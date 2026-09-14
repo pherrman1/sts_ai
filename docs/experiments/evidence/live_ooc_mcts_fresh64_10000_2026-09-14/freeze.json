@@ -1,0 +1,26 @@
+{
+  "runtime_source_sha": "54f2820f426c45540b02eb075cf73102b00de8f0",
+  "reviewed_analysis_launch_sha": "13508a4507daebc1fe081151973050a51d8aef9d",
+  "independent_review": "PASS before canaries and official games",
+  "runtime_ci_run": 34856918459,
+  "canary_seeds": [
+    979999
+  ],
+  "official_seeds": {
+    "lo": 980000,
+    "hi": 980063,
+    "count_per_arm": 64
+  },
+  "mcts_simulations": 10000,
+  "real_combat_simulations": 10000,
+  "bootstrap_resamples": 200000,
+  "bootstrap_seed": 20260914,
+  "host": "sts-test",
+  "workers_per_arm": 24,
+  "arms_sequential": true,
+  "analyzer_ci_run": 34860408603,
+  "analyzer_ci_conclusion": "success",
+  "analyzer_ci_head": "9af81a6cd23f867a75861bff22f65ca4e63dbf7a",
+  "independent_final_review": "PASS",
+  "postflight": "PASS source/cache/binary/five model hashes"
+}

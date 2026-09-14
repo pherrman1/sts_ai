@@ -192,6 +192,12 @@ env plus server port liveness, not a per-decision query log. See
   and the executed branch conditions remain the authoritative configuration
   record.
 
+The live OOC MCTS paired gate analyzer accepts explicit `--seed-start` and
+`--seed-count` cohort parameters. Historical defaults remain970000/32; new gates
+must freeze the cohort before outcomes and pass the explicit values consistently
+through seed membership, support receipts and paired-bootstrap aggregation.
+These parameters do not change the win-CI decision rule or simulation budgets.
+
 ## Open questions
 
 - What thread/scheduling configuration is required for bit-reproducible fair

@@ -1,6 +1,6 @@
 # Out-of-combat policy
 
-Last verified: 2026-09-14 for potion-generation support; 2026-09-10 against the current working tree (semantic OOC
+Last verified: 2026-09-14 for opt-in MCTS controls and continuation-limit accounting; 2026-09-10 against the current working tree (semantic OOC
 decision coverage and reward continuation).
 Previously verified 2026-08-09 (key collection
 gated behind STS_COLLECT_KEYS=1, default off; BEST banner includes keys=collect/skip).
@@ -140,8 +140,10 @@ state.
 Live leaves never apply `v_win` to unresolved rewards, shops, events, selectors
 or battles: rich win features omit those pending contents. `evaluateLeaf` deep
 copies the node and applies the existing ordered OOC policy chain until a map
-checkpoint or exact terminal, capped at 256 continuation steps with a fatal
-failure if unresolved. This is a V4/policy-chain continuation estimate, not a
+checkpoint or exact terminal, capped at 256 continuation steps by default.
+Unresolved exhaustion aborts the whole root to V4 with a dedicated continuation
+reason, never a fabricated scalar value. Optional additional-combat horizons use
+a 1024-step cap. This is a V4/policy-chain continuation estimate, not a
 learned screen-aware value. Branch history, action/combat observers, policy
 trace bookkeeping, Silver diagnostics and potion pricing are scoped and restored.
 Corpus capture is incompatible with live MCTS.
@@ -171,9 +173,36 @@ Native OOC successors that enter no sampled combat are deterministic conditional
 on their copied RNG state. The adapter caches those `(parent, action)` successors
 and advertises them to the core. Only these children are reused as deterministic;
 sampled combat outcomes retain independent equal-weight particles, including
-equal outcomes. PUCT and stochastic widening remain `1.5`, `2`, `0.5`; live roots
-use the fixed 512 budget. Depth counts searched primitive transitions and excludes
+equal outcomes. Default PUCT/widening are `1.5`, `2`, `0.5`, with512 simulations;
+opt-in controls below override these only inside detached OOC search. Depth counts searched primitive transitions and excludes
 policy-chain steps used only to project leaves.
+
+The following `STS_OOC_MCTS_` suffixes configure ON searches. Invalid finite
+ranges/enums fail startup; OFF does not parse or apply search overrides. Native
+V4/win models still must load for every ON ablation. Startup emits exact applied
+settings in `[ooc-mcts-config]` JSON for artifact validation.
+
+| Suffix | Default | Allowed setting / meaning |
+|---|---|---|
+| `SIMS` |512|positive integer, fixed completed draws per owned root|
+| `PRIOR` |policy|`policy` or `uniform`; all candidates retained|
+| `TEMPERATURE` |1|finite positive policy-logit temperature|
+| `CPUCT` |1.5|finite nonnegative PUCT exploration multiplier|
+| `WIDEN_K` |2|finite positive chance-particle width coefficient|
+| `WIDEN_ALPHA` |0.5|finite exponent strictly between0 and1|
+| `MAX_DEPTH` |32|integer1..32 searched primitive transitions|
+| `ROOT_SELECTION` |visits|`visits` or `q`; Q selects only visited actions, ties by visits|
+| `LEAF_VALUE` |native|`native` or `constant`0.5 at resolved map checkpoints|
+| `LEAF_COMBATS` |0|0,1,3 additional surrogate combats before resolved checkpoint|
+| `LEAF_POLICY` |v4|`v4` or `uniform` among unique supported legal V4 candidates|
+
+Exact terminal0/1 overrides either leaf value. Uniform continuation retains V4
+for unsupported/nonunique selectors; all transitions keep the same combat
+support gate and native-simulation prohibition. Chance widening caps particles
+with `ceil(k*N^alpha)`; action candidates are fully expanded, so this substrate
+is not double progressive widening. Root-Q selection changes only the final
+choice, not tree allocation. Leaf projection steps do not count toward tree
+`MAX_DEPTH`. None of these knobs changes real Silver's budget or parameters.
 
 Optional `STS_OOC_MCTS_TRACE` appends one CSV row per completed run, including
 OFF runs when explicitly requested. It records decision/ownership/fallback
@@ -183,9 +212,13 @@ ordinary real combat count. It also records imagined combat totals, unsupported
 root support-abort counts and discarded completed simulations, total simulation
 attempts, pending/battle/map leaf counts, projection steps,
 particle creation/revisits, deterministic revisits and summed searched depth.
-A `.support.jsonl` companion reconciles unsupported support reasons per seed.
+A `.support.jsonl` companion reconciles actual unsupported-combat reasons per
+seed, plus separate `continuation_reasons`/`continuation_limit_aborts`. CSV
+`continuationLimitAborts` counts unresolved continuation bounds, not combat calls.
+`mctsSupportAborts=unsupportedCombats+continuationLimitAborts`, while
+`imaginedCombats=combatSurrogateSamples+unsupportedCombats`.
 OFF ownership/fallback/search counts are zero;
-the decision count still covers actual nonbattle iterations. For ON, `simulations=512*owned+discardedSimulations` and
+the decision count still covers actual nonbattle iterations. For ON, `simulations=configuredBudget*owned+discardedSimulations` and
 `simulationAttempts=simulations+mctsSupportAborts`. Search timing
 includes adapter construction/destruction and unsupported-root checks, and
 excludes execution of the selected live primitive. The `bestbench` `sec` field

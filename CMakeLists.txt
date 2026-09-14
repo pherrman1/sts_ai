@@ -419,6 +419,12 @@ add_test(NAME combat_transition_relic_trajectory_selftest
     COMMAND python3 ${CMAKE_SOURCE_DIR}/tools/test_combat_transition_relic_trajectory.py)
 add_test(NAME combat_transition_composed_selftest
     COMMAND python3 ${CMAKE_SOURCE_DIR}/tools/test_combat_transition_composed.py)
+add_test(NAME ooc_mcts_parameter_search_selftest
+    COMMAND python3 ${CMAKE_SOURCE_DIR}/tools/test_ooc_mcts_parameter_search.py)
+add_test(NAME ooc_mcts_gameplay_analysis_selftest
+    COMMAND python3 ${CMAKE_SOURCE_DIR}/tools/test_analyze_ooc_mcts_gameplay.py)
+add_test(NAME combat_transition_expanded_support_selftest
+    COMMAND python3 ${CMAKE_SOURCE_DIR}/tools/test_combat_transition_expanded_support.py)
 add_test(NAME combat_transition_native_fixture
     COMMAND $<TARGET_FILE:one_combat> combattransitionselftest
         ${CMAKE_CURRENT_BINARY_DIR}/combat_transition_fixture.jsonl

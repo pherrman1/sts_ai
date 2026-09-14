@@ -13,9 +13,16 @@ struct OocContinuationMetrics {
     std::uint64_t imaginedCombats = 0, unsupportedCombats = 0;
     std::uint64_t pendingLeaves = 0, battleLeaves = 0, mapLeaves = 0, projectionSteps = 0;
     std::map<std::string, std::uint64_t> supportReasons;
+    std::uint64_t continuationLimitAborts = 0;
+    std::map<std::string, std::uint64_t> continuationReasons;
 };
 struct OocAdapterOptions {
     bool checkpointLeaves = false;
+    bool uniformPrior = false;
+    double priorTemperature = 1.0;
+    bool constantLeaf = false;
+    unsigned leafCombats = 0;
+    bool uniformLeafPolicy = false;
 };
 class OocGameContextModel final : public sts::search::OocGenerativeModel {
     struct Snapshot { GameContext gc; PathHistory path; };

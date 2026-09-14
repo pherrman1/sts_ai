@@ -1,7 +1,8 @@
 # Current research status
 
 Last verified: 2026-09-14 for exact supported-v1 RNG continuation
-and the stochastic signed-HP distribution;
+and the stochastic signed-HP distribution, expanded-support offline composition,
+and fresh64 fixed10000 live MCTS gate;
 2026-09-13 for the Phase-2 stochastic persistent-state support
 audit and the corrected whole-combat transition model rerun after independent
 review;
@@ -20,14 +21,21 @@ chronology.
 
 ## Current priority / active line
 
-The fixed2048 live OOC MCTS budget regression is complete on reused32 seeds:
-MCTS24/32 versus exact preserved V4 control21/32 (gain9.375pp,95% CI[-12.5,+31.25])
-and previous512 MCTS22/32 (secondary gain6.25pp,CI[-9.375,+21.875]). Both comparisons
-are inconclusive. Source/models/fair exact-10k Silver unchanged; maxdepth8–16,
-more surrogate samples but more support-triggered V4 root fallbacks than512.
-Default OFF and512 remain unchanged; no further seeds or budget are authorized.
-See [ledger-06 §247](../../experiments/ledger-06.md) and
-[2048 evidence](../../experiments/evidence/live_ooc_mcts_2048_2026-09-14.md).
+The fresh64 fixed10000 live OOC MCTS versus matched V4 gate is complete:
+**OOC_MCTS_WINRATE_INCONCLUSIVE**. MCTS42/64 versus V448/64,−9.375pp,
+paired95% CI[−23.4375,+4.6875]pp. Both fresh arms use frozen native models and
+fair exact-10k Silver, A0/keysOFF/Act3; no historical control is pooled. Mechanical
+source/config/seed/trace/support validation and independent reproduction pass
+with zero bridge failures and battleLeaves. Maxdepth6..23,7240owned decisions,1551 support aborts; total V4
+fallback rate33.5658%. Descriptive mean elapsed game ratio4.50565. Negative point
+estimate and crossing-zero interval provide no demonstrated improvement; no
+basis to enable MCTS. Default OFF/existing512 and frozen exclusions are preserved.
+Copied hidden noncombat RNG remains a planning limitation. See
+[ledger-06 §249](../../experiments/ledger-06.md),
+[fresh64 evidence](../../experiments/evidence/live_ooc_mcts_fresh64_10000_2026-09-14.md).
+The prior reused32 fixed2048 regression remains preserved and inconclusive
+[§247](../../experiments/ledger-06.md); it is not a causal comparison of budgets
+against this fresh cohort.
 
 ## Completed recent line
 
@@ -182,10 +190,40 @@ including deaths, have zero potion creations/swaps/substitutions; preserved
 RNG, copy-through and victorious relic checks also pass. Of the previous
 116,302 potion-certification failures, 113,094 recover certification and
 91,155 recover full support. Remaining full fallback is 96,231 rows.
-This census corrects the contract; distribution/exposure and gameplay
-qualification were not rerun on recovered rows. See the
+This census corrected the contract; expanded distribution/exposure qualification
+is now recorded below. It did not rerun gameplay qualification. See the
 [full source/provenance/accounting audit](../../experiments/evidence/potion_generation_support_2026-09-14.md)
 and [maintained potion-generation contract](../behavior/combat-potion-generation.md).
+
+**`EXPANDED_COMPOSED_TRANSITION_QUALIFIED`** on #178's complete
+41,454-row original engineering TEST support, reviewed scoring SHA
+`66d62987308e200f1abbfaa92d3fff67b3370ac7` (§248). OLD (32,164 rows/2,474 sources)
+reproduces the recorded #174 component/exposure metrics and row teacher NLLs
+exactly: all reproduction errors are zero. RECOVERED is 9,290 rows/893 sources;
+EXPANDED is 41,454 rows/2,512 sources, with row-ID disjoint union and historical
+OLD membership proven. Frozen model/corpus/split/prepared hashes match.
+RECOVERED HP/potion/relic mean gaps are +0.019484613/+0.000565261/-0.002278852 nat;
+EXPANDED gaps are +0.013832688/+0.000723143/-0.001336405. Each passes its independent
+0.1-nat mean gate; source-bootstrap CIs remain descriptive. All eleven hard
+validity counts are zero over 1,326,528 EXPANDED draws, including 297,280
+RECOVERED draws. Independent raw-output reproduction passes.
+
+Recovered component diagnostics are weaker than OLD, but composition exposure
+passes the frozen criterion. The recovered census has only COMBUST and BRUTALITY
+outside the historical card-color whitelist (both GREEN in simulator metadata);
+this result does not establish accuracy for other off-color IDs. Act, combat
+type, card-count and common-card slices are diagnostic. The two rows with four
+metadata off-color cards have no informative relic trajectory rows, explicitly
+reported without a score. #174 remains the original 62.526% subset qualification;
+this experiment extends the offline composition prerequisite to 80.586% support.
+The original TEST is reused engineering validation, not untouched holdout evidence.
+
+This satisfies the offline composition prerequisite for a next fresh MCTS
+gameplay gate; it does not establish win-rate improvement, change MCTS defaults,
+or replace that gate's runtime/readiness/provenance requirements. No models,
+support, runtime, data or gameplay changed. See
+[expanded evidence](../../experiments/evidence/composed_transition_expanded_support_2026-09-14.md)
+and [JSON](../../experiments/evidence/composed_transition_expanded_support_2026-09-14.json).
 
 The native runtime adapter is now qualified for the combat boundary (§242);
 the opt-in live OOC MCTS engineering gameplay gate is recorded in §243.

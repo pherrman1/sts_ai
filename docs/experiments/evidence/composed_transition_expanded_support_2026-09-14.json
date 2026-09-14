@@ -1,0 +1,3107 @@
+{
+  "artifactsUnchanged": true,
+  "baseline": "74d31681b8ebd3beb5e85d6db9c1a164f9aeaf13",
+  "classification": "EXPANDED_COMPOSED_TRANSITION_QUALIFIED",
+  "cohortSamplingConvention": "OLD reproduction uses separate historical OLD-only row stream; cohort OLD metrics/exposure table uses subset of EXPANDED stream, whose ancestral draws differ",
+  "commands": [
+    "python3 -m tools.combat_transition_expanded_support prepare --output-dir /tmp/composed-expanded-support-20260914",
+    "python3 -m tools.combat_transition_expanded_support evaluate --output-dir /tmp/composed-expanded-support-20260914 --reviewed-sha 66d62987308e200f1abbfaa92d3fff67b3370ac7",
+    "python3 /tmp/composed-expanded-independent-review.py /tmp/composed-expanded-support-20260914",
+    "python3 -m unittest tools.test_combat_transition_composed tools.test_combat_transition_expanded_support -v",
+    "ctest --test-dir build/linux-gcc-debug-ccache -R 'combat_transition_(composed|expanded_support)_selftest' --output-on-failure",
+    "git diff --check"
+  ],
+  "commonOffColorCards": {
+    "BRUTALITY": 4511,
+    "COMBUST": 5563
+  },
+  "completeDraws": 1326528,
+  "componentMetrics": {
+    "EXPANDED": {
+      "maxHp": {
+        "modeAccuracy": 0.9745735113605051,
+        "nll": 0.05835194163575954
+      },
+      "potion": {
+        "jointMaskNll": 0.5366482852800557,
+        "modeExact": 0.7924296700819159
+      },
+      "relic": {
+        "constraintNll": 0.5763457981327299,
+        "fullVectorModeExact": 0.7840376762944964,
+        "informativeRows": 11015
+      },
+      "rows": 41454,
+      "signedHp": {
+        "crps": 3.6764795114350126,
+        "expectedMae": 5.386602993082606,
+        "nll": 2.5057027861726557
+      },
+      "sources": 2512,
+      "survival": {
+        "auc": 0.9780655012067189,
+        "brier": 0.01903977484820891,
+        "logloss": 0.06362179035607037,
+        "n": 41454
+      },
+      "victories": 39919
+    },
+    "OLD": {
+      "maxHp": {
+        "modeAccuracy": 0.9785874799357945,
+        "nll": 0.04922763811593293
+      },
+      "potion": {
+        "jointMaskNll": 0.5041398600978116,
+        "modeExact": 0.8052648475120385
+      },
+      "relic": {
+        "constraintNll": 0.49033797626590786,
+        "fullVectorModeExact": 0.8140609951845907,
+        "informativeRows": 7414
+      },
+      "rows": 32164,
+      "signedHp": {
+        "crps": 3.432251386103819,
+        "expectedMae": 5.036824001735063,
+        "nll": 2.3717516549582336
+      },
+      "sources": 2474,
+      "survival": {
+        "auc": 0.9808058608058607,
+        "brier": 0.016413114529727785,
+        "logloss": 0.054881630424214234,
+        "n": 32164
+      },
+      "victories": 31150
+    },
+    "RECOVERED": {
+      "maxHp": {
+        "modeAccuracy": 0.9603147451248717,
+        "nll": 0.09076408151973707
+      },
+      "potion": {
+        "jointMaskNll": 0.6521275240104584,
+        "modeExact": 0.7468354430379747
+      },
+      "relic": {
+        "constraintNll": 0.8818702195207453,
+        "fullVectorModeExact": 0.6773862470065002,
+        "informativeRows": 3601
+      },
+      "rows": 9290,
+      "signedHp": {
+        "crps": 4.544047775098679,
+        "expectedMae": 6.629118169325733,
+        "nll": 2.9815355763801197
+      },
+      "sources": 893,
+      "survival": {
+        "auc": 0.9681251503453208,
+        "brier": 0.028133844006833983,
+        "logloss": 0.09388212448397353,
+        "n": 9290
+      },
+      "victories": 8769
+    }
+  },
+  "exposure": {
+    "EXPANDED": {
+      "hp": {
+        "decision": "EXPOSURE_OK",
+        "mean": 0.013832688491182268,
+        "mixtureNll": 2.5195354746638383,
+        "repetitions": 1000,
+        "rows": 39919,
+        "sourceBootstrap95": [
+          0.011592086784587802,
+          0.016428042725691754
+        ],
+        "sources": 2512,
+        "teacherNll": 2.5057027861726557,
+        "zeroMixtureProbabilityRows": 0
+      },
+      "potion": {
+        "decision": "EXPOSURE_OK",
+        "mean": 0.0007231426074703859,
+        "mixtureNll": 0.537371427887526,
+        "repetitions": 1000,
+        "rows": 39919,
+        "sourceBootstrap95": [
+          0.0005218366638643869,
+          0.0009544635737213603
+        ],
+        "sources": 2512,
+        "teacherNll": 0.5366482852800557,
+        "zeroMixtureProbabilityRows": 0
+      },
+      "relic": {
+        "decision": "EXPOSURE_OK",
+        "mean": -0.001336404645159786,
+        "mixtureNll": 2.0872274275816354,
+        "repetitions": 1000,
+        "rows": 11015,
+        "sourceBootstrap95": [
+          -0.00372042152267137,
+          0.0010113810955762876
+        ],
+        "sources": 1202,
+        "teacherNll": 2.0887106611173007,
+        "zeroMixtureProbabilityRows": 0
+      }
+    },
+    "OLD": {
+      "hp": {
+        "decision": "EXPOSURE_OK",
+        "mean": 0.012241621877842357,
+        "mixtureNll": 2.383993276836076,
+        "repetitions": 1000,
+        "rows": 31150,
+        "sourceBootstrap95": [
+          0.009743450351913527,
+          0.014807776042279987
+        ],
+        "sources": 2474,
+        "teacherNll": 2.3717516549582336,
+        "zeroMixtureProbabilityRows": 0
+      },
+      "potion": {
+        "decision": "EXPOSURE_OK",
+        "mean": 0.0007675876546146825,
+        "mixtureNll": 0.5049074477524264,
+        "repetitions": 1000,
+        "rows": 31150,
+        "sourceBootstrap95": [
+          0.0005457987022962803,
+          0.0010000760336047751
+        ],
+        "sources": 2474,
+        "teacherNll": 0.5041398600978116,
+        "zeroMixtureProbabilityRows": 0
+      },
+      "relic": {
+        "decision": "EXPOSURE_OK",
+        "mean": -0.0008786552495000428,
+        "mixtureNll": 2.0587476463378653,
+        "repetitions": 1000,
+        "rows": 7414,
+        "sourceBootstrap95": [
+          -0.0036340833298378777,
+          0.0021630379224602918
+        ],
+        "sources": 909,
+        "teacherNll": 2.060160233974542,
+        "zeroMixtureProbabilityRows": 0
+      }
+    },
+    "RECOVERED": {
+      "hp": {
+        "decision": "EXPOSURE_OK",
+        "mean": 0.019484612884561023,
+        "mixtureNll": 3.0010201892646804,
+        "repetitions": 1000,
+        "rows": 8769,
+        "sourceBootstrap95": [
+          0.014790353559362049,
+          0.024908486528538158
+        ],
+        "sources": 871,
+        "teacherNll": 2.9815355763801197,
+        "zeroMixtureProbabilityRows": 0
+      },
+      "potion": {
+        "decision": "EXPOSURE_OK",
+        "mean": 0.0005652610681221321,
+        "mixtureNll": 0.6526927850785806,
+        "repetitions": 1000,
+        "rows": 8769,
+        "sourceBootstrap95": [
+          -3.8727902313713076e-05,
+          0.0011605455679757541
+        ],
+        "sources": 871,
+        "teacherNll": 0.6521275240104584,
+        "zeroMixtureProbabilityRows": 0
+      },
+      "relic": {
+        "decision": "EXPOSURE_OK",
+        "mean": -0.0022788523039827062,
+        "mixtureNll": 2.145863666998828,
+        "repetitions": 1000,
+        "rows": 3601,
+        "sourceBootstrap95": [
+          -0.006496149139885058,
+          0.0020977584945433302
+        ],
+        "sources": 465,
+        "teacherNll": 2.147492351435659,
+        "zeroMixtureProbabilityRows": 0
+      }
+    }
+  },
+  "gameplay": false,
+  "hardValidity": {
+    "EXPANDED": {
+      "crossRelicResidueInconsistency": 0,
+      "deterministicNativeMismatch": 0,
+      "downstreamModelInvokedAfterDeath": 0,
+      "hpAboveSampledMaxHp": 0,
+      "hpBelow1": 0,
+      "illegalRelicCounter": 0,
+      "invalidInheritedRngReconstruction": 0,
+      "invalidMaxHpClassOrState": 0,
+      "invalidPotionTransition": 0,
+      "potionCreationSwapSubstitution": 0,
+      "unsupportedMutableRelicMutation": 0
+    },
+    "OLD": {
+      "crossRelicResidueInconsistency": 0,
+      "deterministicNativeMismatch": 0,
+      "downstreamModelInvokedAfterDeath": 0,
+      "hpAboveSampledMaxHp": 0,
+      "hpBelow1": 0,
+      "illegalRelicCounter": 0,
+      "invalidInheritedRngReconstruction": 0,
+      "invalidMaxHpClassOrState": 0,
+      "invalidPotionTransition": 0,
+      "potionCreationSwapSubstitution": 0,
+      "unsupportedMutableRelicMutation": 0
+    },
+    "RECOVERED": {
+      "crossRelicResidueInconsistency": 0,
+      "deterministicNativeMismatch": 0,
+      "downstreamModelInvokedAfterDeath": 0,
+      "hpAboveSampledMaxHp": 0,
+      "hpBelow1": 0,
+      "illegalRelicCounter": 0,
+      "invalidInheritedRngReconstruction": 0,
+      "invalidMaxHpClassOrState": 0,
+      "invalidPotionTransition": 0,
+      "potionCreationSwapSubstitution": 0,
+      "unsupportedMutableRelicMutation": 0
+    }
+  },
+  "historicalQualification": "174 remains qualification of original 62.526% subset",
+  "knowledgeImpact": "experiment evidence and maintained research status",
+  "oldReproduction": {
+    "errors": {
+      "exposure.hp.mean": 0.0,
+      "exposure.hp.mixtureNll": 0.0,
+      "exposure.hp.teacherNll": 0.0,
+      "exposure.potion.mean": 0.0,
+      "exposure.potion.mixtureNll": 0.0,
+      "exposure.potion.teacherNll": 0.0,
+      "exposure.relic.mean": 0.0,
+      "exposure.relic.mixtureNll": 0.0,
+      "exposure.relic.teacherNll": 0.0,
+      "historicalSurvival.auc": 0.0,
+      "historicalSurvival.brier": 0.0,
+      "historicalSurvival.logloss": 0.0,
+      "hp.teacherMaxAbs": 0.0,
+      "maxHp.modeAccuracy": 0.0,
+      "maxHp.nll": 0.0,
+      "potion.jointMaskNll": 0.0,
+      "potion.modeExact": 0.0,
+      "potion.teacherMaxAbs": 0.0,
+      "relic.constraintNll": 0.0,
+      "relic.fullVectorExact": 0.0,
+      "relic.teacherMaxAbs": 0.0,
+      "signedHp.crps": 0.0,
+      "signedHp.expectedMae": 0.0,
+      "signedHp.nll": 0.0
+    },
+    "hardValidity": {
+      "crossRelicResidueInconsistency": 0,
+      "deterministicNativeMismatch": 0,
+      "downstreamModelInvokedAfterDeath": 0,
+      "hpAboveSampledMaxHp": 0,
+      "hpBelow1": 0,
+      "illegalRelicCounter": 0,
+      "invalidInheritedRngReconstruction": 0,
+      "invalidMaxHpClassOrState": 0,
+      "invalidPotionTransition": 0,
+      "potionCreationSwapSubstitution": 0,
+      "unsupportedMutableRelicMutation": 0
+    },
+    "historicalQualificationPreserved": true,
+    "passed": true,
+    "tolerance": 1e-05
+  },
+  "partitionProof": {
+    "baseline": "74d31681b8ebd3beb5e85d6db9c1a164f9aeaf13",
+    "counts": {
+      "EXPANDED": {
+        "rows": 41454,
+        "sources": 2512,
+        "victories": 39919
+      },
+      "OLD": {
+        "rows": 32164,
+        "sources": 2474,
+        "victories": 31150
+      },
+      "RECOVERED": {
+        "rows": 9290,
+        "sources": 893,
+        "victories": 8769
+      }
+    },
+    "disjoint": true,
+    "explicitAlchemizeAndEntropicBrewExcluded": true,
+    "historicalEvidenceSha256": "383e8f028fddb4c16ff046ef717266d923ad505a8e9517a9a88d7fd4d53b83fe",
+    "historicalOldIdentity": true,
+    "partitionsSha256": "ed1305acc374b8680dfb37a2bf0d7be37c899ae2b4aaf71c3373d6128dbc473e",
+    "rowIdentity": "original corpus index paired with original sourceSeed; TEST order unchanged",
+    "unionIdentity": true
+  },
+  "provenance": {
+    "baseline": "7316c715bac7fe4559ead59cde1eb374d3437b5b",
+    "corpusContradictions": 0,
+    "counts": {
+      "act:1": {
+        "fallback": 41790,
+        "rate": 0.8251069279251378,
+        "rows": 238946,
+        "supported": 197156
+      },
+      "act:2": {
+        "fallback": 35310,
+        "rate": 0.7940531460700371,
+        "rows": 171452,
+        "supported": 136142
+      },
+      "act:3": {
+        "fallback": 19131,
+        "rate": 0.8079833788341095,
+        "rows": 99632,
+        "supported": 80501
+      },
+      "all": {
+        "fallback": 96231,
+        "rate": 0.8113228633609788,
+        "rows": 510030,
+        "supported": 413799
+      },
+      "room:2": {
+        "fallback": 1259,
+        "rate": 0.839125990288781,
+        "rows": 7826,
+        "supported": 6567
+      },
+      "room:3": {
+        "fallback": 18830,
+        "rate": 0.8408754806270334,
+        "rows": 118335,
+        "supported": 99505
+      },
+      "room:4": {
+        "fallback": 67386,
+        "rate": 0.7957597708639581,
+        "rows": 329935,
+        "supported": 262549
+      },
+      "room:6": {
+        "fallback": 8756,
+        "rate": 0.8376534282641748,
+        "rows": 53934,
+        "supported": 45178
+      },
+      "split:0": {
+        "fallback": 76958,
+        "rate": 0.8114620158115355,
+        "rows": 408183,
+        "supported": 331225
+      },
+      "split:1": {
+        "fallback": 9286,
+        "rate": 0.8157758996944808,
+        "rows": 50406,
+        "supported": 41120
+      },
+      "split:2": {
+        "fallback": 9987,
+        "rate": 0.8058552516475185,
+        "rows": 51441,
+        "supported": 41454
+      },
+      "test:act:1": {
+        "fallback": 4192,
+        "rate": 0.8256674706811944,
+        "rows": 24046,
+        "supported": 19854
+      },
+      "test:act:2": {
+        "fallback": 3730,
+        "rate": 0.7837555800336251,
+        "rows": 17249,
+        "supported": 13519
+      },
+      "test:act:3": {
+        "fallback": 2065,
+        "rate": 0.7964715158683225,
+        "rows": 10146,
+        "supported": 8081
+      },
+      "test:room:2": {
+        "fallback": 128,
+        "rate": 0.8373570520965693,
+        "rows": 787,
+        "supported": 659
+      },
+      "test:room:3": {
+        "fallback": 1951,
+        "rate": 0.8369001839157332,
+        "rows": 11962,
+        "supported": 10011
+      },
+      "test:room:4": {
+        "fallback": 7023,
+        "rate": 0.7887374785669163,
+        "rows": 33243,
+        "supported": 26220
+      },
+      "test:room:6": {
+        "fallback": 885,
+        "rate": 0.8375848779592586,
+        "rows": 5449,
+        "supported": 4564
+      }
+    },
+    "domain": {
+      "classes": 304,
+      "envelope": "all globally supported pre-combat states",
+      "max": 143,
+      "maxHpDeltaValues": [
+        0,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12
+      ],
+      "min": -160,
+      "preCurHpRange": [
+        1,
+        161
+      ],
+      "preMaxHpRange": [
+        24,
+        172
+      ],
+      "rule": "[min(1-preCurHp),max(preMaxHp-preCurHp)+max(deltaMaxHp)]",
+      "sha256": "f812c16ab1d220cd60e8a8915ebb368bcd7e6d9e48915eb8cce5c760fad78eec"
+    },
+    "fullSupportSha256": "d5ac5e9a2e782e63781c68226e9b3ec9f2a9bbd360a2c17d807573cb8232f8d3",
+    "hashes": {
+      "/home/philippherrmann/sts_sweep/runs/combat-transition-model-v1/split_manifest.json": "e9043bcceb9d95027711e6ff33afbfe1cae3cf9528f820c0ff68bddbb419db32",
+      "/home/philippherrmann/sts_sweep/runs/combat-transition-runtime-25k/combat-transition-25k.jsonl": "74c08aa0a3c30342d86cd45355fe17ffa9046963ad7c8cf71b1938f9cdc1cfde",
+      "/home/philippherrmann/sts_sweep/runs/combat-transition-runtime-25k/combat-transition-25k.jsonl.manifest.json": "33669cd99eed8317987192825b5111a68d1e60269c166def2fe568364e20ad59",
+      "/tmp/sts-phase2-attention-audit-20260913/prepared.npz": "2badbb85ccd8329bcb886d50ef8a0b9b1bd2c043fda9445de9f9c2e7a4b6f9a5",
+      "/tmp/sts-phase2-attention-audit-20260913/prepared_manifest.json": "13b2c91fd0ced713f8c429bbf8995ceb58b6e3e57d1555de42f5e67d7f9a389f",
+      "/tmp/sts-phase2-attention-audit-20260913/target_spec.json": "e2315620d512578542d6b3bfbd362eb07b086f0e9fa7770cc23f4fa4c226e229",
+      "hp": "a667a3cfa7d7eca3cb07b46f50321e443c75e8a58f7627becb1fd69bf90f08c9",
+      "max_hp": "66ac8f70da69e29bf9b1364243f6f903e4f74dda1ec8a909ef54a7ea97dc6479",
+      "potion": "8e04bcd5265fb11b8fa91b4553a84690915f437e7b3afee0b93358e312de3ad6",
+      "potion_encoder": "2085010f1aeef7a7957cdc45c851b2424d640037fd0fa981eb7ae7274190f6ef",
+      "relic": "e07e79d487152ae294f4915ef4aecd0e8bd38b8dec8d0133a57b6b58af92bd71",
+      "survival": "2447b2daf1a48a619a5f071488908afd6f0fb83bfd855ee9f379c04120efeaef"
+    },
+    "reasons": {
+      "entropic_brew": 3208,
+      "gold_mutating_card": 2640,
+      "gold_mutating_encounter": 27664,
+      "gold_mutating_potion": 21698,
+      "gold_mutating_relic": 6824,
+      "potion_not_certified": 3208,
+      "pre_smoke_bomb_used": 26,
+      "pre_stolen_gold_nonzero": 19048,
+      "ritual_dagger": 13926,
+      "smoke_bomb": 3765,
+      "writhing_mass": 4477
+    },
+    "savedTestRowsSha256": "c07f051c378d6a1fa8e0094309518d7b655c7abb3dbef713d848ffa1756b2b5a",
+    "testRows": 51441,
+    "testSources": 2517
+  },
+  "rawArtifactHashes": {
+    "expanded/complete_draws.npz": "992fabb9e6d0265facd04379a1f9e6aa6c45803e1ad6e88c72578140288ac077",
+    "expanded/component_reproduction.json": "f595808cffc88f5a206ed500d69beee52e88cfde7631abcdf838b216c366bfc5",
+    "expanded/exposure.json": "9599c21d87a21ca5112216b20f3f71b780c74998e72d76875b666548cee13135",
+    "expanded/exposure.npz": "ff41e0a415888df76b0876d4e89a7fa356d8c2966545d1321305aa7218e57e33",
+    "expanded/full_support.npy": "d5ac5e9a2e782e63781c68226e9b3ec9f2a9bbd360a2c17d807573cb8232f8d3",
+    "expanded/hp_monte_carlo_diagnostic.json": "13d8a6855a0876c49384680c5881191e3936b9f159c949d9fde12506447659f9",
+    "expanded/model_call_receipts.json": "9846994dafdde454d80788730c8f52568f714a183dc39e681da4c64d388d3564",
+    "expanded/preflight.json": "c738529e3d721ba667762cc06dbf35e727c78ac9d1771299326029de90544620",
+    "expanded/recipe.json": "db1e94b415864fb76c5363b914b48a14aded69af6a6f915e77a4d8f2a6292bc2",
+    "expanded/results.json": "07102b7125e547bd33d58eac4d5527355172e32123b38f3dd1a6e3cad5ba5c0c",
+    "expanded/row_metrics.npz": "4db66a2b7744082e17ba35a8e4c955811b20bce603fdca92dd49aecb9465f6ec",
+    "expanded/row_validity.npz": "858d0708e0a75debccdd5f36f847fe8771045374b6ab974941f334ae682c5423",
+    "expanded/sample_failures.json": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
+    "expanded/test_rows.jsonl": "c07f051c378d6a1fa8e0094309518d7b655c7abb3dbef713d848ffa1756b2b5a",
+    "old/complete_draws.npz": "85f3622a1a3d5b09507ac9ea3784bcc540dd005f92a3bd6eee432fcb876d649b",
+    "old/component_reproduction.json": "0b33af642e2d937efb0e722ae779b54685a2ce55fc393ab7cbbcc6d39ca44280",
+    "old/exposure.json": "5a862f6607172b9af32efa5592f03fff0eddadb365d7e2a42a800c2f533d28f3",
+    "old/exposure.npz": "f3491fbe6cdddab327943e4e8a089e573284d02e7eb2586e4ab9d23e5d42b3e0",
+    "old/full_support.npy": "2498c272a24295f9e09e9a9d74142a0323775b6925be568d952565ba1f9507ca",
+    "old/hp_monte_carlo_diagnostic.json": "a75efd57677a5290214df51e7ae8f9d4fdad30f1586837ffdf01c12908c2e20a",
+    "old/model_call_receipts.json": "6239f90bb56f1d16504b37d550386213e534011a1e176d03dde52dbf08671988",
+    "old/preflight.json": "ad4b97fc5751eb8f5a1ebe705b79671f6fe2702124f0fb2e21c95a49aaad0e80",
+    "old/recipe.json": "db1e94b415864fb76c5363b914b48a14aded69af6a6f915e77a4d8f2a6292bc2",
+    "old/results.json": "f7f6dd69cec7df4ff282c1a3486c41f7e86acdf2baa778266b0e8138eb396677",
+    "old/row_metrics.npz": "c8d44a5e41ed835ea21feba0eeb0d96ffeaa1cfb648cef8cbc1f59349653ccb0",
+    "old/row_validity.npz": "4970437254558e3d6d447850b495355d2a4f084ac1831767131502a02ce767a6",
+    "old/sample_failures.json": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
+    "old/test_rows.jsonl": "f04418f97636fc355c01c3411b14278b12fad749e3bfaba6f9d5f02c0331eef8",
+    "old_reproduction.json": "d4fd1a175d602f23cc0a66f78b53f306940ea960640202b51292fcbc7ea20273",
+    "partition_proof.json": "4a1aeb5f99d5603f80a8d2648286e4c8145aed5eac17df6f8373eec6fe609015",
+    "partitions.npz": "ed1305acc374b8680dfb37a2bf0d7be37c899ae2b4aaf71c3373d6128dbc473e",
+    "results.json": "d6cc1303810c648482017e71a7289d86e6ef6a41085e4cf368a211d271dd7984",
+    "verification/composed-expanded-configure.log": "fa3dc78d17b2f3cfc8c38862edf6997c97981bb14fa167fb5302b1dfdd950e72",
+    "verification/composed-expanded-doctor.log": "98d6438f2dfab3abe9cf42139c1fcf85866f160bdd3e711b568f0c125bfaa06b",
+    "verification/composed-expanded-focused-ctest.log": "6f3d3732655795a8d7ad078757f8c624b8dad3e1b177100e69fb9663d637a3a9",
+    "verification/composed-expanded-focused-tests.log": "4f90900d54b2b3d9a1be94483cdd4af463208bc1790d582b809475c0f5d813f4",
+    "verification/composed-expanded-health.json": "d82d52f6a1b035e861de16afd88bda84e57a59e0b30451419bcc8ac7f3b82c87",
+    "verification/composed-expanded-implementation-review.json": "6bbc5e02a9509091e8f6299456d1ee558f8f4f5d266235240bbba98ca9b36abe",
+    "verification/composed-expanded-independent-review.json": "c9ae5cab030d51c3afe032cad3733719e8b30e9e4f1ada34c4af621c9e91bfc1",
+    "verification/composed-expanded-independent-review.py": "e9862c4931272bfeb3a33a7a80951eb46462c059079bc3964c40db988af73090",
+    "verification/composed-expanded-prepare.log": "4113e44978ed3e130d6a358022c9bd30cb7e812360cb94abe3eb30ff3e7a1eec",
+    "verification/composed-expanded-score.log": "5aed6d1ff3bb4a0b10e1fcf0b172d1a3531bc49aa256fad72b78c18fb1cb7d52"
+  },
+  "rawEvidenceDirectory": "/home/philippherrmann/sts_sweep/runs/composed-transition-expanded-support-20260914",
+  "recipe": {
+    "artifactSeedConvention": 20260912,
+    "baseline": "7316c715bac7fe4559ead59cde1eb374d3437b5b",
+    "bootstrapReps": 1000,
+    "bootstrapSeed": 20260917,
+    "corpusSha256": "74c08aa0a3c30342d86cd45355fe17ffa9046963ad7c8cf71b1938f9cdc1cfde",
+    "draws": 32,
+    "evaluationPrecision": "historical survival/maxHP/potion FP32 MHA fastpath enabled; HP AMP FP16 MHA fastpath disabled; relic FP32",
+    "exposureThreshold": 0.1,
+    "hpExposureEstimator": "exact weighted marginal over all maxHP classes",
+    "hpMonteCarloRole": "32-draw diagnostic only; never used for classification",
+    "latencyPrecision": "one-thread CPU FP32, batch 1, full visible encoding, 10 warmups, 100 draws per path",
+    "partition": "original source-grouped reused engineering TEST",
+    "relicAggregation": "mean row gap / observed learned groups on informative rows",
+    "rngScope": "OOC continuation: copy potionRng and exact replay_misc; omit four recreated battle-local streams",
+    "samplingSeed": 20260916,
+    "schema": "offline_composed_transition_v1",
+    "splitSha256": "e9043bcceb9d95027711e6ff33afbfe1cae3cf9528f820c0ff68bddbb419db32",
+    "training": false
+  },
+  "recoveredSlices": {
+    "act:1": {
+      "components": {
+        "maxHp": {
+          "modeAccuracy": 0.9876609442060086,
+          "nll": 0.03386159960506878
+        },
+        "potion": {
+          "jointMaskNll": 0.5785599365003601,
+          "modeExact": 0.7650214592274678
+        },
+        "relic": {
+          "constraintNll": 0.3083676816610668,
+          "fullVectorModeExact": 0.8739270386266095,
+          "informativeRows": 321
+        },
+        "rows": 1902,
+        "signedHp": {
+          "crps": 3.669364495675092,
+          "expectedMae": 5.294315656340976,
+          "nll": 2.8739702240254017
+        },
+        "sources": 471,
+        "survival": {
+          "auc": 0.9899339281680596,
+          "brier": 0.009439597534630749,
+          "logloss": 0.03220485566655233,
+          "n": 1902
+        },
+        "victories": 1864
+      },
+      "exposure": {
+        "hp": {
+          "decision": "EXPOSURE_OK",
+          "mean": 0.0027523062666252335,
+          "mixtureNll": 2.8767225302920276,
+          "repetitions": 1000,
+          "rows": 1864,
+          "sourceBootstrap95": [
+            -0.00016290057795284978,
+            0.006474008755392012
+          ],
+          "sources": 466,
+          "teacherNll": 2.8739702240254017,
+          "zeroMixtureProbabilityRows": 0
+        },
+        "potion": {
+          "decision": "EXPOSURE_OK",
+          "mean": 0.0018592415718408477,
+          "mixtureNll": 0.5804191780722009,
+          "repetitions": 1000,
+          "rows": 1864,
+          "sourceBootstrap95": [
+            0.0007767010019936905,
+            0.0028323118858096627
+          ],
+          "sources": 466,
+          "teacherNll": 0.5785599365003601,
+          "zeroMixtureProbabilityRows": 0
+        },
+        "relic": {
+          "decision": "EXPOSURE_OK",
+          "mean": 0.004374329437347792,
+          "mixtureNll": 1.7948382332198545,
+          "repetitions": 1000,
+          "rows": 321,
+          "sourceBootstrap95": [
+            -0.009866423749269389,
+            0.018019740398816247
+          ],
+          "sources": 124,
+          "teacherNll": 1.790645971784325,
+          "zeroMixtureProbabilityRows": 0
+        }
+      }
+    },
+    "act:2": {
+      "components": {
+        "maxHp": {
+          "modeAccuracy": 0.9548286604361371,
+          "nll": 0.09085923913228022
+        },
+        "potion": {
+          "jointMaskNll": 0.6874672699941111,
+          "modeExact": 0.7271547248182763
+        },
+        "relic": {
+          "constraintNll": 0.7935198991997007,
+          "fullVectorModeExact": 0.7024922118380063,
+          "informativeRows": 1483
+        },
+        "rows": 4115,
+        "signedHp": {
+          "crps": 4.607328010609111,
+          "expectedMae": 6.675726650041349,
+          "nll": 3.11235287643337
+        },
+        "sources": 729,
+        "survival": {
+          "auc": 0.9598203885986836,
+          "brier": 0.034513062650704016,
+          "logloss": 0.11306743838756901,
+          "n": 4115
+        },
+        "victories": 3852
+      },
+      "exposure": {
+        "hp": {
+          "decision": "EXPOSURE_OK",
+          "mean": 0.015886946037965383,
+          "mixtureNll": 3.128239822471335,
+          "repetitions": 1000,
+          "rows": 3852,
+          "sourceBootstrap95": [
+            0.010168828307475125,
+            0.021817639431899374
+          ],
+          "sources": 713,
+          "teacherNll": 3.11235287643337,
+          "zeroMixtureProbabilityRows": 0
+        },
+        "potion": {
+          "decision": "EXPOSURE_OK",
+          "mean": 0.0005843875217326328,
+          "mixtureNll": 0.6880516575158436,
+          "repetitions": 1000,
+          "rows": 3852,
+          "sourceBootstrap95": [
+            -0.00014277297161631528,
+            0.0012727494752569038
+          ],
+          "sources": 713,
+          "teacherNll": 0.6874672699941111,
+          "zeroMixtureProbabilityRows": 0
+        },
+        "relic": {
+          "decision": "EXPOSURE_OK",
+          "mean": -0.0028295572138684897,
+          "mixtureNll": 2.0583106603115024,
+          "repetitions": 1000,
+          "rows": 1483,
+          "sourceBootstrap95": [
+            -0.009344613232165257,
+            0.0032648807464642137
+          ],
+          "sources": 328,
+          "teacherNll": 2.0611184453238582,
+          "zeroMixtureProbabilityRows": 0
+        }
+      }
+    },
+    "act:3": {
+      "components": {
+        "maxHp": {
+          "modeAccuracy": 0.9505404520144121,
+          "nll": 0.12538566002135038
+        },
+        "potion": {
+          "jointMaskNll": 0.6524554904663358,
+          "modeExact": 0.7605633802816901
+        },
+        "relic": {
+          "constraintNll": 1.3434929396147852,
+          "fullVectorModeExact": 0.5257124140189977,
+          "informativeRows": 1797
+        },
+        "rows": 3273,
+        "signedHp": {
+          "crps": 4.998241736991698,
+          "expectedMae": 7.385271466570094,
+          "nll": 2.88215581122587
+        },
+        "sources": 502,
+        "survival": {
+          "auc": 0.9650269481582943,
+          "brier": 0.030977098534974934,
+          "logloss": 0.1056030528608264,
+          "n": 3273
+        },
+        "victories": 3053
+      },
+      "exposure": {
+        "hp": {
+          "decision": "EXPOSURE_OK",
+          "mean": 0.03423968403717115,
+          "mixtureNll": 2.9163954952630413,
+          "repetitions": 1000,
+          "rows": 3053,
+          "sourceBootstrap95": [
+            0.023992108917178588,
+            0.045349264101489234
+          ],
+          "sources": 498,
+          "teacherNll": 2.88215581122587,
+          "zeroMixtureProbabilityRows": 0
+        },
+        "potion": {
+          "decision": "EXPOSURE_OK",
+          "mean": -0.0002489068841344464,
+          "mixtureNll": 0.6522065835822013,
+          "repetitions": 1000,
+          "rows": 3053,
+          "sourceBootstrap95": [
+            -0.0014061661702140216,
+            0.0010657719066565576
+          ],
+          "sources": 498,
+          "teacherNll": 0.6524554904663358,
+          "zeroMixtureProbabilityRows": 0
+        },
+        "relic": {
+          "decision": "EXPOSURE_OK",
+          "mean": -0.0030128400377648287,
+          "mixtureNll": 2.2808220827808836,
+          "repetitions": 1000,
+          "rows": 1797,
+          "sourceBootstrap95": [
+            -0.008395005760323877,
+            0.002691081862108691
+          ],
+          "sources": 334,
+          "teacherNll": 2.2825174992552912,
+          "zeroMixtureProbabilityRows": 0
+        }
+      }
+    },
+    "card:BRUTALITY": {
+      "components": {
+        "maxHp": {
+          "modeAccuracy": 0.9620942904524994,
+          "nll": 0.08910948691565768
+        },
+        "potion": {
+          "jointMaskNll": 0.6636891414191768,
+          "modeExact": 0.7410566216536366
+        },
+        "relic": {
+          "constraintNll": 0.9591393020216104,
+          "fullVectorModeExact": 0.6488983653162758,
+          "informativeRows": 1851
+        },
+        "rows": 4511,
+        "signedHp": {
+          "crps": 4.60538597329167,
+          "expectedMae": 6.696347351986028,
+          "nll": 2.972287064894779
+        },
+        "sources": 527,
+        "survival": {
+          "auc": 0.9627747959708846,
+          "brier": 0.03259699909951733,
+          "logloss": 0.10855599046412842,
+          "n": 4511
+        },
+        "victories": 4221
+      },
+      "exposure": {
+        "hp": {
+          "decision": "EXPOSURE_OK",
+          "mean": 0.019843552575878724,
+          "mixtureNll": 2.9921306174706577,
+          "repetitions": 1000,
+          "rows": 4221,
+          "sourceBootstrap95": [
+            0.012447395202373302,
+            0.02820651223894516
+          ],
+          "sources": 510,
+          "teacherNll": 2.972287064894779,
+          "zeroMixtureProbabilityRows": 0
+        },
+        "potion": {
+          "decision": "EXPOSURE_OK",
+          "mean": -0.00019633625787759593,
+          "mixtureNll": 0.6634928051612993,
+          "repetitions": 1000,
+          "rows": 4221,
+          "sourceBootstrap95": [
+            -0.0009504684217762032,
+            0.00051035389281253
+          ],
+          "sources": 510,
+          "teacherNll": 0.6636891414191768,
+          "zeroMixtureProbabilityRows": 0
+        },
+        "relic": {
+          "decision": "EXPOSURE_OK",
+          "mean": -0.002867340646976758,
+          "mixtureNll": 2.1851726666138616,
+          "repetitions": 1000,
+          "rows": 1851,
+          "sourceBootstrap95": [
+            -0.008754370081251421,
+            0.003033514482514532
+          ],
+          "sources": 271,
+          "teacherNll": 2.1872106964574654,
+          "zeroMixtureProbabilityRows": 0
+        }
+      }
+    },
+    "card:COMBUST": {
+      "components": {
+        "maxHp": {
+          "modeAccuracy": 0.9602272727272727,
+          "nll": 0.09077385182005683
+        },
+        "potion": {
+          "jointMaskNll": 0.6449452322446706,
+          "modeExact": 0.7513257575757576
+        },
+        "relic": {
+          "constraintNll": 0.810233366602207,
+          "fullVectorModeExact": 0.6990530303030303,
+          "informativeRows": 2076
+        },
+        "rows": 5563,
+        "signedHp": {
+          "crps": 4.50189965859553,
+          "expectedMae": 6.585203647452958,
+          "nll": 2.989560147763081
+        },
+        "sources": 462,
+        "survival": {
+          "auc": 0.9713573455402078,
+          "brier": 0.025521683545999953,
+          "logloss": 0.08487022710416259,
+          "n": 5563
+        },
+        "victories": 5280
+      },
+      "exposure": {
+        "hp": {
+          "decision": "EXPOSURE_OK",
+          "mean": 0.019625356821466124,
+          "mixtureNll": 3.009185504584547,
+          "repetitions": 1000,
+          "rows": 5280,
+          "sourceBootstrap95": [
+            0.01325505130038919,
+            0.027409846731715513
+          ],
+          "sources": 454,
+          "teacherNll": 2.989560147763081,
+          "zeroMixtureProbabilityRows": 0
+        },
+        "potion": {
+          "decision": "EXPOSURE_OK",
+          "mean": 0.0010900835937562286,
+          "mixtureNll": 0.6460353158384269,
+          "repetitions": 1000,
+          "rows": 5280,
+          "sourceBootstrap95": [
+            0.0002922259140599118,
+            0.001960138392398275
+          ],
+          "sources": 454,
+          "teacherNll": 0.6449452322446706,
+          "zeroMixtureProbabilityRows": 0
+        },
+        "relic": {
+          "decision": "EXPOSURE_OK",
+          "mean": -0.0007818428526623213,
+          "mixtureNll": 2.0602638043636685,
+          "repetitions": 1000,
+          "rows": 2076,
+          "sourceBootstrap95": [
+            -0.006139498421157782,
+            0.004432900061128863
+          ],
+          "sources": 243,
+          "teacherNll": 2.06070913944131,
+          "zeroMixtureProbabilityRows": 0
+        }
+      }
+    },
+    "combat:boss": {
+      "components": {
+        "maxHp": {
+          "modeAccuracy": 0.976530612244898,
+          "nll": 0.0718303860700304
+        },
+        "potion": {
+          "jointMaskNll": 1.2120655314232365,
+          "modeExact": 0.5010204081632653
+        },
+        "relic": {
+          "constraintNll": 1.0647732270862098,
+          "fullVectorModeExact": 0.6255102040816326,
+          "informativeRows": 460
+        },
+        "rows": 1321,
+        "signedHp": {
+          "crps": 7.566129185617123,
+          "expectedMae": 10.909863478146615,
+          "nll": 3.871234345281808
+        },
+        "sources": 776,
+        "survival": {
+          "auc": 0.9160631994733378,
+          "brier": 0.10095213508459724,
+          "logloss": 0.31338360899705314,
+          "n": 1321
+        },
+        "victories": 980
+      },
+      "exposure": {
+        "hp": {
+          "decision": "EXPOSURE_OK",
+          "mean": 0.00722590885124362,
+          "mixtureNll": 3.8784602541330515,
+          "repetitions": 1000,
+          "rows": 980,
+          "sourceBootstrap95": [
+            0.002180146546145401,
+            0.013437791371028919
+          ],
+          "sources": 618,
+          "teacherNll": 3.871234345281808,
+          "zeroMixtureProbabilityRows": 0
+        },
+        "potion": {
+          "decision": "EXPOSURE_OK",
+          "mean": -0.00011165341840813229,
+          "mixtureNll": 1.2119538780048282,
+          "repetitions": 1000,
+          "rows": 980,
+          "sourceBootstrap95": [
+            -0.0022940007712780653,
+            0.0022688372904448658
+          ],
+          "sources": 618,
+          "teacherNll": 1.2120655314232365,
+          "zeroMixtureProbabilityRows": 0
+        },
+        "relic": {
+          "decision": "EXPOSURE_OK",
+          "mean": -0.010528219478394768,
+          "mixtureNll": 2.256331123039842,
+          "repetitions": 1000,
+          "rows": 460,
+          "sourceBootstrap95": [
+            -0.020808126984062564,
+            -0.0006783039289285658
+          ],
+          "sources": 311,
+          "teacherNll": 2.268429921903431,
+          "zeroMixtureProbabilityRows": 0
+        }
+      }
+    },
+    "combat:elite": {
+      "components": {
+        "maxHp": {
+          "modeAccuracy": 0.9676148796498906,
+          "nll": 0.08504895534332972
+        },
+        "potion": {
+          "jointMaskNll": 0.9607901888093058,
+          "modeExact": 0.613129102844639
+        },
+        "relic": {
+          "constraintNll": 0.8799887068652791,
+          "fullVectorModeExact": 0.6765864332603939,
+          "informativeRows": 919
+        },
+        "rows": 2390,
+        "signedHp": {
+          "crps": 6.37935603605192,
+          "expectedMae": 9.194079302224095,
+          "nll": 3.5508449986756725
+        },
+        "sources": 783,
+        "survival": {
+          "auc": 0.91350630405335,
+          "brier": 0.03165244844576368,
+          "logloss": 0.11673195875754855,
+          "n": 2390
+        },
+        "victories": 2285
+      },
+      "exposure": {
+        "hp": {
+          "decision": "EXPOSURE_OK",
+          "mean": 0.01417277443281663,
+          "mixtureNll": 3.5650177731084893,
+          "repetitions": 1000,
+          "rows": 2285,
+          "sourceBootstrap95": [
+            0.005669316452139001,
+            0.02486256886194897
+          ],
+          "sources": 756,
+          "teacherNll": 3.5508449986756725,
+          "zeroMixtureProbabilityRows": 0
+        },
+        "potion": {
+          "decision": "EXPOSURE_OK",
+          "mean": 0.0007653449258590471,
+          "mixtureNll": 0.9615555337351648,
+          "repetitions": 1000,
+          "rows": 2285,
+          "sourceBootstrap95": [
+            -0.000758151237924794,
+            0.0022834742898187347
+          ],
+          "sources": 756,
+          "teacherNll": 0.9607901888093058,
+          "zeroMixtureProbabilityRows": 0
+        },
+        "relic": {
+          "decision": "EXPOSURE_OK",
+          "mean": -0.008092229568641644,
+          "mixtureNll": 2.181053383380552,
+          "repetitions": 1000,
+          "rows": 919,
+          "sourceBootstrap95": [
+            -0.01716554020446975,
+            0.00035006441710698635
+          ],
+          "sources": 378,
+          "teacherNll": 2.1880023872252714,
+          "zeroMixtureProbabilityRows": 0
+        }
+      }
+    },
+    "combat:event": {
+      "components": {
+        "maxHp": {
+          "modeAccuracy": 0.964824120603015,
+          "nll": 0.08295100337383202
+        },
+        "potion": {
+          "jointMaskNll": 0.8287896605744846,
+          "modeExact": 0.6231155778894473
+        },
+        "relic": {
+          "constraintNll": 1.1378200673070924,
+          "fullVectorModeExact": 0.592964824120603,
+          "informativeRows": 95
+        },
+        "rows": 205,
+        "signedHp": {
+          "crps": 4.931281733152653,
+          "expectedMae": 7.536326321806169,
+          "nll": 3.0891270285963093
+        },
+        "sources": 183,
+        "survival": {
+          "auc": 0.8961474036850923,
+          "brier": 0.028617309436682246,
+          "logloss": 0.1034387468412005,
+          "n": 205
+        },
+        "victories": 199
+      },
+      "exposure": {
+        "hp": {
+          "decision": "EXPOSURE_OK",
+          "mean": 0.018219309574900165,
+          "mixtureNll": 3.1073463381712085,
+          "repetitions": 1000,
+          "rows": 199,
+          "sourceBootstrap95": [
+            0.002578530126950746,
+            0.03679149684118452
+          ],
+          "sources": 178,
+          "teacherNll": 3.0891270285963093,
+          "zeroMixtureProbabilityRows": 0
+        },
+        "potion": {
+          "decision": "EXPOSURE_OK",
+          "mean": 0.000967498412050438,
+          "mixtureNll": 0.8297571589865349,
+          "repetitions": 1000,
+          "rows": 199,
+          "sourceBootstrap95": [
+            -0.00246905893348206,
+            0.005365217655864928
+          ],
+          "sources": 178,
+          "teacherNll": 0.8287896605744846,
+          "zeroMixtureProbabilityRows": 0
+        },
+        "relic": {
+          "decision": "EXPOSURE_OK",
+          "mean": 0.012452857839458138,
+          "mixtureNll": 2.397206855281477,
+          "repetitions": 1000,
+          "rows": 95,
+          "sourceBootstrap95": [
+            -0.006871723180525217,
+            0.03317997902392571
+          ],
+          "sources": 86,
+          "teacherNll": 2.383433610018241,
+          "zeroMixtureProbabilityRows": 0
+        }
+      }
+    },
+    "combat:normal": {
+      "components": {
+        "maxHp": {
+          "modeAccuracy": 0.9540056550424129,
+          "nll": 0.09701646368841538
+        },
+        "potion": {
+          "jointMaskNll": 0.4091135369216498,
+          "modeExact": 0.8544769085768144
+        },
+        "relic": {
+          "constraintNll": 0.8392915747128472,
+          "fullVectorModeExact": 0.6904806786050895,
+          "informativeRows": 2127
+        },
+        "rows": 5374,
+        "signedHp": {
+          "crps": 3.1807341622355367,
+          "expectedMae": 4.699504406147443,
+          "nll": 2.5679281263405316
+        },
+        "sources": 848,
+        "survival": {
+          "auc": 0.9860071849089593,
+          "brier": 0.00865086344563447,
+          "logloss": 0.029399118801269004,
+          "n": 5374
+        },
+        "victories": 5305
+      },
+      "exposure": {
+        "hp": {
+          "decision": "EXPOSURE_OK",
+          "mean": 0.0240845895430925,
+          "mixtureNll": 2.5920127158836244,
+          "repetitions": 1000,
+          "rows": 5305,
+          "sourceBootstrap95": [
+            0.017970079399748876,
+            0.030520774019495517
+          ],
+          "sources": 838,
+          "teacherNll": 2.5679281263405316,
+          "zeroMixtureProbabilityRows": 0
+        },
+        "potion": {
+          "decision": "EXPOSURE_OK",
+          "mean": 0.0005890385140088569,
+          "mixtureNll": 0.4097025754356587,
+          "repetitions": 1000,
+          "rows": 5305,
+          "sourceBootstrap95": [
+            8.681355470739095e-05,
+            0.0010957721821795103
+          ],
+          "sources": 838,
+          "teacherNll": 0.4091135369216498,
+          "zeroMixtureProbabilityRows": 0
+        },
+        "relic": {
+          "decision": "EXPOSURE_OK",
+          "mean": 0.0013589897941951171,
+          "mixtureNll": 2.095543036053589,
+          "repetitions": 1000,
+          "rows": 2127,
+          "sourceBootstrap95": [
+            -0.003913296683957199,
+            0.006534514941589611
+          ],
+          "sources": 435,
+          "teacherNll": 2.0932965710542892,
+          "zeroMixtureProbabilityRows": 0
+        }
+      }
+    },
+    "offColorCount:1": {
+      "components": {
+        "maxHp": {
+          "modeAccuracy": 0.9615023474178404,
+          "nll": 0.08644147074946194
+        },
+        "potion": {
+          "jointMaskNll": 0.6507211231181932,
+          "modeExact": 0.746747149564051
+        },
+        "relic": {
+          "constraintNll": 0.869846011175394,
+          "fullVectorModeExact": 0.6854460093896714,
+          "informativeRows": 2973
+        },
+        "rows": 7879,
+        "signedHp": {
+          "crps": 4.507903232181723,
+          "expectedMae": 6.5828796020313165,
+          "nll": 2.9755513818371426
+        },
+        "sources": 874,
+        "survival": {
+          "auc": 0.9694395935360591,
+          "brier": 0.026682907343319236,
+          "logloss": 0.08980914931403781,
+          "n": 7879
+        },
+        "victories": 7455
+      },
+      "exposure": {
+        "hp": {
+          "decision": "EXPOSURE_OK",
+          "mean": 0.01843489877713091,
+          "mixtureNll": 2.993986280614273,
+          "repetitions": 1000,
+          "rows": 7455,
+          "sourceBootstrap95": [
+            0.013383605669217445,
+            0.02356607804109167
+          ],
+          "sources": 852,
+          "teacherNll": 2.9755513818371426,
+          "zeroMixtureProbabilityRows": 0
+        },
+        "potion": {
+          "decision": "EXPOSURE_OK",
+          "mean": 0.0006758658186917949,
+          "mixtureNll": 0.6513969889368849,
+          "repetitions": 1000,
+          "rows": 7455,
+          "sourceBootstrap95": [
+            3.762429502748076e-05,
+            0.0013235451266372868
+          ],
+          "sources": 852,
+          "teacherNll": 0.6507211231181932,
+          "zeroMixtureProbabilityRows": 0
+        },
+        "relic": {
+          "decision": "EXPOSURE_OK",
+          "mean": -0.002700122844637879,
+          "mixtureNll": 2.179412125270663,
+          "repetitions": 1000,
+          "rows": 2973,
+          "sourceBootstrap95": [
+            -0.007149426472024195,
+            0.0021279926310132724
+          ],
+          "sources": 422,
+          "teacherNll": 2.1811981215542153,
+          "zeroMixtureProbabilityRows": 0
+        }
+      }
+    },
+    "offColorCount:2": {
+      "components": {
+        "maxHp": {
+          "modeAccuracy": 0.9516949152542373,
+          "nll": 0.12305872869938846
+        },
+        "potion": {
+          "jointMaskNll": 0.657976654378924,
+          "modeExact": 0.7491525423728813
+        },
+        "relic": {
+          "constraintNll": 1.0158081907527834,
+          "fullVectorModeExact": 0.6067796610169491,
+          "informativeRows": 599
+        },
+        "rows": 1265,
+        "signedHp": {
+          "crps": 4.636015057606867,
+          "expectedMae": 6.717324366255252,
+          "nll": 2.9965083826278374
+        },
+        "sources": 166,
+        "survival": {
+          "auc": 0.9622731804586242,
+          "brier": 0.03506145485033614,
+          "logloss": 0.11258429040542343,
+          "n": 1265
+        },
+        "victories": 1180
+      },
+      "exposure": {
+        "hp": {
+          "decision": "EXPOSURE_OK",
+          "mean": 0.025742131166543402,
+          "mixtureNll": 3.0222505137943805,
+          "repetitions": 1000,
+          "rows": 1180,
+          "sourceBootstrap95": [
+            0.010359644764486838,
+            0.044130654097477
+          ],
+          "sources": 161,
+          "teacherNll": 2.9965083826278374,
+          "zeroMixtureProbabilityRows": 0
+        },
+        "potion": {
+          "decision": "EXPOSURE_OK",
+          "mean": -4.8375919905107766e-05,
+          "mixtureNll": 0.6579282784590189,
+          "repetitions": 1000,
+          "rows": 1180,
+          "sourceBootstrap95": [
+            -0.0013879090190881147,
+            0.0011802488185470937
+          ],
+          "sources": 161,
+          "teacherNll": 0.657976654378924,
+          "zeroMixtureProbabilityRows": 0
+        },
+        "relic": {
+          "decision": "EXPOSURE_OK",
+          "mean": -0.0015140189352722017,
+          "mixtureNll": 1.998701178528599,
+          "repetitions": 1000,
+          "rows": 599,
+          "sourceBootstrap95": [
+            -0.012657942523039171,
+            0.007971888652874034
+          ],
+          "sources": 88,
+          "teacherNll": 2.0010912586554372,
+          "zeroMixtureProbabilityRows": 0
+        }
+      }
+    },
+    "offColorCount:3": {
+      "components": {
+        "maxHp": {
+          "modeAccuracy": 0.9696969696969697,
+          "nll": 0.047572680311011036
+        },
+        "potion": {
+          "jointMaskNll": 0.68915025026099,
+          "modeExact": 0.7272727272727273
+        },
+        "relic": {
+          "constraintNll": 0.37700209625069214,
+          "fullVectorModeExact": 0.8484848484848485,
+          "informativeRows": 29
+        },
+        "rows": 144,
+        "signedHp": {
+          "crps": 5.79099616825588,
+          "expectedMae": 8.521365024207023,
+          "nll": 3.197060167171647
+        },
+        "sources": 22,
+        "survival": {
+          "auc": 0.9387626262626262,
+          "brier": 0.04704083060983033,
+          "logloss": 0.15341572572459283,
+          "n": 144
+        },
+        "victories": 132
+      },
+      "exposure": {
+        "hp": {
+          "decision": "EXPOSURE_OK",
+          "mean": 0.023125481185936363,
+          "mixtureNll": 3.2201856483575835,
+          "repetitions": 1000,
+          "rows": 132,
+          "sourceBootstrap95": [
+            5.655454343244261e-05,
+            0.06567938808144431
+          ],
+          "sources": 22,
+          "teacherNll": 3.197060167171647,
+          "zeroMixtureProbabilityRows": 0
+        },
+        "potion": {
+          "decision": "EXPOSURE_OK",
+          "mean": -0.00018728626133580727,
+          "mixtureNll": 0.6889629639996541,
+          "repetitions": 1000,
+          "rows": 132,
+          "sourceBootstrap95": [
+            -0.003848842572570706,
+            0.0035900441758749064
+          ],
+          "sources": 22,
+          "teacherNll": 0.68915025026099,
+          "zeroMixtureProbabilityRows": 0
+        },
+        "relic": {
+          "decision": "EXPOSURE_OK",
+          "mean": 0.025110876299818487,
+          "mixtureNll": 1.7462348446368063,
+          "repetitions": 1000,
+          "rows": 29,
+          "sourceBootstrap95": [
+            -0.031093447526523432,
+            0.08112712178698053
+          ],
+          "sources": 10,
+          "teacherNll": 1.7160095932593253,
+          "zeroMixtureProbabilityRows": 0
+        }
+      }
+    },
+    "offColorCount:4": {
+      "components": {
+        "maxHp": {
+          "modeAccuracy": 1.0,
+          "nll": 8.637150186760847e-05
+        },
+        "potion": {
+          "jointMaskNll": 0.0,
+          "modeExact": 1.0
+        },
+        "relic": {
+          "constraintNll": -6.426125493449327e-08,
+          "fullVectorModeExact": 1.0,
+          "informativeRows": 0
+        },
+        "rows": 2,
+        "signedHp": {
+          "crps": 2.713540869846552,
+          "expectedMae": 2.0534291486811327,
+          "nll": 2.229042056933957
+        },
+        "sources": 1,
+        "survival": {
+          "auc": null,
+          "brier": 0.0010819359923264216,
+          "logloss": 0.02382857180398188,
+          "n": 2
+        },
+        "victories": 2
+      },
+      "exposure": {
+        "hp": {
+          "decision": "EXPOSURE_OK",
+          "mean": 6.08540699195137e-05,
+          "mixtureNll": 2.2291029110038765,
+          "repetitions": 1000,
+          "rows": 2,
+          "sourceBootstrap95": [
+            6.08540699195137e-05,
+            6.08540699195137e-05
+          ],
+          "sources": 1,
+          "teacherNll": 2.229042056933957,
+          "zeroMixtureProbabilityRows": 0
+        },
+        "potion": {
+          "decision": "EXPOSURE_OK",
+          "mean": 0.0,
+          "mixtureNll": 0.0,
+          "repetitions": 1000,
+          "rows": 2,
+          "sourceBootstrap95": [
+            0.0,
+            0.0
+          ],
+          "sources": 1,
+          "teacherNll": 0.0,
+          "zeroMixtureProbabilityRows": 0
+        },
+        "relic": {
+          "decision": "NO_INFORMATIVE_ROWS",
+          "mean": null,
+          "rows": 0,
+          "sourceBootstrap95": null,
+          "sources": 0
+        }
+      }
+    },
+    "offColorPresent": {
+      "components": {
+        "maxHp": {
+          "modeAccuracy": 0.9603147451248717,
+          "nll": 0.09076408151973707
+        },
+        "potion": {
+          "jointMaskNll": 0.6521275240104584,
+          "modeExact": 0.7468354430379747
+        },
+        "relic": {
+          "constraintNll": 0.8818702195207453,
+          "fullVectorModeExact": 0.6773862470065002,
+          "informativeRows": 3601
+        },
+        "rows": 9290,
+        "signedHp": {
+          "crps": 4.544047775098679,
+          "expectedMae": 6.629118169325733,
+          "nll": 2.9815355763801197
+        },
+        "sources": 893,
+        "survival": {
+          "auc": 0.9681251503453208,
+          "brier": 0.028133844006833983,
+          "logloss": 0.09388212448397353,
+          "n": 9290
+        },
+        "victories": 8769
+      },
+      "exposure": {
+        "hp": {
+          "decision": "EXPOSURE_OK",
+          "mean": 0.019484612884561023,
+          "mixtureNll": 3.0010201892646804,
+          "repetitions": 1000,
+          "rows": 8769,
+          "sourceBootstrap95": [
+            0.014790353559362049,
+            0.024908486528538158
+          ],
+          "sources": 871,
+          "teacherNll": 2.9815355763801197,
+          "zeroMixtureProbabilityRows": 0
+        },
+        "potion": {
+          "decision": "EXPOSURE_OK",
+          "mean": 0.0005652610681221321,
+          "mixtureNll": 0.6526927850785806,
+          "repetitions": 1000,
+          "rows": 8769,
+          "sourceBootstrap95": [
+            -3.8727902313713076e-05,
+            0.0011605455679757541
+          ],
+          "sources": 871,
+          "teacherNll": 0.6521275240104584,
+          "zeroMixtureProbabilityRows": 0
+        },
+        "relic": {
+          "decision": "EXPOSURE_OK",
+          "mean": -0.0022788523039827062,
+          "mixtureNll": 2.145863666998828,
+          "repetitions": 1000,
+          "rows": 3601,
+          "sourceBootstrap95": [
+            -0.006496149139885058,
+            0.0020977584945433302
+          ],
+          "sources": 465,
+          "teacherNll": 2.147492351435659,
+          "zeroMixtureProbabilityRows": 0
+        }
+      }
+    }
+  },
+  "reviewedSha": "66d62987308e200f1abbfaa92d3fff67b3370ac7",
+  "schema": "expanded_composed_transition_qualification_v1",
+  "testReuse": "engineering validation; not untouched holdout evidence",
+  "training": false,
+  "verification": {
+    "checksNotRun": [
+      "gameplay, MCTS and new combat data (excluded)",
+      "full local C++ build/CTest (no C++ implementation changes; focused added CMake tests passed)"
+    ],
+    "ci": "authoritative GitHub Linux GCC check is reported in the PR",
+    "cmakeConfigure": "linux-gcc-debug-ccache passed",
+    "doctor": "passed with UV_CACHE_DIR=/tmp/composed-expanded-uv-cache; initial sandbox cache write blocked",
+    "finalEvidenceReview": "independent review passed; raw fields preserved, numerical tables and knowledge routing match; 24 OLD reproduction errors all zero",
+    "focusedCtest": "2/2 passed",
+    "focusedUnittest": "22 passed",
+    "gitDiffCheck": "passed",
+    "implementationReview": {
+      "baseline": "74d31681b8ebd3beb5e85d6db9c1a164f9aeaf13",
+      "checks": {
+        "focusedCtest": "2/2 passed",
+        "focusedUnittest": "22 passed",
+        "gitDiffCheck": "passed"
+      },
+      "independentAgent": "review_expanded",
+      "knowledgeImpact": "experiment evidence and maintained research status; scoring pending",
+      "optionalTorchAbsent": "4 skips, exit 0",
+      "reviewedSha": "66d62987308e200f1abbfaa92d3fff67b3370ac7",
+      "scope": "reuse existing frozen composed evaluator; support partition proof; OLD reproduction gate; expanded row metrics and complete validity receipts",
+      "status": "PASS"
+    },
+    "independentRawOutputReview": {
+      "baseline": "74d31681b8ebd3beb5e85d6db9c1a164f9aeaf13",
+      "classification": "EXPANDED_COMPOSED_TRANSITION_QUALIFIED",
+      "command": "python3 /tmp/composed-expanded-independent-review.py /tmp/composed-expanded-support-20260914",
+      "commonOffColorCards": {
+        "BRUTALITY": 4511,
+        "COMBUST": 5563
+      },
+      "completeDraws": 1326528,
+      "componentMetrics": {
+        "EXPANDED": {
+          "maxHp": {
+            "modeAccuracy": 0.9745735113605051,
+            "nll": 0.05835194163575954
+          },
+          "potion": {
+            "jointMaskNll": 0.5366482852800557,
+            "modeExact": 0.7924296700819159
+          },
+          "relic": {
+            "constraintNll": 0.5763457981327299,
+            "fullVectorModeExact": 0.7840376762944964,
+            "informativeRows": 11015
+          },
+          "rows": 41454,
+          "signedHp": {
+            "crps": 3.6764795114350126,
+            "expectedMae": 5.386602993082606,
+            "nll": 2.5057027861726557
+          },
+          "sources": 2512,
+          "survival": {
+            "auc": 0.9780655012067189,
+            "brier": 0.01903977484820891,
+            "logloss": 0.06362179035607037,
+            "n": 41454
+          },
+          "victories": 39919
+        },
+        "OLD": {
+          "maxHp": {
+            "modeAccuracy": 0.9785874799357945,
+            "nll": 0.04922763811593293
+          },
+          "potion": {
+            "jointMaskNll": 0.5041398600978116,
+            "modeExact": 0.8052648475120385
+          },
+          "relic": {
+            "constraintNll": 0.49033797626590786,
+            "fullVectorModeExact": 0.8140609951845907,
+            "informativeRows": 7414
+          },
+          "rows": 32164,
+          "signedHp": {
+            "crps": 3.432251386103819,
+            "expectedMae": 5.036824001735063,
+            "nll": 2.3717516549582336
+          },
+          "sources": 2474,
+          "survival": {
+            "auc": 0.9808058608058609,
+            "brier": 0.016413114529727785,
+            "logloss": 0.054881630424214234,
+            "n": 32164
+          },
+          "victories": 31150
+        },
+        "RECOVERED": {
+          "maxHp": {
+            "modeAccuracy": 0.9603147451248717,
+            "nll": 0.09076408151973707
+          },
+          "potion": {
+            "jointMaskNll": 0.6521275240104584,
+            "modeExact": 0.7468354430379747
+          },
+          "relic": {
+            "constraintNll": 0.8818702195207453,
+            "fullVectorModeExact": 0.6773862470065002,
+            "informativeRows": 3601
+          },
+          "rows": 9290,
+          "signedHp": {
+            "crps": 4.544047775098679,
+            "expectedMae": 6.629118169325733,
+            "nll": 2.9815355763801197
+          },
+          "sources": 893,
+          "survival": {
+            "auc": 0.9681251503453209,
+            "brier": 0.028133844006833983,
+            "logloss": 0.09388212448397353,
+            "n": 9290
+          },
+          "victories": 8769
+        }
+      },
+      "counts": {
+        "EXPANDED": {
+          "rows": 41454,
+          "sources": 2512,
+          "victories": 39919
+        },
+        "OLD": {
+          "rows": 32164,
+          "sources": 2474,
+          "victories": 31150
+        },
+        "RECOVERED": {
+          "rows": 9290,
+          "sources": 893,
+          "victories": 8769
+        }
+      },
+      "exitCode": 0,
+      "exposure": {
+        "EXPANDED": {
+          "hp": {
+            "mean": 0.013832688491182268,
+            "mixtureNll": 2.5195354746638383,
+            "rows": 39919,
+            "sourceBootstrap95": [
+              0.011592086784587802,
+              0.016428042725691754
+            ],
+            "sources": 2512,
+            "teacherNll": 2.5057027861726557,
+            "zeroMixtureProbabilityRows": 0
+          },
+          "potion": {
+            "mean": 0.0007231426074703859,
+            "mixtureNll": 0.537371427887526,
+            "rows": 39919,
+            "sourceBootstrap95": [
+              0.0005218366638643869,
+              0.0009544635737213603
+            ],
+            "sources": 2512,
+            "teacherNll": 0.5366482852800557,
+            "zeroMixtureProbabilityRows": 0
+          },
+          "relic": {
+            "mean": -0.001336404645159786,
+            "mixtureNll": 2.0872274275816354,
+            "rows": 11015,
+            "sourceBootstrap95": [
+              -0.00372042152267137,
+              0.0010113810955762876
+            ],
+            "sources": 1202,
+            "teacherNll": 2.0887106611173007,
+            "zeroMixtureProbabilityRows": 0
+          }
+        },
+        "OLD": {
+          "hp": {
+            "mean": 0.012241621877842357,
+            "mixtureNll": 2.383993276836076,
+            "rows": 31150,
+            "sourceBootstrap95": [
+              0.009743450351913527,
+              0.014807776042279987
+            ],
+            "sources": 2474,
+            "teacherNll": 2.3717516549582336,
+            "zeroMixtureProbabilityRows": 0
+          },
+          "potion": {
+            "mean": 0.0007675876546146825,
+            "mixtureNll": 0.5049074477524264,
+            "rows": 31150,
+            "sourceBootstrap95": [
+              0.0005457987022962803,
+              0.0010000760336047751
+            ],
+            "sources": 2474,
+            "teacherNll": 0.5041398600978116,
+            "zeroMixtureProbabilityRows": 0
+          },
+          "relic": {
+            "mean": -0.0008786552495000428,
+            "mixtureNll": 2.0587476463378653,
+            "rows": 7414,
+            "sourceBootstrap95": [
+              -0.0036340833298378777,
+              0.0021630379224602918
+            ],
+            "sources": 909,
+            "teacherNll": 2.060160233974542,
+            "zeroMixtureProbabilityRows": 0
+          }
+        },
+        "RECOVERED": {
+          "hp": {
+            "mean": 0.019484612884561023,
+            "mixtureNll": 3.0010201892646804,
+            "rows": 8769,
+            "sourceBootstrap95": [
+              0.014790353559362049,
+              0.024908486528538158
+            ],
+            "sources": 871,
+            "teacherNll": 2.9815355763801197,
+            "zeroMixtureProbabilityRows": 0
+          },
+          "potion": {
+            "mean": 0.0005652610681221321,
+            "mixtureNll": 0.6526927850785806,
+            "rows": 8769,
+            "sourceBootstrap95": [
+              -3.8727902313713076e-05,
+              0.0011605455679757541
+            ],
+            "sources": 871,
+            "teacherNll": 0.6521275240104584,
+            "zeroMixtureProbabilityRows": 0
+          },
+          "relic": {
+            "mean": -0.0022788523039827062,
+            "mixtureNll": 2.145863666998828,
+            "rows": 3601,
+            "sourceBootstrap95": [
+              -0.006496149139885058,
+              0.0020977584945433302
+            ],
+            "sources": 465,
+            "teacherNll": 2.147492351435659,
+            "zeroMixtureProbabilityRows": 0
+          }
+        }
+      },
+      "hardValidity": {
+        "EXPANDED": {
+          "crossRelicResidueInconsistency": 0,
+          "deterministicNativeMismatch": 0,
+          "downstreamModelInvokedAfterDeath": 0,
+          "hpAboveSampledMaxHp": 0,
+          "hpBelow1": 0,
+          "illegalRelicCounter": 0,
+          "invalidInheritedRngReconstruction": 0,
+          "invalidMaxHpClassOrState": 0,
+          "invalidPotionTransition": 0,
+          "potionCreationSwapSubstitution": 0,
+          "unsupportedMutableRelicMutation": 0
+        },
+        "OLD": {
+          "crossRelicResidueInconsistency": 0,
+          "deterministicNativeMismatch": 0,
+          "downstreamModelInvokedAfterDeath": 0,
+          "hpAboveSampledMaxHp": 0,
+          "hpBelow1": 0,
+          "illegalRelicCounter": 0,
+          "invalidInheritedRngReconstruction": 0,
+          "invalidMaxHpClassOrState": 0,
+          "invalidPotionTransition": 0,
+          "potionCreationSwapSubstitution": 0,
+          "unsupportedMutableRelicMutation": 0
+        },
+        "RECOVERED": {
+          "crossRelicResidueInconsistency": 0,
+          "deterministicNativeMismatch": 0,
+          "downstreamModelInvokedAfterDeath": 0,
+          "hpAboveSampledMaxHp": 0,
+          "hpBelow1": 0,
+          "illegalRelicCounter": 0,
+          "invalidInheritedRngReconstruction": 0,
+          "invalidMaxHpClassOrState": 0,
+          "invalidPotionTransition": 0,
+          "potionCreationSwapSubstitution": 0,
+          "unsupportedMutableRelicMutation": 0
+        }
+      },
+      "independentAgent": "review_expanded",
+      "limitations": "Complete arrays do not serialize every sampled persistent field or original sampled relic residue. Common residues are independently inferred from saved full vectors; inherited RNG/copy-through independently checked from originals and exactComplete receipt.",
+      "modelCallReceipts": "every support row/draw exactly once; survival once, each downstream forward iff alive",
+      "nativeChecks": "saved HP/maxHP/potion consumption masks, reachable relic counters, common learned-group residues, exact-core/complete indicators, original inherited RNG/copy-through",
+      "oldReproductionErrors": {
+        "exposure.hp.mean": 0.0,
+        "exposure.hp.mixtureNll": 0.0,
+        "exposure.hp.teacherNll": 0.0,
+        "exposure.potion.mean": 0.0,
+        "exposure.potion.mixtureNll": 0.0,
+        "exposure.potion.teacherNll": 0.0,
+        "exposure.relic.mean": 0.0,
+        "exposure.relic.mixtureNll": 0.0,
+        "exposure.relic.teacherNll": 0.0,
+        "historicalSurvival.auc": 0.0,
+        "historicalSurvival.brier": 0.0,
+        "historicalSurvival.logloss": 0.0,
+        "hp.teacherMaxAbs": 0.0,
+        "maxHp.modeAccuracy": 0.0,
+        "maxHp.nll": 0.0,
+        "potion.jointMaskNll": 0.0,
+        "potion.modeExact": 0.0,
+        "potion.teacherMaxAbs": 0.0,
+        "relic.constraintNll": 0.0,
+        "relic.fullVectorExact": 0.0,
+        "relic.teacherMaxAbs": 0.0,
+        "signedHp.crps": 0.0,
+        "signedHp.expectedMae": 0.0,
+        "signedHp.nll": 0.0
+      },
+      "passed": true,
+      "recoveredDiagnosticCensus": {
+        "acts": {
+          "1": 1902,
+          "2": 4115,
+          "3": 3273
+        },
+        "cardRowPresence": {
+          "BRUTALITY": 4511,
+          "COMBUST": 5563
+        },
+        "offColorCount": {
+          "1": 7879,
+          "2": 1265,
+          "3": 144,
+          "4": 2
+        },
+        "outsideOldWhitelistCardIds": [
+          47,
+          73
+        ],
+        "rooms": {
+          "2": 205,
+          "3": 2390,
+          "4": 5374,
+          "6": 1321
+        },
+        "scope": "Metadata GREEN values COMBUST and BRUTALITY only; no broader off-color accuracy inference"
+      },
+      "reviewedSha": "66d62987308e200f1abbfaa92d3fff67b3370ac7",
+      "scriptSha256": "e9862c4931272bfeb3a33a7a80951eb46462c059079bc3964c40db988af73090",
+      "slices": {
+        "act:1": {
+          "components": {
+            "maxHp": {
+              "modeAccuracy": 0.9876609442060086,
+              "nll": 0.03386159960506878
+            },
+            "potion": {
+              "jointMaskNll": 0.5785599365003601,
+              "modeExact": 0.7650214592274678
+            },
+            "relic": {
+              "constraintNll": 0.3083676816610668,
+              "fullVectorModeExact": 0.8739270386266095,
+              "informativeRows": 321
+            },
+            "rows": 1902,
+            "signedHp": {
+              "crps": 3.669364495675092,
+              "expectedMae": 5.294315656340976,
+              "nll": 2.8739702240254017
+            },
+            "sources": 471,
+            "survival": {
+              "auc": 0.9899339281680596,
+              "brier": 0.009439597534630749,
+              "logloss": 0.03220485566655233,
+              "n": 1902
+            },
+            "victories": 1864
+          },
+          "exposure": {
+            "hp": {
+              "mean": 0.0027523062666252335,
+              "mixtureNll": 2.8767225302920276,
+              "rows": 1864,
+              "sourceBootstrap95": [
+                -0.00016290057795284978,
+                0.006474008755392012
+              ],
+              "sources": 466,
+              "teacherNll": 2.8739702240254017,
+              "zeroMixtureProbabilityRows": 0
+            },
+            "potion": {
+              "mean": 0.0018592415718408477,
+              "mixtureNll": 0.5804191780722009,
+              "rows": 1864,
+              "sourceBootstrap95": [
+                0.0007767010019936905,
+                0.0028323118858096627
+              ],
+              "sources": 466,
+              "teacherNll": 0.5785599365003601,
+              "zeroMixtureProbabilityRows": 0
+            },
+            "relic": {
+              "mean": 0.004374329437347792,
+              "mixtureNll": 1.7948382332198545,
+              "rows": 321,
+              "sourceBootstrap95": [
+                -0.009866423749269389,
+                0.018019740398816247
+              ],
+              "sources": 124,
+              "teacherNll": 1.790645971784325,
+              "zeroMixtureProbabilityRows": 0
+            }
+          }
+        },
+        "act:2": {
+          "components": {
+            "maxHp": {
+              "modeAccuracy": 0.9548286604361371,
+              "nll": 0.09085923913228022
+            },
+            "potion": {
+              "jointMaskNll": 0.6874672699941111,
+              "modeExact": 0.7271547248182763
+            },
+            "relic": {
+              "constraintNll": 0.7935198991997007,
+              "fullVectorModeExact": 0.7024922118380063,
+              "informativeRows": 1483
+            },
+            "rows": 4115,
+            "signedHp": {
+              "crps": 4.607328010609111,
+              "expectedMae": 6.675726650041349,
+              "nll": 3.11235287643337
+            },
+            "sources": 729,
+            "survival": {
+              "auc": 0.9598203885986836,
+              "brier": 0.034513062650704016,
+              "logloss": 0.11306743838756901,
+              "n": 4115
+            },
+            "victories": 3852
+          },
+          "exposure": {
+            "hp": {
+              "mean": 0.015886946037965383,
+              "mixtureNll": 3.128239822471335,
+              "rows": 3852,
+              "sourceBootstrap95": [
+                0.010168828307475125,
+                0.021817639431899374
+              ],
+              "sources": 713,
+              "teacherNll": 3.11235287643337,
+              "zeroMixtureProbabilityRows": 0
+            },
+            "potion": {
+              "mean": 0.0005843875217326328,
+              "mixtureNll": 0.6880516575158436,
+              "rows": 3852,
+              "sourceBootstrap95": [
+                -0.00014277297161631528,
+                0.0012727494752569038
+              ],
+              "sources": 713,
+              "teacherNll": 0.6874672699941111,
+              "zeroMixtureProbabilityRows": 0
+            },
+            "relic": {
+              "mean": -0.0028295572138684897,
+              "mixtureNll": 2.0583106603115024,
+              "rows": 1483,
+              "sourceBootstrap95": [
+                -0.009344613232165257,
+                0.0032648807464642137
+              ],
+              "sources": 328,
+              "teacherNll": 2.0611184453238582,
+              "zeroMixtureProbabilityRows": 0
+            }
+          }
+        },
+        "act:3": {
+          "components": {
+            "maxHp": {
+              "modeAccuracy": 0.9505404520144121,
+              "nll": 0.12538566002135038
+            },
+            "potion": {
+              "jointMaskNll": 0.6524554904663358,
+              "modeExact": 0.7605633802816901
+            },
+            "relic": {
+              "constraintNll": 1.3434929396147852,
+              "fullVectorModeExact": 0.5257124140189977,
+              "informativeRows": 1797
+            },
+            "rows": 3273,
+            "signedHp": {
+              "crps": 4.998241736991698,
+              "expectedMae": 7.385271466570094,
+              "nll": 2.88215581122587
+            },
+            "sources": 502,
+            "survival": {
+              "auc": 0.9650269481582944,
+              "brier": 0.030977098534974934,
+              "logloss": 0.1056030528608264,
+              "n": 3273
+            },
+            "victories": 3053
+          },
+          "exposure": {
+            "hp": {
+              "mean": 0.03423968403717115,
+              "mixtureNll": 2.9163954952630413,
+              "rows": 3053,
+              "sourceBootstrap95": [
+                0.023992108917178588,
+                0.045349264101489234
+              ],
+              "sources": 498,
+              "teacherNll": 2.88215581122587,
+              "zeroMixtureProbabilityRows": 0
+            },
+            "potion": {
+              "mean": -0.0002489068841344464,
+              "mixtureNll": 0.6522065835822013,
+              "rows": 3053,
+              "sourceBootstrap95": [
+                -0.0014061661702140216,
+                0.0010657719066565576
+              ],
+              "sources": 498,
+              "teacherNll": 0.6524554904663358,
+              "zeroMixtureProbabilityRows": 0
+            },
+            "relic": {
+              "mean": -0.0030128400377648287,
+              "mixtureNll": 2.2808220827808836,
+              "rows": 1797,
+              "sourceBootstrap95": [
+                -0.008395005760323877,
+                0.002691081862108691
+              ],
+              "sources": 334,
+              "teacherNll": 2.2825174992552912,
+              "zeroMixtureProbabilityRows": 0
+            }
+          }
+        },
+        "card:BRUTALITY": {
+          "components": {
+            "maxHp": {
+              "modeAccuracy": 0.9620942904524994,
+              "nll": 0.08910948691565768
+            },
+            "potion": {
+              "jointMaskNll": 0.6636891414191768,
+              "modeExact": 0.7410566216536366
+            },
+            "relic": {
+              "constraintNll": 0.9591393020216104,
+              "fullVectorModeExact": 0.6488983653162758,
+              "informativeRows": 1851
+            },
+            "rows": 4511,
+            "signedHp": {
+              "crps": 4.60538597329167,
+              "expectedMae": 6.696347351986028,
+              "nll": 2.972287064894779
+            },
+            "sources": 527,
+            "survival": {
+              "auc": 0.9627747959708844,
+              "brier": 0.03259699909951733,
+              "logloss": 0.10855599046412842,
+              "n": 4511
+            },
+            "victories": 4221
+          },
+          "exposure": {
+            "hp": {
+              "mean": 0.019843552575878724,
+              "mixtureNll": 2.9921306174706577,
+              "rows": 4221,
+              "sourceBootstrap95": [
+                0.012447395202373302,
+                0.02820651223894516
+              ],
+              "sources": 510,
+              "teacherNll": 2.972287064894779,
+              "zeroMixtureProbabilityRows": 0
+            },
+            "potion": {
+              "mean": -0.00019633625787759593,
+              "mixtureNll": 0.6634928051612993,
+              "rows": 4221,
+              "sourceBootstrap95": [
+                -0.0009504684217762032,
+                0.00051035389281253
+              ],
+              "sources": 510,
+              "teacherNll": 0.6636891414191768,
+              "zeroMixtureProbabilityRows": 0
+            },
+            "relic": {
+              "mean": -0.002867340646976758,
+              "mixtureNll": 2.1851726666138616,
+              "rows": 1851,
+              "sourceBootstrap95": [
+                -0.008754370081251421,
+                0.003033514482514532
+              ],
+              "sources": 271,
+              "teacherNll": 2.1872106964574654,
+              "zeroMixtureProbabilityRows": 0
+            }
+          }
+        },
+        "card:COMBUST": {
+          "components": {
+            "maxHp": {
+              "modeAccuracy": 0.9602272727272727,
+              "nll": 0.09077385182005683
+            },
+            "potion": {
+              "jointMaskNll": 0.6449452322446706,
+              "modeExact": 0.7513257575757576
+            },
+            "relic": {
+              "constraintNll": 0.810233366602207,
+              "fullVectorModeExact": 0.6990530303030303,
+              "informativeRows": 2076
+            },
+            "rows": 5563,
+            "signedHp": {
+              "crps": 4.50189965859553,
+              "expectedMae": 6.585203647452958,
+              "nll": 2.989560147763081
+            },
+            "sources": 462,
+            "survival": {
+              "auc": 0.9713573455402077,
+              "brier": 0.025521683545999953,
+              "logloss": 0.08487022710416259,
+              "n": 5563
+            },
+            "victories": 5280
+          },
+          "exposure": {
+            "hp": {
+              "mean": 0.019625356821466124,
+              "mixtureNll": 3.009185504584547,
+              "rows": 5280,
+              "sourceBootstrap95": [
+                0.01325505130038919,
+                0.027409846731715513
+              ],
+              "sources": 454,
+              "teacherNll": 2.989560147763081,
+              "zeroMixtureProbabilityRows": 0
+            },
+            "potion": {
+              "mean": 0.0010900835937562286,
+              "mixtureNll": 0.6460353158384269,
+              "rows": 5280,
+              "sourceBootstrap95": [
+                0.0002922259140599118,
+                0.001960138392398275
+              ],
+              "sources": 454,
+              "teacherNll": 0.6449452322446706,
+              "zeroMixtureProbabilityRows": 0
+            },
+            "relic": {
+              "mean": -0.0007818428526623213,
+              "mixtureNll": 2.0602638043636685,
+              "rows": 2076,
+              "sourceBootstrap95": [
+                -0.006139498421157782,
+                0.004432900061128863
+              ],
+              "sources": 243,
+              "teacherNll": 2.06070913944131,
+              "zeroMixtureProbabilityRows": 0
+            }
+          }
+        },
+        "combat:boss": {
+          "components": {
+            "maxHp": {
+              "modeAccuracy": 0.976530612244898,
+              "nll": 0.0718303860700304
+            },
+            "potion": {
+              "jointMaskNll": 1.2120655314232365,
+              "modeExact": 0.5010204081632653
+            },
+            "relic": {
+              "constraintNll": 1.0647732270862098,
+              "fullVectorModeExact": 0.6255102040816326,
+              "informativeRows": 460
+            },
+            "rows": 1321,
+            "signedHp": {
+              "crps": 7.566129185617123,
+              "expectedMae": 10.909863478146615,
+              "nll": 3.871234345281808
+            },
+            "sources": 776,
+            "survival": {
+              "auc": 0.9160631994733377,
+              "brier": 0.10095213508459724,
+              "logloss": 0.31338360899705314,
+              "n": 1321
+            },
+            "victories": 980
+          },
+          "exposure": {
+            "hp": {
+              "mean": 0.00722590885124362,
+              "mixtureNll": 3.8784602541330515,
+              "rows": 980,
+              "sourceBootstrap95": [
+                0.002180146546145401,
+                0.013437791371028919
+              ],
+              "sources": 618,
+              "teacherNll": 3.871234345281808,
+              "zeroMixtureProbabilityRows": 0
+            },
+            "potion": {
+              "mean": -0.00011165341840813229,
+              "mixtureNll": 1.2119538780048282,
+              "rows": 980,
+              "sourceBootstrap95": [
+                -0.0022940007712780653,
+                0.0022688372904448658
+              ],
+              "sources": 618,
+              "teacherNll": 1.2120655314232365,
+              "zeroMixtureProbabilityRows": 0
+            },
+            "relic": {
+              "mean": -0.010528219478394768,
+              "mixtureNll": 2.256331123039842,
+              "rows": 460,
+              "sourceBootstrap95": [
+                -0.020808126984062564,
+                -0.0006783039289285658
+              ],
+              "sources": 311,
+              "teacherNll": 2.268429921903431,
+              "zeroMixtureProbabilityRows": 0
+            }
+          }
+        },
+        "combat:elite": {
+          "components": {
+            "maxHp": {
+              "modeAccuracy": 0.9676148796498906,
+              "nll": 0.08504895534332972
+            },
+            "potion": {
+              "jointMaskNll": 0.9607901888093058,
+              "modeExact": 0.613129102844639
+            },
+            "relic": {
+              "constraintNll": 0.8799887068652791,
+              "fullVectorModeExact": 0.6765864332603939,
+              "informativeRows": 919
+            },
+            "rows": 2390,
+            "signedHp": {
+              "crps": 6.37935603605192,
+              "expectedMae": 9.194079302224095,
+              "nll": 3.5508449986756725
+            },
+            "sources": 783,
+            "survival": {
+              "auc": 0.91350630405335,
+              "brier": 0.03165244844576368,
+              "logloss": 0.11673195875754855,
+              "n": 2390
+            },
+            "victories": 2285
+          },
+          "exposure": {
+            "hp": {
+              "mean": 0.01417277443281663,
+              "mixtureNll": 3.5650177731084893,
+              "rows": 2285,
+              "sourceBootstrap95": [
+                0.005669316452139001,
+                0.02486256886194897
+              ],
+              "sources": 756,
+              "teacherNll": 3.5508449986756725,
+              "zeroMixtureProbabilityRows": 0
+            },
+            "potion": {
+              "mean": 0.0007653449258590471,
+              "mixtureNll": 0.9615555337351648,
+              "rows": 2285,
+              "sourceBootstrap95": [
+                -0.000758151237924794,
+                0.0022834742898187347
+              ],
+              "sources": 756,
+              "teacherNll": 0.9607901888093058,
+              "zeroMixtureProbabilityRows": 0
+            },
+            "relic": {
+              "mean": -0.008092229568641644,
+              "mixtureNll": 2.181053383380552,
+              "rows": 919,
+              "sourceBootstrap95": [
+                -0.01716554020446975,
+                0.00035006441710698635
+              ],
+              "sources": 378,
+              "teacherNll": 2.1880023872252714,
+              "zeroMixtureProbabilityRows": 0
+            }
+          }
+        },
+        "combat:event": {
+          "components": {
+            "maxHp": {
+              "modeAccuracy": 0.964824120603015,
+              "nll": 0.08295100337383202
+            },
+            "potion": {
+              "jointMaskNll": 0.8287896605744846,
+              "modeExact": 0.6231155778894473
+            },
+            "relic": {
+              "constraintNll": 1.1378200673070924,
+              "fullVectorModeExact": 0.592964824120603,
+              "informativeRows": 95
+            },
+            "rows": 205,
+            "signedHp": {
+              "crps": 4.931281733152653,
+              "expectedMae": 7.536326321806169,
+              "nll": 3.0891270285963093
+            },
+            "sources": 183,
+            "survival": {
+              "auc": 0.8961474036850922,
+              "brier": 0.028617309436682246,
+              "logloss": 0.1034387468412005,
+              "n": 205
+            },
+            "victories": 199
+          },
+          "exposure": {
+            "hp": {
+              "mean": 0.018219309574900165,
+              "mixtureNll": 3.1073463381712085,
+              "rows": 199,
+              "sourceBootstrap95": [
+                0.002578530126950746,
+                0.03679149684118452
+              ],
+              "sources": 178,
+              "teacherNll": 3.0891270285963093,
+              "zeroMixtureProbabilityRows": 0
+            },
+            "potion": {
+              "mean": 0.000967498412050438,
+              "mixtureNll": 0.8297571589865349,
+              "rows": 199,
+              "sourceBootstrap95": [
+                -0.00246905893348206,
+                0.005365217655864928
+              ],
+              "sources": 178,
+              "teacherNll": 0.8287896605744846,
+              "zeroMixtureProbabilityRows": 0
+            },
+            "relic": {
+              "mean": 0.012452857839458138,
+              "mixtureNll": 2.397206855281477,
+              "rows": 95,
+              "sourceBootstrap95": [
+                -0.006871723180525217,
+                0.03317997902392571
+              ],
+              "sources": 86,
+              "teacherNll": 2.383433610018241,
+              "zeroMixtureProbabilityRows": 0
+            }
+          }
+        },
+        "combat:normal": {
+          "components": {
+            "maxHp": {
+              "modeAccuracy": 0.9540056550424129,
+              "nll": 0.09701646368841538
+            },
+            "potion": {
+              "jointMaskNll": 0.4091135369216498,
+              "modeExact": 0.8544769085768144
+            },
+            "relic": {
+              "constraintNll": 0.8392915747128472,
+              "fullVectorModeExact": 0.6904806786050895,
+              "informativeRows": 2127
+            },
+            "rows": 5374,
+            "signedHp": {
+              "crps": 3.1807341622355367,
+              "expectedMae": 4.699504406147443,
+              "nll": 2.5679281263405316
+            },
+            "sources": 848,
+            "survival": {
+              "auc": 0.9860071849089593,
+              "brier": 0.00865086344563447,
+              "logloss": 0.029399118801269004,
+              "n": 5374
+            },
+            "victories": 5305
+          },
+          "exposure": {
+            "hp": {
+              "mean": 0.0240845895430925,
+              "mixtureNll": 2.5920127158836244,
+              "rows": 5305,
+              "sourceBootstrap95": [
+                0.017970079399748876,
+                0.030520774019495517
+              ],
+              "sources": 838,
+              "teacherNll": 2.5679281263405316,
+              "zeroMixtureProbabilityRows": 0
+            },
+            "potion": {
+              "mean": 0.0005890385140088569,
+              "mixtureNll": 0.4097025754356587,
+              "rows": 5305,
+              "sourceBootstrap95": [
+                8.681355470739095e-05,
+                0.0010957721821795103
+              ],
+              "sources": 838,
+              "teacherNll": 0.4091135369216498,
+              "zeroMixtureProbabilityRows": 0
+            },
+            "relic": {
+              "mean": 0.0013589897941951171,
+              "mixtureNll": 2.095543036053589,
+              "rows": 2127,
+              "sourceBootstrap95": [
+                -0.003913296683957199,
+                0.006534514941589611
+              ],
+              "sources": 435,
+              "teacherNll": 2.0932965710542892,
+              "zeroMixtureProbabilityRows": 0
+            }
+          }
+        },
+        "offColorCount:1": {
+          "components": {
+            "maxHp": {
+              "modeAccuracy": 0.9615023474178404,
+              "nll": 0.08644147074946194
+            },
+            "potion": {
+              "jointMaskNll": 0.6507211231181932,
+              "modeExact": 0.746747149564051
+            },
+            "relic": {
+              "constraintNll": 0.869846011175394,
+              "fullVectorModeExact": 0.6854460093896714,
+              "informativeRows": 2973
+            },
+            "rows": 7879,
+            "signedHp": {
+              "crps": 4.507903232181723,
+              "expectedMae": 6.5828796020313165,
+              "nll": 2.9755513818371426
+            },
+            "sources": 874,
+            "survival": {
+              "auc": 0.9694395935360591,
+              "brier": 0.026682907343319236,
+              "logloss": 0.08980914931403781,
+              "n": 7879
+            },
+            "victories": 7455
+          },
+          "exposure": {
+            "hp": {
+              "mean": 0.01843489877713091,
+              "mixtureNll": 2.993986280614273,
+              "rows": 7455,
+              "sourceBootstrap95": [
+                0.013383605669217445,
+                0.02356607804109167
+              ],
+              "sources": 852,
+              "teacherNll": 2.9755513818371426,
+              "zeroMixtureProbabilityRows": 0
+            },
+            "potion": {
+              "mean": 0.0006758658186917949,
+              "mixtureNll": 0.6513969889368849,
+              "rows": 7455,
+              "sourceBootstrap95": [
+                3.762429502748076e-05,
+                0.0013235451266372868
+              ],
+              "sources": 852,
+              "teacherNll": 0.6507211231181932,
+              "zeroMixtureProbabilityRows": 0
+            },
+            "relic": {
+              "mean": -0.002700122844637879,
+              "mixtureNll": 2.179412125270663,
+              "rows": 2973,
+              "sourceBootstrap95": [
+                -0.007149426472024195,
+                0.0021279926310132724
+              ],
+              "sources": 422,
+              "teacherNll": 2.1811981215542153,
+              "zeroMixtureProbabilityRows": 0
+            }
+          }
+        },
+        "offColorCount:2": {
+          "components": {
+            "maxHp": {
+              "modeAccuracy": 0.9516949152542373,
+              "nll": 0.12305872869938846
+            },
+            "potion": {
+              "jointMaskNll": 0.657976654378924,
+              "modeExact": 0.7491525423728813
+            },
+            "relic": {
+              "constraintNll": 1.0158081907527834,
+              "fullVectorModeExact": 0.6067796610169491,
+              "informativeRows": 599
+            },
+            "rows": 1265,
+            "signedHp": {
+              "crps": 4.636015057606867,
+              "expectedMae": 6.717324366255252,
+              "nll": 2.9965083826278374
+            },
+            "sources": 166,
+            "survival": {
+              "auc": 0.9622731804586241,
+              "brier": 0.03506145485033614,
+              "logloss": 0.11258429040542343,
+              "n": 1265
+            },
+            "victories": 1180
+          },
+          "exposure": {
+            "hp": {
+              "mean": 0.025742131166543402,
+              "mixtureNll": 3.0222505137943805,
+              "rows": 1180,
+              "sourceBootstrap95": [
+                0.010359644764486838,
+                0.044130654097477
+              ],
+              "sources": 161,
+              "teacherNll": 2.9965083826278374,
+              "zeroMixtureProbabilityRows": 0
+            },
+            "potion": {
+              "mean": -4.8375919905107766e-05,
+              "mixtureNll": 0.6579282784590189,
+              "rows": 1180,
+              "sourceBootstrap95": [
+                -0.0013879090190881147,
+                0.0011802488185470937
+              ],
+              "sources": 161,
+              "teacherNll": 0.657976654378924,
+              "zeroMixtureProbabilityRows": 0
+            },
+            "relic": {
+              "mean": -0.0015140189352722017,
+              "mixtureNll": 1.998701178528599,
+              "rows": 599,
+              "sourceBootstrap95": [
+                -0.012657942523039171,
+                0.007971888652874034
+              ],
+              "sources": 88,
+              "teacherNll": 2.0010912586554372,
+              "zeroMixtureProbabilityRows": 0
+            }
+          }
+        },
+        "offColorCount:3": {
+          "components": {
+            "maxHp": {
+              "modeAccuracy": 0.9696969696969697,
+              "nll": 0.047572680311011036
+            },
+            "potion": {
+              "jointMaskNll": 0.68915025026099,
+              "modeExact": 0.7272727272727273
+            },
+            "relic": {
+              "constraintNll": 0.37700209625069214,
+              "fullVectorModeExact": 0.8484848484848485,
+              "informativeRows": 29
+            },
+            "rows": 144,
+            "signedHp": {
+              "crps": 5.79099616825588,
+              "expectedMae": 8.521365024207023,
+              "nll": 3.197060167171647
+            },
+            "sources": 22,
+            "survival": {
+              "auc": 0.9387626262626263,
+              "brier": 0.04704083060983033,
+              "logloss": 0.15341572572459283,
+              "n": 144
+            },
+            "victories": 132
+          },
+          "exposure": {
+            "hp": {
+              "mean": 0.023125481185936363,
+              "mixtureNll": 3.2201856483575835,
+              "rows": 132,
+              "sourceBootstrap95": [
+                5.655454343244261e-05,
+                0.06567938808144431
+              ],
+              "sources": 22,
+              "teacherNll": 3.197060167171647,
+              "zeroMixtureProbabilityRows": 0
+            },
+            "potion": {
+              "mean": -0.00018728626133580727,
+              "mixtureNll": 0.6889629639996541,
+              "rows": 132,
+              "sourceBootstrap95": [
+                -0.003848842572570706,
+                0.0035900441758749064
+              ],
+              "sources": 22,
+              "teacherNll": 0.68915025026099,
+              "zeroMixtureProbabilityRows": 0
+            },
+            "relic": {
+              "mean": 0.025110876299818487,
+              "mixtureNll": 1.7462348446368063,
+              "rows": 29,
+              "sourceBootstrap95": [
+                -0.031093447526523432,
+                0.08112712178698053
+              ],
+              "sources": 10,
+              "teacherNll": 1.7160095932593253,
+              "zeroMixtureProbabilityRows": 0
+            }
+          }
+        },
+        "offColorCount:4": {
+          "components": {
+            "maxHp": {
+              "modeAccuracy": 1.0,
+              "nll": 8.637150186760847e-05
+            },
+            "potion": {
+              "jointMaskNll": 0.0,
+              "modeExact": 1.0
+            },
+            "relic": {
+              "constraintNll": -6.426125493449327e-08,
+              "fullVectorModeExact": 1.0,
+              "informativeRows": 0
+            },
+            "rows": 2,
+            "signedHp": {
+              "crps": 2.713540869846552,
+              "expectedMae": 2.0534291486811327,
+              "nll": 2.229042056933957
+            },
+            "sources": 1,
+            "survival": {
+              "auc": null,
+              "brier": 0.0010819359923264216,
+              "logloss": 0.02382857180398188,
+              "n": 2
+            },
+            "victories": 2
+          },
+          "exposure": {
+            "hp": {
+              "mean": 6.08540699195137e-05,
+              "mixtureNll": 2.2291029110038765,
+              "rows": 2,
+              "sourceBootstrap95": [
+                6.08540699195137e-05,
+                6.08540699195137e-05
+              ],
+              "sources": 1,
+              "teacherNll": 2.229042056933957,
+              "zeroMixtureProbabilityRows": 0
+            },
+            "potion": {
+              "mean": 0.0,
+              "mixtureNll": 0.0,
+              "rows": 2,
+              "sourceBootstrap95": [
+                0.0,
+                0.0
+              ],
+              "sources": 1,
+              "teacherNll": 0.0,
+              "zeroMixtureProbabilityRows": 0
+            },
+            "relic": {
+              "mean": null,
+              "rows": 0,
+              "sourceBootstrap95": null,
+              "sources": 0
+            }
+          }
+        },
+        "offColorPresent": {
+          "components": {
+            "maxHp": {
+              "modeAccuracy": 0.9603147451248717,
+              "nll": 0.09076408151973707
+            },
+            "potion": {
+              "jointMaskNll": 0.6521275240104584,
+              "modeExact": 0.7468354430379747
+            },
+            "relic": {
+              "constraintNll": 0.8818702195207453,
+              "fullVectorModeExact": 0.6773862470065002,
+              "informativeRows": 3601
+            },
+            "rows": 9290,
+            "signedHp": {
+              "crps": 4.544047775098679,
+              "expectedMae": 6.629118169325733,
+              "nll": 2.9815355763801197
+            },
+            "sources": 893,
+            "survival": {
+              "auc": 0.9681251503453209,
+              "brier": 0.028133844006833983,
+              "logloss": 0.09388212448397353,
+              "n": 9290
+            },
+            "victories": 8769
+          },
+          "exposure": {
+            "hp": {
+              "mean": 0.019484612884561023,
+              "mixtureNll": 3.0010201892646804,
+              "rows": 8769,
+              "sourceBootstrap95": [
+                0.014790353559362049,
+                0.024908486528538158
+              ],
+              "sources": 871,
+              "teacherNll": 2.9815355763801197,
+              "zeroMixtureProbabilityRows": 0
+            },
+            "potion": {
+              "mean": 0.0005652610681221321,
+              "mixtureNll": 0.6526927850785806,
+              "rows": 8769,
+              "sourceBootstrap95": [
+                -3.8727902313713076e-05,
+                0.0011605455679757541
+              ],
+              "sources": 871,
+              "teacherNll": 0.6521275240104584,
+              "zeroMixtureProbabilityRows": 0
+            },
+            "relic": {
+              "mean": -0.0022788523039827062,
+              "mixtureNll": 2.145863666998828,
+              "rows": 3601,
+              "sourceBootstrap95": [
+                -0.006496149139885058,
+                0.0020977584945433302
+              ],
+              "sources": 465,
+              "teacherNll": 2.147492351435659,
+              "zeroMixtureProbabilityRows": 0
+            }
+          }
+        }
+      }
+    },
+    "repositoryHealth": {
+      "added_tracked_paths": [
+        "tools/combat_transition_expanded_support.py",
+        "tools/test_combat_transition_expanded_support.py"
+      ],
+      "baseline": "74d31681b8ebd3beb5e85d6db9c1a164f9aeaf13",
+      "baseline_metrics": {
+        "active_markdown": {
+          "bytes": 2156956,
+          "files": 225
+        },
+        "one_combat_cpp": {
+          "bytes": 573039
+        },
+        "root_scripts": [
+          "analyze_card_cf_reliability.py",
+          "combat_pvnet_parity.py",
+          "eval_combat_pvnet.py",
+          "eval_ensemble.py",
+          "export_combat_model.py",
+          "export_ooc_checkpoint.py",
+          "export_strategic.py",
+          "export_strategic_tok.py",
+          "export_win_model.py",
+          "paired_analysis.py",
+          "parity_test.py",
+          "strategic_gate_contract.py",
+          "strategic_metrics.py",
+          "strategic_split.py",
+          "strategic_tok_contract.py",
+          "strategic_tok_net.py",
+          "train_boss_survival.py",
+          "train_card_cf.py",
+          "train_combat_cpsi.py",
+          "train_combat_deepsets.py",
+          "train_combat_dist.py",
+          "train_combat_pvnet.py",
+          "train_combat_transition_entry.py",
+          "train_deckset.py",
+          "train_meta_entity.py",
+          "train_ooc_checkpoint.py",
+          "train_ooc_encounter.py",
+          "train_ooc_next_action.py",
+          "train_path_cf.py",
+          "train_policy.py",
+          "train_policy_entity.py",
+          "train_rest_cf.py",
+          "train_strategic.py",
+          "train_strategic_ppo.py",
+          "train_strategic_qiso.py",
+          "train_strategic_tok.py",
+          "train_value.py",
+          "train_value_combat.py",
+          "train_value_combat_entity.py",
+          "train_value_combat_meta.py",
+          "train_value_combat_nn.py",
+          "train_value_combat_per_encounter.py",
+          "train_value_deckaware.py",
+          "train_value_rich.py",
+          "train_value_xgb.py",
+          "train_winrate.py",
+          "v_server.py"
+        ],
+        "tracked_bytes": 150507132,
+        "tracked_files": 1144
+      },
+      "current": {
+        "head": "66d62987308e200f1abbfaa92d3fff67b3370ac7",
+        "metrics": {
+          "active_markdown": {
+            "bytes": 2157003,
+            "files": 225
+          },
+          "one_combat_cpp": {
+            "bytes": 573039
+          },
+          "root_scripts": [
+            "analyze_card_cf_reliability.py",
+            "combat_pvnet_parity.py",
+            "eval_combat_pvnet.py",
+            "eval_ensemble.py",
+            "export_combat_model.py",
+            "export_ooc_checkpoint.py",
+            "export_strategic.py",
+            "export_strategic_tok.py",
+            "export_win_model.py",
+            "paired_analysis.py",
+            "parity_test.py",
+            "strategic_gate_contract.py",
+            "strategic_metrics.py",
+            "strategic_split.py",
+            "strategic_tok_contract.py",
+            "strategic_tok_net.py",
+            "train_boss_survival.py",
+            "train_card_cf.py",
+            "train_combat_cpsi.py",
+            "train_combat_deepsets.py",
+            "train_combat_dist.py",
+            "train_combat_pvnet.py",
+            "train_combat_transition_entry.py",
+            "train_deckset.py",
+            "train_meta_entity.py",
+            "train_ooc_checkpoint.py",
+            "train_ooc_encounter.py",
+            "train_ooc_next_action.py",
+            "train_path_cf.py",
+            "train_policy.py",
+            "train_policy_entity.py",
+            "train_rest_cf.py",
+            "train_strategic.py",
+            "train_strategic_ppo.py",
+            "train_strategic_qiso.py",
+            "train_strategic_tok.py",
+            "train_value.py",
+            "train_value_combat.py",
+            "train_value_combat_entity.py",
+            "train_value_combat_meta.py",
+            "train_value_combat_nn.py",
+            "train_value_combat_per_encounter.py",
+            "train_value_deckaware.py",
+            "train_value_rich.py",
+            "train_value_xgb.py",
+            "train_winrate.py",
+            "v_server.py"
+          ],
+          "tracked_bytes": 150530901,
+          "tracked_files": 1146
+        }
+      },
+      "documentation": {
+        "current_broken": []
+      },
+      "hard_failures": {},
+      "status": "pass",
+      "warnings": [
+        "active Markdown growth"
+      ]
+    }
+  }
+}

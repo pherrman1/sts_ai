@@ -171,21 +171,22 @@ def complete_batch(models, arrays, ids, prehp, premax, slots, capacity, rng):
     alive=rng.random(len(ids))<pwin
     chosen=np.flatnonzero(alive)
     counts=dict(survivalRows=len(ids),maxHpRows=0,hpEncoderRows=0,hpHeadRows=0,potionEncoderRows=0,potionDecoderRows=0,relicDecoderRows=0)
-    if not len(chosen): return dict(alive=alive,chosen=chosen,counts=counts)
+    row_calls=np.zeros((len(ids),len(counts)),np.int64); row_calls[:,0]=1
+    if not len(chosen): return dict(alive=alive,chosen=chosen,counts=counts,rowCalls=row_calls)
     inputs=c.base._torch_inputs(arrays,ids[chosen],m.device,torch,trim_padding=True)
-    pd=probabilities(m.max_net.max_hp_delta(m.fp32_encoding(m.max_net.encoder,inputs))); counts['maxHpRows']=len(chosen)
+    pd=probabilities(m.max_net.max_hp_delta(m.fp32_encoding(m.max_net.encoder,inputs))); counts['maxHpRows']=len(chosen); row_calls[chosen,1]=1
     delta=draw_categories(pd,rng); maximum=premax[chosen]+m.delta_values[delta]
     if np.any(maximum<=0): raise ValueError('invalid sampled maxHP state')
-    z=m.hp_encoding(inputs).cpu().numpy(); counts['hpEncoderRows']=len(chosen)
-    ph=hp_prob(m,z,delta,prehp[chosen],maximum); counts['hpHeadRows']=len(chosen)
+    z=m.hp_encoding(inputs).cpu().numpy(); counts['hpEncoderRows']=len(chosen); row_calls[chosen,2]=1
+    ph=hp_prob(m,z,delta,prehp[chosen],maximum); counts['hpHeadRows']=len(chosen); row_calls[chosen,3]=1
     signed=draw_categories(ph,rng); ending=prehp[chosen]+c.CLASSES[signed]; fraction=ending/maximum
     if np.any((ending<1)|(ending>maximum)): raise ValueError('invalid sampled HP')
-    potion_z=m.fp32_encoding(m.potion_encoder.encoder,inputs).cpu().numpy(); counts['potionEncoderRows']=len(chosen)
-    pp=potion_prob(m,potion_z,slots[chosen],capacity[chosen],delta,fraction); counts['potionDecoderRows']=len(chosen)
+    potion_z=m.fp32_encoding(m.potion_encoder.encoder,inputs).cpu().numpy(); counts['potionEncoderRows']=len(chosen); row_calls[chosen,4]=1
+    pp=potion_prob(m,potion_z,slots[chosen],capacity[chosen],delta,fraction); counts['potionDecoderRows']=len(chosen); row_calls[chosen,5]=1
     mask=draw_categories(pp,rng)
-    rp=relic_prob(m,z,signed,fraction,mask); counts['relicDecoderRows']=len(chosen)
+    rp=relic_prob(m,z,signed,fraction,mask); counts['relicDecoderRows']=len(chosen); row_calls[chosen,6]=1
     residues={g:draw_categories(v,rng) for g,v in rp.items()}
-    return dict(alive=alive,chosen=chosen,counts=counts,delta=delta,maximum=maximum,ending=ending,mask=mask,residues=residues)
+    return dict(alive=alive,chosen=chosen,counts=counts,rowCalls=row_calls,delta=delta,maximum=maximum,ending=ending,mask=mask,residues=residues)
 
 
 def validity_key(reason):
@@ -294,15 +295,17 @@ def evaluate(output,reviewed_sha):
         if max_diff>1e-5: raise ValueError(f'maxHP historical probability regression: {max_diff}')
     reproduction['historicalDifferences']=dict(survival=differences,maxHpProbabilityMaxAbs=max_diff)
     hp_teacher=np.zeros(n); potion_teacher=np.zeros(n); relic_teacher=np.zeros(n); max_teacher=np.zeros(n)
-    hp_score_parts={}; relic_mode=np.zeros((n,64),np.int64); potion_exact=[]
+    hp_score_parts={}; hp_row_scores={}; potion_mode_exact=np.zeros(n,bool); relic_mode=np.zeros((n,64),np.int64); potion_exact=[]
     with torch.inference_mode():
         for b in batches(len(victories)):
             sub=victories[b]; max_teacher[sub]=nll(cache['pdelta'][sub,true_delta[sub]])
             p=hp_prob(m,cache['z'][sub],true_delta[sub],prehp[sub],true_max[sub]); hp_teacher[sub]=nll(p[np.arange(len(sub)),true_class[sub]])
             scores=c.hp.row_scores(p,c.CLASSES,prehp[sub],true_max[sub],actualhp[sub],hp_teacher[sub])
-            for k,v in scores.items(): hp_score_parts.setdefault(k,[]).append(v)
+            for k,v in scores.items():
+                hp_score_parts.setdefault(k,[]).append(v)
+                hp_row_scores.setdefault(k,np.zeros(n))[sub]=v
             pp=potion_prob(m,cache['potion_z'][sub],slots[sub],capacity[sub],true_delta[sub],actualhp[sub]/true_max[sub])
-            potion_teacher[sub]=nll(pp[np.arange(len(sub)),true_mask[sub]]); potion_exact.extend(pp.argmax(-1)==true_mask[sub])
+            potion_teacher[sub]=nll(pp[np.arange(len(sub)),true_mask[sub]]); potion_mode_exact[sub]=pp.argmax(-1)==true_mask[sub]; potion_exact.extend(potion_mode_exact[sub])
             rp=relic_prob(m,cache['z'][sub],true_class[sub],actualhp[sub]/true_max[sub],true_mask[sub])
             relic_teacher[sub]=nll(constraint_probability(rp,{g:v[sub] for g,v in compatible.items()}))
             for i,j in enumerate(sub):
@@ -315,6 +318,11 @@ def evaluate(output,reviewed_sha):
                         potion=dict(jointMaskNll=mean(potion_teacher[victories]),modeExact=mean(potion_exact)),
                         relic=dict(constraintNll=mean(relic_teacher[victories]),reconstructed=counter_metrics(rows,victories,relic_mode[victories,None,:],truth_counters,counter_mask)))
     c.base.json_dump(output/'component_reproduction.json',reproduction)
+    np.savez_compressed(output/'row_metrics.npz',rows=ids,source=arrays['sourceSeed'][ids],supported=full,win=win,
+                        pwin=cache['pwin'],maxNll=max_teacher,maxModeExact=cache['pdelta'].argmax(-1)==true_delta,
+                        potionNll=potion_teacher,potionModeExact=potion_mode_exact,relicNll=relic_teacher,
+                        relicModeExact=np.all((relic_mode==truth_counters)|~counter_mask,axis=-1),
+                        observedGroups=observed,**{'hp_'+k:v for k,v in hp_row_scores.items()})
     print('component reproduction passed',flush=True)
     # B: all observed victories, 32 draws of sampled maxHP -> HP -> potion -> relic.
     rng=np.random.default_rng(c.RECIPE['samplingSeed']); mass={k:[] for k in ('hp','potion','relic')}
@@ -363,17 +371,22 @@ def evaluate(output,reviewed_sha):
     sampled_max=sampled_hp.copy(); sampled_mask=sampled_hp.copy(); counters=np.zeros((len(local),draws,64),np.int64)
     exact_core=np.zeros_like(survived); exact_complete=np.zeros_like(survived)
     validity=dict.fromkeys(VALIDITY_KEYS,0); downstream_counts=Counter(); sample_failures=[]
+    row_validity=np.zeros((len(local),len(VALIDITY_KEYS)),np.int64); call_receipts=[]
     with torch.inference_mode():
         for draw in range(draws):
             for b in batches(len(local),512):
                 sub_all=local[b]
                 sample=complete_batch(m,arrays,ids[sub_all],prehp[sub_all],premax[sub_all],slots[sub_all],capacity[sub_all],rng)
                 survived[b,draw]=sample['alive']; downstream_counts.update(sample['counts'])
+                call_receipts.append(dict(draw=draw,rows=ids[sub_all].tolist(),alive=sample['alive'].tolist(),counts=sample['counts'],rowCalls=sample['rowCalls'].tolist()))
+                if not np.array_equal(sample['rowCalls'].sum(0),list(sample['counts'].values())): raise ValueError('model call receipt mismatch')
+                row_validity[b,VALIDITY_KEYS.index('downstreamModelInvokedAfterDeath')]+=sample['rowCalls'][:,1:].sum(1)*(~sample['alive'])
                 if not len(sample['chosen']): continue
                 pos=b[sample['chosen']]; sub=local[pos]
                 d=sample['delta']; maximum=sample['maximum']; ending=sample['ending']; masks=sample['mask']; residues=sample['residues']
                 for i,j in enumerate(sub):
                     r=rows[j]; group={g:int(v[i]) for g,v in residues.items()}
+                    before=np.asarray([validity[k] for k in VALIDITY_KEYS])
                     # A failed assertion is a hard qualification rejection, never
                     # clipping or silently converting a sampled invalidity to fallback.
                     try:
@@ -381,6 +394,7 @@ def evaluate(output,reviewed_sha):
                     except ValueError as error:
                         key=validity_key(str(error)); validity[key]+=1
                         sample_failures.append(dict(rowIndex=r['index'],draw=draw,error=str(error),maximum=int(maximum[i]),hp=int(ending[i]),mask=int(masks[i]),residues=group))
+                        row_validity[pos[i]]+=np.asarray([validity[k] for k in VALIDITY_KEYS])-before
                         continue
                     pred=[x['data'] for x in post['relics']]; counters[pos[i],draw,:len(pred)]=pred
                     for token,(a,z) in enumerate(zip(r['pre']['relics'],post['relics'])):
@@ -394,6 +408,7 @@ def evaluate(output,reviewed_sha):
                         if name in c.relic.TRAJECTORY:
                             g=c.relic.TRAJECTORY[name][0]
                             validity['crossRelicResidueInconsistency']+=int((z['data']-a['data'])%c.relic.CYCLIC[name]!=group[g]%c.relic.CYCLIC[name])
+                    row_validity[pos[i]]+=np.asarray([validity[k] for k in VALIDITY_KEYS])-before
                     truth=r['post']
                     exact_core[pos[i],draw]=all(post[k]==truth[k] for k in ('curHp','maxHp','potions','relics'))
                     exact_complete[pos[i],draw]=all(post[k]==truth[k] for k in c.base.PERSISTENT_KEYS) and post['oocContinuationRng']==dict(miscRng=truth['combatRng'][2],potionRng=truth['combatRng'][4])
@@ -402,7 +417,13 @@ def evaluate(output,reviewed_sha):
     validity['hpBelow1']=int(np.sum(survived & (sampled_hp<1)))
     validity['hpAboveSampledMaxHp']=int(np.sum(survived & (sampled_hp>sampled_max)))
     validity['invalidMaxHpClassOrState']=int(np.sum(survived & ((sampled_max<=0)|~np.isin(sampled_max-premax[local,None],m.delta_values))))
-    validity['downstreamModelInvokedAfterDeath']=sum(abs(downstream_counts[k]-int(survived.sum())) for k in downstream_counts if k!='survivalRows')
+    validity['downstreamModelInvokedAfterDeath']=int(row_validity[:,VALIDITY_KEYS.index('downstreamModelInvokedAfterDeath')].sum())
+    row_validity[:,VALIDITY_KEYS.index('hpBelow1')]=np.sum(survived & (sampled_hp<1),axis=1)
+    row_validity[:,VALIDITY_KEYS.index('hpAboveSampledMaxHp')]=np.sum(survived & (sampled_hp>sampled_max),axis=1)
+    row_validity[:,VALIDITY_KEYS.index('invalidMaxHpClassOrState')]=np.sum(survived & ((sampled_max<=0)|~np.isin(sampled_max-premax[local,None],m.delta_values)),axis=1)
+    if not np.array_equal(row_validity.sum(0),[validity[k] for k in VALIDITY_KEYS]): raise ValueError('row validity accounting differs')
+    np.savez_compressed(output/'row_validity.npz',rows=ids[local],keys=np.asarray(VALIDITY_KEYS),counts=row_validity)
+    c.base.json_dump(output/'model_call_receipts.json',call_receipts)
     np.savez_compressed(output/'complete_draws.npz',rows=ids[local],survived=survived,hp=sampled_hp,maxHp=sampled_max,potionMask=sampled_mask,relicCounters=counters,exactCore=exact_core,exactComplete=exact_complete)
     diag=diagnostics(rows,local,win,cache,true_delta,true_mask,actualhp,premax,survived,sampled_hp,sampled_max,sampled_mask,counters,truth_counters,counter_mask,exact_core,exact_complete)
     outcome=c.frozen.outcome_nll(win[local].astype(int),cache['pwin'][local]); components=dict(outcome=mean(outcome))

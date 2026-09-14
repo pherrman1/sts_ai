@@ -1,0 +1,331 @@
+{
+  "schema_version": 1,
+  "baseline": "f8279e4dfc075e83ca6f167f41b7103635c7dd4f",
+  "screen": [
+    {
+      "id": "00_ref",
+      "profile": {
+        "STS_OOC_MCTS_SIMS": "2048",
+        "STS_OOC_MCTS_PRIOR": "policy",
+        "STS_OOC_MCTS_TEMPERATURE": "1",
+        "STS_OOC_MCTS_CPUCT": "1.5",
+        "STS_OOC_MCTS_WIDEN_K": "2",
+        "STS_OOC_MCTS_WIDEN_ALPHA": "0.5",
+        "STS_OOC_MCTS_MAX_DEPTH": "32",
+        "STS_OOC_MCTS_ROOT_SELECTION": "visits",
+        "STS_OOC_MCTS_LEAF_VALUE": "native",
+        "STS_OOC_MCTS_LEAF_COMBATS": "0",
+        "STS_OOC_MCTS_LEAF_POLICY": "v4"
+      },
+      "family": "all"
+    },
+    {
+      "id": "01_uniform15",
+      "profile": {
+        "STS_OOC_MCTS_SIMS": "2048",
+        "STS_OOC_MCTS_PRIOR": "uniform",
+        "STS_OOC_MCTS_TEMPERATURE": "1",
+        "STS_OOC_MCTS_CPUCT": "1.5",
+        "STS_OOC_MCTS_WIDEN_K": "2",
+        "STS_OOC_MCTS_WIDEN_ALPHA": "0.5",
+        "STS_OOC_MCTS_MAX_DEPTH": "32",
+        "STS_OOC_MCTS_ROOT_SELECTION": "visits",
+        "STS_OOC_MCTS_LEAF_VALUE": "native",
+        "STS_OOC_MCTS_LEAF_COMBATS": "0",
+        "STS_OOC_MCTS_LEAF_POLICY": "v4"
+      },
+      "family": "prior"
+    },
+    {
+      "id": "02_uniform3",
+      "profile": {
+        "STS_OOC_MCTS_SIMS": "2048",
+        "STS_OOC_MCTS_PRIOR": "uniform",
+        "STS_OOC_MCTS_TEMPERATURE": "1",
+        "STS_OOC_MCTS_CPUCT": "3",
+        "STS_OOC_MCTS_WIDEN_K": "2",
+        "STS_OOC_MCTS_WIDEN_ALPHA": "0.5",
+        "STS_OOC_MCTS_MAX_DEPTH": "32",
+        "STS_OOC_MCTS_ROOT_SELECTION": "visits",
+        "STS_OOC_MCTS_LEAF_VALUE": "native",
+        "STS_OOC_MCTS_LEAF_COMBATS": "0",
+        "STS_OOC_MCTS_LEAF_POLICY": "v4"
+      },
+      "family": "prior"
+    },
+    {
+      "id": "03_sharp",
+      "profile": {
+        "STS_OOC_MCTS_SIMS": "2048",
+        "STS_OOC_MCTS_PRIOR": "policy",
+        "STS_OOC_MCTS_TEMPERATURE": "0.5",
+        "STS_OOC_MCTS_CPUCT": "0.5",
+        "STS_OOC_MCTS_WIDEN_K": "2",
+        "STS_OOC_MCTS_WIDEN_ALPHA": "0.5",
+        "STS_OOC_MCTS_MAX_DEPTH": "32",
+        "STS_OOC_MCTS_ROOT_SELECTION": "visits",
+        "STS_OOC_MCTS_LEAF_VALUE": "native",
+        "STS_OOC_MCTS_LEAF_COMBATS": "0",
+        "STS_OOC_MCTS_LEAF_POLICY": "v4"
+      },
+      "family": "prior"
+    },
+    {
+      "id": "04_flat",
+      "profile": {
+        "STS_OOC_MCTS_SIMS": "2048",
+        "STS_OOC_MCTS_PRIOR": "policy",
+        "STS_OOC_MCTS_TEMPERATURE": "2",
+        "STS_OOC_MCTS_CPUCT": "3",
+        "STS_OOC_MCTS_WIDEN_K": "2",
+        "STS_OOC_MCTS_WIDEN_ALPHA": "0.5",
+        "STS_OOC_MCTS_MAX_DEPTH": "32",
+        "STS_OOC_MCTS_ROOT_SELECTION": "visits",
+        "STS_OOC_MCTS_LEAF_VALUE": "native",
+        "STS_OOC_MCTS_LEAF_COMBATS": "0",
+        "STS_OOC_MCTS_LEAF_POLICY": "v4"
+      },
+      "family": "prior"
+    },
+    {
+      "id": "05_greedy",
+      "profile": {
+        "STS_OOC_MCTS_SIMS": "2048",
+        "STS_OOC_MCTS_PRIOR": "policy",
+        "STS_OOC_MCTS_TEMPERATURE": "1",
+        "STS_OOC_MCTS_CPUCT": "0",
+        "STS_OOC_MCTS_WIDEN_K": "2",
+        "STS_OOC_MCTS_WIDEN_ALPHA": "0.5",
+        "STS_OOC_MCTS_MAX_DEPTH": "32",
+        "STS_OOC_MCTS_ROOT_SELECTION": "visits",
+        "STS_OOC_MCTS_LEAF_VALUE": "native",
+        "STS_OOC_MCTS_LEAF_COMBATS": "0",
+        "STS_OOC_MCTS_LEAF_POLICY": "v4"
+      },
+      "family": "prior"
+    },
+    {
+      "id": "06_narrow",
+      "profile": {
+        "STS_OOC_MCTS_SIMS": "2048",
+        "STS_OOC_MCTS_PRIOR": "policy",
+        "STS_OOC_MCTS_TEMPERATURE": "1",
+        "STS_OOC_MCTS_CPUCT": "1.5",
+        "STS_OOC_MCTS_WIDEN_K": "1",
+        "STS_OOC_MCTS_WIDEN_ALPHA": "0.25",
+        "STS_OOC_MCTS_MAX_DEPTH": "32",
+        "STS_OOC_MCTS_ROOT_SELECTION": "visits",
+        "STS_OOC_MCTS_LEAF_VALUE": "native",
+        "STS_OOC_MCTS_LEAF_COMBATS": "0",
+        "STS_OOC_MCTS_LEAF_POLICY": "v4"
+      },
+      "family": "widening"
+    },
+    {
+      "id": "07_broad",
+      "profile": {
+        "STS_OOC_MCTS_SIMS": "2048",
+        "STS_OOC_MCTS_PRIOR": "policy",
+        "STS_OOC_MCTS_TEMPERATURE": "1",
+        "STS_OOC_MCTS_CPUCT": "1.5",
+        "STS_OOC_MCTS_WIDEN_K": "4",
+        "STS_OOC_MCTS_WIDEN_ALPHA": "0.75",
+        "STS_OOC_MCTS_MAX_DEPTH": "32",
+        "STS_OOC_MCTS_ROOT_SELECTION": "visits",
+        "STS_OOC_MCTS_LEAF_VALUE": "native",
+        "STS_OOC_MCTS_LEAF_COMBATS": "0",
+        "STS_OOC_MCTS_LEAF_POLICY": "v4"
+      },
+      "family": "widening"
+    },
+    {
+      "id": "08_depth8",
+      "profile": {
+        "STS_OOC_MCTS_SIMS": "2048",
+        "STS_OOC_MCTS_PRIOR": "policy",
+        "STS_OOC_MCTS_TEMPERATURE": "1",
+        "STS_OOC_MCTS_CPUCT": "1.5",
+        "STS_OOC_MCTS_WIDEN_K": "2",
+        "STS_OOC_MCTS_WIDEN_ALPHA": "0.5",
+        "STS_OOC_MCTS_MAX_DEPTH": "8",
+        "STS_OOC_MCTS_ROOT_SELECTION": "visits",
+        "STS_OOC_MCTS_LEAF_VALUE": "native",
+        "STS_OOC_MCTS_LEAF_COMBATS": "0",
+        "STS_OOC_MCTS_LEAF_POLICY": "v4"
+      },
+      "family": "leaf"
+    },
+    {
+      "id": "09_depth16",
+      "profile": {
+        "STS_OOC_MCTS_SIMS": "2048",
+        "STS_OOC_MCTS_PRIOR": "policy",
+        "STS_OOC_MCTS_TEMPERATURE": "1",
+        "STS_OOC_MCTS_CPUCT": "1.5",
+        "STS_OOC_MCTS_WIDEN_K": "2",
+        "STS_OOC_MCTS_WIDEN_ALPHA": "0.5",
+        "STS_OOC_MCTS_MAX_DEPTH": "16",
+        "STS_OOC_MCTS_ROOT_SELECTION": "visits",
+        "STS_OOC_MCTS_LEAF_VALUE": "native",
+        "STS_OOC_MCTS_LEAF_COMBATS": "0",
+        "STS_OOC_MCTS_LEAF_POLICY": "v4"
+      },
+      "family": "leaf"
+    },
+    {
+      "id": "10_no_value",
+      "profile": {
+        "STS_OOC_MCTS_SIMS": "2048",
+        "STS_OOC_MCTS_PRIOR": "policy",
+        "STS_OOC_MCTS_TEMPERATURE": "1",
+        "STS_OOC_MCTS_CPUCT": "1.5",
+        "STS_OOC_MCTS_WIDEN_K": "2",
+        "STS_OOC_MCTS_WIDEN_ALPHA": "0.5",
+        "STS_OOC_MCTS_MAX_DEPTH": "32",
+        "STS_OOC_MCTS_ROOT_SELECTION": "visits",
+        "STS_OOC_MCTS_LEAF_VALUE": "constant",
+        "STS_OOC_MCTS_LEAF_COMBATS": "0",
+        "STS_OOC_MCTS_LEAF_POLICY": "v4"
+      },
+      "family": "leaf"
+    },
+    {
+      "id": "11_rollout1",
+      "profile": {
+        "STS_OOC_MCTS_SIMS": "2048",
+        "STS_OOC_MCTS_PRIOR": "policy",
+        "STS_OOC_MCTS_TEMPERATURE": "1",
+        "STS_OOC_MCTS_CPUCT": "1.5",
+        "STS_OOC_MCTS_WIDEN_K": "2",
+        "STS_OOC_MCTS_WIDEN_ALPHA": "0.5",
+        "STS_OOC_MCTS_MAX_DEPTH": "32",
+        "STS_OOC_MCTS_ROOT_SELECTION": "visits",
+        "STS_OOC_MCTS_LEAF_VALUE": "native",
+        "STS_OOC_MCTS_LEAF_COMBATS": "1",
+        "STS_OOC_MCTS_LEAF_POLICY": "v4"
+      },
+      "family": "leaf"
+    },
+    {
+      "id": "12_rollout3",
+      "profile": {
+        "STS_OOC_MCTS_SIMS": "2048",
+        "STS_OOC_MCTS_PRIOR": "policy",
+        "STS_OOC_MCTS_TEMPERATURE": "1",
+        "STS_OOC_MCTS_CPUCT": "1.5",
+        "STS_OOC_MCTS_WIDEN_K": "2",
+        "STS_OOC_MCTS_WIDEN_ALPHA": "0.5",
+        "STS_OOC_MCTS_MAX_DEPTH": "32",
+        "STS_OOC_MCTS_ROOT_SELECTION": "visits",
+        "STS_OOC_MCTS_LEAF_VALUE": "native",
+        "STS_OOC_MCTS_LEAF_COMBATS": "3",
+        "STS_OOC_MCTS_LEAF_POLICY": "v4"
+      },
+      "family": "leaf"
+    },
+    {
+      "id": "13_uniform_leaf",
+      "profile": {
+        "STS_OOC_MCTS_SIMS": "2048",
+        "STS_OOC_MCTS_PRIOR": "policy",
+        "STS_OOC_MCTS_TEMPERATURE": "1",
+        "STS_OOC_MCTS_CPUCT": "1.5",
+        "STS_OOC_MCTS_WIDEN_K": "2",
+        "STS_OOC_MCTS_WIDEN_ALPHA": "0.5",
+        "STS_OOC_MCTS_MAX_DEPTH": "32",
+        "STS_OOC_MCTS_ROOT_SELECTION": "visits",
+        "STS_OOC_MCTS_LEAF_VALUE": "native",
+        "STS_OOC_MCTS_LEAF_COMBATS": "1",
+        "STS_OOC_MCTS_LEAF_POLICY": "uniform"
+      },
+      "family": "leaf"
+    },
+    {
+      "id": "14_root_q",
+      "profile": {
+        "STS_OOC_MCTS_SIMS": "2048",
+        "STS_OOC_MCTS_PRIOR": "policy",
+        "STS_OOC_MCTS_TEMPERATURE": "1",
+        "STS_OOC_MCTS_CPUCT": "1.5",
+        "STS_OOC_MCTS_WIDEN_K": "2",
+        "STS_OOC_MCTS_WIDEN_ALPHA": "0.5",
+        "STS_OOC_MCTS_MAX_DEPTH": "32",
+        "STS_OOC_MCTS_ROOT_SELECTION": "q",
+        "STS_OOC_MCTS_LEAF_VALUE": "native",
+        "STS_OOC_MCTS_LEAF_COMBATS": "0",
+        "STS_OOC_MCTS_LEAF_POLICY": "v4"
+      },
+      "family": "root"
+    },
+    {
+      "id": "15_budget512",
+      "profile": {
+        "STS_OOC_MCTS_SIMS": "512",
+        "STS_OOC_MCTS_PRIOR": "policy",
+        "STS_OOC_MCTS_TEMPERATURE": "1",
+        "STS_OOC_MCTS_CPUCT": "1.5",
+        "STS_OOC_MCTS_WIDEN_K": "2",
+        "STS_OOC_MCTS_WIDEN_ALPHA": "0.5",
+        "STS_OOC_MCTS_MAX_DEPTH": "32",
+        "STS_OOC_MCTS_ROOT_SELECTION": "visits",
+        "STS_OOC_MCTS_LEAF_VALUE": "native",
+        "STS_OOC_MCTS_LEAF_COMBATS": "0",
+        "STS_OOC_MCTS_LEAF_POLICY": "v4"
+      },
+      "family": "budget"
+    },
+    {
+      "id": "16_budget10000",
+      "profile": {
+        "STS_OOC_MCTS_SIMS": "10000",
+        "STS_OOC_MCTS_PRIOR": "policy",
+        "STS_OOC_MCTS_TEMPERATURE": "1",
+        "STS_OOC_MCTS_CPUCT": "1.5",
+        "STS_OOC_MCTS_WIDEN_K": "2",
+        "STS_OOC_MCTS_WIDEN_ALPHA": "0.5",
+        "STS_OOC_MCTS_MAX_DEPTH": "32",
+        "STS_OOC_MCTS_ROOT_SELECTION": "visits",
+        "STS_OOC_MCTS_LEAF_VALUE": "native",
+        "STS_OOC_MCTS_LEAF_COMBATS": "0",
+        "STS_OOC_MCTS_LEAF_POLICY": "v4"
+      },
+      "family": "budget"
+    }
+  ],
+  "composition_fields": {
+    "prior": [
+      "PRIOR",
+      "TEMPERATURE",
+      "CPUCT"
+    ],
+    "widening": [
+      "WIDEN_K",
+      "WIDEN_ALPHA"
+    ],
+    "leaf": [
+      "MAX_DEPTH",
+      "LEAF_VALUE",
+      "LEAF_COMBATS",
+      "LEAF_POLICY"
+    ],
+    "root": [
+      "ROOT_SELECTION"
+    ]
+  },
+  "discovery": [
+    12000000,
+    12000031
+  ],
+  "confirmation": [
+    12001000,
+    12001031
+  ],
+  "rank": [
+    "wins desc",
+    "mean_floor desc",
+    "mean_seconds asc",
+    "id asc"
+  ],
+  "maximum_search_configs": 20,
+  "maximum_official_games": 736
+}

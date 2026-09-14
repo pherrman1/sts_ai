@@ -40,6 +40,8 @@ struct OocMctsConfig {
     // Depth counts sampled action transitions; root depth is zero.
     std::uint32_t maxDepth = 32;
     std::uint64_t seed = 0;
+    // Optional final root choice; tree selection remains PUCT.
+    bool selectByMeanQ = false;
 };
 struct OocMctsMetrics {
     std::uint64_t simulations = 0, simulationAttempts = 0, decisionNodes = 0, chanceNodes = 0;

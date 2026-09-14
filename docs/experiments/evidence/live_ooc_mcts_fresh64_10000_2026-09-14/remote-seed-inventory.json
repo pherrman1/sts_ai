@@ -1,0 +1,4624 @@
+{
+  "records": [
+    {
+      "path": "/home/philippherrmann/sts_sweep/silver_m10_blend_canary_logged.csv",
+      "rows": 1,
+      "min": 974100,
+      "max": 974100,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/silver_m10_blend_alpha_0p1.csv",
+      "rows": 16,
+      "min": 974100,
+      "max": 974115,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/silver_m10_depth_control.csv",
+      "rows": 16,
+      "min": 974200,
+      "max": 974215,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/silver_m10_blend_canary_6532.csv",
+      "rows": 1,
+      "min": 974100,
+      "max": 974100,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/silver_m10_blend_canary.csv",
+      "rows": 1,
+      "min": 974100,
+      "max": 974100,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/silver_m10_blend_alpha_1p0.csv",
+      "rows": 16,
+      "min": 974100,
+      "max": 974115,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/silver_m10_blend_alpha_0.csv",
+      "rows": 16,
+      "min": 974100,
+      "max": 974115,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/silver_m10_blend_alpha_0p25.csv",
+      "rows": 16,
+      "min": 974100,
+      "max": 974115,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/silver_m10_depth_d4.csv",
+      "rows": 16,
+      "min": 974200,
+      "max": 974215,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/silver_m10_blend_alpha_0p5.csv",
+      "rows": 16,
+      "min": 974100,
+      "max": 974115,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/silver_m10_depth_d5.csv",
+      "rows": 16,
+      "min": 974200,
+      "max": 974215,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/silver_m10_blend_alpha_0p75.csv",
+      "rows": 16,
+      "min": 974100,
+      "max": 974115,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/smoke-artifacts/7870059/run.csv",
+      "rows": 1,
+      "min": 990001,
+      "max": 990001,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/build/root_sweep/broad_c35.csv",
+      "rows": 8,
+      "min": 932010,
+      "max": 932017,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/build/root_sweep/canary_c12_5_paired.csv",
+      "rows": 1,
+      "min": 932001,
+      "max": 932001,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/build/root_sweep/canary_c18_5.csv",
+      "rows": 1,
+      "min": 932002,
+      "max": 932002,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/build/root_sweep/broad_c50.csv",
+      "rows": 8,
+      "min": 932010,
+      "max": 932017,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/build/root_sweep/online128_c25_932201.csv",
+      "rows": 12,
+      "min": 932201,
+      "max": 932212,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/build/root_sweep/narrow_c25.csv",
+      "rows": 32,
+      "min": 932100,
+      "max": 932131,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/build/root_sweep/narrow_c18_5.csv",
+      "rows": 32,
+      "min": 932100,
+      "max": 932131,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/build/root_sweep/canary_c25_932200.csv",
+      "rows": 1,
+      "min": 932200,
+      "max": 932200,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/build/root_sweep/online128_c35_932201.csv",
+      "rows": 13,
+      "min": 932201,
+      "max": 932213,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/build/root_sweep/broad_c9_9.csv",
+      "rows": 8,
+      "min": 932010,
+      "max": 932017,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/build/root_sweep/broad_c12_5.csv",
+      "rows": 8,
+      "min": 932010,
+      "max": 932017,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/build/root_sweep/canary_control.csv",
+      "rows": 1,
+      "min": 932000,
+      "max": 932000,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/build/root_sweep/canary_c35_932200.csv",
+      "rows": 1,
+      "min": 932200,
+      "max": 932200,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/build/root_sweep/canary_control2.csv",
+      "rows": 1,
+      "min": 932001,
+      "max": 932001,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/build/root_sweep/canary_mt24_c25_932400.csv",
+      "rows": 1,
+      "min": 932400,
+      "max": 932400,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/build/root_sweep/broad_c25.csv",
+      "rows": 8,
+      "min": 932010,
+      "max": 932017,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/build/root_sweep/canary_c21_0_paired.csv",
+      "rows": 1,
+      "min": 932001,
+      "max": 932001,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/build/root_sweep/broad_c5.csv",
+      "rows": 8,
+      "min": 932010,
+      "max": 932017,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/build/root_sweep/narrow_c12_5.csv",
+      "rows": 32,
+      "min": 932100,
+      "max": 932131,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/build/root_sweep/canary_mt24_c35_932400.csv",
+      "rows": 1,
+      "min": 932400,
+      "max": 932400,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/build/root_sweep/online128_mt24_c25_932401.csv",
+      "rows": 128,
+      "min": 932401,
+      "max": 932528,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/build/root_sweep/broad_c0.csv",
+      "rows": 6,
+      "min": 932010,
+      "max": 932015,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/build/root_sweep/canary_c15_0_paired.csv",
+      "rows": 1,
+      "min": 932001,
+      "max": 932001,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/build/root_sweep/broad_c18_5.csv",
+      "rows": 8,
+      "min": 932010,
+      "max": 932017,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/build/root_sweep/narrow_c21_0.csv",
+      "rows": 32,
+      "min": 932100,
+      "max": 932131,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/build/root_sweep/online128_mt24_c35_932401.csv",
+      "rows": 128,
+      "min": 932401,
+      "max": 932528,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/build/root_sweep/narrow_c15_0.csv",
+      "rows": 32,
+      "min": 932100,
+      "max": 932131,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/build/root_sweep/canary_paired_c18_5.csv",
+      "rows": 1,
+      "min": 932001,
+      "max": 932001,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/task-b-85599a3/docs/experiments/evidence/silver-abc-f6ad92d/A_searcher3_1000/results.csv",
+      "rows": 32,
+      "min": 8,
+      "max": 39,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/task-b-85599a3/docs/experiments/evidence/silver-abc-f6ad92d/calibration/tiny_cpu.csv",
+      "rows": 1,
+      "min": 0,
+      "max": 0,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/task-b-85599a3/docs/experiments/evidence/silver-abc-f6ad92d/calibration/C_2700.csv",
+      "rows": 8,
+      "min": 0,
+      "max": 7,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/task-b-85599a3/docs/experiments/evidence/silver-abc-f6ad92d/calibration/C_4300.csv",
+      "rows": 8,
+      "min": 0,
+      "max": 7,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/task-b-85599a3/docs/experiments/evidence/silver-abc-f6ad92d/calibration/A_1000.csv",
+      "rows": 8,
+      "min": 0,
+      "max": 7,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/task-b-85599a3/docs/experiments/evidence/silver-abc-f6ad92d/calibration/C_3700.csv",
+      "rows": 8,
+      "min": 0,
+      "max": 7,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/task-b-85599a3/docs/experiments/evidence/silver-abc-f6ad92d/calibration/B_1000.csv",
+      "rows": 8,
+      "min": 0,
+      "max": 7,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/task-b-85599a3/docs/experiments/evidence/silver-abc-f6ad92d/C_silver_equal_runtime/results.csv",
+      "rows": 32,
+      "min": 8,
+      "max": 39,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/task-b-85599a3/docs/experiments/evidence/silver-abc-f6ad92d/B_silver_1000/results.csv",
+      "rows": 32,
+      "min": 8,
+      "max": 39,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/pilot-artifacts/b444517/runs.csv",
+      "rows": 32,
+      "min": 950000,
+      "max": 950031,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/results/silver-sh-online-broad-933000-sh-half-cautious.csv",
+      "rows": 16,
+      "min": 933000,
+      "max": 933015,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/results/silver-sh-failure-diag-933383-933390.csv",
+      "rows": 8,
+      "min": 933383,
+      "max": 933390,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/results/silver-sh-failure-diag-933376.csv",
+      "rows": 1,
+      "min": 933376,
+      "max": 933376,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/results/silver-sh-failure-diag-933398-single.csv",
+      "rows": 1,
+      "min": 933398,
+      "max": 933398,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/results/silver-sh-online-narrow-6000-933100-sh-half-finalist_heavy.csv",
+      "rows": 64,
+      "min": 933100,
+      "max": 933163,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/results/silver-sh-budget-1000-934400-uct-c25.csv",
+      "rows": 16,
+      "min": 934400,
+      "max": 934415,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/results/silver-semantic-fix-935456-c35.csv",
+      "rows": 1,
+      "min": 935456,
+      "max": 935456,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/results/silver-c35-budget-200-934500-root-c25.csv",
+      "rows": 16,
+      "min": 934500,
+      "max": 934515,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/results/silver-sh-online-narrow-1000-933100-sh-half-finalist_heavy.csv",
+      "rows": 64,
+      "min": 933100,
+      "max": 933163,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/results/silver-sh-online-broad-933000-sh-half-finalist_heavy-rerun1.csv",
+      "rows": 16,
+      "min": 933000,
+      "max": 933015,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/results/silver-sh-aggressive-1000-canary-933999-uct-c25.csv",
+      "rows": 1,
+      "min": 933999,
+      "max": 933999,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/results/silver-sh-online-narrow-1000-933100-sh-screen_two-cautious.csv",
+      "rows": 64,
+      "min": 933100,
+      "max": 933163,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/results/silver-sh-budget-800-934400-sh-aggressive-finalist_heavy.csv",
+      "rows": 16,
+      "min": 934400,
+      "max": 934415,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/results/silver-sh-failure-diag-933382.csv",
+      "rows": 1,
+      "min": 933382,
+      "max": 933382,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/results/silver-c35-budget-3000-934500-root-c25.csv",
+      "rows": 16,
+      "min": 934500,
+      "max": 934515,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/results/silver-c35-budget-2000-934500-root-c25.csv",
+      "rows": 16,
+      "min": 934500,
+      "max": 934515,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/results/silver-sh-online-broad-933000-sh-half-finalist_heavy.csv",
+      "rows": 16,
+      "min": 933000,
+      "max": 933015,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/results/silver-sh-budget-500-934400-sh-aggressive-finalist_heavy.csv",
+      "rows": 16,
+      "min": 934400,
+      "max": 934415,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/results/silver-sh-failure-diag-933394-single.csv",
+      "rows": 1,
+      "min": 933394,
+      "max": 933394,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/results/silver-c35-budget-7500-934500-root-c35.csv",
+      "rows": 16,
+      "min": 934500,
+      "max": 934515,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/results/silver-sh-failure-diag-933393-single.csv",
+      "rows": 1,
+      "min": 933393,
+      "max": 933393,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/results/silver-c35-budget-100-934500-root-c35.csv",
+      "rows": 16,
+      "min": 934500,
+      "max": 934515,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/results/silver-lifecycle-final-79ca93f-933396.csv",
+      "rows": 1,
+      "min": 933396,
+      "max": 933396,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/results/silver-c35-budget-1000-934500-root-c35.csv",
+      "rows": 16,
+      "min": 934500,
+      "max": 934515,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/results/silver-sh-failure-diag-933381.csv",
+      "rows": 1,
+      "min": 933381,
+      "max": 933381,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/results/silver-semantic-diagnostic-ad61357-933100-64.csv",
+      "rows": 64,
+      "min": 933100,
+      "max": 933163,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/results/silver-sh-online-broad-933000-sh-aggressive-balanced.csv",
+      "rows": 16,
+      "min": 933000,
+      "max": 933015,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/results/silver-sh-online-broad-933000-sh-half-cautious-rerun1.csv",
+      "rows": 16,
+      "min": 933000,
+      "max": 933015,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/results/silver-sh-online-broad-933000-sh-gentle-cautious.csv",
+      "rows": 16,
+      "min": 933000,
+      "max": 933015,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/results/silver-sh-online-narrow-3000-933100-sh-half-finalist_heavy.csv",
+      "rows": 64,
+      "min": 933100,
+      "max": 933163,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/results/silver-sh-budget-600-934400-uct-c25.csv",
+      "rows": 16,
+      "min": 934400,
+      "max": 934415,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/results/silver-sh-online-narrow-6000-933100-sh-aggressive-finalist_heavy.csv",
+      "rows": 64,
+      "min": 933100,
+      "max": 933163,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/results/silver-lifecycle-regression-ad61357-933396.csv",
+      "rows": 1,
+      "min": 933396,
+      "max": 933396,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/results/silver-c35-budget-5000-934500-root-c25.csv",
+      "rows": 16,
+      "min": 934500,
+      "max": 934515,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/results/silver-sh-failure-diag-933399-933406.csv",
+      "rows": 8,
+      "min": 933399,
+      "max": 933406,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/results/silver-visit-prior-grouped-screen-976000-976031-B-grouped.csv",
+      "rows": 4,
+      "min": 976000,
+      "max": 976003,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/results/silver-sh-budget-1000-934400-sh-aggressive-finalist_heavy.csv",
+      "rows": 16,
+      "min": 934400,
+      "max": 934415,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/results/silver-c35-budget-500-934500-root-c25.csv",
+      "rows": 16,
+      "min": 934500,
+      "max": 934515,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/results/silver-sh-budget-900-934400-sh-aggressive-finalist_heavy.csv",
+      "rows": 16,
+      "min": 934400,
+      "max": 934415,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/results/silver-sh-online-broad-933000-sh-screen_two-cautious.csv",
+      "rows": 16,
+      "min": 933000,
+      "max": 933015,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/results/silver-sh-aggressive-1000-confirm-934000-uct-c25.csv",
+      "rows": 128,
+      "min": 934000,
+      "max": 934127,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/results/silver-sh-failure-diag-933415-933422.csv",
+      "rows": 8,
+      "min": 933415,
+      "max": 933422,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/results/silver-sh-failure-diag-933395-single.csv",
+      "rows": 1,
+      "min": 933395,
+      "max": 933395,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/results/silver-sh-online-broad-933000-sh-gentle-finalist_heavy.csv",
+      "rows": 16,
+      "min": 933000,
+      "max": 933015,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/results/silver-sh-budget-400-934400-sh-aggressive-finalist_heavy.csv",
+      "rows": 16,
+      "min": 934400,
+      "max": 934415,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/results/silver-sh-budget-300-934400-sh-aggressive-finalist_heavy.csv",
+      "rows": 16,
+      "min": 934400,
+      "max": 934415,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/results/silver-sh-budget-100-934400-uct-c25.csv",
+      "rows": 16,
+      "min": 934400,
+      "max": 934415,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/results/silver-sh-budget-600-934400-sh-aggressive-finalist_heavy.csv",
+      "rows": 16,
+      "min": 934400,
+      "max": 934415,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/results/silver-c35-3000-confirm-935000-root-c35.csv",
+      "rows": 511,
+      "min": 935000,
+      "max": 935511,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/results/silver-sh-online-narrow-3000-933100-sh-screen_two-cautious.csv",
+      "rows": 64,
+      "min": 933100,
+      "max": 933163,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/results/silver-sh-budget-700-934400-uct-c25.csv",
+      "rows": 16,
+      "min": 934400,
+      "max": 934415,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/results/silver-c35-budget-3000-934500-root-c35.csv",
+      "rows": 16,
+      "min": 934500,
+      "max": 934515,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/results/silver-sh-online-broad-933000-sh-aggressive-cautious.csv",
+      "rows": 16,
+      "min": 933000,
+      "max": 933015,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/results/silver-sh-aggressive-1000-canary-933999-sh-aggressive-finalist_heavy.csv",
+      "rows": 1,
+      "min": 933999,
+      "max": 933999,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/results/silver-sh-online-canary-933098.csv",
+      "rows": 1,
+      "min": 933098,
+      "max": 933098,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/results/silver-sh-online-confirm-3000-933300-sh-half-finalist_heavy.csv",
+      "rows": 78,
+      "min": 933300,
+      "max": 933380,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/results/silver-sh-aggressive-1000-confirm-934000-sh-aggressive-finalist_heavy.csv",
+      "rows": 128,
+      "min": 934000,
+      "max": 934127,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/results/silver-telemetry-final-79ca93f-933100-64.csv",
+      "rows": 64,
+      "min": 933100,
+      "max": 933163,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/results/silver-sh-online-broad-933000-sh-half-balanced-rerun1.csv",
+      "rows": 16,
+      "min": 933000,
+      "max": 933015,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/results/silver-sh-failure-diag-933379.csv",
+      "rows": 1,
+      "min": 933379,
+      "max": 933379,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/results/silver-sh-online-confirm-3000-933300-uct-c35.csv",
+      "rows": 128,
+      "min": 933300,
+      "max": 933427,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/results/silver-sh-budget-900-934400-uct-c25.csv",
+      "rows": 16,
+      "min": 934400,
+      "max": 934415,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/results/silver-sh-budget-700-934400-sh-aggressive-finalist_heavy.csv",
+      "rows": 16,
+      "min": 934400,
+      "max": 934415,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/results/silver-sh-failure-diag-933392-single.csv",
+      "rows": 1,
+      "min": 933392,
+      "max": 933392,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/results/silver-sh-online-narrow-3000-933100-uct-c25.csv",
+      "rows": 64,
+      "min": 933100,
+      "max": 933163,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/results/silver-c35-budget-10000-934500-root-c25.csv",
+      "rows": 16,
+      "min": 934500,
+      "max": 934515,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/results/silver-sh-online-narrow-1000-933100-uct-c25.csv",
+      "rows": 64,
+      "min": 933100,
+      "max": 933163,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/results/silver-c35-3000-confirm-935000-root-c25.csv",
+      "rows": 511,
+      "min": 935000,
+      "max": 935511,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/results/silver-sh-failure-diag-933396-single.csv",
+      "rows": 0,
+      "min": null,
+      "max": null,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/results/silver-c35-budget-2000-934500-root-c35.csv",
+      "rows": 16,
+      "min": 934500,
+      "max": 934515,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/results/silver-c35-budget-100-934500-root-c25.csv",
+      "rows": 16,
+      "min": 934500,
+      "max": 934515,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/results/silver-sh-online-narrow-3000-933100-sh-aggressive-finalist_heavy.csv",
+      "rows": 64,
+      "min": 933100,
+      "max": 933163,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/results/silver-sh-online-broad-933000-sh-half-balanced.csv",
+      "rows": 16,
+      "min": 933000,
+      "max": 933015,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/results/silver-sh-failure-diag-933373.csv",
+      "rows": 1,
+      "min": 933373,
+      "max": 933373,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/results/silver-sh-online-narrow-6000-933100-uct-c25.csv",
+      "rows": 64,
+      "min": 933100,
+      "max": 933163,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/results/silver-c35-3000-canary-934999-root-c25.csv",
+      "rows": 1,
+      "min": 934999,
+      "max": 934999,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/results/silver-sh-budget-500-934400-uct-c25.csv",
+      "rows": 16,
+      "min": 934400,
+      "max": 934415,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/results/silver-sh-failure-diag-933423-933427.csv",
+      "rows": 5,
+      "min": 933423,
+      "max": 933427,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/results/silver-sh-online-broad-933000-sh-aggressive-finalist_heavy.csv",
+      "rows": 16,
+      "min": 933000,
+      "max": 933015,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/results/silver-sh-budget-100-934400-sh-aggressive-finalist_heavy.csv",
+      "rows": 16,
+      "min": 934400,
+      "max": 934415,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/results/silver-visit-prior-grouped-screen-976000-976031-A-off-attempt3.csv",
+      "rows": 32,
+      "min": 976000,
+      "max": 976031,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/results/silver-sh-failure-diag-933391-933398.csv",
+      "rows": 0,
+      "min": null,
+      "max": null,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/results/silver-sh-budget-200-934400-uct-c25.csv",
+      "rows": 16,
+      "min": 934400,
+      "max": 934415,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/results/silver-sh-online-narrow-1000-933100-sh-aggressive-finalist_heavy.csv",
+      "rows": 64,
+      "min": 933100,
+      "max": 933163,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/results/silver-c35-budget-200-934500-root-c35.csv",
+      "rows": 16,
+      "min": 934500,
+      "max": 934515,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/results/silver-c35-budget-10000-934500-root-c35.csv",
+      "rows": 16,
+      "min": 934500,
+      "max": 934515,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/results/silver-c35-budget-500-934500-root-c35.csv",
+      "rows": 16,
+      "min": 934500,
+      "max": 934515,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/results/silver-c35-3000-canary-934999-root-c35.csv",
+      "rows": 1,
+      "min": 934999,
+      "max": 934999,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/results/silver-sh-budget-300-934400-uct-c25.csv",
+      "rows": 16,
+      "min": 934400,
+      "max": 934415,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/results/silver-c35-budget-5000-934500-root-c35.csv",
+      "rows": 16,
+      "min": 934500,
+      "max": 934515,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/results/silver-sh-online-broad-933000-sh-screen_two-balanced.csv",
+      "rows": 16,
+      "min": 933000,
+      "max": 933015,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/results/silver-sh-budget-400-934400-uct-c25.csv",
+      "rows": 16,
+      "min": 934400,
+      "max": 934415,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/results/silver-c35-budget-1000-934500-root-c25.csv",
+      "rows": 16,
+      "min": 934500,
+      "max": 934515,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/results/silver-sh-failure-detail2-933396.csv",
+      "rows": 0,
+      "min": null,
+      "max": null,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/results/silver-visit-prior-grouped-screen-976000-976031-A-off-attempt2.csv",
+      "rows": 32,
+      "min": 976000,
+      "max": 976031,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/results/silver-semantic-fix-935505-c25.csv",
+      "rows": 1,
+      "min": 935505,
+      "max": 935505,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/results/silver-sh-failure-diag-933397-single.csv",
+      "rows": 1,
+      "min": 933397,
+      "max": 933397,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/results/silver-sh-failure-diag-933407-933414.csv",
+      "rows": 8,
+      "min": 933407,
+      "max": 933414,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/results/silver-sh-online-narrow-6000-933100-sh-screen_two-cautious.csv",
+      "rows": 64,
+      "min": 933100,
+      "max": 933163,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/results/silver-sh-budget-200-934400-sh-aggressive-finalist_heavy.csv",
+      "rows": 16,
+      "min": 934400,
+      "max": 934415,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/results/silver-sh-budget-800-934400-uct-c25.csv",
+      "rows": 16,
+      "min": 934400,
+      "max": 934415,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/results/silver-sh-online-broad-933000-sh-screen_two-finalist_heavy.csv",
+      "rows": 16,
+      "min": 933000,
+      "max": 933015,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/results/silver-sh-online-confirm-3000-933300-uct-c25.csv",
+      "rows": 128,
+      "min": 933300,
+      "max": 933427,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/results/silver-sh-failure-diag-933391-single.csv",
+      "rows": 1,
+      "min": 933391,
+      "max": 933391,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/results/silver-sh-online-broad-933000-sh-gentle-balanced.csv",
+      "rows": 16,
+      "min": 933000,
+      "max": 933015,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/results/silver-c35-budget-7500-934500-root-c25.csv",
+      "rows": 16,
+      "min": 934500,
+      "max": 934515,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/results/silver-sh-online-broad-933000-uct-c25.csv",
+      "rows": 16,
+      "min": 933000,
+      "max": 933015,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/results/silver-visit-prior-rank4-screen-976064-976095/rank4_976078.csv",
+      "rows": 1,
+      "min": 976078,
+      "max": 976078,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/results/silver-visit-prior-rank4-screen-976064-976095/rank4_976092.csv",
+      "rows": 1,
+      "min": 976092,
+      "max": 976092,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/results/silver-visit-prior-rank4-screen-976064-976095/off_976079.csv",
+      "rows": 1,
+      "min": 976079,
+      "max": 976079,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/results/silver-visit-prior-rank4-screen-976064-976095/rank4_976093.csv",
+      "rows": 1,
+      "min": 976093,
+      "max": 976093,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/results/silver-visit-prior-rank4-screen-976064-976095/rank4_976081.csv",
+      "rows": 1,
+      "min": 976081,
+      "max": 976081,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/results/silver-visit-prior-rank4-screen-976064-976095/off_976088.csv",
+      "rows": 1,
+      "min": 976088,
+      "max": 976088,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/results/silver-visit-prior-rank4-screen-976064-976095/off_976091.csv",
+      "rows": 1,
+      "min": 976091,
+      "max": 976091,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/results/silver-visit-prior-rank4-screen-976064-976095/rank4_976067.csv",
+      "rows": 1,
+      "min": 976067,
+      "max": 976067,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/results/silver-visit-prior-rank4-screen-976064-976095/off_976074.csv",
+      "rows": 1,
+      "min": 976074,
+      "max": 976074,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/results/silver-visit-prior-rank4-screen-976064-976095/off_976077.csv",
+      "rows": 1,
+      "min": 976077,
+      "max": 976077,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/results/silver-visit-prior-rank4-screen-976064-976095/off_976093.csv",
+      "rows": 1,
+      "min": 976093,
+      "max": 976093,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/results/silver-visit-prior-rank4-screen-976064-976095/off_976068.csv",
+      "rows": 1,
+      "min": 976068,
+      "max": 976068,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/results/silver-visit-prior-rank4-screen-976064-976095/rank4_976070.csv",
+      "rows": 1,
+      "min": 976070,
+      "max": 976070,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/results/silver-visit-prior-rank4-screen-976064-976095/off_976089.csv",
+      "rows": 1,
+      "min": 976089,
+      "max": 976089,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/results/silver-visit-prior-rank4-screen-976064-976095/rank4_976075.csv",
+      "rows": 1,
+      "min": 976075,
+      "max": 976075,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/results/silver-visit-prior-rank4-screen-976064-976095/rank4_976090.csv",
+      "rows": 1,
+      "min": 976090,
+      "max": 976090,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/results/silver-visit-prior-rank4-screen-976064-976095/off_976092.csv",
+      "rows": 1,
+      "min": 976092,
+      "max": 976092,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/results/silver-visit-prior-rank4-screen-976064-976095/rank4_976089.csv",
+      "rows": 1,
+      "min": 976089,
+      "max": 976089,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/results/silver-visit-prior-rank4-screen-976064-976095/off_976086.csv",
+      "rows": 1,
+      "min": 976086,
+      "max": 976086,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/results/silver-visit-prior-rank4-screen-976064-976095/off_976075.csv",
+      "rows": 1,
+      "min": 976075,
+      "max": 976075,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/results/silver-visit-prior-rank4-screen-976064-976095/off_976090.csv",
+      "rows": 1,
+      "min": 976090,
+      "max": 976090,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/results/silver-visit-prior-rank4-screen-976064-976095/rank4_976076.csv",
+      "rows": 1,
+      "min": 976076,
+      "max": 976076,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/results/silver-visit-prior-rank4-screen-976064-976095/rank4_976083.csv",
+      "rows": 1,
+      "min": 976083,
+      "max": 976083,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/results/silver-visit-prior-rank4-screen-976064-976095/off_976078.csv",
+      "rows": 1,
+      "min": 976078,
+      "max": 976078,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/results/silver-visit-prior-rank4-screen-976064-976095/off_976072.csv",
+      "rows": 1,
+      "min": 976072,
+      "max": 976072,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/results/silver-visit-prior-rank4-screen-976064-976095/rank4_976064.csv",
+      "rows": 1,
+      "min": 976064,
+      "max": 976064,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/results/silver-visit-prior-rank4-screen-976064-976095/off_976071.csv",
+      "rows": 1,
+      "min": 976071,
+      "max": 976071,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/results/silver-visit-prior-rank4-screen-976064-976095/rank4_976085.csv",
+      "rows": 1,
+      "min": 976085,
+      "max": 976085,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/results/silver-visit-prior-rank4-screen-976064-976095/rank4_976087.csv",
+      "rows": 1,
+      "min": 976087,
+      "max": 976087,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/results/silver-visit-prior-rank4-screen-976064-976095/rank4_976071.csv",
+      "rows": 1,
+      "min": 976071,
+      "max": 976071,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/results/silver-visit-prior-rank4-screen-976064-976095/rank4_976082.csv",
+      "rows": 1,
+      "min": 976082,
+      "max": 976082,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/results/silver-visit-prior-rank4-screen-976064-976095/rank4_976065.csv",
+      "rows": 1,
+      "min": 976065,
+      "max": 976065,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/results/silver-visit-prior-rank4-screen-976064-976095/off_976076.csv",
+      "rows": 1,
+      "min": 976076,
+      "max": 976076,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/results/silver-visit-prior-rank4-screen-976064-976095/off_976073.csv",
+      "rows": 1,
+      "min": 976073,
+      "max": 976073,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/results/silver-visit-prior-rank4-screen-976064-976095/rank4_976086.csv",
+      "rows": 1,
+      "min": 976086,
+      "max": 976086,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/results/silver-visit-prior-rank4-screen-976064-976095/rank4_976088.csv",
+      "rows": 1,
+      "min": 976088,
+      "max": 976088,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/results/silver-visit-prior-rank4-screen-976064-976095/off_976084.csv",
+      "rows": 1,
+      "min": 976084,
+      "max": 976084,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/results/silver-visit-prior-rank4-screen-976064-976095/off_976082.csv",
+      "rows": 1,
+      "min": 976082,
+      "max": 976082,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/results/silver-visit-prior-rank4-screen-976064-976095/rank4_976079.csv",
+      "rows": 1,
+      "min": 976079,
+      "max": 976079,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/results/silver-visit-prior-rank4-screen-976064-976095/rank4_976073.csv",
+      "rows": 1,
+      "min": 976073,
+      "max": 976073,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/results/silver-visit-prior-rank4-screen-976064-976095/rank4_976095.csv",
+      "rows": 1,
+      "min": 976095,
+      "max": 976095,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/results/silver-visit-prior-rank4-screen-976064-976095/off_976080.csv",
+      "rows": 1,
+      "min": 976080,
+      "max": 976080,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/results/silver-visit-prior-rank4-screen-976064-976095/rank4_976068.csv",
+      "rows": 1,
+      "min": 976068,
+      "max": 976068,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/results/silver-visit-prior-rank4-screen-976064-976095/rank4_976094.csv",
+      "rows": 1,
+      "min": 976094,
+      "max": 976094,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/results/silver-visit-prior-rank4-screen-976064-976095/off_976081.csv",
+      "rows": 1,
+      "min": 976081,
+      "max": 976081,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/results/silver-visit-prior-rank4-screen-976064-976095/off_976087.csv",
+      "rows": 1,
+      "min": 976087,
+      "max": 976087,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/results/silver-visit-prior-rank4-screen-976064-976095/off_976094.csv",
+      "rows": 1,
+      "min": 976094,
+      "max": 976094,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/results/silver-visit-prior-rank4-screen-976064-976095/off_976064.csv",
+      "rows": 1,
+      "min": 976064,
+      "max": 976064,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/results/silver-visit-prior-rank4-screen-976064-976095/off_976069.csv",
+      "rows": 1,
+      "min": 976069,
+      "max": 976069,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/results/silver-visit-prior-rank4-screen-976064-976095/rank4_976080.csv",
+      "rows": 1,
+      "min": 976080,
+      "max": 976080,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/results/silver-visit-prior-rank4-screen-976064-976095/rank4_976072.csv",
+      "rows": 1,
+      "min": 976072,
+      "max": 976072,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/results/silver-visit-prior-rank4-screen-976064-976095/rank4_976084.csv",
+      "rows": 1,
+      "min": 976084,
+      "max": 976084,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/results/silver-visit-prior-rank4-screen-976064-976095/off_976066.csv",
+      "rows": 1,
+      "min": 976066,
+      "max": 976066,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/results/silver-visit-prior-rank4-screen-976064-976095/rank4_976074.csv",
+      "rows": 1,
+      "min": 976074,
+      "max": 976074,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/results/silver-visit-prior-rank4-screen-976064-976095/off_976065.csv",
+      "rows": 1,
+      "min": 976065,
+      "max": 976065,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/results/silver-visit-prior-rank4-screen-976064-976095/rank4_976077.csv",
+      "rows": 1,
+      "min": 976077,
+      "max": 976077,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/results/silver-visit-prior-rank4-screen-976064-976095/off_976067.csv",
+      "rows": 1,
+      "min": 976067,
+      "max": 976067,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/results/silver-visit-prior-rank4-screen-976064-976095/off_976095.csv",
+      "rows": 1,
+      "min": 976095,
+      "max": 976095,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/results/silver-visit-prior-rank4-screen-976064-976095/off_976070.csv",
+      "rows": 1,
+      "min": 976070,
+      "max": 976070,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/results/silver-visit-prior-rank4-screen-976064-976095/off_976083.csv",
+      "rows": 1,
+      "min": 976083,
+      "max": 976083,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/results/silver-visit-prior-rank4-screen-976064-976095/rank4_976091.csv",
+      "rows": 1,
+      "min": 976091,
+      "max": 976091,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/results/silver-visit-prior-rank4-screen-976064-976095/rank4_976066.csv",
+      "rows": 1,
+      "min": 976066,
+      "max": 976066,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/results/silver-visit-prior-rank4-screen-976064-976095/off_976085.csv",
+      "rows": 1,
+      "min": 976085,
+      "max": 976085,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/results/silver-visit-prior-rank4-screen-976064-976095/rank4_976069.csv",
+      "rows": 1,
+      "min": 976069,
+      "max": 976069,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/results/silver-visit-prior-grouped-repair-screen-976032-976063-attempt3/off_976051.csv",
+      "rows": 1,
+      "min": 976051,
+      "max": 976051,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/results/silver-visit-prior-grouped-repair-screen-976032-976063-attempt3/grouped_976048.csv",
+      "rows": 1,
+      "min": 976048,
+      "max": 976048,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/results/silver-visit-prior-grouped-repair-screen-976032-976063-attempt3/off_976049.csv",
+      "rows": 1,
+      "min": 976049,
+      "max": 976049,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/results/silver-visit-prior-grouped-repair-screen-976032-976063-attempt3/grouped_976039.csv",
+      "rows": 1,
+      "min": 976039,
+      "max": 976039,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/results/silver-visit-prior-grouped-repair-screen-976032-976063-attempt3/grouped_976036.csv",
+      "rows": 1,
+      "min": 976036,
+      "max": 976036,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/results/silver-visit-prior-grouped-repair-screen-976032-976063-attempt3/grouped_976056.csv",
+      "rows": 1,
+      "min": 976056,
+      "max": 976056,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/results/silver-visit-prior-grouped-repair-screen-976032-976063-attempt3/grouped_976034.csv",
+      "rows": 1,
+      "min": 976034,
+      "max": 976034,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/results/silver-visit-prior-grouped-repair-screen-976032-976063-attempt3/off_976039.csv",
+      "rows": 1,
+      "min": 976039,
+      "max": 976039,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/results/silver-visit-prior-grouped-repair-screen-976032-976063-attempt3/off_976041.csv",
+      "rows": 1,
+      "min": 976041,
+      "max": 976041,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/results/silver-visit-prior-grouped-repair-screen-976032-976063-attempt3/grouped_976061.csv",
+      "rows": 1,
+      "min": 976061,
+      "max": 976061,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/results/silver-visit-prior-grouped-repair-screen-976032-976063-attempt3/off_976058.csv",
+      "rows": 1,
+      "min": 976058,
+      "max": 976058,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/results/silver-visit-prior-grouped-repair-screen-976032-976063-attempt3/grouped_976059.csv",
+      "rows": 1,
+      "min": 976059,
+      "max": 976059,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/results/silver-visit-prior-grouped-repair-screen-976032-976063-attempt3/grouped_976058.csv",
+      "rows": 1,
+      "min": 976058,
+      "max": 976058,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/results/silver-visit-prior-grouped-repair-screen-976032-976063-attempt3/off_976057.csv",
+      "rows": 1,
+      "min": 976057,
+      "max": 976057,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/results/silver-visit-prior-grouped-repair-screen-976032-976063-attempt3/off_976059.csv",
+      "rows": 1,
+      "min": 976059,
+      "max": 976059,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/results/silver-visit-prior-grouped-repair-screen-976032-976063-attempt3/off_976035.csv",
+      "rows": 1,
+      "min": 976035,
+      "max": 976035,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/results/silver-visit-prior-grouped-repair-screen-976032-976063-attempt3/off_976038.csv",
+      "rows": 1,
+      "min": 976038,
+      "max": 976038,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/results/silver-visit-prior-grouped-repair-screen-976032-976063-attempt3/off_976063.csv",
+      "rows": 1,
+      "min": 976063,
+      "max": 976063,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/results/silver-visit-prior-grouped-repair-screen-976032-976063-attempt3/grouped_976045.csv",
+      "rows": 1,
+      "min": 976045,
+      "max": 976045,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/results/silver-visit-prior-grouped-repair-screen-976032-976063-attempt3/grouped_976050.csv",
+      "rows": 1,
+      "min": 976050,
+      "max": 976050,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/results/silver-visit-prior-grouped-repair-screen-976032-976063-attempt3/off_976053.csv",
+      "rows": 1,
+      "min": 976053,
+      "max": 976053,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/results/silver-visit-prior-grouped-repair-screen-976032-976063-attempt3/off_976045.csv",
+      "rows": 1,
+      "min": 976045,
+      "max": 976045,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/results/silver-visit-prior-grouped-repair-screen-976032-976063-attempt3/grouped_976042.csv",
+      "rows": 1,
+      "min": 976042,
+      "max": 976042,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/results/silver-visit-prior-grouped-repair-screen-976032-976063-attempt3/off_976034.csv",
+      "rows": 1,
+      "min": 976034,
+      "max": 976034,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/results/silver-visit-prior-grouped-repair-screen-976032-976063-attempt3/off_976062.csv",
+      "rows": 1,
+      "min": 976062,
+      "max": 976062,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/results/silver-visit-prior-grouped-repair-screen-976032-976063-attempt3/off_976047.csv",
+      "rows": 1,
+      "min": 976047,
+      "max": 976047,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/results/silver-visit-prior-grouped-repair-screen-976032-976063-attempt3/grouped_976057.csv",
+      "rows": 1,
+      "min": 976057,
+      "max": 976057,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/results/silver-visit-prior-grouped-repair-screen-976032-976063-attempt3/grouped_976049.csv",
+      "rows": 1,
+      "min": 976049,
+      "max": 976049,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/results/silver-visit-prior-grouped-repair-screen-976032-976063-attempt3/grouped_976033.csv",
+      "rows": 1,
+      "min": 976033,
+      "max": 976033,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/results/silver-visit-prior-grouped-repair-screen-976032-976063-attempt3/grouped_976052.csv",
+      "rows": 1,
+      "min": 976052,
+      "max": 976052,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/results/silver-visit-prior-grouped-repair-screen-976032-976063-attempt3/grouped_976055.csv",
+      "rows": 1,
+      "min": 976055,
+      "max": 976055,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/results/silver-visit-prior-grouped-repair-screen-976032-976063-attempt3/off_976055.csv",
+      "rows": 1,
+      "min": 976055,
+      "max": 976055,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/results/silver-visit-prior-grouped-repair-screen-976032-976063-attempt3/off_976056.csv",
+      "rows": 1,
+      "min": 976056,
+      "max": 976056,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/results/silver-visit-prior-grouped-repair-screen-976032-976063-attempt3/grouped_976037.csv",
+      "rows": 1,
+      "min": 976037,
+      "max": 976037,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/results/silver-visit-prior-grouped-repair-screen-976032-976063-attempt3/off_976046.csv",
+      "rows": 1,
+      "min": 976046,
+      "max": 976046,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/results/silver-visit-prior-grouped-repair-screen-976032-976063-attempt3/grouped_976051.csv",
+      "rows": 1,
+      "min": 976051,
+      "max": 976051,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/results/silver-visit-prior-grouped-repair-screen-976032-976063-attempt3/grouped_976046.csv",
+      "rows": 1,
+      "min": 976046,
+      "max": 976046,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/results/silver-visit-prior-grouped-repair-screen-976032-976063-attempt3/off_976037.csv",
+      "rows": 1,
+      "min": 976037,
+      "max": 976037,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/results/silver-visit-prior-grouped-repair-screen-976032-976063-attempt3/grouped_976035.csv",
+      "rows": 1,
+      "min": 976035,
+      "max": 976035,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/results/silver-visit-prior-grouped-repair-screen-976032-976063-attempt3/grouped_976062.csv",
+      "rows": 1,
+      "min": 976062,
+      "max": 976062,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/results/silver-visit-prior-grouped-repair-screen-976032-976063-attempt3/off_976033.csv",
+      "rows": 1,
+      "min": 976033,
+      "max": 976033,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/results/silver-visit-prior-grouped-repair-screen-976032-976063-attempt3/grouped_976038.csv",
+      "rows": 1,
+      "min": 976038,
+      "max": 976038,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/results/silver-visit-prior-grouped-repair-screen-976032-976063-attempt3/grouped_976053.csv",
+      "rows": 1,
+      "min": 976053,
+      "max": 976053,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/results/silver-visit-prior-grouped-repair-screen-976032-976063-attempt3/off_976043.csv",
+      "rows": 1,
+      "min": 976043,
+      "max": 976043,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/results/silver-visit-prior-grouped-repair-screen-976032-976063-attempt3/off_976054.csv",
+      "rows": 1,
+      "min": 976054,
+      "max": 976054,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/results/silver-visit-prior-grouped-repair-screen-976032-976063-attempt3/grouped_976041.csv",
+      "rows": 1,
+      "min": 976041,
+      "max": 976041,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/results/silver-visit-prior-grouped-repair-screen-976032-976063-attempt3/grouped_976043.csv",
+      "rows": 1,
+      "min": 976043,
+      "max": 976043,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/results/silver-visit-prior-grouped-repair-screen-976032-976063-attempt3/grouped_976063.csv",
+      "rows": 1,
+      "min": 976063,
+      "max": 976063,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/results/silver-visit-prior-grouped-repair-screen-976032-976063-attempt3/off_976032.csv",
+      "rows": 1,
+      "min": 976032,
+      "max": 976032,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/results/silver-visit-prior-grouped-repair-screen-976032-976063-attempt3/off_976040.csv",
+      "rows": 1,
+      "min": 976040,
+      "max": 976040,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/results/silver-visit-prior-grouped-repair-screen-976032-976063-attempt3/off_976036.csv",
+      "rows": 1,
+      "min": 976036,
+      "max": 976036,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/results/silver-visit-prior-grouped-repair-screen-976032-976063-attempt3/off_976061.csv",
+      "rows": 1,
+      "min": 976061,
+      "max": 976061,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/results/silver-visit-prior-grouped-repair-screen-976032-976063-attempt3/grouped_976060.csv",
+      "rows": 1,
+      "min": 976060,
+      "max": 976060,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/results/silver-visit-prior-grouped-repair-screen-976032-976063-attempt3/off_976060.csv",
+      "rows": 1,
+      "min": 976060,
+      "max": 976060,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/results/silver-visit-prior-grouped-repair-screen-976032-976063-attempt3/grouped_976047.csv",
+      "rows": 1,
+      "min": 976047,
+      "max": 976047,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/results/silver-visit-prior-grouped-repair-screen-976032-976063-attempt3/grouped_976054.csv",
+      "rows": 1,
+      "min": 976054,
+      "max": 976054,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/results/silver-visit-prior-grouped-repair-screen-976032-976063-attempt3/off_976050.csv",
+      "rows": 1,
+      "min": 976050,
+      "max": 976050,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/results/silver-visit-prior-grouped-repair-screen-976032-976063-attempt3/off_976048.csv",
+      "rows": 1,
+      "min": 976048,
+      "max": 976048,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/results/silver-visit-prior-grouped-repair-screen-976032-976063-attempt3/off_976042.csv",
+      "rows": 1,
+      "min": 976042,
+      "max": 976042,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/results/silver-visit-prior-grouped-repair-screen-976032-976063-attempt3/off_976044.csv",
+      "rows": 1,
+      "min": 976044,
+      "max": 976044,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/results/silver-visit-prior-grouped-repair-screen-976032-976063-attempt3/grouped_976032.csv",
+      "rows": 1,
+      "min": 976032,
+      "max": 976032,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/results/silver-visit-prior-grouped-repair-screen-976032-976063-attempt3/grouped_976044.csv",
+      "rows": 1,
+      "min": 976044,
+      "max": 976044,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/results/silver-visit-prior-grouped-repair-screen-976032-976063-attempt3/off_976052.csv",
+      "rows": 1,
+      "min": 976052,
+      "max": 976052,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/results/silver-visit-prior-grouped-repair-screen-976032-976063-attempt3/grouped_976040.csv",
+      "rows": 1,
+      "min": 976040,
+      "max": 976040,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/checkouts/ooc-reach-debug-4745fa7/docs/experiments/evidence/silver-abc-f6ad92d/A_searcher3_1000/results.csv",
+      "rows": 32,
+      "min": 8,
+      "max": 39,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/checkouts/ooc-reach-debug-4745fa7/docs/experiments/evidence/silver-abc-f6ad92d/calibration/tiny_cpu.csv",
+      "rows": 1,
+      "min": 0,
+      "max": 0,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/checkouts/ooc-reach-debug-4745fa7/docs/experiments/evidence/silver-abc-f6ad92d/calibration/C_2700.csv",
+      "rows": 8,
+      "min": 0,
+      "max": 7,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/checkouts/ooc-reach-debug-4745fa7/docs/experiments/evidence/silver-abc-f6ad92d/calibration/C_4300.csv",
+      "rows": 8,
+      "min": 0,
+      "max": 7,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/checkouts/ooc-reach-debug-4745fa7/docs/experiments/evidence/silver-abc-f6ad92d/calibration/A_1000.csv",
+      "rows": 8,
+      "min": 0,
+      "max": 7,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/checkouts/ooc-reach-debug-4745fa7/docs/experiments/evidence/silver-abc-f6ad92d/calibration/C_3700.csv",
+      "rows": 8,
+      "min": 0,
+      "max": 7,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/checkouts/ooc-reach-debug-4745fa7/docs/experiments/evidence/silver-abc-f6ad92d/calibration/B_1000.csv",
+      "rows": 8,
+      "min": 0,
+      "max": 7,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/checkouts/ooc-reach-debug-4745fa7/docs/experiments/evidence/silver-abc-f6ad92d/C_silver_equal_runtime/results.csv",
+      "rows": 32,
+      "min": 8,
+      "max": 39,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/checkouts/ooc-reach-debug-4745fa7/docs/experiments/evidence/silver-abc-f6ad92d/B_silver_1000/results.csv",
+      "rows": 32,
+      "min": 8,
+      "max": 39,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/checkouts/silver-live-bridge-failures-ad61357/docs/experiments/evidence/silver-abc-f6ad92d/A_searcher3_1000/results.csv",
+      "rows": 32,
+      "min": 8,
+      "max": 39,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/checkouts/silver-live-bridge-failures-ad61357/docs/experiments/evidence/silver-abc-f6ad92d/calibration/tiny_cpu.csv",
+      "rows": 1,
+      "min": 0,
+      "max": 0,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/checkouts/silver-live-bridge-failures-ad61357/docs/experiments/evidence/silver-abc-f6ad92d/calibration/C_2700.csv",
+      "rows": 8,
+      "min": 0,
+      "max": 7,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/checkouts/silver-live-bridge-failures-ad61357/docs/experiments/evidence/silver-abc-f6ad92d/calibration/C_4300.csv",
+      "rows": 8,
+      "min": 0,
+      "max": 7,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/checkouts/silver-live-bridge-failures-ad61357/docs/experiments/evidence/silver-abc-f6ad92d/calibration/A_1000.csv",
+      "rows": 8,
+      "min": 0,
+      "max": 7,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/checkouts/silver-live-bridge-failures-ad61357/docs/experiments/evidence/silver-abc-f6ad92d/calibration/C_3700.csv",
+      "rows": 8,
+      "min": 0,
+      "max": 7,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/checkouts/silver-live-bridge-failures-ad61357/docs/experiments/evidence/silver-abc-f6ad92d/calibration/B_1000.csv",
+      "rows": 8,
+      "min": 0,
+      "max": 7,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/checkouts/silver-live-bridge-failures-ad61357/docs/experiments/evidence/silver-abc-f6ad92d/C_silver_equal_runtime/results.csv",
+      "rows": 32,
+      "min": 8,
+      "max": 39,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/checkouts/silver-live-bridge-failures-ad61357/docs/experiments/evidence/silver-abc-f6ad92d/B_silver_1000/results.csv",
+      "rows": 32,
+      "min": 8,
+      "max": 39,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/checkouts/ooc-terminal-fix-a49cc45/docs/experiments/evidence/silver-abc-f6ad92d/A_searcher3_1000/results.csv",
+      "rows": 32,
+      "min": 8,
+      "max": 39,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/checkouts/ooc-terminal-fix-a49cc45/docs/experiments/evidence/silver-abc-f6ad92d/calibration/tiny_cpu.csv",
+      "rows": 1,
+      "min": 0,
+      "max": 0,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/checkouts/ooc-terminal-fix-a49cc45/docs/experiments/evidence/silver-abc-f6ad92d/calibration/C_2700.csv",
+      "rows": 8,
+      "min": 0,
+      "max": 7,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/checkouts/ooc-terminal-fix-a49cc45/docs/experiments/evidence/silver-abc-f6ad92d/calibration/C_4300.csv",
+      "rows": 8,
+      "min": 0,
+      "max": 7,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/checkouts/ooc-terminal-fix-a49cc45/docs/experiments/evidence/silver-abc-f6ad92d/calibration/A_1000.csv",
+      "rows": 8,
+      "min": 0,
+      "max": 7,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/checkouts/ooc-terminal-fix-a49cc45/docs/experiments/evidence/silver-abc-f6ad92d/calibration/C_3700.csv",
+      "rows": 8,
+      "min": 0,
+      "max": 7,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/checkouts/ooc-terminal-fix-a49cc45/docs/experiments/evidence/silver-abc-f6ad92d/calibration/B_1000.csv",
+      "rows": 8,
+      "min": 0,
+      "max": 7,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/checkouts/ooc-terminal-fix-a49cc45/docs/experiments/evidence/silver-abc-f6ad92d/C_silver_equal_runtime/results.csv",
+      "rows": 32,
+      "min": 8,
+      "max": 39,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/checkouts/ooc-terminal-fix-a49cc45/docs/experiments/evidence/silver-abc-f6ad92d/B_silver_1000/results.csv",
+      "rows": 32,
+      "min": 8,
+      "max": 39,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/checkouts/ooc-overlap-ff9e5a9/docs/experiments/evidence/silver-abc-f6ad92d/A_searcher3_1000/results.csv",
+      "rows": 32,
+      "min": 8,
+      "max": 39,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/checkouts/ooc-overlap-ff9e5a9/docs/experiments/evidence/silver-abc-f6ad92d/calibration/tiny_cpu.csv",
+      "rows": 1,
+      "min": 0,
+      "max": 0,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/checkouts/ooc-overlap-ff9e5a9/docs/experiments/evidence/silver-abc-f6ad92d/calibration/C_2700.csv",
+      "rows": 8,
+      "min": 0,
+      "max": 7,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/checkouts/ooc-overlap-ff9e5a9/docs/experiments/evidence/silver-abc-f6ad92d/calibration/C_4300.csv",
+      "rows": 8,
+      "min": 0,
+      "max": 7,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/checkouts/ooc-overlap-ff9e5a9/docs/experiments/evidence/silver-abc-f6ad92d/calibration/A_1000.csv",
+      "rows": 8,
+      "min": 0,
+      "max": 7,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/checkouts/ooc-overlap-ff9e5a9/docs/experiments/evidence/silver-abc-f6ad92d/calibration/C_3700.csv",
+      "rows": 8,
+      "min": 0,
+      "max": 7,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/checkouts/ooc-overlap-ff9e5a9/docs/experiments/evidence/silver-abc-f6ad92d/calibration/B_1000.csv",
+      "rows": 8,
+      "min": 0,
+      "max": 7,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/checkouts/ooc-overlap-ff9e5a9/docs/experiments/evidence/silver-abc-f6ad92d/C_silver_equal_runtime/results.csv",
+      "rows": 32,
+      "min": 8,
+      "max": 39,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/checkouts/ooc-overlap-ff9e5a9/docs/experiments/evidence/silver-abc-f6ad92d/B_silver_1000/results.csv",
+      "rows": 32,
+      "min": 8,
+      "max": 39,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/checkouts/silver-sh-online-ce6ea5a/docs/experiments/evidence/silver-abc-f6ad92d/A_searcher3_1000/results.csv",
+      "rows": 32,
+      "min": 8,
+      "max": 39,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/checkouts/silver-sh-online-ce6ea5a/docs/experiments/evidence/silver-abc-f6ad92d/calibration/tiny_cpu.csv",
+      "rows": 1,
+      "min": 0,
+      "max": 0,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/checkouts/silver-sh-online-ce6ea5a/docs/experiments/evidence/silver-abc-f6ad92d/calibration/C_2700.csv",
+      "rows": 8,
+      "min": 0,
+      "max": 7,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/checkouts/silver-sh-online-ce6ea5a/docs/experiments/evidence/silver-abc-f6ad92d/calibration/C_4300.csv",
+      "rows": 8,
+      "min": 0,
+      "max": 7,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/checkouts/silver-sh-online-ce6ea5a/docs/experiments/evidence/silver-abc-f6ad92d/calibration/A_1000.csv",
+      "rows": 8,
+      "min": 0,
+      "max": 7,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/checkouts/silver-sh-online-ce6ea5a/docs/experiments/evidence/silver-abc-f6ad92d/calibration/C_3700.csv",
+      "rows": 8,
+      "min": 0,
+      "max": 7,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/checkouts/silver-sh-online-ce6ea5a/docs/experiments/evidence/silver-abc-f6ad92d/calibration/B_1000.csv",
+      "rows": 8,
+      "min": 0,
+      "max": 7,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/checkouts/silver-sh-online-ce6ea5a/docs/experiments/evidence/silver-abc-f6ad92d/C_silver_equal_runtime/results.csv",
+      "rows": 32,
+      "min": 8,
+      "max": 39,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/checkouts/silver-sh-online-ce6ea5a/docs/experiments/evidence/silver-abc-f6ad92d/B_silver_1000/results.csv",
+      "rows": 32,
+      "min": 8,
+      "max": 39,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/checkouts/ooc-clean-pilot-fix2/docs/experiments/evidence/silver-abc-f6ad92d/A_searcher3_1000/results.csv",
+      "rows": 32,
+      "min": 8,
+      "max": 39,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/checkouts/ooc-clean-pilot-fix2/docs/experiments/evidence/silver-abc-f6ad92d/calibration/tiny_cpu.csv",
+      "rows": 1,
+      "min": 0,
+      "max": 0,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/checkouts/ooc-clean-pilot-fix2/docs/experiments/evidence/silver-abc-f6ad92d/calibration/C_2700.csv",
+      "rows": 8,
+      "min": 0,
+      "max": 7,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/checkouts/ooc-clean-pilot-fix2/docs/experiments/evidence/silver-abc-f6ad92d/calibration/C_4300.csv",
+      "rows": 8,
+      "min": 0,
+      "max": 7,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/checkouts/ooc-clean-pilot-fix2/docs/experiments/evidence/silver-abc-f6ad92d/calibration/A_1000.csv",
+      "rows": 8,
+      "min": 0,
+      "max": 7,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/checkouts/ooc-clean-pilot-fix2/docs/experiments/evidence/silver-abc-f6ad92d/calibration/C_3700.csv",
+      "rows": 8,
+      "min": 0,
+      "max": 7,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/checkouts/ooc-clean-pilot-fix2/docs/experiments/evidence/silver-abc-f6ad92d/calibration/B_1000.csv",
+      "rows": 8,
+      "min": 0,
+      "max": 7,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/checkouts/ooc-clean-pilot-fix2/docs/experiments/evidence/silver-abc-f6ad92d/C_silver_equal_runtime/results.csv",
+      "rows": 32,
+      "min": 8,
+      "max": 39,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/checkouts/ooc-clean-pilot-fix2/docs/experiments/evidence/silver-abc-f6ad92d/B_silver_1000/results.csv",
+      "rows": 32,
+      "min": 8,
+      "max": 39,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/checkouts/ooc-h-clean-pilot/docs/experiments/evidence/silver-abc-f6ad92d/A_searcher3_1000/results.csv",
+      "rows": 32,
+      "min": 8,
+      "max": 39,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/checkouts/ooc-h-clean-pilot/docs/experiments/evidence/silver-abc-f6ad92d/calibration/tiny_cpu.csv",
+      "rows": 1,
+      "min": 0,
+      "max": 0,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/checkouts/ooc-h-clean-pilot/docs/experiments/evidence/silver-abc-f6ad92d/calibration/C_2700.csv",
+      "rows": 8,
+      "min": 0,
+      "max": 7,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/checkouts/ooc-h-clean-pilot/docs/experiments/evidence/silver-abc-f6ad92d/calibration/C_4300.csv",
+      "rows": 8,
+      "min": 0,
+      "max": 7,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/checkouts/ooc-h-clean-pilot/docs/experiments/evidence/silver-abc-f6ad92d/calibration/A_1000.csv",
+      "rows": 8,
+      "min": 0,
+      "max": 7,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/checkouts/ooc-h-clean-pilot/docs/experiments/evidence/silver-abc-f6ad92d/calibration/C_3700.csv",
+      "rows": 8,
+      "min": 0,
+      "max": 7,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/checkouts/ooc-h-clean-pilot/docs/experiments/evidence/silver-abc-f6ad92d/calibration/B_1000.csv",
+      "rows": 8,
+      "min": 0,
+      "max": 7,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/checkouts/ooc-h-clean-pilot/docs/experiments/evidence/silver-abc-f6ad92d/C_silver_equal_runtime/results.csv",
+      "rows": 32,
+      "min": 8,
+      "max": 39,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/checkouts/ooc-h-clean-pilot/docs/experiments/evidence/silver-abc-f6ad92d/B_silver_1000/results.csv",
+      "rows": 32,
+      "min": 8,
+      "max": 39,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/checkouts/ooc-event-trace-2cb6765/docs/experiments/evidence/silver-abc-f6ad92d/A_searcher3_1000/results.csv",
+      "rows": 32,
+      "min": 8,
+      "max": 39,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/checkouts/ooc-event-trace-2cb6765/docs/experiments/evidence/silver-abc-f6ad92d/calibration/tiny_cpu.csv",
+      "rows": 1,
+      "min": 0,
+      "max": 0,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/checkouts/ooc-event-trace-2cb6765/docs/experiments/evidence/silver-abc-f6ad92d/calibration/C_2700.csv",
+      "rows": 8,
+      "min": 0,
+      "max": 7,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/checkouts/ooc-event-trace-2cb6765/docs/experiments/evidence/silver-abc-f6ad92d/calibration/C_4300.csv",
+      "rows": 8,
+      "min": 0,
+      "max": 7,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/checkouts/ooc-event-trace-2cb6765/docs/experiments/evidence/silver-abc-f6ad92d/calibration/A_1000.csv",
+      "rows": 8,
+      "min": 0,
+      "max": 7,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/checkouts/ooc-event-trace-2cb6765/docs/experiments/evidence/silver-abc-f6ad92d/calibration/C_3700.csv",
+      "rows": 8,
+      "min": 0,
+      "max": 7,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/checkouts/ooc-event-trace-2cb6765/docs/experiments/evidence/silver-abc-f6ad92d/calibration/B_1000.csv",
+      "rows": 8,
+      "min": 0,
+      "max": 7,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/checkouts/ooc-event-trace-2cb6765/docs/experiments/evidence/silver-abc-f6ad92d/C_silver_equal_runtime/results.csv",
+      "rows": 32,
+      "min": 8,
+      "max": 39,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/checkouts/ooc-event-trace-2cb6765/docs/experiments/evidence/silver-abc-f6ad92d/B_silver_1000/results.csv",
+      "rows": 32,
+      "min": 8,
+      "max": 39,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/checkouts/ooc-transaction-fix-548a35b/docs/experiments/evidence/silver-abc-f6ad92d/A_searcher3_1000/results.csv",
+      "rows": 32,
+      "min": 8,
+      "max": 39,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/checkouts/ooc-transaction-fix-548a35b/docs/experiments/evidence/silver-abc-f6ad92d/calibration/tiny_cpu.csv",
+      "rows": 1,
+      "min": 0,
+      "max": 0,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/checkouts/ooc-transaction-fix-548a35b/docs/experiments/evidence/silver-abc-f6ad92d/calibration/C_2700.csv",
+      "rows": 8,
+      "min": 0,
+      "max": 7,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/checkouts/ooc-transaction-fix-548a35b/docs/experiments/evidence/silver-abc-f6ad92d/calibration/C_4300.csv",
+      "rows": 8,
+      "min": 0,
+      "max": 7,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/checkouts/ooc-transaction-fix-548a35b/docs/experiments/evidence/silver-abc-f6ad92d/calibration/A_1000.csv",
+      "rows": 8,
+      "min": 0,
+      "max": 7,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/checkouts/ooc-transaction-fix-548a35b/docs/experiments/evidence/silver-abc-f6ad92d/calibration/C_3700.csv",
+      "rows": 8,
+      "min": 0,
+      "max": 7,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/checkouts/ooc-transaction-fix-548a35b/docs/experiments/evidence/silver-abc-f6ad92d/calibration/B_1000.csv",
+      "rows": 8,
+      "min": 0,
+      "max": 7,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/checkouts/ooc-transaction-fix-548a35b/docs/experiments/evidence/silver-abc-f6ad92d/C_silver_equal_runtime/results.csv",
+      "rows": 32,
+      "min": 8,
+      "max": 39,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/checkouts/ooc-transaction-fix-548a35b/docs/experiments/evidence/silver-abc-f6ad92d/B_silver_1000/results.csv",
+      "rows": 32,
+      "min": 8,
+      "max": 39,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/checkouts/silver-visit-prior-grouped-repair-screen-976032-976063/build/silver_visit_prior_online_screen_20260830/B_grouped.csv",
+      "rows": 4,
+      "min": 976000,
+      "max": 976003,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/checkouts/silver-visit-prior-grouped-repair-screen-976032-976063/build/silver_visit_prior_online_screen_20260830/A_off.csv",
+      "rows": 32,
+      "min": 976000,
+      "max": 976031,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/checkouts/silver-visit-prior-grouped-repair-screen-976032-976063/build/silver_visit_prior_online_screen_20260830/invalid_attempt2_A_off.csv",
+      "rows": 32,
+      "min": 976000,
+      "max": 976031,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/checkouts/silver-visit-prior-grouped-repair-screen-976032-976063/docs/experiments/evidence/silver-abc-f6ad92d/A_searcher3_1000/results.csv",
+      "rows": 32,
+      "min": 8,
+      "max": 39,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/checkouts/silver-visit-prior-grouped-repair-screen-976032-976063/docs/experiments/evidence/silver-abc-f6ad92d/calibration/tiny_cpu.csv",
+      "rows": 1,
+      "min": 0,
+      "max": 0,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/checkouts/silver-visit-prior-grouped-repair-screen-976032-976063/docs/experiments/evidence/silver-abc-f6ad92d/calibration/C_2700.csv",
+      "rows": 8,
+      "min": 0,
+      "max": 7,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/checkouts/silver-visit-prior-grouped-repair-screen-976032-976063/docs/experiments/evidence/silver-abc-f6ad92d/calibration/C_4300.csv",
+      "rows": 8,
+      "min": 0,
+      "max": 7,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/checkouts/silver-visit-prior-grouped-repair-screen-976032-976063/docs/experiments/evidence/silver-abc-f6ad92d/calibration/A_1000.csv",
+      "rows": 8,
+      "min": 0,
+      "max": 7,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/checkouts/silver-visit-prior-grouped-repair-screen-976032-976063/docs/experiments/evidence/silver-abc-f6ad92d/calibration/C_3700.csv",
+      "rows": 8,
+      "min": 0,
+      "max": 7,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/checkouts/silver-visit-prior-grouped-repair-screen-976032-976063/docs/experiments/evidence/silver-abc-f6ad92d/calibration/B_1000.csv",
+      "rows": 8,
+      "min": 0,
+      "max": 7,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/checkouts/silver-visit-prior-grouped-repair-screen-976032-976063/docs/experiments/evidence/silver-abc-f6ad92d/C_silver_equal_runtime/results.csv",
+      "rows": 32,
+      "min": 8,
+      "max": 39,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/checkouts/silver-visit-prior-grouped-repair-screen-976032-976063/docs/experiments/evidence/silver-abc-f6ad92d/B_silver_1000/results.csv",
+      "rows": 32,
+      "min": 8,
+      "max": 39,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/checkouts/ooc-clean-pilot-fix/docs/experiments/evidence/silver-abc-f6ad92d/A_searcher3_1000/results.csv",
+      "rows": 32,
+      "min": 8,
+      "max": 39,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/checkouts/ooc-clean-pilot-fix/docs/experiments/evidence/silver-abc-f6ad92d/calibration/tiny_cpu.csv",
+      "rows": 1,
+      "min": 0,
+      "max": 0,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/checkouts/ooc-clean-pilot-fix/docs/experiments/evidence/silver-abc-f6ad92d/calibration/C_2700.csv",
+      "rows": 8,
+      "min": 0,
+      "max": 7,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/checkouts/ooc-clean-pilot-fix/docs/experiments/evidence/silver-abc-f6ad92d/calibration/C_4300.csv",
+      "rows": 8,
+      "min": 0,
+      "max": 7,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/checkouts/ooc-clean-pilot-fix/docs/experiments/evidence/silver-abc-f6ad92d/calibration/A_1000.csv",
+      "rows": 8,
+      "min": 0,
+      "max": 7,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/checkouts/ooc-clean-pilot-fix/docs/experiments/evidence/silver-abc-f6ad92d/calibration/C_3700.csv",
+      "rows": 8,
+      "min": 0,
+      "max": 7,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/checkouts/ooc-clean-pilot-fix/docs/experiments/evidence/silver-abc-f6ad92d/calibration/B_1000.csv",
+      "rows": 8,
+      "min": 0,
+      "max": 7,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/checkouts/ooc-clean-pilot-fix/docs/experiments/evidence/silver-abc-f6ad92d/C_silver_equal_runtime/results.csv",
+      "rows": 32,
+      "min": 8,
+      "max": 39,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/checkouts/ooc-clean-pilot-fix/docs/experiments/evidence/silver-abc-f6ad92d/B_silver_1000/results.csv",
+      "rows": 32,
+      "min": 8,
+      "max": 39,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/checkouts/silver-visit-prior-grouped-screen-976000-976031/docs/experiments/evidence/silver-abc-f6ad92d/A_searcher3_1000/results.csv",
+      "rows": 32,
+      "min": 8,
+      "max": 39,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/checkouts/silver-visit-prior-grouped-screen-976000-976031/docs/experiments/evidence/silver-abc-f6ad92d/calibration/tiny_cpu.csv",
+      "rows": 1,
+      "min": 0,
+      "max": 0,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/checkouts/silver-visit-prior-grouped-screen-976000-976031/docs/experiments/evidence/silver-abc-f6ad92d/calibration/C_2700.csv",
+      "rows": 8,
+      "min": 0,
+      "max": 7,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/checkouts/silver-visit-prior-grouped-screen-976000-976031/docs/experiments/evidence/silver-abc-f6ad92d/calibration/C_4300.csv",
+      "rows": 8,
+      "min": 0,
+      "max": 7,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/checkouts/silver-visit-prior-grouped-screen-976000-976031/docs/experiments/evidence/silver-abc-f6ad92d/calibration/A_1000.csv",
+      "rows": 8,
+      "min": 0,
+      "max": 7,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/checkouts/silver-visit-prior-grouped-screen-976000-976031/docs/experiments/evidence/silver-abc-f6ad92d/calibration/C_3700.csv",
+      "rows": 8,
+      "min": 0,
+      "max": 7,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/checkouts/silver-visit-prior-grouped-screen-976000-976031/docs/experiments/evidence/silver-abc-f6ad92d/calibration/B_1000.csv",
+      "rows": 8,
+      "min": 0,
+      "max": 7,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/checkouts/silver-visit-prior-grouped-screen-976000-976031/docs/experiments/evidence/silver-abc-f6ad92d/C_silver_equal_runtime/results.csv",
+      "rows": 32,
+      "min": 8,
+      "max": 39,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/checkouts/silver-visit-prior-grouped-screen-976000-976031/docs/experiments/evidence/silver-abc-f6ad92d/B_silver_1000/results.csv",
+      "rows": 32,
+      "min": 8,
+      "max": 39,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/task-b-1fbf733/docs/experiments/evidence/silver-abc-f6ad92d/A_searcher3_1000/results.csv",
+      "rows": 32,
+      "min": 8,
+      "max": 39,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/task-b-1fbf733/docs/experiments/evidence/silver-abc-f6ad92d/calibration/tiny_cpu.csv",
+      "rows": 1,
+      "min": 0,
+      "max": 0,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/task-b-1fbf733/docs/experiments/evidence/silver-abc-f6ad92d/calibration/C_2700.csv",
+      "rows": 8,
+      "min": 0,
+      "max": 7,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/task-b-1fbf733/docs/experiments/evidence/silver-abc-f6ad92d/calibration/C_4300.csv",
+      "rows": 8,
+      "min": 0,
+      "max": 7,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/task-b-1fbf733/docs/experiments/evidence/silver-abc-f6ad92d/calibration/A_1000.csv",
+      "rows": 8,
+      "min": 0,
+      "max": 7,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/task-b-1fbf733/docs/experiments/evidence/silver-abc-f6ad92d/calibration/C_3700.csv",
+      "rows": 8,
+      "min": 0,
+      "max": 7,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/task-b-1fbf733/docs/experiments/evidence/silver-abc-f6ad92d/calibration/B_1000.csv",
+      "rows": 8,
+      "min": 0,
+      "max": 7,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/task-b-1fbf733/docs/experiments/evidence/silver-abc-f6ad92d/C_silver_equal_runtime/results.csv",
+      "rows": 32,
+      "min": 8,
+      "max": 39,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/task-b-1fbf733/docs/experiments/evidence/silver-abc-f6ad92d/B_silver_1000/results.csv",
+      "rows": 32,
+      "min": 8,
+      "max": 39,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/task-b-753433b/docs/experiments/evidence/silver-abc-f6ad92d/A_searcher3_1000/results.csv",
+      "rows": 32,
+      "min": 8,
+      "max": 39,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/task-b-753433b/docs/experiments/evidence/silver-abc-f6ad92d/calibration/tiny_cpu.csv",
+      "rows": 1,
+      "min": 0,
+      "max": 0,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/task-b-753433b/docs/experiments/evidence/silver-abc-f6ad92d/calibration/C_2700.csv",
+      "rows": 8,
+      "min": 0,
+      "max": 7,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/task-b-753433b/docs/experiments/evidence/silver-abc-f6ad92d/calibration/C_4300.csv",
+      "rows": 8,
+      "min": 0,
+      "max": 7,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/task-b-753433b/docs/experiments/evidence/silver-abc-f6ad92d/calibration/A_1000.csv",
+      "rows": 8,
+      "min": 0,
+      "max": 7,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/task-b-753433b/docs/experiments/evidence/silver-abc-f6ad92d/calibration/C_3700.csv",
+      "rows": 8,
+      "min": 0,
+      "max": 7,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/task-b-753433b/docs/experiments/evidence/silver-abc-f6ad92d/calibration/B_1000.csv",
+      "rows": 8,
+      "min": 0,
+      "max": 7,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/task-b-753433b/docs/experiments/evidence/silver-abc-f6ad92d/C_silver_equal_runtime/results.csv",
+      "rows": 32,
+      "min": 8,
+      "max": 39,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/task-b-753433b/docs/experiments/evidence/silver-abc-f6ad92d/B_silver_1000/results.csv",
+      "rows": 32,
+      "min": 8,
+      "max": 39,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/runs/cfaudit-bc8b49c/docs/experiments/evidence/silver-abc-f6ad92d/A_searcher3_1000/results.csv",
+      "rows": 32,
+      "min": 8,
+      "max": 39,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/runs/cfaudit-bc8b49c/docs/experiments/evidence/silver-abc-f6ad92d/calibration/tiny_cpu.csv",
+      "rows": 1,
+      "min": 0,
+      "max": 0,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/runs/cfaudit-bc8b49c/docs/experiments/evidence/silver-abc-f6ad92d/calibration/C_2700.csv",
+      "rows": 8,
+      "min": 0,
+      "max": 7,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/runs/cfaudit-bc8b49c/docs/experiments/evidence/silver-abc-f6ad92d/calibration/C_4300.csv",
+      "rows": 8,
+      "min": 0,
+      "max": 7,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/runs/cfaudit-bc8b49c/docs/experiments/evidence/silver-abc-f6ad92d/calibration/A_1000.csv",
+      "rows": 8,
+      "min": 0,
+      "max": 7,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/runs/cfaudit-bc8b49c/docs/experiments/evidence/silver-abc-f6ad92d/calibration/C_3700.csv",
+      "rows": 8,
+      "min": 0,
+      "max": 7,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/runs/cfaudit-bc8b49c/docs/experiments/evidence/silver-abc-f6ad92d/calibration/B_1000.csv",
+      "rows": 8,
+      "min": 0,
+      "max": 7,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/runs/cfaudit-bc8b49c/docs/experiments/evidence/silver-abc-f6ad92d/C_silver_equal_runtime/results.csv",
+      "rows": 32,
+      "min": 8,
+      "max": 39,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/runs/cfaudit-bc8b49c/docs/experiments/evidence/silver-abc-f6ad92d/B_silver_1000/results.csv",
+      "rows": 32,
+      "min": 8,
+      "max": 39,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/runs/ooc-k-budget-recovery-1d42903/docs/experiments/evidence/silver-abc-f6ad92d/A_searcher3_1000/results.csv",
+      "rows": 32,
+      "min": 8,
+      "max": 39,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/runs/ooc-k-budget-recovery-1d42903/docs/experiments/evidence/silver-abc-f6ad92d/calibration/tiny_cpu.csv",
+      "rows": 1,
+      "min": 0,
+      "max": 0,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/runs/ooc-k-budget-recovery-1d42903/docs/experiments/evidence/silver-abc-f6ad92d/calibration/C_2700.csv",
+      "rows": 8,
+      "min": 0,
+      "max": 7,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/runs/ooc-k-budget-recovery-1d42903/docs/experiments/evidence/silver-abc-f6ad92d/calibration/C_4300.csv",
+      "rows": 8,
+      "min": 0,
+      "max": 7,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/runs/ooc-k-budget-recovery-1d42903/docs/experiments/evidence/silver-abc-f6ad92d/calibration/A_1000.csv",
+      "rows": 8,
+      "min": 0,
+      "max": 7,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/runs/ooc-k-budget-recovery-1d42903/docs/experiments/evidence/silver-abc-f6ad92d/calibration/C_3700.csv",
+      "rows": 8,
+      "min": 0,
+      "max": 7,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/runs/ooc-k-budget-recovery-1d42903/docs/experiments/evidence/silver-abc-f6ad92d/calibration/B_1000.csv",
+      "rows": 8,
+      "min": 0,
+      "max": 7,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/runs/ooc-k-budget-recovery-1d42903/docs/experiments/evidence/silver-abc-f6ad92d/C_silver_equal_runtime/results.csv",
+      "rows": 32,
+      "min": 8,
+      "max": 39,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/runs/ooc-k-budget-recovery-1d42903/docs/experiments/evidence/silver-abc-f6ad92d/B_silver_1000/results.csv",
+      "rows": 32,
+      "min": 8,
+      "max": 39,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/runs/cfaudit-19c7674/docs/experiments/evidence/silver-abc-f6ad92d/A_searcher3_1000/results.csv",
+      "rows": 32,
+      "min": 8,
+      "max": 39,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/runs/cfaudit-19c7674/docs/experiments/evidence/silver-abc-f6ad92d/calibration/tiny_cpu.csv",
+      "rows": 1,
+      "min": 0,
+      "max": 0,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/runs/cfaudit-19c7674/docs/experiments/evidence/silver-abc-f6ad92d/calibration/C_2700.csv",
+      "rows": 8,
+      "min": 0,
+      "max": 7,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/runs/cfaudit-19c7674/docs/experiments/evidence/silver-abc-f6ad92d/calibration/C_4300.csv",
+      "rows": 8,
+      "min": 0,
+      "max": 7,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/runs/cfaudit-19c7674/docs/experiments/evidence/silver-abc-f6ad92d/calibration/A_1000.csv",
+      "rows": 8,
+      "min": 0,
+      "max": 7,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/runs/cfaudit-19c7674/docs/experiments/evidence/silver-abc-f6ad92d/calibration/C_3700.csv",
+      "rows": 8,
+      "min": 0,
+      "max": 7,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/runs/cfaudit-19c7674/docs/experiments/evidence/silver-abc-f6ad92d/calibration/B_1000.csv",
+      "rows": 8,
+      "min": 0,
+      "max": 7,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/runs/cfaudit-19c7674/docs/experiments/evidence/silver-abc-f6ad92d/C_silver_equal_runtime/results.csv",
+      "rows": 32,
+      "min": 8,
+      "max": 39,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/runs/cfaudit-19c7674/docs/experiments/evidence/silver-abc-f6ad92d/B_silver_1000/results.csv",
+      "rows": 32,
+      "min": 8,
+      "max": 39,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/runs/ooc-k-budget-e108213/docs/experiments/evidence/silver-abc-f6ad92d/A_searcher3_1000/results.csv",
+      "rows": 32,
+      "min": 8,
+      "max": 39,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/runs/ooc-k-budget-e108213/docs/experiments/evidence/silver-abc-f6ad92d/calibration/tiny_cpu.csv",
+      "rows": 1,
+      "min": 0,
+      "max": 0,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/runs/ooc-k-budget-e108213/docs/experiments/evidence/silver-abc-f6ad92d/calibration/C_2700.csv",
+      "rows": 8,
+      "min": 0,
+      "max": 7,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/runs/ooc-k-budget-e108213/docs/experiments/evidence/silver-abc-f6ad92d/calibration/C_4300.csv",
+      "rows": 8,
+      "min": 0,
+      "max": 7,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/runs/ooc-k-budget-e108213/docs/experiments/evidence/silver-abc-f6ad92d/calibration/A_1000.csv",
+      "rows": 8,
+      "min": 0,
+      "max": 7,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/runs/ooc-k-budget-e108213/docs/experiments/evidence/silver-abc-f6ad92d/calibration/C_3700.csv",
+      "rows": 8,
+      "min": 0,
+      "max": 7,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/runs/ooc-k-budget-e108213/docs/experiments/evidence/silver-abc-f6ad92d/calibration/B_1000.csv",
+      "rows": 8,
+      "min": 0,
+      "max": 7,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/runs/ooc-k-budget-e108213/docs/experiments/evidence/silver-abc-f6ad92d/C_silver_equal_runtime/results.csv",
+      "rows": 32,
+      "min": 8,
+      "max": 39,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/runs/ooc-k-budget-e108213/docs/experiments/evidence/silver-abc-f6ad92d/B_silver_1000/results.csv",
+      "rows": 32,
+      "min": 8,
+      "max": 39,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/runs/primary_corrected_vwin_l_semanticfix_ad8972c_worktree/docs/experiments/evidence/silver-abc-f6ad92d/A_searcher3_1000/results.csv",
+      "rows": 32,
+      "min": 8,
+      "max": 39,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/runs/primary_corrected_vwin_l_semanticfix_ad8972c_worktree/docs/experiments/evidence/silver-abc-f6ad92d/calibration/tiny_cpu.csv",
+      "rows": 1,
+      "min": 0,
+      "max": 0,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/runs/primary_corrected_vwin_l_semanticfix_ad8972c_worktree/docs/experiments/evidence/silver-abc-f6ad92d/calibration/C_2700.csv",
+      "rows": 8,
+      "min": 0,
+      "max": 7,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/runs/primary_corrected_vwin_l_semanticfix_ad8972c_worktree/docs/experiments/evidence/silver-abc-f6ad92d/calibration/C_4300.csv",
+      "rows": 8,
+      "min": 0,
+      "max": 7,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/runs/primary_corrected_vwin_l_semanticfix_ad8972c_worktree/docs/experiments/evidence/silver-abc-f6ad92d/calibration/A_1000.csv",
+      "rows": 8,
+      "min": 0,
+      "max": 7,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/runs/primary_corrected_vwin_l_semanticfix_ad8972c_worktree/docs/experiments/evidence/silver-abc-f6ad92d/calibration/C_3700.csv",
+      "rows": 8,
+      "min": 0,
+      "max": 7,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/runs/primary_corrected_vwin_l_semanticfix_ad8972c_worktree/docs/experiments/evidence/silver-abc-f6ad92d/calibration/B_1000.csv",
+      "rows": 8,
+      "min": 0,
+      "max": 7,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/runs/primary_corrected_vwin_l_semanticfix_ad8972c_worktree/docs/experiments/evidence/silver-abc-f6ad92d/C_silver_equal_runtime/results.csv",
+      "rows": 32,
+      "min": 8,
+      "max": 39,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/runs/primary_corrected_vwin_l_semanticfix_ad8972c_worktree/docs/experiments/evidence/silver-abc-f6ad92d/B_silver_1000/results.csv",
+      "rows": 32,
+      "min": 8,
+      "max": 39,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/runs/phase12-fullrun-4794647/docs/experiments/evidence/silver-abc-f6ad92d/A_searcher3_1000/results.csv",
+      "rows": 32,
+      "min": 8,
+      "max": 39,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/runs/phase12-fullrun-4794647/docs/experiments/evidence/silver-abc-f6ad92d/calibration/tiny_cpu.csv",
+      "rows": 1,
+      "min": 0,
+      "max": 0,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/runs/phase12-fullrun-4794647/docs/experiments/evidence/silver-abc-f6ad92d/calibration/C_2700.csv",
+      "rows": 8,
+      "min": 0,
+      "max": 7,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/runs/phase12-fullrun-4794647/docs/experiments/evidence/silver-abc-f6ad92d/calibration/C_4300.csv",
+      "rows": 8,
+      "min": 0,
+      "max": 7,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/runs/phase12-fullrun-4794647/docs/experiments/evidence/silver-abc-f6ad92d/calibration/A_1000.csv",
+      "rows": 8,
+      "min": 0,
+      "max": 7,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/runs/phase12-fullrun-4794647/docs/experiments/evidence/silver-abc-f6ad92d/calibration/C_3700.csv",
+      "rows": 8,
+      "min": 0,
+      "max": 7,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/runs/phase12-fullrun-4794647/docs/experiments/evidence/silver-abc-f6ad92d/calibration/B_1000.csv",
+      "rows": 8,
+      "min": 0,
+      "max": 7,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/runs/phase12-fullrun-4794647/docs/experiments/evidence/silver-abc-f6ad92d/C_silver_equal_runtime/results.csv",
+      "rows": 32,
+      "min": 8,
+      "max": 39,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/runs/phase12-fullrun-4794647/docs/experiments/evidence/silver-abc-f6ad92d/B_silver_1000/results.csv",
+      "rows": 32,
+      "min": 8,
+      "max": 39,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/runs/silver-policy-online-241112c/results/B_canary2.csv",
+      "rows": 0,
+      "min": null,
+      "max": null,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/runs/silver-policy-online-241112c/docs/experiments/evidence/silver-abc-f6ad92d/A_searcher3_1000/results.csv",
+      "rows": 32,
+      "min": 8,
+      "max": 39,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/runs/silver-policy-online-241112c/docs/experiments/evidence/silver-abc-f6ad92d/calibration/tiny_cpu.csv",
+      "rows": 1,
+      "min": 0,
+      "max": 0,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/runs/silver-policy-online-241112c/docs/experiments/evidence/silver-abc-f6ad92d/calibration/C_2700.csv",
+      "rows": 8,
+      "min": 0,
+      "max": 7,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/runs/silver-policy-online-241112c/docs/experiments/evidence/silver-abc-f6ad92d/calibration/C_4300.csv",
+      "rows": 8,
+      "min": 0,
+      "max": 7,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/runs/silver-policy-online-241112c/docs/experiments/evidence/silver-abc-f6ad92d/calibration/A_1000.csv",
+      "rows": 8,
+      "min": 0,
+      "max": 7,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/runs/silver-policy-online-241112c/docs/experiments/evidence/silver-abc-f6ad92d/calibration/C_3700.csv",
+      "rows": 8,
+      "min": 0,
+      "max": 7,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/runs/silver-policy-online-241112c/docs/experiments/evidence/silver-abc-f6ad92d/calibration/B_1000.csv",
+      "rows": 8,
+      "min": 0,
+      "max": 7,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/runs/silver-policy-online-241112c/docs/experiments/evidence/silver-abc-f6ad92d/C_silver_equal_runtime/results.csv",
+      "rows": 32,
+      "min": 8,
+      "max": 39,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/runs/silver-policy-online-241112c/docs/experiments/evidence/silver-abc-f6ad92d/B_silver_1000/results.csv",
+      "rows": 32,
+      "min": 8,
+      "max": 39,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/runs/primary_corrected_vwin_l_semanticfix_83621cd_worktree/docs/experiments/evidence/silver-abc-f6ad92d/A_searcher3_1000/results.csv",
+      "rows": 32,
+      "min": 8,
+      "max": 39,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/runs/primary_corrected_vwin_l_semanticfix_83621cd_worktree/docs/experiments/evidence/silver-abc-f6ad92d/calibration/tiny_cpu.csv",
+      "rows": 1,
+      "min": 0,
+      "max": 0,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/runs/primary_corrected_vwin_l_semanticfix_83621cd_worktree/docs/experiments/evidence/silver-abc-f6ad92d/calibration/C_2700.csv",
+      "rows": 8,
+      "min": 0,
+      "max": 7,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/runs/primary_corrected_vwin_l_semanticfix_83621cd_worktree/docs/experiments/evidence/silver-abc-f6ad92d/calibration/C_4300.csv",
+      "rows": 8,
+      "min": 0,
+      "max": 7,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/runs/primary_corrected_vwin_l_semanticfix_83621cd_worktree/docs/experiments/evidence/silver-abc-f6ad92d/calibration/A_1000.csv",
+      "rows": 8,
+      "min": 0,
+      "max": 7,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/runs/primary_corrected_vwin_l_semanticfix_83621cd_worktree/docs/experiments/evidence/silver-abc-f6ad92d/calibration/C_3700.csv",
+      "rows": 8,
+      "min": 0,
+      "max": 7,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/runs/primary_corrected_vwin_l_semanticfix_83621cd_worktree/docs/experiments/evidence/silver-abc-f6ad92d/calibration/B_1000.csv",
+      "rows": 8,
+      "min": 0,
+      "max": 7,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/runs/primary_corrected_vwin_l_semanticfix_83621cd_worktree/docs/experiments/evidence/silver-abc-f6ad92d/C_silver_equal_runtime/results.csv",
+      "rows": 32,
+      "min": 8,
+      "max": 39,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/runs/primary_corrected_vwin_l_semanticfix_83621cd_worktree/docs/experiments/evidence/silver-abc-f6ad92d/B_silver_1000/results.csv",
+      "rows": 32,
+      "min": 8,
+      "max": 39,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/runs/silver-policy-online-attempt3-a805d14/results/attempt3_B.csv",
+      "rows": 32,
+      "min": 975000,
+      "max": 975031,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/runs/silver-policy-online-attempt3-a805d14/results/C.csv",
+      "rows": 24,
+      "min": 975000,
+      "max": 975023,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/runs/silver-policy-online-attempt3-a805d14/results/B.csv",
+      "rows": 32,
+      "min": 975000,
+      "max": 975031,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/runs/silver-policy-online-attempt3-a805d14/results/attempt3_C.csv",
+      "rows": 32,
+      "min": 975000,
+      "max": 975031,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/runs/silver-policy-online-attempt3-a805d14/results/attempt3_A.csv",
+      "rows": 32,
+      "min": 975000,
+      "max": 975031,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/runs/silver-policy-online-attempt3-a805d14/results/attempt3_B_canary.csv",
+      "rows": 1,
+      "min": 975000,
+      "max": 975000,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/runs/silver-policy-online-attempt3-a805d14/results/A.csv",
+      "rows": 32,
+      "min": 975000,
+      "max": 975031,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/runs/silver-policy-online-attempt3-a805d14/results/attempt3_C_canary.csv",
+      "rows": 1,
+      "min": 975024,
+      "max": 975024,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/runs/silver-policy-online-attempt3-a805d14/results/attempt3_D.csv",
+      "rows": 32,
+      "min": 975000,
+      "max": 975031,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/runs/silver-policy-online-attempt3-a805d14/results/B_canary.csv",
+      "rows": 1,
+      "min": 975000,
+      "max": 975000,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/runs/silver-policy-online-attempt3-a805d14/docs/experiments/evidence/silver-abc-f6ad92d/A_searcher3_1000/results.csv",
+      "rows": 32,
+      "min": 8,
+      "max": 39,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/runs/silver-policy-online-attempt3-a805d14/docs/experiments/evidence/silver-abc-f6ad92d/calibration/tiny_cpu.csv",
+      "rows": 1,
+      "min": 0,
+      "max": 0,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/runs/silver-policy-online-attempt3-a805d14/docs/experiments/evidence/silver-abc-f6ad92d/calibration/C_2700.csv",
+      "rows": 8,
+      "min": 0,
+      "max": 7,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/runs/silver-policy-online-attempt3-a805d14/docs/experiments/evidence/silver-abc-f6ad92d/calibration/C_4300.csv",
+      "rows": 8,
+      "min": 0,
+      "max": 7,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/runs/silver-policy-online-attempt3-a805d14/docs/experiments/evidence/silver-abc-f6ad92d/calibration/A_1000.csv",
+      "rows": 8,
+      "min": 0,
+      "max": 7,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/runs/silver-policy-online-attempt3-a805d14/docs/experiments/evidence/silver-abc-f6ad92d/calibration/C_3700.csv",
+      "rows": 8,
+      "min": 0,
+      "max": 7,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/runs/silver-policy-online-attempt3-a805d14/docs/experiments/evidence/silver-abc-f6ad92d/calibration/B_1000.csv",
+      "rows": 8,
+      "min": 0,
+      "max": 7,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/runs/silver-policy-online-attempt3-a805d14/docs/experiments/evidence/silver-abc-f6ad92d/C_silver_equal_runtime/results.csv",
+      "rows": 32,
+      "min": 8,
+      "max": 39,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/runs/silver-policy-online-attempt3-a805d14/docs/experiments/evidence/silver-abc-f6ad92d/B_silver_1000/results.csv",
+      "rows": 32,
+      "min": 8,
+      "max": 39,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/runs/primary_corrected_vwin_l_post157_worktree/docs/experiments/evidence/silver-abc-f6ad92d/A_searcher3_1000/results.csv",
+      "rows": 32,
+      "min": 8,
+      "max": 39,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/runs/primary_corrected_vwin_l_post157_worktree/docs/experiments/evidence/silver-abc-f6ad92d/calibration/tiny_cpu.csv",
+      "rows": 1,
+      "min": 0,
+      "max": 0,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/runs/primary_corrected_vwin_l_post157_worktree/docs/experiments/evidence/silver-abc-f6ad92d/calibration/C_2700.csv",
+      "rows": 8,
+      "min": 0,
+      "max": 7,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/runs/primary_corrected_vwin_l_post157_worktree/docs/experiments/evidence/silver-abc-f6ad92d/calibration/C_4300.csv",
+      "rows": 8,
+      "min": 0,
+      "max": 7,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/runs/primary_corrected_vwin_l_post157_worktree/docs/experiments/evidence/silver-abc-f6ad92d/calibration/A_1000.csv",
+      "rows": 8,
+      "min": 0,
+      "max": 7,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/runs/primary_corrected_vwin_l_post157_worktree/docs/experiments/evidence/silver-abc-f6ad92d/calibration/C_3700.csv",
+      "rows": 8,
+      "min": 0,
+      "max": 7,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/runs/primary_corrected_vwin_l_post157_worktree/docs/experiments/evidence/silver-abc-f6ad92d/calibration/B_1000.csv",
+      "rows": 8,
+      "min": 0,
+      "max": 7,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/runs/primary_corrected_vwin_l_post157_worktree/docs/experiments/evidence/silver-abc-f6ad92d/C_silver_equal_runtime/results.csv",
+      "rows": 32,
+      "min": 8,
+      "max": 39,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/runs/primary_corrected_vwin_l_post157_worktree/docs/experiments/evidence/silver-abc-f6ad92d/B_silver_1000/results.csv",
+      "rows": 32,
+      "min": 8,
+      "max": 39,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/runs/silver-policy-online-attempt2-041acfc/results/C.csv",
+      "rows": 24,
+      "min": 975000,
+      "max": 975023,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/runs/silver-policy-online-attempt2-041acfc/results/B.csv",
+      "rows": 32,
+      "min": 975000,
+      "max": 975031,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/runs/silver-policy-online-attempt2-041acfc/results/A.csv",
+      "rows": 32,
+      "min": 975000,
+      "max": 975031,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/runs/silver-policy-online-attempt2-041acfc/results/B_canary.csv",
+      "rows": 1,
+      "min": 975000,
+      "max": 975000,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/runs/silver-policy-online-attempt2-041acfc/docs/experiments/evidence/silver-abc-f6ad92d/A_searcher3_1000/results.csv",
+      "rows": 32,
+      "min": 8,
+      "max": 39,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/runs/silver-policy-online-attempt2-041acfc/docs/experiments/evidence/silver-abc-f6ad92d/calibration/tiny_cpu.csv",
+      "rows": 1,
+      "min": 0,
+      "max": 0,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/runs/silver-policy-online-attempt2-041acfc/docs/experiments/evidence/silver-abc-f6ad92d/calibration/C_2700.csv",
+      "rows": 8,
+      "min": 0,
+      "max": 7,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/runs/silver-policy-online-attempt2-041acfc/docs/experiments/evidence/silver-abc-f6ad92d/calibration/C_4300.csv",
+      "rows": 8,
+      "min": 0,
+      "max": 7,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/runs/silver-policy-online-attempt2-041acfc/docs/experiments/evidence/silver-abc-f6ad92d/calibration/A_1000.csv",
+      "rows": 8,
+      "min": 0,
+      "max": 7,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/runs/silver-policy-online-attempt2-041acfc/docs/experiments/evidence/silver-abc-f6ad92d/calibration/C_3700.csv",
+      "rows": 8,
+      "min": 0,
+      "max": 7,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/runs/silver-policy-online-attempt2-041acfc/docs/experiments/evidence/silver-abc-f6ad92d/calibration/B_1000.csv",
+      "rows": 8,
+      "min": 0,
+      "max": 7,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/runs/silver-policy-online-attempt2-041acfc/docs/experiments/evidence/silver-abc-f6ad92d/C_silver_equal_runtime/results.csv",
+      "rows": 32,
+      "min": 8,
+      "max": 39,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/runs/silver-policy-online-attempt2-041acfc/docs/experiments/evidence/silver-abc-f6ad92d/B_silver_1000/results.csv",
+      "rows": 32,
+      "min": 8,
+      "max": 39,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/runs/semantic-confirmation-a6c2abb/producer/docs/experiments/evidence/silver-abc-f6ad92d/A_searcher3_1000/results.csv",
+      "rows": 32,
+      "min": 8,
+      "max": 39,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/runs/semantic-confirmation-a6c2abb/producer/docs/experiments/evidence/silver-abc-f6ad92d/calibration/tiny_cpu.csv",
+      "rows": 1,
+      "min": 0,
+      "max": 0,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/runs/semantic-confirmation-a6c2abb/producer/docs/experiments/evidence/silver-abc-f6ad92d/calibration/C_2700.csv",
+      "rows": 8,
+      "min": 0,
+      "max": 7,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/runs/semantic-confirmation-a6c2abb/producer/docs/experiments/evidence/silver-abc-f6ad92d/calibration/C_4300.csv",
+      "rows": 8,
+      "min": 0,
+      "max": 7,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/runs/semantic-confirmation-a6c2abb/producer/docs/experiments/evidence/silver-abc-f6ad92d/calibration/A_1000.csv",
+      "rows": 8,
+      "min": 0,
+      "max": 7,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/runs/semantic-confirmation-a6c2abb/producer/docs/experiments/evidence/silver-abc-f6ad92d/calibration/C_3700.csv",
+      "rows": 8,
+      "min": 0,
+      "max": 7,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/runs/semantic-confirmation-a6c2abb/producer/docs/experiments/evidence/silver-abc-f6ad92d/calibration/B_1000.csv",
+      "rows": 8,
+      "min": 0,
+      "max": 7,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/runs/semantic-confirmation-a6c2abb/producer/docs/experiments/evidence/silver-abc-f6ad92d/C_silver_equal_runtime/results.csv",
+      "rows": 32,
+      "min": 8,
+      "max": 39,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/runs/semantic-confirmation-a6c2abb/producer/docs/experiments/evidence/silver-abc-f6ad92d/B_silver_1000/results.csv",
+      "rows": 32,
+      "min": 8,
+      "max": 39,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/runs/ooc-k-budget-ba0d09e/docs/experiments/evidence/silver-abc-f6ad92d/A_searcher3_1000/results.csv",
+      "rows": 32,
+      "min": 8,
+      "max": 39,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/runs/ooc-k-budget-ba0d09e/docs/experiments/evidence/silver-abc-f6ad92d/calibration/tiny_cpu.csv",
+      "rows": 1,
+      "min": 0,
+      "max": 0,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/runs/ooc-k-budget-ba0d09e/docs/experiments/evidence/silver-abc-f6ad92d/calibration/C_2700.csv",
+      "rows": 8,
+      "min": 0,
+      "max": 7,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/runs/ooc-k-budget-ba0d09e/docs/experiments/evidence/silver-abc-f6ad92d/calibration/C_4300.csv",
+      "rows": 8,
+      "min": 0,
+      "max": 7,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/runs/ooc-k-budget-ba0d09e/docs/experiments/evidence/silver-abc-f6ad92d/calibration/A_1000.csv",
+      "rows": 8,
+      "min": 0,
+      "max": 7,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/runs/ooc-k-budget-ba0d09e/docs/experiments/evidence/silver-abc-f6ad92d/calibration/C_3700.csv",
+      "rows": 8,
+      "min": 0,
+      "max": 7,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/runs/ooc-k-budget-ba0d09e/docs/experiments/evidence/silver-abc-f6ad92d/calibration/B_1000.csv",
+      "rows": 8,
+      "min": 0,
+      "max": 7,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/runs/ooc-k-budget-ba0d09e/docs/experiments/evidence/silver-abc-f6ad92d/C_silver_equal_runtime/results.csv",
+      "rows": 32,
+      "min": 8,
+      "max": 39,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/runs/ooc-k-budget-ba0d09e/docs/experiments/evidence/silver-abc-f6ad92d/B_silver_1000/results.csv",
+      "rows": 32,
+      "min": 8,
+      "max": 39,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/runs/silver-m10-rollout-blend-6532d8f/docs/experiments/evidence/silver-abc-f6ad92d/A_searcher3_1000/results.csv",
+      "rows": 32,
+      "min": 8,
+      "max": 39,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/runs/silver-m10-rollout-blend-6532d8f/docs/experiments/evidence/silver-abc-f6ad92d/calibration/tiny_cpu.csv",
+      "rows": 1,
+      "min": 0,
+      "max": 0,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/runs/silver-m10-rollout-blend-6532d8f/docs/experiments/evidence/silver-abc-f6ad92d/calibration/C_2700.csv",
+      "rows": 8,
+      "min": 0,
+      "max": 7,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/runs/silver-m10-rollout-blend-6532d8f/docs/experiments/evidence/silver-abc-f6ad92d/calibration/C_4300.csv",
+      "rows": 8,
+      "min": 0,
+      "max": 7,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/runs/silver-m10-rollout-blend-6532d8f/docs/experiments/evidence/silver-abc-f6ad92d/calibration/A_1000.csv",
+      "rows": 8,
+      "min": 0,
+      "max": 7,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/runs/silver-m10-rollout-blend-6532d8f/docs/experiments/evidence/silver-abc-f6ad92d/calibration/C_3700.csv",
+      "rows": 8,
+      "min": 0,
+      "max": 7,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/runs/silver-m10-rollout-blend-6532d8f/docs/experiments/evidence/silver-abc-f6ad92d/calibration/B_1000.csv",
+      "rows": 8,
+      "min": 0,
+      "max": 7,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/runs/silver-m10-rollout-blend-6532d8f/docs/experiments/evidence/silver-abc-f6ad92d/C_silver_equal_runtime/results.csv",
+      "rows": 32,
+      "min": 8,
+      "max": 39,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/runs/silver-m10-rollout-blend-6532d8f/docs/experiments/evidence/silver-abc-f6ad92d/B_silver_1000/results.csv",
+      "rows": 32,
+      "min": 8,
+      "max": 39,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/runs/silver-leaf-evaluator-0f0840b/results/perf_A.csv",
+      "rows": 1,
+      "min": 973600,
+      "max": 973600,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/runs/silver-leaf-evaluator-0f0840b/results/gate8_A.csv",
+      "rows": 8,
+      "min": 973600,
+      "max": 973607,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/runs/silver-leaf-evaluator-0f0840b/results/perf_B.csv",
+      "rows": 1,
+      "min": 973600,
+      "max": 973600,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/runs/silver-leaf-evaluator-0f0840b/results/gate8_B.csv",
+      "rows": 8,
+      "min": 973600,
+      "max": 973607,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/runs/silver-leaf-evaluator-0f0840b/docs/experiments/evidence/silver-abc-f6ad92d/A_searcher3_1000/results.csv",
+      "rows": 32,
+      "min": 8,
+      "max": 39,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/runs/silver-leaf-evaluator-0f0840b/docs/experiments/evidence/silver-abc-f6ad92d/calibration/tiny_cpu.csv",
+      "rows": 1,
+      "min": 0,
+      "max": 0,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/runs/silver-leaf-evaluator-0f0840b/docs/experiments/evidence/silver-abc-f6ad92d/calibration/C_2700.csv",
+      "rows": 8,
+      "min": 0,
+      "max": 7,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/runs/silver-leaf-evaluator-0f0840b/docs/experiments/evidence/silver-abc-f6ad92d/calibration/C_4300.csv",
+      "rows": 8,
+      "min": 0,
+      "max": 7,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/runs/silver-leaf-evaluator-0f0840b/docs/experiments/evidence/silver-abc-f6ad92d/calibration/A_1000.csv",
+      "rows": 8,
+      "min": 0,
+      "max": 7,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/runs/silver-leaf-evaluator-0f0840b/docs/experiments/evidence/silver-abc-f6ad92d/calibration/C_3700.csv",
+      "rows": 8,
+      "min": 0,
+      "max": 7,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/runs/silver-leaf-evaluator-0f0840b/docs/experiments/evidence/silver-abc-f6ad92d/calibration/B_1000.csv",
+      "rows": 8,
+      "min": 0,
+      "max": 7,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/runs/silver-leaf-evaluator-0f0840b/docs/experiments/evidence/silver-abc-f6ad92d/C_silver_equal_runtime/results.csv",
+      "rows": 32,
+      "min": 8,
+      "max": 39,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/runs/silver-leaf-evaluator-0f0840b/docs/experiments/evidence/silver-abc-f6ad92d/B_silver_1000/results.csv",
+      "rows": 32,
+      "min": 8,
+      "max": 39,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/runs/ooc-pilot-1ef9aef/docs/experiments/evidence/silver-abc-f6ad92d/A_searcher3_1000/results.csv",
+      "rows": 32,
+      "min": 8,
+      "max": 39,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/runs/ooc-pilot-1ef9aef/docs/experiments/evidence/silver-abc-f6ad92d/calibration/tiny_cpu.csv",
+      "rows": 1,
+      "min": 0,
+      "max": 0,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/runs/ooc-pilot-1ef9aef/docs/experiments/evidence/silver-abc-f6ad92d/calibration/C_2700.csv",
+      "rows": 8,
+      "min": 0,
+      "max": 7,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/runs/ooc-pilot-1ef9aef/docs/experiments/evidence/silver-abc-f6ad92d/calibration/C_4300.csv",
+      "rows": 8,
+      "min": 0,
+      "max": 7,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/runs/ooc-pilot-1ef9aef/docs/experiments/evidence/silver-abc-f6ad92d/calibration/A_1000.csv",
+      "rows": 8,
+      "min": 0,
+      "max": 7,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/runs/ooc-pilot-1ef9aef/docs/experiments/evidence/silver-abc-f6ad92d/calibration/C_3700.csv",
+      "rows": 8,
+      "min": 0,
+      "max": 7,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/runs/ooc-pilot-1ef9aef/docs/experiments/evidence/silver-abc-f6ad92d/calibration/B_1000.csv",
+      "rows": 8,
+      "min": 0,
+      "max": 7,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/runs/ooc-pilot-1ef9aef/docs/experiments/evidence/silver-abc-f6ad92d/C_silver_equal_runtime/results.csv",
+      "rows": 32,
+      "min": 8,
+      "max": 39,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/runs/ooc-pilot-1ef9aef/docs/experiments/evidence/silver-abc-f6ad92d/B_silver_1000/results.csv",
+      "rows": 32,
+      "min": 8,
+      "max": 39,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/runs/silver-teacher-e5a8f97/docs/experiments/evidence/silver-abc-f6ad92d/A_searcher3_1000/results.csv",
+      "rows": 32,
+      "min": 8,
+      "max": 39,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/runs/silver-teacher-e5a8f97/docs/experiments/evidence/silver-abc-f6ad92d/calibration/tiny_cpu.csv",
+      "rows": 1,
+      "min": 0,
+      "max": 0,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/runs/silver-teacher-e5a8f97/docs/experiments/evidence/silver-abc-f6ad92d/calibration/C_2700.csv",
+      "rows": 8,
+      "min": 0,
+      "max": 7,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/runs/silver-teacher-e5a8f97/docs/experiments/evidence/silver-abc-f6ad92d/calibration/C_4300.csv",
+      "rows": 8,
+      "min": 0,
+      "max": 7,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/runs/silver-teacher-e5a8f97/docs/experiments/evidence/silver-abc-f6ad92d/calibration/A_1000.csv",
+      "rows": 8,
+      "min": 0,
+      "max": 7,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/runs/silver-teacher-e5a8f97/docs/experiments/evidence/silver-abc-f6ad92d/calibration/C_3700.csv",
+      "rows": 8,
+      "min": 0,
+      "max": 7,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/runs/silver-teacher-e5a8f97/docs/experiments/evidence/silver-abc-f6ad92d/calibration/B_1000.csv",
+      "rows": 8,
+      "min": 0,
+      "max": 7,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/runs/silver-teacher-e5a8f97/docs/experiments/evidence/silver-abc-f6ad92d/C_silver_equal_runtime/results.csv",
+      "rows": 32,
+      "min": 8,
+      "max": 39,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/runs/silver-teacher-e5a8f97/docs/experiments/evidence/silver-abc-f6ad92d/B_silver_1000/results.csv",
+      "rows": 32,
+      "min": 8,
+      "max": 39,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/runs/ooc-pilot-860a6a2/docs/experiments/evidence/silver-abc-f6ad92d/A_searcher3_1000/results.csv",
+      "rows": 32,
+      "min": 8,
+      "max": 39,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/runs/ooc-pilot-860a6a2/docs/experiments/evidence/silver-abc-f6ad92d/calibration/tiny_cpu.csv",
+      "rows": 1,
+      "min": 0,
+      "max": 0,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/runs/ooc-pilot-860a6a2/docs/experiments/evidence/silver-abc-f6ad92d/calibration/C_2700.csv",
+      "rows": 8,
+      "min": 0,
+      "max": 7,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/runs/ooc-pilot-860a6a2/docs/experiments/evidence/silver-abc-f6ad92d/calibration/C_4300.csv",
+      "rows": 8,
+      "min": 0,
+      "max": 7,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/runs/ooc-pilot-860a6a2/docs/experiments/evidence/silver-abc-f6ad92d/calibration/A_1000.csv",
+      "rows": 8,
+      "min": 0,
+      "max": 7,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/runs/ooc-pilot-860a6a2/docs/experiments/evidence/silver-abc-f6ad92d/calibration/C_3700.csv",
+      "rows": 8,
+      "min": 0,
+      "max": 7,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/runs/ooc-pilot-860a6a2/docs/experiments/evidence/silver-abc-f6ad92d/calibration/B_1000.csv",
+      "rows": 8,
+      "min": 0,
+      "max": 7,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/runs/ooc-pilot-860a6a2/docs/experiments/evidence/silver-abc-f6ad92d/C_silver_equal_runtime/results.csv",
+      "rows": 32,
+      "min": 8,
+      "max": 39,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/runs/ooc-pilot-860a6a2/docs/experiments/evidence/silver-abc-f6ad92d/B_silver_1000/results.csv",
+      "rows": 32,
+      "min": 8,
+      "max": 39,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/runs/phase12-k3-bb41af08/docs/experiments/evidence/silver-abc-f6ad92d/A_searcher3_1000/results.csv",
+      "rows": 32,
+      "min": 8,
+      "max": 39,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/runs/phase12-k3-bb41af08/docs/experiments/evidence/silver-abc-f6ad92d/calibration/tiny_cpu.csv",
+      "rows": 1,
+      "min": 0,
+      "max": 0,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/runs/phase12-k3-bb41af08/docs/experiments/evidence/silver-abc-f6ad92d/calibration/C_2700.csv",
+      "rows": 8,
+      "min": 0,
+      "max": 7,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/runs/phase12-k3-bb41af08/docs/experiments/evidence/silver-abc-f6ad92d/calibration/C_4300.csv",
+      "rows": 8,
+      "min": 0,
+      "max": 7,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/runs/phase12-k3-bb41af08/docs/experiments/evidence/silver-abc-f6ad92d/calibration/A_1000.csv",
+      "rows": 8,
+      "min": 0,
+      "max": 7,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/runs/phase12-k3-bb41af08/docs/experiments/evidence/silver-abc-f6ad92d/calibration/C_3700.csv",
+      "rows": 8,
+      "min": 0,
+      "max": 7,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/runs/phase12-k3-bb41af08/docs/experiments/evidence/silver-abc-f6ad92d/calibration/B_1000.csv",
+      "rows": 8,
+      "min": 0,
+      "max": 7,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/runs/phase12-k3-bb41af08/docs/experiments/evidence/silver-abc-f6ad92d/C_silver_equal_runtime/results.csv",
+      "rows": 32,
+      "min": 8,
+      "max": 39,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/runs/phase12-k3-bb41af08/docs/experiments/evidence/silver-abc-f6ad92d/B_silver_1000/results.csv",
+      "rows": 32,
+      "min": 8,
+      "max": 39,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/runs/mcts64-source-54f2820/docs/experiments/evidence/silver_chance_gameplay_screen_10k_fresh32-95_2026-09-11.csv",
+      "rows": 128,
+      "min": 32,
+      "max": 95,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/runs/mcts64-source-54f2820/docs/experiments/evidence/silver_chance_gameplay_screen_10k_2026-09-11.csv",
+      "rows": 64,
+      "min": 0,
+      "max": 31,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/runs/mcts64-source-54f2820/docs/experiments/evidence/silver_chance_gameplay_screen_2026-09-11.csv",
+      "rows": 64,
+      "min": 0,
+      "max": 31,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/runs/mcts64-source-54f2820/docs/experiments/evidence/live_ooc_mcts_expanded_support_2026-09-14/canary_on.csv",
+      "rows": 1,
+      "min": 969999,
+      "max": 969999,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/runs/mcts64-source-54f2820/docs/experiments/evidence/live_ooc_mcts_expanded_support_2026-09-14/treatment.csv",
+      "rows": 32,
+      "min": 970000,
+      "max": 970031,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/runs/mcts64-source-54f2820/docs/experiments/evidence/live_ooc_mcts_expanded_support_2026-09-14/canary_off.csv",
+      "rows": 1,
+      "min": 969999,
+      "max": 969999,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/runs/mcts64-source-54f2820/docs/experiments/evidence/live_ooc_mcts_expanded_support_2026-09-14/control.csv",
+      "rows": 32,
+      "min": 970000,
+      "max": 970031,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/runs/mcts64-source-54f2820/docs/experiments/evidence/live_ooc_mcts_2026-09-14/repaired-smoke-on.csv",
+      "rows": 8,
+      "min": 969992,
+      "max": 969999,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/runs/mcts64-source-54f2820/docs/experiments/evidence/live_ooc_mcts_2026-09-14/smoke-on.csv",
+      "rows": 5,
+      "min": 969992,
+      "max": 969999,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/runs/mcts64-source-54f2820/docs/experiments/evidence/live_ooc_mcts_2026-09-14/silver-baseline-off.csv",
+      "rows": 1,
+      "min": 969992,
+      "max": 969992,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/runs/mcts64-source-54f2820/docs/experiments/evidence/live_ooc_mcts_2026-09-14/silver-canary-on.csv",
+      "rows": 1,
+      "min": 969992,
+      "max": 969992,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/runs/mcts64-source-54f2820/docs/experiments/evidence/live_ooc_mcts_2026-09-14/repaired-off.csv",
+      "rows": 8,
+      "min": 969992,
+      "max": 969999,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/runs/mcts64-source-54f2820/docs/experiments/evidence/live_ooc_mcts_2026-09-14/baseline-off.csv",
+      "rows": 8,
+      "min": 969992,
+      "max": 969999,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/runs/mcts64-source-54f2820/docs/experiments/evidence/live_ooc_mcts_2026-09-14/silver-canary-off.csv",
+      "rows": 1,
+      "min": 969992,
+      "max": 969992,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/runs/mcts64-source-54f2820/docs/experiments/evidence/live_ooc_mcts_2026-09-14/silver-baseline-corrected-off.csv",
+      "rows": 1,
+      "min": 969992,
+      "max": 969992,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/runs/mcts64-source-54f2820/docs/experiments/evidence/live_ooc_mcts_2026-09-14/treatment.csv",
+      "rows": 32,
+      "min": 970000,
+      "max": 970031,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/runs/mcts64-source-54f2820/docs/experiments/evidence/live_ooc_mcts_2026-09-14/control.csv",
+      "rows": 32,
+      "min": 970000,
+      "max": 970031,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/runs/mcts64-source-54f2820/docs/experiments/evidence/live_ooc_mcts_corrected_2026-09-14/smoke_on.csv",
+      "rows": 8,
+      "min": 969992,
+      "max": 969999,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/runs/mcts64-source-54f2820/docs/experiments/evidence/live_ooc_mcts_corrected_2026-09-14/parity_off.csv",
+      "rows": 8,
+      "min": 969992,
+      "max": 969999,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/runs/mcts64-source-54f2820/docs/experiments/evidence/live_ooc_mcts_corrected_2026-09-14/treatment.csv",
+      "rows": 32,
+      "min": 970000,
+      "max": 970031,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/runs/mcts64-source-54f2820/docs/experiments/evidence/live_ooc_mcts_corrected_2026-09-14/control.csv",
+      "rows": 32,
+      "min": 970000,
+      "max": 970031,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/runs/mcts64-source-54f2820/docs/experiments/evidence/live_ooc_mcts_2048_2026-09-14/canary_on.csv",
+      "rows": 1,
+      "min": 969999,
+      "max": 969999,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/runs/mcts64-source-54f2820/docs/experiments/evidence/live_ooc_mcts_2048_2026-09-14/treatment.csv",
+      "rows": 32,
+      "min": 970000,
+      "max": 970031,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/runs/mcts64-source-54f2820/docs/experiments/evidence/live_ooc_mcts_2048_2026-09-14/control.csv",
+      "rows": 32,
+      "min": 970000,
+      "max": 970031,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/runs/mcts64-source-54f2820/docs/experiments/evidence/silver-abc-f6ad92d/A_searcher3_1000/results.csv",
+      "rows": 32,
+      "min": 8,
+      "max": 39,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/runs/mcts64-source-54f2820/docs/experiments/evidence/silver-abc-f6ad92d/calibration/tiny_cpu.csv",
+      "rows": 1,
+      "min": 0,
+      "max": 0,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/runs/mcts64-source-54f2820/docs/experiments/evidence/silver-abc-f6ad92d/calibration/C_2700.csv",
+      "rows": 8,
+      "min": 0,
+      "max": 7,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/runs/mcts64-source-54f2820/docs/experiments/evidence/silver-abc-f6ad92d/calibration/C_4300.csv",
+      "rows": 8,
+      "min": 0,
+      "max": 7,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/runs/mcts64-source-54f2820/docs/experiments/evidence/silver-abc-f6ad92d/calibration/A_1000.csv",
+      "rows": 8,
+      "min": 0,
+      "max": 7,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/runs/mcts64-source-54f2820/docs/experiments/evidence/silver-abc-f6ad92d/calibration/C_3700.csv",
+      "rows": 8,
+      "min": 0,
+      "max": 7,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/runs/mcts64-source-54f2820/docs/experiments/evidence/silver-abc-f6ad92d/calibration/B_1000.csv",
+      "rows": 8,
+      "min": 0,
+      "max": 7,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/runs/mcts64-source-54f2820/docs/experiments/evidence/silver-abc-f6ad92d/C_silver_equal_runtime/results.csv",
+      "rows": 32,
+      "min": 8,
+      "max": 39,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/runs/mcts64-source-54f2820/docs/experiments/evidence/silver-abc-f6ad92d/B_silver_1000/results.csv",
+      "rows": 32,
+      "min": 8,
+      "max": 39,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/docs/experiments/evidence/silver-abc-f6ad92d/A_searcher3_1000/results.csv",
+      "rows": 32,
+      "min": 8,
+      "max": 39,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/docs/experiments/evidence/silver-abc-f6ad92d/calibration/tiny_cpu.csv",
+      "rows": 1,
+      "min": 0,
+      "max": 0,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/docs/experiments/evidence/silver-abc-f6ad92d/calibration/C_2700.csv",
+      "rows": 8,
+      "min": 0,
+      "max": 7,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/docs/experiments/evidence/silver-abc-f6ad92d/calibration/C_4300.csv",
+      "rows": 8,
+      "min": 0,
+      "max": 7,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/docs/experiments/evidence/silver-abc-f6ad92d/calibration/A_1000.csv",
+      "rows": 8,
+      "min": 0,
+      "max": 7,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/docs/experiments/evidence/silver-abc-f6ad92d/calibration/C_3700.csv",
+      "rows": 8,
+      "min": 0,
+      "max": 7,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/docs/experiments/evidence/silver-abc-f6ad92d/calibration/B_1000.csv",
+      "rows": 8,
+      "min": 0,
+      "max": 7,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/docs/experiments/evidence/silver-abc-f6ad92d/C_silver_equal_runtime/results.csv",
+      "rows": 32,
+      "min": 8,
+      "max": 39,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/docs/experiments/evidence/silver-abc-f6ad92d/B_silver_1000/results.csv",
+      "rows": 32,
+      "min": 8,
+      "max": 39,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/task-b-silver-pruning-3k-20260829/runs/pruning_3k_64_20260829/progressive_unpruning_current_order.csv",
+      "rows": 64,
+      "min": 931000,
+      "max": 931063,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/task-b-silver-pruning-3k-20260829/runs/pruning_3k_64_20260829/ordinary.csv",
+      "rows": 64,
+      "min": 931000,
+      "max": 931063,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/task-b-silver-pruning-3k-20260829/runs/pruning_3k_64_20260829/sequential_halving.csv",
+      "rows": 64,
+      "min": 931000,
+      "max": 931063,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/task-b-silver-pruning-3k-20260829/docs/experiments/evidence/silver-abc-f6ad92d/A_searcher3_1000/results.csv",
+      "rows": 32,
+      "min": 8,
+      "max": 39,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/task-b-silver-pruning-3k-20260829/docs/experiments/evidence/silver-abc-f6ad92d/calibration/tiny_cpu.csv",
+      "rows": 1,
+      "min": 0,
+      "max": 0,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/task-b-silver-pruning-3k-20260829/docs/experiments/evidence/silver-abc-f6ad92d/calibration/C_2700.csv",
+      "rows": 8,
+      "min": 0,
+      "max": 7,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/task-b-silver-pruning-3k-20260829/docs/experiments/evidence/silver-abc-f6ad92d/calibration/C_4300.csv",
+      "rows": 8,
+      "min": 0,
+      "max": 7,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/task-b-silver-pruning-3k-20260829/docs/experiments/evidence/silver-abc-f6ad92d/calibration/A_1000.csv",
+      "rows": 8,
+      "min": 0,
+      "max": 7,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/task-b-silver-pruning-3k-20260829/docs/experiments/evidence/silver-abc-f6ad92d/calibration/C_3700.csv",
+      "rows": 8,
+      "min": 0,
+      "max": 7,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/task-b-silver-pruning-3k-20260829/docs/experiments/evidence/silver-abc-f6ad92d/calibration/B_1000.csv",
+      "rows": 8,
+      "min": 0,
+      "max": 7,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/task-b-silver-pruning-3k-20260829/docs/experiments/evidence/silver-abc-f6ad92d/C_silver_equal_runtime/results.csv",
+      "rows": 32,
+      "min": 8,
+      "max": 39,
+      "collision": []
+    },
+    {
+      "path": "/home/philippherrmann/sts_sweep/task-b-silver-pruning-3k-20260829/docs/experiments/evidence/silver-abc-f6ad92d/B_silver_1000/results.csv",
+      "rows": 32,
+      "min": 8,
+      "max": 39,
+      "collision": []
+    }
+  ],
+  "overlaps": [],
+  "errors": [],
+  "proposedOfficial": [
+    980000,
+    980063
+  ],
+  "excludedCanary": 979999
+}

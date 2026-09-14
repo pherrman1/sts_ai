@@ -1,0 +1,11 @@
+{
+  "arm": "treatment",
+  "rows": 1,
+  "validation": "PASS",
+  "wins": 1,
+  "owned": 47,
+  "supportAborts": 105,
+  "surrogateSamples": 7143,
+  "realCombats": 30,
+  "maxDepth": 12
+}
