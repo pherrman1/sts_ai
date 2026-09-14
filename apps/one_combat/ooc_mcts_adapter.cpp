@@ -1520,7 +1520,9 @@ void oocMctsAdapterSelfTest() {
     require(live.screenState==ScreenState::BATTLE && live.outcome==GameOutcome::UNDECIDED
         && liveMetrics.combatSamples>0 && liveMetrics.owned==1
         && liveMetrics.decisions==1 && liveMetrics.fallback==0
-        && liveMetrics.search.simulations==128, "real combat remains pending despite imagined death");
+        && liveMetrics.search.simulations>0
+        && liveMetrics.search.simulations+liveMetrics.search.savedSimulations==128,
+        "real combat remains pending despite imagined death and visit-lock stopping");
     // Real battle entry dispatches ordinary BattleContext initialization.
     BattleContext pending; pending.init(live);
     require(pending.outcome==Outcome::UNDECIDED && pending.player.curHp==live.curHp,
