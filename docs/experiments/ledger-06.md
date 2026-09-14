@@ -7811,3 +7811,47 @@ claim; timing is descriptive only. Knowledge impact: regression coverage and
 bounded experiment evidence; no default/model/support change.
 [Comparison and raw evidence](evidence/silver_reroot_gc_smoke_2026-09-15/README.md),
 [commands/hashes/provenance](evidence/silver_reroot_gc_smoke_2026-09-15/provenance.json).
+
+
+## §255 — Cap-triggered Silver compaction and exact flat-1k parity (2026-09-15)
+
+Corrects PR #185's unconditional-reroot policy from §254. Baseline
+`876e9305a258df3d5a5eafd50e30375b933f8884`; measured corrected candidate
+`1e7ca07613885acfabaa0ed639a026cda904321c`. Below the configured cap,
+reroot leaves pools/global dedup untouched, preserving orphan statistics.
+Only pre-reroot cap pressure requests collection around an exact candidate;
+the retained count is rechecked for reuse/fresh fallback. A focused below-cap
+regression preserves orphan visits/Q and exact dedup slots. Mechanical tests
+explicitly request collection; the repeated real canary uses lazy triggering.
+
+Same 16 paired seeds 0–15, Ironclad A0, project-fair Silver, flat exact 1k per
+private search including selection subdecisions, allocated cap 32,768, adaptive
+and direct learned leaves OFF, keys OFF, default native OOC, same tracked
+models, Release / OMP4. Both arms exit 0. All nine non-timing result fields
+match exactly by seed; all 7,008 complete decision diagnostic records and 380
+per-combat telemetry records match as multisets. Fresh baseline rows match the
+preserved §254 baseline. Both win 10/16, mean floor 45.375, mean end HP 23.4375.
+Maximum pre-reroot allocation is 13,454; cap fallback and integration failures
+are zero. CSV sec and parallel emission order are excluded. Scaling diagnostics
+do not record action fingerprints/full states: exact recorded-field parity,
+not proof of full trajectory identity or search-quality qualification.
+
+Repeated real 10k Jaw Worm stress fixture unchanged (starter deck, Ironclad
+200/200 HP, A0, seed 0xBADC0DE; expanded legal END_TURN outcomes). Ten reroots
+include seven baseline reroots and three actual pressure-triggered collections:
+35,825→79, 34,622→7, 37,683→3 nodes. Cumulative real allocations at collections:
+35,825 / 70,368 / 108,044. Reclaims 108,041 nodes; final 10k continuation passes
+at 7,602 live / 115,643 cumulative allocations. Debug/Release outputs match;
+retained snapshots/dedup/live ownership checks pass. Complete default Debug
+build succeeds and 92/92 CTest pass (41.10s); focused 3/3 pass. An initial canary
+assertion included the fresh root despite its intentional absence from baseline
+dedup; restricting verification to prior dedup members repairs the fixture.
+
+The §254 adverse smoke remains evidence about unconditional cleanup. This
+correction restores exact recorded flat-1k parity while retaining mechanical
+rescue under pressure. No broader cohort, 10k quality claim, sanitizer or new
+independent review. PR stays draft; no merge. Knowledge impact: corrected
+maintained lifetime/cap contract and reproducible parity/regression evidence.
+[Summary and raw artifacts](evidence/silver_reroot_lazy_parity_2026-09-15/README.md),
+[commands/hashes](evidence/silver_reroot_lazy_parity_2026-09-15/provenance.json),
+[reproducible parity verifier](evidence/silver_reroot_lazy_parity_2026-09-15/verify_parity.py).

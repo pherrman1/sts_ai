@@ -1,0 +1,86 @@
+{
+  "baseline_sha": "876e9305a258df3d5a5eafd50e30375b933f8884",
+  "measured_corrected_sha": "1e7ca07613885acfabaa0ed639a026cda904321c",
+  "arms": {
+    "base": {
+      "sha": "876e9305a258df3d5a5eafd50e30375b933f8884",
+      "binary_sha256": "e9cecc5002aa4074378af5517b4f81518b84122cff4314a4915a8bf9c4459ba6",
+      "exit_code": 0,
+      "environment": {
+        "OMP_NUM_THREADS": "4",
+        "STS_FAIR": "1",
+        "STS_SEARCHER3": "0",
+        "STS_SILVER_SEARCH": "1",
+        "STS_SILVER_EXACT_ROOT_BUDGETS": "1",
+        "STS_SILVER_REUSE_CAP_MODE": "allocated",
+        "STS_SILVER_ADAPTIVE": "0",
+        "STS_SILVER_VNET_LEAF_DIRECT": "0",
+        "STS_SILVER_TELEMETRY": "1",
+        "STS_NATIVE_OOC": "1",
+        "STS_COLLECT_KEYS": "0",
+        "STS_EXECUTABLE_GIT_SHA": "876e9305a258df3d5a5eafd50e30375b933f8884",
+        "STS_SILVER_SCALING_DIAG_FILE": "build/silver-reroot-smoke/lazy-base-decisions.csv"
+      },
+      "command": "bash tools/seed_guard.sh env OMP_NUM_THREADS=4 STS_FAIR=1 STS_SEARCHER3=0 STS_SILVER_SEARCH=1 STS_SILVER_EXACT_ROOT_BUDGETS=1 STS_SILVER_REUSE_CAP_MODE=allocated STS_SILVER_ADAPTIVE=0 STS_SILVER_VNET_LEAF_DIRECT=0 STS_SILVER_TELEMETRY=1 STS_NATIVE_OOC=1 STS_COLLECT_KEYS=0 STS_EXECUTABLE_GIT_SHA=876e9305a258df3d5a5eafd50e30375b933f8884 STS_SILVER_SCALING_DIAG_FILE=build/silver-reroot-smoke/lazy-base-decisions.csv build/silver-reroot-smoke/base-build/one_combat bestbench 1000 16 0 0 build/silver-reroot-smoke/lazy-base-1k-16.csv"
+    },
+    "pr": {
+      "sha": "1e7ca07613885acfabaa0ed639a026cda904321c",
+      "binary_sha256": "2029e0ee75ba33657445180c03e573308013382dff760f492d20b41d9850f7d0",
+      "exit_code": 0,
+      "environment": {
+        "OMP_NUM_THREADS": "4",
+        "STS_FAIR": "1",
+        "STS_SEARCHER3": "0",
+        "STS_SILVER_SEARCH": "1",
+        "STS_SILVER_EXACT_ROOT_BUDGETS": "1",
+        "STS_SILVER_REUSE_CAP_MODE": "allocated",
+        "STS_SILVER_ADAPTIVE": "0",
+        "STS_SILVER_VNET_LEAF_DIRECT": "0",
+        "STS_SILVER_TELEMETRY": "1",
+        "STS_NATIVE_OOC": "1",
+        "STS_COLLECT_KEYS": "0",
+        "STS_EXECUTABLE_GIT_SHA": "1e7ca07613885acfabaa0ed639a026cda904321c",
+        "STS_SILVER_SCALING_DIAG_FILE": "build/silver-reroot-smoke/lazy-pr-decisions.csv"
+      },
+      "command": "bash tools/seed_guard.sh env OMP_NUM_THREADS=4 STS_FAIR=1 STS_SEARCHER3=0 STS_SILVER_SEARCH=1 STS_SILVER_EXACT_ROOT_BUDGETS=1 STS_SILVER_REUSE_CAP_MODE=allocated STS_SILVER_ADAPTIVE=0 STS_SILVER_VNET_LEAF_DIRECT=0 STS_SILVER_TELEMETRY=1 STS_NATIVE_OOC=1 STS_COLLECT_KEYS=0 STS_EXECUTABLE_GIT_SHA=1e7ca07613885acfabaa0ed639a026cda904321c STS_SILVER_SCALING_DIAG_FILE=build/silver-reroot-smoke/lazy-pr-decisions.csv build/linux-gcc-release-ccache/one_combat bestbench 1000 16 0 0 build/silver-reroot-smoke/lazy-pr-1k-16.csv"
+    }
+  },
+  "models_sha256": {
+    "models/v_win_trees.txt": "fc52c14cb7239a33b3c1f9d0477ccb6c895fd51a07240fe804744e605067ad70",
+    "models/v_rich_trees.txt": "3a3420469b1d648e0e306d6cb6a7e85f3d3499105e3ff3a56eee6c579194ffe3",
+    "models/policy_trees_c.txt": "24793bd39dd1a35c8865035e458c3aa40616ef021cb26b05f914f72fb5e5a321"
+  },
+  "base_build_provenance": "Preserved exact baseline tracked/dependency export Release build from \u00a7254; same binary hash",
+  "checks": {
+    "focused_ctest": "3/3 pass",
+    "complete_default_debug_build": "exit0",
+    "complete_debug_ctest": "92/92 pass,41.10s",
+    "release_build": "exit0",
+    "debug_release_canary": "exit0;identical outputs",
+    "parity": "16 result rows excluding sec,7008 exact full diagnostic rows,380 telemetry records, effective configurations match",
+    "not_run": [
+      "full action/state trajectory trace",
+      "sanitizers",
+      "new agent-tooling discovery",
+      "independent review",
+      "broader benchmark",
+      "10kquality cohort"
+    ]
+  },
+  "artifact_sha256": {
+    "canary-debug.log": "18578eb55606179b1852ae7044731deb6b69320cc74c5881680df4180c3fcb28",
+    "parity.json": "e8d61a86671771819da5e405faeb87195aaa37c18ffc8ad77a4e9225302c5375",
+    "canary-release.log": "18578eb55606179b1852ae7044731deb6b69320cc74c5881680df4180c3fcb28",
+    "base-decisions.csv.gz": "ca82374929a71b4435a32c2e7d9d67c2079e62533624d7788fb489d4c8576b2b",
+    "README.md": "79e80dfc32dd2f3e76ce72f18339c81e3062a7f1c4d6575f0cac03a314a98f35",
+    "pr-1k-16.csv": "071ade8885136e10579749db9f5c7178f6c06399f4a3081986f0f14c70807bd1",
+    "verify_parity.py": "42452ae536ec12ba054afb9b0981c9ad9d0c4a45164a8fe84921ba973904bd2d",
+    "base-1k-16.csv.meta.json": "31aec92f71478f22c87c6087d6f82642dddb5d27f01eb8522fb9135d58516c12",
+    "ctest-debug.log": "435bd4809ccea071b3310d6f550b2ff9ef29cb8823f62f121f09e03cd6b6dc22",
+    "base-1k-16.log.gz": "02b6827b566f80f1352a9ec8bd323082be8ae104761f24c4a6a3acc32314a54e",
+    "pr-1k-16.log.gz": "0eb7d65ad47c6a9c455b7d93ff666a6160ba6735ad6bf5ca118f5bd2c3c12a3e",
+    "pr-decisions.csv.gz": "2ab3799536d1d2cd06ce150a6008650537094976fa245fc27a349798788b3915",
+    "pr-1k-16.csv.meta.json": "ea2d432760144b8392e28bce17675341cbeaacfdd2a6de36215374668c593261",
+    "base-1k-16.csv": "1870a8f723d9274d5f2dc7787ed2e254328ec714eb957c7952c41624e4112a46"
+  }
+}
