@@ -265,7 +265,7 @@ enum class SilverRerootFallbackReason : std::uint8_t {
     REUSE_DISABLED,
 };
 
-constexpr std::int64_t kSilverProductionReuseCap = 32 * 1024;
+constexpr std::int64_t kSilverProductionReuseCap = 128 * 1024;
 
 const char *silverReuseCapModeName(SilverReuseCapMode mode);
 const char *silverRerootFallbackReasonName(SilverRerootFallbackReason reason);
@@ -318,7 +318,7 @@ struct SilverSearchConfig {
     double endTurnWideningC = 3.7028;
     double endTurnWideningAlpha = 0.52389;
     // Test-only overrides may use a smaller value.  No gameplay environment
-    // controls this value; production continues to use exactly 32 * 1024.
+    // controls this value; production continues to use exactly 128 * 1024.
     std::int64_t reuseCap = kSilverProductionReuseCap;
     SilverReuseCapMode reuseCapMode = SilverReuseCapMode::ALLOCATED;
     // Default-off collection avoids per-decision diagnostic work unless the

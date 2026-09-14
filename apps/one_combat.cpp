@@ -4096,6 +4096,7 @@ static WholeCombatTeacher loadWholeCombatTeacher(const std::string &path, int si
         || s.value("exploration_parameter",-1.0)!=25.0 || s.value("exploration_parameter_chance",-1.0)!=25.0
         || s.value("chance_widening_c",-1.0)!=3.7028 || s.value("chance_widening_alpha",-1.0)!=0.52389
         || s.value("end_turn_widening_c",-1.0)!=3.7028 || s.value("end_turn_widening_alpha",-1.0)!=0.52389
+        || silver_bridge::kSilverProductionReuseCap != 32768
         || s.value("reuse_cap_mode",std::string{})!="allocated" || s.value("reuse_cap",-1)!=32768
         || s.value("sequential_halving",true) || s.value("pruning",true) || s.value("learned_visit_puct",true)
         || s.value("direct_learned_leaf",true) || s.value("adaptive",true))

@@ -157,8 +157,7 @@ namespace sts::search {
 
 search::BattleSearcher::BattleSearcher(const BattleContext &bc, search::EvalFnc _evalFnc)
     : rootState(new BattleContext(bc)), evalFnc(std::move(_evalFnc)), randGen(bc.seed+bc.floorNum), rolloutAgent(true, bc.seed+bc.floorNum) {
-    // Open-addressed dedup table, sized once. 64k slots * 16B = 1 MB; comfortably holds any
-    // sensible simulationCountBase while keeping the load factor low so probe chains stay short.
+    // Start at 64k open-addressed slots (1 MiB); grow on misses above 50% occupancy.
     constexpr std::size_t dedupSlots = std::size_t(1) << 16;
     stateToNode.assign(dedupSlots, DedupSlot{0, nullptr});
     stateToNodeMask = dedupSlots - 1;
@@ -207,6 +206,7 @@ void search::BattleSearcher::rerootAt(Node* newRoot, bool compact) {
         decisionStatesUsed = decisionStates.size();
         searchStack.clear();
         std::memset(stateToNode.data(), 0, stateToNode.size() * sizeof(DedupSlot));
+        stateToNodeUsed = retainedSlots.size();
         for (const auto &entry : retainedSlots) {
             auto slot = entry.hash & stateToNodeMask;
             while (stateToNode[slot].node) slot = (slot + 1) & stateToNodeMask;
@@ -251,6 +251,20 @@ BattleContext* search::BattleSearcher::allocDecisionState() {
     return decisionStates[decisionStatesUsed++].get();
 }
 
+// Rehash ownership-free entries; this never touches search state/statistics or RNG.
+void search::BattleSearcher::growDedup() {
+    std::vector<DedupSlot> grown(stateToNode.size() * 2, DedupSlot{0, nullptr});
+    const auto mask = grown.size() - 1;
+    for (const auto &entry : stateToNode) {
+        if (!entry.node) continue;
+        auto slot = entry.hash & mask;
+        while (grown[slot].node) slot = (slot + 1) & mask;
+        grown[slot] = entry;
+    }
+    stateToNode.swap(grown);
+    stateToNodeMask = mask;
+}
+
 // Moves `state` into the node only when a new node is created; on a match `state` is left
 // intact, so callers may still read it.
 search::BattleSearcher::Node* search::BattleSearcher::getOrCreateNode(BattleContext &&state) {
@@ -266,6 +280,12 @@ search::BattleSearcher::Node* search::BattleSearcher::getOrCreateNode(BattleCont
         i = (i + 1) & stateToNodeMask;
     }
 
+    // Grow only on a miss, so duplicate lookups have no allocation side effects.
+    if (stateToNodeUsed + 1 > stateToNode.size() / 2) {
+        growDedup();
+        i = hash & stateToNodeMask;
+        while (stateToNode[i].node) i = (i + 1) & stateToNodeMask;
+    }
     Node* newNode = allocNode();
     newNode->state = allocDecisionState();
     // Swap rather than move-assign: the caller's scratch buffer inherits this recycled node's
@@ -273,6 +293,7 @@ search::BattleSearcher::Node* search::BattleSearcher::getOrCreateNode(BattleCont
     // loop performs no heap allocation at all.
     std::swap(*newNode->state, state);
     stateToNode[i] = {hash, newNode};
+    ++stateToNodeUsed;
     lastNodeWasCreated = true;
     ++stats.nodesCreated;
     return newNode;
@@ -284,6 +305,7 @@ bool search::BattleSearcher::resetForSearch() {
     // Recycle the pool rather than freeing it: reclaim every node for reuse and drop the dedup map.
     poolUsed = 0;
     decisionStatesUsed = 0;
+    stateToNodeUsed = 0;
     std::memset(stateToNode.data(), 0, stateToNode.size() * sizeof(DedupSlot));
     diagnosticRootHashValid = false;
     root = allocNode();

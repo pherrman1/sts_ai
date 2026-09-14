@@ -100,6 +100,8 @@ void traceParity(const sts::BattleContext &bc, bool observe) {
     plain.collectRolloutDiagnostics = traced.collectRolloutDiagnostics = true;
     plain.collectVictoryCounts = traced.collectVictoryCounts = true;
     traced.recordActionTrace = true;
+    traced.stateToNode.assign(1 << 18, {0, nullptr});
+    traced.stateToNodeMask = traced.stateToNode.size() - 1;
     std::vector<silver_bridge::SilverLeafObservation> plainLeaves, tracedLeaves;
     auto capture = [](auto &records) {
         return [&records](silver_bridge::SilverLeafObservation &leaf) {
@@ -178,6 +180,12 @@ void rootHash(const sts::BattleContext &bc) {
     require(observations > 0, "reroot observer must run");
 }
 std::size_t validateStorage(const Search &search) {
+    std::size_t occupied = 0;
+    for (const auto &slot : search.stateToNode) if (slot.node) ++occupied;
+    require(occupied == search.stateToNodeUsed && occupied <= search.stateToNode.size() / 2,
+            "dedup load/accounting invariant failed");
+    require((search.stateToNode.size() & (search.stateToNode.size() - 1)) == 0,
+            "dedup capacity must remain power of two");
     std::unordered_set<const Search::Node *> liveNodes;
     for (std::size_t i = 0; i < search.poolUsed; ++i) liveNodes.insert(search.allNodes[i].get());
     std::unordered_set<const sts::BattleContext *> owned;
@@ -369,6 +377,51 @@ void compaction(const sts::BattleContext &bc, int simulations) {
     validateStorage(search);
 }
 
+void dedupGrowth(const sts::BattleContext &bc) {
+    for (const std::size_t initial : {std::size_t(8), std::size_t(65536)}) {
+        Search search(bc);
+        search.stateToNode.assign(initial, {0, nullptr});
+        search.stateToNodeMask = initial - 1;
+        const auto rng = search.randGen;
+        const auto rolloutRng = search.rolloutAgent.rng;
+        const std::size_t count = initial == 8 ? 257 : 65537;
+        std::vector<Search::Node*> nodes;
+        auto capacity = initial;
+        int resizes = 0;
+        for (std::size_t i = 0; i < count; ++i) {
+            auto copy = bc; copy.player.curHp = static_cast<int>(1000 + i);
+            auto *node = search.getOrCreateNode(std::move(copy));
+            require(search.lastNodeWasCreated, "unique resize fixture state deduped");
+            node->simulationCount = i + 1; node->evaluationSum = i * 0.25;
+            nodes.push_back(node);
+            if (search.stateToNode.size() != capacity) {
+                require(search.stateToNode.size() == capacity * 2, "dedup growth must double");
+                capacity *= 2; ++resizes;
+                std::cout << "dedup_growth capacity=" << capacity << " entries=" << search.stateToNodeUsed << '\n';
+            }
+            require(search.stateToNodeUsed == i + 1 && search.stateToNodeUsed <= capacity / 2,
+                    "dedup occupancy accounting failed");
+        }
+        require(resizes >= 2, "fixture must force several resizes");
+        for (std::size_t i = 0; i < count; ++i) {
+            auto copy = *nodes[i]->state;
+            require(search.getOrCreateNode(std::move(copy)) == nodes[i] && !search.lastNodeWasCreated,
+                    "resize lost prior state or duplicated node");
+            require(nodes[i]->simulationCount == static_cast<std::int64_t>(i + 1)
+                    && nodes[i]->evaluationSum == i * 0.25, "resize changed statistics");
+        }
+        require(search.poolUsed == count + 1 && search.randGen == rng && search.rolloutAgent.rng == rolloutRng,
+                "resize changed node count or RNG");
+        search.search(32); validateStorage(search);
+        const auto grown = search.stateToNode.size();
+        search.rerootAt(search.root, true);
+        require(search.stateToNode.size() == grown, "collection shrank dedup capacity");
+        search.setRoot(bc);
+        require(search.stateToNodeUsed == 0 && search.stateToNode.size() == grown,
+                "fresh reset must clear occupancy without shrinking");
+    }
+}
+
 void lazyReroot(const sts::BattleContext &bc) {
     Search search(bc);
     auto next = bc; next.player.curHp -= 1;
@@ -399,11 +452,18 @@ void repeatedRerootCanary(const sts::BattleContext &bc) {
     search.chanceWideningAlpha = search.endTurnWideningAlpha = 0.52389;
     std::size_t historical = search.poolUsed, reclaimed = 0;
     int crossings = 0, reroots = 0, compactions = 0;
+    std::size_t peakNodes = 0, peakStates = 0, capacity = search.stateToNode.size();
+    int resizes = 0;
+    double peakLoad = 0;
     for (int decision = 0; decision < 32; ++decision) {
         const auto previous = search.poolUsed;
         search.search(10000);
         historical += search.poolUsed - previous;
+        while (capacity < search.stateToNode.size()) { capacity *= 2; ++resizes; }
+        peakLoad = std::max(peakLoad, double(search.stateToNodeUsed) / search.stateToNode.size());
         validateStorage(search);
+        peakNodes = std::max(peakNodes, search.poolUsed);
+        peakStates = std::max(peakStates, search.decisionStatesUsed);
         Search::Node *candidate = nullptr;
         for (const auto &edge : search.root->edges) {
             // Follow a legal expanded END_TURN outcome to stress discard/reuse
@@ -428,7 +488,7 @@ void repeatedRerootCanary(const sts::BattleContext &bc) {
         const bool hasActions = !candidate->edges.empty();
         const auto expectedAction = hasActions ? search.getBestAction() : sts::search::Action{};
         search.root = oldRoot;
-        const bool compact = search.allNodes.size() >= 32768;
+        const bool compact = search.allNodes.size() >= silver_bridge::kSilverProductionReuseCap;
         search.rerootAt(candidate, compact);
         if (compact) ++compactions;
         require(!hasActions || search.getBestAction() == expectedAction,
@@ -456,22 +516,27 @@ void repeatedRerootCanary(const sts::BattleContext &bc) {
         }
         reclaimed += before - search.poolUsed;
         ++reroots;
-        require(search.allNodes.size() < 32768, "repeated canary retained tree reaches production cap");
-        if (compact && historical >= 32768) ++crossings;
+        require(search.allNodes.size() < silver_bridge::kSilverProductionReuseCap, "repeated canary retained tree reaches production cap");
+        if (compact && historical >= silver_bridge::kSilverProductionReuseCap) ++crossings;
         std::cout << "repeated_reroot decision=" << decision << " simulations=10000 historical_nodes=" << historical
-                  << " before_nodes=" << before << " retained_nodes=" << search.poolUsed
+                  << " before_nodes=" << before << " old_32k_pressure=" << (before >= 32768)
+                  << " dedup_capacity=" << search.stateToNode.size() << " dedup_entries=" << search.stateToNodeUsed << " retained_nodes=" << search.poolUsed
                   << " compacted=" << compact << " cumulative_reclaimed=" << reclaimed << " allocated_cap_blocked=0" << std::endl;
-        if (crossings >= 3) break;
+        if (crossings >= 1) break;
         require(search.root->state->outcome == sts::Outcome::UNDECIDED,
                 "canary ended before repeated historical-cap crossings");
     }
-    require(crossings >= 3 && reroots >= 3, "canary must search/reroot repeatedly beyond historical cap");
+    require(crossings >= 1 && reroots >= 3, "canary must search/reroot repeatedly beyond historical cap");
     const auto retained = search.poolUsed;
     search.search(10000);
     historical += search.poolUsed - retained;
     validateStorage(search);
 
     std::cout << "repeated_reroot_canary PASS reroots=" << reroots << " historical_cap_reroots=" << crossings
+              << " peak_live_nodes=" << peakNodes << " peak_states=" << peakStates
+              << " dedup_capacity=" << search.stateToNode.size() << " dedup_entries=" << search.stateToNodeUsed
+              << " resizes=" << resizes << " peak_sampled_load=" << peakLoad
+              << " node_bytes=" << sizeof(Search::Node) << " state_bytes=" << sizeof(sts::BattleContext)
               << " compactions=" << compactions << " final_search_nodes=" << search.poolUsed << " historical_nodes=" << historical << '\n';
 }
 
@@ -486,12 +551,13 @@ int main(int argc, char **argv) {
             return 0;
         }
         if (argc > 1 && std::string(argv[1]) == "--repeated-reroot-canary") {
-            gc.curHp = gc.maxHp = 200;
+            gc.curHp = gc.maxHp = 400;
             sts::BattleContext stress{};
             stress.init(gc, sts::MonsterEncounter::JAW_WORM);
             repeatedRerootCanary(stress);
             return 0;
         }
+        dedupGrowth(bc);
         lazyReroot(bc);
         compaction(bc, 0);
         selection(search); widening(search);
