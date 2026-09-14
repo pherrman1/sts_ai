@@ -43,7 +43,7 @@ struct Search {
     bool rootWinnerLocked(const DecisionNode &node, std::uint64_t remaining) const {
         if (node.actions.empty()) return false;
         // With no challenger the visit winner cannot change. The caller still
-        // requires the model's non-aborting guarantee and visit selection.
+        // requires visit selection and the guarantee or explicit policy override.
         if (node.actions.size() == 1) return node.actions.front().visits > 0;
         std::uint64_t leader = 0, challenger = 0;
         for (const auto &action : node.actions) {
