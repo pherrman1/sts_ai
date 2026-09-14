@@ -22,7 +22,7 @@ experiments.
 
 ### Synchronous OOC MCTS substrate
 
-Last verified: 2026-09-13 with focused `ooc_mcts` and `ooc_mcts_adapter` self-tests.
+Last verified: 2026-09-14 for the opt-in native combat boundary and focused adapter oracle.
 
 `OocMctsPlanner` is an offline/test-only generic search core over opaque state
 and action IDs. `OocGenerativeModel` supplies complete actions/priors, actual
@@ -60,7 +60,7 @@ REST_ROOM, CARD_SELECT/UPGRADE, EVENT_SCREEN with a native nonempty candidate
 set (excluding INVALID and MATCH_AND_KEEP), SHOP_ROOM, TREASURE_ROOM,
 BOSS_RELIC_REWARDS, and MAP_SCREEN with a map except row 14. Other selectors,
 non-card reward states, invalid/empty decisions, missing maps and map row 14
-are explicit leaf boundaries. BATTLE is always a hard leaf boundary;
+are explicit leaf boundaries. Stored BATTLE states remain a hard leaf boundary;
 UNDECIDED battle states are never fabricated terminals. Run loss/victory
 remain exact 0/1, with precedence over any boundary.
 
@@ -75,14 +75,42 @@ parent's complete candidates before execution. Leaves call the native-only
 throw, with no server fallback and no clamping. Leaf feature evaluation
 scopes the stored path history and restores the caller's history.
 
-Copied native RNG streams can repeat identical successors. This is an
-exact/native-state integration scaffold, **not a fair stochastic environment
-model** or a scientifically qualified full OOC planner. No simulator RNG is
-reseeded. There is no learned-combat runtime integration or production policy
-change; `runFullRunOOC`, `bestbench`, policy defaults and fallback chain remain
-unchanged. The battle boundary can later be replaced by a qualified sampled
-combat provider through the same generative-model interface. The combat surrogate remains NOT_QUALIFIED, and
-combatRng continuation still blocks valid multi-fight learned rollouts.
+`OocGameContextModel` accepts an optional shared `CombatTransitionSampler`.
+After the ordinary primitive action and prebattle history update, it captures
+`combat_predictor_input_v1` before battle initialization, using the current
+`potionKeepValue`. Unsupported states retain the existing BATTLE leaf and native
+win-value seam. Death sets PLAYER_LOSS without continuation. Victory applies a
+RAW persistent result and calls `regainControl()` once, then updates history
+like the live run loop. A resulting second BATTLE remains a leaf. No sampler
+preserves the original successor behavior.
+
+`NativeCombatTransitionSampler(path)` is explicit opt-in; its constructor throws
+if the requested artifact is absent or incompatible. The versioned
+`COMBAT_TRANSITION_RUNTIME_V1` binary contains six frozen source identities,
+normalization buffers, class/vocabulary domains and FP32 tensors in lexical
+name order. `tools/export_combat_transition_runtime.py` verifies all six source
+hashes before deserialization and creates its output exclusively. Four separate
+Attention encoders share one native implementation; the signed-HP encoding also
+feeds the relic decoder. Learned draws use only the supplied planner RNG.
+The support gate retains the qualified precombat envelope and consumption-only
+potion closure, rejects active unqualified Lizard Tail, and excludes Inserter
+because its carrier state has no qualification corpus tokens. One residue per
+turn/attack/card/shuffle group reconstructs all related counters. Potion RNG
+copies through; misc RNG replays the exact bounded initialization calls,
+including rejection, as in #171. The four other battle streams copy through
+until native reinitialization. Real artifacts and captured-state parity/smoke
+results remain external. The [native adapter evidence](../../experiments/evidence/native_combat_adapter_2026-09-14.md)
+qualifies this combat boundary at 1e-4 probability tolerance; it does not qualify
+the full planner. `combat_transition_runtime_probe` and
+`tools/qualify_combat_transition_runtime.py` perform offline CPU FP32 parity at
+fixed max absolute probability tolerance 1e-4; they do not drive gameplay seeds.
+
+Copied native RNG streams still govern other stochastic OOC transitions. This
+adapter resolves the combat boundary only and remains **not a fair stochastic
+environment model** or a scientifically qualified full OOC planner.
+`runFullRunOOC`, `bestbench`, policy defaults, V4, leaf values and MCTS search
+semantics remain unchanged. No production policy constructs the real sampler.
+
 
 ## Semantic OOC decisions
 

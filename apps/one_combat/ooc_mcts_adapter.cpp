@@ -1,5 +1,7 @@
 #include "ooc_mcts_adapter.h"
 #include "../ooc_strategic_tok_net.h"
+#include "run_driver.h"
+#include "../ooc_test_state.h"
 #include <algorithm>
 #include <cmath>
 #include <iomanip>
@@ -33,7 +35,8 @@ std::vector<double> oocPolicyWeights(const std::vector<double> &logits, double t
     }
     return weights;
 }
-OocGameContextModel::OocGameContextModel(const GameContext &gc, const PathHistory &path) {
+OocGameContextModel::OocGameContextModel(const GameContext &gc, const PathHistory &path,
+    std::shared_ptr<const CombatTransitionSampler> sampler) : combatSampler(std::move(sampler)) {
     if (!winNetOk()) throw std::runtime_error("OOC MCTS requires native v_win");
     if (!g_oocStrategicTokNet.ok) throw std::runtime_error("OOC MCTS requires native V4 policy");
     auto history = path;
@@ -41,6 +44,7 @@ OocGameContextModel::OocGameContextModel(const GameContext &gc, const PathHistor
     states.push_back({detachedCopy(gc), history});
 }
 const GameContext &OocGameContextModel::state(sts::search::OocStateId id) const { return states.at(id).gc; }
+const PathHistory &OocGameContextModel::pathHistory(sts::search::OocStateId id) const { return states.at(id).path; }
 std::optional<double> OocGameContextModel::terminalValue(sts::search::OocStateId id) const {
     switch (state(id).outcome) {
         case sts::GameOutcome::PLAYER_LOSS: return 0;
@@ -86,7 +90,7 @@ std::vector<sts::search::OocPlannerAction> OocGameContextModel::legalActions(sts
     return result;
 }
 sts::search::OocStateId OocGameContextModel::sampleSuccessor(sts::search::OocStateId id,
-    sts::search::OocActionId action, std::mt19937_64 &) {
+    sts::search::OocActionId action, std::mt19937_64 &rng) {
     if (terminalValue(id) || isLeafBoundary(id)) throw std::runtime_error("OOC MCTS transition from leaf");
     auto actions = v4CandidateActions(state(id));
     auto it = std::find_if(actions.begin(), actions.end(), [&](auto a) { return a.bits == action; });
@@ -94,6 +98,26 @@ sts::search::OocStateId OocGameContextModel::sampleSuccessor(sts::search::OocSta
     auto child = Snapshot{detachedCopy(state(id)), states.at(id).path};
     it->execute(child.gc);
     child.path.update(child.gc);
+    if (combatSampler && child.gc.screenState == sts::ScreenState::BATTLE) {
+        const auto input = captureCombatPredictorInput(child.gc, child.gc.info.encounter,
+                                                       potionKeepValue(child.gc));
+        if (combatSampler->support(child.gc, input).supported) {
+            const auto sampled = combatSampler->sample(child.gc, input, rng);
+            switch (sampled.outcome) {
+                case CombatRuntimeSample::Outcome::UNSUPPORTED: break;
+                case CombatRuntimeSample::Outcome::DEATH:
+                    child.gc.outcome = sts::GameOutcome::PLAYER_LOSS;
+                    break;
+                case CombatRuntimeSample::Outcome::VICTORY:
+                    applyCombatTransitionState(child.gc, sampled.rawPost);
+                    child.gc.regainControl();
+                    // Live runs record the entered room before combat and the
+                    // continuation on the next loop, including act changes.
+                    child.path.update(child.gc);
+                    break;
+            }
+        }
+    }
     states.push_back(std::move(child));
     return states.size()-1;
 }
@@ -304,6 +328,178 @@ void oocMctsAdapterSelfTest() {
     auto rewardChild=rewards.sampleSuccessor(0,skip.bits,rng);
     require(rewards.state(rewardChild).info.rewardsContainer.cardRewardCount
         ==reward.info.rewardsContainer.cardRewardCount-1,"reward skip execution");
+    // Inject an equivalent RAW result from a deterministic native exit. The
+    // callback dispatches the same native reward code in both branches.
+    struct FakeSampler final : CombatTransitionSampler {
+        bool enabled=true, death=false, stochastic=false;
+        mutable int supportCalls=0, sampleCalls=0;
+        mutable std::vector<std::uint64_t> draws;
+        CombatTransitionPersistentState raw;
+        CombatPredictorInputV1 expectedInput;
+        CombatRuntimeSupport support(const GameContext &g, const CombatPredictorInputV1 &input) const override {
+            ++supportCalls;
+            require(g.screenState==ScreenState::BATTLE,"sampler prebattle screen");
+            require(combatPredictorInputJson(input)==combatPredictorInputJson(expectedInput),
+                    "predictor must precede battle initialization");
+            return {enabled, enabled?"supported":"fake unsupported"};
+        }
+        CombatRuntimeSample sample(const GameContext &,const CombatPredictorInputV1 &,
+                                   std::mt19937_64 &r) const override {
+            ++sampleCalls;
+            bool loss=death;
+            if(stochastic) { const auto draw=r(); draws.push_back(draw); loss=draw&1; }
+            return {loss?CombatRuntimeSample::Outcome::DEATH:CombatRuntimeSample::Outcome::VICTORY,raw};
+        }
+    };
+    auto combatRoot=detachedCopy(gc);
+    combatRoot.screenState=ScreenState::REST_ROOM;
+    combatRoot.curRoom=Room::MONSTER;
+    int regainCalls=0;
+    combatRoot.regainControlAction=[&](GameContext &g) {
+        ++regainCalls;
+        if(g.screenState==ScreenState::REST_ROOM) g.enterBattle(MonsterEncounter::CULTIST);
+        else g.afterBattle();
+    };
+    const auto restActions=v4CandidateActions(combatRoot);
+    require(!restActions.empty(),"combat entry rest fixture");
+    const auto restAction=restActions.front();
+    auto real=detachedCopy(combatRoot);
+    PathHistory realPath=path; realPath.update(real);
+    restAction.execute(real); realPath.update(real);
+    auto fake=std::make_shared<FakeSampler>();
+    // An injected sampler is never consulted for ordinary nonbattle actions.
+    auto ordinary=detachedCopy(gc); ordinary.screenState=ScreenState::REST_ROOM;
+    auto ordinaryExpected=detachedCopy(ordinary);
+    const auto ordinaryAction=v4CandidateActions(ordinary).front();
+    ordinaryAction.execute(ordinaryExpected);
+    OocGameContextModel ordinaryModel(ordinary,path,fake);
+    const auto ordinaryId=ordinaryModel.sampleSuccessor(0,ordinaryAction.bits,rng);
+    require(fake->supportCalls==0 && fake->sampleCalls==0
+        && test::oocStateFingerprint(ordinaryModel.state(ordinaryId))==test::oocStateFingerprint(ordinaryExpected),
+        "ordinary injected successor unchanged");
+    fake->expectedInput=captureCombatPredictorInput(real,real.info.encounter,potionKeepValue(real));
+    const auto preFingerprint=test::oocStateFingerprint(real);
+    BattleContext deterministic;
+    deterministic.init(real,MonsterEncounter::CULTIST);
+    deterministic.player.curHp=37;
+    deterministic.outcome=Outcome::PLAYER_VICTORY;
+    int rawCalls=0;
+    {
+        CombatTransitionRawObserverScope scope([&](const BattleContext &,GameContext &raw) {
+            ++rawCalls; fake->raw=captureCombatTransitionState(raw);
+        });
+        deterministic.exitBattle(real);
+    }
+    realPath.update(real);
+    require(rawCalls==1 && regainCalls==2,"native oracle continuation once");
+    regainCalls=0;
+    OocGameContextModel crossed(combatRoot,path,fake);
+    const auto rootFingerprint=test::oocStateFingerprint(crossed.state(0));
+    const auto crossedId=crossed.sampleSuccessor(0,restAction.bits,rng);
+    require(regainCalls==2 && fake->sampleCalls==1 && fake->supportCalls==1,
+            "injected reward continuation exactly once");
+    require(test::oocStateFingerprint(crossed.state(crossedId))==test::oocStateFingerprint(real),
+            "injected continuation OOC/reward/RNG fingerprint");
+    require(combatTransitionFingerprint(crossed.state(crossedId))==combatTransitionFingerprint(real),
+            "injected persistent continuation fingerprint");
+    require(crossed.pathHistory(crossedId).roomVisits==realPath.roomVisits
+        && crossed.pathHistory(crossedId).lastNodeKey==realPath.lastNodeKey,"native PathHistory parity");
+    require(test::oocStateFingerprint(crossed.state(0))==rootFingerprint,"combat parent unchanged");
+    fake->enabled=false; regainCalls=0;
+    OocGameContextModel unsupportedCombat(combatRoot,path,fake);
+    const auto unsupportedId=unsupportedCombat.sampleSuccessor(0,restAction.bits,rng);
+    require(fake->sampleCalls==1 && regainCalls==1 && unsupportedCombat.isLeafBoundary(unsupportedId)
+        && test::oocStateFingerprint(unsupportedCombat.state(unsupportedId))==preFingerprint,
+        "unsupported combat retains exact battle leaf");
+    OocGameContextModel disabledCombat(combatRoot,path);
+    const auto disabledId=disabledCombat.sampleSuccessor(0,restAction.bits,rng);
+    require(test::oocStateFingerprint(disabledCombat.state(disabledId))==preFingerprint
+        && disabledCombat.pathHistory(disabledId).roomVisits==unsupportedCombat.pathHistory(unsupportedId).roomVisits,
+        "no sampler combat behavior unchanged");
+    fake->enabled=true; fake->death=true; regainCalls=0;
+    OocGameContextModel deathCombat(combatRoot,path,fake);
+    const auto deathId=deathCombat.sampleSuccessor(0,restAction.bits,rng);
+    require(regainCalls==1 && deathCombat.terminalValue(deathId)==0
+        && deathCombat.state(deathId).screenState==ScreenState::BATTLE,
+        "death terminal without reward continuation");
+    fake->death=false; fake->stochastic=true;
+    std::mt19937_64 plannerRng(991), expectedRng(991);
+    OocGameContextModel chanceCombat(combatRoot,path,fake);
+    for(int i=0;i<8;++i) {
+        const auto expectedDraw=expectedRng();
+        const auto sampleId=chanceCombat.sampleSuccessor(0,restAction.bits,plannerRng);
+        require(fake->draws.back()==expectedDraw,"independent supplied planner RNG draw");
+        require(bool(chanceCombat.terminalValue(sampleId))==bool(expectedDraw&1),
+                "chance outcome not value selected");
+    }
+    // Restrict the test root to the entry action so every planner chance
+    // expansion exercises combat without unrelated rest/select decisions.
+    struct SingleEntryModel final : OocGenerativeModel {
+        OocGameContextModel &adapter;
+        OocActionId entry;
+        SingleEntryModel(OocGameContextModel &a,OocActionId e):adapter(a),entry(e) {}
+        std::optional<double> terminalValue(OocStateId id) const override { return adapter.terminalValue(id); }
+        bool isLeafBoundary(OocStateId id) const override { return adapter.isLeafBoundary(id); }
+        std::vector<OocPlannerAction> legalActions(OocStateId id) const override {
+            require(id==0,"single-entry planner must stop at depth one"); return {{entry,1.0}};
+        }
+        OocStateId sampleSuccessor(OocStateId id,OocActionId a,std::mt19937_64 &r) override {
+            return adapter.sampleSuccessor(id,a,r);
+        }
+        double leafValue(OocStateId id) const override { return adapter.leafValue(id); }
+    };
+    fake->draws.clear();
+    const auto samplesBefore=fake->sampleCalls;
+    OocGameContextModel plannerCombat(combatRoot,path,fake);
+    SingleEntryModel entryModel(plannerCombat,restAction.bits);
+    OocMctsConfig chanceConfig; chanceConfig.maxDepth=1; chanceConfig.seed=12345;
+    OocMctsPlanner chancePlanner(chanceConfig);
+    const auto chanceResult=chancePlanner.search(entryModel,0,32);
+    std::mt19937_64 expectedChanceRng(chanceConfig.seed);
+    std::vector<std::uint64_t> expectedChanceDraws;
+    for(std::uint64_t visit=1;visit<=32;++visit) {
+        if(expectedChanceDraws.size()<chancePlanner.chanceWideningLimit(visit))
+            expectedChanceDraws.push_back(expectedChanceRng());
+        else {
+            std::uniform_int_distribution<std::size_t> choose(0,expectedChanceDraws.size()-1);
+            (void)choose(expectedChanceRng);
+        }
+    }
+    require(fake->draws==expectedChanceDraws && std::set<std::uint64_t>(fake->draws.begin(),fake->draws.end()).size()==fake->draws.size(),
+            "planner expansions receive independent RNG draws with unbiased particle reuse");
+    const auto &chanceMetrics=chanceResult.metrics;
+    require(chanceMetrics.simulations==32 && chanceMetrics.chanceNodes==1
+        && chanceMetrics.transitionSamples==expectedChanceDraws.size()
+        && chanceMetrics.outcomeParticles==chanceMetrics.transitionSamples
+        && chanceMetrics.decisionNodes==chanceMetrics.outcomeParticles+1
+        && chanceMetrics.maxDepthReached==1
+        && fake->sampleCalls-samplesBefore==int(chanceMetrics.transitionSamples)
+        && chanceResult.rootActions.size()==1 && chanceResult.rootActions.front().visits==32,
+        "combat planner progressive widening particle metrics preserved");
+    // Native continuation may enter another battle (e.g. chained battles).
+    // The adapter crosses one combat boundary per primitive transition.
+    fake->stochastic=false;
+    auto chainedRoot=detachedCopy(combatRoot);
+    int chainContinuations=0;
+    chainedRoot.regainControlAction=[&](GameContext &g) {
+        if(g.screenState==ScreenState::REST_ROOM) g.enterBattle(MonsterEncounter::CULTIST);
+        else { ++chainContinuations; g.enterBattle(MonsterEncounter::CULTIST); }
+    };
+    const auto chainSamplesBefore=fake->sampleCalls;
+    OocGameContextModel chainedCombat(chainedRoot,path,fake);
+    const auto chainedId=chainedCombat.sampleSuccessor(0,restAction.bits,rng);
+    require(chainContinuations==1 && fake->sampleCalls==chainSamplesBefore+1
+        && chainedCombat.state(chainedId).screenState==ScreenState::BATTLE
+        && chainedCombat.isLeafBoundary(chainedId) && !chainedCombat.terminalValue(chainedId),
+        "second battle continuation remains leaf without recursive sampling");
+    const auto chainedResult=OocMctsPlanner().search(chainedCombat,chainedId,4);
+    require(chainedResult.metrics.transitionSamples==0 && chainedResult.metrics.leafEvaluations==4
+        && fake->sampleCalls==chainSamplesBefore+1,"chained battle planner retains leaf seam");
+    std::cout<<"combat_planner_chance simulations="<<chanceMetrics.simulations
+        <<" particles="<<chanceMetrics.outcomeParticles<<" samples="<<chanceMetrics.transitionSamples
+        <<" depth="<<chanceMetrics.maxDepthReached<<" chained_battle=leaf"<<'\n';
+    std::cout<<"combat_adapter_oracle raw_calls="<<rawCalls
+        <<" fingerprint=exact path_history=exact stochastic_draws="<<fake->draws.size()<<'\n';
     auto result=OocMctsPlanner().search(model,0,32);
     double sum=0; for(auto a:result.rootActions) sum+=a.prior;
     require(std::abs(sum-1)<1e-12,"normalized priors");
