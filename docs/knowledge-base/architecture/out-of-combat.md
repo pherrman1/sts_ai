@@ -160,7 +160,10 @@ environment model** or a scientifically qualified full OOC planner.
 `STS_OOC_MCTS=1` intercepts each nonbattle decision immediately before the
 existing `runFullRunOocPolicyStep` chain in `runFullRunOOC`. Startup requires
 loaded native V4 policy and native win models plus a compatible
-`STS_OOC_MCTS_COMBAT_MODEL`; explicit artifact failures are fatal. The default
+`STS_OOC_MCTS_COMBAT_MODEL`; explicit artifact failures are fatal. Startup also
+requires the effective Silver reuse cap to be 32,768; the experimental 131,072
+override is rejected. Real combat requires ordinary exact-10k Silver, allocated
+reuse, and adaptive-off, preserving the frozen teacher cap contract. The default
 is OFF and does not load a combat artifact or run MCTS. Both arms retain the
 same normal real combat branch and the same fallback OOC policy chain.
 

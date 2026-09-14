@@ -18,6 +18,9 @@ def main():
     bad = str(root / 'build/absent-ooc-mcts-startup-artifact.native')
     cases = [
         ('default OFF', {}, True, ''),
+        ('invalid cap rejects ON', {'STS_OOC_MCTS': '1', 'STS_SILVER_REUSE_CAP': '0'}, False, 'must be 32768 or experimental 131072'),
+        ('malformed cap rejects ON', {'STS_OOC_MCTS': '1', 'STS_SILVER_REUSE_CAP': 'invalid'}, False, 'must be a nonnegative integer'),
+        ('experimental cap rejects ON', {'STS_OOC_MCTS': '1', 'STS_SILVER_SEARCH': '1', 'STS_SILVER_REUSE_CAP': '131072'}, False, 'requires frozen Silver reuse cap 32768'),
         ('OFF ignores combat artifact and sims', {'STS_OOC_MCTS': '0', 'STS_OOC_MCTS_COMBAT_MODEL': bad, 'STS_OOC_MCTS_SIMS': 'invalid'}, True, ''),
         ('invalid enable flag', {'STS_OOC_MCTS': '2'}, False, 'must be 0 or 1'),
         ('missing V4', {'STS_OOC_MCTS': '1', 'STS_OOC_STRATEGIC_TOK_NN': bad}, False, 'requires native V4'),

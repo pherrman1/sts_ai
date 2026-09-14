@@ -253,7 +253,8 @@ enum class SemanticActionType : std::uint8_t {
 
 enum class CardSource : std::uint8_t { NONE = 0, HAND, DRAW, DISCARD, EXHAUST, CARD_SELECT_OPTION };
 
-// The production cap is deliberately fixed.  The allocated/active modes
+// The production default is 32k; the live backend has an experimental override.
+// The allocated/active modes
 // select the existing pool measurement; NONE disables statistical reuse.
 enum class SilverReuseCapMode : std::uint8_t { ALLOCATED = 0, ACTIVE, NONE };
 enum class SilverRerootFallbackReason : std::uint8_t {
@@ -265,7 +266,7 @@ enum class SilverRerootFallbackReason : std::uint8_t {
     REUSE_DISABLED,
 };
 
-constexpr std::int64_t kSilverProductionReuseCap = 128 * 1024;
+constexpr std::int64_t kSilverProductionReuseCap = 32 * 1024;
 
 const char *silverReuseCapModeName(SilverReuseCapMode mode);
 const char *silverRerootFallbackReasonName(SilverRerootFallbackReason reason);
@@ -318,7 +319,7 @@ struct SilverSearchConfig {
     double endTurnWideningC = 3.7028;
     double endTurnWideningAlpha = 0.52389;
     // Test-only overrides may use a smaller value.  No gameplay environment
-    // controls this value; production continues to use exactly 128 * 1024.
+    // controls this value; production defaults to 32 * 1024; the live backend permits an experimental override.
     std::int64_t reuseCap = kSilverProductionReuseCap;
     SilverReuseCapMode reuseCapMode = SilverReuseCapMode::ALLOCATED;
     // Default-off collection avoids per-decision diagnostic work unless the

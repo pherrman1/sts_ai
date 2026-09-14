@@ -132,7 +132,8 @@ state into a private representation and uses a stable per-battle seed derived
 from run/battle identity, not decision ordinal.
 
 One private session is retained per battle and exact-child reroot is attempted
-after each action. The production cap is 131,072 nodes. The default
+after each action. The production cap remains 32,768 nodes. `STS_SILVER_REUSE_CAP=131072`
+is an experimental opt-in; it is not a qualified production promotion. The default
 `STS_SILVER_REUSE_CAP_MODE=allocated` caps retained allocation; `active` is a
 supported opt-in. Reroot and fallback telemetry must state what occurred.
 
@@ -193,9 +194,10 @@ and reinserts existing hash/pointer entries. Duplicate hits never trigger growth
 Node/state addresses, statistics and RNG are untouched; fresh reset clears
 occupancy and cap-triggered collection rebuilds retained membership without
 shrinking capacity. Fixed widening-cache limits remain independent of dedup.
-Frozen whole-combat/OOC teacher protocols that require a 32,768 cap reject this
-production build's cap mismatch; use their frozen executable for old-contract
-evidence rather than relabeling 128k execution.
+Frozen whole-combat/OOC teacher protocols and live OOC MCTS require an effective
+32,768 cap and reject the experimental 131,072 override before execution.
+A larger cap needs separate decision-quality evidence and teacher/model
+requalification before promotion.
 
 Silver caches the diagnostic root hash lazily only when a leaf observer needs
 it, invalidating on fresh reset and reroot. Rollout timing starts only for an

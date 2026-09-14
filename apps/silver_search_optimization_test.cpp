@@ -445,7 +445,7 @@ void lazyReroot(const sts::BattleContext &bc) {
     validateStorage(search);
 }
 
-void repeatedRerootCanary(const sts::BattleContext &bc) {
+void repeatedRerootCanary(const sts::BattleContext &bc, std::int64_t cap) {
     Search search(bc);
     search.explorationParameter = search.explorationParameterChance = 25.0;
     search.chanceWideningC = search.endTurnWideningC = 3.7028;
@@ -497,7 +497,7 @@ void repeatedRerootCanary(const sts::BattleContext &bc) {
         const bool hasActions = !candidate->edges.empty();
         const auto expectedAction = hasActions ? search.getBestAction() : sts::search::Action{};
         search.root = oldRoot;
-        const bool compact = search.allNodes.size() >= silver_bridge::kSilverProductionReuseCap;
+        const bool compact = search.allNodes.size() >= cap;
         search.rerootAt(candidate, compact);
         if (compact) ++compactions;
         require(!hasActions || search.getBestAction() == expectedAction,
@@ -525,8 +525,8 @@ void repeatedRerootCanary(const sts::BattleContext &bc) {
         }
         reclaimed += before - search.poolUsed;
         ++reroots;
-        require(search.allNodes.size() < silver_bridge::kSilverProductionReuseCap, "repeated canary retained tree reaches production cap");
-        if (compact && historical >= silver_bridge::kSilverProductionReuseCap) ++crossings;
+        require(search.allNodes.size() < cap, "repeated canary retained tree reaches production cap");
+        if (compact && historical >= cap) ++crossings;
         std::cout << "repeated_reroot decision=" << decision << " simulations=10000 historical_nodes=" << historical
                   << " before_nodes=" << before << " old_32k_pressure=" << (before >= 32768)
                   << " reachable_nodes=" << reachable.size() << " reachable_32k_block=" << (reachable.size() >= 32768)
@@ -542,7 +542,7 @@ void repeatedRerootCanary(const sts::BattleContext &bc) {
     historical += search.poolUsed - retained;
     validateStorage(search);
 
-    std::cout << "repeated_reroot_canary PASS reroots=" << reroots << " historical_cap_reroots=" << crossings
+    std::cout << "repeated_reroot_canary PASS configured_cap=" << cap << " reroots=" << reroots << " historical_cap_reroots=" << crossings
               << " peak_reachable_nodes=" << peakReachable << " peak_live_nodes=" << peakNodes << " peak_states=" << peakStates
               << " dedup_capacity=" << search.stateToNode.size() << " dedup_entries=" << search.stateToNodeUsed
               << " resizes=" << resizes << " peak_sampled_load=" << peakLoad
@@ -564,7 +564,10 @@ int main(int argc, char **argv) {
             gc.curHp = gc.maxHp = 400;
             sts::BattleContext stress{};
             stress.init(gc, sts::MonsterEncounter::JAW_WORM);
-            repeatedRerootCanary(stress);
+            const auto cap = argc > 2 && std::string(argv[2]) == "131072"
+                ? 131072 : silver_bridge::kSilverProductionReuseCap;
+            require(argc <= 2 || std::string(argv[2]) == "131072", "canary override must be 131072");
+            repeatedRerootCanary(stress, cap);
             return 0;
         }
         dedupGrowth(bc);
