@@ -7567,3 +7567,45 @@ current research status; stable implementation unchanged.
 [Full evidence](evidence/live_ooc_mcts_2048_2026-09-14.md),
 [primary](evidence/live_ooc_mcts_2048_2026-09-14/result.json),
 [secondary](evidence/live_ooc_mcts_2048_2026-09-14/budget-comparison.json).
+
+
+## §248 Frozen expanded-support composition qualification (2026-09-14)
+
+**EXPANDED_COMPOSED_TRANSITION_QUALIFIED.** #178 widened original TEST support
+from 32,164/51,441 (62.526%) to 41,454/51,441 (80.586%); this engineering validation
+asks whether the unchanged #174 frozen models retain composed qualification on
+the 9,290 newly recovered rows and their complete union. Baseline main
+`74d31681b8ebd3beb5e85d6db9c1a164f9aeaf13`, independently reviewed scoring SHA
+`66d62987308e200f1abbfaa92d3fff67b3370ac7`. No gameplay, MCTS, model/schema/support
+changes, data collection or retraining. Ascension/searcher/game-seed budget are
+not applicable: seed-free frozen corpus scoring, not a gameplay benchmark.
+
+Corpus `74c08aa0a3c30342d86cd45355fe17ffa9046963ad7c8cf71b1938f9cdc1cfde`,
+source split `e9043bcceb9d95027711e6ff33afbfe1cae3cf9528f820c0ff68bddbb419db32`
+and all six frozen models/prepared representation verified; full hashes in JSON.
+OLD/RECOVERED/EXPANDED row counts 32,164/9,290/41,454 and source counts
+2,474/893/2,512. Historical OLD membership, source alignment and disjoint row union
+proven. All OLD reproduced component/exposure metrics and row teacher NLLs have
+exactly zero error versus #174, within the existing 1e-5 tolerance.
+
+Same survival→maxHP→signedHP→joint potion→shared relic→persistent-state recipe,
+FP32/HP AMP FP16 conventions and native masks. Exact HP probability marginal
+across all 11 maxHP classes; potion/relic 32-draw probability-before-log mixture;
+relic mean row gap per observed learned group, informative rows only.
+Sampling seed20260916; source-bootstrap seed20260917,1000 resamples. Independent
+mean <=0.1-nat gates on RECOVERED and EXPANDED; CIs descriptive.
+RECOVERED HP/potion/relic gaps +.019484613/+.000565261/-.002278852;
+EXPANDED +.013832688/+.000723143/-.001336405. All six pass. All eleven hard-validity
+counters zero over1,326,528 complete EXPANDED draws, including297,280 RECOVERED.
+Independent raw-output metrics/CIs/validity/death-forward reproduction passes.
+
+RECOVERED diagnostics are weaker than OLD but no material composition exposure.
+Act/combat/card-count/common-card slices retained; outside-old-whitelist IDs are
+only COMBUST and BRUTALITY, GREEN in native metadata. No general accuracy claim
+for other off-color IDs. The two four-card rows have no informative relic score.
+#174 evidence preserved. Reused TEST is engineering validation, not untouched
+holdout evidence. Offline prerequisite for a next fresh MCTS gameplay gate now
+passes; runtime/readiness and gameplay success remain separate. Knowledge impact:
+experiment evidence/current research status; evaluator navigation updated.
+[Full evidence](evidence/composed_transition_expanded_support_2026-09-14.md),
+[JSON](evidence/composed_transition_expanded_support_2026-09-14.json).

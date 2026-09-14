@@ -1,7 +1,7 @@
 # Current research status
 
 Last verified: 2026-09-14 for exact supported-v1 RNG continuation
-and the stochastic signed-HP distribution;
+and the stochastic signed-HP distribution and expanded-support offline composition;
 2026-09-13 for the Phase-2 stochastic persistent-state support
 audit and the corrected whole-combat transition model rerun after independent
 review;
@@ -182,10 +182,40 @@ including deaths, have zero potion creations/swaps/substitutions; preserved
 RNG, copy-through and victorious relic checks also pass. Of the previous
 116,302 potion-certification failures, 113,094 recover certification and
 91,155 recover full support. Remaining full fallback is 96,231 rows.
-This census corrects the contract; distribution/exposure and gameplay
-qualification were not rerun on recovered rows. See the
+This census corrected the contract; expanded distribution/exposure qualification
+is now recorded below. It did not rerun gameplay qualification. See the
 [full source/provenance/accounting audit](../../experiments/evidence/potion_generation_support_2026-09-14.md)
 and [maintained potion-generation contract](../behavior/combat-potion-generation.md).
+
+**`EXPANDED_COMPOSED_TRANSITION_QUALIFIED`** on #178's complete
+41,454-row original engineering TEST support, reviewed scoring SHA
+`66d62987308e200f1abbfaa92d3fff67b3370ac7` (§248). OLD (32,164 rows/2,474 sources)
+reproduces the recorded #174 component/exposure metrics and row teacher NLLs
+exactly: all reproduction errors are zero. RECOVERED is 9,290 rows/893 sources;
+EXPANDED is 41,454 rows/2,512 sources, with row-ID disjoint union and historical
+OLD membership proven. Frozen model/corpus/split/prepared hashes match.
+RECOVERED HP/potion/relic mean gaps are +0.019484613/+0.000565261/-0.002278852 nat;
+EXPANDED gaps are +0.013832688/+0.000723143/-0.001336405. Each passes its independent
+0.1-nat mean gate; source-bootstrap CIs remain descriptive. All eleven hard
+validity counts are zero over 1,326,528 EXPANDED draws, including 297,280
+RECOVERED draws. Independent raw-output reproduction passes.
+
+Recovered component diagnostics are weaker than OLD, but composition exposure
+passes the frozen criterion. The recovered census has only COMBUST and BRUTALITY
+outside the historical card-color whitelist (both GREEN in simulator metadata);
+this result does not establish accuracy for other off-color IDs. Act, combat
+type, card-count and common-card slices are diagnostic. The two rows with four
+metadata off-color cards have no informative relic trajectory rows, explicitly
+reported without a score. #174 remains the original 62.526% subset qualification;
+this experiment extends the offline composition prerequisite to 80.586% support.
+The original TEST is reused engineering validation, not untouched holdout evidence.
+
+This satisfies the offline composition prerequisite for a next fresh MCTS
+gameplay gate; it does not establish win-rate improvement, change MCTS defaults,
+or replace that gate's runtime/readiness/provenance requirements. No models,
+support, runtime, data or gameplay changed. See
+[expanded evidence](../../experiments/evidence/composed_transition_expanded_support_2026-09-14.md)
+and [JSON](../../experiments/evidence/composed_transition_expanded_support_2026-09-14.json).
 
 The native runtime adapter is now qualified for the combat boundary (§242);
 the opt-in live OOC MCTS engineering gameplay gate is recorded in §243.
