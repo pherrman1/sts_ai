@@ -245,7 +245,7 @@ namespace sts::search {
 
         // public methods
         void setRoot(const BattleContext &bc);      // fresh reset: clear pool/dedup, alloc new root, reseed rng
-        void rerootAt(Node* newRoot);               // tree reuse: keep pool/dedup; root = newRoot; reseed rng
+        void rerootAt(Node* newRoot);               // tree reuse: reclaim unreachable pool/state storage, rebuild dedup; reseed rng
         void search(int64_t simulations);
         void searchForMicros(int64_t maxMicros);   // run steps until the wall-clock budget (microseconds) is spent
         void step();

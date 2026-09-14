@@ -177,6 +177,8 @@ void rootHash(const sts::BattleContext &bc) {
     require(observations > 0, "reroot observer must run");
 }
 std::size_t validateStorage(const Search &search) {
+    std::unordered_set<const Search::Node *> liveNodes;
+    for (std::size_t i = 0; i < search.poolUsed; ++i) liveNodes.insert(search.allNodes[i].get());
     std::unordered_set<const sts::BattleContext *> owned;
     for (std::size_t i = 0; i < search.decisionStatesUsed; ++i)
         require(owned.insert(search.decisionStates[i].get()).second, "state pool slots must not alias");
@@ -184,7 +186,10 @@ std::size_t validateStorage(const Search &search) {
     std::size_t chances = 0;
     for (std::size_t i = 0; i < search.poolUsed; ++i) {
         const auto &node = *search.allNodes[i];
+        for (const auto &edge : node.edges)
+            require(!edge.node || liveNodes.count(edge.node), "live edge references reclaimed node");
         if (node.isRandomNode) {
+            require(liveNodes.count(node.parent), "chance parent references reclaimed node");
             ++chances;
             require(node.state == nullptr, "chance nodes must not own battle states");
             require(node.parent && !node.parent->isRandomNode && node.parent->state,
@@ -212,12 +217,12 @@ void retainedStateGrowth(const sts::BattleContext &bc) {
         }
     }
     require(candidate != nullptr, "retained growth fixture must provide a reroot candidate");
+    search.rerootAt(candidate);
     std::vector<std::pair<const sts::BattleContext *, std::uint64_t>> retained;
     for (std::size_t i = 0; i < search.decisionStatesUsed; ++i) {
         const auto *state = search.decisionStates[i].get();
         retained.emplace_back(state, sts::search::hashBattleState(*state));
     }
-    search.rerootAt(candidate);
     search.search(8);
     require(search.decisionStatesUsed > retained.size(), "reroot continuation must exercise state pool growth");
     validateStorage(search);
@@ -243,23 +248,6 @@ void storage(const sts::BattleContext &bc, bool emitMetrics) {
     require(nodePeak == nodesUsed && statePeak == statesUsed, "first search peaks must match active counts");
     std::vector<const sts::BattleContext *> slots;
     for (const auto &state : search.decisionStates) slots.push_back(state.get());
-    Search::Node *candidate = nullptr;
-    for (std::size_t i = 1; i < search.poolUsed; ++i) {
-        auto *node = search.allNodes[i].get();
-        if (!node->isRandomNode && node->state->outcome == sts::Outcome::UNDECIDED) {
-            candidate = node;
-            break;
-        }
-    }
-    require(candidate != nullptr, "fixture must provide a reroot candidate");
-    auto *candidateState = candidate->state;
-    const auto candidateVisits = candidate->simulationCount;
-    search.rerootAt(candidate);
-    require(search.root == candidate && search.root->state == candidateState
-            && search.root->simulationCount == candidateVisits, "reroot must retain selected node and state");
-    require(search.poolUsed == nodesUsed && search.decisionStatesUsed == statesUsed,
-            "reroot must retain logical node and state accounting");
-    validateStorage(search);
     search.setRoot(bc);
     require(search.poolUsed == 1 && search.decisionStatesUsed == 1,
             "fresh reset must reset both active pool counters");
@@ -285,12 +273,112 @@ void storage(const sts::BattleContext &bc, bool emitMetrics) {
     }
 }
 
+void compaction(const sts::BattleContext &bc, int simulations) {
+    Search search(bc);
+    if (simulations) {
+        search.explorationParameter = search.explorationParameterChance = 25.0;
+        search.chanceWideningC = search.endTurnWideningC = 3.7028;
+        search.chanceWideningAlpha = search.endTurnWideningAlpha = 0.52389;
+        search.search(simulations);
+    }
+    auto changed = bc;
+    changed.player.curHp -= 1;
+    auto *root = search.root;
+    // For the real canary follow an expanded decision child of the selected action.
+    if (simulations) {
+        const auto action = search.getBestAction();
+        for (const auto &edge : search.root->edges) if (edge.action == action && edge.node) {
+            root = edge.node;
+            if (root->isRandomNode) {
+                require(!root->edges.empty(), "selected chance node must have an outcome");
+                root = root->edges.front().node;
+            }
+            break;
+        }
+        require(root != search.root && !root->isRandomNode, "canary needs an exact decision child");
+    } else {
+        root = search.getOrCreateNode(std::move(changed));
+        changed = bc; changed.player.curHp -= 2;
+        auto *shared = search.getOrCreateNode(std::move(changed));
+        root->edges.resize(2);
+        root->edges[0].node = shared;
+        auto *chance = search.allocNode();
+        chance->isRandomNode = true; chance->parent = root;
+        chance->stochasticAction = sts::search::Action(sts::search::ActionType::END_TURN);
+        chance->edges.resize(1); chance->edges[0].node = shared;
+        root->edges[1].node = chance;
+        root->simulationCount = 17; root->victoryCount = 3; root->evaluationSum = 12.5;
+        root->edges[0].visitCount = 9;
+        shared->edges.resize(1); shared->edges[0].node = root; // cycle through a transposition
+        shared->simulationCount = 11; shared->evaluationSum = -3.25;
+        changed = bc; changed.player.curHp -= 3;
+        search.getOrCreateNode(std::move(changed)); // unreachable state
+        // Exercise the production allocation cap with dead historical nodes.
+        while (search.allNodes.size() <= 32768) search.allocNode();
+    }
+    std::unordered_set<Search::Node*> reachable;
+    std::vector<Search::Node*> pending{root};
+    while (!pending.empty()) {
+        auto *node = pending.back(); pending.pop_back();
+        if (!reachable.insert(node).second) continue;
+        if (node->isRandomNode) pending.push_back(node->parent);
+        for (const auto &edge : node->edges) if (edge.node) pending.push_back(edge.node);
+    }
+    std::vector<std::pair<Search::Node*, Search::Node>> snapshots;
+    for (auto *node : reachable) snapshots.emplace_back(node, *node);
+    const auto before = search.allNodes.size(), statesBefore = search.decisionStates.size();
+    auto *oldRoot = search.root;
+    search.root = root;
+    const auto expectedAction = search.getBestAction();
+    search.root = oldRoot;
+    search.rerootAt(root);
+    require(search.getBestAction() == expectedAction, "compaction changed retained-tree result");
+    require(search.allNodes.size() == reachable.size() && search.poolUsed == reachable.size(), "must reclaim unreachable nodes");
+    require(search.allNodes.size() < before, "fixture must discard dead nodes");
+    require(search.decisionStates.size() < statesBefore, "must reclaim unreachable states");
+    validateStorage(search);
+    for (const auto &[node, saved] : snapshots) {
+        require(node->state == saved.state && node->parent == saved.parent, "retained pointers changed");
+        require(node->outcomesGenerated == saved.outcomesGenerated && node->randomnessBase == saved.randomnessBase
+                && node->stochasticAction == saved.stochasticAction, "retained chance bookkeeping changed");
+        require(node->simulationCount == saved.simulationCount && node->victoryCount == saved.victoryCount
+                && node->evaluationSum == saved.evaluationSum, "retained node statistics changed");
+        require(node->edges.size() == saved.edges.size(), "retained edges changed");
+        for (std::size_t i = 0; i < node->edges.size(); ++i)
+            require(node->edges[i].node == saved.edges[i].node && node->edges[i].visitCount == saved.edges[i].visitCount
+                    && node->edges[i].action == saved.edges[i].action && node->edges[i].rngAdvanceSteps == saved.edges[i].rngAdvanceSteps,
+                    "retained edge statistics changed");
+        if (!node->isRandomNode) {
+            auto copy = *node->state;
+            require(search.getOrCreateNode(std::move(copy)) == node && !search.lastNodeWasCreated, "retained dedup lookup failed");
+        }
+    }
+    if (simulations) std::cout << "reroot_canary simulations=" << simulations << " before_nodes=" << before
+        << " retained_nodes=" << search.poolUsed << " before_states=" << statesBefore
+        << " retained_states=" << search.decisionStatesUsed << " historical_allocated_cap=" << (before >= 32768)
+        << " retained_allocated_cap=" << (search.allNodes.size() >= 32768) << '\n';
+    if (!simulations) {
+        auto dead = bc; dead.player.curHp -= 3;
+        search.getOrCreateNode(std::move(dead));
+        require(search.lastNodeWasCreated, "dead dedup entry survived collection");
+        // Remove artificial actions before a genuine continuation.
+        root->edges.clear();
+    }
+    search.search(32);
+    validateStorage(search);
+}
+
 } // namespace
 int main(int argc, char **argv) {
     try {
         sts::GameContext gc{}; // BattleContext keeps a non-owning pointer to this run state.
         const auto bc = fixture(gc);
         Search search(bc);
+        if (argc > 1 && std::string(argv[1]) == "--reroot-canary") {
+            compaction(bc, 10000);
+            return 0;
+        }
+        compaction(bc, 0);
         selection(search); widening(search);
         traceParity(bc, false); traceParity(bc, true); rootHash(bc);
         retainedStateGrowth(bc);

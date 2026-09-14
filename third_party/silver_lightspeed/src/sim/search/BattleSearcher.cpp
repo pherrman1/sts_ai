@@ -179,9 +179,38 @@ void search::BattleSearcher::setRoot(const BattleContext &bc) {
 }
 
 void search::BattleSearcher::rerootAt(Node* newRoot) {
-    // Tree reuse: leave the node pool + dedup table alone (the chosen subtree's cached visits and
-    // evals serve as a head start for the new search). Just redirect root and reseed rng so the
-    // new decision's rollouts behave the same as if we'd constructed a fresh searcher at this state.
+    // Follow both child edges and chance nodes' borrowed-state dependency.
+    // Moving ownership slots preserves node/state addresses and all search statistics.
+    std::unordered_set<Node*> reachable;
+    std::unordered_set<BattleContext*> states;
+    std::vector<Node*> pending{newRoot};
+    while (!pending.empty()) {
+        Node* node = pending.back();
+        pending.pop_back();
+        if (!reachable.insert(node).second) continue;
+        if (node->state) states.insert(node->state);
+        if (node->isRandomNode && node->parent) pending.push_back(node->parent);
+        for (const auto &edge : node->edges)
+            if (edge.node) pending.push_back(edge.node);
+    }
+    // Preserve existing dedup membership (fresh roots are intentionally not inserted).
+    std::vector<DedupSlot> retainedSlots;
+    for (const auto &slot : stateToNode)
+        if (slot.node && reachable.count(slot.node)) retainedSlots.push_back(slot);
+    // Remove inactive high-water slots too: ALLOCATED must count retained storage.
+    allNodes.erase(std::remove_if(allNodes.begin(), allNodes.end(),
+        [&](const auto &node) { return !reachable.count(node.get()); }), allNodes.end());
+    decisionStates.erase(std::remove_if(decisionStates.begin(), decisionStates.end(),
+        [&](const auto &state) { return !states.count(state.get()); }), decisionStates.end());
+    poolUsed = allNodes.size();
+    decisionStatesUsed = decisionStates.size();
+    searchStack.clear();
+    std::memset(stateToNode.data(), 0, stateToNode.size() * sizeof(DedupSlot));
+    for (const auto &entry : retainedSlots) {
+        auto slot = entry.hash & stateToNodeMask;
+        while (stateToNode[slot].node) slot = (slot + 1) & stateToNodeMask;
+        stateToNode[slot] = entry;
+    }
     root = newRoot;
     diagnosticRootHashValid = false;
     *rootState = *newRoot->state;
