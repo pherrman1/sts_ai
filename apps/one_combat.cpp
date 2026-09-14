@@ -4096,11 +4096,12 @@ static WholeCombatTeacher loadWholeCombatTeacher(const std::string &path, int si
         || s.value("exploration_parameter",-1.0)!=25.0 || s.value("exploration_parameter_chance",-1.0)!=25.0
         || s.value("chance_widening_c",-1.0)!=3.7028 || s.value("chance_widening_alpha",-1.0)!=0.52389
         || s.value("end_turn_widening_c",-1.0)!=3.7028 || s.value("end_turn_widening_alpha",-1.0)!=0.52389
-        || silver_bridge::kSilverProductionReuseCap != 32768
         || s.value("reuse_cap_mode",std::string{})!="allocated" || s.value("reuse_cap",-1)!=32768
         || s.value("sequential_halving",true) || s.value("pruning",true) || s.value("learned_visit_puct",true)
         || s.value("direct_learned_leaf",true) || s.value("adaptive",true))
         throw std::runtime_error("wholecombatgen: not the frozen exact-10k ordinary Silver contract");
+    if (silver_bridge::kSilverProductionReuseCap != 32768)
+        throw std::runtime_error("wholecombatgen: production reuse cap mismatch with frozen 32k teacher");
     if (!t.contains("environment") || !t["environment"].is_object()) throw std::runtime_error("wholecombatgen: missing environment");
     for (const auto &[name, expected] : t["environment"].items()) { const char *actual=std::getenv(name.c_str()); if (!expected.is_string() || !actual || expected.get<std::string>()!=actual) throw std::runtime_error("wholecombatgen: environment mismatch for "+name); }
     const std::map<std::string,std::string> required={{"STS_FAIR","1"},{"STS_SEARCHER3","0"},{"STS_SILVER_SEARCH","1"},{"STS_SILVER_EXACT_ROOT_BUDGETS","1"},{"STS_SILVER_REUSE_CAP_MODE","allocated"},{"STS_SILVER_ADAPTIVE","0"},{"STS_SILVER_VNET_LEAF_DIRECT","0"},{"STS_SILVER_TELEMETRY","1"}};
@@ -4333,6 +4334,22 @@ static int teacherSchemaCompatibilitySelfTest() {
         if (!out) throw std::runtime_error("teacher compatibility: cannot create fixture");
         out << teacher.dump(2) << '\n';
         out.close();
+        if (silver_bridge::kSilverProductionReuseCap != 32768) {
+            const auto expectCapMismatch = [&](const auto &run) {
+                bool rejected = false;
+                try { run(); }
+                catch (const std::runtime_error &error) {
+                    rejected = std::string(error.what()).find("production reuse cap mismatch") != std::string::npos;
+                }
+                if (!rejected || std::filesystem::exists(wholePath) || std::filesystem::exists(evalPath))
+                    throw std::runtime_error("frozen teacher cap mismatch must reject before output");
+            };
+            expectCapMismatch([&] { wholeCombatGen(0, 10000, 0, wholePath.string(), 0, teacherPath.string()); });
+            expectCapMismatch([&] { combatEvalGen(0, 10000, 0, evalPath.string(), 0, teacherPath.string(), ""); });
+            cleanup();
+            std::cout << "frozen 32k teacher compatibility: both producers reject production cap mismatch before output\n";
+            return 0;
+        }
         wholeCombatGen(0, 10000, 0, wholePath.string(), 0, teacherPath.string());
         combatEvalGen(0, 10000, 0, evalPath.string(), 0, teacherPath.string(), "");
     } catch (...) {
