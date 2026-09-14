@@ -7644,3 +7644,47 @@ copied hidden noncombat RNG still limits unbiased planning/deployment claims.
 Knowledge impact: experiment evidence/current research status; analyzer cohort
 parameters in evaluation protocol. [Full evidence](evidence/live_ooc_mcts_fresh64_10000_2026-09-14.md),
 [raw/analysis packet](evidence/live_ooc_mcts_fresh64_10000_2026-09-14/README.md).
+
+## §250 — Near-full Ironclad combat-support census and Stage-1 evidence stop (2026-09-14)
+
+Baseline `210f347334898e7c2a85b8af0f30dedc4888ea88`, after updating local main
+and reusing the fresh app-managed worktree; #179/#180 merged. Seed-free audit
+of the unchanged RAW 25k corpus (510,030 rows, 24,999 source seeds), original
+source-grouped splits (51,441 TEST rows), six frozen model/prepared/corpus/split
+hashes and complete row/source/fight accounting. No model fitting, sampling,
+new game seeds/collection, architecture/runtime/MCTS/default changes, or gameplay.
+
+Historical support exactly reproduces: 413,799 overall (81.132286%), 41,454 TEST
+(80.585525%); 96,231 fallback. Full reasons, combinations, encounter/act/room
+counts and TEST counts are frozen in the packet. Gold exclusions affect 74,069
+rows; 71,367 gold-only candidates (57,151 TRAIN / 6,915 VALIDATION / 7,301 TEST)
+have zero later support rejections and zero other victorious copy-through
+mutations. This is an inventory, not ancestral validity or recovered support.
+Four raw joint targets covering five TEST rows are absent from TRAIN; native
+clipping reconstruction is needed rather than observed-pair vocabularies.
+
+#180 strict 64-source first-reason accounting reproduces 1,551 unsupported
+imagined combats and aborted roots. Actual first failures: gold encounter366,
+gold card264, gold potion250, gold relic227, Writhing Mass200, pre-stolen155,
+Ritual Dagger34, Brew30, Smoke Bomb25. Gold total1,262 (81.367%). Saved traces
+are aggregates only; no identified imagined-state corpus, joint reasons or root
+identities support exact before/after replay. No naive subtraction is qualified.
+
+**NEAR_FULL_COMBAT_SUPPORT_NOT_READY**. Stage 1 stops at evidence sufficiency:
+upgraded Transmutation has exactly two whole-corpus rows, source4108572 fights
+27/28, both TEST; zero TRAIN/VALIDATION, one non-gain victory and one death.
+Native Transmutation creates upgraded colorless cards (possible upgraded Hand
+of Greed), with gold procs dependent on policy/eligible kills. Full qualification
+requires targeted source-grouped evidence or a reviewed transfer derivation;
+neither is available. Specific live frequency is unknown (264 aggregate gold-card
+first failures). Smallest additional evidence design and sample-size uncertainty
+are in the staged stop report. No data was collected. Stages2–5 not started;
+zero rows recovered, support unchanged, no new component/exposure/native-parity
+metrics or runtime artifact. This is an evidence limitation, not impossibility.
+
+Checks: app-worktree preflight/check and Bash doctor PASS; Python focused5tests
+PASS; Debug CMake configure/generate PASS; focused Python CTest1/1 PASS (0.14s);
+complete scans/hash bindings PASS; diff check PASS. No independent review yet,
+no C++ build/full CTest/scientific sampling. Knowledge impact: research evidence
+and maintained current status. [Staged report](evidence/near_full_combat_support_2026-09-14/REPORT.md)
+links all frozen JSON receipts and hashes.

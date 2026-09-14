@@ -425,6 +425,8 @@ add_test(NAME ooc_mcts_gameplay_analysis_selftest
     COMMAND python3 ${CMAKE_SOURCE_DIR}/tools/test_analyze_ooc_mcts_gameplay.py)
 add_test(NAME combat_transition_expanded_support_selftest
     COMMAND python3 ${CMAKE_SOURCE_DIR}/tools/test_combat_transition_expanded_support.py)
+add_test(NAME combat_transition_remaining_census_selftest
+    COMMAND python3 ${CMAKE_SOURCE_DIR}/tools/test_combat_transition_remaining_census.py)
 add_test(NAME combat_transition_native_fixture
     COMMAND $<TARGET_FILE:one_combat> combattransitionselftest
         ${CMAKE_CURRENT_BINARY_DIR}/combat_transition_fixture.jsonl

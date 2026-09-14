@@ -39,6 +39,30 @@ against this fresh cohort.
 
 ## Completed recent line
 
+### Near-full combat-support expansion: stopped at Stage 1 evidence gate
+
+**NEAR_FULL_COMBAT_SUPPORT_NOT_READY**. The seed-free frozen census reproduces
+#179: 413,799/510,030 supported overall (81.132286%) and 41,454/51,441
+original TEST (80.585525%). Remaining fallback is 96,231 rows. Gold exclusions
+affect 74,069 rows; 71,367 gold-only candidates have no later support rejection
+or other victorious copy-through mutation. These candidates are not qualified.
+#180 first-failure traces attribute 1,262/1,551 root aborts to gold reasons;
+they contain aggregates rather than saved imagined states or joint reasons,
+so no before/after state replay or new root-abort prediction is established.
+
+Stage 1 stops because upgraded Transmutation occurs in exactly two corpus rows,
+both from one TEST source: TRAIN=0, VALIDATION=0, TEST=2 (one non-gain victory,
+one death). Native generation upgrades its colorless cards, including possible
+Hand of Greed; proc probability also depends on card use and eligible kills.
+There is no validated conditional distribution or reviewed transfer derivation
+for this branch. Reliable full Stage-1 qualification needs targeted evidence
+or a justified derivation; this is not a proof that modeling is impossible.
+Its specific #180 live frequency is unknown because card reasons are aggregated.
+No training, collection, support/runtime changes, or gameplay occurred; stages
+2–5 did not start under the requested stop rule. See
+[staged report and full census](../../experiments/evidence/near_full_combat_support_2026-09-14/REPORT.md)
+and [ledger-06 §250](../../experiments/ledger-06.md).
+
 ### Live OOC MCTS paired Silver gameplay gate
 
 **`OOC_MCTS_WINRATE_DOWN`** in the first fixed 32-seed paired Act-3 engineering
