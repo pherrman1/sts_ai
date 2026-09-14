@@ -16,7 +16,8 @@ Survival, max-HP, HP encoding and potion including its encoder each cost about
 [Initial raw probe](combat-baseline.jsonl), [prepared probe](combat-prepared.jsonl),
 [summary and model/fixture hashes](combat-summary.json).
 
-The baseline logic replay's first fixed root cost 419.230 ms. Temporary nested
+The initial baseline logic replay's [first fixed root](initial-profile-baseline.log)
+cost 419.230 ms. Temporary nested
 timers subtract child time, giving this approximate split:
 
 | Cost | Milliseconds | Fraction |
@@ -63,9 +64,9 @@ A native regain-control callback returns to MAP to isolate searched combat from
 reward projection. Search timing excludes adapter construction/destruction and
 live action execution; no real gameplay occurs.
 
-Median baseline search: **387.760 ms**, optimized: **231.556 ms**; **1.675x**,
-**40.28% lower wall time**. About 1,320 -> 2,211 simulations/sec and
-206 -> 345 combat samples/sec. Encoders: 320 -> 12; all 80 samples and 81 states
+Median baseline search: **384.252 ms**, optimized: **223.176 ms**; **1.722x**,
+**41.92% lower wall time**. About 1,332 -> 2,294 simulations/sec and
+208 -> 358 combat samples/sec. Encoders: 320 -> 12; all 80 samples and 81 states
 remain. Every run had exactly equal selected action, IDs/order/priors, root
 visits/Q, all unchanged tree counters, and every generated snapshot/PathHistory.
 [Summary, repeated timings and payload digest](fixed-search-summary.json),
@@ -74,7 +75,7 @@ Original unmodified baseline adapter self-test stdout also equals final stdout
 byte for byte: [baseline](adapter-baseline.log), [final](adapter-final.log).
 
 Prepared combat sampling accounts for the demonstrated native-search gain.
-The optimized uncached control median is 397.117 ms; these three timings do not
+The optimized uncached control median is 381.131 ms; these three timings do not
 demonstrate an isolated native wall-time benefit from metadata/arena changes.
 Metadata eliminates repeated enumeration; the arena eliminates 80 individual
 particle-node heap allocations in this fixture, while retaining container/map
@@ -88,7 +89,9 @@ stats matched baseline before those tests were added.
 The sole-root abort test executes the exact original fallback primitive and
 preserves complete live state/RNG, with zero simulations/attempts/combat draws.
 No live bypass speed estimate is made. The qualified non-aborting toy lock test
-uses 52/100 simulations, saves 48, and selects the same action as full budget.
+uses 52/100 simulations, saves 48, and selects the same action as full budget. A guaranteed visit-selected sole-root toy stops after
+one simulation and saves nine of ten: no challenger exists, while the same
+unsafe model runs the full budget.
 Equality, catchable challengers, mean-Q selection, one action, unsafe models,
 late aborts and adversarial remaining allocations are tested. Locked-root
 stopping is **dormant in OocGameContextModel**: unsupported combats, continuation
@@ -124,7 +127,8 @@ pristine second full repository build. No additional worktree was created.
 
 [Check receipt](checks.json), [core/runtime CTests](core-runtime-final-ctest.log),
 [final adapter/startup CTests](adapter-startup-final-ctest.log). Eight selected
-CTest checks pass; final GCC ASan+UBSan [planner run](planner-sanitizer.log) passes
+CTest checks pass; the [one-root correction reruns](one-root-final-ctest.log)
+pass all three affected checks; final GCC ASan+UBSan [planner run](planner-sanitizer.log) passes
 176 checks. The initial two execution failures overlapped relinking
 ([raw log](ctest-link-overlap.log)); final reruns pass. Existing SimpleAgent/Silver
 ODR and narrowing/LTO warnings were present in baseline builds as well.

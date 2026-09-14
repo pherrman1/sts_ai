@@ -18,5 +18,6 @@
     "gameplay experiment/canary",
     "full-budget live gameplay performance comparison"
   ],
-  "knowledgeImpact": "Maintained OOC architecture/interfaces/telemetry and parity procedure; code-map navigation; chronological engineering microbenchmark evidence."
+  "knowledgeImpact": "Maintained OOC architecture/interfaces/telemetry and parity procedure; code-map navigation; chronological engineering microbenchmark evidence.",
+  "oneRootCorrection": "Guaranteed visit-selected single action: stop after first simulation, save 9/10; unsafe full budget. Core/adapter/startup reruns: 3/3 pass; final ASan+UBSan PASS176."
 }

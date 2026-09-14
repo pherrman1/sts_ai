@@ -126,8 +126,9 @@ void tests() {
     single.guaranteedNonAborting = false;
     const auto singleFull = planner.search(single, 0, 10);
     require(singleLocked.selectedAction == singleFull.selectedAction
-        && singleLocked.metrics.earlyStopLockedRoot && singleLocked.metrics.simulations == 6,
-        "single root action obeys visit-lock inequality");
+        && singleLocked.metrics.earlyStopLockedRoot && singleLocked.metrics.simulations == 1
+        && singleLocked.metrics.savedSimulations == 9,
+        "guaranteed single root has no challenger and locks after its first simulation");
     auto meanLockConfig = lockConfig; meanLockConfig.selectByMeanQ = true;
     const auto meanLocked = OocMctsPlanner(meanLockConfig).search(lockModel, 0, 100);
     require(!meanLocked.metrics.earlyStopLockedRoot && meanLocked.metrics.simulations == 100,

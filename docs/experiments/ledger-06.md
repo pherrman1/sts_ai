@@ -3113,7 +3113,7 @@ particles, all strategic gates, margin 1.0, explicit `STS_COLLECT_KEYS=0` and
 
 | Arm | Wins | Win rate | Mean floor | Mean HP |
 |---|---:|---:|---:|---:|
-| Strict corrected M0 | 23/64 | 35.9% | 40.281 | 16.672 |
+| Strict corrected M0 | 23/64 | 35.9% | 41.921 | 16.672 |
 | Strict corrected M1 | 16/64 | 25.0% | 37.562 | 8.672 |
 | Original M0 | 17/64 | 26.6% | 38.812 | 14.562 |
 | Original M1 | 16/64 | 25.0% | 38.719 | 10.312 |
@@ -7670,17 +7670,19 @@ baseline probability outputs. Prepared128-draw amortized sampling4.393ms→60.32
 Interleaved3baseline/optimized runs,CPU0/OMP1,Ironclad A0,GameContext42/search
 seed20260914,512simulations/depth1,cPuct1.5/k2/alpha.5,V4 priors/native win leaves.
 Detached native callback isolates searched combat from reward projection; no
-real gameplay/teacher combat budget applies. Median baseline logic replay387.760ms
-versus optimized231.556ms (1.675x,40.28% reduction),about1320→2211 simulations/sec.
+real gameplay/teacher combat budget applies. Median baseline logic replay384.252ms
+versus optimized223.176ms (1.722x,41.92% reduction),about1332→2294 simulations/sec.
 All80samples/81states, action/order/priors/visits/Q/tree statistics and every
 snapshot/history exactly equal. Encoders320→12;80individual node heap allocations
-eliminated, not all allocations. Native uncached control397.117ms does not
+eliminated, not all allocations. Native uncached control381.131ms does not
 establish a separate metadata/arena speed benefit; standalone toy planner suite
 11.376→10.380ms median/process is descriptive. Baseline replay used matching final
 telemetry ABI/otherwise shared build objects; initial original adapter stdout
 and probability vectors also reproduce exactly.
 
-Sole-root unsupported-combat fallback primitive/live RNG equivalence passes,
+Guaranteed visit-selected single-root toy stops after1/10 (saves9): no
+challenger exists; default-unsafe still runs full budget. Sole-root
+unsupported-combat fallback primitive/live RNG equivalence passes,
 with zero simulated work. Non-aborting toy lock saves48/100simulations with same
 action; strict equality/mean-Q/catchable/unsafe/late-abort/adversarial cases pass.
 Locked stopping remains dormant in the live adapter: all intentional abort paths

@@ -54,7 +54,9 @@ through the budget up to 1,048,576 visits; larger visits evaluate it on demand.
 For visit-selected roots, a leader may stop search only when its visit count is
 strictly greater than every challenger's count plus the remaining budget **and**
 `model.searchGuaranteedNonAborting()` is true. The capability defaults to false;
-mean-Q selection never uses this shortcut. A later support abort would otherwise
+mean-Q selection never uses this shortcut. For a guaranteed non-aborting
+visit-selected root with one action, no challenger exists, so it locks after
+the first completed simulation. A later support abort would otherwise
 invalidate even a locked winner. `OocGameContextModel` retains the default false:
 unsupported combat, unresolved continuation limits, and forbidden imagined
 native-combat paths still exist. Observed zero aborts do not qualify this contract.
