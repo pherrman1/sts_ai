@@ -32,7 +32,8 @@ void require(bool ok, const char *why) { if (!ok) throw std::runtime_error(why);
 void applySampledCombatExit(GameContext &gc, const CombatRuntimeSample &sample) {
     const bool escape = sample.outcome == CombatRuntimeSample::Outcome::ESCAPE;
     if ((sample.outcome != CombatRuntimeSample::Outcome::VICTORY && !escape)
-        || sample.rawPost.smokeBombUsed != escape)
+        || sample.rawPost.smokeBombUsed != escape
+        || (escape && sts::isBossEncounter(gc.info.encounter)))
         throw std::runtime_error("combat outcome disagrees with RAW smokeBombUsed");
     applyCombatTransitionState(gc, sample.rawPost);
     gc.regainControl();
@@ -885,6 +886,24 @@ void oocMctsAdapterSelfTest() {
         escapeSampler->escape=false;
         OocGameContextModel mislabeled(escapeRoot,path,escapeSampler);
         rejects([&] { mislabeled.sampleSuccessor(0,restAction.bits,rng); });
+        auto boss=detachedCopy(escapeRoot);
+        boss.info.encounter=MonsterEncounter::SLIME_BOSS;
+        rejects([&] { applySampledCombatExit(boss,{CombatRuntimeSample::Outcome::ESCAPE,escapeSampler->raw}); });
+        BattleContext blocked;
+        blocked.init(boss,MonsterEncounter::SLIME_BOSS);
+        blocked.drinkPotion(0);
+        require(blocked.outcome==Outcome::UNDECIDED && !blocked.smokeBombUsed
+            && blocked.potions[0]==Potion::SMOKE_BOMB && blocked.potionCount==1,
+            "boss blocks Smoke Bomb without consuming it or accepting ESCAPE");
+        blocked.init(escapeRoot,MonsterEncounter::CULTIST);
+        blocked.player.buff<PS::SURROUNDED>();
+        blocked.drinkPotion(0);
+        require(blocked.outcome==Outcome::UNDECIDED && blocked.potionCount==1,
+            "Surrounded blocks Smoke Bomb without consumption");
+        blocked.player.removeStatus<PS::SURROUNDED>();
+        blocked.drinkPotion(0);
+        require(blocked.smokeBombUsed && blocked.potionCount==0,
+            "removing Surrounded allows escape later in the same combat");
         regainCalls=savedRegainCalls;
     }
     std::cout<<"smoke_escape_oracle native_origin=identical cleric=both raw_outcome=ESCAPE parity=exact\n";
