@@ -126,5 +126,69 @@ def fit(folder,sha):
     torch.save(dict(stateDict=state,metadata=meta,recipe=RECIPE),folder/'trajectory.pt');result['artifactSha256']=c.base.sha256(folder/'trajectory.pt');c.base.json_dump(folder/'fit.json',result);print(json.dumps(result),flush=True)
 
 
+def diagnose(folder,sha):
+    sparse.frozen(sha)
+    if (folder/'diagnostics.json').exists():raise ValueError('refusing overwrite')
+    cache,graphs,meta=load(folder);fitmeta=json.loads((folder/'fit.json').read_text())
+    if c.base.sha256(folder/'trajectory.pt')!=fitmeta['artifactSha256']:raise ValueError('checkpoint differs')
+    torch.set_num_threads(4);m=c.FrozenModels('cuda');net=t.new_decoder(len(m.delta_values),m.potion_net).eval().requires_grad_(False)
+    net.load_state_dict(torch.load(folder/'trajectory.pt',map_location='cuda',weights_only=False)['stateDict'])
+    repaired=folder.parent/'maxhp-encoder-v1'/'maxhp-head.pt'
+    repairmeta=json.loads((repaired.parent/'fit.json').read_text())
+    if c.base.sha256(repaired)!=repairmeta['artifactSha256']:raise ValueError('maxHP repair differs')
+    payload=torch.load(repaired,map_location='cuda',weights_only=False)
+    m.max_net.max_hp_delta.load_state_dict(payload['stateDict']);m.max_net.encoder.load_state_dict(payload['encoderStateDict'])
+    arrays,spec=c.base._load_prepared(e.PREPARED);c.base._prepare_target_indices(arrays,spec)
+    test=np.flatnonzero(cache['win']&(cache['split']==2));z=np.zeros((len(test),64),np.float32);pd=np.zeros((len(test),len(m.delta_values)),np.float64)
+    teacher=np.empty(len(test));mass=np.empty((32,len(test)),np.float64)
+    with torch.inference_mode():
+        for start in range(0,len(test),512):
+            sub=test[start:start+512];inputs=c.base._torch_inputs(arrays,cache['ids'][sub],'cuda',torch,trim_padding=True)
+            z[start:start+len(sub)]=m.hp_encoding(inputs).cpu().numpy()
+            pd[start:start+len(sub)]=e.probabilities(m.max_net.max_hp_delta(m.fp32_encoding(m.max_net.encoder,inputs)))
+            teacher[start:start+len(sub)]=losses(net,cache,graphs,sub).cpu().numpy()
+        rng=np.random.default_rng(20260920)
+        for draw in range(32):
+            for start in range(0,len(test),512):
+                sub=test[start:start+512];d=e.draw_categories(pd[start:start+len(sub)],rng)
+                maximum=cache['preMax'][sub]+m.delta_values[d]
+                hp=e.hp_prob(m,z[start:start+len(sub)],d,cache['preHp'][sub],maximum)
+                ending=cache['preHp'][sub]+c.CLASSES[e.draw_categories(hp,rng)]
+                mass[draw,start:start+len(sub)]=(-losses(net,cache,graphs,sub,delta=d,hp=ending/maximum)).exp().cpu().numpy()
+            print('full union potion exposure',draw+1,flush=True)
+    mixture=e.nll(mass.mean(0));gap=mixture-teacher
+    special=np.asarray([i in graphs for i in test]);recursive=np.asarray([i in graphs and graphs[i].rounds>1 for i in test]);brew=np.any(cache['potions'][test]==t.BREW,-1);smoke=np.any(cache['potions'][test]==t.SMOKE,-1)
+    slices={}
+    for name,selected in dict(entireFinalUnion=np.ones(len(test),bool),previous179=cache['old'][test],recovered=~cache['old'][test],special=special,brew=brew,smoke=smoke,recursiveBrew=recursive).items():
+        if selected.any():slices[name]=dict(rows=int(selected.sum()),conditionalTeacherNll=float(teacher[selected].mean()),exposure=e.source_gap_bootstrap(cache['source'][test[selected]],gap[selected]),zeroExactMassRows=int((mass.mean(0)[selected]<=0).sum()),gate=bool(np.isfinite(gap[selected]).all() and gap[selected].mean()<=.1))
+    np.savez_compressed(folder/'diagnostic_rows.npz',ids=cache['ids'][test],source=cache['source'][test],teacherNll=teacher,mixtureNll=mixture,exposureGap=gap)
+    result=dict(sourceSha=sha,modelSha256=fitmeta['artifactSha256'],maxHpSha256=repairmeta['artifactSha256'],slices=slices,draws=32,upstream='repaired maxHP encoder/head and original HP encoder/head',classification='POTION_TRAJECTORY_DEVELOPMENT_PASS' if all(s['gate'] for s in slices.values()) else 'POTION_TRAJECTORY_DEVELOPMENT_FAIL',supportChanged=False,scope='potion component development exposure; not full-stack/native/runtime qualification',partition=RECIPE['partition'])
+    c.base.json_dump(folder/'diagnostics.json',result);print(json.dumps(result),flush=True)
+
+
+def posterior(folder,sha):
+    sparse.frozen(sha)
+    if (folder/'trace_posteriors.npz').exists():raise ValueError('refusing overwrite')
+    cache,graphs,meta=load(folder);fitmeta=json.loads((folder/'fit.json').read_text())
+    if c.base.sha256(folder/'trajectory.pt')!=fitmeta['artifactSha256']:raise ValueError('checkpoint differs')
+    torch.set_num_threads(4);m=c.FrozenModels('cuda');net=t.new_decoder(len(m.delta_values),m.potion_net).eval().requires_grad_(False)
+    net.load_state_dict(torch.load(folder/'trajectory.pt',map_location='cuda',weights_only=False)['stateDict'])
+    ids=np.asarray(sorted(graphs),np.int64);posteriors=np.zeros((len(ids),256),np.float64);max_error=0.
+    with torch.inference_mode():
+        for start in range(0,len(ids),128):
+            sub=ids[start:start+128];owners=np.concatenate([np.full(len(graphs[i].inventories),row) for row,i in enumerate(sub)])
+            inventories=np.concatenate([graphs[i].inventories for i in sub]);rows=sub[owners]
+            lp=t.log_probabilities(net,cache['z'][rows],inventories,cache['capacity'][rows],cache['delta'][rows],cache['trueHp'][rows]/cache['trueMax'][rows],cache['boss'][rows])
+            offset=0
+            for row,i in enumerate(sub):
+                graph=graphs[i];p=lp[offset:offset+len(graph.inventories)];posteriors[start+row],total=t.trace_posterior(p,graph)
+                scalar=float(t.target_log_probability(p,graph,False).exp());max_error=max(max_error,abs(total-scalar));offset+=len(graph.inventories)
+            if start%1024==0:print('exact potion effect posteriors',start,len(ids),flush=True)
+    if max_error>1e-6:raise ValueError('posterior marginal differs from independent target DAG')
+    np.savez_compressed(folder/'trace_posteriors.npz',ids=ids,posterior=posteriors)
+    result=dict(sourceSha=sha,modelSha256=fitmeta['artifactSha256'],specialSurvivors=len(ids),maxIndependentMarginalError=max_error,multipleTraceRows=int(((posteriors>0).sum(-1)>1).sum()),artifactSha256=c.base.sha256(folder/'trace_posteriors.npz'),supportChanged=False)
+    c.base.json_dump(folder/'trace_posteriors.json',result);print(json.dumps(result),flush=True)
+
+
 if __name__=='__main__':
-    p=argparse.ArgumentParser();p.add_argument('command',choices=['prepare','fit']);p.add_argument('--output-dir',type=Path,required=True);p.add_argument('--source-sha',required=True);a=p.parse_args();(prepare if a.command=='prepare' else fit)(a.output_dir,a.source_sha)
+    p=argparse.ArgumentParser();p.add_argument('command',choices=['prepare','fit','diagnose','posterior']);p.add_argument('--output-dir',type=Path,required=True);p.add_argument('--source-sha',required=True);a=p.parse_args();globals()[a.command](a.output_dir,a.source_sha)

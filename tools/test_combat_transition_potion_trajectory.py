@@ -34,6 +34,23 @@ class TrajectoryTest(unittest.TestCase):
         self.assertTrue(all(b>a for a,_,b in graph.edges))
         with self.assertRaises(ValueError):t.target_graph(pre,post,[t.BREW,23,t.SMOKE,23,t.SMOKE,23],True)
 
+    def test_effect_posterior_preserves_compatible_paths_and_native_mass(self):
+        forge=t.EFFECT_IDS[2]
+        pre,post=self.fixture([t.BREW,forge,1,1,1],[forge,forge,forge,1,1])
+        graph=t.target_graph(pre,post,[forge,forge,forge])
+        legal=torch.as_tensor(np.stack([t.legal_actions(i,3) for i in graph.inventories]))
+        lp=torch.log_softmax(torch.zeros((len(graph.inventories),64)).masked_fill(~legal,-torch.inf),-1)
+        posterior,total=t.trace_posterior(lp,graph)
+        self.assertAlmostEqual(total,float(t.target_log_probability(lp,graph,False).exp()),places=7)
+        self.assertAlmostEqual(posterior.sum(),1.,places=12)
+        # The original Brew is always cleared; compatible paths differ on
+        # whether the original Forge was used before generated Forge refilled it.
+        active=np.flatnonzero(posterior)
+        self.assertTrue(np.all((active&1)==1))
+        self.assertTrue(np.any(((active>>5)&4)==4))
+        self.assertTrue(np.any(((active>>5)&4)==0))
+        self.assertGreater(len(active),1)
+
     def test_native_boss_smoke_discard_is_not_escape(self):
         # Frozen RAW row64773, Slime Boss: Smoke removed, no escape/RNG draw.
         pre,post=self.fixture([t.SMOKE,1,1,1,1],[1]*5)

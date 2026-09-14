@@ -159,6 +159,40 @@ def batch_target_log_probabilities(net,graphs,z,capacity,delta,hp,boss,include_g
     return target.log()+(torch.as_tensor(priors,device=device) if include_generation else 0.)
 
 
+def trace_posterior(logp,graph):
+    """Exact teacher posterior over original clearing bits and effect availability.
+
+    Index = original mask + 32 * three generated-or-original effect bits.
+    Compatible orderings can reach the same retained inventory with different
+    available combat effects. Preserve that uncertainty for downstream mechanics.
+    The native generation-body prior is common to all paths and cancels here.
+    """
+    probability=logp.detach().exp().cpu().numpy().astype(np.float64)
+    initial_bits=sum(1<<slot for slot,p in enumerate(graph.inventories[0]) if p>1)
+    traces=np.arange(256,dtype=np.int64)
+    masses=np.zeros((len(graph.inventories),256),np.float64);masses[0,0]=1.
+    target=np.zeros(256,np.float64)
+    def advance(owner,action):
+        mask=action&31
+        _,used=consume(graph.inventories[owner],mask)
+        effects=sum(1<<bit for bit,p in enumerate(EFFECT_IDS) if p in used)
+        mapped=(traces&31)|(mask&initial_bits)|32*((traces>>5)|effects)
+        return mapped,masses[owner]*probability[owner,action]
+    # Graph vertices are topologically ordered; all parent mass arrives first.
+    outgoing=[[] for _ in graph.inventories]
+    endings=[[] for _ in graph.inventories]
+    for owner,action,child in graph.edges:outgoing[owner].append((action,child))
+    for owner,action in graph.target_edges:endings[owner].append(action)
+    for owner in range(len(graph.inventories)):
+        for action,child in outgoing[owner]:
+            mapped,value=advance(owner,action);np.add.at(masses[child],mapped,value)
+        for action in endings[owner]:
+            mapped,value=advance(owner,action);np.add.at(target,mapped,value)
+    total=target.sum()
+    if not np.isfinite(total) or total<=0:raise ValueError('zero/nonfinite exact trace posterior')
+    return target/total,total
+
+
 def sample(net,z,pre,delta,hp,planner,boss=False):
     inventory=tuple(pre['potions']);capacity=pre['potionCapacity'];sozu=any(r['id']==base._RELIC_IDS['SOZU'] for r in pre['relics'])
     origin=None;state=None;body=[];uses=[];discards=[];initial_mask=0
