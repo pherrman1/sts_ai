@@ -18,10 +18,10 @@ MECHANICAL_FIELDS = ('preGold', 'explicitHog', 'generatedHog', 'upgradedHogSourc
 CANDIDATE_FIELDS = ('deltaGold', 'stolenGold', 'noGoldChange', 'noStolenGold',
                     'gain', 'deltaPlusRecovery')
 # Maximum qualifying kills: split slime descendants count; summoned minions
-# do not. Native Darkling deaths retain halfDead (also on the final death
-# because another Darkling is already halfDead), so HoG pays nothing there.
+# do not. MonsterGroup::anyHalfDead defers victory only for Awakened One;
+# the final Darkling death returns before setting halfDead, allowing one HoG
+# payout. Earlier Darkling half-deaths cannot pay.
 CAP_OVERRIDES = {
-    0: ('THREE_DARKLINGS',),
     2: ('TWO_LOUSE', 'TWO_FUNGI_BEASTS', 'TWO_THIEVES', 'CHOSEN_AND_BYRDS',
         'SENTRY_AND_SPHERE', 'CENTURION_AND_HEALER', 'CULTIST_AND_CHOSEN',
         'SHELLED_PARASITE_AND_FUNGI', 'DONU_AND_DECA', 'SHIELD_AND_SPEAR',

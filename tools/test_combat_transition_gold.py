@@ -42,7 +42,7 @@ class NativeGoldTest(unittest.TestCase):
         self.assertIn((100, 0), g.native_posts(0, 'SLIME_BOSS', 0, 2))
         self.assertNotIn((125, 0), g.native_posts(0, 'SLIME_BOSS', 0, 2))
         self.assertEqual(g.native_posts(0, 'GREMLIN_LEADER', 0, 2), ((0, 0), (25, 0)))
-        self.assertEqual(g.native_posts(0, 'THREE_DARKLINGS', 0, 3), ((0, 0),))
+        self.assertEqual(g.native_posts(0, 'THREE_DARKLINGS', 0, 3), ((0, 0), (20, 0), (25, 0)))
 
     def test_upgrade_shared_feature_and_recursive_colorless_pool(self):
         pi, pre = fixture('TRANSMUTATION')
