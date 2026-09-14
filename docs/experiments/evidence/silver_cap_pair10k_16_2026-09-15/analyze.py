@@ -42,5 +42,5 @@ summary['prepressure_diagnostics_identical']=True
 paired=[]
 for s in sorted(a):paired.append({'seed':s,'won_32k':a[s]['won'],'won_128k':b[s]['won'],'floor_32k':a[s]['floor'],'floor_128k':b[s]['floor'],'hp_32k':a[s]['hpEnd'],'hp_128k':b[s]['hpEnd'],'seconds_32k':a[s]['sec'],'seconds_128k':b[s]['sec']})
 with (p/'paired-seeds.csv').open('w') as f:
-    w=csv.DictWriter(f,fieldnames=paired[0]);w.writeheader();w.writerows(paired)
+    w=csv.DictWriter(f,fieldnames=paired[0],lineterminator="\n");w.writeheader();w.writerows(paired)
 (p/'summary.json').write_text(json.dumps(summary,indent=2)+'\n');print(json.dumps(summary,indent=2))
