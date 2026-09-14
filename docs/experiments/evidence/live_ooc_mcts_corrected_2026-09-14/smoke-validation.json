@@ -1,0 +1,11 @@
+{
+  "arm": "smoke_on",
+  "rows": 8,
+  "validation": "PASS",
+  "wins": 7,
+  "owned": 971,
+  "supportAborts": 252,
+  "surrogateSamples": 28189,
+  "realCombats": 215,
+  "maxDepth": 16
+}

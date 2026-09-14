@@ -1,0 +1,17 @@
+{
+  "reviewedSha": "0757c2db918b6395d8f22ca54f6d94c8e3ae0b10",
+  "integration": "PASS",
+  "readiness": "PASS",
+  "finalEvidence": "PASS",
+  "independentBootstrap": "PASS",
+  "sourceBinaryFiveModelsBinding": "PASS",
+  "seedConfigurationSupportAccounting": "PASS",
+  "actualSilverCounts": [
+    823,
+    807
+  ],
+  "bridgeFailureCounters": 0,
+  "priorControlNonTimingParity": "32/32 PASS",
+  "reviewerGameplaySeeds": 0,
+  "issues": []
+}

@@ -1,0 +1,17 @@
+{
+  "status": "PASS",
+  "unchanged_binary_and_artifact": true,
+  "corrected_baseline_canary_sha": "3057ea79f8a678ba13f9f2ea2b4834850fa2dd87",
+  "silver_validation": {
+    "control": {
+      "silver_combat_log_rows": 797,
+      "bridge_failure_counters": "all zero",
+      "benchmark_summary": "BEST                    win%= 65.6   avg_floor= 48.0   avg_hp_end= 33.6   cpu_sec/run=2.37   wall=19.5s"
+    },
+    "treatment": {
+      "silver_combat_log_rows": 702,
+      "bridge_failure_counters": "all zero",
+      "benchmark_summary": "BEST                    win%= 31.2   avg_floor= 41.7   avg_hp_end= 12.3   cpu_sec/run=10.75   wall=94.9s"
+    }
+  }
+}

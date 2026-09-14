@@ -1,0 +1,22 @@
+{
+  "status": "PASS",
+  "seed": 969992,
+  "off_parity": "exact all8 non-timing fields",
+  "effective_backend": "silver",
+  "exact_root_budgets": true,
+  "silver_failure_counters": "all zero",
+  "on_trace": {
+    "seed": "969992",
+    "oocDecisions": "88",
+    "mctsOwned": "70",
+    "mctsFallback": "18",
+    "simulations": "8960",
+    "transitionSamples": "5946",
+    "combatSurrogateSamples": "42",
+    "leafEvaluations": "8960",
+    "maxDepth": "3",
+    "mctsWallSec": "1.333926397",
+    "mctsCpuSec": "1.333760406",
+    "realCombats": "15"
+  }
+}

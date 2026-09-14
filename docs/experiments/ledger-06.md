@@ -7398,7 +7398,89 @@ encoders dominate (~1.08 ms/component); no optimization was attempted.
 [Full evidence and commands](evidence/native_combat_adapter_2026-09-14.md),
 [artifact hashes and raw metrics](evidence/native_combat_adapter_2026-09-14.json).
 
-## §243 Frozen potion-generation support-contract correction (2026-09-14)
+
+## §243 First live OOC MCTS paired Silver gameplay gate (2026-09-14)
+
+**OOC_MCTS_WINRATE_DOWN.** Control V4 full one-ply stack won 21/32; opt-in live
+OOC MCTS won 10/32 on fresh paired seeds 970000..970031, A0, Act-3 stop, no keys.
+Both arms played **Silver real combat** at 1000 exact-root simulations, allocated
+reuse cap 32768, adaptive/direct leaf OFF, four OpenMP threads, same frozen binary
+and SHA `c705072f50e12892dd02a6da6dc1e39305b6839e`. The user changed the original
+cheap Searcher2 plan to Silver before any decision-bearing seed ran.
+Baseline `3057ea79f8a678ba13f9f2ea2b4834850fa2dd87`; independently reviewed MCTS
+implementation `0c7d932d6231de5d3cd5677d8ddac5d4b023d9d2`.
+
+Paired win delta -34.375pp, bootstrap 95% CI [-53.125,-15.625]pp; one treatment-only
+win, twelve control-only wins, nineteen same-result seeds; exact two-sided
+discordant binomial p=.00341796875 descriptive. Mean floor delta -6.28125,
+CI [-10.46875,-2.3125]; runtime 4.5403234x. Classification uses only the primary
+win CI. Bootstrap 200000 paired draws, PCG64 seed 20260914, percentile interval.
+
+Frozen qualified native combat artifact SHA256
+`f9520a14b1fc42e2a22840c0c2cab0b13ebd8ab6285b5c943662f5e0e9cd9233` is used only
+inside imagination. Real selected primitive actions execute once; real BATTLE
+returns to ordinary combat. Native V4 artifact `ooc_strategic_tok_final.native`,
+full REST/EVENT/SHOP/TREASURE/BOSS_RELIC gates, margin 1.0, native floor/win and
+other combat configuration match between arms. MCTS defaults cPuct 1.5, k 2, alpha .5,
+maxDepth 32, 128 simulations; independent indexed SplitMix64 RNG; no tuning.
+Mean 123.40625 owned decisions/run, fallback 18.274%, 980.4375 combat samples/run,
+15796 simulations/run, 15771 leaf evaluations/run; max depth 3 in 32/32 runs;
+MCTS 8.8288376 wall seconds/run, 82.1308% of per-run elapsed time. All trace
+accounting reconciles and Silver bridge failure counters are zero.
+
+Eight implementation seeds 969992..969999: exact OFF parity across all eight
+non-timing fields, repaired ON smoke 8/8 with surrogate sampling and actual
+combats. Duplicate native GOLD IDs now use leaf/live fallback; candidates and
+surrogate support unchanged. Silver excluded-seed canaries pass. Invalid first
+smoke, mistagged baseline canary and an overly strict per-run analysis coverage
+check are preserved/documented. The final coverage-validation correction changes
+no MCTS/gameplay/bootstrap/classification semantics. Focused CTests 3/3,
+qualified startup cases 11/11, independent implementation/statistical review pass.
+
+MCTS reduced actual paired gameplay under the copied-RNG planning environment.
+Copied hidden noncombat RNG still prevents unbiased planning/fairness or
+deployment claims. Keep MCTS OFF; return for review and bounded changed-decision/
+leaf investigation before any new budget or tuning experiment. No automatic
+follow-up seeds. Knowledge impact: live contracts/configuration/code routing
+updated in maintained KB; research status closed with this negative evidence.
+[Full evidence/environment/commands](evidence/live_ooc_mcts_2026-09-14.md),
+[raw paired results](evidence/live_ooc_mcts_2026-09-14/result.json).
+
+
+## §244 Corrected live OOC MCTS paired exact-10k Silver regression (2026-09-14)
+
+**OOC_MCTS_WINRATE_INCONCLUSIVE.** Both control V4 and corrected opt-in MCTS
+won21/32 on the user-requested same seeds970000..970031. Paired win delta0pp,
+bootstrap95% CI[-21.875,+21.875]pp; six wins unique to each arm, twenty same
+results, exact discordant p=1 descriptive. Both use ordinary fair exact-10k
+Silver actual combat, A0, keys OFF, Act-3 stop, four workers and the same frozen
+reviewed executable `f9af4ad6055b98603fd732d59869b5b39cc8beec`.
+
+Four bundled corrections: resolve pending reward/shop/event/selector leaves
+through existing OOC policy to checkpoint/terminal before native win evaluation;
+unsupported imagined combat aborts the entire root to unchanged V4 and discards
+partial action estimates, with no imagined native/Silver fight; align actual
+combat to the frozen10k teacher; reuse deterministic children and fix MCTS512
+simulations without tuning stochastic widening/PUCT/horizon. Search depth6–13,
+3,654 owned decisions, 2,142 fallbacks including972 support aborts;105,957 supported
+surrogate samples. All search/support accounting and real combat logs reconcile;
+zero Silver bridge failures. Control823/treatment811 actual battles.
+Mean game time38.2207→61.0723s (1.5979x), mean floor48.625→49.0625 descriptive.
+
+Focused checks3/3, startup11/11, excluded OFF parity8/8, ON smoke8/8, independent
+implementation review and authoritative Linux GCC CI pass before freeze/run.
+Models, corpus/support, default OFF and original §243 evidence preserved. The
+initial expensive imagined-Silver canary was stopped before any revised official
+seed; user chose whole-decision V4 fallback. Same seeds/four corrections imply
+regression evidence, not fresh confirmation or individual causal attribution.
+The result demonstrates neither improvement nor equivalence; copied hidden RNG
+still prevents unbiased-planning or deployment claims. No follow-up seeds or
+sweep. Knowledge impact: maintained live contracts/telemetry and research status
+updated; frozen raw evidence preserved.
+[Full evidence](evidence/live_ooc_mcts_corrected_2026-09-14.md),
+[raw paired result](evidence/live_ooc_mcts_corrected_2026-09-14/result.json).
+
+## §245 Frozen potion-generation support-contract correction (2026-09-14)
 
 Baseline main `3057ea79f8a678ba13f9f2ea2b4834850fa2dd87`. Seed-free full census
 of the same 510,030 rows and original source split; all corpus/model/prepared
@@ -7423,3 +7505,65 @@ performance or gameplay qualification.
 
 [Full provenance, slices, limitations and commands](evidence/potion_generation_support_2026-09-14.md),
 [raw accounting and source hashes](evidence/potion_generation_support_2026-09-14.json).
+
+
+## §246 Expanded-support live OOC MCTS paired regression (2026-09-14)
+
+**OOC_MCTS_WINRATE_INCONCLUSIVE.** User-requested same32 seeds970000..970031,
+current V4 control21/32 versus expanded-support corrected MCTS22/32. Paired gain
+3.125pp, bootstrap95% CI[-18.75,+25]pp;discordants7 treatment-only/6 control-only,
+exact p=1 descriptive. Both ordinary fair exact-10k Silver, fixed512 MCTS,
+PUCT1.5/k2/alpha.5/horizon32, A0, keys OFF, Act-3 stop, four workers, same models.
+
+Local main updated to merged #178 `0a8f3ed`; draft #177 remains unmerged. Separate
+integration freezes reviewed source `0757c2db918b6395d8f22ca54f6d94c8e3ae0b10`.
+#178 narrows potion generation exclusion to Alchemize/Entropic Brew, retaining
+independent gates and whole-root V4 support fallback; no imagined Silver.
+Main also includes #176 real Silver semantic fixes, limiting cross-run attribution.
+Recovered support has census/contract validation, not new distribution accuracy.
+
+Owned4,060/5,621 (72.2291%);fallback27.7709%,465 support aborts,135,119 surrogate
+samples. Previous §244 owned3,654,fallback36.9565%,972 aborts,105,957 samples:
+coverage increases descriptively. Depth8–14; completed/discarded/attempt/support
+counts all reconcile. Control823/treatment807 actual battles, zero recorded
+Silver failures. Mean game time26.1105→70.4781s (2.6992x); mean floor delta-.6875
+CI[-4,2.5] descriptive. The small positive win point estimate proves neither
+improvement nor equivalence. Same reused-seed regression and copied hidden RNG
+limits remain; keep MCTS OFF, no follow-up seeds or tuning.
+
+Support32 tests/focused3 checks/both excluded canaries pass; independent
+integration/readiness review and Linux GCC CI pass before64 official games.
+Knowledge impact: raw experimental evidence and current research status updated;
+existing support/MCTS contracts unchanged. §245 preserves the colliding #178
+support census separately from original §243/§244 gameplay evidence.
+[Full frozen evidence](evidence/live_ooc_mcts_expanded_support_2026-09-14.md),
+[raw paired result](evidence/live_ooc_mcts_expanded_support_2026-09-14/result.json).
+
+
+## §247 Fixed2048 live OOC MCTS budget regression (2026-09-14)
+
+**OOC_MCTS_WINRATE_INCONCLUSIVE.** User authorized more search: fixed2048 instead
+of512, all other source/model/combat/search settings unchanged. Same32 seeds
+970000..970031, V4 control reused exactly from §246 at reviewed0757 executable,
+new2048 MCTS24/32 versus control21/32. Primary gain9.375pp,95% paired bootstrap
+CI[-12.5,+31.25]pp;discordants8/5,exact p=.5810546875 descriptive. Secondary versus
+preserved512 MCTS22/32:gain6.25pp,CI[-9.375,+21.875]pp,discordants4/2. Both inconclusive.
+
+Actual fair exact-10k Silver; PUCT1.5,widening k2/alpha.5,horizon32,four workers,
+A0/keys OFF/Act-3 stop/native V4 stack/support/model hashes unchanged. No code
+edits/rebuild/imagined Silver. Existing reviewed source0757c2d/binary binding and
+source CI reused. Independent design/reuse/readiness review and excluded canary
+pass before32 new official seeds. New gameplay33 seeds total; no extra controls.
+Historical timing descriptive:2048 mean130.0688s versus51270.4781/V426.1105s.
+
+Owned3,861/5,601,fallback31.0659%,633 support aborts,308,052surrogate samples,
+maxdepth8–16. Larger search encounters more unsupported roots than512465aborts,
+while completed ownership drops4,060→3,861. All support/simulation/log equations
+reconcile;805actual combats,zero recorded Silver failures. Win point estimate
+rises, but no improved-win or equivalence claim. Reused-seed repeated budget
+regression, hidden copied RNG and historical timing limits remain. Keep OFF and
+default512; no sweep/follow-up seeds. Knowledge impact: experiment evidence and
+current research status; stable implementation unchanged.
+[Full evidence](evidence/live_ooc_mcts_2048_2026-09-14.md),
+[primary](evidence/live_ooc_mcts_2048_2026-09-14/result.json),
+[secondary](evidence/live_ooc_mcts_2048_2026-09-14/budget-comparison.json).

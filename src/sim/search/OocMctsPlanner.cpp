@@ -60,18 +60,19 @@ struct Search {
     }
     double evaluate(DecisionNode &node, std::uint32_t depth, bool root = false) {
         metrics.maxDepthReached = std::max(metrics.maxDepthReached, depth);
+        metrics.depthSum += depth;
         ++node.visits;
         if (auto value = model.terminalValue(node.state)) return checkedValue(*value);
         if (model.isLeafBoundary(node.state) || depth == config.maxDepth) {
             ++metrics.leafEvaluations;
-            return checkedValue(model.leafValue(node.state));
+            return checkedValue(model.evaluateLeaf(node.state, rng));
         }
         if (!node.expanded) {
             expand(node);
             // Root expands before action selection; new downstream leaves stop.
             if (!root) {
                 ++metrics.leafEvaluations;
-                return checkedValue(model.leafValue(node.state));
+                return checkedValue(model.evaluateLeaf(node.state, rng));
             }
         }
         ChanceNode *chosen = nullptr;
@@ -94,7 +95,11 @@ struct Search {
         auto &chance = *chosen;
         ++chance.visits;
         DecisionNode *next;
-        if (chance.particles.size() < planner.chanceWideningLimit(chance.visits)) {
+        if (!chance.particles.empty() && model.isDeterministicTransition(node.state, chance.action.id)) {
+            next = chance.particles.front().get();
+            ++metrics.particleRevisits;
+            ++metrics.deterministicRevisits;
+        } else if (chance.particles.size() < planner.chanceWideningLimit(chance.visits)) {
             auto state = model.sampleSuccessor(node.state, chance.action.id, rng);
             ++metrics.transitionSamples;
             chance.particles.push_back(std::make_unique<DecisionNode>(state));
@@ -102,6 +107,7 @@ struct Search {
             ++metrics.decisionNodes;
             next = chance.particles.back().get();
         } else {
+            ++metrics.particleRevisits;
             std::uniform_int_distribution<std::size_t> uniform(0, chance.particles.size()-1);
             next = chance.particles[uniform(rng)].get();
         }
@@ -130,12 +136,20 @@ OocMctsResult OocMctsPlanner::search(OocGenerativeModel &model, OocStateId root,
     Search search{model, config, *this, std::mt19937_64(config.seed), {}};
     DecisionNode node(root);
     search.metrics.decisionNodes = 1;
-    for (std::uint64_t i = 0; i < simulations; ++i) {
-        search.evaluate(node, 0, true);
-        ++search.metrics.simulations;
-    }
     OocMctsResult result;
+    try {
+        for (std::uint64_t i = 0; i < simulations; ++i) {
+            ++search.metrics.simulationAttempts;
+            search.evaluate(node, 0, true);
+            ++search.metrics.simulations;
+        }
+    } catch (const OocSearchUnsupported &unsupported) {
+        // Partial root Q/visits are discarded, including prior supported paths.
+        result.aborted = true;
+        result.abortReason = unsupported.what();
+    }
     result.metrics = search.metrics;
+    if (result.aborted) return result;
     const ChanceNode *best = nullptr;
     for (const auto &action : node.actions) {
         result.rootActions.push_back({action.action.id, action.action.prior, action.visits, action.q()});

@@ -1,0 +1,212 @@
+{
+  "classification": "OOC_MCTS_WINRATE_INCONCLUSIVE",
+  "seeds": [
+    970000,
+    970001,
+    970002,
+    970003,
+    970004,
+    970005,
+    970006,
+    970007,
+    970008,
+    970009,
+    970010,
+    970011,
+    970012,
+    970013,
+    970014,
+    970015,
+    970016,
+    970017,
+    970018,
+    970019,
+    970020,
+    970021,
+    970022,
+    970023,
+    970024,
+    970025,
+    970026,
+    970027,
+    970028,
+    970029,
+    970030,
+    970031
+  ],
+  "benchmark_sha": "0757c2db918b6395d8f22ca54f6d94c8e3ae0b10",
+  "control_wins": 21,
+  "treatment_wins": 22,
+  "treatment_only_wins": 7,
+  "control_only_wins": 6,
+  "same_result_seeds": 19,
+  "win_difference_pp": 3.125,
+  "win_difference_95_ci_pp": [
+    -18.75,
+    25.0
+  ],
+  "exact_two_sided_discordant_binomial_p": 1.0,
+  "paired_outcomes": {
+    "won": {
+      "control_mean": 0.65625,
+      "treatment_mean": 0.6875,
+      "treatment_minus_control": 0.03125,
+      "paired_bootstrap_95_ci": [
+        -0.1875,
+        0.25
+      ]
+    },
+    "floor": {
+      "control_mean": 48.625,
+      "treatment_mean": 47.9375,
+      "treatment_minus_control": -0.6875,
+      "paired_bootstrap_95_ci": [
+        -4.0,
+        2.5
+      ]
+    },
+    "hpEnd": {
+      "control_mean": 40.6875,
+      "treatment_mean": 32.9375,
+      "treatment_minus_control": -7.75,
+      "paired_bootstrap_95_ci": [
+        -24.40625,
+        9.375
+      ]
+    },
+    "fightsLost": {
+      "control_mean": 0.34375,
+      "treatment_mean": 0.3125,
+      "treatment_minus_control": -0.03125,
+      "paired_bootstrap_95_ci": [
+        -0.25,
+        0.1875
+      ]
+    },
+    "deathCombat": {
+      "control_mean": 7.21875,
+      "treatment_mean": 6.125,
+      "treatment_minus_control": -1.09375,
+      "paired_bootstrap_95_ci": [
+        -6.1875,
+        3.8125
+      ]
+    },
+    "sec": {
+      "control_mean": 26.110478125,
+      "treatment_mean": 70.478065625,
+      "treatment_minus_control": 44.3675875,
+      "paired_bootstrap_95_ci": [
+        36.565653515624994,
+        51.70972859374999
+      ]
+    }
+  },
+  "runtime_ratio_of_mean_per_run_seconds": 2.6992253947858336,
+  "diagnostics": {
+    "mean_oocDecisions_per_run": 175.65625,
+    "mean_mctsOwned_per_run": 126.875,
+    "mean_mctsFallback_per_run": 48.78125,
+    "mean_simulations_per_run": 65604.96875,
+    "mean_transitionSamples_per_run": 24422.5625,
+    "mean_combatSurrogateSamples_per_run": 4222.46875,
+    "mean_leafEvaluations_per_run": 65526.0625,
+    "mean_mctsWallSec_per_run": 44.10288732709375,
+    "mean_mctsCpuSec_per_run": 44.10024033315625,
+    "mean_realCombats_per_run": 25.21875,
+    "mean_imaginedCombats_per_run": 4237.0,
+    "mean_unsupportedCombats_per_run": 14.53125,
+    "mean_mctsSupportAborts_per_run": 14.53125,
+    "mean_discardedSimulations_per_run": 644.96875,
+    "mean_simulationAttempts_per_run": 65619.5,
+    "mean_pendingLeaves_per_run": 58018.28125,
+    "mean_battleLeaves_per_run": 0.0,
+    "mean_mapLeaves_per_run": 7507.78125,
+    "mean_projectionSteps_per_run": 100993.125,
+    "mean_outcomeParticles_per_run": 24422.5625,
+    "mean_particleRevisits_per_run": 144266.75,
+    "mean_deterministicRevisits_per_run": 126354.0,
+    "mean_depthSum_per_run": 378433.90625,
+    "fallback_rate": 0.2777085927770859,
+    "max_depth_distribution": {
+      "8": 1,
+      "9": 4,
+      "10": 8,
+      "11": 11,
+      "12": 3,
+      "13": 4,
+      "14": 1
+    },
+    "mcts_fraction_of_total_run_wall_time": 0.6257675623754572
+  },
+  "both_dead_seeds": [
+    970001,
+    970003,
+    970027,
+    970028
+  ],
+  "deathCombat_note": "Raw paired mean includes -1 survivor sentinel; also identify both-dead seeds for conditional comparison.",
+  "bootstrap": {
+    "replicates": 200000,
+    "rng": "NumPy PCG64",
+    "seed": 20260914,
+    "interval": "paired seed percentile 2.5/97.5 quantiles, linear interpolation"
+  },
+  "configurations": [
+    {
+      "STS_FAIR": "1",
+      "STS_SEARCHER3": "0",
+      "STS_SILVER_SEARCH": "1",
+      "STS_SILVER_EXACT_ROOT_BUDGETS": "1",
+      "STS_SILVER_REUSE_CAP_MODE": "allocated",
+      "STS_SILVER_ADAPTIVE": "0",
+      "STS_SILVER_VNET_LEAF_DIRECT": "0",
+      "STS_SILVER_TELEMETRY": "1",
+      "STS_NATIVE_OOC": "1",
+      "STS_OOC_STRATEGIC_TOK_NN": "selfplay/models/ooc_strategic_tok_final.native",
+      "STS_OOC_STRATEGIC_REST": "1",
+      "STS_OOC_STRATEGIC_EVENT": "1",
+      "STS_OOC_STRATEGIC_SHOP": "1",
+      "STS_OOC_STRATEGIC_TREASURE": "1",
+      "STS_OOC_STRATEGIC_BOSS_RELIC": "1",
+      "STS_OOC_STRATEGIC_MARGIN": "1.0",
+      "STS_STOP_AFTER_ACT": "3",
+      "STS_COLLECT_KEYS": "0",
+      "OMP_NUM_THREADS": "4",
+      "STS_EXECUTABLE_GIT_SHA": "0757c2db918b6395d8f22ca54f6d94c8e3ae0b10",
+      "STS_OOC_MCTS": "0",
+      "STS_OOC_MCTS_TRACE": "/home/philippherrmann/Documents/sts/sts_lightspeed/build/ooc-mcts-expanded-support/control.csv.mcts.csv"
+    },
+    {
+      "STS_FAIR": "1",
+      "STS_SEARCHER3": "0",
+      "STS_SILVER_SEARCH": "1",
+      "STS_SILVER_EXACT_ROOT_BUDGETS": "1",
+      "STS_SILVER_REUSE_CAP_MODE": "allocated",
+      "STS_SILVER_ADAPTIVE": "0",
+      "STS_SILVER_VNET_LEAF_DIRECT": "0",
+      "STS_SILVER_TELEMETRY": "1",
+      "STS_NATIVE_OOC": "1",
+      "STS_OOC_STRATEGIC_TOK_NN": "selfplay/models/ooc_strategic_tok_final.native",
+      "STS_OOC_STRATEGIC_REST": "1",
+      "STS_OOC_STRATEGIC_EVENT": "1",
+      "STS_OOC_STRATEGIC_SHOP": "1",
+      "STS_OOC_STRATEGIC_TREASURE": "1",
+      "STS_OOC_STRATEGIC_BOSS_RELIC": "1",
+      "STS_OOC_STRATEGIC_MARGIN": "1.0",
+      "STS_STOP_AFTER_ACT": "3",
+      "STS_COLLECT_KEYS": "0",
+      "OMP_NUM_THREADS": "4",
+      "STS_EXECUTABLE_GIT_SHA": "0757c2db918b6395d8f22ca54f6d94c8e3ae0b10",
+      "STS_OOC_MCTS": "1",
+      "STS_OOC_MCTS_TRACE": "/home/philippherrmann/Documents/sts/sts_lightspeed/build/ooc-mcts-expanded-support/treatment.csv.mcts.csv",
+      "STS_OOC_MCTS_SIMS": "512",
+      "STS_OOC_MCTS_COMBAT_MODEL": "/home/philippherrmann/sts_sweep/runs/combat-transition-runtime-native-20260914/combat_transition_v1.native"
+    }
+  ],
+  "input_sha256": {
+    "build/ooc-mcts-expanded-support/control.csv": "899060322434ef2544bfb8858fa204166c827b60b4b07a87a74ed0b074c854fc",
+    "build/ooc-mcts-expanded-support/treatment.csv": "583e0b605bb8ca4131d21e244e7420f2cf0ab0b4ae32b34ecf7995038558f993"
+  },
+  "known_limitation": "Copied hidden noncombat RNG can bias imagined futures. Actual gameplay uses real combat in both arms; this engineering policy A/B does not qualify unbiased MCTS values or deployment."
+}

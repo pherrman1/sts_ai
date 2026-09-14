@@ -24,12 +24,13 @@ experiments.
 
 Last verified: 2026-09-14 for the opt-in native combat boundary and focused adapter oracle.
 
-`OocMctsPlanner` is an offline/test-only generic search core over opaque state
+`OocMctsPlanner` is a synchronous generic search core over opaque state
 and action IDs. `OocGenerativeModel` supplies complete actions/priors, actual
 successor samples, terminal values and injected leaf values in [0,1]. Distinct
 decision nodes use PUCT; chance nodes retain independent equal-weight outcome
-particles (including duplicate IDs) and reuse particles uniformly, never by
-value. Action Q is the Monte Carlo mean of sampled trajectory values.
+particles (including duplicate IDs) and reuse stochastic particles uniformly,
+never by value. Providers may explicitly mark a transition deterministic; after
+its first sample the core reuses that single child instead of widening it. Action Q is the Monte Carlo mean of sampled trajectory values.
 
 Depth counts action transitions (root zero); exact terminals precede model-defined
 leaf boundaries, which precede the depth horizon,
@@ -45,7 +46,7 @@ ID. Each search resets its tree and seeded RNG; providers must preserve IDs and
 reset any mutable sampling state for exact replay.
 
 The focused `ooc_mcts` CTest verifies toy stochastic MDPs and malformed inputs.
-`apps/one_combat/ooc_mcts_adapter.{h,cpp}` supplies the offline
+`apps/one_combat/ooc_mcts_adapter.{h,cpp}` supplies the
 `OocGameContextModel` integration through explicit `one_combat oocmctsselftest`
 and the guarded `ooc_mcts_adapter` CTest. The adapter requires loaded native
 V4 and win models. `OocStrategicTokNet::predictPolicyLogit` shares the 184-wide
@@ -60,8 +61,10 @@ REST_ROOM, CARD_SELECT/UPGRADE, EVENT_SCREEN with a native nonempty candidate
 set (excluding INVALID and MATCH_AND_KEEP), SHOP_ROOM, TREASURE_ROOM,
 BOSS_RELIC_REWARDS, and MAP_SCREEN with a map except row 14. Other selectors,
 non-card reward states, invalid/empty decisions, missing maps and map row 14
-are explicit leaf boundaries. Stored BATTLE states remain a hard leaf boundary;
-UNDECIDED battle states are never fabricated terminals. Run loss/victory
+are explicit leaf boundaries. Decisions whose native candidates contain duplicate
+primitive IDs (including multiple gold rewards) also use the leaf/fallback
+contract; the V4 candidate enumeration remains unchanged. BATTLE states are decision boundaries, with the leaf evaluator determining the
+continuation contract; UNDECIDED battles are never fabricated terminals. Run loss/victory
 remain exact 0/1, with precedence over any boundary.
 
 Root construction requires an explicit `PathHistory`: prior room visits are not
@@ -76,6 +79,8 @@ throw, with no server fallback and no clamping. Leaf feature evaluation
 scopes the stored path history and restores the caller's history.
 
 `OocGameContextModel` accepts an optional shared `CombatTransitionSampler`.
+The default adapter options retain the offline scaffold contract described here;
+opt-in live selection uses the corrected checkpoint contract below.
 After the ordinary primitive action and prebattle history update, it captures
 `combat_predictor_input_v1` before battle initialization, using the current
 `potionKeepValue`. Unsupported states retain the existing BATTLE leaf and native
@@ -110,8 +115,85 @@ fixed max absolute probability tolerance 1e-4; they do not drive gameplay seeds.
 Copied native RNG streams still govern other stochastic OOC transitions. This
 adapter resolves the combat boundary only and remains **not a fair stochastic
 environment model** or a scientifically qualified full OOC planner.
-`runFullRunOOC`, `bestbench`, policy defaults, V4, leaf values and MCTS search
-semantics remain unchanged. No production policy constructs the real sampler.
+
+### Opt-in live OOC MCTS selection
+
+`STS_OOC_MCTS=1` intercepts each nonbattle decision immediately before the
+existing `runFullRunOocPolicyStep` chain in `runFullRunOOC`. Startup requires
+loaded native V4 policy and native win models plus a compatible
+`STS_OOC_MCTS_COMBAT_MODEL`; explicit artifact failures are fatal. The default
+is OFF and does not load a combat artifact or run MCTS. Both arms retain the
+same normal real combat branch and the same fallback OOC policy chain.
+
+`selectOocMctsAction` constructs detached snapshots and uses the existing PUCT,
+progressive widening and depth defaults with `STS_OOC_MCTS_SIMS` (default 512).
+Its search seed is `SplitMix64(runSeed XOR SplitMix64(decisionIndex))`, using
+explicit unsigned 64-bit arithmetic. The index increments once per actual
+nonbattle run-loop decision, including unsupported roots. It consumes no
+simulator RNG. Terminal/boundary roots and whole-root support aborts return no
+action; completed supported searches must return a legal primitive ID. Snapshots are discarded before
+`oocMctsPolicyStep` resolves that ID against fresh live candidates and executes
+it exactly once. If it enters BATTLE, real combat remains pending for the
+ordinary next run-loop iteration. No sampled combat result transfers to live
+state.
+
+Live leaves never apply `v_win` to unresolved rewards, shops, events, selectors
+or battles: rich win features omit those pending contents. `evaluateLeaf` deep
+copies the node and applies the existing ordered OOC policy chain until a map
+checkpoint or exact terminal, capped at 256 continuation steps with a fatal
+failure if unresolved. This is a V4/policy-chain continuation estimate, not a
+learned screen-aware value. Branch history, action/combat observers, policy
+trace bookkeeping, Silver diagnostics and potion pricing are scoped and restored.
+Corpus capture is incompatible with live MCTS.
+
+Supported imagined battles use the frozen surrogate. If the precombat gate or
+sample returns unsupported, `OocSearchUnsupported` aborts the **entire root's
+search**. Partial Q/visits are discarded and no action is selected; the live
+run loop uses its unchanged V4/OOC policy chain for that decision. Unsupported
+states receive neither a generic precombat value nor an invented scalar penalty.
+Their reason and all completed/attempted search work are retained in diagnostics.
+A thread-local guard forbids native combat playout during OOC imagination,
+including optional leaf-policy counterfactuals: these also abort the root.
+There are no imagined Silver battles. Supported death is exact zero; victory
+carries sampled persistent costs and native rewards. Leaf projection resolves
+chained supported battles; the stop-after-act boss is an exact win horizon.
+
+Live MCTS requires real ordinary Silver at exactly10,000 simulations, allocated
+reuse and no adaptive escalation; per-room budget changes fail. The corpus teacher
+was `silver-ordinary-fair-exact10k-combat-transition-runtime16-f0bbd77`; this aligns
+actual policy configuration/budget, not teacher/model accuracy. Native copied RNG
+still governs noncombat transitions. Fail-closed root fallback may reduce MCTS
+ownership substantially, and low ownership is evidence about support, not policy
+improvement. The leaf fallback uses the standard bestbench chain options
+`restV=false, shopV=true`; other driver configurations are not qualified here.
+
+Native OOC successors that enter no sampled combat are deterministic conditional
+on their copied RNG state. The adapter caches those `(parent, action)` successors
+and advertises them to the core. Only these children are reused as deterministic;
+sampled combat outcomes retain independent equal-weight particles, including
+equal outcomes. PUCT and stochastic widening remain `1.5`, `2`, `0.5`; live roots
+use the fixed 512 budget. Depth counts searched primitive transitions and excludes
+policy-chain steps used only to project leaves.
+
+Optional `STS_OOC_MCTS_TRACE` appends one CSV row per completed run, including
+OFF runs when explicitly requested. It records decision/ownership/fallback
+counts, simulations, all sampled action transitions, combat-surrogate calls,
+leaf evaluations, maximum search depth, search wall/thread CPU seconds and
+ordinary real combat count. It also records imagined combat totals, unsupported
+root support-abort counts and discarded completed simulations, total simulation
+attempts, pending/battle/map leaf counts, projection steps,
+particle creation/revisits, deterministic revisits and summed searched depth.
+A `.support.jsonl` companion reconciles unsupported support reasons per seed.
+OFF ownership/fallback/search counts are zero;
+the decision count still covers actual nonbattle iterations. For ON, `simulations=512*owned+discardedSimulations` and
+`simulationAttempts=simulations+mctsSupportAborts`. Search timing
+includes adapter construction/destruction and unsupported-root checks, and
+excludes execution of the selected live primitive. The `bestbench` `sec` field
+is per-run steady-clock elapsed time, so wall time is the matching denominator.
+Focused adapter tests cover search isolation, indexed determinism, exact live
+primitive execution, pending real combat and unchanged fallback dispatch;
+`ooc_mcts_live_startup` covers startup failure contracts. This opt-in seam does
+not qualify deployment or remove copied hidden noncombat RNG limitations.
 
 
 ## Semantic OOC decisions

@@ -20,9 +20,30 @@ chronology.
 
 ## Current priority / active line
 
-No research line is currently authorized as the active priority.
+The fixed2048 live OOC MCTS budget regression is complete on reused32 seeds:
+MCTS24/32 versus exact preserved V4 control21/32 (gain9.375pp,95% CI[-12.5,+31.25])
+and previous512 MCTS22/32 (secondary gain6.25pp,CI[-9.375,+21.875]). Both comparisons
+are inconclusive. Source/models/fair exact-10k Silver unchanged; maxdepth8–16,
+more surrogate samples but more support-triggered V4 root fallbacks than512.
+Default OFF and512 remain unchanged; no further seeds or budget are authorized.
+See [ledger-06 §247](../../experiments/ledger-06.md) and
+[2048 evidence](../../experiments/evidence/live_ooc_mcts_2048_2026-09-14.md).
 
 ## Completed recent line
+
+### Live OOC MCTS paired Silver gameplay gate
+
+**`OOC_MCTS_WINRATE_DOWN`** in the first fixed 32-seed paired Act-3 engineering
+A/B, with normal real Silver combat in both arms. The opt-in MCTS implementation
+uses the qualified native combat sampler only in detached imagination and is
+OFF by default. The primary paired win-rate CI is strictly negative. Preserve
+the frozen implementation and return for independent review; a bounded audit of
+changed strategic choices and native leaf/boundary behavior should precede any
+new experiment. No parameter sweep or automatic additional seeds are authorized.
+This is actual gameplay evidence under copied hidden noncombat RNG, with no
+unbiased-planning or deployment qualification claim. See
+[ledger-06 §243](../../experiments/ledger-06.md) and the
+[full paired Silver evidence](../../experiments/evidence/live_ooc_mcts_2026-09-14.md).
 
 ### Whole-combat transition model v1
 
@@ -166,7 +187,8 @@ qualification were not rerun on recovered rows. See the
 [full source/provenance/accounting audit](../../experiments/evidence/potion_generation_support_2026-09-14.md)
 and [maintained potion-generation contract](../behavior/combat-potion-generation.md).
 
-Next separately scoped work: native runtime adapter / OOC MCTS integration.
+The native runtime adapter is now qualified for the combat boundary (§242);
+the opt-in live OOC MCTS engineering gameplay gate is recorded in §243.
 Offline composition qualification does not establish runtime or gameplay
 performance. Full evidence and limitations are in the
 [executed evidence](../../experiments/evidence/composed_transition_2026-09-14.md)

@@ -1,0 +1,4 @@
+PASS synthetic UP classification and paired accounting
+PASS synthetic DOWN classification and paired accounting
+PASS synthetic INCONCLUSIVE classification and paired accounting
+PASS exact discordant p-values 0.125 1.0
