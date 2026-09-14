@@ -7723,3 +7723,28 @@ One-seed/order-dependent timing only, no average-speed or decision-quality claim
 Knowledge impact: engineering benchmark evidence only; no default or maintained
 scientific conclusion changes. [Comparison](evidence/live_ooc_mcts_runtime_pair_2026-09-14.md),
 [commands/provenance/raw results](evidence/live_ooc_mcts_runtime_pair_2026-09-14.json).
+
+
+## §252 — Full-run profiling and V4 candidate-state reuse (2026-09-14)
+
+Base `eb84039b99e2f3b932e08fdfc51f1f7eebbbeaa5`, candidate
+`b019e694fcdb150b0ff085eaed118b7272103556`. The preceding CTM/gated-root PR is
+unchanged except action-independent V4 state reuse in the prior/eight Q loops.
+One current full-run profile identifies171,763 repeated deck/state encodings:
+47.56% exclusive OOC time; tree prediction21.18%, rich-feature CSV conversion
+9.52%, CTM prepare/sample/apply9.79%. Tree bucket includes continuation value
+calls, not only final-leaf v_win. Timers are removed from maintained source.
+
+Prepared128-float state per immutable candidate set preserves operations,
+heads, candidate order, margins/ties, fallback/RNG and model/support contracts.
+Independent old-header comparison passes1,536 bitwise checks across512 cases;
+maintained adapter/frozen fixtures plus core/startup/semantic/analyzer5CTest pass.
+One fresh paired seed42, CPU0/OMP1, IroncladA0, OOC512/exact10,000Silver,
+project-fair combat/copied noncombat RNG, keysOFF/Act3-or-death/same models:
+full43.6509s→33.8555s (22.44% lower); OOC25.998381s→16.063340s (38.21% lower).
+Both exit0, same floor50 death, every non-timing OOC counter, all28 Silver
+telemetry lines and support reasons match. Shortcuts/saved simulations remain0.
+No per-action/full-state trace or quality cohort; one ordered pair is descriptive.
+Knowledge impact: maintained V4 API/lifetime and engineering evidence.
+[Profile/comparison](evidence/live_ooc_mcts_v4_reuse_2026-09-14.md),
+[full raw/provenance/check packet](evidence/live_ooc_mcts_v4_reuse_2026-09-14.json).

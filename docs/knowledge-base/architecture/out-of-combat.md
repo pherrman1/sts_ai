@@ -82,8 +82,7 @@ leaf continuation and ordinary live fallback. Each loop rebuilds after state or
 path changes; no cache survives the loop or model reload. Candidate ordering,
 Q margins/ties, fallback dispatch and RNG consumption are unchanged. Legacy
 single-action inference entry points remain available.
-The per-state metadata also retains
-subsequent queries reuse the result. Edge-local storage holds deterministic
+Subsequent queries for the same state reuse cached logits/priors. Edge-local storage holds deterministic
 successor IDs and prepared combat objects. A prepared native combat transition
 computes support, survival probability, max-HP probabilities, and HP/potion
 encodings once for its fixed precombat input. Each draw still computes the
