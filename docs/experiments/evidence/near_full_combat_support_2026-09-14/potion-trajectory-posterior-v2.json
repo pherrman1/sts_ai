@@ -1,0 +1,9 @@
+{
+  "artifactSha256": "34e0745c97d41edc13d5c11f02764ca230e3a3bafe71daa112e53d97bd4edb3b",
+  "maxIndependentMarginalError": 1.1851325631972998e-07,
+  "modelSha256": "0777abcb6500c2836ac5d7422d58ae5fa0dd9c872f896943db63bb8366919cb7",
+  "multipleTraceRows": 50,
+  "sourceSha": "eceb98b9200f45cf777121c349d95f5f5f8d3a71",
+  "specialSurvivors": 6776,
+  "supportChanged": false
+}

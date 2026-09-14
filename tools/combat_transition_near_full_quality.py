@@ -28,7 +28,7 @@ def evaluate(parent,output,sha):
     hp_target=test['trueHp'][alive]-test['preHp'][alive]-c.CLASSES[0];hp=categorical_metrics(probability,hp_target,c.CLASSES);maximum=categorical_metrics(pd[alive],test['delta'][alive],m.delta_values)
     if not np.allclose(probability.sum(-1),1,atol=1e-6):raise ValueError('HP exact marginal normalization')
     sm=dict(nll=e.nll(np.where(win,survival,1-survival)),brier=(survival-win)**2)
-    selected=dict(entireFinalUnion=np.ones(len(rows),bool),previous179=test['old'],recovered=~test['old'],brew=np.any(test['potions']==q.t.BREW,-1),smoke=np.any(test['potions']==q.t.SMOKE,-1),writhing=test['writhing'],ritual=test['dagger'],escape=test['escaped'])
+    selected=dict(entireFinalUnion=np.ones(len(rows),bool),previous179=test['old'],recovered=~test['old'],brew=np.any(test['potions']==q.t.BREW,-1),smoke=np.any(test['potions']==q.t.SMOKE,-1),writhing=np.asarray([r['pi']['globals']['encounter']==c.base.WRITHING_MASS_ID for r in rows]),ritual=np.asarray([any(card['id']==c.base._CARD_IDS['RITUAL_DAGGER'] for card in r['pre']['deck']) for r in rows]),escape=test['escaped'])
     metrics={}
     for name,mask in selected.items():
         if not mask.any():continue

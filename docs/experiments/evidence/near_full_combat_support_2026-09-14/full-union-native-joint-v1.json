@@ -1,0 +1,17 @@
+{
+  "classification": "NATIVE_JOINT_TARGETS_PASS",
+  "counts": {
+    "deathShortCircuit": 18133,
+    "escapeSurvivors": 3001,
+    "jointRepresentableSurvivors": 491897,
+    "ritualSurvivors": 12690,
+    "rows": 510030,
+    "writhingSurvivors": 4363
+  },
+  "failures": [],
+  "posteriorSha256": "34e0745c97d41edc13d5c11f02764ca230e3a3bafe71daa112e53d97bd4edb3b",
+  "scope": "target representability only; no probability/native artifact qualification",
+  "sourceSha": "0257be7bba687d944bd0b9b98f033bfe79dde8f9",
+  "supportChanged": false,
+  "trajectorySha256": "0777abcb6500c2836ac5d7422d58ae5fa0dd9c872f896943db63bb8366919cb7"
+}
