@@ -1,5 +1,6 @@
 #pragma once
 #include <deque>
+#include "combat_transition_sampler.h"
 #include "ooc_policy.h"
 #include "sim/search/OocMctsPlanner.h"
 
@@ -10,10 +11,13 @@ std::vector<double> oocPolicyWeights(const std::vector<double> &logits, double t
 class OocGameContextModel final : public sts::search::OocGenerativeModel {
     struct Snapshot { GameContext gc; PathHistory path; };
     std::deque<Snapshot> states;
+    std::shared_ptr<const CombatTransitionSampler> combatSampler;
 public:
     // Root history is required: prior room visits cannot be recovered from GameContext.
-    explicit OocGameContextModel(const GameContext &, const PathHistory &);
+    explicit OocGameContextModel(const GameContext &, const PathHistory &,
+        std::shared_ptr<const CombatTransitionSampler> = {});
     const GameContext &state(sts::search::OocStateId id) const;
+    const PathHistory &pathHistory(sts::search::OocStateId id) const;
     std::optional<double> terminalValue(sts::search::OocStateId) const override;
     bool isLeafBoundary(sts::search::OocStateId) const override;
     std::vector<sts::search::OocPlannerAction> legalActions(sts::search::OocStateId) const override;

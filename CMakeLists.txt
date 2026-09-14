@@ -230,6 +230,8 @@ add_executable(one_combat apps/one_combat.cpp apps/combat_model_diagnostics.cpp
     apps/one_combat/combat_transition.cpp
     apps/one_combat/e2c_capture.cpp
     apps/one_combat/ooc_mcts_adapter.cpp
+    apps/one_combat/combat_transition_runtime.cpp
+    apps/one_combat/combat_transition_native_contract.cpp
     apps/one_combat/ooc_policy.cpp
     apps/one_combat/run_driver.cpp
     apps/one_combat/fight_replay.cpp
@@ -461,3 +463,15 @@ add_test(NAME ooc_mcts_adapter COMMAND bash ${CMAKE_SOURCE_DIR}/tools/seed_guard
     $<TARGET_FILE:one_combat> oocmctsselftest)
 set_tests_properties(ooc_mcts_adapter PROPERTIES WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
     LABELS "integration" ENVIRONMENT "STS_NATIVE_OOC=1;STS_OOC_STRATEGIC_TOK_NN=${CMAKE_SOURCE_DIR}/selfplay/models/ooc_strategic_tok_final.native")
+
+# Captured-state probability probe; no gameplay or default integration.
+add_executable(combat_transition_runtime_probe tests/combat_transition_runtime_probe.cpp
+    apps/one_combat/combat_transition_runtime.cpp
+    apps/one_combat/combat_transition_native_contract.cpp
+    apps/one_combat/combat_predictor_input.cpp apps/one_combat/combat_transition.cpp
+    $<TARGET_OBJECTS:sts_core_objects>)
+target_include_directories(combat_transition_runtime_probe PRIVATE include json/include)
+add_test(NAME combat_transition_native_contract COMMAND python3 -m unittest
+    tests.test_combat_transition_native_contract -v)
+set_tests_properties(combat_transition_native_contract PROPERTIES
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "integration")
