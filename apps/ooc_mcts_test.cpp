@@ -70,6 +70,19 @@ void tests() {
     OocMctsConfig config;
     config.seed = 42;
     OocMctsPlanner planner(config);
+    // A strong prior can make visit choice differ from highest observed Q.
+    auto rootChoice = deterministic(.999, .001);
+    const auto byVisits = planner.search(rootChoice, 0, 4);
+    auto qConfig = config; qConfig.selectByMeanQ = true;
+    const auto byQ = OocMctsPlanner(qConfig).search(rootChoice, 0, 4);
+    require(byVisits.selectedAction == 1 && byQ.selectedAction == 2,
+        "root Q ablation changes only final root choice");
+    require(byVisits.metrics.simulations == byQ.metrics.simulations
+        && byVisits.rootActions[0].visits == byQ.rootActions[0].visits
+        && byVisits.rootActions[1].visits == byQ.rootActions[1].visits,
+        "root selection leaves search allocation unchanged");
+    require(OocMctsPlanner(qConfig).search(rootChoice, 0, 1).selectedAction == 1,
+        "root Q never selects an unvisited action");
     struct Chain : OocGenerativeModel {
         std::optional<double> terminalValue(OocStateId s) const override {
             return s==8 ? std::optional<double>(1) : std::nullopt;

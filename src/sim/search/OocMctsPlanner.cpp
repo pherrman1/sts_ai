@@ -153,8 +153,12 @@ OocMctsResult OocMctsPlanner::search(OocGenerativeModel &model, OocStateId root,
     const ChanceNode *best = nullptr;
     for (const auto &action : node.actions) {
         result.rootActions.push_back({action.action.id, action.action.prior, action.visits, action.q()});
-        if (!best || action.visits > best->visits
-            || (action.visits == best->visits && action.q() > best->q())) best = &action;
+        // An unvisited action has no estimated Q and cannot win the Q rule.
+        if (config.selectByMeanQ && !action.visits) continue;
+        const bool better = !best || (config.selectByMeanQ
+            ? action.q() > best->q() || (action.q() == best->q() && action.visits > best->visits)
+            : action.visits > best->visits || (action.visits == best->visits && action.q() > best->q()));
+        if (better) best = &action;
     }
     if (best) result.selectedAction = best->action.id;
     return result;

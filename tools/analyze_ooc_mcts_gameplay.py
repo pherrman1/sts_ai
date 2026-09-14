@@ -60,7 +60,7 @@ def analyze(control_path, treatment_path, bootstrap_samples=200000, combat_sims=
                 raise ValueError('ownership trace does not reconcile')
             discarded=int(row.get('discardedSimulations',0))
             aborts=int(row.get('mctsSupportAborts',0))
-            if not 0<=discarded<=aborts*(mcts_sims-1) or not 0<=aborts<=fallback or int(row.get('simulationAttempts',simulations))!=simulations+aborts or (enabled and int(row.get('unsupportedCombats',aborts))!=aborts):
+            if not 0<=discarded<=aborts*(mcts_sims-1) or not 0<=aborts<=fallback or int(row.get('simulationAttempts',simulations))!=simulations+aborts or (enabled and int(row.get('unsupportedCombats',aborts))+int(row.get('continuationLimitAborts',0))!=aborts):
                 raise ValueError('unsupported root attempt accounting mismatch')
             if simulations != owned * mcts_sims + discarded or ('imaginedCombats' not in row and int(row['combatSurrogateSamples']) > int(row['transitionSamples'])) or not 0 <= int(row['maxDepth']) <= 32 or int(row['realCombats']) <= 0:
                 raise ValueError('search/real-combat trace does not reconcile')
@@ -73,6 +73,9 @@ def analyze(control_path, treatment_path, bootstrap_samples=200000, combat_sims=
         if len(reasons)!=seed_count or {r['seed'] for r in reasons}!=expected:
             raise ValueError('support reason seed accounting mismatch')
         for row in reasons:
+            limits=int(traces[1][row['seed']].get('continuationLimitAborts',0))
+            if any(v<0 for v in row.get('continuation_reasons',{}).values()) or row.get('continuation_limit_aborts',0)!=limits or sum(row.get('continuation_reasons',{}).values())!=limits:
+                raise ValueError('continuation limit reason counts do not reconcile')
             if sum(row['reasons'].values())!=int(traces[1][row['seed']]['unsupportedCombats']):
                 raise ValueError('support reason counts do not reconcile')
     has_coverage=bool(sum(int(row['mctsOwned']) for row in traces[1].values()) and sum(int(row['combatSurrogateSamples']) for row in traces[1].values()))

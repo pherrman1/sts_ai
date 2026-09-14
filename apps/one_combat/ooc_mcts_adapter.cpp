@@ -47,6 +47,8 @@ std::vector<double> oocPolicyWeights(const std::vector<double> &logits, double t
 OocGameContextModel::OocGameContextModel(const GameContext &gc, const PathHistory &path,
     std::shared_ptr<const CombatTransitionSampler> sampler, OocAdapterOptions opts)
     : combatSampler(std::move(sampler)), options(std::move(opts)) {
+    if (!std::isfinite(options.priorTemperature) || options.priorTemperature <= 0 || (options.leafCombats != 0 && options.leafCombats != 1 && options.leafCombats != 3))
+        throw std::invalid_argument("OOC MCTS invalid adapter options");
     if (!winNetOk()) throw std::runtime_error("OOC MCTS requires native v_win");
     if (!g_oocStrategicTokNet.ok) throw std::runtime_error("OOC MCTS requires native V4 policy");
     auto history = path;
@@ -97,7 +99,9 @@ std::vector<double> OocGameContextModel::policyLogits(sts::search::OocStateId id
     return logits;
 }
 std::vector<sts::search::OocPlannerAction> OocGameContextModel::legalActions(sts::search::OocStateId id) const {
-    auto weights = oocPolicyWeights(policyLogits(id));
+    if (terminalValue(id) || isLeafBoundary(id)) throw std::runtime_error("OOC MCTS actions requested at leaf");
+    auto weights = options.uniformPrior ? std::vector<double>(v4CandidateActions(state(id)).size(), 1.0)
+                                      : oocPolicyWeights(policyLogits(id), options.priorTemperature);
     auto actions = v4CandidateActions(state(id));
     std::vector<sts::search::OocPlannerAction> result;
     std::set<std::uint32_t> ids;
@@ -151,6 +155,7 @@ double OocGameContextModel::leafValue(sts::search::OocStateId id) const {
         && state(id).screenState != sts::ScreenState::MAP_SCREEN)
         throw std::runtime_error("OOC MCTS v_win requires a resolved map checkpoint");
     if (auto terminal = terminalValue(id)) return *terminal;
+    if (options.checkpointLeaves && options.constantLeaf) return 0.5;
     // Native-only seam; its implementation has no server fallback branch.
     auto gc = detachedCopy(state(id));
     struct PathScope {
@@ -230,6 +235,18 @@ struct ImaginedScope {
     }
 };
 
+template<class Checkpoint, class Step>
+double boundedContinuation(int maxSteps, Checkpoint checkpoint, Step advance) {
+    for (int step=0; step<maxSteps; ++step) {
+        if (const auto value=checkpoint()) return *value;
+        advance();
+    }
+    // The last permitted transition may itself reach an exact terminal or
+    // resolved checkpoint. Exhaustion applies only to still-pending work.
+    if (const auto value=checkpoint()) return *value;
+    throw sts::search::OocSearchUnsupported("continuation_step_limit_" + std::to_string(maxSteps));
+}
+
 }
 double OocGameContextModel::evaluateLeaf(sts::search::OocStateId id, std::mt19937_64 &rng) {
     if (!options.checkpointLeaves) return leafValue(id);
@@ -240,16 +257,34 @@ double OocGameContextModel::evaluateLeaf(sts::search::OocStateId id, std::mt1993
     else if (child.gc.screenState == sts::ScreenState::MAP_SCREEN) ++continuation_.mapLeaves;
     else ++continuation_.pendingLeaves;
     ScumSearchAgent2 agent; agent.simulationCountBase=10000; agent.rng.seed(rng());
-    for (int step=0; step<256; ++step) {
+    const int maxSteps = options.leafCombats ? 1024 : 256;
+    unsigned additionalCombats = 0;
+    const auto checkpoint = [&]() -> std::optional<double> {
         child.path.update(child.gc);
         if (child.gc.outcome == sts::GameOutcome::PLAYER_LOSS) return 0;
         if (child.gc.outcome == sts::GameOutcome::PLAYER_VICTORY) return 1;
-        if (child.gc.screenState == sts::ScreenState::MAP_SCREEN) return vStateWinNative(child.gc);
+        if (child.gc.screenState == sts::ScreenState::MAP_SCREEN && additionalCombats >= options.leafCombats)
+            return options.constantLeaf ? 0.5 : vStateWinNative(child.gc);
+        return std::nullopt;
+    };
+    return boundedContinuation(maxSteps,checkpoint,[&] {
         ++continuation_.projectionSteps;
-        if (child.gc.screenState == sts::ScreenState::BATTLE) resolveCombat(child,rng);
-        else runFullRunOocPolicyStep(child.gc,agent,false,true);
-    }
-    throw std::runtime_error("OOC MCTS pending continuation did not reach a checkpoint in 256 steps");
+        if (child.gc.screenState == sts::ScreenState::BATTLE) { resolveCombat(child,rng); ++additionalCombats; }
+        else {
+            bool applied = false;
+            if (options.uniformLeafPolicy && v4DecisionSupported(child.gc)) {
+                const auto actions = v4CandidateActions(child.gc);
+                std::set<std::uint32_t> ids;
+                bool unique = !actions.empty();
+                for (auto action : actions) if (!ids.insert(action.bits).second) unique = false;
+                if (unique) {
+                    const auto selected = std::uniform_int_distribution<std::size_t>(0, actions.size()-1)(rng);
+                    actions[selected].execute(child.gc); applied = true;
+                }
+            }
+            if (!applied) runFullRunOocPolicyStep(child.gc,agent,false,true);
+        }
+    });
 }
 
 }
@@ -259,6 +294,8 @@ namespace one_combat {
 namespace {
 bool liveEnabled = false;
 std::uint64_t liveSimulations = 512;
+sts::search::OocMctsConfig liveConfig;
+OocAdapterOptions liveOptions{true};
 std::shared_ptr<const CombatTransitionSampler> liveSampler;
 std::string liveTrace;
 std::mutex liveTraceMutex;
@@ -267,6 +304,57 @@ std::uint64_t splitMix64(std::uint64_t x) {
     x = (x ^ (x >> 30)) * 0xbf58476d1ce4e5b9ULL;
     x = (x ^ (x >> 27)) * 0x94d049bb133111ebULL;
     return x ^ (x >> 31);
+}
+// Parsing is strict: no whitespace, trailing text, nonfinite or out-of-range knobs.
+void applyLiveControl(const std::string &key, const std::string &value,
+                      sts::search::OocMctsConfig &config, OocAdapterOptions &opts) {
+    const auto invalid = [&] { throw std::runtime_error(key + " invalid value: " + value); };
+    const auto choice = [&](const char *a, const char *b) {
+        if (value == a) return false;
+        if (value == b) return true;
+        invalid(); return false;
+    };
+    const auto number = [&] {
+        if (value.empty() || value.find_first_not_of("0123456789.+-eE") != std::string::npos) invalid();
+        std::size_t end = 0; double x = 0;
+        try { x = std::stod(value, &end); } catch (...) { invalid(); }
+        if (end != value.size() || !std::isfinite(x)) invalid();
+        return x;
+    };
+    const auto integer = [&] {
+        if (value.empty() || value.find_first_not_of("0123456789") != std::string::npos) invalid();
+        unsigned long long x = 0;
+        try { x = std::stoull(value); } catch (...) { invalid(); }
+        return x;
+    };
+    if (key == "STS_OOC_MCTS_PRIOR") opts.uniformPrior = choice("policy", "uniform");
+    else if (key == "STS_OOC_MCTS_LEAF_VALUE") opts.constantLeaf = choice("native", "constant");
+    else if (key == "STS_OOC_MCTS_LEAF_POLICY") opts.uniformLeafPolicy = choice("v4", "uniform");
+    else if (key == "STS_OOC_MCTS_ROOT_SELECTION") config.selectByMeanQ = choice("visits", "q");
+    else if (key == "STS_OOC_MCTS_TEMPERATURE") { const double x = number(); if (x <= 0) invalid(); opts.priorTemperature = x; }
+    else if (key == "STS_OOC_MCTS_CPUCT") { const double x = number(); if (x < 0) invalid(); config.cPuct = x; }
+    else if (key == "STS_OOC_MCTS_WIDEN_K") { const double x = number(); if (x <= 0) invalid(); config.wideningK = x; }
+    else if (key == "STS_OOC_MCTS_WIDEN_ALPHA") { const double x = number(); if (x <= 0 || x >= 1) invalid(); config.wideningAlpha = x; }
+    else if (key == "STS_OOC_MCTS_MAX_DEPTH") { const auto x = integer(); if (!x || x > 32) invalid(); config.maxDepth = x; }
+    else if (key == "STS_OOC_MCTS_LEAF_COMBATS") { const auto x = integer(); if (x != 0 && x != 1 && x != 3) invalid(); opts.leafCombats = x; }
+    else invalid();
+}
+const char *const liveControlKeys[] = {
+    "STS_OOC_MCTS_PRIOR", "STS_OOC_MCTS_TEMPERATURE", "STS_OOC_MCTS_CPUCT",
+    "STS_OOC_MCTS_WIDEN_K", "STS_OOC_MCTS_WIDEN_ALPHA", "STS_OOC_MCTS_MAX_DEPTH",
+    "STS_OOC_MCTS_ROOT_SELECTION", "STS_OOC_MCTS_LEAF_VALUE",
+    "STS_OOC_MCTS_LEAF_COMBATS", "STS_OOC_MCTS_LEAF_POLICY"
+};
+void recordSearchAbort(const sts::search::OocMctsResult &result, OocContinuationMetrics &continuation) {
+    if (!result.aborted) return;
+    if (result.abortReason.rfind("continuation_step_limit_",0) == 0) {
+        ++continuation.continuationLimitAborts;
+        ++continuation.continuationReasons[result.abortReason];
+    } else if (!continuation.unsupportedCombats) {
+        // A continuation policy attempted a forbidden native combat before resolveCombat.
+        ++continuation.imaginedCombats; ++continuation.unsupportedCombats;
+        ++continuation.supportReasons[result.abortReason];
+    }
 }
 double threadCpuSeconds() {
     timespec t{};
@@ -289,6 +377,7 @@ void configureLiveOocMcts() {
         std::ofstream out(liveTrace, std::ios::app);
         if (!out) throw std::runtime_error("STS_OOC_MCTS_TRACE cannot open output");
     }
+    liveSimulations = 512; liveConfig = {}; liveOptions = {true};
     if (!liveEnabled) return;
     if (!g_oocStrategicTokNet.ok) throw std::runtime_error("STS_OOC_MCTS requires native V4 policy");
     if (!winNetOk()) throw std::runtime_error("STS_OOC_MCTS requires native v_win");
@@ -307,31 +396,46 @@ void configureLiveOocMcts() {
         liveSimulations = std::stoull(value);
         if (!liveSimulations) throw std::runtime_error("STS_OOC_MCTS_SIMS must be positive");
     }
+    liveConfig = {}; liveOptions = {true};
+    for (const char *key : liveControlKeys)
+        if (const char *value = std::getenv(key)) applyLiveControl(key, value, liveConfig, liveOptions);
     const char *artifact = std::getenv("STS_OOC_MCTS_COMBAT_MODEL");
     if (!artifact || !*artifact) throw std::runtime_error("STS_OOC_MCTS requires STS_OOC_MCTS_COMBAT_MODEL");
     liveSampler = std::make_shared<NativeCombatTransitionSampler>(artifact);
-    std::cout << "[live OOC MCTS ON sims=" << liveSimulations << " combat_model=" << artifact << "]\n";
+    const auto precision = std::cout.precision();
+    std::cout << std::setprecision(17) << "[live OOC MCTS ON sims=" << liveSimulations
+        << " combat_model=" << artifact << " prior=" << (liveOptions.uniformPrior ? "uniform" : "policy")
+        << " temperature=" << liveOptions.priorTemperature << " cpuct=" << liveConfig.cPuct
+        << " widen_k=" << liveConfig.wideningK << " widen_alpha=" << liveConfig.wideningAlpha
+        << " max_depth=" << liveConfig.maxDepth << " root_selection=" << (liveConfig.selectByMeanQ ? "q" : "visits")
+        << " leaf_value=" << (liveOptions.constantLeaf ? "constant" : "native")
+        << " leaf_combats=" << liveOptions.leafCombats << " leaf_policy=" << (liveOptions.uniformLeafPolicy ? "uniform" : "v4")
+        << "]\n";
+    std::cout << "[ooc-mcts-config] {\"prior\":\"" << (liveOptions.uniformPrior ? "uniform" : "policy")
+        << "\",\"temperature\":" << liveOptions.priorTemperature << ",\"cPuct\":" << liveConfig.cPuct
+        << ",\"wideningK\":" << liveConfig.wideningK << ",\"wideningAlpha\":" << liveConfig.wideningAlpha
+        << ",\"maxDepth\":" << liveConfig.maxDepth << ",\"rootSelection\":\"" << (liveConfig.selectByMeanQ ? "q" : "visits")
+        << "\",\"leafValue\":\"" << (liveOptions.constantLeaf ? "constant" : "native")
+        << "\",\"leafCombats\":" << liveOptions.leafCombats << ",\"leafPolicy\":\"" << (liveOptions.uniformLeafPolicy ? "uniform" : "v4")
+        << "\",\"simulations\":" << liveSimulations << "}\n";
+    std::cout.precision(precision);
 }
 sts::search::OocMctsResult selectOocMctsAction(const GameContext &gc, const PathHistory &path,
     std::uint64_t seed, std::uint64_t index, std::uint64_t simulations,
     std::shared_ptr<const CombatTransitionSampler> sampler, std::uint64_t &samples,
     OocContinuationMetrics *continuation) {
     ImaginedScope scope;
-    OocGameContextModel model(gc, path, std::move(sampler), {true});
+    OocGameContextModel model(gc, path, std::move(sampler), liveOptions);
     samples = 0;
     if (model.terminalValue(0) || model.isLeafBoundary(0)) return {};
-    sts::search::OocMctsConfig config;
+    auto config = liveConfig;
     config.seed = oocMctsSearchSeed(seed, index);
     auto result = sts::search::OocMctsPlanner(config).search(model, 0, simulations);
     if (!result.selectedAction && !result.aborted) throw std::runtime_error("live OOC MCTS missing selected root action");
     samples = model.combatSamples();
     if (continuation) {
         *continuation = model.continuationMetrics();
-        // A configured leaf policy attempted native combat before resolveCombat.
-        if (result.aborted && !continuation->unsupportedCombats) {
-            ++continuation->imaginedCombats; ++continuation->unsupportedCombats;
-            ++continuation->supportReasons[result.abortReason];
-        }
+        recordSearchAbort(result,*continuation);
     }
     return result;
 }
@@ -351,6 +455,8 @@ bool oocMctsPolicyStep(GameContext &gc, const PathHistory &path, std::uint64_t s
     c.imaginedCombats+=continuation.imaginedCombats; c.unsupportedCombats+=continuation.unsupportedCombats;
     c.pendingLeaves+=continuation.pendingLeaves; c.battleLeaves+=continuation.battleLeaves;
     c.mapLeaves+=continuation.mapLeaves; c.projectionSteps+=continuation.projectionSteps;
+    c.continuationLimitAborts+=continuation.continuationLimitAborts;
+    for (auto &[reason,count] : continuation.continuationReasons) c.continuationReasons[reason]+=count;
     for (auto &[reason,count] : continuation.supportReasons) c.supportReasons[reason]+=count;
     auto &m = metrics.search;
     m.outcomeParticles+=result.metrics.outcomeParticles; m.decisionNodes+=result.metrics.decisionNodes;
@@ -380,7 +486,7 @@ void writeLiveOocMctsTrace(std::uint64_t seed, const LiveOocMctsMetrics &m, int 
     std::ofstream out(liveTrace, std::ios::app);
     if (!out) throw std::runtime_error("STS_OOC_MCTS_TRACE cannot write output");
     if (out.tellp() == 0)
-        out << "seed,oocDecisions,mctsOwned,mctsFallback,simulations,transitionSamples,combatSurrogateSamples,leafEvaluations,maxDepth,mctsWallSec,mctsCpuSec,realCombats,imaginedCombats,unsupportedCombats,mctsSupportAborts,discardedSimulations,simulationAttempts,pendingLeaves,battleLeaves,mapLeaves,projectionSteps,outcomeParticles,particleRevisits,deterministicRevisits,depthSum\n";
+        out << "seed,oocDecisions,mctsOwned,mctsFallback,simulations,transitionSamples,combatSurrogateSamples,leafEvaluations,maxDepth,mctsWallSec,mctsCpuSec,realCombats,imaginedCombats,unsupportedCombats,mctsSupportAborts,discardedSimulations,simulationAttempts,pendingLeaves,battleLeaves,mapLeaves,projectionSteps,outcomeParticles,particleRevisits,deterministicRevisits,depthSum,continuationLimitAborts\n";
     out << std::setprecision(12) << seed << ',' << m.decisions << ',' << m.owned << ',' << m.fallback
         << ',' << m.search.simulations << ',' << m.search.transitionSamples << ',' << m.combatSamples
         << ',' << m.search.leafEvaluations << ',' << m.search.maxDepthReached
@@ -390,9 +496,12 @@ void writeLiveOocMctsTrace(std::uint64_t seed, const LiveOocMctsMetrics &m, int 
         << ',' << m.continuation.pendingLeaves << ',' << m.continuation.battleLeaves
         << ',' << m.continuation.mapLeaves << ',' << m.continuation.projectionSteps
         << ',' << m.search.outcomeParticles << ',' << m.search.particleRevisits
-        << ',' << m.search.deterministicRevisits << ',' << m.search.depthSum << '\n';
+        << ',' << m.search.deterministicRevisits << ',' << m.search.depthSum
+        << ',' << m.continuation.continuationLimitAborts << '\n';
     std::ofstream reasons(liveTrace+".support.jsonl",std::ios::app);
-    reasons << nlohmann::json{{"seed",seed},{"reasons",m.continuation.supportReasons}}.dump() << '\n';
+    reasons << nlohmann::json{{"seed",seed},{"reasons",m.continuation.supportReasons},
+        {"continuation_reasons",m.continuation.continuationReasons},
+        {"continuation_limit_aborts",m.continuation.continuationLimitAborts}}.dump() << '\n';
     reasons.flush();
     if (!reasons) throw std::runtime_error("OOC MCTS support trace write failed");
     out.flush();
@@ -425,6 +534,8 @@ void oocMctsAdapterSelfTest() {
         std::cout << "parity bits="<<f.bits<<" logit="<<logit<<" expected="<<f.logit
                   <<" error="<<std::abs(logit-f.logit)<<" q_error="<<std::abs(q-f.q)<<'\n';
     }
+    const auto cold = oocPolicyWeights({0, 2}, .5), hot = oocPolicyWeights({0, 2}, 2);
+    require(cold[0] < hot[0] && cold[1] == 1 && hot[1] == 1, "temperature changes policy concentration");
     auto extreme = oocPolicyWeights({-10000,0,10000});
     require(extreme == std::vector<double>({0,0,1}), "stable extreme softmax");
     auto rejects = [](auto fn) { bool rejected=false; try { fn(); } catch(const std::exception &) { rejected=true; }
@@ -433,6 +544,24 @@ void oocMctsAdapterSelfTest() {
     rejects([] { oocPolicyWeights({NAN}); });
     rejects([] { oocPolicyWeights({0},INFINITY); });
     rejects([] { oocPolicyWeights({0},NAN); });
+    // One-unit internal bound exposes the final-transition edge without a live
+    // configuration knob or hundreds of artificial native decisions.
+    for (double finalValue : {0.0,0.5,1.0}) {
+        int transitions=0, checkpointChecks=0;
+        const auto value=boundedContinuation(1,[&]() -> std::optional<double> {
+            ++checkpointChecks;
+            return transitions ? std::optional<double>(finalValue) : std::nullopt;
+        },[&] { ++transitions; });
+        require(value==finalValue && transitions==1 && checkpointChecks==2,
+            "last permitted transition accepts exact terminal or resolved checkpoint value");
+    }
+    {
+        int transitions=0;
+        bool aborted=false;
+        try { boundedContinuation(1,[] { return std::optional<double>{}; },[&] { ++transitions; }); }
+        catch (const OocSearchUnsupported &error) { aborted=std::string(error.what())=="continuation_step_limit_1"; }
+        require(aborted && transitions==1,"unresolved continuation still aborts exactly at step limit");
+    }
     GameContext gc(CharacterClass::IRONCLAD,42,0);
     gc.screenState=ScreenState::MAP_SCREEN;
     gc.curEvent=Event::INVALID;
@@ -558,6 +687,36 @@ void oocMctsAdapterSelfTest() {
     OocGameContextModel noMap(fixture,path); require(noMap.isLeafBoundary(0),"missing map boundary");
     fixture=detachedCopy(gc); fixture.screenState=ScreenState::EVENT_SCREEN; fixture.curEvent=Event::MATCH_AND_KEEP;
     OocGameContextModel match(fixture,path); require(match.isLeafBoundary(0),"match and keep boundary");
+    OocAdapterOptions uniformOptions{true}; uniformOptions.uniformPrior = true;
+    OocGameContextModel uniformPrior(gc,path,{},uniformOptions);
+    const auto uniformActions = uniformPrior.legalActions(0);
+    require(!uniformActions.empty(), "uniform prior retains legal actions");
+    for (const auto &action : uniformActions) require(action.prior == 1, "uniform prior equal positive weights");
+    OocAdapterOptions constantOptions{true}; constantOptions.constantLeaf = true;
+    OocGameContextModel constantCheckpoint(gc,path,{},constantOptions);
+    std::mt19937_64 constantRng(777);
+    require(constantCheckpoint.evaluateLeaf(0,constantRng) == .5, "constant value only at resolved checkpoint");
+    for (auto outcome : {GameOutcome::PLAYER_LOSS,GameOutcome::PLAYER_VICTORY}) {
+        auto terminal = detachedCopy(gc); terminal.outcome = outcome;
+        OocGameContextModel exactTerminal(terminal,path,{},constantOptions);
+        require(exactTerminal.evaluateLeaf(0,constantRng) == (outcome == GameOutcome::PLAYER_VICTORY ? 1 : 0),
+                "constant ablation preserves terminal values");
+    }
+    {
+        OocMctsConfig parsed; OocAdapterOptions opts{true};
+        applyLiveControl("STS_OOC_MCTS_ROOT_SELECTION","q",parsed,opts);
+        applyLiveControl("STS_OOC_MCTS_LEAF_COMBATS","3",parsed,opts);
+        applyLiveControl("STS_OOC_MCTS_CPUCT","0",parsed,opts);
+        require(parsed.selectByMeanQ && parsed.cPuct == 0 && opts.leafCombats == 3, "accepted bounded knobs");
+        for (const auto &invalid : std::vector<std::pair<std::string,std::string>>{
+            {"STS_OOC_MCTS_PRIOR","none"},{"STS_OOC_MCTS_TEMPERATURE","0"},
+            {"STS_OOC_MCTS_CPUCT","-1"},{"STS_OOC_MCTS_WIDEN_K","nan"},
+            {"STS_OOC_MCTS_WIDEN_ALPHA","1"},{"STS_OOC_MCTS_MAX_DEPTH","33"},
+            {"STS_OOC_MCTS_MAX_DEPTH","2.5"},{"STS_OOC_MCTS_LEAF_COMBATS","2"},
+            {"STS_OOC_MCTS_LEAF_POLICY","random"},{"STS_OOC_MCTS_LEAF_VALUE","0"},
+            {"STS_OOC_MCTS_ROOT_SELECTION"," q"},{"STS_OOC_MCTS_TEMPERATURE","1junk"}})
+            rejects([&] { applyLiveControl(invalid.first,invalid.second,parsed,opts); });
+    }
     const PathHistory *saved=t_curPath; t_curPath=&path;
     for (int i=0;i<3;++i) {
         auto probe=detachedCopy(gc); probe.curHp=10+i*30; probe.gold=50+i*150;
@@ -852,6 +1011,78 @@ void oocMctsAdapterSelfTest() {
             "pending screen projection matches oracle without live observer or bookkeeping mutation");
         sts::search::g_onGameActionExecute=std::move(savedObserver);
         t_oocStrategicTraceRows.clear();
+    }
+    // Controlled map fixtures prove horizon counting without native combat/search.
+    struct HorizonSampler final : CombatTransitionSampler {
+        mutable unsigned calls = 0;
+        CombatRuntimeSupport support(const GameContext &, const CombatPredictorInputV1 &) const override { return {true,"supported"}; }
+        CombatRuntimeSample sample(const GameContext &g,const CombatPredictorInputV1 &,std::mt19937_64 &) const override {
+            ++calls;
+            return {CombatRuntimeSample::Outcome::VICTORY,captureCombatTransitionState(g)};
+        }
+    };
+    for (unsigned horizon : {1u,3u}) {
+        auto horizonRoot = detachedCopy(gc);
+        for (auto &row : horizonRoot.map->nodes) for (auto &node : row) node.room = Room::MONSTER;
+        auto sampler = std::make_shared<HorizonSampler>();
+        OocAdapterOptions opts{true}; opts.leafCombats = horizon; opts.constantLeaf = true; opts.uniformLeafPolicy = true;
+        OocGameContextModel projected(horizonRoot,path,sampler,opts);
+        std::mt19937_64 projectionRng(912);
+        const auto before = test::oocStateFingerprint(horizonRoot);
+        require(projected.evaluateLeaf(0,projectionRng) == .5 && sampler->calls == horizon
+            && projected.continuationMetrics().imaginedCombats == horizon
+            && projected.continuationMetrics().projectionSteps >= horizon*2
+            && test::oocStateFingerprint(horizonRoot) == before,
+            "uniform continuation completes exact additional combat horizon and preserves root");
+    }
+    {
+        // Inject the bounded-continuation exception after a genuine successful
+        // adapter surrogate draw; isolate root-abort accounting from native exits.
+        auto root=detachedCopy(gc);
+        for (auto &row : root.map->nodes) for (auto &node : row) node.room=Room::MONSTER;
+        auto sampler=std::make_shared<HorizonSampler>();
+        OocGameContextModel adapter(root,path,sampler,{true});
+        struct BoundModel final : OocGenerativeModel {
+            OocGameContextModel &adapter;
+            explicit BoundModel(OocGameContextModel &a):adapter(a) {}
+            std::optional<double> terminalValue(OocStateId id) const override { return adapter.terminalValue(id); }
+            bool isLeafBoundary(OocStateId id) const override { return adapter.isLeafBoundary(id); }
+            std::vector<OocPlannerAction> legalActions(OocStateId id) const override { return adapter.legalActions(id); }
+            OocStateId sampleSuccessor(OocStateId id,OocActionId a,std::mt19937_64 &r) override { return adapter.sampleSuccessor(id,a,r); }
+            double leafValue(OocStateId) const override { throw OocSearchUnsupported("continuation_step_limit_1024"); }
+        } bounded(adapter);
+        OocMctsConfig config; config.maxDepth=1;
+        const auto result=OocMctsPlanner(config).search(bounded,0,1);
+        auto counters=adapter.continuationMetrics();
+        recordSearchAbort(result,counters);
+        const auto samples=adapter.combatSamples();
+        require(result.aborted && !result.selectedAction && result.rootActions.empty()
+            && result.abortReason=="continuation_step_limit_1024"
+            && counters.continuationLimitAborts==1
+            && counters.continuationReasons.at(result.abortReason)==1
+            && counters.unsupportedCombats==0 && counters.supportReasons.empty()
+            && counters.imaginedCombats==samples && samples==1 && sampler->calls==1,
+            "continuation limit abort preserves honest successful combat and separate reason accounting");
+    }
+    {
+        auto pending = detachedCopy(gc); pending.screenState = ScreenState::EVENT_SCREEN;
+        pending.curEvent = Event::BIG_FISH; pending.info.hpAmount0 = 20; pending.info.hpAmount1 = 5;
+        auto oracle = detachedCopy(pending);
+        std::mt19937_64 oracleRng(919), projectionRng(919);
+        oracleRng(); // Existing continuation agent seeding consumes one search draw.
+        const auto actions = v4CandidateActions(oracle);
+        require(v4DecisionSupported(oracle) && actions.size() > 1, "uniform event fixture legal alternatives");
+        actions[std::uniform_int_distribution<std::size_t>(0,actions.size()-1)(oracleRng)].execute(oracle);
+        ScumSearchAgent2 oracleAgent;
+        for (int step=0; step<64 && oracle.screenState != ScreenState::MAP_SCREEN; ++step)
+            runFullRunOocPolicyStep(oracle,oracleAgent,false,true);
+        PathHistory oraclePath=path; oraclePath.update(oracle);
+        const auto previousPath=t_curPath; t_curPath=&oraclePath;
+        const double expected=vStateWinNative(oracle); t_curPath=previousPath;
+        OocAdapterOptions opts{true}; opts.uniformLeafPolicy=true;
+        OocGameContextModel projected(pending,path,{},opts);
+        require(projected.evaluateLeaf(0,projectionRng)==expected,
+            "uniform supported decision executes correct primitive and resolves checkpoint");
     }
     // A single unsupported combat invalidates the entire root; never choose
     // from partial Q, assign a scalar penalty, or call a real combat backend.
