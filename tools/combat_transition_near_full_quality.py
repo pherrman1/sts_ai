@@ -16,10 +16,10 @@ def categorical_metrics(p,target,values):
     return dict(nll=e.nll(mass),brier=brier,crps=crps,meanAbsoluteError=mae)
 
 
-def evaluate(parent,output,sha):
+def evaluate(parent,output,sha,downstream="full-union-downstream-v1",maxhp="full-union-maxHP-v1"):
     q.sparse.frozen(sha)
     if output.exists():raise ValueError('refusing overwrite')
-    cache,graphs,ambiguous,records,meta,rows,ids,test,snapshot=q.load(parent);torch.set_num_threads(4);m,nets,bindings=q.networks(parent);survival,pd=q.upstream(m,parent,ids,test)
+    cache,graphs,ambiguous,records,meta,rows,ids,test,snapshot=q.load(parent);torch.set_num_threads(4);m,nets,bindings=q.networks(parent,downstream,maxhp);survival,pd=q.upstream(m,parent,ids,test)
     win=test['win'];alive=np.flatnonzero(win);probability=np.zeros((len(alive),len(c.CLASSES)))
     with torch.inference_mode():
         for delta in range(len(m.delta_values)):
@@ -43,4 +43,4 @@ def evaluate(parent,output,sha):
 
 
 if __name__=='__main__':
-    p=argparse.ArgumentParser();p.add_argument('--parent',type=Path,required=True);p.add_argument('--output',type=Path,required=True);p.add_argument('--source-sha',required=True);a=p.parse_args();evaluate(a.parent,a.output,a.source_sha)
+    p=argparse.ArgumentParser();p.add_argument('--parent',type=Path,required=True);p.add_argument('--output',type=Path,required=True);p.add_argument('--source-sha',required=True);p.add_argument('--downstream',default='full-union-downstream-v1');p.add_argument('--maxhp',default='full-union-maxHP-v1');a=p.parse_args();evaluate(a.parent,a.output,a.source_sha,a.downstream,a.maxhp)

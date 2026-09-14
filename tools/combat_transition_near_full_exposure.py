@@ -16,11 +16,13 @@ def teacher_traces(cache,ambiguous,index):
     return [(dict(initialMask=code&31,consumed=[p for bit,p in enumerate(t.EFFECT_IDS) if (code>>5)&(1<<bit)],outcome='ESCAPE' if cache['escaped'][index] else 'VICTORY'),weight) for code,weight in options.items()]
 
 
-def evaluate(parent,output,sha,limit=None,downstream="full-union-downstream-v1"):
+def evaluate(parent,output,sha,limit=None,downstream="full-union-downstream-v1",maxhp="full-union-maxHP-v1",cohort="all"):
     q.sparse.frozen(sha)
     if output.exists():raise ValueError('refusing overwrite')
-    cache,graphs,ambiguous,records,meta,allrows,allids,test,snapshot=q.load(parent);torch.set_num_threads(4);m,nets,bindings=q.networks(parent,downstream)
-    selected=np.flatnonzero(test['win'])
+    cache,graphs,ambiguous,records,meta,allrows,allids,test,snapshot=q.load(parent);torch.set_num_threads(4);m,nets,bindings=q.networks(parent,downstream,maxhp)
+    eligible=test['win'].copy()
+    if cohort=='smoke':eligible&=np.any(test['potions']==t.SMOKE,-1)
+    selected=np.flatnonzero(eligible)
     if limit is not None:selected=selected[:limit]
     rows=[allrows[i] for i in selected];ids=allids[selected];test=q.subset(test,selected);n=len(rows)
     survival,pd=q.upstream(m,parent,ids,test);rng=np.random.default_rng(q.RECIPE['seed'])
@@ -67,9 +69,9 @@ def evaluate(parent,output,sha,limit=None,downstream="full-union-downstream-v1")
     def binary_metric(p,y):return dict(rows=len(y),brier=float(np.mean((p-y)**2)),probabilityResolution=1/q.RECIPE['draws'],zeroFrequencyRows=int((p==0).sum()),scope='ancestral Monte Carlo diagnostic, not exact finite target-mass gate')
     brew_target=np.asarray([i in graphs and graphs[i].rounds>0 for i in ids]);metrics=dict(conditionalBrewUse=binary_metric(brew_frequency,brew_target),conditionalEscape=binary_metric(escape_frequency,test['escaped']),sampledHpMeanAbsoluteError=float(np.mean(abs(hp_expected-test['trueHp']))))
     np.savez_compressed(output.with_suffix('.npz'),ids=ids,source=test['source'],teacherNll=teacher_nll,mixtureNll=mixture_nll,exposureGap=gap,brewFrequency=brew_frequency,escapeFrequency=escape_frequency)
-    result=dict(sourceSha=sha,downstreamFolder=downstream,recipe=q.RECIPE,bindings=bindings,snapshot=snapshot,components=components,metrics=metrics,rows=n,classification='FULL_UNION_EXPOSURE_DEVELOPMENT_PASS' if all(passes) else 'FULL_UNION_EXPOSURE_DEVELOPMENT_FAIL',supportChanged=False,independentHoldout=False,rowEvidenceSha256=c.base.sha256(output.with_suffix('.npz')))
+    result=dict(sourceSha=sha,downstreamFolder=downstream,maxHpFolder=maxhp,cohort=cohort,recipe=q.RECIPE,bindings=bindings,snapshot=snapshot,components=components,metrics=metrics,rows=n,classification=('FULL_UNION' if cohort=='all' and limit is None else 'SLICE')+'_EXPOSURE_DEVELOPMENT_'+('PASS' if all(passes) else 'FAIL'),supportChanged=False,independentHoldout=False,rowEvidenceSha256=c.base.sha256(output.with_suffix('.npz')))
     c.base.json_dump(output,result);print(json.dumps(result),flush=True)
 
 
 if __name__=='__main__':
-    p=argparse.ArgumentParser();p.add_argument('--parent',type=Path,required=True);p.add_argument('--output',type=Path,required=True);p.add_argument('--source-sha',required=True);p.add_argument('--limit',type=int);p.add_argument('--downstream',default='full-union-downstream-v1');a=p.parse_args();evaluate(a.parent,a.output,a.source_sha,a.limit,a.downstream)
+    p=argparse.ArgumentParser();p.add_argument('--parent',type=Path,required=True);p.add_argument('--output',type=Path,required=True);p.add_argument('--source-sha',required=True);p.add_argument('--limit',type=int);p.add_argument('--downstream',default='full-union-downstream-v1');p.add_argument('--maxhp',default='full-union-maxHP-v1');p.add_argument('--cohort',choices=['all','smoke'],default='all');a=p.parse_args();evaluate(a.parent,a.output,a.source_sha,a.limit,a.downstream,a.maxhp,a.cohort)

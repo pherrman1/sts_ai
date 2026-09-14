@@ -9,11 +9,13 @@ from tools import combat_transition_composed as c,combat_transition_composed_eva
 from tools import combat_transition_potion_trajectory as t
 
 
-def evaluate(parent,output,sha,downstream):
+def evaluate(parent,output,sha,downstream,maxhp="full-union-maxHP-v1",ritual_only=False):
     q.sparse.frozen(sha)
     if output.exists():raise ValueError('refusing overwrite')
-    cache,graphs,ambiguous,records,meta,rows,ids,test,snapshot=q.load(parent);torch.set_num_threads(4);m,nets,bindings=q.networks(parent,downstream)
-    take=np.flatnonzero(test['win']&test['writhing']&~np.any(np.isin(test['potions'],[t.BREW,t.SMOKE]),-1));rows=[rows[i] for i in take];ids=ids[take];test=q.subset(test,take);_,pd=q.upstream(m,parent,ids,test);mixture=np.zeros(len(ids));teacher=np.zeros(len(ids))
+    cache,graphs,ambiguous,records,meta,rows,ids,test,snapshot=q.load(parent);torch.set_num_threads(4);m,nets,bindings=q.networks(parent,downstream,maxhp)
+    eligible=test['win']&test['writhing']&~np.any(np.isin(test['potions'],[t.BREW,t.SMOKE]),-1)
+    if ritual_only:eligible&=test['dagger']
+    take=np.flatnonzero(eligible);rows=[rows[i] for i in take];ids=ids[take];test=q.subset(test,take);_,pd=q.upstream(m,parent,ids,test);mixture=np.zeros(len(ids));teacher=np.zeros(len(ids))
     device='cuda'
     def tensor(v):return torch.as_tensor(v,device=device)
     with torch.inference_mode():
@@ -37,9 +39,9 @@ def evaluate(parent,output,sha,downstream):
     for name,chosen in dict(writhingNoSpecial=np.ones(len(ids),bool),writhingRitual=ritual).items():
         slices[name]=dict(rows=int(chosen.sum()),teacherNll=float(e.nll(teacher[chosen]).mean()),mixtureNll=float(e.nll(mixture[chosen]).mean()),exposure=e.source_gap_bootstrap(test['source'][chosen],gap[chosen]),zeroExactMassRows=int((mixture[chosen]<=0).sum()),gate=bool(np.isfinite(gap[chosen]).all() and gap[chosen].mean()<=.1))
     np.savez_compressed(output.with_suffix('.npz'),ids=ids,source=test['source'],teacherNll=e.nll(teacher),mixtureNll=e.nll(mixture),gap=gap)
-    result=dict(sourceSha=sha,bindings=bindings,slices=slices,partition='original TEST reused engineering development',protocol='exact all eleven maxHP classes, all legal signed HP and initial ordinary potion actions; special Brew/Smoke rows separately retain full trajectory composition',supportChanged=False,rowsSha256=c.base.sha256(output.with_suffix('.npz')))
+    result=dict(sourceSha=sha,downstreamFolder=downstream,maxHpFolder=maxhp,ritualOnly=ritual_only,bindings=bindings,slices=slices,partition='original TEST reused engineering development',protocol='exact all eleven maxHP classes, all legal signed HP and initial ordinary potion actions; special Brew/Smoke rows separately retain full trajectory composition',supportChanged=False,rowsSha256=c.base.sha256(output.with_suffix('.npz')))
     c.base.json_dump(output,result);print(json.dumps(result),flush=True)
 
 
 if __name__=='__main__':
-    p=argparse.ArgumentParser();p.add_argument('--parent',type=Path,required=True);p.add_argument('--output',type=Path,required=True);p.add_argument('--source-sha',required=True);p.add_argument('--downstream',required=True);a=p.parse_args();evaluate(a.parent,a.output,a.source_sha,a.downstream)
+    p=argparse.ArgumentParser();p.add_argument('--parent',type=Path,required=True);p.add_argument('--output',type=Path,required=True);p.add_argument('--source-sha',required=True);p.add_argument('--downstream',required=True);p.add_argument('--maxhp',default='full-union-maxHP-v1');p.add_argument('--ritual-only',action='store_true');a=p.parse_args();evaluate(a.parent,a.output,a.source_sha,a.downstream,a.maxhp,a.ritual_only)
