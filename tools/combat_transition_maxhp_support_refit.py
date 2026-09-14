@@ -20,7 +20,7 @@ RECIPE=dict(seed=20260912,epochs=12,batch=512,lr=.001,weightDecay=.0001,
 def run(folder,sha):
     sparse.frozen(sha)
     if folder.exists():raise ValueError('refusing overwrite')
-    hashes=e.verify_data();arrays,_=c.base._load_prepared(e.PREPARED)
+    hashes=e.verify_data();arrays,spec=c.base._load_prepared(e.PREPARED);c.base._prepare_target_indices(arrays,spec)
     parent=Path('/home/philippherrmann/sts_sweep/runs/near-full-combat-support-20260914')
     gc,gm=gold.load_cache(parent/'shared-gold-v1')
     eligible=arrays['supported'].copy();eligible[gc['ids']]=True;bindings={'gold':gm['cacheSha256']}
