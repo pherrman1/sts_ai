@@ -44,4 +44,14 @@ class SparseEvents(unittest.TestCase):
         pi['cards']=[dict(cardId=b._CARD_IDS['ARMAMENTS'],upgraded=False)]
         self.assertIn((5,0),n.ritual_posts(pre,pi))
 
+    def test_shared_kill_budget_and_thief_escape(self):
+        from tools import combat_transition_gold_proc_budget as budget
+        pre=self.pre();pre.update(potions=[1]*5,gold=100)
+        pi=dict(cards=[dict(cardId=b._CARD_IDS['HAND_OF_GREED'],upgraded=False)],globals=dict(encounter=b._ENCOUNTER_IDS['CULTIST'],ascension=0))
+        self.assertEqual(budget.joint_gold_posts(pre,pi,0,(3,)),((100,0),))
+        pi['globals']['encounter']=b._ENCOUNTER_IDS['TWO_THIEVES']
+        possible=budget.joint_gold_posts(pre,pi,0,(3,))
+        self.assertNotIn((10,0),possible)
+        self.assertIn((100,0),possible)
+
 if __name__=='__main__':unittest.main()
