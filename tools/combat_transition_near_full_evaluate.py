@@ -69,7 +69,7 @@ def heads(nets,z,rows,ending,maximum,traces,rng,cache,teacher=False):
     return dict(residues=residues,writhing=writhing_event,dagger=dagger,pairs=pairs,target=target)
 
 
-def load(parent):
+def load(parent,final_support=False):
     cache,graphs,meta=te.load(parent/'potion-trajectory-v2');dc,ambiguous,records,dm=d.load(parent,parent/'full-union-downstream-v1');cache.update(dc)
     snapshot=json.loads((parent/'full-union-test-states-v1.json').read_text());file=parent/'full-union-test-states-v1.jsonl'
     if c.base.sha256(file)!=snapshot['snapshotSha256'] or snapshot['corpusSha256']!=c.base.sha256(e.CORPUS):raise ValueError('TEST snapshot differs')
@@ -81,6 +81,8 @@ def load(parent):
         target_dagger.append(tuple(x['delta'] for x in events.ritual_changes(adjusted,post)) if win else ())
     test={k:v[ids] for k,v in cache.items() if isinstance(v,np.ndarray) and v.shape and v.shape[0]==len(cache['ids'])}
     test['writhingTarget']=np.asarray(target_writhing);test['daggerTarget']=target_dagger;test['goldTarget']=[(r['post']['gold'],r['post']['stolenGold']) for r in rows]
+    if final_support:
+        chosen=np.flatnonzero(s.support.final_mask(rows));rows=[rows[i] for i in chosen];ids=ids[chosen];test=subset(test,chosen)
     return cache,graphs,ambiguous,records,dm,rows,ids,test,snapshot
 
 
@@ -130,10 +132,10 @@ def check_raw(pre,pi,post,trace,particle,row):
     if wr and [r for r in post['relics'] if r['id']==rid]!=[r for r in adjusted['relics'] if r['id']==rid]:raise ValueError('native Writhing Omamori')
 
 
-def hard(parent,output,sha,limit=None,downstream="full-union-downstream-v1",maxhp="full-union-maxHP-v1"):
+def hard(parent,output,sha,limit=None,downstream="full-union-downstream-v1",maxhp="full-union-maxHP-v1",final_support=False):
     sparse.frozen(sha)
     if output.exists():raise ValueError('refusing overwrite')
-    cache,graphs,ambiguous,records,meta,rows,ids,test,snapshot=load(parent);torch.set_num_threads(4);m,nets,bindings=networks(parent,downstream,maxhp);survival,pd=upstream(m,parent,ids,test);rng=np.random.default_rng(RECIPE['seed']);counts=Counter();violations={name:0 for name in ('hp','potions','goldDaggerBudget','writhing','relicResidues','rng','escape','deathShortCircuit')}
+    cache,graphs,ambiguous,records,meta,rows,ids,test,snapshot=load(parent,final_support);torch.set_num_threads(4);m,nets,bindings=networks(parent,downstream,maxhp);survival,pd=upstream(m,parent,ids,test);rng=np.random.default_rng(RECIPE['seed']);counts=Counter();violations={name:0 for name in ('hp','potions','goldDaggerBudget','writhing','relicResidues','rng','escape','deathShortCircuit')}
     if limit is not None:
         sub=np.arange(min(limit,len(rows)));rows=[rows[i] for i in sub];ids=ids[sub];test=subset(test,sub);survival=survival[sub];pd=pd[sub]
     with torch.inference_mode():
@@ -148,9 +150,9 @@ def hard(parent,output,sha,limit=None,downstream="full-union-downstream-v1",maxh
                     residues={name:int(value[row]) for name,value in particle['residues'].items()};post=s.assemble(r['pre'],r['pi'],int(ending[row]),int(maximum[row]),trace,residues,int(particle['writhing'][row]),particle['dagger'][row],particle['pairs'][row]);check_raw(r['pre'],r['pi'],post,trace,particle,row)
                     counts[trace['outcome'].lower()]+=1;counts['brewUses']+=trace['brewUses'];counts['recursiveSampledTrajectories']+=trace['brewUses']>sum(p==t.BREW for p in r['pre']['potions'])
             print('whole final union RAW validity',draw+1,dict(counts),flush=True)
-    result=dict(sourceSha=sha,downstreamFolder=downstream,maxHpFolder=maxhp,recipe=RECIPE,bindings=bindings,testSnapshot=snapshot,counts=counts,violations=violations,classification='RAW_SMOKE_PASS' if limit is not None else 'WHOLE_UNION_RAW_VALIDITY_PASS',supportChanged=False,scope='offline RAW contract; native escape continuation has separate exact oracle')
+    result=dict(finalSupport=final_support,sourceSha=sha,downstreamFolder=downstream,maxHpFolder=maxhp,recipe=RECIPE,bindings=bindings,testSnapshot=snapshot,counts=counts,violations=violations,classification='RAW_SMOKE_PASS' if limit is not None else 'WHOLE_UNION_RAW_VALIDITY_PASS',supportChanged=False,scope='offline RAW contract; native escape continuation has separate exact oracle')
     c.base.json_dump(output,result);print(json.dumps(result),flush=True)
 
 
 if __name__=='__main__':
-    p=argparse.ArgumentParser();p.add_argument('command',choices=['hard']);p.add_argument('--parent',type=Path,required=True);p.add_argument('--output',type=Path,required=True);p.add_argument('--source-sha',required=True);p.add_argument('--limit',type=int);p.add_argument('--downstream',default='full-union-downstream-v1');p.add_argument('--maxhp',default='full-union-maxHP-v1');a=p.parse_args();globals()[a.command](a.parent,a.output,a.source_sha,a.limit,a.downstream,a.maxhp)
+    p=argparse.ArgumentParser();p.add_argument('command',choices=['hard']);p.add_argument('--parent',type=Path,required=True);p.add_argument('--output',type=Path,required=True);p.add_argument('--source-sha',required=True);p.add_argument('--limit',type=int);p.add_argument('--downstream',default='full-union-downstream-v1');p.add_argument('--maxhp',default='full-union-maxHP-v1');p.add_argument('--final-support',action='store_true');a=p.parse_args();globals()[a.command](a.parent,a.output,a.source_sha,a.limit,a.downstream,a.maxhp,a.final_support)

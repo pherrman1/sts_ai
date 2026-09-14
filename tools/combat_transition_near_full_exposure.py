@@ -16,10 +16,10 @@ def teacher_traces(cache,ambiguous,index):
     return [(dict(initialMask=code&31,consumed=[p for bit,p in enumerate(t.EFFECT_IDS) if (code>>5)&(1<<bit)],outcome='ESCAPE' if cache['escaped'][index] else 'VICTORY'),weight) for code,weight in options.items()]
 
 
-def evaluate(parent,output,sha,limit=None,downstream="full-union-downstream-v1",maxhp="full-union-maxHP-v1",cohort="all"):
+def evaluate(parent,output,sha,limit=None,downstream="full-union-downstream-v1",maxhp="full-union-maxHP-v1",cohort="all",final_support=False):
     q.sparse.frozen(sha)
     if output.exists():raise ValueError('refusing overwrite')
-    cache,graphs,ambiguous,records,meta,allrows,allids,test,snapshot=q.load(parent);torch.set_num_threads(4);m,nets,bindings=q.networks(parent,downstream,maxhp)
+    cache,graphs,ambiguous,records,meta,allrows,allids,test,snapshot=q.load(parent,final_support);torch.set_num_threads(4);m,nets,bindings=q.networks(parent,downstream,maxhp)
     eligible=test['win'].copy()
     if cohort=='smoke':eligible&=np.any(test['potions']==t.SMOKE,-1)
     selected=np.flatnonzero(eligible)
@@ -62,16 +62,16 @@ def evaluate(parent,output,sha,limit=None,downstream="full-union-downstream-v1",
         for cohort,mask in cohorts.items():
             chosen=mask&active
             if not chosen.any():continue
-            gate=bool(np.isfinite(gap[chosen,j]).all() and gap[chosen,j].mean()<=q.RECIPE['threshold']);diagnostic=cohort in ('recursiveBrew','transmutationPlus')
+            gate=bool(np.isfinite(gap[chosen,j]).all() and gap[chosen,j].mean()<=q.RECIPE['threshold']);diagnostic=(not final_support) and cohort in ('recursiveBrew','transmutationPlus')
             component[cohort]=dict(rows=int(chosen.sum()),teacherNll=float(teacher_nll[chosen,j].mean()),mixtureNll=float(mixture_nll[chosen,j].mean()),exposure=e.source_gap_bootstrap(test['source'][chosen],gap[chosen,j]),zeroExactMassRows=int((mixture[chosen,j]<=0).sum()),gate=gate,diagnosticOnly=diagnostic)
             if not diagnostic:passes.append(gate)
         components[name]=component
     def binary_metric(p,y):return dict(rows=len(y),brier=float(np.mean((p-y)**2)),probabilityResolution=1/q.RECIPE['draws'],zeroFrequencyRows=int((p==0).sum()),scope='ancestral Monte Carlo diagnostic, not exact finite target-mass gate')
     brew_target=np.asarray([i in graphs and graphs[i].rounds>0 for i in ids]);metrics=dict(conditionalBrewUse=binary_metric(brew_frequency,brew_target),conditionalEscape=binary_metric(escape_frequency,test['escaped']),sampledHpMeanAbsoluteError=float(np.mean(abs(hp_expected-test['trueHp']))))
     np.savez_compressed(output.with_suffix('.npz'),ids=ids,source=test['source'],teacherNll=teacher_nll,mixtureNll=mixture_nll,exposureGap=gap,brewFrequency=brew_frequency,escapeFrequency=escape_frequency)
-    result=dict(sourceSha=sha,downstreamFolder=downstream,maxHpFolder=maxhp,cohort=cohort,recipe=q.RECIPE,bindings=bindings,snapshot=snapshot,components=components,metrics=metrics,rows=n,classification=('FULL_UNION' if cohort=='all' and limit is None else 'SLICE')+'_EXPOSURE_DEVELOPMENT_'+('PASS' if all(passes) else 'FAIL'),supportChanged=False,independentHoldout=False,rowEvidenceSha256=c.base.sha256(output.with_suffix('.npz')))
+    result=dict(finalSupport=final_support,sourceSha=sha,downstreamFolder=downstream,maxHpFolder=maxhp,cohort=cohort,recipe=q.RECIPE,bindings=bindings,snapshot=snapshot,components=components,metrics=metrics,rows=n,classification=('FULL_UNION' if cohort=='all' and limit is None else 'SLICE')+'_EXPOSURE_DEVELOPMENT_'+('PASS' if all(passes) else 'FAIL'),supportChanged=False,independentHoldout=False,rowEvidenceSha256=c.base.sha256(output.with_suffix('.npz')))
     c.base.json_dump(output,result);print(json.dumps(result),flush=True)
 
 
 if __name__=='__main__':
-    p=argparse.ArgumentParser();p.add_argument('--parent',type=Path,required=True);p.add_argument('--output',type=Path,required=True);p.add_argument('--source-sha',required=True);p.add_argument('--limit',type=int);p.add_argument('--downstream',default='full-union-downstream-v1');p.add_argument('--maxhp',default='full-union-maxHP-v1');p.add_argument('--cohort',choices=['all','smoke'],default='all');a=p.parse_args();evaluate(a.parent,a.output,a.source_sha,a.limit,a.downstream,a.maxhp,a.cohort)
+    p=argparse.ArgumentParser();p.add_argument('--parent',type=Path,required=True);p.add_argument('--output',type=Path,required=True);p.add_argument('--source-sha',required=True);p.add_argument('--limit',type=int);p.add_argument('--downstream',default='full-union-downstream-v1');p.add_argument('--maxhp',default='full-union-maxHP-v1');p.add_argument('--cohort',choices=['all','smoke'],default='all');p.add_argument('--final-support',action='store_true');a=p.parse_args();evaluate(a.parent,a.output,a.source_sha,a.limit,a.downstream,a.maxhp,a.cohort,a.final_support)
