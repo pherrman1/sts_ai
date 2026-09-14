@@ -1,0 +1,12 @@
+{
+  "passed": true,
+  "arm": "control",
+  "seeds": 64,
+  "wins": 48,
+  "realSilverCombats": 1633,
+  "zeroBridgeFailures": true,
+  "zeroMctsActivity": true,
+  "fullManifestConfigBinding": true,
+  "source": "54f2820f426c45540b02eb075cf73102b00de8f0",
+  "reviewerGameplay": 0
+}

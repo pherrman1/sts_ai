@@ -1,0 +1,98 @@
+{
+  "passed": true,
+  "classification": "OOC_MCTS_WINRATE_INCONCLUSIVE",
+  "source": "54f2820f426c45540b02eb075cf73102b00de8f0",
+  "seeds": 64,
+  "arms": {
+    "control": {
+      "wins": 48,
+      "realSilverCombats": 1633,
+      "zeroBridgeFailures": true,
+      "owned": 0,
+      "supportAborts": 0,
+      "surrogateSamples": 0,
+      "maxDepth": 0
+    },
+    "treatment": {
+      "wins": 42,
+      "realSilverCombats": 1564,
+      "zeroBridgeFailures": true,
+      "owned": 7240,
+      "supportAborts": 1551,
+      "surrogateSamples": 1445511,
+      "maxDepth": 23
+    }
+  },
+  "discordance": {
+    "treatmentOnly": 8,
+    "controlOnly": 14,
+    "sameOutcome": 42,
+    "exactTwoSidedBinomialP": 0.28627872467041016
+  },
+  "pairedOutcomes": {
+    "won": {
+      "control_mean": 0.75,
+      "treatment_mean": 0.65625,
+      "treatment_minus_control": -0.09375,
+      "paired_bootstrap_95_ci": [
+        -0.234375,
+        0.046875
+      ]
+    },
+    "floor": {
+      "control_mean": 48.765625,
+      "treatment_mean": 46.921875,
+      "treatment_minus_control": -1.84375,
+      "paired_bootstrap_95_ci": [
+        -4.390625,
+        0.53125
+      ]
+    },
+    "hpEnd": {
+      "control_mean": 41.109375,
+      "treatment_mean": 40.296875,
+      "treatment_minus_control": -0.8125,
+      "paired_bootstrap_95_ci": [
+        -12.15625,
+        10.109375
+      ]
+    },
+    "fightsLost": {
+      "control_mean": 0.25,
+      "treatment_mean": 0.34375,
+      "treatment_minus_control": 0.09375,
+      "paired_bootstrap_95_ci": [
+        -0.046875,
+        0.234375
+      ]
+    },
+    "deathCombat": {
+      "control_mean": 4.6875,
+      "treatment_mean": 6.59375,
+      "treatment_minus_control": 1.90625,
+      "paired_bootstrap_95_ci": [
+        -1.375,
+        5.1875
+      ]
+    },
+    "sec": {
+      "control_mean": 101.381390625,
+      "treatment_mean": 456.7887890625,
+      "treatment_minus_control": 355.4073984375,
+      "paired_bootstrap_95_ci": [
+        305.96287140625003,
+        407.27075296875
+      ]
+    }
+  },
+  "runtimeRatio": 4.505647301210512,
+  "bootstrap": {
+    "replicates": 200000,
+    "rng": "PCG64",
+    "seed": 20260914,
+    "paired": true
+  },
+  "fullConfigModelHashBinding": true,
+  "reviewerGameplay": 0,
+  "interpretation": "Inconclusive fresh engineering policy comparison; point estimate favors V4, CI includes zero. Sequential same-host elapsed-time ratio descriptive; no causal comparison against historical budgets."
+}

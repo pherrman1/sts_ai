@@ -100,3 +100,64 @@ Independent excluded-canary readiness passed with raw configuration, model-load,
 source/hash, accounting, zero failures and positive treatment coverage checks.
 Official V4 launched first (remote PID5517); MCTS is queued to follow only after
 its completion. Official outcome files remain separate from canaries.
+
+## Completed official result
+
+**`OOC_MCTS_WINRATE_INCONCLUSIVE`**. Both arms completed exactly64 fresh paired
+seeds980000..980063 once, excluding both979999 canaries. V448/64 (75%) versus
+MCTS42/64 (65.625%): MCTS-minus-V4−9.375pp; paired95% bootstrap CI
+**[−23.4375,+4.6875]pp**. Eight treatment-only wins and14 control-only wins;
+42same-result pairs. Descriptive exact two-sided discordant binomial p
+0.28627872467041016. Primary rule/200000 PCG64(20260914) resamples are unchanged.
+The negative point estimate does not meet the DOWN gate because its interval
+includes zero; there is no demonstrated improvement at this fixed10000 setting.
+
+| Descriptive outcome | V4 | MCTS10000 | Paired difference95% CI |
+|---|---:|---:|---:|
+| Mean floor |48.765625|46.921875|−1.84375 [−4.390625,+0.53125]|
+| Mean ending HP |41.109375|40.296875|−0.8125 [−12.15625,+10.109375]|
+| Mean elapsed game seconds |101.381390625|456.7887890625|+355.4073984375 [305.96287140625,407.27075296875]|
+| Real Silver combats |1633|1564|descriptive counts|
+
+Mean elapsed game time ratio4.5056473; whole-arm wall328.8s versus1648.9s.
+These are descriptive sequential24-worker cohort timings, not a causal budget
+comparison against previous differently configured/reused-seed runs. MCTS
+instrumented wall averaged407.3788s,89.1832% of treatment game elapsed time.
+Observed full-batch CPU use≈24cores and peak observed RSS≈6GB; utilization
+naturally tapered with the final games. Arms did not overlap.
+
+Treatment10898 OOC decisions:7240 MCTS-owned and3658 V4 fallbacks (33.5658%).
+1551 fallbacks were support-triggered whole-root aborts. Completed simulations
+73686339=7240×10000+1286339 discarded; attempts73687890=completed+1551.
+Imagined combats1447062=1445511 surrogate samples+1551 unsupported calls.
+Maxdepth6..23; all battleLeaves zero. Both full-arm native benchmark checks and
+strict source/config/seed/trace/support validators pass; all four Silver bridge
+failure counters are zero and log-line counts exactly match real combats.
+Postflight again passes exact source/cache/binary/five-model hashes.
+
+Support-abort reasons (sum1551): gold-mutating encounter366, potion250,
+pre-stolen gold155, Writhing Mass200, Entropic Brew30, gold-mutating relic227,
+card264, Smoke Bomb25, Ritual Dagger34. Frozen exclusions remain exclusions;
+no support broadening, tuning, training, follow-up seeds or default enablement.
+Native MCTS default OFF and existing512 setting are preserved.
+
+Independent final raw-outcome/interval/accounting reproduction **PASS** is recorded
+in `final-independent-review.json`: all six means/CIs reproduce exactly, with
+zero reviewer gameplay. Analyzer/launch reviewed SHA
+13508a4507daebc1fe081151973050a51d8aef9d remains frozen; results only append
+evidence. Source CI passed at54f; new analyzer/readiness CI Linux GCC passed
+run34860408603 (3m9s). Final evidence head receives its own CI.
+
+ELI5: On these64 new games the larger-search policy won six fewer games than
+V4 and took considerably longer. The uncertainty interval crosses zero, so this
+gate is inconclusive and provides no basis to enable MCTS. This is real-game
+engineering policy evidence with copied hidden noncombat RNG, not an unbiased
+planning-value or deployment qualification. The offline composition prerequisite
+passed separately in #179; its qualification is not a gameplay win claim.
+
+Raw outcomes/configs/meta/trace/support, gzip logs, execution receipts, resource
+snapshots, hashes, analysis and review receipts are preserved in the adjacent
+packet. `README.md` gives the seed-free reproduction command. Original working
+artifacts remain ignored under build/ooc-mcts-fresh64-10000; remote raw results
+and source cache remain preserved. Knowledge impact: experiment evidence/current
+research status plus explicit analyzer cohort parameters in benchmark protocol.

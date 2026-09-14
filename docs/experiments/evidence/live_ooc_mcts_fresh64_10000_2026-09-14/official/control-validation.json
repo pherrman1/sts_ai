@@ -1,0 +1,11 @@
+{
+  "arm": "control",
+  "rows": 64,
+  "validation": "PASS",
+  "wins": 48,
+  "owned": 0,
+  "supportAborts": 0,
+  "surrogateSamples": 0,
+  "realCombats": 1633,
+  "maxDepth": 0
+}

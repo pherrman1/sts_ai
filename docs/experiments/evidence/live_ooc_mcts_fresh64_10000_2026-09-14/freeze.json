@@ -17,5 +17,10 @@
   "bootstrap_seed": 20260914,
   "host": "sts-test",
   "workers_per_arm": 24,
-  "arms_sequential": true
+  "arms_sequential": true,
+  "analyzer_ci_run": 34860408603,
+  "analyzer_ci_conclusion": "success",
+  "analyzer_ci_head": "9af81a6cd23f867a75861bff22f65ca4e63dbf7a",
+  "independent_final_review": "PASS",
+  "postflight": "PASS source/cache/binary/five model hashes"
 }

@@ -1,7 +1,8 @@
 # Current research status
 
 Last verified: 2026-09-14 for exact supported-v1 RNG continuation
-and the stochastic signed-HP distribution and expanded-support offline composition;
+and the stochastic signed-HP distribution, expanded-support offline composition,
+and fresh64 fixed10000 live MCTS gate;
 2026-09-13 for the Phase-2 stochastic persistent-state support
 audit and the corrected whole-combat transition model rerun after independent
 review;
@@ -20,14 +21,21 @@ chronology.
 
 ## Current priority / active line
 
-The fixed2048 live OOC MCTS budget regression is complete on reused32 seeds:
-MCTS24/32 versus exact preserved V4 control21/32 (gain9.375pp,95% CI[-12.5,+31.25])
-and previous512 MCTS22/32 (secondary gain6.25pp,CI[-9.375,+21.875]). Both comparisons
-are inconclusive. Source/models/fair exact-10k Silver unchanged; maxdepth8–16,
-more surrogate samples but more support-triggered V4 root fallbacks than512.
-Default OFF and512 remain unchanged; no further seeds or budget are authorized.
-See [ledger-06 §247](../../experiments/ledger-06.md) and
-[2048 evidence](../../experiments/evidence/live_ooc_mcts_2048_2026-09-14.md).
+The fresh64 fixed10000 live OOC MCTS versus matched V4 gate is complete:
+**OOC_MCTS_WINRATE_INCONCLUSIVE**. MCTS42/64 versus V448/64,−9.375pp,
+paired95% CI[−23.4375,+4.6875]pp. Both fresh arms use frozen native models and
+fair exact-10k Silver, A0/keysOFF/Act3; no historical control is pooled. Mechanical
+source/config/seed/trace/support validation and independent reproduction pass
+with zero bridge failures and battleLeaves. Maxdepth6..23,7240owned decisions,1551 support aborts; total V4
+fallback rate33.5658%. Descriptive mean elapsed game ratio4.50565. Negative point
+estimate and crossing-zero interval provide no demonstrated improvement; no
+basis to enable MCTS. Default OFF/existing512 and frozen exclusions are preserved.
+Copied hidden noncombat RNG remains a planning limitation. See
+[ledger-06 §249](../../experiments/ledger-06.md),
+[fresh64 evidence](../../experiments/evidence/live_ooc_mcts_fresh64_10000_2026-09-14.md).
+The prior reused32 fixed2048 regression remains preserved and inconclusive
+[§247](../../experiments/ledger-06.md); it is not a causal comparison of budgets
+against this fresh cohort.
 
 ## Completed recent line
 

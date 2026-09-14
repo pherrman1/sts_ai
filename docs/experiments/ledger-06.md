@@ -7609,3 +7609,38 @@ passes; runtime/readiness and gameplay success remain separate. Knowledge impact
 experiment evidence/current research status; evaluator navigation updated.
 [Full evidence](evidence/composed_transition_expanded_support_2026-09-14.md),
 [JSON](evidence/composed_transition_expanded_support_2026-09-14.json).
+
+
+## §249 — Fresh64 fixed10000 live OOC MCTS versus matched V4 (2026-09-14)
+
+User-authorized fresh64 paired seeds980000..980063, with excluded979999 canary
+per arm; designated GCP sts-test24 CPUs,24 OMP workers, sequential arms. Frozen
+runtime54f2820f426c45540b02eb075cf73102b00de8f0/binary810281cb…/five models;
+reviewed analyzer/launch13508a4507daebc1fe081151973050a51d8aef9d. Source/cache/
+hashes and successful model loads verified; local/remote pre-outcome inventories
+prove freshness. Both canaries and official64-arm mechanism/accounting checks
+pass. No C++/models/support/fair exact-10k Silver/A0/keysOFF/Act3 changes.
+
+**OOC_MCTS_WINRATE_INCONCLUSIVE**: MCTS42/64 versus V448/64,−9.375pp,
+unchanged paired200000 PCG64(20260914)95% CI[−23.4375,+4.6875]pp. Discordant
+8treatment-only/14control-only,42same-result; descriptive exact p0.2862787.
+Mean floor46.921875 versus48.765625,CI difference[−4.390625,+0.53125]. Mean
+game elapsed456.7888s versus101.3814s (ratio4.50565); arm wall1648.9s versus
+328.8s; these sequential24-worker timings are descriptive.
+
+7240owned/10898 decisions,3658 V4 fallbacks (33.5658%),1551 support aborts;
+73686339 completed=7240×10000+1286339 discarded;73687890 attempts;
+1445511 surrogate samples,1447062 imagined calls; maxdepth6..23. Real Silver
+combats1564 versus1633; all bridge failures/battleLeaves zero; strict membership,
+config/source/support reason accounting and postflight hashes pass. No historical
+control is pooled and prior512/2048 cohorts are not causal budget comparisons.
+
+Independent final reproduction PASS (all six means/CIs/accounting) accompanies
+the raw packet; reviewed analysis stayed frozen. Analyzer regression2tests/focusedCTest1 pass; remote
+runtime focused2 pass; Linux GCC analyzer CI run34860408603 passed3m9s.
+No extra seeds, tuning, support/model changes or default enablement. Negative
+point estimate plus crossing-zero interval provides no demonstrated improvement;
+copied hidden noncombat RNG still limits unbiased planning/deployment claims.
+Knowledge impact: experiment evidence/current research status; analyzer cohort
+parameters in evaluation protocol. [Full evidence](evidence/live_ooc_mcts_fresh64_10000_2026-09-14.md),
+[raw/analysis packet](evidence/live_ooc_mcts_fresh64_10000_2026-09-14/README.md).
