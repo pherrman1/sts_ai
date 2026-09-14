@@ -480,3 +480,8 @@ add_test(NAME combat_transition_runtime_loader COMMAND python3
     $<TARGET_FILE:combat_transition_runtime_probe>)
 set_tests_properties(combat_transition_runtime_loader PROPERTIES
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "integration")
+
+add_test(NAME ooc_mcts_live_startup COMMAND python3
+    ${CMAKE_SOURCE_DIR}/tools/verify/ooc_mcts_live_startup.py $<TARGET_FILE:one_combat>)
+set_tests_properties(ooc_mcts_live_startup PROPERTIES
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "integration")

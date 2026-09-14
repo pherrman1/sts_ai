@@ -1,0 +1,8 @@
+{
+  "status": "PASS",
+  "runs": 8,
+  "owned": 671,
+  "combat_surrogate_samples": 6073,
+  "real_combats": 125,
+  "trace_accounting": "PASS"
+}

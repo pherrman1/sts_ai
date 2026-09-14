@@ -1,0 +1,19 @@
+[collect keys OFF]
+[ooc-strat-tok-net] loaded selfplay/models/ooc_strategic_tok_final.native
+[OOC one-ply strategic TOK net ON: card rewards gated at margin 1]
+[OOC one-ply: campfire Q gate ON (rest options + upgrade targets)]
+[OOC one-ply: event Q gate ON (incl. Neow)]
+[OOC one-ply: shop Q gate ON]
+[OOC one-ply: treasure Q gate ON]
+[OOC one-ply: boss relic Q gate ON]
+[CompactTreeNet: 1060 trees, 448 feats from models/v_win_trees.txt]
+[CompactTreeNet: 1256 trees, 448 feats from models/v_rich_trees.txt]
+[native OOC floor/win GBMs ON; no v_server required]
+[live OOC MCTS ON sims=128 combat_model=/home/philippherrmann/sts_sweep/runs/combat-transition-runtime-native-20260914/combat_transition_v1.native]
+[benchmark stops after Act 3 boss]
+[fair-play / determinized MCTS ON]
+[policy PUCT ON: models/policy_trees_c.txt, 100 trees]
+[c_puct = 2.5]
+BEST stack config: skip@-0.5  rest=win-rate  shop-V=ON  path=heuristic  shop-beam=off  native-OOC=ON  keys=skip  searcher=Searcher2  fair-play  seeds 969992..969999  asc 0  sims 1000  threads 4
+BEST models: floor=models/v_rich_trees.txt  win=models/v_win_trees.txt  combatVNet=off  policyNet=ON  PVNet=off  distVNet=off
+BEST                    win%= 12.5   avg_floor= 28.5   avg_hp_end=  2.8   cpu_sec/run=8.59   wall=21.7s

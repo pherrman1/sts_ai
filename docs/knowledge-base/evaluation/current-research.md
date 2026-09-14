@@ -20,9 +20,27 @@ chronology.
 
 ## Current priority / active line
 
-No research line is currently authorized as the active priority.
+The corrected live OOC MCTS paired regression is complete: both arms won21/32
+with ordinary exact-10k Silver on reused seeds970000..970031. The paired win CI
+[-21.875,+21.875]pp is inconclusive. MCTS remains OFF by default; no additional
+seeds or tuning are authorized. See [ledger-06 §244](../../experiments/ledger-06.md)
+and the [corrected benchmark evidence](../../experiments/evidence/live_ooc_mcts_corrected_2026-09-14.md).
 
 ## Completed recent line
+
+### Live OOC MCTS paired Silver gameplay gate
+
+**`OOC_MCTS_WINRATE_DOWN`** in the first fixed 32-seed paired Act-3 engineering
+A/B, with normal real Silver combat in both arms. The opt-in MCTS implementation
+uses the qualified native combat sampler only in detached imagination and is
+OFF by default. The primary paired win-rate CI is strictly negative. Preserve
+the frozen implementation and return for independent review; a bounded audit of
+changed strategic choices and native leaf/boundary behavior should precede any
+new experiment. No parameter sweep or automatic additional seeds are authorized.
+This is actual gameplay evidence under copied hidden noncombat RNG, with no
+unbiased-planning or deployment qualification claim. See
+[ledger-06 §243](../../experiments/ledger-06.md) and the
+[full paired Silver evidence](../../experiments/evidence/live_ooc_mcts_2026-09-14.md).
 
 ### Whole-combat transition model v1
 
@@ -166,7 +184,8 @@ qualification were not rerun on recovered rows. See the
 [full source/provenance/accounting audit](../../experiments/evidence/potion_generation_support_2026-09-14.md)
 and [maintained potion-generation contract](../behavior/combat-potion-generation.md).
 
-Next separately scoped work: native runtime adapter / OOC MCTS integration.
+The native runtime adapter is now qualified for the combat boundary (§242);
+the opt-in live OOC MCTS engineering gameplay gate is recorded in §243.
 Offline composition qualification does not establish runtime or gameplay
 performance. Full evidence and limitations are in the
 [executed evidence](../../experiments/evidence/composed_transition_2026-09-14.md)

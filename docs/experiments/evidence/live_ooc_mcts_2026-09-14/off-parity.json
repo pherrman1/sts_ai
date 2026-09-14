@@ -1,0 +1,17 @@
+{
+  "status": "PASS",
+  "seeds": "969992..969999",
+  "compared_fields": [
+    "won",
+    "floor",
+    "act",
+    "hpEnd",
+    "maxHp",
+    "fightsLost",
+    "deathCombat",
+    "deathEncounter"
+  ],
+  "equal_seeds": 8,
+  "baseline_sha": "3057ea79f8a678ba13f9f2ea2b4834850fa2dd87",
+  "branch_result": "repaired-off.csv"
+}

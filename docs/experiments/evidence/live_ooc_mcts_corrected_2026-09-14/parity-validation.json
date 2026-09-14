@@ -1,0 +1,11 @@
+{
+  "arm": "parity_off",
+  "rows": 8,
+  "validation": "PASS",
+  "wins": 6,
+  "owned": 0,
+  "supportAborts": 0,
+  "surrogateSamples": 0,
+  "realCombats": 221,
+  "maxDepth": 0
+}

@@ -20,6 +20,8 @@ namespace sts {
 namespace sts::search {
 
     class BattleScumSearcher2;
+    // Thread-local guard for surrogate-only OOC imagination; default false.
+    extern thread_local bool g_disallowImaginedCombat;
 
     // Optional recording hook. If set, playoutBattle calls it with the live battle
     // state at each decision point (once per agent decision -- NOT on the hot search

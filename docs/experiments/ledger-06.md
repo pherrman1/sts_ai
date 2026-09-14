@@ -7398,7 +7398,89 @@ encoders dominate (~1.08 ms/component); no optimization was attempted.
 [Full evidence and commands](evidence/native_combat_adapter_2026-09-14.md),
 [artifact hashes and raw metrics](evidence/native_combat_adapter_2026-09-14.json).
 
-## §243 Frozen potion-generation support-contract correction (2026-09-14)
+
+## §243 First live OOC MCTS paired Silver gameplay gate (2026-09-14)
+
+**OOC_MCTS_WINRATE_DOWN.** Control V4 full one-ply stack won 21/32; opt-in live
+OOC MCTS won 10/32 on fresh paired seeds 970000..970031, A0, Act-3 stop, no keys.
+Both arms played **Silver real combat** at 1000 exact-root simulations, allocated
+reuse cap 32768, adaptive/direct leaf OFF, four OpenMP threads, same frozen binary
+and SHA `c705072f50e12892dd02a6da6dc1e39305b6839e`. The user changed the original
+cheap Searcher2 plan to Silver before any decision-bearing seed ran.
+Baseline `3057ea79f8a678ba13f9f2ea2b4834850fa2dd87`; independently reviewed MCTS
+implementation `0c7d932d6231de5d3cd5677d8ddac5d4b023d9d2`.
+
+Paired win delta -34.375pp, bootstrap 95% CI [-53.125,-15.625]pp; one treatment-only
+win, twelve control-only wins, nineteen same-result seeds; exact two-sided
+discordant binomial p=.00341796875 descriptive. Mean floor delta -6.28125,
+CI [-10.46875,-2.3125]; runtime 4.5403234x. Classification uses only the primary
+win CI. Bootstrap 200000 paired draws, PCG64 seed 20260914, percentile interval.
+
+Frozen qualified native combat artifact SHA256
+`f9520a14b1fc42e2a22840c0c2cab0b13ebd8ab6285b5c943662f5e0e9cd9233` is used only
+inside imagination. Real selected primitive actions execute once; real BATTLE
+returns to ordinary combat. Native V4 artifact `ooc_strategic_tok_final.native`,
+full REST/EVENT/SHOP/TREASURE/BOSS_RELIC gates, margin 1.0, native floor/win and
+other combat configuration match between arms. MCTS defaults cPuct 1.5, k 2, alpha .5,
+maxDepth 32, 128 simulations; independent indexed SplitMix64 RNG; no tuning.
+Mean 123.40625 owned decisions/run, fallback 18.274%, 980.4375 combat samples/run,
+15796 simulations/run, 15771 leaf evaluations/run; max depth 3 in 32/32 runs;
+MCTS 8.8288376 wall seconds/run, 82.1308% of per-run elapsed time. All trace
+accounting reconciles and Silver bridge failure counters are zero.
+
+Eight implementation seeds 969992..969999: exact OFF parity across all eight
+non-timing fields, repaired ON smoke 8/8 with surrogate sampling and actual
+combats. Duplicate native GOLD IDs now use leaf/live fallback; candidates and
+surrogate support unchanged. Silver excluded-seed canaries pass. Invalid first
+smoke, mistagged baseline canary and an overly strict per-run analysis coverage
+check are preserved/documented. The final coverage-validation correction changes
+no MCTS/gameplay/bootstrap/classification semantics. Focused CTests 3/3,
+qualified startup cases 11/11, independent implementation/statistical review pass.
+
+MCTS reduced actual paired gameplay under the copied-RNG planning environment.
+Copied hidden noncombat RNG still prevents unbiased planning/fairness or
+deployment claims. Keep MCTS OFF; return for review and bounded changed-decision/
+leaf investigation before any new budget or tuning experiment. No automatic
+follow-up seeds. Knowledge impact: live contracts/configuration/code routing
+updated in maintained KB; research status closed with this negative evidence.
+[Full evidence/environment/commands](evidence/live_ooc_mcts_2026-09-14.md),
+[raw paired results](evidence/live_ooc_mcts_2026-09-14/result.json).
+
+
+## §244 Corrected live OOC MCTS paired exact-10k Silver regression (2026-09-14)
+
+**OOC_MCTS_WINRATE_INCONCLUSIVE.** Both control V4 and corrected opt-in MCTS
+won21/32 on the user-requested same seeds970000..970031. Paired win delta0pp,
+bootstrap95% CI[-21.875,+21.875]pp; six wins unique to each arm, twenty same
+results, exact discordant p=1 descriptive. Both use ordinary fair exact-10k
+Silver actual combat, A0, keys OFF, Act-3 stop, four workers and the same frozen
+reviewed executable `f9af4ad6055b98603fd732d59869b5b39cc8beec`.
+
+Four bundled corrections: resolve pending reward/shop/event/selector leaves
+through existing OOC policy to checkpoint/terminal before native win evaluation;
+unsupported imagined combat aborts the entire root to unchanged V4 and discards
+partial action estimates, with no imagined native/Silver fight; align actual
+combat to the frozen10k teacher; reuse deterministic children and fix MCTS512
+simulations without tuning stochastic widening/PUCT/horizon. Search depth6–13,
+3,654 owned decisions, 2,142 fallbacks including972 support aborts;105,957 supported
+surrogate samples. All search/support accounting and real combat logs reconcile;
+zero Silver bridge failures. Control823/treatment811 actual battles.
+Mean game time38.2207→61.0723s (1.5979x), mean floor48.625→49.0625 descriptive.
+
+Focused checks3/3, startup11/11, excluded OFF parity8/8, ON smoke8/8, independent
+implementation review and authoritative Linux GCC CI pass before freeze/run.
+Models, corpus/support, default OFF and original §243 evidence preserved. The
+initial expensive imagined-Silver canary was stopped before any revised official
+seed; user chose whole-decision V4 fallback. Same seeds/four corrections imply
+regression evidence, not fresh confirmation or individual causal attribution.
+The result demonstrates neither improvement nor equivalence; copied hidden RNG
+still prevents unbiased-planning or deployment claims. No follow-up seeds or
+sweep. Knowledge impact: maintained live contracts/telemetry and research status
+updated; frozen raw evidence preserved.
+[Full evidence](evidence/live_ooc_mcts_corrected_2026-09-14.md),
+[raw paired result](evidence/live_ooc_mcts_corrected_2026-09-14/result.json).
+
+## §245 Frozen potion-generation support-contract correction (2026-09-14)
 
 Baseline main `3057ea79f8a678ba13f9f2ea2b4834850fa2dd87`. Seed-free full census
 of the same 510,030 rows and original source split; all corpus/model/prepared
