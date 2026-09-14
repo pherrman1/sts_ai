@@ -98,8 +98,8 @@ continuation. Teacher likelihood exactly marginalizes compatible orderings and
 tracks generated Colorless/Skill/Forge effects for downstream mechanics.
 
 The original frozen corpus and source splits are unchanged. Full-union encoder
-and head refits are complete; composition and native export/parity qualification
-remain pending. Live support remains at its historical scope until those gates
+and head refits are complete; whole-union composition has failed the Smoke/relic exposure gate after bounded
+shared-head repairs. Native export/parity qualification remains gated. Live support remains at its historical scope until those gates
 pass. These TEST diagnostics are development evidence, including reused TEST
 evidence following the Writhing maxHP repair, rather than untouched confirmation.
 See the [staged report](../../experiments/evidence/near_full_combat_support_2026-09-14/REPORT.md).

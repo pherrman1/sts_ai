@@ -1,8 +1,8 @@
 # Near-full Ironclad combat support: staged execution report
 
-**NEAR_FULL_COMBAT_SUPPORT_NOT_READY**. Stage-1 gold and Stage-2 sparse-event development gates pass. Shared Brew/escape trajectories and all full-union model refits are complete; whole-union composition, native export/parity and final runtime activation remain pending. The earlier stop on Transmutation+ was too conservative and is superseded: share the learned HoG mechanism and supply native upgrade-dependent payouts. No new data or gameplay. Stages 2–5 require Stage 1 to pass.
+**NEAR_FULL_COMBAT_SUPPORT_NOT_READY**. Stage-1 gold and Stage-2 sparse-event development gates pass. Shared Brew/escape trajectories and all full-union model refits are complete; whole-union composition has now failed a Smoke/relic exposure gate. Native export/parity and final runtime activation remain gated. The earlier stop on Transmutation+ was too conservative and is superseded: share the learned HoG mechanism and supply native upgrade-dependent payouts. No new data or gameplay. Stages 2–5 require Stage 1 to pass.
 
-Baseline / unchanged model implementation SHA: `210f347334898e7c2a85b8af0f30dedc4888ea88`. Local main was fast-forwarded from `74d31681b8ebd3beb5e85d6db9c1a164f9aeaf13`; the existing fresh Codex-app-managed worktree was moved to that clean main on `codex/near-full-combat-support`. No additional worktree was created. #179 and #180 are merged. External engineering review supplied by the user covered `8420103ed7cdeb220472a70c4961f203cfca471c`, including gold, sparse events and the native escape oracle. Later full-union trajectory/refit changes have not had independent final implementation review. This does not assert pristine scientific holdout qualification. Final implementation/evidence handoff SHA is recorded in the draft PR evidence packet.
+Task baseline SHA: `210f347334898e7c2a85b8af0f30dedc4888ea88`. Local main was fast-forwarded from `74d31681b8ebd3beb5e85d6db9c1a164f9aeaf13`; the existing fresh Codex-app-managed worktree was moved to that clean main on `codex/near-full-combat-support`. No additional worktree was created. #179 and #180 are merged. External engineering review supplied by the user covered `8420103ed7cdeb220472a70c4961f203cfca471c`, including gold, sparse events and the native escape oracle. Later full-union trajectory/refit changes have not had independent final implementation review. This does not assert pristine scientific holdout qualification. Final implementation/evidence handoff SHA is recorded in the draft PR evidence packet.
 
 ## Initial frozen remaining-support census
 
@@ -324,11 +324,48 @@ The sampler interface represents `ESCAPE` separately from `VICTORY`. Adapter con
 
 The entire candidate union has been refitted with the existing architectures and original source-grouped TRAIN/VALIDATION selection: survival, maxHP, HP and shared potion encoders/heads, then shared relic/gold/Writhing/Ritual heads. Selected TEST NLLs: survival 0.060412, maxHP 0.053423, HP 2.507614, conditional potion trajectory 0.504572; downstream normalized joint target NLL 1.344312. These component losses do not establish composition qualification.
 
-Whole-union RAW validity and exposure evaluation are in progress on all 51,441 TEST rows, including the previously qualified 41,454 rows. All later diagnostics are development evidence on the original reused TEST. In particular the Stage-2 Writhing TEST failure motivated the maxHP repair, so its repaired gap is not untouched confirmation.
+Whole-union RAW validity and exposure evaluation completed on all 51,441 TEST rows, including the previously qualified 41,454 rows. All later diagnostics are development evidence on the original reused TEST. In particular the Stage-2 Writhing TEST failure motivated the maxHP repair, so its repaired gap is not untouched confirmation.
 
 The user confirms that no separate #180 saved imagined-state corpus is known. Available tracked CSV/support JSONL contain aggregate per-seed and first-failure counts only. Exact before/after state replay is **unavailable**, is not inferred by subtracting aggregates, and does not block Stages 3–5.
 
-Live support remains 413,799/510,030 overall and 41,454/51,441 TEST. Native artifact export/parity and support activation await whole-union qualification. Classification: **NEAR_FULL_COMBAT_SUPPORT_NOT_READY**. No new data or gameplay ran. Final end-to-end gameplay evidence requires independent review of the final frozen artifact.
+### Executed full-union composition and stop
+
+The complete original TEST has 51,441 rows: old #179 support 41,454 (39,919 surviving targets), newly recovered candidate rows 9,987 (9,711 surviving targets). The original all-row candidate census covers 510,030 rows with zero remaining source/target representability failures. Candidate eligibility is **not** qualified runtime support.
+
+Full-union exposure source `b26643393c0e6356f18bd22ba31d4d1f677ab1d1`, original full-union candidate weights:
+
+| Component | Full informative union gap | Old #179 gap | Newly recovered gap |
+| --- | ---: | ---: | ---: |
+| HP (exact maxHP marginal) | +0.012821 | +0.011774 | +0.017126 |
+| Potion trajectory | +0.004097 | +0.003758 | +0.005492 |
+| Relic (per observed group) | +0.000416 | -0.002470 | +0.011565 |
+| Gold | +0.019119 | deterministic old population | +0.019119 |
+| Ritual Dagger | -0.000279 | no applicable old rows | -0.000279 |
+| Writhing Mass | +0.088853 | no applicable old rows | +0.088853 |
+
+These aggregate passes do **not** qualify the final union. On 102 informative Smoke Bomb TEST rows, relic exposure is **+0.242637 nat**, source-bootstrap 95% CI **[+0.088666, +0.409294]**, versus the required mean gap <=0.1. There are zero exact target-mass failures. [Full exposure receipt](full-union-exposure-v1.json).
+
+All 51,441 TEST rows receive 32 full ancestral RAW draws: **1,646,112** draws, 62,347 sampled deaths, 1,574,266 victories, 9,499 escapes, 10,217 Brew uses and 354 sampled recursive trajectories. Zero recorded HP/maxHP, potion, joint gold/Dagger-budget, Writhing/deck, relic-residue, RNG, escape-flag/boss, or downstream-after-death violations. Death exits before querying downstream models; the focused sampler test also verifies this. Native escape continuation has the separate exact real-Smoke oracle; this corpus check is RAW legality, not gameplay or complete combat-policy reachability. [RAW receipt](full-union-raw-v1.json).
+
+The original full-union weights' survival NLL/Brier are 0.060412/0.0179865. Exact maxHP-marginal HP NLL/Brier/CRPS/mean MAE are 2.520435/0.752391/3.622578/5.322113. MaxHP NLL/Brier/CRPS/mean MAE are 0.053423/0.032505/0.055558/0.104384. Old/recovered/union quality is separated in the [quality receipt](full-union-quality-v2.json). Generated potion-body identity NLL is supplied by the exact native law: 11.128156 over 306 TEST generation rows /317 rounds; use and retention likelihood is learned separately. Full-union conditional Brew-use/escape Monte Carlo Briers are 0.00051134/0.00080878, diagnostics at 1/32 probability resolution rather than exact-mass gates.
+
+Three bounded relic-decoder repairs keep the original corpus/splits and frozen other heads:
+
+| Repair | Selected epoch | Smoke relic TEST gap | Outcome |
+| --- | ---: | ---: | --- |
+| Added explicit escape coefficient fixed to zero | 1 | +0.199237 | FAIL |
+| Exact teacher anchor plus two fixed ancestral contexts | 10 | +0.201889 | FAIL |
+| Same contexts, balanced shared native Brew/Smoke route loss | 2 | +0.209178 | FAIL |
+
+Original VALIDATION chooses each epoch, using the documented repair loss. No separate branch model or data collection. Non-relic gold/Writhing/Dagger weights remain bit-identical. The final attempted repair's source is `6ab63f40783b9955a978a2692e7af5460fb7c78a`; the exact checkpoint/context hashes and weighted loss are in [fit](full-union-downstream-v4-fit.json) and [focused exposure](smoke-relic-exposure-v4.json). Its Smoke gap CI is [+0.076693, +0.364132]. None of these candidates is promoted to a qualified runtime artifact.
+
+The failure concentrates in ordinary-victory Smoke rows where the ancestral potion model predicts escape, changing the relic head's conditional residue distribution. **Inference:** the outcome/HP/potion/relic correlation needs a stronger model repair; the bounded head repairs have not qualified it. No missing native mechanic or new-data requirement is proven. The failing visible population has 1,005 informative surviving corpus rows: 808 TRAIN, 95 VALIDATION, 102 TEST (0.197047% of the entire corpus). Pre-Smoke presence itself has 3,765 corpus rows. Frequency does not excuse the failed mechanism gate.
+
+Exact finite Writhing integration additionally reports +0.091256 over 449 ordinary-potion TEST rows. The 31 Writhing/Ritual overlap rows have +0.121732, and a shared maxHP head repair with an audited native coarse target gives +0.119052. The evaluator retains numerical threshold flags for every intersection. The report treats these overlap results as visible diagnostics; the handoff requests independent Writhing and Dagger mechanism gates, not an independent learned distribution for every feature intersection. The coarse target excludes available Fruit Juice because its native +5/+10 gain can confound the implantation/maxHP partition; the earlier unbounded exploratory receipt is retained, not promoted. [Exact receipt](full-union-writhing-exact-v1.json), [bounded maxHP fit](full-union-maxHP-v3-fit.json), [overlap diagnostic](writhing-ritual-exact-v3.json).
+
+The user handoff's stop rule is now reached: bounded repair has not made Smoke/relic composition reliable under the required gate. Missing qualification is the outcome/HP/potion/relic correlation, with **no smallest additional corpus collection proven necessary**. Further correlation/factorization work needs an independently reviewed design rather than silently widening support or weakening the gate.
+
+Final classification: **NEAR_FULL_COMBAT_SUPPORT_NOT_READY**. Current live support remains 413,799/510,030 overall (81.132286%) and 41,454/51,441 TEST (80.585525%); actual rows recovered at runtime: **zero**. The entire original residual 96,231 rows remains rejected by the unchanged native predicate. A new runtime artifact, Python/native parity and MCTS supported-sampling integration are **not run**, because full-union qualification failed. Runtime artifact hash: **none**. No new data or gameplay ran. Final end-to-end gameplay evidence requires independent review of a final qualified frozen artifact. #180 state replay is explicitly unavailable and is not the blocker.
 
 ## Checks and reproduction
 
@@ -345,8 +382,9 @@ Live support remains 413,799/510,030 overall and 41,454/51,441 TEST. Native arti
 - Shared gold native/scorer tests: 8 PASS; original census tests: 5 PASS; focused CTests: 2/2 PASS (1.17 s). Supplemental relic diagnostic compiles and completes all 32 draws.
 - Full native preparation, bounded 12-epoch fit, gold/HP/potion exposure, supplemental relic exposure and complete ancestral validity: PASS; raw receipts linked below.
 - Linux GCC at implementation SHA `1a24e7c`: SUCCESS. Final handoff-head CI status is recorded in the PR; earlier CI does not attest later commits.
-- Continuation: 17 focused gold/sparse/Brew tests PASS; Debug `one_combat` build PASS; focused native adapter CTest PASS, including exact escape oracle. Affected maxHP refit and bound exposure/native validity complete as reported above.
-- Not run: independent scientific review, full-stack/final union qualification, new native model export/probability parity, learned Brew/escape probabilities, new data/game campaigns/gameplay. Final-head authoritative Linux GCC CI is recorded in the PR.
+- Earlier continuation: 17 focused gold/sparse/Brew tests PASS; Debug `one_combat` build PASS; focused native adapter CTest PASS, including exact escape oracle. Affected maxHP refit and bound exposure/native validity complete as reported above.
+- Final continuation: worktree/submodule check PASS; seven focused CTests PASS (33 constituent tests, 6.15 s), including death short-circuit and compatible-posterior gradient checks. Original deployed runtime/export/support files have zero diff from reviewed `8420103`.
+- Not run: independent final scientific/implementation review, new native model export/probability parity/support expansion, new data/game campaigns/gameplay. Full-stack refit and final-union development qualification were run and failed as reported above. Final-head authoritative Linux GCC CI is recorded in the PR.
 
 Reproduction (seed-free; frozen inputs must exist at the bound paths):
 

@@ -1,5 +1,6 @@
 import copy
 import unittest
+from unittest.mock import patch
 import numpy as np
 import torch
 from tools import combat_transition_near_full_sampler as s,combat_transition_potion_trajectory as t
@@ -21,6 +22,18 @@ class SamplerTest(unittest.TestCase):
         pre=self.pre();net=AlwaysBrew();a=t.sample(net,np.zeros(64,np.float32),pre,0,.5,np.random.default_rng(8))
         b=s.sample_potions_batch(net,np.zeros((1,64),np.float32),[pre],np.asarray([0]),np.asarray([.5]),np.random.default_rng(8),np.asarray([False]))[0]
         self.assertEqual(a,b)
+
+    def test_death_short_circuits_all_downstream_networks_and_rng(self):
+        class Models:
+            def encode_visible(self,pi):return None
+            def survival(self,inputs):return 0.
+            def max_hp(self,*args):raise AssertionError('maxHP after death')
+        class Planner:
+            def __init__(self):self.calls=0
+            def random(self):self.calls+=1;return .5
+        sampler=s.NearFullSampler.__new__(s.NearFullSampler);sampler.models=Models();sampler.heads={};planner=Planner()
+        with patch.object(s.c,'full_support_reasons',return_value=[]):result=sampler.sample_transition(self.pre(),{},planner)
+        self.assertEqual(result.outcome,'DEATH');self.assertIsNone(result.post_state);self.assertEqual(planner.calls,1)
 
     def test_raw_assembly_keeps_advanced_hypothetical_rng_and_native_deck(self):
         pre=self.pre();before=copy.deepcopy(pre);origin=t.brew.native_origin(77);body,state=t.brew.generate(origin,3)

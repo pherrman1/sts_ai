@@ -39,7 +39,7 @@ against this fresh cohort.
 
 ## Completed recent line
 
-### Near-full combat support: full-union refits await composition and native qualification
+### Near-full combat support: full-union composition fails Smoke/relic exposure
 
 **NEAR_FULL_COMBAT_SUPPORT_NOT_READY**. Stage 1 was user-approved, and external
 engineering review supplied by the user covered PR head
@@ -66,15 +66,25 @@ DISCARD, allows Smoke discard at bosses, and exactly marginalizes compatible
 teacher paths with generated potion effect flags.
 
 Full-union refits of existing survival/maxHP/HP/potion encoders and heads, then
-relic/gold/Writhing/Dagger heads, are complete. Selected TEST NLLs are 0.060412,
-0.053423, 2.507614 and 0.504572 for the four upstream components; normalized
-joint downstream target NLL is 1.344312. Whole-union composition evaluates all
-51,441 TEST rows, including the old 41,454-row support. These are development
-checks on the original source-grouped split; no new data or gameplay ran.
+relic/gold/Writhing/Dagger heads, are complete. All 51,441 TEST rows receive
+32 ancestral draws: 1,646,112 transitions with zero recorded RAW contract
+violations. Old #179 /recovered/union exposure aggregates pass, but the Smoke
+relic slice (102 informative TEST rows) fails at +0.242637 nat. Three bounded
+shared-head repairs give +0.199237, +0.201889 and +0.209178, still above +0.1.
+The source population has 808 TRAIN /95 VALIDATION /102 TEST surviving rows.
+No additional native mechanic or corpus collection requirement is proven.
+
+The handoff stop rule applies after unsuccessful bounded repairs. Further
+outcome/HP/potion/relic correlation work needs a reviewed design. Native
+export/parity and support expansion remain gated; no repaired checkpoint is
+promoted. All diagnostics reuse the original TEST as development evidence.
+The 31 Writhing/Ritual overlap's exact +0.121732 (bounded maxHP repair +0.119052)
+remains an explicit diagnostic of the shared mechanism, not hidden by averages.
+No new data or gameplay ran.
 
 Live support remains 413,799/510,030 overall (81.132286%) and 41,454/51,441 TEST
-(80.585525%). New native artifact export/parity and support activation await the
-whole-union gates. Exact #180 state replay is unavailable: the known tracked
+(80.585525%). New native artifact export/parity and support activation are blocked by the
+failed Smoke/relic gate. Exact #180 state replay is unavailable: the known tracked
 CSV/support JSONL contain aggregate counts without imagined states or root IDs.
 The user explicitly confirms this does not block Stages 3–5; subtracting failure
 aggregates cannot supply a new root-abort count. Final gameplay requires

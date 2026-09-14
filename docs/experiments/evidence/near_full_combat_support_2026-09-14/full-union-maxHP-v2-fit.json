@@ -1,0 +1,105 @@
+{
+  "artifactSha256": "499daf911cfbce83300bc53e36602a22a15fc63ce912032d7129baa7e2e96bf4",
+  "component": "maxHP",
+  "hashes": {
+    "/home/philippherrmann/sts_sweep/runs/combat-transition-model-v1/split_manifest.json": "e9043bcceb9d95027711e6ff33afbfe1cae3cf9528f820c0ff68bddbb419db32",
+    "/home/philippherrmann/sts_sweep/runs/combat-transition-runtime-25k/combat-transition-25k.jsonl": "74c08aa0a3c30342d86cd45355fe17ffa9046963ad7c8cf71b1938f9cdc1cfde",
+    "/home/philippherrmann/sts_sweep/runs/combat-transition-runtime-25k/combat-transition-25k.jsonl.manifest.json": "33669cd99eed8317987192825b5111a68d1e60269c166def2fe568364e20ad59",
+    "/tmp/sts-phase2-attention-audit-20260913/prepared.npz": "2badbb85ccd8329bcb886d50ef8a0b9b1bd2c043fda9445de9f9c2e7a4b6f9a5",
+    "/tmp/sts-phase2-attention-audit-20260913/prepared_manifest.json": "13b2c91fd0ced713f8c429bbf8995ceb58b6e3e57d1555de42f5e67d7f9a389f",
+    "/tmp/sts-phase2-attention-audit-20260913/target_spec.json": "e2315620d512578542d6b3bfbd362eb07b086f0e9fa7770cc23f4fa4c226e229",
+    "hp": "a667a3cfa7d7eca3cb07b46f50321e443c75e8a58f7627becb1fd69bf90f08c9",
+    "max_hp": "66ac8f70da69e29bf9b1364243f6f903e4f74dda1ec8a909ef54a7ea97dc6479",
+    "potion": "8e04bcd5265fb11b8fa91b4553a84690915f437e7b3afee0b93358e312de3ad6",
+    "potion_encoder": "2085010f1aeef7a7957cdc45c851b2424d640037fd0fa981eb7ae7274190f6ef",
+    "relic": "e07e79d487152ae294f4915ef4aecd0e8bd38b8dec8d0133a57b6b58af92bd71",
+    "survival": "2447b2daf1a48a619a5f071488908afd6f0fb83bfd855ee9f379c04120efeaef"
+  },
+  "history": [
+    {
+      "epoch": 1,
+      "validationJointNativeNll": 0.04341784119606018
+    },
+    {
+      "epoch": 2,
+      "validationJointNativeNll": 0.04329808056354523
+    },
+    {
+      "epoch": 3,
+      "validationJointNativeNll": 0.04360618442296982
+    },
+    {
+      "epoch": 4,
+      "validationJointNativeNll": 0.04375315085053444
+    },
+    {
+      "epoch": 5,
+      "validationJointNativeNll": 0.0436578169465065
+    },
+    {
+      "epoch": 6,
+      "validationJointNativeNll": 0.04376576840877533
+    },
+    {
+      "epoch": 7,
+      "validationJointNativeNll": 0.04364382103085518
+    },
+    {
+      "epoch": 8,
+      "validationJointNativeNll": 0.04347953200340271
+    },
+    {
+      "epoch": 9,
+      "validationJointNativeNll": 0.04376198723912239
+    },
+    {
+      "epoch": 10,
+      "validationJointNativeNll": 0.04413888230919838
+    },
+    {
+      "epoch": 11,
+      "validationJointNativeNll": 0.044345032423734665
+    },
+    {
+      "epoch": 12,
+      "validationJointNativeNll": 0.04376700147986412
+    }
+  ],
+  "nativePartitionContradictions": 0,
+  "nativePartitionRows": {
+    "test": 44,
+    "train": 329,
+    "validation": 36
+  },
+  "originalValidationJointNll": 0.04322060942649841,
+  "recipe": {
+    "auxiliary": "one coarse native target on Writhing/Darkstone without charged Omamori: implant iff maxHP delta >=6; coefficient one, not tuned",
+    "batch": 512,
+    "clip": 1.0,
+    "encoderLr": 0.0001,
+    "epochs": 12,
+    "evidence": "bounded development repair motivated by reused TEST, not untouched confirmation",
+    "headLr": 0.001,
+    "population": "entire final-union original TRAIN survivors",
+    "scope": "existing maxHP architecture; all other learned components fixed",
+    "seed": 20260912,
+    "selection": "earliest strict minimum original VALIDATION maxHP NLL plus audited native partition NLL",
+    "weightDecay": 0.0001
+  },
+  "selectedEpoch": 2,
+  "sourceSha": "40cb5ec458e70086317b5118023453db5aed69f3",
+  "supportChanged": false,
+  "testNll": 0.05340100824832916,
+  "testRows": 49630,
+  "trainEncoder": false,
+  "trainRows": 393677,
+  "validationJointNll": 0.04329808056354523,
+  "validationNll": 0.042750053107738495,
+  "validationRows": 48590,
+  "warmBindings": {
+    "HP": "0c8b5aa8c5218d6cd6102b768cc86a474c9ef30953d4b034caedcc41a426109b",
+    "maxHP": "2c5b54d0a9420a9d0e3ab9a26f32b9900c4869490e4af49627009cde21efb4b0",
+    "potion": "ae1a1411990d272579de10564edb48c7f2ec1d14f1c72dacf5390a1415a0f1db",
+    "survival": "e150180a9112f52a94cfa60770adb6c0a48517a7d94a4c26f6e5896e85269c18"
+  }
+}

@@ -1,0 +1,863 @@
+{
+  "bindings": {
+    "HP": "0c8b5aa8c5218d6cd6102b768cc86a474c9ef30953d4b034caedcc41a426109b",
+    "downstream": "7fbeb01f31045a76fcb78e9f8f146a22c02790cbfe418dda094ac17c8145c555",
+    "maxHP": "f10d2b977a5b9aabf66dbcc38d996c654aae870d3841d7d25b82123591e04961",
+    "potion": "ae1a1411990d272579de10564edb48c7f2ec1d14f1c72dacf5390a1415a0f1db",
+    "survival": "e150180a9112f52a94cfa60770adb6c0a48517a7d94a4c26f6e5896e85269c18"
+  },
+  "classification": "SLICE_EXPOSURE_DEVELOPMENT_FAIL",
+  "cohort": "transmutationPlus",
+  "components": {
+    "gold": {
+      "brew": {
+        "diagnosticOnly": false,
+        "exposure": {
+          "mean": 0.001884997281796534,
+          "repetitions": 1000,
+          "rows": 1,
+          "sourceBootstrap95": [
+            0.001884997281796534,
+            0.001884997281796534
+          ],
+          "sources": 1
+        },
+        "gate": true,
+        "mixtureNll": 0.001884997281796534,
+        "rows": 1,
+        "teacherNll": 0.0,
+        "zeroExactMassRows": 0
+      },
+      "entireFinalUnion": {
+        "diagnosticOnly": false,
+        "exposure": {
+          "mean": 0.07853328861610517,
+          "repetitions": 1000,
+          "rows": 39,
+          "sourceBootstrap95": [
+            0.028239192114880518,
+            0.13679647122018768
+          ],
+          "sources": 37
+        },
+        "gate": true,
+        "mixtureNll": 0.3705491917040049,
+        "rows": 39,
+        "teacherNll": 0.2920159030878998,
+        "zeroExactMassRows": 0
+      },
+      "escape": {
+        "diagnosticOnly": false,
+        "exposure": {
+          "mean": 0.07161928713409549,
+          "repetitions": 1000,
+          "rows": 35,
+          "sourceBootstrap95": [
+            0.02558238504663602,
+            0.12954457012088189
+          ],
+          "sources": 34
+        },
+        "gate": true,
+        "mixtureNll": 0.2183069122827546,
+        "rows": 35,
+        "teacherNll": 0.14668762514865913,
+        "zeroExactMassRows": 0
+      },
+      "gold": {
+        "diagnosticOnly": false,
+        "exposure": {
+          "mean": 0.07853328861610517,
+          "repetitions": 1000,
+          "rows": 39,
+          "sourceBootstrap95": [
+            0.028239192114880518,
+            0.13679647122018768
+          ],
+          "sources": 37
+        },
+        "gate": true,
+        "mixtureNll": 0.3705491917040049,
+        "rows": 39,
+        "teacherNll": 0.2920159030878998,
+        "zeroExactMassRows": 0
+      },
+      "recovered": {
+        "diagnosticOnly": false,
+        "exposure": {
+          "mean": 0.07853328861610517,
+          "repetitions": 1000,
+          "rows": 39,
+          "sourceBootstrap95": [
+            0.028239192114880518,
+            0.13679647122018768
+          ],
+          "sources": 37
+        },
+        "gate": true,
+        "mixtureNll": 0.3705491917040049,
+        "rows": 39,
+        "teacherNll": 0.2920159030878998,
+        "zeroExactMassRows": 0
+      },
+      "ritual": {
+        "diagnosticOnly": false,
+        "exposure": {
+          "mean": 0.002436565521455458,
+          "repetitions": 1000,
+          "rows": 5,
+          "sourceBootstrap95": [
+            0.0,
+            0.007309696564366375
+          ],
+          "sources": 5
+        },
+        "gate": true,
+        "mixtureNll": 0.28987452080510856,
+        "rows": 5,
+        "teacherNll": 0.2874379552836531,
+        "zeroExactMassRows": 0
+      },
+      "smoke": {
+        "diagnosticOnly": false,
+        "exposure": {
+          "mean": 0.07853328861610517,
+          "repetitions": 1000,
+          "rows": 39,
+          "sourceBootstrap95": [
+            0.028239192114880518,
+            0.13679647122018768
+          ],
+          "sources": 37
+        },
+        "gate": true,
+        "mixtureNll": 0.3705491917040049,
+        "rows": 39,
+        "teacherNll": 0.2920159030878998,
+        "zeroExactMassRows": 0
+      },
+      "writhing": {
+        "diagnosticOnly": false,
+        "exposure": {
+          "mean": 0.0,
+          "repetitions": 1000,
+          "rows": 2,
+          "sourceBootstrap95": [
+            0.0,
+            0.0
+          ],
+          "sources": 2
+        },
+        "gate": true,
+        "mixtureNll": 0.0,
+        "rows": 2,
+        "teacherNll": 0.0,
+        "zeroExactMassRows": 0
+      }
+    },
+    "hp": {
+      "brew": {
+        "diagnosticOnly": false,
+        "exposure": {
+          "mean": -1.0816529005808206e-08,
+          "repetitions": 1000,
+          "rows": 1,
+          "sourceBootstrap95": [
+            -1.0816529005808206e-08,
+            -1.0816529005808206e-08
+          ],
+          "sources": 1
+        },
+        "gate": true,
+        "mixtureNll": 4.295257181582387,
+        "rows": 1,
+        "teacherNll": 4.295257192398916,
+        "zeroExactMassRows": 0
+      },
+      "entireFinalUnion": {
+        "diagnosticOnly": false,
+        "exposure": {
+          "mean": 0.0410523773343068,
+          "repetitions": 1000,
+          "rows": 362,
+          "sourceBootstrap95": [
+            0.011434132670412553,
+            0.07844138743729125
+          ],
+          "sources": 268
+        },
+        "gate": true,
+        "mixtureNll": 0.5760304509275017,
+        "rows": 362,
+        "teacherNll": 0.5349780735931949,
+        "zeroExactMassRows": 0
+      },
+      "escape": {
+        "diagnosticOnly": false,
+        "exposure": {
+          "mean": 0.014823529530687843,
+          "repetitions": 1000,
+          "rows": 283,
+          "sourceBootstrap95": [
+            0.004042345652277516,
+            0.03157678881505625
+          ],
+          "sources": 266
+        },
+        "gate": true,
+        "mixtureNll": 0.1937193822602429,
+        "rows": 283,
+        "teacherNll": 0.17889585272955505,
+        "zeroExactMassRows": 0
+      },
+      "gold": {
+        "diagnosticOnly": false,
+        "exposure": {
+          "mean": 0.09574824882094657,
+          "repetitions": 1000,
+          "rows": 39,
+          "sourceBootstrap95": [
+            0.0001704147153690507,
+            0.28821445291468595
+          ],
+          "sources": 37
+        },
+        "gate": true,
+        "mixtureNll": 0.28037173383142655,
+        "rows": 39,
+        "teacherNll": 0.18462348501048,
+        "zeroExactMassRows": 0
+      },
+      "recovered": {
+        "diagnosticOnly": false,
+        "exposure": {
+          "mean": 0.0410523773343068,
+          "repetitions": 1000,
+          "rows": 362,
+          "sourceBootstrap95": [
+            0.011434132670412553,
+            0.07844138743729125
+          ],
+          "sources": 268
+        },
+        "gate": true,
+        "mixtureNll": 0.5760304509275017,
+        "rows": 362,
+        "teacherNll": 0.5349780735931949,
+        "zeroExactMassRows": 0
+      },
+      "ritual": {
+        "diagnosticOnly": false,
+        "exposure": {
+          "mean": 0.001282431276068936,
+          "repetitions": 1000,
+          "rows": 5,
+          "sourceBootstrap95": [
+            -1.0686302887724653e-09,
+            0.003847294919413412
+          ],
+          "sources": 5
+        },
+        "gate": true,
+        "mixtureNll": 0.08164450058741687,
+        "rows": 5,
+        "teacherNll": 0.08036206931134796,
+        "zeroExactMassRows": 0
+      },
+      "smoke": {
+        "diagnosticOnly": false,
+        "exposure": {
+          "mean": 0.0410523773343068,
+          "repetitions": 1000,
+          "rows": 362,
+          "sourceBootstrap95": [
+            0.011434132670412553,
+            0.07844138743729125
+          ],
+          "sources": 268
+        },
+        "gate": true,
+        "mixtureNll": 0.5760304509275017,
+        "rows": 362,
+        "teacherNll": 0.5349780735931949,
+        "zeroExactMassRows": 0
+      },
+      "writhing": {
+        "diagnosticOnly": false,
+        "exposure": {
+          "mean": 3.2275248982143075e-05,
+          "repetitions": 1000,
+          "rows": 2,
+          "sourceBootstrap95": [
+            1.0908200779896626e-05,
+            5.364229718438952e-05
+          ],
+          "sources": 2
+        },
+        "gate": true,
+        "mixtureNll": 0.0864011679478818,
+        "rows": 2,
+        "teacherNll": 0.08636889269889966,
+        "zeroExactMassRows": 0
+      }
+    },
+    "potion": {
+      "brew": {
+        "diagnosticOnly": false,
+        "exposure": {
+          "mean": -0.031016768172736964,
+          "repetitions": 1000,
+          "rows": 1,
+          "sourceBootstrap95": [
+            -0.031016768172736964,
+            -0.031016768172736964
+          ],
+          "sources": 1
+        },
+        "gate": true,
+        "mixtureNll": 0.3168317508283357,
+        "rows": 1,
+        "teacherNll": 0.34784851900107266,
+        "zeroExactMassRows": 0
+      },
+      "entireFinalUnion": {
+        "diagnosticOnly": false,
+        "exposure": {
+          "mean": -0.0005026887426934062,
+          "repetitions": 1000,
+          "rows": 362,
+          "sourceBootstrap95": [
+            -0.004222318182216019,
+            0.0024392318137712345
+          ],
+          "sources": 268
+        },
+        "gate": true,
+        "mixtureNll": 0.3661589782130015,
+        "rows": 362,
+        "teacherNll": 0.36666166695569485,
+        "zeroExactMassRows": 0
+      },
+      "escape": {
+        "diagnosticOnly": false,
+        "exposure": {
+          "mean": 0.0006461820008824092,
+          "repetitions": 1000,
+          "rows": 283,
+          "sourceBootstrap95": [
+            5.7306598076716566e-05,
+            0.0014152753996441768
+          ],
+          "sources": 266
+        },
+        "gate": true,
+        "mixtureNll": 0.14747997542656766,
+        "rows": 283,
+        "teacherNll": 0.14683379342568526,
+        "zeroExactMassRows": 0
+      },
+      "gold": {
+        "diagnosticOnly": false,
+        "exposure": {
+          "mean": -0.009880361190831157,
+          "repetitions": 1000,
+          "rows": 39,
+          "sourceBootstrap95": [
+            -0.029230204638628954,
+            0.00027749921861700114
+          ],
+          "sources": 37
+        },
+        "gate": true,
+        "mixtureNll": 0.3028084107334906,
+        "rows": 39,
+        "teacherNll": 0.31268877192432176,
+        "zeroExactMassRows": 0
+      },
+      "recovered": {
+        "diagnosticOnly": false,
+        "exposure": {
+          "mean": -0.0005026887426934062,
+          "repetitions": 1000,
+          "rows": 362,
+          "sourceBootstrap95": [
+            -0.004222318182216019,
+            0.0024392318137712345
+          ],
+          "sources": 268
+        },
+        "gate": true,
+        "mixtureNll": 0.3661589782130015,
+        "rows": 362,
+        "teacherNll": 0.36666166695569485,
+        "zeroExactMassRows": 0
+      },
+      "ritual": {
+        "diagnosticOnly": false,
+        "exposure": {
+          "mean": -0.00016871337800039853,
+          "repetitions": 1000,
+          "rows": 5,
+          "sourceBootstrap95": [
+            -0.0005225110013303419,
+            1.830767396061028e-05
+          ],
+          "sources": 5
+        },
+        "gate": true,
+        "mixtureNll": 0.11893975692195971,
+        "rows": 5,
+        "teacherNll": 0.1191084702999601,
+        "zeroExactMassRows": 0
+      },
+      "smoke": {
+        "diagnosticOnly": false,
+        "exposure": {
+          "mean": -0.0005026887426934062,
+          "repetitions": 1000,
+          "rows": 362,
+          "sourceBootstrap95": [
+            -0.004222318182216019,
+            0.0024392318137712345
+          ],
+          "sources": 268
+        },
+        "gate": true,
+        "mixtureNll": 0.3661589782130015,
+        "rows": 362,
+        "teacherNll": 0.36666166695569485,
+        "zeroExactMassRows": 0
+      },
+      "writhing": {
+        "diagnosticOnly": false,
+        "exposure": {
+          "mean": 6.122249908462068e-06,
+          "repetitions": 1000,
+          "rows": 2,
+          "sourceBootstrap95": [
+            -2.161470902414483e-07,
+            1.2460646907165585e-05
+          ],
+          "sources": 2
+        },
+        "gate": true,
+        "mixtureNll": 0.031156127299659896,
+        "rows": 2,
+        "teacherNll": 0.031150005049751437,
+        "zeroExactMassRows": 0
+      }
+    },
+    "relic": {
+      "brew": {
+        "diagnosticOnly": false,
+        "exposure": {
+          "mean": 0.2433419617749828,
+          "repetitions": 1000,
+          "rows": 1,
+          "sourceBootstrap95": [
+            0.2433419617749828,
+            0.2433419617749828
+          ],
+          "sources": 1
+        },
+        "gate": false,
+        "mixtureNll": 2.474972185883542,
+        "rows": 1,
+        "teacherNll": 2.2316302241085593,
+        "zeroExactMassRows": 0
+      },
+      "entireFinalUnion": {
+        "diagnosticOnly": false,
+        "exposure": {
+          "mean": 0.20917756400321946,
+          "repetitions": 1000,
+          "rows": 102,
+          "sourceBootstrap95": [
+            0.0766928673746515,
+            0.3641323842692701
+          ],
+          "sources": 77
+        },
+        "gate": false,
+        "mixtureNll": 0.8199822932396529,
+        "rows": 102,
+        "teacherNll": 0.6108047292364335,
+        "zeroExactMassRows": 0
+      },
+      "escape": {
+        "diagnosticOnly": false,
+        "exposure": {
+          "mean": 0.0325578926714524,
+          "repetitions": 1000,
+          "rows": 79,
+          "sourceBootstrap95": [
+            0.0211209643300887,
+            0.04672122858266261
+          ],
+          "sources": 76
+        },
+        "gate": true,
+        "mixtureNll": 0.18355093562193472,
+        "rows": 79,
+        "teacherNll": 0.1509930429504823,
+        "zeroExactMassRows": 0
+      },
+      "gold": {
+        "diagnosticOnly": false,
+        "exposure": {
+          "mean": 0.06128469532511809,
+          "repetitions": 1000,
+          "rows": 12,
+          "sourceBootstrap95": [
+            0.011742770662695771,
+            0.1296502149843815
+          ],
+          "sources": 12
+        },
+        "gate": true,
+        "mixtureNll": 0.4562490123284419,
+        "rows": 12,
+        "teacherNll": 0.39496431700332374,
+        "zeroExactMassRows": 0
+      },
+      "recovered": {
+        "diagnosticOnly": false,
+        "exposure": {
+          "mean": 0.20917756400321946,
+          "repetitions": 1000,
+          "rows": 102,
+          "sourceBootstrap95": [
+            0.0766928673746515,
+            0.3641323842692701
+          ],
+          "sources": 77
+        },
+        "gate": false,
+        "mixtureNll": 0.8199822932396529,
+        "rows": 102,
+        "teacherNll": 0.6108047292364335,
+        "zeroExactMassRows": 0
+      },
+      "ritual": {
+        "diagnosticOnly": false,
+        "exposure": {
+          "mean": 0.11394779242006747,
+          "repetitions": 1000,
+          "rows": 3,
+          "sourceBootstrap95": [
+            0.0006378833615008437,
+            0.3156971351176096
+          ],
+          "sources": 3
+        },
+        "gate": false,
+        "mixtureNll": 0.1635952290064507,
+        "rows": 3,
+        "teacherNll": 0.04964743658638323,
+        "zeroExactMassRows": 0
+      },
+      "smoke": {
+        "diagnosticOnly": false,
+        "exposure": {
+          "mean": 0.20917756400321946,
+          "repetitions": 1000,
+          "rows": 102,
+          "sourceBootstrap95": [
+            0.0766928673746515,
+            0.3641323842692701
+          ],
+          "sources": 77
+        },
+        "gate": false,
+        "mixtureNll": 0.8199822932396529,
+        "rows": 102,
+        "teacherNll": 0.6108047292364335,
+        "zeroExactMassRows": 0
+      },
+      "writhing": {
+        "diagnosticOnly": false,
+        "exposure": {
+          "mean": -0.01575667436650008,
+          "repetitions": 1000,
+          "rows": 1,
+          "sourceBootstrap95": [
+            -0.01575667436650008,
+            -0.01575667436650008
+          ],
+          "sources": 1
+        },
+        "gate": true,
+        "mixtureNll": 2.0745860438112835,
+        "rows": 1,
+        "teacherNll": 2.0903427181777836,
+        "zeroExactMassRows": 0
+      }
+    },
+    "ritual": {
+      "entireFinalUnion": {
+        "diagnosticOnly": false,
+        "exposure": {
+          "mean": 5.366338455591345e-06,
+          "repetitions": 1000,
+          "rows": 5,
+          "sourceBootstrap95": [
+            -1.1621259568866254e-06,
+            1.4813121230367479e-05
+          ],
+          "sources": 5
+        },
+        "gate": true,
+        "mixtureNll": 0.00015167742067337094,
+        "rows": 5,
+        "teacherNll": 0.0001463110822177796,
+        "zeroExactMassRows": 0
+      },
+      "escape": {
+        "diagnosticOnly": false,
+        "exposure": {
+          "mean": 5.366338455591345e-06,
+          "repetitions": 1000,
+          "rows": 5,
+          "sourceBootstrap95": [
+            -1.1621259568866254e-06,
+            1.4813121230367479e-05
+          ],
+          "sources": 5
+        },
+        "gate": true,
+        "mixtureNll": 0.00015167742067337094,
+        "rows": 5,
+        "teacherNll": 0.0001463110822177796,
+        "zeroExactMassRows": 0
+      },
+      "gold": {
+        "diagnosticOnly": false,
+        "exposure": {
+          "mean": 5.366338455591345e-06,
+          "repetitions": 1000,
+          "rows": 5,
+          "sourceBootstrap95": [
+            -1.1621259568866254e-06,
+            1.4813121230367479e-05
+          ],
+          "sources": 5
+        },
+        "gate": true,
+        "mixtureNll": 0.00015167742067337094,
+        "rows": 5,
+        "teacherNll": 0.0001463110822177796,
+        "zeroExactMassRows": 0
+      },
+      "recovered": {
+        "diagnosticOnly": false,
+        "exposure": {
+          "mean": 5.366338455591345e-06,
+          "repetitions": 1000,
+          "rows": 5,
+          "sourceBootstrap95": [
+            -1.1621259568866254e-06,
+            1.4813121230367479e-05
+          ],
+          "sources": 5
+        },
+        "gate": true,
+        "mixtureNll": 0.00015167742067337094,
+        "rows": 5,
+        "teacherNll": 0.0001463110822177796,
+        "zeroExactMassRows": 0
+      },
+      "ritual": {
+        "diagnosticOnly": false,
+        "exposure": {
+          "mean": 5.366338455591345e-06,
+          "repetitions": 1000,
+          "rows": 5,
+          "sourceBootstrap95": [
+            -1.1621259568866254e-06,
+            1.4813121230367479e-05
+          ],
+          "sources": 5
+        },
+        "gate": true,
+        "mixtureNll": 0.00015167742067337094,
+        "rows": 5,
+        "teacherNll": 0.0001463110822177796,
+        "zeroExactMassRows": 0
+      },
+      "smoke": {
+        "diagnosticOnly": false,
+        "exposure": {
+          "mean": 5.366338455591345e-06,
+          "repetitions": 1000,
+          "rows": 5,
+          "sourceBootstrap95": [
+            -1.1621259568866254e-06,
+            1.4813121230367479e-05
+          ],
+          "sources": 5
+        },
+        "gate": true,
+        "mixtureNll": 0.00015167742067337094,
+        "rows": 5,
+        "teacherNll": 0.0001463110822177796,
+        "zeroExactMassRows": 0
+      }
+    },
+    "writhing": {
+      "entireFinalUnion": {
+        "diagnosticOnly": false,
+        "exposure": {
+          "mean": -0.000207875463777275,
+          "repetitions": 1000,
+          "rows": 2,
+          "sourceBootstrap95": [
+            -0.00032108986522533245,
+            -9.466106232921753e-05
+          ],
+          "sources": 2
+        },
+        "gate": true,
+        "mixtureNll": 0.09939760869191615,
+        "rows": 2,
+        "teacherNll": 0.09960548415569342,
+        "zeroExactMassRows": 0
+      },
+      "escape": {
+        "diagnosticOnly": false,
+        "exposure": {
+          "mean": -0.000207875463777275,
+          "repetitions": 1000,
+          "rows": 2,
+          "sourceBootstrap95": [
+            -0.00032108986522533245,
+            -9.466106232921753e-05
+          ],
+          "sources": 2
+        },
+        "gate": true,
+        "mixtureNll": 0.09939760869191615,
+        "rows": 2,
+        "teacherNll": 0.09960548415569342,
+        "zeroExactMassRows": 0
+      },
+      "gold": {
+        "diagnosticOnly": false,
+        "exposure": {
+          "mean": -0.000207875463777275,
+          "repetitions": 1000,
+          "rows": 2,
+          "sourceBootstrap95": [
+            -0.00032108986522533245,
+            -9.466106232921753e-05
+          ],
+          "sources": 2
+        },
+        "gate": true,
+        "mixtureNll": 0.09939760869191615,
+        "rows": 2,
+        "teacherNll": 0.09960548415569342,
+        "zeroExactMassRows": 0
+      },
+      "recovered": {
+        "diagnosticOnly": false,
+        "exposure": {
+          "mean": -0.000207875463777275,
+          "repetitions": 1000,
+          "rows": 2,
+          "sourceBootstrap95": [
+            -0.00032108986522533245,
+            -9.466106232921753e-05
+          ],
+          "sources": 2
+        },
+        "gate": true,
+        "mixtureNll": 0.09939760869191615,
+        "rows": 2,
+        "teacherNll": 0.09960548415569342,
+        "zeroExactMassRows": 0
+      },
+      "smoke": {
+        "diagnosticOnly": false,
+        "exposure": {
+          "mean": -0.000207875463777275,
+          "repetitions": 1000,
+          "rows": 2,
+          "sourceBootstrap95": [
+            -0.00032108986522533245,
+            -9.466106232921753e-05
+          ],
+          "sources": 2
+        },
+        "gate": true,
+        "mixtureNll": 0.09939760869191615,
+        "rows": 2,
+        "teacherNll": 0.09960548415569342,
+        "zeroExactMassRows": 0
+      },
+      "writhing": {
+        "diagnosticOnly": false,
+        "exposure": {
+          "mean": -0.000207875463777275,
+          "repetitions": 1000,
+          "rows": 2,
+          "sourceBootstrap95": [
+            -0.00032108986522533245,
+            -9.466106232921753e-05
+          ],
+          "sources": 2
+        },
+        "gate": true,
+        "mixtureNll": 0.09939760869191615,
+        "rows": 2,
+        "teacherNll": 0.09960548415569342,
+        "zeroExactMassRows": 0
+      }
+    }
+  },
+  "downstreamFolder": "full-union-downstream-v4",
+  "independentHoldout": false,
+  "maxHpFolder": "full-union-maxHP-v3",
+  "metrics": {
+    "conditionalBrewUse": {
+      "brier": 2.6976864640883977e-06,
+      "probabilityResolution": 0.03125,
+      "rows": 362,
+      "scope": "ancestral Monte Carlo diagnostic, not exact finite target-mass gate",
+      "zeroFrequencyRows": 361
+    },
+    "conditionalEscape": {
+      "brier": 0.0848449369820442,
+      "probabilityResolution": 0.03125,
+      "rows": 362,
+      "scope": "ancestral Monte Carlo diagnostic, not exact finite target-mass gate",
+      "zeroFrequencyRows": 28
+    },
+    "sampledHpMeanAbsoluteError": 1.46875
+  },
+  "recipe": {
+    "batch": 512,
+    "downstreamExposure": "32 complete upstream HP/potion/escape/Ritual draws; exact conditional native target probabilities",
+    "draws": 32,
+    "hpExposure": "exact eleven-class maxHP marginal",
+    "partition": "original source-grouped TEST; reused development evidence",
+    "potionExposure": "32 upstream HP/maxHP draws, exact observed-body trajectory DAG",
+    "seed": 20260920,
+    "supportChanged": false,
+    "threshold": 0.1,
+    "validity": "32 complete sampled RAW transitions per TEST row, including model death short-circuit"
+  },
+  "rowEvidenceSha256": "0f7dac06d0a47a8b57692fb5756154a3588955339cb444208c25c28cb0d626b7",
+  "rows": 362,
+  "snapshot": {
+    "corpusSha256": "74c08aa0a3c30342d86cd45355fe17ffa9046963ad7c8cf71b1938f9cdc1cfde",
+    "counts": {
+      "previous179": 41454,
+      "recovered": 9987,
+      "rows": 51441
+    },
+    "snapshotSha256": "df37cd1fdcbdc49b6732c67f22bcf08839e813260b661b2b5197ab16057612cc",
+    "sourceSha": "1c31b7eb0a7660d43bc27e0849a8955dd0c3daae"
+  },
+  "sourceSha": "6ab63f40783b9955a978a2692e7af5460fb7c78a",
+  "supportChanged": false
+}

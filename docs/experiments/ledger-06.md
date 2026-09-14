@@ -7782,3 +7782,57 @@ Live support unchanged, zero newly recovered rows; no new data or gameplay.
 Knowledge impact: native mechanics, component repair evidence and current
 qualification/contract status maintained in KB and bound evidence.
 [Report and raw receipts](evidence/near_full_combat_support_2026-09-14/REPORT.md).
+
+## §253 — Shared hypothetical Brew RNG, full-union refits and Smoke/relic composition stop (2026-09-15)
+
+**NEAR_FULL_COMBAT_SUPPORT_NOT_READY.** User-approved continuation and resolved
+planner-owned hypothetical potion RNG: seed a fresh native stream on first
+Brew use, reuse it through recursive generations and retain advanced RAW RNG;
+historical RNG only reconstructs teacher body labels. Shared 64-action decoder
+separates special use/discard, including legal boss Smoke discard, and exactly
+marginalizes compatible body/inventory trajectories and downstream effect flags.
+112 proven recursive examples reconcile to108survivors(86TRAIN/11VAL/11TEST)
+and4deaths. Native joint representability audit covers491,897survivors,
+including3,001escapes/4,363Writhing/12,690Dagger rows, zero failures.
+
+Existing survival/maxHP/HP/potion encoders and heads refitted on complete
+candidate union with original source splits and12epoch original VALIDATION
+selection, source1c31b7e. TEST NLL0.060412/0.053423/2.507614/0.504572;
+shared downstream heads source546cf6a, normalized joint TEST NLL1.344312.
+Full-union engineering evaluation sourceb266433:51,441TEST rows including
+41,454old#179/9,987recovered candidates. Full ancestral validity1,646,112draws,
+62,347deaths/1,574,266victories/9,499escapes, zero recorded RAW contract
+violations. Exact HP marginal NLL/Brier/CRPS/meanMAE:
+2.520435/0.752391/3.622578/5.322113. Entire informative-union exposure means:
+HP+.012821,potion+.004097,relic+.000416,gold+.019119,Dagger-.000279,
+Writhing+.088853; old/recovered aggregates also pass.
+
+**Smoke relic gate fails:**102informative surviving TEST rows, gap+.242637nat,
+source-bootstrap95%[+.088666,+.409294], no exact zero-mass targets.
+Added-outcome ablation, teacher/ancestral-context anchored head refit and
+balanced shared native-route refit give+.199237/+.201889/+.209178, still fail.
+All use original data, original VALIDATION selection and fixed other heads;
+final attempted repair source6ab63f4. Population808TRAIN/95VAL/102TEST,
+1,005surviving corpus rows(0.197047%). No new mechanic or additional corpus
+requirement proven. Outcome/HP/potion/relic correlation remains unqualified;
+further conceptual repair needs reviewed design, not weakened gates or silent
+support expansion. Repaired checkpoints are not promoted.
+
+Exact finite Writhing marginal source4b7f6be gives+.091256 on449ordinary-potion
+TEST rows and+.121732 on31Writhing/Ritual overlaps. Shared native maxHP
+partition head repair excludes available Fruit Juice (its +5/+10 confounds
+maxHP); overlap remains+.119052, source6bdf681. This is an explicit diagnostic
+of shared feature intersection, not an independent new native mechanism.
+Original TEST reuse after Writhing and subsequent repairs is development
+evidence, never untouched confirmation.
+
+User confirms #180 saved-state replay unavailable; tracked CSV/support JSONL
+have per-seed/first-reason aggregates, no imagined states/root IDs. No count
+subtraction or invented root-abort estimate. This is not the stop cause.
+Live support remains413,799/510,030(81.132286%); native export/parity,
+support expansion and MCTS sampling integration gated by failed composition.
+No new data/gameplay, no merge; draft#182 is the handoff. External engineering
+review supplied by user covers8420103 only, later implementation not reviewed.
+Knowledge impact: accepted RNG contract, current qualification failure,
+source-bound receipts and model navigation maintained in KB/evidence.
+[Staged report and immutable receipts](evidence/near_full_combat_support_2026-09-14/REPORT.md).
