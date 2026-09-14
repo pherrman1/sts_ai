@@ -19,5 +19,17 @@
     "full-budget live gameplay performance comparison"
   ],
   "knowledgeImpact": "Maintained OOC architecture/interfaces/telemetry and parity procedure; code-map navigation; chronological engineering microbenchmark evidence.",
-  "oneRootCorrection": "Guaranteed visit-selected single action: stop after first simulation, save 9/10; unsafe full budget. Core/adapter/startup reruns: 3/3 pass; final ASan+UBSan PASS176."
+  "oneRootCorrection": "Guaranteed visit-selected single action: stop after first simulation, save 9/10; unsafe full budget. Core/adapter/startup reruns: 3/3 pass; final ASan+UBSan PASS176.",
+  "soleRootGateCorrection": {
+    "build": "release ccache one_combat and ooc-mcts-test: exit 0",
+    "command": "ctest --test-dir build/linux-gcc-release-ccache -R '^(ooc_mcts|ooc_mcts_adapter|ooc_mcts_live_startup)$' --output-on-failure",
+    "outcome": "3/3 passed; singleton Wheel fallback consumes agent RNG; unsafe root retains abort/fallback; qualified toy bypass has zero simulations",
+    "plannerChanged": false,
+    "sourceSha256": {
+      "apps/one_combat/ooc_mcts_adapter.cpp": "ec8fff5f653909f0a499500f866d0644b9b8bb91c0392f5cc4d901e01b00f326",
+      "apps/one_combat/ooc_mcts_adapter.h": "aa9067f0ddc448cc5980d56bac91be677f9878e82d1b3b3a1c29ca7980c79c95"
+    },
+    "binarySha256": "06b7a184064d77eadabff0c668280f2911297d757d6979b9c0f77a6662f08410",
+    "toolingCorrection": "Release has no CTest preset; used its configured build directory after preset lookup failed."
+  }
 }

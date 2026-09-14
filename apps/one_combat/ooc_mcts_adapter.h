@@ -51,6 +51,8 @@ public:
     // Root history is required: prior room visits cannot be recovered from GameContext.
     explicit OocGameContextModel(const GameContext &, const PathHistory &,
         std::shared_ptr<const CombatTransitionSampler> = {}, OocAdapterOptions = {});
+    // Separate combat-support qualification must exclude every intentional abort path.
+    bool searchGuaranteedNonAborting() const override { return false; }
     std::uint64_t combatSamples() const { return combatSamples_; }
     std::size_t storedStates() const { return states.size(); }
     const OocContinuationMetrics &continuationMetrics() const { return continuation_; }

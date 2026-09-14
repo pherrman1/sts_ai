@@ -7652,7 +7652,8 @@ Baseline main `210f347334898e7c2a85b8af0f30dedc4888ea88`; one clean app worktree
 No combat-support branch dependency, training, support/schema/RNG distribution,
 PUCT, policy, horizon or leaf-value change. Search-local prepared combat edges,
 immutable state metadata, deque particle arena and exact hot-loop cleanup;
-sole-valid-action live bypass and default-unsafe visit-lock capability added.
+sole-valid-action shortcut gated on explicit non-aborting qualification and
+default-unsafe visit-lock capability added. The live model explicitly remains false.
 
 Cheap captured-model profiling found four encoders at roughly1.08ms each versus
 microsecond conditional heads. Fixed depth-one native-root profiling was43.38%
@@ -7682,12 +7683,17 @@ and probability vectors also reproduce exactly.
 
 Guaranteed visit-selected single-root toy stops after1/10 (saves9): no
 challenger exists; default-unsafe still runs full budget. Sole-root
-unsupported-combat fallback primitive/live RNG equivalence passes,
-with zero simulated work. Non-aborting toy lock saves48/100simulations with same
+unsupported-combat roots now search and retain whole-root fallback. The sole Wheel
+of Change regression proves fallback consumes agent RNG despite the same primitive;
+unsafe roots cannot bypass it. An explicitly non-aborting toy still bypasses with
+zero simulated work. Performance measurements above predate this gate correction
+(at `806b7b9607ff7257fb549d6a8e85de983d5c4ce9`); no new benchmark was run.
+Non-aborting toy lock saves48/100simulations with same
 action; strict equality/mean-Q/catchable/unsafe/late-abort/adversarial cases pass.
 Locked stopping remains dormant in the live adapter: all intentional abort paths
 are not excluded. No copy ownership refactor or conditional-head memoization
-was justified. Eight focused CTests pass; two relinking-overlap execution failures
+was justified. Eight initial focused CTests pass; all three affected core/adapter/startup tests
+pass again after the gate correction. Two relinking-overlap execution failures
 were repaired by post-build reruns. No full local CTest/gameplay cohort/canary;
 no gameplay-quality or full-game speed claim. Knowledge impact: maintained OOC
 interface/telemetry/parity procedure and chronological engineering evidence.

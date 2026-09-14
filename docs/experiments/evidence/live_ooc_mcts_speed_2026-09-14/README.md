@@ -2,7 +2,8 @@
 
 Baseline: `210f347334898e7c2a85b8af0f30dedc4888ea88`, verified current main at
 entry and again before publication. One clean Codex app worktree; no dependency
-on PR #182 or combat-support expansion. Candidate executable/source hashes are
+on PR #182 or combat-support expansion. Performance was measured at `806b7b9607ff7257fb549d6a8e85de983d5c4ce9`, before
+the sole-root capability gate correction. Measured executable/source hashes are
 in [fixed-search-summary.json](fixed-search-summary.json); the draft PR records
 the committed head. All model files, policies, model outputs, RNG distributions,
 PUCT/widening formulas, horizons and native combat reconstruction are unchanged.
@@ -41,7 +42,7 @@ builds 1 each. Optimized metadata builds are 81; prior/token builds remain 1.
 Original adapter fixture construction found zero sole-action roots among 41
 supported fixture roots, including the two benchmark models. This synthetic
 count does not estimate the live trivial-root fraction. A new forced sole-action
-fixture separately proves the abort/fallback bypass contract.
+fixtures separately prove why abort-capable roots must retain fallback.
 
 ## Exactness and performance
 
@@ -71,7 +72,7 @@ remain. Every run had exactly equal selected action, IDs/order/priors, root
 visits/Q, all unchanged tree counters, and every generated snapshot/PathHistory.
 [Summary, repeated timings and payload digest](fixed-search-summary.json),
 [raw baseline](fixed-search-baseline-1.log), [raw optimized](fixed-search-optimized-1.log).
-Original unmodified baseline adapter self-test stdout also equals final stdout
+Original unmodified baseline adapter self-test stdout also equals the measured candidate stdout
 byte for byte: [baseline](adapter-baseline.log), [final](adapter-final.log).
 
 Prepared combat sampling accounts for the demonstrated native-search gain.
@@ -86,8 +87,15 @@ stats matched baseline before those tests were added.
 [Planner timing samples](planner-timings.json), [baseline](planner-baseline.txt),
 [optimized](planner-optimized.txt).
 
-The sole-root abort test executes the exact original fallback primitive and
-preserves complete live state/RNG, with zero simulations/attempts/combat draws.
+The corrected sole-root shortcut requires `searchGuaranteedNonAborting()`.
+`OocGameContextModel` explicitly returns false, so it has no qualified live
+trivial-root bypass. Both the sole map and sole Wheel of Change roots search,
+abort on unsupported combat, and return untouched state to the fallback chain.
+The Wheel fallback reaches `ScumSearchAgent2::stepRandom`: its singleton choice
+executes the same primitive but consumes agent RNG. The regression compares
+fallback state and agent RNG against an independent oracle; a primitive-only
+shortcut would skip that draw. An explicitly non-aborting toy model still
+qualifies for the shared adapter shortcut with zero attempts/draws.
 No live bypass speed estimate is made. The qualified non-aborting toy lock test
 uses 52/100 simulations, saves 48, and selects the same action as full budget. A guaranteed visit-selected sole-root toy stops after
 one simulation and saves nine of ten: no challenger exists, while the same
@@ -137,3 +145,8 @@ is the authoritative repository check; its SHA-bound state belongs in the PR.
 
 Knowledge impact: maintained OOC interfaces/architecture/telemetry, code-map
 navigation, focused parity procedure, and this chronological microbenchmark.
+
+Sole-root gate correction checks: see [focused test rerun](sole-gate-ctest.log).
+No planner implementation or generic single-action lock changed in this correction;
+no new performance or gameplay experiment was run. Earlier benchmark hashes and
+raw outcomes describe the measured commit above, not the corrected executable.

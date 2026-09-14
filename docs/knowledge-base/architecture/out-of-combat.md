@@ -163,13 +163,15 @@ explicit unsigned 64-bit arithmetic. The index increments once per actual
 nonbattle run-loop decision, including unsupported roots. It consumes no
 simulator RNG. Terminal/boundary roots and whole-root support aborts return no
 action; completed supported searches must return a legal primitive ID.
-A supported root with one valid, unique V4 candidate returns that primitive
-without constructing a tree. This bypass also applies when entering its sole
-action would have caused whole-root support fallback; focused tests compare the
-primitive against that fallback and verify complete live state/RNG equivalence.
-It reports `trivialRootBypasses`, with zero simulations/attempts/combat draws;
-it is independent of the non-aborting capability. Snapshots are discarded before
-`oocMctsPolicyStep` resolves that ID against fresh live candidates and executes
+A root with one valid, unique V4 candidate may return that primitive without
+constructing a tree only under the explicit `searchGuaranteedNonAborting()`
+contract. `OocGameContextModel` explicitly returns false: separate combat-support
+qualification must exclude every intentional abort path before this can change.
+An unsafe sole root must search and retain whole-root fallback, whose ordered
+policy can consume `ScumSearchAgent2::rng` even for a singleton candidate set.
+Qualified bypasses report `trivialRootBypasses` with zero simulations/attempts/
+combat draws; the current live model is ineligible. Snapshots are discarded before
+`oocMctsPolicyStep` resolves a selected ID against fresh live candidates and executes
 it exactly once. If it enters BATTLE, real combat remains pending for the
 ordinary next run-loop iteration. No sampled combat result transfers to live
 state.
