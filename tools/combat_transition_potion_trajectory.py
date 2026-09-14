@@ -6,6 +6,7 @@ Its exact native prior and all compatible consumption orderings are marginalized
 Imagined generation uses one fresh hypothetical native RNG through recursion.
 """
 from collections import deque
+import copy
 from dataclasses import dataclass
 import numpy as np
 import torch
@@ -23,8 +24,26 @@ def legal_masks(inventory,capacity,boss=False):
     masks=decoder.legal_masks(slots[None],np.asarray([capacity]))[0]
     trigger=np.isin(slots,[BREW,SMOKE])
     masks &= (decoder.BITS & trigger).sum(-1)<=1
-    if boss:masks &= ~np.any(decoder.BITS & (slots==SMOKE),axis=-1)
     return masks
+
+
+def legal_actions(inventory,capacity,boss=False):
+    masks=legal_masks(inventory,capacity,boss);slots=np.asarray(inventory)
+    trigger=np.any(decoder.BITS&np.isin(slots,[BREW,SMOKE]),axis=-1)
+    use=masks&trigger
+    if boss:use &= ~np.any(decoder.BITS&(slots==SMOKE),axis=-1)
+    # Low 5 bits select cleared slots. Bit 5 distinguishes native trigger USE
+    # from DISCARD; ordinary masks need no duplicate action category.
+    return np.concatenate((masks,use))
+
+
+def new_decoder(delta_count,warm=None):
+    net=decoder.new_decoder('joint',delta_count) if warm is None else copy.deepcopy(warm)
+    old=net.mlp[2];new=torch.nn.Linear(64,64,device=old.weight.device)
+    with torch.no_grad():
+        new.weight.copy_(old.weight.repeat(2,1));new.bias.copy_(old.bias.repeat(2)-np.log(2.))
+    net.mlp[2]=new
+    return net
 
 
 def log_probabilities(net,z,inventory,capacity,delta,hp,boss):
@@ -42,7 +61,10 @@ def log_probabilities(net,z,inventory,capacity,delta,hp,boss):
     legal=~torch.any(bits[None]&~active[:,None],-1)
     trigger=(slots==BREW)|(slots==SMOKE)
     legal &= (bits[None]&trigger[:,None]).sum(-1)<=1
-    legal &= ~torch.any(bits[None]&(slots==SMOKE)[:,None],-1)|~torch.as_tensor(boss,device=device)[:,None]
+    trigger_selected=torch.any(bits[None]&trigger[:,None],-1)
+    use=legal&trigger_selected
+    use &= ~torch.any(bits[None]&(slots==SMOKE)[:,None],-1)|~torch.as_tensor(boss,device=device)[:,None]
+    legal=torch.cat((legal,use),-1)
     return torch.log_softmax(logits.masked_fill(~legal,-torch.inf),-1)
 
 
@@ -72,22 +94,23 @@ def target_graph(pre,post,generated,boss=False):
     initial=(tuple(pre['potions']),0);states=[initial];index={initial:0};queue=deque([initial]);edges=[];terminals=[]
     while queue:
         inventory,used_rounds=queue.popleft();owner=index[inventory,used_rounds]
-        for mask in np.flatnonzero(legal_masks(inventory,capacity,boss)):
-            remaining,used=consume(inventory,int(mask))
-            if SMOKE in used:
-                if escape and used_rounds==rounds and remaining==target:terminals.append((owner,int(mask)))
+        for action in np.flatnonzero(legal_actions(inventory,capacity,boss)):
+            mask=int(action)&31;use=action>=32
+            remaining,used=consume(inventory,mask)
+            if SMOKE in used and use:
+                if escape and used_rounds==rounds and remaining==target:terminals.append((owner,int(action)))
                 continue
-            if BREW in used:
+            if BREW in used and use:
                 if used_rounds==rounds:continue
                 body=generated[used_rounds*capacity:(used_rounds+1)*capacity]
                 remaining=tuple(brew.obtain(remaining,body,sozu,capacity));next_round=used_rounds+1
-            elif mask==0 or not any(p in (BREW,SMOKE) for p in remaining):
-                if not escape and used_rounds==rounds and remaining==target:terminals.append((owner,int(mask)))
+            elif mask==0 or (not any(p in (BREW,SMOKE) for p in used) and not any(p in (BREW,SMOKE) for p in remaining)):
+                if not escape and used_rounds==rounds and remaining==target:terminals.append((owner,int(action)))
                 continue
             else:next_round=used_rounds
             child=(remaining,next_round)
             if child not in index:index[child]=len(states);states.append(child);queue.append(child)
-            edges.append((owner,int(mask),index[child]))
+            edges.append((owner,int(action),index[child]))
     if not terminals:raise ValueError('observed native potion trajectory unrepresentable')
     # Topological order: each round advances, and otherwise occupied count falls.
     order=sorted(range(len(states)),key=lambda i:(states[i][1],-sum(p>1 for p in states[i][0])))
@@ -138,20 +161,22 @@ def batch_target_log_probabilities(net,graphs,z,capacity,delta,hp,boss,include_g
 
 def sample(net,z,pre,delta,hp,planner,boss=False):
     inventory=tuple(pre['potions']);capacity=pre['potionCapacity'];sozu=any(r['id']==base._RELIC_IDS['SOZU'] for r in pre['relics'])
-    origin=None;state=None;body=[];uses=[];initial_mask=0
+    origin=None;state=None;body=[];uses=[];discards=[];initial_mask=0
     while True:
         lp=log_probabilities(net,np.asarray(z)[None],np.asarray(inventory)[None],np.asarray([capacity]),np.asarray([delta]),np.asarray([hp]),np.asarray([boss]))
         probability=lp[0].detach().exp().cpu().numpy().astype(float)
-        mask=int(planner.choice(32,p=probability/probability.sum()))
+        action=int(planner.choice(64,p=probability/probability.sum()));mask=action&31;use=action>=32
         for slot,potion in enumerate(inventory):
             if mask&(1<<slot) and pre['potions'][slot]>1 and not initial_mask&(1<<slot):initial_mask|=1<<slot
-        inventory,consumed=consume(inventory,mask);uses.extend(consumed)
-        if SMOKE in consumed:outcome='ESCAPE';break
-        if BREW in consumed:
+        inventory,consumed=consume(inventory,mask)
+        uses.extend(p for p in consumed if p not in (BREW,SMOKE) or use)
+        discards.extend(p for p in consumed if p in (BREW,SMOKE) and not use)
+        if SMOKE in consumed and use:outcome='ESCAPE';break
+        if BREW in consumed and use:
             if state is None:origin=brew.hypothetical_origin(planner);state=dict(origin)
             generated,state=brew.generate(state,capacity);body.extend(generated)
             inventory=tuple(brew.obtain(inventory,generated,sozu,capacity))
-        elif mask==0 or not any(p in (BREW,SMOKE) for p in inventory):outcome='VICTORY';break
+        elif mask==0 or (not any(p in (BREW,SMOKE) for p in consumed) and not any(p in (BREW,SMOKE) for p in inventory)):outcome='VICTORY';break
     return dict(outcome=outcome,potions=list(inventory),potionCount=sum(p>1 for p in inventory),initialMask=initial_mask,
-                consumed=list(uses),generated=body,brewUses=uses.count(BREW),hypotheticalOrigin=origin,
+                consumed=list(uses),discarded=discards,generated=body,brewUses=uses.count(BREW),hypotheticalOrigin=origin,
                 potionRng=dict(pre['combatRng'][4]) if state is None else state)

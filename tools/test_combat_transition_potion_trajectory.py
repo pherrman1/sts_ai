@@ -19,8 +19,8 @@ class TrajectoryTest(unittest.TestCase):
     def test_all_native_consumption_orders_are_marginalized(self):
         pre,post=self.fixture([t.BREW,16,1,1,1],[23,16,23,1,1])
         graph=t.target_graph(pre,post,[23,16,23])
-        logits=torch.zeros((len(graph.inventories),32),requires_grad=True)
-        legal=torch.as_tensor(np.stack([t.legal_masks(i,3) for i in graph.inventories]))
+        logits=torch.zeros((len(graph.inventories),64),requires_grad=True)
+        legal=torch.as_tensor(np.stack([t.legal_actions(i,3) for i in graph.inventories]))
         lp=torch.log_softmax(logits.masked_fill(~legal,-torch.inf),-1)
         loss=-t.target_log_probability(lp,graph,False);loss.backward()
         self.assertTrue(torch.isfinite(loss));self.assertTrue(torch.isfinite(logits.grad).all())
@@ -34,11 +34,20 @@ class TrajectoryTest(unittest.TestCase):
         self.assertTrue(all(b>a for a,_,b in graph.edges))
         with self.assertRaises(ValueError):t.target_graph(pre,post,[t.BREW,23,t.SMOKE,23,t.SMOKE,23],True)
 
+    def test_native_boss_smoke_discard_is_not_escape(self):
+        # Frozen RAW row64773, Slime Boss: Smoke removed, no escape/RNG draw.
+        pre,post=self.fixture([t.SMOKE,1,1,1,1],[1]*5)
+        graph=t.target_graph(pre,post,[],True)
+        self.assertIn((0,1,1),graph.edges)
+        self.assertTrue(t.legal_actions(pre['potions'],3,True)[1])
+        self.assertFalse(t.legal_actions(pre['potions'],3,True)[33])
+        self.assertEqual(graph.generation_log_prior,0.)
+
     def test_batched_exact_marginal_matches_independent_scalar_dag(self):
         first,last=self.fixture([t.BREW,16,1,1,1],[23,16,23,1,1])
         second,end=self.fixture([23,t.SMOKE,1,1,1],[1,1,1,1,1],True)
         graphs=[t.target_graph(first,last,[23,16,23]),t.target_graph(second,end,[])]
-        net=t.decoder.new_decoder('joint',11);z=np.zeros((2,64),np.float32)
+        net=t.new_decoder(11);z=np.zeros((2,64),np.float32)
         batch=t.batch_target_log_probabilities(net,graphs,z,np.asarray([3,3]),np.asarray([0,0]),np.asarray([.5,.5]),np.asarray([False,False]),False)
         scalar=[]
         for graph in graphs:
@@ -53,10 +62,10 @@ class TrajectoryTest(unittest.TestCase):
         class AlwaysBrew(torch.nn.Module):
             def __init__(self):super().__init__();self.anchor=torch.nn.Parameter(torch.tensor(0.))
             def output_logits(self,z,inventory,delta,hp):
-                logits=torch.full((len(inventory),32),-torch.inf)
+                logits=torch.full((len(inventory),64),-torch.inf)
                 for i,slots in enumerate(inventory):
                     brew_slots=torch.nonzero(slots==t.BREW)
-                    logits[i,1<<int(brew_slots[0]) if len(brew_slots) else 0]=0
+                    logits[i,32+(1<<int(brew_slots[0])) if len(brew_slots) else 0]=0
                 return logits
         pre,_=self.fixture([t.BREW,1,1,1,1],[1]*5);other=copy.deepcopy(pre);other['combatRng'][4]=dict(seed0=222,seed1=333,counter=17)
         first=t.sample(AlwaysBrew(),np.zeros(64,np.float32),pre,0,.5,np.random.default_rng(8))

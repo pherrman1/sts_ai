@@ -18,6 +18,7 @@ RECIPE=dict(seed=20260912,epochs=12,batch=512,lr=.001,weightDecay=.0001,gradient
             encoder='frozen historical potion encoder',rng='planner-owned fresh sts::Random(seed); reused through recursive generation; advanced state retained',
             target='exact native generation-body prior times all compatible consumption-order probabilities',
             partition='original source-grouped engineering TEST; reused development evidence, not pristine holdout')
+RECIPE['actions']='64 native categories: five clearing bits plus trigger USE/DISCARD bit; ordinary masks retain one category'
 ENCOUNTER_NAMES={v:k for k,v in c.base._ENCOUNTER_IDS.items()}
 
 
@@ -51,7 +52,9 @@ def prepare(folder,sha):
                 state=dict(pre['combatRng'][4]);generated=[];target=post['combatRng'][4]
                 while state['counter']<target['counter']:generated.append(t.brew.draw_native(state))
                 if state!=target:raise ValueError('native teacher generation RNG mismatch')
-                graph=t.target_graph(pre,post,generated,is_boss);graphs[str(local)]=graph_json(graph)
+                try:graph=t.target_graph(pre,post,generated,is_boss)
+                except ValueError as error:raise ValueError(f'index={index}, source={row["sourceSeed"]}, fight={row["fightIdx"]}, encounter={encounter}, pre={pre["potions"]}, post={post["potions"]}, generated={generated}: {error}') from error
+                graphs[str(local)]=graph_json(graph)
                 records.append(dict(index=index,local=local,source=row['sourceSeed'],fight=row['fightIdx'],pre=pre,post=post,pi=pi,generated=generated))
                 counts['specialSurvivors']+=1;counts['brewGenerationRounds']+=graph.rounds;counts['escapeRows']+=post['smokeBombUsed']
             if index%100000==0:print('final candidate census',index,flush=True)
@@ -107,7 +110,7 @@ def losses(net,cache,graphs,ids,delta=None,hp=None,z=None,include_generation=Fal
 def fit(folder,sha):
     sparse.frozen(sha)
     if (folder/'trajectory.pt').exists():raise ValueError('refusing overwrite')
-    cache,graphs,meta=load(folder);torch.set_num_threads(4);m=c.FrozenModels('cuda');net=copy.deepcopy(m.potion_net).requires_grad_(True)
+    cache,graphs,meta=load(folder);torch.set_num_threads(4);m=c.FrozenModels('cuda');net=t.new_decoder(len(m.delta_values),m.potion_net).requires_grad_(True)
     torch.manual_seed(RECIPE['seed']);opt=torch.optim.AdamW(net.parameters(),lr=RECIPE['lr'],weight_decay=RECIPE['weightDecay']);rng=np.random.default_rng(RECIPE['seed'])
     train=np.flatnonzero(cache['win']&(cache['split']==0));val=np.flatnonzero(cache['win']&(cache['split']==1));test=np.flatnonzero(cache['win']&(cache['split']==2));best=float('inf');history=[]
     def score(ids):
