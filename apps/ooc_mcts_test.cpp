@@ -26,7 +26,8 @@ struct Toy : OocGenerativeModel {
     std::function<OocStateId(OocStateId, OocActionId, std::mt19937_64 &)> transition;
     double leaf = 0.5;
     mutable unsigned leafCalls = 0, legalCalls = 0;
-    bool boundary = false;
+    bool boundary = false, guaranteedNonAborting = false;
+    bool searchGuaranteedNonAborting() const override { return guaranteedNonAborting; }
     bool isLeafBoundary(OocStateId) const override { return boundary; }
     std::optional<double> terminalValue(OocStateId s) const override {
         auto it = terminals.find(s);
@@ -83,6 +84,69 @@ void tests() {
         "root selection leaves search allocation unchanged");
     require(OocMctsPlanner(qConfig).search(rootChoice, 0, 1).selectedAction == 1,
         "root Q never selects an unvisited action");
+    // Visit locking is an explicit model guarantee, never inferred from samples.
+    auto lockConfig = config; lockConfig.cPuct = 0;
+    auto lockFullModel = deterministic();
+    auto lockModel = lockFullModel; lockModel.guaranteedNonAborting = true;
+    const auto lockFull = OocMctsPlanner(lockConfig).search(lockFullModel, 0, 100);
+    const auto locked = OocMctsPlanner(lockConfig).search(lockModel, 0, 100);
+    require(locked.selectedAction == lockFull.selectedAction && locked.metrics.earlyStopLockedRoot
+        && locked.metrics.simulations == 52 && locked.metrics.savedSimulations == 48,
+        "guaranteed non-aborting leader stops only after strict visit lock");
+    require(!lockFull.metrics.earlyStopLockedRoot && lockFull.metrics.simulations == 100
+        && lockFull.metrics.savedSimulations == 0,
+        "default potentially aborting model forbids locked-root stopping");
+    // Even adversarial allocation of every remaining visit cannot catch the leader.
+    const auto leaderVisits = locked.rootActions[1].visits;
+    const auto challengerVisits = locked.rootActions[0].visits;
+    for (std::uint64_t toChallenger = 0; toChallenger <= locked.metrics.savedSimulations; ++toChallenger)
+        require(leaderVisits + locked.metrics.savedSimulations - toChallenger
+            > challengerVisits + toChallenger, "adversarial remaining visits preserve locked winner");
+    auto equalityModel = deterministic();
+    equalityModel.terminals = {{1,1.0},{2,.75},{3,0.0}};
+    equalityModel.guaranteedNonAborting = true;
+    equalityModel.transition = [first = true](auto, auto action, auto &) mutable -> OocStateId {
+        if (action == 2) return 2;
+        if (first) { first = false; return 1; }
+        return 3;
+    };
+    const auto equality = OocMctsPlanner(lockConfig).search(equalityModel, 0, 4);
+    require(!equality.metrics.earlyStopLockedRoot && equality.metrics.simulations == 4
+        && equality.rootActions[0].visits == 2 && equality.rootActions[1].visits == 2
+        && equality.selectedAction == 2,
+        "equality permits challenger to catch the former leader and win by Q");
+    auto balanced = deterministic(); balanced.terminals = {{1,.5},{2,.5}};
+    balanced.guaranteedNonAborting = true;
+    const auto catchable = planner.search(balanced, 0, 20);
+    require(!catchable.metrics.earlyStopLockedRoot && catchable.metrics.simulations == 20,
+        "catchable challenger does not stop search");
+    auto single = deterministic(); single.actions[0] = {{1,1}};
+    single.guaranteedNonAborting = true;
+    const auto singleLocked = planner.search(single, 0, 10);
+    single.guaranteedNonAborting = false;
+    const auto singleFull = planner.search(single, 0, 10);
+    require(singleLocked.selectedAction == singleFull.selectedAction
+        && singleLocked.metrics.earlyStopLockedRoot && singleLocked.metrics.simulations == 6,
+        "single root action obeys visit-lock inequality");
+    auto meanLockConfig = lockConfig; meanLockConfig.selectByMeanQ = true;
+    const auto meanLocked = OocMctsPlanner(meanLockConfig).search(lockModel, 0, 100);
+    require(!meanLocked.metrics.earlyStopLockedRoot && meanLocked.metrics.simulations == 100,
+        "mean-Q final selection never uses visit locking");
+    struct LateAbort : Toy {
+        unsigned evaluations = 0;
+        double evaluateLeaf(OocStateId, std::mt19937_64 &) override {
+            if (++evaluations == 7) throw OocSearchUnsupported("late failure after hypothetical lock");
+            return .5;
+        }
+        bool isLeafBoundary(OocStateId s) const override { return s != 0; }
+    } lateAbort;
+    lateAbort.actions = {{0,{{1,1}}}};
+    lateAbort.transition = [](auto, auto, auto &) { return 1; };
+    const auto lateDiscarded = planner.search(lateAbort, 0, 10);
+    require(lateDiscarded.aborted && !lateDiscarded.selectedAction
+        && lateDiscarded.metrics.simulations == 6 && lateDiscarded.metrics.simulationAttempts == 7
+        && !lateDiscarded.metrics.earlyStopLockedRoot,
+        "potentially aborting model still discards root after hypothetical visit lock");
     struct Chain : OocGenerativeModel {
         std::optional<double> terminalValue(OocStateId s) const override {
             return s==8 ? std::optional<double>(1) : std::nullopt;

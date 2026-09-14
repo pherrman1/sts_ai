@@ -33,6 +33,33 @@ class GameplayAnalysisTest(unittest.TestCase):
             reasons=sorted(map(json.loads,(FIXTURE/(arm+'.csv.mcts.csv.support.jsonl')).read_text().splitlines()),key=lambda r:r['seed'])
             (folder/(arm+'.csv.mcts.csv.support.jsonl')).write_text('\n'.join(json.dumps(dict(reasons[i%32],seed=980000+i)) for i in range(64))+'\n')
 
+    def test_trivial_root_and_locked_stop_accounting(self):
+        with tempfile.TemporaryDirectory() as d:
+            folder=Path(d);self.synthetic64(folder)
+            p=folder/'treatment.csv.mcts.csv'
+            with p.open() as f: rows=list(csv.DictReader(f));headers=list(rows[0])
+            headers+=['trivialRootBypasses','earlyStopLockedRoot','savedSimulations']
+            for row in rows:
+                row.update(trivialRootBypasses='1',earlyStopLockedRoot='0',savedSimulations='0')
+                row['simulations']=str(int(row['simulations'])-10000)
+                row['simulationAttempts']=str(int(row['simulationAttempts'])-10000)
+            def write():
+                with p.open('w') as f:
+                    writer=csv.DictWriter(f,fieldnames=headers);writer.writeheader();writer.writerows(rows)
+            def analyze():
+                return a.analyze(folder/'control.csv',folder/'treatment.csv',bootstrap_samples=10,
+                    combat_sims=10000,mcts_sims=10000,seed_start=980000,seed_count=64)
+            write();self.assertEqual(analyze()['diagnostics']['mean_trivialRootBypasses_per_run'],1)
+            rows[0]['savedSimulations']='3';rows[0]['earlyStopLockedRoot']='1'
+            rows[0]['simulations']=str(int(rows[0]['simulations'])-3)
+            rows[0]['simulationAttempts']=str(int(rows[0]['simulationAttempts'])-3)
+            write();analyze()
+            rows[0]['earlyStopLockedRoot']='0';write()
+            with self.assertRaisesRegex(ValueError,'root shortcut accounting'): analyze()
+            rows[0]['earlyStopLockedRoot']='1'
+            rows[0]['trivialRootBypasses']=str(int(rows[0]['mctsOwned'])+1);write()
+            with self.assertRaisesRegex(ValueError,'root shortcut accounting'): analyze()
+
     def test_64_membership_aggregation_and_corruption_rejection(self):
         with tempfile.TemporaryDirectory() as d:
             folder=Path(d);self.synthetic64(folder)

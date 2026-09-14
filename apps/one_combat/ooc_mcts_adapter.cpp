@@ -53,7 +53,7 @@ OocGameContextModel::OocGameContextModel(const GameContext &gc, const PathHistor
     if (!g_oocStrategicTokNet.ok) throw std::runtime_error("OOC MCTS requires native V4 policy");
     auto history = path;
     history.update(gc);
-    states.push_back({detachedCopy(gc), history});
+    states.push_back({detachedCopy(gc), history, {}});
 }
 const GameContext &OocGameContextModel::state(sts::search::OocStateId id) const { return states.at(id).gc; }
 const PathHistory &OocGameContextModel::pathHistory(sts::search::OocStateId id) const { return states.at(id).path; }
@@ -65,24 +65,44 @@ std::optional<double> OocGameContextModel::terminalValue(sts::search::OocStateId
     }
     throw std::runtime_error("OOC MCTS invalid outcome");
 }
+OocGameContextModel::Metadata &OocGameContextModel::mutableMetadata(sts::search::OocStateId id) const {
+    const auto &snapshot = states.at(id);
+    if (!snapshot.metadata) {
+        Metadata value;
+        if (v4DecisionSupported(snapshot.gc)) {
+            value.candidates = v4CandidateActions(snapshot.gc);
+            value.boundary = value.candidates.empty();
+            std::set<std::uint32_t> ids;
+            for (auto action : value.candidates)
+                if (!ids.insert(action.bits).second) value.boundary = true;
+        }
+        value.edges.resize(value.candidates.size());
+        snapshot.metadata = std::move(value);
+        ++continuation_.metadataBuilds;
+    }
+    return *snapshot.metadata;
+}
+const OocGameContextModel::Metadata &OocGameContextModel::metadata(sts::search::OocStateId id) const {
+    return mutableMetadata(id);
+}
 bool OocGameContextModel::isLeafBoundary(sts::search::OocStateId id) const {
-    const auto &gc = state(id);
-    if (!v4DecisionSupported(gc)) return true;
-    const auto actions = v4CandidateActions(gc);
-    if (actions.empty()) return true;
-    // Native multi-gold rewards can enumerate the same primitive ID twice.
-    // Keep the existing candidate contract unchanged and use the leaf/fallback
-    // contract for decisions without unique planner action identities.
-    std::set<std::uint32_t> ids;
-    for (auto a : actions) if (!ids.insert(a.bits).second) return true;
-    return false;
+    return metadata(id).boundary;
+}
+std::optional<sts::search::OocActionId> OocGameContextModel::soleLegalAction(sts::search::OocStateId id) const {
+    if (terminalValue(id) || isLeafBoundary(id)) return std::nullopt;
+    const auto &actions = metadata(id).candidates;
+    if (actions.size()==1 && actions.front().isValidAction(state(id))) return actions.front().bits;
+    return std::nullopt;
 }
 std::vector<double> OocGameContextModel::policyLogits(sts::search::OocStateId id) const {
     if (terminalValue(id) || isLeafBoundary(id)) throw std::runtime_error("OOC MCTS actions requested at leaf");
     if (!g_oocStrategicTokNet.ok) throw std::runtime_error("OOC MCTS V4 unavailable");
     const auto &snapshot = states.at(id);
     const auto &gc = snapshot.gc;
-    auto actions = v4CandidateActions(gc);
+    auto &cached = mutableMetadata(id);
+    if (cached.logits) return *cached.logits;
+    const auto &actions = cached.candidates;
+    ++continuation_.priorBuilds;
     const TokState ts = buildTokState(gc, snapshot.path);
     std::vector<double> logits;
     for (auto a : actions) {
@@ -96,40 +116,48 @@ std::vector<double> OocGameContextModel::policyLogits(sts::search::OocStateId id
         if (!std::isfinite(logit)) throw std::runtime_error("OOC MCTS nonfinite policy logit");
         logits.push_back(logit);
     }
+    cached.logits = logits;
     return logits;
 }
 std::vector<sts::search::OocPlannerAction> OocGameContextModel::legalActions(sts::search::OocStateId id) const {
     if (terminalValue(id) || isLeafBoundary(id)) throw std::runtime_error("OOC MCTS actions requested at leaf");
-    auto weights = options.uniformPrior ? std::vector<double>(v4CandidateActions(state(id)).size(), 1.0)
+    auto &cached = mutableMetadata(id);
+    if (cached.priors) return *cached.priors;
+    const auto &actions = cached.candidates;
+    auto weights = options.uniformPrior ? std::vector<double>(actions.size(), 1.0)
                                       : oocPolicyWeights(policyLogits(id), options.priorTemperature);
-    auto actions = v4CandidateActions(state(id));
     std::vector<sts::search::OocPlannerAction> result;
-    std::set<std::uint32_t> ids;
-    for (std::size_t i=0; i<actions.size(); ++i) {
-        if (!ids.insert(actions[i].bits).second) throw std::runtime_error("OOC MCTS duplicate primitive action");
+    result.reserve(actions.size());
+    for (std::size_t i=0; i<actions.size(); ++i)
         result.push_back({actions[i].bits, weights[i]});
-    }
+    cached.priors = result;
     return result;
 }
 sts::search::OocStateId OocGameContextModel::sampleSuccessor(sts::search::OocStateId id,
     sts::search::OocActionId action, std::mt19937_64 &rng) {
     if (terminalValue(id) || isLeafBoundary(id)) throw std::runtime_error("OOC MCTS transition from leaf");
-    if (auto cached = deterministic.find({id, action}); cached != deterministic.end()) return cached->second;
-    auto actions = v4CandidateActions(state(id));
+    auto &cached = mutableMetadata(id);
+    const auto &actions = cached.candidates;
     auto it = std::find_if(actions.begin(), actions.end(), [&](auto a) { return a.bits == action; });
     if (it == actions.end()) throw std::runtime_error("OOC MCTS illegal action ID");
-    auto child = Snapshot{detachedCopy(state(id)), states.at(id).path};
+    auto &edge = cached.edges.at(it - actions.begin());
+    if (edge.deterministic) return *edge.deterministic;
+    auto child = Snapshot{detachedCopy(state(id)), states.at(id).path, {}};
     it->execute(child.gc);
     child.path.update(child.gc);
     const bool enteredCombat = child.gc.screenState == sts::ScreenState::BATTLE;
-    if (options.checkpointLeaves && enteredCombat) resolveCombat(child, rng);
-    else {
-    if (combatSampler && child.gc.screenState == sts::ScreenState::BATTLE) {
+    if (enteredCombat && combatSampler && !edge.combat) {
         const auto input = captureCombatPredictorInput(child.gc, child.gc.info.encounter,
                                                        potionKeepValue(child.gc));
-        if (combatSampler->support(child.gc, input).supported) {
+        edge.combat = combatSampler->prepare(child.gc, input);
+        ++continuation_.preparedCombats;
+    }
+    if (enteredCombat) ++continuation_.combatEdgeSamples;
+    if (options.checkpointLeaves && enteredCombat) resolveCombat(child, rng, edge.combat.get());
+    else if (combatSampler && enteredCombat) {
+        if (edge.combat->support().supported) {
             ++combatSamples_;
-            const auto sampled = combatSampler->sample(child.gc, input, rng);
+            const auto sampled = edge.combat->sample(rng);
             switch (sampled.outcome) {
                 case CombatRuntimeSample::Outcome::UNSUPPORTED: break;
                 case CombatRuntimeSample::Outcome::DEATH:
@@ -145,8 +173,7 @@ sts::search::OocStateId OocGameContextModel::sampleSuccessor(sts::search::OocSta
             }
         }
     }
-    }
-    if (options.checkpointLeaves && !enteredCombat) deterministic[{id, action}] = states.size();
+    if (options.checkpointLeaves && !enteredCombat) edge.deterministic = states.size();
     states.push_back(std::move(child));
     return states.size()-1;
 }
@@ -166,18 +193,26 @@ double OocGameContextModel::leafValue(sts::search::OocStateId id) const {
     return vStateWinNative(gc);
 }
 bool OocGameContextModel::isDeterministicTransition(sts::search::OocStateId id,
-    sts::search::OocActionId action) const { return deterministic.count({id, action}) != 0; }
-void OocGameContextModel::resolveCombat(Snapshot &child, std::mt19937_64 &rng) {
+    sts::search::OocActionId action) const {
+    const auto &cached = metadata(id);
+    const auto it = std::find_if(cached.candidates.begin(), cached.candidates.end(),
+        [&](auto candidate) { return candidate.bits == action; });
+    return it != cached.candidates.end() && cached.edges.at(it-cached.candidates.begin()).deterministic.has_value();
+}
+void OocGameContextModel::resolveCombat(Snapshot &child, std::mt19937_64 &rng,
+    const PreparedCombatTransition *prepared) {
     ++continuation_.imaginedCombats;
     const int battleAct = child.gc.act;
     const auto battleRoom = child.gc.curRoom;
     bool victory = false;
-    const auto input = captureCombatPredictorInput(child.gc, child.gc.info.encounter, potionKeepValue(child.gc));
-    const auto support = combatSampler ? combatSampler->support(child.gc, input)
-                                     : CombatRuntimeSupport{false, "missing_sampler"};
+    const auto input = prepared ? CombatPredictorInputV1{}
+        : captureCombatPredictorInput(child.gc, child.gc.info.encounter, potionKeepValue(child.gc));
+    const auto support = prepared ? prepared->support()
+        : combatSampler ? combatSampler->support(child.gc, input)
+                        : CombatRuntimeSupport{false, "missing_sampler"};
     auto reason = support.reason;
     if (support.supported) {
-        const auto sampled = combatSampler->sample(child.gc, input, rng);
+        const auto sampled = prepared ? prepared->sample(rng) : combatSampler->sample(child.gc, input, rng);
         if (sampled.outcome != CombatRuntimeSample::Outcome::UNSUPPORTED) {
             ++combatSamples_;
             if (sampled.outcome == CombatRuntimeSample::Outcome::DEATH) {
@@ -251,7 +286,7 @@ double boundedContinuation(int maxSteps, Checkpoint checkpoint, Step advance) {
 double OocGameContextModel::evaluateLeaf(sts::search::OocStateId id, std::mt19937_64 &rng) {
     if (!options.checkpointLeaves) return leafValue(id);
     ImaginedScope scope;
-    auto child = Snapshot{detachedCopy(state(id)), states.at(id).path};
+    auto child = Snapshot{detachedCopy(state(id)), states.at(id).path, {}};
     t_curPath=&child.path;
     if (child.gc.screenState == sts::ScreenState::BATTLE) ++continuation_.battleLeaves;
     else if (child.gc.screenState == sts::ScreenState::MAP_SCREEN) ++continuation_.mapLeaves;
@@ -430,7 +465,15 @@ sts::search::OocMctsResult selectOocMctsAction(const GameContext &gc, const Path
     if (model.terminalValue(0) || model.isLeafBoundary(0)) return {};
     auto config = liveConfig;
     config.seed = oocMctsSearchSeed(seed, index);
-    auto result = sts::search::OocMctsPlanner(config).search(model, 0, simulations);
+    if (!simulations) throw std::invalid_argument("OOC MCTS requires simulations > 0");
+    sts::search::OocMctsResult result;
+    const auto soleAction = model.soleLegalAction(0);
+    if (config.maxDepth && soleAction) {
+        // No search outcome is transferred to live state. Even a whole-root
+        // support abort would fall back to this same sole primitive candidate.
+        result.selectedAction = soleAction;
+        result.metrics.trivialRootBypasses = 1;
+    } else result = sts::search::OocMctsPlanner(config).search(model, 0, simulations);
     if (!result.selectedAction && !result.aborted) throw std::runtime_error("live OOC MCTS missing selected root action");
     samples = model.combatSamples();
     if (continuation) {
@@ -456,12 +499,17 @@ bool oocMctsPolicyStep(GameContext &gc, const PathHistory &path, std::uint64_t s
     c.pendingLeaves+=continuation.pendingLeaves; c.battleLeaves+=continuation.battleLeaves;
     c.mapLeaves+=continuation.mapLeaves; c.projectionSteps+=continuation.projectionSteps;
     c.continuationLimitAborts+=continuation.continuationLimitAborts;
+    c.metadataBuilds+=continuation.metadataBuilds; c.priorBuilds+=continuation.priorBuilds;
+    c.preparedCombats+=continuation.preparedCombats; c.combatEdgeSamples+=continuation.combatEdgeSamples;
     for (auto &[reason,count] : continuation.continuationReasons) c.continuationReasons[reason]+=count;
     for (auto &[reason,count] : continuation.supportReasons) c.supportReasons[reason]+=count;
     auto &m = metrics.search;
     m.outcomeParticles+=result.metrics.outcomeParticles; m.decisionNodes+=result.metrics.decisionNodes;
     m.chanceNodes+=result.metrics.chanceNodes; m.particleRevisits+=result.metrics.particleRevisits;
     m.deterministicRevisits+=result.metrics.deterministicRevisits; m.depthSum+=result.metrics.depthSum;
+    m.trivialRootBypasses += result.metrics.trivialRootBypasses;
+    m.earlyStopLockedRoot += result.metrics.earlyStopLockedRoot;
+    m.savedSimulations += result.metrics.savedSimulations;
     m.simulations += result.metrics.simulations;
     m.simulationAttempts += result.metrics.simulationAttempts;
     m.transitionSamples += result.metrics.transitionSamples;
@@ -483,10 +531,14 @@ bool oocMctsPolicyStep(GameContext &gc, const PathHistory &path, std::uint64_t s
 void writeLiveOocMctsTrace(std::uint64_t seed, const LiveOocMctsMetrics &m, int realCombats) {
     if (liveTrace.empty()) return;
     std::lock_guard<std::mutex> lock(liveTraceMutex);
+    const std::string header = "seed,oocDecisions,mctsOwned,mctsFallback,simulations,transitionSamples,combatSurrogateSamples,leafEvaluations,maxDepth,mctsWallSec,mctsCpuSec,realCombats,imaginedCombats,unsupportedCombats,mctsSupportAborts,discardedSimulations,simulationAttempts,pendingLeaves,battleLeaves,mapLeaves,projectionSteps,outcomeParticles,particleRevisits,deterministicRevisits,depthSum,continuationLimitAborts,trivialRootBypasses,earlyStopLockedRoot,savedSimulations,metadataBuilds,priorBuilds,preparedCombats,combatEdgeSamples\n";
+    std::ifstream existing(liveTrace);
+    std::string firstLine;
+    if (std::getline(existing,firstLine) && firstLine+'\n' != header)
+        throw std::runtime_error("STS_OOC_MCTS_TRACE incompatible header; use a fresh trace path");
     std::ofstream out(liveTrace, std::ios::app);
     if (!out) throw std::runtime_error("STS_OOC_MCTS_TRACE cannot write output");
-    if (out.tellp() == 0)
-        out << "seed,oocDecisions,mctsOwned,mctsFallback,simulations,transitionSamples,combatSurrogateSamples,leafEvaluations,maxDepth,mctsWallSec,mctsCpuSec,realCombats,imaginedCombats,unsupportedCombats,mctsSupportAborts,discardedSimulations,simulationAttempts,pendingLeaves,battleLeaves,mapLeaves,projectionSteps,outcomeParticles,particleRevisits,deterministicRevisits,depthSum,continuationLimitAborts\n";
+    if (out.tellp() == 0) out << header;
     out << std::setprecision(12) << seed << ',' << m.decisions << ',' << m.owned << ',' << m.fallback
         << ',' << m.search.simulations << ',' << m.search.transitionSamples << ',' << m.combatSamples
         << ',' << m.search.leafEvaluations << ',' << m.search.maxDepthReached
@@ -497,7 +549,11 @@ void writeLiveOocMctsTrace(std::uint64_t seed, const LiveOocMctsMetrics &m, int 
         << ',' << m.continuation.mapLeaves << ',' << m.continuation.projectionSteps
         << ',' << m.search.outcomeParticles << ',' << m.search.particleRevisits
         << ',' << m.search.deterministicRevisits << ',' << m.search.depthSum
-        << ',' << m.continuation.continuationLimitAborts << '\n';
+        << ',' << m.continuation.continuationLimitAborts
+        << ',' << m.search.trivialRootBypasses << ',' << m.search.earlyStopLockedRoot
+        << ',' << m.search.savedSimulations << ',' << m.continuation.metadataBuilds
+        << ',' << m.continuation.priorBuilds << ',' << m.continuation.preparedCombats
+        << ',' << m.continuation.combatEdgeSamples << '\n';
     std::ofstream reasons(liveTrace+".support.jsonl",std::ios::app);
     reasons << nlohmann::json{{"seed",seed},{"reasons",m.continuation.supportReasons},
         {"continuation_reasons",m.continuation.continuationReasons},
@@ -579,6 +635,19 @@ void oocMctsAdapterSelfTest() {
     nonemptyHistory.roomVisits[int(Room::TREASURE)]=6;
     OocGameContextModel historyModel(gc,nonemptyHistory);
     const auto historyLogits=historyModel.policyLogits(0);
+    const auto cachedHistoryActions=historyModel.legalActions(0);
+    for (int repeat=0;repeat<3;++repeat) {
+        require(historyModel.policyLogits(0)==historyLogits,"cached logits remain bit-exact");
+        const auto again=historyModel.legalActions(0);
+        require(again.size()==cachedHistoryActions.size(),"cached legal action count");
+        for (std::size_t i=0;i<again.size();++i)
+            require(again[i].id==cachedHistoryActions[i].id && again[i].prior==cachedHistoryActions[i].prior,
+                "cached legal IDs/order/raw priors exact");
+    }
+    require(historyModel.continuationMetrics().metadataBuilds==1
+        && historyModel.continuationMetrics().priorBuilds==1
+        && !historyModel.searchGuaranteedNonAborting(),
+        "immutable metadata/token/prior build once; live model remains abort-capable");
     const auto historyActions=v4CandidateActions(gc);
     const TokState historyTokens=buildTokState(gc,nonemptyHistory);
     double maxHistoryPolicyError=0;
@@ -1181,6 +1250,32 @@ void oocMctsAdapterSelfTest() {
         && unsupportedMetrics.continuation.supportReasons.at("test unsupported")==1
         && test::oocStateFingerprint(live)==before && !sts::search::g_disallowImaginedCombat,
         "unsupported live search returns untouched decision to existing V4 with reconciled abort metrics");
+    auto sole=detachedCopy(live);
+    int firstNode=-1;
+    for (auto &node : sole.map->nodes[0]) {
+        if (firstNode < 0 && node.edgeCount > 0) firstNode=node.x;
+        else node.edgeCount=0;
+    }
+    PathHistory solePath; solePath.update(sole);
+    const auto soleCandidates=v4CandidateActions(sole);
+    require(soleCandidates.size()==1,"sole map candidate fixture");
+    OocGameContextModel soleModel(sole,solePath,liveSampler,liveOptions);
+    const auto soleSearch=OocMctsPlanner(liveConfig).search(soleModel,0,128);
+    require(soleSearch.aborted && soleSearch.metrics.simulationAttempts==1,
+        "normal sole-action search aborts after entering unsupported combat");
+    auto solePrimitive=detachedCopy(sole), soleFallback=detachedCopy(sole);
+    soleCandidates.front().execute(solePrimitive);
+    ScumSearchAgent2 soleAgent;
+    runFullRunOocPolicyStep(soleFallback,soleAgent,false,true);
+    require(test::oocStateFingerprint(soleFallback)==test::oocStateFingerprint(solePrimitive),
+        "sole candidate equals original whole-root fallback primitive including live RNG");
+    LiveOocMctsMetrics soleMetrics;
+    require(oocMctsPolicyStep(sole,solePath,42,7,soleMetrics)
+        && soleMetrics.search.trivialRootBypasses==1 && soleMetrics.search.simulations==0
+        && soleMetrics.search.simulationAttempts==0 && soleMetrics.combatSamples==0
+        && soleMetrics.supportAborts==0
+        && test::oocStateFingerprint(sole)==test::oocStateFingerprint(solePrimitive),
+        "sole root bypass executes identical primitive without imagined draws or abort");
     auto fallbackLive=detachedCopy(live), fallbackOracle=detachedCopy(live);
     ScumSearchAgent2 fallbackLiveAgent,fallbackOracleAgent;
     runFullRunOocPolicyStep(fallbackLive,fallbackLiveAgent,false,true);
@@ -1255,6 +1350,85 @@ void oocMctsAdapterSelfTest() {
         && multipleGold.info.rewardsContainer.goldRewardCount==1,
         "multi-gold fallback retains existing first-gold collection");
     std::cout<<"PASS live OOC MCTS OFF/isolation/execution/real-combat/fallback/determinism\n";
+    // Opt-in captured-model microbenchmark. Runs only detached search states;
+    // this is not a gameplay cohort or a decision-quality experiment.
+    if (const char *modelPath=std::getenv("STS_OOC_MCTS_MICROBENCH_MODEL")) {
+        auto native=std::make_shared<NativeCombatTransitionSampler>(modelPath);
+        struct ReferenceSampler final : CombatTransitionSampler {
+            std::shared_ptr<const NativeCombatTransitionSampler> native;
+            mutable std::uint64_t encoderCalls=0;
+            explicit ReferenceSampler(std::shared_ptr<const NativeCombatTransitionSampler> n):native(std::move(n)) {}
+            CombatRuntimeSupport support(const GameContext &g,const CombatPredictorInputV1 &p) const override {
+                return native->support(g,p);
+            }
+            CombatRuntimeSample sample(const GameContext &g,const CombatPredictorInputV1 &p,std::mt19937_64 &r) const override {
+                auto result=native->sample(g,p,r);
+                if (result.outcome!=CombatRuntimeSample::Outcome::UNSUPPORTED)
+                    encoderCalls+=result.outcome==CombatRuntimeSample::Outcome::VICTORY ? 4 : 1;
+                return result;
+            }
+        };
+        auto reference=std::make_shared<ReferenceSampler>(native);
+        GameContext fixed(CharacterClass::IRONCLAD,42,0);
+        fixed.screenState=ScreenState::MAP_SCREEN; fixed.curEvent=Event::INVALID;
+        for (auto &node : fixed.map->nodes[0]) node.room=Room::MONSTER;
+        // Isolate one searched combat edge from native reward/projection work.
+        fixed.regainControlAction=[](GameContext &g) { g.screenState=ScreenState::MAP_SCREEN; };
+        PathHistory fixedPath;fixedPath.update(fixed);
+        OocAdapterOptions opts; opts.checkpointLeaves=true;
+        OocGameContextModel before(fixed,fixedPath,reference,opts),after(fixed,fixedPath,native,opts);
+        auto cfg=OocMctsConfig{}; cfg.seed=20260914;cfg.maxDepth=1;
+        const auto start=std::chrono::steady_clock::now();
+        const auto oldResult=OocMctsPlanner(cfg).search(before,0,512);
+        const double oldSeconds=std::chrono::duration<double>(std::chrono::steady_clock::now()-start).count();
+        const auto next=std::chrono::steady_clock::now();
+        const auto newResult=OocMctsPlanner(cfg).search(after,0,512);
+        const double newSeconds=std::chrono::duration<double>(std::chrono::steady_clock::now()-next).count();
+        require(!oldResult.aborted && !newResult.aborted,"fixed native microbenchmark support");
+        require(oldResult.selectedAction==newResult.selectedAction && before.storedStates()==after.storedStates()
+            && before.combatSamples()==after.combatSamples(),"prepared search action/state/sample parity");
+        const auto &a=oldResult.metrics,&b=newResult.metrics;
+        require(a.simulations==b.simulations && a.simulationAttempts==b.simulationAttempts
+            && a.decisionNodes==b.decisionNodes && a.chanceNodes==b.chanceNodes
+            && a.outcomeParticles==b.outcomeParticles && a.transitionSamples==b.transitionSamples
+            && a.leafEvaluations==b.leafEvaluations && a.particleRevisits==b.particleRevisits
+            && a.deterministicRevisits==b.deterministicRevisits && a.depthSum==b.depthSum
+            && a.maxDepthReached==b.maxDepthReached,"prepared complete tree metrics parity");
+        for (std::size_t i=0;i<oldResult.rootActions.size();++i) {
+            const auto &x=oldResult.rootActions[i],&y=newResult.rootActions.at(i);
+            require(x.id==y.id && x.prior==y.prior && x.visits==y.visits && x.q==y.q,
+                "prepared root IDs/order/priors/visits/Q parity");
+        }
+        for (std::size_t i=0;i<before.storedStates();++i)
+            require(test::oocStateFingerprint(before.state(i))==test::oocStateFingerprint(after.state(i))
+                && before.pathHistory(i).roomVisits==after.pathHistory(i).roomVisits
+                && before.pathHistory(i).lastNodeKey==after.pathHistory(i).lastNodeKey,
+                "every prepared search snapshot and PathHistory exact");
+        nlohmann::json exact={{"selectedAction",*newResult.selectedAction},
+            {"simulations",b.simulations},{"simulationAttempts",b.simulationAttempts},
+            {"decisionNodes",b.decisionNodes},{"chanceNodes",b.chanceNodes},
+            {"outcomeParticles",b.outcomeParticles},{"transitionSamples",b.transitionSamples},
+            {"leafEvaluations",b.leafEvaluations},{"particleRevisits",b.particleRevisits},
+            {"deterministicRevisits",b.deterministicRevisits},{"depthSum",b.depthSum},
+            {"maxDepthReached",b.maxDepthReached}};
+        for (auto action:newResult.rootActions)
+            exact["rootActions"].push_back({action.id,action.prior,action.visits,action.q});
+        for (std::size_t i=0;i<after.storedStates();++i)
+            exact["states"].push_back({test::oocStateFingerprint(after.state(i)),
+                after.pathHistory(i).roomVisits,after.pathHistory(i).lastNodeKey});
+        std::cout<<"MICROBENCH_PARITY "<<exact.dump()<<'\n';
+        std::cout<<"MICROBENCH "<<nlohmann::json{{"simulations",512},{"referenceSeconds",oldSeconds},
+            {"preparedSeconds",newSeconds},{"referenceSimulationsPerSecond",512/oldSeconds},
+            {"preparedSimulationsPerSecond",512/newSeconds},{"combatSamples",after.combatSamples()},
+            {"referenceCombatSamplesPerSecond",before.combatSamples()/oldSeconds},
+            {"preparedCombatSamplesPerSecond",after.combatSamples()/newSeconds},
+            {"referenceEncoderCalls",reference->encoderCalls},
+            {"preparedEncoderCalls",4*after.continuationMetrics().preparedCombats},
+            {"uniqueCombatEdges",after.continuationMetrics().preparedCombats},
+            {"generatedStates",after.storedStates()},{"decisionNodes",b.decisionNodes},
+            {"metadataBuilds",after.continuationMetrics().metadataBuilds},
+            {"priorBuilds",after.continuationMetrics().priorBuilds},{"parity",true}}.dump()<<'\n';
+    }
     std::cout<<"PASS OOC MCTS adapter (offline native integration only)\n";
 }
 }

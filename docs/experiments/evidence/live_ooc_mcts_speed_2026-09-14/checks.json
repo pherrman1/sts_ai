@@ -1,0 +1,22 @@
+{
+  "build": "one_combat, ooc-mcts-test, combat_transition_runtime_probe: exit 0",
+  "finalFocusedCTest": {
+    "ooc_mcts": "passed",
+    "combat_transition_composed_selftest": "passed",
+    "ooc_mcts_parameter_search_selftest": "passed",
+    "ooc_mcts_gameplay_analysis_selftest": "passed (3 Python tests including historical exact reproduction)",
+    "ooc_mcts_adapter": "passed",
+    "combat_transition_native_contract": "passed",
+    "combat_transition_runtime_loader": "passed",
+    "ooc_mcts_live_startup": "passed"
+  },
+  "initialCTestFailure": "Two one_combat checks overlapped relinking and could not execute the incomplete binary (rc126/Permission denied); final reruns passed.",
+  "plannerSanitizers": "Final candidate GCC -O1 ASan+UBSan: exit 0, PASS 176 checks",
+  "diffCheck": "git diff --check: exit 0",
+  "notRun": [
+    "full local CTest suite (focused targets only built)",
+    "gameplay experiment/canary",
+    "full-budget live gameplay performance comparison"
+  ],
+  "knowledgeImpact": "Maintained OOC architecture/interfaces/telemetry and parity procedure; code-map navigation; chronological engineering microbenchmark evidence."
+}

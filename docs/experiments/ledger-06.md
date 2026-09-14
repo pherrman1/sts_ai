@@ -7644,3 +7644,51 @@ copied hidden noncombat RNG still limits unbiased planning/deployment claims.
 Knowledge impact: experiment evidence/current research status; analyzer cohort
 parameters in evaluation protocol. [Full evidence](evidence/live_ooc_mcts_fresh64_10000_2026-09-14.md),
 [raw/analysis packet](evidence/live_ooc_mcts_fresh64_10000_2026-09-14/README.md).
+
+
+## §250 — Exact OOC MCTS computation optimizations (2026-09-14)
+
+Baseline main `210f347334898e7c2a85b8af0f30dedc4888ea88`; one clean app worktree.
+No combat-support branch dependency, training, support/schema/RNG distribution,
+PUCT, policy, horizon or leaf-value change. Search-local prepared combat edges,
+immutable state metadata, deque particle arena and exact hot-loop cleanup;
+sole-valid-action live bypass and default-unsafe visit-lock capability added.
+
+Cheap captured-model profiling found four encoders at roughly1.08ms each versus
+microsecond conditional heads. Fixed depth-one native-root profiling was43.38%
+combat/56.22% leaf continuation/value, with copying/action-prior/bookkeeping
+combined below0.5%. Baseline1,188 candidate calls/81 generated states,80 samples/
+3unique combat edges; one token/prior build. Synthetic original fixtures found
+0sole-action roots/41 supported roots, not a live frequency estimate.
+
+23existing captured inputs (16supported/7unsupported),32seeds×4sequential draws
+prove2,944 complete persistent-state/mt19937 post-state comparisons and exact
+baseline probability outputs. Prepared128-draw amortized sampling4.393ms→60.328us
+(72.82x); inferred encoder calls7,775→64. Frozen artifact `f9520a14…` and fixtures
+`372a1627…`; full model/input/source/binary hashes in the packet.
+
+Interleaved3baseline/optimized runs,CPU0/OMP1,Ironclad A0,GameContext42/search
+seed20260914,512simulations/depth1,cPuct1.5/k2/alpha.5,V4 priors/native win leaves.
+Detached native callback isolates searched combat from reward projection; no
+real gameplay/teacher combat budget applies. Median baseline logic replay387.760ms
+versus optimized231.556ms (1.675x,40.28% reduction),about1320→2211 simulations/sec.
+All80samples/81states, action/order/priors/visits/Q/tree statistics and every
+snapshot/history exactly equal. Encoders320→12;80individual node heap allocations
+eliminated, not all allocations. Native uncached control397.117ms does not
+establish a separate metadata/arena speed benefit; standalone toy planner suite
+11.376→10.380ms median/process is descriptive. Baseline replay used matching final
+telemetry ABI/otherwise shared build objects; initial original adapter stdout
+and probability vectors also reproduce exactly.
+
+Sole-root unsupported-combat fallback primitive/live RNG equivalence passes,
+with zero simulated work. Non-aborting toy lock saves48/100simulations with same
+action; strict equality/mean-Q/catchable/unsafe/late-abort/adversarial cases pass.
+Locked stopping remains dormant in the live adapter: all intentional abort paths
+are not excluded. No copy ownership refactor or conditional-head memoization
+was justified. Eight focused CTests pass; two relinking-overlap execution failures
+were repaired by post-build reruns. No full local CTest/gameplay cohort/canary;
+no gameplay-quality or full-game speed claim. Knowledge impact: maintained OOC
+interface/telemetry/parity procedure and chronological engineering evidence.
+[Full packet](evidence/live_ooc_mcts_speed_2026-09-14/README.md),
+[fixed-search timings/parity](evidence/live_ooc_mcts_speed_2026-09-14/fixed-search-summary.json),
+[sampler receipt](evidence/live_ooc_mcts_speed_2026-09-14/combat-summary.json).

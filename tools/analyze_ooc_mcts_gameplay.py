@@ -62,7 +62,12 @@ def analyze(control_path, treatment_path, bootstrap_samples=200000, combat_sims=
             aborts=int(row.get('mctsSupportAborts',0))
             if not 0<=discarded<=aborts*(mcts_sims-1) or not 0<=aborts<=fallback or int(row.get('simulationAttempts',simulations))!=simulations+aborts or (enabled and int(row.get('unsupportedCombats',aborts))+int(row.get('continuationLimitAborts',0))!=aborts):
                 raise ValueError('unsupported root attempt accounting mismatch')
-            if simulations != owned * mcts_sims + discarded or ('imaginedCombats' not in row and int(row['combatSurrogateSamples']) > int(row['transitionSamples'])) or not 0 <= int(row['maxDepth']) <= 32 or int(row['realCombats']) <= 0:
+            trivial=int(row.get('trivialRootBypasses',0))
+            saved=int(row.get('savedSimulations',0))
+            locked=int(row.get('earlyStopLockedRoot',0))
+            if not 0<=trivial<=owned or not 0<=locked<=owned-trivial or not locked<=saved<=locked*(mcts_sims-1) or bool(saved)!=bool(locked):
+                raise ValueError('root shortcut accounting mismatch')
+            if simulations != (owned-trivial) * mcts_sims + discarded - saved or ('imaginedCombats' not in row and int(row['combatSurrogateSamples']) > int(row['transitionSamples'])) or not 0 <= int(row['maxDepth']) <= 32 or int(row['realCombats']) <= 0:
                 raise ValueError('search/real-combat trace does not reconcile')
     if combat_sims == 10000:
         for row in traces[1].values():

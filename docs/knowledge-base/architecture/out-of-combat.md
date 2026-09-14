@@ -22,7 +22,7 @@ experiments.
 
 ### Synchronous OOC MCTS substrate
 
-Last verified: 2026-09-14 for the opt-in native combat boundary and focused adapter oracle.
+Last verified: 2026-09-14 for search-local preparation, metadata, and exact root shortcuts.
 
 `OocMctsPlanner` is a synchronous generic search core over opaque state
 and action IDs. `OocGenerativeModel` supplies complete actions/priors, actual
@@ -45,6 +45,21 @@ PUCT ties use ascending action ID; final choice uses visits, then Q, then
 ID. Each search resets its tree and seeded RNG; providers must preserve IDs and
 reset any mutable sampling state for exact replay.
 
+Particles occupy a search-local `deque<DecisionNode>` arena with stable references,
+so generating each particle does not require a separate heap allocation. PUCT
+computes the parent square root once per selection without changing the numeric
+formula or ties. Prospective widening limits use the original formula, cached
+through the budget up to 1,048,576 visits; larger visits evaluate it on demand.
+
+For visit-selected roots, a leader may stop search only when its visit count is
+strictly greater than every challenger's count plus the remaining budget **and**
+`model.searchGuaranteedNonAborting()` is true. The capability defaults to false;
+mean-Q selection never uses this shortcut. A later support abort would otherwise
+invalidate even a locked winner. `OocGameContextModel` retains the default false:
+unsupported combat, unresolved continuation limits, and forbidden imagined
+native-combat paths still exist. Observed zero aborts do not qualify this contract.
+Metrics count locked-root stops and saved simulations separately.
+
 The focused `ooc_mcts` CTest verifies toy stochastic MDPs and malformed inputs.
 `apps/one_combat/ooc_mcts_adapter.{h,cpp}` supplies the
 `OocGameContextModel` integration through explicit `one_combat oocmctsselftest`
@@ -53,6 +68,20 @@ V4 and win models. `OocStrategicTokNet::predictPolicyLogit` shares the 184-wide
 state/action representation with Q, then applies `pol.0 -> GELU -> pol.2`.
 Finite logits supply weights `exp((logit - max_logit) / 1.0)`; the core
 normalizes them. Q remains unchanged in the live one-ply gates.
+
+Each immutable stored `OocStateId` lazily owns candidate/boundary/uniqueness
+metadata and, when needed, policy logits and raw planner priors. The same
+candidate ordering and token construction feed the same policy inference;
+subsequent queries reuse the result. Edge-local storage holds deterministic
+successor IDs and prepared combat objects. A prepared native combat transition
+computes support, survival probability, max-HP probabilities, and HP/potion
+encodings once for its fixed precombat input. Each draw still computes the
+conditional heads and consumes the original survival → maxHP → signedHP → potion
+→ relic draw sequence. Preparation consumes no RNG. Objects die with the search,
+retain immutable persistent pre-state, and borrow their owning sampler; there is
+no mutable process-wide cache. The uncached native sampler remains a parity
+reference. Leaf-policy continuations retain their original uncached sampling.
+Map ownership and `GameContext` detachment semantics remain unchanged.
 
 The exact primitive candidate contract is shared with those gates through
 `v4CandidateActions`, including the last card-reward group's `CARD(group,5)`
@@ -131,7 +160,13 @@ Its search seed is `SplitMix64(runSeed XOR SplitMix64(decisionIndex))`, using
 explicit unsigned 64-bit arithmetic. The index increments once per actual
 nonbattle run-loop decision, including unsupported roots. It consumes no
 simulator RNG. Terminal/boundary roots and whole-root support aborts return no
-action; completed supported searches must return a legal primitive ID. Snapshots are discarded before
+action; completed supported searches must return a legal primitive ID.
+A supported root with one valid, unique V4 candidate returns that primitive
+without constructing a tree. This bypass also applies when entering its sole
+action would have caused whole-root support fallback; focused tests compare the
+primitive against that fallback and verify complete live state/RNG equivalence.
+It reports `trivialRootBypasses`, with zero simulations/attempts/combat draws;
+it is independent of the non-aborting capability. Snapshots are discarded before
 `oocMctsPolicyStep` resolves that ID against fresh live candidates and executes
 it exactly once. If it enters BATTLE, real combat remains pending for the
 ordinary next run-loop iteration. No sampled combat result transfers to live
@@ -212,13 +247,21 @@ ordinary real combat count. It also records imagined combat totals, unsupported
 root support-abort counts and discarded completed simulations, total simulation
 attempts, pending/battle/map leaf counts, projection steps,
 particle creation/revisits, deterministic revisits and summed searched depth.
+Appending to a trace with an incompatible header fails; use a fresh path when
+changing trace schema. Historical readers default absent shortcut columns to zero.
+Additional columns count trivial-root bypasses, locked-root stops, saved
+simulations, immutable metadata/prior builds, prepared searched combat edges,
+and searched combat-edge sampling attempts. `preparedCombats` includes supported
+and unsupported preparations; `combatEdgeSamples` excludes combat samples made
+only in leaf continuation. Native supported preparations run four encoders,
+while unsupported preparations run none.
 A `.support.jsonl` companion reconciles actual unsupported-combat reasons per
 seed, plus separate `continuation_reasons`/`continuation_limit_aborts`. CSV
 `continuationLimitAborts` counts unresolved continuation bounds, not combat calls.
 `mctsSupportAborts=unsupportedCombats+continuationLimitAborts`, while
 `imaginedCombats=combatSurrogateSamples+unsupportedCombats`.
 OFF ownership/fallback/search counts are zero;
-the decision count still covers actual nonbattle iterations. For ON, `simulations=configuredBudget*owned+discardedSimulations` and
+the decision count still covers actual nonbattle iterations. For ON, `simulations=configuredBudget*(owned-trivialRootBypasses)+discardedSimulations-savedSimulations` and
 `simulationAttempts=simulations+mctsSupportAborts`. Search timing
 includes adapter construction/destruction and unsupported-root checks, and
 excludes execution of the selected live primitive. The `bestbench` `sec` field

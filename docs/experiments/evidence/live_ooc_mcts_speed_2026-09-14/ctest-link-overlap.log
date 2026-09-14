@@ -1,0 +1,41 @@
+Test project /home/philippherrmann/.codex/worktrees/ba92/sts_lightspeed/build/linux-gcc-release-ccache
+    Start  1: ooc_mcts
+1/8 Test  #1: ooc_mcts ..............................   Passed    0.01 sec
+    Start 81: combat_transition_composed_selftest
+2/8 Test #81: combat_transition_composed_selftest ...   Passed    1.68 sec
+    Start 82: ooc_mcts_parameter_search_selftest
+3/8 Test #82: ooc_mcts_parameter_search_selftest ....   Passed    0.13 sec
+    Start 83: ooc_mcts_gameplay_analysis_selftest
+4/8 Test #83: ooc_mcts_gameplay_analysis_selftest ...   Passed    0.25 sec
+    Start 87: ooc_mcts_adapter
+5/8 Test #87: ooc_mcts_adapter ......................***Failed    0.00 sec
+/home/philippherrmann/.codex/worktrees/ba92/sts_lightspeed/tools/seed_guard.sh: line 147: /home/philippherrmann/.codex/worktrees/ba92/sts_lightspeed/build/linux-gcc-release-ccache/one_combat: Permission denied
+
+    Start 88: combat_transition_native_contract
+6/8 Test #88: combat_transition_native_contract .....   Passed    4.00 sec
+    Start 89: combat_transition_runtime_loader
+7/8 Test #89: combat_transition_runtime_loader ......   Passed    0.04 sec
+    Start 90: ooc_mcts_live_startup
+8/8 Test #90: ooc_mcts_live_startup .................***Failed    0.07 sec
+Traceback (most recent call last):
+  File "/home/philippherrmann/.codex/worktrees/ba92/sts_lightspeed/tools/verify/ooc_mcts_live_startup.py", line 42, in <module>
+    main()
+  File "/home/philippherrmann/.codex/worktrees/ba92/sts_lightspeed/tools/verify/ooc_mcts_live_startup.py", line 36, in main
+    raise AssertionError(f'{name}: rc={result.returncode}\n{result.stdout}')
+AssertionError: default OFF: rc=126
+/home/philippherrmann/.codex/worktrees/ba92/sts_lightspeed/tools/seed_guard.sh: line 147: /home/philippherrmann/.codex/worktrees/ba92/sts_lightspeed/build/linux-gcc-release-ccache/one_combat: Permission denied
+
+
+
+75% tests passed, 2 tests failed out of 8
+
+Label Time Summary:
+core           =   0.01 sec*proc (1 test)
+integration    =   4.11 sec*proc (4 tests)
+
+Total Test time (real) =   6.19 sec
+
+The following tests FAILED:
+	 87 - ooc_mcts_adapter (Failed)                         integration
+	 90 - ooc_mcts_live_startup (Failed)                    integration
+Errors while running CTest

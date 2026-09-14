@@ -1,0 +1,20 @@
+deterministic selected=2
+  action=1 prior=0.5 N=147 Q=0.25
+  action=2 prior=0.5 N=9853 Q=0.75
+  simulations=10000 decision_nodes=225 chance_nodes=2 outcome_particles=224 transition_samples=224 leaf_evaluations=0 max_depth_reached=1
+alternating chance selected=0
+  action=0 prior=1 N=20000 Q=0.4916
+  simulations=20000 decision_nodes=284 chance_nodes=1 outcome_particles=283 transition_samples=283 leaf_evaluations=0 max_depth_reached=1
+conditional selected=0
+  action=0 prior=1 N=40000 Q=0.836460000001
+  simulations=40000 decision_nodes=9940 chance_nodes=801 outcome_particles=9939 transition_samples=9939 leaf_evaluations=400 max_depth_reached=2
+  low REST/SMITH samples=3685/1095 high REST/SMITH samples=1097/3662
+misleading prior selected=2
+  action=1 prior=0.999 N=947 Q=0.25
+  action=2 prior=0.001 N=99053 Q=0.75
+  simulations=100000 decision_nodes=693 chance_nodes=2 outcome_particles=692 transition_samples=692 leaf_evaluations=0 max_depth_reached=1
+zero individual prior selected=2
+  action=1 prior=1 N=299 Q=0.25
+  action=2 prior=0 N=9701 Q=0.75
+  simulations=10000 decision_nodes=233 chance_nodes=2 outcome_particles=232 transition_samples=232 leaf_evaluations=0 max_depth_reached=1
+PASS 176 checks

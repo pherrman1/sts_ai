@@ -26,7 +26,7 @@ CombatTransitionPersistentState persistent(const json &j) {
 }
 int main(int argc,char **argv) {
     try {
-        if(argc!=3 && argc!=4)throw std::runtime_error("usage: combat_transition_runtime_probe MODEL FIXTURES");
+        if(argc!=3 && argc!=4)throw std::runtime_error("usage: combat_transition_runtime_probe MODEL FIXTURES [smoke-and-parity]");
         NativeCombatTransitionSampler sampler(argv[1]);const auto &net=sampler.runtime();
         std::mt19937_64 rng(20260914);
         std::ifstream file(argv[2]);if(!file)throw std::runtime_error("fixture file");
@@ -35,6 +35,36 @@ int main(int argc,char **argv) {
             auto j=json::parse(line);auto p=predictor(j.at("predictorInput"));auto pre=persistent(j.at("pre"));
             sts::GameContext gc;applyCombatTransitionState(gc,pre);
             auto support=sampler.support(gc,p);json out={{"supported",support.supported},{"reason",support.reason}};
+            if(argc==4) {
+                using Clock=std::chrono::steady_clock;
+                auto start=Clock::now();auto prepared=sampler.prepare(gc,p);
+                double preparationNs=std::chrono::duration<double,std::nano>(Clock::now()-start).count();
+                if(prepared->support().supported!=support.supported || prepared->support().reason!=support.reason)
+                    throw std::runtime_error("prepared support mismatch");
+                double referenceNs=0,preparedNs=0;int victories=0,deaths=0;
+                constexpr int seeds=32,drawsPerSeed=4;
+                for(int seed=0;seed<seeds;++seed) {
+                    std::mt19937_64 oldRng(20260914+seed),newRng=oldRng;
+                    for(int draw=0;draw<drawsPerSeed;++draw) {
+                        start=Clock::now();auto reference=sampler.sample(gc,p,oldRng);
+                        referenceNs+=std::chrono::duration<double,std::nano>(Clock::now()-start).count();
+                        start=Clock::now();auto sample=prepared->sample(newRng);
+                        preparedNs+=std::chrono::duration<double,std::nano>(Clock::now()-start).count();
+                        if(reference.outcome!=sample.outcome ||
+                            combatTransitionStateJson(reference.rawPost)!=combatTransitionStateJson(sample.rawPost) || oldRng!=newRng)
+                            throw std::runtime_error("prepared sample/state/RNG parity mismatch");
+                        victories+=reference.outcome==CombatRuntimeSample::Outcome::VICTORY;
+                        deaths+=reference.outcome==CombatRuntimeSample::Outcome::DEATH;
+                    }
+                }
+                const int draws=seeds*drawsPerSeed;
+                out["preparedParity"]={{"seeds",seeds},{"drawsPerSeed",drawsPerSeed},{"draws",draws},
+                    {"victory",victories},{"death",deaths},{"fullPersistentStateEqual",true},{"plannerRngPostEqual",true},
+                    {"supportEqual",true},{"preparationNs",preparationNs},{"referenceSampleNs",referenceNs/draws},
+                    {"preparedSampleNs",preparedNs/draws},{"preparedAmortizedNs",(preparationNs+preparedNs)/draws},
+                    {"referenceEncoderCalls",support.supported?draws+3*victories:0},
+                    {"preparedEncoderCalls",support.supported?4:0}};
+            }
             if(support.supported) {
                 out["survival"]=net.survival(p);out["max_hp"]=net.maxHp(p);auto z=net.hpEncoding(p);out["hp_encoding"]=z;
                 int delta=j.value("delta",0),hpClass=j.value("hpClass",160),mask=j.value("mask",0);float fraction=j.value("fraction",.5f);
