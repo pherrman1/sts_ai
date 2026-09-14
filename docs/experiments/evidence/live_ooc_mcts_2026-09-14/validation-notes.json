@@ -1,0 +1,30 @@
+{
+  "pre_gate_smoke_failure": {
+    "status": "INVALID implementation smoke",
+    "completed": 5,
+    "failed": 3,
+    "reason": "Native multi-gold enumeration duplicates GOLD primitive IDs; corrected to leaf/live fallback with unchanged candidates and support."
+  },
+  "original_silver_baseline_canary": {
+    "status": "INVALID executable SHA metadata",
+    "declared_sha": "0c7d932d6231de5d3cd5677d8ddac5d4b023d9d2",
+    "actual_preserved_binary_source_sha": "3057ea79f8a678ba13f9f2ea2b4834850fa2dd87",
+    "correction": "Fresh silver-baseline-corrected-off explicit baseline SHA; same excluded seed; exact OFF parity reproduced after gate."
+  },
+  "analysis_first_attempt": {
+    "status": "FAILED validation before bootstrap",
+    "exit_code": 1,
+    "error": "ValueError: treatment had no ownership or imagined combat samples",
+    "reason": "Incorrect per-run coverage requirement; aggregate-only coverage is the requested contract. Seed970004 owns95 decisions with0 supported combat samples. No gameplay/MCTS/statistical method/decision rule changed."
+  },
+  "independent_review": {
+    "implementation": "PASS before gate including multi-gold repair,focused tests and8-seedsmoke",
+    "statistics": "PASS independent PCG64 exact200000draw reproduction of win/floor CIs,exact discordant p,raw outcomes/trace accounting/effectiveSilver/frozenSHA audit"
+  },
+  "inventory": {
+    "native_adapter_242": "Qualifies the frozen combat boundary only; no live full-game MCTS policy A/B. Reused artifact; no export or training.",
+    "historical_ooc_and_silver_benchmarks": "Different policies,source revisions or seed configurations; no qualifying preserved live-selector evidence exists at baseline because live dispatch was absent.",
+    "eight_seed_smoke": "Implementation-only; excluded from gate."
+  },
+  "remaining_uncertainty": "Root action histories were not recorded; causal explanations for negative gameplay require a separately bounded changed-decision audit. Coverage/depth statistics are descriptive."
+}

@@ -1,0 +1,20 @@
+{
+  "sha": "c705072f50e12892dd02a6da6dc1e39305b6839e",
+  "mcts_implementation_sha": "0c7d932d6231de5d3cd5677d8ddac5d4b023d9d2",
+  "baseline_sha": "3057ea79f8a678ba13f9f2ea2b4834850fa2dd87",
+  "binary": "/home/philippherrmann/Documents/sts/sts_lightspeed/build/linux-gcc-release/one_combat",
+  "binary_sha256": "97e275b9b0c191ae9a7daf5a07ea3187a38f85350ce43eb92b9d9dabf44d218b",
+  "combat_artifact": "/home/philippherrmann/sts_sweep/runs/combat-transition-runtime-native-20260914/combat_transition_v1.native",
+  "combat_artifact_sha256": "f9520a14b1fc42e2a22840c0c2cab0b13ebd8ab6285b5c943662f5e0e9cd9233",
+  "frozen_utc": "2026-09-14T08:49:42.216359+00:00",
+  "backend": "silver",
+  "budget": 1000,
+  "mcts_simulations": 128,
+  "gate_seeds": [
+    970000,
+    970031
+  ],
+  "bootstrap_samples": 200000,
+  "bootstrap_rng_seed": 20260914,
+  "pre_gate_review": "PASS independent implementation review, tests3/3, startup11/11, OFF parity8/8, ON smoke8/8, Silver canaries"
+}

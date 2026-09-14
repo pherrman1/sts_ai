@@ -59,8 +59,8 @@ def analyze(control_path, treatment_path, bootstrap_samples=200000):
                 raise ValueError('ownership trace does not reconcile')
             if simulations != owned * 128 or int(row['combatSurrogateSamples']) > int(row['transitionSamples']) or not 0 <= int(row['maxDepth']) <= 32 or int(row['realCombats']) <= 0:
                 raise ValueError('search/real-combat trace does not reconcile')
-        if int(on['mctsOwned']) == 0 or int(on['combatSurrogateSamples']) == 0:
-            raise ValueError('treatment had no ownership or imagined combat samples')
+    if not sum(int(row['mctsOwned']) for row in traces[1].values()) or not sum(int(row['combatSurrogateSamples']) for row in traces[1].values()):
+        raise ValueError('treatment arm had no ownership or imagined combat samples')
     rng = np.random.Generator(np.random.PCG64(20260914))
     indices = rng.integers(0, 32, size=(bootstrap_samples, 32))
     differences = {}

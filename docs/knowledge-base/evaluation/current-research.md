@@ -24,6 +24,20 @@ No research line is currently authorized as the active priority.
 
 ## Completed recent line
 
+### Live OOC MCTS paired Silver gameplay gate
+
+**`OOC_MCTS_WINRATE_DOWN`** in the first fixed 32-seed paired Act-3 engineering
+A/B, with normal real Silver combat in both arms. The opt-in MCTS implementation
+uses the qualified native combat sampler only in detached imagination and is
+OFF by default. The primary paired win-rate CI is strictly negative. Preserve
+the frozen implementation and return for independent review; a bounded audit of
+changed strategic choices and native leaf/boundary behavior should precede any
+new experiment. No parameter sweep or automatic additional seeds are authorized.
+This is actual gameplay evidence under copied hidden noncombat RNG, with no
+unbiased-planning or deployment qualification claim. See
+[ledger-06 §243](../../experiments/ledger-06.md) and the
+[full paired Silver evidence](../../experiments/evidence/live_ooc_mcts_2026-09-14.md).
+
 ### Whole-combat transition model v1
 
 The corrected offline comparison on the existing 25,000-source
@@ -155,7 +169,8 @@ Only HP exposure/bootstrap was recomputed; teacher NLL reproduces exactly and
 all artifact/data hashes match. No models, seeds, transitions or gameplay change.
 Original TEST support is 32,164/51,441 (62.526001%).
 
-Next separately scoped work: native runtime adapter / OOC MCTS integration.
+The native runtime adapter is now qualified for the combat boundary (§242);
+the opt-in live OOC MCTS engineering gameplay gate is recorded in §243.
 Offline composition qualification does not establish runtime or gameplay
 performance. Full evidence and limitations are in the
 [executed evidence](../../experiments/evidence/composed_transition_2026-09-14.md)

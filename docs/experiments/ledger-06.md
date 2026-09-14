@@ -7397,3 +7397,51 @@ encoders dominate (~1.08 ms/component); no optimization was attempted.
 
 [Full evidence and commands](evidence/native_combat_adapter_2026-09-14.md),
 [artifact hashes and raw metrics](evidence/native_combat_adapter_2026-09-14.json).
+
+
+## §243 First live OOC MCTS paired Silver gameplay gate (2026-09-14)
+
+**OOC_MCTS_WINRATE_DOWN.** Control V4 full one-ply stack won 21/32; opt-in live
+OOC MCTS won 10/32 on fresh paired seeds 970000..970031, A0, Act-3 stop, no keys.
+Both arms played **Silver real combat** at 1000 exact-root simulations, allocated
+reuse cap 32768, adaptive/direct leaf OFF, four OpenMP threads, same frozen binary
+and SHA `c705072f50e12892dd02a6da6dc1e39305b6839e`. The user changed the original
+cheap Searcher2 plan to Silver before any decision-bearing seed ran.
+Baseline `3057ea79f8a678ba13f9f2ea2b4834850fa2dd87`; independently reviewed MCTS
+implementation `0c7d932d6231de5d3cd5677d8ddac5d4b023d9d2`.
+
+Paired win delta -34.375pp, bootstrap 95% CI [-53.125,-15.625]pp; one treatment-only
+win, twelve control-only wins, nineteen same-result seeds; exact two-sided
+discordant binomial p=.00341796875 descriptive. Mean floor delta -6.28125,
+CI [-10.46875,-2.3125]; runtime 4.5403234x. Classification uses only the primary
+win CI. Bootstrap 200000 paired draws, PCG64 seed 20260914, percentile interval.
+
+Frozen qualified native combat artifact SHA256
+`f9520a14b1fc42e2a22840c0c2cab0b13ebd8ab6285b5c943662f5e0e9cd9233` is used only
+inside imagination. Real selected primitive actions execute once; real BATTLE
+returns to ordinary combat. Native V4 artifact `ooc_strategic_tok_final.native`,
+full REST/EVENT/SHOP/TREASURE/BOSS_RELIC gates, margin 1.0, native floor/win and
+other combat configuration match between arms. MCTS defaults cPuct 1.5, k 2, alpha .5,
+maxDepth 32, 128 simulations; independent indexed SplitMix64 RNG; no tuning.
+Mean 123.40625 owned decisions/run, fallback 18.274%, 980.4375 combat samples/run,
+15796 simulations/run, 15771 leaf evaluations/run; max depth 3 in 32/32 runs;
+MCTS 8.8288376 wall seconds/run, 82.1308% of per-run elapsed time. All trace
+accounting reconciles and Silver bridge failure counters are zero.
+
+Eight implementation seeds 969992..969999: exact OFF parity across all eight
+non-timing fields, repaired ON smoke 8/8 with surrogate sampling and actual
+combats. Duplicate native GOLD IDs now use leaf/live fallback; candidates and
+surrogate support unchanged. Silver excluded-seed canaries pass. Invalid first
+smoke, mistagged baseline canary and an overly strict per-run analysis coverage
+check are preserved/documented. The final coverage-validation correction changes
+no MCTS/gameplay/bootstrap/classification semantics. Focused CTests 3/3,
+qualified startup cases 11/11, independent implementation/statistical review pass.
+
+MCTS reduced actual paired gameplay under the copied-RNG planning environment.
+Copied hidden noncombat RNG still prevents unbiased planning/fairness or
+deployment claims. Keep MCTS OFF; return for review and bounded changed-decision/
+leaf investigation before any new budget or tuning experiment. No automatic
+follow-up seeds. Knowledge impact: live contracts/configuration/code routing
+updated in maintained KB; research status closed with this negative evidence.
+[Full evidence/environment/commands](evidence/live_ooc_mcts_2026-09-14.md),
+[raw paired results](evidence/live_ooc_mcts_2026-09-14/result.json).

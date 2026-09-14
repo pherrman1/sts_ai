@@ -1,0 +1,198 @@
+{
+  "classification": "OOC_MCTS_WINRATE_DOWN",
+  "seeds": [
+    970000,
+    970001,
+    970002,
+    970003,
+    970004,
+    970005,
+    970006,
+    970007,
+    970008,
+    970009,
+    970010,
+    970011,
+    970012,
+    970013,
+    970014,
+    970015,
+    970016,
+    970017,
+    970018,
+    970019,
+    970020,
+    970021,
+    970022,
+    970023,
+    970024,
+    970025,
+    970026,
+    970027,
+    970028,
+    970029,
+    970030,
+    970031
+  ],
+  "benchmark_sha": "c705072f50e12892dd02a6da6dc1e39305b6839e",
+  "control_wins": 21,
+  "treatment_wins": 10,
+  "treatment_only_wins": 1,
+  "control_only_wins": 12,
+  "same_result_seeds": 19,
+  "win_difference_pp": -34.375,
+  "win_difference_95_ci_pp": [
+    -53.125,
+    -15.625
+  ],
+  "exact_two_sided_discordant_binomial_p": 0.00341796875,
+  "paired_outcomes": {
+    "won": {
+      "control_mean": 0.65625,
+      "treatment_mean": 0.3125,
+      "treatment_minus_control": -0.34375,
+      "paired_bootstrap_95_ci": [
+        -0.53125,
+        -0.15625
+      ]
+    },
+    "floor": {
+      "control_mean": 48.0,
+      "treatment_mean": 41.71875,
+      "treatment_minus_control": -6.28125,
+      "paired_bootstrap_95_ci": [
+        -10.46875,
+        -2.3125
+      ]
+    },
+    "hpEnd": {
+      "control_mean": 33.625,
+      "treatment_mean": 12.3125,
+      "treatment_minus_control": -21.3125,
+      "paired_bootstrap_95_ci": [
+        -31.6875,
+        -10.8125
+      ]
+    },
+    "fightsLost": {
+      "control_mean": 0.3125,
+      "treatment_mean": 0.6875,
+      "treatment_minus_control": 0.375,
+      "paired_bootstrap_95_ci": [
+        0.1875,
+        0.5625
+      ]
+    },
+    "deathCombat": {
+      "control_mean": 6.25,
+      "treatment_mean": 13.4375,
+      "treatment_minus_control": 7.1875,
+      "paired_bootstrap_95_ci": [
+        3.34375,
+        11.0625
+      ]
+    },
+    "sec": {
+      "control_mean": 2.3676119062499996,
+      "treatment_mean": 10.749723750000001,
+      "treatment_minus_control": 8.38211184375,
+      "paired_bootstrap_95_ci": [
+        6.74537632109375,
+        10.026768396875
+      ]
+    }
+  },
+  "runtime_ratio_of_mean_per_run_seconds": 4.540323404196009,
+  "diagnostics": {
+    "mean_oocDecisions_per_run": 151.0,
+    "mean_mctsOwned_per_run": 123.40625,
+    "mean_mctsFallback_per_run": 27.59375,
+    "mean_simulations_per_run": 15796.0,
+    "mean_transitionSamples_per_run": 12764.65625,
+    "mean_combatSurrogateSamples_per_run": 980.4375,
+    "mean_leafEvaluations_per_run": 15771.0,
+    "mean_mctsWallSec_per_run": 8.8288376156875,
+    "mean_mctsCpuSec_per_run": 8.8284433165,
+    "mean_realCombats_per_run": 21.9375,
+    "fallback_rate": 0.18274006622516556,
+    "max_depth_distribution": {
+      "3": 32
+    },
+    "mcts_fraction_of_total_run_wall_time": 0.8213083257779066
+  },
+  "both_dead_seeds": [
+    970003,
+    970004,
+    970005,
+    970009,
+    970012,
+    970014,
+    970018,
+    970027,
+    970031
+  ],
+  "deathCombat_note": "Raw paired mean includes -1 survivor sentinel; also identify both-dead seeds for conditional comparison.",
+  "bootstrap": {
+    "replicates": 200000,
+    "rng": "NumPy PCG64",
+    "seed": 20260914,
+    "interval": "paired seed percentile 2.5/97.5 quantiles, linear interpolation"
+  },
+  "configurations": [
+    {
+      "STS_FAIR": "1",
+      "STS_SEARCHER3": "0",
+      "STS_SILVER_SEARCH": "1",
+      "STS_SILVER_EXACT_ROOT_BUDGETS": "1",
+      "STS_SILVER_REUSE_CAP_MODE": "allocated",
+      "STS_SILVER_ADAPTIVE": "0",
+      "STS_SILVER_VNET_LEAF_DIRECT": "0",
+      "STS_SILVER_TELEMETRY": "1",
+      "STS_NATIVE_OOC": "1",
+      "STS_OOC_STRATEGIC_TOK_NN": "selfplay/models/ooc_strategic_tok_final.native",
+      "STS_OOC_STRATEGIC_REST": "1",
+      "STS_OOC_STRATEGIC_EVENT": "1",
+      "STS_OOC_STRATEGIC_SHOP": "1",
+      "STS_OOC_STRATEGIC_TREASURE": "1",
+      "STS_OOC_STRATEGIC_BOSS_RELIC": "1",
+      "STS_OOC_STRATEGIC_MARGIN": "1.0",
+      "STS_STOP_AFTER_ACT": "3",
+      "STS_COLLECT_KEYS": "0",
+      "OMP_NUM_THREADS": "4",
+      "STS_EXECUTABLE_GIT_SHA": "c705072f50e12892dd02a6da6dc1e39305b6839e",
+      "STS_OOC_MCTS": "0",
+      "STS_OOC_MCTS_TRACE": "/home/philippherrmann/Documents/sts/sts_lightspeed/build/ooc-mcts-gate/control.csv.mcts.csv"
+    },
+    {
+      "STS_FAIR": "1",
+      "STS_SEARCHER3": "0",
+      "STS_SILVER_SEARCH": "1",
+      "STS_SILVER_EXACT_ROOT_BUDGETS": "1",
+      "STS_SILVER_REUSE_CAP_MODE": "allocated",
+      "STS_SILVER_ADAPTIVE": "0",
+      "STS_SILVER_VNET_LEAF_DIRECT": "0",
+      "STS_SILVER_TELEMETRY": "1",
+      "STS_NATIVE_OOC": "1",
+      "STS_OOC_STRATEGIC_TOK_NN": "selfplay/models/ooc_strategic_tok_final.native",
+      "STS_OOC_STRATEGIC_REST": "1",
+      "STS_OOC_STRATEGIC_EVENT": "1",
+      "STS_OOC_STRATEGIC_SHOP": "1",
+      "STS_OOC_STRATEGIC_TREASURE": "1",
+      "STS_OOC_STRATEGIC_BOSS_RELIC": "1",
+      "STS_OOC_STRATEGIC_MARGIN": "1.0",
+      "STS_STOP_AFTER_ACT": "3",
+      "STS_COLLECT_KEYS": "0",
+      "OMP_NUM_THREADS": "4",
+      "STS_EXECUTABLE_GIT_SHA": "c705072f50e12892dd02a6da6dc1e39305b6839e",
+      "STS_OOC_MCTS": "1",
+      "STS_OOC_MCTS_TRACE": "/home/philippherrmann/Documents/sts/sts_lightspeed/build/ooc-mcts-gate/treatment.csv.mcts.csv",
+      "STS_OOC_MCTS_SIMS": "128",
+      "STS_OOC_MCTS_COMBAT_MODEL": "/home/philippherrmann/sts_sweep/runs/combat-transition-runtime-native-20260914/combat_transition_v1.native"
+    }
+  ],
+  "input_sha256": {
+    "build/ooc-mcts-gate/control.csv": "55595d497e229ca14a4f457308c977133962250c092bdd57114752c4744a94a6",
+    "build/ooc-mcts-gate/treatment.csv": "0c11694f4ef484d7f2f523c5ee301ea5983a260937dc903212f915784d6c40f9"
+  },
+  "known_limitation": "Copied hidden noncombat RNG can bias imagined futures. Actual gameplay uses real combat in both arms; this engineering policy A/B does not qualify unbiased MCTS values or deployment."
+}
