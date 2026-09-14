@@ -29,7 +29,9 @@ def main():
         ('malformed simulations', {'STS_OOC_MCTS': '1', 'STS_OOC_MCTS_SIMS': '-1'}, False, 'positive integer'),
     ]
     if args.artifact:
-        cases.append(('ON loads qualified artifact', {'STS_OOC_MCTS': '1', 'STS_OOC_MCTS_SIMS': '128', 'STS_OOC_MCTS_COMBAT_MODEL': str(Path(args.artifact).resolve())}, True, 'live OOC MCTS ON'))
+        cases.append(('ON loads qualified artifact', {'STS_OOC_MCTS': '1', 'STS_OOC_MCTS_SIMS': '128', 'STS_OOC_MCTS_COMBAT_MODEL': str(Path(args.artifact).resolve())}, True, '"earlyStop":true'))
+        cases.append(('ON rollback disables stopping', {'STS_OOC_MCTS': '1', 'STS_OOC_MCTS_EARLY_STOP': '0', 'STS_OOC_MCTS_COMBAT_MODEL': str(Path(args.artifact).resolve())}, True, '"earlyStop":false'))
+        cases.append(('ON rejects malformed stopping', {'STS_OOC_MCTS': '1', 'STS_OOC_MCTS_EARLY_STOP': 'true', 'STS_OOC_MCTS_COMBAT_MODEL': str(Path(args.artifact).resolve())}, False, 'must be 0 or 1'))
     for name, override, success, message in cases:
         result = subprocess.run(command, env=env | override, cwd=root, text=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, timeout=120)
         if (result.returncode == 0) != success or message not in result.stdout:

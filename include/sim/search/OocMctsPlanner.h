@@ -48,6 +48,9 @@ struct OocMctsConfig {
     // Diagnostic: force full budget and record first strict visit lock, even if
     // support later aborts. Does not qualify the non-aborting guarantee.
     bool observeRootLock = false;
+    // Explicit policy tradeoff: a strict visit lock may skip a later abort and
+    // its fallback. This flag is not a provider support guarantee.
+    bool allowUnqualifiedRootStop = false;
 };
 struct OocMctsMetrics {
     std::uint64_t simulations = 0, simulationAttempts = 0, decisionNodes = 0, chanceNodes = 0;

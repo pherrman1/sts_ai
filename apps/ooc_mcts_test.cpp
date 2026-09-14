@@ -96,7 +96,14 @@ void tests() {
     require(!lockFull.metrics.earlyStopLockedRoot && lockFull.metrics.simulations == 100
         && lockFull.metrics.savedSimulations == 0,
         "default potentially aborting model forbids locked-root stopping");
+    auto unqualifiedConfig=lockConfig; unqualifiedConfig.allowUnqualifiedRootStop=true;
+    auto unqualifiedModel=deterministic();
+    const auto unqualified=OocMctsPlanner(unqualifiedConfig).search(unqualifiedModel,0,100);
+    require(!unqualifiedModel.searchGuaranteedNonAborting() && unqualified.metrics.simulations==52
+        && unqualified.metrics.savedSimulations==48 && unqualified.selectedAction==lockFull.selectedAction,
+        "explicit policy override enables strict visit stop without claiming support guarantee");
     auto observeConfig = lockConfig; observeConfig.observeRootLock = true;
+    observeConfig.allowUnqualifiedRootStop=true;
     auto observeModel = deterministic(); observeModel.guaranteedNonAborting = true;
     const auto observed = OocMctsPlanner(observeConfig).search(observeModel,0,100);
     require(observed.metrics.simulations == 100 && !observed.metrics.earlyStopLockedRoot
@@ -187,6 +194,17 @@ void tests() {
         && observedDiscarded.metrics.hypotheticalRemainingSimulations == 9
         && !observedDiscarded.metrics.savedSimulations,
         "hypothetical lock never hides later support abort or credits actual savings");
+    LateAbort overriddenAbort;
+    overriddenAbort.actions={{0,{{1,1}}}};
+    overriddenAbort.transition=[](auto,auto,auto &) { return 1; };
+    const auto skippedAbort=OocMctsPlanner(unqualifiedConfig).search(overriddenAbort,0,10);
+    require(!skippedAbort.aborted && skippedAbort.selectedAction==1
+        && skippedAbort.metrics.simulations==1 && skippedAbort.metrics.savedSimulations==9,
+        "authorized early stop deliberately skips a later abort and fallback");
+    auto unqualifiedQ=unqualifiedConfig; unqualifiedQ.selectByMeanQ=true;
+    auto unqualifiedQModel=deterministic();
+    require(OocMctsPlanner(unqualifiedQ).search(unqualifiedQModel,0,100).metrics.simulations==100,
+        "unqualified override never applies visit stopping to mean-Q roots");
     auto observedQ = observeConfig; observedQ.selectByMeanQ = true;
     auto observedQModel = deterministic();
     require(!OocMctsPlanner(observedQ).search(observedQModel,0,100).hypotheticalLockedAction,

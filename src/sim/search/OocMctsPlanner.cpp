@@ -167,7 +167,7 @@ OocMctsResult OocMctsPlanner::search(OocGenerativeModel &model, OocStateId root,
         search.wideningLimits.push_back(chanceWideningLimit(n));
     DecisionNode node(root);
     const bool mayStopLocked = !config.observeRootLock && !config.selectByMeanQ
-        && model.searchGuaranteedNonAborting();
+        && (config.allowUnqualifiedRootStop || model.searchGuaranteedNonAborting());
     std::chrono::steady_clock::time_point lockTime;
     search.metrics.decisionNodes = 1;
     OocMctsResult result;

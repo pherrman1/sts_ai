@@ -374,6 +374,7 @@ void applyLiveControl(const std::string &key, const std::string &value,
     if (key == "STS_OOC_MCTS_PRIOR") opts.uniformPrior = choice("policy", "uniform");
     else if (key == "STS_OOC_MCTS_LEAF_VALUE") opts.constantLeaf = choice("native", "constant");
     else if (key == "STS_OOC_MCTS_LEAF_POLICY") opts.uniformLeafPolicy = choice("v4", "uniform");
+    else if (key == "STS_OOC_MCTS_EARLY_STOP") config.allowUnqualifiedRootStop = choice("0", "1");
     else if (key == "STS_OOC_MCTS_ROOT_SELECTION") config.selectByMeanQ = choice("visits", "q");
     else if (key == "STS_OOC_MCTS_TEMPERATURE") { const double x = number(); if (x <= 0) invalid(); opts.priorTemperature = x; }
     else if (key == "STS_OOC_MCTS_CPUCT") { const double x = number(); if (x < 0) invalid(); config.cPuct = x; }
@@ -384,7 +385,7 @@ void applyLiveControl(const std::string &key, const std::string &value,
     else invalid();
 }
 const char *const liveControlKeys[] = {
-    "STS_OOC_MCTS_PRIOR", "STS_OOC_MCTS_TEMPERATURE", "STS_OOC_MCTS_CPUCT",
+    "STS_OOC_MCTS_EARLY_STOP", "STS_OOC_MCTS_PRIOR", "STS_OOC_MCTS_TEMPERATURE", "STS_OOC_MCTS_CPUCT",
     "STS_OOC_MCTS_WIDEN_K", "STS_OOC_MCTS_WIDEN_ALPHA", "STS_OOC_MCTS_MAX_DEPTH",
     "STS_OOC_MCTS_ROOT_SELECTION", "STS_OOC_MCTS_LEAF_VALUE",
     "STS_OOC_MCTS_LEAF_COMBATS", "STS_OOC_MCTS_LEAF_POLICY"
@@ -442,6 +443,7 @@ void configureLiveOocMcts() {
         if (!liveSimulations) throw std::runtime_error("STS_OOC_MCTS_SIMS must be positive");
     }
     liveConfig = {}; liveOptions = {true};
+    liveConfig.allowUnqualifiedRootStop = true; // May skip later aborts; provider guarantee remains false.
     for (const char *key : liveControlKeys)
         if (const char *value = std::getenv(key)) applyLiveControl(key, value, liveConfig, liveOptions);
     if (const char *trace = std::getenv("STS_OOC_MCTS_ROOT_LOCK_TRACE")) liveRootLockTrace = trace;
@@ -460,6 +462,7 @@ void configureLiveOocMcts() {
         << " temperature=" << liveOptions.priorTemperature << " cpuct=" << liveConfig.cPuct
         << " widen_k=" << liveConfig.wideningK << " widen_alpha=" << liveConfig.wideningAlpha
         << " max_depth=" << liveConfig.maxDepth << " root_selection=" << (liveConfig.selectByMeanQ ? "q" : "visits")
+        << " early_stop=" << liveConfig.allowUnqualifiedRootStop
         << " leaf_value=" << (liveOptions.constantLeaf ? "constant" : "native")
         << " leaf_combats=" << liveOptions.leafCombats << " leaf_policy=" << (liveOptions.uniformLeafPolicy ? "uniform" : "v4")
         << "]\n";
@@ -467,7 +470,8 @@ void configureLiveOocMcts() {
         << "\",\"temperature\":" << liveOptions.priorTemperature << ",\"cPuct\":" << liveConfig.cPuct
         << ",\"wideningK\":" << liveConfig.wideningK << ",\"wideningAlpha\":" << liveConfig.wideningAlpha
         << ",\"maxDepth\":" << liveConfig.maxDepth << ",\"rootSelection\":\"" << (liveConfig.selectByMeanQ ? "q" : "visits")
-        << "\",\"leafValue\":\"" << (liveOptions.constantLeaf ? "constant" : "native")
+        << "\",\"earlyStop\":" << (liveConfig.allowUnqualifiedRootStop ? "true" : "false")
+        << ",\"leafValue\":\"" << (liveOptions.constantLeaf ? "constant" : "native")
         << "\",\"leafCombats\":" << liveOptions.leafCombats << ",\"leafPolicy\":\"" << (liveOptions.uniformLeafPolicy ? "uniform" : "v4")
         << "\",\"simulations\":" << liveSimulations << "}\n";
     std::cout.precision(precision);
@@ -848,12 +852,16 @@ void oocMctsAdapterSelfTest() {
     }
     {
         OocMctsConfig parsed; OocAdapterOptions opts{true};
+        applyLiveControl("STS_OOC_MCTS_EARLY_STOP","1",parsed,opts);
+        require(parsed.allowUnqualifiedRootStop,"explicit early-stop enable parsed");
+        applyLiveControl("STS_OOC_MCTS_EARLY_STOP","0",parsed,opts);
+        require(!parsed.allowUnqualifiedRootStop,"early-stop rollback parsed");
         applyLiveControl("STS_OOC_MCTS_ROOT_SELECTION","q",parsed,opts);
         applyLiveControl("STS_OOC_MCTS_LEAF_COMBATS","3",parsed,opts);
         applyLiveControl("STS_OOC_MCTS_CPUCT","0",parsed,opts);
         require(parsed.selectByMeanQ && parsed.cPuct == 0 && opts.leafCombats == 3, "accepted bounded knobs");
         for (const auto &invalid : std::vector<std::pair<std::string,std::string>>{
-            {"STS_OOC_MCTS_PRIOR","none"},{"STS_OOC_MCTS_TEMPERATURE","0"},
+            {"STS_OOC_MCTS_EARLY_STOP","true"},{"STS_OOC_MCTS_EARLY_STOP","2"},{"STS_OOC_MCTS_PRIOR","none"},{"STS_OOC_MCTS_TEMPERATURE","0"},
             {"STS_OOC_MCTS_CPUCT","-1"},{"STS_OOC_MCTS_WIDEN_K","nan"},
             {"STS_OOC_MCTS_WIDEN_ALPHA","1"},{"STS_OOC_MCTS_MAX_DEPTH","33"},
             {"STS_OOC_MCTS_MAX_DEPTH","2.5"},{"STS_OOC_MCTS_LEAF_COMBATS","2"},
@@ -1434,6 +1442,8 @@ void oocMctsAdapterSelfTest() {
     PathHistory wheelPath; wheelPath.update(wheel);
     const auto wheelCandidates=v4CandidateActions(wheel);
     require(wheelCandidates.size()==1,"sole wheel candidate fixture");
+    const auto savedEarlyStop=liveConfig.allowUnqualifiedRootStop;
+    liveConfig.allowUnqualifiedRootStop=false; // Verify rollback preserves legacy fallback/RNG.
     OocGameContextModel wheelModel(wheel,wheelPath,liveSampler,liveOptions);
     const auto wheelSearch=OocMctsPlanner(liveConfig).search(wheelModel,0,128);
     require(!wheelModel.searchGuaranteedNonAborting() && wheelSearch.aborted
@@ -1459,6 +1469,7 @@ void oocMctsAdapterSelfTest() {
     require(wheelAgent.rng==wheelOracleAgent.rng && wheelAgent.rng!=agentBefore
         && test::oocStateFingerprint(wheel)==test::oocStateFingerprint(wheelOracle),
         "unsafe sole wheel dispatch preserves ordered fallback state and agent RNG");
+    liveConfig.allowUnqualifiedRootStop=savedEarlyStop;
     struct QualifiedSoleRoot final : OocGenerativeModel {
         bool searchGuaranteedNonAborting() const override { return true; }
         std::optional<double> terminalValue(OocStateId) const override { return {}; }
