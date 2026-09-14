@@ -60,18 +60,19 @@ struct Search {
     }
     double evaluate(DecisionNode &node, std::uint32_t depth, bool root = false) {
         metrics.maxDepthReached = std::max(metrics.maxDepthReached, depth);
+        metrics.depthSum += depth;
         ++node.visits;
         if (auto value = model.terminalValue(node.state)) return checkedValue(*value);
         if (model.isLeafBoundary(node.state) || depth == config.maxDepth) {
             ++metrics.leafEvaluations;
-            return checkedValue(model.leafValue(node.state));
+            return checkedValue(model.evaluateLeaf(node.state, rng));
         }
         if (!node.expanded) {
             expand(node);
             // Root expands before action selection; new downstream leaves stop.
             if (!root) {
                 ++metrics.leafEvaluations;
-                return checkedValue(model.leafValue(node.state));
+                return checkedValue(model.evaluateLeaf(node.state, rng));
             }
         }
         ChanceNode *chosen = nullptr;
@@ -94,7 +95,11 @@ struct Search {
         auto &chance = *chosen;
         ++chance.visits;
         DecisionNode *next;
-        if (chance.particles.size() < planner.chanceWideningLimit(chance.visits)) {
+        if (!chance.particles.empty() && model.isDeterministicTransition(node.state, chance.action.id)) {
+            next = chance.particles.front().get();
+            ++metrics.particleRevisits;
+            ++metrics.deterministicRevisits;
+        } else if (chance.particles.size() < planner.chanceWideningLimit(chance.visits)) {
             auto state = model.sampleSuccessor(node.state, chance.action.id, rng);
             ++metrics.transitionSamples;
             chance.particles.push_back(std::make_unique<DecisionNode>(state));
@@ -102,6 +107,7 @@ struct Search {
             ++metrics.decisionNodes;
             next = chance.particles.back().get();
         } else {
+            ++metrics.particleRevisits;
             std::uniform_int_distribution<std::size_t> uniform(0, chance.particles.size()-1);
             next = chance.particles[uniform(rng)].get();
         }

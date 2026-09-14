@@ -92,6 +92,13 @@ void runFullRunOocPolicyStep(GameContext &gc, search::ScumSearchAgent2 &agent,
 // map/rewards/events/campfires/shops via the ordered OOC policy chain).
 RunResult runFullRunOOC(std::uint64_t seed, int sims, int asc, bool restV, bool shopV,
                         bool e2cCapture) {
+    if (one_combat::liveOocMctsEnabled()) {
+        if (sims != 10000 || !search::silverLiveBackendInstalled()
+            || !search::silverLiveExactRootBudgets() || search::silverLiveAdaptiveEnabled()
+            || search::silverLiveReuseCapMode() != "allocated")
+            throw std::runtime_error("live OOC MCTS requires ordinary exact-10k Silver real combat");
+        if (e2cCapture) throw std::runtime_error("live OOC MCTS does not support combat corpus capture");
+    }
     vDisconnect();
     t_oocStrategicTraceRows.clear();
     t_oocStrategicTraceDecision = 0;
@@ -127,6 +134,8 @@ RunResult runFullRunOOC(std::uint64_t seed, int sims, int asc, bool restV, bool 
             const Room battleRoom = gc.curRoom;
             const int battleAct = gc.act;
             agent.simulationCountBase = fightSims(gc, sims);            // difficulty-tiered budget
+            if (one_combat::liveOocMctsEnabled() && agent.simulationCountBase != 10000)
+                throw std::runtime_error("live OOC MCTS real combat budget must remain 10000");
             search::g_potionKeepValue = potionKeepValue(gc);           // dynamic potion-saving
             BattleContext bc{};
             // The isolated Silver backend must enter before BattleContext::init

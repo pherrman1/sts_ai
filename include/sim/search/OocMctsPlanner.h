@@ -22,6 +22,10 @@ public:
     virtual OocStateId sampleSuccessor(OocStateId state, OocActionId action,
                                        std::mt19937_64 &rng) = 0;
     virtual double leafValue(OocStateId state) const = 0;
+    // Detached continuation may need independent draws before checkpoint value.
+    virtual double evaluateLeaf(OocStateId state, std::mt19937_64 &) { return leafValue(state); }
+    // Default preserves independent particles, even for identical sampled IDs.
+    virtual bool isDeterministicTransition(OocStateId, OocActionId) const { return false; }
 };
 struct OocMctsConfig {
     double cPuct = 1.5;
@@ -34,6 +38,7 @@ struct OocMctsConfig {
 struct OocMctsMetrics {
     std::uint64_t simulations = 0, decisionNodes = 0, chanceNodes = 0;
     std::uint64_t outcomeParticles = 0, transitionSamples = 0, leafEvaluations = 0;
+    std::uint64_t particleRevisits = 0, deterministicRevisits = 0, depthSum = 0;
     std::uint32_t maxDepthReached = 0;
 };
 struct OocRootActionStats {

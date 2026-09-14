@@ -34,6 +34,7 @@
 namespace sts::search {
 
 thread_local SilverLiveDiagnostics g_silverLiveDiagnostics {};
+thread_local std::optional<std::uint64_t> g_silverImaginedSeed;
 
 namespace {
 
@@ -952,6 +953,7 @@ private:
 };
 
 std::uint64_t isolatedBattleSeed(const BattleContext &bc) {
+    if (g_silverImaginedSeed) return *g_silverImaginedSeed;
     // One deterministic, public seed for Silver's one-RNG *battle* model.
     // It must stay constant through the battle: Silver equalForSearch includes
     // BattleContext::seed and SearchAgent reroots into the selected child.
@@ -1031,15 +1033,15 @@ void runSilverCombat(ScumSearchAgent2 &agent, GameContext &gc, BattleContext &bc
     // BattleSearcher and reroots across all subsequent real decisions.
     auto silverSession = silver_bridge::makeSilverSearchSession();
     const std::uint64_t silverBattleSeed = isolatedBattleSeed(bc);
-    const bool collectScalingDiagnostics = !g_silverLiveOptions.scalingDiagnosticFile.empty();
-    const bool collectStickyQuality = !g_silverLiveOptions.stickyQualityFile.empty();
-    const bool collectRootDiagnostics = !g_silverLiveOptions.rootDiagnosticFile.empty();
-    const bool collectLeafVNet = !g_silverLiveOptions.leafVNetLogFile.empty();
-    const bool collectLeafCorpus = !g_silverLiveOptions.leafCorpusFile.empty();
+    const bool collectScalingDiagnostics = !g_silverImaginedSeed && !g_silverLiveOptions.scalingDiagnosticFile.empty();
+    const bool collectStickyQuality = !g_silverImaginedSeed && !g_silverLiveOptions.stickyQualityFile.empty();
+    const bool collectRootDiagnostics = !g_silverImaginedSeed && !g_silverLiveOptions.rootDiagnosticFile.empty();
+    const bool collectLeafVNet = !g_silverImaginedSeed && !g_silverLiveOptions.leafVNetLogFile.empty();
+    const bool collectLeafCorpus = !g_silverImaginedSeed && !g_silverLiveOptions.leafCorpusFile.empty();
     const bool directLeafVNet = g_silverLiveOptions.leafVNetDirect;
     const bool blendLeafVNet = g_silverLiveOptions.leafVNetBlendEnabled
         && g_silverLiveOptions.leafVNetBlend > 0.0;
-    const bool emitTelemetry = std::getenv("STS_SILVER_TELEMETRY")
+    const bool emitTelemetry = !g_silverImaginedSeed && std::getenv("STS_SILVER_TELEMETRY")
         && std::atoi(std::getenv("STS_SILVER_TELEMETRY")) != 0;
     // Aggregate reroot-cause counters are advertised by STS_SILVER_TELEMETRY,
     // so populate their value-only records even when the authoritative CSV is

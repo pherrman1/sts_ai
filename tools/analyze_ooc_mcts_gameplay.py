@@ -25,12 +25,12 @@ def discordant_pvalue(treatment_only, control_only):
     return min(1.0, 2 * sum(math.comb(n, k) for k in range(min(treatment_only, control_only) + 1)) / 2**n) if n else 1.0
 
 
-def analyze(control_path, treatment_path, bootstrap_samples=200000):
+def analyze(control_path, treatment_path, bootstrap_samples=200000, combat_sims=1000, mcts_sims=128):
     control, treatment = read_rows(control_path), read_rows(treatment_path)
     seeds = list(range(970000, 970032))
     expected = set(seeds)
     if set(control) != expected or set(treatment) != expected:
-        raise ValueError('gate must contain exactly paired fresh seeds 970000..970031')
+        raise ValueError('gate must contain exactly paired seeds 970000..970031')
     traces = [read_rows(Path(str(p) + '.mcts.csv')) for p in (control_path, treatment_path)]
     if any(set(trace) != expected for trace in traces):
         raise ValueError('trace seed accounting mismatch')
@@ -44,21 +44,32 @@ def analyze(control_path, treatment_path, bootstrap_samples=200000):
                        'STS_SILVER_VNET_LEAF_DIRECT': '0', 'STS_SILVER_TELEMETRY': '1'}
     if any(config.get(key) != value for config in configs for key, value in required_silver.items()):
         raise ValueError('frozen Silver configuration mismatch')
-    if configs[1].get('STS_OOC_MCTS_SIMS') != '128':
+    if configs[1].get('STS_OOC_MCTS_SIMS') != str(mcts_sims):
         raise ValueError('frozen treatment MCTS budget mismatch')
     metas = [json.loads(Path(str(p) + '.meta.json').read_text()) for p in (control_path, treatment_path)]
     if metas[0]['config']['executableGitSha'] != metas[1]['config']['executableGitSha']:
         raise ValueError('arm executable SHA mismatch')
     for meta in metas:
-        if meta['sims'] != 1000 or meta['asc'] != 0 or meta['config']['searcher3'] or not meta['config']['silverSearchEnabled'] or meta['config']['effectiveCombatBackend'] != 'silver' or not meta['config']['silverExactRootBudgets'] or not meta['config']['fairPlay']:
+        if meta['sims'] != combat_sims or meta['asc'] != 0 or meta['config']['searcher3'] or not meta['config']['silverSearchEnabled'] or meta['config']['effectiveCombatBackend'] != 'silver' or not meta['config']['silverExactRootBudgets'] or not meta['config']['fairPlay']:
             raise ValueError('actual combat configuration mismatch')
     for off, on in zip((traces[0][s] for s in seeds), (traces[1][s] for s in seeds)):
         for row, enabled in ((off, False), (on, True)):
             decisions, owned, fallback, simulations = [int(row[k]) for k in ('oocDecisions', 'mctsOwned', 'mctsFallback', 'simulations')]
             if (enabled and decisions != owned + fallback) or (not enabled and owned + fallback + simulations != 0):
                 raise ValueError('ownership trace does not reconcile')
-            if simulations != owned * 128 or int(row['combatSurrogateSamples']) > int(row['transitionSamples']) or not 0 <= int(row['maxDepth']) <= 32 or int(row['realCombats']) <= 0:
+            if simulations != owned * mcts_sims or ('imaginedCombats' not in row and int(row['combatSurrogateSamples']) > int(row['transitionSamples'])) or not 0 <= int(row['maxDepth']) <= 32 or int(row['realCombats']) <= 0:
                 raise ValueError('search/real-combat trace does not reconcile')
+    if combat_sims == 10000:
+        for row in traces[1].values():
+            if int(row['imaginedCombats']) != int(row['combatSurrogateSamples']) + int(row['unsupportedCombats']):
+                raise ValueError('imagined support accounting mismatch')
+        reasons_path=Path(str(treatment_path)+'.mcts.csv.support.jsonl')
+        reasons=[json.loads(line) for line in reasons_path.read_text().splitlines()]
+        if len(reasons)!=32 or {r['seed'] for r in reasons}!=expected:
+            raise ValueError('support reason seed accounting mismatch')
+        for row in reasons:
+            if sum(row['reasons'].values())!=int(traces[1][row['seed']]['unsupportedCombats']):
+                raise ValueError('support reason counts do not reconcile')
     if not sum(int(row['mctsOwned']) for row in traces[1].values()) or not sum(int(row['combatSurrogateSamples']) for row in traces[1].values()):
         raise ValueError('treatment arm had no ownership or imagined combat samples')
     rng = np.random.Generator(np.random.PCG64(20260914))
@@ -89,9 +100,11 @@ def main():
     parser.add_argument('control', type=Path)
     parser.add_argument('treatment', type=Path)
     parser.add_argument('output', type=Path)
+    parser.add_argument('--combat-sims',type=int,default=1000)
+    parser.add_argument('--mcts-sims',type=int,default=128)
     args = parser.parse_args()
     assert discordant_pvalue(0, 0) == 1 and discordant_pvalue(1, 1) == 1 and discordant_pvalue(4, 0) == .125
-    result = analyze(args.control, args.treatment)
+    result = analyze(args.control, args.treatment, combat_sims=args.combat_sims, mcts_sims=args.mcts_sims)
     args.output.write_text(json.dumps(result, indent=2) + '\n')
     print(json.dumps(result, indent=2))
 

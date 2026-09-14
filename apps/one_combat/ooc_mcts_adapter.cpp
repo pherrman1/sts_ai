@@ -7,6 +7,9 @@
 #include <time.h>
 #include "../ooc_strategic_tok_net.h"
 #include "run_driver.h"
+#include "combat/BattleContext.h"
+#include "sim/search/SilverLiveBackend.h"
+#include "sim/search/BattleScumSearcher2.h"
 #include "../ooc_test_state.h"
 #include <algorithm>
 #include <cmath>
@@ -42,7 +45,8 @@ std::vector<double> oocPolicyWeights(const std::vector<double> &logits, double t
     return weights;
 }
 OocGameContextModel::OocGameContextModel(const GameContext &gc, const PathHistory &path,
-    std::shared_ptr<const CombatTransitionSampler> sampler) : combatSampler(std::move(sampler)) {
+    std::shared_ptr<const CombatTransitionSampler> sampler, OocAdapterOptions opts)
+    : combatSampler(std::move(sampler)), options(std::move(opts)) {
     if (!winNetOk()) throw std::runtime_error("OOC MCTS requires native v_win");
     if (!g_oocStrategicTokNet.ok) throw std::runtime_error("OOC MCTS requires native V4 policy");
     auto history = path;
@@ -106,12 +110,16 @@ std::vector<sts::search::OocPlannerAction> OocGameContextModel::legalActions(sts
 sts::search::OocStateId OocGameContextModel::sampleSuccessor(sts::search::OocStateId id,
     sts::search::OocActionId action, std::mt19937_64 &rng) {
     if (terminalValue(id) || isLeafBoundary(id)) throw std::runtime_error("OOC MCTS transition from leaf");
+    if (auto cached = deterministic.find({id, action}); cached != deterministic.end()) return cached->second;
     auto actions = v4CandidateActions(state(id));
     auto it = std::find_if(actions.begin(), actions.end(), [&](auto a) { return a.bits == action; });
     if (it == actions.end()) throw std::runtime_error("OOC MCTS illegal action ID");
     auto child = Snapshot{detachedCopy(state(id)), states.at(id).path};
     it->execute(child.gc);
     child.path.update(child.gc);
+    const bool enteredCombat = child.gc.screenState == sts::ScreenState::BATTLE;
+    if (options.checkpointLeaves && enteredCombat) resolveCombat(child, rng);
+    else {
     if (combatSampler && child.gc.screenState == sts::ScreenState::BATTLE) {
         const auto input = captureCombatPredictorInput(child.gc, child.gc.info.encounter,
                                                        potionKeepValue(child.gc));
@@ -133,10 +141,16 @@ sts::search::OocStateId OocGameContextModel::sampleSuccessor(sts::search::OocSta
             }
         }
     }
+    }
+    if (options.checkpointLeaves && !enteredCombat) deterministic[{id, action}] = states.size();
     states.push_back(std::move(child));
     return states.size()-1;
 }
 double OocGameContextModel::leafValue(sts::search::OocStateId id) const {
+    if (options.checkpointLeaves && !terminalValue(id)
+        && state(id).screenState != sts::ScreenState::MAP_SCREEN)
+        throw std::runtime_error("OOC MCTS v_win requires a resolved map checkpoint");
+    if (auto terminal = terminalValue(id)) return *terminal;
     // Native-only seam; its implementation has no server fallback branch.
     auto gc = detachedCopy(state(id));
     struct PathScope {
@@ -146,13 +160,124 @@ double OocGameContextModel::leafValue(sts::search::OocStateId id) const {
     } scope(states.at(id).path);
     return vStateWinNative(gc);
 }
+bool OocGameContextModel::isDeterministicTransition(sts::search::OocStateId id,
+    sts::search::OocActionId action) const { return deterministic.count({id, action}) != 0; }
+void OocGameContextModel::resolveCombat(Snapshot &child, std::mt19937_64 &rng) {
+    ++continuation_.imaginedCombats;
+    const int battleAct = child.gc.act;
+    const auto battleRoom = child.gc.curRoom;
+    bool victory = false;
+    const auto input = captureCombatPredictorInput(child.gc, child.gc.info.encounter, potionKeepValue(child.gc));
+    const auto support = combatSampler ? combatSampler->support(child.gc, input)
+                                     : CombatRuntimeSupport{false, "missing_sampler"};
+    auto reason = support.reason;
+    if (support.supported) {
+        const auto sampled = combatSampler->sample(child.gc, input, rng);
+        if (sampled.outcome != CombatRuntimeSample::Outcome::UNSUPPORTED) {
+            ++combatSamples_;
+            if (sampled.outcome == CombatRuntimeSample::Outcome::DEATH) {
+                child.gc.outcome = sts::GameOutcome::PLAYER_LOSS;
+                return;
+            }
+            applyCombatTransitionState(child.gc, sampled.rawPost);
+            child.gc.regainControl();
+            victory = true;
+        } else reason = "sample_returned_unsupported";
+    }
+    if (!victory) {
+        ++continuation_.unsupportedCombats;
+        ++continuation_.supportReasons[reason.empty() ? "unspecified" : reason];
+        if (!options.unsupportedCombat) throw std::runtime_error("OOC MCTS unsupported combat has no costed continuation");
+        const auto start = std::chrono::steady_clock::now();
+        options.unsupportedCombat(child.gc, rng);
+        continuation_.silverSeconds += std::chrono::duration<double>(std::chrono::steady_clock::now()-start).count();
+        // Live executor leaves its diagnostics available until this accounting.
+        continuation_.silverSimulations += sts::search::g_silverLiveDiagnostics.simulations;
+        victory = child.gc.outcome != sts::GameOutcome::PLAYER_LOSS;
+    }
+    if (victory && g_stopAfterAct > 0 && battleAct == g_stopAfterAct && battleRoom == sts::Room::BOSS)
+        child.gc.outcome = sts::GameOutcome::PLAYER_VICTORY;
+    child.path.update(child.gc);
+}
+namespace {
+// Preserve observers and run-local policy bookkeeping across detached work.
+struct ImaginedScope {
+    const PathHistory *path = t_curPath;
+    std::string rows = std::move(t_oocStrategicTraceRows);
+    int decision = t_oocStrategicTraceDecision;
+    bool shop = t_shopV, tok = t_tokCheckPending;
+    int probeDecision = t_actFightProbeDecisionIdx, probeAction = t_actFightProbeActionIdx,
+        probeFuture = t_actFightProbeFutureIdx;
+    decltype(sts::search::g_onGameActionExecute) observer = std::move(sts::search::g_onGameActionExecute);
+    decltype(sts::search::g_onCombatDecision) combatObserver=std::move(sts::search::g_onCombatDecision);
+    decltype(sts::search::g_onSearchComplete) searchObserver=std::move(sts::search::g_onSearchComplete);
+    decltype(sts::search::g_onSearchComplete3) searchObserver3=std::move(sts::search::g_onSearchComplete3);
+    decltype(sts::g_onBattleExitPersistent) exitObserver=std::move(sts::g_onBattleExitPersistent);
+    sts::search::SilverLiveDiagnostics silver = std::move(sts::search::g_silverLiveDiagnostics);
+    std::optional<std::uint64_t> silverSeed = sts::search::g_silverImaginedSeed;
+    double potion = sts::search::g_potionKeepValue;
+    ImaginedScope() {
+        t_tokCheckPending=false; sts::search::g_onGameActionExecute={};
+        sts::search::g_onCombatDecision={}; sts::search::g_onSearchComplete={};
+        sts::search::g_onSearchComplete3={}; sts::g_onBattleExitPersistent={};
+    }
+    ~ImaginedScope() {
+        t_curPath=path; t_oocStrategicTraceRows=std::move(rows); t_oocStrategicTraceDecision=decision;
+        t_shopV=shop; t_tokCheckPending=tok;
+        t_actFightProbeDecisionIdx=probeDecision; t_actFightProbeActionIdx=probeAction; t_actFightProbeFutureIdx=probeFuture;
+        sts::search::g_onGameActionExecute=std::move(observer);
+        sts::search::g_onCombatDecision=std::move(combatObserver);
+        sts::search::g_onSearchComplete=std::move(searchObserver);
+        sts::search::g_onSearchComplete3=std::move(searchObserver3);
+        sts::g_onBattleExitPersistent=std::move(exitObserver);
+        sts::search::g_silverLiveDiagnostics=std::move(silver);
+        sts::search::g_silverImaginedSeed=silverSeed; sts::search::g_potionKeepValue=potion;
+    }
+};
+void detachedSilverCombat(GameContext &gc, std::mt19937_64 &rng) {
+    using namespace sts::search;
+    if (!silverLiveBackendInstalled() || !silverLiveExactRootBudgets() || silverLiveAdaptiveEnabled())
+        throw std::runtime_error("OOC MCTS detached combat requires ordinary exact-10k Silver");
+    g_silverImaginedSeed=rng();
+    ScumSearchAgent2 agent; agent.simulationCountBase=10000; agent.rng.seed(rng());
+    g_potionKeepValue=potionKeepValue(gc);
+    sts::BattleContext bc;
+    agent.playoutBattle(gc,bc);
+    const auto &d=g_silverLiveDiagnostics;
+    if (bc.outcome == sts::Outcome::UNDECIDED || d.conversionFailures || d.semanticResolutionFailures
+        || d.transactionFailures || d.knowledgeConsistencyFailures)
+        throw std::runtime_error("OOC MCTS detached Silver combat failed");
+    bc.exitBattle(gc);
+}
+}
+double OocGameContextModel::evaluateLeaf(sts::search::OocStateId id, std::mt19937_64 &rng) {
+    if (!options.checkpointLeaves) return leafValue(id);
+    ImaginedScope scope;
+    auto child = Snapshot{detachedCopy(state(id)), states.at(id).path};
+    t_curPath=&child.path;
+    if (child.gc.screenState == sts::ScreenState::BATTLE) ++continuation_.battleLeaves;
+    else if (child.gc.screenState == sts::ScreenState::MAP_SCREEN) ++continuation_.mapLeaves;
+    else ++continuation_.pendingLeaves;
+    ScumSearchAgent2 agent; agent.simulationCountBase=10000; agent.rng.seed(rng());
+    for (int step=0; step<256; ++step) {
+        child.path.update(child.gc);
+        if (child.gc.outcome == sts::GameOutcome::PLAYER_LOSS) return 0;
+        if (child.gc.outcome == sts::GameOutcome::PLAYER_VICTORY) return 1;
+        if (child.gc.screenState == sts::ScreenState::MAP_SCREEN) return vStateWinNative(child.gc);
+        ++continuation_.projectionSteps;
+        if (child.gc.screenState == sts::ScreenState::BATTLE) resolveCombat(child,rng);
+        else runFullRunOocPolicyStep(child.gc,agent,false,true);
+    }
+    throw std::runtime_error("OOC MCTS pending continuation did not reach a checkpoint in 256 steps");
+}
+
 }
 
 namespace one_combat {
 
 namespace {
 bool liveEnabled = false;
-std::uint64_t liveSimulations = 128;
+std::uint64_t liveSimulations = 512;
 std::shared_ptr<const CombatTransitionSampler> liveSampler;
 std::string liveTrace;
 std::mutex liveTraceMutex;
@@ -208,8 +333,10 @@ void configureLiveOocMcts() {
 }
 sts::search::OocMctsResult selectOocMctsAction(const GameContext &gc, const PathHistory &path,
     std::uint64_t seed, std::uint64_t index, std::uint64_t simulations,
-    std::shared_ptr<const CombatTransitionSampler> sampler, std::uint64_t &samples) {
-    OocGameContextModel model(gc, path, std::move(sampler));
+    std::shared_ptr<const CombatTransitionSampler> sampler, std::uint64_t &samples,
+    OocContinuationMetrics *continuation) {
+    ImaginedScope scope;
+    OocGameContextModel model(gc, path, std::move(sampler), {true, detachedSilverCombat});
     samples = 0;
     if (model.terminalValue(0) || model.isLeafBoundary(0)) return {};
     sts::search::OocMctsConfig config;
@@ -217,6 +344,7 @@ sts::search::OocMctsResult selectOocMctsAction(const GameContext &gc, const Path
     auto result = sts::search::OocMctsPlanner(config).search(model, 0, simulations);
     if (!result.selectedAction) throw std::runtime_error("live OOC MCTS missing selected root action");
     samples = model.combatSamples();
+    if (continuation) *continuation = model.continuationMetrics();
     return result;
 }
 bool oocMctsPolicyStep(GameContext &gc, const PathHistory &path, std::uint64_t seed,
@@ -226,7 +354,8 @@ bool oocMctsPolicyStep(GameContext &gc, const PathHistory &path, std::uint64_t s
     const auto wallStart = std::chrono::steady_clock::now();
     const double cpuStart = threadCpuSeconds();
     std::uint64_t samples = 0;
-    const auto result = selectOocMctsAction(gc, path, seed, index, liveSimulations, liveSampler, samples);
+    OocContinuationMetrics continuation;
+    const auto result = selectOocMctsAction(gc, path, seed, index, liveSimulations, liveSampler, samples, &continuation);
     metrics.wallSeconds += std::chrono::duration<double>(std::chrono::steady_clock::now()-wallStart).count();
     metrics.cpuSeconds += threadCpuSeconds()-cpuStart;
     if (!result.selectedAction) { ++metrics.fallback; return false; }
@@ -237,7 +366,16 @@ bool oocMctsPolicyStep(GameContext &gc, const PathHistory &path, std::uint64_t s
     if (action == candidates.end()) throw std::runtime_error("live OOC MCTS selected illegal root action");
     ++metrics.owned;
     metrics.combatSamples += samples;
+    auto &c=metrics.continuation;
+    c.imaginedCombats+=continuation.imaginedCombats; c.unsupportedCombats+=continuation.unsupportedCombats;
+    c.silverSimulations+=continuation.silverSimulations; c.silverSeconds+=continuation.silverSeconds;
+    c.pendingLeaves+=continuation.pendingLeaves; c.battleLeaves+=continuation.battleLeaves;
+    c.mapLeaves+=continuation.mapLeaves; c.projectionSteps+=continuation.projectionSteps;
+    for (auto &[reason,count] : continuation.supportReasons) c.supportReasons[reason]+=count;
     auto &m = metrics.search;
+    m.outcomeParticles+=result.metrics.outcomeParticles; m.decisionNodes+=result.metrics.decisionNodes;
+    m.chanceNodes+=result.metrics.chanceNodes; m.particleRevisits+=result.metrics.particleRevisits;
+    m.deterministicRevisits+=result.metrics.deterministicRevisits; m.depthSum+=result.metrics.depthSum;
     m.simulations += result.metrics.simulations;
     m.transitionSamples += result.metrics.transitionSamples;
     m.leafEvaluations += result.metrics.leafEvaluations;
@@ -251,11 +389,27 @@ void writeLiveOocMctsTrace(std::uint64_t seed, const LiveOocMctsMetrics &m, int 
     std::ofstream out(liveTrace, std::ios::app);
     if (!out) throw std::runtime_error("STS_OOC_MCTS_TRACE cannot write output");
     if (out.tellp() == 0)
-        out << "seed,oocDecisions,mctsOwned,mctsFallback,simulations,transitionSamples,combatSurrogateSamples,leafEvaluations,maxDepth,mctsWallSec,mctsCpuSec,realCombats\n";
+        out << "seed,oocDecisions,mctsOwned,mctsFallback,simulations,transitionSamples,combatSurrogateSamples,leafEvaluations,maxDepth,mctsWallSec,mctsCpuSec,realCombats,imaginedCombats,unsupportedCombats,unsupportedSilverSims,unsupportedSilverSec,pendingLeaves,battleLeaves,mapLeaves,projectionSteps,outcomeParticles,particleRevisits,deterministicRevisits,depthSum\n";
     out << std::setprecision(12) << seed << ',' << m.decisions << ',' << m.owned << ',' << m.fallback
         << ',' << m.search.simulations << ',' << m.search.transitionSamples << ',' << m.combatSamples
         << ',' << m.search.leafEvaluations << ',' << m.search.maxDepthReached
-        << ',' << m.wallSeconds << ',' << m.cpuSeconds << ',' << realCombats << '\n';
+        << ',' << m.wallSeconds << ',' << m.cpuSeconds << ',' << realCombats
+        << ',' << m.continuation.imaginedCombats << ',' << m.continuation.unsupportedCombats
+        << ',' << m.continuation.silverSimulations << ',' << m.continuation.silverSeconds
+        << ',' << m.continuation.pendingLeaves << ',' << m.continuation.battleLeaves
+        << ',' << m.continuation.mapLeaves << ',' << m.continuation.projectionSteps
+        << ',' << m.search.outcomeParticles << ',' << m.search.particleRevisits
+        << ',' << m.search.deterministicRevisits << ',' << m.search.depthSum << '\n';
+    std::ofstream reasons(liveTrace+".support.jsonl",std::ios::app);
+    reasons << "{\"seed\":" << seed << ",\"reasons\":{";
+    bool first=true;
+    for (const auto &[reason,count] : m.continuation.supportReasons) {
+        if (!first) reasons << ',';
+        first=false; reasons << std::quoted(reason) << ':' << count;
+    }
+    reasons << "}}\n";
+    reasons.flush();
+    if (!reasons) throw std::runtime_error("OOC MCTS support trace write failed");
     out.flush();
     if (!out) throw std::runtime_error("STS_OOC_MCTS_TRACE write failed");
 }
@@ -647,6 +801,109 @@ void oocMctsAdapterSelfTest() {
         <<" decision_nodes="<<m.decisionNodes<<" chance_nodes="<<m.chanceNodes
         <<" particles="<<m.outcomeParticles<<" samples="<<m.transitionSamples
         <<" leaf_evaluations="<<m.leafEvaluations<<" max_depth="<<m.maxDepthReached<<'\n';
+    // Rich features cannot see pending gold. Checkpoint projection must collect
+    // it on a detached copy, and match the existing policy's completed oracle.
+    std::vector<float> pendingFeatures;
+    for (int amount : {1,1000}) {
+        auto pendingGold=detachedCopy(reward);
+        auto &container=pendingGold.info.rewardsContainer;
+        container.goldRewardCount=1; container.gold[0]=amount;
+        container.cardRewardCount=container.relicCount=container.potionCount=0;
+        container.emeraldKey=container.sapphireKey=false;
+        const auto fingerprint=test::oocStateFingerprint(pendingGold);
+        const auto features=richFeatureVec(pendingGold);
+        if (pendingFeatures.empty()) pendingFeatures=features;
+        else require(features==pendingFeatures,"rich model cannot see pending reward contents fixture");
+        auto completed=detachedCopy(pendingGold);
+        ScumSearchAgent2 oracleAgent;
+        for (int step=0;step<16 && completed.screenState!=ScreenState::MAP_SCREEN;++step)
+            runFullRunOocPolicyStep(completed,oracleAgent,false,true);
+        require(completed.screenState==ScreenState::MAP_SCREEN && completed.gold==pendingGold.gold+amount,
+            "pending gold oracle reaches checkpoint after collection");
+        OocGameContextModel projected(pendingGold,path,{}, {true,{}});
+        rejects([&] { projected.leafValue(0); });
+        std::mt19937_64 projectionRng(543);
+        const auto savedPath=t_curPath;
+        t_curPath=&projected.pathHistory(0);
+        const auto oracleValue=vStateWinNative(completed);
+        t_curPath=savedPath;
+        require(projected.evaluateLeaf(0,projectionRng)==oracleValue
+            && projected.continuationMetrics().pendingLeaves==1
+            && projected.continuationMetrics().projectionSteps>=2
+            && test::oocStateFingerprint(projected.state(0))==fingerprint
+            && test::oocStateFingerprint(pendingGold)==fingerprint && t_curPath==savedPath,
+            "pending reward projection matches resolved oracle and preserves caller");
+    }
+    // All pending screen families are evaluated only after the same policy
+    // continuation. This also covers selectors outside MCTS-owned decisions.
+    for (int family=0;family<5;++family) {
+        auto pending=detachedCopy(gc);
+        if (family==0) { pending.screenState=ScreenState::SHOP_ROOM; pending.info.shop.setup(pending); }
+        if (family==1) { pending.screenState=ScreenState::EVENT_SCREEN; pending.curEvent=Event::BIG_FISH;
+            pending.info.hpAmount0=20; pending.info.hpAmount1=5; }
+        if (family==2) pending.openCardSelectScreen(CardSelectScreenType::UPGRADE,1);
+        if (family==3) pending.openCardSelectScreen(CardSelectScreenType::REMOVE,1);
+        if (family==4) pending=detachedCopy(reward);
+        const auto beforePending=test::oocStateFingerprint(pending);
+        auto completed=detachedCopy(pending);
+        PathHistory completedPath=path; completedPath.update(completed);
+        const auto previousPath=t_curPath; t_curPath=&completedPath;
+        ScumSearchAgent2 oracleAgent;
+        for (int step=0;step<64 && completed.screenState!=ScreenState::MAP_SCREEN;++step) {
+            runFullRunOocPolicyStep(completed,oracleAgent,false,true); completedPath.update(completed);
+        }
+        require(completed.screenState==ScreenState::MAP_SCREEN,"pending screen oracle reaches checkpoint");
+        const double expectedValue=vStateWinNative(completed); t_curPath=previousPath;
+        OocGameContextModel projected(pending,path,{}, {true,{}});
+        int observerCalls=0;
+        auto savedObserver=std::move(sts::search::g_onGameActionExecute);
+        sts::search::g_onGameActionExecute=[&](std::uint32_t,const GameContext *) { ++observerCalls; };
+        t_oocStrategicTraceRows="live trace sentinel";
+        const auto savedRows=t_oocStrategicTraceRows;
+        std::mt19937_64 projectionRng(543);
+        require(projected.evaluateLeaf(0,projectionRng)==expectedValue
+            && test::oocStateFingerprint(pending)==beforePending && observerCalls==0
+            && t_oocStrategicTraceRows==savedRows && t_curPath==previousPath,
+            "pending screen projection matches oracle without live observer or bookkeeping mutation");
+        sts::search::g_onGameActionExecute=std::move(savedObserver);
+        t_oocStrategicTraceRows.clear();
+    }
+    // Unsupported combat must pay persistent cost rather than escape to v_win.
+    fake->enabled=false;
+    std::vector<std::uint64_t> fallbackDraws;
+    auto fallbackVictory=[&](GameContext &g,std::mt19937_64 &r) {
+        fallbackDraws.push_back(r());
+        sts::search::g_silverLiveDiagnostics={};
+        applyCombatTransitionState(g,fake->raw); g.regainControl();
+    };
+    OocGameContextModel costed(combatRoot,path,fake,{true,fallbackVictory});
+    const auto costedBefore=test::oocStateFingerprint(costed.state(0));
+    std::mt19937_64 costedRng(77), expectedFallbackRng(77);
+    const auto costedId=costed.sampleSuccessor(0,restAction.bits,costedRng);
+    require(costed.state(costedId).curHp==real.curHp && real.curHp<combatRoot.curHp
+        && test::oocStateFingerprint(costed.state(costedId))==test::oocStateFingerprint(real)
+        && fallbackDraws==std::vector<std::uint64_t>{expectedFallbackRng()}
+        && costed.continuationMetrics().imaginedCombats==1
+        && costed.continuationMetrics().unsupportedCombats==1 && costed.combatSamples()==0
+        && costed.continuationMetrics().supportReasons.at("fake unsupported")==1
+        && !costed.isDeterministicTransition(0,restAction.bits)
+        && test::oocStateFingerprint(costed.state(0))==costedBefore,
+        "unsupported victory preserves native cost, continuation and independent RNG accounting");
+    OocGameContextModel uncosted(combatRoot,path,fake,{true,{}});
+    rejects([&] { uncosted.sampleSuccessor(0,restAction.bits,costedRng); });
+    OocGameContextModel costedDeath(combatRoot,path,fake,{true,[](GameContext &g,std::mt19937_64 &r) {
+        (void)r(); sts::search::g_silverLiveDiagnostics={}; g.curHp=0; g.outcome=GameOutcome::PLAYER_LOSS;
+    }});
+    const auto costedDeathId=costedDeath.sampleSuccessor(0,restAction.bits,costedRng);
+    require(costedDeath.terminalValue(costedDeathId)==0 && costedDeath.continuationMetrics().unsupportedCombats==1,
+        "unsupported fallback death backs up exact zero");
+    OocGameContextModel deterministicOoc(ordinary,path,{}, {true,{}});
+    const auto deterministicId=deterministicOoc.sampleSuccessor(0,ordinaryAction.bits,costedRng);
+    const auto rngBeforeCache=costedRng;
+    require(deterministicOoc.isDeterministicTransition(0,ordinaryAction.bits)
+        && deterministicOoc.sampleSuccessor(0,ordinaryAction.bits,costedRng)==deterministicId
+        && costedRng==rngBeforeCache,"deterministic OOC child reused without RNG draw");
+    std::cout << "corrected_continuations reward_oracle=exact unsupported_victory=costed unsupported_death=zero deterministic_reuse=exact\n";
     // No fallback even if availability changes after construction.
     bool policyOk=g_oocStrategicTokNet.ok; g_oocStrategicTokNet.ok=false;
     rejects([&] { OocGameContextModel unavailable(gc,path); });
