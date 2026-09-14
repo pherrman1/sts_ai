@@ -7700,3 +7700,26 @@ interface/telemetry/parity procedure and chronological engineering evidence.
 [Full packet](evidence/live_ooc_mcts_speed_2026-09-14/README.md),
 [fixed-search timings/parity](evidence/live_ooc_mcts_speed_2026-09-14/fixed-search-summary.json),
 [sampler receipt](evidence/live_ooc_mcts_speed_2026-09-14/combat-summary.json).
+
+
+## §251 — One-seed old/new live OOC MCTS runtime comparison (2026-09-14)
+
+User-requested descriptive pair: exactly seed42 once at baseline `210f347334898e7c2a85b8af0f30dedc4888ea88`
+and once at gated PR #183 `bea408a1113b8f4cc9c717a0f1b38d5594b80243`.
+Ironclad A0, OOC512/real exact10,000 Silver, project-fair combat/copied noncombat
+RNG, native V4/win/same combat artifact, keysOFF, Act3-or-death, sequential
+old/new CPU0/OMP1. No model swap, tuning, support expansion or repeated cohort.
+Existing §250 fixed-root/historical gameplay evidence lacks this paired revision/
+configuration; two new guarded full-run commands exit0.
+
+Full-game wall62.3369s→43.8502s,29.66% reduction/1.422x; OOC search
+44.448824s→25.900525s,41.73% reduction/1.716x. Same floor50/Act3 death and
+all common OOC non-timing counters (207 decisions,148owned/59fallback,
+76,792 completed/76,815 attempted,1,016 discarded,4,497 surrogate samples,
+23support aborts) plus all28 complete real-Silver telemetry lines match exactly.
+No per-action/full-state trace: aggregate equality is not full trajectory parity.
+New live bypasses/locked stops/saved simulations remain zero; gate is intact.
+One-seed/order-dependent timing only, no average-speed or decision-quality claim.
+Knowledge impact: engineering benchmark evidence only; no default or maintained
+scientific conclusion changes. [Comparison](evidence/live_ooc_mcts_runtime_pair_2026-09-14.md),
+[commands/provenance/raw results](evidence/live_ooc_mcts_runtime_pair_2026-09-14.json).
