@@ -3,7 +3,7 @@
 #include <algorithm>
 #include <cmath>
 #include <limits>
-#include <memory>
+#include <deque>
 #include <stdexcept>
 
 namespace sts::search {
@@ -19,7 +19,7 @@ struct ChanceNode {
     std::uint64_t visits = 0;
     double totalValue = 0;
     // Equal-weight independent particles, including duplicate state IDs.
-    std::vector<std::unique_ptr<DecisionNode>> particles;
+    std::vector<DecisionNode *> particles;
     double q() const { return visits ? totalValue / visits : 0; }
 };
 struct DecisionNode {
@@ -35,6 +35,24 @@ struct Search {
     const OocMctsPlanner &planner;
     std::mt19937_64 rng;
     OocMctsMetrics metrics;
+    // deque append preserves references; all particles live for this search only.
+    std::deque<DecisionNode> arena;
+    std::vector<std::uint64_t> wideningLimits;
+
+    bool rootWinnerLocked(const DecisionNode &node, std::uint64_t remaining) const {
+        if (node.actions.empty()) return false;
+        // With no challenger the visit winner cannot change. The caller still
+        // requires the model's non-aborting guarantee and visit selection.
+        if (node.actions.size() == 1) return node.actions.front().visits > 0;
+        std::uint64_t leader = 0, challenger = 0;
+        for (const auto &action : node.actions) {
+            if (action.visits > leader) { challenger = leader; leader = action.visits; }
+            else challenger = std::max(challenger, action.visits);
+        }
+        // Subtraction avoids overflow in challenger + remaining. Strictness
+        // preserves the final Q tie-break when visits can still become equal.
+        return leader > challenger && leader - challenger > remaining;
+    }
 
     void expand(DecisionNode &node) {
         auto actions = model.legalActions(node.state);
@@ -51,6 +69,7 @@ struct Search {
         // Scale before summing to avoid overflow with large finite priors.
         double mass = 0;
         if (largest > 0) for (auto a : actions) mass += a.prior / largest;
+        node.actions.reserve(actions.size());
         for (auto a : actions) {
             a.prior = largest > 0 ? (a.prior / largest) / mass : 1.0 / actions.size();
             node.actions.push_back(ChanceNode{a, 0, 0, {}});
@@ -84,10 +103,11 @@ struct Search {
         }
         if (!chosen) {
             double best = -std::numeric_limits<double>::infinity();
+            const double parentSqrt = std::sqrt(static_cast<double>(node.visits - 1));
             for (auto &action : node.actions) {
                 // Parent N excludes the simulation currently in progress.
                 double score = action.q() + config.cPuct * action.action.prior
-                    * std::sqrt(static_cast<double>(node.visits - 1)) / (1.0 + action.visits);
+                    * parentSqrt / (1.0 + action.visits);
                 if (!std::isfinite(score)) throw std::runtime_error("OOC MCTS PUCT score overflow");
                 if (!chosen || score > best) { chosen = &action; best = score; }
             }
@@ -96,20 +116,22 @@ struct Search {
         ++chance.visits;
         DecisionNode *next;
         if (!chance.particles.empty() && model.isDeterministicTransition(node.state, chance.action.id)) {
-            next = chance.particles.front().get();
+            next = chance.particles.front();
             ++metrics.particleRevisits;
             ++metrics.deterministicRevisits;
-        } else if (chance.particles.size() < planner.chanceWideningLimit(chance.visits)) {
+        } else if (chance.particles.size() < (chance.visits < wideningLimits.size() ? wideningLimits[chance.visits]
+                : planner.chanceWideningLimit(chance.visits))) {
             auto state = model.sampleSuccessor(node.state, chance.action.id, rng);
             ++metrics.transitionSamples;
-            chance.particles.push_back(std::make_unique<DecisionNode>(state));
+            arena.emplace_back(state);
+            chance.particles.push_back(&arena.back());
             ++metrics.outcomeParticles;
             ++metrics.decisionNodes;
-            next = chance.particles.back().get();
+            next = chance.particles.back();
         } else {
             ++metrics.particleRevisits;
             std::uniform_int_distribution<std::size_t> uniform(0, chance.particles.size()-1);
-            next = chance.particles[uniform(rng)].get();
+            next = chance.particles[uniform(rng)];
         }
         double value = evaluate(*next, depth + 1);
         chance.totalValue += value;
@@ -133,8 +155,17 @@ std::uint64_t OocMctsPlanner::chanceWideningLimit(std::uint64_t visits) const {
 OocMctsResult OocMctsPlanner::search(OocGenerativeModel &model, OocStateId root,
                                    std::uint64_t simulations) const {
     if (!simulations) throw std::invalid_argument("OOC MCTS requires simulations > 0");
-    Search search{model, config, *this, std::mt19937_64(config.seed), {}};
+    Search search{model, config, *this, std::mt19937_64(config.seed), {}, {}, {}};
+    // Bound auxiliary memory even for arbitrary uint64 budgets. Ordinary
+    // searches cache every prospective visit; larger budgets use the same
+    // exact formula on demand above this cap.
+    const auto cachedVisits = std::min<std::uint64_t>(simulations, 1u << 20);
+    search.wideningLimits.reserve(cachedVisits + 1);
+    search.wideningLimits.push_back(chanceWideningLimit(0));
+    for (std::uint64_t n = 1; n <= cachedVisits; ++n)
+        search.wideningLimits.push_back(chanceWideningLimit(n));
     DecisionNode node(root);
+    const bool mayStopLocked = !config.selectByMeanQ && model.searchGuaranteedNonAborting();
     search.metrics.decisionNodes = 1;
     OocMctsResult result;
     try {
@@ -142,6 +173,12 @@ OocMctsResult OocMctsPlanner::search(OocGenerativeModel &model, OocStateId root,
             ++search.metrics.simulationAttempts;
             search.evaluate(node, 0, true);
             ++search.metrics.simulations;
+            const auto remaining = simulations - search.metrics.simulations;
+            if (remaining && mayStopLocked && search.rootWinnerLocked(node, remaining)) {
+                search.metrics.earlyStopLockedRoot = true;
+                search.metrics.savedSimulations = remaining;
+                break;
+            }
         }
     } catch (const OocSearchUnsupported &unsupported) {
         // Partial root Q/visits are discarded, including prior supported paths.

@@ -30,6 +30,9 @@ public:
     virtual double leafValue(OocStateId state) const = 0;
     // Detached continuation may need independent draws before checkpoint value.
     virtual double evaluateLeaf(OocStateId state, std::mt19937_64 &) { return leafValue(state); }
+    // True only when every configured search path excludes OocSearchUnsupported.
+    // Observed zero aborts are insufficient; providers must prove this guarantee.
+    virtual bool searchGuaranteedNonAborting() const { return false; }
     // Default preserves independent particles, even for identical sampled IDs.
     virtual bool isDeterministicTransition(OocStateId, OocActionId) const { return false; }
 };
@@ -48,6 +51,9 @@ struct OocMctsMetrics {
     std::uint64_t outcomeParticles = 0, transitionSamples = 0, leafEvaluations = 0;
     std::uint64_t particleRevisits = 0, deterministicRevisits = 0, depthSum = 0;
     std::uint32_t maxDepthReached = 0;
+    std::uint64_t trivialRootBypasses = 0;
+    std::uint64_t earlyStopLockedRoot = 0;
+    std::uint64_t savedSimulations = 0;
 };
 struct OocRootActionStats {
     OocActionId id;

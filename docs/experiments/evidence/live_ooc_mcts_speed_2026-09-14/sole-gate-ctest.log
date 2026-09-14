@@ -1,0 +1,15 @@
+Test project /home/philippherrmann/.codex/worktrees/ba92/sts_lightspeed/build/linux-gcc-release-ccache
+    Start  1: ooc_mcts
+1/3 Test  #1: ooc_mcts .........................   Passed    0.01 sec
+    Start 87: ooc_mcts_adapter
+2/3 Test #87: ooc_mcts_adapter .................   Passed    0.15 sec
+    Start 90: ooc_mcts_live_startup
+3/3 Test #90: ooc_mcts_live_startup ............   Passed    1.05 sec
+
+100% tests passed out of 3
+
+Label Time Summary:
+core           =   0.01 sec*proc (1 test)
+integration    =   1.20 sec*proc (2 tests)
+
+Total Test time (real) =   1.21 sec
