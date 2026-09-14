@@ -1,0 +1,13 @@
+{
+  "sourceSha": "0757c2db918b6395d8f22ca54f6d94c8e3ae0b10",
+  "designReuseReadiness": "PASS",
+  "finalEvidence": "PASS",
+  "primaryBootstrapIndependentlyReproduced": "PASS",
+  "secondaryBootstrapIndependentlyReproduced": "PASS",
+  "binaryFiveModelsCopiedControlBinding": "PASS",
+  "supportSimulationDiscardAttempts": "PASS",
+  "actualSilverCombatLogs": 805,
+  "bridgeFailures": 0,
+  "reviewerGameplaySeeds": 0,
+  "issues": []
+}

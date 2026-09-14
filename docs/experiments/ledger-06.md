@@ -7538,3 +7538,32 @@ existing support/MCTS contracts unchanged. §245 preserves the colliding #178
 support census separately from original §243/§244 gameplay evidence.
 [Full frozen evidence](evidence/live_ooc_mcts_expanded_support_2026-09-14.md),
 [raw paired result](evidence/live_ooc_mcts_expanded_support_2026-09-14/result.json).
+
+
+## §247 Fixed2048 live OOC MCTS budget regression (2026-09-14)
+
+**OOC_MCTS_WINRATE_INCONCLUSIVE.** User authorized more search: fixed2048 instead
+of512, all other source/model/combat/search settings unchanged. Same32 seeds
+970000..970031, V4 control reused exactly from §246 at reviewed0757 executable,
+new2048 MCTS24/32 versus control21/32. Primary gain9.375pp,95% paired bootstrap
+CI[-12.5,+31.25]pp;discordants8/5,exact p=.5810546875 descriptive. Secondary versus
+preserved512 MCTS22/32:gain6.25pp,CI[-9.375,+21.875]pp,discordants4/2. Both inconclusive.
+
+Actual fair exact-10k Silver; PUCT1.5,widening k2/alpha.5,horizon32,four workers,
+A0/keys OFF/Act-3 stop/native V4 stack/support/model hashes unchanged. No code
+edits/rebuild/imagined Silver. Existing reviewed source0757c2d/binary binding and
+source CI reused. Independent design/reuse/readiness review and excluded canary
+pass before32 new official seeds. New gameplay33 seeds total; no extra controls.
+Historical timing descriptive:2048 mean130.0688s versus51270.4781/V426.1105s.
+
+Owned3,861/5,601,fallback31.0659%,633 support aborts,308,052surrogate samples,
+maxdepth8–16. Larger search encounters more unsupported roots than512465aborts,
+while completed ownership drops4,060→3,861. All support/simulation/log equations
+reconcile;805actual combats,zero recorded Silver failures. Win point estimate
+rises, but no improved-win or equivalence claim. Reused-seed repeated budget
+regression, hidden copied RNG and historical timing limits remain. Keep OFF and
+default512; no sweep/follow-up seeds. Knowledge impact: experiment evidence and
+current research status; stable implementation unchanged.
+[Full evidence](evidence/live_ooc_mcts_2048_2026-09-14.md),
+[primary](evidence/live_ooc_mcts_2048_2026-09-14/result.json),
+[secondary](evidence/live_ooc_mcts_2048_2026-09-14/budget-comparison.json).

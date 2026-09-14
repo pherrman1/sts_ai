@@ -1,0 +1,43 @@
+{
+  "interpretation": "Secondary descriptive paired budget comparison; fixed same source/models/seeds, historical runtime.",
+  "won": {
+    "mean512": 0.6875,
+    "mean2048": 0.75,
+    "delta2048minus512": 0.0625,
+    "pairedBootstrap95CI": [
+      -0.09375,
+      0.21875
+    ]
+  },
+  "floor": {
+    "mean512": 47.9375,
+    "mean2048": 47.9375,
+    "delta2048minus512": 0.0,
+    "pairedBootstrap95CI": [
+      -1.25,
+      1.469531249999818
+    ]
+  },
+  "hpEnd": {
+    "mean512": 32.9375,
+    "mean2048": 38.0625,
+    "delta2048minus512": 5.125,
+    "pairedBootstrap95CI": [
+      -4.90625,
+      15.09375
+    ]
+  },
+  "sec": {
+    "mean512": 70.478065625,
+    "mean2048": 130.068834375,
+    "delta2048minus512": 59.59076875,
+    "pairedBootstrap95CI": [
+      47.14602070312501,
+      72.38572625
+    ]
+  },
+  "wins512": 22,
+  "wins2048": 24,
+  "only2048": 4,
+  "only512": 2
+}

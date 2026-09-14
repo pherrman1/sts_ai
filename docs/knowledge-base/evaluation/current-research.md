@@ -20,14 +20,14 @@ chronology.
 
 ## Current priority / active line
 
-The expanded-support live OOC MCTS regression is complete after merged #178:
-current-source control21/32 versus MCTS22/32 on reused seeds970000..970031,
-ordinary exact-10k Silver in both arms. Win gain3.125pp,95% CI[-18.75,+25]pp is
-inconclusive. Support-triggered root aborts fell972→465 versus the preceding
-corrected regression; coverage increased, but improved win rate is unproven.
-MCTS remains OFF by default. No additional seeds or tuning are authorized. See
-[ledger-06 §246](../../experiments/ledger-06.md) and
-[expanded-support evidence](../../experiments/evidence/live_ooc_mcts_expanded_support_2026-09-14.md).
+The fixed2048 live OOC MCTS budget regression is complete on reused32 seeds:
+MCTS24/32 versus exact preserved V4 control21/32 (gain9.375pp,95% CI[-12.5,+31.25])
+and previous512 MCTS22/32 (secondary gain6.25pp,CI[-9.375,+21.875]). Both comparisons
+are inconclusive. Source/models/fair exact-10k Silver unchanged; maxdepth8–16,
+more surrogate samples but more support-triggered V4 root fallbacks than512.
+Default OFF and512 remain unchanged; no further seeds or budget are authorized.
+See [ledger-06 §247](../../experiments/ledger-06.md) and
+[2048 evidence](../../experiments/evidence/live_ooc_mcts_2048_2026-09-14.md).
 
 ## Completed recent line
 
