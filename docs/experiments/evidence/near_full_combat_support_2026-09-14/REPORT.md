@@ -281,23 +281,46 @@ A failed first preparation exposed an incorrect assumed Darkling qualifying-kill
 
 Research checkpoint `gold.pt` SHA256: `19a1a387f56ea4c8eceb2ebf4b92f951f497b18876ccab31168f0c6a9a5d853c`. Its local bound directory is `/home/philippherrmann/sts_sweep/runs/near-full-combat-support-20260914/shared-gold-v1`; preparation/cache/test-row/checkpoint hashes and frozen upstream hashes are in the JSON receipts. This is a Python development checkpoint, not a native runtime artifact.
 
-Stage 1 is at the draft-PR implementation-review handoff. The bounded development results pass; no new Transmutation+ collection is needed. Independent review/frozen reviewed SHA remain required for final scientific qualification and an expensive full-stack refit. The repository research workflow explicitly says: “After implementation review passes, freeze the reviewed commit SHA before any expensive scientific run.” No support exclusions or deployable runtime artifact are changed; actual rows recovered: **0**. Candidate recovery after qualification would be 71,367 overall / 7,301 TEST: 485,166/510,030 (95.124993%) overall and 48,755/51,441 (94.778484%) TEST. These percentages are a prospective census calculation, not current support. The frozen census/source-inventory bytes remain unchanged.
+Stage 1 at PR head `9a7220512939deb46e359339d28016e019cebad3` was approved by the user, who authorized all remaining stages. This continuation uses the same app-managed worktree and frozen corpus/splits. User approval is recorded as user approval, not an assertion of independent scientific review.
 
+## Stage 2 — native sparse events and affected maxHP repair
 
-## Stages 2–4
+Writhing Mass has exact native no-change / Parasite / Omamori-consumed reconstruction. Omamori is active only with positive charges; zero charges permit Parasite. Ceramic Fish's world-deck gold is overwritten by battle-player gold on RAW exit, while Darkstone's battle +6 maxHP survives. Ritual Dagger preserves RAW card index and duplicate ownership, with exact +3/+5 increments and a common eligible-kill budget. Its Awakened One cap includes the first phase, as the native Dagger action does. Joint gold/Dagger reconstruction prevents spending the same fatal hit twice, including per-thief escape/recovery.
 
-| Stage | Mechanism | Implementation/training/TEST metrics/exposure/ancestral validity | Rows recovered |
-| --- | --- | --- | ---: |
-| 2 | Writhing Mass | Not started; Stage-1 draft-PR review handoff | 0 |
-| 2 | Ritual Dagger | Not started; Stage-1 draft-PR review handoff | 0 |
-| 3 | Entropic Brew / creation | Not started; Stage-1 draft-PR review handoff | 0 |
-| 4 | Smoke Bomb / ESCAPE | Not started; Stage-1 draft-PR review handoff | 0 |
+The full existing corpus audit finds zero native target problems. Consumption-only development explicitly defers Brew/Smoke overlaps to Stages 3–4: 41 Writhing and 180 Dagger rows. They remain part of the final support goal.
+
+| Component | TRAIN victories | VALIDATION victories | TEST victories | TEST teacher NLL | Exact component exposure gap |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Writhing Mass | 3,462 | 411 | 449 | 0.587495 | +0.047608 |
+| Ritual Dagger | 9,898 | 1,222 | 1,402 | 0.059781 | -0.000122 |
+
+Both tiny shared scorers use frozen visible HP encodings and sampled HP/potion conditions. Original source splits, fixed 12 epochs, original VALIDATION selection; selected epoch 12 for each. Finite 32-draw Writhing misses were retained as diagnostics. Exact marginalization over all maxHP, legal HP and legal potion-mask classes found zero true zero-mass targets but a **real +0.530710 nat exposure failure**. An affected maxHP linear-head-only refit reduced this to +0.287375, still failing. Refitting only the existing maxHP encoder and head repaired it to **+0.047608**, source-bootstrap 95% CI [0.033039, 0.063111]. Dagger's gap is **-0.000122**, CI [-0.000431, 0.000097]. No other historical encoder/head weights changed. This material degradation justifies the affected-component refit allowed by the plan.
+
+MaxHP refit: 388,204 TRAIN / 47,962 VALIDATION / 48,929 TEST victories in the explicitly eligible union; unchanged normalization and architecture; fixed 12 epochs, selected 11. VALIDATION NLL improves 0.053481 → 0.043296; TEST NLL 0.053666. Research checkpoint SHA256 `c6c6564e8e3f689ad3ad152f98ad7d42a819a48e9a603df1ebf70ba93868bec1`.
+
+Affected upstream exposure checks pass. Writhing: HP +0.038175 / potion -0.003109 / relic +0.003011 per observed group. Dagger: HP +0.016799 / potion -0.001816 / relic -0.004980. Rechecking original gold-only rows after maxHP repair gives gold +0.012722 / HP +0.012401 / potion +0.000597 / relic +0.005723. HP uses its exact maxHP marginal; downstream checks use 32 maxHP/HP draws and exact conditional potion-mask marginalization. Writhing's Omamori is evaluated by the native event component.
+
+Combined native sparse validity: **62,912 draws = 1,966 deduplicated TEST rows × 32**, 58,205 surviving sparse calls and 4,707 sampled deaths. Zero shared-residue, joint gold/Dagger, HP, potion-count, RNG, Writhing structure, other persistent, non-native Dagger or downstream-after-death violations. These are bounded development gates. Actual live-support rows recovered remain **0** until native export and final composition qualification.
+
+Bound receipts: [native audit](sparse-native-v2.json), [Writhing fit](writhing-v1-fit.json), [Dagger fit](ritual-v1-fit.json), [Writhing exact exposure](writhing-v1-exact_exposure_encoder_refit.json), [Dagger exact exposure](ritual-v1-exact_exposure_encoder_refit.json), [maxHP refit](maxhp-encoder-v1-fit.json), [combined hard validity](sparse-combined-validity-v1.json). Separate upstream receipts are included alongside these files. Each carries its executed source SHA and artifact/input bindings.
+
+## Stage 3 — native Brew generation; RNG-origin choice pending
+
+The native combat-limited Ironclad return pool has 32 potion types: 65% common, 25% uncommon, 10% rare, uniform within rarity after excluding Fruit Juice. Brew and Smoke remain possible results. Limited generation discards the initial pool candidate and uses bounded rejection draws. Every Brew use generates **potionCapacity** potions, even when full capacity or Sozu prevents insertion; insertion uses the first empty legal slot.
+
+The explicit-origin native generator reproduces all **3,208** pre-Brew rows and **3,106** generation rounds with zero potion RNG end-state mismatches. There are 112 recursive Brew-consumption cases and 88 escape rows. Generated-body labels are teacher targets reconstructed from RAW transitions; historical RNG is not a fair-model input. [Audit](brew-native-label-audit-v1.json), [native generator replay and origin comparison](brew-native-generation-v2.json).
+
+A material contract choice remains pending. Independent planner generation and replay from a preserved historical potion RNG origin generally produce different identities and continuation. Frozen RAW row 662 gives [17, 9, 22] and counter 42 from its historical origin; a different explicit hypothetical origin gives [13, 37, 22] and counter 52. Exact seeds are in the comparison receipt. The user was asked whether imagined Brew branches should use a planner-owned hypothetical potion RNG with the oracle using the same hypothetical origin, or preserve historical-origin replay and label generation known-RNG. No origin substitution or fair/known-RNG contract change has been silently made. Learned Brew trajectories and final qualification await that answer.
+
+## Stage 4 — explicit ESCAPE and native continuation oracle
+
+The sampler interface represents `ESCAPE` separately from `VICTORY`. Adapter continuation requires RAW `smokeBombUsed` to agree with the outcome, applies RAW state and invokes native continuation. An actual Smoke Bomb exit versus explicit ESCAPE injection from the **identical prebattle origin** passes exact OOC/persistent/all-RNG/PathHistory equivalence, no-reward map return and parent preservation. Fixtures cover both with and without Face of Cleric and native reset of a pre-existing used flag. Escape mislabeled as victory is rejected. Historical samplers still emit only their previously supported outcomes. Smoke exclusions remain until learned outcome probabilities and composition qualify; Brew-generated Smoke probabilities depend on Stage 3.
 
 ## Stage 5 and final qualification
 
-No refit or union qualification. Final support remains the historical #179 support; all 96,231 fallback rows and reasons in the initial census remain unsupported. Final new component/composition metrics, native parity, new runtime artifact hash, continuation equivalence, and new #180 counts: **not available**. The unchanged historical runtime is not a near-full-support artifact.
+Affected maxHP refit is complete. Full-stack refit/union qualification, a new native model export/probability parity, final support predicate and #180 replay remain incomplete. Saved imagined #180 states are unavailable in the inspected aggregate traces; before/after state replay cannot be fabricated from first-reason counts. Current support remains 413,799/510,030 overall and 41,454/51,441 TEST, with all 96,231 original unsupported rows preserved in the census. The historical runtime is not a near-full-support artifact.
 
-Final classification: **NEAR_FULL_COMBAT_SUPPORT_NOT_READY**. No gameplay improvement is claimed. Independent review and composition qualification are required before support/runtime changes; the approved shared-mechanism development continues without new data.
+Classification: **NEAR_FULL_COMBAT_SUPPORT_NOT_READY**. The unresolved Brew RNG-origin contract prevents combined trajectory/runtime qualification. This is not a Transmutation low-support stop and requires no new Transmutation data. No gameplay ran.
 
 ## Checks and reproduction
 
@@ -314,7 +337,8 @@ Final classification: **NEAR_FULL_COMBAT_SUPPORT_NOT_READY**. No gameplay improv
 - Shared gold native/scorer tests: 8 PASS; original census tests: 5 PASS; focused CTests: 2/2 PASS (1.17 s). Supplemental relic diagnostic compiles and completes all 32 draws.
 - Full native preparation, bounded 12-epoch fit, gold/HP/potion exposure, supplemental relic exposure and complete ancestral validity: PASS; raw receipts linked below.
 - Linux GCC at implementation SHA `1a24e7c`: SUCCESS. Final handoff-head CI status is recorded in the PR; earlier CI does not attest later commits.
-- Not run: independent implementation/scientific review, upstream/full-stack refit, native export/runtime/escape continuation/new parity tests, new data/game seeds/gameplay. No manual C++ build/full CTest; authoritative Linux GCC CI runs the repository verification.
+- Continuation: 17 focused gold/sparse/Brew tests PASS; Debug `one_combat` build PASS; focused native adapter CTest PASS, including exact escape oracle. Affected maxHP refit and bound exposure/native validity complete as reported above.
+- Not run: independent scientific review, full-stack/final union qualification, new native model export/probability parity, learned Brew/escape probabilities, new data/game campaigns/gameplay. Final-head authoritative Linux GCC CI is recorded in the PR.
 
 Reproduction (seed-free; frozen inputs must exist at the bound paths):
 

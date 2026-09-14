@@ -7749,3 +7749,36 @@ refit; no reviewed SHA exists yet. Focused CTests2/2PASS1.17s, diff checkPASS;
 Linux GCC at1a24e7c SUCCESS; later-head CI recorded in PR. Knowledge impact:
 executed evidence/current research status and supplemental tool navigation.
 [Staged report and JSON receipts](evidence/near_full_combat_support_2026-09-14/REPORT.md).
+
+
+## §252 — Native sparse gates, affected maxHP repair and explicit escape oracle (2026-09-14)
+
+Stage 1 user-approved at PR head 9a7220512939deb46e359339d28016e019cebad3;
+remaining stages authorized, same worktree and frozen 510,030-row corpus/splits.
+Writhing/Dagger shared tiny scorers: fixed12epoch TRAIN-only fits, original
+VALIDATION selection. TEST teacher NLL0.587495/0.059781; exact exposure
++0.047608/-0.000122. Finite Writhing zeros remained diagnostics; exact original
+exposure +0.530710 failed, maxHP head-only refit +0.287375 failed, affected
+existing maxHP encoder/head refit repaired the gate (original architecture and
+normalization; no other historical encoder/head changed). Refit source70b0de5,
+selected11; VAL0.043296 versus0.053481, TEST0.053666. Exact repaired evaluations
+source70b0de5, combined hard validity source5a605cc: 62,912 draws /58,205
+surviving calls /4,707 deaths, zero recorded violations. Joint gold/Dagger
+native legality shares ordinary eligible fatal hits, including thief escapes.
+
+Affected upstream exposure evaluations source07c573e for sparse, ce12078 for
+gold: all evaluated component means <=0.1nat. Native explicit ESCAPE oracle
+passes exact identical-origin OOC/persistent/all-RNG/PathHistory and no-reward
+continuation, including Cleric and native pre-used reset; outcome/RAW flag
+mismatch rejected. Learned escape probabilities remain pending. Native Brew
+replay matches3,208rows/3,106generation rounds, zero end-RNG mismatches;
+112recursive consumption cases /88escape rows. Independent generation versus
+preserved historical RNG replay requires an explicit origin contract; user
+clarification pending, no silent fair/known-RNG substitution.
+
+NEAR_FULL_COMBAT_SUPPORT_NOT_READY: full combined trajectories/refit/native
+export/probability parity/support update and #180 state replay incomplete.
+Live support unchanged, zero newly recovered rows; no new data or gameplay.
+Knowledge impact: native mechanics, component repair evidence and current
+qualification/contract status maintained in KB and bound evidence.
+[Report and raw receipts](evidence/near_full_combat_support_2026-09-14/REPORT.md).

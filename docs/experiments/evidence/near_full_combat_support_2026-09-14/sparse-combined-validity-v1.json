@@ -1,0 +1,37 @@
+{
+  "classification": "SPARSE_COMBINED_HARD_VALIDITY_PASS",
+  "componentHashes": {
+    "ritual": "2d3080c7b5bca9afe45497b947e4bbaec426c856b51e9b8f5894d168d1961a75",
+    "writhing": "23ee9e06b6674709a2a656f11647c0ede3665c27b3e98360a75dbc298e516119"
+  },
+  "draws": 62912,
+  "evaluationSha": "5a605cc2752f9e129d4b8427188df75de350e69c",
+  "goldHash": "19a1a387f56ea4c8eceb2ebf4b92f951f497b18876ccab31168f0c6a9a5d853c",
+  "hardValidity": {
+    "downstreamAfterDeath": 0,
+    "illegalGold": 0,
+    "illegalHp": 0,
+    "illegalPotionCount": 0,
+    "invalidRng": 0,
+    "jointGoldDaggerViolation": 0,
+    "nonNativeDaggerEvent": 0,
+    "otherPersistentMutation": 0,
+    "sharedResidueMismatch": 0,
+    "writhingStructureViolation": 0
+  },
+  "maxHpHash": "c6c6564e8e3f689ad3ad152f98ad7d42a819a48e9a603df1ebf70ba93868bec1",
+  "sampledDeaths": 4707,
+  "scope": "consumption-only Stage-2 candidates; Brew/Smoke overlaps deferred to Stages3/4",
+  "supportChanged": false,
+  "survivingSparseCalls": 58205,
+  "testRows": 1966,
+  "upstreamCalls": {
+    "hpEncoderRows": 58205,
+    "hpHeadRows": 58205,
+    "maxHpRows": 58205,
+    "potionDecoderRows": 58205,
+    "potionEncoderRows": 58205,
+    "relicDecoderRows": 58205,
+    "survivalRows": 62912
+  }
+}

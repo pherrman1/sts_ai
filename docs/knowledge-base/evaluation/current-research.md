@@ -39,43 +39,42 @@ against this fresh cohort.
 
 ## Completed recent line
 
-### Near-full combat-support expansion: shared gold development gates pass
+### Near-full combat-support expansion: sparse gates and native escape oracle pass
 
-**NEAR_FULL_COMBAT_SUPPORT_NOT_READY**. The seed-free frozen census reproduces
-#179: 413,799/510,030 supported overall (81.132286%) and 41,454/51,441
-original TEST (80.585525%). Remaining fallback is 96,231 rows. Gold exclusions
-affect 74,069 rows; 71,367 gold-only candidates have no later support rejection
-or other victorious copy-through mutation. These candidates are not qualified.
-#180 first-failure traces attribute 1,262/1,551 root aborts to gold reasons;
-they contain aggregates rather than saved imagined states or joint reasons,
-so no before/after state replay or new root-abort prediction is established.
+**NEAR_FULL_COMBAT_SUPPORT_NOT_READY**. Stage 1 was user-approved at PR head
+`9a7220512939deb46e359339d28016e019cebad3`; shared Transmutation upgrade features
+remain the accepted design, with two Transmutation+ TEST rows diagnostic only.
+The same frozen corpus/splits and worktree are used for the continuation.
 
-The earlier §250 stop criterion was too conservative and is superseded by the
-accepted shared-mechanism design: upgraded Transmutation is a conditional input,
-not a separate data silo. Its two TEST rows (one non-gain victory, one death;
-zero TRAIN/VALIDATION) remain an ultra-low-support diagnostic and do not veto
-the other gold rows. No new Transmutation data is required. Gold-event outputs
-use native +20/+25 HoG payouts, index-ordered clipped theft, per-thief recovery
-and escape rules, Ectoplasm suppression, and reset of pre-existing stolenGold.
-The small shared categorical scorer conditions on frozen visible encoding,
-upstream HP/potion state and mechanical upgrade/source features. Only the new
-component is fitted; upstream weights stay frozen. Executed development gates
-pass at gold source `1a24e7ccdb26c3ef649371dfe07269ecbc3c2d4a`, with supplemental
-relic evaluation `2f8fb3f45a6656c03d81f69f3f4b1d1c3116164a`. Fit uses 56,153
-original TRAIN victories and 6,788 VALIDATION victories (selected epoch 12).
-Gold-union TEST NLL 0.574911 / Brier 0.259408 / mode exact 0.799972; informative
-subset NLL 1.010275 (4,091 rows). Exposure means: gold 0.012944, HP 0.014668,
-potion 0.000701, relic 0.006219 per observed group; every gold reason slice passes
-≤0.1 nat. All 233,632 complete ancestral draws have zero recorded native gold/
-upstream persistent/downstream-after-death violations. Both Transmutation+
-rows participate in validity; its single victory is a diagnostic, not calibration
-proof. Source audit has zero target/persistent/inherited-RNG violations across
-71,367 candidates. Support/runtime changes remain pending independent review
-and final qualification; no upstream/full-stack refit or native export was run. Specific #180
-upgraded-card frequency remains unknown because its reasons are aggregated.
-No collection or gameplay is authorized for this continuation. See
-[staged report and full census](../../experiments/evidence/near_full_combat_support_2026-09-14/REPORT.md)
-and [ledger-06 §251](../../experiments/ledger-06.md).
+Writhing Mass and Ritual Dagger tiny native-event heads pass bounded exact
+exposure gates: +0.047608 and -0.000122 nat. Exact Writhing exposure first failed
+at +0.530710; an affected maxHP encoder/head refit repaired it, leaving all other
+historical weights unchanged. Their upstream HP/potion/relic exposure checks
+pass, as does rechecking gold with the repaired maxHP model. Combined sparse
+native validity: 62,912 draws, zero recorded hard violations. Omamori prevention
+requires positive charges; zero charges permit Parasite. Dagger changes preserve
+RAW card ownership, and joint gold/Dagger legality shares the fatal-hit budget.
+Brew/Smoke overlaps remain explicitly deferred to combined qualification.
+
+Explicit ESCAPE continuation passes a focused oracle against actual native Smoke
+Bomb exit from the identical origin: exact OOC/persistent/all-RNG/PathHistory,
+no-reward map return, Cleric behavior and unchanged parent. Learned escape
+probabilities and Brew-generated Smoke branches remain unqualified.
+
+Native Brew replay matches all 3,208 pre-Brew rows / 3,106 generation rounds,
+including recursive generation. A material RNG-origin choice is pending:
+independent planner-owned hypothetical potion RNG (oracle uses the same
+hypothetical origin), or preserved historical-origin replay labeled known-RNG.
+Neither contract has been silently substituted. This blocks the remaining
+Brew trajectory/full composition/native artifact qualification, not sparse
+Transmutation calibration. No new data or gameplay ran.
+
+Live support is unchanged: 413,799/510,030 overall (81.132286%), 41,454/51,441
+TEST (80.585525%), zero actual newly recovered rows. No near-full native runtime
+artifact exists yet. Inspected #180 traces contain first-reason aggregates,
+not saved imagined states, so no before/after state replay is established.
+See [staged report and bound receipts](../../experiments/evidence/near_full_combat_support_2026-09-14/REPORT.md)
+and [ledger-06 §252](../../experiments/ledger-06.md).
 
 ### Live OOC MCTS paired Silver gameplay gate
 

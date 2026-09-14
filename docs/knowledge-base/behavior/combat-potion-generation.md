@@ -28,7 +28,7 @@ presence is excluded irrespective of inventory capacity or Sozu.
 
 | Route | Executed source and potion consequence |
 | --- | --- |
-| Entropic Brew | `BattleContext::drinkPotion` calls `returnRandomPotion` and `obtainPotion` to fill available slots. Excluded. |
+| Entropic Brew | `BattleContext::drinkPotion` generates `potionCapacity` results through `returnRandomPotion`, inserting through `obtainPotion` when allowed. Excluded. |
 | Explicit Alchemize | STS1 potion generator; no execution case exists in this simulator's `BattleContext::useCard`. Excluded despite this implementation gap. |
 | Discovery, attack/skill/power potions | `Actions::DiscoveryAction` → `generateDiscoveryCards` → `CombatCardPool` / `CombatTypeCardPool`. Alchemize absent. |
 | Chrysalis, Metamorphosis | `PutRandomCardsInDrawPile` uses `CombatTypeCardPool`. Alchemize absent. |
@@ -62,6 +62,26 @@ accounts for all 510,030 rows: support 322,644 → 413,799, original TEST
 32,164 → 41,454, zero supported potion-identity violations. Remaining fallback
 96,231 retains the original independent exclusions. Distribution qualification
 has not been extended to recovered rows.
+
+## Native Brew development boundary
+
+`Game::returnRandomPotion` in combat-limited Ironclad mode draws rarity at
+65% common /25% uncommon /10% rare, then returns uniformly within that rarity
+from the native pool after excluding Fruit Juice. The initial pool candidate is
+discarded in limited mode. Bounded rejection must replay native raw RNG steps,
+not advance a counter generically. Brew generates `potionCapacity` results on
+every use even if the inventory is full or Sozu prevents insertion; insertion
+searches only the active capacity slots. Generated Brew can be consumed again,
+and generated Smoke Bomb can cause escape.
+
+The explicit-origin development helper `tools/combat_transition_brew.py`
+reproduces all 3,208 frozen pre-Brew rows and 3,106 generation rounds, including
+112 recursive-consumption cases. This generator audit does not qualify a learned
+consumption trajectory or change live support. Independent hypothetical planner
+RNG generation and exact replay from preserved historical potion RNG are distinct
+contracts. Their origin policy remains a material open question in the near-full
+support continuation; neither is silently substituted. See the
+[bound replay and origin comparison](../../experiments/evidence/near_full_combat_support_2026-09-14/brew-native-generation-v2.json).
 
 ## Relevant code
 
