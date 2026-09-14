@@ -46,7 +46,7 @@ int main(int argc,char **argv) {
                     for(int draw=0;draw<j.value("draws",128);++draw){std::mt19937_64 random(20260921+draw),cached=random,tape=random;json words=json::array();for(int k=0;k<256;++k)words.push_back(tape());auto sample=sampler.sample(gc,p,random),other=prepared->sample(cached);if(sample.outcome!=other.outcome||combatTransitionStateJson(sample.rawPost)!=combatTransitionStateJson(other.rawPost)||random!=cached)throw std::runtime_error("near-full prepared/reference parity");
                         auto count=std::mt19937_64(20260921+draw);int used=0;while(count!=random&&used<256){count();++used;}if(count!=random)throw std::runtime_error("parity draw tape exhausted");samples.push_back({{"outcome",int(sample.outcome)},{"rawPost",combatTransitionStateJson(sample.rawPost)},{"words",words},{"wordsUsed",used}});
                     }out["samples"]=samples;
-                }std::cout<<out.dump()<<'\n';continue;
+                }else{std::mt19937_64 random(123),before=random;auto sample=sampler.sample(gc,p,random);if(sample.outcome!=CombatRuntimeSample::Outcome::UNSUPPORTED||random!=before)throw std::runtime_error("unsupported sampling consumed RNG");out["unsupportedNoDraw"]=true;}std::cout<<out.dump()<<'\n';continue;
             }
             if(argc==4) {
                 using Clock=std::chrono::steady_clock;

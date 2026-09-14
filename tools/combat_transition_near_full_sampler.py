@@ -129,7 +129,8 @@ def assemble(pre,pi,ending,maximum,potion_trace,residues,writhing_event,dagger_d
 
 
 class NearFullSampler:
-    def __init__(self,parent,folder=None,device='cuda'):
+    def __init__(self,parent,folder=None,device='cuda',final_support=False):
+        self.final_support=final_support
         parent=Path(parent);folder=parent/'full-union-downstream-v1' if folder is None else Path(folder)
         self.models,self.bindings=downstream.load_upstream(parent,device)
         import json
@@ -140,7 +141,9 @@ class NearFullSampler:
 
     def sample_transition(self,pre,pi,planner):
         m=self.models
-        with support.candidate_contract():reasons=c.full_support_reasons(pre,pi,m)
+        if getattr(self,'final_support',False):reasons=support.final_reasons(pi,pre,m)
+        else:
+            with support.candidate_contract():reasons=c.full_support_reasons(pre,pi,m)
         if reasons:return c.Transition('FULL_SURROGATE_FALLBACK',reasons=tuple(reasons))
         with torch.inference_mode():
             inputs=m.encode_visible(pi)

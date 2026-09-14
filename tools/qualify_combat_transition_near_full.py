@@ -44,7 +44,7 @@ def fixtures(parent,output):
 
 def qualify(parent,artifact,probe,fixture,output):
     if output.exists():raise ValueError('refusing qualification overwrite')
-    rows=fixtures(parent,fixture);torch.set_num_threads(1);m,nets,bindings=models.load(parent,'cpu');sampler=s.NearFullSampler(parent,device='cpu');assert sampler.bindings==bindings
+    rows=fixtures(parent,fixture);torch.set_num_threads(1);m,nets,bindings=models.load(parent,'cpu');sampler=s.NearFullSampler(parent,device='cpu',final_support=True);assert sampler.bindings==bindings
     run=subprocess.run([str(probe.resolve()),str(artifact.resolve()),str(fixture.resolve()),'near-full'],capture_output=True,text=True,check=True);output.with_suffix('.native.jsonl').write_text(run.stdout);native=list(map(json.loads,run.stdout.splitlines()));assert len(rows)==len(native);errors=Counter();counts=Counter();checks=0
     def compare(name,a,b):
         a=np.asarray(a,float);b=np.asarray(b,float)
@@ -59,7 +59,10 @@ def qualify(parent,artifact,probe,fixture,output):
         for row,n in zip(rows,native):
             pre,pi=row['pre'],row['predictorInput'];why=support.final_reasons(pi,pre,m)
             if n['supported']!=(not why):raise ValueError('runtime support parity')
-            if why:counts['failClosedFixtures']+=1;continue
+            if why:
+                tape=Tape([]);fallback=sampler.sample_transition(pre,pi,tape)
+                if fallback.outcome!='FULL_SURROGATE_FALLBACK' or tape.used or not n['unsupportedNoDraw']:raise ValueError('fail-closed sampling parity')
+                counts['failClosedFixtures']+=1;continue
             checks+=1;inputs=m.encode_visible(pi);z=m.hp_encoding(inputs);zp=m.fp32_encoding(m.potion_encoder.encoder,inputs).cpu().numpy();d=row['delta'];ending=row['ending'];maximum=row['maximum'];mask=row['mask'];consumed=row['consumed'];esc=row['escaped'];diag=n['diagnostics'];raw_z=z.cpu().numpy()[0]
             compare('survival',[m.survival(inputs)],[n['survival']]);compare('maxHP',m.max_hp(inputs),n['maxHp']);compare('hp',m.hp_distribution(z,d,pre['curHp'],maximum),n['hp']);compare('hpEncoding',raw_z,diag['hpEncoding']);compare('potionEncoding',zp[0],diag['potionEncoding'])
             lp=t.log_probabilities(m.potion_net,zp,[pre['potions']],[pre['potionCapacity']],[d],[ending/maximum],[gold.encounter_name(pi['globals']['encounter']) in t.BOSSES]);compare('potion',lp[0].exp().cpu().numpy(),diag['potion'])
