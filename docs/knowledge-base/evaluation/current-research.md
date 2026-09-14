@@ -39,7 +39,7 @@ against this fresh cohort.
 
 ## Completed recent line
 
-### Near-full combat-support expansion: stopped at Stage 1 evidence gate
+### Near-full combat-support expansion: shared gold component in development
 
 **NEAR_FULL_COMBAT_SUPPORT_NOT_READY**. The seed-free frozen census reproduces
 #179: 413,799/510,030 supported overall (81.132286%) and 41,454/51,441
@@ -50,16 +50,19 @@ or other victorious copy-through mutation. These candidates are not qualified.
 they contain aggregates rather than saved imagined states or joint reasons,
 so no before/after state replay or new root-abort prediction is established.
 
-Stage 1 stops because upgraded Transmutation occurs in exactly two corpus rows,
-both from one TEST source: TRAIN=0, VALIDATION=0, TEST=2 (one non-gain victory,
-one death). Native generation upgrades its colorless cards, including possible
-Hand of Greed; proc probability also depends on card use and eligible kills.
-There is no validated conditional distribution or reviewed transfer derivation
-for this branch. Reliable full Stage-1 qualification needs targeted evidence
-or a justified derivation; this is not a proof that modeling is impossible.
-Its specific #180 live frequency is unknown because card reasons are aggregated.
-No training, collection, support/runtime changes, or gameplay occurred; stages
-2–5 did not start under the requested stop rule. See
+The earlier §250 stop criterion was too conservative and is superseded by the
+accepted shared-mechanism design: upgraded Transmutation is a conditional input,
+not a separate data silo. Its two TEST rows (one non-gain victory, one death;
+zero TRAIN/VALIDATION) remain an ultra-low-support diagnostic and do not veto
+the other gold rows. No new Transmutation data is required. Gold-event outputs
+use native +20/+25 HoG payouts, index-ordered clipped theft, per-thief recovery
+and escape rules, Ectoplasm suppression, and reset of pre-existing stolenGold.
+The small shared categorical scorer conditions on frozen visible encoding,
+upstream HP/potion state and mechanical upgrade/source features. Only the new
+component is fitted; upstream weights stay frozen. Support/runtime changes
+remain gated on composition, validity and independent review. Specific #180
+upgraded-card frequency remains unknown because its reasons are aggregated.
+No collection or gameplay is authorized for this continuation. See
 [staged report and full census](../../experiments/evidence/near_full_combat_support_2026-09-14/REPORT.md)
 and [ledger-06 §250](../../experiments/ledger-06.md).
 

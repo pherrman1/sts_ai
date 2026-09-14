@@ -1,6 +1,6 @@
-# Near-full Ironclad combat support: staged stop report
+# Near-full Ironclad combat support: staged execution report
 
-**NEAR_FULL_COMBAT_SUPPORT_NOT_READY**. Stage 1 stops at a data-sufficiency gate; no training, support expansion, runtime artifact, MCTS policy change, new collection, or gameplay was performed. Stages 2–5 depend on Stage 1 passing and have not run.
+**NEAR_FULL_COMBAT_SUPPORT_NOT_READY** pending Stage-1 development and composition gates. The earlier stop on Transmutation+ was too conservative and is superseded: share the learned HoG mechanism and supply native upgrade-dependent payouts. No new data or gameplay. Stages 2–5 require Stage 1 to pass.
 
 Baseline / unchanged model implementation SHA: `210f347334898e7c2a85b8af0f30dedc4888ea88`. Local main was fast-forwarded from `74d31681b8ebd3beb5e85d6db9c1a164f9aeaf13`; the existing fresh Codex-app-managed worktree was moved to that clean main on `codex/near-full-combat-support`. No additional worktree was created. #179 and #180 are merged. Reviewed SHA: **none**; this audit has not had independent review. Final audit handoff SHA is recorded in the draft PR evidence packet.
 
@@ -249,30 +249,30 @@ Gold exclusions affect 74,069 rows overall and 7,615 TEST rows. The gold-only ca
 | train | 57,151 | 16,153 | 56,153 | 998 | 364 |
 | validation | 6,915 | 2,017 | 6,788 | 127 | 34 |
 
-**Stop mechanism: upgraded Transmutation → generated upgraded Hand of Greed.** Whole-corpus prepared-card inspection confirms exactly two rows, both source 4108572, fight indices 27 and 28, both TEST. TRAIN=0; VALIDATION=0; TEST=2 (one victory without net gold gain; one death). This is not merely an empty gold-only training slice: the entire 510,030-row corpus has no TRAIN/VALIDATION examples of that visible branch.
+**Transmutation+ diagnostic, not a veto.** Whole-corpus inspection finds exactly two rows, both source 4108572 / fights 27 and 28 / TEST: one non-gain victory and one death; TRAIN=0 and VALIDATION=0. This slice cannot independently establish calibration, but does not require a separate distribution. The accepted design shares statistical information across explicit HoG/HoG+, Transmutation and generated routes, with upgraded-HoG source status as a common condition and exact native +20/+25 payouts. Native generation also permits recursive colorless routes and in-combat upgrades; these affect legal payout availability. The damage shift (25 versus 20) remains a conditional modeling issue and diagnostic caveat.
 
-Missing information: a learnable/validated conditional proc distribution for upgraded Transmutation, or a separately justified transfer rule from observed mechanisms. The native generator gives the card pool/upgrade rule, but generated-card use and kill attribution are stochastic policy/trajectory effects. An unverified shared-head extrapolation cannot be called reliable qualification from one non-proc TEST victory. This does not prove the branch is mathematically impossible to model; it means this full Stage-1 qualification lacks evidence under the requested frozen protocol.
+The earlier request for new targeted Transmutation+ data is withdrawn. Corpus frequency remains 2/510,030 (0.000392%); specific #180 live frequency remains unknown because gold-card reasons are aggregated. No data is collected or reassigned across frozen splits.
 
-Affected corpus frequency: 2/510,030 = 0.000392%; TEST 2/51,441 = 0.003888%; one source. It is a reachable Ironclad colorless acquisition route. #180 live frequency for this specific upgraded-card route is **unknown**: all gold-mutating cards are aggregated into 264 first-failure aborts; no card/upgrade/state details are saved.
+Implementation: `tools/combat_transition_gold.py` enumerates native RAW gold/stolenGold outcomes with turn-ordered clipped theft, killed/escaped thief recovery, exact payouts, Ectoplasm and pre-stolen reset. A single small conditional categorical scorer shares frozen visible state, HP/potion conditions and common upgrade features. The native closure proves gold-accounting legality, not complete combat-policy reachability. `tools/combat_transition_gold_evaluate.py` audits/prepares all original gold-only rows, fits only the new scorer on original TRAIN victories with original VALIDATION epoch selection, and produces bounded development diagnostics. No encoder or upstream head is trained.
 
-Smallest additional evidence: a targeted upgraded-Transmutation transition slice under the same native RAW capture and actual combat policy, from distinct source groups in TRAIN and VALIDATION plus a held-out TEST slice with informative gold-proc and non-proc events. Preserve source grouping and provenance; do not split the two existing TEST rows into TRAIN. A separately reviewed native/transfer derivation could avoid collection, but none is established here. The numeric collection size is not identifiable from one non-proc victorious source; a validated event-rate/precision requirement is needed before choosing a sample count. No additional data was collected.
+The fixed composition diagnostic uses 32 upstream draws, exact conditional potion-mask marginalization for gold exposure, the existing exact maxHP marginal for HP exposure, and 32 complete ancestral draws per gold-only TEST row. Main gold mechanisms and their union are reported separately; Transmutation+ is reported as an ultra-low-support diagnostic and excluded from the vetoing statistical aggregation, while its native validity remains checked. Independent final qualification, relic exposure and union/native/runtime continuation remain required.
 
-Implementation: census and source-inventory tools plus fail-closed accounting tests only. New gold components trained: **none**. Component NLL/Brier/MAE, ancestral exposure, sampled native legality: **not run**. Rows recovered: **0**. Cumulative support stays 413,799/510,030 (81.132286% overall), 41,454/51,441 (80.585525% TEST). If all gold-only candidates later qualify, their bookkeeping upper bound is 95.124993% overall and 94.778484% TEST; this is not qualified support.
+Development fit/metrics are pending on the frozen implementation SHA. No support exclusions have been removed and no deployable runtime artifact is changed. Rows recovered: **0**. The previously frozen census and source-inventory bytes remain unchanged.
 
 ## Stages 2–4
 
 | Stage | Mechanism | Implementation/training/TEST metrics/exposure/ancestral validity | Rows recovered |
 | --- | --- | --- | ---: |
-| 2 | Writhing Mass | Not started; Stage 1 stop rule | 0 |
-| 2 | Ritual Dagger | Not started; Stage 1 stop rule | 0 |
-| 3 | Entropic Brew / creation | Not started; Stage 1 stop rule | 0 |
-| 4 | Smoke Bomb / ESCAPE | Not started; Stage 1 stop rule | 0 |
+| 2 | Writhing Mass | Not started; Stage 1 qualification pending | 0 |
+| 2 | Ritual Dagger | Not started; Stage 1 qualification pending | 0 |
+| 3 | Entropic Brew / creation | Not started; Stage 1 qualification pending | 0 |
+| 4 | Smoke Bomb / ESCAPE | Not started; Stage 1 qualification pending | 0 |
 
 ## Stage 5 and final qualification
 
 No refit or union qualification. Final support remains the historical #179 support; all 96,231 fallback rows and reasons in the initial census remain unsupported. Final new component/composition metrics, native parity, new runtime artifact hash, continuation equivalence, and new #180 counts: **not available**. The unchanged historical runtime is not a near-full-support artifact.
 
-Final classification: **NEAR_FULL_COMBAT_SUPPORT_NOT_READY**. No gameplay improvement is claimed. Independent review and the missing evidence are required before further scientific/model/support changes.
+Final classification: **NEAR_FULL_COMBAT_SUPPORT_NOT_READY**. No gameplay improvement is claimed. Independent review and composition qualification are required before support/runtime changes; the approved shared-mechanism development continues without new data.
 
 ## Checks and reproduction
 

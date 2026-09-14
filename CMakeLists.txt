@@ -427,6 +427,8 @@ add_test(NAME combat_transition_expanded_support_selftest
     COMMAND python3 ${CMAKE_SOURCE_DIR}/tools/test_combat_transition_expanded_support.py)
 add_test(NAME combat_transition_remaining_census_selftest
     COMMAND python3 ${CMAKE_SOURCE_DIR}/tools/test_combat_transition_remaining_census.py)
+add_test(NAME combat_transition_gold_selftest
+    COMMAND python3 ${CMAKE_SOURCE_DIR}/tools/test_combat_transition_gold.py)
 add_test(NAME combat_transition_native_fixture
     COMMAND $<TARGET_FILE:one_combat> combattransitionselftest
         ${CMAKE_CURRENT_BINARY_DIR}/combat_transition_fixture.jsonl

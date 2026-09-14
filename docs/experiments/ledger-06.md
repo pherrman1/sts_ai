@@ -7688,3 +7688,33 @@ complete scans/hash bindings PASS; diff check PASS. No independent review yet,
 no C++ build/full CTest/scientific sampling. Knowledge impact: research evidence
 and maintained current status. [Staged report](evidence/near_full_combat_support_2026-09-14/REPORT.md)
 links all frozen JSON receipts and hashes.
+
+## §251 — Shared native gold component: revised Stage-1 design (2026-09-14)
+
+Supersedes §250's overly conservative Transmutation+ stop. User-approved design
+shares the stochastic gold mechanism; upgrade is a common conditional feature,
+with exact native +20/+25 HoG payouts. The two Transmutation+ TEST rows are an
+ultra-low-support diagnostic, not a calibration gate vetoing the gold union.
+Original frozen splits/corpus/census stay unchanged; no new data or gameplay.
+
+Implement native RAW outcome enumeration: turn/index-ordered theft with clipping,
+two mugs/optional lunge/block/escape, per-thief recovery, reset pre-stolenGold,
+Ectoplasm, qualifying-kill caps including split slimes and minion exclusions.
+A small categorical candidate scorer uses frozen HP encoding, shared mechanical
+upgrade/source features and HP/potion conditions. Native closure guarantees gold
+accounting, not full policy reachability. Only new scorer TRAIN victories fit;
+VALIDATION selects earliest minimum NLL. All upstream checkpoints are frozen.
+
+Protocol: full gold-only native target audit, bounded 12-epoch decoder fit,
+32 upstream draws with exact potion-mask marginalization for gold exposure;
+existing exact maxHP marginal for HP; 32 complete ancestral validity draws per
+TEST row. Report each gold mechanism/union separately and Transmutation+ as a
+non-vetoing diagnostic (its native validity is still checked). Development
+metrics do not substitute for independent final qualification/relic exposure/
+union/native export/runtime continuation. Support remains unchanged pending
+those gates. Scientific outcomes will be recorded on the frozen implementation
+SHA in the same evidence packet after execution.
+
+Checks: native/shared-scorer focused8tests PASS; census tests5PASS; Debug CMake
+configure/generate PASS; focused CTests2/2PASS (1.36s); no C++ changes/build.
+Knowledge impact: revised research status, frozen protocol and code navigation.
