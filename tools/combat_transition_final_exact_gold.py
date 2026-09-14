@@ -37,7 +37,9 @@ def exact(m,nets,row):
 
 def resolve(parent,original,output):
     if output.exists():raise ValueError('refusing overwrite')
-    report=json.loads(original.read_text());z=np.load(original.with_suffix('.npz'));data={k:z[k].copy() for k in z.files};bad=np.flatnonzero(~np.isfinite(data['mixtureNll'][:,5]));ids=data['ids'];snapshot={r['index']:r for r in map(json.loads,(parent/'full-union-test-states-v1.jsonl').open())};torch.set_num_threads(4);m,nets,bindings=models.load(parent,'cpu');assert report['bindings']==bindings;corrections=[]
+    report=json.loads(original.read_text());
+    if c.base.sha256(original.with_suffix('.npz'))!=report['rowEvidenceSha256']:raise ValueError('original exposure row evidence differs')
+    z=np.load(original.with_suffix('.npz'));data={k:z[k].copy() for k in z.files};bad=np.flatnonzero(~np.isfinite(data['mixtureNll'][:,5]));ids=data['ids'];snapshot={r['index']:r for r in map(json.loads,(parent/'full-union-test-states-v1.jsonl').open())};torch.set_num_threads(4);m,nets,bindings=models.load(parent,'cpu');assert report['bindings']==bindings;corrections=[]
     with torch.inference_mode():
         for i in bad:
             mass,total=exact(m,nets,snapshot[int(ids[i])]);data['mixtureNll'][i,5]=-np.log(mass);data['exposureGap'][i,5]=data['mixtureNll'][i,5]-data['teacherNll'][i,5];corrections.append(dict(index=int(ids[i]),originalMonteCarloMass=0.,exactTargetMass=mass,ancestralNormalization=total))

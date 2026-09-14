@@ -230,6 +230,7 @@ add_executable(one_combat apps/one_combat.cpp apps/combat_model_diagnostics.cpp
     apps/one_combat/combat_transition.cpp
     apps/one_combat/e2c_capture.cpp
     apps/one_combat/ooc_mcts_adapter.cpp
+    apps/one_combat/combat_transition_near_full.cpp
     apps/one_combat/combat_transition_runtime.cpp
     apps/one_combat/combat_transition_native_contract.cpp
     apps/one_combat/ooc_policy.cpp
@@ -497,6 +498,7 @@ set_tests_properties(ooc_mcts_adapter PROPERTIES WORKING_DIRECTORY ${CMAKE_SOURC
 
 # Captured-state probability probe; no gameplay or default integration.
 add_executable(combat_transition_runtime_probe tests/combat_transition_runtime_probe.cpp
+    apps/one_combat/combat_transition_near_full.cpp
     apps/one_combat/combat_transition_runtime.cpp
     apps/one_combat/combat_transition_native_contract.cpp
     apps/one_combat/combat_predictor_input.cpp apps/one_combat/combat_transition.cpp
@@ -516,3 +518,6 @@ add_test(NAME ooc_mcts_live_startup COMMAND python3
     ${CMAKE_SOURCE_DIR}/tools/verify/ooc_mcts_live_startup.py $<TARGET_FILE:one_combat>)
 set_tests_properties(ooc_mcts_live_startup PROPERTIES
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "integration")
+
+add_test(NAME combat_transition_final_support_selftest COMMAND python3 -m unittest tools.test_combat_transition_final_support)
+set_tests_properties(combat_transition_final_support_selftest PROPERTIES WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})

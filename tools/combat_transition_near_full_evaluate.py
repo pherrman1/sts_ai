@@ -83,6 +83,11 @@ def load(parent,final_support=False):
     test['writhingTarget']=np.asarray(target_writhing);test['daggerTarget']=target_dagger;test['goldTarget']=[(r['post']['gold'],r['post']['stolenGold']) for r in rows]
     if final_support:
         chosen=np.flatnonzero(s.support.final_mask(rows));rows=[rows[i] for i in chosen];ids=ids[chosen];test=subset(test,chosen)
+        import hashlib
+        digest=hashlib.sha256(''.join(f'{int(i)}\n' for i in ids).encode()).hexdigest()
+        census=json.loads((parent/'final-support-census-v1.json').read_text())
+        if digest!=census['groups']['TEST']['supportedIndexSha256']:raise ValueError('qualification filter differs from full support predicate')
+        snapshot={**snapshot,'finalSupportIndexSha256':digest,'finalSupportRows':len(ids)}
     return cache,graphs,ambiguous,records,dm,rows,ids,test,snapshot
 
 
