@@ -7741,8 +7741,10 @@ Independent old-header comparison passes1,536 bitwise checks across512 cases;
 maintained adapter/frozen fixtures plus core/startup/semantic/analyzer5CTest pass.
 One fresh paired seed42, CPU0/OMP1, IroncladA0, OOC512/exact10,000Silver,
 project-fair combat/copied noncombat RNG, keysOFF/Act3-or-death/same models:
-full43.6509s→33.8555s (22.44% lower); OOC25.998381s→16.063340s (38.21% lower).
-Both exit0, same floor50 death, every non-timing OOC counter, all28 Silver
+full43.6509s→35.3348s (19.05% lower); OOC25.998381s→17.080533s (34.30% lower).
+A preliminary candidate link retained an inactive profiler object; its timing
+is excluded. Rebuild/relink, no-profiler-symbol audit and5CTest rerun pass; one
+clean candidate run supplies these final numbers. Both valid arms exit0, same floor50 death, every non-timing OOC counter, all28 Silver
 telemetry lines and support reasons match. Shortcuts/saved simulations remain0.
 No per-action/full-state trace or quality cohort; one ordered pair is descriptive.
 Knowledge impact: maintained V4 API/lifetime and engineering evidence.

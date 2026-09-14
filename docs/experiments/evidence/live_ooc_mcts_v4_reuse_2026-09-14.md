@@ -2,7 +2,7 @@
 
 Baseline: `eb84039b99e2f3b932e08fdfc51f1f7eebbbeaa5` (PR #183 after CTM reuse
 and the sole-root capability gate). Candidate: `b019e694fcdb150b0ff085eaed118b7272103556`.
-One instrumented baseline run plus one uninstrumented baseline/candidate pair,
+One instrumented baseline run and one usable baseline/candidate timing pair,
 all seed42/Ironclad A0, 512 OOC simulations, exact10,000 Silver real-combat budget,
 project-fair combat/copied noncombat RNG, identical models, keysOFF, Act3-or-death,
 CPU0/OMP1. All seed commands use seed_guard.sh. No seed selection or quality cohort.
@@ -61,9 +61,9 @@ on the PR; independent implementation review remains the draft handoff.
 
 | Measurement | Baseline | Candidate | Reduction |
 | --- | ---: | ---: | ---: |
-| Full run | 43.6509s | 33.8555s | 22.44% (1.289x) |
-| OOC MCTS | 25.998381s | 16.063340s | 38.21% (1.618x) |
-| Whole process including startup | 43.816466s | 33.996594s | descriptive |
+| Full run | 43.6509s | 35.3348s | 19.05% (1.235x) |
+| OOC MCTS | 25.998381s | 17.080533s | 34.30% (1.522x) |
+| Whole process including startup | 43.816466s | 35.475049s | descriptive |
 
 Both exit0 with the same floor50/Act3 death. All non-timing OOC metrics match,
 including207 decisions,148owned/59fallback,76,792completed/76,815attempted,
@@ -74,7 +74,7 @@ was collected; aggregate equality alone is not full trajectory/state parity.
 
 One seed, one ordered pair: descriptive engineering timing, not an average
 speedup or decision-quality qualification. Relative to the earlier original
-baseline62.3369s, current33.8555s is45.69% lower, but that comparison spans trials.
+baseline62.3369s, current35.3348s is43.32% lower, but that comparison spans trials.
 The remaining measured opportunities include tree prediction and rich-feature
 CSV conversion; neither is changed here. Re-profile the candidate before
 assuming their original shares still hold.
@@ -83,3 +83,11 @@ assuming their original shares still hold.
 environment, source/binary/model hashes, instrumentation, independent probe,
 raw logs/metadata/CSV and focused test results. Knowledge impact: current V4
 preparation lifetime/API in the OOC KB and chronological engineering evidence.
+
+Final binary audit found an inactive profiling object in the preliminary candidate
+link because restoring the source retained its older mtime. That timing is
+superseded in the packet. Rebuilding the affected object/relinking removed all
+`speedprof::` symbols; five focused tests passed again, and one clean candidate
+run produced the final table above with matching outcome/counters/telemetry.
+No source changes were needed. Both raw candidate trials are retained, with the
+preliminary one explicitly excluded from the reported comparison.
