@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """Native combat-limited Brew generation from an explicitly supplied RNG origin.
 
-This module does not choose that origin. Using historical potionRng is exact
-known-RNG replay; an independent hypothetical origin is a different contract.
+Historical origins are used only to reconstruct teacher labels. Imagined Brew
+uses a fresh planner-owned native Random origin and retains its advanced state.
 """
 import math
 import re
@@ -26,6 +26,21 @@ FRUIT=base._POTION_IDS['FRUIT_JUICE']
 RARITY_MASS={'COMMON':.65,'UNCOMMON':.25,'RARE':.10}
 PROBABILITY={p:RARITY_MASS[RARITY[p]]/sum(RARITY[q]==RARITY[p] and q!=FRUIT for q in POOL) for p in POOL if p!=FRUIT}
 if not math.isclose(sum(PROBABILITY.values()),1.,abs_tol=1e-12):raise ValueError('native potion law does not normalize')
+
+
+def native_origin(seed):
+    """sts::Random(seed), including its special zero-seed initialization."""
+    def murmur(value):
+        value^=value>>33;value=(value*(-49064778989728563))&rng.MASK
+        value^=value>>33;value=(value*(-4265267296055464877))&rng.MASK
+        return value^(value>>33)
+    first=murmur(int(seed) or (1<<63))
+    return dict(counter=0,seed0=first,seed1=murmur(first))
+
+
+def hypothetical_origin(planner):
+    # Full-width raw draw, avoiding floating-point truncation of a native seed.
+    return native_origin(int(planner.bit_generator.random_raw()))
 
 
 def draw_native(state):
