@@ -7397,3 +7397,29 @@ encoders dominate (~1.08 ms/component); no optimization was attempted.
 
 [Full evidence and commands](evidence/native_combat_adapter_2026-09-14.md),
 [artifact hashes and raw metrics](evidence/native_combat_adapter_2026-09-14.json).
+
+## §243 Frozen potion-generation support-contract correction (2026-09-14)
+
+Baseline main `3057ea79f8a678ba13f9f2ea2b4834850fa2dd87`. Seed-free full census
+of the same 510,030 rows and original source split; all corpus/model/prepared
+hashes and companion provenance revalidated. No training, tuning, sampling,
+new data, gameplay benchmark or win-rate run. Python/native predicates exclude
+explicit Alchemize and Entropic Brew instead of rejecting all off-color cards;
+all independent gates remain. Audited combat random pools cannot generate
+Alchemize. Explicit Alchemize remains unimplemented in this simulator and is
+excluded according to its STS1 potion-generation semantics.
+
+Overall support 322,644/510,030 (63.260%) → 413,799 (81.132%); original TEST
+32,164/51,441 (62.526%) → 41,454 (80.586%). 113,094/116,302 (97.242%) previous
+potion rejections recover certification; 91,155 (78.378%) recover full support.
+All historical support tables/reasons reproduce. The 96,231 remaining full
+fallbacks match original global eligibility; independent reason counts are
+unchanged. Zero potion creation/swap/substitution violations on every supported
+row, including deaths; zero preserved RNG, copy-through and victorious relic
+trajectory contradictions. 32 focused Python/native tests, affected builds and
+six CTests pass. This is contract/census validation; historical distribution
+qualification remains on its original measured subset, with no new runtime
+performance or gameplay qualification.
+
+[Full provenance, slices, limitations and commands](evidence/potion_generation_support_2026-09-14.md),
+[raw accounting and source hashes](evidence/potion_generation_support_2026-09-14.json).

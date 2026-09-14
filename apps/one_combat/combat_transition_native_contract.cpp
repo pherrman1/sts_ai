@@ -73,7 +73,7 @@ std::vector<std::string> nativeComposedSupportReasons(const CombatPredictorInput
         if(c.cardId<0 || c.cardId>=count(sts::cardEnumStrings) || c.bottleBinding < -1 || c.bottleBinding>2)return {"invalid_pre_state"};
         if(i && std::tie(c.cardId,c.upgraded,c.misc,c.bottleBinding)<std::tie(pi.cards[i-1].cardId,pi.cards[i-1].upgraded,pi.cards[i-1].misc,pi.cards[i-1].bottleBinding))return {"invalid_pre_state"};
         ritual|=c.cardId==id(C::RITUAL_DAGGER);goldCard|=c.cardId==id(C::HAND_OF_GREED)||c.cardId==id(C::JACK_OF_ALL_TRADES)||c.cardId==id(C::TRANSMUTATION);
-        auto color=sts::cardColors[c.cardId];certified&=color==sts::CardColor::RED || color==sts::CardColor::COLORLESS || color==sts::CardColor::CURSE;
+        certified&=c.cardId!=id(C::ALCHEMIZE);
     }
     add(ritual,"ritual_dagger");add(goldCard,"gold_mutating_card");bool toolbox=false;
     for(std::size_t i=0;i<pi.relics.size();++i) {auto r=pi.relics[i];if(r.relicId<0 || r.relicId>=count(sts::relicEnumNames) || r.orderIndex!=static_cast<int>(i))return {"invalid_pre_state"};toolbox|=r.relicId==id(R::TOOLBOX);}

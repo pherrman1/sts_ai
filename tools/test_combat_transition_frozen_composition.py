@@ -11,16 +11,20 @@ except ModuleNotFoundError:
 
 
 class FrozenCompositionTests(unittest.TestCase):
-    def test_visible_predicate_rejects_offclass_and_creation(self):
+    def test_visible_predicate_rejects_actual_creation(self):
         pi = {"globals": {"characterClass": frozen.base.IRONCLAD_ID},
               "cards": [{"cardId": frozen.base._CARD_IDS["BASH"]}],
               "potions": [{"slot": i, "potionId": 1} for i in range(5)]}
         self.assertTrue(frozen.potion_consumption_only(pi))
         for field, value in (("cards", [{"cardId": frozen.base._CARD_IDS["ALCHEMIZE"]}]),
-                             ("cards", [{"cardId": frozen.base._CARD_IDS["FOREIGN_INFLUENCE"]}]),
                              ("potions", [{"slot": 0, "potionId": frozen.base.ENTROPIC_BREW_ID}])):
             bad = copy.deepcopy(pi); bad[field] = value
             self.assertFalse(frozen.potion_consumption_only(bad))
+        for name in ("FOREIGN_INFLUENCE", "DISTRACTION", "DISCOVERY", "CHRYSALIS",
+                     "METAMORPHOSIS", "CREATIVE_AI", "MAGNETISM", "BANE"):
+            harmless = copy.deepcopy(pi)
+            harmless["cards"] = [{"cardId": frozen.base._CARD_IDS[name]}]
+            self.assertTrue(frozen.potion_consumption_only(harmless), name)
         bad = copy.deepcopy(pi); bad["globals"]["characterClass"] = 1
         self.assertFalse(frozen.potion_consumption_only(bad))
         # Outcome, RNG, and post-state are absent from the predicate interface.
