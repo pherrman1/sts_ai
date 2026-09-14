@@ -7970,3 +7970,12 @@ review supplied by user covers8420103 only, later implementation not reviewed.
 Knowledge impact: accepted RNG contract, current qualification failure,
 source-bound receipts and model navigation maintained in KB/evidence.
 [Staged report and immutable receipts](evidence/near_full_combat_support_2026-09-14/REPORT.md).
+
+
+## 258. Final near-full native support excluding initial/pre-Smoke and Writhing/Ritual (2026-09-15)
+
+User-authorized final bounded pass in #182 changes the final pre-state support cutoff, not model weights or data. Initial Smoke, pre-Smoke flag and Writhing with Ritual are excluded; Brew-generated Smoke/ESCAPE remains modeled. Exact corpus support505,935/510,030(99.197106%), TEST51,036/51,441(99.212690%). All41,454 old#179 TEST rows are retained and recomposed with selected maxHP weights. Every nonempty final slice gate≤0.1 nat; maximumWrithing+.094655723. One32-draw gold zero is corrected through a restricted exact ancestral sum, preserving the original diagnostic and provenance; no target-mass failures remain. All1,633,152 final TEST draws have zero hard violations.
+
+The tracked V2 artifact SHA22c855e0667a58a73835505672b0ae6d03f12e9fb8d64f08893810199246e94e uses the selected original full-unionv1 stack, not failed Smoke repairs. CPUFP32 Python/native probability error≤5.96e−7 at1e−4 tolerance;3,904 complete RAW/planner-stream/scalar-prepared draws match, including117recursiveBrew cases. Threeexcluded fixtures prove fail-closed/no draws. Executed native support matches exact all/TEST ordered index digests across all510,030 rows. Strict load/export and tracked-artifact/startup tests are added.
+
+Original full-union Smoke failures and three bounded repair attempts remain preserved. No fourth repair, new data, gameplay or#180 root-abort estimate; exact#180 state replay unavailable. TEST reuse remains development evidence, not pristine scientific confirmation. V2 is opt-in and default MCTS remainsOFF. Frozen final SHA, independent review and LinuxGCC CI outcomes are recorded in #182 before authorized merge. Knowledge impact: maintained support/RNG/native artifact contracts, code map and qualification evidence updated. [Final report and bound receipts](evidence/near_full_combat_support_2026-09-14/REPORT.md).

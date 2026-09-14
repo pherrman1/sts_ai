@@ -1,0 +1,41 @@
+{
+  "checks": [
+    {
+      "command": "cmake --preset linux-gcc-debug-ccache",
+      "exitCode": 0
+    },
+    {
+      "command": "cmake --build --preset linux-gcc-debug-ccache-build -j 6",
+      "exitCode": 0
+    },
+    {
+      "command": "ctest --test-dir build/linux-gcc-debug-ccache --output-on-failure",
+      "exitCode": 0,
+      "outcome": "101/101 PASS",
+      "rawLog": "final-all-ctest.log"
+    },
+    {
+      "command": "bash tools/agent/doctor.sh",
+      "exitCode": 0,
+      "rawLog": "final-doctor.log"
+    },
+    {
+      "command": "python3 tools/agent/worktree.py check .",
+      "exitCode": 0,
+      "outcome": "json2222d386c905 pybind11=63d627c5747b"
+    },
+    {
+      "command": "git diff --check",
+      "exitCode": 0
+    }
+  ],
+  "independentHoldout": false,
+  "knowledgeImpact": "Maintained support, native artifact and hypothetical potion RNG contracts and final qualification evidence updated.",
+  "notRun": [
+    "New gameplay or game seeds",
+    "New corpus or training",
+    "Fourth Smoke repair",
+    "Exact #180 imagined-state replay (unavailable)"
+  ],
+  "sourceSha": "ced9ff6412f4dc4a3885ee36616b57d493b28b9c"
+}
