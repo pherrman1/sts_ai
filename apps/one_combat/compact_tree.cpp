@@ -32,11 +32,11 @@ bool CompactTreeNet::load(const std::string &path, const std::unordered_map<std:
         std::cerr << kind << ": truncated/missing tree count in " << path << "\n"; return false;
     }
     baseMargin = logistic ? std::log(baseScore / (1.0 - baseScore)) : baseScore;
-    trees.resize(ntrees);
+    nodes.clear(); roots.clear(); roots.reserve(ntrees + 1);
     for (int t = 0; t < ntrees; ++t) {
         std::string kw; int ti, nn; f >> kw >> ti >> nn;
         if (!f.good() || kw != "tree" || ti != t || nn < 1) { std::cerr << kind << ": invalid tree " << t << " header in " << path << "\n"; return false; }
-        trees[t].resize(nn);
+        std::vector<Node> tr(nn);
         for (int i = 0; i < nn; ++i) {
             std::string type; f >> type;
             Node nd = { -1, 0.0f, 0, 0 };
@@ -44,12 +44,12 @@ bool CompactTreeNet::load(const std::string &path, const std::unordered_map<std:
             else if (type == "S") { int fi = 0, y = 0, no = 0; float th = 0.0f; f >> fi >> th >> y >> no; nd = { fi, th, y, no }; }
             else { std::cerr << kind << ": invalid node tag in tree " << t << "\n"; return false; }
             if (!f.good()) { std::cerr << kind << ": truncated node in tree " << t << " of " << path << "\n"; return false; }
-            trees[t][i] = nd;
+            tr[i] = nd;
         }
-        for (const Node &nd : trees[t]) if (nd.feat >= 0 &&
+        for (const Node &nd : tr) if (nd.feat >= 0 &&
             (nd.feat >= nfeat || nd.yes < 0 || nd.no < 0 || nd.yes >= nn || nd.no >= nn)) {
             std::cerr << kind << ": invalid split index in tree " << t << "\n"; return false; }
-        if (trees[t].back().feat >= 0) {
+        if (tr.back().feat >= 0) {
             std::cerr << kind << ": final node is not a leaf in tree " << t << "\n"; return false;
         }
         std::vector<unsigned char> visit(nn, 0);
@@ -57,7 +57,7 @@ bool CompactTreeNet::load(const std::string &path, const std::unordered_map<std:
             if (visit[node] == 1) return false;
             if (visit[node] == 2) return true;
             visit[node] = 1;
-            const Node &nd = trees[t][node];
+            const Node &nd = tr[node];
             if (nd.feat >= 0 && (!validateTree(nd.yes) || !validateTree(nd.no))) return false;
             visit[node] = 2;
             return true;
@@ -65,7 +65,11 @@ bool CompactTreeNet::load(const std::string &path, const std::unordered_map<std:
         if (!validateTree(0) || std::find(visit.begin(), visit.end(), 0) != visit.end()) {
             std::cerr << kind << ": cyclic or unreachable node in tree " << t << "\n"; return false;
         }
+        roots.push_back(nodes.size());
+        for (auto &nd : tr) if (nd.feat >= 0) nd.feat = sel[nd.feat];
+        nodes.insert(nodes.end(), tr.begin(), tr.end());
     }
+    roots.push_back(nodes.size());
     f >> tok;
     if (!f.eof()) { std::cerr << kind << ": trailing data after " << ntrees << " trees in " << path << "\n"; return false; }
     ok = true;
@@ -75,10 +79,15 @@ bool CompactTreeNet::load(const std::string &path, const std::unordered_map<std:
 
 double CompactTreeNet::predict(const std::vector<float> &raw) const {
     double m = baseMargin;
-    for (const auto &tr : trees) { int i = 0, steps = 0;
-        while (tr[i].feat >= 0 && ++steps <= (int)tr.size()) i = (raw[sel[tr[i].feat]] < tr[i].thr) ? tr[i].yes : tr[i].no;
-        if (steps > (int)tr.size()) return std::numeric_limits<double>::quiet_NaN();
-        m += tr[i].thr; }
+    for (std::size_t t = 0; t + 1 < roots.size(); ++t) {
+        const Node *tr = nodes.data() + roots[t];
+        const int size = static_cast<int>(roots[t + 1] - roots[t]);
+        int i = 0, steps = 0;
+        while (tr[i].feat >= 0 && ++steps <= size)
+            i = (raw[tr[i].feat] < tr[i].thr) ? tr[i].yes : tr[i].no;
+        if (steps > size) return std::numeric_limits<double>::quiet_NaN();
+        m += tr[i].thr;
+    }
     const double out = logistic ? 1.0 / (1.0 + std::exp(-m)) : m;
     return logistic ? std::max(0.0, std::min(1.0, out)) : out;
 }

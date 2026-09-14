@@ -3,6 +3,7 @@
 
 #include <array>
 #include <string>
+#include <vector>
 #include <unordered_map>
 
 #include "game/GameContext.h"
@@ -27,6 +28,7 @@ struct PathHistory {
 FwdMap forwardMapFeatures(const sts::GameContext &gc);
 std::string richHeader();
 std::string richStateHeader();
+std::vector<float> richFeatureVec(const sts::GameContext &gc, const PathHistory &path);
 std::string richRow(const sts::GameContext &gc, const PathHistory &path);
 const std::unordered_map<std::string, int> &richIdxMap();
 

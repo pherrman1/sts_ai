@@ -739,12 +739,22 @@ Phase-5 architecture and recorded in `docs/knowledge-base/decisions/2026-08-02-s
    Sites: `apps/one_combat.cpp` REWARDS chains + `restWinPolicy`,
    `src/sim/search/ScumSearchAgent2.cpp::stepRewardsPolicy` and its REST_ROOM
    case, `src/sim/search/SimpleAgent.cpp::stepRestScreen`.
-3. Rich state is serialized by `vFeatCsv`/`richFeatureVec`. Current server-side
+3. Native rich state is built numerically by `richFeatureVec(gc, path)`; the
+   driver overload supplies the current thread-local path or an empty path.
+   CSV remains in `richRow`/`vFeatCsv` for datasets and server compatibility.
+   All row operands are integral; the parity regression compares every float
+   byte against legacy CSV parsing, including integers beyond float precision.
+   Current server-side
    raw layout has 1,017 values, including full card/relic/potion counts,
    forward-map summaries, and map position (`apps/one_combat.cpp::vFeatCsv`;
    `v_server.py::RAW`).
 4. Native tree models map artifact feature names to raw rich indices through
-   `richIdxMap` and score state or copied post-action states.
+   `richIdxMap` at load time and store final raw indices in split nodes.
+   `CompactTreeNet` stores nodes contiguously with root offsets and an end
+   sentinel; child indices remain relative to their tree. Traversal, float
+   thresholds/leaves, sequential double accumulation, and logistic/clamping
+   operations retain their original order. Models score state or copied
+   post-action states.
 5. Counterfactual evaluators copy `GameContext`, apply a legal action, detach
    shared map state when mutation is possible, and simulate or predict future
    checkpoints.

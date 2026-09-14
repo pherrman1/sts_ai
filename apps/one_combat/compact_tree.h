@@ -9,7 +9,9 @@ namespace one_combat {
 
 struct CompactTreeNet {
     struct Node { int feat; float thr; int yes, no; };
-    std::vector<std::vector<Node>> trees;
+    // Split features are raw indices; child indices remain relative to each root.
+    std::vector<Node> nodes;
+    std::vector<std::size_t> roots; // Includes an end sentinel for tree sizes.
     std::vector<int> sel;
     double baseMargin = 0.0; bool logistic = true, ok = false;
     std::string path;
