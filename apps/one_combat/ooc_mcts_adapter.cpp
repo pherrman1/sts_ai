@@ -341,7 +341,7 @@ std::uint64_t liveSimulations = 512;
 sts::search::OocMctsConfig liveConfig;
 OocAdapterOptions liveOptions{true};
 std::shared_ptr<const CombatTransitionSampler> liveSampler;
-std::string liveTrace;
+std::string liveTrace, liveRootLockTrace;
 std::mutex liveTraceMutex;
 std::uint64_t splitMix64(std::uint64_t x) {
     x += 0x9e3779b97f4a7c15ULL;
@@ -421,6 +421,7 @@ void configureLiveOocMcts() {
         std::ofstream out(liveTrace, std::ios::app);
         if (!out) throw std::runtime_error("STS_OOC_MCTS_TRACE cannot open output");
     }
+    liveRootLockTrace.clear();
     liveSimulations = 512; liveConfig = {}; liveOptions = {true};
     if (!liveEnabled) return;
     if (!g_oocStrategicTokNet.ok) throw std::runtime_error("STS_OOC_MCTS requires native V4 policy");
@@ -443,6 +444,13 @@ void configureLiveOocMcts() {
     liveConfig = {}; liveOptions = {true};
     for (const char *key : liveControlKeys)
         if (const char *value = std::getenv(key)) applyLiveControl(key, value, liveConfig, liveOptions);
+    if (const char *trace = std::getenv("STS_OOC_MCTS_ROOT_LOCK_TRACE")) liveRootLockTrace = trace;
+    liveConfig.observeRootLock = !liveRootLockTrace.empty();
+    if (liveConfig.observeRootLock) {
+        std::ofstream out(liveRootLockTrace, std::ios::app);
+        if (!out) throw std::runtime_error("STS_OOC_MCTS_ROOT_LOCK_TRACE cannot open output");
+        std::cout << "[ooc-root-lock-observer ON full_budget=1 hypothetical_only=1]\n";
+    }
     const char *artifact = std::getenv("STS_OOC_MCTS_COMBAT_MODEL");
     if (!artifact || !*artifact) throw std::runtime_error("STS_OOC_MCTS requires STS_OOC_MCTS_COMBAT_MODEL");
     liveSampler = std::make_shared<NativeCombatTransitionSampler>(artifact);
@@ -468,7 +476,7 @@ namespace {
 sts::search::OocMctsResult searchWithSoleRootShortcut(sts::search::OocGenerativeModel &model,
     const sts::search::OocMctsConfig &config, std::optional<sts::search::OocActionId> soleAction,
     std::uint64_t simulations) {
-    if (config.maxDepth && soleAction && model.searchGuaranteedNonAborting()) {
+    if (!config.observeRootLock && config.maxDepth && soleAction && model.searchGuaranteedNonAborting()) {
         sts::search::OocMctsResult result;
         result.selectedAction = soleAction;
         result.metrics.trivialRootBypasses = 1;
@@ -492,6 +500,30 @@ sts::search::OocMctsResult selectOocMctsAction(const GameContext &gc, const Path
     if (!simulations) throw std::invalid_argument("OOC MCTS requires simulations > 0");
     const auto result = searchWithSoleRootShortcut(model, config, model.soleLegalAction(0), simulations);
     if (!result.selectedAction && !result.aborted) throw std::runtime_error("live OOC MCTS missing selected root action");
+    if (config.observeRootLock) {
+        const auto &m = result.metrics;
+        const bool completed = !result.aborted && m.simulations == simulations;
+        if (completed && result.hypotheticalLockedAction
+            && result.hypotheticalLockedAction != result.selectedAction)
+            throw std::runtime_error("OOC hypothetical lock disagrees with full-budget winner");
+        const nlohmann::json row = {
+            {"seed",seed},{"decisionIndex",index},{"floor",gc.floorNum},{"screen",int(gc.screenState)},
+            {"requestedSimulations",simulations},{"completedSimulations",m.simulations},
+            {"simulationAttempts",m.simulationAttempts},{"fullBudgetCompleted",completed},
+            {"aborted",result.aborted},{"abortReason",result.abortReason},
+            {"hypotheticalLockSimulation",m.hypotheticalLockSimulation},
+            {"hypotheticalRemainingSimulations",m.hypotheticalRemainingSimulations},
+            {"hypotheticalTailWallSeconds",m.hypotheticalTailWallSeconds},
+            {"hypotheticalLockedAction",result.hypotheticalLockedAction
+                ? nlohmann::json(*result.hypotheticalLockedAction) : nlohmann::json(nullptr)},
+            {"selectedAction",result.selectedAction ? nlohmann::json(*result.selectedAction) : nlohmann::json(nullptr)},
+            {"searchGuaranteedNonAborting",model.searchGuaranteedNonAborting()},
+            {"earlyStopLockedRoot",m.earlyStopLockedRoot},{"savedSimulations",m.savedSimulations}};
+        std::lock_guard<std::mutex> lock(liveTraceMutex);
+        std::ofstream out(liveRootLockTrace,std::ios::app);
+        if (!out || !(out << row.dump() << '\n'))
+            throw std::runtime_error("STS_OOC_MCTS_ROOT_LOCK_TRACE write failed");
+    }
     samples = model.combatSamples();
     if (continuation) {
         *continuation = model.continuationMetrics();

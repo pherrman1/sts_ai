@@ -62,6 +62,22 @@ unsupported combat, unresolved continuation limits, and forbidden imagined
 native-combat paths still exist. Observed zero aborts do not qualify this contract.
 Metrics count locked-root stops and saved simulations separately.
 
+`OocMctsConfig::observeRootLock` is an opt-in diagnostic that suppresses both
+locked-root stopping and the qualified sole-root bypass. It records the first
+strict visit lock (including a zero-remaining-budget lock), its action and
+remaining simulation budget, and wall time from that completed simulation to
+search completion/abort. No extra sampling draws are consumed. Mean-Q roots
+have no visit-lock observation. Live `STS_OOC_MCTS_ROOT_LOCK_TRACE=<fresh.jsonl>`
+enables it and writes one JSON record per searched root with seed/decision,
+budget/completed/attempted simulations, lock/action/tail time, full-budget status,
+abort reason, final action and the non-aborting guarantee. Existing run CSV
+columns and actual early-stop/saved-simulation counters retain their semantics.
+Only completed full-budget roots contribute conditional opportunity estimates;
+locked roots that later abort remain invalid and must be reported separately.
+Even zero observed aborts or matching locked/final actions cannot prove the
+provider guarantee. The Smoke-excluded V2 artifact and remaining continuation
+abort paths do not qualify live early stopping.
+
 The focused `ooc_mcts` CTest verifies toy stochastic MDPs and malformed inputs.
 `apps/one_combat/ooc_mcts_adapter.{h,cpp}` supplies the
 `OocGameContextModel` integration through explicit `one_combat oocmctsselftest`

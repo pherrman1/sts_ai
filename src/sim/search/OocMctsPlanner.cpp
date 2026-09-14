@@ -1,6 +1,7 @@
 #include "sim/search/OocMctsPlanner.h"
 
 #include <algorithm>
+#include <chrono>
 #include <cmath>
 #include <limits>
 #include <deque>
@@ -165,7 +166,9 @@ OocMctsResult OocMctsPlanner::search(OocGenerativeModel &model, OocStateId root,
     for (std::uint64_t n = 1; n <= cachedVisits; ++n)
         search.wideningLimits.push_back(chanceWideningLimit(n));
     DecisionNode node(root);
-    const bool mayStopLocked = !config.selectByMeanQ && model.searchGuaranteedNonAborting();
+    const bool mayStopLocked = !config.observeRootLock && !config.selectByMeanQ
+        && model.searchGuaranteedNonAborting();
+    std::chrono::steady_clock::time_point lockTime;
     search.metrics.decisionNodes = 1;
     OocMctsResult result;
     try {
@@ -174,6 +177,14 @@ OocMctsResult OocMctsPlanner::search(OocGenerativeModel &model, OocStateId root,
             search.evaluate(node, 0, true);
             ++search.metrics.simulations;
             const auto remaining = simulations - search.metrics.simulations;
+            if (config.observeRootLock && !config.selectByMeanQ
+                && !search.metrics.hypotheticalLockSimulation && search.rootWinnerLocked(node, remaining)) {
+                search.metrics.hypotheticalLockSimulation = search.metrics.simulations;
+                search.metrics.hypotheticalRemainingSimulations = remaining;
+                result.hypotheticalLockedAction = std::max_element(node.actions.begin(), node.actions.end(),
+                    [](const auto &a, const auto &b) { return a.visits < b.visits; })->action.id;
+                lockTime = std::chrono::steady_clock::now();
+            }
             if (remaining && mayStopLocked && search.rootWinnerLocked(node, remaining)) {
                 search.metrics.earlyStopLockedRoot = true;
                 search.metrics.savedSimulations = remaining;
@@ -185,6 +196,9 @@ OocMctsResult OocMctsPlanner::search(OocGenerativeModel &model, OocStateId root,
         result.aborted = true;
         result.abortReason = unsupported.what();
     }
+    if (search.metrics.hypotheticalLockSimulation)
+        search.metrics.hypotheticalTailWallSeconds =
+            std::chrono::duration<double>(std::chrono::steady_clock::now()-lockTime).count();
     result.metrics = search.metrics;
     if (result.aborted) return result;
     const ChanceNode *best = nullptr;

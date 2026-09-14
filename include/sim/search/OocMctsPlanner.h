@@ -45,6 +45,9 @@ struct OocMctsConfig {
     std::uint64_t seed = 0;
     // Optional final root choice; tree selection remains PUCT.
     bool selectByMeanQ = false;
+    // Diagnostic: force full budget and record first strict visit lock, even if
+    // support later aborts. Does not qualify the non-aborting guarantee.
+    bool observeRootLock = false;
 };
 struct OocMctsMetrics {
     std::uint64_t simulations = 0, simulationAttempts = 0, decisionNodes = 0, chanceNodes = 0;
@@ -54,6 +57,8 @@ struct OocMctsMetrics {
     std::uint64_t trivialRootBypasses = 0;
     std::uint64_t earlyStopLockedRoot = 0;
     std::uint64_t savedSimulations = 0;
+    std::uint64_t hypotheticalLockSimulation = 0, hypotheticalRemainingSimulations = 0;
+    double hypotheticalTailWallSeconds = 0;
 };
 struct OocRootActionStats {
     OocActionId id;
@@ -66,6 +71,7 @@ struct OocMctsResult {
     std::optional<OocActionId> selectedAction;
     bool aborted = false;
     std::string abortReason;
+    std::optional<OocActionId> hypotheticalLockedAction;
     std::vector<OocRootActionStats> rootActions;
     OocMctsMetrics metrics;
 };

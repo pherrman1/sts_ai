@@ -190,6 +190,7 @@ enable flag:
 | `STS_OOC_MCTS` | Opt-in live OOC MCTS selector; requires native V4/win/artifact and ordinary exact-10k Silver real combat | `0` | `configureLiveOocMcts`, `runFullRunOOC` |
 | `STS_OOC_MCTS_SIMS` | Positive simulations per supported OOC root | `512` | `configureLiveOocMcts` |
 | `STS_OOC_MCTS_COMBAT_MODEL` | Compatible native combat-transition artifact; required when enabled, fatal load errors | unset | `configureLiveOocMcts` |
+| `STS_OOC_MCTS_ROOT_LOCK_TRACE` | Optional JSONL per searched root: hypothetical earliest strict visit lock/action/remaining budget/suffix time and eventual abort/completion; forces full budget and suppresses all root shortcuts; no support qualification | unset (off) | `configureLiveOocMcts`, `selectOocMctsAction` |
 | `STS_OOC_MCTS_TRACE` | Optional completed-run CSV of search/continuation/combat counts and timing plus `.support.jsonl`; works with OFF | unset | `writeLiveOocMctsTrace` |
 | `STS_OOC_STRATEGIC_TOK_CHECK` | First-decision glob parity hook | `0` (off) | `main` ~L9305 |
 | `STS_OOC_STRATEGIC_Q` | Q-head vs V2 successor-value scoring; `0` = V2 | `1` (Q head) | `main` ~L9310 |
