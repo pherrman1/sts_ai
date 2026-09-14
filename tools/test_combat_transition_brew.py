@@ -25,6 +25,7 @@ class BrewNativeTest(unittest.TestCase):
         self.assertEqual(b.obtain([20,empty,empty],[17,9,22]),[20,17,9])
         self.assertEqual(b.obtain([20,17,9],[22,23,39]),[20,17,9])
         self.assertEqual(b.obtain([20,empty,empty],[17,9,22],sozu=True),[20,empty,empty])
+        self.assertEqual(b.obtain([20,empty,empty,empty,empty],[17,9,22],capacity=3),[20,17,9,empty,empty])
 
 
 if __name__=='__main__':unittest.main()

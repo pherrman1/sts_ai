@@ -46,7 +46,7 @@ def run(folder,refit,sha,gold=False):
     if gold:
         fitted=json.loads((folder/'fit.json').read_text())
         if c.base.sha256(folder/'gold.pt')!=fitted['artifactSha256']:raise ValueError('gold checkpoint differs')
-        net=c.gold.new_decoder(torch).cuda().eval().requires_grad_(False)
+        net=g.g.new_decoder(torch).cuda().eval().requires_grad_(False)
         net.load_state_dict(torch.load(folder/'gold.pt',weights_only=False,map_location='cpu')['stateDict'])
         teacher['gold']=np.zeros(n);mass['gold']=np.zeros((32,n))
     with torch.inference_mode():
@@ -85,7 +85,7 @@ def run(folder,refit,sha,gold=False):
         if k=='relic':gap=np.divide(gap,observed,out=np.zeros(n),where=observed>0)
         gaps[k]=gap
         results[k]=dict(rows=int(informative.sum()),teacherNll=float(teacher[k][informative].mean()),mixtureNll=float(loss[k][informative].mean()),exposure=e.source_gap_bootstrap(cache['source'][ids][informative],gap[informative]))
-    gate=all(np.isfinite(v).all() and v.mean()<=.1 for v in gaps.values())
+    gate=all(np.isfinite(v).all() and results[k]['exposure']['mean']<=.1 for k,v in gaps.items())
     result=dict(evaluationSha=sha,classification='AFFECTED_UPSTREAM_EXPOSURE_PASS' if gate else 'AFFECTED_UPSTREAM_EXPOSURE_FAIL',gate=bool(gate),mechanism='gold' if gold else meta['mechanism'],results=results,maxHpRefit=refit_meta,hashes=hashes,supportChanged=False,
                 estimator='exact maxHP marginal for HP; 32 maxHP/HP draws and exact conditional potion-mask marginal for downstream components')
     np.savez_compressed(output.with_suffix('.npz'),ids=cache['ids'][ids],source=cache['source'][ids],**{k+'Gap':v for k,v in gaps.items()})

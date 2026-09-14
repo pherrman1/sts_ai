@@ -48,11 +48,13 @@ def generate(origin,capacity):
     return generated,state
 
 
-def obtain(inventory,generated,sozu=False):
+def obtain(inventory,generated,sozu=False,capacity=None):
     result=list(inventory)
+    capacity=len(result) if capacity is None else capacity
+    if not 1<=capacity<=len(result):raise ValueError('invalid native capacity')
     if not sozu:
         for potion in generated:
-            try:slot=result.index(base._POTION_IDS['EMPTY_POTION_SLOT'])
+            try:slot=result.index(base._POTION_IDS['EMPTY_POTION_SLOT'],0,capacity)
             except ValueError:continue
             result[slot]=potion
     return result
