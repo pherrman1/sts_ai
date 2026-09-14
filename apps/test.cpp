@@ -1775,8 +1775,10 @@ int testSilverSemanticActionResolution() {
           && resolved.action.getSelectedIdxs()[0] == 0,
           "hand-vector permutation must not change semantic selected-card identity");
 
-    // A malformed duplicate visible identity must fail loudly instead of using
-    // the first hidden vector index. Real card instances have distinct uids.
+    // Multi-select must reject a malformed duplicate visible identity instead
+    // of using the first hidden vector index. Real card instances have distinct
+    // uids; single-card selection intentionally chooses the first equivalent
+    // live entry.
     bc.cards.hand[1] = bc.cards.hand[0];
     selection.selectedCards = {wire(bc.cards.hand[0])};
     resolved = search::resolveSilverSemanticAction(bc, selection);
