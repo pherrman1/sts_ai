@@ -39,11 +39,18 @@ def analyze(control_path, treatment_path, bootstrap_samples=200000):
         return {k: v for k, v in config.items() if not k.startswith('STS_OOC_MCTS')}
     if common(configs[0]) != common(configs[1]) or configs[0]['STS_OOC_MCTS'] != '0' or configs[1]['STS_OOC_MCTS'] != '1':
         raise ValueError('arm configuration mismatch')
+    required_silver = {'STS_SILVER_SEARCH': '1', 'STS_SILVER_EXACT_ROOT_BUDGETS': '1',
+                       'STS_SILVER_REUSE_CAP_MODE': 'allocated', 'STS_SILVER_ADAPTIVE': '0',
+                       'STS_SILVER_VNET_LEAF_DIRECT': '0', 'STS_SILVER_TELEMETRY': '1'}
+    if any(config.get(key) != value for config in configs for key, value in required_silver.items()):
+        raise ValueError('frozen Silver configuration mismatch')
+    if configs[1].get('STS_OOC_MCTS_SIMS') != '128':
+        raise ValueError('frozen treatment MCTS budget mismatch')
     metas = [json.loads(Path(str(p) + '.meta.json').read_text()) for p in (control_path, treatment_path)]
     if metas[0]['config']['executableGitSha'] != metas[1]['config']['executableGitSha']:
         raise ValueError('arm executable SHA mismatch')
     for meta in metas:
-        if meta['sims'] != 1000 or meta['asc'] != 0 or meta['config']['searcher3'] or meta['config']['silverSearchEnabled'] or not meta['config']['fairPlay']:
+        if meta['sims'] != 1000 or meta['asc'] != 0 or meta['config']['searcher3'] or not meta['config']['silverSearchEnabled'] or meta['config']['effectiveCombatBackend'] != 'silver' or not meta['config']['silverExactRootBudgets'] or not meta['config']['fairPlay']:
             raise ValueError('actual combat configuration mismatch')
     for off, on in zip((traces[0][s] for s in seeds), (traces[1][s] for s in seeds)):
         for row, enabled in ((off, False), (on, True)):
