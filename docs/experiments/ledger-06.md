@@ -7908,3 +7908,27 @@ Recorded flat1k parity reverified, no new gameplay run. A separate matched
 exact10k+32k vs exact10k+128k quality experiment remains required for promotion
 and frozen teacher/model requalification. Knowledge impact: maintained cap and
 startup contracts; no model/support qualification.
+
+
+## §258 — Exact 10k Silver 32k vs experimental 128k lazy GC, exploratory paired 16 (2026-09-15)
+
+Frozen code 2b29e9723a00b9dc6fcea45507e4dcf86c968cde, identical release binary and
+models, fair RNG, A0/keysOFF, exact 10000 every root, allocated reuse/adaptiveOFF,
+OOC MCTS OFF; seeds 0–15 paired, four workers, sequential32k then128k.
+Only cap/output paths differ. Preserved 1k and stress artifacts do not satisfy
+this comparison; this cohort reuses prior 1k seeds and is exploratory, not fresh
+prospective validation. Both exits 0; zero bridge failures, metadata/budget/seed
+and all diagnostic prefixes before 32k pressure validate.
+32k 11/16 vs128k 13/16 wins (+12.5pp), both win 11/both lose 3,32k-only 0/128k-only 2
+(seeds2,8). Paired-bootstrap 95% CI[0,+31.25]pp; exact discordant test p=0.5.
+Only two discordant pairs: no established superiority or promotion decision.
+Mean floor 48.625→50.1875; HP 36.5→34.0; seconds/run 30.5031→30.8804, different
+trajectory lengths prevent fixed-work runtime claims. 32k pressure candidates
+1740 (1526 rescued/214 ALLOCATED_CAP fallback);128k 3 (all rescued/no fallback).
+Peak allocated 47,390→138,829; process RSS four workers 1,130,460→2,622,576KiB
+(1.078→2.501GiB), about 2.32 times peak memory. Search batches can overshoot cap.
+Positive exploratory outcome signal and fewer cap fallbacks at substantial RAM
+cost; keep 32k production/128k opt-in. No root-regret study, new seeds/arms or
+frozen teacher/model requalification. Knowledge impact: maintained exploratory
+cap-research status and evidence; default/scientific contracts unchanged.
+[Raw paired seeds, compressed logs/decisions, commands/hashes, analysis](evidence/silver_cap_pair10k_16_2026-09-15/README.md).

@@ -19,6 +19,19 @@ configurations and benchmark numbers, the [research graph](../research/README.md
 for topic synthesis, and the [experiment ledger](../../../EXPERIMENTS.md) for
 chronology.
 
+## Silver reuse-cap experiment
+
+Production remains 32,768 with explicit experimental 128k opt-in. The exploratory
+exact 10k paired 16 comparison at frozen `2b29e972` gives 11/16 wins at 32k versus 13/16
+at 128k: two 128k-only wins/no 32k-only, exact discordant-pair p=0.5. Cap fallbacks
+fall 214→0, while four-worker peak process RSS rises 1.078→2.501GiB. Diagnostic
+prefixes match until32k pressure; zero bridge failures. This is encouraging
+but not established superiority; prior 1k seeds were reused, no root-regret
+measurement or frozen teacher/model qualification was performed. Keep 32k
+and require fresh matched quality/resource evidence before promotion.
+See [ledger §258](../../experiments/ledger-06.md) and
+[paired packet](../../experiments/evidence/silver_cap_pair10k_16_2026-09-15/README.md).
+
 ## Current priority / active line
 
 The fresh64 fixed10000 live OOC MCTS versus matched V4 gate is complete:

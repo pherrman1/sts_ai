@@ -1,0 +1,141 @@
+{
+  "measured_sha": "2b29e9723a00b9dc6fcea45507e4dcf86c968cde",
+  "binary_sha256": "59185663c1a16f970f0f0cc4e2bdd0e2d72de3198b51ce3c894b317dbc3a5fcd",
+  "common_environment": {
+    "OMP_NUM_THREADS": "4",
+    "STS_FAIR": "1",
+    "STS_SEARCHER3": "0",
+    "STS_SILVER_SEARCH": "1",
+    "STS_SILVER_EXACT_ROOT_BUDGETS": "1",
+    "STS_SILVER_REUSE_CAP_MODE": "allocated",
+    "STS_SILVER_ADAPTIVE": "0",
+    "STS_SILVER_VNET_LEAF_DIRECT": "0",
+    "STS_SILVER_TELEMETRY": "1",
+    "STS_NATIVE_OOC": "1",
+    "STS_COLLECT_KEYS": "0",
+    "STS_OOC_MCTS": "0"
+  },
+  "seeds": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    12,
+    13,
+    14,
+    15
+  ],
+  "inventory": "Preserved flat1k parity and forced-end-turn stress are not matched exact10k whole-run cap-arm evidence. No qualifying prior comparison found.",
+  "decision_rule": "Exploratory paired outcome/diagnostic/resource comparison; no production promotion from N16.",
+  "arms": {
+    "32768": {
+      "environment": {
+        "OMP_NUM_THREADS": "4",
+        "STS_FAIR": "1",
+        "STS_SEARCHER3": "0",
+        "STS_SILVER_SEARCH": "1",
+        "STS_SILVER_EXACT_ROOT_BUDGETS": "1",
+        "STS_SILVER_REUSE_CAP_MODE": "allocated",
+        "STS_SILVER_ADAPTIVE": "0",
+        "STS_SILVER_VNET_LEAF_DIRECT": "0",
+        "STS_SILVER_TELEMETRY": "1",
+        "STS_NATIVE_OOC": "1",
+        "STS_COLLECT_KEYS": "0",
+        "STS_OOC_MCTS": "0",
+        "STS_SILVER_REUSE_CAP": "32768",
+        "STS_SILVER_SCALING_DIAG_FILE": "/home/philippherrmann/.codex/worktrees/18ba/sts_lightspeed/build/silver-cap-pair-20260915/32768-decisions.csv"
+      },
+      "command": [
+        "/usr/bin/time",
+        "-v",
+        "-o",
+        "/home/philippherrmann/.codex/worktrees/18ba/sts_lightspeed/build/silver-cap-pair-20260915/32768-time.txt",
+        "bash",
+        "/home/philippherrmann/.codex/worktrees/18ba/sts_lightspeed/tools/seed_guard.sh",
+        "/home/philippherrmann/.codex/worktrees/18ba/sts_lightspeed/build/linux-gcc-release-ccache/one_combat",
+        "bestbench",
+        "10000",
+        "16",
+        "0",
+        "0",
+        "/home/philippherrmann/.codex/worktrees/18ba/sts_lightspeed/build/silver-cap-pair-20260915/32768.csv"
+      ],
+      "started_unix": 1789427977.7678983,
+      "exit_code": 0,
+      "completed_unix": 1789428123.0294178
+    },
+    "131072": {
+      "environment": {
+        "OMP_NUM_THREADS": "4",
+        "STS_FAIR": "1",
+        "STS_SEARCHER3": "0",
+        "STS_SILVER_SEARCH": "1",
+        "STS_SILVER_EXACT_ROOT_BUDGETS": "1",
+        "STS_SILVER_REUSE_CAP_MODE": "allocated",
+        "STS_SILVER_ADAPTIVE": "0",
+        "STS_SILVER_VNET_LEAF_DIRECT": "0",
+        "STS_SILVER_TELEMETRY": "1",
+        "STS_NATIVE_OOC": "1",
+        "STS_COLLECT_KEYS": "0",
+        "STS_OOC_MCTS": "0",
+        "STS_SILVER_REUSE_CAP": "131072",
+        "STS_SILVER_SCALING_DIAG_FILE": "/home/philippherrmann/.codex/worktrees/18ba/sts_lightspeed/build/silver-cap-pair-20260915/131072-decisions.csv"
+      },
+      "command": [
+        "/usr/bin/time",
+        "-v",
+        "-o",
+        "/home/philippherrmann/.codex/worktrees/18ba/sts_lightspeed/build/silver-cap-pair-20260915/131072-time.txt",
+        "bash",
+        "/home/philippherrmann/.codex/worktrees/18ba/sts_lightspeed/tools/seed_guard.sh",
+        "/home/philippherrmann/.codex/worktrees/18ba/sts_lightspeed/build/linux-gcc-release-ccache/one_combat",
+        "bestbench",
+        "10000",
+        "16",
+        "0",
+        "0",
+        "/home/philippherrmann/.codex/worktrees/18ba/sts_lightspeed/build/silver-cap-pair-20260915/131072.csv"
+      ],
+      "started_unix": 1789428123.029733,
+      "exit_code": 0,
+      "completed_unix": 1789428265.6850965
+    }
+  },
+  "models_sha256": {
+    "/home/philippherrmann/.codex/worktrees/18ba/sts_lightspeed/models/v_win_trees.txt": "fc52c14cb7239a33b3c1f9d0477ccb6c895fd51a07240fe804744e605067ad70",
+    "/home/philippherrmann/.codex/worktrees/18ba/sts_lightspeed/models/v_rich_trees.txt": "3a3420469b1d648e0e306d6cb6a7e85f3d3499105e3ff3a56eee6c579194ffe3",
+    "/home/philippherrmann/.codex/worktrees/18ba/sts_lightspeed/models/policy_trees_c.txt": "24793bd39dd1a35c8865035e458c3aa40616ef021cb26b05f914f72fb5e5a321"
+  },
+  "ci_url": "https://github.com/pherrman1/sts_ai/actions/runs/34908088645",
+  "analysis_commands": [
+    "python3 build/silver-cap-pair-20260915/analyze.py",
+    "python3 paired_analysis.py build/silver-cap-pair-20260915/32768.csv build/silver-cap-pair-20260915/131072.csv"
+  ],
+  "artifact_sha256": {
+    "131072-decisions.csv.gz": "aebf9af582c28e3bebd5619fa5382b9477daf234de861d3e36466c708325a5aa",
+    "131072-time.txt": "cf156a13f6f7da4bf106b5b9a00ba2cb92a447b915a8cd0ea3725726fc56b360",
+    "131072.csv": "674ed0c604df800ad8c24fe79c9e5426e73001315f72d147719e7cb533433f54",
+    "131072.csv.meta.json": "854c3bc48d431e0a92deaad06e79d63f9ba3ec8a41fec3989479652b76c0b589",
+    "131072.log.gz": "fbcef8d9c0f4990ab1f443028397d09276d7e51504038a1102bbafff7026b92d",
+    "32768-decisions.csv.gz": "bf4030f99e82a0a9532362f19528b04f35eb3bf2c2642871f60806519361b3f1",
+    "32768-time.txt": "c180e5376b97e5858d49fc6a374ee0f29b2fdda9f94cdd8463566ecee343f142",
+    "32768.csv": "45766fe61645102feac8d1983c24042c68af1ed934f345196b72af94e2af9777",
+    "32768.csv.meta.json": "a8ab6ff99ea5432679d1d611ff30672c63b3380bc73b30f888d806cf29b196b8",
+    "32768.log.gz": "0b84def3592fc13250bfa1ad13c0a182fee41117b796985daca877e5c935786d",
+    "README.md": "cc4aecebc394bbf266dabc0e7eea29c825c8d2f3403603be67778ab364da0409",
+    "analysis.log": "f9cd859fb734bffe2627308ebcebfe16a74c3de07541ca45c504cb25af4a5cfb",
+    "analyze.py": "3ded051c9aaa06ed1b03c2b9db8147ac0445292718ab371b051ccb439591d7f6",
+    "paired-analysis.txt": "fd2d2dc77b9b234b46178eccacef9d3387441c3fa62f78a6636c47905d61c62d",
+    "paired-seeds.csv": "7dc71616a24359c3069857c3ec777fc4190f7b6b0a1334a213ed63719f0eff99",
+    "run.py": "b209f353e54093377e84f9c2768e74c639e48f4cff0b3613aad02bae64772f07",
+    "summary.json": "f9cd859fb734bffe2627308ebcebfe16a74c3de07541ca45c504cb25af4a5cfb"
+  }
+}
