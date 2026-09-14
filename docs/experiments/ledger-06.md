@@ -7932,3 +7932,38 @@ cost; keep 32k production/128k opt-in. No root-regret study, new seeds/arms or
 frozen teacher/model requalification. Knowledge impact: maintained exploratory
 cap-research status and evidence; default/scientific contracts unchanged.
 [Raw paired seeds, compressed logs/decisions, commands/hashes, analysis](evidence/silver_cap_pair10k_16_2026-09-15/README.md).
+
+
+## §259 — User-selected 128k lazy GC: four budget schedules, paired 32 (2026-09-15)
+
+Same frozen release binary/models as §258, source checkout/runtime SHA
+53a3ba36cb58876f192167162587eacae7c89556 (intervening evidence only), paired
+seeds 16–47, A0/Ironclad/fair RNG/keys OFF/native OOC, allocated cap 131072,
+exact root budgets, Silver adaptive and SIM_ADAPT OFF, learned leaf/OOC MCTS
+OFF, four workers. Requested schedules flat 1k, 1/2/5k normal/elite/boss,
+flat 10k, 10/20/50k; existing room-tier routing and exact mode prevent extra
+boss multiplication. 128 whole-run executions; no added seeds/arms or pooling
+prior N16. Only static budgets/base argument/output paths differ.
+Wins 17/32, 20/32, 21/32, 24/32; mean floor 47.4375,47.90625,48.5,47.9375;
+mean final HP 24.75,35.59375,34.40625,38.84375. Seconds/run
+2.65137,6.61840,31.36327,81.46058; added simulations
+15.136M,31.432M,150.920M,313.860M. 1/2/5k finishes one win behind flat 10k
+at ~21% runtime; no established quality equivalence. Highest schedule has
+three more wins than flat 10k at ~2.60 times runtime, not fixed-work throughput.
+All six paired comparisons preserved: exact p values 0.453125,0.2890625,
+0.0654297,1,0.2890625,0.5078125 (schedule-combination order); all Bonferroni
+six-pair adjusted p>=0.392578. Flat 1k→highest bootstrap CI[+3.125,+40.625]pp
+is favorable but unadjusted; no established superiority across this four-arm
+study. No root-regret measurement or scientific model/default qualification.
+Cap fallbacks 0,0,0,252; pressure candidates 0,0,2,1122 (last two rescued
+2/870). Peak allocated nodes 12756,65917,134873,202041; batches can overshoot
+cap. Highest arm combines compute with more collection/fresh fallback.
+Peak whole-process RSS four workers 0.270,1.205,2.436,4.341 GiB; external time-v,
+no permanent infrastructure. All exits zero; 59,735 diagnostic rows validate
+cap/budget/seed/config; all 3,278 combat telemetry records have zero bridge
+failure counters. Saved analyzer, strict six paired reports, hashes and binary/
+model immutability checks pass. Sequential execution, changed trajectory lengths,
+N32 and six comparisons limit interpretation. Knowledge impact: maintained
+exploratory budget/cost/cap status; chosen experimental cap 128k, no code/model
+or frozen teacher changes.
+[Paired seed CSV, raw compressed diagnostics/logs, reports and provenance](evidence/silver_budget_four32_128k_2026-09-15/README.md).

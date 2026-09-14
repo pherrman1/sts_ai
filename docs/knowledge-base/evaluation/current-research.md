@@ -19,6 +19,22 @@ configurations and benchmark numbers, the [research graph](../research/README.md
 for topic synthesis, and the [experiment ledger](../../../EXPERIMENTS.md) for
 chronology.
 
+## Silver budget comparison at selected 128k cap
+
+The requested four-arm paired 32-seed comparison is complete at fixed 128k
+lazy GC. Flat 1k / 1/2/5k / flat 10k / 10/20/50k win 17/20/21/24 of 32;
+average seconds/run are 2.65/6.62/31.36/81.46. The targeted low schedule has
+an attractive descriptive cost/outcome point (one fewer win than flat 10k at
+about one-fifth runtime), without established quality equivalence. The highest
+schedule has most observed wins, substantial extra compute, 4.34 GiB peak
+four-worker process RSS, and 252 retained-cap fallbacks. All six exact paired
+tests have adjusted p>=0.3926; no established ranking or default/model
+qualification. Zero bridge failures and full budget/config/seed validation.
+The cohort is seeds 16–47; preceding N16 outcomes are not pooled. Root-regret
+and fresh confirmation remain unmeasured. See
+[ledger §259](../../experiments/ledger-06.md) and
+[full paired packet](../../experiments/evidence/silver_budget_four32_128k_2026-09-15/README.md).
+
 ## Silver reuse-cap experiment
 
 Production remains 32,768 with explicit experimental 128k opt-in. The exploratory

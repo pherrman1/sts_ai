@@ -1,0 +1,23 @@
+	Command being timed: "bash /home/philippherrmann/.codex/worktrees/18ba/sts_lightspeed/tools/seed_guard.sh /home/philippherrmann/.codex/worktrees/18ba/sts_lightspeed/build/linux-gcc-release-ccache/one_combat bestbench 1000 32 0 16 /home/philippherrmann/.codex/worktrees/18ba/sts_lightspeed/build/silver-budget-four32-20260915/flat1k.csv"
+	User time (seconds): 84.68
+	System time (seconds): 0.29
+	Percent of CPU this job got: 378%
+	Elapsed (wall clock) time (h:mm:ss or m:ss): 0:22.43
+	Average shared text size (kbytes): 0
+	Average unshared data size (kbytes): 0
+	Average stack size (kbytes): 0
+	Average total size (kbytes): 0
+	Maximum resident set size (kbytes): 283156
+	Average resident set size (kbytes): 0
+	Major (requiring I/O) page faults: 0
+	Minor (reclaiming a frame) page faults: 99538
+	Voluntary context switches: 44
+	Involuntary context switches: 1067
+	Swaps: 0
+	File system inputs: 0
+	File system outputs: 4224
+	Socket messages sent: 0
+	Socket messages received: 0
+	Signals delivered: 0
+	Page size (bytes): 4096
+	Exit status: 0
