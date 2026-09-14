@@ -378,6 +378,9 @@ add_test(NAME silver_player_status COMMAND $<TARGET_FILE:silver-player-status-te
 add_test(NAME silver_search_optimization COMMAND bash ${CMAKE_SOURCE_DIR}/tools/seed_guard.sh
     $<TARGET_FILE:silver-search-optimization-test>)
 set_tests_properties(silver_search_optimization PROPERTIES LABELS "integration")
+add_test(NAME silver_repeated_reroot_canary COMMAND bash ${CMAKE_SOURCE_DIR}/tools/seed_guard.sh
+    $<TARGET_FILE:silver-search-optimization-test> --repeated-reroot-canary)
+set_tests_properties(silver_repeated_reroot_canary PROPERTIES LABELS "integration")
 add_test(NAME silver_bridge_boundary COMMAND $<TARGET_FILE:silver-bridge-test>)
 # tests/agent is owned by the separate pre-build unittest discovery step in CI.
 # Do not register its modules or separate compile-only checks here as well:
