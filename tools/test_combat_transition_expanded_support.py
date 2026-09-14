@@ -1,12 +1,16 @@
 import sys
 from pathlib import Path
 sys.path.insert(0,str(Path(__file__).resolve().parents[1]))
+import importlib.util
 import unittest
 from unittest.mock import patch
 import numpy as np
-from tools import combat_transition_expanded_support as x
+x=None
+if importlib.util.find_spec('torch'):
+    from tools import combat_transition_expanded_support as x
 
 
+@unittest.skipUnless(x, 'optional torch dependency, matching composed evaluator tests')
 class ExpandedSupportTest(unittest.TestCase):
     def test_disjoint_union_and_counts_fail_closed(self):
         masks={'OLD':np.array([1,0,0],bool),'RECOVERED':np.array([0,1,0],bool),'EXPANDED':np.array([1,1,0],bool)}
