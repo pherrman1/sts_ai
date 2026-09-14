@@ -7505,3 +7505,36 @@ performance or gameplay qualification.
 
 [Full provenance, slices, limitations and commands](evidence/potion_generation_support_2026-09-14.md),
 [raw accounting and source hashes](evidence/potion_generation_support_2026-09-14.json).
+
+
+## §246 Expanded-support live OOC MCTS paired regression (2026-09-14)
+
+**OOC_MCTS_WINRATE_INCONCLUSIVE.** User-requested same32 seeds970000..970031,
+current V4 control21/32 versus expanded-support corrected MCTS22/32. Paired gain
+3.125pp, bootstrap95% CI[-18.75,+25]pp;discordants7 treatment-only/6 control-only,
+exact p=1 descriptive. Both ordinary fair exact-10k Silver, fixed512 MCTS,
+PUCT1.5/k2/alpha.5/horizon32, A0, keys OFF, Act-3 stop, four workers, same models.
+
+Local main updated to merged #178 `0a8f3ed`; draft #177 remains unmerged. Separate
+integration freezes reviewed source `0757c2db918b6395d8f22ca54f6d94c8e3ae0b10`.
+#178 narrows potion generation exclusion to Alchemize/Entropic Brew, retaining
+independent gates and whole-root V4 support fallback; no imagined Silver.
+Main also includes #176 real Silver semantic fixes, limiting cross-run attribution.
+Recovered support has census/contract validation, not new distribution accuracy.
+
+Owned4,060/5,621 (72.2291%);fallback27.7709%,465 support aborts,135,119 surrogate
+samples. Previous §244 owned3,654,fallback36.9565%,972 aborts,105,957 samples:
+coverage increases descriptively. Depth8–14; completed/discarded/attempt/support
+counts all reconcile. Control823/treatment807 actual battles, zero recorded
+Silver failures. Mean game time26.1105→70.4781s (2.6992x); mean floor delta-.6875
+CI[-4,2.5] descriptive. The small positive win point estimate proves neither
+improvement nor equivalence. Same reused-seed regression and copied hidden RNG
+limits remain; keep MCTS OFF, no follow-up seeds or tuning.
+
+Support32 tests/focused3 checks/both excluded canaries pass; independent
+integration/readiness review and Linux GCC CI pass before64 official games.
+Knowledge impact: raw experimental evidence and current research status updated;
+existing support/MCTS contracts unchanged. §245 preserves the colliding #178
+support census separately from original §243/§244 gameplay evidence.
+[Full frozen evidence](evidence/live_ooc_mcts_expanded_support_2026-09-14.md),
+[raw paired result](evidence/live_ooc_mcts_expanded_support_2026-09-14/result.json).

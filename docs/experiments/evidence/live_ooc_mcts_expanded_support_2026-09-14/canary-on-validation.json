@@ -1,0 +1,11 @@
+{
+  "arm": "canary_on",
+  "rows": 1,
+  "validation": "PASS",
+  "wins": 1,
+  "owned": 130,
+  "supportAborts": 14,
+  "surrogateSamples": 4056,
+  "realCombats": 26,
+  "maxDepth": 16
+}

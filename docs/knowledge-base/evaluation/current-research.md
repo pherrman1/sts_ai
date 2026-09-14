@@ -20,11 +20,14 @@ chronology.
 
 ## Current priority / active line
 
-The corrected live OOC MCTS paired regression is complete: both arms won21/32
-with ordinary exact-10k Silver on reused seeds970000..970031. The paired win CI
-[-21.875,+21.875]pp is inconclusive. MCTS remains OFF by default; no additional
-seeds or tuning are authorized. See [ledger-06 §244](../../experiments/ledger-06.md)
-and the [corrected benchmark evidence](../../experiments/evidence/live_ooc_mcts_corrected_2026-09-14.md).
+The expanded-support live OOC MCTS regression is complete after merged #178:
+current-source control21/32 versus MCTS22/32 on reused seeds970000..970031,
+ordinary exact-10k Silver in both arms. Win gain3.125pp,95% CI[-18.75,+25]pp is
+inconclusive. Support-triggered root aborts fell972→465 versus the preceding
+corrected regression; coverage increased, but improved win rate is unproven.
+MCTS remains OFF by default. No additional seeds or tuning are authorized. See
+[ledger-06 §246](../../experiments/ledger-06.md) and
+[expanded-support evidence](../../experiments/evidence/live_ooc_mcts_expanded_support_2026-09-14.md).
 
 ## Completed recent line
 
