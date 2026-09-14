@@ -179,7 +179,11 @@ whereas semantic source `richRow` retains its existing four-column mask.
 The label helper is shared with `combatevalgen`, preserving V1's HP ratios,
 epsilon clamp, validity and quarantine semantics. Wins use terminal player HP
 before post-combat healing; true deaths use remaining non-minion enemy HP.
-Escapes, turn caps, missing decision hooks and health failures are invalid.
+Escapes, turn caps, missing decision hooks and health failures are invalid,
+except that a resolved turn-0 terminal during `BattleContext::init` is valid
+when the producer has captured the pre-init battle-start features explicitly.
+This covers legitimate start-of-combat effects such as Neow's Lament's final
+charge without weakening the ordinary missing-hook check.
 V1 marks Awakened One true deaths `progressAmbiguous=1` while retaining
 `labelValid=1` and a signed target; the existing trainer excludes those deaths
 from loss-severity fitting. The sidecar preserves this distinction and does

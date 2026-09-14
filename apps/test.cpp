@@ -1826,6 +1826,18 @@ int testSilverSemanticActionResolution() {
     selectCase(CardSelectTask::SEEK, silver_bridge::CardSource::DRAW, {},
                "draw-pile single-card-select must lower by visible instance identity");
 
+    BattleContext duplicateDiscard = cardSelectFixture(CardSelectTask::HEADBUTT, 1, false);
+    duplicateDiscard.cards.discardPile[1] = duplicateDiscard.cards.discardPile[0];
+    silver_bridge::SemanticAction duplicateDiscardSelection;
+    duplicateDiscardSelection.type = silver_bridge::SemanticActionType::SINGLE_CARD_SELECT;
+    duplicateDiscardSelection.source = silver_bridge::CardSource::DISCARD;
+    duplicateDiscardSelection.cardSelectTask = static_cast<std::int16_t>(CardSelectTask::HEADBUTT);
+    duplicateDiscardSelection.card = wire(duplicateDiscard.cards.discardPile[0]);
+    auto duplicateDiscardResolved =
+        search::resolveSilverSemanticAction(duplicateDiscard, duplicateDiscardSelection);
+    check(duplicateDiscardResolved.ok && duplicateDiscardResolved.action.getSourceIdx() == 0,
+          "duplicate discard identity must lower deterministically for a single-card select");
+
     BattleContext discovery = cardSelectFixture(CardSelectTask::DISCOVERY, 1, false);
     discovery.cardSelectInfo.cards = {CardId::STRIKE_RED, CardId::DEFEND_RED, CardId::BASH};
     silver_bridge::SemanticAction offer;
@@ -1858,8 +1870,10 @@ int testSilverSemanticActionResolution() {
           && resolved.action.getSelectedIdxs()[0] == 0,
           "hand-vector permutation must not change semantic selected-card identity");
 
-    // A malformed duplicate visible identity must fail loudly instead of using
-    // the first hidden vector index. Real card instances have distinct uids.
+    // Multi-select must reject a malformed duplicate visible identity instead
+    // of using the first hidden vector index. Real card instances have distinct
+    // uids; single-card selection intentionally chooses the first equivalent
+    // live entry.
     bc.cards.hand[1] = bc.cards.hand[0];
     selection.selectedCards = {wire(bc.cards.hand[0])};
     resolved = search::resolveSilverSemanticAction(bc, selection);
