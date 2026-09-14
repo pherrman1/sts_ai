@@ -44,3 +44,24 @@ def ritual_changes(pre, post):
         else:
             events.append(dict(index=index, upgraded=before['upgraded'], misc=before['misc'],delta=delta))
     return events
+
+
+def ritual_posts(pre, pi, mask=0):
+    """Joint native 3/5 increments at raw deck positions, with a common kill cap."""
+    import itertools
+    from tools import combat_transition_gold as gold
+    daggers=[c for c in pre['deck'] if c['id']==b._CARD_IDS['RITUAL_DAGGER']]
+    cap=4 if gold.encounter_name(pi['globals']['encounter'])=='AWAKENED_ONE' else gold.CAPS.get(gold.encounter_name(pi['globals']['encounter']),1)
+    upgrade=bool(gold.mechanics(pi,pre,int(mask))[1][gold.MECHANICAL_FIELDS.index('upgradeRoute')])
+    options=[]
+    for card in daggers:
+        payouts=(5,) if card['upgraded'] else ((3,5) if upgrade else (3,))
+        possibilities={0:0}
+        for count in range(1,cap+1):
+            for values in itertools.product(payouts,repeat=count):
+                amount=sum(values);possibilities[amount]=min(possibilities.get(amount,count),count)
+        options.append(possibilities)
+    candidates=[]
+    for amounts in itertools.product(*options):
+        if sum(o[a] for o,a in zip(options,amounts))<=cap:candidates.append(amounts)
+    return tuple(candidates)

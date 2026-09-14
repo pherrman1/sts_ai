@@ -33,4 +33,15 @@ class SparseEvents(unittest.TestCase):
         post=copy.deepcopy(pre);post['deck'][1]['misc']=3
         with self.assertRaises(ValueError):n.ritual_changes(pre,post)
 
+    def test_native_dagger_amounts_and_common_budget(self):
+        pre=self.pre();pre.update(potions=[1]*5,gold=0)
+        pi=dict(cards=[],globals=dict(encounter=b._ENCOUNTER_IDS['CULTIST'],ascension=0))
+        self.assertEqual(n.ritual_posts(pre,pi),((0,),(3,)))
+        pre['deck'].append(copy.deepcopy(pre['deck'][0]))
+        self.assertNotIn((3,3),n.ritual_posts(pre,pi))
+        pre['deck'][1]['upgraded']=True
+        self.assertIn((0,5),n.ritual_posts(pre,pi))
+        pi['cards']=[dict(cardId=b._CARD_IDS['ARMAMENTS'],upgraded=False)]
+        self.assertIn((5,0),n.ritual_posts(pre,pi))
+
 if __name__=='__main__':unittest.main()
