@@ -37,7 +37,7 @@ def run(folder,output,sha):
             mask=int(cache['mask'][local]);_,used=t.consume(pre['potions'],mask)
             effects=sum(1<<bit for bit,p in enumerate(t.EFFECT_IDS) if p in used)
             traces=[mask+32*effects];posterior=None
-        target=(post['gold'],post['info']['stolenGold']);represented=0.
+        target=(post['gold'],post['stolenGold']);represented=0.
         for trace in traces:
             mask=int(trace)&31;flags=int(trace)>>5;consumed=tuple(p for bit,p in enumerate(t.EFFECT_IDS) if flags&(1<<bit))
             try:
