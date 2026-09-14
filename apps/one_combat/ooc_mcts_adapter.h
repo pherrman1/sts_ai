@@ -6,16 +6,18 @@
 
 namespace one_combat {
 // Exact native-state integration only: copied RNG streams are not a fair
-// stochastic environment model. No production policy calls this adapter.
+// stochastic environment model. Live use is explicitly opt-in.
 std::vector<double> oocPolicyWeights(const std::vector<double> &logits, double temperature = 1.0);
 class OocGameContextModel final : public sts::search::OocGenerativeModel {
     struct Snapshot { GameContext gc; PathHistory path; };
     std::deque<Snapshot> states;
     std::shared_ptr<const CombatTransitionSampler> combatSampler;
+    std::uint64_t combatSamples_ = 0;
 public:
     // Root history is required: prior room visits cannot be recovered from GameContext.
     explicit OocGameContextModel(const GameContext &, const PathHistory &,
         std::shared_ptr<const CombatTransitionSampler> = {});
+    std::uint64_t combatSamples() const { return combatSamples_; }
     const GameContext &state(sts::search::OocStateId id) const;
     const PathHistory &pathHistory(sts::search::OocStateId id) const;
     std::optional<double> terminalValue(sts::search::OocStateId) const override;
@@ -26,5 +28,21 @@ public:
                                             std::mt19937_64 &) override;
     double leafValue(sts::search::OocStateId) const override;
 };
+struct LiveOocMctsMetrics {
+    std::uint64_t decisions = 0, owned = 0, fallback = 0, combatSamples = 0;
+    sts::search::OocMctsMetrics search;
+    double wallSeconds = 0, cpuSeconds = 0;
+};
+// Parse once after native policy/win loading. OFF never loads the combat model.
+void configureLiveOocMcts();
+bool liveOocMctsEnabled();
+std::uint64_t oocMctsSearchSeed(std::uint64_t runSeed, std::uint64_t decisionIndex);
+// Search snapshots die before the selected ID is resolved/executed on live gc.
+sts::search::OocMctsResult selectOocMctsAction(const GameContext &, const PathHistory &,
+    std::uint64_t runSeed, std::uint64_t decisionIndex, std::uint64_t simulations,
+    std::shared_ptr<const CombatTransitionSampler>, std::uint64_t &combatSamples);
+bool oocMctsPolicyStep(GameContext &, const PathHistory &, std::uint64_t runSeed,
+    std::uint64_t decisionIndex, LiveOocMctsMetrics &);
+void writeLiveOocMctsTrace(std::uint64_t seed, const LiveOocMctsMetrics &, int realCombats);
 void oocMctsAdapterSelfTest();
 }

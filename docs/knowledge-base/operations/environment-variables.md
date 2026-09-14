@@ -1,6 +1,6 @@
 # Environment variables
 
-Last verified: 2026-09-09 against `apps/one_combat.cpp::main` and the isolated Silver live backend.
+Last verified: 2026-09-14 for live OOC MCTS; 2026-09-09 against `apps/one_combat.cpp::main` and the isolated Silver live backend.
 
 Purpose: single concise reference for all `STS_*` and related env vars consumed
 by `one_combat`. Code is authoritative; this page routes readers to the right
@@ -187,6 +187,10 @@ enable flag:
 |----------|--------|---------|------------|
 | `STS_OOC_STRATEGIC_NN` | V3 strategic net path | unset (off) | `main` ~L9295 |
 | `STS_OOC_STRATEGIC_TOK_NN` | V4 token net path (deployed format) | unset (off) | `main` ~L9300 |
+| `STS_OOC_MCTS` | Opt-in live OOC MCTS selector; requires native V4/win and combat artifact; real combat unchanged | `0` | `configureLiveOocMcts`, `runFullRunOOC` |
+| `STS_OOC_MCTS_SIMS` | Positive simulations per supported OOC root | `128` | `configureLiveOocMcts` |
+| `STS_OOC_MCTS_COMBAT_MODEL` | Compatible native combat-transition artifact; required when enabled, fatal load errors | unset | `configureLiveOocMcts` |
+| `STS_OOC_MCTS_TRACE` | Optional completed-run CSV of decisions/search/real-combat counts and timing; works with OFF | unset | `writeLiveOocMctsTrace` |
 | `STS_OOC_STRATEGIC_TOK_CHECK` | First-decision glob parity hook | `0` (off) | `main` ~L9305 |
 | `STS_OOC_STRATEGIC_Q` | Q-head vs V2 successor-value scoring; `0` = V2 | `1` (Q head) | `main` ~L9310 |
 | `STS_OOC_STRATEGIC_SCORE` | `policy` = sigmoid(policy logit) scoring (5.7.2) | `q` (Q head) | `main` ~L9380 |

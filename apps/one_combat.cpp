@@ -8738,6 +8738,11 @@ int main(int argc, char **argv) {
             }
         }
     }
+    try { one_combat::configureLiveOocMcts(); }
+    catch (const std::exception &e) {
+        std::cerr << "[live OOC MCTS startup failure] " << e.what() << '\n';
+        return 1;
+    }
     if (const char *d = std::getenv("STS_PATH_V")) {        // model-driven pathing (uses forward-map feats)
         g_pathV = std::atoi(d) != 0;
         if (g_pathV) std::cout << "[model-driven pathing via V_win ON]\n";

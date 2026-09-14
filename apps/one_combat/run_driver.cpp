@@ -14,6 +14,7 @@
 #include "e2c_capture.h"
 #include "fight_replay.h"
 #include "ooc_policy.h"
+#include "ooc_mcts_adapter.h"
 #include "particle_diagnostics.h"
 #include "run_features.h"
 #include "search_diagnostics.h"
@@ -115,6 +116,8 @@ RunResult runFullRunOOC(std::uint64_t seed, int sims, int asc, bool restV, bool 
     t_actFightProbeDecisionIdx = 0;
     t_curPath = &path;
     t_tokCheckPending = g_oocStrategicTokCheck;
+    one_combat::LiveOocMctsMetrics mctsMetrics;
+    std::uint64_t oocDecisionIndex = 0;
     bool clearedStopActBoss = false;
     int fightsLost = 0, fightsTotal = 0, deathCombat = -1, deathEncounter = -1;
     auto t0 = std::chrono::steady_clock::now();
@@ -177,7 +180,9 @@ RunResult runFullRunOOC(std::uint64_t seed, int sims, int asc, bool restV, bool 
                 break;
             }
         } else {
-            runFullRunOocPolicyStep(gc, agent, restV, shopV);
+            const auto index = oocDecisionIndex++;
+            if (!one_combat::oocMctsPolicyStep(gc, path, seed, index, mctsMetrics))
+                runFullRunOocPolicyStep(gc, agent, restV, shopV);
         }
     }
     auto t1 = std::chrono::steady_clock::now();
@@ -199,6 +204,7 @@ RunResult runFullRunOOC(std::uint64_t seed, int sims, int asc, bool restV, bool 
                   << (result.won ? 1 : 0) << ',' << result.floor << ',' << result.hpEnd << '\n';
         }
     }
+    one_combat::writeLiveOocMctsTrace(seed, mctsMetrics, fightsTotal);
     one_combat::flushVNetQueryLog();
     if (e2cCapture) {
         // Same effective label semantics as this function's RunResult (honors an

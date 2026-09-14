@@ -1,4 +1,10 @@
 #include "ooc_mcts_adapter.h"
+#include "combat_transition_runtime.h"
+#include <chrono>
+#include <cstdlib>
+#include <fstream>
+#include <mutex>
+#include <time.h>
 #include "../ooc_strategic_tok_net.h"
 #include "run_driver.h"
 #include "../ooc_test_state.h"
@@ -55,7 +61,15 @@ std::optional<double> OocGameContextModel::terminalValue(sts::search::OocStateId
 }
 bool OocGameContextModel::isLeafBoundary(sts::search::OocStateId id) const {
     const auto &gc = state(id);
-    return !v4DecisionSupported(gc) || v4CandidateActions(gc).empty();
+    if (!v4DecisionSupported(gc)) return true;
+    const auto actions = v4CandidateActions(gc);
+    if (actions.empty()) return true;
+    // Native multi-gold rewards can enumerate the same primitive ID twice.
+    // Keep the existing candidate contract unchanged and use the leaf/fallback
+    // contract for decisions without unique planner action identities.
+    std::set<std::uint32_t> ids;
+    for (auto a : actions) if (!ids.insert(a.bits).second) return true;
+    return false;
 }
 std::vector<double> OocGameContextModel::policyLogits(sts::search::OocStateId id) const {
     if (terminalValue(id) || isLeafBoundary(id)) throw std::runtime_error("OOC MCTS actions requested at leaf");
@@ -102,6 +116,7 @@ sts::search::OocStateId OocGameContextModel::sampleSuccessor(sts::search::OocSta
         const auto input = captureCombatPredictorInput(child.gc, child.gc.info.encounter,
                                                        potionKeepValue(child.gc));
         if (combatSampler->support(child.gc, input).supported) {
+            ++combatSamples_;
             const auto sampled = combatSampler->sample(child.gc, input, rng);
             switch (sampled.outcome) {
                 case CombatRuntimeSample::Outcome::UNSUPPORTED: break;
@@ -131,6 +146,120 @@ double OocGameContextModel::leafValue(sts::search::OocStateId id) const {
     } scope(states.at(id).path);
     return vStateWinNative(gc);
 }
+}
+
+namespace one_combat {
+
+namespace {
+bool liveEnabled = false;
+std::uint64_t liveSimulations = 128;
+std::shared_ptr<const CombatTransitionSampler> liveSampler;
+std::string liveTrace;
+std::mutex liveTraceMutex;
+std::uint64_t splitMix64(std::uint64_t x) {
+    x += 0x9e3779b97f4a7c15ULL;
+    x = (x ^ (x >> 30)) * 0xbf58476d1ce4e5b9ULL;
+    x = (x ^ (x >> 27)) * 0x94d049bb133111ebULL;
+    return x ^ (x >> 31);
+}
+double threadCpuSeconds() {
+    timespec t{};
+    if (clock_gettime(CLOCK_THREAD_CPUTIME_ID, &t) != 0)
+        throw std::runtime_error("OOC MCTS thread CPU clock unavailable");
+    return double(t.tv_sec) + double(t.tv_nsec) * 1e-9;
+}
+}
+bool liveOocMctsEnabled() { return liveEnabled; }
+std::uint64_t oocMctsSearchSeed(std::uint64_t seed, std::uint64_t index) {
+    return splitMix64(seed ^ splitMix64(index));
+}
+void configureLiveOocMcts() {
+    const char *enabled = std::getenv("STS_OOC_MCTS");
+    if (enabled && std::string(enabled) != "0" && std::string(enabled) != "1")
+        throw std::runtime_error("STS_OOC_MCTS must be 0 or 1");
+    liveEnabled = enabled && std::string(enabled) == "1";
+    if (const char *trace = std::getenv("STS_OOC_MCTS_TRACE")) liveTrace = trace;
+    if (!liveTrace.empty()) {
+        std::ofstream out(liveTrace, std::ios::app);
+        if (!out) throw std::runtime_error("STS_OOC_MCTS_TRACE cannot open output");
+    }
+    if (!liveEnabled) return;
+    if (!g_oocStrategicTokNet.ok) throw std::runtime_error("STS_OOC_MCTS requires native V4 policy");
+    if (!winNetOk()) throw std::runtime_error("STS_OOC_MCTS requires native v_win");
+    // Legacy win loading may retry the default. An explicit failed request must
+    // remain a startup failure even if that retry succeeded.
+    if (const char *requested = std::getenv("STS_WIN_NET")) {
+        CompactTreeNet explicitWin;
+        const std::string path = std::string(requested) == "1" ? "models/v_win_trees.txt" : requested;
+        if (!explicitWin.load(path, richIdxMap()))
+            throw std::runtime_error("STS_OOC_MCTS explicit STS_WIN_NET failed to load");
+    }
+    if (const char *sims = std::getenv("STS_OOC_MCTS_SIMS")) {
+        const std::string value(sims);
+        if (value.empty() || value.find_first_not_of("0123456789") != std::string::npos)
+            throw std::runtime_error("STS_OOC_MCTS_SIMS must be a positive integer");
+        liveSimulations = std::stoull(value);
+        if (!liveSimulations) throw std::runtime_error("STS_OOC_MCTS_SIMS must be positive");
+    }
+    const char *artifact = std::getenv("STS_OOC_MCTS_COMBAT_MODEL");
+    if (!artifact || !*artifact) throw std::runtime_error("STS_OOC_MCTS requires STS_OOC_MCTS_COMBAT_MODEL");
+    liveSampler = std::make_shared<NativeCombatTransitionSampler>(artifact);
+    std::cout << "[live OOC MCTS ON sims=" << liveSimulations << " combat_model=" << artifact << "]\n";
+}
+sts::search::OocMctsResult selectOocMctsAction(const GameContext &gc, const PathHistory &path,
+    std::uint64_t seed, std::uint64_t index, std::uint64_t simulations,
+    std::shared_ptr<const CombatTransitionSampler> sampler, std::uint64_t &samples) {
+    OocGameContextModel model(gc, path, std::move(sampler));
+    samples = 0;
+    if (model.terminalValue(0) || model.isLeafBoundary(0)) return {};
+    sts::search::OocMctsConfig config;
+    config.seed = oocMctsSearchSeed(seed, index);
+    auto result = sts::search::OocMctsPlanner(config).search(model, 0, simulations);
+    if (!result.selectedAction) throw std::runtime_error("live OOC MCTS missing selected root action");
+    samples = model.combatSamples();
+    return result;
+}
+bool oocMctsPolicyStep(GameContext &gc, const PathHistory &path, std::uint64_t seed,
+    std::uint64_t index, LiveOocMctsMetrics &metrics) {
+    ++metrics.decisions;
+    if (!liveEnabled) return false;
+    const auto wallStart = std::chrono::steady_clock::now();
+    const double cpuStart = threadCpuSeconds();
+    std::uint64_t samples = 0;
+    const auto result = selectOocMctsAction(gc, path, seed, index, liveSimulations, liveSampler, samples);
+    metrics.wallSeconds += std::chrono::duration<double>(std::chrono::steady_clock::now()-wallStart).count();
+    metrics.cpuSeconds += threadCpuSeconds()-cpuStart;
+    if (!result.selectedAction) { ++metrics.fallback; return false; }
+    // Resolve from fresh live candidates; never transfer a sampled snapshot.
+    const auto candidates = v4CandidateActions(gc);
+    const auto action = std::find_if(candidates.begin(), candidates.end(),
+        [&](auto a) { return a.bits == *result.selectedAction; });
+    if (action == candidates.end()) throw std::runtime_error("live OOC MCTS selected illegal root action");
+    ++metrics.owned;
+    metrics.combatSamples += samples;
+    auto &m = metrics.search;
+    m.simulations += result.metrics.simulations;
+    m.transitionSamples += result.metrics.transitionSamples;
+    m.leafEvaluations += result.metrics.leafEvaluations;
+    m.maxDepthReached = std::max(m.maxDepthReached, result.metrics.maxDepthReached);
+    action->execute(gc);
+    return true;
+}
+void writeLiveOocMctsTrace(std::uint64_t seed, const LiveOocMctsMetrics &m, int realCombats) {
+    if (liveTrace.empty()) return;
+    std::lock_guard<std::mutex> lock(liveTraceMutex);
+    std::ofstream out(liveTrace, std::ios::app);
+    if (!out) throw std::runtime_error("STS_OOC_MCTS_TRACE cannot write output");
+    if (out.tellp() == 0)
+        out << "seed,oocDecisions,mctsOwned,mctsFallback,simulations,transitionSamples,combatSurrogateSamples,leafEvaluations,maxDepth,mctsWallSec,mctsCpuSec,realCombats\n";
+    out << std::setprecision(12) << seed << ',' << m.decisions << ',' << m.owned << ',' << m.fallback
+        << ',' << m.search.simulations << ',' << m.search.transitionSamples << ',' << m.combatSamples
+        << ',' << m.search.leafEvaluations << ',' << m.search.maxDepthReached
+        << ',' << m.wallSeconds << ',' << m.cpuSeconds << ',' << realCombats << '\n';
+    out.flush();
+    if (!out) throw std::runtime_error("STS_OOC_MCTS_TRACE write failed");
+}
+
 }
 
 #include "../../tests/data/ooc_v4_policy_fixture.h"
@@ -522,6 +651,104 @@ void oocMctsAdapterSelfTest() {
     bool policyOk=g_oocStrategicTokNet.ok; g_oocStrategicTokNet.ok=false;
     rejects([&] { OocGameContextModel unavailable(gc,path); });
     g_oocStrategicTokNet.ok=policyOk;
+    // Exercise the same live dispatch seam with a stateless lethal imagined
+    // sampler. Every selected first-row map action must leave live combat pending.
+    struct ImaginedDeath final : CombatTransitionSampler {
+        CombatRuntimeSupport support(const GameContext &, const CombatPredictorInputV1 &) const override {
+            return {true, "test supported"};
+        }
+        CombatRuntimeSample sample(const GameContext &, const CombatPredictorInputV1 &,
+                                   std::mt19937_64 &) const override {
+            return {CombatRuntimeSample::Outcome::DEATH, {}};
+        }
+    };
+    struct LiveConfigScope {
+        bool enabled = liveEnabled;
+        std::uint64_t simulations = liveSimulations;
+        std::shared_ptr<const CombatTransitionSampler> sampler = liveSampler;
+        ~LiveConfigScope() { liveEnabled=enabled; liveSimulations=simulations; liveSampler=sampler; }
+    } liveScope;
+    auto live=GameContext(CharacterClass::IRONCLAD, 42, 0);
+    live.screenState=ScreenState::MAP_SCREEN;
+    live.curEvent=Event::INVALID;
+    live.regainControlAction=[](GameContext &g) { g.screenState=ScreenState::MAP_SCREEN; };
+    for (auto &node : live.map->nodes[0]) node.room=Room::MONSTER;
+    PathHistory livePath; livePath.update(live);
+    const auto before=test::oocStateFingerprint(live);
+    const auto beforePath=livePath;
+    LiveOocMctsMetrics offMetrics;
+    liveEnabled=false; liveSampler.reset();
+    require(!oocMctsPolicyStep(live,livePath,42,7,offMetrics)
+        && offMetrics.decisions==1 && offMetrics.search.simulations==0
+        && test::oocStateFingerprint(live)==before, "OFF dispatch has no search/model/RNG use");
+    auto lethal=std::make_shared<ImaginedDeath>();
+    std::uint64_t firstSamples=0, repeatedSamples=0;
+    const auto first=selectOocMctsAction(live,livePath,42,7,128,lethal,firstSamples);
+    const auto second=selectOocMctsAction(live,livePath,42,7,128,lethal,repeatedSamples);
+    require(test::oocStateFingerprint(live)==before
+        && livePath.roomVisits==beforePath.roomVisits && livePath.lastNodeKey==beforePath.lastNodeKey,
+        "live search isolates whole GameContext/map/RNG/PathHistory");
+    require(first.selectedAction && first.selectedAction==second.selectedAction
+        && firstSamples>0 && firstSamples==repeatedSamples
+        && first.rootActions.size()==second.rootActions.size(), "deterministic live selection/samples");
+    for (std::size_t i=0;i<first.rootActions.size();++i) {
+        const auto &a=first.rootActions[i], &b=second.rootActions[i];
+        require(a.id==b.id && a.prior==b.prior && a.visits==b.visits && a.q==b.q,
+            "deterministic live root statistics");
+    }
+    require(oocMctsSearchSeed(42,7)==oocMctsSearchSeed(42,7)
+        && oocMctsSearchSeed(42,7)!=oocMctsSearchSeed(42,8), "stable indexed search RNG");
+    auto liveExpected=detachedCopy(live);
+    const auto liveCandidates=v4CandidateActions(liveExpected);
+    const auto selected=std::find_if(liveCandidates.begin(),liveCandidates.end(),
+        [&](auto a) { return a.bits==*first.selectedAction; });
+    require(selected!=liveCandidates.end(), "selected live candidate exists");
+    selected->execute(liveExpected);
+    liveEnabled=true; liveSimulations=128; liveSampler=lethal;
+    LiveOocMctsMetrics liveMetrics;
+    require(oocMctsPolicyStep(live,livePath,42,7,liveMetrics)
+        && test::oocStateFingerprint(live)==test::oocStateFingerprint(liveExpected),
+        "live execution exactly one primitive, no imagined successor transfer");
+    require(live.screenState==ScreenState::BATTLE && live.outcome==GameOutcome::UNDECIDED
+        && liveMetrics.combatSamples>0 && liveMetrics.owned==1
+        && liveMetrics.decisions==1 && liveMetrics.fallback==0
+        && liveMetrics.search.simulations==128, "real combat remains pending despite imagined death");
+    // Real battle entry dispatches ordinary BattleContext initialization.
+    BattleContext pending; pending.init(live);
+    require(pending.outcome==Outcome::UNDECIDED && pending.player.curHp==live.curHp,
+        "ordinary real battle initializes after selected action");
+    auto uncovered=GameContext(CharacterClass::IRONCLAD,42,0);
+    uncovered.regainControlAction=[](GameContext &g) { g.screenState=ScreenState::MAP_SCREEN; };
+    uncovered.openCardSelectScreen(CardSelectScreenType::REMOVE,1);
+    const auto uncoveredBefore=test::oocStateFingerprint(uncovered);
+    auto fallbackExpected=detachedCopy(uncovered);
+    LiveOocMctsMetrics fallbackMetrics;
+    require(!oocMctsPolicyStep(uncovered,livePath,42,8,fallbackMetrics)
+        && fallbackMetrics.fallback==1 && fallbackMetrics.owned==0
+        && fallbackMetrics.search.simulations==0
+        && test::oocStateFingerprint(uncovered)==uncoveredBefore, "unsupported live root falls back unchanged");
+    ScumSearchAgent2 fallbackAgent, expectedAgent;
+    runFullRunOocPolicyStep(uncovered,fallbackAgent,false,true);
+    runFullRunOocPolicyStep(fallbackExpected,expectedAgent,false,true);
+    require(test::oocStateFingerprint(uncovered)==test::oocStateFingerprint(fallbackExpected),
+        "unsupported root uses identical existing policy chain");
+    auto multipleGold=detachedCopy(reward);
+    multipleGold.info.rewardsContainer.goldRewardCount=2;
+    multipleGold.info.rewardsContainer.gold[0]=12;
+    multipleGold.info.rewardsContainer.gold[1]=13;
+    OocGameContextModel duplicateRoot(multipleGold,livePath,lethal);
+    require(duplicateRoot.isLeafBoundary(0), "duplicate native gold IDs are a boundary");
+    auto goldExpected=detachedCopy(multipleGold);
+    LiveOocMctsMetrics goldMetrics;
+    require(!oocMctsPolicyStep(multipleGold,livePath,42,9,goldMetrics)
+        && goldMetrics.fallback==1 && goldMetrics.search.simulations==0,
+        "multi-gold root uses fallback without searching/deduplicating");
+    runFullRunOocPolicyStep(multipleGold,fallbackAgent,false,true);
+    runFullRunOocPolicyStep(goldExpected,expectedAgent,false,true);
+    require(test::oocStateFingerprint(multipleGold)==test::oocStateFingerprint(goldExpected)
+        && multipleGold.info.rewardsContainer.goldRewardCount==1,
+        "multi-gold fallback retains existing first-gold collection");
+    std::cout<<"PASS live OOC MCTS OFF/isolation/execution/real-combat/fallback/determinism\n";
     std::cout<<"PASS OOC MCTS adapter (offline native integration only)\n";
 }
 }

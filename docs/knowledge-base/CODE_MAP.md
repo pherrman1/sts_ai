@@ -1,6 +1,6 @@
 # Current code map
 
-Last verified: 2026-09-13 for OOC MCTS integration routing.
+Last verified: 2026-09-14 for opt-in live OOC MCTS routing.
 
 Purpose:
 Fast routing for humans and agents. Code remains authoritative. Use this page
@@ -27,8 +27,8 @@ before broad repository search.
 | Topic | Primary code | Key symbols / modes | Read next |
 | --- | --- | --- | --- |
 | Run state | `include/game/GameContext.h`, `src/game/GameContext.cpp` | `GameContext`, `ScreenState`, `GameOutcome` | [out-of-combat.md](architecture/out-of-combat.md) |
-| Offline OOC MCTS substrate | `include/sim/search/OocMctsPlanner.h`, `src/sim/search/OocMctsPlanner.cpp`, `apps/ooc_mcts_test.cpp` | `OocGenerativeModel`, `OocMctsPlanner`; synchronous PUCT decisions / sampled chance particles; test-only, optional injected combat boundary; no production policy change | [out-of-combat.md](architecture/out-of-combat.md#synchronous-ooc-mcts-substrate) |
-| GameContext OOC MCTS integration | `apps/one_combat/ooc_mcts_adapter.{h,cpp}`, `apps/ooc_strategic_tok_net.h` | `OocGameContextModel`, `predictPolicyLogit`, `vStateWinNative`, `oocmctsselftest`; offline native-state scaffold, V4 policy priors/native win leaves, battle boundary, no learned combat or production dispatch | [out-of-combat.md](architecture/out-of-combat.md#synchronous-ooc-mcts-substrate) |
+| Offline OOC MCTS substrate | `include/sim/search/OocMctsPlanner.h`, `src/sim/search/OocMctsPlanner.cpp`, `apps/ooc_mcts_test.cpp` | `OocGenerativeModel`, `OocMctsPlanner`; synchronous PUCT decisions / sampled chance particles; optional injected combat boundary | [out-of-combat.md](architecture/out-of-combat.md#synchronous-ooc-mcts-substrate) |
+| GameContext OOC MCTS integration | `apps/one_combat/ooc_mcts_adapter.{h,cpp}`, `apps/ooc_strategic_tok_net.h` | `OocGameContextModel`, `predictPolicyLogit`, `vStateWinNative`, `oocmctsselftest`; detached native states, V4 policy priors/native win leaves, optional native combat surrogate; `selectOocMctsAction`/`oocMctsPolicyStep` opt-in live primitive execution | [out-of-combat.md](architecture/out-of-combat.md#synchronous-ooc-mcts-substrate) |
 | Run-level actions | `include/sim/search/GameAction.h`, `src/sim/search/GameAction.cpp` | `GameAction`, `getAllActionsInState`, `execute` | [out-of-combat.md](architecture/out-of-combat.md) |
 | Semantic OOC decisions | `include/sim/search/OocSemanticAction.h`, `src/sim/search/OocSemanticAction.cpp` | typed intent/key contract, complete enumeration, transactional live primitive resolution; public single-target compounds and sequential revealed selectors | [out-of-combat.md](architecture/out-of-combat.md#semantic-ooc-decisions), [ADR-0013](../../decisions/0013-ooc-semantic-decision-boundaries.md) |
 | OOC policy chain | `apps/one_combat/run_driver.{h,cpp}`, `apps/one_combat/ooc_policy.{h,cpp}` | `runFullRunOOC` — ordered whole-run loop and branch chain, current default; `ooc_policy` owns live action/checkpoint/one-ply/map policy implementations | [out-of-combat.md](architecture/out-of-combat.md) |

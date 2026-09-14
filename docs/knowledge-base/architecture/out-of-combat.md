@@ -24,7 +24,7 @@ experiments.
 
 Last verified: 2026-09-14 for the opt-in native combat boundary and focused adapter oracle.
 
-`OocMctsPlanner` is an offline/test-only generic search core over opaque state
+`OocMctsPlanner` is a synchronous generic search core over opaque state
 and action IDs. `OocGenerativeModel` supplies complete actions/priors, actual
 successor samples, terminal values and injected leaf values in [0,1]. Distinct
 decision nodes use PUCT; chance nodes retain independent equal-weight outcome
@@ -45,7 +45,7 @@ ID. Each search resets its tree and seeded RNG; providers must preserve IDs and
 reset any mutable sampling state for exact replay.
 
 The focused `ooc_mcts` CTest verifies toy stochastic MDPs and malformed inputs.
-`apps/one_combat/ooc_mcts_adapter.{h,cpp}` supplies the offline
+`apps/one_combat/ooc_mcts_adapter.{h,cpp}` supplies the
 `OocGameContextModel` integration through explicit `one_combat oocmctsselftest`
 and the guarded `ooc_mcts_adapter` CTest. The adapter requires loaded native
 V4 and win models. `OocStrategicTokNet::predictPolicyLogit` shares the 184-wide
@@ -60,7 +60,9 @@ REST_ROOM, CARD_SELECT/UPGRADE, EVENT_SCREEN with a native nonempty candidate
 set (excluding INVALID and MATCH_AND_KEEP), SHOP_ROOM, TREASURE_ROOM,
 BOSS_RELIC_REWARDS, and MAP_SCREEN with a map except row 14. Other selectors,
 non-card reward states, invalid/empty decisions, missing maps and map row 14
-are explicit leaf boundaries. Stored BATTLE states remain a hard leaf boundary;
+are explicit leaf boundaries. Decisions whose native candidates contain duplicate
+primitive IDs (including multiple gold rewards) also use the leaf/fallback
+contract; the V4 candidate enumeration remains unchanged. Stored BATTLE states remain a hard leaf boundary;
 UNDECIDED battle states are never fabricated terminals. Run loss/victory
 remain exact 0/1, with precedence over any boundary.
 
@@ -108,8 +110,41 @@ fixed max absolute probability tolerance 1e-4; they do not drive gameplay seeds.
 Copied native RNG streams still govern other stochastic OOC transitions. This
 adapter resolves the combat boundary only and remains **not a fair stochastic
 environment model** or a scientifically qualified full OOC planner.
-`runFullRunOOC`, `bestbench`, policy defaults, V4, leaf values and MCTS search
-semantics remain unchanged. No production policy constructs the real sampler.
+
+### Opt-in live OOC MCTS selection
+
+`STS_OOC_MCTS=1` intercepts each nonbattle decision immediately before the
+existing `runFullRunOocPolicyStep` chain in `runFullRunOOC`. Startup requires
+loaded native V4 policy and native win models plus a compatible
+`STS_OOC_MCTS_COMBAT_MODEL`; explicit artifact failures are fatal. The default
+is OFF and does not load a combat artifact or run MCTS. Both arms retain the
+same normal real combat branch and the same fallback OOC policy chain.
+
+`selectOocMctsAction` constructs detached snapshots and uses the existing PUCT,
+progressive widening and depth defaults with `STS_OOC_MCTS_SIMS` (default 128).
+Its search seed is `SplitMix64(runSeed XOR SplitMix64(decisionIndex))`, using
+explicit unsigned 64-bit arithmetic. The index increments once per actual
+nonbattle run-loop decision, including unsupported roots. It consumes no
+simulator RNG. Terminal/boundary roots return no action; supported roots must
+return a legal primitive ID. Snapshots are discarded before
+`oocMctsPolicyStep` resolves that ID against fresh live candidates and executes
+it exactly once. If it enters BATTLE, real combat remains pending for the
+ordinary next run-loop iteration. No sampled combat result transfers to live
+state.
+
+Optional `STS_OOC_MCTS_TRACE` appends one CSV row per completed run, including
+OFF runs when explicitly requested. It records decision/ownership/fallback
+counts, simulations, all sampled action transitions, combat-surrogate calls,
+leaf evaluations, maximum search depth, search wall/thread CPU seconds and
+ordinary real combat count. OFF ownership/fallback/search counts are zero;
+the decision count still covers actual nonbattle iterations. Search timing
+includes adapter construction/destruction and unsupported-root checks, and
+excludes execution of the selected live primitive. The `bestbench` `sec` field
+is per-run steady-clock elapsed time, so wall time is the matching denominator.
+Focused adapter tests cover search isolation, indexed determinism, exact live
+primitive execution, pending real combat and unchanged fallback dispatch;
+`ooc_mcts_live_startup` covers startup failure contracts. This opt-in seam does
+not qualify deployment or remove copied hidden noncombat RNG limitations.
 
 
 ## Semantic OOC decisions
