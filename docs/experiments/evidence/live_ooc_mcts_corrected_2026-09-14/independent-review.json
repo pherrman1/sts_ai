@@ -1,0 +1,15 @@
+{
+  "reviewedSha": "f9af4ad6055b98603fd732d59869b5b39cc8beec",
+  "implementation": "PASS",
+  "finalEvidence": "PASS",
+  "bootstrapIndependentlyReproduced": true,
+  "seedConfigurationSupportAccounting": "PASS",
+  "binaryFreezeBinding": "PASS",
+  "actualCombatLogCounts": [
+    823,
+    811
+  ],
+  "failureCounters": 0,
+  "reviewerGameplaySeeds": 0,
+  "issues": []
+}

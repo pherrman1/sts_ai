@@ -7445,3 +7445,37 @@ follow-up seeds. Knowledge impact: live contracts/configuration/code routing
 updated in maintained KB; research status closed with this negative evidence.
 [Full evidence/environment/commands](evidence/live_ooc_mcts_2026-09-14.md),
 [raw paired results](evidence/live_ooc_mcts_2026-09-14/result.json).
+
+
+## §244 Corrected live OOC MCTS paired exact-10k Silver regression (2026-09-14)
+
+**OOC_MCTS_WINRATE_INCONCLUSIVE.** Both control V4 and corrected opt-in MCTS
+won21/32 on the user-requested same seeds970000..970031. Paired win delta0pp,
+bootstrap95% CI[-21.875,+21.875]pp; six wins unique to each arm, twenty same
+results, exact discordant p=1 descriptive. Both use ordinary fair exact-10k
+Silver actual combat, A0, keys OFF, Act-3 stop, four workers and the same frozen
+reviewed executable `f9af4ad6055b98603fd732d59869b5b39cc8beec`.
+
+Four bundled corrections: resolve pending reward/shop/event/selector leaves
+through existing OOC policy to checkpoint/terminal before native win evaluation;
+unsupported imagined combat aborts the entire root to unchanged V4 and discards
+partial action estimates, with no imagined native/Silver fight; align actual
+combat to the frozen10k teacher; reuse deterministic children and fix MCTS512
+simulations without tuning stochastic widening/PUCT/horizon. Search depth6–13,
+3,654 owned decisions, 2,142 fallbacks including972 support aborts;105,957 supported
+surrogate samples. All search/support accounting and real combat logs reconcile;
+zero Silver bridge failures. Control823/treatment811 actual battles.
+Mean game time38.2207→61.0723s (1.5979x), mean floor48.625→49.0625 descriptive.
+
+Focused checks3/3, startup11/11, excluded OFF parity8/8, ON smoke8/8, independent
+implementation review and authoritative Linux GCC CI pass before freeze/run.
+Models, corpus/support, default OFF and original §243 evidence preserved. The
+initial expensive imagined-Silver canary was stopped before any revised official
+seed; user chose whole-decision V4 fallback. Same seeds/four corrections imply
+regression evidence, not fresh confirmation or individual causal attribution.
+The result demonstrates neither improvement nor equivalence; copied hidden RNG
+still prevents unbiased-planning or deployment claims. No follow-up seeds or
+sweep. Knowledge impact: maintained live contracts/telemetry and research status
+updated; frozen raw evidence preserved.
+[Full evidence](evidence/live_ooc_mcts_corrected_2026-09-14.md),
+[raw paired result](evidence/live_ooc_mcts_corrected_2026-09-14/result.json).

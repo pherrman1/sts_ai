@@ -20,11 +20,11 @@ chronology.
 
 ## Current priority / active line
 
-A corrected live OOC MCTS paired regression benchmark is authorized on the
-same32 seeds970000..970031, with ordinary exact-10k Silver in both arms. The
-four corrections and fixed512 MCTS budget are described in the
-[corrected benchmark evidence](../../experiments/evidence/live_ooc_mcts_corrected_2026-09-14.md).
-This is reused-seed regression evidence; no sweep or additional decision seeds.
+The corrected live OOC MCTS paired regression is complete: both arms won21/32
+with ordinary exact-10k Silver on reused seeds970000..970031. The paired win CI
+[-21.875,+21.875]pp is inconclusive. MCTS remains OFF by default; no additional
+seeds or tuning are authorized. See [ledger-06 §244](../../experiments/ledger-06.md)
+and the [corrected benchmark evidence](../../experiments/evidence/live_ooc_mcts_corrected_2026-09-14.md).
 
 ## Completed recent line
 
