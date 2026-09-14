@@ -58,6 +58,23 @@ def event_probabilities(net,z,hp,bits,features,candidates,legal=None):
     return net(*(torch.as_tensor(v,device=device) for v in values))[0].exp().cpu().numpy().astype(float)
 
 
+def batch_event_probabilities(net,z,hp,bits,features,candidates,legals):
+    width=max(len(value) for value in candidates);cards=max(value.shape[1] for value in candidates)
+    padded=np.zeros((len(candidates),width,cards,3),np.float32);legal=np.zeros((len(candidates),width),bool)
+    for row,(value,allowed) in enumerate(zip(candidates,legals)):padded[row,:len(value),:value.shape[1]]=value;legal[row,:len(value)]=allowed
+    device=next(net.parameters()).device
+    values=(np.asarray(z,np.float32),np.asarray(hp,np.float32),np.asarray(bits,np.float32),np.asarray(features,np.float32),padded,legal)
+    return net(*(torch.as_tensor(v,device=device) for v in values)).exp().cpu().numpy().astype(float)
+
+
+def batch_gold_probabilities(net,z,hp,bits,mechanical,posts,gold_values):
+    width=max(len(values) for values in posts);candidate=np.zeros((len(posts),width,6),np.float32);legal=np.zeros((len(posts),width),bool)
+    for row,values in enumerate(posts):candidate[row,:len(values)]=gold.candidate_features(values,gold_values[row]);legal[row,:len(values)]=True
+    device=next(net.parameters()).device
+    values=(np.asarray(z,np.float32),np.asarray(mechanical,np.float32),np.asarray(hp,np.float32),np.asarray(bits,np.float32),candidate,legal)
+    return net(*(torch.as_tensor(v,device=device) for v in values)).exp().cpu().numpy().astype(float)
+
+
 def writhing_probabilities(net,z,pre,pi,ending,maximum,mask,consumed,escaped):
     hp,bits,mechanical,features=conditions(pre,pi,ending,maximum,mask,consumed,escaped)
     posts=events.writhing_posts(pre);omamori=features[0]>0
