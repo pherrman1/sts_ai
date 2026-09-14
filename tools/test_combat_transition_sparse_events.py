@@ -54,4 +54,23 @@ class SparseEvents(unittest.TestCase):
         self.assertNotIn((10,0),possible)
         self.assertIn((100,0),possible)
 
+    def test_smoke_escape_budget_and_raw_stolen_intent_rule(self):
+        from tools import combat_transition_gold_proc_budget as budget
+        pre=self.pre();pre.update(potions=[1]*5,gold=100)
+        pi=dict(cards=[dict(cardId=b._CARD_IDS['HAND_OF_GREED'],upgraded=False)],globals=dict(encounter=b._ENCOUNTER_IDS['LOOTER'],ascension=17))
+        posts=budget.joint_gold_posts(pre,pi,0,(0,),escaped=True)
+        self.assertIn((80,20),posts) # Alive thief, next mug: RAW includes theft.
+        self.assertIn((60,0),posts) # Alive thief, next escape: RAW omits theft.
+        self.assertFalse(any(gold>100 for gold,_ in posts))
+        with self.assertRaises(ValueError):budget.joint_gold_posts(pre,pi,0,(3,),escaped=True)
+        pi['globals']['encounter']=b._ENCOUNTER_IDS['TWO_THIEVES']
+        posts=budget.joint_gold_posts(pre,pi,0,(0,),escaped=True)
+        self.assertIn((60,40),posts);self.assertNotIn((140,0),posts)
+
+    def test_generated_forge_controls_native_dagger_amounts(self):
+        pre=self.pre();pre.update(potions=[1]*5,gold=0)
+        pi=dict(cards=[],globals=dict(encounter=b._ENCOUNTER_IDS['TWO_LOUSE'],ascension=0))
+        self.assertNotIn((5,),n.ritual_posts(pre,pi))
+        self.assertIn((5,),n.ritual_posts(pre,pi,consumed_potions=[b._POTION_IDS['BLESSING_OF_THE_FORGE']]))
+
 if __name__=='__main__':unittest.main()

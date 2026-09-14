@@ -46,13 +46,14 @@ def ritual_changes(pre, post):
     return events
 
 
-def ritual_posts(pre, pi, mask=0):
+def ritual_posts(pre, pi, mask=0, consumed_potions=None, escaped=False):
     """Joint native 3/5 increments at raw deck positions, with a common kill cap."""
     import itertools
     from tools import combat_transition_gold as gold
     daggers=[c for c in pre['deck'] if c['id']==b._CARD_IDS['RITUAL_DAGGER']]
     cap=4 if gold.encounter_name(pi['globals']['encounter'])=='AWAKENED_ONE' else gold.CAPS.get(gold.encounter_name(pi['globals']['encounter']),1)
-    upgrade=bool(gold.mechanics(pi,pre,int(mask))[1][gold.MECHANICAL_FIELDS.index('upgradeRoute')])
+    if escaped:cap=max(0,cap-1)
+    upgrade=bool(gold.mechanics(pi,pre,int(mask),consumed_potions)[1][gold.MECHANICAL_FIELDS.index('upgradeRoute')])
     options=[]
     for card in daggers:
         payouts=(5,) if card['upgraded'] else ((3,5) if upgrade else (3,))

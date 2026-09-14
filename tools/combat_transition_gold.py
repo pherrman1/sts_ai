@@ -48,12 +48,12 @@ def encounter_name(encounter):
     return names[encounter]
 
 
-def mechanics(pi, pre, mask):
+def mechanics(pi, pre, mask, consumed_potions=None):
     if type(mask) is not int or not 0 <= mask < 32:
         raise ValueError('invalid consumption mask')
     cards = pi['cards']; relics = {r['id'] for r in pre['relics']}
     count = lambda name, up=None: sum(c['cardId'] == b._CARD_IDS[name] and (up is None or bool(c['upgraded']) == up) for c in cards)
-    consumed = lambda name: any(p == b._POTION_IDS[name] and (mask & (1 << slot)) for slot, p in enumerate(pre['potions']))
+    consumed = lambda name: (b._POTION_IDS[name] in consumed_potions if consumed_potions is not None else any(p == b._POTION_IDS[name] and (mask & (1 << slot)) for slot, p in enumerate(pre['potions'])))
     toolbox = b._RELIC_IDS['TOOLBOX'] in relics
     colorless = consumed('COLORLESS_POTION')
     trans, jack = count('TRANSMUTATION'), count('JACK_OF_ALL_TRADES')
