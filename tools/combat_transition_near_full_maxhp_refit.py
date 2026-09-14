@@ -8,7 +8,7 @@ from tools import combat_transition_composed as c,combat_transition_composed_eva
 from tools import combat_transition_near_full_downstream as d
 from tools import combat_transition_sparse_evaluate as sparse
 
-RECIPE=dict(seed=20260912,epochs=12,batch=512,headLr=.001,encoderLr=.0001,weightDecay=.0001,clip=1.,selection='earliest strict minimum original VALIDATION maxHP NLL plus audited native partition NLL',population='entire final-union original TRAIN survivors',auxiliary='one coarse native target on Writhing/Darkstone without charged Omamori: implant iff maxHP delta >=6; coefficient one, not tuned',scope='existing maxHP architecture; all other learned components fixed',evidence='bounded development repair motivated by reused TEST, not untouched confirmation')
+RECIPE=dict(seed=20260912,epochs=12,batch=512,headLr=.001,encoderLr=.0001,weightDecay=.0001,clip=1.,selection='earliest strict minimum original VALIDATION maxHP NLL plus audited native partition NLL',population='entire final-union original TRAIN survivors',auxiliary='one coarse native target on Writhing/Darkstone without charged Omamori or available Fruit Juice: implant iff maxHP delta >=6; coefficient one, not tuned',scope='existing maxHP architecture; all other learned components fixed',evidence='bounded development repair motivated by reused TEST, not untouched confirmation')
 
 
 def fit(parent,output,sha,train_encoder=False):
@@ -18,7 +18,7 @@ def fit(parent,output,sha,train_encoder=False):
     selected=np.zeros(len(cache['ids']),bool);implant=np.zeros(len(selected),bool)
     for i,r in records.items():
         pre,pi,post=r['pre'],r['pi'],r['post']
-        if pi['globals']['encounter']!=c.base.WRITHING_MASS_ID or not any(x['id']==c.base._RELIC_IDS['DARKSTONE_PERIAPT'] for x in pre['relics']) or any(x['id']==c.base._RELIC_IDS['OMAMORI'] and x['data']>0 for x in pre['relics']):continue
+        if pi['globals']['encounter']!=c.base.WRITHING_MASS_ID or not any(x['id']==c.base._RELIC_IDS['DARKSTONE_PERIAPT'] for x in pre['relics']) or c.base._POTION_IDS['FRUIT_JUICE'] in pre['potions'] or any(x['id']==c.base._RELIC_IDS['OMAMORI'] and x['data']>0 for x in pre['relics']):continue
         event=bool(r['writhingTarget'])
         if event!=(post['maxHp']-pre['maxHp']>=6):raise ValueError('native coarse partition target contradiction')
         selected[i]=True;implant[i]=event
