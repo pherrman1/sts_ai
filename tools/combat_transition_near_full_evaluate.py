@@ -88,8 +88,8 @@ def subset(test,indices):
     return {k:v[indices] if isinstance(v,np.ndarray) else [v[i] for i in indices] for k,v in test.items()}
 
 
-def networks(parent):
-    m,bindings=d.load_upstream(parent);folder=parent/'full-union-downstream-v1';receipt=json.loads((folder/'fit.json').read_text())
+def networks(parent,downstream="full-union-downstream-v1"):
+    m,bindings=d.load_upstream(parent);folder=parent/downstream;receipt=json.loads((folder/'fit.json').read_text())
     if c.base.sha256(folder/'downstream.pt')!=receipt['artifactSha256']:raise ValueError('downstream checkpoint differs')
     nets=d.models(parent).cuda().eval().requires_grad_(False);nets.load_state_dict(torch.load(folder/'downstream.pt',map_location='cuda',weights_only=False)['stateDict']);bindings['downstream']=receipt['artifactSha256'];return m,nets,bindings
 
@@ -131,10 +131,10 @@ def check_raw(pre,pi,post,trace,particle,row):
     if wr and [r for r in post['relics'] if r['id']==rid]!=[r for r in adjusted['relics'] if r['id']==rid]:raise ValueError('native Writhing Omamori')
 
 
-def hard(parent,output,sha,limit=None):
+def hard(parent,output,sha,limit=None,downstream="full-union-downstream-v1"):
     sparse.frozen(sha)
     if output.exists():raise ValueError('refusing overwrite')
-    cache,graphs,ambiguous,records,meta,rows,ids,test,snapshot=load(parent);torch.set_num_threads(4);m,nets,bindings=networks(parent);survival,pd=upstream(m,parent,ids,test);rng=np.random.default_rng(RECIPE['seed']);counts=Counter();violations={name:0 for name in ('hp','potions','goldDaggerBudget','writhing','relicResidues','rng','escape','deathShortCircuit')}
+    cache,graphs,ambiguous,records,meta,rows,ids,test,snapshot=load(parent);torch.set_num_threads(4);m,nets,bindings=networks(parent,downstream);survival,pd=upstream(m,parent,ids,test);rng=np.random.default_rng(RECIPE['seed']);counts=Counter();violations={name:0 for name in ('hp','potions','goldDaggerBudget','writhing','relicResidues','rng','escape','deathShortCircuit')}
     if limit is not None:
         sub=np.arange(min(limit,len(rows)));rows=[rows[i] for i in sub];ids=ids[sub];test=subset(test,sub);survival=survival[sub];pd=pd[sub]
     with torch.inference_mode():
@@ -149,9 +149,9 @@ def hard(parent,output,sha,limit=None):
                     residues={name:int(value[row]) for name,value in particle['residues'].items()};post=s.assemble(r['pre'],r['pi'],int(ending[row]),int(maximum[row]),trace,residues,int(particle['writhing'][row]),particle['dagger'][row],particle['pairs'][row]);check_raw(r['pre'],r['pi'],post,trace,particle,row)
                     counts[trace['outcome'].lower()]+=1;counts['brewUses']+=trace['brewUses'];counts['recursiveSampledTrajectories']+=trace['brewUses']>sum(p==t.BREW for p in r['pre']['potions'])
             print('whole final union RAW validity',draw+1,dict(counts),flush=True)
-    result=dict(sourceSha=sha,recipe=RECIPE,bindings=bindings,testSnapshot=snapshot,counts=counts,violations=violations,classification='RAW_SMOKE_PASS' if limit is not None else 'WHOLE_UNION_RAW_VALIDITY_PASS',supportChanged=False,scope='offline RAW contract; native escape continuation has separate exact oracle')
+    result=dict(sourceSha=sha,downstreamFolder=downstream,recipe=RECIPE,bindings=bindings,testSnapshot=snapshot,counts=counts,violations=violations,classification='RAW_SMOKE_PASS' if limit is not None else 'WHOLE_UNION_RAW_VALIDITY_PASS',supportChanged=False,scope='offline RAW contract; native escape continuation has separate exact oracle')
     c.base.json_dump(output,result);print(json.dumps(result),flush=True)
 
 
 if __name__=='__main__':
-    p=argparse.ArgumentParser();p.add_argument('command',choices=['hard']);p.add_argument('--parent',type=Path,required=True);p.add_argument('--output',type=Path,required=True);p.add_argument('--source-sha',required=True);p.add_argument('--limit',type=int);a=p.parse_args();globals()[a.command](a.parent,a.output,a.source_sha,a.limit)
+    p=argparse.ArgumentParser();p.add_argument('command',choices=['hard']);p.add_argument('--parent',type=Path,required=True);p.add_argument('--output',type=Path,required=True);p.add_argument('--source-sha',required=True);p.add_argument('--limit',type=int);p.add_argument('--downstream',default='full-union-downstream-v1');a=p.parse_args();globals()[a.command](a.parent,a.output,a.source_sha,a.limit,a.downstream)
