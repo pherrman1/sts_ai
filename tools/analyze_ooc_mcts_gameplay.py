@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Analyze the frozen 32-seed paired live OOC-MCTS engineering gameplay gate."""
+"""Analyze the frozen paired live OOC-MCTS engineering gameplay gate."""
 import argparse
 from collections import Counter
 import csv
@@ -25,12 +25,13 @@ def discordant_pvalue(treatment_only, control_only):
     return min(1.0, 2 * sum(math.comb(n, k) for k in range(min(treatment_only, control_only) + 1)) / 2**n) if n else 1.0
 
 
-def analyze(control_path, treatment_path, bootstrap_samples=200000, combat_sims=1000, mcts_sims=128):
+def analyze(control_path, treatment_path, bootstrap_samples=200000, combat_sims=1000, mcts_sims=128, seed_start=970000, seed_count=32):
     control, treatment = read_rows(control_path), read_rows(treatment_path)
-    seeds = list(range(970000, 970032))
+    if seed_count<=0 or bootstrap_samples<=0: raise ValueError('seed and bootstrap counts must be positive')
+    seeds = list(range(seed_start, seed_start+seed_count))
     expected = set(seeds)
     if set(control) != expected or set(treatment) != expected:
-        raise ValueError('gate must contain exactly paired seeds 970000..970031')
+        raise ValueError(f'gate must contain exactly paired seeds {seed_start}..{seed_start+seed_count-1}')
     traces = [read_rows(Path(str(p) + '.mcts.csv')) for p in (control_path, treatment_path)]
     if any(set(trace) != expected for trace in traces):
         raise ValueError('trace seed accounting mismatch')
@@ -69,7 +70,7 @@ def analyze(control_path, treatment_path, bootstrap_samples=200000, combat_sims=
                 raise ValueError('imagined support accounting mismatch')
         reasons_path=Path(str(treatment_path)+'.mcts.csv.support.jsonl')
         reasons=[json.loads(line) for line in reasons_path.read_text().splitlines()]
-        if len(reasons)!=32 or {r['seed'] for r in reasons}!=expected:
+        if len(reasons)!=seed_count or {r['seed'] for r in reasons}!=expected:
             raise ValueError('support reason seed accounting mismatch')
         for row in reasons:
             if sum(row['reasons'].values())!=int(traces[1][row['seed']]['unsupportedCombats']):
@@ -78,7 +79,7 @@ def analyze(control_path, treatment_path, bootstrap_samples=200000, combat_sims=
     if not has_coverage and combat_sims == 1000:
         raise ValueError('treatment arm had no ownership or imagined combat samples')
     rng = np.random.Generator(np.random.PCG64(20260914))
-    indices = rng.integers(0, 32, size=(bootstrap_samples, 32))
+    indices = rng.integers(0, seed_count, size=(bootstrap_samples, seed_count))
     differences = {}
     for key in ('won', 'floor', 'hpEnd', 'fightsLost', 'deathCombat', 'sec'):
         a, b = (np.array([float(arm[s][key]) for s in seeds]) for arm in (control, treatment))
@@ -95,10 +96,10 @@ def analyze(control_path, treatment_path, bootstrap_samples=200000, combat_sims=
     trace = traces[1]
     totals = {k: sum(float(trace[s][k]) for s in seeds) for k in trace[seeds[0]] if k not in ('seed', 'maxDepth')}
     runtime_total = sum(float(treatment[s]['sec']) for s in seeds)
-    diagnostics = {f'mean_{k}_per_run': v / 32 for k, v in totals.items()}
+    diagnostics = {f'mean_{k}_per_run': v / seed_count for k, v in totals.items()}
     diagnostics.update(fallback_rate=totals['mctsFallback'] / totals['oocDecisions'], max_depth_distribution=dict(sorted(Counter(int(trace[s]['maxDepth']) for s in seeds).items())), mcts_fraction_of_total_run_wall_time=totals['mctsWallSec'] / runtime_total)
     both_dead = [s for s in seeds if int(control[s]['deathCombat']) >= 0 and int(treatment[s]['deathCombat']) >= 0]
-    return {'classification': classification, 'seeds': seeds, 'benchmark_sha': metas[0]['config']['executableGitSha'], 'control_wins': control_wins, 'treatment_wins': treatment_wins, 'treatment_only_wins': treatment_only, 'control_only_wins': control_only, 'same_result_seeds': 32 - treatment_only - control_only, 'win_difference_pp': differences['won']['treatment_minus_control'] * 100, 'win_difference_95_ci_pp': [lo * 100, hi * 100], 'exact_two_sided_discordant_binomial_p': discordant_pvalue(treatment_only, control_only), 'paired_outcomes': differences, 'runtime_ratio_of_mean_per_run_seconds': differences['sec']['treatment_mean'] / differences['sec']['control_mean'], 'diagnostics': diagnostics, 'both_dead_seeds': both_dead, 'deathCombat_note': 'Raw paired mean includes -1 survivor sentinel; also identify both-dead seeds for conditional comparison.', 'bootstrap': {'replicates': bootstrap_samples, 'rng': 'NumPy PCG64', 'seed': 20260914, 'interval': 'paired seed percentile 2.5/97.5 quantiles, linear interpolation'}, 'configurations': configs, 'input_sha256': {str(p): hashlib.sha256(p.read_bytes()).hexdigest() for p in (control_path, treatment_path)}, 'known_limitation': 'Copied hidden noncombat RNG can bias imagined futures. Actual gameplay uses real combat in both arms; this engineering policy A/B does not qualify unbiased MCTS values or deployment.'}
+    return {'classification': classification, 'seeds': seeds, 'benchmark_sha': metas[0]['config']['executableGitSha'], 'control_wins': control_wins, 'treatment_wins': treatment_wins, 'treatment_only_wins': treatment_only, 'control_only_wins': control_only, 'same_result_seeds': seed_count - treatment_only - control_only, 'win_difference_pp': differences['won']['treatment_minus_control'] * 100, 'win_difference_95_ci_pp': [lo * 100, hi * 100], 'exact_two_sided_discordant_binomial_p': discordant_pvalue(treatment_only, control_only), 'paired_outcomes': differences, 'runtime_ratio_of_mean_per_run_seconds': differences['sec']['treatment_mean'] / differences['sec']['control_mean'], 'diagnostics': diagnostics, 'both_dead_seeds': both_dead, 'deathCombat_note': 'Raw paired mean includes -1 survivor sentinel; also identify both-dead seeds for conditional comparison.', 'bootstrap': {'replicates': bootstrap_samples, 'rng': 'NumPy PCG64', 'seed': 20260914, 'interval': 'paired seed percentile 2.5/97.5 quantiles, linear interpolation'}, 'configurations': configs, 'input_sha256': {str(p): hashlib.sha256(p.read_bytes()).hexdigest() for p in (control_path, treatment_path)}, 'known_limitation': 'Copied hidden noncombat RNG can bias imagined futures. Actual gameplay uses real combat in both arms; this engineering policy A/B does not qualify unbiased MCTS values or deployment.'}
 
 
 def main():
@@ -108,9 +109,11 @@ def main():
     parser.add_argument('output', type=Path)
     parser.add_argument('--combat-sims',type=int,default=1000)
     parser.add_argument('--mcts-sims',type=int,default=128)
+    parser.add_argument('--seed-start',type=int,default=970000)
+    parser.add_argument('--seed-count',type=int,default=32)
     args = parser.parse_args()
     assert discordant_pvalue(0, 0) == 1 and discordant_pvalue(1, 1) == 1 and discordant_pvalue(4, 0) == .125
-    result = analyze(args.control, args.treatment, combat_sims=args.combat_sims, mcts_sims=args.mcts_sims)
+    result = analyze(args.control, args.treatment, combat_sims=args.combat_sims, mcts_sims=args.mcts_sims,seed_start=args.seed_start,seed_count=args.seed_count)
     args.output.write_text(json.dumps(result, indent=2) + '\n')
     print(json.dumps(result, indent=2))
 
