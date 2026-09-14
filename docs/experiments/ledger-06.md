@@ -7778,3 +7778,36 @@ Knowledge impact: maintained OOC native interfaces and engineering evidence;
 no default/model/support/scientific qualification change.
 [Evidence](evidence/ooc_rich_tree_speed_2026-09-14.md),
 [raw commands/provenance/check packet](evidence/ooc_rich_tree_speed_2026-09-14.json).
+
+
+## §254 — Silver reroot GC repeated canary and flat-1k smoke (2026-09-15)
+
+PR #185 baseline `876e9305a258df3d5a5eafd50e30375b933f8884`, measured candidate
+`1e37f2a9d68a403158241886f85c926b37b62f1a`. Repeated real private Silver
+10k searches / exact reroots on an explicit durable starter-deck Jaw Worm
+fixture (Ironclad200/200HP, A0, seed0xBADC0DE) follow expanded legal END_TURN
+outcomes. Cumulative real allocations11,635→23,868→35,878→48,231→58,494;
+retained nodes9→1→79→4→64. Three reroots occur beyond32,768historical allocations;
+58,430nodes reclaimed. Final10kcontinuation passes at11,795live/70,225historical
+nodes. Retained addresses, visits/Q, edge statistics, chance links/bookkeeping,
+available best action, dedup and post-search ownership checks pass. Debug/Release
+outputs agree; guarded repeated canary added to CTest; complete Debug92/92pass.
+A preliminary selected-action Looter path reached a truly over-cap reachable
+graph and could not demonstrate the historical-only case; its log is retained.
+Historical totals describe PR allocations, not an executed no-GC baseline graph;
+session cap regressions separately prove post-GC fallback ordering.
+
+Authorized bounded smoke:16paired seeds0–15, IroncladA0, project-fairSilver,
+flat exact1,000per private search including selection subdecisions, allocated
+cap32,768/adaptiveOFF/keysOFF/default nativeOOC/same tracked models/OMP4/Release.
+Baseline10/16wins(62.5%) vs PR7/16(43.75%):−18.75pp, paired bootstrap95%CI
+[−43.75,+6.25]pp;6bothwin/5bothlose/4base-only/1PR-only. Mean floor45.375→46.9375
+(+1.5625; CI approximately[−1.8,+6.6]); mean endHP23.4375→15.9375. Both exit0;
+strict identical seed sets/budgets verified; conversion/semantic-resolution/
+transaction/knowledge failures0 and allocated-cap fallback0 in both arms.
+**Adverse win signal with higher mean floor: not a clean nonregression result,
+not evidence qualifying harm or improvement.** No broader benchmark or quality
+claim; timing is descriptive only. Knowledge impact: regression coverage and
+bounded experiment evidence; no default/model/support change.
+[Comparison and raw evidence](evidence/silver_reroot_gc_smoke_2026-09-15/README.md),
+[commands/hashes/provenance](evidence/silver_reroot_gc_smoke_2026-09-15/provenance.json).
