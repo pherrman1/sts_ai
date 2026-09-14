@@ -140,12 +140,16 @@ Search nodes contain compact bookkeeping and a pointer to a separately pooled
 battle state. Only decision nodes claim state storage; chance nodes have a null
 state pointer and read their decision parent's state. Both pools retain stable
 object addresses and reuse capacity. Fresh reset resets both active counters;
-exact reroot traverses child edges and chance-parent dependencies, reclaims
-unreachable nodes and battle states (including inactive high-water slots), and
-rebuilds dedup from retained decision nodes. Retained addresses, edges, visits,
-and values stay unchanged. The session checks the cap after this collection,
-so historical dead allocations cannot block reuse; a reachable graph at or
-above the cap still falls back. The allocated/active reuse caps count logical
+exact reroot below the configured node cap preserves both pools and the global
+dedup table, including currently orphaned transposition statistics. Only when
+the old configured cap metric is at or above the cap does the session request
+collection around the exact candidate. Collection traverses child edges and
+chance-parent dependencies, reclaims unreachable nodes/states (including
+inactive high-water slots), and rebuilds retained dedup entries. Retained
+addresses, edges, visits and values stay unchanged. The session then rechecks
+the cap: a compacted graph below the cap is reused; one at or above falls back.
+Thus ordinary below-cap reuse retains baseline policy behavior. Allocated/active
+reuse caps count logical
 nodes through `allNodes.size()`/`poolUsed`, never state slots or bytes. Pooled
 state swaps preserve scratch-buffer capacity reuse. All consumers of these
 structures must be rebuilt together after a layout change.

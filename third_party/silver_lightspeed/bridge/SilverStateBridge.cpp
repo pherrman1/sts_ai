@@ -777,7 +777,10 @@ public:
             // previousBest belongs to the old root and may be reclaimed by reroot.
             if (candidate != nullptr) {
                 previousBest = nullptr;
-                searcher->rerootAt(candidate);
+                const auto oldCapMetric = config.reuseCapMode == SilverReuseCapMode::ALLOCATED
+                    ? searcher->allNodes.size() : searcher->poolUsed;
+                searcher->rerootAt(candidate,
+                    oldCapMetric >= static_cast<std::size_t>(config.reuseCap));
             }
             const std::size_t capMetric = config.reuseCapMode == SilverReuseCapMode::ALLOCATED
                 ? searcher->allNodes.size() : searcher->poolUsed;

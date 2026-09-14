@@ -6,6 +6,7 @@
 #include <stdexcept>
 #include <vector>
 #include <unordered_set>
+#include <unordered_map>
 #include <string>
 #include "combat/BattleContext.h"
 #include "game/GameContext.h"
@@ -217,7 +218,7 @@ void retainedStateGrowth(const sts::BattleContext &bc) {
         }
     }
     require(candidate != nullptr, "retained growth fixture must provide a reroot candidate");
-    search.rerootAt(candidate);
+    search.rerootAt(candidate, true);
     std::vector<std::pair<const sts::BattleContext *, std::uint64_t>> retained;
     for (std::size_t i = 0; i < search.decisionStatesUsed; ++i) {
         const auto *state = search.decisionStates[i].get();
@@ -331,7 +332,7 @@ void compaction(const sts::BattleContext &bc, int simulations) {
     search.root = root;
     const auto expectedAction = search.getBestAction();
     search.root = oldRoot;
-    search.rerootAt(root);
+    search.rerootAt(root, true);
     require(search.getBestAction() == expectedAction, "compaction changed retained-tree result");
     require(search.allNodes.size() == reachable.size() && search.poolUsed == reachable.size(), "must reclaim unreachable nodes");
     require(search.allNodes.size() < before, "fixture must discard dead nodes");
@@ -368,13 +369,36 @@ void compaction(const sts::BattleContext &bc, int simulations) {
     validateStorage(search);
 }
 
+void lazyReroot(const sts::BattleContext &bc) {
+    Search search(bc);
+    auto next = bc; next.player.curHp -= 1;
+    auto *candidate = search.getOrCreateNode(std::move(next));
+    next = bc; next.player.curHp -= 2;
+    auto *orphan = search.getOrCreateNode(std::move(next));
+    orphan->simulationCount = 37; orphan->evaluationSum = 12.25;
+    const auto slots = search.stateToNode;
+    const auto nodes = search.allNodes.size(), states = search.decisionStates.size();
+    search.rerootAt(candidate);
+    require(search.allNodes.size() == nodes && search.poolUsed == nodes
+            && search.decisionStates.size() == states, "below-cap reroot reclaimed baseline history");
+    for (std::size_t i = 0; i < slots.size(); ++i)
+        require(slots[i].hash == search.stateToNode[i].hash && slots[i].node == search.stateToNode[i].node,
+                "below-cap reroot changed dedup table");
+    next = *orphan->state;
+    require(search.getOrCreateNode(std::move(next)) == orphan && !search.lastNodeWasCreated
+            && orphan->simulationCount == 37 && orphan->evaluationSum == 12.25,
+            "below-cap reroot lost orphan transposition statistics");
+    search.search(32);
+    validateStorage(search);
+}
+
 void repeatedRerootCanary(const sts::BattleContext &bc) {
     Search search(bc);
     search.explorationParameter = search.explorationParameterChance = 25.0;
     search.chanceWideningC = search.endTurnWideningC = 3.7028;
     search.chanceWideningAlpha = search.endTurnWideningAlpha = 0.52389;
     std::size_t historical = search.poolUsed, reclaimed = 0;
-    int crossings = 0, reroots = 0;
+    int crossings = 0, reroots = 0, compactions = 0;
     for (int decision = 0; decision < 32; ++decision) {
         const auto previous = search.poolUsed;
         search.search(10000);
@@ -393,22 +417,25 @@ void repeatedRerootCanary(const sts::BattleContext &bc) {
             break;
         }
         require(candidate && !candidate->isRandomNode, "repeated canary needs exact child");
-        std::vector<std::pair<Search::Node*, Search::Node>> snapshots;
+        std::unordered_map<Search::Node*, Search::Node> snapshots;
         for (std::size_t i = 0; i < search.poolUsed; ++i)
-            snapshots.emplace_back(search.allNodes[i].get(), *search.allNodes[i]);
+            snapshots.emplace(search.allNodes[i].get(), *search.allNodes[i]);
+        std::unordered_set<Search::Node*> dedupMembers;
+        for (const auto &slot : search.stateToNode) if (slot.node) dedupMembers.insert(slot.node);
         const auto before = search.poolUsed;
         auto *oldRoot = search.root;
         search.root = candidate;
         const bool hasActions = !candidate->edges.empty();
         const auto expectedAction = hasActions ? search.getBestAction() : sts::search::Action{};
         search.root = oldRoot;
-        search.rerootAt(candidate);
+        const bool compact = search.allNodes.size() >= 32768;
+        search.rerootAt(candidate, compact);
+        if (compact) ++compactions;
         require(!hasActions || search.getBestAction() == expectedAction,
                 "repeated compaction changed retained-tree result");
         validateStorage(search);
         for (const auto &owned : search.allNodes) {
-            const auto saved = std::find_if(snapshots.begin(), snapshots.end(),
-                [&](const auto &entry) { return entry.first == owned.get(); });
+            const auto saved = snapshots.find(owned.get());
             require(saved != snapshots.end(), "reroot introduced a node");
             const auto &node = *owned, &old = saved->second;
             require(node.state == old.state && node.parent == old.parent && node.simulationCount == old.simulationCount
@@ -421,7 +448,7 @@ void repeatedRerootCanary(const sts::BattleContext &bc) {
                         && node.edges[i].visitCount == old.edges[i].visitCount
                         && node.edges[i].rngAdvanceSteps == old.edges[i].rngAdvanceSteps,
                         "repeated compaction changed edge statistics");
-            if (!node.isRandomNode) {
+            if (!node.isRandomNode && dedupMembers.count(owned.get())) {
                 auto copy = *node.state;
                 require(search.getOrCreateNode(std::move(copy)) == owned.get() && !search.lastNodeWasCreated,
                         "repeated canary lost retained dedup");
@@ -430,10 +457,10 @@ void repeatedRerootCanary(const sts::BattleContext &bc) {
         reclaimed += before - search.poolUsed;
         ++reroots;
         require(search.allNodes.size() < 32768, "repeated canary retained tree reaches production cap");
-        if (historical >= 32768) ++crossings;
+        if (compact && historical >= 32768) ++crossings;
         std::cout << "repeated_reroot decision=" << decision << " simulations=10000 historical_nodes=" << historical
                   << " before_nodes=" << before << " retained_nodes=" << search.poolUsed
-                  << " cumulative_reclaimed=" << reclaimed << " allocated_cap_blocked=0" << std::endl;
+                  << " compacted=" << compact << " cumulative_reclaimed=" << reclaimed << " allocated_cap_blocked=0" << std::endl;
         if (crossings >= 3) break;
         require(search.root->state->outcome == sts::Outcome::UNDECIDED,
                 "canary ended before repeated historical-cap crossings");
@@ -443,9 +470,9 @@ void repeatedRerootCanary(const sts::BattleContext &bc) {
     search.search(10000);
     historical += search.poolUsed - retained;
     validateStorage(search);
-    require(search.allNodes.size() < 32768, "final continuation must remain below cap");
+
     std::cout << "repeated_reroot_canary PASS reroots=" << reroots << " historical_cap_reroots=" << crossings
-              << " final_search_nodes=" << search.poolUsed << " historical_nodes=" << historical << '\n';
+              << " compactions=" << compactions << " final_search_nodes=" << search.poolUsed << " historical_nodes=" << historical << '\n';
 }
 
 } // namespace
@@ -465,6 +492,7 @@ int main(int argc, char **argv) {
             repeatedRerootCanary(stress);
             return 0;
         }
+        lazyReroot(bc);
         compaction(bc, 0);
         selection(search); widening(search);
         traceParity(bc, false); traceParity(bc, true); rootHash(bc);
