@@ -7750,3 +7750,31 @@ No per-action/full-state trace or quality cohort; one ordered pair is descriptiv
 Knowledge impact: maintained V4 API/lifetime and engineering evidence.
 [Profile/comparison](evidence/live_ooc_mcts_v4_reuse_2026-09-14.md),
 [full raw/provenance/check packet](evidence/live_ooc_mcts_v4_reuse_2026-09-14.json).
+
+
+## §253 — Numeric rich features and contiguous OOC trees (2026-09-14)
+
+PR #183 baseline `61882889dfb269a88f6bd26bf5386d9f22dd5d04`, measured candidate
+`04b7a7878679cc7aa1827fa822ab66dafdf6b8bd`. One refreshed seed42 scoped profile:
+trees33.5%, rich CSV conversion15.2%, CTM preparation16.2%, V4 deck/fusion17.4%.
+Direct1,017-value numeric builder leaves CSV compatibility untouched; all operands
+are integral and4,098state vectors compare bitwise against legacy parsing.
+Tree nodes resolve selected features at load and flatten into contiguous storage
+with root offsets/sentinel; traversal and ordered double accumulation unchanged.
+Frozen original loader/predictor matches27,177bitwise predictions on win/floor/E2c.
+
+One fresh uninstrumented seed42 ordered pair, IroncladA0/OOC512/exact10,000Silver,
+fair combat/copied noncombat RNG, keysOFF/Act3-or-death/same models/CPU0/OMP1:
+full32.1673s→30.3124s (5.77% lower), OOC15.028404s→12.852105s (14.48% lower).
+Both exit0; outcome, every non-timing OOC counter,28Silver telemetry records and
+support reasons match. No full trajectory/state trace or decision-quality cohort.
+Separate128-state/10,000-call/5round equivalent-indirect-call probe medians:
+win12.64% lower, floor12.94% lower, rich features29.98x. Initial unequal-inlining
+probes are superseded; exploratory variants retained, final candidate unchanged.
+All timings descriptive; one ordered pair is not an average-speedup claim.
+Release focused7CTest and complete Debug91CTest pass; overload/map harness
+failures repaired; clean binaries contain no temporary profiler symbols.
+Knowledge impact: maintained OOC native interfaces and engineering evidence;
+no default/model/support/scientific qualification change.
+[Evidence](evidence/ooc_rich_tree_speed_2026-09-14.md),
+[raw commands/provenance/check packet](evidence/ooc_rich_tree_speed_2026-09-14.json).

@@ -129,6 +129,94 @@ std::string richRow(const sts::GameContext &gc, const PathHistory &path) {
     return o.str();
 }
 
+std::vector<float> richFeatureVec(const sts::GameContext &gc, const PathHistory &path) {
+    std::array<int, kNumCardIds> d{}, u{};
+    int botAtk = -1, botSkill = -1, botPow = -1;
+    for (int i = 0; i < gc.deck.size(); ++i) {
+        const sts::Card &c = gc.deck.cards[i];
+        const int id = (int)c.getId();
+        if (id >= 0 && id < kNumCardIds) { ++d[id]; if (c.isUpgraded()) ++u[id]; }
+        if (gc.deck.isCardBottled(i)) {
+            switch (c.getType()) {
+                case sts::CardType::ATTACK: botAtk = id; break;
+                case sts::CardType::SKILL:  botSkill = id; break;
+                case sts::CardType::POWER:  botPow = id; break;
+                default: break;
+            }
+        }
+    }
+    std::array<int, kNumRelics> r{};
+    for (const auto &ri : gc.relics.relics) {
+        const int id = (int)ri.id;
+        if (id >= 0 && id < kNumRelics) r[id] = 1 + (ri.data > 0 ? ri.data : 0);
+    }
+    std::array<int, kNumPotions> pot{};
+    for (int i = 0; i < gc.potionCapacity && i < (int)gc.potions.size(); ++i) {
+        if (gc.potions[i] == sts::Potion::EMPTY_POTION_SLOT) continue;
+        const int id = (int)gc.potions[i];
+        if (id >= 0 && id < kNumPotions) ++pot[id];
+    }
+    const int nextElite = gc.eliteMonsterListOffset < gc.eliteMonsterList.size()
+                        ? (int)gc.eliteMonsterList[gc.eliteMonsterListOffset] : 0;
+    auto nf = [&](int k) -> int {
+        const int idx = gc.monsterListOffset + k;
+        return idx < gc.monsterList.size() ? (int)gc.monsterList[idx] : 0;
+    };
+    std::vector<float> values;
+    values.reserve(32 + 2 * kNumCardIds + kNumRelics + kNumPotions + 12);
+    const auto append = [&](auto value) { values.push_back(static_cast<float>(value)); };
+    append(gc.ascension);
+    append(gc.act);
+    append(gc.floorNum);
+    append(gc.curHp);
+    append(gc.maxHp);
+    append(gc.gold);
+    append(gc.deck.size());
+    append(gc.potionChance);
+    append(gc.cardRarityFactor);
+    append((gc.blueKey ? 1 : 0));
+    append((gc.greenKey ? 1 : 0));
+    append((gc.redKey ? 1 : 0));
+    append(gc.potionCount);
+    append(gc.potionCapacity);
+    append((int)gc.boss);
+    append(nextElite);
+    append(nf(0));
+    append(nf(1));
+    append(nf(2));
+    append((gc.eliteMonsterList.size() - gc.eliteMonsterListOffset));
+    append((gc.monsterList.size() - gc.monsterListOffset));
+    append(gc.monsterListOffset);
+    append(gc.eliteMonsterListOffset);
+    append(path.roomVisits[(int)sts::Room::SHOP]);
+    append(path.roomVisits[(int)sts::Room::REST]);
+    append(path.roomVisits[(int)sts::Room::EVENT]);
+    append(path.roomVisits[(int)sts::Room::ELITE]);
+    append(path.roomVisits[(int)sts::Room::MONSTER]);
+    append(path.roomVisits[(int)sts::Room::TREASURE]);
+    append(botAtk);
+    append(botSkill);
+    append(botPow);
+    for (int i = 0; i < kNumCardIds; ++i) append(d[i]);
+    for (int i = 0; i < kNumCardIds; ++i) append(u[i]);
+    for (int i = 0; i < kNumRelics;  ++i) append(r[i]);
+    for (int i = 0; i < kNumPotions; ++i) append(pot[i]);
+    const FwdMap fm = forwardMapFeatures(gc);
+    append(fm.dElite);
+    append(fm.dRest);
+    append(fm.dShop);
+    append(fm.dBoss);
+    append(fm.cElite);
+    append(fm.cRest);
+    append(fm.cShop);
+    append(fm.cEvent);
+    append(fm.cMonster);
+    append(fm.cTreasure);
+    append(gc.curMapNodeX);
+    append(gc.curMapNodeY);
+    return values;
+}
+
 std::string richStateHeader() {
     std::string h = richHeader();
     const std::string prefix = "seed,";

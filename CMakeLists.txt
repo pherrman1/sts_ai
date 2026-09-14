@@ -253,6 +253,13 @@ add_executable(one_combat_feature_test apps/one_combat_feature_test.cpp
 target_include_directories(one_combat_feature_test PUBLIC include)
 target_include_directories(one_combat_feature_test PUBLIC json/include)
 
+add_executable(one_combat_tree_test apps/one_combat_tree_test.cpp
+    apps/one_combat/compact_tree.cpp apps/one_combat/run_features.cpp $<TARGET_OBJECTS:sts_core_objects>)
+target_include_directories(one_combat_tree_test PUBLIC include json/include)
+add_test(NAME one_combat_tree_parity COMMAND $<TARGET_FILE:one_combat_tree_test>
+    ${CMAKE_SOURCE_DIR}/models/v_win_trees.txt ${CMAKE_SOURCE_DIR}/models/v_rich_trees.txt
+    ${CMAKE_SOURCE_DIR}/models/v_runwin_e2c_v2.txt)
+
 add_executable(parity_test apps/parity_test.cpp $<TARGET_OBJECTS:sts_core_objects>)
 target_include_directories(parity_test PUBLIC include)
 target_include_directories(parity_test PUBLIC json/include)
