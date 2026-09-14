@@ -1,0 +1,108 @@
+{
+  "baseline": "d68545d50ea018f6e6d38cfb2c282c7e99e58edc",
+  "nativeReviewedSha": "ec30dbfda896867e78a3f5bc2fc519134b75e19b",
+  "export": {
+    "path": "/home/philippherrmann/sts_sweep/runs/combat-transition-runtime-native-20260914/combat_transition_v1.native",
+    "sha256": "f9520a14b1fc42e2a22840c0c2cab0b13ebd8ab6285b5c943662f5e0e9cd9233",
+    "bytes": 2134285,
+    "sources": {
+      "survival": "2447b2daf1a48a619a5f071488908afd6f0fb83bfd855ee9f379c04120efeaef",
+      "max_hp": "66ac8f70da69e29bf9b1364243f6f903e4f74dda1ec8a909ef54a7ea97dc6479",
+      "hp": "a667a3cfa7d7eca3cb07b46f50321e443c75e8a58f7627becb1fd69bf90f08c9",
+      "potion": "8e04bcd5265fb11b8fa91b4553a84690915f437e7b3afee0b93358e312de3ad6",
+      "potion_encoder": "2085010f1aeef7a7957cdc45c851b2424d640037fd0fa981eb7ae7274190f6ef",
+      "relic": "e07e79d487152ae294f4915ef4aecd0e8bd38b8dec8d0133a57b6b58af92bd71"
+    }
+  },
+  "parity": {
+    "tolerance": 0.0001,
+    "fixtures": 23,
+    "fixtureSha256": "372a162704a6361fdadcc0487c856021e7a80ed8fde7aa1ffacde345f83eec9c",
+    "modelSha256": "f9520a14b1fc42e2a22840c0c2cab0b13ebd8ab6285b5c943662f5e0e9cd9233",
+    "maxAbsoluteErrors": {
+      "survival": 1.1920928955078125e-07,
+      "max_hp": 6.984919309616089e-09,
+      "hp": 2.086162567138672e-07,
+      "potion": 1.7881393432617188e-07,
+      "relic_turns": 1.1920928955078125e-07,
+      "relic_attacks": 1.043081283569336e-07,
+      "relic_cards": 5.960464477539063e-08,
+      "relic_shuffles": 1.4901161193847656e-07
+    },
+    "supportParity": true,
+    "legalMasksIdentical": true,
+    "finite": true,
+    "passParity": true
+  },
+  "samplingAndLatency": {
+    "tolerance": 0.0001,
+    "fixtures": 23,
+    "fixtureSha256": "372a162704a6361fdadcc0487c856021e7a80ed8fde7aa1ffacde345f83eec9c",
+    "modelSha256": "f9520a14b1fc42e2a22840c0c2cab0b13ebd8ab6285b5c943662f5e0e9cd9233",
+    "maxAbsoluteErrors": {
+      "survival": 1.1920928955078125e-07,
+      "max_hp": 6.984919309616089e-09,
+      "hp": 2.086162567138672e-07,
+      "potion": 1.7881393432617188e-07,
+      "relic_turns": 1.1920928955078125e-07,
+      "relic_attacks": 1.043081283569336e-07,
+      "relic_cards": 5.960464477539063e-08,
+      "relic_shuffles": 1.4901161193847656e-07
+    },
+    "supportParity": true,
+    "legalMasksIdentical": true,
+    "finite": true,
+    "passParity": true,
+    "componentNs": {
+      "hp_encoding": 1076419.7437500001,
+      "hp_head": 10687.51875,
+      "max_hp": 1084389.9,
+      "potion": 1083631.34375,
+      "relic": 4188.45625,
+      "survival": 1090441.025
+    },
+    "smoke": {
+      "deaths": 32,
+      "victories": 480,
+      "invalid": {
+        "copy_through": 0,
+        "duplicate_reward": 0,
+        "illegal_hp": 0,
+        "illegal_potion": 0,
+        "illegal_relic": 0,
+        "invalid_rng": 0,
+        "shared_residue": 0
+      },
+      "supportNs": 626.3671875,
+      "deathNs": 1482471.375,
+      "victoryNs": 4275059.10625
+    }
+  },
+  "fixtureProvenance": {
+    "source": "/home/philippherrmann/sts_sweep/runs/composed-transition-20260914/test_rows.jsonl",
+    "sha256": "f04418f97636fc355c01c3411b14278b12fad749e3bfaba6f9d5f02c0331eef8",
+    "receipt": "/home/philippherrmann/sts_sweep/runs/composed-transition-20260914/preflight.json",
+    "matched": true
+  },
+  "realArtifactLoaderRejections": [
+    {
+      "case": "truncated_weights",
+      "exit": 1,
+      "stderr": "truncated combat runtime"
+    },
+    {
+      "case": "trailing_bytes",
+      "exit": 1,
+      "stderr": "combat runtime trailing bytes"
+    }
+  ],
+  "focusedCTest": {
+    "passed": 8,
+    "failed": 0,
+    "rawLog": "/home/philippherrmann/sts_sweep/runs/combat-transition-runtime-native-20260914/final-focused-ctest.log"
+  },
+  "gameplaySeeds": 0,
+  "training": false,
+  "decision": "RUNTIME_COMBAT_ADAPTER_READY",
+  "limitation": "Other stochastic OOC transitions still replay copied hidden native RNG. This is combat boundary readiness only, not full-planner scientific qualification."
+}

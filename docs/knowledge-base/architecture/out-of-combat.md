@@ -99,7 +99,9 @@ turn/attack/card/shuffle group reconstructs all related counters. Potion RNG
 copies through; misc RNG replays the exact bounded initialization calls,
 including rejection, as in #171. The four other battle streams copy through
 until native reinitialization. Real artifacts and captured-state parity/smoke
-results remain external. `combat_transition_runtime_probe` and
+results remain external. The [native adapter evidence](../../experiments/evidence/native_combat_adapter_2026-09-14.md)
+qualifies this combat boundary at 1e-4 probability tolerance; it does not qualify
+the full planner. `combat_transition_runtime_probe` and
 `tools/qualify_combat_transition_runtime.py` perform offline CPU FP32 parity at
 fixed max absolute probability tolerance 1e-4; they do not drive gameplay seeds.
 

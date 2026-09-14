@@ -16,6 +16,11 @@ from tools.export_combat_transition_runtime import PROBABILITY_TOLERANCE
 
 def fixtures(source, output):
     models=c.FrozenModels();rows=[];seen=set();buckets=set()
+    source=Path(source)
+    receipt=json.loads(source.with_name('preflight.json').read_text())
+    with source.open('rb') as stream:
+        actual=hashlib.file_digest(stream,'sha256').hexdigest()
+    if actual!=receipt['savedTestRowsSha256']:raise ValueError('captured TEST fixture provenance mismatch')
     data=[json.loads(line) for line in Path(source).open()]
     # Cover all act/room strata, then special outcomes and counter-bearing rows.
     predicates=[]
@@ -90,11 +95,14 @@ def qualify(model, probe, fixturePath, output, smoke=False):
                     masks &= np.array_equal(legal,np.asarray(n['potionLegal'])) and bool(np.all(q[~legal]==0))
     report=dict(tolerance=PROBABILITY_TOLERANCE,fixtures=len(rows),fixtureSha256=hashlib.sha256(Path(fixturePath).read_bytes()).hexdigest(),modelSha256=hashlib.sha256(Path(model).read_bytes()).hexdigest(),maxAbsoluteErrors=errors,supportParity=support,legalMasksIdentical=masks,finite=True,passParity=support and masks and max(errors.values())<=PROBABILITY_TOLERANCE)
     if smoke:
-        invalid={};deaths=victories=0;deathTime=victoryTime=supportTime=0
+        invalid={};components={};componentRows=0;deaths=victories=0;deathTime=victoryTime=supportTime=0
         for n in native:
             if 'smoke' not in n:continue
+            componentRows+=1
+            for k,v in n.get('componentsNs',{}).items():components[k]=components.get(k,0)+v
             s=n['smoke'];deaths+=s['death'];victories+=s['victory'];deathTime+=s['death_ns']*s['death'];victoryTime+=s['victory_ns']*s['victory'];supportTime+=s['support_ns']*s['draws']
             for k,v in s['invalid'].items():invalid[k]=invalid.get(k,0)+v
+        report['componentNs']={k:v/componentRows for k,v in components.items()}
         report['smoke']=dict(deaths=deaths,victories=victories,invalid=invalid,supportNs=supportTime/(deaths+victories),deathNs=deathTime/deaths if deaths else None,victoryNs=victoryTime/victories if victories else None)
     Path(output).write_text(json.dumps(report,indent=2)+'\n');print(json.dumps(report,indent=2))
     if not report['passParity']:raise SystemExit('NATIVE_PROBABILITY_PARITY_FAILED')

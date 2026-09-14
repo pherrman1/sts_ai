@@ -7376,3 +7376,24 @@ factorized likelihood, latency, exact commands and limitations:
 [recipe](evidence/composed_transition_recipe_2026-09-14.json).
 Raw rows/arrays/trajectories remain external under
 `/home/philippherrmann/sts_sweep/runs/composed-transition-20260914/qualification/`.
+
+## §242 Native combat boundary parity and adapter smoke (2026-09-14)
+
+Baseline `d68545d50ea018f6e6d38cfb2c282c7e99e58edc`; exporter/inference frozen
+and independently reviewed at `ec30dbfda896867e78a3f5bc2fc519134b75e19b`
+before the single export. No gameplay seeds, training, tuning or data collection.
+One-thread batch-1 CPU FP32, 16 captured supported states plus 7 fixed fallback
+mutations; frozen probability tolerance 1e-4. All support decisions/legal masks
+match Python, maximum probability error 2.0862e-7. Native continuation oracle
+and eight focused CTests pass. 512 samples: all invalid counters zero; 480
+victories/32 deaths are diagnostics only.
+
+**RUNTIME_COMBAT_ADAPTER_READY** for the combat boundary. Default gameplay,
+OOC policy/search implementation unchanged. Other copied hidden OOC RNG still
+prevents scientific qualification of the full planner. Inserter fails closed.
+Native support 0.626 µs, death 1.482 ms, victory 4.275 ms; descriptively slower
+than #174 Python ~3.32 ms on a different fixture mixture. Four Attention
+encoders dominate (~1.08 ms/component); no optimization was attempted.
+
+[Full evidence and commands](evidence/native_combat_adapter_2026-09-14.md),
+[artifact hashes and raw metrics](evidence/native_combat_adapter_2026-09-14.json).

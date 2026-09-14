@@ -432,6 +432,72 @@ void oocMctsAdapterSelfTest() {
         require(bool(chanceCombat.terminalValue(sampleId))==bool(expectedDraw&1),
                 "chance outcome not value selected");
     }
+    // Restrict the test root to the entry action so every planner chance
+    // expansion exercises combat without unrelated rest/select decisions.
+    struct SingleEntryModel final : OocGenerativeModel {
+        OocGameContextModel &adapter;
+        OocActionId entry;
+        SingleEntryModel(OocGameContextModel &a,OocActionId e):adapter(a),entry(e) {}
+        std::optional<double> terminalValue(OocStateId id) const override { return adapter.terminalValue(id); }
+        bool isLeafBoundary(OocStateId id) const override { return adapter.isLeafBoundary(id); }
+        std::vector<OocPlannerAction> legalActions(OocStateId id) const override {
+            require(id==0,"single-entry planner must stop at depth one"); return {{entry,1.0}};
+        }
+        OocStateId sampleSuccessor(OocStateId id,OocActionId a,std::mt19937_64 &r) override {
+            return adapter.sampleSuccessor(id,a,r);
+        }
+        double leafValue(OocStateId id) const override { return adapter.leafValue(id); }
+    };
+    fake->draws.clear();
+    const auto samplesBefore=fake->sampleCalls;
+    OocGameContextModel plannerCombat(combatRoot,path,fake);
+    SingleEntryModel entryModel(plannerCombat,restAction.bits);
+    OocMctsConfig chanceConfig; chanceConfig.maxDepth=1; chanceConfig.seed=12345;
+    OocMctsPlanner chancePlanner(chanceConfig);
+    const auto chanceResult=chancePlanner.search(entryModel,0,32);
+    std::mt19937_64 expectedChanceRng(chanceConfig.seed);
+    std::vector<std::uint64_t> expectedChanceDraws;
+    for(std::uint64_t visit=1;visit<=32;++visit) {
+        if(expectedChanceDraws.size()<chancePlanner.chanceWideningLimit(visit))
+            expectedChanceDraws.push_back(expectedChanceRng());
+        else {
+            std::uniform_int_distribution<std::size_t> choose(0,expectedChanceDraws.size()-1);
+            (void)choose(expectedChanceRng);
+        }
+    }
+    require(fake->draws==expectedChanceDraws && std::set<std::uint64_t>(fake->draws.begin(),fake->draws.end()).size()==fake->draws.size(),
+            "planner expansions receive independent RNG draws with unbiased particle reuse");
+    const auto &chanceMetrics=chanceResult.metrics;
+    require(chanceMetrics.simulations==32 && chanceMetrics.chanceNodes==1
+        && chanceMetrics.transitionSamples==expectedChanceDraws.size()
+        && chanceMetrics.outcomeParticles==chanceMetrics.transitionSamples
+        && chanceMetrics.decisionNodes==chanceMetrics.outcomeParticles+1
+        && chanceMetrics.maxDepthReached==1
+        && fake->sampleCalls-samplesBefore==int(chanceMetrics.transitionSamples)
+        && chanceResult.rootActions.size()==1 && chanceResult.rootActions.front().visits==32,
+        "combat planner progressive widening particle metrics preserved");
+    // Native continuation may enter another battle (e.g. chained battles).
+    // The adapter crosses one combat boundary per primitive transition.
+    fake->stochastic=false;
+    auto chainedRoot=detachedCopy(combatRoot);
+    int chainContinuations=0;
+    chainedRoot.regainControlAction=[&](GameContext &g) {
+        if(g.screenState==ScreenState::REST_ROOM) g.enterBattle(MonsterEncounter::CULTIST);
+        else { ++chainContinuations; g.enterBattle(MonsterEncounter::CULTIST); }
+    };
+    const auto chainSamplesBefore=fake->sampleCalls;
+    OocGameContextModel chainedCombat(chainedRoot,path,fake);
+    const auto chainedId=chainedCombat.sampleSuccessor(0,restAction.bits,rng);
+    require(chainContinuations==1 && fake->sampleCalls==chainSamplesBefore+1
+        && chainedCombat.state(chainedId).screenState==ScreenState::BATTLE
+        && chainedCombat.isLeafBoundary(chainedId) && !chainedCombat.terminalValue(chainedId),
+        "second battle continuation remains leaf without recursive sampling");
+    const auto chainedResult=OocMctsPlanner().search(chainedCombat,chainedId,4);
+    require(chainedResult.metrics.transitionSamples==0 && chainedResult.metrics.leafEvaluations==4
+        && fake->sampleCalls==chainSamplesBefore+1,"chained battle planner retains leaf seam");
+    std::cout<<"combat_planner_chance simulations="<<chanceMetrics.simulations
+        <<" particles="<<chanceMetrics.outcomeParticles<<" samples="<<chanceMetrics.transitionSamples
+        <<" depth="<<chanceMetrics.maxDepthReached<<" chained_battle=leaf"<<'\n';
     std::cout<<"combat_adapter_oracle raw_calls="<<rawCalls
         <<" fingerprint=exact path_history=exact stochastic_draws="<<fake->draws.size()<<'\n';
     auto result=OocMctsPlanner().search(model,0,32);

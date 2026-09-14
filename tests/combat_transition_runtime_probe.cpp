@@ -70,6 +70,11 @@ int main(int argc,char **argv) {
                         // this smoke checks that each sampled RAW state owns one continuation.
                         int continuationCalls=0;auto child=gc;child.regainControlAction=[&](sts::GameContext &){++continuationCalls;};applyCombatTransitionState(child,post);child.regainControl();if(continuationCalls!=1)invalid["duplicate_reward"]=invalid["duplicate_reward"].get<int>()+1;
                     }
+                    json components;
+                    auto timing=[&](const char *name,auto fn) {auto start=Clock::now();for(int i=0;i<10;++i)fn();components[name]=std::chrono::duration<double,std::nano>(Clock::now()-start).count()/10;};
+                    timing("survival",[&]{net.survival(p);});timing("max_hp",[&]{net.maxHp(p);});timing("hp_encoding",[&]{net.hpEncoding(p);});
+                    timing("hp_head",[&]{net.signedHp(z,delta,pre.curHp,maximum);});timing("potion",[&]{net.potion(p,delta,fraction);});timing("relic",[&]{net.relic(z,hpClass,fraction,mask);});
+                    out["componentsNs"]=components;
                     out["smoke"]={{"draws",32},{"death",deaths},{"victory",victories},{"invalid",invalid},{"support_ns",supportNs/32},{"death_ns",deaths?deathNs/deaths:0},{"victory_ns",victories?victoryNs/victories:0}};
                 }
             }

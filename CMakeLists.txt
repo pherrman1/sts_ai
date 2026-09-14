@@ -475,3 +475,8 @@ add_test(NAME combat_transition_native_contract COMMAND python3 -m unittest
     tests.test_combat_transition_native_contract -v)
 set_tests_properties(combat_transition_native_contract PROPERTIES
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "integration")
+add_test(NAME combat_transition_runtime_loader COMMAND python3
+    ${CMAKE_SOURCE_DIR}/tests/check_combat_transition_runtime_loader.py
+    $<TARGET_FILE:combat_transition_runtime_probe>)
+set_tests_properties(combat_transition_runtime_loader PROPERTIES
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "integration")
