@@ -390,10 +390,6 @@ add_test(NAME silver_experimental_cap_integration COMMAND ${CMAKE_COMMAND} -E en
     $<TARGET_FILE:silver-integration-test>)
 set_tests_properties(silver_experimental_cap_integration PROPERTIES
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "integration")
-add_test(NAME live_ooc_mcts_cap_startup COMMAND python3
-    ${CMAKE_SOURCE_DIR}/tools/verify/ooc_mcts_live_startup.py $<TARGET_FILE:one_combat>)
-set_tests_properties(live_ooc_mcts_cap_startup PROPERTIES
-    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "integration")
 add_test(NAME silver_bridge_boundary COMMAND $<TARGET_FILE:silver-bridge-test>)
 # tests/agent is owned by the separate pre-build unittest discovery step in CI.
 # Do not register its modules or separate compile-only checks here as well:

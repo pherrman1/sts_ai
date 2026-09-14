@@ -7889,3 +7889,22 @@ or win-rate claim. Knowledge impact: maintained table/128k cap contract and
 engineering correctness/resource evidence; no model/support qualification.
 [Evidence](evidence/silver_dedup_128k_2026-09-15/README.md),
 [commands/hashes/raw packet](evidence/silver_dedup_128k_2026-09-15/provenance.json).
+
+
+## §257 — Silver 32k default restored; 128k experimental only (2026-09-15)
+
+Supersedes §256's production-cap promotion. Dynamic dedup and lazy collection
+remain; default is 32,768 and `STS_SILVER_REUSE_CAP=131072` is experimental.
+Frozen teacher producers and live OOC MCTS enforce the effective 32k cap.
+The larger cap has no decision-quality qualification and the earlier 775 MiB
+resource observation does not justify production promotion.
+Default32 real 10k stress: 35,968→80 nodes, 35,888 reclaimed, 48,158 cumulative,
+subsequent 10k search valid; largest candidate reachable graph80, no historical
+ALLOCATED_CAP fallback. External debug fixture peak RSS207,108KiB (202.25MiB),
+including validation snapshots; not a matched 32k/128k memory experiment.
+13 startup cases and145 agent-tool tests pass; final full CTest raw outcome in
+[evidence](evidence/silver_cap_default32_2026-09-15/README.md).
+Recorded flat1k parity reverified, no new gameplay run. A separate matched
+exact10k+32k vs exact10k+128k quality experiment remains required for promotion
+and frozen teacher/model requalification. Knowledge impact: maintained cap and
+startup contracts; no model/support qualification.
