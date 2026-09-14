@@ -73,7 +73,16 @@ normalizes them. Q remains unchanged in the live one-ply gates.
 
 Each immutable stored `OocStateId` lazily owns candidate/boundary/uniqueness
 metadata and, when needed, policy logits and raw planner priors. The same
-candidate ordering and token construction feed the same policy inference;
+candidate ordering and token construction feed the same policy inference.
+V4 `prepareState` evaluates deck attention, relic/potion pooling, and state
+fusion once per immutable candidate set. Its value-owned 128-float representation
+is reused for each action's unchanged entity/action encoding and policy or Q
+head. The MCTS prior and the eight token Q-gate loops use this path, including
+leaf continuation and ordinary live fallback. Each loop rebuilds after state or
+path changes; no cache survives the loop or model reload. Candidate ordering,
+Q margins/ties, fallback dispatch and RNG consumption are unchanged. Legacy
+single-action inference entry points remain available.
+The per-state metadata also retains
 subsequent queries reuse the result. Edge-local storage holds deterministic
 successor IDs and prepared combat objects. A prepared native combat transition
 computes support, survival probability, max-HP probabilities, and HP/potion

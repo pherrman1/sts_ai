@@ -104,6 +104,8 @@ std::vector<double> OocGameContextModel::policyLogits(sts::search::OocStateId id
     const auto &actions = cached.candidates;
     ++continuation_.priorBuilds;
     const TokState ts = buildTokState(gc, snapshot.path);
+    const auto prepared = g_oocStrategicTokNet.prepareState(ts.glob, ts.nDk, ts.dk,
+        ts.nRl, ts.rl, ts.nPt, ts.pt);
     std::vector<double> logits;
     for (auto a : actions) {
         int type, c1, c2, c3, d1, d2, d3, et, ei; float price;
@@ -111,8 +113,7 @@ std::vector<double> OocGameContextModel::policyLogits(sts::search::OocStateId id
         tokEntity(gc, a, et, ei, price);
         const int cats[6] = {c1,c2,c3,d1,d2,d3};
         const float entity[4] = {float(et==0),float(et==1),float(et==2),float(et==3)};
-        const double logit = g_oocStrategicTokNet.predictPolicyLogit(ts.glob, ts.nDk, ts.dk,
-            ts.nRl, ts.rl, ts.nPt, ts.pt, a.bits, cats, type, int(gc.screenState), entity, ei, price);
+        const double logit = g_oocStrategicTokNet.predictPolicyLogit(prepared, a.bits, cats, type, int(gc.screenState), entity, ei, price);
         if (!std::isfinite(logit)) throw std::runtime_error("OOC MCTS nonfinite policy logit");
         logits.push_back(logit);
     }
@@ -587,12 +588,18 @@ void oocMctsAdapterSelfTest() {
     const int dk[96][3] = {{1,0,5},{42,1,2},{100,0,1}};
     const int rl[64][2] = {{1,1},{23,4}};
     const int pt[8][2] = {{2,1},{7,2}};
+    const auto fixturePrepared = g_oocStrategicTokNet.prepareState(glob,3,dk,2,rl,2,pt);
     for (auto f : v4PolicyFixtures) {
         const float et[4] = {float(f.entityType==0),float(f.entityType==1),float(f.entityType==2),float(f.entityType==3)};
         double logit = g_oocStrategicTokNet.predictPolicyLogit(glob,3,dk,2,rl,2,pt,f.bits,f.cats,
             f.type,f.screen,et,f.entityId,f.price);
         double q = g_oocStrategicTokNet.predictActionValue(glob,3,dk,2,rl,2,pt,f.bits,f.cats,
             f.type,f.screen,et,f.entityId,f.price);
+        require(logit == g_oocStrategicTokNet.predictPolicyLogit(fixturePrepared,f.bits,f.cats,
+                    f.type,f.screen,et,f.entityId,f.price)
+            && q == g_oocStrategicTokNet.predictActionValue(fixturePrepared,f.bits,f.cats,
+                    f.type,f.screen,et,f.entityId,f.price),
+            "prepared V4 policy/Q exactly match legacy entry points");
         require(std::abs(logit-f.logit)<1e-4, "V4 policy parity");
         require(std::abs(q-f.q)<2e-4, "V4 Q regression parity");
         std::cout << "parity bits="<<f.bits<<" logit="<<logit<<" expected="<<f.logit
@@ -729,6 +736,26 @@ void oocMctsAdapterSelfTest() {
         require(!expectedActions.empty(),"supported candidate fixture is nonempty");
         require(v4DecisionSupported(fixture),"supported screen classification");
         OocGameContextModel provider(fixture,path);
+        const auto tokens=buildTokState(fixture,path);
+        const auto prepared=g_oocStrategicTokNet.prepareState(tokens.glob,tokens.nDk,tokens.dk,
+            tokens.nRl,tokens.rl,tokens.nPt,tokens.pt);
+        // Another preparation must not invalidate a previously prepared value.
+        (void)g_oocStrategicTokNet.prepareState(glob,0,dk,0,rl,0,pt);
+        for (const auto action : expectedActions) {
+            int type,c1,c2,c3,d1,d2,d3,et,ei; float price;
+            strategicCands(fixture,action,type,c1,c2,c3,d1,d2,d3);
+            tokEntity(fixture,action,et,ei,price);
+            const int cats[6]={c1,c2,c3,d1,d2,d3};
+            const float entity[4]={float(et==0),float(et==1),float(et==2),float(et==3)};
+            const auto &net=g_oocStrategicTokNet;
+            require(net.predictPolicyLogit(prepared,action.bits,cats,type,int(fixture.screenState),entity,ei,price)
+                    == net.predictPolicyLogit(tokens.glob,tokens.nDk,tokens.dk,tokens.nRl,tokens.rl,tokens.nPt,tokens.pt,
+                        action.bits,cats,type,int(fixture.screenState),entity,ei,price)
+                && net.predictActionValue(prepared,action.bits,cats,type,int(fixture.screenState),entity,ei,price)
+                    == net.predictActionValue(tokens.glob,tokens.nDk,tokens.dk,tokens.nRl,tokens.rl,tokens.nPt,tokens.pt,
+                        action.bits,cats,type,int(fixture.screenState),entity,ei,price),
+                "prepared policy and Q exact across supported screens and interleaved states");
+        }
         auto actual=provider.legalActions(0);
         require(actual.size()==expectedActions.size(),"exact V4 candidate count");
         for(std::size_t i=0;i<actual.size();++i)
