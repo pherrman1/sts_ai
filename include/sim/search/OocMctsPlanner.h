@@ -4,12 +4,18 @@
 #include <cstdint>
 #include <optional>
 #include <random>
+#include <stdexcept>
+#include <string>
 #include <vector>
 
 namespace sts::search {
 using OocStateId = std::uint64_t;
 using OocActionId = std::uint32_t;
 struct OocPlannerAction { OocActionId id; double prior; };
+// A support failure invalidates the whole root, not a scalar leaf or action.
+class OocSearchUnsupported : public std::runtime_error {
+public: using std::runtime_error::runtime_error;
+};
 
 // Providers own state storage and actual transition distributions. IDs must
 // retain their meaning throughout a search; no hidden GameContext dependency.
@@ -36,7 +42,7 @@ struct OocMctsConfig {
     std::uint64_t seed = 0;
 };
 struct OocMctsMetrics {
-    std::uint64_t simulations = 0, decisionNodes = 0, chanceNodes = 0;
+    std::uint64_t simulations = 0, simulationAttempts = 0, decisionNodes = 0, chanceNodes = 0;
     std::uint64_t outcomeParticles = 0, transitionSamples = 0, leafEvaluations = 0;
     std::uint64_t particleRevisits = 0, deterministicRevisits = 0, depthSum = 0;
     std::uint32_t maxDepthReached = 0;
@@ -50,6 +56,8 @@ struct OocRootActionStats {
 struct OocMctsResult {
     // Absent for terminal/boundary roots or a zero-depth horizon.
     std::optional<OocActionId> selectedAction;
+    bool aborted = false;
+    std::string abortReason;
     std::vector<OocRootActionStats> rootActions;
     OocMctsMetrics metrics;
 };

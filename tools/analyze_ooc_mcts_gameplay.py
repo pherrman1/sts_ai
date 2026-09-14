@@ -57,7 +57,11 @@ def analyze(control_path, treatment_path, bootstrap_samples=200000, combat_sims=
             decisions, owned, fallback, simulations = [int(row[k]) for k in ('oocDecisions', 'mctsOwned', 'mctsFallback', 'simulations')]
             if (enabled and decisions != owned + fallback) or (not enabled and owned + fallback + simulations != 0):
                 raise ValueError('ownership trace does not reconcile')
-            if simulations != owned * mcts_sims or ('imaginedCombats' not in row and int(row['combatSurrogateSamples']) > int(row['transitionSamples'])) or not 0 <= int(row['maxDepth']) <= 32 or int(row['realCombats']) <= 0:
+            discarded=int(row.get('discardedSimulations',0))
+            aborts=int(row.get('mctsSupportAborts',0))
+            if not 0<=discarded<=aborts*(mcts_sims-1) or not 0<=aborts<=fallback or int(row.get('simulationAttempts',simulations))!=simulations+aborts or (enabled and int(row.get('unsupportedCombats',aborts))!=aborts):
+                raise ValueError('unsupported root attempt accounting mismatch')
+            if simulations != owned * mcts_sims + discarded or ('imaginedCombats' not in row and int(row['combatSurrogateSamples']) > int(row['transitionSamples'])) or not 0 <= int(row['maxDepth']) <= 32 or int(row['realCombats']) <= 0:
                 raise ValueError('search/real-combat trace does not reconcile')
     if combat_sims == 10000:
         for row in traces[1].values():
@@ -70,7 +74,8 @@ def analyze(control_path, treatment_path, bootstrap_samples=200000, combat_sims=
         for row in reasons:
             if sum(row['reasons'].values())!=int(traces[1][row['seed']]['unsupportedCombats']):
                 raise ValueError('support reason counts do not reconcile')
-    if not sum(int(row['mctsOwned']) for row in traces[1].values()) or not sum(int(row['combatSurrogateSamples']) for row in traces[1].values()):
+    has_coverage=bool(sum(int(row['mctsOwned']) for row in traces[1].values()) and sum(int(row['combatSurrogateSamples']) for row in traces[1].values()))
+    if not has_coverage and combat_sims == 1000:
         raise ValueError('treatment arm had no ownership or imagined combat samples')
     rng = np.random.Generator(np.random.PCG64(20260914))
     indices = rng.integers(0, 32, size=(bootstrap_samples, 32))
@@ -86,6 +91,7 @@ def analyze(control_path, treatment_path, bootstrap_samples=200000, combat_sims=
     control_only = sum(int(control[s]['won']) == 1 and int(treatment[s]['won']) == 0 for s in seeds)
     lo, hi = differences['won']['paired_bootstrap_95_ci']
     classification = 'OOC_MCTS_WINRATE_UP' if lo > 0 else 'OOC_MCTS_WINRATE_DOWN' if hi < 0 else 'OOC_MCTS_WINRATE_INCONCLUSIVE'
+    if not has_coverage: classification='OOC_MCTS_NO_SEARCH_COVERAGE'
     trace = traces[1]
     totals = {k: sum(float(trace[s][k]) for s in seeds) for k in trace[seeds[0]] if k not in ('seed', 'maxDepth')}
     runtime_total = sum(float(treatment[s]['sec']) for s in seeds)

@@ -128,8 +128,8 @@ progressive widening and depth defaults with `STS_OOC_MCTS_SIMS` (default 512).
 Its search seed is `SplitMix64(runSeed XOR SplitMix64(decisionIndex))`, using
 explicit unsigned 64-bit arithmetic. The index increments once per actual
 nonbattle run-loop decision, including unsupported roots. It consumes no
-simulator RNG. Terminal/boundary roots return no action; supported roots must
-return a legal primitive ID. Snapshots are discarded before
+simulator RNG. Terminal/boundary roots and whole-root support aborts return no
+action; completed supported searches must return a legal primitive ID. Snapshots are discarded before
 `oocMctsPolicyStep` resolves that ID against fresh live candidates and executes
 it exactly once. If it enters BATTLE, real combat remains pending for the
 ordinary next run-loop iteration. No sampled combat result transfers to live
@@ -144,19 +144,26 @@ learned screen-aware value. Branch history, action/combat observers, policy
 trace bookkeeping, Silver diagnostics and potion pricing are scoped and restored.
 Corpus capture is incompatible with live MCTS.
 
-Every imagined battle receives a combat result. Supported battles use the frozen
-surrogate; unsupported precombat support or an unsupported sampled result uses
-detached ordinary exact-10k Silver and native `exitBattle`. Death is exact zero;
-victory carries persistent costs and native rewards. Chained battles are resolved
-by the leaf continuation. The requested stop-after-act boss is an exact win horizon,
-matching the real run loop. Silver search randomness comes from the independent
-planner RNG through a scoped thread-local override; initial native battle RNG,
-like other copied simulator RNG, remains the stated hidden-RNG limitation.
-Imagined Silver does not emit live combat telemetry or transfer state to gameplay.
-Live MCTS requires real ordinary Silver at exactly 10,000 simulations, allocated
-reuse and no adaptive escalation; per-room budget overrides that change 10k fail.
-The corpus teacher was `silver-ordinary-fair-exact10k-combat-transition-runtime16-f0bbd77`;
-this aligns the policy configuration and budget, not teacher/model accuracy.
+Supported imagined battles use the frozen surrogate. If the precombat gate or
+sample returns unsupported, `OocSearchUnsupported` aborts the **entire root's
+search**. Partial Q/visits are discarded and no action is selected; the live
+run loop uses its unchanged V4/OOC policy chain for that decision. Unsupported
+states receive neither a generic precombat value nor an invented scalar penalty.
+Their reason and all completed/attempted search work are retained in diagnostics.
+A thread-local guard forbids native combat playout during OOC imagination,
+including optional leaf-policy counterfactuals: these also abort the root.
+There are no imagined Silver battles. Supported death is exact zero; victory
+carries sampled persistent costs and native rewards. Leaf projection resolves
+chained supported battles; the stop-after-act boss is an exact win horizon.
+
+Live MCTS requires real ordinary Silver at exactly10,000 simulations, allocated
+reuse and no adaptive escalation; per-room budget changes fail. The corpus teacher
+was `silver-ordinary-fair-exact10k-combat-transition-runtime16-f0bbd77`; this aligns
+actual policy configuration/budget, not teacher/model accuracy. Native copied RNG
+still governs noncombat transitions. Fail-closed root fallback may reduce MCTS
+ownership substantially, and low ownership is evidence about support, not policy
+improvement. The leaf fallback uses the standard bestbench chain options
+`restV=false, shopV=true`; other driver configurations are not qualified here.
 
 Native OOC successors that enter no sampled combat are deterministic conditional
 on their copied RNG state. The adapter caches those `(parent, action)` successors
@@ -171,11 +178,13 @@ OFF runs when explicitly requested. It records decision/ownership/fallback
 counts, simulations, all sampled action transitions, combat-surrogate calls,
 leaf evaluations, maximum search depth, search wall/thread CPU seconds and
 ordinary real combat count. It also records imagined combat totals, unsupported
-Silver counts/simulations/time, pending/battle/map leaf counts, projection steps,
+root support-abort counts and discarded completed simulations, total simulation
+attempts, pending/battle/map leaf counts, projection steps,
 particle creation/revisits, deterministic revisits and summed searched depth.
 A `.support.jsonl` companion reconciles unsupported support reasons per seed.
 OFF ownership/fallback/search counts are zero;
-the decision count still covers actual nonbattle iterations. Search timing
+the decision count still covers actual nonbattle iterations. For ON, `simulations=512*owned+discardedSimulations` and
+`simulationAttempts=simulations+mctsSupportAborts`. Search timing
 includes adapter construction/destruction and unsupported-root checks, and
 excludes execution of the selected live primitive. The `bestbench` `sec` field
 is per-run steady-clock elapsed time, so wall time is the matching denominator.

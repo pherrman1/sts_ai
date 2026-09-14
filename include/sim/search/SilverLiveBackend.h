@@ -3,7 +3,6 @@
 #define STS_SILVER_LIVE_BACKEND_H
 
 #include <cstdint>
-#include <optional>
 #include <string>
 #include <vector>
 
@@ -48,9 +47,6 @@ struct SilverLiveDiagnostics {
 };
 
 extern thread_local SilverLiveDiagnostics g_silverLiveDiagnostics;
-// Detached imagined combat scopes override search randomness and suppress live
-// combat telemetry. They must restore these thread-local values after use.
-extern thread_local std::optional<std::uint64_t> g_silverImaginedSeed;
 
 // Installs the private-model combat callback into the core agent. This symbol
 // is linked only by one_combat; other executables retain no full-vendor-model

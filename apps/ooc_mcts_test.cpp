@@ -83,6 +83,16 @@ void tests() {
     require(deep.metrics.maxDepthReached==8 && deep.metrics.outcomeParticles==8
         && deep.metrics.transitionSamples==8 && deep.metrics.deterministicRevisits>100,
         "deterministic children deepen instead of fragmenting into identical particles");
+    auto unsupported=deterministic();
+    unsupported.transition=[](auto,auto action,auto &) -> OocStateId {
+        if (action==2) throw OocSearchUnsupported("toy unsupported");
+        return 1;
+    };
+    const auto discarded=planner.search(unsupported,0,128);
+    require(discarded.aborted && discarded.abortReason=="toy unsupported"
+        && !discarded.selectedAction && discarded.rootActions.empty()
+        && discarded.metrics.simulations==1 && discarded.metrics.simulationAttempts==2,
+        "one unsupported transition discards entire root, including previous supported Q");
     auto t = deterministic();
     auto d = planner.search(t, 0, 10000);
     require(d.selectedAction == 2 && d.rootActions[0].q == .25 && d.rootActions[1].q == .75, "deterministic choice");

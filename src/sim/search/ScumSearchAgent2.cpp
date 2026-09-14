@@ -3,6 +3,7 @@
 //
 
 #include "sim/search/ScumSearchAgent2.h"
+#include "sim/search/OocMctsPlanner.h"
 
 #include <algorithm>
 #include <array>
@@ -20,6 +21,8 @@
 #include "sim/PrintHelpers.h"
 #include "sim/search/BattleScumSearcher2.h"
 #include "sim/search/SimHealth.h"
+
+thread_local bool sts::search::g_disallowImaginedCombat = false;
 
 bool g_collectKeys = false;  // STS_COLLECT_KEYS=1: collect act-4 keys
 
@@ -113,6 +116,7 @@ void search::ScumSearchAgent2::playout(GameContext &gc) {
 }
 
 void search::ScumSearchAgent2::playoutBattle(GameContext &gc, BattleContext &bc) {
+    if (g_disallowImaginedCombat) throw OocSearchUnsupported("native_combat_in_leaf_policy");
     if (g_externalCombatBackend) {
         g_externalCombatBackend(*this, gc, bc);
         return;
@@ -896,6 +900,7 @@ void search::ScumSearchAgent2::playoutBattleFair(BattleContext &bc) {
 }
 
 void search::ScumSearchAgent2::playoutBattle(BattleContext &bc) {
+    if (g_disallowImaginedCombat) throw OocSearchUnsupported("native_combat_in_leaf_policy");
     if (bc.outcome != Outcome::UNDECIDED) {
         return;
     }

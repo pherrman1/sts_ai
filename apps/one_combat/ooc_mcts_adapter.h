@@ -1,6 +1,5 @@
 #pragma once
 #include <deque>
-#include <functional>
 #include <map>
 #include "combat_transition_sampler.h"
 #include "ooc_policy.h"
@@ -11,15 +10,12 @@ namespace one_combat {
 // stochastic environment model. Live use is explicitly opt-in.
 std::vector<double> oocPolicyWeights(const std::vector<double> &logits, double temperature = 1.0);
 struct OocContinuationMetrics {
-    std::uint64_t imaginedCombats = 0, unsupportedCombats = 0, silverSimulations = 0;
+    std::uint64_t imaginedCombats = 0, unsupportedCombats = 0;
     std::uint64_t pendingLeaves = 0, battleLeaves = 0, mapLeaves = 0, projectionSteps = 0;
-    double silverSeconds = 0;
     std::map<std::string, std::uint64_t> supportReasons;
 };
 struct OocAdapterOptions {
     bool checkpointLeaves = false;
-    // Test seam; live use supplies detached ordinary exact-10k Silver.
-    std::function<void(GameContext &, std::mt19937_64 &)> unsupportedCombat;
 };
 class OocGameContextModel final : public sts::search::OocGenerativeModel {
     struct Snapshot { GameContext gc; PathHistory path; };
@@ -50,6 +46,7 @@ public:
 };
 struct LiveOocMctsMetrics {
     std::uint64_t decisions = 0, owned = 0, fallback = 0, combatSamples = 0;
+    std::uint64_t supportAborts = 0, discardedSimulations = 0;
     sts::search::OocMctsMetrics search;
     OocContinuationMetrics continuation;
     double wallSeconds = 0, cpuSeconds = 0;

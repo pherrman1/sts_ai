@@ -136,12 +136,20 @@ OocMctsResult OocMctsPlanner::search(OocGenerativeModel &model, OocStateId root,
     Search search{model, config, *this, std::mt19937_64(config.seed), {}};
     DecisionNode node(root);
     search.metrics.decisionNodes = 1;
-    for (std::uint64_t i = 0; i < simulations; ++i) {
-        search.evaluate(node, 0, true);
-        ++search.metrics.simulations;
-    }
     OocMctsResult result;
+    try {
+        for (std::uint64_t i = 0; i < simulations; ++i) {
+            ++search.metrics.simulationAttempts;
+            search.evaluate(node, 0, true);
+            ++search.metrics.simulations;
+        }
+    } catch (const OocSearchUnsupported &unsupported) {
+        // Partial root Q/visits are discarded, including prior supported paths.
+        result.aborted = true;
+        result.abortReason = unsupported.what();
+    }
     result.metrics = search.metrics;
+    if (result.aborted) return result;
     const ChanceNode *best = nullptr;
     for (const auto &action : node.actions) {
         result.rootActions.push_back({action.action.id, action.action.prior, action.visits, action.q()});
