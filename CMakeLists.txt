@@ -435,7 +435,9 @@ add_test(NAME combat_transition_brew_selftest
     COMMAND python3 -m unittest tools.test_combat_transition_brew)
 add_test(NAME combat_transition_potion_trajectory_selftest
     COMMAND python3 -m unittest tools.test_combat_transition_potion_trajectory)
-set_tests_properties(combat_transition_sparse_events_selftest combat_transition_brew_selftest combat_transition_potion_trajectory_selftest
+add_test(NAME combat_transition_near_full_downstream_selftest
+    COMMAND python3 -m unittest tools.test_combat_transition_near_full_downstream)
+set_tests_properties(combat_transition_sparse_events_selftest combat_transition_brew_selftest combat_transition_potion_trajectory_selftest combat_transition_near_full_downstream_selftest
     PROPERTIES WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "research-repro")
 add_test(NAME combat_transition_native_fixture
     COMMAND $<TARGET_FILE:one_combat> combattransitionselftest
