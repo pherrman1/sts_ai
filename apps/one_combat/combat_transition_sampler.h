@@ -12,13 +12,15 @@ struct CombatRuntimeSupport {
 };
 
 struct CombatRuntimeSample {
-    enum class Outcome { UNSUPPORTED, DEATH, VICTORY };
+    enum class Outcome { UNSUPPORTED, DEATH, VICTORY, ESCAPE };
     Outcome outcome = Outcome::UNSUPPORTED;
     CombatTransitionPersistentState rawPost;
 };
 
 // Support is a pre-combat decision. Learned draws use only the planner RNG;
-// a victory returns RAW persistent state, before native regainControl.
+// A victory or escape returns RAW persistent state, before native regainControl.
+// ESCAPE requires RAW smokeBombUsed; native continuation clears that flag and
+// returns to the map without combat rewards. Existing samplers need not emit it.
 class CombatTransitionSampler {
 public:
     virtual ~CombatTransitionSampler() = default;
