@@ -1,0 +1,29 @@
+{
+  "passed": true,
+  "canaries": {
+    "control": {
+      "passReadiness": true,
+      "seed": 979999,
+      "realCombats": 32,
+      "owned": 0,
+      "supportAborts": 0,
+      "surrogateSamples": 0,
+      "depth": 0,
+      "seconds": 41.2202
+    },
+    "treatment": {
+      "passReadiness": true,
+      "seed": 979999,
+      "realCombats": 30,
+      "owned": 47,
+      "supportAborts": 105,
+      "surrogateSamples": 7143,
+      "depth": 12,
+      "seconds": 92.6452
+    }
+  },
+  "manifestModelHashBinding": true,
+  "fullConfigBinding": true,
+  "readiness": "PASS",
+  "gameplayByReviewer": 0
+}

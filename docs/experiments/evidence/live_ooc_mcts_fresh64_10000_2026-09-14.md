@@ -87,3 +87,16 @@ exactly and64 membership/accounting corruption tests passed (2tests). Focused
 CTest passed1/1; repository health passed with no warnings. Source CI provenance
 remains the prior Linux GCC success; the new analyzer/helper change receives
 its own draft-PR CI after outcome recording.
+
+Both excluded979999 canaries completed once. Native benchmark canary checks and
+strict root/support validators pass: control32real combats,41.2202s; treatment
+47owned decisions,105support aborts,7143surrogate samples,30real combats,
+maxdepth12,92.6452s. Every bridge failure and battleLeaves is zero. Successful
+strategic/floor/win/policy load messages appear in both logs; treatment startup
+confirms native combat model and sims10000. These outcomes are excluded from
+official analysis. Reviewed analyzer/launch SHA is
+`13508a4507daebc1fe081151973050a51d8aef9d`.
+Independent excluded-canary readiness passed with raw configuration, model-load,
+source/hash, accounting, zero failures and positive treatment coverage checks.
+Official V4 launched first (remote PID5517); MCTS is queued to follow only after
+its completion. Official outcome files remain separate from canaries.

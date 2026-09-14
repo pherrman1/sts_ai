@@ -1,0 +1,2 @@
+seed,oocDecisions,mctsOwned,mctsFallback,simulations,transitionSamples,combatSurrogateSamples,leafEvaluations,maxDepth,mctsWallSec,mctsCpuSec,realCombats,imaginedCombats,unsupportedCombats,mctsSupportAborts,discardedSimulations,simulationAttempts,pendingLeaves,battleLeaves,mapLeaves,projectionSteps,outcomeParticles,particleRevisits,deterministicRevisits,depthSum
+979999,195,47,148,504601,61023,7143,504601,12,64.294491876,64.290352171,30,7248,105,105,34601,504706,408152,0,96449,679838,61023,1230673,1127389,2930231
