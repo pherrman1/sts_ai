@@ -8010,3 +8010,27 @@ trajectory/state trace. Knowledge impact: maintained observer/environment/safety
 contracts and engineering opportunity evidence.
 [Report](evidence/ooc_root_lock_observation_2026-09-15.md),
 [raw commands/hashes/root records/checks](evidence/ooc_root_lock_observation_2026-09-15.json).
+
+
+## 260. Enable live OOC visit-lock stopping despite remaining abort support (2026-09-15)
+
+Explicit user policy choice enables strict visit locks by default inside opt-in
+live OOC MCTS, despite remaining Smoke/continuation abort paths. Generic default
+still requires the non-aborting guarantee; the live provider remains false.
+EARLY_STOP=0 restores the requirement. Observer/mean-Q suppress stopping; an
+unqualified singleton must complete one simulation. A later abort can be skipped,
+changing fallback behavior; this is deliberate, not support qualification.
+
+Source1a3f552, one paired guardedseed42/same Release binary, OOC512/exact10kSilver/
+fair/copied noncombat RNG/keysOFF/Act3-or-death/CPU0/OMP1. Full vs stop: completed
+simulations79,360vs39,174, stopped roots155,
+saved40,186(50.64%). OOCwall11.193670vs6.758811s
+(39.62%lower); full elapsed35.8988vs31.3939s
+(12.55%lower). Both exit0;188decisions/155owned/33fallback,
+0support/continuation aborts, all26Silver records and non-timing outcomes match
+(Act3win/floor51/hp16max85). One engineering seed, no average/quality claim or
+complete trajectory trace. FullDebug101/101 and focusedRelease3/3 pass after
+updating legacy assertions/error wording. Knowledge impact: live policy/default/
+rollback and ADR-0014 maintained; no model/support/GPU change.
+[Report](evidence/ooc_early_stop_enabled_2026-09-15.md),
+[raw packet](evidence/ooc_early_stop_enabled_2026-09-15.json).

@@ -51,16 +51,21 @@ computes the parent square root once per selection without changing the numeric
 formula or ties. Prospective widening limits use the original formula, cached
 through the budget up to 1,048,576 visits; larger visits evaluate it on demand.
 
-For visit-selected roots, a leader may stop search only when its visit count is
-strictly greater than every challenger's count plus the remaining budget **and**
-`model.searchGuaranteedNonAborting()` is true. The capability defaults to false;
-mean-Q selection never uses this shortcut. For a guaranteed non-aborting
-visit-selected root with one action, no challenger exists, so it locks after
-the first completed simulation. A later support abort would otherwise
-invalidate even a locked winner. `OocGameContextModel` retains the default false:
-unsupported combat, unresolved continuation limits, and forbidden imagined
-native-combat paths still exist. Observed zero aborts do not qualify this contract.
-Metrics count locked-root stops and saved simulations separately.
+For visit-selected roots, a leader locks when its visit count is strictly
+greater than every challenger's count plus the remaining budget. Mean-Q
+selection never uses this shortcut. Generic planner configuration requires
+`model.searchGuaranteedNonAborting()` by default. Explicit
+`allowUnqualifiedRootStop=true` permits stopping without that guarantee.
+Live OOC MCTS enables this policy by default; `STS_OOC_MCTS_EARLY_STOP=0`
+restores the guarantee requirement. A singleton locks after its first completed
+simulation, rather than bypassing an unqualified root before sampling.
+
+This is an intentional fallback-policy tradeoff: a later support or continuation
+abort would invalidate the full-budget winner, but early stopping can skip that
+abort and execute the locked action. `OocGameContextModel` still returns false
+for the guarantee; Smoke support and other abort paths are unchanged. Observed
+zero aborts do not qualify that contract. Metrics count locked-root stops and
+saved simulations separately. See [ADR-0014](../../../decisions/0014-live-ooc-visit-lock-stopping.md).
 
 `OocMctsConfig::observeRootLock` is an opt-in diagnostic that suppresses both
 locked-root stopping and the qualified sole-root bypass. It records the first
@@ -76,7 +81,8 @@ Only completed full-budget roots contribute conditional opportunity estimates;
 locked roots that later abort remain invalid and must be reported separately.
 Even zero observed aborts or matching locked/final actions cannot prove the
 provider guarantee. The Smoke-excluded V2 artifact and remaining continuation
-abort paths do not qualify live early stopping.
+abort paths do not qualify the provider guarantee; live stopping uses the explicit
+unqualified policy instead.
 
 The focused `ooc_mcts` CTest verifies toy stochastic MDPs and malformed inputs.
 `apps/one_combat/ooc_mcts_adapter.{h,cpp}` supplies the
@@ -195,7 +201,8 @@ A root with one valid, unique V4 candidate may return that primitive without
 constructing a tree only under the explicit `searchGuaranteedNonAborting()`
 contract. `OocGameContextModel` explicitly returns false: separate combat-support
 qualification must exclude every intentional abort path before this can change.
-An unsafe sole root must search and retain whole-root fallback, whose ordered
+An unqualified sole root must complete at least one simulation; an abort reached
+before its lock retains whole-root fallback, whose ordered
 policy can consume `ScumSearchAgent2::rng` even for a singleton candidate set.
 Qualified bypasses report `trivialRootBypasses` with zero simulations/attempts/
 combat draws; the current live model is ineligible. Snapshots are discarded before

@@ -2,7 +2,8 @@
 
 Baseline/current main `5b2a5b51fcbce2ced657281dbb3ac9c6795833c2` includes merged
 PRs #183/#184 and #182. Measured/self-inspected implementation:
-`b50b1c7a164b8f53016b47f5ff1d3a4b318a3b81`. Later commits record documentation/evidence only.
+`b50b1c7a164b8f53016b47f5ff1d3a4b318a3b81`. These measurements describe the observer-only revision; subsequent live-stop
+enablement is recorded separately in `ooc_early_stop_enabled_2026-09-15.md`.
 
 ## Safety and implementation
 
@@ -12,7 +13,8 @@ pre-smokeBombUsed, and Writhing/Ritual intersection. Brew-generated escape
 remains modeled. This is not complete combat support. Independently,
 continuation step limits and forbidden imagined native-combat paths can still
 throw. Live `searchGuaranteedNonAborting()` therefore stays false. No
-support/model/schema/RNG/default change or early-stop enablement is made.
+support/model/schema/RNG/default change or early-stop enablement was made in
+the measured observer-only revision.
 
 `OocMctsConfig::observeRootLock` records the first completed simulation where
 PR #183's strict visit-lock predicate holds. The remaining budget assumes all
