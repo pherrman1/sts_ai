@@ -45,6 +45,11 @@ def qualify(parent,artifact,probe,fixture,output):
         a=np.asarray(a,float);b=np.asarray(b,float)
         if a.shape!=b.shape or not np.isfinite(a).all() or not np.isfinite(b).all():raise ValueError('shape/nonfinite '+name)
         errors[name]=max(errors[name],float(np.max(abs(a-b))))
+    original_trace=t.sample
+    traced=[]
+    def trace(*args,**kwargs):
+        result=original_trace(*args,**kwargs);traced.append(result);return result
+    t.sample=trace
     with torch.inference_mode():
         for row,n in zip(rows,native):
             pre,pi=row['pre'],row['predictorInput'];why=support.final_reasons(pi,pre,m)
@@ -64,17 +69,19 @@ def qualify(parent,artifact,probe,fixture,output):
             if list(map(list,posts))!=diag['goldCandidates']:raise ValueError('native gold candidate parity')
             compare('gold',prob,diag['gold'])
             for sample in n['samples']:
-                tape=Tape(sample['words']);expected=sampler.sample_transition(pre,pi,tape);outcome={'DEATH':1,'VICTORY':2,'ESCAPE':3}[expected.outcome]
+                traced.clear();tape=Tape(sample['words']);expected=sampler.sample_transition(pre,pi,tape);outcome={'DEATH':1,'VICTORY':2,'ESCAPE':3}[expected.outcome]
                 if outcome!=sample['outcome']:raise ValueError(f'sampled outcome differs at row{row["index"]}')
-                if outcome!=1 and expected.post!=sample['rawPost']:raise ValueError(f'complete sampled RAW differs at row{row["index"]}: '+str([k for k in expected.post if expected.post[k]!=sample['rawPost'][k]]))
+                if outcome!=1 and expected.post_state!=sample['rawPost']:raise ValueError(f'complete sampled RAW differs at row{row["index"]}: '+str([k for k in expected.post_state if expected.post_state[k]!=sample['rawPost'][k]]))
                 if tape.used!=sample['wordsUsed']:raise ValueError('planner advanced stream mismatch')
                 counts['samples']+=1;counts[expected.outcome]+=1
                 if outcome==1:
                     if tape.used!=1 or sample['rawPost']['curHp'] or sample['rawPost']['deck']:raise ValueError('death short circuit')
                 else:
-                    if expected.post['combatRng'][4]!=pre['combatRng'][4]:counts['advancedHypotheticalPotionRng']+=1
-                    if expected.post['potionCount']!=sum(v>1 for v in expected.post['potions']):raise ValueError('potion count')
-    passed=max(errors.values())<=1e-4 and counts['ESCAPE']>0 and counts['advancedHypotheticalPotionRng']>0
+                    if traced and traced[-1]['brewUses']>sum(v==t.BREW for v in pre['potions']):counts['recursiveBrew']+=1
+                    if expected.post_state['combatRng'][4]!=pre['combatRng'][4]:counts['advancedHypotheticalPotionRng']+=1
+                    if expected.post_state['potionCount']!=sum(v>1 for v in expected.post_state['potions']):raise ValueError('potion count')
+    t.sample=original_trace
+    passed=max(errors.values())<=1e-4 and counts['recursiveBrew']>0 and counts['ESCAPE']>0 and counts['advancedHypotheticalPotionRng']>0
     result=dict(modelSha256=c.base.sha256(artifact),fixtureSha256=c.base.sha256(fixture),sources=bindings,fixtures=len(rows),supportedFixtures=checks,counts=counts,maxAbsoluteErrors=errors,probabilityTolerance=1e-4,completeRawStateParity=True,advancedPlannerStreamParity=True,preparedReferenceParity=True,classification='NEAR_FULL_NATIVE_PARITY_'+('PASS' if passed else 'FAIL'))
     c.base.json_dump(output,result);print(json.dumps(result),flush=True)
     if not passed:raise ValueError('native parity gate failed')
