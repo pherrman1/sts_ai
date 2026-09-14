@@ -7855,3 +7855,37 @@ maintained lifetime/cap contract and reproducible parity/regression evidence.
 [Summary and raw artifacts](evidence/silver_reroot_lazy_parity_2026-09-15/README.md),
 [commands/hashes](evidence/silver_reroot_lazy_parity_2026-09-15/provenance.json),
 [reproducible parity verifier](evidence/silver_reroot_lazy_parity_2026-09-15/verify_parity.py).
+
+
+## §256 — Dynamic Silver dedup and 128k lazy reuse cap (2026-09-15)
+
+Baseline `fa2ea0ad702281a6b2a1366d792a8e920227832d`, measured implementation
+`9a849fd7deadb4374ad33f42796811b03a3ceb07`, continuing draft PR #185.
+Dedup doubles its power-of-two open-addressed table on a miss before occupancy
+exceeds 50%; reinsertion preserves pointers/statistics/RNG and capacity never
+shrinks within the searcher. Production cap 131,072 replaces 32,768; lazy
+pressure-triggered collection and final retained-cap fallback remain intact.
+Focused tests force multiple resizes including 65,536→131,072→262,144 and
+verify every prior state, same Node pointer, no duplicates, exact visits/Q,
+unchanged RNG and further search. Deterministic 96-step parity across table
+capacities passes with observer OFF/ON. Frozen 32k teacher acceptance initially
+failed; explicit cap-mismatch rejection before output repairs that check without
+relabeling old evidence. Complete Debug build and 92/92 CTest pass (47.36s).
+
+Tiny real 10k repeated stress canary: starter-deck Ironclad 400/400 HP / Jaw
+Worm A0, seed 0xBADC0DE, expanded legal END_TURN outcomes, 14 reroots plus a
+final 10k search. Peak 140,976 live allocated nodes / 116,788 states; largest
+candidate-reachable graph 80. Dedup grows twice to 262,144 slots, peak sampled
+load 49.3408%, final 4,693 entries (1.7902%). Old 32k would trigger collection
+earlier but no reachable-cap fallback. The 128k threshold triggers one
+collection, 140,976→3, reclaiming 140,973 nodes. Final 5,497 live / 146,470
+cumulative allocations; no fallback. Search batches can overshoot the cap
+before the next reroot; session fixtures separately verify generic fallback.
+External time -v reports 794,040 KiB RSS (775.43 MiB), no swaps, on a roughly
+31 GiB host; includes validation snapshots. Raw node/state/table payload
+estimate 711.72 MiB. Comfortable for this fixture/host, not a universal memory
+bound. No permanent memory infrastructure, broader gameplay/quality benchmark
+or win-rate claim. Knowledge impact: maintained table/128k cap contract and
+engineering correctness/resource evidence; no model/support qualification.
+[Evidence](evidence/silver_dedup_128k_2026-09-15/README.md),
+[commands/hashes/raw packet](evidence/silver_dedup_128k_2026-09-15/provenance.json).

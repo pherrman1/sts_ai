@@ -1,0 +1,203 @@
+Test project /home/philippherrmann/.codex/worktrees/18ba/sts_lightspeed/build/linux-gcc-debug-ccache
+      Start  1: one_combat_tree_parity
+ 1/92 Test  #1: one_combat_tree_parity ..........................   Passed    5.28 sec
+      Start  2: ooc_mcts
+ 2/92 Test  #2: ooc_mcts ........................................   Passed    0.08 sec
+      Start  3: selfplay_syntax
+ 3/92 Test  #3: selfplay_syntax .................................   Passed    0.00 sec
+      Start  4: paired_analysis_selftest
+ 4/92 Test  #4: paired_analysis_selftest ........................   Passed    0.98 sec
+      Start  5: py_compile_parity_test
+ 5/92 Test  #5: py_compile_parity_test ..........................   Passed    0.02 sec
+      Start  6: particle_leaf_probe_selftest
+ 6/92 Test  #6: particle_leaf_probe_selftest ....................   Passed    0.91 sec
+      Start  7: semantic_confirmation_analysis
+ 7/92 Test  #7: semantic_confirmation_analysis ..................   Passed    0.93 sec
+      Start  8: py_compile_analyze_ooc_factor
+ 8/92 Test  #8: py_compile_analyze_ooc_factor ...................   Passed    0.02 sec
+      Start  9: particle_posterior_probe_selftest
+ 9/92 Test  #9: particle_posterior_probe_selftest ...............   Passed    0.02 sec
+      Start 10: check_replay_selftest
+10/92 Test #10: check_replay_selftest ...........................   Passed    0.02 sec
+      Start 11: vnettest_selftest
+11/92 Test #11: vnettest_selftest ...............................   Passed    0.04 sec
+      Start 12: winnettest_selftest
+12/92 Test #12: winnettest_selftest .............................   Passed    0.04 sec
+      Start 13: one_combat_feature_regression
+13/92 Test #13: one_combat_feature_regression ...................   Passed    0.37 sec
+      Start 14: battlecontext_roundtrip
+14/92 Test #14: battlecontext_roundtrip .........................   Passed    0.01 sec
+      Start 15: designer_in_spire
+15/92 Test #15: designer_in_spire ...............................   Passed    0.00 sec
+      Start 16: scum_nonfair_empty_edges
+16/92 Test #16: scum_nonfair_empty_edges ........................   Passed    0.00 sec
+      Start 17: scum_convroot_stale_outcome
+17/92 Test #17: scum_convroot_stale_outcome .....................   Passed    0.00 sec
+      Start 18: cardqueue_overflow
+18/92 Test #18: cardqueue_overflow ..............................   Passed    1.08 sec
+      Start 19: keys_collect
+19/92 Test #19: keys_collect ....................................   Passed    0.00 sec
+      Start 20: issue_fixes
+20/92 Test #20: issue_fixes .....................................   Passed    0.01 sec
+      Start 21: ooc_reward_continuation
+21/92 Test #21: ooc_reward_continuation .........................   Passed    0.00 sec
+      Start 22: ooc_semantic
+22/92 Test #22: ooc_semantic ....................................   Passed    0.07 sec
+      Start 23: ooc_semantic_pipeline
+23/92 Test #23: ooc_semantic_pipeline ...........................   Passed    0.01 sec
+      Start 24: ooc_semantic_producer
+24/92 Test #24: ooc_semantic_producer ...........................   Passed    0.19 sec
+      Start 25: combat_evaluator_semantic_branch_contract
+25/92 Test #25: combat_evaluator_semantic_branch_contract .......   Passed    0.12 sec
+      Start 26: battle_start_runout_contract
+26/92 Test #26: battle_start_runout_contract ....................   Passed    0.07 sec
+      Start 27: ooc_policy_parity
+27/92 Test #27: ooc_policy_parity ...............................   Passed    1.02 sec
+      Start 28: teacher_schema_compat
+28/92 Test #28: teacher_schema_compat ...........................Subprocess aborted***Exception:   1.36 sec
+terminate called after throwing an instance of 'std::runtime_error'
+  what():  wholecombatgen: not the frozen exact-10k ordinary Silver contract
+
+      Start 29: ooc_semantic_smith
+29/92 Test #29: ooc_semantic_smith ..............................   Passed    0.00 sec
+      Start 30: relic_reward_sapphire
+30/92 Test #30: relic_reward_sapphire ...........................   Passed    0.00 sec
+      Start 31: semantic_card_edges
+31/92 Test #31: semantic_card_edges .............................   Passed    0.00 sec
+      Start 32: s3_drawpile_reuse_boundary
+32/92 Test #32: s3_drawpile_reuse_boundary ......................   Passed    0.00 sec
+      Start 33: s3_strategy_fusion_diag
+33/92 Test #33: s3_strategy_fusion_diag .........................   Passed    0.02 sec
+      Start 34: s3_persistent_endturn_chance
+34/92 Test #34: s3_persistent_endturn_chance ....................   Passed    0.00 sec
+      Start 35: thorns_retaliation
+35/92 Test #35: thorns_retaliation ..............................   Passed    0.00 sec
+      Start 36: awakened_one_stage2
+36/92 Test #36: awakened_one_stage2 .............................   Passed    0.00 sec
+      Start 37: darkling_victory
+37/92 Test #37: darkling_victory ................................   Passed    0.00 sec
+      Start 38: poison_lose_hp
+38/92 Test #38: poison_lose_hp ..................................   Passed    0.00 sec
+      Start 39: time_eater_exhaust
+39/92 Test #39: time_eater_exhaust ..............................   Passed    0.00 sec
+      Start 40: simhealth_gamble_empty_hand
+40/92 Test #40: simhealth_gamble_empty_hand .....................   Passed    0.00 sec
+      Start 41: gamblers_brew_legality
+41/92 Test #41: gamblers_brew_legality ..........................   Passed    0.00 sec
+      Start 42: simhealth_nonfair_s2_empty
+42/92 Test #42: simhealth_nonfair_s2_empty ......................   Passed    0.00 sec
+      Start 43: simhealth_selection_failure
+43/92 Test #43: simhealth_selection_failure .....................   Passed    0.00 sec
+      Start 44: simhealth_nonfair_s2_selection_failed
+44/92 Test #44: simhealth_nonfair_s2_selection_failed ...........   Passed    0.01 sec
+      Start 45: training_integrity
+45/92 Test #45: training_integrity ..............................   Passed    0.00 sec
+      Start 46: rng_state_propagation
+46/92 Test #46: rng_state_propagation ...........................   Passed    0.00 sec
+      Start 47: s3_rand64_prior_sampler
+47/92 Test #47: s3_rand64_prior_sampler .........................   Passed    0.00 sec
+      Start 48: rejuv_conditional_blocks
+48/92 Test #48: rejuv_conditional_blocks ........................   Passed    0.00 sec
+      Start 49: live_rejuv_attempt_gate
+49/92 Test #49: live_rejuv_attempt_gate .........................   Passed    0.01 sec
+      Start 50: e2c_observer_scope
+50/92 Test #50: e2c_observer_scope ..............................   Passed    0.00 sec
+      Start 51: combat_knowledge
+51/92 Test #51: combat_knowledge ................................   Passed    0.00 sec
+      Start 52: silver_random_bridge
+52/92 Test #52: silver_random_bridge ............................   Passed    0.00 sec
+      Start 53: silver_semantic_action
+53/92 Test #53: silver_semantic_action ..........................   Passed    0.00 sec
+      Start 54: silver_searcher_link_closure
+54/92 Test #54: silver_searcher_link_closure ....................   Passed    0.00 sec
+      Start 55: silver_player_status
+55/92 Test #55: silver_player_status ............................   Passed    0.01 sec
+      Start 56: silver_search_optimization
+56/92 Test #56: silver_search_optimization ......................   Passed    0.76 sec
+      Start 57: silver_repeated_reroot_canary
+57/92 Test #57: silver_repeated_reroot_canary ...................   Passed   15.49 sec
+      Start 58: silver_bridge_boundary
+58/92 Test #58: silver_bridge_boundary ..........................   Passed    0.06 sec
+      Start 59: runic_dome_lifecycle
+59/92 Test #59: runic_dome_lifecycle ............................   Passed    0.00 sec
+      Start 60: analyze_silver_reuse_scaling_selftest
+60/92 Test #60: analyze_silver_reuse_scaling_selftest ...........   Passed    0.03 sec
+      Start 61: analyze_silver_vnet_leaf_selftest
+61/92 Test #61: analyze_silver_vnet_leaf_selftest ...............   Passed    0.03 sec
+      Start 62: check_benchmark_canary_selftest
+62/92 Test #62: check_benchmark_canary_selftest .................   Passed    0.03 sec
+      Start 63: analyze_silver_sticky_quality_selftest
+63/92 Test #63: analyze_silver_sticky_quality_selftest ..........   Passed    0.07 sec
+      Start 64: analyze_silver_root_diagnostic_selftest
+64/92 Test #64: analyze_silver_root_diagnostic_selftest .........   Passed    0.03 sec
+      Start 65: analyze_silver_adaptive_selftest
+65/92 Test #65: analyze_silver_adaptive_selftest ................   Passed    0.03 sec
+      Start 66: analyze_postcombat_raw_terminal_selftest
+66/92 Test #66: analyze_postcombat_raw_terminal_selftest ........   Passed    0.91 sec
+      Start 67: export_win_model_selftest
+67/92 Test #67: export_win_model_selftest .......................   Passed    1.57 sec
+      Start 68: runwin_e2c_native_parity
+68/92 Test #68: runwin_e2c_native_parity ........................   Passed    0.01 sec
+      Start 69: runwin_e2c_production_native_parity
+69/92 Test #69: runwin_e2c_production_native_parity .............   Passed    0.09 sec
+      Start 70: e2c_runwin_projection_parity
+70/92 Test #70: e2c_runwin_projection_parity ....................   Passed    0.01 sec
+      Start 71: combat_transition_oracle
+71/92 Test #71: combat_transition_oracle ........................   Passed    0.00 sec
+      Start 72: combat_predictor_input
+72/92 Test #72: combat_predictor_input ..........................   Passed    0.00 sec
+      Start 73: combat_predictor_input_contract
+73/92 Test #73: combat_predictor_input_contract .................   Passed    0.03 sec
+      Start 74: combat_transition_contract
+74/92 Test #74: combat_transition_contract ......................   Passed    0.04 sec
+      Start 75: combat_transition_model_experiment_selftest
+75/92 Test #75: combat_transition_model_experiment_selftest .....   Passed    0.12 sec
+      Start 76: combat_transition_rng_audit_selftest
+76/92 Test #76: combat_transition_rng_audit_selftest ............   Passed    0.34 sec
+      Start 77: combat_transition_surrogate_selftest
+77/92 Test #77: combat_transition_surrogate_selftest ............   Passed    0.13 sec
+      Start 78: combat_transition_attention_ablation_selftest
+78/92 Test #78: combat_transition_attention_ablation_selftest ...   Passed    3.75 sec
+      Start 79: combat_transition_frozen_composition_selftest
+79/92 Test #79: combat_transition_frozen_composition_selftest ...   Passed    0.10 sec
+      Start 80: combat_transition_potion_decoder_selftest
+80/92 Test #80: combat_transition_potion_decoder_selftest .......   Passed    2.32 sec
+      Start 81: combat_transition_stochastic_hp_selftest
+81/92 Test #81: combat_transition_stochastic_hp_selftest ........   Passed    1.13 sec
+      Start 82: combat_transition_relic_trajectory_selftest
+82/92 Test #82: combat_transition_relic_trajectory_selftest .....   Passed    1.32 sec
+      Start 83: combat_transition_composed_selftest
+83/92 Test #83: combat_transition_composed_selftest .............   Passed    1.01 sec
+      Start 84: ooc_mcts_parameter_search_selftest
+84/92 Test #84: ooc_mcts_parameter_search_selftest ..............   Passed    0.08 sec
+      Start 85: ooc_mcts_gameplay_analysis_selftest
+85/92 Test #85: ooc_mcts_gameplay_analysis_selftest .............   Passed    0.21 sec
+      Start 86: combat_transition_expanded_support_selftest
+86/92 Test #86: combat_transition_expanded_support_selftest .....   Passed    0.99 sec
+      Start 87: combat_transition_native_fixture
+87/92 Test #87: combat_transition_native_fixture ................   Passed    0.28 sec
+      Start 88: combat_transition_fixture_contract
+88/92 Test #88: combat_transition_fixture_contract ..............   Passed    0.03 sec
+      Start 89: ooc_mcts_adapter
+89/92 Test #89: ooc_mcts_adapter ................................   Passed    0.24 sec
+      Start 90: combat_transition_native_contract
+90/92 Test #90: combat_transition_native_contract ...............   Passed    4.43 sec
+      Start 91: combat_transition_runtime_loader
+91/92 Test #91: combat_transition_runtime_loader ................   Passed    0.04 sec
+      Start 92: ooc_mcts_live_startup
+92/92 Test #92: ooc_mcts_live_startup ...........................   Passed    2.02 sec
+
+99% tests passed, 1 tests failed out of 92
+
+Label Time Summary:
+core              =   4.07 sec*proc (28 tests)
+integration       =  23.69 sec*proc (33 tests)
+research-repro    =   5.40 sec*proc (12 tests)
+smoke             =   1.01 sec*proc (5 tests)
+tooling           =   2.61 sec*proc (7 tests)
+
+Total Test time (real) =  50.54 sec
+
+The following tests FAILED:
+	 28 - teacher_schema_compat (Subprocess aborted)        core research-repro
+Errors while running CTest
