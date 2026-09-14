@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Export the explicitly selected, qualified Smoke-excluded near-full stack."""
-import argparse,json,struct,hashlib
+import argparse,json,struct,hashlib,subprocess
 from pathlib import Path
 from tools import export_combat_transition_runtime as old,combat_transition_near_full_models as models
 from tools import combat_transition_composed as c,combat_transition_near_full_support as support
@@ -27,7 +27,7 @@ def export(parent,qualification,validity,output):
     with output.open('xb') as stream:
         stream.write(b'COMBAT_TRANSITION_RUNTIME_V2\0');stream.write(struct.pack('<II',2,len(header)));stream.write(header)
         for name in sorted(tensors):stream.write(tensors[name].tobytes(order='C'))
-    receipt=dict(path=str(output.resolve()),sha256=c.base.sha256(output),bytes=output.stat().st_size,sources=bindings,qualification=metadata['qualification'],supportCensus=census['groups'],sourceSha=c.base.subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip() if hasattr(c.base,'subprocess') else None)
+    receipt=dict(path=str(output.resolve()),sha256=c.base.sha256(output),bytes=output.stat().st_size,sources=bindings,qualification=metadata['qualification'],supportCensus=census['groups'],sourceSha=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip())
     print(json.dumps(receipt),flush=True);return receipt
 if __name__=='__main__':
     p=argparse.ArgumentParser();p.add_argument('--parent',type=Path,required=True);p.add_argument('--qualification',type=Path,required=True);p.add_argument('--validity',type=Path,required=True);p.add_argument('--output',type=Path,required=True);a=p.parse_args();export(a.parent,a.qualification,a.validity,a.output)

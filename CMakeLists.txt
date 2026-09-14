@@ -515,9 +515,13 @@ set_tests_properties(combat_transition_runtime_loader PROPERTIES
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "integration")
 
 add_test(NAME ooc_mcts_live_startup COMMAND python3
-    ${CMAKE_SOURCE_DIR}/tools/verify/ooc_mcts_live_startup.py $<TARGET_FILE:one_combat>)
+    ${CMAKE_SOURCE_DIR}/tools/verify/ooc_mcts_live_startup.py $<TARGET_FILE:one_combat>
+    --artifact ${CMAKE_SOURCE_DIR}/selfplay/models/combat_transition_near_full_except_smoke_v2.native)
 set_tests_properties(ooc_mcts_live_startup PROPERTIES
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "integration")
 
 add_test(NAME combat_transition_final_support_selftest COMMAND python3 -m unittest tools.test_combat_transition_final_support)
 set_tests_properties(combat_transition_final_support_selftest PROPERTIES WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+add_test(NAME combat_transition_near_full_artifact COMMAND python3 -m unittest tests.test_combat_transition_near_full_artifact)
+set_tests_properties(combat_transition_near_full_artifact PROPERTIES WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+    ENVIRONMENT "STS_COMBAT_TRANSITION_PROBE=$<TARGET_FILE:combat_transition_runtime_probe>" LABELS "integration")
