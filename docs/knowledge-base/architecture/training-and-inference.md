@@ -1,6 +1,6 @@
 # Training and inference
 
-Last verified: 2026-09-13 for relic legality, nested potion decoders, frozen composition, attention precision and padding; 2026-09-10 for
+Last verified: 2026-09-14 for potion-generation support; 2026-09-13 for relic legality, nested potion decoders, frozen composition, attention precision and padding; 2026-09-10 for
 the semantic-branch trainer adapter and root trainer audit.
 
 ## Purpose
@@ -72,9 +72,12 @@ checks optimizer-step speed and memory, not scientific quality.
 `tools/combat_transition_frozen_composition.py` is an offline inference-only
 diagnostic on the frozen attention checkpoints: A retains Phase-2, B replaces
 only survival with point-control, and C optionally masks potion support on
-certified inputs. It does not call `fit`. Certification is conservative:
-Ironclad, only canonical RED/COLORLESS/CURSE visible deck cards, and no
-Entropic Brew. The native basis and measured applicability are in the
+certified inputs. It does not call `fit`. Certification retains Ironclad
+eligibility and excludes explicit Alchemize
+and Entropic Brew. Off-color cards alone do not invalidate consumption-only
+support: audited combat random pools exclude Alchemize. See the
+[potion-generation contract](../behavior/combat-potion-generation.md). The native
+basis and historical measured applicability are in the
 [frozen-composition evidence](../../experiments/evidence/frozen_survival_potion_2026-09-13.md).
 Uncertified inputs retain B's probabilities. Masked log-softmax fails on
 nonfinite logits; unavailable slots copy through, and sampled potion count

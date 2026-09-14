@@ -2,14 +2,13 @@
 """Prespecified frozen attention composition/potion-support diagnostic; never fits.
 
 The consumption-only adapter is opt-in. It certifies the current simulator's
-Ironclad/colorless/curse deck closure, not arbitrary native transitions.
+visible absence of potion generators, not arbitrary native transitions.
 """
 from __future__ import annotations
 
 import argparse
 import copy
 import json
-import re
 import subprocess
 import time
 from pathlib import Path
@@ -34,33 +33,19 @@ EXPECTED_HASHES = {
 }
 
 
-def audited_card_ids() -> frozenset[int]:
-    """Canonical metadata, never corpus frequencies. Off-class decks are uncertified."""
-    text = (ROOT / "include/constants/Cards.h").read_text()
-    match = re.search(r"cardColors\[\]\s*=\s*\{(.*?)\};", text, re.S)
-    if match is None:
-        raise ValueError("canonical card colors missing")
-    colors = re.findall(r"CardColor::([A-Z]+)", match[1])
-    if len(colors) != len(base._CARD_IDS) or len(colors) > base.CARD_COUNT:
-        raise ValueError("canonical card color domain changed")
-    return frozenset(i for i, color in enumerate(colors)
-                     if color in ("RED", "COLORLESS", "CURSE"))
-
-
-AUDITED_CARD_IDS = audited_card_ids()
-
-
 def potion_consumption_only(predictor_input: dict) -> bool:
-    """Visible-input-only conservative predicate, scoped to audited simulator code.
+    """Visible-input-only consumption closure for the audited simulator.
 
-    Ironclad + RED/COLORLESS/CURSE deck closure excludes off-class Alchemize
-    and off-class generators. Current combat/class/colorless pools cannot
-    introduce Alchemize or potions. Entropic Brew is excluded explicitly.
-    Prismatic Shard changes reward pools after RAW exit, not this closure.
+    Alchemize is a STS1 potion generator even though its simulator execution
+    is unimplemented. All combat random card pools exclude it. Off-color
+    cards and random card generators therefore do not invalidate closure.
+    Entropic Brew fills empty slots and remains explicitly excluded.
+    Ironclad eligibility is retained independently of the card-color rule.
     """
     if int(predictor_input["globals"]["characterClass"]) != base.IRONCLAD_ID:
         return False
-    if any(int(card["cardId"]) not in AUDITED_CARD_IDS for card in predictor_input["cards"]):
+    if any(int(card["cardId"]) == base._CARD_IDS["ALCHEMIZE"]
+           for card in predictor_input["cards"]):
         return False
     return all(int(potion["potionId"]) != base.ENTROPIC_BREW_ID
                for potion in predictor_input["potions"])

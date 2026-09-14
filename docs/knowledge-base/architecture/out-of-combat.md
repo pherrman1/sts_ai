@@ -1,6 +1,6 @@
 # Out-of-combat policy
 
-Last verified: 2026-09-10 against the current working tree (semantic OOC
+Last verified: 2026-09-14 for potion-generation support; 2026-09-10 against the current working tree (semantic OOC
 decision coverage and reward continuation).
 Previously verified 2026-08-09 (key collection
 gated behind STS_COLLECT_KEYS=1, default off; BEST banner includes keys=collect/skip).
@@ -93,7 +93,9 @@ hashes before deserialization and creates its output exclusively. Four separate
 Attention encoders share one native implementation; the signed-HP encoding also
 feeds the relic decoder. Learned draws use only the supplied planner RNG.
 The support gate retains the qualified precombat envelope and consumption-only
-potion closure, rejects active unqualified Lizard Tail, and excludes Inserter
+potion closure (explicit Alchemize and Entropic Brew excluded; off-color alone
+is allowed, as documented in the [source audit](../behavior/combat-potion-generation.md)),
+rejects active unqualified Lizard Tail, and excludes Inserter
 because its carrier state has no qualification corpus tokens. One residue per
 turn/attack/card/shuffle group reconstructs all related counters. Potion RNG
 copies through; misc RNG replays the exact bounded initialization calls,

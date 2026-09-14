@@ -153,7 +153,18 @@ These and all other original component/diagnostic/latency evidence are unchanged
 from reviewed execution `abe2c6ea50f55d37e4d594ceb6575247e91c32fa`.
 Only HP exposure/bootstrap was recomputed; teacher NLL reproduces exactly and
 all artifact/data hashes match. No models, seeds, transitions or gameplay change.
-Original TEST support is 32,164/51,441 (62.526001%).
+The original distribution qualification used 32,164/51,441 TEST rows
+(62.526001%). The subsequent potion-generation support correction admits
+41,454/51,441 (80.585525%) on original TEST and 413,799/510,030 (81.132286%)
+overall, retaining every independent exclusion. All supported corpus rows,
+including deaths, have zero potion creations/swaps/substitutions; preserved
+RNG, copy-through and victorious relic checks also pass. Of the previous
+116,302 potion-certification failures, 113,094 recover certification and
+91,155 recover full support. Remaining full fallback is 96,231 rows.
+This census corrects the contract; distribution/exposure and gameplay
+qualification were not rerun on recovered rows. See the
+[full source/provenance/accounting audit](../../experiments/evidence/potion_generation_support_2026-09-14.md)
+and [maintained potion-generation contract](../behavior/combat-potion-generation.md).
 
 Next separately scoped work: native runtime adapter / OOC MCTS integration.
 Offline composition qualification does not establish runtime or gameplay
@@ -170,8 +181,10 @@ fraction and potion mask into later factors; relics reuse the HP encoder state.
 Native reconstruction copies supported fields, derives potion count, shares
 trajectory residues and emits exact inherited potion/misc OOC continuation
 RNG. It does not emit the four recreated battle-local RAW RNG streams.
-Nondeterministic active Lizard Tail fails closed. Models and support remain
-frozen; this is an offline interface, with no production dispatch change.
+Nondeterministic active Lizard Tail fails closed. Models remain frozen; the
+potion support predicate now excludes actual
+generation routes (explicit Alchemize and Entropic Brew), allowing harmless
+off-color cards. No production dispatch change is implied by this correction.
 
 The [frozen composed qualification protocol](../../experiments/evidence/composed_transition_2026-09-14.md)
 uses the original source-grouped **reused engineering TEST**, exact HP marginal
