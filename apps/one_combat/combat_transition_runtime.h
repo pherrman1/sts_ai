@@ -18,6 +18,7 @@ public:
     static constexpr float probabilityTolerance = 1e-4f;
     explicit CombatTransitionRuntime(const std::string &path);
     const nlohmann::json &metadata() const { return metadata_; }
+    bool nearFull() const { return metadata_.at("version")==2; }
     float survival(const CombatPredictorInputV1 &) const;
     std::vector<float> maxHp(const CombatPredictorInputV1 &) const;
     std::vector<float> hpEncoding(const CombatPredictorInputV1 &) const;
@@ -26,7 +27,10 @@ public:
     std::vector<float> potion(const CombatPredictorInputV1 &, int delta, float fraction) const;
     std::vector<float> potion(const std::vector<float> &encoding,
         const CombatPredictorInputV1 &, int delta, float fraction) const;
-    std::map<std::string,std::vector<float>> relic(const std::vector<float> &z, int hpClass, float fraction, int mask) const;
+    std::map<std::string,std::vector<float>> relic(const std::vector<float> &z, int hpClass, float fraction, int mask, bool escaped=false) const;
+    std::vector<float> potionInventory(const std::vector<float> &, const std::array<int,5> &, int capacity,int delta,float fraction,bool boss) const;
+    std::vector<float> event(const std::string &, const std::vector<float> &context,const std::vector<std::vector<std::vector<float>>> &candidates,const std::vector<bool> &legal) const;
+    std::vector<float> gold(const std::vector<float> &context,const std::vector<std::vector<float>> &candidates) const;
 };
 }
 

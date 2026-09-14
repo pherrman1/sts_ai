@@ -1,0 +1,49 @@
+{
+  "sourceSha": "07c573e64206ae4fd0cbe569aceca860a1ee15ff",
+  "nativeHelperSha256": "7738f9ade04675d2857a0f2ea2fd491c31074ddf428ceefd4e5c2a4ada4bd636",
+  "corpusSha256": "74c08aa0a3c30342d86cd45355fe17ffa9046963ad7c8cf71b1938f9cdc1cfde",
+  "nativeHeaderSha256": "d16d41c0b95028d7338b05f455511c266907e5ec31be711a705ceeb077ea1938",
+  "counts": {
+    "rows": 3208,
+    "generationRounds": 3106
+  },
+  "problems": [],
+  "originComparison": {
+    "index": 662,
+    "source": 4100052,
+    "fight": 2,
+    "historicalOrigin": {
+      "counter": 30,
+      "seed0": 14696873073139249100,
+      "seed1": 10634194548135322916
+    },
+    "nativeGenerated": [
+      17,
+      9,
+      22
+    ],
+    "nativeEnd": {
+      "counter": 42,
+      "seed0": 12221321183229867173,
+      "seed1": 849184397098560245
+    },
+    "hypotheticalOrigin": {
+      "counter": 30,
+      "seed0": 10634194548135322916,
+      "seed1": 4668304087813142283
+    },
+    "hypotheticalGenerated": [
+      13,
+      37,
+      22
+    ],
+    "hypotheticalEnd": {
+      "counter": 52,
+      "seed0": 12108256917720706954,
+      "seed1": 4584229403586905532
+    },
+    "identitiesEqual": false,
+    "endsEqual": false,
+    "interpretation": "Different RNG origins demonstrate why independent generation is not replay from the preserved historical origin; hypothetical origin policy is pending user clarification."
+  }
+}

@@ -1,0 +1,214 @@
+{
+  "classification": "GOLD_DEVELOPMENT_GATES_PASS_PENDING_REVIEW",
+  "completeDraws": 233632,
+  "frozenHashes": {
+    "/home/philippherrmann/sts_sweep/runs/combat-transition-model-v1/split_manifest.json": "e9043bcceb9d95027711e6ff33afbfe1cae3cf9528f820c0ff68bddbb419db32",
+    "/home/philippherrmann/sts_sweep/runs/combat-transition-runtime-25k/combat-transition-25k.jsonl": "74c08aa0a3c30342d86cd45355fe17ffa9046963ad7c8cf71b1938f9cdc1cfde",
+    "/home/philippherrmann/sts_sweep/runs/combat-transition-runtime-25k/combat-transition-25k.jsonl.manifest.json": "33669cd99eed8317987192825b5111a68d1e60269c166def2fe568364e20ad59",
+    "/tmp/sts-phase2-attention-audit-20260913/prepared.npz": "2badbb85ccd8329bcb886d50ef8a0b9b1bd2c043fda9445de9f9c2e7a4b6f9a5",
+    "/tmp/sts-phase2-attention-audit-20260913/prepared_manifest.json": "13b2c91fd0ced713f8c429bbf8995ceb58b6e3e57d1555de42f5e67d7f9a389f",
+    "/tmp/sts-phase2-attention-audit-20260913/target_spec.json": "e2315620d512578542d6b3bfbd362eb07b086f0e9fa7770cc23f4fa4c226e229",
+    "hp": "a667a3cfa7d7eca3cb07b46f50321e443c75e8a58f7627becb1fd69bf90f08c9",
+    "max_hp": "66ac8f70da69e29bf9b1364243f6f903e4f74dda1ec8a909ef54a7ea97dc6479",
+    "potion": "8e04bcd5265fb11b8fa91b4553a84690915f437e7b3afee0b93358e312de3ad6",
+    "potion_encoder": "2085010f1aeef7a7957cdc45c851b2424d640037fd0fa981eb7ae7274190f6ef",
+    "relic": "e07e79d487152ae294f4915ef4aecd0e8bd38b8dec8d0133a57b6b58af92bd71",
+    "survival": "2447b2daf1a48a619a5f071488908afd6f0fb83bfd855ee9f379c04120efeaef"
+  },
+  "gameplay": false,
+  "goldCalls": 229414,
+  "goldGate": true,
+  "groups": {
+    "GOLD_UNION": {
+      "component": {
+        "expectedGoldMae": 4.2235304716041995,
+        "expectedStolenGoldMae": 4.1703773681654,
+        "jointBrier": 0.2594082209557315,
+        "jointNll": 0.5749108150676437,
+        "modeExact": 0.7999721797190151,
+        "rows": 7189
+      },
+      "goldExposureGap": 0.012944152103694664,
+      "hpExposureGap": 0.014668361754334811,
+      "maxHpNll": 0.06587679457945742,
+      "potionExposureGap": 0.0007009345255511449,
+      "potionNll": 0.6377228091688517,
+      "signedHpNll": 2.85904498940024,
+      "teacherInformative": {
+        "expectedGoldMae": 7.421892094930968,
+        "expectedStolenGoldMae": 7.328487631322673,
+        "jointBrier": 0.45585081898087365,
+        "jointNll": 1.0102747126671452,
+        "modeExact": 0.6484967000733317,
+        "rows": 4091
+      }
+    },
+    "TRANSMUTATION_PLUS_DIAGNOSTIC": {
+      "component": {
+        "expectedGoldMae": 0.6703212503343821,
+        "expectedStolenGoldMae": 0.0,
+        "jointBrier": 0.0014601224330851315,
+        "jointNll": 0.03126090521923053,
+        "modeExact": 1.0,
+        "rows": 1
+      },
+      "goldExposureGap": -9.773396111817725e-05,
+      "hpExposureGap": 0.00012983678035016766,
+      "maxHpNll": 0.0015084193497380265,
+      "potionExposureGap": -0.00069742382245358,
+      "potionNll": 0.4033319590831169,
+      "signedHpNll": 2.8723363148393553,
+      "teacherInformative": {
+        "expectedGoldMae": 0.6703212503343821,
+        "expectedStolenGoldMae": 0.0,
+        "jointBrier": 0.0014601224330851315,
+        "jointNll": 0.03126090521923053,
+        "modeExact": 1.0,
+        "rows": 1
+      }
+    },
+    "gold_mutating_card": {
+      "component": {
+        "expectedGoldMae": 2.4649764231985456,
+        "expectedStolenGoldMae": 0.7162427887707332,
+        "jointBrier": 0.11123095172486672,
+        "jointNll": 0.2670291872340236,
+        "modeExact": 0.9245283018867925,
+        "rows": 212
+      },
+      "goldExposureGap": -0.0015163687660916714,
+      "hpExposureGap": 0.021671679562695337,
+      "maxHpNll": 0.0615382402288681,
+      "potionExposureGap": 0.0007706135154713856,
+      "potionNll": 0.6980928455670234,
+      "signedHpNll": 2.921862474225643,
+      "teacherInformative": {
+        "expectedGoldMae": 2.587004959000454,
+        "expectedStolenGoldMae": 0.7517003525712646,
+        "jointBrier": 0.11673743448352349,
+        "jointNll": 0.28024845392877723,
+        "modeExact": 0.9207920792079208,
+        "rows": 202
+      }
+    },
+    "gold_mutating_encounter": {
+      "component": {
+        "expectedGoldMae": 10.479968226537514,
+        "expectedStolenGoldMae": 10.961916965170404,
+        "jointBrier": 0.6557478536276772,
+        "jointNll": 1.4449715923647397,
+        "modeExact": 0.48811700182815354,
+        "rows": 2735
+      },
+      "goldExposureGap": 0.03001697100019691,
+      "hpExposureGap": 0.011005216525682699,
+      "maxHpNll": 0.06982820374959785,
+      "potionExposureGap": 0.0011232706257116932,
+      "potionNll": 0.3843409445820786,
+      "signedHpNll": 2.9120126971015967,
+      "teacherInformative": {
+        "expectedGoldMae": 10.53388941550169,
+        "expectedStolenGoldMae": 11.01831786098532,
+        "jointBrier": 0.6591217859873933,
+        "jointNll": 1.4524062128326214,
+        "modeExact": 0.4854832782065417,
+        "rows": 2721
+      }
+    },
+    "gold_mutating_potion": {
+      "component": {
+        "expectedGoldMae": 1.0635931862123746,
+        "expectedStolenGoldMae": 0.6827282902341849,
+        "jointBrier": 0.05515183422890726,
+        "jointNll": 0.13487748983358244,
+        "modeExact": 0.9617021276595744,
+        "rows": 2115
+      },
+      "goldExposureGap": 0.007247948825536327,
+      "hpExposureGap": 0.01912446734335107,
+      "maxHpNll": 0.06386115502456254,
+      "potionExposureGap": -0.0004954287059338505,
+      "potionNll": 0.9116259123408581,
+      "signedHpNll": 2.749403728224753,
+      "teacherInformative": {
+        "expectedGoldMae": 2.713509757345202,
+        "expectedStolenGoldMae": 1.7418218743610387,
+        "jointBrier": 0.14070703183852698,
+        "jointNll": 0.34410843304948957,
+        "modeExact": 0.902291917973462,
+        "rows": 829
+      }
+    },
+    "gold_mutating_relic": {
+      "component": {
+        "expectedGoldMae": 1.1412935537283477,
+        "expectedStolenGoldMae": 0.2603924467630296,
+        "jointBrier": 0.060857240004709545,
+        "jointNll": 0.16737247364826122,
+        "modeExact": 0.959349593495935,
+        "rows": 615
+      },
+      "goldExposureGap": 0.0014416998689614547,
+      "hpExposureGap": 0.030265710337372895,
+      "maxHpNll": 0.10254672552977245,
+      "potionExposureGap": -1.659204500266488e-05,
+      "potionNll": 0.6366004979682252,
+      "signedHpNll": 2.7635028721011365,
+      "teacherInformative": {
+        "expectedGoldMae": 1.344627462725927,
+        "expectedStolenGoldMae": 0.3067842045196613,
+        "jointBrier": 0.07169962184462908,
+        "jointNll": 0.19719170745915834,
+        "modeExact": 0.9521072796934866,
+        "rows": 522
+      }
+    },
+    "pre_stolen_gold_nonzero": {
+      "component": {
+        "expectedGoldMae": 0.2757318511343962,
+        "expectedStolenGoldMae": 0.19587509141146395,
+        "jointBrier": 0.01346117337866757,
+        "jointNll": 0.02804843673012575,
+        "modeExact": 0.9924852388620504,
+        "rows": 1863
+      },
+      "goldExposureGap": 0.0006370159744861396,
+      "hpExposureGap": 0.008261920982053238,
+      "maxHpNll": 0.047588082769201775,
+      "potionExposureGap": 0.0015513749499688023,
+      "potionNll": 0.6994747894921988,
+      "signedHpNll": 2.9777770742133,
+      "teacherInformative": {
+        "expectedGoldMae": 4.892270844413144,
+        "expectedStolenGoldMae": 3.475383764757689,
+        "jointBrier": 0.23883967623293031,
+        "jointNll": 0.4976594059830884,
+        "modeExact": 0.8666666666666667,
+        "rows": 105
+      }
+    }
+  },
+  "hardValidity": {
+    "downstreamAfterDeath": 0,
+    "illegalGold": 0,
+    "illegalStolenGold": 0,
+    "nativeGoldClosureViolation": 0,
+    "upstreamPersistentViolation": 0
+  },
+  "independentReview": false,
+  "modelSha256": "19a1a387f56ea4c8eceb2ebf4b92f951f497b18876ccab31168f0c6a9a5d853c",
+  "sampledDeaths": 4218,
+  "sourceSha": "1a24e7ccdb26c3ef649371dfe07269ecbc3c2d4a",
+  "supportChanged": false,
+  "unevaluated": "independent review, relic exposure on recovered rows, final union composition/native export/continuation/runtime parity",
+  "upstreamCalls": {
+    "hpEncoderRows": 229414,
+    "hpHeadRows": 229414,
+    "maxHpRows": 229414,
+    "potionDecoderRows": 229414,
+    "potionEncoderRows": 229414,
+    "relicDecoderRows": 229414,
+    "survivalRows": 233632
+  },
+  "upstreamHpPotionGates": true
+}

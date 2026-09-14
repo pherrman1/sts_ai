@@ -7,6 +7,7 @@ namespace one_combat {
 // A verified loader owns readiness; support never inspects inferred outcomes.
 struct NativeComposedDomain {
     bool ready = false;
+    bool nearFull = false;
     std::array<int,2> preCurHpRange{};
     std::array<int,2> preMaxHpRange{};
     std::vector<int> hpClasses;

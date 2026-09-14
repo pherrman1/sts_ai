@@ -1,0 +1,125 @@
+{
+  "classification": "POTION_TRAJECTORY_DEVELOPMENT_PASS",
+  "draws": 32,
+  "maxHpSha256": "c6c6564e8e3f689ad3ad152f98ad7d42a819a48e9a603df1ebf70ba93868bec1",
+  "modelSha256": "0777abcb6500c2836ac5d7422d58ae5fa0dd9c872f896943db63bb8366919cb7",
+  "partition": "original source-grouped engineering TEST; reused development evidence, not pristine holdout",
+  "scope": "potion component development exposure; not full-stack/native/runtime qualification",
+  "slices": {
+    "brew": {
+      "conditionalTeacherNll": 1.8849276506333752,
+      "exposure": {
+        "mean": 0.0022515026767784643,
+        "repetitions": 1000,
+        "rows": 339,
+        "sourceBootstrap95": [
+          -0.007392084743197908,
+          0.012342720522531882
+        ],
+        "sources": 291
+      },
+      "gate": true,
+      "rows": 339,
+      "zeroExactMassRows": 0
+    },
+    "entireFinalUnion": {
+      "conditionalTeacherNll": 0.5437158448712831,
+      "exposure": {
+        "mean": 0.0025242401853742408,
+        "repetitions": 1000,
+        "rows": 49630,
+        "sourceBootstrap95": [
+          0.0020769370505228798,
+          0.002925792582281266
+        ],
+        "sources": 2517
+      },
+      "gate": true,
+      "rows": 49630,
+      "zeroExactMassRows": 0
+    },
+    "previous179": {
+      "conditionalTeacherNll": 0.5164769601404579,
+      "exposure": {
+        "mean": 0.0024811289110620726,
+        "repetitions": 1000,
+        "rows": 39919,
+        "sourceBootstrap95": [
+          0.002032228636665393,
+          0.0029312581755162664
+        ],
+        "sources": 2512
+      },
+      "gate": true,
+      "rows": 39919,
+      "zeroExactMassRows": 0
+    },
+    "recovered": {
+      "conditionalTeacherNll": 0.6556867067361596,
+      "exposure": {
+        "mean": 0.0027014576665056857,
+        "repetitions": 1000,
+        "rows": 9711,
+        "sourceBootstrap95": [
+          0.0015644672616133943,
+          0.003801138372558169
+        ],
+        "sources": 2191
+      },
+      "gate": true,
+      "rows": 9711,
+      "zeroExactMassRows": 0
+    },
+    "recursiveBrew": {
+      "conditionalTeacherNll": 3.212759082967585,
+      "exposure": {
+        "mean": 0.050469596980542236,
+        "repetitions": 1000,
+        "rows": 11,
+        "sourceBootstrap95": [
+          -0.007954591637127167,
+          0.1360173399179941
+        ],
+        "sources": 11
+      },
+      "gate": true,
+      "rows": 11,
+      "zeroExactMassRows": 0
+    },
+    "smoke": {
+      "conditionalTeacherNll": 0.40018182065535995,
+      "exposure": {
+        "mean": 0.004103886717833162,
+        "repetitions": 1000,
+        "rows": 362,
+        "sourceBootstrap95": [
+          0.0002409420211532881,
+          0.00830299695937706
+        ],
+        "sources": 268
+      },
+      "gate": true,
+      "rows": 362,
+      "zeroExactMassRows": 0
+    },
+    "special": {
+      "conditionalTeacherNll": 1.1188648510501453,
+      "exposure": {
+        "mean": 0.0032773200730154143,
+        "repetitions": 1000,
+        "rows": 700,
+        "sourceBootstrap95": [
+          -0.001679253169519449,
+          0.009327999769806913
+        ],
+        "sources": 530
+      },
+      "gate": true,
+      "rows": 700,
+      "zeroExactMassRows": 0
+    }
+  },
+  "sourceSha": "eceb98b9200f45cf777121c349d95f5f5f8d3a71",
+  "supportChanged": false,
+  "upstream": "repaired maxHP encoder/head and original HP encoder/head"
+}

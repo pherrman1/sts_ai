@@ -1,0 +1,116 @@
+{
+  "artifactSha256": "23ee9e06b6674709a2a656f11647c0ede3665c27b3e98360a75dbc298e516119",
+  "classification": "EXACT_SPARSE_EXPOSURE_FAIL",
+  "estimator": "exact weighted marginal over all maxHP classes, legal HP classes and legal potion masks",
+  "evaluationSha": "bc57fcf8e2b1d2df12bdc46ee3696e070bac9834",
+  "eventExposureGate": false,
+  "exposure": {
+    "mean": 0.28737517015449326,
+    "repetitions": 1000,
+    "rows": 449,
+    "sourceBootstrap95": [
+      0.18395292889726417,
+      0.4084571241208588
+    ],
+    "sources": 435
+  },
+  "maxHpRefit": {
+    "artifactSha256": "439a10f23f0a178b47c9cf15af5966c4187fd30975ccb39731260a1a7f942763",
+    "candidateCacheBindings": {
+      "gold": "7d97a8ae4f793e54f2e7075b61b0ba20000bf30a45e78d3ecbe7297c63e7f201",
+      "ritual": "c30102a20e1087c11861770c9e1665cc16fa8ad1c2dce5d2a6a631e630addbe7",
+      "writhing": "c521784d6205e4348d13cd67d6d97ae5b61047acde07a7f80657835609d43b09"
+    },
+    "encoderChanged": false,
+    "hashes": {
+      "/home/philippherrmann/sts_sweep/runs/combat-transition-model-v1/split_manifest.json": "e9043bcceb9d95027711e6ff33afbfe1cae3cf9528f820c0ff68bddbb419db32",
+      "/home/philippherrmann/sts_sweep/runs/combat-transition-runtime-25k/combat-transition-25k.jsonl": "74c08aa0a3c30342d86cd45355fe17ffa9046963ad7c8cf71b1938f9cdc1cfde",
+      "/home/philippherrmann/sts_sweep/runs/combat-transition-runtime-25k/combat-transition-25k.jsonl.manifest.json": "33669cd99eed8317987192825b5111a68d1e60269c166def2fe568364e20ad59",
+      "/tmp/sts-phase2-attention-audit-20260913/prepared.npz": "2badbb85ccd8329bcb886d50ef8a0b9b1bd2c043fda9445de9f9c2e7a4b6f9a5",
+      "/tmp/sts-phase2-attention-audit-20260913/prepared_manifest.json": "13b2c91fd0ced713f8c429bbf8995ceb58b6e3e57d1555de42f5e67d7f9a389f",
+      "/tmp/sts-phase2-attention-audit-20260913/target_spec.json": "e2315620d512578542d6b3bfbd362eb07b086f0e9fa7770cc23f4fa4c226e229",
+      "hp": "a667a3cfa7d7eca3cb07b46f50321e443c75e8a58f7627becb1fd69bf90f08c9",
+      "max_hp": "66ac8f70da69e29bf9b1364243f6f903e4f74dda1ec8a909ef54a7ea97dc6479",
+      "potion": "8e04bcd5265fb11b8fa91b4553a84690915f437e7b3afee0b93358e312de3ad6",
+      "potion_encoder": "2085010f1aeef7a7957cdc45c851b2424d640037fd0fa981eb7ae7274190f6ef",
+      "relic": "e07e79d487152ae294f4915ef4aecd0e8bd38b8dec8d0133a57b6b58af92bd71",
+      "survival": "2447b2daf1a48a619a5f071488908afd6f0fb83bfd855ee9f379c04120efeaef"
+    },
+    "history": [
+      {
+        "epoch": 1,
+        "validationNll": 0.050941769033670425
+      },
+      {
+        "epoch": 2,
+        "validationNll": 0.05169500783085823
+      },
+      {
+        "epoch": 3,
+        "validationNll": 0.05031425505876541
+      },
+      {
+        "epoch": 4,
+        "validationNll": 0.05017636716365814
+      },
+      {
+        "epoch": 5,
+        "validationNll": 0.05108707398176193
+      },
+      {
+        "epoch": 6,
+        "validationNll": 0.05042470991611481
+      },
+      {
+        "epoch": 7,
+        "validationNll": 0.05041458457708359
+      },
+      {
+        "epoch": 8,
+        "validationNll": 0.0498487688601017
+      },
+      {
+        "epoch": 9,
+        "validationNll": 0.049672242254018784
+      },
+      {
+        "epoch": 10,
+        "validationNll": 0.04985298216342926
+      },
+      {
+        "epoch": 11,
+        "validationNll": 0.04978792369365692
+      },
+      {
+        "epoch": 12,
+        "validationNll": 0.05002579838037491
+      }
+    ],
+    "originalValidationNll": 0.05348127707839012,
+    "otherHeadsChanged": false,
+    "recipe": {
+      "batch": 512,
+      "epochs": 12,
+      "lr": 0.001,
+      "population": "historical prepared supported rows plus gold-only and Stage-2 consumption-only candidates",
+      "refit": "existing maxHP linear head only; historical encoder frozen",
+      "seed": 20260912,
+      "selection": "earliest strict minimum original VALIDATION NLL",
+      "weightDecay": 0.0001
+    },
+    "selectedEpoch": 9,
+    "sourceSha": "bc57fcf8e2b1d2df12bdc46ee3696e070bac9834",
+    "supportChanged": false,
+    "testNll": 0.06221635267138481,
+    "testRows": 48929,
+    "trainRows": 388204,
+    "validationRows": 47962
+  },
+  "mechanism": "writhing",
+  "mixtureNll": 0.8748703959950215,
+  "modelSourceSha": "69f9e51be8bb6c53684dbb02ae5f73b7b397c9ae",
+  "rows": 449,
+  "supportChanged": false,
+  "teacherNll": 0.5874952258405282,
+  "zeroMixtureProbabilityRows": 0
+}

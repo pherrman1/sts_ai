@@ -29,6 +29,15 @@ GameContext detachedCopy(const GameContext &parent) {
     return child;
 }
 void require(bool ok, const char *why) { if (!ok) throw std::runtime_error(why); }
+void applySampledCombatExit(GameContext &gc, const CombatRuntimeSample &sample) {
+    const bool escape = sample.outcome == CombatRuntimeSample::Outcome::ESCAPE;
+    if ((sample.outcome != CombatRuntimeSample::Outcome::VICTORY && !escape)
+        || sample.rawPost.smokeBombUsed != escape
+        || (escape && sts::isBossEncounter(gc.info.encounter)))
+        throw std::runtime_error("combat outcome disagrees with RAW smokeBombUsed");
+    applyCombatTransitionState(gc, sample.rawPost);
+    gc.regainControl();
+}
 }
 std::vector<double> oocPolicyWeights(const std::vector<double> &logits, double temperature) {
     if (!std::isfinite(temperature) || temperature <= 0)
@@ -165,8 +174,8 @@ sts::search::OocStateId OocGameContextModel::sampleSuccessor(sts::search::OocSta
                     child.gc.outcome = sts::GameOutcome::PLAYER_LOSS;
                     break;
                 case CombatRuntimeSample::Outcome::VICTORY:
-                    applyCombatTransitionState(child.gc, sampled.rawPost);
-                    child.gc.regainControl();
+                case CombatRuntimeSample::Outcome::ESCAPE:
+                    applySampledCombatExit(child.gc, sampled);
                     // Live runs record the entered room before combat and the
                     // continuation on the next loop, including act changes.
                     child.path.update(child.gc);
@@ -220,8 +229,7 @@ void OocGameContextModel::resolveCombat(Snapshot &child, std::mt19937_64 &rng,
                 child.gc.outcome = sts::GameOutcome::PLAYER_LOSS;
                 return;
             }
-            applyCombatTransitionState(child.gc, sampled.rawPost);
-            child.gc.regainControl();
+            applySampledCombatExit(child.gc, sampled);
             victory = true;
         } else reason = "sample_returned_unsupported";
     }
@@ -862,7 +870,7 @@ void oocMctsAdapterSelfTest() {
     // Inject an equivalent RAW result from a deterministic native exit. The
     // callback dispatches the same native reward code in both branches.
     struct FakeSampler final : CombatTransitionSampler {
-        bool enabled=true, death=false, stochastic=false;
+        bool enabled=true, death=false, stochastic=false, escape=false;
         mutable int supportCalls=0, sampleCalls=0;
         mutable std::vector<std::uint64_t> draws;
         CombatTransitionPersistentState raw;
@@ -879,7 +887,8 @@ void oocMctsAdapterSelfTest() {
             ++sampleCalls;
             bool loss=death;
             if(stochastic) { const auto draw=r(); draws.push_back(draw); loss=draw&1; }
-            return {loss?CombatRuntimeSample::Outcome::DEATH:CombatRuntimeSample::Outcome::VICTORY,raw};
+            return {loss?CombatRuntimeSample::Outcome::DEATH:
+                (escape?CombatRuntimeSample::Outcome::ESCAPE:CombatRuntimeSample::Outcome::VICTORY),raw};
         }
     };
     auto combatRoot=detachedCopy(gc);
@@ -936,6 +945,72 @@ void oocMctsAdapterSelfTest() {
     require(crossed.pathHistory(crossedId).roomVisits==realPath.roomVisits
         && crossed.pathHistory(crossedId).lastNodeKey==realPath.lastNodeKey,"native PathHistory parity");
     require(test::oocStateFingerprint(crossed.state(0))==rootFingerprint,"combat parent unchanged");
+    // Compare an actual Smoke Bomb exit with explicit ESCAPE injection from
+    // the identical prebattle origin. Includes Cleric's pre-reward maxHP gain.
+    for (bool cleric : {false, true}) {
+        const int savedRegainCalls = regainCalls;
+        auto escapeRoot=detachedCopy(combatRoot);
+        escapeRoot.potions[0]=Potion::SMOKE_BOMB;
+        escapeRoot.potionCount=1;
+        escapeRoot.smokeBombUsed=true; // Native battle initialization resets it.
+        if (cleric) escapeRoot.relics.add({RelicId::FACE_OF_CLERIC,0});
+        auto oracle=detachedCopy(escapeRoot);
+        PathHistory oraclePath=path; oraclePath.update(oracle);
+        restAction.execute(oracle); oraclePath.update(oracle);
+        auto escapeSampler=std::make_shared<FakeSampler>();
+        escapeSampler->escape=true;
+        escapeSampler->expectedInput=captureCombatPredictorInput(oracle,oracle.info.encounter,potionKeepValue(oracle));
+        BattleContext smoke;
+        smoke.init(oracle,MonsterEncounter::CULTIST);
+        require(!smoke.smokeBombUsed,"native pre-used Smoke flag reset");
+        smoke.player.curHp=37;
+        smoke.drinkPotion(0);
+        require(smoke.smokeBombUsed && smoke.outcome==Outcome::PLAYER_VICTORY
+            && smoke.potionCount==0,"native Smoke Bomb consumes and exits");
+        int escapeRawCalls=0;
+        {
+            CombatTransitionRawObserverScope scope([&](const BattleContext &,GameContext &raw) {
+                ++escapeRawCalls; escapeSampler->raw=captureCombatTransitionState(raw);
+            });
+            smoke.exitBattle(oracle);
+        }
+        oraclePath.update(oracle);
+        OocGameContextModel imagined(escapeRoot,path,escapeSampler);
+        const auto parent=test::oocStateFingerprint(imagined.state(0));
+        const auto escaped=imagined.sampleSuccessor(0,restAction.bits,rng);
+        require(escapeRawCalls==1 && escapeSampler->sampleCalls==1
+            && test::oocStateFingerprint(imagined.state(escaped))==test::oocStateFingerprint(oracle)
+            && combatTransitionFingerprint(imagined.state(escaped))==combatTransitionFingerprint(oracle),
+            "ESCAPE exact native OOC/persistent/all-RNG continuation parity");
+        require(oracle.screenState==ScreenState::MAP_SCREEN && !oracle.smokeBombUsed
+            && imagined.pathHistory(escaped).roomVisits==oraclePath.roomVisits
+            && imagined.pathHistory(escaped).lastNodeKey==oraclePath.lastNodeKey
+            && test::oocStateFingerprint(imagined.state(0))==parent,
+            "ESCAPE no rewards, native PathHistory, unchanged parent");
+        escapeSampler->escape=false;
+        OocGameContextModel mislabeled(escapeRoot,path,escapeSampler);
+        rejects([&] { mislabeled.sampleSuccessor(0,restAction.bits,rng); });
+        auto boss=detachedCopy(escapeRoot);
+        boss.info.encounter=MonsterEncounter::SLIME_BOSS;
+        rejects([&] { applySampledCombatExit(boss,{CombatRuntimeSample::Outcome::ESCAPE,escapeSampler->raw}); });
+        BattleContext blocked;
+        blocked.init(boss,MonsterEncounter::SLIME_BOSS);
+        blocked.drinkPotion(0);
+        require(blocked.outcome==Outcome::UNDECIDED && !blocked.smokeBombUsed
+            && blocked.potions[0]==Potion::SMOKE_BOMB && blocked.potionCount==1,
+            "boss blocks Smoke Bomb without consuming it or accepting ESCAPE");
+        blocked.init(escapeRoot,MonsterEncounter::CULTIST);
+        blocked.player.buff<PS::SURROUNDED>();
+        blocked.drinkPotion(0);
+        require(blocked.outcome==Outcome::UNDECIDED && blocked.potionCount==1,
+            "Surrounded blocks Smoke Bomb without consumption");
+        blocked.player.removeStatus<PS::SURROUNDED>();
+        blocked.drinkPotion(0);
+        require(blocked.smokeBombUsed && blocked.potionCount==0,
+            "removing Surrounded allows escape later in the same combat");
+        regainCalls=savedRegainCalls;
+    }
+    std::cout<<"smoke_escape_oracle native_origin=identical cleric=both raw_outcome=ESCAPE parity=exact\n";
     fake->enabled=false; regainCalls=0;
     OocGameContextModel unsupportedCombat(combatRoot,path,fake);
     const auto unsupportedId=unsupportedCombat.sampleSuccessor(0,restAction.bits,rng);

@@ -1,0 +1,31 @@
+Test project /home/philippherrmann/.codex/worktrees/ccae/sts_lightspeed/build/linux-gcc-debug-ccache
+      Start  87: combat_transition_gold_selftest
+ 1/11 Test  #87: combat_transition_gold_selftest ........................   Passed    1.39 sec
+      Start  88: combat_transition_sparse_events_selftest
+ 2/11 Test  #88: combat_transition_sparse_events_selftest ...............   Passed    0.10 sec
+      Start  89: combat_transition_brew_selftest
+ 3/11 Test  #89: combat_transition_brew_selftest ........................   Passed    0.12 sec
+      Start  90: combat_transition_potion_trajectory_selftest
+ 4/11 Test  #90: combat_transition_potion_trajectory_selftest ...........   Passed    1.31 sec
+      Start  91: combat_transition_near_full_downstream_selftest
+ 5/11 Test  #91: combat_transition_near_full_downstream_selftest ........   Passed    1.28 sec
+      Start  92: combat_transition_near_full_sampler_selftest
+ 6/11 Test  #92: combat_transition_near_full_sampler_selftest ...........   Passed    1.01 sec
+      Start  93: combat_transition_near_full_relic_ancestral_selftest
+ 7/11 Test  #93: combat_transition_near_full_relic_ancestral_selftest ...   Passed    1.24 sec
+      Start  96: ooc_mcts_adapter
+ 8/11 Test  #96: ooc_mcts_adapter .......................................   Passed    0.26 sec
+      Start  97: combat_transition_native_contract
+ 9/11 Test  #97: combat_transition_native_contract ......................   Passed    4.02 sec
+      Start  98: combat_transition_runtime_loader
+10/11 Test  #98: combat_transition_runtime_loader .......................   Passed    0.04 sec
+      Start 100: combat_transition_final_support_selftest
+11/11 Test #100: combat_transition_final_support_selftest ...............   Passed    0.12 sec
+
+100% tests passed out of 11
+
+Label Time Summary:
+integration       =   4.32 sec*proc (3 tests)
+research-repro    =   5.06 sec*proc (6 tests)
+
+Total Test time (real) =  10.89 sec

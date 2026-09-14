@@ -1,6 +1,6 @@
 # Out-of-combat policy
 
-Last verified: 2026-09-14 for opt-in MCTS controls and continuation-limit accounting; 2026-09-10 against the current working tree (semantic OOC
+Last verified: 2026-09-15 for qualified V2 combat support; 2026-09-14 for opt-in MCTS controls and continuation-limit accounting; 2026-09-10 against the current working tree (semantic OOC
 decision coverage and reward continuation).
 Previously verified 2026-08-09 (key collection
 gated behind STS_COLLECT_KEYS=1, default off; BEST banner includes keys=collect/skip).
@@ -150,6 +150,10 @@ qualifies this combat boundary at 1e-4 probability tolerance; it does not qualif
 the full planner. `combat_transition_runtime_probe` and
 `tools/qualify_combat_transition_runtime.py` perform offline CPU FP32 parity at
 fixed max absolute probability tolerance 1e-4; they do not drive gameplay seeds.
+
+The qualified `COMBAT_TRANSITION_RUNTIME_V2` artifact is tracked at `selfplay/models/combat_transition_near_full_except_smoke_v2.native`. Its selected refitted component identities, passing qualification and ordered all/TEST cohort hashes are enforced by export/load guards. V2 retains the legacy envelope while supporting shared gold, Writhing, Ritual and Brew trajectories; it excludes initially held Smoke, pre-existing `smokeBombUsed`, and Writhing with Ritual Dagger. Executed support is exactly 505,935/510,030 overall and 51,036/51,441 TEST. V1 behavior above remains unchanged when a V1 artifact is selected.
+
+V2 Brew draws a full-width planner-owned hypothetical native potion RNG on first use, reuses it recursively and retains its advanced RAW state. Unused Brew copies historical potion RNG; other streams follow the existing replay/copy contract. Explicit `ESCAPE` requires matching RAW `smokeBombUsed`, rejects boss escape and uses native `regainControl()` without victory rewards. Generated Smoke/ESCAPE remains possible in a supported Brew trajectory. The probe and `tools/qualify_combat_transition_near_full.py` verify CPU FP32 probabilities, complete RAW sampled states, planner-stream advancement and scalar/prepared parity; unsupported states consume no planner draws. All final slice gates and hard-validity checks pass as reused development evidence in the [final report](../../experiments/evidence/near_full_combat_support_2026-09-14/REPORT.md). V2 uses the same explicit model path; no default MCTS enablement is implied.
 
 Copied native RNG streams still govern other stochastic OOC transitions. This
 adapter resolves the combat boundary only and remains **not a fair stochastic

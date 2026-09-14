@@ -230,6 +230,7 @@ add_executable(one_combat apps/one_combat.cpp apps/combat_model_diagnostics.cpp
     apps/one_combat/combat_transition.cpp
     apps/one_combat/e2c_capture.cpp
     apps/one_combat/ooc_mcts_adapter.cpp
+    apps/one_combat/combat_transition_near_full.cpp
     apps/one_combat/combat_transition_runtime.cpp
     apps/one_combat/combat_transition_native_contract.cpp
     apps/one_combat/ooc_policy.cpp
@@ -432,6 +433,24 @@ add_test(NAME ooc_mcts_gameplay_analysis_selftest
     COMMAND python3 ${CMAKE_SOURCE_DIR}/tools/test_analyze_ooc_mcts_gameplay.py)
 add_test(NAME combat_transition_expanded_support_selftest
     COMMAND python3 ${CMAKE_SOURCE_DIR}/tools/test_combat_transition_expanded_support.py)
+add_test(NAME combat_transition_remaining_census_selftest
+    COMMAND python3 ${CMAKE_SOURCE_DIR}/tools/test_combat_transition_remaining_census.py)
+add_test(NAME combat_transition_gold_selftest
+    COMMAND python3 ${CMAKE_SOURCE_DIR}/tools/test_combat_transition_gold.py)
+add_test(NAME combat_transition_sparse_events_selftest
+    COMMAND python3 -m unittest tools.test_combat_transition_sparse_events)
+add_test(NAME combat_transition_brew_selftest
+    COMMAND python3 -m unittest tools.test_combat_transition_brew)
+add_test(NAME combat_transition_potion_trajectory_selftest
+    COMMAND python3 -m unittest tools.test_combat_transition_potion_trajectory)
+add_test(NAME combat_transition_near_full_downstream_selftest
+    COMMAND python3 -m unittest tools.test_combat_transition_near_full_downstream)
+add_test(NAME combat_transition_near_full_sampler_selftest
+    COMMAND python3 -m unittest tools.test_combat_transition_near_full_sampler)
+add_test(NAME combat_transition_near_full_relic_ancestral_selftest
+    COMMAND python3 -m unittest tools.test_combat_transition_near_full_relic_ancestral)
+set_tests_properties(combat_transition_sparse_events_selftest combat_transition_brew_selftest combat_transition_potion_trajectory_selftest combat_transition_near_full_downstream_selftest combat_transition_near_full_sampler_selftest combat_transition_near_full_relic_ancestral_selftest
+    PROPERTIES WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "research-repro")
 add_test(NAME combat_transition_native_fixture
     COMMAND $<TARGET_FILE:one_combat> combattransitionselftest
         ${CMAKE_CURRENT_BINARY_DIR}/combat_transition_fixture.jsonl
@@ -479,6 +498,7 @@ set_tests_properties(ooc_mcts_adapter PROPERTIES WORKING_DIRECTORY ${CMAKE_SOURC
 
 # Captured-state probability probe; no gameplay or default integration.
 add_executable(combat_transition_runtime_probe tests/combat_transition_runtime_probe.cpp
+    apps/one_combat/combat_transition_near_full.cpp
     apps/one_combat/combat_transition_runtime.cpp
     apps/one_combat/combat_transition_native_contract.cpp
     apps/one_combat/combat_predictor_input.cpp apps/one_combat/combat_transition.cpp
@@ -495,6 +515,13 @@ set_tests_properties(combat_transition_runtime_loader PROPERTIES
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "integration")
 
 add_test(NAME ooc_mcts_live_startup COMMAND python3
-    ${CMAKE_SOURCE_DIR}/tools/verify/ooc_mcts_live_startup.py $<TARGET_FILE:one_combat>)
+    ${CMAKE_SOURCE_DIR}/tools/verify/ooc_mcts_live_startup.py $<TARGET_FILE:one_combat>
+    --artifact ${CMAKE_SOURCE_DIR}/selfplay/models/combat_transition_near_full_except_smoke_v2.native)
 set_tests_properties(ooc_mcts_live_startup PROPERTIES
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "integration")
+
+add_test(NAME combat_transition_final_support_selftest COMMAND python3 -m unittest tools.test_combat_transition_final_support)
+set_tests_properties(combat_transition_final_support_selftest PROPERTIES WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+add_test(NAME combat_transition_near_full_artifact COMMAND python3 -m unittest tests.test_combat_transition_near_full_artifact)
+set_tests_properties(combat_transition_near_full_artifact PROPERTIES WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+    ENVIRONMENT "STS_COMBAT_TRANSITION_PROBE=$<TARGET_FILE:combat_transition_runtime_probe>" LABELS "integration")

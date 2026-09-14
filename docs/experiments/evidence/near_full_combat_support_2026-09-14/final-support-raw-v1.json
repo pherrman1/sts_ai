@@ -1,0 +1,57 @@
+{
+  "bindings": {
+    "HP": "0c8b5aa8c5218d6cd6102b768cc86a474c9ef30953d4b034caedcc41a426109b",
+    "downstream": "d07ead94b3abb9d12f272337e18aece6acd261cc4a39a36b21b82f904236af91",
+    "maxHP": "2c5b54d0a9420a9d0e3ab9a26f32b9900c4869490e4af49627009cde21efb4b0",
+    "potion": "ae1a1411990d272579de10564edb48c7f2ec1d14f1c72dacf5390a1415a0f1db",
+    "survival": "e150180a9112f52a94cfa60770adb6c0a48517a7d94a4c26f6e5896e85269c18"
+  },
+  "classification": "WHOLE_UNION_RAW_VALIDITY_PASS",
+  "counts": {
+    "brewUses": 10142,
+    "death": 61661,
+    "downstreamAfterDeath": 0,
+    "draws": 1633152,
+    "escape": 351,
+    "recursiveSampledTrajectories": 329,
+    "victory": 1571140
+  },
+  "downstreamFolder": "full-union-downstream-v1",
+  "finalSupport": true,
+  "maxHpFolder": "full-union-maxHP-v1",
+  "recipe": {
+    "batch": 512,
+    "downstreamExposure": "32 complete upstream HP/potion/escape/Ritual draws; exact conditional native target probabilities",
+    "draws": 32,
+    "hpExposure": "exact eleven-class maxHP marginal",
+    "partition": "original source-grouped TEST; reused development evidence",
+    "potionExposure": "32 upstream HP/maxHP draws, exact observed-body trajectory DAG",
+    "seed": 20260920,
+    "supportChanged": false,
+    "threshold": 0.1,
+    "validity": "32 complete sampled RAW transitions per TEST row, including model death short-circuit"
+  },
+  "scope": "offline RAW contract; native escape continuation has separate exact oracle",
+  "sourceSha": "1aa1dabb8e2d2b32d3b2ad3cd3df9484a5514ff5",
+  "supportChanged": false,
+  "testSnapshot": {
+    "corpusSha256": "74c08aa0a3c30342d86cd45355fe17ffa9046963ad7c8cf71b1938f9cdc1cfde",
+    "counts": {
+      "previous179": 41454,
+      "recovered": 9987,
+      "rows": 51441
+    },
+    "snapshotSha256": "df37cd1fdcbdc49b6732c67f22bcf08839e813260b661b2b5197ab16057612cc",
+    "sourceSha": "1c31b7eb0a7660d43bc27e0849a8955dd0c3daae"
+  },
+  "violations": {
+    "deathShortCircuit": 0,
+    "escape": 0,
+    "goldDaggerBudget": 0,
+    "hp": 0,
+    "potions": 0,
+    "relicResidues": 0,
+    "rng": 0,
+    "writhing": 0
+  }
+}

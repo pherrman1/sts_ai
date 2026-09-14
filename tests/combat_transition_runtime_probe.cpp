@@ -1,5 +1,6 @@
 // Offline probability probe: reads captured fixtures, never executes gameplay.
 #include "../apps/one_combat/combat_transition_runtime.h"
+#include "../apps/one_combat/combat_transition_near_full.h"
 #include <fstream>
 #include <iostream>
 #include <chrono>
@@ -30,11 +31,23 @@ int main(int argc,char **argv) {
         NativeCombatTransitionSampler sampler(argv[1]);const auto &net=sampler.runtime();
         std::mt19937_64 rng(20260914);
         std::ifstream file(argv[2]);if(!file)throw std::runtime_error("fixture file");
-        std::string line;
+        std::string line;int fixtureIndex=0;
+        const bool supportOnly=argc==4&&std::string(argv[3])=="support-only";
+        const bool full=argc==4&&std::string(argv[3])=="near-full";
         while(std::getline(file,line)) {
-            auto j=json::parse(line);auto p=predictor(j.at("predictorInput"));auto pre=persistent(j.at("pre"));
+            auto j=json::parse(line);auto p=predictor(j.at("predictorInput"));auto pre=persistent(j.contains("pre")?j.at("pre"):j.at("transition").at("pre"));
             sts::GameContext gc;applyCombatTransitionState(gc,pre);
             auto support=sampler.support(gc,p);json out={{"supported",support.supported},{"reason",support.reason}};
+            if(supportOnly){out["index"]=fixtureIndex++;std::cout<<out.dump()<<'\n';continue;}
+            if(full){
+                if(support.supported){int d=j.value("delta",0),ending=j.value("ending",pre.curHp),maximum=j.value("maximum",pre.maxHp),mask=j.value("mask",0);std::vector<int> consumed=j.value("consumed",std::vector<int>{}),dagger=j.value("dagger",std::vector<int>{});
+                    out["survival"]=net.survival(p);out["maxHp"]=net.maxHp(p);out["hp"]=net.signedHp(net.hpEncoding(p),d,pre.curHp,maximum);out["diagnostics"]=nearFullDiagnostics(net,pre,p,d,ending,maximum,mask,consumed,j.value("escaped",false),dagger);
+                    auto prepared=sampler.prepare(gc,p);json samples=json::array();
+                    for(int draw=0;draw<j.value("draws",128);++draw){std::mt19937_64 random(20260921+draw),cached=random,tape=random;json words=json::array();for(int k=0;k<256;++k)words.push_back(tape());auto sample=sampler.sample(gc,p,random),other=prepared->sample(cached);if(sample.outcome!=other.outcome||combatTransitionStateJson(sample.rawPost)!=combatTransitionStateJson(other.rawPost)||random!=cached)throw std::runtime_error("near-full prepared/reference parity");
+                        auto count=std::mt19937_64(20260921+draw);int used=0;while(count!=random&&used<256){count();++used;}if(count!=random)throw std::runtime_error("parity draw tape exhausted");samples.push_back({{"outcome",int(sample.outcome)},{"rawPost",combatTransitionStateJson(sample.rawPost)},{"words",words},{"wordsUsed",used}});
+                    }out["samples"]=samples;
+                }else{std::mt19937_64 random(123),before=random;auto sample=sampler.sample(gc,p,random);if(sample.outcome!=CombatRuntimeSample::Outcome::UNSUPPORTED||random!=before)throw std::runtime_error("unsupported sampling consumed RNG");out["unsupportedNoDraw"]=true;}std::cout<<out.dump()<<'\n';continue;
+            }
             if(argc==4) {
                 using Clock=std::chrono::steady_clock;
                 auto start=Clock::now();auto prepared=sampler.prepare(gc,p);
