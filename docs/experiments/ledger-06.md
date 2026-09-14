@@ -7326,3 +7326,53 @@ Independent scientific replay and raw-array verification passed (exit 0):
 primary CI/exposure reproduced within CPU/GPU roundoff, all artifact hashes
 and initialization/batch histories matched, and native/shared sample checks
 all zero. Linux GCC passed on reviewed implementation SHA `66350924...`.
+
+
+## §241 Offline composed combat-transition qualification (2026-09-14)
+
+Knowledge impact: strict offline ancestral sampler and common original-TEST
+exposure/validity evidence; current status is maintained in
+[evaluation/current-research.md](../knowledge-base/evaluation/current-research.md).
+Baseline `7316c715bac7fe4559ead59cde1eb374d3437b5b`; independently reviewed
+execution SHA `abe2c6ea50f55d37e4d594ceb6575247e91c32fa`. Fixed artifacts use
+20260912 by convention. No model fit/refit/tuning, collection, gameplay seeds,
+policy change or C++ integration. Mode: offline frozen-model composition;
+original source-grouped reused engineering TEST, 32 draws per row, sampling
+seed 20260916 (exposure) / 20260917 (complete), source bootstrap 1000 repetitions
+with seed 20260917. Corpus ascension/source configuration is inherited exactly;
+no new searcher, OOC configuration or game budget is exercised. CUDA scoring
+uses historical per-component arithmetic; CPU latency uses one thread/batch1.
+
+**`COMPOSED_TRANSITION_QUALIFIED`** after HP-only analytical metric correction
+on independently reviewed SHA `dc1499f36055491fec8ff44143f879c124bf230d`.
+Exact weighted marginal over all 11 frozen maxHP classes gives HP NLL
+2.383993276 versus teacher-forced 2.371751655: gap +0.012241622 nat,
+95% source-bootstrap CI [+0.009743450, +0.014807776]. Same sources, bootstrap
+seed/repetitions and individual 0.1-nat gate. Illegal observed HP under a
+maxHP class contributes zero. Teacher reproduction maximum NLL difference 0.0.
+The original cached encodings were not persisted, so identical 512-row TEST
+batches were reconstructed with frozen HP/maxHP encoders only; only HP heads
+and HP exposure/bootstrap were evaluated. No new sampling or other gates ran.
+
+The original 32-draw HP result is retained solely as diagnostic: **8/31,150 rows
+received zero empirical mass with 32 ancestral draws**. All eight have positive
+exact marginal mass, so empirical infinity is not a model-support rejection.
+The prior `COMPOSED_TRANSITION_REJECTED` conclusion is superseded; no maxHP
+investigation, model repair, resampling, tuning or threshold change followed.
+Potion gap +0.000810765 and normalized relic gap -0.001521621 remain unchanged
+and pass. All eleven native/state/RNG/death-call validity counters remain zero
+across 1,029,248 original draws. Original TEST support 32,164/51,441; observed
+supported victories 31,150. Original component diagnostics and latency remain
+from `abe2c6ea...`. Historical attention arithmetic reproduction remains
+within 8.35e-7 with no weights changed. The correction passes 18 direct tests
+and composed CTest; independent implementation and raw-evidence reviews pass.
+Next separately scoped work is runtime/OOC integration, not performed here;
+qualification is offline only.
+
+Full artifacts/hashes, reproduction, source CIs, complete diagnostics,
+factorized likelihood, latency, exact commands and limitations:
+[frozen protocol and executed evidence](evidence/composed_transition_2026-09-14.md),
+[JSON evidence](evidence/composed_transition_2026-09-14.json),
+[recipe](evidence/composed_transition_recipe_2026-09-14.json).
+Raw rows/arrays/trajectories remain external under
+`/home/philippherrmann/sts_sweep/runs/composed-transition-20260914/qualification/`.
