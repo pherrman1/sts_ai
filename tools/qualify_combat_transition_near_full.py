@@ -34,6 +34,11 @@ def fixtures(parent,output):
     result=[]
     for r in selected.values():
         r['predictorInput']=r.pop('pi');r.update(delta=0,ending=min(r['pre']['curHp'],r['pre']['maxHp']),maximum=r['pre']['maxHp'],mask=0,consumed=[],escaped=False,dagger=[0 for card in r['pre']['deck'] if card['id']==c.base._CARD_IDS['RITUAL_DAGGER']],draws=256 if t.BREW in r['pre']['potions'] else 32);result.append(r)
+    base=next(r for r in result if not support.final_exclusions(r['predictorInput'],r['pre']) and t.BREW in r['pre']['potions'])
+    for effect in t.EFFECT_IDS:
+        variant=copy.deepcopy(base);variant.update(consumed=[t.BREW,effect],mask=1<<base['pre']['potions'].index(t.BREW),draws=0);result.append(variant)
+    if gold.encounter_name(base['predictorInput']['globals']['encounter']) not in t.BOSSES:
+        variant=copy.deepcopy(base);variant.update(consumed=[t.BREW,t.SMOKE,t.EFFECT_IDS[0]],mask=1<<base['pre']['potions'].index(t.BREW),escaped=True,draws=0);result.append(variant)
     output.write_text(''.join(json.dumps(r)+'\n' for r in result));return result
 
 

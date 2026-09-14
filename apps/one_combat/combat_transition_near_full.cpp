@@ -115,9 +115,9 @@ std::vector<Profile> profiles(int gold,int encounter,int ascension,int mode,bool
     std::vector<Profile> out(result.begin(),result.end());if(cache.size()>=8192)cache.clear();cache.emplace(key,out);return out;
 }
 std::vector<std::vector<int>> daggerCandidates(const CombatTransitionPersistentState& pre,int encounter,bool upgrade,bool escaped){
-    int maximum=(encounter==int(E::AWAKENED_ONE)?4:cap(encounter))-int(escaped);std::vector<std::map<int,int>> options;
-    for(auto c:pre.deck)if(c.id==int(C::RITUAL_DAGGER)){std::vector<int> payouts=c.upgraded?std::vector<int>{5}:(upgrade?std::vector<int>{3,5}:std::vector<int>{3});std::map<int,int> amounts;
-        for(auto p:gains(maximum,payouts)){auto it=amounts.find(p.second);if(it==amounts.end()||p.first<it->second)amounts[p.second]=p.first;}options.push_back(amounts);}
+    int maximum=(encounter==int(E::AWAKENED_ONE)?4:cap(encounter))-int(escaped);std::vector<std::vector<std::pair<int,int>>> options;
+    for(auto c:pre.deck)if(c.id==int(C::RITUAL_DAGGER)){std::vector<int> payouts=c.upgraded?std::vector<int>{5}:(upgrade?std::vector<int>{3,5}:std::vector<int>{3});std::vector<std::pair<int,int>> amounts;
+        for(auto p:gains(maximum,payouts)){auto it=std::find_if(amounts.begin(),amounts.end(),[&](auto value){return value.first==p.second;});if(it==amounts.end())amounts.emplace_back(p.second,p.first);else it->second=std::min(it->second,p.first);}options.push_back(amounts);}
     std::vector<std::vector<int>> result;std::vector<int> selected;
     std::function<void(size_t,int)> visit=[&](size_t i,int kills){if(i==options.size()){result.push_back(selected);return;}for(auto p:options[i])if(kills+p.second<=maximum){selected.push_back(p.first);visit(i+1,kills+p.second);selected.pop_back();}};visit(0,0);return result;
 }
