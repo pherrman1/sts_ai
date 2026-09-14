@@ -12,7 +12,8 @@ from tools import combat_transition_sparse_evaluate as s
 
 def run(folder,sha,maxhp_refit=None):
     s.frozen(sha)
-    output=folder/('exact_exposure_refit.json' if maxhp_refit else 'exact_exposure.json')
+    suffix='encoder_refit' if maxhp_refit and json.loads((maxhp_refit/'fit.json').read_text()).get('encoderChanged') else 'refit'
+    output=folder/('exact_exposure_'+suffix+'.json' if maxhp_refit else 'exact_exposure.json')
     if output.exists():raise ValueError('refusing overwrite')
     meta=json.loads((folder/'preparation.json').read_text());fit=json.loads((folder/'fit.json').read_text())
     if e.verify_data()!=meta['hashes'] or c.base.sha256(folder/'cache.npz')!=meta['cacheSha256'] or c.base.sha256(folder/'event.pt')!=fit['artifactSha256']:raise ValueError('frozen inputs differ')
@@ -26,6 +27,7 @@ def run(folder,sha,maxhp_refit=None):
         if refit_binding['hashes']!=meta['hashes'] or c.base.sha256(maxhp_refit/'maxhp-head.pt')!=refit_binding['artifactSha256']:raise ValueError('refit provenance differs')
         refit=torch.load(maxhp_refit/'maxhp-head.pt',weights_only=False,map_location='cpu')
         m.max_net.max_hp_delta.load_state_dict(refit['stateDict'],strict=True)
+        if refit.get('encoderStateDict') is not None:m.max_net.encoder.load_state_dict(refit['encoderStateDict'],strict=True)
         arrays,_=c.base._load_prepared(e.PREPARED)
         with torch.inference_mode():
             for start in range(0,len(cache['ids']),512):
@@ -57,7 +59,7 @@ def run(folder,sha,maxhp_refit=None):
                 eventExposureGate=gate,estimator='exact weighted marginal over all maxHP classes, legal HP classes and legal potion masks',
                 rows=len(test),teacherNll=float(teacher.mean()),mixtureNll=float(loss.mean()),exposure=e.source_gap_bootstrap(cache['source'][test],gap),zeroMixtureProbabilityRows=int((mixture==0).sum()),
                 artifactSha256=fit['artifactSha256'],maxHpRefit=refit_binding,supportChanged=False)
-    np.savez_compressed(folder/('exact_exposure_refit_rows.npz' if maxhp_refit else 'exact_exposure_rows.npz'),ids=cache['ids'][test],source=cache['source'][test],teacherNll=teacher,mixtureNll=loss,exposureGap=gap,targetMixtureProbability=mixture)
+    np.savez_compressed(folder/('exact_exposure_'+suffix+'_rows.npz' if maxhp_refit else 'exact_exposure_rows.npz'),ids=cache['ids'][test],source=cache['source'][test],teacherNll=teacher,mixtureNll=loss,exposureGap=gap,targetMixtureProbability=mixture)
     c.base.json_dump(output,result);print(json.dumps(result),flush=True)
 
 
