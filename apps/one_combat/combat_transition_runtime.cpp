@@ -148,7 +148,11 @@ Vec CombatTransitionRuntime::maxHp(const CombatPredictorInputV1 &p) const {retur
 Vec CombatTransitionRuntime::hpEncoding(const CombatPredictorInputV1 &p) const {return encode("hp",p);}
 Vec CombatTransitionRuntime::signedHp(const Vec &z,int delta,int preHp,int maximum) const {auto x=z;append(x,embedding("hp.delta_embedding",delta));auto logits=linear("hp.hp.2",relu(linear("hp.hp.0",x)));for(int i=0;i<304;++i)if(preHp+i-160<1 || preHp+i-160>maximum)logits[i]=-std::numeric_limits<float>::infinity();return softmax(logits);}
 Vec CombatTransitionRuntime::potion(const CombatPredictorInputV1 &p,int delta,float fraction) const {
-    auto x=encode("potion_encoder",p);append(x,embedding("potion.delta",delta));x.push_back(fraction);
+    return potion(potionEncoding(p),p,delta,fraction);
+}
+Vec CombatTransitionRuntime::potionEncoding(const CombatPredictorInputV1 &p) const {return encode("potion_encoder",p);}
+Vec CombatTransitionRuntime::potion(const Vec &encoding,const CombatPredictorInputV1 &p,int delta,float fraction) const {
+    auto x=encoding;append(x,embedding("potion.delta",delta));x.push_back(fraction);
     for(const auto &pot:p.potions) {append(x,embedding("potion.potion",pot.potionId));append(x,embedding("potion.slot",pot.slot));}
     auto logits=linear("potion.mlp.2",relu(linear("potion.mlp.0",x)));
     // #174 first normalizes all 32 logits, then masks and normalizes again.
@@ -190,4 +194,50 @@ CombatRuntimeSample NativeCombatTransitionSampler::sample(const sts::GameContext
     post.combatRng[2]=replayNativeComposedMisc(post.combatRng[2],p.globals.encounter);
     return {CombatRuntimeSample::Outcome::VICTORY,std::move(post)};
 }
+// Keep sample() above as the uncached reference. This object owns only one
+// immutable pre-combat edge; conditional heads and draws remain uncached.
+std::unique_ptr<PreparedCombatTransition> NativeCombatTransitionSampler::prepare(
+    const sts::GameContext &gc,const CombatPredictorInputV1 &p) const {
+    class NativePrepared final : public PreparedCombatTransition {
+        const CombatTransitionRuntime &runtime_;
+        const NativeComposedDomain &domain_;
+        CombatRuntimeSupport support_;
+        CombatTransitionPersistentState pre_;
+        CombatPredictorInputV1 input_;
+        float survival_ = 0;
+        Vec maxHp_,hpEncoding_,potionEncoding_;
+    public:
+        NativePrepared(const CombatTransitionRuntime &runtime,const NativeComposedDomain &domain,
+            CombatRuntimeSupport support,const sts::GameContext &gc,const CombatPredictorInputV1 &p)
+            :runtime_(runtime),domain_(domain),support_(std::move(support)),
+             pre_(captureCombatTransitionState(gc)),input_(p) {
+            if(support_.supported) {
+                survival_=runtime_.survival(p);
+                maxHp_=runtime_.maxHp(p);
+                hpEncoding_=runtime_.hpEncoding(p);
+                potionEncoding_=runtime_.potionEncoding(p);
+            }
+        }
+        const CombatRuntimeSupport &support() const override { return support_; }
+        CombatRuntimeSample sample(std::mt19937_64 &rng) const override {
+            if(!support_.supported)return {};
+            auto uniform=[&]() {return std::generate_canonical<double,53>(rng);};
+            auto category=[&](const Vec &prob) {double draw=uniform(),sum=0;int last=-1;for(size_t i=0;i<prob.size();++i){require(std::isfinite(prob[i]) && prob[i]>=0,"invalid sampler probability");sum+=prob[i];if(prob[i]>0)last=int(i);if(draw<sum)return int(i);}require(last>=0 && std::abs(sum-1)<1e-6,"invalid sampler total");return last;};
+            if(uniform()>=survival_)return {CombatRuntimeSample::Outcome::DEATH,{}};
+            auto post=pre_;
+            int delta=category(maxHp_);post.maxHp+=domain_.maxHpClasses.at(delta);
+            int signedClass=category(runtime_.signedHp(hpEncoding_,delta,post.curHp,post.maxHp));post.curHp+=domain_.hpClasses.at(signedClass);
+            float fraction=float(post.curHp)/post.maxHp;int mask=category(runtime_.potion(potionEncoding_,input_,delta,fraction));
+            for(int slot=0;slot<5;++slot)if(mask&(1<<slot))post.potions[slot]=1;
+            post.potionCount=0;for(int potion:post.potions)post.potionCount+=potion>1;
+            std::map<std::string,int> residues;auto probs=runtime_.relic(hpEncoding_,signedClass,fraction,mask);
+            for(auto group:{"turns","attacks","cards","shuffles"})residues.emplace(group,category(probs.at(group)));
+            post.relics=reconstructNativeComposedRelics(post.relics,residues,input_.globals.encounter);
+            post.combatRng[2]=replayNativeComposedMisc(post.combatRng[2],input_.globals.encounter);
+            return {CombatRuntimeSample::Outcome::VICTORY,std::move(post)};
+        }
+    };
+    return std::make_unique<NativePrepared>(runtime_,domain_,support(gc,p),gc,p);
+}
+
 }

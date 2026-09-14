@@ -409,3 +409,5 @@ python3 -m tools.combat_transition_gold_relic_diagnostic --output-dir "$GOLD_RUN
 ```
 
 Frozen receipts: [census](initial-census.json), [gold inventory](gold-source-inventory.json), [whole-corpus branch presence](gold-branch-presence.json). `SHA256SUMS` freezes their bytes and this report. Knowledge impact: seed-free research census/qualification status recorded in the experiment ledger and maintained current-research page.
+
+Integration refresh: merged main `876e9305a258df3d5a5eafd50e30375b933f8884` into the published task branch without rewriting history. The experiment baseline and source-bound model receipts remain unchanged; ledger entries are now §§254–257 after main’s §§250–253. Final integration SHA and CI are recorded in draft PR #182.

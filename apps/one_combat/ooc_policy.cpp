@@ -232,6 +232,8 @@ bool oocOnePlyCardRewardPolicy(GameContext &gc, const search::ScumSearchAgent2 &
         // V4 token net: Q(s,a) on the token state (STS_OOC_STRATEGIC_Q does
         // not apply to the token path). TokState built once per decision.
         const TokState ts = buildTokState(gc, t_curPath ? *t_curPath : t_emptyPath);
+        const auto prepared = g_oocStrategicTokNet.prepareState(ts.glob, ts.nDk, ts.dk,
+            ts.nRl, ts.rl, ts.nPt, ts.pt);
         for (int i = 0; i < (int)actions.size(); ++i) {
             int actionType, c1, c2, c3, cand1, cand2, cand3;
             strategicCands(gc, actions[i], actionType, c1, c2, c3, cand1, cand2, cand3);
@@ -241,8 +243,7 @@ bool oocOnePlyCardRewardPolicy(GameContext &gc, const search::ScumSearchAgent2 &
             const float entT[4] = {entType == 0 ? 1.0f : 0.0f, entType == 1 ? 1.0f : 0.0f,
                                    entType == 2 ? 1.0f : 0.0f, entType == 3 ? 1.0f : 0.0f};
             const double v = g_oocStrategicTokNet.predictActionValue(
-                ts.glob, ts.nDk, ts.dk, ts.nRl, ts.rl, ts.nPt, ts.pt,
-                actions[i].bits, cats, actionType, (int)gc.screenState, entT, entId, goldGePrice);
+                prepared, actions[i].bits, cats, actionType, (int)gc.screenState, entT, entId, goldGePrice);
             q[i] = v;
             if (v > best) { second = best; best = v; bestIdx = i; }
             else if (v > second) second = v;
@@ -292,6 +293,8 @@ bool oocOnePlyRestPolicy(GameContext &gc, const search::ScumSearchAgent2 &agent)
     int bestIdx = -1;
     if (g_oocStrategicTokNet.ok) {
         const TokState ts = buildTokState(gc, t_curPath ? *t_curPath : t_emptyPath);
+        const auto prepared = g_oocStrategicTokNet.prepareState(ts.glob, ts.nDk, ts.dk,
+            ts.nRl, ts.rl, ts.nPt, ts.pt);
         for (int i = 0; i < (int)actions.size(); ++i) {
             int actionType, c1, c2, c3, cand1, cand2, cand3;
             strategicCands(gc, actions[i], actionType, c1, c2, c3, cand1, cand2, cand3);
@@ -301,8 +304,7 @@ bool oocOnePlyRestPolicy(GameContext &gc, const search::ScumSearchAgent2 &agent)
             const float entT[4] = {entType == 0 ? 1.0f : 0.0f, entType == 1 ? 1.0f : 0.0f,
                                    entType == 2 ? 1.0f : 0.0f, entType == 3 ? 1.0f : 0.0f};
             const double v = g_oocStrategicTokNet.predictActionValue(
-                ts.glob, ts.nDk, ts.dk, ts.nRl, ts.rl, ts.nPt, ts.pt,
-                actions[i].bits, cats, actionType, (int)gc.screenState, entT, entId, goldGePrice);
+                prepared, actions[i].bits, cats, actionType, (int)gc.screenState, entT, entId, goldGePrice);
             q[i] = v;
             if (v > best) { second = best; best = v; bestIdx = i; }
             else if (v > second) second = v;
@@ -340,6 +342,8 @@ bool oocOnePlyUpgradeSelectPolicy(GameContext &gc, const search::ScumSearchAgent
     int bestIdx = -1;
     if (g_oocStrategicTokNet.ok) {
         const TokState ts = buildTokState(gc, t_curPath ? *t_curPath : t_emptyPath);
+        const auto prepared = g_oocStrategicTokNet.prepareState(ts.glob, ts.nDk, ts.dk,
+            ts.nRl, ts.rl, ts.nPt, ts.pt);
         for (int i = 0; i < (int)actions.size(); ++i) {
             int actionType, c1, c2, c3, cand1, cand2, cand3;
             strategicCands(gc, actions[i], actionType, c1, c2, c3, cand1, cand2, cand3);
@@ -349,8 +353,7 @@ bool oocOnePlyUpgradeSelectPolicy(GameContext &gc, const search::ScumSearchAgent
             const float entT[4] = {entType == 0 ? 1.0f : 0.0f, entType == 1 ? 1.0f : 0.0f,
                                    entType == 2 ? 1.0f : 0.0f, entType == 3 ? 1.0f : 0.0f};
             const double v = g_oocStrategicTokNet.predictActionValue(
-                ts.glob, ts.nDk, ts.dk, ts.nRl, ts.rl, ts.nPt, ts.pt,
-                actions[i].bits, cats, actionType, (int)gc.screenState, entT, entId, goldGePrice);
+                prepared, actions[i].bits, cats, actionType, (int)gc.screenState, entT, entId, goldGePrice);
             q[i] = v;
             if (v > best) { second = best; best = v; bestIdx = i; }
             else if (v > second) second = v;
@@ -389,6 +392,8 @@ bool oocOnePlyEventPolicy(GameContext &gc, const search::ScumSearchAgent2 &agent
     int bestIdx = -1;
     if (g_oocStrategicTokNet.ok) {
         const TokState ts = buildTokState(gc, t_curPath ? *t_curPath : t_emptyPath);
+        const auto prepared = g_oocStrategicTokNet.prepareState(ts.glob, ts.nDk, ts.dk,
+            ts.nRl, ts.rl, ts.nPt, ts.pt);
         for (int i = 0; i < (int)actions.size(); ++i) {
             int actionType, c1, c2, c3, cand1, cand2, cand3;
             strategicCands(gc, actions[i], actionType, c1, c2, c3, cand1, cand2, cand3);
@@ -398,8 +403,7 @@ bool oocOnePlyEventPolicy(GameContext &gc, const search::ScumSearchAgent2 &agent
             const float entT[4] = {entType == 0 ? 1.0f : 0.0f, entType == 1 ? 1.0f : 0.0f,
                                    entType == 2 ? 1.0f : 0.0f, entType == 3 ? 1.0f : 0.0f};
             const double v = g_oocStrategicTokNet.predictActionValue(
-                ts.glob, ts.nDk, ts.dk, ts.nRl, ts.rl, ts.nPt, ts.pt,
-                actions[i].bits, cats, actionType, (int)gc.screenState, entT, entId, goldGePrice);
+                prepared, actions[i].bits, cats, actionType, (int)gc.screenState, entT, entId, goldGePrice);
             q[i] = v;
             if (v > best) { second = best; best = v; bestIdx = i; }
             else if (v > second) second = v;
@@ -437,6 +441,8 @@ bool oocOnePlyShopPolicy(GameContext &gc, const search::ScumSearchAgent2 &agent)
     int bestIdx = -1;
     if (g_oocStrategicTokNet.ok) {
         const TokState ts = buildTokState(gc, t_curPath ? *t_curPath : t_emptyPath);
+        const auto prepared = g_oocStrategicTokNet.prepareState(ts.glob, ts.nDk, ts.dk,
+            ts.nRl, ts.rl, ts.nPt, ts.pt);
         for (int i = 0; i < (int)actions.size(); ++i) {
             int actionType, c1, c2, c3, cand1, cand2, cand3;
             strategicCands(gc, actions[i], actionType, c1, c2, c3, cand1, cand2, cand3);
@@ -446,8 +452,7 @@ bool oocOnePlyShopPolicy(GameContext &gc, const search::ScumSearchAgent2 &agent)
             const float entT[4] = {entType == 0 ? 1.0f : 0.0f, entType == 1 ? 1.0f : 0.0f,
                                    entType == 2 ? 1.0f : 0.0f, entType == 3 ? 1.0f : 0.0f};
             const double v = g_oocStrategicTokNet.predictActionValue(
-                ts.glob, ts.nDk, ts.dk, ts.nRl, ts.rl, ts.nPt, ts.pt,
-                actions[i].bits, cats, actionType, (int)gc.screenState, entT, entId, goldGePrice);
+                prepared, actions[i].bits, cats, actionType, (int)gc.screenState, entT, entId, goldGePrice);
             q[i] = v;
             if (v > best) { second = best; best = v; bestIdx = i; }
             else if (v > second) second = v;
@@ -484,6 +489,8 @@ bool oocOnePlyTreasurePolicy(GameContext &gc, const search::ScumSearchAgent2 &ag
     int bestIdx = -1;
     if (g_oocStrategicTokNet.ok) {
         const TokState ts = buildTokState(gc, t_curPath ? *t_curPath : t_emptyPath);
+        const auto prepared = g_oocStrategicTokNet.prepareState(ts.glob, ts.nDk, ts.dk,
+            ts.nRl, ts.rl, ts.nPt, ts.pt);
         for (int i = 0; i < (int)actions.size(); ++i) {
             int actionType, c1, c2, c3, cand1, cand2, cand3;
             strategicCands(gc, actions[i], actionType, c1, c2, c3, cand1, cand2, cand3);
@@ -493,8 +500,7 @@ bool oocOnePlyTreasurePolicy(GameContext &gc, const search::ScumSearchAgent2 &ag
             const float entT[4] = {entType == 0 ? 1.0f : 0.0f, entType == 1 ? 1.0f : 0.0f,
                                    entType == 2 ? 1.0f : 0.0f, entType == 3 ? 1.0f : 0.0f};
             const double v = g_oocStrategicTokNet.predictActionValue(
-                ts.glob, ts.nDk, ts.dk, ts.nRl, ts.rl, ts.nPt, ts.pt,
-                actions[i].bits, cats, actionType, (int)gc.screenState, entT, entId, goldGePrice);
+                prepared, actions[i].bits, cats, actionType, (int)gc.screenState, entT, entId, goldGePrice);
             q[i] = v;
             if (v > best) { second = best; best = v; bestIdx = i; }
             else if (v > second) second = v;
@@ -531,6 +537,8 @@ bool oocOnePlyBossRelicPolicy(GameContext &gc, const search::ScumSearchAgent2 &a
     int bestIdx = -1;
     if (g_oocStrategicTokNet.ok) {
         const TokState ts = buildTokState(gc, t_curPath ? *t_curPath : t_emptyPath);
+        const auto prepared = g_oocStrategicTokNet.prepareState(ts.glob, ts.nDk, ts.dk,
+            ts.nRl, ts.rl, ts.nPt, ts.pt);
         for (int i = 0; i < (int)actions.size(); ++i) {
             int actionType, c1, c2, c3, cand1, cand2, cand3;
             strategicCands(gc, actions[i], actionType, c1, c2, c3, cand1, cand2, cand3);
@@ -540,8 +548,7 @@ bool oocOnePlyBossRelicPolicy(GameContext &gc, const search::ScumSearchAgent2 &a
             const float entT[4] = {entType == 0 ? 1.0f : 0.0f, entType == 1 ? 1.0f : 0.0f,
                                    entType == 2 ? 1.0f : 0.0f, entType == 3 ? 1.0f : 0.0f};
             const double v = g_oocStrategicTokNet.predictActionValue(
-                ts.glob, ts.nDk, ts.dk, ts.nRl, ts.rl, ts.nPt, ts.pt,
-                actions[i].bits, cats, actionType, (int)gc.screenState, entT, entId, goldGePrice);
+                prepared, actions[i].bits, cats, actionType, (int)gc.screenState, entT, entId, goldGePrice);
             q[i] = v;
             if (v > best) { second = best; best = v; bestIdx = i; }
             else if (v > second) second = v;
@@ -582,6 +589,8 @@ bool oocOnePlyMapPolicy(GameContext &gc, const search::ScumSearchAgent2 &agent) 
     int bestIdx = -1;
     if (g_oocStrategicTokNet.ok) {
         const TokState ts = buildTokState(gc, t_curPath ? *t_curPath : t_emptyPath);
+        const auto prepared = g_oocStrategicTokNet.prepareState(ts.glob, ts.nDk, ts.dk,
+            ts.nRl, ts.rl, ts.nPt, ts.pt);
         for (int i = 0; i < (int)actions.size(); ++i) {
             int actionType, c1, c2, c3, cand1, cand2, cand3;
             strategicCands(gc, actions[i], actionType, c1, c2, c3, cand1, cand2, cand3);
@@ -591,8 +600,7 @@ bool oocOnePlyMapPolicy(GameContext &gc, const search::ScumSearchAgent2 &agent) 
             const float entT[4] = {entType == 0 ? 1.0f : 0.0f, entType == 1 ? 1.0f : 0.0f,
                                    entType == 2 ? 1.0f : 0.0f, entType == 3 ? 1.0f : 0.0f};
             const double v = g_oocStrategicTokNet.predictActionValue(
-                ts.glob, ts.nDk, ts.dk, ts.nRl, ts.rl, ts.nPt, ts.pt,
-                actions[i].bits, cats, actionType, (int)gc.screenState, entT, entId, goldGePrice);
+                prepared, actions[i].bits, cats, actionType, (int)gc.screenState, entT, entId, goldGePrice);
             q[i] = v;
             if (v > best) { second = best; best = v; bestIdx = i; }
             else if (v > second) second = v;

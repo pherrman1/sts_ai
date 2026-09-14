@@ -1053,13 +1053,10 @@ static WinNet g_floorNet;
 bool   winNetOk() { return g_winNet.ok; }
 static double winNetPredict(const std::vector<float> &raw) { return g_winNet.predict(raw); }
 
-// rich feature vector as floats (parse of vFeatCsv -> exactly the raw layout).
+// Numeric rich features retain the CSV schema; text remains for dataset/server output.
 std::vector<float> richFeatureVec(GameContext &gc) {
-    const std::string s = vFeatCsv(gc);
-    std::vector<float> v; v.reserve(1024); std::string cur;
-    for (char c : s) { if (c == ',') { v.push_back(std::strtof(cur.c_str(), nullptr)); cur.clear(); } else cur += c; }
-    if (!cur.empty()) v.push_back(std::strtof(cur.c_str(), nullptr));
-    return v;
+    static const PathHistory emptyPath;
+    return one_combat::richFeatureVec(gc, t_curPath ? *t_curPath : emptyPath);
 }
 
 double nativeFloorValue(GameContext &gc) {

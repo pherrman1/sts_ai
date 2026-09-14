@@ -22,7 +22,10 @@ public:
     std::vector<float> maxHp(const CombatPredictorInputV1 &) const;
     std::vector<float> hpEncoding(const CombatPredictorInputV1 &) const;
     std::vector<float> signedHp(const std::vector<float> &z, int delta, int preHp, int maximum) const;
+    std::vector<float> potionEncoding(const CombatPredictorInputV1 &) const;
     std::vector<float> potion(const CombatPredictorInputV1 &, int delta, float fraction) const;
+    std::vector<float> potion(const std::vector<float> &encoding,
+        const CombatPredictorInputV1 &, int delta, float fraction) const;
     std::map<std::string,std::vector<float>> relic(const std::vector<float> &z, int hpClass, float fraction, int mask) const;
 };
 }
@@ -37,6 +40,8 @@ public:
     explicit NativeCombatTransitionSampler(const std::string &path);
     CombatRuntimeSupport support(const sts::GameContext &,const CombatPredictorInputV1 &) const override;
     CombatRuntimeSample sample(const sts::GameContext &,const CombatPredictorInputV1 &,std::mt19937_64 &) const override;
+    std::unique_ptr<PreparedCombatTransition> prepare(const sts::GameContext &,
+        const CombatPredictorInputV1 &) const override;
     const CombatTransitionRuntime &runtime() const { return runtime_; }
 };
 }

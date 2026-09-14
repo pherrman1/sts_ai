@@ -552,6 +552,26 @@ proves a running producer is optimized: inspect the actual job command,
 drawing a production conclusion. PGO remains an experimental build option;
 no production speedup is established by enabling it.
 
+### Focused OOC sampling parity and timing
+
+The offline `combat_transition_runtime_probe MODEL FIXTURES smoke` compares
+uncached and prepared draws over 32 seeds and four sequential draws per captured
+fixture, including complete persistent state and planner RNG post-state. It also
+reports preparation and repeated sampling timing and encoder counts. Supply the
+frozen native model and matching captured JSONL explicitly; the loader CTest uses
+malformed artifacts and does not replace real-model parity.
+
+`one_combat oocmctsselftest` optionally accepts
+`STS_OOC_MCTS_MICROBENCH_MODEL=/absolute/path/to/combat_transition_v1.native`.
+With the normal native V4/win test setup, this runs a fixed 512-simulation,
+depth-one detached native-search fixture. It compares the uncached sampler with
+edge preparation, checks all root statistics/tree counters/snapshots/history,
+and prints `MICROBENCH` timing/counters plus `MICROBENCH_PARITY` exact outputs.
+The native regain-control callback isolates searched combat from reward
+projection; these timings are a microbenchmark, not gameplay qualification.
+Use `tools/seed_guard.sh` for this executable self-test as for the registered
+adapter CTest. No profile environment variable affects live search configuration.
+
 ## Important data flow
 
 1. Configure loads root `json/` and `pybind11/` through `add_subdirectory`.

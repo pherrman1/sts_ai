@@ -3113,7 +3113,7 @@ particles, all strategic gates, margin 1.0, explicit `STS_COLLECT_KEYS=0` and
 
 | Arm | Wins | Win rate | Mean floor | Mean HP |
 |---|---:|---:|---:|---:|
-| Strict corrected M0 | 23/64 | 35.9% | 40.281 | 16.672 |
+| Strict corrected M0 | 23/64 | 35.9% | 41.921 | 16.672 |
 | Strict corrected M1 | 16/64 | 25.0% | 37.562 | 8.672 |
 | Original M0 | 17/64 | 26.6% | 38.812 | 14.562 |
 | Original M1 | 16/64 | 25.0% | 38.719 | 10.312 |
@@ -7645,7 +7645,141 @@ Knowledge impact: experiment evidence/current research status; analyzer cohort
 parameters in evaluation protocol. [Full evidence](evidence/live_ooc_mcts_fresh64_10000_2026-09-14.md),
 [raw/analysis packet](evidence/live_ooc_mcts_fresh64_10000_2026-09-14/README.md).
 
-## §250 — Near-full Ironclad combat-support census and Stage-1 evidence stop (2026-09-14)
+
+## §250 — Exact OOC MCTS computation optimizations (2026-09-14)
+
+Baseline main `210f347334898e7c2a85b8af0f30dedc4888ea88`; one clean app worktree.
+No combat-support branch dependency, training, support/schema/RNG distribution,
+PUCT, policy, horizon or leaf-value change. Search-local prepared combat edges,
+immutable state metadata, deque particle arena and exact hot-loop cleanup;
+sole-valid-action shortcut gated on explicit non-aborting qualification and
+default-unsafe visit-lock capability added. The live model explicitly remains false.
+
+Cheap captured-model profiling found four encoders at roughly1.08ms each versus
+microsecond conditional heads. Fixed depth-one native-root profiling was43.38%
+combat/56.22% leaf continuation/value, with copying/action-prior/bookkeeping
+combined below0.5%. Baseline1,188 candidate calls/81 generated states,80 samples/
+3unique combat edges; one token/prior build. Synthetic original fixtures found
+0sole-action roots/41 supported roots, not a live frequency estimate.
+
+23existing captured inputs (16supported/7unsupported),32seeds×4sequential draws
+prove2,944 complete persistent-state/mt19937 post-state comparisons and exact
+baseline probability outputs. Prepared128-draw amortized sampling4.393ms→60.328us
+(72.82x); inferred encoder calls7,775→64. Frozen artifact `f9520a14…` and fixtures
+`372a1627…`; full model/input/source/binary hashes in the packet.
+
+Interleaved3baseline/optimized runs,CPU0/OMP1,Ironclad A0,GameContext42/search
+seed20260914,512simulations/depth1,cPuct1.5/k2/alpha.5,V4 priors/native win leaves.
+Detached native callback isolates searched combat from reward projection; no
+real gameplay/teacher combat budget applies. Median baseline logic replay384.252ms
+versus optimized223.176ms (1.722x,41.92% reduction),about1332→2294 simulations/sec.
+All80samples/81states, action/order/priors/visits/Q/tree statistics and every
+snapshot/history exactly equal. Encoders320→12;80individual node heap allocations
+eliminated, not all allocations. Native uncached control381.131ms does not
+establish a separate metadata/arena speed benefit; standalone toy planner suite
+11.376→10.380ms median/process is descriptive. Baseline replay used matching final
+telemetry ABI/otherwise shared build objects; initial original adapter stdout
+and probability vectors also reproduce exactly.
+
+Guaranteed visit-selected single-root toy stops after1/10 (saves9): no
+challenger exists; default-unsafe still runs full budget. Sole-root
+unsupported-combat roots now search and retain whole-root fallback. The sole Wheel
+of Change regression proves fallback consumes agent RNG despite the same primitive;
+unsafe roots cannot bypass it. An explicitly non-aborting toy still bypasses with
+zero simulated work. Performance measurements above predate this gate correction
+(at `806b7b9607ff7257fb549d6a8e85de983d5c4ce9`); no new benchmark was run.
+Non-aborting toy lock saves48/100simulations with same
+action; strict equality/mean-Q/catchable/unsafe/late-abort/adversarial cases pass.
+Locked stopping remains dormant in the live adapter: all intentional abort paths
+are not excluded. No copy ownership refactor or conditional-head memoization
+was justified. Eight initial focused CTests pass; all three affected core/adapter/startup tests
+pass again after the gate correction. Two relinking-overlap execution failures
+were repaired by post-build reruns. No full local CTest/gameplay cohort/canary;
+no gameplay-quality or full-game speed claim. Knowledge impact: maintained OOC
+interface/telemetry/parity procedure and chronological engineering evidence.
+[Full packet](evidence/live_ooc_mcts_speed_2026-09-14/README.md),
+[fixed-search timings/parity](evidence/live_ooc_mcts_speed_2026-09-14/fixed-search-summary.json),
+[sampler receipt](evidence/live_ooc_mcts_speed_2026-09-14/combat-summary.json).
+
+
+## §251 — One-seed old/new live OOC MCTS runtime comparison (2026-09-14)
+
+User-requested descriptive pair: exactly seed42 once at baseline `210f347334898e7c2a85b8af0f30dedc4888ea88`
+and once at gated PR #183 `bea408a1113b8f4cc9c717a0f1b38d5594b80243`.
+Ironclad A0, OOC512/real exact10,000 Silver, project-fair combat/copied noncombat
+RNG, native V4/win/same combat artifact, keysOFF, Act3-or-death, sequential
+old/new CPU0/OMP1. No model swap, tuning, support expansion or repeated cohort.
+Existing §250 fixed-root/historical gameplay evidence lacks this paired revision/
+configuration; two new guarded full-run commands exit0.
+
+Full-game wall62.3369s→43.8502s,29.66% reduction/1.422x; OOC search
+44.448824s→25.900525s,41.73% reduction/1.716x. Same floor50/Act3 death and
+all common OOC non-timing counters (207 decisions,148owned/59fallback,
+76,792 completed/76,815 attempted,1,016 discarded,4,497 surrogate samples,
+23support aborts) plus all28 complete real-Silver telemetry lines match exactly.
+No per-action/full-state trace: aggregate equality is not full trajectory parity.
+New live bypasses/locked stops/saved simulations remain zero; gate is intact.
+One-seed/order-dependent timing only, no average-speed or decision-quality claim.
+Knowledge impact: engineering benchmark evidence only; no default or maintained
+scientific conclusion changes. [Comparison](evidence/live_ooc_mcts_runtime_pair_2026-09-14.md),
+[commands/provenance/raw results](evidence/live_ooc_mcts_runtime_pair_2026-09-14.json).
+
+
+## §252 — Full-run profiling and V4 candidate-state reuse (2026-09-14)
+
+Base `eb84039b99e2f3b932e08fdfc51f1f7eebbbeaa5`, candidate
+`b019e694fcdb150b0ff085eaed118b7272103556`. The preceding CTM/gated-root PR is
+unchanged except action-independent V4 state reuse in the prior/eight Q loops.
+One current full-run profile identifies171,763 repeated deck/state encodings:
+47.56% exclusive OOC time; tree prediction21.18%, rich-feature CSV conversion
+9.52%, CTM prepare/sample/apply9.79%. Tree bucket includes continuation value
+calls, not only final-leaf v_win. Timers are removed from maintained source.
+
+Prepared128-float state per immutable candidate set preserves operations,
+heads, candidate order, margins/ties, fallback/RNG and model/support contracts.
+Independent old-header comparison passes1,536 bitwise checks across512 cases;
+maintained adapter/frozen fixtures plus core/startup/semantic/analyzer5CTest pass.
+One fresh paired seed42, CPU0/OMP1, IroncladA0, OOC512/exact10,000Silver,
+project-fair combat/copied noncombat RNG, keysOFF/Act3-or-death/same models:
+full43.6509s→35.3348s (19.05% lower); OOC25.998381s→17.080533s (34.30% lower).
+A preliminary candidate link retained an inactive profiler object; its timing
+is excluded. Rebuild/relink, no-profiler-symbol audit and5CTest rerun pass; one
+clean candidate run supplies these final numbers. Both valid arms exit0, same floor50 death, every non-timing OOC counter, all28 Silver
+telemetry lines and support reasons match. Shortcuts/saved simulations remain0.
+No per-action/full-state trace or quality cohort; one ordered pair is descriptive.
+Knowledge impact: maintained V4 API/lifetime and engineering evidence.
+[Profile/comparison](evidence/live_ooc_mcts_v4_reuse_2026-09-14.md),
+[full raw/provenance/check packet](evidence/live_ooc_mcts_v4_reuse_2026-09-14.json).
+
+
+## §253 — Numeric rich features and contiguous OOC trees (2026-09-14)
+
+PR #183 baseline `61882889dfb269a88f6bd26bf5386d9f22dd5d04`, measured candidate
+`04b7a7878679cc7aa1827fa822ab66dafdf6b8bd`. One refreshed seed42 scoped profile:
+trees33.5%, rich CSV conversion15.2%, CTM preparation16.2%, V4 deck/fusion17.4%.
+Direct1,017-value numeric builder leaves CSV compatibility untouched; all operands
+are integral and4,098state vectors compare bitwise against legacy parsing.
+Tree nodes resolve selected features at load and flatten into contiguous storage
+with root offsets/sentinel; traversal and ordered double accumulation unchanged.
+Frozen original loader/predictor matches27,177bitwise predictions on win/floor/E2c.
+
+One fresh uninstrumented seed42 ordered pair, IroncladA0/OOC512/exact10,000Silver,
+fair combat/copied noncombat RNG, keysOFF/Act3-or-death/same models/CPU0/OMP1:
+full32.1673s→30.3124s (5.77% lower), OOC15.028404s→12.852105s (14.48% lower).
+Both exit0; outcome, every non-timing OOC counter,28Silver telemetry records and
+support reasons match. No full trajectory/state trace or decision-quality cohort.
+Separate128-state/10,000-call/5round equivalent-indirect-call probe medians:
+win12.64% lower, floor12.94% lower, rich features29.98x. Initial unequal-inlining
+probes are superseded; exploratory variants retained, final candidate unchanged.
+All timings descriptive; one ordered pair is not an average-speedup claim.
+Release focused7CTest and complete Debug91CTest pass; overload/map harness
+failures repaired; clean binaries contain no temporary profiler symbols.
+Knowledge impact: maintained OOC native interfaces and engineering evidence;
+no default/model/support/scientific qualification change.
+[Evidence](evidence/ooc_rich_tree_speed_2026-09-14.md),
+[raw commands/provenance/check packet](evidence/ooc_rich_tree_speed_2026-09-14.json).
+
+## §254 — Near-full Ironclad combat-support census and Stage-1 evidence stop (2026-09-14)
 
 Baseline `210f347334898e7c2a85b8af0f30dedc4888ea88`, after updating local main
 and reusing the fresh app-managed worktree; #179/#180 merged. Seed-free audit
@@ -7689,9 +7823,9 @@ no C++ build/full CTest/scientific sampling. Knowledge impact: research evidence
 and maintained current status. [Staged report](evidence/near_full_combat_support_2026-09-14/REPORT.md)
 links all frozen JSON receipts and hashes.
 
-## §251 — Shared native gold component: revised Stage-1 design (2026-09-14)
+## §255 — Shared native gold component: revised Stage-1 design (2026-09-14)
 
-Supersedes §250's overly conservative Transmutation+ stop. User-approved design
+Supersedes §254's overly conservative Transmutation+ stop. User-approved design
 shares the stochastic gold mechanism; upgrade is a common conditional feature,
 with exact native +20/+25 HoG payouts. The two Transmutation+ TEST rows are an
 ultra-low-support diagnostic, not a calibration gate vetoing the gold union.
@@ -7751,7 +7885,7 @@ executed evidence/current research status and supplemental tool navigation.
 [Staged report and JSON receipts](evidence/near_full_combat_support_2026-09-14/REPORT.md).
 
 
-## §252 — Native sparse gates, affected maxHP repair and explicit escape oracle (2026-09-14)
+## §256 — Native sparse gates, affected maxHP repair and explicit escape oracle (2026-09-14)
 
 Stage 1 user-approved at PR head 9a7220512939deb46e359339d28016e019cebad3;
 remaining stages authorized, same worktree and frozen 510,030-row corpus/splits.
@@ -7783,7 +7917,7 @@ Knowledge impact: native mechanics, component repair evidence and current
 qualification/contract status maintained in KB and bound evidence.
 [Report and raw receipts](evidence/near_full_combat_support_2026-09-14/REPORT.md).
 
-## §253 — Shared hypothetical Brew RNG, full-union refits and Smoke/relic composition stop (2026-09-15)
+## §257 — Shared hypothetical Brew RNG, full-union refits and Smoke/relic composition stop (2026-09-15)
 
 **NEAR_FULL_COMBAT_SUPPORT_NOT_READY.** User-approved continuation and resolved
 planner-owned hypothetical potion RNG: seed a fresh native stream on first

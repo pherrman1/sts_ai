@@ -425,20 +425,35 @@ struct OocStrategicTokNet {
         return out;
     }
 
+    // Value-owned and local to one immutable candidate set. Rebuild after any
+    // state/path change or model reload; action/entity inputs remain per candidate.
+    struct PreparedState { float values[NHIDDEN2]; };
+    PreparedState prepareState(const float glob[NGLB], int nDk, const int dk[96][3],
+                               int nRl, const int rl[64][2], int nPt, const int pt[8][2]) const {
+        float zDeck[DECKDIM], zRel[RELDIM], zPot[POTDIM];
+        encodeDeck(nDk, dk, zDeck);
+        encodeRel(nRl, rl, zRel);
+        encodePot(nPt, pt, zPot);
+        PreparedState state;
+        encodeState(glob, zDeck, zRel, zPot, state.values);
+        return state;
+    }
+
     // Shared policy/Q representation z = concat(z_state(128), b(16), a(16), s8(8), e(16)) = 184.
     void encodeStateAction(const float glob[NGLB], int nDk, const int dk[96][3],
                              int nRl, const int rl[64][2], int nPt, const int pt[8][2],
                              std::uint32_t actionBits, const int cats[6], int actionType,
                              int screen, const float entityType[4], int entityId,
                              float goldGePrice, float z[POLIN]) const {
-        float zDeck[DECKDIM], zRel[RELDIM], zPot[POTDIM];
-        encodeDeck(nDk, dk, zDeck);
-        encodeRel(nRl, rl, zRel);
-        encodePot(nPt, pt, zPot);
+        const auto state = prepareState(glob, nDk, dk, nRl, rl, nPt, pt);
+        encodeStateAction(state, actionBits, cats, actionType, screen,
+                          entityType, entityId, goldGePrice, z);
+    }
 
-        float zState[NHIDDEN2];
-        encodeState(glob, zDeck, zRel, zPot, zState);
-
+    void encodeStateAction(const PreparedState &state, std::uint32_t actionBits,
+                             const int cats[6], int actionType, int screen,
+                             const float entityType[4], int entityId,
+                             float goldGePrice, float z[POLIN]) const {
         float bOut[AHIDDEN2], aOut[AHIDDEN2], sOut[SCRDIM];
         encodeAction(actionBits, cats, actionType, screen, bOut, aOut, sOut);
 
@@ -447,7 +462,7 @@ struct OocStrategicTokNet {
                      entityId, entityType, goldGePrice, eOut);
 
         int p = 0;
-        for (int i = 0; i < NHIDDEN2; ++i) z[p++] = zState[i];
+        for (int i = 0; i < NHIDDEN2; ++i) z[p++] = state.values[i];
         for (int i = 0; i < AHIDDEN2; ++i) z[p++] = bOut[i];
         for (int i = 0; i < AHIDDEN2; ++i) z[p++] = aOut[i];
         for (int i = 0; i < SCRDIM; ++i) z[p++] = sOut[i];
@@ -459,10 +474,17 @@ struct OocStrategicTokNet {
                              std::uint32_t actionBits, const int cats[6], int actionType,
                              int screen, const float entityType[4], int entityId,
                              float goldGePrice) const {
+        const auto state = prepareState(glob, nDk, dk, nRl, rl, nPt, pt);
+        return predictActionValue(state, actionBits, cats, actionType, screen,
+                                  entityType, entityId, goldGePrice);
+    }
+
+    float predictActionValue(const PreparedState &state, std::uint32_t actionBits,
+                             const int cats[6], int actionType, int screen,
+                             const float entityType[4], int entityId, float goldGePrice) const {
         float z[POLIN];
-        encodeStateAction(glob, nDk, dk, nRl, rl, nPt, pt, actionBits, cats,
-                          actionType, screen, entityType, entityId, goldGePrice, z);
-        // Q head: Linear(184,96) -> GELU -> Linear(96,1)
+        encodeStateAction(state, actionBits, cats, actionType, screen,
+                          entityType, entityId, goldGePrice, z);
         float hh[POLHID];
         for (int j = 0; j < POLHID; ++j) {
             float s = q0b[j];
@@ -479,9 +501,17 @@ struct OocStrategicTokNet {
                              std::uint32_t actionBits, const int cats[6], int actionType,
                              int screen, const float entityType[4], int entityId,
                              float goldGePrice) const {
+        const auto state = prepareState(glob, nDk, dk, nRl, rl, nPt, pt);
+        return predictPolicyLogit(state, actionBits, cats, actionType, screen,
+                                  entityType, entityId, goldGePrice);
+    }
+
+    float predictPolicyLogit(const PreparedState &state, std::uint32_t actionBits,
+                             const int cats[6], int actionType, int screen,
+                             const float entityType[4], int entityId, float goldGePrice) const {
         float z[POLIN];
-        encodeStateAction(glob, nDk, dk, nRl, rl, nPt, pt, actionBits, cats,
-                          actionType, screen, entityType, entityId, goldGePrice, z);
+        encodeStateAction(state, actionBits, cats, actionType, screen,
+                          entityType, entityId, goldGePrice, z);
         // Policy head (pol.0 -> GELU -> pol.2): Linear(184,96) -> GELU -> Linear(96,1)
         float hh[POLHID];
         for (int j = 0; j < POLHID; ++j) {

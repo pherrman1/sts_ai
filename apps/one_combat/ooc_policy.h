@@ -121,6 +121,7 @@ bool regretGateTail(GameContext &, const std::vector<GameAction> &,
                     const ScumSearchAgent2 &);
 
 namespace one_combat {
+using ::richFeatureVec;
 
 void serverCardRewardPolicy(GameContext &);
 bool restWinPolicy(GameContext &);
