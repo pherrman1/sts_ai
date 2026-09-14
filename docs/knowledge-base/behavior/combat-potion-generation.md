@@ -75,13 +75,34 @@ searches only the active capacity slots. Generated Brew can be consumed again,
 and generated Smoke Bomb can cause escape.
 
 The explicit-origin development helper `tools/combat_transition_brew.py`
-reproduces all 3,208 frozen pre-Brew rows and 3,106 generation rounds, including
-112 recursive-consumption cases. This generator audit does not qualify a learned
-consumption trajectory or change live support. Independent hypothetical planner
-RNG generation and exact replay from preserved historical potion RNG are distinct
-contracts. Their origin policy remains a material open question in the near-full
-support continuation; neither is silently substituted. See the
-[bound replay and origin comparison](../../experiments/evidence/near_full_combat_support_2026-09-14/brew-native-generation-v2.json).
+reproduces all 3,208 frozen pre-Brew rows and 3,106 generation rounds. The 112
+proven recursive-consumption cases comprise 108 surviving RAW transitions
+(86 TRAIN, 11 VALIDATION, 11 TEST) and four deaths. Multiple rounds alone do not
+prove recursion when more than one Brew was initially held.
+
+The accepted fair-planner contract uses a full-width planner RNG draw to seed a
+fresh native hypothetical potion RNG on the first Brew use. Reuse that stream
+through every recursive generation in the imagined combat and retain its
+advanced state in sampled RAW `combatRng[4]`. If Brew is unused, copy the
+historical potion RNG. Generating from a hypothetical stream and then restoring
+the historical stream is inconsistent and forbidden. Historical RNG replay
+reconstructs teacher generation-body labels only; it is never a predictor input.
+
+The shared 64-action trajectory decoder distinguishes special-potion use from
+discard: the lower 32 actions clear slots without triggering Brew or Smoke;
+the upper 32 also trigger the selected special potion. Ordinary consumption
+retains its original categorical interpretation. Bosses prohibit Smoke use,
+while Smoke discard remains legal. Native generation and insertion supply new
+identities; the shared decoder learns use, discard, retention and recursive
+continuation. Teacher likelihood exactly marginalizes compatible orderings and
+tracks generated Colorless/Skill/Forge effects for downstream mechanics.
+
+The original frozen corpus and source splits are unchanged. Full-union encoder
+and head refits are complete; composition and native export/parity qualification
+remain pending. Live support remains at its historical scope until those gates
+pass. These TEST diagnostics are development evidence, including reused TEST
+evidence following the Writhing maxHP repair, rather than untouched confirmation.
+See the [staged report](../../experiments/evidence/near_full_combat_support_2026-09-14/REPORT.md).
 
 ## Relevant code
 

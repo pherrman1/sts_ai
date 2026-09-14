@@ -1,8 +1,8 @@
 # Near-full Ironclad combat support: staged execution report
 
-**NEAR_FULL_COMBAT_SUPPORT_NOT_READY**. Stage-1 shared gold development/composition gates pass; independent review and Stages 2–5 remain pending. The earlier stop on Transmutation+ was too conservative and is superseded: share the learned HoG mechanism and supply native upgrade-dependent payouts. No new data or gameplay. Stages 2–5 require Stage 1 to pass.
+**NEAR_FULL_COMBAT_SUPPORT_NOT_READY**. Stage-1 gold and Stage-2 sparse-event development gates pass. Shared Brew/escape trajectories and all full-union model refits are complete; whole-union composition, native export/parity and final runtime activation remain pending. The earlier stop on Transmutation+ was too conservative and is superseded: share the learned HoG mechanism and supply native upgrade-dependent payouts. No new data or gameplay. Stages 2–5 require Stage 1 to pass.
 
-Baseline / unchanged model implementation SHA: `210f347334898e7c2a85b8af0f30dedc4888ea88`. Local main was fast-forwarded from `74d31681b8ebd3beb5e85d6db9c1a164f9aeaf13`; the existing fresh Codex-app-managed worktree was moved to that clean main on `codex/near-full-combat-support`. No additional worktree was created. #179 and #180 are merged. Reviewed SHA: **none**; this implementation and development evidence have not had independent review. Final implementation/evidence handoff SHA is recorded in the draft PR evidence packet.
+Baseline / unchanged model implementation SHA: `210f347334898e7c2a85b8af0f30dedc4888ea88`. Local main was fast-forwarded from `74d31681b8ebd3beb5e85d6db9c1a164f9aeaf13`; the existing fresh Codex-app-managed worktree was moved to that clean main on `codex/near-full-combat-support`. No additional worktree was created. #179 and #180 are merged. External engineering review supplied by the user covered `8420103ed7cdeb220472a70c4961f203cfca471c`, including gold, sparse events and the native escape oracle. Later full-union trajectory/refit changes have not had independent final implementation review. This does not assert pristine scientific holdout qualification. Final implementation/evidence handoff SHA is recorded in the draft PR evidence packet.
 
 ## Initial frozen remaining-support census
 
@@ -304,13 +304,17 @@ Combined native sparse validity: **62,912 draws = 1,966 deduplicated TEST rows �
 
 Bound receipts: [native audit](sparse-native-v2.json), [Writhing fit](writhing-v1-fit.json), [Dagger fit](ritual-v1-fit.json), [Writhing exact exposure](writhing-v1-exact_exposure_encoder_refit.json), [Dagger exact exposure](ritual-v1-exact_exposure_encoder_refit.json), [maxHP refit](maxhp-encoder-v1-fit.json), [combined hard validity](sparse-combined-validity-v1.json). Separate upstream receipts are included alongside these files. Each carries its executed source SHA and artifact/input bindings.
 
-## Stage 3 — native Brew generation; RNG-origin choice pending
+## Stage 3 — native Brew generation and shared learned trajectory
 
 The native combat-limited Ironclad return pool has 32 potion types: 65% common, 25% uncommon, 10% rare, uniform within rarity after excluding Fruit Juice. Brew and Smoke remain possible results. Limited generation discards the initial pool candidate and uses bounded rejection draws. Every Brew use generates **potionCapacity** potions, even when full capacity or Sozu prevents insertion; insertion uses the first empty legal slot.
 
 The explicit-origin native generator reproduces all **3,208** pre-Brew rows and **3,106** generation rounds with zero potion RNG end-state mismatches. There are 112 recursive Brew-consumption cases and 88 escape rows. Generated-body labels are teacher targets reconstructed from RAW transitions; historical RNG is not a fair-model input. [Audit](brew-native-label-audit-v1.json), [native generator replay and origin comparison](brew-native-generation-v2.json).
 
-A material contract choice remains pending. Independent planner generation and replay from a preserved historical potion RNG origin generally produce different identities and continuation. Frozen RAW row 662 gives [17, 9, 22] and counter 42 from its historical origin; a different explicit hypothetical origin gives [13, 37, 22] and counter 52. Exact seeds are in the comparison receipt. The user was asked whether imagined Brew branches should use a planner-owned hypothetical potion RNG with the oracle using the same hypothetical origin, or preserve historical-origin replay and label generation known-RNG. No origin substitution or fair/known-RNG contract change has been silently made. Learned Brew trajectories and final qualification await that answer.
+The user resolved the origin contract: use a planner-owned fresh native hypothetical potion RNG on first Brew use, reuse it for recursive generations and write its advanced state into sampled RAW. Historical potion RNG reconstructs teacher labels only. An unused Brew branch copies its inherited potion RNG; a used branch never restores that RNG after hypothetical generation.
+
+The shared 64-action potion decoder distinguishes special USE from DISCARD, including legal Smoke discard at bosses. It exactly marginalizes compatible teacher trajectories and records generated Colorless/Skill/Forge effects. The 112 proven recursive cases comprise 108 surviving rows (86 TRAIN / 11 VALIDATION / 11 TEST) and four deaths; multiple rounds from multiple initially held Brews are not automatically recursive. No separate Transmutation+ distribution or new data was collected.
+
+A native joint target audit covers all 491,897 surviving corpus transitions, including 3,001 escapes, 4,363 Writhing and 12,690 Ritual Dagger rows, with zero native representation failures. This is target representability, not model composition qualification.
 
 ## Stage 4 — explicit ESCAPE and native continuation oracle
 
@@ -318,9 +322,13 @@ The sampler interface represents `ESCAPE` separately from `VICTORY`. Adapter con
 
 ## Stage 5 and final qualification
 
-Affected maxHP refit is complete. Full-stack refit/union qualification, a new native model export/probability parity, final support predicate and #180 replay remain incomplete. Saved imagined #180 states are unavailable in the inspected aggregate traces; before/after state replay cannot be fabricated from first-reason counts. Current support remains 413,799/510,030 overall and 41,454/51,441 TEST, with all 96,231 original unsupported rows preserved in the census. The historical runtime is not a near-full-support artifact.
+The entire candidate union has been refitted with the existing architectures and original source-grouped TRAIN/VALIDATION selection: survival, maxHP, HP and shared potion encoders/heads, then shared relic/gold/Writhing/Ritual heads. Selected TEST NLLs: survival 0.060412, maxHP 0.053423, HP 2.507614, conditional potion trajectory 0.504572; downstream normalized joint target NLL 1.344312. These component losses do not establish composition qualification.
 
-Classification: **NEAR_FULL_COMBAT_SUPPORT_NOT_READY**. The unresolved Brew RNG-origin contract prevents combined trajectory/runtime qualification. This is not a Transmutation low-support stop and requires no new Transmutation data. No gameplay ran.
+Whole-union RAW validity and exposure evaluation are in progress on all 51,441 TEST rows, including the previously qualified 41,454 rows. All later diagnostics are development evidence on the original reused TEST. In particular the Stage-2 Writhing TEST failure motivated the maxHP repair, so its repaired gap is not untouched confirmation.
+
+The user confirms that no separate #180 saved imagined-state corpus is known. Available tracked CSV/support JSONL contain aggregate per-seed and first-failure counts only. Exact before/after state replay is **unavailable**, is not inferred by subtracting aggregates, and does not block Stages 3–5.
+
+Live support remains 413,799/510,030 overall and 41,454/51,441 TEST. Native artifact export/parity and support activation await whole-union qualification. Classification: **NEAR_FULL_COMBAT_SUPPORT_NOT_READY**. No new data or gameplay ran. Final end-to-end gameplay evidence requires independent review of the final frozen artifact.
 
 ## Checks and reproduction
 

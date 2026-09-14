@@ -39,42 +39,47 @@ against this fresh cohort.
 
 ## Completed recent line
 
-### Near-full combat-support expansion: sparse gates and native escape oracle pass
+### Near-full combat support: full-union refits await composition and native qualification
 
-**NEAR_FULL_COMBAT_SUPPORT_NOT_READY**. Stage 1 was user-approved at PR head
-`9a7220512939deb46e359339d28016e019cebad3`; shared Transmutation upgrade features
-remain the accepted design, with two Transmutation+ TEST rows diagnostic only.
-The same frozen corpus/splits and worktree are used for the continuation.
+**NEAR_FULL_COMBAT_SUPPORT_NOT_READY**. Stage 1 was user-approved, and external
+engineering review supplied by the user covered PR head
+`8420103ed7cdeb220472a70c4961f203cfca471c` (gold, sparse events, native escape
+continuation). Later trajectory and full-union refits still require independent
+final implementation review. The two Transmutation+ TEST rows are diagnostic
+only; native 20/25 payouts share the same learned mechanism and upgrade features.
 
-Writhing Mass and Ritual Dagger tiny native-event heads pass bounded exact
-exposure gates: +0.047608 and -0.000122 nat. Exact Writhing exposure first failed
-at +0.530710; an affected maxHP encoder/head refit repaired it, leaving all other
-historical weights unchanged. Their upstream HP/potion/relic exposure checks
-pass, as does rechecking gold with the repaired maxHP model. Combined sparse
-native validity: 62,912 draws, zero recorded hard violations. Omamori prevention
-requires positive charges; zero charges permit Parasite. Dagger changes preserve
-RAW card ownership, and joint gold/Dagger legality shares the fatal-hit budget.
-Brew/Smoke overlaps remain explicitly deferred to combined qualification.
+Stage-2 Writhing and Dagger exposure gaps were +0.047608 and -0.000122 nat,
+with 62,912 sampled transitions and zero recorded hard violations. Writhing's
+initial TEST failure motivated a maxHP repair; its subsequent TEST result is
+reused development evidence, not untouched confirmation. Omamori prevention
+requires positive charges. Native Dagger ownership and gold share kill budgets.
+The escape adapter matches an actual native Smoke Bomb exit from the same origin,
+including RNG, PathHistory, no rewards, Cleric behavior and parent preservation.
 
-Explicit ESCAPE continuation passes a focused oracle against actual native Smoke
-Bomb exit from the identical origin: exact OOC/persistent/all-RNG/PathHistory,
-no-reward map return, Cleric behavior and unchanged parent. Learned escape
-probabilities and Brew-generated Smoke branches remain unqualified.
+The accepted Brew contract draws a fresh native hypothetical potion RNG from
+planner RNG on first use, reuses it through recursion, and retains its advanced
+state in sampled RAW. Historical RNG is used only to reconstruct teacher labels.
+Native replay reconciles 3,208 Brew rows and 3,106 generation rounds. The 112
+proven recursive cases comprise 108 survivors (86 TRAIN /11 VALIDATION /11 TEST)
+and four deaths. The shared trajectory decoder distinguishes special USE from
+DISCARD, allows Smoke discard at bosses, and exactly marginalizes compatible
+teacher paths with generated potion effect flags.
 
-Native Brew replay matches all 3,208 pre-Brew rows / 3,106 generation rounds,
-including recursive generation. A material RNG-origin choice is pending:
-independent planner-owned hypothetical potion RNG (oracle uses the same
-hypothetical origin), or preserved historical-origin replay labeled known-RNG.
-Neither contract has been silently substituted. This blocks the remaining
-Brew trajectory/full composition/native artifact qualification, not sparse
-Transmutation calibration. No new data or gameplay ran.
+Full-union refits of existing survival/maxHP/HP/potion encoders and heads, then
+relic/gold/Writhing/Dagger heads, are complete. Selected TEST NLLs are 0.060412,
+0.053423, 2.507614 and 0.504572 for the four upstream components; normalized
+joint downstream target NLL is 1.344312. Whole-union composition evaluates all
+51,441 TEST rows, including the old 41,454-row support. These are development
+checks on the original source-grouped split; no new data or gameplay ran.
 
-Live support is unchanged: 413,799/510,030 overall (81.132286%), 41,454/51,441
-TEST (80.585525%), zero actual newly recovered rows. No near-full native runtime
-artifact exists yet. Inspected #180 traces contain first-reason aggregates,
-not saved imagined states, so no before/after state replay is established.
-See [staged report and bound receipts](../../experiments/evidence/near_full_combat_support_2026-09-14/REPORT.md)
-and [ledger-06 §252](../../experiments/ledger-06.md).
+Live support remains 413,799/510,030 overall (81.132286%) and 41,454/51,441 TEST
+(80.585525%). New native artifact export/parity and support activation await the
+whole-union gates. Exact #180 state replay is unavailable: the known tracked
+CSV/support JSONL contain aggregate counts without imagined states or root IDs.
+The user explicitly confirms this does not block Stages 3–5; subtracting failure
+aggregates cannot supply a new root-abort count. Final gameplay requires
+independent review of the final frozen artifact.
+See the [staged report](../../experiments/evidence/near_full_combat_support_2026-09-14/REPORT.md).
 
 ### Live OOC MCTS paired Silver gameplay gate
 
