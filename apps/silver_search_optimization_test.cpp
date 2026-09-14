@@ -452,7 +452,7 @@ void repeatedRerootCanary(const sts::BattleContext &bc) {
     search.chanceWideningAlpha = search.endTurnWideningAlpha = 0.52389;
     std::size_t historical = search.poolUsed, reclaimed = 0;
     int crossings = 0, reroots = 0, compactions = 0;
-    std::size_t peakNodes = 0, peakStates = 0, capacity = search.stateToNode.size();
+    std::size_t peakNodes = 0, peakStates = 0, peakReachable = 0, capacity = search.stateToNode.size();
     int resizes = 0;
     double peakLoad = 0;
     for (int decision = 0; decision < 32; ++decision) {
@@ -477,6 +477,15 @@ void repeatedRerootCanary(const sts::BattleContext &bc) {
             break;
         }
         require(candidate && !candidate->isRandomNode, "repeated canary needs exact child");
+        std::unordered_set<Search::Node*> reachable;
+        std::vector<Search::Node*> pending{candidate};
+        while (!pending.empty()) {
+            auto *node = pending.back(); pending.pop_back();
+            if (!reachable.insert(node).second) continue;
+            if (node->isRandomNode) pending.push_back(node->parent);
+            for (const auto &edge : node->edges) if (edge.node) pending.push_back(edge.node);
+        }
+        peakReachable = std::max(peakReachable, reachable.size());
         std::unordered_map<Search::Node*, Search::Node> snapshots;
         for (std::size_t i = 0; i < search.poolUsed; ++i)
             snapshots.emplace(search.allNodes[i].get(), *search.allNodes[i]);
@@ -520,6 +529,7 @@ void repeatedRerootCanary(const sts::BattleContext &bc) {
         if (compact && historical >= silver_bridge::kSilverProductionReuseCap) ++crossings;
         std::cout << "repeated_reroot decision=" << decision << " simulations=10000 historical_nodes=" << historical
                   << " before_nodes=" << before << " old_32k_pressure=" << (before >= 32768)
+                  << " reachable_nodes=" << reachable.size() << " reachable_32k_block=" << (reachable.size() >= 32768)
                   << " dedup_capacity=" << search.stateToNode.size() << " dedup_entries=" << search.stateToNodeUsed << " retained_nodes=" << search.poolUsed
                   << " compacted=" << compact << " cumulative_reclaimed=" << reclaimed << " allocated_cap_blocked=0" << std::endl;
         if (crossings >= 1) break;
@@ -533,7 +543,7 @@ void repeatedRerootCanary(const sts::BattleContext &bc) {
     validateStorage(search);
 
     std::cout << "repeated_reroot_canary PASS reroots=" << reroots << " historical_cap_reroots=" << crossings
-              << " peak_live_nodes=" << peakNodes << " peak_states=" << peakStates
+              << " peak_reachable_nodes=" << peakReachable << " peak_live_nodes=" << peakNodes << " peak_states=" << peakStates
               << " dedup_capacity=" << search.stateToNode.size() << " dedup_entries=" << search.stateToNodeUsed
               << " resizes=" << resizes << " peak_sampled_load=" << peakLoad
               << " node_bytes=" << sizeof(Search::Node) << " state_bytes=" << sizeof(sts::BattleContext)
