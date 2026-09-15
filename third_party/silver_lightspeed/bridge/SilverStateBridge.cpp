@@ -774,6 +774,14 @@ public:
         }
         if (previousBest != nullptr) {
             auto *candidate = exactRerootCandidate(previousBest, state);
+            // previousBest belongs to the old root and may be reclaimed by reroot.
+            if (candidate != nullptr) {
+                previousBest = nullptr;
+                const auto oldCapMetric = config.reuseCapMode == SilverReuseCapMode::ALLOCATED
+                    ? searcher->allNodes.size() : searcher->poolUsed;
+                searcher->rerootAt(candidate,
+                    oldCapMetric >= static_cast<std::size_t>(config.reuseCap));
+            }
             const std::size_t capMetric = config.reuseCapMode == SilverReuseCapMode::ALLOCATED
                 ? searcher->allNodes.size() : searcher->poolUsed;
             const bool capBlocked = candidate != nullptr
@@ -784,7 +792,6 @@ public:
                 decisionDiagnostic.exactCandidateFound = candidate != nullptr;
             }
             if (candidate != nullptr && !capBlocked) {
-                searcher->rerootAt(candidate);
                 ++rerootExact;
                 inheritedVisits = searcher->root->simulationCount;
                 if (collectDecisionDiagnostics) {
@@ -800,7 +807,7 @@ public:
                             ? SilverRerootFallbackReason::ALLOCATED_CAP
                             : SilverRerootFallbackReason::ACTIVE_CAP);
                 }
-                if (previousBest->node != nullptr) {
+                if (previousBest != nullptr && previousBest->node != nullptr) {
                     if (!previousBest->node->isRandomNode) {
                         rerootMissDiagnostic = selectionStateSummary(*previousBest->node->state, state);
                     } else {
@@ -1130,6 +1137,16 @@ ReuseCapFixtureProbe probeSilverReuseCapFixture(const BattleStateWire &wire) {
             candidate->state = session.searcher->allocDecisionState();
             *candidate->state = state;
             candidate->simulationCount = 17;
+            if (fillActiveToCap) {
+                // The cap fixture must exceed the cap in the reachable graph.
+                for (std::size_t i = 1; i + 1 < session.searcher->poolUsed; ++i) {
+                    auto *child = session.searcher->allNodes[i].get();
+                    child->state = session.searcher->allocDecisionState();
+                    *child->state = state;
+                    child->state->player.curHp -= static_cast<int>(i);
+                    candidate->edges.push_back({sts::search::Action{}, child, 0, 0});
+                }
+            }
             if (permuteHand && candidate->state->cards.cardsInHand >= 2)
                 std::swap(candidate->state->cards.hand[0], candidate->state->cards.hand[1]);
             session.searcher->root->edges.clear();
@@ -1166,6 +1183,13 @@ ReuseCapFixtureProbe probeSilverReuseCapFixture(const BattleStateWire &wire) {
         result.activeDiagnostic = run(active, true, SilverReuseCapMode::ACTIVE);
         result.activeExactReroot = result.activeDiagnostic.exactReroot;
         result.activeInheritsVisits = result.activeDiagnostic.inheritedVisits == 17;
+
+        SilverSearchSession allocatedAtCap;
+        arrangeCandidate(allocatedAtCap, true, false);
+        const auto retainedCapDiagnostic = run(allocatedAtCap, true, SilverReuseCapMode::ALLOCATED);
+        if (!retainedCapDiagnostic.exactCandidateFound || retainedCapDiagnostic.fallbackReason
+                != SilverRerootFallbackReason::ALLOCATED_CAP)
+            throw std::runtime_error("reachable allocated-cap fallback failed");
 
         SilverSearchSession activeAtCap;
         arrangeCandidate(activeAtCap, true, false);

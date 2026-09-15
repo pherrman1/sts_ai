@@ -38,6 +38,7 @@ thread_local SilverLiveDiagnostics g_silverLiveDiagnostics {};
 namespace {
 
 struct SilverLiveOptions {
+    std::int64_t reuseCap = silver_bridge::kSilverProductionReuseCap;
     silver_bridge::SilverReuseCapMode reuseCapMode = silver_bridge::SilverReuseCapMode::ALLOCATED;
     // Experiment-only override: use the agent's base budget at every root,
     // including bosses, so paired fixed-budget arms are actually comparable.
@@ -117,6 +118,15 @@ int parseNonnegativeInt(const char *name, const char *raw) {
     return static_cast<int>(value);
 }
 
+std::int64_t configuredReuseCap() {
+    const char *raw = std::getenv("STS_SILVER_REUSE_CAP");
+    if (!raw) return silver_bridge::kSilverProductionReuseCap;
+    const auto cap = parseNonnegativeInt("STS_SILVER_REUSE_CAP", raw);
+    if (cap != 32768 && cap != 131072)
+        throw std::invalid_argument("STS_SILVER_REUSE_CAP must be 32768 or experimental 131072");
+    return cap;
+}
+
 void parseSilverLiveOptions() {
     SilverLiveOptions options;
     if (const char *raw = std::getenv("STS_SILVER_REUSE_CAP_MODE")) {
@@ -132,6 +142,7 @@ void parseSilverLiveOptions() {
                                         + mode + "')");
         }
     }
+    options.reuseCap = configuredReuseCap();
     if (const char *raw = std::getenv("STS_SILVER_EXACT_ROOT_BUDGETS"))
         options.exactRootBudgets = std::atoi(raw) != 0;
     if (const char *raw = std::getenv("STS_SILVER_SCALING_DIAG_FILE"))
@@ -970,6 +981,7 @@ silver_bridge::SilverSearchConfig configFor(const ScumSearchAgent2 &agent, const
         ? static_cast<std::int64_t>(agent.bossSimulationMultiplier * agent.simulationCountBase)
         : agent.simulationCountBase);
     result.reuseCapMode = g_silverLiveOptions.reuseCapMode;
+    result.reuseCap = g_silverLiveOptions.reuseCap;
     result.collectDecisionDiagnostics = collectDecisionDiagnostics;
     result.adaptiveEnabled = g_silverLiveOptions.adaptiveEnabled;
     if (result.adaptiveEnabled) {
@@ -1388,7 +1400,10 @@ bool silverLiveBackendInstalled() { return g_silverLiveOptions.installed; }
 std::string silverLiveReuseCapMode() {
     return silver_bridge::silverReuseCapModeName(g_silverLiveOptions.reuseCapMode);
 }
-std::int64_t silverLiveReuseCap() { return silver_bridge::kSilverProductionReuseCap; }
+std::int64_t silverLiveReuseCap() {
+    // OOC startup validates the contract before installing the combat backend.
+    return g_silverLiveOptions.installed ? g_silverLiveOptions.reuseCap : configuredReuseCap();
+}
 std::string silverLiveScalingDiagnosticFile() { return g_silverLiveOptions.scalingDiagnosticFile; }
 std::string silverLiveStickyQualityFile() { return g_silverLiveOptions.stickyQualityFile; }
 bool silverLiveAdaptiveEnabled() { return g_silverLiveOptions.adaptiveEnabled; }

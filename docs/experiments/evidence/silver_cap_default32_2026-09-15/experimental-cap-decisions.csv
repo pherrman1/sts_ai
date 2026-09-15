@@ -1,0 +1,13 @@
+run_seed,floor,encounter,combat_decision_ordinal,transaction_subdecision_ordinal,turn,input_state,configured_simulations,had_predecessor,reroot_attempted,exact_candidate_found,exact_reroot,fallback,fallback_reason,configured_cap_mode,configured_cap,allocated_nodes_before_root,active_nodes_before_root,allocated_nodes_after_search,active_nodes_after_search,inherited_visits,simulations_added,nodes_created,root_visits_after_search,chosen_edge_visits
+5312066,0,1,1,-1,0,1,8,0,0,0,0,1,no_predecessor,allocated,131072,0,0,11,11,0,8,8,8,4
+5312066,0,1,2,-1,0,1,8,1,1,1,1,0,none,allocated,131072,11,11,23,23,4,8,8,12,6
+5312066,0,1,3,-1,0,1,8,1,1,1,1,0,none,allocated,131072,23,23,32,32,6,8,8,14,5
+5312066,0,1,4,-1,0,1,8,1,1,1,1,0,none,allocated,131072,32,32,41,41,5,8,8,13,12
+5312066,0,1,5,-1,1,1,8,1,1,0,0,1,candidate_missing,allocated,131072,41,41,41,10,0,8,8,8,2
+5312066,0,1,6,-1,1,1,8,1,1,1,1,0,none,allocated,131072,41,10,41,23,2,8,8,10,2
+5312066,0,1,7,-1,1,1,8,1,1,1,1,0,none,allocated,131072,41,23,41,31,2,8,8,10,9
+5312066,0,1,8,-1,2,1,8,1,1,0,0,1,candidate_missing,allocated,131072,41,31,41,10,0,8,8,8,2
+5312066,0,1,9,-1,2,1,8,1,1,1,1,0,none,allocated,131072,41,10,41,19,2,8,8,10,2
+5312066,0,1,10,-1,2,1,8,1,1,1,1,0,none,allocated,131072,41,19,41,31,2,8,8,10,3
+5312066,0,1,11,-1,2,1,8,1,1,1,1,0,none,allocated,131072,41,31,41,36,3,8,4,11,10
+5312066,0,1,12,-1,3,1,8,1,1,0,0,1,candidate_missing,allocated,131072,41,36,41,8,0,8,6,8,2

@@ -1,0 +1,12 @@
+=== Paired comparison (16 seeds) ===
+Metric                          base         PR      Delta
+Win rate                       62.5%      43.8%     -18.8pp
+  Win diff 95% CI: [-43.8pp, +6.2pp]
+Avg floor                      45.4      46.9      +1.6
+  Floor diff 95% CI: [-1.8, +6.6]
+Avg HP end                     23.4      15.9      -7.5
+Avg sec/run                    2.42      2.48     +0.06
+  Discordant: 5/16 (31%)
+  Both win: 6, both lose: 5, base-only: 4, PR-only: 1
+  base Wilson 95% CI: [38.6%, 81.5%]
+  PR Wilson 95% CI: [23.1%, 66.8%]

@@ -1,0 +1,481 @@
+{
+  "purpose": "Implementation/correctness canary and bounded paired smoke; no quality qualification",
+  "baseline_sha": "876e9305a258df3d5a5eafd50e30375b933f8884",
+  "measured_candidate_sha": "1e37f2a9d68a403158241886f85c926b37b62f1a",
+  "configuration": "Ironclad A0, project-fair Silver/local search RNG, native default OOC, flat 1k per private search including sequential-selection subdecisions, keys OFF, 4 OpenMP threads",
+  "sample": {
+    "paired_seeds": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12,
+      13,
+      14,
+      15
+    ],
+    "runs_per_arm": 16
+  },
+  "decision_rule": "Look for crashes/integration failures or obvious adverse shift; no promotion or noninferiority gate; stop at 16 pairs",
+  "build": {
+    "base_source": "Tracked git archive at baseline plus exact pinned dependency exports; no extra worktree",
+    "base_command": "cmake -S build/silver-reroot-smoke/base-source -B build/silver-reroot-smoke/base-build -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_COMPILER_LAUNCHER=ccache; cmake --build build/silver-reroot-smoke/base-build --target one_combat -j 4",
+    "pr_command": "cmake --preset linux-gcc-release-ccache; cmake --build --preset linux-gcc-release-ccache-build --target one_combat silver-search-optimization-test -j 4",
+    "compiler": "g++ (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0",
+    "pinned_submodules": {
+      "json": "2222d386c905e6a6ebf73c61571a8a2cf196e843",
+      "pybind11": "63d627c5747befad7720a43ebbe5614fd5d83247"
+    }
+  },
+  "arms": {
+    "base": {
+      "source_sha": "876e9305a258df3d5a5eafd50e30375b933f8884",
+      "binary": "build/silver-reroot-smoke/base-build/one_combat",
+      "binary_sha256": "e9cecc5002aa4074378af5517b4f81518b84122cff4314a4915a8bf9c4459ba6",
+      "exit_code": 0,
+      "environment": {
+        "OMP_NUM_THREADS": "4",
+        "STS_FAIR": "1",
+        "STS_SEARCHER3": "0",
+        "STS_SILVER_SEARCH": "1",
+        "STS_SILVER_EXACT_ROOT_BUDGETS": "1",
+        "STS_SILVER_REUSE_CAP_MODE": "allocated",
+        "STS_SILVER_ADAPTIVE": "0",
+        "STS_SILVER_VNET_LEAF_DIRECT": "0",
+        "STS_SILVER_TELEMETRY": "1",
+        "STS_NATIVE_OOC": "1",
+        "STS_COLLECT_KEYS": "0",
+        "STS_EXECUTABLE_GIT_SHA": "876e9305a258df3d5a5eafd50e30375b933f8884"
+      },
+      "command": "bash tools/seed_guard.sh env OMP_NUM_THREADS=4 STS_FAIR=1 STS_SEARCHER3=0 STS_SILVER_SEARCH=1 STS_SILVER_EXACT_ROOT_BUDGETS=1 STS_SILVER_REUSE_CAP_MODE=allocated STS_SILVER_ADAPTIVE=0 STS_SILVER_VNET_LEAF_DIRECT=0 STS_SILVER_TELEMETRY=1 STS_NATIVE_OOC=1 STS_COLLECT_KEYS=0 STS_EXECUTABLE_GIT_SHA=876e9305a258df3d5a5eafd50e30375b933f8884 build/silver-reroot-smoke/base-build/one_combat bestbench 1000 16 0 0 build/silver-reroot-smoke/base-1k-16.csv",
+      "metadata": {
+        "objective": "bestbench",
+        "argv": [
+          "bestbench",
+          "1000",
+          "16",
+          "0",
+          "0",
+          "build/silver-reroot-smoke/base-1k-16.csv"
+        ],
+        "timestamp": "2026-09-14T22:45:08Z",
+        "seedBlock": {
+          "lo": 0,
+          "hi": 15
+        },
+        "nSeeds": 16,
+        "asc": 0,
+        "sims": 1000,
+        "threads": 4,
+        "config": {
+          "cardSkipThresh": -0.5,
+          "restPolicy": "win-rate",
+          "restV": false,
+          "shopV": true,
+          "pathMode": "heuristic",
+          "shopBeam": false,
+          "nativeOoc": true,
+          "collectKeys": false,
+          "searcher3": false,
+          "s3Belief": true,
+          "s3Prune": true,
+          "s3Chain": true,
+          "s3Live": true,
+          "s3Crn": false,
+          "s3Particles": 64,
+          "s3RolloutK": 1,
+          "s3RolloutTurnStop": false,
+          "s3TurnRollout": false,
+          "s3SemanticCardEdges": false,
+          "fairPlay": true,
+          "effectiveCombatBackend": "silver",
+          "stsSilverSearchEffective": true,
+          "silverSearchEnabled": true,
+          "silverReuseCapMode": "allocated",
+          "silverReuseCap": 32768,
+          "silverUpstreamSha": "84ab3ead9d88c01c4be09a6773fb9a947f57d5ff",
+          "executableGitSha": "876e9305a258df3d5a5eafd50e30375b933f8884",
+          "silverScalingDiagnosticFile": "",
+          "silverStickyQualityFile": "",
+          "silverAdaptiveEnabled": false,
+          "silverAdaptiveTopShare": 0.094,
+          "silverExactRootBudgets": true
+        },
+        "models": {
+          "floor": "models/v_rich_trees.txt",
+          "win": "models/v_win_trees.txt",
+          "combatVNet": "off",
+          "policyNet": "ON",
+          "pvNet": "off",
+          "distVNet": "off"
+        }
+      }
+    },
+    "pr": {
+      "source_sha": "1e37f2a9d68a403158241886f85c926b37b62f1a",
+      "binary": "build/linux-gcc-release-ccache/one_combat",
+      "binary_sha256": "ba1a75391fd6d543059df10ae2e99f1ee5f61464ed54d2a89d701090190e8583",
+      "exit_code": 0,
+      "environment": {
+        "OMP_NUM_THREADS": "4",
+        "STS_FAIR": "1",
+        "STS_SEARCHER3": "0",
+        "STS_SILVER_SEARCH": "1",
+        "STS_SILVER_EXACT_ROOT_BUDGETS": "1",
+        "STS_SILVER_REUSE_CAP_MODE": "allocated",
+        "STS_SILVER_ADAPTIVE": "0",
+        "STS_SILVER_VNET_LEAF_DIRECT": "0",
+        "STS_SILVER_TELEMETRY": "1",
+        "STS_NATIVE_OOC": "1",
+        "STS_COLLECT_KEYS": "0",
+        "STS_EXECUTABLE_GIT_SHA": "1e37f2a9d68a403158241886f85c926b37b62f1a"
+      },
+      "command": "bash tools/seed_guard.sh env OMP_NUM_THREADS=4 STS_FAIR=1 STS_SEARCHER3=0 STS_SILVER_SEARCH=1 STS_SILVER_EXACT_ROOT_BUDGETS=1 STS_SILVER_REUSE_CAP_MODE=allocated STS_SILVER_ADAPTIVE=0 STS_SILVER_VNET_LEAF_DIRECT=0 STS_SILVER_TELEMETRY=1 STS_NATIVE_OOC=1 STS_COLLECT_KEYS=0 STS_EXECUTABLE_GIT_SHA=1e37f2a9d68a403158241886f85c926b37b62f1a build/linux-gcc-release-ccache/one_combat bestbench 1000 16 0 0 build/silver-reroot-smoke/pr-1k-16.csv",
+      "metadata": {
+        "objective": "bestbench",
+        "argv": [
+          "bestbench",
+          "1000",
+          "16",
+          "0",
+          "0",
+          "build/silver-reroot-smoke/pr-1k-16.csv"
+        ],
+        "timestamp": "2026-09-14T22:45:27Z",
+        "seedBlock": {
+          "lo": 0,
+          "hi": 15
+        },
+        "nSeeds": 16,
+        "asc": 0,
+        "sims": 1000,
+        "threads": 4,
+        "config": {
+          "cardSkipThresh": -0.5,
+          "restPolicy": "win-rate",
+          "restV": false,
+          "shopV": true,
+          "pathMode": "heuristic",
+          "shopBeam": false,
+          "nativeOoc": true,
+          "collectKeys": false,
+          "searcher3": false,
+          "s3Belief": true,
+          "s3Prune": true,
+          "s3Chain": true,
+          "s3Live": true,
+          "s3Crn": false,
+          "s3Particles": 64,
+          "s3RolloutK": 1,
+          "s3RolloutTurnStop": false,
+          "s3TurnRollout": false,
+          "s3SemanticCardEdges": false,
+          "fairPlay": true,
+          "effectiveCombatBackend": "silver",
+          "stsSilverSearchEffective": true,
+          "silverSearchEnabled": true,
+          "silverReuseCapMode": "allocated",
+          "silverReuseCap": 32768,
+          "silverUpstreamSha": "84ab3ead9d88c01c4be09a6773fb9a947f57d5ff",
+          "executableGitSha": "1e37f2a9d68a403158241886f85c926b37b62f1a",
+          "silverScalingDiagnosticFile": "",
+          "silverStickyQualityFile": "",
+          "silverAdaptiveEnabled": false,
+          "silverAdaptiveTopShare": 0.094,
+          "silverExactRootBudgets": true
+        },
+        "models": {
+          "floor": "models/v_rich_trees.txt",
+          "win": "models/v_win_trees.txt",
+          "combatVNet": "off",
+          "policyNet": "ON",
+          "pvNet": "off",
+          "distVNet": "off"
+        }
+      }
+    }
+  },
+  "loaded_shared_model_sha256": {
+    "models/v_win_trees.txt": "fc52c14cb7239a33b3c1f9d0477ccb6c895fd51a07240fe804744e605067ad70",
+    "models/v_rich_trees.txt": "3a3420469b1d648e0e306d6cb6a7e85f3d3499105e3ff3a56eee6c579194ffe3",
+    "models/policy_trees_c.txt": "24793bd39dd1a35c8865035e458c3aa40616ef021cb26b05f914f72fb5e5a321"
+  },
+  "paired_rows": [
+    {
+      "seed": 0,
+      "base_won": 0,
+      "pr_won": 0,
+      "base_floor": 50,
+      "pr_floor": 50
+    },
+    {
+      "seed": 1,
+      "base_won": 1,
+      "pr_won": 0,
+      "base_floor": 51,
+      "pr_floor": 50
+    },
+    {
+      "seed": 2,
+      "base_won": 0,
+      "pr_won": 0,
+      "base_floor": 50,
+      "pr_floor": 50
+    },
+    {
+      "seed": 3,
+      "base_won": 1,
+      "pr_won": 0,
+      "base_floor": 41,
+      "pr_floor": 40
+    },
+    {
+      "seed": 4,
+      "base_won": 1,
+      "pr_won": 1,
+      "base_floor": 51,
+      "pr_floor": 51
+    },
+    {
+      "seed": 5,
+      "base_won": 1,
+      "pr_won": 0,
+      "base_floor": 51,
+      "pr_floor": 40
+    },
+    {
+      "seed": 6,
+      "base_won": 1,
+      "pr_won": 1,
+      "base_floor": 51,
+      "pr_floor": 51
+    },
+    {
+      "seed": 7,
+      "base_won": 1,
+      "pr_won": 0,
+      "base_floor": 51,
+      "pr_floor": 50
+    },
+    {
+      "seed": 8,
+      "base_won": 0,
+      "pr_won": 0,
+      "base_floor": 27,
+      "pr_floor": 31
+    },
+    {
+      "seed": 9,
+      "base_won": 0,
+      "pr_won": 0,
+      "base_floor": 50,
+      "pr_floor": 50
+    },
+    {
+      "seed": 10,
+      "base_won": 1,
+      "pr_won": 1,
+      "base_floor": 51,
+      "pr_floor": 51
+    },
+    {
+      "seed": 11,
+      "base_won": 1,
+      "pr_won": 1,
+      "base_floor": 51,
+      "pr_floor": 51
+    },
+    {
+      "seed": 12,
+      "base_won": 1,
+      "pr_won": 1,
+      "base_floor": 51,
+      "pr_floor": 51
+    },
+    {
+      "seed": 13,
+      "base_won": 0,
+      "pr_won": 0,
+      "base_floor": 33,
+      "pr_floor": 33
+    },
+    {
+      "seed": 14,
+      "base_won": 1,
+      "pr_won": 1,
+      "base_floor": 51,
+      "pr_floor": 51
+    },
+    {
+      "seed": 15,
+      "base_won": 0,
+      "pr_won": 1,
+      "base_floor": 16,
+      "pr_floor": 51
+    }
+  ],
+  "validation": {
+    "base": {
+      "telemetry_records": 380,
+      "totals": {
+        "decisions": 6993,
+        "simulations": 7008000,
+        "transaction_subdecisions": 22,
+        "transaction_decisions": 7,
+        "adaptive_escalations": 0,
+        "reroot_exact": 4576,
+        "reroot_fallback": 2045,
+        "reroot_candidate_found": 4576,
+        "reroot_candidate_missing": 2052,
+        "reroot_allocated_cap": 0,
+        "reroot_active_cap": 0,
+        "nodes": 6241346,
+        "chance_outcomes": 5448573,
+        "chance_sibling_reuse": 2063978,
+        "det_transpositions": 543089,
+        "chance_transpositions": 558771,
+        "widening_sampled": 5448573,
+        "widening_capped": 2569021,
+        "depth_sum": 37768704,
+        "chance_depth_sum": 8017594,
+        "rollout_skipped_vnet": 0,
+        "rollout_calls": 6241346,
+        "blend_eligible_leaves": 0,
+        "blend_invocations": 0,
+        "blend_depth_avoided": 0,
+        "leaf_vnet_inference_calls": 0,
+        "leaf_vnet_inference_micros": 0,
+        "conversion_failures": 0,
+        "semantic_resolution_failures": 0,
+        "transaction_failures": 0,
+        "knowledge_failures": 0
+      },
+      "flat_1k_per_search_including_transaction_subdecisions": true
+    },
+    "pr": {
+      "telemetry_records": 394,
+      "totals": {
+        "decisions": 7252,
+        "simulations": 7270000,
+        "transaction_subdecisions": 26,
+        "transaction_decisions": 8,
+        "adaptive_escalations": 0,
+        "reroot_exact": 4730,
+        "reroot_fallback": 2138,
+        "reroot_candidate_found": 4730,
+        "reroot_candidate_missing": 2146,
+        "reroot_allocated_cap": 0,
+        "reroot_active_cap": 0,
+        "nodes": 6471345,
+        "chance_outcomes": 5609526,
+        "chance_sibling_reuse": 2103067,
+        "det_transpositions": 535668,
+        "chance_transpositions": 565428,
+        "widening_sampled": 5609526,
+        "widening_capped": 2648730,
+        "depth_sum": 39113937,
+        "chance_depth_sum": 8258256,
+        "rollout_skipped_vnet": 0,
+        "rollout_calls": 6471345,
+        "blend_eligible_leaves": 0,
+        "blend_invocations": 0,
+        "blend_depth_avoided": 0,
+        "leaf_vnet_inference_calls": 0,
+        "leaf_vnet_inference_micros": 0,
+        "conversion_failures": 0,
+        "semantic_resolution_failures": 0,
+        "transaction_failures": 0,
+        "knowledge_failures": 0
+      },
+      "flat_1k_per_search_including_transaction_subdecisions": true
+    }
+  },
+  "result": {
+    "base_wins": 10,
+    "pr_wins": 7,
+    "both_wins": 6,
+    "both_losses": 5,
+    "base_only_wins": 4,
+    "pr_only_wins": 1,
+    "win_delta_pp": -18.75,
+    "paired_bootstrap_win_95ci_pp": [
+      -43.75,
+      6.25
+    ],
+    "mean_floor_delta": 1.5625,
+    "paired_bootstrap_floor_95ci": [
+      -1.8,
+      6.6
+    ],
+    "interpretation": "Adverse win signal with higher mean floor; small noisy mixed result. Not a clean nonregression result and not proof of harm."
+  },
+  "repeated_canary": {
+    "command": "bash tools/seed_guard.sh build/linux-gcc-release-ccache/silver_search_optimization_test --repeated-reroot-canary",
+    "exit_code": 0,
+    "fixture": "Starter-deck Ironclad 200/200 HP, Jaw Worm A0, seed 0xBADC0DE, floor1 act1; expanded legal END_TURN first stored outcome each reroot",
+    "search": "Exploration25/25; general/endturn widening3.7028/0.52389; 10000 new simulations per search; five reroots plus final 10000 continuation",
+    "allocation_semantics": "historical_nodes is initial pool plus new real allocations across PR searches; no dummy allocations/reset. It is not a measured unmodified baseline graph size. allocated_cap_blocked=0 reports the direct searcher retained-allocation cap predicate, not a session fallback counter. Existing session cap regressions verify fallback ordering.",
+    "cumulative_after_reroots": [
+      11635,
+      23868,
+      35878,
+      48231,
+      58494
+    ],
+    "before_reroot": [
+      11635,
+      12242,
+      12011,
+      12432,
+      10267
+    ],
+    "retained_after_reroot": [
+      9,
+      1,
+      79,
+      4,
+      64
+    ],
+    "cumulative_reclaimed": 58430,
+    "final_search_nodes": 11795,
+    "final_historical_allocations": 70225,
+    "historical_cap_reroots": 3,
+    "debug_release_output_identical": true,
+    "preliminary": "Selected-action Looter path reached genuinely over-cap reachable storage; unsuitable for historical-only demonstration, log retained. No synthetic allocation in either real canary."
+  },
+  "checks": {
+    "focused_ctest": "3/3 pass",
+    "complete_debug_ctest": "92/92 pass,36.07s",
+    "paired_analysis": "exit0;strict identical seed sets",
+    "integration_failures": "zero conversion/semantic-resolution/transaction/knowledge failures in both arms; all telemetry budgets exactly 1k per private subsearch",
+    "not_run": [
+      "broader gameplay cohort",
+      "10k quality benchmark",
+      "sanitizers",
+      "independent implementation/scientific review"
+    ]
+  },
+  "artifact_sha256": {
+    "repeated-canary-selected-path-failed.log": "a155f86f43be6ad97eddbe39642d8ee18ab2506b3067d6f1dd086d03ff22eb2f",
+    "repeated-canary-release.log": "ff78f9891cf6c497f3a100791e952837a652013271870db4f3b99e05fe8f7ae6",
+    "README.md": "8a4e2ae79cf4fecbe75b0f05ee56239c2599bcfa6999c5335aee98eaef51eac5",
+    "pr-1k-16.csv": "60e907474579ccfe207e0ba912011460dcab5421bd0b8487969fc4ae64c2a99e",
+    "repeated-canary-debug.log": "ff78f9891cf6c497f3a100791e952837a652013271870db4f3b99e05fe8f7ae6",
+    "base-1k-16.csv.meta.json": "871346c8217c1af92520e320ce89f1f0023a36c40dcd8d8a4d6927f71e6a9e2d",
+    "validation.json": "20e65a35efe98315c8e51786e115ccc08f15d235e033868af4eb3f61eb11f3c1",
+    "ctest-debug.log": "6cc737333d34c4b997c4dfb7a382f19eb859385183a424b96c661c1ff7af973e",
+    "paired-analysis.txt": "c2072001244d6721b03cf5761fd458b6a2fe530a90fb60903bb800096aefda29",
+    "base-1k-16.log.gz": "c5b9be99a850795893251de10c94b7886a21220847a8907daf28488aee808194",
+    "pr-1k-16.log.gz": "f8dcb1a2061f0d714e71a3b2d4511574b35d080c3fd72943a98d9d28eaeeaf1a",
+    "pr-1k-16.csv.meta.json": "66533b612dceeb2a6b2de6dee2d64bf0ca0c0511e204f24cd9752c87ab8c50b9",
+    "base-1k-16.csv": "8e718138feb5e042f72aa1f758f0eeca53e30d2afc35409c03bdb2a427d44b3f"
+  }
+}

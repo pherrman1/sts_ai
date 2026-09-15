@@ -1,0 +1,40 @@
+{
+  "original_pr_baseline": "876e9305a258df3d5a5eafd50e30375b933f8884",
+  "correction_baseline": "7c66c97234ef4cda24eb9221a2a2202978210c5e",
+  "executable_implementation_sha": "1335f08e1ad85dc8824409064ba00d4524fc7a97",
+  "binary_embedded_sha": "7c66c97234ef4cda24eb9221a2a2202978210c5e",
+  "commands": [
+    "cmake --preset linux-gcc-debug-ccache",
+    "cmake --build --preset linux-gcc-debug-ccache-build -j 4",
+    "ctest --preset linux-gcc-ccache-test",
+    "python3 -m unittest discover -s tests/agent -v",
+    "python3 tools/verify/ooc_mcts_live_startup.py build/linux-gcc-debug-ccache/one_combat",
+    "STS_SILVER_REUSE_CAP=131072 STS_SILVER_SCALING_DIAG_FILE=/tmp/silver32-effective-cap.csv bash tools/seed_guard.sh build/linux-gcc-debug-ccache/silver_integration_test",
+    "/usr/bin/time -v -o /tmp/silver32-memory.txt bash tools/seed_guard.sh build/linux-gcc-debug-ccache/silver_search_optimization_test --repeated-reroot-canary",
+    "python3 docs/experiments/evidence/silver_reroot_lazy_parity_2026-09-15/verify_parity.py"
+  ],
+  "binary_sha256": {
+    "build/linux-gcc-debug-ccache/one_combat": "41379d725a86667187d26baa70c7334e2bd9f07f851da2f59b1ccc243a343b45",
+    "build/linux-gcc-debug-ccache/silver_search_optimization_test": "5464828193d329ce41d53fe4d25a723ad63fb675fbb6743a7d5c1e374a6fdeec",
+    "build/linux-gcc-debug-ccache/silver_integration_test": "1baec138efecb39db0d49aad676cb882f8306617eb15c233a7866863c3671145"
+  },
+  "executable_source_sha256": {
+    "apps/one_combat.cpp": "c135895533141516b9059ba3d4429d9c06584489c4248eb617ded300629500ec",
+    "apps/one_combat/ooc_mcts_adapter.cpp": "a4ce391e497b9cb4e9bf216e9bb7c9981d74743ee62bae07ca4a769db4173d4d",
+    "apps/one_combat/run_driver.cpp": "cb364fc948b4622c07cb910f22e3fbe6887aceba88f4171f7e4c39ca4b5e8035",
+    "third_party/silver_lightspeed/bridge/SilverLiveBackend.cpp": "c51e0fa0159b8a8fc041a61f535a72cad36079e3a46da4f603b794986cff4457",
+    "apps/silver_search_optimization_test.cpp": "cee1d8133f469add7cc95c0df201b568d3c108f300a1f403b0bc6f974decedc7",
+    "include/sim/search/SilverBridge.h": "b419ede4e495781fbaad1da0ea3b4b886fbb4b49b6b5e78c2c9be21fe1670c18"
+  },
+  "artifact_sha256": {
+    "README.md": "c94b3557866123052b7ed4f9588f1135c276381d6cd579588addc81242eb9500",
+    "agent-tests.log": "b0cb9719082da1afc001fce5ce1107d5ac5a72d84fbc6202f7c7aa803bc74070",
+    "canary.log": "761957bdd772add36e49181fc56512b51369de0aa0e43fcde47145bf2fee03a9",
+    "ctest-debug.log": "44f4def1aa144e56a7105a771bbcc9f6e81da9a1487771fbca725359179191c3",
+    "existing-parity-verification.log": "37151537bd339bd2f204502a9f9f8be33515ce6b1ba190eac61403014e0ce6cc",
+    "experimental-cap-decisions.csv": "dc6f9bb8a19dc03c87180bb6cd79b011883e8752e0d6280669daabe5353eb370",
+    "experimental-cap-integration.log": "0b7f08eecdde31bdb3de65cd34e33e5d72e6e8bc31c07172d651181f050fd465",
+    "memory-time.txt": "14294ea898ecf1cfbfd73fe3c4b885cbbed0282f9cca83a5d8e7cce9f180bbb0",
+    "startup.log": "4564cee947ccb5a643308696762804233f9ecf819be8fcd2bb012fa2cf975cd3"
+  }
+}

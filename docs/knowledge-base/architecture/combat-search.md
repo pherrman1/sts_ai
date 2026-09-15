@@ -132,7 +132,8 @@ state into a private representation and uses a stable per-battle seed derived
 from run/battle identity, not decision ordinal.
 
 One private session is retained per battle and exact-child reroot is attempted
-after each action. The production cap is 32,768 nodes. The default
+after each action. The production cap remains 32,768 nodes. `STS_SILVER_REUSE_CAP=131072`
+is an experimental opt-in; it is not a qualified production promotion. The default
 `STS_SILVER_REUSE_CAP_MODE=allocated` caps retained allocation; `active` is a
 supported opt-in. Reroot and fallback telemetry must state what occurred.
 
@@ -140,7 +141,16 @@ Search nodes contain compact bookkeeping and a pointer to a separately pooled
 battle state. Only decision nodes claim state storage; chance nodes have a null
 state pointer and read their decision parent's state. Both pools retain stable
 object addresses and reuse capacity. Fresh reset resets both active counters;
-reroot retains both pools. The allocated/active reuse caps still count logical
+exact reroot below the configured node cap preserves both pools and the global
+dedup table, including currently orphaned transposition statistics. Only when
+the old configured cap metric is at or above the cap does the session request
+collection around the exact candidate. Collection traverses child edges and
+chance-parent dependencies, reclaims unreachable nodes/states (including
+inactive high-water slots), and rebuilds retained dedup entries. Retained
+addresses, edges, visits and values stay unchanged. The session then rechecks
+the cap: a compacted graph below the cap is reused; one at or above falls back.
+Thus ordinary below-cap reuse retains baseline policy behavior. Allocated/active
+reuse caps count logical
 nodes through `allNodes.size()`/`poolUsed`, never state slots or bytes. Pooled
 state swaps preserve scratch-buffer capacity reuse. All consumers of these
 structures must be rebuilt together after a layout change.
@@ -177,6 +187,17 @@ first-insertion-wins semantics, and equality remain unchanged. Insertion
 invalidates references and iterators; current status-processing loops queue
 actions or change existing entries/status bits without inserting during iteration.
 The native simulator retains its own status representation.
+
+Silver dedup uses power-of-two open-addressed storage, starting at 65,536 slots.
+A new decision-state insertion that would exceed 50% occupancy doubles capacity
+and reinserts existing hash/pointer entries. Duplicate hits never trigger growth.
+Node/state addresses, statistics and RNG are untouched; fresh reset clears
+occupancy and cap-triggered collection rebuilds retained membership without
+shrinking capacity. Fixed widening-cache limits remain independent of dedup.
+Frozen whole-combat/OOC teacher protocols and live OOC MCTS require an effective
+32,768 cap and reject the experimental 131,072 override before execution.
+A larger cap needs separate decision-quality evidence and teacher/model
+requalification before promotion.
 
 Silver caches the diagnostic root hash lazily only when a leaf observer needs
 it, invalidating on fresh reset and reroot. Rollout timing starts only for an

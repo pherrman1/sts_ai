@@ -36,12 +36,13 @@ These control the default executing configuration; they are always parsed.
 
 `STS_SILVER_SEARCH=1` installs the isolated Silver combat callback before the
 native Searcher2/3 dispatch.  It does not make Silver the executable default.
-The production reuse cap remains fixed at `32 * 1024`; no environment variable
-changes its size.
+The production reuse cap defaults to `32 * 1024`. The explicit experimental
+`STS_SILVER_REUSE_CAP=131072` override requires separate quality qualification.
 
 | Variable | Effect | Default | Parse site |
 |----------|--------|---------|------------|
 | `STS_SILVER_SEARCH` | Enable isolated Silver combat search | unset/off | `main`; `SilverLiveBackend` |
+| `STS_SILVER_REUSE_CAP` | Effective node cap: `32768` or experimental `131072`; other values fail before gameplay. Frozen 32k teacher producers and live OOC MCTS reject the experimental cap. Collection remains cap-triggered. | `32768` | `SilverLiveBackend::installSilverLiveBackend` |
 | `STS_SILVER_REUSE_CAP_MODE` | Exact-reroot mode: `allocated` (`allNodes.size()` cap), experimental `active` (`poolUsed` cap), or experimental `none` (fresh root every decision); any other value fails before gameplay | `allocated` | `SilverLiveBackend::installSilverLiveBackend` |
 | `STS_SILVER_SCALING_DIAG_FILE` | Default-off per-search CSV for the reuse-cap experiment, including sequential GAMBLE/EXHAUST_MANY private subdecisions | unset/off | `SilverLiveBackend` |
 | `STS_SILVER_STICKY_QUALITY_FILE` | Default-off sticky-cap decision-quality CSV. Valid only with `STS_SILVER_SEARCH=1` and `STS_SILVER_REUSE_CAP_MODE=active`; serializes `(seed,floor,encounter,decision ordinal)` as four fixed-width little-endian values into FNV-1a and selects when `hash & 3 == 0` (one deterministic bucket in four, maximum 16 sampled states per run seed). It then runs isolated fresh 3700/25000/50000 Silver shadows. `<path>.summary.csv` records eligible, selected, and excluded sequential-subdecision counts. | unset/off | `SilverLiveBackend`; `tools/analyze_silver_sticky_quality.py` |
@@ -187,7 +188,7 @@ enable flag:
 |----------|--------|---------|------------|
 | `STS_OOC_STRATEGIC_NN` | V3 strategic net path | unset (off) | `main` ~L9295 |
 | `STS_OOC_STRATEGIC_TOK_NN` | V4 token net path (deployed format) | unset (off) | `main` ~L9300 |
-| `STS_OOC_MCTS` | Opt-in live OOC MCTS selector; requires native V4/win/artifact and ordinary exact-10k Silver real combat | `0` | `configureLiveOocMcts`, `runFullRunOOC` |
+| `STS_OOC_MCTS` | Opt-in live OOC MCTS selector; requires native V4/win/artifact and ordinary exact-10k Silver real combat with effective cap 32768 | `0` | `configureLiveOocMcts`, `runFullRunOOC` |
 | `STS_OOC_MCTS_SIMS` | Positive simulations per supported OOC root | `512` | `configureLiveOocMcts` |
 | `STS_OOC_MCTS_COMBAT_MODEL` | Compatible native combat-transition artifact; required when enabled, fatal load errors | unset | `configureLiveOocMcts` |
 | `STS_OOC_MCTS_EARLY_STOP` | Strict visit-lock stopping even without a non-aborting provider guarantee; may skip later support/continuation aborts; `0` restores guarantee requirement; root-lock trace overrides stopping | `1` when OOC MCTS enabled | `configureLiveOocMcts`, `OocMctsPlanner::search` |

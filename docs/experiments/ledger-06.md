@@ -7779,6 +7779,7 @@ no default/model/support/scientific qualification change.
 [Evidence](evidence/ooc_rich_tree_speed_2026-09-14.md),
 [raw commands/provenance/check packet](evidence/ooc_rich_tree_speed_2026-09-14.json).
 
+
 ## §254 — Near-full Ironclad combat-support census and Stage-1 evidence stop (2026-09-14)
 
 Baseline `210f347334898e7c2a85b8af0f30dedc4888ea88`, after updating local main
@@ -8034,3 +8035,191 @@ updating legacy assertions/error wording. Knowledge impact: live policy/default/
 rollback and ADR-0014 maintained; no model/support/GPU change.
 [Report](evidence/ooc_early_stop_enabled_2026-09-15.md),
 [raw packet](evidence/ooc_early_stop_enabled_2026-09-15.json).
+
+## §261 — Silver reroot GC repeated canary and flat-1k smoke (2026-09-15)
+
+PR #185 baseline `876e9305a258df3d5a5eafd50e30375b933f8884`, measured candidate
+`1e37f2a9d68a403158241886f85c926b37b62f1a`. Repeated real private Silver
+10k searches / exact reroots on an explicit durable starter-deck Jaw Worm
+fixture (Ironclad200/200HP, A0, seed0xBADC0DE) follow expanded legal END_TURN
+outcomes. Cumulative real allocations11,635→23,868→35,878→48,231→58,494;
+retained nodes9→1→79→4→64. Three reroots occur beyond32,768historical allocations;
+58,430nodes reclaimed. Final10kcontinuation passes at11,795live/70,225historical
+nodes. Retained addresses, visits/Q, edge statistics, chance links/bookkeeping,
+available best action, dedup and post-search ownership checks pass. Debug/Release
+outputs agree; guarded repeated canary added to CTest; complete Debug92/92pass.
+A preliminary selected-action Looter path reached a truly over-cap reachable
+graph and could not demonstrate the historical-only case; its log is retained.
+Historical totals describe PR allocations, not an executed no-GC baseline graph;
+session cap regressions separately prove post-GC fallback ordering.
+
+Authorized bounded smoke:16paired seeds0–15, IroncladA0, project-fairSilver,
+flat exact1,000per private search including selection subdecisions, allocated
+cap32,768/adaptiveOFF/keysOFF/default nativeOOC/same tracked models/OMP4/Release.
+Baseline10/16wins(62.5%) vs PR7/16(43.75%):−18.75pp, paired bootstrap95%CI
+[−43.75,+6.25]pp;6bothwin/5bothlose/4base-only/1PR-only. Mean floor45.375→46.9375
+(+1.5625; CI approximately[−1.8,+6.6]); mean endHP23.4375→15.9375. Both exit0;
+strict identical seed sets/budgets verified; conversion/semantic-resolution/
+transaction/knowledge failures0 and allocated-cap fallback0 in both arms.
+**Adverse win signal with higher mean floor: not a clean nonregression result,
+not evidence qualifying harm or improvement.** No broader benchmark or quality
+claim; timing is descriptive only. Knowledge impact: regression coverage and
+bounded experiment evidence; no default/model/support change.
+[Comparison and raw evidence](evidence/silver_reroot_gc_smoke_2026-09-15/README.md),
+[commands/hashes/provenance](evidence/silver_reroot_gc_smoke_2026-09-15/provenance.json).
+
+
+## §262 — Cap-triggered Silver compaction and exact flat-1k parity (2026-09-15)
+
+Corrects PR #185's unconditional-reroot policy from §254. Baseline
+`876e9305a258df3d5a5eafd50e30375b933f8884`; measured corrected candidate
+`1e7ca07613885acfabaa0ed639a026cda904321c`. Below the configured cap,
+reroot leaves pools/global dedup untouched, preserving orphan statistics.
+Only pre-reroot cap pressure requests collection around an exact candidate;
+the retained count is rechecked for reuse/fresh fallback. A focused below-cap
+regression preserves orphan visits/Q and exact dedup slots. Mechanical tests
+explicitly request collection; the repeated real canary uses lazy triggering.
+
+Same 16 paired seeds 0–15, Ironclad A0, project-fair Silver, flat exact 1k per
+private search including selection subdecisions, allocated cap 32,768, adaptive
+and direct learned leaves OFF, keys OFF, default native OOC, same tracked
+models, Release / OMP4. Both arms exit 0. All nine non-timing result fields
+match exactly by seed; all 7,008 complete decision diagnostic records and 380
+per-combat telemetry records match as multisets. Fresh baseline rows match the
+preserved §254 baseline. Both win 10/16, mean floor 45.375, mean end HP 23.4375.
+Maximum pre-reroot allocation is 13,454; cap fallback and integration failures
+are zero. CSV sec and parallel emission order are excluded. Scaling diagnostics
+do not record action fingerprints/full states: exact recorded-field parity,
+not proof of full trajectory identity or search-quality qualification.
+
+Repeated real 10k Jaw Worm stress fixture unchanged (starter deck, Ironclad
+200/200 HP, A0, seed 0xBADC0DE; expanded legal END_TURN outcomes). Ten reroots
+include seven baseline reroots and three actual pressure-triggered collections:
+35,825→79, 34,622→7, 37,683→3 nodes. Cumulative real allocations at collections:
+35,825 / 70,368 / 108,044. Reclaims 108,041 nodes; final 10k continuation passes
+at 7,602 live / 115,643 cumulative allocations. Debug/Release outputs match;
+retained snapshots/dedup/live ownership checks pass. Complete default Debug
+build succeeds and 92/92 CTest pass (41.10s); focused 3/3 pass. An initial canary
+assertion included the fresh root despite its intentional absence from baseline
+dedup; restricting verification to prior dedup members repairs the fixture.
+
+The §254 adverse smoke remains evidence about unconditional cleanup. This
+correction restores exact recorded flat-1k parity while retaining mechanical
+rescue under pressure. No broader cohort, 10k quality claim, sanitizer or new
+independent review. PR stays draft; no merge. Knowledge impact: corrected
+maintained lifetime/cap contract and reproducible parity/regression evidence.
+[Summary and raw artifacts](evidence/silver_reroot_lazy_parity_2026-09-15/README.md),
+[commands/hashes](evidence/silver_reroot_lazy_parity_2026-09-15/provenance.json),
+[reproducible parity verifier](evidence/silver_reroot_lazy_parity_2026-09-15/verify_parity.py).
+
+
+## §263 — Dynamic Silver dedup and 128k lazy reuse cap (2026-09-15)
+
+Baseline `fa2ea0ad702281a6b2a1366d792a8e920227832d`, measured implementation
+`9a849fd7deadb4374ad33f42796811b03a3ceb07`, continuing draft PR #185.
+Dedup doubles its power-of-two open-addressed table on a miss before occupancy
+exceeds 50%; reinsertion preserves pointers/statistics/RNG and capacity never
+shrinks within the searcher. Production cap 131,072 replaces 32,768; lazy
+pressure-triggered collection and final retained-cap fallback remain intact.
+Focused tests force multiple resizes including 65,536→131,072→262,144 and
+verify every prior state, same Node pointer, no duplicates, exact visits/Q,
+unchanged RNG and further search. Deterministic 96-step parity across table
+capacities passes with observer OFF/ON. Frozen 32k teacher acceptance initially
+failed; explicit cap-mismatch rejection before output repairs that check without
+relabeling old evidence. Complete Debug build and 92/92 CTest pass (47.36s).
+
+Tiny real 10k repeated stress canary: starter-deck Ironclad 400/400 HP / Jaw
+Worm A0, seed 0xBADC0DE, expanded legal END_TURN outcomes, 14 reroots plus a
+final 10k search. Peak 140,976 live allocated nodes / 116,788 states; largest
+candidate-reachable graph 80. Dedup grows twice to 262,144 slots, peak sampled
+load 49.3408%, final 4,693 entries (1.7902%). Old 32k would trigger collection
+earlier but no reachable-cap fallback. The 128k threshold triggers one
+collection, 140,976→3, reclaiming 140,973 nodes. Final 5,497 live / 146,470
+cumulative allocations; no fallback. Search batches can overshoot the cap
+before the next reroot; session fixtures separately verify generic fallback.
+External time -v reports 794,040 KiB RSS (775.43 MiB), no swaps, on a roughly
+31 GiB host; includes validation snapshots. Raw node/state/table payload
+estimate 711.72 MiB. Comfortable for this fixture/host, not a universal memory
+bound. No permanent memory infrastructure, broader gameplay/quality benchmark
+or win-rate claim. Knowledge impact: maintained table/128k cap contract and
+engineering correctness/resource evidence; no model/support qualification.
+[Evidence](evidence/silver_dedup_128k_2026-09-15/README.md),
+[commands/hashes/raw packet](evidence/silver_dedup_128k_2026-09-15/provenance.json).
+
+
+## §264 — Silver 32k default restored; 128k experimental only (2026-09-15)
+
+Supersedes §256's production-cap promotion. Dynamic dedup and lazy collection
+remain; default is 32,768 and `STS_SILVER_REUSE_CAP=131072` is experimental.
+Frozen teacher producers and live OOC MCTS enforce the effective 32k cap.
+The larger cap has no decision-quality qualification and the earlier 775 MiB
+resource observation does not justify production promotion.
+Default32 real 10k stress: 35,968→80 nodes, 35,888 reclaimed, 48,158 cumulative,
+subsequent 10k search valid; largest candidate reachable graph80, no historical
+ALLOCATED_CAP fallback. External debug fixture peak RSS207,108KiB (202.25MiB),
+including validation snapshots; not a matched 32k/128k memory experiment.
+13 startup cases and145 agent-tool tests pass; final full CTest raw outcome in
+[evidence](evidence/silver_cap_default32_2026-09-15/README.md).
+Recorded flat1k parity reverified, no new gameplay run. A separate matched
+exact10k+32k vs exact10k+128k quality experiment remains required for promotion
+and frozen teacher/model requalification. Knowledge impact: maintained cap and
+startup contracts; no model/support qualification.
+
+
+## §265 — Exact 10k Silver 32k vs experimental 128k lazy GC, exploratory paired 16 (2026-09-15)
+
+Frozen code 2b29e9723a00b9dc6fcea45507e4dcf86c968cde, identical release binary and
+models, fair RNG, A0/keysOFF, exact 10000 every root, allocated reuse/adaptiveOFF,
+OOC MCTS OFF; seeds 0–15 paired, four workers, sequential 32k then 128k.
+Only cap/output paths differ. Preserved 1k and stress artifacts do not satisfy
+this comparison; this cohort reuses prior 1k seeds and is exploratory, not fresh
+prospective validation. Both exits 0; zero bridge failures, metadata/budget/seed
+and all diagnostic prefixes before 32k pressure validate.
+32k 11/16 vs 128k 13/16 wins (+12.5pp), both win 11/both lose 3,32k-only 0/128k-only 2
+(seeds 2, 8). Paired-bootstrap 95% CI[0,+31.25]pp; exact discordant test p=0.5.
+Only two discordant pairs: no established superiority or promotion decision.
+Mean floor 48.625→50.1875; HP 36.5→34.0; seconds/run 30.5031→30.8804, different
+trajectory lengths prevent fixed-work runtime claims. 32k pressure candidates
+1740 (1526 rescued/214 ALLOCATED_CAP fallback); 128k 3 (all rescued/no fallback).
+Peak allocated 47,390→138,829; process RSS four workers 1,130,460→2,622,576KiB
+(1.078→2.501GiB), about 2.32 times peak memory. Search batches can overshoot cap.
+Positive exploratory outcome signal and fewer cap fallbacks at substantial RAM
+cost; keep 32k production/128k opt-in. No root-regret study, new seeds/arms or
+frozen teacher/model requalification. Knowledge impact: maintained exploratory
+cap-research status and evidence; default/scientific contracts unchanged.
+[Raw paired seeds, compressed logs/decisions, commands/hashes, analysis](evidence/silver_cap_pair10k_16_2026-09-15/README.md).
+
+
+## §266 — User-selected 128k lazy GC: four budget schedules, paired 32 (2026-09-15)
+
+Same frozen release binary/models as §258, source checkout/runtime SHA
+53a3ba36cb58876f192167162587eacae7c89556 (intervening evidence only), paired
+seeds 16–47, A0/Ironclad/fair RNG/keys OFF/native OOC, allocated cap 131072,
+exact root budgets, Silver adaptive and SIM_ADAPT OFF, learned leaf/OOC MCTS
+OFF, four workers. Requested schedules flat 1k, 1/2/5k normal/elite/boss,
+flat 10k, 10/20/50k; existing room-tier routing and exact mode prevent extra
+boss multiplication. 128 whole-run executions; no added seeds/arms or pooling
+prior N16. Only static budgets/base argument/output paths differ.
+Wins 17/32, 20/32, 21/32, 24/32; mean floor 47.4375,47.90625,48.5,47.9375;
+mean final HP 24.75,35.59375,34.40625,38.84375. Seconds/run
+2.65137,6.61840,31.36327,81.46058; added simulations
+15.136M,31.432M,150.920M,313.860M. 1/2/5k finishes one win behind flat 10k
+at ~21% runtime; no established quality equivalence. Highest schedule has
+three more wins than flat 10k at ~2.60 times runtime, not fixed-work throughput.
+All six paired comparisons preserved: exact p values 0.453125,0.2890625,
+0.0654297,1,0.2890625,0.5078125 (schedule-combination order); all Bonferroni
+six-pair adjusted p>=0.392578. Flat 1k→highest bootstrap CI[+3.125,+40.625]pp
+is favorable but unadjusted; no established superiority across this four-arm
+study. No root-regret measurement or scientific model/default qualification.
+Cap fallbacks 0,0,0,252; pressure candidates 0,0,2,1122 (last two rescued
+2/870). Peak allocated nodes 12756,65917,134873,202041; batches can overshoot
+cap. Highest arm combines compute with more collection/fresh fallback.
+Peak whole-process RSS four workers 0.270,1.205,2.436,4.341 GiB; external time-v,
+no permanent infrastructure. All exits zero; 59,735 diagnostic rows validate
+cap/budget/seed/config; all 3,278 combat telemetry records have zero bridge
+failure counters. Saved analyzer, strict six paired reports, hashes and binary/
+model immutability checks pass. Sequential execution, changed trajectory lengths,
+N32 and six comparisons limit interpretation. Knowledge impact: maintained
+exploratory budget/cost/cap status; chosen experimental cap 128k, no code/model
+or frozen teacher changes.
+[Paired seed CSV, raw compressed diagnostics/logs, reports and provenance](evidence/silver_budget_four32_128k_2026-09-15/README.md).

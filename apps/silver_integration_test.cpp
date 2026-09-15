@@ -39,6 +39,10 @@ int main() {
         uninstallSilverLiveBackend();
         return 1;
     }
+    const auto expectedCap = std::getenv("STS_SILVER_REUSE_CAP")
+        ? std::atoll(std::getenv("STS_SILVER_REUSE_CAP")) : 32768;
+    if (silverLiveReuseCap() != expectedCap)
+        throw std::runtime_error("effective Silver cap override was not parsed");
     try {
         BattleContext parityLive;
         parityLive.init(gc, MonsterEncounter::CULTIST);
