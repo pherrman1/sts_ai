@@ -8034,3 +8034,32 @@ updating legacy assertions/error wording. Knowledge impact: live policy/default/
 rollback and ADR-0014 maintained; no model/support/GPU change.
 [Report](evidence/ooc_early_stop_enabled_2026-09-15.md),
 [raw packet](evidence/ooc_early_stop_enabled_2026-09-15.json).
+
+
+## 261. Targeted whole-combat attention hyperparameter optimization (2026-09-15)
+
+On the unchanged 510,030-row / 24,999-source Phase-1 corpus and frozen
+source-grouped split, eight attention-only candidates used matched seed
+20260911, batch 2,048, CUDA FP32, 16-epoch cap and patience 4. Selection used
+VALIDATION Brier + winning-HP MAE + joint alive-HP MAE; TEST was not scored
+until the winner was fixed. Reviewed source55f980c; exact prepared array,
+split, baseline checkpoint, source membership and clean SHA fail closed.
+
+Winner `hp_weight_2` retains width64/layers2/heads4/FF128/dropout.1/LR.001/
+WD.0001 and changes only winning-HP MSE weight1→2. Validation selected epoch13:
+composite0.164160725 versus matched baseline0.168567730 (−0.004407005,
+−2.61%). Next candidates: width96 .167717187, FF256 .168153005, depth3
+.168203941, no-dropout .169234952, lower-LR .170868000, higher-LR .170878278.
+
+Equal TRAIN+VALIDATION refit then historical TEST: tuned survival AUC/Brier/
+logloss0.980058/0.017384/0.058878, winning-HP MAE/RMSE0.069709/0.104013,
+joint alive-HP MAE/RMSE0.075665/0.117100. Tuned-minus-frozen-attention paired
+source-bootstrap95%: Brier[-.000842,-.000225], winning-HP MAE
+[-.003101,-.002633], joint MAE[-.003416,-.002850]. Classification
+**ATTENTION_HPO_IMPROVES_FROZEN_ATTENTION_POSTHOC**. TEST was previously
+inspected; no tuned-versus-DeepSets prospective comparison, native export,
+composition, gameplay or new data. Existing no-clear-family/DeepSets
+simplicity decision remains. Wall3:09:00, exit0, peak RSS8,561,580kB; tuned
+SHA005f860d, evidence SHA3a4ac885. Knowledge impact: current research status
+and bound model-selection evidence updated; no runtime/default change.
+[Report](evidence/combat_transition_attention_hpo_2026-09-15.md).

@@ -86,6 +86,20 @@ default candidate; no Phase-2 implementation is authorized by this result. See
 [ledger-06 §§227–228](../../experiments/ledger-06.md) and the
 [corrected compact evidence report](../../experiments/evidence/combat_transition_model_v1_2026-09-12.md).
 
+A targeted attention-only hyperparameter optimization on the same frozen
+source split subsequently selected the original width-64/two-layer/four-head
+architecture with winning-HP loss weight doubled from 1.0 to 2.0. Its
+validation composite was `0.164160725` versus `0.168567730` for the matched
+attention baseline. After equal TRAIN+VALIDATION refit, all three historical
+TEST error deltas against the frozen attention checkpoint had negative paired
+source-bootstrap intervals. This is classified
+**`ATTENTION_HPO_IMPROVES_FROZEN_ATTENTION_POSTHOC`**: the historical TEST was
+already inspected, no tuned-versus-DeepSets prospective comparison was run,
+and no runtime export, composition, or gameplay qualification was performed.
+The existing no-clear-family conclusion and DeepSets simplicity tie-break
+therefore remain unchanged. See [ledger-06 §261](../../experiments/ledger-06.md)
+and the [HPO evidence report](../../experiments/evidence/combat_transition_attention_hpo_2026-09-15.md).
+
 ### Phase-2 persistent-state transition surrogate support audit
 
 The final v1 boundary excludes every source-audited predictor-visible path
