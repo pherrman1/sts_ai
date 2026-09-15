@@ -8567,3 +8567,51 @@ shared representation. No extra epochs/tuning, new data, TEST, gameplay,
 runtime/export, composition or model promotion. Knowledge impact: closes the
 HP-encoder maxHP/potion frozen-substitution path; experiment evidence only.
 [Protocol, histories and hashes](evidence/shared_frozen_maxhp_encoder_2026-09-15.md).
+
+## §279 — 40-epoch shared transition encoder continuation (2026-09-15)
+
+Baseline is merged main `5a339788`; candidate `440c9d1b` changes only the
+previous shared-distillation recipe's epoch cap from 12 to 40. Architecture,
+loss, teacher hashes, optimizer, learning rates, weight decay, batch, clipping,
+AMP path and seed `20260912` are unchanged. The exact TRAIN/VALIDATION
+population is 393,677/19,986 and 48,590/2,496; TEST inference is zero.
+
+Epochs 1–18 complete and exactly reproduce the prior run through epoch12.
+Combined validation KL reaches its best observed value at epoch18:
+maxHP0.002390692, HP0.005169924, combined0.003780308. During epoch19 the
+fixed non-finite-gradient guard fires before an update is accepted. No
+checkpoint is selected and no quality gate decision is made from this
+incomplete fit. Classify the extension as
+**`EXTENDED_TRAINING_NUMERICALLY_UNSTABLE`**. Do not change AMP/scaler,
+precision, clipping, loss, task weights or seed under this result; any such
+repair is a new experiment. The prior 12-epoch rejection remains applicable.
+[History and receipt](evidence/shared_transition_encoder_distill_40_2026-09-15.md).
+
+
+## §280 — AMP overflow handling for the 40-epoch shared transition encoder (2026-09-15)
+
+Baseline `6497cd04`, frozen experiment code `b58a0392`. This keeps the exact
+40-epoch shared-distillation recipe fixed—model, frozen teachers, seed, loss,
+learning rates `1e-4/1e-3`, weight decay, batch 512, clip 1.0, FP16 autocast
+and source-grouped TRAIN/VALIDATION population—and changes only the AMP
+overflow path. After `scaler.unscale_(optimizer)`, ordinary clipping remains;
+when the norm is non-finite, `scaler.step(optimizer)` and `scaler.update()` are
+allowed to skip the invalid update rather than aborting. The finite forward-loss
+guard remains active.
+
+All 40 epochs completed with seven isolated skipped updates (epochs/batches
+19/559, 23/539, 26/306, 29/30, 31/725, 36/667 and 39/458). Every event backed
+off the scale `2097152→1048576`; no forward loss became non-finite. The earliest
+strict minimum was epoch37: maxHP KL `0.001752824`, HP KL `0.004449562`,
+combined `0.003101193`. The saved epoch37 checkpoint includes model,
+optimizer and scaler state. All preregistered quality gates pass, including
+maxHP NLL relative `+1.2492%` against the `+2%` limit and HP NLL relative
+`+0.1303%`.
+
+Decision **`SHARED_TRANSITION_ENCODER_GO`** for this exact overflow-handling
+experiment. This establishes that GradScaler skip-and-backoff permits the
+fixed recipe to complete and pass its offline gates; it does not authorize
+runtime/export or default-model promotion. Knowledge impact: current research
+status and experiment evidence only; qualified components and defaults are
+unchanged.
+[Evidence, event log and receipt](evidence/shared_transition_encoder_overflow_40_2026-09-15.md).

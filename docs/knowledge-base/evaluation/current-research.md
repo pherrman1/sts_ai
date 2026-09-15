@@ -402,6 +402,28 @@ hashes are unchanged on current main, so no scientific rerun is required. See
 [ledger-06 §278](../../experiments/ledger-06.md) and the
 [maxHP evidence](../../experiments/evidence/shared_frozen_maxhp_encoder_2026-09-15.md).
 
+The cheapest fixed-recipe continuation was then tested by changing only the
+epoch cap from 12 to 40. Epochs 1–18 reproduced the prior trajectory exactly;
+the combined VALIDATION KL reached 0.003780308 at epoch18. Epoch19 stopped on
+the existing non-finite gradient guard before an update was accepted, so no
+checkpoint or new quality decision exists. This exact AMP/scaler/clipping
+continuation is **`EXTENDED_TRAINING_NUMERICALLY_UNSTABLE`**. Do not silently
+stabilize it or alter loss/weights/seed; that would be a new experiment. See
+[ledger-06 §274](../../experiments/ledger-06.md) and the
+[40-epoch continuation evidence](../../experiments/evidence/shared_transition_encoder_distill_40_2026-09-15.md).
+
+The explicitly separate AMP-overflow follow-up changed only that guard: after
+unscaling and clipping, a non-finite gradient norm was handed to
+`scaler.step()`/`scaler.update()` so the invalid update could be skipped, while
+the finite forward-loss guard remained. All 40 epochs completed with seven
+isolated scale backoffs (`2097152→1048576`) and no non-finite forward loss.
+Epoch37 was the selected checkpoint (combined VALIDATION KL `0.003101193`),
+with optimizer and scaler state preserved; every preregistered gate passed and
+the result is **`SHARED_TRANSITION_ENCODER_GO`**. This qualifies the exact
+overflow-handling experiment only; no runtime/export/default promotion or
+component replacement has occurred. See [ledger-06 §280](../../experiments/ledger-06.md)
+and the [overflow-handling evidence](../../experiments/evidence/shared_transition_encoder_overflow_40_2026-09-15.md).
+
 ### Shared relic trajectory residues
 
 **`RELIC_TRAJECTORY_QUALIFIED`** on the audited offline composed support.
