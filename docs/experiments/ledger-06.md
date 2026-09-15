@@ -8321,3 +8321,28 @@ epochs were run because that would be a new experiment. No new data, gameplay,
 TEST scoring, model promotion or runtime change. Knowledge impact: closes the
 maintained shared-survival-encoder HP follow-up; experiment evidence only.
 [Protocol, hashes, slices and receipts](evidence/shared_frozen_hp_encoder_2026-09-15.md).
+
+
+## §270 — Frozen HP representation for maxHP-delta decoding (2026-09-15)
+
+Stacked on #190 head, baseline `cde61c85`, frozen experiment code `af46e32`.
+TRAIN-only full-union maxHP/HP component SHA256 values `2c5b54d0…` and
+`0c8b5aa8…`; same bound source/cache and original TRAIN/VALIDATION split.
+TRAIN 393,677 victories / 19,986 sources; VALIDATION 48,590 / 2,496; no TEST.
+
+Only the frozen 64-dimensional representation differs. Fresh linear 11-class
+heads have byte-identical initial states, batches, AdamW/FP32 recipe and
+VALIDATION selection; encoders are frozen and VALIDATION never enters gradient
+updates. Dedicated maxHP versus HP representation: NLL
+0.042742204→0.159130603 (+272.3032%), accuracy 98.0696%→96.8203% (-1.2492pp),
+expected post-maxHP MAE 0.081356→0.234180 (+0.152824 HP). On 1,546 nonzero-delta
+rows, accuracy collapses 63.1307%→0.0647% and NLL rises 0.787493→3.897300.
+
+**`SHARED_HP_ENCODER_MAXHP_REJECTED`.** The candidate clearly misses all fixed
+gates, so the sequential HP-encoder potion screen did not run. Candidate
+selection at final epoch 12 leaves intrinsic information absence unresolved;
+this rejects the fixed linear-head/training recipe, not every jointly trained
+shared representation. No extra epochs/tuning, new data, TEST, gameplay,
+runtime/export, composition or model promotion. Knowledge impact: closes the
+HP-encoder maxHP/potion frozen-substitution path; experiment evidence only.
+[Protocol, histories and hashes](evidence/shared_frozen_maxhp_encoder_2026-09-15.md).
