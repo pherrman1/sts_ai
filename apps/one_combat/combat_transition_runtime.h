@@ -5,6 +5,12 @@
 #include "combat_predictor_input.h"
 
 namespace one_combat {
+struct CombatTransitionExpectation {
+    bool supported = false;
+    float death = 0;
+    float winningHpFraction = 0;
+};
+
 // CPU FP32 only. Construction is explicit and throws on any incompatible artifact.
 class CombatTransitionRuntime {
     struct Tensor { std::vector<int> shape; std::vector<float> values; };
@@ -46,6 +52,8 @@ public:
     CombatRuntimeSample sample(const sts::GameContext &,const CombatPredictorInputV1 &,std::mt19937_64 &) const override;
     std::unique_ptr<PreparedCombatTransition> prepare(const sts::GameContext &,
         const CombatPredictorInputV1 &) const override;
+    CombatTransitionExpectation expectation(const sts::GameContext &,
+        const CombatPredictorInputV1 &) const;
     const CombatTransitionRuntime &runtime() const { return runtime_; }
 };
 }

@@ -228,6 +228,22 @@ CombatRuntimeSupport NativeCombatTransitionSampler::support(const sts::GameConte
     auto reasons=nativeComposedSupportReasons(p,captureCombatTransitionState(gc),domain_);
     return {reasons.empty(),reasons.empty()?"supported":reasons.front()};
 }
+CombatTransitionExpectation NativeCombatTransitionSampler::expectation(
+    const sts::GameContext &gc,const CombatPredictorInputV1 &p) const {
+    if(!support(gc,p).supported)return {};
+    const float survival=runtime_.survival(p);
+    const auto maxHp=runtime_.maxHp(p),z=runtime_.hpEncoding(p);
+    double expectedFraction=0;
+    for(size_t delta=0;delta<maxHp.size();++delta) {
+        const int maximum=gc.maxHp+domain_.maxHpClasses.at(delta);
+        const auto hp=runtime_.signedHp(z,int(delta),gc.curHp,maximum);
+        double conditional=0;
+        for(size_t cls=0;cls<hp.size();++cls)
+            conditional+=hp[cls]*double(gc.curHp+domain_.hpClasses.at(cls))/maximum;
+        expectedFraction+=maxHp[delta]*conditional;
+    }
+    return {true,1-survival,float(expectedFraction)};
+}
 CombatRuntimeSample NativeCombatTransitionSampler::sample(const sts::GameContext &gc,const CombatPredictorInputV1 &p,std::mt19937_64 &rng) const {
     if(!support(gc,p).supported)return {};
     if(runtime_.nearFull())return sampleNearFull(runtime_,domain_,captureCombatTransitionState(gc),p,rng,runtime_.survival(p),{},{},{});
