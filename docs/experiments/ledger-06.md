@@ -8036,6 +8036,7 @@ rollback and ADR-0014 maintained; no model/support/GPU change.
 [Report](evidence/ooc_early_stop_enabled_2026-09-15.md),
 [raw packet](evidence/ooc_early_stop_enabled_2026-09-15.json).
 
+
 ## §261 — Silver reroot GC repeated canary and flat-1k smoke (2026-09-15)
 
 PR #185 baseline `876e9305a258df3d5a5eafd50e30375b933f8884`, measured candidate
@@ -8225,7 +8226,37 @@ or frozen teacher changes.
 [Paired seed CSV, raw compressed diagnostics/logs, reports and provenance](evidence/silver_budget_four32_128k_2026-09-15/README.md).
 
 
-## §267 — Advanced CTM-scaled 10k versus flat 10k, exploratory paired 16 (2026-09-15)
+## §267 — Local 17-profile OOC MCTS parameter screen (2026-09-15)
+
+User-authorized local screen on source `b7b26548` evaluates 17 preregistered
+MCTS profiles on common seeds `12002000..12002031` (544 games): Ironclad A0,
+fair RNG, exact-root-budget 10k Silver combat, keys off, Act 3 stop and 12
+OpenMP threads. The user explicitly overrode the repository aggregate local
+128-seed policy; every individual 32-seed invocation still ran through
+`tools/seed_guard.sh`. Binary and native CTM SHA256 values are execution-bound
+in the packet. The strategic-model path and successful load marker are retained
+per arm, and its plan-time SHA256 matches the packaging-time file, but the
+runner did not bind its bytes at execution. All 17 arms have exact 32-row result
+and telemetry cohorts; profile/environment/startup/source/model receipts plus
+ownership and abort accounting pass the deterministic analyzer.
+
+The descriptive rank winner is the three-additional-combat leaf rollout:
+26/32 wins (81.25%), mean floor 50.0, versus reference 21/32 (65.625%). The
+paired observed delta is +15.625pp; a fixed 200k-resample paired percentile
+interval is [-6.25,+37.5]pp and includes zero. The winner averages
+2024.370s/game, 29.3x the reference's 69.087s/game and 41.4x the fastest
+profile. Uniform one-combat continuation gives24/32; V4 one-combat continuation
+and the 512-simulation profile each give23/32.
+
+This is selection-biased discovery evidence on one reused cohort, with no V4
+control, untouched holdout, composition phase or default change. Tested source
+predates packaging base `608bb81` and its Silver memory/cap changes, so the
+result does not qualify current main. Knowledge impact: experiment evidence
+only; no maintained architecture, behavior, model, support, RNG or deployment
+fact changes. [Report, analyzer, raw receipts and hash index](evidence/ooc_mcts_local_full_2026-09-15/README.md).
+
+
+## §268 — Advanced CTM-scaled 10k versus flat 10k, exploratory paired 16 (2026-09-15)
 
 Baseline `608bb810c44173fb8c0036df6e89c71da4d778e3`, frozen measured
 implementation `a577fe0c6b7b81fef23e8d960d152766e84f80ae`. The opt-in adaptive
