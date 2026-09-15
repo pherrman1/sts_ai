@@ -1,0 +1,33 @@
+{
+  "schema_version": 1,
+  "experiment": "current-main V2 CTM confirmation of MCTS-512 and rollout3",
+  "baseline_sha": "48fae0465c5eb83a21a2097c94747a9494bf941f",
+  "source_sha": "48fae0465c5eb83a21a2097c94747a9494bf941f",
+  "binary": "build/linux-gcc-release/one_combat",
+  "binary_sha256": "80f561e0db96548de2e2747393f9215354e2b7a56aab0cd3c460262b62c6338f",
+  "models": {
+    "combat_transition": ["selfplay/models/combat_transition_near_full_except_smoke_v2.native", "22c855e0667a58a73835505672b0ae6d03f12e9fb8d64f08893810199246e94e"],
+    "strategic_v4": ["selfplay/models/ooc_strategic_tok_final.native", "e62abd833fc8cb9081a1cec4a1a012832ac3b0e3166da3892841911664f1184c"],
+    "win": ["models/v_win_trees.txt", "fc52c14cb7239a33b3c1f9d0477ccb6c895fd51a07240fe804744e605067ad70"],
+    "floor": ["models/v_rich_trees.txt", "3a3420469b1d648e0e306d6cb6a7e85f3d3499105e3ff3a56eee6c579194ffe3"],
+    "combat_policy": ["models/policy_trees_c.txt", "24793bd39dd1a35c8865035e458c3aa40616ef021cb26b05f914f72fb5e5a321"]
+  },
+  "official_seed_start": 12003000,
+  "official_seed_count": 32,
+  "canary_seeds": {"v4": 12002997, "mcts512": 12002998, "rollout3": 12002999},
+  "omp_threads": 12,
+  "bootstrap_seed": 20260915,
+  "bootstrap_resamples": 200000,
+  "common_contract": {
+    "character": "Ironclad", "ascension": 0, "fair_rng": true,
+    "real_combat": "Silver", "real_combat_sims_per_root": 10000,
+    "silver_reuse_cap_mode": "allocated", "silver_reuse_cap": 32768,
+    "silver_adaptive": false, "keys": false, "stop_after_act": 3,
+    "searcher3": false, "direct_silver_leaf": false
+  },
+  "arms": [
+    {"id": "v4", "profile": {"STS_OOC_MCTS": "0"}},
+    {"id": "mcts512", "profile": {"STS_OOC_MCTS": "1", "STS_OOC_MCTS_SIMS": "512", "STS_OOC_MCTS_LEAF_COMBATS": "0", "STS_OOC_MCTS_LEAF_VALUE": "native", "STS_OOC_MCTS_LEAF_POLICY": "v4", "STS_OOC_MCTS_PRIOR": "policy", "STS_OOC_MCTS_TEMPERATURE": "1", "STS_OOC_MCTS_CPUCT": "1.5", "STS_OOC_MCTS_WIDEN_K": "2", "STS_OOC_MCTS_WIDEN_ALPHA": "0.5", "STS_OOC_MCTS_MAX_DEPTH": "32", "STS_OOC_MCTS_ROOT_SELECTION": "visits", "STS_OOC_MCTS_EARLY_STOP": "1"}},
+    {"id": "rollout3", "profile": {"STS_OOC_MCTS": "1", "STS_OOC_MCTS_SIMS": "2048", "STS_OOC_MCTS_LEAF_COMBATS": "3", "STS_OOC_MCTS_LEAF_VALUE": "native", "STS_OOC_MCTS_LEAF_POLICY": "v4", "STS_OOC_MCTS_PRIOR": "policy", "STS_OOC_MCTS_TEMPERATURE": "1", "STS_OOC_MCTS_CPUCT": "1.5", "STS_OOC_MCTS_WIDEN_K": "2", "STS_OOC_MCTS_WIDEN_ALPHA": "0.5", "STS_OOC_MCTS_MAX_DEPTH": "32", "STS_OOC_MCTS_ROOT_SELECTION": "visits", "STS_OOC_MCTS_EARLY_STOP": "1"}}
+  ]
+}

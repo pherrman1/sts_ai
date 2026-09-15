@@ -1,7 +1,7 @@
 # Current research status
 
 Last verified: 2026-09-15 for final near-full support/native qualification,
-paired old/new-V2 OOC MCTS gameplay, and the paired combat-budget diagnostic;
+paired old/new-V2 OOC MCTS gameplay, and shared transition-encoder distillation;
 2026-09-14 for exact supported-v1 RNG continuation
 and the stochastic signed-HP distribution, expanded-support offline composition,
 and fresh64 fixed10000 live MCTS gate;
@@ -79,10 +79,46 @@ Do not enable an adaptive allocator, early-stop rule, or NN from this packet.
 The diagnostic implementation remains an opt-in bridge capability and the
 ordinary Silver path is unchanged when its environment variable is unset. Stop
 this line unless a separately justified label or regime changes the question.
-See [ledger §273](../../experiments/ledger-06.md) and the
+See [ledger §279](../../experiments/ledger-06.md) and the
 [paired diagnostic packet](../../experiments/evidence/combat_budget_diag_2026-09-15/README.md).
 
 ## Current priority / active line
+
+The corrected all-Act boss leaf has a mechanism pass and paired N8 smoke:
+**CORRECTED_MECHANISM_PASS_PAIRED_N8_SMOKE**. Three identical leaf states
+produce materially different boss/native values and all root Qs change on an
+identical 64-simulation fixture. Fresh fixed512 seeds12003064--12003071 give
+native6/8 versus boss4/8; every terminal and non-timing trace row differs, so
+the treatment is now exercised. The boss arm is about26.6x slower by mean
+elapsed seconds/run. N8 is mechanism evidence only, not a quality conclusion;
+defaults remain unchanged. See [ledger §276](../../experiments/ledger-06.md)
+and the [evidence packet](../../experiments/evidence/ooc_mcts_boss_leaf_corrected_smoke_2026-09-15/README.md).
+
+The all-Act boss leaf N32 follow-up is
+**INVALID_TREATMENT_NOT_EXERCISED**. Live `checkpointLeaves=true` bypassed the
+boss evaluator and called native `v_win` in both arms. Its exact terminal and
+trace equality is a bug signal, not evidence of no effect. Raw evidence remains
+provenance-only. See
+[ledger §275](../../experiments/ledger-06.md) and the
+[paired packet](../../experiments/evidence/ooc_mcts_all_act_boss_leaf_pair32_2026-09-15/README.md).
+
+The current-act boss leaf N32 experiment is also
+**INVALID_TREATMENT_NOT_EXERCISED** for the same checkpoint bypass. Both arms
+executed native `v_win`; its 24/32 versus24/32 and exact traces are not an A/B
+result. See [ledger §274](../../experiments/ledger-06.md) and the
+[paired packet](../../experiments/evidence/ooc_mcts_boss_leaf_pair32_2026-09-15/README.md).
+
+The fresh current-main V2 rollout confirmation on seeds
+`12003000..12003031` is complete. MCTS-512 is **NO_CONFIRMATION**: 22/32 versus
+V4 24/32, -6.25pp, paired95% CI [-28.125,+15.625]pp. At fixed 2048 simulations,
+rollout0 and rollout1 each give 26/32 (+6.25pp versus V4, intervals crossing
+zero), but rollout1 has zero observed win gain over rollout0 at 23.19x elapsed
+time. Rollout3 gives 28/32, +12.5pp versus V4 with CI [-3.125,+28.125]pp and
++6.25pp versus rollout1 with a crossing-zero interval at another 2.35x cost.
+Rollout0 is the practical larger-confirmation candidate; rollout3 is only a
+high-cost research candidate. No arm is gameplay- or deployment-qualified.
+See [ledger §277](../../experiments/ledger-06.md) and the
+[evidence packet](../../experiments/evidence/ooc_mcts_confirmation_v2_2026-09-15/README.md).
 
 The fresh64 fixed10000 live OOC MCTS versus matched V4 gate is complete:
 **OOC_MCTS_WINRATE_INCONCLUSIVE**. MCTS42/64 versus V448/64,−9.375pp,
@@ -363,6 +399,40 @@ survival component (`e150180a…` to `ccc3c210…`), so this screen does not
 directly evaluate the current promoted survival encoder. This does not rule out
 a separately designed shared architecture. See [ledger-06 §272](../../experiments/ledger-06.md) and the
 [frozen-representation evidence](../../experiments/evidence/shared_frozen_hp_encoder_2026-09-15.md).
+
+### Purpose-trained shared maxHP and signed-HP encoder
+
+The explicit joint-training follow-up is **`SHARED_TRANSITION_ENCODER_REJECTED`**.
+One current-style 64/2/4/128 Attention encoder initialized from the dedicated HP
+specialist was distilled against the frozen current maxHP and HP specialists on
+the exact source-grouped final-union TRAIN/VALIDATION victories. The copied HP
+branch remains close to its teacher: NLL +0.2715%, CRPS +0.4813%, expected MAE
++0.021105 HP, with all important slices inside their gates. The fresh maxHP
+branch misses its NLL gate: +6.5932% versus the 2% limit, despite accuracy
+-0.1070pp, expected MAE +0.005442 HP and nonzero accuracy -0.9056pp remaining
+inside bounds. The rejection is driven by maxHP under-learning; HP degradation
+remains within all preregistered gates. Combined KL improved through the final
+epoch12, and the NLL miss is too large for the narrow epoch12 inconclusive
+exception.
+
+Stop this exact path. Do not add potion, extra epochs, task reweighting,
+adapters or architectural variants without a new design decision. No TEST,
+runtime/export, model promotion or gameplay ran, and all qualified components
+remain unchanged. See [ledger-06 §273](../../experiments/ledger-06.md) and the
+[distillation evidence](../../experiments/evidence/shared_transition_encoder_distill_2026-09-15.md).
+
+The reverse frozen substitution also fails: a fresh linear maxHP-delta head on
+the dedicated HP representation is **`SHARED_HP_ENCODER_MAXHP_REJECTED`**.
+Relative to the dedicated maxHP representation, VALIDATION NLL is 272.3032%
+worse, accuracy falls 1.2492 percentage points and expected post-maxHP MAE
+worsens 0.1528 HP. Nonzero-delta accuracy falls from 63.1307% to 0.0647%.
+Because this first sequential screen failed, the analogous HP-encoder potion
+screen did not run. The candidate selected final epoch 12, so intrinsic absence
+of maxHP information is not established; the fixed linear-head/training recipe
+is rejected. #187 changed only survival; the tested maxHP and HP component
+hashes are unchanged on current main, so no scientific rerun is required. See
+[ledger-06 §278](../../experiments/ledger-06.md) and the
+[maxHP evidence](../../experiments/evidence/shared_frozen_maxhp_encoder_2026-09-15.md).
 
 ### Shared relic trajectory residues
 

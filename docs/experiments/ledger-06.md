@@ -8411,7 +8411,165 @@ remains untested by this screen.
 [Protocol, hashes, slices and receipts](evidence/shared_frozen_hp_encoder_2026-09-15.md).
 
 
-## §273 — Paired 500-simulation combat-budget diagnostic (2026-09-15)
+## §274 — All-current-act-boss combat-evaluator OOC MCTS leaf paired 32 (2026-09-15)
+
+An opt-in leaf replaces native `v_win` with the mean score over all three
+current-act bosses: `0.75*P(survive) + 0.25*P(survive)*E[ending HP fraction
+| survive]`, using the tracked qualified V2 combat-transition evaluator. It
+fails the simulation/root closed if any boss is unsupported and retains exact
+terminal 0/1. No treatment leaf calls `v_win`; the ordinary live fallback OOC
+chain is unchanged.
+
+Fresh paired seeds 12003000--12003031 used source `b5f037d` plus bound diff,
+Ironclad A0/fair RNG/keys off/Act-3 stop, 512 OOC MCTS simulations, V4 priors,
+and exact-root-budget 10k Silver real combat. Native and boss leaves both won
+24/32. Both-win24/both-lose8/native-only0/boss-only0 gives 0.0pp; the fixed
+200k paired bootstrap interval is [0.0,0.0]pp because every observed pair is
+identical. All 32 terminal-state rows and all non-timing trace rows match.
+Mean seconds/run103.8807→104.1177. Each arm has5,540 decisions,4,528 owned,
+1,012 fallbacks,1,181,831 completed simulations,1,180,553 leaf evaluations,
+nine expected Smoke support aborts and375 discarded simulations.
+
+Classification corrected to **INVALID_TREATMENT_NOT_EXERCISED**. Live OOC MCTS
+used `checkpointLeaves=true`; its resolved-map checkpoint called native
+`v_win` without checking `bossLeaf`, so both arms executed the control leaf.
+The exact trace equality is a bug signal and supports no treatment-effect
+claim. Raw evidence is retained for provenance. A corrected experiment requires
+a mechanism check before any fresh seed smoke. [Evidence and provenance](evidence/ooc_mcts_boss_leaf_pair32_2026-09-15/README.md).
+
+
+## §275 — All-Act boss combat-evaluator OOC MCTS leaf paired 32 (2026-09-15)
+
+The prior current-act boss leaf was broadened to all ten Act1--4 bosses. Each
+probe preserves player state but uses its canonical encounter act/floor; the
+equal-mean utility remains `0.75*P(survive) + 0.25*P(survive)*E[ending HP
+fraction | survive]`. The treatment leaf uses the tracked qualified V2 combat
+evaluator, no `v_win` call or gameplay RNG, exact terminal0/1, and fail-closed
+support. Inspected origin/main `28d39cd` had five newer offline shared-HP/docs
+commits but no OOC/combat runtime or model change.
+
+Fresh paired seeds12003032--12003063 used IroncladA0/fair RNG/keysOFF/Act3
+stop, fixed512 OOC MCTS, V4 priors and exact10k Silver real combat. Native and
+all-boss leaves both win26/32: both-win26/both-lose6/no discordants, delta0pp,
+fixed200k paired bootstrap95%[0,0]pp because all observed differences are zero.
+All32 terminal-state and non-timing trace rows match. Mean floor49.15625 and
+HP46.09375 match; seconds/run110.3850→109.9430. Each arm records5,720 OOC
+decisions,4,626 owned,1,094 fallbacks,1,199,941 completed simulations,
+1,199,100 leaf evaluations,12 expected Smoke support aborts,550 discarded and
+zero continuation-limit aborts.
+
+Classification corrected to **INVALID_TREATMENT_NOT_EXERCISED**. The same
+checkpoint bug bypassed the all-Act boss evaluator and called native `v_win`
+in both arms. The N32 equality is not a null result and supports no
+treatment-effect inference. Raw evidence is retained for provenance. A
+corrected experiment requires a mechanism check before any fresh seed smoke.
+[Evidence and provenance](evidence/ooc_mcts_all_act_boss_leaf_pair32_2026-09-15/README.md).
+
+
+## §276 — Corrected all-Act boss leaf mechanism and paired N8 smoke (2026-09-15)
+
+The live checkpoint branch now selects constant, boss, or native evaluation in
+that order and shares the all-ten-boss evaluator with ordinary `leafValue()`.
+A fake-sampler regression with `checkpointLeaves=true,bossLeaf=true` requires
+ten distinct `expectation()` calls and a returned value different from native
+`v_win`. This also makes boss mode internally consistent without a loaded win
+model at treatment leaves.
+
+The pre-game real-model mechanism gate passed. At HP20/40/60, boss values were
+0.00409/0.00647/0.01371 versus native0.15437/0.19850/0.24000. On an identical
+64-simulation root, all three action Qs changed by about0.095--0.101, although
+the selected action remained the same in that fixture.
+
+Fresh paired seeds12003064--12003071 used IroncladA0/fair RNG/keysOFF/Act3,
+fixed512 OOC MCTS, V4 priors and exact10k Silver. Native won6/8 and boss won4/8
+(native-only2, boss-only0; descriptive delta -25pp). All eight terminal rows
+and all eight non-timing trace rows differ. Mean floor50.75→44.125 and elapsed
+seconds/run83.30→2218.42. Classification
+**CORRECTED_MECHANISM_PASS_PAIRED_N8_SMOKE**: the treatment is exercised, but
+N8 is not powered quality evidence and provides no default-change basis.
+
+A conditionally planned extension completed its native N8 arm and three boss
+rows before the user requested recording and merge. It is preserved under
+`interrupted-extension/` and excluded from every statistic above. Knowledge
+impact: the live checkpoint contract is corrected; both old N32 packets remain
+invalid; current research records only this bounded mechanism smoke.
+[Evidence and provenance](evidence/ooc_mcts_boss_leaf_corrected_smoke_2026-09-15/README.md).
+
+## §273 — Purpose-trained shared maxHP/signed-HP encoder distillation (2026-09-15)
+
+Baseline `28d39cdb`, frozen experiment code `79c6fcf5`. Exact current maxHP
+and HP specialists (`2c5b54d0…`, `0c8b5aa8…`) served as frozen FP32 teachers
+on the shared final-union TRAIN 393,677/19,986 sources and VALIDATION
+48,590/2,496 sources. Historical TEST had zero inference rows and no metrics.
+The student is the HP-initialized existing 64/2/4/128 Attention encoder with
+the copied HP embedding/head and a fresh seeded Linear(64,11) maxHP head.
+Pure equal-weight temperature-1 KL, seed20260912, AdamW, encoder/head LR
+1e-4/1e-3, WD1e-4, batch512, clip1 and AMP-FP16 training were fixed.
+
+The combined VALIDATION KL improved every epoch and selected the final epoch12:
+maxHP KL0.003832507, HP KL0.005607910, combined0.004720209. HP teacher→student
+NLL2.498291→2.505074 (+0.2715%), CRPS3.619360→3.636778 (+0.4813%) and expected
+MAE5.341970→5.363075 (+0.021105 HP); every important slice passes. maxHP
+NLL0.0426865→0.0455009 (**+6.5932%**, gate +2%), although accuracy drops only
+0.1070pp and expected MAE rises 0.005442 HP. Nonzero accuracy drops 0.9056pp;
+NLL rises 0.810300→0.861658, not catastrophic.
+
+Decision **`SHARED_TRANSITION_ENCODER_REJECTED`**: the rejection is driven by
+maxHP under-learning; HP degradation remains within all preregistered gates.
+Optimization was still improving at epoch12. The miss is not
+narrow enough for the epoch12 inconclusive exception. Stop without potion,
+extra epochs, reweighting, adapters, architecture changes, runtime/export,
+gameplay or promotion. Knowledge impact: experiment evidence and current
+research status only; qualified components/defaults are unchanged.
+[Protocol, epoch history, metrics and hashes](evidence/shared_transition_encoder_distill_2026-09-15.md).
+
+## §277 — Fresh current-main V2 OOC MCTS rollout confirmation (2026-09-15)
+
+Source `48fae046`, fresh paired seeds `12003000..12003031`, execution-hashed
+V2 CTM and strategic/native models. Ironclad A0, fair RNG, exact-10k Silver,
+cap 32768, adaptive/keys/Searcher3/direct leaf off, Act-3 stop, 12 workers.
+Excluded per-arm canaries passed. V4/MCTS512/2048-rollout0/rollout1/rollout3
+won 24/22/26/26/28 of 32. MCTS512-V4=-6.25pp, paired bootstrap95
+[-28.125,+15.625]pp: **NO_CONFIRMATION**. At 2048 simulations, rollout0 and
+rollout1 are each +6.25pp versus V4 with crossing-zero intervals; rollout1
+minus rollout0 is 0pp, CI [-18.75,+18.75]pp, at 23.19x cost. Rollout3-V4 is
++12.5pp, CI [-3.125,+28.125]pp: **PROMISING_INCONCLUSIVE**; rollout3 minus
+rollout1 is +6.25pp, CI [-6.25,+18.75]pp, at 2.35x cost. All provenance,
+backend, seed, bridge, support and telemetry identities pass. The designated
+GCP VM was absent; the user explicitly authorized the 64-game aggregate-local
+extension, each arm remaining a guarded 32-seed invocation. No extra parameters,
+seeds, gameplay/default changes or pooling. Rollout0 is the practical larger-
+confirmation candidate; rollout3 is only a high-cost research candidate.
+[Evidence packet](evidence/ooc_mcts_confirmation_v2_2026-09-15/README.md).
+
+## §278 — Frozen HP representation for maxHP-delta decoding (2026-09-15)
+
+Stacked on #190 head, baseline `cde61c85`, frozen experiment code `af46e32`.
+TRAIN-only full-union maxHP/HP component SHA256 values `2c5b54d0…` and
+`0c8b5aa8…`; same bound source/cache and original TRAIN/VALIDATION split.
+TRAIN 393,677 victories / 19,986 sources; VALIDATION 48,590 / 2,496; no TEST.
+PR #187 changed only the survival component; these exact maxHP and HP component
+hashes are unchanged on current main, so no scientific rerun is required.
+
+Only the frozen 64-dimensional representation differs. Fresh linear 11-class
+heads have byte-identical initial states, batches, AdamW/FP32 recipe and
+VALIDATION selection; encoders are frozen and VALIDATION never enters gradient
+updates. Dedicated maxHP versus HP representation: NLL
+0.042742204→0.159130603 (+272.3032%), accuracy 98.0696%→96.8203% (-1.2492pp),
+expected post-maxHP MAE 0.081356→0.234180 (+0.152824 HP). On 1,546 nonzero-delta
+rows, accuracy collapses 63.1307%→0.0647% and NLL rises 0.787493→3.897300.
+
+**`SHARED_HP_ENCODER_MAXHP_REJECTED`.** The candidate clearly misses all fixed
+gates, so the sequential HP-encoder potion screen did not run. Candidate
+selection at final epoch 12 leaves intrinsic information absence unresolved;
+this rejects the fixed linear-head/training recipe, not every jointly trained
+shared representation. No extra epochs/tuning, new data, TEST, gameplay,
+runtime/export, composition or model promotion. Knowledge impact: closes the
+HP-encoder maxHP/potion frozen-substitution path; experiment evidence only.
+[Protocol, histories and hashes](evidence/shared_frozen_maxhp_encoder_2026-09-15.md).
+
+
+## §279 — Paired 500-simulation combat-budget diagnostic (2026-09-15)
 
 Baseline/current-main source was `28d39cdb`; the pasted request named
 `cde61c85`, but the requested fresh worktree was based on the actual current
@@ -8442,22 +8600,21 @@ The run completed with 398 fights and 7,016 decision rows. The checkpoint
 action agreed with the final action in 5,530/7,016 rows (78.82%). A fight was
 labelled path-stable only if every recorded decision agreed along the generated
 10k trajectory: 35/398 stable and 363/398 unstable. The sorted-seed split was
-64–71 train and 72–79 holdout;
-the holdout contained 25 stable and 180 unstable fights. At the first
-recorded decision, every tested root-summary feature failed to separate the
-holdout label: AUROC was 0.454 for top-two Q gap, 0.484 for top visit share,
-0.475 for second visit share, 0.465 for the top/second ratio, 0.529 for visit
-entropy, and 0.492 for legal-action count. No train threshold satisfying the
-predeclared ≤5% false-stop constraint had nonzero useful coverage on holdout.
-Unstable fights appeared in hallway, elite, and boss categories; no
-category-only exception was supported.
+64–71 train and 72–79 holdout; the holdout contained 25 stable and 180
+unstable fights. At the first recorded decision, every tested root-summary
+feature failed to separate the holdout label: AUROC was 0.454 for top-two Q
+gap, 0.484 for top visit share, 0.475 for second visit share, 0.465 for the
+top/second ratio, 0.529 for visit entropy, and 0.492 for legal-action count.
+No train threshold satisfying the predeclared ≤5% false-stop constraint had
+nonzero useful coverage on holdout. Unstable fights appeared in hallway,
+elite, boss, and other categories; no category-only exception was supported.
 
 **`NO_USEFUL_SIGNAL`** for this bounded predictive diagnostic. Stop before
 adaptive budget allocation, early stopping, NN training, or production
 qualification. This negative result concerns local continuation summaries and
 does not establish or refute a different deployed-policy label or search
-regime. Knowledge impact:
-current research status records a bounded negative result; runtime defaults,
-models, gameplay, and production budgets are unchanged.
+regime. Knowledge impact: current research status records a bounded negative
+result; runtime defaults, models, gameplay, and production budgets are
+unchanged.
 
 [Evidence packet, raw CSV, analysis and provenance](evidence/combat_budget_diag_2026-09-15/README.md).

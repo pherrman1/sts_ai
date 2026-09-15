@@ -1,0 +1,18 @@
+{
+  "status": "preregistered_before_paired_collection",
+  "source_head": "b5f037d56cc9ac6d841ccab43274e85ca3330313",
+  "inspected_origin_main": "28d39cd",
+  "newer_runtime_or_model_changes": false,
+  "implementation_diff_sha256": "7ae4722dda31203079fe41ff6fcc1ebd8bbd0ab0b8320580846b6f208b7c4ad9",
+  "binary_sha256": "9c0ed2d621cac5a022148e931692ef529de30123de95f5988dcb32e8942f80a4",
+  "combat_model": "selfplay/models/combat_transition_near_full_except_smoke_v2.native",
+  "combat_model_sha256": "e9a18951710fdfe9e1a81a2703090a41f039067c670a1d8a0393b5e7e8e0ddfd",
+  "ooc_policy_sha256": "e62abd833fc8cb9081a1cec4a1a012832ac3b0e3166da3892841911664f1184c",
+  "seeds": [12003032, 12003063],
+  "arms": {
+    "native": "existing native v_win leaf",
+    "all_bosses": "mean across all ten Act1-4 bosses of 0.75*survival + 0.25*survival*expected_winning_hp_fraction; canonical boss act/floor"
+  },
+  "shared": "Ironclad A0, fair RNG, keys off, Act-3 stop, OOC MCTS 512, V4 priors, exact-root-budget Silver 10k real combats, 12 OpenMP workers",
+  "decision_rule": "Report paired win delta and fixed 200k paired bootstrap percentile interval, floor/HP/runtime, and complete trace support/abort accounting. N32 cannot alone promote a default."
+}

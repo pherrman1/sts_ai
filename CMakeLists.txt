@@ -444,6 +444,14 @@ add_test(NAME combat_transition_shared_hp_encoder_selftest
     COMMAND python3 -m unittest tools.test_combat_transition_shared_hp_encoder)
 set_tests_properties(combat_transition_shared_hp_encoder_selftest PROPERTIES
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+add_test(NAME combat_transition_shared_maxhp_encoder_selftest
+    COMMAND python3 -m unittest tools.test_combat_transition_shared_maxhp_encoder)
+set_tests_properties(combat_transition_shared_maxhp_encoder_selftest PROPERTIES
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+add_test(NAME combat_transition_shared_encoder_distill_selftest
+    COMMAND python3 -m unittest tools.test_combat_transition_shared_encoder_distill)
+set_tests_properties(combat_transition_shared_encoder_distill_selftest PROPERTIES
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
 add_test(NAME combat_transition_relic_trajectory_selftest
     COMMAND python3 ${CMAKE_SOURCE_DIR}/tools/test_combat_transition_relic_trajectory.py)
 add_test(NAME combat_transition_composed_selftest

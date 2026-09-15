@@ -1,0 +1,13 @@
+{
+  "schema_version": 1,
+  "frozen_before_outcomes": true,
+  "requested_extension": "2048 simulations with 0 and 1 leaf rollout combats",
+  "source_sha": "48fae0465c5eb83a21a2097c94747a9494bf941f",
+  "official_seed_range": [12003000, 12003031],
+  "excluded_canaries": {"mcts2048_rollout0": 12002995, "mcts2048_rollout1": 12002996},
+  "aggregate_local_override": "User explicitly requested 64 additional paired executions after the designated sts-test GCP VM was confirmed absent; each guarded invocation remains 32 seeds.",
+  "arms": [
+    {"id": "mcts2048_rollout0", "profile": {"STS_OOC_MCTS": "1", "STS_OOC_MCTS_SIMS": "2048", "STS_OOC_MCTS_LEAF_COMBATS": "0", "STS_OOC_MCTS_LEAF_VALUE": "native", "STS_OOC_MCTS_LEAF_POLICY": "v4", "STS_OOC_MCTS_PRIOR": "policy", "STS_OOC_MCTS_TEMPERATURE": "1", "STS_OOC_MCTS_CPUCT": "1.5", "STS_OOC_MCTS_WIDEN_K": "2", "STS_OOC_MCTS_WIDEN_ALPHA": "0.5", "STS_OOC_MCTS_MAX_DEPTH": "32", "STS_OOC_MCTS_ROOT_SELECTION": "visits", "STS_OOC_MCTS_EARLY_STOP": "1"}},
+    {"id": "mcts2048_rollout1", "profile": {"STS_OOC_MCTS": "1", "STS_OOC_MCTS_SIMS": "2048", "STS_OOC_MCTS_LEAF_COMBATS": "1", "STS_OOC_MCTS_LEAF_VALUE": "native", "STS_OOC_MCTS_LEAF_POLICY": "v4", "STS_OOC_MCTS_PRIOR": "policy", "STS_OOC_MCTS_TEMPERATURE": "1", "STS_OOC_MCTS_CPUCT": "1.5", "STS_OOC_MCTS_WIDEN_K": "2", "STS_OOC_MCTS_WIDEN_ALPHA": "0.5", "STS_OOC_MCTS_MAX_DEPTH": "32", "STS_OOC_MCTS_ROOT_SELECTION": "visits", "STS_OOC_MCTS_EARLY_STOP": "1"}}
+  ]
+}

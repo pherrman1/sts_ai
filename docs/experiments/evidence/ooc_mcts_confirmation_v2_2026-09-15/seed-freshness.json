@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "official_range": [12003000, 12003031],
+  "excluded_canaries": [12002997, 12002998, 12002999],
+  "forbidden_discovery_range": [12002000, 12002031],
+  "tracked_repository_matches": 0,
+  "preserved_primary_checkout_matches": 0,
+  "search_roots": ["EXPERIMENTS.md", "docs", "selfplay", "tools"],
+  "search_pattern": "1200300|12003000|12003031|12002997|12002998|12002999",
+  "frozen_before_outcomes": true
+}
