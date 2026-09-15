@@ -1,0 +1,59 @@
+{
+  "bindings": {
+    "HP": "0c8b5aa8c5218d6cd6102b768cc86a474c9ef30953d4b034caedcc41a426109b",
+    "downstream": "d07ead94b3abb9d12f272337e18aece6acd261cc4a39a36b21b82f904236af91",
+    "maxHP": "2c5b54d0a9420a9d0e3ab9a26f32b9900c4869490e4af49627009cde21efb4b0",
+    "potion": "ae1a1411990d272579de10564edb48c7f2ec1d14f1c72dacf5390a1415a0f1db",
+    "survival": "ccc3c210060be34b38fe0671d93c6acde4242563c80a25c5978b4190b80010c9"
+  },
+  "classification": "WHOLE_UNION_RAW_VALIDITY_PASS",
+  "counts": {
+    "brewUses": 10419,
+    "death": 59712,
+    "downstreamAfterDeath": 0,
+    "draws": 1633152,
+    "escape": 327,
+    "recursiveSampledTrajectories": 399,
+    "victory": 1573113
+  },
+  "downstreamFolder": "full-union-downstream-v1",
+  "finalSupport": true,
+  "maxHpFolder": "full-union-maxHP-v1",
+  "recipe": {
+    "batch": 512,
+    "downstreamExposure": "32 complete upstream HP/potion/escape/Ritual draws; exact conditional native target probabilities",
+    "draws": 32,
+    "hpExposure": "exact eleven-class maxHP marginal",
+    "partition": "original source-grouped TEST; reused development evidence",
+    "potionExposure": "32 upstream HP/maxHP draws, exact observed-body trajectory DAG",
+    "seed": 20260920,
+    "supportChanged": false,
+    "threshold": 0.1,
+    "validity": "32 complete sampled RAW transitions per TEST row, including model death short-circuit"
+  },
+  "scope": "offline RAW contract; native escape continuation has separate exact oracle",
+  "sourceSha": "a743364e1425bf5855309b565ac0eac1028cd726",
+  "supportChanged": false,
+  "testSnapshot": {
+    "corpusSha256": "74c08aa0a3c30342d86cd45355fe17ffa9046963ad7c8cf71b1938f9cdc1cfde",
+    "counts": {
+      "previous179": 41454,
+      "recovered": 9987,
+      "rows": 51441
+    },
+    "finalSupportIndexSha256": "71f2ca52769aa36a39f5684bf408090deb10edf8c13e55803cc0fd46ce1bfc31",
+    "finalSupportRows": 51036,
+    "snapshotSha256": "df37cd1fdcbdc49b6732c67f22bcf08839e813260b661b2b5197ab16057612cc",
+    "sourceSha": "1c31b7eb0a7660d43bc27e0849a8955dd0c3daae"
+  },
+  "violations": {
+    "deathShortCircuit": 0,
+    "escape": 0,
+    "goldDaggerBudget": 0,
+    "hp": 0,
+    "potions": 0,
+    "relicResidues": 0,
+    "rng": 0,
+    "writhing": 0
+  }
+}

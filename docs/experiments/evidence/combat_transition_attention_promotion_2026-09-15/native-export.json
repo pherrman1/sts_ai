@@ -1,0 +1,16 @@
+{
+  "artifactBytes": 2235832,
+  "artifactSha256": "e9a18951710fdfe9e1a81a2703090a41f039067c670a1d8a0393b5e7e8e0ddfd",
+  "classification": "FINAL_SUPPORT_EXPOSURE_DEVELOPMENT_PASS",
+  "exposureSha256": "0eda4556bbd02e40003b3a801c4498b8613fe09fa03a5b15886d1cad26e3148a",
+  "independentHoldout": false,
+  "sourceSha": "a743364e1425bf5855309b565ac0eac1028cd726",
+  "sources": {
+    "HP": "0c8b5aa8c5218d6cd6102b768cc86a474c9ef30953d4b034caedcc41a426109b",
+    "downstream": "d07ead94b3abb9d12f272337e18aece6acd261cc4a39a36b21b82f904236af91",
+    "maxHP": "2c5b54d0a9420a9d0e3ab9a26f32b9900c4869490e4af49627009cde21efb4b0",
+    "potion": "ae1a1411990d272579de10564edb48c7f2ec1d14f1c72dacf5390a1415a0f1db",
+    "survival": "ccc3c210060be34b38fe0671d93c6acde4242563c80a25c5978b4190b80010c9"
+  },
+  "validitySha256": "91e7823a6883aedd607aaec0268bd60d3c92b6bb37c460134054149b59f2c5e5"
+}

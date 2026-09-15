@@ -8291,3 +8291,86 @@ signal, no established play improvement or default qualification; keep opt-in
 pending a larger prospective gate. Knowledge impact: CTM adaptive integration
 and exploratory gameplay/compute evidence only.
 [Evidence, raw outputs, analyzer and provenance](evidence/ctm_adaptive10k_pair16_2026-09-15/README.md).
+
+
+## §269 — Targeted whole-combat attention hyperparameter optimization (2026-09-15)
+
+On the unchanged 510,030-row / 24,999-source Phase-1 corpus and frozen
+source-grouped split, eight attention-only candidates used matched seed
+20260911, batch 2,048, CUDA FP32, 16-epoch cap and patience 4. Selection used
+VALIDATION Brier + winning-HP MAE + joint alive-HP MAE; TEST was not scored
+until the winner was fixed. Reviewed source55f980c; exact prepared array,
+split, baseline checkpoint, source membership and clean SHA fail closed.
+
+Winner `hp_weight_2` retains width64/layers2/heads4/FF128/dropout.1/LR.001/
+WD.0001 and changes only winning-HP MSE weight1→2. Validation selected epoch13:
+composite0.164160725 versus matched baseline0.168567730 (−0.004407005,
+−2.61%). Next candidates: width96 .167717187, FF256 .168153005, depth3
+.168203941, no-dropout .169234952, lower-LR .170868000, higher-LR .170878278.
+
+Equal TRAIN+VALIDATION refit then historical TEST: tuned survival AUC/Brier/
+logloss0.980058/0.017384/0.058878, winning-HP MAE/RMSE0.069709/0.104013,
+joint alive-HP MAE/RMSE0.075665/0.117100. Tuned-minus-frozen-attention paired
+source-bootstrap95%: Brier[-.000842,-.000225], winning-HP MAE
+[-.003101,-.002633], joint MAE[-.003416,-.002850]. Classification
+**ATTENTION_HPO_IMPROVES_FROZEN_ATTENTION_POSTHOC**. TEST was previously
+inspected; no tuned-versus-DeepSets prospective comparison, native export,
+composition, gameplay or new data. Existing no-clear-family/DeepSets
+simplicity decision remains. Wall3:09:00, exit0, peak RSS8,561,580kB; tuned
+SHA005f860d, evidence SHA3a4ac885. Knowledge impact: current research status
+and bound model-selection evidence updated; no runtime/default change.
+[Report](evidence/combat_transition_attention_hpo_2026-09-15.md).
+
+
+## §270 — Attention-HPO survival promotion into the default near-full artifact (2026-09-15)
+
+Reviewed promotion source `a743364e1425bf5855309b565ac0eac1028cd726`
+reconstructed the exact TRAIN-then-VALIDATION normalization and mapped the
+selected attention checkpoint into the survival component with 0.0 maximum
+probability error over 1,536 stratified rows. Baseline component and receipt
+hashes fail closed. Only survival changed (`e150180a…` to `ccc3c210…`); maxHP,
+HP, potion and downstream artifacts remain byte-identical. The downstream
+compatibility receipt records the old/new survival identities and the audited
+fact that downstream preparation consumes only HP and potion encodings.
+
+Frozen TEST survival NLL/Brier improved 0.060411632/0.017986496 to
+0.058877671/0.017384328. Final-support exposure passed every nonempty slice
+after the same restricted exact correction for gold row 71838 (target mass
+0.0010596961); 1,633,152 RAW draws had zero violations in every invariant
+category. Native parity passed 3,904 draws and 31 fixtures, including 127
+recursive Brew samples, 122 escapes and three fail-closed/no-draw fixtures;
+maximum absolute error was 2.38e-6 at tolerance 1e-4. The executed native
+support predicate exactly retained 505,935/510,030 all and 51,036/51,441 TEST
+states with unchanged ordered-index digests. The tracked default artifact is
+SHA256 `e9a18951710fdfe9e1a81a2703090a41f039067c670a1d8a0393b5e7e8e0ddfd`.
+This qualifies offline composition and the native boundary on reused
+development evidence; online gameplay remains a separate paired test.
+[Promotion report](evidence/combat_transition_attention_promotion_2026-09-15.md).
+
+
+## §271 — Old V2 versus attention-promoted V2 paired OOC MCTS gameplay (2026-09-15)
+
+The prospective gate used fresh paired seeds 12002032--12002095, A0
+Ironclad/project-fair RNG/keys off/Searcher2/Act-3 stop, exact 10k Silver
+combat search and the locked 2,048-simulation OOC MCTS reference profile with
+the full strategic gate stack. Every producer ran through the seed guard; two
+64-seed arms exactly used the local 128-seed ceiling. The old source/artifact
+were `cde61c8`/`22c855e0…`; the promoted source/artifact were
+`22765a5`/`e9a18951…`. Arms, seeds, hashes and the paired decision rule were
+fixed before launch.
+
+Both arms won 49/64 (76.56%). Pairing gives both-win47, both-lose13,
+old-only2 and new-only2: new-minus-old 0.0pp, deterministic 200k-resample
+paired bootstrap95% [-6.25pp,+6.25pp]. Mean floor48.5938→48.7656, final
+HP41.6250→41.9062 and seconds/run158.0474→164.4165. The result establishes
+neither gameplay improvement nor harm; it supports preservation only within
+this gate's limited resolution.
+
+Both arms contain every seed exactly once and both phases exited zero.
+Telemetry has 64 rows per arm and zero continuation-limit aborts. Old/new
+support aborts are 26/34, all expected `smoke_bomb` exclusions on diverging
+trajectories. This is online gameplay evidence for the exact tested profile,
+not equivalence proof, unbiased-planning qualification, or permission to
+enable OOC MCTS by default. Knowledge impact: current research status gains
+prospective gameplay evidence; runtime and artifacts are unchanged.
+[Evidence, raw outputs, analyzer and provenance](evidence/combat_transition_v2_ooc_mcts_pair64_2026-09-15/README.md).
