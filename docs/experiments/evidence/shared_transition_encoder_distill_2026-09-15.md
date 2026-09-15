@@ -3,7 +3,8 @@
 **Decision: `SHARED_TRANSITION_ENCODER_REJECTED`.** The single HP-initialized
 Attention encoder preserves the dedicated signed-HP teacher within every gate,
 but its maxHP categorical NLL is 6.5932% worse than the dedicated maxHP teacher,
-above the fixed 2% limit. This is maxHP under-learning, not HP forgetting. The
+above the fixed 2% limit. The rejection is driven by maxHP under-learning; HP
+degradation remains within all preregistered gates. The
 combined VALIDATION KL was still improving at epoch 12, but the NLL miss is not
 narrow enough for the preregistered epoch-12 `INCONCLUSIVE` exception. Stop;
 do not add potion, epochs, task reweighting, adapters, or architectural variants.

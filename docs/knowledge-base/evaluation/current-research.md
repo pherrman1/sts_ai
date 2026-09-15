@@ -342,9 +342,10 @@ branch remains close to its teacher: NLL +0.2715%, CRPS +0.4813%, expected MAE
 +0.021105 HP, with all important slices inside their gates. The fresh maxHP
 branch misses its NLL gate: +6.5932% versus the 2% limit, despite accuracy
 -0.1070pp, expected MAE +0.005442 HP and nonzero accuracy -0.9056pp remaining
-inside bounds. Combined KL improved through the final epoch12, so the failure
-is maxHP under-learning with optimization still improving, not HP forgetting;
-the NLL miss is too large for the narrow epoch12 inconclusive exception.
+inside bounds. The rejection is driven by maxHP under-learning; HP degradation
+remains within all preregistered gates. Combined KL improved through the final
+epoch12, and the NLL miss is too large for the narrow epoch12 inconclusive
+exception.
 
 Stop this exact path. Do not add potion, extra epochs, task reweighting,
 adapters or architectural variants without a new design decision. No TEST,

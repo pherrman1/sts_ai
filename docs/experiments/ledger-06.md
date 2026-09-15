@@ -8430,8 +8430,9 @@ NLL0.0426865→0.0455009 (**+6.5932%**, gate +2%), although accuracy drops only
 0.1070pp and expected MAE rises 0.005442 HP. Nonzero accuracy drops 0.9056pp;
 NLL rises 0.810300→0.861658, not catastrophic.
 
-Decision **`SHARED_TRANSITION_ENCODER_REJECTED`**: maxHP under-learning with
-optimization still improving at epoch12, not HP forgetting. The miss is not
+Decision **`SHARED_TRANSITION_ENCODER_REJECTED`**: the rejection is driven by
+maxHP under-learning; HP degradation remains within all preregistered gates.
+Optimization was still improving at epoch12. The miss is not
 narrow enough for the epoch12 inconclusive exception. Stop without potion,
 extra epochs, reweighting, adapters, architecture changes, runtime/export,
 gameplay or promotion. Knowledge impact: experiment evidence and current
