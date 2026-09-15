@@ -8223,3 +8223,40 @@ N32 and six comparisons limit interpretation. Knowledge impact: maintained
 exploratory budget/cost/cap status; chosen experimental cap 128k, no code/model
 or frozen teacher changes.
 [Paired seed CSV, raw compressed diagnostics/logs, reports and provenance](evidence/silver_budget_four32_128k_2026-09-15/README.md).
+
+
+## §267 — Advanced CTM-scaled 10k versus flat 10k, exploratory paired 16 (2026-09-15)
+
+Baseline `608bb810c44173fb8c0036df6e89c71da4d778e3`, frozen measured
+implementation `a577fe0c6b7b81fef23e8d960d152766e84f80ae`. The opt-in adaptive
+path loads the qualified tracked near-full V2 CTM and deterministically
+marginalizes survival, max-HP and signed-HP distributions into death risk and
+expected winning HP fraction. The historical danger formula, clamped 0.4x--2x,
+scales a 10k caller base; unsupported fights retain 10k. No model sampling or
+gameplay RNG consumption. Existing C_psi behavior remains available when no
+CTM path is supplied.
+
+Paired seeds 48--63, A0/Ironclad/fair RNG/keys off/native OOC, exact Silver
+root budgets, experimental allocated 131072 lazy-GC reuse, Silver adaptive and
+learned leaf/OOC MCTS off, four workers, sequential flat then CTM arms. No
+preserved artifact matched this treatment; prior C_psi and flat-10k evidence
+used different configurations/seeds. Arms/reporting were fixed before launch;
+no tuning or added seeds/arms afterward.
+
+Flat 10k wins 10/16 versus CTM 11/16; both win10/both lose5, flat-only0,
+CTM-only1 (seed49), +6.25pp and exact paired two-sided p=1.0. Mean floor
+46.1875→46.25, final HP33.9375→40.5625, seconds/run28.4177→19.6017. Added
+simulations fall 71.840M→49.331273M (-31.33%); observed mean run time falls
+31.02%. CTM fight budgets over 383 fights: min5002, median5703, mean6317.49,
+max13609; 365 below/2 equal/16 above 10k. 381/383 changed budgets prove live
+CTM allocation, but the two exact-10k records cannot distinguish exact model
+output from support fallback after the fact.
+
+No cap fallback in either arm; maximum allocated after search126,966→111,486;
+four-worker peak process RSS2.424→2.225GiB. All 16 seeds pair, both exits zero,
+7,184/7,294 decision rows validate configuration, and all 380/383 combat
+telemetry rows have zero bridge failure counters. Encouraging compute-efficiency
+signal, no established play improvement or default qualification; keep opt-in
+pending a larger prospective gate. Knowledge impact: CTM adaptive integration
+and exploratory gameplay/compute evidence only.
+[Evidence, raw outputs, analyzer and provenance](evidence/ctm_adaptive10k_pair16_2026-09-15/README.md).
