@@ -256,7 +256,9 @@ policy-chain steps used only to project leaves.
 
 The following `STS_OOC_MCTS_` suffixes configure ON searches. Invalid finite
 ranges/enums fail startup; OFF does not parse or apply search overrides. Native
-V4/win models still must load for every ON ablation. Startup emits exact applied
+V4 must load for every ON ablation. Boss mode removes `v_win` from leaf
+evaluation only; the unchanged fallback policy chain may still load/use it.
+Startup emits exact applied
 settings in `[ooc-mcts-config]` JSON for artifact validation.
 
 | Suffix | Default | Allowed setting / meaning |
@@ -269,7 +271,7 @@ settings in `[ooc-mcts-config]` JSON for artifact validation.
 | `WIDEN_ALPHA` |0.5|finite exponent strictly between0 and1|
 | `MAX_DEPTH` |32|integer1..32 searched primitive transitions|
 | `ROOT_SELECTION` |visits|`visits` or `q`; Q selects only visited actions, ties by visits|
-| `LEAF_VALUE` |native|`native` or `constant`0.5 at resolved map checkpoints|
+| `LEAF_VALUE` |native|`native`; `constant`0.5; or `boss`, the mean across all ten Act1--4 bosses of `0.75*survival + 0.25*survival*winningHpFraction` from the configured combat evaluator|
 | `LEAF_COMBATS` |0|0,1,3 additional surrogate combats before resolved checkpoint|
 | `LEAF_POLICY` |v4|`v4` or `uniform` among unique supported legal V4 candidates|
 
@@ -280,6 +282,11 @@ with `ceil(k*N^alpha)`; action candidates are fully expanded, so this substrate
 is not double progressive widening. Root-Q selection changes only the final
 choice, not tree allocation. Leaf projection steps do not count toward tree
 `MAX_DEPTH`. None of these knobs changes real Silver's budget or parameters.
+The boss leaf is evaluated through one shared helper from both ordinary
+`leafValue()` and the live resolved-checkpoint branch. It uses no planner or
+gameplay RNG, never calls `v_win`, and fails the simulation/root closed if any
+boss is outside combat-evaluator support. Each probe preserves the leaf's player
+state but uses that encounter's canonical act and boss floor.
 
 Optional `STS_OOC_MCTS_TRACE` appends one CSV row per completed run, including
 OFF runs when explicitly requested. It records decision/ownership/fallback

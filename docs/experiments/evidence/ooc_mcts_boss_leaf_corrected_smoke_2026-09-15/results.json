@@ -1,0 +1,90 @@
+{
+  "arms": {
+    "boss": {
+      "leaf_evaluations": 246925,
+      "mean_final_hp": 25.375,
+      "mean_floor": 44.125,
+      "mean_seconds": 2218.42125,
+      "ooc_decisions": 1222,
+      "wins": 4
+    },
+    "native": {
+      "leaf_evaluations": 302599,
+      "mean_final_hp": 37.875,
+      "mean_floor": 50.75,
+      "mean_seconds": 83.29656250000001,
+      "ooc_decisions": 1442,
+      "wins": 6
+    }
+  },
+  "artifacts": {
+    "raw/initial8_boss.csv": "2b07f416f8b34d650a749213a567b3d8352bbf9d1ae917c9dca801b9dd840b31",
+    "raw/initial8_boss.mcts.csv": "f60d5f8f14fa05b7923828105d02cd0207790b2a5415139daa3ab64864af54ce",
+    "raw/initial8_boss.mcts.csv.support.jsonl": "ad53feee9cdd4386006b5b98c71392b7679712a1502b436bfb212791a7db0c73",
+    "raw/initial8_boss.receipt.json": "24b428fc710f9bcb0654d9398168b979e5966d5b4b8e783c46680f94be406b6d",
+    "raw/initial8_boss.score.json": "b7decddac731f455052e19598ce582e2ea0bd1821d182be1ef4242dc7e34ae5e",
+    "raw/initial8_native.csv": "5464aad257ba00edabe9fc3d23ec35b0b189f3b7860b1dc0a2a09d709774ba9e",
+    "raw/initial8_native.mcts.csv": "dc7d8f06575d0bae9c7fa0f1daed461a174dd935e813aab984fa8c90f541c7fb",
+    "raw/initial8_native.mcts.csv.support.jsonl": "970ebd3c586f8121dcf0dd01115b16fe71a4da81300c88fa044f25f1f02030bc",
+    "raw/initial8_native.receipt.json": "368b9de53a5c7dbb6fdb97955c9913b5bf3f25cb76bee653e87a404b6bff4b98",
+    "raw/initial8_native.score.json": "60a9d2c2927d4b2cf530e9a0aa150d8f4ba6b169d3699b3f6615842ee27c2820"
+  },
+  "classification": "CORRECTED_MECHANISM_PASS_PAIRED_N8_SMOKE",
+  "interrupted_extension": {
+    "boss_rows": 3,
+    "included_in_result": false,
+    "native_rows": 8
+  },
+  "mechanism": {
+    "leaf_values": [
+      {
+        "boss": 0.004087335996530095,
+        "hp": 20,
+        "native": 0.15437455639981643
+      },
+      {
+        "boss": 0.0064711738945186,
+        "hp": 40,
+        "native": 0.19850068560891357
+      },
+      {
+        "boss": 0.013712344390706944,
+        "hp": 60,
+        "native": 0.2400035744756417
+      }
+    ],
+    "leaf_values_differ": true,
+    "model": "selfplay/models/combat_transition_near_full_except_smoke_v2.native",
+    "root_actions": [
+      {
+        "boss_q": 0.24089408955521313,
+        "id": 1,
+        "native_q": 0.33854803444484394
+      },
+      {
+        "boss_q": 0.24896641136849146,
+        "id": 2,
+        "native_q": 0.34413714678665935
+      },
+      {
+        "boss_q": 0.243892183945204,
+        "id": 4,
+        "native_q": 0.344168492881188
+      }
+    ],
+    "root_q_changed": true,
+    "selected_action_changed": false,
+    "simulations": 64
+  },
+  "paired": {
+    "boss_minus_native_win_rate": -0.25,
+    "boss_only": 0,
+    "native_only": 2,
+    "nontiming_trace_rows_different": 8,
+    "terminal_rows_different": 8
+  },
+  "seeds": [
+    12003064,
+    12003071
+  ]
+}
