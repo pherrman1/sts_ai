@@ -8269,3 +8269,13 @@ provenance/config/backend/seed/bridge/support and telemetry identities pass. No
 default change or pooling with #188. Rollout3 alone merits consideration for a
 larger prospective confirmation, conditional on accepting or reducing its
 extreme cost. [Evidence packet](evidence/ooc_mcts_confirmation_v2_2026-09-15/README.md).
+
+User-requested same-seed completion added fixed-2048 rollout0 and rollout1 after
+the designated GCP VM was confirmed absent; the user explicitly authorized the
+64 additional local executions, each in a guarded 32-seed invocation. Both won
+26/32. Versus V4, each is +6.25pp with intervals crossing zero (rollout0
+[-12.5,+25.0]pp; rollout1 [-9.375,+25.0]pp). Rollout1-rollout0 is 0pp,
+CI [-18.75,+18.75]pp, while costing 23.19x as much. Rollout3-rollout1 is
++6.25pp, CI [-6.25,+18.75]pp, at 2.35x cost. The practical next-confirmation
+candidate is rollout0; rollout3 remains only a high-cost research candidate.
+No extra parameters, seeds, gameplay/default changes, or pooling were added.

@@ -60,6 +60,13 @@ confirmation, conditional on extreme cost; neither arm is deployment-qualified.
 See [ledger-06 §268](../../experiments/ledger-06.md) and the
 [evidence packet](../../experiments/evidence/ooc_mcts_confirmation_v2_2026-09-15/README.md).
 
+The same-seed fixed-2048 completion gives rollout0 and rollout1 26/32 each,
+both +6.25pp versus V4 with intervals crossing zero. Rollout1 has zero observed
+win gain over rollout0 at 23.19x its elapsed time. Rollout3 is +6.25pp versus
+rollout1 with a crossing-zero interval at another 2.35x cost. Rollout0 is the
+practical larger-confirmation candidate; rollout3 is only a high-cost research
+candidate. No arm is gameplay- or deployment-qualified.
+
 The earlier fresh64 fixed10000 live OOC MCTS versus matched V4 gate is complete:
 **OOC_MCTS_WINRATE_INCONCLUSIVE**. MCTS42/64 versus V448/64,−9.375pp,
 paired95% CI[−23.4375,+4.6875]pp. Both fresh arms use frozen native models and

@@ -3,6 +3,104 @@
   "bootstrap_resamples": 200000,
   "bootstrap_seed": 20260915,
   "results": {
+    "mcts2048_rollout0": {
+      "games": 32,
+      "mean_floor": 49.1875,
+      "mean_hp": 43.53125,
+      "mean_sec_game": 75.356215625,
+      "telemetry": {
+        "combatSurrogateSamples": 256859,
+        "continuationLimitAborts": 0,
+        "ctm_samples_per_game": 8026.84375,
+        "fallback_rate": 0.18891026762287913,
+        "maxDepth": 21,
+        "mctsFallback": 1080,
+        "mctsOwned": 4637,
+        "mctsSupportAborts": 19,
+        "mctsWallSec": 1025.283388741,
+        "oocDecisions": 5717,
+        "savedSimulations": 4682504,
+        "simulationAttempts": 4816548,
+        "simulations": 4816529,
+        "unsupportedCombats": 19
+      },
+      "wall_seconds": 225.17470860481262,
+      "win_rate": 0.8125,
+      "wins": 26
+    },
+    "mcts2048_rollout0_vs_mcts512": {
+      "bootstrap95": [
+        -0.0625,
+        0.3125
+      ],
+      "candidate_only_wins": 7,
+      "classification": "PROMISING_INCONCLUSIVE",
+      "control_only_wins": 3,
+      "delta": 0.125,
+      "discordant": 10,
+      "exact_p_two_sided": 0.34375
+    },
+    "mcts2048_rollout0_vs_v4": {
+      "bootstrap95": [
+        -0.125,
+        0.25
+      ],
+      "candidate_only_wins": 6,
+      "classification": "PROMISING_INCONCLUSIVE",
+      "control_only_wins": 4,
+      "delta": 0.0625,
+      "discordant": 10,
+      "exact_p_two_sided": 0.75390625
+    },
+    "mcts2048_rollout1": {
+      "games": 32,
+      "mean_floor": 49.84375,
+      "mean_hp": 42.46875,
+      "mean_sec_game": 1747.33290625,
+      "telemetry": {
+        "combatSurrogateSamples": 5011692,
+        "continuationLimitAborts": 0,
+        "ctm_samples_per_game": 156615.375,
+        "fallback_rate": 0.20430842879124636,
+        "maxDepth": 22,
+        "mctsFallback": 1195,
+        "mctsOwned": 4654,
+        "mctsSupportAborts": 93,
+        "mctsWallSec": 54202.975155566004,
+        "oocDecisions": 5849,
+        "savedSimulations": 4760887,
+        "simulationAttempts": 4780264,
+        "simulations": 4780171,
+        "unsupportedCombats": 93
+      },
+      "wall_seconds": 5458.1241998672485,
+      "win_rate": 0.8125,
+      "wins": 26
+    },
+    "mcts2048_rollout1_vs_mcts2048_rollout0": {
+      "bootstrap95": [
+        -0.1875,
+        0.1875
+      ],
+      "candidate_only_wins": 4,
+      "classification": "NO_CONFIRMATION",
+      "control_only_wins": 4,
+      "delta": 0.0,
+      "discordant": 8,
+      "exact_p_two_sided": 1
+    },
+    "mcts2048_rollout1_vs_v4": {
+      "bootstrap95": [
+        -0.09375,
+        0.25
+      ],
+      "candidate_only_wins": 5,
+      "classification": "PROMISING_INCONCLUSIVE",
+      "control_only_wins": 3,
+      "delta": 0.0625,
+      "discordant": 8,
+      "exact_p_two_sided": 0.7265625
+    },
     "mcts512": {
       "games": 32,
       "mean_floor": 48.28125,
@@ -65,6 +163,30 @@
       "win_rate": 0.875,
       "wins": 28
     },
+    "rollout3_vs_mcts2048_rollout0": {
+      "bootstrap95": [
+        -0.09375,
+        0.21875
+      ],
+      "candidate_only_wins": 5,
+      "classification": "PROMISING_INCONCLUSIVE",
+      "control_only_wins": 3,
+      "delta": 0.0625,
+      "discordant": 8,
+      "exact_p_two_sided": 0.7265625
+    },
+    "rollout3_vs_mcts2048_rollout1": {
+      "bootstrap95": [
+        -0.0625,
+        0.1875
+      ],
+      "candidate_only_wins": 3,
+      "classification": "PROMISING_INCONCLUSIVE",
+      "control_only_wins": 1,
+      "delta": 0.0625,
+      "discordant": 4,
+      "exact_p_two_sided": 0.625
+    },
     "rollout3_vs_mcts512": {
       "bootstrap95": [
         0.0625,
@@ -100,10 +222,12 @@
     }
   },
   "runtime_ratios": {
+    "mcts2048_rollout0_vs_v4": 1.9394411360365686,
+    "mcts2048_rollout1_vs_v4": 44.97106560652844,
     "rollout3_vs_mcts512": 80.85334891331128,
     "rollout3_vs_v4": 105.8938158308624
   },
-  "schema_version": 1,
+  "schema_version": 2,
   "seed_block": [
     12003000,
     12003031
