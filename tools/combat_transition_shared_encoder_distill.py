@@ -216,26 +216,41 @@ def run(args):
                 total_max+=float(torch_kl(tm,a))*len(local);total_hp+=float(torch_kl(th,b))*len(local)
                 max_out.append(torch.softmax(a,-1).cpu().numpy());hp_out.append(torch.softmax(b,-1).cpu().numpy())
         a,b=np.concatenate(max_out),np.concatenate(hp_out);return a,b,total_max/len(ids),total_hp/len(ids)
-    history=[];best=float("inf");started=time.monotonic()
-    for epoch in range(1,RECIPE["epochs"]+1):
-        student.train();max_head.train();order=rng.permutation(train);total_max=total_hp=0.
-        for start in range(0,len(order),RECIPE["batch"]):
-            ids=order[start:start+RECIPE["batch"]];batch_digest.update(ids.tobytes());optimizer.zero_grad(set_to_none=True);a,b=forward(ids,True)
-            tm=torch.as_tensor(np.array(teacher_max[ids]),device="cuda");th=torch.as_tensor(np.array(teacher_hp[ids]),device="cuda")
-            lm=torch_kl(tm,a);lh=torch_kl(th,b);loss=.5*(lm+lh)
-            if not torch.isfinite(loss):raise ValueError("nonfinite distillation loss")
-            scaler.scale(loss).backward();scaler.unscale_(optimizer);norm=torch.nn.utils.clip_grad_norm_(list(student.parameters())+list(max_head.parameters()),RECIPE["clip"])
-            if not torch.isfinite(norm):raise ValueError("nonfinite gradient")
-            scaler.step(optimizer);scaler.update();total_max+=float(lm.detach())*len(ids);total_hp+=float(lh.detach())*len(ids)
-        _,_,vm,vh=score(validation);entry=dict(epoch=epoch,trainMaxHpKl=total_max/len(train),trainHpKl=total_hp/len(train),validationMaxHpKl=vm,validationHpKl=vh,selectionLoss=.5*(vm+vh),seconds=time.monotonic()-started);history.append(entry);print(json.dumps(entry),flush=True)
-        if entry["selectionLoss"]<best:best=entry["selectionLoss"];selected=epoch;student_state=copy.deepcopy(student.state_dict());max_state=copy.deepcopy(max_head.state_dict())
+    history=[];best=float("inf");started=time.monotonic();skipped_updates=0
+    overflow_log=(output/"overflow-events.jsonl").open("w")
+    try:
+        for epoch in range(1,RECIPE["epochs"]+1):
+            student.train();max_head.train();order=rng.permutation(train);total_max=total_hp=0.;epoch_skipped=0
+            for batch_index,start in enumerate(range(0,len(order),RECIPE["batch"]),1):
+                ids=order[start:start+RECIPE["batch"]];batch_digest.update(ids.tobytes());optimizer.zero_grad(set_to_none=True);a,b=forward(ids,True)
+                tm=torch.as_tensor(np.array(teacher_max[ids]),device="cuda");th=torch.as_tensor(np.array(teacher_hp[ids]),device="cuda")
+                lm=torch_kl(tm,a);lh=torch_kl(th,b);loss=.5*(lm+lh)
+                if not torch.isfinite(loss):
+                    c.base.json_dump(output/"failure.json",dict(kind="nonfinite_forward_loss",epoch=epoch,batch=batch_index,skippedUpdates=skipped_updates,lossScale=float(scaler.get_scale())))
+                    raise ValueError("nonfinite distillation loss")
+                scaler.scale(loss).backward();scaler.unscale_(optimizer);norm=torch.nn.utils.clip_grad_norm_(list(student.parameters())+list(max_head.parameters()),RECIPE["clip"])
+                loss_scale_before=float(scaler.get_scale())
+                if not torch.isfinite(norm):
+                    scaler.step(optimizer);scaler.update();loss_scale_after=float(scaler.get_scale())
+                    skipped_updates+=1;epoch_skipped+=1
+                    event=dict(epoch=epoch,batch=batch_index,gradientNorm="nonfinite",lossScaleBefore=loss_scale_before,lossScaleAfter=loss_scale_after,skippedUpdates=skipped_updates)
+                    overflow_log.write(json.dumps(event)+"\n");overflow_log.flush();print(json.dumps(dict(stage="overflow",**event)),flush=True)
+                    continue
+                scaler.step(optimizer);scaler.update();total_max+=float(lm.detach())*len(ids);total_hp+=float(lh.detach())*len(ids)
+            _,_,vm,vh=score(validation);entry=dict(epoch=epoch,trainMaxHpKl=total_max/len(train),trainHpKl=total_hp/len(train),validationMaxHpKl=vm,validationHpKl=vh,selectionLoss=.5*(vm+vh),skippedUpdatesEpoch=epoch_skipped,skippedUpdatesCumulative=skipped_updates,lossScale=float(scaler.get_scale()),seconds=time.monotonic()-started);history.append(entry);print(json.dumps(entry),flush=True)
+            if entry["selectionLoss"]<best:
+                best=entry["selectionLoss"];selected=epoch;student_state=copy.deepcopy(student.state_dict());max_state=copy.deepcopy(max_head.state_dict())
+                torch.save(dict(stateDict=student_state,maxHpHeadStateDict=max_state,optimizerStateDict=optimizer.state_dict(),scalerStateDict=scaler.state_dict(),epoch=epoch,validation=entry,skippedUpdates=skipped_updates,recipe=RECIPE,experimentSha=current),output/"best_epoch.pt")
+            c.base.json_dump(output/"progress.json",dict(history=history,bestEpoch=selected if 'selected' in locals() else None,bestSelectionLoss=best,skippedUpdates=skipped_updates,experimentSha=current))
+    finally:
+        overflow_log.close()
     student.load_state_dict(student_state);max_head.load_state_dict(max_state);student_max,student_hp,max_kl,hp_kl=score(validation)
     legal=stochastic_hp.legal_support(teachers.classes,pre[validation],maximum[validation]);validity=dict(maxHpNormalizationError=float(np.max(np.abs(student_max.sum(1)-1))),hpNormalizationError=float(np.max(np.abs(student_hp.sum(1)-1))),hpUnsupportedProbability=float(np.max(np.where(legal,0,student_hp))),allFinite=bool(np.isfinite(student_max).all() and np.isfinite(student_hp).all()))
     if not validity["allFinite"] or max(validity["maxHpNormalizationError"],validity["hpNormalizationError"])>1e-6 or validity["hpUnsupportedProbability"]!=0:raise ValueError("student probability validity failed")
     teacher_metrics=evaluate(teacher_max[validation],teacher_hp[validation],cache,teachers,validation);student_metrics=evaluate(student_max,student_hp,cache,teachers,validation);decision,gates=classify(teacher_metrics,student_metrics)
     if selected == RECIPE["epochs"] and decision == "SHARED_TRANSITION_ENCODER_REJECTED" and narrow_miss(gates): decision="INCONCLUSIVE"
     checkpoint=output/"student.pt";torch.save(dict(stateDict=student_state,maxHpHeadStateDict=max_state,recipe=RECIPE,experimentSha=current,selectedEpoch=selected),checkpoint)
-    result=dict(baselineSha=args.baseline_sha,experimentSha=current,recipe=RECIPE,counts=counts,provenance=provenance,testInferenceRows=0,testMetricsComputed=False,validationInGradientUpdates=False,studentHpInitializationMatches=True,studentHpInitializationSha256=initial_hp_hash,studentMaxHpHeadInitializationSha256=initial_max_hash,batchOrderSha256=batch_digest.hexdigest(),history=history,selectedEpoch=selected,studentToTeacherKl={"maxHP":max_kl,"HP":hp_kl},teacher=teacher_metrics,student=student_metrics,gates=gates,validity=validity,trainingSeconds=time.monotonic()-started,checkpointSha256=c.base.sha256(checkpoint),decision=decision)
+    result=dict(baselineSha=args.baseline_sha,experimentSha=current,recipe=RECIPE,overflowHandling="nonfinite gradient norm -> scaler.step/update skip; nonfinite forward loss aborts",skippedUpdates=sum(x.get("skippedUpdatesEpoch",0) for x in history),overflowEventsSha256=c.base.sha256(output/"overflow-events.jsonl"),bestCheckpointSha256=c.base.sha256(output/"best_epoch.pt"),bestCheckpointEpoch=selected,counts=counts,provenance=provenance,testInferenceRows=0,testMetricsComputed=False,validationInGradientUpdates=False,studentHpInitializationMatches=True,studentHpInitializationSha256=initial_hp_hash,studentMaxHpHeadInitializationSha256=initial_max_hash,batchOrderSha256=batch_digest.hexdigest(),history=history,selectedEpoch=selected,studentToTeacherKl={"maxHP":max_kl,"HP":hp_kl},teacher=teacher_metrics,student=student_metrics,gates=gates,validity=validity,trainingSeconds=time.monotonic()-started,checkpointSha256=c.base.sha256(checkpoint),decision=decision)
     c.base.json_dump(output/"results.json",result);np.savez_compressed(output/"validation_predictions.npz",rowIds=cache["ids"][validation],sourceGroups=cache["source"][validation],deltaValues=teachers.delta_values,classes=teachers.classes,studentMaxHP=student_max,studentHP=student_hp)
     c.base.json_dump(output/"artifact-hashes.json",{p.name:c.base.sha256(p) for p in output.iterdir() if p.is_file() and p.name!="artifact-hashes.json"});print(json.dumps(dict(decision=decision,selectedEpoch=selected,gates=gates)),flush=True)
 
