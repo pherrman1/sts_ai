@@ -95,8 +95,9 @@ RunResult runFullRunOOC(std::uint64_t seed, int sims, int asc, bool restV, bool 
     if (one_combat::liveOocMctsEnabled()) {
         if (sims != 10000 || !search::silverLiveBackendInstalled()
             || !search::silverLiveExactRootBudgets() || search::silverLiveAdaptiveEnabled()
-            || search::silverLiveReuseCapMode() != "allocated")
-            throw std::runtime_error("live OOC MCTS requires ordinary exact-10k Silver real combat");
+            || search::silverLiveReuseCapMode() != "allocated"
+            || search::silverLiveReuseCap() != 32768)
+            throw std::runtime_error("live OOC MCTS requires ordinary exact-10k Silver real combat with reuse cap 32768");
         if (e2cCapture) throw std::runtime_error("live OOC MCTS does not support combat corpus capture");
     }
     vDisconnect();

@@ -1,0 +1,4 @@
+repeated_reroot decision=0 simulations=10000 historical_nodes=10663 before_nodes=10663 retained_nodes=9563 cumulative_reclaimed=1100 allocated_cap_blocked=0
+repeated_reroot decision=1 simulations=10000 historical_nodes=19574 before_nodes=18474 retained_nodes=18213 cumulative_reclaimed=1361 allocated_cap_blocked=0
+repeated_reroot decision=2 simulations=10000 historical_nodes=31244 before_nodes=29883 retained_nodes=29410 cumulative_reclaimed=1834 allocated_cap_blocked=0
+silver_search_optimization FAIL: repeated canary retained tree reaches production cap

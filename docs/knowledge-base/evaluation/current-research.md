@@ -20,6 +20,35 @@ configurations and benchmark numbers, the [research graph](../research/README.md
 for topic synthesis, and the [experiment ledger](../../../EXPERIMENTS.md) for
 chronology.
 
+## Silver budget comparison at selected 128k cap
+
+The requested four-arm paired 32-seed comparison is complete at fixed 128k
+lazy GC. Flat 1k / 1/2/5k / flat 10k / 10/20/50k win 17/20/21/24 of 32;
+average seconds/run are 2.65/6.62/31.36/81.46. The targeted low schedule has
+an attractive descriptive cost/outcome point (one fewer win than flat 10k at
+about one-fifth runtime), without established quality equivalence. The highest
+schedule has most observed wins, substantial extra compute, 4.34 GiB peak
+four-worker process RSS, and 252 retained-cap fallbacks. All six exact paired
+tests have adjusted p>=0.3926; no established ranking or default/model
+qualification. Zero bridge failures and full budget/config/seed validation.
+The cohort is seeds 16–47; preceding N16 outcomes are not pooled. Root-regret
+and fresh confirmation remain unmeasured. See
+[ledger §266](../../experiments/ledger-06.md) and
+[full paired packet](../../experiments/evidence/silver_budget_four32_128k_2026-09-15/README.md).
+
+## Silver reuse-cap experiment
+
+Production remains 32,768 with explicit experimental 128k opt-in. The exploratory
+exact 10k paired 16 comparison at frozen `2b29e972` gives 11/16 wins at 32k versus 13/16
+at 128k: two 128k-only wins/no 32k-only, exact discordant-pair p=0.5. Cap fallbacks
+fall 214→0, while four-worker peak process RSS rises 1.078→2.501GiB. Diagnostic
+prefixes match until 32k pressure; zero bridge failures. This is encouraging
+but not established superiority; prior 1k seeds were reused, no root-regret
+measurement or frozen teacher/model qualification was performed. Keep 32k
+and require fresh matched quality/resource evidence before promotion.
+See [ledger §265](../../experiments/ledger-06.md) and
+[paired packet](../../experiments/evidence/silver_cap_pair10k_16_2026-09-15/README.md).
+
 ## Current priority / active line
 
 The fresh64 fixed10000 live OOC MCTS versus matched V4 gate is complete:
@@ -97,7 +126,7 @@ source-bootstrap intervals. This is classified
 already inspected, no tuned-versus-DeepSets prospective comparison was run,
 and no runtime export, composition, or gameplay qualification was performed.
 The existing no-clear-family conclusion and DeepSets simplicity tie-break
-therefore remain unchanged. See [ledger-06 §261](../../experiments/ledger-06.md)
+therefore remain unchanged. See [ledger-06 §267](../../experiments/ledger-06.md)
 and the [HPO evidence report](../../experiments/evidence/combat_transition_attention_hpo_2026-09-15.md).
 
 ### Phase-2 persistent-state transition surrogate support audit

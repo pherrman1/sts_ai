@@ -247,16 +247,17 @@ int main() {
               && reuse.inheritedVisits > 0,
           "private Silver session must exact-reroot and retain prior subtree visits");
 
+    check(silver_bridge::SilverSearchConfig{}.reuseCap == 32768, "production reuse cap must remain 32k");
     const auto capFixture = silver_bridge::probeSilverReuseCapFixture(firstWire);
     check(capFixture.defaultEqualsExplicitAllocated,
           "unset/default and explicit allocated reuse-cap modes must agree");
     check(capFixture.retainedAllocationAboveCapAfterReset && capFixture.activeBelowCapAfterReset,
           "setRoot must retain allocation while resetting active pool usage");
-    check(capFixture.allocatedCapBlocked
+    check(!capFixture.allocatedCapBlocked
               && capFixture.allocatedDiagnostic.exactCandidateFound
               && capFixture.allocatedDiagnostic.fallbackReason
-                  == silver_bridge::SilverRerootFallbackReason::ALLOCATED_CAP,
-          "allocated mode must cap-block an exact candidate after retained allocation growth");
+                  == silver_bridge::SilverRerootFallbackReason::NONE,
+          "allocated mode must discard historical allocation before checking the cap");
     check(capFixture.activeExactReroot && capFixture.activeInheritsVisits
               && capFixture.activeDiagnostic.fallbackReason
                   == silver_bridge::SilverRerootFallbackReason::NONE,

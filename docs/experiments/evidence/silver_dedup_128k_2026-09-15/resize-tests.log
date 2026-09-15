@@ -1,0 +1,10 @@
+dedup_growth capacity=16 entries=5
+dedup_growth capacity=32 entries=9
+dedup_growth capacity=64 entries=17
+dedup_growth capacity=128 entries=33
+dedup_growth capacity=256 entries=65
+dedup_growth capacity=512 entries=129
+dedup_growth capacity=1024 entries=257
+dedup_growth capacity=131072 entries=32769
+dedup_growth capacity=262144 entries=65537
+silver_search_optimization PASS

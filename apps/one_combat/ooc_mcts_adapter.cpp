@@ -425,6 +425,8 @@ void configureLiveOocMcts() {
     liveRootLockTrace.clear();
     liveSimulations = 512; liveConfig = {}; liveOptions = {true};
     if (!liveEnabled) return;
+    if (sts::search::silverLiveReuseCap() != 32768)
+        throw std::runtime_error("live OOC MCTS requires frozen Silver reuse cap 32768");
     if (!g_oocStrategicTokNet.ok) throw std::runtime_error("STS_OOC_MCTS requires native V4 policy");
     if (!winNetOk()) throw std::runtime_error("STS_OOC_MCTS requires native v_win");
     // Legacy win loading may retry the default. An explicit failed request must
