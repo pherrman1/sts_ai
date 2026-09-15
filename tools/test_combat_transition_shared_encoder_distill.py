@@ -29,6 +29,14 @@ class TestSharedEncoderDistill(unittest.TestCase):
         p=np.array([[.25,.75]],np.float32)
         self.assertAlmostEqual(screen.kl(p,p),0.)
 
+    def test_masked_torch_kl_is_finite(self):
+        import torch
+        teacher=torch.tensor([[.25,.75,0.]])
+        logits=torch.tensor([[0.,1.,-torch.inf]],requires_grad=True)
+        loss=screen.torch_kl(teacher,logits);loss.backward()
+        self.assertTrue(torch.isfinite(loss))
+        self.assertTrue(torch.isfinite(logits.grad).all())
+
     def test_epoch_twelve_narrow_miss(self):
         teacher=metrics();student=metrics();student["HP"]["overall"]["nll"]*=1.021
         decision,gates=screen.classify(teacher,student)

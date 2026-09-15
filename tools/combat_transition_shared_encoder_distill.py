@@ -81,6 +81,13 @@ def kl(teacher, student):
     return float(terms.sum(-1).mean())
 
 
+def torch_kl(teacher, logits):
+    log_student = torch.log_softmax(logits, -1)
+    positive = teacher > 0
+    log_teacher = torch.where(positive, teacher.log(), torch.zeros_like(teacher))
+    return torch.where(positive, teacher * (log_teacher - log_student), torch.zeros_like(teacher)).sum(-1).mean()
+
+
 def classify(teacher, student):
     hp_t, hp_s = teacher["HP"]["overall"], student["HP"]["overall"]
     max_t, max_s = teacher["maxHP"]["overall"], student["maxHP"]["overall"]
@@ -212,7 +219,7 @@ def run(args):
         for start in range(0,len(order),RECIPE["batch"]):
             ids=order[start:start+RECIPE["batch"]];batch_digest.update(ids.tobytes());optimizer.zero_grad(set_to_none=True);a,b=forward(ids,True)
             tm=torch.as_tensor(np.array(teacher_max[ids]),device="cuda");th=torch.as_tensor(np.array(teacher_hp[ids]),device="cuda")
-            lm=torch.nn.functional.kl_div(torch.log_softmax(a,-1),tm,reduction="batchmean");lh=torch.nn.functional.kl_div(torch.log_softmax(b,-1),th,reduction="batchmean");loss=.5*(lm+lh)
+            lm=torch_kl(tm,a);lh=torch_kl(th,b);loss=.5*(lm+lh)
             if not torch.isfinite(loss):raise ValueError("nonfinite distillation loss")
             scaler.scale(loss).backward();scaler.unscale_(optimizer);norm=torch.nn.utils.clip_grad_norm_(list(student.parameters())+list(max_head.parameters()),RECIPE["clip"])
             if not torch.isfinite(norm):raise ValueError("nonfinite gradient")
