@@ -8438,3 +8438,23 @@ extra epochs, reweighting, adapters, architecture changes, runtime/export,
 gameplay or promotion. Knowledge impact: experiment evidence and current
 research status only; qualified components/defaults are unchanged.
 [Protocol, epoch history, metrics and hashes](evidence/shared_transition_encoder_distill_2026-09-15.md).
+
+
+## §274 — 40-epoch shared transition encoder continuation (2026-09-15)
+
+Baseline is merged main `5a339788`; candidate `440c9d1b` changes only the
+previous shared-distillation recipe's epoch cap from 12 to 40. Architecture,
+loss, teacher hashes, optimizer, learning rates, weight decay, batch, clipping,
+AMP path and seed `20260912` are unchanged. The exact TRAIN/VALIDATION
+population is 393,677/19,986 and 48,590/2,496; TEST inference is zero.
+
+Epochs 1–18 complete and exactly reproduce the prior run through epoch12.
+Combined validation KL reaches its best observed value at epoch18:
+maxHP0.002390692, HP0.005169924, combined0.003780308. During epoch19 the
+fixed non-finite-gradient guard fires before an update is accepted. No
+checkpoint is selected and no quality gate decision is made from this
+incomplete fit. Classify the extension as
+**`EXTENDED_TRAINING_NUMERICALLY_UNSTABLE`**. Do not change AMP/scaler,
+precision, clipping, loss, task weights or seed under this result; any such
+repair is a new experiment. The prior 12-epoch rejection remains applicable.
+[History and receipt](evidence/shared_transition_encoder_distill_40_2026-09-15.md).

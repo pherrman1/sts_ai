@@ -353,6 +353,16 @@ runtime/export, model promotion or gameplay ran, and all qualified components
 remain unchanged. See [ledger-06 §273](../../experiments/ledger-06.md) and the
 [distillation evidence](../../experiments/evidence/shared_transition_encoder_distill_2026-09-15.md).
 
+The cheapest fixed-recipe continuation was then tested by changing only the
+epoch cap from 12 to 40. Epochs 1–18 reproduced the prior trajectory exactly;
+the combined VALIDATION KL reached 0.003780308 at epoch18. Epoch19 stopped on
+the existing non-finite gradient guard before an update was accepted, so no
+checkpoint or new quality decision exists. This exact AMP/scaler/clipping
+continuation is **`EXTENDED_TRAINING_NUMERICALLY_UNSTABLE`**. Do not silently
+stabilize it or alter loss/weights/seed; that would be a new experiment. See
+[ledger-06 §274](../../experiments/ledger-06.md) and the
+[40-epoch continuation evidence](../../experiments/evidence/shared_transition_encoder_distill_40_2026-09-15.md).
+
 ### Shared relic trajectory residues
 
 **`RELIC_TRAJECTORY_QUALIFIED`** on the audited offline composed support.
