@@ -29,6 +29,10 @@ GameContext detachedCopy(const GameContext &parent) {
     return child;
 }
 void require(bool ok, const char *why) { if (!ok) throw std::runtime_error(why); }
+double bossLeafUtility(const CombatTransitionExpectation &estimate) {
+    const double survival = 1.0 - estimate.death;
+    return 0.75 * survival + 0.25 * survival * estimate.winningHpFraction;
+}
 void applySampledCombatExit(GameContext &gc, const CombatRuntimeSample &sample) {
     const bool escape = sample.outcome == CombatRuntimeSample::Outcome::ESCAPE;
     if ((sample.outcome != CombatRuntimeSample::Outcome::VICTORY && !escape)
@@ -58,7 +62,7 @@ OocGameContextModel::OocGameContextModel(const GameContext &gc, const PathHistor
     : combatSampler(std::move(sampler)), options(std::move(opts)) {
     if (!std::isfinite(options.priorTemperature) || options.priorTemperature <= 0 || (options.leafCombats != 0 && options.leafCombats != 1 && options.leafCombats != 3))
         throw std::invalid_argument("OOC MCTS invalid adapter options");
-    if (!winNetOk()) throw std::runtime_error("OOC MCTS requires native v_win");
+    if (!options.bossLeaf && !winNetOk()) throw std::runtime_error("OOC MCTS requires native v_win");
     if (!g_oocStrategicTokNet.ok) throw std::runtime_error("OOC MCTS requires native V4 policy");
     auto history = path;
     history.update(gc);
@@ -193,6 +197,41 @@ double OocGameContextModel::leafValue(sts::search::OocStateId id) const {
         throw std::runtime_error("OOC MCTS v_win requires a resolved map checkpoint");
     if (auto terminal = terminalValue(id)) return *terminal;
     if (options.checkpointLeaves && options.constantLeaf) return 0.5;
+    if (options.bossLeaf) {
+        if (!combatSampler) throw std::runtime_error("OOC MCTS boss leaf requires combat evaluator");
+        struct BossProbe { sts::MonsterEncounter encounter; int act, floor; };
+        static constexpr BossProbe bosses[] = {
+            {sts::MonsterEncounter::SLIME_BOSS, 1, 17},
+            {sts::MonsterEncounter::THE_GUARDIAN, 1, 17},
+            {sts::MonsterEncounter::HEXAGHOST, 1, 17},
+            {sts::MonsterEncounter::CHAMP, 2, 34},
+            {sts::MonsterEncounter::COLLECTOR, 2, 34},
+            {sts::MonsterEncounter::AUTOMATON, 2, 34},
+            {sts::MonsterEncounter::AWAKENED_ONE, 3, 50},
+            {sts::MonsterEncounter::DONU_AND_DECA, 3, 50},
+            {sts::MonsterEncounter::TIME_EATER, 3, 50},
+            {sts::MonsterEncounter::THE_HEART, 4, 55}
+        };
+        const auto &source = state(id);
+        double total = 0;
+        for (const auto &boss : bosses) {
+            auto probe = detachedCopy(source);
+            const auto encounter = boss.encounter;
+            probe.act = boss.act;
+            probe.floorNum = boss.floor;
+            probe.curRoom = sts::Room::BOSS;
+            probe.info.encounter = encounter;
+            const auto input = captureCombatPredictorInput(probe, encounter, potionKeepValue(probe));
+            const auto estimate = combatSampler->expectation(probe, input);
+            if (!estimate.supported)
+                throw sts::search::OocSearchUnsupported("boss_leaf_unsupported_" + std::to_string((int)encounter));
+            const double value = bossLeafUtility(estimate);
+            if (!std::isfinite(value) || value < 0 || value > 1)
+                throw std::runtime_error("OOC MCTS invalid boss leaf value");
+            total += value;
+        }
+        return total / std::size(bosses);
+    }
     // Native-only seam; its implementation has no server fallback branch.
     auto gc = detachedCopy(state(id));
     struct PathScope {
@@ -372,7 +411,12 @@ void applyLiveControl(const std::string &key, const std::string &value,
         return x;
     };
     if (key == "STS_OOC_MCTS_PRIOR") opts.uniformPrior = choice("policy", "uniform");
-    else if (key == "STS_OOC_MCTS_LEAF_VALUE") opts.constantLeaf = choice("native", "constant");
+    else if (key == "STS_OOC_MCTS_LEAF_VALUE") {
+        if (value == "native") { opts.constantLeaf = false; opts.bossLeaf = false; }
+        else if (value == "constant") { opts.constantLeaf = true; opts.bossLeaf = false; }
+        else if (value == "boss") { opts.constantLeaf = false; opts.bossLeaf = true; }
+        else invalid();
+    }
     else if (key == "STS_OOC_MCTS_LEAF_POLICY") opts.uniformLeafPolicy = choice("v4", "uniform");
     else if (key == "STS_OOC_MCTS_EARLY_STOP") config.allowUnqualifiedRootStop = choice("0", "1");
     else if (key == "STS_OOC_MCTS_ROOT_SELECTION") config.selectByMeanQ = choice("visits", "q");
@@ -428,7 +472,9 @@ void configureLiveOocMcts() {
     if (sts::search::silverLiveReuseCap() != 32768)
         throw std::runtime_error("live OOC MCTS requires frozen Silver reuse cap 32768");
     if (!g_oocStrategicTokNet.ok) throw std::runtime_error("STS_OOC_MCTS requires native V4 policy");
-    if (!winNetOk()) throw std::runtime_error("STS_OOC_MCTS requires native v_win");
+    const char *leafValue = std::getenv("STS_OOC_MCTS_LEAF_VALUE");
+    const bool bossLeafRequested = leafValue && std::string(leafValue) == "boss";
+    if (!bossLeafRequested && !winNetOk()) throw std::runtime_error("STS_OOC_MCTS requires native v_win");
     // Legacy win loading may retry the default. An explicit failed request must
     // remain a startup failure even if that retry succeeded.
     if (const char *requested = std::getenv("STS_WIN_NET")) {
@@ -465,7 +511,7 @@ void configureLiveOocMcts() {
         << " widen_k=" << liveConfig.wideningK << " widen_alpha=" << liveConfig.wideningAlpha
         << " max_depth=" << liveConfig.maxDepth << " root_selection=" << (liveConfig.selectByMeanQ ? "q" : "visits")
         << " early_stop=" << liveConfig.allowUnqualifiedRootStop
-        << " leaf_value=" << (liveOptions.constantLeaf ? "constant" : "native")
+        << " leaf_value=" << (liveOptions.bossLeaf ? "boss" : liveOptions.constantLeaf ? "constant" : "native")
         << " leaf_combats=" << liveOptions.leafCombats << " leaf_policy=" << (liveOptions.uniformLeafPolicy ? "uniform" : "v4")
         << "]\n";
     std::cout << "[ooc-mcts-config] {\"prior\":\"" << (liveOptions.uniformPrior ? "uniform" : "policy")
@@ -473,7 +519,7 @@ void configureLiveOocMcts() {
         << ",\"wideningK\":" << liveConfig.wideningK << ",\"wideningAlpha\":" << liveConfig.wideningAlpha
         << ",\"maxDepth\":" << liveConfig.maxDepth << ",\"rootSelection\":\"" << (liveConfig.selectByMeanQ ? "q" : "visits")
         << "\",\"earlyStop\":" << (liveConfig.allowUnqualifiedRootStop ? "true" : "false")
-        << ",\"leafValue\":\"" << (liveOptions.constantLeaf ? "constant" : "native")
+        << ",\"leafValue\":\"" << (liveOptions.bossLeaf ? "boss" : liveOptions.constantLeaf ? "constant" : "native")
         << "\",\"leafCombats\":" << liveOptions.leafCombats << ",\"leafPolicy\":\"" << (liveOptions.uniformLeafPolicy ? "uniform" : "v4")
         << "\",\"simulations\":" << liveSimulations << "}\n";
     std::cout.precision(precision);
@@ -860,8 +906,13 @@ void oocMctsAdapterSelfTest() {
         require(!parsed.allowUnqualifiedRootStop,"early-stop rollback parsed");
         applyLiveControl("STS_OOC_MCTS_ROOT_SELECTION","q",parsed,opts);
         applyLiveControl("STS_OOC_MCTS_LEAF_COMBATS","3",parsed,opts);
+        applyLiveControl("STS_OOC_MCTS_LEAF_VALUE","boss",parsed,opts);
         applyLiveControl("STS_OOC_MCTS_CPUCT","0",parsed,opts);
-        require(parsed.selectByMeanQ && parsed.cPuct == 0 && opts.leafCombats == 3, "accepted bounded knobs");
+        require(parsed.selectByMeanQ && parsed.cPuct == 0 && opts.leafCombats == 3 && opts.bossLeaf,
+            "accepted bounded knobs");
+        require(std::abs(bossLeafUtility({true,0.2f,0.5f})-0.7)<1e-7
+            && bossLeafUtility({true,1,1})==0 && bossLeafUtility({true,0,1})==1,
+            "boss leaf survival/HP utility");
         for (const auto &invalid : std::vector<std::pair<std::string,std::string>>{
             {"STS_OOC_MCTS_EARLY_STOP","true"},{"STS_OOC_MCTS_EARLY_STOP","2"},{"STS_OOC_MCTS_PRIOR","none"},{"STS_OOC_MCTS_TEMPERATURE","0"},
             {"STS_OOC_MCTS_CPUCT","-1"},{"STS_OOC_MCTS_WIDEN_K","nan"},

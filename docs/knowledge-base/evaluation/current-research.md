@@ -52,6 +52,27 @@ See [ledger §265](../../experiments/ledger-06.md) and
 
 ## Current priority / active line
 
+The requested all-Act boss leaf follow-up is complete:
+**ALL_ACT_BOSS_LEAF_NO_OBSERVED_BEHAVIORAL_EFFECT**. Fresh paired seeds
+12003032--12003063 at fixed512 OOC MCTS/exact10k Silver give native `v_win`
+26/32 and the ten-boss V2 combat-evaluator leaf26/32, with no discordants. All
+terminal-state and non-timing trace rows match. The treatment evaluates every
+Act1--4 boss at its canonical act/floor while preserving leaf player state.
+This is no observed effect at N32, not equivalence; no more seeds/default
+change without a mechanism hypothesis for unchanged root choices. See
+[ledger §274](../../experiments/ledger-06.md) and the
+[paired packet](../../experiments/evidence/ooc_mcts_all_act_boss_leaf_pair32_2026-09-15/README.md).
+
+The fresh paired 32-seed all-current-act-boss leaf experiment is complete:
+**BOSS_LEAF_NO_OBSERVED_BEHAVIORAL_EFFECT**. At fixed512 OOC MCTS and exact10k
+Silver real combat, native `v_win` and the V2 combat-evaluator boss leaf both
+win24/32 with zero discordant outcomes. Every terminal-state row and non-timing
+trace row matches; mean runtime changes103.8807→104.1177 seconds/run. This is
+no observed effect at N32, not equivalence. Keep the native leaf/defaults and
+do not add seeds without a mechanism-level hypothesis for unchanged root
+choices. See [ledger §272](../../experiments/ledger-06.md) and the
+[paired packet](../../experiments/evidence/ooc_mcts_boss_leaf_pair32_2026-09-15/README.md).
+
 The fresh64 fixed10000 live OOC MCTS versus matched V4 gate is complete:
 **OOC_MCTS_WINRATE_INCONCLUSIVE**. MCTS42/64 versus V448/64,−9.375pp,
 paired95% CI[−23.4375,+4.6875]pp. Both fresh arms use frozen native models and

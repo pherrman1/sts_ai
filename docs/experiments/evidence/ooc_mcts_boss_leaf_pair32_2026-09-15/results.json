@@ -1,0 +1,60 @@
+{
+  "arms": {
+    "boss": {
+      "completed_simulations": 1181831,
+      "discarded_simulations": 375,
+      "leaf_evaluations": 1180553,
+      "mcts_fallback": 1012,
+      "mcts_owned": 4528,
+      "mean_final_hp": 40.1875,
+      "mean_floor": 47.9375,
+      "mean_seconds": 104.11765,
+      "ooc_decisions": 5540,
+      "support_aborts": 9,
+      "wins": 24
+    },
+    "native": {
+      "completed_simulations": 1181831,
+      "discarded_simulations": 375,
+      "leaf_evaluations": 1180553,
+      "mcts_fallback": 1012,
+      "mcts_owned": 4528,
+      "mean_final_hp": 40.1875,
+      "mean_floor": 47.9375,
+      "mean_seconds": 103.88071875,
+      "ooc_decisions": 5540,
+      "support_aborts": 9,
+      "wins": 24
+    }
+  },
+  "artifacts": {
+    "raw/boss.csv": "88ff6b30c4e50c319e7befdedcee7c1917dc6fccd8b5e809ab98b456c9c48ab1",
+    "raw/boss.mcts.csv": "3123282378c8965ed00a7b71917fffc765156b2840cc769a565ae8e1b70bb16d",
+    "raw/boss.mcts.csv.support.jsonl": "d6440797a88171612ac2ee5dae98c920567a632a649375768624ea30c27b18a7",
+    "raw/boss.receipt.json": "cd774d7e2e047115786a6f0142a812b07eaa50aaa86d30fdf5d155c5ff58c9be",
+    "raw/boss.score.json": "0720d9ac567db5d84347e7d423b20e5823ace0f6c02b8cd7a4c2be542fdf490d",
+    "raw/native.csv": "965e73b848ac8e24491d1b7774056c130752ee303df2fedf0d41defd9c44c935",
+    "raw/native.mcts.csv": "3ad89e108dfb93692ace0dcc2fb9eccfa736a671b1aea89f5b236596e41eecfc",
+    "raw/native.mcts.csv.support.jsonl": "a09ff3118dc2f8e1e1f6d3cd309842ea5d2723c5cff6a739a486b44b2bf56242",
+    "raw/native.receipt.json": "a34daf22f6fa73ef7487ec037ff8117694d83609a70bd1c33a7dfeeebce2c9fe",
+    "raw/native.score.json": "458c5b7174c2ff178be6c6e584dc79afa4eb75ca4f46142c802608b9bd27a34b"
+  },
+  "classification": "BOSS_LEAF_NO_OBSERVED_BEHAVIORAL_EFFECT",
+  "paired": {
+    "bootstrap_200k_percentile95": [
+      0.0,
+      0.0
+    ],
+    "boss_minus_native_win_rate": 0.0,
+    "boss_only": 0,
+    "both_lose": 8,
+    "both_win": 24,
+    "identical_nontiming_trace_rows": 32,
+    "identical_terminal_state_rows": 32,
+    "native_only": 0
+  },
+  "seeds": [
+    12003000,
+    12003031
+  ]
+}

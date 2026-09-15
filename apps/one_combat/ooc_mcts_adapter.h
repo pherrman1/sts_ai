@@ -22,6 +22,7 @@ struct OocAdapterOptions {
     bool uniformPrior = false;
     double priorTemperature = 1.0;
     bool constantLeaf = false;
+    bool bossLeaf = false;
     unsigned leafCombats = 0;
     bool uniformLeafPolicy = false;
 };

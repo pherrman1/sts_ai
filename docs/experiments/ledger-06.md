@@ -8374,3 +8374,57 @@ not equivalence proof, unbiased-planning qualification, or permission to
 enable OOC MCTS by default. Knowledge impact: current research status gains
 prospective gameplay evidence; runtime and artifacts are unchanged.
 [Evidence, raw outputs, analyzer and provenance](evidence/combat_transition_v2_ooc_mcts_pair64_2026-09-15/README.md).
+
+
+## §272 — All-current-act-boss combat-evaluator OOC MCTS leaf paired 32 (2026-09-15)
+
+An opt-in leaf replaces native `v_win` with the mean score over all three
+current-act bosses: `0.75*P(survive) + 0.25*P(survive)*E[ending HP fraction
+| survive]`, using the tracked qualified V2 combat-transition evaluator. It
+fails the simulation/root closed if any boss is unsupported and retains exact
+terminal 0/1. No treatment leaf calls `v_win`; the ordinary live fallback OOC
+chain is unchanged.
+
+Fresh paired seeds 12003000--12003031 used source `b5f037d` plus bound diff,
+Ironclad A0/fair RNG/keys off/Act-3 stop, 512 OOC MCTS simulations, V4 priors,
+and exact-root-budget 10k Silver real combat. Native and boss leaves both won
+24/32. Both-win24/both-lose8/native-only0/boss-only0 gives 0.0pp; the fixed
+200k paired bootstrap interval is [0.0,0.0]pp because every observed pair is
+identical. All 32 terminal-state rows and all non-timing trace rows match.
+Mean seconds/run103.8807→104.1177. Each arm has5,540 decisions,4,528 owned,
+1,012 fallbacks,1,181,831 completed simulations,1,180,553 leaf evaluations,
+nine expected Smoke support aborts and375 discarded simulations.
+
+Classification **BOSS_LEAF_NO_OBSERVED_BEHAVIORAL_EFFECT**: no observed action
+or outcome change on this N32 cohort, not equivalence proof. No default change
+or additional seeds. A distinct follow-up would need a mechanism-level
+hypothesis for why materially different leaf values do not alter root choices.
+Knowledge impact: architecture/env documentation records the new opt-in leaf;
+current research records the null online result. [Evidence and provenance](evidence/ooc_mcts_boss_leaf_pair32_2026-09-15/README.md).
+
+
+## §274 — All-Act boss combat-evaluator OOC MCTS leaf paired 32 (2026-09-15)
+
+The prior current-act boss leaf was broadened to all ten Act1--4 bosses. Each
+probe preserves player state but uses its canonical encounter act/floor; the
+equal-mean utility remains `0.75*P(survive) + 0.25*P(survive)*E[ending HP
+fraction | survive]`. The treatment leaf uses the tracked qualified V2 combat
+evaluator, no `v_win` call or gameplay RNG, exact terminal0/1, and fail-closed
+support. Inspected origin/main `28d39cd` had five newer offline shared-HP/docs
+commits but no OOC/combat runtime or model change.
+
+Fresh paired seeds12003032--12003063 used IroncladA0/fair RNG/keysOFF/Act3
+stop, fixed512 OOC MCTS, V4 priors and exact10k Silver real combat. Native and
+all-boss leaves both win26/32: both-win26/both-lose6/no discordants, delta0pp,
+fixed200k paired bootstrap95%[0,0]pp because all observed differences are zero.
+All32 terminal-state and non-timing trace rows match. Mean floor49.15625 and
+HP46.09375 match; seconds/run110.3850→109.9430. Each arm records5,720 OOC
+decisions,4,626 owned,1,094 fallbacks,1,199,941 completed simulations,
+1,199,100 leaf evaluations,12 expected Smoke support aborts,550 discarded and
+zero continuation-limit aborts.
+
+Classification **ALL_ACT_BOSS_LEAF_NO_OBSERVED_BEHAVIORAL_EFFECT**. This is no
+observed action/outcome change at N32, not equivalence. Keep defaults and do
+not add seeds without a mechanism-level hypothesis. Knowledge impact: current
+research and the opt-in architecture contract now include the all-Act variant;
+no default/model/support/RNG change. [Evidence and provenance](evidence/ooc_mcts_all_act_boss_leaf_pair32_2026-09-15/README.md).
