@@ -208,11 +208,14 @@ def run(args):
         legal=stochastic_hp.legal_support(teachers.classes,pre[ids],maximum[ids]); hp_logits=hp_logits.masked_fill(~torch.as_tensor(legal,device="cuda"),-torch.inf)
         return max_logits,hp_logits
     def score(ids):
-        student.eval();max_out=[];hp_out=[]
+        student.eval();max_out=[];hp_out=[];total_max=total_hp=0.
         with torch.inference_mode():
             for start in range(0,len(ids),1024):
-                local=ids[start:start+1024];a,b=forward(local,False);max_out.append(torch.softmax(a,-1).cpu().numpy());hp_out.append(torch.softmax(b,-1).cpu().numpy())
-        a,b=np.concatenate(max_out),np.concatenate(hp_out);return a,b,kl(teacher_max[ids],a),kl(teacher_hp[ids],b)
+                local=ids[start:start+1024];a,b=forward(local,False)
+                tm=torch.as_tensor(np.array(teacher_max[local]),device="cuda");th=torch.as_tensor(np.array(teacher_hp[local]),device="cuda")
+                total_max+=float(torch_kl(tm,a))*len(local);total_hp+=float(torch_kl(th,b))*len(local)
+                max_out.append(torch.softmax(a,-1).cpu().numpy());hp_out.append(torch.softmax(b,-1).cpu().numpy())
+        a,b=np.concatenate(max_out),np.concatenate(hp_out);return a,b,total_max/len(ids),total_hp/len(ids)
     history=[];best=float("inf");started=time.monotonic()
     for epoch in range(1,RECIPE["epochs"]+1):
         student.train();max_head.train();order=rng.permutation(train);total_max=total_hp=0.
