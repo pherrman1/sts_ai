@@ -1,0 +1,72 @@
+{
+  "schema": "shared_frozen_hp_encoder_compact_result_v1",
+  "baselineSha": "cde61c85b8a9ad8500cd3ca6e18607ff33bb6e1a",
+  "experimentSha": "d10908c3336ec00db62d41af5cb12dc08167723e",
+  "decision": "SHARED_ENCODER_HP_REJECTED",
+  "counts": {
+    "TRAIN": {"rows": 393677, "sources": 19986},
+    "VALIDATION": {"rows": 48590, "sources": 2496}
+  },
+  "componentCheckpoints": {
+    "survival": {"sha256": "e150180a9112f52a94cfa60770adb6c0a48517a7d94a4c26f6e5896e85269c18", "sourceSha": "1c31b7eb0a7660d43bc27e0849a8955dd0c3daae"},
+    "HP": {"sha256": "0c8b5aa8c5218d6cd6102b768cc86a474c9ef30953d4b034caedcc41a426109b", "sourceSha": "1c31b7eb0a7660d43bc27e0849a8955dd0c3daae"}
+  },
+  "preparationCacheSha256": "e1c25f2758bf56c7cff392ea02342d809f3ad7427c70b64166244a6b714a251d",
+  "rowIdsSha256": "02ca974b977dd42784f1c43a60c6216270779ce3d1670e2e2ce975967b9612e2",
+  "sourceGroupsSha256": "f29f43065913889181fcb27981536701cf29d8273c54425798984ff801545995",
+  "representationSha256": {
+    "reference": "e0c5181193a3b279740744634c129247c6dc9cc72124c8ede71ce629aeb700dc",
+    "candidate": "f5e6f4ed62eec4ab8859d09edb328224a7d876682a65e7f0a3429173951cf4a4"
+  },
+  "recipe": {"seed": 20260912, "epochs": 12, "batch": 512, "lr": 0.001, "weightDecay": 0.0001, "clip": 1.0, "precision": "cached FP32 representations; AMP-FP16 decoder fit", "selection": "independent earliest strict minimum VALIDATION signed-HP NLL"},
+  "parity": {"rowParity": true, "validationInGradientUpdates": false, "decoderInitialStatesByteIdentical": true, "batchOrdersIdentical": true},
+  "sharedInitializationSha256": "1e9708074b099ddd2113bc8e8329cc516f3fb5b5641f5712abae0e67838bbdc4",
+  "sharedBatchOrderSha256": "dd0579e1f2c34179188c22b82d35126ceb4619fcd76406b134b278a326f2376f",
+  "arms": {
+    "reference": {
+      "selectedEpoch": 8,
+      "history": [
+        {"epoch": 1, "trainNll": 2.610626009, "validationNll": 2.523071766, "validationCrps": 3.644846854, "validationExpectedMae": 5.363883383},
+        {"epoch": 2, "trainNll": 2.508979599, "validationNll": 2.510592461, "validationCrps": 3.628962007, "validationExpectedMae": 5.355067775},
+        {"epoch": 3, "trainNll": 2.499445255, "validationNll": 2.505148888, "validationCrps": 3.628779517, "validationExpectedMae": 5.318853900},
+        {"epoch": 4, "trainNll": 2.494658037, "validationNll": 2.502926350, "validationCrps": 3.626674851, "validationExpectedMae": 5.362603544},
+        {"epoch": 5, "trainNll": 2.491666120, "validationNll": 2.501366138, "validationCrps": 3.622402990, "validationExpectedMae": 5.367916429},
+        {"epoch": 6, "trainNll": 2.488834737, "validationNll": 2.500291109, "validationCrps": 3.623633350, "validationExpectedMae": 5.312856198},
+        {"epoch": 7, "trainNll": 2.487195108, "validationNll": 2.500881195, "validationCrps": 3.620126183, "validationExpectedMae": 5.333373789},
+        {"epoch": 8, "trainNll": 2.485595691, "validationNll": 2.496705532, "validationCrps": 3.618011474, "validationExpectedMae": 5.355416796},
+        {"epoch": 9, "trainNll": 2.484114631, "validationNll": 2.499498129, "validationCrps": 3.617761416, "validationExpectedMae": 5.365350968},
+        {"epoch": 10, "trainNll": 2.482972496, "validationNll": 2.499152660, "validationCrps": 3.622405560, "validationExpectedMae": 5.393135297},
+        {"epoch": 11, "trainNll": 2.482007149, "validationNll": 2.497684479, "validationCrps": 3.618138990, "validationExpectedMae": 5.377144857},
+        {"epoch": 12, "trainNll": 2.481121903, "validationNll": 2.498411655, "validationCrps": 3.619921315, "validationExpectedMae": 5.357420434}
+      ],
+      "selectedValidation": {"nll": 2.496705532, "crps": 3.618011474, "expectedMae": 5.355416796},
+      "validity": {"probabilityMaxNormalizationError": 3.5762786865234375e-07, "unsupportedProbabilityMax": 0.0}
+    },
+    "candidate": {
+      "selectedEpoch": 12,
+      "history": [
+        {"epoch": 1, "trainNll": 2.821613613, "validationNll": 2.743122339, "validationCrps": 4.301740618, "validationExpectedMae": 6.235690468},
+        {"epoch": 2, "trainNll": 2.738841439, "validationNll": 2.721363783, "validationCrps": 4.213784620, "validationExpectedMae": 6.163748240},
+        {"epoch": 3, "trainNll": 2.723112757, "validationNll": 2.710259914, "validationCrps": 4.173159300, "validationExpectedMae": 6.083127365},
+        {"epoch": 4, "trainNll": 2.713807730, "validationNll": 2.704254389, "validationCrps": 4.158144477, "validationExpectedMae": 6.139130900},
+        {"epoch": 5, "trainNll": 2.707788733, "validationNll": 2.699092627, "validationCrps": 4.138836872, "validationExpectedMae": 6.055571621},
+        {"epoch": 6, "trainNll": 2.702201076, "validationNll": 2.695525646, "validationCrps": 4.123682681, "validationExpectedMae": 6.010982354},
+        {"epoch": 7, "trainNll": 2.698538953, "validationNll": 2.691373348, "validationCrps": 4.112600023, "validationExpectedMae": 5.981780877},
+        {"epoch": 8, "trainNll": 2.694969418, "validationNll": 2.688344717, "validationCrps": 4.111914814, "validationExpectedMae": 6.039601812},
+        {"epoch": 9, "trainNll": 2.692079089, "validationNll": 2.685790300, "validationCrps": 4.099427142, "validationExpectedMae": 6.035834128},
+        {"epoch": 10, "trainNll": 2.689243888, "validationNll": 2.684726238, "validationCrps": 4.094280837, "validationExpectedMae": 5.972190907},
+        {"epoch": 11, "trainNll": 2.687040794, "validationNll": 2.690553188, "validationCrps": 4.110707711, "validationExpectedMae": 6.133110424},
+        {"epoch": 12, "trainNll": 2.684891137, "validationNll": 2.680527687, "validationCrps": 4.087017666, "validationExpectedMae": 5.986446000}
+      ],
+      "selectedValidation": {"nll": 2.680527687, "crps": 4.087017666, "expectedMae": 5.986446000},
+      "validity": {"probabilityMaxNormalizationError": 2.980232238769531e-07, "unsupportedProbabilityMax": 0.0}
+    }
+  },
+  "deltas": {"nll": 0.183822155, "nllRelative": 0.073625885, "crps": 0.469006192, "crpsRelative": 0.129630930, "expectedMae": 0.631029204},
+  "sliceDeltas": {
+    "healing": {"rows": 10629, "nllRelative": 0.164324422, "crpsRelative": 0.269186976, "expectedMae": 1.224851043},
+    "lowHp": {"rows": 433, "nllRelative": 0.143458098, "crpsRelative": 0.357310619, "expectedMae": 1.350283613},
+    "damage": {"rows": 24466, "nllRelative": 0.046550027, "crpsRelative": 0.091848358, "expectedMae": 0.517770841}
+  },
+  "external": {"resultsSha256": "40281ce7fd5a7bb7f1e99469529c9ee483ce575ce2db7a92e5e8ba3fdf091e87", "validationPredictionsSha256": "e56e0631aa4201464001ee21959e4e2fd22df1e90219c889314f2b08775351b6"}
+}

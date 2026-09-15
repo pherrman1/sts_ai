@@ -8376,7 +8376,42 @@ prospective gameplay evidence; runtime and artifacts are unchanged.
 [Evidence, raw outputs, analyzer and provenance](evidence/combat_transition_v2_ooc_mcts_pair64_2026-09-15/README.md).
 
 
-## §272 — All-current-act-boss combat-evaluator OOC MCTS leaf paired 32 (2026-09-15)
+## §272 — Frozen pre-promotion survival representation for signed-HP decoding (2026-09-15)
+
+Baseline `cde61c85`, frozen experiment code `d10908c`. The tested full-union
+survival and HP component checkpoints are TRAIN-only with respect to the
+evaluated rows and share the same source/cache provenance. Their SHA256 values
+are `e150180a…` and `0c8b5aa8…`; #187's TRAIN+VALIDATION-refit promoted
+survival encoder was deliberately excluded. After this experiment, #187
+changed only the survival component (`e150180a…` to `ccc3c210…`); therefore
+the result does not directly evaluate the current promoted survival encoder.
+TRAIN has 393,677 victories / 19,986 sources and VALIDATION 48,590 / 2,496;
+historical TEST is untouched.
+
+Only the frozen 64-dimensional state representation differs. Both fresh
+signed-HP decoders have byte-identical initial states, identical batch order,
+maxHP conditioning, legal mask, optimizer and AMP recipe; no encoder gradients
+or VALIDATION gradient updates. Dedicated HP versus survival representation:
+NLL 2.496705532→2.680527687 (+7.3626%), CRPS
+3.618011474→4.087017666 (+12.9631%), expected ending-HP MAE
+5.355416796→5.986446000 (+0.631029 HP). Healing, low-HP and damage slices all
+show obvious regressions; probability support and normalization checks pass.
+
+**`SHARED_ENCODER_HP_REJECTED` for the exact tested pre-#187 checkpoint.** The
+survival representation clearly misses all three prespecified gates. Stop
+before maxHP/potion next-stage composition, runtime/export work, or a seed
+sweep. This rejects this frozen representation substitution under the fixed
+decoder/training recipe, not every possible shared architecture or intrinsic
+absence of HP information. Candidate selection at the final allowed epoch
+leaves harder/slower decoding unresolved; no extra epochs were run because
+that would be a new experiment. No new data, gameplay, TEST scoring, model
+promotion or runtime change. Knowledge impact: experiment evidence retained
+with explicit post-#187 applicability; the current promoted survival encoder
+remains untested by this screen.
+[Protocol, hashes, slices and receipts](evidence/shared_frozen_hp_encoder_2026-09-15.md).
+
+
+## §273 — All-current-act-boss combat-evaluator OOC MCTS leaf paired 32 (2026-09-15)
 
 An opt-in leaf replaces native `v_win` with the mean score over all three
 current-act bosses: `0.75*P(survive) + 0.25*P(survive)*E[ending HP fraction

@@ -70,7 +70,7 @@ win24/32 with zero discordant outcomes. Every terminal-state row and non-timing
 trace row matches; mean runtime changes103.8807→104.1177 seconds/run. This is
 no observed effect at N32, not equivalence. Keep the native leaf/defaults and
 do not add seeds without a mechanism-level hypothesis for unchanged root
-choices. See [ledger §272](../../experiments/ledger-06.md) and the
+choices. See [ledger §273](../../experiments/ledger-06.md) and the
 [paired packet](../../experiments/evidence/ooc_mcts_boss_leaf_pair32_2026-09-15/README.md).
 
 The fresh64 fixed10000 live OOC MCTS versus matched V4 gate is complete:
@@ -333,6 +333,25 @@ individual HP/potion/relic exposure gates at 0.1 nat and zero hard sampled-state
 invalidity. Source-bootstrap CIs and full-state distribution/latency diagnostics
 are descriptive. Historical component qualifications remain distinct from
 composed and runtime qualification.
+
+### Frozen shared state representation for signed HP
+
+The proposed cheap collapse of the dedicated signed-HP encoder into the frozen
+pre-#187 survival representation is **`SHARED_ENCODER_HP_REJECTED` for the
+exact tested checkpoint**. On the
+same source-grouped full-union TRAIN/VALIDATION population, with byte-identical
+fresh HP decoders and no encoder gradients, the survival representation is
+7.3626% worse in VALIDATION NLL, 12.9631% worse in CRPS and 0.6310 HP worse in
+expected ending-HP MAE. Healing and low-HP slices regress more. Do not proceed
+to the maxHP/potion shared-encoder stage or runtime consolidation from this
+representation. The candidate selected the final allowed epoch, so the result
+does not distinguish intrinsically absent information from information that is
+harder or slower to decode under this head/optimizer. No extra epochs are
+warranted within the frozen screen. #187 subsequently replaced only the
+survival component (`e150180a…` to `ccc3c210…`), so this screen does not
+directly evaluate the current promoted survival encoder. This does not rule out
+a separately designed shared architecture. See [ledger-06 §272](../../experiments/ledger-06.md) and the
+[frozen-representation evidence](../../experiments/evidence/shared_frozen_hp_encoder_2026-09-15.md).
 
 ### Shared relic trajectory residues
 
