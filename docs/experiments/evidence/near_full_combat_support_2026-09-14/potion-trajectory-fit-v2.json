@@ -1,0 +1,153 @@
+{
+  "artifactSha256": "0777abcb6500c2836ac5d7422d58ae5fa0dd9c872f896943db63bb8366919cb7",
+  "history": [
+    {
+      "epoch": 1,
+      "validationConditionalNll": 0.5679419636726379
+    },
+    {
+      "epoch": 2,
+      "validationConditionalNll": 0.5636285543441772
+    },
+    {
+      "epoch": 3,
+      "validationConditionalNll": 0.5599689483642578
+    },
+    {
+      "epoch": 4,
+      "validationConditionalNll": 0.5679327249526978
+    },
+    {
+      "epoch": 5,
+      "validationConditionalNll": 0.5563477277755737
+    },
+    {
+      "epoch": 6,
+      "validationConditionalNll": 0.552280068397522
+    },
+    {
+      "epoch": 7,
+      "validationConditionalNll": 0.5513516068458557
+    },
+    {
+      "epoch": 8,
+      "validationConditionalNll": 0.5509417653083801
+    },
+    {
+      "epoch": 9,
+      "validationConditionalNll": 0.5500298142433167
+    },
+    {
+      "epoch": 10,
+      "validationConditionalNll": 0.5500922203063965
+    },
+    {
+      "epoch": 11,
+      "validationConditionalNll": 0.5473456978797913
+    },
+    {
+      "epoch": 12,
+      "validationConditionalNll": 0.5466058850288391
+    }
+  ],
+  "originalValidationNll": 0.599942684173584,
+  "preparation": {
+    "cacheSha256": "e1c25f2758bf56c7cff392ea02342d809f3ad7427c70b64166244a6b714a251d",
+    "census": {
+      "all": {
+        "rows": 510030,
+        "supported": 510030
+      },
+      "test": {
+        "rows": 51441,
+        "supported": 51441
+      },
+      "train": {
+        "rows": 408183,
+        "supported": 408183
+      },
+      "validation": {
+        "rows": 50406,
+        "supported": 50406
+      }
+    },
+    "counts": {
+      "brewGenerationRounds": 3029,
+      "escapeRows": 3001,
+      "specialSurvivors": 6776
+    },
+    "countsBySplit": {
+      "test": {
+        "previousQualified": 41454,
+        "rows": 51441,
+        "survivors": 49630
+      },
+      "train": {
+        "previousQualified": 331225,
+        "rows": 408183,
+        "survivors": 393677
+      },
+      "validation": {
+        "previousQualified": 41120,
+        "rows": 50406,
+        "survivors": 48590
+      }
+    },
+    "graphsSha256": "e59be3b1292a11e27db8188c8359454d1e876287f298d19c48b187c4ff05413a",
+    "hashes": {
+      "/home/philippherrmann/sts_sweep/runs/combat-transition-model-v1/split_manifest.json": "e9043bcceb9d95027711e6ff33afbfe1cae3cf9528f820c0ff68bddbb419db32",
+      "/home/philippherrmann/sts_sweep/runs/combat-transition-runtime-25k/combat-transition-25k.jsonl": "74c08aa0a3c30342d86cd45355fe17ffa9046963ad7c8cf71b1938f9cdc1cfde",
+      "/home/philippherrmann/sts_sweep/runs/combat-transition-runtime-25k/combat-transition-25k.jsonl.manifest.json": "33669cd99eed8317987192825b5111a68d1e60269c166def2fe568364e20ad59",
+      "/tmp/sts-phase2-attention-audit-20260913/prepared.npz": "2badbb85ccd8329bcb886d50ef8a0b9b1bd2c043fda9445de9f9c2e7a4b6f9a5",
+      "/tmp/sts-phase2-attention-audit-20260913/prepared_manifest.json": "13b2c91fd0ced713f8c429bbf8995ceb58b6e3e57d1555de42f5e67d7f9a389f",
+      "/tmp/sts-phase2-attention-audit-20260913/target_spec.json": "e2315620d512578542d6b3bfbd362eb07b086f0e9fa7770cc23f4fa4c226e229",
+      "hp": "a667a3cfa7d7eca3cb07b46f50321e443c75e8a58f7627becb1fd69bf90f08c9",
+      "max_hp": "66ac8f70da69e29bf9b1364243f6f903e4f74dda1ec8a909ef54a7ea97dc6479",
+      "potion": "8e04bcd5265fb11b8fa91b4553a84690915f437e7b3afee0b93358e312de3ad6",
+      "potion_encoder": "2085010f1aeef7a7957cdc45c851b2424d640037fd0fa981eb7ae7274190f6ef",
+      "relic": "e07e79d487152ae294f4915ef4aecd0e8bd38b8dec8d0133a57b6b58af92bd71",
+      "survival": "2447b2daf1a48a619a5f071488908afd6f0fb83bfd855ee9f379c04120efeaef"
+    },
+    "recipe": {
+      "actions": "64 native categories: five clearing bits plus trigger USE/DISCARD bit; ordinary masks retain one category",
+      "batch": 512,
+      "encoder": "frozen historical potion encoder",
+      "epochs": 12,
+      "gradientClip": 1.0,
+      "lr": 0.001,
+      "partition": "original source-grouped engineering TEST; reused development evidence, not pristine holdout",
+      "rng": "planner-owned fresh sts::Random(seed); reused through recursive generation; advanced state retained",
+      "seed": 20260912,
+      "selection": "earliest strict minimum original VALIDATION conditional trajectory NLL",
+      "target": "exact native generation-body prior times all compatible consumption-order probabilities",
+      "training": "shared inventory-conditioned joint-mask decoder only; original TRAIN survivors",
+      "weightDecay": 0.0001
+    },
+    "residualReasons": {},
+    "sourceSha": "11281504eb45b41c7e3f539a7a5bc5eb2a883da7",
+    "specialRowsSha256": "2d8fc6b4a7655805a155b2d2223103bc74dfc8c5a663c53a2129de6fcdf99151",
+    "supportChanged": false
+  },
+  "recipe": {
+    "actions": "64 native categories: five clearing bits plus trigger USE/DISCARD bit; ordinary masks retain one category",
+    "batch": 512,
+    "encoder": "frozen historical potion encoder",
+    "epochs": 12,
+    "gradientClip": 1.0,
+    "lr": 0.001,
+    "partition": "original source-grouped engineering TEST; reused development evidence, not pristine holdout",
+    "rng": "planner-owned fresh sts::Random(seed); reused through recursive generation; advanced state retained",
+    "seed": 20260912,
+    "selection": "earliest strict minimum original VALIDATION conditional trajectory NLL",
+    "target": "exact native generation-body prior times all compatible consumption-order probabilities",
+    "training": "shared inventory-conditioned joint-mask decoder only; original TRAIN survivors",
+    "weightDecay": 0.0001
+  },
+  "selectedEpoch": 12,
+  "sourceSha": "11281504eb45b41c7e3f539a7a5bc5eb2a883da7",
+  "supportChanged": false,
+  "testConditionalNll": 0.5437158346176147,
+  "testRows": 49630,
+  "trainRows": 393677,
+  "validationRows": 48590
+}

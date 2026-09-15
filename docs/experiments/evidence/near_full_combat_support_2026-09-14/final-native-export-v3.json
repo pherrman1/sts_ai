@@ -1,0 +1,79 @@
+{
+  "bytes": 2235832,
+  "path": "/tmp/final-native-verified-export-v3.native",
+  "qualification": {
+    "classification": "FINAL_SUPPORT_EXPOSURE_DEVELOPMENT_PASS",
+    "exposureSha256": "faa8d7977ed6826311b2b96065a843c00e8c1039914de4217dd6fd6da8283de9",
+    "independentHoldout": false,
+    "validitySha256": "195bbadf4159b06fcd847cf0a1a2f179e83e18b46503cc45bbcc5f7fea6872fb"
+  },
+  "sha256": "22c855e0667a58a73835505672b0ae6d03f12e9fb8d64f08893810199246e94e",
+  "sourceSha": "ced9ff6412f4dc4a3885ee36616b57d493b28b9c",
+  "sources": {
+    "HP": "0c8b5aa8c5218d6cd6102b768cc86a474c9ef30953d4b034caedcc41a426109b",
+    "downstream": "d07ead94b3abb9d12f272337e18aece6acd261cc4a39a36b21b82f904236af91",
+    "maxHP": "2c5b54d0a9420a9d0e3ab9a26f32b9900c4869490e4af49627009cde21efb4b0",
+    "potion": "ae1a1411990d272579de10564edb48c7f2ec1d14f1c72dacf5390a1415a0f1db",
+    "survival": "e150180a9112f52a94cfa60770adb6c0a48517a7d94a4c26f6e5896e85269c18"
+  },
+  "supportCensus": {
+    "TEST": {
+      "counts": {
+        "rows": 51441,
+        "supported": 51036,
+        "unsupported": 405
+      },
+      "reasons": {
+        "pre_smoke_bomb_used": 1,
+        "smoke_bomb": 372,
+        "writhing_ritual_intersection": 32
+      },
+      "supportedIndexSha256": "71f2ca52769aa36a39f5684bf408090deb10edf8c13e55803cc0fd46ce1bfc31",
+      "supportedPercent": 99.21269026651892
+    },
+    "TRAIN": {
+      "counts": {
+        "rows": 408183,
+        "supported": 404877,
+        "unsupported": 3306
+      },
+      "reasons": {
+        "pre_smoke_bomb_used": 21,
+        "smoke_bomb": 3043,
+        "writhing_ritual_intersection": 245
+      },
+      "supportedIndexSha256": "286b9a52b23b93068d59f9e462ed4dfa8eb4bdbc619f69dd9b7cc20fc5abc5a3",
+      "supportedPercent": 99.19006916015611
+    },
+    "VALIDATION": {
+      "counts": {
+        "rows": 50406,
+        "supported": 50022,
+        "unsupported": 384
+      },
+      "reasons": {
+        "pre_smoke_bomb_used": 4,
+        "smoke_bomb": 350,
+        "writhing_ritual_intersection": 30
+      },
+      "supportedIndexSha256": "16c368e2d18aedeafffcf5479bd0132357194d99164ab17d0c6ed002f668f292",
+      "supportedPercent": 99.2381859302464
+    },
+    "all": {
+      "counts": {
+        "rows": 510030,
+        "supported": 505935,
+        "unsupported": 4095
+      },
+      "reasons": {
+        "pre_smoke_bomb_used": 26,
+        "smoke_bomb": 3765,
+        "writhing_ritual_intersection": 307
+      },
+      "supportedIndexSha256": "969a239845e7638a5797bcf1f2d03dc7c599c83b22e8dd76337cb31c3c20e0ef",
+      "supportedPercent": 99.19710605258514
+    }
+  },
+  "trackedPath": "selfplay/models/combat_transition_near_full_except_smoke_v2.native",
+  "verification": "Byte-identical re-export of the selected deployable artifact; no weights or metadata changed."
+}

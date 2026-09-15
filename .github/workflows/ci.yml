@@ -52,8 +52,8 @@ jobs:
       - name: Verify and sync locked Python environment
         run: |
           uv lock --check
-          # CTest includes the maintained pandas/SciPy analysis self-tests.
-          uv sync --locked --extra analysis
+          # CTest includes pandas/SciPy analysis and PyTorch combat-model self-tests.
+          uv sync --locked --extra analysis --extra ml
           echo "$PWD/.venv/bin" >> "$GITHUB_PATH"
 
       - name: Check repository prerequisites

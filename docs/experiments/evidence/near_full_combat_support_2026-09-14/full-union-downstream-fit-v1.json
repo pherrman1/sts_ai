@@ -1,0 +1,172 @@
+{
+  "artifactSha256": "d07ead94b3abb9d12f272337e18aece6acd261cc4a39a36b21b82f904236af91",
+  "history": [
+    {
+      "epoch": 1,
+      "validationNll": 1.3815650939941406
+    },
+    {
+      "epoch": 2,
+      "validationNll": 1.3783029317855835
+    },
+    {
+      "epoch": 3,
+      "validationNll": 1.3733824491500854
+    },
+    {
+      "epoch": 4,
+      "validationNll": 1.3711367845535278
+    },
+    {
+      "epoch": 5,
+      "validationNll": 1.3698598146438599
+    },
+    {
+      "epoch": 6,
+      "validationNll": 1.3715506792068481
+    },
+    {
+      "epoch": 7,
+      "validationNll": 1.3673696517944336
+    },
+    {
+      "epoch": 8,
+      "validationNll": 1.3647915124893188
+    },
+    {
+      "epoch": 9,
+      "validationNll": 1.3647969961166382
+    },
+    {
+      "epoch": 10,
+      "validationNll": 1.365204930305481
+    },
+    {
+      "epoch": 11,
+      "validationNll": 1.3662182092666626
+    },
+    {
+      "epoch": 12,
+      "validationNll": 1.3642123937606812
+    }
+  ],
+  "originalValidationNll": 1.4067591428756714,
+  "preparation": {
+    "ambiguousRows": 50,
+    "ambiguousSha256": "e7c48f28f0dbd4989ec7e09c2656811fde66f8eff27c1f933a52defebcc53caa",
+    "cacheSha256": "acd48827199f95d006ed2e225e31df768f5c757c8995fa2a0a868cf49ab0d0e3",
+    "hashes": {
+      "/home/philippherrmann/sts_sweep/runs/combat-transition-model-v1/split_manifest.json": "e9043bcceb9d95027711e6ff33afbfe1cae3cf9528f820c0ff68bddbb419db32",
+      "/home/philippherrmann/sts_sweep/runs/combat-transition-runtime-25k/combat-transition-25k.jsonl": "74c08aa0a3c30342d86cd45355fe17ffa9046963ad7c8cf71b1938f9cdc1cfde",
+      "/home/philippherrmann/sts_sweep/runs/combat-transition-runtime-25k/combat-transition-25k.jsonl.manifest.json": "33669cd99eed8317987192825b5111a68d1e60269c166def2fe568364e20ad59",
+      "/tmp/sts-phase2-attention-audit-20260913/prepared.npz": "2badbb85ccd8329bcb886d50ef8a0b9b1bd2c043fda9445de9f9c2e7a4b6f9a5",
+      "/tmp/sts-phase2-attention-audit-20260913/prepared_manifest.json": "13b2c91fd0ced713f8c429bbf8995ceb58b6e3e57d1555de42f5e67d7f9a389f",
+      "/tmp/sts-phase2-attention-audit-20260913/target_spec.json": "e2315620d512578542d6b3bfbd362eb07b086f0e9fa7770cc23f4fa4c226e229",
+      "hp": "a667a3cfa7d7eca3cb07b46f50321e443c75e8a58f7627becb1fd69bf90f08c9",
+      "max_hp": "66ac8f70da69e29bf9b1364243f6f903e4f74dda1ec8a909ef54a7ea97dc6479",
+      "potion": "8e04bcd5265fb11b8fa91b4553a84690915f437e7b3afee0b93358e312de3ad6",
+      "potion_encoder": "2085010f1aeef7a7957cdc45c851b2424d640037fd0fa981eb7ae7274190f6ef",
+      "relic": "e07e79d487152ae294f4915ef4aecd0e8bd38b8dec8d0133a57b6b58af92bd71",
+      "survival": "2447b2daf1a48a619a5f071488908afd6f0fb83bfd855ee9f379c04120efeaef"
+    },
+    "maxIndependentPosteriorError": 1.3712861846038038e-07,
+    "rawLabels": {
+      "affectedRows": 72795,
+      "hashes": {
+        "/home/philippherrmann/sts_sweep/runs/combat-transition-model-v1/split_manifest.json": "e9043bcceb9d95027711e6ff33afbfe1cae3cf9528f820c0ff68bddbb419db32",
+        "/home/philippherrmann/sts_sweep/runs/combat-transition-runtime-25k/combat-transition-25k.jsonl": "74c08aa0a3c30342d86cd45355fe17ffa9046963ad7c8cf71b1938f9cdc1cfde",
+        "/home/philippherrmann/sts_sweep/runs/combat-transition-runtime-25k/combat-transition-25k.jsonl.manifest.json": "33669cd99eed8317987192825b5111a68d1e60269c166def2fe568364e20ad59",
+        "/tmp/sts-phase2-attention-audit-20260913/prepared.npz": "2badbb85ccd8329bcb886d50ef8a0b9b1bd2c043fda9445de9f9c2e7a4b6f9a5",
+        "/tmp/sts-phase2-attention-audit-20260913/prepared_manifest.json": "13b2c91fd0ced713f8c429bbf8995ceb58b6e3e57d1555de42f5e67d7f9a389f",
+        "/tmp/sts-phase2-attention-audit-20260913/target_spec.json": "e2315620d512578542d6b3bfbd362eb07b086f0e9fa7770cc23f4fa4c226e229",
+        "hp": "a667a3cfa7d7eca3cb07b46f50321e443c75e8a58f7627becb1fd69bf90f08c9",
+        "max_hp": "66ac8f70da69e29bf9b1364243f6f903e4f74dda1ec8a909ef54a7ea97dc6479",
+        "potion": "8e04bcd5265fb11b8fa91b4553a84690915f437e7b3afee0b93358e312de3ad6",
+        "potion_encoder": "2085010f1aeef7a7957cdc45c851b2424d640037fd0fa981eb7ae7274190f6ef",
+        "relic": "e07e79d487152ae294f4915ef4aecd0e8bd38b8dec8d0133a57b6b58af92bd71",
+        "survival": "2447b2daf1a48a619a5f071488908afd6f0fb83bfd855ee9f379c04120efeaef"
+      },
+      "labelsSha256": "441594faaab6ffe59ca94044e39120c78a9813438de9110ce25321923e59afb1",
+      "observedRows": 137203,
+      "preparationCacheSha256": "e1c25f2758bf56c7cff392ea02342d809f3ad7427c70b64166244a6b714a251d",
+      "rawSha256": "eb502d3095a851c9b9018f8aa83281d86d4a7df14b7d6cab68c642661415584b",
+      "rows": 510030,
+      "sourceSha": "1c31b7eb0a7660d43bc27e0849a8955dd0c3daae",
+      "supportChanged": false,
+      "survivors": 491897
+    },
+    "recipe": {
+      "batch": 512,
+      "clip": 1.0,
+      "epochs": 12,
+      "evidence": "development using original source-grouped TEST; no fresh confirmation",
+      "features": "existing HP state64; HP3; clearing bits5; exact native effects and escape condition",
+      "lr": 0.001,
+      "nativeConditions": {
+        "event": [
+          "omamoriChargesOver2",
+          "darkstone",
+          "daggerCopies",
+          "upgradedDaggerCopies",
+          "writhingEncounter",
+          "escaped",
+          "upgradeRoute",
+          "colorlessConsumed"
+        ],
+        "gold": "native eligible kill budget decreases by one for escape",
+        "relic": [
+          "escaped"
+        ]
+      },
+      "population": "entire final union original TRAIN survivors with observed downstream targets",
+      "seed": 20260912,
+      "selection": "earliest strict minimum original VALIDATION normalized joint downstream NLL",
+      "weightDecay": 0.0001
+    },
+    "recordsSha256": "c9d44fa586217fe101f09bbe5348fb6adf2e97192ef1af2f1856e5d776078a3d",
+    "rows": 510030,
+    "sourceSha": "546cf6a5d9f069c14de648da6a03a6c7bb6271ec",
+    "supportChanged": false,
+    "upstreamBindings": {
+      "HP": "0c8b5aa8c5218d6cd6102b768cc86a474c9ef30953d4b034caedcc41a426109b",
+      "maxHP": "2c5b54d0a9420a9d0e3ab9a26f32b9900c4869490e4af49627009cde21efb4b0",
+      "potion": "ae1a1411990d272579de10564edb48c7f2ec1d14f1c72dacf5390a1415a0f1db",
+      "survival": "e150180a9112f52a94cfa60770adb6c0a48517a7d94a4c26f6e5896e85269c18"
+    }
+  },
+  "recipe": {
+    "batch": 512,
+    "clip": 1.0,
+    "epochs": 12,
+    "evidence": "development using original source-grouped TEST; no fresh confirmation",
+    "features": "existing HP state64; HP3; clearing bits5; exact native effects and escape condition",
+    "lr": 0.001,
+    "nativeConditions": {
+      "event": [
+        "omamoriChargesOver2",
+        "darkstone",
+        "daggerCopies",
+        "upgradedDaggerCopies",
+        "writhingEncounter",
+        "escaped",
+        "upgradeRoute",
+        "colorlessConsumed"
+      ],
+      "gold": "native eligible kill budget decreases by one for escape",
+      "relic": [
+        "escaped"
+      ]
+    },
+    "population": "entire final union original TRAIN survivors with observed downstream targets",
+    "seed": 20260912,
+    "selection": "earliest strict minimum original VALIDATION normalized joint downstream NLL",
+    "weightDecay": 0.0001
+  },
+  "selectedEpoch": 12,
+  "sourceSha": "546cf6a5d9f069c14de648da6a03a6c7bb6271ec",
+  "supportChanged": false,
+  "testNll": 1.3443115949630737,
+  "testRows": 19138,
+  "trainRows": 150404,
+  "validationRows": 17950
+}

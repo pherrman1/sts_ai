@@ -1,6 +1,7 @@
 # Current research status
 
-Last verified: 2026-09-14 for exact supported-v1 RNG continuation
+Last verified: 2026-09-15 for final near-full support/native qualification;
+2026-09-14 for exact supported-v1 RNG continuation
 and the stochastic signed-HP distribution, expanded-support offline composition,
 and fresh64 fixed10000 live MCTS gate;
 2026-09-13 for the Phase-2 stochastic persistent-state support
@@ -32,7 +33,7 @@ tests have adjusted p>=0.3926; no established ranking or default/model
 qualification. Zero bridge failures and full budget/config/seed validation.
 The cohort is seeds 16–47; preceding N16 outcomes are not pooled. Root-regret
 and fresh confirmation remain unmeasured. See
-[ledger §259](../../experiments/ledger-06.md) and
+[ledger §266](../../experiments/ledger-06.md) and
 [full paired packet](../../experiments/evidence/silver_budget_four32_128k_2026-09-15/README.md).
 
 ## Silver reuse-cap experiment
@@ -45,7 +46,7 @@ prefixes match until 32k pressure; zero bridge failures. This is encouraging
 but not established superiority; prior 1k seeds were reused, no root-regret
 measurement or frozen teacher/model qualification was performed. Keep 32k
 and require fresh matched quality/resource evidence before promotion.
-See [ledger §258](../../experiments/ledger-06.md) and
+See [ledger §265](../../experiments/ledger-06.md) and
 [paired packet](../../experiments/evidence/silver_cap_pair10k_16_2026-09-15/README.md).
 
 ## Current priority / active line
@@ -67,6 +68,18 @@ The prior reused32 fixed2048 regression remains preserved and inconclusive
 against this fresh cohort.
 
 ## Completed recent line
+
+### Near-full combat support: qualified except initial/pre-Smoke and Writhing/Ritual
+
+**NEAR_FULL_EXCEPT_SMOKE_QUALIFIED** for offline composition and the native combat boundary. The V2 pre-state support predicate excludes initial Smoke Bomb, pre-existing `smokeBombUsed`, and Writhing Mass with any Ritual Dagger. Exact support is **505,935/510,030 (99.197106%)** overall and **51,036/51,441 (99.212690%)** TEST. All 41,454 old #179 TEST states are retained and recomposed with the selected maxHP refit. Every nonempty final slice gate is ≤0.1 nat, including tiny Transmutation+ and recursive Brew slices; the largest is Writhing +0.094656. Seven retained observed ESCAPE rows pass applicable gates.
+
+On the exact supported TEST set, 1,633,152 draws have zero recorded hard-validity violations. One original Monte Carlo gold zero was resolved by a restricted exact ancestral marginal (target mass 0.0010596961), without changing weights or sampling; the original diagnostic and corrected receipt are both preserved. The earlier Writhing repair and all final TEST diagnostics are reused development evidence, not pristine holdout confirmation.
+
+The accepted Brew contract draws a fresh full-width hypothetical native potion RNG from planner RNG on first use, reuses it through recursion and retains its advanced state in sampled RAW. Generated Smoke/ESCAPE remains supported; initial/pre-Smoke states stay excluded. Historical RNG reconstructs teacher labels only. Native generation audited 3,208 Brew rows and 3,106 rounds, including 112 proven recursive cases. Transmutation upgrade status conditions shared learned HoG mechanics, while native payouts remain exact 20/25.
+
+The selected full-union v1 component stack is tracked as `selfplay/models/combat_transition_near_full_except_smoke_v2.native` (SHA256 `22c855e0667a58a73835505672b0ae6d03f12e9fb8d64f08893810199246e94e`). Python/native CPU FP32 probabilities pass at 1e-4 tolerance (maximum probability error 5.96e−7); complete RAW state, planner stream and scalar/prepared parity pass on 3,904 draws, including 117 recursive Brew cases and three unsupported/no-draw fixtures. The executed native support predicate matches both exact corpus/TEST ordered-index hashes. Strict loader/export guards and the tracked artifact are exercised in repository checks.
+
+The original full-union Smoke/relic gap +0.242637 and three failed bounded repairs +0.199237/+0.201889/+0.209178 remain historical evidence; none of those repair checkpoints is promoted. The failing Writhing/Ritual intersection is excluded by visible pre-state rather than hidden by aggregates. No fourth Smoke repair, new data or gameplay was run. V1 support remains 413,799 overall/41,454 TEST when that artifact is selected. V2 is explicit opt-in; MCTS remains OFF by default, with no new gameplay or whole-planner fairness claim. Exact #180 state replay is unavailable and aggregate subtraction cannot estimate root-abort improvement. See [ledger-06 §258](../../experiments/ledger-06.md) and the [final staged report](../../experiments/evidence/near_full_combat_support_2026-09-14/REPORT.md). PR #182 records frozen review/CI evidence before merge.
 
 ### Live OOC MCTS paired Silver gameplay gate
 

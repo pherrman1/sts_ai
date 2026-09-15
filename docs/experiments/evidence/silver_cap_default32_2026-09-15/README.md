@@ -47,4 +47,4 @@ seeds/settings, cap/provenance diagnostics, memory and decision-quality evidence
 do not promote 128k or relabel/requalify frozen models without that evidence.
 
 Knowledge impact: maintained production/experimental cap and frozen-teacher
-startup contracts. Prior ledger §256 promotion is superseded by §257.
+startup contracts. Prior ledger §263 promotion is superseded by §264.

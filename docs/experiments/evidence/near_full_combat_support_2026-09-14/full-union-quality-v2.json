@@ -1,0 +1,192 @@
+{
+  "bindings": {
+    "HP": "0c8b5aa8c5218d6cd6102b768cc86a474c9ef30953d4b034caedcc41a426109b",
+    "downstream": "d07ead94b3abb9d12f272337e18aece6acd261cc4a39a36b21b82f904236af91",
+    "maxHP": "2c5b54d0a9420a9d0e3ab9a26f32b9900c4869490e4af49627009cde21efb4b0",
+    "potion": "ae1a1411990d272579de10564edb48c7f2ec1d14f1c72dacf5390a1415a0f1db",
+    "survival": "e150180a9112f52a94cfa60770adb6c0a48517a7d94a4c26f6e5896e85269c18"
+  },
+  "generatedPotionIdentity": {
+    "generationRounds": 317,
+    "jointBodyNll": 11.128155916339358,
+    "mechanism": "exact native rarity/rejection law; learned use/retention likelihood reported separately",
+    "rngOrigin": "planner-owned native hypothetical origin; historical origin used for teacher labels only",
+    "rows": 306
+  },
+  "metrics": {
+    "brew": {
+      "hpExactMaxHpMarginal": {
+        "brier": 0.751192491631543,
+        "crps": 4.563129605586466,
+        "meanAbsoluteError": 6.525345686477041,
+        "nll": 2.6559284682981614
+      },
+      "maxHp": {
+        "brier": 0.03065528251685798,
+        "crps": 0.04551217596408371,
+        "meanAbsoluteError": 0.09454230262575712,
+        "nll": 0.05664123271771981
+      },
+      "rows": 349,
+      "survival": {
+        "brier": 0.014510284828905089,
+        "nll": 0.046898514628698935
+      },
+      "survivingRows": 339
+    },
+    "entireFinalUnion": {
+      "hpExactMaxHpMarginal": {
+        "brier": 0.75239115955709,
+        "crps": 3.6225778798980537,
+        "meanAbsoluteError": 5.322113020204519,
+        "nll": 2.520435076407135
+      },
+      "maxHp": {
+        "brier": 0.03250503479635743,
+        "crps": 0.05555842908151629,
+        "meanAbsoluteError": 0.10438405695500227,
+        "nll": 0.05342287852492772
+      },
+      "rows": 51441,
+      "survival": {
+        "brier": 0.017986495975337132,
+        "nll": 0.060411632033595807
+      },
+      "survivingRows": 49630
+    },
+    "escape": {
+      "hpExactMaxHpMarginal": {
+        "brier": 0.07705647804393027,
+        "crps": 0.19990089107340392,
+        "meanAbsoluteError": 0.4898656501929985,
+        "nll": 0.22175918038765155
+      },
+      "maxHp": {
+        "brier": 0.010144019028499677,
+        "crps": 0.019318160293632574,
+        "meanAbsoluteError": 0.04750185837540655,
+        "nll": 0.018022749016481116
+      },
+      "rows": 290,
+      "survival": {
+        "brier": 0.001566658252427495,
+        "nll": 0.008120634691145259
+      },
+      "survivingRows": 290
+    },
+    "previous179": {
+      "hpExactMaxHpMarginal": {
+        "brier": 0.7404655710743403,
+        "crps": 3.597216941727009,
+        "meanAbsoluteError": 5.292480186302059,
+        "nll": 2.4857683503789074
+      },
+      "maxHp": {
+        "brier": 0.03148007988243439,
+        "crps": 0.05283841973888448,
+        "meanAbsoluteError": 0.10011632648701407,
+        "nll": 0.05129101894486483
+      },
+      "rows": 41454,
+      "survival": {
+        "brier": 0.018789442739015054,
+        "nll": 0.06265737167247687
+      },
+      "survivingRows": 39919
+    },
+    "recovered": {
+      "hpExactMaxHpMarginal": {
+        "brier": 0.8014136666771476,
+        "crps": 3.7268290683286964,
+        "meanAbsoluteError": 5.443924687031039,
+        "nll": 2.662939559603594
+      },
+      "maxHp": {
+        "brier": 0.036718316148318476,
+        "crps": 0.066739569329536,
+        "meanAbsoluteError": 0.12192741320581281,
+        "nll": 0.06218631201030824
+      },
+      "rows": 9987,
+      "survival": {
+        "brier": 0.01465362773247095,
+        "nll": 0.0510900248452333
+      },
+      "survivingRows": 9711
+    },
+    "ritual": {
+      "hpExactMaxHpMarginal": {
+        "brier": 0.8497846510490901,
+        "crps": 4.914280265640398,
+        "meanAbsoluteError": 7.149049423706293,
+        "nll": 3.0308615992607697
+      },
+      "maxHp": {
+        "brier": 0.04464951964718091,
+        "crps": 0.0812349983627395,
+        "meanAbsoluteError": 0.14932949789982036,
+        "nll": 0.07495560654562015
+      },
+      "rows": 1550,
+      "survival": {
+        "brier": 0.0415670393305702,
+        "nll": 0.1410095502364539
+      },
+      "survivingRows": 1413
+    },
+    "smoke": {
+      "hpExactMaxHpMarginal": {
+        "brier": 0.16952292587069026,
+        "crps": 0.9577031207978807,
+        "meanAbsoluteError": 1.4809860369137753,
+        "nll": 0.5744692201640611
+      },
+      "maxHp": {
+        "brier": 0.028510522549847494,
+        "crps": 0.05182659062636312,
+        "meanAbsoluteError": 0.08110036437720225,
+        "nll": 0.05434855712710245
+      },
+      "rows": 372,
+      "survival": {
+        "brier": 0.008772049775713317,
+        "nll": 0.029256973618337668
+      },
+      "survivingRows": 362
+    },
+    "writhing": {
+      "hpExactMaxHpMarginal": {
+        "brier": 0.8529360375275012,
+        "crps": 4.664550844394659,
+        "meanAbsoluteError": 6.709883265067445,
+        "nll": 3.0593824613490903
+      },
+      "maxHp": {
+        "brier": 0.12034043111669382,
+        "crps": 0.29144202466350655,
+        "meanAbsoluteError": 0.5260318550960991,
+        "nll": 0.22284337867942464
+      },
+      "rows": 464,
+      "survival": {
+        "brier": 0.02069628700887859,
+        "nll": 0.07303137928519653
+      },
+      "survivingRows": 451
+    }
+  },
+  "rowsSha256": "a342e7a22acd489ee1fd8619e19a6d5c2c91326a6ca8099e002d30fd0a43ed1d",
+  "scope": "original grouped TEST development quality; no independent holdout or gameplay",
+  "snapshot": {
+    "corpusSha256": "74c08aa0a3c30342d86cd45355fe17ffa9046963ad7c8cf71b1938f9cdc1cfde",
+    "counts": {
+      "previous179": 41454,
+      "recovered": 9987,
+      "rows": 51441
+    },
+    "snapshotSha256": "df37cd1fdcbdc49b6732c67f22bcf08839e813260b661b2b5197ab16057612cc",
+    "sourceSha": "1c31b7eb0a7660d43bc27e0849a8955dd0c3daae"
+  },
+  "sourceSha": "8df2d3e8921a17eca130f1ac69a9c11392fb8c10",
+  "supportChanged": false
+}

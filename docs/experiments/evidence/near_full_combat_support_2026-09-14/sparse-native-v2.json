@@ -1,0 +1,114 @@
+{
+  "baseline": "d99b7981b9509b150774b4e51eab4adaea0056eb",
+  "gameplay": false,
+  "hashes": {
+    "/home/philippherrmann/sts_sweep/runs/combat-transition-model-v1/split_manifest.json": "e9043bcceb9d95027711e6ff33afbfe1cae3cf9528f820c0ff68bddbb419db32",
+    "/home/philippherrmann/sts_sweep/runs/combat-transition-runtime-25k/combat-transition-25k.jsonl": "74c08aa0a3c30342d86cd45355fe17ffa9046963ad7c8cf71b1938f9cdc1cfde",
+    "/home/philippherrmann/sts_sweep/runs/combat-transition-runtime-25k/combat-transition-25k.jsonl.manifest.json": "33669cd99eed8317987192825b5111a68d1e60269c166def2fe568364e20ad59",
+    "/tmp/sts-phase2-attention-audit-20260913/prepared.npz": "2badbb85ccd8329bcb886d50ef8a0b9b1bd2c043fda9445de9f9c2e7a4b6f9a5",
+    "/tmp/sts-phase2-attention-audit-20260913/prepared_manifest.json": "13b2c91fd0ced713f8c429bbf8995ceb58b6e3e57d1555de42f5e67d7f9a389f",
+    "/tmp/sts-phase2-attention-audit-20260913/target_spec.json": "e2315620d512578542d6b3bfbd362eb07b086f0e9fa7770cc23f4fa4c226e229",
+    "hp": "a667a3cfa7d7eca3cb07b46f50321e443c75e8a58f7627becb1fd69bf90f08c9",
+    "max_hp": "66ac8f70da69e29bf9b1364243f6f903e4f74dda1ec8a909ef54a7ea97dc6479",
+    "potion": "8e04bcd5265fb11b8fa91b4553a84690915f437e7b3afee0b93358e312de3ad6",
+    "potion_encoder": "2085010f1aeef7a7957cdc45c851b2424d640037fd0fa981eb7ae7274190f6ef",
+    "relic": "e07e79d487152ae294f4915ef4aecd0e8bd38b8dec8d0133a57b6b58af92bd71",
+    "survival": "2447b2daf1a48a619a5f071488908afd6f0fb83bfd855ee9f379c04120efeaef"
+  },
+  "nativeTargetProblems": [],
+  "negativeRitualDeltaExamples": [],
+  "schema": "sparse_native_audit_v1",
+  "tables": {
+    "brew": {
+      "test": {
+        "deaths": 10,
+        "rows": 349,
+        "victories": 339
+      },
+      "train": {
+        "deaths": 70,
+        "rows": 2573,
+        "victories": 2503
+      },
+      "validation": {
+        "deaths": 5,
+        "rows": 286,
+        "victories": 281
+      }
+    },
+    "ritual": {
+      "test": {
+        "copies:1": 1413,
+        "deaths": 137,
+        "delta:0:up:False": 845,
+        "delta:0:up:True": 556,
+        "delta:3:up:False": 5,
+        "delta:5:up:True": 7,
+        "rows": 1550,
+        "victories": 1413
+      },
+      "train": {
+        "copies:1": 10034,
+        "deaths": 984,
+        "delta:0:up:False": 6226,
+        "delta:0:up:True": 3732,
+        "delta:3:up:False": 44,
+        "delta:5:up:False": 2,
+        "delta:5:up:True": 30,
+        "rows": 11018,
+        "victories": 10034
+      },
+      "validation": {
+        "copies:1": 1243,
+        "deaths": 115,
+        "delta:0:up:False": 681,
+        "delta:0:up:True": 547,
+        "delta:3:up:False": 9,
+        "delta:5:up:True": 6,
+        "rows": 1358,
+        "victories": 1243
+      }
+    },
+    "smoke": {
+      "test": {
+        "deaths": 10,
+        "rows": 373,
+        "victories": 363
+      },
+      "train": {
+        "deaths": 80,
+        "rows": 3064,
+        "victories": 2984
+      },
+      "validation": {
+        "deaths": 7,
+        "rows": 354,
+        "victories": 347
+      }
+    },
+    "writhing": {
+      "test": {
+        "deaths": 13,
+        "event:0": 302,
+        "event:1": 149,
+        "rows": 464,
+        "victories": 451
+      },
+      "train": {
+        "deaths": 87,
+        "event:0": 2367,
+        "event:1": 1132,
+        "rows": 3586,
+        "victories": 3499
+      },
+      "validation": {
+        "deaths": 14,
+        "event:0": 266,
+        "event:1": 147,
+        "rows": 427,
+        "victories": 413
+      }
+    }
+  },
+  "training": false
+}

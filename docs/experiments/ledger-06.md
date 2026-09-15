@@ -7780,7 +7780,263 @@ no default/model/support/scientific qualification change.
 [raw commands/provenance/check packet](evidence/ooc_rich_tree_speed_2026-09-14.json).
 
 
-## §254 — Silver reroot GC repeated canary and flat-1k smoke (2026-09-15)
+## §254 — Near-full Ironclad combat-support census and Stage-1 evidence stop (2026-09-14)
+
+Baseline `210f347334898e7c2a85b8af0f30dedc4888ea88`, after updating local main
+and reusing the fresh app-managed worktree; #179/#180 merged. Seed-free audit
+of the unchanged RAW 25k corpus (510,030 rows, 24,999 source seeds), original
+source-grouped splits (51,441 TEST rows), six frozen model/prepared/corpus/split
+hashes and complete row/source/fight accounting. No model fitting, sampling,
+new game seeds/collection, architecture/runtime/MCTS/default changes, or gameplay.
+
+Historical support exactly reproduces: 413,799 overall (81.132286%), 41,454 TEST
+(80.585525%); 96,231 fallback. Full reasons, combinations, encounter/act/room
+counts and TEST counts are frozen in the packet. Gold exclusions affect 74,069
+rows; 71,367 gold-only candidates (57,151 TRAIN / 6,915 VALIDATION / 7,301 TEST)
+have zero later support rejections and zero other victorious copy-through
+mutations. This is an inventory, not ancestral validity or recovered support.
+Four raw joint targets covering five TEST rows are absent from TRAIN; native
+clipping reconstruction is needed rather than observed-pair vocabularies.
+
+#180 strict 64-source first-reason accounting reproduces 1,551 unsupported
+imagined combats and aborted roots. Actual first failures: gold encounter366,
+gold card264, gold potion250, gold relic227, Writhing Mass200, pre-stolen155,
+Ritual Dagger34, Brew30, Smoke Bomb25. Gold total1,262 (81.367%). Saved traces
+are aggregates only; no identified imagined-state corpus, joint reasons or root
+identities support exact before/after replay. No naive subtraction is qualified.
+
+**NEAR_FULL_COMBAT_SUPPORT_NOT_READY**. Stage 1 stops at evidence sufficiency:
+upgraded Transmutation has exactly two whole-corpus rows, source4108572 fights
+27/28, both TEST; zero TRAIN/VALIDATION, one non-gain victory and one death.
+Native Transmutation creates upgraded colorless cards (possible upgraded Hand
+of Greed), with gold procs dependent on policy/eligible kills. Full qualification
+requires targeted source-grouped evidence or a reviewed transfer derivation;
+neither is available. Specific live frequency is unknown (264 aggregate gold-card
+first failures). Smallest additional evidence design and sample-size uncertainty
+are in the staged stop report. No data was collected. Stages2–5 not started;
+zero rows recovered, support unchanged, no new component/exposure/native-parity
+metrics or runtime artifact. This is an evidence limitation, not impossibility.
+
+Checks: app-worktree preflight/check and Bash doctor PASS; Python focused5tests
+PASS; Debug CMake configure/generate PASS; focused Python CTest1/1 PASS (0.14s);
+complete scans/hash bindings PASS; diff check PASS. No independent review yet,
+no C++ build/full CTest/scientific sampling. Knowledge impact: research evidence
+and maintained current status. [Staged report](evidence/near_full_combat_support_2026-09-14/REPORT.md)
+links all frozen JSON receipts and hashes.
+
+## §255 — Shared native gold component: revised Stage-1 design (2026-09-14)
+
+Supersedes §254's overly conservative Transmutation+ stop. User-approved design
+shares the stochastic gold mechanism; upgrade is a common conditional feature,
+with exact native +20/+25 HoG payouts. The two Transmutation+ TEST rows are an
+ultra-low-support diagnostic, not a calibration gate vetoing the gold union.
+Original frozen splits/corpus/census stay unchanged; no new data or gameplay.
+
+Implement native RAW outcome enumeration: turn/index-ordered theft with clipping,
+two mugs/optional lunge/block/escape, per-thief recovery, reset pre-stolenGold,
+Ectoplasm, qualifying-kill caps including split slimes and minion exclusions.
+A small categorical candidate scorer uses frozen HP encoding, shared mechanical
+upgrade/source features and HP/potion conditions. Native closure guarantees gold
+accounting, not full policy reachability. Only new scorer TRAIN victories fit;
+VALIDATION selects earliest minimum NLL. All upstream checkpoints are frozen.
+
+Protocol: full gold-only native target audit, bounded 12-epoch decoder fit,
+32 upstream draws with exact potion-mask marginalization for gold exposure;
+existing exact maxHP marginal for HP; 32 complete ancestral validity draws per
+TEST row. Report each gold mechanism/union separately and Transmutation+ as a
+non-vetoing diagnostic (its native validity is still checked). Development
+metrics do not substitute for independent final qualification/relic exposure/
+union/native export/runtime continuation. Support remains unchanged pending
+those gates. Scientific outcomes will be recorded on the frozen implementation
+SHA in the same evidence packet after execution.
+
+Checks: native/shared-scorer focused8tests PASS; census tests5PASS; Debug CMake
+configure/generate PASS; focused CTests2/2PASS (1.36s); no C++ changes/build.
+Knowledge impact: revised research status, frozen protocol and code navigation.
+
+Executed bounded development at gold source `1a24e7ccdb26c3ef649371dfe07269ecbc3c2d4a`
+and supplemental relic evaluation `2f8fb3f45a6656c03d81f69f3f4b1d1c3116164a`.
+Native audit: all71,367 candidates / maximum72 outcomes / zero native target,
+other persistent or inherited RNG violations. Initial preparation found a wrong
+Darkling cap; source inspection of `anyHalfDead`/final death showed one native
+HoG payout, corrected before fit and full audit rerun. Decoder fit56,153 TRAIN
+victories /6,788 VALIDATION,12 epochs,selected12,VALNLL0.617246,2.90s.
+Research checkpoint SHA256 `19a1a387f56ea4c8eceb2ebf4b92f951f497b18876ccab31168f0c6a9a5d853c`.
+
+**GOLD_DEVELOPMENT_GATES_PASS_PENDING_REVIEW** and supplemental relic PASS.
+7,301 gold-only TEST rows /7,190 victories;7,189 vetoing union victories and one
+Transmutation+ diagnostic victory. Gold union NLL0.574911/Brier0.259408/mode
+exact0.799972, gold/stolen expected MAE4.22353/4.17038. Informative4,091 rows:
+NLL1.010275/Brier0.455851/mode0.648497. Union exposure: gold0.012944,
+HP0.014668,potion0.000701,relic0.006219 per observed group (1,834 informative
+relic rows). Every gold reason slice passes each mean≤0.1nat; rare procs and
+ultra-low-support Transmutation+ are diagnostic caveats, not calibration claims.
+233,632 complete ancestral draws,229,414 downstream gold calls,4,218 sampled
+deaths; zero recorded native gold/persistent/downstream-after-death violations.
+Relic exact conditional potion-mask marginal has zero zero-mixture rows.
+
+This is the concrete Stage-1 draft-PR review handoff, not independent scientific
+qualification. No support/runtime changes or rows recovered; prospective census
+recovery71,367/7,301 yields95.124993% overall/94.778484% TEST only after gates
+and review. Stage2–5 remain unimplemented. No new data, gameplay or full-stack
+refit. Independent review/frozen reviewed SHA precedes an expensive scientific
+refit; no reviewed SHA exists yet. Focused CTests2/2PASS1.17s, diff checkPASS;
+Linux GCC at1a24e7c SUCCESS; later-head CI recorded in PR. Knowledge impact:
+executed evidence/current research status and supplemental tool navigation.
+[Staged report and JSON receipts](evidence/near_full_combat_support_2026-09-14/REPORT.md).
+
+
+## §256 — Native sparse gates, affected maxHP repair and explicit escape oracle (2026-09-14)
+
+Stage 1 user-approved at PR head 9a7220512939deb46e359339d28016e019cebad3;
+remaining stages authorized, same worktree and frozen 510,030-row corpus/splits.
+Writhing/Dagger shared tiny scorers: fixed12epoch TRAIN-only fits, original
+VALIDATION selection. TEST teacher NLL0.587495/0.059781; exact exposure
++0.047608/-0.000122. Finite Writhing zeros remained diagnostics; exact original
+exposure +0.530710 failed, maxHP head-only refit +0.287375 failed, affected
+existing maxHP encoder/head refit repaired the gate (original architecture and
+normalization; no other historical encoder/head changed). Refit source70b0de5,
+selected11; VAL0.043296 versus0.053481, TEST0.053666. Exact repaired evaluations
+source70b0de5, combined hard validity source5a605cc: 62,912 draws /58,205
+surviving calls /4,707 deaths, zero recorded violations. Joint gold/Dagger
+native legality shares ordinary eligible fatal hits, including thief escapes.
+
+Affected upstream exposure evaluations source07c573e for sparse, ce12078 for
+gold: all evaluated component means <=0.1nat. Native explicit ESCAPE oracle
+passes exact identical-origin OOC/persistent/all-RNG/PathHistory and no-reward
+continuation, including Cleric and native pre-used reset; outcome/RAW flag
+mismatch rejected. Learned escape probabilities remain pending. Native Brew
+replay matches3,208rows/3,106generation rounds, zero end-RNG mismatches;
+112recursive consumption cases /88escape rows. Independent generation versus
+preserved historical RNG replay requires an explicit origin contract; user
+clarification pending, no silent fair/known-RNG substitution.
+
+NEAR_FULL_COMBAT_SUPPORT_NOT_READY: full combined trajectories/refit/native
+export/probability parity/support update and #180 state replay incomplete.
+Live support unchanged, zero newly recovered rows; no new data or gameplay.
+Knowledge impact: native mechanics, component repair evidence and current
+qualification/contract status maintained in KB and bound evidence.
+[Report and raw receipts](evidence/near_full_combat_support_2026-09-14/REPORT.md).
+
+## §257 — Shared hypothetical Brew RNG, full-union refits and Smoke/relic composition stop (2026-09-15)
+
+**NEAR_FULL_COMBAT_SUPPORT_NOT_READY.** User-approved continuation and resolved
+planner-owned hypothetical potion RNG: seed a fresh native stream on first
+Brew use, reuse it through recursive generations and retain advanced RAW RNG;
+historical RNG only reconstructs teacher body labels. Shared 64-action decoder
+separates special use/discard, including legal boss Smoke discard, and exactly
+marginalizes compatible body/inventory trajectories and downstream effect flags.
+112 proven recursive examples reconcile to108survivors(86TRAIN/11VAL/11TEST)
+and4deaths. Native joint representability audit covers491,897survivors,
+including3,001escapes/4,363Writhing/12,690Dagger rows, zero failures.
+
+Existing survival/maxHP/HP/potion encoders and heads refitted on complete
+candidate union with original source splits and12epoch original VALIDATION
+selection, source1c31b7e. TEST NLL0.060412/0.053423/2.507614/0.504572;
+shared downstream heads source546cf6a, normalized joint TEST NLL1.344312.
+Full-union engineering evaluation sourceb266433:51,441TEST rows including
+41,454old#179/9,987recovered candidates. Full ancestral validity1,646,112draws,
+62,347deaths/1,574,266victories/9,499escapes, zero recorded RAW contract
+violations. Exact HP marginal NLL/Brier/CRPS/meanMAE:
+2.520435/0.752391/3.622578/5.322113. Entire informative-union exposure means:
+HP+.012821,potion+.004097,relic+.000416,gold+.019119,Dagger-.000279,
+Writhing+.088853; old/recovered aggregates also pass.
+
+**Smoke relic gate fails:**102informative surviving TEST rows, gap+.242637nat,
+source-bootstrap95%[+.088666,+.409294], no exact zero-mass targets.
+Added-outcome ablation, teacher/ancestral-context anchored head refit and
+balanced shared native-route refit give+.199237/+.201889/+.209178, still fail.
+All use original data, original VALIDATION selection and fixed other heads;
+final attempted repair source6ab63f4. Population808TRAIN/95VAL/102TEST,
+1,005surviving corpus rows(0.197047%). No new mechanic or additional corpus
+requirement proven. Outcome/HP/potion/relic correlation remains unqualified;
+further conceptual repair needs reviewed design, not weakened gates or silent
+support expansion. Repaired checkpoints are not promoted.
+
+Exact finite Writhing marginal source4b7f6be gives+.091256 on449ordinary-potion
+TEST rows and+.121732 on31Writhing/Ritual overlaps. Shared native maxHP
+partition head repair excludes available Fruit Juice (its +5/+10 confounds
+maxHP); overlap remains+.119052, source6bdf681. This is an explicit diagnostic
+of shared feature intersection, not an independent new native mechanism.
+Original TEST reuse after Writhing and subsequent repairs is development
+evidence, never untouched confirmation.
+
+User confirms #180 saved-state replay unavailable; tracked CSV/support JSONL
+have per-seed/first-reason aggregates, no imagined states/root IDs. No count
+subtraction or invented root-abort estimate. This is not the stop cause.
+Live support remains413,799/510,030(81.132286%); native export/parity,
+support expansion and MCTS sampling integration gated by failed composition.
+No new data/gameplay, no merge; draft#182 is the handoff. External engineering
+review supplied by user covers8420103 only, later implementation not reviewed.
+Knowledge impact: accepted RNG contract, current qualification failure,
+source-bound receipts and model navigation maintained in KB/evidence.
+[Staged report and immutable receipts](evidence/near_full_combat_support_2026-09-14/REPORT.md).
+
+
+## 258. Final near-full native support excluding initial/pre-Smoke and Writhing/Ritual (2026-09-15)
+
+User-authorized final bounded pass in #182 changes the final pre-state support cutoff, not model weights or data. Initial Smoke, pre-Smoke flag and Writhing with Ritual are excluded; Brew-generated Smoke/ESCAPE remains modeled. Exact corpus support505,935/510,030(99.197106%), TEST51,036/51,441(99.212690%). All41,454 old#179 TEST rows are retained and recomposed with selected maxHP weights. Every nonempty final slice gate≤0.1 nat; maximumWrithing+.094655723. One32-draw gold zero is corrected through a restricted exact ancestral sum, preserving the original diagnostic and provenance; no target-mass failures remain. All1,633,152 final TEST draws have zero hard violations.
+
+The tracked V2 artifact SHA22c855e0667a58a73835505672b0ae6d03f12e9fb8d64f08893810199246e94e uses the selected original full-unionv1 stack, not failed Smoke repairs. CPUFP32 Python/native probability error≤5.96e−7 at1e−4 tolerance;3,904 complete RAW/planner-stream/scalar-prepared draws match, including117recursiveBrew cases. Threeexcluded fixtures prove fail-closed/no draws. Executed native support matches exact all/TEST ordered index digests across all510,030 rows. Strict load/export and tracked-artifact/startup tests are added.
+
+Original full-union Smoke failures and three bounded repair attempts remain preserved. No fourth repair, new data, gameplay or#180 root-abort estimate; exact#180 state replay unavailable. TEST reuse remains development evidence, not pristine scientific confirmation. V2 is opt-in and default MCTS remainsOFF. Frozen final SHA, independent review and LinuxGCC CI outcomes are recorded in #182 before authorized merge. Knowledge impact: maintained support/RNG/native artifact contracts, code map and qualification evidence updated. [Final report and bound receipts](evidence/near_full_combat_support_2026-09-14/REPORT.md).
+
+
+## 259. Full-budget hypothetical OOC root-lock observation (2026-09-15)
+
+Base5b2a5b5 (merged #183/#184/#182), measured candidateb50b1c7. Opt-in
+observeRootLock suppresses all root shortcuts, records earliest strict visit
+lock/action/remaining budget and measured loop suffix, and retains eventual
+abort/final full-budget winner. Live ROOT_LOCK_TRACE writes per-root JSONL;
+existing CSV/actual-stop metrics unchanged. No model/support/default/RNG change.
+Live non-aborting guarantee stays false: #182's505,935/510,030near-full support
+explicitly excludes initial/pre-Smoke and Writhing/Ritual; continuation/forbidden
+imagination aborts also remain. Zero observed aborts cannot qualify enablement.
+
+One common seed42OFF/ON, same trackedV2artifact22c855e0…/Release binary,
+IroncladA0/OOC512/exact10kSilver/fair combat/copied noncombat RNG/keysOFF/
+Act3-or-death/CPU0/OMP1. Both guarded commands exit0; same floor51Act3win/hp16,
+every non-timing OOC counter,26Silver records and support reasons match.
+All155searched roots complete512 and lock; first simulation min/median/max
+1/260/509,34sole locks at1. Hypothetical remaining40,186/79,360(50.64%);
+summed completed wall suffix5.258686s/13.471238OOC(39.04%,12.60%full).
+0aborts/locked-then-aborts; safe-enabled roots0, actualsaved/stops0. Conditional
+potential work under a future all-path proof, not achieved or average speedup.
+
+101/101Debug and7/7Release focused CTest pass; original Torch-env/probe-missing
+failures retained and repaired without dependency/runtime changes. Exact52/100
+strict crossing, RNG/visits/Q replay and lock-at1abort-at7 regression pass.
+No support expansion, enabled-stop timing, multi-seed run or complete full-run
+trajectory/state trace. Knowledge impact: maintained observer/environment/safety
+contracts and engineering opportunity evidence.
+[Report](evidence/ooc_root_lock_observation_2026-09-15.md),
+[raw commands/hashes/root records/checks](evidence/ooc_root_lock_observation_2026-09-15.json).
+
+
+## 260. Enable live OOC visit-lock stopping despite remaining abort support (2026-09-15)
+
+Explicit user policy choice enables strict visit locks by default inside opt-in
+live OOC MCTS, despite remaining Smoke/continuation abort paths. Generic default
+still requires the non-aborting guarantee; the live provider remains false.
+EARLY_STOP=0 restores the requirement. Observer/mean-Q suppress stopping; an
+unqualified singleton must complete one simulation. A later abort can be skipped,
+changing fallback behavior; this is deliberate, not support qualification.
+
+Source1a3f552, one paired guardedseed42/same Release binary, OOC512/exact10kSilver/
+fair/copied noncombat RNG/keysOFF/Act3-or-death/CPU0/OMP1. Full vs stop: completed
+simulations79,360vs39,174, stopped roots155,
+saved40,186(50.64%). OOCwall11.193670vs6.758811s
+(39.62%lower); full elapsed35.8988vs31.3939s
+(12.55%lower). Both exit0;188decisions/155owned/33fallback,
+0support/continuation aborts, all26Silver records and non-timing outcomes match
+(Act3win/floor51/hp16max85). One engineering seed, no average/quality claim or
+complete trajectory trace. FullDebug101/101 and focusedRelease3/3 pass after
+updating legacy assertions/error wording. Knowledge impact: live policy/default/
+rollback and ADR-0014 maintained; no model/support/GPU change.
+[Report](evidence/ooc_early_stop_enabled_2026-09-15.md),
+[raw packet](evidence/ooc_early_stop_enabled_2026-09-15.json).
+
+## §261 — Silver reroot GC repeated canary and flat-1k smoke (2026-09-15)
 
 PR #185 baseline `876e9305a258df3d5a5eafd50e30375b933f8884`, measured candidate
 `1e37f2a9d68a403158241886f85c926b37b62f1a`. Repeated real private Silver
@@ -7813,7 +8069,7 @@ bounded experiment evidence; no default/model/support change.
 [commands/hashes/provenance](evidence/silver_reroot_gc_smoke_2026-09-15/provenance.json).
 
 
-## §255 — Cap-triggered Silver compaction and exact flat-1k parity (2026-09-15)
+## §262 — Cap-triggered Silver compaction and exact flat-1k parity (2026-09-15)
 
 Corrects PR #185's unconditional-reroot policy from §254. Baseline
 `876e9305a258df3d5a5eafd50e30375b933f8884`; measured corrected candidate
@@ -7857,7 +8113,7 @@ maintained lifetime/cap contract and reproducible parity/regression evidence.
 [reproducible parity verifier](evidence/silver_reroot_lazy_parity_2026-09-15/verify_parity.py).
 
 
-## §256 — Dynamic Silver dedup and 128k lazy reuse cap (2026-09-15)
+## §263 — Dynamic Silver dedup and 128k lazy reuse cap (2026-09-15)
 
 Baseline `fa2ea0ad702281a6b2a1366d792a8e920227832d`, measured implementation
 `9a849fd7deadb4374ad33f42796811b03a3ceb07`, continuing draft PR #185.
@@ -7891,7 +8147,7 @@ engineering correctness/resource evidence; no model/support qualification.
 [commands/hashes/raw packet](evidence/silver_dedup_128k_2026-09-15/provenance.json).
 
 
-## §257 — Silver 32k default restored; 128k experimental only (2026-09-15)
+## §264 — Silver 32k default restored; 128k experimental only (2026-09-15)
 
 Supersedes §256's production-cap promotion. Dynamic dedup and lazy collection
 remain; default is 32,768 and `STS_SILVER_REUSE_CAP=131072` is experimental.
@@ -7910,7 +8166,7 @@ and frozen teacher/model requalification. Knowledge impact: maintained cap and
 startup contracts; no model/support qualification.
 
 
-## §258 — Exact 10k Silver 32k vs experimental 128k lazy GC, exploratory paired 16 (2026-09-15)
+## §265 — Exact 10k Silver 32k vs experimental 128k lazy GC, exploratory paired 16 (2026-09-15)
 
 Frozen code 2b29e9723a00b9dc6fcea45507e4dcf86c968cde, identical release binary and
 models, fair RNG, A0/keysOFF, exact 10000 every root, allocated reuse/adaptiveOFF,
@@ -7934,7 +8190,7 @@ cap-research status and evidence; default/scientific contracts unchanged.
 [Raw paired seeds, compressed logs/decisions, commands/hashes, analysis](evidence/silver_cap_pair10k_16_2026-09-15/README.md).
 
 
-## §259 — User-selected 128k lazy GC: four budget schedules, paired 32 (2026-09-15)
+## §266 — User-selected 128k lazy GC: four budget schedules, paired 32 (2026-09-15)
 
 Same frozen release binary/models as §258, source checkout/runtime SHA
 53a3ba36cb58876f192167162587eacae7c89556 (intervening evidence only), paired

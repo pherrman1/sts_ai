@@ -1,6 +1,6 @@
 # Out-of-combat policy
 
-Last verified: 2026-09-14 for opt-in MCTS controls and continuation-limit accounting; 2026-09-10 against the current working tree (semantic OOC
+Last verified: 2026-09-15 for qualified V2 combat support; 2026-09-14 for opt-in MCTS controls and continuation-limit accounting; 2026-09-10 against the current working tree (semantic OOC
 decision coverage and reward continuation).
 Previously verified 2026-08-09 (key collection
 gated behind STS_COLLECT_KEYS=1, default off; BEST banner includes keys=collect/skip).
@@ -51,16 +51,38 @@ computes the parent square root once per selection without changing the numeric
 formula or ties. Prospective widening limits use the original formula, cached
 through the budget up to 1,048,576 visits; larger visits evaluate it on demand.
 
-For visit-selected roots, a leader may stop search only when its visit count is
-strictly greater than every challenger's count plus the remaining budget **and**
-`model.searchGuaranteedNonAborting()` is true. The capability defaults to false;
-mean-Q selection never uses this shortcut. For a guaranteed non-aborting
-visit-selected root with one action, no challenger exists, so it locks after
-the first completed simulation. A later support abort would otherwise
-invalidate even a locked winner. `OocGameContextModel` retains the default false:
-unsupported combat, unresolved continuation limits, and forbidden imagined
-native-combat paths still exist. Observed zero aborts do not qualify this contract.
-Metrics count locked-root stops and saved simulations separately.
+For visit-selected roots, a leader locks when its visit count is strictly
+greater than every challenger's count plus the remaining budget. Mean-Q
+selection never uses this shortcut. Generic planner configuration requires
+`model.searchGuaranteedNonAborting()` by default. Explicit
+`allowUnqualifiedRootStop=true` permits stopping without that guarantee.
+Live OOC MCTS enables this policy by default; `STS_OOC_MCTS_EARLY_STOP=0`
+restores the guarantee requirement. A singleton locks after its first completed
+simulation, rather than bypassing an unqualified root before sampling.
+
+This is an intentional fallback-policy tradeoff: a later support or continuation
+abort would invalidate the full-budget winner, but early stopping can skip that
+abort and execute the locked action. `OocGameContextModel` still returns false
+for the guarantee; Smoke support and other abort paths are unchanged. Observed
+zero aborts do not qualify that contract. Metrics count locked-root stops and
+saved simulations separately. See [ADR-0014](../../../decisions/0014-live-ooc-visit-lock-stopping.md).
+
+`OocMctsConfig::observeRootLock` is an opt-in diagnostic that suppresses both
+locked-root stopping and the qualified sole-root bypass. It records the first
+strict visit lock (including a zero-remaining-budget lock), its action and
+remaining simulation budget, and wall time from that completed simulation to
+search completion/abort. No extra sampling draws are consumed. Mean-Q roots
+have no visit-lock observation. Live `STS_OOC_MCTS_ROOT_LOCK_TRACE=<fresh.jsonl>`
+enables it and writes one JSON record per searched root with seed/decision,
+budget/completed/attempted simulations, lock/action/tail time, full-budget status,
+abort reason, final action and the non-aborting guarantee. Existing run CSV
+columns and actual early-stop/saved-simulation counters retain their semantics.
+Only completed full-budget roots contribute conditional opportunity estimates;
+locked roots that later abort remain invalid and must be reported separately.
+Even zero observed aborts or matching locked/final actions cannot prove the
+provider guarantee. The Smoke-excluded V2 artifact and remaining continuation
+abort paths do not qualify the provider guarantee; live stopping uses the explicit
+unqualified policy instead.
 
 The focused `ooc_mcts` CTest verifies toy stochastic MDPs and malformed inputs.
 `apps/one_combat/ooc_mcts_adapter.{h,cpp}` supplies the
@@ -151,6 +173,10 @@ the full planner. `combat_transition_runtime_probe` and
 `tools/qualify_combat_transition_runtime.py` perform offline CPU FP32 parity at
 fixed max absolute probability tolerance 1e-4; they do not drive gameplay seeds.
 
+The qualified `COMBAT_TRANSITION_RUNTIME_V2` artifact is tracked at `selfplay/models/combat_transition_near_full_except_smoke_v2.native`. Its selected refitted component identities, passing qualification and ordered all/TEST cohort hashes are enforced by export/load guards. V2 retains the legacy envelope while supporting shared gold, Writhing, Ritual and Brew trajectories; it excludes initially held Smoke, pre-existing `smokeBombUsed`, and Writhing with Ritual Dagger. Executed support is exactly 505,935/510,030 overall and 51,036/51,441 TEST. V1 behavior above remains unchanged when a V1 artifact is selected.
+
+V2 Brew draws a full-width planner-owned hypothetical native potion RNG on first use, reuses it recursively and retains its advanced RAW state. Unused Brew copies historical potion RNG; other streams follow the existing replay/copy contract. Explicit `ESCAPE` requires matching RAW `smokeBombUsed`, rejects boss escape and uses native `regainControl()` without victory rewards. Generated Smoke/ESCAPE remains possible in a supported Brew trajectory. The probe and `tools/qualify_combat_transition_near_full.py` verify CPU FP32 probabilities, complete RAW sampled states, planner-stream advancement and scalar/prepared parity; unsupported states consume no planner draws. All final slice gates and hard-validity checks pass as reused development evidence in the [final report](../../experiments/evidence/near_full_combat_support_2026-09-14/REPORT.md). V2 uses the same explicit model path; no default MCTS enablement is implied.
+
 Copied native RNG streams still govern other stochastic OOC transitions. This
 adapter resolves the combat boundary only and remains **not a fair stochastic
 environment model** or a scientifically qualified full OOC planner.
@@ -178,7 +204,8 @@ A root with one valid, unique V4 candidate may return that primitive without
 constructing a tree only under the explicit `searchGuaranteedNonAborting()`
 contract. `OocGameContextModel` explicitly returns false: separate combat-support
 qualification must exclude every intentional abort path before this can change.
-An unsafe sole root must search and retain whole-root fallback, whose ordered
+An unqualified sole root must complete at least one simulation; an abort reached
+before its lock retains whole-root fallback, whose ordered
 policy can consume `ScumSearchAgent2::rng` even for a singleton candidate set.
 Qualified bypasses report `trivialRootBypasses` with zero simulations/attempts/
 combat draws; the current live model is ineligible. Snapshots are discarded before

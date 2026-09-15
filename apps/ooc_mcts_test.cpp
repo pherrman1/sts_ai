@@ -96,6 +96,42 @@ void tests() {
     require(!lockFull.metrics.earlyStopLockedRoot && lockFull.metrics.simulations == 100
         && lockFull.metrics.savedSimulations == 0,
         "default potentially aborting model forbids locked-root stopping");
+    auto unqualifiedConfig=lockConfig; unqualifiedConfig.allowUnqualifiedRootStop=true;
+    auto unqualifiedModel=deterministic();
+    const auto unqualified=OocMctsPlanner(unqualifiedConfig).search(unqualifiedModel,0,100);
+    require(!unqualifiedModel.searchGuaranteedNonAborting() && unqualified.metrics.simulations==52
+        && unqualified.metrics.savedSimulations==48 && unqualified.selectedAction==lockFull.selectedAction,
+        "explicit policy override enables strict visit stop without claiming support guarantee");
+    auto observeConfig = lockConfig; observeConfig.observeRootLock = true;
+    observeConfig.allowUnqualifiedRootStop=true;
+    auto observeModel = deterministic(); observeModel.guaranteedNonAborting = true;
+    const auto observed = OocMctsPlanner(observeConfig).search(observeModel,0,100);
+    require(observed.metrics.simulations == 100 && !observed.metrics.earlyStopLockedRoot
+        && !observed.metrics.savedSimulations && observed.metrics.hypotheticalLockSimulation == 52
+        && observed.metrics.hypotheticalRemainingSimulations == 48
+        && observed.hypotheticalLockedAction == lockFull.selectedAction
+        && observed.selectedAction == lockFull.selectedAction,
+        "observer forces full budget and records exact earliest strict lock");
+    for (std::size_t i=0;i<lockFull.rootActions.size();++i)
+        require(observed.rootActions[i].visits == lockFull.rootActions[i].visits
+            && observed.rootActions[i].q == lockFull.rootActions[i].q,
+            "observation leaves full-budget allocation and Q unchanged");
+    std::vector<std::uint64_t> referenceDraws, observedDraws;
+    auto randomReference = alternating(), randomObserved = alternating();
+    randomReference.transition = [&](auto,auto,auto &rng) {
+        const auto draw=rng(); referenceDraws.push_back(draw); return OocStateId(1+draw%2);
+    };
+    randomObserved.transition = [&](auto,auto,auto &rng) {
+        const auto draw=rng(); observedDraws.push_back(draw); return OocStateId(1+draw%2);
+    };
+    auto randomObserveConfig=config; randomObserveConfig.observeRootLock=true;
+    const auto randomFull=planner.search(randomReference,0,128);
+    const auto randomRecorded=OocMctsPlanner(randomObserveConfig).search(randomObserved,0,128);
+    require(referenceDraws==observedDraws && randomFull.selectedAction==randomRecorded.selectedAction
+        && randomFull.rootActions[0].visits==randomRecorded.rootActions[0].visits
+        && randomFull.rootActions[0].q==randomRecorded.rootActions[0].q
+        && randomFull.metrics.transitionSamples==randomRecorded.metrics.transitionSamples,
+        "observation preserves every sampling draw and full-budget stochastic particle result");
     // Even adversarial allocation of every remaining visit cannot catch the leader.
     const auto leaderVisits = locked.rootActions[1].visits;
     const auto challengerVisits = locked.rootActions[0].visits;
@@ -148,6 +184,36 @@ void tests() {
         && lateDiscarded.metrics.simulations == 6 && lateDiscarded.metrics.simulationAttempts == 7
         && !lateDiscarded.metrics.earlyStopLockedRoot,
         "potentially aborting model still discards root after hypothetical visit lock");
+    LateAbort observedLateAbort;
+    observedLateAbort.actions = {{0,{{1,1}}}};
+    observedLateAbort.transition = [](auto,auto,auto &) { return 1; };
+    const auto observedDiscarded = OocMctsPlanner(observeConfig).search(observedLateAbort,0,10);
+    require(observedDiscarded.aborted && !observedDiscarded.selectedAction
+        && observedDiscarded.metrics.simulations == 6 && observedDiscarded.metrics.simulationAttempts == 7
+        && observedDiscarded.metrics.hypotheticalLockSimulation == 1
+        && observedDiscarded.metrics.hypotheticalRemainingSimulations == 9
+        && !observedDiscarded.metrics.savedSimulations,
+        "hypothetical lock never hides later support abort or credits actual savings");
+    LateAbort overriddenAbort;
+    overriddenAbort.actions={{0,{{1,1}}}};
+    overriddenAbort.transition=[](auto,auto,auto &) { return 1; };
+    const auto skippedAbort=OocMctsPlanner(unqualifiedConfig).search(overriddenAbort,0,10);
+    require(!skippedAbort.aborted && skippedAbort.selectedAction==1
+        && skippedAbort.metrics.simulations==1 && skippedAbort.metrics.savedSimulations==9,
+        "authorized early stop deliberately skips a later abort and fallback");
+    auto unqualifiedQ=unqualifiedConfig; unqualifiedQ.selectByMeanQ=true;
+    auto unqualifiedQModel=deterministic();
+    require(OocMctsPlanner(unqualifiedQ).search(unqualifiedQModel,0,100).metrics.simulations==100,
+        "unqualified override never applies visit stopping to mean-Q roots");
+    auto observedQ = observeConfig; observedQ.selectByMeanQ = true;
+    auto observedQModel = deterministic();
+    require(!OocMctsPlanner(observedQ).search(observedQModel,0,100).hypotheticalLockedAction,
+        "visit-lock observation is inapplicable to mean-Q selection");
+    auto oneBudget = deterministic(); oneBudget.actions[0]={{1,1}};
+    const auto observedOne = OocMctsPlanner(observeConfig).search(oneBudget,0,1);
+    require(observedOne.metrics.hypotheticalLockSimulation == 1
+        && observedOne.metrics.hypotheticalRemainingSimulations == 0,
+        "last-simulation lock has zero potential savings");
     struct Chain : OocGenerativeModel {
         std::optional<double> terminalValue(OocStateId s) const override {
             return s==8 ? std::optional<double>(1) : std::nullopt;

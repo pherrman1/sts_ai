@@ -1,6 +1,6 @@
 # Cap-triggered Silver collection: exact flat-1k parity
 
-This correction supersedes the unconditional-cleanup policy tested in ledger §254;
+This correction supersedes the unconditional-cleanup policy tested in ledger §261;
 that earlier adverse smoke remains historical evidence. Production sessions now
 leave pools and global dedup untouched below their configured cap. At or above
 it, an exact candidate is compacted and the retained count is rechecked before
@@ -26,7 +26,7 @@ exports inside this worktree. No new worktree or broader seed block.
   allocation, inherited visits, selected-edge visits, root visits and fallback
   reasons. Parallel emission order is normalized using complete-row multisets.
 - All 380 per-combat telemetry records match exactly as multisets.
-- Fresh baseline rows also match the preserved §254 baseline rows.
+- Fresh baseline rows also match the preserved §261 baseline rows.
 - Both arms win 10/16, mean floor 45.375, mean end HP 23.4375.
 - No cap fallback, adaptive escalation or integration failure counters.
   Maximum pre-reroot allocation is 13,454, confirming no memory-pressure path.

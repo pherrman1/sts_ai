@@ -21,11 +21,11 @@ std::pair<std::string,int> trajectory(int rid) {
     case R::INK_BOTTLE:return {"cards",10}; case R::SUNDIAL:return {"shuffles",3};
     default:return {"",0}; }
 }
-void legal(int rid,int data,int encounter,bool bloom) {
+void legal(int rid,int data,int encounter,bool bloom,bool full=false) {
     auto t=trajectory(rid);
     if(t.second && (data<0 || data>=t.second)) throw std::invalid_argument("invalid_relic_counter");
     if(rid==id(R::NEOWS_LAMENT) && (data<0 || data>3)) throw std::invalid_argument("invalid_relic_counter");
-    if(rid==id(R::OMAMORI) && (data<0 || data>2 || encounter==id(E::WRITHING_MASS))) throw std::invalid_argument("invalid_relic_counter");
+    if(rid==id(R::OMAMORI) && (data<0 || data>2 || (!full && encounter==id(E::WRITHING_MASS)))) throw std::invalid_argument("invalid_relic_counter");
     if(rid==id(R::LIZARD_TAIL) && (data<0 || data>1 || (data==1 && !bloom))) throw std::invalid_argument("active_unqualified_lizard");
 }
 std::uint64_t next(CombatTransitionRandomState &s) {
@@ -66,8 +66,8 @@ std::vector<std::string> nativeComposedSupportReasons(const CombatPredictorInput
     const auto &g=pi.globals;std::vector<std::string> reasons;
     auto add=[&](bool test,const char *s){if(test)reasons.emplace_back(s);};
     if(g.characterClass<0 || g.characterClass>=4 || g.encounter<0 || g.encounter>=count(sts::monsterEncounterEnumNames) || g.roomClass<0 || g.roomClass>=count(sts::roomStrings) || g.lastRoom<0 || g.lastRoom>=count(sts::roomStrings) || !std::isfinite(g.potionKeepValue) || pi.potions.size()!=5 || pi.cards.size()>128 || pi.relics.size()>64) return {"invalid_pre_state"};
-    add(g.characterClass!=id(sts::CharacterClass::IRONCLAD),"non_ironclad");add(g.encounter==id(E::WRITHING_MASS),"writhing_mass");
-    add(g.encounter==id(E::LOOTER)||g.encounter==id(E::TWO_THIEVES)||g.encounter==id(E::EXORDIUM_THUGS),"gold_mutating_encounter");
+    add(g.characterClass!=id(sts::CharacterClass::IRONCLAD),"non_ironclad");add(!d.nearFull && g.encounter==id(E::WRITHING_MASS),"writhing_mass");
+    add(!d.nearFull && (g.encounter==id(E::LOOTER)||g.encounter==id(E::TWO_THIEVES)||g.encounter==id(E::EXORDIUM_THUGS)),"gold_mutating_encounter");
     bool ritual=false,goldCard=false,certified=g.characterClass==0;
     for(std::size_t i=0;i<pi.cards.size();++i) {auto c=pi.cards[i];
         if(c.cardId<0 || c.cardId>=count(sts::cardEnumStrings) || c.bottleBinding < -1 || c.bottleBinding>2)return {"invalid_pre_state"};
@@ -75,11 +75,11 @@ std::vector<std::string> nativeComposedSupportReasons(const CombatPredictorInput
         ritual|=c.cardId==id(C::RITUAL_DAGGER);goldCard|=c.cardId==id(C::HAND_OF_GREED)||c.cardId==id(C::JACK_OF_ALL_TRADES)||c.cardId==id(C::TRANSMUTATION);
         certified&=c.cardId!=id(C::ALCHEMIZE);
     }
-    add(ritual,"ritual_dagger");add(goldCard,"gold_mutating_card");bool toolbox=false;
+    add(!d.nearFull && ritual,"ritual_dagger");add(!d.nearFull && goldCard,"gold_mutating_card");add(d.nearFull && ritual && g.encounter==id(E::WRITHING_MASS),"writhing_ritual_intersection");bool toolbox=false;
     for(std::size_t i=0;i<pi.relics.size();++i) {auto r=pi.relics[i];if(r.relicId<0 || r.relicId>=count(sts::relicEnumNames) || r.orderIndex!=static_cast<int>(i))return {"invalid_pre_state"};toolbox|=r.relicId==id(R::TOOLBOX);}
-    add(toolbox,"gold_mutating_relic");bool smoke=false,entropic=false,goldPotion=false;
+    add(!d.nearFull && toolbox,"gold_mutating_relic");bool smoke=false,entropic=false,goldPotion=false;
     for(int i=0;i<5;++i) {auto p=pi.potions[i];if(p.slot!=i || p.potionId<0 || p.potionId>=count(sts::potionEnumNames))return {"invalid_pre_state"};smoke|=p.potionId==id(P::SMOKE_BOMB);entropic|=p.potionId==id(P::ENTROPIC_BREW);goldPotion|=p.potionId==id(P::COLORLESS_POTION);}
-    add(smoke,"smoke_bomb");add(entropic,"entropic_brew");add(goldPotion,"gold_mutating_potion");add(pre.smokeBombUsed,"pre_smoke_bomb_used");add(pre.stolenGold!=0,"pre_stolen_gold_nonzero");add(!certified || entropic,"potion_not_certified");if(!reasons.empty())return reasons;
+    add(smoke,"smoke_bomb");add(!d.nearFull && entropic,"entropic_brew");add(!d.nearFull && goldPotion,"gold_mutating_potion");add(pre.smokeBombUsed,"pre_smoke_bomb_used");add(!d.nearFull && pre.stolenGold!=0,"pre_stolen_gold_nonzero");add(!certified || (!d.nearFull && entropic),"potion_not_certified");if(!reasons.empty())return reasons;
     if(pre.curHp!=g.curHp || pre.maxHp!=g.maxHp || pre.potionCapacity!=g.potionCapacity || pre.potionCount!=g.potionCount)return {"visible_pre_mismatch"};
     if(pre.relics.size()!=pi.relics.size())return {"visible_relic_mismatch"};
     for(std::size_t i=0;i<pre.relics.size();++i)if(pre.relics[i].id!=pi.relics[i].relicId || pre.relics[i].data!=pi.relics[i].data)return {"visible_relic_mismatch"};
@@ -89,7 +89,7 @@ std::vector<std::string> nativeComposedSupportReasons(const CombatPredictorInput
     if(pre.curHp<d.preCurHpRange[0] || pre.curHp>d.preCurHpRange[1] || pre.maxHp<d.preMaxHpRange[0] || pre.maxHp>d.preMaxHpRange[1])return {"hp_envelope"};
     if(d.maxHpClasses!=d.maxHpDeltaValues || d.maxHpClasses.empty())return {"max_hp_domain"};for(int delta:d.maxHpClasses) {auto max=static_cast<std::int64_t>(pre.maxHp)+delta;if(max<=0 || max>std::numeric_limits<int>::max())return {"max_hp_state"};}
     bool bloom=std::any_of(pre.relics.begin(),pre.relics.end(),[](auto r){return r.id==id(R::MARK_OF_THE_BLOOM);});
-    try {for(auto r:pre.relics) {legal(r.id,r.data,g.encounter,bloom);auto t=trajectory(r.id);if(t.second && !d.trainedGroups.count(t.first))return {"untrained_trajectory"};}}
+    try {for(auto r:pre.relics) {legal(r.id,r.data,g.encounter,bloom,d.nearFull);auto t=trajectory(r.id);if(t.second && !d.trainedGroups.count(t.first))return {"untrained_trajectory"};}}
     catch(const std::invalid_argument &e){return {e.what()};}
     for(int i:{2,4})if(pre.combatRng[i].counter<0 || !(pre.combatRng[i].seed0|pre.combatRng[i].seed1))return {"inherited_rng"};
     if(!g.encounter)return {"encounter_domain"};try {replayNativeComposedMisc(pre.combatRng[2],g.encounter);}catch(const std::exception&){return {"inherited_rng"};}

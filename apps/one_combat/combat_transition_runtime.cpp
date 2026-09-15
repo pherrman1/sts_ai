@@ -1,5 +1,7 @@
 #include "combat_transition_runtime.h"
+#include "combat_transition_near_full.h"
 #include "run_features.h"
+#include "constants/Potions.h"
 #include <algorithm>
 #include <cmath>
 #include <cstring>
@@ -39,16 +41,29 @@ CombatTransitionRuntime::CombatTransitionRuntime(const std::string &path) {
     auto u32=[&]() { unsigned char b[4];read(b,4);return uint32_t(b[0])|(uint32_t(b[1])<<8)|(uint32_t(b[2])<<16)|(uint32_t(b[3])<<24); };
     constexpr char magic[]="COMBAT_TRANSITION_RUNTIME_V1";
     char actual[sizeof(magic)];read(actual,sizeof(actual));
-    require(std::memcmp(actual,magic,sizeof(magic))==0,"combat runtime magic");
-    require(u32()==1,"combat runtime version");
+    const bool full=std::memcmp(actual,"COMBAT_TRANSITION_RUNTIME_V2",sizeof(magic))==0;
+    require(full || std::memcmp(actual,magic,sizeof(magic))==0,"combat runtime magic");
+    require(u32()==(full?2u:1u),"combat runtime version");
     uint32_t length=u32();require(length>0 && length<=1024*1024,"combat runtime header size");
     std::string header(length,'\0');read(header.data(),length);metadata_=nlohmann::json::parse(header);
-    require(metadata_.at("schema")==magic && metadata_.at("version")==1,"combat runtime schema");
+    require(metadata_.at("schema")==std::string(full?"COMBAT_TRANSITION_RUNTIME_V2":magic) && metadata_.at("version")== (full?2:1),"combat runtime schema");
     require(metadata_.at("predictorSchema")==CombatPredictorInputV1::SCHEMA && metadata_.at("predictorHash")==combatPredictorInputFieldSchemaHash()
         && metadata_.at("predictorFieldSchema")==CombatPredictorInputV1::FIELD_SCHEMA,"combat runtime predictor schema");
     require(metadata_.at("width")==64 && metadata_.at("layers")==2 && metadata_.at("heads")==4 && metadata_.at("feedForward")==128,"combat runtime encoder dimensions");
     require(metadata_.at("cardCount")==kNumCardIds && metadata_.at("relicCount")==kNumRelics && metadata_.at("potionCount")==kNumPotions,"combat runtime vocab");
-    require(metadata_.at("sources")==nlohmann::json(sourceHashes),"combat runtime source identities");
+    if(!full) require(metadata_.at("sources")==nlohmann::json(sourceHashes),"combat runtime source identities");
+    else {
+        const std::map<std::string,std::string> hashes={
+        {"survival","e150180a9112f52a94cfa60770adb6c0a48517a7d94a4c26f6e5896e85269c18"},
+        {"maxHP","2c5b54d0a9420a9d0e3ab9a26f32b9900c4869490e4af49627009cde21efb4b0"},
+        {"HP","0c8b5aa8c5218d6cd6102b768cc86a474c9ef30953d4b034caedcc41a426109b"},
+        {"potion","ae1a1411990d272579de10564edb48c7f2ec1d14f1c72dacf5390a1415a0f1db"},
+        {"downstream","d07ead94b3abb9d12f272337e18aece6acd261cc4a39a36b21b82f904236af91"}};
+        require(metadata_.at("sources")==nlohmann::json(hashes),"combat runtime near-full source identities");
+        require(metadata_.at("supportExclusions")==nlohmann::json({"smoke_bomb","pre_smoke_bomb_used","writhing_ritual_intersection"}),"combat runtime support exclusions");
+        require(metadata_.at("qualification").at("classification")=="FINAL_SUPPORT_EXPOSURE_DEVELOPMENT_PASS","combat runtime qualification");
+        require(metadata_.at("supportCensus").at("all").at("supportedIndexSha256")=="969a239845e7638a5797bcf1f2d03dc7c599c83b22e8dd76337cb31c3c20e0ef" && metadata_.at("supportCensus").at("TEST").at("supportedIndexSha256")=="71f2ca52769aa36a39f5684bf408090deb10edf8c13e55803cc0fd46ce1bfc31","combat runtime qualified cohort");
+    }
     require(metadata_.at("maxHpClasses")==nlohmann::json({0,3,4,5,6,7,8,9,10,11,12}),"combat runtime maxHP classes");
     std::vector<int> classes;for(int i=-160;i<=143;++i) classes.push_back(i);
     require(metadata_.at("hpClasses")==classes,"combat runtime HP classes");
@@ -84,9 +99,13 @@ CombatTransitionRuntime::CombatTransitionRuntime(const std::string &path) {
             shape(group+".relic.2.bias",{expected.at(group+".relic.2.weight")[0]});
         }
     }
-    shape("potion.delta.weight",{11,8});shape("potion.potion.weight",{kNumPotions,8});shape("potion.slot.weight",{5,4});lin("potion.mlp.0",64,133);lin("potion.mlp.2",32,64);
-    shape("relic.delta.weight",{304,16});shape("relic.mask.weight",{32,8});lin("relic.shared.0",64,89);
+    shape("potion.delta.weight",{11,8});shape("potion.potion.weight",{kNumPotions,8});shape("potion.slot.weight",{5,4});lin("potion.mlp.0",64,133);lin("potion.mlp.2",full?64:32,64);
+    shape("relic.delta.weight",{304,16});shape("relic.mask.weight",{32,8});lin("relic.shared.0",64,full?90:89);
     for(auto entry:std::map<std::string,int>{{"turns",6},{"attacks",10},{"cards",10},{"shuffles",3},{"lizard",2}}) lin("relic.heads."+entry.first,entry.second,64);
+    if(full) {
+        for(std::string g:{"writhing","ritual"}) {lin(g+".context.0",64,80);lin(g+".context.2",32,64);lin(g+".event.0",32,3);}
+        lin("gold.condition.0",64,87);lin("gold.condition.2",32,64);lin("gold.candidates.0",32,6);lin("gold.bias",1,6);
+    }
     require(metadata_.at("tensors")==nlohmann::json(expected),"combat runtime tensor graph/dimensions");
     for(const auto &entry:expected) {
         Tensor t;t.shape=entry.second;size_t count=1;for(int dim:t.shape) { require(dim>0 && dim<=4096,"combat tensor dimension");count*=dim; }
@@ -152,6 +171,7 @@ Vec CombatTransitionRuntime::potion(const CombatPredictorInputV1 &p,int delta,fl
 }
 Vec CombatTransitionRuntime::potionEncoding(const CombatPredictorInputV1 &p) const {return encode("potion_encoder",p);}
 Vec CombatTransitionRuntime::potion(const Vec &encoding,const CombatPredictorInputV1 &p,int delta,float fraction) const {
+    if(nearFull()){std::array<int,5> inventory;for(int i=0;i<5;++i)inventory[i]=p.potions.at(i).potionId;return potionInventory(encoding,inventory,p.globals.potionCapacity,delta,fraction,sts::isBossEncounter(static_cast<sts::MonsterEncounter>(p.globals.encounter)));}
     auto x=encoding;append(x,embedding("potion.delta",delta));x.push_back(fraction);
     for(const auto &pot:p.potions) {append(x,embedding("potion.potion",pot.potionId));append(x,embedding("potion.slot",pot.slot));}
     auto logits=linear("potion.mlp.2",relu(linear("potion.mlp.0",x)));
@@ -160,7 +180,39 @@ Vec CombatTransitionRuntime::potion(const Vec &encoding,const CombatPredictorInp
     for(int mask=0;mask<32;++mask)for(int slot=0;slot<5;++slot)if((mask&(1<<slot)) && (slot>=p.globals.potionCapacity || p.potions.at(slot).potionId<=1))logits[mask]=-std::numeric_limits<float>::infinity();
     return softmax(logits);
 }
-std::map<std::string,Vec> CombatTransitionRuntime::relic(const Vec &z,int hpClass,float fraction,int mask) const {auto x=z;append(x,embedding("relic.delta",hpClass));x.push_back(fraction);append(x,embedding("relic.mask",mask));auto shared=relu(linear("relic.shared.0",x));std::map<std::string,Vec> out;for(auto g:{"turns","attacks","cards","shuffles"})out.emplace(g,softmax(linear(std::string("relic.heads.")+g,shared)));return out;}
+std::map<std::string,Vec> CombatTransitionRuntime::relic(const Vec &z,int hpClass,float fraction,int mask,bool escaped) const {auto x=z;append(x,embedding("relic.delta",hpClass));x.push_back(fraction);append(x,embedding("relic.mask",mask));if(nearFull())x.push_back(float(escaped));auto shared=relu(linear("relic.shared.0",x));std::map<std::string,Vec> out;for(auto g:{"turns","attacks","cards","shuffles"})out.emplace(g,softmax(linear(std::string("relic.heads.")+g,shared)));return out;}
+Vec CombatTransitionRuntime::potionInventory(const Vec &encoding,const std::array<int,5>& inventory,int capacity,int delta,float fraction,bool boss) const {
+    require(nearFull(),"near-full potion interface on legacy artifact");
+    auto x=encoding;append(x,embedding("potion.delta",delta));x.push_back(fraction);
+    for(int slot=0;slot<5;++slot){append(x,embedding("potion.potion",inventory[slot]));append(x,embedding("potion.slot",slot));}
+    auto logits=linear("potion.mlp.2",relu(linear("potion.mlp.0",x)));
+    for(int a=0;a<64;++a){int mask=a&31,triggers=0;bool valid=true,smoke=false;
+        for(int slot=0;slot<5;++slot)if(mask&(1<<slot)){
+            valid&=slot<capacity && inventory[slot]>1;
+            triggers+=inventory[slot]==int(sts::Potion::ENTROPIC_BREW)||inventory[slot]==int(sts::Potion::SMOKE_BOMB);
+            smoke|=inventory[slot]==int(sts::Potion::SMOKE_BOMB);
+        }
+        valid&=triggers<=1 && (a<32 || (triggers==1 && !(boss&&smoke)));
+        if(!valid)logits[a]=-std::numeric_limits<float>::infinity();
+    }return softmax(logits);
+}
+Vec CombatTransitionRuntime::event(const std::string &group,const Vec &context,const std::vector<std::vector<Vec>>& candidates,const std::vector<bool>& legal) const {
+    auto state=linear(group+".context.2",relu(linear(group+".context.0",context)));Vec logits;
+    require(candidates.size()==legal.size(),"event legality dimensions");
+    for(size_t i=0;i<candidates.size();++i){Vec embedded(32,0.f);
+        for(const auto &card:candidates[i]){auto value=linear(group+".event.0",card);for(int j=0;j<32;++j)embedded[j]+=std::tanh(value[j]);}
+        float score=0;for(int j=0;j<32;++j)score+=embedded[j]*state[j];
+        logits.push_back(legal[i]?score/std::sqrt(32.f):-std::numeric_limits<float>::infinity());
+    }return softmax(logits);
+}
+Vec CombatTransitionRuntime::gold(const Vec &context,const std::vector<Vec>& candidates) const {
+    auto state=linear("gold.condition.2",relu(linear("gold.condition.0",context)));Vec logits;
+    for(const auto &candidate:candidates){auto value=linear("gold.candidates.0",candidate);float score=0;
+        for(int j=0;j<32;++j)score+=std::tanh(value[j])*state[j];
+        logits.push_back(score/std::sqrt(32.f)+linear("gold.bias",candidate)[0]);
+    }return softmax(logits);
+}
+
 }
 
 namespace one_combat {
@@ -170,7 +222,7 @@ NativeCombatTransitionSampler::NativeCombatTransitionSampler(const std::string &
     domain_.preMaxHpRange=d.at("preMaxHpRange").get<std::array<int,2>>();
     domain_.hpClasses=m.at("hpClasses").get<std::vector<int>>();domain_.maxHpClasses=m.at("maxHpClasses").get<std::vector<int>>();
     domain_.maxHpDeltaValues=d.at("maxHpDeltaValues").get<std::vector<int>>();
-    domain_.trainedGroups={"turns","attacks","cards","shuffles"};domain_.ready=true;
+    domain_.trainedGroups={"turns","attacks","cards","shuffles"};domain_.nearFull=runtime_.nearFull();domain_.ready=true;
 }
 CombatRuntimeSupport NativeCombatTransitionSampler::support(const sts::GameContext &gc,const CombatPredictorInputV1 &p) const {
     auto reasons=nativeComposedSupportReasons(p,captureCombatTransitionState(gc),domain_);
@@ -178,6 +230,7 @@ CombatRuntimeSupport NativeCombatTransitionSampler::support(const sts::GameConte
 }
 CombatRuntimeSample NativeCombatTransitionSampler::sample(const sts::GameContext &gc,const CombatPredictorInputV1 &p,std::mt19937_64 &rng) const {
     if(!support(gc,p).supported)return {};
+    if(runtime_.nearFull())return sampleNearFull(runtime_,domain_,captureCombatTransitionState(gc),p,rng,runtime_.survival(p),{},{},{});
     auto uniform=[&]() {return std::generate_canonical<double,53>(rng);};
     auto category=[&](const Vec &prob) {double draw=uniform(),sum=0;int last=-1;for(size_t i=0;i<prob.size();++i){require(std::isfinite(prob[i]) && prob[i]>=0,"invalid sampler probability");sum+=prob[i];if(prob[i]>0)last=int(i);if(draw<sum)return int(i);}require(last>=0 && std::abs(sum-1)<1e-6,"invalid sampler total");return last;};
     if(uniform()>=runtime_.survival(p))return {CombatRuntimeSample::Outcome::DEATH,{}};
@@ -221,6 +274,7 @@ std::unique_ptr<PreparedCombatTransition> NativeCombatTransitionSampler::prepare
         const CombatRuntimeSupport &support() const override { return support_; }
         CombatRuntimeSample sample(std::mt19937_64 &rng) const override {
             if(!support_.supported)return {};
+            if(runtime_.nearFull())return sampleNearFull(runtime_,domain_,pre_,input_,rng,survival_,maxHp_,hpEncoding_,potionEncoding_);
             auto uniform=[&]() {return std::generate_canonical<double,53>(rng);};
             auto category=[&](const Vec &prob) {double draw=uniform(),sum=0;int last=-1;for(size_t i=0;i<prob.size();++i){require(std::isfinite(prob[i]) && prob[i]>=0,"invalid sampler probability");sum+=prob[i];if(prob[i]>0)last=int(i);if(draw<sum)return int(i);}require(last>=0 && std::abs(sum-1)<1e-6,"invalid sampler total");return last;};
             if(uniform()>=survival_)return {CombatRuntimeSample::Outcome::DEATH,{}};

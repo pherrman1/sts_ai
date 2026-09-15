@@ -1,0 +1,73 @@
+{
+  "artifactSha256": "19a1a387f56ea4c8eceb2ebf4b92f951f497b18876ccab31168f0c6a9a5d853c",
+  "classification": "BOUNDED_GOLD_DECODER_FIT_NOT_QUALIFICATION",
+  "elapsedSeconds": 2.900916579994373,
+  "history": [
+    {
+      "epoch": 1,
+      "trainNll": 0.7575266339816137,
+      "validationNll": 0.6983358263969421
+    },
+    {
+      "epoch": 2,
+      "trainNll": 0.6531982548179146,
+      "validationNll": 0.6812024116516113
+    },
+    {
+      "epoch": 3,
+      "trainNll": 0.640330812099846,
+      "validationNll": 0.6693364381790161
+    },
+    {
+      "epoch": 4,
+      "trainNll": 0.6282302290591277,
+      "validationNll": 0.6563647985458374
+    },
+    {
+      "epoch": 5,
+      "trainNll": 0.615211947541533,
+      "validationNll": 0.6449105739593506
+    },
+    {
+      "epoch": 6,
+      "trainNll": 0.605670331842916,
+      "validationNll": 0.6366207599639893
+    },
+    {
+      "epoch": 7,
+      "trainNll": 0.5995305231733636,
+      "validationNll": 0.6296117901802063
+    },
+    {
+      "epoch": 8,
+      "trainNll": 0.5947299871977899,
+      "validationNll": 0.6242004036903381
+    },
+    {
+      "epoch": 9,
+      "trainNll": 0.5916718582800188,
+      "validationNll": 0.6219334006309509
+    },
+    {
+      "epoch": 10,
+      "trainNll": 0.5891031146329727,
+      "validationNll": 0.6211338639259338
+    },
+    {
+      "epoch": 11,
+      "trainNll": 0.587739482178891,
+      "validationNll": 0.6218541264533997
+    },
+    {
+      "epoch": 12,
+      "trainNll": 0.5859025474013139,
+      "validationNll": 0.6172463297843933
+    }
+  ],
+  "independentReview": false,
+  "selectionEpoch": 12,
+  "sourceSha": "1a24e7ccdb26c3ef649371dfe07269ecbc3c2d4a",
+  "trainRows": 56153,
+  "upstreamHashesUnchanged": true,
+  "validationRows": 6788
+}

@@ -1,0 +1,3237 @@
+{
+  "sourceSha": "70b0de57444e213a41f08301e0e50877475b0223",
+  "auditScriptSha256": "ae393541fdd7545e25c0d16f8b6ddce27ffa1a872cfc42c0410434ff91758e3d",
+  "nativeHeaderSha256": "d16d41c0b95028d7338b05f455511c266907e5ec31be711a705ceeb077ea1938",
+  "counts": {
+    "rows": 3208,
+    "win": 3123,
+    "generatedRounds": 3106,
+    "consumedBrewRows": 2979,
+    "recursiveBrewConsumption": 112,
+    "escapeRows": 88,
+    "death": 85
+  },
+  "generationRounds": {
+    "1": 2862,
+    "2": 107,
+    "0": 229,
+    "3": 10
+  },
+  "problems": {},
+  "recursiveExamples": [
+    {
+      "index": 662,
+      "source": 4100052,
+      "fight": 2,
+      "rounds": 2,
+      "generated": [
+        17,
+        9,
+        22,
+        23,
+        39,
+        22
+      ],
+      "prePotions": [
+        17,
+        20,
+        1,
+        1,
+        1
+      ],
+      "postPotions": [
+        1,
+        9,
+        39,
+        1,
+        1
+      ]
+    },
+    {
+      "index": 3816,
+      "source": 4100205,
+      "fight": 5,
+      "rounds": 2,
+      "generated": [
+        34,
+        17,
+        6,
+        41,
+        36,
+        4
+      ],
+      "prePotions": [
+        17,
+        1,
+        1,
+        1,
+        1
+      ],
+      "postPotions": [
+        34,
+        41,
+        36,
+        1,
+        1
+      ]
+    },
+    {
+      "index": 5907,
+      "source": 4100300,
+      "fight": 17,
+      "rounds": 2,
+      "generated": [
+        9,
+        15,
+        17,
+        43,
+        35,
+        22
+      ],
+      "prePotions": [
+        39,
+        17,
+        1,
+        1,
+        1
+      ],
+      "postPotions": [
+        9,
+        43,
+        35,
+        1,
+        1
+      ]
+    },
+    {
+      "index": 7838,
+      "source": 4100383,
+      "fight": 14,
+      "rounds": 3,
+      "generated": [
+        35,
+        38,
+        17,
+        12,
+        17,
+        6,
+        16,
+        34,
+        41
+      ],
+      "prePotions": [
+        17,
+        24,
+        1,
+        1,
+        1
+      ],
+      "postPotions": [
+        16,
+        38,
+        34,
+        1,
+        1
+      ]
+    },
+    {
+      "index": 8910,
+      "source": 4100443,
+      "fight": 16,
+      "rounds": 3,
+      "generated": [
+        43,
+        17,
+        5,
+        16,
+        17,
+        15,
+        43,
+        24,
+        22
+      ],
+      "prePotions": [
+        16,
+        17,
+        1,
+        1,
+        1
+      ],
+      "postPotions": [
+        43,
+        24,
+        22,
+        1,
+        1
+      ]
+    },
+    {
+      "index": 13436,
+      "source": 4100657,
+      "fight": 3,
+      "rounds": 2,
+      "generated": [
+        12,
+        17,
+        22,
+        20,
+        42,
+        27
+      ],
+      "prePotions": [
+        10,
+        17,
+        1,
+        1,
+        1
+      ],
+      "postPotions": [
+        20,
+        42,
+        27,
+        1,
+        1
+      ]
+    },
+    {
+      "index": 18686,
+      "source": 4100911,
+      "fight": 8,
+      "rounds": 2,
+      "generated": [
+        17,
+        27,
+        35,
+        4,
+        20,
+        20
+      ],
+      "prePotions": [
+        17,
+        1,
+        1,
+        1,
+        1
+      ],
+      "postPotions": [
+        4,
+        20,
+        20,
+        1,
+        1
+      ]
+    },
+    {
+      "index": 20080,
+      "source": 4100977,
+      "fight": 16,
+      "rounds": 2,
+      "generated": [
+        3,
+        12,
+        17,
+        22,
+        36,
+        34
+      ],
+      "prePotions": [
+        14,
+        17,
+        1,
+        1,
+        1
+      ],
+      "postPotions": [
+        1,
+        1,
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "index": 20353,
+      "source": 4100984,
+      "fight": 7,
+      "rounds": 3,
+      "generated": [
+        36,
+        17,
+        27,
+        12,
+        27,
+        6,
+        17,
+        36,
+        43,
+        22,
+        24,
+        13,
+        7,
+        12,
+        27
+      ],
+      "prePotions": [
+        39,
+        9,
+        20,
+        17,
+        1
+      ],
+      "postPotions": [
+        36,
+        24,
+        1,
+        27,
+        1
+      ]
+    },
+    {
+      "index": 23633,
+      "source": 4101160,
+      "fight": 11,
+      "rounds": 3,
+      "generated": [
+        17,
+        5,
+        27,
+        3,
+        17,
+        23,
+        13,
+        27,
+        15
+      ],
+      "prePotions": [
+        16,
+        17,
+        1,
+        1,
+        1
+      ],
+      "postPotions": [
+        1,
+        27,
+        15,
+        1,
+        1
+      ]
+    },
+    {
+      "index": 40592,
+      "source": 4101986,
+      "fight": 27,
+      "rounds": 2,
+      "generated": [
+        36,
+        17,
+        4,
+        35,
+        16,
+        20
+      ],
+      "prePotions": [
+        17,
+        12,
+        1,
+        1,
+        1
+      ],
+      "postPotions": [
+        1,
+        16,
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "index": 44762,
+      "source": 4102195,
+      "fight": 18,
+      "rounds": 2,
+      "generated": [
+        3,
+        3,
+        20,
+        17,
+        13,
+        7,
+        23,
+        22,
+        36,
+        37
+      ],
+      "prePotions": [
+        31,
+        24,
+        17,
+        26,
+        22
+      ],
+      "postPotions": [
+        7,
+        3,
+        23,
+        22,
+        36
+      ]
+    },
+    {
+      "index": 46034,
+      "source": 4102258,
+      "fight": 15,
+      "rounds": 2,
+      "generated": [
+        22,
+        17,
+        20,
+        41,
+        27,
+        13
+      ],
+      "prePotions": [
+        17,
+        16,
+        1,
+        1,
+        1
+      ],
+      "postPotions": [
+        41,
+        16,
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "index": 50326,
+      "source": 4102469,
+      "fight": 14,
+      "rounds": 2,
+      "generated": [
+        9,
+        43,
+        17,
+        29,
+        22,
+        9
+      ],
+      "prePotions": [
+        17,
+        1,
+        1,
+        1,
+        1
+      ],
+      "postPotions": [
+        9,
+        1,
+        22,
+        1,
+        1
+      ]
+    },
+    {
+      "index": 59487,
+      "source": 4102921,
+      "fight": 10,
+      "rounds": 2,
+      "generated": [
+        17,
+        14,
+        41,
+        21,
+        10,
+        43
+      ],
+      "prePotions": [
+        36,
+        41,
+        17,
+        1,
+        1
+      ],
+      "postPotions": [
+        36,
+        21,
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "index": 65501,
+      "source": 4103211,
+      "fight": 16,
+      "rounds": 2,
+      "generated": [
+        38,
+        17,
+        5,
+        34,
+        30,
+        36
+      ],
+      "prePotions": [
+        17,
+        1,
+        1,
+        1,
+        1
+      ],
+      "postPotions": [
+        1,
+        30,
+        36,
+        1,
+        1
+      ]
+    },
+    {
+      "index": 88957,
+      "source": 4104357,
+      "fight": 3,
+      "rounds": 2,
+      "generated": [
+        16,
+        17,
+        21,
+        12,
+        38,
+        3
+      ],
+      "prePotions": [
+        6,
+        17,
+        1,
+        1,
+        1
+      ],
+      "postPotions": [
+        1,
+        1,
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "index": 89627,
+      "source": 4104385,
+      "fight": 15,
+      "rounds": 2,
+      "generated": [
+        5,
+        17,
+        22,
+        24,
+        23,
+        29
+      ],
+      "prePotions": [
+        3,
+        31,
+        17,
+        1,
+        1
+      ],
+      "postPotions": [
+        24,
+        23,
+        29,
+        1,
+        1
+      ]
+    },
+    {
+      "index": 95921,
+      "source": 4104699,
+      "fight": 5,
+      "rounds": 2,
+      "generated": [
+        17,
+        7,
+        41,
+        35,
+        3,
+        23
+      ],
+      "prePotions": [
+        17,
+        1,
+        1,
+        1,
+        1
+      ],
+      "postPotions": [
+        1,
+        3,
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "index": 97621,
+      "source": 4104785,
+      "fight": 14,
+      "rounds": 2,
+      "generated": [
+        3,
+        17,
+        12,
+        12,
+        4,
+        7
+      ],
+      "prePotions": [
+        17,
+        1,
+        1,
+        1,
+        1
+      ],
+      "postPotions": [
+        12,
+        4,
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "index": 101496,
+      "source": 4104982,
+      "fight": 1,
+      "rounds": 2,
+      "generated": [
+        14,
+        17,
+        6,
+        7,
+        7,
+        22
+      ],
+      "prePotions": [
+        17,
+        1,
+        1,
+        1,
+        1
+      ],
+      "postPotions": [
+        7,
+        7,
+        22,
+        1,
+        1
+      ]
+    },
+    {
+      "index": 107473,
+      "source": 4105274,
+      "fight": 13,
+      "rounds": 3,
+      "generated": [
+        4,
+        17,
+        5,
+        17,
+        22,
+        7,
+        9,
+        10,
+        31
+      ],
+      "prePotions": [
+        17,
+        39,
+        1,
+        1,
+        1
+      ],
+      "postPotions": [
+        4,
+        1,
+        10,
+        1,
+        1
+      ]
+    },
+    {
+      "index": 113756,
+      "source": 4105569,
+      "fight": 3,
+      "rounds": 2,
+      "generated": [
+        13,
+        17,
+        43,
+        4,
+        27,
+        43
+      ],
+      "prePotions": [
+        17,
+        1,
+        1,
+        1,
+        1
+      ],
+      "postPotions": [
+        4,
+        27,
+        43,
+        1,
+        1
+      ]
+    },
+    {
+      "index": 115242,
+      "source": 4105647,
+      "fight": 9,
+      "rounds": 2,
+      "generated": [
+        6,
+        31,
+        17,
+        22,
+        4,
+        9,
+        23,
+        21,
+        21,
+        39
+      ],
+      "prePotions": [
+        9,
+        39,
+        10,
+        17,
+        1
+      ],
+      "postPotions": [
+        9,
+        9,
+        23,
+        31,
+        21
+      ]
+    },
+    {
+      "index": 118029,
+      "source": 4105787,
+      "fight": 13,
+      "rounds": 2,
+      "generated": [
+        3,
+        17,
+        39,
+        22,
+        15,
+        22
+      ],
+      "prePotions": [
+        17,
+        16,
+        41,
+        1,
+        1
+      ],
+      "postPotions": [
+        1,
+        15,
+        22,
+        1,
+        1
+      ]
+    },
+    {
+      "index": 123541,
+      "source": 4106053,
+      "fight": 1,
+      "rounds": 2,
+      "generated": [
+        20,
+        36,
+        17,
+        5,
+        14,
+        20
+      ],
+      "prePotions": [
+        17,
+        1,
+        1,
+        1,
+        1
+      ],
+      "postPotions": [
+        5,
+        36,
+        14,
+        1,
+        1
+      ]
+    },
+    {
+      "index": 124188,
+      "source": 4106085,
+      "fight": 8,
+      "rounds": 2,
+      "generated": [
+        31,
+        17,
+        5,
+        39,
+        41,
+        19
+      ],
+      "prePotions": [
+        39,
+        6,
+        17,
+        1,
+        1
+      ],
+      "postPotions": [
+        39,
+        41,
+        19,
+        1,
+        1
+      ]
+    },
+    {
+      "index": 124340,
+      "source": 4106087,
+      "fight": 4,
+      "rounds": 2,
+      "generated": [
+        9,
+        17,
+        22,
+        14,
+        31,
+        34
+      ],
+      "prePotions": [
+        17,
+        1,
+        1,
+        1,
+        1
+      ],
+      "postPotions": [
+        9,
+        14,
+        31,
+        1,
+        1
+      ]
+    },
+    {
+      "index": 125464,
+      "source": 4106149,
+      "fight": 2,
+      "rounds": 2,
+      "generated": [
+        16,
+        17,
+        39,
+        13,
+        12,
+        21
+      ],
+      "prePotions": [
+        17,
+        1,
+        1,
+        1,
+        1
+      ],
+      "postPotions": [
+        13,
+        12,
+        21,
+        1,
+        1
+      ]
+    },
+    {
+      "index": 132268,
+      "source": 4106473,
+      "fight": 23,
+      "rounds": 2,
+      "generated": [
+        12,
+        43,
+        22,
+        7,
+        17,
+        14,
+        39,
+        19,
+        35,
+        36
+      ],
+      "prePotions": [
+        17,
+        1,
+        1,
+        1,
+        1
+      ],
+      "postPotions": [
+        14,
+        39,
+        19,
+        35,
+        36
+      ]
+    },
+    {
+      "index": 137705,
+      "source": 4106734,
+      "fight": 19,
+      "rounds": 2,
+      "generated": [
+        3,
+        41,
+        17,
+        37,
+        24,
+        13
+      ],
+      "prePotions": [
+        17,
+        15,
+        1,
+        1,
+        1
+      ],
+      "postPotions": [
+        1,
+        24,
+        13,
+        1,
+        1
+      ]
+    },
+    {
+      "index": 146640,
+      "source": 4107168,
+      "fight": 7,
+      "rounds": 2,
+      "generated": [
+        4,
+        17,
+        3,
+        3,
+        16,
+        43
+      ],
+      "prePotions": [
+        17,
+        6,
+        1,
+        1,
+        1
+      ],
+      "postPotions": [
+        4,
+        3,
+        16,
+        1,
+        1
+      ]
+    },
+    {
+      "index": 151638,
+      "source": 4107416,
+      "fight": 17,
+      "rounds": 2,
+      "generated": [
+        7,
+        17,
+        36,
+        35,
+        21,
+        23
+      ],
+      "prePotions": [
+        36,
+        23,
+        17,
+        1,
+        1
+      ],
+      "postPotions": [
+        36,
+        35,
+        21,
+        1,
+        1
+      ]
+    },
+    {
+      "index": 152761,
+      "source": 4107476,
+      "fight": 10,
+      "rounds": 2,
+      "generated": [
+        29,
+        17,
+        41,
+        39,
+        4,
+        22
+      ],
+      "prePotions": [
+        43,
+        39,
+        17,
+        1,
+        1
+      ],
+      "postPotions": [
+        39,
+        4,
+        22,
+        1,
+        1
+      ]
+    },
+    {
+      "index": 154091,
+      "source": 4107546,
+      "fight": 8,
+      "rounds": 2,
+      "generated": [
+        39,
+        17,
+        12,
+        35,
+        4,
+        15
+      ],
+      "prePotions": [
+        22,
+        43,
+        17,
+        1,
+        1
+      ],
+      "postPotions": [
+        39,
+        35,
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "index": 155484,
+      "source": 4107607,
+      "fight": 16,
+      "rounds": 2,
+      "generated": [
+        16,
+        7,
+        17,
+        24,
+        43,
+        41
+      ],
+      "prePotions": [
+        17,
+        1,
+        1,
+        1,
+        1
+      ],
+      "postPotions": [
+        24,
+        43,
+        41,
+        1,
+        1
+      ]
+    },
+    {
+      "index": 163817,
+      "source": 4108009,
+      "fight": 2,
+      "rounds": 2,
+      "generated": [
+        27,
+        17,
+        14,
+        24,
+        7,
+        17
+      ],
+      "prePotions": [
+        17,
+        1,
+        1,
+        1,
+        1
+      ],
+      "postPotions": [
+        27,
+        24,
+        14,
+        1,
+        1
+      ]
+    },
+    {
+      "index": 163889,
+      "source": 4108025,
+      "fight": 6,
+      "rounds": 2,
+      "generated": [
+        41,
+        17,
+        23,
+        21,
+        22,
+        38
+      ],
+      "prePotions": [
+        27,
+        17,
+        1,
+        1,
+        1
+      ],
+      "postPotions": [
+        27,
+        21,
+        22,
+        1,
+        1
+      ]
+    },
+    {
+      "index": 164191,
+      "source": 4108022,
+      "fight": 14,
+      "rounds": 2,
+      "generated": [
+        17,
+        31,
+        23,
+        9,
+        41,
+        31
+      ],
+      "prePotions": [
+        12,
+        17,
+        1,
+        1,
+        1
+      ],
+      "postPotions": [
+        9,
+        41,
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "index": 181967,
+      "source": 4108910,
+      "fight": 13,
+      "rounds": 2,
+      "generated": [
+        27,
+        27,
+        17,
+        39,
+        43,
+        30
+      ],
+      "prePotions": [
+        39,
+        22,
+        17,
+        1,
+        1
+      ],
+      "postPotions": [
+        27,
+        27,
+        39,
+        1,
+        1
+      ]
+    },
+    {
+      "index": 186207,
+      "source": 4109112,
+      "fight": 23,
+      "rounds": 2,
+      "generated": [
+        17,
+        20,
+        36,
+        24,
+        31,
+        19,
+        20,
+        21,
+        3,
+        41
+      ],
+      "prePotions": [
+        5,
+        42,
+        17,
+        36,
+        7
+      ],
+      "postPotions": [
+        19,
+        42,
+        20,
+        36,
+        36
+      ]
+    },
+    {
+      "index": 187280,
+      "source": 4109167,
+      "fight": 4,
+      "rounds": 2,
+      "generated": [
+        17,
+        21,
+        16,
+        3,
+        24,
+        37
+      ],
+      "prePotions": [
+        16,
+        17,
+        1,
+        1,
+        1
+      ],
+      "postPotions": [
+        1,
+        21,
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "index": 188717,
+      "source": 4109240,
+      "fight": 4,
+      "rounds": 2,
+      "generated": [
+        17,
+        23,
+        4,
+        16,
+        43,
+        13
+      ],
+      "prePotions": [
+        39,
+        17,
+        1,
+        1,
+        1
+      ],
+      "postPotions": [
+        39,
+        1,
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "index": 189438,
+      "source": 4109272,
+      "fight": 9,
+      "rounds": 2,
+      "generated": [
+        42,
+        22,
+        27,
+        17,
+        37,
+        24,
+        3,
+        34,
+        12,
+        24
+      ],
+      "prePotions": [
+        36,
+        3,
+        17,
+        1,
+        1
+      ],
+      "postPotions": [
+        36,
+        42,
+        24,
+        27,
+        3
+      ]
+    },
+    {
+      "index": 192911,
+      "source": 4109443,
+      "fight": 11,
+      "rounds": 2,
+      "generated": [
+        34,
+        20,
+        17,
+        43,
+        21,
+        3,
+        16,
+        27,
+        30,
+        13
+      ],
+      "prePotions": [
+        3,
+        3,
+        17,
+        41,
+        1
+      ],
+      "postPotions": [
+        3,
+        3,
+        1,
+        3,
+        16
+      ]
+    },
+    {
+      "index": 194210,
+      "source": 4109515,
+      "fight": 18,
+      "rounds": 2,
+      "generated": [
+        17,
+        3,
+        30,
+        6,
+        6,
+        34
+      ],
+      "prePotions": [
+        12,
+        17,
+        1,
+        1,
+        1
+      ],
+      "postPotions": [
+        6,
+        6,
+        34,
+        1,
+        1
+      ]
+    },
+    {
+      "index": 194239,
+      "source": 4109507,
+      "fight": 20,
+      "rounds": 2,
+      "generated": [
+        20,
+        17,
+        24,
+        27,
+        6,
+        31
+      ],
+      "prePotions": [
+        17,
+        1,
+        1,
+        1,
+        1
+      ],
+      "postPotions": [
+        20,
+        27,
+        6,
+        1,
+        1
+      ]
+    },
+    {
+      "index": 197722,
+      "source": 4109695,
+      "fight": 3,
+      "rounds": 2,
+      "generated": [
+        12,
+        17,
+        14,
+        24,
+        3,
+        7
+      ],
+      "prePotions": [
+        16,
+        20,
+        17,
+        1,
+        1
+      ],
+      "postPotions": [
+        24,
+        3,
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "index": 205188,
+      "source": 4110064,
+      "fight": 13,
+      "rounds": 3,
+      "generated": [
+        17,
+        23,
+        17,
+        16,
+        24,
+        34,
+        12,
+        14,
+        34
+      ],
+      "prePotions": [
+        39,
+        17,
+        24,
+        1,
+        1
+      ],
+      "postPotions": [
+        12,
+        1,
+        34,
+        1,
+        1
+      ]
+    },
+    {
+      "index": 209827,
+      "source": 4110274,
+      "fight": 20,
+      "rounds": 2,
+      "generated": [
+        7,
+        17,
+        24,
+        39,
+        6,
+        21
+      ],
+      "prePotions": [
+        20,
+        17,
+        1,
+        1,
+        1
+      ],
+      "postPotions": [
+        7,
+        39,
+        6,
+        1,
+        1
+      ]
+    },
+    {
+      "index": 210433,
+      "source": 4110315,
+      "fight": 10,
+      "rounds": 2,
+      "generated": [
+        20,
+        19,
+        17,
+        4,
+        42,
+        36
+      ],
+      "prePotions": [
+        17,
+        16,
+        22,
+        1,
+        1
+      ],
+      "postPotions": [
+        4,
+        42,
+        36,
+        1,
+        1
+      ]
+    },
+    {
+      "index": 222296,
+      "source": 4110902,
+      "fight": 18,
+      "rounds": 2,
+      "generated": [
+        9,
+        17,
+        30,
+        14,
+        35,
+        20
+      ],
+      "prePotions": [
+        17,
+        1,
+        39,
+        1,
+        1
+      ],
+      "postPotions": [
+        9,
+        14,
+        35,
+        1,
+        1
+      ]
+    },
+    {
+      "index": 224376,
+      "source": 4111001,
+      "fight": 17,
+      "rounds": 2,
+      "generated": [
+        22,
+        17,
+        22,
+        24,
+        24,
+        41
+      ],
+      "prePotions": [
+        39,
+        17,
+        1,
+        1,
+        1
+      ],
+      "postPotions": [
+        24,
+        24,
+        41,
+        1,
+        1
+      ]
+    },
+    {
+      "index": 253694,
+      "source": 4112444,
+      "fight": 27,
+      "rounds": 2,
+      "generated": [
+        7,
+        17,
+        12,
+        24,
+        23,
+        22,
+        20,
+        42,
+        7,
+        6
+      ],
+      "prePotions": [
+        39,
+        15,
+        17,
+        15,
+        15
+      ],
+      "postPotions": [
+        7,
+        1,
+        20,
+        1,
+        7
+      ]
+    },
+    {
+      "index": 257379,
+      "source": 4112632,
+      "fight": 8,
+      "rounds": 2,
+      "generated": [
+        31,
+        43,
+        17,
+        13,
+        43,
+        22
+      ],
+      "prePotions": [
+        17,
+        1,
+        1,
+        1,
+        1
+      ],
+      "postPotions": [
+        1,
+        43,
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "index": 259758,
+      "source": 4112747,
+      "fight": 25,
+      "rounds": 2,
+      "generated": [
+        34,
+        15,
+        17,
+        12,
+        16,
+        4
+      ],
+      "prePotions": [
+        17,
+        1,
+        1,
+        1,
+        1
+      ],
+      "postPotions": [
+        34,
+        15,
+        12,
+        1,
+        1
+      ]
+    },
+    {
+      "index": 260345,
+      "source": 4112774,
+      "fight": 16,
+      "rounds": 2,
+      "generated": [
+        17,
+        39,
+        39,
+        15,
+        3,
+        21
+      ],
+      "prePotions": [
+        17,
+        30,
+        30,
+        1,
+        1
+      ],
+      "postPotions": [
+        15,
+        3,
+        21,
+        1,
+        1
+      ]
+    },
+    {
+      "index": 261484,
+      "source": 4112833,
+      "fight": 13,
+      "rounds": 2,
+      "generated": [
+        12,
+        17,
+        34,
+        12,
+        5,
+        42
+      ],
+      "prePotions": [
+        35,
+        41,
+        17,
+        1,
+        1
+      ],
+      "postPotions": [
+        12,
+        5,
+        42,
+        1,
+        1
+      ]
+    },
+    {
+      "index": 262287,
+      "source": 4112872,
+      "fight": 18,
+      "rounds": 2,
+      "generated": [
+        5,
+        3,
+        17,
+        9,
+        5,
+        6
+      ],
+      "prePotions": [
+        17,
+        1,
+        1,
+        1,
+        1
+      ],
+      "postPotions": [
+        1,
+        3,
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "index": 266756,
+      "source": 4113099,
+      "fight": 27,
+      "rounds": 2,
+      "generated": [
+        39,
+        17,
+        35,
+        4,
+        6,
+        21
+      ],
+      "prePotions": [
+        5,
+        10,
+        17,
+        1,
+        1
+      ],
+      "postPotions": [
+        4,
+        6,
+        21,
+        1,
+        1
+      ]
+    },
+    {
+      "index": 268493,
+      "source": 4113190,
+      "fight": 11,
+      "rounds": 2,
+      "generated": [
+        17,
+        30,
+        38,
+        4,
+        36,
+        16
+      ],
+      "prePotions": [
+        17,
+        1,
+        12,
+        1,
+        1
+      ],
+      "postPotions": [
+        4,
+        36,
+        38,
+        1,
+        1
+      ]
+    },
+    {
+      "index": 275595,
+      "source": 4113522,
+      "fight": 26,
+      "rounds": 2,
+      "generated": [
+        17,
+        6,
+        19,
+        7,
+        15,
+        22
+      ],
+      "prePotions": [
+        24,
+        14,
+        17,
+        1,
+        1
+      ],
+      "postPotions": [
+        24,
+        7,
+        6,
+        1,
+        1
+      ]
+    },
+    {
+      "index": 278150,
+      "source": 4113650,
+      "fight": 4,
+      "rounds": 2,
+      "generated": [
+        22,
+        17,
+        9,
+        9,
+        23,
+        43
+      ],
+      "prePotions": [
+        42,
+        17,
+        1,
+        1,
+        1
+      ],
+      "postPotions": [
+        42,
+        9,
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "index": 290444,
+      "source": 4114243,
+      "fight": 5,
+      "rounds": 2,
+      "generated": [
+        41,
+        17,
+        6,
+        43,
+        7,
+        39
+      ],
+      "prePotions": [
+        6,
+        17,
+        1,
+        1,
+        1
+      ],
+      "postPotions": [
+        43,
+        1,
+        39,
+        1,
+        1
+      ]
+    },
+    {
+      "index": 297593,
+      "source": 4114581,
+      "fight": 5,
+      "rounds": 2,
+      "generated": [
+        12,
+        19,
+        17,
+        14,
+        20,
+        37
+      ],
+      "prePotions": [
+        17,
+        1,
+        1,
+        1,
+        1
+      ],
+      "postPotions": [
+        14,
+        20,
+        37,
+        1,
+        1
+      ]
+    },
+    {
+      "index": 333586,
+      "source": 4116371,
+      "fight": 14,
+      "rounds": 2,
+      "generated": [
+        17,
+        42,
+        20,
+        41,
+        36,
+        23
+      ],
+      "prePotions": [
+        17,
+        1,
+        1,
+        1,
+        1
+      ],
+      "postPotions": [
+        41,
+        42,
+        36,
+        1,
+        1
+      ]
+    },
+    {
+      "index": 333738,
+      "source": 4116381,
+      "fight": 2,
+      "rounds": 2,
+      "generated": [
+        17,
+        23,
+        6,
+        19,
+        41,
+        41
+      ],
+      "prePotions": [
+        9,
+        17,
+        1,
+        1,
+        1
+      ],
+      "postPotions": [
+        9,
+        19,
+        41,
+        1,
+        1
+      ]
+    },
+    {
+      "index": 337494,
+      "source": 4116563,
+      "fight": 7,
+      "rounds": 2,
+      "generated": [
+        23,
+        15,
+        17,
+        20,
+        24,
+        14
+      ],
+      "prePotions": [
+        17,
+        1,
+        1,
+        1,
+        1
+      ],
+      "postPotions": [
+        20,
+        15,
+        24,
+        1,
+        1
+      ]
+    },
+    {
+      "index": 345632,
+      "source": 4116967,
+      "fight": 12,
+      "rounds": 2,
+      "generated": [
+        27,
+        17,
+        38,
+        12,
+        23,
+        34
+      ],
+      "prePotions": [
+        17,
+        1,
+        15,
+        1,
+        1
+      ],
+      "postPotions": [
+        27,
+        12,
+        15,
+        1,
+        1
+      ]
+    },
+    {
+      "index": 346108,
+      "source": 4116985,
+      "fight": 10,
+      "rounds": 2,
+      "generated": [
+        22,
+        16,
+        17,
+        23,
+        41,
+        9
+      ],
+      "prePotions": [
+        24,
+        17,
+        1,
+        1,
+        1
+      ],
+      "postPotions": [
+        23,
+        41,
+        9,
+        1,
+        1
+      ]
+    },
+    {
+      "index": 350634,
+      "source": 4117213,
+      "fight": 12,
+      "rounds": 2,
+      "generated": [
+        30,
+        17,
+        4,
+        43,
+        4,
+        41
+      ],
+      "prePotions": [
+        19,
+        27,
+        17,
+        1,
+        1
+      ],
+      "postPotions": [
+        43,
+        27,
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "index": 358120,
+      "source": 4117572,
+      "fight": 13,
+      "rounds": 2,
+      "generated": [
+        17,
+        22,
+        10,
+        6,
+        36,
+        22
+      ],
+      "prePotions": [
+        5,
+        17,
+        1,
+        1,
+        1
+      ],
+      "postPotions": [
+        6,
+        36,
+        22,
+        1,
+        1
+      ]
+    },
+    {
+      "index": 359311,
+      "source": 4117627,
+      "fight": 6,
+      "rounds": 2,
+      "generated": [
+        20,
+        17,
+        5,
+        20,
+        3,
+        34
+      ],
+      "prePotions": [
+        27,
+        17,
+        1,
+        1,
+        1
+      ],
+      "postPotions": [
+        20,
+        3,
+        34,
+        1,
+        1
+      ]
+    },
+    {
+      "index": 359649,
+      "source": 4117648,
+      "fight": 1,
+      "rounds": 2,
+      "generated": [
+        17,
+        37,
+        43,
+        41,
+        27,
+        19
+      ],
+      "prePotions": [
+        17,
+        1,
+        1,
+        1,
+        1
+      ],
+      "postPotions": [
+        41,
+        37,
+        27,
+        1,
+        1
+      ]
+    },
+    {
+      "index": 363786,
+      "source": 4117849,
+      "fight": 3,
+      "rounds": 2,
+      "generated": [
+        17,
+        5,
+        3,
+        30,
+        41,
+        5
+      ],
+      "prePotions": [
+        12,
+        17,
+        1,
+        1,
+        1
+      ],
+      "postPotions": [
+        30,
+        5,
+        41,
+        1,
+        1
+      ]
+    },
+    {
+      "index": 365319,
+      "source": 4117916,
+      "fight": 19,
+      "rounds": 2,
+      "generated": [
+        17,
+        13,
+        42,
+        3,
+        24,
+        30
+      ],
+      "prePotions": [
+        17,
+        1,
+        1,
+        1,
+        1
+      ],
+      "postPotions": [
+        1,
+        1,
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "index": 367295,
+      "source": 4118021,
+      "fight": 6,
+      "rounds": 3,
+      "generated": [
+        43,
+        42,
+        17,
+        17,
+        10,
+        36,
+        30,
+        43,
+        27
+      ],
+      "prePotions": [
+        12,
+        17,
+        39,
+        1,
+        1
+      ],
+      "postPotions": [
+        30,
+        42,
+        43,
+        1,
+        1
+      ]
+    },
+    {
+      "index": 377323,
+      "source": 4118500,
+      "fight": 1,
+      "rounds": 2,
+      "generated": [
+        7,
+        17,
+        4,
+        9,
+        31,
+        27
+      ],
+      "prePotions": [
+        17,
+        1,
+        1,
+        1,
+        1
+      ],
+      "postPotions": [
+        9,
+        31,
+        4,
+        1,
+        1
+      ]
+    },
+    {
+      "index": 382543,
+      "source": 4118765,
+      "fight": 26,
+      "rounds": 2,
+      "generated": [
+        38,
+        17,
+        24,
+        36,
+        20,
+        29
+      ],
+      "prePotions": [
+        17,
+        22,
+        16,
+        1,
+        1
+      ],
+      "postPotions": [
+        38,
+        36,
+        20,
+        1,
+        1
+      ]
+    },
+    {
+      "index": 386395,
+      "source": 4118953,
+      "fight": 1,
+      "rounds": 2,
+      "generated": [
+        17,
+        20,
+        12,
+        39,
+        31,
+        42
+      ],
+      "prePotions": [
+        17,
+        1,
+        1,
+        1,
+        1
+      ],
+      "postPotions": [
+        39,
+        31,
+        42,
+        1,
+        1
+      ]
+    },
+    {
+      "index": 388476,
+      "source": 4119057,
+      "fight": 5,
+      "rounds": 2,
+      "generated": [
+        17,
+        41,
+        39,
+        34,
+        12,
+        31
+      ],
+      "prePotions": [
+        17,
+        1,
+        1,
+        1,
+        1
+      ],
+      "postPotions": [
+        34,
+        12,
+        31,
+        1,
+        1
+      ]
+    },
+    {
+      "index": 388668,
+      "source": 4119066,
+      "fight": 11,
+      "rounds": 3,
+      "generated": [
+        17,
+        17,
+        42,
+        24,
+        4,
+        22,
+        22,
+        27,
+        12
+      ],
+      "prePotions": [
+        6,
+        17,
+        1,
+        1,
+        1
+      ],
+      "postPotions": [
+        22,
+        27,
+        12,
+        1,
+        1
+      ]
+    },
+    {
+      "index": 389430,
+      "source": 4119109,
+      "fight": 6,
+      "rounds": 2,
+      "generated": [
+        17,
+        43,
+        7,
+        3,
+        15,
+        27
+      ],
+      "prePotions": [
+        17,
+        1,
+        1,
+        1,
+        1
+      ],
+      "postPotions": [
+        3,
+        15,
+        27,
+        1,
+        1
+      ]
+    },
+    {
+      "index": 394774,
+      "source": 4119372,
+      "fight": 10,
+      "rounds": 2,
+      "generated": [
+        17,
+        10,
+        36,
+        23,
+        3,
+        35
+      ],
+      "prePotions": [
+        9,
+        23,
+        17,
+        1,
+        1
+      ],
+      "postPotions": [
+        9,
+        23,
+        3,
+        1,
+        1
+      ]
+    },
+    {
+      "index": 396626,
+      "source": 4119458,
+      "fight": 6,
+      "rounds": 3,
+      "generated": [
+        41,
+        19,
+        17,
+        14,
+        30,
+        7,
+        39,
+        15,
+        17,
+        29,
+        15,
+        4,
+        24,
+        39,
+        37
+      ],
+      "prePotions": [
+        22,
+        12,
+        16,
+        17,
+        1
+      ],
+      "postPotions": [
+        15,
+        4,
+        16,
+        15,
+        24
+      ]
+    },
+    {
+      "index": 397613,
+      "source": 4119507,
+      "fight": 10,
+      "rounds": 2,
+      "generated": [
+        27,
+        43,
+        31,
+        30,
+        17,
+        36,
+        14,
+        20,
+        14,
+        14
+      ],
+      "prePotions": [
+        17,
+        1,
+        1,
+        1,
+        1
+      ],
+      "postPotions": [
+        27,
+        1,
+        31,
+        14,
+        20
+      ]
+    },
+    {
+      "index": 399534,
+      "source": 4119604,
+      "fight": 19,
+      "rounds": 2,
+      "generated": [
+        34,
+        17,
+        24,
+        7,
+        6,
+        34
+      ],
+      "prePotions": [
+        17,
+        1,
+        1,
+        1,
+        1
+      ],
+      "postPotions": [
+        34,
+        1,
+        24,
+        1,
+        1
+      ]
+    },
+    {
+      "index": 406901,
+      "source": 4119955,
+      "fight": 7,
+      "rounds": 2,
+      "generated": [
+        3,
+        27,
+        17,
+        30,
+        23,
+        14
+      ],
+      "prePotions": [
+        17,
+        1,
+        1,
+        1,
+        1
+      ],
+      "postPotions": [
+        1,
+        27,
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "index": 411909,
+      "source": 4120187,
+      "fight": 5,
+      "rounds": 2,
+      "generated": [
+        21,
+        17,
+        12,
+        3,
+        15,
+        6
+      ],
+      "prePotions": [
+        43,
+        17,
+        1,
+        1,
+        1
+      ],
+      "postPotions": [
+        21,
+        1,
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "index": 417423,
+      "source": 4120469,
+      "fight": 1,
+      "rounds": 2,
+      "generated": [
+        41,
+        17,
+        5,
+        16,
+        3,
+        6
+      ],
+      "prePotions": [
+        17,
+        1,
+        1,
+        1,
+        1
+      ],
+      "postPotions": [
+        16,
+        3,
+        6,
+        1,
+        1
+      ]
+    },
+    {
+      "index": 423147,
+      "source": 4120747,
+      "fight": 14,
+      "rounds": 2,
+      "generated": [
+        17,
+        13,
+        35,
+        42,
+        12,
+        41
+      ],
+      "prePotions": [
+        17,
+        15,
+        1,
+        1,
+        1
+      ],
+      "postPotions": [
+        42,
+        12,
+        13,
+        1,
+        1
+      ]
+    },
+    {
+      "index": 425410,
+      "source": 4120851,
+      "fight": 18,
+      "rounds": 2,
+      "generated": [
+        17,
+        16,
+        6,
+        6,
+        39,
+        15
+      ],
+      "prePotions": [
+        42,
+        17,
+        1,
+        1,
+        1
+      ],
+      "postPotions": [
+        42,
+        6,
+        16,
+        1,
+        1
+      ]
+    },
+    {
+      "index": 430231,
+      "source": 4121080,
+      "fight": 1,
+      "rounds": 2,
+      "generated": [
+        17,
+        43,
+        39,
+        38,
+        30,
+        12
+      ],
+      "prePotions": [
+        17,
+        1,
+        1,
+        1,
+        1
+      ],
+      "postPotions": [
+        38,
+        30,
+        12,
+        1,
+        1
+      ]
+    },
+    {
+      "index": 431629,
+      "source": 4121171,
+      "fight": 4,
+      "rounds": 2,
+      "generated": [
+        17,
+        21,
+        14,
+        41,
+        4,
+        23
+      ],
+      "prePotions": [
+        5,
+        10,
+        17,
+        1,
+        1
+      ],
+      "postPotions": [
+        41,
+        21,
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "index": 442490,
+      "source": 4121706,
+      "fight": 12,
+      "rounds": 2,
+      "generated": [
+        17,
+        7,
+        5,
+        31,
+        38,
+        39
+      ],
+      "prePotions": [
+        17,
+        39,
+        42,
+        1,
+        1
+      ],
+      "postPotions": [
+        31,
+        38,
+        39,
+        1,
+        1
+      ]
+    },
+    {
+      "index": 443094,
+      "source": 4121739,
+      "fight": 15,
+      "rounds": 2,
+      "generated": [
+        15,
+        30,
+        17,
+        24,
+        27,
+        23
+      ],
+      "prePotions": [
+        17,
+        30,
+        1,
+        1,
+        1
+      ],
+      "postPotions": [
+        24,
+        27,
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "index": 443840,
+      "source": 4121770,
+      "fight": 5,
+      "rounds": 2,
+      "generated": [
+        6,
+        31,
+        17,
+        24,
+        34,
+        42
+      ],
+      "prePotions": [
+        17,
+        1,
+        1,
+        1,
+        1
+      ],
+      "postPotions": [
+        24,
+        34,
+        42,
+        1,
+        1
+      ]
+    },
+    {
+      "index": 449680,
+      "source": 4122058,
+      "fight": 6,
+      "rounds": 2,
+      "generated": [
+        37,
+        17,
+        22,
+        22,
+        42,
+        19
+      ],
+      "prePotions": [
+        22,
+        17,
+        1,
+        1,
+        1
+      ],
+      "postPotions": [
+        37,
+        22,
+        42,
+        1,
+        1
+      ]
+    },
+    {
+      "index": 450400,
+      "source": 4122087,
+      "fight": 6,
+      "rounds": 2,
+      "generated": [
+        17,
+        34,
+        9,
+        7,
+        27,
+        42
+      ],
+      "prePotions": [
+        12,
+        17,
+        34,
+        1,
+        1
+      ],
+      "postPotions": [
+        1,
+        27,
+        9,
+        1,
+        1
+      ]
+    },
+    {
+      "index": 452509,
+      "source": 4122189,
+      "fight": 4,
+      "rounds": 2,
+      "generated": [
+        17,
+        21,
+        15,
+        20,
+        3,
+        42
+      ],
+      "prePotions": [
+        5,
+        4,
+        17,
+        1,
+        1
+      ],
+      "postPotions": [
+        20,
+        4,
+        21,
+        1,
+        1
+      ]
+    },
+    {
+      "index": 467911,
+      "source": 4122958,
+      "fight": 7,
+      "rounds": 2,
+      "generated": [
+        17,
+        12,
+        36,
+        39,
+        19,
+        43
+      ],
+      "prePotions": [
+        17,
+        1,
+        1,
+        1,
+        1
+      ],
+      "postPotions": [
+        39,
+        19,
+        36,
+        1,
+        1
+      ]
+    },
+    {
+      "index": 477816,
+      "source": 4123440,
+      "fight": 7,
+      "rounds": 2,
+      "generated": [
+        17,
+        23,
+        42,
+        5,
+        20,
+        5
+      ],
+      "prePotions": [
+        17,
+        1,
+        1,
+        1,
+        1
+      ],
+      "postPotions": [
+        5,
+        20,
+        42,
+        1,
+        1
+      ]
+    },
+    {
+      "index": 480474,
+      "source": 4123568,
+      "fight": 16,
+      "rounds": 2,
+      "generated": [
+        34,
+        9,
+        17,
+        4,
+        6,
+        36
+      ],
+      "prePotions": [
+        41,
+        17,
+        1,
+        1,
+        1
+      ],
+      "postPotions": [
+        34,
+        4,
+        6,
+        1,
+        1
+      ]
+    },
+    {
+      "index": 482263,
+      "source": 4123655,
+      "fight": 14,
+      "rounds": 2,
+      "generated": [
+        42,
+        20,
+        17,
+        6,
+        16,
+        31
+      ],
+      "prePotions": [
+        17,
+        1,
+        1,
+        1,
+        1
+      ],
+      "postPotions": [
+        6,
+        16,
+        31,
+        1,
+        1
+      ]
+    },
+    {
+      "index": 485074,
+      "source": 4123801,
+      "fight": 17,
+      "rounds": 2,
+      "generated": [
+        3,
+        17,
+        36,
+        13,
+        7,
+        38,
+        41,
+        20,
+        27,
+        36
+      ],
+      "prePotions": [
+        9,
+        17,
+        1,
+        1,
+        1
+      ],
+      "postPotions": [
+        1,
+        38,
+        41,
+        36,
+        1
+      ]
+    },
+    {
+      "index": 485436,
+      "source": 4123820,
+      "fight": 22,
+      "rounds": 2,
+      "generated": [
+        24,
+        17,
+        36,
+        7,
+        43,
+        10
+      ],
+      "prePotions": [
+        17,
+        22,
+        41,
+        1,
+        1
+      ],
+      "postPotions": [
+        7,
+        43,
+        36,
+        1,
+        1
+      ]
+    },
+    {
+      "index": 487045,
+      "source": 4123895,
+      "fight": 21,
+      "rounds": 2,
+      "generated": [
+        17,
+        7,
+        22,
+        29,
+        4,
+        12
+      ],
+      "prePotions": [
+        17,
+        12,
+        1,
+        1,
+        1
+      ],
+      "postPotions": [
+        29,
+        7,
+        22,
+        1,
+        1
+      ]
+    },
+    {
+      "index": 498369,
+      "source": 4124457,
+      "fight": 4,
+      "rounds": 2,
+      "generated": [
+        34,
+        29,
+        17,
+        43,
+        36,
+        20
+      ],
+      "prePotions": [
+        17,
+        30,
+        1,
+        1,
+        1
+      ],
+      "postPotions": [
+        34,
+        43,
+        36,
+        1,
+        1
+      ]
+    },
+    {
+      "index": 501676,
+      "source": 4124610,
+      "fight": 18,
+      "rounds": 3,
+      "generated": [
+        42,
+        39,
+        17,
+        17,
+        9,
+        29,
+        42,
+        23,
+        38
+      ],
+      "prePotions": [
+        17,
+        1,
+        1,
+        1,
+        1
+      ],
+      "postPotions": [
+        42,
+        42,
+        9,
+        1,
+        1
+      ]
+    },
+    {
+      "index": 501982,
+      "source": 4124632,
+      "fight": 5,
+      "rounds": 2,
+      "generated": [
+        17,
+        15,
+        42,
+        21,
+        12,
+        5
+      ],
+      "prePotions": [
+        27,
+        17,
+        1,
+        1,
+        1
+      ],
+      "postPotions": [
+        21,
+        12,
+        42,
+        1,
+        1
+      ]
+    },
+    {
+      "index": 501997,
+      "source": 4124632,
+      "fight": 20,
+      "rounds": 2,
+      "generated": [
+        17,
+        19,
+        38,
+        16,
+        20,
+        27
+      ],
+      "prePotions": [
+        21,
+        17,
+        39,
+        1,
+        1
+      ],
+      "postPotions": [
+        1,
+        16,
+        20,
+        1,
+        1
+      ]
+    },
+    {
+      "index": 504975,
+      "source": 4124776,
+      "fight": 3,
+      "rounds": 2,
+      "generated": [
+        17,
+        27,
+        31,
+        42,
+        23,
+        36
+      ],
+      "prePotions": [
+        24,
+        17,
+        1,
+        1,
+        1
+      ],
+      "postPotions": [
+        42,
+        27,
+        1,
+        1,
+        1
+      ]
+    }
+  ]
+}
