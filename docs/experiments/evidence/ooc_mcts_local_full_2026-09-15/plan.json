@@ -1,0 +1,309 @@
+{
+  "schema_version": 1,
+  "source_sha": "b7b26548a8800899318e5b78ca135c52e0117ed5",
+  "binary": "/home/philippherrmann/Documents/sts/sts_lightspeed/build/linux-gcc-release/one_combat",
+  "binary_sha256": "b5e99e672d1e7873feaf62e7edd202a6f780c2f8a39a165b868be2993f5fe094",
+  "combat_model": "/home/philippherrmann/sts_sweep/runs/combat-transition-runtime-native-20260914/combat_transition_v1.native",
+  "combat_model_sha256": "f9520a14b1fc42e2a22840c0c2cab0b13ebd8ab6285b5c943662f5e0e9cd9233",
+  "strategic_model_sha256": "e62abd833fc8cb9081a1cec4a1a012832ac3b0e3166da3892841911664f1184c",
+  "seed_start": 12002000,
+  "seed_count_per_arm": 32,
+  "arms": [
+    {
+      "id": "00_ref",
+      "profile": {
+        "STS_OOC_MCTS_SIMS": "2048",
+        "STS_OOC_MCTS_PRIOR": "policy",
+        "STS_OOC_MCTS_TEMPERATURE": "1",
+        "STS_OOC_MCTS_CPUCT": "1.5",
+        "STS_OOC_MCTS_WIDEN_K": "2",
+        "STS_OOC_MCTS_WIDEN_ALPHA": "0.5",
+        "STS_OOC_MCTS_MAX_DEPTH": "32",
+        "STS_OOC_MCTS_ROOT_SELECTION": "visits",
+        "STS_OOC_MCTS_LEAF_VALUE": "native",
+        "STS_OOC_MCTS_LEAF_COMBATS": "0",
+        "STS_OOC_MCTS_LEAF_POLICY": "v4"
+      },
+      "family": "all"
+    },
+    {
+      "id": "01_uniform15",
+      "profile": {
+        "STS_OOC_MCTS_SIMS": "2048",
+        "STS_OOC_MCTS_PRIOR": "uniform",
+        "STS_OOC_MCTS_TEMPERATURE": "1",
+        "STS_OOC_MCTS_CPUCT": "1.5",
+        "STS_OOC_MCTS_WIDEN_K": "2",
+        "STS_OOC_MCTS_WIDEN_ALPHA": "0.5",
+        "STS_OOC_MCTS_MAX_DEPTH": "32",
+        "STS_OOC_MCTS_ROOT_SELECTION": "visits",
+        "STS_OOC_MCTS_LEAF_VALUE": "native",
+        "STS_OOC_MCTS_LEAF_COMBATS": "0",
+        "STS_OOC_MCTS_LEAF_POLICY": "v4"
+      },
+      "family": "prior"
+    },
+    {
+      "id": "02_uniform3",
+      "profile": {
+        "STS_OOC_MCTS_SIMS": "2048",
+        "STS_OOC_MCTS_PRIOR": "uniform",
+        "STS_OOC_MCTS_TEMPERATURE": "1",
+        "STS_OOC_MCTS_CPUCT": "3",
+        "STS_OOC_MCTS_WIDEN_K": "2",
+        "STS_OOC_MCTS_WIDEN_ALPHA": "0.5",
+        "STS_OOC_MCTS_MAX_DEPTH": "32",
+        "STS_OOC_MCTS_ROOT_SELECTION": "visits",
+        "STS_OOC_MCTS_LEAF_VALUE": "native",
+        "STS_OOC_MCTS_LEAF_COMBATS": "0",
+        "STS_OOC_MCTS_LEAF_POLICY": "v4"
+      },
+      "family": "prior"
+    },
+    {
+      "id": "03_sharp",
+      "profile": {
+        "STS_OOC_MCTS_SIMS": "2048",
+        "STS_OOC_MCTS_PRIOR": "policy",
+        "STS_OOC_MCTS_TEMPERATURE": "0.5",
+        "STS_OOC_MCTS_CPUCT": "0.5",
+        "STS_OOC_MCTS_WIDEN_K": "2",
+        "STS_OOC_MCTS_WIDEN_ALPHA": "0.5",
+        "STS_OOC_MCTS_MAX_DEPTH": "32",
+        "STS_OOC_MCTS_ROOT_SELECTION": "visits",
+        "STS_OOC_MCTS_LEAF_VALUE": "native",
+        "STS_OOC_MCTS_LEAF_COMBATS": "0",
+        "STS_OOC_MCTS_LEAF_POLICY": "v4"
+      },
+      "family": "prior"
+    },
+    {
+      "id": "04_flat",
+      "profile": {
+        "STS_OOC_MCTS_SIMS": "2048",
+        "STS_OOC_MCTS_PRIOR": "policy",
+        "STS_OOC_MCTS_TEMPERATURE": "2",
+        "STS_OOC_MCTS_CPUCT": "3",
+        "STS_OOC_MCTS_WIDEN_K": "2",
+        "STS_OOC_MCTS_WIDEN_ALPHA": "0.5",
+        "STS_OOC_MCTS_MAX_DEPTH": "32",
+        "STS_OOC_MCTS_ROOT_SELECTION": "visits",
+        "STS_OOC_MCTS_LEAF_VALUE": "native",
+        "STS_OOC_MCTS_LEAF_COMBATS": "0",
+        "STS_OOC_MCTS_LEAF_POLICY": "v4"
+      },
+      "family": "prior"
+    },
+    {
+      "id": "05_greedy",
+      "profile": {
+        "STS_OOC_MCTS_SIMS": "2048",
+        "STS_OOC_MCTS_PRIOR": "policy",
+        "STS_OOC_MCTS_TEMPERATURE": "1",
+        "STS_OOC_MCTS_CPUCT": "0",
+        "STS_OOC_MCTS_WIDEN_K": "2",
+        "STS_OOC_MCTS_WIDEN_ALPHA": "0.5",
+        "STS_OOC_MCTS_MAX_DEPTH": "32",
+        "STS_OOC_MCTS_ROOT_SELECTION": "visits",
+        "STS_OOC_MCTS_LEAF_VALUE": "native",
+        "STS_OOC_MCTS_LEAF_COMBATS": "0",
+        "STS_OOC_MCTS_LEAF_POLICY": "v4"
+      },
+      "family": "prior"
+    },
+    {
+      "id": "06_narrow",
+      "profile": {
+        "STS_OOC_MCTS_SIMS": "2048",
+        "STS_OOC_MCTS_PRIOR": "policy",
+        "STS_OOC_MCTS_TEMPERATURE": "1",
+        "STS_OOC_MCTS_CPUCT": "1.5",
+        "STS_OOC_MCTS_WIDEN_K": "1",
+        "STS_OOC_MCTS_WIDEN_ALPHA": "0.25",
+        "STS_OOC_MCTS_MAX_DEPTH": "32",
+        "STS_OOC_MCTS_ROOT_SELECTION": "visits",
+        "STS_OOC_MCTS_LEAF_VALUE": "native",
+        "STS_OOC_MCTS_LEAF_COMBATS": "0",
+        "STS_OOC_MCTS_LEAF_POLICY": "v4"
+      },
+      "family": "widening"
+    },
+    {
+      "id": "07_broad",
+      "profile": {
+        "STS_OOC_MCTS_SIMS": "2048",
+        "STS_OOC_MCTS_PRIOR": "policy",
+        "STS_OOC_MCTS_TEMPERATURE": "1",
+        "STS_OOC_MCTS_CPUCT": "1.5",
+        "STS_OOC_MCTS_WIDEN_K": "4",
+        "STS_OOC_MCTS_WIDEN_ALPHA": "0.75",
+        "STS_OOC_MCTS_MAX_DEPTH": "32",
+        "STS_OOC_MCTS_ROOT_SELECTION": "visits",
+        "STS_OOC_MCTS_LEAF_VALUE": "native",
+        "STS_OOC_MCTS_LEAF_COMBATS": "0",
+        "STS_OOC_MCTS_LEAF_POLICY": "v4"
+      },
+      "family": "widening"
+    },
+    {
+      "id": "08_depth8",
+      "profile": {
+        "STS_OOC_MCTS_SIMS": "2048",
+        "STS_OOC_MCTS_PRIOR": "policy",
+        "STS_OOC_MCTS_TEMPERATURE": "1",
+        "STS_OOC_MCTS_CPUCT": "1.5",
+        "STS_OOC_MCTS_WIDEN_K": "2",
+        "STS_OOC_MCTS_WIDEN_ALPHA": "0.5",
+        "STS_OOC_MCTS_MAX_DEPTH": "8",
+        "STS_OOC_MCTS_ROOT_SELECTION": "visits",
+        "STS_OOC_MCTS_LEAF_VALUE": "native",
+        "STS_OOC_MCTS_LEAF_COMBATS": "0",
+        "STS_OOC_MCTS_LEAF_POLICY": "v4"
+      },
+      "family": "leaf"
+    },
+    {
+      "id": "09_depth16",
+      "profile": {
+        "STS_OOC_MCTS_SIMS": "2048",
+        "STS_OOC_MCTS_PRIOR": "policy",
+        "STS_OOC_MCTS_TEMPERATURE": "1",
+        "STS_OOC_MCTS_CPUCT": "1.5",
+        "STS_OOC_MCTS_WIDEN_K": "2",
+        "STS_OOC_MCTS_WIDEN_ALPHA": "0.5",
+        "STS_OOC_MCTS_MAX_DEPTH": "16",
+        "STS_OOC_MCTS_ROOT_SELECTION": "visits",
+        "STS_OOC_MCTS_LEAF_VALUE": "native",
+        "STS_OOC_MCTS_LEAF_COMBATS": "0",
+        "STS_OOC_MCTS_LEAF_POLICY": "v4"
+      },
+      "family": "leaf"
+    },
+    {
+      "id": "10_no_value",
+      "profile": {
+        "STS_OOC_MCTS_SIMS": "2048",
+        "STS_OOC_MCTS_PRIOR": "policy",
+        "STS_OOC_MCTS_TEMPERATURE": "1",
+        "STS_OOC_MCTS_CPUCT": "1.5",
+        "STS_OOC_MCTS_WIDEN_K": "2",
+        "STS_OOC_MCTS_WIDEN_ALPHA": "0.5",
+        "STS_OOC_MCTS_MAX_DEPTH": "32",
+        "STS_OOC_MCTS_ROOT_SELECTION": "visits",
+        "STS_OOC_MCTS_LEAF_VALUE": "constant",
+        "STS_OOC_MCTS_LEAF_COMBATS": "0",
+        "STS_OOC_MCTS_LEAF_POLICY": "v4"
+      },
+      "family": "leaf"
+    },
+    {
+      "id": "11_rollout1",
+      "profile": {
+        "STS_OOC_MCTS_SIMS": "2048",
+        "STS_OOC_MCTS_PRIOR": "policy",
+        "STS_OOC_MCTS_TEMPERATURE": "1",
+        "STS_OOC_MCTS_CPUCT": "1.5",
+        "STS_OOC_MCTS_WIDEN_K": "2",
+        "STS_OOC_MCTS_WIDEN_ALPHA": "0.5",
+        "STS_OOC_MCTS_MAX_DEPTH": "32",
+        "STS_OOC_MCTS_ROOT_SELECTION": "visits",
+        "STS_OOC_MCTS_LEAF_VALUE": "native",
+        "STS_OOC_MCTS_LEAF_COMBATS": "1",
+        "STS_OOC_MCTS_LEAF_POLICY": "v4"
+      },
+      "family": "leaf"
+    },
+    {
+      "id": "12_rollout3",
+      "profile": {
+        "STS_OOC_MCTS_SIMS": "2048",
+        "STS_OOC_MCTS_PRIOR": "policy",
+        "STS_OOC_MCTS_TEMPERATURE": "1",
+        "STS_OOC_MCTS_CPUCT": "1.5",
+        "STS_OOC_MCTS_WIDEN_K": "2",
+        "STS_OOC_MCTS_WIDEN_ALPHA": "0.5",
+        "STS_OOC_MCTS_MAX_DEPTH": "32",
+        "STS_OOC_MCTS_ROOT_SELECTION": "visits",
+        "STS_OOC_MCTS_LEAF_VALUE": "native",
+        "STS_OOC_MCTS_LEAF_COMBATS": "3",
+        "STS_OOC_MCTS_LEAF_POLICY": "v4"
+      },
+      "family": "leaf"
+    },
+    {
+      "id": "13_uniform_leaf",
+      "profile": {
+        "STS_OOC_MCTS_SIMS": "2048",
+        "STS_OOC_MCTS_PRIOR": "policy",
+        "STS_OOC_MCTS_TEMPERATURE": "1",
+        "STS_OOC_MCTS_CPUCT": "1.5",
+        "STS_OOC_MCTS_WIDEN_K": "2",
+        "STS_OOC_MCTS_WIDEN_ALPHA": "0.5",
+        "STS_OOC_MCTS_MAX_DEPTH": "32",
+        "STS_OOC_MCTS_ROOT_SELECTION": "visits",
+        "STS_OOC_MCTS_LEAF_VALUE": "native",
+        "STS_OOC_MCTS_LEAF_COMBATS": "1",
+        "STS_OOC_MCTS_LEAF_POLICY": "uniform"
+      },
+      "family": "leaf"
+    },
+    {
+      "id": "14_root_q",
+      "profile": {
+        "STS_OOC_MCTS_SIMS": "2048",
+        "STS_OOC_MCTS_PRIOR": "policy",
+        "STS_OOC_MCTS_TEMPERATURE": "1",
+        "STS_OOC_MCTS_CPUCT": "1.5",
+        "STS_OOC_MCTS_WIDEN_K": "2",
+        "STS_OOC_MCTS_WIDEN_ALPHA": "0.5",
+        "STS_OOC_MCTS_MAX_DEPTH": "32",
+        "STS_OOC_MCTS_ROOT_SELECTION": "q",
+        "STS_OOC_MCTS_LEAF_VALUE": "native",
+        "STS_OOC_MCTS_LEAF_COMBATS": "0",
+        "STS_OOC_MCTS_LEAF_POLICY": "v4"
+      },
+      "family": "root"
+    },
+    {
+      "id": "15_budget512",
+      "profile": {
+        "STS_OOC_MCTS_SIMS": "512",
+        "STS_OOC_MCTS_PRIOR": "policy",
+        "STS_OOC_MCTS_TEMPERATURE": "1",
+        "STS_OOC_MCTS_CPUCT": "1.5",
+        "STS_OOC_MCTS_WIDEN_K": "2",
+        "STS_OOC_MCTS_WIDEN_ALPHA": "0.5",
+        "STS_OOC_MCTS_MAX_DEPTH": "32",
+        "STS_OOC_MCTS_ROOT_SELECTION": "visits",
+        "STS_OOC_MCTS_LEAF_VALUE": "native",
+        "STS_OOC_MCTS_LEAF_COMBATS": "0",
+        "STS_OOC_MCTS_LEAF_POLICY": "v4"
+      },
+      "family": "budget"
+    },
+    {
+      "id": "16_budget10000",
+      "profile": {
+        "STS_OOC_MCTS_SIMS": "10000",
+        "STS_OOC_MCTS_PRIOR": "policy",
+        "STS_OOC_MCTS_TEMPERATURE": "1",
+        "STS_OOC_MCTS_CPUCT": "1.5",
+        "STS_OOC_MCTS_WIDEN_K": "2",
+        "STS_OOC_MCTS_WIDEN_ALPHA": "0.5",
+        "STS_OOC_MCTS_MAX_DEPTH": "32",
+        "STS_OOC_MCTS_ROOT_SELECTION": "visits",
+        "STS_OOC_MCTS_LEAF_VALUE": "native",
+        "STS_OOC_MCTS_LEAF_COMBATS": "0",
+        "STS_OOC_MCTS_LEAF_POLICY": "v4"
+      },
+      "family": "budget"
+    }
+  ],
+  "arm_count": 17,
+  "total_local_games": 544,
+  "omp_threads": 12,
+  "silver_simulations": 10000,
+  "local_limit_override": "User explicitly instructed: ignore the local limit; do the 17x32 sweep. Each 32-seed invocation remains routed through tools/seed_guard.sh.",
+  "cohort_note": "Common fresh cohort for every MCTS profile. The interrupted V4 control produced partial rows on this cohort in a separate packet; those rows are excluded and do not rank or select these profiles.",
+  "early_stop": "Updated main default enabled; STS_OOC_MCTS_EARLY_STOP is intentionally unset for every arm."
+}

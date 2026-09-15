@@ -1,0 +1,809 @@
+{
+  "arms": 17,
+  "binary_sha256": "b5e99e672d1e7873feaf62e7edd202a6f780c2f8a39a165b868be2993f5fe094",
+  "cohort": [
+    12002000,
+    12002031
+  ],
+  "combat_model_sha256": "f9520a14b1fc42e2a22840c0c2cab0b13ebd8ab6285b5c943662f5e0e9cd9233",
+  "common_seeds": true,
+  "current_main_at_evidence_packaging": "608bb810c44173fb8c0036df6e89c71da4d778e3",
+  "games": 544,
+  "interpretation": {
+    "leader_win_rate": 0.8125,
+    "leader_wins": 26,
+    "limits": [
+      "The user explicitly overrode the repository aggregate local 128-seed policy.",
+      "The same 32 seeds were reused across all arms; comparisons are paired but this is a screening cohort.",
+      "The winning profile was selected on these outcomes, so its interval and lead are selection-biased.",
+      "No V4 control or fresh holdout was run in this 17x32 sweep.",
+      "The strategic model path and load marker are retained per arm; its plan-time hash matches packaging time, but the runner did not bind its bytes at execution.",
+      "Source b7b26548 predates current main Silver memory/cap changes; results do not qualify current main or a default change."
+    ],
+    "screening_leader": "12_rollout3"
+  },
+  "qualification": false,
+  "rank_rule": [
+    "wins desc",
+    "mean_floor desc",
+    "mean_seconds asc",
+    "id asc"
+  ],
+  "ranking": [
+    "12_rollout3",
+    "13_uniform_leaf",
+    "11_rollout1",
+    "15_budget512",
+    "16_budget10000",
+    "08_depth8",
+    "07_broad",
+    "00_ref",
+    "09_depth16",
+    "06_narrow",
+    "04_flat",
+    "03_sharp",
+    "01_uniform15",
+    "02_uniform3",
+    "05_greedy",
+    "14_root_q",
+    "10_no_value"
+  ],
+  "results": [
+    {
+      "family": "all",
+      "games": 32,
+      "id": "00_ref",
+      "mean_floor": 47.21875,
+      "mean_seconds": 69.08734375,
+      "paired_bootstrap95_vs_reference": [
+        0.0,
+        0.0
+      ],
+      "paired_win_delta_vs_reference": 0.0,
+      "profile": {
+        "STS_OOC_MCTS_CPUCT": "1.5",
+        "STS_OOC_MCTS_LEAF_COMBATS": "0",
+        "STS_OOC_MCTS_LEAF_POLICY": "v4",
+        "STS_OOC_MCTS_LEAF_VALUE": "native",
+        "STS_OOC_MCTS_MAX_DEPTH": "32",
+        "STS_OOC_MCTS_PRIOR": "policy",
+        "STS_OOC_MCTS_ROOT_SELECTION": "visits",
+        "STS_OOC_MCTS_SIMS": "2048",
+        "STS_OOC_MCTS_TEMPERATURE": "1",
+        "STS_OOC_MCTS_WIDEN_ALPHA": "0.5",
+        "STS_OOC_MCTS_WIDEN_K": "2"
+      },
+      "support_reason_records": 32,
+      "telemetry": {
+        "combatSurrogateSamples": 161856,
+        "continuationLimitAborts": 0,
+        "earlyStopLockedRoot": 3958,
+        "mctsFallback": 1664,
+        "mctsOwned": 3958,
+        "mctsSupportAborts": 571,
+        "oocDecisions": 5622,
+        "savedSimulations": 4104775,
+        "simulations": 4079677
+      },
+      "wall_seconds": 267.8719575405121,
+      "win_rate": 0.65625,
+      "win_rate_wilson95": [
+        0.4831108797896222,
+        0.7958956207556682
+      ],
+      "wins": 21
+    },
+    {
+      "family": "prior",
+      "games": 32,
+      "id": "01_uniform15",
+      "mean_floor": 45.0625,
+      "mean_seconds": 73.21340000000001,
+      "paired_bootstrap95_vs_reference": [
+        -0.3125,
+        0.1875
+      ],
+      "paired_win_delta_vs_reference": -0.0625,
+      "profile": {
+        "STS_OOC_MCTS_CPUCT": "1.5",
+        "STS_OOC_MCTS_LEAF_COMBATS": "0",
+        "STS_OOC_MCTS_LEAF_POLICY": "v4",
+        "STS_OOC_MCTS_LEAF_VALUE": "native",
+        "STS_OOC_MCTS_MAX_DEPTH": "32",
+        "STS_OOC_MCTS_PRIOR": "uniform",
+        "STS_OOC_MCTS_ROOT_SELECTION": "visits",
+        "STS_OOC_MCTS_SIMS": "2048",
+        "STS_OOC_MCTS_TEMPERATURE": "1",
+        "STS_OOC_MCTS_WIDEN_ALPHA": "0.5",
+        "STS_OOC_MCTS_WIDEN_K": "2"
+      },
+      "support_reason_records": 32,
+      "telemetry": {
+        "combatSurrogateSamples": 226270,
+        "continuationLimitAborts": 0,
+        "earlyStopLockedRoot": 2193,
+        "mctsFallback": 2880,
+        "mctsOwned": 2290,
+        "mctsSupportAborts": 1076,
+        "oocDecisions": 5170,
+        "savedSimulations": 2007222,
+        "simulations": 2815087
+      },
+      "wall_seconds": 342.80496168136597,
+      "win_rate": 0.59375,
+      "win_rate_wilson95": [
+        0.42260024875382873,
+        0.7448036515733456
+      ],
+      "wins": 19
+    },
+    {
+      "family": "prior",
+      "games": 32,
+      "id": "02_uniform3",
+      "mean_floor": 45.625,
+      "mean_seconds": 81.811634375,
+      "paired_bootstrap95_vs_reference": [
+        -0.3125,
+        0.125
+      ],
+      "paired_win_delta_vs_reference": -0.09375,
+      "profile": {
+        "STS_OOC_MCTS_CPUCT": "3",
+        "STS_OOC_MCTS_LEAF_COMBATS": "0",
+        "STS_OOC_MCTS_LEAF_POLICY": "v4",
+        "STS_OOC_MCTS_LEAF_VALUE": "native",
+        "STS_OOC_MCTS_MAX_DEPTH": "32",
+        "STS_OOC_MCTS_PRIOR": "uniform",
+        "STS_OOC_MCTS_ROOT_SELECTION": "visits",
+        "STS_OOC_MCTS_SIMS": "2048",
+        "STS_OOC_MCTS_TEMPERATURE": "1",
+        "STS_OOC_MCTS_WIDEN_ALPHA": "0.5",
+        "STS_OOC_MCTS_WIDEN_K": "2"
+      },
+      "support_reason_records": 32,
+      "telemetry": {
+        "combatSurrogateSamples": 261523,
+        "continuationLimitAborts": 0,
+        "earlyStopLockedRoot": 2220,
+        "mctsFallback": 2948,
+        "mctsOwned": 2353,
+        "mctsSupportAborts": 1036,
+        "oocDecisions": 5301,
+        "savedSimulations": 1833344,
+        "simulations": 3130518
+      },
+      "wall_seconds": 290.5563020706177,
+      "win_rate": 0.5625,
+      "win_rate_wilson95": [
+        0.3932559113685198,
+        0.7183466888495963
+      ],
+      "wins": 18
+    },
+    {
+      "family": "prior",
+      "games": 32,
+      "id": "03_sharp",
+      "mean_floor": 46.375,
+      "mean_seconds": 65.94679375,
+      "paired_bootstrap95_vs_reference": [
+        -0.21875,
+        0.15625
+      ],
+      "paired_win_delta_vs_reference": -0.03125,
+      "profile": {
+        "STS_OOC_MCTS_CPUCT": "0.5",
+        "STS_OOC_MCTS_LEAF_COMBATS": "0",
+        "STS_OOC_MCTS_LEAF_POLICY": "v4",
+        "STS_OOC_MCTS_LEAF_VALUE": "native",
+        "STS_OOC_MCTS_MAX_DEPTH": "32",
+        "STS_OOC_MCTS_PRIOR": "policy",
+        "STS_OOC_MCTS_ROOT_SELECTION": "visits",
+        "STS_OOC_MCTS_SIMS": "2048",
+        "STS_OOC_MCTS_TEMPERATURE": "0.5",
+        "STS_OOC_MCTS_WIDEN_ALPHA": "0.5",
+        "STS_OOC_MCTS_WIDEN_K": "2"
+      },
+      "support_reason_records": 32,
+      "telemetry": {
+        "combatSurrogateSamples": 129810,
+        "continuationLimitAborts": 0,
+        "earlyStopLockedRoot": 3961,
+        "mctsFallback": 1515,
+        "mctsOwned": 3963,
+        "mctsSupportAborts": 423,
+        "oocDecisions": 5478,
+        "savedSimulations": 4336321,
+        "simulations": 3791094
+      },
+      "wall_seconds": 266.287127494812,
+      "win_rate": 0.625,
+      "win_rate_wilson95": [
+        0.4525440735307745,
+        0.7706611269054578
+      ],
+      "wins": 20
+    },
+    {
+      "family": "prior",
+      "games": 32,
+      "id": "04_flat",
+      "mean_floor": 46.96875,
+      "mean_seconds": 72.359803125,
+      "paired_bootstrap95_vs_reference": [
+        -0.1875,
+        0.125
+      ],
+      "paired_win_delta_vs_reference": -0.03125,
+      "profile": {
+        "STS_OOC_MCTS_CPUCT": "3",
+        "STS_OOC_MCTS_LEAF_COMBATS": "0",
+        "STS_OOC_MCTS_LEAF_POLICY": "v4",
+        "STS_OOC_MCTS_LEAF_VALUE": "native",
+        "STS_OOC_MCTS_MAX_DEPTH": "32",
+        "STS_OOC_MCTS_PRIOR": "policy",
+        "STS_OOC_MCTS_ROOT_SELECTION": "visits",
+        "STS_OOC_MCTS_SIMS": "2048",
+        "STS_OOC_MCTS_TEMPERATURE": "2",
+        "STS_OOC_MCTS_WIDEN_ALPHA": "0.5",
+        "STS_OOC_MCTS_WIDEN_K": "2"
+      },
+      "support_reason_records": 32,
+      "telemetry": {
+        "combatSurrogateSamples": 212234,
+        "continuationLimitAborts": 0,
+        "earlyStopLockedRoot": 3716,
+        "mctsFallback": 1895,
+        "mctsOwned": 3718,
+        "mctsSupportAborts": 801,
+        "oocDecisions": 5613,
+        "savedSimulations": 3562398,
+        "simulations": 4163030
+      },
+      "wall_seconds": 267.40272426605225,
+      "win_rate": 0.625,
+      "win_rate_wilson95": [
+        0.4525440735307745,
+        0.7706611269054578
+      ],
+      "wins": 20
+    },
+    {
+      "family": "prior",
+      "games": 32,
+      "id": "05_greedy",
+      "mean_floor": 43.96875,
+      "mean_seconds": 66.363753125,
+      "paired_bootstrap95_vs_reference": [
+        -0.375,
+        0.1875
+      ],
+      "paired_win_delta_vs_reference": -0.09375,
+      "profile": {
+        "STS_OOC_MCTS_CPUCT": "0",
+        "STS_OOC_MCTS_LEAF_COMBATS": "0",
+        "STS_OOC_MCTS_LEAF_POLICY": "v4",
+        "STS_OOC_MCTS_LEAF_VALUE": "native",
+        "STS_OOC_MCTS_MAX_DEPTH": "32",
+        "STS_OOC_MCTS_PRIOR": "policy",
+        "STS_OOC_MCTS_ROOT_SELECTION": "visits",
+        "STS_OOC_MCTS_SIMS": "2048",
+        "STS_OOC_MCTS_TEMPERATURE": "1",
+        "STS_OOC_MCTS_WIDEN_ALPHA": "0.5",
+        "STS_OOC_MCTS_WIDEN_K": "2"
+      },
+      "support_reason_records": 32,
+      "telemetry": {
+        "combatSurrogateSamples": 52764,
+        "continuationLimitAborts": 0,
+        "earlyStopLockedRoot": 2587,
+        "mctsFallback": 2657,
+        "mctsOwned": 2590,
+        "mctsSupportAborts": 386,
+        "oocDecisions": 5247,
+        "savedSimulations": 3370021,
+        "simulations": 1938081
+      },
+      "wall_seconds": 225.02764987945557,
+      "win_rate": 0.5625,
+      "win_rate_wilson95": [
+        0.3932559113685198,
+        0.7183466888495963
+      ],
+      "wins": 18
+    },
+    {
+      "family": "widening",
+      "games": 32,
+      "id": "06_narrow",
+      "mean_floor": 47.96875,
+      "mean_seconds": 64.504253125,
+      "paired_bootstrap95_vs_reference": [
+        -0.1875,
+        0.125
+      ],
+      "paired_win_delta_vs_reference": -0.03125,
+      "profile": {
+        "STS_OOC_MCTS_CPUCT": "1.5",
+        "STS_OOC_MCTS_LEAF_COMBATS": "0",
+        "STS_OOC_MCTS_LEAF_POLICY": "v4",
+        "STS_OOC_MCTS_LEAF_VALUE": "native",
+        "STS_OOC_MCTS_MAX_DEPTH": "32",
+        "STS_OOC_MCTS_PRIOR": "policy",
+        "STS_OOC_MCTS_ROOT_SELECTION": "visits",
+        "STS_OOC_MCTS_SIMS": "2048",
+        "STS_OOC_MCTS_TEMPERATURE": "1",
+        "STS_OOC_MCTS_WIDEN_ALPHA": "0.25",
+        "STS_OOC_MCTS_WIDEN_K": "1"
+      },
+      "support_reason_records": 32,
+      "telemetry": {
+        "combatSurrogateSamples": 43013,
+        "continuationLimitAborts": 0,
+        "earlyStopLockedRoot": 4048,
+        "mctsFallback": 1662,
+        "mctsOwned": 4051,
+        "mctsSupportAborts": 541,
+        "oocDecisions": 5713,
+        "savedSimulations": 4213355,
+        "simulations": 4155610
+      },
+      "wall_seconds": 258.50094270706177,
+      "win_rate": 0.625,
+      "win_rate_wilson95": [
+        0.4525440735307745,
+        0.7706611269054578
+      ],
+      "wins": 20
+    },
+    {
+      "family": "widening",
+      "games": 32,
+      "id": "07_broad",
+      "mean_floor": 47.53125,
+      "mean_seconds": 81.553865625,
+      "paired_bootstrap95_vs_reference": [
+        -0.125,
+        0.125
+      ],
+      "paired_win_delta_vs_reference": 0.0,
+      "profile": {
+        "STS_OOC_MCTS_CPUCT": "1.5",
+        "STS_OOC_MCTS_LEAF_COMBATS": "0",
+        "STS_OOC_MCTS_LEAF_POLICY": "v4",
+        "STS_OOC_MCTS_LEAF_VALUE": "native",
+        "STS_OOC_MCTS_MAX_DEPTH": "32",
+        "STS_OOC_MCTS_PRIOR": "policy",
+        "STS_OOC_MCTS_ROOT_SELECTION": "visits",
+        "STS_OOC_MCTS_SIMS": "2048",
+        "STS_OOC_MCTS_TEMPERATURE": "1",
+        "STS_OOC_MCTS_WIDEN_ALPHA": "0.75",
+        "STS_OOC_MCTS_WIDEN_K": "4"
+      },
+      "support_reason_records": 32,
+      "telemetry": {
+        "combatSurrogateSamples": 952529,
+        "continuationLimitAborts": 0,
+        "earlyStopLockedRoot": 4020,
+        "mctsFallback": 1584,
+        "mctsOwned": 4022,
+        "mctsSupportAborts": 500,
+        "oocDecisions": 5606,
+        "savedSimulations": 4178320,
+        "simulations": 4121642
+      },
+      "wall_seconds": 307.49322748184204,
+      "win_rate": 0.65625,
+      "win_rate_wilson95": [
+        0.4831108797896222,
+        0.7958956207556682
+      ],
+      "wins": 21
+    },
+    {
+      "family": "leaf",
+      "games": 32,
+      "id": "08_depth8",
+      "mean_floor": 47.5,
+      "mean_seconds": 72.385409375,
+      "paired_bootstrap95_vs_reference": [
+        0.0,
+        0.09375
+      ],
+      "paired_win_delta_vs_reference": 0.03125,
+      "profile": {
+        "STS_OOC_MCTS_CPUCT": "1.5",
+        "STS_OOC_MCTS_LEAF_COMBATS": "0",
+        "STS_OOC_MCTS_LEAF_POLICY": "v4",
+        "STS_OOC_MCTS_LEAF_VALUE": "native",
+        "STS_OOC_MCTS_MAX_DEPTH": "8",
+        "STS_OOC_MCTS_PRIOR": "policy",
+        "STS_OOC_MCTS_ROOT_SELECTION": "visits",
+        "STS_OOC_MCTS_SIMS": "2048",
+        "STS_OOC_MCTS_TEMPERATURE": "1",
+        "STS_OOC_MCTS_WIDEN_ALPHA": "0.5",
+        "STS_OOC_MCTS_WIDEN_K": "2"
+      },
+      "support_reason_records": 32,
+      "telemetry": {
+        "combatSurrogateSamples": 152411,
+        "continuationLimitAborts": 0,
+        "earlyStopLockedRoot": 3977,
+        "mctsFallback": 1689,
+        "mctsOwned": 3978,
+        "mctsSupportAborts": 580,
+        "oocDecisions": 5667,
+        "savedSimulations": 4120866,
+        "simulations": 4098959
+      },
+      "wall_seconds": 275.29249358177185,
+      "win_rate": 0.6875,
+      "win_rate_wilson95": [
+        0.5143332169904459,
+        0.8204745836639026
+      ],
+      "wins": 22
+    },
+    {
+      "family": "leaf",
+      "games": 32,
+      "id": "09_depth16",
+      "mean_floor": 47.21875,
+      "mean_seconds": 72.169509375,
+      "paired_bootstrap95_vs_reference": [
+        0.0,
+        0.0
+      ],
+      "paired_win_delta_vs_reference": 0.0,
+      "profile": {
+        "STS_OOC_MCTS_CPUCT": "1.5",
+        "STS_OOC_MCTS_LEAF_COMBATS": "0",
+        "STS_OOC_MCTS_LEAF_POLICY": "v4",
+        "STS_OOC_MCTS_LEAF_VALUE": "native",
+        "STS_OOC_MCTS_MAX_DEPTH": "16",
+        "STS_OOC_MCTS_PRIOR": "policy",
+        "STS_OOC_MCTS_ROOT_SELECTION": "visits",
+        "STS_OOC_MCTS_SIMS": "2048",
+        "STS_OOC_MCTS_TEMPERATURE": "1",
+        "STS_OOC_MCTS_WIDEN_ALPHA": "0.5",
+        "STS_OOC_MCTS_WIDEN_K": "2"
+      },
+      "support_reason_records": 32,
+      "telemetry": {
+        "combatSurrogateSamples": 161856,
+        "continuationLimitAborts": 0,
+        "earlyStopLockedRoot": 3958,
+        "mctsFallback": 1664,
+        "mctsOwned": 3958,
+        "mctsSupportAborts": 571,
+        "oocDecisions": 5622,
+        "savedSimulations": 4104775,
+        "simulations": 4079677
+      },
+      "wall_seconds": 275.87295484542847,
+      "win_rate": 0.65625,
+      "win_rate_wilson95": [
+        0.4831108797896222,
+        0.7958956207556682
+      ],
+      "wins": 21
+    },
+    {
+      "family": "leaf",
+      "games": 32,
+      "id": "10_no_value",
+      "mean_floor": 44.8125,
+      "mean_seconds": 56.467075,
+      "paired_bootstrap95_vs_reference": [
+        -0.40625,
+        0.03125
+      ],
+      "paired_win_delta_vs_reference": -0.1875,
+      "profile": {
+        "STS_OOC_MCTS_CPUCT": "1.5",
+        "STS_OOC_MCTS_LEAF_COMBATS": "0",
+        "STS_OOC_MCTS_LEAF_POLICY": "v4",
+        "STS_OOC_MCTS_LEAF_VALUE": "constant",
+        "STS_OOC_MCTS_MAX_DEPTH": "32",
+        "STS_OOC_MCTS_PRIOR": "policy",
+        "STS_OOC_MCTS_ROOT_SELECTION": "visits",
+        "STS_OOC_MCTS_SIMS": "2048",
+        "STS_OOC_MCTS_TEMPERATURE": "1",
+        "STS_OOC_MCTS_WIDEN_ALPHA": "0.5",
+        "STS_OOC_MCTS_WIDEN_K": "2"
+      },
+      "support_reason_records": 32,
+      "telemetry": {
+        "combatSurrogateSamples": 174639,
+        "continuationLimitAborts": 0,
+        "earlyStopLockedRoot": 3871,
+        "mctsFallback": 1503,
+        "mctsOwned": 3875,
+        "mctsSupportAborts": 479,
+        "oocDecisions": 5378,
+        "savedSimulations": 3905396,
+        "simulations": 4089405
+      },
+      "wall_seconds": 194.84381818771362,
+      "win_rate": 0.46875,
+      "win_rate_wilson95": [
+        0.30869387108068835,
+        0.6355048288102536
+      ],
+      "wins": 15
+    },
+    {
+      "family": "leaf",
+      "games": 32,
+      "id": "11_rollout1",
+      "mean_floor": 48.46875,
+      "mean_seconds": 925.89671875,
+      "paired_bootstrap95_vs_reference": [
+        -0.125,
+        0.25
+      ],
+      "paired_win_delta_vs_reference": 0.0625,
+      "profile": {
+        "STS_OOC_MCTS_CPUCT": "1.5",
+        "STS_OOC_MCTS_LEAF_COMBATS": "1",
+        "STS_OOC_MCTS_LEAF_POLICY": "v4",
+        "STS_OOC_MCTS_LEAF_VALUE": "native",
+        "STS_OOC_MCTS_MAX_DEPTH": "32",
+        "STS_OOC_MCTS_PRIOR": "policy",
+        "STS_OOC_MCTS_ROOT_SELECTION": "visits",
+        "STS_OOC_MCTS_SIMS": "2048",
+        "STS_OOC_MCTS_TEMPERATURE": "1",
+        "STS_OOC_MCTS_WIDEN_ALPHA": "0.5",
+        "STS_OOC_MCTS_WIDEN_K": "2"
+      },
+      "support_reason_records": 32,
+      "telemetry": {
+        "combatSurrogateSamples": 3431049,
+        "continuationLimitAborts": 0,
+        "earlyStopLockedRoot": 3183,
+        "mctsFallback": 2734,
+        "mctsOwned": 3184,
+        "mctsSupportAborts": 1525,
+        "oocDecisions": 5918,
+        "savedSimulations": 3274197,
+        "simulations": 3296215
+      },
+      "wall_seconds": 2839.496123790741,
+      "win_rate": 0.71875,
+      "win_rate_wilson95": [
+        0.5462549057408342,
+        0.8443541950225723
+      ],
+      "wins": 23
+    },
+    {
+      "family": "leaf",
+      "games": 32,
+      "id": "12_rollout3",
+      "mean_floor": 50.0,
+      "mean_seconds": 2024.3700625,
+      "paired_bootstrap95_vs_reference": [
+        -0.0625,
+        0.375
+      ],
+      "paired_win_delta_vs_reference": 0.15625,
+      "profile": {
+        "STS_OOC_MCTS_CPUCT": "1.5",
+        "STS_OOC_MCTS_LEAF_COMBATS": "3",
+        "STS_OOC_MCTS_LEAF_POLICY": "v4",
+        "STS_OOC_MCTS_LEAF_VALUE": "native",
+        "STS_OOC_MCTS_MAX_DEPTH": "32",
+        "STS_OOC_MCTS_PRIOR": "policy",
+        "STS_OOC_MCTS_ROOT_SELECTION": "visits",
+        "STS_OOC_MCTS_SIMS": "2048",
+        "STS_OOC_MCTS_TEMPERATURE": "1",
+        "STS_OOC_MCTS_WIDEN_ALPHA": "0.5",
+        "STS_OOC_MCTS_WIDEN_K": "2"
+      },
+      "support_reason_records": 32,
+      "telemetry": {
+        "combatSurrogateSamples": 7413229,
+        "continuationLimitAborts": 0,
+        "earlyStopLockedRoot": 2576,
+        "mctsFallback": 3544,
+        "mctsOwned": 2577,
+        "mctsSupportAborts": 2258,
+        "oocDecisions": 6121,
+        "savedSimulations": 2728373,
+        "simulations": 2614947
+      },
+      "wall_seconds": 7033.977957010269,
+      "win_rate": 0.8125,
+      "win_rate_wilson95": [
+        0.6469084479862404,
+        0.9111045531043405
+      ],
+      "wins": 26
+    },
+    {
+      "family": "leaf",
+      "games": 32,
+      "id": "13_uniform_leaf",
+      "mean_floor": 47.46875,
+      "mean_seconds": 663.7496875,
+      "paired_bootstrap95_vs_reference": [
+        -0.09375,
+        0.28125
+      ],
+      "paired_win_delta_vs_reference": 0.09375,
+      "profile": {
+        "STS_OOC_MCTS_CPUCT": "1.5",
+        "STS_OOC_MCTS_LEAF_COMBATS": "1",
+        "STS_OOC_MCTS_LEAF_POLICY": "uniform",
+        "STS_OOC_MCTS_LEAF_VALUE": "native",
+        "STS_OOC_MCTS_MAX_DEPTH": "32",
+        "STS_OOC_MCTS_PRIOR": "policy",
+        "STS_OOC_MCTS_ROOT_SELECTION": "visits",
+        "STS_OOC_MCTS_SIMS": "2048",
+        "STS_OOC_MCTS_TEMPERATURE": "1",
+        "STS_OOC_MCTS_WIDEN_ALPHA": "0.5",
+        "STS_OOC_MCTS_WIDEN_K": "2"
+      },
+      "support_reason_records": 32,
+      "telemetry": {
+        "combatSurrogateSamples": 3167115,
+        "continuationLimitAborts": 0,
+        "earlyStopLockedRoot": 3003,
+        "mctsFallback": 2788,
+        "mctsOwned": 3007,
+        "mctsSupportAborts": 1598,
+        "oocDecisions": 5795,
+        "savedSimulations": 3148723,
+        "simulations": 3055241
+      },
+      "wall_seconds": 2240.379989862442,
+      "win_rate": 0.75,
+      "win_rate_wilson95": [
+        0.5789344100575552,
+        0.8674759908149096
+      ],
+      "wins": 24
+    },
+    {
+      "family": "root",
+      "games": 32,
+      "id": "14_root_q",
+      "mean_floor": 44.0,
+      "mean_seconds": 70.886403125,
+      "paired_bootstrap95_vs_reference": [
+        -0.34375,
+        0.09375
+      ],
+      "paired_win_delta_vs_reference": -0.125,
+      "profile": {
+        "STS_OOC_MCTS_CPUCT": "1.5",
+        "STS_OOC_MCTS_LEAF_COMBATS": "0",
+        "STS_OOC_MCTS_LEAF_POLICY": "v4",
+        "STS_OOC_MCTS_LEAF_VALUE": "native",
+        "STS_OOC_MCTS_MAX_DEPTH": "32",
+        "STS_OOC_MCTS_PRIOR": "policy",
+        "STS_OOC_MCTS_ROOT_SELECTION": "q",
+        "STS_OOC_MCTS_SIMS": "2048",
+        "STS_OOC_MCTS_TEMPERATURE": "1",
+        "STS_OOC_MCTS_WIDEN_ALPHA": "0.5",
+        "STS_OOC_MCTS_WIDEN_K": "2"
+      },
+      "support_reason_records": 32,
+      "telemetry": {
+        "combatSurrogateSamples": 263138,
+        "continuationLimitAborts": 0,
+        "earlyStopLockedRoot": 0,
+        "mctsFallback": 2668,
+        "mctsOwned": 2502,
+        "mctsSupportAborts": 598,
+        "oocDecisions": 5170,
+        "savedSimulations": 0,
+        "simulations": 5269807
+      },
+      "wall_seconds": 219.13148736953735,
+      "win_rate": 0.53125,
+      "win_rate_wilson95": [
+        0.3644951711897464,
+        0.6913061289193116
+      ],
+      "wins": 17
+    },
+    {
+      "family": "budget",
+      "games": 32,
+      "id": "15_budget512",
+      "mean_floor": 47.46875,
+      "mean_seconds": 48.892609375,
+      "paired_bootstrap95_vs_reference": [
+        -0.09375,
+        0.25
+      ],
+      "paired_win_delta_vs_reference": 0.0625,
+      "profile": {
+        "STS_OOC_MCTS_CPUCT": "1.5",
+        "STS_OOC_MCTS_LEAF_COMBATS": "0",
+        "STS_OOC_MCTS_LEAF_POLICY": "v4",
+        "STS_OOC_MCTS_LEAF_VALUE": "native",
+        "STS_OOC_MCTS_MAX_DEPTH": "32",
+        "STS_OOC_MCTS_PRIOR": "policy",
+        "STS_OOC_MCTS_ROOT_SELECTION": "visits",
+        "STS_OOC_MCTS_SIMS": "512",
+        "STS_OOC_MCTS_TEMPERATURE": "1",
+        "STS_OOC_MCTS_WIDEN_ALPHA": "0.5",
+        "STS_OOC_MCTS_WIDEN_K": "2"
+      },
+      "support_reason_records": 32,
+      "telemetry": {
+        "combatSurrogateSamples": 71175,
+        "continuationLimitAborts": 0,
+        "earlyStopLockedRoot": 4089,
+        "mctsFallback": 1554,
+        "mctsOwned": 4101,
+        "mctsSupportAborts": 470,
+        "oocDecisions": 5655,
+        "savedSimulations": 1039759,
+        "simulations": 1073236
+      },
+      "wall_seconds": 168.59837865829468,
+      "win_rate": 0.71875,
+      "win_rate_wilson95": [
+        0.5462549057408342,
+        0.8443541950225723
+      ],
+      "wins": 23
+    },
+    {
+      "family": "budget",
+      "games": 32,
+      "id": "16_budget10000",
+      "mean_floor": 48.03125,
+      "mean_seconds": 123.051875,
+      "paired_bootstrap95_vs_reference": [
+        -0.15625,
+        0.21875
+      ],
+      "paired_win_delta_vs_reference": 0.03125,
+      "profile": {
+        "STS_OOC_MCTS_CPUCT": "1.5",
+        "STS_OOC_MCTS_LEAF_COMBATS": "0",
+        "STS_OOC_MCTS_LEAF_POLICY": "v4",
+        "STS_OOC_MCTS_LEAF_VALUE": "native",
+        "STS_OOC_MCTS_MAX_DEPTH": "32",
+        "STS_OOC_MCTS_PRIOR": "policy",
+        "STS_OOC_MCTS_ROOT_SELECTION": "visits",
+        "STS_OOC_MCTS_SIMS": "10000",
+        "STS_OOC_MCTS_TEMPERATURE": "1",
+        "STS_OOC_MCTS_WIDEN_ALPHA": "0.5",
+        "STS_OOC_MCTS_WIDEN_K": "2"
+      },
+      "support_reason_records": 32,
+      "telemetry": {
+        "combatSurrogateSamples": 445822,
+        "continuationLimitAborts": 0,
+        "earlyStopLockedRoot": 3914,
+        "mctsFallback": 1769,
+        "mctsOwned": 3915,
+        "mctsSupportAborts": 670,
+        "oocDecisions": 5684,
+        "savedSimulations": 20314505,
+        "simulations": 19284783
+      },
+      "wall_seconds": 439.60397458076477,
+      "win_rate": 0.6875,
+      "win_rate_wilson95": [
+        0.5143332169904459,
+        0.8204745836639026
+      ],
+      "wins": 22
+    }
+  ],
+  "schema_version": 1,
+  "selection_biased": true,
+  "source_sha": "b7b26548a8800899318e5b78ca135c52e0117ed5",
+  "strategic_model_provenance": {
+    "execution_time_byte_binding": false,
+    "per_arm_path_and_load_marker": true,
+    "plan_and_packaging_sha256": "e62abd833fc8cb9081a1cec4a1a012832ac3b0e3166da3892841911664f1184c"
+  }
+}
