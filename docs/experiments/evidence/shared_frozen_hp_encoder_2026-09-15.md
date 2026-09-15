@@ -1,9 +1,10 @@
 # Frozen survival representation for signed-HP decoding
 
-**Decision: `SHARED_ENCODER_HP_REJECTED`.** A newly initialized signed-HP
-decoder trained on the frozen current-main survival representation is materially
-worse than the byte-identically initialized decoder trained on the frozen
-dedicated HP representation. Stop this shared-encoder path before maxHP/potion
+**Decision: `SHARED_ENCODER_HP_REJECTED` for the exact tested pre-#187
+checkpoint.** A newly initialized signed-HP decoder trained on the frozen
+TRAIN-only survival representation is materially worse than the
+byte-identically initialized decoder trained on the frozen dedicated HP
+representation. Stop this exact shared-encoder path before maxHP/potion
 composition, runtime changes, or export work.
 
 ## Boundaries and provenance
@@ -19,6 +20,11 @@ composition, runtime changes, or export work.
   `e1c25f2758bf56c7cff392ea02342d809f3ad7427c70b64166244a6b714a251d`,
   original source-grouped TRAIN fitting, and VALIDATION-only checkpoint
   selection. The #187 TRAIN+VALIDATION-refit survival encoder was not used.
+- Post-experiment applicability: #187 subsequently changed only the survival
+  component (`e150180a…` to `ccc3c210…`) and promoted a new tracked native
+  artifact. This result does not directly test that current promoted survival
+  encoder. The tested HP checkpoint and all paired rows/metrics remain bound
+  historical evidence; no result is relabeled as current-main evidence.
 - TRAIN: 393,677 victories / 19,986 sources. VALIDATION: 48,590 victories /
   2,496 sources. Historical TEST was not scored or selected.
 - Row-ID SHA256:

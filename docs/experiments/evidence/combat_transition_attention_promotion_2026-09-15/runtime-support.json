@@ -1,0 +1,20 @@
+{
+  "artifactSha256": "e9a18951710fdfe9e1a81a2703090a41f039067c670a1d8a0393b5e7e8e0ddfd",
+  "censusSha256": "ee9af9f7f45278d2b4645868b7cfd8f7965397e278a42b3f6336e9a6c6a9d107",
+  "classification": "EXACT_RUNTIME_SUPPORT_COHORT_PASS",
+  "groups": {
+    "TEST": {
+      "rows": 51441,
+      "supported": 51036,
+      "supportedIndexSha256": "71f2ca52769aa36a39f5684bf408090deb10edf8c13e55803cc0fd46ce1bfc31"
+    },
+    "all": {
+      "rows": 510030,
+      "supported": 505935,
+      "supportedIndexSha256": "969a239845e7638a5797bcf1f2d03dc7c599c83b22e8dd76337cb31c3c20e0ef"
+    }
+  },
+  "probeSha256": "b64aedafe9087928e114aff8da1c4544a22b8a54403e78e59e90776b65c213c9",
+  "rawNativeOutputSha256": "59dd2abf226a0a43f3b2c810420ef74131ad9bdc4d47cb0b832d11931e9160de",
+  "sourceSha": "a743364e1425bf5855309b565ac0eac1028cd726"
+}

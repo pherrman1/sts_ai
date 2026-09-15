@@ -1,0 +1,63 @@
+{
+  "arms": {
+    "new_v2": {
+      "meanFloor": 48.765625,
+      "meanHpEnd": 41.90625,
+      "meanSeconds": 164.416490625,
+      "telemetry": {
+        "continuationLimitAborts": 0,
+        "discardedSimulations": 1642,
+        "mctsFallback": 2109,
+        "mctsOwned": 9089,
+        "mctsSupportAborts": 34,
+        "oocDecisions": 11198,
+        "rows": 64,
+        "supportReasons": {
+          "smoke_bomb": 34
+        },
+        "unsupportedCombats": 34
+      },
+      "winRate": 0.765625,
+      "wins": 49
+    },
+    "old_v2": {
+      "meanFloor": 48.59375,
+      "meanHpEnd": 41.625,
+      "meanSeconds": 158.047353125,
+      "telemetry": {
+        "continuationLimitAborts": 0,
+        "discardedSimulations": 1539,
+        "mctsFallback": 2094,
+        "mctsOwned": 9073,
+        "mctsSupportAborts": 26,
+        "oocDecisions": 11167,
+        "rows": 64,
+        "supportReasons": {
+          "smoke_bomb": 26
+        },
+        "unsupportedCombats": 26
+      },
+      "winRate": 0.765625,
+      "wins": 49
+    }
+  },
+  "bootstrap": {
+    "method": "paired empirical resampling with replacement",
+    "newMinusOldWinRateDelta": 0,
+    "percentile95": [
+      -0.0625,
+      0.0625
+    ],
+    "replicates": 200000,
+    "seed": 20260915
+  },
+  "pairedSeeds": 64,
+  "pairing": {
+    "bothLose": 13,
+    "bothWin": 47,
+    "newOnly": 2,
+    "oldOnly": 2
+  },
+  "seedFirst": 12002032,
+  "seedLast": 12002095
+}

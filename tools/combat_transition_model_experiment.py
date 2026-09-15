@@ -773,14 +773,22 @@ class DeepSetsModel:
 
 
 class AttentionModel:
-    def __init__(self, torch, max_cards: int, max_relics: int, scalar_mean: np.ndarray, scalar_std: np.ndarray):
+    def __init__(self, torch, max_cards: int, max_relics: int, scalar_mean: np.ndarray,
+                 scalar_std: np.ndarray, config: dict | None = None):
         import torch.nn as nn
         self.torch = torch; self.nn = nn; self.max_cards = max_cards; self.max_relics = max_relics
+        self.config = {
+            "width": 64, "heads": 4, "layers": 2, "feedforward": 128,
+            "dropout": 0.1, "trunkWidth": 64,
+            **(config or {}),
+        }
+        if self.config["width"] % self.config["heads"]:
+            raise ValueError("attention width must be divisible by heads")
         self.scalar_mean = torch.tensor(scalar_mean, dtype=torch.float32)
         self.scalar_inv = torch.tensor(1 / np.maximum(scalar_std, 1e-6), dtype=torch.float32)
         class Net(nn.Module):
             def __init__(self, outer):
-                super().__init__(); self.outer = outer; d = 64
+                super().__init__(); self.outer = outer; d = int(outer.config["width"])
                 self.card_id = nn.Embedding(CARD_COUNT, d); self.relic_id = nn.Embedding(RELIC_COUNT, d)
                 self.potion_id = nn.Embedding(POTION_COUNT, d); self.type_embedding = nn.Embedding(4, d)
                 self.global_category = nn.ModuleList(
@@ -790,13 +798,20 @@ class AttentionModel:
                 self.global_proj = nn.Linear(len(CONTINUOUS_GLOBAL_FIELDS) + 8 * len(CATEGORICAL_GLOBAL_FIELDS), d)
                 self.card_fields = nn.Linear(3, d); self.relic_fields = nn.Linear(2, d)
                 self.potion_slot = nn.Embedding(5, d)
-                layer = nn.TransformerEncoderLayer(d_model=d, nhead=4, dim_feedforward=128,
-                                                    dropout=0.1, batch_first=True, activation="gelu")
-                self.encoder = nn.TransformerEncoder(layer, num_layers=2)
-                self.trunk = nn.Sequential(nn.Linear(d, 64), nn.ReLU())
-                self.win = nn.Linear(64, 1); self.hp = nn.Linear(64, 1)
+                layer = nn.TransformerEncoderLayer(
+                    d_model=d, nhead=int(outer.config["heads"]),
+                    dim_feedforward=int(outer.config["feedforward"]),
+                    dropout=float(outer.config["dropout"]), batch_first=True,
+                    activation="gelu",
+                )
+                self.encoder = nn.TransformerEncoder(
+                    layer, num_layers=int(outer.config["layers"])
+                )
+                trunk_width = int(outer.config["trunkWidth"])
+                self.trunk = nn.Sequential(nn.Linear(d, trunk_width), nn.ReLU())
+                self.win = nn.Linear(trunk_width, 1); self.hp = nn.Linear(trunk_width, 1)
             def forward(self, g, gc, c, r, p, cmask, rmask):
-                t = self.outer.torch; d = 64
+                t = self.outer.torch
                 gs = (g - self.outer.scalar_mean.to(g.device)) * self.outer.scalar_inv.to(g.device)
                 global_categories = t.cat(
                     [embedding(gc[:, index].long())
