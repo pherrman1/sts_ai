@@ -8254,3 +8254,18 @@ predates packaging base `608bb81` and its Silver memory/cap changes, so the
 result does not qualify current main. Knowledge impact: experiment evidence
 only; no maintained architecture, behavior, model, support, RNG or deployment
 fact changes. [Report, analyzer, raw receipts and hash index](evidence/ooc_mcts_local_full_2026-09-15/README.md).
+
+## §268 — Fresh current-main V2 confirmation of MCTS-512 and rollout3 (2026-09-15)
+
+Source `48fae046`, fresh paired seeds `12003000..12003031`, execution-hashed
+V2 CTM and strategic/native models. Ironclad A0, fair RNG, exact-10k Silver,
+cap 32768, adaptive/keys/Searcher3/direct leaf off, Act-3 stop, 12 workers.
+Excluded per-arm canaries passed. V4/MCTS512/rollout3 won 24/22/28 of 32.
+MCTS512-V4=-6.25pp, paired bootstrap95 [-28.125,+15.625]pp: **NO_CONFIRMATION**.
+Rollout3-V4=+12.5pp, CI [-3.125,+28.125]pp: **PROMISING_INCONCLUSIVE**.
+Descriptive rollout3-MCTS512=+18.75pp, CI [+6.25,+34.375]pp. Mean seconds/game
+38.855/50.888/4114.462; rollout3 is 105.89x V4 and 80.85x MCTS512. All
+provenance/config/backend/seed/bridge/support and telemetry identities pass. No
+default change or pooling with #188. Rollout3 alone merits consideration for a
+larger prospective confirmation, conditional on accepting or reducing its
+extreme cost. [Evidence packet](evidence/ooc_mcts_confirmation_v2_2026-09-15/README.md).

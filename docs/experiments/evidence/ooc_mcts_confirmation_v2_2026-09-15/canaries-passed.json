@@ -1,0 +1,9 @@
+{
+  "all_passed": true,
+  "source_sha": "48fae0465c5eb83a21a2097c94747a9494bf941f",
+  "arms": [
+    "v4",
+    "mcts512",
+    "rollout3"
+  ]
+}

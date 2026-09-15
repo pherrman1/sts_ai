@@ -51,7 +51,16 @@ See [ledger §265](../../experiments/ledger-06.md) and
 
 ## Current priority / active line
 
-The fresh64 fixed10000 live OOC MCTS versus matched V4 gate is complete:
+The fresh current-main V2 confirmation on seeds `12003000..12003031` is
+complete. MCTS-512 is **NO_CONFIRMATION**: 22/32 versus V4 24/32, -6.25pp,
+paired95% CI [-28.125,+15.625]pp. Rollout3 is **PROMISING_INCONCLUSIVE**:
+28/32 versus V4 24/32, +12.5pp, CI [-3.125,+28.125]pp, at 105.89x V4 elapsed
+time. It is the only candidate worth considering for a larger prospective
+confirmation, conditional on extreme cost; neither arm is deployment-qualified.
+See [ledger-06 §268](../../experiments/ledger-06.md) and the
+[evidence packet](../../experiments/evidence/ooc_mcts_confirmation_v2_2026-09-15/README.md).
+
+The earlier fresh64 fixed10000 live OOC MCTS versus matched V4 gate is complete:
 **OOC_MCTS_WINRATE_INCONCLUSIVE**. MCTS42/64 versus V448/64,−9.375pp,
 paired95% CI[−23.4375,+4.6875]pp. Both fresh arms use frozen native models and
 fair exact-10k Silver, A0/keysOFF/Act3; no historical control is pooled. Mechanical
