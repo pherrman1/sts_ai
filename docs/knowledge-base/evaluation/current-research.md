@@ -52,23 +52,43 @@ See [ledger §265](../../experiments/ledger-06.md) and
 
 ## Current priority / active line
 
-The fresh current-main V2 confirmation on seeds `12003000..12003031` is
-complete. MCTS-512 is **NO_CONFIRMATION**: 22/32 versus V4 24/32, -6.25pp,
-paired95% CI [-28.125,+15.625]pp. Rollout3 is **PROMISING_INCONCLUSIVE**:
-28/32 versus V4 24/32, +12.5pp, CI [-3.125,+28.125]pp, at 105.89x V4 elapsed
-time. The fixed-2048 completion below determines the practical next-confirmation
-candidate; neither arm in this initial comparison is deployment-qualified.
-See [ledger-06 §274](../../experiments/ledger-06.md) and the
+The corrected all-Act boss leaf has a mechanism pass and paired N8 smoke:
+**CORRECTED_MECHANISM_PASS_PAIRED_N8_SMOKE**. Three identical leaf states
+produce materially different boss/native values and all root Qs change on an
+identical 64-simulation fixture. Fresh fixed512 seeds12003064--12003071 give
+native6/8 versus boss4/8; every terminal and non-timing trace row differs, so
+the treatment is now exercised. The boss arm is about26.6x slower by mean
+elapsed seconds/run. N8 is mechanism evidence only, not a quality conclusion;
+defaults remain unchanged. See [ledger §276](../../experiments/ledger-06.md)
+and the [evidence packet](../../experiments/evidence/ooc_mcts_boss_leaf_corrected_smoke_2026-09-15/README.md).
+
+The all-Act boss leaf N32 follow-up is
+**INVALID_TREATMENT_NOT_EXERCISED**. Live `checkpointLeaves=true` bypassed the
+boss evaluator and called native `v_win` in both arms. Its exact terminal and
+trace equality is a bug signal, not evidence of no effect. Raw evidence remains
+provenance-only. See
+[ledger §275](../../experiments/ledger-06.md) and the
+[paired packet](../../experiments/evidence/ooc_mcts_all_act_boss_leaf_pair32_2026-09-15/README.md).
+
+The current-act boss leaf N32 experiment is also
+**INVALID_TREATMENT_NOT_EXERCISED** for the same checkpoint bypass. Both arms
+executed native `v_win`; its 24/32 versus24/32 and exact traces are not an A/B
+result. See [ledger §274](../../experiments/ledger-06.md) and the
+[paired packet](../../experiments/evidence/ooc_mcts_boss_leaf_pair32_2026-09-15/README.md).
+
+The fresh current-main V2 rollout confirmation on seeds
+`12003000..12003031` is complete. MCTS-512 is **NO_CONFIRMATION**: 22/32 versus
+V4 24/32, -6.25pp, paired95% CI [-28.125,+15.625]pp. At fixed 2048 simulations,
+rollout0 and rollout1 each give 26/32 (+6.25pp versus V4, intervals crossing
+zero), but rollout1 has zero observed win gain over rollout0 at 23.19x elapsed
+time. Rollout3 gives 28/32, +12.5pp versus V4 with CI [-3.125,+28.125]pp and
++6.25pp versus rollout1 with a crossing-zero interval at another 2.35x cost.
+Rollout0 is the practical larger-confirmation candidate; rollout3 is only a
+high-cost research candidate. No arm is gameplay- or deployment-qualified.
+See [ledger §277](../../experiments/ledger-06.md) and the
 [evidence packet](../../experiments/evidence/ooc_mcts_confirmation_v2_2026-09-15/README.md).
 
-The same-seed fixed-2048 completion gives rollout0 and rollout1 26/32 each,
-both +6.25pp versus V4 with intervals crossing zero. Rollout1 has zero observed
-win gain over rollout0 at 23.19x its elapsed time. Rollout3 is +6.25pp versus
-rollout1 with a crossing-zero interval at another 2.35x cost. Rollout0 is the
-practical larger-confirmation candidate; rollout3 is only a high-cost research
-candidate. No arm is gameplay- or deployment-qualified.
-
-The earlier fresh64 fixed10000 live OOC MCTS versus matched V4 gate is complete:
+The fresh64 fixed10000 live OOC MCTS versus matched V4 gate is complete:
 **OOC_MCTS_WINRATE_INCONCLUSIVE**. MCTS42/64 versus V448/64,−9.375pp,
 paired95% CI[−23.4375,+4.6875]pp. Both fresh arms use frozen native models and
 fair exact-10k Silver, A0/keysOFF/Act3; no historical control is pooled. Mechanical

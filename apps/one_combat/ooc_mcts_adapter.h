@@ -22,6 +22,7 @@ struct OocAdapterOptions {
     bool uniformPrior = false;
     double priorTemperature = 1.0;
     bool constantLeaf = false;
+    bool bossLeaf = false;
     unsigned leafCombats = 0;
     bool uniformLeafPolicy = false;
 };
@@ -46,6 +47,7 @@ class OocGameContextModel final : public sts::search::OocGenerativeModel {
     mutable OocContinuationMetrics continuation_;
     const Metadata &metadata(sts::search::OocStateId) const;
     Metadata &mutableMetadata(sts::search::OocStateId) const;
+    double bossLeafValue(const GameContext &) const;
     void resolveCombat(Snapshot &, std::mt19937_64 &, const PreparedCombatTransition * = nullptr);
 public:
     // Root history is required: prior room visits cannot be recovered from GameContext.
