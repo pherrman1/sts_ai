@@ -8411,7 +8411,7 @@ remains untested by this screen.
 [Protocol, hashes, slices and receipts](evidence/shared_frozen_hp_encoder_2026-09-15.md).
 
 
-## §273 — All-current-act-boss combat-evaluator OOC MCTS leaf paired 32 (2026-09-15)
+## §274 — All-current-act-boss combat-evaluator OOC MCTS leaf paired 32 (2026-09-15)
 
 An opt-in leaf replaces native `v_win` with the mean score over all three
 current-act bosses: `0.75*P(survive) + 0.25*P(survive)*E[ending HP fraction
@@ -8438,7 +8438,7 @@ claim. Raw evidence is retained for provenance. A corrected experiment requires
 a mechanism check before any fresh seed smoke. [Evidence and provenance](evidence/ooc_mcts_boss_leaf_pair32_2026-09-15/README.md).
 
 
-## §274 — All-Act boss combat-evaluator OOC MCTS leaf paired 32 (2026-09-15)
+## §275 — All-Act boss combat-evaluator OOC MCTS leaf paired 32 (2026-09-15)
 
 The prior current-act boss leaf was broadened to all ten Act1--4 bosses. Each
 probe preserves player state but uses its canonical encounter act/floor; the
@@ -8466,7 +8466,7 @@ corrected experiment requires a mechanism check before any fresh seed smoke.
 [Evidence and provenance](evidence/ooc_mcts_all_act_boss_leaf_pair32_2026-09-15/README.md).
 
 
-## §275 — Corrected all-Act boss leaf mechanism and paired N8 smoke (2026-09-15)
+## §276 — Corrected all-Act boss leaf mechanism and paired N8 smoke (2026-09-15)
 
 The live checkpoint branch now selects constant, boss, or native evaluation in
 that order and shares the all-ten-boss evaluator with ordinary `leafValue()`.
@@ -8494,3 +8494,31 @@ rows before the user requested recording and merge. It is preserved under
 impact: the live checkpoint contract is corrected; both old N32 packets remain
 invalid; current research records only this bounded mechanism smoke.
 [Evidence and provenance](evidence/ooc_mcts_boss_leaf_corrected_smoke_2026-09-15/README.md).
+
+## §273 — Purpose-trained shared maxHP/signed-HP encoder distillation (2026-09-15)
+
+Baseline `28d39cdb`, frozen experiment code `79c6fcf5`. Exact current maxHP
+and HP specialists (`2c5b54d0…`, `0c8b5aa8…`) served as frozen FP32 teachers
+on the shared final-union TRAIN 393,677/19,986 sources and VALIDATION
+48,590/2,496 sources. Historical TEST had zero inference rows and no metrics.
+The student is the HP-initialized existing 64/2/4/128 Attention encoder with
+the copied HP embedding/head and a fresh seeded Linear(64,11) maxHP head.
+Pure equal-weight temperature-1 KL, seed20260912, AdamW, encoder/head LR
+1e-4/1e-3, WD1e-4, batch512, clip1 and AMP-FP16 training were fixed.
+
+The combined VALIDATION KL improved every epoch and selected the final epoch12:
+maxHP KL0.003832507, HP KL0.005607910, combined0.004720209. HP teacher→student
+NLL2.498291→2.505074 (+0.2715%), CRPS3.619360→3.636778 (+0.4813%) and expected
+MAE5.341970→5.363075 (+0.021105 HP); every important slice passes. maxHP
+NLL0.0426865→0.0455009 (**+6.5932%**, gate +2%), although accuracy drops only
+0.1070pp and expected MAE rises 0.005442 HP. Nonzero accuracy drops 0.9056pp;
+NLL rises 0.810300→0.861658, not catastrophic.
+
+Decision **`SHARED_TRANSITION_ENCODER_REJECTED`**: the rejection is driven by
+maxHP under-learning; HP degradation remains within all preregistered gates.
+Optimization was still improving at epoch12. The miss is not
+narrow enough for the epoch12 inconclusive exception. Stop without potion,
+extra epochs, reweighting, adapters, architecture changes, runtime/export,
+gameplay or promotion. Knowledge impact: experiment evidence and current
+research status only; qualified components/defaults are unchanged.
+[Protocol, epoch history, metrics and hashes](evidence/shared_transition_encoder_distill_2026-09-15.md).
