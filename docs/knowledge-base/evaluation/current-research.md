@@ -296,6 +296,19 @@ invalidity. Source-bootstrap CIs and full-state distribution/latency diagnostics
 are descriptive. Historical component qualifications remain distinct from
 composed and runtime qualification.
 
+### Frozen shared state representation for signed HP
+
+The proposed cheap collapse of the dedicated signed-HP encoder into the frozen
+survival representation is closed as **`SHARED_ENCODER_HP_REJECTED`**. On the
+same source-grouped full-union TRAIN/VALIDATION population, with byte-identical
+fresh HP decoders and no encoder gradients, the survival representation is
+7.3626% worse in VALIDATION NLL, 12.9631% worse in CRPS and 0.6310 HP worse in
+expected ending-HP MAE. Healing and low-HP slices regress more. Do not proceed
+to the maxHP/potion shared-encoder stage or runtime consolidation from this
+representation. This does not rule out a separately designed shared
+architecture. See [ledger-06 §269](../../experiments/ledger-06.md) and the
+[frozen-representation evidence](../../experiments/evidence/shared_frozen_hp_encoder_2026-09-15.md).
+
 ### Shared relic trajectory residues
 
 **`RELIC_TRAJECTORY_QUALIFIED`** on the audited offline composed support.

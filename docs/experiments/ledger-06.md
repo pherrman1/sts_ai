@@ -8291,3 +8291,30 @@ signal, no established play improvement or default qualification; keep opt-in
 pending a larger prospective gate. Knowledge impact: CTM adaptive integration
 and exploratory gameplay/compute evidence only.
 [Evidence, raw outputs, analyzer and provenance](evidence/ctm_adaptive10k_pair16_2026-09-15/README.md).
+
+
+## §269 — Frozen survival representation for signed-HP decoding (2026-09-15)
+
+Baseline `cde61c85`, frozen experiment code `d10908c`. The current-main
+full-union survival and HP component checkpoints are TRAIN-only with respect to
+the evaluated rows and share the same source/cache provenance. Their SHA256
+values are `e150180a…` and `0c8b5aa8…`; #187's TRAIN+VALIDATION-refit survival
+encoder is excluded. TRAIN has 393,677 victories / 19,986 sources and
+VALIDATION 48,590 / 2,496; historical TEST is untouched.
+
+Only the frozen 64-dimensional state representation differs. Both fresh
+signed-HP decoders have byte-identical initial states, identical batch order,
+maxHP conditioning, legal mask, optimizer and AMP recipe; no encoder gradients
+or VALIDATION gradient updates. Dedicated HP versus survival representation:
+NLL 2.496705532→2.680527687 (+7.3626%), CRPS
+3.618011474→4.087017666 (+12.9631%), expected ending-HP MAE
+5.355416796→5.986446000 (+0.631029 HP). Healing, low-HP and damage slices all
+show obvious regressions; probability support and normalization checks pass.
+
+**`SHARED_ENCODER_HP_REJECTED`.** The survival representation clearly misses
+all three prespecified gates. Stop before maxHP/potion next-stage composition,
+runtime/export work, or a seed sweep. This rejects this frozen representation
+substitution, not every possible shared architecture. No new data, gameplay,
+TEST scoring, model promotion or runtime change. Knowledge impact: closes the
+maintained shared-survival-encoder HP follow-up; experiment evidence only.
+[Protocol, hashes, slices and receipts](evidence/shared_frozen_hp_encoder_2026-09-15.md).
