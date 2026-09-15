@@ -23,7 +23,7 @@ RECIPE = dict(
     encoder="AttentionEncoder:64/2/4/128 initialized from current HP specialist",
     hpBranch="copied maxHP-delta embedding and 72/64/304 ReLU head",
     maxHpBranch="fresh Linear(64,11)", loss="0.5 KL(maxHP teacher||student) + 0.5 KL(HP teacher||student)",
-    temperature=1, epochs=12, batch=512, encoderLr=1e-4, headLr=1e-3,
+    temperature=1, epochs=40, batch=512, encoderLr=1e-4, headLr=1e-3,
     optimizer="AdamW", weightDecay=1e-4, clip=1.0,
     trainingPrecision="AMP-FP16 established attention path", teacherPrecision="FP32",
     selection="earliest strict minimum 0.5 VALIDATION maxHP KL + 0.5 VALIDATION HP KL",
