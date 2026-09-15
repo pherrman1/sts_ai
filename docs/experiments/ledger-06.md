@@ -8036,6 +8036,7 @@ rollback and ADR-0014 maintained; no model/support/GPU change.
 [Report](evidence/ooc_early_stop_enabled_2026-09-15.md),
 [raw packet](evidence/ooc_early_stop_enabled_2026-09-15.json).
 
+
 ## §261 — Silver reroot GC repeated canary and flat-1k smoke (2026-09-15)
 
 PR #185 baseline `876e9305a258df3d5a5eafd50e30375b933f8884`, measured candidate
@@ -8225,7 +8226,74 @@ or frozen teacher changes.
 [Paired seed CSV, raw compressed diagnostics/logs, reports and provenance](evidence/silver_budget_four32_128k_2026-09-15/README.md).
 
 
-## §267 — Targeted whole-combat attention hyperparameter optimization (2026-09-15)
+## §267 — Local 17-profile OOC MCTS parameter screen (2026-09-15)
+
+User-authorized local screen on source `b7b26548` evaluates 17 preregistered
+MCTS profiles on common seeds `12002000..12002031` (544 games): Ironclad A0,
+fair RNG, exact-root-budget 10k Silver combat, keys off, Act 3 stop and 12
+OpenMP threads. The user explicitly overrode the repository aggregate local
+128-seed policy; every individual 32-seed invocation still ran through
+`tools/seed_guard.sh`. Binary and native CTM SHA256 values are execution-bound
+in the packet. The strategic-model path and successful load marker are retained
+per arm, and its plan-time SHA256 matches the packaging-time file, but the
+runner did not bind its bytes at execution. All 17 arms have exact 32-row result
+and telemetry cohorts; profile/environment/startup/source/model receipts plus
+ownership and abort accounting pass the deterministic analyzer.
+
+The descriptive rank winner is the three-additional-combat leaf rollout:
+26/32 wins (81.25%), mean floor 50.0, versus reference 21/32 (65.625%). The
+paired observed delta is +15.625pp; a fixed 200k-resample paired percentile
+interval is [-6.25,+37.5]pp and includes zero. The winner averages
+2024.370s/game, 29.3x the reference's 69.087s/game and 41.4x the fastest
+profile. Uniform one-combat continuation gives24/32; V4 one-combat continuation
+and the 512-simulation profile each give23/32.
+
+This is selection-biased discovery evidence on one reused cohort, with no V4
+control, untouched holdout, composition phase or default change. Tested source
+predates packaging base `608bb81` and its Silver memory/cap changes, so the
+result does not qualify current main. Knowledge impact: experiment evidence
+only; no maintained architecture, behavior, model, support, RNG or deployment
+fact changes. [Report, analyzer, raw receipts and hash index](evidence/ooc_mcts_local_full_2026-09-15/README.md).
+
+
+## §268 — Advanced CTM-scaled 10k versus flat 10k, exploratory paired 16 (2026-09-15)
+
+Baseline `608bb810c44173fb8c0036df6e89c71da4d778e3`, frozen measured
+implementation `a577fe0c6b7b81fef23e8d960d152766e84f80ae`. The opt-in adaptive
+path loads the qualified tracked near-full V2 CTM and deterministically
+marginalizes survival, max-HP and signed-HP distributions into death risk and
+expected winning HP fraction. The historical danger formula, clamped 0.4x--2x,
+scales a 10k caller base; unsupported fights retain 10k. No model sampling or
+gameplay RNG consumption. Existing C_psi behavior remains available when no
+CTM path is supplied.
+
+Paired seeds 48--63, A0/Ironclad/fair RNG/keys off/native OOC, exact Silver
+root budgets, experimental allocated 131072 lazy-GC reuse, Silver adaptive and
+learned leaf/OOC MCTS off, four workers, sequential flat then CTM arms. No
+preserved artifact matched this treatment; prior C_psi and flat-10k evidence
+used different configurations/seeds. Arms/reporting were fixed before launch;
+no tuning or added seeds/arms afterward.
+
+Flat 10k wins 10/16 versus CTM 11/16; both win10/both lose5, flat-only0,
+CTM-only1 (seed49), +6.25pp and exact paired two-sided p=1.0. Mean floor
+46.1875→46.25, final HP33.9375→40.5625, seconds/run28.4177→19.6017. Added
+simulations fall 71.840M→49.331273M (-31.33%); observed mean run time falls
+31.02%. CTM fight budgets over 383 fights: min5002, median5703, mean6317.49,
+max13609; 365 below/2 equal/16 above 10k. 381/383 changed budgets prove live
+CTM allocation, but the two exact-10k records cannot distinguish exact model
+output from support fallback after the fact.
+
+No cap fallback in either arm; maximum allocated after search126,966→111,486;
+four-worker peak process RSS2.424→2.225GiB. All 16 seeds pair, both exits zero,
+7,184/7,294 decision rows validate configuration, and all 380/383 combat
+telemetry rows have zero bridge failure counters. Encouraging compute-efficiency
+signal, no established play improvement or default qualification; keep opt-in
+pending a larger prospective gate. Knowledge impact: CTM adaptive integration
+and exploratory gameplay/compute evidence only.
+[Evidence, raw outputs, analyzer and provenance](evidence/ctm_adaptive10k_pair16_2026-09-15/README.md).
+
+
+## §269 — Targeted whole-combat attention hyperparameter optimization (2026-09-15)
 
 On the unchanged 510,030-row / 24,999-source Phase-1 corpus and frozen
 source-grouped split, eight attention-only candidates used matched seed
@@ -8253,7 +8321,8 @@ SHA005f860d, evidence SHA3a4ac885. Knowledge impact: current research status
 and bound model-selection evidence updated; no runtime/default change.
 [Report](evidence/combat_transition_attention_hpo_2026-09-15.md).
 
-## §268 — Attention-HPO survival promotion into the default near-full artifact (2026-09-15)
+
+## §270 — Attention-HPO survival promotion into the default near-full artifact (2026-09-15)
 
 Reviewed promotion source `a743364e1425bf5855309b565ac0eac1028cd726`
 reconstructed the exact TRAIN-then-VALIDATION normalization and mapped the

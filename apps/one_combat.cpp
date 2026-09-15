@@ -1,4 +1,5 @@
 #include "one_combat/ooc_mcts_adapter.h"
+#include "one_combat/combat_transition_runtime.h"
 // one_combat.cpp -- integration driver for full-run evaluation, data generation,
 // and focused search/model diagnostics.
 
@@ -661,18 +662,26 @@ static double g_dgTemp = 2.0;   // env STS_DG_TEMP (swept: 1-2 good spread+quali
 // unset = use the run's base sims). Deaths cluster at elites/bosses, so we can search
 // those deep and skimp on trivial hallway fights for the same win% at far less compute.
 static int g_simsNormal = -1, g_simsElite = -1, g_simsBoss = -1;
-// Dynamic per-fight budget via the C_psi no-peek combat outcome surrogate
-// (STS_SIM_ADAPT=1 + STS_CPSI_NN, EXPERIMENTS.md §103): one forward pass at fight
-// start predicts P(death) and E[hp/maxHp|win]; the budget multiplier rises with
-// predicted danger. Learned tiering — unlike the static STS_SIMS_* room tiers it
-// cannot misjudge difficulty (act-3 monsters ~ act-1 elites, §21). buildCpsiEntry
-// uses only pre-combat state, so this is fair-play clean. Takes precedence over
-// the static tiers when enabled.
+// Dynamic per-fight budget via a no-peek combat outcome surrogate. C_psi is the
+// historical path (§103); STS_SIM_ADAPT_CTM selects the qualified native combat
+// transition model. Both predict P(death) and E[hp/maxHp|win] from pre-combat
+// state, so allocation consumes no gameplay RNG. CTM-unsupported fights retain
+// the caller's base budget. Adaptive allocation takes precedence over room tiers.
 static bool   g_simAdapt = false;       // env STS_SIM_ADAPT=1
 static double g_simAdaptMinFrac = 0.4;  // env STS_SIM_ADAPT_MIN_FRAC: budget floor as a fraction of base
 static double g_simAdaptMaxFrac = 2.0;  // env STS_SIM_ADAPT_MAX_FRAC: budget ceiling as a fraction of base
+static std::unique_ptr<one_combat::NativeCombatTransitionSampler> g_simAdaptCtm;
 // Pick the sim budget for the fight in the current room (falls back to base).
 int fightSims(const GameContext &gc, int base) {
+    if (g_simAdapt && g_simAdaptCtm && gc.info.encounter != MonsterEncounter::INVALID) {
+        const auto input=one_combat::captureCombatPredictorInput(
+            gc,gc.info.encounter,potionKeepValue(gc));
+        const auto r=g_simAdaptCtm->expectation(gc,input);
+        if (!r.supported) return base;
+        const double m=0.5+r.death+(1.0-r.winningHpFraction);
+        const double frac=std::min(g_simAdaptMaxFrac,std::max(g_simAdaptMinFrac,m));
+        return std::max(1,(int)std::llround(base*frac));
+    }
     if (g_simAdapt && g_cpsiNet.loaded() && gc.info.encounter != MonsterEncounter::INVALID) {
         float scalar[search::kCpsiScalars], deck[search::kCpsiCards],
               relics[search::kCpsiRelics], potions[search::kCpsiPotions];
@@ -8811,9 +8820,13 @@ int main(int argc, char **argv) {
         g_simAdapt = std::atoi(d) != 0;
         if (const char *f = std::getenv("STS_SIM_ADAPT_MIN_FRAC")) g_simAdaptMinFrac = std::atof(f);
         if (const char *f = std::getenv("STS_SIM_ADAPT_MAX_FRAC")) g_simAdaptMaxFrac = std::atof(f);
-        if (g_simAdapt)
-            std::cout << "[C_psi adaptive sim budget ON: frac " << g_simAdaptMinFrac
-                      << ".." << g_simAdaptMaxFrac << " (needs STS_CPSI_NN)]\n";
+        if (g_simAdapt) {
+            if (const char *path=std::getenv("STS_SIM_ADAPT_CTM"))
+                if (*path) g_simAdaptCtm=std::make_unique<one_combat::NativeCombatTransitionSampler>(path);
+            std::cout << '[' << (g_simAdaptCtm ? "CTM" : "C_psi")
+                      << " adaptive sim budget ON: frac " << g_simAdaptMinFrac
+                      << ".." << g_simAdaptMaxFrac << (g_simAdaptCtm ? "]\n" : " (needs STS_CPSI_NN)]\n");
+        }
     }
     if (const char *d = std::getenv("STS_CONVERGE")) {       // convergence-based early stopping
         search::g_convergeStop = std::atoi(d) != 0;

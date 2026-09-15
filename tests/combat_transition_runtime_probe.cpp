@@ -38,6 +38,9 @@ int main(int argc,char **argv) {
             auto j=json::parse(line);auto p=predictor(j.at("predictorInput"));auto pre=persistent(j.contains("pre")?j.at("pre"):j.at("transition").at("pre"));
             sts::GameContext gc;applyCombatTransitionState(gc,pre);
             auto support=sampler.support(gc,p);json out={{"supported",support.supported},{"reason",support.reason}};
+            auto expectation=sampler.expectation(gc,p);
+            out["expectation"]={{"supported",expectation.supported},{"death",expectation.death},
+                {"winningHpFraction",expectation.winningHpFraction}};
             if(supportOnly){out["index"]=fixtureIndex++;std::cout<<out.dump()<<'\n';continue;}
             if(full){
                 if(support.supported){int d=j.value("delta",0),ending=j.value("ending",pre.curHp),maximum=j.value("maximum",pre.maxHp),mask=j.value("mask",0);std::vector<int> consumed=j.value("consumed",std::vector<int>{}),dagger=j.value("dagger",std::vector<int>{});

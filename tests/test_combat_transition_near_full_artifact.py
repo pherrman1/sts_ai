@@ -18,7 +18,13 @@ class Artifact(unittest.TestCase):
         rows=list(map(json.loads,run.stdout.splitlines()));self.assertEqual(len(rows),len(FIXTURES.read_text().splitlines()));unsupported=[r for r in rows if not r['supported']];self.assertEqual(len(unsupported),3);self.assertTrue(all(r['unsupportedNoDraw'] for r in unsupported))
         sampled=0
         for row in rows:
-            if not row['supported']:continue
+            self.assertEqual(row['expectation']['supported'],row['supported'])
+            if not row['supported']:
+                self.assertEqual(row['expectation']['death'],0)
+                self.assertEqual(row['expectation']['winningHpFraction'],0)
+                continue
+            self.assertAlmostEqual(row['expectation']['death'],1-row['survival'],places=6)
+            self.assertTrue(0 < row['expectation']['winningHpFraction'] <= 1)
             self.assertEqual(len(row['diagnostics']['potion']),64)
             for sample in row['samples']:
                 sampled+=1;post=sample['rawPost']
