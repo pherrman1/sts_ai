@@ -1,7 +1,7 @@
 # Current research status
 
-Last verified: 2026-09-15 for final near-full support/native qualification
-and paired old/new-V2 OOC MCTS gameplay;
+Last verified: 2026-09-15 for final near-full support/native qualification,
+paired old/new-V2 OOC MCTS gameplay, and shared transition-encoder distillation;
 2026-09-14 for exact supported-v1 RNG continuation
 and the stochastic signed-HP distribution, expanded-support offline composition,
 and fresh64 fixed10000 live MCTS gate;
@@ -331,6 +331,27 @@ survival component (`e150180a…` to `ccc3c210…`), so this screen does not
 directly evaluate the current promoted survival encoder. This does not rule out
 a separately designed shared architecture. See [ledger-06 §272](../../experiments/ledger-06.md) and the
 [frozen-representation evidence](../../experiments/evidence/shared_frozen_hp_encoder_2026-09-15.md).
+
+### Purpose-trained shared maxHP and signed-HP encoder
+
+The explicit joint-training follow-up is **`SHARED_TRANSITION_ENCODER_REJECTED`**.
+One current-style 64/2/4/128 Attention encoder initialized from the dedicated HP
+specialist was distilled against the frozen current maxHP and HP specialists on
+the exact source-grouped final-union TRAIN/VALIDATION victories. The copied HP
+branch remains close to its teacher: NLL +0.2715%, CRPS +0.4813%, expected MAE
++0.021105 HP, with all important slices inside their gates. The fresh maxHP
+branch misses its NLL gate: +6.5932% versus the 2% limit, despite accuracy
+-0.1070pp, expected MAE +0.005442 HP and nonzero accuracy -0.9056pp remaining
+inside bounds. The rejection is driven by maxHP under-learning; HP degradation
+remains within all preregistered gates. Combined KL improved through the final
+epoch12, and the NLL miss is too large for the narrow epoch12 inconclusive
+exception.
+
+Stop this exact path. Do not add potion, extra epochs, task reweighting,
+adapters or architectural variants without a new design decision. No TEST,
+runtime/export, model promotion or gameplay ran, and all qualified components
+remain unchanged. See [ledger-06 §273](../../experiments/ledger-06.md) and the
+[distillation evidence](../../experiments/evidence/shared_transition_encoder_distill_2026-09-15.md).
 
 ### Shared relic trajectory residues
 
