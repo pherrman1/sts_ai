@@ -228,6 +228,10 @@ def run(args):
                 if not torch.isfinite(loss):
                     c.base.json_dump(output/"failure.json",dict(kind="nonfinite_forward_loss",epoch=epoch,batch=batch_index,skippedUpdates=skipped_updates,lossScale=float(scaler.get_scale())))
                     raise ValueError("nonfinite distillation loss")
+                # Keep the descriptive train metrics representative of every
+                # finite batch, including batches whose optimizer update is
+                # skipped by GradScaler after an overflow.
+                total_max+=float(lm.detach())*len(ids);total_hp+=float(lh.detach())*len(ids)
                 scaler.scale(loss).backward();scaler.unscale_(optimizer);norm=torch.nn.utils.clip_grad_norm_(list(student.parameters())+list(max_head.parameters()),RECIPE["clip"])
                 loss_scale_before=float(scaler.get_scale())
                 if not torch.isfinite(norm):
@@ -236,7 +240,7 @@ def run(args):
                     event=dict(epoch=epoch,batch=batch_index,gradientNorm="nonfinite",lossScaleBefore=loss_scale_before,lossScaleAfter=loss_scale_after,skippedUpdates=skipped_updates)
                     overflow_log.write(json.dumps(event)+"\n");overflow_log.flush();print(json.dumps(dict(stage="overflow",**event)),flush=True)
                     continue
-                scaler.step(optimizer);scaler.update();total_max+=float(lm.detach())*len(ids);total_hp+=float(lh.detach())*len(ids)
+                scaler.step(optimizer);scaler.update()
             _,_,vm,vh=score(validation);entry=dict(epoch=epoch,trainMaxHpKl=total_max/len(train),trainHpKl=total_hp/len(train),validationMaxHpKl=vm,validationHpKl=vh,selectionLoss=.5*(vm+vh),skippedUpdatesEpoch=epoch_skipped,skippedUpdatesCumulative=skipped_updates,lossScale=float(scaler.get_scale()),seconds=time.monotonic()-started);history.append(entry);print(json.dumps(entry),flush=True)
             if entry["selectionLoss"]<best:
                 best=entry["selectionLoss"];selected=epoch;student_state=copy.deepcopy(student.state_dict());max_state=copy.deepcopy(max_head.state_dict())
