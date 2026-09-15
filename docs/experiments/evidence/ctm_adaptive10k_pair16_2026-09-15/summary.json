@@ -1,0 +1,88 @@
+{
+  "ctm_adaptive10k": {
+    "budget": {
+      "above10k": 16,
+      "below10k": 365,
+      "equal10k": 2,
+      "maximum": 13609,
+      "mean": 6317.490861618799,
+      "median": 5703,
+      "minimum": 5002
+    },
+    "capFallbacks": 0,
+    "decisionRows": 7294,
+    "fights": 383,
+    "maxAllocatedAfterSearch": 111486,
+    "meanFinalHp": 40.5625,
+    "meanFloor": 46.25,
+    "meanSecPerRun": 19.601725625,
+    "peakRssKiB": 2333552,
+    "seeds": [
+      48,
+      49,
+      50,
+      51,
+      52,
+      53,
+      54,
+      55,
+      56,
+      57,
+      58,
+      59,
+      60,
+      61,
+      62,
+      63
+    ],
+    "simulationsAdded": 49331273,
+    "telemetryRows": 383,
+    "wins": 11
+  },
+  "flat10k": {
+    "budget": {
+      "above10k": 0,
+      "below10k": 0,
+      "equal10k": 380,
+      "maximum": 10000,
+      "mean": 10000,
+      "median": 10000.0,
+      "minimum": 10000
+    },
+    "capFallbacks": 0,
+    "decisionRows": 7184,
+    "fights": 380,
+    "maxAllocatedAfterSearch": 126966,
+    "meanFinalHp": 33.9375,
+    "meanFloor": 46.1875,
+    "meanSecPerRun": 28.41767625,
+    "peakRssKiB": 2542232,
+    "seeds": [
+      48,
+      49,
+      50,
+      51,
+      52,
+      53,
+      54,
+      55,
+      56,
+      57,
+      58,
+      59,
+      60,
+      61,
+      62,
+      63
+    ],
+    "simulationsAdded": 71840000,
+    "telemetryRows": 380,
+    "wins": 10
+  },
+  "paired": {
+    "ctmOnly": 1,
+    "exactTwoSidedP": 1.0,
+    "flatOnly": 0,
+    "winDeltaPercentagePoints": 6.25
+  }
+}

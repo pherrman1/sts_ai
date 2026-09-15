@@ -54,7 +54,7 @@ CombatTransitionRuntime::CombatTransitionRuntime(const std::string &path) {
     if(!full) require(metadata_.at("sources")==nlohmann::json(sourceHashes),"combat runtime source identities");
     else {
         const std::map<std::string,std::string> hashes={
-        {"survival","e150180a9112f52a94cfa60770adb6c0a48517a7d94a4c26f6e5896e85269c18"},
+        {"survival","ccc3c210060be34b38fe0671d93c6acde4242563c80a25c5978b4190b80010c9"},
         {"maxHP","2c5b54d0a9420a9d0e3ab9a26f32b9900c4869490e4af49627009cde21efb4b0"},
         {"HP","0c8b5aa8c5218d6cd6102b768cc86a474c9ef30953d4b034caedcc41a426109b"},
         {"potion","ae1a1411990d272579de10564edb48c7f2ec1d14f1c72dacf5390a1415a0f1db"},
@@ -227,6 +227,22 @@ NativeCombatTransitionSampler::NativeCombatTransitionSampler(const std::string &
 CombatRuntimeSupport NativeCombatTransitionSampler::support(const sts::GameContext &gc,const CombatPredictorInputV1 &p) const {
     auto reasons=nativeComposedSupportReasons(p,captureCombatTransitionState(gc),domain_);
     return {reasons.empty(),reasons.empty()?"supported":reasons.front()};
+}
+CombatTransitionExpectation NativeCombatTransitionSampler::expectation(
+    const sts::GameContext &gc,const CombatPredictorInputV1 &p) const {
+    if(!support(gc,p).supported)return {};
+    const float survival=runtime_.survival(p);
+    const auto maxHp=runtime_.maxHp(p),z=runtime_.hpEncoding(p);
+    double expectedFraction=0;
+    for(size_t delta=0;delta<maxHp.size();++delta) {
+        const int maximum=gc.maxHp+domain_.maxHpClasses.at(delta);
+        const auto hp=runtime_.signedHp(z,int(delta),gc.curHp,maximum);
+        double conditional=0;
+        for(size_t cls=0;cls<hp.size();++cls)
+            conditional+=hp[cls]*double(gc.curHp+domain_.hpClasses.at(cls))/maximum;
+        expectedFraction+=maxHp[delta]*conditional;
+    }
+    return {true,1-survival,float(expectedFraction)};
 }
 CombatRuntimeSample NativeCombatTransitionSampler::sample(const sts::GameContext &gc,const CombatPredictorInputV1 &p,std::mt19937_64 &rng) const {
     if(!support(gc,p).supported)return {};

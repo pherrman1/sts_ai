@@ -13,12 +13,18 @@ class Artifact(unittest.TestCase):
             if p.exists():return p
         self.fail('native probe must be built')
     def test_actual_artifact_and_native_paths(self):
-        self.assertEqual(hashlib.sha256(ARTIFACT.read_bytes()).hexdigest(),'22c855e0667a58a73835505672b0ae6d03f12e9fb8d64f08893810199246e94e')
+        self.assertEqual(hashlib.sha256(ARTIFACT.read_bytes()).hexdigest(),'e9a18951710fdfe9e1a81a2703090a41f039067c670a1d8a0393b5e7e8e0ddfd')
         run=subprocess.run([str(self.probe()),str(ARTIFACT),str(FIXTURES),'near-full'],text=True,capture_output=True,check=True)
         rows=list(map(json.loads,run.stdout.splitlines()));self.assertEqual(len(rows),len(FIXTURES.read_text().splitlines()));unsupported=[r for r in rows if not r['supported']];self.assertEqual(len(unsupported),3);self.assertTrue(all(r['unsupportedNoDraw'] for r in unsupported))
         sampled=0
         for row in rows:
-            if not row['supported']:continue
+            self.assertEqual(row['expectation']['supported'],row['supported'])
+            if not row['supported']:
+                self.assertEqual(row['expectation']['death'],0)
+                self.assertEqual(row['expectation']['winningHpFraction'],0)
+                continue
+            self.assertAlmostEqual(row['expectation']['death'],1-row['survival'],places=6)
+            self.assertTrue(0 < row['expectation']['winningHpFraction'] <= 1)
             self.assertEqual(len(row['diagnostics']['potion']),64)
             for sample in row['samples']:
                 sampled+=1;post=sample['rawPost']

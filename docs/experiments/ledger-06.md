@@ -8255,27 +8255,176 @@ result does not qualify current main. Knowledge impact: experiment evidence
 only; no maintained architecture, behavior, model, support, RNG or deployment
 fact changes. [Report, analyzer, raw receipts and hash index](evidence/ooc_mcts_local_full_2026-09-15/README.md).
 
-## §268 — Fresh current-main V2 confirmation of MCTS-512 and rollout3 (2026-09-15)
+
+## §268 — Advanced CTM-scaled 10k versus flat 10k, exploratory paired 16 (2026-09-15)
+
+Baseline `608bb810c44173fb8c0036df6e89c71da4d778e3`, frozen measured
+implementation `a577fe0c6b7b81fef23e8d960d152766e84f80ae`. The opt-in adaptive
+path loads the qualified tracked near-full V2 CTM and deterministically
+marginalizes survival, max-HP and signed-HP distributions into death risk and
+expected winning HP fraction. The historical danger formula, clamped 0.4x--2x,
+scales a 10k caller base; unsupported fights retain 10k. No model sampling or
+gameplay RNG consumption. Existing C_psi behavior remains available when no
+CTM path is supplied.
+
+Paired seeds 48--63, A0/Ironclad/fair RNG/keys off/native OOC, exact Silver
+root budgets, experimental allocated 131072 lazy-GC reuse, Silver adaptive and
+learned leaf/OOC MCTS off, four workers, sequential flat then CTM arms. No
+preserved artifact matched this treatment; prior C_psi and flat-10k evidence
+used different configurations/seeds. Arms/reporting were fixed before launch;
+no tuning or added seeds/arms afterward.
+
+Flat 10k wins 10/16 versus CTM 11/16; both win10/both lose5, flat-only0,
+CTM-only1 (seed49), +6.25pp and exact paired two-sided p=1.0. Mean floor
+46.1875→46.25, final HP33.9375→40.5625, seconds/run28.4177→19.6017. Added
+simulations fall 71.840M→49.331273M (-31.33%); observed mean run time falls
+31.02%. CTM fight budgets over 383 fights: min5002, median5703, mean6317.49,
+max13609; 365 below/2 equal/16 above 10k. 381/383 changed budgets prove live
+CTM allocation, but the two exact-10k records cannot distinguish exact model
+output from support fallback after the fact.
+
+No cap fallback in either arm; maximum allocated after search126,966→111,486;
+four-worker peak process RSS2.424→2.225GiB. All 16 seeds pair, both exits zero,
+7,184/7,294 decision rows validate configuration, and all 380/383 combat
+telemetry rows have zero bridge failure counters. Encouraging compute-efficiency
+signal, no established play improvement or default qualification; keep opt-in
+pending a larger prospective gate. Knowledge impact: CTM adaptive integration
+and exploratory gameplay/compute evidence only.
+[Evidence, raw outputs, analyzer and provenance](evidence/ctm_adaptive10k_pair16_2026-09-15/README.md).
+
+
+## §269 — Targeted whole-combat attention hyperparameter optimization (2026-09-15)
+
+On the unchanged 510,030-row / 24,999-source Phase-1 corpus and frozen
+source-grouped split, eight attention-only candidates used matched seed
+20260911, batch 2,048, CUDA FP32, 16-epoch cap and patience 4. Selection used
+VALIDATION Brier + winning-HP MAE + joint alive-HP MAE; TEST was not scored
+until the winner was fixed. Reviewed source55f980c; exact prepared array,
+split, baseline checkpoint, source membership and clean SHA fail closed.
+
+Winner `hp_weight_2` retains width64/layers2/heads4/FF128/dropout.1/LR.001/
+WD.0001 and changes only winning-HP MSE weight1→2. Validation selected epoch13:
+composite0.164160725 versus matched baseline0.168567730 (−0.004407005,
+−2.61%). Next candidates: width96 .167717187, FF256 .168153005, depth3
+.168203941, no-dropout .169234952, lower-LR .170868000, higher-LR .170878278.
+
+Equal TRAIN+VALIDATION refit then historical TEST: tuned survival AUC/Brier/
+logloss0.980058/0.017384/0.058878, winning-HP MAE/RMSE0.069709/0.104013,
+joint alive-HP MAE/RMSE0.075665/0.117100. Tuned-minus-frozen-attention paired
+source-bootstrap95%: Brier[-.000842,-.000225], winning-HP MAE
+[-.003101,-.002633], joint MAE[-.003416,-.002850]. Classification
+**ATTENTION_HPO_IMPROVES_FROZEN_ATTENTION_POSTHOC**. TEST was previously
+inspected; no tuned-versus-DeepSets prospective comparison, native export,
+composition, gameplay or new data. Existing no-clear-family/DeepSets
+simplicity decision remains. Wall3:09:00, exit0, peak RSS8,561,580kB; tuned
+SHA005f860d, evidence SHA3a4ac885. Knowledge impact: current research status
+and bound model-selection evidence updated; no runtime/default change.
+[Report](evidence/combat_transition_attention_hpo_2026-09-15.md).
+
+
+## §270 — Attention-HPO survival promotion into the default near-full artifact (2026-09-15)
+
+Reviewed promotion source `a743364e1425bf5855309b565ac0eac1028cd726`
+reconstructed the exact TRAIN-then-VALIDATION normalization and mapped the
+selected attention checkpoint into the survival component with 0.0 maximum
+probability error over 1,536 stratified rows. Baseline component and receipt
+hashes fail closed. Only survival changed (`e150180a…` to `ccc3c210…`); maxHP,
+HP, potion and downstream artifacts remain byte-identical. The downstream
+compatibility receipt records the old/new survival identities and the audited
+fact that downstream preparation consumes only HP and potion encodings.
+
+Frozen TEST survival NLL/Brier improved 0.060411632/0.017986496 to
+0.058877671/0.017384328. Final-support exposure passed every nonempty slice
+after the same restricted exact correction for gold row 71838 (target mass
+0.0010596961); 1,633,152 RAW draws had zero violations in every invariant
+category. Native parity passed 3,904 draws and 31 fixtures, including 127
+recursive Brew samples, 122 escapes and three fail-closed/no-draw fixtures;
+maximum absolute error was 2.38e-6 at tolerance 1e-4. The executed native
+support predicate exactly retained 505,935/510,030 all and 51,036/51,441 TEST
+states with unchanged ordered-index digests. The tracked default artifact is
+SHA256 `e9a18951710fdfe9e1a81a2703090a41f039067c670a1d8a0393b5e7e8e0ddfd`.
+This qualifies offline composition and the native boundary on reused
+development evidence; online gameplay remains a separate paired test.
+[Promotion report](evidence/combat_transition_attention_promotion_2026-09-15.md).
+
+
+## §271 — Old V2 versus attention-promoted V2 paired OOC MCTS gameplay (2026-09-15)
+
+The prospective gate used fresh paired seeds 12002032--12002095, A0
+Ironclad/project-fair RNG/keys off/Searcher2/Act-3 stop, exact 10k Silver
+combat search and the locked 2,048-simulation OOC MCTS reference profile with
+the full strategic gate stack. Every producer ran through the seed guard; two
+64-seed arms exactly used the local 128-seed ceiling. The old source/artifact
+were `cde61c8`/`22c855e0…`; the promoted source/artifact were
+`22765a5`/`e9a18951…`. Arms, seeds, hashes and the paired decision rule were
+fixed before launch.
+
+Both arms won 49/64 (76.56%). Pairing gives both-win47, both-lose13,
+old-only2 and new-only2: new-minus-old 0.0pp, deterministic 200k-resample
+paired bootstrap95% [-6.25pp,+6.25pp]. Mean floor48.5938→48.7656, final
+HP41.6250→41.9062 and seconds/run158.0474→164.4165. The result establishes
+neither gameplay improvement nor harm; it supports preservation only within
+this gate's limited resolution.
+
+Both arms contain every seed exactly once and both phases exited zero.
+Telemetry has 64 rows per arm and zero continuation-limit aborts. Old/new
+support aborts are 26/34, all expected `smoke_bomb` exclusions on diverging
+trajectories. This is online gameplay evidence for the exact tested profile,
+not equivalence proof, unbiased-planning qualification, or permission to
+enable OOC MCTS by default. Knowledge impact: current research status gains
+prospective gameplay evidence; runtime and artifacts are unchanged.
+[Evidence, raw outputs, analyzer and provenance](evidence/combat_transition_v2_ooc_mcts_pair64_2026-09-15/README.md).
+
+
+## §272 — Frozen pre-promotion survival representation for signed-HP decoding (2026-09-15)
+
+Baseline `cde61c85`, frozen experiment code `d10908c`. The tested full-union
+survival and HP component checkpoints are TRAIN-only with respect to the
+evaluated rows and share the same source/cache provenance. Their SHA256 values
+are `e150180a…` and `0c8b5aa8…`; #187's TRAIN+VALIDATION-refit promoted
+survival encoder was deliberately excluded. After this experiment, #187
+changed only the survival component (`e150180a…` to `ccc3c210…`); therefore
+the result does not directly evaluate the current promoted survival encoder.
+TRAIN has 393,677 victories / 19,986 sources and VALIDATION 48,590 / 2,496;
+historical TEST is untouched.
+
+Only the frozen 64-dimensional state representation differs. Both fresh
+signed-HP decoders have byte-identical initial states, identical batch order,
+maxHP conditioning, legal mask, optimizer and AMP recipe; no encoder gradients
+or VALIDATION gradient updates. Dedicated HP versus survival representation:
+NLL 2.496705532→2.680527687 (+7.3626%), CRPS
+3.618011474→4.087017666 (+12.9631%), expected ending-HP MAE
+5.355416796→5.986446000 (+0.631029 HP). Healing, low-HP and damage slices all
+show obvious regressions; probability support and normalization checks pass.
+
+**`SHARED_ENCODER_HP_REJECTED` for the exact tested pre-#187 checkpoint.** The
+survival representation clearly misses all three prespecified gates. Stop
+before maxHP/potion next-stage composition, runtime/export work, or a seed
+sweep. This rejects this frozen representation substitution under the fixed
+decoder/training recipe, not every possible shared architecture or intrinsic
+absence of HP information. Candidate selection at the final allowed epoch
+leaves harder/slower decoding unresolved; no extra epochs were run because
+that would be a new experiment. No new data, gameplay, TEST scoring, model
+promotion or runtime change. Knowledge impact: experiment evidence retained
+with explicit post-#187 applicability; the current promoted survival encoder
+remains untested by this screen.
+[Protocol, hashes, slices and receipts](evidence/shared_frozen_hp_encoder_2026-09-15.md).
+
+## §273 — Fresh current-main V2 OOC MCTS rollout confirmation (2026-09-15)
 
 Source `48fae046`, fresh paired seeds `12003000..12003031`, execution-hashed
 V2 CTM and strategic/native models. Ironclad A0, fair RNG, exact-10k Silver,
 cap 32768, adaptive/keys/Searcher3/direct leaf off, Act-3 stop, 12 workers.
-Excluded per-arm canaries passed. V4/MCTS512/rollout3 won 24/22/28 of 32.
-MCTS512-V4=-6.25pp, paired bootstrap95 [-28.125,+15.625]pp: **NO_CONFIRMATION**.
-Rollout3-V4=+12.5pp, CI [-3.125,+28.125]pp: **PROMISING_INCONCLUSIVE**.
-Descriptive rollout3-MCTS512=+18.75pp, CI [+6.25,+34.375]pp. Mean seconds/game
-38.855/50.888/4114.462; rollout3 is 105.89x V4 and 80.85x MCTS512. All
-provenance/config/backend/seed/bridge/support and telemetry identities pass. No
-default change or pooling with #188. Rollout3 alone merits consideration for a
-larger prospective confirmation, conditional on accepting or reducing its
-extreme cost. [Evidence packet](evidence/ooc_mcts_confirmation_v2_2026-09-15/README.md).
-
-User-requested same-seed completion added fixed-2048 rollout0 and rollout1 after
-the designated GCP VM was confirmed absent; the user explicitly authorized the
-64 additional local executions, each in a guarded 32-seed invocation. Both won
-26/32. Versus V4, each is +6.25pp with intervals crossing zero (rollout0
-[-12.5,+25.0]pp; rollout1 [-9.375,+25.0]pp). Rollout1-rollout0 is 0pp,
-CI [-18.75,+18.75]pp, while costing 23.19x as much. Rollout3-rollout1 is
-+6.25pp, CI [-6.25,+18.75]pp, at 2.35x cost. The practical next-confirmation
-candidate is rollout0; rollout3 remains only a high-cost research candidate.
-No extra parameters, seeds, gameplay/default changes, or pooling were added.
+Excluded per-arm canaries passed. V4/MCTS512/2048-rollout0/rollout1/rollout3
+won 24/22/26/26/28 of 32. MCTS512-V4=-6.25pp, paired bootstrap95
+[-28.125,+15.625]pp: **NO_CONFIRMATION**. At 2048 simulations, rollout0 and
+rollout1 are each +6.25pp versus V4 with crossing-zero intervals; rollout1
+minus rollout0 is 0pp, CI [-18.75,+18.75]pp, at 23.19x cost. Rollout3-V4 is
++12.5pp, CI [-3.125,+28.125]pp: **PROMISING_INCONCLUSIVE**; rollout3 minus
+rollout1 is +6.25pp, CI [-6.25,+18.75]pp, at 2.35x cost. All provenance,
+backend, seed, bridge, support and telemetry identities pass. The designated
+GCP VM was absent; the user explicitly authorized the 64-game aggregate-local
+extension, each arm remaining a guarded 32-seed invocation. No extra parameters,
+seeds, gameplay/default changes or pooling. Rollout0 is the practical larger-
+confirmation candidate; rollout3 is only a high-cost research candidate.
+[Evidence packet](evidence/ooc_mcts_confirmation_v2_2026-09-15/README.md).

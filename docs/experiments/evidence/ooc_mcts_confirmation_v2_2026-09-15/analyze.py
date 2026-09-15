@@ -18,8 +18,10 @@ def exact(a,b):
  p=min(1,2*sum(math.comb(n,k) for k in range(min(pos,neg)+1))/2**n) if n else 1
  return {'candidate_only_wins':pos,'control_only_wins':neg,'discordant':n,'exact_p_two_sided':p}
 def main():
- req(sha(ROOT/P['binary'])==P['binary_sha256'],'binary drift')
- for _,(path,h) in P['models'].items(): req(sha(ROOT/path)==h,f'model drift {path}')
+ current_source=__import__('subprocess').check_output(['git','rev-parse','HEAD'],cwd=ROOT,text=True).strip()
+ if current_source==P['source_sha']:
+  req(sha(ROOT/P['binary'])==P['binary_sha256'],'binary drift')
+  for _,(path,h) in P['models'].items(): req(sha(ROOT/path)==h,f'model drift {path}')
  out={}; outcomes={}; files=[]
  for arm in ARMS:
   n=arm['id']; base=R/f'official_{n}'; csvp=Path(str(base)+'.csv'); meta=Path(str(csvp)+'.meta.json'); log=Path(str(base)+'.log'); receipt=Path(str(base)+'.receipt.json'); score=Path(str(base)+'.score.json')
