@@ -8541,3 +8541,29 @@ extension, each arm remaining a guarded 32-seed invocation. No extra parameters,
 seeds, gameplay/default changes or pooling. Rollout0 is the practical larger-
 confirmation candidate; rollout3 is only a high-cost research candidate.
 [Evidence packet](evidence/ooc_mcts_confirmation_v2_2026-09-15/README.md).
+
+## §278 — Frozen HP representation for maxHP-delta decoding (2026-09-15)
+
+Stacked on #190 head, baseline `cde61c85`, frozen experiment code `af46e32`.
+TRAIN-only full-union maxHP/HP component SHA256 values `2c5b54d0…` and
+`0c8b5aa8…`; same bound source/cache and original TRAIN/VALIDATION split.
+TRAIN 393,677 victories / 19,986 sources; VALIDATION 48,590 / 2,496; no TEST.
+PR #187 changed only the survival component; these exact maxHP and HP component
+hashes are unchanged on current main, so no scientific rerun is required.
+
+Only the frozen 64-dimensional representation differs. Fresh linear 11-class
+heads have byte-identical initial states, batches, AdamW/FP32 recipe and
+VALIDATION selection; encoders are frozen and VALIDATION never enters gradient
+updates. Dedicated maxHP versus HP representation: NLL
+0.042742204→0.159130603 (+272.3032%), accuracy 98.0696%→96.8203% (-1.2492pp),
+expected post-maxHP MAE 0.081356→0.234180 (+0.152824 HP). On 1,546 nonzero-delta
+rows, accuracy collapses 63.1307%→0.0647% and NLL rises 0.787493→3.897300.
+
+**`SHARED_HP_ENCODER_MAXHP_REJECTED`.** The candidate clearly misses all fixed
+gates, so the sequential HP-encoder potion screen did not run. Candidate
+selection at final epoch 12 leaves intrinsic information absence unresolved;
+this rejects the fixed linear-head/training recipe, not every jointly trained
+shared representation. No extra epochs/tuning, new data, TEST, gameplay,
+runtime/export, composition or model promotion. Knowledge impact: closes the
+HP-encoder maxHP/potion frozen-substitution path; experiment evidence only.
+[Protocol, histories and hashes](evidence/shared_frozen_maxhp_encoder_2026-09-15.md).
