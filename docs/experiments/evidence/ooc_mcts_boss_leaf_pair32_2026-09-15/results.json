@@ -39,7 +39,7 @@
     "raw/native.receipt.json": "a34daf22f6fa73ef7487ec037ff8117694d83609a70bd1c33a7dfeeebce2c9fe",
     "raw/native.score.json": "458c5b7174c2ff178be6c6e584dc79afa4eb75ca4f46142c802608b9bd27a34b"
   },
-  "classification": "BOSS_LEAF_NO_OBSERVED_BEHAVIORAL_EFFECT",
+  "classification": "INVALID_TREATMENT_NOT_EXERCISED",
   "paired": {
     "bootstrap_200k_percentile95": [
       0.0,
@@ -56,5 +56,9 @@
   "seeds": [
     12003000,
     12003031
-  ]
+  ],
+  "validity": {
+    "reason": "live checkpointLeaves path bypassed bossLeaf and evaluated native v_win in both arms",
+    "treatment_exercised": false
+  }
 }

@@ -1,21 +1,27 @@
 # OOC MCTS all-current-act-boss leaf paired 32
 
-Classification: **`BOSS_LEAF_NO_OBSERVED_BEHAVIORAL_EFFECT`**.
+Classification: **`INVALID_TREATMENT_NOT_EXERCISED`**.
+
+This is not a valid A/B test. Live OOC MCTS used `checkpointLeaves=true`, and
+the executed checkpoint branch ignored `bossLeaf` and called native `v_win`
+in both arms. The 1,180,553 leaf evaluations per arm therefore did not
+exercise the treatment. The exact equality below is a bug signal, not evidence
+of no behavioral effect. Raw artifacts are retained for provenance only.
 
 On fresh paired seeds 12003000--12003031, both the existing native `v_win`
 leaf and the all-current-act-boss combat-evaluator leaf won 24/32. Every seed
 had the same win/loss, floor, final HP, max HP, and death combat/encounter.
 The paired boss-minus-native win delta is 0.0 percentage points; the fixed
 200,000-resample paired percentile interval is [0.0, 0.0]pp because all 32
-observed paired differences are exactly zero. This is no observed effect on
-this cohort, not proof of policy equivalence.
+observed paired differences are exactly zero because both arms executed the
+same evaluator.
 
-The treatment evaluates all three possible bosses for the leaf state's current
+The intended, but unexercised, treatment evaluates all three possible bosses for the leaf state's current
 act with the tracked qualified V2 combat-transition model. Per boss, utility is
 `0.75 * P(survive) + 0.25 * P(survive) * E[ending HP fraction | survive]`;
 the leaf is their arithmetic mean. Exact terminal values remain 0/1. Any
-unsupported boss fails the simulation/root closed. The treatment leaf never
-calls `v_win`; the normal live fallback OOC chain remains unchanged.
+unsupported boss fails the simulation/root closed. That implementation existed
+only in `leafValue()`, which the live checkpoint path bypassed.
 
 Both arms used source `b5f037d56cc9ac6d841ccab43274e85ca3330313`
 plus implementation diff SHA256 `e6cb7b1249d0d77e947470f99b79b2e6d367be2035df30bcfd388251415f78a0`,
@@ -42,7 +48,4 @@ and model hashes and complete seed membership. `analyze.py` validates both
 starts caused by invalid abbreviated provenance labels are retained under
 `failed-start/`; neither completed a seed.
 
-The opt-in implementation remains experimental and live OOC MCTS remains OFF
-by default. This N32 result provides no reason to replace the native leaf or to
-run more seeds without a distinct hypothesis about why leaf values are not
-changing root choices.
+This packet must not be used for treatment-effect inference.

@@ -191,47 +191,47 @@ sts::search::OocStateId OocGameContextModel::sampleSuccessor(sts::search::OocSta
     states.push_back(std::move(child));
     return states.size()-1;
 }
+double OocGameContextModel::bossLeafValue(const GameContext &source) const {
+    if (!combatSampler) throw std::runtime_error("OOC MCTS boss leaf requires combat evaluator");
+    struct BossProbe { sts::MonsterEncounter encounter; int act, floor; };
+    static constexpr BossProbe bosses[] = {
+        {sts::MonsterEncounter::SLIME_BOSS, 1, 17},
+        {sts::MonsterEncounter::THE_GUARDIAN, 1, 17},
+        {sts::MonsterEncounter::HEXAGHOST, 1, 17},
+        {sts::MonsterEncounter::CHAMP, 2, 34},
+        {sts::MonsterEncounter::COLLECTOR, 2, 34},
+        {sts::MonsterEncounter::AUTOMATON, 2, 34},
+        {sts::MonsterEncounter::AWAKENED_ONE, 3, 50},
+        {sts::MonsterEncounter::DONU_AND_DECA, 3, 50},
+        {sts::MonsterEncounter::TIME_EATER, 3, 50},
+        {sts::MonsterEncounter::THE_HEART, 4, 55}
+    };
+    double total = 0;
+    for (const auto &boss : bosses) {
+        auto probe = detachedCopy(source);
+        const auto encounter = boss.encounter;
+        probe.act = boss.act;
+        probe.floorNum = boss.floor;
+        probe.curRoom = sts::Room::BOSS;
+        probe.info.encounter = encounter;
+        const auto input = captureCombatPredictorInput(probe, encounter, potionKeepValue(probe));
+        const auto estimate = combatSampler->expectation(probe, input);
+        if (!estimate.supported)
+            throw sts::search::OocSearchUnsupported("boss_leaf_unsupported_" + std::to_string((int)encounter));
+        const double value = bossLeafUtility(estimate);
+        if (!std::isfinite(value) || value < 0 || value > 1)
+            throw std::runtime_error("OOC MCTS invalid boss leaf value");
+        total += value;
+    }
+    return total / std::size(bosses);
+}
 double OocGameContextModel::leafValue(sts::search::OocStateId id) const {
     if (options.checkpointLeaves && !terminalValue(id)
         && state(id).screenState != sts::ScreenState::MAP_SCREEN)
-        throw std::runtime_error("OOC MCTS v_win requires a resolved map checkpoint");
+        throw std::runtime_error("OOC MCTS leaf requires a resolved map checkpoint");
     if (auto terminal = terminalValue(id)) return *terminal;
     if (options.checkpointLeaves && options.constantLeaf) return 0.5;
-    if (options.bossLeaf) {
-        if (!combatSampler) throw std::runtime_error("OOC MCTS boss leaf requires combat evaluator");
-        struct BossProbe { sts::MonsterEncounter encounter; int act, floor; };
-        static constexpr BossProbe bosses[] = {
-            {sts::MonsterEncounter::SLIME_BOSS, 1, 17},
-            {sts::MonsterEncounter::THE_GUARDIAN, 1, 17},
-            {sts::MonsterEncounter::HEXAGHOST, 1, 17},
-            {sts::MonsterEncounter::CHAMP, 2, 34},
-            {sts::MonsterEncounter::COLLECTOR, 2, 34},
-            {sts::MonsterEncounter::AUTOMATON, 2, 34},
-            {sts::MonsterEncounter::AWAKENED_ONE, 3, 50},
-            {sts::MonsterEncounter::DONU_AND_DECA, 3, 50},
-            {sts::MonsterEncounter::TIME_EATER, 3, 50},
-            {sts::MonsterEncounter::THE_HEART, 4, 55}
-        };
-        const auto &source = state(id);
-        double total = 0;
-        for (const auto &boss : bosses) {
-            auto probe = detachedCopy(source);
-            const auto encounter = boss.encounter;
-            probe.act = boss.act;
-            probe.floorNum = boss.floor;
-            probe.curRoom = sts::Room::BOSS;
-            probe.info.encounter = encounter;
-            const auto input = captureCombatPredictorInput(probe, encounter, potionKeepValue(probe));
-            const auto estimate = combatSampler->expectation(probe, input);
-            if (!estimate.supported)
-                throw sts::search::OocSearchUnsupported("boss_leaf_unsupported_" + std::to_string((int)encounter));
-            const double value = bossLeafUtility(estimate);
-            if (!std::isfinite(value) || value < 0 || value > 1)
-                throw std::runtime_error("OOC MCTS invalid boss leaf value");
-            total += value;
-        }
-        return total / std::size(bosses);
-    }
+    if (options.bossLeaf) return bossLeafValue(state(id));
     // Native-only seam; its implementation has no server fallback branch.
     auto gc = detachedCopy(state(id));
     struct PathScope {
@@ -346,8 +346,11 @@ double OocGameContextModel::evaluateLeaf(sts::search::OocStateId id, std::mt1993
         child.path.update(child.gc);
         if (child.gc.outcome == sts::GameOutcome::PLAYER_LOSS) return 0;
         if (child.gc.outcome == sts::GameOutcome::PLAYER_VICTORY) return 1;
-        if (child.gc.screenState == sts::ScreenState::MAP_SCREEN && additionalCombats >= options.leafCombats)
-            return options.constantLeaf ? 0.5 : vStateWinNative(child.gc);
+        if (child.gc.screenState == sts::ScreenState::MAP_SCREEN && additionalCombats >= options.leafCombats) {
+            if (options.constantLeaf) return 0.5;
+            if (options.bossLeaf) return bossLeafValue(child.gc);
+            return vStateWinNative(child.gc);
+        }
         return std::nullopt;
     };
     return boundedContinuation(maxSteps,checkpoint,[&] {
@@ -898,6 +901,33 @@ void oocMctsAdapterSelfTest() {
         require(exactTerminal.evaluateLeaf(0,constantRng) == (outcome == GameOutcome::PLAYER_VICTORY ? 1 : 0),
                 "constant ablation preserves terminal values");
     }
+    struct BossExpectationSampler final : CombatTransitionSampler {
+        mutable int expectationCalls=0;
+        mutable std::vector<MonsterEncounter> encounters;
+        CombatRuntimeSupport support(const GameContext &,const CombatPredictorInputV1 &) const override {
+            return {true,"supported"};
+        }
+        CombatTransitionExpectation expectation(const GameContext &probe,
+            const CombatPredictorInputV1 &) const override {
+            ++expectationCalls;
+            encounters.push_back(probe.info.encounter);
+            return {true,0.2f,0.5f};
+        }
+        CombatRuntimeSample sample(const GameContext &,const CombatPredictorInputV1 &,
+            std::mt19937_64 &) const override { return {}; }
+    };
+    auto bossSampler=std::make_shared<BossExpectationSampler>();
+    OocAdapterOptions bossCheckpointOptions{true}; bossCheckpointOptions.bossLeaf=true;
+    OocGameContextModel bossCheckpoint(gc,path,bossSampler,bossCheckpointOptions);
+    const double nativeCheckpointValue=vStateWinNative(gc);
+    const double bossCheckpointValue=bossCheckpoint.evaluateLeaf(0,constantRng);
+    require(bossSampler->expectationCalls==10 && bossSampler->encounters.size()==10,
+        "checkpoint boss leaf calls every all-act boss expectation");
+    require(std::set<MonsterEncounter>(bossSampler->encounters.begin(),bossSampler->encounters.end()).size()==10,
+        "checkpoint boss leaf probes ten distinct bosses");
+    require(std::abs(bossCheckpointValue-0.7)<1e-7
+        && std::abs(bossCheckpointValue-nativeCheckpointValue)>1e-6,
+        "checkpoint boss leaf returns combat expectation instead of native v_win");
     {
         OocMctsConfig parsed; OocAdapterOptions opts{true};
         applyLiveControl("STS_OOC_MCTS_EARLY_STOP","1",parsed,opts);
@@ -1690,6 +1720,54 @@ void oocMctsAdapterSelfTest() {
             {"generatedStates",after.storedStates()},{"decisionNodes",b.decisionNodes},
             {"metadataBuilds",after.continuationMetrics().metadataBuilds},
             {"priorBuilds",after.continuationMetrics().priorBuilds},{"parity",true}}.dump()<<'\n';
+    }
+    // Opt-in mechanism gate for experimental leaf evaluators. This compares
+    // identical detached states and identical planner seeds before gameplay.
+    if (const char *modelPath=std::getenv("STS_OOC_MCTS_BOSS_MECHANISM_MODEL")) {
+        auto sampler=std::make_shared<NativeCombatTransitionSampler>(modelPath);
+        OocAdapterOptions nativeOptions{true};
+        OocAdapterOptions bossOptions{true}; bossOptions.bossLeaf=true;
+        nlohmann::json mechanism;
+        bool everyLeafDiffers=true;
+        for (int hp : {20,40,60}) {
+            auto probe=detachedCopy(gc); probe.curHp=hp; probe.maxHp=80;
+            OocGameContextModel nativeLeaf(probe,path,sampler,nativeOptions);
+            OocGameContextModel bossLeaf(probe,path,sampler,bossOptions);
+            std::mt19937_64 nativeRng(20260915),bossRng(20260915);
+            const double nativeValue=nativeLeaf.evaluateLeaf(0,nativeRng);
+            const double bossValue=bossLeaf.evaluateLeaf(0,bossRng);
+            everyLeafDiffers=everyLeafDiffers && std::abs(nativeValue-bossValue)>1e-6;
+            mechanism["leaves"].push_back({{"hp",hp},{"native",nativeValue},{"boss",bossValue},
+                {"bossExpectationCalls",10}});
+        }
+        require(everyLeafDiffers,"real boss mechanism leaf values must differ from native v_win");
+        auto root=detachedCopy(gc);
+        PathHistory rootPath; rootPath.update(root);
+        OocGameContextModel nativeSearch(root,rootPath,sampler,nativeOptions);
+        OocGameContextModel bossSearch(root,rootPath,sampler,bossOptions);
+        OocMctsConfig cfg; cfg.seed=20260915;
+        const auto nativeResult=OocMctsPlanner(cfg).search(nativeSearch,0,64);
+        const auto bossResult=OocMctsPlanner(cfg).search(bossSearch,0,64);
+        require(!nativeResult.aborted && !bossResult.aborted
+            && nativeResult.rootActions.size()==bossResult.rootActions.size(),
+            "real boss mechanism searches must complete on identical roots");
+        bool qChanged=false;
+        for (std::size_t i=0;i<nativeResult.rootActions.size();++i) {
+            const auto &nativeAction=nativeResult.rootActions[i];
+            const auto &bossAction=bossResult.rootActions[i];
+            require(nativeAction.id==bossAction.id,"real boss mechanism root action identity");
+            qChanged=qChanged || std::abs(nativeAction.q-bossAction.q)>1e-6;
+            mechanism["rootActions"].push_back({{"id",nativeAction.id},
+                {"nativeQ",nativeAction.q},{"bossQ",bossAction.q},
+                {"nativeVisits",nativeAction.visits},{"bossVisits",bossAction.visits}});
+        }
+        require(qChanged,"real boss mechanism must change at least one MCTS root Q");
+        mechanism["nativeSelectedAction"]=*nativeResult.selectedAction;
+        mechanism["bossSelectedAction"]=*bossResult.selectedAction;
+        mechanism["simulations"]=64;
+        mechanism["leafValuesDiffer"]=everyLeafDiffers;
+        mechanism["rootQChanged"]=qChanged;
+        std::cout<<"BOSS_LEAF_MECHANISM "<<mechanism.dump()<<'\n';
     }
     std::cout<<"PASS OOC MCTS adapter (offline native integration only)\n";
 }

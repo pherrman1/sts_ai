@@ -8430,12 +8430,12 @@ Mean seconds/run103.8807→104.1177. Each arm has5,540 decisions,4,528 owned,
 1,012 fallbacks,1,181,831 completed simulations,1,180,553 leaf evaluations,
 nine expected Smoke support aborts and375 discarded simulations.
 
-Classification **BOSS_LEAF_NO_OBSERVED_BEHAVIORAL_EFFECT**: no observed action
-or outcome change on this N32 cohort, not equivalence proof. No default change
-or additional seeds. A distinct follow-up would need a mechanism-level
-hypothesis for why materially different leaf values do not alter root choices.
-Knowledge impact: architecture/env documentation records the new opt-in leaf;
-current research records the null online result. [Evidence and provenance](evidence/ooc_mcts_boss_leaf_pair32_2026-09-15/README.md).
+Classification corrected to **INVALID_TREATMENT_NOT_EXERCISED**. Live OOC MCTS
+used `checkpointLeaves=true`; its resolved-map checkpoint called native
+`v_win` without checking `bossLeaf`, so both arms executed the control leaf.
+The exact trace equality is a bug signal and supports no treatment-effect
+claim. Raw evidence is retained for provenance. A corrected experiment requires
+a mechanism check before any fresh seed smoke. [Evidence and provenance](evidence/ooc_mcts_boss_leaf_pair32_2026-09-15/README.md).
 
 
 ## §274 — All-Act boss combat-evaluator OOC MCTS leaf paired 32 (2026-09-15)
@@ -8458,8 +8458,39 @@ decisions,4,626 owned,1,094 fallbacks,1,199,941 completed simulations,
 1,199,100 leaf evaluations,12 expected Smoke support aborts,550 discarded and
 zero continuation-limit aborts.
 
-Classification **ALL_ACT_BOSS_LEAF_NO_OBSERVED_BEHAVIORAL_EFFECT**. This is no
-observed action/outcome change at N32, not equivalence. Keep defaults and do
-not add seeds without a mechanism-level hypothesis. Knowledge impact: current
-research and the opt-in architecture contract now include the all-Act variant;
-no default/model/support/RNG change. [Evidence and provenance](evidence/ooc_mcts_all_act_boss_leaf_pair32_2026-09-15/README.md).
+Classification corrected to **INVALID_TREATMENT_NOT_EXERCISED**. The same
+checkpoint bug bypassed the all-Act boss evaluator and called native `v_win`
+in both arms. The N32 equality is not a null result and supports no
+treatment-effect inference. Raw evidence is retained for provenance. A
+corrected experiment requires a mechanism check before any fresh seed smoke.
+[Evidence and provenance](evidence/ooc_mcts_all_act_boss_leaf_pair32_2026-09-15/README.md).
+
+
+## §275 — Corrected all-Act boss leaf mechanism and paired N8 smoke (2026-09-15)
+
+The live checkpoint branch now selects constant, boss, or native evaluation in
+that order and shares the all-ten-boss evaluator with ordinary `leafValue()`.
+A fake-sampler regression with `checkpointLeaves=true,bossLeaf=true` requires
+ten distinct `expectation()` calls and a returned value different from native
+`v_win`. This also makes boss mode internally consistent without a loaded win
+model at treatment leaves.
+
+The pre-game real-model mechanism gate passed. At HP20/40/60, boss values were
+0.00409/0.00647/0.01371 versus native0.15437/0.19850/0.24000. On an identical
+64-simulation root, all three action Qs changed by about0.095--0.101, although
+the selected action remained the same in that fixture.
+
+Fresh paired seeds12003064--12003071 used IroncladA0/fair RNG/keysOFF/Act3,
+fixed512 OOC MCTS, V4 priors and exact10k Silver. Native won6/8 and boss won4/8
+(native-only2, boss-only0; descriptive delta -25pp). All eight terminal rows
+and all eight non-timing trace rows differ. Mean floor50.75→44.125 and elapsed
+seconds/run83.30→2218.42. Classification
+**CORRECTED_MECHANISM_PASS_PAIRED_N8_SMOKE**: the treatment is exercised, but
+N8 is not powered quality evidence and provides no default-change basis.
+
+A conditionally planned extension completed its native N8 arm and three boss
+rows before the user requested recording and merge. It is preserved under
+`interrupted-extension/` and excluded from every statistic above. Knowledge
+impact: the live checkpoint contract is corrected; both old N32 packets remain
+invalid; current research records only this bounded mechanism smoke.
+[Evidence and provenance](evidence/ooc_mcts_boss_leaf_corrected_smoke_2026-09-15/README.md).

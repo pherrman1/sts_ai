@@ -28,7 +28,9 @@ def main():
     state_fields=('won','floor','act','hpEnd','maxHp','fightsLost','deathCombat','deathEncounter')
     trace_fields=[k for k in next(iter(traces['native'].values())) if k not in ('mctsWallSec','mctsCpuSec')]
     summary={
-      'classification':'BOSS_LEAF_NO_OBSERVED_BEHAVIORAL_EFFECT',
+      'classification':'INVALID_TREATMENT_NOT_EXERCISED',
+      'validity':{'treatment_exercised':False,
+        'reason':'live checkpointLeaves path bypassed bossLeaf and evaluated native v_win in both arms'},
       'seeds':PLAN['seeds'],
       'arms':{},
       'paired':{

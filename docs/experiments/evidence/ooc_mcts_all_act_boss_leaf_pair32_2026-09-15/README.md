@@ -1,22 +1,27 @@
 # OOC MCTS all-Act boss leaf paired 32
 
-Classification: **`ALL_ACT_BOSS_LEAF_NO_OBSERVED_BEHAVIORAL_EFFECT`**.
+Classification: **`INVALID_TREATMENT_NOT_EXERCISED`**.
+
+This is not a valid A/B test. Live OOC MCTS used `checkpointLeaves=true`, and
+the executed checkpoint branch ignored `bossLeaf` and called native `v_win`
+in both arms. The 1,199,100 leaf evaluations per arm therefore did not
+exercise the treatment. The exact equality below is a bug signal, not evidence
+of no behavioral effect. Raw artifacts are retained for provenance only.
 
 Fresh paired seeds 12003032--12003063 compare the existing native `v_win`
 leaf with a combat-evaluator leaf averaged across all ten Act 1--4 bosses.
 Both arms won 26/32. Both-win26/both-lose6/native-only0/all-bosses-only0
 gives a 0.0 percentage-point delta. The fixed 200,000-resample paired
 percentile interval is [0.0,0.0]pp because every observed paired win difference
-is exactly zero. This is no observed effect, not policy-equivalence proof.
+is exactly zero because both arms executed the same evaluator.
 
-Each boss probe preserves the leaf's deck, HP, max HP, gold, relics and potions,
+The intended, but unexercised, boss probe preserves the leaf's deck, HP, max HP, gold, relics and potions,
 while using the encounter's canonical act and boss floor (17, 34, 50, or 55).
 Per-boss utility is `0.75 * P(survive) + 0.25 * P(survive) * E[ending HP
 fraction | survive]`; the leaf is the equal mean over Slime Boss, Guardian,
 Hexaghost, Champ, Collector, Automaton, Awakened One, Donu and Deca, Time Eater,
-and Heart. The treatment leaf never calls `v_win`, consumes no gameplay RNG,
-retains exact terminal 0/1, and fails the simulation/root closed if any probe
-is unsupported. The normal fallback OOC chain remains unchanged.
+and Heart. That implementation existed only in `leafValue()`, which the live
+checkpoint path bypassed.
 
 Both arms used Ironclad A0, project-fair RNG, keys off, Act-3 stop, exactly 512
 OOC MCTS simulations, V4 priors, and ordinary exact-root-budget 10k Silver real
@@ -37,6 +42,4 @@ aborts. All 32 terminal-state rows and all 32 non-timing trace rows match.
 `plan.json` was written before collection. `run.py` validates hashes and exact
 seed membership; `analyze.py` validates both result/trace cohorts, performs the
 fixed paired bootstrap, and binds every raw artifact hash in `results.json`.
-The opt-in implementation remains experimental and live OOC MCTS remains OFF
-by default. More seeds are not justified without a mechanism-level hypothesis
-for why replacing the leaf values leaves root choices unchanged.
+This packet must not be used for treatment-effect inference.

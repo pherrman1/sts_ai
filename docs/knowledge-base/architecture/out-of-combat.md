@@ -282,10 +282,11 @@ with `ceil(k*N^alpha)`; action candidates are fully expanded, so this substrate
 is not double progressive widening. Root-Q selection changes only the final
 choice, not tree allocation. Leaf projection steps do not count toward tree
 `MAX_DEPTH`. None of these knobs changes real Silver's budget or parameters.
-The boss leaf is evaluated directly at the resolved leaf state, uses no planner
-or gameplay RNG, never calls `v_win`, and fails the simulation/root closed if
-any boss is outside combat-evaluator support. Each probe preserves the leaf's
-player state but uses that encounter's canonical act and boss floor.
+The boss leaf is evaluated through one shared helper from both ordinary
+`leafValue()` and the live resolved-checkpoint branch. It uses no planner or
+gameplay RNG, never calls `v_win`, and fails the simulation/root closed if any
+boss is outside combat-evaluator support. Each probe preserves the leaf's player
+state but uses that encounter's canonical act and boss floor.
 
 Optional `STS_OOC_MCTS_TRACE` appends one CSV row per completed run, including
 OFF runs when explicitly requested. It records decision/ownership/fallback

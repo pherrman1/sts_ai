@@ -52,25 +52,28 @@ See [ledger §265](../../experiments/ledger-06.md) and
 
 ## Current priority / active line
 
-The requested all-Act boss leaf follow-up is complete:
-**ALL_ACT_BOSS_LEAF_NO_OBSERVED_BEHAVIORAL_EFFECT**. Fresh paired seeds
-12003032--12003063 at fixed512 OOC MCTS/exact10k Silver give native `v_win`
-26/32 and the ten-boss V2 combat-evaluator leaf26/32, with no discordants. All
-terminal-state and non-timing trace rows match. The treatment evaluates every
-Act1--4 boss at its canonical act/floor while preserving leaf player state.
-This is no observed effect at N32, not equivalence; no more seeds/default
-change without a mechanism hypothesis for unchanged root choices. See
+The corrected all-Act boss leaf has a mechanism pass and paired N8 smoke:
+**CORRECTED_MECHANISM_PASS_PAIRED_N8_SMOKE**. Three identical leaf states
+produce materially different boss/native values and all root Qs change on an
+identical 64-simulation fixture. Fresh fixed512 seeds12003064--12003071 give
+native6/8 versus boss4/8; every terminal and non-timing trace row differs, so
+the treatment is now exercised. The boss arm is about26.6x slower by mean
+elapsed seconds/run. N8 is mechanism evidence only, not a quality conclusion;
+defaults remain unchanged. See [ledger §275](../../experiments/ledger-06.md)
+and the [evidence packet](../../experiments/evidence/ooc_mcts_boss_leaf_corrected_smoke_2026-09-15/README.md).
+
+The all-Act boss leaf N32 follow-up is
+**INVALID_TREATMENT_NOT_EXERCISED**. Live `checkpointLeaves=true` bypassed the
+boss evaluator and called native `v_win` in both arms. Its exact terminal and
+trace equality is a bug signal, not evidence of no effect. Raw evidence remains
+provenance-only. See
 [ledger §274](../../experiments/ledger-06.md) and the
 [paired packet](../../experiments/evidence/ooc_mcts_all_act_boss_leaf_pair32_2026-09-15/README.md).
 
-The fresh paired 32-seed all-current-act-boss leaf experiment is complete:
-**BOSS_LEAF_NO_OBSERVED_BEHAVIORAL_EFFECT**. At fixed512 OOC MCTS and exact10k
-Silver real combat, native `v_win` and the V2 combat-evaluator boss leaf both
-win24/32 with zero discordant outcomes. Every terminal-state row and non-timing
-trace row matches; mean runtime changes103.8807→104.1177 seconds/run. This is
-no observed effect at N32, not equivalence. Keep the native leaf/defaults and
-do not add seeds without a mechanism-level hypothesis for unchanged root
-choices. See [ledger §273](../../experiments/ledger-06.md) and the
+The current-act boss leaf N32 experiment is also
+**INVALID_TREATMENT_NOT_EXERCISED** for the same checkpoint bypass. Both arms
+executed native `v_win`; its 24/32 versus24/32 and exact traces are not an A/B
+result. See [ledger §273](../../experiments/ledger-06.md) and the
 [paired packet](../../experiments/evidence/ooc_mcts_boss_leaf_pair32_2026-09-15/README.md).
 
 The fresh64 fixed10000 live OOC MCTS versus matched V4 gate is complete:

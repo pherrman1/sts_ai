@@ -1,0 +1,17 @@
+{
+  "model": "selfplay/models/combat_transition_near_full_except_smoke_v2.native",
+  "simulations": 64,
+  "leaf_values": [
+    {"hp": 20, "native": 0.15437455639981643, "boss": 0.004087335996530095},
+    {"hp": 40, "native": 0.19850068560891357, "boss": 0.0064711738945186},
+    {"hp": 60, "native": 0.2400035744756417, "boss": 0.013712344390706944}
+  ],
+  "root_actions": [
+    {"id": 1, "native_q": 0.33854803444484394, "boss_q": 0.24089408955521313},
+    {"id": 2, "native_q": 0.34413714678665935, "boss_q": 0.24896641136849146},
+    {"id": 4, "native_q": 0.344168492881188, "boss_q": 0.243892183945204}
+  ],
+  "leaf_values_differ": true,
+  "root_q_changed": true,
+  "selected_action_changed": false
+}
