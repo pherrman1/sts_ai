@@ -8346,3 +8346,31 @@ SHA256 `e9a18951710fdfe9e1a81a2703090a41f039067c670a1d8a0393b5e7e8e0ddfd`.
 This qualifies offline composition and the native boundary on reused
 development evidence; online gameplay remains a separate paired test.
 [Promotion report](evidence/combat_transition_attention_promotion_2026-09-15.md).
+
+
+## §271 — Old V2 versus attention-promoted V2 paired OOC MCTS gameplay (2026-09-15)
+
+The prospective gate used fresh paired seeds 12002032--12002095, A0
+Ironclad/project-fair RNG/keys off/Searcher2/Act-3 stop, exact 10k Silver
+combat search and the locked 2,048-simulation OOC MCTS reference profile with
+the full strategic gate stack. Every producer ran through the seed guard; two
+64-seed arms exactly used the local 128-seed ceiling. The old source/artifact
+were `cde61c8`/`22c855e0…`; the promoted source/artifact were
+`22765a5`/`e9a18951…`. Arms, seeds, hashes and the paired decision rule were
+fixed before launch.
+
+Both arms won 49/64 (76.56%). Pairing gives both-win47, both-lose13,
+old-only2 and new-only2: new-minus-old 0.0pp, deterministic 200k-resample
+paired bootstrap95% [-6.25pp,+6.25pp]. Mean floor48.5938→48.7656, final
+HP41.6250→41.9062 and seconds/run158.0474→164.4165. The result establishes
+neither gameplay improvement nor harm; it supports preservation only within
+this gate's limited resolution.
+
+Both arms contain every seed exactly once and both phases exited zero.
+Telemetry has 64 rows per arm and zero continuation-limit aborts. Old/new
+support aborts are 26/34, all expected `smoke_bomb` exclusions on diverging
+trajectories. This is online gameplay evidence for the exact tested profile,
+not equivalence proof, unbiased-planning qualification, or permission to
+enable OOC MCTS by default. Knowledge impact: current research status gains
+prospective gameplay evidence; runtime and artifacts are unchanged.
+[Evidence, raw outputs, analyzer and provenance](evidence/combat_transition_v2_ooc_mcts_pair64_2026-09-15/README.md).

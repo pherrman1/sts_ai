@@ -1,0 +1,18 @@
+{
+  "runnerExitCode": 0,
+  "runnerSha256": "d57c76cdd36127a85e73635327f2cc30509c00e7f813673cdbc380a058e3415a",
+  "terminalMarker": "PAIR64_COMPLETE",
+  "oldRemainderWallSeconds": 896.9850172996521,
+  "newRemainderWallSeconds": 927.1248388290405,
+  "postRunValidation": {
+    "oldRows": 64,
+    "newRows": 64,
+    "oldUniqueSeeds": 64,
+    "newUniqueSeeds": 64,
+    "commonSeedFirst": 12002032,
+    "commonSeedLast": 12002095,
+    "metadataRecordsPerArm": 2,
+    "telemetryRowsPerArm": 64,
+    "supportRowsPerArm": 64
+  }
+}
