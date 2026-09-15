@@ -76,6 +76,18 @@ executed native `v_win`; its 24/32 versus24/32 and exact traces are not an A/B
 result. See [ledger §274](../../experiments/ledger-06.md) and the
 [paired packet](../../experiments/evidence/ooc_mcts_boss_leaf_pair32_2026-09-15/README.md).
 
+The fresh current-main V2 rollout confirmation on seeds
+`12003000..12003031` is complete. MCTS-512 is **NO_CONFIRMATION**: 22/32 versus
+V4 24/32, -6.25pp, paired95% CI [-28.125,+15.625]pp. At fixed 2048 simulations,
+rollout0 and rollout1 each give 26/32 (+6.25pp versus V4, intervals crossing
+zero), but rollout1 has zero observed win gain over rollout0 at 23.19x elapsed
+time. Rollout3 gives 28/32, +12.5pp versus V4 with CI [-3.125,+28.125]pp and
++6.25pp versus rollout1 with a crossing-zero interval at another 2.35x cost.
+Rollout0 is the practical larger-confirmation candidate; rollout3 is only a
+high-cost research candidate. No arm is gameplay- or deployment-qualified.
+See [ledger §277](../../experiments/ledger-06.md) and the
+[evidence packet](../../experiments/evidence/ooc_mcts_confirmation_v2_2026-09-15/README.md).
+
 The fresh64 fixed10000 live OOC MCTS versus matched V4 gate is complete:
 **OOC_MCTS_WINRATE_INCONCLUSIVE**. MCTS42/64 versus V448/64,−9.375pp,
 paired95% CI[−23.4375,+4.6875]pp. Both fresh arms use frozen native models and

@@ -8522,3 +8522,22 @@ extra epochs, reweighting, adapters, architecture changes, runtime/export,
 gameplay or promotion. Knowledge impact: experiment evidence and current
 research status only; qualified components/defaults are unchanged.
 [Protocol, epoch history, metrics and hashes](evidence/shared_transition_encoder_distill_2026-09-15.md).
+
+## §277 — Fresh current-main V2 OOC MCTS rollout confirmation (2026-09-15)
+
+Source `48fae046`, fresh paired seeds `12003000..12003031`, execution-hashed
+V2 CTM and strategic/native models. Ironclad A0, fair RNG, exact-10k Silver,
+cap 32768, adaptive/keys/Searcher3/direct leaf off, Act-3 stop, 12 workers.
+Excluded per-arm canaries passed. V4/MCTS512/2048-rollout0/rollout1/rollout3
+won 24/22/26/26/28 of 32. MCTS512-V4=-6.25pp, paired bootstrap95
+[-28.125,+15.625]pp: **NO_CONFIRMATION**. At 2048 simulations, rollout0 and
+rollout1 are each +6.25pp versus V4 with crossing-zero intervals; rollout1
+minus rollout0 is 0pp, CI [-18.75,+18.75]pp, at 23.19x cost. Rollout3-V4 is
++12.5pp, CI [-3.125,+28.125]pp: **PROMISING_INCONCLUSIVE**; rollout3 minus
+rollout1 is +6.25pp, CI [-6.25,+18.75]pp, at 2.35x cost. All provenance,
+backend, seed, bridge, support and telemetry identities pass. The designated
+GCP VM was absent; the user explicitly authorized the 64-game aggregate-local
+extension, each arm remaining a guarded 32-seed invocation. No extra parameters,
+seeds, gameplay/default changes or pooling. Rollout0 is the practical larger-
+confirmation candidate; rollout3 is only a high-cost research candidate.
+[Evidence packet](evidence/ooc_mcts_confirmation_v2_2026-09-15/README.md).
