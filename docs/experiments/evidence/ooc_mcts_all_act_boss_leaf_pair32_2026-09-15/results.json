@@ -1,0 +1,66 @@
+{
+  "arms": {
+    "all_bosses": {
+      "completed_simulations": 1199941,
+      "continuation_limit_aborts": 0,
+      "discarded_simulations": 550,
+      "leaf_evaluations": 1199100,
+      "mcts_fallback": 1094,
+      "mcts_owned": 4626,
+      "mean_final_hp": 46.09375,
+      "mean_floor": 49.15625,
+      "mean_seconds": 109.943021875,
+      "ooc_decisions": 5720,
+      "support_aborts": 12,
+      "wins": 26
+    },
+    "native": {
+      "completed_simulations": 1199941,
+      "continuation_limit_aborts": 0,
+      "discarded_simulations": 550,
+      "leaf_evaluations": 1199100,
+      "mcts_fallback": 1094,
+      "mcts_owned": 4626,
+      "mean_final_hp": 46.09375,
+      "mean_floor": 49.15625,
+      "mean_seconds": 110.38495625,
+      "ooc_decisions": 5720,
+      "support_aborts": 12,
+      "wins": 26
+    }
+  },
+  "artifacts": {
+    "raw/all_bosses.csv": "b4a6d43893ef61650168f52128a9fdf239e1b1c8bc65e8afcf110af10cfafdb2",
+    "raw/all_bosses.mcts.csv": "a82e1adb44b07fb55e30853e55098a858af1d74a90f5bad4abb6156c2bdf6349",
+    "raw/all_bosses.mcts.csv.support.jsonl": "d24c05b4dd18dd710a2e77b6622f2fe185cf21fa4aa8ec62c9131a0dc5c51296",
+    "raw/all_bosses.receipt.json": "2a6f7178016e48621e14b8295ff1b389347626892b85d6bce8c0d748b3dfde8d",
+    "raw/all_bosses.score.json": "7952c30d0d2ab7edbfe654bc82c19b4097146c5ce31454a0795a840de6d58ef8",
+    "raw/native.csv": "5a2dd5245e1c3f63fd1ddd1cdb4578179324695bc8184919a9c765189c8303d0",
+    "raw/native.mcts.csv": "e9b07b5e0847af3b22cecda2751337b46a0e41e1d91543a069b377a5f89aad39",
+    "raw/native.mcts.csv.support.jsonl": "ac0f46c7e84b8a1c5fc6670dbf8f716542a624e517aa2dc739d9844985be0ac5",
+    "raw/native.receipt.json": "e531ddbda686c82f09d602688041e6282a6433eaeb9ad5fcbd09423ecb6b03f3",
+    "raw/native.score.json": "0335e7cce6c545407278353e2c6406ed3494c43039b4fdf873d698c5702f7758"
+  },
+  "classification": "INVALID_TREATMENT_NOT_EXERCISED",
+  "paired": {
+    "all_bosses_minus_native_win_rate": 0.0,
+    "all_bosses_only": 0,
+    "bootstrap_200k_percentile95": [
+      0.0,
+      0.0
+    ],
+    "both_lose": 6,
+    "both_win": 26,
+    "identical_nontiming_trace_rows": 32,
+    "identical_terminal_state_rows": 32,
+    "native_only": 0
+  },
+  "seeds": [
+    12003032,
+    12003063
+  ],
+  "validity": {
+    "reason": "live checkpointLeaves path bypassed bossLeaf and evaluated native v_win in both arms",
+    "treatment_exercised": false
+  }
+}

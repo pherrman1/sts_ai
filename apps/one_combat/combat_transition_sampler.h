@@ -18,6 +18,12 @@ struct CombatRuntimeSample {
     CombatTransitionPersistentState rawPost;
 };
 
+struct CombatTransitionExpectation {
+    bool supported = false;
+    float death = 0;
+    float winningHpFraction = 0;
+};
+
 // Prepared values have search/edge-local ownership. The originating sampler must
 // outlive the object. Preparation never consumes planner or live gameplay RNG.
 class PreparedCombatTransition {
@@ -38,6 +44,8 @@ public:
         const CombatPredictorInputV1 &) const;
     virtual CombatRuntimeSupport support(const sts::GameContext &,
         const CombatPredictorInputV1 &) const = 0;
+    virtual CombatTransitionExpectation expectation(const sts::GameContext &,
+        const CombatPredictorInputV1 &) const { return {}; }
     virtual CombatRuntimeSample sample(const sts::GameContext &,
         const CombatPredictorInputV1 &, std::mt19937_64 &) const = 0;
 };

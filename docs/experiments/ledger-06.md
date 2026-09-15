@@ -8411,6 +8411,90 @@ remains untested by this screen.
 [Protocol, hashes, slices and receipts](evidence/shared_frozen_hp_encoder_2026-09-15.md).
 
 
+## §274 — All-current-act-boss combat-evaluator OOC MCTS leaf paired 32 (2026-09-15)
+
+An opt-in leaf replaces native `v_win` with the mean score over all three
+current-act bosses: `0.75*P(survive) + 0.25*P(survive)*E[ending HP fraction
+| survive]`, using the tracked qualified V2 combat-transition evaluator. It
+fails the simulation/root closed if any boss is unsupported and retains exact
+terminal 0/1. No treatment leaf calls `v_win`; the ordinary live fallback OOC
+chain is unchanged.
+
+Fresh paired seeds 12003000--12003031 used source `b5f037d` plus bound diff,
+Ironclad A0/fair RNG/keys off/Act-3 stop, 512 OOC MCTS simulations, V4 priors,
+and exact-root-budget 10k Silver real combat. Native and boss leaves both won
+24/32. Both-win24/both-lose8/native-only0/boss-only0 gives 0.0pp; the fixed
+200k paired bootstrap interval is [0.0,0.0]pp because every observed pair is
+identical. All 32 terminal-state rows and all non-timing trace rows match.
+Mean seconds/run103.8807→104.1177. Each arm has5,540 decisions,4,528 owned,
+1,012 fallbacks,1,181,831 completed simulations,1,180,553 leaf evaluations,
+nine expected Smoke support aborts and375 discarded simulations.
+
+Classification corrected to **INVALID_TREATMENT_NOT_EXERCISED**. Live OOC MCTS
+used `checkpointLeaves=true`; its resolved-map checkpoint called native
+`v_win` without checking `bossLeaf`, so both arms executed the control leaf.
+The exact trace equality is a bug signal and supports no treatment-effect
+claim. Raw evidence is retained for provenance. A corrected experiment requires
+a mechanism check before any fresh seed smoke. [Evidence and provenance](evidence/ooc_mcts_boss_leaf_pair32_2026-09-15/README.md).
+
+
+## §275 — All-Act boss combat-evaluator OOC MCTS leaf paired 32 (2026-09-15)
+
+The prior current-act boss leaf was broadened to all ten Act1--4 bosses. Each
+probe preserves player state but uses its canonical encounter act/floor; the
+equal-mean utility remains `0.75*P(survive) + 0.25*P(survive)*E[ending HP
+fraction | survive]`. The treatment leaf uses the tracked qualified V2 combat
+evaluator, no `v_win` call or gameplay RNG, exact terminal0/1, and fail-closed
+support. Inspected origin/main `28d39cd` had five newer offline shared-HP/docs
+commits but no OOC/combat runtime or model change.
+
+Fresh paired seeds12003032--12003063 used IroncladA0/fair RNG/keysOFF/Act3
+stop, fixed512 OOC MCTS, V4 priors and exact10k Silver real combat. Native and
+all-boss leaves both win26/32: both-win26/both-lose6/no discordants, delta0pp,
+fixed200k paired bootstrap95%[0,0]pp because all observed differences are zero.
+All32 terminal-state and non-timing trace rows match. Mean floor49.15625 and
+HP46.09375 match; seconds/run110.3850→109.9430. Each arm records5,720 OOC
+decisions,4,626 owned,1,094 fallbacks,1,199,941 completed simulations,
+1,199,100 leaf evaluations,12 expected Smoke support aborts,550 discarded and
+zero continuation-limit aborts.
+
+Classification corrected to **INVALID_TREATMENT_NOT_EXERCISED**. The same
+checkpoint bug bypassed the all-Act boss evaluator and called native `v_win`
+in both arms. The N32 equality is not a null result and supports no
+treatment-effect inference. Raw evidence is retained for provenance. A
+corrected experiment requires a mechanism check before any fresh seed smoke.
+[Evidence and provenance](evidence/ooc_mcts_all_act_boss_leaf_pair32_2026-09-15/README.md).
+
+
+## §276 — Corrected all-Act boss leaf mechanism and paired N8 smoke (2026-09-15)
+
+The live checkpoint branch now selects constant, boss, or native evaluation in
+that order and shares the all-ten-boss evaluator with ordinary `leafValue()`.
+A fake-sampler regression with `checkpointLeaves=true,bossLeaf=true` requires
+ten distinct `expectation()` calls and a returned value different from native
+`v_win`. This also makes boss mode internally consistent without a loaded win
+model at treatment leaves.
+
+The pre-game real-model mechanism gate passed. At HP20/40/60, boss values were
+0.00409/0.00647/0.01371 versus native0.15437/0.19850/0.24000. On an identical
+64-simulation root, all three action Qs changed by about0.095--0.101, although
+the selected action remained the same in that fixture.
+
+Fresh paired seeds12003064--12003071 used IroncladA0/fair RNG/keysOFF/Act3,
+fixed512 OOC MCTS, V4 priors and exact10k Silver. Native won6/8 and boss won4/8
+(native-only2, boss-only0; descriptive delta -25pp). All eight terminal rows
+and all eight non-timing trace rows differ. Mean floor50.75→44.125 and elapsed
+seconds/run83.30→2218.42. Classification
+**CORRECTED_MECHANISM_PASS_PAIRED_N8_SMOKE**: the treatment is exercised, but
+N8 is not powered quality evidence and provides no default-change basis.
+
+A conditionally planned extension completed its native N8 arm and three boss
+rows before the user requested recording and merge. It is preserved under
+`interrupted-extension/` and excluded from every statistic above. Knowledge
+impact: the live checkpoint contract is corrected; both old N32 packets remain
+invalid; current research records only this bounded mechanism smoke.
+[Evidence and provenance](evidence/ooc_mcts_boss_leaf_corrected_smoke_2026-09-15/README.md).
+
 ## §273 — Purpose-trained shared maxHP/signed-HP encoder distillation (2026-09-15)
 
 Baseline `28d39cdb`, frozen experiment code `79c6fcf5`. Exact current maxHP

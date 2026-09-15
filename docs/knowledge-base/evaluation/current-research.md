@@ -52,6 +52,30 @@ See [ledger §265](../../experiments/ledger-06.md) and
 
 ## Current priority / active line
 
+The corrected all-Act boss leaf has a mechanism pass and paired N8 smoke:
+**CORRECTED_MECHANISM_PASS_PAIRED_N8_SMOKE**. Three identical leaf states
+produce materially different boss/native values and all root Qs change on an
+identical 64-simulation fixture. Fresh fixed512 seeds12003064--12003071 give
+native6/8 versus boss4/8; every terminal and non-timing trace row differs, so
+the treatment is now exercised. The boss arm is about26.6x slower by mean
+elapsed seconds/run. N8 is mechanism evidence only, not a quality conclusion;
+defaults remain unchanged. See [ledger §276](../../experiments/ledger-06.md)
+and the [evidence packet](../../experiments/evidence/ooc_mcts_boss_leaf_corrected_smoke_2026-09-15/README.md).
+
+The all-Act boss leaf N32 follow-up is
+**INVALID_TREATMENT_NOT_EXERCISED**. Live `checkpointLeaves=true` bypassed the
+boss evaluator and called native `v_win` in both arms. Its exact terminal and
+trace equality is a bug signal, not evidence of no effect. Raw evidence remains
+provenance-only. See
+[ledger §275](../../experiments/ledger-06.md) and the
+[paired packet](../../experiments/evidence/ooc_mcts_all_act_boss_leaf_pair32_2026-09-15/README.md).
+
+The current-act boss leaf N32 experiment is also
+**INVALID_TREATMENT_NOT_EXERCISED** for the same checkpoint bypass. Both arms
+executed native `v_win`; its 24/32 versus24/32 and exact traces are not an A/B
+result. See [ledger §274](../../experiments/ledger-06.md) and the
+[paired packet](../../experiments/evidence/ooc_mcts_boss_leaf_pair32_2026-09-15/README.md).
+
 The fresh64 fixed10000 live OOC MCTS versus matched V4 gate is complete:
 **OOC_MCTS_WINRATE_INCONCLUSIVE**. MCTS42/64 versus V448/64,−9.375pp,
 paired95% CI[−23.4375,+4.6875]pp. Both fresh arms use frozen native models and
