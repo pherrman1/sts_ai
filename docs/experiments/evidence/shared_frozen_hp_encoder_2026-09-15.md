@@ -64,9 +64,13 @@ Important existing slices also regress:
 | damage | 24,466 | +4.6550% | +9.1848% | +0.517771 HP |
 
 The candidate misses the preregistered limits of at most +1% NLL, +1% CRPS,
-and +0.1 HP expected-MAE by wide margins. This is representation insufficiency
-under the tested frozen decoder recipe, not a claim that no shared architecture
-could work.
+and +0.1 HP expected-MAE by wide margins. The frozen survival representation
+does not support competitive signed-HP decoding under this fixed decoder and
+training recipe. Because its selected epoch is the final allowed epoch, this
+screen does not distinguish absent information from information that this
+head/optimizer decodes more slowly or with greater difficulty. No extra epochs
+were run because that would be a new experiment. This is not a claim that no
+shared architecture could work.
 
 ## Receipts and scope
 
@@ -76,8 +80,12 @@ External immutable run directory:
 `40281ce7fd5a7bb7f1e99469529c9ee483ce575ce2db7a92e5e8ba3fdf091e87`;
 `validation_predictions.npz` SHA256 is
 `e56e0631aa4201464001ee21959e4e2fd22df1e90219c889314f2b08775351b6`.
-Caching took 46.28 seconds; decoder fits took 60.87 seconds (reference) and
-46.75 seconds (candidate), descriptive only.
+The tracked compact `shared_frozen_hp_encoder_2026-09-15/results.json` retains
+the complete per-epoch TRAIN NLL and VALIDATION NLL/CRPS/expected-MAE history,
+selected epochs, parity checks, artifact bindings and final decision. The large
+prediction arrays remain external.
+Caching took 46.28 seconds; complete decoder fit/scoring stages took 62.10
+seconds (reference) and 47.94 seconds (candidate), descriptive only.
 
 No new data, simulator/gameplay seeds, TEST evaluation, encoder tuning,
 adapter, maxHP/potion/relic changes, runtime integration, export, or composed

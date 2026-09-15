@@ -8314,7 +8314,10 @@ show obvious regressions; probability support and normalization checks pass.
 **`SHARED_ENCODER_HP_REJECTED`.** The survival representation clearly misses
 all three prespecified gates. Stop before maxHP/potion next-stage composition,
 runtime/export work, or a seed sweep. This rejects this frozen representation
-substitution, not every possible shared architecture. No new data, gameplay,
+substitution under the fixed decoder/training recipe, not every possible shared
+architecture or intrinsic absence of HP information. Candidate selection at
+the final allowed epoch leaves harder/slower decoding unresolved; no extra
+epochs were run because that would be a new experiment. No new data, gameplay,
 TEST scoring, model promotion or runtime change. Knowledge impact: closes the
 maintained shared-survival-encoder HP follow-up; experiment evidence only.
 [Protocol, hashes, slices and receipts](evidence/shared_frozen_hp_encoder_2026-09-15.md).
