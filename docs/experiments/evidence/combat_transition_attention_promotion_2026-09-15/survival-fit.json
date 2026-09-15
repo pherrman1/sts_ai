@@ -1,0 +1,114 @@
+{
+  "artifactSha256": "ccc3c210060be34b38fe0671d93c6acde4242563c80a25c5978b4190b80010c9",
+  "component": "survival",
+  "hpoEvidenceSha256": "3a4ac8859f9e31f5912449a6c8a1376e7f4e3306791c7e60508cc7e9d956a24c",
+  "hpoModelSha256": "005f860d847a773c363170d2473fc8f3f77b4beab501c5db44833d2ac8e1e987",
+  "maxAbsoluteSurvivalProbabilityError": 0.0,
+  "normalizationPopulation": "TRAIN+VALIDATION rows from frozen Phase-1 split",
+  "normalizationRows": 458589,
+  "origin": "targeted Phase-1 attention HPO winner",
+  "parityRows": 1536,
+  "preparedSha256": "a642671d0956f36405b837755cdf3dfb3c4870cde4a1d6f251046ffc8205a1c9",
+  "schemaVersion": "combat_transition_attention_hpo_promotion_v1",
+  "sourceSha": "a743364e1425bf5855309b565ac0eac1028cd726",
+  "supportChanged": false,
+  "winner": {
+    "candidate": {
+      "dropout": 0.1,
+      "feedforward": 128,
+      "heads": 4,
+      "layers": 2,
+      "learningRate": 0.001,
+      "name": "hp_weight_2",
+      "trunkWidth": 64,
+      "weightDecay": 0.0001,
+      "width": 64,
+      "winningHpWeight": 2.0
+    },
+    "parameters": 114178,
+    "selectedEpochs": 13,
+    "selectionScore": 0.16416072472929955,
+    "validation": {
+      "calibration": [
+        {
+          "bin": "0.0-0.1",
+          "n": 265,
+          "observed": 0.06415094339622641,
+          "predicted": 0.0507517047226429
+        },
+        {
+          "bin": "0.1-0.2",
+          "n": 210,
+          "observed": 0.20476190476190476,
+          "predicted": 0.14987441897392273
+        },
+        {
+          "bin": "0.2-0.3",
+          "n": 207,
+          "observed": 0.25120772946859904,
+          "predicted": 0.2547919750213623
+        },
+        {
+          "bin": "0.3-0.4",
+          "n": 215,
+          "observed": 0.3488372093023256,
+          "predicted": 0.3528369963169098
+        },
+        {
+          "bin": "0.4-0.5",
+          "n": 300,
+          "observed": 0.49666666666666665,
+          "predicted": 0.45260000228881836
+        },
+        {
+          "bin": "0.5-0.6",
+          "n": 397,
+          "observed": 0.5969773299748111,
+          "predicted": 0.5514828562736511
+        },
+        {
+          "bin": "0.6-0.7",
+          "n": 522,
+          "observed": 0.6532567049808429,
+          "predicted": 0.6497117280960083
+        },
+        {
+          "bin": "0.7-0.8",
+          "n": 719,
+          "observed": 0.7371349095966621,
+          "predicted": 0.75240558385849
+        },
+        {
+          "bin": "0.8-0.9",
+          "n": 1276,
+          "observed": 0.8636363636363636,
+          "predicted": 0.8557718396186829
+        },
+        {
+          "bin": "0.9-1.0",
+          "n": 46295,
+          "observed": 0.9945782481909493,
+          "predicted": 0.9955460429191589
+        }
+      ],
+      "jointAliveHp": {
+        "bias": 0.011236092075705528,
+        "mae": 0.07597000896930695,
+        "n": 50406,
+        "rmse": 0.12103401124477386
+      },
+      "survival": {
+        "auc": 0.9769674422231146,
+        "brier": 0.018870335072278976,
+        "logloss": 0.06367086619138718,
+        "n": 50406
+      },
+      "winningHp": {
+        "bias": 0.01155945099890232,
+        "mae": 0.06932038068771362,
+        "n": 48590,
+        "rmse": 0.10635336488485336
+      }
+    }
+  }
+}

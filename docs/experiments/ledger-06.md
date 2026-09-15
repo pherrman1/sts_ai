@@ -8252,3 +8252,28 @@ simplicity decision remains. Wall3:09:00, exit0, peak RSS8,561,580kB; tuned
 SHA005f860d, evidence SHA3a4ac885. Knowledge impact: current research status
 and bound model-selection evidence updated; no runtime/default change.
 [Report](evidence/combat_transition_attention_hpo_2026-09-15.md).
+
+## §268 — Attention-HPO survival promotion into the default near-full artifact (2026-09-15)
+
+Reviewed promotion source `a743364e1425bf5855309b565ac0eac1028cd726`
+reconstructed the exact TRAIN-then-VALIDATION normalization and mapped the
+selected attention checkpoint into the survival component with 0.0 maximum
+probability error over 1,536 stratified rows. Baseline component and receipt
+hashes fail closed. Only survival changed (`e150180a…` to `ccc3c210…`); maxHP,
+HP, potion and downstream artifacts remain byte-identical. The downstream
+compatibility receipt records the old/new survival identities and the audited
+fact that downstream preparation consumes only HP and potion encodings.
+
+Frozen TEST survival NLL/Brier improved 0.060411632/0.017986496 to
+0.058877671/0.017384328. Final-support exposure passed every nonempty slice
+after the same restricted exact correction for gold row 71838 (target mass
+0.0010596961); 1,633,152 RAW draws had zero violations in every invariant
+category. Native parity passed 3,904 draws and 31 fixtures, including 127
+recursive Brew samples, 122 escapes and three fail-closed/no-draw fixtures;
+maximum absolute error was 2.38e-6 at tolerance 1e-4. The executed native
+support predicate exactly retained 505,935/510,030 all and 51,036/51,441 TEST
+states with unchanged ordered-index digests. The tracked default artifact is
+SHA256 `e9a18951710fdfe9e1a81a2703090a41f039067c670a1d8a0393b5e7e8e0ddfd`.
+This qualifies offline composition and the native boundary on reused
+development evidence; online gameplay remains a separate paired test.
+[Promotion report](evidence/combat_transition_attention_promotion_2026-09-15.md).

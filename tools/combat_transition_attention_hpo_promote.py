@@ -23,7 +23,6 @@ SCHEMA = "combat_transition_attention_hpo_promotion_v1"
 EXPECTED_HPO_EVIDENCE_SHA256 = "3a4ac8859f9e31f5912449a6c8a1376e7f4e3306791c7e60508cc7e9d956a24c"
 EXPECTED_HPO_MODEL_SHA256 = "005f860d847a773c363170d2473fc8f3f77b4beab501c5db44833d2ac8e1e987"
 EXPECTED_PREPARED_SHA256 = "a642671d0956f36405b837755cdf3dfb3c4870cde4a1d6f251046ffc8205a1c9"
-EXPECTED_BASE_PARENT_ARTIFACT_SHA256 = "22c855e0667a58a73835505672b0ae6d03f12e9fb8d64f08893810199246e94e"
 EXPECTED_BASE_COMPONENTS = {
     "survival": "e150180a9112f52a94cfa60770adb6c0a48517a7d94a4c26f6e5896e85269c18",
     "maxHP": "2c5b54d0a9420a9d0e3ab9a26f32b9900c4869490e4af49627009cde21efb4b0",
@@ -172,8 +171,6 @@ def promote(args) -> None:
         raise ValueError("HPO model hash differs")
     if sha256(prepared_path) != EXPECTED_PREPARED_SHA256:
         raise ValueError("prepared array hash differs")
-    if sha256(repo_root / "selfplay/models/combat_transition_near_full_except_smoke_v2.native") != EXPECTED_BASE_PARENT_ARTIFACT_SHA256:
-        raise ValueError("tracked near-full baseline artifact differs")
     base = validate_base_parent(base_parent)
     evidence = json.loads(evidence_path.read_text(encoding="utf-8"))
     winner = evidence["winner"]
