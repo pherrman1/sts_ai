@@ -8411,12 +8411,14 @@ remains untested by this screen.
 [Protocol, hashes, slices and receipts](evidence/shared_frozen_hp_encoder_2026-09-15.md).
 
 
-## §270 — Frozen HP representation for maxHP-delta decoding (2026-09-15)
+## §273 — Frozen HP representation for maxHP-delta decoding (2026-09-15)
 
 Stacked on #190 head, baseline `cde61c85`, frozen experiment code `af46e32`.
 TRAIN-only full-union maxHP/HP component SHA256 values `2c5b54d0…` and
 `0c8b5aa8…`; same bound source/cache and original TRAIN/VALIDATION split.
 TRAIN 393,677 victories / 19,986 sources; VALIDATION 48,590 / 2,496; no TEST.
+PR #187 changed only the survival component; these exact maxHP and HP component
+hashes are unchanged on current main, so no scientific rerun is required.
 
 Only the frozen 64-dimensional representation differs. Fresh linear 11-class
 heads have byte-identical initial states, batches, AdamW/FP32 recipe and

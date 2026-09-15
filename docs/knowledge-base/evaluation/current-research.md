@@ -340,7 +340,9 @@ worsens 0.1528 HP. Nonzero-delta accuracy falls from 63.1307% to 0.0647%.
 Because this first sequential screen failed, the analogous HP-encoder potion
 screen did not run. The candidate selected final epoch 12, so intrinsic absence
 of maxHP information is not established; the fixed linear-head/training recipe
-is rejected. See [ledger-06 §270](../../experiments/ledger-06.md) and the
+is rejected. #187 changed only survival; the tested maxHP and HP component
+hashes are unchanged on current main, so no scientific rerun is required. See
+[ledger-06 §273](../../experiments/ledger-06.md) and the
 [maxHP evidence](../../experiments/evidence/shared_frozen_maxhp_encoder_2026-09-15.md).
 
 ### Shared relic trajectory residues

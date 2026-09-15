@@ -14,6 +14,9 @@ not run.
   `2c5b54d0a9420a9d0e3ab9a26f32b9900c4869490e4af49627009cde21efb4b0`.
 - Dedicated HP component SHA256:
   `0c8b5aa8c5218d6cd6102b768cc86a474c9ef30953d4b034caedcc41a426109b`.
+- Post-#187 applicability: #187 changed only the survival component. The exact
+  maxHP and HP component hashes tested here are unchanged on current main, so
+  the result remains directly applicable and no scientific rerun is required.
 - Both component receipts bind source `1c31b7eb0a7660d43bc27e0849a8955dd0c3daae`,
   original source-grouped TRAIN fitting, VALIDATION-only checkpoint selection,
   and preparation cache SHA256
