@@ -1,0 +1,44 @@
+{
+  "baselineSha": "28d39cdb611865518bed68d57b5f0afb6fcee5b5",
+  "experimentSha": "79c6fcf5ae979b5902c3b6c3af79da3902c1bbf0",
+  "decision": "SHARED_TRANSITION_ENCODER_REJECTED",
+  "failureMode": ["maxHP under-learning", "optimization still improving at epoch 12"],
+  "componentSha256": {
+    "maxHP": "2c5b54d0a9420a9d0e3ab9a26f32b9900c4869490e4af49627009cde21efb4b0",
+    "HP": "0c8b5aa8c5218d6cd6102b768cc86a474c9ef30953d4b034caedcc41a426109b"
+  },
+  "counts": {"TRAIN": {"rows": 393677, "sources": 19986}, "VALIDATION": {"rows": 48590, "sources": 2496}},
+  "selectedEpoch": 12,
+  "validationHistory": [
+    [1, 0.026371805, 0.012746500, 0.019559152], [2, 0.014245100, 0.009836317, 0.012040708],
+    [3, 0.009168629, 0.009170659, 0.009169644], [4, 0.007194339, 0.008212018, 0.007703179],
+    [5, 0.006248825, 0.007573678, 0.006911251], [6, 0.005895067, 0.007220532, 0.006557799],
+    [7, 0.005214406, 0.006806695, 0.006010551], [8, 0.004873859, 0.006448926, 0.005661392],
+    [9, 0.004508752, 0.006283858, 0.005396305], [10, 0.004389736, 0.006010032, 0.005199884],
+    [11, 0.004232703, 0.005874818, 0.005053760], [12, 0.003832507, 0.005607910, 0.004720209]
+  ],
+  "validationHistoryColumns": ["epoch", "maxHpKl", "hpKl", "combinedSelectionLoss"],
+  "teacher": {
+    "maxHP": {"nll": 0.042686500, "accuracy": 0.981107224, "expectedPostMaxHpMae": 0.081489171,
+      "nonzero": {"rows": 1546, "nll": 0.810299516, "accuracy": 0.631306598, "expectedPostMaxHpMae": 1.262335974}},
+    "HP": {"nll": 2.498291492, "crps": 3.619360053, "expectedMae": 5.341970254}
+  },
+  "student": {
+    "maxHP": {"nll": 0.045500919, "accuracy": 0.980037045, "expectedPostMaxHpMae": 0.086931331,
+      "nonzero": {"rows": 1546, "nll": 0.861657560, "accuracy": 0.622250970, "expectedPostMaxHpMae": 1.313237925}},
+    "HP": {"nll": 2.505073786, "crps": 3.636778273, "expectedMae": 5.363074912}
+  },
+  "gates": {"hpNllRelative": 0.002714773, "hpCrpsRelative": 0.004812514, "hpExpectedMaeDelta": 0.021104659,
+    "maxHpNllRelative": 0.065932311, "maxHpAccuracyDrop": 0.001070179, "maxHpExpectedMaeDelta": 0.005442159,
+    "maxHpNonzeroAccuracyDrop": 0.009055627, "maxHpNonzeroNllDelta": 0.051358044, "maxHpNonzeroNllCatastrophic": false},
+  "invariants": {"teacherParametersFrozen": true, "studentHpInitializationMatches": true, "validationInGradientUpdates": false,
+    "testInferenceRows": 0, "testMetricsComputed": false, "allOutputsFiniteAndNormalized": true, "illegalHpProbability": 0.0},
+  "hashes": {"preparationCache": "e1c25f2758bf56c7cff392ea02342d809f3ad7427c70b64166244a6b714a251d",
+    "batchOrder": "dd0579e1f2c34179188c22b82d35126ceb4619fcd76406b134b278a326f2376f",
+    "teacherMaxHP": "10404b3e1de4f033667e4be62aefc24d9b4a3920cf1ddcd563408aeef17583d7",
+    "teacherHP": "6244ca5e8c196bbfe32094f5113416c7b31cdfb8a084d3ff46d160141d252759",
+    "externalResults": "f51b062aabf8a62b93190db7854740f606654a475cfc21f4efbea50af0eb37c0",
+    "validationPredictions": "620c66ba2a5354187dfea72ae573bf609d0af269be42a9931f3bd9490552afce",
+    "studentCheckpoint": "c60d18c6c7065a86a8038f094bd3170a96e29ad30549f7791b63d469ac6d6ba9"},
+  "wallSeconds": {"teacherCache": 26.188501, "trainingSelectionScoring": 323.340451}
+}
