@@ -24,6 +24,12 @@ and links the historical record; do not rewrite the old ADR or chronological
 entry. Mark the earlier ADR `superseded` only when current evidence establishes
 the replacement.
 
+## Current architecture ADRs
+
+- [ADR-0014](0014-live-ooc-visit-lock-stopping.md) enables live strict visit-lock
+  stopping through an explicit policy override while retaining the false
+  non-aborting provider guarantee and a rollback switch.
+
 ## Current routing ADRs
 
 - [ADR-0012](0012-frozen-session-decision-log.md) routes historical session material to Git history and new knowledge to canonical maintained destinations.

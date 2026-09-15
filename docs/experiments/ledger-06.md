@@ -7979,3 +7979,58 @@ User-authorized final bounded pass in #182 changes the final pre-state support c
 The tracked V2 artifact SHA22c855e0667a58a73835505672b0ae6d03f12e9fb8d64f08893810199246e94e uses the selected original full-unionv1 stack, not failed Smoke repairs. CPUFP32 Python/native probability error≤5.96e−7 at1e−4 tolerance;3,904 complete RAW/planner-stream/scalar-prepared draws match, including117recursiveBrew cases. Threeexcluded fixtures prove fail-closed/no draws. Executed native support matches exact all/TEST ordered index digests across all510,030 rows. Strict load/export and tracked-artifact/startup tests are added.
 
 Original full-union Smoke failures and three bounded repair attempts remain preserved. No fourth repair, new data, gameplay or#180 root-abort estimate; exact#180 state replay unavailable. TEST reuse remains development evidence, not pristine scientific confirmation. V2 is opt-in and default MCTS remainsOFF. Frozen final SHA, independent review and LinuxGCC CI outcomes are recorded in #182 before authorized merge. Knowledge impact: maintained support/RNG/native artifact contracts, code map and qualification evidence updated. [Final report and bound receipts](evidence/near_full_combat_support_2026-09-14/REPORT.md).
+
+
+## 259. Full-budget hypothetical OOC root-lock observation (2026-09-15)
+
+Base5b2a5b5 (merged #183/#184/#182), measured candidateb50b1c7. Opt-in
+observeRootLock suppresses all root shortcuts, records earliest strict visit
+lock/action/remaining budget and measured loop suffix, and retains eventual
+abort/final full-budget winner. Live ROOT_LOCK_TRACE writes per-root JSONL;
+existing CSV/actual-stop metrics unchanged. No model/support/default/RNG change.
+Live non-aborting guarantee stays false: #182's505,935/510,030near-full support
+explicitly excludes initial/pre-Smoke and Writhing/Ritual; continuation/forbidden
+imagination aborts also remain. Zero observed aborts cannot qualify enablement.
+
+One common seed42OFF/ON, same trackedV2artifact22c855e0…/Release binary,
+IroncladA0/OOC512/exact10kSilver/fair combat/copied noncombat RNG/keysOFF/
+Act3-or-death/CPU0/OMP1. Both guarded commands exit0; same floor51Act3win/hp16,
+every non-timing OOC counter,26Silver records and support reasons match.
+All155searched roots complete512 and lock; first simulation min/median/max
+1/260/509,34sole locks at1. Hypothetical remaining40,186/79,360(50.64%);
+summed completed wall suffix5.258686s/13.471238OOC(39.04%,12.60%full).
+0aborts/locked-then-aborts; safe-enabled roots0, actualsaved/stops0. Conditional
+potential work under a future all-path proof, not achieved or average speedup.
+
+101/101Debug and7/7Release focused CTest pass; original Torch-env/probe-missing
+failures retained and repaired without dependency/runtime changes. Exact52/100
+strict crossing, RNG/visits/Q replay and lock-at1abort-at7 regression pass.
+No support expansion, enabled-stop timing, multi-seed run or complete full-run
+trajectory/state trace. Knowledge impact: maintained observer/environment/safety
+contracts and engineering opportunity evidence.
+[Report](evidence/ooc_root_lock_observation_2026-09-15.md),
+[raw commands/hashes/root records/checks](evidence/ooc_root_lock_observation_2026-09-15.json).
+
+
+## 260. Enable live OOC visit-lock stopping despite remaining abort support (2026-09-15)
+
+Explicit user policy choice enables strict visit locks by default inside opt-in
+live OOC MCTS, despite remaining Smoke/continuation abort paths. Generic default
+still requires the non-aborting guarantee; the live provider remains false.
+EARLY_STOP=0 restores the requirement. Observer/mean-Q suppress stopping; an
+unqualified singleton must complete one simulation. A later abort can be skipped,
+changing fallback behavior; this is deliberate, not support qualification.
+
+Source1a3f552, one paired guardedseed42/same Release binary, OOC512/exact10kSilver/
+fair/copied noncombat RNG/keysOFF/Act3-or-death/CPU0/OMP1. Full vs stop: completed
+simulations79,360vs39,174, stopped roots155,
+saved40,186(50.64%). OOCwall11.193670vs6.758811s
+(39.62%lower); full elapsed35.8988vs31.3939s
+(12.55%lower). Both exit0;188decisions/155owned/33fallback,
+0support/continuation aborts, all26Silver records and non-timing outcomes match
+(Act3win/floor51/hp16max85). One engineering seed, no average/quality claim or
+complete trajectory trace. FullDebug101/101 and focusedRelease3/3 pass after
+updating legacy assertions/error wording. Knowledge impact: live policy/default/
+rollback and ADR-0014 maintained; no model/support/GPU change.
+[Report](evidence/ooc_early_stop_enabled_2026-09-15.md),
+[raw packet](evidence/ooc_early_stop_enabled_2026-09-15.json).
