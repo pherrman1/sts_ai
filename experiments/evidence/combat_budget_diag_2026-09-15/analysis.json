@@ -1,0 +1,430 @@
+{
+  "holdout": {
+    "fights": 205,
+    "metrics": {
+      "legal_actions": {
+        "auc": 0.49244444444444446,
+        "auprc": 0.8831643531258476,
+        "threshold_candidates": 17
+      },
+      "q_gap": {
+        "auc": 0.45411111111111113,
+        "auprc": 0.8610735619209766,
+        "threshold_candidates": 204
+      },
+      "second_visit_share": {
+        "auc": 0.4752222222222222,
+        "auprc": 0.8737242996791269,
+        "threshold_candidates": 121
+      },
+      "top_second_visit_ratio": {
+        "auc": 0.4651111111111111,
+        "auprc": 0.8571448239047634,
+        "threshold_candidates": 200
+      },
+      "top_visit_share": {
+        "auc": 0.48444444444444446,
+        "auprc": 0.8787548532354952,
+        "threshold_candidates": 153
+      },
+      "visit_entropy": {
+        "auc": 0.5286666666666666,
+        "auprc": 0.8920588993206893,
+        "threshold_candidates": 205
+      }
+    },
+    "per_decision_agreement_rate": 0.8011728567439262,
+    "per_decision_rows": 3581,
+    "per_fight_500_sufficient_rate": 0.12195121951219512,
+    "stable_fights": 25,
+    "unstable_fights": 180
+  },
+  "holdout_seeds": [
+    72,
+    73,
+    74,
+    75,
+    76,
+    77,
+    78,
+    79
+  ],
+  "holdout_unstable_categories": [
+    {
+      "encounter": "18",
+      "room_type": "boss",
+      "unstable_fights": 1
+    },
+    {
+      "encounter": "19",
+      "room_type": "boss",
+      "unstable_fights": 4
+    },
+    {
+      "encounter": "20",
+      "room_type": "boss",
+      "unstable_fights": 3
+    },
+    {
+      "encounter": "37",
+      "room_type": "boss",
+      "unstable_fights": 6
+    },
+    {
+      "encounter": "38",
+      "room_type": "boss",
+      "unstable_fights": 1
+    },
+    {
+      "encounter": "39",
+      "room_type": "boss",
+      "unstable_fights": 1
+    },
+    {
+      "encounter": "53",
+      "room_type": "boss",
+      "unstable_fights": 3
+    },
+    {
+      "encounter": "54",
+      "room_type": "boss",
+      "unstable_fights": 1
+    },
+    {
+      "encounter": "55",
+      "room_type": "boss",
+      "unstable_fights": 3
+    },
+    {
+      "encounter": "15",
+      "room_type": "elite",
+      "unstable_fights": 4
+    },
+    {
+      "encounter": "16",
+      "room_type": "elite",
+      "unstable_fights": 5
+    },
+    {
+      "encounter": "17",
+      "room_type": "elite",
+      "unstable_fights": 6
+    },
+    {
+      "encounter": "34",
+      "room_type": "elite",
+      "unstable_fights": 4
+    },
+    {
+      "encounter": "35",
+      "room_type": "elite",
+      "unstable_fights": 5
+    },
+    {
+      "encounter": "36",
+      "room_type": "elite",
+      "unstable_fights": 7
+    },
+    {
+      "encounter": "50",
+      "room_type": "elite",
+      "unstable_fights": 5
+    },
+    {
+      "encounter": "51",
+      "room_type": "elite",
+      "unstable_fights": 4
+    },
+    {
+      "encounter": "52",
+      "room_type": "elite",
+      "unstable_fights": 6
+    },
+    {
+      "encounter": "1",
+      "room_type": "hallway",
+      "unstable_fights": 7
+    },
+    {
+      "encounter": "10",
+      "room_type": "hallway",
+      "unstable_fights": 4
+    },
+    {
+      "encounter": "11",
+      "room_type": "hallway",
+      "unstable_fights": 2
+    },
+    {
+      "encounter": "12",
+      "room_type": "hallway",
+      "unstable_fights": 2
+    },
+    {
+      "encounter": "13",
+      "room_type": "hallway",
+      "unstable_fights": 3
+    },
+    {
+      "encounter": "14",
+      "room_type": "hallway",
+      "unstable_fights": 2
+    },
+    {
+      "encounter": "2",
+      "room_type": "hallway",
+      "unstable_fights": 4
+    },
+    {
+      "encounter": "21",
+      "room_type": "hallway",
+      "unstable_fights": 3
+    },
+    {
+      "encounter": "22",
+      "room_type": "hallway",
+      "unstable_fights": 3
+    },
+    {
+      "encounter": "23",
+      "room_type": "hallway",
+      "unstable_fights": 3
+    },
+    {
+      "encounter": "24",
+      "room_type": "hallway",
+      "unstable_fights": 4
+    },
+    {
+      "encounter": "25",
+      "room_type": "hallway",
+      "unstable_fights": 2
+    },
+    {
+      "encounter": "26",
+      "room_type": "hallway",
+      "unstable_fights": 1
+    },
+    {
+      "encounter": "27",
+      "room_type": "hallway",
+      "unstable_fights": 1
+    },
+    {
+      "encounter": "28",
+      "room_type": "hallway",
+      "unstable_fights": 4
+    },
+    {
+      "encounter": "29",
+      "room_type": "hallway",
+      "unstable_fights": 4
+    },
+    {
+      "encounter": "3",
+      "room_type": "hallway",
+      "unstable_fights": 2
+    },
+    {
+      "encounter": "30",
+      "room_type": "hallway",
+      "unstable_fights": 5
+    },
+    {
+      "encounter": "31",
+      "room_type": "hallway",
+      "unstable_fights": 3
+    },
+    {
+      "encounter": "32",
+      "room_type": "hallway",
+      "unstable_fights": 4
+    },
+    {
+      "encounter": "33",
+      "room_type": "hallway",
+      "unstable_fights": 1
+    },
+    {
+      "encounter": "4",
+      "room_type": "hallway",
+      "unstable_fights": 3
+    },
+    {
+      "encounter": "40",
+      "room_type": "hallway",
+      "unstable_fights": 3
+    },
+    {
+      "encounter": "41",
+      "room_type": "hallway",
+      "unstable_fights": 5
+    },
+    {
+      "encounter": "42",
+      "room_type": "hallway",
+      "unstable_fights": 4
+    },
+    {
+      "encounter": "43",
+      "room_type": "hallway",
+      "unstable_fights": 2
+    },
+    {
+      "encounter": "44",
+      "room_type": "hallway",
+      "unstable_fights": 3
+    },
+    {
+      "encounter": "45",
+      "room_type": "hallway",
+      "unstable_fights": 3
+    },
+    {
+      "encounter": "46",
+      "room_type": "hallway",
+      "unstable_fights": 2
+    },
+    {
+      "encounter": "47",
+      "room_type": "hallway",
+      "unstable_fights": 2
+    },
+    {
+      "encounter": "48",
+      "room_type": "hallway",
+      "unstable_fights": 1
+    },
+    {
+      "encounter": "49",
+      "room_type": "hallway",
+      "unstable_fights": 6
+    },
+    {
+      "encounter": "5",
+      "room_type": "hallway",
+      "unstable_fights": 2
+    },
+    {
+      "encounter": "6",
+      "room_type": "hallway",
+      "unstable_fights": 2
+    },
+    {
+      "encounter": "7",
+      "room_type": "hallway",
+      "unstable_fights": 3
+    },
+    {
+      "encounter": "8",
+      "room_type": "hallway",
+      "unstable_fights": 5
+    },
+    {
+      "encounter": "18",
+      "room_type": "other",
+      "unstable_fights": 1
+    }
+  ],
+  "schema": "combat_budget_diag_v1",
+  "seeds": [
+    64,
+    65,
+    66,
+    67,
+    68,
+    69,
+    70,
+    71,
+    72,
+    73,
+    74,
+    75,
+    76,
+    77,
+    78,
+    79
+  ],
+  "train": {
+    "fights": 193,
+    "metrics": {
+      "legal_actions": {
+        "auc": 0.46557377049180326,
+        "auprc": 0.9410187732649908,
+        "threshold_candidates": 17
+      },
+      "q_gap": {
+        "auc": 0.6131147540983607,
+        "auprc": 0.9697645387254187,
+        "threshold_candidates": 184
+      },
+      "second_visit_share": {
+        "auc": 0.5404371584699453,
+        "auprc": 0.9561983507493199,
+        "threshold_candidates": 101
+      },
+      "top_second_visit_ratio": {
+        "auc": 0.6125683060109289,
+        "auprc": 0.9690004981247484,
+        "threshold_candidates": 183
+      },
+      "top_visit_share": {
+        "auc": 0.5147540983606558,
+        "auprc": 0.9530840857163723,
+        "threshold_candidates": 136
+      },
+      "visit_entropy": {
+        "auc": 0.4557377049180328,
+        "auprc": 0.951497114063628,
+        "threshold_candidates": 184
+      }
+    },
+    "per_decision_agreement_rate": 0.7746724890829695,
+    "per_decision_rows": 3435,
+    "per_fight_500_sufficient_rate": 0.05181347150259067,
+    "stable_fights": 10,
+    "unstable_fights": 183
+  },
+  "train_seeds": [
+    64,
+    65,
+    66,
+    67,
+    68,
+    69,
+    70,
+    71
+  ],
+  "train_thresholds_holdout_risk_coverage": {
+    "legal_actions": {
+      "holdout": {},
+      "threshold": null,
+      "train": {}
+    },
+    "q_gap": {
+      "holdout": {},
+      "threshold": null,
+      "train": {}
+    },
+    "second_visit_share": {
+      "holdout": {},
+      "threshold": null,
+      "train": {}
+    },
+    "top_second_visit_ratio": {
+      "holdout": {},
+      "threshold": null,
+      "train": {}
+    },
+    "top_visit_share": {
+      "holdout": {},
+      "threshold": null,
+      "train": {}
+    },
+    "visit_entropy": {
+      "holdout": {},
+      "threshold": null,
+      "train": {}
+    }
+  }
+}

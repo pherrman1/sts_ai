@@ -8409,3 +8409,44 @@ promotion or runtime change. Knowledge impact: experiment evidence retained
 with explicit post-#187 applicability; the current promoted survival encoder
 remains untested by this screen.
 [Protocol, hashes, slices and receipts](evidence/shared_frozen_hp_encoder_2026-09-15.md).
+
+
+## §273 — Paired 500-simulation combat-budget diagnostic (2026-09-15)
+
+Baseline/current-main source was `28d39cdb`; the pasted request named
+`cde61c85`, but the requested fresh worktree was based on the actual current
+local `main`. The implementation was frozen at `ee7e80a` before the scientific
+run. The diagnostic is opt-in and records an exact 500-simulation checkpoint,
+then continues the same private Silver search state to the exact 10,000 total;
+the ordinary path is unchanged when `STS_COMBAT_BUDGET_DIAG_FILE` is unset.
+
+The designated run used fresh seeds 64–79, Ironclad A0, fair project RNG,
+Searcher2, exact 10,000 Silver simulations, allocated cap 131,072, native
+out-of-combat decisions, and four OpenMP workers. Adaptive budgets,
+convergence stops, keys, and OOC MCTS were disabled. Every combat root has a
+checkpoint action/root summary, final action/root summary, semantic agreement,
+and reroot telemetry in the raw CSV. The paired continuation was validated by
+a fixed-state bridge test: standalone 500 and the 500 prefix of a 1,000-total
+continuation choose the same action with the expected simulation counts.
+
+The run completed with 398 fights and 7,016 decision rows. The checkpoint
+action agreed with the final action in 5,530/7,016 rows (78.82%). A fight was
+labelled stable only if every recorded decision agreed: 35/398 stable and
+363/398 unstable. The sorted-seed split was 64–71 train and 72–79 holdout;
+the holdout contained 25 stable and 180 unstable fights. At the first
+recorded decision, every tested root-summary feature failed to separate the
+holdout label: AUROC was 0.454 for top-two Q gap, 0.484 for top visit share,
+0.475 for second visit share, 0.465 for the top/second ratio, 0.529 for visit
+entropy, and 0.492 for legal-action count. No train threshold satisfying the
+predeclared ≤5% false-stop constraint had nonzero useful coverage on holdout.
+Unstable fights appeared in hallway, elite, and boss categories; no
+category-only exception was supported.
+
+**`NO_USEFUL_SIGNAL`** for this bounded predictive diagnostic. Stop before
+adaptive budget allocation, early stopping, NN training, or production
+qualification. This is a negative diagnostic result, not evidence that a
+different label or search regime could never be predictive. Knowledge impact:
+current research status records a bounded negative result; runtime defaults,
+models, gameplay, and production budgets are unchanged.
+
+[Evidence packet, raw CSV, analysis and provenance](evidence/combat_budget_diag_2026-09-15/README.md).

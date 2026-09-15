@@ -1,7 +1,7 @@
 # Current research status
 
-Last verified: 2026-09-15 for final near-full support/native qualification
-and paired old/new-V2 OOC MCTS gameplay;
+Last verified: 2026-09-15 for final near-full support/native qualification,
+paired old/new-V2 OOC MCTS gameplay, and the paired combat-budget diagnostic;
 2026-09-14 for exact supported-v1 RNG continuation
 and the stochastic signed-HP distribution, expanded-support offline composition,
 and fresh64 fixed10000 live MCTS gate;
@@ -49,6 +49,29 @@ measurement or frozen teacher/model qualification was performed. Keep 32k
 and require fresh matched quality/resource evidence before promotion.
 See [ledger §265](../../experiments/ledger-06.md) and
 [paired packet](../../experiments/evidence/silver_cap_pair10k_16_2026-09-15/README.md).
+
+## Paired combat-budget diagnostic
+
+The bounded predictive diagnostic is **`NO_USEFUL_SIGNAL`**. Sixteen fresh
+seeds (64–79) ran fair Ironclad A0 with one exact 10,000-simulation Silver
+search per combat. Each opted-in root was observed at 500 simulations and then
+continued on the same private search state for the remaining 9,500; adaptive
+budgets, convergence stops, keys, and OOC MCTS were disabled, with the current
+allocated 131,072-cap configuration held fixed. The 500-simulation semantic
+action agreed with the final action in 78.82% of decision rows, but only 35 of
+398 fights were stable across every recorded decision. On the held-out eight
+seeds, all first-decision root summaries had AUROC below 0.53 for separating
+fights that later changed action from fights that stayed stable, and no
+threshold met the preregistered ≤5% false-stop constraint with nonzero useful
+coverage. Unstable fights occurred in hallway, elite, and boss categories, so
+no category-only exception is supported.
+
+Do not enable an adaptive allocator, early-stop rule, or NN from this packet.
+The diagnostic implementation remains an opt-in bridge capability and the
+ordinary Silver path is unchanged when its environment variable is unset. Stop
+this line unless a separately justified label or regime changes the question.
+See [ledger §273](../../experiments/ledger-06.md) and the
+[paired diagnostic packet](../../experiments/evidence/combat_budget_diag_2026-09-15/README.md).
 
 ## Current priority / active line
 

@@ -1,0 +1,5 @@
+Pre-registered run:
+baseline main 28d39cdb611865518bed68d57b5f0afb6fcee5b5
+frozen implementation ee7e80a0361e720972b3d43872adfa13c1ef2c2c
+seeds 64..79, Ironclad A0, fair Silver, exact 10000, checkpoint 500
+STS_SIM_ADAPT=0 STS_SILVER_ADAPTIVE=0 STS_CONVERGE=0 STS_CONV_ROOT=0 keys off, native OOC, allocated reuse cap 131072
