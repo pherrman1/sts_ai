@@ -401,6 +401,7 @@ add_test(NAME analyze_silver_vnet_leaf_selftest COMMAND python3 ${CMAKE_SOURCE_D
 add_test(NAME check_benchmark_canary_selftest COMMAND python3 ${CMAKE_SOURCE_DIR}/tools/agent/check_benchmark_canary.py --self-test)
 add_test(NAME analyze_silver_sticky_quality_selftest COMMAND python3 ${CMAKE_SOURCE_DIR}/tools/analyze_silver_sticky_quality.py --self-test)
 add_test(NAME analyze_silver_root_diagnostic_selftest COMMAND python3 ${CMAKE_SOURCE_DIR}/tools/analyze_silver_root_diagnostic.py --self-test)
+add_test(NAME analyze_combat_budget_diag_selftest COMMAND python3 ${CMAKE_SOURCE_DIR}/tools/analyze_combat_budget_diag.py --self-test)
 add_test(NAME analyze_silver_adaptive_selftest COMMAND python3 ${CMAKE_SOURCE_DIR}/tools/analyze_silver_adaptive.py --self-test)
 add_test(NAME analyze_postcombat_raw_terminal_selftest COMMAND python3 ${CMAKE_SOURCE_DIR}/tools/test_postcombat_raw_terminal_selftest.py)
 add_test(NAME export_win_model_selftest COMMAND python3 ${CMAKE_SOURCE_DIR}/tools/test_export_win_model_selftest.py)

@@ -164,6 +164,29 @@ int main() {
           && inMemorySearch.rootActionSummaries.size() == reloadedSearch.rootActionSummaries.size(),
           "serialized/reloaded leaf must reproduce an identical deterministic small-budget search");
 
+    // The paired-budget probe must expose the same 500-step prefix as an
+    // independent fresh 500-step search, while its final result comes from
+    // the unchanged same-session continuation.
+    auto prefixConfig = serializedSearchConfig;
+    prefixConfig.simulationsPerDecision = 500;
+    const auto standalonePrefix = silver_bridge::runSilverDecision(firstWire, prefixConfig);
+    auto pairedConfig = serializedSearchConfig;
+    pairedConfig.simulationsPerDecision = 1000;
+    pairedConfig.collectBudgetDiagnostics = true;
+    pairedConfig.budgetDiagnosticCheckpoint = 500;
+    auto pairedSession = silver_bridge::makeSilverSearchSession();
+    const auto paired = silver_bridge::runSilverDecisionWithCheckpoint(
+        *pairedSession, firstWire, pairedConfig);
+    check(standalonePrefix.accepted && paired.accepted && paired.budgetDiagnostic.valid
+          && paired.simulations == 1000
+          && silver_bridge::semanticActionFingerprint(standalonePrefix.action)
+              == paired.budgetDiagnostic.checkpointActionFingerprint
+          && paired.budgetDiagnostic.checkpointSimulations == 500
+          && paired.budgetDiagnostic.totalSimulations == 1000
+          && paired.budgetDiagnostic.checkpointRootUncertainty.valid
+          && paired.budgetDiagnostic.checkpointRootUncertainty.legalActions > 0,
+          "paired budget probe must preserve the exact standalone 500-step prefix and sensible root statistics");
+
     silver_bridge::SilverLeafObservation capturedLeaf;
     bool capturedLeafStart = false;
     auto parentObserverConfig = serializedSearchConfig;

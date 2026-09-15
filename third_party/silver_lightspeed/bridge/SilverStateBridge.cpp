@@ -1322,13 +1322,71 @@ SelectionTransactionTrace runSequentialSelectionTransaction(
         for (int step = 0; step < maxSubdecisions; ++step) {
             if (step > 0) session.beginAt(state, config);
 
-            auto decision = runCurrentRootDecision(session, config, false);
-            decision = applyAdaptiveContinuation(session, config, std::move(decision), false);
+            SilverDecisionResult decision;
+            if (config.collectBudgetDiagnostics) {
+                const auto checkpoint = config.budgetDiagnosticCheckpoint;
+                if (checkpoint <= 0 || config.simulationsPerDecision <= checkpoint) {
+                    trace.failure = "invalid_budget_diagnostic_range";
+                    return trace;
+                }
+                auto checkpointConfig = config;
+                checkpointConfig.simulationsPerDecision = checkpoint;
+                checkpointConfig.adaptiveEnabled = false;
+                checkpointConfig.collectBudgetDiagnostics = false;
+                checkpointConfig.collectDecisionDiagnostics = true;
+                checkpointConfig.collectRootActionSummaries = true;
+                auto prefix = runCurrentRootDecision(session, checkpointConfig, false);
+                if (!prefix.accepted || prefix.simulations != checkpoint) {
+                    trace.failure = "checkpoint_simulation_count_mismatch";
+                    return trace;
+                }
+                std::string checkpointActionFingerprint;
+                if (session.previousBest != nullptr)
+                    checkpointActionFingerprint = semanticActionFingerprint(
+                        semanticFromAction(*session.searcher->root->state, session.previousBest->action));
+                auto suffixConfig = config;
+                suffixConfig.simulationsPerDecision = config.simulationsPerDecision - checkpoint;
+                suffixConfig.adaptiveEnabled = false;
+                suffixConfig.collectBudgetDiagnostics = false;
+                suffixConfig.collectDecisionDiagnostics = true;
+                suffixConfig.collectRootActionSummaries = true;
+                auto suffix = continueSilverDecision(session, suffixConfig.simulationsPerDecision,
+                                                     suffixConfig, false);
+                if (!suffix.accepted || suffix.simulations != suffixConfig.simulationsPerDecision) {
+                    trace.failure = "reference_simulation_count_mismatch";
+                    return trace;
+                }
+                decision = std::move(suffix);
+                decision.simulations += prefix.simulations;
+                decision.telemetry.add(prefix.telemetry);
+                decision.diagnostic.simulationsAdded += prefix.diagnostic.simulationsAdded;
+                decision.diagnostic.nodesCreated += prefix.diagnostic.nodesCreated;
+                decision.diagnostic.allocatedNodesBeforeRoot = prefix.diagnostic.allocatedNodesBeforeRoot;
+                decision.diagnostic.activeNodesBeforeRoot = prefix.diagnostic.activeNodesBeforeRoot;
+                decision.diagnostic.inheritedVisits = prefix.diagnostic.inheritedVisits;
+                decision.budgetDiagnostic.valid = true;
+                decision.budgetDiagnostic.checkpointSimulations = prefix.simulations;
+                decision.budgetDiagnostic.totalSimulations = decision.simulations;
+                decision.budgetDiagnostic.checkpointActionFingerprint = checkpointActionFingerprint;
+                if (session.previousBest != nullptr) {
+                    const auto finalAction = semanticFromAction(*session.searcher->root->state,
+                                                                session.previousBest->action);
+                    decision.budgetDiagnostic.finalActionFingerprint =
+                        semanticActionFingerprint(finalAction);
+                }
+                decision.budgetDiagnostic.checkpointRootUncertainty = prefix.rootUncertainty;
+                decision.budgetDiagnostic.finalRootUncertainty = decision.rootUncertainty;
+            } else {
+                decision = runCurrentRootDecision(session, config, false);
+                decision = applyAdaptiveContinuation(session, config, std::move(decision), false);
+            }
             trace.totalSimulations += decision.simulations;
             ++trace.searchDecisions;
             trace.telemetry.add(decision.telemetry);
             if (config.collectDecisionDiagnostics)
                 trace.searchDiagnostics.push_back(decision.diagnostic);
+            if (config.collectBudgetDiagnostics)
+                trace.budgetDiagnostics.push_back(decision.budgetDiagnostic);
             if (!decision.accepted) {
                 trace.failure = "Silver search returned no root edge";
                 return trace;
@@ -1427,6 +1485,77 @@ SilverDecisionResult runSilverDecision(SilverSearchSession &session,
 SilverDecisionResult runSilverDecision(const BattleStateWire &wire, const SilverSearchConfig &config) {
     auto session = makeSilverSearchSession();
     return runSilverDecision(*session, wire, config);
+}
+
+SilverDecisionResult runSilverDecisionWithCheckpoint(
+        SilverSearchSession &session, const BattleStateWire &wire,
+        const SilverSearchConfig &config) {
+    SilverDecisionResult result;
+    const auto checkpoint = config.budgetDiagnosticCheckpoint;
+    const auto total = config.simulationsPerDecision;
+    if (checkpoint <= 0 || total <= checkpoint) {
+        result.failureReason = "invalid_budget_diagnostic_range";
+        return result;
+    }
+    try {
+        const int rerootExactBefore = session.rerootExact;
+        const int rerootFallbackBefore = session.rerootFallback;
+        auto checkpointConfig = config;
+        checkpointConfig.simulationsPerDecision = checkpoint;
+        checkpointConfig.adaptiveEnabled = false;
+        checkpointConfig.collectBudgetDiagnostics = false;
+        checkpointConfig.collectDecisionDiagnostics = true;
+        checkpointConfig.collectRootActionSummaries = true;
+        const auto state = session.materializeAndBegin(wire, checkpointConfig);
+        auto prefix = runCurrentRootDecision(session, checkpointConfig);
+        if (!prefix.accepted || prefix.simulations != checkpoint) {
+            result.failureReason = !prefix.failureReason.empty()
+                ? prefix.failureReason : "checkpoint_simulation_count_mismatch";
+            return result;
+        }
+
+        auto continuationConfig = config;
+        continuationConfig.simulationsPerDecision = total - checkpoint;
+        continuationConfig.adaptiveEnabled = false;
+        continuationConfig.collectBudgetDiagnostics = false;
+        continuationConfig.collectDecisionDiagnostics = true;
+        continuationConfig.collectRootActionSummaries = true;
+        auto suffix = continueSilverDecision(session, total - checkpoint, continuationConfig);
+        if (!suffix.accepted || suffix.simulations != total - checkpoint) {
+            result.failureReason = !suffix.failureReason.empty()
+                ? suffix.failureReason : "reference_simulation_count_mismatch";
+            return result;
+        }
+
+        result = std::move(suffix);
+        result.simulations = prefix.simulations + result.simulations;
+        result.telemetry.add(prefix.telemetry);
+        result.rerootExact = session.rerootExact - rerootExactBefore;
+        result.rerootFallback = session.rerootFallback - rerootFallbackBefore;
+        result.inheritedVisits = session.inheritedVisits;
+        result.rerootMissDiagnostic = session.rerootMissDiagnostic;
+        result.diagnostic.simulationsAdded += prefix.diagnostic.simulationsAdded;
+        result.diagnostic.nodesCreated += prefix.diagnostic.nodesCreated;
+        result.diagnostic.allocatedNodesBeforeRoot = prefix.diagnostic.allocatedNodesBeforeRoot;
+        result.diagnostic.activeNodesBeforeRoot = prefix.diagnostic.activeNodesBeforeRoot;
+        result.diagnostic.allocatedNodesAfterSearch = suffix.diagnostic.allocatedNodesAfterSearch;
+        result.diagnostic.activeNodesAfterSearch = suffix.diagnostic.activeNodesAfterSearch;
+        result.diagnostic.inheritedVisits = prefix.diagnostic.inheritedVisits;
+        result.diagnostic.rootVisitsAfterSearch = suffix.diagnostic.rootVisitsAfterSearch;
+        result.diagnostic.chosenEdgeVisits = suffix.diagnostic.chosenEdgeVisits;
+        result.budgetDiagnostic.valid = true;
+        result.budgetDiagnostic.checkpointSimulations = prefix.simulations;
+        result.budgetDiagnostic.totalSimulations = result.simulations;
+        result.budgetDiagnostic.checkpointActionFingerprint = prefix.initialActionFingerprint;
+        result.budgetDiagnostic.finalActionFingerprint = semanticActionFingerprint(result.action);
+        result.budgetDiagnostic.checkpointRootUncertainty = prefix.rootUncertainty;
+        result.budgetDiagnostic.finalRootUncertainty = result.rootUncertainty;
+        (void)state;
+    } catch (const std::exception &e) {
+        result.accepted = false;
+        result.failureReason = std::string("search_exception: ") + e.what();
+    }
+    return result;
 }
 
 std::vector<SemanticAction> enumerateSilverLegalActions(const BattleStateWire &wire) {

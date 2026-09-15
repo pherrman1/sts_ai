@@ -330,6 +330,11 @@ struct SilverSearchConfig {
     // evaluation mean.  This is default-off diagnostic observation only.
     bool collectRootActionSummaries = false;
     bool collectRolloutDiagnostics = false;
+    // Opt-in paired budget diagnostic: snapshot this same root after the
+    // checkpoint budget and continue it to simulationsPerDecision. This is
+    // observational only and is never enabled by the production path.
+    bool collectBudgetDiagnostics = false;
+    std::int64_t budgetDiagnosticCheckpoint = 500;
     // Optional type-free leaf callback. It is invoked at the exact point a
     // SimpleAgent rollout would begin and is behavior-neutral unless the
     // callback explicitly sets skipRollout/directValue.
@@ -473,6 +478,16 @@ struct SilverSearchTelemetry {
     }
 };
 
+struct SilverBudgetDiagnostic {
+    bool valid = false;
+    std::int64_t checkpointSimulations = 0;
+    std::int64_t totalSimulations = 0;
+    std::string checkpointActionFingerprint;
+    std::string finalActionFingerprint;
+    SilverRootUncertainty checkpointRootUncertainty;
+    SilverRootUncertainty finalRootUncertainty;
+};
+
 struct SelectionTransactionTrace {
     bool accepted = false;
     bool finalConfirmation = false;
@@ -490,6 +505,7 @@ struct SelectionTransactionTrace {
     // parity/debug trace only; final live lowering remains identity based.
     std::vector<int> selectedBitsAfterEachIntermediate;
     std::vector<SilverSearchDecisionDiagnostic> searchDiagnostics;
+    std::vector<SilverBudgetDiagnostic> budgetDiagnostics;
     SemanticAction finalAction;
     SilverSearchTelemetry telemetry;
 };
@@ -520,6 +536,7 @@ struct SilverDecisionResult {
     double adaptiveThreshold = 0.0;
     int rerootExact = 0;
     int rerootFallback = 0;
+    SilverBudgetDiagnostic budgetDiagnostic;
 };
 
 // Fresh forced-action continuation used by the bounded Silver root diagnostic.
@@ -640,6 +657,12 @@ SilverDecisionResult runSilverDecision(const BattleStateWire &state,
 SilverDecisionResult runSilverDecision(SilverSearchSession &session,
                                        const BattleStateWire &state,
                                        const SilverSearchConfig &config);
+// Run one root in two contiguous pieces on the same private search session.
+// The returned budgetDiagnostic is the only additional observation; the final
+// action and root state are those of the full-budget search.
+SilverDecisionResult runSilverDecisionWithCheckpoint(
+    SilverSearchSession &session, const BattleStateWire &state,
+    const SilverSearchConfig &config);
 // Continue the current private root without materializing or rerooting it.
 // `additionalSimulations` is an increment, so the resulting root has the
 // previous visits plus exactly this many new search steps.

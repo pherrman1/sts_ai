@@ -46,7 +46,8 @@ The production reuse cap defaults to `32 * 1024`. The explicit experimental
 | `STS_SILVER_REUSE_CAP_MODE` | Exact-reroot mode: `allocated` (`allNodes.size()` cap), experimental `active` (`poolUsed` cap), or experimental `none` (fresh root every decision); any other value fails before gameplay | `allocated` | `SilverLiveBackend::installSilverLiveBackend` |
 | `STS_SILVER_SCALING_DIAG_FILE` | Default-off per-search CSV for the reuse-cap experiment, including sequential GAMBLE/EXHAUST_MANY private subdecisions | unset/off | `SilverLiveBackend` |
 | `STS_SILVER_STICKY_QUALITY_FILE` | Default-off sticky-cap decision-quality CSV. Valid only with `STS_SILVER_SEARCH=1` and `STS_SILVER_REUSE_CAP_MODE=active`; serializes `(seed,floor,encounter,decision ordinal)` as four fixed-width little-endian values into FNV-1a and selects when `hash & 3 == 0` (one deterministic bucket in four, maximum 16 sampled states per run seed). It then runs isolated fresh 3700/25000/50000 Silver shadows. `<path>.summary.csv` records eligible, selected, and excluded sequential-subdecision counts. | unset/off | `SilverLiveBackend`; `tools/analyze_silver_sticky_quality.py` |
-| `STS_SILVER_ROOT_DIAG_FILE` | Default-off root-action diagnostic CSV: samples ordinary fair Silver combat roots, records fresh 1k/3.7k root visits/Qs, and evaluates every accepted legal root action with fresh forced-action Silver continuations. Diagnostic only; it does not alter the live action. | unset/off | `SilverLiveBackend`; `tools/analyze_silver_root_diagnostic.py` |
+| `STS_SILVER_ROOT_DIAG_FILE` | Default-off root-action diagnostic CSV: samples ordinary fair Silver combat roots, records fresh 1k/3.7k root visits/Qs, and evaluates every accepted legal root action with fresh forced-action Silver continuations. Diagnostic only; it does not alter the live action. | unset/off | `SilverLiveBackend`; `tools/analyze_silver_root_diagnostic.py` |
+| `STS_COMBAT_BUDGET_DIAG_FILE` | Default-off paired combat-budget CSV: at every ordinary or sequential-selection Silver decision, records the same-search 500-simulation root snapshot and continues that root to the exact 10,000-simulation final action. Includes stable semantic action identities, visit/Q/entropy/legal-action diagnostics, and per-decision agreement. Diagnostic only; unset leaves the normal one-shot search path unchanged. | unset/off | `SilverLiveBackend`; `tools/analyze_combat_budget_diag.py` |
 | `STS_SILVER_ROOT_DIAG_MAX_PER_SEED` | Maximum captured root decisions per run seed for the root-action diagnostic | `8` when the file option is set | `SilverLiveBackend` |
 | `STS_SILVER_ROOT_DIAG_REF_BUDGET` | Silver simulations per forced-action continuation replicate | `25000` when the file option is set | `SilverLiveBackend` |
 | `STS_SILVER_ROOT_DIAG_REPLICATES` | Independent continuation replicates; sibling actions use the same replicate seeds for common-random-number pairing | `2` when the file option is set | `SilverLiveBackend` |
@@ -94,6 +95,14 @@ with the increment `3700 - 1000` on the existing root. The adaptive flag also
 applies independently to each private subdecision of sequential
 `GAMBLE`/`EXHAUST_MANY`; the live atomic action bridge and transaction protocol
 are unchanged.
+
+The paired combat-budget diagnostic uses the existing Silver root summary
+helper: final action selection remains maximum edge visits, while the
+checkpoint fields are the top visit share, second visit share and ratio, the
+top-two child-Q gap when available, visit entropy, and legal-action count. It
+does not enable `STS_SILVER_ADAPTIVE`, `STS_SIM_ADAPT`, `STS_CONVERGE`, or
+`STS_CONV_ROOT`, and the final 10k action is selected only after the same
+private search receives its remaining 9,500 simulations.
 
 When Silver is enabled, `bestbench` metadata records the effective combat
 backend, reuse-cap mode and production cap, Silver upstream SHA, executable
