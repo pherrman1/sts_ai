@@ -183,7 +183,10 @@ def run(args):
     if output.exists(): raise ValueError("refusing overwrite")
     output.mkdir(parents=True); torch.set_num_threads(4); torch.manual_seed(RECIPE["seed"]); torch.cuda.manual_seed_all(RECIPE["seed"])
     cache, arrays, teachers, train, validation, counts, provenance = prepare(Path(args.artifact_root), output)
-    student = copy.deepcopy(teachers.hp_net); student.train().requires_grad_(True)
+    width = len(c.base.CONTINUOUS_GLOBAL_FIELDS)
+    student = stochastic_hp.new_model(torch, np.zeros(width,np.float32), np.ones(width,np.float32),
+                                      len(teachers.delta_values), teachers.classes, RECIPE["seed"]).cuda()
+    student.load_state_dict(teachers.hp_net.state_dict()); student.train().requires_grad_(True)
     if state_hash(student) != state_hash(teachers.hp_net): raise ValueError("student HP initialization differs")
     initial_hp_hash = state_hash(student)
     max_head = torch.nn.Linear(64,len(teachers.delta_values)).cuda(); torch.manual_seed(RECIPE["seed"]); torch.cuda.manual_seed_all(RECIPE["seed"]); max_head.reset_parameters(); initial_max_hash = state_hash(max_head)
