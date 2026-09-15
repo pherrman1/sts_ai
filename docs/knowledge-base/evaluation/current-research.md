@@ -56,8 +56,8 @@ The fresh current-main V2 confirmation on seeds `12003000..12003031` is
 complete. MCTS-512 is **NO_CONFIRMATION**: 22/32 versus V4 24/32, -6.25pp,
 paired95% CI [-28.125,+15.625]pp. Rollout3 is **PROMISING_INCONCLUSIVE**:
 28/32 versus V4 24/32, +12.5pp, CI [-3.125,+28.125]pp, at 105.89x V4 elapsed
-time. It is the only candidate worth considering for a larger prospective
-confirmation, conditional on extreme cost; neither arm is deployment-qualified.
+time. The fixed-2048 completion below determines the practical next-confirmation
+candidate; neither arm in this initial comparison is deployment-qualified.
 See [ledger-06 §274](../../experiments/ledger-06.md) and the
 [evidence packet](../../experiments/evidence/ooc_mcts_confirmation_v2_2026-09-15/README.md).
 
