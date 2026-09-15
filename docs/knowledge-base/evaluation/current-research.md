@@ -1,6 +1,7 @@
 # Current research status
 
-Last verified: 2026-09-15 for final near-full support/native qualification;
+Last verified: 2026-09-15 for final near-full support/native qualification
+and paired old/new-V2 OOC MCTS gameplay;
 2026-09-14 for exact supported-v1 RNG continuation
 and the stochastic signed-HP distribution, expanded-support offline composition,
 and fresh64 fixed10000 live MCTS gate;
@@ -77,9 +78,11 @@ On the exact supported TEST set, 1,633,152 draws have zero recorded hard-validit
 
 The accepted Brew contract draws a fresh full-width hypothetical native potion RNG from planner RNG on first use, reuses it through recursion and retains its advanced state in sampled RAW. Generated Smoke/ESCAPE remains supported; initial/pre-Smoke states stay excluded. Historical RNG reconstructs teacher labels only. Native generation audited 3,208 Brew rows and 3,106 rounds, including 112 proven recursive cases. Transmutation upgrade status conditions shared learned HoG mechanics, while native payouts remain exact 20/25.
 
-The selected full-union v1 component stack is tracked as `selfplay/models/combat_transition_near_full_except_smoke_v2.native` (SHA256 `22c855e0667a58a73835505672b0ae6d03f12e9fb8d64f08893810199246e94e`). Python/native CPU FP32 probabilities pass at 1e-4 tolerance (maximum probability error 5.96e−7); complete RAW state, planner stream and scalar/prepared parity pass on 3,904 draws, including 117 recursive Brew cases and three unsupported/no-draw fixtures. The executed native support predicate matches both exact corpus/TEST ordered-index hashes. Strict loader/export guards and the tracked artifact are exercised in repository checks.
+The tracked default artifact at `selfplay/models/combat_transition_near_full_except_smoke_v2.native` now uses the targeted attention-HPO survival component (artifact SHA256 `e9a18951710fdfe9e1a81a2703090a41f039067c670a1d8a0393b5e7e8e0ddfd`). All other component checkpoints are unchanged. Frozen TEST survival NLL/Brier improve from 0.060412/0.017986 to 0.058878/0.017384. The full final-support composition and RAW gates were rerun: all nonempty exposure slices pass, the established exact correction resolves the one Monte Carlo gold zero, and 1,633,152 transitions have zero hard-validity violations. Python/native CPU FP32 probabilities pass at 1e-4 tolerance (maximum error 2.38e−6); complete RAW state, planner stream and scalar/prepared parity pass on 3,904 draws, including 127 recursive Brew cases and three unsupported/no-draw fixtures. The executed native support predicate still exactly matches both corpus/TEST ordered-index hashes.
 
-The original full-union Smoke/relic gap +0.242637 and three failed bounded repairs +0.199237/+0.201889/+0.209178 remain historical evidence; none of those repair checkpoints is promoted. The failing Writhing/Ritual intersection is excluded by visible pre-state rather than hidden by aggregates. No fourth Smoke repair, new data or gameplay was run. V1 support remains 413,799 overall/41,454 TEST when that artifact is selected. V2 is explicit opt-in; MCTS remains OFF by default, with no new gameplay or whole-planner fairness claim. Exact #180 state replay is unavailable and aggregate subtraction cannot estimate root-abort improvement. See [ledger-06 §258](../../experiments/ledger-06.md) and the [final staged report](../../experiments/evidence/near_full_combat_support_2026-09-14/REPORT.md). PR #182 records frozen review/CI evidence before merge.
+A fresh prospective 64-seed paired gameplay gate compared the prior V2 artifact with this attention-promoted V2 under the locked 2,048-simulation OOC MCTS reference profile and exact 10k Silver combat search. Both arms won 49/64; both-win47/both-lose13/old-only2/new-only2 gives a new-minus-old delta of 0.0pp and paired bootstrap95% [-6.25pp,+6.25pp]. This establishes neither gameplay improvement nor harm. It is bounded online evidence that observed play was preserved at this gate's resolution, not equivalence proof or unbiased-planning qualification. See [ledger-06 §271](../../experiments/ledger-06.md) and the [paired evidence](../../experiments/evidence/combat_transition_v2_ooc_mcts_pair64_2026-09-15/README.md).
+
+The original full-union Smoke/relic gap +0.242637 and three failed bounded repairs +0.199237/+0.201889/+0.209178 remain historical evidence; none of those repair checkpoints is promoted. The failing Writhing/Ritual intersection is excluded by visible pre-state rather than hidden by aggregates. No fourth Smoke repair or new data was used. V1 support remains 413,799 overall/41,454 TEST when that artifact is selected. The V2 artifact is the default model file, but live OOC MCTS remains OFF by default. Exact #180 state replay is unavailable and aggregate subtraction cannot estimate root-abort improvement. See [ledger-06 §270](../../experiments/ledger-06.md) and the [promotion report](../../experiments/evidence/combat_transition_attention_promotion_2026-09-15.md).
 
 ### Live OOC MCTS paired Silver gameplay gate
 
@@ -114,6 +117,20 @@ collection is authorized. If Phase 2 is later authorized, DeepSets is the
 default candidate; no Phase-2 implementation is authorized by this result. See
 [ledger-06 §§227–228](../../experiments/ledger-06.md) and the
 [corrected compact evidence report](../../experiments/evidence/combat_transition_model_v1_2026-09-12.md).
+
+A targeted attention-only hyperparameter optimization on the same frozen
+source split subsequently selected the original width-64/two-layer/four-head
+architecture with winning-HP loss weight doubled from 1.0 to 2.0. Its
+validation composite was `0.164160725` versus `0.168567730` for the matched
+attention baseline. After equal TRAIN+VALIDATION refit, all three historical
+TEST error deltas against the frozen attention checkpoint had negative paired
+source-bootstrap intervals. This is classified
+**`ATTENTION_HPO_IMPROVES_FROZEN_ATTENTION_POSTHOC`**: the historical TEST was
+already inspected, no tuned-versus-DeepSets prospective comparison was run,
+and no runtime export, composition, or gameplay qualification was performed.
+The existing no-clear-family conclusion and DeepSets simplicity tie-break
+therefore remain unchanged. See [ledger-06 §267](../../experiments/ledger-06.md)
+and the [HPO evidence report](../../experiments/evidence/combat_transition_attention_hpo_2026-09-15.md).
 
 ### Phase-2 persistent-state transition surrogate support audit
 
@@ -299,7 +316,8 @@ composed and runtime qualification.
 ### Frozen shared state representation for signed HP
 
 The proposed cheap collapse of the dedicated signed-HP encoder into the frozen
-survival representation is closed as **`SHARED_ENCODER_HP_REJECTED`**. On the
+pre-#187 survival representation is **`SHARED_ENCODER_HP_REJECTED` for the
+exact tested checkpoint**. On the
 same source-grouped full-union TRAIN/VALIDATION population, with byte-identical
 fresh HP decoders and no encoder gradients, the survival representation is
 7.3626% worse in VALIDATION NLL, 12.9631% worse in CRPS and 0.6310 HP worse in
@@ -308,8 +326,10 @@ to the maxHP/potion shared-encoder stage or runtime consolidation from this
 representation. The candidate selected the final allowed epoch, so the result
 does not distinguish intrinsically absent information from information that is
 harder or slower to decode under this head/optimizer. No extra epochs are
-warranted within the frozen screen. This does not rule out a separately
-designed shared architecture. See [ledger-06 §269](../../experiments/ledger-06.md) and the
+warranted within the frozen screen. #187 subsequently replaced only the
+survival component (`e150180a…` to `ccc3c210…`), so this screen does not
+directly evaluate the current promoted survival encoder. This does not rule out
+a separately designed shared architecture. See [ledger-06 §272](../../experiments/ledger-06.md) and the
 [frozen-representation evidence](../../experiments/evidence/shared_frozen_hp_encoder_2026-09-15.md).
 
 ### Shared relic trajectory residues
