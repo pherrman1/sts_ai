@@ -42,6 +42,33 @@ int main() {
     const auto check = [&failures](bool ok, const char *message) {
         if (!ok) { std::cerr << "  " << message << '\n'; ++failures; }
     };
+    const auto sameRootUncertainty = [](const silver_bridge::SilverRootUncertainty &lhs,
+                                        const silver_bridge::SilverRootUncertainty &rhs) {
+        return lhs.valid == rhs.valid
+            && lhs.rootVisits == rhs.rootVisits
+            && lhs.topVisits == rhs.topVisits
+            && lhs.secondVisits == rhs.secondVisits
+            && lhs.legalActions == rhs.legalActions
+            && lhs.topVisitShare == rhs.topVisitShare
+            && lhs.topTwoVisitGapShare == rhs.topTwoVisitGapShare
+            && lhs.topQGap == rhs.topQGap
+            && lhs.visitEntropy == rhs.visitEntropy
+            && lhs.topQGapValid == rhs.topQGapValid;
+    };
+    const auto sameRootActionSummaries = [](const auto &lhs, const auto &rhs) {
+        if (lhs.size() != rhs.size()) return false;
+        for (std::size_t i = 0; i < lhs.size(); ++i) {
+            if (silver_bridge::semanticActionFingerprint(lhs[i].action)
+                    != silver_bridge::semanticActionFingerprint(rhs[i].action)
+                    || lhs[i].edgeVisits != rhs[i].edgeVisits
+                    || lhs[i].childSimulations != rhs[i].childSimulations
+                    || lhs[i].childEvaluationSum != rhs[i].childEvaluationSum
+                    || lhs[i].childVictoryCount != rhs[i].childVictoryCount
+                    || lhs[i].selectionQValid != rhs[i].selectionQValid
+                    || lhs[i].selectionQ != rhs[i].selectionQ) return false;
+        }
+        return true;
+    };
 
     GameContext gc(CharacterClass::IRONCLAD, 0x5151u, 0);
     BattleContext first;
@@ -187,6 +214,24 @@ int main() {
           && paired.budgetDiagnostic.checkpointRootUncertainty.legalActions > 0,
           "paired budget probe must preserve the exact standalone 500-step prefix and sensible root statistics");
 
+    // The full split search must match an uninterrupted search at the final
+    // root, not only at the checkpoint action. This is a fresh ordinary root
+    // with no retained predecessor.
+    auto uninterruptedConfig = serializedSearchConfig;
+    uninterruptedConfig.simulationsPerDecision = 1000;
+    uninterruptedConfig.collectRootActionSummaries = true;
+    uninterruptedConfig.collectDecisionDiagnostics = true;
+    const auto uninterrupted = silver_bridge::runSilverDecision(firstWire, uninterruptedConfig);
+    const auto splitFinal = paired;
+    check(uninterrupted.accepted && splitFinal.accepted
+              && silver_bridge::semanticActionFingerprint(uninterrupted.action)
+                  == silver_bridge::semanticActionFingerprint(splitFinal.action)
+              && sameRootActionSummaries(uninterrupted.rootActionSummaries,
+                                          splitFinal.rootActionSummaries)
+              && sameRootUncertainty(uninterrupted.rootUncertainty,
+                                     splitFinal.budgetDiagnostic.finalRootUncertainty),
+          "ordinary split continuation must match uninterrupted final action and root statistics");
+
     silver_bridge::SilverLeafObservation capturedLeaf;
     bool capturedLeafStart = false;
     auto parentObserverConfig = serializedSearchConfig;
@@ -264,11 +309,14 @@ int main() {
     // Silver decision and reroot into it at the next. This is an entirely
     // native/private action execution: no live BattleContext is touched.
     silver_bridge::SilverSearchConfig reuseConfig;
-    reuseConfig.simulationsPerDecision = 32;
+    reuseConfig.simulationsPerDecision = 64;
+    reuseConfig.budgetDiagnosticCheckpoint = 32;
     const auto reuse = silver_bridge::probeSilverSearchSessionReuse(firstWire, reuseConfig);
     check(reuse.accepted && reuse.rerootExact == 1 && reuse.rerootFallback == 0
-              && reuse.inheritedVisits > 0,
-          "private Silver session must exact-reroot and retain prior subtree visits");
+              && reuse.inheritedVisits > 0
+              && reuse.splitFinalActionMatches
+              && reuse.splitFinalRootStatisticsMatch,
+          "retained-root split continuation must match uninterrupted action/root statistics");
 
     check(silver_bridge::SilverSearchConfig{}.reuseCap == 32768, "production reuse cap must remain 32k");
     const auto capFixture = silver_bridge::probeSilverReuseCapFixture(firstWire);
@@ -698,6 +746,33 @@ int main() {
               && transaction.searchDiagnostics[1].exactReroot
               && transaction.searchDiagnostics[1].inheritedVisits > 0,
           "GAMBLE second subdecision must prove exact reroot with inherited visits");
+
+    auto uninterruptedTransactionConfig = transactionConfig;
+    uninterruptedTransactionConfig.collectRootActionSummaries = true;
+    const auto uninterruptedTransaction = silver_bridge::runSequentialSelectionTransaction(
+        convert(transactionLive, gc, transactionKnowledge), uninterruptedTransactionConfig);
+    auto splitTransactionConfig = uninterruptedTransactionConfig;
+    splitTransactionConfig.collectBudgetDiagnostics = true;
+    splitTransactionConfig.budgetDiagnosticCheckpoint = 8;
+    const auto splitTransaction = silver_bridge::runSequentialSelectionTransaction(
+        convert(transactionLive, gc, transactionKnowledge), splitTransactionConfig);
+    bool sequentialRootStatsMatch = uninterruptedTransaction.accepted
+        && splitTransaction.accepted
+        && uninterruptedTransaction.searchDecisions == splitTransaction.searchDecisions
+        && uninterruptedTransaction.budgetDiagnostics.empty()
+        && splitTransaction.budgetDiagnostics.size()
+            == static_cast<std::size_t>(splitTransaction.searchDecisions)
+        && silver_bridge::semanticActionFingerprint(uninterruptedTransaction.finalAction)
+            == silver_bridge::semanticActionFingerprint(splitTransaction.finalAction);
+    if (sequentialRootStatsMatch) {
+        for (std::size_t i = 0; i < splitTransaction.budgetDiagnostics.size(); ++i) {
+            sequentialRootStatsMatch = sequentialRootStatsMatch
+                && sameRootUncertainty(uninterruptedTransaction.searchDiagnostics[i].rootUncertainty,
+                                       splitTransaction.budgetDiagnostics[i].finalRootUncertainty);
+        }
+    }
+    check(sequentialRootStatsMatch,
+          "sequential-selection split continuation must match uninterrupted final action/root statistics");
     check(transactionLive.inputState == transactionBefore.inputState
           && transactionLive.cardSelectInfo.cardSelectTask == transactionBefore.cardSelectInfo.cardSelectTask
           && transactionLive.cards.cardsInHand == transactionBefore.cards.cardsInHand

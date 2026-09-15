@@ -8416,9 +8416,15 @@ remains untested by this screen.
 Baseline/current-main source was `28d39cdb`; the pasted request named
 `cde61c85`, but the requested fresh worktree was based on the actual current
 local `main`. The implementation was frozen at `ee7e80a` before the scientific
-run. The diagnostic is opt-in and records an exact 500-simulation checkpoint,
-then continues the same private Silver search state to the exact 10,000 total;
-the ordinary path is unchanged when `STS_COMBAT_BUDGET_DIAG_FILE` is unset.
+run. The diagnostic is opt-in and adds 500 simulations to the current private
+Silver search state, records a checkpoint, then continues that same tree to
+the exact 10,000 total; the ordinary path is unchanged when
+`STS_COMBAT_BUDGET_DIAG_FILE` is unset. The checkpoint is not an independent
+fresh 500-simulation search: inherited visits and retained-root state may
+already be substantial. Agreement is therefore a local continuation
+comparison along the 10k-generated trajectory, not proof that an actually
+stopped fight would reproduce later decisions with its different retained
+tree and search-RNG state.
 
 The designated run used fresh seeds 64–79, Ironclad A0, fair project RNG,
 Searcher2, exact 10,000 Silver simulations, allocated cap 131,072, native
@@ -8428,11 +8434,15 @@ checkpoint action/root summary, final action/root summary, semantic agreement,
 and reroot telemetry in the raw CSV. The paired continuation was validated by
 a fixed-state bridge test: standalone 500 and the 500 prefix of a 1,000-total
 continuation choose the same action with the expected simulation counts.
+Additional split-versus-uninterrupted checks compare final actions and root
+statistics for an ordinary root, a retained-root continuation, and sequential
+GAMBLE selection.
 
 The run completed with 398 fights and 7,016 decision rows. The checkpoint
 action agreed with the final action in 5,530/7,016 rows (78.82%). A fight was
-labelled stable only if every recorded decision agreed: 35/398 stable and
-363/398 unstable. The sorted-seed split was 64–71 train and 72–79 holdout;
+labelled path-stable only if every recorded decision agreed along the generated
+10k trajectory: 35/398 stable and 363/398 unstable. The sorted-seed split was
+64–71 train and 72–79 holdout;
 the holdout contained 25 stable and 180 unstable fights. At the first
 recorded decision, every tested root-summary feature failed to separate the
 holdout label: AUROC was 0.454 for top-two Q gap, 0.484 for top visit share,
@@ -8444,8 +8454,9 @@ category-only exception was supported.
 
 **`NO_USEFUL_SIGNAL`** for this bounded predictive diagnostic. Stop before
 adaptive budget allocation, early stopping, NN training, or production
-qualification. This is a negative diagnostic result, not evidence that a
-different label or search regime could never be predictive. Knowledge impact:
+qualification. This negative result concerns local continuation summaries and
+does not establish or refute a different deployed-policy label or search
+regime. Knowledge impact:
 current research status records a bounded negative result; runtime defaults,
 models, gameplay, and production budgets are unchanged.
 

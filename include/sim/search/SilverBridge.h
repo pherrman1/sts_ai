@@ -598,6 +598,8 @@ struct SessionReuseProbe {
     std::int64_t secondRootVisitsAfterSearch = 0;
     bool firstAdaptiveEscalated = false;
     bool secondAdaptiveEscalated = false;
+    bool splitFinalActionMatches = false;
+    bool splitFinalRootStatisticsMatch = false;
 };
 
 // Small-cap, bridge-private fixture.  It exercises retained allocation versus

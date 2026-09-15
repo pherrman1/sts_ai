@@ -54,17 +54,26 @@ See [ledger §265](../../experiments/ledger-06.md) and
 
 The bounded predictive diagnostic is **`NO_USEFUL_SIGNAL`**. Sixteen fresh
 seeds (64–79) ran fair Ironclad A0 with one exact 10,000-simulation Silver
-search per combat. Each opted-in root was observed at 500 simulations and then
-continued on the same private search state for the remaining 9,500; adaptive
+search per combat. Each opted-in root added 500 simulations to its current
+private search state, then continued that same tree for the remaining 9,500;
+the checkpoint was not an independent fresh 500-simulation search. Adaptive
 budgets, convergence stops, keys, and OOC MCTS were disabled, with the current
 allocated 131,072-cap configuration held fixed. The 500-simulation semantic
 action agreed with the final action in 78.82% of decision rows, but only 35 of
-398 fights were stable across every recorded decision. On the held-out eight
-seeds, all first-decision root summaries had AUROC below 0.53 for separating
-fights that later changed action from fights that stayed stable, and no
-threshold met the preregistered ≤5% false-stop constraint with nonzero useful
-coverage. Unstable fights occurred in hallway, elite, and boss categories, so
-no category-only exception is supported.
+398 fights were stable across every decision on the already-generated 10k
+trajectory. On the held-out eight seeds, all first-decision root summaries had
+AUROC below 0.53 for separating fights that later changed action from fights
+that stayed stable, and no threshold met the preregistered ≤5% false-stop
+constraint with nonzero useful coverage. Unstable fights occurred in hallway,
+elite, boss, and other categories, so no category-only exception is
+supported.
+
+This is a local continuation diagnostic, not a proof that a deployed fight
+could stop at 500 and reproduce later decisions: an early stop would retain a
+different search tree and search-RNG state before subsequent roots. Focused
+split-versus-uninterrupted checks passed for ordinary, retained-root, and
+sequential-selection fixtures, establishing the instrumentation comparison
+but not whole-fight policy equivalence.
 
 Do not enable an adaptive allocator, early-stop rule, or NN from this packet.
 The diagnostic implementation remains an opt-in bridge capability and the

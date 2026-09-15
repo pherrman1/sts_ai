@@ -4,7 +4,7 @@
     "metrics": {
       "legal_actions": {
         "auc": 0.49244444444444446,
-        "auprc": 0.8831643531258476,
+        "auprc": 0.8865297018595628,
         "threshold_candidates": 17
       },
       "q_gap": {
@@ -14,17 +14,17 @@
       },
       "second_visit_share": {
         "auc": 0.4752222222222222,
-        "auprc": 0.8737242996791269,
+        "auprc": 0.8737385672575325,
         "threshold_candidates": 121
       },
       "top_second_visit_ratio": {
         "auc": 0.4651111111111111,
-        "auprc": 0.8571448239047634,
+        "auprc": 0.8580868712203211,
         "threshold_candidates": 200
       },
       "top_visit_share": {
         "auc": 0.48444444444444446,
-        "auprc": 0.8787548532354952,
+        "auprc": 0.8786678579068983,
         "threshold_candidates": 153
       },
       "visit_entropy": {
@@ -35,7 +35,7 @@
     },
     "per_decision_agreement_rate": 0.8011728567439262,
     "per_decision_rows": 3581,
-    "per_fight_500_sufficient_rate": 0.12195121951219512,
+    "per_fight_checkpoint_path_stable_rate": 0.12195121951219512,
     "stable_fights": 25,
     "unstable_fights": 180
   },
@@ -326,7 +326,7 @@
       "unstable_fights": 1
     }
   ],
-  "schema": "combat_budget_diag_v1",
+  "schema": "combat_budget_diag_v2",
   "seeds": [
     64,
     65,
@@ -350,17 +350,17 @@
     "metrics": {
       "legal_actions": {
         "auc": 0.46557377049180326,
-        "auprc": 0.9410187732649908,
+        "auprc": 0.9396525291446036,
         "threshold_candidates": 17
       },
       "q_gap": {
-        "auc": 0.6131147540983607,
-        "auprc": 0.9697645387254187,
-        "threshold_candidates": 184
+        "auc": 0.5907514450867052,
+        "auprc": 0.9648507015620542,
+        "threshold_candidates": 183
       },
       "second_visit_share": {
         "auc": 0.5404371584699453,
-        "auprc": 0.9561983507493199,
+        "auprc": 0.9561809065239691,
         "threshold_candidates": 101
       },
       "top_second_visit_ratio": {
@@ -370,18 +370,18 @@
       },
       "top_visit_share": {
         "auc": 0.5147540983606558,
-        "auprc": 0.9530840857163723,
+        "auprc": 0.9531163502189879,
         "threshold_candidates": 136
       },
       "visit_entropy": {
         "auc": 0.4557377049180328,
-        "auprc": 0.951497114063628,
+        "auprc": 0.9515653790297572,
         "threshold_candidates": 184
       }
     },
     "per_decision_agreement_rate": 0.7746724890829695,
     "per_decision_rows": 3435,
-    "per_fight_500_sufficient_rate": 0.05181347150259067,
+    "per_fight_checkpoint_path_stable_rate": 0.05181347150259067,
     "stable_fights": 10,
     "unstable_fights": 183
   },

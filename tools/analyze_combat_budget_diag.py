@@ -62,20 +62,26 @@ def auprc(scores, labels):
     tp = fp = 0
     previous_recall = 0.0
     area = 0.0
-    for index in order:
-        if labels[index]:
-            tp += 1
-        else:
-            fp += 1
+    index = 0
+    while index < len(order):
+        end = index + 1
+        while end < len(order) and scores[order[end]] == scores[order[index]]:
+            end += 1
+        tied_labels = [labels[i] for i in order[index:end]]
+        tied_positives = sum(tied_labels)
+        tp += tied_positives
+        fp += len(tied_labels) - tied_positives
         recall = tp / positives
         precision = tp / (tp + fp)
         area += (recall - previous_recall) * precision
         previous_recall = recall
+        index = end
     return area
 
 
-def risk_coverage(rows, score_key, direction):
+def risk_coverage(rows, score_key, direction, validity_key=None):
     """Choose a safe-stop threshold on rows, then evaluate unchanged rows."""
+    rows = [row for row in rows if validity_key is None or row.get(validity_key) == "1"]
     candidates = sorted({float(row[score_key]) for row in rows})
     if direction == "lower-risk":
         candidates = list(reversed(candidates))
@@ -87,9 +93,8 @@ def risk_coverage(rows, score_key, direction):
             continue
         false_stops = sum(row["fight_requires_more"] == "1" for row in selected)
         rate = false_stops / len(selected)
-        if rate <= 0.05:
+        if rate <= 0.05 and (chosen is None or len(selected) > len(chosen[1])):
             chosen = (threshold, selected, rate)
-            break
     if chosen is None:
         return {"threshold": None, "coverage": 0.0, "false_stop_rate": None, "stopped": 0}
     threshold, selected, false_rate = chosen
@@ -99,18 +104,22 @@ def risk_coverage(rows, score_key, direction):
 
 def metric_specs():
     return {
-        "q_gap": ("checkpoint_top_q_gap", "higher-confidence"),
-        "top_visit_share": ("checkpoint_top_visit_share", "higher-confidence"),
-        "second_visit_share": ("checkpoint_second_visit_share", "lower-risk"),
-        "top_second_visit_ratio": ("checkpoint_top_second_visit_ratio", "higher-confidence"),
-        "visit_entropy": ("checkpoint_visit_entropy", "lower-risk"),
-        "legal_actions": ("checkpoint_legal_actions", "lower-risk"),
+        "q_gap": ("checkpoint_top_q_gap", "higher-confidence", "checkpoint_top_q_gap_valid"),
+        "top_visit_share": ("checkpoint_top_visit_share", "higher-confidence", None),
+        "second_visit_share": ("checkpoint_second_visit_share", "lower-risk", None),
+        "top_second_visit_ratio": ("checkpoint_top_second_visit_ratio", "higher-confidence", None),
+        "visit_entropy": ("checkpoint_visit_entropy", "lower-risk", None),
+        "legal_actions": ("checkpoint_legal_actions", "lower-risk", None),
     }
 
 
 def score(row, key, direction):
     value = float(row[key])
     return value if direction == "lower-risk" else -value
+
+
+def metric_valid(row, validity_key):
+    return validity_key is None or row.get(validity_key) == "1"
 
 
 def analyze_partition(rows):
@@ -136,13 +145,14 @@ def analyze_partition(rows):
         "unstable_fights": labels.count(1),
         "per_decision_rows": len(rows),
         "per_decision_agreement_rate": sum(row["agreement"] == "1" for row in rows) / len(rows),
-        "per_fight_500_sufficient_rate": labels.count(0) / len(labels),
+        "per_fight_checkpoint_path_stable_rate": labels.count(0) / len(labels),
         "metrics": {},
     }
     if len(set(labels)) < 2:
         return result
-    for name, (column, direction) in metric_specs().items():
-        valid = [row for row in fights if row[column] not in ("", "NA")]
+    for name, (column, direction, validity_key) in metric_specs().items():
+        valid = [row for row in fights
+                 if metric_valid(row, validity_key) and row[column] not in ("", "NA")]
         scores = [score(row, column, direction) for row in valid]
         valid_labels = [int(row["fight_requires_more"]) for row in valid]
         risk = {"auc": auc(scores, valid_labels), "auprc": auprc(scores, valid_labels)}
@@ -182,24 +192,26 @@ def analyze(rows):
     train_fights = first_rows(train_groups)
     holdout_fights = first_rows(holdout_groups)
     risk_coverage_result = {}
-    for name, (column, direction) in metric_specs().items():
+    for name, (column, direction, validity_key) in metric_specs().items():
+        valid_train = [row for row in train_fights if metric_valid(row, validity_key)]
         if direction == "higher-confidence":
-            ordered = sorted({float(row[column]) for row in train_fights}, reverse=True)
+            ordered = sorted({float(row[column]) for row in valid_train}, reverse=True)
             selector = lambda row, threshold: float(row[column]) >= threshold
         else:
-            ordered = sorted({float(row[column]) for row in train_fights})
+            ordered = sorted({float(row[column]) for row in valid_train})
             selector = lambda row, threshold: float(row[column]) <= threshold
         selected = None
         for threshold in ordered:
-            candidates = [row for row in train_fights if selector(row, threshold)]
+            candidates = [row for row in valid_train if selector(row, threshold)]
             if candidates and sum(row["fight_requires_more"] == "1" for row in candidates) / len(candidates) <= 0.05:
-                selected = (threshold, candidates)
-                break
+                if selected is None or len(candidates) > len(selected[1]):
+                    selected = (threshold, candidates)
         if selected is None:
             risk_coverage_result[name] = {"threshold": None, "train": {}, "holdout": {}}
             continue
         threshold, train_selected = selected
-        holdout_selected = [row for row in holdout_fights if selector(row, threshold)]
+        holdout_selected = [row for row in holdout_fights
+                            if metric_valid(row, validity_key) and selector(row, threshold)]
         def summarize(selected_rows, total):
             return {
                 "stopped": len(selected_rows), "coverage": len(selected_rows) / total if total else None,
@@ -215,7 +227,7 @@ def analyze(rows):
     category = Counter((row["room_type"], row["encounter"])
                        for row in holdout_fights if row["fight_requires_more"] == "1")
     return {
-        "schema": "combat_budget_diag_v1",
+        "schema": "combat_budget_diag_v2",
         "seeds": seeds,
         "train_seeds": sorted(train_seeds),
         "holdout_seeds": sorted(set(seeds) - train_seeds),
@@ -249,10 +261,35 @@ def self_test():
                        checkpoint_second_visit_share=".2", checkpoint_top_second_visit_ratio="2",
                        checkpoint_visit_entropy=".7", checkpoint_legal_actions="4")
             rows.append(row)
+    for row in rows:
+        row["checkpoint_top_q_gap_valid"] = "1"
     result = analyze(rows)
     assert result["train"]["fights"] == 2
     assert result["holdout"]["unstable_fights"] == 2
     assert result["holdout"]["per_decision_agreement_rate"] == 0.5
+    assert analyze_partition(rows)["metrics"]["q_gap"]["threshold_candidates"] == 4
+
+    masked_rows = [dict(row) for row in rows]
+    for row in masked_rows:
+        if row["run_seed"] == "1":
+            row["checkpoint_top_q_gap"] = "999"
+            row["checkpoint_top_q_gap_valid"] = "0"
+    masked = analyze_partition(masked_rows)
+    assert masked["metrics"]["q_gap"]["threshold_candidates"] == 3
+
+    threshold_rows = [
+        {"score": "0.9", "fight_requires_more": "0"},
+        {"score": "0.8", "fight_requires_more": "0"},
+        {"score": "0.1", "fight_requires_more": "1"},
+    ]
+    threshold = risk_coverage(threshold_rows, "score", "higher-confidence")
+    assert threshold["threshold"] == 0.8 and threshold["stopped"] == 2
+
+    tied_scores = [0.5, 0.5, 0.4, 0.4]
+    tied_labels = [1, 0, 0, 1]
+    assert auprc(tied_scores, tied_labels) == auprc(
+        [0.5, 0.4, 0.5, 0.4], [0, 1, 1, 0])
+    assert auprc(tied_scores, tied_labels) == 0.5
     print("analyze_combat_budget_diag self-test PASS")
 
 
