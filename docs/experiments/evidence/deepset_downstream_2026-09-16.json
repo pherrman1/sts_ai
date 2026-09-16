@@ -1,0 +1,276 @@
+{
+  "artifacts": {
+    "candidateDownstreamSha256": "4152e1be73f8f1da10ca0c2cb425594ba574906a7141509cdfcf0a395c0b0687",
+    "candidateZSha256": "7cff0adf96301b781a720380555bf6f4c622141f69d601b06b8a73f4a1895aec",
+    "deepSetsCheckpointSha256": "bee6800dd7230b180c2b4894c0f01763efca4b7799e3f36a805333c3003dc663",
+    "deepSetsReceiptSha256": "83b2482eab347c09901c3b39f2ce7fed324f6be378ca36ff51f0d3965074c769",
+    "downstreamCacheSha256": "acd48827199f95d006ed2e225e31df768f5c757c8995fa2a0a868cf49ab0d0e3",
+    "preparationCacheSha256": "e1c25f2758bf56c7cff392ea02342d809f3ad7427c70b64166244a6b714a251d",
+    "referenceDownstreamSha256": "d07ead94b3abb9d12f272337e18aece6acd261cc4a39a36b21b82f904236af91"
+  },
+  "baselineSha": "852a96d22cf52a0588a355cae86eed3dd26ff668",
+  "candidate": {
+    "checkpointSha256": "4152e1be73f8f1da10ca0c2cb425594ba574906a7141509cdfcf0a395c0b0687",
+    "metrics": {
+      "attacks": {
+        "exactLabelAccuracy": 0.1654320987654321,
+        "exactLabelRows": 6075,
+        "nll": 2.1840660514070818,
+        "rows": 6075
+      },
+      "cards": {
+        "exactLabelAccuracy": 0.11632492113564669,
+        "exactLabelRows": 2536,
+        "nll": 2.3057621494044445,
+        "rows": 2536
+      },
+      "gold": {
+        "nll": 0.5810600885334857,
+        "rows": 6921
+      },
+      "joint": {
+        "nll": 1.3586479743954167,
+        "rows": 17950
+      },
+      "ritual": {
+        "nll": 0.0651752369895456,
+        "rows": 1243
+      },
+      "shuffles": {
+        "exactLabelAccuracy": 0.5770782889426957,
+        "exactLabelRows": 2478,
+        "nll": 0.8577624276163562,
+        "rows": 2478
+      },
+      "turns": {
+        "exactLabelAccuracy": 0.2770673486786019,
+        "exactLabelRows": 1173,
+        "nll": 1.2219271253840756,
+        "rows": 4635
+      },
+      "writhing": {
+        "nll": 0.5732755410212538,
+        "rows": 413
+      }
+    },
+    "zSha256": "7cff0adf96301b781a720380555bf6f4c622141f69d601b06b8a73f4a1895aec"
+  },
+  "candidateMinusReference": {
+    "attacks": {
+      "exactLabelAccuracyDelta": 0.005925925925925946,
+      "nllRelative": 0.0010970086617168029
+    },
+    "cards": {
+      "exactLabelAccuracyDelta": 0.009858044164037849,
+      "nllRelative": -0.002760131941263122
+    },
+    "gold": {
+      "nllRelative": -0.010014177760110599
+    },
+    "joint": {
+      "nllRelative": -0.004078920800024144
+    },
+    "ritual": {
+      "nllRelative": -0.07341420777230845
+    },
+    "shuffles": {
+      "exactLabelAccuracyDelta": 0.006053268765133235,
+      "nllRelative": -0.019876626211537962
+    },
+    "turns": {
+      "exactLabelAccuracyDelta": -0.0008525149190110604,
+      "nllRelative": -0.01013815753423164
+    },
+    "writhing": {
+      "nllRelative": -0.018978306006827372
+    }
+  },
+  "checks": {
+    "candidateReloadedFromDisk": true,
+    "candidateZFinite": true,
+    "candidateZShape": [
+      510030,
+      64
+    ],
+    "encoderFrozen": true,
+    "focusedTests": "10 passed",
+    "gitDiffCheck": true,
+    "nonZCacheUnchanged": true,
+    "optimizerDownstreamOnly": true,
+    "pyCompile": true,
+    "referenceMetricsReproduced": true,
+    "worktreeCheck": true
+  },
+  "decision": "DEEPSET_DOWNSTREAM_GO",
+  "deviations": [
+    "The DeepSets normalization population is 393677 TRAIN rows, while the downstream-head fit uses the existing downstream-eligible TRAIN population of 150404 rows; both are recorded separately and no population was substituted silently."
+  ],
+  "failures": [],
+  "finalHeadSha": "4876568a4b35daae09284079ba04da0ab66c3b59",
+  "finiteAndLegal": true,
+  "gates": {
+    "importantSliceNllRelativeMax": 0.05,
+    "principalAccuracyDropMax": 0.005,
+    "principalNllRelativeMax": 0.02
+  },
+  "implementationSha": "4876568a4b35daae09284079ba04da0ab66c3b59",
+  "population": {
+    "eligibleValidationRows": 17950,
+    "testInferenceRows": 0,
+    "train": {
+      "rows": 150404,
+      "sources": 18286
+    },
+    "validation": {
+      "rows": 17950,
+      "sources": 2276
+    }
+  },
+  "provenance": {
+    "candidateOutput": "/home/philippherrmann/sts_sweep/runs/deepset-downstream-20260916",
+    "deepSetsEvidence": "/home/philippherrmann/.codex/worktrees/b541/sts_lightspeed/docs/experiments/evidence/shared_transition_deepset_distill_correction_2026-09-16.json",
+    "deepSetsRun": "/home/philippherrmann/sts_sweep/runs/shared-transition-deepset-distill-corrected-20260916",
+    "referenceEvidence": "/home/philippherrmann/.codex/worktrees/b541/sts_lightspeed/docs/experiments/evidence/shared_hp_downstream_2026-09-16.json",
+    "referenceParent": "/home/philippherrmann/sts_sweep/runs/near-full-combat-support-20260914"
+  },
+  "recipe": {
+    "batch": 512,
+    "clip": 1.0,
+    "epochs": 12,
+    "lr": 0.001,
+    "optimizer": "AdamW",
+    "population": "entire final union original TRAIN survivors with observed downstream targets",
+    "seed": 20260912,
+    "selection": "earliest strict minimum original VALIDATION normalized joint downstream NLL",
+    "testInferenceRows": 0,
+    "trainingPrecision": "FP32 (existing near-full downstream implementation)",
+    "weightDecay": 0.0001
+  },
+  "reference": {
+    "checkpointSha256": "d07ead94b3abb9d12f272337e18aece6acd261cc4a39a36b21b82f904236af91",
+    "metrics": {
+      "attacks": {
+        "exactLabelAccuracy": 0.15950617283950616,
+        "exactLabelRows": 6075,
+        "nll": 2.181672737516994,
+        "rows": 6075
+      },
+      "cards": {
+        "exactLabelAccuracy": 0.10646687697160884,
+        "exactLabelRows": 2536,
+        "nll": 2.312143971833902,
+        "rows": 2536
+      },
+      "gold": {
+        "nll": 0.586937787875396,
+        "rows": 6921
+      },
+      "joint": {
+        "nll": 1.3642124890928302,
+        "rows": 17950
+      },
+      "ritual": {
+        "nll": 0.07033912837455851,
+        "rows": 1243
+      },
+      "shuffles": {
+        "exactLabelAccuracy": 0.5710250201775625,
+        "exactLabelRows": 2478,
+        "nll": 0.8751576082721656,
+        "rows": 2478
+      },
+      "turns": {
+        "exactLabelAccuracy": 0.27791986359761295,
+        "exactLabelRows": 1173,
+        "nll": 1.2344420937978853,
+        "rows": 4635
+      },
+      "writhing": {
+        "nll": 0.5843658142642904,
+        "rows": 413
+      }
+    }
+  },
+  "remainingUncertainty": "One fixed offline fit and one eligible source-grouped VALIDATION cohort; no TEST, runtime, native, gameplay, OOC MCTS, or default qualification was performed.",
+  "schema": "deepset_downstream_qualification_v1",
+  "sourceSha": "1c31b7eb0a7660d43bc27e0849a8955dd0c3daae",
+  "test": {
+    "inferenceRows": 0,
+    "metricsComputed": false
+  },
+  "training": {
+    "history": [
+      {
+        "epoch": 1,
+        "validationNll": 1.40565025806427
+      },
+      {
+        "epoch": 2,
+        "validationNll": 1.3921260833740234
+      },
+      {
+        "epoch": 3,
+        "validationNll": 1.3838567733764648
+      },
+      {
+        "epoch": 4,
+        "validationNll": 1.379034399986267
+      },
+      {
+        "epoch": 5,
+        "validationNll": 1.374688744544983
+      },
+      {
+        "epoch": 6,
+        "validationNll": 1.376158595085144
+      },
+      {
+        "epoch": 7,
+        "validationNll": 1.3676679134368896
+      },
+      {
+        "epoch": 8,
+        "validationNll": 1.366439700126648
+      },
+      {
+        "epoch": 9,
+        "validationNll": 1.3642643690109253
+      },
+      {
+        "epoch": 10,
+        "validationNll": 1.3633614778518677
+      },
+      {
+        "epoch": 11,
+        "validationNll": 1.362069845199585
+      },
+      {
+        "epoch": 12,
+        "validationNll": 1.3586479425430298
+      }
+    ],
+    "selectedEpoch": 12,
+    "smoke": {
+      "finite": true,
+      "finiteGradients": true,
+      "optimizerScope": true,
+      "rows": 8
+    },
+    "trainingSeconds": 48.76463708500023
+  },
+  "unchanged": {
+    "deepsetEncoderFrozen": true,
+    "eventCandidateGeneration": true,
+    "hpDeltaEmbeddingFrozen": true,
+    "hpHeadFrozen": true,
+    "labels": true,
+    "legalityMasks": true,
+    "maxHpHeadFrozen": true,
+    "nativeRuleHelpers": true,
+    "potionDecoder": true,
+    "potionZ": true,
+    "sourceSplits": true,
+    "supportPredicate": true,
+    "traces": true
+  }
+}

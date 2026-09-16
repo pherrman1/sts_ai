@@ -537,6 +537,35 @@ its receipt records the artifact/cache bindings, exact row selection, isolated
 because the original cache used different inference arithmetic than the CPU
 replay; the regenerated-versus-cache difference is recorded explicitly.
 
+### Retrained downstream consumers for the qualified DeepSets representation
+
+The exact downstream retraining follow-up is **`DEEPSET_DOWNSTREAM_GO`** on the
+same eligible source-grouped VALIDATION cohort of 17,950 rows. It precomputed
+only the frozen corrected PR #205 DeepSets encoder output (`[N,64]`) and
+retrained the existing relic/turn/card/attack/shuffle, Writhing, Ritual and
+gold consumers with the same 12-epoch, batch-512, AdamW recipe. The DeepSets
+encoder, maxHP/HP heads and HP delta embedding were excluded from the
+optimizer. Potion representation, decoder, traces, labels, support predicate,
+candidate generation, legality masks and native-rule helpers were unchanged.
+
+Relative to the hash-verified dedicated-HP downstream reference, joint NLL
+improved 0.4079%. Turns, attacks, cards and shuffles stayed within the fixed
+2% NLL and 0.005 singleton-accuracy gates; their NLL changes were −1.0138%,
++0.1097%, −0.2760% and −1.9877%, and their accuracy deltas were −0.0853pp,
++0.5926pp, +0.9858pp and +0.6053pp. Writhing, Ritual and gold NLL changed by
+−1.8978%, −7.3414% and −1.0014%, each inside the fixed +5% important-slice
+gate. All outputs were finite/legal, and TEST inference rows were zero.
+
+This qualifies the frozen DeepSets representation for these retrained offline
+downstream consumers only. It does not qualify the full CTM, potion or
+survival sharing, native runtime, gameplay, OOC MCTS, speedup or default
+promotion. The actual downstream-eligible TRAIN fit population was 150,404
+rows / 18,286 sources; the separate 393,677-row population is retained only
+as the DeepSets encoder's bound TRAIN normalization population. See the
+[downstream evidence report](../../experiments/evidence/deepset_downstream_2026-09-16.md),
+[machine-readable receipt](../../experiments/evidence/deepset_downstream_2026-09-16.json)
+and [ledger §287](../../experiments/ledger-06.md).
+
 ### Shared maxHP+HP representation for potion decoding
 
 The sequential frozen substitution screen is **`SHARED_ENCODER_POTION_REJECTED`**.
