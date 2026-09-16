@@ -8567,3 +8567,128 @@ shared representation. No extra epochs/tuning, new data, TEST, gameplay,
 runtime/export, composition or model promotion. Knowledge impact: closes the
 HP-encoder maxHP/potion frozen-substitution path; experiment evidence only.
 [Protocol, histories and hashes](evidence/shared_frozen_maxhp_encoder_2026-09-15.md).
+
+
+## §279 — Paired 500-simulation combat-budget diagnostic (2026-09-15)
+
+Baseline/current-main source was `28d39cdb`; the pasted request named
+`cde61c85`, but the requested fresh worktree was based on the actual current
+local `main`. The implementation was frozen at `ee7e80a` before the scientific
+run. The diagnostic is opt-in and adds 500 simulations to the current private
+Silver search state, records a checkpoint, then continues that same tree to
+the exact 10,000 total; the ordinary path is unchanged when
+`STS_COMBAT_BUDGET_DIAG_FILE` is unset. The checkpoint is not an independent
+fresh 500-simulation search: inherited visits and retained-root state may
+already be substantial. Agreement is therefore a local continuation
+comparison along the 10k-generated trajectory, not proof that an actually
+stopped fight would reproduce later decisions with its different retained
+tree and search-RNG state.
+
+The designated run used fresh seeds 64–79, Ironclad A0, fair project RNG,
+Searcher2, exact 10,000 Silver simulations, allocated cap 131,072, native
+out-of-combat decisions, and four OpenMP workers. Adaptive budgets,
+convergence stops, keys, and OOC MCTS were disabled. Every combat root has a
+checkpoint action/root summary, final action/root summary, semantic agreement,
+and reroot telemetry in the raw CSV. The paired continuation was validated by
+a fixed-state bridge test: standalone 500 and the 500 prefix of a 1,000-total
+continuation choose the same action with the expected simulation counts.
+Additional split-versus-uninterrupted checks compare final actions and root
+statistics for an ordinary root, a retained-root continuation, and sequential
+GAMBLE selection.
+
+The run completed with 398 fights and 7,016 decision rows. The checkpoint
+action agreed with the final action in 5,530/7,016 rows (78.82%). A fight was
+labelled path-stable only if every recorded decision agreed along the generated
+10k trajectory: 35/398 stable and 363/398 unstable. The sorted-seed split was
+64–71 train and 72–79 holdout; the holdout contained 25 stable and 180
+unstable fights. At the first recorded decision, every tested root-summary
+feature failed to separate the holdout label: AUROC was 0.454 for top-two Q
+gap, 0.484 for top visit share, 0.475 for second visit share, 0.465 for the
+top/second ratio, 0.529 for visit entropy, and 0.492 for legal-action count.
+No train threshold satisfying the predeclared ≤5% false-stop constraint had
+nonzero useful coverage on holdout. Unstable fights appeared in hallway,
+elite, boss, and other categories; no category-only exception was supported.
+
+**`NO_USEFUL_SIGNAL`** for this bounded predictive diagnostic. Stop before
+adaptive budget allocation, early stopping, NN training, or production
+qualification. This negative result concerns local continuation summaries and
+does not establish or refute a different deployed-policy label or search
+regime. Knowledge impact: current research status records a bounded negative
+result; runtime defaults, models, gameplay, and production budgets are
+unchanged.
+
+[Evidence packet, raw CSV, analysis and provenance](evidence/combat_budget_diag_2026-09-15/README.md).
+
+
+## §280 — Retained-root adaptive Silver prospective A/B smoke (2026-09-16)
+
+The frozen treatment keeps fresh roots and one-action/forced roots at exact
+10,000 Silver simulations. A retained non-forced root first runs 500 new
+simulations and stops only when `top_two_visit_gap_share >=
+0.2932885906040268`; otherwise that same private search continues to 10,000.
+This is an opt-in policy under `STS_SILVER_ADAPTIVE=1` and
+`STS_SILVER_ADAPTIVE_RETAINED_ONLY=1`; the ordinary path remains unchanged.
+The implementation was frozen at `ec3a9266966406c130aff18c0077f69bf4df83c9`.
+
+Fresh paired seeds64--79 used Ironclad A0, fair RNG, exact-root budgets,
+allocated reuse cap131072, native OOC, adaptive CTM off, no OOC MCTS, and
+sequential control then treatment arms using the same executable. Flat exact
+10k control won10/16 versus treatment11/16. Mean final floor was48.25 versus
+47.25 and mean final HP36.00 versus39.06. Outer wall time was113.05s versus
+66.71s. Control added70,160,000 Silver simulations across7,016 decisions;
+treatment added41,362,000 across6,800 decisions, a 41.05% simulation reduction
+and 40.99% wall reduction.
+
+Treatment telemetry recorded391 fresh roots,6,409 retained roots, and255
+one-action/forced roots. It stopped2,804 decisions at500 (41.24% of all
+treatment decisions,42.84% of non-forced decisions,43.75% of retained roots);
+all 2,804 stops had inherited visits, more than one legal action, and a gap at
+or above threshold. Fresh and forced roots continued to10k. Exact/fallback
+reroot rows were4425/2375 in treatment versus4556/2460 in control. The paired
+outcomes had five win disagreements, five floor disagreements, and thirteen
+HP disagreements. No expensive shadow10k comparison was collected.
+
+Classification: **`PER_DECISION_SIGNAL_PROMISING`** — retained-root adaptive
+search only; fresh-root early stopping remains rejected. This N16 smoke is
+mechanical/compute evidence, not a quality qualification or whole-fight action
+equivalence claim. It supports the planned fresh N32 prospective qualification;
+it does not promote the policy or justify further offline threshold tuning.
+The earlier §279 checkpoints remain local continuation comparisons and are not
+pooled with this live-policy result. Knowledge impact: current research status
+and experiment evidence updated; normal Silver defaults remain unchanged.
+[Evidence packet and raw traces](evidence/silver_retained_adaptive_pair16_2026-09-16/README.md).
+
+
+## §281 — Retained-root adaptive Silver prospective qualification (N32, 2026-09-16)
+
+The N16 smoke met its mechanical/compute gate without an obvious gameplay
+regression, so the same frozen implementation ran a fresh paired N32 on
+seeds80--111. Configuration remained Ironclad A0, fair RNG, exact-root
+budgets, allocated reuse cap131072, native OOC, adaptive CTM off, no OOC MCTS,
+sequential arms, and the same executable. The flat control disables adaptive
+Silver; the treatment uses fresh/forced roots at10k and retained non-forced
+roots at500 only when the frozen top-two visit-gap threshold
+`0.2932885906040268` is met.
+
+Flat control won22/32 versus treatment24/32: three treatment-only wins and one
+control-only win. Mean final floor was47.84 versus48.31 and mean final HP
+32.53 versus30.97. Control added142,010,000 Silver simulations across14,201
+decisions; treatment added86,146,500 across14,403 decisions, a 39.34%
+simulation reduction and 42.33% wall reduction (235.06s versus135.55s).
+
+Treatment telemetry recorded813 fresh roots,13,590 retained roots, and443
+one-action/forced roots. It stopped6,093 decisions at500 (42.30% of all
+treatment decisions,43.65% of non-forced decisions,44.83% of retained roots);
+all stops satisfied retained/non-forced/threshold invariants. Fresh and forced
+roots continued to10k. Exact/fallback reroot rows were9416/4987 in treatment
+versus9285/4916 in control. No expensive shadow10k comparison was collected.
+
+Classification remains **`PER_DECISION_SIGNAL_PROMISING`** — retained-root
+adaptive search only. This N32 packet supports the compute-saving treatment at
+the bounded prospective gate but does not promote a default, establish
+universal safety, or claim whole-fight action equivalence. Fresh-root early
+stopping remains rejected, and the earlier §279 local-continuation negative
+result is not replaced or pooled with this policy result. Knowledge impact:
+current research status and experiment evidence updated; normal Silver
+defaults remain unchanged.
+[Evidence packet and raw traces](evidence/silver_retained_adaptive_pair32_2026-09-16/README.md).

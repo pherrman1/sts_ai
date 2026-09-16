@@ -1856,6 +1856,8 @@ static bool bestBench(int sims, int nSeeds, int asc, std::uint64_t seedOffset = 
             ? search::silverLiveStickyQualityFile() : "";
         meta.silverAdaptiveEnabled = meta.silverSearchEnabled
             && search::silverLiveAdaptiveEnabled();
+        meta.silverAdaptiveRetainedOnly = meta.silverSearchEnabled
+            && search::silverLiveAdaptiveRetainedOnly();
         meta.silverAdaptiveTopShare = meta.silverSearchEnabled
             ? search::silverLiveAdaptiveTopTwoVisitGapThreshold() : 0.0;
         meta.silverExactRootBudgets = meta.silverSearchEnabled
