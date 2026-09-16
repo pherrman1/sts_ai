@@ -47,6 +47,7 @@ struct SilverLiveOptions {
     std::string stickyQualityFile;
     std::string rootDiagnosticFile;
     std::string budgetDiagnosticFile;
+    std::string sequentialDiagnosticFile;
     int rootDiagnosticMaxPerSeed = 8;
     std::int64_t rootDiagnosticReferenceBudget = 25000;
     int rootDiagnosticReplicates = 2;
@@ -82,6 +83,8 @@ std::mutex g_rootDiagnosticMutex;
 bool g_rootDiagnosticHeaderWritten = false;
 std::mutex g_budgetDiagnosticMutex;
 bool g_budgetDiagnosticHeaderWritten = false;
+std::mutex g_sequentialDiagnosticMutex;
+bool g_sequentialDiagnosticHeaderWritten = false;
 std::mutex g_leafVNetLogMutex;
 std::mutex g_leafCorpusMutex;
 bool g_leafVNetLogHeaderWritten = false;
@@ -102,6 +105,8 @@ constexpr const char *kRootDiagnosticHeader =
     "run_seed,act,floor,encounter,room_type,combat_decision_ordinal,turn,input_state,cur_hp,max_hp,potion_count,action_type,stochastic,action_fingerprint,chosen_1k,chosen_1k_visits,chosen_1k_q,chosen_37k,chosen_37k_visits,chosen_37k_q,active_reroot_exact,active_fallback_reason,active_inherited_visits,reference_budget,reference_replicates,reference_value,reference_value_stddev,reference_rollout_win_rate,reference_rollout_actions,reference_rollout_turns,reference_rollout_calls,reference_terminal_wins,reference_terminal_losses,reference_utility_sum,reference_win_bonus,reference_hp,reference_potion,reference_turn_penalty,reference_death_save,reference_gold,reference_max_hp,reference_parasite_penalty,reference_monster_damage,reference_alive,reference_energy_waste,reference_draw,reference_survival,current_1k_rollout_calls,current_1k_terminal_wins,current_1k_terminal_losses,current_1k_rollout_actions,current_1k_rollout_turns,current_1k_utility_sum,current_1k_win_bonus_sum,current_1k_hp_sum,current_1k_potion_sum,current_1k_turn_penalty_sum,current_1k_death_save_sum,current_1k_gold_sum,current_1k_max_hp_sum,current_1k_parasite_penalty_sum,current_1k_monster_damage_sum,current_1k_alive_sum,current_1k_energy_waste_sum,current_1k_draw_sum,current_1k_survival_sum,current_37k_rollout_calls,current_37k_terminal_wins,current_37k_terminal_losses,current_37k_rollout_actions,current_37k_rollout_turns,current_37k_utility_sum,current_37k_win_bonus_sum,current_37k_hp_sum,current_37k_potion_sum,current_37k_turn_penalty_sum,current_37k_death_save_sum,current_37k_gold_sum,current_37k_max_hp_sum,current_37k_parasite_penalty_sum,current_37k_monster_damage_sum,current_37k_alive_sum,current_37k_energy_waste_sum,current_37k_draw_sum,current_37k_survival_sum,low_root_action_summaries,low_root_visit_share,low_top_two_visit_gap_share,low_top_q_gap,low_visit_entropy,low_legal_actions,adaptive_action,adaptive_simulations,adaptive_escalated,adaptive_initial_top_visit_share,adaptive_threshold";
 constexpr const char *kBudgetDiagnosticHeader =
     "run_seed,act,floor,encounter,room_type,combat_id,decision_index,transaction_subdecision_index,turn,input_state,checkpoint_simulations,total_simulations,checkpoint_action,final_action,agreement,checkpoint_root_visits,checkpoint_legal_actions,checkpoint_top_visit_share,checkpoint_second_visit_share,checkpoint_top_second_visit_ratio,checkpoint_top_q_gap,checkpoint_top_q_gap_valid,checkpoint_visit_entropy,final_root_visits,final_legal_actions,final_top_visit_share,final_top_two_visit_gap_share,final_top_q_gap,final_top_q_gap_valid,final_visit_entropy,inherited_visits,reroot_exact,reroot_fallback";
+constexpr const char *kSequentialDiagnosticHeader =
+    "run_seed,act,floor,encounter,room_type,combat_id,decision_index,transaction_subdecision_index,turn,input_state,checkpoint_new_simulations,inherited_visits,fresh_root,retained_root,one_action_or_forced,reroot_exact,reroot_fallback,legal_action_count,checkpoint_action,top_visit_share,second_visit_share,top_two_visit_gap_share,visit_entropy,top_q_gap,top_q_gap_valid,root_visits,search_root_visits_after_search,final_action,risk_event";
 constexpr const char *kLeafVNetHeader =
     "run_seed,act,floor,encounter,combat_decision_ordinal,isolated_search_seed,root_state_hash,parent_state_hash,leaf_state_hash,depth,action_count_before_rollout,leaf_turn,leaf_input_state,leaf_cur_hp,leaf_max_hp,vnet_raw_prediction,rollout_terminal_outcome,rollout_utility,rollout_action_count,rollout_turn_delta,rollout_wall_micros";
 
@@ -159,6 +164,8 @@ void parseSilverLiveOptions() {
         options.rootDiagnosticFile = raw;
     if (const char *raw = std::getenv("STS_COMBAT_BUDGET_DIAG_FILE"))
         options.budgetDiagnosticFile = raw;
+    if (const char *raw = std::getenv("STS_COMBAT_SEQUENTIAL_DIAG_FILE"))
+        options.sequentialDiagnosticFile = raw;
     if (const char *raw = std::getenv("STS_SILVER_ROOT_DIAG_MAX_PER_SEED"))
         options.rootDiagnosticMaxPerSeed = std::atoi(raw);
     if (const char *raw = std::getenv("STS_SILVER_ROOT_DIAG_REF_BUDGET"))
@@ -251,6 +258,10 @@ void parseSilverLiveOptions() {
     }
     if (options.adaptiveRetainedOnly && !options.adaptiveEnabled)
         throw std::invalid_argument("STS_SILVER_ADAPTIVE_RETAINED_ONLY requires STS_SILVER_ADAPTIVE=1");
+    if (!options.sequentialDiagnosticFile.empty()
+            && (!options.exactRootBudgets || options.adaptiveEnabled))
+        throw std::invalid_argument(
+            "STS_COMBAT_SEQUENTIAL_DIAG_FILE requires exact root budgets and Silver adaptive stopping off");
     options.installed = true;
     g_silverLiveOptions = std::move(options);
 }
@@ -318,6 +329,15 @@ struct BudgetDiagnosticRow {
     silver_bridge::SilverSearchDecisionDiagnostic searchDiagnostic;
 };
 
+struct SequentialDiagnosticRow {
+    std::uint64_t runSeed = 0;
+    int act = 0, floor = 0, encounter = 0;
+    std::string roomType;
+    int decision = 0, subdecision = -1, turn = 0, inputState = 0;
+    silver_bridge::SilverCheckpointDiagnostic checkpoint;
+    silver_bridge::SilverSearchDecisionDiagnostic searchDiagnostic;
+};
+
 std::string csvField(const std::string &value);
 
 double secondVisitShare(const silver_bridge::SilverRootUncertainty &root) {
@@ -380,6 +400,59 @@ void writeBudgetDiagnostics(const std::vector<BudgetDiagnosticRow> &rows) {
     if (!out) throw std::runtime_error("cannot write STS_COMBAT_BUDGET_DIAG_FILE: "
                                       + g_silverLiveOptions.budgetDiagnosticFile);
     g_budgetDiagnosticHeaderWritten = true;
+}
+
+void writeSequentialDiagnostics(const std::vector<SequentialDiagnosticRow> &rows) {
+    if (rows.empty()) return;
+    std::lock_guard<std::mutex> lock(g_sequentialDiagnosticMutex);
+    bool empty = false;
+    if (!g_sequentialDiagnosticHeaderWritten) {
+        std::ifstream existing(g_silverLiveOptions.sequentialDiagnosticFile, std::ios::binary);
+        empty = !existing || existing.peek() == std::ifstream::traits_type::eof();
+        if (!empty) {
+            std::string header;
+            std::getline(existing, header);
+            if (header != kSequentialDiagnosticHeader)
+                throw std::runtime_error("STS_COMBAT_SEQUENTIAL_DIAG_FILE has an incompatible existing header: "
+                                         + g_silverLiveOptions.sequentialDiagnosticFile);
+        }
+    }
+    std::ofstream out(g_silverLiveOptions.sequentialDiagnosticFile, std::ios::app);
+    if (!out) throw std::runtime_error("cannot open STS_COMBAT_SEQUENTIAL_DIAG_FILE: "
+                                      + g_silverLiveOptions.sequentialDiagnosticFile);
+    if (!g_sequentialDiagnosticHeaderWritten && empty)
+        out << kSequentialDiagnosticHeader << '\n';
+    out << std::setprecision(17);
+    for (const auto &row : rows) {
+        const auto &d = row.checkpoint;
+        const auto &root = d.rootUncertainty;
+        const auto &search = row.searchDiagnostic;
+        const bool riskEvent = !d.checkpointActionFingerprint.empty()
+            && !d.finalActionFingerprint.empty()
+            && d.checkpointActionFingerprint != d.finalActionFingerprint;
+        const std::string combatId = std::to_string(row.runSeed) + ":"
+            + std::to_string(row.act) + ":" + std::to_string(row.floor) + ":"
+            + std::to_string(row.encounter);
+        const bool retained = search.inheritedVisits > 0;
+        out << row.runSeed << ',' << row.act << ',' << row.floor << ',' << row.encounter << ','
+            << csvField(row.roomType) << ',' << combatId << ',' << row.decision << ','
+            << row.subdecision << ',' << row.turn << ',' << row.inputState << ','
+            << d.checkpointSimulations << ',' << search.inheritedVisits << ','
+            << (retained ? 0 : 1) << ',' << (retained ? 1 : 0) << ','
+            << (root.legalActions <= 1 ? 1 : 0) << ','
+            << (search.exactReroot ? 1 : 0) << ',' << (search.fallback ? 1 : 0) << ','
+            << root.legalActions << ',' << csvField(d.checkpointActionFingerprint) << ','
+            << root.topVisitShare << ','
+            << (root.rootVisits > 0 ? static_cast<double>(root.secondVisits) / root.rootVisits : 0.0) << ','
+            << root.topTwoVisitGapShare << ',' << root.visitEntropy << ',' << root.topQGap << ','
+            << (root.topQGapValid ? 1 : 0) << ',' << root.rootVisits << ','
+            << d.rootVisitsAfterSearch << ','
+            << csvField(d.finalActionFingerprint) << ',' << (riskEvent ? 1 : 0) << '\n';
+    }
+    out.flush();
+    if (!out) throw std::runtime_error("cannot write STS_COMBAT_SEQUENTIAL_DIAG_FILE: "
+                                      + g_silverLiveOptions.sequentialDiagnosticFile);
+    g_sequentialDiagnosticHeaderWritten = true;
 }
 
 struct StickyQualityBudgets {
@@ -1136,6 +1209,7 @@ void runSilverCombat(ScumSearchAgent2 &agent, GameContext &gc, BattleContext &bc
     const bool collectStickyQuality = !g_silverLiveOptions.stickyQualityFile.empty();
     const bool collectRootDiagnostics = !g_silverLiveOptions.rootDiagnosticFile.empty();
     const bool collectBudgetDiagnostics = !g_silverLiveOptions.budgetDiagnosticFile.empty();
+    const bool collectSequentialDiagnostics = !g_silverLiveOptions.sequentialDiagnosticFile.empty();
     const bool collectLeafVNet = !g_silverLiveOptions.leafVNetLogFile.empty();
     const bool collectLeafCorpus = !g_silverLiveOptions.leafCorpusFile.empty();
     const bool directLeafVNet = g_silverLiveOptions.leafVNetDirect;
@@ -1148,9 +1222,10 @@ void runSilverCombat(ScumSearchAgent2 &agent, GameContext &gc, BattleContext &bc
     // disabled. Both options are opt-in; default gameplay retains the cheap
     // no-diagnostic path.
     const bool collectDecisionDiagnostics = collectScalingDiagnostics || collectStickyQuality
-        || collectRootDiagnostics || collectBudgetDiagnostics || emitTelemetry;
+        || collectRootDiagnostics || collectBudgetDiagnostics || collectSequentialDiagnostics || emitTelemetry;
     std::vector<ScalingDiagnosticRow> scalingDiagnostics;
     std::vector<BudgetDiagnosticRow> budgetDiagnostics;
+    std::vector<SequentialDiagnosticRow> sequentialDiagnostics;
     std::vector<StickyQualityRow> stickyQualityRows;
     StickyQualityCounters stickyQualityCounters;
 
@@ -1278,11 +1353,15 @@ void runSilverCombat(ScumSearchAgent2 &agent, GameContext &gc, BattleContext &bc
         }
 
         auto config = configFor(agent, bc, collectDecisionDiagnostics);
+        if (collectSequentialDiagnostics && config.simulationsPerDecision != 10000)
+            fail("sequential diagnostics", "requires an exact Silver root budget of 10000");
         config.collectRootActionSummaries = collectRootDiagnostics || collectBudgetDiagnostics
-            || config.adaptiveEnabled;
+            || collectSequentialDiagnostics || config.adaptiveEnabled;
         config.collectRolloutDiagnostics = collectRootDiagnostics || emitTelemetry;
         config.collectBudgetDiagnostics = collectBudgetDiagnostics;
         config.budgetDiagnosticCheckpoint = 500;
+        if (collectSequentialDiagnostics)
+            config.budgetDiagnosticCheckpoints = {250, 500, 1000, 2000, 4000, 8000, 10000};
         config.leafObserver = leafObserver;
         currentCorpusConfig = config;
         currentCorpusConfig.leafObserver = {};
@@ -1332,6 +1411,23 @@ void runSilverCombat(ScumSearchAgent2 &agent, GameContext &gc, BattleContext &bc
                             decision, static_cast<int>(i), wire.turn, wire.inputState,
                             transaction.budgetDiagnostics[i], transaction.searchDiagnostics[i]});
                     }
+                    if (collectSequentialDiagnostics) {
+                        if (i >= transaction.checkpointDiagnostics.size()
+                                || transaction.checkpointDiagnostics[i].size()
+                                    != config.budgetDiagnosticCheckpoints.size()) {
+                            fail("sequential diagnostics", "transaction omitted checkpoint diagnostics");
+                        }
+                        for (const auto &checkpoint : transaction.checkpointDiagnostics[i]) {
+                            if (!checkpoint.valid || checkpoint.finalActionFingerprint.empty())
+                                fail("sequential diagnostics", "transaction checkpoint is incomplete");
+                            sequentialDiagnostics.push_back({
+                                gc.seed, wire.act, bc.floorNum, static_cast<int>(bc.encounter),
+                                gc.curRoom == Room::MONSTER ? "hallway" : gc.curRoom == Room::ELITE ? "elite"
+                                    : gc.curRoom == Room::BOSS ? "boss" : "other",
+                                decision, static_cast<int>(i), wire.turn, wire.inputState,
+                                checkpoint, transaction.searchDiagnostics[i]});
+                        }
+                    }
                 }
             }
         } else {
@@ -1365,6 +1461,20 @@ void runSilverCombat(ScumSearchAgent2 &agent, GameContext &gc, BattleContext &bc
                         : gc.curRoom == Room::BOSS ? "boss" : "other",
                     decision, -1, wire.turn, wire.inputState,
                     result.budgetDiagnostic, result.diagnostic});
+            }
+            if (collectSequentialDiagnostics) {
+                if (result.checkpointDiagnostics.size() != config.budgetDiagnosticCheckpoints.size())
+                    fail("sequential diagnostics", "ordinary decision omitted checkpoint diagnostics");
+                for (const auto &checkpoint : result.checkpointDiagnostics) {
+                    if (!checkpoint.valid || checkpoint.finalActionFingerprint.empty())
+                        fail("sequential diagnostics", "ordinary checkpoint is incomplete");
+                    sequentialDiagnostics.push_back({
+                        gc.seed, wire.act, bc.floorNum, static_cast<int>(bc.encounter),
+                        gc.curRoom == Room::MONSTER ? "hallway" : gc.curRoom == Room::ELITE ? "elite"
+                            : gc.curRoom == Room::BOSS ? "boss" : "other",
+                        decision, -1, wire.turn, wire.inputState,
+                        checkpoint, result.diagnostic});
+                }
             }
             if (collectStickyQuality && stickyEligible(result.diagnostic)) {
                 ++stickyQualityCounters.eligibleOrdinary;
@@ -1444,6 +1554,7 @@ void runSilverCombat(ScumSearchAgent2 &agent, GameContext &gc, BattleContext &bc
     agent.simulationCountTotal += static_cast<std::int64_t>(g_silverLiveDiagnostics.simulations);
     if (collectScalingDiagnostics) writeScalingDiagnostics(scalingDiagnostics);
     if (collectBudgetDiagnostics) writeBudgetDiagnostics(budgetDiagnostics);
+    if (collectSequentialDiagnostics) writeSequentialDiagnostics(sequentialDiagnostics);
     if (collectStickyQuality) writeStickyQuality(stickyQualityRows, gc.seed, bc.floorNum,
                                                  static_cast<int>(bc.encounter), stickyQualityCounters);
     if (emitTelemetry) {
