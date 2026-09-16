@@ -9178,3 +9178,42 @@ evidence updated.
   and external raw receipt
   `/home/philippherrmann/sts_sweep/runs/deepset-potion-screen-20260916/results.json`
   (SHA256 `1ba8b785…7dcad107ab45363`).
+
+## §290 — Frozen qualified DeepSets representation for survival prediction (2026-09-16)
+
+- **Question and baseline:** Can the qualified frozen PR #205 DeepSets
+  representation support survival prediction when only a new survival head is
+  trained? The current `main` baseline was `4c8ff3fe044626c6d18226e5f4091a0d1cb842d1`
+  after the merged PR #210 potion screen.
+- **Intervention/provenance:** Arm A used the frozen TRAIN-only full-union
+  survival Attention encoder; Arm B used the corrected frozen DeepSets
+  encoder. The checkpoint/receipt were `bee6800d…c3003dc663` /
+  `83b2482e…5074c769`; the reused TRAIN+VALIDATION representation and row-ID
+  files were `9232027d…d37352af` / `3dfecd1d…112e437`. The source, corpus and
+  preparation bindings were `1c31b7e…9a8955dd`, `74c08aa0…c1cfde` and
+  `e1c25f27…a251d`. TRAIN was 408,183 rows / 19,986 sources; VALIDATION was
+  50,406 / 2,496; TEST encoding and inference were zero.
+- **Protocol:** Fresh survival heads were byte-identically initialized with
+  seed `20260912`. Both arms used FP32, AdamW, batch 512, 12 epochs, learning
+  rate `0.001`, weight decay `0.0001`, clip `1.0`, identical epoch
+  permutations, BCE-with-logits loss, and earliest strict minimum VALIDATION
+  NLL. Only head parameters entered each optimizer; both selected checkpoints
+  reloaded with exact metric reproduction.
+- **Result:** Arm A selected epoch 10 at NLL `0.059312280`; Arm B selected
+  epoch 12 at `0.083209150`, a **+40.2899%** regression. Brier worsened
+  **+37.5178%**. Observed-death NLL worsened **+44.2850%**; low-pre-HP NLL
+  worsened **+55.8470%** on 756 rows / 292 deaths. ROC-AUC remained diagnostic
+  only. The original dedicated component validation NLL reproduced as
+  `0.059494425` versus recorded `0.059494428`.
+- **Decision:** **`DEEPSET_SURVIVAL_REJECTED`**. All fixed core NLL, Brier,
+  death-slice and low-pre-HP gates failed. This rejects the exact frozen
+  victory-distilled DeepSets representation plus matched head recipe; it does
+  not prove intrinsic information absence or authorize encoder fine-tuning.
+  No TEST, runtime/export, C++, gameplay, OOC MCTS, potion, architecture sweep
+  or promotion work occurred. **Knowledge impact:** current research status
+  and experiment evidence only; qualified encoders and runtime defaults remain
+  unchanged.
+- **Evidence:** [screen report](evidence/deepset_survival_screen_2026-09-16.md),
+  [machine-readable receipt](evidence/deepset_survival_screen_2026-09-16.json),
+  and external raw receipt
+  `/home/philippherrmann/sts_sweep/runs/deepset-survival-screen-20260916-final/results.json`.
