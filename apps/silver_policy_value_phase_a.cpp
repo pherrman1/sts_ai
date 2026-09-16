@@ -340,9 +340,9 @@ struct SyntheticPV {
 
     static float relu(float value) { return value > 0.0f ? value : 0.0f; }
 
-    void forward(const std::vector<float> &state, const std::vector<std::vector<float>> &actions,
-                 float &value, std::vector<float> &logits) const {
-        float h1[H] {}, h2[H] {};
+    void encodeAndValue(const std::vector<float> &state, std::array<float, H> &h2,
+                        float &value) const {
+        float h1[H] {};
         for (int r = 0; r < H; ++r) {
             float sum = b1[r];
             for (int c = 0; c < kModelStateWidth; ++c) sum += w1[r * kModelStateWidth + c] * state[c];
@@ -355,6 +355,11 @@ struct SyntheticPV {
         }
         value = valueB;
         for (int c = 0; c < H; ++c) value += valueW[c] * h2[c];
+    }
+
+    void scoreActions(const std::array<float, H> &h2,
+                      const std::vector<std::vector<float>> &actions,
+                      std::vector<float> &logits) const {
         logits.resize(actions.size());
         for (std::size_t a = 0; a < actions.size(); ++a) {
             float hidden[32] {};
@@ -368,6 +373,13 @@ struct SyntheticPV {
             for (int r = 0; r < 32; ++r) score += actionOutW[r] * hidden[r];
             logits[a] = score;
         }
+    }
+
+    void forward(const std::vector<float> &state, const std::vector<std::vector<float>> &actions,
+                 float &value, std::vector<float> &logits) const {
+        std::array<float, H> h2 {};
+        encodeAndValue(state, h2, value);
+        scoreActions(h2, actions, logits);
     }
 };
 
@@ -397,6 +409,7 @@ void benchmark(const std::vector<LeafValueSample> &leaves, const Corpus &corpus,
     SyntheticPV model;
     float value = 0.0f; std::vector<float> logits;
     double checksum = 0.0;
+    std::array<double, 4> stageMicros {};
     for (const auto &input : inputs) {
         model.forward(input.state, input.actions, value, logits);
         checksum += value;
@@ -414,6 +427,7 @@ void benchmark(const std::vector<LeafValueSample> &leaves, const Corpus &corpus,
             // every sibling score.
             const auto benchmarkWire = sts::search::silverLiveBattleStateWireForBenchmark(
                 visibleState(sample.leaf));
+            const auto conversionEnd = std::chrono::steady_clock::now();
             const auto rows = sts::search::silverLiveParentPolicyFeatures(benchmarkWire);
             if (rows.empty() || rows.front().features.size() != static_cast<std::size_t>(kCanonicalPolicyWidth))
                 throw std::runtime_error("unexpected policy feature layout during leaf benchmark");
@@ -423,10 +437,19 @@ void benchmark(const std::vector<LeafValueSample> &leaves, const Corpus &corpus,
             std::vector<std::vector<float>> actions;
             for (const auto &row : rows)
                 actions.emplace_back(row.features.begin() + kCanonicalStateWidth, row.features.end());
-            model.forward(state, actions, value, logits);
+            const auto featureEnd = std::chrono::steady_clock::now();
+            std::array<float, SyntheticPV::H> hidden {};
+            model.encodeAndValue(state, hidden, value);
+            const auto neuralEnd = std::chrono::steady_clock::now();
+            model.scoreActions(hidden, actions, logits);
+            const auto actionEnd = std::chrono::steady_clock::now();
             checksum += value;
             for (float score : logits) checksum += score;
             scored += actions.size(); ++calls;
+            stageMicros[0] += std::chrono::duration<double, std::micro>(conversionEnd - callStart).count();
+            stageMicros[1] += std::chrono::duration<double, std::micro>(featureEnd - conversionEnd).count();
+            stageMicros[2] += std::chrono::duration<double, std::micro>(neuralEnd - featureEnd).count();
+            stageMicros[3] += std::chrono::duration<double, std::micro>(actionEnd - neuralEnd).count();
             callLatencies.push_back(std::chrono::duration<double, std::micro>(
                 std::chrono::steady_clock::now() - callStart).count());
         }
@@ -451,6 +474,16 @@ void benchmark(const std::vector<LeafValueSample> &leaves, const Corpus &corpus,
     };
     json distribution = json::object();
     for (const auto &[count, frequency] : actionCounts) distribution[std::to_string(count)] = frequency;
+    const std::array<const char *, 4> stageNames = {
+        "bridge_state_conversion", "feature_extraction", "neural_encoder_value", "action_scoring"};
+    json stageTiming = json::object();
+    for (std::size_t i = 0; i < stageNames.size(); ++i) {
+        const double mean = stageMicros[i] / std::max<std::size_t>(1, calls);
+        stageTiming[stageNames[i]] = {
+            {"total_micros", stageMicros[i]}, {"mean_micros", mean},
+            {"share_of_stage_sum", stageMicros[i] / std::max(1.0, std::accumulate(
+                stageMicros.begin(), stageMicros.end(), 0.0))}};
+    }
     const json result = {
         {"benchmark_schema", "silver_policy_value_phase_a_benchmark_v2"},
         {"architecture", {{"state_input", kModelStateWidth}, {"encoder", "1768 -> 64 -> 64"},
@@ -468,9 +501,11 @@ void benchmark(const std::vector<LeafValueSample> &leaves, const Corpus &corpus,
         {"p99_legal_actions", intPercentile(actionCountSamples, 0.99)},
         {"calls_per_second", 1.0e6 / std::max(1.0, perCall)},
         {"action_scores_per_second", 1.0e6 * static_cast<double>(scored) / std::max(1.0, micros)},
+        {"stage_timing", stageTiming},
         {"checksum", checksum}, {"checksum_is_observed", true},
         {"sampled_rollout_leaf_coverage", sampledCoverage(corpus)},
         {"timed_region", "stored public wire fixture -> live BattleContext -> Silver wire conversion + canonical feature preparation + root scalar derivation + encoder + value + all actions"},
+        {"stage_timing_contract", "conversion; canonical 1768-feature extraction and action-vector preparation; 1768->64->64 encoder plus value head; all legal action scores"},
         {"conversion_included", true},
         {"benchmark_boundary", "The stored wire is a fixture only; the timed candidate includes live BattleContext -> Silver wire conversion before feature extraction."}
     };
