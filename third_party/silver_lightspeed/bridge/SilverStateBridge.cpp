@@ -979,21 +979,35 @@ SilverDecisionResult applyAdaptiveContinuation(SilverSearchSession &session,
                                                bool convertSemanticAction = true) {
     result.initialSimulations = result.simulations;
     result.adaptiveThreshold = config.adaptiveTopTwoVisitGapThreshold;
+    result.adaptiveRequireRetainedRoot = config.adaptiveRequireRetainedRoot;
     if (result.accepted) {
         result.initialActionFingerprint = semanticActionFingerprint(result.action);
     }
     if (config.collectDecisionDiagnostics) {
         result.diagnostic.adaptiveEnabled = config.adaptiveEnabled;
+        result.diagnostic.adaptiveRequireRetainedRoot = config.adaptiveRequireRetainedRoot;
         result.diagnostic.adaptiveInitialSimulations = config.adaptiveInitialSimulations;
         result.diagnostic.adaptiveTotalSimulations = config.adaptiveTotalSimulations;
         result.diagnostic.rootUncertainty = result.rootUncertainty;
     }
-    if (!result.accepted || !config.adaptiveEnabled
-            || result.simulations != config.adaptiveInitialSimulations
-            || config.adaptiveInitialSimulations <= 0
-            || config.adaptiveTotalSimulations <= result.simulations
-            || !result.rootUncertainty.valid
-            || result.rootUncertainty.topTwoVisitGapShare >= config.adaptiveTopTwoVisitGapThreshold) {
+    const bool commonContinuationConfigValid = result.accepted && config.adaptiveEnabled
+        && result.simulations == config.adaptiveInitialSimulations
+        && config.adaptiveInitialSimulations > 0
+        && config.adaptiveTotalSimulations > result.simulations;
+    if (!commonContinuationConfigValid) {
+        return result;
+    }
+    const bool gapEligibleToStop = result.rootUncertainty.valid
+        && result.rootUncertainty.topTwoVisitGapShare
+            >= config.adaptiveTopTwoVisitGapThreshold;
+    const bool retainedPolicyEligibleToStop = gapEligibleToStop
+        && result.rootUncertainty.legalActions > 1
+        && result.inheritedVisits > 0;
+    if (!config.adaptiveRequireRetainedRoot
+            && (!result.rootUncertainty.valid || gapEligibleToStop)) {
+        return result;
+    }
+    if (config.adaptiveRequireRetainedRoot && retainedPolicyEligibleToStop) {
         return result;
     }
 

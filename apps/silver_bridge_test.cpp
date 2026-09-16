@@ -520,6 +520,25 @@ int main() {
                   == adaptiveReuse.inheritedVisits + adaptiveReuse.secondSimulations,
           "adaptive exact-reroot path must account for each decision's added simulations separately");
 
+    // The retained-root treatment must continue fresh roots even when their
+    // gap is above threshold, then permit an early stop only after exact
+    // rerooting into a non-forced root with inherited visits.
+    auto retainedPolicyConfig = adaptiveConfig;
+    retainedPolicyConfig.adaptiveRequireRetainedRoot = true;
+    retainedPolicyConfig.adaptiveTopTwoVisitGapThreshold = 0.0;
+    const auto retainedPolicyFresh = silver_bridge::runSilverDecision(
+        firstWire, retainedPolicyConfig);
+    check(retainedPolicyFresh.accepted && retainedPolicyFresh.inheritedVisits == 0
+              && retainedPolicyFresh.simulations == 32
+              && retainedPolicyFresh.adaptiveEscalated,
+          "retained-only adaptive policy must continue fresh roots to its total budget");
+    const auto retainedPolicyReuse = silver_bridge::probeSilverSearchSessionReuse(
+        firstWire, retainedPolicyConfig);
+    check(retainedPolicyReuse.accepted && retainedPolicyReuse.inheritedVisits > 0
+              && retainedPolicyReuse.firstSimulations == 32
+              && retainedPolicyReuse.secondSimulations == 16,
+          "retained-only adaptive policy must stop eligible retained roots at its initial budget");
+
     silver_bridge::SemanticAction fingerprintCard = qualityFresh.action;
     fingerprintCard.type = silver_bridge::SemanticActionType::CARD;
     fingerprintCard.card.uniqueId += 1;

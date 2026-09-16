@@ -64,6 +64,7 @@ std::int64_t silverLiveReuseCap();
 std::string silverLiveScalingDiagnosticFile();
 std::string silverLiveStickyQualityFile();
 bool silverLiveAdaptiveEnabled();
+bool silverLiveAdaptiveRetainedOnly();
 bool silverLiveExactRootBudgets();
 double silverLiveAdaptiveTopTwoVisitGapThreshold();
 

@@ -62,6 +62,7 @@ struct BenchConfigSidecar {
     std::string silverScalingDiagnosticFile;
     std::string silverStickyQualityFile;
     bool silverAdaptiveEnabled = false;
+    bool silverAdaptiveRetainedOnly = false;
     double silverAdaptiveTopShare = 0.0;
     bool silverExactRootBudgets = false;
 
@@ -156,6 +157,7 @@ inline std::string benchConfigSidecarLine(const BenchConfigSidecar &c) {
     o << ",\"silverStickyQualityFile\":\""
       << detail::jsonEscape(c.silverStickyQualityFile) << '\"';
     o << ",\"silverAdaptiveEnabled\":" << (c.silverAdaptiveEnabled ? "true" : "false");
+    o << ",\"silverAdaptiveRetainedOnly\":" << (c.silverAdaptiveRetainedOnly ? "true" : "false");
     o << ",\"silverAdaptiveTopShare\":" << c.silverAdaptiveTopShare;
     o << ",\"silverExactRootBudgets\":" << (c.silverExactRootBudgets ? "true" : "false");
     o << '}';

@@ -65,6 +65,7 @@ struct SilverLiveOptions {
     int leafCorpusGroupModulus = 1;
     int leafCorpusMaxLeavesPerGroup = 256;
     bool adaptiveEnabled = false;
+    bool adaptiveRetainedOnly = false;
     double adaptiveTopTwoVisitGapThreshold = 0.094;
     bool installed = false;
 };
@@ -92,7 +93,7 @@ std::unordered_map<std::uint64_t, int> g_rootDiagnosticSelectionsByRunSeed;
 struct StickyQualityTestBudgets { std::int64_t fresh = 0, ref25 = 0, ref50 = 0; };
 StickyQualityTestBudgets g_stickyQualityTestBudgets;
 constexpr const char *kScalingDiagnosticHeader =
-    "run_seed,floor,encounter,combat_decision_ordinal,transaction_subdecision_ordinal,turn,input_state,configured_simulations,had_predecessor,reroot_attempted,exact_candidate_found,exact_reroot,fallback,fallback_reason,configured_cap_mode,configured_cap,allocated_nodes_before_root,active_nodes_before_root,allocated_nodes_after_search,active_nodes_after_search,inherited_visits,simulations_added,nodes_created,root_visits_after_search,chosen_edge_visits";
+    "run_seed,floor,encounter,combat_decision_ordinal,transaction_subdecision_ordinal,turn,input_state,configured_simulations,had_predecessor,reroot_attempted,exact_candidate_found,exact_reroot,fallback,fallback_reason,configured_cap_mode,configured_cap,allocated_nodes_before_root,active_nodes_before_root,allocated_nodes_after_search,active_nodes_after_search,inherited_visits,simulations_added,nodes_created,root_visits_after_search,chosen_edge_visits,root_legal_actions,root_top_two_visit_gap_share,adaptive_enabled,adaptive_require_retained_root,adaptive_initial_simulations,adaptive_total_simulations,adaptive_escalated";
 constexpr const char *kStickyQualityHeader =
     "run_seed,act,floor,encounter,room_type,combat_decision_ordinal,turn,input_state,allocated_nodes_before_root,active_nodes_before_root,inherited_visits,configured_cap,active_simulations_added,active_nodes_created,fresh_budget,ref25_budget,ref50_budget,active_action_fingerprint,fresh_action_fingerprint,ref25_action_fingerprint,ref50_action_fingerprint,ref25_ref50_agree,fresh_ref50_agree,active_ref50_agree,fresh_active_disagree,fresh_wall_ms,ref25_wall_ms,ref50_wall_ms,fresh_nodes_created,fresh_simulations_added,ref25_nodes_created,ref25_simulations_added,ref50_nodes_created,ref50_simulations_added,ref25_root_action_summaries,ref50_root_action_summaries,q_diagnostic_available,ref50_chosen_selection_q,active_ref50_selection_q,fresh_ref50_selection_q,ref50_q_gap_active,ref50_q_gap_fresh,ref50_q_gap_active_minus_fresh";
 constexpr const char *kStickyQualitySummaryHeader =
@@ -186,6 +187,8 @@ void parseSilverLiveOptions() {
     if (const char *raw = std::getenv("STS_EXECUTABLE_GIT_SHA")) options.executableGitSha = raw;
     if (const char *raw = std::getenv("STS_SILVER_ADAPTIVE"))
         options.adaptiveEnabled = std::atoi(raw) != 0;
+    if (const char *raw = std::getenv("STS_SILVER_ADAPTIVE_RETAINED_ONLY"))
+        options.adaptiveRetainedOnly = std::atoi(raw) != 0;
     if (const char *raw = std::getenv("STS_SILVER_ADAPTIVE_TOP_GAP"))
         options.adaptiveTopTwoVisitGapThreshold = std::atof(raw);
     if (!options.rootDiagnosticFile.empty()
@@ -246,6 +249,8 @@ void parseSilverLiveOptions() {
                 || options.adaptiveTopTwoVisitGapThreshold > 1.0)) {
         throw std::invalid_argument("STS_SILVER_ADAPTIVE_TOP_GAP must be in [0,1]");
     }
+    if (options.adaptiveRetainedOnly && !options.adaptiveEnabled)
+        throw std::invalid_argument("STS_SILVER_ADAPTIVE_RETAINED_ONLY requires STS_SILVER_ADAPTIVE=1");
     options.installed = true;
     g_silverLiveOptions = std::move(options);
 }
@@ -293,7 +298,10 @@ void writeScalingDiagnostics(const std::vector<ScalingDiagnosticRow> &rows) {
             << d.configuredCap << ',' << d.allocatedNodesBeforeRoot << ',' << d.activeNodesBeforeRoot << ','
             << d.allocatedNodesAfterSearch << ',' << d.activeNodesAfterSearch << ','
             << d.inheritedVisits << ',' << d.simulationsAdded << ',' << d.nodesCreated << ',' << d.rootVisitsAfterSearch << ','
-            << d.chosenEdgeVisits << '\n';
+            << d.chosenEdgeVisits << ',' << d.rootUncertainty.legalActions << ','
+            << d.rootUncertainty.topTwoVisitGapShare << ',' << (d.adaptiveEnabled ? 1 : 0) << ','
+            << (d.adaptiveRequireRetainedRoot ? 1 : 0) << ',' << d.adaptiveInitialSimulations << ','
+            << d.adaptiveTotalSimulations << ',' << (d.adaptiveEscalated ? 1 : 0) << '\n';
     }
     out.flush();
     if (!out) throw std::runtime_error("cannot write STS_SILVER_SCALING_DIAG_FILE: "
@@ -1065,8 +1073,9 @@ silver_bridge::SilverSearchConfig configFor(const ScumSearchAgent2 &agent, const
     result.collectDecisionDiagnostics = collectDecisionDiagnostics;
     result.adaptiveEnabled = g_silverLiveOptions.adaptiveEnabled;
     if (result.adaptiveEnabled) {
-        result.adaptiveInitialSimulations = 1000;
-        result.adaptiveTotalSimulations = 3700;
+        result.adaptiveRequireRetainedRoot = g_silverLiveOptions.adaptiveRetainedOnly;
+        result.adaptiveInitialSimulations = g_silverLiveOptions.adaptiveRetainedOnly ? 500 : 1000;
+        result.adaptiveTotalSimulations = g_silverLiveOptions.adaptiveRetainedOnly ? 10000 : 3700;
         result.adaptiveTopTwoVisitGapThreshold = g_silverLiveOptions.adaptiveTopTwoVisitGapThreshold;
         // Adaptive Silver has an explicit two-tier budget, including bosses;
         // the ordinary Silver boss multiplier is not part of this treatment.
@@ -1517,6 +1526,7 @@ std::int64_t silverLiveReuseCap() {
 std::string silverLiveScalingDiagnosticFile() { return g_silverLiveOptions.scalingDiagnosticFile; }
 std::string silverLiveStickyQualityFile() { return g_silverLiveOptions.stickyQualityFile; }
 bool silverLiveAdaptiveEnabled() { return g_silverLiveOptions.adaptiveEnabled; }
+bool silverLiveAdaptiveRetainedOnly() { return g_silverLiveOptions.adaptiveRetainedOnly; }
 bool silverLiveExactRootBudgets() { return g_silverLiveOptions.exactRootBudgets; }
 double silverLiveAdaptiveTopTwoVisitGapThreshold() {
     return g_silverLiveOptions.adaptiveTopTwoVisitGapThreshold;
