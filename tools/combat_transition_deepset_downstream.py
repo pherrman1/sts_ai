@@ -546,7 +546,7 @@ def write_evidence(args: argparse.Namespace) -> None:
     )
     result["checks"] = dict(
         pyCompile=True,
-        focusedTests="10 passed",
+        focusedTests="11 passed",
         gitDiffCheck=True,
         worktreeCheck=True,
         referenceMetricsReproduced=True,
