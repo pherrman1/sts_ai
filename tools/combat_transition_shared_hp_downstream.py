@@ -11,9 +11,14 @@ from __future__ import annotations
 import argparse
 import json
 from pathlib import Path
+import sys
 
 import numpy as np
 import torch
+
+ROOT = Path(__file__).resolve().parents[1]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
 
 from tools import combat_transition_composed as c
 from tools import combat_transition_composed_evaluate as composed_eval
@@ -67,7 +72,7 @@ def verify_artifacts(parent: Path, expected: dict, candidate: Path, candidate_re
             parent / f'full-union-{component}-v1' / 'component.pt', expected['componentHashes'][component])
     hashes['downstream'] = require_digest(
         downstream_folder / 'downstream.pt', expected['componentHashes']['downstream'])
-    native = Path('selfplay/models/combat_transition_near_full_except_smoke_v2.native')
+    native = ROOT / 'selfplay/models/combat_transition_near_full_except_smoke_v2.native'
     hashes['currentNativeArtifact'] = require_digest(native, expected['componentHashes']['currentNativeArtifact'])
     return hashes
 
