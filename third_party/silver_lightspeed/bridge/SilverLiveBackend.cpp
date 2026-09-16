@@ -69,6 +69,7 @@ struct SilverLiveOptions {
     bool adaptiveRetainedOnly = false;
     double adaptiveTopTwoVisitGapThreshold = 0.094;
     bool exactVisitLockEnabled = false;
+    bool rhoRacingEnabled = false;
     bool installed = false;
 };
 
@@ -97,7 +98,7 @@ std::unordered_map<std::uint64_t, int> g_rootDiagnosticSelectionsByRunSeed;
 struct StickyQualityTestBudgets { std::int64_t fresh = 0, ref25 = 0, ref50 = 0; };
 StickyQualityTestBudgets g_stickyQualityTestBudgets;
 constexpr const char *kScalingDiagnosticHeader =
-    "run_seed,floor,encounter,combat_decision_ordinal,transaction_subdecision_ordinal,turn,input_state,configured_simulations,had_predecessor,reroot_attempted,exact_candidate_found,exact_reroot,fallback,fallback_reason,configured_cap_mode,configured_cap,allocated_nodes_before_root,active_nodes_before_root,allocated_nodes_after_search,active_nodes_after_search,inherited_visits,simulations_added,nodes_created,root_visits_after_search,chosen_edge_visits,root_legal_actions,root_top_two_visit_gap_share,adaptive_enabled,adaptive_require_retained_root,adaptive_initial_simulations,adaptive_total_simulations,adaptive_escalated,exact_visit_lock_enabled,exact_visit_lock_eligible,exact_visit_lock_fired,exact_visit_lock_fired_at_zero,exact_visit_lock_summary_valid,exact_visit_lock_max_budget,exact_visit_lock_new_simulations_used,exact_visit_lock_remaining_budget,exact_visit_lock_stop_budget,exact_visit_lock_top_visits,exact_visit_lock_second_visits,exact_visit_lock_margin,exact_visit_lock_final_action";
+    "run_seed,floor,encounter,combat_decision_ordinal,transaction_subdecision_ordinal,turn,input_state,configured_simulations,had_predecessor,reroot_attempted,exact_candidate_found,exact_reroot,fallback,fallback_reason,configured_cap_mode,configured_cap,allocated_nodes_before_root,active_nodes_before_root,allocated_nodes_after_search,active_nodes_after_search,inherited_visits,simulations_added,nodes_created,root_visits_after_search,chosen_edge_visits,root_legal_actions,root_top_two_visit_gap_share,adaptive_enabled,adaptive_require_retained_root,adaptive_initial_simulations,adaptive_total_simulations,adaptive_escalated,exact_visit_lock_enabled,exact_visit_lock_eligible,exact_visit_lock_fired,exact_visit_lock_fired_at_zero,exact_visit_lock_summary_valid,exact_visit_lock_max_budget,exact_visit_lock_new_simulations_used,exact_visit_lock_remaining_budget,exact_visit_lock_stop_budget,exact_visit_lock_top_visits,exact_visit_lock_second_visits,exact_visit_lock_margin,exact_visit_lock_final_action,rho_racing_enabled,rho_racing_fired,rho_racing_leader_stability,rho_racing_visit_margin,rho_racing_remaining_budget,rho_racing_ratio";
 constexpr const char *kStickyQualityHeader =
     "run_seed,act,floor,encounter,room_type,combat_decision_ordinal,turn,input_state,allocated_nodes_before_root,active_nodes_before_root,inherited_visits,configured_cap,active_simulations_added,active_nodes_created,fresh_budget,ref25_budget,ref50_budget,active_action_fingerprint,fresh_action_fingerprint,ref25_action_fingerprint,ref50_action_fingerprint,ref25_ref50_agree,fresh_ref50_agree,active_ref50_agree,fresh_active_disagree,fresh_wall_ms,ref25_wall_ms,ref50_wall_ms,fresh_nodes_created,fresh_simulations_added,ref25_nodes_created,ref25_simulations_added,ref50_nodes_created,ref50_simulations_added,ref25_root_action_summaries,ref50_root_action_summaries,q_diagnostic_available,ref50_chosen_selection_q,active_ref50_selection_q,fresh_ref50_selection_q,ref50_q_gap_active,ref50_q_gap_fresh,ref50_q_gap_active_minus_fresh";
 constexpr const char *kStickyQualitySummaryHeader =
@@ -203,6 +204,8 @@ void parseSilverLiveOptions() {
         options.adaptiveTopTwoVisitGapThreshold = std::atof(raw);
     if (const char *raw = std::getenv("STS_SILVER_EXACT_VISIT_LOCK"))
         options.exactVisitLockEnabled = std::atoi(raw) != 0;
+    if (const char *raw = std::getenv("STS_SILVER_RHO_RACING"))
+        options.rhoRacingEnabled = std::atoi(raw) != 0;
     if (!options.rootDiagnosticFile.empty()
             && (options.rootDiagnosticMaxPerSeed <= 0
                 || options.rootDiagnosticReferenceBudget <= 0
@@ -266,14 +269,20 @@ void parseSilverLiveOptions() {
     if (options.exactVisitLockEnabled && options.adaptiveEnabled)
         throw std::invalid_argument(
             "STS_SILVER_EXACT_VISIT_LOCK and STS_SILVER_ADAPTIVE are incompatible");
+    if (options.rhoRacingEnabled && options.adaptiveEnabled)
+        throw std::invalid_argument(
+            "STS_SILVER_RHO_RACING and STS_SILVER_ADAPTIVE are incompatible");
+    if (options.rhoRacingEnabled && options.exactVisitLockEnabled)
+        throw std::invalid_argument(
+            "STS_SILVER_RHO_RACING includes exact locking; do not also set STS_SILVER_EXACT_VISIT_LOCK");
     if (!options.sequentialDiagnosticFile.empty()
             && (!options.exactRootBudgets || options.adaptiveEnabled))
         throw std::invalid_argument(
             "STS_COMBAT_SEQUENTIAL_DIAG_FILE requires exact root budgets and Silver adaptive stopping off");
-    if (options.exactVisitLockEnabled
+    if ((options.exactVisitLockEnabled || options.rhoRacingEnabled)
             && (!options.budgetDiagnosticFile.empty() || !options.sequentialDiagnosticFile.empty()))
         throw std::invalid_argument(
-            "STS_SILVER_EXACT_VISIT_LOCK is incompatible with paired/sequential diagnostic modes");
+            "sequential stopping is incompatible with paired/sequential diagnostic modes");
     options.installed = true;
     g_silverLiveOptions = std::move(options);
 }
@@ -334,7 +343,11 @@ void writeScalingDiagnostics(const std::vector<ScalingDiagnosticRow> &rows) {
             << d.exactVisitLockRemainingBudget << ',' << d.exactVisitLockStopBudget << ','
             << d.rootUncertainty.topVisits << ',' << d.rootUncertainty.secondVisits << ','
             << (d.rootUncertainty.topVisits - d.rootUncertainty.secondVisits) << ','
-            << csvField(d.exactVisitLockFinalAction) << '\n';
+            << csvField(d.exactVisitLockFinalAction) << ','
+            << (d.rhoRacingEnabled ? 1 : 0) << ','
+            << (d.rhoRacingFired ? 1 : 0) << ','
+            << d.rhoRacingLeaderStability << ',' << d.rhoRacingVisitMargin << ','
+            << d.rhoRacingRemainingBudget << ',' << d.rhoRacingRatio << '\n';
     }
     out.flush();
     if (!out) throw std::runtime_error("cannot write STS_SILVER_SCALING_DIAG_FILE: "
@@ -1168,6 +1181,7 @@ silver_bridge::SilverSearchConfig configFor(const ScumSearchAgent2 &agent, const
     result.collectDecisionDiagnostics = collectDecisionDiagnostics;
     result.exactVisitLockEnabled = g_silverLiveOptions.exactVisitLockEnabled;
     result.exactVisitLockRequireRetainedRoot = true;
+    result.rhoRacingEnabled = g_silverLiveOptions.rhoRacingEnabled;
     result.adaptiveEnabled = g_silverLiveOptions.adaptiveEnabled;
     if (result.adaptiveEnabled) {
         result.adaptiveRequireRetainedRoot = g_silverLiveOptions.adaptiveRetainedOnly;
@@ -1216,6 +1230,10 @@ void addDecisionDiagnostic(const silver_bridge::SilverSearchDecisionDiagnostic &
             ++g_silverLiveDiagnostics.exactVisitLockZeroFired;
         if (!diagnostic.exactVisitLockSummaryValid)
             ++g_silverLiveDiagnostics.exactVisitLockInvalidSummaries;
+    }
+    if (diagnostic.rhoRacingEnabled) {
+        ++g_silverLiveDiagnostics.rhoRacingChecks;
+        if (diagnostic.rhoRacingFired) ++g_silverLiveDiagnostics.rhoRacingFired;
     }
 }
 
@@ -1601,6 +1619,8 @@ void runSilverCombat(ScumSearchAgent2 &agent, GameContext &gc, BattleContext &bc
                   << " exact_visit_lock_fired=" << d.exactVisitLockFired
                   << " exact_visit_lock_zero=" << d.exactVisitLockZeroFired
                   << " exact_visit_lock_invalid=" << d.exactVisitLockInvalidSummaries
+                  << " rho_racing_checks=" << d.rhoRacingChecks
+                  << " rho_racing_fired=" << d.rhoRacingFired
                   << " reroot_exact=" << d.rerootExact
                   << " reroot_fallback=" << d.rerootFallback
                   << " reroot_candidate_found=" << d.rerootCandidateFound
@@ -1676,6 +1696,7 @@ bool silverLiveAdaptiveEnabled() { return g_silverLiveOptions.adaptiveEnabled; }
 bool silverLiveAdaptiveRetainedOnly() { return g_silverLiveOptions.adaptiveRetainedOnly; }
 bool silverLiveExactRootBudgets() { return g_silverLiveOptions.exactRootBudgets; }
 bool silverLiveExactVisitLockEnabled() { return g_silverLiveOptions.exactVisitLockEnabled; }
+bool silverLiveRhoRacingEnabled() { return g_silverLiveOptions.rhoRacingEnabled; }
 double silverLiveAdaptiveTopTwoVisitGapThreshold() {
     return g_silverLiveOptions.adaptiveTopTwoVisitGapThreshold;
 }

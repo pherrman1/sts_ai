@@ -582,6 +582,17 @@ int main() {
     invalidExactBoundary.valid = false;
     check(!silver_bridge::silverExactVisitLockHolds(invalidExactBoundary, 1, 0),
           "invalid or incomplete root summaries must never exact-lock");
+    check(!silver_bridge::silverRhoRacingStopHolds(exactBoundary, 1000, 0, 2)
+              && !silver_bridge::silverRhoRacingStopHolds(exactBoundary, 1000, 1000, 2)
+              && !silver_bridge::silverRhoRacingStopHolds(exactBoundary, 1000, 998, 1)
+              && silver_bridge::silverRhoRacingStopHolds(exactBoundary, 1000, 998, 2),
+          "rho racing must require observations, remaining budget, and two stable leaders");
+    auto rhoHalfBoundary = exactBoundary;
+    rhoHalfBoundary.topVisits = 9;
+    rhoHalfBoundary.secondVisits = 5;
+    check(!silver_bridge::silverRhoRacingStopHolds(rhoHalfBoundary, 1000, 991, 2)
+              && silver_bridge::silverRhoRacingStopHolds(rhoHalfBoundary, 1000, 992, 2),
+          "rho racing must use the integer visit margin at the >= 0.50 boundary");
     auto incompatibleExactConfig = disabledConfig;
     incompatibleExactConfig.exactVisitLockEnabled = true;
     incompatibleExactConfig.adaptiveEnabled = true;
@@ -617,6 +628,7 @@ int main() {
     check(exactReuse.accepted && exactReuse.rerootExact == 1
               && exactReuse.rerootFallback == 0 && exactReuse.inheritedVisits > 0
               && exactReuse.secondSimulations <= exactReuseConfig.simulationsPerDecision
+              && !exactReuse.rhoRacingFired
               && exactReuse.exactVisitLockActionMatchesFullBudget
               && exactReuse.exactVisitLockCheckpointCount >= 2
               && exactReuse.exactVisitLockTelemetryMatchesCheckpointTrace
@@ -629,6 +641,34 @@ int main() {
     check(exactZero.accepted && exactZero.exactVisitLockFiredAtZero
               && exactZero.secondSimulations == 0,
           "retained exact visit-lock must support a safe zero-new-simulation stop");
+
+    auto rhoConfig = disabledConfig;
+    rhoConfig.simulationsPerDecision = 1000;
+    rhoConfig.rhoRacingEnabled = true;
+    rhoConfig.collectRootActionSummaries = true;
+    rhoConfig.collectDecisionDiagnostics = true;
+    const auto rhoFresh = silver_bridge::runSilverDecision(firstWire, rhoConfig);
+    check(rhoFresh.accepted && rhoFresh.inheritedVisits == 0
+              && rhoFresh.simulations == rhoConfig.simulationsPerDecision
+              && rhoFresh.diagnostic.rhoRacingEnabled
+              && !rhoFresh.diagnostic.rhoRacingFired,
+          "rho racing must never soft-stop a fresh root");
+    const auto rhoReuse = silver_bridge::probeSilverSearchSessionReuse(firstWire, rhoConfig);
+    check(rhoReuse.accepted && rhoReuse.inheritedVisits > 0
+              && rhoReuse.secondSimulations <= rhoConfig.simulationsPerDecision
+              && rhoReuse.secondRootVisitsAfterSearch
+                  == rhoReuse.inheritedVisits + rhoReuse.secondSimulations,
+          "rho racing retained-root continuation must preserve visit accounting");
+    check(!(rhoReuse.exactVisitLockFired && rhoReuse.rhoRacingFired),
+          "rho racing must give exact locking priority when both predicates could hold at a checkpoint");
+    auto incompatibleRhoConfig = rhoConfig;
+    incompatibleRhoConfig.exactVisitLockEnabled = true;
+    const auto incompatibleRho = silver_bridge::runSilverDecision(
+        firstWire, incompatibleRhoConfig);
+    check(!incompatibleRho.accepted
+              && incompatibleRho.failureReason
+                  == "exact_visit_lock_and_rho_racing_are_incompatible",
+          "rho racing must fail closed when the exact-lock-only controller is also selected");
 
     silver_bridge::SemanticAction fingerprintCard = qualityFresh.action;
     fingerprintCard.type = silver_bridge::SemanticActionType::CARD;
@@ -935,6 +975,25 @@ int main() {
     }
     check(exactTransactionAccounting,
           "exact visit-lock must preserve transactional sequential card selection and accounting");
+    auto rhoTransactionConfig = exactTransactionConfig;
+    rhoTransactionConfig.exactVisitLockEnabled = false;
+    rhoTransactionConfig.rhoRacingEnabled = true;
+    const auto rhoTransaction = silver_bridge::runSequentialSelectionTransaction(
+        convert(transactionLive, gc, transactionKnowledge), rhoTransactionConfig);
+    bool rhoTransactionAccounting = rhoTransaction.accepted
+        && rhoTransaction.finalConfirmation
+        && rhoTransaction.searchDiagnostics.size()
+            == static_cast<std::size_t>(rhoTransaction.searchDecisions);
+    for (const auto &diagnostic : rhoTransaction.searchDiagnostics) {
+        rhoTransactionAccounting = rhoTransactionAccounting
+            && diagnostic.rhoRacingEnabled
+            && diagnostic.exactVisitLockNewSimulationsUsed <= 32
+            && diagnostic.exactVisitLockRemainingBudget >= 0
+            && diagnostic.rootVisitsAfterSearch
+                == diagnostic.inheritedVisits + diagnostic.simulationsAdded;
+    }
+    check(rhoTransactionAccounting,
+          "rho racing must preserve transactional sequential card selection and accounting");
     check(transactionLive.inputState == transactionBefore.inputState
           && transactionLive.cardSelectInfo.cardSelectTask == transactionBefore.cardSelectInfo.cardSelectTask
           && transactionLive.cards.cardsInHand == transactionBefore.cards.cardsInHand

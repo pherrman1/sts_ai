@@ -9032,3 +9032,57 @@ default-off. Knowledge impact: current research status and experiment
 evidence updated.
 
 [Evidence packet, raw traces, validation and provenance](evidence/silver_exact_visit_lock_pair_2026-09-16/README.md).
+
+## §287 — Silver rho-racing soft-lock follow-up (2026-09-16)
+
+- **Dependency and baseline:** PR #204 was verified merged and contained in
+  current `origin/main`, SHA
+  `3f8ca7b59c2de1ba78a2d8bab0f280f849dd6845`. The PR #202 sequential
+  checkpoint packet remained available. The new implementation was frozen at
+  `ae97d56a74a9b70ac34b87478a87de5e3a9ee893`; the single Release executable
+  used for all prospective arms has SHA-256
+  `c85579fd22a9c38475a3810062cabd0a15fe6d4bc33c8ea5f9ee0dee5a476eb3`.
+- **Offline Stage 1:** The existing seeds 112--127 packet was replayed only
+  offline. Candidates A/B/C were evaluated exactly as predeclared, with
+  exact locking first and fresh/forced roots held to max budget. Discovery
+  selected B (`rho >= 0.50` and the same semantic leader for at least two
+  consecutive checkpoints): 1,129 soft stops, 1.5058% disagreement, and
+  43.0299% all-decision reduction. Evaluation on 120--127 gave 1,070 soft
+  stops, 1.4953% disagreement, 42.7237% all-decision reduction versus
+  34.4918% exact-only, and 8.2319 percentage points incremental saving.
+  Room disagreement was 2.3041% for bosses, 2.1978% for elites, 0.6494% for
+  hallways, and 0% for other rooms. Classification:
+  **`RHO_RACING_OFFLINE_PROMISING`**; this is post-hoc engineering evidence.
+- **Runtime implementation:** Added default-off `STS_SILVER_RHO_RACING=1`.
+  It owns exact locking internally, uses the frozen B rule and PR #204's
+  zero/2.5/5/10/20/40/80/100% schedule, and rejects old adaptive mode,
+  separate exact-lock mode, and paired/sequential diagnostics. Focused tests
+  cover exact priority, integer/remaining-budget boundaries, zero safety,
+  fresh/retained behavior, arbitrary budgets, sequential transactions,
+  option parsing, and default/exact regression. A first attempted pair was
+  discarded after review found the soft predicate was not gated by the rho
+  option; the fix was applied, retested, amended, and rebuilt before valid
+  prospective collection.
+- **N16:** On the clean block 176--191, exact-only used 46,126,250 Silver
+  simulations and rho used 41,544,000, a 9.9341% incremental reduction.
+  Wins were 11/16 versus 11/16; paired outcomes were one baseline-only and
+  one treatment-only win. Exact/soft stops were 3,830/0 versus 1,313/2,516,
+  with zero failure counters. The N16 gate passed.
+- **N32:** On the new block 192--223, flat/exact/rho used
+  150,990,000/103,112,250/89,270,750 simulations and wall times
+  258.82/177.52/147.72 seconds. Exact/rho reductions versus flat were
+  31.7092%/40.8764%; rho's incremental reduction versus exact was 13.4237%.
+  Wins were 23/32, 25/32, and 20/32. Rho versus exact had five exact-only
+  wins and no rho-only win; rho versus flat had three flat-only wins and no
+  rho-only win. All seed, sidecar, schedule, budget, strictness,
+  exact-priority, root-accounting, fresh/forced, and bridge-failure checks
+  passed. Classification: **`RHO_RACING_COMPUTE_PASS_GAMEPLAY_CONCERN`**.
+- **Decision:** The compute gates passed, but the paired gameplay point
+  estimates are concerning against both comparators, especially exact-only.
+  Do not promote rho, tune it, or replace the frozen #199 preferred
+  experimental path. Runtime defaults remain unchanged. **Knowledge impact:**
+  current research status and experiment evidence updated; no production
+  policy changed.
+- **Evidence:** [rho-racing packet](evidence/silver_rho_racing_2026-09-16/README.md),
+  including raw N16/N32 results, scaling traces, logs, sidecars, time receipts,
+  paired CSVs, provenance, and validator output.
