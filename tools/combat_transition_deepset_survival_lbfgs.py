@@ -22,7 +22,7 @@ from tools import combat_transition_deepset_survival as screen
 BASELINE_SHA = "e82810f8486d4ad47b62b074ebcfdcb307fa9f17"
 SCREEN_OUTPUT = Path("/home/philippherrmann/sts_sweep/runs/deepset-survival-screen-20260916-final")
 REPRESENTATION = Path("/home/philippherrmann/sts_sweep/runs/deepset-downstream-20260916-corrected")
-OUTPUT = Path("/home/philippherrmann/sts_sweep/runs/deepset-survival-lbfgs-20260917")
+OUTPUT = Path("/home/philippherrmann/sts_sweep/runs/deepset-survival-lbfgs-20260916")
 L2 = 1e-4
 SEED = 20260912
 
