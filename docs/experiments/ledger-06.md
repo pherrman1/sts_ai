@@ -8578,7 +8578,9 @@ the exact current final-union TRAIN/VALIDATION winning population: TRAIN
 Encoders were cached once, decoder initialization and 12-epoch batch order
 were byte-identical, and the FP32 AdamW recipe was fixed at seed 20260912,
 batch 512, learning rate 1e-3, weight decay 1e-4 and clip 1.0. TEST rows were
-not evaluated.
+not evaluated. Both arms selected epoch 12; the shared curve descended at
+every epoch, but the absolute NLL gap remained 0.02344 at epoch 11 and 0.02356
+at epoch 12, so the shared arm was not closing the gap faster.
 
 Dedicated potion versus shared maxHP+HP validation exact trajectory NLL was
 0.507205895 versus 0.530769047 (**+4.6457%**, gate +2%). The no-change Brier

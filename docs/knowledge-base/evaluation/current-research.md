@@ -414,6 +414,12 @@ limit). The recursive-Brew slice regressed 22.3968%. No-change Brier and
 action-mode accuracy remained within bounds; illegal probability was exactly
 zero and normalization remained within tolerance.
 
+Both decoder fits selected epoch 12. The shared validation curve descended at
+every epoch, but the absolute gap did not close (0.02344 NLL at epoch 11,
+0.02356 at epoch 12), so this is not evidence that the shared arm was catching
+up faster under the fixed recipe. A longer decoder-only epoch-cap diagnostic,
+if desired, is a separate experiment.
+
 The teacher-forced gate therefore stopped the planned ancestral diagnostic.
 There was no TEST inference, joint fine-tuning, runtime/export, gameplay or
 promotion. This rejects the exact frozen substitution and decoder recipe, not
