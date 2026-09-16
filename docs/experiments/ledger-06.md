@@ -9086,3 +9086,51 @@ evidence updated.
 - **Evidence:** [rho-racing packet](evidence/silver_rho_racing_2026-09-16/README.md),
   including raw N16/N32 results, scaling traces, logs, sidecars, time receipts,
   paired CSVs, provenance, and validator output.
+
+## §288 — Retrained downstream consumers for the qualified DeepSets representation (2026-09-16)
+
+- **Question and baseline:** Does the corrected qualified PR #205 DeepSets
+  representation contain enough information for the existing downstream CTM
+  consumers when those consumers are retrained? After reconciling the branch
+  with current `main`, the baseline was `066264dc25bf2046aecd5ca7a94a8e82d5031e7b`.
+  The implementation correction was frozen at
+  `e036a32af068e8a99cd3c3edbfe1aeb35fdab58c`.
+- **Correction/intervention:** Only the downstream state input changed from
+  the dedicated HP representation to the frozen 64-dimensional
+  `student.encoder` output from the corrected DeepSets artifact. Preparation
+  generated representations for 458,589 TRAIN+VALIDATION rows and zero TEST
+  rows, with explicit row-ID binding; TEST rows were not encoded or inferred.
+  The DeepSets checkpoint SHA256 was
+  `bee6800dd7230b180c2b4894c0f01763efca4b7799e3f36a805333c3003dc663`, the
+  corrected result receipt SHA256 was
+  `83b2482eab347c09901c3b39f2ce7fed324f6be378ca36ff51f0d3965074c769`, and
+  the generated representation SHA256 was
+  `9232027d8331fd2157727276410161e3c12816b6680cb116ebc2b3afd37352af`.
+- **Protocol/provenance:** Existing `models`, `losses`, compatible-set targets,
+  exact hidden potion-trace marginalization, event candidates, legality masks,
+  native helpers and source-grouped splits were reused. Preparation cache,
+  downstream cache and reference checkpoint hashes were unchanged at
+  `e1c25f27…a251d`, `acd48827…d0e3` and `d07ead94…6af91`. The downstream fit
+  used seed `20260912`, 12 epochs, batch 512, FP32, AdamW, learning rate
+  `0.001`, weight decay `0.0001`, clip 1.0, and earliest strict minimum
+  original VALIDATION normalized joint NLL. TRAIN was 150,404 eligible rows /
+  18,286 sources; VALIDATION was 17,950 eligible rows / 2,276 sources.
+- **Result:** Candidate checkpoint SHA256 was
+  `c00ed677b8b2b2854fb62982247853982bc58d9fc20afdd96c593bcc6c07423a`, with
+  epoch 12 selected. Joint NLL was 1.358598545 versus reference 1.364212489
+  (−0.4115%). Turns, attacks, cards and shuffles had relative NLL changes of
+  −1.0592%, +0.1175%, −0.3111% and −1.9974%; singleton accuracy changes were
+  +0.1705pp, +0.7407pp, +0.8675pp and +0.8071pp. Writhing, Ritual and gold
+  relative NLL changes were −1.8988%, −7.3414% and −1.0014%. All fixed NLL,
+  accuracy and important-slice gates passed. The explicit output-support audit
+  found finite losses, normalized head probabilities and positive exact legal
+  target mass under the existing masks.
+- **Decision:** **`DEEPSET_DOWNSTREAM_GO`**. Retrained downstream consumers
+  can use this frozen cheap representation with acceptable offline validation
+  quality. This does not qualify full CTM sharing, potion/survival sharing,
+  native runtime, gameplay, OOC MCTS, speedup or default promotion. No TEST
+  inference, native export, C++ or runtime change occurred. **Knowledge impact:**
+  current research status and experiment evidence only; qualified executable
+  defaults remain unchanged.
+
+[Corrected evidence packet and machine-readable receipt](evidence/deepset_downstream_2026-09-16.md).

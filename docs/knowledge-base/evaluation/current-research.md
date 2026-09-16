@@ -155,7 +155,7 @@ rho-only wins and lower mean floor/HP. The result is
 strong enough to replace the frozen #199 preferred experimental path. The
 mode, exact-lock-only mode, and normal Silver defaults remain unchanged.
 See the [rho-racing evidence packet](../../experiments/evidence/silver_rho_racing_2026-09-16/README.md)
-and [ledger §287](../../experiments/ledger-06.md).
+and [ledger §288](../../experiments/ledger-06.md).
 
 ## Current priority / active line
 
@@ -558,6 +558,37 @@ its receipt records the artifact/cache bindings, exact row selection, isolated
 `9.53e-08`. The historical dedicated `z` cache remains the metric reference
 because the original cache used different inference arithmetic than the CPU
 replay; the regenerated-versus-cache difference is recorded explicitly.
+
+### Retrained downstream consumers for the qualified DeepSets representation
+
+The exact downstream retraining follow-up is **`DEEPSET_DOWNSTREAM_GO`** on the
+same eligible source-grouped VALIDATION cohort of 17,950 rows. It precomputed
+only the frozen corrected PR #205 DeepSets encoder output (`[N,64]`) and
+retrained the existing relic/turn/card/attack/shuffle, Writhing, Ritual and
+gold consumers with the same 12-epoch, batch-512, AdamW recipe. The DeepSets
+encoder, maxHP/HP heads and HP delta embedding were excluded from the
+optimizer. Potion representation, decoder, traces, labels, support predicate,
+candidate generation, legality masks and native-rule helpers were unchanged.
+
+Relative to the hash-verified dedicated-HP downstream reference, joint NLL
+improved 0.4115%. Turns, attacks, cards and shuffles stayed within the fixed
+2% NLL and 0.005 singleton-accuracy gates; their NLL changes were −1.0592%,
++0.1175%, −0.3111% and −1.9974%, and their accuracy deltas were +0.1705pp,
++0.7407pp, +0.8675pp and +0.8071pp. Writhing, Ritual and gold NLL changed by
+−1.8988%, −7.3414% and −1.0014%, each inside the fixed +5% important-slice
+gate. All outputs had finite metrics, normalized probabilities and positive
+exact legal target mass under the existing masks; TEST rows were neither
+encoded nor inferred.
+
+This qualifies the frozen DeepSets representation for these retrained offline
+downstream consumers only. It does not qualify the full CTM, potion or
+survival sharing, native runtime, gameplay, OOC MCTS, speedup or default
+promotion. The actual downstream-eligible TRAIN fit population was 150,404
+rows / 18,286 sources; the separate 393,677-row population is retained only
+as the DeepSets encoder's bound TRAIN normalization population. See the
+[downstream evidence report](../../experiments/evidence/deepset_downstream_2026-09-16.md),
+[machine-readable receipt](../../experiments/evidence/deepset_downstream_2026-09-16.json)
+and [ledger §287](../../experiments/ledger-06.md).
 
 ### Shared maxHP+HP representation for potion decoding
 
