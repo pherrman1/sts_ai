@@ -8725,3 +8725,48 @@ restart and matched all three recorded exact hashes. Knowledge impact:
 experiment evidence and current research status only; qualified components
 and executable defaults are unchanged.
 [Evidence, provenance and receipt](evidence/shared_potion_encoder_screen_2026-09-16.md).
+
+## §283 — Sequential Silver stopping controller diagnostic (2026-09-16)
+
+- **Question:** Can progressively larger exact continuation checkpoints
+  support an offline risk estimator for a future dynamic sequential stopping
+  controller, and does it improve on the frozen #199 retained-root rule?
+- **Baseline and implementation:** Actual current `main` at task start was
+  `c371f3c29ffab07096c71fc66a4ab930e9595952` (the requested
+  `77a76167865d96df776fd80794695a6937fdac3f` was already an older contained
+  parent). Diagnostic source is
+  `21111b7e6af73b7f8a770b45df3d7093b17b69dc`. The opt-in checkpoint stream
+  reuses the existing Silver private session and leaves the legacy fixed rule,
+  gameplay policy, and defaults unchanged.
+- **Protocol:** One exact-10k Ironclad A0 fair Silver native-OOC arm, normal
+  policy/models, four workers, fresh seeds `112..127`, allocated reuse cap
+  131,072, and cumulative checkpoints `250/500/1000/2000/4000/8000/10000`.
+  CTM adaptive budgeting, Silver adaptive stopping, convergence stopping, OOC
+  MCTS, and key collection were explicitly off. Seeds `112..119` were used for
+  discovery and `120..127` for held-out evaluation. Every live decision used
+  the final 10k reference action; no gameplay A/B was run.
+- **Correctness:** 53,228 rows / 7,604 decisions were collected. Every
+  checkpoint has 7,604 rows and every decision has all seven checkpoints.
+  `rootVisitsAfterSearch == inheritedVisits + checkpoint` for every row,
+  including retained roots whose child-edge visit summary is one lower than
+  the internal root counter. Fresh/retained and one-action/forced controls
+  were separately identifiable.
+- **Stage 1:** Retained non-forced action-change risk was 11.7913%, 11.5242%,
+  10.1274%, 8.4634%, 5.7518%, and 1.9310% at 250 through 8,000. Fresh roots
+  were 24.2537% overall and one-action/forced roots 0%; neither control is
+  included in the quality claim.
+- **Stage 2:** The predeclared standardized logistic regression was fit only
+  on discovery retained/non-forced rows before 10k. On held-out evaluation,
+  the 1% and 2% ceilings stopped 0 decisions. The 5% ceiling stopped 55/3,778,
+  had zero observed action disagreements, and reduced nominal simulations by
+  0.5393%. The frozen #199 rule stopped 1,621 decisions, reduced nominal
+  simulations by 40.7610%, and had 1.9124% offline action disagreement.
+- **Decision:** **`FIXED_RULE_STILL_SUFFICIENT`**. This is offline engineering
+  evidence only; it does not qualify dynamic runtime stopping, establish
+  universal safety, tune a threshold, introduce `dynamicSearch(session,maxBudget)`,
+  or change the fixed #199 policy/defaults. **Knowledge impact:** current
+  research status and experiment evidence only; normal Silver defaults remain
+  unchanged.
+- **Evidence:** [full packet](evidence/combat_sequential_stopping_2026-09-16/README.md),
+  including the raw checkpoint stream, estimator JSON, benchmark receipt,
+  sidecar, and run log.
