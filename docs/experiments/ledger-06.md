@@ -9128,3 +9128,44 @@ evidence updated.
 - **Evidence:** [deployment packet](evidence/silver_retained_adaptive_deployment_pair32_2026-09-16/README.md),
   including raw arm results, metadata, scaling traces, run logs, paired CSV,
   summary, and validation outputs.
+
+## §289 — Current #199 retained-adaptive Silver cap screen (fresh N16, 2026-09-16)
+
+- **Question/provenance:** After the #199 retained-root policy deployment
+  screen, test whether the allocated Silver reuse cap should increase from
+  32,768 to 131,072. The fresh next block, seeds 256--271, used the reviewed
+  executable `3fb0c8ce2e009c2ef7a3abee5584556aff515261` and identical explicit
+  current-policy settings in both arms: fresh/forced roots at 10,000,
+  retained non-forced roots at 500 with continuation to 10,000 below the
+  exact threshold `0.2932885906040268`. Prior cap artifacts were inspected but
+  were exploratory/reused or exact-flat-budget comparisons and did not satisfy
+  this fresh retained-adaptive production comparison.
+- **Protocol:** Ironclad A0, project-fair Silver, native OOC, Searcher2,
+  ordinary boss budgeting, base budget 10,000, allocated reuse mode, four
+  workers, CTM adaptive budgeting/convergence/OOC MCTS/keys off, and
+  exact-lock/rho off. Only `STS_SILVER_REUSE_CAP` differed: 32,768 versus
+  131,072. Both producers ran through `tools/seed_guard.sh` and exited 0.
+- **Result:** 32k won 11/16 with mean floor 49.0000 and HP 40.2500; 128k won
+  11/16 with mean floor 49.1250 and HP 39.8125. Paired outcomes were 11 both
+  wins, 5 both losses, and no cap-only win in either direction. Simulations
+  were 46,704,500 versus 46,652,500; external wall was 80.51s versus 77.02s;
+  peak four-worker RSS was 1,066,104 KiB versus 1,986,088 KiB. The 128k arm
+  therefore used 1.86x peak RSS for 0.11% fewer simulations and no changed
+  paired wins.
+- **Mechanism accounting:** 32k had 398 cap-pressure exact candidates, of
+  which 395 were rescued by exact reroot and 3 fell back at the allocated cap;
+  128k had zero pressure candidates and zero allocated-cap fallbacks. Exact
+  reroot rates were 69.1407% (5,021/7,262) versus 69.2107% (5,033/7,272).
+  Valid 500-stops were 3,169 versus 3,185. Both arms had zero conversion,
+  semantic-resolution, transaction, knowledge, exact-lock, and rho failures.
+- **Decision:** **`CAP_128K_NOT_MATERIALLY_USEFUL_IN_FRESH_N16`**. Keep the
+  allocated 32,768 production cap and leave 131,072 experimental. The larger
+  cap removes the small number of unrecovered cap events, but 32k already
+  rescues 99.2% of pressure candidates and the paired outcome evidence shows
+  no useful-tree quality gain. The observed 1.89 GiB RSS is a substantial
+  concurrency cost. This N16 screen is not a general quality-equivalence
+  proof. **Knowledge impact:** maintained experiment evidence and current cap
+  decision; production/default/model contracts otherwise unchanged.
+- **Evidence:** [cap-screen packet](evidence/silver_cap_adaptive_pair16_2026-09-16/README.md),
+  including raw arm results, metadata, scaling traces, `/usr/bin/time -v` logs,
+  paired analysis, compact summary, and provenance.
