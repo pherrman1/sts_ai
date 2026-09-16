@@ -1,0 +1,337 @@
+{
+  "baselineSha": "27c8f7a0918b6ac684a3913436e30c54c0f5ff6c",
+  "candidate": {
+    "bestEpoch": 37,
+    "checkpoint": "/home/philippherrmann/sts_sweep/runs/shared-transition-encoder-overflow-40-20260915/best_epoch.pt",
+    "checkpointSha256": "daf50b5ec0847fe7a44cde0efd5d592a1939a25e6978f6757dd2b0157a105267",
+    "qualifiedDecision": "SHARED_TRANSITION_ENCODER_GO",
+    "receipt": "/home/philippherrmann/sts_sweep/runs/shared-transition-encoder-overflow-40-20260915/results.json",
+    "receiptSha256": "4149c038a2abe9ab181b03c714763e74fb7b37f534020179004696fd465577c7"
+  },
+  "componentHashes": {
+    "HP": "0c8b5aa8c5218d6cd6102b768cc86a474c9ef30953d4b034caedcc41a426109b",
+    "currentNativeArtifact": "e9a18951710fdfe9e1a81a2703090a41f039067c670a1d8a0393b5e7e8e0ddfd",
+    "downstream": "d07ead94b3abb9d12f272337e18aece6acd261cc4a39a36b21b82f904236af91",
+    "maxHP": "2c5b54d0a9420a9d0e3ab9a26f32b9900c4869490e4af49627009cde21efb4b0",
+    "potion": "ae1a1411990d272579de10564edb48c7f2ec1d14f1c72dacf5390a1415a0f1db",
+    "sharedMaxHpHp": "daf50b5ec0847fe7a44cde0efd5d592a1939a25e6978f6757dd2b0157a105267",
+    "survival": "ccc3c210060be34b38fe0671d93c6acde4242563c80a25c5978b4190b80010c9"
+  },
+  "decision": "SHARED_HP_DOWNSTREAM_FAIL",
+  "experimentSha": "27c8f7a0918b6ac684a3913436e30c54c0f5ff6c",
+  "handoffExpectedBaselineSha": "c371f3c29ffab07096c71fc66a4ab930e9595952",
+  "method": {
+    "candidate": "PR #197 epoch-37 shared maxHP+HP encoder representation z_shared",
+    "downstream": "same frozen full-union-downstream-v1 heads, traces, legality masks and targets",
+    "evaluator": "tools/combat_transition_near_full_downstream.py::losses",
+    "metricNotes": "Relic NLL is the existing compatible-set constraint NLL. Exact-label accuracy is reported only on singleton compatibility rows. Event and gold NLLs use the existing frozen trace-marginalized targets.",
+    "precision": "CPU FP32; torch 2.5.1+cu121; CUDA unavailable; 4 torch threads for offline evaluation",
+    "reference": "current dedicated HP encoder representation z_hp"
+  },
+  "population": {
+    "downstreamCache": "/home/philippherrmann/sts_sweep/runs/near-full-combat-support-20260914/full-union-downstream-v1/cache.npz",
+    "downstreamCacheSha256": "acd48827199f95d006ed2e225e31df768f5c757c8995fa2a0a868cf49ab0d0e3",
+    "downstreamRows": 510030,
+    "eligibleValidationRows": 17950,
+    "preparationCacheSha256": "e1c25f2758bf56c7cff392ea02342d809f3ad7427c70b64166244a6b714a251d",
+    "source": "/home/philippherrmann/sts_sweep/runs/near-full-combat-support-20260914",
+    "sourceSha": "1c31b7eb0a7660d43bc27e0849a8955dd0c3daae",
+    "sourceValidationGroups": 2496,
+    "sourceValidationRows": 48590,
+    "testInferenceRows": 0
+  },
+  "replay": {
+    "baselineSha": "27c8f7a0918b6ac684a3913436e30c54c0f5ff6c",
+    "candidateEncoding": "regenerated PR #197 epoch-37 shared maxHP+HP encoder z_shared",
+    "driver": "tools/combat_transition_shared_hp_downstream.py",
+    "driverSha": "1eaa3de",
+    "eligibleValidationRows": 17950,
+    "hashes": {
+      "HP": "0c8b5aa8c5218d6cd6102b768cc86a474c9ef30953d4b034caedcc41a426109b",
+      "candidateCheckpoint": "daf50b5ec0847fe7a44cde0efd5d592a1939a25e6978f6757dd2b0157a105267",
+      "candidateReceipt": "4149c038a2abe9ab181b03c714763e74fb7b37f534020179004696fd465577c7",
+      "currentNativeArtifact": "e9a18951710fdfe9e1a81a2703090a41f039067c670a1d8a0393b5e7e8e0ddfd",
+      "downstream": "d07ead94b3abb9d12f272337e18aece6acd261cc4a39a36b21b82f904236af91",
+      "downstreamCache": "acd48827199f95d006ed2e225e31df768f5c757c8995fa2a0a868cf49ab0d0e3",
+      "hp": "a667a3cfa7d7eca3cb07b46f50321e443c75e8a58f7627becb1fd69bf90f08c9",
+      "maxHP": "2c5b54d0a9420a9d0e3ab9a26f32b9900c4869490e4af49627009cde21efb4b0",
+      "max_hp": "66ac8f70da69e29bf9b1364243f6f903e4f74dda1ec8a909ef54a7ea97dc6479",
+      "potion": "ae1a1411990d272579de10564edb48c7f2ec1d14f1c72dacf5390a1415a0f1db",
+      "potion_encoder": "2085010f1aeef7a7957cdc45c851b2424d640037fd0fa981eb7ae7274190f6ef",
+      "preparationCache": "e1c25f2758bf56c7cff392ea02342d809f3ad7427c70b64166244a6b714a251d",
+      "relic": "e07e79d487152ae294f4915ef4aecd0e8bd38b8dec8d0133a57b6b58af92bd71",
+      "survival": "2447b2daf1a48a619a5f071488908afd6f0fb83bfd855ee9f379c04120efeaef",
+      "survivalPromotionReceipt": "5d23804c01c7c4626c3a0c181aa23634b879f2452f23b08e5886e4e1b3799ff2"
+    },
+    "maxAbsMetricDifference": 9.533214906376486e-08,
+    "metrics": {
+      "candidate": {
+        "attacks": {
+          "exactLabelAccuracy": 0.14584362139917695,
+          "exactLabelRows": 6075,
+          "nll": 2.2478209694472002,
+          "rows": 6075
+        },
+        "cards": {
+          "exactLabelAccuracy": 0.11277602523659307,
+          "exactLabelRows": 2536,
+          "nll": 2.3203203035783386,
+          "rows": 2536
+        },
+        "gold": {
+          "nll": 0.7315258914181256,
+          "rows": 6921
+        },
+        "joint": {
+          "nll": 1.4482603587677214,
+          "rows": 17950
+        },
+        "ritual": {
+          "nll": 0.08486113809109762,
+          "rows": 1243
+        },
+        "shuffles": {
+          "exactLabelAccuracy": 0.5104923325262308,
+          "exactLabelRows": 2478,
+          "nll": 0.9759654558485674,
+          "rows": 2478
+        },
+        "turns": {
+          "exactLabelAccuracy": 0.2514919011082694,
+          "exactLabelRows": 1173,
+          "nll": 1.253996396584014,
+          "rows": 4635
+        },
+        "writhing": {
+          "nll": 0.5780458461694382,
+          "rows": 413
+        }
+      },
+      "candidateMinusReference": {
+        "attacks": {
+          "exactLabelAccuracyDelta": -0.013662551440329213,
+          "nllRelative": 0.03031996082303845
+        },
+        "cards": {
+          "exactLabelAccuracyDelta": 0.0063091482649842295,
+          "nllRelative": 0.003536255459884341
+        },
+        "gold": {
+          "nllRelative": 0.24634315003999196
+        },
+        "joint": {
+          "nllRelative": 0.061609075086815235
+        },
+        "ritual": {
+          "nllRelative": 0.20645706098615357
+        },
+        "shuffles": {
+          "exactLabelAccuracyDelta": -0.060532687651331685,
+          "nllRelative": 0.11518822052570399
+        },
+        "turns": {
+          "exactLabelAccuracyDelta": -0.026427962489343537,
+          "nllRelative": 0.01584059947758898
+        },
+        "writhing": {
+          "nllRelative": -0.010815088666350059
+        }
+      },
+      "decision": "SHARED_HP_DOWNSTREAM_FAIL",
+      "finiteAndLegal": true,
+      "gates": {
+        "importantSliceNllRelativeMax": 0.05,
+        "principalAccuracyDropMax": 0.005,
+        "principalNllRelativeMax": 0.02
+      },
+      "reference": {
+        "attacks": {
+          "exactLabelAccuracy": 0.15950617283950616,
+          "exactLabelRows": 6075,
+          "nll": 2.181672737516994,
+          "rows": 6075
+        },
+        "cards": {
+          "exactLabelAccuracy": 0.10646687697160884,
+          "exactLabelRows": 2536,
+          "nll": 2.312143971833902,
+          "rows": 2536
+        },
+        "gold": {
+          "nll": 0.586937787875396,
+          "rows": 6921
+        },
+        "joint": {
+          "nll": 1.3642124890928302,
+          "rows": 17950
+        },
+        "ritual": {
+          "nll": 0.07033912837455851,
+          "rows": 1243
+        },
+        "shuffles": {
+          "exactLabelAccuracy": 0.5710250201775625,
+          "exactLabelRows": 2478,
+          "nll": 0.8751576082721656,
+          "rows": 2478
+        },
+        "turns": {
+          "exactLabelAccuracy": 0.27791986359761295,
+          "exactLabelRows": 1173,
+          "nll": 1.2344420937978853,
+          "rows": 4635
+        },
+        "writhing": {
+          "nll": 0.5843658142642904,
+          "rows": 413
+        }
+      }
+    },
+    "preparationCacheMetadataSha256": "a12fd0f71fd58fd999267d8e3d8dca839dd743e5bf5bc4b36f87e9d159b26550",
+    "referenceEncoding": {
+      "maxAbsDifferenceFromCache": 4.486812114715576,
+      "metricsEncoding": "tracked cache z",
+      "regenerated": true
+    },
+    "substitution": "candidate_cache['z'] = z_shared; all other cache fields unchanged"
+  },
+  "schema": "shared_hp_downstream_stage_a_v1",
+  "scope": "Stage-A frozen downstream substitution only; no TEST inference, runtime change, timing, gameplay or promotion",
+  "stageA": {
+    "candidate": {
+      "attacks": {
+        "exactLabelAccuracy": 0.14584362139917695,
+        "exactLabelRows": 6075,
+        "nll": 2.2478209624718355,
+        "rows": 6075
+      },
+      "cards": {
+        "exactLabelAccuracy": 0.11277602523659307,
+        "exactLabelRows": 2536,
+        "nll": 2.320320297786864,
+        "rows": 2536
+      },
+      "gold": {
+        "nll": 0.7315258914181256,
+        "rows": 6921
+      },
+      "joint": {
+        "nll": 1.4482603073120117,
+        "rows": 17950
+      },
+      "ritual": {
+        "nll": 0.08486113809109762,
+        "rows": 1243
+      },
+      "shuffles": {
+        "exactLabelAccuracy": 0.5104923325262308,
+        "exactLabelRows": 2478,
+        "nll": 0.9759654523702156,
+        "rows": 2478
+      },
+      "turns": {
+        "exactLabelAccuracy": 0.2514919011082694,
+        "exactLabelRows": 1173,
+        "nll": 1.2539963900395374,
+        "rows": 4635
+      },
+      "writhing": {
+        "nll": 0.5780458443540356,
+        "rows": 413
+      }
+    },
+    "candidateMinusReference": {
+      "attacks": {
+        "exactLabelAccuracyDelta": -0.013662551440329213,
+        "nllRelative": 0.0303199601195685
+      },
+      "cards": {
+        "exactLabelAccuracyDelta": 0.0063091482649842295,
+        "nllRelative": 0.0035362563988485807
+      },
+      "gold": {
+        "nllRelative": 0.24634315003999196
+      },
+      "joint": {
+        "nllRelative": 0.06160911155457138
+      },
+      "ritual": {
+        "nllRelative": 0.20645706098615357
+      },
+      "shuffles": {
+        "exactLabelAccuracyDelta": -0.060532687651331685,
+        "nllRelative": 0.11518822332069134
+      },
+      "turns": {
+        "exactLabelAccuracyDelta": -0.026427962489343537,
+        "nllRelative": 0.015840597213160335
+      },
+      "writhing": {
+        "nllRelative": -0.010815092341667443
+      }
+    },
+    "decision": "SHARED_HP_DOWNSTREAM_FAIL",
+    "failureReasons": [
+      "joint downstream NLL +6.1609% exceeds +2% principal-NLL gate",
+      "turns exact-label accuracy -2.6428pp exceeds -0.5pp gate",
+      "attacks exact-label accuracy -1.3663pp exceeds -0.5pp gate",
+      "shuffles exact-label accuracy -6.0533pp exceeds -0.5pp gate",
+      "shuffles NLL +11.5188% exceeds +5% important-slice gate",
+      "ritual NLL +20.6457% exceeds +5% important-slice gate",
+      "gold NLL +24.6343% exceeds +5% important-slice gate"
+    ],
+    "finiteAndLegal": true,
+    "gates": {
+      "importantSliceNllRelativeMax": 0.05,
+      "principalAccuracyDropMax": 0.005,
+      "principalNllRelativeMax": 0.02
+    },
+    "reference": {
+      "attacks": {
+        "exactLabelAccuracy": 0.15950617283950616,
+        "exactLabelRows": 6075,
+        "nll": 2.1816727322364753,
+        "rows": 6075
+      },
+      "cards": {
+        "exactLabelAccuracy": 0.10646687697160884,
+        "exactLabelRows": 2536,
+        "nll": 2.312143963899466,
+        "rows": 2536
+      },
+      "gold": {
+        "nll": 0.586937787875396,
+        "rows": 6921
+      },
+      "joint": {
+        "nll": 1.3642123937606812,
+        "rows": 17950
+      },
+      "ritual": {
+        "nll": 0.07033912837455851,
+        "rows": 1243
+      },
+      "shuffles": {
+        "exactLabelAccuracy": 0.5710250201775625,
+        "exactLabelRows": 2478,
+        "nll": 0.8751576029596935,
+        "rows": 2478
+      },
+      "turns": {
+        "exactLabelAccuracy": 0.27791986359761295,
+        "exactLabelRows": 1173,
+        "nll": 1.234442090107178,
+        "rows": 4635
+      },
+      "writhing": {
+        "nll": 0.584365814600251,
+        "rows": 413
+      }
+    }
+  },
+  "stageB": {
+    "reason": "Stage A failed; retain separate maxHP and HP encoders",
+    "run": false
+  },
+  "uncertainty": "One frozen offline VALIDATION substitution on the existing final-union development population; no TEST, runtime, preparation benchmark, gameplay or default-promotion claim."
+}
