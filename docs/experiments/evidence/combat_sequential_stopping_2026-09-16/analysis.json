@@ -785,7 +785,7 @@
       ]
     }
   },
-  "classification": "FIXED_RULE_STILL_SUFFICIENT",
+  "classification": "LOGISTIC_DYNAMIC_RULE_REJECTED",
   "discovery_seeds": [
     112,
     113,
@@ -924,6 +924,173 @@
     126,
     127
   ],
+  "exact_visit_lock": {
+    "all": {
+      "forced_one_action_control": {
+        "decisions": 302,
+        "distribution_of_chosen_stopping_budgets": {
+          "1000": 10,
+          "2000": 16,
+          "250": 201,
+          "4000": 37,
+          "8000": 38
+        },
+        "lock_condition": "top_edge_visits - second_edge_visits > 10000 - checkpoint_new_simulations",
+        "mean_new_simulations_per_decision": 1802.1523178807947,
+        "median_new_simulations_per_decision": 250.0,
+        "nominal_simulation_reduction_vs_flat_10k": 0.8197847682119206,
+        "offline_reference_action_disagreement_rate": 0.0,
+        "stopped_decisions": 302,
+        "strict_lock_action_disagreements": 0,
+        "strict_lock_guarantee_observed": true
+      },
+      "fresh_control": {
+        "decisions": 2455,
+        "distribution_of_chosen_stopping_budgets": {
+          "10000": 828,
+          "8000": 1627
+        },
+        "lock_condition": "top_edge_visits - second_edge_visits > 10000 - checkpoint_new_simulations",
+        "mean_new_simulations_per_decision": 8674.541751527495,
+        "median_new_simulations_per_decision": 8000,
+        "nominal_simulation_reduction_vs_flat_10k": 0.13254582484725053,
+        "offline_reference_action_disagreement_rate": 0.0,
+        "stopped_decisions": 1627,
+        "strict_lock_action_disagreements": 0,
+        "strict_lock_guarantee_observed": true
+      },
+      "retained_non_forced": {
+        "decisions": 4868,
+        "distribution_of_chosen_stopping_budgets": {
+          "1000": 197,
+          "10000": 806,
+          "2000": 393,
+          "250": 1393,
+          "4000": 668,
+          "500": 116,
+          "8000": 1295
+        },
+        "lock_condition": "top_edge_visits - second_edge_visits > 10000 - checkpoint_new_simulations",
+        "mean_new_simulations_per_decision": 4618.169679539852,
+        "median_new_simulations_per_decision": 4000.0,
+        "nominal_simulation_reduction_vs_flat_10k": 0.5381830320460148,
+        "offline_reference_action_disagreement_rate": 0.0,
+        "stopped_decisions": 4062,
+        "strict_lock_action_disagreements": 0,
+        "strict_lock_guarantee_observed": true
+      }
+    },
+    "discovery": {
+      "forced_one_action_control": {
+        "decisions": 126,
+        "distribution_of_chosen_stopping_budgets": {
+          "1000": 5,
+          "2000": 5,
+          "250": 79,
+          "4000": 20,
+          "8000": 17
+        },
+        "lock_condition": "top_edge_visits - second_edge_visits > 10000 - checkpoint_new_simulations",
+        "mean_new_simulations_per_decision": 1990.079365079365,
+        "median_new_simulations_per_decision": 250.0,
+        "nominal_simulation_reduction_vs_flat_10k": 0.8009920634920635,
+        "offline_reference_action_disagreement_rate": 0.0,
+        "stopped_decisions": 126,
+        "strict_lock_action_disagreements": 0,
+        "strict_lock_guarantee_observed": true
+      },
+      "fresh_control": {
+        "decisions": 1261,
+        "distribution_of_chosen_stopping_budgets": {
+          "10000": 421,
+          "8000": 840
+        },
+        "lock_condition": "top_edge_visits - second_edge_visits > 10000 - checkpoint_new_simulations",
+        "mean_new_simulations_per_decision": 8667.724028548771,
+        "median_new_simulations_per_decision": 8000,
+        "nominal_simulation_reduction_vs_flat_10k": 0.1332275971451229,
+        "offline_reference_action_disagreement_rate": 0.0,
+        "stopped_decisions": 840,
+        "strict_lock_action_disagreements": 0,
+        "strict_lock_guarantee_observed": true
+      },
+      "retained_non_forced": {
+        "decisions": 2446,
+        "distribution_of_chosen_stopping_budgets": {
+          "1000": 97,
+          "10000": 387,
+          "2000": 197,
+          "250": 689,
+          "4000": 361,
+          "500": 54,
+          "8000": 661
+        },
+        "lock_condition": "top_edge_visits - second_edge_visits > 10000 - checkpoint_new_simulations",
+        "mean_new_simulations_per_decision": 4616.618969746525,
+        "median_new_simulations_per_decision": 4000.0,
+        "nominal_simulation_reduction_vs_flat_10k": 0.5383381030253475,
+        "offline_reference_action_disagreement_rate": 0.0,
+        "stopped_decisions": 2059,
+        "strict_lock_action_disagreements": 0,
+        "strict_lock_guarantee_observed": true
+      }
+    },
+    "evaluation": {
+      "forced_one_action_control": {
+        "decisions": 176,
+        "distribution_of_chosen_stopping_budgets": {
+          "1000": 5,
+          "2000": 11,
+          "250": 122,
+          "4000": 17,
+          "8000": 21
+        },
+        "lock_condition": "top_edge_visits - second_edge_visits > 10000 - checkpoint_new_simulations",
+        "mean_new_simulations_per_decision": 1667.6136363636363,
+        "median_new_simulations_per_decision": 250.0,
+        "nominal_simulation_reduction_vs_flat_10k": 0.8332386363636364,
+        "offline_reference_action_disagreement_rate": 0.0,
+        "stopped_decisions": 176,
+        "strict_lock_action_disagreements": 0,
+        "strict_lock_guarantee_observed": true
+      },
+      "fresh_control": {
+        "decisions": 1194,
+        "distribution_of_chosen_stopping_budgets": {
+          "10000": 407,
+          "8000": 787
+        },
+        "lock_condition": "top_edge_visits - second_edge_visits > 10000 - checkpoint_new_simulations",
+        "mean_new_simulations_per_decision": 8681.742043551088,
+        "median_new_simulations_per_decision": 8000.0,
+        "nominal_simulation_reduction_vs_flat_10k": 0.13182579564489116,
+        "offline_reference_action_disagreement_rate": 0.0,
+        "stopped_decisions": 787,
+        "strict_lock_action_disagreements": 0,
+        "strict_lock_guarantee_observed": true
+      },
+      "retained_non_forced": {
+        "decisions": 2422,
+        "distribution_of_chosen_stopping_budgets": {
+          "1000": 100,
+          "10000": 419,
+          "2000": 196,
+          "250": 704,
+          "4000": 307,
+          "500": 62,
+          "8000": 634
+        },
+        "lock_condition": "top_edge_visits - second_edge_visits > 10000 - checkpoint_new_simulations",
+        "mean_new_simulations_per_decision": 4619.735755573906,
+        "median_new_simulations_per_decision": 4000.0,
+        "nominal_simulation_reduction_vs_flat_10k": 0.5380264244426094,
+        "offline_reference_action_disagreement_rate": 0.0,
+        "stopped_decisions": 2003,
+        "strict_lock_action_disagreements": 0,
+        "strict_lock_guarantee_observed": true
+      }
+    }
+  },
   "frozen_199_fixed_rule_evaluation": {
     "decisions": 3778,
     "mean_new_simulations_per_decision": 5923.901535203811,
@@ -935,10 +1102,12 @@
     "stopped_rows": 1621
   },
   "interpretation": {
+    "classification_reason": "The predeclared logistic controller was retained as a diagnostic, but its held-out stopping behavior is too conservative to replace the frozen #199 rule. The exact visit-lock and empirical rho tables motivate further offline work; neither qualifies a runtime sequential stopping policy.",
     "evaluation_label": "internal held-out engineering evidence",
-    "monotonicity_check": "See checkpoint calibration and stage-one stability tables; no threshold was tuned on evaluation.",
+    "monotonicity_check": "See exact visit-lock and held-out rho/stability tables; no threshold was tuned on evaluation.",
     "quality_scope": "offline full-10k trajectories; fresh and forced roots excluded from quality claim",
-    "runtime_equivalence": false
+    "runtime_equivalence": false,
+    "sequential_stopping_status": "OPEN_EXACT_LOCK_AND_EMPIRICAL_RACING"
   },
   "metadata": {
     "baseline_sha": "c371f3c29ffab07096c71fc66a4ab930e9595952",
@@ -2109,6 +2278,1432 @@
       }
     }
   },
+  "rho_leader_stability_risk_table": {
+    "all": {
+      "four_plus": {
+        "0.1_to_0.25": {
+          "action_agreement_rate": 0.8405797101449275,
+          "decisions": 697,
+          "leader_stability_range": [
+            4,
+            Infinity
+          ],
+          "rho_range": [
+            0.1,
+            0.25
+          ],
+          "risk_event_rate": 0.15942028985507245,
+          "rows": 828
+        },
+        "0.25_to_0.5": {
+          "action_agreement_rate": 0.9337811900191939,
+          "decisions": 961,
+          "leader_stability_range": [
+            4,
+            Infinity
+          ],
+          "rho_range": [
+            0.25,
+            0.5
+          ],
+          "risk_event_rate": 0.06621880998080615,
+          "rows": 1042
+        },
+        "0.5_to_0.75": {
+          "action_agreement_rate": 0.9591346153846154,
+          "decisions": 812,
+          "leader_stability_range": [
+            4,
+            Infinity
+          ],
+          "rho_range": [
+            0.5,
+            0.75
+          ],
+          "risk_event_rate": 0.040865384615384616,
+          "rows": 832
+        },
+        "0.75_to_1": {
+          "action_agreement_rate": 0.9775413711583925,
+          "decisions": 833,
+          "leader_stability_range": [
+            4,
+            Infinity
+          ],
+          "rho_range": [
+            0.75,
+            1.0
+          ],
+          "risk_event_rate": 0.022458628841607566,
+          "rows": 846
+        },
+        "0_to_0.1": {
+          "action_agreement_rate": 0.7153772683858644,
+          "decisions": 651,
+          "leader_stability_range": [
+            4,
+            Infinity
+          ],
+          "rho_range": [
+            0.0,
+            0.1
+          ],
+          "risk_event_rate": 0.28462273161413565,
+          "rows": 1047
+        },
+        "1_to_2": {
+          "action_agreement_rate": 1.0,
+          "decisions": 2115,
+          "leader_stability_range": [
+            4,
+            Infinity
+          ],
+          "rho_range": [
+            1.0,
+            2.0
+          ],
+          "risk_event_rate": 0.0,
+          "rows": 2560
+        },
+        "2_plus": {
+          "action_agreement_rate": 1.0,
+          "decisions": 3570,
+          "leader_stability_range": [
+            4,
+            Infinity
+          ],
+          "rho_range": [
+            2.0,
+            Infinity
+          ],
+          "risk_event_rate": 0.0,
+          "rows": 6160
+        }
+      },
+      "one": {
+        "0.1_to_0.25": {
+          "action_agreement_rate": 0.8861538461538462,
+          "decisions": 632,
+          "leader_stability_range": [
+            1,
+            2
+          ],
+          "rho_range": [
+            0.1,
+            0.25
+          ],
+          "risk_event_rate": 0.11384615384615385,
+          "rows": 650
+        },
+        "0.25_to_0.5": {
+          "action_agreement_rate": 0.9482470784641068,
+          "decisions": 596,
+          "leader_stability_range": [
+            1,
+            2
+          ],
+          "rho_range": [
+            0.25,
+            0.5
+          ],
+          "risk_event_rate": 0.05175292153589316,
+          "rows": 599
+        },
+        "0.5_to_0.75": {
+          "action_agreement_rate": 0.9807692307692307,
+          "decisions": 571,
+          "leader_stability_range": [
+            1,
+            2
+          ],
+          "rho_range": [
+            0.5,
+            0.75
+          ],
+          "risk_event_rate": 0.019230769230769232,
+          "rows": 572
+        },
+        "0.75_to_1": {
+          "action_agreement_rate": 0.9981751824817519,
+          "decisions": 548,
+          "leader_stability_range": [
+            1,
+            2
+          ],
+          "rho_range": [
+            0.75,
+            1.0
+          ],
+          "risk_event_rate": 0.0018248175182481751,
+          "rows": 548
+        },
+        "0_to_0.1": {
+          "action_agreement_rate": 0.6260288065843621,
+          "decisions": 1321,
+          "leader_stability_range": [
+            1,
+            2
+          ],
+          "rho_range": [
+            0.0,
+            0.1
+          ],
+          "risk_event_rate": 0.37397119341563784,
+          "rows": 1944
+        },
+        "1_to_2": {
+          "action_agreement_rate": 1.0,
+          "decisions": 951,
+          "leader_stability_range": [
+            1,
+            2
+          ],
+          "rho_range": [
+            1.0,
+            2.0
+          ],
+          "risk_event_rate": 0.0,
+          "rows": 951
+        },
+        "2_plus": {
+          "action_agreement_rate": 1.0,
+          "decisions": 490,
+          "leader_stability_range": [
+            1,
+            2
+          ],
+          "rho_range": [
+            2.0,
+            Infinity
+          ],
+          "risk_event_rate": 0.0,
+          "rows": 490
+        }
+      },
+      "three": {
+        "0.1_to_0.25": {
+          "action_agreement_rate": 0.8550247116968699,
+          "decisions": 607,
+          "leader_stability_range": [
+            3,
+            4
+          ],
+          "rho_range": [
+            0.1,
+            0.25
+          ],
+          "risk_event_rate": 0.14497528830313014,
+          "rows": 607
+        },
+        "0.25_to_0.5": {
+          "action_agreement_rate": 0.9539823008849557,
+          "decisions": 565,
+          "leader_stability_range": [
+            3,
+            4
+          ],
+          "rho_range": [
+            0.25,
+            0.5
+          ],
+          "risk_event_rate": 0.04601769911504425,
+          "rows": 565
+        },
+        "0.5_to_0.75": {
+          "action_agreement_rate": 0.9821073558648111,
+          "decisions": 503,
+          "leader_stability_range": [
+            3,
+            4
+          ],
+          "rho_range": [
+            0.5,
+            0.75
+          ],
+          "risk_event_rate": 0.017892644135188866,
+          "rows": 503
+        },
+        "0.75_to_1": {
+          "action_agreement_rate": 0.9897330595482546,
+          "decisions": 487,
+          "leader_stability_range": [
+            3,
+            4
+          ],
+          "rho_range": [
+            0.75,
+            1.0
+          ],
+          "risk_event_rate": 0.01026694045174538,
+          "rows": 487
+        },
+        "0_to_0.1": {
+          "action_agreement_rate": 0.6812045690550363,
+          "decisions": 960,
+          "leader_stability_range": [
+            3,
+            4
+          ],
+          "rho_range": [
+            0.0,
+            0.1
+          ],
+          "risk_event_rate": 0.31879543094496365,
+          "rows": 963
+        },
+        "1_to_2": {
+          "action_agreement_rate": 1.0,
+          "decisions": 1032,
+          "leader_stability_range": [
+            3,
+            4
+          ],
+          "rho_range": [
+            1.0,
+            2.0
+          ],
+          "risk_event_rate": 0.0,
+          "rows": 1032
+        },
+        "2_plus": {
+          "action_agreement_rate": 1.0,
+          "decisions": 745,
+          "leader_stability_range": [
+            3,
+            4
+          ],
+          "rho_range": [
+            2.0,
+            Infinity
+          ],
+          "risk_event_rate": 0.0,
+          "rows": 745
+        }
+      },
+      "two": {
+        "0.1_to_0.25": {
+          "action_agreement_rate": 0.8816855753646677,
+          "decisions": 617,
+          "leader_stability_range": [
+            2,
+            3
+          ],
+          "rho_range": [
+            0.1,
+            0.25
+          ],
+          "risk_event_rate": 0.11831442463533225,
+          "rows": 617
+        },
+        "0.25_to_0.5": {
+          "action_agreement_rate": 0.9463414634146341,
+          "decisions": 615,
+          "leader_stability_range": [
+            2,
+            3
+          ],
+          "rho_range": [
+            0.25,
+            0.5
+          ],
+          "risk_event_rate": 0.05365853658536585,
+          "rows": 615
+        },
+        "0.5_to_0.75": {
+          "action_agreement_rate": 0.9813432835820896,
+          "decisions": 536,
+          "leader_stability_range": [
+            2,
+            3
+          ],
+          "rho_range": [
+            0.5,
+            0.75
+          ],
+          "risk_event_rate": 0.018656716417910446,
+          "rows": 536
+        },
+        "0.75_to_1": {
+          "action_agreement_rate": 0.9961389961389961,
+          "decisions": 518,
+          "leader_stability_range": [
+            2,
+            3
+          ],
+          "rho_range": [
+            0.75,
+            1.0
+          ],
+          "risk_event_rate": 0.003861003861003861,
+          "rows": 518
+        },
+        "0_to_0.1": {
+          "action_agreement_rate": 0.6555555555555556,
+          "decisions": 1222,
+          "leader_stability_range": [
+            2,
+            3
+          ],
+          "rho_range": [
+            0.0,
+            0.1
+          ],
+          "risk_event_rate": 0.34444444444444444,
+          "rows": 1350
+        },
+        "1_to_2": {
+          "action_agreement_rate": 1.0,
+          "decisions": 1002,
+          "leader_stability_range": [
+            2,
+            3
+          ],
+          "rho_range": [
+            1.0,
+            2.0
+          ],
+          "risk_event_rate": 0.0,
+          "rows": 1002
+        },
+        "2_plus": {
+          "action_agreement_rate": 1.0,
+          "decisions": 599,
+          "leader_stability_range": [
+            2,
+            3
+          ],
+          "rho_range": [
+            2.0,
+            Infinity
+          ],
+          "risk_event_rate": 0.0,
+          "rows": 599
+        }
+      }
+    },
+    "discovery": {
+      "four_plus": {
+        "0.1_to_0.25": {
+          "action_agreement_rate": 0.835509138381201,
+          "decisions": 322,
+          "leader_stability_range": [
+            4,
+            Infinity
+          ],
+          "rho_range": [
+            0.1,
+            0.25
+          ],
+          "risk_event_rate": 0.16449086161879894,
+          "rows": 383
+        },
+        "0.25_to_0.5": {
+          "action_agreement_rate": 0.9328358208955224,
+          "decisions": 487,
+          "leader_stability_range": [
+            4,
+            Infinity
+          ],
+          "rho_range": [
+            0.25,
+            0.5
+          ],
+          "risk_event_rate": 0.06716417910447761,
+          "rows": 536
+        },
+        "0.5_to_0.75": {
+          "action_agreement_rate": 0.9613636363636363,
+          "decisions": 431,
+          "leader_stability_range": [
+            4,
+            Infinity
+          ],
+          "rho_range": [
+            0.5,
+            0.75
+          ],
+          "risk_event_rate": 0.038636363636363635,
+          "rows": 440
+        },
+        "0.75_to_1": {
+          "action_agreement_rate": 0.9814385150812065,
+          "decisions": 426,
+          "leader_stability_range": [
+            4,
+            Infinity
+          ],
+          "rho_range": [
+            0.75,
+            1.0
+          ],
+          "risk_event_rate": 0.018561484918793503,
+          "rows": 431
+        },
+        "0_to_0.1": {
+          "action_agreement_rate": 0.6570841889117043,
+          "decisions": 306,
+          "leader_stability_range": [
+            4,
+            Infinity
+          ],
+          "rho_range": [
+            0.0,
+            0.1
+          ],
+          "risk_event_rate": 0.34291581108829566,
+          "rows": 487
+        },
+        "1_to_2": {
+          "action_agreement_rate": 1.0,
+          "decisions": 1089,
+          "leader_stability_range": [
+            4,
+            Infinity
+          ],
+          "rho_range": [
+            1.0,
+            2.0
+          ],
+          "risk_event_rate": 0.0,
+          "rows": 1323
+        },
+        "2_plus": {
+          "action_agreement_rate": 1.0,
+          "decisions": 1799,
+          "leader_stability_range": [
+            4,
+            Infinity
+          ],
+          "rho_range": [
+            2.0,
+            Infinity
+          ],
+          "risk_event_rate": 0.0,
+          "rows": 3056
+        }
+      },
+      "one": {
+        "0.1_to_0.25": {
+          "action_agreement_rate": 0.8846153846153846,
+          "decisions": 326,
+          "leader_stability_range": [
+            1,
+            2
+          ],
+          "rho_range": [
+            0.1,
+            0.25
+          ],
+          "risk_event_rate": 0.11538461538461539,
+          "rows": 338
+        },
+        "0.25_to_0.5": {
+          "action_agreement_rate": 0.9563953488372093,
+          "decisions": 342,
+          "leader_stability_range": [
+            1,
+            2
+          ],
+          "rho_range": [
+            0.25,
+            0.5
+          ],
+          "risk_event_rate": 0.0436046511627907,
+          "rows": 344
+        },
+        "0.5_to_0.75": {
+          "action_agreement_rate": 0.9825783972125436,
+          "decisions": 287,
+          "leader_stability_range": [
+            1,
+            2
+          ],
+          "rho_range": [
+            0.5,
+            0.75
+          ],
+          "risk_event_rate": 0.017421602787456445,
+          "rows": 287
+        },
+        "0.75_to_1": {
+          "action_agreement_rate": 1.0,
+          "decisions": 268,
+          "leader_stability_range": [
+            1,
+            2
+          ],
+          "rho_range": [
+            0.75,
+            1.0
+          ],
+          "risk_event_rate": 0.0,
+          "rows": 268
+        },
+        "0_to_0.1": {
+          "action_agreement_rate": 0.6026970954356846,
+          "decisions": 639,
+          "leader_stability_range": [
+            1,
+            2
+          ],
+          "rho_range": [
+            0.0,
+            0.1
+          ],
+          "risk_event_rate": 0.39730290456431533,
+          "rows": 964
+        },
+        "1_to_2": {
+          "action_agreement_rate": 1.0,
+          "decisions": 479,
+          "leader_stability_range": [
+            1,
+            2
+          ],
+          "rho_range": [
+            1.0,
+            2.0
+          ],
+          "risk_event_rate": 0.0,
+          "rows": 479
+        },
+        "2_plus": {
+          "action_agreement_rate": 1.0,
+          "decisions": 235,
+          "leader_stability_range": [
+            1,
+            2
+          ],
+          "rho_range": [
+            2.0,
+            Infinity
+          ],
+          "risk_event_rate": 0.0,
+          "rows": 235
+        }
+      },
+      "three": {
+        "0.1_to_0.25": {
+          "action_agreement_rate": 0.8627450980392157,
+          "decisions": 306,
+          "leader_stability_range": [
+            3,
+            4
+          ],
+          "rho_range": [
+            0.1,
+            0.25
+          ],
+          "risk_event_rate": 0.13725490196078433,
+          "rows": 306
+        },
+        "0.25_to_0.5": {
+          "action_agreement_rate": 0.9655172413793104,
+          "decisions": 319,
+          "leader_stability_range": [
+            3,
+            4
+          ],
+          "rho_range": [
+            0.25,
+            0.5
+          ],
+          "risk_event_rate": 0.034482758620689655,
+          "rows": 319
+        },
+        "0.5_to_0.75": {
+          "action_agreement_rate": 0.9808429118773946,
+          "decisions": 261,
+          "leader_stability_range": [
+            3,
+            4
+          ],
+          "rho_range": [
+            0.5,
+            0.75
+          ],
+          "risk_event_rate": 0.019157088122605363,
+          "rows": 261
+        },
+        "0.75_to_1": {
+          "action_agreement_rate": 0.9959016393442623,
+          "decisions": 244,
+          "leader_stability_range": [
+            3,
+            4
+          ],
+          "rho_range": [
+            0.75,
+            1.0
+          ],
+          "risk_event_rate": 0.004098360655737705,
+          "rows": 244
+        },
+        "0_to_0.1": {
+          "action_agreement_rate": 0.6173913043478261,
+          "decisions": 457,
+          "leader_stability_range": [
+            3,
+            4
+          ],
+          "rho_range": [
+            0.0,
+            0.1
+          ],
+          "risk_event_rate": 0.3826086956521739,
+          "rows": 460
+        },
+        "1_to_2": {
+          "action_agreement_rate": 1.0,
+          "decisions": 514,
+          "leader_stability_range": [
+            3,
+            4
+          ],
+          "rho_range": [
+            1.0,
+            2.0
+          ],
+          "risk_event_rate": 0.0,
+          "rows": 514
+        },
+        "2_plus": {
+          "action_agreement_rate": 1.0,
+          "decisions": 363,
+          "leader_stability_range": [
+            3,
+            4
+          ],
+          "rho_range": [
+            2.0,
+            Infinity
+          ],
+          "risk_event_rate": 0.0,
+          "rows": 363
+        }
+      },
+      "two": {
+        "0.1_to_0.25": {
+          "action_agreement_rate": 0.8806451612903226,
+          "decisions": 310,
+          "leader_stability_range": [
+            2,
+            3
+          ],
+          "rho_range": [
+            0.1,
+            0.25
+          ],
+          "risk_event_rate": 0.11935483870967742,
+          "rows": 310
+        },
+        "0.25_to_0.5": {
+          "action_agreement_rate": 0.9627507163323782,
+          "decisions": 349,
+          "leader_stability_range": [
+            2,
+            3
+          ],
+          "rho_range": [
+            0.25,
+            0.5
+          ],
+          "risk_event_rate": 0.03724928366762178,
+          "rows": 349
+        },
+        "0.5_to_0.75": {
+          "action_agreement_rate": 0.9818181818181818,
+          "decisions": 275,
+          "leader_stability_range": [
+            2,
+            3
+          ],
+          "rho_range": [
+            0.5,
+            0.75
+          ],
+          "risk_event_rate": 0.01818181818181818,
+          "rows": 275
+        },
+        "0.75_to_1": {
+          "action_agreement_rate": 1.0,
+          "decisions": 253,
+          "leader_stability_range": [
+            2,
+            3
+          ],
+          "rho_range": [
+            0.75,
+            1.0
+          ],
+          "risk_event_rate": 0.0,
+          "rows": 253
+        },
+        "0_to_0.1": {
+          "action_agreement_rate": 0.6217457886676876,
+          "decisions": 596,
+          "leader_stability_range": [
+            2,
+            3
+          ],
+          "rho_range": [
+            0.0,
+            0.1
+          ],
+          "risk_event_rate": 0.3782542113323124,
+          "rows": 653
+        },
+        "1_to_2": {
+          "action_agreement_rate": 1.0,
+          "decisions": 508,
+          "leader_stability_range": [
+            2,
+            3
+          ],
+          "rho_range": [
+            1.0,
+            2.0
+          ],
+          "risk_event_rate": 0.0,
+          "rows": 508
+        },
+        "2_plus": {
+          "action_agreement_rate": 1.0,
+          "decisions": 290,
+          "leader_stability_range": [
+            2,
+            3
+          ],
+          "rho_range": [
+            2.0,
+            Infinity
+          ],
+          "risk_event_rate": 0.0,
+          "rows": 290
+        }
+      }
+    },
+    "evaluation": {
+      "four_plus": {
+        "0.1_to_0.25": {
+          "action_agreement_rate": 0.8449438202247191,
+          "decisions": 375,
+          "leader_stability_range": [
+            4,
+            Infinity
+          ],
+          "rho_range": [
+            0.1,
+            0.25
+          ],
+          "risk_event_rate": 0.1550561797752809,
+          "rows": 445
+        },
+        "0.25_to_0.5": {
+          "action_agreement_rate": 0.9347826086956522,
+          "decisions": 474,
+          "leader_stability_range": [
+            4,
+            Infinity
+          ],
+          "rho_range": [
+            0.25,
+            0.5
+          ],
+          "risk_event_rate": 0.06521739130434782,
+          "rows": 506
+        },
+        "0.5_to_0.75": {
+          "action_agreement_rate": 0.9566326530612245,
+          "decisions": 381,
+          "leader_stability_range": [
+            4,
+            Infinity
+          ],
+          "rho_range": [
+            0.5,
+            0.75
+          ],
+          "risk_event_rate": 0.04336734693877551,
+          "rows": 392
+        },
+        "0.75_to_1": {
+          "action_agreement_rate": 0.9734939759036144,
+          "decisions": 407,
+          "leader_stability_range": [
+            4,
+            Infinity
+          ],
+          "rho_range": [
+            0.75,
+            1.0
+          ],
+          "risk_event_rate": 0.02650602409638554,
+          "rows": 415
+        },
+        "0_to_0.1": {
+          "action_agreement_rate": 0.7660714285714286,
+          "decisions": 345,
+          "leader_stability_range": [
+            4,
+            Infinity
+          ],
+          "rho_range": [
+            0.0,
+            0.1
+          ],
+          "risk_event_rate": 0.23392857142857143,
+          "rows": 560
+        },
+        "1_to_2": {
+          "action_agreement_rate": 1.0,
+          "decisions": 1026,
+          "leader_stability_range": [
+            4,
+            Infinity
+          ],
+          "rho_range": [
+            1.0,
+            2.0
+          ],
+          "risk_event_rate": 0.0,
+          "rows": 1237
+        },
+        "2_plus": {
+          "action_agreement_rate": 1.0,
+          "decisions": 1771,
+          "leader_stability_range": [
+            4,
+            Infinity
+          ],
+          "rho_range": [
+            2.0,
+            Infinity
+          ],
+          "risk_event_rate": 0.0,
+          "rows": 3104
+        }
+      },
+      "one": {
+        "0.1_to_0.25": {
+          "action_agreement_rate": 0.8878205128205128,
+          "decisions": 306,
+          "leader_stability_range": [
+            1,
+            2
+          ],
+          "rho_range": [
+            0.1,
+            0.25
+          ],
+          "risk_event_rate": 0.11217948717948718,
+          "rows": 312
+        },
+        "0.25_to_0.5": {
+          "action_agreement_rate": 0.9372549019607843,
+          "decisions": 254,
+          "leader_stability_range": [
+            1,
+            2
+          ],
+          "rho_range": [
+            0.25,
+            0.5
+          ],
+          "risk_event_rate": 0.06274509803921569,
+          "rows": 255
+        },
+        "0.5_to_0.75": {
+          "action_agreement_rate": 0.9789473684210527,
+          "decisions": 284,
+          "leader_stability_range": [
+            1,
+            2
+          ],
+          "rho_range": [
+            0.5,
+            0.75
+          ],
+          "risk_event_rate": 0.021052631578947368,
+          "rows": 285
+        },
+        "0.75_to_1": {
+          "action_agreement_rate": 0.9964285714285714,
+          "decisions": 280,
+          "leader_stability_range": [
+            1,
+            2
+          ],
+          "rho_range": [
+            0.75,
+            1.0
+          ],
+          "risk_event_rate": 0.0035714285714285713,
+          "rows": 280
+        },
+        "0_to_0.1": {
+          "action_agreement_rate": 0.6489795918367347,
+          "decisions": 682,
+          "leader_stability_range": [
+            1,
+            2
+          ],
+          "rho_range": [
+            0.0,
+            0.1
+          ],
+          "risk_event_rate": 0.3510204081632653,
+          "rows": 980
+        },
+        "1_to_2": {
+          "action_agreement_rate": 1.0,
+          "decisions": 472,
+          "leader_stability_range": [
+            1,
+            2
+          ],
+          "rho_range": [
+            1.0,
+            2.0
+          ],
+          "risk_event_rate": 0.0,
+          "rows": 472
+        },
+        "2_plus": {
+          "action_agreement_rate": 1.0,
+          "decisions": 255,
+          "leader_stability_range": [
+            1,
+            2
+          ],
+          "rho_range": [
+            2.0,
+            Infinity
+          ],
+          "risk_event_rate": 0.0,
+          "rows": 255
+        }
+      },
+      "three": {
+        "0.1_to_0.25": {
+          "action_agreement_rate": 0.8471760797342193,
+          "decisions": 301,
+          "leader_stability_range": [
+            3,
+            4
+          ],
+          "rho_range": [
+            0.1,
+            0.25
+          ],
+          "risk_event_rate": 0.15282392026578073,
+          "rows": 301
+        },
+        "0.25_to_0.5": {
+          "action_agreement_rate": 0.9390243902439024,
+          "decisions": 246,
+          "leader_stability_range": [
+            3,
+            4
+          ],
+          "rho_range": [
+            0.25,
+            0.5
+          ],
+          "risk_event_rate": 0.06097560975609756,
+          "rows": 246
+        },
+        "0.5_to_0.75": {
+          "action_agreement_rate": 0.9834710743801653,
+          "decisions": 242,
+          "leader_stability_range": [
+            3,
+            4
+          ],
+          "rho_range": [
+            0.5,
+            0.75
+          ],
+          "risk_event_rate": 0.01652892561983471,
+          "rows": 242
+        },
+        "0.75_to_1": {
+          "action_agreement_rate": 0.9835390946502057,
+          "decisions": 243,
+          "leader_stability_range": [
+            3,
+            4
+          ],
+          "rho_range": [
+            0.75,
+            1.0
+          ],
+          "risk_event_rate": 0.01646090534979424,
+          "rows": 243
+        },
+        "0_to_0.1": {
+          "action_agreement_rate": 0.7395626242544732,
+          "decisions": 503,
+          "leader_stability_range": [
+            3,
+            4
+          ],
+          "rho_range": [
+            0.0,
+            0.1
+          ],
+          "risk_event_rate": 0.26043737574552683,
+          "rows": 503
+        },
+        "1_to_2": {
+          "action_agreement_rate": 1.0,
+          "decisions": 518,
+          "leader_stability_range": [
+            3,
+            4
+          ],
+          "rho_range": [
+            1.0,
+            2.0
+          ],
+          "risk_event_rate": 0.0,
+          "rows": 518
+        },
+        "2_plus": {
+          "action_agreement_rate": 1.0,
+          "decisions": 382,
+          "leader_stability_range": [
+            3,
+            4
+          ],
+          "rho_range": [
+            2.0,
+            Infinity
+          ],
+          "risk_event_rate": 0.0,
+          "rows": 382
+        }
+      },
+      "two": {
+        "0.1_to_0.25": {
+          "action_agreement_rate": 0.8827361563517915,
+          "decisions": 307,
+          "leader_stability_range": [
+            2,
+            3
+          ],
+          "rho_range": [
+            0.1,
+            0.25
+          ],
+          "risk_event_rate": 0.11726384364820847,
+          "rows": 307
+        },
+        "0.25_to_0.5": {
+          "action_agreement_rate": 0.924812030075188,
+          "decisions": 266,
+          "leader_stability_range": [
+            2,
+            3
+          ],
+          "rho_range": [
+            0.25,
+            0.5
+          ],
+          "risk_event_rate": 0.07518796992481203,
+          "rows": 266
+        },
+        "0.5_to_0.75": {
+          "action_agreement_rate": 0.9808429118773946,
+          "decisions": 261,
+          "leader_stability_range": [
+            2,
+            3
+          ],
+          "rho_range": [
+            0.5,
+            0.75
+          ],
+          "risk_event_rate": 0.019157088122605363,
+          "rows": 261
+        },
+        "0.75_to_1": {
+          "action_agreement_rate": 0.9924528301886792,
+          "decisions": 265,
+          "leader_stability_range": [
+            2,
+            3
+          ],
+          "rho_range": [
+            0.75,
+            1.0
+          ],
+          "risk_event_rate": 0.007547169811320755,
+          "rows": 265
+        },
+        "0_to_0.1": {
+          "action_agreement_rate": 0.6872309899569584,
+          "decisions": 626,
+          "leader_stability_range": [
+            2,
+            3
+          ],
+          "rho_range": [
+            0.0,
+            0.1
+          ],
+          "risk_event_rate": 0.3127690100430416,
+          "rows": 697
+        },
+        "1_to_2": {
+          "action_agreement_rate": 1.0,
+          "decisions": 494,
+          "leader_stability_range": [
+            2,
+            3
+          ],
+          "rho_range": [
+            1.0,
+            2.0
+          ],
+          "risk_event_rate": 0.0,
+          "rows": 494
+        },
+        "2_plus": {
+          "action_agreement_rate": 1.0,
+          "decisions": 309,
+          "leader_stability_range": [
+            2,
+            3
+          ],
+          "rho_range": [
+            2.0,
+            Infinity
+          ],
+          "risk_event_rate": 0.0,
+          "rows": 309
+        }
+      }
+    }
+  },
+  "rho_risk_table": {
+    "all": {
+      "0.1_to_0.25": {
+        "action_agreement_rate": 0.8641746854182087,
+        "decisions": 1354,
+        "rho_range": [
+          0.1,
+          0.25
+        ],
+        "risk_event_rate": 0.13582531458179126,
+        "rows": 2702
+      },
+      "0.25_to_0.5": {
+        "action_agreement_rate": 0.9436370081531372,
+        "decisions": 1510,
+        "rho_range": [
+          0.25,
+          0.5
+        ],
+        "risk_event_rate": 0.05636299184686282,
+        "rows": 2821
+      },
+      "0.5_to_0.75": {
+        "action_agreement_rate": 0.9738027015963979,
+        "decisions": 1452,
+        "rho_range": [
+          0.5,
+          0.75
+        ],
+        "risk_event_rate": 0.026197298403602128,
+        "rows": 2443
+      },
+      "0.75_to_1": {
+        "action_agreement_rate": 0.9887453105460609,
+        "decisions": 1575,
+        "rho_range": [
+          0.75,
+          1.0
+        ],
+        "risk_event_rate": 0.011254689453939141,
+        "rows": 2399
+      },
+      "0_to_0.1": {
+        "action_agreement_rate": 0.6611990950226244,
+        "decisions": 1370,
+        "rho_range": [
+          0.0,
+          0.1
+        ],
+        "risk_event_rate": 0.3388009049773756,
+        "rows": 5304
+      },
+      "1_to_2": {
+        "action_agreement_rate": 1.0,
+        "decisions": 2671,
+        "rho_range": [
+          1.0,
+          2.0
+        ],
+        "risk_event_rate": 0.0,
+        "rows": 5545
+      },
+      "2_plus": {
+        "action_agreement_rate": 1.0,
+        "decisions": 3664,
+        "rho_range": [
+          2.0,
+          Infinity
+        ],
+        "risk_event_rate": 0.0,
+        "rows": 7994
+      }
+    },
+    "discovery": {
+      "0.1_to_0.25": {
+        "action_agreement_rate": 0.8646222887060584,
+        "decisions": 672,
+        "rho_range": [
+          0.1,
+          0.25
+        ],
+        "risk_event_rate": 0.13537771129394166,
+        "rows": 1337
+      },
+      "0.25_to_0.5": {
+        "action_agreement_rate": 0.9515503875968992,
+        "decisions": 803,
+        "rho_range": [
+          0.25,
+          0.5
+        ],
+        "risk_event_rate": 0.04844961240310078,
+        "rows": 1548
+      },
+      "0.5_to_0.75": {
+        "action_agreement_rate": 0.9746634996041171,
+        "decisions": 749,
+        "rho_range": [
+          0.5,
+          0.75
+        ],
+        "risk_event_rate": 0.025336500395882817,
+        "rows": 1263
+      },
+      "0.75_to_1": {
+        "action_agreement_rate": 0.9924749163879598,
+        "decisions": 793,
+        "rho_range": [
+          0.75,
+          1.0
+        ],
+        "risk_event_rate": 0.007525083612040134,
+        "rows": 1196
+      },
+      "0_to_0.1": {
+        "action_agreement_rate": 0.6205148205928237,
+        "decisions": 666,
+        "rho_range": [
+          0.0,
+          0.1
+        ],
+        "risk_event_rate": 0.3794851794071763,
+        "rows": 2564
+      },
+      "1_to_2": {
+        "action_agreement_rate": 1.0,
+        "decisions": 1369,
+        "rho_range": [
+          1.0,
+          2.0
+        ],
+        "risk_event_rate": 0.0,
+        "rows": 2824
+      },
+      "2_plus": {
+        "action_agreement_rate": 1.0,
+        "decisions": 1851,
+        "rho_range": [
+          2.0,
+          Infinity
+        ],
+        "risk_event_rate": 0.0,
+        "rows": 3944
+      }
+    },
+    "evaluation": {
+      "0.1_to_0.25": {
+        "action_agreement_rate": 0.8637362637362638,
+        "decisions": 682,
+        "rho_range": [
+          0.1,
+          0.25
+        ],
+        "risk_event_rate": 0.13626373626373625,
+        "rows": 1365
+      },
+      "0.25_to_0.5": {
+        "action_agreement_rate": 0.9340141398271798,
+        "decisions": 707,
+        "rho_range": [
+          0.25,
+          0.5
+        ],
+        "risk_event_rate": 0.06598586017282011,
+        "rows": 1273
+      },
+      "0.5_to_0.75": {
+        "action_agreement_rate": 0.9728813559322034,
+        "decisions": 703,
+        "rho_range": [
+          0.5,
+          0.75
+        ],
+        "risk_event_rate": 0.02711864406779661,
+        "rows": 1180
+      },
+      "0.75_to_1": {
+        "action_agreement_rate": 0.9850374064837906,
+        "decisions": 782,
+        "rho_range": [
+          0.75,
+          1.0
+        ],
+        "risk_event_rate": 0.014962593516209476,
+        "rows": 1203
+      },
+      "0_to_0.1": {
+        "action_agreement_rate": 0.6992700729927007,
+        "decisions": 704,
+        "rho_range": [
+          0.0,
+          0.1
+        ],
+        "risk_event_rate": 0.3007299270072993,
+        "rows": 2740
+      },
+      "1_to_2": {
+        "action_agreement_rate": 1.0,
+        "decisions": 1302,
+        "rho_range": [
+          1.0,
+          2.0
+        ],
+        "risk_event_rate": 0.0,
+        "rows": 2721
+      },
+      "2_plus": {
+        "action_agreement_rate": 1.0,
+        "decisions": 1813,
+        "rho_range": [
+          2.0,
+          Infinity
+        ],
+        "risk_event_rate": 0.0,
+        "rows": 4050
+      }
+    }
+  },
   "row_counts_by_checkpoint_population": {
     "1000": {
       "all": 7604,
@@ -2160,7 +3755,7 @@
       "retained_non_forced": 4868
     }
   },
-  "schema": "combat_sequential_diag_v1",
+  "schema": "combat_sequential_diag_v2",
   "seeds": [
     112,
     113,

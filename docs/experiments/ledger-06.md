@@ -8761,9 +8761,21 @@ and executable defaults are unchanged.
   had zero observed action disagreements, and reduced nominal simulations by
   0.5393%. The frozen #199 rule stopped 1,621 decisions, reduced nominal
   simulations by 40.7610%, and had 1.9124% offline action disagreement.
-- **Decision:** **`FIXED_RULE_STILL_SUFFICIENT`**. This is offline engineering
-  evidence only; it does not qualify dynamic runtime stopping, establish
-  universal safety, tune a threshold, introduce `dynamicSearch(session,maxBudget)`,
+- **Six-step offline follow-up:** The strict integer visit lock
+  `N1-N2 > Bmax-Bused` stopped 2,003/2,422 held-out retained/non-forced
+  decisions, with budget counts 704/62/100/196/307/634/419 at
+  250/500/1,000/2,000/4,000/8,000/10,000, 53.8026% nominal reduction, and
+  zero observed disagreements. Held-out empirical risk by
+  `rho=(N1-N2)/(Bmax-Bused)` was 30.0730%, 13.6264%, 6.5986%, 2.7119%,
+  1.4963%, 0%, and 0% across `0-.1`, `.1-.25`, `.25-.5`, `.5-.75`,
+  `.75-1`, `1-2`, and `2+`; the complete rho/leader-stability cross-table and
+  all control-population lock distributions are in the packet JSON. These
+  are descriptive offline analyses; no soft threshold was tuned.
+- **Decision:** **`LOGISTIC_DYNAMIC_RULE_REJECTED`**. The logistic controller
+  is too conservative to replace #199, while exact visit-lock stopping and
+  an independently specified empirical-risk racing rule remain open. This is
+  offline engineering evidence only; it does not qualify dynamic runtime
+  stopping, establish universal safety, introduce `dynamicSearch(session,maxBudget)`,
   or change the fixed #199 policy/defaults. **Knowledge impact:** current
   research status and experiment evidence only; normal Silver defaults remain
   unchanged.

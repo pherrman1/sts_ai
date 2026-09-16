@@ -2,9 +2,10 @@
 
 ## Decision
 
-**`FIXED_RULE_STILL_SUFFICIENT`** for the requested bounded offline
-qualification. This is evidence about a possible future dynamic controller,
-not a gameplay-policy change or runtime qualification.
+**`LOGISTIC_DYNAMIC_RULE_REJECTED`** for the predeclared logistic dynamic
+controller. This is evidence about a possible future sequential controller,
+not a gameplay-policy change or runtime qualification. Exact visit-lock
+stopping and softer empirical racing remain open follow-up lines.
 
 The held-out logistic controller did not stop any primary decision at the 1%
 or 2% risk ceilings. At the 5% ceiling it stopped 55/3,778 held-out
@@ -13,8 +14,36 @@ full 10,000-simulation action and only 0.5393% nominal simulation reduction.
 The frozen #199 rule (`retained + 500 simulations +
 top_two_visit_gap_share >= 0.2932885906040268`) stopped 1,621 held-out
 decisions, with 40.7610% nominal reduction and 1.9124% action disagreement.
-The dynamic controller therefore did not demonstrate a useful improvement
-over the fixed rule at the predeclared 1%/2% safety ceilings.
+The logistic rule is therefore rejected as a useful replacement for #199.
+
+The six requested offline follow-ups are included in `analysis.json`:
+
+1. The exact visit lock `N1 - N2 > Bmax - Bused` is evaluated from integer
+   edge-visit reconstruction. On held-out retained/non-forced decisions it
+   stopped 2,003/2,422 decisions, with the budget distribution
+   `250:704, 500:62, 1,000:100, 2,000:196, 4,000:307, 8,000:634,
+   10,000:419`, 53.8026% nominal simulation reduction, and zero observed
+   action disagreements. This is an offline mathematical lock check, not a
+   runtime qualification.
+2. The same exact-lock budget distributions and compute savings are recorded
+   separately for retained/non-forced, fresh-root, and one-action/forced
+   controls, for all, discovery, and held-out evaluation seeds.
+3. The exact-lock savings are reported against flat 10,000 simulations; the
+   held-out primary result is 53.8026% nominal reduction.
+4. Held-out empirical action-change risk falls across
+   `rho=(N1-N2)/(Bmax-Bused)`: 30.0730% for `0-.1`, 13.6264% for `.1-.25`,
+   6.5986% for `.25-.5`, 2.7119% for `.5-.75`, 1.4963% for `.75-1`, and
+   0% for `1-2` and `2+` (row-level descriptive rates).
+5. The complete held-out `rho x consecutive-same-leader` table is recorded;
+   for example, the `0-.1` risk is 35.1020%, 31.2769%, 26.0437%, and
+   23.3929% for leader streaks 1, 2, 3, and 4+ respectively. No soft
+   threshold was tuned or promoted from these slices.
+6. The frozen #199 comparison remains the result above: 1,621/3,778 stops,
+   40.7610% nominal reduction, and 1.9124% offline disagreement.
+
+Sequential stopping remains open: exact locking is promising as an offline
+mechanism, while an empirical-risk racing rule still needs an independently
+specified, separately qualified design.
 
 ## Protocol and provenance
 
@@ -53,8 +82,9 @@ roots were 0%; those controls are not included in the quality claim.
 
 Stage 2 fits only one standardized logistic regression on discovery
 retained/non-forced rows before 10k. No alternative model or evaluation-set
-threshold tuning was performed. The complete estimator output, calibration,
-failure slices, frozen-rule comparison, and hashes are in
+threshold tuning was performed. The complete estimator output, exact-lock
+budget distributions, rho risk tables, calibration, failure slices,
+frozen-rule comparison, and hashes are in
 [`analysis.json`](analysis.json).
 
 ## Files

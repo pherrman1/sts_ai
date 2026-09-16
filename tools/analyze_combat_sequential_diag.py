@@ -22,6 +22,21 @@ import numpy as np
 
 CHECKPOINTS = (250, 500, 1000, 2000, 4000, 8000, 10000)
 FIXED_GAP = 0.2932885906040268
+RHO_BINS = (
+    ("0_to_0.1", 0.0, 0.1),
+    ("0.1_to_0.25", 0.1, 0.25),
+    ("0.25_to_0.5", 0.25, 0.5),
+    ("0.5_to_0.75", 0.5, 0.75),
+    ("0.75_to_1", 0.75, 1.0),
+    ("1_to_2", 1.0, 2.0),
+    ("2_plus", 2.0, float("inf")),
+)
+STABILITY_BINS = (
+    ("one", 1, 2),
+    ("two", 2, 3),
+    ("three", 3, 4),
+    ("four_plus", 4, float("inf")),
+)
 FEATURE_NAMES = (
     "log1p_inherited_visits",
     "log1p_new_simulations",
@@ -155,6 +170,34 @@ def _forced(row):
     return row["one_action_or_forced"] == "1"
 
 
+def _visit_lock_fields(row):
+    """Recover integer top/second edge visits and the exact lock ratio."""
+    root_visits = _int(row, "root_visits")
+    if root_visits <= 0:
+        raise ValueError("root_visits must be positive for visit-lock analysis")
+    top_share = _float(row, "top_visit_share")
+    second_share = _float(row, "second_visit_share")
+    top = round(root_visits * top_share)
+    second = round(root_visits * second_share)
+    if (abs(top / root_visits - top_share) > 1e-9
+            or abs(second / root_visits - second_share) > 1e-9):
+        raise ValueError("visit shares do not reconstruct integer edge visits")
+    checkpoint = _int(row, "checkpoint_new_simulations")
+    remaining = CHECKPOINTS[-1] - checkpoint
+    margin = top - second
+    return {
+        "top_visits": top,
+        "second_visits": second,
+        "visit_margin": margin,
+        "remaining_budget": remaining,
+        "rho": margin / remaining if remaining else None,
+    }
+
+
+def _with_lock_fields(row):
+    return {**row, **_visit_lock_fields(row)}
+
+
 def _feature_row(row):
     q_valid = _int(row, "top_q_gap_valid")
     q_gap = _float(row, "top_q_gap") or 0.0
@@ -230,6 +273,94 @@ def _row_summary(rows):
         "action_agreement_rate": _fraction(
             sum(row["risk_event"] == "0" for row in rows), len(rows)),
         "risk_event_rate": _fraction(sum(row["risk_event"] == "1" for row in rows), len(rows)),
+    }
+
+
+def _rho_risk_table(rows):
+    eligible = [_with_lock_fields(row) for row in rows
+                if _primary(row) and _int(row, "checkpoint_new_simulations") < 10000]
+    result = {}
+    for name, low, high in RHO_BINS:
+        subset = [row for row in eligible if low <= row["rho"] < high]
+        result[name] = {**_row_summary(subset), "rho_range": [low, high]}
+    return result
+
+
+def _rho_stability_risk_table(rows):
+    eligible = [_with_lock_fields(row) for row in rows
+                if _primary(row) and _int(row, "checkpoint_new_simulations") < 10000]
+    result = {}
+    for stability_name, stability_low, stability_high in STABILITY_BINS:
+        stability_rows = [row for row in eligible
+                          if stability_low <= row["consecutive_same_leader"] < stability_high]
+        result[stability_name] = {}
+        for rho_name, rho_low, rho_high in RHO_BINS:
+            subset = [row for row in stability_rows if rho_low <= row["rho"] < rho_high]
+            result[stability_name][rho_name] = {
+                **_row_summary(subset),
+                "rho_range": [rho_low, rho_high],
+                "leader_stability_range": [stability_low, stability_high],
+            }
+    return result
+
+
+def exact_visit_lock_result(rows, predicate):
+    """Apply the strict N1-N2 > remaining-budget lock offline.
+
+    The final 10k row is the reference action.  A strict lock is a
+    mathematical action identity guarantee for this visit-count statistic;
+    it is not a runtime stopping qualification.
+    """
+    groups = _group_rows(rows)
+    chosen = []
+    for decision_rows in groups.values():
+        by_checkpoint = {_int(row, "checkpoint_new_simulations"): row
+                         for row in decision_rows}
+        if not predicate(by_checkpoint[10000]):
+            continue
+        selected = by_checkpoint[10000]
+        lock_fields = None
+        for row in decision_rows:
+            fields = _visit_lock_fields(row)
+            if fields["remaining_budget"] and fields["visit_margin"] > fields["remaining_budget"]:
+                selected = row
+                lock_fields = fields
+                break
+        chosen.append((selected, lock_fields))
+    budgets = [_int(row, "checkpoint_new_simulations") for row, _ in chosen]
+    early = [(row, fields) for row, fields in chosen if _int(row, "checkpoint_new_simulations") < 10000]
+    disagreements = sum(row["risk_event"] == "1" for row, _ in early)
+    return {
+        "decisions": len(chosen),
+        "stopped_decisions": len(early),
+        "distribution_of_chosen_stopping_budgets": dict(
+            sorted(Counter(map(str, budgets)).items())),
+        "mean_new_simulations_per_decision": statistics.mean(budgets) if budgets else None,
+        "median_new_simulations_per_decision": statistics.median(budgets) if budgets else None,
+        "nominal_simulation_reduction_vs_flat_10k": (
+            1.0 - statistics.mean(budgets) / 10000.0 if budgets else None),
+        "offline_reference_action_disagreement_rate": _fraction(disagreements, len(early)),
+        "strict_lock_action_disagreements": disagreements,
+        "strict_lock_guarantee_observed": disagreements == 0,
+        "lock_condition": "top_edge_visits - second_edge_visits > 10000 - checkpoint_new_simulations",
+    }
+
+
+def exact_visit_lock_by_split(rows, discovery_seeds):
+    split_rows = {
+        "all": rows,
+        "discovery": [row for row in rows if int(row["run_seed"]) in discovery_seeds],
+        "evaluation": [row for row in rows if int(row["run_seed"]) not in discovery_seeds],
+    }
+    predicates = {
+        "retained_non_forced": _primary,
+        "fresh_control": _fresh,
+        "forced_one_action_control": _forced,
+    }
+    return {
+        split_name: {population: exact_visit_lock_result(split, predicate)
+                     for population, predicate in predicates.items()}
+        for split_name, split in split_rows.items()
     }
 
 
@@ -411,13 +542,6 @@ def analyze(rows, metadata=None):
             "forced_one_action": sum(_forced(row) for row in current),
             "retained_non_forced": sum(_primary(row) for row in current),
         }
-    classification = "DYNAMIC_STOPPING_INCONCLUSIVE"
-    eval_two = eval_result["0.02"]
-    dynamic_good = (eval_two["offline_reference_action_disagreement_rate"] is not None
-                    and eval_two["offline_reference_action_disagreement_rate"] <= .02
-                    and eval_two["nominal_simulation_reduction_vs_flat_10k"] is not None
-                    and eval_two["nominal_simulation_reduction_vs_flat_10k"] >= .40
-                    and sum(value > 0.05 for value in eval_two["fraction_stopping_at_each_checkpoint"].values()) >= 2)
     fixed = fixed_rule_result(evaluation)
     evaluation_primary = [row for row in evaluation if _primary(row)
                           and _int(row, "checkpoint_new_simulations") < 10000]
@@ -441,13 +565,8 @@ def analyze(rows, metadata=None):
                                   sum(_int(row, "risk_event") for row in slice_rows), len(slice_rows))}
             for slice_name, slice_rows in sorted(grouped.items())
         }
-    if dynamic_good:
-        classification = "DYNAMIC_STOPPING_PROMISING"
-    elif (eval_two["nominal_simulation_reduction_vs_flat_10k"] is not None
-          and eval_two["nominal_simulation_reduction_vs_flat_10k"] < .10):
-        classification = "FIXED_RULE_STILL_SUFFICIENT"
     return {
-        "schema": "combat_sequential_diag_v1",
+        "schema": "combat_sequential_diag_v2",
         "metadata": metadata or {},
         "seeds": seeds,
         "discovery_seeds": sorted(discovery_seeds),
@@ -464,13 +583,31 @@ def analyze(rows, metadata=None):
         "calibration": calibration((discovery, evaluation), model),
         "offline_sequential_controller": {"discovery": discovered_result, "evaluation": eval_result},
         "frozen_199_fixed_rule_evaluation": fixed,
+        "exact_visit_lock": exact_visit_lock_by_split(enriched, discovery_seeds),
+        "rho_risk_table": {
+            "all": _rho_risk_table(enriched),
+            "discovery": _rho_risk_table(discovery),
+            "evaluation": _rho_risk_table(evaluation),
+        },
+        "rho_leader_stability_risk_table": {
+            "all": _rho_stability_risk_table(enriched),
+            "discovery": _rho_stability_risk_table(discovery),
+            "evaluation": _rho_stability_risk_table(evaluation),
+        },
         "evaluation_failure_slices": failure_slices,
-        "classification": classification,
+        "classification": "LOGISTIC_DYNAMIC_RULE_REJECTED",
         "interpretation": {
             "quality_scope": "offline full-10k trajectories; fresh and forced roots excluded from quality claim",
             "evaluation_label": "internal held-out engineering evidence",
             "runtime_equivalence": False,
-            "monotonicity_check": "See checkpoint calibration and stage-one stability tables; no threshold was tuned on evaluation.",
+            "sequential_stopping_status": "OPEN_EXACT_LOCK_AND_EMPIRICAL_RACING",
+            "monotonicity_check": "See exact visit-lock and held-out rho/stability tables; no threshold was tuned on evaluation.",
+            "classification_reason": (
+                "The predeclared logistic controller was retained as a diagnostic, but its held-out "
+                "stopping behavior is too conservative to replace the frozen #199 rule. The exact "
+                "visit-lock and empirical rho tables motivate further offline work; neither qualifies "
+                "a runtime sequential stopping policy."
+            ),
         },
     }
 
@@ -481,6 +618,9 @@ def self_test():
         for checkpoint in CHECKPOINTS:
             stable = seed % 3 != 0
             action = "A" if stable or checkpoint >= 4000 else ("B" if checkpoint == 250 else "A")
+            root_visits = 100 + checkpoint
+            top_visits = round(root_visits * (.5 + checkpoint / 30000))
+            second_visits = round(root_visits * .2)
             rows.append({
                 "run_seed": str(seed), "act": "1", "floor": str(seed), "encounter": "2",
                 "room_type": "hallway", "combat_id": f"{seed}:1:{seed}:2",
@@ -489,15 +629,16 @@ def self_test():
                 "inherited_visits": "100" if seed % 2 else "0", "fresh_root": "0" if seed % 2 else "1",
                 "retained_root": "1" if seed % 2 else "0", "one_action_or_forced": "0",
                 "reroot_exact": "1", "reroot_fallback": "0", "legal_action_count": "4",
-                "checkpoint_action": action, "top_visit_share": str(.5 + checkpoint / 30000),
-                "second_visit_share": ".2", "top_two_visit_gap_share": str(.1 + checkpoint / 30000),
+                "checkpoint_action": action, "top_visit_share": str(top_visits / root_visits),
+                "second_visit_share": str(second_visits / root_visits),
+                "top_two_visit_gap_share": str((top_visits - second_visits) / root_visits),
                 "visit_entropy": ".9", "top_q_gap": ".2", "top_q_gap_valid": "1",
-                "root_visits": str(100 + checkpoint),
-                "search_root_visits_after_search": str(100 + checkpoint), "final_action": "A",
+                "root_visits": str(root_visits),
+                "search_root_visits_after_search": str(root_visits), "final_action": "A",
                 "risk_event": "1" if action != "A" else "0",
             })
     result = analyze(rows, {"self_test": True})
-    assert result["schema"] == "combat_sequential_diag_v1"
+    assert result["schema"] == "combat_sequential_diag_v2"
     assert result["estimator"]["training_rows"] == 24
     assert result["row_counts_by_checkpoint_population"]["10000"]["all"] == 16
     assert result["frozen_199_fixed_rule_evaluation"]["rule"].startswith("retained + 500")

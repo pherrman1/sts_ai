@@ -83,19 +83,23 @@ establish universal safety, or claim action equivalence. No expensive shadow
 and [N32 packet](../../experiments/evidence/silver_retained_adaptive_pair32_2026-09-16/README.md).
 
 The follow-up exact-10k sequential-checkpoint diagnostic on fresh seeds
-112--127 is **`FIXED_RULE_STILL_SUFFICIENT`** for the bounded offline question.
-It records cumulative 250/500/1,000/2,000/4,000/8,000/10,000 checkpoints on
-the same private root, with the full 10k action as the label reference. The
-held-out logistic controller stopped no primary decisions at 1% or 2% risk;
-at 5% it saved only 0.5393% nominal simulation with zero observed action
-disagreements. The frozen #199 retained-root rule saved 40.7610% with 1.9124%
-held-out disagreement under the same offline label. This does not overturn
-the separately qualified retained-root compute-saving candidate; it says the
-new dynamic estimator does not currently justify replacing that fixed rule.
-Fresh and one-action/forced roots remain controls, not part of the quality
-claim. No gameplay A/B, runtime stopping API, threshold tuning, or default
-change was made. See [ledger §283](../../experiments/ledger-06.md) and the
-[sequential stopping evidence packet](../../experiments/evidence/combat_sequential_stopping_2026-09-16/README.md).
+112--127 is **`LOGISTIC_DYNAMIC_RULE_REJECTED`** for the bounded offline
+question. It records cumulative 250/500/1,000/2,000/4,000/8,000/10,000
+checkpoints on the same private root, with the full 10k action as the label
+reference. The held-out logistic controller stopped no primary decisions at
+1% or 2% risk; at 5% it saved only 0.5393% nominal simulation with zero
+observed action disagreements. The frozen #199 retained-root rule saved
+40.7610% with 1.9124% held-out disagreement under the same offline label.
+The requested exact visit-lock analysis found 2,003/2,422 held-out primary
+decisions with a strict lock, 53.8026% nominal savings, and zero observed
+disagreements. Descriptive rho and rho/leader-stability tables are recorded
+in the packet, but no soft threshold was tuned. This does not overturn the
+separately qualified retained-root compute-saving candidate; it rejects this
+logistic dynamic rule while leaving exact-lock and empirical-risk sequential
+stopping open. Fresh and one-action/forced roots remain controls, not part of
+the quality claim. No gameplay A/B, runtime stopping API, threshold tuning,
+or default change was made. See [ledger §283](../../experiments/ledger-06.md)
+and the [sequential stopping evidence packet](../../experiments/evidence/combat_sequential_stopping_2026-09-16/README.md).
 
 ## Current priority / active line
 
