@@ -1,0 +1,43 @@
+{
+  "date": "2026-09-16",
+  "implementation_sha": "8adbfe9f6b58145c853e53248fa5979a4e1991fa",
+  "release_executable": "build/linux-gcc-release-ccache/one_combat",
+  "release_executable_sha256": "b282b7662b3e128d80cc6ce8701408369d50a63a0bf1389a465c65d7488c6b8d",
+  "model_sha256": {
+    "models/v_win_trees.txt": "fc52c14cb7239a33b3c1f9d0477ccb6c895fd51a07240fe804744e605067ad70",
+    "models/v_rich_trees.txt": "3a3420469b1d648e0e306d6cb6a7e85f3d3499105e3ff3a56eee6c579194ffe3",
+    "models/policy_trees_c.txt": "24793bd39dd1a35c8865035e458c3aa40616ef021cb26b05f914f72fb5e5a321"
+  },
+  "stages": {
+    "n16": {"seed_lo": 128, "seed_hi": 143, "n_seeds": 16},
+    "n32": {"seed_lo": 144, "seed_hi": 175, "n_seeds": 32}
+  },
+  "common_environment": {
+    "OMP_NUM_THREADS": "4",
+    "STS_FAIR": "1",
+    "STS_SEARCHER3": "0",
+    "STS_SILVER_SEARCH": "1",
+    "STS_SILVER_EXACT_ROOT_BUDGETS": "1",
+    "STS_SILVER_REUSE_CAP_MODE": "allocated",
+    "STS_SILVER_REUSE_CAP": "131072",
+    "STS_SILVER_ADAPTIVE": "0",
+    "STS_SILVER_VNET_LEAF_DIRECT": "0",
+    "STS_SIM_ADAPT": "0",
+    "STS_CONVERGE": "0",
+    "STS_CONV_ROOT": "0",
+    "STS_NATIVE_OOC": "1",
+    "STS_OOC_MCTS": "0",
+    "STS_COLLECT_KEYS": "0",
+    "STS_SILVER_TELEMETRY": "1",
+    "STS_EXECUTABLE_GIT_SHA": "8adbfe9f6b58145c853e53248fa5979a4e1991fa"
+  },
+  "control_difference": {"STS_SILVER_EXACT_VISIT_LOCK": "0"},
+  "treatment_difference": {"STS_SILVER_EXACT_VISIT_LOCK": "1"},
+  "decision_rule": "N1-N2 > Bmax-Bused; no rho, soft threshold, logistic rule, or learned risk model",
+  "classification": "LIVE_EXACT_VISIT_LOCK_REJECTED",
+  "classification_reason": "N32 treatment saved 28.77% of control Silver simulations, below the approximately 40% compute gate",
+  "shadow_10k": "not collected",
+  "raw_artifacts": "n16/ and n32/",
+  "validation": "analyze.py and paired-analysis.txt",
+  "defaults_changed": false
+}

@@ -1,0 +1,199 @@
+{
+  "status": "PASS",
+  "implementation_sha": "8adbfe9f6b58145c853e53248fa5979a4e1991fa",
+  "stages": {
+    "n16": {
+      "control": {
+        "seeds": [
+          128,
+          143
+        ],
+        "result_count": 16,
+        "decision_count": 7975,
+        "wins": 11,
+        "mean_floor": 48.25,
+        "median_floor": 51.0,
+        "mean_hp_end": 30.6875,
+        "median_hp_end": 28.0,
+        "mean_sec_per_run": 32.52769375,
+        "wall_seconds": 138.53,
+        "total_simulations": 79750000,
+        "mean_new_simulations": 10000,
+        "median_new_simulations": 10000,
+        "fresh_roots": 405,
+        "retained_roots": 7570,
+        "forced_or_one_action_roots": null,
+        "exact_reroots": 5380,
+        "fallback_reroots": 2595,
+        "failures": {
+          "conversion_failures": 0,
+          "semantic_resolution_failures": 0,
+          "transaction_failures": 0,
+          "knowledge_failures": 0
+        },
+        "lock_count": 0,
+        "zero_lock_count": 0,
+        "lock_budget_distribution": {
+          "10000": 7975
+        },
+        "lock_margin_min": null,
+        "lock_margin_max": null
+      },
+      "treatment": {
+        "seeds": [
+          128,
+          143
+        ],
+        "result_count": 16,
+        "decision_count": 7831,
+        "wins": 10,
+        "mean_floor": 47,
+        "median_floor": 51.0,
+        "mean_hp_end": 33.125,
+        "median_hp_end": 27.0,
+        "mean_sec_per_run": 20.39166875,
+        "wall_seconds": 90.83,
+        "total_simulations": 52000500,
+        "mean_new_simulations": 6640.339675648065,
+        "median_new_simulations": 8000,
+        "fresh_roots": 392,
+        "retained_roots": 7439,
+        "forced_or_one_action_roots": 278,
+        "exact_reroots": 5284,
+        "fallback_reroots": 2547,
+        "failures": {
+          "conversion_failures": 0,
+          "semantic_resolution_failures": 0,
+          "transaction_failures": 0,
+          "knowledge_failures": 0
+        },
+        "lock_count": 4980,
+        "zero_lock_count": 362,
+        "lock_budget_distribution": {
+          "0": 362,
+          "250": 376,
+          "500": 283,
+          "1000": 421,
+          "2000": 622,
+          "4000": 803,
+          "8000": 1376,
+          "10000": 3588
+        },
+        "lock_margin_min": 1,
+        "lock_margin_max": 18433
+      },
+      "compute_reduction_vs_control": 0.3479561128526646,
+      "paired": {
+        "control_only_wins": 2,
+        "treatment_only_wins": 1,
+        "control_only_seeds": [
+          128,
+          129
+        ],
+        "treatment_only_seeds": [
+          142
+        ]
+      },
+      "gate": {
+        "passed": true,
+        "interpretation": "smoke pass at the handoff's approximate 35% compute gate"
+      }
+    },
+    "n32": {
+      "control": {
+        "seeds": [
+          144,
+          175
+        ],
+        "result_count": 32,
+        "decision_count": 14636,
+        "wins": 24,
+        "mean_floor": 48.34375,
+        "median_floor": 51.0,
+        "mean_hp_end": 48.46875,
+        "median_hp_end": 49.0,
+        "mean_sec_per_run": 28.6382884375,
+        "wall_seconds": 243.77,
+        "total_simulations": 146360000,
+        "mean_new_simulations": 10000,
+        "median_new_simulations": 10000.0,
+        "fresh_roots": 820,
+        "retained_roots": 13816,
+        "forced_or_one_action_roots": null,
+        "exact_reroots": 9610,
+        "fallback_reroots": 5026,
+        "failures": {
+          "conversion_failures": 0,
+          "semantic_resolution_failures": 0,
+          "transaction_failures": 0,
+          "knowledge_failures": 0
+        },
+        "lock_count": 0,
+        "zero_lock_count": 0,
+        "lock_budget_distribution": {
+          "10000": 14636
+        },
+        "lock_margin_min": null,
+        "lock_margin_max": null
+      },
+      "treatment": {
+        "seeds": [
+          144,
+          175
+        ],
+        "result_count": 32,
+        "decision_count": 14821,
+        "wins": 22,
+        "mean_floor": 48.78125,
+        "median_floor": 51.0,
+        "mean_hp_end": 42.4375,
+        "median_hp_end": 46.5,
+        "mean_sec_per_run": 19.9397665625,
+        "wall_seconds": 166.77,
+        "total_simulations": 104251000,
+        "mean_new_simulations": 7034.005802577424,
+        "median_new_simulations": 8000,
+        "fresh_roots": 825,
+        "retained_roots": 13996,
+        "forced_or_one_action_roots": 472,
+        "exact_reroots": 9702,
+        "fallback_reroots": 5119,
+        "failures": {
+          "conversion_failures": 0,
+          "semantic_resolution_failures": 0,
+          "transaction_failures": 0,
+          "knowledge_failures": 0
+        },
+        "lock_count": 9179,
+        "zero_lock_count": 465,
+        "lock_budget_distribution": {
+          "0": 465,
+          "250": 512,
+          "500": 462,
+          "1000": 700,
+          "2000": 1094,
+          "4000": 1541,
+          "8000": 2815,
+          "10000": 7232
+        },
+        "lock_margin_min": 1,
+        "lock_margin_max": 24364
+      },
+      "compute_reduction_vs_control": 0.2877083902705657,
+      "paired": {
+        "control_only_wins": 2,
+        "treatment_only_wins": 0,
+        "control_only_seeds": [
+          170,
+          171
+        ],
+        "treatment_only_seeds": []
+      },
+      "gate": {
+        "passed": false,
+        "classification": "LIVE_EXACT_VISIT_LOCK_REJECTED",
+        "reason": "compute reduction is below the handoff's approximately 40% N32 gate"
+      }
+    }
+  }
+}
