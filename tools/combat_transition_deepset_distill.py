@@ -31,7 +31,10 @@ RECIPE = dict(
     encoder=("historical DeepSetsEncoder: card 48->64->64, relic 48->64->64, "
              "potion 40->64->64, global 42->64, sum pooling, 256->128->64 trunk"),
     encoderSource="tools/combat_transition_surrogate.py::DeepSetsEncoder",
-    encoderNormalization="TRAIN-only mean/std for the 10 continuous globals",
+    encoderNormalization=(
+        "TRAIN-only mean/std for the 10 continuous globals, indexed by "
+        "cache['ids'][train] original row IDs"
+    ),
     hpBranch="existing maxHP-delta embedding and 72/64/304 ReLU head",
     maxHpBranch="fresh Linear(64,11)",
     loss="0.5 KL(maxHP teacher||student) + 0.5 KL(HP teacher||student)",
@@ -68,6 +71,22 @@ EXPECTED_CONTROL = {
 
 def digest_array(value):
     return hashlib.sha256(np.asarray(value).tobytes()).hexdigest()
+
+
+def normalization_row_ids(cache, train):
+    """Return and validate the original prepared-row IDs used for TRAIN stats."""
+    cache_ids = np.asarray(cache["ids"])
+    row_ids = np.asarray(cache_ids[np.asarray(train)], dtype=np.int64)
+    if not np.array_equal(row_ids, cache_ids[np.asarray(train)]):
+        raise ValueError("normalization row IDs differ from cache['ids'][train]")
+    return row_ids
+
+
+def normalization_stats(cache, arrays, train):
+    """Compute TRAIN-only scalar statistics in original-row order."""
+    row_ids = normalization_row_ids(cache, train)
+    selected = arrays["globals_continuous"][row_ids]
+    return selected.mean(0), selected.std(0), row_ids
 
 
 def parameter_count(module):
@@ -191,7 +210,26 @@ def _prepare(args):
     models.hp_net.eval().requires_grad_(False)
     if max_hash != EXPECTED_TEACHERS["maxHP"] or hp_hash != EXPECTED_TEACHERS["HP"]:
         raise ValueError("teacher checkpoint hash differs")
-    return cache, arrays, models, outputs, train, validation, counts, validity, ids, meta, (max_fit, hp_fit), max_hash, hp_hash
+    return cache, arrays, models, outputs, train, validation, counts, validity, ids, meta, (max_fit, hp_fit), max_hash, hp_hash, hp_payload
+
+
+def initialize_specialist_hp_branch(student, teachers):
+    """Copy the HP branch from the verified specialist used by Attention."""
+    specialist_delta_hash = reference.state_hash(teachers.hp_net.delta_embedding)
+    specialist_hp_hash = reference.state_hash(teachers.hp_net.hp)
+    student.delta_embedding.load_state_dict(teachers.hp_net.delta_embedding.state_dict())
+    student.hp.load_state_dict(teachers.hp_net.hp.state_dict())
+    student_delta_hash = reference.state_hash(student.delta_embedding)
+    student_hp_hash = reference.state_hash(student.hp)
+    if (student_delta_hash != specialist_delta_hash or
+            student_hp_hash != specialist_hp_hash):
+        raise ValueError("DeepSets HP branch initialization differs from specialist")
+    return dict(
+        source="verified HP specialist used by the Attention control",
+        deltaEmbeddingSha256=student_delta_hash,
+        hpHeadSha256=student_hp_hash,
+        matchesSpecialist=True,
+    )
 
 
 def _evaluate(prob_max, prob_hp, cache, models, ids):
@@ -214,10 +252,10 @@ def run(args):
     torch.manual_seed(RECIPE["seed"])
     torch.cuda.manual_seed_all(RECIPE["seed"])
     control, control_sha = _load_control(Path(args.control_dir))
-    cache, arrays, teachers, teacher_outputs, train, validation, counts, teacher_validity, ids, meta, teacher_fits, max_hash, hp_hash = _prepare(args)
-    scalar_mean = arrays["globals_continuous"][train].mean(0)
-    scalar_std = arrays["globals_continuous"][train].std(0)
+    cache, arrays, teachers, teacher_outputs, train, validation, counts, teacher_validity, ids, meta, teacher_fits, max_hash, hp_hash, _ = _prepare(args)
+    scalar_mean, scalar_std, normalization_ids = normalization_stats(cache, arrays, train)
     student = _student_model(torch, scalar_mean, scalar_std, len(teachers.delta_values), teachers.classes, RECIPE["seed"]).cuda()
+    hp_initialization = initialize_specialist_hp_branch(student, teachers)
     student.train().requires_grad_(True)
     initial_student_hash = reference.state_hash(student)
     max_head = torch.nn.Linear(64, len(teachers.delta_values)).cuda()
@@ -333,7 +371,8 @@ def run(args):
         baselineSha=args.baseline_sha, experimentSha=current, recipe=RECIPE,
         control=dict(path=str(Path(args.control_dir).resolve()), resultSha256=control_sha, experimentSha=control["experimentSha"], bestCheckpointSha256=control["bestCheckpointSha256"], selectedEpoch=control["selectedEpoch"]),
         parameterCount=dict(encoder=encoder_parameters, studentWithoutMaxHpHead=student_parameters, maxHpHead=parameter_count(max_head), complete=student_parameters + parameter_count(max_head)),
-        scalarNormalization=dict(mean=scalar_mean.tolist(), std=scalar_std.tolist()),
+        scalarNormalization=dict(mean=scalar_mean.tolist(), std=scalar_std.tolist(), rows=int(len(normalization_ids)), rowIdsSha256=digest_array(normalization_ids)),
+        hpBranchInitialization=hp_initialization,
         teacherCheckpoints={"maxHP": max_hash, "HP": hp_hash},
         counts=counts, provenance=dict(sourceHashes=meta["hashes"], preparationCacheSha256=meta["cacheSha256"], rowIdsSha256=digest_array(cache["ids"][ids]), sourceGroupsSha256=digest_array(cache["source"][ids]), teacherOutputs=EXPECTED_TEACHER_OUTPUTS, teacherValidity=teacher_validity, teacherParametersFrozen=True, teacherCacheReused=True),
         testInferenceRows=0, testMetricsComputed=False, validationInGradientUpdates=False,
@@ -359,10 +398,10 @@ def finalize_existing(args):
     if not output.is_dir() or not best_path.is_file() or (output / "results.json").exists():
         raise ValueError("finalize requires an existing incomplete fit directory")
     control, control_sha = _load_control(Path(args.control_dir))
-    cache, arrays, teachers, teacher_outputs, train, validation, counts, teacher_validity, ids, meta, teacher_fits, max_hash, hp_hash = _prepare(args)
-    scalar_mean = arrays["globals_continuous"][train].mean(0)
-    scalar_std = arrays["globals_continuous"][train].std(0)
+    cache, arrays, teachers, teacher_outputs, train, validation, counts, teacher_validity, ids, meta, teacher_fits, max_hash, hp_hash, _ = _prepare(args)
+    scalar_mean, scalar_std, normalization_ids = normalization_stats(cache, arrays, train)
     student = _student_model(torch, scalar_mean, scalar_std, len(teachers.delta_values), teachers.classes, RECIPE["seed"]).cuda()
+    hp_initialization = initialize_specialist_hp_branch(student, teachers)
     student.train().requires_grad_(True)
     initial_student_hash = reference.state_hash(student)
     max_head = torch.nn.Linear(64, len(teachers.delta_values)).cuda()
@@ -409,7 +448,8 @@ def finalize_existing(args):
         baselineSha=args.baseline_sha, experimentSha=args.experiment_sha, recipe=RECIPE,
         control=dict(path=str(Path(args.control_dir).resolve()), resultSha256=control_sha, experimentSha=control["experimentSha"], bestCheckpointSha256=control["bestCheckpointSha256"], selectedEpoch=control["selectedEpoch"]),
         parameterCount=dict(encoder=parameter_count(student.encoder), studentWithoutMaxHpHead=parameter_count(student), maxHpHead=parameter_count(max_head), complete=parameter_count(student) + parameter_count(max_head)),
-        scalarNormalization=dict(mean=scalar_mean.tolist(), std=scalar_std.tolist()),
+        scalarNormalization=dict(mean=scalar_mean.tolist(), std=scalar_std.tolist(), rows=int(len(normalization_ids)), rowIdsSha256=digest_array(normalization_ids)),
+        hpBranchInitialization=hp_initialization,
         teacherCheckpoints={"maxHP": max_hash, "HP": hp_hash}, counts=counts,
         provenance=dict(sourceHashes=meta["hashes"], preparationCacheSha256=meta["cacheSha256"], rowIdsSha256=digest_array(cache["ids"][ids]), sourceGroupsSha256=digest_array(cache["source"][ids]), teacherOutputs=EXPECTED_TEACHER_OUTPUTS, teacherValidity=teacher_validity, teacherParametersFrozen=True, teacherCacheReused=True),
         testInferenceRows=0, testMetricsComputed=False, validationInGradientUpdates=False,

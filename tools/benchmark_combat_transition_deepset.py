@@ -27,9 +27,8 @@ def _summary(samples):
     )
 
 
-def _load_models(candidate_dir, control_dir, arrays, train, classes, delta_values):
-    mean = arrays["globals_continuous"][train].mean(0)
-    std = arrays["globals_continuous"][train].std(0)
+def _load_models(candidate_dir, control_dir, cache, arrays, train, classes, delta_values):
+    mean, std, _ = deepset.normalization_stats(cache, arrays, train)
     candidate = deepset._student_model(torch, mean, std, len(delta_values), classes, 20260912).eval()
     candidate_payload = torch.load(Path(candidate_dir) / "student.pt", map_location="cpu", weights_only=False)
     candidate.load_state_dict(candidate_payload["stateDict"])
@@ -64,7 +63,7 @@ def run(args):
     pre = torch.as_tensor(cache["preHp"][batch_ids], dtype=torch.long)
     maximum = torch.as_tensor(cache["trueMax"][batch_ids], dtype=torch.long)
     legal = torch.as_tensor(stochastic_hp.legal_support(classes, cache["preHp"][batch_ids], cache["trueMax"][batch_ids]))
-    models = _load_models(args.candidate_dir, args.control_dir, arrays, train, classes, delta_values)
+    models = _load_models(args.candidate_dir, args.control_dir, cache, arrays, train, classes, delta_values)
     result = dict(schema="combat_transition_deepset_speed_screen_v1", candidateSha=args.candidate_sha, controlSha=args.control_sha, corpusRows=0, testInferenceRows=0, batchRows=int(len(batch_ids)), validationRowIdsSha256=deepset.digest_array(cache["ids"][batch_ids]), threads=args.threads, warmups=args.warmups, repetitions=args.repetitions, timings={})
 
     def encoder_forward(parts):

@@ -46,6 +46,17 @@ class DeepSetsDistillTests(unittest.TestCase):
         right = experiment.reference.state_hash(make())
         self.assertEqual(left, right)
 
+    def test_normalization_uses_train_cache_original_row_ids(self):
+        cache = {"ids": np.array([2, 0, 1], dtype=np.int64)}
+        arrays = {"globals_continuous": np.array([[10.0], [20.0], [30.0]])}
+        train = np.array([0, 2], dtype=np.int64)
+
+        mean, std, row_ids = experiment.normalization_stats(cache, arrays, train)
+
+        np.testing.assert_array_equal(row_ids, cache["ids"][train])
+        np.testing.assert_allclose(mean, [25.0])
+        np.testing.assert_allclose(std, [5.0])
+
 
 if __name__ == "__main__":
     unittest.main()
