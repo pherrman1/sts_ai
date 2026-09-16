@@ -1,5 +1,10 @@
 # Shared maxHP+HP DeepSets encoder distillation
 
+> Superseded by the same-session correction in
+> [`shared_transition_deepset_distill_correction_2026-09-16.md`](shared_transition_deepset_distill_correction_2026-09-16.md).
+> The original receipt used the wrong normalization rows and fresh HP-branch
+> initialization; its numbers are retained only for audit history.
+
 **Stage-A decision: `CHEAP_ENCODER_QUALITY_GO`. Stage-B decision:
 `CHEAP_ENCODER_SPEED_GO`.** A single fixed 40-epoch distillation fit replaced
 only the shared state encoder with the existing historical DeepSets mechanism.

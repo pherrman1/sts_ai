@@ -1,4 +1,7 @@
 {
+  "status": "superseded_by_same_session_correction",
+  "supersededBy": "shared_transition_deepset_distill_correction_2026-09-16.json",
+  "supersededReason": "The original receipt used arrays[train] for normalization and fresh HP-branch initialization; use the correction packet for current evidence.",
   "schema": "shared_transition_deepset_distillation_v1_evidence",
   "decision": "CHEAP_ENCODER_SPEED_GO",
   "stageA": "CHEAP_ENCODER_QUALITY_GO",

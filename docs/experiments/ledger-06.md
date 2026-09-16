@@ -8951,3 +8951,34 @@ the regenerated-vs-cache difference explicitly.
   no qualified component, runtime contract, native CTM, gameplay result or
   executable default changed. [Evidence packet](evidence/shared_transition_deepset_distill_2026-09-16.md)
   and [machine-readable receipt](evidence/shared_transition_deepset_distill_2026-09-16.json).
+
+### §286a — Same-session DeepSets receipt correction (2026-09-16)
+
+- **Correction:** the original §286 receipt is superseded because its
+  normalization used `arrays[train]` and its HP delta embedding plus HP head
+  were fresh. The narrowly corrected implementation uses
+  `cache["ids"][train]`, asserts and tests that these are the TRAIN cache's
+  original row IDs, and copies both HP modules from the verified specialist
+  used by the Attention control. No other recipe, architecture, seed,
+  population, TEST, gameplay or downstream scope changed.
+- **Stage A:** the single corrected 40-epoch fit at
+  `b192275ca0584a0c1eee8916176613b428a5e1b4` selected epoch 40 and passed
+  **`SHARED_TRANSITION_ENCODER_GO`** / **`CHEAP_ENCODER_QUALITY_GO`**.
+  Corrected candidate metrics were maxHP NLL `0.043216348`, HP NLL
+  `2.506730318`, HP CRPS `3.639513338`, and ending-HP MAE `5.368440`.
+  Normalization covered 393,677 original row IDs with hash
+  `e42a4dc3…`; both copied HP-module hashes matched the specialist. TEST
+  inference rows and metrics remained zero. The corrected checkpoint hash is
+  `bee6800d…`, result receipt hash `83b2482e…`, and validation prediction
+  hash `ecf91913…`.
+- **Stage B:** because Stage A passed, the same first-512 VALIDATION-row CPU
+  screen (4 threads, 10 warmups, 100 repetitions) was rerun once. Encoder
+  medians were Attention `101.934 ms` versus DeepSets `4.691 ms` (21.73x),
+  and complete maxHP+HP medians were `102.462 ms` versus `4.939 ms` (20.74x),
+  passing **`CHEAP_ENCODER_SPEED_GO`**. The speed receipt hash is
+  `49784953…`.
+- **Boundary:** this is corrected offline evidence only. No TEST evaluation,
+  runtime export, default promotion, gameplay, downstream training, extra
+  seed, tuning or architecture work ran. See the
+  [correction evidence](evidence/shared_transition_deepset_distill_correction_2026-09-16.md)
+  and [machine-readable receipt](evidence/shared_transition_deepset_distill_correction_2026-09-16.json).

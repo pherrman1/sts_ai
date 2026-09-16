@@ -442,23 +442,27 @@ remain unchanged. See [ledger-06 §273](../../experiments/ledger-06.md) and the
 
 ### Purpose-trained shared maxHP and signed-HP DeepSets encoder
 
-The authorized architecture follow-up is **`CHEAP_ENCODER_QUALITY_GO`** and
-**`CHEAP_ENCODER_SPEED_GO`**. One fixed 40-epoch temperature-1 distillation
-run replaced only the shared state encoder with the existing historical
-`DeepSetsEncoder` (94,424 encoder parameters, output width 64); maxHP and HP
-branches, frozen teachers, source split, loss, optimizer, AMP behavior and
-selection rule were unchanged. On VALIDATION, maxHP NLL was +0.7832% relative
-to the dedicated specialist, HP NLL +0.3399%, HP CRPS +0.7303%, and expected
-ending-HP MAE +0.030176 HP. All fixed accuracy, support, slice and MAE gates
-passed; epoch 39 was selected. A repeated CPU implementation screen on
-identical 512-row batches measured 19.76x encoder and 18.96x complete
-maxHP+HP-forward median speedups over the shared Attention control. These are
-offline implementation timings, not native/OOC speedup claims. This result
-does not authorize downstream substitution, export, native CTM work, gameplay
-or default promotion: downstream consumers must be retrained for the new
-representation in a separate experiment. No TEST rows were inferred. See
-[ledger-06 §286](../../experiments/ledger-06.md) and the
-[DeepSets distillation evidence](../../experiments/evidence/shared_transition_deepset_distill_2026-09-16.md).
+The authorized architecture follow-up remains **`CHEAP_ENCODER_QUALITY_GO`**
+and **`CHEAP_ENCODER_SPEED_GO`** after a same-session correction. One fixed
+40-epoch temperature-1 distillation run replaced only the shared state encoder
+with the existing historical `DeepSetsEncoder` (94,424 encoder parameters,
+output width 64); the frozen teachers, source split, loss, optimizer, AMP
+behavior and selection rule were unchanged. The correction uses
+`cache["ids"][train]` for TRAIN normalization and initializes the HP delta
+embedding plus HP head from the specialist used by the Attention control. On
+VALIDATION, corrected maxHP NLL was +1.2413% relative to the dedicated
+specialist, HP NLL +0.3378%, HP CRPS +0.5568%, and expected ending-HP MAE
++0.026469 HP. All fixed accuracy, support, slice and MAE gates passed; epoch
+40 was selected. The same CPU implementation screen on identical 512-row
+batches measured 21.73x encoder and 20.74x complete maxHP+HP-forward median
+speedups over the shared Attention control. These are offline implementation
+timings, not native/OOC speedup claims. This result does not authorize
+downstream substitution, export, native CTM work, gameplay or default
+promotion: downstream consumers must be retrained for the new representation
+in a separate experiment. No TEST rows were inferred. See
+[ledger-06 §286](../../experiments/ledger-06.md), the
+[correction evidence](../../experiments/evidence/shared_transition_deepset_distill_correction_2026-09-16.md),
+and the [superseded original packet](../../experiments/evidence/shared_transition_deepset_distill_2026-09-16.md).
 
 The reverse frozen substitution also fails: a fresh linear maxHP-delta head on
 the dedicated HP representation is **`SHARED_HP_ENCODER_MAXHP_REJECTED`**.

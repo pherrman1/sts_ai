@@ -1,0 +1,139 @@
+{
+  "schema": "shared_transition_deepset_distillation_v1_correction_evidence",
+  "status": "current_same_session_correction",
+  "supersedes": "shared_transition_deepset_distill_2026-09-16.json",
+  "baselineSha": "77fec051c2453d79f05bad5e813989b861fa5d0a",
+  "fitExperimentSha": "b192275ca0584a0c1eee8916176613b428a5e1b4",
+  "conceptualChange": "Correction only: DeepSets normalization uses cache['ids'][train], and the HP delta embedding plus HP head initialize from the verified HP specialist used by the Attention control.",
+  "architecture": {
+    "source": "tools/combat_transition_surrogate.py::DeepSetsEncoder",
+    "encoderParameters": 94424,
+    "completeStudentParameters": 119659,
+    "outputShape": ["batch", 64],
+    "normalization": "TRAIN-only mean/std indexed by cache['ids'][train] original row IDs",
+    "normalizationRows": 393677,
+    "normalizationRowIdsSha256": "e42a4dc3a964524a277fdcfde4cbdc552277dc358ce0d1d27e2c612a43ae3214",
+    "hpBranchInitialization": {
+      "source": "verified HP specialist used by the Attention control",
+      "deltaEmbeddingSha256": "8795adf502265abf3fb75161e89c42d79481fd69a218ecc485a2066820423858",
+      "hpHeadSha256": "ede45d686671629e49c016b824c0b6593fa5fbc13d7f4ec4a7d6a1e2a51997c2",
+      "matchesSpecialist": true
+    }
+  },
+  "recipe": {
+    "seed": 20260912,
+    "epochs": 40,
+    "batch": 512,
+    "encoderLr": 0.0001,
+    "headLr": 0.001,
+    "optimizer": "AdamW",
+    "weightDecay": 0.0001,
+    "clip": 1.0,
+    "temperature": 1,
+    "selection": "earliest strict minimum equal-weight VALIDATION KL",
+    "trainingPrecision": "AMP FP16; FP32 teacher and validation scoring",
+    "overflowHandling": "nonfinite gradient norm -> scaler step/update skip; nonfinite forward loss aborts"
+  },
+  "provenance": {
+    "maxHPTeacherSha256": "2c5b54d0a9420a9d0e3ab9a26f32b9900c4869490e4af49627009cde21efb4b0",
+    "HPTeacherSha256": "0c8b5aa8c5218d6cd6102b768cc86a474c9ef30953d4b034caedcc41a426109b",
+    "teacherMaxHPOutputSha256": "10404b3e1de4f033667e4be62aefc24d9b4a3920cf1ddcd563408aeef17583d7",
+    "teacherHPOutputSha256": "6244ca5e8c196bbfe32094f5113416c7b31cdfb8a084d3ff46d160141d252759",
+    "preparationCacheSha256": "e1c25f2758bf56c7cff392ea02342d809f3ad7427c70b64166244a6b714a251d",
+    "preparedNpzSha256": "2badbb85ccd8329bcb886d50ef8a0b9b1bd2c043fda9445de9f9c2e7a4b6f9a5",
+    "preparedManifestSha256": "13b2c91fd0ced713f8c429bbf8995ceb58b6e3e57d1555de42f5e67d7f9a389f",
+    "targetSpecSha256": "e2315620d512578542d6b3bfbd362eb07b086f0e9fa7770cc23f4fa4c226e229",
+    "sourceSha": "1c31b7eb0a7660d43bc27e0849a8955dd0c3daae",
+    "splitSha256": "e9043bcceb9d95027711e6ff33afbfe1cae3cf9528f820c0ff68bddbb419db32",
+    "corpusSha256": "74c08aa0a3c30342d86cd45355fe17ffa9046963ad7c8cf71b1938f9cdc1cfde",
+    "rowIdsSha256": "5933a118735224ec76cd2f292e32d33056d15dbd6dc74c07d04d25eeacd6c6b0",
+    "sourceGroupsSha256": "e1f313dc373edc6b134146ac16d279b1432b1b3688ee1cc2b4085c25c28ebb46",
+    "controlReceiptSha256": "4149c038a2abe9ab181b03c714763e74fb7b37f534020179004696fd465577c7",
+    "controlCheckpointSha256": "daf50b5ec0847fe7a44cde0efd5d592a1939a25e6978f6757dd2b0157a105267"
+  },
+  "population": {
+    "TRAIN": {"rows": 393677, "sources": 19986},
+    "VALIDATION": {"rows": 48590, "sources": 2496},
+    "testInferenceRows": 0,
+    "testMetricsComputed": false
+  },
+  "training": {
+    "selectedEpoch": 40,
+    "finalValidationMaxHpKl": 0.001856976581660216,
+    "finalValidationHpKl": 0.02177649539460074,
+    "finalSelectionLoss": 0.011816735988130479,
+    "skippedUpdates": 9,
+    "trainingSeconds": 175.907295493,
+    "progressSha256": "1f2447acce55112c86537e2f9f7e4be0dd869ced6dc2393498e5c5d529935c8d",
+    "batchOrderSha256": "3c937998dbf1ca520d1c89a7053bffe54f1796e0c737e12319edbfb4dcd14aab"
+  },
+  "validation": {
+    "specialistTeachers": {
+      "maxHP": {"nll": 0.042686499655246735, "accuracy": 0.981107223708582, "expectedPostMaxHpMae": 0.08148917117811641},
+      "HP": {"nll": 2.498291492462158, "crps": 3.619360053253274, "expectedMae": 5.341970253555984}
+    },
+    "sharedAttentionControl": {
+      "maxHP": {"nll": 0.04321973770856857, "accuracy": 0.9805515538176579, "expectedPostMaxHpMae": 0.08281235780597467},
+      "HP": {"nll": 2.5015461444854736, "crps": 3.629157164135184, "expectedMae": 5.357439473845718}
+    },
+    "deepSetsStudent": {
+      "maxHP": {"nll": 0.04321634769439697, "accuracy": 0.9805721341839885, "expectedPostMaxHpMae": 0.08256676170695153},
+      "HP": {"nll": 2.506730318069458, "crps": 3.639513337765817, "expectedMae": 5.368439672793013},
+      "slices": {
+        "damage": {"nll": 3.6797308921813965, "crps": 5.396553837354495, "expectedMae": 7.146766266053163, "rows": 24466},
+        "healing": {"nll": 2.246809482574463, "crps": 3.08680523761274, "expectedMae": 5.278088053462356, "rows": 10629},
+        "lowPreHp": {"nll": 2.9768056869506836, "crps": 3.3855201347852604, "expectedMae": 4.847831238959921, "rows": 433}
+      }
+    }
+  },
+  "gates": {
+    "maxHpNllRelative": 0.0124125436245535,
+    "maxHpAccuracyDrop": 0.0005350895245935794,
+    "maxHpExpectedMaeDelta": 0.0010775905288351179,
+    "maxHpNonzeroAccuracyDrop": 0.010349288486416586,
+    "maxHpNonzeroNllDelta": 0.02559596300125122,
+    "maxHpNonzeroNllCatastrophic": false,
+    "hpNllRelative": 0.0033778386680503127,
+    "hpCrpsRelative": 0.005568190015919554,
+    "hpExpectedMaeDelta": 0.026469419237028724,
+    "hpSlices": {
+      "damage": {"nllRelative": 0.003544025272759252, "crpsRelative": 0.00923203167576072, "expectedMaeDelta": 0.049685952619068274},
+      "healing": {"nllRelative": 0.0025512187944855547, "crpsRelative": -0.005960872660571828, "expectedMaeDelta": -0.018417231884024332},
+      "lowPreHp": {"nllRelative": 0.002848637632185027, "crpsRelative": 0.0032275159301745986, "expectedMaeDelta": 0.03530715022198727}
+    }
+  },
+  "stageA": {"decision": "SHARED_TRANSITION_ENCODER_GO", "qualityGate": "CHEAP_ENCODER_QUALITY_GO", "checkpointSha256": "bee6800dd7230b180c2b4894c0f01763efca4b7799e3f36a805333c3003dc663"},
+  "stageB": {
+    "decision": "CHEAP_ENCODER_SPEED_GO",
+    "candidateSha": "b192275ca0584a0c1eee8916176613b428a5e1b4",
+    "speedScreenSha256": "49784953f2d44b733ad99e5e1f9d42cfe1fafb4b9a6ae1def7975e39090ce468",
+    "batchRows": 512,
+    "validationRowIdsSha256": "2a755a9639a985d2a847c60baca51f68a4d5be8efc956b45cde792bc8e990b0c",
+    "threads": 4,
+    "warmups": 10,
+    "repetitions": 100,
+    "timingsMs": {
+      "Attention": {"encoderMedian": 101.9339464999689, "encoderIqr": [85.32829674996378, 110.90990374995613], "completeMedian": 102.4621000000252, "completeIqr": [87.4205844999949, 110.61501925007633]},
+      "DeepSets": {"encoderMedian": 4.6906984999850465, "encoderIqr": [4.514543999960097, 4.939058750011327], "completeMedian": 4.939254000021265, "completeIqr": [4.767134749954494, 5.211838499974419]}
+    },
+    "speedup": {"encoder": 21.731080456416855, "completeMaxHpHp": 20.744448453062766}
+  },
+  "artifacts": {
+    "externalRun": "/home/philippherrmann/sts_sweep/runs/shared-transition-deepset-distill-corrected-20260916",
+    "resultsSha256": "83b2482eab347c09901c3b39f2ce7fed324f6be378ca36ff51f0d3965074c769",
+    "speedScreenSha256": "49784953f2d44b733ad99e5e1f9d42cfe1fafb4b9a6ae1def7975e39090ce468",
+    "studentCheckpointSha256": "bee6800dd7230b180c2b4894c0f01763efca4b7799e3f36a805333c3003dc663",
+    "validationPredictionsSha256": "ecf91913592beb52e716d9dc20c47ecd3df8600facdb7e453fbaa2e91406f87f",
+    "overflowEventsSha256": "41805266963621fda20da77bc975403cf60c64bd622759579395d140a15f6296"
+  },
+  "verification": {
+    "focusedDeepSetsTests": "4 passed",
+    "pyCompile": true,
+    "gitDiffCheck": true,
+    "preparedDataReconstructedExact": true,
+    "teacherCacheAndPopulationPreflight": true,
+    "testInferenceRows": 0,
+    "runtimeOrDefaultPromotion": false
+  },
+  "uncertainty": "One offline seed and one fixed TRAIN/VALIDATION fit; CPU timing is an implementation screen, not a native/OOC speedup claim. No TEST evaluation or downstream work was performed."
+}
