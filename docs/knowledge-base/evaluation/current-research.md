@@ -452,6 +452,14 @@ the exact frozen substitution, not every possible jointly trained shared
 architecture. See [the evidence packet](../../experiments/evidence/shared_hp_downstream_2026-09-16.md)
 and [ledger-06 §285](../../experiments/ledger-06.md).
 
+The experiment is replayable with the tracked
+[`shared_hp_downstream` driver](../../../tools/combat_transition_shared_hp_downstream.py);
+its receipt records the artifact/cache bindings, exact row selection, isolated
+`z` substitution, driver SHA, and a maximum replay metric difference of
+`9.53e-08`. The historical dedicated `z` cache remains the metric reference
+because the original cache used different inference arithmetic than the CPU
+replay; the regenerated-versus-cache difference is recorded explicitly.
+
 ### Shared maxHP+HP representation for potion decoding
 
 The sequential frozen substitution screen is **`SHARED_ENCODER_POTION_REJECTED`**.

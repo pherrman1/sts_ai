@@ -8840,4 +8840,12 @@ possible shared architecture or intrinsic information absence. Knowledge
 impact: current research status and experiment evidence only; qualified
 components and executable defaults remain unchanged.
 
+The reproducibility gap was repaired by tracking
+`tools/combat_transition_shared_hp_downstream.py` and replaying the receipt.
+The driver verifies the frozen bindings, regenerates both HP encodings, swaps
+only `cache["z"]`, and reproduces the recorded metrics within `9.53e-08`.
+Because the historical cache used different inference arithmetic, the driver
+uses that hash-verified dedicated cache as the metric reference and records
+the regenerated-vs-cache difference explicitly.
+
 [Evidence packet and machine-readable receipt](evidence/shared_hp_downstream_2026-09-16.md).

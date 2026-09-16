@@ -46,6 +46,22 @@ evaluation, or promotion. This rejects this exact frozen shared-representation
 substitution for downstream consumers; it does not establish that every
 possible jointly trained shared representation is impossible.
 
+## Replayability
+
+The tracked replay driver is
+[`tools/combat_transition_shared_hp_downstream.py`](../../../tools/combat_transition_shared_hp_downstream.py).
+It verifies the candidate checkpoint, frozen component/native/cache bindings,
+and 17,950-row selection; loads the trained downstream checkpoint; regenerates
+the dedicated and PR #197 shared encodings; substitutes only `cache["z"]` for
+the candidate; and writes the machine-readable receipt. The replay reproduced
+all recorded metrics with maximum absolute difference `9.53e-08`.
+
+The historical dedicated `z` cache was retained as the reference used for
+metrics because the original cache was produced with different inference
+arithmetic than the current CPU replay. The driver records the regenerated
+dedicated-vs-cache maximum absolute difference (`4.4868121`) rather than
+silently presenting those encodings as byte-identical.
+
 Knowledge impact: current research status and experiment evidence only;
 qualified components and executable defaults are unchanged.
 
