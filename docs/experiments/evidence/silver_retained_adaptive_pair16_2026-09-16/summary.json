@@ -136,6 +136,8 @@
   },
   "paired": {
     "win_disagreements": 5,
+    "treatment_only_wins": 3,
+    "control_only_wins": 2,
     "floor_disagreements": 5,
     "hp_disagreements": 13
   },

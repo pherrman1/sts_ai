@@ -6,11 +6,14 @@ from __future__ import annotations
 import csv
 import json
 import re
+import sys
 from pathlib import Path
 
 
-ROOT = Path(__file__).resolve().parent
-EXPECTED_SEEDS = set(range(64, 80))
+ROOT = Path(sys.argv[1]).resolve() if len(sys.argv) > 1 else Path(__file__).resolve().parent
+SEED_LO = int(sys.argv[2]) if len(sys.argv) > 2 else 64
+SEED_COUNT = int(sys.argv[3]) if len(sys.argv) > 3 else 16
+EXPECTED_SEEDS = set(range(SEED_LO, SEED_LO + SEED_COUNT))
 THRESHOLD = 0.2932885906040268
 
 
@@ -34,11 +37,11 @@ def validate_results(arm: str) -> tuple[list[dict[str, str]], dict]:
         raise AssertionError(f"{arm}: expected one result for seeds 64..79, got {seeds}")
     with (ROOT / arm / "results.csv.meta.json").open() as handle:
         sidecar = json.load(handle)
-    if sidecar["seedBlock"] != {"lo": 64, "hi": 79}:
+    if sidecar["seedBlock"] != {"lo": SEED_LO, "hi": SEED_LO + SEED_COUNT - 1}:
         raise AssertionError(f"{arm}: unexpected seed block {sidecar['seedBlock']}")
     config = sidecar["config"]
     expected = {
-        "nSeeds": 16,
+        "nSeeds": SEED_COUNT,
         "sims": 10000,
         "fairPlay": True,
         "nativeOoc": True,
@@ -188,19 +191,19 @@ def main() -> None:
         "threshold": THRESHOLD,
         "implementation_commit": "ec3a9266966406c130aff18c0077f69bf4df83c9",
         "binary_sha256": "fc5aa161edef33b55666008c91b0c215047530058847c93fd075f73336a5c302",
-        "seed_block": {"lo": 64, "hi": 79, "n": 16},
+        "seed_block": {"lo": SEED_LO, "hi": SEED_LO + SEED_COUNT - 1, "n": SEED_COUNT},
         "control": {
             "win_count": sum(int(row["won"]) for row in control_results),
-            "mean_floor": sum(int(row["floor"]) for row in control_results) / 16,
-            "mean_hp_end": sum(int(row["hpEnd"]) for row in control_results) / 16,
+            "mean_floor": sum(int(row["floor"]) for row in control_results) / SEED_COUNT,
+            "mean_hp_end": sum(int(row["hpEnd"]) for row in control_results) / SEED_COUNT,
             "wall_seconds": control_wall,
             "scaling": control_scaling,
             "sidecar": control_sidecar["config"],
         },
         "treatment": {
             "win_count": sum(int(row["won"]) for row in treatment_results),
-            "mean_floor": sum(int(row["floor"]) for row in treatment_results) / 16,
-            "mean_hp_end": sum(int(row["hpEnd"]) for row in treatment_results) / 16,
+            "mean_floor": sum(int(row["floor"]) for row in treatment_results) / SEED_COUNT,
+            "mean_hp_end": sum(int(row["hpEnd"]) for row in treatment_results) / SEED_COUNT,
             "wall_seconds": treatment_wall,
             "scaling": treatment_scaling,
             "sidecar": treatment_sidecar["config"],
@@ -213,6 +216,8 @@ def main() -> None:
         },
         "paired": {
             "win_disagreements": sum(row["control_won"] != row["treatment_won"] for row in paired),
+            "treatment_only_wins": sum(row["control_won"] == 0 and row["treatment_won"] == 1 for row in paired),
+            "control_only_wins": sum(row["control_won"] == 1 and row["treatment_won"] == 0 for row in paired),
             "floor_disagreements": sum(row["control_floor"] != row["treatment_floor"] for row in paired),
             "hp_disagreements": sum(row["control_hp_end"] != row["treatment_hp_end"] for row in paired),
         },

@@ -8657,3 +8657,38 @@ The earlier §279 checkpoints remain local continuation comparisons and are not
 pooled with this live-policy result. Knowledge impact: current research status
 and experiment evidence updated; normal Silver defaults remain unchanged.
 [Evidence packet and raw traces](evidence/silver_retained_adaptive_pair16_2026-09-16/README.md).
+
+
+## §281 — Retained-root adaptive Silver prospective qualification (N32, 2026-09-16)
+
+The N16 smoke met its mechanical/compute gate without an obvious gameplay
+regression, so the same frozen implementation ran a fresh paired N32 on
+seeds80--111. Configuration remained Ironclad A0, fair RNG, exact-root
+budgets, allocated reuse cap131072, native OOC, adaptive CTM off, no OOC MCTS,
+sequential arms, and the same executable. The flat control disables adaptive
+Silver; the treatment uses fresh/forced roots at10k and retained non-forced
+roots at500 only when the frozen top-two visit-gap threshold
+`0.2932885906040268` is met.
+
+Flat control won22/32 versus treatment24/32: three treatment-only wins and one
+control-only win. Mean final floor was47.84 versus48.31 and mean final HP
+32.53 versus30.97. Control added142,010,000 Silver simulations across14,201
+decisions; treatment added86,146,500 across14,403 decisions, a 39.34%
+simulation reduction and 42.33% wall reduction (235.06s versus135.55s).
+
+Treatment telemetry recorded813 fresh roots,13,590 retained roots, and443
+one-action/forced roots. It stopped6,093 decisions at500 (42.30% of all
+treatment decisions,43.65% of non-forced decisions,44.83% of retained roots);
+all stops satisfied retained/non-forced/threshold invariants. Fresh and forced
+roots continued to10k. Exact/fallback reroot rows were9416/4987 in treatment
+versus9285/4916 in control. No expensive shadow10k comparison was collected.
+
+Classification remains **`PER_DECISION_SIGNAL_PROMISING`** — retained-root
+adaptive search only. This N32 packet supports the compute-saving treatment at
+the bounded prospective gate but does not promote a default, establish
+universal safety, or claim whole-fight action equivalence. Fresh-root early
+stopping remains rejected, and the earlier §279 local-continuation negative
+result is not replaced or pooled with this policy result. Knowledge impact:
+current research status and experiment evidence updated; normal Silver
+defaults remain unchanged.
+[Evidence packet and raw traces](evidence/silver_retained_adaptive_pair32_2026-09-16/README.md).

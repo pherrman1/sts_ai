@@ -59,8 +59,9 @@ were continuation checkpoints on a 10k-generated trajectory, not independent
 fresh searches, and cannot establish deployed-policy equivalence. The
 fresh-root subgroup is rejected for early stopping.
 
-A separate frozen prospective policy now has a bounded live smoke result:
-**`PER_DECISION_SIGNAL_PROMISING`** for retained-root adaptive search only.
+A separate frozen prospective policy now has a live N16 smoke and fresh N32
+qualification result: **`PER_DECISION_SIGNAL_PROMISING`** for retained-root
+adaptive search only.
 Fresh roots and one-action/forced roots run exact 10k; retained non-forced
 roots run 500 new simulations and stop when the top-two visit-gap share is at
 least `0.2932885906040268`. With fresh paired seeds 64–79, fair Ironclad A0,
@@ -69,14 +70,17 @@ off, and OOC MCTS off, the treatment reduced added Silver simulations by
 41.05% and wall time by 40.99% relative to flat 10k. It stopped 2,804/6,800
 live decisions, with all stops satisfying retained/non-forced/threshold
 invariants. Outcomes were 10/16 wins for control versus 11/16 for treatment;
-the five win disagreements and N16 size are descriptive, not a quality gate.
+the five win disagreements and N16 size were descriptive only.
 
-This is enough mechanical and compute evidence to run the planned fresh N32
-prospective qualification, but not to promote the policy or claim action
-equivalence. The live qualification should judge compute against gameplay and
-retain reroot/inherited-visit telemetry; it should not add expensive shadow
-10k searches that defeat the treatment. See [ledger §280](../../experiments/ledger-06.md)
-and the [N16 packet](../../experiments/evidence/silver_retained_adaptive_pair16_2026-09-16/README.md).
+The fresh N32 qualification on seeds80--111 reduced added Silver simulations by
+39.34% and wall time by 42.33%; it stopped6,093/14,403 decisions with all
+invariants passing. Control won22/32 versus treatment24/32, with three
+treatment-only wins and one control-only win. This supports the retained-root
+compute-saving candidate at this bounded gate, but does not promote a default,
+establish universal safety, or claim action equivalence. No expensive shadow
+10k searches were collected. See [ledger §280](../../experiments/ledger-06.md),
+[N16 packet](../../experiments/evidence/silver_retained_adaptive_pair16_2026-09-16/README.md),
+and [N32 packet](../../experiments/evidence/silver_retained_adaptive_pair32_2026-09-16/README.md).
 
 ## Current priority / active line
 
