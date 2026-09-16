@@ -8618,3 +8618,42 @@ result; runtime defaults, models, gameplay, and production budgets are
 unchanged.
 
 [Evidence packet, raw CSV, analysis and provenance](evidence/combat_budget_diag_2026-09-15/README.md).
+
+
+## §280 — Retained-root adaptive Silver prospective A/B smoke (2026-09-16)
+
+The frozen treatment keeps fresh roots and one-action/forced roots at exact
+10,000 Silver simulations. A retained non-forced root first runs 500 new
+simulations and stops only when `top_two_visit_gap_share >=
+0.2932885906040268`; otherwise that same private search continues to 10,000.
+This is an opt-in policy under `STS_SILVER_ADAPTIVE=1` and
+`STS_SILVER_ADAPTIVE_RETAINED_ONLY=1`; the ordinary path remains unchanged.
+The implementation was frozen at `ec3a9266966406c130aff18c0077f69bf4df83c9`.
+
+Fresh paired seeds64--79 used Ironclad A0, fair RNG, exact-root budgets,
+allocated reuse cap131072, native OOC, adaptive CTM off, no OOC MCTS, and
+sequential control then treatment arms using the same executable. Flat exact
+10k control won10/16 versus treatment11/16. Mean final floor was48.25 versus
+47.25 and mean final HP36.00 versus39.06. Outer wall time was113.05s versus
+66.71s. Control added70,160,000 Silver simulations across7,016 decisions;
+treatment added41,362,000 across6,800 decisions, a 41.05% simulation reduction
+and 40.99% wall reduction.
+
+Treatment telemetry recorded391 fresh roots,6,409 retained roots, and255
+one-action/forced roots. It stopped2,804 decisions at500 (41.24% of all
+treatment decisions,42.84% of non-forced decisions,43.75% of retained roots);
+all 2,804 stops had inherited visits, more than one legal action, and a gap at
+or above threshold. Fresh and forced roots continued to10k. Exact/fallback
+reroot rows were4425/2375 in treatment versus4556/2460 in control. The paired
+outcomes had five win disagreements, five floor disagreements, and thirteen
+HP disagreements. No expensive shadow10k comparison was collected.
+
+Classification: **`PER_DECISION_SIGNAL_PROMISING`** — retained-root adaptive
+search only; fresh-root early stopping remains rejected. This N16 smoke is
+mechanical/compute evidence, not a quality qualification or whole-fight action
+equivalence claim. It supports the planned fresh N32 prospective qualification;
+it does not promote the policy or justify further offline threshold tuning.
+The earlier §279 checkpoints remain local continuation comparisons and are not
+pooled with this live-policy result. Knowledge impact: current research status
+and experiment evidence updated; normal Silver defaults remain unchanged.
+[Evidence packet and raw traces](evidence/silver_retained_adaptive_pair16_2026-09-16/README.md).

@@ -1,6 +1,7 @@
 # Current research status
 
-Last verified: 2026-09-15 for final near-full support/native qualification,
+Last verified: 2026-09-16 for retained-root adaptive Silver prospective N16,
+final near-full support/native qualification,
 paired old/new-V2 OOC MCTS gameplay, and shared transition-encoder distillation;
 2026-09-14 for exact supported-v1 RNG continuation
 and the stochastic signed-HP distribution, expanded-support offline composition,
@@ -50,37 +51,32 @@ and require fresh matched quality/resource evidence before promotion.
 See [ledger §265](../../experiments/ledger-06.md) and
 [paired packet](../../experiments/evidence/silver_cap_pair10k_16_2026-09-15/README.md).
 
-## Paired combat-budget diagnostic
+## Retained-root adaptive Silver search
 
-The bounded predictive diagnostic is **`NO_USEFUL_SIGNAL`**. Sixteen fresh
-seeds (64–79) ran fair Ironclad A0 with one exact 10,000-simulation Silver
-search per combat. Each opted-in root added 500 simulations to its current
-private search state, then continued that same tree for the remaining 9,500;
-the checkpoint was not an independent fresh 500-simulation search. Adaptive
-budgets, convergence stops, keys, and OOC MCTS were disabled, with the current
-allocated 131,072-cap configuration held fixed. The 500-simulation semantic
-action agreed with the final action in 78.82% of decision rows, but only 35 of
-398 fights were stable across every decision on the already-generated 10k
-trajectory. On the held-out eight seeds, all first-decision root summaries had
-AUROC below 0.53 for separating fights that later changed action from fights
-that stayed stable, and no threshold met the preregistered ≤5% false-stop
-constraint with nonzero useful coverage. Unstable fights occurred in hallway,
-elite, boss, and other categories, so no category-only exception is
-supported.
+The earlier bounded checkpoint diagnostic remains **`NO_USEFUL_SIGNAL`** for a
+whole-fight or fresh-root early-stop policy. Its 500-simulation observations
+were continuation checkpoints on a 10k-generated trajectory, not independent
+fresh searches, and cannot establish deployed-policy equivalence. The
+fresh-root subgroup is rejected for early stopping.
 
-This is a local continuation diagnostic, not a proof that a deployed fight
-could stop at 500 and reproduce later decisions: an early stop would retain a
-different search tree and search-RNG state before subsequent roots. Focused
-split-versus-uninterrupted checks passed for ordinary, retained-root, and
-sequential-selection fixtures, establishing the instrumentation comparison
-but not whole-fight policy equivalence.
+A separate frozen prospective policy now has a bounded live smoke result:
+**`PER_DECISION_SIGNAL_PROMISING`** for retained-root adaptive search only.
+Fresh roots and one-action/forced roots run exact 10k; retained non-forced
+roots run 500 new simulations and stop when the top-two visit-gap share is at
+least `0.2932885906040268`. With fresh paired seeds 64–79, fair Ironclad A0,
+exact-root budgets, allocated cap 131,072, native OOC, CTM adaptive budgeting
+off, and OOC MCTS off, the treatment reduced added Silver simulations by
+41.05% and wall time by 40.99% relative to flat 10k. It stopped 2,804/6,800
+live decisions, with all stops satisfying retained/non-forced/threshold
+invariants. Outcomes were 10/16 wins for control versus 11/16 for treatment;
+the five win disagreements and N16 size are descriptive, not a quality gate.
 
-Do not enable an adaptive allocator, early-stop rule, or NN from this packet.
-The diagnostic implementation remains an opt-in bridge capability and the
-ordinary Silver path is unchanged when its environment variable is unset. Stop
-this line unless a separately justified label or regime changes the question.
-See [ledger §279](../../experiments/ledger-06.md) and the
-[paired diagnostic packet](../../experiments/evidence/combat_budget_diag_2026-09-15/README.md).
+This is enough mechanical and compute evidence to run the planned fresh N32
+prospective qualification, but not to promote the policy or claim action
+equivalence. The live qualification should judge compute against gameplay and
+retain reroot/inherited-visit telemetry; it should not add expensive shadow
+10k searches that defeat the treatment. See [ledger §280](../../experiments/ledger-06.md)
+and the [N16 packet](../../experiments/evidence/silver_retained_adaptive_pair16_2026-09-16/README.md).
 
 ## Current priority / active line
 
