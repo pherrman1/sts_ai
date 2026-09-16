@@ -133,7 +133,7 @@ def models(parent):
     return torch.nn.ModuleDict(nets)
 
 
-def losses(nets,cache,ambiguous,records,ids,ending=None,maximum=None,allow_zero=False):
+def losses(nets,cache,ambiguous,records,ids,ending=None,maximum=None,allow_zero=False,return_details=False):
     ending=cache['trueHp'][ids] if ending is None else ending;maximum=cache['trueMax'][ids] if maximum is None else maximum
     owners=[];traces=[];weights=[];data=[]
     for owner,i in enumerate(ids):
@@ -148,11 +148,12 @@ def losses(nets,cache,ambiguous,records,ids,ending=None,maximum=None,allow_zero=
     signed=ending[owners]-cache['preHp'][rows]-c.CLASSES[0];fraction=ending[owners]/maximum[owners]
     outputs=nets['relic'](tensor(cache['z'][rows]),tensor(signed),tensor(fraction.astype(np.float32)),tensor(masks),tensor(cache['escaped'][rows].astype(np.float32)))
     logmass=tensor(np.zeros(len(rows),np.float32))
-    component_logs={}
+    component_logs={};component_probabilities={}
     for j,name in enumerate(c.TRAINED_GROUPS):
-        lp=torch.log_softmax(outputs[name],-1);compatible=tensor(cache['compatible_'+name][rows]);observed=tensor(cache['observed'][rows,j])
+        probabilities=torch.softmax(outputs[name],-1)
+        lp=torch.log(probabilities);compatible=tensor(cache['compatible_'+name][rows]);observed=tensor(cache['observed'][rows,j])
         value=torch.logsumexp(lp.masked_fill(~compatible,-torch.inf),-1)*observed
-        logmass=logmass+value;component_logs[name]=value
+        logmass=logmass+value;component_logs[name]=value;component_probabilities[name]=probabilities
     hp=np.stack(((ending[owners]-cache['preHp'][rows])/160,fraction,(maximum[owners]-cache['preMax'][rows])/10),-1).astype(np.float32)
     bits=c.potion.BITS[masks].astype(np.float32)
     event_log={}
@@ -184,6 +185,10 @@ def losses(nets,cache,ambiguous,records,ids,ending=None,maximum=None,allow_zero=
     mass=logmass.new_zeros(len(ids)).index_add(0,tensor(owners),tensor(np.asarray(weights,np.float32))*logmass.exp())
     count=cache['observed'][ids].sum(-1)+cache['writhing'][ids]+cache['dagger'][ids]+np.asarray([i in records for i in ids])
     if not torch.isfinite(mass).all() or (mass<0).any() or ((mass<=0).any() and not allow_zero):raise ValueError('zero/nonfinite exact downstream joint target mass')
+    if return_details:
+        return dict(owners=owners,weights=np.asarray(weights,np.float32),component_logs=component_logs,
+                    component_probabilities=component_probabilities,event_logs=event_log,gold_log=gold_log,
+                    joint_log=logmass,counts=count)
     return -mass.log()/tensor(count.clip(min=1).astype(np.float32))
 
 
