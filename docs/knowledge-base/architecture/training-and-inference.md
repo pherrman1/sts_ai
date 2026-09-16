@@ -345,10 +345,15 @@ model-visible input. The executable benchmarks actual supported
 legal siblings. It also measures full-search rollout calls and wall time by
 input state in the same guarded source run, so the break-even estimate uses the
 actual supported leaf denominator rather than a corpus-only proxy.
-Neither corpus conversion nor benchmarking changes training, gameplay, model
-loading, search selection, or utility semantics. Any cost classification is a
-hardware/configuration-specific feasibility diagnostic, not runtime
-qualification.
+The clean baseline must have corpus/VNet observers unset, and the candidate
+timing must include the live-to-Silver conversion or explicitly target a
+future direct-Silver extractor. The corrected 2026-09-16 measurement included
+that conversion and found the candidate slower than clean Silver rollouts at
+both 100-simulation and 1k operating points; the earlier observer-contaminated
+feasibility estimate is withdrawn. Neither corpus conversion nor benchmarking
+changes training, gameplay, model loading, search selection, or utility
+semantics. Any cost classification is a hardware/configuration-specific
+feasibility diagnostic, not runtime qualification.
 
 ### Combat schema
 

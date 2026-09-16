@@ -8969,25 +8969,29 @@ effective-gold and max-HP scalars (1,768 state inputs). Hidden pending-intent
 details are redacted before feature extraction. No training, model loading,
 gameplay, action selection, utility, RNG, or runtime default changed.
 
-The final corrected implementation was `71d669a5779e3180f679dfd15301c6f371d9a11b`.
-Its guarded one-thread source run (seeds 100--107) produced 3,334 decisions,
-333,400 simulations, 315,816 rollout calls, 145.152346 seconds of summed
-search wall, and 76.768818 seconds of summed rollout wall. Full telemetry
-classified 290,326 calls (91.9288%) and 71.752385 seconds of rollout wall
-(93.4655%) as `PLAYER_NORMAL`; the call-weighted mean was 247.144 microseconds.
-The sampled corpus had 116,696 supported leaves, but was not used as the full
-denominator.
+The corrected benchmark boundary was committed at
+`d7897477a45e7112e1fe21d7484edc1cd9adfbfc`. The prior corpus-producing run is
+retained only for schema/examples. Clean one-thread Silver timing with no
+corpus or VNet observer measured 290,326 `PLAYER_NORMAL` calls at 3.083
+microseconds mean for 100 simulations (seeds 100--107), and 694,480 calls at
+2.981 microseconds mean for the 1k operating point (seeds 108--109).
 
-The native one-thread fixed-weight benchmark measured actual supported leaves
-at 123.434/119.679/141.623/160.248 microseconds (mean/median/p90/p99), with
-3,200 calls, 13,000 action scores, and an observed checksum. Replacing the
-full-run `PLAYER_NORMAL` rollout calls gives an estimated 109.236043-second
-search, 24.7439% end-to-end reduction, and 1.3288x speedup. The bounded
-engineering classification is **`PV_COST_FEASIBLE`**. This does not establish
-predictor quality, hidden-state sufficiency, or gameplay benefit.
+The conversion-inclusive native one-thread benchmark measured actual
+supported leaves at 143.763/143.739/150.833/165.010 microseconds
+(mean/median/p90/p99), with 3,200 calls, 13,000 action scores, and an observed
+checksum. Replacing clean full-run `PLAYER_NORMAL` rollouts gives an estimated
+42.134786-second search versus 1.291608 seconds at 100 simulations
+(-3,162.1959% reduction, 0.0307x speedup), and 101.191794 seconds versus
+3.421245 seconds at 1k (-2,857.7473% reduction, 0.0338x speedup).
+The corrected bounded engineering classification is
+**`PV_COST_NOT_FEASIBLE_CLEAN_BASELINE`**. The earlier
+`PV_COST_FEASIBLE` result is withdrawn because its baseline included
+corpus-observer work.
 
 The Phase-A packet records the separate parent-policy/leaf-value schemas,
-root effective-gold/max-HP input scalars, exact arithmetic, executable/source/
-benchmark/example hashes, raw timing-log hash, and CPU identity.
+root effective-gold/max-HP input scalars, clean and observer-enabled run
+boundaries, exact arithmetic, executable/source/benchmark/example hashes, raw
+timing-log hashes, and CPU identity. This does not establish predictor quality,
+hidden-state sufficiency, or gameplay benefit.
 
 **Evidence:** [Phase-A packet](evidence/silver_policy_value_phase_a_2026-09-16.md).
