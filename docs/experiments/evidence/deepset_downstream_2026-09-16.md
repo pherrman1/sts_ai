@@ -4,7 +4,7 @@ Decision: **`DEEPSET_DOWNSTREAM_GO`**.
 
 This experiment replaced only the downstream state input with the frozen qualified 64-dimensional DeepSets representation and retrained the existing downstream heads with the reference recipe. The DeepSets encoder, maxHP/HP heads and HP delta embedding were not trained; potion representation, traces, labels, masks, support and native target helpers were unchanged.
 
-Baseline: `066264dc25bf2046aecd5ca7a94a8e82d5031e7b`; implementation SHA: `e036a32af068e8a99cd3c3edbfe1aeb35fdab58c`; final head SHA: `e036a32af068e8a99cd3c3edbfe1aeb35fdab58c`.
+Baseline: `066264dc25bf2046aecd5ca7a94a8e82d5031e7b`; implementation SHA: `e036a32af068e8a99cd3c3edbfe1aeb35fdab58c`; final head SHA: `1bc53ea33588f107804347ffd871ec34a03f37fd`.
 
 TRAIN: 150404 rows / 18286 sources. VALIDATION: 17950 downstream-eligible rows. TEST inference/encoding rows: 0.
 

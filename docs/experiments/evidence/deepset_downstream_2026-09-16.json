@@ -108,7 +108,7 @@
     "The DeepSets normalization population is 393677 TRAIN rows, while the downstream-head fit uses the existing downstream-eligible TRAIN population of 150404 rows; both are recorded separately and no population was substituted silently."
   ],
   "failures": [],
-  "finalHeadSha": "e036a32af068e8a99cd3c3edbfe1aeb35fdab58c",
+  "finalHeadSha": "1bc53ea33588f107804347ffd871ec34a03f37fd",
   "finiteAndLegal": true,
   "gates": {
     "importantSliceNllRelativeMax": 0.05,
