@@ -191,7 +191,7 @@ def _prepare(args):
     models.hp_net.eval().requires_grad_(False)
     if max_hash != EXPECTED_TEACHERS["maxHP"] or hp_hash != EXPECTED_TEACHERS["HP"]:
         raise ValueError("teacher checkpoint hash differs")
-    return cache, arrays, models, outputs, train, validation, counts, validity, ids, meta, (max_fit, hp_fit)
+    return cache, arrays, models, outputs, train, validation, counts, validity, ids, meta, (max_fit, hp_fit), max_hash, hp_hash
 
 
 def _evaluate(prob_max, prob_hp, cache, models, ids):
@@ -214,7 +214,7 @@ def run(args):
     torch.manual_seed(RECIPE["seed"])
     torch.cuda.manual_seed_all(RECIPE["seed"])
     control, control_sha = _load_control(Path(args.control_dir))
-    cache, arrays, teachers, teacher_outputs, train, validation, counts, teacher_validity, ids, meta, teacher_fits = _prepare(args)
+    cache, arrays, teachers, teacher_outputs, train, validation, counts, teacher_validity, ids, meta, teacher_fits, max_hash, hp_hash = _prepare(args)
     scalar_mean = arrays["globals_continuous"][train].mean(0)
     scalar_std = arrays["globals_continuous"][train].std(0)
     student = _student_model(torch, scalar_mean, scalar_std, len(teachers.delta_values), teachers.classes, RECIPE["seed"]).cuda()
@@ -350,6 +350,82 @@ def run(args):
     print(json.dumps(dict(decision=decision, selectedEpoch=selected, gates=gates)), flush=True)
 
 
+def finalize_existing(args):
+    """Complete a fit whose selected checkpoint was written before receipt assembly."""
+    if not torch.cuda.is_available():
+        raise ValueError("CUDA required by fixed recipe")
+    output = Path(args.output_dir)
+    best_path = output / "best_epoch.pt"
+    if not output.is_dir() or not best_path.is_file() or (output / "results.json").exists():
+        raise ValueError("finalize requires an existing incomplete fit directory")
+    control, control_sha = _load_control(Path(args.control_dir))
+    cache, arrays, teachers, teacher_outputs, train, validation, counts, teacher_validity, ids, meta, teacher_fits, max_hash, hp_hash = _prepare(args)
+    scalar_mean = arrays["globals_continuous"][train].mean(0)
+    scalar_std = arrays["globals_continuous"][train].std(0)
+    student = _student_model(torch, scalar_mean, scalar_std, len(teachers.delta_values), teachers.classes, RECIPE["seed"]).cuda()
+    student.train().requires_grad_(True)
+    initial_student_hash = reference.state_hash(student)
+    max_head = torch.nn.Linear(64, len(teachers.delta_values)).cuda()
+    torch.manual_seed(RECIPE["seed"]); torch.cuda.manual_seed_all(RECIPE["seed"]); max_head.reset_parameters()
+    initial_max_hash = reference.state_hash(max_head)
+    saved = torch.load(best_path, map_location="cuda", weights_only=False)
+    student.load_state_dict(saved["stateDict"]); max_head.load_state_dict(saved["maxHpHeadStateDict"])
+    selected = int(saved["epoch"])
+    teacher_max = teacher_outputs["maxHP"]; teacher_hp = teacher_outputs["HP"]
+    pre = cache["preHp"].astype(np.int64); maximum = cache["trueMax"].astype(np.int64)
+
+    def score(score_ids):
+        student.eval(); max_out, hp_out = [], []; total_max = total_hp = 0.0
+        with torch.inference_mode():
+            for start in range(0, len(score_ids), 1024):
+                local = score_ids[start:start + 1024]
+                inputs = c.base._torch_inputs(arrays, cache["ids"][local], "cuda", torch, trim_padding=True)
+                with c.attention_backend(torch, False):
+                    z = student.encoder(*inputs)
+                    logits_max = max_head(z).float()
+                    logits_hp = student.hp(torch.cat((z, student.delta_embedding(torch.as_tensor(cache["delta"][local], device="cuda"))), -1)).float()
+                legal = stochastic_hp.legal_support(teachers.classes, pre[local], maximum[local])
+                logits_hp = logits_hp.masked_fill(~torch.as_tensor(legal, device="cuda"), -torch.inf)
+                tm = torch.as_tensor(np.array(teacher_max[local]), device="cuda")
+                th = torch.as_tensor(np.array(teacher_hp[local]), device="cuda")
+                total_max += float(reference.torch_kl(tm, logits_max)) * len(local)
+                total_hp += float(reference.torch_kl(th, logits_hp)) * len(local)
+                max_out.append(torch.softmax(logits_max, -1).cpu().numpy())
+                hp_out.append(torch.softmax(logits_hp, -1).cpu().numpy())
+        return np.concatenate(max_out), np.concatenate(hp_out), total_max / len(score_ids), total_hp / len(score_ids)
+
+    student_max, student_hp, max_kl, hp_kl = score(validation)
+    legal = stochastic_hp.legal_support(teachers.classes, pre[validation], maximum[validation])
+    validity = dict(maxHpNormalizationError=float(np.max(np.abs(student_max.sum(1) - 1))), hpNormalizationError=float(np.max(np.abs(student_hp.sum(1) - 1))), hpUnsupportedProbability=float(np.max(np.where(legal, 0, student_hp))), allFinite=bool(np.isfinite(student_max).all() and np.isfinite(student_hp).all()))
+    if not validity["allFinite"] or max(validity["maxHpNormalizationError"], validity["hpNormalizationError"]) > 1e-6 or validity["hpUnsupportedProbability"] != 0:
+        raise ValueError("student probability validity failed")
+    teacher_metrics = _evaluate(teacher_max[validation], teacher_hp[validation], cache, teachers, validation)
+    student_metrics = _evaluate(student_max, student_hp, cache, teachers, validation)
+    decision, gates = reference.classify(teacher_metrics, student_metrics)
+    history = json.loads((output / "progress.json").read_text())["history"]
+    checkpoint = output / "student.pt"
+    torch.save(dict(stateDict=saved["stateDict"], maxHpHeadStateDict=saved["maxHpHeadStateDict"], recipe=RECIPE, experimentSha=args.experiment_sha, selectedEpoch=selected), checkpoint)
+    result = dict(
+        baselineSha=args.baseline_sha, experimentSha=args.experiment_sha, recipe=RECIPE,
+        control=dict(path=str(Path(args.control_dir).resolve()), resultSha256=control_sha, experimentSha=control["experimentSha"], bestCheckpointSha256=control["bestCheckpointSha256"], selectedEpoch=control["selectedEpoch"]),
+        parameterCount=dict(encoder=parameter_count(student.encoder), studentWithoutMaxHpHead=parameter_count(student), maxHpHead=parameter_count(max_head), complete=parameter_count(student) + parameter_count(max_head)),
+        scalarNormalization=dict(mean=scalar_mean.tolist(), std=scalar_std.tolist()),
+        teacherCheckpoints={"maxHP": max_hash, "HP": hp_hash}, counts=counts,
+        provenance=dict(sourceHashes=meta["hashes"], preparationCacheSha256=meta["cacheSha256"], rowIdsSha256=digest_array(cache["ids"][ids]), sourceGroupsSha256=digest_array(cache["source"][ids]), teacherOutputs=EXPECTED_TEACHER_OUTPUTS, teacherValidity=teacher_validity, teacherParametersFrozen=True, teacherCacheReused=True),
+        testInferenceRows=0, testMetricsComputed=False, validationInGradientUpdates=False,
+        initialStudentSha256=initial_student_hash, initialMaxHpHeadSha256=initial_max_hash,
+        history=history, selectedEpoch=selected, studentToTeacherKl={"maxHP": max_kl, "HP": hp_kl},
+        specialistTeachers=teacher_metrics, deepSetsStudent=student_metrics, sharedAttentionControl=control["student"],
+        gates=gates, validity=validity, skippedUpdates=int(json.loads((output / "progress.json").read_text())["skippedUpdates"]),
+        overflowEventsSha256=c.base.sha256(output / "overflow-events.jsonl"), overflowHandling=RECIPE["overflowHandling"],
+        trainingSeconds=float(history[-1]["seconds"]), checkpointSha256=c.base.sha256(checkpoint), decision=decision,
+    )
+    c.base.json_dump(output / "results.json", result)
+    np.savez_compressed(output / "validation_predictions.npz", rowIds=cache["ids"][validation], sourceGroups=cache["source"][validation], deltaValues=teachers.delta_values, classes=teachers.classes, studentMaxHP=student_max, studentHP=student_hp)
+    c.base.json_dump(output / "artifact-hashes.json", {p.name: c.base.sha256(p) for p in output.iterdir() if p.is_file() and p.name != "artifact-hashes.json"})
+    print(json.dumps(dict(decision=decision, selectedEpoch=selected, gates=gates)), flush=True)
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--artifact-root", required=True)
@@ -358,4 +434,9 @@ if __name__ == "__main__":
     parser.add_argument("--output-dir", required=True)
     parser.add_argument("--baseline-sha", required=True)
     parser.add_argument("--experiment-sha", required=True)
-    run(parser.parse_args())
+    parser.add_argument("--finalize-existing", action="store_true")
+    parsed = parser.parse_args()
+    if parsed.finalize_existing:
+        finalize_existing(parsed)
+    else:
+        run(parsed)
