@@ -9134,3 +9134,47 @@ evidence updated.
   defaults remain unchanged.
 
 [Corrected evidence packet and machine-readable receipt](evidence/deepset_downstream_2026-09-16.md).
+
+## §289 — Frozen qualified DeepSets representation for potion decoding (2026-09-16)
+
+- **Question and baseline:** Can the qualified frozen PR #205 DeepSets state
+  representation replace the dedicated potion Attention encoder when the
+  existing potion decoder is retrained for that representation? The current
+  `main` baseline was `b0704c755a78fc139c6859781ce899c230919a44`; the final
+  screen implementation was `207db265c41badab848fe3caabe4ab2d9b47de1a`.
+- **Intervention/provenance:** Only the state representation supplied to the
+  potion decoder changed. The corrected DeepSets checkpoint and receipt were
+  `bee6800d…c3003dc663` and `83b2482e…5074c769`; the reused TRAIN+VALIDATION
+  representation was `9232027d…d37352af`, with explicit row-ID binding and
+  zero TEST rows. The dedicated potion component was
+  `ae1a1411…15a0f1db`; the potion preparation cache contract was
+  `e1c25f27…a251d`; source SHA was `1c31b7e…9a8955dd`.
+- **Protocol:** The exact 64-action native potion trajectory DAG, observed
+  generation-body prior, legality masks, Brew recursion, Smoke handling and
+  teacher-forced metrics were reused. A and B used fresh byte-identical
+  decoder initialization, seed `20260912`, FP32, AdamW, batch 512, 12 epochs,
+  learning rate `0.001`, weight decay `0.0001`, clip `1.0`, fixed identical
+  batch orders, and earliest strict minimum VALIDATION trajectory NLL. Both
+  encoders and the PR #205 maxHP/HP upstream modules were frozen. TRAIN was
+  393,677 rows / 19,986 sources; VALIDATION was 48,590 / 2,496.
+- **Result:** Both arms selected epoch 12. Dedicated A validation trajectory
+  NLL was `0.506803228`; frozen DeepSets B was `0.537569223`, a `+6.0706%`
+  regression above the fixed `+2%` gate. No-change Brier delta was `+0.00723277`
+  and passed, but normal action-mode accuracy dropped `1.2154` percentage
+  points, beyond the `0.01` gate. Brew, Smoke and trajectory-special slices
+  regressed `+2.7248%`, `+4.9113%` and `+3.0868%`; recursive Brew regressed
+  `+19.1859%`, an obvious slice regression. Illegal probability remained
+  exactly zero and maximum normalization error was `1.9914e-7`.
+- **Decision:** **`DEEPSET_POTION_REJECTED`** after
+  `TEACHER_FORCED_REJECTED`. The required ancestral Stage B was not run. This
+  rejects this exact frozen DeepSets representation plus decoder recipe only;
+  it does not reinterpret the prior Attention rejection, justify encoder
+  fine-tuning, or establish intrinsic information absence. No TEST scoring,
+  runtime/export, C++, gameplay, OOC MCTS or default promotion occurred.
+  **Knowledge impact:** current research status and experiment evidence only;
+  qualified encoders and executable defaults remain unchanged.
+- **Evidence:** [screen report](evidence/deepset_potion_screen_2026-09-16.md),
+  [machine-readable receipt](evidence/deepset_potion_screen_2026-09-16.json),
+  and external raw receipt
+  `/home/philippherrmann/sts_sweep/runs/deepset-potion-screen-20260916/results.json`
+  (SHA256 `1ba8b785…7dcad107ab45363`).

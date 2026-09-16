@@ -47,7 +47,7 @@ under [`docs/experiments/`](docs/experiments/). Each shard is a frozen slice
 | [`ledger-03.md`](docs/experiments/ledger-03.md) | §67 Checkpoint-oracle distilled OOC action NN through §96 Wave A1/B sweep Q_win | FROZEN |
 | [`ledger-04.md`](docs/experiments/ledger-04.md) | §97 Combat value net under the gate stack through §116 Phase 3 Stage 2 TERM_WIN | FROZEN |
 | [`ledger-05.md`](docs/experiments/ledger-05.md) | §117 Searcher2 rollout-usage diagnostic through §135 Leaf-state diagnostic infrastructure | FROZEN |
-| [`ledger-06.md`](docs/experiments/ledger-06.md) | §135a Leaf-state diagnostics gate-matching through the 2026-09-16 §285/§285a entries, including shared HP downstream compatibility and sequential Silver stopping | **CURRENT** — append here |
+| [`ledger-06.md`](docs/experiments/ledger-06.md) | §135a Leaf-state diagnostics gate-matching through the 2026-09-16 §289 entry, including shared HP downstream compatibility, sequential Silver stopping, and DeepSets potion decoding | **CURRENT** — append here |
 
 ## Appending new experiments
 

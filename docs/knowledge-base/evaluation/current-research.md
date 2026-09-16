@@ -616,6 +616,34 @@ potion encoder and all qualified current components remain unchanged. See
 [ledger-06 §282](../../experiments/ledger-06.md) and the
 [screen evidence](../../experiments/evidence/shared_potion_encoder_screen_2026-09-16.md).
 
+### Qualified DeepSets representation for potion decoding
+
+The sequential frozen DeepSets substitution screen is also
+**`DEEPSET_POTION_REJECTED`**. The corrected qualified PR #205 DeepSets
+representation was frozen, the dedicated potion encoder was used only for the
+control representation, and both arms trained fresh byte-identically
+initialized potion decoders with the exact existing 64-action trajectory DAG
+and fixed 12-epoch decoder-only recipe. This is a distinct result from the
+earlier shared-Attention screen.
+
+On the exact final-union winning TRAIN/VALIDATION population, selected epoch
+12 validation trajectory NLL was 0.506803228 for the dedicated control and
+0.537569223 for DeepSets (**+6.0706%**, above the fixed +2% gate). Normal
+action-mode accuracy dropped 1.2154 percentage points, beyond the 0.01 gate;
+no-change Brier remained within its limit. Brew, Smoke and trajectory-special
+NLL changes were +2.7248%, +4.9113% and +3.0868%, while recursive Brew
+regressed **+19.1859%**, an obvious slice regression. Legal probability was
+exactly zero and normalization remained within tolerance.
+
+The Stage-A teacher-forced gate therefore stopped the planned 32-draw
+ancestral stage. This rejects only the exact frozen DeepSets representation
+plus current potion-decoder recipe. It does not justify fine-tuning DeepSets,
+reinterpret the Attention result, claim intrinsic information absence, or
+qualify potion sharing for runtime. No TEST, export, C++, gameplay, OOC MCTS
+or default-promotion work occurred. See
+[ledger-06 §289](../../experiments/ledger-06.md) and the
+[DeepSets potion screen evidence](../../experiments/evidence/deepset_potion_screen_2026-09-16.md).
+
 ### Jointly adapted shared maxHP+HP+potion representation
 
 The requested follow-up is **`SHARED_TRANSITION_POTION_REJECTED`**. Starting

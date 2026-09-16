@@ -4,6 +4,7 @@ import numpy as np
 import torch
 
 from tools import combat_transition_shared_potion_encoder as screen
+from tools import combat_transition_surrogate as surrogate
 
 
 class SharedPotionEncoderScreenTests(unittest.TestCase):
@@ -49,6 +50,27 @@ class SharedPotionEncoderScreenTests(unittest.TestCase):
         )
         self.assertEqual(tuple(student.encoder.scalar_mean.shape), (width,))
         self.assertEqual(tuple(loaded_head.weight.shape), (len(delta_values), 64))
+
+    def test_candidate_upstream_loads_deepsets_checkpoint_with_frozen_heads(self):
+        width = len(screen.composed.base.CONTINUOUS_GLOBAL_FIELDS)
+        classes = np.arange(-2, 3, dtype=np.int64)
+        delta_values = np.arange(11, dtype=np.int64)
+        source = screen.stochastic_hp.new_model(
+            torch, np.zeros(width, np.float32), np.ones(width, np.float32),
+            len(delta_values), classes, screen.RECIPE["seed"]
+        )
+        source.encoder = surrogate.DeepSetsEncoder(
+            torch.nn, torch, np.zeros(width, np.float32), np.ones(width, np.float32)
+        ).net
+        head = torch.nn.Linear(64, len(delta_values))
+        student, loaded_head = screen.candidate_upstream(
+            {"stateDict": source.state_dict(), "maxHpHeadStateDict": head.state_dict()},
+            classes, delta_values, "cpu", representation="deepsets"
+        )
+        self.assertEqual(tuple(student.encoder.scalar_mean.shape), (width,))
+        self.assertEqual(tuple(loaded_head.weight.shape), (len(delta_values), 64))
+        self.assertTrue(all(not parameter.requires_grad for parameter in student.parameters()))
+        self.assertTrue(all(not parameter.requires_grad for parameter in loaded_head.parameters()))
 
 
 if __name__ == "__main__":
