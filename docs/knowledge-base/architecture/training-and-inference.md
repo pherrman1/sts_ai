@@ -318,13 +318,37 @@ as diagnostics. The untouched 25k-B parents compare the model with the exact
 current Silver root-edge ordering and the 1k-A, 10k-A, and 25k-A teachers. This
 pipeline is offline-only and does not install scores into Silver selection.
 
+### Phase-A policy/value cost diagnostic
+
+`apps/silver_policy_value_phase_a.cpp` is a bounded, diagnostic-only contract
+probe for a prospective `PLAYER_NORMAL` policy-plus-value input. It consumes
+an existing `silver_leaf_corpus_v1`, redacts interpreter/provenance fields (and
+latent intent details when intents are hidden), restores the visible wire
+through the live adapter, and emits exact pinned-Silver legal actions with
+semantic identities and the canonical 1,766-state-feature projection. The
+current policy layout is 1,780 features total: 1,766 state features plus 22
+action features. The output enumerates known projection omissions explicitly;
+it is not a claim that the canonical vector is a lossless representation of
+every visible wire field.
+
+The optional teacher label is the existing Silver terminal utility from
+`BattleSearcher::evaluateEndState`, including its current root-relative
+reference context and weights. The original root snapshot is marked
+teacher-only; it is not part of the model-visible input. The executable also
+runs a fixed-weight native CPU benchmark for `1766 -> 64 -> 64`, `64 -> 1`,
+and `[64,22] -> 32 -> 1`, encoding state once and scoring all legal siblings.
+Neither corpus conversion nor benchmarking changes training, gameplay, model
+loading, search selection, or utility semantics. Any cost classification is a
+hardware/configuration-specific feasibility diagnostic, not runtime
+qualification.
+
 ### Combat schema
 
 `src/sim/search/CombatValueNet.cpp` is the canonical producer:
 
 - `combatFeatureCount()` returns 1,766 state features;
 - `combatPolicyFeatureCount()` returns 1,780 total features;
-- the final 14 are produced by `combatPolicyFeatureNames` and
+- the final 22 are produced by `combatPolicyFeatureNames` and
   `combatFillActionFeatures`.
 
 State blocks are 26 base scalars, 24 powers, 128 relic flags, four 371-card zone

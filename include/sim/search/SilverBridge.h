@@ -455,6 +455,9 @@ struct SilverSearchTelemetry {
     std::int64_t rolloutNonTerminalStops = 0;
     std::int64_t rolloutActionCount = 0;
     std::int64_t rolloutTurnDelta = 0;
+    double searchWallMicros = 0.0;
+    double rolloutWallMicros = 0.0;
+    std::vector<double> rolloutLatencyMicros;
     std::int64_t rolloutSkippedVNet = 0;
     double rolloutUtilitySum = 0.0;
     double rolloutWinBonusSum = 0.0;
@@ -489,6 +492,11 @@ struct SilverSearchTelemetry {
         rolloutNonTerminalStops += other.rolloutNonTerminalStops;
         rolloutActionCount += other.rolloutActionCount;
         rolloutTurnDelta += other.rolloutTurnDelta;
+        searchWallMicros += other.searchWallMicros;
+        rolloutWallMicros += other.rolloutWallMicros;
+        rolloutLatencyMicros.insert(rolloutLatencyMicros.end(),
+                                    other.rolloutLatencyMicros.begin(),
+                                    other.rolloutLatencyMicros.end());
         rolloutSkippedVNet += other.rolloutSkippedVNet;
         rolloutUtilitySum += other.rolloutUtilitySum;
         rolloutWinBonusSum += other.rolloutWinBonusSum;

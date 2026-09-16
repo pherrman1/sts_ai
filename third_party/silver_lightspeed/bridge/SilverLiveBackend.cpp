@@ -802,6 +802,9 @@ std::vector<SilverPolicyFeatureRow> silverLiveParentPolicyFeaturesImpl(
     std::unordered_set<std::string> fingerprints;
     std::vector<SilverPolicyFeatureRow> rows;
     rows.reserve(semantics.size());
+    const int stateWidth = combatFeatureCount();
+    std::vector<float> stateFeatures(stateWidth);
+    combatExtractFeatures(live, stateFeatures.data());
     for (std::size_t i = 0; i < semantics.size(); ++i) {
         const auto fingerprint = silver_bridge::semanticActionFingerprint(semantics[i]);
         if (!fingerprints.insert(fingerprint).second)
@@ -813,7 +816,8 @@ std::vector<SilverPolicyFeatureRow> silverLiveParentPolicyFeaturesImpl(
         row.actionFingerprint = fingerprint;
         row.silverOrder = static_cast<int>(i);
         row.features.resize(combatPolicyFeatureCount());
-        combatExtractPolicyFeatures(live, resolved.action, row.features.data());
+        std::copy(stateFeatures.begin(), stateFeatures.end(), row.features.begin());
+        combatFillActionFeatures(live, resolved.action, row.features.data() + stateWidth);
         rows.push_back(std::move(row));
     }
     return rows;
@@ -1195,10 +1199,26 @@ void addTelemetry(const silver_bridge::SilverSearchTelemetry &telemetry) {
     g_silverLiveDiagnostics.chanceDepthSum += telemetry.chanceDepthSum;
     g_silverLiveDiagnostics.rolloutSkippedVNet += telemetry.rolloutSkippedVNet;
     g_silverLiveDiagnostics.rolloutCalls += telemetry.rolloutCalls;
+    g_silverLiveDiagnostics.searchWallMicros += telemetry.searchWallMicros;
+    g_silverLiveDiagnostics.rolloutWallMicros += telemetry.rolloutWallMicros;
+    g_silverLiveDiagnostics.rolloutLatencyMicros.insert(
+        g_silverLiveDiagnostics.rolloutLatencyMicros.end(),
+        telemetry.rolloutLatencyMicros.begin(), telemetry.rolloutLatencyMicros.end());
     for (std::size_t i = 0; i < telemetry.wideningSampled.size(); ++i) {
         g_silverLiveDiagnostics.wideningSampled += telemetry.wideningSampled[i];
         g_silverLiveDiagnostics.wideningCapped += telemetry.wideningCapped[i];
     }
+}
+
+double rolloutPercentile(const std::vector<double> &samples, double fraction) {
+    if (samples.empty()) return 0.0;
+    std::vector<double> sorted = samples;
+    std::sort(sorted.begin(), sorted.end());
+    const double position = fraction * static_cast<double>(sorted.size() - 1);
+    const auto lower = static_cast<std::size_t>(position);
+    const auto upper = std::min(sorted.size() - 1, lower + 1);
+    const double weight = position - static_cast<double>(lower);
+    return sorted[lower] * (1.0 - weight) + sorted[upper] * weight;
 }
 
 void addDecisionDiagnostic(const silver_bridge::SilverSearchDecisionDiagnostic &diagnostic) {
@@ -1618,6 +1638,15 @@ void runSilverCombat(ScumSearchAgent2 &agent, GameContext &gc, BattleContext &bc
                   << " chance_depth_sum=" << d.chanceDepthSum
                   << " rollout_skipped_vnet=" << d.rolloutSkippedVNet
                   << " rollout_calls=" << d.rolloutCalls
+                  << " search_wall_micros=" << d.searchWallMicros
+                  << " rollout_wall_micros=" << d.rolloutWallMicros
+                  << " rollout_fraction=" << (d.searchWallMicros > 0.0
+                      ? d.rolloutWallMicros / d.searchWallMicros : 0.0)
+                  << " rollout_mean_micros=" << (d.rolloutCalls > 0
+                      ? d.rolloutWallMicros / d.rolloutCalls : 0.0)
+                  << " rollout_p50_micros=" << rolloutPercentile(d.rolloutLatencyMicros, 0.50)
+                  << " rollout_p90_micros=" << rolloutPercentile(d.rolloutLatencyMicros, 0.90)
+                  << " rollout_p99_micros=" << rolloutPercentile(d.rolloutLatencyMicros, 0.99)
                   << " blend_eligible_leaves=" << d.blendEligibleLeaves
                   << " blend_invocations=" << d.blendInvocations
                   << " blend_depth_avoided=" << d.blendDepthAvoided

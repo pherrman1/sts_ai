@@ -8,7 +8,9 @@
 #include "sim/search/SilverBridge.h"
 
 #include <algorithm>
+#include <chrono>
 #include <cmath>
+#include <numeric>
 #include <sstream>
 #include <stdexcept>
 
@@ -512,6 +514,9 @@ SilverSearchTelemetry telemetry(const sts::search::SearchStats &stats) {
     out.rolloutNonTerminalStops = stats.rolloutNonTerminalStops;
     out.rolloutActionCount = stats.rolloutActionCount;
     out.rolloutTurnDelta = stats.rolloutTurnDelta;
+    out.rolloutLatencyMicros = stats.rolloutLatencyMicros;
+    out.rolloutWallMicros = std::accumulate(out.rolloutLatencyMicros.begin(),
+                                            out.rolloutLatencyMicros.end(), 0.0);
     out.rolloutSkippedVNet = stats.rolloutSkippedVNet;
     out.rolloutUtilitySum = stats.rolloutUtilitySum;
     out.rolloutWinBonusSum = stats.rolloutWinBonusSum;
@@ -552,6 +557,12 @@ SilverSearchTelemetry telemetryDelta(const sts::search::SearchStats &after,
     result.rolloutNonTerminalStops -= prior.rolloutNonTerminalStops;
     result.rolloutActionCount -= prior.rolloutActionCount;
     result.rolloutTurnDelta -= prior.rolloutTurnDelta;
+    const auto priorLatencyCount = std::min(prior.rolloutLatencyMicros.size(),
+                                            result.rolloutLatencyMicros.size());
+    result.rolloutLatencyMicros.erase(result.rolloutLatencyMicros.begin(),
+                                      result.rolloutLatencyMicros.begin() + priorLatencyCount);
+    result.rolloutWallMicros = std::accumulate(result.rolloutLatencyMicros.begin(),
+                                               result.rolloutLatencyMicros.end(), 0.0);
     result.rolloutSkippedVNet -= prior.rolloutSkippedVNet;
     result.rolloutUtilitySum -= prior.rolloutUtilitySum;
     result.rolloutWinBonusSum -= prior.rolloutWinBonusSum;
@@ -715,6 +726,7 @@ public:
     SilverSearchDecisionDiagnostic decisionDiagnostic {};
     bool collectDecisionDiagnostics = false;
     std::vector<SilverRootActionSummary> rootActionSummaries;
+    double lastSearchWallMicros = 0.0;
 
     void configure(const SilverSearchConfig &config) {
         searcher->explorationParameter = config.explorationParameter;
@@ -900,7 +912,12 @@ public:
         rootActionSummaries.clear();
         searchStatsBefore = searcher->stats;
         const auto before = searchStatsBefore.steps;
+        const auto searchStart = config.collectRolloutDiagnostics
+            ? std::chrono::steady_clock::now() : std::chrono::steady_clock::time_point{};
         searcher->search(config.simulationsPerDecision);
+        lastSearchWallMicros = config.collectRolloutDiagnostics
+            ? std::chrono::duration<double, std::micro>(
+                std::chrono::steady_clock::now() - searchStart).count() : 0.0;
         simulations = searcher->stats.steps - before;
         if (searcher->root == nullptr || searcher->root->edges.empty()) {
             if (collectDecisionDiagnostics) {
@@ -979,6 +996,7 @@ SilverDecisionResult runCurrentRootDecision(SilverSearchSession &session,
     result.rerootMissDiagnostic = session.rerootMissDiagnostic;
     const auto *best = session.searchAndChoose(config, result.simulations);
     result.telemetry = telemetryDelta(session.searcher->stats, session.searchStatsBefore);
+    result.telemetry.searchWallMicros = session.lastSearchWallMicros;
     if (config.collectRootActionSummaries) {
         result.rootActionSummaries = session.rootActionSummaries;
         result.rootUncertainty = summarizeSilverRoot(result.rootActionSummaries);
@@ -1282,6 +1300,7 @@ SilverDecisionResult continueSilverDecision(
         result.inheritedVisits = session.inheritedVisits;
         result.rerootMissDiagnostic = session.rerootMissDiagnostic;
         result.telemetry = telemetryDelta(session.searcher->stats, session.searchStatsBefore);
+        result.telemetry.searchWallMicros = session.lastSearchWallMicros;
         if (config.collectRootActionSummaries) {
             result.rootActionSummaries = session.rootActionSummaries;
             result.rootUncertainty = summarizeSilverRoot(result.rootActionSummaries);

@@ -611,12 +611,17 @@ double search::BattleSearcher::rolloutToEnd(BattleContext &bc, std::vector<Actio
                                              const Node *parent,
                                              const Action *incomingAction,
                                              int depth) {
+    const auto diagnosticStart = collectRolloutDiagnostics
+        ? std::chrono::steady_clock::now() : std::chrono::steady_clock::time_point{};
     const int maxTurns = rolloutMaxTurnsEnv();
     const int startTurn = bc.turn;
     const std::size_t actionStackStart = actionCount;
     if (isTerminalState(bc)) {
         const double evaluation = evaluateEndState(bc);
-        recordRolloutDiagnostic(bc, 0, 0);
+        recordRolloutDiagnostic(bc, 0, 0,
+            collectRolloutDiagnostics
+                ? std::chrono::duration<double, std::micro>(
+                    std::chrono::steady_clock::now() - diagnosticStart).count() : 0.0);
         return evaluation;
     }
     std::optional<silver_bridge::SilverLeafObservation> leafObservation;
@@ -636,7 +641,7 @@ double search::BattleSearcher::rolloutToEnd(BattleContext &bc, std::vector<Actio
             return leafObservation->directValue;
         }
     }
-    const auto rolloutStart = leafObservation && leafObservation->collectResult
+    const auto observationStart = leafObservation && leafObservation->collectResult
         ? std::chrono::steady_clock::now() : std::chrono::steady_clock::time_point{};
     while (!isTerminalState(bc)) {
         if (maxTurns > 0 && bc.turn - startTurn >= maxTurns) break;
@@ -689,7 +694,10 @@ double search::BattleSearcher::rolloutToEnd(BattleContext &bc, std::vector<Actio
         ? silver_bridge::silverBlendRolloutUtility(
             evaluation, leafObservation->vnetRawPrediction, leafObservation->blendAlpha)
         : evaluation;
-    recordRolloutDiagnostic(bc, rolloutActionCount, turnDelta);
+    recordRolloutDiagnostic(bc, rolloutActionCount, turnDelta,
+        collectRolloutDiagnostics
+            ? std::chrono::duration<double, std::micro>(
+                std::chrono::steady_clock::now() - diagnosticStart).count() : 0.0);
     if (leafObservation && leafObservation->collectResult) {
         leafObservation->phase = silver_bridge::SilverLeafObservationPhase::END;
         leafObservation->terminalOutcome = static_cast<int>(bc.outcome);
@@ -698,7 +706,7 @@ double search::BattleSearcher::rolloutToEnd(BattleContext &bc, std::vector<Actio
         leafObservation->rolloutActionCount = rolloutActionCount;
         leafObservation->rolloutTurnDelta = turnDelta;
         leafObservation->rolloutWallMicros = std::chrono::duration_cast<std::chrono::microseconds>(
-            std::chrono::steady_clock::now() - rolloutStart).count();
+            std::chrono::steady_clock::now() - observationStart).count();
         leafObservation->terminalHp = bc.player.curHp;
         leafObservation->terminalMaxHp = bc.player.maxHp;
         leafObservation->terminalTurn = bc.turn;
@@ -1059,7 +1067,8 @@ double search::BattleSearcher::evaluateEndState(const BattleContext &bc) const {
 
 void search::BattleSearcher::recordRolloutDiagnostic(const BattleContext &bc,
                                                       std::int64_t actionCount,
-                                                      std::int64_t turnDelta) {
+                                                      std::int64_t turnDelta,
+                                                      double wallMicros) {
     if (!collectRolloutDiagnostics) return;
 
     ++stats.rolloutCalls;
@@ -1068,6 +1077,7 @@ void search::BattleSearcher::recordRolloutDiagnostic(const BattleContext &bc,
     else ++stats.rolloutNonTerminalStops;
     stats.rolloutActionCount += actionCount;
     stats.rolloutTurnDelta += turnDelta;
+    stats.rolloutLatencyMicros.push_back(wallMicros);
 
     // Keep the exact linear terms used by evaluateEndState separate. This is
     // intentionally a diagnostic mirror of that function, not a second value

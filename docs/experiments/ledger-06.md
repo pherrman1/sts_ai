@@ -8956,3 +8956,28 @@ default-off. Knowledge impact: current research status and experiment
 evidence updated.
 
 [Evidence packet, raw traces, validation and provenance](evidence/silver_exact_visit_lock_pair_2026-09-16/README.md).
+
+## §287 — Silver policy/value Phase-A cost diagnostic (2026-09-16)
+
+The bounded Phase-A probe defines a diagnostic-only `PLAYER_NORMAL`
+policy-plus-value contract over the visible Silver wire. It preserves exact
+semantic legal siblings, uses the current 1,766 state and 22 action feature
+layout, retains the existing `BattleSearcher::evaluateEndState` utility and
+teacher-only original-root reference, and explicitly records lossy canonical
+projection fields. Hidden pending-intent details are redacted before feature
+extraction. No training, model loading, gameplay, action selection, utility,
+RNG, or runtime default changed.
+
+The 8-seed guarded source run produced 3,388 decisions, 340,600 simulations,
+321,411 rollout calls, 153.268 seconds search wall, 80.545 seconds rollout
+wall, and a 52.5516% rollout fraction. Across 140,639 sampled rollout rows,
+action count mean/median/p90/p99 was 13.633/11/28/45 and turn delta was
+2.446/2/5/9. The native Release one-thread fixed-weight benchmark measured
+the complete candidate call at 120.947/120.916/126.727/142.990 microseconds
+(mean/median/p90/p99), 8,268 calls/s and 32,556 action scores/s, with a mean
+of 3.9375 legal actions. Relative to the call-weighted rollout mean of
+250.598 microseconds, the bounded engineering classification is
+**`PV_COST_FEASIBLE`**. This does not establish predictor quality, hidden-state
+sufficiency, or gameplay benefit.
+
+**Evidence:** [Phase-A packet](evidence/silver_policy_value_phase_a_2026-09-16.md).

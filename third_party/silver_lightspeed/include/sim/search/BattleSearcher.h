@@ -90,6 +90,9 @@ namespace sts::search {
         std::int64_t rolloutNonTerminalStops = 0;
         std::int64_t rolloutActionCount = 0;
         std::int64_t rolloutTurnDelta = 0;
+        // Populated only when collectRolloutDiagnostics is enabled. Values are
+        // end-to-end rollout durations in fractional microseconds.
+        std::vector<double> rolloutLatencyMicros;
         std::int64_t rolloutSkippedVNet = 0;
         double rolloutUtilitySum = 0.0;
         double rolloutWinBonusSum = 0.0;
@@ -119,6 +122,9 @@ namespace sts::search {
             rolloutNonTerminalStops += o.rolloutNonTerminalStops;
             rolloutActionCount += o.rolloutActionCount;
             rolloutTurnDelta += o.rolloutTurnDelta;
+            rolloutLatencyMicros.insert(rolloutLatencyMicros.end(),
+                                        o.rolloutLatencyMicros.begin(),
+                                        o.rolloutLatencyMicros.end());
             rolloutSkippedVNet += o.rolloutSkippedVNet;
             rolloutUtilitySum += o.rolloutUtilitySum;
             rolloutWinBonusSum += o.rolloutWinBonusSum;
@@ -286,7 +292,7 @@ namespace sts::search {
         Edge* selectChanceOutcome(Node &chance);
         double evaluateEndState(const BattleContext &bc) const;
         void recordRolloutDiagnostic(const BattleContext &bc, std::int64_t actionCount,
-                                     std::int64_t turnDelta);
+                                     std::int64_t turnDelta, double wallMicros);
 
         void printSearchTree(std::ostream &os, int levels);
         void printSearchStack(std::ostream &os, bool skipLast=false);
