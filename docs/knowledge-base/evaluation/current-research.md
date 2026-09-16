@@ -101,6 +101,18 @@ the quality claim. No gameplay A/B, runtime stopping API, threshold tuning,
 or default change was made. See [ledger §285](../../experiments/ledger-06.md)
 and the [sequential stopping evidence packet](../../experiments/evidence/combat_sequential_stopping_2026-09-16/README.md).
 
+The default-off prospective implementation is now present behind
+`STS_SILVER_EXACT_VISIT_LOCK=1`. It uses the caller's maximum new-simulation
+budget and a 2.5/5/10/20/40/80/100% same-session polling schedule, with an
+additional zero-new-simulation retained-root check. Only retained roots with
+more than one complete legal root action are eligible; fresh and one-action /
+forced roots remain full-budget controls. The lock is the strict integer
+predicate `N1 - N2 > Bmax - Bused`; no `rho`, soft threshold, logistic model,
+or fixed 10k controller rule is used. Focused fixtures cover strict-boundary
+semantics, 1k/3.7k/10k caller budgets, zero-new-simulation accounting and
+sequential selection. Live gameplay impact remains unverified: no paired
+prospective gameplay result has been collected in this implementation change.
+
 ## Current priority / active line
 
 The corrected all-Act boss leaf has a mechanism pass and paired N8 smoke:

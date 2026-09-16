@@ -734,7 +734,7 @@ public:
     void beginAt(const sts::BattleContext &state, const SilverSearchConfig &config) {
         inheritedVisits = 0;
         rerootMissDiagnostic.clear();
-        collectDecisionDiagnostics = config.collectDecisionDiagnostics;
+        collectDecisionDiagnostics = config.collectDecisionDiagnostics || config.exactVisitLockEnabled;
         if (collectDecisionDiagnostics) {
             decisionDiagnostic = {};
             decisionDiagnostic.configuredCapMode = config.reuseCapMode;
@@ -847,6 +847,54 @@ public:
         return state;
     }
 
+    bool captureCurrentRootActionSummaries() {
+        rootActionSummaries.clear();
+        if (searcher == nullptr || searcher->root == nullptr
+                || searcher->root->state == nullptr || searcher->root->isRandomNode
+                || searcher->root->edges.empty()) {
+            return false;
+        }
+        rootActionSummaries.reserve(searcher->root->edges.size());
+        for (const auto &edge : searcher->root->edges) {
+            if (!edge.action.isValidAction(*searcher->root->state)) {
+                rootActionSummaries.clear();
+                return false;
+            }
+            SilverRootActionSummary summary;
+            summary.action = semanticFromAction(*searcher->root->state, edge.action);
+            summary.edgeVisits = edge.visitCount;
+            if (edge.node != nullptr) {
+                summary.childSimulations = edge.node->simulationCount;
+                summary.childVictoryCount = edge.node->victoryCount;
+                summary.childEvaluationSum = edge.node->evaluationSum;
+                if (edge.node->simulationCount > 0) {
+                    summary.selectionQValid = true;
+                    summary.selectionQ = edge.node->evaluationSum / edge.node->simulationCount;
+                }
+            }
+            rootActionSummaries.push_back(std::move(summary));
+        }
+        return true;
+    }
+
+    const sts::search::BattleSearcher::Edge *selectCurrentRoot() {
+        if (searcher == nullptr || searcher->root == nullptr
+                || searcher->root->edges.empty()) {
+            previousBest = nullptr;
+            return nullptr;
+        }
+        const sts::search::BattleSearcher::Edge *best = nullptr;
+        std::int32_t visits = -1;
+        for (const auto &edge : searcher->root->edges) {
+            if (edge.visitCount > visits) {
+                visits = edge.visitCount;
+                best = &edge;
+            }
+        }
+        previousBest = best;
+        return best;
+    }
+
     const sts::search::BattleSearcher::Edge *searchAndChoose(const SilverSearchConfig &config,
                                                                std::int64_t &simulations) {
         rootActionSummaries.clear();
@@ -864,27 +912,9 @@ public:
             }
             return nullptr;
         }
-        const sts::search::BattleSearcher::Edge *best = nullptr;
-        std::int32_t visits = -1;
-        for (const auto &edge : searcher->root->edges) {
-            if (edge.visitCount > visits) { visits = edge.visitCount; best = &edge; }
-            if (config.collectRootActionSummaries) {
-                SilverRootActionSummary summary;
-                summary.action = semanticFromAction(*searcher->root->state, edge.action);
-                summary.edgeVisits = edge.visitCount;
-                if (edge.node != nullptr) {
-                    summary.childSimulations = edge.node->simulationCount;
-                    summary.childVictoryCount = edge.node->victoryCount;
-                    summary.childEvaluationSum = edge.node->evaluationSum;
-                    if (edge.node->simulationCount > 0) {
-                        summary.selectionQValid = true;
-                        summary.selectionQ = edge.node->evaluationSum / edge.node->simulationCount;
-                    }
-                }
-                rootActionSummaries.push_back(std::move(summary));
-            }
-        }
-        previousBest = best;
+        if (config.collectRootActionSummaries)
+            captureCurrentRootActionSummaries();
+        const auto *best = selectCurrentRoot();
         if (collectDecisionDiagnostics) {
             decisionDiagnostic.allocatedNodesAfterSearch = static_cast<std::int64_t>(searcher->allNodes.size());
             decisionDiagnostic.activeNodesAfterSearch = static_cast<std::int64_t>(searcher->poolUsed);
@@ -935,6 +965,12 @@ SilverRootUncertainty summarizeSilverRoot(
     return result;
 }
 
+bool silverExactVisitLockHolds(const SilverRootUncertainty &root,
+                               std::int64_t maxBudget, std::int64_t used) {
+    if (!root.valid || maxBudget <= 0 || used < 0 || used > maxBudget) return false;
+    return root.topVisits - root.secondVisits > maxBudget - used;
+}
+
 SilverDecisionResult runCurrentRootDecision(SilverSearchSession &session,
                                              const SilverSearchConfig &config,
                                              bool convertSemanticAction = true) {
@@ -963,6 +999,178 @@ SilverDecisionResult runCurrentRootDecision(SilverSearchSession &session,
     }
     result.initialSimulations = result.simulations;
     return result;
+}
+
+SilverDecisionResult continueSilverDecision(
+        SilverSearchSession &session, std::int64_t additionalSimulations,
+        const SilverSearchConfig &config, bool convertSemanticAction);
+
+bool completeRootActionSummary(SilverSearchSession &session,
+                               const BattleStateWire *expectedWire) {
+    if (!session.captureCurrentRootActionSummaries()) return false;
+    const auto root = summarizeSilverRoot(session.rootActionSummaries);
+    if (!root.valid) return false;
+
+    std::vector<std::string> actual;
+    actual.reserve(session.rootActionSummaries.size());
+    for (const auto &summary : session.rootActionSummaries)
+        actual.push_back(semanticActionFingerprint(summary.action));
+    std::sort(actual.begin(), actual.end());
+    if (std::adjacent_find(actual.begin(), actual.end()) != actual.end()) return false;
+    if (expectedWire != nullptr) {
+        auto expectedActions = enumerateSilverLegalActions(*expectedWire);
+        if (expectedActions.empty()) return false;
+        std::vector<std::string> expected;
+        expected.reserve(expectedActions.size());
+        for (const auto &action : expectedActions)
+            expected.push_back(semanticActionFingerprint(action));
+        std::sort(expected.begin(), expected.end());
+        if (actual != expected) return false;
+    }
+    return true;
+}
+
+SilverDecisionResult selectCurrentRootWithoutSearch(
+        SilverSearchSession &session, const SilverSearchConfig &config,
+        bool convertSemanticAction) {
+    SilverDecisionResult result;
+    result.inheritedVisits = session.inheritedVisits;
+    result.rerootMissDiagnostic = session.rerootMissDiagnostic;
+    result.simulations = 0;
+    if (!completeRootActionSummary(session, nullptr)) {
+        result.failureReason = "incomplete_root_action_summary";
+        return result;
+    }
+    result.rootActionSummaries = session.rootActionSummaries;
+    result.rootUncertainty = summarizeSilverRoot(result.rootActionSummaries);
+    const auto *best = session.selectCurrentRoot();
+    if (best == nullptr) {
+        result.failureReason = "no_selected_action";
+        return result;
+    }
+    result.accepted = true;
+    if (convertSemanticAction
+            && best->action.getActionType() != sts::search::ActionType::MULTI_CARD_SELECT) {
+        result.action = semanticFromAction(*session.searcher->root->state, best->action);
+        result.initialActionFingerprint = semanticActionFingerprint(result.action);
+    }
+    result.initialSimulations = 0;
+    if (config.collectDecisionDiagnostics) {
+        result.diagnostic = session.decisionDiagnostic;
+        result.diagnostic.inheritedVisits = result.inheritedVisits;
+        result.diagnostic.simulationsAdded = 0;
+        result.diagnostic.rootVisitsAfterSearch = result.rootUncertainty.rootVisits;
+        result.diagnostic.chosenEdgeVisits = result.rootUncertainty.topVisits;
+        result.diagnostic.rootUncertainty = result.rootUncertainty;
+    }
+    return result;
+}
+
+std::vector<std::int64_t> exactVisitLockSchedule(std::int64_t maxBudget) {
+    constexpr std::array<std::int64_t, 6> fractions {25, 50, 100, 200, 400, 800};
+    std::vector<std::int64_t> result;
+    result.reserve(fractions.size() + 1);
+    for (const auto fraction : fractions) {
+        const auto checkpoint = std::max<std::int64_t>(
+            1, (maxBudget * fraction + 999) / 1000);
+        result.push_back(std::min(maxBudget, checkpoint));
+    }
+    result.push_back(maxBudget);
+    result.erase(std::unique(result.begin(), result.end()), result.end());
+    return result;
+}
+
+SilverDecisionResult runCurrentRootWithExactVisitLock(
+        SilverSearchSession &session, const BattleStateWire *expectedWire,
+        const SilverSearchConfig &config, bool convertSemanticAction) {
+    SilverDecisionResult result;
+    const auto maxBudget = config.simulationsPerDecision;
+    if (!config.exactVisitLockEnabled || config.adaptiveEnabled
+            || maxBudget <= 0) {
+        result.failureReason = "invalid_exact_visit_lock_configuration";
+        return result;
+    }
+
+    const auto inheritedVisits = session.inheritedVisits;
+    const auto mark = [&](SilverDecisionResult &current, bool summaryValid,
+                          bool eligible, bool fired, bool firedAtZero,
+                          std::int64_t used, std::int64_t stopBudget) {
+        current.diagnostic.exactVisitLockEnabled = true;
+        current.diagnostic.exactVisitLockEligible = eligible;
+        current.diagnostic.exactVisitLockFired = fired;
+        current.diagnostic.exactVisitLockFiredAtZero = firedAtZero;
+        current.diagnostic.exactVisitLockSummaryValid = summaryValid;
+        current.diagnostic.exactVisitLockMaxBudget = maxBudget;
+        current.diagnostic.exactVisitLockNewSimulationsUsed = used;
+        current.diagnostic.exactVisitLockRemainingBudget = maxBudget - used;
+        current.diagnostic.exactVisitLockStopBudget = stopBudget;
+        current.diagnostic.inheritedVisits = inheritedVisits;
+        current.diagnostic.simulationsAdded = used;
+        if (session.searcher != nullptr && session.searcher->root != nullptr
+                && session.previousBest != nullptr) {
+            current.diagnostic.exactVisitLockFinalAction = semanticActionFingerprint(
+                semanticFromAction(*session.searcher->root->state,
+                                   session.previousBest->action));
+        }
+    };
+
+    // The zero-search observation is deliberately independent of any
+    // checkpoint. It is valid only for a retained, non-forced root whose
+    // complete legal action set can be reconstructed exactly.
+    const bool zeroSummaryValid = completeRootActionSummary(session, expectedWire);
+    const auto zeroRoot = summarizeSilverRoot(session.rootActionSummaries);
+    const bool zeroEligible = config.exactVisitLockRequireRetainedRoot
+        ? inheritedVisits > 0 && zeroRoot.valid && zeroRoot.legalActions > 1
+        : zeroRoot.valid && zeroRoot.legalActions > 1;
+    const bool zeroLocked = zeroSummaryValid && zeroEligible
+        && silverExactVisitLockHolds(zeroRoot, maxBudget, 0);
+    if (zeroLocked) {
+        result = selectCurrentRootWithoutSearch(session, config, convertSemanticAction);
+        if (result.accepted) {
+            result.rootActionSummaries = session.rootActionSummaries;
+            result.rootUncertainty = zeroRoot;
+            mark(result, true, true, true, true, 0, 0);
+        }
+        return result;
+    }
+
+    std::int64_t used = 0;
+    SilverDecisionResult last;
+    const auto checkpoints = exactVisitLockSchedule(maxBudget);
+    for (const auto cumulative : checkpoints) {
+        const auto increment = cumulative - used;
+        auto stepConfig = config;
+        stepConfig.exactVisitLockEnabled = false;
+        stepConfig.adaptiveEnabled = false;
+        stepConfig.simulationsPerDecision = increment;
+        stepConfig.collectRootActionSummaries = true;
+        stepConfig.collectDecisionDiagnostics = true;
+        SilverDecisionResult step = used == 0
+            ? runCurrentRootDecision(session, stepConfig, convertSemanticAction)
+            : continueSilverDecision(session, increment, stepConfig, convertSemanticAction);
+        if (!step.accepted || step.simulations != increment) {
+            result = std::move(step);
+            result.accepted = false;
+            if (result.failureReason.empty()) result.failureReason = "exact_visit_lock_simulation_count_mismatch";
+            return result;
+        }
+        used = cumulative;
+        last = std::move(step);
+        last.simulations = used;
+        const bool summaryValid = completeRootActionSummary(session, expectedWire);
+        const auto root = summarizeSilverRoot(session.rootActionSummaries);
+        const bool eligible = config.exactVisitLockRequireRetainedRoot
+            ? inheritedVisits > 0 && root.valid && root.legalActions > 1
+            : root.valid && root.legalActions > 1;
+        const bool locked = summaryValid && eligible
+            && silverExactVisitLockHolds(root, maxBudget, used);
+        mark(last, summaryValid, eligible, locked, false, used, used);
+        last.rootActionSummaries = session.rootActionSummaries;
+        last.rootUncertainty = root;
+        last.diagnostic.rootUncertainty = root;
+        if (locked) return last;
+    }
+    return last;
 }
 
 SilverDecisionResult continueSilverDecision(
@@ -1235,10 +1443,27 @@ SessionReuseProbe probeSilverSearchSessionReuse(const BattleStateWire &wire,
         auto comparisonConfig = config;
         comparisonConfig.collectDecisionDiagnostics = true;
         comparisonConfig.collectRootActionSummaries = true;
+        auto firstConfig = comparisonConfig;
+        // A one-simulation exact-lock probe needs a retained root with more
+        // than one inherited leader visit so that zero-use can be strictly
+        // greater than the remaining budget. This is test-fixture setup only.
+        if (config.exactVisitLockEnabled && config.simulationsPerDecision == 1) {
+            firstConfig.exactVisitLockEnabled = false;
+            firstConfig.simulationsPerDecision = 16;
+        }
         SilverSearchSession session;
-        sts::BattleContext state = session.materializeAndBegin(wire, comparisonConfig);
-        auto firstDecision = runCurrentRootDecision(session, comparisonConfig, true);
-        firstDecision = applyAdaptiveContinuation(session, comparisonConfig, std::move(firstDecision), true);
+        sts::BattleContext state = session.materializeAndBegin(wire, firstConfig);
+        auto runProbeDecision = [&](SilverSearchSession &probeSession,
+                                    const BattleStateWire *expectedWire,
+                                    const SilverSearchConfig &decisionConfig) {
+            if (decisionConfig.exactVisitLockEnabled)
+                return runCurrentRootWithExactVisitLock(
+                    probeSession, expectedWire, decisionConfig, true);
+            auto decision = runCurrentRootDecision(probeSession, decisionConfig, true);
+            return applyAdaptiveContinuation(
+                probeSession, decisionConfig, std::move(decision), true);
+        };
+        auto firstDecision = runProbeDecision(session, &wire, firstConfig);
         result.firstSimulations = firstDecision.simulations;
         result.firstAdaptiveEscalated = firstDecision.adaptiveEscalated;
         const auto *best = session.previousBest;
@@ -1252,16 +1477,35 @@ SessionReuseProbe probeSilverSearchSessionReuse(const BattleStateWire &wire,
         session.beginAt(state, comparisonConfig);
         result.inheritedVisits = session.searcher->root == nullptr
             ? 0 : session.searcher->root->simulationCount;
-        auto secondDecision = runCurrentRootDecision(session, comparisonConfig, true);
-        secondDecision = applyAdaptiveContinuation(session, comparisonConfig, std::move(secondDecision), true);
+        auto secondDecision = runProbeDecision(session, nullptr, comparisonConfig);
         result.secondSimulations = secondDecision.simulations;
         result.secondAdaptiveEscalated = secondDecision.adaptiveEscalated;
+        result.exactVisitLockFired = secondDecision.diagnostic.exactVisitLockFired;
+        result.exactVisitLockFiredAtZero = secondDecision.diagnostic.exactVisitLockFiredAtZero;
         result.secondRootVisitsAfterSearch = session.searcher->root == nullptr
             ? 0 : session.searcher->root->simulationCount;
         if (!secondDecision.accepted) return result;
         result.accepted = true;
         result.rerootExact = session.rerootExact;
         result.rerootFallback = session.rerootFallback;
+
+        if (config.exactVisitLockEnabled) {
+            SilverSearchSession referenceSession;
+            auto referenceConfig = comparisonConfig;
+            referenceConfig.exactVisitLockEnabled = false;
+            auto referenceState = referenceSession.materializeAndBegin(wire, firstConfig);
+            auto referenceFirst = runCurrentRootDecision(referenceSession, firstConfig, true);
+            if (referenceFirst.accepted && referenceSession.previousBest != nullptr
+                    && referenceSession.previousBest->action.isValidAction(referenceState)) {
+                referenceSession.previousBest->action.execute(referenceState);
+                referenceSession.beginAt(referenceState, referenceConfig);
+                const auto referenceSecond = runCurrentRootDecision(
+                    referenceSession, referenceConfig, true);
+                result.exactVisitLockActionMatchesFullBudget = referenceSecond.accepted
+                    && semanticActionFingerprint(secondDecision.action)
+                        == semanticActionFingerprint(referenceSecond.action);
+            }
+        }
 
         // Compare the retained-root second decision with an otherwise
         // identical split continuation. Both sessions first build the same
@@ -1482,6 +1726,10 @@ SelectionTransactionTrace runSequentialSelectionTransaction(
     SelectionTransactionTrace trace;
     trace.simulationsPerSubdecision = config.simulationsPerDecision;
     if (config.simulationsPerDecision <= 0) return trace;
+    if (config.exactVisitLockEnabled && config.adaptiveEnabled) {
+        trace.failure = "exact_visit_lock_and_adaptive_are_incompatible";
+        return trace;
+    }
     try {
         sts::BattleContext state = session.materializeAndBegin(wire, config);
         const auto task = state.cardSelectInfo.cardSelectTask;
@@ -1500,7 +1748,15 @@ SelectionTransactionTrace runSequentialSelectionTransaction(
             if (step > 0) session.beginAt(state, config);
 
             SilverDecisionResult decision;
-            if (!config.budgetDiagnosticCheckpoints.empty()) {
+            if (config.exactVisitLockEnabled) {
+                decision = runCurrentRootWithExactVisitLock(
+                    session, nullptr, config, false);
+                if (!decision.accepted) {
+                    trace.failure = decision.failureReason.empty()
+                        ? "exact visit-lock search failed" : decision.failureReason;
+                    return trace;
+                }
+            } else if (!config.budgetDiagnosticCheckpoints.empty()) {
                 decision = runCurrentRootWithCheckpoints(
                     session, config, config.budgetDiagnosticCheckpoints, false);
                 if (!decision.accepted) {
@@ -1590,6 +1846,10 @@ SilverDecisionResult runSilverDecision(SilverSearchSession &session,
         result.failureReason = "invalid_simulation_budget";
         return result;
     }
+    if (config.exactVisitLockEnabled && config.adaptiveEnabled) {
+        result.failureReason = "exact_visit_lock_and_adaptive_are_incompatible";
+        return result;
+    }
     try {
         const int rerootExactBefore = session.rerootExact;
         const int rerootFallbackBefore = session.rerootFallback;
@@ -1604,11 +1864,15 @@ SilverDecisionResult runSilverDecision(SilverSearchSession &session,
             result.failureReason = "transactional_selection_required";
             return result; // must use the transactional API
         }
-        result = config.budgetDiagnosticCheckpoints.empty()
-            ? runCurrentRootDecision(session, config)
-            : runCurrentRootWithCheckpoints(
-                session, config, config.budgetDiagnosticCheckpoints, true);
-        if (config.budgetDiagnosticCheckpoints.empty())
+        if (config.exactVisitLockEnabled) {
+            result = runCurrentRootWithExactVisitLock(session, &wire, config, true);
+        } else {
+            result = config.budgetDiagnosticCheckpoints.empty()
+                ? runCurrentRootDecision(session, config)
+                : runCurrentRootWithCheckpoints(
+                    session, config, config.budgetDiagnosticCheckpoints, true);
+        }
+        if (config.budgetDiagnosticCheckpoints.empty() && !config.exactVisitLockEnabled)
             result = applyAdaptiveContinuation(session, config, std::move(result));
         result.rerootExact = session.rerootExact - rerootExactBefore;
         result.rerootFallback = session.rerootFallback - rerootFallbackBefore;

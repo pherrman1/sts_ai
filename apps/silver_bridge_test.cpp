@@ -570,6 +570,63 @@ int main() {
               && retainedPolicyReuse.secondSimulations == 16,
           "retained-only adaptive policy must stop eligible retained roots at its initial budget");
 
+    silver_bridge::SilverRootUncertainty exactBoundary;
+    exactBoundary.valid = true;
+    exactBoundary.topVisits = 10;
+    exactBoundary.secondVisits = 7;
+    check(!silver_bridge::silverExactVisitLockHolds(exactBoundary, 1000, 0)
+              && !silver_bridge::silverExactVisitLockHolds(exactBoundary, 1000, 997)
+              && silver_bridge::silverExactVisitLockHolds(exactBoundary, 1000, 998),
+          "exact visit lock must use strict margin > remaining boundary");
+    auto invalidExactBoundary = exactBoundary;
+    invalidExactBoundary.valid = false;
+    check(!silver_bridge::silverExactVisitLockHolds(invalidExactBoundary, 1, 0),
+          "invalid or incomplete root summaries must never exact-lock");
+    auto incompatibleExactConfig = disabledConfig;
+    incompatibleExactConfig.exactVisitLockEnabled = true;
+    incompatibleExactConfig.adaptiveEnabled = true;
+    const auto incompatibleExact = silver_bridge::runSilverDecision(
+        firstWire, incompatibleExactConfig);
+    check(!incompatibleExact.accepted
+              && incompatibleExact.failureReason
+                  == "exact_visit_lock_and_adaptive_are_incompatible",
+          "exact visit-lock and retained-adaptive policies must fail closed when combined");
+
+    // Exact visit-lock uses the caller's budget, not a 10k-specific constant.
+    for (const auto maxBudget : {1000LL, 3700LL, 10000LL}) {
+        auto exactConfig = disabledConfig;
+        exactConfig.simulationsPerDecision = maxBudget;
+        exactConfig.exactVisitLockEnabled = true;
+        exactConfig.collectRootActionSummaries = true;
+        exactConfig.collectDecisionDiagnostics = true;
+        const auto freshExact = silver_bridge::runSilverDecision(firstWire, exactConfig);
+        check(freshExact.accepted && freshExact.simulations == maxBudget
+                  && !freshExact.diagnostic.exactVisitLockFired
+                  && freshExact.diagnostic.exactVisitLockMaxBudget == maxBudget
+                  && freshExact.diagnostic.exactVisitLockNewSimulationsUsed == maxBudget
+                  && !freshExact.diagnostic.exactVisitLockFinalAction.empty(),
+              "fresh exact visit-lock roots must run to each caller-supplied maximum budget");
+    }
+    auto exactReuseConfig = disabledConfig;
+    exactReuseConfig.simulationsPerDecision = 1000;
+    exactReuseConfig.exactVisitLockEnabled = true;
+    exactReuseConfig.collectRootActionSummaries = true;
+    exactReuseConfig.collectDecisionDiagnostics = true;
+    const auto exactReuse = silver_bridge::probeSilverSearchSessionReuse(
+        firstWire, exactReuseConfig);
+    check(exactReuse.accepted && exactReuse.rerootExact == 1
+              && exactReuse.rerootFallback == 0 && exactReuse.inheritedVisits > 0
+              && exactReuse.secondSimulations <= exactReuseConfig.simulationsPerDecision
+              && exactReuse.exactVisitLockActionMatchesFullBudget,
+          "retained exact visit-lock search must preserve the uninterrupted max-budget action");
+    auto exactZeroConfig = exactReuseConfig;
+    exactZeroConfig.simulationsPerDecision = 1;
+    const auto exactZero = silver_bridge::probeSilverSearchSessionReuse(
+        firstWire, exactZeroConfig);
+    check(exactZero.accepted && exactZero.exactVisitLockFiredAtZero
+              && exactZero.secondSimulations == 0,
+          "retained exact visit-lock must support a safe zero-new-simulation stop");
+
     silver_bridge::SemanticAction fingerprintCard = qualityFresh.action;
     fingerprintCard.type = silver_bridge::SemanticActionType::CARD;
     fingerprintCard.card.uniqueId += 1;
@@ -856,6 +913,25 @@ int main() {
     }
     check(multiTransactionComplete,
           "sequential-selection multi-checkpoint continuation must cover every private subdecision");
+    auto exactTransactionConfig = transactionConfig;
+    exactTransactionConfig.simulationsPerDecision = 32;
+    exactTransactionConfig.exactVisitLockEnabled = true;
+    exactTransactionConfig.collectRootActionSummaries = true;
+    exactTransactionConfig.collectDecisionDiagnostics = true;
+    const auto exactTransaction = silver_bridge::runSequentialSelectionTransaction(
+        convert(transactionLive, gc, transactionKnowledge), exactTransactionConfig);
+    bool exactTransactionAccounting = exactTransaction.accepted
+        && exactTransaction.finalConfirmation
+        && exactTransaction.searchDiagnostics.size()
+            == static_cast<std::size_t>(exactTransaction.searchDecisions);
+    for (const auto &diagnostic : exactTransaction.searchDiagnostics) {
+        exactTransactionAccounting = exactTransactionAccounting
+            && diagnostic.exactVisitLockEnabled
+            && diagnostic.exactVisitLockNewSimulationsUsed <= 32
+            && diagnostic.exactVisitLockRemainingBudget >= 0;
+    }
+    check(exactTransactionAccounting,
+          "exact visit-lock must preserve transactional sequential card selection and accounting");
     check(transactionLive.inputState == transactionBefore.inputState
           && transactionLive.cardSelectInfo.cardSelectTask == transactionBefore.cardSelectInfo.cardSelectTask
           && transactionLive.cards.cardsInHand == transactionBefore.cards.cardsInHand
