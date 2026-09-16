@@ -355,6 +355,10 @@ struct SilverSearchConfig {
     std::int64_t adaptiveInitialSimulations = 1000;
     std::int64_t adaptiveTotalSimulations = 3700;
     double adaptiveTopTwoVisitGapThreshold = 0.094;
+    // Default-off exact visit-lock stopping. The caller's simulationsPerDecision
+    // is the maximum new-simulation budget; no fixed budget is implied here.
+    bool exactVisitLockEnabled = false;
+    bool exactVisitLockRequireRetainedRoot = true;
 };
 
 struct SilverRootActionSummary {
@@ -388,6 +392,11 @@ struct SilverRootUncertainty {
 SilverRootUncertainty summarizeSilverRoot(
     const std::vector<SilverRootActionSummary> &summaries);
 
+// Pure integer exact-lock predicate. `maxBudget` is the caller's maximum new
+// simulation budget and `used` is the number already added for this decision.
+bool silverExactVisitLockHolds(const SilverRootUncertainty &root,
+                               std::int64_t maxBudget, std::int64_t used);
+
 // Value-only accounting of one actual private Silver search invocation.  The
 // record is emitted for ordinary decisions and every sequential-selection
 // subdecision when collection is enabled.
@@ -415,6 +424,16 @@ struct SilverSearchDecisionDiagnostic {
     std::int64_t adaptiveInitialSimulations = 0;
     std::int64_t adaptiveTotalSimulations = 0;
     SilverRootUncertainty rootUncertainty;
+    bool exactVisitLockEnabled = false;
+    bool exactVisitLockEligible = false;
+    bool exactVisitLockFired = false;
+    bool exactVisitLockFiredAtZero = false;
+    bool exactVisitLockSummaryValid = false;
+    std::int64_t exactVisitLockMaxBudget = 0;
+    std::int64_t exactVisitLockNewSimulationsUsed = 0;
+    std::int64_t exactVisitLockRemainingBudget = 0;
+    std::int64_t exactVisitLockStopBudget = 0;
+    std::string exactVisitLockFinalAction;
 };
 
 // Value-only copy of Silver BattleSearcher's deterministic telemetry. This is
@@ -625,6 +644,12 @@ struct SessionReuseProbe {
     bool secondAdaptiveEscalated = false;
     bool splitFinalActionMatches = false;
     bool splitFinalRootStatisticsMatch = false;
+    bool exactVisitLockFired = false;
+    bool exactVisitLockFiredAtZero = false;
+    bool exactVisitLockActionMatchesFullBudget = false;
+    int exactVisitLockCheckpointCount = 0;
+    bool exactVisitLockTelemetryMatchesCheckpointTrace = false;
+    bool exactVisitLockNodesMatchCheckpointTrace = false;
 };
 
 // Small-cap, bridge-private fixture.  It exercises retained allocation versus

@@ -55,6 +55,7 @@ The production reuse cap defaults to `32 * 1024`. The explicit experimental
 | `STS_SILVER_ADAPTIVE` | Enable the default-off two-tier Silver treatment: legacy mode searches to 1,000 simulations and may continue the same root to 3,700; retained-only mode uses the separately documented 500→10,000 policy | unset/off | `SilverLiveBackend` |
 | `STS_SILVER_ADAPTIVE_TOP_GAP` | Strict uncertainty threshold for `STS_SILVER_ADAPTIVE`; legacy escalation occurs when the initial-budget top-vs-second visit-share gap is `<` this value, while retained-only stopping requires `>=` this value | `0.094` | `SilverLiveBackend` |
 | `STS_SILVER_ADAPTIVE_RETAINED_ONLY` | With `STS_SILVER_ADAPTIVE=1`, use the frozen retained-root treatment: fresh and forced roots continue to 10,000; retained non-forced roots stop at 500 only when the top-two visit-share gap is at least the configured threshold | unset/off | `SilverLiveBackend` |
+| `STS_SILVER_EXACT_VISIT_LOCK` | Default-off exact retained-root stopping: at geometric 2.5/5/10/20/40/80/100% checkpoints of the caller's maximum new-simulation budget, stop only when integer top-root-edge visits minus second visits is strictly greater than the remaining budget. Fresh and one-action/forced roots always run to the maximum. Incompatible with `STS_SILVER_ADAPTIVE` and paired/sequential diagnostic modes. | unset/off | `SilverLiveBackend`; `SilverStateBridge` |
 | `STS_SILVER_EXACT_ROOT_BUDGETS` | Experiment-only budget control: use the agent's base simulations at every Silver root, including bosses, instead of applying the native boss multiplier. Set identically for paired fixed-1k and adaptive arms. | unset/off | `SilverLiveBackend` |
 | `STS_SILVER_TELEMETRY` | Per-combat Silver aggregate telemetry line, including skipped VNet rollouts and leaf-VNet inference calls/microseconds when enabled | unset/off | `SilverLiveBackend` |
 | `STS_SILVER_VNET_LEAF_LOG` | Default-off CSV for sampled Silver rollout-start leaves and their actual one-sample rollout references | unset/off | `SilverLiveBackend` |
@@ -100,6 +101,19 @@ at or above the configured threshold may stop at 500; fresh and forced roots
 continue to 10,000. The adaptive flag applies independently to each private
 subdecision of sequential `GAMBLE`/`EXHAUST_MANY`; the live atomic action bridge
 and transaction protocol are unchanged.
+
+Exact visit-lock Silver is a separate default-off treatment selected by
+`STS_SILVER_EXACT_VISIT_LOCK=1`; it cannot be silently composed with the
+adaptive policy. Its maximum is `SilverSearchConfig::simulationsPerDecision`
+(the qualification launch uses the exact 10,000-simulation caller budget), and
+the controller polls the same private root at scaled geometric checkpoints.
+The strict integer predicate is `topVisits - secondVisits > maxBudget - used`.
+It first checks a complete retained non-forced root before adding any new
+simulation, so a valid zero-use lock is possible; equality continues because a
+tie can still be reached. The scaling diagnostic records the maximum, used and
+remaining budgets, integer root ranking, eligibility, summary validity, lock
+and zero-lock flags, and stop budget. Paired and sequential diagnostic modes
+remain observational paths and are rejected alongside the live treatment.
 
 The paired combat-budget diagnostic uses the existing Silver root summary
 helper: final action selection remains maximum edge visits, while the

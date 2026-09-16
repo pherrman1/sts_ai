@@ -65,6 +65,7 @@ struct BenchConfigSidecar {
     bool silverAdaptiveRetainedOnly = false;
     double silverAdaptiveTopShare = 0.0;
     bool silverExactRootBudgets = false;
+    bool silverExactVisitLock = false;
 
     // models block -- mirrors the "BEST models" banner fields
     std::string floorModel;                 // path or "MISSING"
@@ -160,6 +161,7 @@ inline std::string benchConfigSidecarLine(const BenchConfigSidecar &c) {
     o << ",\"silverAdaptiveRetainedOnly\":" << (c.silverAdaptiveRetainedOnly ? "true" : "false");
     o << ",\"silverAdaptiveTopShare\":" << c.silverAdaptiveTopShare;
     o << ",\"silverExactRootBudgets\":" << (c.silverExactRootBudgets ? "true" : "false");
+    o << ",\"silverExactVisitLock\":" << (c.silverExactVisitLock ? "true" : "false");
     o << '}';
     o << ",\"models\":{";
     o << "\"floor\":\"" << detail::jsonEscape(c.floorModel) << '"';

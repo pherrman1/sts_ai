@@ -8906,7 +8906,7 @@ the regenerated-vs-cache difference explicitly.
  including the raw checkpoint stream, estimator JSON, benchmark receipt,
    sidecar, and run log.
 
-## §286 — Purpose-trained shared maxHP+HP DeepSets encoder (2026-09-16)
+## §286a — Purpose-trained shared maxHP+HP DeepSets encoder (2026-09-16)
 
 - **Question and baseline:** Can the successful shared maxHP+HP Attention
   distillation be replaced by a cheaper permutation-invariant encoder while
@@ -8952,7 +8952,7 @@ the regenerated-vs-cache difference explicitly.
   executable default changed. [Evidence packet](evidence/shared_transition_deepset_distill_2026-09-16.md)
   and [machine-readable receipt](evidence/shared_transition_deepset_distill_2026-09-16.json).
 
-### §286a — Same-session DeepSets receipt correction (2026-09-16)
+### §286b — Same-session DeepSets receipt correction (2026-09-16)
 
 - **Correction:** the original §286 receipt is superseded because its
   normalization used `arrays[train]` and its HP delta embedding plus HP head
@@ -8982,3 +8982,53 @@ the regenerated-vs-cache difference explicitly.
   seed, tuning or architecture work ran. See the
   [correction evidence](evidence/shared_transition_deepset_distill_correction_2026-09-16.md)
   and [machine-readable receipt](evidence/shared_transition_deepset_distill_correction_2026-09-16.json).
+## §286 — Exact Silver visit-lock prospective A/B (N16 smoke and N32, 2026-09-16)
+
+The default-off exact visit-lock implementation was committed at
+`8adbfe9f6b58145c853e53248fa5979a4e1991fa` and built as the Release
+`one_combat` executable with SHA-256
+`b282b7662b3e128d80cc6ce8701408369d50a63a0bf1389a465c65d7488c6b8d` before
+gameplay collection. The treatment used only the strict integer rule
+`N1-N2 > Bmax-Bused` on the same private Silver session at generalized
+2.5/5/10/20/40/80/100% checkpoints plus the zero-use check. Fresh and
+one-action/forced roots remained full-budget controls. No logistic/risk/rho
+rule, tuning, shadow search, default change, or cap variation was used.
+
+The frozen regime was Ironclad A0, project-fair Silver, native OOC, four
+workers, exact 10,000 root budgets, allocated reuse cap 131,072, CTM and old
+Silver adaptive stopping off, convergence stopping off, OOC MCTS off, and keys
+off. N16 used fresh paired seeds 128--143. The nominal compute target was 35%:
+control/treatment won 11/16 versus 10/16, and treatment saved 34.80% of
+control Silver simulations and 34.43% wall time. This was marginally below
+the nominal target. All lock, fresh/forced, accounting and failure invariants
+passed; there were 4,980 exact locks including 362 zero-use locks, and paired
+gameplay had two control-only and one treatment-only win. Because the protocol
+called the threshold approximate and the mechanism/gameplay checks passed,
+N32 was run as an explicitly documented extension; this was not a nominal 35%
+compute pass.
+
+The earlier PR #202 offline 53.8026% reduction applied only to retained,
+non-forced decisions: 2,422 of 3,778 evaluation decisions. Its all-decision
+equivalent was approximately 34.5%, so the live N16 result is consistent with
+that offline prediction. The live N32 result at 28.77% is a moderate
+degradation relative to that prediction, not a collapse from 53.8% to 28.8%.
+This makes the descriptive rho extension a justified follow-up hypothesis,
+without changing the exact-lock gate or promoting a runtime policy.
+
+After the documented N16 extension authorization, a new N32 block 144--175
+was run without changing the implementation or configuration. Control/treatment won 24/32 versus 22/32;
+treatment saved 28.77% of control Silver simulations and 31.59% wall time.
+There were 9,179 exact locks including 465 zero-use locks, with no invalid,
+fresh, one-action/forced, non-strict, accounting, semantic, conversion,
+transaction, knowledge, or other bridge failures. Paired gameplay had two
+control-only wins and no treatment-only wins.
+
+Decision: **`LIVE_EXACT_VISIT_LOCK_REJECTED`** for this bounded prospective
+gate because the N32 compute reduction is below the approximately 40%
+requirement. This is not a universal gameplay-harm finding and does not
+invalidate the current-root exact-lock proof, but it does not support
+promotion. Runtime defaults remain unchanged; the exact mode remains
+default-off. Knowledge impact: current research status and experiment
+evidence updated.
+
+[Evidence packet, raw traces, validation and provenance](evidence/silver_exact_visit_lock_pair_2026-09-16/README.md).
