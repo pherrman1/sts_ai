@@ -8725,3 +8725,47 @@ restart and matched all three recorded exact hashes. Knowledge impact:
 experiment evidence and current research status only; qualified components
 and executable defaults are unchanged.
 [Evidence, provenance and receipt](evidence/shared_potion_encoder_screen_2026-09-16.md).
+
+
+## §283 — Jointly adapted shared maxHP+HP+potion representation (2026-09-16)
+
+The PR #197 epoch-37 shared maxHP+HP Attention encoder was allowed to adapt
+jointly with its maxHP/HP branches and the existing exact 64-action potion
+trajectory decoder. The actual current-main base was `c371f3c2`; PR #198 was
+confirmed merged there. The reviewed experiment implementation was frozen at
+`49e2642a`. The maxHP and HP teachers remained frozen, and the potion decoder
+was initialized from the qualified dedicated potion component.
+
+The exact final-union source-grouped population was TRAIN 393,677 rows /
+19,986 sources and VALIDATION 48,590 rows / 2,496 sources. TEST inference was
+zero. The fixed FP32 recipe used seed `20260912`, AdamW, encoder LR `1e-4`,
+heads/decoder LR `1e-3`, weight decay `1e-4`, batch 512, clip 1.0 and 12
+epochs. A deterministic TRAIN-only 8,192-row calibration cohort froze
+`s_max=0.0021965544365230016`, `s_hp=0.011543620959855616`, and
+`s_potion=2.281699538230896`; the cohort row-ID SHA256 was
+`122776e919b5fd6445b516ae8e9f70aa5db4f4c3d1eccbb994f0e7de80ffa053`. Batch
+order SHA256 was
+`110ff129ce40099ba612986aabe78195cbcc37bcd11597b9e6b3d012f3cf304d`.
+
+All twelve epochs were eligible under the PR #197 maxHP/HP preservation gates;
+the earliest strict minimum potion validation trajectory NLL was epoch 12.
+The selected candidate preserved maxHP (NLL −0.0776%, accuracy −0.0185pp,
+expected post-maxHP MAE +0.000554 HP) and HP (NLL +0.1202%, CRPS +0.2306%,
+expected ending-HP MAE +0.012734 HP). Against the dedicated potion specialist
+on the same VALIDATION rows, exact trajectory NLL was 0.504024366 versus
+0.524099650 (**+3.9830%**, fixed gate +2%). Normal no-change Brier changed by
++0.00430663 and action-mode accuracy fell 0.7422pp, both within their gates;
+illegal probability was exactly zero and maximum normalization error was
+2.04e−7. Slice NLL changes were Brew +8.6531%, Smoke +4.6304%, recursive Brew
+**+20.5168%**, and all trajectory-special +7.9931%. The primary NLL and
+obvious recursive-Brew slice gates failed.
+
+**`SHARED_TRANSITION_POTION_REJECTED`.** Because teacher-forced potion quality
+failed, the mandatory 32-draw ancestral qualification did not run. No TEST,
+runtime/export, promotion, native C++ or gameplay work ran. This rejects the
+specified jointly adapted architecture/recipe, not every shared architecture
+or intrinsic potion information absence. Qualified components and executable
+defaults remain unchanged. Knowledge impact: experiment evidence and current
+research status only.
+
+[Evidence, provenance, full epoch history and receipt](evidence/shared_transition_encoder_potion_2026-09-16.md).
