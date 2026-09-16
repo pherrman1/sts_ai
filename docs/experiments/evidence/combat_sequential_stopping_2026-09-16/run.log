@@ -1,0 +1,11 @@
+[collect keys OFF]
+[CompactTreeNet: 1060 trees, 448 feats from models/v_win_trees.txt]
+[CompactTreeNet: 1256 trees, 448 feats from models/v_rich_trees.txt]
+[native OOC floor/win GBMs ON; no v_server required]
+[fair-play / determinized MCTS ON]
+[isolated Silver combat backend ON: local Silver RNG/chance search; Searcher3 particles bypassed; reuse-cap=allocated cap=131072]
+[policy PUCT ON: models/policy_trees_c.txt, 100 trees]
+[c_puct = 2.5]
+BEST stack config: skip@-0.5  rest=win-rate  shop-V=ON  path=heuristic  shop-beam=off  native-OOC=ON  keys=skip  searcher=Searcher2  fair-play  seeds 112..127  asc 0  sims 10000  threads 4
+BEST models: floor=models/v_rich_trees.txt  win=models/v_win_trees.txt  combatVNet=off  policyNet=ON  PVNet=off  distVNet=off
+BEST                    win%= 68.8   avg_floor= 48.3   avg_hp_end= 28.9   cpu_sec/run=183.02   wall=790.7s

@@ -335,6 +335,11 @@ struct SilverSearchConfig {
     // observational only and is never enabled by the production path.
     bool collectBudgetDiagnostics = false;
     std::int64_t budgetDiagnosticCheckpoint = 500;
+    // Opt-in multi-checkpoint continuation diagnostic. When non-empty, the
+    // listed cumulative new-simulation budgets are visited in order on the
+    // same private root and the final entry must equal simulationsPerDecision.
+    // This is observation only; it does not change the selected action path.
+    std::vector<std::int64_t> budgetDiagnosticCheckpoints;
     // Optional type-free leaf callback. It is invoked at the exact point a
     // SimpleAgent rollout would begin and is behavior-neutral unless the
     // callback explicitly sets skipRollout/directValue.
@@ -493,6 +498,18 @@ struct SilverBudgetDiagnostic {
     SilverRootUncertainty finalRootUncertainty;
 };
 
+struct SilverCheckpointDiagnostic {
+    bool valid = false;
+    std::int64_t checkpointSimulations = 0;
+    std::string checkpointActionFingerprint;
+    SilverRootUncertainty rootUncertainty;
+    std::int64_t rootVisitsAfterSearch = 0;
+    // The action selected by the same session after the exact final-budget
+    // continuation. Every checkpoint row receives this value so offline
+    // consumers can form the local action-change label without replaying C++.
+    std::string finalActionFingerprint;
+};
+
 struct SelectionTransactionTrace {
     bool accepted = false;
     bool finalConfirmation = false;
@@ -511,6 +528,7 @@ struct SelectionTransactionTrace {
     std::vector<int> selectedBitsAfterEachIntermediate;
     std::vector<SilverSearchDecisionDiagnostic> searchDiagnostics;
     std::vector<SilverBudgetDiagnostic> budgetDiagnostics;
+    std::vector<std::vector<SilverCheckpointDiagnostic>> checkpointDiagnostics;
     SemanticAction finalAction;
     SilverSearchTelemetry telemetry;
 };
@@ -543,6 +561,7 @@ struct SilverDecisionResult {
     int rerootExact = 0;
     int rerootFallback = 0;
     SilverBudgetDiagnostic budgetDiagnostic;
+    std::vector<SilverCheckpointDiagnostic> checkpointDiagnostics;
 };
 
 // Fresh forced-action continuation used by the bounded Silver root diagnostic.
