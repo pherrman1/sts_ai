@@ -1,0 +1,839 @@
+{
+  "baselineSha": "4c8ff3fe044626c6d18226e5f4091a0d1cb842d1",
+  "batchOrderSha256": "7b06bbba98360d80aa5ca47b9fb3f7adcd7b80f4bdbe0ccebabd2fbecc93ace7",
+  "corpusSha256": "74c08aa0a3c30342d86cd45355fe17ffa9046963ad7c8cf71b1938f9cdc1cfde",
+  "decision": "DEEPSET_SURVIVAL_REJECTED",
+  "deltas": {
+    "brierRelative": 0.3751784321284959,
+    "deathNllRelative": 0.4428503477153851,
+    "lowPreHpNllRelative": 0.558469902336765,
+    "nllRelative": 0.40289918317467066
+  },
+  "failures": [
+    "core NLL degradation exceeds 2%",
+    "core Brier degradation exceeds 5%",
+    "observed-death NLL degradation exceeds 10%",
+    "low-pre-HP NLL degradation exceeds 10%"
+  ],
+  "fit": {
+    "A": {
+      "checkpoint": "/home/philippherrmann/sts_sweep/runs/deepset-survival-screen-20260916-final/head_a.pt",
+      "checkpointSha256": "698c88c6187e5c6590daa1c856918ab231c17929c6410dce6837c044877db81f",
+      "history": [
+        {
+          "epoch": 1,
+          "trainingNll": 0.06099382076087994,
+          "validationNll": 0.05988175794482231
+        },
+        {
+          "epoch": 2,
+          "trainingNll": 0.055347398142878874,
+          "validationNll": 0.05965028330683708
+        },
+        {
+          "epoch": 3,
+          "trainingNll": 0.05523358441581179,
+          "validationNll": 0.05954759567975998
+        },
+        {
+          "epoch": 4,
+          "trainingNll": 0.0551682465399305,
+          "validationNll": 0.059517063200473785
+        },
+        {
+          "epoch": 5,
+          "trainingNll": 0.05518801880062075,
+          "validationNll": 0.059526264667510986
+        },
+        {
+          "epoch": 6,
+          "trainingNll": 0.05512086329818295,
+          "validationNll": 0.06000147759914398
+        },
+        {
+          "epoch": 7,
+          "trainingNll": 0.05512932196427557,
+          "validationNll": 0.059428922832012177
+        },
+        {
+          "epoch": 8,
+          "trainingNll": 0.05515417172561836,
+          "validationNll": 0.059419434517621994
+        },
+        {
+          "epoch": 9,
+          "trainingNll": 0.05510547822971541,
+          "validationNll": 0.05948978289961815
+        },
+        {
+          "epoch": 10,
+          "trainingNll": 0.05508234323863696,
+          "validationNll": 0.059312280267477036
+        },
+        {
+          "epoch": 11,
+          "trainingNll": 0.055070520560712294,
+          "validationNll": 0.05937417596578598
+        },
+        {
+          "epoch": 12,
+          "trainingNll": 0.05512150578004749,
+          "validationNll": 0.05938297510147095
+        }
+      ],
+      "name": "A",
+      "selectedEpoch": 10,
+      "smoke": {
+        "finite": true,
+        "finiteGradients": true,
+        "optimizerScope": true,
+        "rows": 8
+      },
+      "stateSha256": "e361bdc7b675c2768ef48698f4d85594583802fa4a8a91215b78aa78a7dd70f6",
+      "trainingSeconds": 6.255673186999047
+    },
+    "B": {
+      "checkpoint": "/home/philippherrmann/sts_sweep/runs/deepset-survival-screen-20260916-final/head_b.pt",
+      "checkpointSha256": "9fc06f9817101230e1008b8570bf89e50d9eb1bfcf0452f75509d901a1914549",
+      "history": [
+        {
+          "epoch": 1,
+          "trainingNll": 0.1643634192122702,
+          "validationNll": 0.12170759588479996
+        },
+        {
+          "epoch": 2,
+          "trainingNll": 0.10838818078613222,
+          "validationNll": 0.10282173752784729
+        },
+        {
+          "epoch": 3,
+          "trainingNll": 0.09562500451871178,
+          "validationNll": 0.09534645080566406
+        },
+        {
+          "epoch": 4,
+          "trainingNll": 0.09011182371050791,
+          "validationNll": 0.09195861220359802
+        },
+        {
+          "epoch": 5,
+          "trainingNll": 0.08728327906053317,
+          "validationNll": 0.0898914709687233
+        },
+        {
+          "epoch": 6,
+          "trainingNll": 0.08539384455048948,
+          "validationNll": 0.0890219584107399
+        },
+        {
+          "epoch": 7,
+          "trainingNll": 0.08404260105395078,
+          "validationNll": 0.08717669546604156
+        },
+        {
+          "epoch": 8,
+          "trainingNll": 0.08291931724862049,
+          "validationNll": 0.08613525331020355
+        },
+        {
+          "epoch": 9,
+          "trainingNll": 0.08188795541088682,
+          "validationNll": 0.08523387461900711
+        },
+        {
+          "epoch": 10,
+          "trainingNll": 0.0810596462488548,
+          "validationNll": 0.08445502817630768
+        },
+        {
+          "epoch": 11,
+          "trainingNll": 0.0803408612564841,
+          "validationNll": 0.08395897597074509
+        },
+        {
+          "epoch": 12,
+          "trainingNll": 0.07975587854278565,
+          "validationNll": 0.08320914953947067
+        }
+      ],
+      "name": "B",
+      "selectedEpoch": 12,
+      "smoke": {
+        "finite": true,
+        "finiteGradients": true,
+        "optimizerScope": true,
+        "rows": 8
+      },
+      "stateSha256": "b2cbe36b89451c3bde5bb360e56796832e7046e1a888f51b0ec4ed4b59471238",
+      "trainingSeconds": 6.319337873001132
+    }
+  },
+  "gates": {
+    "coreBrierRelativeMax": 0.05,
+    "coreNllRelativeMax": 0.02,
+    "deathNllRelativeMax": 0.1,
+    "lowPreHpMinimumDeaths": 1,
+    "lowPreHpMinimumRows": 100,
+    "lowPreHpNllRelativeMax": 0.1,
+    "lowPreHpSupportSufficient": true
+  },
+  "initialization": {
+    "byteIdentical": true,
+    "headSha256": "fd275d8d3523bc77f466eaf8400620d0ec25be0c35e57076e3af6cb317322c5e"
+  },
+  "knowledgeImpact": "experiment evidence and current research status only; runtime defaults unchanged",
+  "metrics": {
+    "A": {
+      "accuracyAt05": 0.975479109629806,
+      "brier": 0.017769712954759598,
+      "calibration": [
+        {
+          "bin": 0,
+          "lower": 0.0,
+          "meanPredicted": 0.0483224093914032,
+          "observedSurvival": 0.05921052631578947,
+          "rows": 304,
+          "upper": 0.1
+        },
+        {
+          "bin": 1,
+          "lower": 0.1,
+          "meanPredicted": 0.14880143105983734,
+          "observedSurvival": 0.1935483870967742,
+          "rows": 217,
+          "upper": 0.2
+        },
+        {
+          "bin": 2,
+          "lower": 0.2,
+          "meanPredicted": 0.2523522675037384,
+          "observedSurvival": 0.2545454545454545,
+          "rows": 220,
+          "upper": 0.3
+        },
+        {
+          "bin": 3,
+          "lower": 0.3,
+          "meanPredicted": 0.34801509976387024,
+          "observedSurvival": 0.4092664092664093,
+          "rows": 259,
+          "upper": 0.4
+        },
+        {
+          "bin": 4,
+          "lower": 0.4,
+          "meanPredicted": 0.4555930197238922,
+          "observedSurvival": 0.46078431372549017,
+          "rows": 306,
+          "upper": 0.5
+        },
+        {
+          "bin": 5,
+          "lower": 0.5,
+          "meanPredicted": 0.5515828728675842,
+          "observedSurvival": 0.5754475703324808,
+          "rows": 391,
+          "upper": 0.6
+        },
+        {
+          "bin": 6,
+          "lower": 0.6,
+          "meanPredicted": 0.6516127586364746,
+          "observedSurvival": 0.6540880503144654,
+          "rows": 477,
+          "upper": 0.7
+        },
+        {
+          "bin": 7,
+          "lower": 0.7,
+          "meanPredicted": 0.7536250352859497,
+          "observedSurvival": 0.7455716586151369,
+          "rows": 621,
+          "upper": 0.8
+        },
+        {
+          "bin": 8,
+          "lower": 0.8,
+          "meanPredicted": 0.85575932264328,
+          "observedSurvival": 0.8402270884022709,
+          "rows": 1233,
+          "upper": 0.9
+        },
+        {
+          "bin": 9,
+          "lower": 0.9,
+          "meanPredicted": 0.9959251284599304,
+          "observedSurvival": 0.995967915822157,
+          "rows": 46378,
+          "upper": 1.0
+        }
+      ],
+      "finiteLogits": true,
+      "finiteProbabilities": true,
+      "meanPredictedSurvival": 0.9635897278785706,
+      "nll": 0.059312280267477036,
+      "observedSurvivalRate": 0.9639725429512359,
+      "probabilitiesInUnitInterval": true,
+      "rocAuc": 0.4940138559356224,
+      "rows": 50406
+    },
+    "B": {
+      "accuracyAt05": 0.966948379161211,
+      "brier": 0.024436526000499725,
+      "calibration": [
+        {
+          "bin": 0,
+          "lower": 0.0,
+          "meanPredicted": 0.07613413035869598,
+          "observedSurvival": 0.0,
+          "rows": 3,
+          "upper": 0.1
+        },
+        {
+          "bin": 1,
+          "lower": 0.1,
+          "meanPredicted": 0.15908625721931458,
+          "observedSurvival": 0.1527777777777778,
+          "rows": 72,
+          "upper": 0.2
+        },
+        {
+          "bin": 2,
+          "lower": 0.2,
+          "meanPredicted": 0.25500261783599854,
+          "observedSurvival": 0.3021978021978022,
+          "rows": 182,
+          "upper": 0.3
+        },
+        {
+          "bin": 3,
+          "lower": 0.3,
+          "meanPredicted": 0.354358047246933,
+          "observedSurvival": 0.43884892086330934,
+          "rows": 278,
+          "upper": 0.4
+        },
+        {
+          "bin": 4,
+          "lower": 0.4,
+          "meanPredicted": 0.4516052305698395,
+          "observedSurvival": 0.5131195335276968,
+          "rows": 343,
+          "upper": 0.5
+        },
+        {
+          "bin": 5,
+          "lower": 0.5,
+          "meanPredicted": 0.5500932931900024,
+          "observedSurvival": 0.5802469135802469,
+          "rows": 405,
+          "upper": 0.6
+        },
+        {
+          "bin": 6,
+          "lower": 0.6,
+          "meanPredicted": 0.6531499624252319,
+          "observedSurvival": 0.6523887973640856,
+          "rows": 607,
+          "upper": 0.7
+        },
+        {
+          "bin": 7,
+          "lower": 0.7,
+          "meanPredicted": 0.7539730668067932,
+          "observedSurvival": 0.7559129612109745,
+          "rows": 1057,
+          "upper": 0.8
+        },
+        {
+          "bin": 8,
+          "lower": 0.8,
+          "meanPredicted": 0.8575496673583984,
+          "observedSurvival": 0.8439092172301992,
+          "rows": 2159,
+          "upper": 0.9
+        },
+        {
+          "bin": 9,
+          "lower": 0.9,
+          "meanPredicted": 0.9910908341407776,
+          "observedSurvival": 0.99280353200883,
+          "rows": 45300,
+          "upper": 1.0
+        }
+      ],
+      "finiteLogits": true,
+      "finiteProbabilities": true,
+      "meanPredictedSurvival": 0.9617024064064026,
+      "nll": 0.08320914953947067,
+      "observedSurvivalRate": 0.9639725429512359,
+      "probabilitiesInUnitInterval": true,
+      "rocAuc": 0.5043004806014182,
+      "rows": 50406
+    }
+  },
+  "population": {
+    "TEST": {
+      "encodedRows": 0,
+      "inferenceRows": 0,
+      "rows": 51441,
+      "scoredRows": 0
+    },
+    "TRAIN": {
+      "rows": 408183,
+      "sources": 19986
+    },
+    "VALIDATION": {
+      "rows": 50406,
+      "sources": 2496
+    },
+    "rowIdsSha256": "059a0b1b0267f4b1f457a28a57c904adeebc0d1c1d5b2529556a5481e65b773b",
+    "trainValidationRowIdsSha256": "55e768df3a8d954194607e121cf8a5e2ebd20bef080935f755d87d26aeb186a8"
+  },
+  "provenance": {
+    "attentionRepresentationSha256": "4ab5ef2a1049f25ae4534cc2e40b0f36f96a1d419ccd398bfcef1a11f413bf9d",
+    "attentionRowIdsSha256": "3dfecd1df38856c3069b1efdc3ed6cf6f6ad1c792afcbf368b3badb7b112e437",
+    "deepSetsBinding": {
+      "checkpointSha256": "bee6800dd7230b180c2b4894c0f01763efca4b7799e3f36a805333c3003dc663",
+      "normalizationRowIdsSha256": "e42a4dc3a964524a277fdcfde4cbdc552277dc358ce0d1d27e2c612a43ae3214",
+      "normalizationRows": 393677,
+      "receiptSha256": "83b2482eab347c09901c3b39f2ce7fed324f6be378ca36ff51f0d3965074c769",
+      "selectedEpoch": 40,
+      "source": "b192275ca0584a0c1eee8916176613b428a5e1b4"
+    },
+    "deepSetsCheckpointSha256": "bee6800dd7230b180c2b4894c0f01763efca4b7799e3f36a805333c3003dc663",
+    "deepSetsReceiptSha256": "83b2482eab347c09901c3b39f2ce7fed324f6be378ca36ff51f0d3965074c769",
+    "preparation": {
+      "cacheSha256": "e1c25f2758bf56c7cff392ea02342d809f3ad7427c70b64166244a6b714a251d",
+      "census": {
+        "all": {
+          "rows": 510030,
+          "supported": 510030
+        },
+        "test": {
+          "rows": 51441,
+          "supported": 51441
+        },
+        "train": {
+          "rows": 408183,
+          "supported": 408183
+        },
+        "validation": {
+          "rows": 50406,
+          "supported": 50406
+        }
+      },
+      "counts": {
+        "brewGenerationRounds": 3029,
+        "escapeRows": 3001,
+        "specialSurvivors": 6776
+      },
+      "countsBySplit": {
+        "test": {
+          "previousQualified": 41454,
+          "rows": 51441,
+          "survivors": 49630
+        },
+        "train": {
+          "previousQualified": 331225,
+          "rows": 408183,
+          "survivors": 393677
+        },
+        "validation": {
+          "previousQualified": 41120,
+          "rows": 50406,
+          "survivors": 48590
+        }
+      },
+      "graphsSha256": "e59be3b1292a11e27db8188c8359454d1e876287f298d19c48b187c4ff05413a",
+      "hashes": {
+        "/home/philippherrmann/sts_sweep/runs/combat-transition-model-v1/split_manifest.json": "e9043bcceb9d95027711e6ff33afbfe1cae3cf9528f820c0ff68bddbb419db32",
+        "/home/philippherrmann/sts_sweep/runs/combat-transition-runtime-25k/combat-transition-25k.jsonl": "74c08aa0a3c30342d86cd45355fe17ffa9046963ad7c8cf71b1938f9cdc1cfde",
+        "/home/philippherrmann/sts_sweep/runs/combat-transition-runtime-25k/combat-transition-25k.jsonl.manifest.json": "33669cd99eed8317987192825b5111a68d1e60269c166def2fe568364e20ad59",
+        "/tmp/sts-phase2-attention-audit-20260913/prepared.npz": "2badbb85ccd8329bcb886d50ef8a0b9b1bd2c043fda9445de9f9c2e7a4b6f9a5",
+        "/tmp/sts-phase2-attention-audit-20260913/prepared_manifest.json": "13b2c91fd0ced713f8c429bbf8995ceb58b6e3e57d1555de42f5e67d7f9a389f",
+        "/tmp/sts-phase2-attention-audit-20260913/target_spec.json": "e2315620d512578542d6b3bfbd362eb07b086f0e9fa7770cc23f4fa4c226e229",
+        "hp": "a667a3cfa7d7eca3cb07b46f50321e443c75e8a58f7627becb1fd69bf90f08c9",
+        "max_hp": "66ac8f70da69e29bf9b1364243f6f903e4f74dda1ec8a909ef54a7ea97dc6479",
+        "potion": "8e04bcd5265fb11b8fa91b4553a84690915f437e7b3afee0b93358e312de3ad6",
+        "potion_encoder": "2085010f1aeef7a7957cdc45c851b2424d640037fd0fa981eb7ae7274190f6ef",
+        "relic": "e07e79d487152ae294f4915ef4aecd0e8bd38b8dec8d0133a57b6b58af92bd71",
+        "survival": "2447b2daf1a48a619a5f071488908afd6f0fb83bfd855ee9f379c04120efeaef"
+      },
+      "recipe": {
+        "actions": "64 native categories: five clearing bits plus trigger USE/DISCARD bit; ordinary masks retain one category",
+        "batch": 512,
+        "encoder": "frozen historical potion encoder",
+        "epochs": 12,
+        "gradientClip": 1.0,
+        "lr": 0.001,
+        "partition": "original source-grouped engineering TEST; reused development evidence, not pristine holdout",
+        "rng": "planner-owned fresh sts::Random(seed); reused through recursive generation; advanced state retained",
+        "seed": 20260912,
+        "selection": "earliest strict minimum original VALIDATION conditional trajectory NLL",
+        "target": "exact native generation-body prior times all compatible consumption-order probabilities",
+        "training": "shared inventory-conditioned joint-mask decoder only; original TRAIN survivors",
+        "weightDecay": 0.0001
+      },
+      "residualReasons": {},
+      "sourceSha": "11281504eb45b41c7e3f539a7a5bc5eb2a883da7",
+      "specialRowsSha256": "2d8fc6b4a7655805a155b2d2223103bc74dfc8c5a663c53a2129de6fcdf99151",
+      "supportChanged": false
+    },
+    "preparationCacheSha256": "e1c25f2758bf56c7cff392ea02342d809f3ad7427c70b64166244a6b714a251d",
+    "referenceComponentSha256": "e150180a9112f52a94cfa60770adb6c0a48517a7d94a4c26f6e5896e85269c18",
+    "referenceFit": {
+      "artifactSha256": "e150180a9112f52a94cfa60770adb6c0a48517a7d94a4c26f6e5896e85269c18",
+      "component": "survival",
+      "hashes": {
+        "/home/philippherrmann/sts_sweep/runs/combat-transition-model-v1/split_manifest.json": "e9043bcceb9d95027711e6ff33afbfe1cae3cf9528f820c0ff68bddbb419db32",
+        "/home/philippherrmann/sts_sweep/runs/combat-transition-runtime-25k/combat-transition-25k.jsonl": "74c08aa0a3c30342d86cd45355fe17ffa9046963ad7c8cf71b1938f9cdc1cfde",
+        "/home/philippherrmann/sts_sweep/runs/combat-transition-runtime-25k/combat-transition-25k.jsonl.manifest.json": "33669cd99eed8317987192825b5111a68d1e60269c166def2fe568364e20ad59",
+        "/tmp/sts-phase2-attention-audit-20260913/prepared.npz": "2badbb85ccd8329bcb886d50ef8a0b9b1bd2c043fda9445de9f9c2e7a4b6f9a5",
+        "/tmp/sts-phase2-attention-audit-20260913/prepared_manifest.json": "13b2c91fd0ced713f8c429bbf8995ceb58b6e3e57d1555de42f5e67d7f9a389f",
+        "/tmp/sts-phase2-attention-audit-20260913/target_spec.json": "e2315620d512578542d6b3bfbd362eb07b086f0e9fa7770cc23f4fa4c226e229",
+        "hp": "a667a3cfa7d7eca3cb07b46f50321e443c75e8a58f7627becb1fd69bf90f08c9",
+        "max_hp": "66ac8f70da69e29bf9b1364243f6f903e4f74dda1ec8a909ef54a7ea97dc6479",
+        "potion": "8e04bcd5265fb11b8fa91b4553a84690915f437e7b3afee0b93358e312de3ad6",
+        "potion_encoder": "2085010f1aeef7a7957cdc45c851b2424d640037fd0fa981eb7ae7274190f6ef",
+        "relic": "e07e79d487152ae294f4915ef4aecd0e8bd38b8dec8d0133a57b6b58af92bd71",
+        "survival": "2447b2daf1a48a619a5f071488908afd6f0fb83bfd855ee9f379c04120efeaef"
+      },
+      "history": [
+        {
+          "epoch": 1,
+          "validationNll": 0.05949442833662033
+        },
+        {
+          "epoch": 2,
+          "validationNll": 0.06018524244427681
+        },
+        {
+          "epoch": 3,
+          "validationNll": 0.059913355857133865
+        },
+        {
+          "epoch": 4,
+          "validationNll": 0.06084025278687477
+        },
+        {
+          "epoch": 5,
+          "validationNll": 0.06072220951318741
+        },
+        {
+          "epoch": 6,
+          "validationNll": 0.06129971146583557
+        },
+        {
+          "epoch": 7,
+          "validationNll": 0.060235679149627686
+        },
+        {
+          "epoch": 8,
+          "validationNll": 0.06115161255002022
+        },
+        {
+          "epoch": 9,
+          "validationNll": 0.06011151522397995
+        },
+        {
+          "epoch": 10,
+          "validationNll": 0.06040889397263527
+        },
+        {
+          "epoch": 11,
+          "validationNll": 0.06036519631743431
+        },
+        {
+          "epoch": 12,
+          "validationNll": 0.060464419424533844
+        }
+      ],
+      "originalValidationNll": 0.06048867478966713,
+      "preparationCacheSha256": "e1c25f2758bf56c7cff392ea02342d809f3ad7427c70b64166244a6b714a251d",
+      "recipe": {
+        "batch": 512,
+        "clip": 1.0,
+        "encoderLr": 0.0001,
+        "epochs": 12,
+        "evidence": "engineering development; original TEST reused, not untouched confirmation",
+        "headLr": 0.001,
+        "population": "entire provisional final union; original source-grouped TRAIN",
+        "scope": "existing survival, maxHP, HP and potion encoder/head architectures; shared 64-action native trajectory extension",
+        "seed": 20260912,
+        "selection": "earliest strict minimum original VALIDATION NLL",
+        "weightDecay": 0.0001
+      },
+      "selectedEpoch": 1,
+      "sourceSha": "1c31b7eb0a7660d43bc27e0849a8955dd0c3daae",
+      "supportChanged": false,
+      "testNll": 0.060411643236875534,
+      "testRows": 51441,
+      "trainRows": 408183,
+      "validationRows": 50406,
+      "warmBindings": {}
+    },
+    "representation": {
+      "candidateZRowIdsSha256": "3dfecd1df38856c3069b1efdc3ed6cf6f6ad1c792afcbf368b3badb7b112e437",
+      "candidateZSha256": "9232027d8331fd2157727276410161e3c12816b6680cb116ebc2b3afd37352af",
+      "deepset": {
+        "checkpointSha256": "bee6800dd7230b180c2b4894c0f01763efca4b7799e3f36a805333c3003dc663",
+        "normalizationRowIdsSha256": "e42a4dc3a964524a277fdcfde4cbdc552277dc358ce0d1d27e2c612a43ae3214",
+        "normalizationRows": 393677,
+        "receiptSha256": "83b2482eab347c09901c3b39f2ce7fed324f6be378ca36ff51f0d3965074c769",
+        "selectedEpoch": 40,
+        "source": "b192275ca0584a0c1eee8916176613b428a5e1b4"
+      },
+      "generatedRowIdsSha256": "55e768df3a8d954194607e121cf8a5e2ebd20bef080935f755d87d26aeb186a8",
+      "generatedRows": 458589,
+      "generatedSplits": {
+        "TEST": 0,
+        "TRAIN": 408183,
+        "VALIDATION": 50406
+      },
+      "idsSha256": "059a0b1b0267f4b1f457a28a57c904adeebc0d1c1d5b2529556a5481e65b773b",
+      "nonZCacheFingerprints": {
+        "affected": "14cfab46b8bb9e13fb0137cd8dd424f62175e336238225f116d57dc9cb3afa37",
+        "boss": "bead6c9af81d49481c44a349d28394b3b6e27f246e2c52ac6823aa9691c22913",
+        "capacity": "7c56535b06e7b6b0faa9b86d89b6dec17e092f418a7c1628a57567a64bd561c7",
+        "compatible_attacks": "c27b10af66ac5db8a752ee0332bac92974d5f2d4988e91fe7773f1e4d3111dc8",
+        "compatible_cards": "f31af0a69848395b7333ab2d5aa4fadddb09589963c9fc1c1e36a578ec06e82e",
+        "compatible_shuffles": "93c569a204dae5932c43f11ea1a29da784ddbaa7e62e4a84cdbd81de74163b32",
+        "compatible_turns": "585165a0e3745057675fd8f0a0d7b809c757ccdd0cfe02c17e38e001bddf3252",
+        "dagger": "139b3704ba897ce3cbbf750975fafb1a76fb25854dc9e1d5199d69713d8ca5d0",
+        "delta": "a65be56293ae5ba231248bad5a2d0b9c5b781866282ae0c2132facda5ebcc1af",
+        "escaped": "793dcf6ecc47e3db49cfacd1a147394b581a2ccf2b123bffce27cfda545ae767",
+        "ids": "059a0b1b0267f4b1f457a28a57c904adeebc0d1c1d5b2529556a5481e65b773b",
+        "mask": "5dbf903204fc7080438db67055f1ccaab9d5bb182eaed66a5148ab4834f38f7f",
+        "observed": "8631fed52d9e6ffef54acdafc0637cc695e55d41e16c6b1ff15cdf2d76149ca4",
+        "old": "9b533dc3230b26b0072f75f380a85717d4398cb79ec62318f487c396b4ce8ccf",
+        "potionZ": "ebc3e60dfd4de0838abbe440f3b9f3ec241c7ba7f3ab901e7a65edd937fd55be",
+        "potions": "34cfff538e24b4847323f798d5c640bb9f3e525fe2c95330755b7149050030ab",
+        "preHp": "76505742d84814f3e60773d75e7f5675b8ec5ba60cf822c0e0853175d33af812",
+        "preMax": "6fec055c5e9d8d3ccb015ce7d1f75d3c28fd640715c010ec116ccecbe5ececba",
+        "source": "e2f6446e8a7e72e049db55178f1a7a07254731f6b7d9516c721d8fa0655e46fd",
+        "split": "3dff562214d063b92e516d301d6a8b92398bcbd16c034495c473753e627e28dd",
+        "traces": "314609936887cadc5684f9759dff42d13eb1ca4f4d09fa809544c0b35c9b0659",
+        "trueHp": "cef15d1738b7ffc9b9b23070f1c930da4fbeaaf8d9a2d3412f9df37f0c88a232",
+        "trueMax": "bf21b451537e9a590b45a39928a23d54c3d35557129b8339cb3a08e68f90bfad",
+        "win": "4efac5178d3392d1c9500ef88a86c1e770ae7ad570a89c81720ce627feccd011",
+        "writhing": "8d77e6cb5f23e03e349d88e31594affe0de256c8426430214f4ea7b3328de17e"
+      },
+      "referenceCacheSha256": "acd48827199f95d006ed2e225e31df768f5c757c8995fa2a0a868cf49ab0d0e3",
+      "referencePreparationCacheSha256": "e1c25f2758bf56c7cff392ea02342d809f3ad7427c70b64166244a6b714a251d",
+      "rows": 510030,
+      "schema": "deepset_downstream_representation_v1",
+      "shape": [
+        458589,
+        64
+      ],
+      "sourceSha": "1c31b7eb0a7660d43bc27e0849a8955dd0c3daae",
+      "testInferenceRows": 0,
+      "testRowsEncoded": 0
+    },
+    "savedDeepSetsSampleMaxAbsError": 3.5762786865234375e-07
+  },
+  "recipe": {
+    "batch": 512,
+    "epochs": 12,
+    "gradientClip": 1.0,
+    "loss": "BCE-with-logits survival loss",
+    "lr": 0.001,
+    "optimizer": "AdamW",
+    "precision": "fp32",
+    "schema": "deepset_survival_screen_v1",
+    "seed": 20260912,
+    "selection": "earliest strict minimum VALIDATION log loss",
+    "testInferenceRows": 0,
+    "training": "fresh survival head only; both encoders frozen and cached",
+    "weightDecay": 0.0001
+  },
+  "reference": {
+    "expectedValidationNll": 0.05949442833662033,
+    "metrics": {
+      "accuracyAt05": 0.9751021703765425,
+      "brier": 0.01781509444117546,
+      "calibration": [
+        {
+          "bin": 0,
+          "lower": 0.0,
+          "meanPredicted": 0.05218931660056114,
+          "observedSurvival": 0.05734767025089606,
+          "rows": 279,
+          "upper": 0.1
+        },
+        {
+          "bin": 1,
+          "lower": 0.1,
+          "meanPredicted": 0.14857900142669678,
+          "observedSurvival": 0.17777777777777778,
+          "rows": 225,
+          "upper": 0.2
+        },
+        {
+          "bin": 2,
+          "lower": 0.2,
+          "meanPredicted": 0.2543490529060364,
+          "observedSurvival": 0.2703862660944206,
+          "rows": 233,
+          "upper": 0.3
+        },
+        {
+          "bin": 3,
+          "lower": 0.3,
+          "meanPredicted": 0.3474677801132202,
+          "observedSurvival": 0.36885245901639346,
+          "rows": 244,
+          "upper": 0.4
+        },
+        {
+          "bin": 4,
+          "lower": 0.4,
+          "meanPredicted": 0.4531751275062561,
+          "observedSurvival": 0.5031645569620253,
+          "rows": 316,
+          "upper": 0.5
+        },
+        {
+          "bin": 5,
+          "lower": 0.5,
+          "meanPredicted": 0.5489605069160461,
+          "observedSurvival": 0.5685279187817259,
+          "rows": 394,
+          "upper": 0.6
+        },
+        {
+          "bin": 6,
+          "lower": 0.6,
+          "meanPredicted": 0.6516559720039368,
+          "observedSurvival": 0.6544401544401545,
+          "rows": 518,
+          "upper": 0.7
+        },
+        {
+          "bin": 7,
+          "lower": 0.7,
+          "meanPredicted": 0.7530989050865173,
+          "observedSurvival": 0.7275641025641025,
+          "rows": 624,
+          "upper": 0.8
+        },
+        {
+          "bin": 8,
+          "lower": 0.8,
+          "meanPredicted": 0.8548954725265503,
+          "observedSurvival": 0.851963746223565,
+          "rows": 1324,
+          "upper": 0.9
+        },
+        {
+          "bin": 9,
+          "lower": 0.9,
+          "meanPredicted": 0.9957226514816284,
+          "observedSurvival": 0.9962810006702848,
+          "rows": 46249,
+          "upper": 1.0
+        }
+      ],
+      "finiteLogits": true,
+      "finiteProbabilities": true,
+      "meanPredictedSurvival": 0.9630218148231506,
+      "nll": 0.05949442461133003,
+      "observedSurvivalRate": 0.9639725429512359,
+      "probabilitiesInUnitInterval": true,
+      "rocAuc": 0.5023766753279486,
+      "rows": 50406
+    }
+  },
+  "reloadVerification": {
+    "A": {
+      "checkpointSha256": "698c88c6187e5c6590daa1c856918ab231c17929c6410dce6837c044877db81f",
+      "metricsMatch": true
+    },
+    "B": {
+      "checkpointSha256": "9fc06f9817101230e1008b8570bf89e50d9eb1bfcf0452f75509d901a1914549",
+      "metricsMatch": true
+    }
+  },
+  "schema": "deepset_survival_screen_v1",
+  "slices": {
+    "boss": {
+      "A": {
+        "brier": 0.08784572035074234,
+        "deaths": 1169,
+        "nll": 0.27982664108276367,
+        "rows": 5444
+      },
+      "B": {
+        "brier": 0.12963823974132538,
+        "deaths": 1169,
+        "nll": 0.40067943930625916,
+        "rows": 5444
+      }
+    },
+    "deaths": {
+      "A": {
+        "brier": 0.32474154233932495,
+        "deaths": 1816,
+        "nll": 1.0007206201553345,
+        "rows": 1816
+      },
+      "B": {
+        "brier": 0.4899820387363434,
+        "deaths": 1816,
+        "nll": 1.44389009475708,
+        "rows": 1816
+      }
+    },
+    "lowPreHp": {
+      "A": {
+        "brier": 0.1293174773454666,
+        "deaths": 292,
+        "nll": 0.39673981070518494,
+        "rows": 756
+      },
+      "B": {
+        "brier": 0.20090165734291077,
+        "deaths": 292,
+        "nll": 0.6183070540428162,
+        "rows": 756
+      }
+    },
+    "normal": {
+      "A": {
+        "brier": 0.009284908883273602,
+        "deaths": 647,
+        "nll": 0.032612401992082596,
+        "rows": 44962
+      },
+      "B": {
+        "brier": 0.011698702350258827,
+        "deaths": 647,
+        "nll": 0.04476983845233917,
+        "rows": 44962
+      }
+    },
+    "victories": {
+      "A": {
+        "brier": 0.006296965759247541,
+        "deaths": 0,
+        "nll": 0.02412814274430275,
+        "rows": 48590
+      },
+      "B": {
+        "brier": 0.007037255447357893,
+        "deaths": 0,
+        "nll": 0.03235512971878052,
+        "rows": 48590
+      }
+    }
+  },
+  "sourceSha": "1c31b7eb0a7660d43bc27e0849a8955dd0c3daae",
+  "uncertainty": "One fixed offline TRAIN/VALIDATION screen; no TEST, runtime, native, gameplay, OOC MCTS, promotion, or encoder fine-tuning.",
+  "validity": {
+    "encodersFrozen": true,
+    "finite": true,
+    "testInferenceRows": 0
+  }
+}

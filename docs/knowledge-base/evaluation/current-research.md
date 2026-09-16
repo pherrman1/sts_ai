@@ -644,6 +644,32 @@ or default-promotion work occurred. See
 [ledger-06 §289](../../experiments/ledger-06.md) and the
 [DeepSets potion screen evidence](../../experiments/evidence/deepset_potion_screen_2026-09-16.md).
 
+### Qualified DeepSets representation for survival prediction
+
+The matched frozen survival-head screen is **`DEEPSET_SURVIVAL_REJECTED`**.
+The TRAIN-only full-union survival Attention encoder and the corrected
+qualified PR #205 DeepSets encoder were frozen. Only fresh byte-identically
+initialized survival heads were trained with the same 12-epoch, batch-512,
+FP32 AdamW recipe and identical epoch permutations on all original
+TRAIN/VALIDATION rows. No TEST rows were encoded or scored.
+
+Arm A selected epoch 10 at validation NLL `0.059312280`; Arm B selected epoch
+12 at `0.083209150`, a **+40.2899%** degradation. Brier worsened **+37.5178%**.
+Observed-death NLL worsened **+44.2850%**, and the supported low-pre-HP slice
+(`756` rows, `292` deaths) worsened **+55.8470%**. All four fixed gates failed.
+The original dedicated survival component's recorded validation NLL was
+reproduced as `0.059494425`, and the selected heads reloaded from disk without
+metric drift.
+
+This rejects the exact frozen victory-distilled DeepSets representation plus
+matched survival-head recipe for survival. It does not establish intrinsic
+information absence and does not authorize fine-tuning, a replacement runtime
+encoder, or a broader architecture search. The next clean option, if pursued,
+is a separately designed survival-specific representation. No TEST, runtime,
+native export, gameplay, OOC MCTS or promotion work occurred. See
+[ledger-06 §290](../../experiments/ledger-06.md) and the
+[DeepSets survival evidence](../../experiments/evidence/deepset_survival_screen_2026-09-16.md).
+
 ### Jointly adapted shared maxHP+HP+potion representation
 
 The requested follow-up is **`SHARED_TRANSITION_POTION_REJECTED`**. Starting
