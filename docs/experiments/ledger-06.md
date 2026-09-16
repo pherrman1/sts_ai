@@ -8969,12 +8969,25 @@ effective-gold and max-HP scalars (1,768 state inputs). Hidden pending-intent
 details are redacted before feature extraction. No training, model loading,
 gameplay, action selection, utility, RNG, or runtime default changed.
 
-The final corrected run and its exact cost arithmetic are recorded in the
-[evidence packet](evidence/silver_policy_value_phase_a_2026-09-16.md). The
-source telemetry measures all rollout calls and wall time by input state, and
-the native benchmark measures actual supported `PLAYER_NORMAL` leaves with an
-observed checksum. The classification is based on the resulting end-to-end
-break-even estimate, not on corpus coverage alone. This does not establish
+The final corrected implementation was `71d669a5779e3180f679dfd15301c6f371d9a11b`.
+Its guarded one-thread source run (seeds 100--107) produced 3,334 decisions,
+333,400 simulations, 315,816 rollout calls, 145.152346 seconds of summed
+search wall, and 76.768818 seconds of summed rollout wall. Full telemetry
+classified 290,326 calls (91.9288%) and 71.752385 seconds of rollout wall
+(93.4655%) as `PLAYER_NORMAL`; the call-weighted mean was 247.144 microseconds.
+The sampled corpus had 116,696 supported leaves, but was not used as the full
+denominator.
+
+The native one-thread fixed-weight benchmark measured actual supported leaves
+at 123.434/119.679/141.623/160.248 microseconds (mean/median/p90/p99), with
+3,200 calls, 13,000 action scores, and an observed checksum. Replacing the
+full-run `PLAYER_NORMAL` rollout calls gives an estimated 109.236043-second
+search, 24.7439% end-to-end reduction, and 1.3288x speedup. The bounded
+engineering classification is **`PV_COST_FEASIBLE`**. This does not establish
 predictor quality, hidden-state sufficiency, or gameplay benefit.
+
+The Phase-A packet records the separate parent-policy/leaf-value schemas,
+root effective-gold/max-HP input scalars, exact arithmetic, executable/source/
+benchmark/example hashes, raw timing-log hash, and CPU identity.
 
 **Evidence:** [Phase-A packet](evidence/silver_policy_value_phase_a_2026-09-16.md).

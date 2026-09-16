@@ -6,106 +6,194 @@ terminal utility.
 
 ## Binding and scope
 
-- Baseline reviewed SHA: `77fec051c2453d79f05bad5e813989b861fa5d0a`
+- Requested baseline SHA: `77fec051c2453d79f05bad5e813989b861fa5d0a`
+- PR base SHA at the final correction: `3f8ca7b59c2de1ba78a2d8bab0f280f849dd6845`
+- Experiment implementation SHA: `71d669a5779e3180f679dfd15301c6f371d9a11b`
 - Upstream Silver SHA: `84ab3ead9d88c01c4be09a6773fb9a947f57d5ff`
-- Source worktree: fresh Codex-app-managed worktree, detached at the baseline
+- Source executable Git SHA recorded in the run metadata: the experiment
+  implementation SHA above
 - Supported input: visible `PLAYER_NORMAL` combat state only
 - Candidate contract: one shared state encoder, one scalar value, and all
   currently legal Silver sibling actions
-- Canonical widths: 1,766 state features and 22 action features
-- Utility: existing `BattleSearcher::evaluateEndState`, with the original
-  root retained as teacher-only reference context and the existing gold/maxHP
+- Canonical widths: 1,766 state features plus 22 action features = 1,788
+  canonical policy features
+- Prospective model input: the 1,766 canonical state features plus exact
+  isolated-Silver root effective gold and root max HP = 1,768 state inputs
+- Utility: existing `BattleSearcher::evaluateEndState`, with the original root
+  retained as teacher-only reference context and existing gold/maxHP
   root-relative weights (`0.25`, `2.0`)
 
-The converter redacts isolated-search seed, observed-generation, misc-bit
-provenance, and latent pending intent data when `intentsHidden` is set. It
-retains visible combat/player/enemy/power/status/hand/pile/card/potion/relic
-fields in the visible wire. The canonical 1,766-feature projection is
-explicitly marked lossy for draw order, some card-instance metadata,
-per-monster detail, card-select/queue context, and full relic counters; these
-are documented in every emitted example rather than silently treated as
-represented.
+The converter writes separate `parent_policy` and `leaf_value` records. A
+parent policy record contains no child utility label. A value record uses the
+teacher utility from that same actual rollout leaf and preserves its incoming
+semantic action fingerprint; it never substitutes a parent or first-child
+label. Hidden pending-intent fields and interpreter/provenance-only fields are
+redacted before feature extraction. The canonical projection remains
+explicitly lossy for draw order, some card-instance metadata, per-monster
+detail, card-select/queue context, and full relic-counter detail.
 
-## A1 — current Silver rollout cost
+## A1 — full Silver rollout cost and supported-leaf coverage
 
-Guarded source run: `bestbench`, 8 seeds (`100..107`), Release binary, one CPU
-thread, fair Silver, 100 simulations per decision, exact root budgets, and
-reuse-cap mode `none`. Leaf corpus sampling was modulus 1 with at most 16
-leaves per group. The run completed without telemetry conversion, semantic,
-transaction, or knowledge failures.
+Run artifact directory:
+`build/phase_a_final_omp1/`. The guarded source command was:
 
-The live telemetry produced 188 combat summaries:
+```text
+OMP_NUM_THREADS=1 STS_FAIR=1 STS_SEARCHER3=0 STS_SILVER_SEARCH=1
+STS_SILVER_EXACT_ROOT_BUDGETS=1 STS_SILVER_REUSE_CAP_MODE=none
+STS_SILVER_ADAPTIVE=0 STS_SILVER_VNET_LEAF_DIRECT=0 STS_NATIVE_OOC=1
+STS_SILVER_TELEMETRY=1 STS_SILVER_LEAF_CORPUS=.../source.corpus.jsonl
+STS_SILVER_LEAF_CORPUS_GROUP_MODULUS=1
+STS_SILVER_LEAF_CORPUS_MAX_PER_GROUP=16
+STS_EXECUTABLE_GIT_SHA=71d669a5779e3180f679dfd15301c6f371d9a11b
+bash tools/seed_guard.sh .../one_combat bestbench 100 8 0 100 .../source.csv
+```
+
+The run used seeds `100..107`, Release `one_combat`, exact 100 simulations
+per decision, fair Silver, reuse-cap mode `none`, and one worker thread. The
+raw timing output is preserved in `source.log`; its SHA-256 is listed below.
+There were 169 per-combat telemetry summaries and no telemetry, conversion,
+semantic, transaction, or knowledge failures.
+
+The full-search denominator is the sum of the raw `[silver-combat]` telemetry
+lines, not the sampled corpus:
 
 | Metric | Result |
 | --- | ---: |
-| decisions / simulations / rollout calls | 3,388 / 340,600 / 321,411 |
-| rollout calls per simulation | 0.9437 |
-| search wall / rollout wall | 153.268 s / 80.545 s |
-| rollout wall fraction | 52.5516% |
-| call-weighted rollout mean | 250.598 µs |
-| mean of per-combat rollout means | 238.950 µs |
-| median of per-combat rollout means | 239.684 µs |
-| median of per-combat p50 estimates | 231.853 µs |
-| median of per-combat p90 estimates | 293.671 µs |
-| median of per-combat p99 estimates | 351.290 µs |
+| decisions / simulations / rollout calls | 3,334 / 333,400 / 315,816 |
+| total search wall | 145.152346 s |
+| total rollout wall | 76.768818 s |
+| rollout wall fraction | 52.8893% |
+| `PLAYER_NORMAL` rollout calls | 290,326 (91.9288% of rollout calls) |
+| `PLAYER_NORMAL` rollout wall | 71.752385 s (93.4655% of rollout wall) |
+| `PLAYER_NORMAL` rollout wall / total search wall | 49.4325% |
+| `PLAYER_NORMAL` call-weighted mean | 247.144 µs |
 
-The percentile rows are summaries of the per-combat percentile telemetry
-emitted by the live backend; the raw sampled rollout rows contain the exact
-action and turn counts. Across 140,639 sampled rollout observations (19,916
-groups; all 8 seeds), rollout action count was mean/median/p90/p99
-`13.633 / 11 / 28 / 45`, and rollout turn delta was
-`2.446 / 2 / 5 / 9`. There were 5,016 hidden-intent rows in the source corpus;
-the converter redacted them before feature extraction, and 2 of the 16
-selected examples retained the `intentsHidden` marker after redaction.
+The rollout-start input-state mapping is `0=EXECUTING_ACTIONS`,
+`1=PLAYER_NORMAL`, `2=CARD_SELECT`, and `3..9=other/unused` for this run:
+
+| Input state | Calls | Wall micros |
+| --- | ---: | ---: |
+| `EXECUTING_ACTIONS` (0) | 6,117 | 313.388 |
+| `PLAYER_NORMAL` (1) | 290,326 | 71,752,384.900 |
+| `CARD_SELECT` (2) | 19,373 | 5,016,105.890 |
+| 3..9 | 0 | 0 |
+
+The corpus contains 127,797 rows across 17,158 complete groups. It is a
+sampled observation artifact, not the full denominator: 116,696 rows are
+`PLAYER_NORMAL` leaves and 11,101 are `CARD_SELECT` leaves. The sampled corpus
+has no state-0 rows because the complete-group capture selects rollout leaves
+at supported decision parents. Its state-1 action count was
+`14.704 / 12 / 30 / 48` mean/median/p90/p99 (range 1..80), with turn delta
+`2.689 / 2 / 6 / 10` (range 0..18). State 2 was
+`20.395 / 17 / 39 / 59` actions (range 2..78), with turn delta
+`3.617 / 3 / 7 / 11` (range 0..15). The full telemetry values above, rather
+than these sampled row counts, are used for the break-even calculation.
 
 ## A2–A4 — contract and representative examples
 
 `apps/silver_policy_value_phase_a.cpp` writes
-`silver_policy_value_phase_a_v1` JSONL. The 16 selected examples all have
-`input_state=PLAYER_NORMAL`, a teacher utility, exact Silver order, unique
-semantic action fingerprints, and 1,766/22 state/action feature widths. The
-legal-action counts are `[1, 1, 8, 5, 1, 7, 6, 5, 2, 6, 6, 2, 5, 3, 2, 3]`;
-the emitted action objects include the full semantic card/potion/select/target
-identity as well as the fingerprint and action features. The original root is
-present only under `root_reference_context.teacher_only`.
+`silver_policy_value_phase_a_v2` JSONL. The selected artifact contains 16
+`parent_policy` records and 16 `leaf_value` records. Parent records contain
+the exact legal sibling set in Silver order, semantic card/potion/select/target
+identity, unique fingerprints, 1,766 canonical state features, and the two
+root reference scalars. Leaf records contain the actual visible leaf state,
+the same 1,766 canonical features plus the two scalar inputs, the leaf's
+incoming action fingerprint, and its own `utility_original_root` label. The
+header records the sampled coverage and both record counts.
+
+The original root state remains under `root_reference_context.teacher_only`.
+The derived effective-gold and max-HP scalars are the only root context passed
+to the prospective model input; the full root snapshot is not a model feature.
 
 ## A5 — native synthetic CPU benchmark
 
-Binary: `silver_policy_value_phase_a`, Release, `OMP_NUM_THREADS=1`. The timed
-region is complete wire materialization, canonical state/action preparation,
-one shared `1766 -> 64 -> 64` ReLU encoder, `64 -> 1` value head, and all legal
-`[64,22] -> 32 -> 1` action scores. Fixed synthetic weights are deterministic;
-there is no model file or training dependency.
+Binary: `silver_policy_value_phase_a`, Release, `OMP_NUM_THREADS=1`. The
+benchmark uses the selected actual supported `PLAYER_NORMAL` leaves, not a
+synthetic zero state. Its fixed weights are deterministic and its checksum is
+accumulated from every value and every legal-action logit, with the result
+observed in the JSON output to prevent dead-code elimination.
+
+The timed region is visible leaf wire materialization, canonical feature
+preparation, exact root scalar derivation, one shared `1768 -> 64 -> 64`
+ReLU encoder, `64 -> 1` value head, and all legal `[64,22] -> 32 -> 1`
+action scores.
 
 | Metric | Result |
 | --- | ---: |
 | examples / iterations / calls | 16 / 200 / 3,200 |
-| action scores | 12,600 |
-| call mean / median / p90 / p99 | 120.947 / 120.916 / 126.727 / 142.990 µs |
-| calls/s / action scores/s | 8,268.07 / 32,555.52 |
-| legal actions mean / median / p90 / p99 | 3.9375 / 3 / 6 / 7 |
+| action scores | 13,000 |
+| call mean / median / p90 / p99 | 123.434 / 119.679 / 141.623 / 160.248 µs |
+| calls/s / action scores/s | 8,101.50 / 32,912.34 |
+| legal actions mean / median / p90 / p99 | 4.0625 / 4 / 6 / 6 |
+| observed checksum | `127.37751752097392` |
 
-Compared with the call-weighted current rollout mean, the candidate mean is
-`0.483x` (approximately 52% lower). On this machine and this bounded
-representative corpus, the classification is **`PV_COST_FEASIBLE`**. This is
-only a cost classification: no action-ranking quality, terminal-label quality,
-hidden-state sufficiency, or gameplay benefit has been established.
+## End-to-end break-even calculation
+
+The candidate mean is compared with the full-run call-weighted
+`PLAYER_NORMAL` rollout mean:
+
+```text
+replaceable_rollout_wall = 290,326 * 123.43394 us
+                       = 34,895,301.07 us
+
+estimated_search_wall = 145,152,345.90 - 71,752,384.90
+                        + 34,895,301.07
+                      = 109,236,043.06 us
+
+estimated_reduction = 1 - 109,236,043.06 / 145,152,345.90
+                    = 24.7439%
+estimated_speedup = 1.3288x
+candidate / PLAYER_NORMAL rollout mean = 0.4994x
+```
+
+Thus the bounded engineering classification is **`PV_COST_FEASIBLE`** for
+this machine, source configuration, and representative supported-leaf
+sample. This is a cost classification only; no action-ranking quality,
+terminal-label quality, hidden-state sufficiency, or gameplay benefit has
+been established.
+
+## Provenance and hashes
+
+Hardware/software identity:
+
+- CPU: AMD Ryzen 5 7500F 6-Core Processor, 1 socket, 6 cores, 2 threads/core
+- OS/kernel: Linux x86_64, kernel `7.1.5-76070105-generic`
+- Source run: one worker thread; candidate benchmark: one thread
+
+| Artifact | SHA-256 |
+| --- | --- |
+| Release `silver_policy_value_phase_a` | `fbd340962c227d0db4bd58d99334a73ccadddad673843e29cc4a803893411f0e` |
+| `source.corpus.jsonl` | `f19f012bc0acc9c7bac517de7d4270a85a00fde4d7d2967fc9e18f41bed2a843` |
+| raw telemetry/timing `source.log` | `2299aa893a97f0297e5c700e3aa0bb227776ea69e88bb4404985a3b94b043660` |
+| source results `source.csv` | `6ea1355f9cedec5819b4886d7ce471f3eeffd907c53706f0d86e2319efbcf3ba` |
+| source metadata `source.csv.meta.json` | `639bc6b1ea335a7623724ab76dfe7c145eef54066d29dfabad72550788326a41` |
+| selected examples `examples.jsonl` | `5a8bd180628ccc0d221c63f738e5e5c8707253698aed13b5fca993b44a08d20f` |
+| benchmark JSON `benchmark.json` | `3fd886df7623739451fc2c9a0e428346585985962d6447743d4650855f3ec9fd` |
+
+The source run and benchmark artifacts are generated build outputs and are
+intentionally not committed. The implementation SHA, executable hash, source
+corpus hash, selected-example hash, benchmark hash, raw timing-log hash, and
+hardware identity above make the uncommitted evidence reproducible and
+reviewable.
 
 ## Verification and boundaries
 
-- Release configure and target build passed for the new executable.
-- The source corpus was produced through `tools/seed_guard.sh`; the local run
-  stayed below the 128-seed ceiling.
+- Release build passed for `silver-policy-value-phase-a`, `one_combat`,
+  `silver-native-test`, `silver-bridge-test`, and `unit-test`.
+- Focused native CTest passed 4/4:
+  `silver_random_bridge`, `silver_semantic_action`,
+  `silver_searcher_link_closure`, and `silver_bridge_boundary`.
+- The final source run went through `tools/seed_guard.sh` and stayed below the
+  local 128-seed ceiling.
 - The diagnostic-off path remains default-off; no search policy, model loading,
-  utility, RNG, or gameplay default was changed.
-- Focused native tests passed: `silver_random_bridge`,
-  `silver_semantic_action`, `silver_searcher_link_closure`, and
-  `silver_bridge_boundary` (4/4). The authoritative GitHub Linux GCC check was
-  not run locally and remains required for publication.
-- Remaining uncertainty: the canonical projection is intentionally lossy,
-  the sample is small and corpus-provided, and this does not qualify runtime
-  inference or a gameplay gate.
+  utility, RNG, or gameplay default changed.
+- GitHub Actions `Linux GCC` is the authoritative post-push check and must be
+  read back for the final PR head.
+- Remaining uncertainty: the canonical projection is intentionally lossy, the
+  sample is bounded and corpus-provided, root scalar materialization is not yet
+  runtime integration, and this does not qualify predictor quality or a
+  gameplay gate.
 
-Knowledge impact: current maintained policy/value contract and Phase-A
-engineering evidence were added to the knowledge base and experiment ledger;
-runtime defaults and research qualification remain unchanged.
+Knowledge impact: the maintained policy/value contract, corrected 1,788
+feature arithmetic, and Phase-A engineering evidence were updated; runtime
+defaults and research qualification remain unchanged.
