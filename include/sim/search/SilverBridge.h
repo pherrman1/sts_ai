@@ -174,6 +174,14 @@ struct BattleStateWire {
     std::uint32_t miscBits = 0;
 };
 
+// Root-relative reference scalars used by the Phase-A policy/value contract.
+// These are derived by the isolated Silver materializer so the offline
+// artifact does not need to duplicate thief-gold or relic semantics.
+struct SilverRootReferenceScalars {
+    double effectiveGold = 0.0;
+    int maxHp = 0;
+};
+
 enum class SilverLeafObservationPhase : std::uint8_t { START = 0, END = 1 };
 
 // Type-free observation/control value for the isolated Silver rollout boundary.
@@ -292,6 +300,11 @@ struct SemanticAction {
 // is diagnostic identity only: it deliberately contains no Silver hand/pile
 // index and can therefore cross the isolated-search/live-action boundary.
 std::string semanticActionFingerprint(const SemanticAction &action);
+
+// Materialize the observed root and return the exact run-relative scalars
+// needed by the candidate value input.  This is read-only and does not run a
+// search or consume RNG.
+SilverRootReferenceScalars silverRootReferenceScalars(const BattleStateWire &state);
 
 // Enumerate the exact legal root actions in the order used by the pinned
 // Silver BattleSearcher. This performs no search simulation or rollout.
@@ -455,6 +468,8 @@ struct SilverSearchTelemetry {
     std::int64_t rolloutNonTerminalStops = 0;
     std::int64_t rolloutActionCount = 0;
     std::int64_t rolloutTurnDelta = 0;
+    std::array<std::int64_t, 10> rolloutCallsByInputState {};
+    std::array<double, 10> rolloutWallMicrosByInputState {};
     double searchWallMicros = 0.0;
     double rolloutWallMicros = 0.0;
     std::vector<double> rolloutLatencyMicros;
@@ -492,6 +507,10 @@ struct SilverSearchTelemetry {
         rolloutNonTerminalStops += other.rolloutNonTerminalStops;
         rolloutActionCount += other.rolloutActionCount;
         rolloutTurnDelta += other.rolloutTurnDelta;
+        for (std::size_t i = 0; i < rolloutCallsByInputState.size(); ++i) {
+            rolloutCallsByInputState[i] += other.rolloutCallsByInputState[i];
+            rolloutWallMicrosByInputState[i] += other.rolloutWallMicrosByInputState[i];
+        }
         searchWallMicros += other.searchWallMicros;
         rolloutWallMicros += other.rolloutWallMicros;
         rolloutLatencyMicros.insert(rolloutLatencyMicros.end(),

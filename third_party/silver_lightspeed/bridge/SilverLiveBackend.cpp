@@ -1201,6 +1201,10 @@ void addTelemetry(const silver_bridge::SilverSearchTelemetry &telemetry) {
     g_silverLiveDiagnostics.rolloutCalls += telemetry.rolloutCalls;
     g_silverLiveDiagnostics.searchWallMicros += telemetry.searchWallMicros;
     g_silverLiveDiagnostics.rolloutWallMicros += telemetry.rolloutWallMicros;
+    for (std::size_t i = 0; i < g_silverLiveDiagnostics.rolloutCallsByInputState.size(); ++i) {
+        g_silverLiveDiagnostics.rolloutCallsByInputState[i] += telemetry.rolloutCallsByInputState[i];
+        g_silverLiveDiagnostics.rolloutWallMicrosByInputState[i] += telemetry.rolloutWallMicrosByInputState[i];
+    }
     g_silverLiveDiagnostics.rolloutLatencyMicros.insert(
         g_silverLiveDiagnostics.rolloutLatencyMicros.end(),
         telemetry.rolloutLatencyMicros.begin(), telemetry.rolloutLatencyMicros.end());
@@ -1638,6 +1642,17 @@ void runSilverCombat(ScumSearchAgent2 &agent, GameContext &gc, BattleContext &bc
                   << " chance_depth_sum=" << d.chanceDepthSum
                   << " rollout_skipped_vnet=" << d.rolloutSkippedVNet
                   << " rollout_calls=" << d.rolloutCalls
+                  << " rollout_calls_by_input_state=";
+        for (std::size_t i = 0; i < d.rolloutCallsByInputState.size(); ++i) {
+            if (i != 0) line << ',';
+            line << i << ':' << d.rolloutCallsByInputState[i];
+        }
+        line << " rollout_wall_micros_by_input_state=";
+        for (std::size_t i = 0; i < d.rolloutWallMicrosByInputState.size(); ++i) {
+            if (i != 0) line << ',';
+            line << i << ':' << d.rolloutWallMicrosByInputState[i];
+        }
+        line
                   << " search_wall_micros=" << d.searchWallMicros
                   << " rollout_wall_micros=" << d.rolloutWallMicros
                   << " rollout_fraction=" << (d.searchWallMicros > 0.0

@@ -7,6 +7,7 @@
 
 #include "sim/search/Action.h"
 
+#include <array>
 #include <functional>
 #include <memory>
 #include <random>
@@ -67,6 +68,7 @@ namespace sts::search {
     // Deterministic search-graph telemetry: counts are exact properties of the search
     // (machine/thread independent), summable across searchers.
     struct SearchStats {
+        static constexpr int kInputStateCount = 10;
         std::int64_t steps = 0;                  // simulations run
         std::int64_t nodesCreated = 0;           // new nodes allocated via dedup misses
         std::int64_t detTranspositions = 0;      // deterministic-edge expansion hit an existing node
@@ -90,6 +92,8 @@ namespace sts::search {
         std::int64_t rolloutNonTerminalStops = 0;
         std::int64_t rolloutActionCount = 0;
         std::int64_t rolloutTurnDelta = 0;
+        std::array<std::int64_t, kInputStateCount> rolloutCallsByInputState {};
+        std::array<double, kInputStateCount> rolloutWallMicrosByInputState {};
         // Populated only when collectRolloutDiagnostics is enabled. Values are
         // end-to-end rollout durations in fractional microseconds.
         std::vector<double> rolloutLatencyMicros;
@@ -122,6 +126,10 @@ namespace sts::search {
             rolloutNonTerminalStops += o.rolloutNonTerminalStops;
             rolloutActionCount += o.rolloutActionCount;
             rolloutTurnDelta += o.rolloutTurnDelta;
+            for (int i = 0; i < kInputStateCount; ++i) {
+                rolloutCallsByInputState[i] += o.rolloutCallsByInputState[i];
+                rolloutWallMicrosByInputState[i] += o.rolloutWallMicrosByInputState[i];
+            }
             rolloutLatencyMicros.insert(rolloutLatencyMicros.end(),
                                         o.rolloutLatencyMicros.begin(),
                                         o.rolloutLatencyMicros.end());
@@ -291,8 +299,9 @@ namespace sts::search {
         void enumerateCardSelectActions(Node &node, const BattleContext &bc);
         Edge* selectChanceOutcome(Node &chance);
         double evaluateEndState(const BattleContext &bc) const;
-        void recordRolloutDiagnostic(const BattleContext &bc, std::int64_t actionCount,
-                                     std::int64_t turnDelta, double wallMicros);
+        void recordRolloutDiagnostic(const BattleContext &bc, int inputState,
+                                     std::int64_t actionCount, std::int64_t turnDelta,
+                                     double wallMicros);
 
         void printSearchTree(std::ostream &os, int levels);
         void printSearchStack(std::ostream &os, bool skipLast=false);

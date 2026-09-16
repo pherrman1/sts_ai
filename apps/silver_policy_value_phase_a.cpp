@@ -7,8 +7,8 @@
 #include "sim/search/SilverWireJson.h"
 
 #include <algorithm>
+#include <array>
 #include <chrono>
-#include <cmath>
 #include <cstdint>
 #include <fstream>
 #include <iostream>
@@ -26,13 +26,32 @@ namespace {
 
 constexpr int kPlayerNormal = 1;
 constexpr int kCanonicalStateWidth = 1766;
+constexpr int kCanonicalPolicyWidth = 1788;
+constexpr int kModelStateWidth = kCanonicalStateWidth + 2;
+constexpr int kInputStateCount = 10;
 
 struct Group {
     std::string id;
     silver_bridge::BattleStateWire parent;
     silver_bridge::BattleStateWire root;
-    json teacher;
-    bool haveTeacher = false;
+};
+
+struct LeafValueSample {
+    std::string groupId;
+    std::string leafId;
+    std::string incomingActionFingerprint;
+    std::uint64_t runSeed = 0;
+    silver_bridge::BattleStateWire leaf;
+    silver_bridge::BattleStateWire root;
+    json aux;
+};
+
+struct Corpus {
+    std::map<std::string, Group> groups;
+    std::vector<LeafValueSample> playerNormalLeaves;
+    std::array<std::uint64_t, kInputStateCount> sampledLeafCalls {};
+    std::array<double, kInputStateCount> sampledLeafWallMicros {};
+    std::size_t sampledLeafRows = 0;
 };
 
 json semanticAction(const silver_bridge::SemanticAction &action) {
@@ -75,10 +94,33 @@ silver_bridge::BattleStateWire visibleState(silver_bridge::BattleStateWire state
     return state;
 }
 
-std::vector<Group> readGroups(const std::string &path, int maxGroups) {
+void requireCanonicalWidths() {
+    if (sts::search::combatFeatureCount() != kCanonicalStateWidth
+            || sts::search::combatPolicyFeatureCount() != kCanonicalPolicyWidth)
+        throw std::runtime_error("canonical feature contract changed: expected 1766/1788");
+}
+
+void requireSameRows(const std::vector<sts::search::SilverPolicyFeatureRow> &left,
+                     const std::vector<sts::search::SilverPolicyFeatureRow> &right,
+                     const std::string &context) {
+    if (left.size() != right.size()) throw std::runtime_error("nondeterministic action count: " + context);
+    for (std::size_t i = 0; i < left.size(); ++i) {
+        if (left[i].silverOrder != right[i].silverOrder
+                || left[i].actionFingerprint != right[i].actionFingerprint
+                || left[i].features != right[i].features)
+            throw std::runtime_error("nondeterministic policy features: " + context);
+    }
+}
+
+void requireSameFeatures(const std::vector<float> &left, const std::vector<float> &right,
+                         const std::string &context) {
+    if (left != right) throw std::runtime_error("nondeterministic value features: " + context);
+}
+
+Corpus readCorpus(const std::string &path, int maxGroups, int maxValueLeaves) {
     std::ifstream input(path);
     if (!input) throw std::runtime_error("cannot open corpus: " + path);
-    std::map<std::string, Group> groups;
+    Corpus corpus;
     std::string line;
     while (std::getline(input, line)) {
         if (line.empty()) continue;
@@ -88,37 +130,84 @@ std::vector<Group> readGroups(const std::string &path, int maxGroups) {
         const auto groupId = row.at("group_id").get<std::string>();
         const auto parent = silver_bridge::battleStateWireFromEnvelope(row.at("parent_state"));
         const auto root = silver_bridge::battleStateWireFromEnvelope(row.at("original_root_state"));
-        auto it = groups.find(groupId);
-        if (it == groups.end()) {
-            it = groups.emplace(groupId, Group{groupId, parent, root, {}, false}).first;
+        const auto leaf = silver_bridge::battleStateWireFromEnvelope(row.at("leaf_state"));
+        auto it = corpus.groups.find(groupId);
+        if (it == corpus.groups.end()) {
+            it = corpus.groups.emplace(groupId, Group{groupId, parent, root}).first;
         } else if (silver_bridge::battleStateWireEnvelope(it->second.parent).dump()
                        != silver_bridge::battleStateWireEnvelope(parent).dump()
                    || silver_bridge::battleStateWireEnvelope(it->second.root).dump()
                        != silver_bridge::battleStateWireEnvelope(root).dump()) {
             throw std::runtime_error("inconsistent parent/root state in group " + groupId);
         }
-        if (parent.inputState != kPlayerNormal) continue;
-        if (row.contains("aux_rollout") && row.at("aux_rollout").contains("utility_original_root")
-                && !it->second.haveTeacher) {
-            it->second.teacher = row.at("aux_rollout");
-            it->second.haveTeacher = true;
+
+        const int inputState = leaf.inputState;
+        if (inputState >= 0 && inputState < kInputStateCount) {
+            ++corpus.sampledLeafCalls[static_cast<std::size_t>(inputState)];
+            if (row.contains("aux_rollout"))
+                corpus.sampledLeafWallMicros[static_cast<std::size_t>(inputState)]
+                    += row.at("aux_rollout").value("wall_micros", 0.0);
+        }
+        ++corpus.sampledLeafRows;
+        if (inputState == kPlayerNormal
+                && static_cast<int>(corpus.playerNormalLeaves.size()) < maxValueLeaves
+                && row.contains("aux_rollout")
+                && row.at("aux_rollout").contains("utility_original_root")) {
+            corpus.playerNormalLeaves.push_back({
+                groupId, row.value("leaf_snapshot_id", std::string{}),
+                row.value("incoming_action_fingerprint", std::string{}),
+                row.value("run_seed", std::uint64_t{0}), leaf, root,
+                row.at("aux_rollout")});
         }
     }
-    std::vector<Group> result;
-    for (auto &[ignored, group] : groups) {
+    if (static_cast<int>(corpus.groups.size()) < maxGroups)
+        throw std::runtime_error("corpus has fewer groups than requested policy examples");
+    if (static_cast<int>(corpus.playerNormalLeaves.size()) < maxValueLeaves)
+        throw std::runtime_error("corpus has fewer supported PLAYER_NORMAL leaves than requested");
+    return corpus;
+}
+
+std::vector<const Group *> selectPolicyGroups(const Corpus &corpus, int maxGroups) {
+    std::vector<const Group *> result;
+    for (const auto &[ignored, group] : corpus.groups) {
         if (group.parent.inputState != kPlayerNormal) continue;
-        result.push_back(std::move(group));
+        result.push_back(&group);
         if (static_cast<int>(result.size()) >= maxGroups) break;
     }
+    if (static_cast<int>(result.size()) < maxGroups)
+        throw std::runtime_error("corpus has fewer PLAYER_NORMAL parent groups than requested");
     return result;
 }
 
-json example(const Group &group) {
+json rootReferenceContext(const silver_bridge::BattleStateWire &root) {
+    const auto scalars = silver_bridge::silverRootReferenceScalars(root);
+    return {{"teacher_only", true},
+            {"original_root_state", silver_bridge::battleStateWireEnvelope(root)},
+            {"effective_gold", scalars.effectiveGold},
+            {"max_hp", scalars.maxHp},
+            {"terminal_utility_contract", "BattleSearcher::evaluateEndState"},
+            {"root_relative_fields", {"effective_gold_delta", "player_max_hp_delta"}},
+            {"weights", {{"gold_weight", 0.25}, {"max_hp_weight", 2.0}}}};
+}
+
+std::vector<float> modelStateFeatures(const std::vector<float> &canonical,
+                                      const silver_bridge::BattleStateWire &root) {
+    if (canonical.size() != static_cast<std::size_t>(kCanonicalStateWidth))
+        throw std::runtime_error("unexpected canonical state feature width");
+    const auto scalars = silver_bridge::silverRootReferenceScalars(root);
+    std::vector<float> result = canonical;
+    result.push_back(static_cast<float>(scalars.effectiveGold));
+    result.push_back(static_cast<float>(scalars.maxHp));
+    return result;
+}
+
+json policyExample(const Group &group) {
+    requireCanonicalWidths();
     const auto visible = visibleState(group.parent);
     const auto rows = sts::search::silverLiveParentPolicyFeatures(visible);
+    const auto repeatRows = sts::search::silverLiveParentPolicyFeatures(visible);
+    requireSameRows(rows, repeatRows, "parent policy " + group.id);
     if (rows.empty()) throw std::runtime_error("parent has no legal actions: " + group.id);
-    if (rows.front().features.size() != static_cast<std::size_t>(sts::search::combatPolicyFeatureCount()))
-        throw std::runtime_error("canonical policy feature vector has an unexpected width");
     const auto semantics = silver_bridge::enumerateSilverLegalActions(visible);
     if (semantics.size() != rows.size())
         throw std::runtime_error("semantic/action feature count mismatch: " + group.id);
@@ -138,18 +227,20 @@ json example(const Group &group) {
     }
     std::vector<float> stateFeatures(rows.front().features.begin(),
                                      rows.front().features.begin() + kCanonicalStateWidth);
-    const auto parentVisible = visible;
+    const auto modelFeatures = modelStateFeatures(stateFeatures, group.root);
     return {
-        {"example_schema", "silver_policy_value_phase_a_v1"},
-        {"support", {{"input_state", "PLAYER_NORMAL"},
-                      {"other_input_states", "unsupported"},
-                      {"hidden_information_leakage", false}}},
+        {"example_schema", "silver_policy_value_phase_a_v2"},
+        {"example_kind", "parent_policy"},
+        {"support", {{"input_state", "PLAYER_NORMAL"}, {"state_role", "policy_parent"},
+                      {"other_input_states", "unsupported"}, {"hidden_information_leakage", false}}},
         {"provenance", {{"group_id", group.id}, {"isolated_search_seed", group.parent.isolatedSearchSeed},
                          {"act", group.parent.act}, {"floor", group.parent.floorNum},
                          {"encounter", group.parent.encounter}, {"parent_state_hash_source", "corpus"}}},
-        {"visible_state", silver_bridge::battleStateWireEnvelope(parentVisible)},
+        {"visible_state", silver_bridge::battleStateWireEnvelope(visible)},
         {"canonical_state_features", stateFeatures},
         {"canonical_state_feature_count", kCanonicalStateWidth},
+        {"model_state_features", modelFeatures},
+        {"model_state_feature_count", kModelStateWidth},
         {"canonical_projection_omissions", {
             "known_draw_pile_order_is_not_in_1766_vector",
             "card_instance_upgrade_cost_special_data_and_free_play_are_not_in_pile_counts",
@@ -157,33 +248,84 @@ json example(const Group &group) {
             "card_select_and_queue_context_are_not_in_1766_vector",
             "full_visible_relic_power_counter_detail_is_not_fully_expanded"}},
         {"legal_actions", actions},
-        {"root_reference_context", {
-            {"teacher_only", true},
-            {"original_root_state", silver_bridge::battleStateWireEnvelope(group.root)},
-            {"terminal_utility_contract", "BattleSearcher::evaluateEndState"},
-            {"root_relative_fields", {"effective_gold_delta", "player_max_hp_delta"}},
-            {"weights", {{"gold_weight", 0.25}, {"max_hp_weight", 2.0}}}}},
-        {"teacher_terminal_utility", group.haveTeacher
-            ? json(group.teacher.at("utility_original_root")) : json(nullptr)},
-        {"teacher_utility_available", group.haveTeacher},
+        {"root_reference_context", rootReferenceContext(group.root)},
+        {"value_target_status", "not_attached_to_parent_policy_example"},
+        {"teacher_terminal_utility", nullptr},
+        {"teacher_utility_available", false},
         {"capture_contract", {
-            "state_input_is_visible_state_only",
+            "state_input_is_visible_parent_state_only",
             "legal_actions_are_exact_pinned_silver_actions",
             "action_identity_is_semantic_and_unique",
-            "teacher_utility_is_optional_rollout_observation"}}
+            "no_child_rollout_utility_is_attached_to_this_parent"}}
     };
+}
+
+json valueExample(const LeafValueSample &sample) {
+    requireCanonicalWidths();
+    const auto visible = visibleState(sample.leaf);
+    const auto features = sts::search::silverLiveLeafCanonicalFeatures(visible);
+    const auto repeatFeatures = sts::search::silverLiveLeafCanonicalFeatures(visible);
+    requireSameFeatures(features, repeatFeatures, "leaf value " + sample.leafId);
+    if (features.size() != static_cast<std::size_t>(kCanonicalStateWidth))
+        throw std::runtime_error("unexpected canonical value feature width");
+    const auto modelFeatures = modelStateFeatures(features, sample.root);
+    const auto &aux = sample.aux;
+    return {
+        {"example_schema", "silver_policy_value_phase_a_v2"},
+        {"example_kind", "leaf_value"},
+        {"support", {{"input_state", "PLAYER_NORMAL"}, {"state_role", "rollout_leaf_value"},
+                      {"other_input_states", "unsupported"}, {"hidden_information_leakage", false}}},
+        {"provenance", {{"group_id", sample.groupId}, {"leaf_snapshot_id", sample.leafId},
+                         {"run_seed", sample.runSeed}, {"isolated_search_seed", sample.leaf.isolatedSearchSeed},
+                         {"act", sample.leaf.act}, {"floor", sample.leaf.floorNum},
+                         {"encounter", sample.leaf.encounter},
+                         {"incoming_action_fingerprint", sample.incomingActionFingerprint}}},
+        {"visible_state", silver_bridge::battleStateWireEnvelope(visible)},
+        {"canonical_state_features", features},
+        {"canonical_state_feature_count", kCanonicalStateWidth},
+        {"model_state_features", modelFeatures},
+        {"model_state_feature_count", kModelStateWidth},
+        {"canonical_projection_omissions", {
+            "known_draw_pile_order_is_not_in_1766_vector",
+            "card_instance_upgrade_cost_special_data_and_free_play_are_not_in_pile_counts",
+            "per_monster_visible_statuses_and_intent_history_are_only_partially_aggregated",
+            "card_select_and_queue_context_are_not_in_1766_vector",
+            "full_visible_relic_power_counter_detail_is_not_fully_expanded"}},
+        {"root_reference_context", rootReferenceContext(sample.root)},
+        {"value_target_contract", "Silver evaluateEndState at this rollout leaf with original root reference"},
+        {"teacher_terminal_utility", aux.at("utility_original_root")},
+        {"teacher_utility_available", true},
+        {"rollout_observation", {{"action_count", aux.value("action_count", 0)},
+                                  {"turn_delta", aux.value("turn_delta", 0)},
+                                  {"wall_micros", aux.value("wall_micros", 0.0)}}},
+        {"capture_contract", {
+            "state_input_is_visible_rollout_leaf_state_only",
+            "value_label_is_from_this_same_leaf",
+            "original_root_is_teacher_only_reference_context",
+            "no_parent_child_label_substitution"}}
+    };
+}
+
+json sampledCoverage(const Corpus &corpus) {
+    json calls = json::object();
+    json wall = json::object();
+    for (int i = 0; i < kInputStateCount; ++i) {
+        calls[std::to_string(i)] = corpus.sampledLeafCalls[static_cast<std::size_t>(i)];
+        wall[std::to_string(i)] = corpus.sampledLeafWallMicros[static_cast<std::size_t>(i)];
+    }
+    return {{"rows", corpus.sampledLeafRows}, {"calls_by_input_state", calls},
+            {"wall_micros_by_input_state", wall},
+            {"source_is_sampled_corpus_not_full_search_denominator", true}};
 }
 
 struct SyntheticPV {
     static constexpr int H = 64;
-    // The canonical layout is 1,766 state features plus 22 action features;
-    // the runtime checks below fail closed if that contract changes.
-    static constexpr int A = 22;
+    static constexpr int A = kCanonicalPolicyWidth - kCanonicalStateWidth;
     std::vector<float> w1, b1, w2, b2, valueW, actionW, actionB, actionOutW;
     float valueB = 0.0f;
     float actionOutB = 0.0f;
 
-    SyntheticPV() : w1(H * kCanonicalStateWidth), b1(H), w2(H * H), b2(H),
+    SyntheticPV() : w1(H * kModelStateWidth), b1(H), w2(H * H), b2(H),
                     valueW(H), actionW(32 * (H + A)), actionB(32), actionOutW(32) {
         std::uint32_t x = 0x12345678u;
         auto fill = [&x](std::vector<float> &v) {
@@ -203,7 +345,7 @@ struct SyntheticPV {
         float h1[H] {}, h2[H] {};
         for (int r = 0; r < H; ++r) {
             float sum = b1[r];
-            for (int c = 0; c < kCanonicalStateWidth; ++c) sum += w1[r * kCanonicalStateWidth + c] * state[c];
+            for (int c = 0; c < kModelStateWidth; ++c) sum += w1[r * kModelStateWidth + c] * state[c];
             h1[r] = relu(sum);
         }
         for (int r = 0; r < H; ++r) {
@@ -229,18 +371,21 @@ struct SyntheticPV {
     }
 };
 
-void benchmark(const std::vector<Group> &groups, const std::string &path, int iterations) {
-    if (groups.empty()) throw std::runtime_error("no PLAYER_NORMAL examples to benchmark");
+void benchmark(const std::vector<LeafValueSample> &leaves, const Corpus &corpus,
+               const std::string &path, int iterations) {
+    if (leaves.empty()) throw std::runtime_error("no PLAYER_NORMAL rollout leaves to benchmark");
     struct Prepared { std::vector<float> state; std::vector<std::vector<float>> actions; };
     std::vector<Prepared> inputs;
     std::map<int, int> actionCounts;
     std::vector<int> actionCountSamples;
-    for (const auto &group : groups) {
-        const auto rows = sts::search::silverLiveParentPolicyFeatures(visibleState(group.parent));
-        if (rows.empty() || rows.front().features.size() != static_cast<std::size_t>(sts::search::combatPolicyFeatureCount()))
-            throw std::runtime_error("unexpected policy feature layout in benchmark");
+    for (const auto &sample : leaves) {
+        const auto rows = sts::search::silverLiveParentPolicyFeatures(visibleState(sample.leaf));
+        if (rows.empty() || rows.front().features.size() != static_cast<std::size_t>(kCanonicalPolicyWidth))
+            throw std::runtime_error("unexpected policy feature layout in leaf benchmark");
         Prepared prepared;
-        prepared.state.assign(rows.front().features.begin(), rows.front().features.begin() + kCanonicalStateWidth);
+        const std::vector<float> canonical(rows.front().features.begin(),
+                                           rows.front().features.begin() + kCanonicalStateWidth);
+        prepared.state = modelStateFeatures(canonical, sample.root);
         for (const auto &row : rows)
             prepared.actions.emplace_back(row.features.begin() + kCanonicalStateWidth, row.features.end());
         ++actionCounts[static_cast<int>(prepared.actions.size())];
@@ -249,25 +394,33 @@ void benchmark(const std::vector<Group> &groups, const std::string &path, int it
     }
     SyntheticPV model;
     float value = 0.0f; std::vector<float> logits;
-    for (const auto &input : inputs) model.forward(input.state, input.actions, value, logits);
+    double checksum = 0.0;
+    for (const auto &input : inputs) {
+        model.forward(input.state, input.actions, value, logits);
+        checksum += value;
+        for (float score : logits) checksum += score;
+    }
     const auto start = std::chrono::steady_clock::now();
     std::vector<double> callLatencies;
-    callLatencies.reserve(groups.size() * static_cast<std::size_t>(iterations));
+    callLatencies.reserve(leaves.size() * static_cast<std::size_t>(iterations));
     std::size_t calls = 0, scored = 0;
     for (int i = 0; i < iterations; ++i) {
-        for (const auto &group : groups) {
+        for (const auto &sample : leaves) {
             const auto callStart = std::chrono::steady_clock::now();
-            // This is the complete candidate call: BattleContext/wire
-            // materialization and canonical state+action preparation happen
-            // before the shared encoder and all sibling scores.
-            const auto rows = sts::search::silverLiveParentPolicyFeatures(visibleState(group.parent));
-            if (rows.empty() || rows.front().features.size() != static_cast<std::size_t>(sts::search::combatPolicyFeatureCount()))
-                throw std::runtime_error("unexpected policy feature layout during benchmark");
-            std::vector<float> state(rows.front().features.begin(), rows.front().features.begin() + kCanonicalStateWidth);
+            // Complete candidate call: live wire materialization, feature
+            // preparation, shared encoder, value, and every sibling score.
+            const auto rows = sts::search::silverLiveParentPolicyFeatures(visibleState(sample.leaf));
+            if (rows.empty() || rows.front().features.size() != static_cast<std::size_t>(kCanonicalPolicyWidth))
+                throw std::runtime_error("unexpected policy feature layout during leaf benchmark");
+            const std::vector<float> canonical(rows.front().features.begin(),
+                                                rows.front().features.begin() + kCanonicalStateWidth);
+            std::vector<float> state = modelStateFeatures(canonical, sample.root);
             std::vector<std::vector<float>> actions;
             for (const auto &row : rows)
                 actions.emplace_back(row.features.begin() + kCanonicalStateWidth, row.features.end());
             model.forward(state, actions, value, logits);
+            checksum += value;
+            for (float score : logits) checksum += score;
             scored += actions.size(); ++calls;
             callLatencies.push_back(std::chrono::duration<double, std::micro>(
                 std::chrono::steady_clock::now() - callStart).count());
@@ -294,11 +447,11 @@ void benchmark(const std::vector<Group> &groups, const std::string &path, int it
     json distribution = json::object();
     for (const auto &[count, frequency] : actionCounts) distribution[std::to_string(count)] = frequency;
     const json result = {
-        {"benchmark_schema", "silver_policy_value_phase_a_benchmark_v1"},
-        {"architecture", {{"state_input", kCanonicalStateWidth}, {"encoder", "1766 -> 64 -> 64"},
+        {"benchmark_schema", "silver_policy_value_phase_a_benchmark_v2"},
+        {"architecture", {{"state_input", kModelStateWidth}, {"encoder", "1768 -> 64 -> 64"},
                            {"value_head", "64 -> 1"}, {"action_head", "[64,22] -> 32 -> 1"},
                            {"shared_state_encoding_once", true}, {"fixed_synthetic_weights", true}}},
-        {"cpu_threads", 1}, {"examples", groups.size()}, {"iterations", iterations},
+        {"cpu_threads", 1}, {"examples", leaves.size()}, {"iterations", iterations},
         {"calls", calls}, {"action_scores", scored}, {"legal_action_count_distribution", distribution},
         {"mean_call_micros", perCall}, {"median_call_micros", percentile(callLatencies, 0.50)},
         {"p90_call_micros", percentile(callLatencies, 0.90)},
@@ -310,7 +463,9 @@ void benchmark(const std::vector<Group> &groups, const std::string &path, int it
         {"p99_legal_actions", intPercentile(actionCountSamples, 0.99)},
         {"calls_per_second", 1.0e6 / std::max(1.0, perCall)},
         {"action_scores_per_second", 1.0e6 * static_cast<double>(scored) / std::max(1.0, micros)},
-        {"timed_region", "wire materialization + canonical feature preparation + encoder + value + all actions"}
+        {"checksum", checksum}, {"checksum_is_observed", true},
+        {"sampled_rollout_leaf_coverage", sampledCoverage(corpus)},
+        {"timed_region", "visible leaf wire materialization + canonical feature preparation + root scalar derivation + encoder + value + all actions"}
     };
     std::ofstream output(path);
     if (!output) throw std::runtime_error("cannot write benchmark: " + path);
@@ -328,18 +483,23 @@ int main(int argc, char **argv) {
         }
         const int maxExamples = argc == 5 ? std::stoi(argv[4]) : 16;
         if (maxExamples <= 0 || maxExamples > 128) throw std::runtime_error("max_examples must be 1..128");
-        const auto groups = readGroups(argv[1], maxExamples);
-        if (groups.empty()) throw std::runtime_error("corpus contained no ordinary PLAYER_NORMAL parent groups");
+        const auto corpus = readCorpus(argv[1], maxExamples, maxExamples);
+        const auto policyGroups = selectPolicyGroups(corpus, maxExamples);
         std::ofstream examples(argv[2]);
         if (!examples) throw std::runtime_error("cannot write examples: " + std::string(argv[2]));
-        examples << json{{"artifact_schema", "silver_policy_value_phase_a_v1"},
-                         {"example_count", groups.size()}, {"source", argv[1]},
-                         {"feature_contract", "visible wire + canonical compatibility projection + semantic siblings"}}
+        examples << json{{"artifact_schema", "silver_policy_value_phase_a_v2"},
+                         {"policy_example_count", policyGroups.size()},
+                         {"value_example_count", corpus.playerNormalLeaves.size()},
+                         {"source", argv[1]}, {"feature_contract", "visible wire + exact semantic siblings"},
+                         {"sampled_rollout_leaf_coverage", sampledCoverage(corpus)}}
                   .dump() << '\n';
-        for (const auto &group : groups) examples << example(group).dump() << '\n';
+        for (const auto *group : policyGroups) examples << policyExample(*group).dump() << '\n';
+        for (const auto &sample : corpus.playerNormalLeaves) examples << valueExample(sample).dump() << '\n';
         examples.close();
-        benchmark(groups, argv[3], 200);
-        std::cout << "captured_examples=" << groups.size() << " output=" << argv[2] << '\n';
+        benchmark(corpus.playerNormalLeaves, corpus, argv[3], 200);
+        std::cout << "captured_policy_examples=" << policyGroups.size()
+                  << " captured_value_examples=" << corpus.playerNormalLeaves.size()
+                  << " output=" << argv[2] << '\n';
         return 0;
     } catch (const std::exception &e) {
         std::cerr << "silver_policy_value_phase_a: " << e.what() << '\n';

@@ -514,6 +514,10 @@ SilverSearchTelemetry telemetry(const sts::search::SearchStats &stats) {
     out.rolloutNonTerminalStops = stats.rolloutNonTerminalStops;
     out.rolloutActionCount = stats.rolloutActionCount;
     out.rolloutTurnDelta = stats.rolloutTurnDelta;
+    for (std::size_t i = 0; i < out.rolloutCallsByInputState.size(); ++i) {
+        out.rolloutCallsByInputState[i] = stats.rolloutCallsByInputState[i];
+        out.rolloutWallMicrosByInputState[i] = stats.rolloutWallMicrosByInputState[i];
+    }
     out.rolloutLatencyMicros = stats.rolloutLatencyMicros;
     out.rolloutWallMicros = std::accumulate(out.rolloutLatencyMicros.begin(),
                                             out.rolloutLatencyMicros.end(), 0.0);
@@ -557,6 +561,10 @@ SilverSearchTelemetry telemetryDelta(const sts::search::SearchStats &after,
     result.rolloutNonTerminalStops -= prior.rolloutNonTerminalStops;
     result.rolloutActionCount -= prior.rolloutActionCount;
     result.rolloutTurnDelta -= prior.rolloutTurnDelta;
+    for (std::size_t i = 0; i < result.rolloutCallsByInputState.size(); ++i) {
+        result.rolloutCallsByInputState[i] -= prior.rolloutCallsByInputState[i];
+        result.rolloutWallMicrosByInputState[i] -= prior.rolloutWallMicrosByInputState[i];
+    }
     const auto priorLatencyCount = std::min(prior.rolloutLatencyMicros.size(),
                                             result.rolloutLatencyMicros.size());
     result.rolloutLatencyMicros.erase(result.rolloutLatencyMicros.begin(),
@@ -674,6 +682,27 @@ std::string semanticActionFingerprint(const SemanticAction &action) {
         out << cardFingerprint(action.selectedCards[i]);
     }
     return out.str();
+}
+
+SilverRootReferenceScalars silverRootReferenceScalars(const BattleStateWire &wire) {
+    sts::GameContext runContext;
+    initializeRunContext(runContext, wire);
+    const auto state = materialize(wire, &runContext);
+    SilverRootReferenceScalars result;
+    result.effectiveGold = state.player.gold;
+    result.maxHp = state.player.maxHp;
+    if (state.requiresStolenGoldCheck() && !state.player.hasRelic<sts::RelicId::ECTOPLASM>()) {
+        for (int i = 0; i < state.monsters.monsterCount; ++i) {
+            const auto &monster = state.monsters.arr[i];
+            const bool thief = monster.id == sts::MonsterId::LOOTER
+                || monster.id == sts::MonsterId::MUGGER;
+            const bool escaped = monster.curHp > 0
+                && (monster.moveHistory[0] == sts::MonsterMoveId::LOOTER_ESCAPE
+                    || monster.moveHistory[0] == sts::MonsterMoveId::MUGGER_ESCAPE);
+            if (thief && !escaped) result.effectiveGold += monster.miscInfo;
+        }
+    }
+    return result;
 }
 
 double silverVictoryBaselineCorrection(const BattleStateWire &originalRoot,

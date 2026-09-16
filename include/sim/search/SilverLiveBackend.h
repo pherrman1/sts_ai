@@ -43,6 +43,8 @@ struct SilverLiveDiagnostics {
     std::uint64_t rolloutCalls = 0;
     double searchWallMicros = 0.0;
     double rolloutWallMicros = 0.0;
+    std::array<std::uint64_t, 10> rolloutCallsByInputState {};
+    std::array<double, 10> rolloutWallMicrosByInputState {};
     std::vector<double> rolloutLatencyMicros;
     std::uint64_t blendEligibleLeaves = 0;
     std::uint64_t blendInvocations = 0;

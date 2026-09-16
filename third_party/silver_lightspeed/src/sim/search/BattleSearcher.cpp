@@ -611,6 +611,7 @@ double search::BattleSearcher::rolloutToEnd(BattleContext &bc, std::vector<Actio
                                              const Node *parent,
                                              const Action *incomingAction,
                                              int depth) {
+    const int rolloutInputState = static_cast<int>(bc.inputState);
     const auto diagnosticStart = collectRolloutDiagnostics
         ? std::chrono::steady_clock::now() : std::chrono::steady_clock::time_point{};
     const int maxTurns = rolloutMaxTurnsEnv();
@@ -618,7 +619,7 @@ double search::BattleSearcher::rolloutToEnd(BattleContext &bc, std::vector<Actio
     const std::size_t actionStackStart = actionCount;
     if (isTerminalState(bc)) {
         const double evaluation = evaluateEndState(bc);
-        recordRolloutDiagnostic(bc, 0, 0,
+        recordRolloutDiagnostic(bc, rolloutInputState, 0, 0,
             collectRolloutDiagnostics
                 ? std::chrono::duration<double, std::micro>(
                     std::chrono::steady_clock::now() - diagnosticStart).count() : 0.0);
@@ -694,7 +695,7 @@ double search::BattleSearcher::rolloutToEnd(BattleContext &bc, std::vector<Actio
         ? silver_bridge::silverBlendRolloutUtility(
             evaluation, leafObservation->vnetRawPrediction, leafObservation->blendAlpha)
         : evaluation;
-    recordRolloutDiagnostic(bc, rolloutActionCount, turnDelta,
+    recordRolloutDiagnostic(bc, rolloutInputState, rolloutActionCount, turnDelta,
         collectRolloutDiagnostics
             ? std::chrono::duration<double, std::micro>(
                 std::chrono::steady_clock::now() - diagnosticStart).count() : 0.0);
@@ -1066,6 +1067,7 @@ double search::BattleSearcher::evaluateEndState(const BattleContext &bc) const {
 }
 
 void search::BattleSearcher::recordRolloutDiagnostic(const BattleContext &bc,
+                                                      int inputState,
                                                       std::int64_t actionCount,
                                                       std::int64_t turnDelta,
                                                       double wallMicros) {
@@ -1078,6 +1080,10 @@ void search::BattleSearcher::recordRolloutDiagnostic(const BattleContext &bc,
     stats.rolloutActionCount += actionCount;
     stats.rolloutTurnDelta += turnDelta;
     stats.rolloutLatencyMicros.push_back(wallMicros);
+    if (inputState >= 0 && inputState < SearchStats::kInputStateCount) {
+        ++stats.rolloutCallsByInputState[static_cast<std::size_t>(inputState)];
+        stats.rolloutWallMicrosByInputState[static_cast<std::size_t>(inputState)] += wallMicros;
+    }
 
     // Keep the exact linear terms used by evaluateEndState separate. This is
     // intentionally a diagnostic mirror of that function, not a second value

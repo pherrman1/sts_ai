@@ -324,19 +324,27 @@ pipeline is offline-only and does not install scores into Silver selection.
 probe for a prospective `PLAYER_NORMAL` policy-plus-value input. It consumes
 an existing `silver_leaf_corpus_v1`, redacts interpreter/provenance fields (and
 latent intent details when intents are hidden), restores the visible wire
-through the live adapter, and emits exact pinned-Silver legal actions with
-semantic identities and the canonical 1,766-state-feature projection. The
-current policy layout is 1,780 features total: 1,766 state features plus 22
-action features. The output enumerates known projection omissions explicitly;
-it is not a claim that the canonical vector is a lossless representation of
-every visible wire field.
+through the live adapter, and emits separate parent-policy and actual
+`PLAYER_NORMAL` rollout-leaf value records. Parent-policy records enumerate
+exact pinned-Silver legal actions with semantic identities; leaf-value records
+label that same leaf and never substitute a parent or first-child utility. The
+canonical policy layout is 1,788 features total: 1,766 state features plus 22
+action features. The prospective shared model input appends the exact isolated
+Silver root reference scalars (effective gold and max HP), giving a 1,768-wide
+state input. The output enumerates known projection omissions explicitly; it is
+not a claim that the canonical vector is a lossless representation of every
+visible wire field.
 
 The optional teacher label is the existing Silver terminal utility from
 `BattleSearcher::evaluateEndState`, including its current root-relative
-reference context and weights. The original root snapshot is marked
-teacher-only; it is not part of the model-visible input. The executable also
-runs a fixed-weight native CPU benchmark for `1766 -> 64 -> 64`, `64 -> 1`,
-and `[64,22] -> 32 -> 1`, encoding state once and scoring all legal siblings.
+reference context and weights. The original root snapshot remains available as
+teacher-only provenance, while the two derived root scalars are part of the
+model-visible input. The executable benchmarks actual supported
+`PLAYER_NORMAL` leaves with a fixed-weight native CPU model: `1768 -> 64 ->
+64`, `64 -> 1`, and `[64,22] -> 32 -> 1`, encoding state once and scoring all
+legal siblings. It also measures full-search rollout calls and wall time by
+input state in the same guarded source run, so the break-even estimate uses the
+actual supported leaf denominator rather than a corpus-only proxy.
 Neither corpus conversion nor benchmarking changes training, gameplay, model
 loading, search selection, or utility semantics. Any cost classification is a
 hardware/configuration-specific feasibility diagnostic, not runtime
@@ -347,7 +355,7 @@ qualification.
 `src/sim/search/CombatValueNet.cpp` is the canonical producer:
 
 - `combatFeatureCount()` returns 1,766 state features;
-- `combatPolicyFeatureCount()` returns 1,780 total features;
+- `combatPolicyFeatureCount()` returns 1,788 total features;
 - the final 22 are produced by `combatPolicyFeatureNames` and
   `combatFillActionFeatures`.
 
