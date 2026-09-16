@@ -1,0 +1,3986 @@
+{
+  "calibration": {
+    "discovery": {
+      "1000": [
+        {
+          "decisions": 0,
+          "observed_action_change_rate": null,
+          "predicted_risk": null,
+          "predicted_risk_range": [
+            0.0,
+            0.01
+          ]
+        },
+        {
+          "decisions": 0,
+          "observed_action_change_rate": null,
+          "predicted_risk": null,
+          "predicted_risk_range": [
+            0.01,
+            0.02
+          ]
+        },
+        {
+          "decisions": 22,
+          "observed_action_change_rate": 0.0,
+          "predicted_risk": 0.046983038792158864,
+          "predicted_risk_range": [
+            0.02,
+            0.05
+          ]
+        },
+        {
+          "decisions": 1723,
+          "observed_action_change_rate": 0.014509576320371444,
+          "predicted_risk": 0.07235899975456662,
+          "predicted_risk_range": [
+            0.05,
+            0.1
+          ]
+        },
+        {
+          "decisions": 673,
+          "observed_action_change_rate": 0.33580980683506684,
+          "predicted_risk": 0.12495495602231223,
+          "predicted_risk_range": [
+            0.1,
+            0.2
+          ]
+        },
+        {
+          "decisions": 28,
+          "observed_action_change_rate": 0.39285714285714285,
+          "predicted_risk": 0.21500892625007398,
+          "predicted_risk_range": [
+            0.2,
+            0.4
+          ]
+        },
+        {
+          "decisions": 0,
+          "observed_action_change_rate": null,
+          "predicted_risk": null,
+          "predicted_risk_range": [
+            0.4,
+            1.0000001
+          ]
+        }
+      ],
+      "2000": [
+        {
+          "decisions": 0,
+          "observed_action_change_rate": null,
+          "predicted_risk": null,
+          "predicted_risk_range": [
+            0.0,
+            0.01
+          ]
+        },
+        {
+          "decisions": 0,
+          "observed_action_change_rate": null,
+          "predicted_risk": null,
+          "predicted_risk_range": [
+            0.01,
+            0.02
+          ]
+        },
+        {
+          "decisions": 34,
+          "observed_action_change_rate": 0.0,
+          "predicted_risk": 0.0468625497979904,
+          "predicted_risk_range": [
+            0.02,
+            0.05
+          ]
+        },
+        {
+          "decisions": 1798,
+          "observed_action_change_rate": 0.013904338153503892,
+          "predicted_risk": 0.07072349899750313,
+          "predicted_risk_range": [
+            0.05,
+            0.1
+          ]
+        },
+        {
+          "decisions": 591,
+          "observed_action_change_rate": 0.2961082910321489,
+          "predicted_risk": 0.12594403754698222,
+          "predicted_risk_range": [
+            0.1,
+            0.2
+          ]
+        },
+        {
+          "decisions": 23,
+          "observed_action_change_rate": 0.7391304347826086,
+          "predicted_risk": 0.2258518304138892,
+          "predicted_risk_range": [
+            0.2,
+            0.4
+          ]
+        },
+        {
+          "decisions": 0,
+          "observed_action_change_rate": null,
+          "predicted_risk": null,
+          "predicted_risk_range": [
+            0.4,
+            1.0000001
+          ]
+        }
+      ],
+      "250": [
+        {
+          "decisions": 0,
+          "observed_action_change_rate": null,
+          "predicted_risk": null,
+          "predicted_risk_range": [
+            0.0,
+            0.01
+          ]
+        },
+        {
+          "decisions": 0,
+          "observed_action_change_rate": null,
+          "predicted_risk": null,
+          "predicted_risk_range": [
+            0.01,
+            0.02
+          ]
+        },
+        {
+          "decisions": 8,
+          "observed_action_change_rate": 0.0,
+          "predicted_risk": 0.04856898689149733,
+          "predicted_risk_range": [
+            0.02,
+            0.05
+          ]
+        },
+        {
+          "decisions": 1487,
+          "observed_action_change_rate": 0.008069939475453935,
+          "predicted_risk": 0.07514696031360055,
+          "predicted_risk_range": [
+            0.05,
+            0.1
+          ]
+        },
+        {
+          "decisions": 936,
+          "observed_action_change_rate": 0.2916666666666667,
+          "predicted_risk": 0.12626959733937768,
+          "predicted_risk_range": [
+            0.1,
+            0.2
+          ]
+        },
+        {
+          "decisions": 15,
+          "observed_action_change_rate": 0.7333333333333333,
+          "predicted_risk": 0.21323728822711926,
+          "predicted_risk_range": [
+            0.2,
+            0.4
+          ]
+        },
+        {
+          "decisions": 0,
+          "observed_action_change_rate": null,
+          "predicted_risk": null,
+          "predicted_risk_range": [
+            0.4,
+            1.0000001
+          ]
+        }
+      ],
+      "4000": [
+        {
+          "decisions": 0,
+          "observed_action_change_rate": null,
+          "predicted_risk": null,
+          "predicted_risk_range": [
+            0.0,
+            0.01
+          ]
+        },
+        {
+          "decisions": 0,
+          "observed_action_change_rate": null,
+          "predicted_risk": null,
+          "predicted_risk_range": [
+            0.01,
+            0.02
+          ]
+        },
+        {
+          "decisions": 51,
+          "observed_action_change_rate": 0.0,
+          "predicted_risk": 0.0467549317264735,
+          "predicted_risk_range": [
+            0.02,
+            0.05
+          ]
+        },
+        {
+          "decisions": 1876,
+          "observed_action_change_rate": 0.011194029850746268,
+          "predicted_risk": 0.06894811630333239,
+          "predicted_risk_range": [
+            0.05,
+            0.1
+          ]
+        },
+        {
+          "decisions": 504,
+          "observed_action_change_rate": 0.2222222222222222,
+          "predicted_risk": 0.12585497785965957,
+          "predicted_risk_range": [
+            0.1,
+            0.2
+          ]
+        },
+        {
+          "decisions": 15,
+          "observed_action_change_rate": 0.8,
+          "predicted_risk": 0.22564879828353496,
+          "predicted_risk_range": [
+            0.2,
+            0.4
+          ]
+        },
+        {
+          "decisions": 0,
+          "observed_action_change_rate": null,
+          "predicted_risk": null,
+          "predicted_risk_range": [
+            0.4,
+            1.0000001
+          ]
+        }
+      ],
+      "500": [
+        {
+          "decisions": 0,
+          "observed_action_change_rate": null,
+          "predicted_risk": null,
+          "predicted_risk_range": [
+            0.0,
+            0.01
+          ]
+        },
+        {
+          "decisions": 0,
+          "observed_action_change_rate": null,
+          "predicted_risk": null,
+          "predicted_risk_range": [
+            0.01,
+            0.02
+          ]
+        },
+        {
+          "decisions": 15,
+          "observed_action_change_rate": 0.0,
+          "predicted_risk": 0.047688708411426486,
+          "predicted_risk_range": [
+            0.02,
+            0.05
+          ]
+        },
+        {
+          "decisions": 1634,
+          "observed_action_change_rate": 0.014687882496940025,
+          "predicted_risk": 0.07396557073947649,
+          "predicted_risk_range": [
+            0.05,
+            0.1
+          ]
+        },
+        {
+          "decisions": 770,
+          "observed_action_change_rate": 0.32987012987012987,
+          "predicted_risk": 0.12538665633628848,
+          "predicted_risk_range": [
+            0.1,
+            0.2
+          ]
+        },
+        {
+          "decisions": 27,
+          "observed_action_change_rate": 0.8148148148148148,
+          "predicted_risk": 0.21997961631448942,
+          "predicted_risk_range": [
+            0.2,
+            0.4
+          ]
+        },
+        {
+          "decisions": 0,
+          "observed_action_change_rate": null,
+          "predicted_risk": null,
+          "predicted_risk_range": [
+            0.4,
+            1.0000001
+          ]
+        }
+      ],
+      "8000": [
+        {
+          "decisions": 0,
+          "observed_action_change_rate": null,
+          "predicted_risk": null,
+          "predicted_risk_range": [
+            0.0,
+            0.01
+          ]
+        },
+        {
+          "decisions": 0,
+          "observed_action_change_rate": null,
+          "predicted_risk": null,
+          "predicted_risk_range": [
+            0.01,
+            0.02
+          ]
+        },
+        {
+          "decisions": 70,
+          "observed_action_change_rate": 0.0,
+          "predicted_risk": 0.04658600652296082,
+          "predicted_risk_range": [
+            0.02,
+            0.05
+          ]
+        },
+        {
+          "decisions": 1925,
+          "observed_action_change_rate": 0.0,
+          "predicted_risk": 0.06672944532511489,
+          "predicted_risk_range": [
+            0.05,
+            0.1
+          ]
+        },
+        {
+          "decisions": 431,
+          "observed_action_change_rate": 0.1136890951276102,
+          "predicted_risk": 0.12423445428899517,
+          "predicted_risk_range": [
+            0.1,
+            0.2
+          ]
+        },
+        {
+          "decisions": 20,
+          "observed_action_change_rate": 0.05,
+          "predicted_risk": 0.22034457389724108,
+          "predicted_risk_range": [
+            0.2,
+            0.4
+          ]
+        },
+        {
+          "decisions": 0,
+          "observed_action_change_rate": null,
+          "predicted_risk": null,
+          "predicted_risk_range": [
+            0.4,
+            1.0000001
+          ]
+        }
+      ]
+    },
+    "evaluation": {
+      "1000": [
+        {
+          "decisions": 0,
+          "observed_action_change_rate": null,
+          "predicted_risk": null,
+          "predicted_risk_range": [
+            0.0,
+            0.01
+          ]
+        },
+        {
+          "decisions": 0,
+          "observed_action_change_rate": null,
+          "predicted_risk": null,
+          "predicted_risk_range": [
+            0.01,
+            0.02
+          ]
+        },
+        {
+          "decisions": 3,
+          "observed_action_change_rate": 0.0,
+          "predicted_risk": 0.04698959040193409,
+          "predicted_risk_range": [
+            0.02,
+            0.05
+          ]
+        },
+        {
+          "decisions": 1697,
+          "observed_action_change_rate": 0.015910430170889805,
+          "predicted_risk": 0.0710712475603404,
+          "predicted_risk_range": [
+            0.05,
+            0.1
+          ]
+        },
+        {
+          "decisions": 705,
+          "observed_action_change_rate": 0.275177304964539,
+          "predicted_risk": 0.1253148107798753,
+          "predicted_risk_range": [
+            0.1,
+            0.2
+          ]
+        },
+        {
+          "decisions": 17,
+          "observed_action_change_rate": 0.5882352941176471,
+          "predicted_risk": 0.22539660911427464,
+          "predicted_risk_range": [
+            0.2,
+            0.4
+          ]
+        },
+        {
+          "decisions": 0,
+          "observed_action_change_rate": null,
+          "predicted_risk": null,
+          "predicted_risk_range": [
+            0.4,
+            1.0000001
+          ]
+        }
+      ],
+      "2000": [
+        {
+          "decisions": 0,
+          "observed_action_change_rate": null,
+          "predicted_risk": null,
+          "predicted_risk_range": [
+            0.0,
+            0.01
+          ]
+        },
+        {
+          "decisions": 0,
+          "observed_action_change_rate": null,
+          "predicted_risk": null,
+          "predicted_risk_range": [
+            0.01,
+            0.02
+          ]
+        },
+        {
+          "decisions": 9,
+          "observed_action_change_rate": 0.0,
+          "predicted_risk": 0.04791785362450511,
+          "predicted_risk_range": [
+            0.02,
+            0.05
+          ]
+        },
+        {
+          "decisions": 1786,
+          "observed_action_change_rate": 0.01791713325867861,
+          "predicted_risk": 0.06945959246161884,
+          "predicted_risk_range": [
+            0.05,
+            0.1
+          ]
+        },
+        {
+          "decisions": 615,
+          "observed_action_change_rate": 0.2552845528455285,
+          "predicted_risk": 0.12519405664434127,
+          "predicted_risk_range": [
+            0.1,
+            0.2
+          ]
+        },
+        {
+          "decisions": 12,
+          "observed_action_change_rate": 0.5,
+          "predicted_risk": 0.21788048665237345,
+          "predicted_risk_range": [
+            0.2,
+            0.4
+          ]
+        },
+        {
+          "decisions": 0,
+          "observed_action_change_rate": null,
+          "predicted_risk": null,
+          "predicted_risk_range": [
+            0.4,
+            1.0000001
+          ]
+        }
+      ],
+      "250": [
+        {
+          "decisions": 0,
+          "observed_action_change_rate": null,
+          "predicted_risk": null,
+          "predicted_risk_range": [
+            0.0,
+            0.01
+          ]
+        },
+        {
+          "decisions": 0,
+          "observed_action_change_rate": null,
+          "predicted_risk": null,
+          "predicted_risk_range": [
+            0.01,
+            0.02
+          ]
+        },
+        {
+          "decisions": 1,
+          "observed_action_change_rate": 0.0,
+          "predicted_risk": 0.045721367988921416,
+          "predicted_risk_range": [
+            0.02,
+            0.05
+          ]
+        },
+        {
+          "decisions": 1451,
+          "observed_action_change_rate": 0.010337698139214336,
+          "predicted_risk": 0.07336878755462037,
+          "predicted_risk_range": [
+            0.05,
+            0.1
+          ]
+        },
+        {
+          "decisions": 955,
+          "observed_action_change_rate": 0.2638743455497382,
+          "predicted_risk": 0.12703481392032362,
+          "predicted_risk_range": [
+            0.1,
+            0.2
+          ]
+        },
+        {
+          "decisions": 15,
+          "observed_action_change_rate": 0.7333333333333333,
+          "predicted_risk": 0.20955703234930612,
+          "predicted_risk_range": [
+            0.2,
+            0.4
+          ]
+        },
+        {
+          "decisions": 0,
+          "observed_action_change_rate": null,
+          "predicted_risk": null,
+          "predicted_risk_range": [
+            0.4,
+            1.0000001
+          ]
+        }
+      ],
+      "4000": [
+        {
+          "decisions": 0,
+          "observed_action_change_rate": null,
+          "predicted_risk": null,
+          "predicted_risk_range": [
+            0.0,
+            0.01
+          ]
+        },
+        {
+          "decisions": 0,
+          "observed_action_change_rate": null,
+          "predicted_risk": null,
+          "predicted_risk_range": [
+            0.01,
+            0.02
+          ]
+        },
+        {
+          "decisions": 18,
+          "observed_action_change_rate": 0.0,
+          "predicted_risk": 0.047975231501131727,
+          "predicted_risk_range": [
+            0.02,
+            0.05
+          ]
+        },
+        {
+          "decisions": 1881,
+          "observed_action_change_rate": 0.010101010101010102,
+          "predicted_risk": 0.06797373686094264,
+          "predicted_risk_range": [
+            0.05,
+            0.1
+          ]
+        },
+        {
+          "decisions": 510,
+          "observed_action_change_rate": 0.21372549019607842,
+          "predicted_risk": 0.1252270294746959,
+          "predicted_risk_range": [
+            0.1,
+            0.2
+          ]
+        },
+        {
+          "decisions": 13,
+          "observed_action_change_rate": 0.5384615384615384,
+          "predicted_risk": 0.2233333567455151,
+          "predicted_risk_range": [
+            0.2,
+            0.4
+          ]
+        },
+        {
+          "decisions": 0,
+          "observed_action_change_rate": null,
+          "predicted_risk": null,
+          "predicted_risk_range": [
+            0.4,
+            1.0000001
+          ]
+        }
+      ],
+      "500": [
+        {
+          "decisions": 0,
+          "observed_action_change_rate": null,
+          "predicted_risk": null,
+          "predicted_risk_range": [
+            0.0,
+            0.01
+          ]
+        },
+        {
+          "decisions": 0,
+          "observed_action_change_rate": null,
+          "predicted_risk": null,
+          "predicted_risk_range": [
+            0.01,
+            0.02
+          ]
+        },
+        {
+          "decisions": 1,
+          "observed_action_change_rate": 0.0,
+          "predicted_risk": 0.04370138451850528,
+          "predicted_risk_range": [
+            0.02,
+            0.05
+          ]
+        },
+        {
+          "decisions": 1583,
+          "observed_action_change_rate": 0.016424510423247,
+          "predicted_risk": 0.07215453556348117,
+          "predicted_risk_range": [
+            0.05,
+            0.1
+          ]
+        },
+        {
+          "decisions": 818,
+          "observed_action_change_rate": 0.27383863080684595,
+          "predicted_risk": 0.12521049768375994,
+          "predicted_risk_range": [
+            0.1,
+            0.2
+          ]
+        },
+        {
+          "decisions": 20,
+          "observed_action_change_rate": 0.55,
+          "predicted_risk": 0.22011686686427612,
+          "predicted_risk_range": [
+            0.2,
+            0.4
+          ]
+        },
+        {
+          "decisions": 0,
+          "observed_action_change_rate": null,
+          "predicted_risk": null,
+          "predicted_risk_range": [
+            0.4,
+            1.0000001
+          ]
+        }
+      ],
+      "8000": [
+        {
+          "decisions": 0,
+          "observed_action_change_rate": null,
+          "predicted_risk": null,
+          "predicted_risk_range": [
+            0.0,
+            0.01
+          ]
+        },
+        {
+          "decisions": 0,
+          "observed_action_change_rate": null,
+          "predicted_risk": null,
+          "predicted_risk_range": [
+            0.01,
+            0.02
+          ]
+        },
+        {
+          "decisions": 55,
+          "observed_action_change_rate": 0.0,
+          "predicted_risk": 0.04853628880973541,
+          "predicted_risk_range": [
+            0.02,
+            0.05
+          ]
+        },
+        {
+          "decisions": 1920,
+          "observed_action_change_rate": 0.0005208333333333333,
+          "predicted_risk": 0.06572903751085174,
+          "predicted_risk_range": [
+            0.05,
+            0.1
+          ]
+        },
+        {
+          "decisions": 434,
+          "observed_action_change_rate": 0.08525345622119816,
+          "predicted_risk": 0.12447086753565857,
+          "predicted_risk_range": [
+            0.1,
+            0.2
+          ]
+        },
+        {
+          "decisions": 13,
+          "observed_action_change_rate": 0.46153846153846156,
+          "predicted_risk": 0.2172902014928721,
+          "predicted_risk_range": [
+            0.2,
+            0.4
+          ]
+        },
+        {
+          "decisions": 0,
+          "observed_action_change_rate": null,
+          "predicted_risk": null,
+          "predicted_risk_range": [
+            0.4,
+            1.0000001
+          ]
+        }
+      ]
+    }
+  },
+  "classification": "LOGISTIC_DYNAMIC_RULE_REJECTED",
+  "discovery_seeds": [
+    112,
+    113,
+    114,
+    115,
+    116,
+    117,
+    118,
+    119
+  ],
+  "estimator": {
+    "coefficients": [
+      -0.06792723811445969,
+      -0.0286670512107369,
+      -0.08658205596325279,
+      -0.0931244072643301,
+      0.08417031844430656,
+      0.03523708854727214,
+      0.02638203272346094,
+      -0.03278333863776125,
+      0.0203723477012213,
+      -0.03566518232741314,
+      -0.029808124205005077,
+      -0.02965943471156273,
+      0.0
+    ],
+    "feature_mean": [
+      8.79312509010563,
+      7.255639595970333,
+      0.5933307343143062,
+      0.735471794960803,
+      0.7035530641062225,
+      1.8652084959750521,
+      0.031956936494957754,
+      1.374249491170852,
+      0.08490051785227583,
+      0.00998214638823462,
+      0.008175712538228536,
+      4.398787239418008,
+      1.0
+    ],
+    "feature_scale": [
+      1.2993457305942981,
+      1.1825505867307362,
+      0.3605986375086408,
+      0.24718980862043327,
+      0.5862404284518544,
+      0.41346454835677604,
+      0.17588544767777642,
+      0.43371793687879817,
+      0.3658394576494715,
+      0.05288073302285684,
+      0.033479835030166945,
+      7.941429385917982,
+      1.0
+    ],
+    "features": [
+      "log1p_inherited_visits",
+      "log1p_new_simulations",
+      "top_two_visit_gap_share",
+      "top_visit_share",
+      "visit_entropy",
+      "legal_action_count",
+      "leader_changed",
+      "consecutive_same_leader",
+      "leader_changes_so_far",
+      "gap_change",
+      "top_visit_share_change",
+      "q_gap",
+      "q_gap_valid"
+    ],
+    "intercept": -2.4128611896473235,
+    "l2": 1.0,
+    "max_iterations": 1200,
+    "model": "standardized logistic regression",
+    "training_population": "discovery retained non-forced checkpoints < 10k",
+    "training_rows": 14676
+  },
+  "evaluation_failure_slices": {
+    "inherited_visits_ge_1000": {
+      "inherited_visits_ge_1000": {
+        "action_agreement_rate": 0.9353558052434457,
+        "checkpoint_action_change_rate": 0.06464419475655431,
+        "decisions": 2225,
+        "risk_event_rate": 0.06464419475655431,
+        "rows": 13350
+      }
+    },
+    "low_inherited_visits_le_999": {
+      "low_inherited_visits_le_999": {
+        "action_agreement_rate": 0.7622673434856176,
+        "checkpoint_action_change_rate": 0.2377326565143824,
+        "decisions": 197,
+        "risk_event_rate": 0.2377326565143824,
+        "rows": 1182
+      }
+    },
+    "room_type": {
+      "boss": {
+        "action_agreement_rate": 0.9302788844621513,
+        "checkpoint_action_change_rate": 0.0697211155378486,
+        "decisions": 502,
+        "risk_event_rate": 0.0697211155378486,
+        "rows": 3012
+      },
+      "elite": {
+        "action_agreement_rate": 0.9186698717948718,
+        "checkpoint_action_change_rate": 0.08133012820512821,
+        "decisions": 832,
+        "risk_event_rate": 0.08133012820512821,
+        "rows": 4992
+      },
+      "hallway": {
+        "action_agreement_rate": 0.9186679474863912,
+        "checkpoint_action_change_rate": 0.08133205251360871,
+        "decisions": 1041,
+        "risk_event_rate": 0.08133205251360871,
+        "rows": 6246
+      },
+      "other": {
+        "action_agreement_rate": 0.9290780141843972,
+        "checkpoint_action_change_rate": 0.07092198581560284,
+        "decisions": 47,
+        "risk_event_rate": 0.07092198581560284,
+        "rows": 282
+      }
+    }
+  },
+  "evaluation_seeds": [
+    120,
+    121,
+    122,
+    123,
+    124,
+    125,
+    126,
+    127
+  ],
+  "exact_visit_lock": {
+    "all": {
+      "forced_one_action_control": {
+        "decisions": 302,
+        "distribution_of_chosen_stopping_budgets": {
+          "1000": 10,
+          "2000": 16,
+          "250": 201,
+          "4000": 37,
+          "8000": 38
+        },
+        "lock_condition": "top_edge_visits - second_edge_visits > 10000 - checkpoint_new_simulations",
+        "mean_new_simulations_per_decision": 1802.1523178807947,
+        "median_new_simulations_per_decision": 250.0,
+        "nominal_simulation_reduction_vs_flat_10k": 0.8197847682119206,
+        "offline_reference_action_disagreement_rate": 0.0,
+        "stopped_decisions": 302,
+        "strict_lock_action_disagreements": 0,
+        "strict_lock_guarantee_observed": true
+      },
+      "fresh_control": {
+        "decisions": 2455,
+        "distribution_of_chosen_stopping_budgets": {
+          "10000": 828,
+          "8000": 1627
+        },
+        "lock_condition": "top_edge_visits - second_edge_visits > 10000 - checkpoint_new_simulations",
+        "mean_new_simulations_per_decision": 8674.541751527495,
+        "median_new_simulations_per_decision": 8000,
+        "nominal_simulation_reduction_vs_flat_10k": 0.13254582484725053,
+        "offline_reference_action_disagreement_rate": 0.0,
+        "stopped_decisions": 1627,
+        "strict_lock_action_disagreements": 0,
+        "strict_lock_guarantee_observed": true
+      },
+      "retained_non_forced": {
+        "decisions": 4868,
+        "distribution_of_chosen_stopping_budgets": {
+          "1000": 197,
+          "10000": 806,
+          "2000": 393,
+          "250": 1393,
+          "4000": 668,
+          "500": 116,
+          "8000": 1295
+        },
+        "lock_condition": "top_edge_visits - second_edge_visits > 10000 - checkpoint_new_simulations",
+        "mean_new_simulations_per_decision": 4618.169679539852,
+        "median_new_simulations_per_decision": 4000.0,
+        "nominal_simulation_reduction_vs_flat_10k": 0.5381830320460148,
+        "offline_reference_action_disagreement_rate": 0.0,
+        "stopped_decisions": 4062,
+        "strict_lock_action_disagreements": 0,
+        "strict_lock_guarantee_observed": true
+      }
+    },
+    "discovery": {
+      "forced_one_action_control": {
+        "decisions": 126,
+        "distribution_of_chosen_stopping_budgets": {
+          "1000": 5,
+          "2000": 5,
+          "250": 79,
+          "4000": 20,
+          "8000": 17
+        },
+        "lock_condition": "top_edge_visits - second_edge_visits > 10000 - checkpoint_new_simulations",
+        "mean_new_simulations_per_decision": 1990.079365079365,
+        "median_new_simulations_per_decision": 250.0,
+        "nominal_simulation_reduction_vs_flat_10k": 0.8009920634920635,
+        "offline_reference_action_disagreement_rate": 0.0,
+        "stopped_decisions": 126,
+        "strict_lock_action_disagreements": 0,
+        "strict_lock_guarantee_observed": true
+      },
+      "fresh_control": {
+        "decisions": 1261,
+        "distribution_of_chosen_stopping_budgets": {
+          "10000": 421,
+          "8000": 840
+        },
+        "lock_condition": "top_edge_visits - second_edge_visits > 10000 - checkpoint_new_simulations",
+        "mean_new_simulations_per_decision": 8667.724028548771,
+        "median_new_simulations_per_decision": 8000,
+        "nominal_simulation_reduction_vs_flat_10k": 0.1332275971451229,
+        "offline_reference_action_disagreement_rate": 0.0,
+        "stopped_decisions": 840,
+        "strict_lock_action_disagreements": 0,
+        "strict_lock_guarantee_observed": true
+      },
+      "retained_non_forced": {
+        "decisions": 2446,
+        "distribution_of_chosen_stopping_budgets": {
+          "1000": 97,
+          "10000": 387,
+          "2000": 197,
+          "250": 689,
+          "4000": 361,
+          "500": 54,
+          "8000": 661
+        },
+        "lock_condition": "top_edge_visits - second_edge_visits > 10000 - checkpoint_new_simulations",
+        "mean_new_simulations_per_decision": 4616.618969746525,
+        "median_new_simulations_per_decision": 4000.0,
+        "nominal_simulation_reduction_vs_flat_10k": 0.5383381030253475,
+        "offline_reference_action_disagreement_rate": 0.0,
+        "stopped_decisions": 2059,
+        "strict_lock_action_disagreements": 0,
+        "strict_lock_guarantee_observed": true
+      }
+    },
+    "evaluation": {
+      "forced_one_action_control": {
+        "decisions": 176,
+        "distribution_of_chosen_stopping_budgets": {
+          "1000": 5,
+          "2000": 11,
+          "250": 122,
+          "4000": 17,
+          "8000": 21
+        },
+        "lock_condition": "top_edge_visits - second_edge_visits > 10000 - checkpoint_new_simulations",
+        "mean_new_simulations_per_decision": 1667.6136363636363,
+        "median_new_simulations_per_decision": 250.0,
+        "nominal_simulation_reduction_vs_flat_10k": 0.8332386363636364,
+        "offline_reference_action_disagreement_rate": 0.0,
+        "stopped_decisions": 176,
+        "strict_lock_action_disagreements": 0,
+        "strict_lock_guarantee_observed": true
+      },
+      "fresh_control": {
+        "decisions": 1194,
+        "distribution_of_chosen_stopping_budgets": {
+          "10000": 407,
+          "8000": 787
+        },
+        "lock_condition": "top_edge_visits - second_edge_visits > 10000 - checkpoint_new_simulations",
+        "mean_new_simulations_per_decision": 8681.742043551088,
+        "median_new_simulations_per_decision": 8000.0,
+        "nominal_simulation_reduction_vs_flat_10k": 0.13182579564489116,
+        "offline_reference_action_disagreement_rate": 0.0,
+        "stopped_decisions": 787,
+        "strict_lock_action_disagreements": 0,
+        "strict_lock_guarantee_observed": true
+      },
+      "retained_non_forced": {
+        "decisions": 2422,
+        "distribution_of_chosen_stopping_budgets": {
+          "1000": 100,
+          "10000": 419,
+          "2000": 196,
+          "250": 704,
+          "4000": 307,
+          "500": 62,
+          "8000": 634
+        },
+        "lock_condition": "top_edge_visits - second_edge_visits > 10000 - checkpoint_new_simulations",
+        "mean_new_simulations_per_decision": 4619.735755573906,
+        "median_new_simulations_per_decision": 4000.0,
+        "nominal_simulation_reduction_vs_flat_10k": 0.5380264244426094,
+        "offline_reference_action_disagreement_rate": 0.0,
+        "stopped_decisions": 2003,
+        "strict_lock_action_disagreements": 0,
+        "strict_lock_guarantee_observed": true
+      }
+    }
+  },
+  "frozen_199_fixed_rule_evaluation": {
+    "decisions": 3778,
+    "mean_new_simulations_per_decision": 5923.901535203811,
+    "median_new_simulations_per_decision": 10000.0,
+    "nominal_simulation_reduction_vs_flat_10k": 0.40760984647961884,
+    "offline_reference_action_disagreement_rate": 0.019123997532387416,
+    "rule": "retained + 500 sims + top_two_visit_gap_share >= 0.2932885906040268",
+    "stopped_at_500": 1621,
+    "stopped_rows": 1621
+  },
+  "interpretation": {
+    "classification_reason": "The predeclared logistic controller was retained as a diagnostic, but its held-out stopping behavior is too conservative to replace the frozen #199 rule. The exact visit-lock and empirical rho tables motivate further offline work; neither qualifies a runtime sequential stopping policy.",
+    "evaluation_label": "internal held-out engineering evidence",
+    "monotonicity_check": "See exact visit-lock and held-out rho/stability tables; no threshold was tuned on evaluation.",
+    "quality_scope": "offline full-10k trajectories; fresh and forced roots excluded from quality claim",
+    "runtime_equivalence": false,
+    "sequential_stopping_status": "OPEN_EXACT_LOCK_AND_EMPIRICAL_RACING"
+  },
+  "metadata": {
+    "baseline_sha": "c371f3c29ffab07096c71fc66a4ab930e9595952",
+    "executable_sha256": "982387c0fbd1920c7d11ccd1aa825f9350c22129d493d37319d0d5141dc40b62",
+    "seed_block": "112-127",
+    "source_sha": "21111b7e6af73b7f8a770b45df3d7093b17b69dc"
+  },
+  "offline_sequential_controller": {
+    "discovery": {
+      "0.01": {
+        "decisions": 3826,
+        "distribution_of_chosen_stopping_budgets": {
+          "10000": 3826
+        },
+        "evaluation_stopped_rows": [],
+        "fraction_reaching_10k": 1.0,
+        "fraction_stopping_at_each_checkpoint": {
+          "1000": 0.0,
+          "10000": 1.0,
+          "2000": 0.0,
+          "250": 0.0,
+          "4000": 0.0,
+          "500": 0.0,
+          "8000": 0.0
+        },
+        "mean_new_simulations_per_decision": 10000,
+        "median_new_simulations_per_decision": 10000.0,
+        "nominal_simulation_reduction_vs_flat_10k": 0.0,
+        "offline_reference_action_disagreement_rate": null,
+        "risk_ceiling": 0.01,
+        "stopped_decisions": 0,
+        "stopped_retained_non_forced": 0
+      },
+      "0.02": {
+        "decisions": 3826,
+        "distribution_of_chosen_stopping_budgets": {
+          "10000": 3826
+        },
+        "evaluation_stopped_rows": [],
+        "fraction_reaching_10k": 1.0,
+        "fraction_stopping_at_each_checkpoint": {
+          "1000": 0.0,
+          "10000": 1.0,
+          "2000": 0.0,
+          "250": 0.0,
+          "4000": 0.0,
+          "500": 0.0,
+          "8000": 0.0
+        },
+        "mean_new_simulations_per_decision": 10000,
+        "median_new_simulations_per_decision": 10000.0,
+        "nominal_simulation_reduction_vs_flat_10k": 0.0,
+        "offline_reference_action_disagreement_rate": null,
+        "risk_ceiling": 0.02,
+        "stopped_decisions": 0,
+        "stopped_retained_non_forced": 0
+      },
+      "0.05": {
+        "decisions": 3826,
+        "distribution_of_chosen_stopping_budgets": {
+          "1000": 7,
+          "10000": 3756,
+          "2000": 12,
+          "250": 8,
+          "4000": 17,
+          "500": 7,
+          "8000": 19
+        },
+        "evaluation_stopped_rows": [
+          {
+            "checkpoint": 2000,
+            "encounter": 1,
+            "inherited_visits": 16600,
+            "predicted_risk": 0.04985171491549314,
+            "risk_event": 0,
+            "room_type": "hallway"
+          },
+          {
+            "checkpoint": 4000,
+            "encounter": 1,
+            "inherited_visits": 10131,
+            "predicted_risk": 0.04969298016677662,
+            "risk_event": 0,
+            "room_type": "hallway"
+          },
+          {
+            "checkpoint": 8000,
+            "encounter": 9,
+            "inherited_visits": 31817,
+            "predicted_risk": 0.049835246615769324,
+            "risk_event": 0,
+            "room_type": "hallway"
+          },
+          {
+            "checkpoint": 2000,
+            "encounter": 8,
+            "inherited_visits": 17421,
+            "predicted_risk": 0.049757712698875446,
+            "risk_event": 0,
+            "room_type": "hallway"
+          },
+          {
+            "checkpoint": 8000,
+            "encounter": 8,
+            "inherited_visits": 7689,
+            "predicted_risk": 0.04976443710697377,
+            "risk_event": 0,
+            "room_type": "hallway"
+          },
+          {
+            "checkpoint": 2000,
+            "encounter": 8,
+            "inherited_visits": 20927,
+            "predicted_risk": 0.049302790730602244,
+            "risk_event": 0,
+            "room_type": "hallway"
+          },
+          {
+            "checkpoint": 4000,
+            "encounter": 16,
+            "inherited_visits": 19157,
+            "predicted_risk": 0.048571820501429976,
+            "risk_event": 0,
+            "room_type": "elite"
+          },
+          {
+            "checkpoint": 4000,
+            "encounter": 16,
+            "inherited_visits": 15143,
+            "predicted_risk": 0.04926797603308388,
+            "risk_event": 0,
+            "room_type": "elite"
+          },
+          {
+            "checkpoint": 8000,
+            "encounter": 16,
+            "inherited_visits": 11125,
+            "predicted_risk": 0.048834538674967044,
+            "risk_event": 0,
+            "room_type": "elite"
+          },
+          {
+            "checkpoint": 4000,
+            "encounter": 16,
+            "inherited_visits": 9626,
+            "predicted_risk": 0.049246661526167655,
+            "risk_event": 0,
+            "room_type": "elite"
+          },
+          {
+            "checkpoint": 4000,
+            "encounter": 5,
+            "inherited_visits": 13057,
+            "predicted_risk": 0.04974121290423805,
+            "risk_event": 0,
+            "room_type": "hallway"
+          },
+          {
+            "checkpoint": 1000,
+            "encounter": 5,
+            "inherited_visits": 28836,
+            "predicted_risk": 0.04951821677788237,
+            "risk_event": 0,
+            "room_type": "hallway"
+          },
+          {
+            "checkpoint": 8000,
+            "encounter": 16,
+            "inherited_visits": 25987,
+            "predicted_risk": 0.049535644699180224,
+            "risk_event": 0,
+            "room_type": "elite"
+          },
+          {
+            "checkpoint": 8000,
+            "encounter": 14,
+            "inherited_visits": 45309,
+            "predicted_risk": 0.048952840017573544,
+            "risk_event": 0,
+            "room_type": "hallway"
+          },
+          {
+            "checkpoint": 8000,
+            "encounter": 15,
+            "inherited_visits": 48227,
+            "predicted_risk": 0.049837651660427064,
+            "risk_event": 0,
+            "room_type": "elite"
+          },
+          {
+            "checkpoint": 500,
+            "encounter": 22,
+            "inherited_visits": 12635,
+            "predicted_risk": 0.049446554783224426,
+            "risk_event": 0,
+            "room_type": "hallway"
+          },
+          {
+            "checkpoint": 1000,
+            "encounter": 22,
+            "inherited_visits": 8508,
+            "predicted_risk": 0.0492998162071236,
+            "risk_event": 0,
+            "room_type": "hallway"
+          },
+          {
+            "checkpoint": 250,
+            "encounter": 22,
+            "inherited_visits": 17667,
+            "predicted_risk": 0.04943697315272208,
+            "risk_event": 0,
+            "room_type": "hallway"
+          },
+          {
+            "checkpoint": 1000,
+            "encounter": 24,
+            "inherited_visits": 9834,
+            "predicted_risk": 0.049964038314893225,
+            "risk_event": 0,
+            "room_type": "hallway"
+          },
+          {
+            "checkpoint": 1000,
+            "encounter": 24,
+            "inherited_visits": 9510,
+            "predicted_risk": 0.048605990278754105,
+            "risk_event": 0,
+            "room_type": "hallway"
+          },
+          {
+            "checkpoint": 250,
+            "encounter": 24,
+            "inherited_visits": 18998,
+            "predicted_risk": 0.04958562062798398,
+            "risk_event": 0,
+            "room_type": "hallway"
+          },
+          {
+            "checkpoint": 2000,
+            "encounter": 32,
+            "inherited_visits": 26315,
+            "predicted_risk": 0.04986837047260313,
+            "risk_event": 0,
+            "room_type": "hallway"
+          },
+          {
+            "checkpoint": 4000,
+            "encounter": 35,
+            "inherited_visits": 13921,
+            "predicted_risk": 0.04912565417441613,
+            "risk_event": 0,
+            "room_type": "elite"
+          },
+          {
+            "checkpoint": 250,
+            "encounter": 36,
+            "inherited_visits": 56166,
+            "predicted_risk": 0.04697311134402453,
+            "risk_event": 0,
+            "room_type": "elite"
+          },
+          {
+            "checkpoint": 1000,
+            "encounter": 36,
+            "inherited_visits": 10330,
+            "predicted_risk": 0.04915859351602369,
+            "risk_event": 0,
+            "room_type": "elite"
+          },
+          {
+            "checkpoint": 250,
+            "encounter": 36,
+            "inherited_visits": 39821,
+            "predicted_risk": 0.047230432614527466,
+            "risk_event": 0,
+            "room_type": "elite"
+          },
+          {
+            "checkpoint": 8000,
+            "encounter": 38,
+            "inherited_visits": 47432,
+            "predicted_risk": 0.04869103929253708,
+            "risk_event": 0,
+            "room_type": "boss"
+          },
+          {
+            "checkpoint": 8000,
+            "encounter": 38,
+            "inherited_visits": 39162,
+            "predicted_risk": 0.04872549373897462,
+            "risk_event": 0,
+            "room_type": "boss"
+          },
+          {
+            "checkpoint": 1000,
+            "encounter": 52,
+            "inherited_visits": 3809,
+            "predicted_risk": 0.04883808826735872,
+            "risk_event": 0,
+            "room_type": "elite"
+          },
+          {
+            "checkpoint": 4000,
+            "encounter": 39,
+            "inherited_visits": 9964,
+            "predicted_risk": 0.049291823175713796,
+            "risk_event": 0,
+            "room_type": "boss"
+          },
+          {
+            "checkpoint": 250,
+            "encounter": 39,
+            "inherited_visits": 20979,
+            "predicted_risk": 0.049394847265990104,
+            "risk_event": 0,
+            "room_type": "boss"
+          },
+          {
+            "checkpoint": 500,
+            "encounter": 39,
+            "inherited_visits": 9220,
+            "predicted_risk": 0.048870731069912104,
+            "risk_event": 0,
+            "room_type": "boss"
+          },
+          {
+            "checkpoint": 2000,
+            "encounter": 39,
+            "inherited_visits": 15133,
+            "predicted_risk": 0.04974852872088264,
+            "risk_event": 0,
+            "room_type": "boss"
+          },
+          {
+            "checkpoint": 8000,
+            "encounter": 39,
+            "inherited_visits": 1434,
+            "predicted_risk": 0.04992489905879747,
+            "risk_event": 0,
+            "room_type": "boss"
+          },
+          {
+            "checkpoint": 250,
+            "encounter": 39,
+            "inherited_visits": 46795,
+            "predicted_risk": 0.04919624659175048,
+            "risk_event": 0,
+            "room_type": "boss"
+          },
+          {
+            "checkpoint": 250,
+            "encounter": 39,
+            "inherited_visits": 49308,
+            "predicted_risk": 0.04728998033145867,
+            "risk_event": 0,
+            "room_type": "boss"
+          },
+          {
+            "checkpoint": 2000,
+            "encounter": 40,
+            "inherited_visits": 5542,
+            "predicted_risk": 0.04869172029510185,
+            "risk_event": 0,
+            "room_type": "hallway"
+          },
+          {
+            "checkpoint": 500,
+            "encounter": 40,
+            "inherited_visits": 21022,
+            "predicted_risk": 0.04823846650743889,
+            "risk_event": 0,
+            "room_type": "hallway"
+          },
+          {
+            "checkpoint": 2000,
+            "encounter": 44,
+            "inherited_visits": 1689,
+            "predicted_risk": 0.04962392340139927,
+            "risk_event": 0,
+            "room_type": "hallway"
+          },
+          {
+            "checkpoint": 2000,
+            "encounter": 44,
+            "inherited_visits": 2032,
+            "predicted_risk": 0.049696698584332184,
+            "risk_event": 0,
+            "room_type": "hallway"
+          },
+          {
+            "checkpoint": 250,
+            "encounter": 44,
+            "inherited_visits": 28482,
+            "predicted_risk": 0.0494446832035213,
+            "risk_event": 0,
+            "room_type": "hallway"
+          },
+          {
+            "checkpoint": 500,
+            "encounter": 44,
+            "inherited_visits": 18929,
+            "predicted_risk": 0.04960601079049313,
+            "risk_event": 0,
+            "room_type": "hallway"
+          },
+          {
+            "checkpoint": 500,
+            "encounter": 52,
+            "inherited_visits": 26808,
+            "predicted_risk": 0.049912689475447795,
+            "risk_event": 0,
+            "room_type": "elite"
+          },
+          {
+            "checkpoint": 4000,
+            "encounter": 52,
+            "inherited_visits": 47559,
+            "predicted_risk": 0.04956440566356893,
+            "risk_event": 0,
+            "room_type": "elite"
+          },
+          {
+            "checkpoint": 4000,
+            "encounter": 51,
+            "inherited_visits": 29963,
+            "predicted_risk": 0.048756733700220385,
+            "risk_event": 0,
+            "room_type": "elite"
+          },
+          {
+            "checkpoint": 8000,
+            "encounter": 16,
+            "inherited_visits": 28197,
+            "predicted_risk": 0.04930832820895805,
+            "risk_event": 0,
+            "room_type": "elite"
+          },
+          {
+            "checkpoint": 2000,
+            "encounter": 54,
+            "inherited_visits": 9990,
+            "predicted_risk": 0.04941176795413262,
+            "risk_event": 0,
+            "room_type": "boss"
+          },
+          {
+            "checkpoint": 8000,
+            "encounter": 36,
+            "inherited_visits": 21192,
+            "predicted_risk": 0.04964352660396732,
+            "risk_event": 0,
+            "room_type": "elite"
+          },
+          {
+            "checkpoint": 4000,
+            "encounter": 38,
+            "inherited_visits": 12193,
+            "predicted_risk": 0.049259619906051544,
+            "risk_event": 0,
+            "room_type": "boss"
+          },
+          {
+            "checkpoint": 2000,
+            "encounter": 38,
+            "inherited_visits": 39082,
+            "predicted_risk": 0.048940729575110704,
+            "risk_event": 0,
+            "room_type": "boss"
+          },
+          {
+            "checkpoint": 500,
+            "encounter": 38,
+            "inherited_visits": 49075,
+            "predicted_risk": 0.049667322294839694,
+            "risk_event": 0,
+            "room_type": "boss"
+          },
+          {
+            "checkpoint": 4000,
+            "encounter": 38,
+            "inherited_visits": 17209,
+            "predicted_risk": 0.04865918871620993,
+            "risk_event": 0,
+            "room_type": "boss"
+          },
+          {
+            "checkpoint": 1000,
+            "encounter": 38,
+            "inherited_visits": 9413,
+            "predicted_risk": 0.04871314853534069,
+            "risk_event": 0,
+            "room_type": "boss"
+          },
+          {
+            "checkpoint": 4000,
+            "encounter": 42,
+            "inherited_visits": 9913,
+            "predicted_risk": 0.0495782730644268,
+            "risk_event": 0,
+            "room_type": "hallway"
+          },
+          {
+            "checkpoint": 4000,
+            "encounter": 34,
+            "inherited_visits": 49954,
+            "predicted_risk": 0.049432802872816616,
+            "risk_event": 0,
+            "room_type": "elite"
+          },
+          {
+            "checkpoint": 4000,
+            "encounter": 40,
+            "inherited_visits": 12535,
+            "predicted_risk": 0.04882058030869876,
+            "risk_event": 0,
+            "room_type": "hallway"
+          },
+          {
+            "checkpoint": 2000,
+            "encounter": 16,
+            "inherited_visits": 19882,
+            "predicted_risk": 0.049137248647868004,
+            "risk_event": 0,
+            "room_type": "elite"
+          },
+          {
+            "checkpoint": 2000,
+            "encounter": 44,
+            "inherited_visits": 21678,
+            "predicted_risk": 0.04890645379420543,
+            "risk_event": 0,
+            "room_type": "hallway"
+          },
+          {
+            "checkpoint": 4000,
+            "encounter": 44,
+            "inherited_visits": 26854,
+            "predicted_risk": 0.04968036338144333,
+            "risk_event": 0,
+            "room_type": "hallway"
+          },
+          {
+            "checkpoint": 500,
+            "encounter": 44,
+            "inherited_visits": 47078,
+            "predicted_risk": 0.0481947452044248,
+            "risk_event": 0,
+            "room_type": "hallway"
+          },
+          {
+            "checkpoint": 8000,
+            "encounter": 19,
+            "inherited_visits": 29721,
+            "predicted_risk": 0.04992902006706867,
+            "risk_event": 0,
+            "room_type": "boss"
+          },
+          {
+            "checkpoint": 8000,
+            "encounter": 30,
+            "inherited_visits": 47493,
+            "predicted_risk": 0.04904261090255534,
+            "risk_event": 0,
+            "room_type": "hallway"
+          },
+          {
+            "checkpoint": 4000,
+            "encounter": 15,
+            "inherited_visits": 11158,
+            "predicted_risk": 0.04945780047294594,
+            "risk_event": 0,
+            "room_type": "elite"
+          },
+          {
+            "checkpoint": 4000,
+            "encounter": 44,
+            "inherited_visits": 28311,
+            "predicted_risk": 0.048855349639769556,
+            "risk_event": 0,
+            "room_type": "hallway"
+          },
+          {
+            "checkpoint": 8000,
+            "encounter": 25,
+            "inherited_visits": 35993,
+            "predicted_risk": 0.04949019491316714,
+            "risk_event": 0,
+            "room_type": "hallway"
+          },
+          {
+            "checkpoint": 8000,
+            "encounter": 55,
+            "inherited_visits": 37087,
+            "predicted_risk": 0.0498296561852135,
+            "risk_event": 0,
+            "room_type": "boss"
+          },
+          {
+            "checkpoint": 8000,
+            "encounter": 37,
+            "inherited_visits": 20872,
+            "predicted_risk": 0.04895571111209316,
+            "risk_event": 0,
+            "room_type": "boss"
+          },
+          {
+            "checkpoint": 8000,
+            "encounter": 37,
+            "inherited_visits": 23718,
+            "predicted_risk": 0.04968179881548733,
+            "risk_event": 0,
+            "room_type": "boss"
+          },
+          {
+            "checkpoint": 8000,
+            "encounter": 37,
+            "inherited_visits": 24698,
+            "predicted_risk": 0.049363681218164444,
+            "risk_event": 0,
+            "room_type": "boss"
+          },
+          {
+            "checkpoint": 8000,
+            "encounter": 40,
+            "inherited_visits": 28821,
+            "predicted_risk": 0.04949382400246848,
+            "risk_event": 0,
+            "room_type": "hallway"
+          }
+        ],
+        "fraction_reaching_10k": 0.98170412963931,
+        "fraction_stopping_at_each_checkpoint": {
+          "1000": 0.0018295870360690017,
+          "10000": 0.98170412963931,
+          "2000": 0.0031364349189754314,
+          "250": 0.0020909566126502874,
+          "4000": 0.004443282801881861,
+          "500": 0.0018295870360690017,
+          "8000": 0.004966021955044433
+        },
+        "mean_new_simulations_per_decision": 9884.082592786199,
+        "median_new_simulations_per_decision": 10000.0,
+        "nominal_simulation_reduction_vs_flat_10k": 0.01159174072138014,
+        "offline_reference_action_disagreement_rate": 0.0,
+        "risk_ceiling": 0.05,
+        "stopped_decisions": 70,
+        "stopped_retained_non_forced": 70
+      }
+    },
+    "evaluation": {
+      "0.01": {
+        "decisions": 3778,
+        "distribution_of_chosen_stopping_budgets": {
+          "10000": 3778
+        },
+        "evaluation_stopped_rows": [],
+        "fraction_reaching_10k": 1.0,
+        "fraction_stopping_at_each_checkpoint": {
+          "1000": 0.0,
+          "10000": 1.0,
+          "2000": 0.0,
+          "250": 0.0,
+          "4000": 0.0,
+          "500": 0.0,
+          "8000": 0.0
+        },
+        "mean_new_simulations_per_decision": 10000,
+        "median_new_simulations_per_decision": 10000.0,
+        "nominal_simulation_reduction_vs_flat_10k": 0.0,
+        "offline_reference_action_disagreement_rate": null,
+        "risk_ceiling": 0.01,
+        "stopped_decisions": 0,
+        "stopped_retained_non_forced": 0
+      },
+      "0.02": {
+        "decisions": 3778,
+        "distribution_of_chosen_stopping_budgets": {
+          "10000": 3778
+        },
+        "evaluation_stopped_rows": [],
+        "fraction_reaching_10k": 1.0,
+        "fraction_stopping_at_each_checkpoint": {
+          "1000": 0.0,
+          "10000": 1.0,
+          "2000": 0.0,
+          "250": 0.0,
+          "4000": 0.0,
+          "500": 0.0,
+          "8000": 0.0
+        },
+        "mean_new_simulations_per_decision": 10000,
+        "median_new_simulations_per_decision": 10000.0,
+        "nominal_simulation_reduction_vs_flat_10k": 0.0,
+        "offline_reference_action_disagreement_rate": null,
+        "risk_ceiling": 0.02,
+        "stopped_decisions": 0,
+        "stopped_retained_non_forced": 0
+      },
+      "0.05": {
+        "decisions": 3778,
+        "distribution_of_chosen_stopping_budgets": {
+          "1000": 2,
+          "10000": 3723,
+          "2000": 6,
+          "250": 1,
+          "4000": 9,
+          "8000": 37
+        },
+        "evaluation_stopped_rows": [
+          {
+            "checkpoint": 8000,
+            "encounter": 15,
+            "inherited_visits": 19161,
+            "predicted_risk": 0.049106295331149206,
+            "risk_event": 0,
+            "room_type": "elite"
+          },
+          {
+            "checkpoint": 8000,
+            "encounter": 15,
+            "inherited_visits": 28875,
+            "predicted_risk": 0.04910496870249274,
+            "risk_event": 0,
+            "room_type": "elite"
+          },
+          {
+            "checkpoint": 8000,
+            "encounter": 1,
+            "inherited_visits": 15605,
+            "predicted_risk": 0.04989657035002586,
+            "risk_event": 0,
+            "room_type": "hallway"
+          },
+          {
+            "checkpoint": 4000,
+            "encounter": 2,
+            "inherited_visits": 36414,
+            "predicted_risk": 0.04939737499814506,
+            "risk_event": 0,
+            "room_type": "hallway"
+          },
+          {
+            "checkpoint": 8000,
+            "encounter": 6,
+            "inherited_visits": 25561,
+            "predicted_risk": 0.049376094810883155,
+            "risk_event": 0,
+            "room_type": "hallway"
+          },
+          {
+            "checkpoint": 8000,
+            "encounter": 29,
+            "inherited_visits": 26048,
+            "predicted_risk": 0.04980966751667185,
+            "risk_event": 0,
+            "room_type": "hallway"
+          },
+          {
+            "checkpoint": 8000,
+            "encounter": 22,
+            "inherited_visits": 60362,
+            "predicted_risk": 0.048827520739471414,
+            "risk_event": 0,
+            "room_type": "hallway"
+          },
+          {
+            "checkpoint": 8000,
+            "encounter": 22,
+            "inherited_visits": 33442,
+            "predicted_risk": 0.04976222324111252,
+            "risk_event": 0,
+            "room_type": "hallway"
+          },
+          {
+            "checkpoint": 8000,
+            "encounter": 27,
+            "inherited_visits": 11841,
+            "predicted_risk": 0.049051251996580475,
+            "risk_event": 0,
+            "room_type": "hallway"
+          },
+          {
+            "checkpoint": 8000,
+            "encounter": 34,
+            "inherited_visits": 32804,
+            "predicted_risk": 0.04999541068711978,
+            "risk_event": 0,
+            "room_type": "elite"
+          },
+          {
+            "checkpoint": 8000,
+            "encounter": 36,
+            "inherited_visits": 18392,
+            "predicted_risk": 0.04966481457431883,
+            "risk_event": 0,
+            "room_type": "elite"
+          },
+          {
+            "checkpoint": 8000,
+            "encounter": 36,
+            "inherited_visits": 29771,
+            "predicted_risk": 0.04865201325144168,
+            "risk_event": 0,
+            "room_type": "elite"
+          },
+          {
+            "checkpoint": 8000,
+            "encounter": 39,
+            "inherited_visits": 20067,
+            "predicted_risk": 0.04997112585929347,
+            "risk_event": 0,
+            "room_type": "boss"
+          },
+          {
+            "checkpoint": 8000,
+            "encounter": 36,
+            "inherited_visits": 19887,
+            "predicted_risk": 0.04909767305909441,
+            "risk_event": 0,
+            "room_type": "elite"
+          },
+          {
+            "checkpoint": 8000,
+            "encounter": 27,
+            "inherited_visits": 33107,
+            "predicted_risk": 0.04938334810193718,
+            "risk_event": 0,
+            "room_type": "hallway"
+          },
+          {
+            "checkpoint": 8000,
+            "encounter": 17,
+            "inherited_visits": 28618,
+            "predicted_risk": 0.049126098308899,
+            "risk_event": 0,
+            "room_type": "elite"
+          },
+          {
+            "checkpoint": 8000,
+            "encounter": 34,
+            "inherited_visits": 25773,
+            "predicted_risk": 0.04991381215543692,
+            "risk_event": 0,
+            "room_type": "elite"
+          },
+          {
+            "checkpoint": 8000,
+            "encounter": 38,
+            "inherited_visits": 35037,
+            "predicted_risk": 0.04914735013780806,
+            "risk_event": 0,
+            "room_type": "boss"
+          },
+          {
+            "checkpoint": 8000,
+            "encounter": 40,
+            "inherited_visits": 29187,
+            "predicted_risk": 0.049515539765612786,
+            "risk_event": 0,
+            "room_type": "hallway"
+          },
+          {
+            "checkpoint": 8000,
+            "encounter": 44,
+            "inherited_visits": 28995,
+            "predicted_risk": 0.04969467915431219,
+            "risk_event": 0,
+            "room_type": "hallway"
+          },
+          {
+            "checkpoint": 2000,
+            "encounter": 8,
+            "inherited_visits": 33746,
+            "predicted_risk": 0.04990412699491508,
+            "risk_event": 0,
+            "room_type": "hallway"
+          },
+          {
+            "checkpoint": 8000,
+            "encounter": 28,
+            "inherited_visits": 19318,
+            "predicted_risk": 0.0497585067616996,
+            "risk_event": 0,
+            "room_type": "hallway"
+          },
+          {
+            "checkpoint": 8000,
+            "encounter": 28,
+            "inherited_visits": 29328,
+            "predicted_risk": 0.04994131198695185,
+            "risk_event": 0,
+            "room_type": "hallway"
+          },
+          {
+            "checkpoint": 8000,
+            "encounter": 15,
+            "inherited_visits": 28990,
+            "predicted_risk": 0.049505582714702755,
+            "risk_event": 0,
+            "room_type": "elite"
+          },
+          {
+            "checkpoint": 8000,
+            "encounter": 15,
+            "inherited_visits": 44985,
+            "predicted_risk": 0.04965992000579865,
+            "risk_event": 0,
+            "room_type": "elite"
+          },
+          {
+            "checkpoint": 4000,
+            "encounter": 18,
+            "inherited_visits": 29628,
+            "predicted_risk": 0.04892625585331395,
+            "risk_event": 0,
+            "room_type": "boss"
+          },
+          {
+            "checkpoint": 1000,
+            "encounter": 18,
+            "inherited_visits": 19129,
+            "predicted_risk": 0.049747602857444395,
+            "risk_event": 0,
+            "room_type": "boss"
+          },
+          {
+            "checkpoint": 4000,
+            "encounter": 35,
+            "inherited_visits": 39584,
+            "predicted_risk": 0.0494555999495016,
+            "risk_event": 0,
+            "room_type": "elite"
+          },
+          {
+            "checkpoint": 2000,
+            "encounter": 35,
+            "inherited_visits": 59395,
+            "predicted_risk": 0.04847063005165086,
+            "risk_event": 0,
+            "room_type": "elite"
+          },
+          {
+            "checkpoint": 8000,
+            "encounter": 35,
+            "inherited_visits": 69380,
+            "predicted_risk": 0.04983552255080899,
+            "risk_event": 0,
+            "room_type": "elite"
+          },
+          {
+            "checkpoint": 8000,
+            "encounter": 38,
+            "inherited_visits": 37713,
+            "predicted_risk": 0.048848360149310814,
+            "risk_event": 0,
+            "room_type": "boss"
+          },
+          {
+            "checkpoint": 4000,
+            "encounter": 34,
+            "inherited_visits": 22410,
+            "predicted_risk": 0.04958153966285148,
+            "risk_event": 0,
+            "room_type": "elite"
+          },
+          {
+            "checkpoint": 8000,
+            "encounter": 34,
+            "inherited_visits": 36910,
+            "predicted_risk": 0.04936022848511322,
+            "risk_event": 0,
+            "room_type": "elite"
+          },
+          {
+            "checkpoint": 4000,
+            "encounter": 34,
+            "inherited_visits": 29605,
+            "predicted_risk": 0.04993469710563919,
+            "risk_event": 0,
+            "room_type": "elite"
+          },
+          {
+            "checkpoint": 4000,
+            "encounter": 39,
+            "inherited_visits": 21133,
+            "predicted_risk": 0.04871470778286471,
+            "risk_event": 0,
+            "room_type": "boss"
+          },
+          {
+            "checkpoint": 8000,
+            "encounter": 48,
+            "inherited_visits": 33137,
+            "predicted_risk": 0.04893526457505176,
+            "risk_event": 0,
+            "room_type": "hallway"
+          },
+          {
+            "checkpoint": 8000,
+            "encounter": 51,
+            "inherited_visits": 32659,
+            "predicted_risk": 0.04957415330145856,
+            "risk_event": 0,
+            "room_type": "elite"
+          },
+          {
+            "checkpoint": 8000,
+            "encounter": 19,
+            "inherited_visits": 25430,
+            "predicted_risk": 0.049094798364189736,
+            "risk_event": 0,
+            "room_type": "other"
+          },
+          {
+            "checkpoint": 2000,
+            "encounter": 19,
+            "inherited_visits": 18400,
+            "predicted_risk": 0.04897456373642862,
+            "risk_event": 0,
+            "room_type": "boss"
+          },
+          {
+            "checkpoint": 2000,
+            "encounter": 19,
+            "inherited_visits": 29001,
+            "predicted_risk": 0.04866728235252021,
+            "risk_event": 0,
+            "room_type": "boss"
+          },
+          {
+            "checkpoint": 2000,
+            "encounter": 19,
+            "inherited_visits": 39425,
+            "predicted_risk": 0.04985558938989965,
+            "risk_event": 0,
+            "room_type": "boss"
+          },
+          {
+            "checkpoint": 4000,
+            "encounter": 50,
+            "inherited_visits": 43580,
+            "predicted_risk": 0.04986937561339616,
+            "risk_event": 0,
+            "room_type": "elite"
+          },
+          {
+            "checkpoint": 8000,
+            "encounter": 46,
+            "inherited_visits": 9812,
+            "predicted_risk": 0.048546718379189537,
+            "risk_event": 0,
+            "room_type": "hallway"
+          },
+          {
+            "checkpoint": 250,
+            "encounter": 54,
+            "inherited_visits": 20495,
+            "predicted_risk": 0.045721367988921416,
+            "risk_event": 0,
+            "room_type": "boss"
+          },
+          {
+            "checkpoint": 4000,
+            "encounter": 54,
+            "inherited_visits": 38115,
+            "predicted_risk": 0.04945279764838486,
+            "risk_event": 0,
+            "room_type": "boss"
+          },
+          {
+            "checkpoint": 8000,
+            "encounter": 54,
+            "inherited_visits": 15134,
+            "predicted_risk": 0.04948197878853114,
+            "risk_event": 0,
+            "room_type": "boss"
+          },
+          {
+            "checkpoint": 8000,
+            "encounter": 54,
+            "inherited_visits": 19226,
+            "predicted_risk": 0.049530554455516025,
+            "risk_event": 0,
+            "room_type": "boss"
+          },
+          {
+            "checkpoint": 2000,
+            "encounter": 55,
+            "inherited_visits": 23158,
+            "predicted_risk": 0.04886467644569019,
+            "risk_event": 0,
+            "room_type": "boss"
+          },
+          {
+            "checkpoint": 8000,
+            "encounter": 34,
+            "inherited_visits": 24572,
+            "predicted_risk": 0.049945777366560286,
+            "risk_event": 0,
+            "room_type": "elite"
+          },
+          {
+            "checkpoint": 8000,
+            "encounter": 50,
+            "inherited_visits": 37685,
+            "predicted_risk": 0.0497014360405267,
+            "risk_event": 0,
+            "room_type": "elite"
+          },
+          {
+            "checkpoint": 8000,
+            "encounter": 50,
+            "inherited_visits": 38719,
+            "predicted_risk": 0.049821827437745714,
+            "risk_event": 0,
+            "room_type": "elite"
+          },
+          {
+            "checkpoint": 1000,
+            "encounter": 50,
+            "inherited_visits": 48614,
+            "predicted_risk": 0.0490985630087129,
+            "risk_event": 0,
+            "room_type": "elite"
+          },
+          {
+            "checkpoint": 4000,
+            "encounter": 50,
+            "inherited_visits": 46299,
+            "predicted_risk": 0.04941194645087391,
+            "risk_event": 0,
+            "room_type": "elite"
+          },
+          {
+            "checkpoint": 8000,
+            "encounter": 52,
+            "inherited_visits": 37730,
+            "predicted_risk": 0.049238004139166305,
+            "risk_event": 0,
+            "room_type": "elite"
+          },
+          {
+            "checkpoint": 8000,
+            "encounter": 43,
+            "inherited_visits": 26216,
+            "predicted_risk": 0.04964004703655985,
+            "risk_event": 0,
+            "room_type": "hallway"
+          }
+        ],
+        "fraction_reaching_10k": 0.9854420328215987,
+        "fraction_stopping_at_each_checkpoint": {
+          "1000": 0.0005293806246691371,
+          "10000": 0.9854420328215987,
+          "2000": 0.0015881418740074113,
+          "250": 0.00026469031233456857,
+          "4000": 0.002382212811011117,
+          "500": 0.0,
+          "8000": 0.009793541556379036
+        },
+        "mean_new_simulations_per_decision": 9946.06934886183,
+        "median_new_simulations_per_decision": 10000.0,
+        "nominal_simulation_reduction_vs_flat_10k": 0.005393065113816875,
+        "offline_reference_action_disagreement_rate": 0.0,
+        "risk_ceiling": 0.05,
+        "stopped_decisions": 55,
+        "stopped_retained_non_forced": 55
+      }
+    }
+  },
+  "rho_leader_stability_risk_table": {
+    "all": {
+      "four_plus": {
+        "0.1_to_0.25": {
+          "action_agreement_rate": 0.8405797101449275,
+          "decisions": 697,
+          "leader_stability_range": [
+            4,
+            Infinity
+          ],
+          "rho_range": [
+            0.1,
+            0.25
+          ],
+          "risk_event_rate": 0.15942028985507245,
+          "rows": 828
+        },
+        "0.25_to_0.5": {
+          "action_agreement_rate": 0.9337811900191939,
+          "decisions": 961,
+          "leader_stability_range": [
+            4,
+            Infinity
+          ],
+          "rho_range": [
+            0.25,
+            0.5
+          ],
+          "risk_event_rate": 0.06621880998080615,
+          "rows": 1042
+        },
+        "0.5_to_0.75": {
+          "action_agreement_rate": 0.9591346153846154,
+          "decisions": 812,
+          "leader_stability_range": [
+            4,
+            Infinity
+          ],
+          "rho_range": [
+            0.5,
+            0.75
+          ],
+          "risk_event_rate": 0.040865384615384616,
+          "rows": 832
+        },
+        "0.75_to_1": {
+          "action_agreement_rate": 0.9775413711583925,
+          "decisions": 833,
+          "leader_stability_range": [
+            4,
+            Infinity
+          ],
+          "rho_range": [
+            0.75,
+            1.0
+          ],
+          "risk_event_rate": 0.022458628841607566,
+          "rows": 846
+        },
+        "0_to_0.1": {
+          "action_agreement_rate": 0.7153772683858644,
+          "decisions": 651,
+          "leader_stability_range": [
+            4,
+            Infinity
+          ],
+          "rho_range": [
+            0.0,
+            0.1
+          ],
+          "risk_event_rate": 0.28462273161413565,
+          "rows": 1047
+        },
+        "1_to_2": {
+          "action_agreement_rate": 1.0,
+          "decisions": 2115,
+          "leader_stability_range": [
+            4,
+            Infinity
+          ],
+          "rho_range": [
+            1.0,
+            2.0
+          ],
+          "risk_event_rate": 0.0,
+          "rows": 2560
+        },
+        "2_plus": {
+          "action_agreement_rate": 1.0,
+          "decisions": 3570,
+          "leader_stability_range": [
+            4,
+            Infinity
+          ],
+          "rho_range": [
+            2.0,
+            Infinity
+          ],
+          "risk_event_rate": 0.0,
+          "rows": 6160
+        }
+      },
+      "one": {
+        "0.1_to_0.25": {
+          "action_agreement_rate": 0.8861538461538462,
+          "decisions": 632,
+          "leader_stability_range": [
+            1,
+            2
+          ],
+          "rho_range": [
+            0.1,
+            0.25
+          ],
+          "risk_event_rate": 0.11384615384615385,
+          "rows": 650
+        },
+        "0.25_to_0.5": {
+          "action_agreement_rate": 0.9482470784641068,
+          "decisions": 596,
+          "leader_stability_range": [
+            1,
+            2
+          ],
+          "rho_range": [
+            0.25,
+            0.5
+          ],
+          "risk_event_rate": 0.05175292153589316,
+          "rows": 599
+        },
+        "0.5_to_0.75": {
+          "action_agreement_rate": 0.9807692307692307,
+          "decisions": 571,
+          "leader_stability_range": [
+            1,
+            2
+          ],
+          "rho_range": [
+            0.5,
+            0.75
+          ],
+          "risk_event_rate": 0.019230769230769232,
+          "rows": 572
+        },
+        "0.75_to_1": {
+          "action_agreement_rate": 0.9981751824817519,
+          "decisions": 548,
+          "leader_stability_range": [
+            1,
+            2
+          ],
+          "rho_range": [
+            0.75,
+            1.0
+          ],
+          "risk_event_rate": 0.0018248175182481751,
+          "rows": 548
+        },
+        "0_to_0.1": {
+          "action_agreement_rate": 0.6260288065843621,
+          "decisions": 1321,
+          "leader_stability_range": [
+            1,
+            2
+          ],
+          "rho_range": [
+            0.0,
+            0.1
+          ],
+          "risk_event_rate": 0.37397119341563784,
+          "rows": 1944
+        },
+        "1_to_2": {
+          "action_agreement_rate": 1.0,
+          "decisions": 951,
+          "leader_stability_range": [
+            1,
+            2
+          ],
+          "rho_range": [
+            1.0,
+            2.0
+          ],
+          "risk_event_rate": 0.0,
+          "rows": 951
+        },
+        "2_plus": {
+          "action_agreement_rate": 1.0,
+          "decisions": 490,
+          "leader_stability_range": [
+            1,
+            2
+          ],
+          "rho_range": [
+            2.0,
+            Infinity
+          ],
+          "risk_event_rate": 0.0,
+          "rows": 490
+        }
+      },
+      "three": {
+        "0.1_to_0.25": {
+          "action_agreement_rate": 0.8550247116968699,
+          "decisions": 607,
+          "leader_stability_range": [
+            3,
+            4
+          ],
+          "rho_range": [
+            0.1,
+            0.25
+          ],
+          "risk_event_rate": 0.14497528830313014,
+          "rows": 607
+        },
+        "0.25_to_0.5": {
+          "action_agreement_rate": 0.9539823008849557,
+          "decisions": 565,
+          "leader_stability_range": [
+            3,
+            4
+          ],
+          "rho_range": [
+            0.25,
+            0.5
+          ],
+          "risk_event_rate": 0.04601769911504425,
+          "rows": 565
+        },
+        "0.5_to_0.75": {
+          "action_agreement_rate": 0.9821073558648111,
+          "decisions": 503,
+          "leader_stability_range": [
+            3,
+            4
+          ],
+          "rho_range": [
+            0.5,
+            0.75
+          ],
+          "risk_event_rate": 0.017892644135188866,
+          "rows": 503
+        },
+        "0.75_to_1": {
+          "action_agreement_rate": 0.9897330595482546,
+          "decisions": 487,
+          "leader_stability_range": [
+            3,
+            4
+          ],
+          "rho_range": [
+            0.75,
+            1.0
+          ],
+          "risk_event_rate": 0.01026694045174538,
+          "rows": 487
+        },
+        "0_to_0.1": {
+          "action_agreement_rate": 0.6812045690550363,
+          "decisions": 960,
+          "leader_stability_range": [
+            3,
+            4
+          ],
+          "rho_range": [
+            0.0,
+            0.1
+          ],
+          "risk_event_rate": 0.31879543094496365,
+          "rows": 963
+        },
+        "1_to_2": {
+          "action_agreement_rate": 1.0,
+          "decisions": 1032,
+          "leader_stability_range": [
+            3,
+            4
+          ],
+          "rho_range": [
+            1.0,
+            2.0
+          ],
+          "risk_event_rate": 0.0,
+          "rows": 1032
+        },
+        "2_plus": {
+          "action_agreement_rate": 1.0,
+          "decisions": 745,
+          "leader_stability_range": [
+            3,
+            4
+          ],
+          "rho_range": [
+            2.0,
+            Infinity
+          ],
+          "risk_event_rate": 0.0,
+          "rows": 745
+        }
+      },
+      "two": {
+        "0.1_to_0.25": {
+          "action_agreement_rate": 0.8816855753646677,
+          "decisions": 617,
+          "leader_stability_range": [
+            2,
+            3
+          ],
+          "rho_range": [
+            0.1,
+            0.25
+          ],
+          "risk_event_rate": 0.11831442463533225,
+          "rows": 617
+        },
+        "0.25_to_0.5": {
+          "action_agreement_rate": 0.9463414634146341,
+          "decisions": 615,
+          "leader_stability_range": [
+            2,
+            3
+          ],
+          "rho_range": [
+            0.25,
+            0.5
+          ],
+          "risk_event_rate": 0.05365853658536585,
+          "rows": 615
+        },
+        "0.5_to_0.75": {
+          "action_agreement_rate": 0.9813432835820896,
+          "decisions": 536,
+          "leader_stability_range": [
+            2,
+            3
+          ],
+          "rho_range": [
+            0.5,
+            0.75
+          ],
+          "risk_event_rate": 0.018656716417910446,
+          "rows": 536
+        },
+        "0.75_to_1": {
+          "action_agreement_rate": 0.9961389961389961,
+          "decisions": 518,
+          "leader_stability_range": [
+            2,
+            3
+          ],
+          "rho_range": [
+            0.75,
+            1.0
+          ],
+          "risk_event_rate": 0.003861003861003861,
+          "rows": 518
+        },
+        "0_to_0.1": {
+          "action_agreement_rate": 0.6555555555555556,
+          "decisions": 1222,
+          "leader_stability_range": [
+            2,
+            3
+          ],
+          "rho_range": [
+            0.0,
+            0.1
+          ],
+          "risk_event_rate": 0.34444444444444444,
+          "rows": 1350
+        },
+        "1_to_2": {
+          "action_agreement_rate": 1.0,
+          "decisions": 1002,
+          "leader_stability_range": [
+            2,
+            3
+          ],
+          "rho_range": [
+            1.0,
+            2.0
+          ],
+          "risk_event_rate": 0.0,
+          "rows": 1002
+        },
+        "2_plus": {
+          "action_agreement_rate": 1.0,
+          "decisions": 599,
+          "leader_stability_range": [
+            2,
+            3
+          ],
+          "rho_range": [
+            2.0,
+            Infinity
+          ],
+          "risk_event_rate": 0.0,
+          "rows": 599
+        }
+      }
+    },
+    "discovery": {
+      "four_plus": {
+        "0.1_to_0.25": {
+          "action_agreement_rate": 0.835509138381201,
+          "decisions": 322,
+          "leader_stability_range": [
+            4,
+            Infinity
+          ],
+          "rho_range": [
+            0.1,
+            0.25
+          ],
+          "risk_event_rate": 0.16449086161879894,
+          "rows": 383
+        },
+        "0.25_to_0.5": {
+          "action_agreement_rate": 0.9328358208955224,
+          "decisions": 487,
+          "leader_stability_range": [
+            4,
+            Infinity
+          ],
+          "rho_range": [
+            0.25,
+            0.5
+          ],
+          "risk_event_rate": 0.06716417910447761,
+          "rows": 536
+        },
+        "0.5_to_0.75": {
+          "action_agreement_rate": 0.9613636363636363,
+          "decisions": 431,
+          "leader_stability_range": [
+            4,
+            Infinity
+          ],
+          "rho_range": [
+            0.5,
+            0.75
+          ],
+          "risk_event_rate": 0.038636363636363635,
+          "rows": 440
+        },
+        "0.75_to_1": {
+          "action_agreement_rate": 0.9814385150812065,
+          "decisions": 426,
+          "leader_stability_range": [
+            4,
+            Infinity
+          ],
+          "rho_range": [
+            0.75,
+            1.0
+          ],
+          "risk_event_rate": 0.018561484918793503,
+          "rows": 431
+        },
+        "0_to_0.1": {
+          "action_agreement_rate": 0.6570841889117043,
+          "decisions": 306,
+          "leader_stability_range": [
+            4,
+            Infinity
+          ],
+          "rho_range": [
+            0.0,
+            0.1
+          ],
+          "risk_event_rate": 0.34291581108829566,
+          "rows": 487
+        },
+        "1_to_2": {
+          "action_agreement_rate": 1.0,
+          "decisions": 1089,
+          "leader_stability_range": [
+            4,
+            Infinity
+          ],
+          "rho_range": [
+            1.0,
+            2.0
+          ],
+          "risk_event_rate": 0.0,
+          "rows": 1323
+        },
+        "2_plus": {
+          "action_agreement_rate": 1.0,
+          "decisions": 1799,
+          "leader_stability_range": [
+            4,
+            Infinity
+          ],
+          "rho_range": [
+            2.0,
+            Infinity
+          ],
+          "risk_event_rate": 0.0,
+          "rows": 3056
+        }
+      },
+      "one": {
+        "0.1_to_0.25": {
+          "action_agreement_rate": 0.8846153846153846,
+          "decisions": 326,
+          "leader_stability_range": [
+            1,
+            2
+          ],
+          "rho_range": [
+            0.1,
+            0.25
+          ],
+          "risk_event_rate": 0.11538461538461539,
+          "rows": 338
+        },
+        "0.25_to_0.5": {
+          "action_agreement_rate": 0.9563953488372093,
+          "decisions": 342,
+          "leader_stability_range": [
+            1,
+            2
+          ],
+          "rho_range": [
+            0.25,
+            0.5
+          ],
+          "risk_event_rate": 0.0436046511627907,
+          "rows": 344
+        },
+        "0.5_to_0.75": {
+          "action_agreement_rate": 0.9825783972125436,
+          "decisions": 287,
+          "leader_stability_range": [
+            1,
+            2
+          ],
+          "rho_range": [
+            0.5,
+            0.75
+          ],
+          "risk_event_rate": 0.017421602787456445,
+          "rows": 287
+        },
+        "0.75_to_1": {
+          "action_agreement_rate": 1.0,
+          "decisions": 268,
+          "leader_stability_range": [
+            1,
+            2
+          ],
+          "rho_range": [
+            0.75,
+            1.0
+          ],
+          "risk_event_rate": 0.0,
+          "rows": 268
+        },
+        "0_to_0.1": {
+          "action_agreement_rate": 0.6026970954356846,
+          "decisions": 639,
+          "leader_stability_range": [
+            1,
+            2
+          ],
+          "rho_range": [
+            0.0,
+            0.1
+          ],
+          "risk_event_rate": 0.39730290456431533,
+          "rows": 964
+        },
+        "1_to_2": {
+          "action_agreement_rate": 1.0,
+          "decisions": 479,
+          "leader_stability_range": [
+            1,
+            2
+          ],
+          "rho_range": [
+            1.0,
+            2.0
+          ],
+          "risk_event_rate": 0.0,
+          "rows": 479
+        },
+        "2_plus": {
+          "action_agreement_rate": 1.0,
+          "decisions": 235,
+          "leader_stability_range": [
+            1,
+            2
+          ],
+          "rho_range": [
+            2.0,
+            Infinity
+          ],
+          "risk_event_rate": 0.0,
+          "rows": 235
+        }
+      },
+      "three": {
+        "0.1_to_0.25": {
+          "action_agreement_rate": 0.8627450980392157,
+          "decisions": 306,
+          "leader_stability_range": [
+            3,
+            4
+          ],
+          "rho_range": [
+            0.1,
+            0.25
+          ],
+          "risk_event_rate": 0.13725490196078433,
+          "rows": 306
+        },
+        "0.25_to_0.5": {
+          "action_agreement_rate": 0.9655172413793104,
+          "decisions": 319,
+          "leader_stability_range": [
+            3,
+            4
+          ],
+          "rho_range": [
+            0.25,
+            0.5
+          ],
+          "risk_event_rate": 0.034482758620689655,
+          "rows": 319
+        },
+        "0.5_to_0.75": {
+          "action_agreement_rate": 0.9808429118773946,
+          "decisions": 261,
+          "leader_stability_range": [
+            3,
+            4
+          ],
+          "rho_range": [
+            0.5,
+            0.75
+          ],
+          "risk_event_rate": 0.019157088122605363,
+          "rows": 261
+        },
+        "0.75_to_1": {
+          "action_agreement_rate": 0.9959016393442623,
+          "decisions": 244,
+          "leader_stability_range": [
+            3,
+            4
+          ],
+          "rho_range": [
+            0.75,
+            1.0
+          ],
+          "risk_event_rate": 0.004098360655737705,
+          "rows": 244
+        },
+        "0_to_0.1": {
+          "action_agreement_rate": 0.6173913043478261,
+          "decisions": 457,
+          "leader_stability_range": [
+            3,
+            4
+          ],
+          "rho_range": [
+            0.0,
+            0.1
+          ],
+          "risk_event_rate": 0.3826086956521739,
+          "rows": 460
+        },
+        "1_to_2": {
+          "action_agreement_rate": 1.0,
+          "decisions": 514,
+          "leader_stability_range": [
+            3,
+            4
+          ],
+          "rho_range": [
+            1.0,
+            2.0
+          ],
+          "risk_event_rate": 0.0,
+          "rows": 514
+        },
+        "2_plus": {
+          "action_agreement_rate": 1.0,
+          "decisions": 363,
+          "leader_stability_range": [
+            3,
+            4
+          ],
+          "rho_range": [
+            2.0,
+            Infinity
+          ],
+          "risk_event_rate": 0.0,
+          "rows": 363
+        }
+      },
+      "two": {
+        "0.1_to_0.25": {
+          "action_agreement_rate": 0.8806451612903226,
+          "decisions": 310,
+          "leader_stability_range": [
+            2,
+            3
+          ],
+          "rho_range": [
+            0.1,
+            0.25
+          ],
+          "risk_event_rate": 0.11935483870967742,
+          "rows": 310
+        },
+        "0.25_to_0.5": {
+          "action_agreement_rate": 0.9627507163323782,
+          "decisions": 349,
+          "leader_stability_range": [
+            2,
+            3
+          ],
+          "rho_range": [
+            0.25,
+            0.5
+          ],
+          "risk_event_rate": 0.03724928366762178,
+          "rows": 349
+        },
+        "0.5_to_0.75": {
+          "action_agreement_rate": 0.9818181818181818,
+          "decisions": 275,
+          "leader_stability_range": [
+            2,
+            3
+          ],
+          "rho_range": [
+            0.5,
+            0.75
+          ],
+          "risk_event_rate": 0.01818181818181818,
+          "rows": 275
+        },
+        "0.75_to_1": {
+          "action_agreement_rate": 1.0,
+          "decisions": 253,
+          "leader_stability_range": [
+            2,
+            3
+          ],
+          "rho_range": [
+            0.75,
+            1.0
+          ],
+          "risk_event_rate": 0.0,
+          "rows": 253
+        },
+        "0_to_0.1": {
+          "action_agreement_rate": 0.6217457886676876,
+          "decisions": 596,
+          "leader_stability_range": [
+            2,
+            3
+          ],
+          "rho_range": [
+            0.0,
+            0.1
+          ],
+          "risk_event_rate": 0.3782542113323124,
+          "rows": 653
+        },
+        "1_to_2": {
+          "action_agreement_rate": 1.0,
+          "decisions": 508,
+          "leader_stability_range": [
+            2,
+            3
+          ],
+          "rho_range": [
+            1.0,
+            2.0
+          ],
+          "risk_event_rate": 0.0,
+          "rows": 508
+        },
+        "2_plus": {
+          "action_agreement_rate": 1.0,
+          "decisions": 290,
+          "leader_stability_range": [
+            2,
+            3
+          ],
+          "rho_range": [
+            2.0,
+            Infinity
+          ],
+          "risk_event_rate": 0.0,
+          "rows": 290
+        }
+      }
+    },
+    "evaluation": {
+      "four_plus": {
+        "0.1_to_0.25": {
+          "action_agreement_rate": 0.8449438202247191,
+          "decisions": 375,
+          "leader_stability_range": [
+            4,
+            Infinity
+          ],
+          "rho_range": [
+            0.1,
+            0.25
+          ],
+          "risk_event_rate": 0.1550561797752809,
+          "rows": 445
+        },
+        "0.25_to_0.5": {
+          "action_agreement_rate": 0.9347826086956522,
+          "decisions": 474,
+          "leader_stability_range": [
+            4,
+            Infinity
+          ],
+          "rho_range": [
+            0.25,
+            0.5
+          ],
+          "risk_event_rate": 0.06521739130434782,
+          "rows": 506
+        },
+        "0.5_to_0.75": {
+          "action_agreement_rate": 0.9566326530612245,
+          "decisions": 381,
+          "leader_stability_range": [
+            4,
+            Infinity
+          ],
+          "rho_range": [
+            0.5,
+            0.75
+          ],
+          "risk_event_rate": 0.04336734693877551,
+          "rows": 392
+        },
+        "0.75_to_1": {
+          "action_agreement_rate": 0.9734939759036144,
+          "decisions": 407,
+          "leader_stability_range": [
+            4,
+            Infinity
+          ],
+          "rho_range": [
+            0.75,
+            1.0
+          ],
+          "risk_event_rate": 0.02650602409638554,
+          "rows": 415
+        },
+        "0_to_0.1": {
+          "action_agreement_rate": 0.7660714285714286,
+          "decisions": 345,
+          "leader_stability_range": [
+            4,
+            Infinity
+          ],
+          "rho_range": [
+            0.0,
+            0.1
+          ],
+          "risk_event_rate": 0.23392857142857143,
+          "rows": 560
+        },
+        "1_to_2": {
+          "action_agreement_rate": 1.0,
+          "decisions": 1026,
+          "leader_stability_range": [
+            4,
+            Infinity
+          ],
+          "rho_range": [
+            1.0,
+            2.0
+          ],
+          "risk_event_rate": 0.0,
+          "rows": 1237
+        },
+        "2_plus": {
+          "action_agreement_rate": 1.0,
+          "decisions": 1771,
+          "leader_stability_range": [
+            4,
+            Infinity
+          ],
+          "rho_range": [
+            2.0,
+            Infinity
+          ],
+          "risk_event_rate": 0.0,
+          "rows": 3104
+        }
+      },
+      "one": {
+        "0.1_to_0.25": {
+          "action_agreement_rate": 0.8878205128205128,
+          "decisions": 306,
+          "leader_stability_range": [
+            1,
+            2
+          ],
+          "rho_range": [
+            0.1,
+            0.25
+          ],
+          "risk_event_rate": 0.11217948717948718,
+          "rows": 312
+        },
+        "0.25_to_0.5": {
+          "action_agreement_rate": 0.9372549019607843,
+          "decisions": 254,
+          "leader_stability_range": [
+            1,
+            2
+          ],
+          "rho_range": [
+            0.25,
+            0.5
+          ],
+          "risk_event_rate": 0.06274509803921569,
+          "rows": 255
+        },
+        "0.5_to_0.75": {
+          "action_agreement_rate": 0.9789473684210527,
+          "decisions": 284,
+          "leader_stability_range": [
+            1,
+            2
+          ],
+          "rho_range": [
+            0.5,
+            0.75
+          ],
+          "risk_event_rate": 0.021052631578947368,
+          "rows": 285
+        },
+        "0.75_to_1": {
+          "action_agreement_rate": 0.9964285714285714,
+          "decisions": 280,
+          "leader_stability_range": [
+            1,
+            2
+          ],
+          "rho_range": [
+            0.75,
+            1.0
+          ],
+          "risk_event_rate": 0.0035714285714285713,
+          "rows": 280
+        },
+        "0_to_0.1": {
+          "action_agreement_rate": 0.6489795918367347,
+          "decisions": 682,
+          "leader_stability_range": [
+            1,
+            2
+          ],
+          "rho_range": [
+            0.0,
+            0.1
+          ],
+          "risk_event_rate": 0.3510204081632653,
+          "rows": 980
+        },
+        "1_to_2": {
+          "action_agreement_rate": 1.0,
+          "decisions": 472,
+          "leader_stability_range": [
+            1,
+            2
+          ],
+          "rho_range": [
+            1.0,
+            2.0
+          ],
+          "risk_event_rate": 0.0,
+          "rows": 472
+        },
+        "2_plus": {
+          "action_agreement_rate": 1.0,
+          "decisions": 255,
+          "leader_stability_range": [
+            1,
+            2
+          ],
+          "rho_range": [
+            2.0,
+            Infinity
+          ],
+          "risk_event_rate": 0.0,
+          "rows": 255
+        }
+      },
+      "three": {
+        "0.1_to_0.25": {
+          "action_agreement_rate": 0.8471760797342193,
+          "decisions": 301,
+          "leader_stability_range": [
+            3,
+            4
+          ],
+          "rho_range": [
+            0.1,
+            0.25
+          ],
+          "risk_event_rate": 0.15282392026578073,
+          "rows": 301
+        },
+        "0.25_to_0.5": {
+          "action_agreement_rate": 0.9390243902439024,
+          "decisions": 246,
+          "leader_stability_range": [
+            3,
+            4
+          ],
+          "rho_range": [
+            0.25,
+            0.5
+          ],
+          "risk_event_rate": 0.06097560975609756,
+          "rows": 246
+        },
+        "0.5_to_0.75": {
+          "action_agreement_rate": 0.9834710743801653,
+          "decisions": 242,
+          "leader_stability_range": [
+            3,
+            4
+          ],
+          "rho_range": [
+            0.5,
+            0.75
+          ],
+          "risk_event_rate": 0.01652892561983471,
+          "rows": 242
+        },
+        "0.75_to_1": {
+          "action_agreement_rate": 0.9835390946502057,
+          "decisions": 243,
+          "leader_stability_range": [
+            3,
+            4
+          ],
+          "rho_range": [
+            0.75,
+            1.0
+          ],
+          "risk_event_rate": 0.01646090534979424,
+          "rows": 243
+        },
+        "0_to_0.1": {
+          "action_agreement_rate": 0.7395626242544732,
+          "decisions": 503,
+          "leader_stability_range": [
+            3,
+            4
+          ],
+          "rho_range": [
+            0.0,
+            0.1
+          ],
+          "risk_event_rate": 0.26043737574552683,
+          "rows": 503
+        },
+        "1_to_2": {
+          "action_agreement_rate": 1.0,
+          "decisions": 518,
+          "leader_stability_range": [
+            3,
+            4
+          ],
+          "rho_range": [
+            1.0,
+            2.0
+          ],
+          "risk_event_rate": 0.0,
+          "rows": 518
+        },
+        "2_plus": {
+          "action_agreement_rate": 1.0,
+          "decisions": 382,
+          "leader_stability_range": [
+            3,
+            4
+          ],
+          "rho_range": [
+            2.0,
+            Infinity
+          ],
+          "risk_event_rate": 0.0,
+          "rows": 382
+        }
+      },
+      "two": {
+        "0.1_to_0.25": {
+          "action_agreement_rate": 0.8827361563517915,
+          "decisions": 307,
+          "leader_stability_range": [
+            2,
+            3
+          ],
+          "rho_range": [
+            0.1,
+            0.25
+          ],
+          "risk_event_rate": 0.11726384364820847,
+          "rows": 307
+        },
+        "0.25_to_0.5": {
+          "action_agreement_rate": 0.924812030075188,
+          "decisions": 266,
+          "leader_stability_range": [
+            2,
+            3
+          ],
+          "rho_range": [
+            0.25,
+            0.5
+          ],
+          "risk_event_rate": 0.07518796992481203,
+          "rows": 266
+        },
+        "0.5_to_0.75": {
+          "action_agreement_rate": 0.9808429118773946,
+          "decisions": 261,
+          "leader_stability_range": [
+            2,
+            3
+          ],
+          "rho_range": [
+            0.5,
+            0.75
+          ],
+          "risk_event_rate": 0.019157088122605363,
+          "rows": 261
+        },
+        "0.75_to_1": {
+          "action_agreement_rate": 0.9924528301886792,
+          "decisions": 265,
+          "leader_stability_range": [
+            2,
+            3
+          ],
+          "rho_range": [
+            0.75,
+            1.0
+          ],
+          "risk_event_rate": 0.007547169811320755,
+          "rows": 265
+        },
+        "0_to_0.1": {
+          "action_agreement_rate": 0.6872309899569584,
+          "decisions": 626,
+          "leader_stability_range": [
+            2,
+            3
+          ],
+          "rho_range": [
+            0.0,
+            0.1
+          ],
+          "risk_event_rate": 0.3127690100430416,
+          "rows": 697
+        },
+        "1_to_2": {
+          "action_agreement_rate": 1.0,
+          "decisions": 494,
+          "leader_stability_range": [
+            2,
+            3
+          ],
+          "rho_range": [
+            1.0,
+            2.0
+          ],
+          "risk_event_rate": 0.0,
+          "rows": 494
+        },
+        "2_plus": {
+          "action_agreement_rate": 1.0,
+          "decisions": 309,
+          "leader_stability_range": [
+            2,
+            3
+          ],
+          "rho_range": [
+            2.0,
+            Infinity
+          ],
+          "risk_event_rate": 0.0,
+          "rows": 309
+        }
+      }
+    }
+  },
+  "rho_risk_table": {
+    "all": {
+      "0.1_to_0.25": {
+        "action_agreement_rate": 0.8641746854182087,
+        "decisions": 1354,
+        "rho_range": [
+          0.1,
+          0.25
+        ],
+        "risk_event_rate": 0.13582531458179126,
+        "rows": 2702
+      },
+      "0.25_to_0.5": {
+        "action_agreement_rate": 0.9436370081531372,
+        "decisions": 1510,
+        "rho_range": [
+          0.25,
+          0.5
+        ],
+        "risk_event_rate": 0.05636299184686282,
+        "rows": 2821
+      },
+      "0.5_to_0.75": {
+        "action_agreement_rate": 0.9738027015963979,
+        "decisions": 1452,
+        "rho_range": [
+          0.5,
+          0.75
+        ],
+        "risk_event_rate": 0.026197298403602128,
+        "rows": 2443
+      },
+      "0.75_to_1": {
+        "action_agreement_rate": 0.9887453105460609,
+        "decisions": 1575,
+        "rho_range": [
+          0.75,
+          1.0
+        ],
+        "risk_event_rate": 0.011254689453939141,
+        "rows": 2399
+      },
+      "0_to_0.1": {
+        "action_agreement_rate": 0.6611990950226244,
+        "decisions": 1370,
+        "rho_range": [
+          0.0,
+          0.1
+        ],
+        "risk_event_rate": 0.3388009049773756,
+        "rows": 5304
+      },
+      "1_to_2": {
+        "action_agreement_rate": 1.0,
+        "decisions": 2671,
+        "rho_range": [
+          1.0,
+          2.0
+        ],
+        "risk_event_rate": 0.0,
+        "rows": 5545
+      },
+      "2_plus": {
+        "action_agreement_rate": 1.0,
+        "decisions": 3664,
+        "rho_range": [
+          2.0,
+          Infinity
+        ],
+        "risk_event_rate": 0.0,
+        "rows": 7994
+      }
+    },
+    "discovery": {
+      "0.1_to_0.25": {
+        "action_agreement_rate": 0.8646222887060584,
+        "decisions": 672,
+        "rho_range": [
+          0.1,
+          0.25
+        ],
+        "risk_event_rate": 0.13537771129394166,
+        "rows": 1337
+      },
+      "0.25_to_0.5": {
+        "action_agreement_rate": 0.9515503875968992,
+        "decisions": 803,
+        "rho_range": [
+          0.25,
+          0.5
+        ],
+        "risk_event_rate": 0.04844961240310078,
+        "rows": 1548
+      },
+      "0.5_to_0.75": {
+        "action_agreement_rate": 0.9746634996041171,
+        "decisions": 749,
+        "rho_range": [
+          0.5,
+          0.75
+        ],
+        "risk_event_rate": 0.025336500395882817,
+        "rows": 1263
+      },
+      "0.75_to_1": {
+        "action_agreement_rate": 0.9924749163879598,
+        "decisions": 793,
+        "rho_range": [
+          0.75,
+          1.0
+        ],
+        "risk_event_rate": 0.007525083612040134,
+        "rows": 1196
+      },
+      "0_to_0.1": {
+        "action_agreement_rate": 0.6205148205928237,
+        "decisions": 666,
+        "rho_range": [
+          0.0,
+          0.1
+        ],
+        "risk_event_rate": 0.3794851794071763,
+        "rows": 2564
+      },
+      "1_to_2": {
+        "action_agreement_rate": 1.0,
+        "decisions": 1369,
+        "rho_range": [
+          1.0,
+          2.0
+        ],
+        "risk_event_rate": 0.0,
+        "rows": 2824
+      },
+      "2_plus": {
+        "action_agreement_rate": 1.0,
+        "decisions": 1851,
+        "rho_range": [
+          2.0,
+          Infinity
+        ],
+        "risk_event_rate": 0.0,
+        "rows": 3944
+      }
+    },
+    "evaluation": {
+      "0.1_to_0.25": {
+        "action_agreement_rate": 0.8637362637362638,
+        "decisions": 682,
+        "rho_range": [
+          0.1,
+          0.25
+        ],
+        "risk_event_rate": 0.13626373626373625,
+        "rows": 1365
+      },
+      "0.25_to_0.5": {
+        "action_agreement_rate": 0.9340141398271798,
+        "decisions": 707,
+        "rho_range": [
+          0.25,
+          0.5
+        ],
+        "risk_event_rate": 0.06598586017282011,
+        "rows": 1273
+      },
+      "0.5_to_0.75": {
+        "action_agreement_rate": 0.9728813559322034,
+        "decisions": 703,
+        "rho_range": [
+          0.5,
+          0.75
+        ],
+        "risk_event_rate": 0.02711864406779661,
+        "rows": 1180
+      },
+      "0.75_to_1": {
+        "action_agreement_rate": 0.9850374064837906,
+        "decisions": 782,
+        "rho_range": [
+          0.75,
+          1.0
+        ],
+        "risk_event_rate": 0.014962593516209476,
+        "rows": 1203
+      },
+      "0_to_0.1": {
+        "action_agreement_rate": 0.6992700729927007,
+        "decisions": 704,
+        "rho_range": [
+          0.0,
+          0.1
+        ],
+        "risk_event_rate": 0.3007299270072993,
+        "rows": 2740
+      },
+      "1_to_2": {
+        "action_agreement_rate": 1.0,
+        "decisions": 1302,
+        "rho_range": [
+          1.0,
+          2.0
+        ],
+        "risk_event_rate": 0.0,
+        "rows": 2721
+      },
+      "2_plus": {
+        "action_agreement_rate": 1.0,
+        "decisions": 1813,
+        "rho_range": [
+          2.0,
+          Infinity
+        ],
+        "risk_event_rate": 0.0,
+        "rows": 4050
+      }
+    }
+  },
+  "row_counts_by_checkpoint_population": {
+    "1000": {
+      "all": 7604,
+      "forced_one_action": 302,
+      "fresh": 2455,
+      "retained": 5149,
+      "retained_non_forced": 4868
+    },
+    "10000": {
+      "all": 7604,
+      "forced_one_action": 302,
+      "fresh": 2455,
+      "retained": 5149,
+      "retained_non_forced": 4868
+    },
+    "2000": {
+      "all": 7604,
+      "forced_one_action": 302,
+      "fresh": 2455,
+      "retained": 5149,
+      "retained_non_forced": 4868
+    },
+    "250": {
+      "all": 7604,
+      "forced_one_action": 302,
+      "fresh": 2455,
+      "retained": 5149,
+      "retained_non_forced": 4868
+    },
+    "4000": {
+      "all": 7604,
+      "forced_one_action": 302,
+      "fresh": 2455,
+      "retained": 5149,
+      "retained_non_forced": 4868
+    },
+    "500": {
+      "all": 7604,
+      "forced_one_action": 302,
+      "fresh": 2455,
+      "retained": 5149,
+      "retained_non_forced": 4868
+    },
+    "8000": {
+      "all": 7604,
+      "forced_one_action": 302,
+      "fresh": 2455,
+      "retained": 5149,
+      "retained_non_forced": 4868
+    }
+  },
+  "schema": "combat_sequential_diag_v2",
+  "seeds": [
+    112,
+    113,
+    114,
+    115,
+    116,
+    117,
+    118,
+    119,
+    120,
+    121,
+    122,
+    123,
+    124,
+    125,
+    126,
+    127
+  ],
+  "stage_one_descriptive_analysis": {
+    "by_checkpoint": {
+      "1000": {
+        "action_agreement_rate": 0.8987263763352507,
+        "decisions": 4868,
+        "fraction_leaders_changing_at_later_checkpoints": 0.11606409202958094,
+        "risk_event_rate": 0.10127362366474939,
+        "rows": 4868
+      },
+      "10000": {
+        "action_agreement_rate": 1.0,
+        "decisions": 4868,
+        "fraction_leaders_changing_at_later_checkpoints": 0.0,
+        "risk_event_rate": 0.0,
+        "rows": 4868
+      },
+      "2000": {
+        "action_agreement_rate": 0.9153656532456861,
+        "decisions": 4868,
+        "fraction_leaders_changing_at_later_checkpoints": 0.0932621199671323,
+        "risk_event_rate": 0.08463434675431389,
+        "rows": 4868
+      },
+      "250": {
+        "action_agreement_rate": 0.8820870994248151,
+        "decisions": 4868,
+        "fraction_leaders_changing_at_later_checkpoints": 0.13763352506162696,
+        "risk_event_rate": 0.11791290057518489,
+        "rows": 4868
+      },
+      "4000": {
+        "action_agreement_rate": 0.942481511914544,
+        "decisions": 4868,
+        "fraction_leaders_changing_at_later_checkpoints": 0.06101068200493016,
+        "risk_event_rate": 0.05751848808545604,
+        "rows": 4868
+      },
+      "500": {
+        "action_agreement_rate": 0.8847576006573542,
+        "decisions": 4868,
+        "fraction_leaders_changing_at_later_checkpoints": 0.1314708299096138,
+        "risk_event_rate": 0.11524239934264585,
+        "rows": 4868
+      },
+      "8000": {
+        "action_agreement_rate": 0.9806902218570255,
+        "decisions": 4868,
+        "fraction_leaders_changing_at_later_checkpoints": 0.019309778142974528,
+        "risk_event_rate": 0.019309778142974528,
+        "rows": 4868
+      }
+    },
+    "gap_bands": {
+      "0.05_to_0.10": {
+        "action_agreement_rate": 0.7065217391304348,
+        "decisions": 787,
+        "range": [
+          0.05,
+          0.1
+        ],
+        "risk_event_rate": 0.29347826086956524,
+        "rows": 1564
+      },
+      "0.10_to_0.20": {
+        "action_agreement_rate": 0.8057311420143278,
+        "decisions": 985,
+        "range": [
+          0.1,
+          0.2
+        ],
+        "risk_event_rate": 0.19426885798567214,
+        "rows": 2373
+      },
+      "0.20_to_0.30": {
+        "action_agreement_rate": 0.902070509233352,
+        "decisions": 834,
+        "range": [
+          0.2,
+          0.3
+        ],
+        "risk_event_rate": 0.09792949076664802,
+        "rows": 1787
+      },
+      "0.30_plus": {
+        "action_agreement_rate": 0.9877375543504812,
+        "decisions": 3811,
+        "range": [
+          0.3,
+          Infinity
+        ],
+        "risk_event_rate": 0.012262445649518785,
+        "rows": 20469
+      },
+      "0_to_0.05": {
+        "action_agreement_rate": 0.6457711442786069,
+        "decisions": 901,
+        "range": [
+          0,
+          0.05
+        ],
+        "risk_event_rate": 0.354228855721393,
+        "rows": 3015
+      }
+    },
+    "inherited_visit_bands": {
+      "10000_plus": {
+        "action_agreement_rate": 0.9773311306901615,
+        "decisions": 1816,
+        "range": [
+          10000,
+          Infinity
+        ],
+        "risk_event_rate": 0.022668869309838472,
+        "rows": 10896
+      },
+      "1000_to_9999": {
+        "action_agreement_rate": 0.9072881141846659,
+        "decisions": 2639,
+        "range": [
+          1000,
+          10000
+        ],
+        "risk_event_rate": 0.09271188581533409,
+        "rows": 15834
+      },
+      "1_to_999": {
+        "action_agreement_rate": 0.7179176755447942,
+        "decisions": 413,
+        "range": [
+          1,
+          1000
+        ],
+        "risk_event_rate": 0.2820823244552058,
+        "rows": 2478
+      },
+      "zero": {
+        "action_agreement_rate": null,
+        "decisions": 0,
+        "range": [
+          0,
+          1
+        ],
+        "risk_event_rate": null,
+        "rows": 0
+      }
+    },
+    "leader_stability_bands": {
+      "four_plus": {
+        "action_agreement_rate": 0.958542996620353,
+        "decisions": 4639,
+        "range": [
+          4,
+          Infinity
+        ],
+        "risk_event_rate": 0.041457003379647014,
+        "rows": 13315
+      },
+      "one": {
+        "action_agreement_rate": 0.8533194299617657,
+        "decisions": 4868,
+        "range": [
+          1,
+          2
+        ],
+        "risk_event_rate": 0.14668057003823426,
+        "rows": 5754
+      },
+      "three": {
+        "action_agreement_rate": 0.9112607099143207,
+        "decisions": 4819,
+        "range": [
+          3,
+          4
+        ],
+        "risk_event_rate": 0.08873929008567931,
+        "rows": 4902
+      },
+      "two": {
+        "action_agreement_rate": 0.8886767233148749,
+        "decisions": 4868,
+        "range": [
+          2,
+          3
+        ],
+        "risk_event_rate": 0.11132327668512507,
+        "rows": 5237
+      }
+    },
+    "population": {
+      "forced_one_action_control": {
+        "action_agreement_rate": 1.0,
+        "decisions": 302,
+        "risk_event_rate": 0.0,
+        "rows": 2114
+      },
+      "fresh_control": {
+        "action_agreement_rate": 0.757462903695083,
+        "decisions": 2455,
+        "risk_event_rate": 0.24253709630491707,
+        "rows": 17185
+      },
+      "retained_non_forced": {
+        "action_agreement_rate": 0.9291583519192393,
+        "decisions": 4868,
+        "risk_event_rate": 0.07084164808076066,
+        "rows": 34076
+      }
+    }
+  }
+}

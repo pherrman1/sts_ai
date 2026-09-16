@@ -232,6 +232,37 @@ int main() {
                                      splitFinal.budgetDiagnostic.finalRootUncertainty),
           "ordinary split continuation must match uninterrupted final action and root statistics");
 
+    // The sequential diagnostic visits a geometric schedule on one private
+    // root. Its final result must remain byte-for-byte equivalent to the
+    // uninterrupted reference, while every chunk reports its exact cumulative
+    // simulation count and the final action label.
+    auto sequentialConfig = serializedSearchConfig;
+    sequentialConfig.simulationsPerDecision = 1000;
+    sequentialConfig.collectDecisionDiagnostics = true;
+    sequentialConfig.collectRootActionSummaries = true;
+    sequentialConfig.budgetDiagnosticCheckpoints = {250, 500, 750, 1000};
+    const auto sequential = silver_bridge::runSilverDecision(firstWire, sequentialConfig);
+    check(sequential.accepted && sequential.simulations == 1000
+              && sequential.checkpointDiagnostics.size() == 4
+              && silver_bridge::semanticActionFingerprint(sequential.action)
+                  == silver_bridge::semanticActionFingerprint(uninterrupted.action)
+              && sameRootActionSummaries(sequential.rootActionSummaries,
+                                          uninterrupted.rootActionSummaries),
+          "multi-checkpoint continuation must preserve the uninterrupted final result");
+    bool checkpointsExact = true;
+    for (std::size_t i = 0; i < sequential.checkpointDiagnostics.size(); ++i) {
+        const auto &checkpoint = sequential.checkpointDiagnostics[i];
+        checkpointsExact = checkpointsExact && checkpoint.valid
+            && checkpoint.checkpointSimulations == sequentialConfig.budgetDiagnosticCheckpoints[i]
+            && !checkpoint.checkpointActionFingerprint.empty()
+            && checkpoint.finalActionFingerprint
+                == silver_bridge::semanticActionFingerprint(sequential.action)
+            && checkpoint.rootUncertainty.rootVisits
+                == checkpoint.checkpointSimulations;
+    }
+    check(checkpointsExact,
+          "multi-checkpoint continuation must expose exact cumulative budgets and final labels");
+
     silver_bridge::SilverLeafObservation capturedLeaf;
     bool capturedLeafStart = false;
     auto parentObserverConfig = serializedSearchConfig;
@@ -792,6 +823,39 @@ int main() {
     }
     check(sequentialRootStatsMatch,
           "sequential-selection split continuation must match uninterrupted final action/root statistics");
+
+    auto multiTransactionConfig = uninterruptedTransactionConfig;
+    multiTransactionConfig.budgetDiagnosticCheckpoints = {4, 8, 12, 16};
+    const auto multiTransaction = silver_bridge::runSequentialSelectionTransaction(
+        convert(transactionLive, gc, transactionKnowledge), multiTransactionConfig);
+    bool multiTransactionComplete = multiTransaction.accepted
+        && multiTransaction.finalConfirmation
+        && multiTransaction.searchDecisions == uninterruptedTransaction.searchDecisions
+        && multiTransaction.checkpointDiagnostics.size()
+            == static_cast<std::size_t>(multiTransaction.searchDecisions)
+        && silver_bridge::semanticActionFingerprint(multiTransaction.finalAction)
+            == silver_bridge::semanticActionFingerprint(uninterruptedTransaction.finalAction);
+    if (multiTransactionComplete) {
+        for (std::size_t subdecisionIndex = 0;
+             subdecisionIndex < multiTransaction.checkpointDiagnostics.size();
+             ++subdecisionIndex) {
+            const auto &subdecision = multiTransaction.checkpointDiagnostics[subdecisionIndex];
+            multiTransactionComplete = multiTransactionComplete && subdecision.size() == 4;
+            for (std::size_t i = 0; i < subdecision.size(); ++i) {
+                multiTransactionComplete = multiTransactionComplete
+                    && subdecision[i].valid
+                    && subdecision[i].checkpointSimulations
+                        == multiTransactionConfig.budgetDiagnosticCheckpoints[i]
+                    && !subdecision[i].checkpointActionFingerprint.empty()
+                    && !subdecision[i].finalActionFingerprint.empty()
+                    && subdecision[i].rootVisitsAfterSearch
+                        == multiTransaction.searchDiagnostics[subdecisionIndex].inheritedVisits
+                            + multiTransactionConfig.budgetDiagnosticCheckpoints[i];
+            }
+        }
+    }
+    check(multiTransactionComplete,
+          "sequential-selection multi-checkpoint continuation must cover every private subdecision");
     check(transactionLive.inputState == transactionBefore.inputState
           && transactionLive.cardSelectInfo.cardSelectTask == transactionBefore.cardSelectInfo.cardSelectTask
           && transactionLive.cards.cardsInHand == transactionBefore.cards.cardsInHand
