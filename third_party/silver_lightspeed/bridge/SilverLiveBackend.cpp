@@ -65,9 +65,9 @@ struct SilverLiveOptions {
     std::string executableGitSha;
     int leafCorpusGroupModulus = 1;
     int leafCorpusMaxLeavesPerGroup = 256;
-    bool adaptiveEnabled = false;
-    bool adaptiveRetainedOnly = false;
-    double adaptiveTopTwoVisitGapThreshold = 0.094;
+    bool adaptiveEnabled = true;
+    bool adaptiveRetainedOnly = true;
+    double adaptiveTopTwoVisitGapThreshold = 0.2932885906040268;
     bool exactVisitLockEnabled = false;
     bool rhoRacingEnabled = false;
     bool installed = false;
@@ -196,8 +196,9 @@ void parseSilverLiveOptions() {
     if (const char *raw = std::getenv("STS_SILVER_LEAF_CORPUS_MAX_PER_GROUP"))
         options.leafCorpusMaxLeavesPerGroup = std::atoi(raw);
     if (const char *raw = std::getenv("STS_EXECUTABLE_GIT_SHA")) options.executableGitSha = raw;
-    if (const char *raw = std::getenv("STS_SILVER_ADAPTIVE"))
-        options.adaptiveEnabled = std::atoi(raw) != 0;
+    const char *adaptiveOverride = std::getenv("STS_SILVER_ADAPTIVE");
+    if (adaptiveOverride)
+        options.adaptiveEnabled = std::atoi(adaptiveOverride) != 0;
     if (const char *raw = std::getenv("STS_SILVER_ADAPTIVE_RETAINED_ONLY"))
         options.adaptiveRetainedOnly = std::atoi(raw) != 0;
     if (const char *raw = std::getenv("STS_SILVER_ADAPTIVE_TOP_GAP"))
@@ -206,6 +207,13 @@ void parseSilverLiveOptions() {
         options.exactVisitLockEnabled = std::atoi(raw) != 0;
     if (const char *raw = std::getenv("STS_SILVER_RHO_RACING"))
         options.rhoRacingEnabled = std::atoi(raw) != 0;
+    // The retained-only policy is now the production default. An explicit
+    // adaptive opt-out must therefore also clear that dormant default, while
+    // preserving the historical validation for an explicit contradictory
+    // retained-only override.
+    if (adaptiveOverride && !options.adaptiveEnabled
+            && !std::getenv("STS_SILVER_ADAPTIVE_RETAINED_ONLY"))
+        options.adaptiveRetainedOnly = false;
     if (!options.rootDiagnosticFile.empty()
             && (options.rootDiagnosticMaxPerSeed <= 0
                 || options.rootDiagnosticReferenceBudget <= 0

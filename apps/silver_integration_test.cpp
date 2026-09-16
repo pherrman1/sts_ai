@@ -1,4 +1,5 @@
-// Controlled end-to-end smoke for the default-off isolated Silver callback.
+// Controlled end-to-end smoke for the isolated Silver callback and its
+// production/default opt-out configuration.
 #include <cstdlib>
 #include <cmath>
 #include <iostream>
@@ -30,6 +31,34 @@ int main() {
     installSilverLiveBackend();
     if (!g_externalCombatBackend) {
         std::cerr << "silver_integration FAIL: backend was not installed\n";
+        return 1;
+    }
+    constexpr double kPromotedAdaptiveThreshold = 0.2932885906040268;
+    const char *adaptiveOverride = std::getenv("STS_SILVER_ADAPTIVE");
+    const bool expectedAdaptive = adaptiveOverride
+        ? std::atoi(adaptiveOverride) != 0 : true;
+    const char *retainedOverride = std::getenv("STS_SILVER_ADAPTIVE_RETAINED_ONLY");
+    const bool expectedRetained = retainedOverride
+        ? std::atoi(retainedOverride) != 0
+        : !(adaptiveOverride && !expectedAdaptive);
+    const double expectedThreshold = std::getenv("STS_SILVER_ADAPTIVE_TOP_GAP")
+        ? std::atof(std::getenv("STS_SILVER_ADAPTIVE_TOP_GAP"))
+        : kPromotedAdaptiveThreshold;
+    if (silverLiveAdaptiveEnabled() != expectedAdaptive
+            || silverLiveAdaptiveRetainedOnly() != expectedRetained
+            || silverLiveAdaptiveTopTwoVisitGapThreshold() != expectedThreshold) {
+        std::cerr << "silver_integration FAIL: adaptive defaults/overrides were not parsed"
+                  << " adaptive=" << silverLiveAdaptiveEnabled()
+                  << " retained=" << silverLiveAdaptiveRetainedOnly()
+                  << " threshold=" << silverLiveAdaptiveTopTwoVisitGapThreshold() << '\n';
+        uninstallSilverLiveBackend();
+        return 1;
+    }
+    if (!adaptiveOverride && (!silverLiveAdaptiveEnabled()
+            || !silverLiveAdaptiveRetainedOnly()
+            || silverLiveAdaptiveTopTwoVisitGapThreshold() != kPromotedAdaptiveThreshold)) {
+        std::cerr << "silver_integration FAIL: promoted retained adaptive policy is not the default\n";
+        uninstallSilverLiveBackend();
         return 1;
     }
     const bool expectedExactRootBudgets = std::getenv("STS_SILVER_EXACT_ROOT_BUDGETS")
@@ -126,6 +155,18 @@ int main() {
                   << " knowledge_failures=" << g_silverLiveDiagnostics.knowledgeConsistencyFailures
                   << " reroot_exact=" << g_silverLiveDiagnostics.rerootExact
                   << " reroot_fallback=" << g_silverLiveDiagnostics.rerootFallback << '\n';
+        return 1;
+    }
+    const std::uint64_t expectedFlatSimulations = g_silverLiveDiagnostics.decisions
+        * static_cast<std::uint64_t>(agent.simulationCountBase);
+    if (!expectedAdaptive && g_silverLiveDiagnostics.simulations != expectedFlatSimulations) {
+        std::cerr << "silver_integration FAIL: adaptive opt-out did not restore flat Silver"
+                  << " simulations=" << g_silverLiveDiagnostics.simulations
+                  << " expected=" << expectedFlatSimulations << '\n';
+        return 1;
+    }
+    if (expectedAdaptive && g_silverLiveDiagnostics.simulations < 10000) {
+        std::cerr << "silver_integration FAIL: promoted fresh root did not reach 10k\n";
         return 1;
     }
     std::cout << "silver_integration PASS outcome=" << static_cast<int>(live.outcome)

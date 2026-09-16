@@ -9086,3 +9086,45 @@ evidence updated.
 - **Evidence:** [rho-racing packet](evidence/silver_rho_racing_2026-09-16/README.md),
   including raw N16/N32 results, scaling traces, logs, sidecars, time receipts,
   paired CSVs, provenance, and validator output.
+
+## §288 — Retained-root adaptive Silver production deployment gate (2026-09-16)
+
+- **Preflight:** Current `origin/main` was
+  `066264dc25bf2046aecd5ca7a94a8e82d5031e7b`. It contains merged PR #199
+  (`77a76167865d96df776fd80794695a6937fdac3f`), PR #204
+  (`3f8ca7b59c2de1ba78a2d8bab0f280f849dd6845`), and PR #207 (the current
+  merge). Production remained at a 32,768 allocated reuse cap with ordinary
+  boss budgeting, exact-root budgets off, exact-lock off, and rho off.
+- **Protocol:** The next unused contiguous 32-seed block, 224--255, used
+  Ironclad A0, project-fair Silver, native OOC, four workers, base budget
+  10,000, 32,768 allocated reuse cap, ordinary boss budgeting, CTM adaptive
+  budgeting/convergence/OOC MCTS/keys off, and exact-lock/rho off. Both arms
+  used the same Release executable (`c85579fd22a9c38475a3810062cabd0a15fe6d4bc33c8ea5f9ee0dee5a476eb3`).
+- **Control/treatment:** Control used `STS_SILVER_ADAPTIVE=0`. Treatment used
+  `STS_SILVER_ADAPTIVE=1`, `STS_SILVER_ADAPTIVE_RETAINED_ONLY=1`, and
+  `STS_SILVER_ADAPTIVE_TOP_GAP=0.2932885906040268`, with no other treatment
+  difference. Fresh and one-action/forced roots used 10,000; eligible retained
+  non-forced roots used 500 and continued the same private tree to 10,000 only
+  below the threshold.
+- **Result:** Control/treatment won 21/32 versus 22/32. Treatment had five
+  treatment-only and four control-only wins, mean floor 48.40625 versus
+  48.28125, and mean ending HP 32.90625 versus 29.34375. Silver simulations
+  were 202,860,000 versus 81,633,000, a **59.7589%** treatment reduction;
+  wall times were 395.72s versus 132.08s, a **66.6229%** reduction.
+- **Accounting:** Treatment recorded 13,945 decisions, 812 fresh roots,
+  13,133 retained roots, 510 one-action/forced roots, 6,086 valid 500-stops,
+  and 7,859 10k continuations. Every stop was retained, non-forced, exactly
+  500 new simulations, and at least the threshold; fresh and forced roots all
+  reached 10k. Exact/rho stop counters and conversion, semantic, transaction,
+  and knowledge failure counters were zero in both arms. All seed/result,
+  sidecar, reroot, and paired-accounting checks passed.
+- **Decision:** **`RETAINED_ADAPTIVE_DEFAULT_GO`**. Promote the frozen #199
+  retained-root policy to the normal live Silver default without changing the
+  production cap, cap mode, search algorithm, MCTS constants, exact-lock
+  default, or rho default. `STS_SILVER_ADAPTIVE=0` remains a clean flat-Silver
+  opt-out. This N32 is a deployment screen, not a formal equivalence proof or
+  superiority claim. **Knowledge impact:** maintained environment-variable
+  contract, current research status, and experiment evidence updated.
+- **Evidence:** [deployment packet](evidence/silver_retained_adaptive_deployment_pair32_2026-09-16/README.md),
+  including raw arm results, metadata, scaling traces, run logs, paired CSV,
+  summary, and validation outputs.

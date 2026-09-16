@@ -1,6 +1,6 @@
 # Current research status
 
-Last verified: 2026-09-16 for retained-root adaptive Silver prospective N16,
+Last verified: 2026-09-16 for retained-root adaptive Silver deployment-gate N32,
 final near-full support/native qualification,
 paired old/new-V2 OOC MCTS gameplay, and shared transition-encoder distillation;
 2026-09-14 for exact supported-v1 RNG continuation
@@ -133,7 +133,7 @@ Classification is **`LIVE_EXACT_VISIT_LOCK_REJECTED`** for the frozen bounded
 gate because the N32 compute reduction is below the approximately 40%
 requirement. This does not establish universal gameplay harm or invalidate
 the current-root proof, but it does not support promotion; the feature and
-normal Silver defaults remain unchanged. See the [paired evidence packet](../../experiments/evidence/silver_exact_visit_lock_pair_2026-09-16/README.md).
+exact-lock-only remains default-off. See the [paired evidence packet](../../experiments/evidence/silver_exact_visit_lock_pair_2026-09-16/README.md).
 
 The frozen offline rho follow-up then evaluated exactly candidates A
 (`rho >= 0.75`), B (`rho >= 0.50` plus two consecutive same-leader
@@ -153,9 +153,24 @@ and 40.8764% versus flat 10k, but produced five exact-only wins versus zero
 rho-only wins and lower mean floor/HP. The result is
 **`RHO_RACING_COMPUTE_PASS_GAMEPLAY_CONCERN`**: rho is not promoted and is not
 strong enough to replace the frozen #199 preferred experimental path. The
-mode, exact-lock-only mode, and normal Silver defaults remain unchanged.
+mode and exact-lock-only mode remain default-off.
 See the [rho-racing evidence packet](../../experiments/evidence/silver_rho_racing_2026-09-16/README.md)
 and [ledger §287](../../experiments/ledger-06.md).
+
+The final normal-production deployment screen for PR #199 used fresh paired
+seeds 224--255, the 32,768 allocated reuse cap, ordinary boss budgeting, and
+`STS_SILVER_EXACT_ROOT_BUDGETS=0`. Control won 21/32 and treatment won 22/32;
+the treatment had five treatment-only versus four control-only wins, mean
+floor 48.40625 versus 48.28125, and mean ending HP 32.90625 versus 29.34375.
+It reduced Silver simulations from 202,860,000 to 81,633,000 (59.7589%) and
+wall time from 395.72s to 132.08s (66.6229%). All 6,086 500-simulation stops
+passed retained/non-forced/threshold validation, all fresh and one-action/
+forced roots reached 10k, and all bridge failure counters plus exact-lock/rho
+counters were zero. Classification: **`RETAINED_ADAPTIVE_DEFAULT_GO`**.
+The policy is now the normal live Silver default, while `STS_SILVER_ADAPTIVE=0`
+restores flat Silver. This remains a deployment screen, not a formal
+equivalence proof or superiority claim. See [ledger §288](../../experiments/ledger-06.md)
+and the [deployment packet](../../experiments/evidence/silver_retained_adaptive_deployment_pair32_2026-09-16/README.md).
 
 ## Current priority / active line
 

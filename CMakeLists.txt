@@ -391,6 +391,23 @@ add_test(NAME silver_experimental_cap_integration COMMAND ${CMAKE_COMMAND} -E en
     $<TARGET_FILE:silver-integration-test>)
 set_tests_properties(silver_experimental_cap_integration PROPERTIES
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "integration")
+add_test(NAME silver_integration_default COMMAND ${CMAKE_COMMAND} -E env
+    --unset=STS_SILVER_ADAPTIVE --unset=STS_SILVER_ADAPTIVE_RETAINED_ONLY
+    --unset=STS_SILVER_ADAPTIVE_TOP_GAP --unset=STS_SILVER_EXACT_VISIT_LOCK
+    --unset=STS_SILVER_RHO_RACING $<TARGET_FILE:silver-integration-test>)
+set_tests_properties(silver_integration_default PROPERTIES
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "integration;smoke")
+add_test(NAME silver_integration_adaptive_optout COMMAND ${CMAKE_COMMAND} -E env
+    STS_SILVER_ADAPTIVE=0 --unset=STS_SILVER_ADAPTIVE_RETAINED_ONLY
+    $<TARGET_FILE:silver-integration-test>)
+set_tests_properties(silver_integration_adaptive_optout PROPERTIES
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "integration;smoke")
+add_test(NAME silver_integration_adaptive_override COMMAND ${CMAKE_COMMAND} -E env
+    STS_SILVER_ADAPTIVE=1 STS_SILVER_ADAPTIVE_RETAINED_ONLY=1
+    STS_SILVER_ADAPTIVE_TOP_GAP=0.2932885906040268
+    $<TARGET_FILE:silver-integration-test>)
+set_tests_properties(silver_integration_adaptive_override PROPERTIES
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "integration;smoke")
 add_test(NAME silver_bridge_boundary COMMAND $<TARGET_FILE:silver-bridge-test>)
 # tests/agent is owned by the separate pre-build unittest discovery step in CI.
 # Do not register its modules or separate compile-only checks here as well:
