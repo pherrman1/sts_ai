@@ -364,6 +364,24 @@ def exact_visit_lock_by_split(rows, discovery_seeds):
     }
 
 
+def _visit_lock_boundary_self_test():
+    def row(top_visits, second_visits):
+        return {
+            "root_visits": "10000",
+            "top_visit_share": str(top_visits / 10000),
+            "second_visit_share": str(second_visits / 10000),
+            "checkpoint_new_simulations": "8000",
+        }
+
+    equal = _visit_lock_fields(row(6000, 4000))
+    strict = _visit_lock_fields(row(6001, 4000))
+    assert equal["visit_margin"] == equal["remaining_budget"] == 2000
+    assert equal["rho"] == 1.0
+    assert not (equal["visit_margin"] > equal["remaining_budget"])
+    assert strict["visit_margin"] == 2001
+    assert strict["visit_margin"] > strict["remaining_budget"]
+
+
 def _bands(rows, field, ranges):
     result = {}
     for name, low, high in ranges:
@@ -613,6 +631,7 @@ def analyze(rows, metadata=None):
 
 
 def self_test():
+    _visit_lock_boundary_self_test()
     rows = []
     for seed in range(1, 17):
         for checkpoint in CHECKPOINTS:
