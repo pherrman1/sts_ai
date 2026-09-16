@@ -67,7 +67,12 @@ def verify_artifacts(parent: Path, expected: dict, candidate: Path, candidate_re
     downstream_folder = parent / 'full-union-downstream-v1'
     hashes['preparationCache'] = require_digest(preparation / 'cache.npz', population['preparationCacheSha256'])
     hashes['downstreamCache'] = require_digest(downstream_folder / 'cache.npz', population['downstreamCacheSha256'])
-    for component in ('survival', 'maxHP', 'HP', 'potion'):
+    promotion_receipt = ROOT / 'docs/experiments/evidence/combat_transition_attention_promotion_2026-09-15/survival-fit.json'
+    promotion = json.loads(promotion_receipt.read_text())
+    if promotion.get('artifactSha256') != expected['componentHashes']['survival']:
+        raise ValueError('promoted survival receipt differs from the Stage-A binding')
+    hashes['survivalPromotionReceipt'] = digest(promotion_receipt)
+    for component in ('maxHP', 'HP', 'potion'):
         hashes[component] = require_digest(
             parent / f'full-union-{component}-v1' / 'component.pt', expected['componentHashes'][component])
     hashes['downstream'] = require_digest(
