@@ -195,7 +195,10 @@ def fit_arm(initial_state, delta_count, cache, graphs, z, train, validation, ord
     net.to(device).train()
     if module_digest(net) != module_digest_from_state(initial_state):
         raise ValueError(f"{label} decoder initialization changed")
-    optimizer = torch.optim.AdamW(net.parameters(), lr=RECIPE["lr"], weight_decay=RECIPE["weightDecay"])
+    decoder_parameters = list(net.parameters())
+    optimizer = torch.optim.AdamW(decoder_parameters, lr=RECIPE["lr"], weight_decay=RECIPE["weightDecay"])
+    if {id(parameter) for group in optimizer.param_groups for parameter in group["params"]} != {id(parameter) for parameter in decoder_parameters}:
+        raise ValueError(f"{label} optimizer contains non-decoder parameters")
     history = []
     best = float("inf")
     selected = None
@@ -235,6 +238,7 @@ def fit_arm(initial_state, delta_count, cache, graphs, z, train, validation, ord
         "checkpointSha256": composed.base.sha256(output / f"{label}.pt"),
         "encoderFrozen": True,
         "decoderOnly": True,
+        "optimizerScope": True,
     }
 
 
