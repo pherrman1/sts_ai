@@ -294,7 +294,7 @@ def main() -> None:
                            for row in read_csv(ROOT / stage / comparator / "results.csv")}
         path = ROOT / stage / f"paired_{candidate}_vs_{comparator}.csv"
         with path.open("w", newline="") as handle:
-            writer = csv.writer(handle)
+            writer = csv.writer(handle, lineterminator="\n")
             writer.writerow(["seed", "candidate_won", "comparator_won",
                              "candidate_floor", "comparator_floor",
                              "candidate_hp_end", "comparator_hp_end"])
