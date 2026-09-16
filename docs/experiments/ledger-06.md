@@ -8692,3 +8692,36 @@ result is not replaced or pooled with this policy result. Knowledge impact:
 current research status and experiment evidence updated; normal Silver
 defaults remain unchanged.
 [Evidence packet and raw traces](evidence/silver_retained_adaptive_pair32_2026-09-16/README.md).
+
+## §282 — Shared maxHP+HP encoder as potion encoder (2026-09-16)
+
+The successful PR #197 epoch-37 shared maxHP+HP Attention encoder was tested
+as a frozen replacement for the dedicated potion encoder. A fresh existing
+64-action potion decoder was trained separately on each representation using
+the exact current final-union TRAIN/VALIDATION winning population: TRAIN
+393,677 rows / 19,986 sources and VALIDATION 48,590 rows / 2,496 sources.
+Encoders were cached once, decoder initialization and 12-epoch batch order
+were byte-identical, and the FP32 AdamW recipe was fixed at seed 20260912,
+batch 512, learning rate 1e-3, weight decay 1e-4 and clip 1.0. TEST rows were
+not evaluated. Both arms selected epoch 12; the shared curve descended at
+every epoch, but the absolute NLL gap remained 0.02344 at epoch 11 and 0.02356
+at epoch 12, so the shared arm was not closing the gap faster.
+
+Dedicated potion versus shared maxHP+HP validation exact trajectory NLL was
+0.507205895 versus 0.530769047 (**+4.6457%**, gate +2%). The no-change Brier
+delta was +0.00527133 (gate +0.01), action-mode accuracy fell 0.8673pp (gate
+1pp), illegal probability was exactly zero, and maximum normalization error
+was 1.92e-7. Slice NLL changes were Brew +5.8765%, Smoke +8.7886%, recursive
+Brew **+22.3968%**, and all trajectory-special +6.3589%; recursive Brew is an
+obvious regression under the screen rule.
+
+Decision **`SHARED_ENCODER_POTION_REJECTED`**. Since teacher-forced acceptance
+failed, the planned 32-draw ancestral diagnostic did not run. Stop this exact
+substitution path: no joint fine-tune, extra epochs, TEST, runtime/export,
+promotion or gameplay. The result rejects this frozen representation and
+decoder recipe, not every possible shared architecture or intrinsic
+information absence. The preparation cache was regenerated after the host
+restart and matched all three recorded exact hashes. Knowledge impact:
+experiment evidence and current research status only; qualified components
+and executable defaults are unchanged.
+[Evidence, provenance and receipt](evidence/shared_potion_encoder_screen_2026-09-16.md).

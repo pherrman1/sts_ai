@@ -434,6 +434,32 @@ hashes are unchanged on current main, so no scientific rerun is required. See
 [ledger-06 §278](../../experiments/ledger-06.md) and the
 [maxHP evidence](../../experiments/evidence/shared_frozen_maxhp_encoder_2026-09-15.md).
 
+### Shared maxHP+HP representation for potion decoding
+
+The sequential frozen substitution screen is **`SHARED_ENCODER_POTION_REJECTED`**.
+PR #197's qualified epoch-37 shared maxHP+HP Attention encoder was frozen and
+compared with the dedicated potion encoder using fresh decoder-only fits on
+the exact current final-union TRAIN/VALIDATION winning rows. Validation exact
+trajectory NLL was 0.507205895 for the dedicated potion representation and
+0.530769047 for the shared representation (**+4.6457%**, above the fixed 2%
+limit). The recursive-Brew slice regressed 22.3968%. No-change Brier and
+action-mode accuracy remained within bounds; illegal probability was exactly
+zero and normalization remained within tolerance.
+
+Both decoder fits selected epoch 12. The shared validation curve descended at
+every epoch, but the absolute gap did not close (0.02344 NLL at epoch 11,
+0.02356 at epoch 12), so this is not evidence that the shared arm was catching
+up faster under the fixed recipe. A longer decoder-only epoch-cap diagnostic,
+if desired, is a separate experiment.
+
+The teacher-forced gate therefore stopped the planned ancestral diagnostic.
+There was no TEST inference, joint fine-tuning, runtime/export, gameplay or
+promotion. This rejects the exact frozen substitution and decoder recipe, not
+all shared architectures or intrinsic information absence. The dedicated
+potion encoder and all qualified current components remain unchanged. See
+[ledger-06 §282](../../experiments/ledger-06.md) and the
+[screen evidence](../../experiments/evidence/shared_potion_encoder_screen_2026-09-16.md).
+
 ### Shared relic trajectory residues
 
 **`RELIC_TRAJECTORY_QUALIFIED`** on the audited offline composed support.
