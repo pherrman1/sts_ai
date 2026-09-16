@@ -197,6 +197,8 @@ def main(args: argparse.Namespace) -> None:
     candidate_cache = dict(cache)
     candidate_cache['z'] = candidate_z
     nets = downstream.models(args.parent)
+    downstream_state = torch.load(folder / 'downstream.pt', map_location='cpu', weights_only=False)['stateDict']
+    nets.load_state_dict(downstream_state, strict=True)
     replayed = replay_stage_a(nets, reference_cache, candidate_cache, ambiguous, records, ids, expected)
     maximum_difference = compare_metrics(replayed, expected)
     output = dict(expected)
