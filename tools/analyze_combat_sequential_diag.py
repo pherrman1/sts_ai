@@ -37,6 +37,14 @@ STABILITY_BINS = (
     ("three", 3, 4),
     ("four_plus", 4, float("inf")),
 )
+RHO_RACING_CANDIDATES = {
+    "A": {"rho_threshold": 0.75, "leader_stability": 1,
+           "rule": "rho >= 0.75"},
+    "B": {"rho_threshold": 0.50, "leader_stability": 2,
+           "rule": "rho >= 0.50 AND same leader for >= 2 consecutive checkpoints"},
+    "C": {"rho_threshold": 0.50, "leader_stability": 3,
+           "rule": "rho >= 0.50 AND same leader for >= 3 consecutive checkpoints"},
+}
 FEATURE_NAMES = (
     "log1p_inherited_visits",
     "log1p_new_simulations",
@@ -364,6 +372,216 @@ def exact_visit_lock_by_split(rows, discovery_seeds):
     }
 
 
+def _rho_racing_stop(row, candidate):
+    fields = _visit_lock_fields(row)
+    return (fields["remaining_budget"] > 0
+            and fields["rho"] >= candidate["rho_threshold"]
+            and row["consecutive_same_leader"] >= candidate["leader_stability"])
+
+
+def _exact_lock_all_decision_budgets(rows):
+    budgets = []
+    exact_stops = 0
+    for decision_rows in _group_rows(rows).values():
+        selected = decision_rows[-1]
+        for row in decision_rows:
+            if (_primary(row)
+                    and _int(row, "checkpoint_new_simulations") < 10000):
+                fields = _visit_lock_fields(row)
+                if fields["remaining_budget"] > 0 and fields["visit_margin"] > fields["remaining_budget"]:
+                    selected = row
+                    exact_stops += 1
+                    break
+        budgets.append(_int(selected, "checkpoint_new_simulations"))
+    return budgets, exact_stops
+
+
+def _rho_racing_result(rows, candidate_name):
+    """Replay exact lock followed by one frozen soft-racing candidate.
+
+    This is post-hoc evidence only.  The 10k row is the action reference, and
+    exact locking is evaluated before the approximate soft rule at every
+    checkpoint.  Fresh and one-action/forced roots never soft-stop.
+    """
+    candidate = RHO_RACING_CANDIDATES[candidate_name]
+    chosen = []
+    groups = _group_rows(rows)
+    for key, decision_rows in groups.items():
+        by_checkpoint = {_int(row, "checkpoint_new_simulations"): row
+                         for row in decision_rows}
+        reference = by_checkpoint[10000]
+        selected = reference
+        stop_kind = "max_budget"
+        for row in decision_rows:
+            checkpoint = _int(row, "checkpoint_new_simulations")
+            if checkpoint == 10000 or not _primary(row):
+                continue
+            fields = _visit_lock_fields(row)
+            if fields["remaining_budget"] > 0 and fields["visit_margin"] > fields["remaining_budget"]:
+                selected = row
+                stop_kind = "exact_lock"
+                break
+            if _rho_racing_stop(row, candidate):
+                selected = row
+                stop_kind = "soft_rho"
+                break
+        chosen.append({"key": key, "row": selected, "stop_kind": stop_kind,
+                       "primary": _primary(reference)})
+
+    budgets = [_int(item["row"], "checkpoint_new_simulations") for item in chosen]
+    primary = [item for item in chosen if item["primary"]]
+    soft = [item for item in primary if item["stop_kind"] == "soft_rho"]
+    exact = [item for item in primary if item["stop_kind"] == "exact_lock"]
+    early = [item for item in primary if item["stop_kind"] != "max_budget"]
+    exact_all_budgets, exact_all_stops = _exact_lock_all_decision_budgets(rows)
+    exact_all_reduction = (1.0 - statistics.mean(exact_all_budgets) / 10000.0
+                           if exact_all_budgets else None)
+
+    def stop_rows(items):
+        return [item["row"] for item in items]
+
+    def breakdown(items, field):
+        grouped = defaultdict(list)
+        for item in items:
+            grouped[item["row"][field]].append(item["row"])
+        return {str(name): {
+            "decisions": len(group_rows),
+            "disagreements": sum(_int(row, "risk_event") for row in group_rows),
+            "disagreement_rate": _fraction(
+                sum(_int(row, "risk_event") for row in group_rows), len(group_rows)),
+        } for name, group_rows in sorted(grouped.items())}
+
+    inherited_bands = (
+        ("zero", 0, 1), ("1_to_999", 1, 1000),
+        ("1000_to_9999", 1000, 10000), ("10000_plus", 10000, float("inf")),
+    )
+    soft_rows = stop_rows(soft)
+    inherited = {}
+    for name, low, high in inherited_bands:
+        subset = [row for row in soft_rows
+                  if low <= _int(row, "inherited_visits") < high]
+        inherited[name] = {
+            "decisions": len(subset),
+            "disagreements": sum(_int(row, "risk_event") for row in subset),
+            "disagreement_rate": _fraction(
+                sum(_int(row, "risk_event") for row in subset), len(subset)),
+        }
+    return {
+        "candidate": candidate_name,
+        "rule": candidate["rule"],
+        "rho_threshold": candidate["rho_threshold"],
+        "leader_stability": candidate["leader_stability"],
+        "decisions": len(chosen),
+        "primary_decisions": len(primary),
+        "exact_lock_stops": len(exact),
+        "exact_lock_stops_all_decisions": exact_all_stops,
+        "soft_rho_stops": len(soft),
+        "total_stops": len(early),
+        "soft_rho_disagreements": sum(_int(row, "risk_event") for row in soft_rows),
+        "soft_rho_disagreement_rate": _fraction(
+            sum(_int(row, "risk_event") for row in soft_rows), len(soft_rows)),
+        "overall_chosen_budget_distribution": dict(
+            sorted(Counter(map(str, budgets)).items())),
+        "mean_new_simulations_per_all_decision": (
+            statistics.mean(budgets) if budgets else None),
+        "median_new_simulations_per_all_decision": (
+            statistics.median(budgets) if budgets else None),
+        "all_decision_nominal_simulation_reduction": (
+            1.0 - statistics.mean(budgets) / 10000.0 if budgets else None),
+        "exact_lock_all_decision_nominal_simulation_reduction": exact_all_reduction,
+        "incremental_nominal_saving_beyond_exact_lock": (
+            (1.0 - statistics.mean(budgets) / 10000.0) - exact_all_reduction
+            if budgets and exact_all_reduction is not None else None),
+        "primary_chosen_budget_distribution": dict(
+            sorted(Counter(str(_int(item["row"], "checkpoint_new_simulations"))
+                           for item in primary).items())),
+        "primary_nominal_simulation_reduction": (
+            1.0 - statistics.mean(
+                [_int(item["row"], "checkpoint_new_simulations") for item in primary])
+            / 10000.0 if primary else None),
+        "soft_rho_stop_checkpoint_distribution": dict(
+            sorted(Counter(str(_int(row, "checkpoint_new_simulations"))
+                           for row in soft_rows).items())),
+        "soft_rho_stop_breakdown_by_room_type": breakdown(soft, "room_type"),
+        "soft_rho_stop_breakdown_by_inherited_visit_band": inherited,
+        "soft_rho_stop_rows": [{
+            "checkpoint": _int(row, "checkpoint_new_simulations"),
+            "risk_event": _int(row, "risk_event"),
+            "room_type": row["room_type"],
+            "inherited_visits": _int(row, "inherited_visits"),
+            "rho": _visit_lock_fields(row)["rho"],
+            "consecutive_same_leader": row["consecutive_same_leader"],
+        } for row in soft_rows],
+    }
+
+
+def _rho_racing_stage_one(rows, discovery_seeds):
+    split_rows = {
+        "discovery": [row for row in rows if int(row["run_seed"]) in discovery_seeds],
+        "evaluation": [row for row in rows if int(row["run_seed"]) not in discovery_seeds],
+    }
+    discovery_results = {
+        name: _rho_racing_result(split_rows["discovery"], name)
+        for name in RHO_RACING_CANDIDATES
+    }
+    eligible = [
+        (-result["all_decision_nominal_simulation_reduction"],
+         result["soft_rho_disagreement_rate"], name)
+        for name, result in discovery_results.items()
+        if result["soft_rho_stops"] >= 100
+        and result["soft_rho_disagreement_rate"] is not None
+        and result["soft_rho_disagreement_rate"] <= 0.02
+    ]
+    selected = min(eligible)[2] if eligible else None
+    evaluation_result = (_rho_racing_result(split_rows["evaluation"], selected)
+                         if selected else None)
+    evaluation_gate = None
+    classification = "RHO_RACING_OFFLINE_NOT_PROMISING"
+    if evaluation_result:
+        room_breakdown = evaluation_result["soft_rho_stop_breakdown_by_room_type"]
+        no_obvious_room_concentration = all(
+            details["disagreement_rate"] is None
+            or details["disagreement_rate"] <= 0.025
+            for details in room_breakdown.values())
+        evaluation_gate = {
+            "soft_disagreement_rate_max": 0.025,
+            "minimum_soft_stops": 100,
+            "incremental_saving_beyond_exact_lock_min": 0.05,
+            "not_isolated_checkpoint": len(
+                evaluation_result["soft_rho_stop_checkpoint_distribution"]) >= 2,
+            "no_obvious_room_concentration": no_obvious_room_concentration,
+            "soft_disagreement_rate": evaluation_result["soft_rho_disagreement_rate"],
+            "soft_stops": evaluation_result["soft_rho_stops"],
+            "incremental_saving_beyond_exact_lock": evaluation_result[
+                "incremental_nominal_saving_beyond_exact_lock"],
+        }
+        evaluation_gate["passed"] = (
+            evaluation_gate["soft_disagreement_rate"] is not None
+            and evaluation_gate["soft_disagreement_rate"] <= 0.025
+            and evaluation_gate["soft_stops"] >= 100
+            and evaluation_gate["incremental_saving_beyond_exact_lock"] is not None
+            and evaluation_gate["incremental_saving_beyond_exact_lock"] >= 0.05
+            and evaluation_gate["not_isolated_checkpoint"]
+            and evaluation_gate["no_obvious_room_concentration"])
+        if evaluation_gate["passed"]:
+            classification = "RHO_RACING_OFFLINE_PROMISING"
+    return {
+        "candidates": list(RHO_RACING_CANDIDATES),
+        "discovery_selection_rule": {
+            "soft_disagreement_rate_max": 0.02,
+            "minimum_soft_stops": 100,
+            "primary_objective": "maximum all-decision nominal simulation reduction",
+            "tie_break": ["lower soft disagreement", "simpler rule A then B then C"],
+        },
+        "discovery": discovery_results,
+        "selected_candidate": selected,
+        "selection_status": "selected_from_discovery_only" if selected else "no_candidate_passed_discovery_gate",
+        "evaluation": evaluation_result,
+        "evaluation_gate": evaluation_gate,
+        "classification": classification,
+    }
+
+
 def _visit_lock_boundary_self_test():
     def row(top_visits, second_visits):
         return {
@@ -602,6 +820,7 @@ def analyze(rows, metadata=None):
         "offline_sequential_controller": {"discovery": discovered_result, "evaluation": eval_result},
         "frozen_199_fixed_rule_evaluation": fixed,
         "exact_visit_lock": exact_visit_lock_by_split(enriched, discovery_seeds),
+        "rho_racing_stage_one": _rho_racing_stage_one(enriched, discovery_seeds),
         "rho_risk_table": {
             "all": _rho_risk_table(enriched),
             "discovery": _rho_risk_table(discovery),
@@ -661,6 +880,9 @@ def self_test():
     assert result["estimator"]["training_rows"] == 24
     assert result["row_counts_by_checkpoint_population"]["10000"]["all"] == 16
     assert result["frozen_199_fixed_rule_evaluation"]["rule"].startswith("retained + 500")
+    stage_one_result = result["rho_racing_stage_one"]
+    assert stage_one_result["candidates"] == ["A", "B", "C"]
+    assert set(stage_one_result["discovery"]) == {"A", "B", "C"}
     print("analyze_combat_sequential_diag self-test PASS")
 
 

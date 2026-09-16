@@ -135,6 +135,28 @@ requirement. This does not establish universal gameplay harm or invalidate
 the current-root proof, but it does not support promotion; the feature and
 normal Silver defaults remain unchanged. See the [paired evidence packet](../../experiments/evidence/silver_exact_visit_lock_pair_2026-09-16/README.md).
 
+The frozen offline rho follow-up then evaluated exactly candidates A
+(`rho >= 0.75`), B (`rho >= 0.50` plus two consecutive same-leader
+checkpoints), and C (`rho >= 0.50` plus three). On discovery seeds 112--119,
+B was selected before evaluation because it passed the <=2% and >=100-soft-stop
+requirements and maximized all-decision savings. On held-out seeds 120--127,
+B had 1,070 soft stops, 1.4953% disagreement, and 8.2319 percentage points
+of additional all-decision nominal saving beyond exact locking. This is
+**`RHO_RACING_OFFLINE_PROMISING`** post-hoc engineering evidence only.
+
+The default-off runtime mode `STS_SILVER_RHO_RACING=1` was frozen at
+`ae97d56a74a9b70ac34b87478a87de5e3a9ee893` and tested with fresh N16 seeds
+176--191 and N32 seeds 192--223. N16 passed its incremental compute and
+gameplay gate, saving 9.9341% additional simulations versus exact-only. The
+N32 three-arm result saved 13.4237% additional simulations versus exact-only
+and 40.8764% versus flat 10k, but produced five exact-only wins versus zero
+rho-only wins and lower mean floor/HP. The result is
+**`RHO_RACING_COMPUTE_PASS_GAMEPLAY_CONCERN`**: rho is not promoted and is not
+strong enough to replace the frozen #199 preferred experimental path. The
+mode, exact-lock-only mode, and normal Silver defaults remain unchanged.
+See the [rho-racing evidence packet](../../experiments/evidence/silver_rho_racing_2026-09-16/README.md)
+and [ledger §288](../../experiments/ledger-06.md).
+
 ## Current priority / active line
 
 The corrected all-Act boss leaf has a mechanism pass and paired N8 smoke:
@@ -474,6 +496,30 @@ runtime/export, model promotion or gameplay ran, and all qualified components
 remain unchanged. See [ledger-06 §273](../../experiments/ledger-06.md) and the
 [distillation evidence](../../experiments/evidence/shared_transition_encoder_distill_2026-09-15.md).
 
+### Purpose-trained shared maxHP and signed-HP DeepSets encoder
+
+The authorized architecture follow-up remains **`CHEAP_ENCODER_QUALITY_GO`**
+and **`CHEAP_ENCODER_SPEED_GO`** after a same-session correction. One fixed
+40-epoch temperature-1 distillation run replaced only the shared state encoder
+with the existing historical `DeepSetsEncoder` (94,424 encoder parameters,
+output width 64); the frozen teachers, source split, loss, optimizer, AMP
+behavior and selection rule were unchanged. The correction uses
+`cache["ids"][train]` for TRAIN normalization and initializes the HP delta
+embedding plus HP head from the specialist used by the Attention control. On
+VALIDATION, corrected maxHP NLL was +1.2413% relative to the dedicated
+specialist, HP NLL +0.3378%, HP CRPS +0.5568%, and expected ending-HP MAE
++0.026469 HP. All fixed accuracy, support, slice and MAE gates passed; epoch
+40 was selected. The same CPU implementation screen on identical 512-row
+batches measured 21.73x encoder and 20.74x complete maxHP+HP-forward median
+speedups over the shared Attention control. These are offline implementation
+timings, not native/OOC speedup claims. This result does not authorize
+downstream substitution, export, native CTM work, gameplay or default
+promotion: downstream consumers must be retrained for the new representation
+in a separate experiment. No TEST rows were inferred. See
+[ledger-06 §286a–§286b](../../experiments/ledger-06.md), the
+[correction evidence](../../experiments/evidence/shared_transition_deepset_distill_correction_2026-09-16.md),
+and the [superseded original packet](../../experiments/evidence/shared_transition_deepset_distill_2026-09-16.md).
+
 The reverse frozen substitution also fails: a fresh linear maxHP-delta head on
 the dedicated HP representation is **`SHARED_HP_ENCODER_MAXHP_REJECTED`**.
 Relative to the dedicated maxHP representation, VALIDATION NLL is 272.3032%
@@ -512,6 +558,37 @@ its receipt records the artifact/cache bindings, exact row selection, isolated
 `9.53e-08`. The historical dedicated `z` cache remains the metric reference
 because the original cache used different inference arithmetic than the CPU
 replay; the regenerated-versus-cache difference is recorded explicitly.
+
+### Retrained downstream consumers for the qualified DeepSets representation
+
+The exact downstream retraining follow-up is **`DEEPSET_DOWNSTREAM_GO`** on the
+same eligible source-grouped VALIDATION cohort of 17,950 rows. It precomputed
+only the frozen corrected PR #205 DeepSets encoder output (`[N,64]`) and
+retrained the existing relic/turn/card/attack/shuffle, Writhing, Ritual and
+gold consumers with the same 12-epoch, batch-512, AdamW recipe. The DeepSets
+encoder, maxHP/HP heads and HP delta embedding were excluded from the
+optimizer. Potion representation, decoder, traces, labels, support predicate,
+candidate generation, legality masks and native-rule helpers were unchanged.
+
+Relative to the hash-verified dedicated-HP downstream reference, joint NLL
+improved 0.4115%. Turns, attacks, cards and shuffles stayed within the fixed
+2% NLL and 0.005 singleton-accuracy gates; their NLL changes were −1.0592%,
++0.1175%, −0.3111% and −1.9974%, and their accuracy deltas were +0.1705pp,
++0.7407pp, +0.8675pp and +0.8071pp. Writhing, Ritual and gold NLL changed by
+−1.8988%, −7.3414% and −1.0014%, each inside the fixed +5% important-slice
+gate. All outputs had finite metrics, normalized probabilities and positive
+exact legal target mass under the existing masks; TEST rows were neither
+encoded nor inferred.
+
+This qualifies the frozen DeepSets representation for these retrained offline
+downstream consumers only. It does not qualify the full CTM, potion or
+survival sharing, native runtime, gameplay, OOC MCTS, speedup or default
+promotion. The actual downstream-eligible TRAIN fit population was 150,404
+rows / 18,286 sources; the separate 393,677-row population is retained only
+as the DeepSets encoder's bound TRAIN normalization population. See the
+[downstream evidence report](../../experiments/evidence/deepset_downstream_2026-09-16.md),
+[machine-readable receipt](../../experiments/evidence/deepset_downstream_2026-09-16.json)
+and [ledger §287](../../experiments/ledger-06.md).
 
 ### Shared maxHP+HP representation for potion decoding
 

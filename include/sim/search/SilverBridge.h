@@ -372,6 +372,10 @@ struct SilverSearchConfig {
     // is the maximum new-simulation budget; no fixed budget is implied here.
     bool exactVisitLockEnabled = false;
     bool exactVisitLockRequireRetainedRoot = true;
+    // Default-off experimental B rule: exact locking plus rho >= 0.50 and
+    // the same semantic leader at two consecutive checkpoints. This mode
+    // owns the exact-lock layer internally and cannot be composed with it.
+    bool rhoRacingEnabled = false;
 };
 
 struct SilverRootActionSummary {
@@ -410,6 +414,13 @@ SilverRootUncertainty summarizeSilverRoot(
 bool silverExactVisitLockHolds(const SilverRootUncertainty &root,
                                std::int64_t maxBudget, std::int64_t used);
 
+// Pure integer predicate for the frozen rho-racing B candidate. The caller
+// supplies the within-decision leader-stability count; zero remaining budget
+// and zero observations never satisfy the soft rule.
+bool silverRhoRacingStopHolds(const SilverRootUncertainty &root,
+                              std::int64_t maxBudget, std::int64_t used,
+                              int consecutiveSameLeader);
+
 // Value-only accounting of one actual private Silver search invocation.  The
 // record is emitted for ordinary decisions and every sequential-selection
 // subdecision when collection is enabled.
@@ -447,6 +458,12 @@ struct SilverSearchDecisionDiagnostic {
     std::int64_t exactVisitLockRemainingBudget = 0;
     std::int64_t exactVisitLockStopBudget = 0;
     std::string exactVisitLockFinalAction;
+    bool rhoRacingEnabled = false;
+    bool rhoRacingFired = false;
+    int rhoRacingLeaderStability = 0;
+    std::int64_t rhoRacingVisitMargin = 0;
+    std::int64_t rhoRacingRemainingBudget = 0;
+    double rhoRacingRatio = 0.0;
 };
 
 // Value-only copy of Silver BattleSearcher's deterministic telemetry. This is
@@ -673,6 +690,7 @@ struct SessionReuseProbe {
     bool splitFinalRootStatisticsMatch = false;
     bool exactVisitLockFired = false;
     bool exactVisitLockFiredAtZero = false;
+    bool rhoRacingFired = false;
     bool exactVisitLockActionMatchesFullBudget = false;
     int exactVisitLockCheckpointCount = 0;
     bool exactVisitLockTelemetryMatchesCheckpointTrace = false;
