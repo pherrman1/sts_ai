@@ -26,6 +26,7 @@ try:
     from tools import combat_transition_near_full_refit as near_full
     from tools import combat_transition_potion_trajectory as trajectory
     from tools import combat_transition_potion_trajectory_evaluate as trajectory_evaluate
+    from tools import combat_transition_surrogate as surrogate
     from tools import combat_transition_stochastic_hp as stochastic_hp
 except ModuleNotFoundError:
     import sys
@@ -36,6 +37,7 @@ except ModuleNotFoundError:
     from tools import combat_transition_near_full_refit as near_full
     from tools import combat_transition_potion_trajectory as trajectory
     from tools import combat_transition_potion_trajectory_evaluate as trajectory_evaluate
+    import combat_transition_surrogate as surrogate
     from tools import combat_transition_stochastic_hp as stochastic_hp
 
 
@@ -343,14 +345,22 @@ def compare_teacher(a: dict, b: dict) -> tuple[str, dict]:
     return ("TEACHER_FORCED_PASS" if passed else "TEACHER_FORCED_REJECTED"), gates
 
 
-def candidate_upstream(payload, classes, delta_values, device):
+def candidate_upstream(payload, classes, delta_values, device, representation="attention"):
     width = len(composed.base.CONTINUOUS_GLOBAL_FIELDS)
     student = stochastic_hp.new_model(torch, np.zeros(width, np.float32), np.ones(width, np.float32), len(delta_values), classes, RECIPE["seed"])
+    if representation == "deepsets":
+        student.encoder = surrogate.DeepSetsEncoder(
+            torch.nn, torch, np.zeros(width, np.float32), np.ones(width, np.float32)
+        ).net
+    elif representation != "attention":
+        raise ValueError(f"unknown candidate representation: {representation}")
     student.load_state_dict(payload["stateDict"], strict=True)
     student.to(device).eval().requires_grad_(False)
     head = torch.nn.Linear(64, len(delta_values), device=device)
     head.load_state_dict(payload["maxHpHeadStateDict"], strict=True)
     head.eval().requires_grad_(False)
+    if any(parameter.requires_grad for parameter in student.parameters()) or any(parameter.requires_grad for parameter in head.parameters()):
+        raise ValueError("candidate upstream is not frozen")
     return student, head
 
 
@@ -378,8 +388,9 @@ def upstream_distributions(student, max_head, cache, z, ids, delta_values, class
     return max_prob, hp_prob
 
 
-def ancestral(net_a, net_b, cache, graphs, z_a, z_b, ids, candidate_payload, delta_values, classes, device):
-    student, max_head = candidate_upstream(candidate_payload, classes, delta_values, device)
+def ancestral(net_a, net_b, cache, graphs, z_a, z_b, ids, candidate_payload, delta_values, classes, device,
+              candidate_representation="attention"):
+    student, max_head = candidate_upstream(candidate_payload, classes, delta_values, device, candidate_representation)
     max_prob, hp_prob = upstream_distributions(student, max_head, cache, z_b, ids, delta_values, classes, device)
     rng = np.random.default_rng(RECIPE["ancestralSeed"])
     log_masses = [[], []]
