@@ -734,7 +734,8 @@ public:
     void beginAt(const sts::BattleContext &state, const SilverSearchConfig &config) {
         inheritedVisits = 0;
         rerootMissDiagnostic.clear();
-        collectDecisionDiagnostics = config.collectDecisionDiagnostics || config.exactVisitLockEnabled;
+        collectDecisionDiagnostics = config.collectDecisionDiagnostics
+            || config.exactVisitLockEnabled || config.rhoRacingEnabled;
         if (collectDecisionDiagnostics) {
             decisionDiagnostic = {};
             decisionDiagnostic.configuredCapMode = config.reuseCapMode;
@@ -971,6 +972,16 @@ bool silverExactVisitLockHolds(const SilverRootUncertainty &root,
     return root.topVisits - root.secondVisits > maxBudget - used;
 }
 
+bool silverRhoRacingStopHolds(const SilverRootUncertainty &root,
+                              std::int64_t maxBudget, std::int64_t used,
+                              int consecutiveSameLeader) {
+    if (!root.valid || maxBudget <= 0 || used <= 0 || used >= maxBudget
+            || consecutiveSameLeader < 2) return false;
+    const auto remaining = maxBudget - used;
+    const auto margin = root.topVisits - root.secondVisits;
+    return margin >= 0 && margin * 2 >= remaining;
+}
+
 SilverDecisionResult runCurrentRootDecision(SilverSearchSession &session,
                                              const SilverSearchConfig &config,
                                              bool convertSemanticAction = true) {
@@ -1085,9 +1096,9 @@ SilverDecisionResult runCurrentRootWithExactVisitLock(
         const SilverSearchConfig &config, bool convertSemanticAction) {
     SilverDecisionResult result;
     const auto maxBudget = config.simulationsPerDecision;
-    if (!config.exactVisitLockEnabled || config.adaptiveEnabled
+    if ((!config.exactVisitLockEnabled && !config.rhoRacingEnabled) || config.adaptiveEnabled
             || maxBudget <= 0) {
-        result.failureReason = "invalid_exact_visit_lock_configuration";
+        result.failureReason = "invalid_sequential_stopping_configuration";
         return result;
     }
 
@@ -1104,6 +1115,7 @@ SilverDecisionResult runCurrentRootWithExactVisitLock(
         current.diagnostic.exactVisitLockNewSimulationsUsed = used;
         current.diagnostic.exactVisitLockRemainingBudget = maxBudget - used;
         current.diagnostic.exactVisitLockStopBudget = stopBudget;
+        current.diagnostic.rhoRacingEnabled = config.rhoRacingEnabled;
         current.diagnostic.inheritedVisits = inheritedVisits;
         current.diagnostic.simulationsAdded = used;
         if (session.searcher != nullptr && session.searcher->root != nullptr
@@ -1138,6 +1150,8 @@ SilverDecisionResult runCurrentRootWithExactVisitLock(
     SilverDecisionResult last;
     SilverSearchTelemetry totalTelemetry;
     std::int64_t totalNodesCreated = 0;
+    std::string previousLeader;
+    int consecutiveSameLeader = 0;
     const auto checkpoints = exactVisitLockSchedule(maxBudget);
     for (const auto cumulative : checkpoints) {
         const auto increment = cumulative - used;
@@ -1174,7 +1188,30 @@ SilverDecisionResult runCurrentRootWithExactVisitLock(
         last.rootActionSummaries = session.rootActionSummaries;
         last.rootUncertainty = root;
         last.diagnostic.rootUncertainty = root;
+        std::string leader;
+        if (session.searcher != nullptr && session.searcher->root != nullptr
+                && session.previousBest != nullptr) {
+            leader = semanticActionFingerprint(semanticFromAction(
+                *session.searcher->root->state, session.previousBest->action));
+        }
+        if (leader.empty() || leader != previousLeader)
+            consecutiveSameLeader = leader.empty() ? 0 : 1;
+        else
+            ++consecutiveSameLeader;
+        previousLeader = std::move(leader);
+        const bool softRacing = config.rhoRacingEnabled && !locked && summaryValid && eligible
+            && silverRhoRacingStopHolds(root, maxBudget, used, consecutiveSameLeader);
+        last.diagnostic.rhoRacingEnabled = config.rhoRacingEnabled;
+        last.diagnostic.rhoRacingFired = softRacing;
+        last.diagnostic.rhoRacingLeaderStability = consecutiveSameLeader;
+        last.diagnostic.rhoRacingVisitMargin = root.topVisits - root.secondVisits;
+        last.diagnostic.rhoRacingRemainingBudget = std::max<std::int64_t>(0, maxBudget - used);
+        last.diagnostic.rhoRacingRatio = last.diagnostic.rhoRacingRemainingBudget > 0
+            ? static_cast<double>(last.diagnostic.rhoRacingVisitMargin)
+                / static_cast<double>(last.diagnostic.rhoRacingRemainingBudget)
+            : 0.0;
         if (locked) return last;
+        if (softRacing) return last;
     }
     return last;
 }
@@ -1488,7 +1525,8 @@ SessionReuseProbe probeSilverSearchSessionReuse(const BattleStateWire &wire,
         // A one-simulation exact-lock probe needs a retained root with more
         // than one inherited leader visit so that zero-use can be strictly
         // greater than the remaining budget. This is test-fixture setup only.
-        if (config.exactVisitLockEnabled && config.simulationsPerDecision == 1) {
+        if ((config.exactVisitLockEnabled || config.rhoRacingEnabled)
+                && config.simulationsPerDecision == 1) {
             firstConfig.exactVisitLockEnabled = false;
             firstConfig.simulationsPerDecision = 16;
         }
@@ -1497,7 +1535,7 @@ SessionReuseProbe probeSilverSearchSessionReuse(const BattleStateWire &wire,
         auto runProbeDecision = [&](SilverSearchSession &probeSession,
                                     const BattleStateWire *expectedWire,
                                     const SilverSearchConfig &decisionConfig) {
-            if (decisionConfig.exactVisitLockEnabled)
+            if (decisionConfig.exactVisitLockEnabled || decisionConfig.rhoRacingEnabled)
                 return runCurrentRootWithExactVisitLock(
                     probeSession, expectedWire, decisionConfig, true);
             auto decision = runCurrentRootDecision(probeSession, decisionConfig, true);
@@ -1523,6 +1561,7 @@ SessionReuseProbe probeSilverSearchSessionReuse(const BattleStateWire &wire,
         result.secondAdaptiveEscalated = secondDecision.adaptiveEscalated;
         result.exactVisitLockFired = secondDecision.diagnostic.exactVisitLockFired;
         result.exactVisitLockFiredAtZero = secondDecision.diagnostic.exactVisitLockFiredAtZero;
+        result.rhoRacingFired = secondDecision.diagnostic.rhoRacingFired;
         result.secondRootVisitsAfterSearch = session.searcher->root == nullptr
             ? 0 : session.searcher->root->simulationCount;
         if (!secondDecision.accepted) return result;
@@ -1530,10 +1569,11 @@ SessionReuseProbe probeSilverSearchSessionReuse(const BattleStateWire &wire,
         result.rerootExact = session.rerootExact;
         result.rerootFallback = session.rerootFallback;
 
-        if (config.exactVisitLockEnabled) {
+        if (config.exactVisitLockEnabled || config.rhoRacingEnabled) {
             SilverSearchSession referenceSession;
             auto referenceConfig = comparisonConfig;
             referenceConfig.exactVisitLockEnabled = false;
+            referenceConfig.rhoRacingEnabled = false;
             auto referenceState = referenceSession.materializeAndBegin(wire, firstConfig);
             auto referenceFirst = runCurrentRootDecision(referenceSession, firstConfig, true);
             if (referenceFirst.accepted && referenceSession.previousBest != nullptr
@@ -1555,7 +1595,8 @@ SessionReuseProbe probeSilverSearchSessionReuse(const BattleStateWire &wire,
         // checkpoint plus continuation. Adaptive configs are excluded because
         // their policy is a separate continuation contract.
         std::vector<std::int64_t> splitCheckpoints;
-        if (config.exactVisitLockEnabled && !config.adaptiveEnabled) {
+        if ((config.exactVisitLockEnabled || config.rhoRacingEnabled)
+                && !config.adaptiveEnabled) {
             splitCheckpoints = exactVisitLockSchedule(config.simulationsPerDecision);
             splitCheckpoints.erase(
                 std::remove_if(splitCheckpoints.begin(), splitCheckpoints.end(),
@@ -1577,7 +1618,7 @@ SessionReuseProbe probeSilverSearchSessionReuse(const BattleStateWire &wire,
                 splitSession.previousBest->action.execute(splitState);
                 splitSession.beginAt(splitState, comparisonConfig);
                 auto splitConfig = comparisonConfig;
-                if (config.exactVisitLockEnabled)
+                if (config.exactVisitLockEnabled || config.rhoRacingEnabled)
                     splitConfig.simulationsPerDecision = splitCheckpoints.back();
                 auto splitSecond = runCurrentRootWithCheckpoints(
                     splitSession, splitConfig, splitCheckpoints, true);
@@ -1587,7 +1628,7 @@ SessionReuseProbe probeSilverSearchSessionReuse(const BattleStateWire &wire,
                 result.splitFinalRootStatisticsMatch = splitSecond.accepted
                     && sameRootActionSummaries(secondDecision.rootActionSummaries,
                                                 splitSecond.rootActionSummaries);
-                if (config.exactVisitLockEnabled) {
+                if (config.exactVisitLockEnabled || config.rhoRacingEnabled) {
                     result.exactVisitLockTelemetryMatchesCheckpointTrace = splitSecond.accepted
                         && sameSilverSearchTelemetry(secondDecision.telemetry,
                                                      splitSecond.telemetry);
@@ -1795,6 +1836,14 @@ SelectionTransactionTrace runSequentialSelectionTransaction(
         trace.failure = "exact_visit_lock_and_adaptive_are_incompatible";
         return trace;
     }
+    if (config.rhoRacingEnabled && config.adaptiveEnabled) {
+        trace.failure = "rho_racing_and_adaptive_are_incompatible";
+        return trace;
+    }
+    if (config.exactVisitLockEnabled && config.rhoRacingEnabled) {
+        trace.failure = "exact_visit_lock_and_rho_racing_are_incompatible";
+        return trace;
+    }
     try {
         sts::BattleContext state = session.materializeAndBegin(wire, config);
         const auto task = state.cardSelectInfo.cardSelectTask;
@@ -1813,7 +1862,7 @@ SelectionTransactionTrace runSequentialSelectionTransaction(
             if (step > 0) session.beginAt(state, config);
 
             SilverDecisionResult decision;
-            if (config.exactVisitLockEnabled) {
+            if (config.exactVisitLockEnabled || config.rhoRacingEnabled) {
                 decision = runCurrentRootWithExactVisitLock(
                     session, nullptr, config, false);
                 if (!decision.accepted) {
@@ -1915,6 +1964,14 @@ SilverDecisionResult runSilverDecision(SilverSearchSession &session,
         result.failureReason = "exact_visit_lock_and_adaptive_are_incompatible";
         return result;
     }
+    if (config.rhoRacingEnabled && config.adaptiveEnabled) {
+        result.failureReason = "rho_racing_and_adaptive_are_incompatible";
+        return result;
+    }
+    if (config.exactVisitLockEnabled && config.rhoRacingEnabled) {
+        result.failureReason = "exact_visit_lock_and_rho_racing_are_incompatible";
+        return result;
+    }
     try {
         const int rerootExactBefore = session.rerootExact;
         const int rerootFallbackBefore = session.rerootFallback;
@@ -1929,7 +1986,7 @@ SilverDecisionResult runSilverDecision(SilverSearchSession &session,
             result.failureReason = "transactional_selection_required";
             return result; // must use the transactional API
         }
-        if (config.exactVisitLockEnabled) {
+        if (config.exactVisitLockEnabled || config.rhoRacingEnabled) {
             result = runCurrentRootWithExactVisitLock(session, &wire, config, true);
         } else {
             result = config.budgetDiagnosticCheckpoints.empty()
@@ -1937,7 +1994,8 @@ SilverDecisionResult runSilverDecision(SilverSearchSession &session,
                 : runCurrentRootWithCheckpoints(
                     session, config, config.budgetDiagnosticCheckpoints, true);
         }
-        if (config.budgetDiagnosticCheckpoints.empty() && !config.exactVisitLockEnabled)
+        if (config.budgetDiagnosticCheckpoints.empty()
+                && !config.exactVisitLockEnabled && !config.rhoRacingEnabled)
             result = applyAdaptiveContinuation(session, config, std::move(result));
         result.rerootExact = session.rerootExact - rerootExactBefore;
         result.rerootFallback = session.rerootFallback - rerootFallbackBefore;

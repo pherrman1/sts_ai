@@ -46,6 +46,13 @@ int main() {
         uninstallSilverLiveBackend();
         return 1;
     }
+    const bool expectedRhoRacing = std::getenv("STS_SILVER_RHO_RACING")
+        && std::atoi(std::getenv("STS_SILVER_RHO_RACING")) != 0;
+    if (silverLiveRhoRacingEnabled() != expectedRhoRacing) {
+        std::cerr << "silver_integration FAIL: rho-racing option was not parsed\n";
+        uninstallSilverLiveBackend();
+        return 1;
+    }
     const auto expectedCap = std::getenv("STS_SILVER_REUSE_CAP")
         ? std::atoll(std::getenv("STS_SILVER_REUSE_CAP")) : 32768;
     if (silverLiveReuseCap() != expectedCap)
