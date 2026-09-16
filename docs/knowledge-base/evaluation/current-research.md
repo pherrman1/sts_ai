@@ -135,6 +135,28 @@ requirement. This does not establish universal gameplay harm or invalidate
 the current-root proof, but it does not support promotion; the feature and
 normal Silver defaults remain unchanged. See the [paired evidence packet](../../experiments/evidence/silver_exact_visit_lock_pair_2026-09-16/README.md).
 
+The frozen offline rho follow-up then evaluated exactly candidates A
+(`rho >= 0.75`), B (`rho >= 0.50` plus two consecutive same-leader
+checkpoints), and C (`rho >= 0.50` plus three). On discovery seeds 112--119,
+B was selected before evaluation because it passed the <=2% and >=100-soft-stop
+requirements and maximized all-decision savings. On held-out seeds 120--127,
+B had 1,070 soft stops, 1.4953% disagreement, and 8.2319 percentage points
+of additional all-decision nominal saving beyond exact locking. This is
+**`RHO_RACING_OFFLINE_PROMISING`** post-hoc engineering evidence only.
+
+The default-off runtime mode `STS_SILVER_RHO_RACING=1` was frozen at
+`ae97d56a74a9b70ac34b87478a87de5e3a9ee893` and tested with fresh N16 seeds
+176--191 and N32 seeds 192--223. N16 passed its incremental compute and
+gameplay gate, saving 9.9341% additional simulations versus exact-only. The
+N32 three-arm result saved 13.4237% additional simulations versus exact-only
+and 40.8764% versus flat 10k, but produced five exact-only wins versus zero
+rho-only wins and lower mean floor/HP. The result is
+**`RHO_RACING_COMPUTE_PASS_GAMEPLAY_CONCERN`**: rho is not promoted and is not
+strong enough to replace the frozen #199 preferred experimental path. The
+mode, exact-lock-only mode, and normal Silver defaults remain unchanged.
+See the [rho-racing evidence packet](../../experiments/evidence/silver_rho_racing_2026-09-16/README.md)
+and [ledger §288](../../experiments/ledger-06.md).
+
 ## Current priority / active line
 
 The corrected all-Act boss leaf has a mechanism pass and paired N8 smoke:
