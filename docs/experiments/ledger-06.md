@@ -8903,5 +8903,51 @@ the regenerated-vs-cache difference explicitly.
   research status and experiment evidence only; normal Silver defaults remain
   unchanged.
  - **Evidence:** [full packet](evidence/combat_sequential_stopping_2026-09-16/README.md),
-  including the raw checkpoint stream, estimator JSON, benchmark receipt,
+ including the raw checkpoint stream, estimator JSON, benchmark receipt,
    sidecar, and run log.
+
+## §286 — Purpose-trained shared maxHP+HP DeepSets encoder (2026-09-16)
+
+- **Question and baseline:** Can the successful shared maxHP+HP Attention
+  distillation be replaced by a cheaper permutation-invariant encoder while
+  retaining acceptable predictive quality? Baseline is current `main`
+  `77fec051c2453d79f05bad5e813989b861fa5d0a`. The fit implementation was
+  frozen at `7521643c512c1f2a89a02f2fb8a512036831203a`; receipt assembly used
+  `21d7467ae81b5cdde7bcd5dbc48393ea146254a1` after training completed.
+- **Intervention:** one candidate only: the existing historical
+  `tools/combat_transition_surrogate.py::DeepSetsEncoder`, with card/relic
+  masked sum pooling and a 64-dimensional output. The encoder has 94,424
+  parameters and the complete maxHP+HP student has 119,659. The maxHP and HP
+  branches were unchanged. No tokenization, loss, task weight, temperature,
+  extra layer, adapter, downstream consumer, or runtime default changed.
+- **Protocol/provenance:** exact frozen maxHP/HP teacher checkpoints were
+  `2c5b54d0…` and `0c8b5aa8…`; teacher-output hashes were `10404b3e…` and
+  `6244ca5e…`; preparation cache `e1c25f27…`; source SHA `1c31b7eb…`.
+  TRAIN was 393,677 victories / 19,986 sources and VALIDATION 48,590 /
+  2,496. Seed `20260912`, 40 epochs, batch 512, AdamW, LR `1e-4/1e-3`,
+  weight decay `1e-4`, clip 1.0, AMP FP16 training, FP32 teacher/scoring,
+  and earliest strict minimum equal-weight validation KL were fixed. Nine
+  nonfinite-gradient updates were skipped under the established AMP rule.
+  TEST inference rows and metrics were zero.
+- **Stage A:** epoch 39 selected. Combined validation KL was `0.012285614`,
+  with maxHP KL `0.001936906` and HP KL `0.022634322`. Relative to the
+  dedicated specialists, maxHP NLL was +0.7832%, accuracy dropped 0.0535pp,
+  expected post-maxHP MAE increased 0.000550 HP, HP NLL was +0.3399%, HP CRPS
+  +0.7303%, and expected ending-HP MAE +0.030176 HP. Damage, healing and
+  low-pre-HP slices passed; outputs were finite, normalized and exactly legal.
+  Decision **`CHEAP_ENCODER_QUALITY_GO`**.
+- **Stage B:** on identical first-512 VALIDATION rows with four CPU threads,
+  10 warmups and 100 repetitions, encoder median was Attention `80.714 ms`
+  versus DeepSets `4.085 ms` (19.76x), and complete maxHP+HP forward was
+  `81.909 ms` versus `4.320 ms` (18.96x). IQRs and the row-identity hash are
+  in the evidence packet. This is an implementation-level CPU screen, not a
+  native/OOC speedup claim. Decision **`CHEAP_ENCODER_SPEED_GO`**.
+- **Boundary:** the result is an offline quality and speed handoff only. Do
+  not export/promote the checkpoint, replace runtime defaults, retrain or
+  substitute downstream relic/event/gold heads, add potion/survival, run OOC
+  gameplay, or infer TEST performance from this result. The next decision is
+  whether to train downstream consumers for this representation.
+- **Knowledge impact:** current research status and experiment evidence only;
+  no qualified component, runtime contract, native CTM, gameplay result or
+  executable default changed. [Evidence packet](evidence/shared_transition_deepset_distill_2026-09-16.md)
+  and [machine-readable receipt](evidence/shared_transition_deepset_distill_2026-09-16.json).
