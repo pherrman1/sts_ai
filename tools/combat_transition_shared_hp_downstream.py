@@ -46,7 +46,7 @@ def require_digest(path: Path, expected: str) -> str:
 
 def load_candidate(path: Path, receipt_path: Path):
     receipt = json.loads(receipt_path.read_text())
-    if receipt.get('bestEpoch') != 37 or receipt.get('decision') != 'SHARED_TRANSITION_ENCODER_GO':
+    if receipt.get('bestCheckpointEpoch') != 37 or receipt.get('decision') != 'SHARED_TRANSITION_ENCODER_GO':
         raise ValueError('candidate receipt is not the qualified PR #197 epoch-37 artifact')
     require_digest(path, receipt['bestCheckpointSha256'])
     payload = torch.load(path, map_location='cpu', weights_only=False)
