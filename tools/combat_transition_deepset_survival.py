@@ -256,7 +256,9 @@ def auc_score(labels: np.ndarray, probabilities: np.ndarray) -> float:
             end += 1
         ranks[start:end] = (ranks[start] + ranks[end - 1]) / 2.0
         start = end
-    positive_ranks = ranks[order][positives]
+    ranks_by_original = np.empty_like(ranks)
+    ranks_by_original[order] = ranks
+    positive_ranks = ranks_by_original[positives]
     negative_count = float(negatives.sum())
     positive_count = float(positives.sum())
     return float((positive_ranks.sum() - positive_count * (positive_count + 1.0) / 2.0) / (positive_count * negative_count))
@@ -316,6 +318,93 @@ def slice_metrics(head: torch.nn.Module, z: np.ndarray, cache: dict, ids: np.nda
         "nll": float(losses.mean()) if len(ids) else None,
         "brier": float(np.mean((probabilities - labels) ** 2)) if len(ids) else None,
     }
+
+
+def load_head_checkpoint(path: Path, device: str) -> torch.nn.Module:
+    head = torch.nn.Linear(64, 1).to(device)
+    head.load_state_dict(torch.load(path, map_location=device, weights_only=False)["stateDict"], strict=True)
+    head.eval().requires_grad_(False)
+    return head
+
+
+def validation_slices(head_a: torch.nn.Module, head_b: torch.nn.Module, z_a: np.ndarray,
+                      z_b: np.ndarray, cache: dict, target: np.ndarray,
+                      validation: np.ndarray, device: str) -> dict:
+    slices = {}
+    for label, mask in {
+        "victories": cache["win"][validation],
+        "deaths": ~cache["win"][validation],
+        "lowPreHp": (cache["preHp"][validation] / np.maximum(cache["preMax"][validation], 1)) <= 0.25,
+        "normal": ~cache.get("boss", np.zeros(len(cache["ids"]), dtype=bool))[validation],
+        "boss": cache.get("boss", np.zeros(len(cache["ids"]), dtype=bool))[validation],
+    }.items():
+        ids = validation[mask]
+        positions = np.searchsorted(target, ids)
+        slices[label] = {
+            "A": slice_metrics(head_a, z_a, cache, ids, device, positions),
+            "B": slice_metrics(head_b, z_b, cache, ids, device, positions),
+        }
+    return slices
+
+
+def replay(args: argparse.Namespace) -> dict:
+    if current_head() != args.base_sha:
+        raise ValueError(f"current baseline differs: {current_head()} != {args.base_sha}")
+    output = args.replay_dir
+    result_path = output / "results.json"
+    result = json.loads(result_path.read_text(encoding="utf-8"))
+    cache, _ = load_cache(args)
+    arrays, _ = load_prepared()
+    if not np.array_equal(cache["source"], arrays["sourceSeed"]):
+        raise ValueError("cache source ids do not match prepared source ids")
+    target = np.flatnonzero(cache["split"] < 2).astype(np.int64)
+    validation = np.flatnonzero(cache["split"] == 1).astype(np.int64)
+    row_ids = np.load(output / "z_row_ids.npy", mmap_mode="r")
+    z_a = np.load(output / "z_attention.npy", mmap_mode="r")
+    if tuple(row_ids.shape) != (REPRESENTATION_ROWS,) or not np.array_equal(row_ids, cache["ids"][target]):
+        raise ValueError("saved Attention representation row identity differs")
+    if tuple(z_a.shape) != (REPRESENTATION_ROWS, 64) or z_a.dtype != np.float32 or not np.isfinite(z_a).all():
+        raise ValueError("saved Attention representation schema differs")
+    z_b, representation = load_candidate_representation(args, cache, target)
+    device = "cuda" if torch.cuda.is_available() else "cpu"
+    _, reference_head, _ = load_reference(args)
+    head_a = load_head_checkpoint(output / "head_a.pt", device)
+    head_b = load_head_checkpoint(output / "head_b.pt", device)
+    reference_metrics = metrics(reference_head.to(device), z_a, cache, validation, device,
+                                np.searchsorted(target, validation))
+    metrics_a = metrics(head_a, z_a, cache, validation, device, np.searchsorted(target, validation))
+    metrics_b = metrics(head_b, z_b, cache, validation, device, np.searchsorted(target, validation))
+    slices = validation_slices(head_a, head_b, z_a, z_b, cache, target, validation, device)
+    deltas = {
+        "nllRelative": metrics_b["nll"] / metrics_a["nll"] - 1.0,
+        "brierRelative": metrics_b["brier"] / metrics_a["brier"] - 1.0,
+        "deathNllRelative": slices["deaths"]["B"]["nll"] / slices["deaths"]["A"]["nll"] - 1.0,
+        "lowPreHpNllRelative": slices["lowPreHp"]["B"]["nll"] / slices["lowPreHp"]["A"]["nll"] - 1.0,
+    }
+    previous_metrics = result["metrics"]
+    for arm, fresh_metrics in (("A", metrics_a), ("B", metrics_b)):
+        for key in ("nll", "brier"):
+            if abs(previous_metrics[arm][key] - fresh_metrics[key]) > 1e-7:
+                raise ValueError(f"replay changed {arm} {key}")
+    result["reference"]["metrics"] = reference_metrics
+    result["metrics"] = {"A": metrics_a, "B": metrics_b}
+    result["slices"] = slices
+    result["deltas"] = deltas
+    result["replayVerification"] = {
+        "noRetraining": True,
+        "existingCheckpointHashes": {
+            "A": digest(output / "head_a.pt"),
+            "B": digest(output / "head_b.pt"),
+        },
+        "representationSha256": representation["candidateZSha256"],
+        "aucImplementation": "rank_by_original_index_after_tie_averaging",
+        "nllAndBrierUnchanged": True,
+    }
+    composed.base.json_dump(result_path, result)
+    print(json.dumps({"output": str(result_path), "decision": result["decision"],
+                      "auc": {arm: result["metrics"][arm]["rocAuc"] for arm in ("A", "B")}},
+                     sort_keys=True), flush=True)
+    return result
 
 
 def train_arm(name: str, initial_state: dict, z: np.ndarray, cache: dict, train: np.ndarray,
@@ -436,12 +525,8 @@ def run(args: argparse.Namespace) -> dict:
     arm_b = train_arm("B", initial_state, z_b, cache, train, train_positions, validation, validation_positions, orders, device, args.output)
     metrics_a = metrics(arm_a.pop("head"), z_a, cache, validation, device, validation_positions)
     metrics_b = metrics(arm_b.pop("head"), z_b, cache, validation, device, validation_positions)
-    def load_head(path: str) -> torch.nn.Module:
-        head = torch.nn.Linear(64, 1).to(device)
-        head.load_state_dict(torch.load(path, map_location=device, weights_only=False)["stateDict"], strict=True)
-        return head
-    head_a = load_head(arm_a["checkpoint"])
-    head_b = load_head(arm_b["checkpoint"])
+    head_a = load_head_checkpoint(Path(arm_a["checkpoint"]), device)
+    head_b = load_head_checkpoint(Path(arm_b["checkpoint"]), device)
     reloaded_metrics_a = metrics(head_a, z_a, cache, validation, device, validation_positions)
     reloaded_metrics_b = metrics(head_b, z_b, cache, validation, device, validation_positions)
     reload_verification = {
@@ -456,20 +541,7 @@ def run(args: argparse.Namespace) -> dict:
     }
     if not all(value["metricsMatch"] for value in reload_verification.values()):
         raise ValueError("reloaded selected checkpoint metrics differ")
-    slices = {}
-    for label, mask in {
-        "victories": cache["win"][validation],
-        "deaths": ~cache["win"][validation],
-        "lowPreHp": (cache["preHp"][validation] / np.maximum(cache["preMax"][validation], 1)) <= 0.25,
-        "normal": ~cache.get("boss", np.zeros(len(cache["ids"]), dtype=bool))[validation],
-        "boss": cache.get("boss", np.zeros(len(cache["ids"]), dtype=bool))[validation],
-    }.items():
-        ids = validation[mask]
-        positions = np.searchsorted(target, ids)
-        slices[label] = {
-            "A": slice_metrics(head_a, z_a, cache, ids, device, positions),
-            "B": slice_metrics(head_b, z_b, cache, ids, device, positions),
-        }
+    slices = validation_slices(head_a, head_b, z_a, z_b, cache, target, validation, device)
     deltas = {
         "nllRelative": metrics_b["nll"] / metrics_a["nll"] - 1.0,
         "brierRelative": metrics_b["brier"] / metrics_a["brier"] - 1.0,
@@ -546,15 +618,22 @@ def run(args: argparse.Namespace) -> dict:
 
 def main() -> None:
     parser = argparse.ArgumentParser()
+    parser.add_argument("command", choices=("run", "replay"), nargs="?", default="run")
     parser.add_argument("--cache", type=Path, default=Path("/home/philippherrmann/sts_sweep/runs/near-full-combat-support-20260914/potion-trajectory-v2"))
     parser.add_argument("--reference-component", type=Path, default=Path("/home/philippherrmann/sts_sweep/runs/near-full-combat-support-20260914/full-union-survival-v1/component.pt"))
     parser.add_argument("--deepset-run", type=Path, default=Path("/home/philippherrmann/sts_sweep/runs/shared-transition-deepset-distill-corrected-20260916"))
     parser.add_argument("--deepset-evidence", type=Path, default=ROOT / "docs/experiments/evidence/shared_transition_deepset_distill_correction_2026-09-16.json")
     parser.add_argument("--representation", type=Path, default=Path("/home/philippherrmann/sts_sweep/runs/deepset-downstream-20260916-corrected"))
-    parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument("--output", type=Path)
+    parser.add_argument("--replay-dir", type=Path, default=Path("/home/philippherrmann/sts_sweep/runs/deepset-survival-screen-20260916-final"))
     parser.add_argument("--base-sha", default=BASELINE_SHA)
     main_args = parser.parse_args()
-    run(main_args)
+    if main_args.command == "run":
+        if main_args.output is None:
+            parser.error("--output is required for run")
+        run(main_args)
+    else:
+        replay(main_args)
 
 
 if __name__ == "__main__":

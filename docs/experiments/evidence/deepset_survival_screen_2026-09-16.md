@@ -30,6 +30,10 @@ against the recorded `0.059494428`. The saved DeepSets representations were
 bound by original row ID, and four regenerated DeepSets rows had maximum
 absolute error below `1e-5`.
 
+The evidence was replayed from the existing selected checkpoints after fixing
+the diagnostic ROC-AUC rank mapping. NLL, Brier, checkpoint hashes, and the
+rejection decision were unchanged; no retraining occurred.
+
 ## Training
 
 | Epoch | A validation NLL | B validation NLL |
@@ -58,7 +62,7 @@ exactly.
 |---|---:|---:|---:|
 | Validation NLL | 0.059312280 | 0.083209150 | **+40.2899%** |
 | Brier | 0.017769713 | 0.024436526 | **+37.5178%** |
-| ROC-AUC | 0.494014 | 0.504300 | diagnostic |
+| ROC-AUC | 0.980639 | 0.957098 | diagnostic |
 | Accuracy at 0.5 | 0.975479 | 0.966948 | diagnostic |
 | Mean predicted survival | 0.963590 | 0.961702 | diagnostic |
 | Observed survival rate | 0.963973 | 0.963973 | matched |

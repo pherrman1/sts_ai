@@ -275,7 +275,7 @@
       "nll": 0.059312280267477036,
       "observedSurvivalRate": 0.9639725429512359,
       "probabilitiesInUnitInterval": true,
-      "rocAuc": 0.4940138559356224,
+      "rocAuc": 0.9806392980281833,
       "rows": 50406
     },
     "B": {
@@ -369,7 +369,7 @@
       "nll": 0.08320914953947067,
       "observedSurvivalRate": 0.9639725429512359,
       "probabilitiesInUnitInterval": true,
-      "rocAuc": 0.5043004806014182,
+      "rocAuc": 0.957098362138291,
       "rows": 50406
     }
   },
@@ -742,7 +742,7 @@
       "nll": 0.05949442461133003,
       "observedSurvivalRate": 0.9639725429512359,
       "probabilitiesInUnitInterval": true,
-      "rocAuc": 0.5023766753279486,
+      "rocAuc": 0.9804745247703295,
       "rows": 50406
     }
   },
@@ -755,6 +755,16 @@
       "checkpointSha256": "9fc06f9817101230e1008b8570bf89e50d9eb1bfcf0452f75509d901a1914549",
       "metricsMatch": true
     }
+  },
+  "replayVerification": {
+    "aucImplementation": "rank_by_original_index_after_tie_averaging",
+    "existingCheckpointHashes": {
+      "A": "698c88c6187e5c6590daa1c856918ab231c17929c6410dce6837c044877db81f",
+      "B": "9fc06f9817101230e1008b8570bf89e50d9eb1bfcf0452f75509d901a1914549"
+    },
+    "nllAndBrierUnchanged": true,
+    "noRetraining": true,
+    "representationSha256": "9232027d8331fd2157727276410161e3c12816b6680cb116ebc2b3afd37352af"
   },
   "schema": "deepset_survival_screen_v1",
   "slices": {

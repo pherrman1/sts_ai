@@ -17,6 +17,16 @@ class DeepSetsSurvivalTests(unittest.TestCase):
         probabilities = np.full(4, 0.5, dtype=np.float32)
         self.assertAlmostEqual(experiment.auc_score(labels, probabilities), 0.5)
 
+    def test_auc_is_one_for_perfect_ranking(self):
+        labels = np.array([0, 1, 0, 1], dtype=np.int8)
+        probabilities = np.array([0.1, 0.9, 0.2, 0.8], dtype=np.float32)
+        self.assertAlmostEqual(experiment.auc_score(labels, probabilities), 1.0)
+
+    def test_auc_is_zero_for_reversed_ranking(self):
+        labels = np.array([0, 1, 0, 1], dtype=np.int8)
+        probabilities = np.array([0.9, 0.1, 0.8, 0.2], dtype=np.float32)
+        self.assertAlmostEqual(experiment.auc_score(labels, probabilities), 0.0)
+
     def test_calibration_covers_each_row_once(self):
         labels = np.array([0, 1, 1], dtype=np.int8)
         probabilities = np.array([0.0, 0.5, 1.0], dtype=np.float32)
