@@ -1,0 +1,99 @@
+{
+  "schema": "shared_potion_encoder_screen_v1",
+  "decision": "SHARED_ENCODER_POTION_REJECTED",
+  "baseSha": "af9cbac36cf769674d28249d762fdb8f2ee6d9e6",
+  "experimentSha": "877f6f6feb5781c609ceca76374588e7bbb047e7",
+  "candidate": {
+    "checkpointSha256": "daf50b5ec0847fe7a44cde0efd5d592a1939a25e6978f6757dd2b0157a105267",
+    "selectedEpoch": 37,
+    "decision": "SHARED_TRANSITION_ENCODER_GO",
+    "receiptSha256": "4149c038a2abe9ab181b03c714763e74fb7b37f534020179004696fd465577c7"
+  },
+  "components": {
+    "dedicatedPotionSha256": "ae1a1411990d272579de10564edb48c7f2ec1d14f1c72dacf5390a1415a0f1db",
+    "maxHPTeacherSha256": "2c5b54d0a9420a9d0e3ab9a26f32b9900c4869490e4af49627009cde21efb4b0",
+    "HPTeacherSha256": "0c8b5aa8c5218d6cd6102b768cc86a474c9ef30953d4b034caedcc41a426109b",
+    "sourceSha": "1c31b7eb0a7660d43bc27e0849a8955dd0c3daae",
+    "cacheSha256": "e1c25f2758bf56c7cff392ea02342d809f3ad7427c70b64166244a6b714a251d",
+    "preparedNpzSha256": "2badbb85ccd8329bcb886d50ef8a0b9b1bd2c043fda9445de9f9c2e7a4b6f9a5",
+    "preparedManifestSha256": "13b2c91fd0ced713f8c429bbf8995ceb58b6e3e57d1555de42f5e67d7f9a389f",
+    "targetSpecSha256": "e2315620d512578542d6b3bfbd362eb07b086f0e9fa7770cc23f4fa4c226e229"
+  },
+  "population": {
+    "trainRows": 393677,
+    "trainSources": 19986,
+    "validationRows": 48590,
+    "validationSources": 2496,
+    "testInferenceRows": 0,
+    "rowSequenceSha256": "2cb23f2eac81cd30f0200c49d42f090873b5452b265bb47410d67c46d6745809",
+    "sourceSequenceSha256": "d843fcf1f106e8985aef32087c12745da9dfca6f050c64bcca44837578718b32",
+    "splitSequenceSha256": "607782399125f7785c3a33f65934c9461b8b1e86f053637e8110f51a2294f3ca",
+    "batchOrderSha256": "110ff129ce40099ba612986aabe78195cbcc37bcd11597b9e6b3d012f3cf304d"
+  },
+  "recipe": {
+    "seed": 20260912,
+    "precision": "fp32",
+    "epochs": 12,
+    "batch": 512,
+    "learningRate": 0.001,
+    "weightDecay": 0.0001,
+    "gradientClip": 1.0,
+    "encodersFrozen": true,
+    "decoderInitialStatesByteIdentical": true,
+    "validationInGradientUpdates": false,
+    "ancestralDraws": 32,
+    "ancestralRan": false
+  },
+  "teacherForced": {
+    "A": {
+      "selectedEpoch": 12,
+      "trajectoryNll": 0.5072058949570629,
+      "normalNoChangeBrier": 0.09207901699001358,
+      "normalActionModeAccuracy": 0.8073010048784556,
+      "normalCountAccuracy": 0.8158070299795689,
+      "illegalProbabilityMax": 0.0,
+      "normalizationErrorMax": 1.8979732629986756e-07
+    },
+    "B": {
+      "selectedEpoch": 12,
+      "trajectoryNll": 0.530769047162545,
+      "normalNoChangeBrier": 0.09735034690681671,
+      "normalActionModeAccuracy": 0.7986281949714381,
+      "normalCountAccuracy": 0.805904182129008,
+      "illegalProbabilityMax": 0.0,
+      "normalizationErrorMax": 1.922940542353757e-07
+    },
+    "gates": {
+      "trajectoryNllRelative": 0.04645677907090734,
+      "noChangeBrierDelta": 0.005271329916803125,
+      "actionModeAccuracyDrop": 0.008672809907017465,
+      "countAccuracyDrop": 0.009902847850560836,
+      "obviousSliceRegression": true
+    },
+    "slicesRelativeNll": {
+      "brew": 0.05876466269614942,
+      "smoke": 0.08788609559493914,
+      "recursiveBrew": 0.22396764213020043,
+      "trajectorySpecial": 0.06358908219527036
+    }
+  },
+  "externalReceipt": {
+    "path": "/home/philippherrmann/sts_sweep/runs/shared-potion-encoder-screen-20260916/results.json",
+    "sha256": "4709efbf3df750c45bf503f931c5b40c9028dca8c89b547cd9385fdd7a27f54d"
+  },
+  "changedPaths": [
+    "tools/combat_transition_shared_potion_encoder.py",
+    "tools/test_combat_transition_shared_potion_encoder.py",
+    "docs/experiments/evidence/shared_potion_encoder_screen_2026-09-16.md",
+    "docs/experiments/evidence/shared_potion_encoder_screen_2026-09-16.json",
+    "docs/experiments/ledger-06.md",
+    "docs/knowledge-base/evaluation/current-research.md"
+  ],
+  "verification": [
+    "python3 -m py_compile tools/combat_transition_shared_potion_encoder.py tools/test_combat_transition_shared_potion_encoder.py",
+    "python3 -m unittest tools.test_combat_transition_shared_potion_encoder -v",
+    "CUDA artifact smoke: both encoders loaded and produced finite 64-D representations",
+    "git diff --check"
+  ],
+  "uncertainty": "Offline TRAIN/VALIDATION screen only; ancestral, TEST, runtime, export, promotion and gameplay were not run. Rejection applies to this frozen representation and decoder recipe, not all shared architectures."
+}
