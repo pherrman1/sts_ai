@@ -460,6 +460,18 @@ potion encoder and all qualified current components remain unchanged. See
 [ledger-06 §282](../../experiments/ledger-06.md) and the
 [screen evidence](../../experiments/evidence/shared_potion_encoder_screen_2026-09-16.md).
 
+The requested joint-adaptation follow-up was then run for 24 epochs with the
+same architecture, population, seed, calibration, optimizer, and gates; only
+the epoch horizon changed. All 24 checkpoints preserved the maxHP/HP gates,
+with epoch 23 selected at potion NLL 0.520021881. The dedicated specialist
+remained better at 0.504024366, a **+3.1740%** regression above the fixed +2%
+limit, and recursive Brew regressed **+20.2797%**. The teacher-forced potion
+gate therefore failed again and ancestral qualification was not run. This
+confirms rejection of the specified 24-epoch treatment, not every possible
+shared architecture or intrinsic potion information absence. See
+[ledger-06 §284](../../experiments/ledger-06.md) and the
+[24-epoch evidence](../../experiments/evidence/shared_transition_encoder_potion_24_2026-09-16.md).
+
 ### Shared relic trajectory residues
 
 **`RELIC_TRAJECTORY_QUALIFIED`** on the audited offline composed support.

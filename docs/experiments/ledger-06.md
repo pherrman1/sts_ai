@@ -8725,3 +8725,41 @@ restart and matched all three recorded exact hashes. Knowledge impact:
 experiment evidence and current research status only; qualified components
 and executable defaults are unchanged.
 [Evidence, provenance and receipt](evidence/shared_potion_encoder_screen_2026-09-16.md).
+
+
+## §284 — Jointly adapted shared maxHP+HP+potion representation, 24 epochs (2026-09-16)
+
+The requested follow-up to the frozen substitution screen allowed the PR #197
+epoch-37 shared maxHP+HP Attention encoder, its maxHP/HP branches, and the
+existing exact 64-action potion decoder to adapt jointly for 24 epochs. All
+other variables were held fixed relative to the 12-epoch treatment: the
+current-main base was `c371f3c2`, the reviewed implementation was
+`71d3d4d6`, the same source-grouped final-union population was used (TRAIN
+393,677 rows / 19,986 sources; VALIDATION 48,590 rows / 2,496 sources), and
+TEST inference was zero. The FP32 recipe used seed `20260912`, AdamW,
+encoder LR `1e-4`, heads/decoder LR `1e-3`, weight decay `1e-4`, batch 512,
+clip 1.0, and 24 epochs. The 8,192-row TRAIN-only calibration cohort and
+loss scales were unchanged; the 24-epoch batch-order SHA256 was
+`9615a714605fac562b61f93779f7a1204f3a71d5125b329558eb0a2915e45375`.
+
+All 24 checkpoints remained eligible under the PR #197 maxHP/HP preservation
+gates. Epoch 23 was the earliest strict minimum potion validation NLL at
+`0.520021881`. The selected checkpoint preserved maxHP (NLL −0.5145%,
+accuracy −0.0165pp, expected post-maxHP MAE +0.000470 HP) and HP (NLL
++0.1168%, CRPS +0.2460%, expected ending-HP MAE +0.010358 HP).
+
+Against the dedicated potion specialist on the same VALIDATION rows, exact
+trajectory NLL was `0.504024366` versus `0.520021881` (**+3.1740%**, fixed
+gate +2%). No-change Brier delta was +0.00300605, action-mode accuracy fell
+0.3586pp, illegal probability was exactly zero, and normalization error was
+2.04e−7. Brew, Smoke, recursive Brew, and all trajectory-special slices
+regressed (+12.0600%, +15.5893%, **+20.2797%**, and +12.6391%).
+
+Decision **`SHARED_TRANSITION_POTION_REJECTED`**. Since teacher-forced potion
+quality failed, the mandatory 32-draw ancestral qualification did not run.
+This rejects the specified jointly adapted architecture, recipe, and
+24-epoch selection rule, not every shared architecture or intrinsic potion
+information absence. Qualified components and executable defaults remain
+unchanged. Knowledge impact: experiment evidence and current research status
+only.
+[Evidence, provenance and receipt](evidence/shared_transition_encoder_potion_24_2026-09-16.md).
