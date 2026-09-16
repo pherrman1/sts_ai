@@ -322,6 +322,7 @@ def run(args):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--artifact-root", type=Path, required=True)
+    parser.add_argument("--output-dir", type=Path, required=True)
     parser.add_argument("--representation-dir", type=Path, required=True)
     parser.add_argument("--candidate-checkpoint", type=Path, required=True)
     parser.add_argument("--candidate-receipt", type=Path, required=True)
