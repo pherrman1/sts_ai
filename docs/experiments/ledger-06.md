@@ -9218,7 +9218,7 @@ evidence updated.
   and external raw receipt
   `/home/philippherrmann/sts_sweep/runs/deepset-survival-screen-20260916-final/results.json`.
 
-## §291 — Converged linear probe for frozen DeepSets survival (2026-09-17)
+## §291 — Converged linear probe for frozen DeepSets survival (2026-09-16)
 
 - **Question and baseline:** Does the PR #211 survival gap persist when the
   linear readout is optimized to convergence rather than stopped after 12
@@ -9243,7 +9243,7 @@ evidence updated.
   native export or promotion work occurred. **Knowledge impact:** current
   research status and experiment evidence only; qualified components and
   runtime defaults remain unchanged.
-- **Evidence:** [S1 report](evidence/deepset_survival_lbfgs_2026-09-17.md),
-  [machine-readable receipt](evidence/deepset_survival_lbfgs_2026-09-17.json),
+- **Evidence:** [S1 report](evidence/deepset_survival_lbfgs_2026-09-16.md),
+  [machine-readable receipt](evidence/deepset_survival_lbfgs_2026-09-16.json),
   and external raw receipt
-  `/home/philippherrmann/sts_sweep/runs/deepset-survival-lbfgs-20260917/results.json`.
+  `/home/philippherrmann/sts_sweep/runs/deepset-survival-lbfgs-20260916/results.json`.

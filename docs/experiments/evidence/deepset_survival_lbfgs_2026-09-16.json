@@ -12,7 +12,7 @@
   "decision": "S1_LINEAR_PROBE_DIAGNOSTIC",
   "fit": {
     "A": {
-      "checkpoint": "/home/philippherrmann/sts_sweep/runs/deepset-survival-lbfgs-20260917/head_a.pt",
+      "checkpoint": "/home/philippherrmann/sts_sweep/runs/deepset-survival-lbfgs-20260916/head_a.pt",
       "checkpointSha256": "cc8cb47183386e0a775749d4d4342b167bd52811dd999e0a100bc03ad7ff8ff4",
       "closureCalls": 69,
       "finalGradientNorm": 1.5214564882626291e-05,
@@ -22,7 +22,7 @@
       "trainingSeconds": 0.30475587000000814
     },
     "B": {
-      "checkpoint": "/home/philippherrmann/sts_sweep/runs/deepset-survival-lbfgs-20260917/head_b.pt",
+      "checkpoint": "/home/philippherrmann/sts_sweep/runs/deepset-survival-lbfgs-20260916/head_b.pt",
       "checkpointSha256": "f45cae5fd48c4cf5a6e05006b8420505f0c5b5392b6fe3b3ff118159eed5f01f",
       "closureCalls": 68,
       "finalGradientNorm": 2.1000532797188498e-05,

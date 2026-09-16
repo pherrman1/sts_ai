@@ -1,4 +1,4 @@
-# Converged linear survival probe (2026-09-17)
+# Converged linear survival probe (2026-09-16)
 
 Decision: **`S1_LINEAR_PROBE_DIAGNOSTIC`**. This is a convergence diagnostic,
 not a new preregistered acceptance gate.
