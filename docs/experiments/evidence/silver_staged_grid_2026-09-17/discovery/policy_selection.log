@@ -1,0 +1,87 @@
+{
+  "checkpoints": [
+    250,
+    500,
+    1000,
+    2000,
+    4000,
+    8000,
+    10000,
+    20000,
+    50000
+  ],
+  "disagreement_denominator": "early_stops_only",
+  "discovery_decisions": 14326,
+  "grid": [
+    "inf",
+    0.75,
+    0.6,
+    0.5,
+    0.4,
+    0.35,
+    0.3,
+    0.25,
+    0.2
+  ],
+  "policies": {
+    "1%": {
+      "decisions": 2952,
+      "disagreement_count": 19,
+      "disagreement_rate": 0.00982928091050181,
+      "early_stops": 1933,
+      "mean_simulation_saving": 30389.39701897019,
+      "mean_simulations": 19610.60298102981,
+      "thresholds": [
+        "inf",
+        0.75,
+        0.75,
+        0.75,
+        0.75,
+        0.75,
+        0.6,
+        0.5,
+        "inf"
+      ]
+    },
+    "2%": {
+      "decisions": 2952,
+      "disagreement_count": 42,
+      "disagreement_rate": 0.019178082191780823,
+      "early_stops": 2190,
+      "mean_simulation_saving": 33451.050135501355,
+      "mean_simulations": 16548.949864498645,
+      "thresholds": [
+        0.75,
+        0.75,
+        0.75,
+        0.75,
+        0.6,
+        0.6,
+        0.6,
+        0.25,
+        "inf"
+      ]
+    },
+    "5%": {
+      "decisions": 2952,
+      "disagreement_count": 117,
+      "disagreement_rate": 0.04978723404255319,
+      "early_stops": 2350,
+      "mean_simulation_saving": 38310.128726287265,
+      "mean_simulations": 11689.871273712737,
+      "thresholds": [
+        0.5,
+        0.4,
+        0.4,
+        0.2,
+        0.2,
+        0.2,
+        0.2,
+        0.2,
+        "inf"
+      ]
+    }
+  },
+  "retained_non_forced_decisions": 2952,
+  "schema_version": 1
+}

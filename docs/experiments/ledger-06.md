@@ -9169,3 +9169,56 @@ evidence updated.
 - **Evidence:** [cap-screen packet](evidence/silver_cap_adaptive_pair16_2026-09-16/README.md),
   including raw arm results, metadata, scaling traces, `/usr/bin/time -v` logs,
   paired analysis, compact summary, and provenance.
+
+## §290 — Staged retained-root Silver threshold grid and Pareto inspection (2026-09-17)
+
+- **Question/hypothesis:** Replace the single current #199 retained-root
+  `500 -> 10,000` decision with cumulative 250/500/1,000/2,000/4,000/8,000/
+  10,000/20,000/50,000 checkpoints and a monotone per-checkpoint top-two
+  visit-share threshold. The hypothesis was that later checkpoints could
+  safely buy more simulation savings while retaining useful 50k decisions.
+- **Implementation/provenance:** The staged path is opt-in and was frozen at
+  source SHA `41f26f8af92ebdb0b4f488cf1c9c5457fb057394`; current production
+  defaults remain unchanged. Fresh and one-action/forced roots continue only
+  to 10,000. The requested grid was `{0.20,0.25,0.30,0.35,0.40,0.50,0.60,
+  0.75,inf}`. All commands used Ironclad A0, fair Searcher2/native OOC,
+  allocated 32,768 cap, four workers, base 10,000, and CTM adaptive
+  budgeting/convergence/OOC MCTS/keys off. Every bestbench command ran through
+  `tools/seed_guard.sh`; each invocation stayed within the repository's local
+  128-seed ceiling.
+- **Discovery sweep:** Each of the nine scalar grid values was measured on
+  fresh seeds 272--303 (N32 per arm). A separate exact 50k reference emitted
+  complete same-root checkpoint traces. The scalar arm simulation totals were
+  112,759,000; 126,997,250; 136,694,750; 145,857,000; 154,448,250;
+  172,042,000; 185,837,000; 216,851,250; and 374,990,000 from tau 0.20
+  through infinity. Wins were respectively 22, 26, 24, 24, 24, 24, 22, 23,
+  and 23 out of 32. Peak RSS ranged from 2,025,120 to 2,212,708 KiB for the
+  finite arms and was 2,143,792 KiB for infinity. Exact reroot rates ranged
+  from 65.2435% down to 48.1831%; cap-pressure/rescue/fallback counts are in
+  the packet's machine-readable summary.
+- **Policy construction:** Offline enumeration over 2,952 retained
+  non-forced discovery decisions selected maximum-saving schedules under
+  early-stop-only checkpoint-to-50k disagreement constraints. The 1% schedule
+  had 19/1,933 disagreements and mean 30,389.40 saved simulations; the 2%
+  schedule had 42/2,190 and 33,451.05 saved; the 5% schedule had 117/2,350
+  and 38,310.13 saved.
+- **Held-out inspection:** On fresh held-out seeds 304--319, flat 50k won
+  10/16 with mean floor/HP 47.1875/34.5625, 414,200,000 simulations, and
+  13:41.47 wall. The frozen 1%, 2%, and 5% policies won 8/16, 8/16, and 7/16;
+  mean floor/HP were 42.6875/24.1250, 39.9375/22.6250, and 41.6250/28.5625.
+  Their simulations were 99,191,000; 78,491,500; and 57,546,500, with wall
+  times 3:17.74, 2:31.00, and 1:44.68. Peak RSS was 2,138,436; 2,110,216;
+  and 1,915,624 KiB. All arms had zero conversion, semantic-resolution,
+  transaction, and knowledge failures.
+- **Decision:** **`STAGED_PARETO_GAMEPLAY_GATE_FAIL`**. The implementation and
+  compute curve are qualified as an opt-in research path, but every frozen
+  Pareto policy lost overall wins and mean floor/HP versus the held-out flat
+  50k reference. Do not promote staged adaptive Silver; keep current #199
+  500->10k and the allocated 32,768 cap in production. This is a bounded N32
+  scalar-arm discovery and N16 held-out inspection, not a universal quality
+  equivalence proof. **Knowledge impact:** maintained staged-search contract,
+  current research status, and experiment evidence updated; no production
+  policy changed.
+- **Evidence:** [staged threshold packet](evidence/silver_staged_grid_2026-09-17/README.md),
+  including raw per-arm results, metadata, scaling traces, telemetry logs,
+  `/usr/bin/time -v` receipts, frozen schedules, summaries, and provenance.

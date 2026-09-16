@@ -164,6 +164,14 @@ when it is at least `0.2932885906040268`; otherwise the same root continues to
 at ordinary roots and private sequential-selection subdecisions; the first
 search is not discarded.
 
+The staged policy is separate and opt-in via `STS_SILVER_ADAPTIVE_STAGED=1`.
+It visits cumulative 250/500/1,000/2,000/4,000/8,000/10,000/20,000/50,000
+checkpoints on retained non-forced roots and applies one monotone threshold per
+checkpoint. Fresh and one-action/forced roots continue to 10,000, and the
+50,000 endpoint is terminal rather than an early stop. It is an experimental
+quality/compute path; the production default remains the two-tier 500->10,000
+policy above.
+
 Silver exposes sequential selection where live sts_ai exposes atomic
 `GAMBLE`/`EXHAUST_MANY` subsets. The bridge executes every private subdecision,
 reroots between them, and returns one identity-based atomic subset for live

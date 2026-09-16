@@ -1,6 +1,8 @@
 # Current research status
 
-Last verified: 2026-09-16 for retained-root adaptive Silver deployment-gate N32,
+Last verified: 2026-09-17 for staged retained-root adaptive Silver N32 scalar
+sweep and N16 Pareto held-out inspection;
+2026-09-16 for retained-root adaptive Silver deployment-gate N32,
 final near-full support/native qualification,
 paired old/new-V2 OOC MCTS gameplay, and shared transition-encoder distillation;
 2026-09-14 for exact supported-v1 RNG continuation
@@ -100,6 +102,19 @@ stopping open. Fresh and one-action/forced roots remain controls, not part of
 the quality claim. No gameplay A/B, runtime stopping API, threshold tuning,
 or default change was made. See [ledger §285](../../experiments/ledger-06.md)
 and the [sequential stopping evidence packet](../../experiments/evidence/combat_sequential_stopping_2026-09-16/README.md).
+
+The staged retained-root follow-up is **`STAGED_PARETO_GAMEPLAY_GATE_FAIL`**.
+At frozen source `41f26f8`, all nine scalar thresholds in the requested grid
+were tested on discovery seeds 272--303, with cumulative
+250/500/1,000/2,000/4,000/8,000/10,000/20,000/50,000 checkpoints and the
+allocated 32,768-node production cap. Offline enumeration over 2,952 retained
+non-forced discovery decisions produced maximum-saving schedules at 1%, 2%, and
+5% checkpoint-to-50k disagreement. On held-out seeds 304--319, the flat 50k
+reference won 10/16; the 1%, 2%, and 5% schedules won 8/16, 8/16, and 7/16,
+respectively, with lower mean floor and ending HP in each arm. The staged
+runtime is therefore not promoted; current #199 500->10k and the 32k cap remain
+the production defaults. See [ledger §290](../../experiments/ledger-06.md) and
+the [staged sweep packet](../../experiments/evidence/silver_staged_grid_2026-09-17/README.md).
 
 The default-off prospective implementation was tested behind
 `STS_SILVER_EXACT_VISIT_LOCK=1` at frozen source
