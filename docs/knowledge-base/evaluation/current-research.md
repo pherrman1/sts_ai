@@ -460,15 +460,43 @@ potion encoder and all qualified current components remain unchanged. See
 [ledger-06 §282](../../experiments/ledger-06.md) and the
 [screen evidence](../../experiments/evidence/shared_potion_encoder_screen_2026-09-16.md).
 
-The requested joint-adaptation follow-up was then run for 24 epochs with the
-same architecture, population, seed, calibration, optimizer, and gates; only
-the epoch horizon changed. All 24 checkpoints preserved the maxHP/HP gates,
-with epoch 23 selected at potion NLL 0.520021881. The dedicated specialist
-remained better at 0.504024366, a **+3.1740%** regression above the fixed +2%
-limit, and recursive Brew regressed **+20.2797%**. The teacher-forced potion
-gate therefore failed again and ancestral qualification was not run. This
-confirms rejection of the specified 24-epoch treatment, not every possible
-shared architecture or intrinsic potion information absence. See
+### Jointly adapted shared maxHP+HP+potion representation
+
+The requested follow-up is **`SHARED_TRANSITION_POTION_REJECTED`**. Starting
+from PR #197's qualified epoch-37 shared Attention encoder, one fixed FP32
+12-epoch run jointly adapted the shared encoder, maxHP/HP heads, and the
+existing exact 64-action potion decoder. TRAIN-only calibration normalized the
+three losses with `s_max=0.0021965544365230016`,
+`s_hp=0.011543620959855616`, and `s_potion=2.281699538230896`; no task-weight
+sweep or second seed was used.
+
+All 12 epochs remained inside the PR #197 maxHP/HP preservation gates, with
+epoch 12 the earliest strict minimum potion validation trajectory NLL. Against
+the current dedicated potion specialist on the same VALIDATION rows, however,
+exact trajectory NLL was 0.524099650 versus 0.504024366 (**+3.9830%**, gate
++2%), and recursive Brew was **+20.5168%**. No-change Brier, action-mode
+accuracy, legality, and normalization passed their individual checks, but the
+primary NLL and obvious recursive-Brew slice gates failed. The mandatory
+ancestral qualification was therefore not run.
+
+This closes the specified one-seed jointly adapted architecture/recipe, not
+the possibility of every shared architecture or intrinsic potion information
+absence. No TEST, runtime/export, promotion, native C++ or gameplay work ran;
+qualified components and executable defaults remain unchanged. See
+[ledger-06 §283](../../experiments/ledger-06.md) and the
+[joint-fit evidence](../../experiments/evidence/shared_transition_encoder_potion_2026-09-16.md).
+
+### 24-epoch jointly adapted shared maxHP+HP+potion representation
+
+The same jointly adapted architecture, population, seed, calibration,
+optimizer, and gates was then run for 24 epochs, changing only the epoch
+horizon. All 24 checkpoints preserved the maxHP/HP gates, with epoch 23
+selected at potion NLL 0.520021881. The dedicated specialist remained better
+at 0.504024366, a **+3.1740%** regression above the fixed +2% limit, and
+recursive Brew regressed **+20.2797%**. The teacher-forced potion gate failed
+again and ancestral qualification was not run. This confirms rejection of the
+specified 24-epoch treatment, not every possible shared architecture or
+intrinsic potion information absence. See
 [ledger-06 §284](../../experiments/ledger-06.md) and the
 [24-epoch evidence](../../experiments/evidence/shared_transition_encoder_potion_24_2026-09-16.md).
 
