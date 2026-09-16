@@ -49,7 +49,7 @@ RECIPE = {
     "encoder": "AttentionEncoder:64/2/4/128 initialized from PR #197 epoch 37",
     "branches": "PR #197 maxHP head, HP delta embedding + head, existing 64-action potion decoder",
     "teachersFrozen": True,
-    "epochs": 12,
+    "epochs": 24,
     "batch": 512,
     "encoderLr": 1e-4,
     "headsLr": 1e-3,
