@@ -20,6 +20,10 @@ struct SilverLiveDiagnostics {
     std::uint64_t transactionSubdecisions = 0;
     std::uint64_t transactionDecisions = 0;
     std::uint64_t adaptiveEscalations = 0;
+    std::uint64_t exactVisitLockChecks = 0;
+    std::uint64_t exactVisitLockFired = 0;
+    std::uint64_t exactVisitLockZeroFired = 0;
+    std::uint64_t exactVisitLockInvalidSummaries = 0;
     std::uint64_t rerootExact = 0;
     std::uint64_t rerootFallback = 0;
     std::uint64_t rerootCandidateFound = 0;
@@ -66,6 +70,7 @@ std::string silverLiveStickyQualityFile();
 bool silverLiveAdaptiveEnabled();
 bool silverLiveAdaptiveRetainedOnly();
 bool silverLiveExactRootBudgets();
+bool silverLiveExactVisitLockEnabled();
 double silverLiveAdaptiveTopTwoVisitGapThreshold();
 
 // Stable deterministic sampler used only by STS_SILVER_STICKY_QUALITY_FILE.

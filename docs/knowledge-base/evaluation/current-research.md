@@ -101,6 +101,40 @@ the quality claim. No gameplay A/B, runtime stopping API, threshold tuning,
 or default change was made. See [ledger §285](../../experiments/ledger-06.md)
 and the [sequential stopping evidence packet](../../experiments/evidence/combat_sequential_stopping_2026-09-16/README.md).
 
+The default-off prospective implementation was tested behind
+`STS_SILVER_EXACT_VISIT_LOCK=1` at frozen source
+`8adbfe9f6b58145c853e53248fa5979a4e1991fa`. It uses the caller's maximum
+new-simulation budget and a 2.5/5/10/20/40/80/100% same-session polling
+schedule, with an additional zero-new-simulation retained-root check. Only
+retained roots with more than one complete legal root action are eligible;
+fresh and one-action/forced roots remain full-budget controls. The lock is the
+strict integer predicate `N1 - N2 > Bmax - Bused`; no `rho`, soft threshold,
+logistic model, or fixed 10k controller rule is used. Focused fixtures cover
+strict-boundary semantics, 1k/3.7k/10k caller budgets, zero-new-simulation
+accounting and sequential selection.
+
+The fresh paired N16 smoke on seeds 128--143 achieved 34.80% compute and
+34.43% wall-time reduction, marginally below the nominal 35% compute target.
+All mechanism/gameplay checks passed: 4,980 exact locks, 362 zero-use locks,
+no invalid/fresh/forced locks, and zero bridge failures. Because the protocol
+called the threshold approximate, N32 was run as an explicitly documented
+extension; this was not a nominal 35% compute pass. The fresh N32 follow-up on
+seeds 144--175 had zero lock/accounting/bridge violations but saved only
+28.77% of control Silver simulations and 31.59% wall time. Control won 24/32
+versus treatment 22/32, with two control-only wins and no treatment-only wins.
+The earlier PR #202 offline 53.8026% reduction covered only retained,
+non-forced decisions: 2,422 of 3,778 evaluation decisions. Its all-decision
+equivalent was approximately 34.5%, making the live N16 result consistent
+with the offline prediction. The N32 28.77% result is a moderate live
+degradation, not a collapse from 53.8% to 28.8%; the descriptive rho
+extension remains a justified follow-up hypothesis without supporting
+promotion of the runtime policy.
+Classification is **`LIVE_EXACT_VISIT_LOCK_REJECTED`** for the frozen bounded
+gate because the N32 compute reduction is below the approximately 40%
+requirement. This does not establish universal gameplay harm or invalidate
+the current-root proof, but it does not support promotion; the feature and
+normal Silver defaults remain unchanged. See the [paired evidence packet](../../experiments/evidence/silver_exact_visit_lock_pair_2026-09-16/README.md).
+
 ## Current priority / active line
 
 The corrected all-Act boss leaf has a mechanism pass and paired N8 smoke:

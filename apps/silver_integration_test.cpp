@@ -39,6 +39,13 @@ int main() {
         uninstallSilverLiveBackend();
         return 1;
     }
+    const bool expectedExactVisitLock = std::getenv("STS_SILVER_EXACT_VISIT_LOCK")
+        && std::atoi(std::getenv("STS_SILVER_EXACT_VISIT_LOCK")) != 0;
+    if (silverLiveExactVisitLockEnabled() != expectedExactVisitLock) {
+        std::cerr << "silver_integration FAIL: exact visit-lock option was not parsed\n";
+        uninstallSilverLiveBackend();
+        return 1;
+    }
     const auto expectedCap = std::getenv("STS_SILVER_REUSE_CAP")
         ? std::atoll(std::getenv("STS_SILVER_REUSE_CAP")) : 32768;
     if (silverLiveReuseCap() != expectedCap)
