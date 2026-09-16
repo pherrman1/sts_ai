@@ -1,104 +1,106 @@
 {
   "artifacts": {
-    "candidateDownstreamSha256": "4152e1be73f8f1da10ca0c2cb425594ba574906a7141509cdfcf0a395c0b0687",
-    "candidateZSha256": "7cff0adf96301b781a720380555bf6f4c622141f69d601b06b8a73f4a1895aec",
+    "candidateDownstreamSha256": "c00ed677b8b2b2854fb62982247853982bc58d9fc20afdd96c593bcc6c07423a",
+    "candidateZSha256": "9232027d8331fd2157727276410161e3c12816b6680cb116ebc2b3afd37352af",
     "deepSetsCheckpointSha256": "bee6800dd7230b180c2b4894c0f01763efca4b7799e3f36a805333c3003dc663",
     "deepSetsReceiptSha256": "83b2482eab347c09901c3b39f2ce7fed324f6be378ca36ff51f0d3965074c769",
     "downstreamCacheSha256": "acd48827199f95d006ed2e225e31df768f5c757c8995fa2a0a868cf49ab0d0e3",
     "preparationCacheSha256": "e1c25f2758bf56c7cff392ea02342d809f3ad7427c70b64166244a6b714a251d",
     "referenceDownstreamSha256": "d07ead94b3abb9d12f272337e18aece6acd261cc4a39a36b21b82f904236af91"
   },
-  "baselineSha": "852a96d22cf52a0588a355cae86eed3dd26ff668",
+  "baselineSha": "066264dc25bf2046aecd5ca7a94a8e82d5031e7b",
   "candidate": {
-    "checkpointSha256": "4152e1be73f8f1da10ca0c2cb425594ba574906a7141509cdfcf0a395c0b0687",
+    "checkpointSha256": "c00ed677b8b2b2854fb62982247853982bc58d9fc20afdd96c593bcc6c07423a",
     "metrics": {
       "attacks": {
-        "exactLabelAccuracy": 0.1654320987654321,
+        "exactLabelAccuracy": 0.16691358024691358,
         "exactLabelRows": 6075,
-        "nll": 2.1840660514070818,
+        "nll": 2.1842361588922325,
         "rows": 6075
       },
       "cards": {
-        "exactLabelAccuracy": 0.11632492113564669,
+        "exactLabelAccuracy": 0.11514195583596215,
         "exactLabelRows": 2536,
-        "nll": 2.3057621494044445,
+        "nll": 2.3049515723906495,
         "rows": 2536
       },
       "gold": {
-        "nll": 0.5810600885334857,
+        "nll": 0.5810600823799822,
         "rows": 6921
       },
       "joint": {
-        "nll": 1.3586479743954167,
+        "nll": 1.3585985447940871,
         "rows": 17950
       },
       "ritual": {
-        "nll": 0.0651752369895456,
+        "nll": 0.06517523817251218,
         "rows": 1243
       },
       "shuffles": {
-        "exactLabelAccuracy": 0.5770782889426957,
+        "exactLabelAccuracy": 0.5790960451977402,
         "exactLabelRows": 2478,
-        "nll": 0.8577624276163562,
+        "nll": 0.8576772314239736,
         "rows": 2478
       },
       "turns": {
-        "exactLabelAccuracy": 0.2770673486786019,
+        "exactLabelAccuracy": 0.2796248934356351,
         "exactLabelRows": 1173,
-        "nll": 1.2219271253840756,
+        "nll": 1.221367363246532,
         "rows": 4635
       },
       "writhing": {
-        "nll": 0.5732755410212538,
+        "nll": 0.573269897549481,
         "rows": 413
       }
     },
-    "zSha256": "7cff0adf96301b781a720380555bf6f4c622141f69d601b06b8a73f4a1895aec"
+    "zSha256": "9232027d8331fd2157727276410161e3c12816b6680cb116ebc2b3afd37352af"
   },
   "candidateMinusReference": {
     "attacks": {
-      "exactLabelAccuracyDelta": 0.005925925925925946,
-      "nllRelative": 0.0010970086617168029
+      "exactLabelAccuracyDelta": 0.007407407407407418,
+      "nllRelative": 0.0011749797901201564
     },
     "cards": {
-      "exactLabelAccuracyDelta": 0.009858044164037849,
-      "nllRelative": -0.002760131941263122
+      "exactLabelAccuracyDelta": 0.008675078864353314,
+      "nllRelative": -0.003110705704691852
     },
     "gold": {
-      "nllRelative": -0.010014177760110599
+      "nllRelative": -0.010014188244191868
     },
     "joint": {
-      "nllRelative": -0.004078920800024144
+      "nllRelative": -0.0041151538661519105
     },
     "ritual": {
-      "nllRelative": -0.07341420777230845
+      "nllRelative": -0.07341419095426405
     },
     "shuffles": {
-      "exactLabelAccuracyDelta": 0.006053268765133235,
-      "nllRelative": -0.019876626211537962
+      "exactLabelAccuracyDelta": 0.008071025020177647,
+      "nllRelative": -0.019973975753583173
     },
     "turns": {
-      "exactLabelAccuracyDelta": -0.0008525149190110604,
-      "nllRelative": -0.01013815753423164
+      "exactLabelAccuracyDelta": 0.0017050298380221762,
+      "nllRelative": -0.010591611074382223
     },
     "writhing": {
-      "nllRelative": -0.018978306006827372
+      "nllRelative": -0.01898796343653164
     }
   },
   "checks": {
     "candidateReloadedFromDisk": true,
     "candidateZFinite": true,
+    "candidateZGeneratedRows": 458589,
     "candidateZShape": [
-      510030,
+      458589,
       64
     ],
     "encoderFrozen": true,
-    "focusedTests": "10 passed",
+    "focusedTests": "11 passed",
     "gitDiffCheck": true,
     "nonZCacheUnchanged": true,
     "optimizerDownstreamOnly": true,
     "pyCompile": true,
     "referenceMetricsReproduced": true,
+    "testRowsEncoded": 0,
     "worktreeCheck": true
   },
   "decision": "DEEPSET_DOWNSTREAM_GO",
@@ -106,14 +108,20 @@
     "The DeepSets normalization population is 393677 TRAIN rows, while the downstream-head fit uses the existing downstream-eligible TRAIN population of 150404 rows; both are recorded separately and no population was substituted silently."
   ],
   "failures": [],
-  "finalHeadSha": "4876568a4b35daae09284079ba04da0ab66c3b59",
+  "finalHeadSha": "e036a32af068e8a99cd3c3edbfe1aeb35fdab58c",
   "finiteAndLegal": true,
   "gates": {
     "importantSliceNllRelativeMax": 0.05,
     "principalAccuracyDropMax": 0.005,
     "principalNllRelativeMax": 0.02
   },
-  "implementationSha": "4876568a4b35daae09284079ba04da0ab66c3b59",
+  "implementationSha": "e036a32af068e8a99cd3c3edbfe1aeb35fdab58c",
+  "outputSupport": {
+    "existingLegalityMasksApplied": true,
+    "finiteLosses": true,
+    "normalizedProbabilities": true,
+    "positiveLegalTargetMass": true
+  },
   "population": {
     "eligibleValidationRows": 17950,
     "testInferenceRows": 0,
@@ -127,7 +135,7 @@
     }
   },
   "provenance": {
-    "candidateOutput": "/home/philippherrmann/sts_sweep/runs/deepset-downstream-20260916",
+    "candidateOutput": "/home/philippherrmann/sts_sweep/runs/deepset-downstream-20260916-corrected",
     "deepSetsEvidence": "/home/philippherrmann/.codex/worktrees/b541/sts_lightspeed/docs/experiments/evidence/shared_transition_deepset_distill_correction_2026-09-16.json",
     "deepSetsRun": "/home/philippherrmann/sts_sweep/runs/shared-transition-deepset-distill-corrected-20260916",
     "referenceEvidence": "/home/philippherrmann/.codex/worktrees/b541/sts_lightspeed/docs/experiments/evidence/shared_hp_downstream_2026-09-16.json",
@@ -214,39 +222,39 @@
       },
       {
         "epoch": 4,
-        "validationNll": 1.379034399986267
+        "validationNll": 1.379035234451294
       },
       {
         "epoch": 5,
-        "validationNll": 1.374688744544983
+        "validationNll": 1.3747448921203613
       },
       {
         "epoch": 6,
-        "validationNll": 1.376158595085144
+        "validationNll": 1.376349925994873
       },
       {
         "epoch": 7,
-        "validationNll": 1.3676679134368896
+        "validationNll": 1.3674055337905884
       },
       {
         "epoch": 8,
-        "validationNll": 1.366439700126648
+        "validationNll": 1.3664195537567139
       },
       {
         "epoch": 9,
-        "validationNll": 1.3642643690109253
+        "validationNll": 1.3642082214355469
       },
       {
         "epoch": 10,
-        "validationNll": 1.3633614778518677
+        "validationNll": 1.3634909391403198
       },
       {
         "epoch": 11,
-        "validationNll": 1.362069845199585
+        "validationNll": 1.3623265027999878
       },
       {
         "epoch": 12,
-        "validationNll": 1.3586479425430298
+        "validationNll": 1.3585984706878662
       }
     ],
     "selectedEpoch": 12,
@@ -256,7 +264,7 @@
       "optimizerScope": true,
       "rows": 8
     },
-    "trainingSeconds": 48.76463708500023
+    "trainingSeconds": 45.77192938600001
   },
   "unchanged": {
     "deepsetEncoderFrozen": true,

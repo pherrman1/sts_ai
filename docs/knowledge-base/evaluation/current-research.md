@@ -571,12 +571,14 @@ optimizer. Potion representation, decoder, traces, labels, support predicate,
 candidate generation, legality masks and native-rule helpers were unchanged.
 
 Relative to the hash-verified dedicated-HP downstream reference, joint NLL
-improved 0.4079%. Turns, attacks, cards and shuffles stayed within the fixed
-2% NLL and 0.005 singleton-accuracy gates; their NLL changes were −1.0138%,
-+0.1097%, −0.2760% and −1.9877%, and their accuracy deltas were −0.0853pp,
-+0.5926pp, +0.9858pp and +0.6053pp. Writhing, Ritual and gold NLL changed by
-−1.8978%, −7.3414% and −1.0014%, each inside the fixed +5% important-slice
-gate. All outputs were finite/legal, and TEST inference rows were zero.
+improved 0.4115%. Turns, attacks, cards and shuffles stayed within the fixed
+2% NLL and 0.005 singleton-accuracy gates; their NLL changes were −1.0592%,
++0.1175%, −0.3111% and −1.9974%, and their accuracy deltas were +0.1705pp,
++0.7407pp, +0.8675pp and +0.8071pp. Writhing, Ritual and gold NLL changed by
+−1.8988%, −7.3414% and −1.0014%, each inside the fixed +5% important-slice
+gate. All outputs had finite metrics, normalized probabilities and positive
+exact legal target mass under the existing masks; TEST rows were neither
+encoded nor inferred.
 
 This qualifies the frozen DeepSets representation for these retrained offline
 downstream consumers only. It does not qualify the full CTM, potion or
