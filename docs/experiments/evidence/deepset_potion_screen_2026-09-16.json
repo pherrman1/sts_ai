@@ -1,0 +1,401 @@
+{
+  "ancestral": null,
+  "decision": "DEEPSET_POTION_REJECTED",
+  "externalResult": {
+    "path": "/home/philippherrmann/sts_sweep/runs/deepset-potion-screen-20260916/results.json",
+    "sha256": "1ba8b78524b8b6fc97c00a41eb33fc178cd6f36fa79a6b0af7dcad107ab45363"
+  },
+  "fit": {
+    "A": {
+      "checkpointSha256": "dad2df4a0d0d8a31c4707ee21bf92adf9b76c77deb520b49653b5eb789c3d48e",
+      "decoderOnly": true,
+      "encoderFrozen": true,
+      "history": [
+        {
+          "epoch": 1,
+          "validationTrajectoryNll": 0.5479084332557369
+        },
+        {
+          "epoch": 2,
+          "validationTrajectoryNll": 0.5373734571469425
+        },
+        {
+          "epoch": 3,
+          "validationTrajectoryNll": 0.5287533074686321
+        },
+        {
+          "epoch": 4,
+          "validationTrajectoryNll": 0.5270741920729495
+        },
+        {
+          "epoch": 5,
+          "validationTrajectoryNll": 0.5188334245942485
+        },
+        {
+          "epoch": 6,
+          "validationTrajectoryNll": 0.5158367065610647
+        },
+        {
+          "epoch": 7,
+          "validationTrajectoryNll": 0.5134531646549187
+        },
+        {
+          "epoch": 8,
+          "validationTrajectoryNll": 0.5131266356435382
+        },
+        {
+          "epoch": 9,
+          "validationTrajectoryNll": 0.5093036129539664
+        },
+        {
+          "epoch": 10,
+          "validationTrajectoryNll": 0.5111689502284764
+        },
+        {
+          "epoch": 11,
+          "validationTrajectoryNll": 0.5072360873091264
+        },
+        {
+          "epoch": 12,
+          "validationTrajectoryNll": 0.5068032282204711
+        }
+      ],
+      "label": "A",
+      "optimizerScope": true,
+      "selectedEpoch": 12,
+      "trainingSeconds": 39.2316770590005
+    },
+    "B": {
+      "checkpointSha256": "06eda953b523ed6b3b9dbc3031bf44408c3bc67f0bc8b7862d28c150448819c1",
+      "decoderOnly": true,
+      "encoderFrozen": true,
+      "history": [
+        {
+          "epoch": 1,
+          "validationTrajectoryNll": 0.5831351858590351
+        },
+        {
+          "epoch": 2,
+          "validationTrajectoryNll": 0.5734166725124078
+        },
+        {
+          "epoch": 3,
+          "validationTrajectoryNll": 0.5639216171539797
+        },
+        {
+          "epoch": 4,
+          "validationTrajectoryNll": 0.5633123693800658
+        },
+        {
+          "epoch": 5,
+          "validationTrajectoryNll": 0.5530089264549874
+        },
+        {
+          "epoch": 6,
+          "validationTrajectoryNll": 0.5497780667803455
+        },
+        {
+          "epoch": 7,
+          "validationTrajectoryNll": 0.5457777652189095
+        },
+        {
+          "epoch": 8,
+          "validationTrajectoryNll": 0.5445723353825281
+        },
+        {
+          "epoch": 9,
+          "validationTrajectoryNll": 0.542972347212542
+        },
+        {
+          "epoch": 10,
+          "validationTrajectoryNll": 0.5424871263184353
+        },
+        {
+          "epoch": 11,
+          "validationTrajectoryNll": 0.5382637321621293
+        },
+        {
+          "epoch": 12,
+          "validationTrajectoryNll": 0.537569223134993
+        }
+      ],
+      "label": "B",
+      "optimizerScope": true,
+      "selectedEpoch": 12,
+      "trainingSeconds": 38.93795071100067
+    }
+  },
+  "knowledgeImpact": "experiment evidence and current research status only; runtime defaults unchanged",
+  "provenance": {
+    "baselineSha": "b0704c755a78fc139c6859781ce899c230919a44",
+    "batchOrderSha256": "110ff129ce40099ba612986aabe78195cbcc37bcd11597b9e6b3d012f3cf304d",
+    "cacheSha256": "e1c25f2758bf56c7cff392ea02342d809f3ad7427c70b64166244a6b714a251d",
+    "cachedRepresentationSampleMaxAbsError": 4.76837158203125e-07,
+    "candidateCheckpointSha256": "bee6800dd7230b180c2b4894c0f01763efca4b7799e3f36a805333c3003dc663",
+    "candidateDecision": "SHARED_TRANSITION_ENCODER_GO",
+    "candidateEncodingSha256": "cbd1605dd8183dc21825521b21041acb9e62aa8167a38caa2c98c456f49c11ae",
+    "candidateReceiptSha256": "83b2482eab347c09901c3b39f2ce7fed324f6be378ca36ff51f0d3965074c769",
+    "candidateRepresentation": {
+      "candidateZRowIdsSha256": "3dfecd1df38856c3069b1efdc3ed6cf6f6ad1c792afcbf368b3badb7b112e437",
+      "candidateZSha256": "9232027d8331fd2157727276410161e3c12816b6680cb116ebc2b3afd37352af",
+      "generatedRows": 458589,
+      "generatedSplits": {
+        "TEST": 0,
+        "TRAIN": 408183,
+        "VALIDATION": 50406
+      },
+      "mappedPotionRows": 442267,
+      "mappedRowIdsSha256": "2cb23f2eac81cd30f0200c49d42f090873b5452b265bb47410d67c46d6745809"
+    },
+    "candidateSelectedEpoch": 40,
+    "counts": {
+      "TRAIN": {
+        "rows": 393677,
+        "sources": 19986
+      },
+      "VALIDATION": {
+        "rows": 48590,
+        "sources": 2496
+      }
+    },
+    "decoderInitialStateSha256": "0ddb857bee23593b97e7f65e5a3665ffff57148ea39dc7b4a166dc967cab5f9e",
+    "decoderInitialStatesByteIdentical": true,
+    "dedicatedEncodingSha256": "003dbc25d7d0e658577520eba5332c651268f84f31534508796954732d629f69",
+    "dedicatedPotionComponentSha256": "ae1a1411990d272579de10564edb48c7f2ec1d14f1c72dacf5390a1415a0f1db",
+    "dedicatedPotionSourceSha": "1c31b7eb0a7660d43bc27e0849a8955dd0c3daae",
+    "encodersFrozen": true,
+    "encodingWallSeconds": {
+      "A": 4.859148183999423
+    },
+    "implementationSha": "207db265c41badab848fe3caabe4ab2d9b47de1a",
+    "maxHpHpHeadsFrozen": true,
+    "preparationCacheSha256": "165ddba8ed9d47a592de4fc7ec037f1687fbee2ec280daca20307ddbf7d78744",
+    "rowSequenceSha256": "2cb23f2eac81cd30f0200c49d42f090873b5452b265bb47410d67c46d6745809",
+    "sourceDataHashes": {
+      "/home/philippherrmann/sts_sweep/runs/combat-transition-model-v1/split_manifest.json": "e9043bcceb9d95027711e6ff33afbfe1cae3cf9528f820c0ff68bddbb419db32",
+      "/home/philippherrmann/sts_sweep/runs/combat-transition-runtime-25k/combat-transition-25k.jsonl": "74c08aa0a3c30342d86cd45355fe17ffa9046963ad7c8cf71b1938f9cdc1cfde",
+      "/home/philippherrmann/sts_sweep/runs/combat-transition-runtime-25k/combat-transition-25k.jsonl.manifest.json": "33669cd99eed8317987192825b5111a68d1e60269c166def2fe568364e20ad59",
+      "/tmp/sts-phase2-attention-audit-20260913/prepared.npz": "2badbb85ccd8329bcb886d50ef8a0b9b1bd2c043fda9445de9f9c2e7a4b6f9a5",
+      "/tmp/sts-phase2-attention-audit-20260913/prepared_manifest.json": "13b2c91fd0ced713f8c429bbf8995ceb58b6e3e57d1555de42f5e67d7f9a389f",
+      "/tmp/sts-phase2-attention-audit-20260913/target_spec.json": "e2315620d512578542d6b3bfbd362eb07b086f0e9fa7770cc23f4fa4c226e229",
+      "hp": "a667a3cfa7d7eca3cb07b46f50321e443c75e8a58f7627becb1fd69bf90f08c9",
+      "max_hp": "66ac8f70da69e29bf9b1364243f6f903e4f74dda1ec8a909ef54a7ea97dc6479",
+      "potion": "8e04bcd5265fb11b8fa91b4553a84690915f437e7b3afee0b93358e312de3ad6",
+      "potion_encoder": "2085010f1aeef7a7957cdc45c851b2424d640037fd0fa981eb7ae7274190f6ef",
+      "relic": "e07e79d487152ae294f4915ef4aecd0e8bd38b8dec8d0133a57b6b58af92bd71",
+      "survival": "2447b2daf1a48a619a5f071488908afd6f0fb83bfd855ee9f379c04120efeaef"
+    },
+    "sourceSequenceSha256": "d843fcf1f106e8985aef32087c12745da9dfca6f050c64bcca44837578718b32",
+    "splitSequenceSha256": "607782399125f7785c3a33f65934c9461b8b1e86f053637e8110f51a2294f3ca",
+    "testEncodedRows": 0,
+    "testInferenceRows": 0,
+    "validationInGradientUpdates": false
+  },
+  "recipe": {
+    "ancestralBoundaryNat": 0.1,
+    "ancestralDraws": 32,
+    "ancestralSeed": 20260920,
+    "batch": 512,
+    "epochs": 12,
+    "gradientClip": 1.0,
+    "lr": 0.001,
+    "population": "current final-union source-grouped TRAIN/VALIDATION winning rows",
+    "precision": "fp32",
+    "schema": "deepset_potion_screen_v1",
+    "seed": 20260912,
+    "selection": "earliest strict minimum VALIDATION exact trajectory NLL",
+    "testInferenceRows": 0,
+    "training": "decoder-only; frozen encoder representations cached once",
+    "trajectory": "existing 64-action native USE/DISCARD DAG with exact observed generation-body prior",
+    "weightDecay": 0.0001
+  },
+  "reloadVerification": {
+    "A": {
+      "checkpointSha256": "dad2df4a0d0d8a31c4707ee21bf92adf9b76c77deb520b49653b5eb789c3d48e",
+      "metricsReproduced": true
+    },
+    "B": {
+      "checkpointSha256": "06eda953b523ed6b3b9dbc3031bf44408c3bc67f0bc8b7862d28c150448819c1",
+      "metricsReproduced": true
+    }
+  },
+  "schema": "deepset_potion_screen_v1",
+  "smoke": {
+    "finite": true,
+    "finiteGradients": true,
+    "legalMaskExact": true,
+    "normalizationErrorMax": 5.960464477539063e-08,
+    "rows": 8
+  },
+  "stageADecision": "TEACHER_FORCED_REJECTED",
+  "teacherForced": {
+    "A": {
+      "countCalibration": [
+        {
+          "brier": 0.09205779045948878,
+          "count": 0,
+          "meanProbability": 0.7091376327923405,
+          "observedFrequency": 0.7186340324396447
+        },
+        {
+          "brier": 0.10674389326095732,
+          "count": 1,
+          "meanProbability": 0.22092358745114551,
+          "observedFrequency": 0.21242129841971397
+        },
+        {
+          "brier": 0.036259682219268494,
+          "count": 2,
+          "meanProbability": 0.05849124425072962,
+          "observedFrequency": 0.057624150439894925
+        },
+        {
+          "brier": 0.008326420745869477,
+          "count": 3,
+          "meanProbability": 0.011043794651812284,
+          "observedFrequency": 0.010841012383771838
+        },
+        {
+          "brier": 0.0003892846867866501,
+          "count": 4,
+          "meanProbability": 0.0003689255223104281,
+          "observedFrequency": 0.0004378101154984781
+        },
+        {
+          "brier": 4.117622836453388e-05,
+          "count": 5,
+          "meanProbability": 3.481302164171728e-05,
+          "observedFrequency": 4.169620147604553e-05
+        }
+      ],
+      "illegalProbabilityMax": 0.0,
+      "label": "A",
+      "normalActionModeAccuracy": 0.8063211441437685,
+      "normalChangedActionModeAccuracy": 0.4574688796680498,
+      "normalChangedRows": 13496,
+      "normalCountAccuracy": 0.8145561439352875,
+      "normalNoChangeBrier": 0.09205779045948878,
+      "normalRows": 47966,
+      "normalUnchangedActionModeAccuracy": 0.9429068755439513,
+      "normalizationErrorMax": 1.9847707433129358e-07,
+      "rows": 48590,
+      "slices": {
+        "brew": {
+          "rows": 281,
+          "trajectoryNll": 1.800035643222281
+        },
+        "recursiveBrew": {
+          "rows": 12,
+          "trajectoryNll": 2.41296723484993
+        },
+        "smoke": {
+          "rows": 343,
+          "trajectoryNll": 0.2925538366092654
+        },
+        "trajectorySpecial": {
+          "rows": 624,
+          "trajectoryNll": 0.9714038168308318
+        }
+      },
+      "trajectoryNll": 0.5068032282204711
+    },
+    "B": {
+      "countCalibration": [
+        {
+          "brier": 0.09929055615452562,
+          "count": 0,
+          "meanProbability": 0.7027099283005934,
+          "observedFrequency": 0.7186340324396447
+        },
+        {
+          "brier": 0.11185723438190784,
+          "count": 1,
+          "meanProbability": 0.22588046288516725,
+          "observedFrequency": 0.21242129841971397
+        },
+        {
+          "brier": 0.03804085597881053,
+          "count": 2,
+          "meanProbability": 0.05972705736078969,
+          "observedFrequency": 0.057624150439894925
+        },
+        {
+          "brier": 0.008846026773839609,
+          "count": 3,
+          "meanProbability": 0.01127504149552871,
+          "observedFrequency": 0.010841012383771838
+        },
+        {
+          "brier": 0.00038175408718442455,
+          "count": 4,
+          "meanProbability": 0.00036948474117734866,
+          "observedFrequency": 0.0004378101154984781
+        },
+        {
+          "brier": 3.932607489152939e-05,
+          "count": 5,
+          "meanProbability": 3.80227426890836e-05,
+          "observedFrequency": 4.169620147604553e-05
+        }
+      ],
+      "illegalProbabilityMax": 0.0,
+      "label": "B",
+      "normalActionModeAccuracy": 0.7941667014135012,
+      "normalChangedActionModeAccuracy": 0.43286899822169533,
+      "normalChangedRows": 13496,
+      "normalCountAccuracy": 0.8018596505858316,
+      "normalNoChangeBrier": 0.09929055615452562,
+      "normalRows": 47966,
+      "normalUnchangedActionModeAccuracy": 0.9356251813170873,
+      "normalizationErrorMax": 1.9914122950659419e-07,
+      "rows": 48590,
+      "slices": {
+        "brew": {
+          "rows": 281,
+          "trajectoryNll": 1.8490838110579502
+        },
+        "recursiveBrew": {
+          "rows": 12,
+          "trajectoryNll": 2.87591719130675
+        },
+        "smoke": {
+          "rows": 343,
+          "trajectoryNll": 0.306922151717804
+        },
+        "trajectorySpecial": {
+          "rows": 624,
+          "trajectoryNll": 1.0013891810039917
+        }
+      },
+      "trajectoryNll": 0.537569223134993
+    },
+    "gates": {
+      "actionModeAccuracyDrop": 0.012154442730267334,
+      "countAccuracyDrop": 0.012696493349455884,
+      "illegalProbabilityMax": 0.0,
+      "noChangeBrierDelta": 0.007232765695036836,
+      "normalizationErrorMax": 1.9914122950659419e-07,
+      "obviousSliceRegression": true,
+      "slices": {
+        "brew": {
+          "delta": 0.04904816783566912,
+          "relative": 0.027248442562985576
+        },
+        "recursiveBrew": {
+          "delta": 0.46294995645682,
+          "relative": 0.1918591971621249
+        },
+        "smoke": {
+          "delta": 0.014368315108538587,
+          "relative": 0.04911340516012064
+        },
+        "trajectorySpecial": {
+          "delta": 0.02998536417315989,
+          "relative": 0.030868073249893137
+        }
+      },
+      "trajectoryNllRelative": 0.060705996334218304
+    }
+  },
+  "uncertainty": "offline TRAIN/VALIDATION screen; no TEST, runtime, export, promotion or gameplay"
+}
