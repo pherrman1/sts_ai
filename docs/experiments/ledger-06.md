@@ -8807,6 +8807,48 @@ unchanged. Knowledge impact: experiment evidence and current research status
 only.
 [Evidence, provenance and receipt](evidence/shared_transition_encoder_potion_24_2026-09-16.md).
 
+
+## §285a — Shared maxHP+HP representation for native downstream consumers (2026-09-16)
+
+The actual current-main baseline was `27c8f7a0918b6ac684a3913436e30c54c0f5ff6c`,
+a descendant of the handoff's expected `c371f3c2`. The exact PR #197 epoch-37
+checkpoint was verified at SHA256
+`daf50b5ec0847fe7a44cde0efd5d592a1939a25e6978f6757dd2b0157a105267`, with
+receipt SHA256 `4149c038a2abe9ab181b03c714763e74fb7b37f534020179004696fd465577c7`
+and receipt decision `SHARED_TRANSITION_ENCODER_GO`.
+
+Stage A replaced only the dedicated HP representation consumed by the frozen
+relic/event/gold downstream heads. The survival representation, dedicated
+potion representation, heads, support predicates, trace construction,
+legality masks and targets were unchanged. The existing final-union
+source-grouped data and `full-union-downstream-v1` evaluator were reused; the
+eligible VALIDATION cohort was 17,950 rows, with no TEST inference.
+
+Reference versus shared candidate joint downstream NLL was 1.364212394 versus
+1.448260307 (**+6.1609%**, gate +2%). Turns exact-label accuracy fell 2.6428pp,
+attacks fell 1.3663pp, and shuffles fell 6.0533pp; shuffles NLL rose 11.5188%,
+Ritual NLL rose 20.6457%, and gold NLL rose 24.6343%. Cards were +0.3536% NLL
+and Writhing was −1.0815% NLL. Outputs remained finite/legal, but the principal,
+accuracy and important-slice gates failed.
+
+Decision **`SHARED_HP_DOWNSTREAM_FAIL`**. Stop before the native 3-encoder
+implementation and preparation benchmark; retain separate maxHP and HP
+encoders. No C++, runtime, TEST, OOC timing, gameplay or default-promotion
+change ran. This rejects the exact frozen downstream substitution, not every
+possible shared architecture or intrinsic information absence. Knowledge
+impact: current research status and experiment evidence only; qualified
+components and executable defaults remain unchanged.
+
+The reproducibility gap was repaired by tracking
+`tools/combat_transition_shared_hp_downstream.py` and replaying the receipt.
+The driver verifies the frozen bindings, regenerates both HP encodings, swaps
+only `cache["z"]`, and reproduces the recorded metrics within `9.53e-08`.
+Because the historical cache used different inference arithmetic, the driver
+uses that hash-verified dedicated cache as the metric reference and records
+the regenerated-vs-cache difference explicitly.
+
+[Evidence packet and machine-readable receipt](evidence/shared_hp_downstream_2026-09-16.md).
+
 ## §285 — Sequential Silver stopping controller diagnostic (2026-09-16)
 
 - **Question:** Can progressively larger exact continuation checkpoints
@@ -8888,6 +8930,14 @@ gameplay had two control-only and one treatment-only win. Because the protocol
 called the threshold approximate and the mechanism/gameplay checks passed,
 N32 was run as an explicitly documented extension; this was not a nominal 35%
 compute pass.
+
+The earlier PR #202 offline 53.8026% reduction applied only to retained,
+non-forced decisions: 2,422 of 3,778 evaluation decisions. Its all-decision
+equivalent was approximately 34.5%, so the live N16 result is consistent with
+that offline prediction. The live N32 result at 28.77% is a moderate
+degradation relative to that prediction, not a collapse from 53.8% to 28.8%.
+This makes the descriptive rho extension a justified follow-up hypothesis,
+without changing the exact-lock gate or promoting a runtime policy.
 
 After the documented N16 extension authorization, a new N32 block 144--175
 was run without changing the implementation or configuration. Control/treatment won 24/32 versus 22/32;

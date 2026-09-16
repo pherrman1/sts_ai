@@ -122,6 +122,13 @@ extension; this was not a nominal 35% compute pass. The fresh N32 follow-up on
 seeds 144--175 had zero lock/accounting/bridge violations but saved only
 28.77% of control Silver simulations and 31.59% wall time. Control won 24/32
 versus treatment 22/32, with two control-only wins and no treatment-only wins.
+The earlier PR #202 offline 53.8026% reduction covered only retained,
+non-forced decisions: 2,422 of 3,778 evaluation decisions. Its all-decision
+equivalent was approximately 34.5%, making the live N16 result consistent
+with the offline prediction. The N32 28.77% result is a moderate live
+degradation, not a collapse from 53.8% to 28.8%; the descriptive rho
+extension remains a justified follow-up hypothesis without supporting
+promotion of the runtime policy.
 Classification is **`LIVE_EXACT_VISIT_LOCK_REJECTED`** for the frozen bounded
 gate because the N32 compute reduction is below the approximately 40%
 requirement. This does not establish universal gameplay harm or invalidate
@@ -479,6 +486,32 @@ is rejected. #187 changed only survival; the tested maxHP and HP component
 hashes are unchanged on current main, so no scientific rerun is required. See
 [ledger-06 §278](../../experiments/ledger-06.md) and the
 [maxHP evidence](../../experiments/evidence/shared_frozen_maxhp_encoder_2026-09-15.md).
+
+### Shared maxHP+HP representation for native downstream consumers
+
+Stage A is **`SHARED_HP_DOWNSTREAM_FAIL`**. On the exact current final-union
+source-grouped eligible VALIDATION cohort (17,950 rows), the PR #197 epoch-37
+shared representation was substituted only for the dedicated HP representation
+at frozen relic/event/gold downstream consumers. Joint downstream NLL worsened
+from 1.364212394 to 1.448260307 (**+6.1609%**, above the +2% gate). Turns,
+attacks and shuffles exact-label accuracy fell 2.6428pp, 1.3663pp and 6.0533pp;
+shuffles NLL worsened 11.5188%, Ritual 20.6457%, and gold 24.6343%. All outputs
+were finite/legal, but the principal, accuracy and important-slice gates failed.
+
+The native 3-encoder runtime experiment was therefore not implemented or
+timed. Separate maxHP and HP encoders remain in the runtime; survival, potion,
+downstream models, support predicates and defaults are unchanged. This rejects
+the exact frozen substitution, not every possible jointly trained shared
+architecture. See [the evidence packet](../../experiments/evidence/shared_hp_downstream_2026-09-16.md)
+and [ledger-06 §285a](../../experiments/ledger-06.md).
+
+The experiment is replayable with the tracked
+[`shared_hp_downstream` driver](../../../tools/combat_transition_shared_hp_downstream.py);
+its receipt records the artifact/cache bindings, exact row selection, isolated
+`z` substitution, driver SHA, and a maximum replay metric difference of
+`9.53e-08`. The historical dedicated `z` cache remains the metric reference
+because the original cache used different inference arithmetic than the CPU
+replay; the regenerated-versus-cache difference is recorded explicitly.
 
 ### Shared maxHP+HP representation for potion decoding
 
