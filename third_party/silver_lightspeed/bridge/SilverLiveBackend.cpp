@@ -46,6 +46,7 @@ struct SilverLiveOptions {
     std::string scalingDiagnosticFile;
     std::string stickyQualityFile;
     std::string rootDiagnosticFile;
+    std::string budgetDiagnosticFile;
     int rootDiagnosticMaxPerSeed = 8;
     std::int64_t rootDiagnosticReferenceBudget = 25000;
     int rootDiagnosticReplicates = 2;
@@ -64,6 +65,7 @@ struct SilverLiveOptions {
     int leafCorpusGroupModulus = 1;
     int leafCorpusMaxLeavesPerGroup = 256;
     bool adaptiveEnabled = false;
+    bool adaptiveRetainedOnly = false;
     double adaptiveTopTwoVisitGapThreshold = 0.094;
     bool installed = false;
 };
@@ -78,6 +80,8 @@ bool g_stickyQualityHeaderWritten = false;
 bool g_stickyQualitySummaryHeaderWritten = false;
 std::mutex g_rootDiagnosticMutex;
 bool g_rootDiagnosticHeaderWritten = false;
+std::mutex g_budgetDiagnosticMutex;
+bool g_budgetDiagnosticHeaderWritten = false;
 std::mutex g_leafVNetLogMutex;
 std::mutex g_leafCorpusMutex;
 bool g_leafVNetLogHeaderWritten = false;
@@ -89,13 +93,15 @@ std::unordered_map<std::uint64_t, int> g_rootDiagnosticSelectionsByRunSeed;
 struct StickyQualityTestBudgets { std::int64_t fresh = 0, ref25 = 0, ref50 = 0; };
 StickyQualityTestBudgets g_stickyQualityTestBudgets;
 constexpr const char *kScalingDiagnosticHeader =
-    "run_seed,floor,encounter,combat_decision_ordinal,transaction_subdecision_ordinal,turn,input_state,configured_simulations,had_predecessor,reroot_attempted,exact_candidate_found,exact_reroot,fallback,fallback_reason,configured_cap_mode,configured_cap,allocated_nodes_before_root,active_nodes_before_root,allocated_nodes_after_search,active_nodes_after_search,inherited_visits,simulations_added,nodes_created,root_visits_after_search,chosen_edge_visits";
+    "run_seed,floor,encounter,combat_decision_ordinal,transaction_subdecision_ordinal,turn,input_state,configured_simulations,had_predecessor,reroot_attempted,exact_candidate_found,exact_reroot,fallback,fallback_reason,configured_cap_mode,configured_cap,allocated_nodes_before_root,active_nodes_before_root,allocated_nodes_after_search,active_nodes_after_search,inherited_visits,simulations_added,nodes_created,root_visits_after_search,chosen_edge_visits,root_legal_actions,root_top_two_visit_gap_share,adaptive_enabled,adaptive_require_retained_root,adaptive_initial_simulations,adaptive_total_simulations,adaptive_escalated";
 constexpr const char *kStickyQualityHeader =
     "run_seed,act,floor,encounter,room_type,combat_decision_ordinal,turn,input_state,allocated_nodes_before_root,active_nodes_before_root,inherited_visits,configured_cap,active_simulations_added,active_nodes_created,fresh_budget,ref25_budget,ref50_budget,active_action_fingerprint,fresh_action_fingerprint,ref25_action_fingerprint,ref50_action_fingerprint,ref25_ref50_agree,fresh_ref50_agree,active_ref50_agree,fresh_active_disagree,fresh_wall_ms,ref25_wall_ms,ref50_wall_ms,fresh_nodes_created,fresh_simulations_added,ref25_nodes_created,ref25_simulations_added,ref50_nodes_created,ref50_simulations_added,ref25_root_action_summaries,ref50_root_action_summaries,q_diagnostic_available,ref50_chosen_selection_q,active_ref50_selection_q,fresh_ref50_selection_q,ref50_q_gap_active,ref50_q_gap_fresh,ref50_q_gap_active_minus_fresh";
 constexpr const char *kStickyQualitySummaryHeader =
     "run_seed,floor,encounter,sticky_eligible_ordinary_decisions,selected_evaluated_decisions,excluded_transaction_subdecisions";
 constexpr const char *kRootDiagnosticHeader =
     "run_seed,act,floor,encounter,room_type,combat_decision_ordinal,turn,input_state,cur_hp,max_hp,potion_count,action_type,stochastic,action_fingerprint,chosen_1k,chosen_1k_visits,chosen_1k_q,chosen_37k,chosen_37k_visits,chosen_37k_q,active_reroot_exact,active_fallback_reason,active_inherited_visits,reference_budget,reference_replicates,reference_value,reference_value_stddev,reference_rollout_win_rate,reference_rollout_actions,reference_rollout_turns,reference_rollout_calls,reference_terminal_wins,reference_terminal_losses,reference_utility_sum,reference_win_bonus,reference_hp,reference_potion,reference_turn_penalty,reference_death_save,reference_gold,reference_max_hp,reference_parasite_penalty,reference_monster_damage,reference_alive,reference_energy_waste,reference_draw,reference_survival,current_1k_rollout_calls,current_1k_terminal_wins,current_1k_terminal_losses,current_1k_rollout_actions,current_1k_rollout_turns,current_1k_utility_sum,current_1k_win_bonus_sum,current_1k_hp_sum,current_1k_potion_sum,current_1k_turn_penalty_sum,current_1k_death_save_sum,current_1k_gold_sum,current_1k_max_hp_sum,current_1k_parasite_penalty_sum,current_1k_monster_damage_sum,current_1k_alive_sum,current_1k_energy_waste_sum,current_1k_draw_sum,current_1k_survival_sum,current_37k_rollout_calls,current_37k_terminal_wins,current_37k_terminal_losses,current_37k_rollout_actions,current_37k_rollout_turns,current_37k_utility_sum,current_37k_win_bonus_sum,current_37k_hp_sum,current_37k_potion_sum,current_37k_turn_penalty_sum,current_37k_death_save_sum,current_37k_gold_sum,current_37k_max_hp_sum,current_37k_parasite_penalty_sum,current_37k_monster_damage_sum,current_37k_alive_sum,current_37k_energy_waste_sum,current_37k_draw_sum,current_37k_survival_sum,low_root_action_summaries,low_root_visit_share,low_top_two_visit_gap_share,low_top_q_gap,low_visit_entropy,low_legal_actions,adaptive_action,adaptive_simulations,adaptive_escalated,adaptive_initial_top_visit_share,adaptive_threshold";
+constexpr const char *kBudgetDiagnosticHeader =
+    "run_seed,act,floor,encounter,room_type,combat_id,decision_index,transaction_subdecision_index,turn,input_state,checkpoint_simulations,total_simulations,checkpoint_action,final_action,agreement,checkpoint_root_visits,checkpoint_legal_actions,checkpoint_top_visit_share,checkpoint_second_visit_share,checkpoint_top_second_visit_ratio,checkpoint_top_q_gap,checkpoint_top_q_gap_valid,checkpoint_visit_entropy,final_root_visits,final_legal_actions,final_top_visit_share,final_top_two_visit_gap_share,final_top_q_gap,final_top_q_gap_valid,final_visit_entropy,inherited_visits,reroot_exact,reroot_fallback";
 constexpr const char *kLeafVNetHeader =
     "run_seed,act,floor,encounter,combat_decision_ordinal,isolated_search_seed,root_state_hash,parent_state_hash,leaf_state_hash,depth,action_count_before_rollout,leaf_turn,leaf_input_state,leaf_cur_hp,leaf_max_hp,vnet_raw_prediction,rollout_terminal_outcome,rollout_utility,rollout_action_count,rollout_turn_delta,rollout_wall_micros";
 
@@ -151,6 +157,8 @@ void parseSilverLiveOptions() {
         options.stickyQualityFile = raw;
     if (const char *raw = std::getenv("STS_SILVER_ROOT_DIAG_FILE"))
         options.rootDiagnosticFile = raw;
+    if (const char *raw = std::getenv("STS_COMBAT_BUDGET_DIAG_FILE"))
+        options.budgetDiagnosticFile = raw;
     if (const char *raw = std::getenv("STS_SILVER_ROOT_DIAG_MAX_PER_SEED"))
         options.rootDiagnosticMaxPerSeed = std::atoi(raw);
     if (const char *raw = std::getenv("STS_SILVER_ROOT_DIAG_REF_BUDGET"))
@@ -179,6 +187,8 @@ void parseSilverLiveOptions() {
     if (const char *raw = std::getenv("STS_EXECUTABLE_GIT_SHA")) options.executableGitSha = raw;
     if (const char *raw = std::getenv("STS_SILVER_ADAPTIVE"))
         options.adaptiveEnabled = std::atoi(raw) != 0;
+    if (const char *raw = std::getenv("STS_SILVER_ADAPTIVE_RETAINED_ONLY"))
+        options.adaptiveRetainedOnly = std::atoi(raw) != 0;
     if (const char *raw = std::getenv("STS_SILVER_ADAPTIVE_TOP_GAP"))
         options.adaptiveTopTwoVisitGapThreshold = std::atof(raw);
     if (!options.rootDiagnosticFile.empty()
@@ -239,6 +249,8 @@ void parseSilverLiveOptions() {
                 || options.adaptiveTopTwoVisitGapThreshold > 1.0)) {
         throw std::invalid_argument("STS_SILVER_ADAPTIVE_TOP_GAP must be in [0,1]");
     }
+    if (options.adaptiveRetainedOnly && !options.adaptiveEnabled)
+        throw std::invalid_argument("STS_SILVER_ADAPTIVE_RETAINED_ONLY requires STS_SILVER_ADAPTIVE=1");
     options.installed = true;
     g_silverLiveOptions = std::move(options);
 }
@@ -286,12 +298,88 @@ void writeScalingDiagnostics(const std::vector<ScalingDiagnosticRow> &rows) {
             << d.configuredCap << ',' << d.allocatedNodesBeforeRoot << ',' << d.activeNodesBeforeRoot << ','
             << d.allocatedNodesAfterSearch << ',' << d.activeNodesAfterSearch << ','
             << d.inheritedVisits << ',' << d.simulationsAdded << ',' << d.nodesCreated << ',' << d.rootVisitsAfterSearch << ','
-            << d.chosenEdgeVisits << '\n';
+            << d.chosenEdgeVisits << ',' << d.rootUncertainty.legalActions << ','
+            << d.rootUncertainty.topTwoVisitGapShare << ',' << (d.adaptiveEnabled ? 1 : 0) << ','
+            << (d.adaptiveRequireRetainedRoot ? 1 : 0) << ',' << d.adaptiveInitialSimulations << ','
+            << d.adaptiveTotalSimulations << ',' << (d.adaptiveEscalated ? 1 : 0) << '\n';
     }
     out.flush();
     if (!out) throw std::runtime_error("cannot write STS_SILVER_SCALING_DIAG_FILE: "
                                        + g_silverLiveOptions.scalingDiagnosticFile);
     g_scalingDiagnosticHeaderWritten = true;
+}
+
+struct BudgetDiagnosticRow {
+    std::uint64_t runSeed = 0;
+    int act = 0, floor = 0, encounter = 0;
+    std::string roomType;
+    int decision = 0, subdecision = -1, turn = 0, inputState = 0;
+    silver_bridge::SilverBudgetDiagnostic diagnostic;
+    silver_bridge::SilverSearchDecisionDiagnostic searchDiagnostic;
+};
+
+std::string csvField(const std::string &value);
+
+double secondVisitShare(const silver_bridge::SilverRootUncertainty &root) {
+    return root.rootVisits > 0
+        ? static_cast<double>(root.secondVisits) / root.rootVisits : 0.0;
+}
+
+double topSecondVisitRatio(const silver_bridge::SilverRootUncertainty &root) {
+    return root.secondVisits > 0
+        ? static_cast<double>(root.topVisits) / root.secondVisits : 0.0;
+}
+
+void writeBudgetDiagnostics(const std::vector<BudgetDiagnosticRow> &rows) {
+    if (rows.empty()) return;
+    std::lock_guard<std::mutex> lock(g_budgetDiagnosticMutex);
+    bool empty = false;
+    if (!g_budgetDiagnosticHeaderWritten) {
+        std::ifstream existing(g_silverLiveOptions.budgetDiagnosticFile, std::ios::binary);
+        empty = !existing || existing.peek() == std::ifstream::traits_type::eof();
+        if (!empty) {
+            std::string header;
+            std::getline(existing, header);
+            if (header != kBudgetDiagnosticHeader)
+                throw std::runtime_error("STS_COMBAT_BUDGET_DIAG_FILE has an incompatible existing header: "
+                                         + g_silverLiveOptions.budgetDiagnosticFile);
+        }
+    }
+    std::ofstream out(g_silverLiveOptions.budgetDiagnosticFile, std::ios::app);
+    if (!out) throw std::runtime_error("cannot open STS_COMBAT_BUDGET_DIAG_FILE: "
+                                      + g_silverLiveOptions.budgetDiagnosticFile);
+    if (!g_budgetDiagnosticHeaderWritten && empty) out << kBudgetDiagnosticHeader << '\n';
+    out << std::setprecision(17);
+    for (const auto &row : rows) {
+        const auto &d = row.diagnostic;
+        const auto &checkpoint = d.checkpointRootUncertainty;
+        const auto &final = d.finalRootUncertainty;
+        const bool agreement = !d.checkpointActionFingerprint.empty()
+            && d.checkpointActionFingerprint == d.finalActionFingerprint;
+        const std::string combatId = std::to_string(row.runSeed) + ":"
+            + std::to_string(row.act) + ":" + std::to_string(row.floor) + ":"
+            + std::to_string(row.encounter);
+        out << row.runSeed << ',' << row.act << ',' << row.floor << ',' << row.encounter << ','
+            << csvField(row.roomType) << ',' << combatId << ',' << row.decision << ','
+            << row.subdecision << ',' << row.turn << ',' << row.inputState << ','
+            << d.checkpointSimulations << ',' << d.totalSimulations << ','
+            << csvField(d.checkpointActionFingerprint) << ',' << csvField(d.finalActionFingerprint) << ','
+            << (agreement ? 1 : 0) << ','
+            << checkpoint.rootVisits << ',' << checkpoint.legalActions << ','
+            << checkpoint.topVisitShare << ',' << secondVisitShare(checkpoint) << ','
+            << topSecondVisitRatio(checkpoint) << ',' << checkpoint.topQGap << ','
+            << (checkpoint.topQGapValid ? 1 : 0) << ',' << checkpoint.visitEntropy << ','
+            << final.rootVisits << ',' << final.legalActions << ',' << final.topVisitShare << ','
+            << final.topTwoVisitGapShare << ',' << final.topQGap << ','
+            << (final.topQGapValid ? 1 : 0) << ',' << final.visitEntropy << ','
+            << row.searchDiagnostic.inheritedVisits << ','
+            << (row.searchDiagnostic.exactReroot ? 1 : 0) << ','
+            << (row.searchDiagnostic.fallback ? 1 : 0) << '\n';
+    }
+    out.flush();
+    if (!out) throw std::runtime_error("cannot write STS_COMBAT_BUDGET_DIAG_FILE: "
+                                      + g_silverLiveOptions.budgetDiagnosticFile);
+    g_budgetDiagnosticHeaderWritten = true;
 }
 
 struct StickyQualityBudgets {
@@ -985,8 +1073,9 @@ silver_bridge::SilverSearchConfig configFor(const ScumSearchAgent2 &agent, const
     result.collectDecisionDiagnostics = collectDecisionDiagnostics;
     result.adaptiveEnabled = g_silverLiveOptions.adaptiveEnabled;
     if (result.adaptiveEnabled) {
-        result.adaptiveInitialSimulations = 1000;
-        result.adaptiveTotalSimulations = 3700;
+        result.adaptiveRequireRetainedRoot = g_silverLiveOptions.adaptiveRetainedOnly;
+        result.adaptiveInitialSimulations = g_silverLiveOptions.adaptiveRetainedOnly ? 500 : 1000;
+        result.adaptiveTotalSimulations = g_silverLiveOptions.adaptiveRetainedOnly ? 10000 : 3700;
         result.adaptiveTopTwoVisitGapThreshold = g_silverLiveOptions.adaptiveTopTwoVisitGapThreshold;
         // Adaptive Silver has an explicit two-tier budget, including bosses;
         // the ordinary Silver boss multiplier is not part of this treatment.
@@ -1046,6 +1135,7 @@ void runSilverCombat(ScumSearchAgent2 &agent, GameContext &gc, BattleContext &bc
     const bool collectScalingDiagnostics = !g_silverLiveOptions.scalingDiagnosticFile.empty();
     const bool collectStickyQuality = !g_silverLiveOptions.stickyQualityFile.empty();
     const bool collectRootDiagnostics = !g_silverLiveOptions.rootDiagnosticFile.empty();
+    const bool collectBudgetDiagnostics = !g_silverLiveOptions.budgetDiagnosticFile.empty();
     const bool collectLeafVNet = !g_silverLiveOptions.leafVNetLogFile.empty();
     const bool collectLeafCorpus = !g_silverLiveOptions.leafCorpusFile.empty();
     const bool directLeafVNet = g_silverLiveOptions.leafVNetDirect;
@@ -1058,8 +1148,9 @@ void runSilverCombat(ScumSearchAgent2 &agent, GameContext &gc, BattleContext &bc
     // disabled. Both options are opt-in; default gameplay retains the cheap
     // no-diagnostic path.
     const bool collectDecisionDiagnostics = collectScalingDiagnostics || collectStickyQuality
-        || collectRootDiagnostics || emitTelemetry;
+        || collectRootDiagnostics || collectBudgetDiagnostics || emitTelemetry;
     std::vector<ScalingDiagnosticRow> scalingDiagnostics;
+    std::vector<BudgetDiagnosticRow> budgetDiagnostics;
     std::vector<StickyQualityRow> stickyQualityRows;
     StickyQualityCounters stickyQualityCounters;
 
@@ -1187,8 +1278,11 @@ void runSilverCombat(ScumSearchAgent2 &agent, GameContext &gc, BattleContext &bc
         }
 
         auto config = configFor(agent, bc, collectDecisionDiagnostics);
-        config.collectRootActionSummaries = collectRootDiagnostics || config.adaptiveEnabled;
+        config.collectRootActionSummaries = collectRootDiagnostics || collectBudgetDiagnostics
+            || config.adaptiveEnabled;
         config.collectRolloutDiagnostics = collectRootDiagnostics || emitTelemetry;
+        config.collectBudgetDiagnostics = collectBudgetDiagnostics;
+        config.budgetDiagnosticCheckpoint = 500;
         config.leafObserver = leafObserver;
         currentCorpusConfig = config;
         currentCorpusConfig.leafObserver = {};
@@ -1226,10 +1320,24 @@ void runSilverCombat(ScumSearchAgent2 &agent, GameContext &gc, BattleContext &bc
                                                       static_cast<int>(i), wire.turn, wire.inputState,
                                                       config.simulationsPerDecision, transaction.searchDiagnostics[i]});
                     }
+                    if (collectBudgetDiagnostics) {
+                        if (i >= transaction.budgetDiagnostics.size()
+                                || !transaction.budgetDiagnostics[i].valid) {
+                            fail("budget diagnostics", "transaction omitted a paired budget diagnostic");
+                        }
+                        budgetDiagnostics.push_back({
+                            gc.seed, wire.act, bc.floorNum, static_cast<int>(bc.encounter),
+                            gc.curRoom == Room::MONSTER ? "hallway" : gc.curRoom == Room::ELITE ? "elite"
+                                : gc.curRoom == Room::BOSS ? "boss" : "other",
+                            decision, static_cast<int>(i), wire.turn, wire.inputState,
+                            transaction.budgetDiagnostics[i], transaction.searchDiagnostics[i]});
+                    }
                 }
             }
         } else {
-            const auto result = silver_bridge::runSilverDecision(*silverSession, wire, config);
+            const auto result = collectBudgetDiagnostics
+                ? silver_bridge::runSilverDecisionWithCheckpoint(*silverSession, wire, config)
+                : silver_bridge::runSilverDecision(*silverSession, wire, config);
             if (!result.accepted) {
                 ++g_silverLiveDiagnostics.conversionFailures;
                 fail("search", "Silver returned no semantic decision");
@@ -1247,6 +1355,16 @@ void runSilverCombat(ScumSearchAgent2 &agent, GameContext &gc, BattleContext &bc
                                                   -1, wire.turn, wire.inputState, config.simulationsPerDecision,
                                                   result.diagnostic});
                 }
+            }
+            if (collectBudgetDiagnostics) {
+                if (!result.budgetDiagnostic.valid)
+                    fail("budget diagnostics", "ordinary decision omitted paired budget diagnostic");
+                budgetDiagnostics.push_back({
+                    gc.seed, wire.act, bc.floorNum, static_cast<int>(bc.encounter),
+                    gc.curRoom == Room::MONSTER ? "hallway" : gc.curRoom == Room::ELITE ? "elite"
+                        : gc.curRoom == Room::BOSS ? "boss" : "other",
+                    decision, -1, wire.turn, wire.inputState,
+                    result.budgetDiagnostic, result.diagnostic});
             }
             if (collectStickyQuality && stickyEligible(result.diagnostic)) {
                 ++stickyQualityCounters.eligibleOrdinary;
@@ -1325,6 +1443,7 @@ void runSilverCombat(ScumSearchAgent2 &agent, GameContext &gc, BattleContext &bc
     }
     agent.simulationCountTotal += static_cast<std::int64_t>(g_silverLiveDiagnostics.simulations);
     if (collectScalingDiagnostics) writeScalingDiagnostics(scalingDiagnostics);
+    if (collectBudgetDiagnostics) writeBudgetDiagnostics(budgetDiagnostics);
     if (collectStickyQuality) writeStickyQuality(stickyQualityRows, gc.seed, bc.floorNum,
                                                  static_cast<int>(bc.encounter), stickyQualityCounters);
     if (emitTelemetry) {
@@ -1407,6 +1526,7 @@ std::int64_t silverLiveReuseCap() {
 std::string silverLiveScalingDiagnosticFile() { return g_silverLiveOptions.scalingDiagnosticFile; }
 std::string silverLiveStickyQualityFile() { return g_silverLiveOptions.stickyQualityFile; }
 bool silverLiveAdaptiveEnabled() { return g_silverLiveOptions.adaptiveEnabled; }
+bool silverLiveAdaptiveRetainedOnly() { return g_silverLiveOptions.adaptiveRetainedOnly; }
 bool silverLiveExactRootBudgets() { return g_silverLiveOptions.exactRootBudgets; }
 double silverLiveAdaptiveTopTwoVisitGapThreshold() {
     return g_silverLiveOptions.adaptiveTopTwoVisitGapThreshold;

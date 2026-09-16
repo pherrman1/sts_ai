@@ -1,6 +1,7 @@
 # Current research status
 
-Last verified: 2026-09-15 for final near-full support/native qualification,
+Last verified: 2026-09-16 for retained-root adaptive Silver prospective N16,
+final near-full support/native qualification,
 paired old/new-V2 OOC MCTS gameplay, and shared transition-encoder distillation;
 2026-09-14 for exact supported-v1 RNG continuation
 and the stochastic signed-HP distribution, expanded-support offline composition,
@@ -49,6 +50,37 @@ measurement or frozen teacher/model qualification was performed. Keep 32k
 and require fresh matched quality/resource evidence before promotion.
 See [ledger §265](../../experiments/ledger-06.md) and
 [paired packet](../../experiments/evidence/silver_cap_pair10k_16_2026-09-15/README.md).
+
+## Retained-root adaptive Silver search
+
+The earlier bounded checkpoint diagnostic remains **`NO_USEFUL_SIGNAL`** for a
+whole-fight or fresh-root early-stop policy. Its 500-simulation observations
+were continuation checkpoints on a 10k-generated trajectory, not independent
+fresh searches, and cannot establish deployed-policy equivalence. The
+fresh-root subgroup is rejected for early stopping.
+
+A separate frozen prospective policy now has a live N16 smoke and fresh N32
+qualification result: **`PER_DECISION_SIGNAL_PROMISING`** for retained-root
+adaptive search only.
+Fresh roots and one-action/forced roots run exact 10k; retained non-forced
+roots run 500 new simulations and stop when the top-two visit-gap share is at
+least `0.2932885906040268`. With fresh paired seeds 64–79, fair Ironclad A0,
+exact-root budgets, allocated cap 131,072, native OOC, CTM adaptive budgeting
+off, and OOC MCTS off, the treatment reduced added Silver simulations by
+41.05% and wall time by 40.99% relative to flat 10k. It stopped 2,804/6,800
+live decisions, with all stops satisfying retained/non-forced/threshold
+invariants. Outcomes were 10/16 wins for control versus 11/16 for treatment;
+the five win disagreements and N16 size were descriptive only.
+
+The fresh N32 qualification on seeds80--111 reduced added Silver simulations by
+39.34% and wall time by 42.33%; it stopped6,093/14,403 decisions with all
+invariants passing. Control won22/32 versus treatment24/32, with three
+treatment-only wins and one control-only win. This supports the retained-root
+compute-saving candidate at this bounded gate, but does not promote a default,
+establish universal safety, or claim action equivalence. No expensive shadow
+10k searches were collected. See [ledger §280](../../experiments/ledger-06.md),
+[N16 packet](../../experiments/evidence/silver_retained_adaptive_pair16_2026-09-16/README.md),
+and [N32 packet](../../experiments/evidence/silver_retained_adaptive_pair32_2026-09-16/README.md).
 
 ## Current priority / active line
 
@@ -425,7 +457,7 @@ There was no TEST inference, joint fine-tuning, runtime/export, gameplay or
 promotion. This rejects the exact frozen substitution and decoder recipe, not
 all shared architectures or intrinsic information absence. The dedicated
 potion encoder and all qualified current components remain unchanged. See
-[ledger-06 §279](../../experiments/ledger-06.md) and the
+[ledger-06 §282](../../experiments/ledger-06.md) and the
 [screen evidence](../../experiments/evidence/shared_potion_encoder_screen_2026-09-16.md).
 
 ### Shared relic trajectory residues
