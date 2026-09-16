@@ -204,11 +204,12 @@ def reload_metrics(output: Path, initial_state: dict, delta_count: int, cache: d
         net.load_state_dict(payload["stateDict"], strict=True)
         net.to(device).eval().requires_grad_(False)
         actual = shared.teacher_metrics(net, cache, graphs, z, validation, label)
+        # CUDA reductions can differ by a few ulps after a CPU checkpoint round trip.
         for key in ("trajectoryNll", "normalNoChangeBrier", "normalActionModeAccuracy", "normalCountAccuracy", "illegalProbabilityMax", "normalizationErrorMax"):
-            if not np.isclose(actual[key], expected[key], rtol=0, atol=1e-12):
+            if not np.isclose(actual[key], expected[key], rtol=1e-7, atol=1e-8):
                 raise ValueError(f"reloaded {label} metric differs: {key}")
         for name in expected.get("slices", {}):
-            if not np.isclose(actual["slices"][name]["trajectoryNll"], expected["slices"][name]["trajectoryNll"], rtol=0, atol=1e-12):
+            if not np.isclose(actual["slices"][name]["trajectoryNll"], expected["slices"][name]["trajectoryNll"], rtol=1e-7, atol=1e-8):
                 raise ValueError(f"reloaded {label} slice differs: {name}")
         values[label] = {"checkpointSha256": composed.base.sha256(output / f"{label}.pt"), "metricsReproduced": True}
     return values
