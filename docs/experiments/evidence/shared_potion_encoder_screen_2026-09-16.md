@@ -36,6 +36,35 @@ were inside their limits, but the primary NLL and slice gates failed.
 
 ## Teacher-forced VALIDATION results
 
+Both arms selected epoch 12. The complete validation curves were:
+
+| Epoch | Dedicated A | Shared B | B minus A |
+| ---: | ---: | ---: | ---: |
+| 1 | 0.547908432 | 0.573346112 | +0.025437679 |
+| 2 | 0.537373456 | 0.562709399 | +0.025335943 |
+| 3 | 0.528723733 | 0.554323639 | +0.025599906 |
+| 4 | 0.526914184 | 0.551210152 | +0.024295967 |
+| 5 | 0.518582775 | 0.546295819 | +0.027713044 |
+| 6 | 0.515517131 | 0.540650853 | +0.025133722 |
+| 7 | 0.513288989 | 0.538576193 | +0.025287204 |
+| 8 | 0.512925290 | 0.537742147 | +0.024816858 |
+| 9 | 0.509348665 | 0.535079229 | +0.025730564 |
+| 10 | 0.511312060 | 0.534518831 | +0.023206772 |
+| 11 | 0.507510264 | 0.530950705 | +0.023440441 |
+| 12 | 0.507205895 | 0.530769047 | +0.023563152 |
+
+The shared curve descends through the final epoch, but the absolute gap does
+not close at the endpoint; relative to A it is 4.619% at epoch 11 and 4.646%
+at epoch 12. A longer decoder-only continuation would therefore be a cheap,
+separate follow-up rather than evidence that this screen passed.
+
+Post-run implementation review corrected the unexecuted ancestral checkpoint
+loader to derive its Attention normalization width from the 10 continuous
+global features. A focused synthetic-checkpoint test now exercises strict
+loading of that helper. This correction does not alter the completed fit or
+its decision because the ancestral path was correctly skipped after the
+teacher-forced failure.
+
 | Metric | Dedicated potion (A) | Shared maxHP+HP (B) | Gate result |
 | --- | ---: | ---: | --- |
 | Exact trajectory NLL | 0.507205895 | 0.530769047 | **+4.6457%, fail** (limit +2%) |
@@ -71,7 +100,7 @@ The complete external result is
 (SHA256 `4709efbf3df750c45bf503f931c5b40c9028dca8c89b547cd9385fdd7a27f54d`).
 The compact tracked receipt is
 `shared_potion_encoder_screen_2026-09-16.json`.
-The tracked implementation and its three focused gate tests are in
+The tracked implementation and its four focused tests are in
 `tools/combat_transition_shared_potion_encoder.py` and
 `tools/test_combat_transition_shared_potion_encoder.py`.
 

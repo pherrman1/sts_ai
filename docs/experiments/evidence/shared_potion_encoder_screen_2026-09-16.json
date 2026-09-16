@@ -47,6 +47,20 @@
   "teacherForced": {
     "A": {
       "selectedEpoch": 12,
+      "validationHistory": [
+        0.547908432496294,
+        0.5373734561463398,
+        0.5287237331074487,
+        0.5269141842657853,
+        0.5185827746774538,
+        0.5155171305930374,
+        0.5132889894887438,
+        0.5129252895964526,
+        0.5093486648637017,
+        0.5113120596243191,
+        0.5075102639283535,
+        0.5072058949570629
+      ],
       "trajectoryNll": 0.5072058949570629,
       "normalNoChangeBrier": 0.09207901699001358,
       "normalActionModeAccuracy": 0.8073010048784556,
@@ -56,6 +70,20 @@
     },
     "B": {
       "selectedEpoch": 12,
+      "validationHistory": [
+        0.5733461116877145,
+        0.5627093990789775,
+        0.5543236391475441,
+        0.5512101515403405,
+        0.5462958185612009,
+        0.5406508526035948,
+        0.5385761933150979,
+        0.5377421472018602,
+        0.5350792288666827,
+        0.5345188311543152,
+        0.5309507045120507,
+        0.5307690471649984
+      ],
       "trajectoryNll": 0.530769047162545,
       "normalNoChangeBrier": 0.09735034690681671,
       "normalActionModeAccuracy": 0.7986281949714381,
@@ -91,7 +119,7 @@
   ],
   "verification": [
     "python3 -m py_compile tools/combat_transition_shared_potion_encoder.py tools/test_combat_transition_shared_potion_encoder.py",
-    "python3 -m unittest tools.test_combat_transition_shared_potion_encoder -v",
+    "python3 -m unittest tools.test_combat_transition_shared_potion_encoder -v (4 passed, including ancestral helper checkpoint loading)",
     "CUDA artifact smoke: both encoders loaded and produced finite 64-D representations",
     "git diff --check"
   ],

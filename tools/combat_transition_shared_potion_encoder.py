@@ -344,7 +344,7 @@ def compare_teacher(a: dict, b: dict) -> tuple[str, dict]:
 
 
 def candidate_upstream(payload, classes, delta_values, device):
-    width = 72
+    width = len(composed.base.CONTINUOUS_GLOBAL_FIELDS)
     student = stochastic_hp.new_model(torch, np.zeros(width, np.float32), np.ones(width, np.float32), len(delta_values), classes, RECIPE["seed"])
     student.load_state_dict(payload["stateDict"], strict=True)
     student.to(device).eval().requires_grad_(False)

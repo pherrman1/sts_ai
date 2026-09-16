@@ -1,5 +1,8 @@
 import unittest
 
+import numpy as np
+import torch
+
 from tools import combat_transition_shared_potion_encoder as screen
 
 
@@ -30,6 +33,22 @@ class SharedPotionEncoderScreenTests(unittest.TestCase):
              "slices": {"brew": {"trajectoryNll": 1.0}}}
         b = dict(a, slices={"brew": {"trajectoryNll": 1.11}})
         self.assertEqual(screen.compare_teacher(a, b)[0], "TEACHER_FORCED_REJECTED")
+
+    def test_candidate_upstream_loads_attention_checkpoint_with_10_scalars(self):
+        width = len(screen.composed.base.CONTINUOUS_GLOBAL_FIELDS)
+        classes = np.arange(-2, 3, dtype=np.int64)
+        delta_values = np.arange(11, dtype=np.int64)
+        source = screen.stochastic_hp.new_model(
+            torch, np.zeros(width, np.float32), np.ones(width, np.float32),
+            len(delta_values), classes, screen.RECIPE["seed"]
+        )
+        head = torch.nn.Linear(64, len(delta_values))
+        student, loaded_head = screen.candidate_upstream(
+            {"stateDict": source.state_dict(), "maxHpHeadStateDict": head.state_dict()},
+            classes, delta_values, "cpu"
+        )
+        self.assertEqual(tuple(student.encoder.scalar_mean.shape), (width,))
+        self.assertEqual(tuple(loaded_head.weight.shape), (len(delta_values), 64))
 
 
 if __name__ == "__main__":
