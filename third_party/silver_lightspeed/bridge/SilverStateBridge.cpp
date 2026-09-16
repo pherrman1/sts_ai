@@ -1136,6 +1136,8 @@ SilverDecisionResult runCurrentRootWithExactVisitLock(
 
     std::int64_t used = 0;
     SilverDecisionResult last;
+    SilverSearchTelemetry totalTelemetry;
+    std::int64_t totalNodesCreated = 0;
     const auto checkpoints = exactVisitLockSchedule(maxBudget);
     for (const auto cumulative : checkpoints) {
         const auto increment = cumulative - used;
@@ -1155,8 +1157,12 @@ SilverDecisionResult runCurrentRootWithExactVisitLock(
             return result;
         }
         used = cumulative;
+        totalTelemetry.add(step.telemetry);
+        totalNodesCreated += step.diagnostic.nodesCreated;
         last = std::move(step);
         last.simulations = used;
+        last.telemetry = totalTelemetry;
+        last.diagnostic.nodesCreated = totalNodesCreated;
         const bool summaryValid = completeRootActionSummary(session, expectedWire);
         const auto root = summarizeSilverRoot(session.rootActionSummaries);
         const bool eligible = config.exactVisitLockRequireRetainedRoot
@@ -1326,6 +1332,41 @@ bool sameRootActionSummaries(const std::vector<SilverRootActionSummary> &lhs,
                 || a.selectionQ != b.selectionQ) return false;
     }
     return true;
+}
+
+bool sameSilverSearchTelemetry(const SilverSearchTelemetry &lhs,
+                               const SilverSearchTelemetry &rhs) {
+    return lhs.nodesCreated == rhs.nodesCreated
+        && lhs.detTranspositions == rhs.detTranspositions
+        && lhs.chanceOutcomesSampled == rhs.chanceOutcomesSampled
+        && lhs.chanceSiblingReuse == rhs.chanceSiblingReuse
+        && lhs.chanceTranspositions == rhs.chanceTranspositions
+        && lhs.depthSum == rhs.depthSum
+        && lhs.chanceDepthSum == rhs.chanceDepthSum
+        && lhs.wideningSampled == rhs.wideningSampled
+        && lhs.wideningSiblingReuse == rhs.wideningSiblingReuse
+        && lhs.wideningCapped == rhs.wideningCapped
+        && lhs.rolloutCalls == rhs.rolloutCalls
+        && lhs.rolloutTerminalWins == rhs.rolloutTerminalWins
+        && lhs.rolloutTerminalLosses == rhs.rolloutTerminalLosses
+        && lhs.rolloutNonTerminalStops == rhs.rolloutNonTerminalStops
+        && lhs.rolloutActionCount == rhs.rolloutActionCount
+        && lhs.rolloutTurnDelta == rhs.rolloutTurnDelta
+        && lhs.rolloutSkippedVNet == rhs.rolloutSkippedVNet
+        && lhs.rolloutUtilitySum == rhs.rolloutUtilitySum
+        && lhs.rolloutWinBonusSum == rhs.rolloutWinBonusSum
+        && lhs.rolloutHpSum == rhs.rolloutHpSum
+        && lhs.rolloutPotionSum == rhs.rolloutPotionSum
+        && lhs.rolloutTurnPenaltySum == rhs.rolloutTurnPenaltySum
+        && lhs.rolloutDeathSaveSum == rhs.rolloutDeathSaveSum
+        && lhs.rolloutGoldSum == rhs.rolloutGoldSum
+        && lhs.rolloutMaxHpSum == rhs.rolloutMaxHpSum
+        && lhs.rolloutParasitePenaltySum == rhs.rolloutParasitePenaltySum
+        && lhs.rolloutMonsterDamageSum == rhs.rolloutMonsterDamageSum
+        && lhs.rolloutAliveSum == rhs.rolloutAliveSum
+        && lhs.rolloutEnergyWasteSum == rhs.rolloutEnergyWasteSum
+        && lhs.rolloutDrawSum == rhs.rolloutDrawSum
+        && lhs.rolloutSurvivalSum == rhs.rolloutSurvivalSum;
 }
 
 } // namespace
@@ -1513,8 +1554,21 @@ SessionReuseProbe probeSilverSearchSessionReuse(const BattleStateWire &wire,
         // second decision differs: uninterrupted total budget versus a
         // checkpoint plus continuation. Adaptive configs are excluded because
         // their policy is a separate continuation contract.
-        if (!config.adaptiveEnabled && config.budgetDiagnosticCheckpoint > 0
+        std::vector<std::int64_t> splitCheckpoints;
+        if (config.exactVisitLockEnabled && !config.adaptiveEnabled) {
+            splitCheckpoints = exactVisitLockSchedule(config.simulationsPerDecision);
+            splitCheckpoints.erase(
+                std::remove_if(splitCheckpoints.begin(), splitCheckpoints.end(),
+                               [&](const auto checkpoint) {
+                                   return checkpoint > secondDecision.diagnostic.exactVisitLockStopBudget;
+                               }),
+                splitCheckpoints.end());
+            result.exactVisitLockCheckpointCount = static_cast<int>(splitCheckpoints.size());
+        } else if (!config.adaptiveEnabled && config.budgetDiagnosticCheckpoint > 0
                 && config.budgetDiagnosticCheckpoint < config.simulationsPerDecision) {
+            splitCheckpoints = {config.budgetDiagnosticCheckpoint, config.simulationsPerDecision};
+        }
+        if (!splitCheckpoints.empty()) {
             SilverSearchSession splitSession;
             auto splitState = splitSession.materializeAndBegin(wire, comparisonConfig);
             auto splitFirst = runCurrentRootDecision(splitSession, comparisonConfig, true);
@@ -1522,14 +1576,25 @@ SessionReuseProbe probeSilverSearchSessionReuse(const BattleStateWire &wire,
                     && splitSession.previousBest->action.isValidAction(splitState)) {
                 splitSession.previousBest->action.execute(splitState);
                 splitSession.beginAt(splitState, comparisonConfig);
-                auto splitSecond = runCurrentRootWithCheckpoint(
-                    splitSession, comparisonConfig, true);
+                auto splitConfig = comparisonConfig;
+                if (config.exactVisitLockEnabled)
+                    splitConfig.simulationsPerDecision = splitCheckpoints.back();
+                auto splitSecond = runCurrentRootWithCheckpoints(
+                    splitSession, splitConfig, splitCheckpoints, true);
                 result.splitFinalActionMatches = splitSecond.accepted
                     && semanticActionFingerprint(secondDecision.action)
                         == semanticActionFingerprint(splitSecond.action);
                 result.splitFinalRootStatisticsMatch = splitSecond.accepted
                     && sameRootActionSummaries(secondDecision.rootActionSummaries,
                                                 splitSecond.rootActionSummaries);
+                if (config.exactVisitLockEnabled) {
+                    result.exactVisitLockTelemetryMatchesCheckpointTrace = splitSecond.accepted
+                        && sameSilverSearchTelemetry(secondDecision.telemetry,
+                                                     splitSecond.telemetry);
+                    result.exactVisitLockNodesMatchCheckpointTrace = splitSecond.accepted
+                        && secondDecision.diagnostic.nodesCreated
+                            == splitSecond.diagnostic.nodesCreated;
+                }
             }
         }
     } catch (const std::exception &) {

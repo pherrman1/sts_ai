@@ -13,8 +13,9 @@ seeds, Ironclad A0, project-fair Silver, native OOC, four workers, exact
 10,000-simulation root budgets, allocated reuse cap 131072, CTM adaptation off,
 old Silver adaptive mode off, convergence stopping off, OOC MCTS off, and keys
 off. Control and treatment ran sequentially on the same executable and model
-files. N16 used seeds 128--143; after its smoke gate passed, N32 used a new
-block, seeds 144--175.
+files. N16 used seeds 128--143; after its mechanism/gameplay checks passed,
+N32 was run as an explicitly documented approximate-threshold extension on a
+new block, seeds 144--175.
 
 Control used flat 10,000 new simulations at every decision. Treatment enabled
 only `STS_SILVER_EXACT_VISIT_LOCK=1`; fresh and one-action/forced roots still
@@ -43,8 +44,11 @@ was retained/non-forced, strict, complete, and exactly accounted; failure
 counters were zero. The treatment had two control-only wins and one
 treatment-only win, so it did not trigger the specified gross gameplay stop.
 
-This passed the handoff's approximate 35% N16 smoke threshold and authorized
-the fresh N32 stage without tuning or seed reuse.
+The nominal N16 compute target was 35%; treatment achieved 34.80%, marginally
+below that target. Because the protocol called the threshold approximate and
+all mechanism/gameplay checks passed, N32 was run as an explicitly documented
+extension without tuning or seed reuse. This was not a nominal 35% compute
+pass.
 
 ## N32 qualification
 

@@ -617,7 +617,10 @@ int main() {
     check(exactReuse.accepted && exactReuse.rerootExact == 1
               && exactReuse.rerootFallback == 0 && exactReuse.inheritedVisits > 0
               && exactReuse.secondSimulations <= exactReuseConfig.simulationsPerDecision
-              && exactReuse.exactVisitLockActionMatchesFullBudget,
+              && exactReuse.exactVisitLockActionMatchesFullBudget
+              && exactReuse.exactVisitLockCheckpointCount >= 2
+              && exactReuse.exactVisitLockTelemetryMatchesCheckpointTrace
+              && exactReuse.exactVisitLockNodesMatchCheckpointTrace,
           "retained exact visit-lock search must preserve the uninterrupted max-budget action");
     auto exactZeroConfig = exactReuseConfig;
     exactZeroConfig.simulationsPerDecision = 1;

@@ -647,6 +647,9 @@ struct SessionReuseProbe {
     bool exactVisitLockFired = false;
     bool exactVisitLockFiredAtZero = false;
     bool exactVisitLockActionMatchesFullBudget = false;
+    int exactVisitLockCheckpointCount = 0;
+    bool exactVisitLockTelemetryMatchesCheckpointTrace = false;
+    bool exactVisitLockNodesMatchCheckpointTrace = false;
 };
 
 // Small-cap, bridge-private fixture.  It exercises retained allocation versus

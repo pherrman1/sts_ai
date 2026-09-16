@@ -95,8 +95,13 @@
         ]
       },
       "gate": {
-        "passed": true,
-        "interpretation": "smoke pass at the handoff's approximate 35% compute gate"
+        "passed": false,
+        "nominal_compute_target": 0.35,
+        "nominal_compute_passed": false,
+        "mechanism_passed": true,
+        "gameplay_passed": true,
+        "extension_authorized": true,
+        "interpretation": "nominal 35% compute target missed marginally; the protocol's approximate threshold and passing mechanism/gameplay checks authorized N32 as an explicitly documented extension"
       }
     },
     "n32": {
@@ -191,8 +196,13 @@
       },
       "gate": {
         "passed": false,
+        "compute_target": 0.4,
+        "compute_passed": false,
+        "wall_reduction": true,
+        "mechanism_passed": true,
+        "gameplay_warning": false,
         "classification": "LIVE_EXACT_VISIT_LOCK_REJECTED",
-        "reason": "compute reduction is below the handoff's approximately 40% N32 gate"
+        "reason": "compute reduction is below the approximately 40% N32 gate"
       }
     }
   }

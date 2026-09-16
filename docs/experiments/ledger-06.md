@@ -8879,15 +8879,18 @@ rule, tuning, shadow search, default change, or cap variation was used.
 The frozen regime was Ironclad A0, project-fair Silver, native OOC, four
 workers, exact 10,000 root budgets, allocated reuse cap 131,072, CTM and old
 Silver adaptive stopping off, convergence stopping off, OOC MCTS off, and keys
-off. N16 used fresh paired seeds 128--143. It passed the approximate smoke
-gate: control/treatment won 11/16 versus 10/16, treatment saved 34.80% of
-control Silver simulations and 34.43% wall time, and there were 4,980 exact
-locks including 362 zero-use locks. All lock, fresh/forced, accounting and
-failure invariants passed; paired gameplay had two control-only and one
-treatment-only win.
+off. N16 used fresh paired seeds 128--143. The nominal compute target was 35%:
+control/treatment won 11/16 versus 10/16, and treatment saved 34.80% of
+control Silver simulations and 34.43% wall time. This was marginally below
+the nominal target. All lock, fresh/forced, accounting and failure invariants
+passed; there were 4,980 exact locks including 362 zero-use locks, and paired
+gameplay had two control-only and one treatment-only win. Because the protocol
+called the threshold approximate and the mechanism/gameplay checks passed,
+N32 was run as an explicitly documented extension; this was not a nominal 35%
+compute pass.
 
-After the N16 gate, a new N32 block 144--175 was run without changing the
-implementation or configuration. Control/treatment won 24/32 versus 22/32;
+After the documented N16 extension authorization, a new N32 block 144--175
+was run without changing the implementation or configuration. Control/treatment won 24/32 versus 22/32;
 treatment saved 28.77% of control Silver simulations and 31.59% wall time.
 There were 9,179 exact locks including 465 zero-use locks, with no invalid,
 fresh, one-action/forced, non-strict, accounting, semantic, conversion,

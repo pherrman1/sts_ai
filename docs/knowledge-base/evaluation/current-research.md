@@ -113,18 +113,20 @@ logistic model, or fixed 10k controller rule is used. Focused fixtures cover
 strict-boundary semantics, 1k/3.7k/10k caller budgets, zero-new-simulation
 accounting and sequential selection.
 
-The fresh paired N16 smoke on seeds 128--143 passed its approximate compute
-gate: treatment saved 34.80% of control Silver simulations and 34.43% wall
-time, with 4,980 exact locks, 362 zero-use locks, no invalid/fresh/forced
-locks, and zero bridge failures. The authorized fresh N32 follow-up on seeds
-144--175 had zero lock/accounting/bridge violations but saved only 28.77% of
-control Silver simulations and 31.59% wall time. Control won 24/32 versus
-treatment 22/32, with two control-only wins and no treatment-only wins.
-Classification is **`LIVE_EXACT_VISIT_LOCK_REJECTED`** for the bounded gate:
-the N32 compute reduction is below the approximately 40% requirement. This
-does not establish universal gameplay harm or invalidate the current-root
-proof, but it does not support promotion; the feature and normal Silver
-defaults remain unchanged. See the [paired evidence packet](../../experiments/evidence/silver_exact_visit_lock_pair_2026-09-16/README.md).
+The fresh paired N16 smoke on seeds 128--143 achieved 34.80% compute and
+34.43% wall-time reduction, marginally below the nominal 35% compute target.
+All mechanism/gameplay checks passed: 4,980 exact locks, 362 zero-use locks,
+no invalid/fresh/forced locks, and zero bridge failures. Because the protocol
+called the threshold approximate, N32 was run as an explicitly documented
+extension; this was not a nominal 35% compute pass. The fresh N32 follow-up on
+seeds 144--175 had zero lock/accounting/bridge violations but saved only
+28.77% of control Silver simulations and 31.59% wall time. Control won 24/32
+versus treatment 22/32, with two control-only wins and no treatment-only wins.
+Classification is **`LIVE_EXACT_VISIT_LOCK_REJECTED`** for the frozen bounded
+gate because the N32 compute reduction is below the approximately 40%
+requirement. This does not establish universal gameplay harm or invalidate
+the current-root proof, but it does not support promotion; the feature and
+normal Silver defaults remain unchanged. See the [paired evidence packet](../../experiments/evidence/silver_exact_visit_lock_pair_2026-09-16/README.md).
 
 ## Current priority / active line
 
