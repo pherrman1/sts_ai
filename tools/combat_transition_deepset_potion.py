@@ -61,6 +61,9 @@ EXPECTED = {
     "candidateReceipt": "83b2482eab347c09901c3b39f2ce7fed324f6be378ca36ff51f0d3965074c769",
     "candidateZ": "9232027d8331fd2157727276410161e3c12816b6680cb116ebc2b3afd37352af",
     "candidateRows": 458589,
+    "rowSequence": "2cb23f2eac81cd30f0200c49d42f090873b5452b265bb47410d67c46d6745809",
+    "sourceSequence": "d843fcf1f106e8985aef32087c12745da9dfca6f050c64bcca44837578718b32",
+    "splitSequence": "607782399125f7785c3a33f65934c9461b8b1e86f053637e8110f51a2294f3ca",
     "dedicatedPotionComponent": "ae1a1411990d272579de10564edb48c7f2ec1d14f1c72dacf5390a1415a0f1db",
     "cache": "e1c25f2758bf56c7cff392ea02342d809f3ad7427c70b64166244a6b714a251d",
     "sourceSha": "1c31b7eb0a7660d43bc27e0849a8955dd0c3daae",
@@ -251,6 +254,17 @@ def run(args):
     if counts != expected_counts:
         raise ValueError(f"final-union population differs: {counts}")
     target = np.concatenate((train, validation))
+    sequence_hashes = {
+        "rowSequenceSha256": shared.digest(cache["ids"][target]),
+        "sourceSequenceSha256": shared.digest(cache["source"][target]),
+        "splitSequenceSha256": shared.digest(cache["split"][target]),
+    }
+    if sequence_hashes != {
+        "rowSequenceSha256": EXPECTED["rowSequence"],
+        "sourceSequenceSha256": EXPECTED["sourceSequence"],
+        "splitSequenceSha256": EXPECTED["splitSequence"],
+    }:
+        raise ValueError(f"potion population sequence hashes differ: {sequence_hashes}")
     z_b, representation = map_candidate_z(Path(args.representation_dir), cache, train, validation)
     candidate_encoder = load_deepset_encoder(candidate_payload, "cuda")
     cached_error = verify_cached_sample(candidate_encoder, arrays, cache, target, z_b, "cuda")
@@ -304,6 +318,7 @@ def run(args):
             "preparationCacheSha256": composed.base.sha256(artifact_root / "potion-trajectory-v2" / "preparation.json"),
             "cacheSha256": cache_meta["cacheSha256"], "sourceDataHashes": cache_meta["hashes"],
             "counts": counts, "testEncodedRows": 0, "testInferenceRows": 0,
+            **sequence_hashes,
             "candidateRepresentation": representation, "cachedRepresentationSampleMaxAbsError": cached_error,
             "dedicatedEncodingSha256": shared.digest(z_a[target]), "candidateEncodingSha256": shared.digest(z_b[target]),
             "encodingWallSeconds": {"A": time_a}, "batchOrderSha256": batch_digest,
