@@ -379,7 +379,9 @@ void benchmark(const std::vector<LeafValueSample> &leaves, const Corpus &corpus,
     std::map<int, int> actionCounts;
     std::vector<int> actionCountSamples;
     for (const auto &sample : leaves) {
-        const auto rows = sts::search::silverLiveParentPolicyFeatures(visibleState(sample.leaf));
+        const auto benchmarkWire = sts::search::silverLiveBattleStateWireForBenchmark(
+            visibleState(sample.leaf));
+        const auto rows = sts::search::silverLiveParentPolicyFeatures(benchmarkWire);
         if (rows.empty() || rows.front().features.size() != static_cast<std::size_t>(kCanonicalPolicyWidth))
             throw std::runtime_error("unexpected policy feature layout in leaf benchmark");
         Prepared prepared;
@@ -407,9 +409,12 @@ void benchmark(const std::vector<LeafValueSample> &leaves, const Corpus &corpus,
     for (int i = 0; i < iterations; ++i) {
         for (const auto &sample : leaves) {
             const auto callStart = std::chrono::steady_clock::now();
-            // Complete candidate call: live wire materialization, feature
-            // preparation, shared encoder, value, and every sibling score.
-            const auto rows = sts::search::silverLiveParentPolicyFeatures(visibleState(sample.leaf));
+            // Complete candidate call: live BattleContext -> Silver wire
+            // conversion, feature preparation, shared encoder, value, and
+            // every sibling score.
+            const auto benchmarkWire = sts::search::silverLiveBattleStateWireForBenchmark(
+                visibleState(sample.leaf));
+            const auto rows = sts::search::silverLiveParentPolicyFeatures(benchmarkWire);
             if (rows.empty() || rows.front().features.size() != static_cast<std::size_t>(kCanonicalPolicyWidth))
                 throw std::runtime_error("unexpected policy feature layout during leaf benchmark");
             const std::vector<float> canonical(rows.front().features.begin(),
@@ -465,7 +470,9 @@ void benchmark(const std::vector<LeafValueSample> &leaves, const Corpus &corpus,
         {"action_scores_per_second", 1.0e6 * static_cast<double>(scored) / std::max(1.0, micros)},
         {"checksum", checksum}, {"checksum_is_observed", true},
         {"sampled_rollout_leaf_coverage", sampledCoverage(corpus)},
-        {"timed_region", "visible leaf wire materialization + canonical feature preparation + root scalar derivation + encoder + value + all actions"}
+        {"timed_region", "stored public wire fixture -> live BattleContext -> Silver wire conversion + canonical feature preparation + root scalar derivation + encoder + value + all actions"},
+        {"conversion_included", true},
+        {"benchmark_boundary", "The stored wire is a fixture only; the timed candidate includes live BattleContext -> Silver wire conversion before feature extraction."}
     };
     std::ofstream output(path);
     if (!output) throw std::runtime_error("cannot write benchmark: " + path);

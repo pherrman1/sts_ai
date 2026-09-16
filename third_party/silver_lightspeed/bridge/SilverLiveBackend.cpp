@@ -793,6 +793,23 @@ std::vector<float> silverLiveLeafCanonicalFeaturesImpl(
     return features;
 }
 
+silver_bridge::BattleStateWire silverLiveBattleStateWireForBenchmarkImpl(
+        const silver_bridge::BattleStateWire &wire) {
+    BattleContext live = liveLeafBattleContext(wire);
+    CombatKnowledgeState knowledge;
+    knowledge.configureHiddenMonsterIntents(wire.intentsHidden);
+    if (wire.intentsHidden)
+        throw std::invalid_argument("benchmark wire conversion does not synthesize hidden intent history");
+    knowledge.initializeFromLiveBattle(live);
+    const SilverRunContext runContext {
+        wire.act, wire.omamoriOwned, wire.omamoriValue};
+    const auto conversion = makeSilverBattleStateConversion(
+        live, knowledge, runContext, wire.isolatedSearchSeed);
+    if (!conversion.failureReason.empty())
+        throw std::runtime_error("benchmark live-to-wire conversion failed: " + conversion.failureReason);
+    return conversion.wire;
+}
+
 std::vector<SilverPolicyFeatureRow> silverLiveParentPolicyFeaturesImpl(
         const silver_bridge::BattleStateWire &wire) {
     g_richCombatFeatures = true;
@@ -1691,6 +1708,11 @@ double silverLiveLeafVNetPredictionForTest(
 std::vector<float> silverLiveLeafCanonicalFeatures(
         const silver_bridge::BattleStateWire &wire) {
     return silverLiveLeafCanonicalFeaturesImpl(wire);
+}
+
+silver_bridge::BattleStateWire silverLiveBattleStateWireForBenchmark(
+        const silver_bridge::BattleStateWire &wire) {
+    return silverLiveBattleStateWireForBenchmarkImpl(wire);
 }
 
 std::vector<SilverPolicyFeatureRow> silverLiveParentPolicyFeatures(

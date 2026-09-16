@@ -100,6 +100,12 @@ double silverLiveLeafVNetPredictionForTest(
 std::vector<float> silverLiveLeafCanonicalFeatures(
     const silver_bridge::BattleStateWire &wire);
 
+// Benchmark-only seam that includes the live BattleContext -> Silver wire
+// conversion before feature extraction. The input wire is only a fixture for
+// reconstructing a representative public live state; no search or RNG runs.
+silver_bridge::BattleStateWire silverLiveBattleStateWireForBenchmark(
+    const silver_bridge::BattleStateWire &wire);
+
 struct SilverPolicyFeatureRow {
     std::string actionFingerprint;
     std::vector<float> features;
