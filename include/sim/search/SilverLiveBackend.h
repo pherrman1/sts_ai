@@ -71,6 +71,7 @@ std::string silverLiveScalingDiagnosticFile();
 std::string silverLiveStickyQualityFile();
 bool silverLiveAdaptiveEnabled();
 bool silverLiveAdaptiveRetainedOnly();
+bool silverLiveAdaptiveStaged();
 bool silverLiveExactRootBudgets();
 bool silverLiveExactVisitLockEnabled();
 bool silverLiveRhoRacingEnabled();

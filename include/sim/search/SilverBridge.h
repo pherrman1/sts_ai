@@ -355,6 +355,13 @@ struct SilverSearchConfig {
     std::int64_t adaptiveInitialSimulations = 1000;
     std::int64_t adaptiveTotalSimulations = 3700;
     double adaptiveTopTwoVisitGapThreshold = 0.094;
+    // Optional staged retained-root policy.  Checkpoints are cumulative
+    // new-simulation budgets and thresholds are the corresponding stop rules.
+    // The final checkpoint may use infinity to mean "never stop here".
+    bool adaptiveStaged = false;
+    std::vector<std::int64_t> adaptiveCheckpoints;
+    std::vector<double> adaptiveCheckpointThresholds;
+    std::int64_t adaptiveNonRetainedTotalSimulations = 10000;
     // Default-off exact visit-lock stopping. The caller's simulationsPerDecision
     // is the maximum new-simulation budget; no fixed budget is implied here.
     bool exactVisitLockEnabled = false;
@@ -544,6 +551,12 @@ struct SilverCheckpointDiagnostic {
     // continuation. Every checkpoint row receives this value so offline
     // consumers can form the local action-change label without replaying C++.
     std::string finalActionFingerprint;
+    // Populated only by the actual staged adaptive policy; observation-only
+    // checkpoint diagnostics leave these at their defaults.
+    double adaptiveThreshold = 0.0;
+    bool adaptiveRetainedRoot = false;
+    bool adaptiveEligibleToStop = false;
+    bool adaptiveStopped = false;
 };
 
 struct SelectionTransactionTrace {

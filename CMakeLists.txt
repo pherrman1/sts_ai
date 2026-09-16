@@ -420,6 +420,7 @@ add_test(NAME analyze_silver_sticky_quality_selftest COMMAND python3 ${CMAKE_SOU
 add_test(NAME analyze_silver_root_diagnostic_selftest COMMAND python3 ${CMAKE_SOURCE_DIR}/tools/analyze_silver_root_diagnostic.py --self-test)
 add_test(NAME analyze_combat_budget_diag_selftest COMMAND python3 ${CMAKE_SOURCE_DIR}/tools/analyze_combat_budget_diag.py --self-test)
 add_test(NAME analyze_combat_sequential_diag_selftest COMMAND python3 ${CMAKE_SOURCE_DIR}/tools/analyze_combat_sequential_diag.py --self-test)
+add_test(NAME analyze_silver_staged_selftest COMMAND python3 ${CMAKE_SOURCE_DIR}/tools/analyze_silver_staged.py --self-test)
 add_test(NAME analyze_silver_adaptive_selftest COMMAND python3 ${CMAKE_SOURCE_DIR}/tools/analyze_silver_adaptive.py --self-test)
 add_test(NAME analyze_postcombat_raw_terminal_selftest COMMAND python3 ${CMAKE_SOURCE_DIR}/tools/test_postcombat_raw_terminal_selftest.py)
 add_test(NAME export_win_model_selftest COMMAND python3 ${CMAKE_SOURCE_DIR}/tools/test_export_win_model_selftest.py)
@@ -539,7 +540,7 @@ set_tests_properties(selfplay_syntax py_compile_parity_test py_compile_analyze_o
 set_tests_properties(particle_leaf_probe_selftest particle_posterior_probe_selftest
     analyze_silver_reuse_scaling_selftest analyze_silver_vnet_leaf_selftest
     analyze_silver_sticky_quality_selftest analyze_silver_root_diagnostic_selftest
-    analyze_silver_adaptive_selftest analyze_postcombat_raw_terminal_selftest
+    analyze_silver_adaptive_selftest analyze_silver_staged_selftest analyze_postcombat_raw_terminal_selftest
     PROPERTIES LABELS "research-repro")
 set_property(TEST selfplay_syntax paired_analysis_selftest check_replay_selftest
     battlecontext_roundtrip issue_fixes APPEND PROPERTY LABELS "smoke")

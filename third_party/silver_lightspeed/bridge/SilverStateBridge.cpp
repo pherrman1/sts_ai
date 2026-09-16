@@ -1245,6 +1245,100 @@ SilverDecisionResult applyAdaptiveContinuation(SilverSearchSession &session,
         result.diagnostic.adaptiveTotalSimulations = config.adaptiveTotalSimulations;
         result.diagnostic.rootUncertainty = result.rootUncertainty;
     }
+    if (config.adaptiveStaged) {
+        const bool stagedConfigValid = config.adaptiveEnabled
+            && config.adaptiveRequireRetainedRoot
+            && !config.adaptiveCheckpoints.empty()
+            && config.adaptiveCheckpoints.size() == config.adaptiveCheckpointThresholds.size()
+            && config.adaptiveCheckpoints.front() == config.adaptiveInitialSimulations
+            && config.adaptiveCheckpoints.back() == config.adaptiveTotalSimulations
+            && std::is_sorted(config.adaptiveCheckpoints.begin(), config.adaptiveCheckpoints.end())
+            && std::adjacent_find(config.adaptiveCheckpoints.begin(), config.adaptiveCheckpoints.end())
+                == config.adaptiveCheckpoints.end();
+        if (!stagedConfigValid) {
+            result.accepted = false;
+            result.failureReason = "invalid_staged_adaptive_schedule";
+            return result;
+        }
+        const bool commonContinuationConfigValid = result.accepted
+            && result.simulations == config.adaptiveInitialSimulations
+            && config.adaptiveInitialSimulations > 0;
+        if (!commonContinuationConfigValid) return result;
+
+        const bool retainedRoot = result.inheritedVisits > 0;
+        const bool multiActionRoot = result.rootUncertainty.valid
+            && result.rootUncertainty.legalActions > 1;
+        const bool retainedNonForcedRoot = retainedRoot && multiActionRoot;
+        auto recordCheckpoint = [&](std::int64_t checkpoint, double threshold,
+                                    bool eligible, bool stopped) {
+            SilverCheckpointDiagnostic diagnostic;
+            diagnostic.valid = true;
+            diagnostic.checkpointSimulations = checkpoint;
+            diagnostic.checkpointActionFingerprint = semanticActionFingerprint(result.action);
+            diagnostic.finalActionFingerprint = diagnostic.checkpointActionFingerprint;
+            diagnostic.rootUncertainty = result.rootUncertainty;
+            diagnostic.rootVisitsAfterSearch = result.diagnostic.rootVisitsAfterSearch;
+            diagnostic.adaptiveThreshold = threshold;
+            diagnostic.adaptiveRetainedRoot = retainedNonForcedRoot;
+            diagnostic.adaptiveEligibleToStop = eligible;
+            diagnostic.adaptiveStopped = stopped;
+            result.checkpointDiagnostics.push_back(std::move(diagnostic));
+        };
+        auto mergeContinuation = [&](SilverDecisionResult continuation) {
+            result.action = continuation.action;
+            result.accepted = true;
+            result.simulations += continuation.simulations;
+            result.telemetry.add(continuation.telemetry);
+            result.rootActionSummaries = std::move(continuation.rootActionSummaries);
+            result.rootUncertainty = continuation.rootUncertainty;
+            result.adaptiveEscalated = true;
+            if (config.collectDecisionDiagnostics) {
+                result.diagnostic.simulationsAdded += continuation.diagnostic.simulationsAdded;
+                result.diagnostic.nodesCreated += continuation.diagnostic.nodesCreated;
+                result.diagnostic.allocatedNodesAfterSearch = continuation.diagnostic.allocatedNodesAfterSearch;
+                result.diagnostic.activeNodesAfterSearch = continuation.diagnostic.activeNodesAfterSearch;
+                result.diagnostic.rootVisitsAfterSearch = continuation.diagnostic.rootVisitsAfterSearch;
+                result.diagnostic.chosenEdgeVisits = continuation.diagnostic.chosenEdgeVisits;
+            }
+        };
+
+        for (std::size_t i = 0; i < config.adaptiveCheckpoints.size(); ++i) {
+            const double threshold = config.adaptiveCheckpointThresholds[i];
+            const bool gapEligible = result.rootUncertainty.valid
+                && result.rootUncertainty.legalActions > 1
+                && result.rootUncertainty.topTwoVisitGapShare >= threshold;
+            const bool stopForPolicy = retainedNonForcedRoot && gapEligible;
+            const bool stopForNonRetained = !retainedNonForcedRoot
+                && result.simulations >= config.adaptiveNonRetainedTotalSimulations;
+            const bool stopAtFinal = i + 1 == config.adaptiveCheckpoints.size();
+            recordCheckpoint(config.adaptiveCheckpoints[i], threshold,
+                             retainedNonForcedRoot && gapEligible,
+                             stopForPolicy || stopForNonRetained || stopAtFinal);
+            if (stopForPolicy || stopForNonRetained || stopAtFinal) return result;
+            const std::int64_t next = config.adaptiveCheckpoints[i + 1];
+            const auto continuationConfig = [&] {
+                auto value = config;
+                value.adaptiveEnabled = false;
+                value.simulationsPerDecision = next - result.simulations;
+                value.adaptiveStaged = false;
+                value.adaptiveCheckpoints.clear();
+                value.adaptiveCheckpointThresholds.clear();
+                return value;
+            }();
+            const auto continuation = continueSilverDecision(
+                session, continuationConfig.simulationsPerDecision, continuationConfig,
+                convertSemanticAction);
+            if (!continuation.accepted
+                    || continuation.simulations != continuationConfig.simulationsPerDecision) {
+                result.accepted = false;
+                result.failureReason = !continuation.failureReason.empty()
+                    ? continuation.failureReason : "staged_adaptive_continuation_simulation_count_mismatch";
+                return result;
+            }
+            mergeContinuation(continuation);
+        }
+        return result;
+    }
     const bool commonContinuationConfigValid = result.accepted && config.adaptiveEnabled
         && result.simulations == config.adaptiveInitialSimulations
         && config.adaptiveInitialSimulations > 0
