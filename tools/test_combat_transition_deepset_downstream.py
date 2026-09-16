@@ -38,6 +38,10 @@ class DeepSetsDownstreamTests(unittest.TestCase):
         invalid[1, 2] = np.inf
         self.assertFalse(np.isfinite(invalid).all())
 
+    def test_representation_rows_exclude_test_split(self):
+        cache = {"split": np.array([0, 1, 2, 2, 0], dtype=np.int8)}
+        np.testing.assert_array_equal(experiment.generated_representation_ids(cache), [0, 1, 4])
+
 
 if __name__ == "__main__":
     unittest.main()

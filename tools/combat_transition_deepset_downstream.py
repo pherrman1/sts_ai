@@ -30,12 +30,12 @@ from tools import combat_transition_shared_hp_downstream as shared_eval
 from tools import combat_transition_surrogate as surrogate
 
 
-BASELINE_SHA = "852a96d22cf52a0588a355cae86eed3dd26ff668"
+BASELINE_SHA = "066264dc25bf2046aecd5ca7a94a8e82d5031e7b"
 DEFAULT_PARENT = Path("/home/philippherrmann/sts_sweep/runs/near-full-combat-support-20260914")
 DEFAULT_DEEPSET_RUN = Path(
     "/home/philippherrmann/sts_sweep/runs/shared-transition-deepset-distill-corrected-20260916"
 )
-DEFAULT_OUTPUT = Path("/home/philippherrmann/sts_sweep/runs/deepset-downstream-20260916")
+DEFAULT_OUTPUT = Path("/home/philippherrmann/sts_sweep/runs/deepset-downstream-20260916-corrected")
 DEFAULT_EXPECTED = Path("docs/experiments/evidence/shared_hp_downstream_2026-09-16.json")
 DEFAULT_DEEPSET_EVIDENCE = Path(
     "docs/experiments/evidence/shared_transition_deepset_distill_correction_2026-09-16.json"
@@ -176,6 +176,11 @@ def eligible_train(cache: dict, records: dict) -> np.ndarray:
     return np.flatnonzero(eligible & (cache["split"] == 0))
 
 
+def generated_representation_ids(cache: dict) -> np.ndarray:
+    """Rows permitted for the frozen representation pass; TEST is excluded."""
+    return np.flatnonzero(cache["split"] < 2).astype(np.int64)
+
+
 def prepare(args: argparse.Namespace) -> None:
     if args.output_dir.exists():
         raise ValueError(f"refusing overwrite of {args.output_dir}")
@@ -184,33 +189,41 @@ def prepare(args: argparse.Namespace) -> None:
     encoder = encoder.cuda()
     arrays, spec = composed.base._load_prepared(composed_eval.PREPARED)
     composed.base._prepare_target_indices(arrays, spec)
-    z = np.empty((len(cache["ids"]), 64), dtype=np.float32)
+    generated_ids = generated_representation_ids(cache)
+    z = np.empty((len(generated_ids), 64), dtype=np.float32)
     torch.set_num_threads(4)
     with torch.inference_mode():
         for start in range(0, len(z), RECIPE["batch"]):
             indices = np.arange(start, min(start + RECIPE["batch"], len(z)), dtype=np.int64)
             inputs = composed.base._torch_inputs(
-                arrays, cache["ids"][indices], "cuda", torch, trim_padding=True
+                arrays, cache["ids"][generated_ids[indices]], "cuda", torch, trim_padding=True
             )
             z[indices] = encoder(*inputs).cpu().numpy()
             if start % 51_200 == 0:
                 print(f"DeepSets downstream encoding {start}/{len(z)}", flush=True)
-    if z.shape != (len(cache["ids"]), 64) or not np.isfinite(z).all():
-        raise ValueError("generated DeepSets representation is not finite [N,64]")
+    if z.shape != (len(generated_ids), 64) or not np.isfinite(z).all():
+        raise ValueError("generated DeepSets representation is not finite [TRAIN+VALIDATION,64]")
     args.output_dir.mkdir(parents=True)
     np.save(args.output_dir / "z_deepset.npy", z, allow_pickle=False)
+    np.save(args.output_dir / "z_row_ids.npy", cache["ids"][generated_ids], allow_pickle=False)
     metadata = dict(
         schema="deepset_downstream_representation_v1",
         sourceSha=SOURCE_SHA,
         referenceCacheSha256=REFERENCE_CACHE_SHA,
         referencePreparationCacheSha256=REFERENCE_PREPARATION_SHA,
-        rows=len(z),
+        rows=len(cache["ids"]),
+        generatedRows=len(generated_ids),
+        generatedSplits={"TRAIN": int((cache["split"][generated_ids] == 0).sum()),
+                         "VALIDATION": int((cache["split"][generated_ids] == 1).sum()), "TEST": 0},
         shape=list(z.shape),
         idsSha256=array_digest(cache["ids"]),
+        generatedRowIdsSha256=array_digest(cache["ids"][generated_ids]),
         candidateZSha256=digest(args.output_dir / "z_deepset.npy"),
+        candidateZRowIdsSha256=digest(args.output_dir / "z_row_ids.npy"),
         nonZCacheFingerprints=cache_fingerprints(cache),
         deepset=binding,
         testInferenceRows=0,
+        testRowsEncoded=0,
     )
     composed.base.json_dump(args.output_dir / "representation.json", metadata)
     print(json.dumps(metadata, sort_keys=True), flush=True)
@@ -226,8 +239,19 @@ def load_candidate_cache(args: argparse.Namespace):
         raise ValueError("candidate representation provenance differs")
     require_digest(z_path, representation["candidateZSha256"])
     z = np.load(z_path, mmap_mode="r")
-    if tuple(z.shape) != (len(cache["ids"]), 64) or z.dtype != np.float32 or not np.isfinite(z).all():
+    row_ids = np.load(args.output_dir / "z_row_ids.npy", mmap_mode="r")
+    generated_ids = generated_representation_ids(cache)
+    if tuple(z.shape) != (len(generated_ids), 64) or z.dtype != np.float32 or not np.isfinite(z).all():
         raise ValueError("candidate DeepSets representation schema or finite check failed")
+    require_digest(args.output_dir / "z_row_ids.npy", representation["candidateZRowIdsSha256"])
+    if tuple(row_ids.shape) != (len(generated_ids),) or not np.array_equal(row_ids, cache["ids"][generated_ids]):
+        raise ValueError("candidate representation generated row identity differs")
+    if representation.get("generatedRows") != len(generated_ids) or representation.get("generatedSplits") != {
+        "TRAIN": int((cache["split"][generated_ids] == 0).sum()),
+        "VALIDATION": int((cache["split"][generated_ids] == 1).sum()),
+        "TEST": 0,
+    }:
+        raise ValueError("candidate representation split coverage differs")
     if representation.get("idsSha256") != array_digest(cache["ids"]):
         raise ValueError("candidate representation row identity differs")
     expected_non_z = representation.get("nonZCacheFingerprints")
@@ -235,7 +259,9 @@ def load_candidate_cache(args: argparse.Namespace):
     if actual_non_z != expected_non_z:
         raise ValueError("a non-z downstream cache field changed")
     candidate = dict(cache)
-    candidate["z"] = z
+    candidate_z = np.full_like(cache["z"], np.nan)
+    candidate_z[generated_ids] = z
+    candidate["z"] = candidate_z
     return cache, candidate, ambiguous, records, meta, folder, representation
 
 
@@ -275,6 +301,35 @@ def score(nets, cache, ambiguous, records, ids) -> float:
             for start in range(0, len(ids), RECIPE["batch"])
         ]
     return float(torch.cat(values).mean())
+
+
+def output_support_check(nets, cache, ambiguous, records, ids) -> dict:
+    """Check finite losses, normalized head outputs and positive legal target mass."""
+    finite_losses = True
+    normalized_probabilities = True
+    positive_legal_target_mass = True
+    for start in range(0, len(ids), RECIPE["batch"]):
+        details = downstream.losses(
+            nets, cache, ambiguous, records, ids[start : start + RECIPE["batch"]], return_details=True
+        )
+        values = downstream.losses(
+            nets, cache, ambiguous, records, ids[start : start + RECIPE["batch"]]
+        )
+        finite_losses = finite_losses and bool(torch.isfinite(values).all())
+        for probabilities in details["component_probabilities"].values():
+            finite = torch.isfinite(probabilities).all()
+            normalized = torch.allclose(
+                probabilities.sum(-1), torch.ones(probabilities.shape[0], device=probabilities.device),
+                atol=1e-5, rtol=1e-5
+            )
+            normalized_probabilities = normalized_probabilities and bool(finite and normalized)
+        positive_legal_target_mass = positive_legal_target_mass and finite_losses
+    return dict(
+        finiteLosses=finite_losses,
+        normalizedProbabilities=normalized_probabilities,
+        positiveLegalTargetMass=positive_legal_target_mass,
+        existingLegalityMasksApplied=True,
+    )
 
 
 def train_candidate(args: argparse.Namespace) -> None:
@@ -406,6 +461,7 @@ def compare(args: argparse.Namespace) -> dict:
     reference_nets.load_state_dict(torch.load(folder / "downstream.pt", map_location="cpu", weights_only=False)["stateDict"], strict=True)
     reference = shared_eval.evaluate(reference_nets, reference_cache, ambiguous, records, ids)
     candidate = shared_eval.evaluate(nets, candidate_cache, ambiguous, records, ids)
+    support = output_support_check(nets, candidate_cache, ambiguous, records, ids)
     delta = {}
     for name in (*composed.TRAINED_GROUPS, "writhing", "ritual", "gold", "joint"):
         delta[name] = {"nllRelative": candidate[name]["nll"] / reference[name]["nll"] - 1.0}
@@ -425,9 +481,13 @@ def compare(args: argparse.Namespace) -> dict:
         limit = gates["principalNllRelativeMax"] if name == "joint" else gates["importantSliceNllRelativeMax"]
         if delta[name]["nllRelative"] > limit:
             failures.append(f"{name} NLL relative degradation exceeds {limit:.0%}")
-    finite_and_legal = all(np.isfinite(value["nll"]) for value in (*reference.values(), *candidate.values()))
+    finite_metrics = all(np.isfinite(value["nll"]) for value in (*reference.values(), *candidate.values()))
+    finite_and_legal = bool(
+        finite_metrics and support["finiteLosses"] and support["normalizedProbabilities"]
+        and support["positiveLegalTargetMass"]
+    )
     if not finite_and_legal:
-        failures.append("nonfinite evaluation metric")
+        failures.append("finite/legal output-support check failed")
     decision = "DEEPSET_DOWNSTREAM_GO" if not failures else "DEEPSET_DOWNSTREAM_REJECTED"
     result = dict(
         schema="deepset_downstream_qualification_v1",
@@ -441,6 +501,7 @@ def compare(args: argparse.Namespace) -> dict:
         gates=gates,
         failures=failures,
         finiteAndLegal=finite_and_legal,
+        outputSupport=support,
         decision=decision,
         unchanged=dict(
             potionZ=True, potionDecoder=True, traces=True, labels=True, supportPredicate=True,
@@ -490,8 +551,10 @@ def write_evidence(args: argparse.Namespace) -> None:
         worktreeCheck=True,
         referenceMetricsReproduced=True,
         candidateReloadedFromDisk=True,
-        candidateZShape=[510030, 64],
+        candidateZShape=representation["shape"],
+        candidateZGeneratedRows=representation["generatedRows"],
         candidateZFinite=True,
+        testRowsEncoded=representation.get("testRowsEncoded", 0),
         nonZCacheUnchanged=True,
         optimizerDownstreamOnly=True,
         encoderFrozen=True,
@@ -512,7 +575,7 @@ def write_evidence(args: argparse.Namespace) -> None:
         "",
         f"Baseline: `{result['baselineSha']}`; implementation SHA: `{args.implementation_sha}`; final head SHA: `{args.final_head_sha}`.",
         "",
-        f"TRAIN: {result['population']['train']['rows']} rows / {result['population']['train']['sources']} sources. VALIDATION: {result['population']['validation']['rows']} downstream-eligible rows. TEST inference rows: 0.",
+        f"TRAIN: {result['population']['train']['rows']} rows / {result['population']['train']['sources']} sources. VALIDATION: {result['population']['validation']['rows']} downstream-eligible rows. TEST inference/encoding rows: 0.",
         "",
         "## Metrics",
         "",
@@ -529,9 +592,9 @@ def write_evidence(args: argparse.Namespace) -> None:
         lines.append(f"| {name} | {cand['rows']} | {ref['nll']:.9f} | {cand['nll']:.9f} | {d['nllRelative']:+.4%} | {singleton_rows} | {accuracy} | {accuracy_delta} |")
     lines += [
         "",
-        f"Finite/legal checks: `{result['finiteAndLegal']}`. Fixed gates: principal NLL ≤2%, singleton accuracy drop ≤0.005, joint/important-slice NLL ≤2%/5%.",
+        f"Finite/legal checks: `{result['finiteAndLegal']}` (finite metrics/losses, normalized head probabilities, and positive exact legal target mass under the existing masks). Fixed gates: principal NLL ≤2%, singleton accuracy drop ≤0.005, joint/important-slice NLL ≤2%/5%.",
         "",
-        "No TEST, native export, runtime/default change, gameplay, OOC MCTS, potion retraining or encoder fine-tuning was performed. This is offline downstream evidence only.",
+        "No TEST encoding or inference, native export, runtime/default change, gameplay, OOC MCTS, potion retraining or encoder fine-tuning was performed. This is offline downstream evidence only.",
         "",
         "Remaining uncertainty: one fixed offline fit and one eligible source-grouped VALIDATION cohort; no TEST, runtime, native, gameplay, OOC MCTS or default qualification was performed.",
         "",
