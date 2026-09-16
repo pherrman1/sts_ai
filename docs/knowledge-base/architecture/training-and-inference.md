@@ -355,6 +355,14 @@ changes training, gameplay, model loading, search selection, or utility
 semantics. Any cost classification is a hardware/configuration-specific
 feasibility diagnostic, not runtime qualification.
 
+The bounded stage follow-up on the same fixture measured 1.242 microseconds for
+live conversion, 40.944 microseconds for feature/vector preparation, 72.158
+microseconds for the shared encoder plus value head, and 4.212 microseconds for
+action scoring. Because the neural stage alone is about 24.2 times the clean
+rollout mean, a Silver-native compact representation is not a viable
+conversion-only remedy for this exact model boundary. See the linked Phase-A
+evidence packet for the raw receipt and provenance.
+
 ### Combat schema
 
 `src/sim/search/CombatValueNet.cpp` is the canonical producer:

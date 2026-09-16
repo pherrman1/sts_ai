@@ -161,6 +161,40 @@ rollout baseline and is withdrawn. This is a cost classification only; no
 action-ranking quality, terminal-label quality, hidden-state sufficiency, or
 gameplay benefit has been established.
 
+## Bounded stage decomposition follow-up
+
+The requested one-variable follow-up was run against the same 16 actual
+supported `PLAYER_NORMAL` leaves, fixed synthetic weights, one thread, and 200
+iterations (3,200 calls). The timing boundaries were:
+
+1. live `BattleContext` -> Silver wire conversion;
+2. canonical feature extraction, root-scalar append, and action-vector
+   preparation;
+3. the shared `1768 -> 64 -> 64` encoder plus value head;
+4. all legal action scores.
+
+| Stage | Mean per call | Share of timed stage sum |
+| --- | ---: | ---: |
+| bridge/state conversion | 1.242 µs | 1.05% |
+| 1,768-state feature extraction and action-vector preparation | 40.944 µs | 34.54% |
+| neural encoder plus value head | 72.158 µs | 60.86% |
+| action scoring | 4.212 µs | 3.55% |
+
+The stage sum is 118.556 µs/call; the independently measured end-to-end call
+mean was 118.851 µs/call. The observed checksum remained
+`127.37751752097392`. The neural encoder/value stage alone is approximately
+24.2x the 2.981 µs clean 1k `PLAYER_NORMAL` rollout mean, so this exact model
+boundary is not viable for per-leaf evaluation. A Silver-native compact
+representation would only be a meaningful follow-up if it also changes the
+model/input computation; it cannot rescue the measured `1768 -> 64 -> 64`
+path by removing conversion alone.
+
+Follow-up implementation SHA: `9f472e8d1ef176589a398ef98687b04eac9f46f0`
+(the full SHA is recorded by Git), benchmark executable SHA-256
+`81991938f9476835ed5b06d41d4da0fd069c950a1ee54957345998911718f3e5`, and
+stage benchmark JSON SHA-256
+`49ce1d9095ff19a64625b338e4dcb6777af2195ccb2184bd37f832a26fa28efd`.
+
 ## Provenance and hashes
 
 Hardware/software identity:
@@ -173,7 +207,7 @@ Hardware/software identity:
 | Artifact | SHA-256 |
 | --- | --- |
 | Release `one_combat` | `01127b2861a269ef5898e7070392ef11be386fef920370d8df752411ce1ef020` |
-| Release `silver_policy_value_phase_a` | `824486d7b95cf29c869c1c035dbde3ee40cb03225e56e28a2312c98a907cb673` |
+| Release `silver_policy_value_phase_a` (stage follow-up) | `81991938f9476835ed5b06d41d4da0fd069c950a1ee54957345998911718f3e5` |
 | `source.corpus.jsonl` | `f19f012bc0acc9c7bac517de7d4270a85a00fde4d7d2967fc9e18f41bed2a843` |
 | corpus source log `build/phase_a_final_omp1/source.log` | `2299aa893a97f0297e5c700e3aa0bb227776ea69e88bb4404985a3b94b043660` |
 | clean 100-sim raw log | `cf2695be2111db808668f472ef9f73132529ccbf1dfe4f6eb7f1b6d62dcd5ce2` |
@@ -185,6 +219,8 @@ Hardware/software identity:
 | selected examples `examples.jsonl` | `5a8bd180628ccc0d221c63f738e5e5c8707253698aed13b5fca993b44a08d20f` |
 | conversion-inclusive benchmark JSON | `d99be74a1a2b7ffb964144382cb46bb449f371a8e63153c25cd6af0875a50630` |
 | benchmark raw output log | `78c3f26ba26b3b967c8b1183504693d4accc8032367be3ef3cc268a183cc9ac0` |
+| stage-decomposition benchmark JSON | `49ce1d9095ff19a64625b338e4dcb6777af2195ccb2184bd37f832a26fa28efd` |
+| stage-decomposition raw output log | `2eff0dc352a5d6e9fbfe613ab40fb079e3ee74ba968e1b0d717f85442daff977` |
 
 The source run and benchmark artifacts are generated build outputs and are
 intentionally not committed. The implementation SHA, executable hash, source
@@ -204,8 +240,8 @@ reviewable.
   observation.
 - The diagnostic-off path remains default-off; no search policy, model loading,
   utility, RNG, or gameplay default changed.
-- GitHub Actions `Linux GCC` passed for the prior PR head before this
-  correction; the corrected implementation requires a new post-push check.
+- GitHub Actions `Linux GCC` passed for refreshed PR head
+  `f6ad4f67c64ec5cf2a6e6d3b5f1bfac540c3fb54` after merging current `main`.
 - Remaining uncertainty: the canonical projection is intentionally lossy, the
   sample is bounded and corpus-provided, root scalar materialization is not yet
   runtime integration, and this does not qualify predictor quality or a

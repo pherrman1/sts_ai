@@ -9173,3 +9173,25 @@ hidden-state sufficiency, or gameplay benefit.
   defaults remain unchanged.
 
 [Corrected evidence packet and machine-readable receipt](evidence/deepset_downstream_2026-09-16.md).
+
+## §290 — Silver policy/value stage-cost decomposition (2026-09-16)
+
+The requested tiny follow-up decomposed the conversion-inclusive Phase-A
+candidate on the same 16 supported `PLAYER_NORMAL` leaves, fixed synthetic
+weights, one thread, 200 iterations, and 3,200 calls. Mean per-call costs were
+1.242 microseconds for live `BattleContext` to Silver wire conversion, 40.944
+microseconds for canonical feature extraction plus root-scalar and action
+vector preparation, 72.158 microseconds for the `1768 -> 64 -> 64` encoder plus
+value head, and 4.212 microseconds for all legal action scores. The stage sum
+was 118.556 microseconds versus 118.851 microseconds independently measured
+end-to-end.
+
+The neural encoder/value stage alone is about 24.2 times the clean 1k
+`PLAYER_NORMAL` rollout mean of 2.981 microseconds. Decision:
+**`PV_COST_NOT_FEASIBLE_MODEL_FORWARD`** for this exact model boundary. A
+Silver-native compact representation is not pursued as a conversion-only fix;
+it would need to change the model/input computation as well. No gameplay,
+training, runtime integration, or default change occurred. Knowledge impact:
+current Phase-A evidence and research status updated.
+
+[Phase-A evidence packet with stage receipt](evidence/silver_policy_value_phase_a_2026-09-16.md).
