@@ -9720,3 +9720,21 @@ top-level benchmark reporting corrected.
   [receipt](evidence/survival_wide96_2026-09-17.json). Checkpoint reload, full
   metrics/slices, initialization, normalization and permutations verified.
   **Knowledge impact:** current research evidence; no default change.
+
+## §302 — Width-96 maxHP/HP pretraining then survival (2026-09-17)
+
+- **Question:** Does PR #205-style pretraining make width-96 useful for survival?
+- **Execution:** independently reviewed `8adb4794ec22fb051014c8c638cb2fec326b7615`,
+  baseline `35402d1e59ae5e9e66fe277f853f3ec62213c157`. Exact teachers and victory-only
+  normalization/population; copied delta8, fresh HP104→64→304 and maxHP96→11.
+  Same 40-epoch AMP KL schedule; only selected encoder transfers to fresh96→1.
+- **Result:** pretraining selected39/40, diagnostic GO, nine AMP skips. Strong-WD
+  survival selected14/20, NLL0.062599011 (+5.2183%), Brier0.018578166 (+4.2833%),
+  death NLL+16.0179%, low-HP+3.2761%. Fixed NLL/death gates reject; other gates pass.
+- **Decision:** `SURVIVAL_DEEPSET_REJECTED`. No speed screen, TEST, runtime,
+  gameplay, export or promotion. Improved versus scratch width-96, but no further
+  scaling/tuning justified by this run; no causal claim about interaction structure.
+- **Evidence:** [report](evidence/survival_wide96_pretrained_2026-09-17.md) and
+  [complete receipt](evidence/survival_wide96_pretrained_2026-09-17.json), including
+  both full histories and all slices. **Knowledge impact:** research status;
+  no qualified-default change.
