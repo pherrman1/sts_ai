@@ -1,0 +1,614 @@
+{
+  "baselineSha": "7370ccdd35a79e5b55991e646fe3587762f02718",
+  "batchOrderSha256": "7b06bbba98360d80aa5ca47b9fb3f7adcd7b80f4bdbe0ccebabd2fbecc93ace7",
+  "comparison": {
+    "brierRelative": 0.2181164465183958,
+    "deathNllRelative": 0.17674534547532006,
+    "lowPreHpNllRelative": 0.2095881381089495,
+    "nllRelative": 0.21317136040598683
+  },
+  "corpusSha256": "74c08aa0a3c30342d86cd45355fe17ffa9046963ad7c8cf71b1938f9cdc1cfde",
+  "decision": "S2_NONLINEAR_DIAGNOSTIC",
+  "fit": {
+    "A": {
+      "checkpoint": "/tmp/deepset-survival-s2-20260917/head_a.pt",
+      "checkpointSha256": "7a1d9a9f55738453b325c97896a934602a4893a6a0e92f718d52d6bf4e5064dc",
+      "history": [
+        {
+          "epoch": 1,
+          "trainingNll": 0.0875729826269648,
+          "validationNll": 0.06142304092645645
+        },
+        {
+          "epoch": 2,
+          "trainingNll": 0.05636455133127838,
+          "validationNll": 0.06063476577401161
+        },
+        {
+          "epoch": 3,
+          "trainingNll": 0.05596304301144485,
+          "validationNll": 0.060094308108091354
+        },
+        {
+          "epoch": 4,
+          "trainingNll": 0.055784928383665125,
+          "validationNll": 0.05998136103153229
+        },
+        {
+          "epoch": 5,
+          "trainingNll": 0.05562392241300497,
+          "validationNll": 0.060337696224451065
+        },
+        {
+          "epoch": 6,
+          "trainingNll": 0.0554953181887405,
+          "validationNll": 0.06048755347728729
+        },
+        {
+          "epoch": 7,
+          "trainingNll": 0.05541696392681291,
+          "validationNll": 0.05984289571642876
+        },
+        {
+          "epoch": 8,
+          "trainingNll": 0.05544129468706019,
+          "validationNll": 0.05992850288748741
+        },
+        {
+          "epoch": 9,
+          "trainingNll": 0.05533091551192422,
+          "validationNll": 0.06000068411231041
+        },
+        {
+          "epoch": 10,
+          "trainingNll": 0.05525851925662287,
+          "validationNll": 0.05970201641321182
+        },
+        {
+          "epoch": 11,
+          "trainingNll": 0.055155909517523194,
+          "validationNll": 0.05977947264909744
+        },
+        {
+          "epoch": 12,
+          "trainingNll": 0.05519553232601935,
+          "validationNll": 0.060160037130117416
+        }
+      ],
+      "name": "A",
+      "selectedEpoch": 10,
+      "smoke": {
+        "finite": true,
+        "finiteGradients": true,
+        "optimizerScope": true,
+        "rows": 8
+      },
+      "stateSha256": "8d9cc7ac836af9e8d3af37590d48b828fa78c1f2c067f1c8cfa37d5444bcfddf",
+      "trainingSeconds": 4.633825249002257
+    },
+    "B": {
+      "checkpoint": "/tmp/deepset-survival-s2-20260917/head_b.pt",
+      "checkpointSha256": "477cc4b5d645e8711afef1998407da2daa344b7cd8908d628851c64a884c3317",
+      "history": [
+        {
+          "epoch": 1,
+          "trainingNll": 0.12114089705460801,
+          "validationNll": 0.07970811426639557
+        },
+        {
+          "epoch": 2,
+          "trainingNll": 0.07451425015198108,
+          "validationNll": 0.0771682932972908
+        },
+        {
+          "epoch": 3,
+          "trainingNll": 0.07253452157951835,
+          "validationNll": 0.0748986229300499
+        },
+        {
+          "epoch": 4,
+          "trainingNll": 0.0715368588298634,
+          "validationNll": 0.07470203191041946
+        },
+        {
+          "epoch": 5,
+          "trainingNll": 0.07094758422928571,
+          "validationNll": 0.07406420260667801
+        },
+        {
+          "epoch": 6,
+          "trainingNll": 0.07055230767356423,
+          "validationNll": 0.07390189170837402
+        },
+        {
+          "epoch": 7,
+          "trainingNll": 0.07023848265988336,
+          "validationNll": 0.0732983872294426
+        },
+        {
+          "epoch": 8,
+          "trainingNll": 0.07002641904847066,
+          "validationNll": 0.07362515479326248
+        },
+        {
+          "epoch": 9,
+          "trainingNll": 0.06964095108640522,
+          "validationNll": 0.0727633386850357
+        },
+        {
+          "epoch": 10,
+          "trainingNll": 0.0693894648168208,
+          "validationNll": 0.07325736433267593
+        },
+        {
+          "epoch": 11,
+          "trainingNll": 0.06913939234625577,
+          "validationNll": 0.07319942861795425
+        },
+        {
+          "epoch": 12,
+          "trainingNll": 0.06907704089509141,
+          "validationNll": 0.07242877036333084
+        }
+      ],
+      "name": "B",
+      "selectedEpoch": 12,
+      "smoke": {
+        "finite": true,
+        "finiteGradients": true,
+        "optimizerScope": true,
+        "rows": 8
+      },
+      "stateSha256": "f27a5f4cda4cbc951467c6c40bb128320a30ed81b495aa0b483e052efe17c149",
+      "trainingSeconds": 4.583981846000825
+    }
+  },
+  "initialization": {
+    "byteIdentical": true,
+    "headSha256": "2d7114bfc05724512ef15e4ae62033fb27778f357f6eb8ca5452efe963690586"
+  },
+  "interpretation": "one matched tiny nonlinear decoder over frozen S1b-normalized embeddings; no acceptance gate added",
+  "knowledgeImpact": "experiment evidence and current research status only; runtime defaults unchanged",
+  "metrics": {
+    "A": {
+      "accuracyAt05": 0.9754592707217394,
+      "brier": 0.01781858503818512,
+      "calibration": [
+        {
+          "bin": 0,
+          "lower": 0.0,
+          "meanPredicted": 0.052357159554958344,
+          "observedSurvival": 0.043859649122807015,
+          "rows": 228,
+          "upper": 0.1
+        },
+        {
+          "bin": 1,
+          "lower": 0.1,
+          "meanPredicted": 0.14552178978919983,
+          "observedSurvival": 0.14220183486238533,
+          "rows": 218,
+          "upper": 0.2
+        },
+        {
+          "bin": 2,
+          "lower": 0.2,
+          "meanPredicted": 0.25221747159957886,
+          "observedSurvival": 0.25,
+          "rows": 220,
+          "upper": 0.3
+        },
+        {
+          "bin": 3,
+          "lower": 0.3,
+          "meanPredicted": 0.3491414189338684,
+          "observedSurvival": 0.3829787234042553,
+          "rows": 235,
+          "upper": 0.4
+        },
+        {
+          "bin": 4,
+          "lower": 0.4,
+          "meanPredicted": 0.45313066244125366,
+          "observedSurvival": 0.4155405405405405,
+          "rows": 296,
+          "upper": 0.5
+        },
+        {
+          "bin": 5,
+          "lower": 0.5,
+          "meanPredicted": 0.551947295665741,
+          "observedSurvival": 0.5497382198952879,
+          "rows": 382,
+          "upper": 0.6
+        },
+        {
+          "bin": 6,
+          "lower": 0.6,
+          "meanPredicted": 0.6519265174865723,
+          "observedSurvival": 0.6433962264150943,
+          "rows": 530,
+          "upper": 0.7
+        },
+        {
+          "bin": 7,
+          "lower": 0.7,
+          "meanPredicted": 0.7550030946731567,
+          "observedSurvival": 0.7326589595375722,
+          "rows": 692,
+          "upper": 0.8
+        },
+        {
+          "bin": 8,
+          "lower": 0.8,
+          "meanPredicted": 0.85494065284729,
+          "observedSurvival": 0.844495765973826,
+          "rows": 1299,
+          "upper": 0.9
+        },
+        {
+          "bin": 9,
+          "lower": 0.9,
+          "meanPredicted": 0.99583899974823,
+          "observedSurvival": 0.9961128147540276,
+          "rows": 46306,
+          "upper": 1.0
+        }
+      ],
+      "finiteLogits": true,
+      "finiteProbabilities": true,
+      "meanPredictedSurvival": 0.9645287990570068,
+      "nll": 0.05970200523734093,
+      "observedSurvivalRate": 0.9639725429512359,
+      "probabilitiesInUnitInterval": true,
+      "rocAuc": 0.9802771187124487,
+      "rows": 50406
+    },
+    "B": {
+      "accuracyAt05": 0.969924215371186,
+      "brier": 0.021705111488699913,
+      "calibration": [
+        {
+          "bin": 0,
+          "lower": 0.0,
+          "meanPredicted": 0.06635798513889313,
+          "observedSurvival": 0.05,
+          "rows": 80,
+          "upper": 0.1
+        },
+        {
+          "bin": 1,
+          "lower": 0.1,
+          "meanPredicted": 0.15160450339317322,
+          "observedSurvival": 0.19704433497536947,
+          "rows": 203,
+          "upper": 0.2
+        },
+        {
+          "bin": 2,
+          "lower": 0.2,
+          "meanPredicted": 0.25237494707107544,
+          "observedSurvival": 0.2898550724637681,
+          "rows": 207,
+          "upper": 0.3
+        },
+        {
+          "bin": 3,
+          "lower": 0.3,
+          "meanPredicted": 0.3520280718803406,
+          "observedSurvival": 0.39464882943143814,
+          "rows": 299,
+          "upper": 0.4
+        },
+        {
+          "bin": 4,
+          "lower": 0.4,
+          "meanPredicted": 0.4519280791282654,
+          "observedSurvival": 0.5637393767705382,
+          "rows": 353,
+          "upper": 0.5
+        },
+        {
+          "bin": 5,
+          "lower": 0.5,
+          "meanPredicted": 0.5515842437744141,
+          "observedSurvival": 0.6216814159292036,
+          "rows": 452,
+          "upper": 0.6
+        },
+        {
+          "bin": 6,
+          "lower": 0.6,
+          "meanPredicted": 0.6523106694221497,
+          "observedSurvival": 0.6241721854304636,
+          "rows": 604,
+          "upper": 0.7
+        },
+        {
+          "bin": 7,
+          "lower": 0.7,
+          "meanPredicted": 0.7535700798034668,
+          "observedSurvival": 0.7678958785249458,
+          "rows": 922,
+          "upper": 0.8
+        },
+        {
+          "bin": 8,
+          "lower": 0.8,
+          "meanPredicted": 0.8567944765090942,
+          "observedSurvival": 0.8608590441621294,
+          "rows": 1653,
+          "upper": 0.9
+        },
+        {
+          "bin": 9,
+          "lower": 0.9,
+          "meanPredicted": 0.9946216344833374,
+          "observedSurvival": 0.9944557666600925,
+          "rows": 45633,
+          "upper": 1.0
+        }
+      ],
+      "finiteLogits": true,
+      "finiteProbabilities": true,
+      "meanPredictedSurvival": 0.9620890617370605,
+      "nll": 0.07242876291275024,
+      "observedSurvivalRate": 0.9639725429512359,
+      "probabilitiesInUnitInterval": true,
+      "rocAuc": 0.9695542775430125,
+      "rows": 50406
+    }
+  },
+  "population": {
+    "TEST": {
+      "encodedRows": 0,
+      "inferenceRows": 0,
+      "rows": 51441,
+      "scoredRows": 0
+    },
+    "TRAIN": {
+      "rows": 408183,
+      "sources": 19986
+    },
+    "VALIDATION": {
+      "rows": 50406,
+      "sources": 2496
+    }
+  },
+  "provenance": {
+    "attentionRepresentationSha256": "4ab5ef2a1049f25ae4534cc2e40b0f36f96a1d419ccd398bfcef1a11f413bf9d",
+    "attentionRowIdsSha256": "3dfecd1df38856c3069b1efdc3ed6cf6f6ad1c792afcbf368b3badb7b112e437",
+    "preparation": {
+      "cacheSha256": "e1c25f2758bf56c7cff392ea02342d809f3ad7427c70b64166244a6b714a251d",
+      "census": {
+        "all": {
+          "rows": 510030,
+          "supported": 510030
+        },
+        "test": {
+          "rows": 51441,
+          "supported": 51441
+        },
+        "train": {
+          "rows": 408183,
+          "supported": 408183
+        },
+        "validation": {
+          "rows": 50406,
+          "supported": 50406
+        }
+      },
+      "counts": {
+        "brewGenerationRounds": 3029,
+        "escapeRows": 3001,
+        "specialSurvivors": 6776
+      },
+      "countsBySplit": {
+        "test": {
+          "previousQualified": 41454,
+          "rows": 51441,
+          "survivors": 49630
+        },
+        "train": {
+          "previousQualified": 331225,
+          "rows": 408183,
+          "survivors": 393677
+        },
+        "validation": {
+          "previousQualified": 41120,
+          "rows": 50406,
+          "survivors": 48590
+        }
+      },
+      "graphsSha256": "e59be3b1292a11e27db8188c8359454d1e876287f298d19c48b187c4ff05413a",
+      "hashes": {
+        "/home/philippherrmann/sts_sweep/runs/combat-transition-model-v1/split_manifest.json": "e9043bcceb9d95027711e6ff33afbfe1cae3cf9528f820c0ff68bddbb419db32",
+        "/home/philippherrmann/sts_sweep/runs/combat-transition-runtime-25k/combat-transition-25k.jsonl": "74c08aa0a3c30342d86cd45355fe17ffa9046963ad7c8cf71b1938f9cdc1cfde",
+        "/home/philippherrmann/sts_sweep/runs/combat-transition-runtime-25k/combat-transition-25k.jsonl.manifest.json": "33669cd99eed8317987192825b5111a68d1e60269c166def2fe568364e20ad59",
+        "/tmp/sts-phase2-attention-audit-20260913/prepared.npz": "2badbb85ccd8329bcb886d50ef8a0b9b1bd2c043fda9445de9f9c2e7a4b6f9a5",
+        "/tmp/sts-phase2-attention-audit-20260913/prepared_manifest.json": "13b2c91fd0ced713f8c429bbf8995ceb58b6e3e57d1555de42f5e67d7f9a389f",
+        "/tmp/sts-phase2-attention-audit-20260913/target_spec.json": "e2315620d512578542d6b3bfbd362eb07b086f0e9fa7770cc23f4fa4c226e229",
+        "hp": "a667a3cfa7d7eca3cb07b46f50321e443c75e8a58f7627becb1fd69bf90f08c9",
+        "max_hp": "66ac8f70da69e29bf9b1364243f6f903e4f74dda1ec8a909ef54a7ea97dc6479",
+        "potion": "8e04bcd5265fb11b8fa91b4553a84690915f437e7b3afee0b93358e312de3ad6",
+        "potion_encoder": "2085010f1aeef7a7957cdc45c851b2424d640037fd0fa981eb7ae7274190f6ef",
+        "relic": "e07e79d487152ae294f4915ef4aecd0e8bd38b8dec8d0133a57b6b58af92bd71",
+        "survival": "2447b2daf1a48a619a5f071488908afd6f0fb83bfd855ee9f379c04120efeaef"
+      },
+      "recipe": {
+        "actions": "64 native categories: five clearing bits plus trigger USE/DISCARD bit; ordinary masks retain one category",
+        "batch": 512,
+        "encoder": "frozen historical potion encoder",
+        "epochs": 12,
+        "gradientClip": 1.0,
+        "lr": 0.001,
+        "partition": "original source-grouped engineering TEST; reused development evidence, not pristine holdout",
+        "rng": "planner-owned fresh sts::Random(seed); reused through recursive generation; advanced state retained",
+        "seed": 20260912,
+        "selection": "earliest strict minimum original VALIDATION conditional trajectory NLL",
+        "target": "exact native generation-body prior times all compatible consumption-order probabilities",
+        "training": "shared inventory-conditioned joint-mask decoder only; original TRAIN survivors",
+        "weightDecay": 0.0001
+      },
+      "residualReasons": {},
+      "sourceSha": "11281504eb45b41c7e3f539a7a5bc5eb2a883da7",
+      "specialRowsSha256": "2d8fc6b4a7655805a155b2d2223103bc74dfc8c5a663c53a2129de6fcdf99151",
+      "supportChanged": false
+    },
+    "preparationCacheSha256": "e1c25f2758bf56c7cff392ea02342d809f3ad7427c70b64166244a6b714a251d",
+    "representation": {
+      "candidateZRowIdsSha256": "3dfecd1df38856c3069b1efdc3ed6cf6f6ad1c792afcbf368b3badb7b112e437",
+      "candidateZSha256": "9232027d8331fd2157727276410161e3c12816b6680cb116ebc2b3afd37352af",
+      "deepset": {
+        "checkpointSha256": "bee6800dd7230b180c2b4894c0f01763efca4b7799e3f36a805333c3003dc663",
+        "normalizationRowIdsSha256": "e42a4dc3a964524a277fdcfde4cbdc552277dc358ce0d1d27e2c612a43ae3214",
+        "normalizationRows": 393677,
+        "receiptSha256": "83b2482eab347c09901c3b39f2ce7fed324f6be378ca36ff51f0d3965074c769",
+        "selectedEpoch": 40,
+        "source": "b192275ca0584a0c1eee8916176613b428a5e1b4"
+      },
+      "generatedRowIdsSha256": "55e768df3a8d954194607e121cf8a5e2ebd20bef080935f755d87d26aeb186a8",
+      "generatedRows": 458589,
+      "generatedSplits": {
+        "TEST": 0,
+        "TRAIN": 408183,
+        "VALIDATION": 50406
+      },
+      "idsSha256": "059a0b1b0267f4b1f457a28a57c904adeebc0d1c1d5b2529556a5481e65b773b",
+      "nonZCacheFingerprints": {
+        "affected": "14cfab46b8bb9e13fb0137cd8dd424f62175e336238225f116d57dc9cb3afa37",
+        "boss": "bead6c9af81d49481c44a349d28394b3b6e27f246e2c52ac6823aa9691c22913",
+        "capacity": "7c56535b06e7b6b0faa9b86d89b6dec17e092f418a7c1628a57567a64bd561c7",
+        "compatible_attacks": "c27b10af66ac5db8a752ee0332bac92974d5f2d4988e91fe7773f1e4d3111dc8",
+        "compatible_cards": "f31af0a69848395b7333ab2d5aa4fadddb09589963c9fc1c1e36a578ec06e82e",
+        "compatible_shuffles": "93c569a204dae5932c43f11ea1a29da784ddbaa7e62e4a84cdbd81de74163b32",
+        "compatible_turns": "585165a0e3745057675fd8f0a0d7b809c757ccdd0cfe02c17e38e001bddf3252",
+        "dagger": "139b3704ba897ce3cbbf750975fafb1a76fb25854dc9e1d5199d69713d8ca5d0",
+        "delta": "a65be56293ae5ba231248bad5a2d0b9c5b781866282ae0c2132facda5ebcc1af",
+        "escaped": "793dcf6ecc47e3db49cfacd1a147394b581a2ccf2b123bffce27cfda545ae767",
+        "ids": "059a0b1b0267f4b1f457a28a57c904adeebc0d1c1d5b2529556a5481e65b773b",
+        "mask": "5dbf903204fc7080438db67055f1ccaab9d5bb182eaed66a5148ab4834f38f7f",
+        "observed": "8631fed52d9e6ffef54acdafc0637cc695e55d41e16c6b1ff15cdf2d76149ca4",
+        "old": "9b533dc3230b26b0072f75f380a85717d4398cb79ec62318f487c396b4ce8ccf",
+        "potionZ": "ebc3e60dfd4de0838abbe440f3b9f3ec241c7ba7f3ab901e7a65edd937fd55be",
+        "potions": "34cfff538e24b4847323f798d5c640bb9f3e525fe2c95330755b7149050030ab",
+        "preHp": "76505742d84814f3e60773d75e7f5675b8ec5ba60cf822c0e0853175d33af812",
+        "preMax": "6fec055c5e9d8d3ccb015ce7d1f75d3c28fd640715c010ec116ccecbe5ececba",
+        "source": "e2f6446e8a7e72e049db55178f1a7a07254731f6b7d9516c721d8fa0655e46fd",
+        "split": "3dff562214d063b92e516d301d6a8b92398bcbd16c034495c473753e627e28dd",
+        "traces": "314609936887cadc5684f9759dff42d13eb1ca4f4d09fa809544c0b35c9b0659",
+        "trueHp": "cef15d1738b7ffc9b9b23070f1c930da4fbeaaf8d9a2d3412f9df37f0c88a232",
+        "trueMax": "bf21b451537e9a590b45a39928a23d54c3d35557129b8339cb3a08e68f90bfad",
+        "win": "4efac5178d3392d1c9500ef88a86c1e770ae7ad570a89c81720ce627feccd011",
+        "writhing": "8d77e6cb5f23e03e349d88e31594affe0de256c8426430214f4ea7b3328de17e"
+      },
+      "referenceCacheSha256": "acd48827199f95d006ed2e225e31df768f5c757c8995fa2a0a868cf49ab0d0e3",
+      "referencePreparationCacheSha256": "e1c25f2758bf56c7cff392ea02342d809f3ad7427c70b64166244a6b714a251d",
+      "rows": 510030,
+      "schema": "deepset_downstream_representation_v1",
+      "shape": [
+        458589,
+        64
+      ],
+      "sourceSha": "1c31b7eb0a7660d43bc27e0849a8955dd0c3daae",
+      "testInferenceRows": 0,
+      "testRowsEncoded": 0
+    },
+    "s1bEvidence": "/home/philippherrmann/.codex/worktrees/96c6/sts_lightspeed/docs/experiments/evidence/deepset_survival_s1b_2026-09-17.json",
+    "s1bEvidenceSha256": "83e505d0a0dcd9704793927e58d0a5f1d6eee72637867707b2cb4525f1390832",
+    "screenOutput": "/home/philippherrmann/sts_sweep/runs/deepset-survival-screen-20260916-final"
+  },
+  "recipe": {
+    "architecture": "Linear(64,64) -> ReLU -> Linear(64,1)",
+    "batch": 512,
+    "epochs": 12,
+    "gradientClip": 1.0,
+    "lr": 0.001,
+    "optimizer": "AdamW",
+    "precision": "fp32",
+    "seed": 20260912,
+    "selection": "earliest strict minimum VALIDATION log loss",
+    "testInferenceRows": 0,
+    "weightDecay": 0.0001
+  },
+  "schema": "deepset_survival_s2_v1",
+  "slices": {
+    "boss": {
+      "A": {
+        "brier": 0.08809394389390945,
+        "deaths": 1169,
+        "nll": 0.28037941455841064,
+        "rows": 5444
+      },
+      "B": {
+        "brier": 0.11325724422931671,
+        "deaths": 1169,
+        "nll": 0.35295984148979187,
+        "rows": 5444
+      }
+    },
+    "deaths": {
+      "A": {
+        "brier": 0.33903995156288147,
+        "deaths": 1816,
+        "nll": 1.0372587442398071,
+        "rows": 1816
+      },
+      "B": {
+        "brier": 0.4038967788219452,
+        "deaths": 1816,
+        "nll": 1.2205893993377686,
+        "rows": 1816
+      }
+    },
+    "lowPreHp": {
+      "A": {
+        "brier": 0.12937699258327484,
+        "deaths": 292,
+        "nll": 0.397677481174469,
+        "rows": 756
+      },
+      "B": {
+        "brier": 0.15852735936641693,
+        "deaths": 292,
+        "nll": 0.48102596402168274,
+        "rows": 756
+      }
+    },
+    "normal": {
+      "A": {
+        "brier": 0.009309642016887665,
+        "deaths": 647,
+        "nll": 0.03298238664865494,
+        "rows": 44962
+      },
+      "B": {
+        "brier": 0.010619977489113808,
+        "deaths": 647,
+        "nll": 0.03846205770969391,
+        "rows": 44962
+      }
+    },
+    "victories": {
+      "A": {
+        "brier": 0.005813274532556534,
+        "deaths": 0,
+        "nll": 0.02316685952246189,
+        "rows": 48590
+      },
+      "B": {
+        "brier": 0.007421102374792099,
+        "deaths": 0,
+        "nll": 0.02951747551560402,
+        "rows": 48590
+      }
+    }
+  },
+  "sourceSha": "1c31b7eb0a7660d43bc27e0849a8955dd0c3daae",
+  "uncertainty": "One fixed offline TRAIN/VALIDATION nonlinear-decoder comparison; no encoder fine-tuning, TEST, runtime, gameplay, OOC MCTS or promotion.",
+  "validity": {
+    "encodersFrozen": true,
+    "finite": true,
+    "testInferenceRows": 0
+  }
+}
