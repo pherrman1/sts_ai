@@ -1,6 +1,7 @@
 # Current research status
 
-Last verified: 2026-09-17 for shared transition-encoder historical chronology,
+Last verified: 2026-09-18 for the frozen six-arm Silver root-mechanism replay;
+2026-09-17 for shared transition-encoder historical chronology,
 staged retained-root adaptive Silver N32 scalar sweep and N16 Pareto held-out inspection;
 2026-09-16 for retained-root adaptive Silver deployment-gate N32,
 final near-full support/native qualification,
@@ -1248,12 +1249,20 @@ and [ledger-06 §173](../../experiments/ledger-06.md).
 
 ### Silver root allocation and learned action guidance
 
-Lower root exploration, Sequential Halving, progressive unpruning, hard
-candidate pruning, learned ordering, and the tested grouped/rank-4 visit-PUCT
-priors produced no stable promotable advantage; ordinary c=25 remains the
-default. Do not restart these frozen treatments without an independent new
-hypothesis. See [ledger-06 §186–§205](../../experiments/ledger-06.md) and the
-[action-pruning evidence](../../experiments/evidence/silver_action_pruning_retention_2026-08-28.json).
+Earlier lower root exploration, Sequential Halving, progressive unpruning,
+hard candidate pruning, learned ordering, and grouped/rank-4 visit-PUCT priors
+produced no stable promotable advantage; ordinary c=25 remains the default.
+The later six-arm root-mechanism replay was a **single-source-seed offline
+signal**, not a multi-seed confirmation: informative Teacher-A visit PUCT
+beats uniform PUCT (`C-E` mean B-regret delta `-0.412311`, 95% CI
+`[-0.717735,-0.139643]`), while uniform PUCT loses to ordinary UCT (`E-A`
+`+0.352288`, 95% CI `[+0.092162,+0.653903]`). Informative PUCT versus ordinary
+UCT is near zero (`C-A` `-0.060023`, CI crossing zero). Root bootstrap units
+were correlated decisions from source seed `0`, so current classification is
+**`ROOT_GUIDANCE_INCONCLUSIVE`** and multi-seed confirmation is required. Do
+not train a policy, run gameplay, or change the default from this result.
+See [ledger-06 §303](../../experiments/ledger-06.md) and the
+[six-arm replay evidence](../../experiments/evidence/silver_root_mechanism_2026-09-17.md).
 
 ### Combat leaf/model variants
 
