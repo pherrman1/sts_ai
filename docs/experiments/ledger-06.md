@@ -9738,3 +9738,37 @@ top-level benchmark reporting corrected.
   [complete receipt](evidence/survival_wide96_pretrained_2026-09-17.json), including
   both full histories and all slices. **Knowledge impact:** research status;
   no qualified-default change.
+
+## §303 — Six-arm Silver root mechanism replay (2026-09-17)
+
+- **Question and frozen implementation:** Does a normalized Teacher-A visit
+  prior help independently of Teacher-A-Q root ordering, and does either
+  intervention recover the historical result? The implementation was frozen
+  at `06d9de36d1c2e07c7e0420a0752ae9a4d7fd738e`; the pre-implementation
+  baseline was `be5b6ac2c9914b0a56244f2522b7573f81360067`. No code changed for
+  this evidence record.
+- **Protocol:** Reused the captured population from source seed `0` (214
+  eligible roots), deterministically selected 64 roots, and reused one frozen
+  10k-A label plus one independent frozen 25k-B label per root. Six arms
+  crossed native versus stable Teacher-A-Q-descending root order with ordinary
+  UCT, uniform root PUCT, or normalized Teacher-A-visit root PUCT. Each root
+  and arm used four common deterministic replicates at exactly 32 simulations.
+  Internal UCT, chance handling, DPW, evaluator, rollout, RNG contract, and
+  no-tree-reuse behavior were unchanged.
+- **Result:** Uniform PUCT was worse than ordinary UCT (`E-A` mean regret
+  `+0.352288`, 95% CI `[+0.092162,+0.653903]`). Informative PUCT was better
+  than uniform PUCT (`C-E` mean regret `-0.412311`, 95% CI
+  `[-0.717735,-0.139643]`; B-best delta `+5.4688` percentage points, CI
+  `[+1.5625,+10.1563]`; improved/worsened/tied `17/5/42`). Informative PUCT
+  versus ordinary UCT was near zero (`C-A` `-0.060023`, CI
+  `[-0.328827,+0.196384]`). The largest adverse `C-E` root delta was
+  `+2.121451` at `0/1/11/10/3`.
+- **Decision:** Review recommendation
+  **`ROOT_PRIOR_SIGNAL_CONFIRMED_WITH_TAIL_REVIEW`**, corresponding to the
+  preregistered `ROOT_PRIOR_SIGNAL_CONFIRMED` class. This confirms an
+  informative-prior signal relative to uniform PUCT, not broad absolute
+  superiority over ordinary UCT. No model training, gameplay gate, runtime
+  integration, or default promotion is authorized from this bounded replay.
+  Knowledge impact: current research status and experiment evidence updated.
+- **Evidence:** [six-arm replay report](evidence/silver_root_mechanism_2026-09-17.md)
+  and the external raw run directory and hashes recorded there.
