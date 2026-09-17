@@ -9,14 +9,16 @@ training a model or changing gameplay. The implementation was frozen at
 authoritative Linux GCC CI. No rerun was performed for this documentation
 change.
 
-The run is complete and awaits scientific interpretation. The analyzer leaves
-`classification` unset by design; the review recommendation below is not a
-machine-written artifact field.
+The run is complete and remains a single-source-seed offline screen. The
+analyzer leaves `classification` unset by design; the review classification
+below is not a machine-written artifact field.
 
 ## Frozen protocol
 
 - Baseline before implementation: `be5b6ac2c9914b0a56244f2522b7573f81360067`.
-- Source capture: 214 eligible roots from source seed `0`.
+- Planned source population: at least 8 independent gameplay seeds.
+- Actual source capture: 214 eligible roots from source seed `0` only. This is
+  a material protocol deviation from the planned multi-seed population.
 - Selection: 64 roots, the lowest `SHA256(UTF8(root_id))`, breaking hash ties
   by `root_id`.
 - Labels: one frozen 10k-A Teacher-A label and one independent 25k-B
@@ -69,7 +71,9 @@ range. B-best probability counts exact B-Q equality, including tied maxima.
 
 Intervals are paired root bootstrap 95% intervals with 10,000 resamples,
 seed `20260917`, resampling roots rather than replicates. Negative regret
-delta means the first arm is better.
+delta means the first arm is better. Because all 64 roots came from one
+source-seed trajectory, these intervals describe this captured root set; they
+are not independent run-level uncertainty over Silver gameplay states.
 
 | Contrast | Mean regret delta | 95% regret CI | B-best delta | 95% B-best CI | Improved / worsened / tied |
 | --- | ---: | ---: | ---: | ---: | ---: |
@@ -92,6 +96,32 @@ same bootstrap draws; these are not additional replay rows:
 | C - A | -0.060023 | [-0.328827, +0.196384] | +5.0781 pp | [-0.7813, +11.3281] pp | 21 / 14 / 29 |
 | D - B | +0.197095 | [-0.204999, +0.684928] | +3.1250 pp | [-2.3438, +8.9844] pp | 17 / 16 / 31 |
 
+## Harmful-tail audit
+
+The largest adverse `C - E` root is `0/1/11/10/3`, source seed `0`, Act 1
+floor 11, Exordium Thugs, decision 3, state hash
+`55f34bbeef5a7908`. It is a normal seven-action root, not a forced or
+single-surface fixture:
+
+| Native action | Surface details | Teacher-A Q | A visits | Native-order prior | Teacher-B Q |
+| --- | --- | ---: | ---: | ---: | ---: |
+| Uppercut | card 349, cost 2, target 1 | 131.336267 | 9816 | 0.9816 | 131.483242 |
+| Wild Strike | card 362, cost 1, target 1 | 119.544444 | 36 | 0.0036 | 118.740541 |
+| Twin Strike | card 347, cost 1, target 1 | 119.731579 | 38 | 0.0038 | 120.937255 |
+| Strike | card 321, cost 1, target 1 | 114.368421 | 19 | 0.0019 | 119.246154 |
+| Defend | card 104, cost 1, target 0 | 120.190244 | 41 | 0.0041 | 122.997436 |
+| Liquid Memories | potion 31, slot 0 | 116.356522 | 23 | 0.0023 | 117.896774 |
+| End Turn | end-turn action | 117.451852 | 27 | 0.0027 | 117.653333 |
+
+The Teacher-A-Q order is Uppercut, Defend, Twin Strike, Wild Strike, End
+Turn, Liquid Memories, Strike. The Teacher-B best action is Uppercut. E
+selected Uppercut on all four replicates. C selected Uppercut on replicates
+0, 1, and 3, but selected Defend on replicate 2, producing B-regret
+`8.485806`; D has the same replicate-2 Defend selection. Thus the root is a
+specific treatment-sensitive card-play allocation case, not a malformed
+action, potion-only, target-selection, or provenance edge case. No tree trace
+was retained that would justify a narrower causal explanation.
+
 ## Interpretation and decision
 
 The informative prior clearly improves over uniform PUCT: `C - E` has a
@@ -99,16 +129,24 @@ negative regret interval, a non-worse and positive B-best interval, and 17
 improved versus 5 worsened roots. However, uniform PUCT is itself worse than
 ordinary UCT: `E - A` is +0.352288 with a wholly positive regret interval.
 Consequently, `C - A` is near zero with an interval crossing zero. The bounded
-result supports independent value of the normalized visit prior relative to
-the uniform-PUCT control, but does **not** establish broad absolute
-superiority over ordinary UCT.
+single-seed result supports a strong informative-prior signal relative to the
+uniform-PUCT control on this trajectory, but does **not** establish
+generalization over Silver gameplay states or broad absolute superiority over
+ordinary UCT.
 
 The largest adverse `C - E` root delta is +2.121451 at root
-`0/1/11/10/3`; the next largest is +0.170752. This is the required harmful
-tail review point. The preregistered review recommendation is
-`ROOT_PRIOR_SIGNAL_CONFIRMED`, with the explicit tail caveat
-`ROOT_PRIOR_SIGNAL_CONFIRMED_WITH_TAIL_REVIEW`. No nonlinear policy training,
-gameplay run, or default/runtime change is authorized by this report alone.
+`0/1/11/10/3`; the next largest is +0.170752. The root has now been audited
+as above, but the one-seed population remains the larger unresolved validity
+limitation. The scientific classification is
+**`ROOT_GUIDANCE_INCONCLUSIVE`**: strong single-source-seed informative-prior
+signal; multi-seed confirmation required. No nonlinear policy training,
+gameplay run, or default/runtime change is authorized.
+
+The cheapest planned confirmation is 16 fresh source seeds with two
+deterministically selected roots per seed (32 roots), using the same teachers
+and six replay arms, with source-seed means as the bootstrap/sign-test units.
+If that screen is beneficial but inconclusive, add two more frozen roots per
+existing seed to reach 64 roots. Neither follow-up was run in this PR.
 
 ## Provenance and raw results
 
@@ -144,7 +182,9 @@ The three run executables were also retained and hashed:
 
 The manifest records the exact commands used for capture, deterministic
 selection, 10k-A/25k-B labeling, replay, and analysis. The machine-readable
-analyzer classification is `null` by design and its predeclared set is:
+analyzer classification is `null` by design. The review classification for
+this single-source-seed evidence is `ROOT_GUIDANCE_INCONCLUSIVE`; the
+predeclared set is:
 
 ```text
 ROOT_PRIOR_SIGNAL_CONFIRMED

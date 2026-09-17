@@ -9747,8 +9747,9 @@ top-level benchmark reporting corrected.
   at `06d9de36d1c2e07c7e0420a0752ae9a4d7fd738e`; the pre-implementation
   baseline was `be5b6ac2c9914b0a56244f2522b7573f81360067`. No code changed for
   this evidence record.
-- **Protocol:** Reused the captured population from source seed `0` (214
-  eligible roots), deterministically selected 64 roots, and reused one frozen
+- **Protocol:** The planned source population was at least 8 gameplay seeds,
+  but the run used source seed `0` only: 214 eligible roots and 64
+  deterministically selected roots from that one trajectory. It reused one frozen
   10k-A label plus one independent frozen 25k-B label per root. Six arms
   crossed native versus stable Teacher-A-Q-descending root order with ordinary
   UCT, uniform root PUCT, or normalized Teacher-A-visit root PUCT. Each root
@@ -9763,12 +9764,19 @@ top-level benchmark reporting corrected.
   versus ordinary UCT was near zero (`C-A` `-0.060023`, CI
   `[-0.328827,+0.196384]`). The largest adverse `C-E` root delta was
   `+2.121451` at `0/1/11/10/3`.
-- **Decision:** Review recommendation
-  **`ROOT_PRIOR_SIGNAL_CONFIRMED_WITH_TAIL_REVIEW`**, corresponding to the
-  preregistered `ROOT_PRIOR_SIGNAL_CONFIRMED` class. This confirms an
-  informative-prior signal relative to uniform PUCT, not broad absolute
-  superiority over ordinary UCT. No model training, gameplay gate, runtime
-  integration, or default promotion is authorized from this bounded replay.
+- **Tail audit and decision:** The largest adverse `C-E` root
+  `0/1/11/10/3` is a normal seven-action Act-1 Exordium Thugs state with five
+  cards, Liquid Memories, and End Turn. C and D select Defend only on replicate
+  2; E selects Uppercut on all four replicates. This identifies a
+  treatment-sensitive card-play allocation case, not a malformed action or
+  provenance edge case, but does not explain its causal mechanism. Root-level
+  bootstrap intervals cannot represent independent run-level uncertainty
+  because all roots came from one source-seed trajectory. Classification:
+  **`ROOT_GUIDANCE_INCONCLUSIVE`** — strong single-source-seed informative-
+  prior signal; multi-seed confirmation required. The planned next screen is
+  16 fresh source seeds × 2 roots/seed, analyzed by source seed; it was not run
+  here. No model training, gameplay gate, runtime integration, or default
+  promotion is authorized.
   Knowledge impact: current research status and experiment evidence updated.
 - **Evidence:** [six-arm replay report](evidence/silver_root_mechanism_2026-09-17.md)
   and the external raw run directory and hashes recorded there.

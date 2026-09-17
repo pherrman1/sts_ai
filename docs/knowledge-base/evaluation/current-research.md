@@ -1237,15 +1237,16 @@ and [ledger-06 §173](../../experiments/ledger-06.md).
 Earlier lower root exploration, Sequential Halving, progressive unpruning,
 hard candidate pruning, learned ordering, and grouped/rank-4 visit-PUCT priors
 produced no stable promotable advantage; ordinary c=25 remains the default.
-The later frozen six-arm root-mechanism replay found that informative
-Teacher-A visit PUCT beats uniform PUCT (`C-E` mean B-regret delta `-0.412311`,
-95% CI `[-0.717735,-0.139643]`), while uniform PUCT loses to ordinary UCT
-(`E-A` `+0.352288`, 95% CI `[+0.092162,+0.653903]`). Informative PUCT versus
-ordinary UCT is near zero (`C-A` `-0.060023`, CI crossing zero), so this is an
-informative-prior signal relative to the uniform control, not broad absolute
-superiority. The evidence remains offline and requires harmful-tail review;
-do not train a policy, run gameplay, or change the default from this result
-alone. See [ledger-06 §303](../../experiments/ledger-06.md) and the
+The later six-arm root-mechanism replay was a **single-source-seed offline
+signal**, not a multi-seed confirmation: informative Teacher-A visit PUCT
+beats uniform PUCT (`C-E` mean B-regret delta `-0.412311`, 95% CI
+`[-0.717735,-0.139643]`), while uniform PUCT loses to ordinary UCT (`E-A`
+`+0.352288`, 95% CI `[+0.092162,+0.653903]`). Informative PUCT versus ordinary
+UCT is near zero (`C-A` `-0.060023`, CI crossing zero). Root bootstrap units
+were correlated decisions from source seed `0`, so current classification is
+**`ROOT_GUIDANCE_INCONCLUSIVE`** and multi-seed confirmation is required. Do
+not train a policy, run gameplay, or change the default from this result.
+See [ledger-06 §303](../../experiments/ledger-06.md) and the
 [six-arm replay evidence](../../experiments/evidence/silver_root_mechanism_2026-09-17.md).
 
 ### Combat leaf/model variants
