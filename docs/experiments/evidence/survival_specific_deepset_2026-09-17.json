@@ -1,5 +1,5 @@
 {
-  "baselineSha": "fe45572499d7fe5145b1c4f8bc30521cbcdca41e",
+  "baselineSha": "be5b6ac2c9914b0a56244f2522b7573f81360067",
   "decision": "SMOKE_PASSED_NOT_QUALIFIED",
   "environment": {
     "cpuThreads": 4,
@@ -8,7 +8,7 @@
     "tf32": false,
     "torch": "2.5.1+cu121"
   },
-  "experimentSha": "fe45572499d7fe5145b1c4f8bc30521cbcdca41e",
+  "experimentSha": "be5b6ac2c9914b0a56244f2522b7573f81360067",
   "fixedGates": {
     "brierRelative": 0.05,
     "deathNllRelative": 0.1,
