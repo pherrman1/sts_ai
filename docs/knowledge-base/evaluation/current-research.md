@@ -268,6 +268,21 @@ against this fresh cohort.
 
 ## Completed recent line
 
+### Strong-WD DeepSets survival online speed screen
+
+**DEEPSET_ONLINE_TRADEOFF_STOP** on user-reviewed frozen SHA
+`471ba9a119de2a4f6ae691329467acae1b0f70a0` after Linux GCC passed. Exact #217
+width-64 strong-WD re-export reproduced `c870e4c…`; Stage A was not rerun.
+Native survival median improved 1.143383→0.128041 ms, but matched end-to-end
+CPU/run median improved only 50.88→50.29 s (ratio 0.988404, **1.1596%**), below
+the 10% gate. Two historical #187 seeds were replayed twice per arm at the same
+2048-MCTS/10k-Silver profile, with one-thread isolated timing. These are not
+fresh quality-gate seeds. No 16/64 paired gameplay gate or quality bootstrap ran;
+no equivalence, non-inferiority, or promotion claim. See
+[Stage-B report and raw evidence](../../experiments/evidence/deepset_survival_online_stage_b_2026-09-18/README.md)
+for timing variability, support telemetry, and the shared legacy V1 diagnostic
+warning. Defaults and all source code remain unchanged after review.
+
 ### Near-full combat support: qualified except initial/pre-Smoke and Writhing/Ritual
 
 **NEAR_FULL_EXCEPT_SMOKE_QUALIFIED** for offline composition and the native combat boundary. The V2 pre-state support predicate excludes initial Smoke Bomb, pre-existing `smokeBombUsed`, and Writhing Mass with any Ritual Dagger. Exact support is **505,935/510,030 (99.197106%)** overall and **51,036/51,441 (99.212690%)** TEST. All 41,454 old #179 TEST states are retained and recomposed with the selected maxHP refit. Every nonempty final slice gate is ≤0.1 nat, including tiny Transmutation+ and recursive Brew slices; the largest is Writhing +0.094656. Seven retained observed ESCAPE rows pass applicable gates.
