@@ -670,6 +670,19 @@ native export, gameplay, OOC MCTS or promotion work occurred. See
 [ledger-06 §290](../../experiments/ledger-06.md) and the
 [DeepSets survival evidence](../../experiments/evidence/deepset_survival_screen_2026-09-16.md).
 
+### Converged linear survival probe
+
+The S1 follow-up remains **diagnostic, not a qualification**. Full-batch
+strong-Wolfe L-BFGS with identical L2 `1e-4` was fit on TRAIN for both existing
+frozen embeddings, with validation evaluated once after convergence. The
+DeepSets arm improved from the fixed-12-epoch probe's validation NLL `0.083209150`
+to `0.079102747`; the Attention control was `0.059344385`. The relative NLL
+gap narrowed from **+40.2899%** to **+33.2944%**, but death NLL and low-pre-HP
+NLL still regressed **+37.6878%** and **+41.4150%**. This reduces but does not
+eliminate the stopping-rule explanation. Proceed to the matched tiny nonlinear
+S2 decoder before changing the encoder. See [ledger-06 §291](../../experiments/ledger-06.md)
+and the [S1 evidence](../../experiments/evidence/deepset_survival_lbfgs_2026-09-17.md).
+
 ### Jointly adapted shared maxHP+HP+potion representation
 
 The requested follow-up is **`SHARED_TRANSITION_POTION_REJECTED`**. Starting

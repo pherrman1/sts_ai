@@ -9217,3 +9217,33 @@ evidence updated.
   [machine-readable receipt](evidence/deepset_survival_screen_2026-09-16.json),
   and external raw receipt
   `/home/philippherrmann/sts_sweep/runs/deepset-survival-screen-20260916-final/results.json`.
+
+## §291 — Converged linear probe for frozen DeepSets survival (2026-09-16)
+
+- **Question and baseline:** Does the PR #211 survival gap persist when the
+  linear readout is optimized to convergence rather than stopped after 12
+  AdamW epochs? The baseline after merged PR #211 was
+  `e82810f8486d4ad47b62b074ebcfdcb307fa9f17`.
+- **Protocol:** Existing frozen Attention and DeepSets embeddings were reused.
+  Fresh byte-identical heads were fit on TRAIN with full-batch L-BFGS, strong
+  Wolfe line search, maximum 500 iterations / 1,000 evaluations, history 20,
+  tolerances `1e-9` / `1e-12`, and identical L2 `1e-4`. Validation was scored
+  once after fitting; no validation epoch selection, TEST inference, encoder
+  training or new embedding generation occurred.
+- **Result:** Attention validation NLL was `0.059344385`; DeepSets was
+  `0.079102747`, a **+33.2944%** relative gap versus +40.2899% in PR #211.
+  Brier relative degradation was +31.5958%; observed-death NLL +37.6878%;
+  low-pre-HP NLL +41.4150%. The gap narrowed by 6.9955 percentage points but
+  remained substantial. The probes used only 69 / 68 closure calls and about
+  0.30 / 0.15 seconds.
+- **Decision:** **`S1_LINEAR_PROBE_DIAGNOSTIC`**. This reduces, but does not
+  eliminate, the hypothesis that the prior result was caused by the 12-epoch
+  stopping rule. Proceed to the matched tiny nonlinear S2 decoder before
+  changing the encoder. No runtime, TEST, gameplay, OOC MCTS, fine-tuning,
+  native export or promotion work occurred. **Knowledge impact:** current
+  research status and experiment evidence only; qualified components and
+  runtime defaults remain unchanged.
+- **Evidence:** [S1 report](evidence/deepset_survival_lbfgs_2026-09-16.md),
+  [machine-readable receipt](evidence/deepset_survival_lbfgs_2026-09-16.json),
+  and external raw receipt
+  `/home/philippherrmann/sts_sweep/runs/deepset-survival-lbfgs-20260916/results.json`.
