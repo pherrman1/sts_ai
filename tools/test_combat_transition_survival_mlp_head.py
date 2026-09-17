@@ -15,10 +15,19 @@ class MlpHeadTests(unittest.TestCase):
         encoder = experiment.mlp.fit.screen.surrogate.DeepSetsEncoder(torch.nn, torch, np.zeros(10), np.ones(10)).net
         model = experiment.freeze_encoder(experiment.mlp.replace_head(experiment.fit.SurvivalNet(encoder)))
         optimizer, proof = experiment.head_optimizer(model)
-        encoder_gradient_count = sum(parameter.grad is not None for parameter in model.encoder.parameters())
-        _, gradients = experiment.mlp.fit.update_batch(model, optimizer, fixtures.DeepSetsDistillTests()._inputs(), torch.tensor([0., 1.]))
-        self.assertTrue(all(value > 0 for value in gradients['head'].values()))
-        self.assertEqual(encoder_gradient_count, 0)
+        optimizer.zero_grad(set_to_none=True)
+        logits = model(fixtures.DeepSetsDistillTests()._inputs())
+        loss = torch.nn.functional.binary_cross_entropy_with_logits(
+            logits, torch.tensor([0., 1.])
+        )
+        loss.backward()
+        head_gradients = [parameter.grad for parameter in model.head.parameters()]
+        self.assertTrue(all(gradient is not None and torch.isfinite(gradient).all() and gradient.abs().sum() > 0
+                            for gradient in head_gradients))
+        self.assertTrue(all(parameter.grad is None for parameter in model.encoder.parameters()))
+        before = experiment.mlp.fit.screen.state_digest(model.encoder.state_dict())
+        optimizer.step()
+        self.assertEqual(before, experiment.mlp.fit.screen.state_digest(model.encoder.state_dict()))
         self.assertTrue(proof['frozenEncoder'])
 
     def test_training_preserves_encoder_and_selects_nll(self):
