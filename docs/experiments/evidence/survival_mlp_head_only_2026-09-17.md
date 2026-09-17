@@ -25,7 +25,7 @@ frozen strong-WD encoder still fails the unchanged overall and death gates.
 | Death NLL relative | — | +6.9980% | +13.6766% |
 | Low-pre-HP NLL relative | — | +3.1996% | +3.3845% |
 
-Selected epoch 10 of 16, patience stop. Relative to linear strong-WD, NLL improves 0.0356% and Brier improves 0.4492%, but unchanged gates still reject it. Death NLL remains severely regressed. No speed screen because quality is not GO.
+Selected epoch 10 of 16, patience stop. Relative to linear strong-WD, NLL worsens 0.0336% and Brier improves 0.4492%, but unchanged gates still reject it. Death NLL remains severely regressed. No speed screen because quality is not GO.
 
 ## History
 

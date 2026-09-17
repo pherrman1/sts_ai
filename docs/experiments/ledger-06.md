@@ -9690,7 +9690,8 @@ top-level benchmark reporting corrected.
   epoch-20 encoder; fresh 64→64→1 ReLU survival head only; strong-WD head
   optimizer/recipe, unchanged normalization and selection by survival NLL.
 - **Result:** epoch 10/16 NLL `0.062951967` (+5.8115%), Brier `0.018761696`
-  (+5.3135%), death NLL +13.6766%; low-HP and validity pass, overall gates fail.
+  (+5.3135%), death NLL +13.6766%; relative to linear strong-WD, NLL worsens
+  0.0336% while Brier improves 0.4492%; overall gates fail.
 - **Decision:** `SURVIVAL_DEEPSET_REJECTED`. A nonlinear head alone does not
   materially close the gap and still regresses deaths; it neither proves nor
   disproves a wider-encoder ceiling. No extension, widening, TEST, runtime or
