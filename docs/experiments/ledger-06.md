@@ -9738,3 +9738,19 @@ top-level benchmark reporting corrected.
   [complete receipt](evidence/survival_wide96_pretrained_2026-09-17.json), including
   both full histories and all slices. **Knowledge impact:** research status;
   no qualified-default change.
+
+## §303 — Current OOC CPU attribution (2026-09-18)
+
+Profiling only on baseline589a7a7, frozen instrumentationc886964. `perf` was
+unavailable; no system repair attempted. Historical seeds12002032/12002033 ran
+once each with Attention control, OMP1, exact10k Silver and the locked2048 OOC
+profile. All non-timing MCTS columns match exactly. Full CPU42.30/62.75s
+(+3.55%/+3.16% versus supplied Stage B); real Silver22.835/35.689s,
+MCTS19.310/26.916s. V4 prior/continuation exclusive total8.143/10.921s;
+CTM preparation3.681/5.583s. Real combat accounts for54–57%, V4 for17–19%.
+Pooled infinite-real-combat-speed Amdahl bound2.26x. Existing rollout wall
+telemetry supports targeting Silver rollout execution, but does not identify
+a specific kernel or prove the proposed scratch-allocation hypothesis.
+No optimization, model changes, fresh seeds or quality comparison performed.
+Knowledge impact: performance evidence and next target, no qualified default.
+[Report, exclusive/inclusive tables, receipts, raw logs and hashes](evidence/ooc_cpu_profile_2026-09-18/README.md).

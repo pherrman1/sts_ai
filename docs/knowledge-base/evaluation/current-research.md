@@ -17,6 +17,15 @@ other sections retain their prior verification and linked evidence.
 
 ## Purpose
 
+The [current OOC CPU profile](../../experiments/evidence/ooc_cpu_profile_2026-09-18/README.md)
+reuses only historical seeds12002032/12002033, with exact workload reproduction
+and frozen opt-in instrumentation on main589a7a7. Real Silver combat accounts
+for54–57% of full CPU; V4 prior/continuation inference for17–19%; all CTM
+preparation for under9%. Prioritize real-combat execution and V4 inference for
+future behavior-preserving speed experiments, not further CTM inference first.
+No optimization or gameplay-quality conclusion was tested; measured full CPU
+is3.2–3.6% above supplied Stage-B timings and is not a production benchmark.
+
 This page routes current research work: what is active, what is plausibly
 parked, what is closed to avoid repetition, and where the authoritative
 evidence lives. Use [current-baselines.md](current-baselines.md) for executable
