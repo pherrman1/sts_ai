@@ -68,13 +68,17 @@ were zero in the recorded telemetry.
 
 ## Decision
 
-The staged runtime and the nine-arm compute curve are real and reproducible,
+The staged runtime and the nine-arm compute curve were real and reproducible,
 but the three selected policies do not pass a gameplay-quality promotion gate
 against the held-out 50k reference in this N16 inspection: all three lose
-paired wins overall, with lower mean floor and HP. **Do not promote staged
-adaptive Silver or change the current #199 production default.** Keep the
-existing 500→10k policy and the allocated 32,768 cap in production. The
-50k-capable staged mode remains an experimental, opt-in research path.
+paired wins overall, with lower mean floor and HP. They also do not beat the
+actual #199 production compute: #199 used 81,633,000/32 = 2.55M Silver
+simulations per run, versus 3.60M, 4.91M, and 6.20M for the frozen 5%, 2%,
+and 1% policies. **Do not promote staged adaptive Silver or change the current
+#199 production default.** Keep the existing 500→10k policy and the allocated
+32,768 cap in production. The rejected live staged runtime/configuration path
+has been removed; the analyzer and frozen evidence remain for research
+reproducibility.
 
 This is a bounded N32-per-scalar-arm discovery sweep and N16 held-out
 inspection, not a universal equivalence proof. The held-out run is a quality

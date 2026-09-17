@@ -9211,14 +9211,17 @@ evidence updated.
   and 1,915,624 KiB. All arms had zero conversion, semantic-resolution,
   transaction, and knowledge failures.
 - **Decision:** **`STAGED_PARETO_GAMEPLAY_GATE_FAIL`**. The implementation and
-  compute curve are qualified as an opt-in research path, but every frozen
-  Pareto policy lost overall wins and mean floor/HP versus the held-out flat
-  50k reference. Do not promote staged adaptive Silver; keep current #199
-  500->10k and the allocated 32,768 cap in production. This is a bounded N32
-  scalar-arm discovery and N16 held-out inspection, not a universal quality
-  equivalence proof. **Knowledge impact:** maintained staged-search contract,
-  current research status, and experiment evidence updated; no production
-  policy changed.
+  compute curve are qualified as an experiment, but every frozen Pareto policy
+  lost overall wins and mean floor/HP versus the held-out flat 50k reference.
+  They also used more Silver simulations per run than #199's 81,633,000/32 =
+  2.55M baseline: 3.60M, 4.91M, and 6.20M for the frozen 5%, 2%, and 1%
+  policies. Do not promote staged adaptive Silver; keep current #199 500->10k
+  and the allocated 32,768 cap in production. The rejected live
+  runtime/configuration path was removed after the experiment; the analyzer
+  and evidence packet remain. This is a bounded N32 scalar-arm discovery and
+  N16 held-out inspection, not a universal quality equivalence proof.
+  **Knowledge impact:** maintained current research status and experiment
+  evidence; no production policy changed.
 - **Evidence:** [staged threshold packet](evidence/silver_staged_grid_2026-09-17/README.md),
   including raw per-arm results, metadata, scaling traces, telemetry logs,
   `/usr/bin/time -v` receipts, frozen schedules, summaries, and provenance.

@@ -69,10 +69,6 @@ struct SilverLiveOptions {
     bool adaptiveEnabled = true;
     bool adaptiveRetainedOnly = true;
     double adaptiveTopTwoVisitGapThreshold = 0.2932885906040268;
-    bool adaptiveStaged = false;
-    std::vector<std::int64_t> adaptiveStagedCheckpoints = {
-        250, 500, 1000, 2000, 4000, 8000, 10000, 20000, 50000};
-    std::vector<double> adaptiveStagedThresholds;
     std::vector<std::int64_t> sequentialDiagnosticCheckpoints = {
         250, 500, 1000, 2000, 4000, 8000, 10000};
     bool exactVisitLockEnabled = false;
@@ -162,30 +158,6 @@ std::vector<std::int64_t> parseCheckpointList(const char *name, const char *raw)
     return result;
 }
 
-std::vector<double> parseThresholdList(const char *name, const char *raw) {
-    std::vector<double> result;
-    for (const auto &token : commaSeparated(name, raw)) {
-        char *end = nullptr;
-        errno = 0;
-        const double value = std::strtod(token.c_str(), &end);
-        const bool infinity = token == "inf" || token == "INF" || token == "infinity"
-            || token == "INFINITY";
-        if (token.c_str() == end || *end != '\0' || errno == ERANGE
-                || (!infinity && (value < 0.0 || value > 1.0)))
-            throw std::invalid_argument(std::string(name) + " must contain values in [0,1] or inf");
-        result.push_back(infinity ? std::numeric_limits<double>::infinity() : value);
-    }
-    for (std::size_t i = 1; i < result.size(); ++i) {
-        // Infinity is also accepted as the final no-early-stop sentinel for
-        // the 50k endpoint; it is not a threshold that can fire there.
-        const bool finalNoStopSentinel = i + 1 == result.size()
-            && std::isinf(result[i]);
-        if (!finalNoStopSentinel && result[i] > result[i - 1])
-            throw std::invalid_argument(std::string(name) + " must be monotone non-increasing");
-    }
-    return result;
-}
-
 int parseNonnegativeInt(const char *name, const char *raw) {
     errno = 0;
     char *end = nullptr;
@@ -266,14 +238,6 @@ void parseSilverLiveOptions() {
         options.adaptiveRetainedOnly = std::atoi(raw) != 0;
     if (const char *raw = std::getenv("STS_SILVER_ADAPTIVE_TOP_GAP"))
         options.adaptiveTopTwoVisitGapThreshold = std::atof(raw);
-    if (const char *raw = std::getenv("STS_SILVER_ADAPTIVE_STAGED"))
-        options.adaptiveStaged = std::atoi(raw) != 0;
-    if (const char *raw = std::getenv("STS_SILVER_ADAPTIVE_STAGED_CHECKPOINTS"))
-        options.adaptiveStagedCheckpoints = parseCheckpointList(
-            "STS_SILVER_ADAPTIVE_STAGED_CHECKPOINTS", raw);
-    if (const char *raw = std::getenv("STS_SILVER_ADAPTIVE_STAGED_THRESHOLDS"))
-        options.adaptiveStagedThresholds = parseThresholdList(
-            "STS_SILVER_ADAPTIVE_STAGED_THRESHOLDS", raw);
     if (const char *raw = std::getenv("STS_COMBAT_SEQUENTIAL_DIAG_CHECKPOINTS"))
         options.sequentialDiagnosticCheckpoints = parseCheckpointList(
             "STS_COMBAT_SEQUENTIAL_DIAG_CHECKPOINTS", raw);
@@ -341,25 +305,13 @@ void parseSilverLiveOptions() {
         throw std::invalid_argument(
             "STS_SILVER_STICKY_QUALITY_FILE requires STS_SILVER_REUSE_CAP_MODE=active");
     }
-    if (options.adaptiveEnabled && !options.adaptiveStaged
+    if (options.adaptiveEnabled
             && (options.adaptiveTopTwoVisitGapThreshold < 0.0
                 || options.adaptiveTopTwoVisitGapThreshold > 1.0)) {
         throw std::invalid_argument("STS_SILVER_ADAPTIVE_TOP_GAP must be in [0,1]");
     }
     if (options.adaptiveRetainedOnly && !options.adaptiveEnabled)
         throw std::invalid_argument("STS_SILVER_ADAPTIVE_RETAINED_ONLY requires STS_SILVER_ADAPTIVE=1");
-    if (options.adaptiveStaged) {
-        if (!options.adaptiveEnabled || !options.adaptiveRetainedOnly)
-            throw std::invalid_argument(
-                "STS_SILVER_ADAPTIVE_STAGED requires retained-only Silver adaptive mode");
-        if (options.adaptiveStagedCheckpoints.front() != 250
-                || options.adaptiveStagedCheckpoints.back() != 50000)
-            throw std::invalid_argument(
-                "STS_SILVER_ADAPTIVE_STAGED_CHECKPOINTS must start at 250 and end at 50000");
-        if (options.adaptiveStagedThresholds.size() != options.adaptiveStagedCheckpoints.size())
-            throw std::invalid_argument(
-                "STS_SILVER_ADAPTIVE_STAGED_THRESHOLDS must match checkpoint count");
-    }
     if (options.exactVisitLockEnabled && options.adaptiveEnabled)
         throw std::invalid_argument(
             "STS_SILVER_EXACT_VISIT_LOCK and STS_SILVER_ADAPTIVE are incompatible");
@@ -1282,19 +1234,9 @@ silver_bridge::SilverSearchConfig configFor(const ScumSearchAgent2 &agent, const
     result.adaptiveEnabled = g_silverLiveOptions.adaptiveEnabled;
     if (result.adaptiveEnabled) {
         result.adaptiveRequireRetainedRoot = g_silverLiveOptions.adaptiveRetainedOnly;
-        result.adaptiveStaged = g_silverLiveOptions.adaptiveStaged;
-        if (result.adaptiveStaged) {
-            result.adaptiveCheckpoints = g_silverLiveOptions.adaptiveStagedCheckpoints;
-            result.adaptiveCheckpointThresholds = g_silverLiveOptions.adaptiveStagedThresholds;
-            result.adaptiveInitialSimulations = result.adaptiveCheckpoints.front();
-            result.adaptiveTotalSimulations = result.adaptiveCheckpoints.back();
-            result.adaptiveNonRetainedTotalSimulations = 10000;
-            result.adaptiveTopTwoVisitGapThreshold = result.adaptiveCheckpointThresholds.front();
-        } else {
-            result.adaptiveInitialSimulations = g_silverLiveOptions.adaptiveRetainedOnly ? 500 : 1000;
-            result.adaptiveTotalSimulations = g_silverLiveOptions.adaptiveRetainedOnly ? 10000 : 3700;
-            result.adaptiveTopTwoVisitGapThreshold = g_silverLiveOptions.adaptiveTopTwoVisitGapThreshold;
-        }
+        result.adaptiveInitialSimulations = g_silverLiveOptions.adaptiveRetainedOnly ? 500 : 1000;
+        result.adaptiveTotalSimulations = g_silverLiveOptions.adaptiveRetainedOnly ? 10000 : 3700;
+        result.adaptiveTopTwoVisitGapThreshold = g_silverLiveOptions.adaptiveTopTwoVisitGapThreshold;
         // Adaptive Silver has an explicit two-tier budget, including bosses;
         // the ordinary Silver boss multiplier is not part of this treatment.
         result.simulationsPerDecision = result.adaptiveInitialSimulations;
@@ -1802,7 +1744,6 @@ std::string silverLiveScalingDiagnosticFile() { return g_silverLiveOptions.scali
 std::string silverLiveStickyQualityFile() { return g_silverLiveOptions.stickyQualityFile; }
 bool silverLiveAdaptiveEnabled() { return g_silverLiveOptions.adaptiveEnabled; }
 bool silverLiveAdaptiveRetainedOnly() { return g_silverLiveOptions.adaptiveRetainedOnly; }
-bool silverLiveAdaptiveStaged() { return g_silverLiveOptions.adaptiveStaged; }
 bool silverLiveExactRootBudgets() { return g_silverLiveOptions.exactRootBudgets; }
 bool silverLiveExactVisitLockEnabled() { return g_silverLiveOptions.exactVisitLockEnabled; }
 bool silverLiveRhoRacingEnabled() { return g_silverLiveOptions.rhoRacingEnabled; }

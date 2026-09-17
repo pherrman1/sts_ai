@@ -112,9 +112,10 @@ non-forced discovery decisions produced maximum-saving schedules at 1%, 2%, and
 5% checkpoint-to-50k disagreement. On held-out seeds 304--319, the flat 50k
 reference won 10/16; the 1%, 2%, and 5% schedules won 8/16, 8/16, and 7/16,
 respectively, with lower mean floor and ending HP in each arm. The staged
-runtime is therefore not promoted; current #199 500->10k and the 32k cap remain
-the production defaults. See [ledger §290](../../experiments/ledger-06.md) and
-the [staged sweep packet](../../experiments/evidence/silver_staged_grid_2026-09-17/README.md).
+runtime is therefore not promoted; its rejected live runtime/configuration path
+has been removed while the analyzer and frozen evidence are retained. Current
+#199 500->10k and the 32k cap remain the production defaults. See [ledger §290](../../experiments/ledger-06.md)
+and the [staged sweep packet](../../experiments/evidence/silver_staged_grid_2026-09-17/README.md).
 
 The default-off prospective implementation was tested behind
 `STS_SILVER_EXACT_VISIT_LOCK=1` at frozen source
