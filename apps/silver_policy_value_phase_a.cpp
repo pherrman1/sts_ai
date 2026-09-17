@@ -442,7 +442,6 @@ void benchmark(const std::vector<LeafValueSample> &leaves, const Corpus &corpus,
         checksum += value;
         for (float score : logits) checksum += score;
     }
-    const auto start = std::chrono::steady_clock::now();
     std::vector<double> callLatencies;
     callLatencies.reserve(leaves.size() * static_cast<std::size_t>(iterations));
     std::size_t calls = 0, scored = 0;
@@ -485,6 +484,7 @@ void benchmark(const std::vector<LeafValueSample> &leaves, const Corpus &corpus,
     }
     sparseMicros = std::chrono::duration<double, std::micro>(
         std::chrono::steady_clock::now() - sparseStart).count();
+    const auto start = std::chrono::steady_clock::now();
     for (int i = 0; i < iterations; ++i) {
         for (const auto &sample : leaves) {
             const auto callStart = std::chrono::steady_clock::now();
