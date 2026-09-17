@@ -782,6 +782,91 @@ trained on all TRAIN combats including deaths, optionally with the qualified
 Attention specialist as a soft teacher. See [ledger-06 §293](../../experiments/ledger-06.md)
 and the [S2 evidence](../../experiments/evidence/deepset_survival_s2_2026-09-17.md).
 
+### Survival-specific DeepSets fit
+
+The fixed warm-start survival adaptation is **`SURVIVAL_DEEPSET_REJECTED`**.
+Training the corrected PR #205 encoder on all survival TRAIN rows selected
+epoch 23, but DeepSets VALIDATION NLL remained +5.9990% and Brier +6.0802%
+above the Attention specialist, failing the fixed +2% and +5% gates. Death
+NLL (+6.2773%) and low-pre-HP NLL (+3.8294%) passed. The candidate remains
+offline-only, with zero TEST inference and no runtime change. By the
+preregistered miss routing, Attention-teacher distillation is the plausible
+next separate hypothesis, not a rescue adjustment to this run. See
+[ledger-06 §294](../../experiments/ledger-06.md) and the
+[fit evidence](../../experiments/evidence/survival_specific_deepset_fit_2026-09-17.md).
+
+The subsequent six-arm LR/weight-decay sweep also rejects all candidates.
+Strong-WD (`1e-4` encoder LR, `1e-3` head LR, `1e-3` decay) is best at
+epoch 20: NLL `0.062930815` and Brier `0.018841730`, still +5.7760% and
++5.7627% above Attention. This improves baseline NLL only 0.2104%; lower
+learning rates did not close the gap within the fixed 40-epoch budget.
+The much-lower-LR arm selected epoch 39 at the cap, so its convergence is
+not established. These results reject the tested settings, not DeepSets
+as an architecture. Optional LR-decay continuation remains untested; no
+distillation, TEST, runtime or promotion followed. See [ledger-06 §296](../../experiments/ledger-06.md)
+and the [sweep report](../../experiments/evidence/survival_deepset_sweep_2026-09-17.md).
+
+Five-fold source-grouped Platt calibration of frozen strong-WD does not close
+the gap: cross-fitted NLL `0.062660988` (+5.3225%) and Brier `0.018729319`
+(+5.1317%) still fail the original overall limits. Death/low-HP gates pass.
+This removes only about 8% of excess NLL, disfavoring global affine calibration
+as the main explanation. It is diagnostic only: the calibrators exclude each
+scored source, but the model/epoch were already selected on this VALIDATION
+set. See the
+[calibration evidence](../../experiments/evidence/survival_platt_crossfit_2026-09-17.md).
+
+The paired 64-wide joint survival/HP experiment also rejects both arms.
+Both recompute normalization on all 408,183 TRAIN rows, use identical fresh
+heads and epoch orders, and select solely by VALIDATION survival NLL.
+The historical PR #161 optimizer schedule (batch 2048, AdamW 1e-3/1e-4,
+cap 12, patience 3, seed 20260911) favors the PR #205 warm-start over scratch:
+warm epoch 12 NLL `0.063309319` (+6.4122%), scratch epoch 4 NLL `0.069789790`
+(+17.3048%). Both fail NLL, Brier and death NLL; scratch also fails low-HP NLL.
+Warm's best epoch is at the cap, so convergence is not established. The
+experiment isolates initialization within this joint-loss setting, not the
+individual effects of HP auxiliary loss or normalization. No widening or
+runtime qualification follows. See [paired evidence](../../experiments/evidence/survival_deepset_aux_paired_2026-09-17.md).
+
+The requested smallest architecture increase—joint fine-tuning strong-WD with
+a `64→64→1` ReLU head—also rejects. Selected epoch 6/12 has NLL
+`0.063041106` (+5.9614%) and Brier `0.018754756` (+5.2745%); death NLL fails
+at +15.8636%. This one joint run cannot isolate head architecture from
+additional encoder updates, but it does not materially close the gap. No trunk
+widening follows without a new explicit plan. See
+[MLP evidence](../../experiments/evidence/survival_mlp_joint_2026-09-17.md).
+
+The requested frozen-encoder head-only diagnostic also rejects: epoch 10/16
+NLL `0.062951967` (+5.8115%), Brier `0.018761696` (+5.3135%), death NLL
++13.6766%. It isolates a nonlinear head from encoder updates, but the unchanged
+strong-WD representation still does not pass. No widening follows without a new
+explicit plan. See [head-only evidence](../../experiments/evidence/survival_mlp_head_only_2026-09-17.md).
+
+The authorized width-96 scratch survival-only experiment also rejects. With
+unchanged embeddings, entity outputs 96, trunk 384→192→96 and a linear head,
+the strong-WD schedule selects epoch 14/20: NLL `0.065301903` (+9.7614%),
+Brier `0.019292932` (+8.2954%), death NLL +21.4414%; low-HP +8.1272% and
+validity pass. All-TRAIN normalization is fixed throughout. No speed screen
+ran. This tests the requested wider scratch recipe, not an isolated width
+effect versus the warm-started width-64 baseline. It does not prove interaction
+structure is necessary. Further scaling/tuning is not part of this experiment.
+See [width-96 evidence](../../experiments/evidence/survival_wide96_2026-09-17.md).
+
+The authorized width-96 maxHP/HP pretraining followed by strong-WD survival
+fine-tuning also rejects. It preserves PR #205's victory-only population,
+normalization, teacher hashes, equal-weight KL objective and 40-epoch AMP
+schedule. Only the specialist 8-D delta embedding is copied; the compatible
+HP MLP is fresh 104→64→304, and maxHP is fresh 96→11. Only the selected encoder
+transfers to a fresh linear survival head, retaining pretraining normalization.
+The existing survival NLL selection and fixed gates are unchanged. Pretraining
+selects epoch 39/40 and passes its diagnostic gates; survival selects 14/20:
+NLL 0.062599011 (+5.2183%), Brier 0.018578166 (+4.2833%), death NLL +16.0179%,
+low-HP +3.2761%. NLL and death gates fail; Brier, low-HP and validity pass.
+Pretraining improves on scratch width-96 but does not qualify survival.
+Stop this scaling direction rather than add optimizer or width sweeps. This
+does not establish pairwise interactions as necessary. No speed screen, matched
+width-64 control, TEST, runtime export, gameplay or promotion ran.
+See [pretrained width-96 evidence](../../experiments/evidence/survival_wide96_pretrained_2026-09-17.md).
+
 ### Jointly adapted shared maxHP+HP+potion representation
 
 The requested follow-up is **`SHARED_TRANSITION_POTION_REJECTED`**. Starting

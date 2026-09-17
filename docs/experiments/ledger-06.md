@@ -9539,6 +9539,38 @@ top-level benchmark reporting corrected.
   [machine-readable receipt](evidence/deepset_survival_s2_2026-09-17.json),
   and raw receipt `/tmp/deepset-survival-s2-20260917/results.json`.
 
+## §294 — Warm-start survival-specific DeepSets (2026-09-17)
+
+- **Question and baseline:** Can the corrected PR #205 DeepSets encoder,
+  warm-started and trained on all survival TRAIN rows including deaths, match
+  the dedicated TRAIN-only survival Attention encoder closely enough for
+  offline replacement? The reconciled baseline was
+  `be5b6ac2c9914b0a56244f2522b7573f81360067`.
+- **Protocol:** Reuse the exact 94,424-parameter PR #205 encoder and its bound
+  scalar normalization, add only a fresh 65-parameter linear survival head,
+  and train both on 408,183 TRAIN rows. The fixed recipe was FP32 AdamW,
+  batch 512, seed 20260912, encoder/head LRs `1e-4` / `1e-3`, weight decay
+  `1e-4`, clip 1.0, plain unweighted BCE, 12-epoch floor, patience 6, and
+  absolute cap 40. Validation selected the earliest strict NLL minimum.
+  The fixed gates were NLL +2%, Brier +5%, death NLL +10%, low-pre-HP NLL
+  +10%, plus finite/probability/population validity and zero TEST inference.
+- **Result:** Epoch 23 was selected by patience after six non-improving
+  epochs. Attention NLL/Brier were `0.0594944246` / `0.0178150944`;
+  DeepSets were `0.0630634725` / `0.0188982822`. Relative degradation was
+  **NLL +5.9990%** and **Brier +6.0802%**. Death NLL +6.2773% and low-pre-HP
+  NLL +3.8294% passed. Overall NLL/Brier failed, so the speed screen was
+  skipped. TEST encoded/inferred/scored rows were all `0`.
+- **Decision:** **`SURVIVAL_DEEPSET_REJECTED`**. This exact warm-started
+  supervised adaptation does not recover sufficient survival quality for
+  offline replacement. By the preregistered evidence pattern, Attention-teacher
+  distillation is the plausible separate next hypothesis; no rescue tuning,
+  TEST, runtime, gameplay, OOC MCTS, export or promotion occurred.
+  **Knowledge impact:** current research status and experiment evidence only.
+- **Evidence:** [fit report](evidence/survival_specific_deepset_fit_2026-09-17.md),
+  [machine-readable receipt](evidence/survival_specific_deepset_fit_2026-09-17.json),
+  and raw receipt
+  `/home/philippherrmann/sts_sweep/runs/survival-specific-deepset-20260917-fit/results.json`.
+
 ## §295 — Shared Attention 40-epoch continuation and overflow follow-up (2026-09-15; recovered 2026-09-17)
 
 - **Historical result:** Following the rejected 12-epoch recipe (§273), changing
@@ -9567,3 +9599,142 @@ top-level benchmark reporting corrected.
   tool, model, runtime, or default and runs no training or gameplay.
   **Knowledge impact:** restore historical experiment evidence and correct
   maintained research chronology; no new experimental conclusion.
+
+## §296 — Survival DeepSets six-arm LR/weight-decay sweep (2026-09-17)
+
+- **Question:** Can less aggressive updates or stronger AdamW regularization
+  close the original warm-start survival model's roughly 6% validation gap?
+  Baseline main `0b7d4607c49b5db8082f4cad89579f3e33635f41`; frozen run
+  `92b404e03a91a6c95a592de80c7e04fe78f2d9af`.
+- **Protocol:** Six requested LR/WD combinations, identical PR #205 encoder
+  and fresh head initialization, source-grouped TRAIN/VALIDATION populations,
+  epoch permutations, FP32 BCE, batch 512, clip 1.0, seed 20260912, 12/40
+  floor/cap, patience 6. Select each arm by earliest strict VALIDATION NLL.
+  No TEST inference, architecture change, or distillation.
+- **Result:** All six fail overall NLL and Brier gates. Strong-WD selects
+  epoch 20, NLL `0.062930815` (+5.7760%), Brier `0.018841730` (+5.7627%).
+  Death/low-HP NLL pass for this arm. Baseline reproduces exactly; best NLL
+  improves it only 0.2104%. Much-lower-LR reaches cap and selects epoch 39,
+  leaving convergence uncertainty for that schedule, not permission to extend.
+- **Decision:** `SURVIVAL_DEEPSET_SWEEP_REJECTED`. These six optimizer
+  settings do not qualify DeepSets; architecture incapacity is not established.
+  Optional LR-decay continuation and speed screening were not run.
+- **Evidence:** [report](evidence/survival_deepset_sweep_2026-09-17.md) and
+  [audited receipt](evidence/survival_deepset_sweep_2026-09-17.json) include all
+  histories, checkpoint hashes and slices. An interrupted initial attempt is
+  preserved and excluded. Post-run reporting fixes and reloaded-checkpoint
+  verification are explicit; six-arm training was not altered.
+  **Knowledge impact:** research status/evidence only; no runtime promotion.
+
+## §297 — Frozen strong-WD cross-fitted Platt calibration (2026-09-17)
+
+- **Hypothesis:** global affine probability calibration explains most of the
+  surviving quality gap without encoder training.
+- **Protocol:** frozen strong-WD epoch 20, five source-grouped VALIDATION folds,
+  unweighted FP64 logistic NLL, seed 20260912; no in-sample qualification.
+- **Result:** NLL `0.062660988` (+5.3225%), Brier `0.018729319` (+5.1317%):
+  both overall gates fail; death/low-HP and validity limits pass. Calibration
+  closes about 8% of excess NLL, not most of the gap.
+- **Boundary:** diagnostic only; the model was previously selected on the same
+  VALIDATION set. No TEST, encoder training, scratch replay, widening or runtime
+  change. Historical-composite versus survival-NLL selection for the proposed
+  PR #161-style replay remains unresolved.
+- **Evidence:** [receipt and protocol](evidence/survival_platt_crossfit_2026-09-17.md).
+  **Knowledge impact:** current research evidence, no qualified default.
+
+## §298 — Paired warm/scratch survival plus auxiliary HP (2026-09-17)
+
+- **Question:** Does the PR #161-style joint-loss recipe salvage current
+  64-wide DeepSets, and does the PR #205 initialization help within it?
+- **Execution:** `9ca315fac9b6ad30444c599af489dc765207b4ef`. Same fresh heads,
+  all 408,183 TRAIN-row normalization, epoch order and optimizer for both arms.
+  BCE plus survivor-only HP-fraction MSE; selection solely survival NLL.
+  Historical schedule: AdamW 1e-3, decay 1e-4, batch 2048, seed 20260911,
+  cap 12, patience 3. Original splits and survival gates unchanged.
+- **Result:** Warm epoch 12/12 NLL `0.063309319` (+6.4122%), Brier
+  `0.018885445` (+6.0081%); scratch epoch 4/7 NLL `0.069789790`
+  (+17.3048%), Brier `0.020476995` (+14.9418%). Both also fail death NLL;
+  scratch fails low-HP NLL. HP metrics remain diagnostics only.
+- **Decision:** Both rejected. Warm helps within this schedule, but its best
+  epoch is at the cap; convergence and generality remain uncertain. No extension,
+  TEST, speed screen, architecture change, gameplay, runtime or promotion.
+- **Evidence:** [report](evidence/survival_deepset_aux_paired_2026-09-17.md) and
+  [complete receipt](evidence/survival_deepset_aux_paired_2026-09-17.json).
+  Both checkpoints independently reloaded and results reproduced. No independent
+  implementation review passed; failed tool delegation is recorded, not hidden.
+  **Knowledge impact:** current research and experiment evidence only.
+
+## §299 — Small nonlinear survival head (2026-09-17)
+
+- **Question:** Can a small MLP survival head materially improve the frozen
+  strong-WD representation without widening the encoder?
+- **Execution:** `ba77f58d1622d2d88847a7c33af965a6aeaccac3`. Strong-WD epoch 20
+  initialized encoder; fresh 64→64→1 ReLU head (+4,160 parameters); joint
+  strong-WD optimizer/recipe and unchanged normalization; selection survival NLL.
+- **Result:** epoch 6/12 NLL `0.063041106` (+5.9614%), Brier `0.018754756`
+  (+5.2745%), death NLL +15.8636%; low-HP passes. Both overall gates fail; NLL
+  worsens 0.1753% while Brier improves 0.4616%. No speed screen.
+- **Decision:** `SURVIVAL_DEEPSET_REJECTED`. This small nonlinear head is not
+  sufficient under the fixed gates; it neither proves nor disproves a wider
+  encoder ceiling. No widening, extension, TEST, runtime or promotion.
+- **Evidence:** [report](evidence/survival_mlp_joint_2026-09-17.md) and
+  [receipt](evidence/survival_mlp_joint_2026-09-17.json). Clean duplicate run
+  reproduced the same result. No independent implementation review passed.
+  **Knowledge impact:** current research evidence; no default change.
+
+## §300 — Frozen-encoder nonlinear survival head (2026-09-17)
+
+- **Question:** Does a fresh nonlinear head on the frozen strong-WD
+  representation close the survival gap without encoder updates?
+- **Execution:** `8506e5e94bfd10f9ee0a5526aa78e3e0db8af2ea`. Frozen strong-WD
+  epoch-20 encoder; fresh 64→64→1 ReLU survival head only; strong-WD head
+  optimizer/recipe, unchanged normalization and selection by survival NLL.
+- **Result:** epoch 10/16 NLL `0.062951967` (+5.8115%), Brier `0.018761696`
+  (+5.3135%), death NLL +13.6766%; relative to linear strong-WD, NLL worsens
+  0.0336% while Brier improves 0.4492%; overall gates fail.
+- **Decision:** `SURVIVAL_DEEPSET_REJECTED`. A nonlinear head alone does not
+  materially close the gap and still regresses deaths; it neither proves nor
+  disproves a wider-encoder ceiling. No extension, widening, TEST, runtime or
+  promotion.
+- **Evidence:** [report](evidence/survival_mlp_head_only_2026-09-17.md) and
+  [receipt](evidence/survival_mlp_head_only_2026-09-17.json). Initial and
+  selected encoder hashes are identical. No independent review passed.
+  **Knowledge impact:** current research evidence; no default change.
+
+## §301 — Scratch width-96 DeepSets survival (2026-09-17)
+
+- **Question:** Does the single modest latent-width increase salvage the
+  survival-only recipe without embedding or feature changes?
+- **Execution:** `2e56f5de48fab5002684af8080decc988e69189d`; baseline dependency
+  `6fa601d9429db1a1a266e34c63252ce4861f9d5a`. Scratch entity outputs 96,
+  concat 384, trunk 384→192→96, head 96→1. Same strong-WD optimizer, batch,
+  seed, early stopping and gates; fixed normalization from all TRAIN rows.
+- **Result:** epoch 14/20, NLL `0.065301903` (+9.7614%), Brier `0.019292932`
+  (+8.2954%), death NLL +21.4414%; low-HP +8.1272% passes. Validity passes.
+  167,257 parameters. `SURVIVAL_DEEPSET_REJECTED`; speed screen skipped.
+- **Limits:** One run, no matched scratch width-64 survival-only control;
+  comparison with warm strong-WD conflates width, initialization and normalization.
+  This does not establish pairwise interactions as the missing mechanism.
+  No further scaling, training, TEST, runtime, gameplay or promotion.
+- **Evidence:** [report](evidence/survival_wide96_2026-09-17.md) and
+  [receipt](evidence/survival_wide96_2026-09-17.json). Checkpoint reload, full
+  metrics/slices, initialization, normalization and permutations verified.
+  **Knowledge impact:** current research evidence; no default change.
+
+## §302 — Width-96 maxHP/HP pretraining then survival (2026-09-17)
+
+- **Question:** Does PR #205-style pretraining make width-96 useful for survival?
+- **Execution:** independently reviewed `8adb4794ec22fb051014c8c638cb2fec326b7615`,
+  baseline `35402d1e59ae5e9e66fe277f853f3ec62213c157`. Exact teachers and victory-only
+  normalization/population; copied delta8, fresh HP104→64→304 and maxHP96→11.
+  Same 40-epoch AMP KL schedule; only selected encoder transfers to fresh96→1.
+- **Result:** pretraining selected39/40, diagnostic GO, nine AMP skips. Strong-WD
+  survival selected14/20, NLL0.062599011 (+5.2183%), Brier0.018578166 (+4.2833%),
+  death NLL+16.0179%, low-HP+3.2761%. Fixed NLL/death gates reject; other gates pass.
+- **Decision:** `SURVIVAL_DEEPSET_REJECTED`. No speed screen, TEST, runtime,
+  gameplay, export or promotion. Improved versus scratch width-96, but no further
+  scaling/tuning justified by this run; no causal claim about interaction structure.
+- **Evidence:** [report](evidence/survival_wide96_pretrained_2026-09-17.md) and
+  [complete receipt](evidence/survival_wide96_pretrained_2026-09-17.json), including
+  both full histories and all slices. **Knowledge impact:** research status;
+  no qualified-default change.

@@ -495,6 +495,38 @@ add_test(NAME combat_transition_shared_encoder_potion_selftest
     COMMAND python3 -m unittest tools.test_combat_transition_shared_encoder_potion)
 set_tests_properties(combat_transition_shared_encoder_potion_selftest PROPERTIES
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+add_test(NAME combat_transition_survival_deepset_train_selftest
+    COMMAND python3 -m unittest tools.test_combat_transition_survival_deepset_train)
+set_tests_properties(combat_transition_survival_deepset_train_selftest PROPERTIES
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+add_test(NAME combat_transition_survival_deepset_sweep_selftest
+    COMMAND python3 -m unittest tools.test_combat_transition_survival_deepset_sweep)
+set_tests_properties(combat_transition_survival_deepset_sweep_selftest PROPERTIES
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+add_test(NAME combat_transition_survival_platt_selftest
+    COMMAND python3 -m unittest tools.test_combat_transition_survival_platt)
+set_tests_properties(combat_transition_survival_platt_selftest PROPERTIES
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+add_test(NAME combat_transition_survival_mlp_selftest
+    COMMAND python3 -m unittest tools.test_combat_transition_survival_mlp)
+set_tests_properties(combat_transition_survival_mlp_selftest PROPERTIES
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+add_test(NAME combat_transition_survival_mlp_head_selftest
+    COMMAND python3 -m unittest tools.test_combat_transition_survival_mlp_head)
+set_tests_properties(combat_transition_survival_mlp_head_selftest PROPERTIES
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+add_test(NAME combat_transition_survival_deepset_aux_selftest
+    COMMAND python3 -m unittest tools.test_combat_transition_survival_deepset_aux)
+set_tests_properties(combat_transition_survival_deepset_aux_selftest PROPERTIES
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+add_test(NAME combat_transition_survival_wide96_selftest
+    COMMAND python3 -m unittest tools.test_combat_transition_survival_wide96)
+set_tests_properties(combat_transition_survival_wide96_selftest PROPERTIES
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+add_test(NAME combat_transition_wide96_pretrain_selftest
+    COMMAND python3 -m unittest tools.test_combat_transition_wide96_pretrain)
+set_tests_properties(combat_transition_wide96_pretrain_selftest PROPERTIES
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
 add_test(NAME combat_transition_relic_trajectory_selftest
     COMMAND python3 ${CMAKE_SOURCE_DIR}/tools/test_combat_transition_relic_trajectory.py)
 add_test(NAME combat_transition_composed_selftest
