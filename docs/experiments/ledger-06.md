@@ -9681,3 +9681,21 @@ top-level benchmark reporting corrected.
   [receipt](evidence/survival_mlp_joint_2026-09-17.json). Clean duplicate run
   reproduced the same result. No independent implementation review passed.
   **Knowledge impact:** current research evidence; no default change.
+
+## §300 — Frozen-encoder nonlinear survival head (2026-09-17)
+
+- **Question:** Does a fresh nonlinear head on the frozen strong-WD
+  representation close the survival gap without encoder updates?
+- **Execution:** `8506e5e94bfd10f9ee0a5526aa78e3e0db8af2ea`. Frozen strong-WD
+  epoch-20 encoder; fresh 64→64→1 ReLU survival head only; strong-WD head
+  optimizer/recipe, unchanged normalization and selection by survival NLL.
+- **Result:** epoch 10/16 NLL `0.062951967` (+5.8115%), Brier `0.018761696`
+  (+5.3135%), death NLL +13.6766%; low-HP and validity pass, overall gates fail.
+- **Decision:** `SURVIVAL_DEEPSET_REJECTED`. A nonlinear head alone does not
+  materially close the gap and still regresses deaths; it neither proves nor
+  disproves a wider-encoder ceiling. No extension, widening, TEST, runtime or
+  promotion.
+- **Evidence:** [report](evidence/survival_mlp_head_only_2026-09-17.md) and
+  [receipt](evidence/survival_mlp_head_only_2026-09-17.json). Initial and
+  selected encoder hashes are identical. No independent review passed.
+  **Knowledge impact:** current research evidence; no default change.

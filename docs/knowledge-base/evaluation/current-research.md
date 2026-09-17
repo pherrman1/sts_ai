@@ -835,6 +835,12 @@ additional encoder updates, but it does not materially close the gap. No trunk
 widening follows without a new explicit plan. See
 [MLP evidence](../../experiments/evidence/survival_mlp_joint_2026-09-17.md).
 
+The requested frozen-encoder head-only diagnostic also rejects: epoch 10/16
+NLL `0.062951967` (+5.8115%), Brier `0.018761696` (+5.3135%), death NLL
++13.6766%. It isolates a nonlinear head from encoder updates, but the unchanged
+strong-WD representation still does not pass. No widening follows without a new
+explicit plan. See [head-only evidence](../../experiments/evidence/survival_mlp_head_only_2026-09-17.md).
+
 ### Jointly adapted shared maxHP+HP+potion representation
 
 The requested follow-up is **`SHARED_TRANSITION_POTION_REJECTED`**. Starting

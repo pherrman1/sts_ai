@@ -1,17 +1,18 @@
 # Frozen-encoder nonlinear survival-head diagnostic
 
-**SURVIVAL_DEEPSET_REJECTED.** With the strong-WD encoder frozen, training a fresh
-`64→64→1` ReLU survival head does not pass the fixed gates.
+**SURVIVAL_DEEPSET_REJECTED.** The fresh 64→64→1 ReLU head trained alone on the
+frozen strong-WD encoder still fails the unchanged overall and death gates.
 
-## Protocol
+## Frozen protocol and proof
 
 - Frozen execution SHA: `8506e5e94bfd10f9ee0a5526aa78e3e0db8af2ea`.
 - Start: strong-WD epoch 20 checkpoint, SHA256 `3689593db85974f13b6313c495e7fde4ec4b4fa7d87f3442c8604a47f5e0f05b`.
-- Fresh MLP head `Linear(64,64), ReLU, Linear(64,1)`: 4,225 parameters, +4,160 versus linear.
-- Strong-WD encoder remains frozen for all 16 completed epochs; only the head trains.
-- Same strong-WD head LR 1e-3, decay 1e-3, batch 512, clip 1.0, seed 20260912, floor 12, cap 40, patience 6.
-- Same source-disjoint TRAIN/VALIDATION population and unchanged normalization. Selection: earliest strict VALIDATION survival NLL.
-- No auxiliary HP loss, encoder update, widening, TEST inference, runtime, gameplay, export, or promotion.
+- Fresh head: `Linear(64,64), ReLU, Linear(64,1)`, 4,225 parameters (+4,160 versus linear).
+- Strong-WD encoder and normalization remain frozen; the optimizer excludes every encoder tensor.
+- Same source-disjoint population and epoch permutations; strong-WD head LR 1e-3, decay 1e-3, batch 512, clip 1.0, seed 20260912, floor 12, cap 40, patience 6.
+- Selection: earliest strict VALIDATION survival NLL only. No auxiliary HP loss.
+- Original initial and selected encoder SHA256 are both `77bb505395170a6c08673c849c3da0214e91f0643688f45d1cf9c06a98262ff1`.
+- No TEST encoding/inference/scoring, runtime, gameplay, export, or promotion.
 
 ## Result
 
@@ -24,7 +25,7 @@
 | Death NLL relative | — | +6.9980% | +13.6766% |
 | Low-pre-HP NLL relative | — | +3.1996% | +3.3845% |
 
-Selected epoch 10 of 16, stopped by patience. Relative to linear strong-WD, NLL improves 0.0356% and Brier improves 0.4492%, but both unchanged overall gates still fail. Death NLL fails; low-HP and validity pass. No speed screen.
+Selected epoch 10 of 16, patience stop. Relative to linear strong-WD, NLL improves 0.0356% and Brier improves 0.4492%, but unchanged gates still reject it. Death NLL remains severely regressed. No speed screen because quality is not GO.
 
 ## History
 
@@ -59,18 +60,14 @@ Selected epoch 10 of 16, stopped by patience. Relative to linear strong-WD, NLL 
 
 ## Interpretation
 
-This isolates the nonlinear-head intervention from encoder updates. It still leaves the
-NLL gap around +5.81%, and death NLL regresses to +13.6766%. This disfavors a simple nonlinear
-survival boundary as the missing mechanism for the strong-WD representation. It does
-not establish a wider-encoder ceiling, because the encoder remains frozen throughout.
+The nonlinear boundary alone, under this one fixed recipe, leaves the overall NLL gap essentially at +5.8% and does not repair the death regression. It does not establish a wider-encoder ceiling because the encoder is frozen, but it removes the plausible “boundary nonlinearity alone” explanation in this bounded setting.
 
-## Artifacts and checks
+## Evidence and checks
 
 Command: `python3 tools/combat_transition_survival_mlp_head.py --experiment-sha "$(git rev-parse HEAD)" --output /home/philippherrmann/sts_sweep/runs/survival-mlp-head-only-20260917`.
-Raw receipt: `/home/philippherrmann/sts_sweep/runs/survival-mlp-head-only-20260917/results.json`; SHA256 `a953c9d6046b2272f2b8ffa45b1d64e0d4fd75870027bcdfecf76d64e59ed3bc`.
-The [tracked receipt](survival_mlp_head_only_2026-09-17.json) preserves full histories, metrics, slices, hashes and optimizer proof.
-Selected checkpoint: `/home/philippherrmann/sts_sweep/runs/survival-mlp-head-only-20260917/selected.pt`; SHA256 `ce08b700984fecb2d099264668841adc5bcac15a8430e57c4dac2564cc4def03`.
+Raw receipt: `/home/philippherrmann/sts_sweep/runs/survival-mlp-head-only-20260917/results.json`; SHA256 `a953c9d6046b2272f2b8ffa45b1d64e0d4fd75870027bcdfecf76d64e59ed3bc`. Selected checkpoint `/home/philippherrmann/sts_sweep/runs/survival-mlp-head-only-20260917/selected.pt`, SHA256 `ce08b700984fecb2d099264668841adc5bcac15a8430e57c4dac2564cc4def03`.
+The [tracked receipt](survival_mlp_head_only_2026-09-17.json) contains complete histories, metrics, slices, optimizer scope, hashes and provenance.
 
-Focused tests: 2/2 head-only suite; focused CTest 2/2. The frozen encoder digest was verified during training and after independent checkpoint reload; all epoch permutation hashes and selected NLL reproduce. No independent implementation review passed.
+Focused tests: 2/2 head-only and 2/2 focused CTest. The frozen encoder digest was checked during training and after checkpoint reload; epoch orders and selected NLL reproduce exactly. No independent implementation review passed.
 
-**Knowledge impact:** bounded head-only evidence and current research status; no runtime or qualified-default change.
+**Knowledge impact:** bounded diagnostic evidence and current research status; no runtime or qualified-default change.
