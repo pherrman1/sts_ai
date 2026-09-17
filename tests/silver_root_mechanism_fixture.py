@@ -49,12 +49,31 @@ def main():
         assert len(teachers) == 2 and teachers[0]["teacher_rng_identity"] != teachers[1]["teacher_rng_identity"]
         assert all(row["silver_config"]["reuse_cap_mode"] == "none"
                    and row["simulations_performed"] == 32 for row in teachers)
+        changed_roots = [json.loads(roots.read_text().splitlines()[0])]
+        changed_roots[0]["executable_git_sha"] = "0" * 40
+        changed_root_path = temporary / "changed-root.jsonl"
+        changed_root_path.write_text("".join(json.dumps(row) + "\n" for row in changed_roots))
+        run(args.relabel, "--roots", changed_root_path, temporary / "root-sha-rejected.jsonl",
+            "20260917", sha, success=False)
         run(args.replay, roots, labels, replay, "20260917", sha, "--fixture")
         rows = [json.loads(line) for line in replay.read_text().splitlines()]
         assert len(rows) == 24
         strict_replay = temporary / "strict-rejected.jsonl"
         run(args.replay, roots, labels, strict_replay, "20260917", sha, success=False)
         assert not strict_replay.exists()
+        strict_labels = json.loads(json.dumps(teachers))
+        for label in strict_labels:
+            label["fixture_only"] = False
+            label["budget"] = 10000 if label["replicate"] == "A" else 25000
+            label["simulations_performed"] = label["budget"]
+            label["silver_config"]["simulations_per_decision"] = label["budget"]
+        strict_labels_path = temporary / "changed-teacher.jsonl"
+        strict_labels_path.write_text("".join(json.dumps(row) + "\n" for row in strict_labels))
+        teacher_sha_rejected = temporary / "teacher-sha-rejected.jsonl"
+        root_sha = captures[0]["executable_git_sha"]
+        run(args.replay, roots, strict_labels_path, teacher_sha_rejected, "20260917", root_sha,
+            success=False)
+        assert not teacher_sha_rejected.exists()
         for row in rows:
             native = row["native_order"]
             if row["arm"] in ("A", "E", "C"):
