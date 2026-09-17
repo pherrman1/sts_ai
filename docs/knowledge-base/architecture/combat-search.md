@@ -33,6 +33,63 @@ native searcher choice. The complete flag and parameter reference is
 
 ## Searcher2 / Searcher3
 
+### Offline Silver root mechanism tooling
+
+`STS_SILVER_ROOT_MECHANISM_CAPTURE=<new path>` enables observation-only capture
+at the live Silver boundary, after visible-state conversion and before search.
+It requires a full `STS_EXECUTABLE_GIT_SHA` and refuses an existing output.
+Only nonterminal `PLAYER_NORMAL` roots with at least two legal actions are
+emitted. `silver_root_mechanism_v1` records contain the complete visible wire,
+semantic actions/native fingerprint order, source SHA, Silver upstream SHA,
+source seed, act/floor/encounter, and decision ordinal. The wire contains no
+live RNG streams; its isolated search seed is public diagnostic provenance.
+Runic Dome and draw-order redaction remain the existing conversion contract.
+
+The root identity is `source_seed/act/floor/encounter/decision`; state integrity
+uses a deterministic 64-bit FNV-style checksum of the canonical JSON envelope
+(offset 1469598103934665603, multiplier 1099511628211, zero remapped to one).
+This checksum is not cryptographic. Artifact byte integrity is SHA-256 in the
+selection manifest and must also be recorded for executable/teacher/replay
+files in the eventual reviewed run's evidence packet.
+`tools/analyze_silver_root_mechanism.py select CAPTURE SELECTED` takes the lowest
+64 SHA-256 hashes of UTF-8 root identities, independently of state/labels,
+and writes `SELECTED.manifest.json` with capture/selection hashes and IDs.
+
+`silver_leaf_relabel --roots ROOTS OUTPUT SEED EXECUTABLE_SHA` reuses
+`relabelOne` for fresh, no-reuse 10k-A and 25k-B searches. Teacher RNG identity
+is the same FNV-style hash of `SEED/root_id/A` or `SEED/root_id/B`; collisions
+fail closed. The root is its own evaluation reference, so the original-root
+victory correction is zero and ordering Q equals the child selection mean.
+Every teacher action must have valid Q and match the entire native order.
+The optional fixture budget (32..128) requires exactly one root, marks outputs
+`fixture_only`, and cannot supply a scientific replay.
+
+`silver_root_mechanism ROOTS LABELS OUTPUT SEED EXECUTABLE_SHA` runs exactly
+32 simulations and four common replicates over A native-UCT, B A-Q-order-UCT,
+C native-visit-PUCT, and D A-Q-order-visit-PUCT. Ordering is stable descending
+teacher-A corrected Q, with native ties. Priors are exactly normalized A edge
+visits, without smoothing or pruning. Replay RNG is derived independently as
+`SEED/replay/root_id/replicate` and checked against both teachers.
+`--fixture` requires one root and fixture labels. Scientific mode requires 64.
+
+The dedicated `replaySilverRoot` entry point owns a fresh local session,
+validates the complete semantic permutation and finite normalized priors,
+and prepares only its root edges. It never changes `SilverSearchConfig` or
+exposes gameplay guidance flags. The sole selection change is a default-empty
+prior vector checked by root pointer identity: after unvisited-first handling,
+root PUCT is `Q_child + 2.5 * P * sqrt(parent_visits) / (edge_visits + 1)`.
+Internal UCT, chance DPW, evaluator, and terminal rollout code are unchanged.
+Teacher B is used only for regret and best-action judgment; the fixed fixture
+test changes B Q and verifies identical treatment actions/priors/order.
+
+`tools/analyze_silver_root_mechanism.py analyze REPLAY OUTPUT` validates the
+64×4×4 population and common replicate identities, aggregates within root,
+and reports the five paired contrasts with 10,000 root-bootstrap resamples
+(Python RNG seed 20260917; empirical sorted endpoints 249 and 9749).
+It emits no scientific classification automatically. Implementation tests
+are not evidence of guidance quality; scientific capture/label/replay waits
+for independent review and a frozen implementation SHA.
+
 ### Searcher2
 
 `BattleScumSearcher2` is the default MCTS implementation. Normal dispatch

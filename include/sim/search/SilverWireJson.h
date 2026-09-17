@@ -9,6 +9,8 @@ namespace silver_bridge {
 
 NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(CardWire, id, uniqueId, specialData, cost, costForTurn,
                                    upgraded, freeToPlayOnce, retain)
+NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(SemanticAction, type, source, card, selectedCards,
+    optionCardId, potionId, potionSlot, target, discardPotion, skipCardSelect, cardSelectTask)
 NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(PileWire, knownBottom, unknown, knownTop,
                                    fullOrderObserved, valid)
 NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(PlayerWire, characterClass, gold, curHp, maxHp, energy,

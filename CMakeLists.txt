@@ -117,6 +117,12 @@ target_include_directories(silver-leaf-relabel PRIVATE include json/include)
 target_link_libraries(silver-leaf-relabel PRIVATE silver_combat_search_bridge)
 target_link_options(silver-leaf-relabel PRIVATE -Wl,--gc-sections)
 
+add_executable(silver-root-mechanism apps/silver_root_mechanism.cpp)
+set_target_properties(silver-root-mechanism PROPERTIES OUTPUT_NAME silver_root_mechanism)
+target_include_directories(silver-root-mechanism PRIVATE include json/include)
+target_link_libraries(silver-root-mechanism PRIVATE silver_combat_search_bridge)
+target_link_options(silver-root-mechanism PRIVATE -Wl,--gc-sections)
+
 add_executable(silver-leaf-features apps/silver_leaf_features.cpp $<TARGET_OBJECTS:sts_core_objects>)
 set_target_properties(silver-leaf-features PROPERTIES OUTPUT_NAME silver_leaf_features)
 target_include_directories(silver-leaf-features PRIVATE include json/include)
@@ -417,6 +423,12 @@ add_test(NAME silver_integration_adaptive_override COMMAND ${CMAKE_COMMAND} -E e
 set_tests_properties(silver_integration_adaptive_override PROPERTIES
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "integration;smoke")
 add_test(NAME silver_bridge_boundary COMMAND $<TARGET_FILE:silver-bridge-test>)
+add_test(NAME silver_root_mechanism_fixture COMMAND python3
+    ${CMAKE_SOURCE_DIR}/tests/silver_root_mechanism_fixture.py
+    $<TARGET_FILE:silver-bridge-test> $<TARGET_FILE:silver-leaf-relabel>
+    $<TARGET_FILE:silver-root-mechanism>)
+set_tests_properties(silver_root_mechanism_fixture PROPERTIES
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "integration")
 # tests/agent is owned by the separate pre-build unittest discovery step in CI.
 # Do not register its modules or separate compile-only checks here as well:
 # importing those tools during unittest discovery already parses them.

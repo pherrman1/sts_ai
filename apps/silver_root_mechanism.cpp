@@ -1,0 +1,159 @@
+#include "sim/search/SilverRootMechanism.h"
+#include <cmath>
+#include <filesystem>
+#include <fstream>
+#include <iostream>
+#include <map>
+#include <numeric>
+
+namespace {
+using Json = nlohmann::json;
+
+std::vector<Json> readRows(const std::string &path) {
+    std::ifstream input(path);
+    if (!input) throw std::runtime_error("cannot read " + path);
+    std::vector<Json> rows;
+    std::string line;
+    while (std::getline(input, line)) if (!line.empty()) rows.push_back(Json::parse(line));
+    return rows;
+}
+
+struct Teacher {
+    std::map<std::string, double> quality;
+    std::map<std::string, std::int64_t> visits;
+    std::uint64_t seed;
+};
+
+Teacher teacher(const Json &label, const Json &root, const std::string &replicate, bool fixture) {
+    if (label.at("relabel_schema") != "silver_leaf_teacher_v1"
+            || !label.at("teacher_valid").get<bool>() || label.at("replicate") != replicate
+            || label.at("state_kind") != "parent" || label.at("root_id") != root.at("root_id")
+            || label.at("group_id") != root.at("root_id")
+            || label.at("root_state_hash") != root.at("state_hash")
+            || label.at("root_snapshot_hash") != silver_bridge::rootMechanismHash(root.dump())
+            || label.at("source_executable_git_sha") != root.at("executable_git_sha")
+            || label.at("silver_upstream_sha") != silver_bridge::kRootMechanismSilverSha
+            || !silver_bridge::rootMechanismShaValid(label.at("executable_git_sha").get<std::string>())
+            || label.at("fixture_only").get<bool>() != fixture
+            || label.at("silver_config").at("reuse_cap_mode") != "none"
+            || label.at("victory_baseline_correction").get<double>() != 0.0)
+        throw std::invalid_argument("teacher provenance mismatch");
+    const int budget = label.at("budget");
+    if ((!fixture && budget != (replicate == "A" ? 10000 : 25000))
+            || (fixture && (budget < 32 || budget > 128)) || label.at("simulations_performed") != budget)
+        throw std::invalid_argument("teacher budget mismatch");
+    const auto &config = label.at("silver_config");
+    if (config.at("simulations_per_decision") != budget
+            || config.at("exploration_parameter") != 25.0
+            || config.at("exploration_parameter_chance") != 25.0
+            || config.at("chance_widening_c") != 3.7028
+            || config.at("chance_widening_alpha") != 0.52389
+            || config.at("end_turn_widening_c") != 3.7028
+            || config.at("end_turn_widening_alpha") != 0.52389)
+        throw std::invalid_argument("teacher configuration mismatch");
+    Teacher result;
+    result.seed = label.at("teacher_rng_identity").get<std::uint64_t>();
+    const auto expectedSeed = silver_bridge::rootMechanismSeed(
+        std::to_string(label.at("relabel_seed").get<std::uint64_t>()) + "/"
+        + root.at("root_id").get<std::string>() + "/" + replicate);
+    if (result.seed != expectedSeed) throw std::invalid_argument("teacher RNG identity mismatch");
+    std::vector<std::string> actual;
+    for (const auto &action : label.at("root_actions")) {
+        const auto fingerprint = action.at("action_fingerprint").get<std::string>();
+        const double quality = action.at("original_root_corrected_q");
+        const auto visits = action.at("visits").get<std::int64_t>();
+        if (!action.at("leaf_root_q_valid").get<bool>() || !std::isfinite(quality) || visits < 0
+                || !result.quality.emplace(fingerprint, quality).second)
+            throw std::invalid_argument("invalid teacher action");
+        result.visits.emplace(fingerprint, visits);
+        actual.push_back(fingerprint);
+    }
+    if (actual != root.at("native_order").get<std::vector<std::string>>()
+            || label.at("root_action_count") != actual.size())
+        throw std::invalid_argument("native/teacher surface mismatch");
+    return result;
+}
+}
+
+int main(int argc, char **argv) {
+    try {
+        if (argc != 6 && argc != 7)
+            throw std::invalid_argument("usage: silver_root_mechanism ROOTS LABELS OUTPUT SEED EXECUTABLE_SHA [--fixture]");
+        const bool fixture = argc == 7 && std::string(argv[6]) == "--fixture";
+        if (argc == 7 && !fixture) throw std::invalid_argument("unknown option");
+        if (!silver_bridge::rootMechanismShaValid(argv[5])) throw std::invalid_argument("invalid executable SHA");
+        if (std::filesystem::exists(argv[3])) throw std::invalid_argument("refusing existing replay output");
+        const auto seed = std::stoull(argv[4]);
+        const auto roots = readRows(argv[1]);
+        const auto labels = readRows(argv[2]);
+        if (roots.size() != (fixture ? 1u : 64u) || labels.size() != roots.size() * 2)
+            throw std::invalid_argument("incomplete root/teacher population");
+        std::map<std::pair<std::string, std::string>, Json> indexed;
+        for (const auto &label : labels)
+            if (!indexed.emplace(std::make_pair(label.at("root_id").get<std::string>(),
+                    label.at("replicate").get<std::string>()), label).second)
+                throw std::invalid_argument("duplicate teacher");
+        std::set<std::string> ids;
+        for (const auto &root : roots) {
+            silver_bridge::validateRootMechanismSnapshot(root);
+            const auto id = root.at("root_id").get<std::string>();
+            if (!ids.insert(id).second) throw std::invalid_argument("duplicate root");
+            const auto labelA = teacher(indexed.at({id, "A"}), root, "A", fixture);
+            const auto labelB = teacher(indexed.at({id, "B"}), root, "B", fixture);
+            if (labelA.seed == labelB.seed) throw std::invalid_argument("teacher RNG identities must differ");
+        }
+        std::ofstream output(argv[3]);
+        for (const auto &root : roots) {
+            const auto id = root.at("root_id").get<std::string>();
+            auto wire = silver_bridge::validateRootMechanismSnapshot(root);
+            const auto native = root.at("native_order").get<std::vector<std::string>>();
+            const auto labelA = teacher(indexed.at({id, "A"}), root, "A", fixture);
+            auto ordered = native;
+            std::stable_sort(ordered.begin(), ordered.end(), [&](const auto &left, const auto &right) {
+                return labelA.quality.at(left) > labelA.quality.at(right);
+            });
+            const auto total = std::accumulate(native.begin(), native.end(), std::int64_t{0},
+                [&](auto sum, const auto &fingerprint) { return sum + labelA.visits.at(fingerprint); });
+            if (total <= 0) throw std::invalid_argument("teacher A has no visits");
+            const auto labelB = teacher(indexed.at({id, "B"}), root, "B", fixture);
+            const auto best = *std::max_element(native.begin(), native.end(), [&](const auto &left, const auto &right) {
+                return labelB.quality.at(left) < labelB.quality.at(right);
+            });
+            std::set<std::uint64_t> seeds {labelA.seed, labelB.seed};
+            for (int replicate = 0; replicate < 4; ++replicate) {
+                wire.isolatedSearchSeed = silver_bridge::rootMechanismSeed(
+                    std::to_string(seed) + "/replay/" + id + "/" + std::to_string(replicate));
+                if (!seeds.insert(wire.isolatedSearchSeed).second) throw std::invalid_argument("replay RNG collision");
+                for (const std::string arm : {"A", "B", "C", "D"}) {
+                    const auto &order = arm == "B" || arm == "D" ? ordered : native;
+                    const bool puct = arm == "C" || arm == "D";
+                    std::vector<double> priors;
+                    if (puct) for (const auto &fingerprint : order)
+                        priors.push_back(static_cast<double>(labelA.visits.at(fingerprint)) / total);
+                    const auto result = silver_bridge::replaySilverRoot(wire, native, order, priors, puct);
+                    if (!result.accepted) throw std::runtime_error("replay failed: " + result.failureReason);
+                    const auto selected = silver_bridge::semanticActionFingerprint(result.action);
+                    const double selectedQ = labelB.quality.at(selected);
+                    Json row = {{"schema", "silver_root_mechanism_replay_v1"}, {"root_id", id},
+                        {"source_seed", root.at("source_seed")}, {"arm", arm}, {"replicate", replicate},
+                        {"search_seed", wire.isolatedSearchSeed}, {"simulations", result.simulations},
+                        {"selected_action_fingerprint", selected}, {"b_selected_q", selectedQ},
+                        {"b_best_q", labelB.quality.at(best)}, {"b_best_action", best},
+                        {"b_regret", labelB.quality.at(best) - selectedQ}, {"b_best", selected == best},
+                        {"native_order", native}, {"replay_order", order}, {"priors", priors},
+                        {"teacher_a_seed", labelA.seed}, {"teacher_b_seed", labelB.seed},
+                        {"teacher_a_hash", silver_bridge::rootMechanismHash(indexed.at({id, "A"}).dump())},
+                        {"teacher_b_hash", silver_bridge::rootMechanismHash(indexed.at({id, "B"}).dump())},
+                        {"state_hash", root.at("state_hash")}, {"executable_git_sha", argv[5]},
+                        {"silver_upstream_sha", silver_bridge::kRootMechanismSilverSha}, {"fixture_only", fixture}};
+                    output << row.dump() << '\n';
+                    output.flush();
+                    if (!output) throw std::runtime_error("replay write failed");
+                }
+            }
+        }
+    } catch (const std::exception &error) {
+        std::cerr << "silver_root_mechanism: " << error.what() << '\n';
+        return 1;
+    }
+}

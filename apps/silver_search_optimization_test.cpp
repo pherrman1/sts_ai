@@ -79,6 +79,30 @@ void widening(Search &search) {
     }
 }
 
+void rootPriorSelection(Search &search) {
+    Search::Node child, internal;
+    child.simulationCount = 4;
+    child.evaluationSum = 12;
+    auto *root = search.root;
+    const auto saved = *root;
+    root->simulationCount = 16;
+    root->edges.resize(2);
+    for (auto &edge : root->edges) { edge.node = &child; edge.visitCount = 3; }
+    internal = *root;
+    const auto ordinary = search.evaluateEdge(*root, 0, std::log(17.0));
+    search.replayRootPriors = {0.25, 0.75};
+    require(search.evaluateEdge(*root, 0, std::log(17.0)) == 3.625, "exact root PUCT formula");
+    require(search.selectBestEdgeToSearch(*root) == 1, "prior must influence root allocation");
+    require(search.evaluateEdge(internal, 0, std::log(17.0)) == ordinary, "internal UCT unchanged");
+    root->isRandomNode = true;
+    require(search.evaluateEdge(*root, 0, std::log(17.0)) == ordinary, "chance selection excludes prior");
+    root->isRandomNode = false;
+    root->edges[0].visitCount = 0;
+    require(search.selectBestEdgeToSearch(*root) == 0, "unvisited first despite root prior");
+    search.replayRootPriors.clear();
+    *root = saved;
+}
+
 void equalStats(const sts::search::SearchStats &a, const sts::search::SearchStats &b) {
 #define SAME(field) require(a.field == b.field, "trace changed stats: " #field)
     SAME(steps); SAME(nodesCreated); SAME(detTranspositions);
@@ -573,7 +597,7 @@ int main(int argc, char **argv) {
         dedupGrowth(bc);
         lazyReroot(bc);
         compaction(bc, 0);
-        selection(search); widening(search);
+        selection(search); widening(search); rootPriorSelection(search);
         traceParity(bc, false); traceParity(bc, true); rootHash(bc);
         retainedStateGrowth(bc);
         storage(bc, argc > 1 && std::string(argv[1]) == "--storage-metrics");

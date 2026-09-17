@@ -31,6 +31,8 @@
 #include "sim/search/SilverBridge.h"
 #include "sim/search/SilverSemanticAction.h"
 #include "sim/search/SilverWireJson.h"
+#include "sim/search/SilverRootMechanism.h"
+#include <filesystem>
 
 namespace sts::search {
 
@@ -47,6 +49,7 @@ struct SilverLiveOptions {
     std::string scalingDiagnosticFile;
     std::string stickyQualityFile;
     std::string rootDiagnosticFile;
+    std::string rootMechanismCapture;
     std::string budgetDiagnosticFile;
     std::string sequentialDiagnosticFile;
     int rootDiagnosticMaxPerSeed = 8;
@@ -201,6 +204,8 @@ void parseSilverLiveOptions() {
         options.stickyQualityFile = raw;
     if (const char *raw = std::getenv("STS_SILVER_ROOT_DIAG_FILE"))
         options.rootDiagnosticFile = raw;
+    if (const char *raw = std::getenv("STS_SILVER_ROOT_MECHANISM_CAPTURE"))
+        options.rootMechanismCapture = raw;
     if (const char *raw = std::getenv("STS_COMBAT_BUDGET_DIAG_FILE"))
         options.budgetDiagnosticFile = raw;
     if (const char *raw = std::getenv("STS_COMBAT_SEQUENTIAL_DIAG_FILE"))
@@ -231,6 +236,12 @@ void parseSilverLiveOptions() {
     if (const char *raw = std::getenv("STS_SILVER_LEAF_CORPUS_MAX_PER_GROUP"))
         options.leafCorpusMaxLeavesPerGroup = std::atoi(raw);
     if (const char *raw = std::getenv("STS_EXECUTABLE_GIT_SHA")) options.executableGitSha = raw;
+    if (!options.rootMechanismCapture.empty()) {
+        if (!silver_bridge::rootMechanismShaValid(options.executableGitSha))
+            throw std::invalid_argument("root capture requires full STS_EXECUTABLE_GIT_SHA");
+        if (std::filesystem::exists(options.rootMechanismCapture))
+            throw std::invalid_argument("root capture refuses an existing output file");
+    }
     const char *adaptiveOverride = std::getenv("STS_SILVER_ADAPTIVE");
     if (adaptiveOverride)
         options.adaptiveEnabled = std::atoi(adaptiveOverride) != 0;
@@ -1493,6 +1504,23 @@ void runSilverCombat(ScumSearchAgent2 &agent, GameContext &gc, BattleContext &bc
         }
 
         auto config = configFor(agent, bc, collectDecisionDiagnostics);
+        if (!g_silverLiveOptions.rootMechanismCapture.empty()) {
+            const auto combatId = std::to_string(wire.act) + "/" + std::to_string(wire.floorNum)
+                + "/" + std::to_string(wire.encounter);
+            auto row = silver_bridge::rootMechanismSnapshot(wire, gc.seed, combatId, decision,
+                g_silverLiveOptions.executableGitSha);
+            if (!row.is_null()) {
+                row["capture_config"] = {{"simulations", config.simulationsPerDecision},
+                    {"reuse_cap", config.reuseCap}, {"reuse_mode", silver_bridge::silverReuseCapModeName(config.reuseCapMode)},
+                    {"adaptive", config.adaptiveEnabled}, {"exact_lock", config.exactVisitLockEnabled},
+                    {"rho", config.rhoRacingEnabled}};
+                std::lock_guard<std::mutex> lock(g_leafCorpusMutex);
+                std::ofstream output(g_silverLiveOptions.rootMechanismCapture, std::ios::app);
+                output << row.dump() << '\n';
+                output.flush();
+                if (!output) throw std::runtime_error("root capture write failed");
+            }
+        }
         if (collectSequentialDiagnostics
                 && config.simulationsPerDecision != g_silverLiveOptions.sequentialDiagnosticCheckpoints.back())
             fail("sequential diagnostics", "configured root budget must equal the final diagnostic checkpoint");

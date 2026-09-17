@@ -2068,6 +2068,58 @@ SilverDecisionResult runSilverDecision(const BattleStateWire &wire, const Silver
     return runSilverDecision(*session, wire, config);
 }
 
+SilverDecisionResult replaySilverRoot(const BattleStateWire &wire,
+        const std::vector<std::string> &nativeOrder, const std::vector<std::string> &replayOrder,
+        const std::vector<double> &priors, bool usePuct) {
+    SilverDecisionResult result;
+    try {
+        if (wire.inputState != static_cast<int>(sts::InputState::PLAYER_NORMAL)
+                || wire.outcome != static_cast<int>(sts::Outcome::UNDECIDED))
+            throw std::invalid_argument("unsupported replay root");
+        SilverSearchConfig config;
+        config.simulationsPerDecision = 32;
+        config.reuseCapMode = SilverReuseCapMode::NONE;
+        config.collectRootActionSummaries = true;
+        auto session = makeSilverSearchSession();
+        const auto state = session->materializeAndBegin(wire, config);
+        auto &searcher = *session->searcher;
+        searcher.enumerateActionsForNode(*searcher.root, state);
+        auto &edges = searcher.root->edges;
+        std::vector<std::string> actual;
+        for (const auto &edge : edges) actual.push_back(silverActionFingerprint(state, edge.action));
+        auto sorted = actual;
+        std::sort(sorted.begin(), sorted.end());
+        auto requested = replayOrder;
+        std::sort(requested.begin(), requested.end());
+        if (actual.size() < 2 || actual != nativeOrder || sorted != requested
+                || std::adjacent_find(sorted.begin(), sorted.end()) != sorted.end())
+            throw std::invalid_argument("replay action surface mismatch");
+        if (usePuct) {
+            double total = 0;
+            if (priors.size() != edges.size()) throw std::invalid_argument("replay prior size mismatch");
+            for (const double prior : priors) {
+                if (!std::isfinite(prior) || prior < 0) throw std::invalid_argument("invalid replay prior");
+                total += prior;
+            }
+            if (std::abs(total - 1.0) > 1e-12) throw std::invalid_argument("unnormalized replay prior");
+        } else if (!priors.empty()) throw std::invalid_argument("UCT replay must not carry priors");
+        auto reordered = edges;
+        for (std::size_t index = 0; index < replayOrder.size(); ++index) {
+            const auto position = std::find(actual.begin(), actual.end(), replayOrder[index]) - actual.begin();
+            reordered[index] = edges[position];
+        }
+        edges = std::move(reordered);
+        if (usePuct) searcher.replayRootPriors = priors;
+        result = runCurrentRootDecision(*session, config);
+        if (result.simulations != 32 || result.inheritedVisits != 0)
+            throw std::runtime_error("replay budget/reuse mismatch");
+    } catch (const std::exception &error) {
+        result.accepted = false;
+        result.failureReason = error.what();
+    }
+    return result;
+}
+
 SilverDecisionResult runSilverDecisionWithCheckpoint(
         SilverSearchSession &session, const BattleStateWire &wire,
         const SilverSearchConfig &config) {
