@@ -9,6 +9,7 @@
 #include <algorithm>
 #include <array>
 #include <chrono>
+#include <cmath>
 #include <cstdint>
 #include <fstream>
 #include <iostream>
@@ -322,11 +323,13 @@ struct SyntheticPV {
     static constexpr int H = 64;
     static constexpr int A = kCanonicalPolicyWidth - kCanonicalStateWidth;
     std::vector<float> w1, b1, w2, b2, valueW, actionW, actionB, actionOutW;
+    std::vector<std::array<float, H>> w1ByInput;
     float valueB = 0.0f;
     float actionOutB = 0.0f;
 
     SyntheticPV() : w1(H * kModelStateWidth), b1(H), w2(H * H), b2(H),
-                    valueW(H), actionW(32 * (H + A)), actionB(32), actionOutW(32) {
+                    valueW(H), actionW(32 * (H + A)), actionB(32), actionOutW(32),
+                    w1ByInput(kModelStateWidth) {
         std::uint32_t x = 0x12345678u;
         auto fill = [&x](std::vector<float> &v) {
             for (float &value : v) {
@@ -336,6 +339,9 @@ struct SyntheticPV {
         };
         fill(w1); fill(b1); fill(w2); fill(b2); fill(valueW); fill(actionW); fill(actionB);
         fill(actionOutW);
+        for (int input = 0; input < kModelStateWidth; ++input)
+            for (int output = 0; output < H; ++output)
+                w1ByInput[input][output] = w1[output * kModelStateWidth + input];
     }
 
     static float relu(float value) { return value > 0.0f ? value : 0.0f; }
@@ -348,6 +354,27 @@ struct SyntheticPV {
             for (int c = 0; c < kModelStateWidth; ++c) sum += w1[r * kModelStateWidth + c] * state[c];
             h1[r] = relu(sum);
         }
+        for (int r = 0; r < H; ++r) {
+            float sum = b2[r];
+            for (int c = 0; c < H; ++c) sum += w2[r * H + c] * h1[c];
+            h2[r] = relu(sum);
+        }
+        value = valueB;
+        for (int c = 0; c < H; ++c) value += valueW[c] * h2[c];
+    }
+
+    void encodeAndValueSparse(const std::vector<float> &state, std::array<float, H> &h2,
+                              float &value, std::size_t &nonzeroInputs) const {
+        std::array<float, H> h1 {};
+        nonzeroInputs = 0;
+        for (int input = 0; input < kModelStateWidth; ++input) {
+            const float feature = state[input];
+            if (feature == 0.0f) continue;
+            ++nonzeroInputs;
+            for (int output = 0; output < H; ++output)
+                h1[output] += feature * w1ByInput[input][output];
+        }
+        for (int output = 0; output < H; ++output) h1[output] = relu(h1[output] + b1[output]);
         for (int r = 0; r < H; ++r) {
             float sum = b2[r];
             for (int c = 0; c < H; ++c) sum += w2[r * H + c] * h1[c];
@@ -415,10 +442,49 @@ void benchmark(const std::vector<LeafValueSample> &leaves, const Corpus &corpus,
         checksum += value;
         for (float score : logits) checksum += score;
     }
-    const auto start = std::chrono::steady_clock::now();
     std::vector<double> callLatencies;
     callLatencies.reserve(leaves.size() * static_cast<std::size_t>(iterations));
     std::size_t calls = 0, scored = 0;
+    double sparseMicros = 0.0;
+    double sparseChecksum = 0.0;
+    std::size_t sparseCalls = 0, sparseScored = 0, sparseNonzeroInputs = 0;
+    float maxValueAbsError = 0.0f, maxLogitAbsError = 0.0f;
+    constexpr float kParityTolerance = 1.0e-5f;
+    for (const auto &input : inputs) {
+        std::array<float, SyntheticPV::H> denseHidden {}, sparseHidden {};
+        float denseValue = 0.0f, sparseValue = 0.0f;
+        std::vector<float> denseLogits, sparseLogits;
+        model.forward(input.state, input.actions, denseValue, denseLogits);
+        std::size_t nonzeroInputs = 0;
+        model.encodeAndValueSparse(input.state, sparseHidden, sparseValue, nonzeroInputs);
+        model.scoreActions(sparseHidden, input.actions, sparseLogits);
+        maxValueAbsError = std::max(maxValueAbsError, std::abs(denseValue - sparseValue));
+        if (denseLogits.size() != sparseLogits.size())
+            throw std::runtime_error("sparse parity action count mismatch");
+        for (std::size_t i = 0; i < denseLogits.size(); ++i)
+            maxLogitAbsError = std::max(maxLogitAbsError,
+                                        std::abs(denseLogits[i] - sparseLogits[i]));
+        if (maxValueAbsError > kParityTolerance || maxLogitAbsError > kParityTolerance)
+            throw std::runtime_error("sparse evaluator parity tolerance exceeded");
+    }
+    const auto sparseStart = std::chrono::steady_clock::now();
+    for (int i = 0; i < iterations; ++i) {
+        for (const auto &input : inputs) {
+            std::array<float, SyntheticPV::H> hidden {};
+            float sparseValue = 0.0f;
+            std::size_t nonzeroInputs = 0;
+            model.encodeAndValueSparse(input.state, hidden, sparseValue, nonzeroInputs);
+            model.scoreActions(hidden, input.actions, logits);
+            sparseChecksum += sparseValue;
+            for (float score : logits) sparseChecksum += score;
+            sparseNonzeroInputs += nonzeroInputs;
+            sparseScored += logits.size();
+            ++sparseCalls;
+        }
+    }
+    sparseMicros = std::chrono::duration<double, std::micro>(
+        std::chrono::steady_clock::now() - sparseStart).count();
+    const auto start = std::chrono::steady_clock::now();
     for (int i = 0; i < iterations; ++i) {
         for (const auto &sample : leaves) {
             const auto callStart = std::chrono::steady_clock::now();
@@ -501,6 +567,19 @@ void benchmark(const std::vector<LeafValueSample> &leaves, const Corpus &corpus,
         {"p99_legal_actions", intPercentile(actionCountSamples, 0.99)},
         {"calls_per_second", 1.0e6 / std::max(1.0, perCall)},
         {"action_scores_per_second", 1.0e6 * static_cast<double>(scored) / std::max(1.0, micros)},
+        {"sparse_evaluation", {
+            {"calls", sparseCalls}, {"action_scores", sparseScored},
+            {"mean_model_micros", sparseMicros / std::max<std::size_t>(1, sparseCalls)},
+            {"calls_per_second", 1.0e6 * static_cast<double>(sparseCalls)
+                / std::max(1.0, sparseMicros)},
+            {"action_scores_per_second", 1.0e6 * static_cast<double>(sparseScored)
+                / std::max(1.0, sparseMicros)},
+            {"mean_nonzero_state_inputs", static_cast<double>(sparseNonzeroInputs)
+                / std::max<std::size_t>(1, sparseCalls)},
+            {"checksum", sparseChecksum}, {"checksum_is_observed", true},
+            {"max_value_abs_error_vs_dense", maxValueAbsError},
+            {"max_logit_abs_error_vs_dense", maxLogitAbsError},
+            {"parity_tolerance", kParityTolerance}}},
         {"stage_timing", stageTiming},
         {"checksum", checksum}, {"checksum_is_observed", true},
         {"sampled_rollout_leaf_coverage", sampledCoverage(corpus)},
