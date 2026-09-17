@@ -177,6 +177,19 @@ The qualified `COMBAT_TRANSITION_RUNTIME_V2` artifact is tracked at `selfplay/mo
 
 V2 Brew draws a full-width planner-owned hypothetical native potion RNG on first use, reuses it recursively and retains its advanced RAW state. Unused Brew copies historical potion RNG; other streams follow the existing replay/copy contract. Explicit `ESCAPE` requires matching RAW `smokeBombUsed`, rejects boss escape and uses native `regainControl()` without victory rewards. Generated Smoke/ESCAPE remains possible in a supported Brew trajectory. The probe and `tools/qualify_combat_transition_near_full.py` verify CPU FP32 probabilities, complete RAW sampled states, planner-stream advancement and scalar/prepared parity; unsupported states consume no planner draws. All final slice gates and hard-validity checks pass as reused development evidence in the [final report](../../experiments/evidence/near_full_combat_support_2026-09-14/REPORT.md). V2 uses the same explicit model path; no default MCTS enablement is implied.
 
+The opt-in experimental width-64 strong-WD survival alternative is exported by
+`tools/export_combat_transition_survival_deepset.py`. It verifies the exact #217
+checkpoint and tracked Attention control, replaces only survival tensors, and
+adds `experimentalSurvival` with `qualified:false`. The V2 loader validates its
+fixed identity and DeepSets tensor graph; all other components, support rules,
+and defaults remain unchanged. Selection uses the existing explicit combat-model
+path, not a new default. Retained control qualification metadata does not qualify
+the replacement. The non-TEST checker is
+`tools/check_combat_transition_survival_deepset.py`; its
+[Stage-A evidence](../../experiments/evidence/deepset_survival_online_stage_a_2026-09-17/README.md)
+is implementation evidence only. Independent review, a frozen SHA, timing, and
+paired gameplay remain prerequisites to any online tradeoff conclusion.
+
 Copied native RNG streams still govern other stochastic OOC transitions. This
 adapter resolves the combat boundary only and remains **not a fair stochastic
 environment model** or a scientifically qualified full OOC planner.

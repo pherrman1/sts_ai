@@ -1,0 +1,21 @@
+{
+  "baselineSha": "589a7a73c40e5b89e96df1ffec6a00b08c2ea9ba",
+  "reviewStatus": "pending user independent GitHub review; not frozen",
+  "implementationSha256": {
+    "apps/one_combat/combat_transition_runtime.cpp": "91d4cea22abd8d4975e7b7a3c556cf111c70e5b7614c60921c8fdbdddfd4898c",
+    "tests/check_combat_transition_runtime_loader.py": "49fb8557eeceddfa30b1e3ac9211586b9f0ba23b353955b655cd5012f5aa9fa0",
+    "tools/export_combat_transition_survival_deepset.py": "538262722926ad22fc604b758666f87f3f21864c32a1c3745675f8dce68518a4",
+    "tools/check_combat_transition_survival_deepset.py": "b7b3bc66e7b01aff687e73d8a9bf933904c13c4dd0bc7134fb2917823783cbb9"
+  },
+  "preservedEvidenceSha256": {
+    "/tmp/deepset-online-stage-a-02/candidate.jsonl": "0be149bf85e4aa561175adb6ebf7ec3eb46f8f784f8e71ae5b61f909083e9f15",
+    "/tmp/deepset-online-stage-a-02/candidate.native": "c870e4c10f05abbb672c2ccf9d15def046b4b9c9a2bf591b5205ef0ecaab8b7b",
+    "/tmp/deepset-online-stage-a-02/control.jsonl": "414f943467fee39b1c1b3feb60a11e3bba7aa38a103e1902a62edf9a1317ec4d",
+    "/tmp/deepset-online-stage-a-02/fixtures.jsonl": "0f26c66d4c2c662e319244aa47c845abf2911f2ab3926f5a0a67b2a133592c1e",
+    "/tmp/deepset-online-stage-a-02/parity.json": "8fc4cc9f311c9266a47c1ce87b93e066bf9da4bcab889c11c5c938ace516f5f1"
+  },
+  "executableSha256": "c0275f4ded393a6bb59aa8fec77d8f26226c95ceb629b9207c03d22e2dc7c11a",
+  "timingRun": false,
+  "gameplaySeeds": 0,
+  "classification": null
+}
