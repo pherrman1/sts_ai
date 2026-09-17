@@ -148,7 +148,7 @@ def fit_stage_b(model, arrays, cache, train, validation, output, experiment_sha,
 def run(args):
     if args.output.exists():
         raise ValueError(f"refusing overwrite of {args.output}")
-    if fit.current_head() != args.experiment_sha or subprocess_status() != "":
+    if fit.screen.current_head() != args.experiment_sha or subprocess_status() != "":
         raise ValueError("freeze the exact clean implementation SHA before sweep")
     if not torch.cuda.is_available():
         raise ValueError("CUDA required")
