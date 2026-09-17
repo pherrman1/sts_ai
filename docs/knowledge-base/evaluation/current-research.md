@@ -24,6 +24,20 @@ configurations and benchmark numbers, the [research graph](../research/README.md
 for topic synthesis, and the [experiment ledger](../../../EXPERIMENTS.md) for
 chronology.
 
+## Silver policy/value Phase-A cost diagnostic
+
+The corrected clean-baseline result is **`PV_COST_NOT_FEASIBLE_CLEAN_BASELINE`**:
+the conversion-inclusive candidate was much slower than the approximately
+3-microsecond clean `PLAYER_NORMAL` rollout. A bounded stage decomposition on
+the same fixture measured 1.242 microseconds for conversion, 40.944 for
+feature/vector preparation, 72.158 for the `1768 -> 64 -> 64` encoder plus
+value head, and 4.212 for action scoring. The neural stage alone is therefore
+about 24.2 times the rollout cost. Do not pursue a conversion-only
+Silver-native representation for this exact model boundary; no training,
+runtime, gameplay, or default change is implied. See
+[ledger §290](../../experiments/ledger-06.md) and the
+[Phase-A evidence packet](../../experiments/evidence/silver_policy_value_phase_a_2026-09-16.md).
+
 ## Silver budget comparison at selected 128k cap
 
 The requested four-arm paired 32-seed comparison is complete at fixed 128k
@@ -114,7 +128,7 @@ reference won 10/16; the 1%, 2%, and 5% schedules won 8/16, 8/16, and 7/16,
 respectively, with lower mean floor and ending HP in each arm. The staged
 runtime is therefore not promoted; its rejected live runtime/configuration path
 has been removed while the analyzer and frozen evidence are retained. Current
-#199 500->10k and the 32k cap remain the production defaults. See [ledger §290](../../experiments/ledger-06.md)
+#199 500->10k and the 32k cap remain the production defaults. See [ledger §294](../../experiments/ledger-06.md)
 and the [staged sweep packet](../../experiments/evidence/silver_staged_grid_2026-09-17/README.md).
 
 The default-off prospective implementation was tested behind
@@ -171,7 +185,7 @@ rho-only wins and lower mean floor/HP. The result is
 strong enough to replace the frozen #199 preferred experimental path. The
 mode and exact-lock-only mode remain default-off.
 See the [rho-racing evidence packet](../../experiments/evidence/silver_rho_racing_2026-09-16/README.md)
-and [ledger §287](../../experiments/ledger-06.md).
+and [ledger §288](../../experiments/ledger-06.md).
 
 The final normal-production deployment screen for PR #199 used fresh paired
 seeds 224--255, the 32,768 allocated reuse cap, ordinary boss budgeting, and
@@ -590,6 +604,37 @@ its receipt records the artifact/cache bindings, exact row selection, isolated
 because the original cache used different inference arithmetic than the CPU
 replay; the regenerated-versus-cache difference is recorded explicitly.
 
+### Retrained downstream consumers for the qualified DeepSets representation
+
+The exact downstream retraining follow-up is **`DEEPSET_DOWNSTREAM_GO`** on the
+same eligible source-grouped VALIDATION cohort of 17,950 rows. It precomputed
+only the frozen corrected PR #205 DeepSets encoder output (`[N,64]`) and
+retrained the existing relic/turn/card/attack/shuffle, Writhing, Ritual and
+gold consumers with the same 12-epoch, batch-512, AdamW recipe. The DeepSets
+encoder, maxHP/HP heads and HP delta embedding were excluded from the
+optimizer. Potion representation, decoder, traces, labels, support predicate,
+candidate generation, legality masks and native-rule helpers were unchanged.
+
+Relative to the hash-verified dedicated-HP downstream reference, joint NLL
+improved 0.4115%. Turns, attacks, cards and shuffles stayed within the fixed
+2% NLL and 0.005 singleton-accuracy gates; their NLL changes were −1.0592%,
++0.1175%, −0.3111% and −1.9974%, and their accuracy deltas were +0.1705pp,
++0.7407pp, +0.8675pp and +0.8071pp. Writhing, Ritual and gold NLL changed by
+−1.8988%, −7.3414% and −1.0014%, each inside the fixed +5% important-slice
+gate. All outputs had finite metrics, normalized probabilities and positive
+exact legal target mass under the existing masks; TEST rows were neither
+encoded nor inferred.
+
+This qualifies the frozen DeepSets representation for these retrained offline
+downstream consumers only. It does not qualify the full CTM, potion or
+survival sharing, native runtime, gameplay, OOC MCTS, speedup or default
+promotion. The actual downstream-eligible TRAIN fit population was 150,404
+rows / 18,286 sources; the separate 393,677-row population is retained only
+as the DeepSets encoder's bound TRAIN normalization population. See the
+[downstream evidence report](../../experiments/evidence/deepset_downstream_2026-09-16.md),
+[machine-readable receipt](../../experiments/evidence/deepset_downstream_2026-09-16.json)
+and [ledger §287](../../experiments/ledger-06.md).
+
 ### Shared maxHP+HP representation for potion decoding
 
 The sequential frozen substitution screen is **`SHARED_ENCODER_POTION_REJECTED`**.
@@ -615,6 +660,73 @@ all shared architectures or intrinsic information absence. The dedicated
 potion encoder and all qualified current components remain unchanged. See
 [ledger-06 §282](../../experiments/ledger-06.md) and the
 [screen evidence](../../experiments/evidence/shared_potion_encoder_screen_2026-09-16.md).
+
+### Qualified DeepSets representation for potion decoding
+
+The sequential frozen DeepSets substitution screen is also
+**`DEEPSET_POTION_REJECTED`**. The corrected qualified PR #205 DeepSets
+representation was frozen, the dedicated potion encoder was used only for the
+control representation, and both arms trained fresh byte-identically
+initialized potion decoders with the exact existing 64-action trajectory DAG
+and fixed 12-epoch decoder-only recipe. This is a distinct result from the
+earlier shared-Attention screen.
+
+On the exact final-union winning TRAIN/VALIDATION population, selected epoch
+12 validation trajectory NLL was 0.506803228 for the dedicated control and
+0.537569223 for DeepSets (**+6.0706%**, above the fixed +2% gate). Normal
+action-mode accuracy dropped 1.2154 percentage points, beyond the 0.01 gate;
+no-change Brier remained within its limit. Brew, Smoke and trajectory-special
+NLL changes were +2.7248%, +4.9113% and +3.0868%, while recursive Brew
+regressed **+19.1859%**, an obvious slice regression. Legal probability was
+exactly zero and normalization remained within tolerance.
+
+The Stage-A teacher-forced gate therefore stopped the planned 32-draw
+ancestral stage. This rejects only the exact frozen DeepSets representation
+plus current potion-decoder recipe. It does not justify fine-tuning DeepSets,
+reinterpret the Attention result, claim intrinsic information absence, or
+qualify potion sharing for runtime. No TEST, export, C++, gameplay, OOC MCTS
+or default-promotion work occurred. See
+[ledger-06 §289](../../experiments/ledger-06.md) and the
+[DeepSets potion screen evidence](../../experiments/evidence/deepset_potion_screen_2026-09-16.md).
+
+### Qualified DeepSets representation for survival prediction
+
+The matched frozen survival-head screen is **`DEEPSET_SURVIVAL_REJECTED`**.
+The TRAIN-only full-union survival Attention encoder and the corrected
+qualified PR #205 DeepSets encoder were frozen. Only fresh byte-identically
+initialized survival heads were trained with the same 12-epoch, batch-512,
+FP32 AdamW recipe and identical epoch permutations on all original
+TRAIN/VALIDATION rows. No TEST rows were encoded or scored.
+
+Arm A selected epoch 10 at validation NLL `0.059312280`; Arm B selected epoch
+12 at `0.083209150`, a **+40.2899%** degradation. Brier worsened **+37.5178%**.
+Observed-death NLL worsened **+44.2850%**, and the supported low-pre-HP slice
+(`756` rows, `292` deaths) worsened **+55.8470%**. All four fixed gates failed.
+The original dedicated survival component's recorded validation NLL was
+reproduced as `0.059494425`, and the selected heads reloaded from disk without
+metric drift.
+
+This rejects the exact frozen victory-distilled DeepSets representation plus
+matched survival-head recipe for survival. It does not establish intrinsic
+information absence and does not authorize fine-tuning, a replacement runtime
+encoder, or a broader architecture search. The next clean option, if pursued,
+is a separately designed survival-specific representation. No TEST, runtime,
+native export, gameplay, OOC MCTS or promotion work occurred. See
+[ledger-06 §290](../../experiments/ledger-06.md) and the
+[DeepSets survival evidence](../../experiments/evidence/deepset_survival_screen_2026-09-16.md).
+
+### Converged linear survival probe
+
+The S1 follow-up remains **diagnostic, not a qualification**. Full-batch
+strong-Wolfe L-BFGS with identical L2 `1e-4` was fit on TRAIN for both existing
+frozen embeddings, with validation evaluated once after convergence. The
+DeepSets arm improved from the fixed-12-epoch probe's validation NLL `0.083209150`
+to `0.079102747`; the Attention control was `0.059344385`. The relative NLL
+gap narrowed from **+40.2899%** to **+33.2944%**, but death NLL and low-pre-HP
+NLL still regressed **+37.6878%** and **+41.4150%**. This reduces but does not
+eliminate the stopping-rule explanation. Proceed to the matched tiny nonlinear
+S2 decoder before changing the encoder. See [ledger-06 §291](../../experiments/ledger-06.md)
+and the [S1 evidence](../../experiments/evidence/deepset_survival_lbfgs_2026-09-17.md).
 
 ### Jointly adapted shared maxHP+HP+potion representation
 

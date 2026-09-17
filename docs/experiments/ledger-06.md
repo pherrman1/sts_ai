@@ -9033,7 +9033,46 @@ evidence updated.
 
 [Evidence packet, raw traces, validation and provenance](evidence/silver_exact_visit_lock_pair_2026-09-16/README.md).
 
-## §287 — Silver rho-racing soft-lock follow-up (2026-09-16)
+## §287 — Silver policy/value Phase-A cost diagnostic (2026-09-16)
+
+The bounded Phase-A probe defines a diagnostic-only `PLAYER_NORMAL`
+policy-plus-value contract over the visible Silver wire. It emits separate
+parent-policy records and actual rollout-leaf value records, preserving exact
+semantic legal siblings and preventing parent/child label substitution. The
+canonical policy layout is 1,766 state plus 22 action features (1,788 total);
+the prospective shared model input appends exact isolated-Silver root
+effective-gold and max-HP scalars (1,768 state inputs). Hidden pending-intent
+details are redacted before feature extraction. No training, model loading,
+gameplay, action selection, utility, RNG, or runtime default changed.
+
+The corrected benchmark boundary was committed at
+`d7897477a45e7112e1fe21d7484edc1cd9adfbfc`. The prior corpus-producing run is
+retained only for schema/examples. Clean one-thread Silver timing with no
+corpus or VNet observer measured 290,326 `PLAYER_NORMAL` calls at 3.083
+microseconds mean for 100 simulations (seeds 100--107), and 694,480 calls at
+2.981 microseconds mean for the 1k operating point (seeds 108--109).
+
+The conversion-inclusive native one-thread benchmark measured actual
+supported leaves at 143.763/143.739/150.833/165.010 microseconds
+(mean/median/p90/p99), with 3,200 calls, 13,000 action scores, and an observed
+checksum. Replacing clean full-run `PLAYER_NORMAL` rollouts gives an estimated
+42.134786-second search versus 1.291608 seconds at 100 simulations
+(-3,162.1959% reduction, 0.0307x speedup), and 101.191794 seconds versus
+3.421245 seconds at 1k (-2,857.7473% reduction, 0.0338x speedup).
+The corrected bounded engineering classification is
+**`PV_COST_NOT_FEASIBLE_CLEAN_BASELINE`**. The earlier
+`PV_COST_FEASIBLE` result is withdrawn because its baseline included
+corpus-observer work.
+
+The Phase-A packet records the separate parent-policy/leaf-value schemas,
+root effective-gold/max-HP input scalars, clean and observer-enabled run
+boundaries, exact arithmetic, executable/source/benchmark/example hashes, raw
+timing-log hashes, and CPU identity. This does not establish predictor quality,
+hidden-state sufficiency, or gameplay benefit.
+
+**Evidence:** [Phase-A packet](evidence/silver_policy_value_phase_a_2026-09-16.md).
+
+## §288 — Silver rho-racing soft-lock follow-up (2026-09-16)
 
 - **Dependency and baseline:** PR #204 was verified merged and contained in
   current `origin/main`, SHA
@@ -9087,7 +9126,7 @@ evidence updated.
   including raw N16/N32 results, scaling traces, logs, sidecars, time receipts,
   paired CSVs, provenance, and validator output.
 
-## §288 — Retained-root adaptive Silver production deployment gate (2026-09-16)
+## §292 — Retained-root adaptive Silver production deployment gate (2026-09-16)
 
 - **Preflight:** Current `origin/main` was
   `066264dc25bf2046aecd5ca7a94a8e82d5031e7b`. It contains merged PR #199
@@ -9129,7 +9168,7 @@ evidence updated.
   including raw arm results, metadata, scaling traces, run logs, paired CSV,
   summary, and validation outputs.
 
-## §289 — Current #199 retained-adaptive Silver cap screen (fresh N16, 2026-09-16)
+## §293 — Current #199 retained-adaptive Silver cap screen (fresh N16, 2026-09-16)
 
 - **Question/provenance:** After the #199 retained-root policy deployment
   screen, test whether the allocated Silver reuse cap should increase from
@@ -9170,7 +9209,7 @@ evidence updated.
   including raw arm results, metadata, scaling traces, `/usr/bin/time -v` logs,
   paired analysis, compact summary, and provenance.
 
-## §290 — Staged retained-root Silver threshold grid and Pareto inspection (2026-09-17)
+## §294 — Staged retained-root Silver threshold grid and Pareto inspection (2026-09-17)
 
 - **Question/hypothesis:** Replace the single current #199 retained-root
   `500 -> 10,000` decision with cumulative 250/500/1,000/2,000/4,000/8,000/
@@ -9225,3 +9264,184 @@ evidence updated.
 - **Evidence:** [staged threshold packet](evidence/silver_staged_grid_2026-09-17/README.md),
   including raw per-arm results, metadata, scaling traces, telemetry logs,
   `/usr/bin/time -v` receipts, frozen schedules, summaries, and provenance.
+## §289 — Retrained downstream consumers for the qualified DeepSets representation (2026-09-16)
+
+- **Question and baseline:** Does the corrected qualified PR #205 DeepSets
+  representation contain enough information for the existing downstream CTM
+  consumers when those consumers are retrained? After reconciling the branch
+  with current `main`, the baseline was `066264dc25bf2046aecd5ca7a94a8e82d5031e7b`.
+  The implementation correction was frozen at
+  `e036a32af068e8a99cd3c3edbfe1aeb35fdab58c`.
+- **Correction/intervention:** Only the downstream state input changed from
+  the dedicated HP representation to the frozen 64-dimensional
+  `student.encoder` output from the corrected DeepSets artifact. Preparation
+  generated representations for 458,589 TRAIN+VALIDATION rows and zero TEST
+  rows, with explicit row-ID binding; TEST rows were not encoded or inferred.
+  The DeepSets checkpoint SHA256 was
+  `bee6800dd7230b180c2b4894c0f01763efca4b7799e3f36a805333c3003dc663`, the
+  corrected result receipt SHA256 was
+  `83b2482eab347c09901c3b39f2ce7fed324f6be378ca36ff51f0d3965074c769`, and
+  the generated representation SHA256 was
+  `9232027d8331fd2157727276410161e3c12816b6680cb116ebc2b3afd37352af`.
+- **Protocol/provenance:** Existing `models`, `losses`, compatible-set targets,
+  exact hidden potion-trace marginalization, event candidates, legality masks,
+  native helpers and source-grouped splits were reused. Preparation cache,
+  downstream cache and reference checkpoint hashes were unchanged at
+  `e1c25f27…a251d`, `acd48827…d0e3` and `d07ead94…6af91`. The downstream fit
+  used seed `20260912`, 12 epochs, batch 512, FP32, AdamW, learning rate
+  `0.001`, weight decay `0.0001`, clip 1.0, and earliest strict minimum
+  original VALIDATION normalized joint NLL. TRAIN was 150,404 eligible rows /
+  18,286 sources; VALIDATION was 17,950 eligible rows / 2,276 sources.
+- **Result:** Candidate checkpoint SHA256 was
+  `c00ed677b8b2b2854fb62982247853982bc58d9fc20afdd96c593bcc6c07423a`, with
+  epoch 12 selected. Joint NLL was 1.358598545 versus reference 1.364212489
+  (−0.4115%). Turns, attacks, cards and shuffles had relative NLL changes of
+  −1.0592%, +0.1175%, −0.3111% and −1.9974%; singleton accuracy changes were
+  +0.1705pp, +0.7407pp, +0.8675pp and +0.8071pp. Writhing, Ritual and gold
+  relative NLL changes were −1.8988%, −7.3414% and −1.0014%. All fixed NLL,
+  accuracy and important-slice gates passed. The explicit output-support audit
+  found finite losses, normalized head probabilities and positive exact legal
+  target mass under the existing masks.
+- **Decision:** **`DEEPSET_DOWNSTREAM_GO`**. Retrained downstream consumers
+  can use this frozen cheap representation with acceptable offline validation
+  quality. This does not qualify full CTM sharing, potion/survival sharing,
+  native runtime, gameplay, OOC MCTS, speedup or default promotion. No TEST
+  inference, native export, C++ or runtime change occurred. **Knowledge impact:**
+  current research status and experiment evidence only; qualified executable
+  defaults remain unchanged.
+
+[Corrected evidence packet and machine-readable receipt](evidence/deepset_downstream_2026-09-16.md).
+
+## §290 — Silver policy/value stage-cost decomposition (2026-09-16)
+
+The requested tiny follow-up decomposed the conversion-inclusive Phase-A
+candidate on the same 16 supported `PLAYER_NORMAL` leaves, fixed synthetic
+weights, one thread, 200 iterations, and 3,200 calls. Mean per-call costs were
+1.242 microseconds for live `BattleContext` to Silver wire conversion, 40.944
+microseconds for canonical feature extraction plus root-scalar and action
+vector preparation, 72.158 microseconds for the `1768 -> 64 -> 64` encoder plus
+value head, and 4.212 microseconds for all legal action scores. The stage sum
+was 118.556 microseconds versus 118.851 microseconds independently measured
+end-to-end.
+
+The neural encoder/value stage alone is about 24.2 times the clean 1k
+`PLAYER_NORMAL` rollout mean of 2.981 microseconds. Decision:
+**`PV_COST_NOT_FEASIBLE_MODEL_FORWARD`** for this exact model boundary. A
+Silver-native compact representation is not pursued as a conversion-only fix;
+it would need to change the model/input computation as well. No gameplay,
+training, runtime integration, or default change occurred. Knowledge impact:
+current Phase-A evidence and research status updated.
+
+[Phase-A evidence packet with stage receipt](evidence/silver_policy_value_phase_a_2026-09-16.md).
+## §291 — Frozen qualified DeepSets representation for potion decoding (2026-09-16)
+
+- **Question and baseline:** Can the qualified frozen PR #205 DeepSets state
+  representation replace the dedicated potion Attention encoder when the
+  existing potion decoder is retrained for that representation? The current
+  `main` baseline was `b0704c755a78fc139c6859781ce899c230919a44`; the final
+  screen implementation was `207db265c41badab848fe3caabe4ab2d9b47de1a`.
+- **Intervention/provenance:** Only the state representation supplied to the
+  potion decoder changed. The corrected DeepSets checkpoint and receipt were
+  `bee6800d…c3003dc663` and `83b2482e…5074c769`; the reused TRAIN+VALIDATION
+  representation was `9232027d…d37352af`, with explicit row-ID binding and
+  zero TEST rows. The dedicated potion component was
+  `ae1a1411…15a0f1db`; the potion preparation cache contract was
+  `e1c25f27…a251d`; source SHA was `1c31b7e…9a8955dd`.
+- **Protocol:** The exact 64-action native potion trajectory DAG, observed
+  generation-body prior, legality masks, Brew recursion, Smoke handling and
+  teacher-forced metrics were reused. A and B used fresh byte-identical
+  decoder initialization, seed `20260912`, FP32, AdamW, batch 512, 12 epochs,
+  learning rate `0.001`, weight decay `0.0001`, clip `1.0`, fixed identical
+  batch orders, and earliest strict minimum VALIDATION trajectory NLL. Both
+  encoders and the PR #205 maxHP/HP upstream modules were frozen. TRAIN was
+  393,677 rows / 19,986 sources; VALIDATION was 48,590 / 2,496.
+- **Result:** Both arms selected epoch 12. Dedicated A validation trajectory
+  NLL was `0.506803228`; frozen DeepSets B was `0.537569223`, a `+6.0706%`
+  regression above the fixed `+2%` gate. No-change Brier delta was `+0.00723277`
+  and passed, but normal action-mode accuracy dropped `1.2154` percentage
+  points, beyond the `0.01` gate. Brew, Smoke and trajectory-special slices
+  regressed `+2.7248%`, `+4.9113%` and `+3.0868%`; recursive Brew regressed
+  `+19.1859%`, an obvious slice regression. Illegal probability remained
+  exactly zero and maximum normalization error was `1.9914e-7`.
+- **Decision:** **`DEEPSET_POTION_REJECTED`** after
+  `TEACHER_FORCED_REJECTED`. The required ancestral Stage B was not run. This
+  rejects this exact frozen DeepSets representation plus decoder recipe only;
+  it does not reinterpret the prior Attention rejection, justify encoder
+  fine-tuning, or establish intrinsic information absence. No TEST scoring,
+  runtime/export, C++, gameplay, OOC MCTS or default promotion occurred.
+  **Knowledge impact:** current research status and experiment evidence only;
+  qualified encoders and executable defaults remain unchanged.
+- **Evidence:** [screen report](evidence/deepset_potion_screen_2026-09-16.md),
+  [machine-readable receipt](evidence/deepset_potion_screen_2026-09-16.json),
+  and external raw receipt
+  `/home/philippherrmann/sts_sweep/runs/deepset-potion-screen-20260916/results.json`
+  (SHA256 `1ba8b785…7dcad107ab45363`).
+
+## §290 — Frozen qualified DeepSets representation for survival prediction (2026-09-16)
+
+- **Question and baseline:** Can the qualified frozen PR #205 DeepSets
+  representation support survival prediction when only a new survival head is
+  trained? The current `main` baseline was `4c8ff3fe044626c6d18226e5f4091a0d1cb842d1`
+  after the merged PR #210 potion screen.
+- **Intervention/provenance:** Arm A used the frozen TRAIN-only full-union
+  survival Attention encoder; Arm B used the corrected frozen DeepSets
+  encoder. The checkpoint/receipt were `bee6800d…c3003dc663` /
+  `83b2482e…5074c769`; the reused TRAIN+VALIDATION representation and row-ID
+  files were `9232027d…d37352af` / `3dfecd1d…112e437`. The source, corpus and
+  preparation bindings were `1c31b7e…9a8955dd`, `74c08aa0…c1cfde` and
+  `e1c25f27…a251d`. TRAIN was 408,183 rows / 19,986 sources; VALIDATION was
+  50,406 / 2,496; TEST encoding and inference were zero.
+- **Protocol:** Fresh survival heads were byte-identically initialized with
+  seed `20260912`. Both arms used FP32, AdamW, batch 512, 12 epochs, learning
+  rate `0.001`, weight decay `0.0001`, clip `1.0`, identical epoch
+  permutations, BCE-with-logits loss, and earliest strict minimum VALIDATION
+  NLL. Only head parameters entered each optimizer; both selected checkpoints
+  reloaded with exact metric reproduction.
+- **Result:** Arm A selected epoch 10 at NLL `0.059312280`; Arm B selected
+  epoch 12 at `0.083209150`, a **+40.2899%** regression. Brier worsened
+  **+37.5178%**. Observed-death NLL worsened **+44.2850%**; low-pre-HP NLL
+  worsened **+55.8470%** on 756 rows / 292 deaths. ROC-AUC remained diagnostic
+  only. The original dedicated component validation NLL reproduced as
+  `0.059494425` versus recorded `0.059494428`.
+- **Decision:** **`DEEPSET_SURVIVAL_REJECTED`**. All fixed core NLL, Brier,
+  death-slice and low-pre-HP gates failed. This rejects the exact frozen
+  victory-distilled DeepSets representation plus matched head recipe; it does
+  not prove intrinsic information absence or authorize encoder fine-tuning.
+  No TEST, runtime/export, C++, gameplay, OOC MCTS, potion, architecture sweep
+  or promotion work occurred. **Knowledge impact:** current research status
+  and experiment evidence only; qualified encoders and runtime defaults remain
+  unchanged.
+- **Evidence:** [screen report](evidence/deepset_survival_screen_2026-09-16.md),
+  [machine-readable receipt](evidence/deepset_survival_screen_2026-09-16.json),
+  and external raw receipt
+  `/home/philippherrmann/sts_sweep/runs/deepset-survival-screen-20260916-final/results.json`.
+
+## §291 — Converged linear probe for frozen DeepSets survival (2026-09-16)
+
+- **Question and baseline:** Does the PR #211 survival gap persist when the
+  linear readout is optimized to convergence rather than stopped after 12
+  AdamW epochs? The baseline after merged PR #211 was
+  `e82810f8486d4ad47b62b074ebcfdcb307fa9f17`.
+- **Protocol:** Existing frozen Attention and DeepSets embeddings were reused.
+  Fresh byte-identical heads were fit on TRAIN with full-batch L-BFGS, strong
+  Wolfe line search, maximum 500 iterations / 1,000 evaluations, history 20,
+  tolerances `1e-9` / `1e-12`, and identical L2 `1e-4`. Validation was scored
+  once after fitting; no validation epoch selection, TEST inference, encoder
+  training or new embedding generation occurred.
+- **Result:** Attention validation NLL was `0.059344385`; DeepSets was
+  `0.079102747`, a **+33.2944%** relative gap versus +40.2899% in PR #211.
+  Brier relative degradation was +31.5958%; observed-death NLL +37.6878%;
+  low-pre-HP NLL +41.4150%. The gap narrowed by 6.9955 percentage points but
+  remained substantial. The probes used only 69 / 68 closure calls and about
+  0.30 / 0.15 seconds.
+- **Decision:** **`S1_LINEAR_PROBE_DIAGNOSTIC`**. This reduces, but does not
+  eliminate, the hypothesis that the prior result was caused by the 12-epoch
+  stopping rule. Proceed to the matched tiny nonlinear S2 decoder before
+  changing the encoder. No runtime, TEST, gameplay, OOC MCTS, fine-tuning,
+  native export or promotion work occurred. **Knowledge impact:** current
+  research status and experiment evidence only; qualified components and
+  runtime defaults remain unchanged.
+- **Evidence:** [S1 report](evidence/deepset_survival_lbfgs_2026-09-16.md),
+  [machine-readable receipt](evidence/deepset_survival_lbfgs_2026-09-16.json),
+  and external raw receipt
+  `/home/philippherrmann/sts_sweep/runs/deepset-survival-lbfgs-20260916/results.json`.
