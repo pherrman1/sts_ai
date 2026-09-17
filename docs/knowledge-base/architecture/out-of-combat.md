@@ -187,8 +187,10 @@ path, not a new default. Retained control qualification metadata does not qualif
 the replacement. The non-TEST checker is
 `tools/check_combat_transition_survival_deepset.py`; its
 [Stage-A evidence](../../experiments/evidence/deepset_survival_online_stage_a_2026-09-17/README.md)
-is implementation evidence only. Independent review, a frozen SHA, timing, and
-paired gameplay remain prerequisites to any online tradeoff conclusion.
+is implementation evidence only. The independently reviewed
+[Stage-B speed screen](../../experiments/evidence/deepset_survival_online_stage_b_2026-09-18/README.md)
+stopped below the 10% end-to-end CPU improvement threshold; the gameplay-quality
+gate did not run. The alternative remains experimental, not a promoted default.
 
 Copied native RNG streams still govern other stochastic OOC transitions. This
 adapter resolves the combat boundary only and remains **not a fair stochastic

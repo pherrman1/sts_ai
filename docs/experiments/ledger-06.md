@@ -9738,3 +9738,30 @@ top-level benchmark reporting corrected.
   [complete receipt](evidence/survival_wide96_pretrained_2026-09-17.json), including
   both full histories and all slices. **Knowledge impact:** research status;
   no qualified-default change.
+
+## §303 — Strong-WD survival native and OOC CPU screen (2026-09-18)
+
+- **Decision:** `DEEPSET_ONLINE_TRADEOFF_STOP`; median CPU/run reduction
+  1.1596% is below the required 10%. No 16/64 quality gate or promotion.
+- **Execution:** baseline `589a7a73c40e5b89e96df1ffec6a00b08c2ea9ba`, user-reviewed
+  frozen SHA `471ba9a119de2a4f6ae691329467acae1b0f70a0`; Linux GCC passed first.
+  Exact strong-WD checkpoint `3689593d…` re-exported to native `c870e4c…`;
+  current Attention control `e9a18951…`, executable `c0275f4d…`. Other components
+  unchanged; Stage-A source-bound evidence retained without rerun.
+- **Mode:** guarded `bestbench 10000 1 0 SEED OUTPUT`, A0 Ironclad project-fair,
+  effective Silver backend, 2048 OOC simulations, native leaf value, V4 policy,
+  early stop, keys off, Act-3 stop. Historical #187 seeds 12002032/12002033,
+  two repetitions per arm, balanced ordering; 8 invocations, 2 unique seeds.
+  One thread per run instead of historical 12-way outer parallelism; CPU is
+  `/usr/bin/time` user+system, not bestbench elapsed `sec`.
+- **Results:** CPU median control/candidate 50.88/50.29 s, ratio 0.988404;
+  mean 51.125/50.1525 s. Native survival 1.143383/0.128041 ms;
+  reference sample 4.435917/3.168253 ms; prepared sample 0.023364/0.023288 ms.
+  All runs complete, support reasons match per seed, zero continuation aborts.
+  Shared legacy V1 copy-through flags in the timed V2 probe are disclosed.
+- **Limits:** timing-only historical two-seed screen, not a gameplay-quality
+  result; fresh cohort not launched, no bootstrap interval, no TEST inference.
+  Source remains frozen; evidence/report commit is not the execution SHA.
+- **Evidence:** [report, plan, runner, raw logs/CSV/telemetry and hashes](evidence/deepset_survival_online_stage_b_2026-09-18/README.md).
+  **Knowledge impact:** bounded negative speed evidence and maintained research
+  status; no runtime/model/default changes after review.

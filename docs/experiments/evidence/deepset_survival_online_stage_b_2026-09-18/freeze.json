@@ -1,0 +1,31 @@
+{
+  "frozenSourceSha": "471ba9a119de2a4f6ae691329467acae1b0f70a0",
+  "baselineSha": "589a7a73c40e5b89e96df1ffec6a00b08c2ea9ba",
+  "frozenAt": "2026-09-17T21:53:09.907157+00:00",
+  "review": "User independent GitHub review GO conditional on Linux GCC; condition satisfied",
+  "ci": [
+    {
+      "__typename": "CheckRun",
+      "completedAt": "2026-09-17T21:48:14Z",
+      "conclusion": "SUCCESS",
+      "detailsUrl": "https://github.com/pherrman1/sts_ai/actions/runs/35278049583/job/105393291526",
+      "name": "Linux GCC",
+      "startedAt": "2026-09-17T21:41:18Z",
+      "status": "COMPLETED",
+      "workflowName": "CI"
+    }
+  ],
+  "stage": "B only",
+  "sourceClean": true,
+  "candidateReexportVerified": true,
+  "hashes": {
+    "/home/philippherrmann/sts_sweep/runs/deepset-survival-online-471ba9a-stage-b/candidate.native": "c870e4c10f05abbb672c2ccf9d15def046b4b9c9a2bf591b5205ef0ecaab8b7b",
+    "/home/philippherrmann/.codex/worktrees/529c/sts_lightspeed/selfplay/models/combat_transition_near_full_except_smoke_v2.native": "e9a18951710fdfe9e1a81a2703090a41f039067c670a1d8a0393b5e7e8e0ddfd",
+    "/home/philippherrmann/.codex/worktrees/529c/sts_lightspeed/build/linux-gcc-release-ccache/one_combat": "c0275f4ded393a6bb59aa8fec77d8f26226c95ceb629b9207c03d22e2dc7c11a",
+    "/home/philippherrmann/.codex/worktrees/529c/sts_lightspeed/build/linux-gcc-release-ccache/combat_transition_runtime_probe": "9b6da7cd4806ed51e068a3156bd74d083eb6cbfcd9d78cc67e52f9c4b2673802",
+    "/tmp/deepset-online-stage-a-02/parity.json": "8fc4cc9f311c9266a47c1ce87b93e066bf9da4bcab889c11c5c938ace516f5f1"
+  },
+  "stageARerun": false,
+  "gameplaySeeds": 0,
+  "sourceChangesAllowedWithoutReview": false
+}
