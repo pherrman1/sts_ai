@@ -806,6 +806,23 @@ std::vector<float> silverLiveLeafCanonicalFeaturesImpl(
     return features;
 }
 
+silver_bridge::BattleStateWire silverLiveBattleStateWireForBenchmarkImpl(
+        const silver_bridge::BattleStateWire &wire) {
+    BattleContext live = liveLeafBattleContext(wire);
+    CombatKnowledgeState knowledge;
+    knowledge.configureHiddenMonsterIntents(wire.intentsHidden);
+    if (wire.intentsHidden)
+        throw std::invalid_argument("benchmark wire conversion does not synthesize hidden intent history");
+    knowledge.initializeFromLiveBattle(live);
+    const SilverRunContext runContext {
+        wire.act, wire.omamoriOwned, wire.omamoriValue};
+    const auto conversion = makeSilverBattleStateConversion(
+        live, knowledge, runContext, wire.isolatedSearchSeed);
+    if (!conversion.failureReason.empty())
+        throw std::runtime_error("benchmark live-to-wire conversion failed: " + conversion.failureReason);
+    return conversion.wire;
+}
+
 std::vector<SilverPolicyFeatureRow> silverLiveParentPolicyFeaturesImpl(
         const silver_bridge::BattleStateWire &wire) {
     g_richCombatFeatures = true;
@@ -815,6 +832,9 @@ std::vector<SilverPolicyFeatureRow> silverLiveParentPolicyFeaturesImpl(
     std::unordered_set<std::string> fingerprints;
     std::vector<SilverPolicyFeatureRow> rows;
     rows.reserve(semantics.size());
+    const int stateWidth = combatFeatureCount();
+    std::vector<float> stateFeatures(stateWidth);
+    combatExtractFeatures(live, stateFeatures.data());
     for (std::size_t i = 0; i < semantics.size(); ++i) {
         const auto fingerprint = silver_bridge::semanticActionFingerprint(semantics[i]);
         if (!fingerprints.insert(fingerprint).second)
@@ -826,7 +846,8 @@ std::vector<SilverPolicyFeatureRow> silverLiveParentPolicyFeaturesImpl(
         row.actionFingerprint = fingerprint;
         row.silverOrder = static_cast<int>(i);
         row.features.resize(combatPolicyFeatureCount());
-        combatExtractPolicyFeatures(live, resolved.action, row.features.data());
+        std::copy(stateFeatures.begin(), stateFeatures.end(), row.features.begin());
+        combatFillActionFeatures(live, resolved.action, row.features.data() + stateWidth);
         rows.push_back(std::move(row));
     }
     return rows;
@@ -1209,10 +1230,30 @@ void addTelemetry(const silver_bridge::SilverSearchTelemetry &telemetry) {
     g_silverLiveDiagnostics.chanceDepthSum += telemetry.chanceDepthSum;
     g_silverLiveDiagnostics.rolloutSkippedVNet += telemetry.rolloutSkippedVNet;
     g_silverLiveDiagnostics.rolloutCalls += telemetry.rolloutCalls;
+    g_silverLiveDiagnostics.searchWallMicros += telemetry.searchWallMicros;
+    g_silverLiveDiagnostics.rolloutWallMicros += telemetry.rolloutWallMicros;
+    for (std::size_t i = 0; i < g_silverLiveDiagnostics.rolloutCallsByInputState.size(); ++i) {
+        g_silverLiveDiagnostics.rolloutCallsByInputState[i] += telemetry.rolloutCallsByInputState[i];
+        g_silverLiveDiagnostics.rolloutWallMicrosByInputState[i] += telemetry.rolloutWallMicrosByInputState[i];
+    }
+    g_silverLiveDiagnostics.rolloutLatencyMicros.insert(
+        g_silverLiveDiagnostics.rolloutLatencyMicros.end(),
+        telemetry.rolloutLatencyMicros.begin(), telemetry.rolloutLatencyMicros.end());
     for (std::size_t i = 0; i < telemetry.wideningSampled.size(); ++i) {
         g_silverLiveDiagnostics.wideningSampled += telemetry.wideningSampled[i];
         g_silverLiveDiagnostics.wideningCapped += telemetry.wideningCapped[i];
     }
+}
+
+double rolloutPercentile(const std::vector<double> &samples, double fraction) {
+    if (samples.empty()) return 0.0;
+    std::vector<double> sorted = samples;
+    std::sort(sorted.begin(), sorted.end());
+    const double position = fraction * static_cast<double>(sorted.size() - 1);
+    const auto lower = static_cast<std::size_t>(position);
+    const auto upper = std::min(sorted.size() - 1, lower + 1);
+    const double weight = position - static_cast<double>(lower);
+    return sorted[lower] * (1.0 - weight) + sorted[upper] * weight;
 }
 
 void addDecisionDiagnostic(const silver_bridge::SilverSearchDecisionDiagnostic &diagnostic) {
@@ -1638,6 +1679,26 @@ void runSilverCombat(ScumSearchAgent2 &agent, GameContext &gc, BattleContext &bc
                   << " chance_depth_sum=" << d.chanceDepthSum
                   << " rollout_skipped_vnet=" << d.rolloutSkippedVNet
                   << " rollout_calls=" << d.rolloutCalls
+                  << " rollout_calls_by_input_state=";
+        for (std::size_t i = 0; i < d.rolloutCallsByInputState.size(); ++i) {
+            if (i != 0) line << ',';
+            line << i << ':' << d.rolloutCallsByInputState[i];
+        }
+        line << " rollout_wall_micros_by_input_state=";
+        for (std::size_t i = 0; i < d.rolloutWallMicrosByInputState.size(); ++i) {
+            if (i != 0) line << ',';
+            line << i << ':' << d.rolloutWallMicrosByInputState[i];
+        }
+        line
+                  << " search_wall_micros=" << d.searchWallMicros
+                  << " rollout_wall_micros=" << d.rolloutWallMicros
+                  << " rollout_fraction=" << (d.searchWallMicros > 0.0
+                      ? d.rolloutWallMicros / d.searchWallMicros : 0.0)
+                  << " rollout_mean_micros=" << (d.rolloutCalls > 0
+                      ? d.rolloutWallMicros / d.rolloutCalls : 0.0)
+                  << " rollout_p50_micros=" << rolloutPercentile(d.rolloutLatencyMicros, 0.50)
+                  << " rollout_p90_micros=" << rolloutPercentile(d.rolloutLatencyMicros, 0.90)
+                  << " rollout_p99_micros=" << rolloutPercentile(d.rolloutLatencyMicros, 0.99)
                   << " blend_eligible_leaves=" << d.blendEligibleLeaves
                   << " blend_invocations=" << d.blendInvocations
                   << " blend_depth_avoided=" << d.blendDepthAvoided
@@ -1667,6 +1728,11 @@ double silverLiveLeafVNetPredictionForTest(
 std::vector<float> silverLiveLeafCanonicalFeatures(
         const silver_bridge::BattleStateWire &wire) {
     return silverLiveLeafCanonicalFeaturesImpl(wire);
+}
+
+silver_bridge::BattleStateWire silverLiveBattleStateWireForBenchmark(
+        const silver_bridge::BattleStateWire &wire) {
+    return silverLiveBattleStateWireForBenchmarkImpl(wire);
 }
 
 std::vector<SilverPolicyFeatureRow> silverLiveParentPolicyFeatures(
