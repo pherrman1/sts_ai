@@ -41,6 +41,24 @@ tested value and action logit: maximum absolute value error was
 2.14 rollout-equivalents, so it does not provide an inference-throughput gain
 for per-leaf replacement.
 
+## Timer-boundary correction
+
+The first run of this screen started the outer end-to-end timer before the
+parity checks and sparse benchmark, while dividing by only the dense-call
+count. That inflated its top-level mean and made its percentiles incomparable.
+The minimal correction moved that timestamp immediately before the dense timed
+loop; parity, sparse timing, and stage timestamps were already independently
+bounded and were not affected.
+
+On the corrected run, the dense conversion-inclusive end-to-end report was
+120.636 µs mean, 119.208 µs median, 124.404 µs p90, and 173.634 µs p99. The
+separately bounded sparse model-plus-action timing was 6.355 µs/call. The
+corrected stage means were 1.300 µs conversion, 41.418 µs feature/vector
+preparation, 73.341 µs dense encoder/value, and 4.291 µs action scoring. Sparse
+parity remained `4.66e-10` maximum value error and `1.16e-10` maximum logit
+error. Thus the timer correction changes only the top-level end-to-end report;
+it does not invalidate the sparse-vs-dense model-computation conclusion.
+
 ## Decision
 
 **`PV_SPARSE_NOT_FEASIBLE_PER_LEAF`** for the throughput-oriented screen. The
@@ -54,10 +72,11 @@ screen.
 ## Provenance
 
 - Implementation commit: `fb467614a2804114520dc76992cdefe9a975d6d0`
+- Timer correction commit: `d0b956b019d9fcf8a5696971e35466f3fa854bc3`
 - Input corpus SHA-256: `f19f012bc0acc9c7bac517de7d4270a85a00fde4d7d2967fc9e18f41bed2a843`
-- Benchmark executable SHA-256: `f4a9900ac91d9bd4a7c6da759ac5dbbb9de25e88985b8ee466c849680f271788`
-- Benchmark JSON SHA-256: `5f75d992f100277ab84a36f2437a43fd8f31c0338e48a5a64c7942cf96155539`
-- Raw benchmark log SHA-256: `26398d0964d0f4941c53dd615b95b2bed1c432f8e09f24a7c659781d776cdcab`
+- Corrected benchmark executable SHA-256: `b5bd7687a9644c5e033111b6a7d537fe2fedda00f8067d96f53f6e0d969ec30e`
+- Corrected benchmark JSON SHA-256: `389ed5a003e6a221ec77620569497b64f8d197f21fe73ca901edfff6656cde63`
+- Corrected raw benchmark log SHA-256: `bc04e75ba0afa4955837803cbae6191b13d5697d5a0b43f0c665c96752e0649d`
 - Parity tolerance: `1e-5`
 
 The generated JSON, log, and example output remain ignored build artifacts;

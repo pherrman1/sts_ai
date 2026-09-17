@@ -9217,6 +9217,21 @@ default change occurred. Knowledge impact: current research status and
 experiment evidence updated.
 
 [Sparse evaluator evidence packet](evidence/silver_sparse_evaluator_2026-09-17.md).
+
+## §293 — Sparse evaluator top-level timer correction (2026-09-17)
+
+Review found that the sparse screen's outer timer began before parity and the
+separate sparse benchmark, while its denominator counted only dense calls.
+The timer was moved immediately before the dense loop. On the corrected same
+fixture run, dense conversion-inclusive end-to-end timing was 120.636
+microseconds mean, 119.208 median, 124.404 p90, and 173.634 p99. The sparse
+model-plus-action timer remained independently bounded at 6.355 microseconds
+per call; parity remained below `5e-10`. This changes only the top-level report,
+not the sparse-vs-dense model-computation conclusion. No training, gameplay,
+runtime, or default change occurred. Knowledge impact: evidence provenance and
+top-level benchmark reporting corrected.
+
+[Corrected sparse evaluator evidence](evidence/silver_sparse_evaluator_2026-09-17.md).
 ## §291 — Frozen qualified DeepSets representation for potion decoding (2026-09-16)
 
 - **Question and baseline:** Can the qualified frozen PR #205 DeepSets state
