@@ -22,6 +22,7 @@ struct Teacher {
     std::map<std::string, double> quality;
     std::map<std::string, std::int64_t> visits;
     std::uint64_t seed;
+    std::string executableGitSha;
 };
 
 Teacher teacher(const Json &label, const Json &root, const std::string &replicate, bool fixture) {
@@ -53,6 +54,7 @@ Teacher teacher(const Json &label, const Json &root, const std::string &replicat
         throw std::invalid_argument("teacher configuration mismatch");
     Teacher result;
     result.seed = label.at("teacher_rng_identity").get<std::uint64_t>();
+    result.executableGitSha = label.at("executable_git_sha").get<std::string>();
     const auto expectedSeed = silver_bridge::rootMechanismSeed(
         std::to_string(label.at("relabel_seed").get<std::uint64_t>()) + "/"
         + root.at("root_id").get<std::string>() + "/" + replicate);
@@ -86,7 +88,7 @@ int main(int argc, char **argv) {
         const auto seed = std::stoull(argv[4]);
         const auto roots = readRows(argv[1]);
         const auto labels = readRows(argv[2]);
-        if (roots.size() != (fixture ? 1u : 64u) || labels.size() != roots.size() * 2)
+        if (roots.empty() || labels.size() != roots.size() * 2)
             throw std::invalid_argument("incomplete root/teacher population");
         std::map<std::pair<std::string, std::string>, Json> indexed;
         for (const auto &label : labels)
@@ -100,8 +102,14 @@ int main(int argc, char **argv) {
             if (!ids.insert(id).second) throw std::invalid_argument("duplicate root");
             const auto labelA = teacher(indexed.at({id, "A"}), root, "A", fixture);
             const auto labelB = teacher(indexed.at({id, "B"}), root, "B", fixture);
+            if (!fixture && (root.at("executable_git_sha") != argv[5]
+                    || labelA.executableGitSha != argv[5]
+                    || labelB.executableGitSha != argv[5]))
+                throw std::invalid_argument("root/teacher/CLI executable SHA mismatch");
             if (labelA.seed == labelB.seed) throw std::invalid_argument("teacher RNG identities must differ");
         }
+        if (roots.size() != (fixture ? 1u : 64u))
+            throw std::invalid_argument("incomplete root/teacher population");
         std::ofstream output(argv[3]);
         for (const auto &root : roots) {
             const auto id = root.at("root_id").get<std::string>();
@@ -124,12 +132,19 @@ int main(int argc, char **argv) {
                 wire.isolatedSearchSeed = silver_bridge::rootMechanismSeed(
                     std::to_string(seed) + "/replay/" + id + "/" + std::to_string(replicate));
                 if (!seeds.insert(wire.isolatedSearchSeed).second) throw std::invalid_argument("replay RNG collision");
-                for (const std::string arm : {"A", "B", "C", "D"}) {
-                    const auto &order = arm == "B" || arm == "D" ? ordered : native;
-                    const bool puct = arm == "C" || arm == "D";
+                for (const std::string arm : {"A", "B", "E", "F", "C", "D"}) {
+                    const bool teacherOrder = arm == "B" || arm == "F" || arm == "D";
+                    const auto &order = teacherOrder ? ordered : native;
+                    const bool puct = arm == "E" || arm == "F" || arm == "C" || arm == "D";
                     std::vector<double> priors;
-                    if (puct) for (const auto &fingerprint : order)
-                        priors.push_back(static_cast<double>(labelA.visits.at(fingerprint)) / total);
+                    if (puct) {
+                        if (arm == "E" || arm == "F") {
+                            priors.assign(order.size(), 1.0 / static_cast<double>(order.size()));
+                        } else {
+                            for (const auto &fingerprint : order)
+                                priors.push_back(static_cast<double>(labelA.visits.at(fingerprint)) / total);
+                        }
+                    }
                     const auto result = silver_bridge::replaySilverRoot(wire, native, order, priors, puct);
                     if (!result.accepted) throw std::runtime_error("replay failed: " + result.failureReason);
                     const auto selected = silver_bridge::semanticActionFingerprint(result.action);

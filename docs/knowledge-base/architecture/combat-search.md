@@ -61,15 +61,20 @@ is the same FNV-style hash of `SEED/root_id/A` or `SEED/root_id/B`; collisions
 fail closed. The root is its own evaluation reference, so the original-root
 victory correction is zero and ordering Q equals the child selection mean.
 Every teacher action must have valid Q and match the entire native order.
-The optional fixture budget (32..128) requires exactly one root, marks outputs
-`fixture_only`, and cannot supply a scientific replay.
+Scientific mode also requires the root SHA, both teacher record SHAs, both
+teacher source-root SHAs, and the CLI SHA to be identical. The optional fixture
+budget (32..128) requires exactly one root, marks outputs `fixture_only`, and
+cannot supply a scientific replay; it intentionally permits the fixed fixture's
+historical source SHA.
 
 `silver_root_mechanism ROOTS LABELS OUTPUT SEED EXECUTABLE_SHA` runs exactly
 32 simulations and four common replicates over A native-UCT, B A-Q-order-UCT,
-C native-visit-PUCT, and D A-Q-order-visit-PUCT. Ordering is stable descending
-teacher-A corrected Q, with native ties. Priors are exactly normalized A edge
-visits, without smoothing or pruning. Replay RNG is derived independently as
-`SEED/replay/root_id/replicate` and checked against both teachers.
+E native-uniform-PUCT, F A-Q-order-uniform-PUCT, C native-visit-PUCT, and D
+A-Q-order-visit-PUCT. Ordering is stable descending teacher-A corrected Q, with
+native ties. Uniform priors are exactly `1 / legal_action_count`; visit priors
+are exactly normalized A edge visits, without smoothing or pruning. Replay RNG
+is derived independently as `SEED/replay/root_id/replicate` and checked against
+both teachers.
 `--fixture` requires one root and fixture labels. Scientific mode requires 64.
 
 The dedicated `replaySilverRoot` entry point owns a fresh local session,
@@ -83,9 +88,10 @@ Teacher B is used only for regret and best-action judgment; the fixed fixture
 test changes B Q and verifies identical treatment actions/priors/order.
 
 `tools/analyze_silver_root_mechanism.py analyze REPLAY OUTPUT` validates the
-64×4×4 population and common replicate identities, aggregates within root,
-and reports the five paired contrasts with 10,000 root-bootstrap resamples
-(Python RNG seed 20260917; empirical sorted endpoints 249 and 9749).
+64×6×4 population, common replicate identities, and per-root replay provenance,
+aggregates within root, and reports the eight paired contrasts `E-A`, `C-E`,
+`F-B`, `D-F`, `B-A`, `F-E`, `D-C`, and `D-A` with 10,000 root-bootstrap
+resamples (Python RNG seed 20260917; empirical sorted endpoints 249 and 9749).
 It emits no scientific classification automatically. Implementation tests
 are not evidence of guidance quality; scientific capture/label/replay waits
 for independent review and a frozen implementation SHA.

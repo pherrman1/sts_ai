@@ -199,6 +199,8 @@ int main(int argc, char **argv) {
             while (std::getline(input, line)) if (!line.empty()) {
                 auto row = json::parse(line);
                 silver_bridge::validateRootMechanismSnapshot(row);
+                if (!smoke && row.at("executable_git_sha") != executableSha)
+                    throw std::invalid_argument("root/CLI executable SHA mismatch");
                 if (!ids.insert(row.at("root_id").get<std::string>()).second)
                     throw std::invalid_argument("duplicate root");
                 roots.push_back(std::move(row));

@@ -51,16 +51,21 @@ def main():
                    and row["simulations_performed"] == 32 for row in teachers)
         run(args.replay, roots, labels, replay, "20260917", sha, "--fixture")
         rows = [json.loads(line) for line in replay.read_text().splitlines()]
-        assert len(rows) == 16
+        assert len(rows) == 24
+        strict_replay = temporary / "strict-rejected.jsonl"
+        run(args.replay, roots, labels, strict_replay, "20260917", sha, success=False)
+        assert not strict_replay.exists()
         for row in rows:
             native = row["native_order"]
-            if row["arm"] in ("A", "C"):
+            if row["arm"] in ("A", "E", "C"):
                 assert row["replay_order"] == native
             teacher_actions = {item["action_fingerprint"]: item for item in teachers[0]["root_actions"]}
             expected_order = sorted(native, key=lambda key: -teacher_actions[key]["original_root_corrected_q"])
-            if row["arm"] in ("B", "D"):
+            if row["arm"] in ("B", "F", "D"):
                 assert row["replay_order"] == expected_order
-            if row["arm"] in ("C", "D"):
+            if row["arm"] in ("E", "F"):
+                assert row["priors"] == [1.0 / len(row["replay_order"])] * len(row["replay_order"])
+            elif row["arm"] in ("C", "D"):
                 total = sum(item["visits"] for item in teacher_actions.values())
                 assert row["priors"] == [teacher_actions[key]["visits"] / total for key in row["replay_order"]]
             else:
@@ -84,7 +89,7 @@ def main():
             for key in ("selected_action_fingerprint", "replay_order", "priors", "search_seed", "simulations"):
                 assert original[key] == changed_row[key], key
         print(json.dumps({"fixed_fixture_only": True, "capture_neutral": True,
-                          "teacher_records": 2, "fixture_budget": 32, "replay_rows": 16,
+                          "teacher_records": 2, "fixture_budget": 32, "replay_rows": 24,
                           "teacher_b_treatment_neutral": True,
                           "hashes": {path.name: hashlib.sha256(path.read_bytes()).hexdigest()
                                      for path in (roots, labels, replay)}}))

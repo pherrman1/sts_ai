@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Frozen 64-root, four-replicate Silver mechanism analysis; no game execution."""
+"""Frozen 64-root, six-arm, four-replicate Silver mechanism analysis; no game execution."""
 
 import argparse
 import hashlib
@@ -10,12 +10,29 @@ import statistics
 from pathlib import Path
 
 
-CONTRASTS = ("C-A", "B-A", "D-A", "D-C", "D-B")
+ARMS = ("A", "B", "E", "F", "C", "D")
+CONTRASTS = ("E-A", "C-E", "F-B", "D-F", "B-A", "F-E", "D-C", "D-A")
 RESAMPLES = 10000
 SEED = 20260917
 CLASSIFICATIONS = ("ROOT_PRIOR_SIGNAL_CONFIRMED", "ROOT_ORDER_SIGNAL_ONLY",
-                   "ROOT_COMBINATION_ONLY", "ROOT_GUIDANCE_SIGNAL_NOT_CONFIRMED",
-                   "ROOT_GUIDANCE_INCONCLUSIVE")
+                   "ROOT_COMBINATION_ONLY", "ROOT_GUIDANCE_SIGNAL_NOT_REPRODUCED")
+
+
+def _metadata(row):
+    required = ("state_hash", "teacher_a_hash", "teacher_b_hash", "executable_git_sha",
+                "silver_upstream_sha", "native_order", "fixture_only")
+    if any(key not in row for key in required) or row["fixture_only"] is not False:
+        raise ValueError("scientific replay provenance is incomplete")
+    if (not isinstance(row["state_hash"], str) or not row["state_hash"]
+            or not isinstance(row["teacher_a_hash"], str) or not row["teacher_a_hash"]
+            or not isinstance(row["teacher_b_hash"], str) or not row["teacher_b_hash"]
+            or not isinstance(row["executable_git_sha"], str)
+            or not row["executable_git_sha"]
+            or not isinstance(row["silver_upstream_sha"], str)
+            or not row["silver_upstream_sha"]
+            or not isinstance(row["native_order"], list) or not row["native_order"]):
+        raise ValueError("invalid scientific replay provenance")
+    return tuple(json.dumps(row[key], sort_keys=True) for key in required[:-1])
 
 
 def select(rows):
@@ -32,9 +49,10 @@ def analyze(rows, expected_roots=64):
     indexed = {}
     seeds = {}
     sources = {}
+    metadata = {}
     for row in rows:
         root, arm, replicate = row["root_id"], row["arm"], row["replicate"]
-        if (not isinstance(root, str) or not root or arm not in tuple("ABCD")
+        if (not isinstance(root, str) or not root or arm not in ARMS
                 or type(replicate) is not int or replicate not in range(4)
                 or type(row["simulations"]) is not int or row["simulations"] != 32
                 or type(row["source_seed"]) is not int or row["source_seed"] < 0
@@ -43,8 +61,16 @@ def analyze(rows, expected_roots=64):
                 or type(row["b_regret"]) not in (int, float)
                 or not math.isfinite(row["b_regret"]) or row["b_regret"] < 0
                 or not isinstance(row["selected_action_fingerprint"], str)
-                or not row["selected_action_fingerprint"]):
+                or not row["selected_action_fingerprint"]
+                or not isinstance(row.get("replay_order"), list)
+                or not isinstance(row.get("priors"), list)):
             raise ValueError("invalid replay row")
+        row_metadata = _metadata(row)
+        if metadata.setdefault(root, row_metadata) != row_metadata:
+            raise ValueError("root provenance differs between arms or replicates")
+        native_order = json.loads(row_metadata[5])
+        if row["selected_action_fingerprint"] not in native_order:
+            raise ValueError("selected action is outside the native root surface")
         key = root, arm, replicate
         if key in indexed:
             raise ValueError("duplicate root/arm/replicate")
@@ -55,7 +81,7 @@ def analyze(rows, expected_roots=64):
         if sources.setdefault(root, row["source_seed"]) != row["source_seed"]:
             raise ValueError("root source identity changed")
     roots = sorted(sources)
-    expected = {(root, arm, replicate) for root in roots for arm in "ABCD"
+    expected = {(root, arm, replicate) for root in roots for arm in ARMS
                 for replicate in range(4)}
     if len(roots) != expected_roots or not roots or set(indexed) != expected:
         raise ValueError("incomplete root/arm/replicate population")
@@ -65,8 +91,32 @@ def analyze(rows, expected_roots=64):
     reduced = {}
     for root in roots:
         reduced[root] = {}
-        for arm in "ABCD":
+        for arm in ARMS:
             samples = [indexed[root, arm, replicate] for replicate in range(4)]
+            contracts = {(json.dumps(sample["replay_order"], sort_keys=True),
+                          json.dumps(sample["priors"], sort_keys=True)) for sample in samples}
+            if len(contracts) != 1:
+                raise ValueError("replay contract differs between replicates")
+            native = json.loads(metadata[root][5])
+            expected_native_order = arm in ("A", "E", "C")
+            if any((sample["replay_order"] == native) != expected_native_order for sample in samples):
+                raise ValueError("root replay order does not match arm contract")
+            puct = arm in ("E", "F", "C", "D")
+            expected_prior_count = len(native) if puct else 0
+            if any(len(sample["priors"]) != expected_prior_count for sample in samples):
+                raise ValueError("root prior vector does not match arm contract")
+            if puct:
+                for sample in samples:
+                    if (any(not isinstance(prior, (int, float)) or not math.isfinite(prior)
+                            or prior < 0 for prior in sample["priors"])
+                            or not math.isclose(sum(sample["priors"]), 1.0,
+                                                rel_tol=0.0, abs_tol=1e-12)):
+                        raise ValueError("invalid normalized root prior vector")
+            if arm in ("E", "F"):
+                for sample in samples:
+                    if (not sample["priors"]
+                            or any(prior != sample["priors"][0] for prior in sample["priors"])):
+                        raise ValueError("uniform PUCT prior is not uniform")
             regrets = [sample["b_regret"] for sample in samples]
             reduced[root][arm] = {
                 "regret": statistics.mean(regrets),
@@ -99,7 +149,7 @@ def analyze(rows, expected_roots=64):
     return {"roots": len(roots), "replicates_per_root": 4, "bootstrap_resamples": RESAMPLES,
             "bootstrap_seed": SEED, "bootstrap_unit": "root", "contrasts": contrasts,
             "arms": {arm: {field: statistics.mean(reduced[root][arm][field] for root in roots)
-                           for field in reduced[roots[0]][arm]} for arm in "ABCD"},
+                           for field in reduced[roots[0]][arm]} for arm in ARMS},
             "root_results": reduced, "source_seeds": sources, "classification": None,
             "predeclared_classifications": CLASSIFICATIONS,
             "interpretation": "Statistical screen only; correctness and harmful-tail review remain required."}
