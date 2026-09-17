@@ -751,6 +751,9 @@ SelectionTransactionTrace runSequentialSelectionTransaction(
 // transaction API above instead.
 SilverDecisionResult runSilverDecision(const BattleStateWire &state,
                                        const SilverSearchConfig &config);
+SilverDecisionResult replaySilverRoot(const BattleStateWire &state,
+    const std::vector<std::string> &nativeOrder, const std::vector<std::string> &replayOrder,
+    const std::vector<double> &priors, bool usePuct);
 SilverDecisionResult runSilverDecision(SilverSearchSession &session,
                                        const BattleStateWire &state,
                                        const SilverSearchConfig &config);

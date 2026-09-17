@@ -4,6 +4,8 @@
 #include <cmath>
 #include <iostream>
 #include <set>
+#include <fstream>
+#include "sim/search/SilverRootMechanism.h"
 
 #include "combat/BattleContext.h"
 #include "game/GameContext.h"
@@ -37,7 +39,7 @@ silver_bridge::BattleStateWire convert(const BattleContext &bc, const GameContex
 
 } // namespace
 
-int main() {
+int main(int argc, char **argv) {
     int failures = 0;
     const auto check = [&failures](bool ok, const char *message) {
         if (!ok) { std::cerr << "  " << message << '\n'; ++failures; }
@@ -74,6 +76,24 @@ int main() {
     BattleContext first;
     first.init(gc, MonsterEncounter::CULTIST);
     installPile(first);
+    if (argc == 2 && std::string(argv[1]) == "--capture-neutrality-fixture") {
+        gc.info.encounter = MonsterEncounter::CULTIST;
+        search::ScumSearchAgent2 agent;
+        agent.simulationCountBase = 8;
+        agent.bossSimulationMultiplier = 1;
+        search::installSilverLiveBackend();
+        search::setSilverLiveActionTraceForTest(true);
+        BattleContext live;
+        search::g_externalCombatBackend(agent, gc, live);
+        search::uninstallSilverLiveBackend();
+        nlohmann::json result = {{"outcome", static_cast<int>(live.outcome)},
+            {"hp", live.player.curHp}, {"turn", live.turn},
+            {"actions", search::g_silverLiveDiagnostics.actionFingerprints},
+            {"simulations", search::g_silverLiveDiagnostics.simulations},
+            {"ai_counter", live.aiRng.counter}, {"shuffle_counter", live.shuffleRng.counter}};
+        std::cout << result.dump() << '\n';
+        return 0;
+    }
 
     // Smoke Bomb is a shared live-simulator rule. Silver communicates the
     // visible potion identity/slot semantically; lowering must accept its use
@@ -138,6 +158,17 @@ int main() {
     const auto serializedWire = silver_bridge::battleStateWireEnvelope(firstWire).dump();
     const auto reloadedWire = silver_bridge::battleStateWireFromEnvelope(
         nlohmann::json::parse(serializedWire));
+    const auto snapshot = silver_bridge::rootMechanismSnapshot(firstWire, gc.seed, "1/1/cultist", 0,
+        "be5b6ac2c9914b0a56244f2522b7573f81360067");
+    check(!snapshot.is_null(), "capture fixture must be eligible");
+    const auto capturedWire = silver_bridge::validateRootMechanismSnapshot(snapshot);
+    check(silver_bridge::battleStateWireEnvelope(capturedWire).dump() == serializedWire,
+          "capture must round-trip every visible wire field");
+    if (argc == 3 && std::string(argv[1]) == "--root-mechanism-fixture") {
+        std::ofstream output(argv[2]);
+        output << snapshot.dump() << '\n';
+        return failures || !output ? 1 : 0;
+    }
     check(silver_bridge::convertedStatesEqualForSearch(firstWire, reloadedWire),
           "BattleStateWire JSON round-trip must preserve the exact Silver search state");
     search::g_richCombatFeatures = true;
@@ -185,6 +216,35 @@ int main() {
     serializedSearchConfig.collectRootActionSummaries = true;
     const auto inMemorySearch = silver_bridge::runSilverDecision(firstWire, serializedSearchConfig);
     const auto reloadedSearch = silver_bridge::runSilverDecision(reloadedWire, serializedSearchConfig);
+    auto replayConfig = serializedSearchConfig;
+    replayConfig.simulationsPerDecision = 32;
+    const auto ordinaryReplay = silver_bridge::runSilverDecision(reloadedWire, replayConfig);
+    const auto nativeOrder = snapshot.at("native_order").get<std::vector<std::string>>();
+    auto reversedOrder = nativeOrder;
+    std::reverse(reversedOrder.begin(), reversedOrder.end());
+    const auto baselineReplay = silver_bridge::replaySilverRoot(reloadedWire, nativeOrder, nativeOrder, {}, false);
+    check(baselineReplay.accepted && sameRootActionSummaries(ordinaryReplay.rootActionSummaries,
+              baselineReplay.rootActionSummaries), "baseline replay exact ordinary root statistics");
+    for (const bool puct : {false, true}) for (const bool reorder : {false, true}) {
+        const auto &order = reorder ? reversedOrder : nativeOrder;
+        const auto priors = puct ? std::vector<double>(order.size(), 1.0 / order.size()) : std::vector<double>{};
+        const auto result = silver_bridge::replaySilverRoot(reloadedWire, nativeOrder, order, priors, puct);
+        check(result.accepted && result.simulations == 32 && result.inheritedVisits == 0,
+              "four mechanisms run exact fresh budget");
+        std::vector<std::string> actual;
+        for (const auto &summary : result.rootActionSummaries)
+            actual.push_back(silver_bridge::semanticActionFingerprint(summary.action));
+        check(actual == order, "replay preserves requested semantic order and full action set");
+    }
+    for (const auto bad : {std::vector<double>{}, std::vector<double>(nativeOrder.size(), 0.0),
+             std::vector<double>(nativeOrder.size(), -1.0),
+             std::vector<double>(nativeOrder.size(), std::numeric_limits<double>::quiet_NaN())})
+        check(!silver_bridge::replaySilverRoot(reloadedWire, nativeOrder, nativeOrder, bad, true).accepted,
+              "invalid priors fail closed");
+    auto wrongOrder = nativeOrder;
+    wrongOrder[0] = "not-an-action";
+    check(!silver_bridge::replaySilverRoot(reloadedWire, nativeOrder, wrongOrder, {}, false).accepted,
+          "unknown replay action fails closed");
     check(inMemorySearch.accepted && reloadedSearch.accepted
           && silver_bridge::semanticActionFingerprint(inMemorySearch.action)
               == silver_bridge::semanticActionFingerprint(reloadedSearch.action)

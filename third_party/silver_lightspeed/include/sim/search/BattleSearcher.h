@@ -208,6 +208,7 @@ namespace sts::search {
         // outcome variance on top of policy variance and may need a different exploration level).
         double explorationParameter = 9.9;         // deterministic edges; tuned default
         double explorationParameterChance = 9.9;   // stochastic (chance-node) edges
+        std::vector<double> replayRootPriors;
 
         // Double Progressive Widening for chance nodes: after n visits a chance node may
         // hold at most ceil(chanceWideningC * (n+1)^chanceWideningAlpha) distinct outcomes.

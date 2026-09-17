@@ -1,5 +1,8 @@
 #include "sim/search/SilverBridge.h"
 #include "sim/search/SilverWireJson.h"
+#include "sim/search/SilverRootMechanism.h"
+#include <filesystem>
+#include <cmath>
 
 #include <chrono>
 #include <algorithm>
@@ -178,6 +181,71 @@ json relabelOne(const Entry &entry, const silver_bridge::BattleStateWire &input,
 
 int main(int argc, char **argv) {
     try {
+        if (argc >= 2 && std::string(argv[1]) == "--roots") {
+            if (argc != 6 && argc != 7)
+                throw std::invalid_argument("usage: silver_leaf_relabel --roots ROOTS OUTPUT SEED EXECUTABLE_SHA [SMOKE_BUDGET]");
+            if (std::filesystem::exists(argv[3])) throw std::invalid_argument("refusing existing label output");
+            const std::string executableSha = argv[5];
+            if (!silver_bridge::rootMechanismShaValid(executableSha)) throw std::invalid_argument("invalid executable SHA");
+            const bool smoke = argc == 7;
+            const auto smokeBudget = smoke ? std::stoll(argv[6]) : 0;
+            if (smoke && (smokeBudget < 32 || smokeBudget > 128)) throw std::invalid_argument("fixture budget must be 32..128");
+            const auto seed = std::stoull(argv[4]);
+            std::ifstream input(argv[2]);
+            if (!input) throw std::runtime_error("cannot open root snapshots");
+            std::vector<json> roots;
+            std::unordered_set<std::string> ids;
+            std::string line;
+            while (std::getline(input, line)) if (!line.empty()) {
+                auto row = json::parse(line);
+                silver_bridge::validateRootMechanismSnapshot(row);
+                if (!smoke && row.at("executable_git_sha") != executableSha)
+                    throw std::invalid_argument("root/CLI executable SHA mismatch");
+                if (!ids.insert(row.at("root_id").get<std::string>()).second)
+                    throw std::invalid_argument("duplicate root");
+                roots.push_back(std::move(row));
+            }
+            if (roots.size() != (smoke ? 1u : 64u)) throw std::invalid_argument("expected 64 roots, or one fixture");
+            std::ofstream output(argv[3]);
+            for (const auto &row : roots) {
+                const auto wire = silver_bridge::validateRootMechanismSnapshot(row);
+                Entry entry;
+                entry.groupId = row.at("root_id").get<std::string>();
+                entry.leafId = entry.groupId;
+                entry.originalRoot = wire;
+                entry.act = wire.act;
+                entry.executableGitSha = executableSha;
+                entry.silverUpstreamSha = silver_bridge::kRootMechanismSilverSha;
+                const auto native = row.at("native_order").get<std::vector<std::string>>();
+                std::uint64_t previousSeed = 0;
+                for (const std::string replicate : {"A", "B"}) {
+                    const auto identity = teacherSeed(seed, entry.groupId, replicate);
+                    if (identity == 0 || identity == previousSeed) throw std::runtime_error("teacher RNG collision");
+                    previousSeed = identity;
+                    const auto budget = smoke ? smokeBudget : replicate == "A" ? 10000 : 25000;
+                    auto label = relabelOne(entry, wire, "parent", budget, replicate, seed);
+                    if (!label.at("teacher_valid").get<bool>() || label.at("simulations_performed") != budget)
+                        throw std::runtime_error("root teacher failed budget/acceptance check");
+                    std::vector<std::string> actual;
+                    for (const auto &action : label.at("root_actions")) {
+                        actual.push_back(action.at("action_fingerprint").get<std::string>());
+                        if (!action.at("leaf_root_q_valid").get<bool>()
+                                || !std::isfinite(action.at("original_root_corrected_q").get<double>()))
+                            throw std::runtime_error("teacher Q unavailable");
+                    }
+                    if (actual != native) throw std::runtime_error("teacher/native action mismatch");
+                    label["root_id"] = entry.groupId;
+                    label["root_state_hash"] = row.at("state_hash");
+                    label["root_snapshot_hash"] = silver_bridge::rootMechanismHash(row.dump());
+                    label["source_executable_git_sha"] = row.at("executable_git_sha");
+                    label["fixture_only"] = smoke;
+                    output << label.dump() << '\n';
+                    output.flush();
+                    if (!output) throw std::runtime_error("teacher write failed");
+                }
+            }
+            return 0;
+        }
         if (argc != 5 && argc != 6) {
             std::cerr << "usage: silver_leaf_relabel CORPUS.jsonl MANIFEST.json OUTPUT.jsonl RELABEL_SEED [SMOKE_BUDGET]\n";
             return 2;
