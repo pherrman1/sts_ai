@@ -51,7 +51,8 @@ def normalization(arrays, cache, train):
     return values.mean(0), values.std(0)
 
 
-def train_model(model, arrays, cache, train, validation, output, sha, device='cuda'):
+def train_model(model, arrays, cache, train, validation, output, sha, device='cuda', *, recipe=RECIPE):
+    RECIPE = recipe
     optimizer, proof = fit.make_optimizer(model)
     for group, record in zip(optimizer.param_groups, proof['groups']):
         group['weight_decay'] = RECIPE['weightDecay']

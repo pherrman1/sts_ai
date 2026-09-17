@@ -851,6 +851,16 @@ effect versus the warm-started width-64 baseline. It does not prove interaction
 structure is necessary. Further scaling/tuning is not part of this experiment.
 See [width-96 evidence](../../experiments/evidence/survival_wide96_2026-09-17.md).
 
+The next authorized experiment is width-96 maxHP/HP pretraining followed by
+strong-WD survival fine-tuning. It preserves PR #205's victory-only population,
+normalization, teacher hashes, equal-weight KL objective and 40-epoch AMP
+schedule. Only the specialist 8-D delta embedding is copied; the compatible
+HP MLP is fresh 104→64→304, and maxHP is fresh 96→11. Only the selected encoder
+transfers to a fresh linear survival head, retaining pretraining normalization.
+The existing survival NLL selection and fixed gates are unchanged. Implementation
+is under verification; no scientific result or qualification is claimed yet.
+No matched width-64 control, TEST, runtime export, or promotion is authorized.
+
 ### Jointly adapted shared maxHP+HP+potion representation
 
 The requested follow-up is **`SHARED_TRANSITION_POTION_REJECTED`**. Starting
