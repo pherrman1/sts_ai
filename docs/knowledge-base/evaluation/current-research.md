@@ -683,6 +683,15 @@ eliminate the stopping-rule explanation. Proceed to the matched tiny nonlinear
 S2 decoder before changing the encoder. See [ledger-06 §291](../../experiments/ledger-06.md)
 and the [S1 evidence](../../experiments/evidence/deepset_survival_lbfgs_2026-09-17.md).
 
+The scale-neutral S1b follow-up also remains **diagnostic**. Independent
+TRAIN-only z-scoring and unregularized L-BFGS reduced the DeepSets validation
+NLL gap to **+29.4618%**; Brier, observed-death NLL and low-pre-HP NLL gaps
+were +28.6715%, +32.9193% and +33.1960%. Eleven DeepSets dimensions were
+constant on TRAIN and were safely centered with unit scale. The residual gap
+is therefore not explained by the raw-feature-scale/L2 interaction alone.
+S2 is justified next on the same frozen embeddings. See [ledger-06 §292](../../experiments/ledger-06.md)
+and the [S1b evidence](../../experiments/evidence/deepset_survival_s1b_2026-09-17.md).
+
 ### Jointly adapted shared maxHP+HP+potion representation
 
 The requested follow-up is **`SHARED_TRANSITION_POTION_REJECTED`**. Starting
