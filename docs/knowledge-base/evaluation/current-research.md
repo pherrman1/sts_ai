@@ -22,6 +22,20 @@ configurations and benchmark numbers, the [research graph](../research/README.md
 for topic synthesis, and the [experiment ledger](../../../EXPERIMENTS.md) for
 chronology.
 
+## Silver policy/value Phase-A cost diagnostic
+
+The corrected clean-baseline result is **`PV_COST_NOT_FEASIBLE_CLEAN_BASELINE`**:
+the conversion-inclusive candidate was much slower than the approximately
+3-microsecond clean `PLAYER_NORMAL` rollout. A bounded stage decomposition on
+the same fixture measured 1.242 microseconds for conversion, 40.944 for
+feature/vector preparation, 72.158 for the `1768 -> 64 -> 64` encoder plus
+value head, and 4.212 for action scoring. The neural stage alone is therefore
+about 24.2 times the rollout cost. Do not pursue a conversion-only
+Silver-native representation for this exact model boundary; no training,
+runtime, gameplay, or default change is implied. See
+[ledger §290](../../experiments/ledger-06.md) and the
+[Phase-A evidence packet](../../experiments/evidence/silver_policy_value_phase_a_2026-09-16.md).
+
 ## Silver budget comparison at selected 128k cap
 
 The requested four-arm paired 32-seed comparison is complete at fixed 128k

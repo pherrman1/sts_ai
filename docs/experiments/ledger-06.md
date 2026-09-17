@@ -9033,7 +9033,46 @@ evidence updated.
 
 [Evidence packet, raw traces, validation and provenance](evidence/silver_exact_visit_lock_pair_2026-09-16/README.md).
 
-## §287 — Silver rho-racing soft-lock follow-up (2026-09-16)
+## §287 — Silver policy/value Phase-A cost diagnostic (2026-09-16)
+
+The bounded Phase-A probe defines a diagnostic-only `PLAYER_NORMAL`
+policy-plus-value contract over the visible Silver wire. It emits separate
+parent-policy records and actual rollout-leaf value records, preserving exact
+semantic legal siblings and preventing parent/child label substitution. The
+canonical policy layout is 1,766 state plus 22 action features (1,788 total);
+the prospective shared model input appends exact isolated-Silver root
+effective-gold and max-HP scalars (1,768 state inputs). Hidden pending-intent
+details are redacted before feature extraction. No training, model loading,
+gameplay, action selection, utility, RNG, or runtime default changed.
+
+The corrected benchmark boundary was committed at
+`d7897477a45e7112e1fe21d7484edc1cd9adfbfc`. The prior corpus-producing run is
+retained only for schema/examples. Clean one-thread Silver timing with no
+corpus or VNet observer measured 290,326 `PLAYER_NORMAL` calls at 3.083
+microseconds mean for 100 simulations (seeds 100--107), and 694,480 calls at
+2.981 microseconds mean for the 1k operating point (seeds 108--109).
+
+The conversion-inclusive native one-thread benchmark measured actual
+supported leaves at 143.763/143.739/150.833/165.010 microseconds
+(mean/median/p90/p99), with 3,200 calls, 13,000 action scores, and an observed
+checksum. Replacing clean full-run `PLAYER_NORMAL` rollouts gives an estimated
+42.134786-second search versus 1.291608 seconds at 100 simulations
+(-3,162.1959% reduction, 0.0307x speedup), and 101.191794 seconds versus
+3.421245 seconds at 1k (-2,857.7473% reduction, 0.0338x speedup).
+The corrected bounded engineering classification is
+**`PV_COST_NOT_FEASIBLE_CLEAN_BASELINE`**. The earlier
+`PV_COST_FEASIBLE` result is withdrawn because its baseline included
+corpus-observer work.
+
+The Phase-A packet records the separate parent-policy/leaf-value schemas,
+root effective-gold/max-HP input scalars, clean and observer-enabled run
+boundaries, exact arithmetic, executable/source/benchmark/example hashes, raw
+timing-log hashes, and CPU identity. This does not establish predictor quality,
+hidden-state sufficiency, or gameplay benefit.
+
+**Evidence:** [Phase-A packet](evidence/silver_policy_value_phase_a_2026-09-16.md).
+
+## §288 — Silver rho-racing soft-lock follow-up (2026-09-16)
 
 - **Dependency and baseline:** PR #204 was verified merged and contained in
   current `origin/main`, SHA
@@ -9087,7 +9126,7 @@ evidence updated.
   including raw N16/N32 results, scaling traces, logs, sidecars, time receipts,
   paired CSVs, provenance, and validator output.
 
-## §288 — Retrained downstream consumers for the qualified DeepSets representation (2026-09-16)
+## §289 — Retrained downstream consumers for the qualified DeepSets representation (2026-09-16)
 
 - **Question and baseline:** Does the corrected qualified PR #205 DeepSets
   representation contain enough information for the existing downstream CTM
@@ -9135,7 +9174,28 @@ evidence updated.
 
 [Corrected evidence packet and machine-readable receipt](evidence/deepset_downstream_2026-09-16.md).
 
-## §289 — Frozen qualified DeepSets representation for potion decoding (2026-09-16)
+## §290 — Silver policy/value stage-cost decomposition (2026-09-16)
+
+The requested tiny follow-up decomposed the conversion-inclusive Phase-A
+candidate on the same 16 supported `PLAYER_NORMAL` leaves, fixed synthetic
+weights, one thread, 200 iterations, and 3,200 calls. Mean per-call costs were
+1.242 microseconds for live `BattleContext` to Silver wire conversion, 40.944
+microseconds for canonical feature extraction plus root-scalar and action
+vector preparation, 72.158 microseconds for the `1768 -> 64 -> 64` encoder plus
+value head, and 4.212 microseconds for all legal action scores. The stage sum
+was 118.556 microseconds versus 118.851 microseconds independently measured
+end-to-end.
+
+The neural encoder/value stage alone is about 24.2 times the clean 1k
+`PLAYER_NORMAL` rollout mean of 2.981 microseconds. Decision:
+**`PV_COST_NOT_FEASIBLE_MODEL_FORWARD`** for this exact model boundary. A
+Silver-native compact representation is not pursued as a conversion-only fix;
+it would need to change the model/input computation as well. No gameplay,
+training, runtime integration, or default change occurred. Knowledge impact:
+current Phase-A evidence and research status updated.
+
+[Phase-A evidence packet with stage receipt](evidence/silver_policy_value_phase_a_2026-09-16.md).
+## §291 — Frozen qualified DeepSets representation for potion decoding (2026-09-16)
 
 - **Question and baseline:** Can the qualified frozen PR #205 DeepSets state
   representation replace the dedicated potion Attention encoder when the

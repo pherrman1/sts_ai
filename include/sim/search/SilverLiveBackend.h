@@ -43,6 +43,11 @@ struct SilverLiveDiagnostics {
     std::uint64_t chanceDepthSum = 0;
     std::uint64_t rolloutSkippedVNet = 0;
     std::uint64_t rolloutCalls = 0;
+    double searchWallMicros = 0.0;
+    double rolloutWallMicros = 0.0;
+    std::array<std::uint64_t, 10> rolloutCallsByInputState {};
+    std::array<double, 10> rolloutWallMicrosByInputState {};
+    std::vector<double> rolloutLatencyMicros;
     std::uint64_t blendEligibleLeaves = 0;
     std::uint64_t blendInvocations = 0;
     std::uint64_t blendDepthAvoided = 0;
@@ -96,6 +101,12 @@ double silverLiveLeafVNetPredictionForTest(
 // Project a stored Silver wire through the same live-state adapter and
 // canonical rich CombatValueNet feature extractor used by deployment.
 std::vector<float> silverLiveLeafCanonicalFeatures(
+    const silver_bridge::BattleStateWire &wire);
+
+// Benchmark-only seam that includes the live BattleContext -> Silver wire
+// conversion before feature extraction. The input wire is only a fixture for
+// reconstructing a representative public live state; no search or RNG runs.
+silver_bridge::BattleStateWire silverLiveBattleStateWireForBenchmark(
     const silver_bridge::BattleStateWire &wire);
 
 struct SilverPolicyFeatureRow {
