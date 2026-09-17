@@ -9307,3 +9307,30 @@ current Phase-A evidence and research status updated.
   [machine-readable receipt](evidence/deepset_survival_lbfgs_2026-09-16.json),
   and external raw receipt
   `/home/philippherrmann/sts_sweep/runs/deepset-survival-lbfgs-20260916/results.json`.
+
+## §292 — Scale-neutral linear survival probe (S1b, 2026-09-17)
+
+- **Question and baseline:** Does the S1 DeepSets linear gap survive
+  representation-specific scale normalization and removal of L2 regularization?
+  The baseline after merged PR #212 was
+  `ada2b7ca13b374881c2594aaee937437ea3204f4`.
+- **Protocol:** Attention and DeepSets embeddings were independently
+  standardized with TRAIN-only means and standard deviations. Eleven constant
+  DeepSets dimensions used unit scale after centering. One fresh byte-identical
+  unregularized full-batch L-BFGS head per arm used the fixed strong-Wolfe
+  recipe; validation was evaluated once after fitting. TEST rows remained zero.
+- **Result:** Attention validation NLL was `0.059368707`; DeepSets was
+  `0.076859772`, a **+29.4618%** gap. Brier relative degradation was +28.6715%;
+  observed-death NLL +32.9193%; low-pre-HP NLL +33.1960%. AUC was 0.980665 / 0.964784.
+  Final gradient norms were `6.996e-5` / `1.911e-5`; head norms were
+  `8.9364` / `9.9994`.
+- **Decision:** **`S1B_LINEAR_SCALE_DIAGNOSTIC`**. The remaining gap stays in
+  the expected 25–35% range, so raw scale plus L2 is not the main explanation.
+  Proceed to S2, the matched tiny nonlinear `64→64→1` ReLU decoder, without
+  changing the encoder. No runtime, TEST, gameplay, OOC MCTS, fine-tuning,
+  native export or promotion work occurred. **Knowledge impact:** current
+  research status and experiment evidence only; qualified components and
+  runtime defaults remain unchanged.
+- **Evidence:** [S1b report](evidence/deepset_survival_s1b_2026-09-17.md),
+  [machine-readable receipt](evidence/deepset_survival_s1b_2026-09-17.json),
+  and raw receipt `/tmp/deepset-survival-s1b-20260917-retry2/results.json`.
