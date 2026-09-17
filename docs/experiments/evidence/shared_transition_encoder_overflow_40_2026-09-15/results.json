@@ -1,0 +1,61 @@
+{
+  "experiment": "shared_transition_encoder_overflow_40",
+  "date": "2026-09-15",
+  "baselineSha": "6497cd0497cffc3fea7a1d2c443a801d2bd39054",
+  "experimentSha": "b58a03920fb84aee84f7fcde3ef300366221feb8",
+  "decision": "SHARED_TRANSITION_ENCODER_GO",
+  "selectedEpoch": 37,
+  "skippedUpdates": 7,
+  "forwardNonfiniteLossEvents": 0,
+  "overflowHandling": "after scaler.unscale_(optimizer), clip gradients; on nonfinite norm call scaler.step(optimizer) and scaler.update() without aborting",
+  "recipe": {
+    "epochs": 40,
+    "seed": 20260912,
+    "batch": 512,
+    "encoderLr": 0.0001,
+    "headLr": 0.001,
+    "clip": 1.0,
+    "teacherPrecision": "FP32",
+    "trainingPrecision": "AMP-FP16",
+    "loss": "0.5 KL(maxHP teacher||student) + 0.5 KL(HP teacher||student)",
+    "teachersFrozen": true,
+    "population": "exact current final-union source-grouped TRAIN/VALIDATION victories"
+  },
+  "overflowEvents": [
+    {"epoch": 19, "batch": 559, "lossScaleBefore": 2097152.0, "lossScaleAfter": 1048576.0, "skippedUpdates": 1},
+    {"epoch": 23, "batch": 539, "lossScaleBefore": 2097152.0, "lossScaleAfter": 1048576.0, "skippedUpdates": 2},
+    {"epoch": 26, "batch": 306, "lossScaleBefore": 2097152.0, "lossScaleAfter": 1048576.0, "skippedUpdates": 3},
+    {"epoch": 29, "batch": 30, "lossScaleBefore": 2097152.0, "lossScaleAfter": 1048576.0, "skippedUpdates": 4},
+    {"epoch": 31, "batch": 725, "lossScaleBefore": 2097152.0, "lossScaleAfter": 1048576.0, "skippedUpdates": 5},
+    {"epoch": 36, "batch": 667, "lossScaleBefore": 2097152.0, "lossScaleAfter": 1048576.0, "skippedUpdates": 6},
+    {"epoch": 39, "batch": 458, "lossScaleBefore": 2097152.0, "lossScaleAfter": 1048576.0, "skippedUpdates": 7}
+  ],
+  "selected": {
+    "validationMaxHpKl": 0.0017528239940734272,
+    "validationHpKl": 0.004449562175380709,
+    "combinedValidationKl": 0.003101193084727068,
+    "hpNllRelative": 0.0013027511133650183,
+    "hpCrpsRelative": 0.0027068627430707104,
+    "hpExpectedMaeDelta": 0.01546922028973352,
+    "maxHpNllRelative": 0.012491960166059116,
+    "maxHpAccuracyDrop": 0.0005556698909241486,
+    "maxHpExpectedMaeDelta": 0.0013231866278582555,
+    "maxHpNonzeroAccuracyDrop": -0.01875808538163004,
+    "maxHpNonzeroNllDelta": -0.005914926528930664,
+    "maxHpNonzeroNllCatastrophic": false,
+    "allFinite": true,
+    "hpNormalizationError": 2.980232238769531e-07,
+    "maxHpNormalizationError": 2.384185791015625e-07,
+    "hpUnsupportedProbability": 0.0,
+    "checkpointEpoch": 37,
+    "checkpointContains": ["stateDict", "maxHpHeadStateDict", "optimizerStateDict", "scalerStateDict"]
+  },
+  "artifacts": {
+    "bestCheckpointSha256": "daf50b5ec0847fe7a44cde0efd5d592a1939a25e6978f6757dd2b0157a105267",
+    "overflowEventsSha256": "0c656af9faa2de9697d1403411bc9f4ee1b30133b0755fd3566400a8c6a481a5",
+    "resultsSha256": "4149c038a2abe9ab181b03c714763e74fb7b37f534020179004696fd465577c7"
+  },
+  "externalRunDirectory": "/home/philippherrmann/sts_sweep/runs/shared-transition-encoder-overflow-40-20260915/",
+  "testInferenceRows": 0,
+  "promotion": "none"
+}
