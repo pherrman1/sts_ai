@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import json
 import math
+import time
 from pathlib import Path
 import sys
 
@@ -26,10 +27,7 @@ RECIPE = dict(
     maxEpochs=40, minEpochs=12, patience=6,
     selection="per-arm earliest strict minimum VALIDATION NLL",
     stageA="fresh PR205 warm-start for each arm",
-    stageB="selected checkpoint continuation after all arms; 5x LRs; 15 epochs; floor 5; patience 6",
-    stageBTrigger="only an arm within +0.05% NLL of its gate",
-    stageBDecision="only if stage B improves that arm's selected VALIDATION NLL",
-    continuation="initial-epoch generator state restored, strict validation selection",
+    continuation="not part of this six-arm sweep; optional separate follow-up",
 )
 ARMS = {
     "baseline": dict(encoderLr=1e-4, headLr=1e-3, weightDecay=1e-4),
@@ -56,14 +54,15 @@ def fit_arm(model, arrays, cache, train, validation, output, experiment_sha, arm
         group["lr"] = learning_rate
     optimizer.param_groups[0]["weight_decay"] = ARMS[arm]["weightDecay"]
     optimizer.param_groups[1]["weight_decay"] = ARMS[arm]["weightDecay"]
+    for group_proof, group in zip(proof["groups"], optimizer.param_groups):
+        group_proof.update(lr=group["lr"], weightDecay=group["weight_decay"])
     generator = np.random.default_rng(fit.RECIPE["seed"])
     best_nll, best_epoch, epoch = math.inf, 0, 0
     history = []
     initial_normalization = fit.normalization_digest(model.encoder)
     while epoch < fit.RECIPE["maxEpochs"]:
         epoch += 1
-        state = generator.bit_generator.state
-        started = __import__("time").perf_counter()
+        started = time.perf_counter()
         order = generator.permutation(train)
         total_loss = 0.0
         for start in range(0, len(order), fit.RECIPE["batch"]):
@@ -77,7 +76,7 @@ def fit_arm(model, arrays, cache, train, validation, output, experiment_sha, arm
         if fit.normalization_digest(model.encoder) != initial_normalization:
             raise ValueError("warm-start normalization buffers changed")
         entry = dict(epoch=epoch, trainNll=total_loss / len(train), validationNll=validation_nll,
-            seconds=__import__("time").perf_counter() - started, batchOrderSha256=fit.screen.array_digest(order))
+            seconds=time.perf_counter() - started, batchOrderSha256=fit.screen.array_digest(order))
         history.append(entry)
         if fit.strict_minimum(validation_nll, best_nll):
             best_nll, best_epoch = validation_nll, epoch
@@ -91,58 +90,8 @@ def fit_arm(model, arrays, cache, train, validation, output, experiment_sha, arm
     model.load_state_dict(torch.load(output / "selected.pt", map_location="cuda", weights_only=False)["stateDict"])
     return dict(history=history, selectedEpoch=best_epoch,
         stoppingReason="patience" if fit.should_stop(epoch, best_epoch) else "max epoch",
-        optimizationUncertainty=best_epoch == fit.RECIPE["maxEpochs"], optimizerScope=proof,
-        generatorStateBeforeStageB=state)
-
-
-def stage_b_recipe(arm, stage_a):
-    recipe = arm_recipe(arm)
-    recipe.update(stage="B", encoderLr=ARMS[arm]["encoderLr"] / 5,
-                  headLr=ARMS[arm]["headLr"] / 5, maxEpochs=15, minEpochs=5, patience=6,
-                  continuation="same warm-start at stage-A selected state; reduced LRs")
-    return recipe
-
-
-def fit_stage_b(model, arrays, cache, train, validation, output, experiment_sha, arm, stage_a):
-    optimizer, proof = fit.make_optimizer(model)
-    for group, learning_rate in zip(optimizer.param_groups,
-                                    (stage_b_recipe(arm, stage_a)["encoderLr"],
-                                     stage_b_recipe(arm, stage_a)["headLr"])):
-        group["lr"] = learning_rate
-    for group in optimizer.param_groups:
-        group["weight_decay"] = ARMS[arm]["weightDecay"]
-    generator = np.random.default_rng(fit.RECIPE["seed"])
-    generator.bit_generator.state = stage_a["generatorStateBeforeStageB"]
-    best_nll, best_epoch, epoch = stage_a["history"][stage_a["selectedEpoch"] - 1]["validationNll"], 0, 0
-    history = []
-    while epoch < 15:
-        epoch += 1
-        order = generator.permutation(train)
-        total_loss = 0.0
-        for start in range(0, len(order), fit.RECIPE["batch"]):
-            batch = order[start:start + fit.RECIPE["batch"]]
-            loss, _ = fit.update_batch(model, optimizer,
-                fit.inputs_for(arrays, cache, batch, "cuda", 0),
-                torch.as_tensor(cache["win"][batch], dtype=torch.float32, device="cuda"))
-            total_loss += loss * len(batch)
-        validation_nll = fit.summarize(
-            fit.predict(model, arrays, cache, validation, "cuda"), cache, validation)["nll"]
-        history.append(dict(epoch=epoch, trainNll=total_loss / len(train),
-            validationNll=validation_nll, seconds=__import__("time").perf_counter(),
-            batchOrderSha256=fit.screen.array_digest(order)))
-        if fit.strict_minimum(validation_nll, best_nll):
-            best_nll, best_epoch = validation_nll, epoch
-            torch.save(dict(stateDict=model.state_dict(), selectedEpoch=epoch,
-                experimentSha=experiment_sha, recipe=stage_b_recipe(arm, stage_a)), output / "selected.pt")
-        print(json.dumps(dict(arm=arm, stage="B", **history[-1])), flush=True)
-        if epoch >= 5 and epoch - (best_epoch or 0) >= 6:
-            break
-    if best_epoch:
-        model.load_state_dict(torch.load(output / "selected.pt", map_location="cuda", weights_only=False)["stateDict"])
-        return dict(history=history, selectedEpoch=best_epoch,
-                    stoppingReason="patience" if epoch - best_epoch >= 6 else "max epoch")
-    return dict(history=history, selectedEpoch=None,
-                stoppingReason="no strict improvement over stage A", accepted=False)
+        optimizationUncertainty=epoch == fit.RECIPE["maxEpochs"] and not fit.should_stop(epoch, best_epoch),
+        optimizerScope=proof)
 
 
 def run(args):
@@ -172,7 +121,7 @@ def run(args):
     original_encoder_state = {key.removeprefix("encoder."): value for key, value in
                               payload["stateDict"].items() if key.startswith("encoder.")}
     result = dict(schema=RECIPE["schema"], baselineSha=args.base_sha, experimentSha=args.experiment_sha,
-        recipe=RECIPE, arms=ARMS, armOrder=ARM_ORDER, fixedGates=fit.GATES, population=population,
+        recipe=RECIPE, armRecipes={name: dict(values) for name, values in ARMS.items()}, arms={}, armOrder=ARM_ORDER, fixedGates=fit.GATES, population=population,
         provenance=provenance, reference=dict(metrics=reference_metrics,
             originalNll=fit.screen.REFERENCE_NLL), initialization=dict(
             encoderSha256=fit.screen.state_digest(original_encoder_state),
@@ -198,25 +147,6 @@ def run(args):
             evaluation=fit.compare(reference_logits, fit.predict(model, arrays, cache, validation, "cuda"),
                                    cache, validation))
         fit.screen.composed.base.json_dump(args.output / "progress.json", result)
-    candidate_gaps = {name: result["arms"][name]["metrics"]["nll"] / reference_metrics["nll"] - 1
-                      for name in ARM_ORDER}
-    if min(candidate_gaps.values()) <= 0.0005:
-        stage_arm = min(candidate_gaps, key=candidate_gaps.get)
-        encoder, _ = fit.screen.load_candidate_encoder(args)
-        selected = torch.load(args.output / stage_arm / "selected.pt", map_location="cpu", weights_only=False)
-        encoder.load_state_dict({key.removeprefix("encoder."): value for key, value
-                                 in selected["stateDict"].items() if key.startswith("encoder.")}, strict=True)
-        model = fit.SurvivalNet(encoder).cuda()
-        model.head.load_state_dict({key.removeprefix("head."): value for key, value
-                                    in selected["stateDict"].items() if key.startswith("head.")}, strict=True)
-        stage_b = fit_stage_b(model, arrays, cache, train, validation, args.output / stage_arm,
-                              args.experiment_sha, stage_arm, result["arms"][stage_arm]["stageA"])
-        result["stageB"] = dict(arm=stage_arm, **stage_b,
-            evaluation=fit.compare(reference_logits, fit.predict(model, arrays, cache, validation, "cuda"),
-                                   cache, validation))
-        result["stageB"]["accepted"] = stage_b["selectedEpoch"] is not None and (
-            result["stageB"]["evaluation"]["metrics"]["DeepSets"]["nll"] <
-            result["arms"][stage_arm]["evaluation"]["metrics"]["DeepSets"]["nll"])
     result["selection"] = dict(referenceNll=reference_metrics["nll"], armNll={name: value["metrics"]["nll"] for name, value in result["arms"].items()},
         selectedArm=min(ARM_ORDER, key=lambda name: result["arms"][name]["metrics"]["nll"]))
     selected_arm = result["selection"]["selectedArm"]
@@ -233,14 +163,13 @@ def subprocess_status():
 
 def compare_selected(result, reference_metrics):
     arm_name = result["selection"]["selectedArm"]
-    metrics = result["arms"][arm_name]["metrics"]
-    passed = dict(nllRelative=bool(metrics["nll"] / reference_metrics["nll"] - 1 <= fit.GATES["nllRelative"]),
-                  brierRelative=bool(metrics["brier"] / reference_metrics["brier"] - 1 <= fit.GATES["brierRelative"]))
-    passed["validity"] = bool(metrics["finiteLogits"] and metrics["finiteProbabilities"] and
-                              metrics["probabilitiesInUnitInterval"])
-    passed["decision"] = "SURVIVAL_DEEPSET_SWEEP_GO" if all(passed.values()) else "SURVIVAL_DEEPSET_SWEEP_REJECTED"
-    return dict(arm=arm_name, thresholds=fit.GATES, gatesPassed=passed, decision=passed["decision"],
-                stageBEvaluated=bool(result.get("stageB")))
+    evaluation = result["arms"][arm_name]["evaluation"]
+    passed = dict(evaluation["gatesPassed"])
+    if set(passed) != set(GATES) | {"validity"}:
+        raise ValueError("selected arm is missing required gates")
+    return dict(arm=arm_name, thresholds=GATES, gatesPassed=passed,
+                decision="SURVIVAL_DEEPSET_SWEEP_GO" if all(passed.values())
+                else "SURVIVAL_DEEPSET_SWEEP_REJECTED", stageBEvaluated=False)
 
 
 def main():

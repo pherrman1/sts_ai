@@ -1,0 +1,3440 @@
+{
+  "allArmsRejected": true,
+  "armRecipes": {
+    "baseline": {
+      "encoderLr": 0.0001,
+      "headLr": 0.001,
+      "weightDecay": 0.0001
+    },
+    "lowerLr": {
+      "encoderLr": 5e-05,
+      "headLr": 0.0005,
+      "weightDecay": 0.0001
+    },
+    "lowerLrWd": {
+      "encoderLr": 5e-05,
+      "headLr": 0.0005,
+      "weightDecay": 0.0005
+    },
+    "moreWd": {
+      "encoderLr": 0.0001,
+      "headLr": 0.001,
+      "weightDecay": 0.0005
+    },
+    "muchLowerLr": {
+      "encoderLr": 2e-05,
+      "headLr": 0.0002,
+      "weightDecay": 0.0001
+    },
+    "strongWd": {
+      "encoderLr": 0.0001,
+      "headLr": 0.001,
+      "weightDecay": 0.001
+    }
+  },
+  "arms": {
+    "baseline": {
+      "batchOrdersVerified": true,
+      "checkpointPath": "/home/philippherrmann/sts_sweep/runs/survival-specific-deepset-sweep-20260917-final/baseline/selected.pt",
+      "checkpointRecipe": {
+        "batch": 512,
+        "continuation": "initial-epoch generator state restored, strict validation selection",
+        "encoderLr": 0.0001,
+        "gradientClip": 1.0,
+        "headLr": 0.001,
+        "loss": "unweighted BCEWithLogitsLoss; 1=survived, 0=death",
+        "maxEpochs": 40,
+        "minEpochs": 12,
+        "name": "baseline",
+        "optimizer": "AdamW",
+        "patience": 6,
+        "precision": "FP32",
+        "schema": "survival_specific_deepset_lr_wd_sweep_v1",
+        "seed": 20260912,
+        "selection": "per-arm earliest strict minimum VALIDATION NLL",
+        "stageA": "fresh PR205 warm-start for each arm",
+        "stageB": "selected checkpoint continuation after all arms; 5x LRs; 15 epochs; floor 5; patience 6",
+        "stageBDecision": "only if stage B improves that arm's selected VALIDATION NLL",
+        "stageBTrigger": "only an arm within +0.05% NLL of its gate",
+        "training": "PR205 encoder plus fresh Linear(64,1), TRAIN only",
+        "weightDecay": 0.0001
+      },
+      "checkpointSha256": "ab047bce9cb446ec52dca912cd45dfbd05e0bd25f323e62e72d33300b0db852f",
+      "completedEpochs": 29,
+      "encoderSha256": "53d6c189cdae746cdeed0ad8f5617692fdd60760d079ee2b5296b6408f1786f1",
+      "evaluation": {
+        "comparison": {
+          "brierRelative": 0.06080168491383575,
+          "deathNllRelative": 0.06277252316275517,
+          "lowPreHpNllRelative": 0.038294370567614866,
+          "nllRelative": 0.05998961955461013
+        },
+        "decision": "SURVIVAL_DEEPSET_REJECTED",
+        "gatesPassed": {
+          "brierRelative": false,
+          "deathNllRelative": true,
+          "lowPreHpNllRelative": true,
+          "nllRelative": false,
+          "validity": true
+        },
+        "metrics": {
+          "Attention": {
+            "accuracyAt05": 0.9751021703765425,
+            "brier": 0.01781509444117546,
+            "calibration": [
+              {
+                "bin": 0,
+                "lower": 0.0,
+                "meanPredicted": 0.052189312875270844,
+                "observedSurvival": 0.05734767025089606,
+                "rows": 279,
+                "upper": 0.1
+              },
+              {
+                "bin": 1,
+                "lower": 0.1,
+                "meanPredicted": 0.14857900142669678,
+                "observedSurvival": 0.17777777777777778,
+                "rows": 225,
+                "upper": 0.2
+              },
+              {
+                "bin": 2,
+                "lower": 0.2,
+                "meanPredicted": 0.2543490529060364,
+                "observedSurvival": 0.2703862660944206,
+                "rows": 233,
+                "upper": 0.3
+              },
+              {
+                "bin": 3,
+                "lower": 0.3,
+                "meanPredicted": 0.3474677801132202,
+                "observedSurvival": 0.36885245901639346,
+                "rows": 244,
+                "upper": 0.4
+              },
+              {
+                "bin": 4,
+                "lower": 0.4,
+                "meanPredicted": 0.4531751275062561,
+                "observedSurvival": 0.5031645569620253,
+                "rows": 316,
+                "upper": 0.5
+              },
+              {
+                "bin": 5,
+                "lower": 0.5,
+                "meanPredicted": 0.5489605069160461,
+                "observedSurvival": 0.5685279187817259,
+                "rows": 394,
+                "upper": 0.6
+              },
+              {
+                "bin": 6,
+                "lower": 0.6,
+                "meanPredicted": 0.6516559720039368,
+                "observedSurvival": 0.6544401544401545,
+                "rows": 518,
+                "upper": 0.7
+              },
+              {
+                "bin": 7,
+                "lower": 0.7,
+                "meanPredicted": 0.7530989050865173,
+                "observedSurvival": 0.7275641025641025,
+                "rows": 624,
+                "upper": 0.8
+              },
+              {
+                "bin": 8,
+                "lower": 0.8,
+                "meanPredicted": 0.8548954725265503,
+                "observedSurvival": 0.851963746223565,
+                "rows": 1324,
+                "upper": 0.9
+              },
+              {
+                "bin": 9,
+                "lower": 0.9,
+                "meanPredicted": 0.9957226514816284,
+                "observedSurvival": 0.9962810006702848,
+                "rows": 46249,
+                "upper": 1.0
+              }
+            ],
+            "finiteLogits": true,
+            "finiteProbabilities": true,
+            "meanPredictedSurvival": 0.9630218148231506,
+            "nll": 0.05949442461133003,
+            "observedSurvivalRate": 0.9639725429512359,
+            "probabilitiesInUnitInterval": true,
+            "rocAuc": 0.980474519103929,
+            "rows": 50406
+          },
+          "DeepSets": {
+            "accuracyAt05": 0.974169741697417,
+            "brier": 0.018898282200098038,
+            "calibration": [
+              {
+                "bin": 0,
+                "lower": 0.0,
+                "meanPredicted": 0.05079767853021622,
+                "observedSurvival": 0.07894736842105263,
+                "rows": 342,
+                "upper": 0.1
+              },
+              {
+                "bin": 1,
+                "lower": 0.1,
+                "meanPredicted": 0.14876697957515717,
+                "observedSurvival": 0.23465703971119134,
+                "rows": 277,
+                "upper": 0.2
+              },
+              {
+                "bin": 2,
+                "lower": 0.2,
+                "meanPredicted": 0.24963387846946716,
+                "observedSurvival": 0.3142857142857143,
+                "rows": 245,
+                "upper": 0.3
+              },
+              {
+                "bin": 3,
+                "lower": 0.3,
+                "meanPredicted": 0.3476921617984772,
+                "observedSurvival": 0.44398340248962653,
+                "rows": 241,
+                "upper": 0.4
+              },
+              {
+                "bin": 4,
+                "lower": 0.4,
+                "meanPredicted": 0.45075395703315735,
+                "observedSurvival": 0.5670103092783505,
+                "rows": 291,
+                "upper": 0.5
+              },
+              {
+                "bin": 5,
+                "lower": 0.5,
+                "meanPredicted": 0.5544461011886597,
+                "observedSurvival": 0.6243523316062176,
+                "rows": 386,
+                "upper": 0.6
+              },
+              {
+                "bin": 6,
+                "lower": 0.6,
+                "meanPredicted": 0.6523498892784119,
+                "observedSurvival": 0.7089201877934272,
+                "rows": 426,
+                "upper": 0.7
+              },
+              {
+                "bin": 7,
+                "lower": 0.7,
+                "meanPredicted": 0.7520155310630798,
+                "observedSurvival": 0.7491803278688525,
+                "rows": 610,
+                "upper": 0.8
+              },
+              {
+                "bin": 8,
+                "lower": 0.8,
+                "meanPredicted": 0.8566984534263611,
+                "observedSurvival": 0.8200537153088631,
+                "rows": 1117,
+                "upper": 0.9
+              },
+              {
+                "bin": 9,
+                "lower": 0.9,
+                "meanPredicted": 0.9959942102432251,
+                "observedSurvival": 0.9948785263928042,
+                "rows": 46471,
+                "upper": 1.0
+              }
+            ],
+            "finiteLogits": true,
+            "finiteProbabilities": true,
+            "meanPredictedSurvival": 0.9627253413200378,
+            "nll": 0.06306347250938416,
+            "observedSurvivalRate": 0.9639725429512359,
+            "probabilitiesInUnitInterval": true,
+            "rocAuc": 0.9781892598139789,
+            "rows": 50406
+          }
+        },
+        "slices": {
+          "boss": {
+            "A": {
+              "brier": 0.08825218677520752,
+              "deaths": 1169,
+              "nll": 0.2808343768119812,
+              "rows": 5444
+            },
+            "B": {
+              "brier": 0.09309723973274231,
+              "deaths": 1169,
+              "nll": 0.29646551609039307,
+              "rows": 5444
+            }
+          },
+          "deaths": {
+            "A": {
+              "brier": 0.32351234555244446,
+              "deaths": 1816,
+              "nll": 0.989065945148468,
+              "rows": 1816
+            },
+            "B": {
+              "brier": 0.33238327503204346,
+              "deaths": 1816,
+              "nll": 1.0511521100997925,
+              "rows": 1816
+            }
+          },
+          "lowPreHp": {
+            "A": {
+              "brier": 0.1296009123325348,
+              "deaths": 292,
+              "nll": 0.39808058738708496,
+              "rows": 756
+            },
+            "B": {
+              "brier": 0.13590355217456818,
+              "deaths": 292,
+              "nll": 0.41332483291625977,
+              "rows": 756
+            }
+          },
+          "normal": {
+            "A": {
+              "brier": 0.009286569431424141,
+              "deaths": 647,
+              "nll": 0.03269457817077637,
+              "rows": 44962
+            },
+            "B": {
+              "brier": 0.009914270602166653,
+              "deaths": 647,
+              "nll": 0.034803152084350586,
+              "rows": 44962
+            }
+          },
+          "victories": {
+            "A": {
+              "brier": 0.006389982532709837,
+              "deaths": 0,
+              "nll": 0.024752669036388397,
+              "rows": 48590
+            },
+            "B": {
+              "brier": 0.007182110566645861,
+              "deaths": 0,
+              "nll": 0.026134703308343887,
+              "rows": 48590
+            }
+          }
+        },
+        "thresholds": {
+          "brierRelative": 0.05,
+          "deathNllRelative": 0.1,
+          "lowPreHpNllRelative": 0.1,
+          "nllRelative": 0.02
+        }
+      },
+      "history": [
+        {
+          "batchOrderSha256": "adf64f2660a3e05970715006120fa8eb0d93407d7d93c4e7d0a8e7456bef2bad",
+          "epoch": 1,
+          "seconds": 4.696852177992696,
+          "trainNll": 0.09126506577526355,
+          "validationNll": 0.0740526020526886
+        },
+        {
+          "batchOrderSha256": "01197d8b276cd6e9a65c577aa3d6450ea099136d0df287b3692f8cd3cbaf1adf",
+          "epoch": 2,
+          "seconds": 4.835547729002428,
+          "trainNll": 0.06788920090757157,
+          "validationNll": 0.07058467715978622
+        },
+        {
+          "batchOrderSha256": "34b0889c8e4c6cccf50a04a3b6962b72d48f5b5716b6b3a6833d681ac43edc86",
+          "epoch": 3,
+          "seconds": 4.4689905300037935,
+          "trainNll": 0.06536203301761623,
+          "validationNll": 0.06797458976507187
+        },
+        {
+          "batchOrderSha256": "bc38faa5f96db60fe6cec28bfff2a581a17105f47bde5e9d10edf6db120f5b33",
+          "epoch": 4,
+          "seconds": 4.04541509700357,
+          "trainNll": 0.06357053983530778,
+          "validationNll": 0.06633669137954712
+        },
+        {
+          "batchOrderSha256": "8eaa7ec833c94a9910772c9fd6fa1aa9d6808ada3d786f93bc89301e60e18154",
+          "epoch": 5,
+          "seconds": 3.936899023989099,
+          "trainNll": 0.06209382706910256,
+          "validationNll": 0.06663195788860321
+        },
+        {
+          "batchOrderSha256": "73c955c2564ba2027b612ff7bf791e781a75ddd634ff7204c976ae7750b74e9a",
+          "epoch": 6,
+          "seconds": 3.9378024010075023,
+          "trainNll": 0.061473538501798465,
+          "validationNll": 0.06546112149953842
+        },
+        {
+          "batchOrderSha256": "3b3d1f3a2142ffcf73083f793921ff35e111db5b81a5c919a446fc35d944a84b",
+          "epoch": 7,
+          "seconds": 4.177212053007679,
+          "trainNll": 0.06066382030618809,
+          "validationNll": 0.0645790621638298
+        },
+        {
+          "batchOrderSha256": "2026cf1fb559658ce816db053a8be97b0272f7110d9265eb886747c910752716",
+          "epoch": 8,
+          "seconds": 4.168291037000017,
+          "trainNll": 0.05989943109875009,
+          "validationNll": 0.06471052765846252
+        },
+        {
+          "batchOrderSha256": "54b2d13c815c0450c4c3ee51697e97e25105ba9edd4bdbc9a6da6169ce56587c",
+          "epoch": 9,
+          "seconds": 4.078707740001846,
+          "trainNll": 0.05958629232301863,
+          "validationNll": 0.06548090279102325
+        },
+        {
+          "batchOrderSha256": "88e538e2da9316336aea7faa6e55dc19ddafc486659a01704e6d4f2a90d3d33e",
+          "epoch": 10,
+          "seconds": 3.972746258994448,
+          "trainNll": 0.05910769551860903,
+          "validationNll": 0.0646730288863182
+        },
+        {
+          "batchOrderSha256": "309f97a22bc7afcf827d981475986d0cf09e61e0fcecae13d0c91887d1df9820",
+          "epoch": 11,
+          "seconds": 3.9422124109987635,
+          "trainNll": 0.05862461292071212,
+          "validationNll": 0.06593859940767288
+        },
+        {
+          "batchOrderSha256": "4ef4200e8571a535f21e9010a0d3c25bad1d1a6de8f7ac3391406bf0be18aff6",
+          "epoch": 12,
+          "seconds": 3.9287212980125332,
+          "trainNll": 0.058327232735223125,
+          "validationNll": 0.06361623108386993
+        },
+        {
+          "batchOrderSha256": "6c75977ab8bf948aec6033cd088b730039239dc2a48d35e4c48f6c2022a46367",
+          "epoch": 13,
+          "seconds": 3.8544142980099423,
+          "trainNll": 0.057869859484062466,
+          "validationNll": 0.06502612680196762
+        },
+        {
+          "batchOrderSha256": "9496cb84bc6970967f570c948b18a0448264d3879038068e5f2afbbf02720ea8",
+          "epoch": 14,
+          "seconds": 3.8612982369959354,
+          "trainNll": 0.05754318500605519,
+          "validationNll": 0.06334227323532104
+        },
+        {
+          "batchOrderSha256": "dcd10a0701c7d2088d332c35981bc8521b15d754704fd0c83009a8c7a64df20d",
+          "epoch": 15,
+          "seconds": 3.894818945991574,
+          "trainNll": 0.05711404545786355,
+          "validationNll": 0.06468718498945236
+        },
+        {
+          "batchOrderSha256": "9ede316e64e010bbdbc2089d797b443d3b1f0c9628290dbb35d4c3a2d6a5beda",
+          "epoch": 16,
+          "seconds": 3.890169270001934,
+          "trainNll": 0.056808861486406084,
+          "validationNll": 0.0639127790927887
+        },
+        {
+          "batchOrderSha256": "489109c43a3bec9c9c9e8c5cc53328ff6705b54a2ea45e466d32f0dc0952f367",
+          "epoch": 17,
+          "seconds": 3.911977138996008,
+          "trainNll": 0.05646618917831821,
+          "validationNll": 0.06456911563873291
+        },
+        {
+          "batchOrderSha256": "c261f66c07c0fcf0eec8d88b7c0dff3a11b66795d1062723199fa1fc901be2a7",
+          "epoch": 18,
+          "seconds": 3.9190560129936785,
+          "trainNll": 0.05611190728732909,
+          "validationNll": 0.06384053826332092
+        },
+        {
+          "batchOrderSha256": "01d70b26060586c0f0241c0865ce3b74baa322301bdee48e7f1ff611e2f94040",
+          "epoch": 19,
+          "seconds": 3.9014937350002583,
+          "trainNll": 0.05571273634400832,
+          "validationNll": 0.06417588144540787
+        },
+        {
+          "batchOrderSha256": "8d29c36d2d95e0101a772c707bb6dd738b3318a571171440ea71777d3741d93c",
+          "epoch": 20,
+          "seconds": 3.938583320006728,
+          "trainNll": 0.05551671424834612,
+          "validationNll": 0.06311805546283722
+        },
+        {
+          "batchOrderSha256": "8a5b4bf49ee7c031fcdc266f7b7b2a59571c66ff2707cd9db54499cf87fd9df2",
+          "epoch": 21,
+          "seconds": 4.067855667002732,
+          "trainNll": 0.055307712669101484,
+          "validationNll": 0.06405280530452728
+        },
+        {
+          "batchOrderSha256": "1775230a69b13a870f33770e328f6a8ce6b5c20bd24e58e6c48e5b951b721a07",
+          "epoch": 22,
+          "seconds": 4.001245054998435,
+          "trainNll": 0.05482967585374232,
+          "validationNll": 0.06416052579879761
+        },
+        {
+          "batchOrderSha256": "a01da13100961f8a910fb5a64b68265af66cdd233ce7b8ab2cfefb534513f8db",
+          "epoch": 23,
+          "seconds": 3.9226813040004345,
+          "trainNll": 0.054579460278355446,
+          "validationNll": 0.06306347250938416
+        },
+        {
+          "batchOrderSha256": "a0594c1a46faae656a3de42724592bdb3e13c644779e01d2b0bd6a7242cadad5",
+          "epoch": 24,
+          "seconds": 3.95719516799727,
+          "trainNll": 0.054247817740468246,
+          "validationNll": 0.06321480870246887
+        },
+        {
+          "batchOrderSha256": "c66bb478e8181423c2179a2b7ca04c039d88fd749433da7abca5b0d80646a20d",
+          "epoch": 25,
+          "seconds": 3.971430350007722,
+          "trainNll": 0.05393168572227875,
+          "validationNll": 0.0639096200466156
+        },
+        {
+          "batchOrderSha256": "c12d561f511b6de9cfdf3451ad3aeb27f6c112717a4ae8d9e6d6e4a291a90662",
+          "epoch": 26,
+          "seconds": 3.988232256990159,
+          "trainNll": 0.05370742129085861,
+          "validationNll": 0.06322167813777924
+        },
+        {
+          "batchOrderSha256": "abe1b717250e5d45dacb0b7b93d04aff704e82773e711e7370727590ec1cdaa1",
+          "epoch": 27,
+          "seconds": 3.9456053280009655,
+          "trainNll": 0.053355021009721865,
+          "validationNll": 0.06341807544231415
+        },
+        {
+          "batchOrderSha256": "0a64cc1b0626019b52b351132d840195859c9ce0003f142af611f160ee8348a5",
+          "epoch": 28,
+          "seconds": 3.939184032002231,
+          "trainNll": 0.05338328747872743,
+          "validationNll": 0.06433252990245819
+        },
+        {
+          "batchOrderSha256": "547fa38e2666e9faf15400d1e110bd446928a0076671c8fab699d0bd09600584",
+          "epoch": 29,
+          "seconds": 3.9200817579985596,
+          "trainNll": 0.05264081090415238,
+          "validationNll": 0.06382420659065247
+        }
+      ],
+      "initialStateSha256": "e66fdd971ef36efdd282696b127ba28bdf8f66309036adf2250f4469814010ba",
+      "selectedEpoch": 23,
+      "stoppingReason": "patience"
+    },
+    "lowerLr": {
+      "batchOrdersVerified": true,
+      "checkpointPath": "/home/philippherrmann/sts_sweep/runs/survival-specific-deepset-sweep-20260917-final/lowerLr/selected.pt",
+      "checkpointRecipe": {
+        "batch": 512,
+        "continuation": "initial-epoch generator state restored, strict validation selection",
+        "encoderLr": 5e-05,
+        "gradientClip": 1.0,
+        "headLr": 0.0005,
+        "loss": "unweighted BCEWithLogitsLoss; 1=survived, 0=death",
+        "maxEpochs": 40,
+        "minEpochs": 12,
+        "name": "lowerLr",
+        "optimizer": "AdamW",
+        "patience": 6,
+        "precision": "FP32",
+        "schema": "survival_specific_deepset_lr_wd_sweep_v1",
+        "seed": 20260912,
+        "selection": "per-arm earliest strict minimum VALIDATION NLL",
+        "stageA": "fresh PR205 warm-start for each arm",
+        "stageB": "selected checkpoint continuation after all arms; 5x LRs; 15 epochs; floor 5; patience 6",
+        "stageBDecision": "only if stage B improves that arm's selected VALIDATION NLL",
+        "stageBTrigger": "only an arm within +0.05% NLL of its gate",
+        "training": "PR205 encoder plus fresh Linear(64,1), TRAIN only",
+        "weightDecay": 0.0001
+      },
+      "checkpointSha256": "9fb33cf52bf8183358f4e760aec956fdd176fd00a52f169811d3aaa892bc26ed",
+      "completedEpochs": 40,
+      "encoderSha256": "60897efb6d0285011b1333de91798603d64ffa9e2e4da26f1a2f983c1f6e134a",
+      "evaluation": {
+        "comparison": {
+          "brierRelative": 0.06245395688974309,
+          "deathNllRelative": 0.01250161732355859,
+          "lowPreHpNllRelative": 0.02697297850893987,
+          "nllRelative": 0.06291527964868537
+        },
+        "decision": "SURVIVAL_DEEPSET_REJECTED",
+        "gatesPassed": {
+          "brierRelative": false,
+          "deathNllRelative": true,
+          "lowPreHpNllRelative": true,
+          "nllRelative": false,
+          "validity": true
+        },
+        "metrics": {
+          "Attention": {
+            "accuracyAt05": 0.9751021703765425,
+            "brier": 0.01781509444117546,
+            "calibration": [
+              {
+                "bin": 0,
+                "lower": 0.0,
+                "meanPredicted": 0.052189312875270844,
+                "observedSurvival": 0.05734767025089606,
+                "rows": 279,
+                "upper": 0.1
+              },
+              {
+                "bin": 1,
+                "lower": 0.1,
+                "meanPredicted": 0.14857900142669678,
+                "observedSurvival": 0.17777777777777778,
+                "rows": 225,
+                "upper": 0.2
+              },
+              {
+                "bin": 2,
+                "lower": 0.2,
+                "meanPredicted": 0.2543490529060364,
+                "observedSurvival": 0.2703862660944206,
+                "rows": 233,
+                "upper": 0.3
+              },
+              {
+                "bin": 3,
+                "lower": 0.3,
+                "meanPredicted": 0.3474677801132202,
+                "observedSurvival": 0.36885245901639346,
+                "rows": 244,
+                "upper": 0.4
+              },
+              {
+                "bin": 4,
+                "lower": 0.4,
+                "meanPredicted": 0.4531751275062561,
+                "observedSurvival": 0.5031645569620253,
+                "rows": 316,
+                "upper": 0.5
+              },
+              {
+                "bin": 5,
+                "lower": 0.5,
+                "meanPredicted": 0.5489605069160461,
+                "observedSurvival": 0.5685279187817259,
+                "rows": 394,
+                "upper": 0.6
+              },
+              {
+                "bin": 6,
+                "lower": 0.6,
+                "meanPredicted": 0.6516559720039368,
+                "observedSurvival": 0.6544401544401545,
+                "rows": 518,
+                "upper": 0.7
+              },
+              {
+                "bin": 7,
+                "lower": 0.7,
+                "meanPredicted": 0.7530989050865173,
+                "observedSurvival": 0.7275641025641025,
+                "rows": 624,
+                "upper": 0.8
+              },
+              {
+                "bin": 8,
+                "lower": 0.8,
+                "meanPredicted": 0.8548954725265503,
+                "observedSurvival": 0.851963746223565,
+                "rows": 1324,
+                "upper": 0.9
+              },
+              {
+                "bin": 9,
+                "lower": 0.9,
+                "meanPredicted": 0.9957226514816284,
+                "observedSurvival": 0.9962810006702848,
+                "rows": 46249,
+                "upper": 1.0
+              }
+            ],
+            "finiteLogits": true,
+            "finiteProbabilities": true,
+            "meanPredictedSurvival": 0.9630218148231506,
+            "nll": 0.05949442461133003,
+            "observedSurvivalRate": 0.9639725429512359,
+            "probabilitiesInUnitInterval": true,
+            "rocAuc": 0.980474519103929,
+            "rows": 50406
+          },
+          "DeepSets": {
+            "accuracyAt05": 0.9742689362377495,
+            "brier": 0.018927717581391335,
+            "calibration": [
+              {
+                "bin": 0,
+                "lower": 0.0,
+                "meanPredicted": 0.050816528499126434,
+                "observedSurvival": 0.07006369426751592,
+                "rows": 314,
+                "upper": 0.1
+              },
+              {
+                "bin": 1,
+                "lower": 0.1,
+                "meanPredicted": 0.14901003241539001,
+                "observedSurvival": 0.22826086956521738,
+                "rows": 276,
+                "upper": 0.2
+              },
+              {
+                "bin": 2,
+                "lower": 0.2,
+                "meanPredicted": 0.25033333897590637,
+                "observedSurvival": 0.35379061371841153,
+                "rows": 277,
+                "upper": 0.3
+              },
+              {
+                "bin": 3,
+                "lower": 0.3,
+                "meanPredicted": 0.3477044105529785,
+                "observedSurvival": 0.4226415094339623,
+                "rows": 265,
+                "upper": 0.4
+              },
+              {
+                "bin": 4,
+                "lower": 0.4,
+                "meanPredicted": 0.4513789713382721,
+                "observedSurvival": 0.5341246290801187,
+                "rows": 337,
+                "upper": 0.5
+              },
+              {
+                "bin": 5,
+                "lower": 0.5,
+                "meanPredicted": 0.5540453195571899,
+                "observedSurvival": 0.6675191815856778,
+                "rows": 391,
+                "upper": 0.6
+              },
+              {
+                "bin": 6,
+                "lower": 0.6,
+                "meanPredicted": 0.6500912308692932,
+                "observedSurvival": 0.7100456621004566,
+                "rows": 438,
+                "upper": 0.7
+              },
+              {
+                "bin": 7,
+                "lower": 0.7,
+                "meanPredicted": 0.7525453567504883,
+                "observedSurvival": 0.7619047619047619,
+                "rows": 693,
+                "upper": 0.8
+              },
+              {
+                "bin": 8,
+                "lower": 0.8,
+                "meanPredicted": 0.8563964366912842,
+                "observedSurvival": 0.846832397754611,
+                "rows": 1247,
+                "upper": 0.9
+              },
+              {
+                "bin": 9,
+                "lower": 0.9,
+                "meanPredicted": 0.995622992515564,
+                "observedSurvival": 0.9954730549298215,
+                "rows": 46168,
+                "upper": 1.0
+              }
+            ],
+            "finiteLogits": true,
+            "finiteProbabilities": true,
+            "meanPredictedSurvival": 0.9607470035552979,
+            "nll": 0.06323753297328949,
+            "observedSurvivalRate": 0.9639725429512359,
+            "probabilitiesInUnitInterval": true,
+            "rocAuc": 0.9778631188049244,
+            "rows": 50406
+          }
+        },
+        "slices": {
+          "boss": {
+            "A": {
+              "brier": 0.08825218677520752,
+              "deaths": 1169,
+              "nll": 0.2808343768119812,
+              "rows": 5444
+            },
+            "B": {
+              "brier": 0.09324434399604797,
+              "deaths": 1169,
+              "nll": 0.2959336042404175,
+              "rows": 5444
+            }
+          },
+          "deaths": {
+            "A": {
+              "brier": 0.32351234555244446,
+              "deaths": 1816,
+              "nll": 0.989065945148468,
+              "rows": 1816
+            },
+            "B": {
+              "brier": 0.3200114369392395,
+              "deaths": 1816,
+              "nll": 1.001430869102478,
+              "rows": 1816
+            }
+          },
+          "lowPreHp": {
+            "A": {
+              "brier": 0.1296009123325348,
+              "deaths": 292,
+              "nll": 0.39808058738708496,
+              "rows": 756
+            },
+            "B": {
+              "brier": 0.13374370336532593,
+              "deaths": 292,
+              "nll": 0.40881800651550293,
+              "rows": 756
+            }
+          },
+          "normal": {
+            "A": {
+              "brier": 0.009286569431424141,
+              "deaths": 647,
+              "nll": 0.03269457817077637,
+              "rows": 44962
+            },
+            "B": {
+              "brier": 0.009929459542036057,
+              "deaths": 647,
+              "nll": 0.03506268933415413,
+              "rows": 44962
+            }
+          },
+          "victories": {
+            "A": {
+              "brier": 0.006389982532709837,
+              "deaths": 0,
+              "nll": 0.024752669036388397,
+              "rows": 48590
+            },
+            "B": {
+              "brier": 0.00767503259703517,
+              "deaths": 0,
+              "nll": 0.028173549100756645,
+              "rows": 48590
+            }
+          }
+        },
+        "thresholds": {
+          "brierRelative": 0.05,
+          "deathNllRelative": 0.1,
+          "lowPreHpNllRelative": 0.1,
+          "nllRelative": 0.02
+        }
+      },
+      "history": [
+        {
+          "batchOrderSha256": "adf64f2660a3e05970715006120fa8eb0d93407d7d93c4e7d0a8e7456bef2bad",
+          "epoch": 1,
+          "seconds": 3.9514027380064363,
+          "trainNll": 0.10753410047561789,
+          "validationNll": 0.07690378278493881
+        },
+        {
+          "batchOrderSha256": "01197d8b276cd6e9a65c577aa3d6450ea099136d0df287b3692f8cd3cbaf1adf",
+          "epoch": 2,
+          "seconds": 3.809163758007344,
+          "trainNll": 0.0711388209758347,
+          "validationNll": 0.07365570962429047
+        },
+        {
+          "batchOrderSha256": "34b0889c8e4c6cccf50a04a3b6962b72d48f5b5716b6b3a6833d681ac43edc86",
+          "epoch": 3,
+          "seconds": 3.992292451992398,
+          "trainNll": 0.06782857555132492,
+          "validationNll": 0.07058127224445343
+        },
+        {
+          "batchOrderSha256": "bc38faa5f96db60fe6cec28bfff2a581a17105f47bde5e9d10edf6db120f5b33",
+          "epoch": 4,
+          "seconds": 3.9441980180126848,
+          "trainNll": 0.06600053760730916,
+          "validationNll": 0.06946898996829987
+        },
+        {
+          "batchOrderSha256": "8eaa7ec833c94a9910772c9fd6fa1aa9d6808ada3d786f93bc89301e60e18154",
+          "epoch": 5,
+          "seconds": 3.959853022999596,
+          "trainNll": 0.06460547006630965,
+          "validationNll": 0.06943332403898239
+        },
+        {
+          "batchOrderSha256": "73c955c2564ba2027b612ff7bf791e781a75ddd634ff7204c976ae7750b74e9a",
+          "epoch": 6,
+          "seconds": 3.9770213140000124,
+          "trainNll": 0.06379516464108129,
+          "validationNll": 0.06809680163860321
+        },
+        {
+          "batchOrderSha256": "3b3d1f3a2142ffcf73083f793921ff35e111db5b81a5c919a446fc35d944a84b",
+          "epoch": 7,
+          "seconds": 3.9086597809946397,
+          "trainNll": 0.06289895695702427,
+          "validationNll": 0.06669051945209503
+        },
+        {
+          "batchOrderSha256": "2026cf1fb559658ce816db053a8be97b0272f7110d9265eb886747c910752716",
+          "epoch": 8,
+          "seconds": 3.9007974440028192,
+          "trainNll": 0.06222958244363056,
+          "validationNll": 0.066718190908432
+        },
+        {
+          "batchOrderSha256": "54b2d13c815c0450c4c3ee51697e97e25105ba9edd4bdbc9a6da6169ce56587c",
+          "epoch": 9,
+          "seconds": 4.171600920002675,
+          "trainNll": 0.061698043572604,
+          "validationNll": 0.0660935565829277
+        },
+        {
+          "batchOrderSha256": "88e538e2da9316336aea7faa6e55dc19ddafc486659a01704e6d4f2a90d3d33e",
+          "epoch": 10,
+          "seconds": 4.329881686993758,
+          "trainNll": 0.06116967501375495,
+          "validationNll": 0.06540148705244064
+        },
+        {
+          "batchOrderSha256": "309f97a22bc7afcf827d981475986d0cf09e61e0fcecae13d0c91887d1df9820",
+          "epoch": 11,
+          "seconds": 4.246684800993535,
+          "trainNll": 0.06067255682853408,
+          "validationNll": 0.06554447114467621
+        },
+        {
+          "batchOrderSha256": "4ef4200e8571a535f21e9010a0d3c25bad1d1a6de8f7ac3391406bf0be18aff6",
+          "epoch": 12,
+          "seconds": 4.2225568989961175,
+          "trainNll": 0.06037766700286322,
+          "validationNll": 0.06516674906015396
+        },
+        {
+          "batchOrderSha256": "6c75977ab8bf948aec6033cd088b730039239dc2a48d35e4c48f6c2022a46367",
+          "epoch": 13,
+          "seconds": 4.270660537993535,
+          "trainNll": 0.05999864592343236,
+          "validationNll": 0.06555341184139252
+        },
+        {
+          "batchOrderSha256": "9496cb84bc6970967f570c948b18a0448264d3879038068e5f2afbbf02720ea8",
+          "epoch": 14,
+          "seconds": 4.258851849008352,
+          "trainNll": 0.05969467274702182,
+          "validationNll": 0.06450057774782181
+        },
+        {
+          "batchOrderSha256": "dcd10a0701c7d2088d332c35981bc8521b15d754704fd0c83009a8c7a64df20d",
+          "epoch": 15,
+          "seconds": 4.216303462002543,
+          "trainNll": 0.059335909483851465,
+          "validationNll": 0.06510275602340698
+        },
+        {
+          "batchOrderSha256": "9ede316e64e010bbdbc2089d797b443d3b1f0c9628290dbb35d4c3a2d6a5beda",
+          "epoch": 16,
+          "seconds": 4.196394976010197,
+          "trainNll": 0.05906959771995721,
+          "validationNll": 0.06456606835126877
+        },
+        {
+          "batchOrderSha256": "489109c43a3bec9c9c9e8c5cc53328ff6705b54a2ea45e466d32f0dc0952f367",
+          "epoch": 17,
+          "seconds": 4.266671517005307,
+          "trainNll": 0.058818417928772,
+          "validationNll": 0.06568319350481033
+        },
+        {
+          "batchOrderSha256": "c261f66c07c0fcf0eec8d88b7c0dff3a11b66795d1062723199fa1fc901be2a7",
+          "epoch": 18,
+          "seconds": 4.311112905998016,
+          "trainNll": 0.058566840489791196,
+          "validationNll": 0.06432303041219711
+        },
+        {
+          "batchOrderSha256": "01d70b26060586c0f0241c0865ce3b74baa322301bdee48e7f1ff611e2f94040",
+          "epoch": 19,
+          "seconds": 4.222373697004514,
+          "trainNll": 0.05831989006306173,
+          "validationNll": 0.06458908319473267
+        },
+        {
+          "batchOrderSha256": "8d29c36d2d95e0101a772c707bb6dd738b3318a571171440ea71777d3741d93c",
+          "epoch": 20,
+          "seconds": 4.216371324000647,
+          "trainNll": 0.05817033052015877,
+          "validationNll": 0.06369350105524063
+        },
+        {
+          "batchOrderSha256": "8a5b4bf49ee7c031fcdc266f7b7b2a59571c66ff2707cd9db54499cf87fd9df2",
+          "epoch": 21,
+          "seconds": 3.8573171199968783,
+          "trainNll": 0.05804927998048571,
+          "validationNll": 0.06443750113248825
+        },
+        {
+          "batchOrderSha256": "1775230a69b13a870f33770e328f6a8ce6b5c20bd24e58e6c48e5b951b721a07",
+          "epoch": 22,
+          "seconds": 4.084984205008368,
+          "trainNll": 0.0577178196599901,
+          "validationNll": 0.06439486145973206
+        },
+        {
+          "batchOrderSha256": "a01da13100961f8a910fb5a64b68265af66cdd233ce7b8ab2cfefb534513f8db",
+          "epoch": 23,
+          "seconds": 4.03095398399455,
+          "trainNll": 0.057569818220929506,
+          "validationNll": 0.06372889876365662
+        },
+        {
+          "batchOrderSha256": "a0594c1a46faae656a3de42724592bdb3e13c644779e01d2b0bd6a7242cadad5",
+          "epoch": 24,
+          "seconds": 4.203736249997746,
+          "trainNll": 0.05742177548803494,
+          "validationNll": 0.06424735486507416
+        },
+        {
+          "batchOrderSha256": "c66bb478e8181423c2179a2b7ca04c039d88fd749433da7abca5b0d80646a20d",
+          "epoch": 25,
+          "seconds": 4.172563076994265,
+          "trainNll": 0.05716882866914585,
+          "validationNll": 0.06349178403615952
+        },
+        {
+          "batchOrderSha256": "c12d561f511b6de9cfdf3451ad3aeb27f6c112717a4ae8d9e6d6e4a291a90662",
+          "epoch": 26,
+          "seconds": 3.973172373996931,
+          "trainNll": 0.0569739610904065,
+          "validationNll": 0.06359601020812988
+        },
+        {
+          "batchOrderSha256": "abe1b717250e5d45dacb0b7b93d04aff704e82773e711e7370727590ec1cdaa1",
+          "epoch": 27,
+          "seconds": 4.324557419997291,
+          "trainNll": 0.05677151705316031,
+          "validationNll": 0.06336050480604172
+        },
+        {
+          "batchOrderSha256": "0a64cc1b0626019b52b351132d840195859c9ce0003f142af611f160ee8348a5",
+          "epoch": 28,
+          "seconds": 4.31581317599921,
+          "trainNll": 0.05687408368351892,
+          "validationNll": 0.06397208571434021
+        },
+        {
+          "batchOrderSha256": "547fa38e2666e9faf15400d1e110bd446928a0076671c8fab699d0bd09600584",
+          "epoch": 29,
+          "seconds": 4.26397055099369,
+          "trainNll": 0.05641284755850276,
+          "validationNll": 0.06387209892272949
+        },
+        {
+          "batchOrderSha256": "3f1a81b2bfe406594b62c54c6780b0d3eac40ff40717d7598fb57dc4a2847897",
+          "epoch": 30,
+          "seconds": 4.2802652409882285,
+          "trainNll": 0.05627373014576288,
+          "validationNll": 0.06358201801776886
+        },
+        {
+          "batchOrderSha256": "ff35eab592ca62d26035bc1bbb43869b02385ae24ae30ff6c50d776330e854dc",
+          "epoch": 31,
+          "seconds": 4.162483779000468,
+          "trainNll": 0.05601138119278789,
+          "validationNll": 0.06329507380723953
+        },
+        {
+          "batchOrderSha256": "b64727cfb9aee68d4f4b63ded182fb374af9b9e1aaae6a96220522c7eb1f3493",
+          "epoch": 32,
+          "seconds": 4.259597092008335,
+          "trainNll": 0.05591888451705545,
+          "validationNll": 0.06373825669288635
+        },
+        {
+          "batchOrderSha256": "edacdc287812d03a60e8eb33e025d26dff28862408992b67335f1a09529911cc",
+          "epoch": 33,
+          "seconds": 4.09648734300572,
+          "trainNll": 0.05588003054110766,
+          "validationNll": 0.0648307204246521
+        },
+        {
+          "batchOrderSha256": "b412e01b60ed5a484b032aa3d3d716666bdb8fdba7f82f8608f2a9c71859dcf8",
+          "epoch": 34,
+          "seconds": 4.06700580100005,
+          "trainNll": 0.05567802528950512,
+          "validationNll": 0.06323753297328949
+        },
+        {
+          "batchOrderSha256": "a1a669c9a0c0908cd0138a0d13bcaf32e79e41b4db18ab86308dc735badc223b",
+          "epoch": 35,
+          "seconds": 4.415559337998275,
+          "trainNll": 0.05550065124496965,
+          "validationNll": 0.06329651921987534
+        },
+        {
+          "batchOrderSha256": "14ee4f956984144118817cf6f2cb23925a8b793cff132bfff8b53242987ee7c1",
+          "epoch": 36,
+          "seconds": 4.2958098689996405,
+          "trainNll": 0.055199167074845866,
+          "validationNll": 0.06359509378671646
+        },
+        {
+          "batchOrderSha256": "5478c4825d664c0de71849c58ec9f73c5e35f24b25554ba9b8d4f7d09c5b7509",
+          "epoch": 37,
+          "seconds": 4.187470705001033,
+          "trainNll": 0.05511955570056462,
+          "validationNll": 0.06346919387578964
+        },
+        {
+          "batchOrderSha256": "2c4072e89b2bf435d0f5c0caa25c6dcf95bfe62e8bc24df443ebd42d74fb4b99",
+          "epoch": 38,
+          "seconds": 4.377416273986455,
+          "trainNll": 0.05499037494739997,
+          "validationNll": 0.06363309174776077
+        },
+        {
+          "batchOrderSha256": "55dc1b830da8bc5c05666a1963b114c9ae5724b1c60461c40ee5d5db51dbb8e5",
+          "epoch": 39,
+          "seconds": 4.002466937992722,
+          "trainNll": 0.05478420421422978,
+          "validationNll": 0.06349651515483856
+        },
+        {
+          "batchOrderSha256": "caef35d5771c15601be1900f360724ffd2b6056c09afe3802c1df7ae36ddfcf7",
+          "epoch": 40,
+          "seconds": 4.337195549000171,
+          "trainNll": 0.054680962348736165,
+          "validationNll": 0.06471259146928787
+        }
+      ],
+      "initialStateSha256": "e66fdd971ef36efdd282696b127ba28bdf8f66309036adf2250f4469814010ba",
+      "selectedEpoch": 34,
+      "stoppingReason": "patience"
+    },
+    "lowerLrWd": {
+      "batchOrdersVerified": true,
+      "checkpointPath": "/home/philippherrmann/sts_sweep/runs/survival-specific-deepset-sweep-20260917-final/lowerLrWd/selected.pt",
+      "checkpointRecipe": {
+        "batch": 512,
+        "continuation": "initial-epoch generator state restored, strict validation selection",
+        "encoderLr": 5e-05,
+        "gradientClip": 1.0,
+        "headLr": 0.0005,
+        "loss": "unweighted BCEWithLogitsLoss; 1=survived, 0=death",
+        "maxEpochs": 40,
+        "minEpochs": 12,
+        "name": "lowerLrWd",
+        "optimizer": "AdamW",
+        "patience": 6,
+        "precision": "FP32",
+        "schema": "survival_specific_deepset_lr_wd_sweep_v1",
+        "seed": 20260912,
+        "selection": "per-arm earliest strict minimum VALIDATION NLL",
+        "stageA": "fresh PR205 warm-start for each arm",
+        "stageB": "selected checkpoint continuation after all arms; 5x LRs; 15 epochs; floor 5; patience 6",
+        "stageBDecision": "only if stage B improves that arm's selected VALIDATION NLL",
+        "stageBTrigger": "only an arm within +0.05% NLL of its gate",
+        "training": "PR205 encoder plus fresh Linear(64,1), TRAIN only",
+        "weightDecay": 0.0005
+      },
+      "checkpointSha256": "ac7aa0c654e2829a3cabf4f9a7a3e9e751449f8e9d0cd3e740e35ace60c79e0a",
+      "completedEpochs": 40,
+      "encoderSha256": "a68c270113c1aa42230ae2083b4f7f78ace37d25e0be54078100a647802f466a",
+      "evaluation": {
+        "comparison": {
+          "brierRelative": 0.059979887930311726,
+          "deathNllRelative": 0.01258417841439674,
+          "lowPreHpNllRelative": 0.025804185375442268,
+          "nllRelative": 0.061127097965469
+        },
+        "decision": "SURVIVAL_DEEPSET_REJECTED",
+        "gatesPassed": {
+          "brierRelative": false,
+          "deathNllRelative": true,
+          "lowPreHpNllRelative": true,
+          "nllRelative": false,
+          "validity": true
+        },
+        "metrics": {
+          "Attention": {
+            "accuracyAt05": 0.9751021703765425,
+            "brier": 0.01781509444117546,
+            "calibration": [
+              {
+                "bin": 0,
+                "lower": 0.0,
+                "meanPredicted": 0.052189312875270844,
+                "observedSurvival": 0.05734767025089606,
+                "rows": 279,
+                "upper": 0.1
+              },
+              {
+                "bin": 1,
+                "lower": 0.1,
+                "meanPredicted": 0.14857900142669678,
+                "observedSurvival": 0.17777777777777778,
+                "rows": 225,
+                "upper": 0.2
+              },
+              {
+                "bin": 2,
+                "lower": 0.2,
+                "meanPredicted": 0.2543490529060364,
+                "observedSurvival": 0.2703862660944206,
+                "rows": 233,
+                "upper": 0.3
+              },
+              {
+                "bin": 3,
+                "lower": 0.3,
+                "meanPredicted": 0.3474677801132202,
+                "observedSurvival": 0.36885245901639346,
+                "rows": 244,
+                "upper": 0.4
+              },
+              {
+                "bin": 4,
+                "lower": 0.4,
+                "meanPredicted": 0.4531751275062561,
+                "observedSurvival": 0.5031645569620253,
+                "rows": 316,
+                "upper": 0.5
+              },
+              {
+                "bin": 5,
+                "lower": 0.5,
+                "meanPredicted": 0.5489605069160461,
+                "observedSurvival": 0.5685279187817259,
+                "rows": 394,
+                "upper": 0.6
+              },
+              {
+                "bin": 6,
+                "lower": 0.6,
+                "meanPredicted": 0.6516559720039368,
+                "observedSurvival": 0.6544401544401545,
+                "rows": 518,
+                "upper": 0.7
+              },
+              {
+                "bin": 7,
+                "lower": 0.7,
+                "meanPredicted": 0.7530989050865173,
+                "observedSurvival": 0.7275641025641025,
+                "rows": 624,
+                "upper": 0.8
+              },
+              {
+                "bin": 8,
+                "lower": 0.8,
+                "meanPredicted": 0.8548954725265503,
+                "observedSurvival": 0.851963746223565,
+                "rows": 1324,
+                "upper": 0.9
+              },
+              {
+                "bin": 9,
+                "lower": 0.9,
+                "meanPredicted": 0.9957226514816284,
+                "observedSurvival": 0.9962810006702848,
+                "rows": 46249,
+                "upper": 1.0
+              }
+            ],
+            "finiteLogits": true,
+            "finiteProbabilities": true,
+            "meanPredictedSurvival": 0.9630218148231506,
+            "nll": 0.05949442461133003,
+            "observedSurvivalRate": 0.9639725429512359,
+            "probabilitiesInUnitInterval": true,
+            "rocAuc": 0.980474519103929,
+            "rows": 50406
+          },
+          "DeepSets": {
+            "accuracyAt05": 0.9743482918700155,
+            "brier": 0.018883641809225082,
+            "calibration": [
+              {
+                "bin": 0,
+                "lower": 0.0,
+                "meanPredicted": 0.05141656845808029,
+                "observedSurvival": 0.06430868167202572,
+                "rows": 311,
+                "upper": 0.1
+              },
+              {
+                "bin": 1,
+                "lower": 0.1,
+                "meanPredicted": 0.1500115841627121,
+                "observedSurvival": 0.23465703971119134,
+                "rows": 277,
+                "upper": 0.2
+              },
+              {
+                "bin": 2,
+                "lower": 0.2,
+                "meanPredicted": 0.25192442536354065,
+                "observedSurvival": 0.34050179211469533,
+                "rows": 279,
+                "upper": 0.3
+              },
+              {
+                "bin": 3,
+                "lower": 0.3,
+                "meanPredicted": 0.34964388608932495,
+                "observedSurvival": 0.4153846153846154,
+                "rows": 260,
+                "upper": 0.4
+              },
+              {
+                "bin": 4,
+                "lower": 0.4,
+                "meanPredicted": 0.4522707462310791,
+                "observedSurvival": 0.5411764705882353,
+                "rows": 340,
+                "upper": 0.5
+              },
+              {
+                "bin": 5,
+                "lower": 0.5,
+                "meanPredicted": 0.5526979565620422,
+                "observedSurvival": 0.6771653543307087,
+                "rows": 381,
+                "upper": 0.6
+              },
+              {
+                "bin": 6,
+                "lower": 0.6,
+                "meanPredicted": 0.6489660143852234,
+                "observedSurvival": 0.6930022573363431,
+                "rows": 443,
+                "upper": 0.7
+              },
+              {
+                "bin": 7,
+                "lower": 0.7,
+                "meanPredicted": 0.754244327545166,
+                "observedSurvival": 0.763046544428773,
+                "rows": 709,
+                "upper": 0.8
+              },
+              {
+                "bin": 8,
+                "lower": 0.8,
+                "meanPredicted": 0.8568419218063354,
+                "observedSurvival": 0.8499594484995945,
+                "rows": 1233,
+                "upper": 0.9
+              },
+              {
+                "bin": 9,
+                "lower": 0.9,
+                "meanPredicted": 0.995555579662323,
+                "observedSurvival": 0.9954735451454313,
+                "rows": 46173,
+                "upper": 1.0
+              }
+            ],
+            "finiteLogits": true,
+            "finiteProbabilities": true,
+            "meanPredictedSurvival": 0.9607906937599182,
+            "nll": 0.06313114613294601,
+            "observedSurvivalRate": 0.9639725429512359,
+            "probabilitiesInUnitInterval": true,
+            "rocAuc": 0.9778880339675773,
+            "rows": 50406
+          }
+        },
+        "slices": {
+          "boss": {
+            "A": {
+              "brier": 0.08825218677520752,
+              "deaths": 1169,
+              "nll": 0.2808343768119812,
+              "rows": 5444
+            },
+            "B": {
+              "brier": 0.09284894913434982,
+              "deaths": 1169,
+              "nll": 0.294808954000473,
+              "rows": 5444
+            }
+          },
+          "deaths": {
+            "A": {
+              "brier": 0.32351234555244446,
+              "deaths": 1816,
+              "nll": 0.989065945148468,
+              "rows": 1816
+            },
+            "B": {
+              "brier": 0.32039666175842285,
+              "deaths": 1816,
+              "nll": 1.0015125274658203,
+              "rows": 1816
+            }
+          },
+          "lowPreHp": {
+            "A": {
+              "brier": 0.1296009123325348,
+              "deaths": 292,
+              "nll": 0.39808058738708496,
+              "rows": 756
+            },
+            "B": {
+              "brier": 0.13373520970344543,
+              "deaths": 292,
+              "nll": 0.40835273265838623,
+              "rows": 756
+            }
+          },
+          "normal": {
+            "A": {
+              "brier": 0.009286569431424141,
+              "deaths": 647,
+              "nll": 0.03269457817077637,
+              "rows": 44962
+            },
+            "B": {
+              "brier": 0.009927921928465366,
+              "deaths": 647,
+              "nll": 0.03507959842681885,
+              "rows": 44962
+            }
+          },
+          "victories": {
+            "A": {
+              "brier": 0.006389982532709837,
+              "deaths": 0,
+              "nll": 0.024752669036388397,
+              "rows": 48590
+            },
+            "B": {
+              "brier": 0.00761491060256958,
+              "deaths": 0,
+              "nll": 0.02806013822555542,
+              "rows": 48590
+            }
+          }
+        },
+        "thresholds": {
+          "brierRelative": 0.05,
+          "deathNllRelative": 0.1,
+          "lowPreHpNllRelative": 0.1,
+          "nllRelative": 0.02
+        }
+      },
+      "history": [
+        {
+          "batchOrderSha256": "adf64f2660a3e05970715006120fa8eb0d93407d7d93c4e7d0a8e7456bef2bad",
+          "epoch": 1,
+          "seconds": 3.839065985986963,
+          "trainNll": 0.10753339396350196,
+          "validationNll": 0.07688046991825104
+        },
+        {
+          "batchOrderSha256": "01197d8b276cd6e9a65c577aa3d6450ea099136d0df287b3692f8cd3cbaf1adf",
+          "epoch": 2,
+          "seconds": 3.841698834003182,
+          "trainNll": 0.07114418561573019,
+          "validationNll": 0.07367992401123047
+        },
+        {
+          "batchOrderSha256": "34b0889c8e4c6cccf50a04a3b6962b72d48f5b5716b6b3a6833d681ac43edc86",
+          "epoch": 3,
+          "seconds": 3.822777959998348,
+          "trainNll": 0.06782472953452598,
+          "validationNll": 0.07059260457754135
+        },
+        {
+          "batchOrderSha256": "bc38faa5f96db60fe6cec28bfff2a581a17105f47bde5e9d10edf6db120f5b33",
+          "epoch": 4,
+          "seconds": 3.893777239994961,
+          "trainNll": 0.06599677597749895,
+          "validationNll": 0.06946142017841339
+        },
+        {
+          "batchOrderSha256": "8eaa7ec833c94a9910772c9fd6fa1aa9d6808ada3d786f93bc89301e60e18154",
+          "epoch": 5,
+          "seconds": 3.861994458013214,
+          "trainNll": 0.06460498223965322,
+          "validationNll": 0.06942950189113617
+        },
+        {
+          "batchOrderSha256": "73c955c2564ba2027b612ff7bf791e781a75ddd634ff7204c976ae7750b74e9a",
+          "epoch": 6,
+          "seconds": 3.9008311869984027,
+          "trainNll": 0.06379905701678676,
+          "validationNll": 0.06809878349304199
+        },
+        {
+          "batchOrderSha256": "3b3d1f3a2142ffcf73083f793921ff35e111db5b81a5c919a446fc35d944a84b",
+          "epoch": 7,
+          "seconds": 3.802402676999918,
+          "trainNll": 0.06289503977388602,
+          "validationNll": 0.06669624149799347
+        },
+        {
+          "batchOrderSha256": "2026cf1fb559658ce816db053a8be97b0272f7110d9265eb886747c910752716",
+          "epoch": 8,
+          "seconds": 3.9562399440037552,
+          "trainNll": 0.062224588530934336,
+          "validationNll": 0.0667266920208931
+        },
+        {
+          "batchOrderSha256": "54b2d13c815c0450c4c3ee51697e97e25105ba9edd4bdbc9a6da6169ce56587c",
+          "epoch": 9,
+          "seconds": 3.870508833002532,
+          "trainNll": 0.06169200547931663,
+          "validationNll": 0.06604429334402084
+        },
+        {
+          "batchOrderSha256": "88e538e2da9316336aea7faa6e55dc19ddafc486659a01704e6d4f2a90d3d33e",
+          "epoch": 10,
+          "seconds": 3.8601845969969872,
+          "trainNll": 0.06116493393868148,
+          "validationNll": 0.06538256257772446
+        },
+        {
+          "batchOrderSha256": "309f97a22bc7afcf827d981475986d0cf09e61e0fcecae13d0c91887d1df9820",
+          "epoch": 11,
+          "seconds": 3.8076487770013046,
+          "trainNll": 0.06067391004190743,
+          "validationNll": 0.06545626372098923
+        },
+        {
+          "batchOrderSha256": "4ef4200e8571a535f21e9010a0d3c25bad1d1a6de8f7ac3391406bf0be18aff6",
+          "epoch": 12,
+          "seconds": 3.8041325789963594,
+          "trainNll": 0.06037878259949526,
+          "validationNll": 0.065137580037117
+        },
+        {
+          "batchOrderSha256": "6c75977ab8bf948aec6033cd088b730039239dc2a48d35e4c48f6c2022a46367",
+          "epoch": 13,
+          "seconds": 3.8527913360012462,
+          "trainNll": 0.05999459538803814,
+          "validationNll": 0.06552422046661377
+        },
+        {
+          "batchOrderSha256": "9496cb84bc6970967f570c948b18a0448264d3879038068e5f2afbbf02720ea8",
+          "epoch": 14,
+          "seconds": 4.0009748809970915,
+          "trainNll": 0.059703188169236476,
+          "validationNll": 0.06446529924869537
+        },
+        {
+          "batchOrderSha256": "dcd10a0701c7d2088d332c35981bc8521b15d754704fd0c83009a8c7a64df20d",
+          "epoch": 15,
+          "seconds": 4.013749555000686,
+          "trainNll": 0.05934062223331912,
+          "validationNll": 0.0651354119181633
+        },
+        {
+          "batchOrderSha256": "9ede316e64e010bbdbc2089d797b443d3b1f0c9628290dbb35d4c3a2d6a5beda",
+          "epoch": 16,
+          "seconds": 3.9830604859889718,
+          "trainNll": 0.059072810930219245,
+          "validationNll": 0.0645517110824585
+        },
+        {
+          "batchOrderSha256": "489109c43a3bec9c9c9e8c5cc53328ff6705b54a2ea45e466d32f0dc0952f367",
+          "epoch": 17,
+          "seconds": 3.874390184006188,
+          "trainNll": 0.058842578365329655,
+          "validationNll": 0.06562068313360214
+        },
+        {
+          "batchOrderSha256": "c261f66c07c0fcf0eec8d88b7c0dff3a11b66795d1062723199fa1fc901be2a7",
+          "epoch": 18,
+          "seconds": 3.8871554999932414,
+          "trainNll": 0.05858674425734864,
+          "validationNll": 0.06433809548616409
+        },
+        {
+          "batchOrderSha256": "01d70b26060586c0f0241c0865ce3b74baa322301bdee48e7f1ff611e2f94040",
+          "epoch": 19,
+          "seconds": 3.924131823994685,
+          "trainNll": 0.05832447384227614,
+          "validationNll": 0.06461535394191742
+        },
+        {
+          "batchOrderSha256": "8d29c36d2d95e0101a772c707bb6dd738b3318a571171440ea71777d3741d93c",
+          "epoch": 20,
+          "seconds": 3.8378456970094703,
+          "trainNll": 0.058187373066630244,
+          "validationNll": 0.06366751343011856
+        },
+        {
+          "batchOrderSha256": "8a5b4bf49ee7c031fcdc266f7b7b2a59571c66ff2707cd9db54499cf87fd9df2",
+          "epoch": 21,
+          "seconds": 3.8033239679934923,
+          "trainNll": 0.058060654326905936,
+          "validationNll": 0.0643768236041069
+        },
+        {
+          "batchOrderSha256": "1775230a69b13a870f33770e328f6a8ce6b5c20bd24e58e6c48e5b951b721a07",
+          "epoch": 22,
+          "seconds": 3.825798842997756,
+          "trainNll": 0.05773078804773667,
+          "validationNll": 0.06446164846420288
+        },
+        {
+          "batchOrderSha256": "a01da13100961f8a910fb5a64b68265af66cdd233ce7b8ab2cfefb534513f8db",
+          "epoch": 23,
+          "seconds": 3.8616948580020107,
+          "trainNll": 0.05758118466820068,
+          "validationNll": 0.06361477822065353
+        },
+        {
+          "batchOrderSha256": "a0594c1a46faae656a3de42724592bdb3e13c644779e01d2b0bd6a7242cadad5",
+          "epoch": 24,
+          "seconds": 3.804184124994208,
+          "trainNll": 0.057450986813623615,
+          "validationNll": 0.06428835541009903
+        },
+        {
+          "batchOrderSha256": "c66bb478e8181423c2179a2b7ca04c039d88fd749433da7abca5b0d80646a20d",
+          "epoch": 25,
+          "seconds": 3.8867454339924734,
+          "trainNll": 0.05719321200079771,
+          "validationNll": 0.06350361555814743
+        },
+        {
+          "batchOrderSha256": "c12d561f511b6de9cfdf3451ad3aeb27f6c112717a4ae8d9e6d6e4a291a90662",
+          "epoch": 26,
+          "seconds": 3.8034165910066804,
+          "trainNll": 0.05700807729038545,
+          "validationNll": 0.06359050422906876
+        },
+        {
+          "batchOrderSha256": "abe1b717250e5d45dacb0b7b93d04aff704e82773e711e7370727590ec1cdaa1",
+          "epoch": 27,
+          "seconds": 3.8043967020057607,
+          "trainNll": 0.0568059647420752,
+          "validationNll": 0.06335336714982986
+        },
+        {
+          "batchOrderSha256": "0a64cc1b0626019b52b351132d840195859c9ce0003f142af611f160ee8348a5",
+          "epoch": 28,
+          "seconds": 3.8987667400069768,
+          "trainNll": 0.056913293312383824,
+          "validationNll": 0.06380200386047363
+        },
+        {
+          "batchOrderSha256": "547fa38e2666e9faf15400d1e110bd446928a0076671c8fab699d0bd09600584",
+          "epoch": 29,
+          "seconds": 3.8447546630050056,
+          "trainNll": 0.05644822522885928,
+          "validationNll": 0.06376612931489944
+        },
+        {
+          "batchOrderSha256": "3f1a81b2bfe406594b62c54c6780b0d3eac40ff40717d7598fb57dc4a2847897",
+          "epoch": 30,
+          "seconds": 3.8874486980057554,
+          "trainNll": 0.05631509225392055,
+          "validationNll": 0.06363435089588165
+        },
+        {
+          "batchOrderSha256": "ff35eab592ca62d26035bc1bbb43869b02385ae24ae30ff6c50d776330e854dc",
+          "epoch": 31,
+          "seconds": 3.919866776006529,
+          "trainNll": 0.05607504855809373,
+          "validationNll": 0.0632021501660347
+        },
+        {
+          "batchOrderSha256": "b64727cfb9aee68d4f4b63ded182fb374af9b9e1aaae6a96220522c7eb1f3493",
+          "epoch": 32,
+          "seconds": 3.989133231007145,
+          "trainNll": 0.05595809181093672,
+          "validationNll": 0.06376054883003235
+        },
+        {
+          "batchOrderSha256": "edacdc287812d03a60e8eb33e025d26dff28862408992b67335f1a09529911cc",
+          "epoch": 33,
+          "seconds": 3.8468897710117744,
+          "trainNll": 0.05594833059286416,
+          "validationNll": 0.06467866897583008
+        },
+        {
+          "batchOrderSha256": "b412e01b60ed5a484b032aa3d3d716666bdb8fdba7f82f8608f2a9c71859dcf8",
+          "epoch": 34,
+          "seconds": 3.859790280999732,
+          "trainNll": 0.055740707584754794,
+          "validationNll": 0.06313114613294601
+        },
+        {
+          "batchOrderSha256": "a1a669c9a0c0908cd0138a0d13bcaf32e79e41b4db18ab86308dc735badc223b",
+          "epoch": 35,
+          "seconds": 3.914173090000986,
+          "trainNll": 0.05557305179415872,
+          "validationNll": 0.06333956122398376
+        },
+        {
+          "batchOrderSha256": "14ee4f956984144118817cf6f2cb23925a8b793cff132bfff8b53242987ee7c1",
+          "epoch": 36,
+          "seconds": 3.8689384989993414,
+          "trainNll": 0.055278696294348256,
+          "validationNll": 0.06350913643836975
+        },
+        {
+          "batchOrderSha256": "5478c4825d664c0de71849c58ec9f73c5e35f24b25554ba9b8d4f7d09c5b7509",
+          "epoch": 37,
+          "seconds": 3.8633853810024448,
+          "trainNll": 0.05520302956818938,
+          "validationNll": 0.06340174376964569
+        },
+        {
+          "batchOrderSha256": "2c4072e89b2bf435d0f5c0caa25c6dcf95bfe62e8bc24df443ebd42d74fb4b99",
+          "epoch": 38,
+          "seconds": 3.9546665439993376,
+          "trainNll": 0.05506077627129801,
+          "validationNll": 0.06357946246862411
+        },
+        {
+          "batchOrderSha256": "55dc1b830da8bc5c05666a1963b114c9ae5724b1c60461c40ee5d5db51dbb8e5",
+          "epoch": 39,
+          "seconds": 3.9984030759951565,
+          "trainNll": 0.054873199449031455,
+          "validationNll": 0.06335170567035675
+        },
+        {
+          "batchOrderSha256": "caef35d5771c15601be1900f360724ffd2b6056c09afe3802c1df7ae36ddfcf7",
+          "epoch": 40,
+          "seconds": 3.8623505529976683,
+          "trainNll": 0.05476693686761258,
+          "validationNll": 0.06466640532016754
+        }
+      ],
+      "initialStateSha256": "e66fdd971ef36efdd282696b127ba28bdf8f66309036adf2250f4469814010ba",
+      "selectedEpoch": 34,
+      "stoppingReason": "patience"
+    },
+    "moreWd": {
+      "batchOrdersVerified": true,
+      "checkpointPath": "/home/philippherrmann/sts_sweep/runs/survival-specific-deepset-sweep-20260917-final/moreWd/selected.pt",
+      "checkpointRecipe": {
+        "batch": 512,
+        "continuation": "initial-epoch generator state restored, strict validation selection",
+        "encoderLr": 0.0001,
+        "gradientClip": 1.0,
+        "headLr": 0.001,
+        "loss": "unweighted BCEWithLogitsLoss; 1=survived, 0=death",
+        "maxEpochs": 40,
+        "minEpochs": 12,
+        "name": "moreWd",
+        "optimizer": "AdamW",
+        "patience": 6,
+        "precision": "FP32",
+        "schema": "survival_specific_deepset_lr_wd_sweep_v1",
+        "seed": 20260912,
+        "selection": "per-arm earliest strict minimum VALIDATION NLL",
+        "stageA": "fresh PR205 warm-start for each arm",
+        "stageB": "selected checkpoint continuation after all arms; 5x LRs; 15 epochs; floor 5; patience 6",
+        "stageBDecision": "only if stage B improves that arm's selected VALIDATION NLL",
+        "stageBTrigger": "only an arm within +0.05% NLL of its gate",
+        "training": "PR205 encoder plus fresh Linear(64,1), TRAIN only",
+        "weightDecay": 0.0005
+      },
+      "checkpointSha256": "c0e98f23d22eb2cbf2512b7edbec588d6f7406410eb12fd0bacc94faf877f76b",
+      "completedEpochs": 30,
+      "encoderSha256": "0d46032188115b18722e08a674620657fad68d853094e16ac49f2804d7bc0b72",
+      "evaluation": {
+        "comparison": {
+          "brierRelative": 0.061135213206131134,
+          "deathNllRelative": 0.018513993170811816,
+          "lowPreHpNllRelative": 0.030161930104793067,
+          "nllRelative": 0.0597303901909112
+        },
+        "decision": "SURVIVAL_DEEPSET_REJECTED",
+        "gatesPassed": {
+          "brierRelative": false,
+          "deathNllRelative": true,
+          "lowPreHpNllRelative": true,
+          "nllRelative": false,
+          "validity": true
+        },
+        "metrics": {
+          "Attention": {
+            "accuracyAt05": 0.9751021703765425,
+            "brier": 0.01781509444117546,
+            "calibration": [
+              {
+                "bin": 0,
+                "lower": 0.0,
+                "meanPredicted": 0.052189312875270844,
+                "observedSurvival": 0.05734767025089606,
+                "rows": 279,
+                "upper": 0.1
+              },
+              {
+                "bin": 1,
+                "lower": 0.1,
+                "meanPredicted": 0.14857900142669678,
+                "observedSurvival": 0.17777777777777778,
+                "rows": 225,
+                "upper": 0.2
+              },
+              {
+                "bin": 2,
+                "lower": 0.2,
+                "meanPredicted": 0.2543490529060364,
+                "observedSurvival": 0.2703862660944206,
+                "rows": 233,
+                "upper": 0.3
+              },
+              {
+                "bin": 3,
+                "lower": 0.3,
+                "meanPredicted": 0.3474677801132202,
+                "observedSurvival": 0.36885245901639346,
+                "rows": 244,
+                "upper": 0.4
+              },
+              {
+                "bin": 4,
+                "lower": 0.4,
+                "meanPredicted": 0.4531751275062561,
+                "observedSurvival": 0.5031645569620253,
+                "rows": 316,
+                "upper": 0.5
+              },
+              {
+                "bin": 5,
+                "lower": 0.5,
+                "meanPredicted": 0.5489605069160461,
+                "observedSurvival": 0.5685279187817259,
+                "rows": 394,
+                "upper": 0.6
+              },
+              {
+                "bin": 6,
+                "lower": 0.6,
+                "meanPredicted": 0.6516559720039368,
+                "observedSurvival": 0.6544401544401545,
+                "rows": 518,
+                "upper": 0.7
+              },
+              {
+                "bin": 7,
+                "lower": 0.7,
+                "meanPredicted": 0.7530989050865173,
+                "observedSurvival": 0.7275641025641025,
+                "rows": 624,
+                "upper": 0.8
+              },
+              {
+                "bin": 8,
+                "lower": 0.8,
+                "meanPredicted": 0.8548954725265503,
+                "observedSurvival": 0.851963746223565,
+                "rows": 1324,
+                "upper": 0.9
+              },
+              {
+                "bin": 9,
+                "lower": 0.9,
+                "meanPredicted": 0.9957226514816284,
+                "observedSurvival": 0.9962810006702848,
+                "rows": 46249,
+                "upper": 1.0
+              }
+            ],
+            "finiteLogits": true,
+            "finiteProbabilities": true,
+            "meanPredictedSurvival": 0.9630218148231506,
+            "nll": 0.05949442461133003,
+            "observedSurvivalRate": 0.9639725429512359,
+            "probabilitiesInUnitInterval": true,
+            "rocAuc": 0.980474519103929,
+            "rows": 50406
+          },
+          "DeepSets": {
+            "accuracyAt05": 0.9739515137086855,
+            "brier": 0.018904224038124084,
+            "calibration": [
+              {
+                "bin": 0,
+                "lower": 0.0,
+                "meanPredicted": 0.05344606190919876,
+                "observedSurvival": 0.06109324758842444,
+                "rows": 311,
+                "upper": 0.1
+              },
+              {
+                "bin": 1,
+                "lower": 0.1,
+                "meanPredicted": 0.15409433841705322,
+                "observedSurvival": 0.2226148409893993,
+                "rows": 283,
+                "upper": 0.2
+              },
+              {
+                "bin": 2,
+                "lower": 0.2,
+                "meanPredicted": 0.25065743923187256,
+                "observedSurvival": 0.3129496402877698,
+                "rows": 278,
+                "upper": 0.3
+              },
+              {
+                "bin": 3,
+                "lower": 0.3,
+                "meanPredicted": 0.3521560728549957,
+                "observedSurvival": 0.48659003831417624,
+                "rows": 261,
+                "upper": 0.4
+              },
+              {
+                "bin": 4,
+                "lower": 0.4,
+                "meanPredicted": 0.45382437109947205,
+                "observedSurvival": 0.5575757575757576,
+                "rows": 330,
+                "upper": 0.5
+              },
+              {
+                "bin": 5,
+                "lower": 0.5,
+                "meanPredicted": 0.5490788221359253,
+                "observedSurvival": 0.6501305483028721,
+                "rows": 383,
+                "upper": 0.6
+              },
+              {
+                "bin": 6,
+                "lower": 0.6,
+                "meanPredicted": 0.6536638736724854,
+                "observedSurvival": 0.700218818380744,
+                "rows": 457,
+                "upper": 0.7
+              },
+              {
+                "bin": 7,
+                "lower": 0.7,
+                "meanPredicted": 0.7559763789176941,
+                "observedSurvival": 0.7605633802816901,
+                "rows": 710,
+                "upper": 0.8
+              },
+              {
+                "bin": 8,
+                "lower": 0.8,
+                "meanPredicted": 0.8569247722625732,
+                "observedSurvival": 0.8449152542372881,
+                "rows": 1180,
+                "upper": 0.9
+              },
+              {
+                "bin": 9,
+                "lower": 0.9,
+                "meanPredicted": 0.9957295060157776,
+                "observedSurvival": 0.9954774630515223,
+                "rows": 46213,
+                "upper": 1.0
+              }
+            ],
+            "finiteLogits": true,
+            "finiteProbabilities": true,
+            "meanPredictedSurvival": 0.961079478263855,
+            "nll": 0.06304804980754852,
+            "observedSurvivalRate": 0.9639725429512359,
+            "probabilitiesInUnitInterval": true,
+            "rocAuc": 0.9779804926232533,
+            "rows": 50406
+          }
+        },
+        "slices": {
+          "boss": {
+            "A": {
+              "brier": 0.08825218677520752,
+              "deaths": 1169,
+              "nll": 0.2808343768119812,
+              "rows": 5444
+            },
+            "B": {
+              "brier": 0.09351504594087601,
+              "deaths": 1169,
+              "nll": 0.29761895537376404,
+              "rows": 5444
+            }
+          },
+          "deaths": {
+            "A": {
+              "brier": 0.32351234555244446,
+              "deaths": 1816,
+              "nll": 0.989065945148468,
+              "rows": 1816
+            },
+            "B": {
+              "brier": 0.32171401381492615,
+              "deaths": 1816,
+              "nll": 1.0073775053024292,
+              "rows": 1816
+            }
+          },
+          "lowPreHp": {
+            "A": {
+              "brier": 0.1296009123325348,
+              "deaths": 292,
+              "nll": 0.39808058738708496,
+              "rows": 756
+            },
+            "B": {
+              "brier": 0.13479399681091309,
+              "deaths": 292,
+              "nll": 0.4100874662399292,
+              "rows": 756
+            }
+          },
+          "normal": {
+            "A": {
+              "brier": 0.009286569431424141,
+              "deaths": 647,
+              "nll": 0.03269457817077637,
+              "rows": 44962
+            },
+            "B": {
+              "brier": 0.009870342910289764,
+              "deaths": 647,
+              "nll": 0.03464619442820549,
+              "rows": 44962
+            }
+          },
+          "victories": {
+            "A": {
+              "brier": 0.006389982532709837,
+              "deaths": 0,
+              "nll": 0.024752669036388397,
+              "rows": 48590
+            },
+            "B": {
+              "brier": 0.00758702727034688,
+              "deaths": 0,
+              "nll": 0.027754729613661766,
+              "rows": 48590
+            }
+          }
+        },
+        "thresholds": {
+          "brierRelative": 0.05,
+          "deathNllRelative": 0.1,
+          "lowPreHpNllRelative": 0.1,
+          "nllRelative": 0.02
+        }
+      },
+      "history": [
+        {
+          "batchOrderSha256": "adf64f2660a3e05970715006120fa8eb0d93407d7d93c4e7d0a8e7456bef2bad",
+          "epoch": 1,
+          "seconds": 3.9738566119922325,
+          "trainNll": 0.09126306306246229,
+          "validationNll": 0.07403690367937088
+        },
+        {
+          "batchOrderSha256": "01197d8b276cd6e9a65c577aa3d6450ea099136d0df287b3692f8cd3cbaf1adf",
+          "epoch": 2,
+          "seconds": 4.132207421003841,
+          "trainNll": 0.06787007184809285,
+          "validationNll": 0.07053939998149872
+        },
+        {
+          "batchOrderSha256": "34b0889c8e4c6cccf50a04a3b6962b72d48f5b5716b6b3a6833d681ac43edc86",
+          "epoch": 3,
+          "seconds": 4.015141865995247,
+          "trainNll": 0.06534420007019749,
+          "validationNll": 0.06798196583986282
+        },
+        {
+          "batchOrderSha256": "bc38faa5f96db60fe6cec28bfff2a581a17105f47bde5e9d10edf6db120f5b33",
+          "epoch": 4,
+          "seconds": 4.029381166008534,
+          "trainNll": 0.06356147051380895,
+          "validationNll": 0.06634986400604248
+        },
+        {
+          "batchOrderSha256": "8eaa7ec833c94a9910772c9fd6fa1aa9d6808ada3d786f93bc89301e60e18154",
+          "epoch": 5,
+          "seconds": 4.621622594000655,
+          "trainNll": 0.0621019592268167,
+          "validationNll": 0.06646794825792313
+        },
+        {
+          "batchOrderSha256": "73c955c2564ba2027b612ff7bf791e781a75ddd634ff7204c976ae7750b74e9a",
+          "epoch": 6,
+          "seconds": 4.526780444997712,
+          "trainNll": 0.061460355929294656,
+          "validationNll": 0.06547852605581284
+        },
+        {
+          "batchOrderSha256": "3b3d1f3a2142ffcf73083f793921ff35e111db5b81a5c919a446fc35d944a84b",
+          "epoch": 7,
+          "seconds": 4.251962499998626,
+          "trainNll": 0.060701642748072174,
+          "validationNll": 0.06456321477890015
+        },
+        {
+          "batchOrderSha256": "2026cf1fb559658ce816db053a8be97b0272f7110d9265eb886747c910752716",
+          "epoch": 8,
+          "seconds": 4.375248985001235,
+          "trainNll": 0.05993774431724652,
+          "validationNll": 0.06467080116271973
+        },
+        {
+          "batchOrderSha256": "54b2d13c815c0450c4c3ee51697e97e25105ba9edd4bdbc9a6da6169ce56587c",
+          "epoch": 9,
+          "seconds": 4.444836469003349,
+          "trainNll": 0.059649520857280945,
+          "validationNll": 0.06546864658594131
+        },
+        {
+          "batchOrderSha256": "88e538e2da9316336aea7faa6e55dc19ddafc486659a01704e6d4f2a90d3d33e",
+          "epoch": 10,
+          "seconds": 4.318267791997641,
+          "trainNll": 0.05914524666692508,
+          "validationNll": 0.06454036384820938
+        },
+        {
+          "batchOrderSha256": "309f97a22bc7afcf827d981475986d0cf09e61e0fcecae13d0c91887d1df9820",
+          "epoch": 11,
+          "seconds": 4.5283302500029095,
+          "trainNll": 0.0586655681971758,
+          "validationNll": 0.06613026559352875
+        },
+        {
+          "batchOrderSha256": "4ef4200e8571a535f21e9010a0d3c25bad1d1a6de8f7ac3391406bf0be18aff6",
+          "epoch": 12,
+          "seconds": 4.400848586999928,
+          "trainNll": 0.05840859502471144,
+          "validationNll": 0.06355075538158417
+        },
+        {
+          "batchOrderSha256": "6c75977ab8bf948aec6033cd088b730039239dc2a48d35e4c48f6c2022a46367",
+          "epoch": 13,
+          "seconds": 4.401179355001659,
+          "trainNll": 0.05794320823985159,
+          "validationNll": 0.06511332839727402
+        },
+        {
+          "batchOrderSha256": "9496cb84bc6970967f570c948b18a0448264d3879038068e5f2afbbf02720ea8",
+          "epoch": 14,
+          "seconds": 4.4162138200044865,
+          "trainNll": 0.057639081147848756,
+          "validationNll": 0.06341623514890671
+        },
+        {
+          "batchOrderSha256": "dcd10a0701c7d2088d332c35981bc8521b15d754704fd0c83009a8c7a64df20d",
+          "epoch": 15,
+          "seconds": 4.382406335993437,
+          "trainNll": 0.057228982734849436,
+          "validationNll": 0.06473076343536377
+        },
+        {
+          "batchOrderSha256": "9ede316e64e010bbdbc2089d797b443d3b1f0c9628290dbb35d4c3a2d6a5beda",
+          "epoch": 16,
+          "seconds": 4.36277151700051,
+          "trainNll": 0.056904834818325055,
+          "validationNll": 0.06391692906618118
+        },
+        {
+          "batchOrderSha256": "489109c43a3bec9c9c9e8c5cc53328ff6705b54a2ea45e466d32f0dc0952f367",
+          "epoch": 17,
+          "seconds": 4.43377235000662,
+          "trainNll": 0.0565933233678728,
+          "validationNll": 0.06464612483978271
+        },
+        {
+          "batchOrderSha256": "c261f66c07c0fcf0eec8d88b7c0dff3a11b66795d1062723199fa1fc901be2a7",
+          "epoch": 18,
+          "seconds": 4.297224451001966,
+          "trainNll": 0.056245871303170415,
+          "validationNll": 0.06358812004327774
+        },
+        {
+          "batchOrderSha256": "01d70b26060586c0f0241c0865ce3b74baa322301bdee48e7f1ff611e2f94040",
+          "epoch": 19,
+          "seconds": 4.01942413499637,
+          "trainNll": 0.05585309487431089,
+          "validationNll": 0.06423311680555344
+        },
+        {
+          "batchOrderSha256": "8d29c36d2d95e0101a772c707bb6dd738b3318a571171440ea71777d3741d93c",
+          "epoch": 20,
+          "seconds": 4.128961196998716,
+          "trainNll": 0.05565573679989148,
+          "validationNll": 0.06314876675605774
+        },
+        {
+          "batchOrderSha256": "8a5b4bf49ee7c031fcdc266f7b7b2a59571c66ff2707cd9db54499cf87fd9df2",
+          "epoch": 21,
+          "seconds": 4.576419803997851,
+          "trainNll": 0.05545007007626738,
+          "validationNll": 0.06408637762069702
+        },
+        {
+          "batchOrderSha256": "1775230a69b13a870f33770e328f6a8ce6b5c20bd24e58e6c48e5b951b721a07",
+          "epoch": 22,
+          "seconds": 4.721001300000353,
+          "trainNll": 0.05495084337120691,
+          "validationNll": 0.06421448290348053
+        },
+        {
+          "batchOrderSha256": "a01da13100961f8a910fb5a64b68265af66cdd233ce7b8ab2cfefb534513f8db",
+          "epoch": 23,
+          "seconds": 4.347077009006171,
+          "trainNll": 0.054745169513373035,
+          "validationNll": 0.0631236732006073
+        },
+        {
+          "batchOrderSha256": "a0594c1a46faae656a3de42724592bdb3e13c644779e01d2b0bd6a7242cadad5",
+          "epoch": 24,
+          "seconds": 4.312538858997868,
+          "trainNll": 0.05441613534981797,
+          "validationNll": 0.06304804980754852
+        },
+        {
+          "batchOrderSha256": "c66bb478e8181423c2179a2b7ca04c039d88fd749433da7abca5b0d80646a20d",
+          "epoch": 25,
+          "seconds": 4.329263733001426,
+          "trainNll": 0.05410062788446016,
+          "validationNll": 0.06385362148284912
+        },
+        {
+          "batchOrderSha256": "c12d561f511b6de9cfdf3451ad3aeb27f6c112717a4ae8d9e6d6e4a291a90662",
+          "epoch": 26,
+          "seconds": 4.436555760999909,
+          "trainNll": 0.0538145699692677,
+          "validationNll": 0.06317929178476334
+        },
+        {
+          "batchOrderSha256": "abe1b717250e5d45dacb0b7b93d04aff704e82773e711e7370727590ec1cdaa1",
+          "epoch": 27,
+          "seconds": 3.9248542839923175,
+          "trainNll": 0.0534849418618508,
+          "validationNll": 0.06345448642969131
+        },
+        {
+          "batchOrderSha256": "0a64cc1b0626019b52b351132d840195859c9ce0003f142af611f160ee8348a5",
+          "epoch": 28,
+          "seconds": 3.9316320340003585,
+          "trainNll": 0.0535034483013305,
+          "validationNll": 0.06427741050720215
+        },
+        {
+          "batchOrderSha256": "547fa38e2666e9faf15400d1e110bd446928a0076671c8fab699d0bd09600584",
+          "epoch": 29,
+          "seconds": 3.794399827995221,
+          "trainNll": 0.05276096428910714,
+          "validationNll": 0.06351523101329803
+        },
+        {
+          "batchOrderSha256": "3f1a81b2bfe406594b62c54c6780b0d3eac40ff40717d7598fb57dc4a2847897",
+          "epoch": 30,
+          "seconds": 4.031211143999826,
+          "trainNll": 0.0525175073440567,
+          "validationNll": 0.06374789774417877
+        }
+      ],
+      "initialStateSha256": "e66fdd971ef36efdd282696b127ba28bdf8f66309036adf2250f4469814010ba",
+      "selectedEpoch": 24,
+      "stoppingReason": "patience"
+    },
+    "muchLowerLr": {
+      "batchOrdersVerified": true,
+      "checkpointPath": "/home/philippherrmann/sts_sweep/runs/survival-specific-deepset-sweep-20260917-final/muchLowerLr/selected.pt",
+      "checkpointRecipe": {
+        "batch": 512,
+        "continuation": "initial-epoch generator state restored, strict validation selection",
+        "encoderLr": 2e-05,
+        "gradientClip": 1.0,
+        "headLr": 0.0002,
+        "loss": "unweighted BCEWithLogitsLoss; 1=survived, 0=death",
+        "maxEpochs": 40,
+        "minEpochs": 12,
+        "name": "muchLowerLr",
+        "optimizer": "AdamW",
+        "patience": 6,
+        "precision": "FP32",
+        "schema": "survival_specific_deepset_lr_wd_sweep_v1",
+        "seed": 20260912,
+        "selection": "per-arm earliest strict minimum VALIDATION NLL",
+        "stageA": "fresh PR205 warm-start for each arm",
+        "stageB": "selected checkpoint continuation after all arms; 5x LRs; 15 epochs; floor 5; patience 6",
+        "stageBDecision": "only if stage B improves that arm's selected VALIDATION NLL",
+        "stageBTrigger": "only an arm within +0.05% NLL of its gate",
+        "training": "PR205 encoder plus fresh Linear(64,1), TRAIN only",
+        "weightDecay": 0.0001
+      },
+      "checkpointSha256": "0b40782a10a5bbdadc909172afed2ae313adc79883ce547c387133bc41631284",
+      "completedEpochs": 40,
+      "encoderSha256": "9042674533a7423614b462e8624d52258748914b462358c374e4a5c449a33ff4",
+      "evaluation": {
+        "comparison": {
+          "brierRelative": 0.06882497459852699,
+          "deathNllRelative": 0.13282205318826534,
+          "lowPreHpNllRelative": 0.05768756240001771,
+          "nllRelative": 0.0772778387133759
+        },
+        "decision": "SURVIVAL_DEEPSET_REJECTED",
+        "gatesPassed": {
+          "brierRelative": false,
+          "deathNllRelative": false,
+          "lowPreHpNllRelative": true,
+          "nllRelative": false,
+          "validity": true
+        },
+        "metrics": {
+          "Attention": {
+            "accuracyAt05": 0.9751021703765425,
+            "brier": 0.01781509444117546,
+            "calibration": [
+              {
+                "bin": 0,
+                "lower": 0.0,
+                "meanPredicted": 0.052189312875270844,
+                "observedSurvival": 0.05734767025089606,
+                "rows": 279,
+                "upper": 0.1
+              },
+              {
+                "bin": 1,
+                "lower": 0.1,
+                "meanPredicted": 0.14857900142669678,
+                "observedSurvival": 0.17777777777777778,
+                "rows": 225,
+                "upper": 0.2
+              },
+              {
+                "bin": 2,
+                "lower": 0.2,
+                "meanPredicted": 0.2543490529060364,
+                "observedSurvival": 0.2703862660944206,
+                "rows": 233,
+                "upper": 0.3
+              },
+              {
+                "bin": 3,
+                "lower": 0.3,
+                "meanPredicted": 0.3474677801132202,
+                "observedSurvival": 0.36885245901639346,
+                "rows": 244,
+                "upper": 0.4
+              },
+              {
+                "bin": 4,
+                "lower": 0.4,
+                "meanPredicted": 0.4531751275062561,
+                "observedSurvival": 0.5031645569620253,
+                "rows": 316,
+                "upper": 0.5
+              },
+              {
+                "bin": 5,
+                "lower": 0.5,
+                "meanPredicted": 0.5489605069160461,
+                "observedSurvival": 0.5685279187817259,
+                "rows": 394,
+                "upper": 0.6
+              },
+              {
+                "bin": 6,
+                "lower": 0.6,
+                "meanPredicted": 0.6516559720039368,
+                "observedSurvival": 0.6544401544401545,
+                "rows": 518,
+                "upper": 0.7
+              },
+              {
+                "bin": 7,
+                "lower": 0.7,
+                "meanPredicted": 0.7530989050865173,
+                "observedSurvival": 0.7275641025641025,
+                "rows": 624,
+                "upper": 0.8
+              },
+              {
+                "bin": 8,
+                "lower": 0.8,
+                "meanPredicted": 0.8548954725265503,
+                "observedSurvival": 0.851963746223565,
+                "rows": 1324,
+                "upper": 0.9
+              },
+              {
+                "bin": 9,
+                "lower": 0.9,
+                "meanPredicted": 0.9957226514816284,
+                "observedSurvival": 0.9962810006702848,
+                "rows": 46249,
+                "upper": 1.0
+              }
+            ],
+            "finiteLogits": true,
+            "finiteProbabilities": true,
+            "meanPredictedSurvival": 0.9630218148231506,
+            "nll": 0.05949442461133003,
+            "observedSurvivalRate": 0.9639725429512359,
+            "probabilitiesInUnitInterval": true,
+            "rocAuc": 0.980474519103929,
+            "rows": 50406
+          },
+          "DeepSets": {
+            "accuracyAt05": 0.973653930087688,
+            "brier": 0.019041217863559723,
+            "calibration": [
+              {
+                "bin": 0,
+                "lower": 0.0,
+                "meanPredicted": 0.05297091230750084,
+                "observedSurvival": 0.03669724770642202,
+                "rows": 218,
+                "upper": 0.1
+              },
+              {
+                "bin": 1,
+                "lower": 0.1,
+                "meanPredicted": 0.14473652839660645,
+                "observedSurvival": 0.18061674008810572,
+                "rows": 227,
+                "upper": 0.2
+              },
+              {
+                "bin": 2,
+                "lower": 0.2,
+                "meanPredicted": 0.2510969638824463,
+                "observedSurvival": 0.29045643153526973,
+                "rows": 241,
+                "upper": 0.3
+              },
+              {
+                "bin": 3,
+                "lower": 0.3,
+                "meanPredicted": 0.3505389094352722,
+                "observedSurvival": 0.40601503759398494,
+                "rows": 266,
+                "upper": 0.4
+              },
+              {
+                "bin": 4,
+                "lower": 0.4,
+                "meanPredicted": 0.45477423071861267,
+                "observedSurvival": 0.5173611111111112,
+                "rows": 288,
+                "upper": 0.5
+              },
+              {
+                "bin": 5,
+                "lower": 0.5,
+                "meanPredicted": 0.5505412220954895,
+                "observedSurvival": 0.5444126074498568,
+                "rows": 349,
+                "upper": 0.6
+              },
+              {
+                "bin": 6,
+                "lower": 0.6,
+                "meanPredicted": 0.6524972915649414,
+                "observedSurvival": 0.6611909650924025,
+                "rows": 487,
+                "upper": 0.7
+              },
+              {
+                "bin": 7,
+                "lower": 0.7,
+                "meanPredicted": 0.7531749606132507,
+                "observedSurvival": 0.7463976945244957,
+                "rows": 694,
+                "upper": 0.8
+              },
+              {
+                "bin": 8,
+                "lower": 0.8,
+                "meanPredicted": 0.856528639793396,
+                "observedSurvival": 0.8372827804107424,
+                "rows": 1266,
+                "upper": 0.9
+              },
+              {
+                "bin": 9,
+                "lower": 0.9,
+                "meanPredicted": 0.9953632354736328,
+                "observedSurvival": 0.9946948458054777,
+                "rows": 46370,
+                "upper": 1.0
+              }
+            ],
+            "finiteLogits": true,
+            "finiteProbabilities": true,
+            "meanPredictedSurvival": 0.964192807674408,
+            "nll": 0.06409202516078949,
+            "observedSurvivalRate": 0.9639725429512359,
+            "probabilitiesInUnitInterval": true,
+            "rocAuc": 0.9766185959475717,
+            "rows": 50406
+          }
+        },
+        "slices": {
+          "boss": {
+            "A": {
+              "brier": 0.08825218677520752,
+              "deaths": 1169,
+              "nll": 0.2808343768119812,
+              "rows": 5444
+            },
+            "B": {
+              "brier": 0.09424751996994019,
+              "deaths": 1169,
+              "nll": 0.29996663331985474,
+              "rows": 5444
+            }
+          },
+          "deaths": {
+            "A": {
+              "brier": 0.32351234555244446,
+              "deaths": 1816,
+              "nll": 0.989065945148468,
+              "rows": 1816
+            },
+            "B": {
+              "brier": 0.3602465093135834,
+              "deaths": 1816,
+              "nll": 1.1204357147216797,
+              "rows": 1816
+            }
+          },
+          "lowPreHp": {
+            "A": {
+              "brier": 0.1296009123325348,
+              "deaths": 292,
+              "nll": 0.39808058738708496,
+              "rows": 756
+            },
+            "B": {
+              "brier": 0.1384446918964386,
+              "deaths": 292,
+              "nll": 0.42104488611221313,
+              "rows": 756
+            }
+          },
+          "normal": {
+            "A": {
+              "brier": 0.009286569431424141,
+              "deaths": 647,
+              "nll": 0.03269457817077637,
+              "rows": 44962
+            },
+            "B": {
+              "brier": 0.009935237467288971,
+              "deaths": 647,
+              "nll": 0.03553231805562973,
+              "rows": 44962
+            }
+          },
+          "victories": {
+            "A": {
+              "brier": 0.006389982532709837,
+              "deaths": 0,
+              "nll": 0.024752669036388397,
+              "rows": 48590
+            },
+            "B": {
+              "brier": 0.006289031822234392,
+              "deaths": 0,
+              "nll": 0.024612287059426308,
+              "rows": 48590
+            }
+          }
+        },
+        "thresholds": {
+          "brierRelative": 0.05,
+          "deathNllRelative": 0.1,
+          "lowPreHpNllRelative": 0.1,
+          "nllRelative": 0.02
+        }
+      },
+      "history": [
+        {
+          "batchOrderSha256": "adf64f2660a3e05970715006120fa8eb0d93407d7d93c4e7d0a8e7456bef2bad",
+          "epoch": 1,
+          "seconds": 4.3273374540003715,
+          "trainNll": 0.14851300388880467,
+          "validationNll": 0.08748873323202133
+        },
+        {
+          "batchOrderSha256": "01197d8b276cd6e9a65c577aa3d6450ea099136d0df287b3692f8cd3cbaf1adf",
+          "epoch": 2,
+          "seconds": 4.35630862400285,
+          "trainNll": 0.07869914256454039,
+          "validationNll": 0.07833196967840195
+        },
+        {
+          "batchOrderSha256": "34b0889c8e4c6cccf50a04a3b6962b72d48f5b5716b6b3a6833d681ac43edc86",
+          "epoch": 3,
+          "seconds": 4.226746464002645,
+          "trainNll": 0.07315959857526225,
+          "validationNll": 0.075526162981987
+        },
+        {
+          "batchOrderSha256": "bc38faa5f96db60fe6cec28bfff2a581a17105f47bde5e9d10edf6db120f5b33",
+          "epoch": 4,
+          "seconds": 4.741003835995798,
+          "trainNll": 0.07055391618839862,
+          "validationNll": 0.07334578782320023
+        },
+        {
+          "batchOrderSha256": "8eaa7ec833c94a9910772c9fd6fa1aa9d6808ada3d786f93bc89301e60e18154",
+          "epoch": 5,
+          "seconds": 4.604646127001615,
+          "trainNll": 0.06877536576530921,
+          "validationNll": 0.07242092490196228
+        },
+        {
+          "batchOrderSha256": "73c955c2564ba2027b612ff7bf791e781a75ddd634ff7204c976ae7750b74e9a",
+          "epoch": 6,
+          "seconds": 4.368344481001259,
+          "trainNll": 0.067566307754003,
+          "validationNll": 0.07198500633239746
+        },
+        {
+          "batchOrderSha256": "3b3d1f3a2142ffcf73083f793921ff35e111db5b81a5c919a446fc35d944a84b",
+          "epoch": 7,
+          "seconds": 4.473823858992546,
+          "trainNll": 0.06660411510761807,
+          "validationNll": 0.07040445506572723
+        },
+        {
+          "batchOrderSha256": "2026cf1fb559658ce816db053a8be97b0272f7110d9265eb886747c910752716",
+          "epoch": 8,
+          "seconds": 4.383108016001643,
+          "trainNll": 0.06591683690547923,
+          "validationNll": 0.06999552249908447
+        },
+        {
+          "batchOrderSha256": "54b2d13c815c0450c4c3ee51697e97e25105ba9edd4bdbc9a6da6169ce56587c",
+          "epoch": 9,
+          "seconds": 4.34953303700604,
+          "trainNll": 0.06523241817397807,
+          "validationNll": 0.06904711574316025
+        },
+        {
+          "batchOrderSha256": "88e538e2da9316336aea7faa6e55dc19ddafc486659a01704e6d4f2a90d3d33e",
+          "epoch": 10,
+          "seconds": 4.413387970998883,
+          "trainNll": 0.06466452586565695,
+          "validationNll": 0.06853283196687698
+        },
+        {
+          "batchOrderSha256": "309f97a22bc7afcf827d981475986d0cf09e61e0fcecae13d0c91887d1df9820",
+          "epoch": 11,
+          "seconds": 4.21783847399638,
+          "trainNll": 0.06413324350785866,
+          "validationNll": 0.06833573430776596
+        },
+        {
+          "batchOrderSha256": "4ef4200e8571a535f21e9010a0d3c25bad1d1a6de8f7ac3391406bf0be18aff6",
+          "epoch": 12,
+          "seconds": 4.3801138430135325,
+          "trainNll": 0.06368483850942634,
+          "validationNll": 0.06771060079336166
+        },
+        {
+          "batchOrderSha256": "6c75977ab8bf948aec6033cd088b730039239dc2a48d35e4c48f6c2022a46367",
+          "epoch": 13,
+          "seconds": 4.399289865003084,
+          "trainNll": 0.06328304593233629,
+          "validationNll": 0.06770966947078705
+        },
+        {
+          "batchOrderSha256": "9496cb84bc6970967f570c948b18a0448264d3879038068e5f2afbbf02720ea8",
+          "epoch": 14,
+          "seconds": 4.3749870260071475,
+          "trainNll": 0.0628746289737049,
+          "validationNll": 0.06719972938299179
+        },
+        {
+          "batchOrderSha256": "dcd10a0701c7d2088d332c35981bc8521b15d754704fd0c83009a8c7a64df20d",
+          "epoch": 15,
+          "seconds": 4.429517090989975,
+          "trainNll": 0.06251198856104496,
+          "validationNll": 0.06721667945384979
+        },
+        {
+          "batchOrderSha256": "9ede316e64e010bbdbc2089d797b443d3b1f0c9628290dbb35d4c3a2d6a5beda",
+          "epoch": 16,
+          "seconds": 4.4636737079999875,
+          "trainNll": 0.06213337643442541,
+          "validationNll": 0.06694621592760086
+        },
+        {
+          "batchOrderSha256": "489109c43a3bec9c9c9e8c5cc53328ff6705b54a2ea45e466d32f0dc0952f367",
+          "epoch": 17,
+          "seconds": 4.473189833996003,
+          "trainNll": 0.061919148232397664,
+          "validationNll": 0.06656687706708908
+        },
+        {
+          "batchOrderSha256": "c261f66c07c0fcf0eec8d88b7c0dff3a11b66795d1062723199fa1fc901be2a7",
+          "epoch": 18,
+          "seconds": 4.247614858002635,
+          "trainNll": 0.06159304604465269,
+          "validationNll": 0.0663246363401413
+        },
+        {
+          "batchOrderSha256": "01d70b26060586c0f0241c0865ce3b74baa322301bdee48e7f1ff611e2f94040",
+          "epoch": 19,
+          "seconds": 3.894305837005959,
+          "trainNll": 0.06138289075026824,
+          "validationNll": 0.06635989993810654
+        },
+        {
+          "batchOrderSha256": "8d29c36d2d95e0101a772c707bb6dd738b3318a571171440ea71777d3741d93c",
+          "epoch": 20,
+          "seconds": 3.8755939430120634,
+          "trainNll": 0.06112458865511061,
+          "validationNll": 0.06624612212181091
+        },
+        {
+          "batchOrderSha256": "8a5b4bf49ee7c031fcdc266f7b7b2a59571c66ff2707cd9db54499cf87fd9df2",
+          "epoch": 21,
+          "seconds": 3.9404926169954706,
+          "trainNll": 0.06091306294876362,
+          "validationNll": 0.06635688245296478
+        },
+        {
+          "batchOrderSha256": "1775230a69b13a870f33770e328f6a8ce6b5c20bd24e58e6c48e5b951b721a07",
+          "epoch": 22,
+          "seconds": 4.885529207007494,
+          "trainNll": 0.06066590293462902,
+          "validationNll": 0.06568732112646103
+        },
+        {
+          "batchOrderSha256": "a01da13100961f8a910fb5a64b68265af66cdd233ce7b8ab2cfefb534513f8db",
+          "epoch": 23,
+          "seconds": 4.464091458008625,
+          "trainNll": 0.06045539173884883,
+          "validationNll": 0.06533468514680862
+        },
+        {
+          "batchOrderSha256": "a0594c1a46faae656a3de42724592bdb3e13c644779e01d2b0bd6a7242cadad5",
+          "epoch": 24,
+          "seconds": 4.528832016992965,
+          "trainNll": 0.06036594000471809,
+          "validationNll": 0.06603377312421799
+        },
+        {
+          "batchOrderSha256": "c66bb478e8181423c2179a2b7ca04c039d88fd749433da7abca5b0d80646a20d",
+          "epoch": 25,
+          "seconds": 4.404001917995629,
+          "trainNll": 0.0600887562216674,
+          "validationNll": 0.06501402705907822
+        },
+        {
+          "batchOrderSha256": "c12d561f511b6de9cfdf3451ad3aeb27f6c112717a4ae8d9e6d6e4a291a90662",
+          "epoch": 26,
+          "seconds": 4.34693992199027,
+          "trainNll": 0.059884285400996225,
+          "validationNll": 0.0650787428021431
+        },
+        {
+          "batchOrderSha256": "abe1b717250e5d45dacb0b7b93d04aff704e82773e711e7370727590ec1cdaa1",
+          "epoch": 27,
+          "seconds": 4.43013797099411,
+          "trainNll": 0.05972424674260763,
+          "validationNll": 0.06521781533956528
+        },
+        {
+          "batchOrderSha256": "0a64cc1b0626019b52b351132d840195859c9ce0003f142af611f160ee8348a5",
+          "epoch": 28,
+          "seconds": 4.194473337003728,
+          "trainNll": 0.05972201903404965,
+          "validationNll": 0.0650475025177002
+        },
+        {
+          "batchOrderSha256": "547fa38e2666e9faf15400d1e110bd446928a0076671c8fab699d0bd09600584",
+          "epoch": 29,
+          "seconds": 4.446311182997306,
+          "trainNll": 0.0594598086006476,
+          "validationNll": 0.0649166852235794
+        },
+        {
+          "batchOrderSha256": "3f1a81b2bfe406594b62c54c6780b0d3eac40ff40717d7598fb57dc4a2847897",
+          "epoch": 30,
+          "seconds": 4.465314642991871,
+          "trainNll": 0.0593449370390455,
+          "validationNll": 0.06486908346414566
+        },
+        {
+          "batchOrderSha256": "ff35eab592ca62d26035bc1bbb43869b02385ae24ae30ff6c50d776330e854dc",
+          "epoch": 31,
+          "seconds": 4.541678234003484,
+          "trainNll": 0.05912510696365373,
+          "validationNll": 0.0647089034318924
+        },
+        {
+          "batchOrderSha256": "b64727cfb9aee68d4f4b63ded182fb374af9b9e1aaae6a96220522c7eb1f3493",
+          "epoch": 32,
+          "seconds": 4.329832955991151,
+          "trainNll": 0.059032320939012,
+          "validationNll": 0.06459798663854599
+        },
+        {
+          "batchOrderSha256": "edacdc287812d03a60e8eb33e025d26dff28862408992b67335f1a09529911cc",
+          "epoch": 33,
+          "seconds": 4.4065231069980655,
+          "trainNll": 0.0589753119828657,
+          "validationNll": 0.06486260145902634
+        },
+        {
+          "batchOrderSha256": "b412e01b60ed5a484b032aa3d3d716666bdb8fdba7f82f8608f2a9c71859dcf8",
+          "epoch": 34,
+          "seconds": 4.199365485997987,
+          "trainNll": 0.05882071880922204,
+          "validationNll": 0.06457490473985672
+        },
+        {
+          "batchOrderSha256": "a1a669c9a0c0908cd0138a0d13bcaf32e79e41b4db18ab86308dc735badc223b",
+          "epoch": 35,
+          "seconds": 4.132831305993022,
+          "trainNll": 0.058700300805297485,
+          "validationNll": 0.06505467742681503
+        },
+        {
+          "batchOrderSha256": "14ee4f956984144118817cf6f2cb23925a8b793cff132bfff8b53242987ee7c1",
+          "epoch": 36,
+          "seconds": 4.372621425995021,
+          "trainNll": 0.058589422394210715,
+          "validationNll": 0.0652109831571579
+        },
+        {
+          "batchOrderSha256": "5478c4825d664c0de71849c58ec9f73c5e35f24b25554ba9b8d4f7d09c5b7509",
+          "epoch": 37,
+          "seconds": 4.256436026000301,
+          "trainNll": 0.0584743346143806,
+          "validationNll": 0.06496255099773407
+        },
+        {
+          "batchOrderSha256": "2c4072e89b2bf435d0f5c0caa25c6dcf95bfe62e8bc24df443ebd42d74fb4b99",
+          "epoch": 38,
+          "seconds": 4.385575385997072,
+          "trainNll": 0.058321573133686154,
+          "validationNll": 0.064362533390522
+        },
+        {
+          "batchOrderSha256": "55dc1b830da8bc5c05666a1963b114c9ae5724b1c60461c40ee5d5db51dbb8e5",
+          "epoch": 39,
+          "seconds": 4.37606909799797,
+          "trainNll": 0.058224771599559105,
+          "validationNll": 0.06409202516078949
+        },
+        {
+          "batchOrderSha256": "caef35d5771c15601be1900f360724ffd2b6056c09afe3802c1df7ae36ddfcf7",
+          "epoch": 40,
+          "seconds": 4.5862806840013945,
+          "trainNll": 0.058105198429615604,
+          "validationNll": 0.06416190415620804
+        }
+      ],
+      "initialStateSha256": "e66fdd971ef36efdd282696b127ba28bdf8f66309036adf2250f4469814010ba",
+      "selectedEpoch": 39,
+      "stoppingReason": "max epoch"
+    },
+    "strongWd": {
+      "batchOrdersVerified": true,
+      "checkpointPath": "/home/philippherrmann/sts_sweep/runs/survival-specific-deepset-sweep-20260917-final/strongWd/selected.pt",
+      "checkpointRecipe": {
+        "batch": 512,
+        "continuation": "initial-epoch generator state restored, strict validation selection",
+        "encoderLr": 0.0001,
+        "gradientClip": 1.0,
+        "headLr": 0.001,
+        "loss": "unweighted BCEWithLogitsLoss; 1=survived, 0=death",
+        "maxEpochs": 40,
+        "minEpochs": 12,
+        "name": "strongWd",
+        "optimizer": "AdamW",
+        "patience": 6,
+        "precision": "FP32",
+        "schema": "survival_specific_deepset_lr_wd_sweep_v1",
+        "seed": 20260912,
+        "selection": "per-arm earliest strict minimum VALIDATION NLL",
+        "stageA": "fresh PR205 warm-start for each arm",
+        "stageB": "selected checkpoint continuation after all arms; 5x LRs; 15 epochs; floor 5; patience 6",
+        "stageBDecision": "only if stage B improves that arm's selected VALIDATION NLL",
+        "stageBTrigger": "only an arm within +0.05% NLL of its gate",
+        "training": "PR205 encoder plus fresh Linear(64,1), TRAIN only",
+        "weightDecay": 0.001
+      },
+      "checkpointSha256": "3689593db85974f13b6313c495e7fde4ec4b4fa7d87f3442c8604a47f5e0f05b",
+      "completedEpochs": 26,
+      "encoderSha256": "77bb505395170a6c08673c849c3da0214e91f0643688f45d1cf9c06a98262ff1",
+      "evaluation": {
+        "comparison": {
+          "brierRelative": 0.057627311094907485,
+          "deathNllRelative": 0.0699798050750724,
+          "lowPreHpNllRelative": 0.03199634838240595,
+          "nllRelative": 0.057759871332068835
+        },
+        "decision": "SURVIVAL_DEEPSET_REJECTED",
+        "gatesPassed": {
+          "brierRelative": false,
+          "deathNllRelative": true,
+          "lowPreHpNllRelative": true,
+          "nllRelative": false,
+          "validity": true
+        },
+        "metrics": {
+          "Attention": {
+            "accuracyAt05": 0.9751021703765425,
+            "brier": 0.01781509444117546,
+            "calibration": [
+              {
+                "bin": 0,
+                "lower": 0.0,
+                "meanPredicted": 0.052189312875270844,
+                "observedSurvival": 0.05734767025089606,
+                "rows": 279,
+                "upper": 0.1
+              },
+              {
+                "bin": 1,
+                "lower": 0.1,
+                "meanPredicted": 0.14857900142669678,
+                "observedSurvival": 0.17777777777777778,
+                "rows": 225,
+                "upper": 0.2
+              },
+              {
+                "bin": 2,
+                "lower": 0.2,
+                "meanPredicted": 0.2543490529060364,
+                "observedSurvival": 0.2703862660944206,
+                "rows": 233,
+                "upper": 0.3
+              },
+              {
+                "bin": 3,
+                "lower": 0.3,
+                "meanPredicted": 0.3474677801132202,
+                "observedSurvival": 0.36885245901639346,
+                "rows": 244,
+                "upper": 0.4
+              },
+              {
+                "bin": 4,
+                "lower": 0.4,
+                "meanPredicted": 0.4531751275062561,
+                "observedSurvival": 0.5031645569620253,
+                "rows": 316,
+                "upper": 0.5
+              },
+              {
+                "bin": 5,
+                "lower": 0.5,
+                "meanPredicted": 0.5489605069160461,
+                "observedSurvival": 0.5685279187817259,
+                "rows": 394,
+                "upper": 0.6
+              },
+              {
+                "bin": 6,
+                "lower": 0.6,
+                "meanPredicted": 0.6516559720039368,
+                "observedSurvival": 0.6544401544401545,
+                "rows": 518,
+                "upper": 0.7
+              },
+              {
+                "bin": 7,
+                "lower": 0.7,
+                "meanPredicted": 0.7530989050865173,
+                "observedSurvival": 0.7275641025641025,
+                "rows": 624,
+                "upper": 0.8
+              },
+              {
+                "bin": 8,
+                "lower": 0.8,
+                "meanPredicted": 0.8548954725265503,
+                "observedSurvival": 0.851963746223565,
+                "rows": 1324,
+                "upper": 0.9
+              },
+              {
+                "bin": 9,
+                "lower": 0.9,
+                "meanPredicted": 0.9957226514816284,
+                "observedSurvival": 0.9962810006702848,
+                "rows": 46249,
+                "upper": 1.0
+              }
+            ],
+            "finiteLogits": true,
+            "finiteProbabilities": true,
+            "meanPredictedSurvival": 0.9630218148231506,
+            "nll": 0.05949442461133003,
+            "observedSurvivalRate": 0.9639725429512359,
+            "probabilitiesInUnitInterval": true,
+            "rocAuc": 0.980474519103929,
+            "rows": 50406
+          },
+          "DeepSets": {
+            "accuracyAt05": 0.974011030432885,
+            "brier": 0.018841730430722237,
+            "calibration": [
+              {
+                "bin": 0,
+                "lower": 0.0,
+                "meanPredicted": 0.05359282344579697,
+                "observedSurvival": 0.06859205776173286,
+                "rows": 277,
+                "upper": 0.1
+              },
+              {
+                "bin": 1,
+                "lower": 0.1,
+                "meanPredicted": 0.14860041439533234,
+                "observedSurvival": 0.1843137254901961,
+                "rows": 255,
+                "upper": 0.2
+              },
+              {
+                "bin": 2,
+                "lower": 0.2,
+                "meanPredicted": 0.24961666762828827,
+                "observedSurvival": 0.30916030534351147,
+                "rows": 262,
+                "upper": 0.3
+              },
+              {
+                "bin": 3,
+                "lower": 0.3,
+                "meanPredicted": 0.35028812289237976,
+                "observedSurvival": 0.40816326530612246,
+                "rows": 245,
+                "upper": 0.4
+              },
+              {
+                "bin": 4,
+                "lower": 0.4,
+                "meanPredicted": 0.4528598487377167,
+                "observedSurvival": 0.5656565656565656,
+                "rows": 297,
+                "upper": 0.5
+              },
+              {
+                "bin": 5,
+                "lower": 0.5,
+                "meanPredicted": 0.5506856441497803,
+                "observedSurvival": 0.6106870229007634,
+                "rows": 393,
+                "upper": 0.6
+              },
+              {
+                "bin": 6,
+                "lower": 0.6,
+                "meanPredicted": 0.6552222371101379,
+                "observedSurvival": 0.6572052401746725,
+                "rows": 458,
+                "upper": 0.7
+              },
+              {
+                "bin": 7,
+                "lower": 0.7,
+                "meanPredicted": 0.7547325491905212,
+                "observedSurvival": 0.7503628447024674,
+                "rows": 689,
+                "upper": 0.8
+              },
+              {
+                "bin": 8,
+                "lower": 0.8,
+                "meanPredicted": 0.8572045564651489,
+                "observedSurvival": 0.8406408094435076,
+                "rows": 1186,
+                "upper": 0.9
+              },
+              {
+                "bin": 9,
+                "lower": 0.9,
+                "meanPredicted": 0.9957862496376038,
+                "observedSurvival": 0.9951665803556016,
+                "rows": 46344,
+                "upper": 1.0
+              }
+            ],
+            "finiteLogits": true,
+            "finiteProbabilities": true,
+            "meanPredictedSurvival": 0.9629873633384705,
+            "nll": 0.06293081492185593,
+            "observedSurvivalRate": 0.9639725429512359,
+            "probabilitiesInUnitInterval": true,
+            "rocAuc": 0.9779968061900665,
+            "rows": 50406
+          }
+        },
+        "slices": {
+          "boss": {
+            "A": {
+              "brier": 0.08825218677520752,
+              "deaths": 1169,
+              "nll": 0.2808343768119812,
+              "rows": 5444
+            },
+            "B": {
+              "brier": 0.092734195291996,
+              "deaths": 1169,
+              "nll": 0.294944167137146,
+              "rows": 5444
+            }
+          },
+          "deaths": {
+            "A": {
+              "brier": 0.32351234555244446,
+              "deaths": 1816,
+              "nll": 0.989065945148468,
+              "rows": 1816
+            },
+            "B": {
+              "brier": 0.339271605014801,
+              "deaths": 1816,
+              "nll": 1.05828058719635,
+              "rows": 1816
+            }
+          },
+          "lowPreHp": {
+            "A": {
+              "brier": 0.1296009123325348,
+              "deaths": 292,
+              "nll": 0.39808058738708496,
+              "rows": 756
+            },
+            "B": {
+              "brier": 0.13482937216758728,
+              "deaths": 292,
+              "nll": 0.4108177125453949,
+              "rows": 756
+            }
+          },
+          "normal": {
+            "A": {
+              "brier": 0.009286569431424141,
+              "deaths": 647,
+              "nll": 0.03269457817077637,
+              "rows": 44962
+            },
+            "B": {
+              "brier": 0.009894829243421555,
+              "deaths": 647,
+              "nll": 0.03483862802386284,
+              "rows": 44962
+            }
+          },
+          "victories": {
+            "A": {
+              "brier": 0.006389982532709837,
+              "deaths": 0,
+              "nll": 0.024752669036388397,
+              "rows": 48590
+            },
+            "B": {
+              "brier": 0.006866001524031162,
+              "deaths": 0,
+              "nll": 0.025730663910508156,
+              "rows": 48590
+            }
+          }
+        },
+        "thresholds": {
+          "brierRelative": 0.05,
+          "deathNllRelative": 0.1,
+          "lowPreHpNllRelative": 0.1,
+          "nllRelative": 0.02
+        }
+      },
+      "history": [
+        {
+          "batchOrderSha256": "adf64f2660a3e05970715006120fa8eb0d93407d7d93c4e7d0a8e7456bef2bad",
+          "epoch": 1,
+          "seconds": 3.83372280500771,
+          "trainNll": 0.0912643873279563,
+          "validationNll": 0.0740566998720169
+        },
+        {
+          "batchOrderSha256": "01197d8b276cd6e9a65c577aa3d6450ea099136d0df287b3692f8cd3cbaf1adf",
+          "epoch": 2,
+          "seconds": 3.960365411010571,
+          "trainNll": 0.06787039248189575,
+          "validationNll": 0.07054606825113297
+        },
+        {
+          "batchOrderSha256": "34b0889c8e4c6cccf50a04a3b6962b72d48f5b5716b6b3a6833d681ac43edc86",
+          "epoch": 3,
+          "seconds": 3.84225407098711,
+          "trainNll": 0.0653381174843039,
+          "validationNll": 0.0679415687918663
+        },
+        {
+          "batchOrderSha256": "bc38faa5f96db60fe6cec28bfff2a581a17105f47bde5e9d10edf6db120f5b33",
+          "epoch": 4,
+          "seconds": 3.863781366002513,
+          "trainNll": 0.06350208666819963,
+          "validationNll": 0.06630347669124603
+        },
+        {
+          "batchOrderSha256": "8eaa7ec833c94a9910772c9fd6fa1aa9d6808ada3d786f93bc89301e60e18154",
+          "epoch": 5,
+          "seconds": 3.8883051669981796,
+          "trainNll": 0.06200687491110574,
+          "validationNll": 0.06666834652423859
+        },
+        {
+          "batchOrderSha256": "73c955c2564ba2027b612ff7bf791e781a75ddd634ff7204c976ae7750b74e9a",
+          "epoch": 6,
+          "seconds": 3.887006991993985,
+          "trainNll": 0.06136740359755097,
+          "validationNll": 0.065433070063591
+        },
+        {
+          "batchOrderSha256": "3b3d1f3a2142ffcf73083f793921ff35e111db5b81a5c919a446fc35d944a84b",
+          "epoch": 7,
+          "seconds": 3.9149733950034715,
+          "trainNll": 0.06058536016413127,
+          "validationNll": 0.06459495425224304
+        },
+        {
+          "batchOrderSha256": "2026cf1fb559658ce816db053a8be97b0272f7110d9265eb886747c910752716",
+          "epoch": 8,
+          "seconds": 3.9502402570069535,
+          "trainNll": 0.05985874566832905,
+          "validationNll": 0.064690500497818
+        },
+        {
+          "batchOrderSha256": "54b2d13c815c0450c4c3ee51697e97e25105ba9edd4bdbc9a6da6169ce56587c",
+          "epoch": 9,
+          "seconds": 4.091550621000351,
+          "trainNll": 0.059532897685067476,
+          "validationNll": 0.06530425697565079
+        },
+        {
+          "batchOrderSha256": "88e538e2da9316336aea7faa6e55dc19ddafc486659a01704e6d4f2a90d3d33e",
+          "epoch": 10,
+          "seconds": 4.045542275009211,
+          "trainNll": 0.059026685409748356,
+          "validationNll": 0.06443246454000473
+        },
+        {
+          "batchOrderSha256": "309f97a22bc7afcf827d981475986d0cf09e61e0fcecae13d0c91887d1df9820",
+          "epoch": 11,
+          "seconds": 3.971059436997166,
+          "trainNll": 0.05855631538637838,
+          "validationNll": 0.06567486375570297
+        },
+        {
+          "batchOrderSha256": "4ef4200e8571a535f21e9010a0d3c25bad1d1a6de8f7ac3391406bf0be18aff6",
+          "epoch": 12,
+          "seconds": 3.9975421679991996,
+          "trainNll": 0.05828235086992099,
+          "validationNll": 0.06355972588062286
+        },
+        {
+          "batchOrderSha256": "6c75977ab8bf948aec6033cd088b730039239dc2a48d35e4c48f6c2022a46367",
+          "epoch": 13,
+          "seconds": 3.8435747689945856,
+          "trainNll": 0.05780318752247881,
+          "validationNll": 0.06532591581344604
+        },
+        {
+          "batchOrderSha256": "9496cb84bc6970967f570c948b18a0448264d3879038068e5f2afbbf02720ea8",
+          "epoch": 14,
+          "seconds": 3.8540917150094174,
+          "trainNll": 0.05748684663157739,
+          "validationNll": 0.0633895993232727
+        },
+        {
+          "batchOrderSha256": "dcd10a0701c7d2088d332c35981bc8521b15d754704fd0c83009a8c7a64df20d",
+          "epoch": 15,
+          "seconds": 3.8523685459949775,
+          "trainNll": 0.05706374039205853,
+          "validationNll": 0.06462401151657104
+        },
+        {
+          "batchOrderSha256": "9ede316e64e010bbdbc2089d797b443d3b1f0c9628290dbb35d4c3a2d6a5beda",
+          "epoch": 16,
+          "seconds": 3.8779063819965813,
+          "trainNll": 0.05676646254012511,
+          "validationNll": 0.06394434720277786
+        },
+        {
+          "batchOrderSha256": "489109c43a3bec9c9c9e8c5cc53328ff6705b54a2ea45e466d32f0dc0952f367",
+          "epoch": 17,
+          "seconds": 3.8315993680007523,
+          "trainNll": 0.05641377389565196,
+          "validationNll": 0.06454183161258698
+        },
+        {
+          "batchOrderSha256": "c261f66c07c0fcf0eec8d88b7c0dff3a11b66795d1062723199fa1fc901be2a7",
+          "epoch": 18,
+          "seconds": 3.86032318600337,
+          "trainNll": 0.0560595240871641,
+          "validationNll": 0.06373385339975357
+        },
+        {
+          "batchOrderSha256": "01d70b26060586c0f0241c0865ce3b74baa322301bdee48e7f1ff611e2f94040",
+          "epoch": 19,
+          "seconds": 3.9068625229992904,
+          "trainNll": 0.055657430436466024,
+          "validationNll": 0.06448516249656677
+        },
+        {
+          "batchOrderSha256": "8d29c36d2d95e0101a772c707bb6dd738b3318a571171440ea71777d3741d93c",
+          "epoch": 20,
+          "seconds": 3.900287701995694,
+          "trainNll": 0.05546000657467739,
+          "validationNll": 0.06293081492185593
+        },
+        {
+          "batchOrderSha256": "8a5b4bf49ee7c031fcdc266f7b7b2a59571c66ff2707cd9db54499cf87fd9df2",
+          "epoch": 21,
+          "seconds": 3.873218495005858,
+          "trainNll": 0.05528974613963925,
+          "validationNll": 0.06410466879606247
+        },
+        {
+          "batchOrderSha256": "1775230a69b13a870f33770e328f6a8ce6b5c20bd24e58e6c48e5b951b721a07",
+          "epoch": 22,
+          "seconds": 3.9379219239926897,
+          "trainNll": 0.054765564492649674,
+          "validationNll": 0.0642300620675087
+        },
+        {
+          "batchOrderSha256": "a01da13100961f8a910fb5a64b68265af66cdd233ce7b8ab2cfefb534513f8db",
+          "epoch": 23,
+          "seconds": 3.9294241000025067,
+          "trainNll": 0.054556265201728606,
+          "validationNll": 0.06296417862176895
+        },
+        {
+          "batchOrderSha256": "a0594c1a46faae656a3de42724592bdb3e13c644779e01d2b0bd6a7242cadad5",
+          "epoch": 24,
+          "seconds": 3.8785643110022647,
+          "trainNll": 0.05426466058461895,
+          "validationNll": 0.06321761012077332
+        },
+        {
+          "batchOrderSha256": "c66bb478e8181423c2179a2b7ca04c039d88fd749433da7abca5b0d80646a20d",
+          "epoch": 25,
+          "seconds": 3.8819981359993108,
+          "trainNll": 0.05398712118127846,
+          "validationNll": 0.06402184069156647
+        },
+        {
+          "batchOrderSha256": "c12d561f511b6de9cfdf3451ad3aeb27f6c112717a4ae8d9e6d6e4a291a90662",
+          "epoch": 26,
+          "seconds": 4.061254938002094,
+          "trainNll": 0.05370336000065463,
+          "validationNll": 0.063042052090168
+        }
+      ],
+      "initialStateSha256": "e66fdd971ef36efdd282696b127ba28bdf8f66309036adf2250f4469814010ba",
+      "selectedEpoch": 20,
+      "stoppingReason": "patience"
+    }
+  },
+  "baselineSha": "0b7d4607c49b5db8082f4cad89579f3e33635f41",
+  "continuationRun": false,
+  "decision": "SURVIVAL_DEEPSET_SWEEP_REJECTED",
+  "deviations": [
+    "First run interrupted during lowerLr; preserved and excluded. All six final arms ran fresh.",
+    "Unused optional continuation code had an arbitrary trigger and was removed after execution. No continuation ran.",
+    "No independent implementation review passed before execution; local checks and post-run checkpoint audit are not independent review.",
+    "No per-epoch Brier checkpoints retained; Brier available at NLL-selected checkpoints only."
+  ],
+  "executionSha": "92b404e03a91a6c95a592de80c7e04fe78f2d9af",
+  "initializationIdentical": true,
+  "optimizerEvidence": "checkpoint recipes plus executed group assignment verified; raw optimizerScope LR fields are stale defaults, corrected in source after fit",
+  "population": {
+    "TEST": {
+      "encodedRows": 0,
+      "inferenceRows": 0,
+      "rowIdsSha256": "b8d6d54c5f1343837a7096991760dfc38ebb983982ffb9eab56b96491a54fed6",
+      "rows": 51441,
+      "scoredRows": 0,
+      "sourceIdsSha256": "b87414509ccc393bd1930070fa636b515d5ad10976f6e1e473659e460bb40a81",
+      "sources": 2517
+    },
+    "TRAIN": {
+      "rowIdsSha256": "f08096c4888950ae3720a1620d809d25e1da89ec94f22770e561948f856db0a4",
+      "rows": 408183,
+      "sourceIdsSha256": "81ebc90e0219eb0ea7ce83c5a8d25808c5275514321e642f12145cc94dc047c2",
+      "sources": 19986
+    },
+    "VALIDATION": {
+      "rowIdsSha256": "08a5391631e81f8adae8e3ade94d6d0d065bdb838b46ad834202e78aa4b61809",
+      "rows": 50406,
+      "sourceIdsSha256": "e143bf2aea94f7db99f7ae4b842eb6c368d557aab7b227f92e2a178bb00b4f5a",
+      "sources": 2496
+    }
+  },
+  "provenance": {
+    "preparationCacheSha256": "e1c25f2758bf56c7cff392ea02342d809f3ad7427c70b64166244a6b714a251d",
+    "preparationSha256": "165ddba8ed9d47a592de4fc7ec037f1687fbee2ec280daca20307ddbf7d78744",
+    "sourceSha": "1c31b7eb0a7660d43bc27e0849a8955dd0c3daae",
+    "verifiedFiles": {
+      "/home/philippherrmann/sts_sweep/runs/combat-transition-model-v1/split_manifest.json": "e9043bcceb9d95027711e6ff33afbfe1cae3cf9528f820c0ff68bddbb419db32",
+      "/home/philippherrmann/sts_sweep/runs/combat-transition-runtime-25k/combat-transition-25k.jsonl": "74c08aa0a3c30342d86cd45355fe17ffa9046963ad7c8cf71b1938f9cdc1cfde",
+      "/tmp/sts-phase2-attention-audit-20260913/prepared.npz": "2badbb85ccd8329bcb886d50ef8a0b9b1bd2c043fda9445de9f9c2e7a4b6f9a5",
+      "/tmp/sts-phase2-attention-audit-20260913/prepared_manifest.json": "13b2c91fd0ced713f8c429bbf8995ceb58b6e3e57d1555de42f5e67d7f9a389f",
+      "/tmp/sts-phase2-attention-audit-20260913/target_spec.json": "e2315620d512578542d6b3bfbd362eb07b086f0e9fa7770cc23f4fa4c226e229"
+    }
+  },
+  "rawReceiptPath": "/home/philippherrmann/sts_sweep/runs/survival-specific-deepset-sweep-20260917-final/results.json",
+  "rawReceiptSha256": "f347d12cf8b1778cc01961f720fd63d96f6fca6bda740893da27ec37f058c555",
+  "reportingCorrection": "raw aggregate omitted slice gates; audited evaluation recomputes all four and validity from saved checkpoints; rejection unchanged",
+  "schema": "survival_deepset_sweep_audit_v1",
+  "selectedArm": "strongWd",
+  "speedScreen": "not run: all six arms rejected",
+  "testInferenceRows": 0
+}

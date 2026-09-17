@@ -9599,3 +9599,29 @@ top-level benchmark reporting corrected.
   tool, model, runtime, or default and runs no training or gameplay.
   **Knowledge impact:** restore historical experiment evidence and correct
   maintained research chronology; no new experimental conclusion.
+
+## §296 — Survival DeepSets six-arm LR/weight-decay sweep (2026-09-17)
+
+- **Question:** Can less aggressive updates or stronger AdamW regularization
+  close the original warm-start survival model's roughly 6% validation gap?
+  Baseline main `0b7d4607c49b5db8082f4cad89579f3e33635f41`; frozen run
+  `92b404e03a91a6c95a592de80c7e04fe78f2d9af`.
+- **Protocol:** Six requested LR/WD combinations, identical PR #205 encoder
+  and fresh head initialization, source-grouped TRAIN/VALIDATION populations,
+  epoch permutations, FP32 BCE, batch 512, clip 1.0, seed 20260912, 12/40
+  floor/cap, patience 6. Select each arm by earliest strict VALIDATION NLL.
+  No TEST inference, architecture change, or distillation.
+- **Result:** All six fail overall NLL and Brier gates. Strong-WD selects
+  epoch 20, NLL `0.062930815` (+5.7760%), Brier `0.018841730` (+5.7627%).
+  Death/low-HP NLL pass for this arm. Baseline reproduces exactly; best NLL
+  improves it only 0.2104%. Much-lower-LR reaches cap and selects epoch 39,
+  leaving convergence uncertainty for that schedule, not permission to extend.
+- **Decision:** `SURVIVAL_DEEPSET_SWEEP_REJECTED`. These six optimizer
+  settings do not qualify DeepSets; architecture incapacity is not established.
+  Optional LR-decay continuation and speed screening were not run.
+- **Evidence:** [report](evidence/survival_deepset_sweep_2026-09-17.md) and
+  [audited receipt](evidence/survival_deepset_sweep_2026-09-17.json) include all
+  histories, checkpoint hashes and slices. An interrupted initial attempt is
+  preserved and excluded. Post-run reporting fixes and reloaded-checkpoint
+  verification are explicit; six-arm training was not altered.
+  **Knowledge impact:** research status/evidence only; no runtime promotion.

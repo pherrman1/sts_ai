@@ -795,6 +795,17 @@ next separate hypothesis, not a rescue adjustment to this run. See
 [ledger-06 §294](../../experiments/ledger-06.md) and the
 [fit evidence](../../experiments/evidence/survival_specific_deepset_fit_2026-09-17.md).
 
+The subsequent six-arm LR/weight-decay sweep also rejects all candidates.
+Strong-WD (`1e-4` encoder LR, `1e-3` head LR, `1e-3` decay) is best at
+epoch 20: NLL `0.062930815` and Brier `0.018841730`, still +5.7760% and
++5.7627% above Attention. This improves baseline NLL only 0.2104%; lower
+learning rates did not close the gap within the fixed 40-epoch budget.
+The much-lower-LR arm selected epoch 39 at the cap, so its convergence is
+not established. These results reject the tested settings, not DeepSets
+as an architecture. Optional LR-decay continuation remains untested; no
+distillation, TEST, runtime or promotion followed. See [ledger-06 §296](../../experiments/ledger-06.md)
+and the [sweep report](../../experiments/evidence/survival_deepset_sweep_2026-09-17.md).
+
 ### Jointly adapted shared maxHP+HP+potion representation
 
 The requested follow-up is **`SHARED_TRANSITION_POTION_REJECTED`**. Starting
