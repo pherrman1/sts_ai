@@ -82,6 +82,16 @@ class MechanismTest(unittest.TestCase):
         rows[next(index for index, row in enumerate(rows) if row["arm"] == "D")]["priors"] = [0.6, 0.4]
         with self.assertRaises(ValueError):
             MODULE.analyze(rows, expected_roots=3)
+
+    def test_teacher_order_may_equal_native_order(self):
+        rows = self.rows()
+        for row in rows:
+            if row["arm"] in ("B", "F", "D"):
+                row["replay_order"] = ["card", "defend"]
+            if row["arm"] == "D":
+                row["priors"] = [0.6, 0.4]
+        result = MODULE.analyze(rows, expected_roots=3)
+        self.assertEqual(result["roots"], 3)
         rows = self.rows()
         rows[next(index for index, row in enumerate(rows) if row["arm"] == "F")]["replay_order"] = ["card", "defend"]
         with self.assertRaises(ValueError):

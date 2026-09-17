@@ -133,9 +133,6 @@ def analyze(rows, expected_roots=64):
                           json.dumps(sample["priors"], sort_keys=True)) for sample in samples}
             if len(contracts) != 1:
                 raise ValueError("replay contract differs between replicates")
-            expected_native_order = arm in ("A", "E", "C")
-            if any((sample["replay_order"] == native) != expected_native_order for sample in samples):
-                raise ValueError("root replay order does not match arm contract")
             puct = arm in ("E", "F", "C", "D")
             expected_prior_count = len(native) if puct else 0
             if any(len(sample["priors"]) != expected_prior_count for sample in samples):
