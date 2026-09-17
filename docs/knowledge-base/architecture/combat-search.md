@@ -74,7 +74,8 @@ A-Q-order-visit-PUCT. Ordering is stable descending teacher-A corrected Q, with
 native ties. Uniform priors are exactly `1 / legal_action_count`; visit priors
 are exactly normalized A edge visits, without smoothing or pruning. Replay RNG
 is derived independently as `SEED/replay/root_id/replicate` and checked against
-both teachers.
+both teachers. Teacher-B judgment uses the maximum B-Q directly, so every
+action tied at that maximum is B-best.
 `--fixture` requires one root and fixture labels. Scientific mode requires 64.
 
 The dedicated `replaySilverRoot` entry point owns a fresh local session,
@@ -92,7 +93,10 @@ test changes B Q and verifies identical treatment actions/priors/order.
 aggregates within root, and reports the eight paired contrasts `E-A`, `C-E`,
 `F-B`, `D-F`, `B-A`, `F-E`, `D-C`, and `D-A` with 10,000 root-bootstrap
 resamples (Python RNG seed 20260917; empirical sorted endpoints 249 and 9749).
-It emits no scientific classification automatically. Implementation tests
+It emits no scientific classification automatically; its predeclared names are
+`ROOT_PRIOR_SIGNAL_CONFIRMED`, `ROOT_ORDER_SIGNAL_ONLY`,
+`ROOT_COMBINATION_ONLY`, `ROOT_GUIDANCE_SIGNAL_NOT_CONFIRMED`, and
+`ROOT_GUIDANCE_INCONCLUSIVE`. Implementation tests
 are not evidence of guidance quality; scientific capture/label/replay waits
 for independent review and a frozen implementation SHA.
 

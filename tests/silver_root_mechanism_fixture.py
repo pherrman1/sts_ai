@@ -70,10 +70,22 @@ def main():
         strict_labels_path = temporary / "changed-teacher.jsonl"
         strict_labels_path.write_text("".join(json.dumps(row) + "\n" for row in strict_labels))
         teacher_sha_rejected = temporary / "teacher-sha-rejected.jsonl"
-        root_sha = captures[0]["executable_git_sha"]
+        root_sha = json.loads(roots.read_text().splitlines()[0])["executable_git_sha"]
         run(args.replay, roots, strict_labels_path, teacher_sha_rejected, "20260917", root_sha,
             success=False)
         assert not teacher_sha_rejected.exists()
+        tie_labels = json.loads(json.dumps(teachers))
+        for index, action in enumerate(tie_labels[0]["root_actions"]):
+            action["original_root_corrected_q"] = 1.0 if index == 1 else -1.0
+        for action in tie_labels[1]["root_actions"]:
+            action["original_root_corrected_q"] = 0.0
+        tie_labels_path = temporary / "tie-teacher.jsonl"
+        tie_labels_path.write_text("".join(json.dumps(row) + "\n" for row in tie_labels))
+        tie_replay = temporary / "tie-replay.jsonl"
+        run(args.replay, roots, tie_labels_path, tie_replay, "20260917", sha, "--fixture")
+        tie_rows = [json.loads(line) for line in tie_replay.read_text().splitlines()]
+        assert all(row["b_regret"] == 0.0 and row["b_best"] for row in tie_rows)
+        assert any(row["selected_action_fingerprint"] != row["b_best_action"] for row in tie_rows)
         for row in rows:
             native = row["native_order"]
             if row["arm"] in ("A", "E", "C"):

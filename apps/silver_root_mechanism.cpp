@@ -124,9 +124,14 @@ int main(int argc, char **argv) {
                 [&](auto sum, const auto &fingerprint) { return sum + labelA.visits.at(fingerprint); });
             if (total <= 0) throw std::invalid_argument("teacher A has no visits");
             const auto labelB = teacher(indexed.at({id, "B"}), root, "B", fixture);
-            const auto best = *std::max_element(native.begin(), native.end(), [&](const auto &left, const auto &right) {
-                return labelB.quality.at(left) < labelB.quality.at(right);
-            });
+            auto best = native.front();
+            double bestQ = labelB.quality.at(best);
+            for (auto action = native.begin() + 1; action != native.end(); ++action) {
+                if (labelB.quality.at(*action) >= bestQ) {
+                    best = *action;
+                    bestQ = labelB.quality.at(best);
+                }
+            }
             std::set<std::uint64_t> seeds {labelA.seed, labelB.seed};
             for (int replicate = 0; replicate < 4; ++replicate) {
                 wire.isolatedSearchSeed = silver_bridge::rootMechanismSeed(
@@ -153,8 +158,8 @@ int main(int argc, char **argv) {
                         {"source_seed", root.at("source_seed")}, {"arm", arm}, {"replicate", replicate},
                         {"search_seed", wire.isolatedSearchSeed}, {"simulations", result.simulations},
                         {"selected_action_fingerprint", selected}, {"b_selected_q", selectedQ},
-                        {"b_best_q", labelB.quality.at(best)}, {"b_best_action", best},
-                        {"b_regret", labelB.quality.at(best) - selectedQ}, {"b_best", selected == best},
+                        {"b_best_q", bestQ}, {"b_best_action", best},
+                        {"b_regret", bestQ - selectedQ}, {"b_best", selectedQ == bestQ},
                         {"native_order", native}, {"replay_order", order}, {"priors", priors},
                         {"teacher_a_seed", labelA.seed}, {"teacher_b_seed", labelB.seed},
                         {"teacher_a_hash", silver_bridge::rootMechanismHash(indexed.at({id, "A"}).dump())},

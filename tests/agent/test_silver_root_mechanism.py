@@ -20,7 +20,8 @@ class MechanismTest(unittest.TestCase):
                   "E": ["card", "defend"], "F": ["defend", "card"],
                   "C": ["card", "defend"], "D": ["defend", "card"]}
         priors = {arm: ([] if arm in ("A", "B") else
-                        [0.5, 0.5] if arm in ("E", "F") else [0.6, 0.4])
+                        [0.5, 0.5] if arm in ("E", "F") else
+                        [0.6, 0.4] if arm == "C" else [0.4, 0.6])
                   for arm in "ABEFCD"}
         regrets = {"A": 6.0, "B": 5.0, "E": 4.0, "F": 3.0, "C": 2.0, "D": 1.0}
         return [{"root_id": str(root), "source_seed": 100 + root,
@@ -41,6 +42,10 @@ class MechanismTest(unittest.TestCase):
         self.assertEqual(result["contrasts"]["C-E"]["improved"], 3)
         self.assertEqual(result["bootstrap_resamples"], 10000)
         self.assertIsNone(result["classification"])
+        self.assertEqual(result["predeclared_classifications"], (
+            "ROOT_PRIOR_SIGNAL_CONFIRMED", "ROOT_ORDER_SIGNAL_ONLY",
+            "ROOT_COMBINATION_ONLY", "ROOT_GUIDANCE_SIGNAL_NOT_CONFIRMED",
+            "ROOT_GUIDANCE_INCONCLUSIVE"))
         self.assertEqual(set(result["contrasts"]),
                          {"E-A", "C-E", "F-B", "D-F", "B-A", "F-E", "D-C", "D-A"})
 
@@ -65,6 +70,22 @@ class MechanismTest(unittest.TestCase):
             rows[0][field] = "mixed"
             with self.assertRaises(ValueError):
                 MODULE.analyze(rows, expected_roots=3)
+        rows = self.rows()
+        for row in rows:
+            if row["root_id"] == "1":
+                row["executable_git_sha"] = "c" * 40
+        with self.assertRaises(ValueError):
+            MODULE.analyze(rows, expected_roots=3)
+
+    def test_cross_arm_treatment_contract_rejected(self):
+        rows = self.rows()
+        rows[next(index for index, row in enumerate(rows) if row["arm"] == "D")]["priors"] = [0.6, 0.4]
+        with self.assertRaises(ValueError):
+            MODULE.analyze(rows, expected_roots=3)
+        rows = self.rows()
+        rows[next(index for index, row in enumerate(rows) if row["arm"] == "F")]["replay_order"] = ["card", "defend"]
+        with self.assertRaises(ValueError):
+            MODULE.analyze(rows, expected_roots=3)
 
     def test_selection_ignores_outcome_and_input_order(self):
         rows = [{"root_id": str(index), "source_seed": 10, "outcome": index}

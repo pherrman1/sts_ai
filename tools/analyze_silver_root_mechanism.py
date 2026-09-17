@@ -15,7 +15,8 @@ CONTRASTS = ("E-A", "C-E", "F-B", "D-F", "B-A", "F-E", "D-C", "D-A")
 RESAMPLES = 10000
 SEED = 20260917
 CLASSIFICATIONS = ("ROOT_PRIOR_SIGNAL_CONFIRMED", "ROOT_ORDER_SIGNAL_ONLY",
-                   "ROOT_COMBINATION_ONLY", "ROOT_GUIDANCE_SIGNAL_NOT_REPRODUCED")
+                   "ROOT_COMBINATION_ONLY", "ROOT_GUIDANCE_SIGNAL_NOT_CONFIRMED",
+                   "ROOT_GUIDANCE_INCONCLUSIVE")
 
 
 def _metadata(row):
@@ -50,6 +51,8 @@ def analyze(rows, expected_roots=64):
     seeds = {}
     sources = {}
     metadata = {}
+    executable_sha = None
+    silver_sha = None
     for row in rows:
         root, arm, replicate = row["root_id"], row["arm"], row["replicate"]
         if (not isinstance(root, str) or not root or arm not in ARMS
@@ -66,6 +69,12 @@ def analyze(rows, expected_roots=64):
                 or not isinstance(row.get("priors"), list)):
             raise ValueError("invalid replay row")
         row_metadata = _metadata(row)
+        if executable_sha is None:
+            executable_sha = row["executable_git_sha"]
+            silver_sha = row["silver_upstream_sha"]
+        elif (row["executable_git_sha"] != executable_sha
+              or row["silver_upstream_sha"] != silver_sha):
+            raise ValueError("scientific artifact provenance differs globally")
         if metadata.setdefault(root, row_metadata) != row_metadata:
             raise ValueError("root provenance differs between arms or replicates")
         native_order = json.loads(row_metadata[5])
@@ -91,13 +100,39 @@ def analyze(rows, expected_roots=64):
     reduced = {}
     for root in roots:
         reduced[root] = {}
+        samples_by_arm = {arm: [indexed[root, arm, replicate] for replicate in range(4)]
+                          for arm in ARMS}
+        native = json.loads(metadata[root][5])
+        native_orders = ("A", "E", "C")
+        ordered_orders = ("B", "F", "D")
+        for arm in native_orders:
+            if any(sample["replay_order"] != native for sample in samples_by_arm[arm]):
+                raise ValueError("native-order arm contract differs from native order")
+        ordered = samples_by_arm["B"][0]["replay_order"]
+        if any(sample["replay_order"] != ordered for arm in ordered_orders
+               for sample in samples_by_arm[arm]):
+            raise ValueError("Teacher-A ordering differs between arms")
+        if any(sample["priors"] for arm in ("A", "B") for sample in samples_by_arm[arm]):
+            raise ValueError("UCT arm unexpectedly carries priors")
+        informative_maps = {}
+        for arm in ("C", "D"):
+            for sample in samples_by_arm[arm]:
+                if len(sample["replay_order"]) != len(sample["priors"]):
+                    raise ValueError("informative prior/action length mismatch")
+                mapping = dict(zip(sample["replay_order"], sample["priors"]))
+                if len(mapping) != len(sample["replay_order"]):
+                    raise ValueError("duplicate action in informative prior mapping")
+                informative_maps.setdefault(arm, mapping)
+                if informative_maps[arm] != mapping:
+                    raise ValueError("informative prior differs between replicates")
+        if informative_maps["C"] != informative_maps["D"]:
+            raise ValueError("C/D informative prior mapping differs")
         for arm in ARMS:
-            samples = [indexed[root, arm, replicate] for replicate in range(4)]
+            samples = samples_by_arm[arm]
             contracts = {(json.dumps(sample["replay_order"], sort_keys=True),
                           json.dumps(sample["priors"], sort_keys=True)) for sample in samples}
             if len(contracts) != 1:
                 raise ValueError("replay contract differs between replicates")
-            native = json.loads(metadata[root][5])
             expected_native_order = arm in ("A", "E", "C")
             if any((sample["replay_order"] == native) != expected_native_order for sample in samples):
                 raise ValueError("root replay order does not match arm contract")
