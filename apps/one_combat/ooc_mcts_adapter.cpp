@@ -383,7 +383,7 @@ std::uint64_t liveSimulations = 512;
 sts::search::OocMctsConfig liveConfig;
 OocAdapterOptions liveOptions{true};
 std::shared_ptr<const CombatTransitionSampler> liveSampler;
-std::string liveTrace, liveRootLockTrace;
+std::string liveTrace, liveRootLockTrace, liveCheckpointTrace;
 std::mutex liveTraceMutex;
 std::uint64_t splitMix64(std::uint64_t x) {
     x += 0x9e3779b97f4a7c15ULL;
@@ -470,6 +470,7 @@ void configureLiveOocMcts() {
         if (!out) throw std::runtime_error("STS_OOC_MCTS_TRACE cannot open output");
     }
     liveRootLockTrace.clear();
+    liveCheckpointTrace.clear();
     liveSimulations = 512; liveConfig = {}; liveOptions = {true};
     if (!liveEnabled) return;
     if (sts::search::silverLiveReuseCap() != 32768)
@@ -499,6 +500,14 @@ void configureLiveOocMcts() {
         if (const char *value = std::getenv(key)) applyLiveControl(key, value, liveConfig, liveOptions);
     if (const char *trace = std::getenv("STS_OOC_MCTS_ROOT_LOCK_TRACE")) liveRootLockTrace = trace;
     liveConfig.observeRootLock = !liveRootLockTrace.empty();
+    if (const char *trace = std::getenv("STS_OOC_MCTS_CHECKPOINT_TRACE")) liveCheckpointTrace = trace;
+    if (!liveCheckpointTrace.empty()) {
+        if (liveSimulations != 2048 || liveConfig.selectByMeanQ || liveConfig.observeRootLock)
+            throw std::runtime_error("checkpoint shadow requires 2048 visit selection and no root-lock observer");
+        std::ofstream out(liveCheckpointTrace, std::ios::app);
+        if (!out) throw std::runtime_error("STS_OOC_MCTS_CHECKPOINT_TRACE cannot open output");
+        std::cout << "[ooc-checkpoint-shadow ON live_policy_unchanged=1 checkpoints=128,256,512,1024,2048]\n";
+    }
     if (liveConfig.observeRootLock) {
         std::ofstream out(liveRootLockTrace, std::ios::app);
         if (!out) throw std::runtime_error("STS_OOC_MCTS_ROOT_LOCK_TRACE cannot open output");
@@ -597,6 +606,41 @@ bool oocMctsPolicyStep(GameContext &gc, const PathHistory &path, std::uint64_t s
     const auto result = selectOocMctsAction(gc, path, seed, index, liveSimulations, liveSampler, samples, &continuation);
     metrics.wallSeconds += std::chrono::duration<double>(std::chrono::steady_clock::now()-wallStart).count();
     metrics.cpuSeconds += threadCpuSeconds()-cpuStart;
+    if (!liveCheckpointTrace.empty()) {
+        ImaginedScope scope;
+        OocGameContextModel shadow(gc, path, liveSampler, liveOptions);
+        if (!shadow.terminalValue(0) && !shadow.isLeafBoundary(0)) {
+            auto config=liveConfig;
+            config.seed=oocMctsSearchSeed(seed,index);
+            config.observeRootLock=true;
+            config.rootCheckpointSimulations={128,256,512,1024,2048};
+            const auto observed=sts::search::OocMctsPlanner(config).search(shadow,0,liveSimulations);
+            nlohmann::json checkpoints=nlohmann::json::array();
+            for (const auto &checkpoint : observed.rootCheckpoints) {
+                nlohmann::json actions=nlohmann::json::array();
+                for (const auto &action : checkpoint.actions)
+                    actions.push_back({{"id",action.id},{"prior",action.prior},
+                        {"visits",action.visits},{"q",action.q}});
+                checkpoints.push_back({{"simulations",checkpoint.simulations},{"actions",actions}});
+            }
+            const nlohmann::json row={
+                {"schemaVersion",1},{"seed",seed},{"decisionIndex",index},
+                {"floor",gc.floorNum},{"screen",int(gc.screenState)},
+                {"requestedSimulations",liveSimulations},
+                {"liveSimulations",result.metrics.simulations},
+                {"liveAborted",result.aborted},{"liveAbortReason",result.abortReason},
+                {"liveAction",result.selectedAction ? nlohmann::json(*result.selectedAction) : nlohmann::json(nullptr)},
+                {"shadowSimulations",observed.metrics.simulations},
+                {"shadowAttempts",observed.metrics.simulationAttempts},
+                {"shadowAborted",observed.aborted},{"shadowAbortReason",observed.abortReason},
+                {"finalAction",observed.selectedAction ? nlohmann::json(*observed.selectedAction) : nlohmann::json(nullptr)},
+                {"checkpoints",checkpoints}};
+            std::lock_guard<std::mutex> lock(liveTraceMutex);
+            std::ofstream out(liveCheckpointTrace,std::ios::app);
+            if (!out || !(out << row.dump() << '\n'))
+                throw std::runtime_error("STS_OOC_MCTS_CHECKPOINT_TRACE write failed");
+        }
+    }
     metrics.combatSamples += samples;
     auto &c=metrics.continuation;
     c.imaginedCombats+=continuation.imaginedCombats; c.unsupportedCombats+=continuation.unsupportedCombats;

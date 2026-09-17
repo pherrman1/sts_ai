@@ -68,6 +68,25 @@ zero aborts do not qualify that contract. Metrics count locked-root stops and
 saved simulations separately. See [ADR-0014](../../../decisions/0014-live-ooc-visit-lock-stopping.md).
 
 `OocMctsConfig::observeRootLock` is an opt-in diagnostic that suppresses both
+locked-root stopping and the qualified sole-root bypass.
+
+`STS_OOC_MCTS_CHECKPOINT_TRACE=<fresh.jsonl>` instead preserves the live policy
+and runs a separate discarded full-budget shadow search from the same root,
+history, models and search seed. It requires 2048 visit selection and rejects
+combination with the live root-lock observer. It records all action IDs, priors,
+visits and Q after 128/256/512/1024/2048 completed shadow simulations, plus
+live and shadow action/abort/completed-budget status. Late shadow aborts do not
+change the live action. Existing live MCTS CPU and counters exclude the shadow;
+process runtime includes it and is not a deployment performance benchmark.
+The generic `rootCheckpointSimulations` option only records reached positive,
+strictly increasing thresholds; it never disables early stopping itself.
+Offline analysis uses visits/Q/ascending-ID tie-breaking, separates singleton
+roots and aborts, and reports additional savings against existing live stopping
+as well as nominal 2048. Checkpoint stability means stability only at observed
+checkpoints, not at every intervening simulation. No rule is deployed by this
+diagnostic. `tools/analyze_ooc_root_checkpoints.py` implements the offline report.
+
+The root-lock observer suppresses
 locked-root stopping and the qualified sole-root bypass. It records the first
 strict visit lock (including a zero-remaining-budget lock), its action and
 remaining simulation budget, and wall time from that completed simulation to

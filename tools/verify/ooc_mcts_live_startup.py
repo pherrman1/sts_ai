@@ -4,6 +4,7 @@ import argparse
 import os
 from pathlib import Path
 import subprocess
+import tempfile
 
 
 def main():
@@ -32,6 +33,21 @@ def main():
         ('malformed simulations', {'STS_OOC_MCTS': '1', 'STS_OOC_MCTS_SIMS': '-1'}, False, 'positive integer'),
     ]
     if args.artifact:
+        with tempfile.TemporaryDirectory() as temporary:
+            trace = str(Path(temporary) / 'checkpoints.jsonl')
+            result = subprocess.run(command, env=env | {'STS_OOC_MCTS': '1', 'STS_OOC_MCTS_SIMS': '2048',
+                'STS_OOC_MCTS_COMBAT_MODEL': str(Path(args.artifact).resolve()),
+                'STS_OOC_MCTS_CHECKPOINT_TRACE': trace}, cwd=root, text=True,
+                stdout=subprocess.PIPE, stderr=subprocess.STDOUT, timeout=120)
+            if result.returncode or 'live_policy_unchanged=1' not in result.stdout:
+                raise AssertionError(result.stdout)
+            print('PASS checkpoint shadow startup rc=0')
+        cases.append(('checkpoint wrong budget', {'STS_OOC_MCTS': '1', 'STS_OOC_MCTS_SIMS': '512',
+            'STS_OOC_MCTS_CHECKPOINT_TRACE': bad, 'STS_OOC_MCTS_COMBAT_MODEL': str(Path(args.artifact).resolve())},
+            False, 'checkpoint shadow requires 2048'))
+        cases.append(('checkpoint rejects full-budget live observer', {'STS_OOC_MCTS': '1', 'STS_OOC_MCTS_SIMS': '2048',
+            'STS_OOC_MCTS_ROOT_LOCK_TRACE': bad, 'STS_OOC_MCTS_CHECKPOINT_TRACE': bad,
+            'STS_OOC_MCTS_COMBAT_MODEL': str(Path(args.artifact).resolve())}, False, 'checkpoint shadow requires 2048'))
         cases.append(('ON loads qualified artifact', {'STS_OOC_MCTS': '1', 'STS_OOC_MCTS_SIMS': '128', 'STS_OOC_MCTS_COMBAT_MODEL': str(Path(args.artifact).resolve())}, True, '"earlyStop":true'))
         cases.append(('ON rollback disables stopping', {'STS_OOC_MCTS': '1', 'STS_OOC_MCTS_EARLY_STOP': '0', 'STS_OOC_MCTS_COMBAT_MODEL': str(Path(args.artifact).resolve())}, True, '"earlyStop":false'))
         cases.append(('ON rejects malformed stopping', {'STS_OOC_MCTS': '1', 'STS_OOC_MCTS_EARLY_STOP': 'true', 'STS_OOC_MCTS_COMBAT_MODEL': str(Path(args.artifact).resolve())}, False, 'STS_OOC_MCTS_EARLY_STOP invalid value'))
