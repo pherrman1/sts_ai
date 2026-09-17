@@ -38,6 +38,15 @@ runtime, gameplay, or default change is implied. See
 [ledger §290](../../experiments/ledger-06.md) and the
 [Phase-A evidence packet](../../experiments/evidence/silver_policy_value_phase_a_2026-09-16.md).
 
+The bounded parity-preserving sparse evaluator screen is now also closed for
+per-leaf throughput: it computes the same outputs at 6.377 microseconds per
+model-plus-action call, versus a 2.981-microsecond clean rollout mean. It is a
+valid optimization of the dense function, not a throughput win. Do not extend
+the adapter/native-state optimization under this hypothesis; root-only learned
+guidance is the next distinct direction. See
+[ledger §292](../../experiments/ledger-06.md) and the
+[sparse evaluator evidence](../../experiments/evidence/silver_sparse_evaluator_2026-09-17.md).
+
 ## Silver budget comparison at selected 128k cap
 
 The requested four-arm paired 32-seed comparison is complete at fixed 128k
