@@ -9195,6 +9195,28 @@ training, runtime integration, or default change occurred. Knowledge impact:
 current Phase-A evidence and research status updated.
 
 [Phase-A evidence packet with stage receipt](evidence/silver_policy_value_phase_a_2026-09-16.md).
+
+## §292 — Sparse Silver policy/value evaluator screen (2026-09-17)
+
+The merged Phase-A follow-up tested one bounded implementation change: transpose
+the first-layer weights and skip zero inputs while preserving the same fixed
+weights, feature semantics, model width, legal actions, and outputs. On the
+same 16 supported `PLAYER_NORMAL` leaves, one thread, 200 iterations, and
+3,200 calls, sparse encoder/value plus action scoring measured 6.377
+microseconds per call, versus 78.019 microseconds for the dense model path.
+The sparse path averaged 39 nonzero state inputs and matched every dense value
+and action logit within `4.66e-10` value and `1.16e-10` logit absolute error.
+
+The sparse path is approximately 12.2x faster than dense, but remains about
+2.14 times the clean 2.981-microsecond `PLAYER_NORMAL` rollout mean. Decision:
+**`PV_SPARSE_NOT_FEASIBLE_PER_LEAF`** for inference throughput. The second
+offline-adapter/native-state optimization was not attempted under the declared
+stop rule. Root-only learned guidance is the next distinct direction, with a
+separate decision-quality hypothesis. No training, gameplay, runtime, or
+default change occurred. Knowledge impact: current research status and
+experiment evidence updated.
+
+[Sparse evaluator evidence packet](evidence/silver_sparse_evaluator_2026-09-17.md).
 ## §291 — Frozen qualified DeepSets representation for potion decoding (2026-09-16)
 
 - **Question and baseline:** Can the qualified frozen PR #205 DeepSets state
