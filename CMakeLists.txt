@@ -483,6 +483,10 @@ add_test(NAME combat_transition_shared_encoder_potion_selftest
     COMMAND python3 -m unittest tools.test_combat_transition_shared_encoder_potion)
 set_tests_properties(combat_transition_shared_encoder_potion_selftest PROPERTIES
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+add_test(NAME combat_transition_survival_deepset_train_selftest
+    COMMAND python3 -m unittest tools.test_combat_transition_survival_deepset_train)
+set_tests_properties(combat_transition_survival_deepset_train_selftest PROPERTIES
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
 add_test(NAME combat_transition_relic_trajectory_selftest
     COMMAND python3 ${CMAKE_SOURCE_DIR}/tools/test_combat_transition_relic_trajectory.py)
 add_test(NAME combat_transition_composed_selftest

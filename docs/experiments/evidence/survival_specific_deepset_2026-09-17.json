@@ -1,0 +1,344 @@
+{
+  "baselineSha": "fe45572499d7fe5145b1c4f8bc30521cbcdca41e",
+  "decision": "SMOKE_PASSED_NOT_QUALIFIED",
+  "environment": {
+    "cpuThreads": 4,
+    "cuda": "12.1",
+    "gpu": "NVIDIA GeForce RTX 3060 Ti",
+    "tf32": false,
+    "torch": "2.5.1+cu121"
+  },
+  "experimentSha": "fe45572499d7fe5145b1c4f8bc30521cbcdca41e",
+  "fixedGates": {
+    "brierRelative": 0.05,
+    "deathNllRelative": 0.1,
+    "lowPreHpNllRelative": 0.1,
+    "nllRelative": 0.02
+  },
+  "fullFitRun": false,
+  "implementationFileSha256": "9a124b8527e9d4921b4077221504a683184090833c14c733f205e2812ec53020",
+  "implementationShaNote": "smoke ran uncommitted implementation; implementationFileSha256 binds exact trainer source",
+  "independentImplementationReview": "not completed; delegate invocation failed",
+  "initialization": {
+    "binding": {
+      "checkpointSha256": "bee6800dd7230b180c2b4894c0f01763efca4b7799e3f36a805333c3003dc663",
+      "normalizationRowIdsSha256": "e42a4dc3a964524a277fdcfde4cbdc552277dc358ce0d1d27e2c612a43ae3214",
+      "normalizationRows": 393677,
+      "receiptSha256": "83b2482eab347c09901c3b39f2ce7fed324f6be378ca36ff51f0d3965074c769",
+      "selectedEpoch": 40,
+      "source": "b192275ca0584a0c1eee8916176613b428a5e1b4"
+    },
+    "encoderSha256": "8b1105e14632aa29d9f4b39e14d9614c6708cc94b8f4c4d00a41194bd7f43c90",
+    "exactEncoderLoad": true,
+    "headSha256": "fd275d8d3523bc77f466eaf8400620d0ec25be0c35e57076e3af6cb317322c5e",
+    "normalizationSha256": "5f806bb16a38939b3d5a01b51f0345998df3ff1ce4bdd907b2b1f38aeacad957"
+  },
+  "population": {
+    "TEST": {
+      "encodedRows": 0,
+      "inferenceRows": 0,
+      "rowIdsSha256": "b8d6d54c5f1343837a7096991760dfc38ebb983982ffb9eab56b96491a54fed6",
+      "rows": 51441,
+      "scoredRows": 0,
+      "sourceIdsSha256": "b87414509ccc393bd1930070fa636b515d5ad10976f6e1e473659e460bb40a81",
+      "sources": 2517
+    },
+    "TRAIN": {
+      "rowIdsSha256": "f08096c4888950ae3720a1620d809d25e1da89ec94f22770e561948f856db0a4",
+      "rows": 408183,
+      "sourceIdsSha256": "81ebc90e0219eb0ea7ce83c5a8d25808c5275514321e642f12145cc94dc047c2",
+      "sources": 19986
+    },
+    "VALIDATION": {
+      "rowIdsSha256": "08a5391631e81f8adae8e3ade94d6d0d065bdb838b46ad834202e78aa4b61809",
+      "rows": 50406,
+      "sourceIdsSha256": "e143bf2aea94f7db99f7ae4b842eb6c368d557aab7b227f92e2a178bb00b4f5a",
+      "sources": 2496
+    }
+  },
+  "provenance": {
+    "preparationCacheSha256": "e1c25f2758bf56c7cff392ea02342d809f3ad7427c70b64166244a6b714a251d",
+    "preparationSha256": "165ddba8ed9d47a592de4fc7ec037f1687fbee2ec280daca20307ddbf7d78744",
+    "sourceSha": "1c31b7eb0a7660d43bc27e0849a8955dd0c3daae",
+    "verifiedFiles": {
+      "/home/philippherrmann/sts_sweep/runs/combat-transition-model-v1/split_manifest.json": "e9043bcceb9d95027711e6ff33afbfe1cae3cf9528f820c0ff68bddbb419db32",
+      "/home/philippherrmann/sts_sweep/runs/combat-transition-runtime-25k/combat-transition-25k.jsonl": "74c08aa0a3c30342d86cd45355fe17ffa9046963ad7c8cf71b1938f9cdc1cfde",
+      "/tmp/sts-phase2-attention-audit-20260913/prepared.npz": "2badbb85ccd8329bcb886d50ef8a0b9b1bd2c043fda9445de9f9c2e7a4b6f9a5",
+      "/tmp/sts-phase2-attention-audit-20260913/prepared_manifest.json": "13b2c91fd0ced713f8c429bbf8995ceb58b6e3e57d1555de42f5e67d7f9a389f",
+      "/tmp/sts-phase2-attention-audit-20260913/target_spec.json": "e2315620d512578542d6b3bfbd362eb07b086f0e9fa7770cc23f4fa4c226e229"
+    }
+  },
+  "recipe": {
+    "batch": 512,
+    "encoderLr": 0.0001,
+    "gradientClip": 1.0,
+    "headLr": 0.001,
+    "loss": "unweighted BCEWithLogitsLoss; 1=survived, 0=death",
+    "maxEpochs": 40,
+    "minEpochs": 12,
+    "normalization": "unchanged PR205 scalar_mean/scalar_inv buffers",
+    "optimizer": "AdamW",
+    "patience": 6,
+    "precision": "FP32",
+    "seed": 20260912,
+    "selection": "earliest strict minimum VALIDATION NLL",
+    "training": "PR205 encoder plus fresh Linear(64,1), TRAIN only",
+    "weightDecay": 0.0001
+  },
+  "reference": {
+    "componentSha256": "e150180a9112f52a94cfa60770adb6c0a48517a7d94a4c26f6e5896e85269c18",
+    "metrics": {
+      "accuracyAt05": 0.9751021703765425,
+      "brier": 0.01781509444117546,
+      "calibration": [
+        {
+          "bin": 0,
+          "lower": 0.0,
+          "meanPredicted": 0.052189312875270844,
+          "observedSurvival": 0.05734767025089606,
+          "rows": 279,
+          "upper": 0.1
+        },
+        {
+          "bin": 1,
+          "lower": 0.1,
+          "meanPredicted": 0.14857900142669678,
+          "observedSurvival": 0.17777777777777778,
+          "rows": 225,
+          "upper": 0.2
+        },
+        {
+          "bin": 2,
+          "lower": 0.2,
+          "meanPredicted": 0.2543490529060364,
+          "observedSurvival": 0.2703862660944206,
+          "rows": 233,
+          "upper": 0.3
+        },
+        {
+          "bin": 3,
+          "lower": 0.3,
+          "meanPredicted": 0.3474677801132202,
+          "observedSurvival": 0.36885245901639346,
+          "rows": 244,
+          "upper": 0.4
+        },
+        {
+          "bin": 4,
+          "lower": 0.4,
+          "meanPredicted": 0.4531751275062561,
+          "observedSurvival": 0.5031645569620253,
+          "rows": 316,
+          "upper": 0.5
+        },
+        {
+          "bin": 5,
+          "lower": 0.5,
+          "meanPredicted": 0.5489605069160461,
+          "observedSurvival": 0.5685279187817259,
+          "rows": 394,
+          "upper": 0.6
+        },
+        {
+          "bin": 6,
+          "lower": 0.6,
+          "meanPredicted": 0.6516559720039368,
+          "observedSurvival": 0.6544401544401545,
+          "rows": 518,
+          "upper": 0.7
+        },
+        {
+          "bin": 7,
+          "lower": 0.7,
+          "meanPredicted": 0.7530989050865173,
+          "observedSurvival": 0.7275641025641025,
+          "rows": 624,
+          "upper": 0.8
+        },
+        {
+          "bin": 8,
+          "lower": 0.8,
+          "meanPredicted": 0.8548954725265503,
+          "observedSurvival": 0.851963746223565,
+          "rows": 1324,
+          "upper": 0.9
+        },
+        {
+          "bin": 9,
+          "lower": 0.9,
+          "meanPredicted": 0.9957226514816284,
+          "observedSurvival": 0.9962810006702848,
+          "rows": 46249,
+          "upper": 1.0
+        }
+      ],
+      "finiteLogits": true,
+      "finiteProbabilities": true,
+      "meanPredictedSurvival": 0.9630218148231506,
+      "nll": 0.05949442461133003,
+      "observedSurvivalRate": 0.9639725429512359,
+      "probabilitiesInUnitInterval": true,
+      "rocAuc": 0.980474519103929,
+      "rows": 50406
+    },
+    "originalNll": 0.05949442833662033
+  },
+  "schema": "survival_specific_deepset_v1",
+  "smoke": {
+    "additionalTrainBatchRows": [
+      512,
+      512
+    ],
+    "gradientNorms": {
+      "encoder": 2.8184878826141357,
+      "head": 2.1365160942077637
+    },
+    "loss": 0.7401845455169678,
+    "optimizerScope": {
+      "duplicateParameterIds": false,
+      "exactParameterIds": true,
+      "groups": [
+        {
+          "elements": 94424,
+          "lr": 0.0001,
+          "name": "encoder",
+          "tensors": 26
+        },
+        {
+          "elements": 65,
+          "lr": 0.001,
+          "name": "survivalHead",
+          "tensors": 2
+        }
+      ],
+      "parameterNames": [
+        "encoder.card_id.weight",
+        "encoder.relic_id.weight",
+        "encoder.potion_id.weight",
+        "encoder.potion_slot.weight",
+        "encoder.global_category.0.weight",
+        "encoder.global_category.1.weight",
+        "encoder.global_category.2.weight",
+        "encoder.global_category.3.weight",
+        "encoder.card_mlp.0.weight",
+        "encoder.card_mlp.0.bias",
+        "encoder.card_mlp.2.weight",
+        "encoder.card_mlp.2.bias",
+        "encoder.relic_mlp.0.weight",
+        "encoder.relic_mlp.0.bias",
+        "encoder.relic_mlp.2.weight",
+        "encoder.relic_mlp.2.bias",
+        "encoder.potion_mlp.0.weight",
+        "encoder.potion_mlp.0.bias",
+        "encoder.potion_mlp.2.weight",
+        "encoder.potion_mlp.2.bias",
+        "encoder.global_mlp.0.weight",
+        "encoder.global_mlp.0.bias",
+        "encoder.trunk.0.weight",
+        "encoder.trunk.0.bias",
+        "encoder.trunk.2.weight",
+        "encoder.trunk.2.bias",
+        "head.weight",
+        "head.bias"
+      ]
+    },
+    "rows": 32,
+    "validation": {
+      "accuracyAt05": 0.921875,
+      "brier": 0.19697581231594086,
+      "calibration": [
+        {
+          "bin": 0,
+          "lower": 0.0,
+          "meanPredicted": null,
+          "observedSurvival": null,
+          "rows": 0,
+          "upper": 0.1
+        },
+        {
+          "bin": 1,
+          "lower": 0.1,
+          "meanPredicted": null,
+          "observedSurvival": null,
+          "rows": 0,
+          "upper": 0.2
+        },
+        {
+          "bin": 2,
+          "lower": 0.2,
+          "meanPredicted": null,
+          "observedSurvival": null,
+          "rows": 0,
+          "upper": 0.3
+        },
+        {
+          "bin": 3,
+          "lower": 0.3,
+          "meanPredicted": null,
+          "observedSurvival": null,
+          "rows": 0,
+          "upper": 0.4
+        },
+        {
+          "bin": 4,
+          "lower": 0.4,
+          "meanPredicted": 0.4882751703262329,
+          "observedSurvival": 0.9,
+          "rows": 30,
+          "upper": 0.5
+        },
+        {
+          "bin": 5,
+          "lower": 0.5,
+          "meanPredicted": 0.5541195273399353,
+          "observedSurvival": 0.9706601466992665,
+          "rows": 409,
+          "upper": 0.6
+        },
+        {
+          "bin": 6,
+          "lower": 0.6,
+          "meanPredicted": 0.621923565864563,
+          "observedSurvival": 0.9863013698630136,
+          "rows": 73,
+          "upper": 0.7
+        },
+        {
+          "bin": 7,
+          "lower": 0.7,
+          "meanPredicted": null,
+          "observedSurvival": null,
+          "rows": 0,
+          "upper": 0.8
+        },
+        {
+          "bin": 8,
+          "lower": 0.8,
+          "meanPredicted": null,
+          "observedSurvival": null,
+          "rows": 0,
+          "upper": 0.9
+        },
+        {
+          "bin": 9,
+          "lower": 0.9,
+          "meanPredicted": null,
+          "observedSurvival": null,
+          "rows": 0,
+          "upper": 1.0
+        }
+      ],
+      "finiteLogits": true,
+      "finiteProbabilities": true,
+      "meanPredictedSurvival": 0.559928834438324,
+      "nll": 0.5860110521316528,
+      "observedSurvivalRate": 0.96875,
+      "probabilitiesInUnitInterval": true,
+      "rocAuc": 0.7269405241935484,
+      "rows": 512
+    }
+  },
+  "testEncodedRows": 0,
+  "testInferenceRows": 0,
+  "testScoredRows": 0
+}
