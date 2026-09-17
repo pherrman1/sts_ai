@@ -841,6 +841,16 @@ NLL `0.062951967` (+5.8115%), Brier `0.018761696` (+5.3135%), death NLL
 strong-WD representation still does not pass. No widening follows without a new
 explicit plan. See [head-only evidence](../../experiments/evidence/survival_mlp_head_only_2026-09-17.md).
 
+The authorized width-96 scratch survival-only experiment also rejects. With
+unchanged embeddings, entity outputs 96, trunk 384→192→96 and a linear head,
+the strong-WD schedule selects epoch 14/20: NLL `0.065301903` (+9.7614%),
+Brier `0.019292932` (+8.2954%), death NLL +21.4414%; low-HP +8.1272% and
+validity pass. All-TRAIN normalization is fixed throughout. No speed screen
+ran. This tests the requested wider scratch recipe, not an isolated width
+effect versus the warm-started width-64 baseline. It does not prove interaction
+structure is necessary. Further scaling/tuning is not part of this experiment.
+See [width-96 evidence](../../experiments/evidence/survival_wide96_2026-09-17.md).
+
 ### Jointly adapted shared maxHP+HP+potion representation
 
 The requested follow-up is **`SHARED_TRANSITION_POTION_REJECTED`**. Starting

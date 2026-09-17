@@ -9700,3 +9700,23 @@ top-level benchmark reporting corrected.
   [receipt](evidence/survival_mlp_head_only_2026-09-17.json). Initial and
   selected encoder hashes are identical. No independent review passed.
   **Knowledge impact:** current research evidence; no default change.
+
+## §301 — Scratch width-96 DeepSets survival (2026-09-17)
+
+- **Question:** Does the single modest latent-width increase salvage the
+  survival-only recipe without embedding or feature changes?
+- **Execution:** `2e56f5de48fab5002684af8080decc988e69189d`; baseline dependency
+  `6fa601d9429db1a1a266e34c63252ce4861f9d5a`. Scratch entity outputs 96,
+  concat 384, trunk 384→192→96, head 96→1. Same strong-WD optimizer, batch,
+  seed, early stopping and gates; fixed normalization from all TRAIN rows.
+- **Result:** epoch 14/20, NLL `0.065301903` (+9.7614%), Brier `0.019292932`
+  (+8.2954%), death NLL +21.4414%; low-HP +8.1272% passes. Validity passes.
+  167,257 parameters. `SURVIVAL_DEEPSET_REJECTED`; speed screen skipped.
+- **Limits:** One run, no matched scratch width-64 survival-only control;
+  comparison with warm strong-WD conflates width, initialization and normalization.
+  This does not establish pairwise interactions as the missing mechanism.
+  No further scaling, training, TEST, runtime, gameplay or promotion.
+- **Evidence:** [report](evidence/survival_wide96_2026-09-17.md) and
+  [receipt](evidence/survival_wide96_2026-09-17.json). Checkpoint reload, full
+  metrics/slices, initialization, normalization and permutations verified.
+  **Knowledge impact:** current research evidence; no default change.
