@@ -559,8 +559,12 @@ passed all fixed gates: **`SHARED_TRANSITION_ENCODER_GO`**, with maxHP NLL
 qualification, not runtime/export or default-model promotion. The four
 unchanged evidence files are recovered from PR #197's frozen commit
 [`013db3d8a8f1180adfe16003f24c36742a9d0ed7`](https://github.com/pherrman1/sts_ai/commit/013db3d8a8f1180adfe16003f24c36742a9d0ed7),
-which also preserves the exact historical implementation; today's generic
-distillation tool is not reverted. See [ledger-06 §295](../../experiments/ledger-06.md),
+which preserves PR #197's final corrected state. The actual overflow run used
+`b58a03920fb84aee84f7fcde3ef300366221feb8`, as recorded in the recovered receipt.
+The later `013db3d…` correction changes only skipped-batch TRAIN metric
+accounting, not optimizer updates, validation results, checkpoint selection,
+or the GO decision; no rerun is needed. Today's generic distillation tool is
+not reverted. See [ledger-06 §295](../../experiments/ledger-06.md),
 the [continuation evidence](../../experiments/evidence/shared_transition_encoder_distill_40_2026-09-15.md),
 and the [overflow evidence](../../experiments/evidence/shared_transition_encoder_overflow_40_2026-09-15.md).
 The later DeepSets follow-up below became the cheaper qualified maxHP+HP

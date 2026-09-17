@@ -9553,7 +9553,11 @@ top-level benchmark reporting corrected.
 - **Provenance and evidence:** The four files below are recovered unchanged
   from PR #197's frozen commit
   [`013db3d8a8f1180adfe16003f24c36742a9d0ed7`](https://github.com/pherrman1/sts_ai/commit/013db3d8a8f1180adfe16003f24c36742a9d0ed7),
-  which preserves the exact historical implementation:
+  which preserves PR #197's final corrected state. The actual overflow run used
+  `b58a03920fb84aee84f7fcde3ef300366221feb8`, as recorded in the recovered receipt.
+  The later `013db3d…` correction changes only skipped-batch TRAIN metric
+  accounting, not optimizer updates, validation results, checkpoint selection,
+  or the GO decision; no rerun is needed. Recovered evidence:
   [continuation report](evidence/shared_transition_encoder_distill_40_2026-09-15.md),
   [continuation receipt](evidence/shared_transition_encoder_distill_40_2026-09-15/results.json),
   [overflow report](evidence/shared_transition_encoder_overflow_40_2026-09-15.md),
