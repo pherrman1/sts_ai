@@ -1,8 +1,9 @@
 # Survival-specific DeepSets: pre-fit implementation handoff
 
 Status: **SMOKE_PASSED_NOT_QUALIFIED**. The full fit has **not run**.
-Baseline: `fe45572499d7fe5145b1c4f8bc30521cbcdca41e` (merged PR #215),
-verified against fetched `origin/main` on 2026-09-17.
+Baseline: `be5b6ac2c9914b0a56244f2522b7573f81360067` after reconciling the
+original `fe45572499d7fe5145b1c4f8bc30521cbcdca41e` handoff with current
+`origin/main` on 2026-09-17. The merge did not alter the experiment contract.
 
 ## Accepted experiment
 
@@ -68,7 +69,9 @@ gradient and normalization contract, optimizer scope, explicit TEST/mixed
 split rejection, strict checkpoint ties, the stopping floor/patience, and
 quality rejection. It is registered with CTest for Linux GCC CI.
 
-Final focused outcome: 17 tests passed; focused CTest passed 1/1 (1.73 s).
+Final focused outcome: 17 tests passed; focused CTest passed 1/1 (1.73 s)
+at the original implementation SHA. Post-merge focused checks and CI remain
+required before the frozen fit SHA is finalized.
 `cmake --preset linux-gcc-debug-ccache`, worktree checks, environment doctor,
 and `git diff --check` passed. Repository health reports two pre-existing
 broken documentation links: `combat_budget_diag_2026-09-15/README.md` and

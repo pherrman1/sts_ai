@@ -363,6 +363,16 @@ rollout mean, a Silver-native compact representation is not a viable
 conversion-only remedy for this exact model boundary. See the linked Phase-A
 evidence packet for the raw receipt and provenance.
 
+A parity-preserving sparse first-layer screen then reduced the fixed model-plus-
+action computation from 78.019 to 6.377 microseconds per call by transposing
+the weights and skipping zero state inputs (mean 39 nonzero inputs). Maximum
+absolute parity errors were below `5e-10`, but 6.377 microseconds is still
+about 2.14 clean rollout-equivalents. The per-leaf throughput path is therefore
+closed at **`PV_SPARSE_NOT_FEASIBLE_PER_LEAF`**; do not add adapter/native-state
+optimization without a new hypothesis. Root-only learned guidance is a
+separate architectural direction. See the
+[sparse evaluator evidence](../../experiments/evidence/silver_sparse_evaluator_2026-09-17.md).
+
 ### Combat schema
 
 `src/sim/search/CombatValueNet.cpp` is the canonical producer:

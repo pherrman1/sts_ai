@@ -20,7 +20,7 @@ if str(ROOT) not in sys.path:
 from tools import combat_transition_deepset_survival as screen
 
 
-BASELINE_SHA = "fe45572499d7fe5145b1c4f8bc30521cbcdca41e"
+BASELINE_SHA = "be5b6ac2c9914b0a56244f2522b7573f81360067"
 RECIPE = dict(
     seed=20260912, batch=512, precision="FP32", optimizer="AdamW",
     encoderLr=1e-4, headLr=1e-3, weightDecay=1e-4, gradientClip=1.0,
