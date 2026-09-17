@@ -9126,6 +9126,144 @@ hidden-state sufficiency, or gameplay benefit.
   including raw N16/N32 results, scaling traces, logs, sidecars, time receipts,
   paired CSVs, provenance, and validator output.
 
+## §292 — Retained-root adaptive Silver production deployment gate (2026-09-16)
+
+- **Preflight:** Current `origin/main` was
+  `066264dc25bf2046aecd5ca7a94a8e82d5031e7b`. It contains merged PR #199
+  (`77a76167865d96df776fd80794695a6937fdac3f`), PR #204
+  (`3f8ca7b59c2de1ba78a2d8bab0f280f849dd6845`), and PR #207 (the current
+  merge). Production remained at a 32,768 allocated reuse cap with ordinary
+  boss budgeting, exact-root budgets off, exact-lock off, and rho off.
+- **Protocol:** The next unused contiguous 32-seed block, 224--255, used
+  Ironclad A0, project-fair Silver, native OOC, four workers, base budget
+  10,000, 32,768 allocated reuse cap, ordinary boss budgeting, CTM adaptive
+  budgeting/convergence/OOC MCTS/keys off, and exact-lock/rho off. Both arms
+  used the same Release executable (`c85579fd22a9c38475a3810062cabd0a15fe6d4bc33c8ea5f9ee0dee5a476eb3`).
+- **Control/treatment:** Control used `STS_SILVER_ADAPTIVE=0`. Treatment used
+  `STS_SILVER_ADAPTIVE=1`, `STS_SILVER_ADAPTIVE_RETAINED_ONLY=1`, and
+  `STS_SILVER_ADAPTIVE_TOP_GAP=0.2932885906040268`, with no other treatment
+  difference. Fresh and one-action/forced roots used 10,000; eligible retained
+  non-forced roots used 500 and continued the same private tree to 10,000 only
+  below the threshold.
+- **Result:** Control/treatment won 21/32 versus 22/32. Treatment had five
+  treatment-only and four control-only wins, mean floor 48.40625 versus
+  48.28125, and mean ending HP 32.90625 versus 29.34375. Silver simulations
+  were 202,860,000 versus 81,633,000, a **59.7589%** treatment reduction;
+  wall times were 395.72s versus 132.08s, a **66.6229%** reduction.
+- **Accounting:** Treatment recorded 13,945 decisions, 812 fresh roots,
+  13,133 retained roots, 510 one-action/forced roots, 6,086 valid 500-stops,
+  and 7,859 10k continuations. Every stop was retained, non-forced, exactly
+  500 new simulations, and at least the threshold; fresh and forced roots all
+  reached 10k. Exact/rho stop counters and conversion, semantic, transaction,
+  and knowledge failure counters were zero in both arms. All seed/result,
+  sidecar, reroot, and paired-accounting checks passed.
+- **Decision:** **`RETAINED_ADAPTIVE_DEFAULT_GO`**. Promote the frozen #199
+  retained-root policy to the normal live Silver default without changing the
+  production cap, cap mode, search algorithm, MCTS constants, exact-lock
+  default, or rho default. `STS_SILVER_ADAPTIVE=0` remains a clean flat-Silver
+  opt-out. This N32 is a deployment screen, not a formal equivalence proof or
+  superiority claim. **Knowledge impact:** maintained environment-variable
+  contract, current research status, and experiment evidence updated.
+- **Evidence:** [deployment packet](evidence/silver_retained_adaptive_deployment_pair32_2026-09-16/README.md),
+  including raw arm results, metadata, scaling traces, run logs, paired CSV,
+  summary, and validation outputs.
+
+## §293 — Current #199 retained-adaptive Silver cap screen (fresh N16, 2026-09-16)
+
+- **Question/provenance:** After the #199 retained-root policy deployment
+  screen, test whether the allocated Silver reuse cap should increase from
+  32,768 to 131,072. The fresh next block, seeds 256--271, used the reviewed
+  executable `3fb0c8ce2e009c2ef7a3abee5584556aff515261` and identical explicit
+  current-policy settings in both arms: fresh/forced roots at 10,000,
+  retained non-forced roots at 500 with continuation to 10,000 below the
+  exact threshold `0.2932885906040268`. Prior cap artifacts were inspected but
+  were exploratory/reused or exact-flat-budget comparisons and did not satisfy
+  this fresh retained-adaptive production comparison.
+- **Protocol:** Ironclad A0, project-fair Silver, native OOC, Searcher2,
+  ordinary boss budgeting, base budget 10,000, allocated reuse mode, four
+  workers, CTM adaptive budgeting/convergence/OOC MCTS/keys off, and
+  exact-lock/rho off. Only `STS_SILVER_REUSE_CAP` differed: 32,768 versus
+  131,072. Both producers ran through `tools/seed_guard.sh` and exited 0.
+- **Result:** 32k won 11/16 with mean floor 49.0000 and HP 40.2500; 128k won
+  11/16 with mean floor 49.1250 and HP 39.8125. Paired outcomes were 11 both
+  wins, 5 both losses, and no cap-only win in either direction. Simulations
+  were 46,704,500 versus 46,652,500; external wall was 80.51s versus 77.02s;
+  peak four-worker RSS was 1,066,104 KiB versus 1,986,088 KiB. The 128k arm
+  therefore used 1.86x peak RSS for 0.11% fewer simulations and no changed
+  paired wins.
+- **Mechanism accounting:** 32k had 398 cap-pressure exact candidates, of
+  which 395 were rescued by exact reroot and 3 fell back at the allocated cap;
+  128k had zero pressure candidates and zero allocated-cap fallbacks. Exact
+  reroot rates were 69.1407% (5,021/7,262) versus 69.2107% (5,033/7,272).
+  Valid 500-stops were 3,169 versus 3,185. Both arms had zero conversion,
+  semantic-resolution, transaction, knowledge, exact-lock, and rho failures.
+- **Decision:** **`CAP_128K_NOT_MATERIALLY_USEFUL_IN_FRESH_N16`**. Keep the
+  allocated 32,768 production cap and leave 131,072 experimental. The larger
+  cap removes the small number of unrecovered cap events, but 32k already
+  rescues 99.2% of pressure candidates and the paired outcome evidence shows
+  no useful-tree quality gain. The observed 1.89 GiB RSS is a substantial
+  concurrency cost. This N16 screen is not a general quality-equivalence
+  proof. **Knowledge impact:** maintained experiment evidence and current cap
+  decision; production/default/model contracts otherwise unchanged.
+- **Evidence:** [cap-screen packet](evidence/silver_cap_adaptive_pair16_2026-09-16/README.md),
+  including raw arm results, metadata, scaling traces, `/usr/bin/time -v` logs,
+  paired analysis, compact summary, and provenance.
+
+## §294 — Staged retained-root Silver threshold grid and Pareto inspection (2026-09-17)
+
+- **Question/hypothesis:** Replace the single current #199 retained-root
+  `500 -> 10,000` decision with cumulative 250/500/1,000/2,000/4,000/8,000/
+  10,000/20,000/50,000 checkpoints and a monotone per-checkpoint top-two
+  visit-share threshold. The hypothesis was that later checkpoints could
+  safely buy more simulation savings while retaining useful 50k decisions.
+- **Implementation/provenance:** The staged path is opt-in and was frozen at
+  source SHA `41f26f8af92ebdb0b4f488cf1c9c5457fb057394`; current production
+  defaults remain unchanged. Fresh and one-action/forced roots continue only
+  to 10,000. The requested grid was `{0.20,0.25,0.30,0.35,0.40,0.50,0.60,
+  0.75,inf}`. All commands used Ironclad A0, fair Searcher2/native OOC,
+  allocated 32,768 cap, four workers, base 10,000, and CTM adaptive
+  budgeting/convergence/OOC MCTS/keys off. Every bestbench command ran through
+  `tools/seed_guard.sh`; each invocation stayed within the repository's local
+  128-seed ceiling.
+- **Discovery sweep:** Each of the nine scalar grid values was measured on
+  fresh seeds 272--303 (N32 per arm). A separate exact 50k reference emitted
+  complete same-root checkpoint traces. The scalar arm simulation totals were
+  112,759,000; 126,997,250; 136,694,750; 145,857,000; 154,448,250;
+  172,042,000; 185,837,000; 216,851,250; and 374,990,000 from tau 0.20
+  through infinity. Wins were respectively 22, 26, 24, 24, 24, 24, 22, 23,
+  and 23 out of 32. Peak RSS ranged from 2,025,120 to 2,212,708 KiB for the
+  finite arms and was 2,143,792 KiB for infinity. Exact reroot rates ranged
+  from 65.2435% down to 48.1831%; cap-pressure/rescue/fallback counts are in
+  the packet's machine-readable summary.
+- **Policy construction:** Offline enumeration over 2,952 retained
+  non-forced discovery decisions selected maximum-saving schedules under
+  early-stop-only checkpoint-to-50k disagreement constraints. The 1% schedule
+  had 19/1,933 disagreements and mean 30,389.40 saved simulations; the 2%
+  schedule had 42/2,190 and 33,451.05 saved; the 5% schedule had 117/2,350
+  and 38,310.13 saved.
+- **Held-out inspection:** On fresh held-out seeds 304--319, flat 50k won
+  10/16 with mean floor/HP 47.1875/34.5625, 414,200,000 simulations, and
+  13:41.47 wall. The frozen 1%, 2%, and 5% policies won 8/16, 8/16, and 7/16;
+  mean floor/HP were 42.6875/24.1250, 39.9375/22.6250, and 41.6250/28.5625.
+  Their simulations were 99,191,000; 78,491,500; and 57,546,500, with wall
+  times 3:17.74, 2:31.00, and 1:44.68. Peak RSS was 2,138,436; 2,110,216;
+  and 1,915,624 KiB. All arms had zero conversion, semantic-resolution,
+  transaction, and knowledge failures.
+- **Decision:** **`STAGED_PARETO_GAMEPLAY_GATE_FAIL`**. The implementation and
+  compute curve are qualified as an experiment, but every frozen Pareto policy
+  lost overall wins and mean floor/HP versus the held-out flat 50k reference.
+  They also used more Silver simulations per run than #199's 81,633,000/32 =
+  2.55M baseline: 3.60M, 4.91M, and 6.20M for the frozen 5%, 2%, and 1%
+  policies. Do not promote staged adaptive Silver; keep current #199 500->10k
+  and the allocated 32,768 cap in production. The rejected live
+  runtime/configuration path was removed after the experiment; the analyzer
+  and evidence packet remain. This is a bounded N32 scalar-arm discovery and
+  N16 held-out inspection, not a universal quality equivalence proof.
+  **Knowledge impact:** maintained current research status and experiment
+  evidence; no production policy changed.
+- **Evidence:** [staged threshold packet](evidence/silver_staged_grid_2026-09-17/README.md),
+  including raw per-arm results, metadata, scaling traces, telemetry logs,
+  `/usr/bin/time -v` receipts, frozen schedules, summaries, and provenance.
 ## §289 — Retrained downstream consumers for the qualified DeepSets representation (2026-09-16)
 
 - **Question and baseline:** Does the corrected qualified PR #205 DeepSets

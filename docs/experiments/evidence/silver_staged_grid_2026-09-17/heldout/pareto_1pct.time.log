@@ -1,0 +1,23 @@
+	Command being timed: "env OMP_NUM_THREADS=4 STS_FAIR=1 STS_SEARCHER3=0 STS_SILVER_SEARCH=1 STS_NATIVE_OOC=1 STS_SILVER_EXACT_ROOT_BUDGETS=0 STS_SILVER_REUSE_CAP_MODE=allocated STS_SILVER_REUSE_CAP=32768 STS_SILVER_ADAPTIVE=1 STS_SILVER_ADAPTIVE_RETAINED_ONLY=1 STS_SILVER_ADAPTIVE_STAGED=1 STS_SILVER_ADAPTIVE_STAGED_THRESHOLDS=inf,0.75,0.75,0.75,0.75,0.75,0.60,0.50,inf STS_SILVER_EXACT_VISIT_LOCK=0 STS_SILVER_RHO_RACING=0 STS_SILVER_VNET_LEAF_DIRECT=0 STS_COLLECT_KEYS=0 STS_OOC_MCTS=0 STS_SIM_ADAPT=0 STS_CONVERGE=0 STS_CONV_ROOT=0 STS_SILVER_TELEMETRY=1 STS_SILVER_SCALING_DIAG_FILE=docs/experiments/evidence/silver_staged_grid_2026-09-17/heldout/pareto_1pct.scaling.csv STS_EXECUTABLE_GIT_SHA=41f26f8af92ebdb0b4f488cf1c9c5457fb057394 bash tools/seed_guard.sh build/linux-gcc-release-ccache/one_combat bestbench 10000 16 0 304 docs/experiments/evidence/silver_staged_grid_2026-09-17/heldout/pareto_1pct.results.csv"
+	User time (seconds): 681.84
+	System time (seconds): 2.02
+	Percent of CPU this job got: 345%
+	Elapsed (wall clock) time (h:mm:ss or m:ss): 3:17.74
+	Average shared text size (kbytes): 0
+	Average unshared data size (kbytes): 0
+	Average stack size (kbytes): 0
+	Average total size (kbytes): 0
+	Maximum resident set size (kbytes): 2138436
+	Average resident set size (kbytes): 0
+	Major (requiring I/O) page faults: 0
+	Minor (reclaiming a frame) page faults: 855781
+	Voluntary context switches: 33
+	Involuntary context switches: 5716
+	Swaps: 0
+	File system inputs: 0
+	File system outputs: 3280
+	Socket messages sent: 0
+	Socket messages received: 0
+	Signals delivered: 0
+	Page size (bytes): 4096
+	Exit status: 0

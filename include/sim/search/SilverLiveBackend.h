@@ -1,4 +1,4 @@
-// Default-off executable integration for the isolated Silver combat model.
+// Executable integration for the isolated Silver combat model.
 #ifndef STS_SILVER_LIVE_BACKEND_H
 #define STS_SILVER_LIVE_BACKEND_H
 

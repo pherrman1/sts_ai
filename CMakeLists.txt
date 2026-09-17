@@ -399,6 +399,23 @@ add_test(NAME silver_experimental_cap_integration COMMAND ${CMAKE_COMMAND} -E en
     $<TARGET_FILE:silver-integration-test>)
 set_tests_properties(silver_experimental_cap_integration PROPERTIES
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "integration")
+add_test(NAME silver_integration_default COMMAND ${CMAKE_COMMAND} -E env
+    --unset=STS_SILVER_ADAPTIVE --unset=STS_SILVER_ADAPTIVE_RETAINED_ONLY
+    --unset=STS_SILVER_ADAPTIVE_TOP_GAP --unset=STS_SILVER_EXACT_VISIT_LOCK
+    --unset=STS_SILVER_RHO_RACING $<TARGET_FILE:silver-integration-test>)
+set_tests_properties(silver_integration_default PROPERTIES
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "integration;smoke")
+add_test(NAME silver_integration_adaptive_optout COMMAND ${CMAKE_COMMAND} -E env
+    STS_SILVER_ADAPTIVE=0 --unset=STS_SILVER_ADAPTIVE_RETAINED_ONLY
+    $<TARGET_FILE:silver-integration-test>)
+set_tests_properties(silver_integration_adaptive_optout PROPERTIES
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "integration;smoke")
+add_test(NAME silver_integration_adaptive_override COMMAND ${CMAKE_COMMAND} -E env
+    STS_SILVER_ADAPTIVE=1 STS_SILVER_ADAPTIVE_RETAINED_ONLY=1
+    STS_SILVER_ADAPTIVE_TOP_GAP=0.2932885906040268
+    $<TARGET_FILE:silver-integration-test>)
+set_tests_properties(silver_integration_adaptive_override PROPERTIES
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "integration;smoke")
 add_test(NAME silver_bridge_boundary COMMAND $<TARGET_FILE:silver-bridge-test>)
 # tests/agent is owned by the separate pre-build unittest discovery step in CI.
 # Do not register its modules or separate compile-only checks here as well:
@@ -411,6 +428,7 @@ add_test(NAME analyze_silver_sticky_quality_selftest COMMAND python3 ${CMAKE_SOU
 add_test(NAME analyze_silver_root_diagnostic_selftest COMMAND python3 ${CMAKE_SOURCE_DIR}/tools/analyze_silver_root_diagnostic.py --self-test)
 add_test(NAME analyze_combat_budget_diag_selftest COMMAND python3 ${CMAKE_SOURCE_DIR}/tools/analyze_combat_budget_diag.py --self-test)
 add_test(NAME analyze_combat_sequential_diag_selftest COMMAND python3 ${CMAKE_SOURCE_DIR}/tools/analyze_combat_sequential_diag.py --self-test)
+add_test(NAME analyze_silver_staged_selftest COMMAND python3 ${CMAKE_SOURCE_DIR}/tools/analyze_silver_staged.py --self-test)
 add_test(NAME analyze_silver_adaptive_selftest COMMAND python3 ${CMAKE_SOURCE_DIR}/tools/analyze_silver_adaptive.py --self-test)
 add_test(NAME analyze_postcombat_raw_terminal_selftest COMMAND python3 ${CMAKE_SOURCE_DIR}/tools/test_postcombat_raw_terminal_selftest.py)
 add_test(NAME export_win_model_selftest COMMAND python3 ${CMAKE_SOURCE_DIR}/tools/test_export_win_model_selftest.py)
@@ -530,7 +548,7 @@ set_tests_properties(selfplay_syntax py_compile_parity_test py_compile_analyze_o
 set_tests_properties(particle_leaf_probe_selftest particle_posterior_probe_selftest
     analyze_silver_reuse_scaling_selftest analyze_silver_vnet_leaf_selftest
     analyze_silver_sticky_quality_selftest analyze_silver_root_diagnostic_selftest
-    analyze_silver_adaptive_selftest analyze_postcombat_raw_terminal_selftest
+    analyze_silver_adaptive_selftest analyze_silver_staged_selftest analyze_postcombat_raw_terminal_selftest
     PROPERTIES LABELS "research-repro")
 set_property(TEST selfplay_syntax paired_analysis_selftest check_replay_selftest
     battlecontext_roundtrip issue_fixes APPEND PROPERTY LABELS "smoke")

@@ -49,12 +49,13 @@ The production reuse cap defaults to `32 * 1024`. The explicit experimental
 | `STS_SILVER_ROOT_DIAG_FILE` | Default-off root-action diagnostic CSV: samples ordinary fair Silver combat roots, records fresh 1k/3.7k root visits/Qs, and evaluates every accepted legal root action with fresh forced-action Silver continuations. Diagnostic only; it does not alter the live action. | unset/off | `SilverLiveBackend`; `tools/analyze_silver_root_diagnostic.py` |
 | `STS_COMBAT_BUDGET_DIAG_FILE` | Default-off paired combat-budget CSV: at every ordinary or sequential-selection Silver decision, records the same-search 500-simulation root snapshot and continues that root to the exact 10,000-simulation final action. Includes stable semantic action identities, visit/Q/entropy/legal-action diagnostics, and per-decision agreement. Diagnostic only; unset leaves the normal one-shot search path unchanged. | unset/off | `SilverLiveBackend`; `tools/analyze_combat_budget_diag.py` |
 | `STS_COMBAT_SEQUENTIAL_DIAG_FILE` | Default-off offline sequential-stopping CSV: with `STS_SILVER_EXACT_ROOT_BUDGETS=1` and Silver adaptive stopping off, every ordinary or sequential-selection decision visits the same private root at cumulative 250/500/1,000/2,000/4,000/8,000/10,000 new simulations, recording action identity, root uncertainty, inherited/fresh/retained and one-action/forced tags. The final action is always the exact 10,000-simulation reference; this never changes live action selection. | unset/off | `SilverLiveBackend`; `tools/analyze_combat_sequential_diag.py` |
+| `STS_COMBAT_SEQUENTIAL_DIAG_CHECKPOINTS` | Optional comma-separated cumulative checkpoint override for `STS_COMBAT_SEQUENTIAL_DIAG_FILE`; values must be strictly increasing positive integers, and the final value must equal the exact root budget. This extends offline references through 20,000 and 50,000. | `250,500,1000,2000,4000,8000,10000` | `SilverLiveBackend` |
 | `STS_SILVER_ROOT_DIAG_MAX_PER_SEED` | Maximum captured root decisions per run seed for the root-action diagnostic | `8` when the file option is set | `SilverLiveBackend` |
 | `STS_SILVER_ROOT_DIAG_REF_BUDGET` | Silver simulations per forced-action continuation replicate | `25000` when the file option is set | `SilverLiveBackend` |
 | `STS_SILVER_ROOT_DIAG_REPLICATES` | Independent continuation replicates; sibling actions use the same replicate seeds for common-random-number pairing | `2` when the file option is set | `SilverLiveBackend` |
-| `STS_SILVER_ADAPTIVE` | Enable the default-off two-tier Silver treatment: legacy mode searches to 1,000 simulations and may continue the same root to 3,700; retained-only mode uses the separately documented 500→10,000 policy | unset/off | `SilverLiveBackend` |
-| `STS_SILVER_ADAPTIVE_TOP_GAP` | Strict uncertainty threshold for `STS_SILVER_ADAPTIVE`; legacy escalation occurs when the initial-budget top-vs-second visit-share gap is `<` this value, while retained-only stopping requires `>=` this value | `0.094` | `SilverLiveBackend` |
-| `STS_SILVER_ADAPTIVE_RETAINED_ONLY` | With `STS_SILVER_ADAPTIVE=1`, use the frozen retained-root treatment: fresh and forced roots continue to 10,000; retained non-forced roots stop at 500 only when the top-two visit-share gap is at least the configured threshold | unset/off | `SilverLiveBackend` |
+| `STS_SILVER_ADAPTIVE` | Enable the two-tier Silver policy: the promoted retained-only mode searches fresh/forced roots to 10,000 and may stop eligible retained roots at 500; `0` restores flat Silver | unset/on | `SilverLiveBackend` |
+| `STS_SILVER_ADAPTIVE_TOP_GAP` | Strict uncertainty threshold for `STS_SILVER_ADAPTIVE`; retained-only stopping requires the top-vs-second visit-share gap to be `>=` this value | `0.2932885906040268` | `SilverLiveBackend` |
+| `STS_SILVER_ADAPTIVE_RETAINED_ONLY` | With `STS_SILVER_ADAPTIVE=1`, use retained-root stopping: fresh and forced roots continue to 10,000; retained non-forced roots stop at 500 only when the top-two visit-share gap is at least the configured threshold | on | `SilverLiveBackend` |
 | `STS_SILVER_EXACT_VISIT_LOCK` | Default-off exact retained-root stopping: at geometric 2.5/5/10/20/40/80/100% checkpoints of the caller's maximum new-simulation budget, stop only when integer top-root-edge visits minus second visits is strictly greater than the remaining budget. Fresh and one-action/forced roots always run to the maximum. Incompatible with `STS_SILVER_ADAPTIVE` and paired/sequential diagnostic modes. | unset/off | `SilverLiveBackend`; `SilverStateBridge` |
 | `STS_SILVER_RHO_RACING` | Default-off experimental retained-root stopping: includes the exact visit lock, then additionally stops when `rho=(top visits-second visits)/(maximum new budget-used)` is at least `0.50` and the same semantic leader has held for at least two consecutive checkpoints. Uses the caller's maximum budget and the exact 2.5/5/10/20/40/80/100% schedule; fresh and one-action/forced roots never soft-stop. Incompatible with `STS_SILVER_ADAPTIVE`, `STS_SILVER_EXACT_VISIT_LOCK`, and paired/sequential diagnostic modes. | unset/off | `SilverLiveBackend`; `SilverStateBridge` |
 | `STS_SILVER_EXACT_ROOT_BUDGETS` | Experiment-only budget control: use the agent's base simulations at every Silver root, including bosses, instead of applying the native boss multiplier. Set identically for paired fixed-1k and adaptive arms. | unset/off | `SilverLiveBackend` |
@@ -92,16 +93,14 @@ In the root-diagnostic CSV, `adaptive_initial_top_visit_share` is the initial
 final-search concentration measurement. The benchmark sidecar records whether
 `STS_SILVER_EXACT_ROOT_BUDGETS` was enabled.
 
-Adaptive Silver is a bounded experiment flag, not a production default. Its
-legacy initial search collects root summaries only while the flag is enabled
-(or the root diagnostic is enabled), and continuation calls
-`BattleSearcher::search` with the increment `3700 - 1000` on the existing root.
-With `STS_SILVER_ADAPTIVE_RETAINED_ONLY=1`, the initial/total budgets are
-500/10,000 and only a retained root with more than one legal action and a gap
-at or above the configured threshold may stop at 500; fresh and forced roots
-continue to 10,000. The adaptive flag applies independently to each private
-subdecision of sequential `GAMBLE`/`EXHAUST_MANY`; the live atomic action bridge
-and transaction protocol are unchanged.
+Adaptive Silver is the production default retained-root policy. Its initial
+and total budgets are 500/10,000 and only a retained root with more than one
+legal action and a gap at or above the configured threshold may stop; fresh and
+forced roots continue to 10,000. `STS_SILVER_ADAPTIVE=0` restores flat Silver,
+including when the retained-only default is otherwise dormant. The adaptive
+flag applies independently to each private subdecision of sequential
+`GAMBLE`/`EXHAUST_MANY`; the live atomic action bridge and transaction protocol
+are unchanged.
 
 Exact visit-lock Silver is a separate default-off treatment selected by
 `STS_SILVER_EXACT_VISIT_LOCK=1`; it cannot be silently composed with the

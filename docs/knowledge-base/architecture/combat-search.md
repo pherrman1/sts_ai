@@ -156,10 +156,19 @@ state swaps preserve scratch-buffer capacity reuse. All consumers of these
 structures must be rebuilt together after a layout change.
 
 
-`STS_SILVER_ADAPTIVE=1` searches 1,000 simulations, measures the top-two
-visit-share gap, and, when below threshold, continues the same root to exactly
-3,700 total. It applies at ordinary roots and private sequential-selection
-subdecisions; the first search is not discarded.
+The live Silver default uses the retained-root adaptive policy: fresh and
+one-action/forced roots search 10,000 simulations, while a retained non-forced
+root first searches 500, measures the top-two visit-share gap, and stops at 500
+when it is at least `0.2932885906040268`; otherwise the same root continues to
+10,000 total. `STS_SILVER_ADAPTIVE=0` restores flat Silver. The policy applies
+at ordinary roots and private sequential-selection subdecisions; the first
+search is not discarded.
+
+The multi-stage retained-root policy was evaluated offline and is not part of
+the live runtime. Its analyzer and frozen evidence remain under
+`tools/analyze_silver_staged.py` and
+`docs/experiments/evidence/silver_staged_grid_2026-09-17/`; production uses the
+two-tier 500->10,000 policy above.
 
 Silver exposes sequential selection where live sts_ai exposes atomic
 `GAMBLE`/`EXHAUST_MANY` subsets. The bridge executes every private subdecision,

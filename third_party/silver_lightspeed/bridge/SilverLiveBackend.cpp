@@ -5,6 +5,7 @@
 
 #include "sim/search/SilverLiveBackend.h"
 
+#include <algorithm>
 #include <chrono>
 #include <cerrno>
 #include <cmath>
@@ -65,9 +66,11 @@ struct SilverLiveOptions {
     std::string executableGitSha;
     int leafCorpusGroupModulus = 1;
     int leafCorpusMaxLeavesPerGroup = 256;
-    bool adaptiveEnabled = false;
-    bool adaptiveRetainedOnly = false;
-    double adaptiveTopTwoVisitGapThreshold = 0.094;
+    bool adaptiveEnabled = true;
+    bool adaptiveRetainedOnly = true;
+    double adaptiveTopTwoVisitGapThreshold = 0.2932885906040268;
+    std::vector<std::int64_t> sequentialDiagnosticCheckpoints = {
+        250, 500, 1000, 2000, 4000, 8000, 10000};
     bool exactVisitLockEnabled = false;
     bool rhoRacingEnabled = false;
     bool installed = false;
@@ -121,6 +124,38 @@ double parseFiniteDouble(const char *name, const char *raw) {
     if (raw == end || *end != '\0' || errno == ERANGE || !std::isfinite(value))
         throw std::invalid_argument(std::string(name) + " must be a finite number");
     return value;
+}
+
+std::vector<std::string> commaSeparated(const char *name, const char *raw) {
+    std::vector<std::string> values;
+    std::string text(raw);
+    std::size_t start = 0;
+    while (start <= text.size()) {
+        const auto end = text.find(',', start);
+        const auto token = text.substr(start, end == std::string::npos ? end : end - start);
+        if (token.empty())
+            throw std::invalid_argument(std::string(name) + " contains an empty item");
+        values.push_back(token);
+        if (end == std::string::npos) break;
+        start = end + 1;
+    }
+    return values;
+}
+
+std::vector<std::int64_t> parseCheckpointList(const char *name, const char *raw) {
+    std::vector<std::int64_t> result;
+    for (const auto &token : commaSeparated(name, raw)) {
+        errno = 0;
+        char *end = nullptr;
+        const auto value = std::strtoll(token.c_str(), &end, 10);
+        if (token.c_str() == end || *end != '\0' || errno == ERANGE || value <= 0)
+            throw std::invalid_argument(std::string(name) + " must contain positive integers");
+        result.push_back(value);
+    }
+    if (!std::is_sorted(result.begin(), result.end())
+            || std::adjacent_find(result.begin(), result.end()) != result.end())
+        throw std::invalid_argument(std::string(name) + " must be strictly increasing");
+    return result;
 }
 
 int parseNonnegativeInt(const char *name, const char *raw) {
@@ -196,16 +231,27 @@ void parseSilverLiveOptions() {
     if (const char *raw = std::getenv("STS_SILVER_LEAF_CORPUS_MAX_PER_GROUP"))
         options.leafCorpusMaxLeavesPerGroup = std::atoi(raw);
     if (const char *raw = std::getenv("STS_EXECUTABLE_GIT_SHA")) options.executableGitSha = raw;
-    if (const char *raw = std::getenv("STS_SILVER_ADAPTIVE"))
-        options.adaptiveEnabled = std::atoi(raw) != 0;
+    const char *adaptiveOverride = std::getenv("STS_SILVER_ADAPTIVE");
+    if (adaptiveOverride)
+        options.adaptiveEnabled = std::atoi(adaptiveOverride) != 0;
     if (const char *raw = std::getenv("STS_SILVER_ADAPTIVE_RETAINED_ONLY"))
         options.adaptiveRetainedOnly = std::atoi(raw) != 0;
     if (const char *raw = std::getenv("STS_SILVER_ADAPTIVE_TOP_GAP"))
         options.adaptiveTopTwoVisitGapThreshold = std::atof(raw);
+    if (const char *raw = std::getenv("STS_COMBAT_SEQUENTIAL_DIAG_CHECKPOINTS"))
+        options.sequentialDiagnosticCheckpoints = parseCheckpointList(
+            "STS_COMBAT_SEQUENTIAL_DIAG_CHECKPOINTS", raw);
     if (const char *raw = std::getenv("STS_SILVER_EXACT_VISIT_LOCK"))
         options.exactVisitLockEnabled = std::atoi(raw) != 0;
     if (const char *raw = std::getenv("STS_SILVER_RHO_RACING"))
         options.rhoRacingEnabled = std::atoi(raw) != 0;
+    // The retained-only policy is now the production default. An explicit
+    // adaptive opt-out must therefore also clear that dormant default, while
+    // preserving the historical validation for an explicit contradictory
+    // retained-only override.
+    if (adaptiveOverride && !options.adaptiveEnabled
+            && !std::getenv("STS_SILVER_ADAPTIVE_RETAINED_ONLY"))
+        options.adaptiveRetainedOnly = false;
     if (!options.rootDiagnosticFile.empty()
             && (options.rootDiagnosticMaxPerSeed <= 0
                 || options.rootDiagnosticReferenceBudget <= 0
@@ -279,6 +325,9 @@ void parseSilverLiveOptions() {
             && (!options.exactRootBudgets || options.adaptiveEnabled))
         throw std::invalid_argument(
             "STS_COMBAT_SEQUENTIAL_DIAG_FILE requires exact root budgets and Silver adaptive stopping off");
+    if (!options.sequentialDiagnosticFile.empty()
+            && options.sequentialDiagnosticCheckpoints.empty())
+        throw std::invalid_argument("sequential diagnostic checkpoint list cannot be empty");
     if ((options.exactVisitLockEnabled || options.rhoRacingEnabled)
             && (!options.budgetDiagnosticFile.empty() || !options.sequentialDiagnosticFile.empty()))
         throw std::invalid_argument(
@@ -1444,15 +1493,16 @@ void runSilverCombat(ScumSearchAgent2 &agent, GameContext &gc, BattleContext &bc
         }
 
         auto config = configFor(agent, bc, collectDecisionDiagnostics);
-        if (collectSequentialDiagnostics && config.simulationsPerDecision != 10000)
-            fail("sequential diagnostics", "requires an exact Silver root budget of 10000");
+        if (collectSequentialDiagnostics
+                && config.simulationsPerDecision != g_silverLiveOptions.sequentialDiagnosticCheckpoints.back())
+            fail("sequential diagnostics", "configured root budget must equal the final diagnostic checkpoint");
         config.collectRootActionSummaries = collectRootDiagnostics || collectBudgetDiagnostics
             || collectSequentialDiagnostics || config.adaptiveEnabled;
         config.collectRolloutDiagnostics = collectRootDiagnostics || emitTelemetry;
         config.collectBudgetDiagnostics = collectBudgetDiagnostics;
         config.budgetDiagnosticCheckpoint = 500;
         if (collectSequentialDiagnostics)
-            config.budgetDiagnosticCheckpoints = {250, 500, 1000, 2000, 4000, 8000, 10000};
+            config.budgetDiagnosticCheckpoints = g_silverLiveOptions.sequentialDiagnosticCheckpoints;
         config.leafObserver = leafObserver;
         currentCorpusConfig = config;
         currentCorpusConfig.leafObserver = {};

@@ -1,0 +1,12 @@
+=== Paired comparison (16 seeds) ===
+Metric                           32k       128k      Delta
+Win rate                       68.8%      68.8%      +0.0pp
+  Win diff 95% CI: [+0.0pp, +0.0pp]
+Avg floor                      49.0      49.1      +0.1
+  Floor diff 95% CI: [+0.0, +0.4]
+Avg HP end                     40.2      39.8      -0.4
+Avg sec/run                   18.56     17.72     -0.84
+  Discordant: 0/16 (0%)
+  Both win: 11, both lose: 5, 32k-only: 0, 128k-only: 0
+  32k Wilson 95% CI: [44.4%, 85.8%]
+  128k Wilson 95% CI: [44.4%, 85.8%]

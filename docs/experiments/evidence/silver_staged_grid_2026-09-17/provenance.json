@@ -1,0 +1,40 @@
+{
+  "schema_version": 1,
+  "source_sha": "41f26f8af92ebdb0b4f488cf1c9c5457fb057394",
+  "binary_sha256": "1ceefe3528a5477d288b346d9bf9b4f64692051403bffc61b51e95a94920b20e",
+  "discovery_seeds": [272, 303],
+  "heldout_seeds": [304, 319],
+  "checkpoints": [250, 500, 1000, 2000, 4000, 8000, 10000, 20000, 50000],
+  "threshold_grid": [0.20, 0.25, 0.30, 0.35, 0.40, 0.50, 0.60, 0.75, "inf"],
+  "reuse_cap": 32768,
+  "reuse_cap_mode": "allocated",
+  "openmp_threads": 4,
+  "common_flags": {
+    "STS_FAIR": "1",
+    "STS_SEARCHER3": "0",
+    "STS_SILVER_SEARCH": "1",
+    "STS_NATIVE_OOC": "1",
+    "STS_SILVER_EXACT_ROOT_BUDGETS": "0",
+    "STS_SILVER_EXACT_VISIT_LOCK": "0",
+    "STS_SILVER_RHO_RACING": "0",
+    "STS_SILVER_VNET_LEAF_DIRECT": "0",
+    "STS_COLLECT_KEYS": "0",
+    "STS_OOC_MCTS": "0",
+    "STS_SIM_ADAPT": "0",
+    "STS_CONVERGE": "0",
+    "STS_CONV_ROOT": "0"
+  },
+  "discovery_reference": "STS_SILVER_ADAPTIVE=0 STS_SILVER_EXACT_ROOT_BUDGETS=1 STS_COMBAT_SEQUENTIAL_DIAG_CHECKPOINTS=250,500,1000,2000,4000,8000,10000,20000,50000 one_combat bestbench 50000 32 0 272 discovery/reference_results.csv",
+  "scalar_arm_thresholds": {
+    "0.20": "0.20,0.20,0.20,0.20,0.20,0.20,0.20,0.20,inf",
+    "0.25": "0.25,0.25,0.25,0.25,0.25,0.25,0.25,0.25,inf",
+    "0.30": "0.30,0.30,0.30,0.30,0.30,0.30,0.30,0.30,inf",
+    "0.35": "0.35,0.35,0.35,0.35,0.35,0.35,0.35,0.35,inf",
+    "0.40": "0.40,0.40,0.40,0.40,0.40,0.40,0.40,0.40,inf",
+    "0.50": "0.50,0.50,0.50,0.50,0.50,0.50,0.50,0.50,inf",
+    "0.60": "0.60,0.60,0.60,0.60,0.60,0.60,0.60,0.60,inf",
+    "0.75": "0.75,0.75,0.75,0.75,0.75,0.75,0.75,0.75,inf",
+    "inf": "inf,inf,inf,inf,inf,inf,inf,inf,inf"
+  },
+  "seed_guard": "all bestbench invocations ran through bash tools/seed_guard.sh; each invocation requested <=128 seeds"
+}
