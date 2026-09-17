@@ -9538,3 +9538,35 @@ top-level benchmark reporting corrected.
 - **Evidence:** [S2 report](evidence/deepset_survival_s2_2026-09-17.md),
   [machine-readable receipt](evidence/deepset_survival_s2_2026-09-17.json),
   and raw receipt `/tmp/deepset-survival-s2-20260917/results.json`.
+
+## §294 — Warm-start survival-specific DeepSets (2026-09-17)
+
+- **Question and baseline:** Can the corrected PR #205 DeepSets encoder,
+  warm-started and trained on all survival TRAIN rows including deaths, match
+  the dedicated TRAIN-only survival Attention encoder closely enough for
+  offline replacement? The reconciled baseline was
+  `be5b6ac2c9914b0a56244f2522b7573f81360067`.
+- **Protocol:** Reuse the exact 94,424-parameter PR #205 encoder and its bound
+  scalar normalization, add only a fresh 65-parameter linear survival head,
+  and train both on 408,183 TRAIN rows. The fixed recipe was FP32 AdamW,
+  batch 512, seed 20260912, encoder/head LRs `1e-4` / `1e-3`, weight decay
+  `1e-4`, clip 1.0, plain unweighted BCE, 12-epoch floor, patience 6, and
+  absolute cap 40. Validation selected the earliest strict NLL minimum.
+  The fixed gates were NLL +2%, Brier +5%, death NLL +10%, low-pre-HP NLL
+  +10%, plus finite/probability/population validity and zero TEST inference.
+- **Result:** Epoch 23 was selected by patience after six non-improving
+  epochs. Attention NLL/Brier were `0.0594944246` / `0.0178150944`;
+  DeepSets were `0.0630634725` / `0.0188982822`. Relative degradation was
+  **NLL +5.9990%** and **Brier +6.0802%**. Death NLL +6.2773% and low-pre-HP
+  NLL +3.8294% passed. Overall NLL/Brier failed, so the speed screen was
+  skipped. TEST encoded/inferred/scored rows were all `0`.
+- **Decision:** **`SURVIVAL_DEEPSET_REJECTED`**. This exact warm-started
+  supervised adaptation does not recover sufficient survival quality for
+  offline replacement. By the preregistered evidence pattern, Attention-teacher
+  distillation is the plausible separate next hypothesis; no rescue tuning,
+  TEST, runtime, gameplay, OOC MCTS, export or promotion occurred.
+  **Knowledge impact:** current research status and experiment evidence only.
+- **Evidence:** [fit report](evidence/survival_specific_deepset_fit_2026-09-17.md),
+  [machine-readable receipt](evidence/survival_specific_deepset_fit_2026-09-17.json),
+  and raw receipt
+  `/home/philippherrmann/sts_sweep/runs/survival-specific-deepset-20260917-fit/results.json`.

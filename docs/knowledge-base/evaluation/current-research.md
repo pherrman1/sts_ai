@@ -762,17 +762,18 @@ trained on all TRAIN combats including deaths, optionally with the qualified
 Attention specialist as a soft teacher. See [ledger-06 §293](../../experiments/ledger-06.md)
 and the [S2 evidence](../../experiments/evidence/deepset_survival_s2_2026-09-17.md).
 
-### Survival-specific DeepSets implementation
+### Survival-specific DeepSets fit
 
-The fixed warm-start survival adaptation driver is implemented and has passed
-artifact/population preflight and a 32-row real-data backward smoke, followed
-by two bounded TRAIN updates and VALIDATION evaluation. The TRAIN-only
-Attention reference reproduces VALIDATION NLL `0.0594944246`. The new model
-contains only the PR #205 encoder and fresh linear survival head, preserving
-the original scalar normalization. **The full fit has not run and no quality
-decision exists:** independent implementation review remains the pre-fit
-boundary. See the [fixed contract and preflight evidence](../../experiments/evidence/survival_specific_deepset_2026-09-17.md).
-Runtime components and promotion status remain unchanged.
+The fixed warm-start survival adaptation is **`SURVIVAL_DEEPSET_REJECTED`**.
+Training the corrected PR #205 encoder on all survival TRAIN rows selected
+epoch 23, but DeepSets VALIDATION NLL remained +5.9990% and Brier +6.0802%
+above the Attention specialist, failing the fixed +2% and +5% gates. Death
+NLL (+6.2773%) and low-pre-HP NLL (+3.8294%) passed. The candidate remains
+offline-only, with zero TEST inference and no runtime change. By the
+preregistered miss routing, Attention-teacher distillation is the plausible
+next separate hypothesis, not a rescue adjustment to this run. See
+[ledger-06 §294](../../experiments/ledger-06.md) and the
+[fit evidence](../../experiments/evidence/survival_specific_deepset_fit_2026-09-17.md).
 
 ### Jointly adapted shared maxHP+HP+potion representation
 
