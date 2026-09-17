@@ -9663,3 +9663,21 @@ top-level benchmark reporting corrected.
   Both checkpoints independently reloaded and results reproduced. No independent
   implementation review passed; failed tool delegation is recorded, not hidden.
   **Knowledge impact:** current research and experiment evidence only.
+
+## §299 — Small nonlinear survival head (2026-09-17)
+
+- **Question:** Can a small MLP survival head materially improve the frozen
+  strong-WD representation without widening the encoder?
+- **Execution:** `ba77f58d1622d2d88847a7c33af965a6aeaccac3`. Strong-WD epoch 20
+  initialized encoder; fresh 64→64→1 ReLU head (+4,160 parameters); joint
+  strong-WD optimizer/recipe and unchanged normalization; selection survival NLL.
+- **Result:** epoch 6/12 NLL `0.063041106` (+5.9614%), Brier `0.018754756`
+  (+5.2745%), death NLL +15.8636%; low-HP passes. Both overall gates fail and
+  it is worse than strong-WD on Brier. No speed screen.
+- **Decision:** `SURVIVAL_DEEPSET_REJECTED`. This small nonlinear head is not
+  sufficient under the fixed gates; it neither proves nor disproves a wider
+  encoder ceiling. No widening, extension, TEST, runtime or promotion.
+- **Evidence:** [report](evidence/survival_mlp_joint_2026-09-17.md) and
+  [receipt](evidence/survival_mlp_joint_2026-09-17.json). Clean duplicate run
+  reproduced the same result. No independent implementation review passed.
+  **Knowledge impact:** current research evidence; no default change.

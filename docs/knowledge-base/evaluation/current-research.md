@@ -827,6 +827,14 @@ experiment isolates initialization within this joint-loss setting, not the
 individual effects of HP auxiliary loss or normalization. No widening or
 runtime qualification follows. See [paired evidence](../../experiments/evidence/survival_deepset_aux_paired_2026-09-17.md).
 
+The requested smallest architecture increase—joint fine-tuning strong-WD with
+a `64→64→1` ReLU head—also rejects. Selected epoch 6/12 has NLL
+`0.063041106` (+5.9614%) and Brier `0.018754756` (+5.2745%); death NLL fails
+at +15.8636%. This one joint run cannot isolate head architecture from
+additional encoder updates, but it does not materially close the gap. No trunk
+widening follows without a new explicit plan. See
+[MLP evidence](../../experiments/evidence/survival_mlp_joint_2026-09-17.md).
+
 ### Jointly adapted shared maxHP+HP+potion representation
 
 The requested follow-up is **`SHARED_TRANSITION_POTION_REJECTED`**. Starting
