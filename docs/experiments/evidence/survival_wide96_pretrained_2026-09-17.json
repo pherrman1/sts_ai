@@ -1,0 +1,3383 @@
+{
+  "baselineSha": "35402d1e59ae5e9e66fe277f853f3ec62213c157",
+  "decision": "SURVIVAL_DEEPSET_REJECTED",
+  "experimentSha": "8adb4794ec22fb051014c8c638cb2fec326b7615",
+  "pretraining": {
+    "baselineSha": "35402d1e59ae5e9e66fe277f853f3ec62213c157",
+    "batchOrderSha256": "3c937998dbf1ca520d1c89a7053bffe54f1796e0c737e12319edbfb4dcd14aab",
+    "checkpointSha256": "a180803709da170c16f51f341d86793e1acc8a83881bbb1b502e81e3dfbe7f21",
+    "control": {
+      "bestCheckpointSha256": "daf50b5ec0847fe7a44cde0efd5d592a1939a25e6978f6757dd2b0157a105267",
+      "experimentSha": "b58a03920fb84aee84f7fcde3ef300366221feb8",
+      "path": "/home/philippherrmann/sts_sweep/runs/shared-transition-encoder-overflow-40-20260915",
+      "resultSha256": "4149c038a2abe9ab181b03c714763e74fb7b37f534020179004696fd465577c7",
+      "selectedEpoch": 37
+    },
+    "counts": {
+      "TRAIN": {
+        "rows": 393677,
+        "sources": 19986
+      },
+      "VALIDATION": {
+        "rows": 48590,
+        "sources": 2496
+      }
+    },
+    "decision": "SHARED_TRANSITION_ENCODER_GO",
+    "deepSetsStudent": {
+      "HP": {
+        "overall": {
+          "coverage50": 0.6675653426630994,
+          "coverage80": 0.8790080263428689,
+          "coverage95": 0.9748919530767648,
+          "crps": 3.626401527818622,
+          "expectedMae": 5.34651376217536,
+          "expectedRmse": 8.211424835279761,
+          "modeExact": 0.36054743774439185,
+          "modeMae": 6.300329285861288,
+          "nll": 2.5021162033081055,
+          "rows": 48590,
+          "width50": 8.657563284626466,
+          "width80": 16.335357069355833,
+          "width95": 24.7936612471702
+        },
+        "slices": {
+          "damage": {
+            "coverage50": 0.5328210577944903,
+            "coverage80": 0.8176653314804219,
+            "coverage95": 0.9594130630262405,
+            "crps": 5.357638922314081,
+            "expectedMae": 7.10213854060873,
+            "expectedRmse": 9.993001441105331,
+            "modeExact": 0.02644486225782719,
+            "modeMae": 10.888375705060083,
+            "nll": 3.6706697940826416,
+            "rows": 24466,
+            "width50": 12.0605738575983,
+            "width80": 22.40051500040873,
+            "width95": 33.143791383961414
+          },
+          "healing": {
+            "coverage50": 0.63910057390159,
+            "coverage80": 0.8827735440775237,
+            "coverage95": 0.9806190610593659,
+            "crps": 3.1221443267781877,
+            "expectedMae": 5.319663896102642,
+            "expectedRmse": 7.6022618867347616,
+            "modeExact": 0.41885407846457806,
+            "modeMae": 3.08467400508044,
+            "nll": 2.249824285507202,
+            "rows": 10629,
+            "width50": 7.989462790478878,
+            "width80": 14.797346881174146,
+            "width95": 22.264371060306708
+          },
+          "lowPreHp": {
+            "coverage50": 0.6327944572748267,
+            "coverage80": 0.8983833718244804,
+            "coverage95": 0.9722863741339491,
+            "crps": 3.409875363300192,
+            "expectedMae": 4.861027943960804,
+            "expectedRmse": 6.493271325046889,
+            "modeExact": 0.19399538106235567,
+            "modeMae": 5.882217090069284,
+            "nll": 2.9931604862213135,
+            "rows": 433,
+            "width50": 8.921478060046189,
+            "width80": 16.120092378752886,
+            "width95": 24.034642032332563
+          }
+        }
+      },
+      "maxHP": {
+        "overall": {
+          "accuracy": 0.9809220004116074,
+          "expectedPostMaxHpMae": 0.08207468652603743,
+          "nll": 0.042581018060445786,
+          "rows": 48590
+        },
+        "slices": {
+          "nonzeroDelta": {
+            "accuracy": 0.6254851228978008,
+            "expectedPostMaxHpMae": 1.2989702165766004,
+            "nll": 0.820682168006897,
+            "rows": 1546
+          },
+          "zeroDelta": {
+            "accuracy": 0.9926026698409999,
+            "expectedPostMaxHpMae": 0.04208402906795201,
+            "nll": 0.017010396346449852,
+            "rows": 47044
+          }
+        }
+      }
+    },
+    "experimentSha": "8adb4794ec22fb051014c8c638cb2fec326b7615",
+    "gates": {
+      "hpCrpsRelative": 0.0019455026473585376,
+      "hpExpectedMaeDelta": 0.004543508619375913,
+      "hpNllRelative": 0.0015309305809538952,
+      "hpSlices": {
+        "damage": {
+          "crpsRelative": 0.001954391175470651,
+          "expectedMaeDelta": 0.0050582271746355545,
+          "nllRelative": 0.001072863351995737,
+          "rows": 24466
+        },
+        "healing": {
+          "crpsRelative": 0.005419319690714685,
+          "expectedMaeDelta": 0.02315861075626202,
+          "nllRelative": 0.0038964571772164597,
+          "rows": 10629
+        },
+        "lowPreHp": {
+          "crpsRelative": 0.010444674425820812,
+          "expectedMaeDelta": 0.048503855222869596,
+          "nllRelative": 0.008358365136132365,
+          "rows": 433
+        }
+      },
+      "maxHpAccuracyDrop": 0.0001852232969746792,
+      "maxHpExpectedMaeDelta": 0.0005855153479210201,
+      "maxHpNllRelative": -0.0024710762337708807,
+      "maxHpNonzeroAccuracyDrop": 0.005821474773609281,
+      "maxHpNonzeroNllCatastrophic": false,
+      "maxHpNonzeroNllDelta": 0.010382652282714844
+    },
+    "history": [
+      {
+        "epoch": 1,
+        "lossScale": 16384.0,
+        "seconds": 4.208271930998308,
+        "selectionLoss": 0.13581449790027994,
+        "skippedUpdatesCumulative": 0,
+        "skippedUpdatesEpoch": 0,
+        "trainHpKl": 0.3724067722781365,
+        "trainMaxHpKl": 0.1642214889483771,
+        "validationHpKl": 0.20409098181073915,
+        "validationMaxHpKl": 0.06753801398982075
+      },
+      {
+        "epoch": 2,
+        "lossScale": 16384.0,
+        "seconds": 8.215986348994193,
+        "selectionLoss": 0.08568527920042097,
+        "skippedUpdatesCumulative": 0,
+        "skippedUpdatesEpoch": 0,
+        "trainHpKl": 0.1686792164149119,
+        "trainMaxHpKl": 0.047791863071896215,
+        "validationHpKl": 0.14719058508538346,
+        "validationMaxHpKl": 0.024179973315458493
+      },
+      {
+        "epoch": 3,
+        "lossScale": 32768.0,
+        "seconds": 12.151612871995894,
+        "selectionLoss": 0.06418268666738516,
+        "skippedUpdatesCumulative": 0,
+        "skippedUpdatesEpoch": 0,
+        "trainHpKl": 0.1240513226749782,
+        "trainMaxHpKl": 0.0260568832024263,
+        "validationHpKl": 0.10800026747995896,
+        "validationMaxHpKl": 0.02036510585481138
+      },
+      {
+        "epoch": 4,
+        "lossScale": 32768.0,
+        "seconds": 16.11268790399481,
+        "selectionLoss": 0.05294330573341064,
+        "skippedUpdatesCumulative": 0,
+        "skippedUpdatesEpoch": 0,
+        "trainHpKl": 0.09775000709774227,
+        "trainMaxHpKl": 0.023095809056135435,
+        "validationHpKl": 0.08728311356662305,
+        "validationMaxHpKl": 0.018603497900198232
+      },
+      {
+        "epoch": 5,
+        "lossScale": 32768.0,
+        "seconds": 20.13683619600488,
+        "selectionLoss": 0.04596851429726388,
+        "skippedUpdatesCumulative": 0,
+        "skippedUpdatesEpoch": 0,
+        "trainHpKl": 0.08059093627389607,
+        "trainMaxHpKl": 0.02094243907906638,
+        "validationHpKl": 0.074508722437142,
+        "validationMaxHpKl": 0.017428306157385755
+      },
+      {
+        "epoch": 6,
+        "lossScale": 65536.0,
+        "seconds": 24.347604110997054,
+        "selectionLoss": 0.04064174826284076,
+        "skippedUpdatesCumulative": 0,
+        "skippedUpdatesEpoch": 0,
+        "trainHpKl": 0.06988693449262981,
+        "trainMaxHpKl": 0.018692386364177957,
+        "validationHpKl": 0.06524401143834188,
+        "validationMaxHpKl": 0.01603948508733964
+      },
+      {
+        "epoch": 7,
+        "lossScale": 65536.0,
+        "seconds": 28.33683544199448,
+        "selectionLoss": 0.03507212725253478,
+        "skippedUpdatesCumulative": 0,
+        "skippedUpdatesEpoch": 0,
+        "trainHpKl": 0.06067768827865345,
+        "trainMaxHpKl": 0.01612834919279735,
+        "validationHpKl": 0.05621454406527365,
+        "validationMaxHpKl": 0.013929710439795904
+      },
+      {
+        "epoch": 8,
+        "lossScale": 131072.0,
+        "seconds": 32.46160258700547,
+        "selectionLoss": 0.0316096974650197,
+        "skippedUpdatesCumulative": 0,
+        "skippedUpdatesEpoch": 0,
+        "trainHpKl": 0.05436648997356479,
+        "trainMaxHpKl": 0.013423359800153852,
+        "validationHpKl": 0.052289886228904285,
+        "validationMaxHpKl": 0.010929508701135121
+      },
+      {
+        "epoch": 9,
+        "lossScale": 131072.0,
+        "seconds": 36.45578384700639,
+        "selectionLoss": 0.02679546278633049,
+        "skippedUpdatesCumulative": 0,
+        "skippedUpdatesEpoch": 0,
+        "trainHpKl": 0.04914637362137302,
+        "trainMaxHpKl": 0.010241060923848438,
+        "validationHpKl": 0.04571418211455943,
+        "validationMaxHpKl": 0.007876743458101547
+      },
+      {
+        "epoch": 10,
+        "lossScale": 131072.0,
+        "seconds": 40.407799381995574,
+        "selectionLoss": 0.02471134399461863,
+        "skippedUpdatesCumulative": 0,
+        "skippedUpdatesEpoch": 0,
+        "trainHpKl": 0.04505327471443571,
+        "trainMaxHpKl": 0.007465126301227979,
+        "validationHpKl": 0.043495370078863345,
+        "validationMaxHpKl": 0.005927317910373918
+      },
+      {
+        "epoch": 11,
+        "lossScale": 262144.0,
+        "seconds": 44.31792192099965,
+        "selectionLoss": 0.022977583044090276,
+        "skippedUpdatesCumulative": 0,
+        "skippedUpdatesEpoch": 0,
+        "trainHpKl": 0.04142200331236043,
+        "trainMaxHpKl": 0.005789823387814728,
+        "validationHpKl": 0.04121360785509363,
+        "validationMaxHpKl": 0.004741558233086927
+      },
+      {
+        "epoch": 12,
+        "lossScale": 262144.0,
+        "seconds": 48.26951691099384,
+        "selectionLoss": 0.020266961454933185,
+        "skippedUpdatesCumulative": 0,
+        "skippedUpdatesEpoch": 0,
+        "trainHpKl": 0.03867194620446087,
+        "trainMaxHpKl": 0.004872039515987616,
+        "validationHpKl": 0.03666094119631231,
+        "validationMaxHpKl": 0.0038729817135540593
+      },
+      {
+        "epoch": 13,
+        "lossScale": 262144.0,
+        "seconds": 52.281978807994165,
+        "selectionLoss": 0.019146015932778933,
+        "skippedUpdatesCumulative": 0,
+        "skippedUpdatesEpoch": 0,
+        "trainHpKl": 0.03619611012647916,
+        "trainMaxHpKl": 0.004308292856725702,
+        "validationHpKl": 0.034647101843294524,
+        "validationMaxHpKl": 0.0036449300222633394
+      },
+      {
+        "epoch": 14,
+        "lossScale": 262144.0,
+        "seconds": 56.36536684700695,
+        "selectionLoss": 0.018168978215926626,
+        "skippedUpdatesCumulative": 1,
+        "skippedUpdatesEpoch": 1,
+        "trainHpKl": 0.034110353553651496,
+        "trainMaxHpKl": 0.003926349596977916,
+        "validationHpKl": 0.03306778087479069,
+        "validationMaxHpKl": 0.0032701755570625646
+      },
+      {
+        "epoch": 15,
+        "lossScale": 262144.0,
+        "seconds": 60.36817053800041,
+        "selectionLoss": 0.017635397775524177,
+        "skippedUpdatesCumulative": 1,
+        "skippedUpdatesEpoch": 0,
+        "trainHpKl": 0.03226875799745827,
+        "trainMaxHpKl": 0.0035910233459465505,
+        "validationHpKl": 0.0322705129654068,
+        "validationMaxHpKl": 0.0030002825856415565
+      },
+      {
+        "epoch": 16,
+        "lossScale": 524288.0,
+        "seconds": 64.32106384300278,
+        "selectionLoss": 0.017374487349041793,
+        "skippedUpdatesCumulative": 1,
+        "skippedUpdatesEpoch": 0,
+        "trainHpKl": 0.030845097954303832,
+        "trainMaxHpKl": 0.003345139069009539,
+        "validationHpKl": 0.03195137158925579,
+        "validationMaxHpKl": 0.0027976031088277962
+      },
+      {
+        "epoch": 17,
+        "lossScale": 262144.0,
+        "seconds": 68.30773521099763,
+        "selectionLoss": 0.015862532063885267,
+        "skippedUpdatesCumulative": 2,
+        "skippedUpdatesEpoch": 1,
+        "trainHpKl": 0.029593382334656713,
+        "trainMaxHpKl": 0.003127613545378351,
+        "validationHpKl": 0.028968603049415845,
+        "validationMaxHpKl": 0.0027564610783546916
+      },
+      {
+        "epoch": 18,
+        "lossScale": 262144.0,
+        "seconds": 72.33128243099782,
+        "selectionLoss": 0.015015267107167966,
+        "skippedUpdatesCumulative": 2,
+        "skippedUpdatesEpoch": 0,
+        "trainHpKl": 0.0283430234223408,
+        "trainMaxHpKl": 0.0029575827400128997,
+        "validationHpKl": 0.027539625056248972,
+        "validationMaxHpKl": 0.0024909091580869605
+      },
+      {
+        "epoch": 19,
+        "lossScale": 262144.0,
+        "seconds": 76.28509051499714,
+        "selectionLoss": 0.014708622809222527,
+        "skippedUpdatesCumulative": 3,
+        "skippedUpdatesEpoch": 1,
+        "trainHpKl": 0.02761547469359133,
+        "trainMaxHpKl": 0.00280600183110926,
+        "validationHpKl": 0.027063186196899753,
+        "validationMaxHpKl": 0.0023540594215453025
+      },
+      {
+        "epoch": 20,
+        "lossScale": 262144.0,
+        "seconds": 80.29766859899973,
+        "selectionLoss": 0.014584059738802693,
+        "skippedUpdatesCumulative": 3,
+        "skippedUpdatesEpoch": 0,
+        "trainHpKl": 0.026607156809963818,
+        "trainMaxHpKl": 0.0026915138734277554,
+        "validationHpKl": 0.026812203972765045,
+        "validationMaxHpKl": 0.002355915504840339
+      },
+      {
+        "epoch": 21,
+        "lossScale": 262144.0,
+        "seconds": 84.1948202719941,
+        "selectionLoss": 0.013823502106736062,
+        "skippedUpdatesCumulative": 3,
+        "skippedUpdatesEpoch": 0,
+        "trainHpKl": 0.02572362964629699,
+        "trainMaxHpKl": 0.0025665902181440338,
+        "validationHpKl": 0.025447127829840776,
+        "validationMaxHpKl": 0.0021998763836313484
+      },
+      {
+        "epoch": 22,
+        "lossScale": 262144.0,
+        "seconds": 88.13263089599786,
+        "selectionLoss": 0.013827419633078352,
+        "skippedUpdatesCumulative": 4,
+        "skippedUpdatesEpoch": 1,
+        "trainHpKl": 0.025204928060132175,
+        "trainMaxHpKl": 0.002464285901062766,
+        "validationHpKl": 0.02548706529577295,
+        "validationMaxHpKl": 0.002167773970383754
+      },
+      {
+        "epoch": 23,
+        "lossScale": 262144.0,
+        "seconds": 92.02398604899645,
+        "selectionLoss": 0.013206842248924723,
+        "skippedUpdatesCumulative": 4,
+        "skippedUpdatesEpoch": 0,
+        "trainHpKl": 0.02438366416865147,
+        "trainMaxHpKl": 0.00236554902672064,
+        "validationHpKl": 0.024326338036701523,
+        "validationMaxHpKl": 0.0020873464611479214
+      },
+      {
+        "epoch": 24,
+        "lossScale": 262144.0,
+        "seconds": 96.00520796500496,
+        "selectionLoss": 0.013445716558467158,
+        "skippedUpdatesCumulative": 4,
+        "skippedUpdatesEpoch": 0,
+        "trainHpKl": 0.023860554598719837,
+        "trainMaxHpKl": 0.002291116742650853,
+        "validationHpKl": 0.024818458295952247,
+        "validationMaxHpKl": 0.0020729748209820697
+      },
+      {
+        "epoch": 25,
+        "lossScale": 524288.0,
+        "seconds": 99.96890266200353,
+        "selectionLoss": 0.01275995048901702,
+        "skippedUpdatesCumulative": 4,
+        "skippedUpdatesEpoch": 0,
+        "trainHpKl": 0.023385091279672365,
+        "trainMaxHpKl": 0.002219384522201894,
+        "validationHpKl": 0.023570832772436125,
+        "validationMaxHpKl": 0.001949068205597916
+      },
+      {
+        "epoch": 26,
+        "lossScale": 524288.0,
+        "seconds": 103.87575357900641,
+        "selectionLoss": 0.012310499171706759,
+        "skippedUpdatesCumulative": 4,
+        "skippedUpdatesEpoch": 0,
+        "trainHpKl": 0.022728790583973136,
+        "trainMaxHpKl": 0.0021498633935551036,
+        "validationHpKl": 0.022624185422435786,
+        "validationMaxHpKl": 0.0019968129209777326
+      },
+      {
+        "epoch": 27,
+        "lossScale": 524288.0,
+        "seconds": 107.85120849900704,
+        "selectionLoss": 0.012102202504421452,
+        "skippedUpdatesCumulative": 4,
+        "skippedUpdatesEpoch": 0,
+        "trainHpKl": 0.022249144835034783,
+        "trainMaxHpKl": 0.002077827548101252,
+        "validationHpKl": 0.022338871353170364,
+        "validationMaxHpKl": 0.0018655336556725414
+      },
+      {
+        "epoch": 28,
+        "lossScale": 524288.0,
+        "seconds": 111.81701513200824,
+        "selectionLoss": 0.012087662810886756,
+        "skippedUpdatesCumulative": 5,
+        "skippedUpdatesEpoch": 1,
+        "trainHpKl": 0.021801714161478563,
+        "trainMaxHpKl": 0.002026358879314122,
+        "validationHpKl": 0.022366641637725237,
+        "validationMaxHpKl": 0.0018086839840482745
+      },
+      {
+        "epoch": 29,
+        "lossScale": 262144.0,
+        "seconds": 115.90959575799934,
+        "selectionLoss": 0.01213559112710672,
+        "skippedUpdatesCumulative": 6,
+        "skippedUpdatesEpoch": 1,
+        "trainHpKl": 0.021468586580682156,
+        "trainMaxHpKl": 0.0019732990134697526,
+        "validationHpKl": 0.022445566643333824,
+        "validationMaxHpKl": 0.0018256156108796176
+      },
+      {
+        "epoch": 30,
+        "lossScale": 262144.0,
+        "seconds": 120.00432708200242,
+        "selectionLoss": 0.011512319066580033,
+        "skippedUpdatesCumulative": 6,
+        "skippedUpdatesEpoch": 0,
+        "trainHpKl": 0.020937359099688295,
+        "trainMaxHpKl": 0.0019341965996475122,
+        "validationHpKl": 0.0211875102168973,
+        "validationMaxHpKl": 0.0018371279162627682
+      },
+      {
+        "epoch": 31,
+        "lossScale": 524288.0,
+        "seconds": 123.94214785500662,
+        "selectionLoss": 0.01124820861671792,
+        "skippedUpdatesCumulative": 6,
+        "skippedUpdatesEpoch": 0,
+        "trainHpKl": 0.020593938640120556,
+        "trainMaxHpKl": 0.0018742969721115,
+        "validationHpKl": 0.020663506051141752,
+        "validationMaxHpKl": 0.0018329111822940893
+      },
+      {
+        "epoch": 32,
+        "lossScale": 524288.0,
+        "seconds": 127.88181419600733,
+        "selectionLoss": 0.011554025493880623,
+        "skippedUpdatesCumulative": 6,
+        "skippedUpdatesEpoch": 0,
+        "trainHpKl": 0.02038475619784665,
+        "trainMaxHpKl": 0.0018376872959904895,
+        "validationHpKl": 0.021365793749696188,
+        "validationMaxHpKl": 0.001742257238065058
+      },
+      {
+        "epoch": 33,
+        "lossScale": 524288.0,
+        "seconds": 131.79330599300738,
+        "selectionLoss": 0.011253470967543167,
+        "skippedUpdatesCumulative": 6,
+        "skippedUpdatesEpoch": 0,
+        "trainHpKl": 0.01998789972532211,
+        "trainMaxHpKl": 0.0018121899912692634,
+        "validationHpKl": 0.020839714360340777,
+        "validationMaxHpKl": 0.001667227574745556
+      },
+      {
+        "epoch": 34,
+        "lossScale": 524288.0,
+        "seconds": 135.6653569170012,
+        "selectionLoss": 0.012023476736532418,
+        "skippedUpdatesCumulative": 7,
+        "skippedUpdatesEpoch": 1,
+        "trainHpKl": 0.019699511146737552,
+        "trainMaxHpKl": 0.0017764143552254875,
+        "validationHpKl": 0.022390528935283562,
+        "validationMaxHpKl": 0.0016564245377812738
+      },
+      {
+        "epoch": 35,
+        "lossScale": 524288.0,
+        "seconds": 139.60856644800515,
+        "selectionLoss": 0.010937888474743553,
+        "skippedUpdatesCumulative": 7,
+        "skippedUpdatesEpoch": 0,
+        "trainHpKl": 0.019286404921210688,
+        "trainMaxHpKl": 0.0017383268100255739,
+        "validationHpKl": 0.020271894206638125,
+        "validationMaxHpKl": 0.0016038827428489807
+      },
+      {
+        "epoch": 36,
+        "lossScale": 524288.0,
+        "seconds": 143.5135312610073,
+        "selectionLoss": 0.011217565609443066,
+        "skippedUpdatesCumulative": 7,
+        "skippedUpdatesEpoch": 0,
+        "trainHpKl": 0.019120685273764117,
+        "trainMaxHpKl": 0.001705681611879921,
+        "validationHpKl": 0.020830378905521373,
+        "validationMaxHpKl": 0.0016047523133647598
+      },
+      {
+        "epoch": 37,
+        "lossScale": 524288.0,
+        "seconds": 147.46326704999956,
+        "selectionLoss": 0.010532341349080192,
+        "skippedUpdatesCumulative": 8,
+        "skippedUpdatesEpoch": 1,
+        "trainHpKl": 0.018812956013510268,
+        "trainMaxHpKl": 0.0016740249088348837,
+        "validationHpKl": 0.01940222929524502,
+        "validationMaxHpKl": 0.0016624534029153642
+      },
+      {
+        "epoch": 38,
+        "lossScale": 524288.0,
+        "seconds": 151.420010678994,
+        "selectionLoss": 0.010234100853823433,
+        "skippedUpdatesCumulative": 8,
+        "skippedUpdatesEpoch": 0,
+        "trainHpKl": 0.01857113996878593,
+        "trainMaxHpKl": 0.0016463505230233499,
+        "validationHpKl": 0.018804625464389785,
+        "validationMaxHpKl": 0.0016635762432570815
+      },
+      {
+        "epoch": 39,
+        "lossScale": 524288.0,
+        "seconds": 155.25325763900764,
+        "selectionLoss": 0.010068939380908666,
+        "skippedUpdatesCumulative": 9,
+        "skippedUpdatesEpoch": 1,
+        "trainHpKl": 0.018380162874033323,
+        "trainMaxHpKl": 0.0016157595406485253,
+        "validationHpKl": 0.01859056575614426,
+        "validationMaxHpKl": 0.001547313005673071
+      },
+      {
+        "epoch": 40,
+        "lossScale": 524288.0,
+        "seconds": 159.20526904599683,
+        "selectionLoss": 0.010371734889451442,
+        "skippedUpdatesCumulative": 9,
+        "skippedUpdatesEpoch": 0,
+        "trainHpKl": 0.01806837149455449,
+        "trainMaxHpKl": 0.001595966387828493,
+        "validationHpKl": 0.01916392583505046,
+        "validationMaxHpKl": 0.0015795439438524217
+      }
+    ],
+    "hpBranchInitialization": {
+      "copiedDeltaOnly": true,
+      "deltaEmbeddingSha256": "8795adf502265abf3fb75161e89c42d79481fd69a218ecc485a2066820423858",
+      "freshEncoderSha256": "9b69c69899d2e3d05d83bb8d03ea1d4c621cc042d64eabdfe0dc57c2c8dc177a",
+      "freshHpHeadSha256": "d39ebab5c4420617a7f3ab6132c60e952ef9b1435dc8c57df4d9d4daa0e61828",
+      "hpHeadMatchesSpecialist": false
+    },
+    "initialMaxHpHeadSha256": "777e7041f088f124defa36cb58f5f41a1fd16be7a54eae31fbe44630944e3fa2",
+    "initialStudentSha256": "4c133729ed7441291d4967108d51a2eebd9fd2d7ec1f055c722f7a72152db8b9",
+    "parameterCount": {
+      "complete": 194795,
+      "encoder": 167160,
+      "maxHpHead": 1067,
+      "studentWithoutMaxHpHead": 193728
+    },
+    "provenance": {
+      "preparationCacheSha256": "e1c25f2758bf56c7cff392ea02342d809f3ad7427c70b64166244a6b714a251d",
+      "rowIdsSha256": "5933a118735224ec76cd2f292e32d33056d15dbd6dc74c07d04d25eeacd6c6b0",
+      "sourceGroupsSha256": "e1f313dc373edc6b134146ac16d279b1432b1b3688ee1cc2b4085c25c28ebb46",
+      "sourceHashes": {
+        "/home/philippherrmann/sts_sweep/runs/combat-transition-model-v1/split_manifest.json": "e9043bcceb9d95027711e6ff33afbfe1cae3cf9528f820c0ff68bddbb419db32",
+        "/home/philippherrmann/sts_sweep/runs/combat-transition-runtime-25k/combat-transition-25k.jsonl": "74c08aa0a3c30342d86cd45355fe17ffa9046963ad7c8cf71b1938f9cdc1cfde",
+        "/home/philippherrmann/sts_sweep/runs/combat-transition-runtime-25k/combat-transition-25k.jsonl.manifest.json": "33669cd99eed8317987192825b5111a68d1e60269c166def2fe568364e20ad59",
+        "/tmp/sts-phase2-attention-audit-20260913/prepared.npz": "2badbb85ccd8329bcb886d50ef8a0b9b1bd2c043fda9445de9f9c2e7a4b6f9a5",
+        "/tmp/sts-phase2-attention-audit-20260913/prepared_manifest.json": "13b2c91fd0ced713f8c429bbf8995ceb58b6e3e57d1555de42f5e67d7f9a389f",
+        "/tmp/sts-phase2-attention-audit-20260913/target_spec.json": "e2315620d512578542d6b3bfbd362eb07b086f0e9fa7770cc23f4fa4c226e229",
+        "hp": "a667a3cfa7d7eca3cb07b46f50321e443c75e8a58f7627becb1fd69bf90f08c9",
+        "max_hp": "66ac8f70da69e29bf9b1364243f6f903e4f74dda1ec8a909ef54a7ea97dc6479",
+        "potion": "8e04bcd5265fb11b8fa91b4553a84690915f437e7b3afee0b93358e312de3ad6",
+        "potion_encoder": "2085010f1aeef7a7957cdc45c851b2424d640037fd0fa981eb7ae7274190f6ef",
+        "relic": "e07e79d487152ae294f4915ef4aecd0e8bd38b8dec8d0133a57b6b58af92bd71",
+        "survival": "2447b2daf1a48a619a5f071488908afd6f0fb83bfd855ee9f379c04120efeaef"
+      },
+      "teacherCacheReused": true,
+      "teacherOutputs": {
+        "HP": "6244ca5e8c196bbfe32094f5113416c7b31cdfb8a084d3ff46d160141d252759",
+        "maxHP": "10404b3e1de4f033667e4be62aefc24d9b4a3920cf1ddcd563408aeef17583d7"
+      },
+      "teacherParametersFrozen": true,
+      "teacherValidity": {
+        "allFinite": true,
+        "hpNormalizationError": 3.5762786865234375e-07,
+        "maxHpNormalizationError": 2.384185791015625e-07
+      }
+    },
+    "recipe": {
+      "batch": 512,
+      "clip": 1.0,
+      "encoder": "entity outputs 96; concat 384; trunk 384->192->96",
+      "encoderLr": 0.0001,
+      "encoderNormalization": "TRAIN-only mean/std for the 10 continuous globals, indexed by cache['ids'][train] original row IDs",
+      "encoderSource": "tools/combat_transition_survival_wide96.py::build_model",
+      "epochs": 40,
+      "headLr": 0.001,
+      "hpBranch": "copied specialist 8-D delta embedding; fresh 104->64->304 ReLU MLP",
+      "loss": "0.5 KL(maxHP teacher||student) + 0.5 KL(HP teacher||student)",
+      "maxHpBranch": "fresh Linear(96,11)",
+      "optimizer": "AdamW",
+      "overflowHandling": "nonfinite gradient norm -> scaler.step/update skip; nonfinite forward loss aborts",
+      "population": "exact current final-union source-grouped TRAIN/VALIDATION victories",
+      "schema": "wide96_maxhp_hp_pretrain_v1",
+      "seed": 20260912,
+      "selection": "earliest strict minimum 0.5 VALIDATION maxHP KL + 0.5 VALIDATION HP KL",
+      "teacherPrecision": "FP32",
+      "temperature": 1,
+      "trainingPrecision": "AMP-FP16 matched shared-Attention recipe",
+      "weightDecay": 0.0001
+    },
+    "scalarNormalization": {
+      "mean": [
+        0.0,
+        1.7097443342208862,
+        19.724754333496094,
+        68.1785659790039,
+        80.0302505493164,
+        153.29473876953125,
+        1.53873610496521,
+        3.143655776977539,
+        4.0,
+        0.051885176450014114
+      ],
+      "rowIdsSha256": "e42a4dc3a964524a277fdcfde4cbdc552277dc358ce0d1d27e2c612a43ae3214",
+      "rows": 393677,
+      "std": [
+        0.0,
+        0.7643799781799316,
+        13.841556549072266,
+        17.839649200439453,
+        12.197325706481934,
+        140.00872802734375,
+        1.0951355695724487,
+        0.516998291015625,
+        0.0,
+        0.2218335121870041
+      ]
+    },
+    "selectedEpoch": 39,
+    "sharedAttentionControl": {
+      "HP": {
+        "overall": {
+          "coverage50": 0.6695410578308294,
+          "coverage80": 0.8795842766001235,
+          "coverage95": 0.9753447211360362,
+          "crps": 3.629157164135184,
+          "expectedMae": 5.357439473845718,
+          "expectedRmse": 8.21598084987122,
+          "modeExact": 0.3614118131302737,
+          "modeMae": 6.293414282774234,
+          "nll": 2.5015461444854736,
+          "rows": 48590,
+          "width50": 8.65569047129039,
+          "width80": 16.39176785346779,
+          "width95": 24.935007203128215
+        },
+        "slices": {
+          "damage": {
+            "coverage50": 0.53449685277528,
+            "coverage80": 0.816847870514183,
+            "coverage95": 0.9595356821711764,
+            "crps": 5.371108698084198,
+            "expectedMae": 7.120743893537911,
+            "expectedRmse": 9.993294486254225,
+            "modeExact": 0.02742581541731382,
+            "modeMae": 10.884819749856945,
+            "nll": 3.6728930473327637,
+            "rows": 24466,
+            "width50": 12.072917518188506,
+            "width80": 22.476784108558817,
+            "width95": 33.289708166435055
+          },
+          "healing": {
+            "coverage50": 0.6449336720293537,
+            "coverage80": 0.8874776554708815,
+            "coverage95": 0.9819362122495061,
+            "crps": 3.096141749620765,
+            "expectedMae": 5.297237465962651,
+            "expectedRmse": 7.608676947060129,
+            "modeExact": 0.4200771474268511,
+            "modeMae": 3.0726314799134444,
+            "nll": 2.2394745349884033,
+            "rows": 10629,
+            "width50": 7.924169724339072,
+            "width80": 14.782481889171136,
+            "width95": 22.411703829146674
+          },
+          "lowPreHp": {
+            "coverage50": 0.628175519630485,
+            "coverage80": 0.8937644341801386,
+            "coverage95": 0.976905311778291,
+            "crps": 3.373000573365697,
+            "expectedMae": 4.811257685746051,
+            "expectedRmse": 6.411192323174361,
+            "modeExact": 0.18937644341801385,
+            "modeMae": 5.762124711316397,
+            "nll": 2.973290205001831,
+            "rows": 433,
+            "width50": 8.74133949191686,
+            "width80": 15.84526558891455,
+            "width95": 23.95381062355658
+          }
+        }
+      },
+      "maxHP": {
+        "overall": {
+          "accuracy": 0.9805515538176579,
+          "expectedPostMaxHpMae": 0.08281235780597467,
+          "nll": 0.04321973770856857,
+          "rows": 48590
+        },
+        "slices": {
+          "nonzeroDelta": {
+            "accuracy": 0.6500646830530401,
+            "expectedPostMaxHpMae": 1.2541078001353962,
+            "nll": 0.8043845891952515,
+            "rows": 1546
+          },
+          "zeroDelta": {
+            "accuracy": 0.991412294872885,
+            "expectedPostMaxHpMae": 0.04432024927265935,
+            "nll": 0.018205685541033745,
+            "rows": 47044
+          }
+        }
+      }
+    },
+    "skippedUpdates": 9,
+    "specialistTeachers": {
+      "HP": {
+        "overall": {
+          "coverage50": 0.6667832887425397,
+          "coverage80": 0.8782877135213006,
+          "coverage95": 0.9740069973245524,
+          "crps": 3.619360053253274,
+          "expectedMae": 5.341970253555984,
+          "expectedRmse": 8.196472293297024,
+          "modeExact": 0.36178225972422307,
+          "modeMae": 6.250010290183165,
+          "nll": 2.498291492462158,
+          "rows": 48590,
+          "width50": 8.590697674418605,
+          "width80": 16.253879399053304,
+          "width95": 24.703766207038484
+        },
+        "slices": {
+          "damage": {
+            "coverage50": 0.5311452628137007,
+            "coverage80": 0.8152538216300171,
+            "coverage95": 0.957573775852203,
+            "crps": 5.347188424443769,
+            "expectedMae": 7.097080313434095,
+            "expectedRmse": 9.959949298744409,
+            "modeExact": 0.029019864301479605,
+            "modeMae": 10.767432355105043,
+            "nll": 3.666735887527466,
+            "rows": 24466,
+            "width50": 11.979072999264286,
+            "width80": 22.288481974985693,
+            "width95": 32.98851467342434
+          },
+          "healing": {
+            "coverage50": 0.6411703829146674,
+            "coverage80": 0.8851255997742027,
+            "coverage95": 0.9806190610593659,
+            "crps": 3.1053156286459824,
+            "expectedMae": 5.29650528534638,
+            "expectedRmse": 7.606452888209563,
+            "modeExact": 0.41866591400884373,
+            "modeMae": 3.1379245460532506,
+            "nll": 2.2410919666290283,
+            "rows": 10629,
+            "width50": 7.87364756797441,
+            "width80": 14.663091542007715,
+            "width95": 22.21394298616991
+          },
+          "lowPreHp": {
+            "coverage50": 0.6235565819861432,
+            "coverage80": 0.8983833718244804,
+            "coverage95": 0.976905311778291,
+            "crps": 3.3746284676475073,
+            "expectedMae": 4.812524088737934,
+            "expectedRmse": 6.422043417835076,
+            "modeExact": 0.20092378752886836,
+            "modeMae": 5.628175519630485,
+            "nll": 2.9683499336242676,
+            "rows": 433,
+            "width50": 8.699769053117782,
+            "width80": 15.706697459584296,
+            "width95": 23.658198614318707
+          }
+        }
+      },
+      "maxHP": {
+        "overall": {
+          "accuracy": 0.981107223708582,
+          "expectedPostMaxHpMae": 0.08148917117811641,
+          "nll": 0.042686499655246735,
+          "rows": 48590
+        },
+        "slices": {
+          "nonzeroDelta": {
+            "accuracy": 0.6313065976714101,
+            "expectedPostMaxHpMae": 1.2623359742275002,
+            "nll": 0.8102995157241821,
+            "rows": 1546
+          },
+          "zeroDelta": {
+            "accuracy": 0.9926026698409999,
+            "expectedPostMaxHpMae": 0.042683177692988704,
+            "nll": 0.017460545524954796,
+            "rows": 47044
+          }
+        }
+      }
+    },
+    "studentToTeacherKl": {
+      "HP": 0.01859056575614426,
+      "maxHP": 0.001547313005673071
+    },
+    "teacherCheckpoints": {
+      "HP": "0c8b5aa8c5218d6cd6102b768cc86a474c9ef30953d4b034caedcc41a426109b",
+      "maxHP": "2c5b54d0a9420a9d0e3ab9a26f32b9900c4869490e4af49627009cde21efb4b0"
+    },
+    "testInferenceRows": 0,
+    "testMetricsComputed": false,
+    "trainingSeconds": 160.28127472600318,
+    "validationInGradientUpdates": false,
+    "validity": {
+      "allFinite": true,
+      "hpNormalizationError": 2.980232238769531e-07,
+      "hpUnsupportedProbability": 0.0,
+      "maxHpNormalizationError": 2.384185791015625e-07
+    }
+  },
+  "pretrainingReceiptSha256": "4b71ce2bc9500f63f8436c1052d2fee96d90eded85dbae78cd7900b5354df107",
+  "promotion": false,
+  "runtimeExport": false,
+  "survival": {
+    "baselineSha": "35402d1e59ae5e9e66fe277f853f3ec62213c157",
+    "checkpointSha256": "fefcc3940f06bf25d0d81a53d0ff5d7557a9251f9122c9431afb9e8e4ea6cae6",
+    "completedEpochs": 20,
+    "environment": {
+      "cpuThreads": 4,
+      "cuda": "12.1",
+      "gpu": "NVIDIA GeForce RTX 3060 Ti",
+      "tf32": false,
+      "torch": "2.5.1+cu121"
+    },
+    "evaluation": {
+      "comparison": {
+        "brierRelative": 0.04283287430500127,
+        "deathNllRelative": 0.16017906235067825,
+        "lowPreHpNllRelative": 0.0327607205251812,
+        "nllRelative": 0.05218280829681743
+      },
+      "decision": "SURVIVAL_DEEPSET_REJECTED",
+      "gatesPassed": {
+        "brierRelative": true,
+        "deathNllRelative": false,
+        "lowPreHpNllRelative": true,
+        "nllRelative": false,
+        "validity": true
+      },
+      "metrics": {
+        "Attention": {
+          "accuracyAt05": 0.9751021703765425,
+          "brier": 0.01781509444117546,
+          "calibration": [
+            {
+              "bin": 0,
+              "lower": 0.0,
+              "meanPredicted": 0.052189312875270844,
+              "observedSurvival": 0.05734767025089606,
+              "rows": 279,
+              "upper": 0.1
+            },
+            {
+              "bin": 1,
+              "lower": 0.1,
+              "meanPredicted": 0.14857900142669678,
+              "observedSurvival": 0.17777777777777778,
+              "rows": 225,
+              "upper": 0.2
+            },
+            {
+              "bin": 2,
+              "lower": 0.2,
+              "meanPredicted": 0.2543490529060364,
+              "observedSurvival": 0.2703862660944206,
+              "rows": 233,
+              "upper": 0.3
+            },
+            {
+              "bin": 3,
+              "lower": 0.3,
+              "meanPredicted": 0.3474677801132202,
+              "observedSurvival": 0.36885245901639346,
+              "rows": 244,
+              "upper": 0.4
+            },
+            {
+              "bin": 4,
+              "lower": 0.4,
+              "meanPredicted": 0.4531751275062561,
+              "observedSurvival": 0.5031645569620253,
+              "rows": 316,
+              "upper": 0.5
+            },
+            {
+              "bin": 5,
+              "lower": 0.5,
+              "meanPredicted": 0.5489605069160461,
+              "observedSurvival": 0.5685279187817259,
+              "rows": 394,
+              "upper": 0.6
+            },
+            {
+              "bin": 6,
+              "lower": 0.6,
+              "meanPredicted": 0.6516559720039368,
+              "observedSurvival": 0.6544401544401545,
+              "rows": 518,
+              "upper": 0.7
+            },
+            {
+              "bin": 7,
+              "lower": 0.7,
+              "meanPredicted": 0.7530989050865173,
+              "observedSurvival": 0.7275641025641025,
+              "rows": 624,
+              "upper": 0.8
+            },
+            {
+              "bin": 8,
+              "lower": 0.8,
+              "meanPredicted": 0.8548954725265503,
+              "observedSurvival": 0.851963746223565,
+              "rows": 1324,
+              "upper": 0.9
+            },
+            {
+              "bin": 9,
+              "lower": 0.9,
+              "meanPredicted": 0.9957226514816284,
+              "observedSurvival": 0.9962810006702848,
+              "rows": 46249,
+              "upper": 1.0
+            }
+          ],
+          "finiteLogits": true,
+          "finiteProbabilities": true,
+          "meanPredictedSurvival": 0.9630218148231506,
+          "nll": 0.05949442461133003,
+          "observedSurvivalRate": 0.9639725429512359,
+          "probabilitiesInUnitInterval": true,
+          "rocAuc": 0.980474519103929,
+          "rows": 50406
+        },
+        "DeepSets": {
+          "accuracyAt05": 0.974447486410348,
+          "brier": 0.018578166142106056,
+          "calibration": [
+            {
+              "bin": 0,
+              "lower": 0.0,
+              "meanPredicted": 0.053286924958229065,
+              "observedSurvival": 0.05405405405405406,
+              "rows": 259,
+              "upper": 0.1
+            },
+            {
+              "bin": 1,
+              "lower": 0.1,
+              "meanPredicted": 0.14621394872665405,
+              "observedSurvival": 0.16872427983539096,
+              "rows": 243,
+              "upper": 0.2
+            },
+            {
+              "bin": 2,
+              "lower": 0.2,
+              "meanPredicted": 0.24925747513771057,
+              "observedSurvival": 0.22727272727272727,
+              "rows": 220,
+              "upper": 0.3
+            },
+            {
+              "bin": 3,
+              "lower": 0.3,
+              "meanPredicted": 0.3503653407096863,
+              "observedSurvival": 0.4574898785425101,
+              "rows": 247,
+              "upper": 0.4
+            },
+            {
+              "bin": 4,
+              "lower": 0.4,
+              "meanPredicted": 0.4520031213760376,
+              "observedSurvival": 0.5087719298245614,
+              "rows": 285,
+              "upper": 0.5
+            },
+            {
+              "bin": 5,
+              "lower": 0.5,
+              "meanPredicted": 0.5531649589538574,
+              "observedSurvival": 0.5807453416149069,
+              "rows": 322,
+              "upper": 0.6
+            },
+            {
+              "bin": 6,
+              "lower": 0.6,
+              "meanPredicted": 0.6539528965950012,
+              "observedSurvival": 0.6243523316062176,
+              "rows": 386,
+              "upper": 0.7
+            },
+            {
+              "bin": 7,
+              "lower": 0.7,
+              "meanPredicted": 0.7511378526687622,
+              "observedSurvival": 0.7233009708737864,
+              "rows": 618,
+              "upper": 0.8
+            },
+            {
+              "bin": 8,
+              "lower": 0.8,
+              "meanPredicted": 0.8569021224975586,
+              "observedSurvival": 0.8276497695852535,
+              "rows": 1085,
+              "upper": 0.9
+            },
+            {
+              "bin": 9,
+              "lower": 0.9,
+              "meanPredicted": 0.9959997534751892,
+              "observedSurvival": 0.9938597804925012,
+              "rows": 46741,
+              "upper": 1.0
+            }
+          ],
+          "finiteLogits": true,
+          "finiteProbabilities": true,
+          "meanPredictedSurvival": 0.9661158919334412,
+          "nll": 0.06259901076555252,
+          "observedSurvivalRate": 0.9639725429512359,
+          "probabilitiesInUnitInterval": true,
+          "rocAuc": 0.978287503864485,
+          "rows": 50406
+        }
+      },
+      "slices": {
+        "boss": {
+          "A": {
+            "brier": 0.08825218677520752,
+            "deaths": 1169,
+            "nll": 0.2808343768119812,
+            "rows": 5444
+          },
+          "B": {
+            "brier": 0.0914335548877716,
+            "deaths": 1169,
+            "nll": 0.2912774682044983,
+            "rows": 5444
+          }
+        },
+        "deaths": {
+          "A": {
+            "brier": 0.32351234555244446,
+            "deaths": 1816,
+            "nll": 0.989065945148468,
+            "rows": 1816
+          },
+          "B": {
+            "brier": 0.36114946007728577,
+            "deaths": 1816,
+            "nll": 1.147493600845337,
+            "rows": 1816
+          }
+        },
+        "lowPreHp": {
+          "A": {
+            "brier": 0.1296009123325348,
+            "deaths": 292,
+            "nll": 0.39808058738708496,
+            "rows": 756
+          },
+          "B": {
+            "brier": 0.13214315474033356,
+            "deaths": 292,
+            "nll": 0.41112199425697327,
+            "rows": 756
+          }
+        },
+        "normal": {
+          "A": {
+            "brier": 0.009286569431424141,
+            "deaths": 647,
+            "nll": 0.03269457817077637,
+            "rows": 44962
+          },
+          "B": {
+            "brier": 0.009756834246218204,
+            "deaths": 647,
+            "nll": 0.034910619258880615,
+            "rows": 44962
+          }
+        },
+        "victories": {
+          "A": {
+            "brier": 0.006389982532709837,
+            "deaths": 0,
+            "nll": 0.024752669036388397,
+            "rows": 48590
+          },
+          "B": {
+            "brier": 0.005774924531579018,
+            "deaths": 0,
+            "nll": 0.022052224725484848,
+            "rows": 48590
+          }
+        }
+      },
+      "thresholds": {
+        "brierRelative": 0.05,
+        "deathNllRelative": 0.1,
+        "lowPreHpNllRelative": 0.1,
+        "nllRelative": 0.02
+      }
+    },
+    "experimentSha": "8adb4794ec22fb051014c8c638cb2fec326b7615",
+    "fixedGates": {
+      "brierRelative": 0.05,
+      "deathNllRelative": 0.1,
+      "lowPreHpNllRelative": 0.1,
+      "nllRelative": 0.02
+    },
+    "history": [
+      {
+        "batchOrderSha256": "adf64f2660a3e05970715006120fa8eb0d93407d7d93c4e7d0a8e7456bef2bad",
+        "epoch": 1,
+        "seconds": 4.6042906090006,
+        "trainNll": 0.08239672553759832,
+        "validation": {
+          "accuracyAt05": 0.9710153553148435,
+          "brier": 0.021731866523623466,
+          "calibration": [
+            {
+              "bin": 0,
+              "lower": 0.0,
+              "meanPredicted": 0.08354485780000687,
+              "observedSurvival": 0.0,
+              "rows": 27,
+              "upper": 0.1
+            },
+            {
+              "bin": 1,
+              "lower": 0.1,
+              "meanPredicted": 0.15231853723526,
+              "observedSurvival": 0.05084745762711865,
+              "rows": 118,
+              "upper": 0.2
+            },
+            {
+              "bin": 2,
+              "lower": 0.2,
+              "meanPredicted": 0.250701367855072,
+              "observedSurvival": 0.18110236220472442,
+              "rows": 127,
+              "upper": 0.3
+            },
+            {
+              "bin": 3,
+              "lower": 0.3,
+              "meanPredicted": 0.3539268970489502,
+              "observedSurvival": 0.20666666666666667,
+              "rows": 150,
+              "upper": 0.4
+            },
+            {
+              "bin": 4,
+              "lower": 0.4,
+              "meanPredicted": 0.4522815942764282,
+              "observedSurvival": 0.3789954337899543,
+              "rows": 219,
+              "upper": 0.5
+            },
+            {
+              "bin": 5,
+              "lower": 0.5,
+              "meanPredicted": 0.5523278117179871,
+              "observedSurvival": 0.4657534246575342,
+              "rows": 292,
+              "upper": 0.6
+            },
+            {
+              "bin": 6,
+              "lower": 0.6,
+              "meanPredicted": 0.6531370282173157,
+              "observedSurvival": 0.5371287128712872,
+              "rows": 404,
+              "upper": 0.7
+            },
+            {
+              "bin": 7,
+              "lower": 0.7,
+              "meanPredicted": 0.7557437419891357,
+              "observedSurvival": 0.6134453781512605,
+              "rows": 595,
+              "upper": 0.8
+            },
+            {
+              "bin": 8,
+              "lower": 0.8,
+              "meanPredicted": 0.8571979999542236,
+              "observedSurvival": 0.7737341772151899,
+              "rows": 1264,
+              "upper": 0.9
+            },
+            {
+              "bin": 9,
+              "lower": 0.9,
+              "meanPredicted": 0.9946762323379517,
+              "observedSurvival": 0.9902774835839865,
+              "rows": 47210,
+              "upper": 1.0
+            }
+          ],
+          "finiteLogits": true,
+          "finiteProbabilities": true,
+          "meanPredictedSurvival": 0.9745107293128967,
+          "nll": 0.07480516284704208,
+          "observedSurvivalRate": 0.9639725429512359,
+          "probabilitiesInUnitInterval": true,
+          "rocAuc": 0.9689104441279319,
+          "rows": 50406
+        }
+      },
+      {
+        "batchOrderSha256": "01197d8b276cd6e9a65c577aa3d6450ea099136d0df287b3692f8cd3cbaf1adf",
+        "epoch": 2,
+        "seconds": 4.574580246000551,
+        "trainNll": 0.0664861160759592,
+        "validation": {
+          "accuracyAt05": 0.9718485894536365,
+          "brier": 0.02054344117641449,
+          "calibration": [
+            {
+              "bin": 0,
+              "lower": 0.0,
+              "meanPredicted": 0.06691454350948334,
+              "observedSurvival": 0.047058823529411764,
+              "rows": 170,
+              "upper": 0.1
+            },
+            {
+              "bin": 1,
+              "lower": 0.1,
+              "meanPredicted": 0.15020397305488586,
+              "observedSurvival": 0.18726591760299627,
+              "rows": 267,
+              "upper": 0.2
+            },
+            {
+              "bin": 2,
+              "lower": 0.2,
+              "meanPredicted": 0.24830074608325958,
+              "observedSurvival": 0.36466165413533835,
+              "rows": 266,
+              "upper": 0.3
+            },
+            {
+              "bin": 3,
+              "lower": 0.3,
+              "meanPredicted": 0.3516354560852051,
+              "observedSurvival": 0.46540880503144655,
+              "rows": 318,
+              "upper": 0.4
+            },
+            {
+              "bin": 4,
+              "lower": 0.4,
+              "meanPredicted": 0.4507068395614624,
+              "observedSurvival": 0.5228426395939086,
+              "rows": 394,
+              "upper": 0.5
+            },
+            {
+              "bin": 5,
+              "lower": 0.5,
+              "meanPredicted": 0.5536698698997498,
+              "observedSurvival": 0.6321585903083701,
+              "rows": 454,
+              "upper": 0.6
+            },
+            {
+              "bin": 6,
+              "lower": 0.6,
+              "meanPredicted": 0.6500873565673828,
+              "observedSurvival": 0.7193605683836589,
+              "rows": 563,
+              "upper": 0.7
+            },
+            {
+              "bin": 7,
+              "lower": 0.7,
+              "meanPredicted": 0.7537559866905212,
+              "observedSurvival": 0.7870619946091644,
+              "rows": 742,
+              "upper": 0.8
+            },
+            {
+              "bin": 8,
+              "lower": 0.8,
+              "meanPredicted": 0.857240617275238,
+              "observedSurvival": 0.861995753715499,
+              "rows": 1413,
+              "upper": 0.9
+            },
+            {
+              "bin": 9,
+              "lower": 0.9,
+              "meanPredicted": 0.9947364926338196,
+              "observedSurvival": 0.9949365983543945,
+              "rows": 45819,
+              "upper": 1.0
+            }
+          ],
+          "finiteLogits": true,
+          "finiteProbabilities": true,
+          "meanPredictedSurvival": 0.9596614837646484,
+          "nll": 0.0693107321858406,
+          "observedSurvivalRate": 0.9639725429512359,
+          "probabilitiesInUnitInterval": true,
+          "rocAuc": 0.972253427718943,
+          "rows": 50406
+        }
+      },
+      {
+        "batchOrderSha256": "34b0889c8e4c6cccf50a04a3b6962b72d48f5b5716b6b3a6833d681ac43edc86",
+        "epoch": 3,
+        "seconds": 4.470276186999399,
+        "trainNll": 0.06396725948149776,
+        "validation": {
+          "accuracyAt05": 0.9726223068682299,
+          "brier": 0.019818969070911407,
+          "calibration": [
+            {
+              "bin": 0,
+              "lower": 0.0,
+              "meanPredicted": 0.06835606694221497,
+              "observedSurvival": 0.021052631578947368,
+              "rows": 95,
+              "upper": 0.1
+            },
+            {
+              "bin": 1,
+              "lower": 0.1,
+              "meanPredicted": 0.15013790130615234,
+              "observedSurvival": 0.1388888888888889,
+              "rows": 216,
+              "upper": 0.2
+            },
+            {
+              "bin": 2,
+              "lower": 0.2,
+              "meanPredicted": 0.2511303424835205,
+              "observedSurvival": 0.22321428571428573,
+              "rows": 224,
+              "upper": 0.3
+            },
+            {
+              "bin": 3,
+              "lower": 0.3,
+              "meanPredicted": 0.35437682271003723,
+              "observedSurvival": 0.3967611336032389,
+              "rows": 247,
+              "upper": 0.4
+            },
+            {
+              "bin": 4,
+              "lower": 0.4,
+              "meanPredicted": 0.45380350947380066,
+              "observedSurvival": 0.47865853658536583,
+              "rows": 328,
+              "upper": 0.5
+            },
+            {
+              "bin": 5,
+              "lower": 0.5,
+              "meanPredicted": 0.5525452494621277,
+              "observedSurvival": 0.5459317585301837,
+              "rows": 381,
+              "upper": 0.6
+            },
+            {
+              "bin": 6,
+              "lower": 0.6,
+              "meanPredicted": 0.6530289649963379,
+              "observedSurvival": 0.6296992481203008,
+              "rows": 532,
+              "upper": 0.7
+            },
+            {
+              "bin": 7,
+              "lower": 0.7,
+              "meanPredicted": 0.7547266483306885,
+              "observedSurvival": 0.7424657534246575,
+              "rows": 730,
+              "upper": 0.8
+            },
+            {
+              "bin": 8,
+              "lower": 0.8,
+              "meanPredicted": 0.8563542366027832,
+              "observedSurvival": 0.8340486409155937,
+              "rows": 1398,
+              "upper": 0.9
+            },
+            {
+              "bin": 9,
+              "lower": 0.9,
+              "meanPredicted": 0.9943937063217163,
+              "observedSurvival": 0.9945303210463734,
+              "rows": 46255,
+              "upper": 1.0
+            }
+          ],
+          "finiteLogits": true,
+          "finiteProbabilities": true,
+          "meanPredictedSurvival": 0.964831531047821,
+          "nll": 0.06693431735038757,
+          "observedSurvivalRate": 0.9639725429512359,
+          "probabilitiesInUnitInterval": true,
+          "rocAuc": 0.9741266717014523,
+          "rows": 50406
+        }
+      },
+      {
+        "batchOrderSha256": "bc38faa5f96db60fe6cec28bfff2a581a17105f47bde5e9d10edf6db120f5b33",
+        "epoch": 4,
+        "seconds": 4.752478793001501,
+        "trainNll": 0.06208722058771513,
+        "validation": {
+          "accuracyAt05": 0.9734753799150895,
+          "brier": 0.01936301589012146,
+          "calibration": [
+            {
+              "bin": 0,
+              "lower": 0.0,
+              "meanPredicted": 0.06458787620067596,
+              "observedSurvival": 0.05421686746987952,
+              "rows": 166,
+              "upper": 0.1
+            },
+            {
+              "bin": 1,
+              "lower": 0.1,
+              "meanPredicted": 0.14991793036460876,
+              "observedSurvival": 0.1336206896551724,
+              "rows": 232,
+              "upper": 0.2
+            },
+            {
+              "bin": 2,
+              "lower": 0.2,
+              "meanPredicted": 0.2506038546562195,
+              "observedSurvival": 0.29957805907172996,
+              "rows": 237,
+              "upper": 0.3
+            },
+            {
+              "bin": 3,
+              "lower": 0.3,
+              "meanPredicted": 0.3529762625694275,
+              "observedSurvival": 0.40069686411149824,
+              "rows": 287,
+              "upper": 0.4
+            },
+            {
+              "bin": 4,
+              "lower": 0.4,
+              "meanPredicted": 0.45094916224479675,
+              "observedSurvival": 0.48534201954397393,
+              "rows": 307,
+              "upper": 0.5
+            },
+            {
+              "bin": 5,
+              "lower": 0.5,
+              "meanPredicted": 0.5502883195877075,
+              "observedSurvival": 0.5665859564164649,
+              "rows": 413,
+              "upper": 0.6
+            },
+            {
+              "bin": 6,
+              "lower": 0.6,
+              "meanPredicted": 0.650769829750061,
+              "observedSurvival": 0.6772388059701493,
+              "rows": 536,
+              "upper": 0.7
+            },
+            {
+              "bin": 7,
+              "lower": 0.7,
+              "meanPredicted": 0.754484236240387,
+              "observedSurvival": 0.7559274755927475,
+              "rows": 717,
+              "upper": 0.8
+            },
+            {
+              "bin": 8,
+              "lower": 0.8,
+              "meanPredicted": 0.8569899201393127,
+              "observedSurvival": 0.8513909224011713,
+              "rows": 1366,
+              "upper": 0.9
+            },
+            {
+              "bin": 9,
+              "lower": 0.9,
+              "meanPredicted": 0.99482661485672,
+              "observedSurvival": 0.9949723697041933,
+              "rows": 46145,
+              "upper": 1.0
+            }
+          ],
+          "finiteLogits": true,
+          "finiteProbabilities": true,
+          "meanPredictedSurvival": 0.9629530310630798,
+          "nll": 0.06526821851730347,
+          "observedSurvivalRate": 0.9639725429512359,
+          "probabilitiesInUnitInterval": true,
+          "rocAuc": 0.975626936209024,
+          "rows": 50406
+        }
+      },
+      {
+        "batchOrderSha256": "8eaa7ec833c94a9910772c9fd6fa1aa9d6808ada3d786f93bc89301e60e18154",
+        "epoch": 5,
+        "seconds": 4.653776601990103,
+        "trainNll": 0.06057010836624773,
+        "validation": {
+          "accuracyAt05": 0.9739316748006189,
+          "brier": 0.019337177276611328,
+          "calibration": [
+            {
+              "bin": 0,
+              "lower": 0.0,
+              "meanPredicted": 0.06318537145853043,
+              "observedSurvival": 0.05142857142857143,
+              "rows": 175,
+              "upper": 0.1
+            },
+            {
+              "bin": 1,
+              "lower": 0.1,
+              "meanPredicted": 0.14932961761951447,
+              "observedSurvival": 0.14492753623188406,
+              "rows": 207,
+              "upper": 0.2
+            },
+            {
+              "bin": 2,
+              "lower": 0.2,
+              "meanPredicted": 0.2504805028438568,
+              "observedSurvival": 0.25943396226415094,
+              "rows": 212,
+              "upper": 0.3
+            },
+            {
+              "bin": 3,
+              "lower": 0.3,
+              "meanPredicted": 0.35332930088043213,
+              "observedSurvival": 0.3459915611814346,
+              "rows": 237,
+              "upper": 0.4
+            },
+            {
+              "bin": 4,
+              "lower": 0.4,
+              "meanPredicted": 0.4509166479110718,
+              "observedSurvival": 0.4549019607843137,
+              "rows": 255,
+              "upper": 0.5
+            },
+            {
+              "bin": 5,
+              "lower": 0.5,
+              "meanPredicted": 0.550296425819397,
+              "observedSurvival": 0.5789473684210527,
+              "rows": 323,
+              "upper": 0.6
+            },
+            {
+              "bin": 6,
+              "lower": 0.6,
+              "meanPredicted": 0.6520766615867615,
+              "observedSurvival": 0.6058091286307054,
+              "rows": 482,
+              "upper": 0.7
+            },
+            {
+              "bin": 7,
+              "lower": 0.7,
+              "meanPredicted": 0.7541303038597107,
+              "observedSurvival": 0.7056,
+              "rows": 625,
+              "upper": 0.8
+            },
+            {
+              "bin": 8,
+              "lower": 0.8,
+              "meanPredicted": 0.8565347790718079,
+              "observedSurvival": 0.8179419525065963,
+              "rows": 1137,
+              "upper": 0.9
+            },
+            {
+              "bin": 9,
+              "lower": 0.9,
+              "meanPredicted": 0.9955303072929382,
+              "observedSurvival": 0.9934763544585374,
+              "rows": 46753,
+              "upper": 1.0
+            }
+          ],
+          "finiteLogits": true,
+          "finiteProbabilities": true,
+          "meanPredictedSurvival": 0.9676442742347717,
+          "nll": 0.06563414633274078,
+          "observedSurvivalRate": 0.9639725429512359,
+          "probabilitiesInUnitInterval": true,
+          "rocAuc": 0.9756890852888459,
+          "rows": 50406
+        }
+      },
+      {
+        "batchOrderSha256": "73c955c2564ba2027b612ff7bf791e781a75ddd634ff7204c976ae7750b74e9a",
+        "epoch": 6,
+        "seconds": 4.655087170001934,
+        "trainNll": 0.05995702031310345,
+        "validation": {
+          "accuracyAt05": 0.973772963536087,
+          "brier": 0.019067564979195595,
+          "calibration": [
+            {
+              "bin": 0,
+              "lower": 0.0,
+              "meanPredicted": 0.0653243362903595,
+              "observedSurvival": 0.03821656050955414,
+              "rows": 157,
+              "upper": 0.1
+            },
+            {
+              "bin": 1,
+              "lower": 0.1,
+              "meanPredicted": 0.146903395652771,
+              "observedSurvival": 0.13953488372093023,
+              "rows": 215,
+              "upper": 0.2
+            },
+            {
+              "bin": 2,
+              "lower": 0.2,
+              "meanPredicted": 0.25244733691215515,
+              "observedSurvival": 0.23529411764705882,
+              "rows": 221,
+              "upper": 0.3
+            },
+            {
+              "bin": 3,
+              "lower": 0.3,
+              "meanPredicted": 0.3484131395816803,
+              "observedSurvival": 0.36507936507936506,
+              "rows": 252,
+              "upper": 0.4
+            },
+            {
+              "bin": 4,
+              "lower": 0.4,
+              "meanPredicted": 0.4506072998046875,
+              "observedSurvival": 0.4835164835164835,
+              "rows": 273,
+              "upper": 0.5
+            },
+            {
+              "bin": 5,
+              "lower": 0.5,
+              "meanPredicted": 0.5508453249931335,
+              "observedSurvival": 0.5043988269794721,
+              "rows": 341,
+              "upper": 0.6
+            },
+            {
+              "bin": 6,
+              "lower": 0.6,
+              "meanPredicted": 0.6519859433174133,
+              "observedSurvival": 0.6367521367521367,
+              "rows": 468,
+              "upper": 0.7
+            },
+            {
+              "bin": 7,
+              "lower": 0.7,
+              "meanPredicted": 0.7549943923950195,
+              "observedSurvival": 0.7265861027190332,
+              "rows": 662,
+              "upper": 0.8
+            },
+            {
+              "bin": 8,
+              "lower": 0.8,
+              "meanPredicted": 0.8573399782180786,
+              "observedSurvival": 0.8235294117647058,
+              "rows": 1173,
+              "upper": 0.9
+            },
+            {
+              "bin": 9,
+              "lower": 0.9,
+              "meanPredicted": 0.9956133961677551,
+              "observedSurvival": 0.9939327673441386,
+              "rows": 46644,
+              "upper": 1.0
+            }
+          ],
+          "finiteLogits": true,
+          "finiteProbabilities": true,
+          "meanPredictedSurvival": 0.9670726656913757,
+          "nll": 0.06437700241804123,
+          "observedSurvivalRate": 0.9639725429512359,
+          "probabilitiesInUnitInterval": true,
+          "rocAuc": 0.976798300170536,
+          "rows": 50406
+        }
+      },
+      {
+        "batchOrderSha256": "3b3d1f3a2142ffcf73083f793921ff35e111db5b81a5c919a446fc35d944a84b",
+        "epoch": 7,
+        "seconds": 4.530023782994249,
+        "trainNll": 0.05909268173887397,
+        "validation": {
+          "accuracyAt05": 0.9743284529619489,
+          "brier": 0.018793174996972084,
+          "calibration": [
+            {
+              "bin": 0,
+              "lower": 0.0,
+              "meanPredicted": 0.06269250810146332,
+              "observedSurvival": 0.04060913705583756,
+              "rows": 197,
+              "upper": 0.1
+            },
+            {
+              "bin": 1,
+              "lower": 0.1,
+              "meanPredicted": 0.1485878974199295,
+              "observedSurvival": 0.17154811715481172,
+              "rows": 239,
+              "upper": 0.2
+            },
+            {
+              "bin": 2,
+              "lower": 0.2,
+              "meanPredicted": 0.25190940499305725,
+              "observedSurvival": 0.24481327800829875,
+              "rows": 241,
+              "upper": 0.3
+            },
+            {
+              "bin": 3,
+              "lower": 0.3,
+              "meanPredicted": 0.34823039174079895,
+              "observedSurvival": 0.39148936170212767,
+              "rows": 235,
+              "upper": 0.4
+            },
+            {
+              "bin": 4,
+              "lower": 0.4,
+              "meanPredicted": 0.45217278599739075,
+              "observedSurvival": 0.48466257668711654,
+              "rows": 326,
+              "upper": 0.5
+            },
+            {
+              "bin": 5,
+              "lower": 0.5,
+              "meanPredicted": 0.5538872480392456,
+              "observedSurvival": 0.5568513119533528,
+              "rows": 343,
+              "upper": 0.6
+            },
+            {
+              "bin": 6,
+              "lower": 0.6,
+              "meanPredicted": 0.6515530943870544,
+              "observedSurvival": 0.6495726495726496,
+              "rows": 468,
+              "upper": 0.7
+            },
+            {
+              "bin": 7,
+              "lower": 0.7,
+              "meanPredicted": 0.7536349296569824,
+              "observedSurvival": 0.7641653905053599,
+              "rows": 653,
+              "upper": 0.8
+            },
+            {
+              "bin": 8,
+              "lower": 0.8,
+              "meanPredicted": 0.8570743203163147,
+              "observedSurvival": 0.8268892794376098,
+              "rows": 1138,
+              "upper": 0.9
+            },
+            {
+              "bin": 9,
+              "lower": 0.9,
+              "meanPredicted": 0.9958040714263916,
+              "observedSurvival": 0.9942232530172229,
+              "rows": 46566,
+              "upper": 1.0
+            }
+          ],
+          "finiteLogits": true,
+          "finiteProbabilities": true,
+          "meanPredictedSurvival": 0.9655757546424866,
+          "nll": 0.06358463317155838,
+          "observedSurvivalRate": 0.9639725429512359,
+          "probabilitiesInUnitInterval": true,
+          "rocAuc": 0.9772390157961112,
+          "rows": 50406
+        }
+      },
+      {
+        "batchOrderSha256": "2026cf1fb559658ce816db053a8be97b0272f7110d9265eb886747c910752716",
+        "epoch": 8,
+        "seconds": 4.657031012000516,
+        "trainNll": 0.058277209273996065,
+        "validation": {
+          "accuracyAt05": 0.9743482918700155,
+          "brier": 0.018863027915358543,
+          "calibration": [
+            {
+              "bin": 0,
+              "lower": 0.0,
+              "meanPredicted": 0.06023237481713295,
+              "observedSurvival": 0.04639175257731959,
+              "rows": 194,
+              "upper": 0.1
+            },
+            {
+              "bin": 1,
+              "lower": 0.1,
+              "meanPredicted": 0.14766201376914978,
+              "observedSurvival": 0.1506276150627615,
+              "rows": 239,
+              "upper": 0.2
+            },
+            {
+              "bin": 2,
+              "lower": 0.2,
+              "meanPredicted": 0.2524355947971344,
+              "observedSurvival": 0.25,
+              "rows": 216,
+              "upper": 0.3
+            },
+            {
+              "bin": 3,
+              "lower": 0.3,
+              "meanPredicted": 0.35260555148124695,
+              "observedSurvival": 0.38910505836575876,
+              "rows": 257,
+              "upper": 0.4
+            },
+            {
+              "bin": 4,
+              "lower": 0.4,
+              "meanPredicted": 0.4508717954158783,
+              "observedSurvival": 0.47491638795986624,
+              "rows": 299,
+              "upper": 0.5
+            },
+            {
+              "bin": 5,
+              "lower": 0.5,
+              "meanPredicted": 0.5519928336143494,
+              "observedSurvival": 0.5451807228915663,
+              "rows": 332,
+              "upper": 0.6
+            },
+            {
+              "bin": 6,
+              "lower": 0.6,
+              "meanPredicted": 0.6540942192077637,
+              "observedSurvival": 0.6774193548387096,
+              "rows": 465,
+              "upper": 0.7
+            },
+            {
+              "bin": 7,
+              "lower": 0.7,
+              "meanPredicted": 0.7531987428665161,
+              "observedSurvival": 0.7430769230769231,
+              "rows": 650,
+              "upper": 0.8
+            },
+            {
+              "bin": 8,
+              "lower": 0.8,
+              "meanPredicted": 0.8578810095787048,
+              "observedSurvival": 0.8198498748957465,
+              "rows": 1199,
+              "upper": 0.9
+            },
+            {
+              "bin": 9,
+              "lower": 0.9,
+              "meanPredicted": 0.9956474304199219,
+              "observedSurvival": 0.9942433680592847,
+              "rows": 46555,
+              "upper": 1.0
+            }
+          ],
+          "finiteLogits": true,
+          "finiteProbabilities": true,
+          "meanPredictedSurvival": 0.965855062007904,
+          "nll": 0.06358327716588974,
+          "observedSurvivalRate": 0.9639725429512359,
+          "probabilitiesInUnitInterval": true,
+          "rocAuc": 0.9772686057391117,
+          "rows": 50406
+        }
+      },
+      {
+        "batchOrderSha256": "54b2d13c815c0450c4c3ee51697e97e25105ba9edd4bdbc9a6da6169ce56587c",
+        "epoch": 9,
+        "seconds": 4.596892526009469,
+        "trainNll": 0.05774075656461628,
+        "validation": {
+          "accuracyAt05": 0.9734952188231559,
+          "brier": 0.01914501190185547,
+          "calibration": [
+            {
+              "bin": 0,
+              "lower": 0.0,
+              "meanPredicted": 0.056798383593559265,
+              "observedSurvival": 0.08814589665653495,
+              "rows": 329,
+              "upper": 0.1
+            },
+            {
+              "bin": 1,
+              "lower": 0.1,
+              "meanPredicted": 0.14985841512680054,
+              "observedSurvival": 0.19732441471571907,
+              "rows": 299,
+              "upper": 0.2
+            },
+            {
+              "bin": 2,
+              "lower": 0.2,
+              "meanPredicted": 0.24931517243385315,
+              "observedSurvival": 0.36212624584717606,
+              "rows": 301,
+              "upper": 0.3
+            },
+            {
+              "bin": 3,
+              "lower": 0.3,
+              "meanPredicted": 0.35021916031837463,
+              "observedSurvival": 0.5080385852090032,
+              "rows": 311,
+              "upper": 0.4
+            },
+            {
+              "bin": 4,
+              "lower": 0.4,
+              "meanPredicted": 0.45043209195137024,
+              "observedSurvival": 0.5706214689265536,
+              "rows": 354,
+              "upper": 0.5
+            },
+            {
+              "bin": 5,
+              "lower": 0.5,
+              "meanPredicted": 0.5509929656982422,
+              "observedSurvival": 0.6317135549872123,
+              "rows": 391,
+              "upper": 0.6
+            },
+            {
+              "bin": 6,
+              "lower": 0.6,
+              "meanPredicted": 0.6505951881408691,
+              "observedSurvival": 0.725609756097561,
+              "rows": 492,
+              "upper": 0.7
+            },
+            {
+              "bin": 7,
+              "lower": 0.7,
+              "meanPredicted": 0.7539824843406677,
+              "observedSurvival": 0.8053977272727273,
+              "rows": 704,
+              "upper": 0.8
+            },
+            {
+              "bin": 8,
+              "lower": 0.8,
+              "meanPredicted": 0.8564478754997253,
+              "observedSurvival": 0.8711256117455138,
+              "rows": 1226,
+              "upper": 0.9
+            },
+            {
+              "bin": 9,
+              "lower": 0.9,
+              "meanPredicted": 0.9956293106079102,
+              "observedSurvival": 0.995543381377856,
+              "rows": 45999,
+              "upper": 1.0
+            }
+          ],
+          "finiteLogits": true,
+          "finiteProbabilities": true,
+          "meanPredictedSurvival": 0.9586398005485535,
+          "nll": 0.06404204666614532,
+          "observedSurvivalRate": 0.9639725429512359,
+          "probabilitiesInUnitInterval": true,
+          "rocAuc": 0.9775857371714961,
+          "rows": 50406
+        }
+      },
+      {
+        "batchOrderSha256": "88e538e2da9316336aea7faa6e55dc19ddafc486659a01704e6d4f2a90d3d33e",
+        "epoch": 10,
+        "seconds": 4.624603352000122,
+        "trainNll": 0.05703415376905164,
+        "validation": {
+          "accuracyAt05": 0.9743681307780819,
+          "brier": 0.019047807902097702,
+          "calibration": [
+            {
+              "bin": 0,
+              "lower": 0.0,
+              "meanPredicted": 0.058745283633470535,
+              "observedSurvival": 0.013986013986013986,
+              "rows": 143,
+              "upper": 0.1
+            },
+            {
+              "bin": 1,
+              "lower": 0.1,
+              "meanPredicted": 0.14819495379924774,
+              "observedSurvival": 0.12254901960784313,
+              "rows": 204,
+              "upper": 0.2
+            },
+            {
+              "bin": 2,
+              "lower": 0.2,
+              "meanPredicted": 0.2482205480337143,
+              "observedSurvival": 0.24550898203592814,
+              "rows": 167,
+              "upper": 0.3
+            },
+            {
+              "bin": 3,
+              "lower": 0.3,
+              "meanPredicted": 0.35057055950164795,
+              "observedSurvival": 0.21465968586387435,
+              "rows": 191,
+              "upper": 0.4
+            },
+            {
+              "bin": 4,
+              "lower": 0.4,
+              "meanPredicted": 0.4464257061481476,
+              "observedSurvival": 0.4296577946768061,
+              "rows": 263,
+              "upper": 0.5
+            },
+            {
+              "bin": 5,
+              "lower": 0.5,
+              "meanPredicted": 0.5528903007507324,
+              "observedSurvival": 0.506896551724138,
+              "rows": 290,
+              "upper": 0.6
+            },
+            {
+              "bin": 6,
+              "lower": 0.6,
+              "meanPredicted": 0.6543155908584595,
+              "observedSurvival": 0.5606469002695418,
+              "rows": 371,
+              "upper": 0.7
+            },
+            {
+              "bin": 7,
+              "lower": 0.7,
+              "meanPredicted": 0.7533972263336182,
+              "observedSurvival": 0.6798679867986799,
+              "rows": 606,
+              "upper": 0.8
+            },
+            {
+              "bin": 8,
+              "lower": 0.8,
+              "meanPredicted": 0.8565745949745178,
+              "observedSurvival": 0.7946345975948196,
+              "rows": 1081,
+              "upper": 0.9
+            },
+            {
+              "bin": 9,
+              "lower": 0.9,
+              "meanPredicted": 0.9957286715507507,
+              "observedSurvival": 0.9926098959439371,
+              "rows": 47090,
+              "upper": 1.0
+            }
+          ],
+          "finiteLogits": true,
+          "finiteProbabilities": true,
+          "meanPredictedSurvival": 0.9708947539329529,
+          "nll": 0.06451279670000076,
+          "observedSurvivalRate": 0.9639725429512359,
+          "probabilitiesInUnitInterval": true,
+          "rocAuc": 0.9775608956720487,
+          "rows": 50406
+        }
+      },
+      {
+        "batchOrderSha256": "309f97a22bc7afcf827d981475986d0cf09e61e0fcecae13d0c91887d1df9820",
+        "epoch": 11,
+        "seconds": 4.543259173005936,
+        "trainNll": 0.056361670009709985,
+        "validation": {
+          "accuracyAt05": 0.9743086140538825,
+          "brier": 0.019284183159470558,
+          "calibration": [
+            {
+              "bin": 0,
+              "lower": 0.0,
+              "meanPredicted": 0.059495002031326294,
+              "observedSurvival": 0.025806451612903226,
+              "rows": 155,
+              "upper": 0.1
+            },
+            {
+              "bin": 1,
+              "lower": 0.1,
+              "meanPredicted": 0.15076903998851776,
+              "observedSurvival": 0.14646464646464646,
+              "rows": 198,
+              "upper": 0.2
+            },
+            {
+              "bin": 2,
+              "lower": 0.2,
+              "meanPredicted": 0.2508404850959778,
+              "observedSurvival": 0.16891891891891891,
+              "rows": 148,
+              "upper": 0.3
+            },
+            {
+              "bin": 3,
+              "lower": 0.3,
+              "meanPredicted": 0.35162967443466187,
+              "observedSurvival": 0.28095238095238095,
+              "rows": 210,
+              "upper": 0.4
+            },
+            {
+              "bin": 4,
+              "lower": 0.4,
+              "meanPredicted": 0.45155054330825806,
+              "observedSurvival": 0.39814814814814814,
+              "rows": 216,
+              "upper": 0.5
+            },
+            {
+              "bin": 5,
+              "lower": 0.5,
+              "meanPredicted": 0.5515101552009583,
+              "observedSurvival": 0.45925925925925926,
+              "rows": 270,
+              "upper": 0.6
+            },
+            {
+              "bin": 6,
+              "lower": 0.6,
+              "meanPredicted": 0.6521332859992981,
+              "observedSurvival": 0.5942857142857143,
+              "rows": 350,
+              "upper": 0.7
+            },
+            {
+              "bin": 7,
+              "lower": 0.7,
+              "meanPredicted": 0.7543126940727234,
+              "observedSurvival": 0.6648250460405156,
+              "rows": 543,
+              "upper": 0.8
+            },
+            {
+              "bin": 8,
+              "lower": 0.8,
+              "meanPredicted": 0.8562759160995483,
+              "observedSurvival": 0.7576687116564417,
+              "rows": 978,
+              "upper": 0.9
+            },
+            {
+              "bin": 9,
+              "lower": 0.9,
+              "meanPredicted": 0.9964503645896912,
+              "observedSurvival": 0.9918669990282648,
+              "rows": 47338,
+              "upper": 1.0
+            }
+          ],
+          "finiteLogits": true,
+          "finiteProbabilities": true,
+          "meanPredictedSurvival": 0.9729343056678772,
+          "nll": 0.06618492305278778,
+          "observedSurvivalRate": 0.9639725429512359,
+          "probabilitiesInUnitInterval": true,
+          "rocAuc": 0.9776013594374579,
+          "rows": 50406
+        }
+      },
+      {
+        "batchOrderSha256": "4ef4200e8571a535f21e9010a0d3c25bad1d1a6de8f7ac3391406bf0be18aff6",
+        "epoch": 12,
+        "seconds": 4.53826757700881,
+        "trainNll": 0.05595802893774746,
+        "validation": {
+          "accuracyAt05": 0.9745466809506804,
+          "brier": 0.018648121505975723,
+          "calibration": [
+            {
+              "bin": 0,
+              "lower": 0.0,
+              "meanPredicted": 0.05751762539148331,
+              "observedSurvival": 0.045454545454545456,
+              "rows": 242,
+              "upper": 0.1
+            },
+            {
+              "bin": 1,
+              "lower": 0.1,
+              "meanPredicted": 0.14668498933315277,
+              "observedSurvival": 0.17813765182186234,
+              "rows": 247,
+              "upper": 0.2
+            },
+            {
+              "bin": 2,
+              "lower": 0.2,
+              "meanPredicted": 0.25002580881118774,
+              "observedSurvival": 0.2457627118644068,
+              "rows": 236,
+              "upper": 0.3
+            },
+            {
+              "bin": 3,
+              "lower": 0.3,
+              "meanPredicted": 0.35051581263542175,
+              "observedSurvival": 0.44776119402985076,
+              "rows": 268,
+              "upper": 0.4
+            },
+            {
+              "bin": 4,
+              "lower": 0.4,
+              "meanPredicted": 0.45258742570877075,
+              "observedSurvival": 0.4901315789473684,
+              "rows": 304,
+              "upper": 0.5
+            },
+            {
+              "bin": 5,
+              "lower": 0.5,
+              "meanPredicted": 0.5501285791397095,
+              "observedSurvival": 0.5808383233532934,
+              "rows": 334,
+              "upper": 0.6
+            },
+            {
+              "bin": 6,
+              "lower": 0.6,
+              "meanPredicted": 0.6519346237182617,
+              "observedSurvival": 0.6643835616438356,
+              "rows": 438,
+              "upper": 0.7
+            },
+            {
+              "bin": 7,
+              "lower": 0.7,
+              "meanPredicted": 0.7525473833084106,
+              "observedSurvival": 0.7484472049689441,
+              "rows": 644,
+              "upper": 0.8
+            },
+            {
+              "bin": 8,
+              "lower": 0.8,
+              "meanPredicted": 0.856744110584259,
+              "observedSurvival": 0.8333333333333334,
+              "rows": 1146,
+              "upper": 0.9
+            },
+            {
+              "bin": 9,
+              "lower": 0.9,
+              "meanPredicted": 0.9957713484764099,
+              "observedSurvival": 0.9943927643027478,
+              "rows": 46547,
+              "upper": 1.0
+            }
+          ],
+          "finiteLogits": true,
+          "finiteProbabilities": true,
+          "meanPredictedSurvival": 0.964698851108551,
+          "nll": 0.06279772520065308,
+          "observedSurvivalRate": 0.9639725429512359,
+          "probabilitiesInUnitInterval": true,
+          "rocAuc": 0.9778826055559736,
+          "rows": 50406
+        }
+      },
+      {
+        "batchOrderSha256": "6c75977ab8bf948aec6033cd088b730039239dc2a48d35e4c48f6c2022a46367",
+        "epoch": 13,
+        "seconds": 4.594616632006364,
+        "trainNll": 0.055231408533591375,
+        "validation": {
+          "accuracyAt05": 0.973336507558624,
+          "brier": 0.019338183104991913,
+          "calibration": [
+            {
+              "bin": 0,
+              "lower": 0.0,
+              "meanPredicted": 0.055809494107961655,
+              "observedSurvival": 0.06422018348623854,
+              "rows": 327,
+              "upper": 0.1
+            },
+            {
+              "bin": 1,
+              "lower": 0.1,
+              "meanPredicted": 0.15077140927314758,
+              "observedSurvival": 0.22142857142857142,
+              "rows": 280,
+              "upper": 0.2
+            },
+            {
+              "bin": 2,
+              "lower": 0.2,
+              "meanPredicted": 0.2504483163356781,
+              "observedSurvival": 0.41830065359477125,
+              "rows": 306,
+              "upper": 0.3
+            },
+            {
+              "bin": 3,
+              "lower": 0.3,
+              "meanPredicted": 0.3520347476005554,
+              "observedSurvival": 0.4575645756457565,
+              "rows": 271,
+              "upper": 0.4
+            },
+            {
+              "bin": 4,
+              "lower": 0.4,
+              "meanPredicted": 0.45195794105529785,
+              "observedSurvival": 0.5621301775147929,
+              "rows": 338,
+              "upper": 0.5
+            },
+            {
+              "bin": 5,
+              "lower": 0.5,
+              "meanPredicted": 0.5511430501937866,
+              "observedSurvival": 0.6612903225806451,
+              "rows": 372,
+              "upper": 0.6
+            },
+            {
+              "bin": 6,
+              "lower": 0.6,
+              "meanPredicted": 0.6520763039588928,
+              "observedSurvival": 0.6814345991561181,
+              "rows": 474,
+              "upper": 0.7
+            },
+            {
+              "bin": 7,
+              "lower": 0.7,
+              "meanPredicted": 0.7532404661178589,
+              "observedSurvival": 0.7828655834564254,
+              "rows": 677,
+              "upper": 0.8
+            },
+            {
+              "bin": 8,
+              "lower": 0.8,
+              "meanPredicted": 0.8557271957397461,
+              "observedSurvival": 0.8406840684068407,
+              "rows": 1111,
+              "upper": 0.9
+            },
+            {
+              "bin": 9,
+              "lower": 0.9,
+              "meanPredicted": 0.9960971474647522,
+              "observedSurvival": 0.9952864864864864,
+              "rows": 46250,
+              "upper": 1.0
+            }
+          ],
+          "finiteLogits": true,
+          "finiteProbabilities": true,
+          "meanPredictedSurvival": 0.9607888460159302,
+          "nll": 0.0645940974354744,
+          "observedSurvivalRate": 0.9639725429512359,
+          "probabilitiesInUnitInterval": true,
+          "rocAuc": 0.9771986086947061,
+          "rows": 50406
+        }
+      },
+      {
+        "batchOrderSha256": "9496cb84bc6970967f570c948b18a0448264d3879038068e5f2afbbf02720ea8",
+        "epoch": 14,
+        "seconds": 4.559690284993849,
+        "trainNll": 0.05476222233374144,
+        "validation": {
+          "accuracyAt05": 0.974447486410348,
+          "brier": 0.018578166142106056,
+          "calibration": [
+            {
+              "bin": 0,
+              "lower": 0.0,
+              "meanPredicted": 0.053286924958229065,
+              "observedSurvival": 0.05405405405405406,
+              "rows": 259,
+              "upper": 0.1
+            },
+            {
+              "bin": 1,
+              "lower": 0.1,
+              "meanPredicted": 0.14621394872665405,
+              "observedSurvival": 0.16872427983539096,
+              "rows": 243,
+              "upper": 0.2
+            },
+            {
+              "bin": 2,
+              "lower": 0.2,
+              "meanPredicted": 0.24925747513771057,
+              "observedSurvival": 0.22727272727272727,
+              "rows": 220,
+              "upper": 0.3
+            },
+            {
+              "bin": 3,
+              "lower": 0.3,
+              "meanPredicted": 0.3503653407096863,
+              "observedSurvival": 0.4574898785425101,
+              "rows": 247,
+              "upper": 0.4
+            },
+            {
+              "bin": 4,
+              "lower": 0.4,
+              "meanPredicted": 0.4520031213760376,
+              "observedSurvival": 0.5087719298245614,
+              "rows": 285,
+              "upper": 0.5
+            },
+            {
+              "bin": 5,
+              "lower": 0.5,
+              "meanPredicted": 0.5531649589538574,
+              "observedSurvival": 0.5807453416149069,
+              "rows": 322,
+              "upper": 0.6
+            },
+            {
+              "bin": 6,
+              "lower": 0.6,
+              "meanPredicted": 0.6539528965950012,
+              "observedSurvival": 0.6243523316062176,
+              "rows": 386,
+              "upper": 0.7
+            },
+            {
+              "bin": 7,
+              "lower": 0.7,
+              "meanPredicted": 0.7511378526687622,
+              "observedSurvival": 0.7233009708737864,
+              "rows": 618,
+              "upper": 0.8
+            },
+            {
+              "bin": 8,
+              "lower": 0.8,
+              "meanPredicted": 0.8569021224975586,
+              "observedSurvival": 0.8276497695852535,
+              "rows": 1085,
+              "upper": 0.9
+            },
+            {
+              "bin": 9,
+              "lower": 0.9,
+              "meanPredicted": 0.9959997534751892,
+              "observedSurvival": 0.9938597804925012,
+              "rows": 46741,
+              "upper": 1.0
+            }
+          ],
+          "finiteLogits": true,
+          "finiteProbabilities": true,
+          "meanPredictedSurvival": 0.9661158919334412,
+          "nll": 0.06259901076555252,
+          "observedSurvivalRate": 0.9639725429512359,
+          "probabilitiesInUnitInterval": true,
+          "rocAuc": 0.978287503864485,
+          "rows": 50406
+        }
+      },
+      {
+        "batchOrderSha256": "dcd10a0701c7d2088d332c35981bc8521b15d754704fd0c83009a8c7a64df20d",
+        "epoch": 15,
+        "seconds": 4.603776468007709,
+        "trainNll": 0.05406815871354739,
+        "validation": {
+          "accuracyAt05": 0.9738721580764195,
+          "brier": 0.019115090370178223,
+          "calibration": [
+            {
+              "bin": 0,
+              "lower": 0.0,
+              "meanPredicted": 0.05150913819670677,
+              "observedSurvival": 0.07084468664850137,
+              "rows": 367,
+              "upper": 0.1
+            },
+            {
+              "bin": 1,
+              "lower": 0.1,
+              "meanPredicted": 0.15045978128910065,
+              "observedSurvival": 0.2490842490842491,
+              "rows": 273,
+              "upper": 0.2
+            },
+            {
+              "bin": 2,
+              "lower": 0.2,
+              "meanPredicted": 0.2546702027320862,
+              "observedSurvival": 0.3984375,
+              "rows": 256,
+              "upper": 0.3
+            },
+            {
+              "bin": 3,
+              "lower": 0.3,
+              "meanPredicted": 0.34970733523368835,
+              "observedSurvival": 0.5,
+              "rows": 276,
+              "upper": 0.4
+            },
+            {
+              "bin": 4,
+              "lower": 0.4,
+              "meanPredicted": 0.45338618755340576,
+              "observedSurvival": 0.5084175084175084,
+              "rows": 297,
+              "upper": 0.5
+            },
+            {
+              "bin": 5,
+              "lower": 0.5,
+              "meanPredicted": 0.5536532402038574,
+              "observedSurvival": 0.6617210682492581,
+              "rows": 337,
+              "upper": 0.6
+            },
+            {
+              "bin": 6,
+              "lower": 0.6,
+              "meanPredicted": 0.6514005661010742,
+              "observedSurvival": 0.6498800959232613,
+              "rows": 417,
+              "upper": 0.7
+            },
+            {
+              "bin": 7,
+              "lower": 0.7,
+              "meanPredicted": 0.7534122467041016,
+              "observedSurvival": 0.7721739130434783,
+              "rows": 575,
+              "upper": 0.8
+            },
+            {
+              "bin": 8,
+              "lower": 0.8,
+              "meanPredicted": 0.8574191927909851,
+              "observedSurvival": 0.8360037700282752,
+              "rows": 1061,
+              "upper": 0.9
+            },
+            {
+              "bin": 9,
+              "lower": 0.9,
+              "meanPredicted": 0.996450662612915,
+              "observedSurvival": 0.994263862332696,
+              "rows": 46547,
+              "upper": 1.0
+            }
+          ],
+          "finiteLogits": true,
+          "finiteProbabilities": true,
+          "meanPredictedSurvival": 0.9629665017127991,
+          "nll": 0.06438352167606354,
+          "observedSurvivalRate": 0.9639725429512359,
+          "probabilitiesInUnitInterval": true,
+          "rocAuc": 0.9775429785139162,
+          "rows": 50406
+        }
+      },
+      {
+        "batchOrderSha256": "9ede316e64e010bbdbc2089d797b443d3b1f0c9628290dbb35d4c3a2d6a5beda",
+        "epoch": 16,
+        "seconds": 4.542246832003002,
+        "trainNll": 0.053577799023814064,
+        "validation": {
+          "accuracyAt05": 0.9728405348569614,
+          "brier": 0.01961861178278923,
+          "calibration": [
+            {
+              "bin": 0,
+              "lower": 0.0,
+              "meanPredicted": 0.05128145590424538,
+              "observedSurvival": 0.09782608695652174,
+              "rows": 460,
+              "upper": 0.1
+            },
+            {
+              "bin": 1,
+              "lower": 0.1,
+              "meanPredicted": 0.1476195752620697,
+              "observedSurvival": 0.283987915407855,
+              "rows": 331,
+              "upper": 0.2
+            },
+            {
+              "bin": 2,
+              "lower": 0.2,
+              "meanPredicted": 0.2515513300895691,
+              "observedSurvival": 0.47720364741641336,
+              "rows": 329,
+              "upper": 0.3
+            },
+            {
+              "bin": 3,
+              "lower": 0.3,
+              "meanPredicted": 0.3507867753505707,
+              "observedSurvival": 0.535031847133758,
+              "rows": 314,
+              "upper": 0.4
+            },
+            {
+              "bin": 4,
+              "lower": 0.4,
+              "meanPredicted": 0.4509265720844269,
+              "observedSurvival": 0.5830985915492958,
+              "rows": 355,
+              "upper": 0.5
+            },
+            {
+              "bin": 5,
+              "lower": 0.5,
+              "meanPredicted": 0.5505579710006714,
+              "observedSurvival": 0.6903553299492385,
+              "rows": 394,
+              "upper": 0.6
+            },
+            {
+              "bin": 6,
+              "lower": 0.6,
+              "meanPredicted": 0.6509419679641724,
+              "observedSurvival": 0.7452471482889734,
+              "rows": 526,
+              "upper": 0.7
+            },
+            {
+              "bin": 7,
+              "lower": 0.7,
+              "meanPredicted": 0.7540229558944702,
+              "observedSurvival": 0.8093841642228738,
+              "rows": 682,
+              "upper": 0.8
+            },
+            {
+              "bin": 8,
+              "lower": 0.8,
+              "meanPredicted": 0.8555024266242981,
+              "observedSurvival": 0.877326565143824,
+              "rows": 1182,
+              "upper": 0.9
+            },
+            {
+              "bin": 9,
+              "lower": 0.9,
+              "meanPredicted": 0.9957337379455566,
+              "observedSurvival": 0.9963563371369973,
+              "rows": 45833,
+              "upper": 1.0
+            }
+          ],
+          "finiteLogits": true,
+          "finiteProbabilities": true,
+          "meanPredictedSurvival": 0.9551971554756165,
+          "nll": 0.06485365331172943,
+          "observedSurvivalRate": 0.9639725429512359,
+          "probabilitiesInUnitInterval": true,
+          "rocAuc": 0.9782708673128478,
+          "rows": 50406
+        }
+      },
+      {
+        "batchOrderSha256": "489109c43a3bec9c9c9e8c5cc53328ff6705b54a2ea45e466d32f0dc0952f367",
+        "epoch": 17,
+        "seconds": 4.6010238549934,
+        "trainNll": 0.05297683457994736,
+        "validation": {
+          "accuracyAt05": 0.9745863587668134,
+          "brier": 0.018788747489452362,
+          "calibration": [
+            {
+              "bin": 0,
+              "lower": 0.0,
+              "meanPredicted": 0.05463552847504616,
+              "observedSurvival": 0.05333333333333334,
+              "rows": 225,
+              "upper": 0.1
+            },
+            {
+              "bin": 1,
+              "lower": 0.1,
+              "meanPredicted": 0.15054696798324585,
+              "observedSurvival": 0.1572052401746725,
+              "rows": 229,
+              "upper": 0.2
+            },
+            {
+              "bin": 2,
+              "lower": 0.2,
+              "meanPredicted": 0.2482282817363739,
+              "observedSurvival": 0.23857868020304568,
+              "rows": 197,
+              "upper": 0.3
+            },
+            {
+              "bin": 3,
+              "lower": 0.3,
+              "meanPredicted": 0.3506421148777008,
+              "observedSurvival": 0.35784313725490197,
+              "rows": 204,
+              "upper": 0.4
+            },
+            {
+              "bin": 4,
+              "lower": 0.4,
+              "meanPredicted": 0.4512077867984772,
+              "observedSurvival": 0.468503937007874,
+              "rows": 254,
+              "upper": 0.5
+            },
+            {
+              "bin": 5,
+              "lower": 0.5,
+              "meanPredicted": 0.5544916987419128,
+              "observedSurvival": 0.5454545454545454,
+              "rows": 319,
+              "upper": 0.6
+            },
+            {
+              "bin": 6,
+              "lower": 0.6,
+              "meanPredicted": 0.6536014676094055,
+              "observedSurvival": 0.6191709844559585,
+              "rows": 386,
+              "upper": 0.7
+            },
+            {
+              "bin": 7,
+              "lower": 0.7,
+              "meanPredicted": 0.7519078850746155,
+              "observedSurvival": 0.6924428822495606,
+              "rows": 569,
+              "upper": 0.8
+            },
+            {
+              "bin": 8,
+              "lower": 0.8,
+              "meanPredicted": 0.8553534746170044,
+              "observedSurvival": 0.7965587044534413,
+              "rows": 988,
+              "upper": 0.9
+            },
+            {
+              "bin": 9,
+              "lower": 0.9,
+              "meanPredicted": 0.9963418245315552,
+              "observedSurvival": 0.9930689911767833,
+              "rows": 47035,
+              "upper": 1.0
+            }
+          ],
+          "finiteLogits": true,
+          "finiteProbabilities": true,
+          "meanPredictedSurvival": 0.9690680503845215,
+          "nll": 0.06398233026266098,
+          "observedSurvivalRate": 0.9639725429512359,
+          "probabilitiesInUnitInterval": true,
+          "rocAuc": 0.9779687461751797,
+          "rows": 50406
+        }
+      },
+      {
+        "batchOrderSha256": "c261f66c07c0fcf0eec8d88b7c0dff3a11b66795d1062723199fa1fc901be2a7",
+        "epoch": 18,
+        "seconds": 4.630992449994665,
+        "trainNll": 0.052371193724764904,
+        "validation": {
+          "accuracyAt05": 0.974169741697417,
+          "brier": 0.0190422423183918,
+          "calibration": [
+            {
+              "bin": 0,
+              "lower": 0.0,
+              "meanPredicted": 0.05289702117443085,
+              "observedSurvival": 0.05,
+              "rows": 220,
+              "upper": 0.1
+            },
+            {
+              "bin": 1,
+              "lower": 0.1,
+              "meanPredicted": 0.15001843869686127,
+              "observedSurvival": 0.17903930131004367,
+              "rows": 229,
+              "upper": 0.2
+            },
+            {
+              "bin": 2,
+              "lower": 0.2,
+              "meanPredicted": 0.24869632720947266,
+              "observedSurvival": 0.23958333333333334,
+              "rows": 192,
+              "upper": 0.3
+            },
+            {
+              "bin": 3,
+              "lower": 0.3,
+              "meanPredicted": 0.3524746298789978,
+              "observedSurvival": 0.3481781376518219,
+              "rows": 247,
+              "upper": 0.4
+            },
+            {
+              "bin": 4,
+              "lower": 0.4,
+              "meanPredicted": 0.4521917402744293,
+              "observedSurvival": 0.5128205128205128,
+              "rows": 234,
+              "upper": 0.5
+            },
+            {
+              "bin": 5,
+              "lower": 0.5,
+              "meanPredicted": 0.549484372138977,
+              "observedSurvival": 0.5622895622895623,
+              "rows": 297,
+              "upper": 0.6
+            },
+            {
+              "bin": 6,
+              "lower": 0.6,
+              "meanPredicted": 0.6519667506217957,
+              "observedSurvival": 0.6134663341645885,
+              "rows": 401,
+              "upper": 0.7
+            },
+            {
+              "bin": 7,
+              "lower": 0.7,
+              "meanPredicted": 0.7535879015922546,
+              "observedSurvival": 0.6948051948051948,
+              "rows": 616,
+              "upper": 0.8
+            },
+            {
+              "bin": 8,
+              "lower": 0.8,
+              "meanPredicted": 0.8561388254165649,
+              "observedSurvival": 0.7938553022794846,
+              "rows": 1009,
+              "upper": 0.9
+            },
+            {
+              "bin": 9,
+              "lower": 0.9,
+              "meanPredicted": 0.996314287185669,
+              "observedSurvival": 0.9932497178509827,
+              "rows": 46961,
+              "upper": 1.0
+            }
+          ],
+          "finiteLogits": true,
+          "finiteProbabilities": true,
+          "meanPredictedSurvival": 0.9686787724494934,
+          "nll": 0.06475822627544403,
+          "observedSurvivalRate": 0.9639725429512359,
+          "probabilitiesInUnitInterval": true,
+          "rocAuc": 0.9773093358253407,
+          "rows": 50406
+        }
+      },
+      {
+        "batchOrderSha256": "01d70b26060586c0f0241c0865ce3b74baa322301bdee48e7f1ff611e2f94040",
+        "epoch": 19,
+        "seconds": 4.667234325999743,
+        "trainNll": 0.05171514533004307,
+        "validation": {
+          "accuracyAt05": 0.9740308693409515,
+          "brier": 0.019105760380625725,
+          "calibration": [
+            {
+              "bin": 0,
+              "lower": 0.0,
+              "meanPredicted": 0.04969869181513786,
+              "observedSurvival": 0.06622516556291391,
+              "rows": 302,
+              "upper": 0.1
+            },
+            {
+              "bin": 1,
+              "lower": 0.1,
+              "meanPredicted": 0.14674648642539978,
+              "observedSurvival": 0.19090909090909092,
+              "rows": 220,
+              "upper": 0.2
+            },
+            {
+              "bin": 2,
+              "lower": 0.2,
+              "meanPredicted": 0.2473675012588501,
+              "observedSurvival": 0.33488372093023255,
+              "rows": 215,
+              "upper": 0.3
+            },
+            {
+              "bin": 3,
+              "lower": 0.3,
+              "meanPredicted": 0.34871745109558105,
+              "observedSurvival": 0.4076923076923077,
+              "rows": 260,
+              "upper": 0.4
+            },
+            {
+              "bin": 4,
+              "lower": 0.4,
+              "meanPredicted": 0.4521450698375702,
+              "observedSurvival": 0.5208333333333334,
+              "rows": 240,
+              "upper": 0.5
+            },
+            {
+              "bin": 5,
+              "lower": 0.5,
+              "meanPredicted": 0.5541055202484131,
+              "observedSurvival": 0.599290780141844,
+              "rows": 282,
+              "upper": 0.6
+            },
+            {
+              "bin": 6,
+              "lower": 0.6,
+              "meanPredicted": 0.652906060218811,
+              "observedSurvival": 0.6145552560646901,
+              "rows": 371,
+              "upper": 0.7
+            },
+            {
+              "bin": 7,
+              "lower": 0.7,
+              "meanPredicted": 0.7521212100982666,
+              "observedSurvival": 0.6909413854351687,
+              "rows": 563,
+              "upper": 0.8
+            },
+            {
+              "bin": 8,
+              "lower": 0.8,
+              "meanPredicted": 0.8559970855712891,
+              "observedSurvival": 0.7961264016309888,
+              "rows": 981,
+              "upper": 0.9
+            },
+            {
+              "bin": 9,
+              "lower": 0.9,
+              "meanPredicted": 0.9965528249740601,
+              "observedSurvival": 0.9933151664821596,
+              "rows": 46972,
+              "upper": 1.0
+            }
+          ],
+          "finiteLogits": true,
+          "finiteProbabilities": true,
+          "meanPredictedSurvival": 0.9675713777542114,
+          "nll": 0.06517325341701508,
+          "observedSurvivalRate": 0.9639725429512359,
+          "probabilitiesInUnitInterval": true,
+          "rocAuc": 0.9772194837138586,
+          "rows": 50406
+        }
+      },
+      {
+        "batchOrderSha256": "8d29c36d2d95e0101a772c707bb6dd738b3318a571171440ea71777d3741d93c",
+        "epoch": 20,
+        "seconds": 4.58805842899892,
+        "trainNll": 0.05120321678416949,
+        "validation": {
+          "accuracyAt05": 0.9735150577312225,
+          "brier": 0.019127070903778076,
+          "calibration": [
+            {
+              "bin": 0,
+              "lower": 0.0,
+              "meanPredicted": 0.05077837035059929,
+              "observedSurvival": 0.07142857142857142,
+              "rows": 322,
+              "upper": 0.1
+            },
+            {
+              "bin": 1,
+              "lower": 0.1,
+              "meanPredicted": 0.14838062226772308,
+              "observedSurvival": 0.18723404255319148,
+              "rows": 235,
+              "upper": 0.2
+            },
+            {
+              "bin": 2,
+              "lower": 0.2,
+              "meanPredicted": 0.25006264448165894,
+              "observedSurvival": 0.30701754385964913,
+              "rows": 228,
+              "upper": 0.3
+            },
+            {
+              "bin": 3,
+              "lower": 0.3,
+              "meanPredicted": 0.34745559096336365,
+              "observedSurvival": 0.48497854077253216,
+              "rows": 233,
+              "upper": 0.4
+            },
+            {
+              "bin": 4,
+              "lower": 0.4,
+              "meanPredicted": 0.4530700445175171,
+              "observedSurvival": 0.5703422053231939,
+              "rows": 263,
+              "upper": 0.5
+            },
+            {
+              "bin": 5,
+              "lower": 0.5,
+              "meanPredicted": 0.5520073771476746,
+              "observedSurvival": 0.5342465753424658,
+              "rows": 292,
+              "upper": 0.6
+            },
+            {
+              "bin": 6,
+              "lower": 0.6,
+              "meanPredicted": 0.6535797119140625,
+              "observedSurvival": 0.6625,
+              "rows": 400,
+              "upper": 0.7
+            },
+            {
+              "bin": 7,
+              "lower": 0.7,
+              "meanPredicted": 0.7518578171730042,
+              "observedSurvival": 0.7190812720848057,
+              "rows": 566,
+              "upper": 0.8
+            },
+            {
+              "bin": 8,
+              "lower": 0.8,
+              "meanPredicted": 0.8570615649223328,
+              "observedSurvival": 0.8030150753768844,
+              "rows": 995,
+              "upper": 0.9
+            },
+            {
+              "bin": 9,
+              "lower": 0.9,
+              "meanPredicted": 0.9964876174926758,
+              "observedSurvival": 0.9934075780849975,
+              "rows": 46872,
+              "upper": 1.0
+            }
+          ],
+          "finiteLogits": true,
+          "finiteProbabilities": true,
+          "meanPredictedSurvival": 0.966485321521759,
+          "nll": 0.06498081982135773,
+          "observedSurvivalRate": 0.9639725429512359,
+          "probabilitiesInUnitInterval": true,
+          "rocAuc": 0.9772466541038791,
+          "rows": 50406
+        }
+      }
+    ],
+    "initialization": {
+      "encoderOnly": true,
+      "encoderSha256": "6231547777d14d8c401c745491ca63b8fe3e797a3980c14d76c6dbbc7511b245",
+      "headSha256": "0bdd9d9de20ae652dea49d18196fb66791879d8f98084ab087cc65b69e8821aa",
+      "normalization": {
+        "mean": [
+          0.0,
+          1.7097443342208862,
+          19.724754333496094,
+          68.1785659790039,
+          80.0302505493164,
+          153.29473876953125,
+          1.53873610496521,
+          3.143655776977539,
+          4.0,
+          0.051885176450014114
+        ],
+        "rowIdsSha256": "e42a4dc3a964524a277fdcfde4cbdc552277dc358ce0d1d27e2c612a43ae3214",
+        "rows": 393677,
+        "std": [
+          0.0,
+          0.7643799781799316,
+          13.841556549072266,
+          17.839649200439453,
+          12.197325706481934,
+          140.00872802734375,
+          1.0951355695724487,
+          0.516998291015625,
+          0.0,
+          0.2218335121870041
+        ]
+      },
+      "normalizationSha256": "5f806bb16a38939b3d5a01b51f0345998df3ff1ce4bdd907b2b1f38aeacad957",
+      "pretrainingCheckpointSha256": "a180803709da170c16f51f341d86793e1acc8a83881bbb1b502e81e3dfbe7f21",
+      "pretrainingSelectedEpoch": 39
+    },
+    "optimizerScope": {
+      "duplicateParameterIds": false,
+      "exactParameterIds": true,
+      "groups": [
+        {
+          "elements": 167160,
+          "lr": 0.0001,
+          "name": "encoder",
+          "tensors": 26,
+          "weightDecay": 0.001
+        },
+        {
+          "elements": 97,
+          "lr": 0.001,
+          "name": "survivalHead",
+          "tensors": 2,
+          "weightDecay": 0.001
+        }
+      ],
+      "parameterNames": [
+        "encoder.card_id.weight",
+        "encoder.relic_id.weight",
+        "encoder.potion_id.weight",
+        "encoder.potion_slot.weight",
+        "encoder.global_category.0.weight",
+        "encoder.global_category.1.weight",
+        "encoder.global_category.2.weight",
+        "encoder.global_category.3.weight",
+        "encoder.card_mlp.0.weight",
+        "encoder.card_mlp.0.bias",
+        "encoder.card_mlp.2.weight",
+        "encoder.card_mlp.2.bias",
+        "encoder.relic_mlp.0.weight",
+        "encoder.relic_mlp.0.bias",
+        "encoder.relic_mlp.2.weight",
+        "encoder.relic_mlp.2.bias",
+        "encoder.potion_mlp.0.weight",
+        "encoder.potion_mlp.0.bias",
+        "encoder.potion_mlp.2.weight",
+        "encoder.potion_mlp.2.bias",
+        "encoder.global_mlp.0.weight",
+        "encoder.global_mlp.0.bias",
+        "encoder.trunk.0.weight",
+        "encoder.trunk.0.bias",
+        "encoder.trunk.2.weight",
+        "encoder.trunk.2.bias",
+        "head.weight",
+        "head.bias"
+      ]
+    },
+    "parameters": 167257,
+    "population": {
+      "TEST": {
+        "encodedRows": 0,
+        "inferenceRows": 0,
+        "rowIdsSha256": "b8d6d54c5f1343837a7096991760dfc38ebb983982ffb9eab56b96491a54fed6",
+        "rows": 51441,
+        "scoredRows": 0,
+        "sourceIdsSha256": "b87414509ccc393bd1930070fa636b515d5ad10976f6e1e473659e460bb40a81",
+        "sources": 2517
+      },
+      "TRAIN": {
+        "rowIdsSha256": "f08096c4888950ae3720a1620d809d25e1da89ec94f22770e561948f856db0a4",
+        "rows": 408183,
+        "sourceIdsSha256": "81ebc90e0219eb0ea7ce83c5a8d25808c5275514321e642f12145cc94dc047c2",
+        "sources": 19986
+      },
+      "VALIDATION": {
+        "rowIdsSha256": "08a5391631e81f8adae8e3ade94d6d0d065bdb838b46ad834202e78aa4b61809",
+        "rows": 50406,
+        "sourceIdsSha256": "e143bf2aea94f7db99f7ae4b842eb6c368d557aab7b227f92e2a178bb00b4f5a",
+        "sources": 2496
+      }
+    },
+    "predictionsSha256": "8bcae62c4e2b091419e401bc0e913bc310700bc291d9982e876c16ecb63793d5",
+    "provenance": {
+      "preparationCacheSha256": "e1c25f2758bf56c7cff392ea02342d809f3ad7427c70b64166244a6b714a251d",
+      "preparationSha256": "165ddba8ed9d47a592de4fc7ec037f1687fbee2ec280daca20307ddbf7d78744",
+      "sourceSha": "1c31b7eb0a7660d43bc27e0849a8955dd0c3daae",
+      "verifiedFiles": {
+        "/home/philippherrmann/sts_sweep/runs/combat-transition-model-v1/split_manifest.json": "e9043bcceb9d95027711e6ff33afbfe1cae3cf9528f820c0ff68bddbb419db32",
+        "/home/philippherrmann/sts_sweep/runs/combat-transition-runtime-25k/combat-transition-25k.jsonl": "74c08aa0a3c30342d86cd45355fe17ffa9046963ad7c8cf71b1938f9cdc1cfde",
+        "/tmp/sts-phase2-attention-audit-20260913/prepared.npz": "2badbb85ccd8329bcb886d50ef8a0b9b1bd2c043fda9445de9f9c2e7a4b6f9a5",
+        "/tmp/sts-phase2-attention-audit-20260913/prepared_manifest.json": "13b2c91fd0ced713f8c429bbf8995ceb58b6e3e57d1555de42f5e67d7f9a389f",
+        "/tmp/sts-phase2-attention-audit-20260913/target_spec.json": "e2315620d512578542d6b3bfbd362eb07b086f0e9fa7770cc23f4fa4c226e229"
+      }
+    },
+    "recipe": {
+      "architecture": "entity outputs 96; concat 384; trunk 384->192->96; head 96->1",
+      "batch": 512,
+      "encoderLr": 0.0001,
+      "gradientClip": 1.0,
+      "headLr": 0.001,
+      "loss": "unweighted BCEWithLogitsLoss; 1=survived, 0=death",
+      "maxEpochs": 40,
+      "minEpochs": 12,
+      "normalization": "unchanged victory-only TRAIN pretraining scalar_mean/scalar_inv buffers",
+      "optimizer": "AdamW",
+      "patience": 6,
+      "precision": "FP32",
+      "schema": "wide96_pretrained_survival_v1",
+      "seed": 20260912,
+      "selection": "earliest strict minimum VALIDATION NLL",
+      "training": "selected width-96 maxHP/HP pretrained encoder plus fresh Linear(96,1); survival BCE only",
+      "weightDecay": 0.001
+    },
+    "selectedEpoch": 14,
+    "speedScreen": {
+      "skipped": "quality gate rejected"
+    },
+    "stoppingReason": "patience",
+    "testEncodedRows": 0,
+    "testInferenceRows": 0,
+    "testScoredRows": 0
+  },
+  "survivalReceiptSha256": "167fbd4c163900d7273a491c65e43172cb60754465f6ae5997168ff93c84e527",
+  "testInferenceRows": 0,
+  "testScoredRows": 0
+}

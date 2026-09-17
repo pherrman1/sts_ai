@@ -236,7 +236,9 @@ def _evaluate(prob_max, prob_hp, cache, models, ids):
     return reference.evaluate(prob_max, prob_hp, cache, models, ids)
 
 
-def run(args):
+def run(args, *, recipe=RECIPE, student_factory=_student_model,
+        hp_initializer=initialize_specialist_hp_branch, latent_width=64):
+    RECIPE = recipe
     root = Path(__file__).resolve().parents[1]
     current = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=root, text=True).strip()
     status = subprocess.check_output(["git", "status", "--porcelain"], cwd=root, text=True).strip()
@@ -254,11 +256,11 @@ def run(args):
     control, control_sha = _load_control(Path(args.control_dir))
     cache, arrays, teachers, teacher_outputs, train, validation, counts, teacher_validity, ids, meta, teacher_fits, max_hash, hp_hash, _ = _prepare(args)
     scalar_mean, scalar_std, normalization_ids = normalization_stats(cache, arrays, train)
-    student = _student_model(torch, scalar_mean, scalar_std, len(teachers.delta_values), teachers.classes, RECIPE["seed"]).cuda()
-    hp_initialization = initialize_specialist_hp_branch(student, teachers)
+    student = student_factory(torch, scalar_mean, scalar_std, len(teachers.delta_values), teachers.classes, RECIPE["seed"]).cuda()
+    hp_initialization = hp_initializer(student, teachers)
     student.train().requires_grad_(True)
     initial_student_hash = reference.state_hash(student)
-    max_head = torch.nn.Linear(64, len(teachers.delta_values)).cuda()
+    max_head = torch.nn.Linear(latent_width, len(teachers.delta_values)).cuda()
     torch.manual_seed(RECIPE["seed"])
     torch.cuda.manual_seed_all(RECIPE["seed"])
     max_head.reset_parameters()
@@ -387,6 +389,7 @@ def run(args):
     np.savez_compressed(output / "validation_predictions.npz", rowIds=cache["ids"][validation], sourceGroups=cache["source"][validation], deltaValues=teachers.delta_values, classes=teachers.classes, studentMaxHP=student_max, studentHP=student_hp)
     c.base.json_dump(output / "artifact-hashes.json", {p.name: c.base.sha256(p) for p in output.iterdir() if p.is_file() and p.name != "artifact-hashes.json"})
     print(json.dumps(dict(decision=decision, selectedEpoch=selected, gates=gates)), flush=True)
+    return result
 
 
 def finalize_existing(args):

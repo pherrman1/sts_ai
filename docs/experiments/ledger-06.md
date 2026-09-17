@@ -9700,3 +9700,41 @@ top-level benchmark reporting corrected.
   [receipt](evidence/survival_mlp_head_only_2026-09-17.json). Initial and
   selected encoder hashes are identical. No independent review passed.
   **Knowledge impact:** current research evidence; no default change.
+
+## §301 — Scratch width-96 DeepSets survival (2026-09-17)
+
+- **Question:** Does the single modest latent-width increase salvage the
+  survival-only recipe without embedding or feature changes?
+- **Execution:** `2e56f5de48fab5002684af8080decc988e69189d`; baseline dependency
+  `6fa601d9429db1a1a266e34c63252ce4861f9d5a`. Scratch entity outputs 96,
+  concat 384, trunk 384→192→96, head 96→1. Same strong-WD optimizer, batch,
+  seed, early stopping and gates; fixed normalization from all TRAIN rows.
+- **Result:** epoch 14/20, NLL `0.065301903` (+9.7614%), Brier `0.019292932`
+  (+8.2954%), death NLL +21.4414%; low-HP +8.1272% passes. Validity passes.
+  167,257 parameters. `SURVIVAL_DEEPSET_REJECTED`; speed screen skipped.
+- **Limits:** One run, no matched scratch width-64 survival-only control;
+  comparison with warm strong-WD conflates width, initialization and normalization.
+  This does not establish pairwise interactions as the missing mechanism.
+  No further scaling, training, TEST, runtime, gameplay or promotion.
+- **Evidence:** [report](evidence/survival_wide96_2026-09-17.md) and
+  [receipt](evidence/survival_wide96_2026-09-17.json). Checkpoint reload, full
+  metrics/slices, initialization, normalization and permutations verified.
+  **Knowledge impact:** current research evidence; no default change.
+
+## §302 — Width-96 maxHP/HP pretraining then survival (2026-09-17)
+
+- **Question:** Does PR #205-style pretraining make width-96 useful for survival?
+- **Execution:** independently reviewed `8adb4794ec22fb051014c8c638cb2fec326b7615`,
+  baseline `35402d1e59ae5e9e66fe277f853f3ec62213c157`. Exact teachers and victory-only
+  normalization/population; copied delta8, fresh HP104→64→304 and maxHP96→11.
+  Same 40-epoch AMP KL schedule; only selected encoder transfers to fresh96→1.
+- **Result:** pretraining selected39/40, diagnostic GO, nine AMP skips. Strong-WD
+  survival selected14/20, NLL0.062599011 (+5.2183%), Brier0.018578166 (+4.2833%),
+  death NLL+16.0179%, low-HP+3.2761%. Fixed NLL/death gates reject; other gates pass.
+- **Decision:** `SURVIVAL_DEEPSET_REJECTED`. No speed screen, TEST, runtime,
+  gameplay, export or promotion. Improved versus scratch width-96, but no further
+  scaling/tuning justified by this run; no causal claim about interaction structure.
+- **Evidence:** [report](evidence/survival_wide96_pretrained_2026-09-17.md) and
+  [complete receipt](evidence/survival_wide96_pretrained_2026-09-17.json), including
+  both full histories and all slices. **Knowledge impact:** research status;
+  no qualified-default change.
