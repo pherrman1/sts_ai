@@ -499,6 +499,10 @@ add_test(NAME combat_transition_survival_mlp_selftest
     COMMAND python3 -m unittest tools.test_combat_transition_survival_mlp)
 set_tests_properties(combat_transition_survival_mlp_selftest PROPERTIES
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+add_test(NAME combat_transition_survival_mlp_head_selftest
+    COMMAND python3 -m unittest tools.test_combat_transition_survival_mlp_head)
+set_tests_properties(combat_transition_survival_mlp_head_selftest PROPERTIES
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
 add_test(NAME combat_transition_survival_deepset_aux_selftest
     COMMAND python3 -m unittest tools.test_combat_transition_survival_deepset_aux)
 set_tests_properties(combat_transition_survival_deepset_aux_selftest PROPERTIES

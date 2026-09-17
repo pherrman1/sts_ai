@@ -26,7 +26,7 @@ linear-head model.
 | Death NLL relative | — | +6.9980% | +15.8636% |
 | Low-pre-HP NLL relative | — | +3.1996% | +4.0078% |
 
-NLL improves from linear strong-WD by 0.1753%, while Brier worsens by 0.4837%. NLL and Brier still fail; death NLL fails at +15.8636%; low-HP and validity pass. No speed screen because quality is not GO.
+NLL worsens from linear strong-WD by 0.1753%, while Brier improves by 0.4616%. NLL and Brier still fail; death NLL fails at +15.8636%; low-HP and validity pass. No speed screen because quality is not GO.
 
 Selected epoch 6 of 12, stopped by patience. Full VALIDATION NLL history:
 

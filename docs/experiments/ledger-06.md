@@ -9672,8 +9672,8 @@ top-level benchmark reporting corrected.
   initialized encoder; fresh 64→64→1 ReLU head (+4,160 parameters); joint
   strong-WD optimizer/recipe and unchanged normalization; selection survival NLL.
 - **Result:** epoch 6/12 NLL `0.063041106` (+5.9614%), Brier `0.018754756`
-  (+5.2745%), death NLL +15.8636%; low-HP passes. Both overall gates fail and
-  it is worse than strong-WD on Brier. No speed screen.
+  (+5.2745%), death NLL +15.8636%; low-HP passes. Both overall gates fail; NLL
+  worsens 0.1753% while Brier improves 0.4616%. No speed screen.
 - **Decision:** `SURVIVAL_DEEPSET_REJECTED`. This small nonlinear head is not
   sufficient under the fixed gates; it neither proves nor disproves a wider
   encoder ceiling. No widening, extension, TEST, runtime or promotion.
