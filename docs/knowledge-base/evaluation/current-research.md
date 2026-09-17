@@ -737,6 +737,22 @@ is therefore not explained by the raw-feature-scale/L2 interaction alone.
 S2 is justified next on the same frozen embeddings. See [ledger-06 §292](../../experiments/ledger-06.md)
 and the [S1b evidence](../../experiments/evidence/deepset_survival_s1b_2026-09-17.md).
 
+### Nonlinear survival decoder over frozen representations
+
+The matched S2 decoder is **`S2_NONLINEAR_DIAGNOSTIC`**. A fresh
+`Linear(64,64) → ReLU → Linear(64,1)` decoder recovered part of the scale-neutral
+S1b gap: DeepSets validation NLL moved from **+29.4618%** to **+21.3171%**
+relative to the Attention control. Brier remained +21.8116%; observed-death
+NLL +17.6745%; low-pre-HP NLL +20.9588%. The nonlinear head therefore recovers
+real interactions, but the remaining gap is still clearly above the `10%`
+stop threshold and is concentrated in the important death/low-HP slices.
+
+Stop trying to decode survival from this frozen victory-distilled general
+representation. The next clean route is a survival-specific DeepSets encoder
+trained on all TRAIN combats including deaths, optionally with the qualified
+Attention specialist as a soft teacher. See [ledger-06 §293](../../experiments/ledger-06.md)
+and the [S2 evidence](../../experiments/evidence/deepset_survival_s2_2026-09-17.md).
+
 ### Jointly adapted shared maxHP+HP+potion representation
 
 The requested follow-up is **`SHARED_TRANSITION_POTION_REJECTED`**. Starting

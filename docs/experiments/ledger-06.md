@@ -9472,3 +9472,32 @@ current Phase-A evidence and research status updated.
 - **Evidence:** [S1b report](evidence/deepset_survival_s1b_2026-09-17.md),
   [machine-readable receipt](evidence/deepset_survival_s1b_2026-09-17.json),
   and raw receipt `/tmp/deepset-survival-s1b-20260917-retry2/results.json`.
+
+## §293 — Nonlinear frozen survival decoder (S2, 2026-09-17)
+
+- **Question and baseline:** Can a tiny nonlinear decoder recover the survival
+  information that a linear head cannot expose from the frozen general
+  representation? The baseline after merged PR #213 was
+  `7370ccdd35a79e5b55991e646fe3587762f02718`.
+- **Protocol:** The S1b TRAIN-only normalized Attention and DeepSets embeddings
+  were frozen. A and B used identical fresh
+  `Linear(64,64) -> ReLU -> Linear(64,1)` heads, seed `20260912`, identical
+  epoch permutations, FP32 AdamW, batch 512, 12 epochs, clip 1.0, and earliest
+  strict VALIDATION NLL. TEST rows remained zero.
+- **Result:** Attention validation NLL was `0.059702005`; DeepSets was
+  `0.072428763`, a **+21.3171%** gap. Brier relative degradation was +21.8116%;
+  observed-death NLL +17.6745%; low-pre-HP NLL +20.9588%. S2 reduced the S1b
+  NLL gap by 8.1447 percentage points, but Arm B still selected epoch 12 and
+  the remaining gap stayed above the `10%` stop threshold.
+- **Decision:** **`S2_NONLINEAR_DIAGNOSTIC`**. Nonlinear decoding recovers real
+  interactions but does not make the frozen victory-distilled general
+  representation survival-competitive. Stop trying to decode survival from
+  this `z`; next train a survival-specific DeepSets encoder on all TRAIN
+  combats including deaths, optionally using the Attention specialist as a
+  soft teacher. No runtime, TEST, gameplay, OOC MCTS, fine-tuning, native
+  export or promotion work occurred. **Knowledge impact:** current research
+  status and experiment evidence only; qualified components and runtime
+  defaults remain unchanged.
+- **Evidence:** [S2 report](evidence/deepset_survival_s2_2026-09-17.md),
+  [machine-readable receipt](evidence/deepset_survival_s2_2026-09-17.json),
+  and raw receipt `/tmp/deepset-survival-s2-20260917/results.json`.
