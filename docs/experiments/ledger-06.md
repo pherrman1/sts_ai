@@ -9501,3 +9501,28 @@ current Phase-A evidence and research status updated.
 - **Evidence:** [S2 report](evidence/deepset_survival_s2_2026-09-17.md),
   [machine-readable receipt](evidence/deepset_survival_s2_2026-09-17.json),
   and raw receipt `/tmp/deepset-survival-s2-20260917/results.json`.
+
+## §295 — Shared Attention 40-epoch continuation and overflow follow-up (2026-09-15; recovered 2026-09-17)
+
+- **Historical result:** Following the rejected 12-epoch recipe (§273), changing
+  only the horizon to 40 epochs aborted at epoch 19 on a non-finite gradient
+  norm: **`EXTENDED_TRAINING_NUMERICALLY_UNSTABLE`**, with no selected checkpoint
+  or quality decision. The subsequent one-variable overflow-handling variant
+  let GradScaler skip non-finite-gradient updates while retaining clipping and
+  the finite forward-loss guard. It completed 40 epochs with seven skipped
+  updates and no non-finite forward loss; epoch 37 passed all fixed gates:
+  **`SHARED_TRANSITION_ENCODER_GO`**, combined validation KL `0.003101193`,
+  maxHP NLL relative `+1.2492%`, and HP NLL relative `+0.1303%`.
+- **Provenance and evidence:** The four files below are recovered unchanged
+  from PR #197's frozen commit
+  [`013db3d8a8f1180adfe16003f24c36742a9d0ed7`](https://github.com/pherrman1/sts_ai/commit/013db3d8a8f1180adfe16003f24c36742a9d0ed7),
+  which preserves the exact historical implementation:
+  [continuation report](evidence/shared_transition_encoder_distill_40_2026-09-15.md),
+  [continuation receipt](evidence/shared_transition_encoder_distill_40_2026-09-15/results.json),
+  [overflow report](evidence/shared_transition_encoder_overflow_40_2026-09-15.md),
+  and [overflow receipt](evidence/shared_transition_encoder_overflow_40_2026-09-15/results.json).
+- **Boundary:** Historical offline Attention qualification precedes the later
+  cheaper qualified DeepSets direction (§286a–§286b). This recovery changes no
+  tool, model, runtime, or default and runs no training or gameplay.
+  **Knowledge impact:** restore historical experiment evidence and correct
+  maintained research chronology; no new experimental conclusion.

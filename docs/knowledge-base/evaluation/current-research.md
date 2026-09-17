@@ -1,7 +1,7 @@
 # Current research status
 
-Last verified: 2026-09-17 for staged retained-root adaptive Silver N32 scalar
-sweep and N16 Pareto held-out inspection;
+Last verified: 2026-09-17 for shared transition-encoder historical chronology,
+staged retained-root adaptive Silver N32 scalar sweep and N16 Pareto held-out inspection;
 2026-09-16 for retained-root adaptive Silver deployment-gate N32,
 final near-full support/native qualification,
 paired old/new-V2 OOC MCTS gameplay, and shared transition-encoder distillation;
@@ -522,7 +522,7 @@ a separately designed shared architecture. See [ledger-06 §272](../../experimen
 
 ### Purpose-trained shared maxHP and signed-HP encoder
 
-The explicit joint-training follow-up is **`SHARED_TRANSITION_ENCODER_REJECTED`**.
+The initial 12-epoch joint-training follow-up was **`SHARED_TRANSITION_ENCODER_REJECTED`**.
 One current-style 64/2/4/128 Attention encoder initialized from the dedicated HP
 specialist was distilled against the frozen current maxHP and HP specialists on
 the exact source-grouped final-union TRAIN/VALIDATION victories. The copied HP
@@ -535,11 +535,27 @@ remains within all preregistered gates. Combined KL improved through the final
 epoch12, and the NLL miss is too large for the narrow epoch12 inconclusive
 exception.
 
-Stop this exact path. Do not add potion, extra epochs, task reweighting,
-adapters or architectural variants without a new design decision. No TEST,
-runtime/export, model promotion or gameplay ran, and all qualified components
-remain unchanged. See [ledger-06 §273](../../experiments/ledger-06.md) and the
+That rejected the exact 12-epoch recipe, not the later authorized variants.
+No TEST, runtime/export, model promotion or gameplay ran. See
+[ledger-06 §273](../../experiments/ledger-06.md) and the
 [distillation evidence](../../experiments/evidence/shared_transition_encoder_distill_2026-09-15.md).
+
+The subsequent 40-epoch continuation aborted at epoch 19 with a non-finite
+gradient norm: **`EXTENDED_TRAINING_NUMERICALLY_UNSTABLE`**, without a selected
+checkpoint or quality decision. The one-variable overflow-handling follow-up
+then completed all 40 epochs, allowing GradScaler to skip seven non-finite
+gradient updates while retaining the finite forward-loss guard. Epoch 37
+passed all fixed gates: **`SHARED_TRANSITION_ENCODER_GO`**, with maxHP NLL
++1.2492% and HP NLL +0.1303%. This is the historical offline shared Attention
+qualification, not runtime/export or default-model promotion. The four
+unchanged evidence files are recovered from PR #197's frozen commit
+[`013db3d8a8f1180adfe16003f24c36742a9d0ed7`](https://github.com/pherrman1/sts_ai/commit/013db3d8a8f1180adfe16003f24c36742a9d0ed7),
+which also preserves the exact historical implementation; today's generic
+distillation tool is not reverted. See [ledger-06 §295](../../experiments/ledger-06.md),
+the [continuation evidence](../../experiments/evidence/shared_transition_encoder_distill_40_2026-09-15.md),
+and the [overflow evidence](../../experiments/evidence/shared_transition_encoder_overflow_40_2026-09-15.md).
+The later DeepSets follow-up below became the cheaper qualified maxHP+HP
+direction; it does not erase the preceding Attention qualification.
 
 ### Purpose-trained shared maxHP and signed-HP DeepSets encoder
 
