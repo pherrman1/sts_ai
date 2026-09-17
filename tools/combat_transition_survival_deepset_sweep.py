@@ -194,10 +194,11 @@ def run(args):
         arm_dir.mkdir()
         stage_a = fit_arm(model, arrays, cache, train, validation, arm_dir, args.experiment_sha, name)
         result["arms"][name] = dict(stageA=stage_a, selected=stage_a["selectedEpoch"],
+            metrics=fit.summarize(fit.predict(model, arrays, cache, validation, "cuda"), cache, validation),
             evaluation=fit.compare(reference_logits, fit.predict(model, arrays, cache, validation, "cuda"),
                                    cache, validation))
         fit.screen.composed.base.json_dump(args.output / "progress.json", result)
-    candidate_gaps = {name: result["arms"][name]["evaluation"]["metrics"]["DeepSets"]["nll"] / reference_metrics["nll"] - 1
+    candidate_gaps = {name: result["arms"][name]["metrics"]["nll"] / reference_metrics["nll"] - 1
                       for name in ARM_ORDER}
     if min(candidate_gaps.values()) <= 0.0005:
         stage_arm = min(candidate_gaps, key=candidate_gaps.get)
@@ -219,7 +220,7 @@ def run(args):
     result["selection"] = dict(referenceNll=reference_metrics["nll"], armNll={name: value["metrics"]["nll"] for name, value in result["arms"].items()},
         selectedArm=min(ARM_ORDER, key=lambda name: result["arms"][name]["metrics"]["nll"]))
     selected_arm = result["selection"]["selectedArm"]
-    result["decision"] = result["arms"][selected_arm]["metrics"] and compare_selected(result, reference_metrics)
+    result["decision"] = compare_selected(result, reference_metrics)
     screen = fit.screen
     screen.composed.base.json_dump(args.output / "results.json", result)
     print(json.dumps(dict(decision=result["decision"]["decision"], output=str(args.output))), flush=True)
