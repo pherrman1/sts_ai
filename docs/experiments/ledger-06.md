@@ -9625,3 +9625,19 @@ top-level benchmark reporting corrected.
   preserved and excluded. Post-run reporting fixes and reloaded-checkpoint
   verification are explicit; six-arm training was not altered.
   **Knowledge impact:** research status/evidence only; no runtime promotion.
+
+## §297 — Frozen strong-WD cross-fitted Platt calibration (2026-09-17)
+
+- **Hypothesis:** global affine probability calibration explains most of the
+  surviving quality gap without encoder training.
+- **Protocol:** frozen strong-WD epoch 20, five source-grouped VALIDATION folds,
+  unweighted FP64 logistic NLL, seed 20260912; no in-sample qualification.
+- **Result:** NLL `0.062660988` (+5.3225%), Brier `0.018729319` (+5.1317%):
+  both overall gates fail; death/low-HP and validity limits pass. Calibration
+  closes about 8% of excess NLL, not most of the gap.
+- **Boundary:** diagnostic only; the model was previously selected on the same
+  VALIDATION set. No TEST, encoder training, scratch replay, widening or runtime
+  change. Historical-composite versus survival-NLL selection for the proposed
+  PR #161-style replay remains unresolved.
+- **Evidence:** [receipt and protocol](evidence/survival_platt_crossfit_2026-09-17.md).
+  **Knowledge impact:** current research evidence, no qualified default.

@@ -806,6 +806,17 @@ as an architecture. Optional LR-decay continuation remains untested; no
 distillation, TEST, runtime or promotion followed. See [ledger-06 §296](../../experiments/ledger-06.md)
 and the [sweep report](../../experiments/evidence/survival_deepset_sweep_2026-09-17.md).
 
+Five-fold source-grouped Platt calibration of frozen strong-WD does not close
+the gap: cross-fitted NLL `0.062660988` (+5.3225%) and Brier `0.018729319`
+(+5.1317%) still fail the original overall limits. Death/low-HP gates pass.
+This removes only about 8% of excess NLL, disfavoring global affine calibration
+as the main explanation. It is diagnostic only: the calibrators exclude each
+scored source, but the model/epoch were already selected on this VALIDATION
+set. The next requested hypothesis is from-scratch 64-wide joint survival/HP
+training before widening, with historical-composite versus survival-NLL
+selection still to resolve. See the
+[calibration evidence](../../experiments/evidence/survival_platt_crossfit_2026-09-17.md).
+
 ### Jointly adapted shared maxHP+HP+potion representation
 
 The requested follow-up is **`SHARED_TRANSITION_POTION_REJECTED`**. Starting
