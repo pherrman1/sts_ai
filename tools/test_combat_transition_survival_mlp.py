@@ -23,6 +23,20 @@ class MlpTests(unittest.TestCase):
         self.assertTrue(all(value > 0 for value in gradients.values()))
         self.assertEqual([record['lr'] for record in proof['groups']], [1e-4, 1e-3])
 
+    def test_mlp_schema_loads_and_forward_passes(self):
+        encoder = experiment.fit.screen.surrogate.DeepSetsEncoder(
+            torch.nn, torch, np.zeros(10), np.ones(10)
+        ).net
+        model = experiment.replace_head(experiment.fit.SurvivalNet(encoder))
+        state = model.state_dict()
+        for key in ('head.0.weight', 'head.0.bias', 'head.2.weight', 'head.2.bias'):
+            self.assertIn(key, state)
+        reloaded = experiment.replace_head(experiment.fit.SurvivalNet(encoder))
+        reloaded.load_state_dict(state, strict=True)
+        logits = reloaded(fixtures.DeepSetsDistillTests()._inputs())
+        self.assertEqual(tuple(logits.shape), (2,))
+        self.assertTrue(torch.isfinite(logits).all())
+
     def test_selection_floor_patience_and_decay(self):
         model = experiment.replace_head(experiment.fit.SurvivalNet(torch.nn.Linear(10, 64)))
         cache = dict(win=np.array([0., 1., 0., 1.]))

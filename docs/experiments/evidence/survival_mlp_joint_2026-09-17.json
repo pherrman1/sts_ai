@@ -1,0 +1,1904 @@
+{
+  "baseline": {
+    "comparison": {
+      "brierRelative": 0.057627311094907485,
+      "deathNllRelative": 0.0699798050750724,
+      "lowPreHpNllRelative": 0.03199634838240595,
+      "nllRelative": 0.057759871332068835
+    },
+    "decision": "SURVIVAL_DEEPSET_REJECTED",
+    "gatesPassed": {
+      "brierRelative": false,
+      "deathNllRelative": true,
+      "lowPreHpNllRelative": true,
+      "nllRelative": false,
+      "validity": true
+    },
+    "metrics": {
+      "Attention": {
+        "accuracyAt05": 0.9751021703765425,
+        "brier": 0.01781509444117546,
+        "calibration": [
+          {
+            "bin": 0,
+            "lower": 0.0,
+            "meanPredicted": 0.052189312875270844,
+            "observedSurvival": 0.05734767025089606,
+            "rows": 279,
+            "upper": 0.1
+          },
+          {
+            "bin": 1,
+            "lower": 0.1,
+            "meanPredicted": 0.14857900142669678,
+            "observedSurvival": 0.17777777777777778,
+            "rows": 225,
+            "upper": 0.2
+          },
+          {
+            "bin": 2,
+            "lower": 0.2,
+            "meanPredicted": 0.2543490529060364,
+            "observedSurvival": 0.2703862660944206,
+            "rows": 233,
+            "upper": 0.3
+          },
+          {
+            "bin": 3,
+            "lower": 0.3,
+            "meanPredicted": 0.3474677801132202,
+            "observedSurvival": 0.36885245901639346,
+            "rows": 244,
+            "upper": 0.4
+          },
+          {
+            "bin": 4,
+            "lower": 0.4,
+            "meanPredicted": 0.4531751275062561,
+            "observedSurvival": 0.5031645569620253,
+            "rows": 316,
+            "upper": 0.5
+          },
+          {
+            "bin": 5,
+            "lower": 0.5,
+            "meanPredicted": 0.5489605069160461,
+            "observedSurvival": 0.5685279187817259,
+            "rows": 394,
+            "upper": 0.6
+          },
+          {
+            "bin": 6,
+            "lower": 0.6,
+            "meanPredicted": 0.6516559720039368,
+            "observedSurvival": 0.6544401544401545,
+            "rows": 518,
+            "upper": 0.7
+          },
+          {
+            "bin": 7,
+            "lower": 0.7,
+            "meanPredicted": 0.7530989050865173,
+            "observedSurvival": 0.7275641025641025,
+            "rows": 624,
+            "upper": 0.8
+          },
+          {
+            "bin": 8,
+            "lower": 0.8,
+            "meanPredicted": 0.8548954725265503,
+            "observedSurvival": 0.851963746223565,
+            "rows": 1324,
+            "upper": 0.9
+          },
+          {
+            "bin": 9,
+            "lower": 0.9,
+            "meanPredicted": 0.9957226514816284,
+            "observedSurvival": 0.9962810006702848,
+            "rows": 46249,
+            "upper": 1.0
+          }
+        ],
+        "finiteLogits": true,
+        "finiteProbabilities": true,
+        "meanPredictedSurvival": 0.9630218148231506,
+        "nll": 0.05949442461133003,
+        "observedSurvivalRate": 0.9639725429512359,
+        "probabilitiesInUnitInterval": true,
+        "rocAuc": 0.980474519103929,
+        "rows": 50406
+      },
+      "DeepSets": {
+        "accuracyAt05": 0.974011030432885,
+        "brier": 0.018841730430722237,
+        "calibration": [
+          {
+            "bin": 0,
+            "lower": 0.0,
+            "meanPredicted": 0.05359282344579697,
+            "observedSurvival": 0.06859205776173286,
+            "rows": 277,
+            "upper": 0.1
+          },
+          {
+            "bin": 1,
+            "lower": 0.1,
+            "meanPredicted": 0.14860041439533234,
+            "observedSurvival": 0.1843137254901961,
+            "rows": 255,
+            "upper": 0.2
+          },
+          {
+            "bin": 2,
+            "lower": 0.2,
+            "meanPredicted": 0.24961666762828827,
+            "observedSurvival": 0.30916030534351147,
+            "rows": 262,
+            "upper": 0.3
+          },
+          {
+            "bin": 3,
+            "lower": 0.3,
+            "meanPredicted": 0.35028812289237976,
+            "observedSurvival": 0.40816326530612246,
+            "rows": 245,
+            "upper": 0.4
+          },
+          {
+            "bin": 4,
+            "lower": 0.4,
+            "meanPredicted": 0.4528598487377167,
+            "observedSurvival": 0.5656565656565656,
+            "rows": 297,
+            "upper": 0.5
+          },
+          {
+            "bin": 5,
+            "lower": 0.5,
+            "meanPredicted": 0.5506856441497803,
+            "observedSurvival": 0.6106870229007634,
+            "rows": 393,
+            "upper": 0.6
+          },
+          {
+            "bin": 6,
+            "lower": 0.6,
+            "meanPredicted": 0.6552222371101379,
+            "observedSurvival": 0.6572052401746725,
+            "rows": 458,
+            "upper": 0.7
+          },
+          {
+            "bin": 7,
+            "lower": 0.7,
+            "meanPredicted": 0.7547325491905212,
+            "observedSurvival": 0.7503628447024674,
+            "rows": 689,
+            "upper": 0.8
+          },
+          {
+            "bin": 8,
+            "lower": 0.8,
+            "meanPredicted": 0.8572045564651489,
+            "observedSurvival": 0.8406408094435076,
+            "rows": 1186,
+            "upper": 0.9
+          },
+          {
+            "bin": 9,
+            "lower": 0.9,
+            "meanPredicted": 0.9957862496376038,
+            "observedSurvival": 0.9951665803556016,
+            "rows": 46344,
+            "upper": 1.0
+          }
+        ],
+        "finiteLogits": true,
+        "finiteProbabilities": true,
+        "meanPredictedSurvival": 0.9629873633384705,
+        "nll": 0.06293081492185593,
+        "observedSurvivalRate": 0.9639725429512359,
+        "probabilitiesInUnitInterval": true,
+        "rocAuc": 0.9779968061900665,
+        "rows": 50406
+      }
+    },
+    "slices": {
+      "boss": {
+        "A": {
+          "brier": 0.08825218677520752,
+          "deaths": 1169,
+          "nll": 0.2808343768119812,
+          "rows": 5444
+        },
+        "B": {
+          "brier": 0.092734195291996,
+          "deaths": 1169,
+          "nll": 0.294944167137146,
+          "rows": 5444
+        }
+      },
+      "deaths": {
+        "A": {
+          "brier": 0.32351234555244446,
+          "deaths": 1816,
+          "nll": 0.989065945148468,
+          "rows": 1816
+        },
+        "B": {
+          "brier": 0.339271605014801,
+          "deaths": 1816,
+          "nll": 1.05828058719635,
+          "rows": 1816
+        }
+      },
+      "lowPreHp": {
+        "A": {
+          "brier": 0.1296009123325348,
+          "deaths": 292,
+          "nll": 0.39808058738708496,
+          "rows": 756
+        },
+        "B": {
+          "brier": 0.13482937216758728,
+          "deaths": 292,
+          "nll": 0.4108177125453949,
+          "rows": 756
+        }
+      },
+      "normal": {
+        "A": {
+          "brier": 0.009286569431424141,
+          "deaths": 647,
+          "nll": 0.03269457817077637,
+          "rows": 44962
+        },
+        "B": {
+          "brier": 0.009894829243421555,
+          "deaths": 647,
+          "nll": 0.03483862802386284,
+          "rows": 44962
+        }
+      },
+      "victories": {
+        "A": {
+          "brier": 0.006389982532709837,
+          "deaths": 0,
+          "nll": 0.024752669036388397,
+          "rows": 48590
+        },
+        "B": {
+          "brier": 0.006866001524031162,
+          "deaths": 0,
+          "nll": 0.025730663910508156,
+          "rows": 48590
+        }
+      }
+    },
+    "thresholds": {
+      "brierRelative": 0.05,
+      "deathNllRelative": 0.1,
+      "lowPreHpNllRelative": 0.1,
+      "nllRelative": 0.02
+    }
+  },
+  "checkpoint": "/home/philippherrmann/sts_sweep/runs/survival-mlp-joint-20260917/selected.pt",
+  "checkpointSha256": "0f4d9f88783711c9e886700818028d7bc23d8c220a9fa0d896aa1bc8609ba33b",
+  "completedEpochs": 12,
+  "environment": {
+    "cuda": "12.1",
+    "gpu": "NVIDIA GeForce RTX 3060 Ti",
+    "tf32": false,
+    "threads": 4,
+    "torch": "2.5.1+cu121"
+  },
+  "evaluation": {
+    "comparison": {
+      "brierRelative": 0.05274525150856202,
+      "deathNllRelative": 0.15863619443269483,
+      "lowPreHpNllRelative": 0.04007825493764949,
+      "nllRelative": 0.05961367436145837
+    },
+    "decision": "SURVIVAL_DEEPSET_REJECTED",
+    "gatesPassed": {
+      "brierRelative": false,
+      "deathNllRelative": false,
+      "lowPreHpNllRelative": true,
+      "nllRelative": false,
+      "validity": true
+    },
+    "metrics": {
+      "Attention": {
+        "accuracyAt05": 0.9751021703765425,
+        "brier": 0.01781509444117546,
+        "calibration": [
+          {
+            "bin": 0,
+            "lower": 0.0,
+            "meanPredicted": 0.052189312875270844,
+            "observedSurvival": 0.05734767025089606,
+            "rows": 279,
+            "upper": 0.1
+          },
+          {
+            "bin": 1,
+            "lower": 0.1,
+            "meanPredicted": 0.14857900142669678,
+            "observedSurvival": 0.17777777777777778,
+            "rows": 225,
+            "upper": 0.2
+          },
+          {
+            "bin": 2,
+            "lower": 0.2,
+            "meanPredicted": 0.2543490529060364,
+            "observedSurvival": 0.2703862660944206,
+            "rows": 233,
+            "upper": 0.3
+          },
+          {
+            "bin": 3,
+            "lower": 0.3,
+            "meanPredicted": 0.3474677801132202,
+            "observedSurvival": 0.36885245901639346,
+            "rows": 244,
+            "upper": 0.4
+          },
+          {
+            "bin": 4,
+            "lower": 0.4,
+            "meanPredicted": 0.4531751275062561,
+            "observedSurvival": 0.5031645569620253,
+            "rows": 316,
+            "upper": 0.5
+          },
+          {
+            "bin": 5,
+            "lower": 0.5,
+            "meanPredicted": 0.5489605069160461,
+            "observedSurvival": 0.5685279187817259,
+            "rows": 394,
+            "upper": 0.6
+          },
+          {
+            "bin": 6,
+            "lower": 0.6,
+            "meanPredicted": 0.6516559720039368,
+            "observedSurvival": 0.6544401544401545,
+            "rows": 518,
+            "upper": 0.7
+          },
+          {
+            "bin": 7,
+            "lower": 0.7,
+            "meanPredicted": 0.7530989050865173,
+            "observedSurvival": 0.7275641025641025,
+            "rows": 624,
+            "upper": 0.8
+          },
+          {
+            "bin": 8,
+            "lower": 0.8,
+            "meanPredicted": 0.8548954725265503,
+            "observedSurvival": 0.851963746223565,
+            "rows": 1324,
+            "upper": 0.9
+          },
+          {
+            "bin": 9,
+            "lower": 0.9,
+            "meanPredicted": 0.9957226514816284,
+            "observedSurvival": 0.9962810006702848,
+            "rows": 46249,
+            "upper": 1.0
+          }
+        ],
+        "finiteLogits": true,
+        "finiteProbabilities": true,
+        "meanPredictedSurvival": 0.9630218148231506,
+        "nll": 0.05949442461133003,
+        "observedSurvivalRate": 0.9639725429512359,
+        "probabilitiesInUnitInterval": true,
+        "rocAuc": 0.980474519103929,
+        "rows": 50406
+      },
+      "DeepSets": {
+        "accuracyAt05": 0.9745466809506804,
+        "brier": 0.018754756078124046,
+        "calibration": [
+          {
+            "bin": 0,
+            "lower": 0.0,
+            "meanPredicted": 0.05735192820429802,
+            "observedSurvival": 0.05415162454873646,
+            "rows": 277,
+            "upper": 0.1
+          },
+          {
+            "bin": 1,
+            "lower": 0.1,
+            "meanPredicted": 0.1512942910194397,
+            "observedSurvival": 0.211864406779661,
+            "rows": 236,
+            "upper": 0.2
+          },
+          {
+            "bin": 2,
+            "lower": 0.2,
+            "meanPredicted": 0.2518002390861511,
+            "observedSurvival": 0.2823529411764706,
+            "rows": 255,
+            "upper": 0.3
+          },
+          {
+            "bin": 3,
+            "lower": 0.3,
+            "meanPredicted": 0.3521648943424225,
+            "observedSurvival": 0.38235294117647056,
+            "rows": 238,
+            "upper": 0.4
+          },
+          {
+            "bin": 4,
+            "lower": 0.4,
+            "meanPredicted": 0.4516582787036896,
+            "observedSurvival": 0.5346938775510204,
+            "rows": 245,
+            "upper": 0.5
+          },
+          {
+            "bin": 5,
+            "lower": 0.5,
+            "meanPredicted": 0.5517138838768005,
+            "observedSurvival": 0.5918367346938775,
+            "rows": 343,
+            "upper": 0.6
+          },
+          {
+            "bin": 6,
+            "lower": 0.6,
+            "meanPredicted": 0.6527650356292725,
+            "observedSurvival": 0.6658536585365854,
+            "rows": 410,
+            "upper": 0.7
+          },
+          {
+            "bin": 7,
+            "lower": 0.7,
+            "meanPredicted": 0.7516193389892578,
+            "observedSurvival": 0.7439222042139384,
+            "rows": 617,
+            "upper": 0.8
+          },
+          {
+            "bin": 8,
+            "lower": 0.8,
+            "meanPredicted": 0.856127142906189,
+            "observedSurvival": 0.7985143918291551,
+            "rows": 1077,
+            "upper": 0.9
+          },
+          {
+            "bin": 9,
+            "lower": 0.9,
+            "meanPredicted": 0.9962452054023743,
+            "observedSurvival": 0.9941765864519997,
+            "rows": 46708,
+            "upper": 1.0
+          }
+        ],
+        "finiteLogits": true,
+        "finiteProbabilities": true,
+        "meanPredictedSurvival": 0.9658684134483337,
+        "nll": 0.06304110586643219,
+        "observedSurvivalRate": 0.9639725429512359,
+        "probabilitiesInUnitInterval": true,
+        "rocAuc": 0.9782098968443136,
+        "rows": 50406
+      }
+    },
+    "slices": {
+      "boss": {
+        "A": {
+          "brier": 0.08825218677520752,
+          "deaths": 1169,
+          "nll": 0.2808343768119812,
+          "rows": 5444
+        },
+        "B": {
+          "brier": 0.09290313720703125,
+          "deaths": 1169,
+          "nll": 0.2972450256347656,
+          "rows": 5444
+        }
+      },
+      "deaths": {
+        "A": {
+          "brier": 0.32351234555244446,
+          "deaths": 1816,
+          "nll": 0.989065945148468,
+          "rows": 1816
+        },
+        "B": {
+          "brier": 0.35926637053489685,
+          "deaths": 1816,
+          "nll": 1.1459676027297974,
+          "rows": 1816
+        }
+      },
+      "lowPreHp": {
+        "A": {
+          "brier": 0.1296009123325348,
+          "deaths": 292,
+          "nll": 0.39808058738708496,
+          "rows": 756
+        },
+        "B": {
+          "brier": 0.133942112326622,
+          "deaths": 292,
+          "nll": 0.41403496265411377,
+          "rows": 756
+        }
+      },
+      "normal": {
+        "A": {
+          "brier": 0.009286569431424141,
+          "deaths": 647,
+          "nll": 0.03269457817077637,
+          "rows": 44962
+        },
+        "B": {
+          "brier": 0.009776868857443333,
+          "deaths": 647,
+          "nll": 0.03468368947505951,
+          "rows": 44962
+        }
+      },
+      "victories": {
+        "A": {
+          "brier": 0.006389982532709837,
+          "deaths": 0,
+          "nll": 0.024752669036388397,
+          "rows": 48590
+        },
+        "B": {
+          "brier": 0.0060284934006631374,
+          "deaths": 0,
+          "nll": 0.02256786823272705,
+          "rows": 48590
+        }
+      }
+    },
+    "thresholds": {
+      "brierRelative": 0.05,
+      "deathNllRelative": 0.1,
+      "lowPreHpNllRelative": 0.1,
+      "nllRelative": 0.02
+    }
+  },
+  "experimentSha": "ba77f58d1622d2d88847a7c33af965a6aeaccac3",
+  "history": [
+    {
+      "batchOrderSha256": "adf64f2660a3e05970715006120fa8eb0d93407d7d93c4e7d0a8e7456bef2bad",
+      "epoch": 1,
+      "seconds": 4.7756059910025215,
+      "trainNll": 0.07421168203633594,
+      "validation": {
+        "accuracyAt05": 0.9741499027893504,
+        "brier": 0.019235048443078995,
+        "calibration": [
+          {
+            "bin": 0,
+            "lower": 0.0,
+            "meanPredicted": 0.06020006164908409,
+            "observedSurvival": 0.06593406593406594,
+            "rows": 182,
+            "upper": 0.1
+          },
+          {
+            "bin": 1,
+            "lower": 0.1,
+            "meanPredicted": 0.14606764912605286,
+            "observedSurvival": 0.0718232044198895,
+            "rows": 181,
+            "upper": 0.2
+          },
+          {
+            "bin": 2,
+            "lower": 0.2,
+            "meanPredicted": 0.24756760895252228,
+            "observedSurvival": 0.24858757062146894,
+            "rows": 177,
+            "upper": 0.3
+          },
+          {
+            "bin": 3,
+            "lower": 0.3,
+            "meanPredicted": 0.35090354084968567,
+            "observedSurvival": 0.3026315789473684,
+            "rows": 228,
+            "upper": 0.4
+          },
+          {
+            "bin": 4,
+            "lower": 0.4,
+            "meanPredicted": 0.45499294996261597,
+            "observedSurvival": 0.44878048780487806,
+            "rows": 205,
+            "upper": 0.5
+          },
+          {
+            "bin": 5,
+            "lower": 0.5,
+            "meanPredicted": 0.554053008556366,
+            "observedSurvival": 0.4607142857142857,
+            "rows": 280,
+            "upper": 0.6
+          },
+          {
+            "bin": 6,
+            "lower": 0.6,
+            "meanPredicted": 0.6508697271347046,
+            "observedSurvival": 0.6129032258064516,
+            "rows": 403,
+            "upper": 0.7
+          },
+          {
+            "bin": 7,
+            "lower": 0.7,
+            "meanPredicted": 0.7544263601303101,
+            "observedSurvival": 0.6880907372400756,
+            "rows": 529,
+            "upper": 0.8
+          },
+          {
+            "bin": 8,
+            "lower": 0.8,
+            "meanPredicted": 0.8551697731018066,
+            "observedSurvival": 0.7636003956478734,
+            "rows": 1011,
+            "upper": 0.9
+          },
+          {
+            "bin": 9,
+            "lower": 0.9,
+            "meanPredicted": 0.9960664510726929,
+            "observedSurvival": 0.9923321330226647,
+            "rows": 47210,
+            "upper": 1.0
+          }
+        ],
+        "finiteLogits": true,
+        "finiteProbabilities": true,
+        "meanPredictedSurvival": 0.9713107943534851,
+        "nll": 0.06539253145456314,
+        "observedSurvivalRate": 0.9639725429512359,
+        "probabilitiesInUnitInterval": true,
+        "rocAuc": 0.9773351009480568,
+        "rows": 50406
+      }
+    },
+    {
+      "batchOrderSha256": "01197d8b276cd6e9a65c577aa3d6450ea099136d0df287b3692f8cd3cbaf1adf",
+      "epoch": 2,
+      "seconds": 4.5679615270055365,
+      "trainNll": 0.055860814909126144,
+      "validation": {
+        "accuracyAt05": 0.97381264135222,
+        "brier": 0.019145317375659943,
+        "calibration": [
+          {
+            "bin": 0,
+            "lower": 0.0,
+            "meanPredicted": 0.053209610283374786,
+            "observedSurvival": 0.07714285714285714,
+            "rows": 350,
+            "upper": 0.1
+          },
+          {
+            "bin": 1,
+            "lower": 0.1,
+            "meanPredicted": 0.15125955641269684,
+            "observedSurvival": 0.24850299401197604,
+            "rows": 334,
+            "upper": 0.2
+          },
+          {
+            "bin": 2,
+            "lower": 0.2,
+            "meanPredicted": 0.25130876898765564,
+            "observedSurvival": 0.3673469387755102,
+            "rows": 245,
+            "upper": 0.3
+          },
+          {
+            "bin": 3,
+            "lower": 0.3,
+            "meanPredicted": 0.34981998801231384,
+            "observedSurvival": 0.4808362369337979,
+            "rows": 287,
+            "upper": 0.4
+          },
+          {
+            "bin": 4,
+            "lower": 0.4,
+            "meanPredicted": 0.45198991894721985,
+            "observedSurvival": 0.5647058823529412,
+            "rows": 340,
+            "upper": 0.5
+          },
+          {
+            "bin": 5,
+            "lower": 0.5,
+            "meanPredicted": 0.5511162877082825,
+            "observedSurvival": 0.6762402088772846,
+            "rows": 383,
+            "upper": 0.6
+          },
+          {
+            "bin": 6,
+            "lower": 0.6,
+            "meanPredicted": 0.6531296968460083,
+            "observedSurvival": 0.7194860813704497,
+            "rows": 467,
+            "upper": 0.7
+          },
+          {
+            "bin": 7,
+            "lower": 0.7,
+            "meanPredicted": 0.7519369721412659,
+            "observedSurvival": 0.7636632200886263,
+            "rows": 677,
+            "upper": 0.8
+          },
+          {
+            "bin": 8,
+            "lower": 0.8,
+            "meanPredicted": 0.8565609455108643,
+            "observedSurvival": 0.8532423208191127,
+            "rows": 1172,
+            "upper": 0.9
+          },
+          {
+            "bin": 9,
+            "lower": 0.9,
+            "meanPredicted": 0.9959259033203125,
+            "observedSurvival": 0.9956013954193842,
+            "rows": 46151,
+            "upper": 1.0
+          }
+        ],
+        "finiteLogits": true,
+        "finiteProbabilities": true,
+        "meanPredictedSurvival": 0.9597429633140564,
+        "nll": 0.06374916434288025,
+        "observedSurvivalRate": 0.9639725429512359,
+        "probabilitiesInUnitInterval": true,
+        "rocAuc": 0.9778795966973498,
+        "rows": 50406
+      }
+    },
+    {
+      "batchOrderSha256": "34b0889c8e4c6cccf50a04a3b6962b72d48f5b5716b6b3a6833d681ac43edc86",
+      "epoch": 3,
+      "seconds": 4.544047813993529,
+      "trainNll": 0.0553576371246079,
+      "validation": {
+        "accuracyAt05": 0.973772963536087,
+        "brier": 0.01910785771906376,
+        "calibration": [
+          {
+            "bin": 0,
+            "lower": 0.0,
+            "meanPredicted": 0.05776045471429825,
+            "observedSurvival": 0.07112970711297072,
+            "rows": 239,
+            "upper": 0.1
+          },
+          {
+            "bin": 1,
+            "lower": 0.1,
+            "meanPredicted": 0.14443807303905487,
+            "observedSurvival": 0.16736401673640167,
+            "rows": 239,
+            "upper": 0.2
+          },
+          {
+            "bin": 2,
+            "lower": 0.2,
+            "meanPredicted": 0.24938344955444336,
+            "observedSurvival": 0.2785388127853881,
+            "rows": 219,
+            "upper": 0.3
+          },
+          {
+            "bin": 3,
+            "lower": 0.3,
+            "meanPredicted": 0.3500116467475891,
+            "observedSurvival": 0.36964980544747084,
+            "rows": 257,
+            "upper": 0.4
+          },
+          {
+            "bin": 4,
+            "lower": 0.4,
+            "meanPredicted": 0.4493615925312042,
+            "observedSurvival": 0.5634328358208955,
+            "rows": 268,
+            "upper": 0.5
+          },
+          {
+            "bin": 5,
+            "lower": 0.5,
+            "meanPredicted": 0.5539034605026245,
+            "observedSurvival": 0.5945945945945946,
+            "rows": 333,
+            "upper": 0.6
+          },
+          {
+            "bin": 6,
+            "lower": 0.6,
+            "meanPredicted": 0.6541534066200256,
+            "observedSurvival": 0.6380510440835266,
+            "rows": 431,
+            "upper": 0.7
+          },
+          {
+            "bin": 7,
+            "lower": 0.7,
+            "meanPredicted": 0.7545832991600037,
+            "observedSurvival": 0.7069767441860465,
+            "rows": 645,
+            "upper": 0.8
+          },
+          {
+            "bin": 8,
+            "lower": 0.8,
+            "meanPredicted": 0.8567271828651428,
+            "observedSurvival": 0.8156028368794326,
+            "rows": 1128,
+            "upper": 0.9
+          },
+          {
+            "bin": 9,
+            "lower": 0.9,
+            "meanPredicted": 0.9955180287361145,
+            "observedSurvival": 0.9942118464209917,
+            "rows": 46647,
+            "upper": 1.0
+          }
+        ],
+        "finiteLogits": true,
+        "finiteProbabilities": true,
+        "meanPredictedSurvival": 0.9655742049217224,
+        "nll": 0.06400790065526962,
+        "observedSurvivalRate": 0.9639725429512359,
+        "probabilitiesInUnitInterval": true,
+        "rocAuc": 0.9771990846723415,
+        "rows": 50406
+      }
+    },
+    {
+      "batchOrderSha256": "bc38faa5f96db60fe6cec28bfff2a581a17105f47bde5e9d10edf6db120f5b33",
+      "epoch": 4,
+      "seconds": 4.446482204992208,
+      "trainNll": 0.054909866676379766,
+      "validation": {
+        "accuracyAt05": 0.9737531246280204,
+        "brier": 0.01901337504386902,
+        "calibration": [
+          {
+            "bin": 0,
+            "lower": 0.0,
+            "meanPredicted": 0.053666066378355026,
+            "observedSurvival": 0.07871720116618076,
+            "rows": 343,
+            "upper": 0.1
+          },
+          {
+            "bin": 1,
+            "lower": 0.1,
+            "meanPredicted": 0.14898589253425598,
+            "observedSurvival": 0.24014336917562723,
+            "rows": 279,
+            "upper": 0.2
+          },
+          {
+            "bin": 2,
+            "lower": 0.2,
+            "meanPredicted": 0.2504224479198456,
+            "observedSurvival": 0.3092369477911647,
+            "rows": 249,
+            "upper": 0.3
+          },
+          {
+            "bin": 3,
+            "lower": 0.3,
+            "meanPredicted": 0.3504282534122467,
+            "observedSurvival": 0.4867924528301887,
+            "rows": 265,
+            "upper": 0.4
+          },
+          {
+            "bin": 4,
+            "lower": 0.4,
+            "meanPredicted": 0.45228254795074463,
+            "observedSurvival": 0.5728813559322034,
+            "rows": 295,
+            "upper": 0.5
+          },
+          {
+            "bin": 5,
+            "lower": 0.5,
+            "meanPredicted": 0.5528340935707092,
+            "observedSurvival": 0.6539589442815249,
+            "rows": 341,
+            "upper": 0.6
+          },
+          {
+            "bin": 6,
+            "lower": 0.6,
+            "meanPredicted": 0.6519646644592285,
+            "observedSurvival": 0.655011655011655,
+            "rows": 429,
+            "upper": 0.7
+          },
+          {
+            "bin": 7,
+            "lower": 0.7,
+            "meanPredicted": 0.7525122165679932,
+            "observedSurvival": 0.7445141065830722,
+            "rows": 638,
+            "upper": 0.8
+          },
+          {
+            "bin": 8,
+            "lower": 0.8,
+            "meanPredicted": 0.8557688593864441,
+            "observedSurvival": 0.8395624430264357,
+            "rows": 1097,
+            "upper": 0.9
+          },
+          {
+            "bin": 9,
+            "lower": 0.9,
+            "meanPredicted": 0.9959339499473572,
+            "observedSurvival": 0.9946417043253712,
+            "rows": 46470,
+            "upper": 1.0
+          }
+        ],
+        "finiteLogits": true,
+        "finiteProbabilities": true,
+        "meanPredictedSurvival": 0.9625195264816284,
+        "nll": 0.06349082291126251,
+        "observedSurvivalRate": 0.9639725429512359,
+        "probabilitiesInUnitInterval": true,
+        "rocAuc": 0.9778875239915393,
+        "rows": 50406
+      }
+    },
+    {
+      "batchOrderSha256": "8eaa7ec833c94a9910772c9fd6fa1aa9d6808ada3d786f93bc89301e60e18154",
+      "epoch": 5,
+      "seconds": 4.531267711005057,
+      "trainNll": 0.05427432640934785,
+      "validation": {
+        "accuracyAt05": 0.9748244256636115,
+        "brier": 0.01904894970357418,
+        "calibration": [
+          {
+            "bin": 0,
+            "lower": 0.0,
+            "meanPredicted": 0.052473075687885284,
+            "observedSurvival": 0.05166051660516605,
+            "rows": 271,
+            "upper": 0.1
+          },
+          {
+            "bin": 1,
+            "lower": 0.1,
+            "meanPredicted": 0.14932183921337128,
+            "observedSurvival": 0.18719211822660098,
+            "rows": 203,
+            "upper": 0.2
+          },
+          {
+            "bin": 2,
+            "lower": 0.2,
+            "meanPredicted": 0.2482871562242508,
+            "observedSurvival": 0.24193548387096775,
+            "rows": 186,
+            "upper": 0.3
+          },
+          {
+            "bin": 3,
+            "lower": 0.3,
+            "meanPredicted": 0.35190320014953613,
+            "observedSurvival": 0.3803418803418803,
+            "rows": 234,
+            "upper": 0.4
+          },
+          {
+            "bin": 4,
+            "lower": 0.4,
+            "meanPredicted": 0.44763293862342834,
+            "observedSurvival": 0.43523316062176165,
+            "rows": 193,
+            "upper": 0.5
+          },
+          {
+            "bin": 5,
+            "lower": 0.5,
+            "meanPredicted": 0.5485526323318481,
+            "observedSurvival": 0.6031746031746031,
+            "rows": 252,
+            "upper": 0.6
+          },
+          {
+            "bin": 6,
+            "lower": 0.6,
+            "meanPredicted": 0.6516898274421692,
+            "observedSurvival": 0.5748663101604278,
+            "rows": 374,
+            "upper": 0.7
+          },
+          {
+            "bin": 7,
+            "lower": 0.7,
+            "meanPredicted": 0.7526444792747498,
+            "observedSurvival": 0.6891891891891891,
+            "rows": 518,
+            "upper": 0.8
+          },
+          {
+            "bin": 8,
+            "lower": 0.8,
+            "meanPredicted": 0.8556954860687256,
+            "observedSurvival": 0.7702127659574468,
+            "rows": 940,
+            "upper": 0.9
+          },
+          {
+            "bin": 9,
+            "lower": 0.9,
+            "meanPredicted": 0.9966007471084595,
+            "observedSurvival": 0.9923150206414735,
+            "rows": 47235,
+            "upper": 1.0
+          }
+        ],
+        "finiteLogits": true,
+        "finiteProbabilities": true,
+        "meanPredictedSurvival": 0.9703226089477539,
+        "nll": 0.0652436837553978,
+        "observedSurvivalRate": 0.9639725429512359,
+        "probabilitiesInUnitInterval": true,
+        "rocAuc": 0.9778413088297024,
+        "rows": 50406
+      }
+    },
+    {
+      "batchOrderSha256": "73c955c2564ba2027b612ff7bf791e781a75ddd634ff7204c976ae7750b74e9a",
+      "epoch": 6,
+      "seconds": 4.640513939986704,
+      "trainNll": 0.05412619086204969,
+      "validation": {
+        "accuracyAt05": 0.9745466809506804,
+        "brier": 0.018754756078124046,
+        "calibration": [
+          {
+            "bin": 0,
+            "lower": 0.0,
+            "meanPredicted": 0.05735192820429802,
+            "observedSurvival": 0.05415162454873646,
+            "rows": 277,
+            "upper": 0.1
+          },
+          {
+            "bin": 1,
+            "lower": 0.1,
+            "meanPredicted": 0.1512942910194397,
+            "observedSurvival": 0.211864406779661,
+            "rows": 236,
+            "upper": 0.2
+          },
+          {
+            "bin": 2,
+            "lower": 0.2,
+            "meanPredicted": 0.2518002390861511,
+            "observedSurvival": 0.2823529411764706,
+            "rows": 255,
+            "upper": 0.3
+          },
+          {
+            "bin": 3,
+            "lower": 0.3,
+            "meanPredicted": 0.3521648943424225,
+            "observedSurvival": 0.38235294117647056,
+            "rows": 238,
+            "upper": 0.4
+          },
+          {
+            "bin": 4,
+            "lower": 0.4,
+            "meanPredicted": 0.4516582787036896,
+            "observedSurvival": 0.5346938775510204,
+            "rows": 245,
+            "upper": 0.5
+          },
+          {
+            "bin": 5,
+            "lower": 0.5,
+            "meanPredicted": 0.5517138838768005,
+            "observedSurvival": 0.5918367346938775,
+            "rows": 343,
+            "upper": 0.6
+          },
+          {
+            "bin": 6,
+            "lower": 0.6,
+            "meanPredicted": 0.6527650356292725,
+            "observedSurvival": 0.6658536585365854,
+            "rows": 410,
+            "upper": 0.7
+          },
+          {
+            "bin": 7,
+            "lower": 0.7,
+            "meanPredicted": 0.7516193389892578,
+            "observedSurvival": 0.7439222042139384,
+            "rows": 617,
+            "upper": 0.8
+          },
+          {
+            "bin": 8,
+            "lower": 0.8,
+            "meanPredicted": 0.856127142906189,
+            "observedSurvival": 0.7985143918291551,
+            "rows": 1077,
+            "upper": 0.9
+          },
+          {
+            "bin": 9,
+            "lower": 0.9,
+            "meanPredicted": 0.9962452054023743,
+            "observedSurvival": 0.9941765864519997,
+            "rows": 46708,
+            "upper": 1.0
+          }
+        ],
+        "finiteLogits": true,
+        "finiteProbabilities": true,
+        "meanPredictedSurvival": 0.9658684134483337,
+        "nll": 0.06304110586643219,
+        "observedSurvivalRate": 0.9639725429512359,
+        "probabilitiesInUnitInterval": true,
+        "rocAuc": 0.9782098968443136,
+        "rows": 50406
+      }
+    },
+    {
+      "batchOrderSha256": "3b3d1f3a2142ffcf73083f793921ff35e111db5b81a5c919a446fc35d944a84b",
+      "epoch": 7,
+      "seconds": 4.677162712003337,
+      "trainNll": 0.05360346855558221,
+      "validation": {
+        "accuracyAt05": 0.9745070031345475,
+        "brier": 0.018826685845851898,
+        "calibration": [
+          {
+            "bin": 0,
+            "lower": 0.0,
+            "meanPredicted": 0.047983985394239426,
+            "observedSurvival": 0.07859078590785908,
+            "rows": 369,
+            "upper": 0.1
+          },
+          {
+            "bin": 1,
+            "lower": 0.1,
+            "meanPredicted": 0.1476539820432663,
+            "observedSurvival": 0.24738675958188153,
+            "rows": 287,
+            "upper": 0.2
+          },
+          {
+            "bin": 2,
+            "lower": 0.2,
+            "meanPredicted": 0.2507036328315735,
+            "observedSurvival": 0.3445692883895131,
+            "rows": 267,
+            "upper": 0.3
+          },
+          {
+            "bin": 3,
+            "lower": 0.3,
+            "meanPredicted": 0.3499554395675659,
+            "observedSurvival": 0.4266666666666667,
+            "rows": 225,
+            "upper": 0.4
+          },
+          {
+            "bin": 4,
+            "lower": 0.4,
+            "meanPredicted": 0.4490879476070404,
+            "observedSurvival": 0.5810276679841897,
+            "rows": 253,
+            "upper": 0.5
+          },
+          {
+            "bin": 5,
+            "lower": 0.5,
+            "meanPredicted": 0.5517695546150208,
+            "observedSurvival": 0.652046783625731,
+            "rows": 342,
+            "upper": 0.6
+          },
+          {
+            "bin": 6,
+            "lower": 0.6,
+            "meanPredicted": 0.65183025598526,
+            "observedSurvival": 0.678082191780822,
+            "rows": 438,
+            "upper": 0.7
+          },
+          {
+            "bin": 7,
+            "lower": 0.7,
+            "meanPredicted": 0.7525299191474915,
+            "observedSurvival": 0.756896551724138,
+            "rows": 580,
+            "upper": 0.8
+          },
+          {
+            "bin": 8,
+            "lower": 0.8,
+            "meanPredicted": 0.8563072681427002,
+            "observedSurvival": 0.8134254689042448,
+            "rows": 1013,
+            "upper": 0.9
+          },
+          {
+            "bin": 9,
+            "lower": 0.9,
+            "meanPredicted": 0.9963603019714355,
+            "observedSurvival": 0.9944244295762567,
+            "rows": 46632,
+            "upper": 1.0
+          }
+        ],
+        "finiteLogits": true,
+        "finiteProbabilities": true,
+        "meanPredictedSurvival": 0.9633727073669434,
+        "nll": 0.06326749920845032,
+        "observedSurvivalRate": 0.9639725429512359,
+        "probabilitiesInUnitInterval": true,
+        "rocAuc": 0.9782986043429106,
+        "rows": 50406
+      }
+    },
+    {
+      "batchOrderSha256": "2026cf1fb559658ce816db053a8be97b0272f7110d9265eb886747c910752716",
+      "epoch": 8,
+      "seconds": 4.467595005990006,
+      "trainNll": 0.05330893972802129,
+      "validation": {
+        "accuracyAt05": 0.9746657143990795,
+        "brier": 0.018795300275087357,
+        "calibration": [
+          {
+            "bin": 0,
+            "lower": 0.0,
+            "meanPredicted": 0.053817860782146454,
+            "observedSurvival": 0.059233449477351915,
+            "rows": 287,
+            "upper": 0.1
+          },
+          {
+            "bin": 1,
+            "lower": 0.1,
+            "meanPredicted": 0.14703992009162903,
+            "observedSurvival": 0.17972350230414746,
+            "rows": 217,
+            "upper": 0.2
+          },
+          {
+            "bin": 2,
+            "lower": 0.2,
+            "meanPredicted": 0.250577449798584,
+            "observedSurvival": 0.30991735537190085,
+            "rows": 242,
+            "upper": 0.3
+          },
+          {
+            "bin": 3,
+            "lower": 0.3,
+            "meanPredicted": 0.34618568420410156,
+            "observedSurvival": 0.38197424892703863,
+            "rows": 233,
+            "upper": 0.4
+          },
+          {
+            "bin": 4,
+            "lower": 0.4,
+            "meanPredicted": 0.4519177973270416,
+            "observedSurvival": 0.5,
+            "rows": 284,
+            "upper": 0.5
+          },
+          {
+            "bin": 5,
+            "lower": 0.5,
+            "meanPredicted": 0.5533556938171387,
+            "observedSurvival": 0.5679442508710801,
+            "rows": 287,
+            "upper": 0.6
+          },
+          {
+            "bin": 6,
+            "lower": 0.6,
+            "meanPredicted": 0.6503818035125732,
+            "observedSurvival": 0.7034313725490197,
+            "rows": 408,
+            "upper": 0.7
+          },
+          {
+            "bin": 7,
+            "lower": 0.7,
+            "meanPredicted": 0.7535653114318848,
+            "observedSurvival": 0.7170731707317073,
+            "rows": 615,
+            "upper": 0.8
+          },
+          {
+            "bin": 8,
+            "lower": 0.8,
+            "meanPredicted": 0.855750322341919,
+            "observedSurvival": 0.7960710944808232,
+            "rows": 1069,
+            "upper": 0.9
+          },
+          {
+            "bin": 9,
+            "lower": 0.9,
+            "meanPredicted": 0.9962573051452637,
+            "observedSurvival": 0.9940552561799675,
+            "rows": 46764,
+            "upper": 1.0
+          }
+        ],
+        "finiteLogits": true,
+        "finiteProbabilities": true,
+        "meanPredictedSurvival": 0.9663212299346924,
+        "nll": 0.06328397989273071,
+        "observedSurvivalRate": 0.9639725429512359,
+        "probabilitiesInUnitInterval": true,
+        "rocAuc": 0.9780856666814749,
+        "rows": 50406
+      }
+    },
+    {
+      "batchOrderSha256": "54b2d13c815c0450c4c3ee51697e97e25105ba9edd4bdbc9a6da6169ce56587c",
+      "epoch": 9,
+      "seconds": 4.325445269991178,
+      "trainNll": 0.05300905240894623,
+      "validation": {
+        "accuracyAt05": 0.9729595683053605,
+        "brier": 0.019313182681798935,
+        "calibration": [
+          {
+            "bin": 0,
+            "lower": 0.0,
+            "meanPredicted": 0.048279423266649246,
+            "observedSurvival": 0.09953703703703703,
+            "rows": 432,
+            "upper": 0.1
+          },
+          {
+            "bin": 1,
+            "lower": 0.1,
+            "meanPredicted": 0.14704865217208862,
+            "observedSurvival": 0.2625,
+            "rows": 320,
+            "upper": 0.2
+          },
+          {
+            "bin": 2,
+            "lower": 0.2,
+            "meanPredicted": 0.24801528453826904,
+            "observedSurvival": 0.3814814814814815,
+            "rows": 270,
+            "upper": 0.3
+          },
+          {
+            "bin": 3,
+            "lower": 0.3,
+            "meanPredicted": 0.3483479917049408,
+            "observedSurvival": 0.5632183908045977,
+            "rows": 261,
+            "upper": 0.4
+          },
+          {
+            "bin": 4,
+            "lower": 0.4,
+            "meanPredicted": 0.45031625032424927,
+            "observedSurvival": 0.6079545454545454,
+            "rows": 352,
+            "upper": 0.5
+          },
+          {
+            "bin": 5,
+            "lower": 0.5,
+            "meanPredicted": 0.5550086498260498,
+            "observedSurvival": 0.6657824933687002,
+            "rows": 377,
+            "upper": 0.6
+          },
+          {
+            "bin": 6,
+            "lower": 0.6,
+            "meanPredicted": 0.6517584323883057,
+            "observedSurvival": 0.7266187050359713,
+            "rows": 417,
+            "upper": 0.7
+          },
+          {
+            "bin": 7,
+            "lower": 0.7,
+            "meanPredicted": 0.7514725923538208,
+            "observedSurvival": 0.7709580838323353,
+            "rows": 668,
+            "upper": 0.8
+          },
+          {
+            "bin": 8,
+            "lower": 0.8,
+            "meanPredicted": 0.8541653156280518,
+            "observedSurvival": 0.8467670504871567,
+            "rows": 1129,
+            "upper": 0.9
+          },
+          {
+            "bin": 9,
+            "lower": 0.9,
+            "meanPredicted": 0.9962027668952942,
+            "observedSurvival": 0.9955391944564747,
+            "rows": 46180,
+            "upper": 1.0
+          }
+        ],
+        "finiteLogits": true,
+        "finiteProbabilities": true,
+        "meanPredictedSurvival": 0.9589396715164185,
+        "nll": 0.06420056521892548,
+        "observedSurvivalRate": 0.9639725429512359,
+        "probabilitiesInUnitInterval": true,
+        "rocAuc": 0.9780740052294076,
+        "rows": 50406
+      }
+    },
+    {
+      "batchOrderSha256": "88e538e2da9316336aea7faa6e55dc19ddafc486659a01704e6d4f2a90d3d33e",
+      "epoch": 10,
+      "seconds": 4.418280042998958,
+      "trainNll": 0.05271778207495243,
+      "validation": {
+        "accuracyAt05": 0.97500297583621,
+        "brier": 0.01913401670753956,
+        "calibration": [
+          {
+            "bin": 0,
+            "lower": 0.0,
+            "meanPredicted": 0.05281323567032814,
+            "observedSurvival": 0.048672566371681415,
+            "rows": 226,
+            "upper": 0.1
+          },
+          {
+            "bin": 1,
+            "lower": 0.1,
+            "meanPredicted": 0.14690802991390228,
+            "observedSurvival": 0.12698412698412698,
+            "rows": 189,
+            "upper": 0.2
+          },
+          {
+            "bin": 2,
+            "lower": 0.2,
+            "meanPredicted": 0.25403261184692383,
+            "observedSurvival": 0.26737967914438504,
+            "rows": 187,
+            "upper": 0.3
+          },
+          {
+            "bin": 3,
+            "lower": 0.3,
+            "meanPredicted": 0.3499480187892914,
+            "observedSurvival": 0.31862745098039214,
+            "rows": 204,
+            "upper": 0.4
+          },
+          {
+            "bin": 4,
+            "lower": 0.4,
+            "meanPredicted": 0.45079824328422546,
+            "observedSurvival": 0.3853211009174312,
+            "rows": 218,
+            "upper": 0.5
+          },
+          {
+            "bin": 5,
+            "lower": 0.5,
+            "meanPredicted": 0.5532510280609131,
+            "observedSurvival": 0.5503875968992248,
+            "rows": 258,
+            "upper": 0.6
+          },
+          {
+            "bin": 6,
+            "lower": 0.6,
+            "meanPredicted": 0.6541096568107605,
+            "observedSurvival": 0.6435045317220544,
+            "rows": 331,
+            "upper": 0.7
+          },
+          {
+            "bin": 7,
+            "lower": 0.7,
+            "meanPredicted": 0.7535603046417236,
+            "observedSurvival": 0.6755793226381461,
+            "rows": 561,
+            "upper": 0.8
+          },
+          {
+            "bin": 8,
+            "lower": 0.8,
+            "meanPredicted": 0.8574296832084656,
+            "observedSurvival": 0.7548321464903357,
+            "rows": 983,
+            "upper": 0.9
+          },
+          {
+            "bin": 9,
+            "lower": 0.9,
+            "meanPredicted": 0.9962450265884399,
+            "observedSurvival": 0.9921903109060509,
+            "rows": 47249,
+            "upper": 1.0
+          }
+        ],
+        "finiteLogits": true,
+        "finiteProbabilities": true,
+        "meanPredictedSurvival": 0.9711801409721375,
+        "nll": 0.06509652733802795,
+        "observedSurvivalRate": 0.9639725429512359,
+        "probabilitiesInUnitInterval": true,
+        "rocAuc": 0.9777393362877189,
+        "rows": 50406
+      }
+    },
+    {
+      "batchOrderSha256": "309f97a22bc7afcf827d981475986d0cf09e61e0fcecae13d0c91887d1df9820",
+      "epoch": 11,
+      "seconds": 4.386612762013101,
+      "trainNll": 0.0522416035022416,
+      "validation": {
+        "accuracyAt05": 0.974526842042614,
+        "brier": 0.01892603561282158,
+        "calibration": [
+          {
+            "bin": 0,
+            "lower": 0.0,
+            "meanPredicted": 0.05216452479362488,
+            "observedSurvival": 0.055776892430278883,
+            "rows": 251,
+            "upper": 0.1
+          },
+          {
+            "bin": 1,
+            "lower": 0.1,
+            "meanPredicted": 0.1486256718635559,
+            "observedSurvival": 0.15668202764976957,
+            "rows": 217,
+            "upper": 0.2
+          },
+          {
+            "bin": 2,
+            "lower": 0.2,
+            "meanPredicted": 0.25254788994789124,
+            "observedSurvival": 0.27722772277227725,
+            "rows": 202,
+            "upper": 0.3
+          },
+          {
+            "bin": 3,
+            "lower": 0.3,
+            "meanPredicted": 0.3509945571422577,
+            "observedSurvival": 0.3568281938325991,
+            "rows": 227,
+            "upper": 0.4
+          },
+          {
+            "bin": 4,
+            "lower": 0.4,
+            "meanPredicted": 0.45125502347946167,
+            "observedSurvival": 0.4890829694323144,
+            "rows": 229,
+            "upper": 0.5
+          },
+          {
+            "bin": 5,
+            "lower": 0.5,
+            "meanPredicted": 0.5520807504653931,
+            "observedSurvival": 0.5601374570446735,
+            "rows": 291,
+            "upper": 0.6
+          },
+          {
+            "bin": 6,
+            "lower": 0.6,
+            "meanPredicted": 0.6540092825889587,
+            "observedSurvival": 0.6493150684931507,
+            "rows": 365,
+            "upper": 0.7
+          },
+          {
+            "bin": 7,
+            "lower": 0.7,
+            "meanPredicted": 0.75346839427948,
+            "observedSurvival": 0.6936026936026936,
+            "rows": 594,
+            "upper": 0.8
+          },
+          {
+            "bin": 8,
+            "lower": 0.8,
+            "meanPredicted": 0.855999767780304,
+            "observedSurvival": 0.7712609970674487,
+            "rows": 1023,
+            "upper": 0.9
+          },
+          {
+            "bin": 9,
+            "lower": 0.9,
+            "meanPredicted": 0.9965168237686157,
+            "observedSurvival": 0.9932988703810071,
+            "rows": 47007,
+            "upper": 1.0
+          }
+        ],
+        "finiteLogits": true,
+        "finiteProbabilities": true,
+        "meanPredictedSurvival": 0.9690365791320801,
+        "nll": 0.06429438292980194,
+        "observedSurvivalRate": 0.9639725429512359,
+        "probabilitiesInUnitInterval": true,
+        "rocAuc": 0.9779214260652607,
+        "rows": 50406
+      }
+    },
+    {
+      "batchOrderSha256": "4ef4200e8571a535f21e9010a0d3c25bad1d1a6de8f7ac3391406bf0be18aff6",
+      "epoch": 12,
+      "seconds": 4.846712982995086,
+      "trainNll": 0.05200273552124088,
+      "validation": {
+        "accuracyAt05": 0.9743681307780819,
+        "brier": 0.018948500975966454,
+        "calibration": [
+          {
+            "bin": 0,
+            "lower": 0.0,
+            "meanPredicted": 0.04820986092090607,
+            "observedSurvival": 0.056818181818181816,
+            "rows": 352,
+            "upper": 0.1
+          },
+          {
+            "bin": 1,
+            "lower": 0.1,
+            "meanPredicted": 0.15173229575157166,
+            "observedSurvival": 0.24372759856630824,
+            "rows": 279,
+            "upper": 0.2
+          },
+          {
+            "bin": 2,
+            "lower": 0.2,
+            "meanPredicted": 0.2493641972541809,
+            "observedSurvival": 0.33620689655172414,
+            "rows": 232,
+            "upper": 0.3
+          },
+          {
+            "bin": 3,
+            "lower": 0.3,
+            "meanPredicted": 0.3520217537879944,
+            "observedSurvival": 0.459915611814346,
+            "rows": 237,
+            "upper": 0.4
+          },
+          {
+            "bin": 4,
+            "lower": 0.4,
+            "meanPredicted": 0.45025280117988586,
+            "observedSurvival": 0.5471014492753623,
+            "rows": 276,
+            "upper": 0.5
+          },
+          {
+            "bin": 5,
+            "lower": 0.5,
+            "meanPredicted": 0.5555971264839172,
+            "observedSurvival": 0.6765578635014837,
+            "rows": 337,
+            "upper": 0.6
+          },
+          {
+            "bin": 6,
+            "lower": 0.6,
+            "meanPredicted": 0.6533417701721191,
+            "observedSurvival": 0.68,
+            "rows": 400,
+            "upper": 0.7
+          },
+          {
+            "bin": 7,
+            "lower": 0.7,
+            "meanPredicted": 0.7524789571762085,
+            "observedSurvival": 0.734860883797054,
+            "rows": 611,
+            "upper": 0.8
+          },
+          {
+            "bin": 8,
+            "lower": 0.8,
+            "meanPredicted": 0.8552522659301758,
+            "observedSurvival": 0.8095238095238095,
+            "rows": 1050,
+            "upper": 0.9
+          },
+          {
+            "bin": 9,
+            "lower": 0.9,
+            "meanPredicted": 0.9964380264282227,
+            "observedSurvival": 0.9942743180648482,
+            "rows": 46632,
+            "upper": 1.0
+          }
+        ],
+        "finiteLogits": true,
+        "finiteProbabilities": true,
+        "meanPredictedSurvival": 0.9641135334968567,
+        "nll": 0.06382740288972855,
+        "observedSurvivalRate": 0.9639725429512359,
+        "probabilitiesInUnitInterval": true,
+        "rocAuc": 0.9777419144999107,
+        "rows": 50406
+      }
+    }
+  ],
+  "initialization": {
+    "addedParameters": 4160,
+    "checkpoint": "/home/philippherrmann/sts_sweep/runs/survival-specific-deepset-sweep-20260917-final/strongWd/selected.pt",
+    "checkpointSha256": "3689593db85974f13b6313c495e7fde4ec4b4fa7d87f3442c8604a47f5e0f05b",
+    "encoderSha256": "77bb505395170a6c08673c849c3da0214e91f0643688f45d1cf9c06a98262ff1",
+    "headParameters": 4225
+  },
+  "optimizerScope": {
+    "duplicateParameterIds": false,
+    "exactParameterIds": true,
+    "groups": [
+      {
+        "elements": 94424,
+        "lr": 0.0001,
+        "name": "encoder",
+        "tensors": 26,
+        "weightDecay": 0.001
+      },
+      {
+        "elements": 4225,
+        "lr": 0.001,
+        "name": "survivalHead",
+        "tensors": 4,
+        "weightDecay": 0.001
+      }
+    ],
+    "parameterNames": [
+      "encoder.card_id.weight",
+      "encoder.relic_id.weight",
+      "encoder.potion_id.weight",
+      "encoder.potion_slot.weight",
+      "encoder.global_category.0.weight",
+      "encoder.global_category.1.weight",
+      "encoder.global_category.2.weight",
+      "encoder.global_category.3.weight",
+      "encoder.card_mlp.0.weight",
+      "encoder.card_mlp.0.bias",
+      "encoder.card_mlp.2.weight",
+      "encoder.card_mlp.2.bias",
+      "encoder.relic_mlp.0.weight",
+      "encoder.relic_mlp.0.bias",
+      "encoder.relic_mlp.2.weight",
+      "encoder.relic_mlp.2.bias",
+      "encoder.potion_mlp.0.weight",
+      "encoder.potion_mlp.0.bias",
+      "encoder.potion_mlp.2.weight",
+      "encoder.potion_mlp.2.bias",
+      "encoder.global_mlp.0.weight",
+      "encoder.global_mlp.0.bias",
+      "encoder.trunk.0.weight",
+      "encoder.trunk.0.bias",
+      "encoder.trunk.2.weight",
+      "encoder.trunk.2.bias",
+      "head.0.weight",
+      "head.0.bias",
+      "head.2.weight",
+      "head.2.bias"
+    ]
+  },
+  "population": {
+    "TEST": {
+      "encodedRows": 0,
+      "inferenceRows": 0,
+      "rowIdsSha256": "b8d6d54c5f1343837a7096991760dfc38ebb983982ffb9eab56b96491a54fed6",
+      "rows": 51441,
+      "scoredRows": 0,
+      "sourceIdsSha256": "b87414509ccc393bd1930070fa636b515d5ad10976f6e1e473659e460bb40a81",
+      "sources": 2517
+    },
+    "TRAIN": {
+      "rowIdsSha256": "f08096c4888950ae3720a1620d809d25e1da89ec94f22770e561948f856db0a4",
+      "rows": 408183,
+      "sourceIdsSha256": "81ebc90e0219eb0ea7ce83c5a8d25808c5275514321e642f12145cc94dc047c2",
+      "sources": 19986
+    },
+    "VALIDATION": {
+      "rowIdsSha256": "08a5391631e81f8adae8e3ade94d6d0d065bdb838b46ad834202e78aa4b61809",
+      "rows": 50406,
+      "sourceIdsSha256": "e143bf2aea94f7db99f7ae4b842eb6c368d557aab7b227f92e2a178bb00b4f5a",
+      "sources": 2496
+    }
+  },
+  "predictionsSha256": "ae573b4b37ef82f872eb57da8f81adcecdcbae380b718b78ac0148af37dfae98",
+  "provenance": {
+    "preparationCacheSha256": "e1c25f2758bf56c7cff392ea02342d809f3ad7427c70b64166244a6b714a251d",
+    "preparationSha256": "165ddba8ed9d47a592de4fc7ec037f1687fbee2ec280daca20307ddbf7d78744",
+    "sourceSha": "1c31b7eb0a7660d43bc27e0849a8955dd0c3daae",
+    "verifiedFiles": {
+      "/home/philippherrmann/sts_sweep/runs/combat-transition-model-v1/split_manifest.json": "e9043bcceb9d95027711e6ff33afbfe1cae3cf9528f820c0ff68bddbb419db32",
+      "/home/philippherrmann/sts_sweep/runs/combat-transition-runtime-25k/combat-transition-25k.jsonl": "74c08aa0a3c30342d86cd45355fe17ffa9046963ad7c8cf71b1938f9cdc1cfde",
+      "/tmp/sts-phase2-attention-audit-20260913/prepared.npz": "2badbb85ccd8329bcb886d50ef8a0b9b1bd2c043fda9445de9f9c2e7a4b6f9a5",
+      "/tmp/sts-phase2-attention-audit-20260913/prepared_manifest.json": "13b2c91fd0ced713f8c429bbf8995ceb58b6e3e57d1555de42f5e67d7f9a389f",
+      "/tmp/sts-phase2-attention-audit-20260913/target_spec.json": "e2315620d512578542d6b3bfbd362eb07b086f0e9fa7770cc23f4fa4c226e229"
+    }
+  },
+  "recipe": {
+    "batch": 512,
+    "encoderLr": 0.0001,
+    "gradientClip": 1.0,
+    "head": "Linear(64,64), ReLU, Linear(64,1)",
+    "headLr": 0.001,
+    "loss": "unweighted BCEWithLogitsLoss; 1=survived, 0=death",
+    "maxEpochs": 40,
+    "minEpochs": 12,
+    "normalization": "unchanged strong-WD buffers",
+    "optimizer": "AdamW",
+    "patience": 6,
+    "precision": "FP32",
+    "schema": "survival_mlp_joint_v1",
+    "seed": 20260912,
+    "selection": "earliest strict minimum VALIDATION NLL",
+    "training": "strong-WD epoch-20 encoder plus fresh MLP head, jointly trained on TRAIN",
+    "weightDecay": 0.001
+  },
+  "scope": "single joint fine-tune; no frozen-head arm; no causal isolation of head vs additional encoder updates",
+  "selectedEpoch": 6,
+  "speedScreen": null,
+  "stoppingReason": "patience",
+  "testEncodedRows": 0,
+  "testInferenceRows": 0,
+  "testScoredRows": 0
+}
