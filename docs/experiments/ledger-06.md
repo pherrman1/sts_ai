@@ -9641,3 +9641,25 @@ top-level benchmark reporting corrected.
   PR #161-style replay remains unresolved.
 - **Evidence:** [receipt and protocol](evidence/survival_platt_crossfit_2026-09-17.md).
   **Knowledge impact:** current research evidence, no qualified default.
+
+## §298 — Paired warm/scratch survival plus auxiliary HP (2026-09-17)
+
+- **Question:** Does the PR #161-style joint-loss recipe salvage current
+  64-wide DeepSets, and does the PR #205 initialization help within it?
+- **Execution:** `9ca315fac9b6ad30444c599af489dc765207b4ef`. Same fresh heads,
+  all 408,183 TRAIN-row normalization, epoch order and optimizer for both arms.
+  BCE plus survivor-only HP-fraction MSE; selection solely survival NLL.
+  Historical schedule: AdamW 1e-3, decay 1e-4, batch 2048, seed 20260911,
+  cap 12, patience 3. Original splits and survival gates unchanged.
+- **Result:** Warm epoch 12/12 NLL `0.063309319` (+6.4122%), Brier
+  `0.018885445` (+6.0081%); scratch epoch 4/7 NLL `0.069789790`
+  (+17.3048%), Brier `0.020476995` (+14.9418%). Both also fail death NLL;
+  scratch fails low-HP NLL. HP metrics remain diagnostics only.
+- **Decision:** Both rejected. Warm helps within this schedule, but its best
+  epoch is at the cap; convergence and generality remain uncertain. No extension,
+  TEST, speed screen, architecture change, gameplay, runtime or promotion.
+- **Evidence:** [report](evidence/survival_deepset_aux_paired_2026-09-17.md) and
+  [complete receipt](evidence/survival_deepset_aux_paired_2026-09-17.json).
+  Both checkpoints independently reloaded and results reproduced. No independent
+  implementation review passed; failed tool delegation is recorded, not hidden.
+  **Knowledge impact:** current research and experiment evidence only.

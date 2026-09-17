@@ -812,10 +812,20 @@ the gap: cross-fitted NLL `0.062660988` (+5.3225%) and Brier `0.018729319`
 This removes only about 8% of excess NLL, disfavoring global affine calibration
 as the main explanation. It is diagnostic only: the calibrators exclude each
 scored source, but the model/epoch were already selected on this VALIDATION
-set. The next requested hypothesis is from-scratch 64-wide joint survival/HP
-training before widening, with historical-composite versus survival-NLL
-selection still to resolve. See the
+set. See the
 [calibration evidence](../../experiments/evidence/survival_platt_crossfit_2026-09-17.md).
+
+The paired 64-wide joint survival/HP experiment also rejects both arms.
+Both recompute normalization on all 408,183 TRAIN rows, use identical fresh
+heads and epoch orders, and select solely by VALIDATION survival NLL.
+The historical PR #161 optimizer schedule (batch 2048, AdamW 1e-3/1e-4,
+cap 12, patience 3, seed 20260911) favors the PR #205 warm-start over scratch:
+warm epoch 12 NLL `0.063309319` (+6.4122%), scratch epoch 4 NLL `0.069789790`
+(+17.3048%). Both fail NLL, Brier and death NLL; scratch also fails low-HP NLL.
+Warm's best epoch is at the cap, so convergence is not established. The
+experiment isolates initialization within this joint-loss setting, not the
+individual effects of HP auxiliary loss or normalization. No widening or
+runtime qualification follows. See [paired evidence](../../experiments/evidence/survival_deepset_aux_paired_2026-09-17.md).
 
 ### Jointly adapted shared maxHP+HP+potion representation
 
