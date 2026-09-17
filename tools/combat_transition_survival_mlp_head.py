@@ -17,6 +17,7 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from tools import combat_transition_survival_mlp as mlp
+from tools import combat_transition_survival_deepset_train as fit
 from tools import combat_transition_survival_platt as platt
 
 RECIPE = dict(mlp.RECIPE, training='strong-WD epoch-20 encoder frozen; fresh MLP survival head only',
