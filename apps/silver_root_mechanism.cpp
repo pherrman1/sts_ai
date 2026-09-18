@@ -1,5 +1,6 @@
 #include "sim/search/SilverRootMechanism.h"
 #include <cmath>
+#include <chrono>
 #include <filesystem>
 #include <fstream>
 #include <iostream>
@@ -79,10 +80,15 @@ Teacher teacher(const Json &label, const Json &root, const std::string &replicat
 
 int main(int argc, char **argv) {
     try {
-        if (argc != 6 && argc != 7)
-            throw std::invalid_argument("usage: silver_root_mechanism ROOTS LABELS OUTPUT SEED EXECUTABLE_SHA [--fixture]");
-        const bool fixture = argc == 7 && std::string(argv[6]) == "--fixture";
-        if (argc == 7 && !fixture) throw std::invalid_argument("unknown option");
+        if (argc < 6 || argc > 8)
+            throw std::invalid_argument("usage: silver_root_mechanism ROOTS LABELS OUTPUT SEED EXECUTABLE_SHA [--fixture|--rave-screen]");
+        bool fixture = false;
+        bool raveScreen = false;
+        for (int i = 6; i < argc; ++i) {
+            if (std::string(argv[i]) == "--fixture") fixture = true;
+            else if (std::string(argv[i]) == "--rave-screen") raveScreen = true;
+            else throw std::invalid_argument("unknown option");
+        }
         if (!silver_bridge::rootMechanismShaValid(argv[5])) throw std::invalid_argument("invalid executable SHA");
         if (std::filesystem::exists(argv[3])) throw std::invalid_argument("refusing existing replay output");
         const auto seed = std::stoull(argv[4]);
@@ -102,7 +108,7 @@ int main(int argc, char **argv) {
             if (!ids.insert(id).second) throw std::invalid_argument("duplicate root");
             const auto labelA = teacher(indexed.at({id, "A"}), root, "A", fixture);
             const auto labelB = teacher(indexed.at({id, "B"}), root, "B", fixture);
-            if (!fixture && (root.at("executable_git_sha") != argv[5]
+            if (!fixture && !raveScreen && (root.at("executable_git_sha") != argv[5]
                     || labelA.executableGitSha != argv[5]
                     || labelB.executableGitSha != argv[5]))
                 throw std::invalid_argument("root/teacher/CLI executable SHA mismatch");
@@ -137,7 +143,10 @@ int main(int argc, char **argv) {
                 wire.isolatedSearchSeed = silver_bridge::rootMechanismSeed(
                     std::to_string(seed) + "/replay/" + id + "/" + std::to_string(replicate));
                 if (!seeds.insert(wire.isolatedSearchSeed).second) throw std::invalid_argument("replay RNG collision");
-                for (const std::string arm : {"A", "B", "E", "F", "C", "D"}) {
+                const std::vector<std::string> arms = raveScreen
+                    ? std::vector<std::string>{"A", "R8", "R32", "R128"}
+                    : std::vector<std::string>{"A", "B", "E", "F", "C", "D"};
+                for (const std::string arm : arms) {
                     const bool teacherOrder = arm == "B" || arm == "F" || arm == "D";
                     const auto &order = teacherOrder ? ordered : native;
                     const bool puct = arm == "E" || arm == "F" || arm == "C" || arm == "D";
@@ -150,7 +159,11 @@ int main(int argc, char **argv) {
                                 priors.push_back(static_cast<double>(labelA.visits.at(fingerprint)) / total);
                         }
                     }
-                    const auto result = silver_bridge::replaySilverRoot(wire, native, order, priors, puct);
+                    const int raveK = arm == "R8" ? 8 : arm == "R32" ? 32 : arm == "R128" ? 128 : 0;
+                    const auto wallStart = std::chrono::steady_clock::now();
+                    const auto result = silver_bridge::replaySilverRoot(wire, native, order, priors, puct, raveK);
+                    const auto wallMicros = std::chrono::duration<double, std::micro>(
+                        std::chrono::steady_clock::now() - wallStart).count();
                     if (!result.accepted) throw std::runtime_error("replay failed: " + result.failureReason);
                     const auto selected = silver_bridge::semanticActionFingerprint(result.action);
                     const double selectedQ = labelB.quality.at(selected);
@@ -158,6 +171,11 @@ int main(int argc, char **argv) {
                         {"source_seed", root.at("source_seed")}, {"arm", arm}, {"replicate", replicate},
                         {"search_seed", wire.isolatedSearchSeed}, {"simulations", result.simulations},
                         {"selected_action_fingerprint", selected}, {"b_selected_q", selectedQ},
+                        {"rave_k", raveK}, {"rave_updates", result.telemetry.raveUpdates},
+                        {"rave_eligible_edges", result.telemetry.raveEligibleEdges},
+                        {"rave_eligible_nodes", result.telemetry.raveEligibleNodes},
+                        {"rave_covered_nodes", result.telemetry.raveCoveredNodes},
+                        {"search_wall_micros", wallMicros},
                         {"b_best_q", bestQ}, {"b_best_action", best},
                         {"b_regret", bestQ - selectedQ}, {"b_best", selectedQ == bestQ},
                         {"native_order", native}, {"replay_order", order}, {"priors", priors},
