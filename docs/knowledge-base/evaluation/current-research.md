@@ -1273,68 +1273,17 @@ and [ledger-06 §173](../../experiments/ledger-06.md).
 Earlier lower root exploration, Sequential Halving, progressive unpruning,
 hard candidate pruning, learned ordering, and grouped/rank-4 visit-PUCT priors
 produced no stable promotable advantage; ordinary c=25 remains the default.
-The later six-arm root-mechanism replay was followed by a bounded 16-source-seed
-confirmation: informative Teacher-A visit PUCT beats uniform PUCT (`C-E` mean
-B-regret delta `-0.602946`, source-seed bootstrap 95% CI
-`[-1.050254,-0.221492]`, improved/worsened/tied `9/2/5`), while uniform PUCT
-loses to ordinary UCT (`E-A` `+0.751411`, CI `[+0.165289,+1.510793]`).
-Informative PUCT versus ordinary UCT remains inconclusive (`C-A` `+0.148464`,
-CI `[-0.348172,+0.719575]`), and the C-E B-best interval crosses zero
-(`+3.1250` pp, `[-6.2500,+10.1563]` pp). The source-seed confirmation therefore
-remains **`ROOT_GUIDANCE_INCONCLUSIVE`**: the informative-prior signal against
-uniform PUCT persists directionally, but it does not establish broad absolute
-guidance value. The preregistered fresh-seed extension is now complete: seeds
-`17..32` added two roots per seed and were pooled with seeds `1..16` for 32
-source-seed units. The primary `C-A` effect is `-0.143262`, but its source-seed
-bootstrap CI `[-0.553535,+0.250062]` includes zero and the exact two-sided sign
-test is `p=0.8388` (`11/13/8` improved/worsened/tied). `C-E` remains
-beneficial, but oracle-informed PUCT still does not establish an advantage over
-ordinary UCT. The learned-PUCT line is **`ROOT_GUIDANCE_SIGNAL_NOT_CONFIRMED`**
-and stops: do not train a policy, run gameplay, tune PUCT, add roots, or change
-the default. See [ledger-06 §303–§306](../../experiments/ledger-06.md),
-the [six-arm replay evidence](../../experiments/evidence/silver_root_mechanism_2026-09-17.md),
-the [16-seed confirmation evidence](../../experiments/evidence/silver_root_mechanism_confirmation16_2026-09-18.md),
-the [32-source-seed preregistration](../../experiments/evidence/silver_root_mechanism_confirmation32_preregistration_2026-09-18.md),
-and the [pooled confirmation evidence](../../experiments/evidence/silver_root_mechanism_confirmation32_2026-09-18.md).
-
-The subsequent A/B/G/H replay analysis initially bootstrapped over 64 roots
-despite the preregistered source-seed unit. Reanalysis of the unchanged replay
-reduces four replicates within root and two roots within each of 32 source
-seeds before inference. Teacher-A best-first ordering versus native UCT
-(`G-A`) is `-0.419882`, source-seed bootstrap 95% CI
-`[-0.859591,-0.101469]`, B-best delta `+8.9844` pp with CI
-`[+3.1250,+15.6250]` pp, and exact two-sided sign-test `p=0.035156`
-(`12/3/17` improved/worsened/tied). The corrected classification is
-**`ROOT_ORDER_SIGNAL_ONLY`**: the narrow top-1 ordering gate passes, but this
-does not authorize training, runtime integration, gameplay qualification, or a
-default change. Harmful-tail review and separate authorization remain
-required. See the corrected [ordering ablation evidence](../../experiments/evidence/silver_root_ordering_ablation_2026-09-18.md).
-
-The completed tail and feasibility audit finds the largest `G-A` harm is a
-valid seven-action `PLAYER_NORMAL` root with a material Teacher-A/Teacher-B
-ordering disagreement, not a malformed state. Preserved artifacts contain 128
-unique root states with valid 10k-A action-Q labels, but only 33 source-seed
-trajectories because 64 roots share seed `0`. The existing Phase-A contract
-provides 1,766 canonical state features, two root scalars, and 22 action
-features; an offline conversion step is needed because the root artifacts do
-not materialize those vectors. Label search time is approximately 0.376
-seconds per root, while fresh independent-root qualification remains the
-important cost. See the [tail and feasibility audit](../../experiments/evidence/silver_root_ordering_training_feasibility_2026-09-18.md).
-
-A second independent 10k-A label on the same 64 roots agrees with the original
-10k-A Q-top action on `50/64` roots (`78.125%`). The known harmful root remains
-stable but wrong relative to Teacher-B: both 10k teachers rank Seeing Red,
-while B selects Havoc. Single hard 10k-A top-1 labels are therefore neither
-fully stable nor reliably aligned with the stronger judge; no learnability
-probe or larger training corpus is authorized yet. See the [teacher stability
-report](../../experiments/evidence/silver_root_teacher_stability_2026-09-18.md).
-
-A single independent 25k-B2 teacher on the same roots is not more stable:
-B/B2 Q-top agreement is `42/64` (`65.625%`), below A/A2's `50/64`
-(`78.125%`). On the known harmful root, B selects Havoc while B2 selects
-Intimidate. Hard single-teacher top-1 labels are therefore unsuitable as an
-immediate training target, and no grouped learnability probe or larger corpus
-is authorized yet. See the [25k-B2 stability report](../../experiments/evidence/silver_root_teacher_b2_stability_2026-09-18.md).
+The later six-arm root-mechanism replay was a **single-source-seed offline
+signal**, not a multi-seed confirmation: informative Teacher-A visit PUCT
+beats uniform PUCT (`C-E` mean B-regret delta `-0.412311`, 95% CI
+`[-0.717735,-0.139643]`), while uniform PUCT loses to ordinary UCT (`E-A`
+`+0.352288`, 95% CI `[+0.092162,+0.653903]`). Informative PUCT versus ordinary
+UCT is near zero (`C-A` `-0.060023`, CI crossing zero). Root bootstrap units
+were correlated decisions from source seed `0`, so current classification is
+**`ROOT_GUIDANCE_INCONCLUSIVE`** and multi-seed confirmation is required. Do
+not train a policy, run gameplay, or change the default from this result.
+See [ledger-06 §303](../../experiments/ledger-06.md) and the
+[six-arm replay evidence](../../experiments/evidence/silver_root_mechanism_2026-09-17.md).
 
 A visit-weighted T20 ensemble of A/A2 versus an independent J50 ensemble of
 B/B2 also fails the zero-search screen: top-action agreement is `44/64`, T20
