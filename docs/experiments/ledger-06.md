@@ -9807,3 +9807,18 @@ top-level benchmark reporting corrected.
 - **Evidence:** [report, plan, runner, raw logs/CSV/telemetry and hashes](evidence/deepset_survival_online_stage_b_2026-09-18/README.md).
   **Knowledge impact:** bounded negative speed evidence and maintained research
   status; no runtime/model/default changes after review.
+
+## §304 — OOC root checkpoint diagnostic (2026-09-18)
+
+The live policy remained 2,048 visit-selected simulations. A same-root discarded
+shadow recorded action IDs/priors/visits/Q at 128/256/512/1024/2048 over the
+historical seeds12002032--12002039. The run produced1,134 roots,1,133 completed
+and one expected smoke_bomb shadow abort; zero completed-root live/final-action
+mismatches occurred. Agreement with final2048 was92.41%/93.65%/95.41%/97.18%
+at the first four checkpoints. Gap conditioning was strongly useful (>20% gap
+gave96.4% at128 and99.4% at1024), while observed stability discriminated stable
+from unstable roots but did not prove invariance. Offline candidate
+`512 -> 2048 when gap<10%` gave97.53% agreement and68.98% nominal simulation
+savings; no rule was deployed or gameplay-qualified. Knowledge impact: current
+OOC research gains checkpoint/savings evidence; defaults and quality baselines
+unchanged. [Evidence packet](evidence/ooc_root_checkpoints_2026-09-18/README.md).
