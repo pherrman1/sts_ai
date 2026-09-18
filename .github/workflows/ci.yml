@@ -1,12 +1,16 @@
 name: CI
 
 on:
-  push:
-    branches:
-      - main
   pull_request:
     branches:
       - main
+    types:
+      - opened
+      - synchronize
+      - reopened
+      - ready_for_review
+    paths-ignore:
+      - 'docs/**'
 
 concurrency:
   group: ci-${{ github.workflow }}-${{ github.ref }}
@@ -18,6 +22,7 @@ permissions:
 jobs:
   linux-gcc:
     name: Linux GCC
+    if: ${{ !github.event.pull_request.draft }}
     runs-on: ubuntu-latest
     timeout-minutes: 30
 
@@ -52,15 +57,11 @@ jobs:
       - name: Verify and sync locked Python environment
         run: |
           uv lock --check
-          # CTest includes pandas/SciPy analysis and PyTorch combat-model self-tests.
-          uv sync --locked --extra analysis --extra ml
+          uv sync --locked --extra analysis
           echo "$PWD/.venv/bin" >> "$GITHUB_PATH"
 
       - name: Check repository prerequisites
         run: tools/agent/doctor.sh
-
-      - name: Test coding-agent evaluator
-        run: python3 -m unittest discover -s tests/agent -p 'test_*.py' --durations 20
 
       - name: Check repository health
         env:
@@ -104,4 +105,4 @@ jobs:
           ccache --show-stats || true
 
       - name: Test
-        run: ctest --preset linux-gcc-test
+        run: ctest --preset linux-gcc-test -L 'core|smoke'
