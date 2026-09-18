@@ -12,10 +12,12 @@ import com.megacrit.cardcrawl.dungeons.AbstractDungeon;
 import com.megacrit.cardcrawl.cards.AbstractCard;
 import com.megacrit.cardcrawl.monsters.AbstractMonster;
 import com.megacrit.cardcrawl.helpers.FontHelper;
+import com.megacrit.cardcrawl.rooms.EventRoom;
 import com.megacrit.cardcrawl.rooms.MonsterRoom;
+import com.megacrit.cardcrawl.rooms.ShopRoom;
 import com.megacrit.cardcrawl.rooms.RestRoom;
+import com.megacrit.cardcrawl.rooms.TreasureRoom;
 import com.megacrit.cardcrawl.rooms.AbstractRoom;
-import com.megacrit.cardcrawl.helpers.MonsterHelper;
 import com.megacrit.cardcrawl.core.Settings;
 import com.evacipated.cardcrawl.modthespire.lib.SpireInitializer;
 import org.lwjgl.input.Keyboard;
@@ -82,6 +84,10 @@ public final class STSModelInspector implements PostInitializeSubscriber,
     public void receivePostBattle(AbstractRoom room) {
         combatEntry = "";
         combatEntryHash = "";
+        ctmStatus = "";
+        ctmReason = "";
+        ctmDeath = 0.0;
+        ctmWinningHp = 0.0;
     }
 
     private STSModelInspector() {}
@@ -107,8 +113,6 @@ public final class STSModelInspector implements PostInitializeSubscriber,
                 lastFingerprint = "";
                 responseSequence = -1;
                 responseHash = "";
-                ctmStatus = "";
-                ctmReason = "";
                 advisor.clearPending();
             }
             return;
@@ -197,7 +201,6 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         String candidates = candidatesJson(boundary);
         String combat = "";
         if ("combat".equals(boundary)) combat = combatJson();
-        if (!"combat".equals(boundary)) lastRoomClass = roomClass(room);
         String raw = boundary + "|" + character + "|" + AbstractDungeon.ascensionLevel +
                 "|" + act + "|" + floor + "|" + hp + "|" + maxHp + "|" + gold +
                 "|" + room.getClass().getName() + "|" + AbstractDungeon.screen.name() +
@@ -229,28 +232,46 @@ public final class STSModelInspector implements PostInitializeSubscriber,
     }
 
     private static String roomClass(AbstractRoom room) {
+        if (room == null) return "NONE";
         if (room instanceof com.megacrit.cardcrawl.rooms.MonsterRoomBoss) return "BOSS";
         if (room instanceof com.megacrit.cardcrawl.rooms.MonsterRoomElite) return "ELITE";
         if (room instanceof MonsterRoom) return "MONSTER";
+        if (room instanceof ShopRoom) return "SHOP";
+        if (room instanceof TreasureRoom) return "TREASURE";
         if (room instanceof RestRoom) return "REST";
+        if (room instanceof EventRoom) return "EVENT";
         return "EVENT";
     }
 
     private String encounterName(AbstractRoom room) {
         if (room == null || room.monsters == null || room.monsters.monsters == null
                 || room.monsters.monsters.isEmpty()) return "";
-        String name = MonsterHelper.getEncounterName(room.monsters.monsters.get(0).id);
-        // MonsterHelper exposes canonical encounter labels for vanilla IDs;
-        // only the unambiguous single-monster cases are accepted here.
         if (room.monsters.monsters.size() != 1) return "";
-        String[] names = {"Cultist:CULTIST", "Jaw Worm:JAW_WORM", "Blue Slaver:BLUE_SLAVER",
-                "Gremlin Nob:GREMLIN_NOB", "Lagavulin:LAGAVULIN", "Three Sentries:THREE_SENTRIES",
-                "Spheric Guardian:SPHERIC_GUARDIAN", "Chosen:CHOSEN", "Snake Plant:SNAKE_PLANT",
-                "Snecko:SNECKO", "Transient:TRANSIENT", "Writhing Mass:WRITHING_MASS"};
-        for (String candidate : names) {
-            String[] pair = candidate.split(":");
-            if (pair[0].equals(name)) return pair[1];
-        }
+        String id = room.monsters.monsters.get(0).id;
+        if (id.equals(com.megacrit.cardcrawl.helpers.MonsterHelper.CULTIST_ENC)) return "CULTIST";
+        if (id.equals(com.megacrit.cardcrawl.helpers.MonsterHelper.JAW_WORM_ENC)) return "JAW_WORM";
+        if (id.equals(com.megacrit.cardcrawl.helpers.MonsterHelper.BLUE_SLAVER_ENC)) return "BLUE_SLAVER";
+        if (id.equals(com.megacrit.cardcrawl.helpers.MonsterHelper.LOOTER_ENC)) return "LOOTER";
+        if (id.equals(com.megacrit.cardcrawl.helpers.MonsterHelper.RED_SLAVER_ENC)) return "RED_SLAVER";
+        if (id.equals(com.megacrit.cardcrawl.helpers.MonsterHelper.GREMLIN_NOB_ENC)) return "GREMLIN_NOB";
+        if (id.equals(com.megacrit.cardcrawl.helpers.MonsterHelper.LAGAVULIN_ENC)) return "LAGAVULIN";
+        if (id.equals(com.megacrit.cardcrawl.helpers.MonsterHelper.SPHERE_GUARDIAN_ENC)) return "SPHERIC_GUARDIAN";
+        if (id.equals(com.megacrit.cardcrawl.helpers.MonsterHelper.CHOSEN_ENC)) return "CHOSEN";
+        if (id.equals(com.megacrit.cardcrawl.helpers.MonsterHelper.SHELL_PARASITE_ENC)) return "SHELL_PARASITE";
+        if (id.equals(com.megacrit.cardcrawl.helpers.MonsterHelper.SNAKE_PLANT_ENC)) return "SNAKE_PLANT";
+        if (id.equals(com.megacrit.cardcrawl.helpers.MonsterHelper.SNECKO_ENC)) return "SNECKO";
+        if (id.equals(com.megacrit.cardcrawl.helpers.MonsterHelper.TRANSIENT_ENC)) return "TRANSIENT";
+        if (id.equals(com.megacrit.cardcrawl.helpers.MonsterHelper.ORB_WALKER_ENC)) return "ORB_WALKER";
+        if (id.equals(com.megacrit.cardcrawl.helpers.MonsterHelper.SPIRE_GROWTH_ENC)) return "SPIRE_GROWTH";
+        if (id.equals(com.megacrit.cardcrawl.helpers.MonsterHelper.MAW_ENC)) return "MAW";
+        if (id.equals(com.megacrit.cardcrawl.helpers.MonsterHelper.WRITHING_MASS_ENC)) return "WRITHING_MASS";
+        if (id.equals(com.megacrit.cardcrawl.helpers.MonsterHelper.GIANT_HEAD_ENC)) return "GIANT_HEAD";
+        if (id.equals(com.megacrit.cardcrawl.helpers.MonsterHelper.NEMESIS_ENC)) return "NEMESIS";
+        if (id.equals(com.megacrit.cardcrawl.helpers.MonsterHelper.SLIME_BOSS_ENC)) return "SLIME_BOSS";
+        if (id.equals(com.megacrit.cardcrawl.helpers.MonsterHelper.GUARDIAN_ENC)) return "THE_GUARDIAN";
+        if (id.equals(com.megacrit.cardcrawl.helpers.MonsterHelper.HEXAGHOST_ENC)) return "HEXAGHOST";
+        if (id.equals(com.megacrit.cardcrawl.helpers.MonsterHelper.CHAMP_ENC)) return "CHAMP";
+        if (id.equals(com.megacrit.cardcrawl.helpers.MonsterHelper.TIME_EATER_ENC)) return "TIME_EATER";
         return "";
     }
 
