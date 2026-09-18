@@ -1237,17 +1237,23 @@ and [ledger-06 §173](../../experiments/ledger-06.md).
 Earlier lower root exploration, Sequential Halving, progressive unpruning,
 hard candidate pruning, learned ordering, and grouped/rank-4 visit-PUCT priors
 produced no stable promotable advantage; ordinary c=25 remains the default.
-The later six-arm root-mechanism replay was a **single-source-seed offline
-signal**, not a multi-seed confirmation: informative Teacher-A visit PUCT
-beats uniform PUCT (`C-E` mean B-regret delta `-0.412311`, 95% CI
-`[-0.717735,-0.139643]`), while uniform PUCT loses to ordinary UCT (`E-A`
-`+0.352288`, 95% CI `[+0.092162,+0.653903]`). Informative PUCT versus ordinary
-UCT is near zero (`C-A` `-0.060023`, CI crossing zero). Root bootstrap units
-were correlated decisions from source seed `0`, so current classification is
-**`ROOT_GUIDANCE_INCONCLUSIVE`** and multi-seed confirmation is required. Do
-not train a policy, run gameplay, or change the default from this result.
-See [ledger-06 §303](../../experiments/ledger-06.md) and the
-[six-arm replay evidence](../../experiments/evidence/silver_root_mechanism_2026-09-17.md).
+The later six-arm root-mechanism replay was followed by a bounded 16-source-seed
+confirmation: informative Teacher-A visit PUCT beats uniform PUCT (`C-E` mean
+B-regret delta `-0.602946`, source-seed bootstrap 95% CI
+`[-1.050254,-0.221492]`, improved/worsened/tied `9/2/5`), while uniform PUCT
+loses to ordinary UCT (`E-A` `+0.751411`, CI `[+0.165289,+1.510793]`).
+Informative PUCT versus ordinary UCT remains inconclusive (`C-A` `+0.148464`,
+CI `[-0.348172,+0.719575]`), and the C-E B-best interval crosses zero
+(`+3.1250` pp, `[-6.2500,+10.1563]` pp). The source-seed confirmation therefore
+remains **`ROOT_GUIDANCE_INCONCLUSIVE`**: the informative-prior signal against
+uniform PUCT persists directionally, but it does not establish broad absolute
+guidance value. The preregistered next screen is fresh seeds `17..32` with two
+roots per seed, pooled with seeds `1..16` for 32 source-seed units; its primary
+gate is `C-A`, not `C-E`. Do not train a policy, run gameplay, or change the
+default from this result. See [ledger-06 §303–§305](../../experiments/ledger-06.md),
+the [six-arm replay evidence](../../experiments/evidence/silver_root_mechanism_2026-09-17.md),
+the [16-seed confirmation evidence](../../experiments/evidence/silver_root_mechanism_confirmation16_2026-09-18.md),
+and the [32-source-seed preregistration](../../experiments/evidence/silver_root_mechanism_confirmation32_preregistration_2026-09-18.md).
 
 ### Combat leaf/model variants
 

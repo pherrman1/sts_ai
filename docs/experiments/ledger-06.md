@@ -9780,3 +9780,53 @@ top-level benchmark reporting corrected.
   Knowledge impact: current research status and experiment evidence updated.
 - **Evidence:** [six-arm replay report](evidence/silver_root_mechanism_2026-09-17.md)
   and the external raw run directory and hashes recorded there.
+
+## §304 — Silver root mechanism 16-seed confirmation (2026-09-18)
+
+- **Question and frozen implementation:** Does the informative Teacher-A visit
+  prior signal persist across independent source gameplay seeds? The run used
+  implementation SHA `06d9de36d1c2e07c7e0420a0752ae9a4d7fd738e`, baseline
+  `be5b6ac2c9914b0a56244f2522b7573f81360067`, and Silver SHA
+  `84ab3ead9d88c01c4be09a6773fb9a947f57d5ff`.
+- **Protocol:** Fresh source seeds `1..16`, two lowest-root-ID SHA256-selected
+  roots per seed, frozen 10k-A/25k-B labels, six arms, four common replicates,
+  and exactly 32 simulations. Replicates were reduced within root, then roots
+  within source seed; bootstrap and exact sign tests used the 16 source seeds.
+- **Result:** `C-E` mean regret delta `-0.602946`, source-seed bootstrap 95% CI
+  `[-1.050254,-0.221492]`, B-best delta `+3.1250` pp with CI
+  `[-6.2500,+10.1563]` pp, and source-seed improved/worsened/tied `9/2/5`.
+  `E-A` remained harmful (`+0.751411`, CI `[+0.165289,+1.510793]`), while
+  `C-A` remained inconclusive (`+0.148464`, CI `[-0.348172,+0.719575]`).
+- **Decision:** **`ROOT_GUIDANCE_INCONCLUSIVE`**. The informative-prior signal
+  against uniform PUCT persists directionally, but B-best and absolute
+  ordinary-UCT comparisons remain inconclusive. The staged next action is a
+  preregistered fresh-seed extension: seeds `17..32`, two roots per seed,
+  pooled with seeds `1..16` to reach 32 source-seed units; no policy training,
+  gameplay qualification, runtime integration, or default promotion.
+- **Provenance note:** The frozen `one_combat` binary produced capture. The
+  existing helper cardinality guards required a temporary uncommitted 32-root
+  gate-only build; runtime helper hashes, restored frozen hashes, raw artifact
+  hashes, and commands are in the [confirmation report](evidence/silver_root_mechanism_confirmation16_2026-09-18.md)
+  and run manifest. No search/replay behavior changed.
+- **Knowledge impact:** current research status and experiment evidence updated.
+
+## §305 — Silver root mechanism fresh-seed extension preregistration (2026-09-18)
+
+- **Question:** Can informative PUCT arm `C` beat ordinary UCT arm `A` across
+  32 independent source gameplay seeds, rather than merely recover uniform
+  PUCT's loss?
+- **Preregistration:** Add fresh seeds `17..32`, exactly two deterministic
+  roots per seed, and pool them with the existing seeds `1..16`. Keep the
+  frozen implementation, 10k-A/25k-B teachers, six arms, four common
+  replicates, 32 simulations, root reduction, and source-seed bootstrap/sign
+  test unchanged. The primary gate is `C-A`; `C-E`, `E-A`, `B-A`, B-best, tail,
+  and dispersion remain secondary.
+- **Decision rule:** A clear `C-A` win requires a source-seed bootstrap 95% CI
+  entirely below zero and exact paired sign-test `p < 0.05`, followed by
+  non-worse B-best and harmful-tail review before any separate training
+  decision. A neutral or adverse `C-A` does not authorize training.
+- **Status:** Seeds `17..32` have not been collected or examined. No policy
+  training, gameplay qualification, runtime integration, or default promotion.
+- **Evidence:** [preregistration](evidence/silver_root_mechanism_confirmation32_preregistration_2026-09-18.md)
+  and [prior 16-seed report](evidence/silver_root_mechanism_confirmation16_2026-09-18.md).
+  **Knowledge impact:** preregistered research follow-up; no default change.
