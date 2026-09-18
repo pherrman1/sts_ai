@@ -9925,3 +9925,21 @@ top-level benchmark reporting corrected.
 - **Evidence:** [teacher stability report](evidence/silver_root_teacher_stability_2026-09-18.md).
   **Knowledge impact:** current research evidence only; no model, runtime,
   gameplay, or default change.
+
+## §310 — Silver root 25k-B teacher stability probe (2026-09-18)
+
+- **Protocol:** Reused the existing 64 A/B/G/H ablation roots and generated
+  exactly one independent 25k teacher label per root, B2, with relabel seed
+  `20260919`. No gameplay roots or model training were added.
+- **Result:** B/B2 corrected-Q top-action agreement is `42/64` (`65.625%`),
+  below A/A2's `50/64` (`78.125%`). Mean regret of B's choice under B2 is
+  `0.916525`; mean regret of B2's choice under B is `1.205270`. On the 22
+  disagreement roots these are `2.666256` and `3.506241`, respectively.
+- **Tail:** On `14/2/23/36/3`, B selects Havoc but B2 selects Intimidate;
+  cross-regrets are `6.211919` and `9.313845`. A stronger-budget single label
+  therefore does not resolve the known tail.
+- **Decision:** Do not begin a grouped learnability probe or larger corpus from
+  hard single-teacher top-1 labels. Resolve the target/consensus policy first.
+- **Evidence:** [25k-B2 stability report](evidence/silver_root_teacher_b2_stability_2026-09-18.md).
+  **Knowledge impact:** current research evidence only; no model, runtime,
+  gameplay, or default change.

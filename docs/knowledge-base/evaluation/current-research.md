@@ -1293,6 +1293,13 @@ fully stable nor reliably aligned with the stronger judge; no learnability
 probe or larger training corpus is authorized yet. See the [teacher stability
 report](../../experiments/evidence/silver_root_teacher_stability_2026-09-18.md).
 
+A single independent 25k-B2 teacher on the same roots is not more stable:
+B/B2 Q-top agreement is `42/64` (`65.625%`), below A/A2's `50/64`
+(`78.125%`). On the known harmful root, B selects Havoc while B2 selects
+Intimidate. Hard single-teacher top-1 labels are therefore unsuitable as an
+immediate training target, and no grouped learnability probe or larger corpus
+is authorized yet. See the [25k-B2 stability report](../../experiments/evidence/silver_root_teacher_b2_stability_2026-09-18.md).
+
 ### Combat leaf/model variants
 
 Raw deep-search utility targets, repeated DAgger, residual correction, sampled
