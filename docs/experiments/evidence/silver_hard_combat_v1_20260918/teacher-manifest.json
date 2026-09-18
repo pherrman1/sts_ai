@@ -1,0 +1,28 @@
+{
+  "counts": {
+    "anomalous": 10,
+    "easy": 258,
+    "tier_a": 22,
+    "tier_b": 116,
+    "tier_c": 32
+  },
+  "screen_10k_budget": 10000,
+  "screen_10k_cases": 438,
+  "screen_1k_budget": 1000,
+  "screen_1k_cases": 3096,
+  "teacher_inputs": {
+    "all_1k_losses": 54,
+    "low_hp_win_blocks": [
+      128,
+      128,
+      128
+    ]
+  },
+  "tier_thresholds": {
+    "anomalous": "1k win -> 10k loss",
+    "easy": "both win and terminal HP fraction delta < 0.10",
+    "tier_a": "1k loss -> 10k win",
+    "tier_b": "both win and terminal HP fraction delta >= 0.10",
+    "tier_c": "both lose"
+  }
+}

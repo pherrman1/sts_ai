@@ -27,6 +27,24 @@ seed,won,floor,act,hpEnd,maxHp,fightsLost,deathCombat,deathEncounter,sec
 Other modes include combat-only, data-generation, `reprobench`, and `runtrace`.
 `runtrace` is a debugging policy and does not exactly mirror `runFullRunOOC`.
 
+### Frozen hard-combat screen usage
+
+For the frozen `silver_hard_combat_v1` benchmark, the intended funnel is:
+
+1. **Primary cheap screen:** `hard64-dev` at the fixed 1,000-simulation
+   replay budget. Report wins/64 first; retain HP fraction, decisions, and
+   simulation count as secondary diagnostics.
+2. **Secondary quality/cost evidence:** terminal HP fraction and compute,
+   interpreted separately from the primary win count.
+3. **10,000 simulations:** teacher/reference evidence used to classify the
+   candidate pool, not the primary benchmark score.
+4. **Confirmation:** `hard64-holdout` at 1,000 simulations is reserved for
+   warranted confirmation and is not for routine tuning.
+
+`hard64-dev` and `hard64-holdout` are screening artifacts, not production
+promotion gates. A change that improves the DEV screen still requires the
+normal unit/parity and paired whole-run gameplay funnel before promotion.
+
 `STS_FAIR=1` selects the project-fair combat path. Searcher2 remains default;
 `STS_SEARCHER3=1` is an independent opt-in. Without `STS_FAIR=1`, default
 Searcher2 uses the concrete battle RNG and produces the known-RNG diagnostic
