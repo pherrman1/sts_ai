@@ -79,13 +79,15 @@ Teacher teacher(const Json &label, const Json &root, const std::string &replicat
 
 int main(int argc, char **argv) {
     try {
-        if (argc != 6 && argc != 7)
+        if (argc != 6 && argc != 7 && argc != 8)
             throw std::invalid_argument("usage: silver_root_mechanism ROOTS LABELS OUTPUT SEED EXECUTABLE_SHA [--fixture] [--orders=native,full,top1,top2]");
-        const bool fixture = argc == 7 && std::string(argv[6]) == "--fixture";
-        if (argc == 7 && !fixture) throw std::invalid_argument("unknown option");
         std::vector<std::string> arms {"A", "B"};
-        if (argc == 7 && std::string(argv[6]).rfind("--orders=", 0) == 0) {
-            const std::string modes = argv[6] + 9;
+        bool fixture = false;
+        for (int index = 6; index < argc; ++index) {
+            const std::string option = argv[index];
+            if (option == "--fixture") fixture = true;
+            else if (option.rfind("--orders=", 0) == 0) {
+                const std::string modes = option.substr(9);
             std::istringstream modesInput(modes);
             std::string mode;
             while (std::getline(modesInput, mode, ',')) {
@@ -95,8 +97,7 @@ int main(int argc, char **argv) {
                 else if (mode == "top2") arms.push_back("H");
                 else throw std::invalid_argument("unsupported order mode");
             }
-        } else if (argc == 7 && std::string(argv[6]) != "--fixture") {
-            throw std::invalid_argument("unknown option");
+            } else throw std::invalid_argument("unknown option");
         }
         if (!silver_bridge::rootMechanismShaValid(argv[5])) throw std::invalid_argument("invalid executable SHA");
         if (std::filesystem::exists(argv[3])) throw std::invalid_argument("refusing existing replay output");
@@ -152,7 +153,7 @@ int main(int argc, char **argv) {
                 wire.isolatedSearchSeed = silver_bridge::rootMechanismSeed(
                     std::to_string(seed) + "/replay/" + id + "/" + std::to_string(replicate));
                 if (!seeds.insert(wire.isolatedSearchSeed).second) throw std::invalid_argument("replay RNG collision");
-            for (const std::string arm : arms) {
+                for (const std::string arm : arms) {
                 std::vector<std::string> order;
                 if (arm == "G" || arm == "H") {
                     const std::size_t prefix = arm == "G" ? 1u : 2u;
@@ -189,6 +190,7 @@ int main(int argc, char **argv) {
                 output << row.dump() << '\n';
                 output.flush();
                 if (!output) throw std::runtime_error("replay write failed");
+                }
             }
         }
     } catch (const std::exception &error) {
