@@ -233,8 +233,11 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         if (lastNodeX >= 0) {
             lastRoomClass = lastNodeRoomClass;
             previousRoomKnown = true;
-        } else if (AbstractDungeon.floorNum <= 1) {
-            // A new run has no preceding room; NONE is the canonical native value.
+        } else {
+            // If the observer starts after a save is loaded, the preceding map
+            // node is not available. NONE is the native fail-closed category
+            // for the first observed node, and lets the entry payload exist so
+            // the advisor can apply its ordinary support checks.
             lastRoomClass = "NONE";
             previousRoomKnown = true;
         }
