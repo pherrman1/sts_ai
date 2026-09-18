@@ -9824,3 +9824,54 @@ savings versus existing live early stopping; no rule was deployed or
 gameplay-qualified. Knowledge impact: current
 OOC research gains checkpoint/savings evidence; defaults and quality baselines
 unchanged. [Evidence packet](evidence/ooc_root_checkpoints_2026-09-18/README.md).
+
+## §305 — OOC 20% gap-stop quality gate (2026-09-18)
+
+- **Question and frozen implementation:** Does the merged opt-in OOC MCTS rule
+  stop at exactly 512 simulations when the top-two root visit gap is at least
+  20%, while preserving the existing exact visit-lock stopping rule, materially
+  reduce full-run CPU without an obvious gameplay regression? The execution
+  source was frozen at `495fa147517fdc42e631c513bde5a87b3bb25144`; the Release
+  `one_combat` SHA256 was
+  `9a3b8c2bd1e563c691926d823c43767430d03c11b97a9c5f0d924e616beb1250`.
+  No gameplay source edits were made.
+- **Protocol:** Ironclad A0, project-fair, Act-3 stop, keys off, Silver backend
+  with exact 10k simulations, allocated 32,768 reuse cap, exact-root budgets,
+  adaptive/exact-visit-lock/rho stopping off, native OOC MCTS at 2,048
+  visit-selected simulations, native leaf value, zero leaf combats, V4 policy,
+  and no checkpoint/root-lock/CPU diagnostic modes. Control had
+  `STS_OOC_MCTS_GAP_STOP_20=0`; treatment had it set to `1`. The predeclared
+  cohort was paired seeds `12003000..12003063`, with canary `12003064`.
+- **Mechanism/speed result:** The canaries passed frozen provenance and both
+  arms loaded Silver/OOC-2048/V4/CTM correctly. In the 16-pair OMP1 smoke,
+  treatment reduced total OOC simulations by **41.4%**, median MCTS CPU by
+  **36.6%**, and median full-process CPU by **13.0%** (means were 42.7% and
+  16.9% respectively). Treatment fired 1,532 gap stops versus zero in control;
+  trace arithmetic reconciled for every run.
+- **Gameplay result and limits:** The smoke outcomes were control 10/16 versus
+  treatment 9/16, with three control-only and two treatment-only wins. This is
+  smoke-only evidence, not a quality conclusion. The Stage-C OMP12 control arm
+  completed 63/64 rows; seed `12003058` became a long-tail runtime pathology
+  with approximately 3.56 GiB RSS and was stopped before treatment. Four
+  isolated OMP1 control parity reruns matched their OMP12 outcomes and every
+  non-time MCTS counter. A fresh isolated OMP1 run of `12003058` stayed near
+  300 MiB RSS but exceeded 15 minutes without a completed row and was stopped;
+  its boundary remains unknown. The old partial 63-row control run is
+  diagnostic only and was not mixed into a quality result.
+- **Decision:** **`OOC_GAP_STOP_20_QUALITY_INCONCLUSIVE_RUNTIME`**. Mechanism/
+  speed is PASS; gameplay quality is unresolved. No evidence supports rejecting
+  the 20% rule. No seed was replaced, Stage B was not rerun, treatment was not
+  launched for the incomplete quality gate, and no default promotion is
+  authorized.
+- **Next predeclaration:** Close `12003000..12003063` without replacement.
+  A future independent quality cohort is `12004000..12004063`, using the same
+  frozen binary/configuration, one OMP1 process per seed, and up to about 12
+  externally concurrent processes. Run all 64 controls first; launch treatment
+  only if every control completes. Apply a fixed 10-minute per-process ceiling
+  to either arm; any timeout aborts the cohort as `INCONCLUSIVE_RUNTIME`
+  without substitution. Stage B is not repeated.
+- **Evidence:** Raw frozen-run artifacts are retained under the local
+  `build/ooc_gap_stop_20_20260918/` experiment directory, including canary,
+  Stage-B, partial Stage-C, and rescue-preflight outputs. **Knowledge impact:**
+  current research status and experiment evidence; no default, model, or
+  gameplay implementation change.
