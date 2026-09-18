@@ -167,6 +167,25 @@ void tests() {
         && stoppedCheckpoint.selectedAction==unqualified.selectedAction
         && stoppedCheckpoint.rootCheckpoints.size()==2,
         "checkpoints do not disable policy stopping or invent unreached snapshots");
+    auto gapConfig = config;
+    gapConfig.cPuct = 0;
+    gapConfig.stopAt512VisitGap20 = true;
+    auto gapModel = deterministic();
+    const auto gapStopped = OocMctsPlanner(gapConfig).search(gapModel, 0, 2048);
+    require(gapStopped.metrics.simulations == 512
+        && gapStopped.metrics.savedSimulations == 1536
+        && gapStopped.metrics.earlyStopVisitGap20
+        && !gapStopped.metrics.earlyStopLockedRoot
+        && gapStopped.selectedAction == 2,
+        "20% gap candidate stops exactly at simulation 512 using visit leader");
+    auto gapObservedConfig = gapConfig;
+    gapObservedConfig.observeRootLock = true;
+    auto gapObservedModel = deterministic();
+    const auto gapObserved = OocMctsPlanner(gapObservedConfig).search(gapObservedModel, 0, 2048);
+    require(gapObserved.metrics.simulations == 2048
+        && !gapObserved.metrics.earlyStopVisitGap20
+        && !gapObserved.metrics.savedSimulations,
+        "full-budget observation disables the 20% gap candidate");
     for (const auto &thresholds : std::vector<std::vector<std::uint64_t>>{{0},{2,1},{2,2}}) {
         auto invalidCheckpointConfig=config; invalidCheckpointConfig.rootCheckpointSimulations=thresholds;
         rejects([&] { OocMctsPlanner invalid(invalidCheckpointConfig); });

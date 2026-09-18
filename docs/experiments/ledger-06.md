@@ -9818,7 +9818,9 @@ mismatches occurred. Agreement with final2048 was92.41%/93.65%/95.41%/97.18%
 at the first four checkpoints. Gap conditioning was strongly useful (>20% gap
 gave96.4% at128 and99.4% at1024), while observed stability discriminated stable
 from unstable roots but did not prove invariance. Offline candidate
-`512 -> 2048 when gap<10%` gave97.53% agreement and68.98% nominal simulation
-savings; no rule was deployed or gameplay-qualified. Knowledge impact: current
+On the 898-root multi-action cohort, the conservative candidate
+`512 -> 2048 when gap<20%` gave98.11% agreement and about42.1% additional
+savings versus existing live early stopping; no rule was deployed or
+gameplay-qualified. Knowledge impact: current
 OOC research gains checkpoint/savings evidence; defaults and quality baselines
 unchanged. [Evidence packet](evidence/ooc_root_checkpoints_2026-09-18/README.md).

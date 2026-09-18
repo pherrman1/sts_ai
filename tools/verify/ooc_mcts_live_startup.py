@@ -31,6 +31,7 @@ def main():
         ('bad combat artifact', {'STS_OOC_MCTS': '1', 'STS_OOC_MCTS_COMBAT_MODEL': bad}, False, 'startup failure'),
         ('zero simulations', {'STS_OOC_MCTS': '1', 'STS_OOC_MCTS_SIMS': '0'}, False, 'must be positive'),
         ('malformed simulations', {'STS_OOC_MCTS': '1', 'STS_OOC_MCTS_SIMS': '-1'}, False, 'positive integer'),
+        ('malformed gap stop', {'STS_OOC_MCTS': '1', 'STS_OOC_MCTS_GAP_STOP_20': 'true'}, False, 'STS_OOC_MCTS_GAP_STOP_20 invalid value'),
     ]
     if args.artifact:
         with tempfile.TemporaryDirectory() as temporary:
@@ -51,6 +52,12 @@ def main():
         cases.append(('ON loads qualified artifact', {'STS_OOC_MCTS': '1', 'STS_OOC_MCTS_SIMS': '128', 'STS_OOC_MCTS_COMBAT_MODEL': str(Path(args.artifact).resolve())}, True, '"earlyStop":true'))
         cases.append(('ON rollback disables stopping', {'STS_OOC_MCTS': '1', 'STS_OOC_MCTS_EARLY_STOP': '0', 'STS_OOC_MCTS_COMBAT_MODEL': str(Path(args.artifact).resolve())}, True, '"earlyStop":false'))
         cases.append(('ON rejects malformed stopping', {'STS_OOC_MCTS': '1', 'STS_OOC_MCTS_EARLY_STOP': 'true', 'STS_OOC_MCTS_COMBAT_MODEL': str(Path(args.artifact).resolve())}, False, 'STS_OOC_MCTS_EARLY_STOP invalid value'))
+        cases.append(('ON accepts 20% gap stop', {'STS_OOC_MCTS': '1', 'STS_OOC_MCTS_SIMS': '2048',
+            'STS_OOC_MCTS_GAP_STOP_20': '1', 'STS_OOC_MCTS_COMBAT_MODEL': str(Path(args.artifact).resolve())},
+            True, '"gapStop20":true'))
+        cases.append(('20% gap stop requires 2048', {'STS_OOC_MCTS': '1', 'STS_OOC_MCTS_SIMS': '512',
+            'STS_OOC_MCTS_GAP_STOP_20': '1', 'STS_OOC_MCTS_COMBAT_MODEL': str(Path(args.artifact).resolve())},
+            False, 'STS_OOC_MCTS_GAP_STOP_20 requires 2048'))
     for name, override, success, message in cases:
         result = subprocess.run(command, env=env | override, cwd=root, text=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, timeout=120)
         if (result.returncode == 0) != success or message not in result.stdout:
