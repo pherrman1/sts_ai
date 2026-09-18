@@ -2109,6 +2109,8 @@ SilverCombatReplayResult runSilverCombatReplay(
     try {
         auto session = makeSilverSearchSession();
         sts::BattleContext state = session->materializeAndBegin(wire, config);
+        const int initialRerootExact = session->rerootExact;
+        const int initialRerootFallback = session->rerootFallback;
         result.actionTraceHash = 0;
         while (state.outcome == sts::Outcome::UNDECIDED) {
             if (result.decisions >= kMaxSilverCombatReplayDecisions) {
@@ -2155,10 +2157,13 @@ SilverCombatReplayResult runSilverCombatReplay(
                 return result;
             }
 
-            // Reuse the exact private state produced above. beginAt compares
-            // it with the selected internal child and reroots the same
-            // BattleSearcher; no wire or live BattleContext is involved.
-            session->beginAt(state, config);
+            if (state.outcome == sts::Outcome::UNDECIDED) {
+                // Reuse the exact private state produced above. beginAt
+                // compares it with the selected internal child and reroots
+                // the same BattleSearcher; no wire or live BattleContext is
+                // involved. Terminal actions do not need a next root.
+                session->beginAt(state, config);
+            }
         }
 
         result.terminalOutcome = static_cast<int>(state.outcome);
@@ -2166,8 +2171,8 @@ SilverCombatReplayResult runSilverCombatReplay(
         result.terminalHp = state.player.curHp;
         result.terminalMaxHp = state.player.maxHp;
         result.terminalTurn = state.turn;
-        result.rerootExact = session->rerootExact;
-        result.rerootFallback = session->rerootFallback;
+        result.rerootExact = session->rerootExact - initialRerootExact;
+        result.rerootFallback = session->rerootFallback - initialRerootFallback;
         result.accepted = true;
     } catch (const std::exception &error) {
         result.failureReason = std::string("replay_exception: ") + error.what();

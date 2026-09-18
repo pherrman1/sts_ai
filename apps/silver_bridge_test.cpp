@@ -157,6 +157,9 @@ int main(int argc, char **argv) {
     const auto replayB = silver_bridge::runSilverCombatReplay(firstWire, completeReplayConfig);
     check(replayA.accepted && replayA.decisions > 1,
           "isolated complete-fight replay must reach terminal after multiple decisions");
+    check(replayA.accepted
+              && replayA.rerootExact + replayA.rerootFallback == replayA.decisions - 1,
+          "complete-fight replay must reroot only between decisions");
     check(replayA.accepted && replayB.accepted
               && replayA.won == replayB.won
               && replayA.terminalHp == replayB.terminalHp
@@ -203,6 +206,10 @@ int main(int argc, char **argv) {
               && gambleReplayA.singleCardSelectActions > 0
               && gambleReplayA.multiCardSelectActions > 0,
           "complete replay must traverse PLAYER_NORMAL GAMBLE selection and confirmation");
+    check(gambleReplayA.accepted
+              && gambleReplayA.rerootExact + gambleReplayA.rerootFallback
+                  == gambleReplayA.decisions - 1,
+          "GAMBLE complete replay must not reroot after terminal confirmation");
     check(gambleReplayA.accepted && gambleReplayB.accepted
               && gambleReplayA.won == gambleReplayB.won
               && gambleReplayA.terminalHp == gambleReplayB.terminalHp

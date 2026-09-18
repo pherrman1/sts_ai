@@ -6,6 +6,7 @@
 #include <chrono>
 #include <fstream>
 #include <iostream>
+#include <stdexcept>
 #include <string>
 
 namespace {
@@ -61,7 +62,10 @@ int main(int argc, char **argv) {
     }
     std::int64_t budget = 0;
     try {
-        budget = std::stoll(argv[2]);
+        const std::string budgetText = argv[2];
+        std::size_t consumed = 0;
+        budget = std::stoll(budgetText, &consumed);
+        if (consumed != budgetText.size()) throw std::invalid_argument("trailing budget text");
     } catch (const std::exception &) {
         std::cerr << "invalid simulation budget\n";
         return 2;
@@ -77,14 +81,18 @@ int main(int argc, char **argv) {
         return 2;
     }
     std::string line;
+    bool hadFailure = false;
     while (std::getline(input, line)) {
         if (line.empty()) continue;
         try {
-            std::cout << replayRow(nlohmann::json::parse(line), budget).dump() << '\n';
+            const auto row = replayRow(nlohmann::json::parse(line), budget);
+            hadFailure = hadFailure || row.value("status", "") != "ok";
+            std::cout << row.dump() << '\n';
         } catch (const std::exception &error) {
+            hadFailure = true;
             std::cout << nlohmann::json{{"status", std::string("invalid_json: ") + error.what()},
                                         {"budget", budget}}.dump() << '\n';
         }
     }
-    return 0;
+    return hadFailure || input.bad() ? 1 : 0;
 }
