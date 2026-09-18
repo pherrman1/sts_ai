@@ -32,6 +32,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.security.MessageDigest;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Properties;
 
 /** Read-only observer. It never calls an AbstractDungeon action or mutates game state. */
@@ -262,6 +264,14 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         com.megacrit.cardcrawl.monsters.MonsterGroup group = room == null ? null : room.monsters;
         if (group == null) group = AbstractDungeon.getMonsters();
         if (group == null || group.monsters == null || group.monsters.isEmpty()) return "";
+        Map<String, Integer> counts = new HashMap<>();
+        for (AbstractMonster monster : group.monsters) {
+            if (monster == null || monster.id == null) return "";
+            Integer count = counts.get(monster.id);
+            counts.put(monster.id, count == null ? 1 : count + 1);
+        }
+        String multi = multiEncounterName(counts);
+        if (!multi.isEmpty()) return multi;
         if (group.monsters.size() != 1) return "";
         String id = group.monsters.get(0).id;
         if (id.equals(com.megacrit.cardcrawl.helpers.MonsterHelper.CULTIST_ENC)) return "CULTIST";
@@ -289,6 +299,75 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         if (id.equals(com.megacrit.cardcrawl.helpers.MonsterHelper.CHAMP_ENC)) return "CHAMP";
         if (id.equals(com.megacrit.cardcrawl.helpers.MonsterHelper.TIME_EATER_ENC)) return "TIME_EATER";
         return "";
+    }
+
+    private static String multiEncounterName(Map<String, Integer> counts) {
+        int total = 0;
+        for (Integer value : counts.values()) total += value;
+        if (counts.size() == 1) {
+            if (count(counts, "Sentry") == 3) return "THREE_SENTRIES";
+            if (count(counts, "Cultist") == 3) return "THREE_CULTIST";
+            if (count(counts, "Byrd") == 3) return "THREE_BYRDS";
+            if (count(counts, "Byrd") == 4) return "FOUR_BYRDS";
+            if (count(counts, "Darkling") == 3) return "THREE_DARKLINGS";
+            if (count(counts, "FungiBeast") == 2) return "TWO_FUNGI_BEASTS";
+        }
+        int louseCount = count(counts, "FuzzyLouseNormal") + count(counts, "FuzzyLouseDefensive");
+        if (louseCount == 2 && total == 2) return "TWO_LOUSE";
+        if (louseCount == 3 && total == 3) return "THREE_LOUSE";
+        if (shapeCount(counts) == 3 && total == 3) return "THREE_SHAPES";
+        if (shapeCount(counts) == 4 && total == 4) return "FOUR_SHAPES";
+        if (counts.size() == 2) {
+            if (count(counts, "Cultist") == 1 && count(counts, "Chosen") == 1)
+                return "CULTIST_AND_CHOSEN";
+            if (count(counts, "Chosen") == 1 && count(counts, "Byrd") == 2)
+                return "CHOSEN_AND_BYRDS";
+            if (count(counts, "Sentry") == 1 && count(counts, "SphericGuardian") == 1)
+                return "SENTRY_AND_SPHERE";
+            if (count(counts, "Centurion") == 1 && count(counts, "Healer") == 1)
+                return "CENTURION_AND_HEALER";
+            if (count(counts, "ShelledParasite") == 1 && count(counts, "FungiBeast") == 1)
+                return "SHELLED_PARASITE_AND_FUNGI";
+            if (count(counts, "Donu") == 1 && count(counts, "Deca") == 1)
+                return "DONU_AND_DECA";
+            if (count(counts, "SpireShield") == 1 && count(counts, "SpireSpear") == 1)
+                return "SHIELD_AND_SPEAR";
+            if (count(counts, "Looter") == 1 && count(counts, "Mugger") == 1)
+                return "TWO_THIEVES";
+        }
+        if (count(counts, "SlaverBlue") == 1 && count(counts, "SlaverRed") == 1
+                && count(counts, "Taskmaster") == 1)
+            return "SLAVERS";
+        if (count(counts, "BanditPointy") == 1 && count(counts, "BanditLeader") == 1
+                && count(counts, "BanditBear") == 1)
+            return "MASKED_BANDITS_EVENT";
+        if (count(counts, "SphericGuardian") == 1 && shapeCount(counts) == 2 && total == 3)
+            return "SPHERE_AND_TWO_SHAPES";
+        if (count(counts, "GremlinLeader") == 1 && total == 3) {
+            int gremlins = total - count(counts, "GremlinLeader");
+            if (gremlins == 2) return "GREMLIN_LEADER";
+        }
+        if (isGremlinGang(counts)) return "GREMLIN_GANG";
+        return "";
+    }
+
+    private static int count(Map<String, Integer> counts, String id) {
+        Integer value = counts.get(id);
+        return value == null ? 0 : value;
+    }
+
+    private static int shapeCount(Map<String, Integer> counts) {
+        return count(counts, "Exploder") + count(counts, "Repulsor") + count(counts, "Spiker");
+    }
+
+    private static boolean isGremlinGang(Map<String, Integer> counts) {
+        int total = 0;
+        for (Map.Entry<String, Integer> entry : counts.entrySet()) {
+            String id = entry.getKey();
+            if (!id.startsWith("Gremlin") || "GremlinLeader".equals(id)) return false;
+            total += entry.getValue();
+        }
+        return total == 4;
     }
 
     private String combatEntryJson(AbstractRoom room) {

@@ -63,6 +63,20 @@ int main(int argc, char **argv) {
         std::cerr << "forecast/native expectation mismatch\n";
         return 1;
     }
+    for (const char *encounter : {"TWO_LOUSE", "SMALL_SLIMES", "GREMLIN_GANG",
+                                  "THREE_LOUSE", "TWO_FUNGI_BEASTS", "THREE_SENTRIES",
+                                  "THREE_BYRDS", "CULTIST_AND_CHOSEN", "THREE_CULTIST",
+                                  "SENTRY_AND_SPHERE", "THREE_DARKLINGS", "THREE_SHAPES",
+                                  "FOUR_SHAPES", "SPHERE_AND_TWO_SHAPES", "DONU_AND_DECA",
+                                  "SHIELD_AND_SPEAR"}) {
+        observation["combatEntry"]["encounter"] = encounter;
+        const auto multiResult = advisor::importCombatPredictorInput(observation, imported);
+        if (!multiResult.ok || !sampler.forecastSupport(imported).supported) {
+            std::cerr << "multi-monster encounter was not forecastable: " << encounter << "\n";
+            return 1;
+        }
+    }
+    observation["combatEntry"]["encounter"] = "CULTIST";
     observation["combatEntry"]["isBurningElite"] = true;
     if (!advisor::importCombatPredictorInput(observation, imported)
         .ok || !imported.globals.isBurningElite) {
