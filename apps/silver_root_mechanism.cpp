@@ -81,7 +81,7 @@ int main(int argc, char **argv) {
     try {
         if (argc != 6 && argc != 7 && argc != 8)
             throw std::invalid_argument("usage: silver_root_mechanism ROOTS LABELS OUTPUT SEED EXECUTABLE_SHA [--fixture] [--orders=native,full,top1,top2]");
-        std::vector<std::string> arms {"A", "B"};
+        std::vector<std::string> arms;
         bool fixture = false;
         for (int index = 6; index < argc; ++index) {
             const std::string option = argv[index];
@@ -95,7 +95,6 @@ int main(int argc, char **argv) {
                 else if (mode == "full") arms.push_back("B");
                 else if (mode == "top1") arms.push_back("G");
                 else if (mode == "top2") arms.push_back("H");
-                else throw std::invalid_argument("unsupported order mode");
             }
             } else throw std::invalid_argument("unknown option");
         }
@@ -157,7 +156,6 @@ int main(int argc, char **argv) {
                 std::vector<std::string> order;
                 if (arm == "G" || arm == "H") {
                     const std::size_t prefix = arm == "G" ? 1u : 2u;
-                    if (prefix >= ordered.size()) throw std::invalid_argument("root lacks distinct top actions");
                     std::vector<std::string> remainder(native.begin(), native.end());
                     remainder.erase(std::remove_if(remainder.begin(), remainder.end(),
                         [&](const auto &fingerprint) {
