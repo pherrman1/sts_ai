@@ -259,10 +259,11 @@ public final class STSModelInspector implements PostInitializeSubscriber,
     }
 
     private String encounterName(AbstractRoom room) {
-        if (room == null || room.monsters == null || room.monsters.monsters == null
-                || room.monsters.monsters.isEmpty()) return "";
-        if (room.monsters.monsters.size() != 1) return "";
-        String id = room.monsters.monsters.get(0).id;
+        com.megacrit.cardcrawl.monsters.MonsterGroup group = room == null ? null : room.monsters;
+        if (group == null) group = AbstractDungeon.getMonsters();
+        if (group == null || group.monsters == null || group.monsters.isEmpty()) return "";
+        if (group.monsters.size() != 1) return "";
+        String id = group.monsters.get(0).id;
         if (id.equals(com.megacrit.cardcrawl.helpers.MonsterHelper.CULTIST_ENC)) return "CULTIST";
         if (id.equals(com.megacrit.cardcrawl.helpers.MonsterHelper.JAW_WORM_ENC)) return "JAW_WORM";
         if (id.equals(com.megacrit.cardcrawl.helpers.MonsterHelper.BLUE_SLAVER_ENC)) return "BLUE_SLAVER";
