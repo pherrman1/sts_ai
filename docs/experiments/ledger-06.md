@@ -9944,3 +9944,19 @@ unchanged. [Evidence packet](evidence/ooc_root_checkpoints_2026-09-18/README.md)
   **Knowledge impact:** durable benchmark evidence and deterministic selection
   procedure; no Silver search behavior, model, threshold, or production gate
   changed.
+
+## §313 — Same-turn CARD RAVE/AMAF mechanism screen (2026-09-18)
+
+Implemented an opt-in, searcher-owned RAVE sidecar for Silver and ran the
+smallest frozen-root screen: A versus R8/R32/R128, 64 source-seed-0 roots,
+four common replicates, and 32 simulations. The key is semantic same-turn
+CARD state `(card id, upgraded, specialData, costForTurn, freeToPlayOnce,
+target)`; END_TURN, potions, selections, later turns, and chance nodes are
+excluded. Primary K=32 uses `beta=sqrt(K/(3*N+K))` and leaves UCT exploration
+unchanged. The R32-A root-bootstrap regret difference was -0.076467 with
+95% CI [-0.420937,+0.188419], with 11/17/36 improved/worsened/tied roots;
+B-best fell 5.08 pp. RAVE coverage was 100% of 1,789 eligible decision nodes
+and 2.994 samples per eligible edge. Classification:
+**RAVE_SCREEN_INCONCLUSIVE**. This is a mechanism screen only; no gameplay
+default or generalization claim is authorized. Evidence:
+`docs/experiments/evidence/silver_rave_mechanism_2026-09-18.md`.

@@ -306,6 +306,7 @@ bool search::BattleSearcher::resetForSearch() {
     poolUsed = 0;
     decisionStatesUsed = 0;
     stateToNodeUsed = 0;
+    raveStats.clear();
     std::memset(stateToNode.data(), 0, stateToNode.size() * sizeof(DedupSlot));
     diagnosticRootHashValid = false;
     root = allocNode();
@@ -352,6 +353,9 @@ void search::BattleSearcher::step() {
     ++stats.steps;
     searchStack.clear();
     searchStack.push_back(root);
+    traceStarts.clear();
+    traceStarts.push_back(0);
+    actionTrace.clear();
     actionStack.clear();
     actionCount = 0;
 
@@ -396,6 +400,7 @@ void search::BattleSearcher::step() {
             }
 
             searchStack.push_back(child);
+            traceStarts.push_back(traceStarts.back());
 
             if (child->simulationCount == 0) {
                 BattleContext &rollout = (rolloutScratch = *child->state);
@@ -431,16 +436,18 @@ void search::BattleSearcher::step() {
             // Already expanded: descend (transposition or revisit).
             if (onPath(edge.node)) {
                 // Descending would revisit an on-path node -> cycle. Roll out instead.
-                recordAction(edge.action);
+                recordAction(edge.action, *cur->state);
                 BattleContext &rollout = (rolloutScratch = *edge.node->state);
                 const auto evaluation = rolloutToEnd(rollout, actionStack,
                     cur, &edge.action, depth);
                 updateFromPlayout(searchStack, actionStack, rollout, evaluation);
                 return;
             }
-            recordAction(edge.action);
+            recordAction(edge.action, *cur->state);
+            const auto childTraceStart = actionCount;
             cur = edge.node;
             searchStack.push_back(cur);
+            traceStarts.push_back(childTraceStart);
             continue;
         }
 
@@ -453,7 +460,8 @@ void search::BattleSearcher::step() {
         const auto randomnessBase = static_cast<std::uint64_t>(baseGen.randomLong());
         next.rng = Random(randomnessBase);
         edge.action.execute(next);
-        recordAction(edge.action);
+        recordAction(edge.action, *cur->state);
+        const auto childTraceStart = actionCount;
         const bool rngChanged = next.rng.counter != 0;
 
         if (rngChanged) {
@@ -481,6 +489,7 @@ void search::BattleSearcher::step() {
 
             cur = chance;
             searchStack.push_back(cur);
+            traceStarts.push_back(childTraceStart);
             continue;  // staged outcome consumed at the top of the loop next iteration
         }
 
@@ -504,6 +513,7 @@ void search::BattleSearcher::step() {
         }
 
         searchStack.push_back(child);
+        traceStarts.push_back(childTraceStart);
 
         if (child->simulationCount == 0) {
             // Brand-new node (only new nodes have simulationCount 0 here) -> next was moved into
@@ -541,6 +551,47 @@ void search::BattleSearcher::updateFromPlayout(const std::vector<Node *> &stack,
         if (collectVictoryCounts && endState.outcome == Outcome::PLAYER_VICTORY) ++node.victoryCount;
         node.evaluationSum += evaluation;
     }
+    if (!raveEnabled) return;
+    for (std::size_t nodeIndex = 0; nodeIndex < stack.size(); ++nodeIndex) {
+        Node *node = stack[nodeIndex];
+        if (node->isRandomNode || node->state->inputState != InputState::PLAYER_NORMAL) continue;
+        auto &raves = raveStats[node];
+        if (raves.empty()) {
+            raves.resize(node->edges.size());
+            bool hasEligibleEdge = false;
+            for (std::size_t i = 0; i < node->edges.size(); ++i) {
+                const auto &action = node->edges[i].action;
+                if (action.getActionType() != ActionType::CARD
+                        || action.getSourceIdx() < 0
+                        || action.getSourceIdx() >= node->state->cards.cardsInHand) continue;
+                const auto &card = node->state->cards.hand[action.getSourceIdx()];
+                raves[i].eligible = true;
+                hasEligibleEdge = true;
+                raves[i].key = {static_cast<std::int32_t>(card.id), card.specialData,
+                    card.costForTurn, static_cast<std::int8_t>(action.getTargetIdx()),
+                    card.upgraded, card.freeToPlayOnce};
+                ++stats.raveEligibleEdges;
+            }
+            if (hasEligibleEdge) ++stats.raveEligibleNodes;
+        }
+        const bool nodeHadSamples = std::any_of(raves.begin(), raves.end(),
+            [](const auto &rave) { return rave.visits > 0; });
+        const auto start = traceStarts[nodeIndex];
+        for (auto &rave : raves) {
+            if (!rave.eligible) continue;
+            for (std::size_t actionIndex = start; actionIndex < actionTrace.size(); ++actionIndex) {
+                const auto &traced = actionTrace[actionIndex];
+                if (traced.eligible && traced.turn == node->state->turn && traced.key == rave.key) {
+                    ++rave.visits;
+                    rave.evaluationSum += evaluation;
+                    ++stats.raveUpdates;
+                    break;
+                }
+            }
+        }
+        if (!nodeHadSamples && std::any_of(raves.begin(), raves.end(),
+                [](const auto &rave) { return rave.visits > 0; })) ++stats.raveCoveredNodes;
+    }
 }
 
 bool search::BattleSearcher::isTerminalState(const BattleContext &bc) const { // maybe can optimize by making this evaluate directly if score cannot possibly be higher than best
@@ -559,7 +610,20 @@ double search::BattleSearcher::evaluateEdge(const search::BattleSearcher::Node &
     // Q-value uses the (possibly transposition-shared) child state estimate, but the exploration
     // term uses this edge's own visit count rather than the child's simulationCount. With node
     // sharing the two diverge, and using edge visits keeps UCB well-formed (Childs et al. 2008).
-    const double qualityValue = edge.node->evaluationSum / edge.node->simulationCount;
+    const double normalQuality = edge.node->evaluationSum / edge.node->simulationCount;
+    double qualityValue = normalQuality;
+    if (raveEnabled && !parent.isRandomNode) {
+        const auto it = raveStats.find(const_cast<Node *>(&parent));
+        if (it != raveStats.end() && edgeIdx < static_cast<int>(it->second.size())) {
+            const auto &rave = it->second[edgeIdx];
+            if (rave.visits > 0) {
+                const double beta = std::sqrt(raveK /
+                    (3.0 * static_cast<double>(parent.simulationCount) + raveK));
+                qualityValue = (1.0 - beta) * normalQuality
+                    + beta * (rave.evaluationSum / rave.visits);
+            }
+        }
+    }
     if (&parent == root && !parent.isRandomNode && !replayRootPriors.empty()) {
         return qualityValue + 2.5 * replayRootPriors.at(edgeIdx)
             * std::sqrt(static_cast<double>(parent.simulationCount)) / (edge.visitCount + 1);
@@ -685,7 +749,7 @@ double search::BattleSearcher::rolloutToEnd(BattleContext &bc, std::vector<Actio
                 break;
         }
 
-        recordAction(action);
+        recordAction(action, bc);
         if (leafObservation && leafObservation->collectResult) {
             leafObservation->rolloutActionFingerprints.push_back(
                 silver_bridge::silverActionFingerprint(bc, action));

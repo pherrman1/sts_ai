@@ -476,6 +476,10 @@ struct SilverSearchTelemetry {
     std::int64_t chanceTranspositions = 0;
     std::int64_t depthSum = 0;
     std::int64_t chanceDepthSum = 0;
+    std::int64_t raveUpdates = 0;
+    std::int64_t raveEligibleEdges = 0;
+    std::int64_t raveEligibleNodes = 0;
+    std::int64_t raveCoveredNodes = 0;
     std::array<std::int64_t, 3> wideningSampled {};
     std::array<std::int64_t, 3> wideningSiblingReuse {};
     std::array<std::int64_t, 3> wideningCapped {};
@@ -513,6 +517,10 @@ struct SilverSearchTelemetry {
         chanceTranspositions += other.chanceTranspositions;
         depthSum += other.depthSum;
         chanceDepthSum += other.chanceDepthSum;
+        raveUpdates += other.raveUpdates;
+        raveEligibleEdges += other.raveEligibleEdges;
+        raveEligibleNodes += other.raveEligibleNodes;
+        raveCoveredNodes += other.raveCoveredNodes;
         for (std::size_t i = 0; i < wideningSampled.size(); ++i) {
             wideningSampled[i] += other.wideningSampled[i];
             wideningSiblingReuse[i] += other.wideningSiblingReuse[i];
@@ -774,7 +782,7 @@ SilverDecisionResult runSilverDecision(const BattleStateWire &state,
                                        const SilverSearchConfig &config);
 SilverDecisionResult replaySilverRoot(const BattleStateWire &state,
     const std::vector<std::string> &nativeOrder, const std::vector<std::string> &replayOrder,
-    const std::vector<double> &priors, bool usePuct);
+    const std::vector<double> &priors, bool usePuct, int raveK = 0);
 SilverDecisionResult runSilverDecision(SilverSearchSession &session,
                                        const BattleStateWire &state,
                                        const SilverSearchConfig &config);

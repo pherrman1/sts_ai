@@ -77,6 +77,10 @@ namespace sts::search {
         std::int64_t chanceTranspositions = 0;   // sampled outcome dedup-hit a non-sibling node
         std::int64_t depthSum = 0;               // in-tree path length at each simulation's end
         std::int64_t chanceDepthSum = 0;         // chance nodes on the path at each simulation's end
+        std::int64_t raveUpdates = 0;
+        std::int64_t raveEligibleEdges = 0;
+        std::int64_t raveEligibleNodes = 0;
+        std::int64_t raveCoveredNodes = 0;
         // Widening behavior split by the kind of stochastic action that spawned the chance node
         // (0 = END_TURN: monster rolls + start-of-turn draws; 1 = card play; 2 = other).
         // Per category: outcomes sampled (widen executes), sibling collisions among them, and
@@ -117,6 +121,9 @@ namespace sts::search {
             chanceOutcomesSampled += o.chanceOutcomesSampled; chanceSiblingReuse += o.chanceSiblingReuse;
             chanceTranspositions += o.chanceTranspositions;
             depthSum += o.depthSum; chanceDepthSum += o.chanceDepthSum;
+            raveUpdates += o.raveUpdates; raveEligibleEdges += o.raveEligibleEdges;
+            raveEligibleNodes += o.raveEligibleNodes;
+            raveCoveredNodes += o.raveCoveredNodes;
             for (int i = 0; i < 3; ++i) {
                 wSampled[i] += o.wSampled[i]; wSibReuse[i] += o.wSibReuse[i]; wCapped[i] += o.wCapped[i];
             }
@@ -174,6 +181,22 @@ namespace sts::search {
             std::int32_t visitCount = 0;        // times this edge was traversed (UCB / DPW reselection)
         };
 
+        struct RaveActionKey {
+            std::int32_t cardId = -1;
+            std::int16_t specialData = 0;
+            std::int8_t costForTurn = 0;
+            std::int8_t target = -1;
+            bool upgraded = false;
+            bool freeToPlayOnce = false;
+            bool operator==(const RaveActionKey &) const = default;
+        };
+        struct RaveStat {
+            RaveActionKey key;
+            std::int64_t visits = 0;
+            double evaluationSum = 0.0;
+            bool eligible = false;
+        };
+
         std::unique_ptr<BattleContext> rootState;
         Node* root = nullptr;   // points into allNodes; set by resetForSearch (fresh) or rerootAt (reuse)
 
@@ -209,6 +232,9 @@ namespace sts::search {
         double explorationParameter = 9.9;         // deterministic edges; tuned default
         double explorationParameterChance = 9.9;   // stochastic (chance-node) edges
         std::vector<double> replayRootPriors;
+        bool raveEnabled = false;
+        double raveK = 0.0;
+        std::unordered_map<Node*, std::vector<RaveStat>> raveStats;
 
         // Double Progressive Widening for chance nodes: after n visits a chance node may
         // hold at most ceil(chanceWideningC * (n+1)^chanceWideningAlpha) distinct outcomes.
@@ -229,13 +255,30 @@ namespace sts::search {
         std::default_random_engine randGen;
 
         std::vector<Node*> searchStack;        // descent path; doubles as the cycle-guard set (linear scan, depth is small)
+        std::vector<std::size_t> traceStarts;
         // Counts remain available with tracing disabled; enable before search for debug traces.
         bool recordActionTrace = false;
         std::size_t actionCount = 0;
         std::vector<Action> actionStack;
-        void recordAction(const Action &action) {
+        struct TracedAction { RaveActionKey key; int turn = 0; bool eligible = false; };
+        std::vector<TracedAction> actionTrace;
+        void recordAction(const Action &action, const BattleContext &bc) {
             ++actionCount;
             if (recordActionTrace) actionStack.push_back(action);
+            if (raveEnabled) {
+                TracedAction traced;
+                traced.turn = bc.turn;
+                if (action.getActionType() == ActionType::CARD
+                        && action.getSourceIdx() >= 0
+                        && action.getSourceIdx() < bc.cards.cardsInHand) {
+                    const auto &card = bc.cards.hand[action.getSourceIdx()];
+                    traced.eligible = true;
+                    traced.key = {static_cast<std::int32_t>(card.id), card.specialData,
+                        card.costForTurn, static_cast<std::int8_t>(action.getTargetIdx()),
+                        card.upgraded, card.freeToPlayOnce};
+                }
+                actionTrace.push_back(traced);
+            }
         }
 
         bool diagnosticRootHashValid = false;
@@ -306,6 +349,7 @@ namespace sts::search {
 
         void printSearchTree(std::ostream &os, int levels);
         void printSearchStack(std::ostream &os, bool skipLast=false);
+        void setRave(int k) { raveEnabled = k > 0; raveK = static_cast<double>(k); }
     };
 
     extern thread_local BattleSearcher *g_debug_scum_search;
