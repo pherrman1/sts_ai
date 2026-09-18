@@ -1,0 +1,38 @@
+{
+  "schema_version": 1,
+  "experiment": "ooc-gap-stop-20-independent-64-pair-20260918",
+  "source_sha": "495fa147517fdc42e631c513bde5a87b3bb25144",
+  "binary_sha256": "9a3b8c2bd1e563c691926d823c43767430d03c11b97a9c5f0d924e616beb1250",
+  "seed_range": [12004000, 12004063],
+  "n_pairs": 64,
+  "bootstrap_seed": 20260807,
+  "bootstrap_iterations": 10000,
+  "decision": "OOC_GAP_STOP_20_PROMISING",
+  "not_equivalent": true,
+  "control_wins": 44,
+  "treatment_wins": 44,
+  "both_win": 36,
+  "both_lose": 12,
+  "control_only": 8,
+  "treatment_only": 8,
+  "win_delta_pp": 0.0,
+  "win_delta_bootstrap_95_ci_pp": [-12.5, 12.5],
+  "floor_delta": -0.75,
+  "floor_delta_bootstrap_95_ci": [-2.609765625, 1.046875],
+  "hp_end_delta": -6.5625,
+  "hp_end_delta_bootstrap_95_ci": [-15.390625, 2.125],
+  "support": {
+    "control_unsupported_combats": 42,
+    "control_support_aborts": 42,
+    "control_seeds_with_support": 9,
+    "treatment_unsupported_combats": 27,
+    "treatment_support_aborts": 27,
+    "treatment_seeds_with_support": 11
+  },
+  "gap_stop": {
+    "control_events": 0,
+    "treatment_events": 5708,
+    "treatment_seeds_with_events": 64
+  },
+  "paired_rows_source": "raw/{control,treatment}/12004000..12004063.csv"
+}
