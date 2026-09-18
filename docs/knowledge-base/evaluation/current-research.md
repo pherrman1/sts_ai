@@ -22,9 +22,11 @@ The 8-seed OOC root-checkpoint diagnostic is complete. It preserves the live
 2,048-simulation policy and uses a discarded same-root shadow search to observe
 128/256/512/1024/2048 prefixes. Across 1,133 completed roots, checkpoint
 agreement with final 2,048 is 92.41%, 93.65%, 95.41%, 97.18% and 100.00%;
-top-two gap and observed leader stability are useful risk discriminators. The
-candidate `512 -> 2048 when gap < 10%` retains 97.53% agreement and removes
-68.98% of nominal simulations offline, but is not deployed or gameplay-qualified.
+top-two gap and observed leader stability are useful risk discriminators. On
+the 898-root multi-action cohort, the conservative candidate `512 -> 2048 when
+gap < 20%` retains 98.11% agreement and saves about 42.1% additional
+simulations versus existing live early stopping. It is not deployed or
+gameplay-qualified; singleton roots are descriptive only for this gap analysis.
 One expected smoke-bomb shadow abort remains separately reported. See
 [the evidence packet](../../experiments/evidence/ooc_root_checkpoints_2026-09-18/README.md).
 

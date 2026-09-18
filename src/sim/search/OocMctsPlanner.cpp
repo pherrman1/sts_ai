@@ -56,6 +56,16 @@ struct Search {
         return leader > challenger && leader - challenger > remaining;
     }
 
+    bool rootVisitGapAtLeast20(const DecisionNode &node) const {
+        if (node.actions.size() < 2) return false;
+        std::uint64_t leader = 0, challenger = 0;
+        for (const auto &action : node.actions) {
+            if (action.visits > leader) { challenger = leader; leader = action.visits; }
+            else challenger = std::max(challenger, action.visits);
+        }
+        return 5 * (leader - challenger) >= node.visits;
+    }
+
     void expand(DecisionNode &node) {
         auto actions = model.legalActions(node.state);
         if (actions.empty()) throw std::runtime_error("OOC MCTS nonterminal has no legal actions");
@@ -208,6 +218,13 @@ OocMctsResult OocMctsPlanner::search(OocGenerativeModel &model, OocStateId root,
             }
             if (remaining && mayStopLocked && search.rootWinnerLocked(node, remaining)) {
                 search.metrics.earlyStopLockedRoot = true;
+                search.metrics.savedSimulations = remaining;
+                break;
+            }
+            if (remaining && config.stopAt512VisitGap20 && !config.observeRootLock
+                && !config.selectByMeanQ && search.metrics.simulations == 512
+                && search.rootVisitGapAtLeast20(node)) {
+                search.metrics.earlyStopVisitGap20 = true;
                 search.metrics.savedSimulations = remaining;
                 break;
             }

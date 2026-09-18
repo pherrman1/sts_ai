@@ -31,8 +31,8 @@ one aborted shadow root is excluded from agreement and rule denominators; it is
 retained as support evidence, not silently treated as a settled root.
 
 Results below use all 1,133 completed roots. The multi-action subset contains
-898 roots; singleton roots are reported separately by the analyzer and do not
-drive the conclusions.
+898 roots; singleton roots are reported separately by the analyzer and are
+descriptive only for the gap-based candidate analysis below.
 
 ## Checkpoint agreement
 
@@ -68,20 +68,24 @@ checkpoints.
 These are offline counterfactual simulation counts only. They do not rerun
 gameplay with reduced budgets and do not authorize deployment.
 
-| Rule | Agreement | Nominal simulations saved vs 2048 | Extra saved vs existing live early stop |
+| Rule (multi-action roots, n=898) | Agreement | Nominal simulations saved vs 2048 | Extra saved vs existing live early stop |
 |---|---:|---:|---:|
-| Fixed 512 | 95.41% | 75.00% | 60.73% |
-| 512 → 2048 if gap < 5% | 96.73% | 71.56% | 54.62% |
-| 512 → 2048 if gap < 10% | 97.53% | 68.98% | 50.19% |
-| 512 → 2048 if gap < 20% | 98.50% | 63.81% | 42.06% |
-| 256 → 512 → 2048, gap < 10% | 96.20% | 81.56% | 69.65% |
-| Stable + 256 → 512 → 2048, gap < 10% | 96.29% | 80.79% | 68.73% |
+| Fixed 512 | 94.21% | 75.00% | 60.74% |
+| 512 → 2048 if gap < 5% | 95.88% | 70.66% | 54.63% |
+| 512 → 2048 if gap < 10% | 96.88% | 67.40% | 50.20% |
+| 512 → 2048 if gap < 20% | 98.11% | 60.89% | 42.07% |
+| 256 → 512 → 2048, gap < 10% | 95.21% | 80.01% | 69.66% |
+| Stable + 256 → 512 → 2048, gap < 10% | 95.32% | 79.04% | 68.74% |
 
-The first promising candidate is therefore `512 → 2048 if gap < 10%`: it
-retains 97.53% checkpoint agreement while removing 68.98% of nominal search
-simulations. It is still only a candidate rule. The 52 disagreements at fixed
-512 and the one late support abort show why this diagnostic cannot itself
-change the live policy.
+The candidate table is headlined by the 898-root multi-action cohort; singleton
+roots remain descriptive because they do not have a top-two gap. On that
+cleaner cohort, the conservative first online candidate is therefore
+512 → 2048 if gap < 20% (stop at 512 when gap is at least 20%): it retains
+98.11% agreement and removes about 42.1% of the simulations additionally saved
+versus the existing live early-stop policy. The 10% rule buys only about
+8 percentage points more additional savings while increasing disagreement from
+about 1.9% to 3.1%. This remains only a candidate rule. The one late support
+abort shows why this diagnostic cannot itself change the live policy.
 
 ## Verification
 
