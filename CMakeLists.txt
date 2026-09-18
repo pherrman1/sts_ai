@@ -129,6 +129,12 @@ target_include_directories(silver-hard-combat-fixture PRIVATE include json/inclu
 target_link_libraries(silver-hard-combat-fixture PRIVATE silver_combat_search_bridge)
 target_link_options(silver-hard-combat-fixture PRIVATE -Wl,--gc-sections)
 
+add_executable(silver-hard-combat-replay apps/silver_hard_combat_replay.cpp)
+set_target_properties(silver-hard-combat-replay PROPERTIES OUTPUT_NAME silver_hard_combat_replay)
+target_include_directories(silver-hard-combat-replay PRIVATE include json/include)
+target_link_libraries(silver-hard-combat-replay PRIVATE silver_combat_search_bridge)
+target_link_options(silver-hard-combat-replay PRIVATE -Wl,--gc-sections)
+
 add_executable(silver-leaf-features apps/silver_leaf_features.cpp $<TARGET_OBJECTS:sts_core_objects>)
 set_target_properties(silver-leaf-features PROPERTIES OUTPUT_NAME silver_leaf_features)
 target_include_directories(silver-leaf-features PRIVATE include json/include)
@@ -268,6 +274,20 @@ target_link_libraries(one_combat PRIVATE silver_live_backend)
 # -ffunction-sections; discard the unreachable OOC closure instead of vendoring
 # it into the integration executable.
 target_link_options(one_combat PRIVATE -Wl,--gc-sections)
+
+# Read-only newline-delimited JSON endpoint for the private live-model
+# inspector.  Keep it separate from the simulator driver until a proven
+# Java-game importer can construct the native observation contracts.
+add_executable(one_combat_advisor
+    apps/one_combat/advisor_stdio.cpp
+    apps/one_combat/advisor_protocol.cpp)
+target_include_directories(one_combat_advisor PUBLIC json/include)
+target_sources(one_combat_advisor PRIVATE apps/one_combat/live_ooc_importer.cpp)
+target_link_libraries(one_combat_advisor PRIVATE sts_core_objects)
+add_test(NAME live_advisor_protocol COMMAND python3
+    ${CMAKE_SOURCE_DIR}/tests/live_advisor_protocol.py $<TARGET_FILE:one_combat_advisor>)
+set_tests_properties(live_advisor_protocol PROPERTIES
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "integration;smoke")
 
 add_executable(one_combat_feature_test apps/one_combat_feature_test.cpp
     apps/one_combat/run_features.cpp $<TARGET_OBJECTS:sts_core_objects>)

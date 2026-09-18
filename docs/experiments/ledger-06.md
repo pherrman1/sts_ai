@@ -9910,41 +9910,66 @@ unchanged. [Evidence packet](evidence/ooc_root_checkpoints_2026-09-18/README.md)
   **Knowledge impact:** current research evidence only; no model, runtime,
   gameplay, or default change.
 
-## §312 — OOC 20% gap-stop independent 64-pair quality confirmation (2026-09-18)
+## §312 — First frozen `silver_hard_combat_v1` candidate pool (2026-09-18)
+
+- **Protocol:** On merged source/replay SHA `e7695fe14c342861937535f990c18479def86502`,
+  collected Ironclad A0, fair Searcher2, keys-off Act-3 gameplay on fresh
+  seeds `12100000..12100127` with ordinary adaptive Silver, allocated 32,768
+  reuse cap, and four OpenMP threads. The run completed all 128 source seeds
+  and captured 3,096 first-action combat snapshots with zero source failures.
+- **Screen:** Exact flat 1k replay covered all 3,096 captures: 3,042 wins and
+  54 losses, all technically valid. The prospective 10k screen covered all
+  losses plus three fixed successive blocks of 128 lowest-HP-fraction 1k
+  wins. Combined classifications were 22 Tier A, 116 material Tier B, 32
+  unresolved Tier C, 10 anomalous, and 258 easy.
+- **Selection:** Easy and anomalous cases were excluded. The deterministic
+  selector retained 64 `hard64-dev` and 64 `hard64-holdout` cases, with no
+  source seed shared between cohorts, no more than two cases per source seed,
+  and no state-hash duplicates. DEV is 9/48/7 A/B/C; HOLDOUT is 13/47/4.
+- **Baseline:** The primary 1k screen is DEV `48/64` and HOLDOUT `47/64`.
+  DEV mean terminal HP fraction was `0.2011844` and HOLDOUT `0.2359278`;
+  replay failures were zero. The separate exact-10k teacher/reference replay
+  won `57/64` on DEV and `60/64` on HOLDOUT, with mean terminal HP fractions
+  `0.5013957` and `0.5374656`. The replay schema exposes wall time but not CPU
+  time; 10k mean wall time was 3.088858s (DEV) and 2.960088s (HOLDOUT).
+  Per the maintained benchmark protocol, DEV@1k is the primary cheap screen,
+  HOLDOUT@1k is reserved confirmation, and 10k is teacher/reference evidence;
+  none is a production promotion gate.
+- **Technical exclusion:** An interrupted Debug-speed run left 400 partial
+  captures and 13 completed rows; those files are durably quarantined outside
+  the app worktree at `/home/philippherrmann/sts_sweep/runs/` and excluded
+  because three active seeds lacked completed whole-run accounting. The final
+  pool uses only the clean Release rerun.
+- **Evidence:** [frozen-pool receipt](evidence/silver_hard_combat_v1_20260918/README.md).
+  **Knowledge impact:** durable benchmark evidence and deterministic selection
+  procedure; no Silver search behavior, model, threshold, or production gate
+  changed.
+
+## §313 — OOC 20% gap-stop independent 64-pair quality confirmation (2026-09-18)
 
 - **Relation to §305:** The earlier `12003000..12003063` cohort remains
-  `OOC_GAP_STOP_20_QUALITY_INCONCLUSIVE_RUNTIME`; its pathological seed
-  `12003058` was not replaced and its partial rows were not mixed into this
-  result. This is a separate fresh cohort, not a repair of the earlier gate.
-- **Frozen provenance and protocol:** Reused source
+  `OOC_GAP_STOP_20_QUALITY_INCONCLUSIVE_RUNTIME`; pathological seed
+  `12003058` was not replaced. Its partial rows were not mixed into this
+  fresh independent cohort.
+- **Protocol:** Reused source SHA
   `495fa147517fdc42e631c513bde5a87b3bb25144` and the unchanged Release
-  `one_combat` SHA256
+  binary SHA256
   `9a3b8c2bd1e563c691926d823c43767430d03c11b97a9c5f0d924e616beb1250`.
   Seeds `12004000..12004063` ran as paired control/treatment evaluations,
-  one OMP1 process per seed, up to 12 external workers, with control completed
-  before treatment and a 600-second per-process ceiling. No seed replacement,
-  rebuild, Stage-B rerun, checkpoint/root-lock/profile diagnostics, or other
-  search change was used.
-- **Quality result:** Control and treatment each won 44/64 (68.8%). The paired
-  result was 36 both-win, 12 both-lose, 8 control-only, and 8 treatment-only
-  pairs; discordance was 16/64. Win-rate delta was **0.0 pp**, deterministic
-  paired bootstrap 95% CI **[-12.5, +12.5] pp**. Mean floor delta was **-0.75**
-  (CI [-2.61, +1.05]) and mean ending-HP delta was **-6.56** (CI
+  one OMP1 process per seed, up to 12 external workers, control first, and a
+  600-second per-process ceiling. No seed replacement, rebuild, Stage-B
+  rerun, or diagnostic mode was used.
+- **Result:** Control and treatment each won 44/64. The paired counts were
+  36 both-win, 12 both-lose, 8 control-only, and 8 treatment-only. Win-rate
+  delta was **0.0 pp**, bootstrap 95% CI **[-12.5, +12.5] pp**. Floor delta
+  was **-0.75** (CI [-2.61, +1.05]); ending-HP delta was **-6.56** (CI
   [-15.39, +2.13]).
-- **Trace/support result:** Trace arithmetic and frozen provenance checks
-  passed for all 128 runs. Control recorded 42 unsupported combats/support
-  aborts across 9 seeds and zero gap stops. Treatment recorded 27 such
-  abnormalities across 11 seeds and 5,708 gap stops across all 64 seeds.
-- **Decision:** **`OOC_GAP_STOP_20_PROMISING`**. This result is not
-  “equivalent”: wins are flat and the confidence interval does not show a
-  gameplay loss, but the negative floor/HP point estimates remain unresolved.
-  The mechanism/speed PASS from §305 is retained separately. Freeze the 20%
-  threshold; do not run a threshold sweep. Before default promotion, run the
-  independent paired cohort `12005000..12005127` with the same frozen artifact
-  and robust OMP1-per-seed execution. Treat a strengthened floor/HP
-  disadvantage as requiring investigation even if win rate remains flat.
-- **Evidence:** [OOC 20% gap-stop evidence packet](evidence/ooc_gap_stop_20_20260918/README.md);
-  raw ignored artifacts remain under
-  `build/ooc_gap_stop_20_20260918/fresh12004000/`. **Knowledge impact:**
-  current research status and experiment evidence; no default, model, or
-  gameplay implementation change.
+- **Decision:** **`OOC_GAP_STOP_20_PROMISING`**, explicitly not
+  “equivalent”. Wins are flat and the CI does not show a gameplay loss, but
+  the negative floor/HP point estimates remain unresolved. Freeze the 20%
+  threshold and run the predeclared independent `12005000..12005127`
+  confirmation before any default promotion.
+- **Evidence:** [OOC 20% gap-stop evidence packet](evidence/ooc_gap_stop_20_20260918/README.md),
+  including the checked-in raw bundle, analysis JSON, and SHA256 manifest.
+  **Knowledge impact:** current research status and experiment evidence; no
+  default, model, or gameplay implementation change.

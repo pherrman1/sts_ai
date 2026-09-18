@@ -627,6 +627,27 @@ struct SilverDecisionResult {
     std::vector<SilverCheckpointDiagnostic> checkpointDiagnostics;
 };
 
+// Complete-fight replay result for a frozen private Silver start state. The
+// replay owns one session and never lowers an action through the live model.
+struct SilverCombatReplayResult {
+    bool accepted = false;
+    bool won = false;
+    int terminalOutcome = 0;
+    int terminalHp = 0;
+    int terminalMaxHp = 0;
+    int terminalTurn = 0;
+    int decisions = 0;
+    int singleCardSelectActions = 0;
+    int multiCardSelectActions = 0;
+    bool traversedGamble = false;
+    std::int64_t simulations = 0;
+    int rerootExact = 0;
+    int rerootFallback = 0;
+    std::uint64_t actionTraceHash = 0;
+    SilverSearchTelemetry telemetry;
+    std::string failureReason;
+};
+
 // Fresh forced-action continuation used by the bounded Silver root diagnostic.
 // Each replicate materializes a new private state and searches only after the
 // specified legal root action has been executed. The action identity is
@@ -757,6 +778,12 @@ SilverDecisionResult replaySilverRoot(const BattleStateWire &state,
 SilverDecisionResult runSilverDecision(SilverSearchSession &session,
                                        const BattleStateWire &state,
                                        const SilverSearchConfig &config);
+
+// Replays one frozen fight entirely inside the isolated Silver model. The
+// caller must put the snapshot's stored deterministic benchmark seed in
+// `state.isolatedSearchSeed` before calling this function.
+SilverCombatReplayResult runSilverCombatReplay(
+    const BattleStateWire &state, const SilverSearchConfig &config);
 // Run one root in two contiguous pieces on the same private search session.
 // The returned budgetDiagnostic is the only additional observation; the final
 // action and root state are those of the full-budget search.

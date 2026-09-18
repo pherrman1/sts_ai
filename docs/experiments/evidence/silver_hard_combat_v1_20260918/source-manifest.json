@@ -1,0 +1,28 @@
+{
+  "acts": [
+    1,
+    2,
+    3
+  ],
+  "ascension": 0,
+  "capture_count": 3096,
+  "fair": true,
+  "keys": false,
+  "schema": "silver_hard_combat_v1",
+  "searcher": "Searcher2",
+  "silver": {
+    "adaptive": true,
+    "base_budget": 10000,
+    "exact_root_budgets": false,
+    "exact_visit_lock": false,
+    "reuse_cap": 32768,
+    "reuse_mode": "allocated",
+    "rho_racing": false
+  },
+  "silver_upstream_sha": "84ab3ead9d88c01c4be09a6773fb9a947f57d5ff",
+  "source_seed_count": 128,
+  "source_seed_end": 12100127,
+  "source_seed_start": 12100000,
+  "source_sha": "e7695fe14c342861937535f990c18479def86502",
+  "threads": 4
+}

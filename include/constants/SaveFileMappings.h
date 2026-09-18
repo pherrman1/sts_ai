@@ -808,7 +808,7 @@ namespace sts {
             {CombatRewardType::SAPPHIRE_KEY, "SAPPHIRE_KEY"},
         })
 
-        void from_json(const nlohmann::json &j, CombatReward &r) {
+        inline void from_json(const nlohmann::json &j, CombatReward &r) {
             j.at("type").get_to(r.type);
 
             switch (r.type) {

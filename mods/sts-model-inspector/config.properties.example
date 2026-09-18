@@ -1,0 +1,3 @@
+# Copy to ~/.sts-model-inspector.properties and set the absolute advisor path.
+# The mod launches this as one direct ProcessBuilder argument; no shell is used.
+advisor=/absolute/path/to/sts_ai/build/linux-gcc-debug/one_combat_advisor
