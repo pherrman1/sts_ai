@@ -9830,3 +9830,25 @@ top-level benchmark reporting corrected.
 - **Evidence:** [preregistration](evidence/silver_root_mechanism_confirmation32_preregistration_2026-09-18.md)
   and [prior 16-seed report](evidence/silver_root_mechanism_confirmation16_2026-09-18.md).
   **Knowledge impact:** preregistered research follow-up; no default change.
+
+## §306 — Silver root mechanism pooled 32-seed confirmation (2026-09-18)
+
+- **Protocol:** The preregistered fresh seeds `17..32` produced 5,724 eligible
+  roots and 32 selected roots, two per seed. They were pooled with the prior
+  seeds `1..16` for 32 source-seed units and 64 total roots. The preregistration
+  commit was `5bff722b002a747e8d24ecbdbec9e99f8aad1748`, recorded in the run
+  manifest before collection.
+- **Primary result:** `C-A` mean B-regret delta `-0.143262`, source-seed
+  bootstrap 95% CI `[-0.553535,+0.250062]`, exact two-sided sign-test
+  `p=0.8388`, improved/worsened/tied `11/13/8`. The primary gate fails.
+- **Secondary context:** `C-E` remains beneficial (`-0.521796`, CI
+  `[-0.881025,-0.235779]`), but this does not establish improvement over
+  ordinary UCT. `E-A` is positive in point estimate (`+0.378535`, CI crosses
+  zero) and B-best comparisons do not change the primary decision.
+- **Decision:** **`ROOT_GUIDANCE_SIGNAL_NOT_CONFIRMED`**. Stop the learned-PUCT
+  line. No additional roots, PUCT tuning, policy training, gameplay
+  qualification, runtime integration, or default promotion.
+- **Evidence:** [pooled confirmation report](evidence/silver_root_mechanism_confirmation32_2026-09-18.md),
+  [preregistration](evidence/silver_root_mechanism_confirmation32_preregistration_2026-09-18.md),
+  and the local run manifest/hash packet. **Knowledge impact:** current
+  research status and experiment evidence updated; no default change.

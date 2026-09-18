@@ -1247,13 +1247,19 @@ CI `[-0.348172,+0.719575]`), and the C-E B-best interval crosses zero
 (`+3.1250` pp, `[-6.2500,+10.1563]` pp). The source-seed confirmation therefore
 remains **`ROOT_GUIDANCE_INCONCLUSIVE`**: the informative-prior signal against
 uniform PUCT persists directionally, but it does not establish broad absolute
-guidance value. The preregistered next screen is fresh seeds `17..32` with two
-roots per seed, pooled with seeds `1..16` for 32 source-seed units; its primary
-gate is `C-A`, not `C-E`. Do not train a policy, run gameplay, or change the
-default from this result. See [ledger-06 §303–§305](../../experiments/ledger-06.md),
+guidance value. The preregistered fresh-seed extension is now complete: seeds
+`17..32` added two roots per seed and were pooled with seeds `1..16` for 32
+source-seed units. The primary `C-A` effect is `-0.143262`, but its source-seed
+bootstrap CI `[-0.553535,+0.250062]` includes zero and the exact two-sided sign
+test is `p=0.8388` (`11/13/8` improved/worsened/tied). `C-E` remains
+beneficial, but oracle-informed PUCT still does not establish an advantage over
+ordinary UCT. The learned-PUCT line is **`ROOT_GUIDANCE_SIGNAL_NOT_CONFIRMED`**
+and stops: do not train a policy, run gameplay, tune PUCT, add roots, or change
+the default. See [ledger-06 §303–§306](../../experiments/ledger-06.md),
 the [six-arm replay evidence](../../experiments/evidence/silver_root_mechanism_2026-09-17.md),
 the [16-seed confirmation evidence](../../experiments/evidence/silver_root_mechanism_confirmation16_2026-09-18.md),
-and the [32-source-seed preregistration](../../experiments/evidence/silver_root_mechanism_confirmation32_preregistration_2026-09-18.md).
+the [32-source-seed preregistration](../../experiments/evidence/silver_root_mechanism_confirmation32_preregistration_2026-09-18.md),
+and the [pooled confirmation evidence](../../experiments/evidence/silver_root_mechanism_confirmation32_2026-09-18.md).
 
 ### Combat leaf/model variants
 
