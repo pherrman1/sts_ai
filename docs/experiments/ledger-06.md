@@ -9909,3 +9909,42 @@ unchanged. [Evidence packet](evidence/ooc_root_checkpoints_2026-09-18/README.md)
 - **Evidence:** [ensemble audit](evidence/silver_root_teacher_ensemble_audit_2026-09-18.md).
   **Knowledge impact:** current research evidence only; no model, runtime,
   gameplay, or default change.
+
+## §312 — OOC 20% gap-stop independent 64-pair quality confirmation (2026-09-18)
+
+- **Relation to §305:** The earlier `12003000..12003063` cohort remains
+  `OOC_GAP_STOP_20_QUALITY_INCONCLUSIVE_RUNTIME`; its pathological seed
+  `12003058` was not replaced and its partial rows were not mixed into this
+  result. This is a separate fresh cohort, not a repair of the earlier gate.
+- **Frozen provenance and protocol:** Reused source
+  `495fa147517fdc42e631c513bde5a87b3bb25144` and the unchanged Release
+  `one_combat` SHA256
+  `9a3b8c2bd1e563c691926d823c43767430d03c11b97a9c5f0d924e616beb1250`.
+  Seeds `12004000..12004063` ran as paired control/treatment evaluations,
+  one OMP1 process per seed, up to 12 external workers, with control completed
+  before treatment and a 600-second per-process ceiling. No seed replacement,
+  rebuild, Stage-B rerun, checkpoint/root-lock/profile diagnostics, or other
+  search change was used.
+- **Quality result:** Control and treatment each won 44/64 (68.8%). The paired
+  result was 36 both-win, 12 both-lose, 8 control-only, and 8 treatment-only
+  pairs; discordance was 16/64. Win-rate delta was **0.0 pp**, deterministic
+  paired bootstrap 95% CI **[-12.5, +12.5] pp**. Mean floor delta was **-0.75**
+  (CI [-2.61, +1.05]) and mean ending-HP delta was **-6.56** (CI
+  [-15.39, +2.13]).
+- **Trace/support result:** Trace arithmetic and frozen provenance checks
+  passed for all 128 runs. Control recorded 42 unsupported combats/support
+  aborts across 9 seeds and zero gap stops. Treatment recorded 27 such
+  abnormalities across 11 seeds and 5,708 gap stops across all 64 seeds.
+- **Decision:** **`OOC_GAP_STOP_20_PROMISING`**. This result is not
+  “equivalent”: wins are flat and the confidence interval does not show a
+  gameplay loss, but the negative floor/HP point estimates remain unresolved.
+  The mechanism/speed PASS from §305 is retained separately. Freeze the 20%
+  threshold; do not run a threshold sweep. Before default promotion, run the
+  independent paired cohort `12005000..12005127` with the same frozen artifact
+  and robust OMP1-per-seed execution. Treat a strengthened floor/HP
+  disadvantage as requiring investigation even if win rate remains flat.
+- **Evidence:** [OOC 20% gap-stop evidence packet](evidence/ooc_gap_stop_20_20260918/README.md);
+  raw ignored artifacts remain under
+  `build/ooc_gap_stop_20_20260918/fresh12004000/`. **Knowledge impact:**
+  current research status and experiment evidence; no default, model, or
+  gameplay implementation change.

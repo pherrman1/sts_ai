@@ -18,8 +18,8 @@ other sections retain their prior verification and linked evidence.
 ## OOC 20% gap-stop quality gate
 
 The merged opt-in rule `512 -> stop when the top-two root visit gap is at
-least 20%, otherwise continue toward 2,048` has **mechanism/speed PASS** but
-the first quality cohort is **`OOC_GAP_STOP_20_QUALITY_INCONCLUSIVE_RUNTIME`**.
+least 20%, otherwise continue toward 2,048` has **mechanism/speed PASS** and
+the completed independent quality confirmation is **`PROMISING`**.
 At frozen source `495fa147517fdc42e631c513bde5a87b3bb25144` and the exact
 control/treatment configuration, the 16-pair OMP1 smoke reduced total OOC
 simulations by 41.4%, median MCTS CPU by 36.6%, and median full-run CPU by
@@ -30,17 +30,33 @@ control seed `12003058` became a long-tail runtime pathology under OMP12;
 isolated OMP1 reproduction also exceeded the bounded runtime without a
 completed row, while four other OMP12-to-OMP1 control parity checks matched
 all non-time MCTS counters and outcomes. The pathology boundary is unknown.
-No evidence from this experiment supports rejecting the 20% rule, and no
-quality claim or default promotion is established.
+No evidence from this incomplete cohort supports rejecting the 20% rule; its
+quality result is unresolved and it authorizes no default promotion.
 
-The original cohort is closed without seed replacement or further treatment
-runs. A future independent quality attempt is predeclared for seeds
-`12004000..12004063`, reusing the exact frozen binary/configuration, with one
-OMP1 process per seed and up to approximately 12 external processes. Control
-will run first; treatment starts only if all 64 controls complete. A fixed
-10-minute per-process ceiling applies to either arm; any timeout aborts that
-cohort as `INCONCLUSIVE_RUNTIME`, with no seed substitution. Stage B is not
-rerun. See [ledger §305](../../experiments/ledger-06.md).
+The original `12003000..12003063` cohort remains closed as
+**`OOC_GAP_STOP_20_QUALITY_INCONCLUSIVE_RUNTIME`**: control seed `12003058`
+became pathological and was not replaced. Its partial rows are diagnostic
+only. The independent `12004000..12004063` confirmation then completed all
+128 runs under the same frozen artifact, using one OMP1 process per seed, up
+to 12 external workers, and a 600-second per-process ceiling. Control and
+treatment each won 44/64; the paired win-rate delta was **0.0 pp**, with
+bootstrap 95% CI **[-12.5, +12.5] pp**. Discordant pairs were 16/64 (8
+control-only, 8 treatment-only). Mean floor changed by **-0.75** (CI
+[-2.61, +1.05]) and mean ending HP by **-6.56** (CI [-15.39, +2.13]); these
+point estimates warrant attention in the final confirmation but are not a
+convincing quality regression. The rule is therefore **PROMISING**, not
+“equivalent”; no default promotion has yet been made.
+
+The 20% threshold is frozen. One final independent 128-paired-seed
+confirmation, `12005000..12005127`, is predeclared before any default
+promotion. It will reuse this exact binary/configuration, use one OMP1 process
+per seed with external concurrency and a fixed 600-second ceiling, preserve
+control/treatment pairing, prohibit replacements, and make no other search
+change. Its primary question is whether the speed win persists without a
+meaningful gameplay-quality loss, especially the negative floor/HP tendency.
+If floor/HP disadvantage strengthens, investigate it before promotion even if
+win rate remains flat. See [ledger §305](../../experiments/ledger-06.md) and
+[the fresh-cohort evidence packet](../../experiments/evidence/ooc_gap_stop_20_20260918/README.md).
 
 Semantic confirmation section verified 2026-09-10 at producer `a6c2abb`;
 other sections retain their prior verification and linked evidence.
