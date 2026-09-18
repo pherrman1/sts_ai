@@ -9739,6 +9739,22 @@ top-level benchmark reporting corrected.
   both full histories and all slices. **Knowledge impact:** research status;
   no qualified-default change.
 
+## §305 — Current OOC CPU attribution (2026-09-18)
+
+Profiling only on baseline589a7a7, frozen instrumentationc886964. `perf` was
+unavailable; no system repair attempted. Historical seeds12002032/12002033 ran
+once each with Attention control, OMP1, exact10k Silver and the locked2048 OOC
+profile. All non-timing MCTS columns match exactly. Full CPU42.30/62.75s
+(+3.55%/+3.16% versus supplied Stage B); real Silver22.835/35.689s,
+MCTS19.310/26.916s. V4 prior/continuation exclusive total8.143/10.921s;
+CTM preparation3.681/5.583s. Real combat accounts for54–57%, V4 for17–19%.
+Pooled infinite-real-combat-speed Amdahl bound2.26x. Existing rollout wall
+telemetry supports targeting Silver rollout execution, but does not identify
+a specific kernel or prove the proposed scratch-allocation hypothesis.
+No optimization, model changes, fresh seeds or quality comparison performed.
+Knowledge impact: performance evidence and next target, no qualified default.
+[Report, exclusive/inclusive tables, receipts, raw logs and hashes](evidence/ooc_cpu_profile_2026-09-18/README.md).
+
 ## §303 — Six-arm Silver root mechanism replay (2026-09-17)
 
 - **Question and frozen implementation:** Does a normalized Teacher-A visit
@@ -9875,3 +9891,21 @@ unchanged. [Evidence packet](evidence/ooc_root_checkpoints_2026-09-18/README.md)
   Stage-B, partial Stage-C, and rescue-preflight outputs. **Knowledge impact:**
   current research status and experiment evidence; no default, model, or
   gameplay implementation change.
+
+## §311 — Silver root ensemble-teacher audit (2026-09-18)
+
+- **Protocol:** Constructed visit-weighted `T20` from A/A2 10k corrected Qs and
+  independent-jury `J50` from B/B2 25k corrected Qs on the existing 64 roots.
+  No replay, gameplay, teacher generation, or training was performed.
+- **Result:** T20/J50 top-action agreement is `44/64` (`68.750%`). T20 mean
+  J50-regret is `0.534197`, slightly worse than original A's `0.495031`; T20
+  matches original A on `54/64` roots. Disagreement roots have smaller T20/J50
+  margins, but the ensemble does not improve the judge comparison.
+- **Tail:** T20 still selects Seeing Red at `14/2/23/36/3`, while J50 selects
+  Intimidate; T20 J50-regret is `3.034235`, identical to A's choice.
+- **Decision:** Do not run the proposed I-vs-A replay, train a model, or collect
+  a larger corpus. The current ensemble is not a credible target without a new
+  target definition or evidence addressing unstable/biasing Q estimates.
+- **Evidence:** [ensemble audit](evidence/silver_root_teacher_ensemble_audit_2026-09-18.md).
+  **Knowledge impact:** current research evidence only; no model, runtime,
+  gameplay, or default change.

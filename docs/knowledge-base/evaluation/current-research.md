@@ -47,6 +47,15 @@ other sections retain their prior verification and linked evidence.
 
 ## Purpose
 
+The [current OOC CPU profile](../../experiments/evidence/ooc_cpu_profile_2026-09-18/README.md)
+reuses only historical seeds12002032/12002033, with exact workload reproduction
+and frozen opt-in instrumentation on main589a7a7. Real Silver combat accounts
+for54–57% of full CPU; V4 prior/continuation inference for17–19%; all CTM
+preparation for under9%. Prioritize real-combat execution and V4 inference for
+future behavior-preserving speed experiments, not further CTM inference first.
+No optimization or gameplay-quality conclusion was tested; measured full CPU
+is3.2–3.6% above supplied Stage-B timings and is not a production benchmark.
+
 The 8-seed OOC root-checkpoint diagnostic is complete. It preserves the live
 2,048-simulation policy and uses a discarded same-root shadow search to observe
 128/256/512/1024/2048 prefixes. Across 1,133 completed roots, checkpoint
@@ -1304,6 +1313,13 @@ were correlated decisions from source seed `0`, so current classification is
 not train a policy, run gameplay, or change the default from this result.
 See [ledger-06 §303](../../experiments/ledger-06.md) and the
 [six-arm replay evidence](../../experiments/evidence/silver_root_mechanism_2026-09-17.md).
+
+A visit-weighted T20 ensemble of A/A2 versus an independent J50 ensemble of
+B/B2 also fails the zero-search screen: top-action agreement is `44/64`, T20
+mean J50-regret is `0.534197` versus `0.495031` for original A, and the known
+harmful root remains misranked. The proposed ensemble ordering arm is therefore
+not run; the learned root-ordering line is stopped pending a new target
+definition. See the [ensemble audit](../../experiments/evidence/silver_root_teacher_ensemble_audit_2026-09-18.md).
 
 ### Combat leaf/model variants
 

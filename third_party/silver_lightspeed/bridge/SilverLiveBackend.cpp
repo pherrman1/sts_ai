@@ -32,6 +32,7 @@
 #include "sim/search/SilverSemanticAction.h"
 #include "sim/search/SilverWireJson.h"
 #include "sim/search/SilverRootMechanism.h"
+#include "sim/search/SilverHardCombat.h"
 #include <filesystem>
 
 namespace sts::search {
@@ -50,6 +51,7 @@ struct SilverLiveOptions {
     std::string stickyQualityFile;
     std::string rootDiagnosticFile;
     std::string rootMechanismCapture;
+    std::string hardCombatCapture;
     std::string budgetDiagnosticFile;
     std::string sequentialDiagnosticFile;
     int rootDiagnosticMaxPerSeed = 8;
@@ -206,6 +208,8 @@ void parseSilverLiveOptions() {
         options.rootDiagnosticFile = raw;
     if (const char *raw = std::getenv("STS_SILVER_ROOT_MECHANISM_CAPTURE"))
         options.rootMechanismCapture = raw;
+    if (const char *raw = std::getenv("STS_SILVER_HARD_COMBAT_CAPTURE"))
+        options.hardCombatCapture = raw;
     if (const char *raw = std::getenv("STS_COMBAT_BUDGET_DIAG_FILE"))
         options.budgetDiagnosticFile = raw;
     if (const char *raw = std::getenv("STS_COMBAT_SEQUENTIAL_DIAG_FILE"))
@@ -236,11 +240,13 @@ void parseSilverLiveOptions() {
     if (const char *raw = std::getenv("STS_SILVER_LEAF_CORPUS_MAX_PER_GROUP"))
         options.leafCorpusMaxLeavesPerGroup = std::atoi(raw);
     if (const char *raw = std::getenv("STS_EXECUTABLE_GIT_SHA")) options.executableGitSha = raw;
-    if (!options.rootMechanismCapture.empty()) {
+    if (!options.rootMechanismCapture.empty() || !options.hardCombatCapture.empty()) {
         if (!silver_bridge::rootMechanismShaValid(options.executableGitSha))
-            throw std::invalid_argument("root capture requires full STS_EXECUTABLE_GIT_SHA");
-        if (std::filesystem::exists(options.rootMechanismCapture))
-            throw std::invalid_argument("root capture refuses an existing output file");
+            throw std::invalid_argument("Silver capture requires full STS_EXECUTABLE_GIT_SHA");
+        for (const std::string &capturePath : {options.rootMechanismCapture, options.hardCombatCapture}) {
+            if (!capturePath.empty() && std::filesystem::exists(capturePath))
+                throw std::invalid_argument("Silver capture refuses an existing output file");
+        }
     }
     const char *adaptiveOverride = std::getenv("STS_SILVER_ADAPTIVE");
     if (adaptiveOverride)
@@ -1381,6 +1387,14 @@ void runSilverCombat(ScumSearchAgent2 &agent, GameContext &gc, BattleContext &bc
     StickyQualityCounters stickyQualityCounters;
 
     int decision = 0;
+    bool hardCombatCaptured = false;
+    static std::mutex hardCombatIndexMutex;
+    static std::unordered_map<std::uint64_t, int> hardCombatIndices;
+    int hardCombatFightIndex = -1;
+    if (!g_silverLiveOptions.hardCombatCapture.empty()) {
+        std::lock_guard<std::mutex> lock(hardCombatIndexMutex);
+        hardCombatFightIndex = hardCombatIndices[gc.seed]++;
+    }
     int sampledLeafCount = 0;
     std::unordered_map<std::string, std::unordered_set<std::string>> corpusLeavesByGroup;
     struct PendingCorpusLeaf {
@@ -1504,6 +1518,30 @@ void runSilverCombat(ScumSearchAgent2 &agent, GameContext &gc, BattleContext &bc
         }
 
         auto config = configFor(agent, bc, collectDecisionDiagnostics);
+        if (!hardCombatCaptured && !g_silverLiveOptions.hardCombatCapture.empty()) {
+            const std::string roomType = gc.curRoom == Room::MONSTER ? "hallway"
+                : gc.curRoom == Room::ELITE ? "elite"
+                : gc.curRoom == Room::BOSS ? "boss" : "other";
+            const auto stateHash = silver_bridge::rootMechanismHash(
+                silver_bridge::battleStateWireEnvelope(wire).dump());
+            const auto row = silver_bridge::hardCombatSnapshot(wire, gc.seed,
+                hardCombatFightIndex, roomType, g_silverLiveOptions.executableGitSha,
+                silver_bridge::hardCombatBenchmarkSeed(stateHash),
+                {{"simulations", config.simulationsPerDecision},
+                 {"reuse_cap", config.reuseCap},
+                 {"reuse_mode", silver_bridge::silverReuseCapModeName(config.reuseCapMode)},
+                 {"adaptive", config.adaptiveEnabled},
+                 {"exact_lock", config.exactVisitLockEnabled},
+                 {"rho", config.rhoRacingEnabled}});
+            std::lock_guard<std::mutex> lock(g_leafCorpusMutex);
+            std::ofstream output(g_silverLiveOptions.hardCombatCapture, std::ios::app);
+            if (!output) throw std::runtime_error("cannot open STS_SILVER_HARD_COMBAT_CAPTURE: "
+                                                   + g_silverLiveOptions.hardCombatCapture);
+            output << row.dump() << '\n';
+            output.flush();
+            if (!output) throw std::runtime_error("hard-combat capture write failed");
+            hardCombatCaptured = true;
+        }
         if (!g_silverLiveOptions.rootMechanismCapture.empty()) {
             const auto combatId = std::to_string(wire.act) + "/" + std::to_string(wire.floorNum)
                 + "/" + std::to_string(wire.encounter);

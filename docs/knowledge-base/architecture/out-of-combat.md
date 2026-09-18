@@ -323,7 +323,23 @@ boss is outside combat-evaluator support. Each probe preserves the leaf's player
 state but uses that encounter's canonical act and boss floor.
 
 Optional `STS_OOC_MCTS_TRACE` appends one CSV row per completed run, including
-OFF runs when explicitly requested. It records decision/ownership/fallback
+OFF runs when explicitly requested.
+
+`STS_OOC_CPU_PROFILE=1` separately emits `[ooc-cpu-profile]` JSON to stderr at
+the full-run trace boundary. Defaults remain off. Thread-local CPU scopes
+record calls, inclusive CPU and exclusive CPU after subtracting timed children;
+do not sum inclusive buckets. They cover real combat, MCTS, prior preparation
+and predictions, V4 state/Q inference inside active scopes, native leaf value,
+projection, successors, CTM preparation/resolution and metadata. Native leaf
+timing includes feature construction; projection excludes timed child networks.
+Counters reset at each report. `processCpuAtReportSec` is cumulative process CPU,
+not per-seed CPU in a multi-seed process; use external process CPU timing for
+one-seed invocations. These are attribution diagnostics, not production timings.
+See the [two historical-seed profile](../../experiments/evidence/ooc_cpu_profile_2026-09-18/README.md)
+for scope details, workload reconciliation and measured overhead limitations.
+
+The CSV trace records
+decision/ownership/fallback
 counts, simulations, all sampled action transitions, combat-surrogate calls,
 leaf evaluations, maximum search depth, search wall/thread CPU seconds and
 ordinary real combat count. It also records imagined combat totals, unsupported
