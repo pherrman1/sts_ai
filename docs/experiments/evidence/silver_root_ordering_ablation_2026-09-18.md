@@ -70,6 +70,7 @@ required before any model work.
 - Replay SHA: `f54759089049267102c088d60c57c169f50448b5f166a7e7cc735d554513c1af`
 - Analysis input SHA: `45380b601b04447e6585e1717b69c361217e39128d804e0f8bd5cd486b5a81d8`
 - Corrected analysis SHA: `6f458625e4d8a403e10ddb82d0e80c2fdf649171127c180ae7e7aabd095284a1`
-- Replay executable Git SHA: `06d9de36d1c2e07c7e0420a0752ae9a4d7fd738e`
+- Replay executable source state: dirty worktree based on `1df5adb8f883cc79268c1886b2a6da4919aac814`, plus the four executable-source changes later committed in `d7e227ed1987cc7df9ba7c58f5e4d0ad12cca3ae`; executable-source content is equivalent to `d7e227e`, but the binary was not built from a clean commit checkout.
+- Replay executable SHA-256: `ba607f78f5b3432edb5ef0db3e1412197a38af4ef7d2c2b0e5aae49884541239`
+- Frozen underlying Silver/root-mechanism provenance: `06d9de36d1c2e07c7e0420a0752ae9a4d7fd738e`
 - Preregistration SHA: `e15a236c8de45dba6252858cd397b56f8a9b5f9f`
-- Frozen implementation SHA: `06d9de36d1c2e07c7e0420a0752ae9a4d7fd738e`

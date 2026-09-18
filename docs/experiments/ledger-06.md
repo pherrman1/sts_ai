@@ -9873,6 +9873,9 @@ top-level benchmark reporting corrected.
 - **Evidence:** [corrected ordering ablation report](evidence/silver_root_ordering_ablation_2026-09-18.md),
   unchanged replay SHA `f54759089049267102c088d60c57c169f50448b5f166a7e7cc735d554513c1af`,
   corrected analysis SHA `6f458625e4d8a403e10ddb82d0e80c2fdf649171127c180ae7e7aabd095284a1`,
-  and replay executable SHA `06d9de36d1c2e07c7e0420a0752ae9a4d7fd738e`. **Knowledge
-  impact:** current research status and experiment evidence updated; no default
-  change.
+  replay executable source state based on `1df5adb` plus the executable-source
+  changes later committed in `d7e227e`, and replay executable SHA-256
+  `ba607f78f5b3432edb5ef0db3e1412197a38af4ef7d2c2b0e5aae49884541239`. The
+  `06d9de3` SHA is frozen underlying Silver/root-mechanism provenance, not the
+  source commit of this replay binary. **Knowledge impact:** current research
+  status and experiment evidence updated; no default change.
