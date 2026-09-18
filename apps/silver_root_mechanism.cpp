@@ -108,7 +108,7 @@ int main(int argc, char **argv) {
             if (!ids.insert(id).second) throw std::invalid_argument("duplicate root");
             const auto labelA = teacher(indexed.at({id, "A"}), root, "A", fixture);
             const auto labelB = teacher(indexed.at({id, "B"}), root, "B", fixture);
-            if (!fixture && (root.at("executable_git_sha") != argv[5]
+            if (!fixture && !raveScreen && (root.at("executable_git_sha") != argv[5]
                     || labelA.executableGitSha != argv[5]
                     || labelB.executableGitSha != argv[5]))
                 throw std::invalid_argument("root/teacher/CLI executable SHA mismatch");
