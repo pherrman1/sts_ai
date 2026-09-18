@@ -1,0 +1,168 @@
+[
+  {
+    "counters": {
+      "combat_prepare": {
+        "calls": 790,
+        "exclusiveCpuSec": 3.6810871199999644,
+        "inclusiveCpuSec": 3.6810871199999644
+      },
+      "combat_resolve": {
+        "calls": 7583,
+        "exclusiveCpuSec": 0.24347748300001498,
+        "inclusiveCpuSec": 0.24347748300001498
+      },
+      "evaluate_leaf": {
+        "calls": 146875,
+        "exclusiveCpuSec": 2.94557627599937,
+        "inclusiveCpuSec": 10.807217110000883
+      },
+      "leaf_value": {
+        "calls": 146875,
+        "exclusiveCpuSec": 3.879697831001324,
+        "inclusiveCpuSec": 3.879697831001324
+      },
+      "mcts": {
+        "calls": 171,
+        "exclusiveCpuSec": 0.2720232179990485,
+        "inclusiveCpuSec": 19.309518108
+      },
+      "metadata": {
+        "calls": 50321,
+        "exclusiveCpuSec": 0.04030437800020806,
+        "inclusiveCpuSec": 0.04030437800020806
+      },
+      "policy_logits": {
+        "calls": 23904,
+        "exclusiveCpuSec": 0.0884050039999251,
+        "inclusiveCpuSec": 4.173227449999736
+      },
+      "policy_predict": {
+        "calls": 115343,
+        "exclusiveCpuSec": 1.8329036819999582,
+        "inclusiveCpuSec": 1.8329036819999582
+      },
+      "policy_prepare": {
+        "calls": 23904,
+        "exclusiveCpuSec": 0.04506859099968974,
+        "inclusiveCpuSec": 2.2519187639998526
+      },
+      "real_combat": {
+        "calls": 25,
+        "exclusiveCpuSec": 22.83513401500001,
+        "inclusiveCpuSec": 22.83513401500001
+      },
+      "successor": {
+        "calls": 50152,
+        "exclusiveCpuSec": 0.10456473700014657,
+        "inclusiveCpuSec": 4.016745952000126
+      },
+      "v4_action_value": {
+        "calls": 117938,
+        "exclusiveCpuSec": 1.652288600000207,
+        "inclusiveCpuSec": 1.652288600000207
+      },
+      "v4_state_network": {
+        "calls": 50616,
+        "exclusiveCpuSec": 4.524121188000144,
+        "inclusiveCpuSec": 4.524121188000144
+      }
+    },
+    "mctsCpuSec": 19.309776841000016,
+    "processCpuAtReportSec": 42.282294559,
+    "realCombats": 25,
+    "seed": 12002032,
+    "fullCpuSec": 42.300000000000004,
+    "stageBFullCpuSec": 40.85,
+    "stageBMctsCpuSec": 17.985,
+    "fullCpuChangePercent": 3.5495716034271707,
+    "workloadExactMatch": true,
+    "silverExistingTelemetry": {
+      "rollout_calls": 2950559.0,
+      "rollout_wall_micros": 12421298.583,
+      "search_wall_micros": 21085113.42
+    }
+  },
+  {
+    "counters": {
+      "combat_prepare": {
+        "calls": 1012,
+        "exclusiveCpuSec": 5.5830757439999585,
+        "inclusiveCpuSec": 5.5830757439999585
+      },
+      "combat_resolve": {
+        "calls": 9184,
+        "exclusiveCpuSec": 0.2963597639998655,
+        "inclusiveCpuSec": 0.2963597639998655
+      },
+      "evaluate_leaf": {
+        "calls": 148161,
+        "exclusiveCpuSec": 5.730244147996721,
+        "inclusiveCpuSec": 15.956559697998571
+      },
+      "leaf_value": {
+        "calls": 148161,
+        "exclusiveCpuSec": 3.9548640370006036,
+        "inclusiveCpuSec": 3.9548640370006036
+      },
+      "mcts": {
+        "calls": 187,
+        "exclusiveCpuSec": 0.28127619400108267,
+        "inclusiveCpuSec": 26.915643584000012
+      },
+      "metadata": {
+        "calls": 49040,
+        "exclusiveCpuSec": 0.04256499600053339,
+        "inclusiveCpuSec": 0.04256499600053339
+      },
+      "policy_logits": {
+        "calls": 26614,
+        "exclusiveCpuSec": 0.10279286500013642,
+        "inclusiveCpuSec": 4.649393669999993
+      },
+      "policy_predict": {
+        "calls": 136215,
+        "exclusiveCpuSec": 2.1756722490004967,
+        "inclusiveCpuSec": 2.1756722490004967
+      },
+      "policy_prepare": {
+        "calls": 26614,
+        "exclusiveCpuSec": 0.0513336789996027,
+        "inclusiveCpuSec": 2.3709285559993605
+      },
+      "real_combat": {
+        "calls": 26,
+        "exclusiveCpuSec": 35.68943592599999,
+        "inclusiveCpuSec": 35.68943592599999
+      },
+      "successor": {
+        "calls": 48857,
+        "exclusiveCpuSec": 0.1064135180000086,
+        "inclusiveCpuSec": 5.9858490259998325
+      },
+      "v4_action_value": {
+        "calls": 199952,
+        "exclusiveCpuSec": 2.873681479001278,
+        "inclusiveCpuSec": 2.873681479001278
+      },
+      "v4_state_network": {
+        "calls": 67198,
+        "exclusiveCpuSec": 5.717364910999725,
+        "inclusiveCpuSec": 5.717364910999725
+      }
+    },
+    "mctsCpuSec": 26.915925390999988,
+    "processCpuAtReportSec": 62.729193381,
+    "realCombats": 26,
+    "seed": 12002033,
+    "fullCpuSec": 62.75,
+    "stageBFullCpuSec": 60.83,
+    "stageBMctsCpuSec": 25.472,
+    "fullCpuChangePercent": 3.156337333552517,
+    "workloadExactMatch": true,
+    "silverExistingTelemetry": {
+      "rollout_calls": 4306532.0,
+      "rollout_wall_micros": 18533827.6,
+      "search_wall_micros": 32836671.0
+    }
+  }
+]

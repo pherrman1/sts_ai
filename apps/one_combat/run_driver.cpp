@@ -15,6 +15,7 @@
 #include "fight_replay.h"
 #include "ooc_policy.h"
 #include "ooc_mcts_adapter.h"
+#include "ooc_profile.h"
 #include "particle_diagnostics.h"
 #include "run_features.h"
 #include "search_diagnostics.h"
@@ -144,6 +145,7 @@ RunResult runFullRunOOC(std::uint64_t seed, int sims, int asc, bool restV, bool 
             // intent lifecycle.  The normal bestbench path deliberately
             // remains byte-for-byte below this opt-in branch.
             if (search::g_externalCombatBackend) {
+                one_combat::OocProfileScope combatProfile(one_combat::OocProfileBucket::RealCombat);
                 agent.playoutBattle(gc, bc);
                 ++fightsTotal;
                 if (bc.outcome == Outcome::PLAYER_LOSS) {
@@ -176,7 +178,10 @@ RunResult runFullRunOOC(std::uint64_t seed, int sims, int asc, bool restV, bool 
             // (the agent's internal Searcher3 loop handles per-decision iteration)
             if (one_combat::vnetQueryLogConfigured())
                 one_combat::beginVNetQueryLogFight(seed, fightsTotal);
-            agent.playoutBattle(bc);
+            {
+                one_combat::OocProfileScope combatProfile(one_combat::OocProfileBucket::RealCombat);
+                agent.playoutBattle(bc);
+            }
             if (one_combat::fightReplayCaptureEnabled() && battleAct == 3 && battleRoom == Room::BOSS)
                 one_combat::fightReplayCaptureEnd(bc, seed);   // fightrep: index row + capture-time outcome
             if (one_combat::searchDiagnosticsActive())

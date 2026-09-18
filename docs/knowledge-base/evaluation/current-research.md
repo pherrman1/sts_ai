@@ -18,6 +18,15 @@ other sections retain their prior verification and linked evidence.
 
 ## Purpose
 
+The [current OOC CPU profile](../../experiments/evidence/ooc_cpu_profile_2026-09-18/README.md)
+reuses only historical seeds12002032/12002033, with exact workload reproduction
+and frozen opt-in instrumentation on main589a7a7. Real Silver combat accounts
+for54–57% of full CPU; V4 prior/continuation inference for17–19%; all CTM
+preparation for under9%. Prioritize real-combat execution and V4 inference for
+future behavior-preserving speed experiments, not further CTM inference first.
+No optimization or gameplay-quality conclusion was tested; measured full CPU
+is3.2–3.6% above supplied Stage-B timings and is not a production benchmark.
+
 The 8-seed OOC root-checkpoint diagnostic is complete. It preserves the live
 2,048-simulation policy and uses a discarded same-root shadow search to observe
 128/256/512/1024/2048 prefixes. Across 1,133 completed roots, checkpoint
