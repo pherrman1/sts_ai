@@ -30,11 +30,15 @@ and 258 easy cases. Easy and anomalous cases were excluded from v1.
 
 Selection is deterministic in
 [`tools/freeze_silver_hard_combat.py`](../../../tools/freeze_silver_hard_combat.py)
-(SHA-256 `f1464fec4563ece3c5eb60b43242586fbb20a0585bcdce6c1ae5b506b04e2ade`).
+(SHA-256 `c6532c66e4e02f72136b7dea0f493c402cd3439d7e78aaa5939b502f787a91fc`).
 It ranks A, then material B (terminal HP-fraction improvement at least 0.10),
-then C; caps a source seed at two cases; and partitions source-seed groups
-deterministically into exact 64-case DEV and HOLDOUT sets. The selected sets
-share no source seed and contain no exact state-hash duplicates.
+then C; caps a source seed at two cases; and performs a deterministic
+exact-size, source-disjoint partition. The first feasible subset in
+source-seed order becomes DEV; the remaining source groups become HOLDOUT.
+The selected sets share no source seed and contain no exact state-hash
+duplicates. Tier-C cases are retained to fill the frozen hard set after A/B
+under the two-case source cap; they are not selected by an additional
+diversity heuristic.
 
 DEV composition is 9 Tier A / 48 Tier B / 7 Tier C, across Acts 1/2/3
 `12/16/36`, with room types hallway/elite/boss/other `8/22/32/2`.
@@ -67,9 +71,12 @@ deterministic membership and source-seed partition.
 
 ## Artifact locations and hashes
 
-All raw artifacts are in
-`build/silver-hard-combat-v1-20260918/` in the producing worktree. The
-membership files and baseline outputs are retained there; their hashes are:
+All raw source/screen artifacts, including the interrupted-run quarantine, are
+durably archived outside the app-managed worktree at
+`/home/philippherrmann/sts_sweep/runs/silver-hard-combat-v1-20260918/`.
+The producing worktree also contains a working copy under
+`build/silver-hard-combat-v1-20260918/`. The membership files and baseline
+outputs are tracked in this directory; their hashes are:
 
 | artifact | SHA-256 |
 |---|---|
@@ -78,8 +85,8 @@ membership files and baseline outputs are retained there; their hashes are:
 | `source-results.csv.meta.json` | `8c881593fe0d28fc0d8e75aad441bdd539d920826bd4cf6346d44ac62a4c471a` |
 | `screen-1k.jsonl` | `a849253e0e268d99272397bdc1289dfc4ab21deae53cc20415757b08b656cece` |
 | `screen-10k-all.jsonl` | `b3fd6045ed8be4c44623c47f21895b0eaa2c4588aec4c12cbe40207fb88bcd32` |
-| `hard64-dev.jsonl` | `f4ff0a6b9931095f500e18da368e4e5973c101951cf7adf0ee2a646fcf5b958b` |
-| `hard64-holdout.jsonl` | `5c3847cee77d4409b9392a3182935873c962aa6174267e9d2c790e20211097a8` |
+| `hard64-dev.jsonl` | `06af97bace598a23fb5d396e48568b6fd5e68b81a5dca88c01193ddacbfd5c31` |
+| `hard64-holdout.jsonl` | `620e831be1a6743d074ded72f50ccb6444505b18ca7e4663cadf853aaf682ef3` |
 | `selection-receipt.json` | `458bcb481fe899af4170ba020dacaa764d3b785a2b2a5773772ce7e6d7bb1ced` |
 | `hard64-dev-snapshots.jsonl` | `ab7c3298754864986c31273a0f1d23967b165fdd79a386261b680b8ad16d0eae` |
 | `hard64-holdout-snapshots.jsonl` | `e8b914ad74ca0508ee6b1db329c5f454e92e7785cd60af1475d53b35a9d8af34` |
@@ -97,9 +104,10 @@ Screens and baselines were run through the same guard with
 
 An initial Debug collection was interrupted during a toolchain-speed check.
 Its 400 partial capture rows and 13 completed result rows are preserved under
-`interrupted-debug/` with `SHA256SUMS`; they are excluded technically because
-three active source seeds had no completed whole-run result. The final source
-population is the clean Release rerun only. No rows were silently discarded.
+`/home/philippherrmann/sts_sweep/runs/silver-hard-combat-v1-20260918/interrupted-debug/`
+with `SHA256SUMS`; they are excluded technically because three active source
+seeds had no completed whole-run result. The final source population is the
+clean Release rerun only. No rows were silently discarded.
 
 Knowledge impact: durable benchmark evidence and selection procedure; no
 Silver search behavior, threshold, model, or production gate was changed.

@@ -55,20 +55,20 @@ def select(rows):
         if len(chosen) == TARGET_PER_SET * 2: break
     if len(chosen) != TARGET_PER_SET * 2:
         raise SystemExit(f"only selected {len(chosen)} cases")
-    # Deterministic source-disjoint balanced assignment. A tiny subset-sum
-    # chooses exactly 64 cases for DEV while keeping the source groups intact;
-    # ties resolve by seed order and category score.
+    # Deterministic exact-size, source-disjoint assignment. A tiny subset-sum
+    # chooses exactly 64 cases for DEV while keeping source groups intact;
+    # the first feasible subset in source-seed order wins.
     groups = defaultdict(list)
     for x in chosen: groups[x["source_seed"]].append(x)
     states = {0: (0, tuple())}
     for seed in sorted(groups):
-        n = len(groups[seed]); score = sum(category_score(x) for x in groups[seed])
-        for total, (old_score, picked) in list(states.items()):
+        n = len(groups[seed])
+        for total, picked in list(states.items()):
             if total + n <= TARGET_PER_SET and total + n not in states:
-                states[total + n] = (old_score + score, picked + (seed,))
+                states[total + n] = picked + (seed,)
     if TARGET_PER_SET not in states:
         raise SystemExit("cannot partition selected source groups into 64-case cohorts")
-    dev_seeds = set(states[TARGET_PER_SET][1])
+    dev_seeds = set(states[TARGET_PER_SET])
     dev = [x for s in dev_seeds for x in sorted(groups[s], key=rank)]
     hold = [x for s in groups if s not in dev_seeds for x in sorted(groups[s], key=rank)]
     if len(dev) != TARGET_PER_SET or len(hold) != TARGET_PER_SET:
@@ -78,10 +78,8 @@ def select(rows):
             x["cohort"] = cohort
             x["selection_reason"] = {"A": "1k loss -> 10k win",
                 "B": "both win; 10k improves terminal HP fraction",
-                "C": "difficult unresolved; retained for diversity"}.get(x["category"], "fallback")
+                "C": "retained to fill the frozen hard set after A/B under the two-case source cap"}.get(x["category"], "fallback")
     return sorted(dev + hold, key=lambda x: (x["cohort"], x["source_seed"], x["fight_index"]))
-
-def category_score(x): return {"A": 0, "B": 1, "C": 2}.get(x["category"], 3)
 
 def main():
     ap = argparse.ArgumentParser()

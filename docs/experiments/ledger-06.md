@@ -9926,15 +9926,18 @@ unchanged. [Evidence packet](evidence/ooc_root_checkpoints_2026-09-18/README.md)
   selector retained 64 `hard64-dev` and 64 `hard64-holdout` cases, with no
   source seed shared between cohorts, no more than two cases per source seed,
   and no state-hash duplicates. DEV is 9/48/7 A/B/C; HOLDOUT is 13/47/4.
-- **Baseline:** At exact 10k replay, DEV won `57/64`, mean terminal HP
-  fraction `0.5013957`, mean 34.265625 decisions and 342,656.25 simulations;
-  HOLDOUT won `60/64`, mean terminal HP fraction `0.5374656`, mean 32.625
-  decisions and 326,250 simulations. Replay failures were zero in both.
-  The replay schema exposes wall time but not CPU time; mean wall time was
-  3.088858s (DEV) and 2.960088s (HOLDOUT). These are frozen references, not
-  promotion evidence.
+- **Baseline:** The primary 1k screen is DEV `48/64` and HOLDOUT `47/64`.
+  DEV mean terminal HP fraction was `0.2011844` and HOLDOUT `0.2359278`;
+  replay failures were zero. The separate exact-10k teacher/reference replay
+  won `57/64` on DEV and `60/64` on HOLDOUT, with mean terminal HP fractions
+  `0.5013957` and `0.5374656`. The replay schema exposes wall time but not CPU
+  time; 10k mean wall time was 3.088858s (DEV) and 2.960088s (HOLDOUT).
+  Per the maintained benchmark protocol, DEV@1k is the primary cheap screen,
+  HOLDOUT@1k is reserved confirmation, and 10k is teacher/reference evidence;
+  none is a production promotion gate.
 - **Technical exclusion:** An interrupted Debug-speed run left 400 partial
-  captures and 13 completed rows; those files are quarantined and excluded
+  captures and 13 completed rows; those files are durably quarantined outside
+  the app worktree at `/home/philippherrmann/sts_sweep/runs/` and excluded
   because three active seeds lacked completed whole-run accounting. The final
   pool uses only the clean Release rerun.
 - **Evidence:** [frozen-pool receipt](evidence/silver_hard_combat_v1_20260918/README.md).
