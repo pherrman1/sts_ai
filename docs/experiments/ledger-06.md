@@ -9926,6 +9926,24 @@ top-level benchmark reporting corrected.
   **Knowledge impact:** current research evidence only; no model, runtime,
   gameplay, or default change.
 
+## §311 — Silver root ensemble-teacher audit (2026-09-18)
+
+- **Protocol:** Constructed visit-weighted `T20` from A/A2 10k corrected Qs and
+  independent-jury `J50` from B/B2 25k corrected Qs on the existing 64 roots.
+  No replay, gameplay, teacher generation, or training was performed.
+- **Result:** T20/J50 top-action agreement is `44/64` (`68.750%`). T20 mean
+  J50-regret is `0.534197`, slightly worse than original A's `0.495031`; T20
+  matches original A on `54/64` roots. Disagreement roots have smaller T20/J50
+  margins, but the ensemble does not improve the judge comparison.
+- **Tail:** T20 still selects Seeing Red at `14/2/23/36/3`, while J50 selects
+  Intimidate; T20 J50-regret is `3.034235`, identical to A's choice.
+- **Decision:** Do not run the proposed I-vs-A replay, train a model, or collect
+  a larger corpus. The current ensemble is not a credible target without a new
+  target definition or evidence addressing unstable/biasing Q estimates.
+- **Evidence:** [ensemble audit](evidence/silver_root_teacher_ensemble_audit_2026-09-18.md).
+  **Knowledge impact:** current research evidence only; no model, runtime,
+  gameplay, or default change.
+
 ## §310 — Silver root 25k-B teacher stability probe (2026-09-18)
 
 - **Protocol:** Reused the existing 64 A/B/G/H ablation roots and generated

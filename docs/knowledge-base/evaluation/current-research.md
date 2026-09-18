@@ -1300,6 +1300,13 @@ Intimidate. Hard single-teacher top-1 labels are therefore unsuitable as an
 immediate training target, and no grouped learnability probe or larger corpus
 is authorized yet. See the [25k-B2 stability report](../../experiments/evidence/silver_root_teacher_b2_stability_2026-09-18.md).
 
+A visit-weighted T20 ensemble of A/A2 versus an independent J50 ensemble of
+B/B2 also fails the zero-search screen: top-action agreement is `44/64`, T20
+mean J50-regret is `0.534197` versus `0.495031` for original A, and the known
+harmful root remains misranked. The proposed ensemble ordering arm is therefore
+not run; the learned root-ordering line is stopped pending a new target
+definition. See the [ensemble audit](../../experiments/evidence/silver_root_teacher_ensemble_audit_2026-09-18.md).
+
 ### Combat leaf/model variants
 
 Raw deep-search utility targets, repeated DAgger, residual correction, sampled
