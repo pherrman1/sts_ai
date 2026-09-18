@@ -125,7 +125,8 @@ ImportResult importCombatPredictorInput(const nlohmann::json &o,
                                    static_cast<int>(sizeof(sts::monsterEncounterEnumNames) /
                                                     sizeof(*sts::monsterEncounterEnumNames)), encounter);
     if (out.globals.roomClass < 0 || out.globals.lastRoom < 0 || out.globals.encounter <= 0)
-        return bad("UNSUPPORTED", "encounter or room identity is not canonical");
+        return bad("UNSUPPORTED", "encounter or room identity is not canonical (room="
+                   + room + ", previous=" + previous + ", encounter=" + encounter + ")");
     out.cards.clear(); out.relics.clear(); out.potions.clear();
     if (!s.contains("deck") || !s.at("deck").is_array()) return bad("SCHEMA_MISMATCH", "deck must be an array");
     for (const auto &wire : s.at("deck")) {
