@@ -125,6 +125,7 @@ void tests() {
         const auto draw=rng(); observedDraws.push_back(draw); return OocStateId(1+draw%2);
     };
     auto randomObserveConfig=config; randomObserveConfig.observeRootLock=true;
+    randomObserveConfig.rootCheckpointSimulations={1,64,128};
     const auto randomFull=planner.search(randomReference,0,128);
     const auto randomRecorded=OocMctsPlanner(randomObserveConfig).search(randomObserved,0,128);
     require(referenceDraws==observedDraws && randomFull.selectedAction==randomRecorded.selectedAction
@@ -132,6 +133,44 @@ void tests() {
         && randomFull.rootActions[0].q==randomRecorded.rootActions[0].q
         && randomFull.metrics.transitionSamples==randomRecorded.metrics.transitionSamples,
         "observation preserves every sampling draw and full-budget stochastic particle result");
+    auto checkpointModel = deterministic();
+    auto checkpointConfig = config;
+    checkpointConfig.rootCheckpointSimulations = {2, 3, 4};
+    const auto checkpoints = OocMctsPlanner(checkpointConfig).search(checkpointModel,0,4);
+    require(checkpoints.rootCheckpoints.size() == 3
+        && checkpoints.rootCheckpoints[0].simulations == 2
+        && checkpoints.rootCheckpoints[0].actions[0].visits == 1
+        && checkpoints.rootCheckpoints[0].actions[1].visits == 1
+        && checkpoints.rootCheckpoints[1].simulations == 3
+        && checkpoints.rootCheckpoints[1].actions[0].visits == 1
+        && checkpoints.rootCheckpoints[1].actions[1].visits == 2
+        && checkpoints.rootCheckpoints[2].simulations == 4
+        && checkpoints.rootCheckpoints[2].actions[0].visits == 1
+        && checkpoints.rootCheckpoints[2].actions[1].visits == 3,
+        "checkpoint follows post-simulation completed allocations");
+    for (const auto &checkpoint : checkpoints.rootCheckpoints) {
+        auto prefixModel = deterministic();
+        const auto prefix = planner.search(prefixModel,0,checkpoint.simulations);
+        require(prefix.rootActions.size() == checkpoint.actions.size(), "checkpoint action count");
+        for (std::size_t index=0;index<prefix.rootActions.size();++index) {
+            const auto &expected=prefix.rootActions[index], &actual=checkpoint.actions[index];
+            require(expected.id==actual.id && expected.prior==actual.prior
+                && expected.visits==actual.visits && expected.q==actual.q,
+                "checkpoint equals independently replayed prefix including Q and tie fields");
+        }
+    }
+    auto stoppedCheckpointConfig=unqualifiedConfig;
+    stoppedCheckpointConfig.rootCheckpointSimulations={1,50,100};
+    auto stoppedCheckpointModel=deterministic();
+    const auto stoppedCheckpoint=OocMctsPlanner(stoppedCheckpointConfig).search(stoppedCheckpointModel,0,100);
+    require(stoppedCheckpoint.metrics.simulations==unqualified.metrics.simulations
+        && stoppedCheckpoint.selectedAction==unqualified.selectedAction
+        && stoppedCheckpoint.rootCheckpoints.size()==2,
+        "checkpoints do not disable policy stopping or invent unreached snapshots");
+    for (const auto &thresholds : std::vector<std::vector<std::uint64_t>>{{0},{2,1},{2,2}}) {
+        auto invalidCheckpointConfig=config; invalidCheckpointConfig.rootCheckpointSimulations=thresholds;
+        rejects([&] { OocMctsPlanner invalid(invalidCheckpointConfig); });
+    }
     // Even adversarial allocation of every remaining visit cannot catch the leader.
     const auto leaderVisits = locked.rootActions[1].visits;
     const auto challengerVisits = locked.rootActions[0].visits;
