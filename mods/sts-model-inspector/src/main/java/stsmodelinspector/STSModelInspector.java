@@ -74,7 +74,10 @@ public final class STSModelInspector implements PostInitializeSubscriber,
     public void receiveOnBattleStart(AbstractRoom room) {
         // BaseMod's hook is at AbstractRoom's battle-start boundary, before
         // player/monster start-of-combat effects are applied.
-        String entry = combatEntryJson(room);
+        // The encounter group may not be populated at this exact hook. Capture
+        // persistent state now and bind the revealed encounter below when the
+        // combat observation becomes visible.
+        String entry = combatEntryJson(room, "");
         if (entry.isEmpty()) { combatEntry = ""; combatEntryHash = ""; return; }
         combatEntry = entry;
         combatEntryHash = sha256(entry);
@@ -190,6 +193,15 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         } else {
             return null;
         }
+        if ("combat".equals(boundary) && !combatEntry.isEmpty()
+                && combatEntry.contains("\"encounter\":\"\"")) {
+            String encounter = encounterName(room);
+            if (!encounter.isEmpty()) {
+                combatEntry = combatEntry.replace("\"encounter\":\"\"",
+                        "\"encounter\":\"" + encounter + "\"");
+                combatEntryHash = sha256(combatEntry);
+            }
+        }
         String character = AbstractDungeon.player.chosenClass == null
                 ? "unknown" : AbstractDungeon.player.chosenClass.name();
         int act = AbstractDungeon.actNum;
@@ -276,9 +288,11 @@ public final class STSModelInspector implements PostInitializeSubscriber,
     }
 
     private String combatEntryJson(AbstractRoom room) {
-        if (AbstractDungeon.player == null) return "";
-        String encounter = encounterName(room);
-        if (encounter.isEmpty() || !previousRoomKnown
+        return combatEntryJson(room, encounterName(room));
+    }
+
+    private String combatEntryJson(AbstractRoom room, String encounter) {
+        if (AbstractDungeon.player == null || !previousRoomKnown
                 || AbstractDungeon.currMapNode == null) return "";
         boolean burningElite = room instanceof com.megacrit.cardcrawl.rooms.MonsterRoomElite
                 && AbstractDungeon.currMapNode.hasEmeraldKey;

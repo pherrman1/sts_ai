@@ -39,6 +39,9 @@ int main(int argc, char **argv) {
     for (const auto &p : canonical.potions)
         observation["potions"].push_back(json(static_cast<Potion>(p.potionId)));
 
+    const auto combatEntry = observation;
+    observation = {{"boundary", "combat"}, {"combatEntry", combatEntry}};
+
     CombatPredictorInputV1 imported;
     const auto result = advisor::importCombatPredictorInput(observation, imported);
     if (!result.ok || combatPredictorInputJson(imported) != canonicalJson) {
@@ -60,26 +63,32 @@ int main(int argc, char **argv) {
         std::cerr << "forecast/native expectation mismatch\n";
         return 1;
     }
-    observation["isBurningElite"] = true;
+    observation["combatEntry"]["isBurningElite"] = true;
     if (!advisor::importCombatPredictorInput(observation, imported)
         .ok || !imported.globals.isBurningElite) {
         std::cerr << "burning-elite flag was not preserved\n";
         return 1;
     }
-    observation["isBurningElite"] = false;
-    observation["potions"][0] = "SmokeBomb";
+    observation["combatEntry"]["isBurningElite"] = false;
+    observation["combatEntry"]["potions"][0] = "SmokeBomb";
     const auto smokeResult = advisor::importCombatPredictorInput(observation, imported);
     if (!smokeResult.ok || sampler.forecastSupport(imported).supported) {
         std::cerr << "Smoke Bomb must fail closed\n";
         return 1;
     }
-    observation["potions"] = {"Potion Slot", "Potion Slot", "Potion Slot",
-                               "Potion Slot", "Potion Slot"};
-    observation["encounter"] = "WRITHING_MASS";
+    observation["combatEntry"]["potions"] = {"Potion Slot", "Potion Slot", "Potion Slot",
+                                                "Potion Slot", "Potion Slot"};
+    observation["combatEntry"]["encounter"] = "WRITHING_MASS";
     if (!advisor::importCombatPredictorInput(observation, imported).ok
         || sampler.forecastSupport(imported).reason != "writhing_ritual_intersection") {
         std::cerr << "Writhing Mass + Ritual Dagger must fail closed: "
                   << sampler.forecastSupport(imported).reason << "\n";
+        return 1;
+    }
+    auto missingEntry = observation;
+    missingEntry.erase("combatEntry");
+    if (advisor::importCombatPredictorInput(missingEntry, imported).code != "UNSUPPORTED") {
+        std::cerr << "missing combat entry did not fail closed\n";
         return 1;
     }
     std::cout << "live_ctm_importer PASS\n";

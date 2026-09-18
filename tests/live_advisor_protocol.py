@@ -139,10 +139,12 @@ class AdvisorProtocolTest(unittest.TestCase):
                                              "Potion Slot", "Potion Slot", "Potion Slot"]}
         smoke = {"protocol": "sts_model_inspector_v1", "kind": "observation",
                  "session": "fail", "sequence": 1, "observationHash": "smoke",
-                 "observation": dict(base, combatEntryHash="smoke")}
+                 "observation": dict(base, combatEntryHash="smoke",
+                                      combatEntry=base)}
         writhing = dict(base, encounter="WRITHING_MASS", potions=["Potion Slot"] * 5)
         writhing_wire = dict(smoke, sequence=2, observationHash="writhing",
-                             observation=dict(writhing, combatEntryHash="writhing"))
+                             observation=dict(writhing, combatEntryHash="writhing",
+                                              combatEntry=writhing))
         rows = self.run_advisor([json.dumps(smoke), json.dumps(writhing_wire)], self.model)
         self.assertEqual(rows[0]["evaluators"][0]["status"], "UNSUPPORTED")
         self.assertEqual(rows[0]["evaluators"][0]["reason"], "smoke_bomb")

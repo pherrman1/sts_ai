@@ -93,8 +93,9 @@ ImportResult importCombatPredictorInput(const nlohmann::json &o,
                                          CombatPredictorInputV1 &out) {
     if (!o.is_object() || o.value("boundary", std::string()) != "combat")
         return bad("UNSUPPORTED_BOUNDARY", "combat entry observation required");
-    const auto &s = o.contains("combatEntry") && o.at("combatEntry").is_object()
-        ? o.at("combatEntry") : o;
+    if (!o.contains("combatEntry") || !o.at("combatEntry").is_object())
+        return bad("UNSUPPORTED", "combat entry payload is required");
+    const auto &s = o.at("combatEntry");
     if (s.value("character", std::string()) != "IRONCLAD")
         return bad("UNSUPPORTED_CHARACTER", "native forecast supports Ironclad only");
     for (const char *name : {"ascension", "act", "floor", "hp", "maxHp", "gold",
