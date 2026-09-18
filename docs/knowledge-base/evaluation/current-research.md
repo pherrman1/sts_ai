@@ -1261,6 +1261,19 @@ the [16-seed confirmation evidence](../../experiments/evidence/silver_root_mecha
 the [32-source-seed preregistration](../../experiments/evidence/silver_root_mechanism_confirmation32_preregistration_2026-09-18.md),
 and the [pooled confirmation evidence](../../experiments/evidence/silver_root_mechanism_confirmation32_2026-09-18.md).
 
+The subsequent A/B/G/H replay analysis initially bootstrapped over 64 roots
+despite the preregistered source-seed unit. Reanalysis of the unchanged replay
+reduces four replicates within root and two roots within each of 32 source
+seeds before inference. Teacher-A best-first ordering versus native UCT
+(`G-A`) is `-0.419882`, source-seed bootstrap 95% CI
+`[-0.859591,-0.101469]`, B-best delta `+8.9844` pp with CI
+`[+3.1250,+15.6250]` pp, and exact two-sided sign-test `p=0.035156`
+(`12/3/17` improved/worsened/tied). The corrected classification is
+**`ROOT_ORDER_SIGNAL_ONLY`**: the narrow top-1 ordering gate passes, but this
+does not authorize training, runtime integration, gameplay qualification, or a
+default change. Harmful-tail review and separate authorization remain
+required. See the corrected [ordering ablation evidence](../../experiments/evidence/silver_root_ordering_ablation_2026-09-18.md).
+
 ### Combat leaf/model variants
 
 Raw deep-search utility targets, repeated DAgger, residual correction, sampled

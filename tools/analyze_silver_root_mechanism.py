@@ -140,20 +140,51 @@ def analyze(rows, expected_roots=64):
                 "b_best_probability": statistics.mean(sample["b_best"] for sample in samples),
                 "regret_sd": statistics.pstdev(regrets),
                 "regret_range": max(regrets) - min(regrets)}
+    source_root_groups = {}
+    for root in roots:
+        source_root_groups.setdefault(sources[root], []).append(root)
+    if any(len(group) != 2 for group in source_root_groups.values()):
+        raise ValueError("each source seed must contribute exactly two roots")
+    source_seeds = sorted(source_root_groups)
+    source_results = {}
+    for source_seed in source_seeds:
+        source_results[source_seed] = {
+            arm: {
+                "regret": statistics.mean(reduced[root][arm]["regret"]
+                                           for root in source_root_groups[source_seed]),
+                "b_best_probability": statistics.mean(
+                    reduced[root][arm]["b_best_probability"]
+                    for root in source_root_groups[source_seed]),
+            }
+            for arm in ARMS
+        }
+
     generator = random.Random(SEED)
-    draws = [[generator.randrange(len(roots)) for _ in roots] for _ in range(RESAMPLES)]
+    draws = [[generator.randrange(len(source_seeds)) for _ in source_seeds]
+             for _ in range(RESAMPLES)]
 
     def interval(values):
         means = sorted(statistics.mean(values[index] for index in draw) for draw in draws)
         return [means[249], means[9749]]
 
+    def sign_test_pvalue(deltas):
+        non_ties = [delta for delta in deltas if delta != 0]
+        wins = sum(delta < 0 for delta in non_ties)
+        losses = len(non_ties) - wins
+        tail = min(wins, losses)
+        probability = sum(math.comb(len(non_ties), index)
+                          for index in range(tail + 1)) / 2 ** len(non_ties)
+        return min(1.0, 2.0 * probability) if non_ties else 1.0
+
     contrasts = {}
     for contrast in CONTRASTS:
         treatment, control = contrast.split("-")
-        deltas = [reduced[root][treatment]["regret"] - reduced[root][control]["regret"]
-                  for root in roots]
-        probabilities = [reduced[root][treatment]["b_best_probability"]
-                         - reduced[root][control]["b_best_probability"] for root in roots]
+        deltas = [source_results[source_seed][treatment]["regret"]
+                  - source_results[source_seed][control]["regret"]
+                  for source_seed in source_seeds]
+        probabilities = [source_results[source_seed][treatment]["b_best_probability"]
+                         - source_results[source_seed][control]["b_best_probability"]
+                         for source_seed in source_seeds]
         contrasts[contrast] = {
             "mean_regret_delta": statistics.mean(deltas), "regret_ci95": interval(deltas),
             "b_best_probability_delta": statistics.mean(probabilities),
@@ -161,14 +192,20 @@ def analyze(rows, expected_roots=64):
             "improved": sum(delta < 0 for delta in deltas),
             "worsened": sum(delta > 0 for delta in deltas),
             "tied": sum(delta == 0 for delta in deltas),
-            "root_deltas": dict(zip(roots, deltas)),
-            "worst_harms": sorted(zip(roots, deltas), key=lambda pair: pair[1], reverse=True)[:10]}
-    return {"roots": len(roots), "replicates_per_root": 4, "bootstrap_resamples": RESAMPLES,
-            "bootstrap_seed": SEED, "bootstrap_unit": "root", "contrasts": contrasts,
+            "sign_test_p_two_sided": sign_test_pvalue(deltas),
+            "root_deltas": {
+                root: reduced[root][treatment]["regret"]
+                - reduced[root][control]["regret"] for root in roots},
+            "source_seed_deltas": dict(zip(source_seeds, deltas)),
+            "worst_harms": sorted(zip(source_seeds, deltas), key=lambda pair: pair[1], reverse=True)[:10]}
+    return {"roots": len(roots), "source_seeds": len(source_seeds),
+            "replicates_per_root": 4, "bootstrap_resamples": RESAMPLES,
+            "bootstrap_seed": SEED, "bootstrap_unit": "source_seed", "contrasts": contrasts,
             "arms_schema": "ordering_ablation_v1",
             "arms": {arm: {field: statistics.mean(reduced[root][arm][field] for root in roots)
                            for field in reduced[roots[0]][arm]} for arm in ARMS},
-            "root_results": reduced, "source_seeds": sources, "classification": None,
+            "root_results": reduced, "source_seed_results": source_results,
+            "source_seed_map": sources, "classification": None,
             "predeclared_classifications": CLASSIFICATIONS,
             "interpretation": "Statistical screen only; correctness and harmful-tail review remain required."}
 

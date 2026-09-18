@@ -9852,3 +9852,27 @@ top-level benchmark reporting corrected.
   [preregistration](evidence/silver_root_mechanism_confirmation32_preregistration_2026-09-18.md),
   and the local run manifest/hash packet. **Knowledge impact:** current
   research status and experiment evidence updated; no default change.
+
+## §307 — Silver root ordering ablation source-seed reanalysis (2026-09-18)
+
+- **Correction:** The unchanged A/B/G/H replay was initially analyzed at root
+  level, although the preregistration specified source seeds as the independent
+  units. The corrected analysis reduces four replicates within root, then two
+  roots within each of 32 source seeds, before bootstrap, sign tests, and
+  improved/worsened/tied counts. No replay or teacher data were regenerated.
+- **Results:** `G-A` remains `-0.419882`, with source-seed bootstrap 95% CI
+  `[-0.859591,-0.101469]`, B-best delta `+8.9844` pp and CI
+  `[+3.1250,+15.6250]` pp, counts `12/3/17`, and exact two-sided sign-test
+  `p=0.035156`. `H-A` is `-0.364122`, CI `[-0.814229,-0.036575]`, but its
+  sign-test `p=0.143463` fails the strict gate. `B-A` is `-0.678663`, CI
+  `[-1.414380,-0.135440]`, with `p=0.049042` and counts `13/4/15`.
+- **Decision:** **`ROOT_ORDER_SIGNAL_ONLY`**. The preregistered top-1/best-action
+  ordering gate passes after correction. This does not authorize model
+  training, runtime integration, gameplay qualification, or a default change;
+  harmful-tail review and separate authorization remain required.
+- **Evidence:** [corrected ordering ablation report](evidence/silver_root_ordering_ablation_2026-09-18.md),
+  unchanged replay SHA `f54759089049267102c088d60c57c169f50448b5f166a7e7cc735d554513c1af`,
+  corrected analysis SHA `6f458625e4d8a403e10ddb82d0e80c2fdf649171127c180ae7e7aabd095284a1`,
+  and replay executable SHA `06d9de36d1c2e07c7e0420a0752ae9a4d7fd738e`. **Knowledge
+  impact:** current research status and experiment evidence updated; no default
+  change.
