@@ -20,7 +20,10 @@ int main() {
                 one_combat::advisor::Request request;
                 const auto validation = one_combat::advisor::parseRequest(wire, request);
                 if (!validation.ok) {
-                    response = one_combat::advisor::errorResponse(validation.code, validation.message);
+                    response = request.identityTrusted
+                        ? one_combat::advisor::errorResponse(
+                              request, validation.code, validation.message)
+                        : one_combat::advisor::errorResponse(validation.code, validation.message);
                 } else if (!latest.accept(request)) {
                     response = one_combat::advisor::staleResponse(request, "older sequence in session");
                 } else {

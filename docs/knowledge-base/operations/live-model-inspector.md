@@ -24,21 +24,25 @@ post-update/render subscribers and captures detached Ironclad-compatible
 summary fields for card rewards, rest sites, and ordinary player turns. Combat
 observations include only player-visible decision state: turn, energy, player
 block, hand card instances/costs, and living-monster HP, block, intent, and
-intent damage. The combat fingerprint includes that payload, so successive
-decisions are not collapsed into one observation. A stable-boundary loss
-clears the displayed observation and fences late responses from the prior
-decision. Advisor writes use one bounded latest-observation slot; intermediate
-captures are replaceable rather than queued without limit. It launches the
-advisor with a direct `ProcessBuilder` call. Its F8 panel remains diagnostic
-until a native importer proves parity. Workshop and game/dependency JARs
-remain outside Git.
+intent damage. Under Runic Dome, intent and intent damage are omitted from
+both the payload and fingerprint because they are not player-visible. The
+combat boundary requires the installed runtime's waiting-for-user phase, no
+current action, empty action/card/monster queues, and an unended turn. The
+combat fingerprint includes that payload, so successive decisions are not
+collapsed into one observation. A stable-boundary loss clears the displayed
+observation and fences late responses from the prior decision. Advisor writes
+use one bounded latest-observation slot; intermediate captures are replaceable
+rather than queued without limit. It launches the advisor with a direct
+`ProcessBuilder` call. Its F8 panel remains diagnostic until a native importer
+proves parity. Workshop and game/dependency JARs remain outside Git.
 
 For `card_reward` and `rest`, the native endpoint now validates the detached
 deck and candidate card-instance arrays (canonical save-file card ID, upgrade
 flag, and misc value). Valid observations still fail closed because validation
-is not yet a native `GameContext` import. Importer errors carry the observation
-session, sequence, and hash; malformed envelopes remain uncorrelated because
-their identity cannot be trusted.
+is not yet a native `GameContext` import. Importer and post-identity validation
+errors carry the observation session, sequence, and hash; malformed or
+pre-identity envelopes remain uncorrelated because their identity cannot be
+trusted.
 
 Run the endpoint after building:
 
@@ -72,6 +76,6 @@ advisory only. Until the importer proves the required public-state parity, the
 endpoint must remain fail-closed and must not be described as a live
 evaluator. CTM and Silver remain separate later integrations.
 
-Knowledge impact: this page records the new protocol/lifecycle boundary and
-the explicit unsupported state; evaluator semantics and game-hook timing
-remain open questions.
+Knowledge impact: this page records the protocol/lifecycle boundary, the
+explicit unsupported state, the player-visible combat gate, and the Runic Dome
+redaction; evaluator semantics remain an open question.

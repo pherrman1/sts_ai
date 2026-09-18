@@ -52,6 +52,21 @@ class AdvisorProtocolTest(unittest.TestCase):
         self.assertEqual(rows[1]["code"], "PROTOCOL_MISMATCH")
         self.assertEqual(rows[2]["code"], "MALFORMED_REQUEST")
         self.assertEqual(rows[3]["code"], "SCHEMA_MISMATCH")
+        self.assertEqual(rows[3]["session"], "run-1")
+        self.assertEqual(rows[3]["sequence"], 1)
+        self.assertEqual(rows[3]["observationHash"], "abc")
+
+    def test_schema_error_with_valid_identity_is_correlated(self):
+        rows = self.run_advisor([
+            '{"protocol":"sts_model_inspector_v1","kind":"observation",'
+            '"session":"schema-run","sequence":7,"observationHash":"schema-hash",'
+            '"observation":{"boundary":"card_reward","deck":[],"candidates":[{}]}}',
+        ])
+        self.assertEqual(rows[0]["status"], "ERROR")
+        self.assertEqual(rows[0]["code"], "SCHEMA_MISMATCH")
+        self.assertEqual(rows[0]["session"], "schema-run")
+        self.assertEqual(rows[0]["sequence"], 7)
+        self.assertEqual(rows[0]["observationHash"], "schema-hash")
 
     def test_native_importer_rejects_unknown_card_id(self):
         rows = self.run_advisor([

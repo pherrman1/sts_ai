@@ -34,6 +34,7 @@ ValidationResult parseRequest(const nlohmann::json &wire, Request &request) {
     if (!wire.contains("sequence") || !wire.at("sequence").is_number_unsigned())
         return bad("MALFORMED_REQUEST", "sequence must be an unsigned integer");
     request.sequence = wire.at("sequence").get<std::uint64_t>();
+    request.identityTrusted = true;
     if (!wire.contains("observation") || !wire.at("observation").is_object())
         return bad("MALFORMED_REQUEST", "observation must be an object");
     request.observation = wire.at("observation");

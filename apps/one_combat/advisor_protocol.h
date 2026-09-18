@@ -16,6 +16,7 @@ struct Request {
     std::uint64_t sequence = 0;
     std::string observationHash;
     nlohmann::json observation;
+    bool identityTrusted = false;
 };
 
 struct ValidationResult {

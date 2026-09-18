@@ -127,10 +127,7 @@ public final class STSModelInspector implements PostInitializeSubscriber,
             boundary = "card_reward";
         } else if (room instanceof RestRoom) {
             boundary = "rest";
-        } else if (room instanceof MonsterRoom && AbstractDungeon.screen == AbstractDungeon.CurrentScreen.NONE
-                && AbstractDungeon.actionManager != null
-                && AbstractDungeon.actionManager.actions.isEmpty()
-                && !AbstractDungeon.actionManager.turnHasEnded) {
+        } else if (room instanceof MonsterRoom && isPlayerDecisionPoint()) {
             boundary = "combat";
         } else {
             return null;
@@ -195,6 +192,25 @@ public final class STSModelInspector implements PostInitializeSubscriber,
                 ",\"cost\":" + card.cost + ",\"costForTurn\":" + card.costForTurn + "}";
     }
 
+    private static boolean isPlayerDecisionPoint() {
+        if (AbstractDungeon.screen != AbstractDungeon.CurrentScreen.NONE
+                || AbstractDungeon.actionManager == null) return false;
+        com.megacrit.cardcrawl.actions.GameActionManager actions = AbstractDungeon.actionManager;
+        return actions.phase == com.megacrit.cardcrawl.actions.GameActionManager.Phase.WAITING_ON_USER
+                && actions.currentAction == null
+                && actions.actions.isEmpty()
+                && actions.cardQueue.isEmpty()
+                && actions.monsterQueue.isEmpty()
+                && !actions.turnHasEnded;
+    }
+
+    private static boolean hasRunicDome() {
+        for (com.megacrit.cardcrawl.relics.AbstractRelic relic : AbstractDungeon.player.relics) {
+            if ("Runic Dome".equals(relic.relicId)) return true;
+        }
+        return false;
+    }
+
     private static String combatJson() {
         StringBuilder out = new StringBuilder("{\"turn\":");
         out.append(com.megacrit.cardcrawl.actions.GameActionManager.turn)
@@ -210,6 +226,7 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         }
         out.append("],\"monsters\":[");
         first = true;
+        boolean runicDome = hasRunicDome();
         if (AbstractDungeon.getMonsters() != null) {
             for (AbstractMonster monster : AbstractDungeon.getMonsters().monsters) {
                 if (monster == null || monster.isDeadOrEscaped()) continue;
@@ -217,10 +234,13 @@ public final class STSModelInspector implements PostInitializeSubscriber,
                 first = false;
                 out.append("{\"id\":\"").append(escapeJson(monster.id))
                         .append("\",\"hp\":").append(monster.currentHealth)
-                        .append(",\"block\":").append(monster.currentBlock)
-                        .append(",\"intent\":\"")
-                        .append(escapeJson(monster.intent == null ? "UNKNOWN" : monster.intent.name()))
-                        .append("\",\"intentDamage\":").append(monster.getIntentDmg()).append('}');
+                        .append(",\"block\":").append(monster.currentBlock);
+                if (!runicDome) {
+                    out.append(",\"intent\":\"")
+                            .append(escapeJson(monster.intent == null ? "UNKNOWN" : monster.intent.name()))
+                            .append("\",\"intentDamage\":").append(monster.getIntentDmg());
+                }
+                out.append('}');
             }
         }
         return out.append("]}").toString();
