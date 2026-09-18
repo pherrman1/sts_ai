@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Frozen 64-root, six-arm, four-replicate Silver mechanism analysis; no game execution."""
+"""Frozen 64-root, four-arm ordering-ablation analysis; no game execution."""
 
 import argparse
 import hashlib
@@ -10,8 +10,8 @@ import statistics
 from pathlib import Path
 
 
-ARMS = ("A", "B", "E", "F", "C", "D")
-CONTRASTS = ("E-A", "C-E", "F-B", "D-F", "B-A", "F-E", "D-C", "D-A")
+ARMS = ("A", "B", "G", "H")
+CONTRASTS = ("G-A", "H-A", "G-B", "H-B", "B-A")
 RESAMPLES = 10000
 SEED = 20260917
 CLASSIFICATIONS = ("ROOT_PRIOR_SIGNAL_CONFIRMED", "ROOT_ORDER_SIGNAL_ONLY",
@@ -103,52 +103,37 @@ def analyze(rows, expected_roots=64):
         samples_by_arm = {arm: [indexed[root, arm, replicate] for replicate in range(4)]
                           for arm in ARMS}
         native = json.loads(metadata[root][5])
-        native_orders = ("A", "E", "C")
-        ordered_orders = ("B", "F", "D")
-        for arm in native_orders:
-            if any(sample["replay_order"] != native for sample in samples_by_arm[arm]):
-                raise ValueError("native-order arm contract differs from native order")
+        if any(sample["replay_order"] != native for sample in samples_by_arm["A"]):
+            raise ValueError("native-order arm contract differs from native order")
         ordered = samples_by_arm["B"][0]["replay_order"]
-        if any(sample["replay_order"] != ordered for arm in ordered_orders
-               for sample in samples_by_arm[arm]):
-            raise ValueError("Teacher-A ordering differs between arms")
-        if any(sample["priors"] for arm in ("A", "B") for sample in samples_by_arm[arm]):
-            raise ValueError("UCT arm unexpectedly carries priors")
-        informative_maps = {}
-        for arm in ("C", "D"):
-            for sample in samples_by_arm[arm]:
-                if len(sample["replay_order"]) != len(sample["priors"]):
-                    raise ValueError("informative prior/action length mismatch")
-                mapping = dict(zip(sample["replay_order"], sample["priors"]))
-                if len(mapping) != len(sample["replay_order"]):
-                    raise ValueError("duplicate action in informative prior mapping")
-                informative_maps.setdefault(arm, mapping)
-                if informative_maps[arm] != mapping:
-                    raise ValueError("informative prior differs between replicates")
-        if informative_maps["C"] != informative_maps["D"]:
-            raise ValueError("C/D informative prior mapping differs")
+        if any(sample["replay_order"] != ordered for sample in samples_by_arm["B"]):
+            raise ValueError("Teacher-A full ordering differs between replicates")
+        if sorted(ordered) != sorted(native):
+            raise ValueError("Teacher-A full ordering is not the native surface")
+        top1 = samples_by_arm["G"][0]["replay_order"]
+        top2 = samples_by_arm["H"][0]["replay_order"]
+        if any(sample["replay_order"] != top1 for sample in samples_by_arm["G"]):
+            raise ValueError("top1 ordering differs between replicates")
+        if any(sample["replay_order"] != top2 for sample in samples_by_arm["H"]):
+            raise ValueError("top2 ordering differs between replicates")
+        if sorted(top1) != sorted(native) or sorted(top2) != sorted(native):
+            raise ValueError("prefix ordering is not the native surface")
+        if top1[1:] != [action for action in native if action != top1[0]]:
+            raise ValueError("top1 ordering changes the native remainder")
+        if top2[2:] != [action for action in native if action not in top2[:2]]:
+            raise ValueError("top2 ordering changes the native remainder")
+        if top1[0] != ordered[0] or top2[:2] != ordered[:2]:
+            raise ValueError("prefix ordering does not match Teacher-A prefix")
+        if any(sample["priors"] for arm in ARMS for sample in samples_by_arm[arm]):
+            raise ValueError("UCT ordering arm unexpectedly carries priors")
         for arm in ARMS:
             samples = samples_by_arm[arm]
             contracts = {(json.dumps(sample["replay_order"], sort_keys=True),
                           json.dumps(sample["priors"], sort_keys=True)) for sample in samples}
             if len(contracts) != 1:
                 raise ValueError("replay contract differs between replicates")
-            puct = arm in ("E", "F", "C", "D")
-            expected_prior_count = len(native) if puct else 0
-            if any(len(sample["priors"]) != expected_prior_count for sample in samples):
-                raise ValueError("root prior vector does not match arm contract")
-            if puct:
-                for sample in samples:
-                    if (any(not isinstance(prior, (int, float)) or not math.isfinite(prior)
-                            or prior < 0 for prior in sample["priors"])
-                            or not math.isclose(sum(sample["priors"]), 1.0,
-                                                rel_tol=0.0, abs_tol=1e-12)):
-                        raise ValueError("invalid normalized root prior vector")
-            if arm in ("E", "F"):
-                for sample in samples:
-                    if (not sample["priors"]
-                            or any(prior != sample["priors"][0] for prior in sample["priors"])):
-                        raise ValueError("uniform PUCT prior is not uniform")
+            if any(sample["priors"] for sample in samples):
+                raise ValueError("root prior vector does not match UCT contract")
             regrets = [sample["b_regret"] for sample in samples]
             reduced[root][arm] = {
                 "regret": statistics.mean(regrets),
@@ -180,6 +165,7 @@ def analyze(rows, expected_roots=64):
             "worst_harms": sorted(zip(roots, deltas), key=lambda pair: pair[1], reverse=True)[:10]}
     return {"roots": len(roots), "replicates_per_root": 4, "bootstrap_resamples": RESAMPLES,
             "bootstrap_seed": SEED, "bootstrap_unit": "root", "contrasts": contrasts,
+            "arms_schema": "ordering_ablation_v1",
             "arms": {arm: {field: statistics.mean(reduced[root][arm][field] for root in roots)
                            for field in reduced[roots[0]][arm]} for arm in ARMS},
             "root_results": reduced, "source_seeds": sources, "classification": None,

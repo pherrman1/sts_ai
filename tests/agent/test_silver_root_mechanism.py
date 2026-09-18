@@ -17,13 +17,9 @@ SPEC.loader.exec_module(MODULE)
 class MechanismTest(unittest.TestCase):
     def rows(self):
         orders = {"A": ["card", "defend"], "B": ["defend", "card"],
-                  "E": ["card", "defend"], "F": ["defend", "card"],
-                  "C": ["card", "defend"], "D": ["defend", "card"]}
-        priors = {arm: ([] if arm in ("A", "B") else
-                        [0.5, 0.5] if arm in ("E", "F") else
-                        [0.6, 0.4] if arm == "C" else [0.4, 0.6])
-                  for arm in "ABEFCD"}
-        regrets = {"A": 6.0, "B": 5.0, "E": 4.0, "F": 3.0, "C": 2.0, "D": 1.0}
+                  "G": ["defend", "card"], "H": ["defend", "card"]}
+        priors = {arm: [] for arm in "ABGH"}
+        regrets = {"A": 6.0, "B": 5.0, "G": 4.5, "H": 4.0}
         return [{"root_id": str(root), "source_seed": 100 + root,
                  "arm": arm, "replicate": replicate, "search_seed": 1000 + replicate,
                  "simulations": 32, "selected_action_fingerprint": "card",
@@ -33,13 +29,13 @@ class MechanismTest(unittest.TestCase):
                  "teacher_b_hash": f"teacher-b-{root}",
                  "executable_git_sha": "a" * 40, "silver_upstream_sha": "b" * 40,
                  "native_order": ["card", "defend"], "fixture_only": False}
-                for root in range(3) for arm in "ABEFCD" for replicate in range(4)]
+                for root in range(3) for arm in "ABGH" for replicate in range(4)]
 
     def test_root_pairing(self):
         result = MODULE.analyze(self.rows(), expected_roots=3)
         self.assertEqual(result["roots"], 3)
-        self.assertEqual(result["contrasts"]["C-E"]["regret_ci95"], [-2.0, -2.0])
-        self.assertEqual(result["contrasts"]["C-E"]["improved"], 3)
+        self.assertEqual(result["contrasts"]["G-A"]["regret_ci95"], [-1.5, -1.5])
+        self.assertEqual(result["contrasts"]["G-A"]["improved"], 3)
         self.assertEqual(result["bootstrap_resamples"], 10000)
         self.assertIsNone(result["classification"])
         self.assertEqual(result["predeclared_classifications"], (
@@ -47,7 +43,7 @@ class MechanismTest(unittest.TestCase):
             "ROOT_COMBINATION_ONLY", "ROOT_GUIDANCE_SIGNAL_NOT_CONFIRMED",
             "ROOT_GUIDANCE_INCONCLUSIVE"))
         self.assertEqual(set(result["contrasts"]),
-                         {"E-A", "C-E", "F-B", "D-F", "B-A", "F-E", "D-C", "D-A"})
+                         {"G-A", "H-A", "G-B", "H-B", "B-A"})
 
     def test_incomplete_duplicate_and_unpaired_rejected(self):
         for change in (lambda rows: rows[:-1], lambda rows: rows + [rows[0]],
@@ -79,21 +75,19 @@ class MechanismTest(unittest.TestCase):
 
     def test_cross_arm_treatment_contract_rejected(self):
         rows = self.rows()
-        rows[next(index for index, row in enumerate(rows) if row["arm"] == "D")]["priors"] = [0.6, 0.4]
+        rows[next(index for index, row in enumerate(rows) if row["arm"] == "G")]["priors"] = [0.6, 0.4]
         with self.assertRaises(ValueError):
             MODULE.analyze(rows, expected_roots=3)
 
     def test_teacher_order_may_equal_native_order(self):
         rows = self.rows()
         for row in rows:
-            if row["arm"] in ("B", "F", "D"):
+            if row["arm"] in ("B", "G", "H"):
                 row["replay_order"] = ["card", "defend"]
-            if row["arm"] == "D":
-                row["priors"] = [0.6, 0.4]
         result = MODULE.analyze(rows, expected_roots=3)
         self.assertEqual(result["roots"], 3)
         rows = self.rows()
-        rows[next(index for index, row in enumerate(rows) if row["arm"] == "F")]["replay_order"] = ["card", "defend"]
+        rows[next(index for index, row in enumerate(rows) if row["arm"] == "H")]["replay_order"] = ["card", "defend"]
         with self.assertRaises(ValueError):
             MODULE.analyze(rows, expected_roots=3)
 
