@@ -1285,6 +1285,13 @@ not train a policy, run gameplay, or change the default from this result.
 See [ledger-06 §303](../../experiments/ledger-06.md) and the
 [six-arm replay evidence](../../experiments/evidence/silver_root_mechanism_2026-09-17.md).
 
+A visit-weighted T20 ensemble of A/A2 versus an independent J50 ensemble of
+B/B2 also fails the zero-search screen: top-action agreement is `44/64`, T20
+mean J50-regret is `0.534197` versus `0.495031` for original A, and the known
+harmful root remains misranked. The proposed ensemble ordering arm is therefore
+not run; the learned root-ordering line is stopped pending a new target
+definition. See the [ensemble audit](../../experiments/evidence/silver_root_teacher_ensemble_audit_2026-09-18.md).
+
 ### Combat leaf/model variants
 
 Raw deep-search utility targets, repeated DAgger, residual correction, sampled
