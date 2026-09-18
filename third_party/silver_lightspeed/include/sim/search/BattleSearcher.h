@@ -188,7 +188,11 @@ namespace sts::search {
             std::int8_t target = -1;
             bool upgraded = false;
             bool freeToPlayOnce = false;
-            bool operator==(const RaveActionKey &) const = default;
+            bool operator==(const RaveActionKey &other) const {
+                return cardId == other.cardId && specialData == other.specialData
+                    && costForTurn == other.costForTurn && target == other.target
+                    && upgraded == other.upgraded && freeToPlayOnce == other.freeToPlayOnce;
+            }
         };
         struct RaveStat {
             RaveActionKey key;
