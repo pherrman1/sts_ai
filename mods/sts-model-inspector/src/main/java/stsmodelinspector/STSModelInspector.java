@@ -295,8 +295,7 @@ public final class STSModelInspector implements PostInitializeSubscriber,
     }
 
     private String combatEntryJson(AbstractRoom room, String encounter) {
-        if (AbstractDungeon.player == null || !previousRoomKnown
-                || AbstractDungeon.currMapNode == null) return "";
+        if (AbstractDungeon.player == null || AbstractDungeon.currMapNode == null) return "";
         boolean burningElite = room instanceof com.megacrit.cardcrawl.rooms.MonsterRoomElite
                 && AbstractDungeon.currMapNode.hasEmeraldKey;
         StringBuilder out = new StringBuilder("{\"character\":\"")
