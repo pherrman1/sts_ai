@@ -13,7 +13,7 @@ were not regenerated. Their declared executable provenance is
 `06d9de36d1c2e07c7e0420a0752ae9a4d7fd738e`. The current-main descendant had
 only later complete-fight replay API changes in the relevant paths before this
 experiment. Replay rows were generated from clean committed RAVE head
-`f8c05ba60bc95afde27ad58d8876411e9ae6cc2b`; the row-level declared teacher
+`e608003ff02cd3f4d5efc5e99726bd3983835500`; the row-level declared teacher
 provenance remains the older SHA by contract.
 
 ## Frozen protocol
@@ -70,8 +70,8 @@ suggested roughly 16 seeds × 2 roots) and the same frozen arm definitions.
 
 ## Artifacts and checks
 
-- Raw replay: `build/scientific-rave-f8c05ba/replay-final.jsonl`, SHA-256
-  `2f9149406c45db6bb98ba75019fcfd3d1055ae3854a17a5c7651aa3c5b4be8f5`.
+- Raw replay: `build/scientific-rave-e608003/replay-final.jsonl`, SHA-256
+  `1f087642b598cc1d36a7f316abf0f39a96211fa130c841c48af551f8e8608ef0`.
 - RAVE executable: built from the clean committed head above; the local
   Debug executable hash is not used as scientific provenance for future CI
   artifacts.
