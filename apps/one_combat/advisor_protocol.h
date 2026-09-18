@@ -27,6 +27,8 @@ struct ValidationResult {
 ValidationResult parseRequest(const nlohmann::json &wire, Request &request);
 nlohmann::json helloResponse();
 nlohmann::json errorResponse(const std::string &code, const std::string &message);
+nlohmann::json errorResponse(const Request &request, const std::string &code,
+                             const std::string &message);
 nlohmann::json unsupportedResponse(const Request &request, const std::string &reason);
 nlohmann::json staleResponse(const Request &request, const std::string &reason);
 

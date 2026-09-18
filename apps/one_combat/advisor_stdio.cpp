@@ -33,7 +33,7 @@ int main() {
                             one_combat::advisor::importPublicOoc(request.observation, imported);
                         if (!importedResult.ok) {
                             response = one_combat::advisor::errorResponse(
-                                importedResult.code, importedResult.message);
+                                request, importedResult.code, importedResult.message);
                         } else {
                             // The public OOC state is now imported and ID-checked.
                             // Keep evaluation fail-closed until map/path, relic,

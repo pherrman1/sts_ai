@@ -2,7 +2,7 @@
 
 #include <limits>
 
-#include "sim/SimHelpers.h"
+#include "constants/SaveFileMappings.h"
 
 namespace one_combat::advisor {
 
@@ -32,9 +32,14 @@ ImportResult cards(const nlohmann::json &object, const char *name,
             || !wire.contains("misc") || !wire.at("misc").is_number_integer())
             return bad("SCHEMA_MISMATCH", std::string("observation.") + name +
                        " contains an invalid card instance");
-        const auto id = sts::SimHelpers::getCardIdForString(wire.at("id").get<std::string>());
+        sts::CardId id = sts::CardId::INVALID;
+        try {
+            id = nlohmann::json(wire.at("id").get<std::string>()).get<sts::CardId>();
+        } catch (const nlohmann::json::exception &) {
+            return bad("UNKNOWN_CARD_ID", "observation contains an unknown save-file card ID");
+        }
         if (id == sts::CardId::INVALID)
-            return bad("UNKNOWN_CARD_ID", "observation contains an unknown card ID");
+            return bad("UNKNOWN_CARD_ID", "observation contains an unknown save-file card ID");
         const auto misc = wire.at("misc").get<std::int64_t>();
         if (misc < std::numeric_limits<std::int16_t>::min()
             || misc > std::numeric_limits<std::int16_t>::max())

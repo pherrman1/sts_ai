@@ -8,6 +8,7 @@ import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.megacrit.cardcrawl.dungeons.AbstractDungeon;
 import com.megacrit.cardcrawl.cards.AbstractCard;
+import com.megacrit.cardcrawl.monsters.AbstractMonster;
 import com.megacrit.cardcrawl.helpers.FontHelper;
 import com.megacrit.cardcrawl.rooms.MonsterRoom;
 import com.megacrit.cardcrawl.rooms.RestRoom;
@@ -27,9 +28,6 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.security.MessageDigest;
 import java.util.Properties;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
 
 /** Read-only observer. It never calls an AbstractDungeon action or mutates game state. */
 @SpireInitializer
@@ -44,7 +42,7 @@ public final class STSModelInspector implements PostInitializeSubscriber,
     private String session = Long.toHexString(System.nanoTime());
     private long sequence;
     private String lastFingerprint = "";
-    private Snapshot newest;
+    private volatile Snapshot newest;
     private volatile String advisorStatus = "disconnected";
     private volatile String advisorReason = "not started";
     private volatile long responseSequence = -1;
@@ -72,10 +70,25 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         toggleDown = down;
 
         Snapshot snapshot = captureStableSnapshot();
-        if (snapshot == null || snapshot.hash.equals(lastFingerprint)) return;
+        if (snapshot == null) {
+            if (newest != null) {
+                newest = null;
+                lastFingerprint = "";
+                responseSequence = -1;
+                responseHash = "";
+                advisor.clearPending();
+            }
+            return;
+        }
+        if (snapshot.hash.equals(lastFingerprint)) return;
         lastFingerprint = snapshot.hash;
-        newest = snapshot;
-        advisor.send(snapshot);
+        Snapshot emitted = snapshot.withSequence(++sequence);
+        newest = emitted;
+        responseSequence = -1;
+        responseHash = "";
+        advisorStatus = "waiting";
+        advisorReason = "";
+        advisor.send(emitted);
     }
 
     @Override
@@ -131,13 +144,15 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         int gold = AbstractDungeon.player.gold;
         String deck = deckJson();
         String candidates = candidatesJson(boundary);
+        String combat = "";
+        if ("combat".equals(boundary)) combat = combatJson();
         String raw = boundary + "|" + character + "|" + AbstractDungeon.ascensionLevel +
                 "|" + act + "|" + floor + "|" + hp + "|" + maxHp + "|" + gold +
                 "|" + room.getClass().getName() + "|" + AbstractDungeon.screen.name() +
-                "|" + deck + "|" + candidates;
-        return new Snapshot(session, ++sequence, boundary, character,
+                "|" + deck + "|" + candidates + "|" + combat;
+        return new Snapshot(session, 0, boundary, character,
                 AbstractDungeon.ascensionLevel, act, floor, hp, maxHp, gold,
-                deck, candidates, sha256(raw));
+                deck, candidates, combat, sha256(raw));
     }
 
     private static String deckJson() {
@@ -174,8 +189,41 @@ public final class STSModelInspector implements PostInitializeSubscriber,
     }
 
     private static String cardJson(AbstractCard card) {
-        return "{\"id\":\"" + escapeJson(card.cardID) + "\",\"upgraded\":" +
-                (card.upgraded ? "true" : "false") + ",\"misc\":" + card.misc + "}";
+        return "{\"id\":\"" + escapeJson(card.cardID) + "\",\"uuid\":\"" +
+                escapeJson(String.valueOf(card.uuid)) + "\",\"upgraded\":" +
+                (card.upgraded ? "true" : "false") + ",\"misc\":" + card.misc +
+                ",\"cost\":" + card.cost + ",\"costForTurn\":" + card.costForTurn + "}";
+    }
+
+    private static String combatJson() {
+        StringBuilder out = new StringBuilder("{\"turn\":");
+        out.append(com.megacrit.cardcrawl.actions.GameActionManager.turn)
+                .append(",\"energy\":")
+                .append(AbstractDungeon.player.energy == null ? 0 : AbstractDungeon.player.energy.energy)
+                .append(",\"block\":").append(AbstractDungeon.player.currentBlock)
+                .append(",\"hand\":[");
+        boolean first = true;
+        for (AbstractCard card : AbstractDungeon.player.hand.group) {
+            if (!first) out.append(',');
+            first = false;
+            out.append(cardJson(card));
+        }
+        out.append("],\"monsters\":[");
+        first = true;
+        if (AbstractDungeon.getMonsters() != null) {
+            for (AbstractMonster monster : AbstractDungeon.getMonsters().monsters) {
+                if (monster == null || monster.isDeadOrEscaped()) continue;
+                if (!first) out.append(',');
+                first = false;
+                out.append("{\"id\":\"").append(escapeJson(monster.id))
+                        .append("\",\"hp\":").append(monster.currentHealth)
+                        .append(",\"block\":").append(monster.currentBlock)
+                        .append(",\"intent\":\"")
+                        .append(escapeJson(monster.intent == null ? "UNKNOWN" : monster.intent.name()))
+                        .append("\",\"intentDamage\":").append(monster.getIntentDmg()).append('}');
+            }
+        }
+        return out.append("]}").toString();
     }
 
     private static String escapeJson(String value) {
@@ -199,15 +247,13 @@ public final class STSModelInspector implements PostInitializeSubscriber,
     }
 
     private final class Advisor {
-        private final ExecutorService io = Executors.newFixedThreadPool(3, r -> {
-            Thread t = new Thread(r, "sts-model-inspector-advisor");
-            t.setDaemon(true);
-            return t;
-        });
         private Process process;
         private BufferedWriter stdin;
         private Thread reader;
         private Thread errorReader;
+        private Thread writer;
+        private Snapshot pendingObservation;
+        private boolean stopping;
 
         synchronized void start() {
             try {
@@ -222,6 +268,7 @@ public final class STSModelInspector implements PostInitializeSubscriber,
                 }
                 Process started = new ProcessBuilder(executable).redirectErrorStream(false).start();
                 process = started;
+                stopping = false;
                 stdin = new BufferedWriter(new OutputStreamWriter(process.getOutputStream(), StandardCharsets.UTF_8));
                 reader = new Thread(() -> readResponses(started), "sts-model-inspector-responses");
                 reader.setDaemon(true);
@@ -237,14 +284,41 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         }
 
         void send(Snapshot s) {
-            io.submit(() -> {
+            synchronized (this) {
+                if (stopping) return;
+                pendingObservation = s;
+                if (writer == null || !writer.isAlive()) {
+                    writer = new Thread(this::writePending, "sts-model-inspector-advisor");
+                    writer.setDaemon(true);
+                    writer.start();
+                }
+                notifyAll();
+            }
+        }
+
+        synchronized void clearPending() {
+            pendingObservation = null;
+            notifyAll();
+        }
+
+        private void writePending() {
+            while (true) {
+                Snapshot next;
+                synchronized (this) {
+                    while (pendingObservation == null && !stopping) {
+                        try { wait(); } catch (InterruptedException ignored) {}
+                    }
+                    if (stopping) return;
+                    next = pendingObservation;
+                    pendingObservation = null;
+                }
                 try {
-                    write(s.toJson());
+                    write(next.toJson());
                 } catch (Exception e) {
                     advisorStatus = "error";
                     advisorReason = e.getClass().getSimpleName();
                 }
-            });
+            }
         }
 
         private synchronized void write(String line) throws IOException {
@@ -255,10 +329,13 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         }
 
         synchronized void shutdown() {
+            stopping = true;
+            pendingObservation = null;
+            notifyAll();
             if (process != null) process.destroy();
             if (reader != null) reader.interrupt();
             if (errorReader != null) errorReader.interrupt();
-            io.shutdownNow();
+            if (writer != null) writer.interrupt();
             process = null;
             stdin = null;
         }
@@ -273,14 +350,23 @@ public final class STSModelInspector implements PostInitializeSubscriber,
                     } else {
                         String status = field(line, "status");
                         String reason = field(line, "reason");
+                        String code = field(line, "code");
+                        String message = field(line, "message");
+                        String responseSession = field(line, "session");
                         long seq = numberField(line, "sequence");
                         String hash = field(line, "observationHash");
                         Snapshot current = newest;
-                        if (current != null && seq == current.sequence && current.hash.equals(hash)) {
+                        if (current != null && current.session.equals(responseSession)
+                                && seq == current.sequence && current.hash.equals(hash)) {
                             responseSequence = seq;
                             responseHash = hash;
                             advisorStatus = status == null ? "error" : status.toLowerCase();
-                            advisorReason = reason == null ? "" : reason;
+                            if ("ERROR".equals(status)) {
+                                advisorReason = (code == null ? "UNKNOWN" : code) +
+                                        (message == null || message.isEmpty() ? "" : " - " + message);
+                            } else {
+                                advisorReason = reason == null ? "" : reason;
+                            }
                         }
                     }
                 }
@@ -321,16 +407,23 @@ public final class STSModelInspector implements PostInitializeSubscriber,
 
     private static final class Snapshot {
         final String session, boundary, character, deck, candidates, hash;
+        final String combat;
         final long sequence;
         final int ascension, act, floor, hp, maxHp, gold;
 
         Snapshot(String session, long sequence, String boundary, String character,
                  int ascension, int act, int floor, int hp, int maxHp, int gold,
-                 String deck, String candidates, String hash) {
+                 String deck, String candidates, String combat, String hash) {
             this.session = session; this.sequence = sequence; this.boundary = boundary;
             this.character = character; this.ascension = ascension; this.act = act;
             this.floor = floor; this.hp = hp; this.maxHp = maxHp; this.gold = gold;
             this.deck = deck; this.candidates = candidates; this.hash = hash;
+            this.combat = combat;
+        }
+
+        Snapshot withSequence(long emittedSequence) {
+            return new Snapshot(session, emittedSequence, boundary, character, ascension, act,
+                    floor, hp, maxHp, gold, deck, candidates, combat, hash);
         }
 
         String toJson() {
@@ -340,8 +433,9 @@ public final class STSModelInspector implements PostInitializeSubscriber,
                     "\"boundary\":\"" + boundary + "\",\"character\":\"" + character +
                     "\",\"ascension\":" + ascension + ",\"act\":" + act +
                     ",\"floor\":" + floor + ",\"hp\":" + hp + ",\"maxHp\":" + maxHp +
-                    ",\"gold\":" + gold + ",\"deck\":" + deck +
-                    ",\"candidates\":" + candidates + "}}";
+                        ",\"gold\":" + gold + ",\"deck\":" + deck +
+                    ",\"candidates\":" + candidates +
+                    (combat.isEmpty() ? "" : ",\"combat\":" + combat) + "}}";
         }
 
         private static String escape(String s) { return s.replace("\\", "\\\\").replace("\"", "\\\""); }

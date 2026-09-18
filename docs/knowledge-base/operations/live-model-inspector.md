@@ -20,17 +20,25 @@ with an equal or older sequence in the same session. A new process starts a
 new session state.
 
 The Java frontend is under `mods/sts-model-inspector/`. It uses BaseMod
-post-update/render subscribers, captures detached Ironclad-compatible summary
-fields for card rewards, rest sites, and ordinary player turns, and now exports
-the visible deck instances plus card-reward candidates and upgradeable rest
-targets. It launches the advisor with a direct `ProcessBuilder` call. Its F8
-panel remains diagnostic until a native importer proves parity. Workshop and
-game/dependency JARs remain outside Git.
+post-update/render subscribers and captures detached Ironclad-compatible
+summary fields for card rewards, rest sites, and ordinary player turns. Combat
+observations include only player-visible decision state: turn, energy, player
+block, hand card instances/costs, and living-monster HP, block, intent, and
+intent damage. The combat fingerprint includes that payload, so successive
+decisions are not collapsed into one observation. A stable-boundary loss
+clears the displayed observation and fences late responses from the prior
+decision. Advisor writes use one bounded latest-observation slot; intermediate
+captures are replaceable rather than queued without limit. It launches the
+advisor with a direct `ProcessBuilder` call. Its F8 panel remains diagnostic
+until a native importer proves parity. Workshop and game/dependency JARs
+remain outside Git.
 
 For `card_reward` and `rest`, the native endpoint now validates the detached
-deck and candidate card-instance arrays (internal ID, upgrade flag, and misc
-value). Valid observations still fail closed because validation is not yet a
-native `GameContext` import.
+deck and candidate card-instance arrays (canonical save-file card ID, upgrade
+flag, and misc value). Valid observations still fail closed because validation
+is not yet a native `GameContext` import. Importer errors carry the observation
+session, sequence, and hash; malformed envelopes remain uncorrelated because
+their identity cannot be trusted.
 
 Run the endpoint after building:
 

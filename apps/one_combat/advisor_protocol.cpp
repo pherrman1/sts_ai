@@ -71,6 +71,14 @@ nlohmann::json errorResponse(const std::string &code, const std::string &message
             {"kind", "error"}, {"status", "ERROR"}, {"code", code}, {"message", message}};
 }
 
+nlohmann::json errorResponse(const Request &request, const std::string &code,
+                             const std::string &message) {
+    return { {"protocol", kProtocol}, {"protocolVersion", kProtocolVersion},
+             {"kind", "error"}, {"status", "ERROR"}, {"code", code},
+             {"message", message}, {"session", request.session},
+             {"sequence", request.sequence}, {"observationHash", request.observationHash} };
+}
+
 nlohmann::json unsupportedResponse(const Request &request, const std::string &reason) {
     return {{"protocol", kProtocol}, {"protocolVersion", kProtocolVersion},
             {"kind", "analysis"}, {"status", "UNSUPPORTED"}, {"reason", reason},

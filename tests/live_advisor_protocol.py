@@ -19,7 +19,11 @@ class AdvisorProtocolTest(unittest.TestCase):
             '"session":"run-1","sequence":1,"observationHash":"abc",'
             '"observation":{"boundary":"card_reward","character":"IRONCLAD",'
             '"ascension":0,"act":1,"floor":1,"hp":80,"maxHp":80,"gold":99,"deck":[],'
-            '"candidates":[{"id":"BASH","upgraded":false,"misc":0}]}}',
+            '"candidates":['
+            '{"id":"Bash","upgraded":false,"misc":0},'
+            '{"id":"Strike_R","upgraded":false,"misc":0},'
+            '{"id":"Defend_R","upgraded":false,"misc":0},'
+            '{"id":"AscendersBane","upgraded":false,"misc":0}]}}',
         ])
         self.assertEqual(rows[0]["status"], "READY")
         self.assertEqual(rows[0]["evaluators"], [])
@@ -60,6 +64,18 @@ class AdvisorProtocolTest(unittest.TestCase):
         ])
         self.assertEqual(rows[0]["status"], "ERROR")
         self.assertEqual(rows[0]["code"], "UNKNOWN_CARD_ID")
+        self.assertEqual(rows[0]["message"],
+                         "observation contains an unknown save-file card ID")
+        self.assertEqual(rows[0]["session"], "run-import")
+        self.assertEqual(rows[0]["sequence"], 1)
+        self.assertEqual(rows[0]["observationHash"], "import")
+
+    def test_malformed_error_has_no_untrusted_identity(self):
+        rows = self.run_advisor(["not-json"])
+        self.assertEqual(rows[0]["code"], "MALFORMED_JSON")
+        self.assertNotIn("session", rows[0])
+        self.assertNotIn("sequence", rows[0])
+        self.assertNotIn("observationHash", rows[0])
 
 
 if __name__ == "__main__":
