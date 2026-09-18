@@ -1,6 +1,7 @@
 # Current research status
 
-Last verified: 2026-09-18 for the frozen six-arm Silver root-mechanism replay;
+Last verified: 2026-09-18 for the OOC 20% gap-stop quality gate and frozen
+six-arm Silver root-mechanism replay;
 2026-09-17 for shared transition-encoder historical chronology,
 staged retained-root adaptive Silver N32 scalar sweep and N16 Pareto held-out inspection;
 2026-09-16 for retained-root adaptive Silver deployment-gate N32,
@@ -13,6 +14,34 @@ and fresh64 fixed10000 live MCTS gate;
 audit and the corrected whole-combat transition model rerun after independent
 review;
 other sections retain their prior verification and linked evidence.
+
+## OOC 20% gap-stop quality gate
+
+The merged opt-in rule `512 -> stop when the top-two root visit gap is at
+least 20%, otherwise continue toward 2,048` has **mechanism/speed PASS** but
+the first quality cohort is **`OOC_GAP_STOP_20_QUALITY_INCONCLUSIVE_RUNTIME`**.
+At frozen source `495fa147517fdc42e631c513bde5a87b3bb25144` and the exact
+control/treatment configuration, the 16-pair OMP1 smoke reduced total OOC
+simulations by 41.4%, median MCTS CPU by 36.6%, and median full-run CPU by
+13.0%. Its 9/16 treatment versus 10/16 control result is smoke-only (three
+control-only versus two treatment-only wins) and is not a gameplay-quality
+conclusion. The full `12003000..12003063` quality gate did not complete:
+control seed `12003058` became a long-tail runtime pathology under OMP12;
+isolated OMP1 reproduction also exceeded the bounded runtime without a
+completed row, while four other OMP12-to-OMP1 control parity checks matched
+all non-time MCTS counters and outcomes. The pathology boundary is unknown.
+No evidence from this experiment supports rejecting the 20% rule, and no
+quality claim or default promotion is established.
+
+The original cohort is closed without seed replacement or further treatment
+runs. A future independent quality attempt is predeclared for seeds
+`12004000..12004063`, reusing the exact frozen binary/configuration, with one
+OMP1 process per seed and up to approximately 12 external processes. Control
+will run first; treatment starts only if all 64 controls complete. A fixed
+10-minute per-process ceiling applies to either arm; any timeout aborts that
+cohort as `INCONCLUSIVE_RUNTIME`, with no seed substitution. Stage B is not
+rerun. See [ledger §305](../../experiments/ledger-06.md).
+
 Semantic confirmation section verified 2026-09-10 at producer `a6c2abb`;
 other sections retain their prior verification and linked evidence.
 
