@@ -68,6 +68,25 @@ zero aborts do not qualify that contract. Metrics count locked-root stops and
 saved simulations separately. See [ADR-0014](../../../decisions/0014-live-ooc-visit-lock-stopping.md).
 
 `OocMctsConfig::observeRootLock` is an opt-in diagnostic that suppresses both
+locked-root stopping and the qualified sole-root bypass.
+
+`STS_OOC_MCTS_CHECKPOINT_TRACE=<fresh.jsonl>` instead preserves the live policy
+and runs a separate discarded full-budget shadow search from the same root,
+history, models and search seed. It requires 2048 visit selection and rejects
+combination with the live root-lock observer. It records all action IDs, priors,
+visits and Q after 128/256/512/1024/2048 completed shadow simulations, plus
+live and shadow action/abort/completed-budget status. Late shadow aborts do not
+change the live action. Existing live MCTS CPU and counters exclude the shadow;
+process runtime includes it and is not a deployment performance benchmark.
+The generic `rootCheckpointSimulations` option only records reached positive,
+strictly increasing thresholds; it never disables early stopping itself.
+Offline analysis uses visits/Q/ascending-ID tie-breaking, separates singleton
+roots and aborts, and reports additional savings against existing live stopping
+as well as nominal 2048. Checkpoint stability means stability only at observed
+checkpoints, not at every intervening simulation. No rule is deployed by this
+diagnostic. `tools/analyze_ooc_root_checkpoints.py` implements the offline report.
+
+The root-lock observer suppresses
 locked-root stopping and the qualified sole-root bypass. It records the first
 strict visit lock (including a zero-remaining-budget lock), its action and
 remaining simulation budget, and wall time from that completed simulation to
@@ -176,6 +195,21 @@ fixed max absolute probability tolerance 1e-4; they do not drive gameplay seeds.
 The qualified `COMBAT_TRANSITION_RUNTIME_V2` artifact is tracked at `selfplay/models/combat_transition_near_full_except_smoke_v2.native`. Its default survival component is the targeted attention-HPO winner; maxHP, HP, potion and downstream heads remain the frozen near-full checkpoints. Selected component identities, passing qualification and ordered all/TEST cohort hashes are enforced by export/load guards. V2 retains the legacy envelope while supporting shared gold, Writhing, Ritual and Brew trajectories; it excludes initially held Smoke, pre-existing `smokeBombUsed`, and Writhing with Ritual Dagger. Executed support is exactly 505,935/510,030 overall and 51,036/51,441 TEST. V1 behavior above remains unchanged when a V1 artifact is selected.
 
 V2 Brew draws a full-width planner-owned hypothetical native potion RNG on first use, reuses it recursively and retains its advanced RAW state. Unused Brew copies historical potion RNG; other streams follow the existing replay/copy contract. Explicit `ESCAPE` requires matching RAW `smokeBombUsed`, rejects boss escape and uses native `regainControl()` without victory rewards. Generated Smoke/ESCAPE remains possible in a supported Brew trajectory. The probe and `tools/qualify_combat_transition_near_full.py` verify CPU FP32 probabilities, complete RAW sampled states, planner-stream advancement and scalar/prepared parity; unsupported states consume no planner draws. All final slice gates and hard-validity checks pass as reused development evidence in the [final report](../../experiments/evidence/near_full_combat_support_2026-09-14/REPORT.md). V2 uses the same explicit model path; no default MCTS enablement is implied.
+
+The opt-in experimental width-64 strong-WD survival alternative is exported by
+`tools/export_combat_transition_survival_deepset.py`. It verifies the exact #217
+checkpoint and tracked Attention control, replaces only survival tensors, and
+adds `experimentalSurvival` with `qualified:false`. The V2 loader validates its
+fixed identity and DeepSets tensor graph; all other components, support rules,
+and defaults remain unchanged. Selection uses the existing explicit combat-model
+path, not a new default. Retained control qualification metadata does not qualify
+the replacement. The non-TEST checker is
+`tools/check_combat_transition_survival_deepset.py`; its
+[Stage-A evidence](../../experiments/evidence/deepset_survival_online_stage_a_2026-09-17/README.md)
+is implementation evidence only. The independently reviewed
+[Stage-B speed screen](../../experiments/evidence/deepset_survival_online_stage_b_2026-09-18/README.md)
+stopped below the 10% end-to-end CPU improvement threshold; the gameplay-quality
+gate did not run. The alternative remains experimental, not a promoted default.
 
 Copied native RNG streams still govern other stochastic OOC transitions. This
 adapter resolves the combat boundary only and remains **not a fair stochastic

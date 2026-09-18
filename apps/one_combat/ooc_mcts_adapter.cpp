@@ -396,7 +396,7 @@ std::uint64_t liveSimulations = 512;
 sts::search::OocMctsConfig liveConfig;
 OocAdapterOptions liveOptions{true};
 std::shared_ptr<const CombatTransitionSampler> liveSampler;
-std::string liveTrace, liveRootLockTrace;
+std::string liveTrace, liveRootLockTrace, liveCheckpointTrace;
 std::mutex liveTraceMutex;
 std::uint64_t splitMix64(std::uint64_t x) {
     x += 0x9e3779b97f4a7c15ULL;
@@ -435,6 +435,7 @@ void applyLiveControl(const std::string &key, const std::string &value,
     }
     else if (key == "STS_OOC_MCTS_LEAF_POLICY") opts.uniformLeafPolicy = choice("v4", "uniform");
     else if (key == "STS_OOC_MCTS_EARLY_STOP") config.allowUnqualifiedRootStop = choice("0", "1");
+    else if (key == "STS_OOC_MCTS_GAP_STOP_20") config.stopAt512VisitGap20 = choice("0", "1");
     else if (key == "STS_OOC_MCTS_ROOT_SELECTION") config.selectByMeanQ = choice("visits", "q");
     else if (key == "STS_OOC_MCTS_TEMPERATURE") { const double x = number(); if (x <= 0) invalid(); opts.priorTemperature = x; }
     else if (key == "STS_OOC_MCTS_CPUCT") { const double x = number(); if (x < 0) invalid(); config.cPuct = x; }
@@ -445,7 +446,7 @@ void applyLiveControl(const std::string &key, const std::string &value,
     else invalid();
 }
 const char *const liveControlKeys[] = {
-    "STS_OOC_MCTS_EARLY_STOP", "STS_OOC_MCTS_PRIOR", "STS_OOC_MCTS_TEMPERATURE", "STS_OOC_MCTS_CPUCT",
+    "STS_OOC_MCTS_EARLY_STOP", "STS_OOC_MCTS_GAP_STOP_20", "STS_OOC_MCTS_PRIOR", "STS_OOC_MCTS_TEMPERATURE", "STS_OOC_MCTS_CPUCT",
     "STS_OOC_MCTS_WIDEN_K", "STS_OOC_MCTS_WIDEN_ALPHA", "STS_OOC_MCTS_MAX_DEPTH",
     "STS_OOC_MCTS_ROOT_SELECTION", "STS_OOC_MCTS_LEAF_VALUE",
     "STS_OOC_MCTS_LEAF_COMBATS", "STS_OOC_MCTS_LEAF_POLICY"
@@ -483,6 +484,7 @@ void configureLiveOocMcts() {
         if (!out) throw std::runtime_error("STS_OOC_MCTS_TRACE cannot open output");
     }
     liveRootLockTrace.clear();
+    liveCheckpointTrace.clear();
     liveSimulations = 512; liveConfig = {}; liveOptions = {true};
     if (!liveEnabled) return;
     if (sts::search::silverLiveReuseCap() != 32768)
@@ -510,8 +512,19 @@ void configureLiveOocMcts() {
     liveConfig.allowUnqualifiedRootStop = true; // May skip later aborts; provider guarantee remains false.
     for (const char *key : liveControlKeys)
         if (const char *value = std::getenv(key)) applyLiveControl(key, value, liveConfig, liveOptions);
+    if (liveConfig.stopAt512VisitGap20
+        && (liveSimulations != 2048 || liveConfig.selectByMeanQ))
+        throw std::runtime_error("STS_OOC_MCTS_GAP_STOP_20 requires 2048 visit-selected simulations");
     if (const char *trace = std::getenv("STS_OOC_MCTS_ROOT_LOCK_TRACE")) liveRootLockTrace = trace;
     liveConfig.observeRootLock = !liveRootLockTrace.empty();
+    if (const char *trace = std::getenv("STS_OOC_MCTS_CHECKPOINT_TRACE")) liveCheckpointTrace = trace;
+    if (!liveCheckpointTrace.empty()) {
+        if (liveSimulations != 2048 || liveConfig.selectByMeanQ || liveConfig.observeRootLock)
+            throw std::runtime_error("checkpoint shadow requires 2048 visit selection and no root-lock observer");
+        std::ofstream out(liveCheckpointTrace, std::ios::app);
+        if (!out) throw std::runtime_error("STS_OOC_MCTS_CHECKPOINT_TRACE cannot open output");
+        std::cout << "[ooc-checkpoint-shadow ON live_policy_unchanged=1 checkpoints=128,256,512,1024,2048]\n";
+    }
     if (liveConfig.observeRootLock) {
         std::ofstream out(liveRootLockTrace, std::ios::app);
         if (!out) throw std::runtime_error("STS_OOC_MCTS_ROOT_LOCK_TRACE cannot open output");
@@ -527,6 +540,7 @@ void configureLiveOocMcts() {
         << " widen_k=" << liveConfig.wideningK << " widen_alpha=" << liveConfig.wideningAlpha
         << " max_depth=" << liveConfig.maxDepth << " root_selection=" << (liveConfig.selectByMeanQ ? "q" : "visits")
         << " early_stop=" << liveConfig.allowUnqualifiedRootStop
+        << " gap_stop_20=" << liveConfig.stopAt512VisitGap20
         << " leaf_value=" << (liveOptions.bossLeaf ? "boss" : liveOptions.constantLeaf ? "constant" : "native")
         << " leaf_combats=" << liveOptions.leafCombats << " leaf_policy=" << (liveOptions.uniformLeafPolicy ? "uniform" : "v4")
         << "]\n";
@@ -535,6 +549,7 @@ void configureLiveOocMcts() {
         << ",\"wideningK\":" << liveConfig.wideningK << ",\"wideningAlpha\":" << liveConfig.wideningAlpha
         << ",\"maxDepth\":" << liveConfig.maxDepth << ",\"rootSelection\":\"" << (liveConfig.selectByMeanQ ? "q" : "visits")
         << "\",\"earlyStop\":" << (liveConfig.allowUnqualifiedRootStop ? "true" : "false")
+        << ",\"gapStop20\":" << (liveConfig.stopAt512VisitGap20 ? "true" : "false")
         << ",\"leafValue\":\"" << (liveOptions.bossLeaf ? "boss" : liveOptions.constantLeaf ? "constant" : "native")
         << "\",\"leafCombats\":" << liveOptions.leafCombats << ",\"leafPolicy\":\"" << (liveOptions.uniformLeafPolicy ? "uniform" : "v4")
         << "\",\"simulations\":" << liveSimulations << "}\n";
@@ -612,6 +627,44 @@ bool oocMctsPolicyStep(GameContext &gc, const PathHistory &path, std::uint64_t s
     profile.stop();
     metrics.wallSeconds += std::chrono::duration<double>(std::chrono::steady_clock::now()-wallStart).count();
     metrics.cpuSeconds += threadCpuSeconds()-cpuStart;
+    if (!liveCheckpointTrace.empty()) {
+        ImaginedScope scope;
+        OocGameContextModel shadow(gc, path, liveSampler, liveOptions);
+        if (!shadow.terminalValue(0) && !shadow.isLeafBoundary(0)) {
+            auto config=liveConfig;
+            config.seed=oocMctsSearchSeed(seed,index);
+            config.observeRootLock=true;
+            config.stopAt512VisitGap20=false;
+            config.rootCheckpointSimulations={128,256,512,1024,2048};
+            const auto observed=sts::search::OocMctsPlanner(config).search(shadow,0,liveSimulations);
+            nlohmann::json checkpoints=nlohmann::json::array();
+            for (const auto &checkpoint : observed.rootCheckpoints) {
+                nlohmann::json actions=nlohmann::json::array();
+                for (const auto &action : checkpoint.actions)
+                    actions.push_back({{"id",action.id},{"prior",action.prior},
+                        {"visits",action.visits},{"q",action.q}});
+                checkpoints.push_back({{"simulations",checkpoint.simulations},{"actions",actions}});
+            }
+            const nlohmann::json row={
+                {"schemaVersion",1},{"seed",seed},{"decisionIndex",index},
+                {"floor",gc.floorNum},{"screen",int(gc.screenState)},
+                {"requestedSimulations",liveSimulations},
+                {"liveSimulations",result.metrics.simulations},
+                {"liveAborted",result.aborted},{"liveAbortReason",result.abortReason},
+                {"liveAction",result.selectedAction ? nlohmann::json(*result.selectedAction) : nlohmann::json(nullptr)},
+                {"liveGapStop20",result.metrics.earlyStopVisitGap20},
+                {"liveSavedSimulations",result.metrics.savedSimulations},
+                {"shadowSimulations",observed.metrics.simulations},
+                {"shadowAttempts",observed.metrics.simulationAttempts},
+                {"shadowAborted",observed.aborted},{"shadowAbortReason",observed.abortReason},
+                {"finalAction",observed.selectedAction ? nlohmann::json(*observed.selectedAction) : nlohmann::json(nullptr)},
+                {"checkpoints",checkpoints}};
+            std::lock_guard<std::mutex> lock(liveTraceMutex);
+            std::ofstream out(liveCheckpointTrace,std::ios::app);
+            if (!out || !(out << row.dump() << '\n'))
+                throw std::runtime_error("STS_OOC_MCTS_CHECKPOINT_TRACE write failed");
+        }
+    }
     metrics.combatSamples += samples;
     auto &c=metrics.continuation;
     c.imaginedCombats+=continuation.imaginedCombats; c.unsupportedCombats+=continuation.unsupportedCombats;
@@ -628,6 +681,7 @@ bool oocMctsPolicyStep(GameContext &gc, const PathHistory &path, std::uint64_t s
     m.deterministicRevisits+=result.metrics.deterministicRevisits; m.depthSum+=result.metrics.depthSum;
     m.trivialRootBypasses += result.metrics.trivialRootBypasses;
     m.earlyStopLockedRoot += result.metrics.earlyStopLockedRoot;
+    m.earlyStopVisitGap20 += result.metrics.earlyStopVisitGap20;
     m.savedSimulations += result.metrics.savedSimulations;
     m.simulations += result.metrics.simulations;
     m.simulationAttempts += result.metrics.simulationAttempts;
@@ -665,7 +719,7 @@ void writeLiveOocMctsTrace(std::uint64_t seed, const LiveOocMctsMetrics &m, int 
     }
     if (liveTrace.empty()) return;
     std::lock_guard<std::mutex> lock(liveTraceMutex);
-    const std::string header = "seed,oocDecisions,mctsOwned,mctsFallback,simulations,transitionSamples,combatSurrogateSamples,leafEvaluations,maxDepth,mctsWallSec,mctsCpuSec,realCombats,imaginedCombats,unsupportedCombats,mctsSupportAborts,discardedSimulations,simulationAttempts,pendingLeaves,battleLeaves,mapLeaves,projectionSteps,outcomeParticles,particleRevisits,deterministicRevisits,depthSum,continuationLimitAborts,trivialRootBypasses,earlyStopLockedRoot,savedSimulations,metadataBuilds,priorBuilds,preparedCombats,combatEdgeSamples\n";
+    const std::string header = "seed,oocDecisions,mctsOwned,mctsFallback,simulations,transitionSamples,combatSurrogateSamples,leafEvaluations,maxDepth,mctsWallSec,mctsCpuSec,realCombats,imaginedCombats,unsupportedCombats,mctsSupportAborts,discardedSimulations,simulationAttempts,pendingLeaves,battleLeaves,mapLeaves,projectionSteps,outcomeParticles,particleRevisits,deterministicRevisits,depthSum,continuationLimitAborts,trivialRootBypasses,earlyStopLockedRoot,earlyStopVisitGap20,savedSimulations,metadataBuilds,priorBuilds,preparedCombats,combatEdgeSamples\n";
     std::ifstream existing(liveTrace);
     std::string firstLine;
     if (std::getline(existing,firstLine) && firstLine+'\n' != header)
@@ -685,6 +739,7 @@ void writeLiveOocMctsTrace(std::uint64_t seed, const LiveOocMctsMetrics &m, int 
         << ',' << m.search.deterministicRevisits << ',' << m.search.depthSum
         << ',' << m.continuation.continuationLimitAborts
         << ',' << m.search.trivialRootBypasses << ',' << m.search.earlyStopLockedRoot
+        << ',' << m.search.earlyStopVisitGap20
         << ',' << m.search.savedSimulations << ',' << m.continuation.metadataBuilds
         << ',' << m.continuation.priorBuilds << ',' << m.continuation.preparedCombats
         << ',' << m.continuation.combatEdgeSamples << '\n';

@@ -48,9 +48,13 @@ struct OocMctsConfig {
     // Diagnostic: force full budget and record first strict visit lock, even if
     // support later aborts. Does not qualify the non-aborting guarantee.
     bool observeRootLock = false;
+    std::vector<std::uint64_t> rootCheckpointSimulations;
     // Explicit policy tradeoff: a strict visit lock may skip a later abort and
     // its fallback. This flag is not a provider support guarantee.
     bool allowUnqualifiedRootStop = false;
+    // Explicit online candidate: after simulation 512, stop at a >=20% root
+    // top-two visit gap. This is intentionally fixed and opt-in.
+    bool stopAt512VisitGap20 = false;
 };
 struct OocMctsMetrics {
     std::uint64_t simulations = 0, simulationAttempts = 0, decisionNodes = 0, chanceNodes = 0;
@@ -59,6 +63,7 @@ struct OocMctsMetrics {
     std::uint32_t maxDepthReached = 0;
     std::uint64_t trivialRootBypasses = 0;
     std::uint64_t earlyStopLockedRoot = 0;
+    std::uint64_t earlyStopVisitGap20 = 0;
     std::uint64_t savedSimulations = 0;
     std::uint64_t hypotheticalLockSimulation = 0, hypotheticalRemainingSimulations = 0;
     double hypotheticalTailWallSeconds = 0;
@@ -69,6 +74,10 @@ struct OocRootActionStats {
     std::uint64_t visits;
     double q;
 };
+struct OocRootCheckpointStats {
+    std::uint64_t simulations;
+    std::vector<OocRootActionStats> actions;
+};
 struct OocMctsResult {
     // Absent for terminal/boundary roots or a zero-depth horizon.
     std::optional<OocActionId> selectedAction;
@@ -76,6 +85,7 @@ struct OocMctsResult {
     std::string abortReason;
     std::optional<OocActionId> hypotheticalLockedAction;
     std::vector<OocRootActionStats> rootActions;
+    std::vector<OocRootCheckpointStats> rootCheckpoints;
     OocMctsMetrics metrics;
 };
 class OocMctsPlanner {

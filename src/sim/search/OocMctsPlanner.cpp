@@ -6,6 +6,7 @@
 #include <limits>
 #include <deque>
 #include <stdexcept>
+#include <utility>
 
 namespace sts::search {
 namespace {
@@ -53,6 +54,16 @@ struct Search {
         // Subtraction avoids overflow in challenger + remaining. Strictness
         // preserves the final Q tie-break when visits can still become equal.
         return leader > challenger && leader - challenger > remaining;
+    }
+
+    bool rootVisitGapAtLeast20(const DecisionNode &node) const {
+        if (node.actions.size() < 2) return false;
+        std::uint64_t leader = 0, challenger = 0;
+        for (const auto &action : node.actions) {
+            if (action.visits > leader) { challenger = leader; leader = action.visits; }
+            else challenger = std::max(challenger, action.visits);
+        }
+        return 5 * (leader - challenger) >= node.visits;
     }
 
     void expand(DecisionNode &node) {
@@ -146,6 +157,13 @@ OocMctsPlanner::OocMctsPlanner(OocMctsConfig config) : config(config) {
         || !std::isfinite(config.wideningAlpha) || config.wideningAlpha <= 0
         || config.wideningAlpha >= 1)
         throw std::invalid_argument("OOC MCTS invalid PUCT/PW configuration");
+    if ((!config.rootCheckpointSimulations.empty() && !config.rootCheckpointSimulations.front())
+        || !std::is_sorted(config.rootCheckpointSimulations.begin(),
+                        config.rootCheckpointSimulations.end())
+        || std::adjacent_find(config.rootCheckpointSimulations.begin(),
+                              config.rootCheckpointSimulations.end())
+            != config.rootCheckpointSimulations.end())
+        throw std::invalid_argument("OOC MCTS invalid root checkpoint thresholds");
 }
 std::uint64_t OocMctsPlanner::chanceWideningLimit(std::uint64_t visits) const {
     double limit = std::ceil(config.wideningK * std::pow(static_cast<double>(std::max<std::uint64_t>(1, visits)), config.wideningAlpha));
@@ -171,12 +189,25 @@ OocMctsResult OocMctsPlanner::search(OocGenerativeModel &model, OocStateId root,
     std::chrono::steady_clock::time_point lockTime;
     search.metrics.decisionNodes = 1;
     OocMctsResult result;
+    std::size_t checkpointIndex = 0;
     try {
         for (std::uint64_t i = 0; i < simulations; ++i) {
             ++search.metrics.simulationAttempts;
             search.evaluate(node, 0, true);
             ++search.metrics.simulations;
             const auto remaining = simulations - search.metrics.simulations;
+            while (checkpointIndex < config.rootCheckpointSimulations.size()
+                && search.metrics.simulations >= config.rootCheckpointSimulations[checkpointIndex]) {
+                std::vector<OocRootActionStats> checkpointActions;
+                checkpointActions.reserve(node.actions.size());
+                for (const auto &action : node.actions)
+                    checkpointActions.push_back({action.action.id, action.action.prior,
+                        action.visits, action.q()});
+                if (!checkpointActions.empty())
+                    result.rootCheckpoints.push_back({search.metrics.simulations,
+                        std::move(checkpointActions)});
+                ++checkpointIndex;
+            }
             if (config.observeRootLock && !config.selectByMeanQ
                 && !search.metrics.hypotheticalLockSimulation && search.rootWinnerLocked(node, remaining)) {
                 search.metrics.hypotheticalLockSimulation = search.metrics.simulations;
@@ -187,6 +218,13 @@ OocMctsResult OocMctsPlanner::search(OocGenerativeModel &model, OocStateId root,
             }
             if (remaining && mayStopLocked && search.rootWinnerLocked(node, remaining)) {
                 search.metrics.earlyStopLockedRoot = true;
+                search.metrics.savedSimulations = remaining;
+                break;
+            }
+            if (remaining && config.stopAt512VisitGap20 && !config.observeRootLock
+                && !config.selectByMeanQ && search.metrics.simulations == 512
+                && search.rootVisitGapAtLeast20(node)) {
+                search.metrics.earlyStopVisitGap20 = true;
                 search.metrics.savedSimulations = remaining;
                 break;
             }

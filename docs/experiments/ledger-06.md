@@ -9739,7 +9739,7 @@ top-level benchmark reporting corrected.
   both full histories and all slices. **Knowledge impact:** research status;
   no qualified-default change.
 
-## §303 — Current OOC CPU attribution (2026-09-18)
+## §305 — Current OOC CPU attribution (2026-09-18)
 
 Profiling only on baseline589a7a7, frozen instrumentationc886964. `perf` was
 unavailable; no system repair attempted. Historical seeds12002032/12002033 ran
@@ -9754,3 +9754,89 @@ a specific kernel or prove the proposed scratch-allocation hypothesis.
 No optimization, model changes, fresh seeds or quality comparison performed.
 Knowledge impact: performance evidence and next target, no qualified default.
 [Report, exclusive/inclusive tables, receipts, raw logs and hashes](evidence/ooc_cpu_profile_2026-09-18/README.md).
+
+## §303 — Six-arm Silver root mechanism replay (2026-09-17)
+
+- **Question and frozen implementation:** Does a normalized Teacher-A visit
+  prior help independently of Teacher-A-Q root ordering, and does either
+  intervention recover the historical result? The implementation was frozen
+  at `06d9de36d1c2e07c7e0420a0752ae9a4d7fd738e`; the pre-implementation
+  baseline was `be5b6ac2c9914b0a56244f2522b7573f81360067`. No code changed for
+  this evidence record.
+- **Protocol:** The planned source population was at least 8 gameplay seeds,
+  but the run used source seed `0` only: 214 eligible roots and 64
+  deterministically selected roots from that one trajectory. It reused one frozen
+  10k-A label plus one independent frozen 25k-B label per root. Six arms
+  crossed native versus stable Teacher-A-Q-descending root order with ordinary
+  UCT, uniform root PUCT, or normalized Teacher-A-visit root PUCT. Each root
+  and arm used four common deterministic replicates at exactly 32 simulations.
+  Internal UCT, chance handling, DPW, evaluator, rollout, RNG contract, and
+  no-tree-reuse behavior were unchanged.
+- **Result:** Uniform PUCT was worse than ordinary UCT (`E-A` mean regret
+  `+0.352288`, 95% CI `[+0.092162,+0.653903]`). Informative PUCT was better
+  than uniform PUCT (`C-E` mean regret `-0.412311`, 95% CI
+  `[-0.717735,-0.139643]`; B-best delta `+5.4688` percentage points, CI
+  `[+1.5625,+10.1563]`; improved/worsened/tied `17/5/42`). Informative PUCT
+  versus ordinary UCT was near zero (`C-A` `-0.060023`, CI
+  `[-0.328827,+0.196384]`). The largest adverse `C-E` root delta was
+  `+2.121451` at `0/1/11/10/3`.
+- **Tail audit and decision:** The largest adverse `C-E` root
+  `0/1/11/10/3` is a normal seven-action Act-1 Exordium Thugs state with five
+  cards, Liquid Memories, and End Turn. C and D select Defend only on replicate
+  2; E selects Uppercut on all four replicates. This identifies a
+  treatment-sensitive card-play allocation case, not a malformed action or
+  provenance edge case, but does not explain its causal mechanism. Root-level
+  bootstrap intervals cannot represent independent run-level uncertainty
+  because all roots came from one source-seed trajectory. Classification:
+  **`ROOT_GUIDANCE_INCONCLUSIVE`** — strong single-source-seed informative-
+  prior signal; multi-seed confirmation required. The planned next screen is
+  16 fresh source seeds × 2 roots/seed, analyzed by source seed; it was not run
+  here. No model training, gameplay gate, runtime integration, or default
+  promotion is authorized.
+  Knowledge impact: current research status and experiment evidence updated.
+- **Evidence:** [six-arm replay report](evidence/silver_root_mechanism_2026-09-17.md)
+  and the external raw run directory and hashes recorded there.
+
+## §304 — Strong-WD survival native and OOC CPU screen (2026-09-18)
+
+- **Decision:** `DEEPSET_ONLINE_TRADEOFF_STOP`; median CPU/run reduction
+  1.1596% is below the required 10%. No 16/64 quality gate or promotion.
+- **Execution:** baseline `589a7a73c40e5b89e96df1ffec6a00b08c2ea9ba`, user-reviewed
+  frozen SHA `471ba9a119de2a4f6ae691329467acae1b0f70a0`; Linux GCC passed first.
+  Exact strong-WD checkpoint `3689593d…` re-exported to native `c870e4c…`;
+  current Attention control `e9a18951…`, executable `c0275f4d…`. Other components
+  unchanged; Stage-A source-bound evidence retained without rerun.
+- **Mode:** guarded `bestbench 10000 1 0 SEED OUTPUT`, A0 Ironclad project-fair,
+  effective Silver backend, 2048 OOC simulations, native leaf value, V4 policy,
+  early stop, keys off, Act-3 stop. Historical #187 seeds 12002032/12002033,
+  two repetitions per arm, balanced ordering; 8 invocations, 2 unique seeds.
+  One thread per run instead of historical 12-way outer parallelism; CPU is
+  `/usr/bin/time` user+system, not bestbench elapsed `sec`.
+- **Results:** CPU median control/candidate 50.88/50.29 s, ratio 0.988404;
+  mean 51.125/50.1525 s. Native survival 1.143383/0.128041 ms;
+  reference sample 4.435917/3.168253 ms; prepared sample 0.023364/0.023288 ms.
+  All runs complete, support reasons match per seed, zero continuation aborts.
+  Shared legacy V1 copy-through flags in the timed V2 probe are disclosed.
+- **Limits:** timing-only historical two-seed screen, not a gameplay-quality
+  result; fresh cohort not launched, no bootstrap interval, no TEST inference.
+  Source remains frozen; evidence/report commit is not the execution SHA.
+- **Evidence:** [report, plan, runner, raw logs/CSV/telemetry and hashes](evidence/deepset_survival_online_stage_b_2026-09-18/README.md).
+  **Knowledge impact:** bounded negative speed evidence and maintained research
+  status; no runtime/model/default changes after review.
+
+## §304 — OOC root checkpoint diagnostic (2026-09-18)
+
+The live policy remained 2,048 visit-selected simulations. A same-root discarded
+shadow recorded action IDs/priors/visits/Q at 128/256/512/1024/2048 over the
+historical seeds12002032--12002039. The run produced1,134 roots,1,133 completed
+and one expected smoke_bomb shadow abort; zero completed-root live/final-action
+mismatches occurred. Agreement with final2048 was92.41%/93.65%/95.41%/97.18%
+at the first four checkpoints. Gap conditioning was strongly useful (>20% gap
+gave96.4% at128 and99.4% at1024), while observed stability discriminated stable
+from unstable roots but did not prove invariance. Offline candidate
+On the 898-root multi-action cohort, the conservative candidate
+`512 -> 2048 when gap<20%` gave98.11% agreement and about42.1% additional
+savings versus existing live early stopping; no rule was deployed or
+gameplay-qualified. Knowledge impact: current
+OOC research gains checkpoint/savings evidence; defaults and quality baselines
+unchanged. [Evidence packet](evidence/ooc_root_checkpoints_2026-09-18/README.md).
