@@ -353,9 +353,11 @@ void search::BattleSearcher::step() {
     ++stats.steps;
     searchStack.clear();
     searchStack.push_back(root);
-    traceStarts.clear();
-    traceStarts.push_back(0);
-    actionTrace.clear();
+    if (raveEnabled) {
+        traceStarts.clear();
+        traceStarts.push_back(0);
+        actionTrace.clear();
+    }
     actionStack.clear();
     actionCount = 0;
 
@@ -400,7 +402,7 @@ void search::BattleSearcher::step() {
             }
 
             searchStack.push_back(child);
-            traceStarts.push_back(traceStarts.back());
+            if (raveEnabled) traceStarts.push_back(traceStarts.back());
 
             if (child->simulationCount == 0) {
                 BattleContext &rollout = (rolloutScratch = *child->state);
@@ -444,10 +446,9 @@ void search::BattleSearcher::step() {
                 return;
             }
             recordAction(edge.action, *cur->state);
-            const auto childTraceStart = actionCount;
             cur = edge.node;
             searchStack.push_back(cur);
-            traceStarts.push_back(childTraceStart);
+            if (raveEnabled) traceStarts.push_back(actionCount);
             continue;
         }
 
@@ -461,7 +462,6 @@ void search::BattleSearcher::step() {
         next.rng = Random(randomnessBase);
         edge.action.execute(next);
         recordAction(edge.action, *cur->state);
-        const auto childTraceStart = actionCount;
         const bool rngChanged = next.rng.counter != 0;
 
         if (rngChanged) {
@@ -489,7 +489,7 @@ void search::BattleSearcher::step() {
 
             cur = chance;
             searchStack.push_back(cur);
-            traceStarts.push_back(childTraceStart);
+            if (raveEnabled) traceStarts.push_back(actionCount);
             continue;  // staged outcome consumed at the top of the loop next iteration
         }
 
@@ -513,7 +513,7 @@ void search::BattleSearcher::step() {
         }
 
         searchStack.push_back(child);
-        traceStarts.push_back(childTraceStart);
+        if (raveEnabled) traceStarts.push_back(actionCount);
 
         if (child->simulationCount == 0) {
             // Brand-new node (only new nodes have simulationCount 0 here) -> next was moved into

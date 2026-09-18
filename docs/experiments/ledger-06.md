@@ -9945,7 +9945,36 @@ unchanged. [Evidence packet](evidence/ooc_root_checkpoints_2026-09-18/README.md)
   procedure; no Silver search behavior, model, threshold, or production gate
   changed.
 
-## §313 — Same-turn CARD RAVE/AMAF mechanism screen (2026-09-18)
+## §313 — OOC 20% gap-stop independent 64-pair quality confirmation (2026-09-18)
+
+- **Relation to §305:** The earlier `12003000..12003063` cohort remains
+  `OOC_GAP_STOP_20_QUALITY_INCONCLUSIVE_RUNTIME`; pathological seed
+  `12003058` was not replaced. Its partial rows were not mixed into this
+  fresh independent cohort.
+- **Protocol:** Reused source SHA
+  `495fa147517fdc42e631c513bde5a87b3bb25144` and the unchanged Release
+  binary SHA256
+  `9a3b8c2bd1e563c691926d823c43767430d03c11b97a9c5f0d924e616beb1250`.
+  Seeds `12004000..12004063` ran as paired control/treatment evaluations,
+  one OMP1 process per seed, up to 12 external workers, control first, and a
+  600-second per-process ceiling. No seed replacement, rebuild, Stage-B
+  rerun, or diagnostic mode was used.
+- **Result:** Control and treatment each won 44/64. The paired counts were
+  36 both-win, 12 both-lose, 8 control-only, and 8 treatment-only. Win-rate
+  delta was **0.0 pp**, bootstrap 95% CI **[-12.5, +12.5] pp**. Floor delta
+  was **-0.75** (CI [-2.61, +1.05]); ending-HP delta was **-6.56** (CI
+  [-15.39, +2.13]).
+- **Decision:** **`OOC_GAP_STOP_20_PROMISING`**, explicitly not
+  “equivalent”. Wins are flat and the CI does not show a gameplay loss, but
+  the negative floor/HP point estimates remain unresolved. Freeze the 20%
+  threshold and run the predeclared independent `12005000..12005127`
+  confirmation before any default promotion.
+- **Evidence:** [OOC 20% gap-stop evidence packet](evidence/ooc_gap_stop_20_20260918/README.md),
+  including the checked-in raw bundle, analysis JSON, and SHA256 manifest.
+  **Knowledge impact:** current research status and experiment evidence; no
+  default, model, or gameplay implementation change.
+
+## §314 — Same-turn CARD RAVE/AMAF mechanism screen (2026-09-18)
 
 Implemented an opt-in, searcher-owned RAVE sidecar for Silver and ran the
 smallest frozen-root screen: A versus R8/R32/R128, 64 source-seed-0 roots,
