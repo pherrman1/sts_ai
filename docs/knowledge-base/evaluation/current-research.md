@@ -1274,6 +1274,17 @@ does not authorize training, runtime integration, gameplay qualification, or a
 default change. Harmful-tail review and separate authorization remain
 required. See the corrected [ordering ablation evidence](../../experiments/evidence/silver_root_ordering_ablation_2026-09-18.md).
 
+The completed tail and feasibility audit finds the largest `G-A` harm is a
+valid seven-action `PLAYER_NORMAL` root with a material Teacher-A/Teacher-B
+ordering disagreement, not a malformed state. Preserved artifacts contain 128
+unique root states with valid 10k-A action-Q labels, but only 33 source-seed
+trajectories because 64 roots share seed `0`. The existing Phase-A contract
+provides 1,766 canonical state features, two root scalars, and 22 action
+features; an offline conversion step is needed because the root artifacts do
+not materialize those vectors. Label search time is approximately 0.376
+seconds per root, while fresh independent-root qualification remains the
+important cost. See the [tail and feasibility audit](../../experiments/evidence/silver_root_ordering_training_feasibility_2026-09-18.md).
+
 ### Combat leaf/model variants
 
 Raw deep-search utility targets, repeated DAgger, residual correction, sampled

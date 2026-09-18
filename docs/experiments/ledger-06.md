@@ -9879,3 +9879,29 @@ top-level benchmark reporting corrected.
   `06d9de3` SHA is frozen underlying Silver/root-mechanism provenance, not the
   source commit of this replay binary. **Knowledge impact:** current research
   status and experiment evidence updated; no default change.
+
+## §308 — Silver root ordering tail and training-data feasibility audit (2026-09-18)
+
+- **Tail:** The largest positive root-level `G-A` delta is `+1.514772` at
+  `14/2/23/36/3`, a valid seven-action `PLAYER_NORMAL` combat state. Teacher-A
+  ranks Seeing Red first (`Q=52.560875`), while independent Teacher-B selects
+  Havoc (`Q=49.455004`). A selects Evolve on all four replicates; G selects
+  Blood for Blood once and Evolve three times, yielding B-regrets
+  `[14.6229,0,8.5638,0]` versus A's `[8.5638,0,8.5638,0]`. This is a
+  treatment-sensitive allocation case, not a malformed root.
+- **Reusable labels:** Deduplicated preserved artifacts contain 128 unique
+  root states with valid 10k-A action-Q labels: 64 from the earlier seed-0
+  pool and 64 from source seeds `1..32` in the ablation. These represent only
+  33 source-seed trajectories because the seed-0 roots share one trajectory.
+- **Representation/cost:** All 128 roots are `PLAYER_NORMAL`. Existing Phase-A
+  support provides 1,766 canonical state features, two exact root scalars, and
+  22 action features. The existing files contain wire snapshots and labels,
+  not materialized feature vectors; a small offline conversion adapter is
+  required. Recorded 10k-A label time totals 48.100342 seconds, mean 0.375784
+  seconds/root; this excludes fresh-root capture and conversion overhead.
+- **Decision:** This supports a cheap offline feature-conversion smoke test,
+  not immediate model training. No new labels, model training, runtime
+  integration, gameplay qualification, or default change is authorized.
+- **Evidence:** [tail and feasibility audit](evidence/silver_root_ordering_training_feasibility_2026-09-18.md).
+  **Knowledge impact:** current research status and feasibility evidence only;
+  no model, runtime, gameplay, or default change.
