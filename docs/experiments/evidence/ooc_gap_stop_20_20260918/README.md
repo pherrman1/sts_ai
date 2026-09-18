@@ -8,9 +8,11 @@ execution artifact. The binary was not rebuilt between cohorts.
 - Source SHA: `495fa147517fdc42e631c513bde5a87b3bb25144`
 - `one_combat` SHA256:
   `9a3b8c2bd1e563c691926d823c43767430d03c11b97a9c5f0d924e616beb1250`
-- Runtime: project-fair, Act-3 stop, keys off, Silver backend, native OOC MCTS,
-  2,048 simulations, V4 policy, allocated 32,768 reuse cap, OMP1 isolated
-  processes.
+- Runtime for the successful independent cohort: project-fair, Act-3 stop,
+  keys off, Silver backend, native OOC MCTS, 2,048 simulations, V4 policy,
+  allocated 32,768 reuse cap, OMP1 isolated processes. The earlier attempted
+  Stage-C cohort initially used OMP12 before its rescue/inconclusive status;
+  it is not represented by the raw bundle below.
 - Treatment-only setting: `STS_OOC_MCTS_GAP_STOP_20=1`.
 - No checkpoint, root-lock, or CPU-profile diagnostic mode was enabled.
 
@@ -35,6 +37,12 @@ The fresh paired cohort `12004000..12004063` completed all 64 controls before
 any treatment runs, followed by all 64 treatments. No process exceeded the
 600-second ceiling and no seed was replaced. Raw ignored artifacts are
 retained under `build/ooc_gap_stop_20_20260918/fresh12004000/`.
+
+The compact checked-in raw bundle is under [`raw/`](raw/), with 64 seed files
+per arm for each result CSV, metadata JSON, MCTS trace CSV, and support JSONL
+format. The checked-in [analysis JSON](analysis.json) contains the
+machine-readable paired summary; [SHA256SUMS](SHA256SUMS) covers every
+checked-in raw file and the analysis JSON.
 
 | Metric | Control | Treatment | Paired delta |
 |---|---:|---:|---:|
