@@ -9909,3 +9909,35 @@ unchanged. [Evidence packet](evidence/ooc_root_checkpoints_2026-09-18/README.md)
 - **Evidence:** [ensemble audit](evidence/silver_root_teacher_ensemble_audit_2026-09-18.md).
   **Knowledge impact:** current research evidence only; no model, runtime,
   gameplay, or default change.
+
+## §312 — First frozen `silver_hard_combat_v1` candidate pool (2026-09-18)
+
+- **Protocol:** On merged source/replay SHA `e7695fe14c342861937535f990c18479def86502`,
+  collected Ironclad A0, fair Searcher2, keys-off Act-3 gameplay on fresh
+  seeds `12100000..12100127` with ordinary adaptive Silver, allocated 32,768
+  reuse cap, and four OpenMP threads. The run completed all 128 source seeds
+  and captured 3,096 first-action combat snapshots with zero source failures.
+- **Screen:** Exact flat 1k replay covered all 3,096 captures: 3,042 wins and
+  54 losses, all technically valid. The prospective 10k screen covered all
+  losses plus three fixed successive blocks of 128 lowest-HP-fraction 1k
+  wins. Combined classifications were 22 Tier A, 116 material Tier B, 32
+  unresolved Tier C, 10 anomalous, and 258 easy.
+- **Selection:** Easy and anomalous cases were excluded. The deterministic
+  selector retained 64 `hard64-dev` and 64 `hard64-holdout` cases, with no
+  source seed shared between cohorts, no more than two cases per source seed,
+  and no state-hash duplicates. DEV is 9/48/7 A/B/C; HOLDOUT is 13/47/4.
+- **Baseline:** At exact 10k replay, DEV won `57/64`, mean terminal HP
+  fraction `0.5013957`, mean 34.265625 decisions and 342,656.25 simulations;
+  HOLDOUT won `60/64`, mean terminal HP fraction `0.5374656`, mean 32.625
+  decisions and 326,250 simulations. Replay failures were zero in both.
+  The replay schema exposes wall time but not CPU time; mean wall time was
+  3.088858s (DEV) and 2.960088s (HOLDOUT). These are frozen references, not
+  promotion evidence.
+- **Technical exclusion:** An interrupted Debug-speed run left 400 partial
+  captures and 13 completed rows; those files are quarantined and excluded
+  because three active seeds lacked completed whole-run accounting. The final
+  pool uses only the clean Release rerun.
+- **Evidence:** [frozen-pool receipt](evidence/silver_hard_combat_v1_20260918/README.md).
+  **Knowledge impact:** durable benchmark evidence and deterministic selection
+  procedure; no Silver search behavior, model, threshold, or production gate
+  changed.
