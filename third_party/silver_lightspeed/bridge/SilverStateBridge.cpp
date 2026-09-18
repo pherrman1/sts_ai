@@ -2068,6 +2068,118 @@ SilverDecisionResult runSilverDecision(const BattleStateWire &wire, const Silver
     return runSilverDecision(*session, wire, config);
 }
 
+namespace {
+
+constexpr int kMaxSilverCombatReplayDecisions = 10000;
+
+std::uint64_t extendSilverReplayTraceHash(std::uint64_t hash, const std::string &value) {
+    // FNV-1a is used instead of std::hash so the trace identity is stable
+    // across processes and standard-library implementations.
+    if (hash == 0) hash = 1469598103934665603ULL;
+    for (const unsigned char byte : value) {
+        hash ^= byte;
+        hash *= 1099511628211ULL;
+    }
+    hash ^= 0xff;
+    hash *= 1099511628211ULL;
+    return hash;
+}
+
+} // namespace
+
+SilverCombatReplayResult runSilverCombatReplay(
+        const BattleStateWire &wire, const SilverSearchConfig &config) {
+    SilverCombatReplayResult result;
+    if (config.simulationsPerDecision <= 0) {
+        result.failureReason = "invalid_simulation_budget";
+        return result;
+    }
+    if (config.adaptiveEnabled || config.exactVisitLockEnabled || config.rhoRacingEnabled
+            || !config.budgetDiagnosticCheckpoints.empty()) {
+        result.failureReason = "unsupported_replay_search_configuration";
+        return result;
+    }
+    if (!wire.valid || wire.version != BattleStateWire::kVersion
+            || wire.inputState <= 0
+            || wire.outcome != static_cast<int>(sts::Outcome::UNDECIDED)) {
+        result.failureReason = "invalid_replay_start_state";
+        return result;
+    }
+
+    try {
+        auto session = makeSilverSearchSession();
+        sts::BattleContext state = session->materializeAndBegin(wire, config);
+        const int initialRerootExact = session->rerootExact;
+        const int initialRerootFallback = session->rerootFallback;
+        result.actionTraceHash = 0;
+        while (state.outcome == sts::Outcome::UNDECIDED) {
+            if (result.decisions >= kMaxSilverCombatReplayDecisions) {
+                result.failureReason = "decision_bound_exceeded";
+                return result;
+            }
+
+            const auto beforeHash = sts::search::hashBattleState(state);
+            const auto beforeInputState = state.inputState;
+            const auto beforeSelectedBits = state.cardSelectInfo.selectedBits;
+            const auto decision = runCurrentRootDecision(*session, config);
+            result.simulations += decision.simulations;
+            result.telemetry.add(decision.telemetry);
+            ++result.decisions;
+            if (!decision.accepted || session->previousBest == nullptr) {
+                result.failureReason = decision.failureReason.empty()
+                    ? "no_selected_action" : decision.failureReason;
+                return result;
+            }
+
+            const auto *selected = session->previousBest;
+            if (!selected->action.isValidAction(state)) {
+                result.failureReason = "selected_action_invalid_in_private_state";
+                return result;
+            }
+            if (selected->action.getActionType() == sts::search::ActionType::SINGLE_CARD_SELECT) {
+                ++result.singleCardSelectActions;
+                if (state.cardSelectInfo.cardSelectTask == sts::CardSelectTask::GAMBLE)
+                    result.traversedGamble = true;
+            } else if (selected->action.getActionType() == sts::search::ActionType::MULTI_CARD_SELECT) {
+                ++result.multiCardSelectActions;
+                if (state.cardSelectInfo.cardSelectTask == sts::CardSelectTask::GAMBLE)
+                    result.traversedGamble = true;
+            }
+            result.actionTraceHash = extendSilverReplayTraceHash(
+                result.actionTraceHash, silverActionFingerprint(state, selected->action));
+            selected->action.execute(state);
+            const auto afterHash = sts::search::hashBattleState(state);
+            const bool privateSelectionProgressed = beforeInputState != state.inputState
+                || beforeSelectedBits != state.cardSelectInfo.selectedBits;
+            if (state.outcome == sts::Outcome::UNDECIDED && beforeHash == afterHash
+                    && !privateSelectionProgressed) {
+                result.failureReason = "private_action_stall";
+                return result;
+            }
+
+            if (state.outcome == sts::Outcome::UNDECIDED) {
+                // Reuse the exact private state produced above. beginAt
+                // compares it with the selected internal child and reroots
+                // the same BattleSearcher; no wire or live BattleContext is
+                // involved. Terminal actions do not need a next root.
+                session->beginAt(state, config);
+            }
+        }
+
+        result.terminalOutcome = static_cast<int>(state.outcome);
+        result.won = state.outcome == sts::Outcome::PLAYER_VICTORY;
+        result.terminalHp = state.player.curHp;
+        result.terminalMaxHp = state.player.maxHp;
+        result.terminalTurn = state.turn;
+        result.rerootExact = session->rerootExact - initialRerootExact;
+        result.rerootFallback = session->rerootFallback - initialRerootFallback;
+        result.accepted = true;
+    } catch (const std::exception &error) {
+        result.failureReason = std::string("replay_exception: ") + error.what();
+    }
+    return result;
+}
+
 SilverDecisionResult replaySilverRoot(const BattleStateWire &wire,
         const std::vector<std::string> &nativeOrder, const std::vector<std::string> &replayOrder,
         const std::vector<double> &priors, bool usePuct) {

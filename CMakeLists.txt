@@ -129,6 +129,12 @@ target_include_directories(silver-hard-combat-fixture PRIVATE include json/inclu
 target_link_libraries(silver-hard-combat-fixture PRIVATE silver_combat_search_bridge)
 target_link_options(silver-hard-combat-fixture PRIVATE -Wl,--gc-sections)
 
+add_executable(silver-hard-combat-replay apps/silver_hard_combat_replay.cpp)
+set_target_properties(silver-hard-combat-replay PROPERTIES OUTPUT_NAME silver_hard_combat_replay)
+target_include_directories(silver-hard-combat-replay PRIVATE include json/include)
+target_link_libraries(silver-hard-combat-replay PRIVATE silver_combat_search_bridge)
+target_link_options(silver-hard-combat-replay PRIVATE -Wl,--gc-sections)
+
 add_executable(silver-leaf-features apps/silver_leaf_features.cpp $<TARGET_OBJECTS:sts_core_objects>)
 set_target_properties(silver-leaf-features PROPERTIES OUTPUT_NAME silver_leaf_features)
 target_include_directories(silver-leaf-features PRIVATE include json/include)
