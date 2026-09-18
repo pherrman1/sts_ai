@@ -183,12 +183,18 @@ int main(int argc, char **argv) {
     try {
         if (argc >= 2 && std::string(argv[1]) == "--roots") {
             if (argc != 6 && argc != 7)
-                throw std::invalid_argument("usage: silver_leaf_relabel --roots ROOTS OUTPUT SEED EXECUTABLE_SHA [SMOKE_BUDGET]");
+                throw std::invalid_argument("usage: silver_leaf_relabel --roots ROOTS OUTPUT SEED EXECUTABLE_SHA [SMOKE_BUDGET|--single-budget=BUDGET]");
             if (std::filesystem::exists(argv[3])) throw std::invalid_argument("refusing existing label output");
             const std::string executableSha = argv[5];
             if (!silver_bridge::rootMechanismShaValid(executableSha)) throw std::invalid_argument("invalid executable SHA");
-            const bool smoke = argc == 7;
+            const std::string option = argc == 7 ? argv[6] : "";
+            const bool singleBudget = option.rfind("--single-budget=", 0) == 0;
+            const bool smoke = argc == 7 && !singleBudget;
+            const auto budgetText = singleBudget ? option.substr(std::string("--single-budget=").size()) : "";
+            const auto singleBudgetValue = singleBudget ? std::stoll(budgetText) : 0;
             const auto smokeBudget = smoke ? std::stoll(argv[6]) : 0;
+            if (singleBudget && (singleBudgetValue <= 0 || budgetText.empty()))
+                throw std::invalid_argument("invalid single budget");
             if (smoke && (smokeBudget < 32 || smokeBudget > 128)) throw std::invalid_argument("fixture budget must be 32..128");
             const auto seed = std::stoull(argv[4]);
             std::ifstream input(argv[2]);
@@ -218,11 +224,14 @@ int main(int argc, char **argv) {
                 entry.silverUpstreamSha = silver_bridge::kRootMechanismSilverSha;
                 const auto native = row.at("native_order").get<std::vector<std::string>>();
                 std::uint64_t previousSeed = 0;
-                for (const std::string replicate : {"A", "B"}) {
+                const std::vector<std::string> replicates = singleBudget
+                    ? std::vector<std::string>{"A2"} : std::vector<std::string>{"A", "B"};
+                for (const std::string &replicate : replicates) {
                     const auto identity = teacherSeed(seed, entry.groupId, replicate);
                     if (identity == 0 || identity == previousSeed) throw std::runtime_error("teacher RNG collision");
                     previousSeed = identity;
-                    const auto budget = smoke ? smokeBudget : replicate == "A" ? 10000 : 25000;
+                    const auto budget = singleBudget ? singleBudgetValue
+                        : smoke ? smokeBudget : replicate == "A" ? 10000 : 25000;
                     auto label = relabelOne(entry, wire, "parent", budget, replicate, seed);
                     if (!label.at("teacher_valid").get<bool>() || label.at("simulations_performed") != budget)
                         throw std::runtime_error("root teacher failed budget/acceptance check");

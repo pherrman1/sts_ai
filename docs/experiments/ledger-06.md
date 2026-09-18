@@ -9905,3 +9905,23 @@ top-level benchmark reporting corrected.
 - **Evidence:** [tail and feasibility audit](evidence/silver_root_ordering_training_feasibility_2026-09-18.md).
   **Knowledge impact:** current research status and feasibility evidence only;
   no model, runtime, gameplay, or default change.
+
+## §309 — Silver root 10k-A teacher stability probe (2026-09-18)
+
+- **Protocol:** Reused the existing 64 A/B/G/H ablation roots and generated
+  exactly one independent 10k-A label per root with relabel seed `20260918`.
+  No gameplay roots, Teacher-B treatment inputs, or model training were added.
+- **Result:** A/A2 corrected-Q top-action agreement is `50/64` (`78.125%`);
+  A/B is `49/64`, and A2/B is `48/64`. Mean B-regret of A's top action is
+  `1.679358` when A/A2 agree (`n=50`) and `1.291792` when they disagree
+  (`n=14`); A2's mean B-regret in the disagreement subset is `2.486354`.
+- **Tail:** The known harmful root `14/2/23/36/3` is stable: A and A2 both
+  rank Seeing Red first, while B selects Havoc; both 10k teachers have B-regret
+  `14.622866` for that choice. The tail is therefore not explained by one-run
+  10k search noise.
+- **Decision:** Single 10k-A top-1 labels are materially noisy and can also be
+  stably biased against B. Do not begin the learnability probe or larger corpus
+  collection yet; consider consensus or stronger labels first.
+- **Evidence:** [teacher stability report](evidence/silver_root_teacher_stability_2026-09-18.md).
+  **Knowledge impact:** current research evidence only; no model, runtime,
+  gameplay, or default change.

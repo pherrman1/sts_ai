@@ -1285,6 +1285,14 @@ not materialize those vectors. Label search time is approximately 0.376
 seconds per root, while fresh independent-root qualification remains the
 important cost. See the [tail and feasibility audit](../../experiments/evidence/silver_root_ordering_training_feasibility_2026-09-18.md).
 
+A second independent 10k-A label on the same 64 roots agrees with the original
+10k-A Q-top action on `50/64` roots (`78.125%`). The known harmful root remains
+stable but wrong relative to Teacher-B: both 10k teachers rank Seeing Red,
+while B selects Havoc. Single hard 10k-A top-1 labels are therefore neither
+fully stable nor reliably aligned with the stronger judge; no learnability
+probe or larger training corpus is authorized yet. See the [teacher stability
+report](../../experiments/evidence/silver_root_teacher_stability_2026-09-18.md).
+
 ### Combat leaf/model variants
 
 Raw deep-search utility targets, repeated DAgger, residual correction, sampled
