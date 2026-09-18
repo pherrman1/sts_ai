@@ -149,6 +149,70 @@ int main(int argc, char **argv) {
     firstKnowledge.initializeFromLiveBattle(first);
     permutedKnowledge.initializeFromLiveBattle(permuted);
     const auto firstWire = convert(first, gc, firstKnowledge);
+
+    silver_bridge::SilverSearchConfig completeReplayConfig;
+    completeReplayConfig.simulationsPerDecision = 8;
+    completeReplayConfig.reuseCap = silver_bridge::kSilverProductionReuseCap;
+    const auto replayA = silver_bridge::runSilverCombatReplay(firstWire, completeReplayConfig);
+    const auto replayB = silver_bridge::runSilverCombatReplay(firstWire, completeReplayConfig);
+    check(replayA.accepted && replayA.decisions > 1,
+          "isolated complete-fight replay must reach terminal after multiple decisions");
+    check(replayA.accepted && replayB.accepted
+              && replayA.won == replayB.won
+              && replayA.terminalHp == replayB.terminalHp
+              && replayA.terminalTurn == replayB.terminalTurn
+              && replayA.decisions == replayB.decisions
+              && replayA.simulations == replayB.simulations
+              && replayA.actionTraceHash == replayB.actionTraceHash,
+          "complete-fight replay must be deterministic for the same snapshot and budget");
+
+    // Start from PLAYER_NORMAL with the only useful card action being a
+    // deterministic Gambler's Brew opportunity. This exercises the complete
+    // replay loop across the private sequential-selection protocol, including
+    // post-confirm draw/RNG advancement, rather than only the helper API that
+    // starts on CARD_SELECT.
+    BattleContext gambleReplayLive = first;
+    gambleReplayLive.cards.cardsInHand = 5;
+    for (int i = 0; i < gambleReplayLive.cards.cardsInHand; ++i)
+        gambleReplayLive.cards.hand[i] = card(CardId::REGRET, static_cast<std::int16_t>(181 + i));
+    gambleReplayLive.potions[0] = Potion::GAMBLERS_BREW;
+    gambleReplayLive.potionCount = 1;
+    gambleReplayLive.inputState = InputState::PLAYER_NORMAL;
+    search::CombatKnowledgeState gambleReplayKnowledge;
+    gambleReplayKnowledge.initializeFromLiveBattle(gambleReplayLive);
+    auto gambleReplayConfig = completeReplayConfig;
+    gambleReplayConfig.simulationsPerDecision = 16;
+    const auto gambleReplayWire = convert(gambleReplayLive, gc, gambleReplayKnowledge);
+    const auto gambleReplayA = silver_bridge::runSilverCombatReplay(
+        gambleReplayWire, gambleReplayConfig);
+    const auto gambleReplayB = silver_bridge::runSilverCombatReplay(
+        gambleReplayWire, gambleReplayConfig);
+    if (!(gambleReplayA.accepted && gambleReplayA.traversedGamble
+              && gambleReplayA.singleCardSelectActions > 0
+              && gambleReplayA.multiCardSelectActions > 0)) {
+        std::cerr << "  complete GAMBLE replay diagnostic: accepted=" << gambleReplayA.accepted
+                  << " failure=" << gambleReplayA.failureReason
+                  << " decisions=" << gambleReplayA.decisions
+                  << " single=" << gambleReplayA.singleCardSelectActions
+                  << " multi=" << gambleReplayA.multiCardSelectActions
+                  << " gamble=" << gambleReplayA.traversedGamble
+                  << " hp=" << gambleReplayA.terminalHp
+                  << " turn=" << gambleReplayA.terminalTurn << '\n';
+    }
+    check(gambleReplayA.accepted && gambleReplayA.traversedGamble
+              && gambleReplayA.singleCardSelectActions > 0
+              && gambleReplayA.multiCardSelectActions > 0,
+          "complete replay must traverse PLAYER_NORMAL GAMBLE selection and confirmation");
+    check(gambleReplayA.accepted && gambleReplayB.accepted
+              && gambleReplayA.won == gambleReplayB.won
+              && gambleReplayA.terminalHp == gambleReplayB.terminalHp
+              && gambleReplayA.terminalTurn == gambleReplayB.terminalTurn
+              && gambleReplayA.decisions == gambleReplayB.decisions
+              && gambleReplayA.simulations == gambleReplayB.simulations
+              && gambleReplayA.rerootExact == gambleReplayB.rerootExact
+              && gambleReplayA.rerootFallback == gambleReplayB.rerootFallback
+              && gambleReplayA.actionTraceHash == gambleReplayB.actionTraceHash,
+          "GAMBLE complete replay must repeat with identical terminal and reroot results");
     const auto permutedWire = convert(permuted, gc, permutedKnowledge);
     check(silver_bridge::inspectConvertedBattleState(firstWire).accepted,
           "ordinary wire must materialize a private Silver root");
