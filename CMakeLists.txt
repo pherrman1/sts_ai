@@ -282,7 +282,13 @@ add_executable(one_combat_advisor
     apps/one_combat/advisor_stdio.cpp
     apps/one_combat/advisor_protocol.cpp)
 target_include_directories(one_combat_advisor PUBLIC json/include)
-target_sources(one_combat_advisor PRIVATE apps/one_combat/live_ooc_importer.cpp)
+target_sources(one_combat_advisor PRIVATE
+    apps/one_combat/live_ooc_importer.cpp
+    apps/one_combat/combat_predictor_input.cpp
+    apps/one_combat/combat_transition.cpp
+    apps/one_combat/combat_transition_near_full.cpp
+    apps/one_combat/combat_transition_runtime.cpp
+    apps/one_combat/combat_transition_native_contract.cpp)
 target_link_libraries(one_combat_advisor PRIVATE sts_core_objects)
 add_test(NAME live_advisor_protocol COMMAND python3
     ${CMAKE_SOURCE_DIR}/tests/live_advisor_protocol.py $<TARGET_FILE:one_combat_advisor>)

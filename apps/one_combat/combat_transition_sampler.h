@@ -44,6 +44,12 @@ public:
         const CombatPredictorInputV1 &) const;
     virtual CombatRuntimeSupport support(const sts::GameContext &,
         const CombatPredictorInputV1 &) const = 0;
+    // Observer qualification never imports inherited combat RNG.
+    virtual CombatRuntimeSupport forecastSupport(const CombatPredictorInputV1 &) const {
+        return {};
+    }
+    virtual CombatTransitionExpectation forecastExpectation(
+        const CombatPredictorInputV1 &) const { return {}; }
     virtual CombatTransitionExpectation expectation(const sts::GameContext &,
         const CombatPredictorInputV1 &) const { return {}; }
     virtual CombatRuntimeSample sample(const sts::GameContext &,

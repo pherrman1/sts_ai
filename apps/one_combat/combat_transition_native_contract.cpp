@@ -95,4 +95,66 @@ std::vector<std::string> nativeComposedSupportReasons(const CombatPredictorInput
     if(!g.encounter)return {"encounter_domain"};try {replayNativeComposedMisc(pre.combatRng[2],g.encounter);}catch(const std::exception&){return {"inherited_rng"};}
     return {};
 }
+
+std::vector<std::string> nativeComposedForecastSupportReasons(
+    const CombatPredictorInputV1 &pi, const NativeComposedDomain &d) {
+    if (!d.ready) return {"artifacts_not_loaded"};
+    const auto &g = pi.globals;
+    if (g.characterClass < 0 || g.characterClass >= 4
+        || g.encounter <= 0 || g.encounter >= count(sts::monsterEncounterEnumNames)
+        || g.roomClass < 0 || g.roomClass >= count(sts::roomStrings)
+        || g.lastRoom < 0 || g.lastRoom >= count(sts::roomStrings)
+        || !std::isfinite(g.potionKeepValue) || pi.potions.size() != 5
+        || pi.cards.size() > 128 || pi.relics.size() > 64)
+        return {"invalid_pre_state"};
+    std::vector<std::string> reasons;
+    auto add = [&](bool test, const char *reason) { if (test) reasons.emplace_back(reason); };
+    add(g.characterClass != id(sts::CharacterClass::IRONCLAD), "non_ironclad");
+    add(d.nearFull && g.encounter == id(E::WRITHING_MASS)
+        && std::any_of(pi.cards.begin(), pi.cards.end(), [](const auto &c) {
+            return c.cardId == id(C::RITUAL_DAGGER);
+        }), "writhing_ritual_intersection");
+    bool certified = g.characterClass == 0;
+    for (size_t i = 0; i < pi.cards.size(); ++i) {
+        const auto c = pi.cards[i];
+        if (c.cardId < 0 || c.cardId >= count(sts::cardEnumStrings)
+            || c.bottleBinding < -1 || c.bottleBinding > 2)
+            return {"invalid_pre_state"};
+        if (i && std::tie(c.cardId, c.upgraded, c.misc, c.bottleBinding)
+            < std::tie(pi.cards[i-1].cardId, pi.cards[i-1].upgraded,
+                       pi.cards[i-1].misc, pi.cards[i-1].bottleBinding))
+            return {"invalid_pre_state"};
+        certified &= c.cardId != id(C::ALCHEMIZE);
+    }
+    bool smoke = false, entropic = false;
+    const bool bloom = std::any_of(pi.relics.begin(), pi.relics.end(), [](const auto &r) {
+        return r.relicId == id(R::MARK_OF_THE_BLOOM);
+    });
+    for (size_t i = 0; i < pi.relics.size(); ++i) {
+        const auto r = pi.relics[i];
+        if (r.relicId < 0 || r.relicId >= count(sts::relicEnumNames)
+            || r.orderIndex != static_cast<int>(i)) return {"invalid_pre_state"};
+        try { legal(r.relicId, r.data, g.encounter, bloom, d.nearFull); }
+        catch (const std::invalid_argument &e) { return {e.what()}; }
+    }
+    for (int i = 0; i < 5; ++i) {
+        const auto p = pi.potions[i];
+        if (p.slot != i || p.potionId < 1 || p.potionId >= count(sts::potionEnumNames))
+            return {"invalid_pre_state"};
+        smoke |= p.potionId == id(P::SMOKE_BOMB);
+        entropic |= p.potionId == id(P::ENTROPIC_BREW);
+    }
+    add(smoke, "smoke_bomb");
+    add(!d.nearFull && entropic, "entropic_brew");
+    add(!certified, "potion_not_certified");
+    if (g.curHp < d.preCurHpRange[0] || g.curHp > d.preCurHpRange[1]
+        || g.maxHp < d.preMaxHpRange[0] || g.maxHp > d.preMaxHpRange[1])
+        return {"hp_envelope"};
+    if (d.hpClasses.size() != 304 || d.maxHpClasses != d.maxHpDeltaValues)
+        return {"model_domain"};
+    for (int delta : d.maxHpClasses) {
+        if (static_cast<std::int64_t>(g.maxHp) + delta <= 0) return {"max_hp_state"};
+    }
+    return reasons;
+}
 }

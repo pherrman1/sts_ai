@@ -21,6 +21,10 @@ Set `advisor` to the absolute path of `one_combat_advisor`. The environment
 variable `STS_MODEL_INSPECTOR_ADVISOR` is accepted when the property is not
 set. F8 toggles the panel.
 
+Set `ctmModel` to the tracked `combat_transition_near_full_except_smoke_v2.native`
+artifact. The advisor loads it once at startup and reports an unavailable or
+schema-mismatched artifact without affecting the game.
+
 ## Build
 
 The repository does not include game or workshop dependencies. Keep those

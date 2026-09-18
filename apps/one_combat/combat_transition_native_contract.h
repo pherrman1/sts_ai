@@ -17,6 +17,8 @@ struct NativeComposedDomain {
 };
 std::vector<std::string> nativeComposedSupportReasons(const CombatPredictorInputV1 &input,
     const CombatTransitionPersistentState &pre, const NativeComposedDomain &domain);
+std::vector<std::string> nativeComposedForecastSupportReasons(
+    const CombatPredictorInputV1 &input, const NativeComposedDomain &domain);
 CombatTransitionRandomState replayNativeComposedMisc(CombatTransitionRandomState pre, int encounter);
 std::vector<CombatTransitionRelicState> reconstructNativeComposedRelics(
     const std::vector<CombatTransitionRelicState> &pre,

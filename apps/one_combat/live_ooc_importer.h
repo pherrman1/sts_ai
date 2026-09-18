@@ -6,6 +6,7 @@
 #include <nlohmann/json.hpp>
 
 #include "game/Card.h"
+#include "combat_predictor_input.h"
 
 namespace one_combat::advisor {
 
@@ -33,5 +34,7 @@ struct ImportResult {
 };
 
 ImportResult importPublicOoc(const nlohmann::json &observation, PublicOocState &out);
+ImportResult importCombatPredictorInput(const nlohmann::json &observation,
+    CombatPredictorInputV1 &out);
 
 } // namespace one_combat::advisor

@@ -4,6 +4,8 @@ import basemod.BaseMod;
 import basemod.interfaces.PostInitializeSubscriber;
 import basemod.interfaces.PostUpdateSubscriber;
 import basemod.interfaces.RenderSubscriber;
+import basemod.interfaces.OnStartBattleSubscriber;
+import basemod.interfaces.PostBattleSubscriber;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.megacrit.cardcrawl.dungeons.AbstractDungeon;
@@ -13,6 +15,7 @@ import com.megacrit.cardcrawl.helpers.FontHelper;
 import com.megacrit.cardcrawl.rooms.MonsterRoom;
 import com.megacrit.cardcrawl.rooms.RestRoom;
 import com.megacrit.cardcrawl.rooms.AbstractRoom;
+import com.megacrit.cardcrawl.helpers.MonsterHelper;
 import com.megacrit.cardcrawl.core.Settings;
 import com.evacipated.cardcrawl.modthespire.lib.SpireInitializer;
 import org.lwjgl.input.Keyboard;
@@ -32,7 +35,8 @@ import java.util.Properties;
 /** Read-only observer. It never calls an AbstractDungeon action or mutates game state. */
 @SpireInitializer
 public final class STSModelInspector implements PostInitializeSubscriber,
-        PostUpdateSubscriber, RenderSubscriber {
+        PostUpdateSubscriber, RenderSubscriber, OnStartBattleSubscriber,
+        PostBattleSubscriber {
     private static final String PROTOCOL = "sts_model_inspector_v1";
     private static final int PROTOCOL_VERSION = 1;
     private static final String TOGGLE = "stsmodelinspector.toggle";
@@ -47,11 +51,34 @@ public final class STSModelInspector implements PostInitializeSubscriber,
     private volatile String advisorReason = "not started";
     private volatile long responseSequence = -1;
     private volatile String responseHash = "";
+    private volatile String ctmStatus = "";
+    private volatile String ctmReason = "";
+    private volatile double ctmDeath = 0.0;
+    private volatile double ctmWinningHp = 0.0;
     private volatile boolean panelVisible = true;
+    private volatile String combatEntry = "";
+    private volatile String combatEntryHash = "";
+    private String lastRoomClass = "NONE";
     private boolean toggleDown;
 
     public static void initialize() {
         BaseMod.subscribe(INSTANCE);
+    }
+
+    @Override
+    public void receiveOnBattleStart(AbstractRoom room) {
+        // BaseMod's hook is at AbstractRoom's battle-start boundary, before
+        // player/monster start-of-combat effects are applied.
+        String entry = combatEntryJson(room);
+        if (entry.isEmpty()) { combatEntry = ""; combatEntryHash = ""; return; }
+        combatEntry = entry;
+        combatEntryHash = sha256(entry);
+    }
+
+    @Override
+    public void receivePostBattle(AbstractRoom room) {
+        combatEntry = "";
+        combatEntryHash = "";
     }
 
     private STSModelInspector() {}
@@ -76,6 +103,8 @@ public final class STSModelInspector implements PostInitializeSubscriber,
                 lastFingerprint = "";
                 responseSequence = -1;
                 responseHash = "";
+                ctmStatus = "";
+                ctmReason = "";
                 advisor.clearPending();
             }
             return;
@@ -86,6 +115,8 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         newest = emitted;
         responseSequence = -1;
         responseHash = "";
+        ctmStatus = "";
+        ctmReason = "";
         advisorStatus = "waiting";
         advisorReason = "";
         advisor.send(emitted);
@@ -112,9 +143,23 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         FontHelper.renderFontLeftTopAligned(sb, FontHelper.tipBodyFont,
                 "Observation: " + newest.sequence + "  Advisor: " + result,
                 x, y - 72.0f * Settings.scale, white);
+        if ("combat".equals(newest.boundary)) {
+            String forecast = ctmStatus.isEmpty() ? "CTM — waiting" : "CTM — " + ctmStatus;
+            FontHelper.renderFontLeftTopAligned(sb, FontHelper.tipBodyFont, forecast,
+                    x, y - 116.0f * Settings.scale, white);
+            if ("OK".equals(ctmStatus)) {
+                FontHelper.renderFontLeftTopAligned(sb, FontHelper.tipBodyFont,
+                        String.format("Death: %.1f%%   HP if survive: %.0f%%",
+                                100.0 * ctmDeath, 100.0 * ctmWinningHp),
+                        x, y - 138.0f * Settings.scale, white);
+            } else if (!ctmReason.isEmpty()) {
+                FontHelper.renderFontLeftTopAligned(sb, FontHelper.tipBodyFont, ctmReason,
+                        x, y - 138.0f * Settings.scale, Color.ORANGE);
+            }
+        }
         FontHelper.renderFontLeftTopAligned(sb, FontHelper.tipBodyFont,
                 "Toggle: " + Keyboard.getKeyName(loadToggleKey()), x,
-                y - 94.0f * Settings.scale, Color.GRAY);
+                y - ("combat".equals(newest.boundary) ? 160.0f : 94.0f) * Settings.scale, Color.GRAY);
     }
 
     private Snapshot captureStableSnapshot() {
@@ -143,13 +188,104 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         String candidates = candidatesJson(boundary);
         String combat = "";
         if ("combat".equals(boundary)) combat = combatJson();
+        if (!"combat".equals(boundary)) lastRoomClass = roomClass(room);
         String raw = boundary + "|" + character + "|" + AbstractDungeon.ascensionLevel +
                 "|" + act + "|" + floor + "|" + hp + "|" + maxHp + "|" + gold +
                 "|" + room.getClass().getName() + "|" + AbstractDungeon.screen.name() +
                 "|" + deck + "|" + candidates + "|" + combat;
         return new Snapshot(session, 0, boundary, character,
                 AbstractDungeon.ascensionLevel, act, floor, hp, maxHp, gold,
-                deck, candidates, combat, sha256(raw));
+                deck, candidates, combat, "combat".equals(boundary) ? combatEntry : "",
+                "combat".equals(boundary) ? combatEntryHash : "", sha256(raw));
+    }
+
+    private static String roomClass(AbstractRoom room) {
+        if (room instanceof com.megacrit.cardcrawl.rooms.MonsterRoomBoss) return "BOSS";
+        if (room instanceof com.megacrit.cardcrawl.rooms.MonsterRoomElite) return "ELITE";
+        if (room instanceof MonsterRoom) return "MONSTER";
+        if (room instanceof RestRoom) return "REST";
+        return "EVENT";
+    }
+
+    private String encounterName(AbstractRoom room) {
+        if (room == null || room.monsters == null || room.monsters.monsters == null
+                || room.monsters.monsters.isEmpty()) return "";
+        String name = MonsterHelper.getEncounterName(room.monsters.monsters.get(0).id);
+        // MonsterHelper exposes canonical encounter labels for vanilla IDs;
+        // only the unambiguous single-monster cases are accepted here.
+        if (room.monsters.monsters.size() != 1) return "";
+        String[] names = {"Cultist:CULTIST", "Jaw Worm:JAW_WORM", "Blue Slaver:BLUE_SLAVER",
+                "Gremlin Nob:GREMLIN_NOB", "Lagavulin:LAGAVULIN", "Three Sentries:THREE_SENTRIES",
+                "Spheric Guardian:SPHERIC_GUARDIAN", "Chosen:CHOSEN", "Snake Plant:SNAKE_PLANT",
+                "Snecko:SNECKO", "Transient:TRANSIENT", "Writhing Mass:WRITHING_MASS"};
+        for (String candidate : names) {
+            String[] pair = candidate.split(":");
+            if (pair[0].equals(name)) return pair[1];
+        }
+        return "";
+    }
+
+    private String combatEntryJson(AbstractRoom room) {
+        if (AbstractDungeon.player == null) return "";
+        String encounter = encounterName(room);
+        if (encounter.isEmpty()) return "";
+        StringBuilder out = new StringBuilder("{\"character\":\"")
+                .append(escapeJson(AbstractDungeon.player.chosenClass.name()))
+                .append("\",\"ascension\":").append(AbstractDungeon.ascensionLevel)
+                .append(",\"act\":").append(AbstractDungeon.actNum)
+                .append(",\"floor\":").append(AbstractDungeon.floorNum)
+                .append(",\"hp\":").append(AbstractDungeon.player.currentHealth)
+                .append(",\"maxHp\":").append(AbstractDungeon.player.maxHealth)
+                .append(",\"gold\":").append(AbstractDungeon.player.gold)
+                .append(",\"roomClass\":\"").append(roomClass(room))
+                .append("\",\"previousRoomClass\":\"").append(lastRoomClass)
+                .append("\",\"encounter\":\"").append(encounter)
+                .append("\",\"potionKeepValue\":4.0,\"isBurningElite\":false")
+                .append(",\"potionCapacity\":").append(AbstractDungeon.player.potionSlots)
+                .append(",\"deck\":").append(deckEntryJson())
+                .append(",\"relics\":").append(relicEntryJson())
+                .append(",\"potions\":").append(potionEntryJson()).append('}');
+        return out.toString();
+    }
+
+    private static String deckEntryJson() {
+        StringBuilder out = new StringBuilder("["); boolean first = true;
+        for (AbstractCard card : AbstractDungeon.player.masterDeck.group) {
+            if (!first) out.append(','); first = false;
+            int bottle = card.inBottleFlame ? 0 : (card.inBottleLightning ? 1 :
+                    (card.inBottleTornado ? 2 : -1));
+            out.append("{\"id\":\"").append(escapeJson(card.cardID))
+                    .append("\",\"upgraded\":").append(card.upgraded)
+                    .append(",\"misc\":").append(card.misc)
+                    .append(",\"bottleBinding\":").append(bottle).append('}');
+        }
+        return out.append(']').toString();
+    }
+
+    private static String relicEntryJson() {
+        StringBuilder out = new StringBuilder("["); boolean first = true;
+        for (com.megacrit.cardcrawl.relics.AbstractRelic relic : AbstractDungeon.player.relics) {
+            if (!first) out.append(','); first = false;
+            out.append("{\"id\":\"").append(escapeJson(relic.relicId))
+                    .append("\",\"data\":").append(relic.counter).append('}');
+        }
+        return out.append(']').toString();
+    }
+
+    private static String potionEntryJson() {
+        StringBuilder out = new StringBuilder("["); boolean first = true;
+        for (int slot = 0; slot < AbstractDungeon.player.potionSlots; ++slot) {
+            if (!first) out.append(','); first = false;
+            String id = "Potion Slot";
+            if (slot < AbstractDungeon.player.potions.size()
+                    && AbstractDungeon.player.potions.get(slot) != null)
+                id = AbstractDungeon.player.potions.get(slot).ID;
+            out.append('\"').append(escapeJson(id)).append('\"');
+        }
+        for (int slot = AbstractDungeon.player.potionSlots; slot < 5; ++slot) {
+            if (!first) out.append(','); first = false; out.append("\"Potion Slot\"");
+        }
+        return out.append(']').toString();
     }
 
     private static String deckJson() {
@@ -292,7 +428,11 @@ public final class STSModelInspector implements PostInitializeSubscriber,
                     advisorReason = "set advisor in ~/.sts-model-inspector.properties";
                     return;
                 }
-                Process started = new ProcessBuilder(executable).redirectErrorStream(false).start();
+                ProcessBuilder builder = new ProcessBuilder(executable);
+                String ctmModel = p.getProperty("ctmModel", System.getenv("STS_CTM_MODEL"));
+                if (ctmModel != null && !ctmModel.trim().isEmpty())
+                    builder.environment().put("STS_CTM_MODEL", ctmModel);
+                Process started = builder.redirectErrorStream(false).start();
                 process = started;
                 stopping = false;
                 stdin = new BufferedWriter(new OutputStreamWriter(process.getOutputStream(), StandardCharsets.UTF_8));
@@ -393,6 +533,16 @@ public final class STSModelInspector implements PostInitializeSubscriber,
                             } else {
                                 advisorReason = reason == null ? "" : reason;
                             }
+                            if (line.contains("\"id\":\"ctm_combat_entry_v2\"")) {
+                                if (line.contains("\"status\":\"UNSUPPORTED\"")) {
+                                    ctmStatus = "unsupported";
+                                    ctmReason = reason == null ? "unsupported" : reason;
+                                } else if (line.contains("\"deathProbability\":")) {
+                                    ctmStatus = "OK";
+                                    ctmDeath = doubleField(line, "deathProbability");
+                                    ctmWinningHp = doubleField(line, "winningHpFraction");
+                                }
+                            }
                         }
                     }
                 }
@@ -429,27 +579,42 @@ public final class STSModelInspector implements PostInitializeSubscriber,
             try { return Long.parseLong(json.substring(start, end)); }
             catch (Exception e) { return -1; }
         }
+
+        private double doubleField(String json, String key) {
+            String needle = "\"" + key + "\":";
+            int start = json.indexOf(needle);
+            if (start < 0) return 0.0;
+            start += needle.length();
+            int end = start;
+            while (end < json.length() && "0123456789+-.eE".indexOf(json.charAt(end)) >= 0) end++;
+            try { return Double.parseDouble(json.substring(start, end)); }
+            catch (Exception e) { return 0.0; }
+        }
     }
 
     private static final class Snapshot {
         final String session, boundary, character, deck, candidates, hash;
         final String combat;
+        final String combatEntry, combatEntryHash;
         final long sequence;
         final int ascension, act, floor, hp, maxHp, gold;
 
         Snapshot(String session, long sequence, String boundary, String character,
                  int ascension, int act, int floor, int hp, int maxHp, int gold,
-                 String deck, String candidates, String combat, String hash) {
+                 String deck, String candidates, String combat, String combatEntry,
+                 String combatEntryHash, String hash) {
             this.session = session; this.sequence = sequence; this.boundary = boundary;
             this.character = character; this.ascension = ascension; this.act = act;
             this.floor = floor; this.hp = hp; this.maxHp = maxHp; this.gold = gold;
             this.deck = deck; this.candidates = candidates; this.hash = hash;
-            this.combat = combat;
+            this.combat = combat; this.combatEntry = combatEntry;
+            this.combatEntryHash = combatEntryHash;
         }
 
         Snapshot withSequence(long emittedSequence) {
             return new Snapshot(session, emittedSequence, boundary, character, ascension, act,
-                    floor, hp, maxHp, gold, deck, candidates, combat, hash);
+                    floor, hp, maxHp, gold, deck, candidates, combat, combatEntry,
+                    combatEntryHash, hash);
         }
 
         String toJson() {
@@ -459,9 +624,11 @@ public final class STSModelInspector implements PostInitializeSubscriber,
                     "\"boundary\":\"" + boundary + "\",\"character\":\"" + character +
                     "\",\"ascension\":" + ascension + ",\"act\":" + act +
                     ",\"floor\":" + floor + ",\"hp\":" + hp + ",\"maxHp\":" + maxHp +
-                        ",\"gold\":" + gold + ",\"deck\":" + deck +
+                    ",\"gold\":" + gold + ",\"deck\":" + deck +
                     ",\"candidates\":" + candidates +
-                    (combat.isEmpty() ? "" : ",\"combat\":" + combat) + "}}";
+                    (combat.isEmpty() ? "" : ",\"combat\":" + combat
+                        + ",\"combatEntryHash\":\"" + combatEntryHash + "\""
+                        + (combatEntry.isEmpty() ? "" : ",\"combatEntry\":" + combatEntry)) + "}}";
         }
 
         private static String escape(String s) { return s.replace("\\", "\\\\").replace("\"", "\\\""); }
