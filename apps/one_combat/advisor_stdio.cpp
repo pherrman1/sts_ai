@@ -14,6 +14,8 @@ int main() {
     one_combat::advisor::LatestObservation latest;
     std::unique_ptr<one_combat::NativeCombatTransitionSampler> ctm;
     std::string ctmStatus = "MODEL_UNAVAILABLE", ctmReason;
+    std::string cachedEntryHash;
+    json cachedEvaluator;
     if (const char *path = std::getenv("STS_CTM_MODEL"); path && *path) {
         try {
             ctm = std::make_unique<one_combat::NativeCombatTransitionSampler>(path);
@@ -60,23 +62,32 @@ int main() {
                             if (!imported.ok) response = one_combat::advisor::errorResponse(
                                 request, imported.code, imported.message);
                             else {
-                                const auto started = std::chrono::steady_clock::now();
-                                const auto support = ctm->forecastSupport(input);
-                                json evaluator = {{"id", "ctm_combat_entry_v2"},
-                                    {"scope", "combat_entry"}, {"combatEntryHash",
-                                    request.observation.value("combatEntryHash", request.observationHash)},
-                                    {"potionKeepValue", input.globals.potionKeepValue}};
-                                if (!support.supported) {
-                                    evaluator["status"] = "UNSUPPORTED";
-                                    evaluator["reason"] = support.reason;
+                                const std::string entryHash = request.observation.value(
+                                    "combatEntryHash", request.observationHash);
+                                json evaluator;
+                                if (entryHash == cachedEntryHash && !cachedEvaluator.is_null()) {
+                                    evaluator = cachedEvaluator;
+                                    evaluator["latencyMicros"] = 0;
                                 } else {
-                                    const auto result = ctm->forecastExpectation(input);
-                                    evaluator["status"] = "OK";
-                                    evaluator["deathProbability"] = result.death;
-                                    evaluator["winningHpFraction"] = result.winningHpFraction;
+                                    const auto started = std::chrono::steady_clock::now();
+                                    const auto support = ctm->forecastSupport(input);
+                                    evaluator = {{"id", "ctm_combat_entry_v2"},
+                                        {"scope", "combat_entry"}, {"combatEntryHash", entryHash},
+                                        {"potionKeepValue", input.globals.potionKeepValue}};
+                                    if (!support.supported) {
+                                        evaluator["status"] = "UNSUPPORTED";
+                                        evaluator["reason"] = support.reason;
+                                    } else {
+                                        const auto result = ctm->forecastExpectation(input);
+                                        evaluator["status"] = "OK";
+                                        evaluator["deathProbability"] = result.death;
+                                        evaluator["winningHpFraction"] = result.winningHpFraction;
+                                    }
+                                    evaluator["latencyMicros"] = std::chrono::duration_cast<std::chrono::microseconds>(
+                                        std::chrono::steady_clock::now() - started).count();
+                                    cachedEntryHash = entryHash;
+                                    cachedEvaluator = evaluator;
                                 }
-                                evaluator["latencyMicros"] = std::chrono::duration_cast<std::chrono::microseconds>(
-                                    std::chrono::steady_clock::now() - started).count();
                                 response = {{"protocol", one_combat::advisor::kProtocol},
                                     {"protocolVersion", one_combat::advisor::kProtocolVersion},
                                     {"kind", "analysis"}, {"status", "OK"},

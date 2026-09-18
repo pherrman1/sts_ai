@@ -59,6 +59,9 @@ public final class STSModelInspector implements PostInitializeSubscriber,
     private volatile String combatEntry = "";
     private volatile String combatEntryHash = "";
     private String lastRoomClass = "NONE";
+    private String lastNodeRoomClass = "";
+    private int lastNodeX = -1, lastNodeY = -1;
+    private boolean previousRoomKnown;
     private boolean toggleDown;
 
     public static void initialize() {
@@ -92,6 +95,7 @@ public final class STSModelInspector implements PostInitializeSubscriber,
 
     @Override
     public void receivePostUpdate() {
+        observeRoomTransition();
         boolean down = Keyboard.isKeyDown(loadToggleKey());
         if (down && !toggleDown) panelVisible = !panelVisible;
         toggleDown = down;
@@ -115,8 +119,13 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         newest = emitted;
         responseSequence = -1;
         responseHash = "";
-        ctmStatus = "";
-        ctmReason = "";
+        if (!"combat".equals(snapshot.boundary)
+                || !snapshot.combatEntryHash.equals(combatEntryHash)) {
+            ctmStatus = "";
+            ctmReason = "";
+            ctmDeath = 0.0;
+            ctmWinningHp = 0.0;
+        }
         advisorStatus = "waiting";
         advisorReason = "";
         advisor.send(emitted);
@@ -199,6 +208,26 @@ public final class STSModelInspector implements PostInitializeSubscriber,
                 "combat".equals(boundary) ? combatEntryHash : "", sha256(raw));
     }
 
+    private void observeRoomTransition() {
+        if (AbstractDungeon.currMapNode == null) return;
+        int x = AbstractDungeon.currMapNode.x;
+        int y = AbstractDungeon.currMapNode.y;
+        String current = roomClass(AbstractDungeon.currMapNode.room != null
+                ? AbstractDungeon.currMapNode.room : AbstractDungeon.getCurrRoom());
+        if (x == lastNodeX && y == lastNodeY) return;
+        if (lastNodeX >= 0) {
+            lastRoomClass = lastNodeRoomClass;
+            previousRoomKnown = true;
+        } else if (AbstractDungeon.floorNum <= 1) {
+            // A new run has no preceding room; NONE is the canonical native value.
+            lastRoomClass = "NONE";
+            previousRoomKnown = true;
+        }
+        lastNodeX = x;
+        lastNodeY = y;
+        lastNodeRoomClass = current;
+    }
+
     private static String roomClass(AbstractRoom room) {
         if (room instanceof com.megacrit.cardcrawl.rooms.MonsterRoomBoss) return "BOSS";
         if (room instanceof com.megacrit.cardcrawl.rooms.MonsterRoomElite) return "ELITE";
@@ -228,7 +257,10 @@ public final class STSModelInspector implements PostInitializeSubscriber,
     private String combatEntryJson(AbstractRoom room) {
         if (AbstractDungeon.player == null) return "";
         String encounter = encounterName(room);
-        if (encounter.isEmpty()) return "";
+        if (encounter.isEmpty() || !previousRoomKnown
+                || AbstractDungeon.currMapNode == null) return "";
+        boolean burningElite = room instanceof com.megacrit.cardcrawl.rooms.MonsterRoomElite
+                && AbstractDungeon.currMapNode.hasEmeraldKey;
         StringBuilder out = new StringBuilder("{\"character\":\"")
                 .append(escapeJson(AbstractDungeon.player.chosenClass.name()))
                 .append("\",\"ascension\":").append(AbstractDungeon.ascensionLevel)
@@ -240,7 +272,8 @@ public final class STSModelInspector implements PostInitializeSubscriber,
                 .append(",\"roomClass\":\"").append(roomClass(room))
                 .append("\",\"previousRoomClass\":\"").append(lastRoomClass)
                 .append("\",\"encounter\":\"").append(encounter)
-                .append("\",\"potionKeepValue\":4.0,\"isBurningElite\":false")
+                .append("\",\"potionKeepValue\":4.0,\"isBurningElite\":")
+                .append(burningElite)
                 .append(",\"potionCapacity\":").append(AbstractDungeon.player.potionSlots)
                 .append(",\"deck\":").append(deckEntryJson())
                 .append(",\"relics\":").append(relicEntryJson())
@@ -527,6 +560,11 @@ public final class STSModelInspector implements PostInitializeSubscriber,
                             responseSequence = seq;
                             responseHash = hash;
                             advisorStatus = status == null ? "error" : status.toLowerCase();
+                            if ("MODEL_UNAVAILABLE".equals(status)
+                                    || "SCHEMA_MISMATCH".equals(status)) {
+                                ctmStatus = status.toLowerCase().replace('_', ' ');
+                                ctmReason = reason == null ? ctmStatus : reason;
+                            }
                             if ("ERROR".equals(status)) {
                                 advisorReason = (code == null ? "UNKNOWN" : code) +
                                         (message == null || message.isEmpty() ? "" : " - " + message);
