@@ -123,6 +123,12 @@ target_include_directories(silver-root-mechanism PRIVATE include json/include)
 target_link_libraries(silver-root-mechanism PRIVATE silver_combat_search_bridge)
 target_link_options(silver-root-mechanism PRIVATE -Wl,--gc-sections)
 
+add_executable(silver-hard-combat-fixture apps/silver_hard_combat_fixture.cpp)
+set_target_properties(silver-hard-combat-fixture PROPERTIES OUTPUT_NAME silver_hard_combat_fixture)
+target_include_directories(silver-hard-combat-fixture PRIVATE include json/include)
+target_link_libraries(silver-hard-combat-fixture PRIVATE silver_combat_search_bridge)
+target_link_options(silver-hard-combat-fixture PRIVATE -Wl,--gc-sections)
+
 add_executable(silver-leaf-features apps/silver_leaf_features.cpp $<TARGET_OBJECTS:sts_core_objects>)
 set_target_properties(silver-leaf-features PROPERTIES OUTPUT_NAME silver_leaf_features)
 target_include_directories(silver-leaf-features PRIVATE include json/include)
@@ -429,6 +435,8 @@ add_test(NAME silver_root_mechanism_fixture COMMAND python3
     $<TARGET_FILE:silver-root-mechanism>)
 set_tests_properties(silver_root_mechanism_fixture PROPERTIES
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "integration")
+add_test(NAME silver_hard_combat_fixture COMMAND $<TARGET_FILE:silver-hard-combat-fixture>)
+set_tests_properties(silver_hard_combat_fixture PROPERTIES LABELS "integration")
 # tests/agent is owned by the separate pre-build unittest discovery step in CI.
 # Do not register its modules or separate compile-only checks here as well:
 # importing those tools during unittest discovery already parses them.
