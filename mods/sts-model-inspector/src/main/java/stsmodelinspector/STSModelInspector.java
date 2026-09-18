@@ -125,7 +125,7 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         String boundary;
         if (AbstractDungeon.screen == AbstractDungeon.CurrentScreen.CARD_REWARD) {
             boundary = "card_reward";
-        } else if (room instanceof RestRoom) {
+        } else if (room instanceof RestRoom && isActionableRestDecision((RestRoom) room)) {
             boundary = "rest";
         } else if (room instanceof MonsterRoom && isPlayerDecisionPoint()) {
             boundary = "combat";
@@ -202,6 +202,12 @@ public final class STSModelInspector implements PostInitializeSubscriber,
                 && actions.cardQueue.isEmpty()
                 && actions.monsterQueue.isEmpty()
                 && !actions.turnHasEnded;
+    }
+
+    private static boolean isActionableRestDecision(RestRoom room) {
+        return room.campfireUI != null
+                && !com.megacrit.cardcrawl.rooms.CampfireUI.hidden
+                && !room.campfireUI.somethingSelected;
     }
 
     private static boolean hasRunicDome() {

@@ -36,6 +36,10 @@ rather than queued without limit. It launches the advisor with a direct
 `ProcessBuilder` call. Its F8 panel remains diagnostic until a native importer
 proves parity. Workshop and game/dependency JARs remain outside Git.
 
+Rest observations are emitted only while the installed campfire UI exists, is
+visible, and has not selected an option. Selecting a campfire option therefore
+clears the old rest observation while the option resolves.
+
 For `card_reward` and `rest`, the native endpoint now validates the detached
 deck and candidate card-instance arrays (canonical save-file card ID, upgrade
 flag, and misc value). Valid observations still fail closed because validation
