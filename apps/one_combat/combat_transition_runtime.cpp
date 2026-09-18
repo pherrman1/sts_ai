@@ -47,18 +47,25 @@ CombatTransitionRuntime::CombatTransitionRuntime(const std::string &path) {
     uint32_t length=u32();require(length>0 && length<=1024*1024,"combat runtime header size");
     std::string header(length,'\0');read(header.data(),length);metadata_=nlohmann::json::parse(header);
     require(metadata_.at("schema")==std::string(full?"COMBAT_TRANSITION_RUNTIME_V2":magic) && metadata_.at("version")== (full?2:1),"combat runtime schema");
+    const bool deepSurvival=metadata_.contains("experimentalSurvival");
+    if(deepSurvival) require(full && metadata_.at("experimentalSurvival")==nlohmann::json({
+        {"architecture","deepset64_linear_strongWd"},
+        {"checkpointSha256","3689593db85974f13b6313c495e7fde4ec4b4fa7d87f3442c8604a47f5e0f05b"},
+        {"controlSha256","e9a18951710fdfe9e1a81a2703090a41f039067c670a1d8a0393b5e7e8e0ddfd"},
+        {"qualified",false}}),"combat runtime experimental survival identity");
     require(metadata_.at("predictorSchema")==CombatPredictorInputV1::SCHEMA && metadata_.at("predictorHash")==combatPredictorInputFieldSchemaHash()
         && metadata_.at("predictorFieldSchema")==CombatPredictorInputV1::FIELD_SCHEMA,"combat runtime predictor schema");
     require(metadata_.at("width")==64 && metadata_.at("layers")==2 && metadata_.at("heads")==4 && metadata_.at("feedForward")==128,"combat runtime encoder dimensions");
     require(metadata_.at("cardCount")==kNumCardIds && metadata_.at("relicCount")==kNumRelics && metadata_.at("potionCount")==kNumPotions,"combat runtime vocab");
     if(!full) require(metadata_.at("sources")==nlohmann::json(sourceHashes),"combat runtime source identities");
     else {
-        const std::map<std::string,std::string> hashes={
+        std::map<std::string,std::string> hashes={
         {"survival","ccc3c210060be34b38fe0671d93c6acde4242563c80a25c5978b4190b80010c9"},
         {"maxHP","2c5b54d0a9420a9d0e3ab9a26f32b9900c4869490e4af49627009cde21efb4b0"},
         {"HP","0c8b5aa8c5218d6cd6102b768cc86a474c9ef30953d4b034caedcc41a426109b"},
         {"potion","ae1a1411990d272579de10564edb48c7f2ec1d14f1c72dacf5390a1415a0f1db"},
         {"downstream","d07ead94b3abb9d12f272337e18aece6acd261cc4a39a36b21b82f904236af91"}};
+        if(deepSurvival) hashes["survival"]="3689593db85974f13b6313c495e7fde4ec4b4fa7d87f3442c8604a47f5e0f05b";
         require(metadata_.at("sources")==nlohmann::json(hashes),"combat runtime near-full source identities");
         require(metadata_.at("supportExclusions")==nlohmann::json({"smoke_bomb","pre_smoke_bomb_used","writhing_ritual_intersection"}),"combat runtime support exclusions");
         require(metadata_.at("qualification").at("classification")=="FINAL_SUPPORT_EXPOSURE_DEVELOPMENT_PASS","combat runtime qualification");
@@ -77,6 +84,19 @@ CombatTransitionRuntime::CombatTransitionRuntime(const std::string &path) {
     auto lin=[&](std::string name,int out,int in) { shape(name+".weight",{out,in});shape(name+".bias",{out}); };
     for(std::string group:{"survival","max_hp","hp","potion_encoder"}) {
         std::string p=group+".encoder.";
+        if(group=="survival" && deepSurvival) {
+            shape(p+"scalar_mean",{10});shape(p+"scalar_inv",{10});
+            shape(p+"card_id.weight",{kNumCardIds,48});shape(p+"relic_id.weight",{kNumRelics,48});
+            shape(p+"potion_id.weight",{kNumPotions,32});shape(p+"potion_slot.weight",{5,8});
+            auto categories=metadata_.at("globalCategoryCounts").get<std::vector<int>>();
+            for(int category=0;category<4;++category) shape(p+"global_category."+std::to_string(category)+".weight",{categories[category],8});
+            for(const auto &entry:std::map<std::string,int>{{"card_mlp",51},{"relic_mlp",50},{"potion_mlp",40}}) {
+                lin(p+entry.first+".0",64,entry.second);lin(p+entry.first+".2",64,64);
+            }
+            lin(p+"global_mlp.0",64,42);lin(p+"trunk.0",128,256);lin(p+"trunk.2",64,128);
+            lin("survival.survival",1,64);
+            continue;
+        }
         shape(p+"scalar_mean",{10});shape(p+"scalar_inv",{10});
         shape(p+"card_id.weight",{kNumCardIds,64});shape(p+"relic_id.weight",{kNumRelics,64});shape(p+"potion_id.weight",{kNumPotions,64});shape(p+"type_embedding.weight",{4,64});
         auto cats=metadata_.at("globalCategoryCounts").get<std::vector<int>>();
@@ -134,6 +154,30 @@ Vec CombatTransitionRuntime::encode(const std::string &group,const CombatPredict
     for(int i=0;i<10;++i) global[i]=(global[i]-mean[i])*inv[i];
     int cats[4]={g.characterClass,g.encounter,g.roomClass,g.lastRoom};
     for(int i=0;i<4;++i) append(global,embedding(p+"global_category."+std::to_string(i),cats[i]));
+    if(group=="survival" && metadata_.contains("experimentalSurvival")) {
+        auto transform=[&](const std::string &name,const Vec &fields) {
+            return relu(linear(p+name+".2",relu(linear(p+name+".0",fields))));
+        };
+        Vec cardPool(64),relicPool(64),potionPool(64);
+        for(const auto &card:input.cards) {
+            auto fields=embedding(p+"card_id",card.cardId);
+            append(fields,{float(card.upgraded),float(std::clamp(card.misc,-20,20))/20,float(card.bottleBinding+1)/3});
+            add(cardPool,transform("card_mlp",fields));
+        }
+        for(const auto &relic:input.relics) {
+            auto fields=embedding(p+"relic_id",relic.relicId);
+            append(fields,{float(relic.data)/10,float(relic.orderIndex)/64});
+            add(relicPool,transform("relic_mlp",fields));
+        }
+        for(const auto &potion:input.potions) {
+            auto fields=embedding(p+"potion_id",potion.potionId);
+            append(fields,embedding(p+"potion_slot",potion.slot));
+            add(potionPool,transform("potion_mlp",fields));
+        }
+        append(cardPool,relicPool);append(cardPool,potionPool);
+        append(cardPool,relu(linear(p+"global_mlp.0",global)));
+        return relu(linear(p+"trunk.2",relu(linear(p+"trunk.0",cardPool))));
+    }
     std::vector<Vec> tokens;
     auto token=linear(p+"global_proj",global);add(token,embedding(p+"type_embedding",0));tokens.push_back(token);
     for(const auto &c:input.cards) {token=embedding(p+"card_id",c.cardId);add(token,linear(p+"card_fields",{float(c.upgraded),float(std::clamp(c.misc,-20,20))/20,float(c.bottleBinding+1)/3}));add(token,embedding(p+"type_embedding",1));tokens.push_back(token);}

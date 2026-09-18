@@ -9739,6 +9739,22 @@ top-level benchmark reporting corrected.
   both full histories and all slices. **Knowledge impact:** research status;
   no qualified-default change.
 
+## §305 — Current OOC CPU attribution (2026-09-18)
+
+Profiling only on baseline589a7a7, frozen instrumentationc886964. `perf` was
+unavailable; no system repair attempted. Historical seeds12002032/12002033 ran
+once each with Attention control, OMP1, exact10k Silver and the locked2048 OOC
+profile. All non-timing MCTS columns match exactly. Full CPU42.30/62.75s
+(+3.55%/+3.16% versus supplied Stage B); real Silver22.835/35.689s,
+MCTS19.310/26.916s. V4 prior/continuation exclusive total8.143/10.921s;
+CTM preparation3.681/5.583s. Real combat accounts for54–57%, V4 for17–19%.
+Pooled infinite-real-combat-speed Amdahl bound2.26x. Existing rollout wall
+telemetry supports targeting Silver rollout execution, but does not identify
+a specific kernel or prove the proposed scratch-allocation hypothesis.
+No optimization, model changes, fresh seeds or quality comparison performed.
+Knowledge impact: performance evidence and next target, no qualified default.
+[Report, exclusive/inclusive tables, receipts, raw logs and hashes](evidence/ooc_cpu_profile_2026-09-18/README.md).
+
 ## §303 — Six-arm Silver root mechanism replay (2026-09-17)
 
 - **Question and frozen implementation:** Does a normalized Teacher-A visit
@@ -9781,150 +9797,49 @@ top-level benchmark reporting corrected.
 - **Evidence:** [six-arm replay report](evidence/silver_root_mechanism_2026-09-17.md)
   and the external raw run directory and hashes recorded there.
 
-## §304 — Silver root mechanism 16-seed confirmation (2026-09-18)
+## §304 — Strong-WD survival native and OOC CPU screen (2026-09-18)
 
-- **Question and frozen implementation:** Does the informative Teacher-A visit
-  prior signal persist across independent source gameplay seeds? The run used
-  implementation SHA `06d9de36d1c2e07c7e0420a0752ae9a4d7fd738e`, baseline
-  `be5b6ac2c9914b0a56244f2522b7573f81360067`, and Silver SHA
-  `84ab3ead9d88c01c4be09a6773fb9a947f57d5ff`.
-- **Protocol:** Fresh source seeds `1..16`, two lowest-root-ID SHA256-selected
-  roots per seed, frozen 10k-A/25k-B labels, six arms, four common replicates,
-  and exactly 32 simulations. Replicates were reduced within root, then roots
-  within source seed; bootstrap and exact sign tests used the 16 source seeds.
-- **Result:** `C-E` mean regret delta `-0.602946`, source-seed bootstrap 95% CI
-  `[-1.050254,-0.221492]`, B-best delta `+3.1250` pp with CI
-  `[-6.2500,+10.1563]` pp, and source-seed improved/worsened/tied `9/2/5`.
-  `E-A` remained harmful (`+0.751411`, CI `[+0.165289,+1.510793]`), while
-  `C-A` remained inconclusive (`+0.148464`, CI `[-0.348172,+0.719575]`).
-- **Decision:** **`ROOT_GUIDANCE_INCONCLUSIVE`**. The informative-prior signal
-  against uniform PUCT persists directionally, but B-best and absolute
-  ordinary-UCT comparisons remain inconclusive. The staged next action is a
-  preregistered fresh-seed extension: seeds `17..32`, two roots per seed,
-  pooled with seeds `1..16` to reach 32 source-seed units; no policy training,
-  gameplay qualification, runtime integration, or default promotion.
-- **Provenance note:** The frozen `one_combat` binary produced capture. The
-  existing helper cardinality guards required a temporary uncommitted 32-root
-  gate-only build; runtime helper hashes, restored frozen hashes, raw artifact
-  hashes, and commands are in the [confirmation report](evidence/silver_root_mechanism_confirmation16_2026-09-18.md)
-  and run manifest. No search/replay behavior changed.
-- **Knowledge impact:** current research status and experiment evidence updated.
+- **Decision:** `DEEPSET_ONLINE_TRADEOFF_STOP`; median CPU/run reduction
+  1.1596% is below the required 10%. No 16/64 quality gate or promotion.
+- **Execution:** baseline `589a7a73c40e5b89e96df1ffec6a00b08c2ea9ba`, user-reviewed
+  frozen SHA `471ba9a119de2a4f6ae691329467acae1b0f70a0`; Linux GCC passed first.
+  Exact strong-WD checkpoint `3689593d…` re-exported to native `c870e4c…`;
+  current Attention control `e9a18951…`, executable `c0275f4d…`. Other components
+  unchanged; Stage-A source-bound evidence retained without rerun.
+- **Mode:** guarded `bestbench 10000 1 0 SEED OUTPUT`, A0 Ironclad project-fair,
+  effective Silver backend, 2048 OOC simulations, native leaf value, V4 policy,
+  early stop, keys off, Act-3 stop. Historical #187 seeds 12002032/12002033,
+  two repetitions per arm, balanced ordering; 8 invocations, 2 unique seeds.
+  One thread per run instead of historical 12-way outer parallelism; CPU is
+  `/usr/bin/time` user+system, not bestbench elapsed `sec`.
+- **Results:** CPU median control/candidate 50.88/50.29 s, ratio 0.988404;
+  mean 51.125/50.1525 s. Native survival 1.143383/0.128041 ms;
+  reference sample 4.435917/3.168253 ms; prepared sample 0.023364/0.023288 ms.
+  All runs complete, support reasons match per seed, zero continuation aborts.
+  Shared legacy V1 copy-through flags in the timed V2 probe are disclosed.
+- **Limits:** timing-only historical two-seed screen, not a gameplay-quality
+  result; fresh cohort not launched, no bootstrap interval, no TEST inference.
+  Source remains frozen; evidence/report commit is not the execution SHA.
+- **Evidence:** [report, plan, runner, raw logs/CSV/telemetry and hashes](evidence/deepset_survival_online_stage_b_2026-09-18/README.md).
+  **Knowledge impact:** bounded negative speed evidence and maintained research
+  status; no runtime/model/default changes after review.
 
-## §305 — Silver root mechanism fresh-seed extension preregistration (2026-09-18)
+## §304 — OOC root checkpoint diagnostic (2026-09-18)
 
-- **Question:** Can informative PUCT arm `C` beat ordinary UCT arm `A` across
-  32 independent source gameplay seeds, rather than merely recover uniform
-  PUCT's loss?
-- **Preregistration:** Add fresh seeds `17..32`, exactly two deterministic
-  roots per seed, and pool them with the existing seeds `1..16`. Keep the
-  frozen implementation, 10k-A/25k-B teachers, six arms, four common
-  replicates, 32 simulations, root reduction, and source-seed bootstrap/sign
-  test unchanged. The primary gate is `C-A`; `C-E`, `E-A`, `B-A`, B-best, tail,
-  and dispersion remain secondary.
-- **Decision rule:** A clear `C-A` win requires a source-seed bootstrap 95% CI
-  entirely below zero and exact paired sign-test `p < 0.05`, followed by
-  non-worse B-best and harmful-tail review before any separate training
-  decision. A neutral or adverse `C-A` does not authorize training.
-- **Status:** Seeds `17..32` have not been collected or examined. No policy
-  training, gameplay qualification, runtime integration, or default promotion.
-- **Evidence:** [preregistration](evidence/silver_root_mechanism_confirmation32_preregistration_2026-09-18.md)
-  and [prior 16-seed report](evidence/silver_root_mechanism_confirmation16_2026-09-18.md).
-  **Knowledge impact:** preregistered research follow-up; no default change.
-
-## §306 — Silver root mechanism pooled 32-seed confirmation (2026-09-18)
-
-- **Protocol:** The preregistered fresh seeds `17..32` produced 5,724 eligible
-  roots and 32 selected roots, two per seed. They were pooled with the prior
-  seeds `1..16` for 32 source-seed units and 64 total roots. The preregistration
-  commit was `5bff722b002a747e8d24ecbdbec9e99f8aad1748`, recorded in the run
-  manifest before collection.
-- **Primary result:** `C-A` mean B-regret delta `-0.143262`, source-seed
-  bootstrap 95% CI `[-0.553535,+0.250062]`, exact two-sided sign-test
-  `p=0.8388`, improved/worsened/tied `11/13/8`. The primary gate fails.
-- **Secondary context:** `C-E` remains beneficial (`-0.521796`, CI
-  `[-0.881025,-0.235779]`), but this does not establish improvement over
-  ordinary UCT. `E-A` is positive in point estimate (`+0.378535`, CI crosses
-  zero) and B-best comparisons do not change the primary decision.
-- **Decision:** **`ROOT_GUIDANCE_SIGNAL_NOT_CONFIRMED`**. Stop the learned-PUCT
-  line. No additional roots, PUCT tuning, policy training, gameplay
-  qualification, runtime integration, or default promotion.
-- **Evidence:** [pooled confirmation report](evidence/silver_root_mechanism_confirmation32_2026-09-18.md),
-  [preregistration](evidence/silver_root_mechanism_confirmation32_preregistration_2026-09-18.md),
-  and the local run manifest/hash packet. **Knowledge impact:** current
-  research status and experiment evidence updated; no default change.
-
-## §307 — Silver root ordering ablation source-seed reanalysis (2026-09-18)
-
-- **Correction:** The unchanged A/B/G/H replay was initially analyzed at root
-  level, although the preregistration specified source seeds as the independent
-  units. The corrected analysis reduces four replicates within root, then two
-  roots within each of 32 source seeds, before bootstrap, sign tests, and
-  improved/worsened/tied counts. No replay or teacher data were regenerated.
-- **Results:** `G-A` remains `-0.419882`, with source-seed bootstrap 95% CI
-  `[-0.859591,-0.101469]`, B-best delta `+8.9844` pp and CI
-  `[+3.1250,+15.6250]` pp, counts `12/3/17`, and exact two-sided sign-test
-  `p=0.035156`. `H-A` is `-0.364122`, CI `[-0.814229,-0.036575]`, but its
-  sign-test `p=0.143463` fails the strict gate. `B-A` is `-0.678663`, CI
-  `[-1.414380,-0.135440]`, with `p=0.049042` and counts `13/4/15`.
-- **Decision:** **`ROOT_ORDER_SIGNAL_ONLY`**. The preregistered top-1/best-action
-  ordering gate passes after correction. This does not authorize model
-  training, runtime integration, gameplay qualification, or a default change;
-  harmful-tail review and separate authorization remain required.
-- **Evidence:** [corrected ordering ablation report](evidence/silver_root_ordering_ablation_2026-09-18.md),
-  unchanged replay SHA `f54759089049267102c088d60c57c169f50448b5f166a7e7cc735d554513c1af`,
-  corrected analysis SHA `6f458625e4d8a403e10ddb82d0e80c2fdf649171127c180ae7e7aabd095284a1`,
-  replay executable source state based on `1df5adb` plus the executable-source
-  changes later committed in `d7e227e`, and replay executable SHA-256
-  `ba607f78f5b3432edb5ef0db3e1412197a38af4ef7d2c2b0e5aae49884541239`. The
-  `06d9de3` SHA is frozen underlying Silver/root-mechanism provenance, not the
-  source commit of this replay binary. **Knowledge impact:** current research
-  status and experiment evidence updated; no default change.
-
-## §308 — Silver root ordering tail and training-data feasibility audit (2026-09-18)
-
-- **Tail:** The largest positive root-level `G-A` delta is `+1.514772` at
-  `14/2/23/36/3`, a valid seven-action `PLAYER_NORMAL` combat state. Teacher-A
-  ranks Seeing Red first (`Q=52.560875`), while independent Teacher-B selects
-  Havoc (`Q=49.455004`). A selects Evolve on all four replicates; G selects
-  Blood for Blood once and Evolve three times, yielding B-regrets
-  `[14.6229,0,8.5638,0]` versus A's `[8.5638,0,8.5638,0]`. This is a
-  treatment-sensitive allocation case, not a malformed root.
-- **Reusable labels:** Deduplicated preserved artifacts contain 128 unique
-  root states with valid 10k-A action-Q labels: 64 from the earlier seed-0
-  pool and 64 from source seeds `1..32` in the ablation. These represent only
-  33 source-seed trajectories because the seed-0 roots share one trajectory.
-- **Representation/cost:** All 128 roots are `PLAYER_NORMAL`. Existing Phase-A
-  support provides 1,766 canonical state features, two exact root scalars, and
-  22 action features. The existing files contain wire snapshots and labels,
-  not materialized feature vectors; a small offline conversion adapter is
-  required. Recorded 10k-A label time totals 48.100342 seconds, mean 0.375784
-  seconds/root; this excludes fresh-root capture and conversion overhead.
-- **Decision:** This supports a cheap offline feature-conversion smoke test,
-  not immediate model training. No new labels, model training, runtime
-  integration, gameplay qualification, or default change is authorized.
-- **Evidence:** [tail and feasibility audit](evidence/silver_root_ordering_training_feasibility_2026-09-18.md).
-  **Knowledge impact:** current research status and feasibility evidence only;
-  no model, runtime, gameplay, or default change.
-
-## §309 — Silver root 10k-A teacher stability probe (2026-09-18)
-
-- **Protocol:** Reused the existing 64 A/B/G/H ablation roots and generated
-  exactly one independent 10k-A label per root with relabel seed `20260918`.
-  No gameplay roots, Teacher-B treatment inputs, or model training were added.
-- **Result:** A/A2 corrected-Q top-action agreement is `50/64` (`78.125%`);
-  A/B is `49/64`, and A2/B is `48/64`. Mean B-regret of A's top action is
-  `1.679358` when A/A2 agree (`n=50`) and `1.291792` when they disagree
-  (`n=14`); A2's mean B-regret in the disagreement subset is `2.486354`.
-- **Tail:** The known harmful root `14/2/23/36/3` is stable: A and A2 both
-  rank Seeing Red first, while B selects Havoc; both 10k teachers have B-regret
-  `14.622866` for that choice. The tail is therefore not explained by one-run
-  10k search noise.
-- **Decision:** Single 10k-A top-1 labels are materially noisy and can also be
-  stably biased against B. Do not begin the learnability probe or larger corpus
-  collection yet; consider consensus or stronger labels first.
-- **Evidence:** [teacher stability report](evidence/silver_root_teacher_stability_2026-09-18.md).
-  **Knowledge impact:** current research evidence only; no model, runtime,
-  gameplay, or default change.
+The live policy remained 2,048 visit-selected simulations. A same-root discarded
+shadow recorded action IDs/priors/visits/Q at 128/256/512/1024/2048 over the
+historical seeds12002032--12002039. The run produced1,134 roots,1,133 completed
+and one expected smoke_bomb shadow abort; zero completed-root live/final-action
+mismatches occurred. Agreement with final2048 was92.41%/93.65%/95.41%/97.18%
+at the first four checkpoints. Gap conditioning was strongly useful (>20% gap
+gave96.4% at128 and99.4% at1024), while observed stability discriminated stable
+from unstable roots but did not prove invariance. Offline candidate
+On the 898-root multi-action cohort, the conservative candidate
+`512 -> 2048 when gap<20%` gave98.11% agreement and about42.1% additional
+savings versus existing live early stopping; no rule was deployed or
+gameplay-qualified. Knowledge impact: current
+OOC research gains checkpoint/savings evidence; defaults and quality baselines
+unchanged. [Evidence packet](evidence/ooc_root_checkpoints_2026-09-18/README.md).
 
 ## §311 — Silver root ensemble-teacher audit (2026-09-18)
 
@@ -9941,23 +9856,5 @@ top-level benchmark reporting corrected.
   a larger corpus. The current ensemble is not a credible target without a new
   target definition or evidence addressing unstable/biasing Q estimates.
 - **Evidence:** [ensemble audit](evidence/silver_root_teacher_ensemble_audit_2026-09-18.md).
-  **Knowledge impact:** current research evidence only; no model, runtime,
-  gameplay, or default change.
-
-## §310 — Silver root 25k-B teacher stability probe (2026-09-18)
-
-- **Protocol:** Reused the existing 64 A/B/G/H ablation roots and generated
-  exactly one independent 25k teacher label per root, B2, with relabel seed
-  `20260919`. No gameplay roots or model training were added.
-- **Result:** B/B2 corrected-Q top-action agreement is `42/64` (`65.625%`),
-  below A/A2's `50/64` (`78.125%`). Mean regret of B's choice under B2 is
-  `0.916525`; mean regret of B2's choice under B is `1.205270`. On the 22
-  disagreement roots these are `2.666256` and `3.506241`, respectively.
-- **Tail:** On `14/2/23/36/3`, B selects Havoc but B2 selects Intimidate;
-  cross-regrets are `6.211919` and `9.313845`. A stronger-budget single label
-  therefore does not resolve the known tail.
-- **Decision:** Do not begin a grouped learnability probe or larger corpus from
-  hard single-teacher top-1 labels. Resolve the target/consensus policy first.
-- **Evidence:** [25k-B2 stability report](evidence/silver_root_teacher_b2_stability_2026-09-18.md).
   **Knowledge impact:** current research evidence only; no model, runtime,
   gameplay, or default change.

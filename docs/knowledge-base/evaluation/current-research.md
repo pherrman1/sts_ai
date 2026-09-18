@@ -18,6 +18,27 @@ other sections retain their prior verification and linked evidence.
 
 ## Purpose
 
+The [current OOC CPU profile](../../experiments/evidence/ooc_cpu_profile_2026-09-18/README.md)
+reuses only historical seeds12002032/12002033, with exact workload reproduction
+and frozen opt-in instrumentation on main589a7a7. Real Silver combat accounts
+for54–57% of full CPU; V4 prior/continuation inference for17–19%; all CTM
+preparation for under9%. Prioritize real-combat execution and V4 inference for
+future behavior-preserving speed experiments, not further CTM inference first.
+No optimization or gameplay-quality conclusion was tested; measured full CPU
+is3.2–3.6% above supplied Stage-B timings and is not a production benchmark.
+
+The 8-seed OOC root-checkpoint diagnostic is complete. It preserves the live
+2,048-simulation policy and uses a discarded same-root shadow search to observe
+128/256/512/1024/2048 prefixes. Across 1,133 completed roots, checkpoint
+agreement with final 2,048 is 92.41%, 93.65%, 95.41%, 97.18% and 100.00%;
+top-two gap and observed leader stability are useful risk discriminators. On
+the 898-root multi-action cohort, the conservative candidate `512 -> 2048 when
+gap < 20%` retains 98.11% agreement and saves about 42.1% additional
+simulations versus existing live early stopping. It is not deployed or
+gameplay-qualified; singleton roots are descriptive only for this gap analysis.
+One expected smoke-bomb shadow abort remains separately reported. See
+[the evidence packet](../../experiments/evidence/ooc_root_checkpoints_2026-09-18/README.md).
+
 This page routes current research work: what is active, what is plausibly
 parked, what is closed to avoid repetition, and where the authoritative
 evidence lives. Use [current-baselines.md](current-baselines.md) for executable
@@ -267,6 +288,21 @@ The prior reused32 fixed2048 regression remains preserved and inconclusive
 against this fresh cohort.
 
 ## Completed recent line
+
+### Strong-WD DeepSets survival online speed screen
+
+**DEEPSET_ONLINE_TRADEOFF_STOP** on user-reviewed frozen SHA
+`471ba9a119de2a4f6ae691329467acae1b0f70a0` after Linux GCC passed. Exact #217
+width-64 strong-WD re-export reproduced `c870e4c…`; Stage A was not rerun.
+Native survival median improved 1.143383→0.128041 ms, but matched end-to-end
+CPU/run median improved only 50.88→50.29 s (ratio 0.988404, **1.1596%**), below
+the 10% gate. Two historical #187 seeds were replayed twice per arm at the same
+2048-MCTS/10k-Silver profile, with one-thread isolated timing. These are not
+fresh quality-gate seeds. No 16/64 paired gameplay gate or quality bootstrap ran;
+no equivalence, non-inferiority, or promotion claim. See
+[Stage-B report and raw evidence](../../experiments/evidence/deepset_survival_online_stage_b_2026-09-18/README.md)
+for timing variability, support telemetry, and the shared legacy V1 diagnostic
+warning. Defaults and all source code remain unchanged after review.
 
 ### Near-full combat support: qualified except initial/pre-Smoke and Writhing/Ritual
 

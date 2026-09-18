@@ -535,6 +535,8 @@ add_test(NAME ooc_mcts_parameter_search_selftest
     COMMAND python3 ${CMAKE_SOURCE_DIR}/tools/test_ooc_mcts_parameter_search.py)
 add_test(NAME ooc_mcts_gameplay_analysis_selftest
     COMMAND python3 ${CMAKE_SOURCE_DIR}/tools/test_analyze_ooc_mcts_gameplay.py)
+add_test(NAME ooc_root_checkpoint_analysis_selftest
+    COMMAND python3 ${CMAKE_SOURCE_DIR}/tools/test_analyze_ooc_root_checkpoints.py)
 add_test(NAME combat_transition_expanded_support_selftest
     COMMAND python3 ${CMAKE_SOURCE_DIR}/tools/test_combat_transition_expanded_support.py)
 add_test(NAME combat_transition_remaining_census_selftest

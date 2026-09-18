@@ -2,6 +2,7 @@
 // deck self-attention layer; loaded from the binary exported by
 // export_strategic_tok.py (magic OOC_STRAT_V4).
 #pragma once
+#include "one_combat/ooc_profile.h"
 #include <cstdio>
 #include <cstring>
 #include <cstdint>
@@ -430,6 +431,8 @@ struct OocStrategicTokNet {
     struct PreparedState { float values[NHIDDEN2]; };
     PreparedState prepareState(const float glob[NGLB], int nDk, const int dk[96][3],
                                int nRl, const int rl[64][2], int nPt, const int pt[8][2]) const {
+        one_combat::OocProfileScope profile(one_combat::OocProfileBucket::V4StateNetwork,
+            one_combat::OocProfileScope::hasParent());
         float zDeck[DECKDIM], zRel[RELDIM], zPot[POTDIM];
         encodeDeck(nDk, dk, zDeck);
         encodeRel(nRl, rl, zRel);
@@ -482,6 +485,8 @@ struct OocStrategicTokNet {
     float predictActionValue(const PreparedState &state, std::uint32_t actionBits,
                              const int cats[6], int actionType, int screen,
                              const float entityType[4], int entityId, float goldGePrice) const {
+        one_combat::OocProfileScope profile(one_combat::OocProfileBucket::V4ActionValue,
+            one_combat::OocProfileScope::hasParent());
         float z[POLIN];
         encodeStateAction(state, actionBits, cats, actionType, screen,
                           entityType, entityId, goldGePrice, z);
