@@ -78,6 +78,8 @@ struct SameTurnPath {
     int energy = 0;
     int handSize = 0;
     int discardSize = 0;
+    int energyWasted = 0;
+    int cardsDrawn = 0;
     int actionQueueSize = 0;
     int cardQueueSize = 0;
     sts::InputState inputState = sts::InputState::EXECUTING_ACTIONS;
@@ -134,6 +136,7 @@ sts::BattleContext sameTurnState(sts::GameContext &gc, sts::MonsterEncounter enc
     bc.actionQueue.clear();
     bc.cardQueue.clear();
     bc.monsters.arr[0].curHp = targetHp;
+    bc.monsters.arr[0].maxHp = std::max(bc.monsters.arr[0].maxHp, targetHp);
     bc.monsters.arr[0].block = 0;
     bc.monsters.arr[0].vulnerable = 0;
     bc.monsters.arr[0].weak = 0;
@@ -166,6 +169,8 @@ SameTurnPath resolveSameTurnPath(const sts::BattleContext &original,
     path.energy = path.state.player.energy;
     path.handSize = path.state.cards.cardsInHand;
     path.discardSize = path.state.cards.discardPile.size();
+    path.energyWasted = path.state.energyWasted;
+    path.cardsDrawn = path.state.cardsDrawn;
     path.actionQueueSize = path.state.actionQueue.size;
     path.cardQueueSize = path.state.cardQueue.size;
     path.inputState = path.state.inputState;
@@ -192,6 +197,8 @@ void sameTurnDominanceAuditFixtures(sts::GameContext &gc) {
                 bashThenStrike.energy == strikeThenBash.energy &&
                 bashThenStrike.handSize == strikeThenBash.handSize &&
                 bashThenStrike.discardSize == strikeThenBash.discardSize &&
+                bashThenStrike.energyWasted == strikeThenBash.energyWasted &&
+                bashThenStrike.cardsDrawn == strikeThenBash.cardsDrawn &&
                 bashThenStrike.rngCounter == strikeThenBash.rngCounter &&
                 bashThenStrike.rngCounter == static_cast<std::uint64_t>(initialRngCounter),
             "plain endpoints must match on non-damage fields");
