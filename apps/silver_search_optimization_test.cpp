@@ -25,6 +25,7 @@ using Search = sts::search::BattleSearcher;
 void require(bool ok, const char *message) {
     if (!ok) throw std::runtime_error(message);
 }
+void equalStats(const sts::search::SearchStats &a, const sts::search::SearchStats &b);
 sts::BattleContext fixture(sts::GameContext &gc) {
     gc.cc = sts::CharacterClass::IRONCLAD;
     gc.seed = 0xBADC0DEu;
@@ -276,6 +277,167 @@ void cardActionCanonicalization(const sts::BattleContext &original) {
         }
     }
     require(specialCount == 2, "identity-sensitive card copies must remain distinct");
+}
+
+void uidFragmentationDiagnostic(const sts::BattleContext &original) {
+    auto base = original;
+    base.cards.cardsInHand = 1;
+    base.cards.hand[0] = sts::CardInstance(sts::CardId::STRIKE_RED);
+    base.cards.hand[0].setUniqueId(101);
+    sts::CardInstance drawStrike(sts::CardId::STRIKE_RED);
+    drawStrike.setUniqueId(202);
+    base.cards.drawPile.assignInformationState({}, {drawStrike}, {}, false);
+
+    auto swapped = base;
+    swapped.cards.hand[0].setUniqueId(202);
+    sts::CardInstance swappedDraw(sts::CardId::STRIKE_RED);
+    swappedDraw.setUniqueId(101);
+    swapped.cards.drawPile.assignInformationState({}, {swappedDraw}, {}, false);
+    require(!base.equalForSearch(swapped), "UID swap must miss exact search equality");
+    const auto swappedComparison = sts::search::compareForSearchIgnoringBenignDrawIdentityDiagnostic(
+        base, swapped);
+    require(swappedComparison.equivalent && swappedComparison.handDifferent
+                && swappedComparison.drawDifferent,
+            "ordinary hand/draw UID swap must match the diagnostic comparator");
+    require(sts::search::equalForSearchIgnoringBenignDrawIdentityDiagnostic(base, swapped),
+            "diagnostic comparator wrapper must agree with detailed comparison");
+
+    auto special = base;
+    special.cards.hand[0] = sts::CardInstance(sts::CardId::RAMPAGE);
+    special.cards.hand[0].setUniqueId(301);
+    sts::CardInstance specialDraw(sts::CardId::RAMPAGE);
+    specialDraw.setUniqueId(302);
+    special.cards.drawPile.assignInformationState({}, {specialDraw}, {}, false);
+    auto specialSwapped = special;
+    specialSwapped.cards.hand[0].setUniqueId(302);
+    sts::CardInstance specialSwappedDraw(sts::CardId::RAMPAGE);
+    specialSwappedDraw.setUniqueId(301);
+    specialSwapped.cards.drawPile.assignInformationState({}, {specialSwappedDraw}, {}, false);
+    require(special.cards.hand[0].usesSpecialData(), "Rampage must be identity-sensitive");
+    require(!sts::search::equalForSearchIgnoringBenignDrawIdentityDiagnostic(
+                special, specialSwapped),
+            "special-data card UID swap must remain distinct");
+
+    const auto ordinaryDifference = [&](auto mutate, const char *message) {
+        auto changed = base;
+        mutate(changed.cards.hand[0]);
+        require(!sts::search::equalForSearchIgnoringBenignDrawIdentityDiagnostic(base, changed),
+                message);
+    };
+    ordinaryDifference([](auto &card) { card.upgraded = true; },
+                       "upgrade difference must remain distinct");
+    ordinaryDifference([](auto &card) { card.cost = static_cast<std::int8_t>(card.cost + 1); },
+                       "base cost difference must remain distinct");
+    ordinaryDifference([](auto &card) { card.costForTurn = static_cast<std::int8_t>(card.costForTurn - 1); },
+                       "turn cost difference must remain distinct");
+    ordinaryDifference([](auto &card) { card.freeToPlayOnce = true; },
+                       "free-to-play difference must remain distinct");
+    ordinaryDifference([](auto &card) { card.retain = true; },
+                       "retain difference must remain distinct");
+    ordinaryDifference([](auto &card) { card.specialData = 1; },
+                       "special-data difference must remain distinct");
+
+    auto knownTopChanged = base;
+    sts::CardInstance top(sts::CardId::BASH);
+    top.setUniqueId(401);
+    knownTopChanged.cards.drawPile.assignInformationState({}, {drawStrike}, {top}, false);
+    auto knownTopUidChanged = knownTopChanged;
+    knownTopUidChanged.cards.drawPile = {};
+    sts::CardInstance topChanged = top;
+    topChanged.setUniqueId(402);
+    knownTopUidChanged.cards.drawPile.assignInformationState({}, {drawStrike}, {topChanged}, false);
+    require(!sts::search::equalForSearchIgnoringBenignDrawIdentityDiagnostic(
+                knownTopChanged, knownTopUidChanged),
+            "known-top UID difference must remain distinct");
+
+    auto knownBottomChanged = base;
+    sts::CardInstance bottom(sts::CardId::DEFEND_RED);
+    bottom.setUniqueId(403);
+    knownBottomChanged.cards.drawPile.assignInformationState({bottom}, {drawStrike}, {}, false);
+    auto knownBottomUidChanged = knownBottomChanged;
+    sts::CardInstance bottomChanged = bottom;
+    bottomChanged.setUniqueId(404);
+    knownBottomUidChanged.cards.drawPile.assignInformationState({bottomChanged}, {drawStrike}, {}, false);
+    require(!sts::search::equalForSearchIgnoringBenignDrawIdentityDiagnostic(
+                knownBottomChanged, knownBottomUidChanged),
+            "known-bottom UID difference must remain distinct");
+
+    auto discardChanged = base;
+    sts::CardInstance discard(sts::CardId::DEFEND_RED);
+    discard.setUniqueId(501);
+    discardChanged.cards.discardPile.assignInformationState({}, {discard}, {}, false);
+    auto discardUidChanged = discardChanged;
+    discard.setUniqueId(502);
+    discardUidChanged.cards.discardPile.assignInformationState({}, {discard}, {}, false);
+    require(!sts::search::equalForSearchIgnoringBenignDrawIdentityDiagnostic(
+                discardChanged, discardUidChanged),
+            "discard UID difference must remain distinct");
+
+    auto exhaustChanged = base;
+    sts::CardInstance exhaust(sts::CardId::DEFEND_RED);
+    exhaust.setUniqueId(601);
+    exhaustChanged.cards.exhaustPile.assignInformationState({}, {exhaust}, {}, false);
+    auto exhaustUidChanged = exhaustChanged;
+    exhaust.setUniqueId(602);
+    exhaustUidChanged.cards.exhaustPile.assignInformationState({}, {exhaust}, {}, false);
+    require(!sts::search::equalForSearchIgnoringBenignDrawIdentityDiagnostic(
+                exhaustChanged, exhaustUidChanged),
+            "exhaust UID difference must remain distinct");
+
+    auto queueChanged = base;
+    queueChanged.curCardQueueItem.card = sts::CardInstance(sts::CardId::STRIKE_RED);
+    queueChanged.curCardQueueItem.card.setUniqueId(701);
+    auto queueUidChanged = queueChanged;
+    queueUidChanged.curCardQueueItem.card.setUniqueId(702);
+    require(!sts::search::equalForSearchIgnoringBenignDrawIdentityDiagnostic(
+                queueChanged, queueUidChanged),
+            "queued-card UID difference must remain distinct");
+
+    auto parity = base;
+    sts::CardInstance duplicateA(sts::CardId::STRIKE_RED);
+    duplicateA.setUniqueId(801);
+    sts::CardInstance duplicateB(sts::CardId::STRIKE_RED);
+    duplicateB.setUniqueId(802);
+    sts::CardInstance duplicateC(sts::CardId::DEFEND_RED);
+    duplicateC.setUniqueId(803);
+    parity.cards.drawPile.assignInformationState({}, {duplicateA, duplicateB, duplicateC}, {}, false);
+    Search diagnosticsOff(parity);
+    Search diagnosticsOn(parity);
+    diagnosticsOn.collectUidFragmentationDiagnostics = true;
+    diagnosticsOff.recordActionTrace = true;
+    diagnosticsOn.recordActionTrace = true;
+    diagnosticsOff.search(128);
+    diagnosticsOn.search(128);
+    require(diagnosticsOff.getBestAction() == diagnosticsOn.getBestAction(),
+            "UID diagnostics must not change the selected action");
+    require(diagnosticsOff.randGen == diagnosticsOn.randGen,
+            "UID diagnostics must not change search RNG");
+    require(diagnosticsOff.rolloutAgent.rng == diagnosticsOn.rolloutAgent.rng,
+            "UID diagnostics must not change rollout RNG");
+    require(diagnosticsOff.actionStack == diagnosticsOn.actionStack,
+            "UID diagnostics must not change the action trace");
+    equalStats(diagnosticsOff.stats, diagnosticsOn.stats);
+    require(diagnosticsOff.stats.uidRelaxedNodeAllocationCandidates == 0
+                && diagnosticsOff.stats.uidRelaxedNodeCandidatesWithDrawDifference == 0
+                && diagnosticsOff.stats.uidRelaxedNodeCandidatesWithHandDifference == 0
+                && diagnosticsOff.stats.uidRelaxedNodeCandidatesWithBothHandAndDrawDifference == 0
+                && diagnosticsOff.stats.uidRelaxedChanceSiblingCandidates == 0
+                && diagnosticsOff.stats.uidRelaxedChanceSiblingCandidatesByCategory[0] == 0
+                && diagnosticsOff.stats.uidRelaxedChanceSiblingCandidatesByCategory[1] == 0
+                && diagnosticsOff.stats.uidRelaxedChanceSiblingCandidatesByCategory[2] == 0
+                && diagnosticsOff.stats.uidRelaxedChanceSiblingCandidatesWithHandDrawSwap == 0,
+            "UID diagnostics must remain inactive by default");
+    require(diagnosticsOff.getRootEdges().size() == diagnosticsOn.getRootEdges().size(),
+            "UID diagnostics must not change root edge count");
+    for (std::size_t i = 0; i < diagnosticsOff.getRootEdges().size(); ++i) {
+        const auto &lhs = diagnosticsOff.getRootEdges()[i];
+        const auto &rhs = diagnosticsOn.getRootEdges()[i];
+        require(lhs.action == rhs.action && lhs.visitCount == rhs.visitCount
+                    && lhs.rngAdvanceSteps == rhs.rngAdvanceSteps
+                    && lhs.node->simulationCount == rhs.node->simulationCount
+                    && lhs.node->evaluationSum == rhs.node->evaluationSum,
+                "UID diagnostics must not change root edge statistics");
+    }
 }
 
 void singleCardSelectCanonicalization(const sts::BattleContext &original) {
@@ -1100,6 +1262,7 @@ int main(int argc, char **argv) {
         }
         dedupGrowth(bc);
         cardActionCanonicalization(bc);
+        uidFragmentationDiagnostic(bc);
         singleCardSelectCanonicalization(bc);
         gambleMultiplicityCanonicalization(bc);
         potionActionCanonicalization(gc, bc);

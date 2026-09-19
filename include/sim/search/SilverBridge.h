@@ -343,6 +343,9 @@ struct SilverSearchConfig {
     // evaluation mean.  This is default-off diagnostic observation only.
     bool collectRootActionSummaries = false;
     bool collectRolloutDiagnostics = false;
+    // Default-off diagnostic accounting for conservative UID-only search
+    // fragmentation candidates. This never changes search behavior.
+    bool collectUidFragmentationDiagnostics = false;
     // Opt-in paired budget diagnostic: snapshot this same root after the
     // checkpoint budget and continue it to simulationsPerDecision. This is
     // observational only and is never enabled by the production path.
@@ -474,6 +477,13 @@ struct SilverSearchTelemetry {
     std::int64_t chanceOutcomesSampled = 0;
     std::int64_t chanceSiblingReuse = 0;
     std::int64_t chanceTranspositions = 0;
+    std::int64_t uidRelaxedNodeAllocationCandidates = 0;
+    std::int64_t uidRelaxedNodeCandidatesWithDrawDifference = 0;
+    std::int64_t uidRelaxedNodeCandidatesWithHandDifference = 0;
+    std::int64_t uidRelaxedNodeCandidatesWithBothHandAndDrawDifference = 0;
+    std::int64_t uidRelaxedChanceSiblingCandidates = 0;
+    std::array<std::int64_t, 3> uidRelaxedChanceSiblingCandidatesByCategory {};
+    std::int64_t uidRelaxedChanceSiblingCandidatesWithHandDrawSwap = 0;
     std::int64_t depthSum = 0;
     std::int64_t chanceDepthSum = 0;
     std::int64_t raveUpdates = 0;
@@ -515,6 +525,15 @@ struct SilverSearchTelemetry {
         chanceOutcomesSampled += other.chanceOutcomesSampled;
         chanceSiblingReuse += other.chanceSiblingReuse;
         chanceTranspositions += other.chanceTranspositions;
+        uidRelaxedNodeAllocationCandidates += other.uidRelaxedNodeAllocationCandidates;
+        uidRelaxedNodeCandidatesWithDrawDifference += other.uidRelaxedNodeCandidatesWithDrawDifference;
+        uidRelaxedNodeCandidatesWithHandDifference += other.uidRelaxedNodeCandidatesWithHandDifference;
+        uidRelaxedNodeCandidatesWithBothHandAndDrawDifference += other.uidRelaxedNodeCandidatesWithBothHandAndDrawDifference;
+        uidRelaxedChanceSiblingCandidates += other.uidRelaxedChanceSiblingCandidates;
+        for (std::size_t i = 0; i < uidRelaxedChanceSiblingCandidatesByCategory.size(); ++i) {
+            uidRelaxedChanceSiblingCandidatesByCategory[i] += other.uidRelaxedChanceSiblingCandidatesByCategory[i];
+        }
+        uidRelaxedChanceSiblingCandidatesWithHandDrawSwap += other.uidRelaxedChanceSiblingCandidatesWithHandDrawSwap;
         depthSum += other.depthSum;
         chanceDepthSum += other.chanceDepthSum;
         raveUpdates += other.raveUpdates;

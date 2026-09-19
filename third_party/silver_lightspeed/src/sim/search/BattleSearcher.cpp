@@ -33,6 +33,126 @@ static int chanceCat(const search::Action &a) {
 namespace sts::search {
     thread_local search::BattleSearcher *g_debug_scum_search;
 
+    namespace {
+
+        template <typename LhsIt, typename RhsIt, typename Equal>
+        bool equalAsMultiset(LhsIt lhsBegin, LhsIt lhsEnd, RhsIt rhsBegin,
+                             RhsIt rhsEnd, Equal equal) {
+            const auto lhsSize = std::distance(lhsBegin, lhsEnd);
+            if (lhsSize != std::distance(rhsBegin, rhsEnd)) return false;
+            std::vector<bool> matched(static_cast<std::size_t>(lhsSize), false);
+            for (auto lhs = lhsBegin; lhs != lhsEnd; ++lhs) {
+                bool found = false;
+                std::size_t rhsIndex = 0;
+                for (auto rhs = rhsBegin; rhs != rhsEnd; ++rhs, ++rhsIndex) {
+                    if (!matched[rhsIndex] && equal(*lhs, *rhs)) {
+                        matched[rhsIndex] = true;
+                        found = true;
+                        break;
+                    }
+                }
+                if (!found) return false;
+            }
+            return true;
+        }
+
+        bool equalHand(const CardManager &lhs, const CardManager &rhs, bool relaxed) {
+            if (lhs.cardsInHand != rhs.cardsInHand) return false;
+            return equalAsMultiset(lhs.hand.begin(), lhs.hand.begin() + lhs.cardsInHand,
+                                   rhs.hand.begin(), rhs.hand.begin() + rhs.cardsInHand,
+                [relaxed](const CardInstance &a, const CardInstance &b) {
+                    return relaxed ? Action::areCardsEquivalentForSearch(a, b) : a == b;
+                });
+        }
+
+        bool equalUnknownDraw(const CardPile &lhs, const CardPile &rhs, bool relaxed) {
+            const int lhsBegin = lhs.knownBottom();
+            const int rhsBegin = rhs.knownBottom();
+            const int lhsEnd = lhs.size() - lhs.knownCount();
+            const int rhsEnd = rhs.size() - rhs.knownCount();
+            if (lhsBegin != rhsBegin || lhsEnd - lhsBegin != rhsEnd - rhsBegin) return false;
+            return equalAsMultiset(lhs.begin() + lhsBegin, lhs.begin() + lhsEnd,
+                                   rhs.begin() + rhsBegin, rhs.begin() + rhsEnd,
+                [relaxed](const CardInstance &a, const CardInstance &b) {
+                    return relaxed ? Action::areCardsEquivalentForSearch(a, b) : a == b;
+                });
+        }
+
+        bool equalKnownDrawRegions(const CardPile &lhs, const CardPile &rhs) {
+            if (lhs.size() != rhs.size() || lhs.knownCount() != rhs.knownCount()
+                    || lhs.knownBottom() != rhs.knownBottom()
+                    || lhs.isOrderObserved() != rhs.isOrderObserved()) {
+                return false;
+            }
+            for (int i = 0; i < lhs.knownBottom(); ++i) {
+                if (!(lhs[i] == rhs[i])) return false;
+            }
+            for (int i = lhs.size() - lhs.knownCount(); i < lhs.size(); ++i) {
+                if (!(lhs[i] == rhs[i])) return false;
+            }
+            return true;
+        }
+
+    } // namespace
+
+    UidFragmentationDiagnosticComparison compareForSearchIgnoringBenignDrawIdentityDiagnostic(
+            const BattleContext &lhs, const BattleContext &rhs) {
+        UidFragmentationDiagnosticComparison result;
+        if (!(lhs.seed == rhs.seed && lhs.turn == rhs.turn
+                && lhs.ascension == rhs.ascension && lhs.outcome == rhs.outcome
+                && lhs.inputState == rhs.inputState
+                && lhs.cardSelectInfo == rhs.cardSelectInfo
+                && lhs.monsterTurnIdx == rhs.monsterTurnIdx
+                && lhs.isBattleOver == rhs.isBattleOver
+                && lhs.endTurnQueued == rhs.endTurnQueued
+                && lhs.turnHasEnded == rhs.turnHasEnded
+                && lhs.skipMonsterTurn == rhs.skipMonsterTurn
+                && lhs.smokeBombUsed == rhs.smokeBombUsed
+                && lhs.actionQueue == rhs.actionQueue
+                && lhs.cardQueue == rhs.cardQueue
+                && lhs.potionCount == rhs.potionCount
+                && lhs.potionCapacity == rhs.potionCapacity
+                && lhs.potions == rhs.potions
+                && lhs.player == rhs.player
+                && lhs.monsters == rhs.monsters
+                && lhs.curCardQueueItem == rhs.curCardQueueItem
+                && lhs.miscBits == rhs.miscBits)) {
+            return result;
+        }
+
+        const auto &lhsCards = lhs.cards;
+        const auto &rhsCards = rhs.cards;
+        if (!(lhsCards.nextUniqueCardId == rhsCards.nextUniqueCardId
+                && lhsCards.handNormalityCount == rhsCards.handNormalityCount
+                && lhsCards.handPainCount == rhsCards.handPainCount
+                && lhsCards.strikeCount == rhsCards.strikeCount
+                && lhsCards.handBloodCardCount == rhsCards.handBloodCardCount
+                && lhsCards.drawPileBloodCardCount == rhsCards.drawPileBloodCardCount
+                && lhsCards.discardPileBloodCardCount == rhsCards.discardPileBloodCardCount
+                && lhsCards.limbo == rhsCards.limbo
+                && lhsCards.stasisCards == rhsCards.stasisCards
+                && lhsCards.discardPile == rhsCards.discardPile
+                && lhsCards.exhaustPile == rhsCards.exhaustPile
+                && equalKnownDrawRegions(lhsCards.drawPile, rhsCards.drawPile))) {
+            return result;
+        }
+
+        if (!equalHand(lhsCards, rhsCards, true)
+                || !equalUnknownDraw(lhsCards.drawPile, rhsCards.drawPile, true)) {
+            return result;
+        }
+
+        result.equivalent = true;
+        result.handDifferent = !equalHand(lhsCards, rhsCards, false);
+        result.drawDifferent = !equalUnknownDraw(lhsCards.drawPile, rhsCards.drawPile, false);
+        return result;
+    }
+
+    bool equalForSearchIgnoringBenignDrawIdentityDiagnostic(
+            const BattleContext &lhs, const BattleContext &rhs) {
+        return compareForSearchIgnoringBenignDrawIdentityDiagnostic(lhs, rhs).equivalent;
+    }
+
     // Arbitrary nonzero seed for the state hash accumulator.
     constexpr std::uint64_t HASH_SEED = 14695981039346656037ULL;
 
@@ -269,6 +389,9 @@ void search::BattleSearcher::growDedup() {
 // intact, so callers may still read it.
 search::BattleSearcher::Node* search::BattleSearcher::getOrCreateNode(BattleContext &&state) {
     const std::size_t hash = search::hashBattleState(state);
+    bool relaxedEquivalentSeen = false;
+    bool relaxedHandDifference = false;
+    bool relaxedDrawDifference = false;
 
     // Linear probe the open-addressed table; equalForSearch resolves hash collisions exactly.
     std::size_t i = hash & stateToNodeMask;
@@ -277,7 +400,34 @@ search::BattleSearcher::Node* search::BattleSearcher::getOrCreateNode(BattleCont
             lastNodeWasCreated = false;
             return stateToNode[i].node;
         }
+        if (collectUidFragmentationDiagnostics && stateToNode[i].hash == hash) {
+            const auto comparison = compareForSearchIgnoringBenignDrawIdentityDiagnostic(
+                *stateToNode[i].node->state, state);
+            if (comparison.equivalent) {
+                relaxedEquivalentSeen = true;
+                // Use the first relaxed-equivalent probe entry for the
+                // mutually exclusive difference classification. A later
+                // entry may differ in a different relaxed region, but it
+                // must not synthesize a hand+draw classification from two
+                // separate state pairs.
+                if (!relaxedHandDifference && !relaxedDrawDifference) {
+                    relaxedHandDifference = comparison.handDifferent;
+                    relaxedDrawDifference = comparison.drawDifferent;
+                }
+            }
+        }
         i = (i + 1) & stateToNodeMask;
+    }
+
+    if (collectUidFragmentationDiagnostics && relaxedEquivalentSeen) {
+        ++stats.uidRelaxedNodeAllocationCandidates;
+        if (relaxedHandDifference && relaxedDrawDifference) {
+            ++stats.uidRelaxedNodeCandidatesWithBothHandAndDrawDifference;
+        } else if (relaxedHandDifference) {
+            ++stats.uidRelaxedNodeCandidatesWithHandDifference;
+        } else if (relaxedDrawDifference) {
+            ++stats.uidRelaxedNodeCandidatesWithDrawDifference;
+        }
     }
 
     // Grow only on a miss, so duplicate lookups have no allocation side effects.
@@ -843,6 +993,20 @@ search::BattleSearcher::Edge* search::BattleSearcher::selectChanceOutcome(search
                 ++stats.chanceSiblingReuse;
                 ++stats.wSibReuse[wcat];
                 return &e;  // resampled an outcome we already have
+            }
+        }
+        if (collectUidFragmentationDiagnostics) {
+            for (const auto &e : chance.edges) {
+                const auto comparison = compareForSearchIgnoringBenignDrawIdentityDiagnostic(
+                    *e.node->state, *child->state);
+                if (comparison.equivalent) {
+                    ++stats.uidRelaxedChanceSiblingCandidates;
+                    ++stats.uidRelaxedChanceSiblingCandidatesByCategory[wcat];
+                    if (comparison.handDifferent && comparison.drawDifferent) {
+                        ++stats.uidRelaxedChanceSiblingCandidatesWithHandDrawSwap;
+                    }
+                    break;
+                }
             }
         }
         if (!lastNodeWasCreated) ++stats.chanceTranspositions;

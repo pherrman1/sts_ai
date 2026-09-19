@@ -501,6 +501,15 @@ SilverSearchTelemetry telemetry(const sts::search::SearchStats &stats) {
     out.chanceOutcomesSampled = stats.chanceOutcomesSampled;
     out.chanceSiblingReuse = stats.chanceSiblingReuse;
     out.chanceTranspositions = stats.chanceTranspositions;
+    out.uidRelaxedNodeAllocationCandidates = stats.uidRelaxedNodeAllocationCandidates;
+    out.uidRelaxedNodeCandidatesWithDrawDifference = stats.uidRelaxedNodeCandidatesWithDrawDifference;
+    out.uidRelaxedNodeCandidatesWithHandDifference = stats.uidRelaxedNodeCandidatesWithHandDifference;
+    out.uidRelaxedNodeCandidatesWithBothHandAndDrawDifference = stats.uidRelaxedNodeCandidatesWithBothHandAndDrawDifference;
+    out.uidRelaxedChanceSiblingCandidates = stats.uidRelaxedChanceSiblingCandidates;
+    for (std::size_t i = 0; i < out.uidRelaxedChanceSiblingCandidatesByCategory.size(); ++i) {
+        out.uidRelaxedChanceSiblingCandidatesByCategory[i] = stats.uidRelaxedChanceSiblingCandidatesByCategory[i];
+    }
+    out.uidRelaxedChanceSiblingCandidatesWithHandDrawSwap = stats.uidRelaxedChanceSiblingCandidatesWithHandDrawSwap;
     out.depthSum = stats.depthSum;
     out.chanceDepthSum = stats.chanceDepthSum;
     out.raveUpdates = stats.raveUpdates;
@@ -552,6 +561,15 @@ SilverSearchTelemetry telemetryDelta(const sts::search::SearchStats &after,
     result.chanceOutcomesSampled -= prior.chanceOutcomesSampled;
     result.chanceSiblingReuse -= prior.chanceSiblingReuse;
     result.chanceTranspositions -= prior.chanceTranspositions;
+    result.uidRelaxedNodeAllocationCandidates -= prior.uidRelaxedNodeAllocationCandidates;
+    result.uidRelaxedNodeCandidatesWithDrawDifference -= prior.uidRelaxedNodeCandidatesWithDrawDifference;
+    result.uidRelaxedNodeCandidatesWithHandDifference -= prior.uidRelaxedNodeCandidatesWithHandDifference;
+    result.uidRelaxedNodeCandidatesWithBothHandAndDrawDifference -= prior.uidRelaxedNodeCandidatesWithBothHandAndDrawDifference;
+    result.uidRelaxedChanceSiblingCandidates -= prior.uidRelaxedChanceSiblingCandidates;
+    for (std::size_t i = 0; i < result.uidRelaxedChanceSiblingCandidatesByCategory.size(); ++i) {
+        result.uidRelaxedChanceSiblingCandidatesByCategory[i] -= prior.uidRelaxedChanceSiblingCandidatesByCategory[i];
+    }
+    result.uidRelaxedChanceSiblingCandidatesWithHandDrawSwap -= prior.uidRelaxedChanceSiblingCandidatesWithHandDrawSwap;
     result.depthSum -= prior.depthSum;
     result.chanceDepthSum -= prior.chanceDepthSum;
     result.raveUpdates -= prior.raveUpdates;
@@ -774,6 +792,7 @@ public:
         searcher->endTurnWideningAlpha = config.endTurnWideningAlpha;
         searcher->collectRolloutDiagnostics = config.collectRolloutDiagnostics;
         searcher->collectVictoryCounts = config.collectRootActionSummaries;
+        searcher->collectUidFragmentationDiagnostics = config.collectUidFragmentationDiagnostics;
         searcher->leafObserver = config.leafObserver;
     }
 

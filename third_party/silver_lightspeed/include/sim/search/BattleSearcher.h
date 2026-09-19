@@ -75,6 +75,13 @@ namespace sts::search {
         std::int64_t chanceOutcomesSampled = 0;  // chance-node widening samples executed
         std::int64_t chanceSiblingReuse = 0;     // sampled outcome collided with an existing sibling
         std::int64_t chanceTranspositions = 0;   // sampled outcome dedup-hit a non-sibling node
+        std::int64_t uidRelaxedNodeAllocationCandidates = 0;
+        std::int64_t uidRelaxedNodeCandidatesWithDrawDifference = 0;
+        std::int64_t uidRelaxedNodeCandidatesWithHandDifference = 0;
+        std::int64_t uidRelaxedNodeCandidatesWithBothHandAndDrawDifference = 0;
+        std::int64_t uidRelaxedChanceSiblingCandidates = 0;
+        std::int64_t uidRelaxedChanceSiblingCandidatesByCategory[3] = {};
+        std::int64_t uidRelaxedChanceSiblingCandidatesWithHandDrawSwap = 0;
         std::int64_t depthSum = 0;               // in-tree path length at each simulation's end
         std::int64_t chanceDepthSum = 0;         // chance nodes on the path at each simulation's end
         std::int64_t raveUpdates = 0;
@@ -120,6 +127,15 @@ namespace sts::search {
             steps += o.steps; nodesCreated += o.nodesCreated; detTranspositions += o.detTranspositions;
             chanceOutcomesSampled += o.chanceOutcomesSampled; chanceSiblingReuse += o.chanceSiblingReuse;
             chanceTranspositions += o.chanceTranspositions;
+            uidRelaxedNodeAllocationCandidates += o.uidRelaxedNodeAllocationCandidates;
+            uidRelaxedNodeCandidatesWithDrawDifference += o.uidRelaxedNodeCandidatesWithDrawDifference;
+            uidRelaxedNodeCandidatesWithHandDifference += o.uidRelaxedNodeCandidatesWithHandDifference;
+            uidRelaxedNodeCandidatesWithBothHandAndDrawDifference += o.uidRelaxedNodeCandidatesWithBothHandAndDrawDifference;
+            uidRelaxedChanceSiblingCandidates += o.uidRelaxedChanceSiblingCandidates;
+            for (int i = 0; i < 3; ++i) {
+                uidRelaxedChanceSiblingCandidatesByCategory[i] += o.uidRelaxedChanceSiblingCandidatesByCategory[i];
+            }
+            uidRelaxedChanceSiblingCandidatesWithHandDrawSwap += o.uidRelaxedChanceSiblingCandidatesWithHandDrawSwap;
             depthSum += o.depthSum; chanceDepthSum += o.chanceDepthSum;
             raveUpdates += o.raveUpdates; raveEligibleEdges += o.raveEligibleEdges;
             raveEligibleNodes += o.raveEligibleNodes;
@@ -157,6 +173,18 @@ namespace sts::search {
             rolloutSurvivalSum += o.rolloutSurvivalSum;
         }
     };
+
+    struct UidFragmentationDiagnosticComparison {
+        bool equivalent = false;
+        bool handDifferent = false;
+        bool drawDifferent = false;
+    };
+
+    UidFragmentationDiagnosticComparison compareForSearchIgnoringBenignDrawIdentityDiagnostic(
+        const BattleContext &lhs, const BattleContext &rhs);
+
+    bool equalForSearchIgnoringBenignDrawIdentityDiagnostic(
+        const BattleContext &lhs, const BattleContext &rhs);
 
     // to find a solution to a battle with tree pruning
     struct BattleSearcher {
@@ -254,6 +282,7 @@ namespace sts::search {
         // diagnostic accounting only; it is never consulted by selection.
         bool collectRolloutDiagnostics = false;
         bool collectVictoryCounts = false;
+        bool collectUidFragmentationDiagnostics = false;
         silver_bridge::SilverLeafObserver leafObserver;
 
         std::default_random_engine randGen;
