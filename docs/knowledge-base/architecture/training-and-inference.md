@@ -331,7 +331,8 @@ common-random-number pairing, while each replicate rematerializes and executes
 the root action afresh. Consequently an immediate stochastic action outcome is
 resampled rather than frozen before its continuation.
 
-The `silver_forced_action_target_v1` rows retain each raw value, semantic
+The `silver_forced_action_target_v2` rows retain each original-root-corrected
+raw value, semantic
 action, stochastic classification, immediate RNG-counter transition,
 continuation RNG identity and budget, root/snapshot hashes, utility definition,
 evaluator configuration, executable/Silver SHAs, and Teacher-A Q/visit data.
@@ -344,7 +345,11 @@ counters rather than claiming two independent streams. A separate historical-
 regression mode evaluates known harmful roots without adding them to primary
 population statistics.
 If a forced action terminates combat immediately, its exact terminal utility is
-recorded with `terminal_after_action=true` and zero continuation simulations;
+recorded with `terminal_after_action=true` and zero continuation simulations.
+For both terminal and nonterminal actions, gold/max-HP changes caused before
+the fresh continuation root are translated back to the original root and
+applied only in proportion to victorious outcomes. Rows retain the raw
+victory count, full victory-baseline correction, and applied correction;
 nonterminal replicates must consume their complete 5k or 10k budget.
 `tools/analyze_silver_forced_action_audit.py` derives root-centered continuous
 advantages and pairwise margins and evaluates L only against untouched J. Its

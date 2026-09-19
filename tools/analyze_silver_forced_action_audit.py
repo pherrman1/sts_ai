@@ -10,8 +10,8 @@ import statistics
 from collections import defaultdict
 from pathlib import Path
 
-SCHEMA = "silver_forced_action_target_v1"
-TARGET = "forced_action_continuation_value_v1"
+SCHEMA = "silver_forced_action_target_v2"
+TARGET = "forced_action_original_root_value_v2"
 RESAMPLES = 10000
 BOOTSTRAP_SEED = 20260919
 HARMFUL_REGRET = 3.0
@@ -73,7 +73,9 @@ def _validate(rows, expected_roots, replicates, l_budget, j_budget, fixture,
         required = ("population", "root_id", "source_seed", "state_hash", "root_snapshot_hash",
                     "action_fingerprint", "native_order", "estimator", "replicate", "value",
                     "continuation_budget", "simulations", "rng_identity", "stochastic",
-                    "terminal_after_action",
+                    "terminal_after_action", "terminal_victory", "victories",
+                    "victory_baseline_correction", "applied_baseline_correction",
+                    "leaf_root_value",
                     "root_outcome_rng_identity", "immediate_rng_counter_before",
                     "immediate_rng_counter_after", "continuation_rng_identity",
                     "continuation_rng_counter",
@@ -95,7 +97,25 @@ def _validate(rows, expected_roots, replicates, l_budget, j_budget, fixture,
                 or type(row["value"]) not in (int, float) or not math.isfinite(row["value"])
                 or row["continuation_budget"] != budget
                 or type(row["terminal_after_action"]) is not bool
+                or type(row["terminal_victory"]) is not bool
+                or (not row["terminal_after_action"] and row["terminal_victory"])
                 or row["simulations"] != (0 if row["terminal_after_action"] else budget)
+                or type(row["victories"]) is not int
+                or row["victories"] < 0
+                or row["victories"] > (1 if row["terminal_after_action"] else budget)
+                or (row["terminal_after_action"] and row["victories"]
+                    != (1 if row["terminal_victory"] else 0))
+                or type(row["victory_baseline_correction"]) not in (int, float)
+                or not math.isfinite(row["victory_baseline_correction"])
+                or type(row["applied_baseline_correction"]) not in (int, float)
+                or not math.isfinite(row["applied_baseline_correction"])
+                or type(row["leaf_root_value"]) not in (int, float)
+                or not math.isfinite(row["leaf_root_value"])
+                or not math.isclose(row["applied_baseline_correction"],
+                    row["victory_baseline_correction"] * row["victories"]
+                    / (1 if row["terminal_after_action"] else budget), abs_tol=1e-12)
+                or not math.isclose(row["value"], row["leaf_root_value"]
+                    + row["applied_baseline_correction"], abs_tol=1e-12)
                 or type(row["rng_identity"]) is not int or row["rng_identity"] <= 0
                 or row["root_outcome_rng_identity"] != row["rng_identity"]
                 or row["continuation_rng_identity"] != row["rng_identity"]

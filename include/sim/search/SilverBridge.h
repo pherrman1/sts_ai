@@ -687,7 +687,12 @@ struct SilverForcedActionReference {
         std::int32_t immediateRngCounterAfter = 0;
         bool stochastic = false;
         bool terminalAfterAction = false;
+        bool terminalVictory = false;
         std::int64_t simulations = 0;
+        std::int64_t victories = 0;
+        double victoryBaselineCorrection = 0.0;
+        double appliedBaselineCorrection = 0.0;
+        double leafRootValue = 0.0;
         double value = 0.0;
         SilverSearchTelemetry telemetry;
     };
@@ -706,6 +711,19 @@ struct SilverForcedActionReference {
     // exactly one row per requested independent replicate.
     std::vector<Replicate> rawReplicates;
 };
+
+struct SilverForcedActionBaselineProbe {
+    SemanticAction action;
+    bool accepted = false;
+    bool terminalAfterAction = false;
+    double victoryBaselineCorrection = 0.0;
+};
+
+// Execute each legal semantic root action once and report the root-relative
+// victory correction caused immediately by that action.  This is a cheap
+// diagnostic: it runs no continuation search.
+std::vector<SilverForcedActionBaselineProbe> probeSilverForcedActionBaselines(
+    const BattleStateWire &state);
 
 // Enumerates the legal ordinary root actions and evaluates every one with a
 // fresh high-budget Silver continuation. `replicates` are independent private

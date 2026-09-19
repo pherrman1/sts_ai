@@ -509,6 +509,37 @@ int main(int argc, char **argv) {
     check(std::abs(silver_bridge::silverVictoryBaselineCorrection(firstWire, advancedLeaf) - 5.25) < 1e-12,
           "original-root victory correction must exactly reconstruct gold and max-HP baselines");
 
+    // A forced action is searched from its post-action state.  A lethal Feed
+    // therefore moves the fresh search root past the +3 max-HP gain.  The
+    // forced-action evaluator must restore the original-root victory utility,
+    // including the terminal case where there are no continuation playouts.
+    BattleContext lethalFeed = first;
+    lethalFeed.cards.cardsInHand = 1;
+    lethalFeed.cards.hand[0] = card(CardId::FEED, 90);
+    lethalFeed.player.energy = 2;
+    lethalFeed.monsters.arr[0].curHp = 1;
+    search::CombatKnowledgeState lethalFeedKnowledge;
+    lethalFeedKnowledge.initializeFromLiveBattle(lethalFeed);
+    const auto lethalFeedWire = convert(lethalFeed, gc, lethalFeedKnowledge);
+    silver_bridge::SilverSearchConfig forcedFeedConfig;
+    forcedFeedConfig.reuseCapMode = silver_bridge::SilverReuseCapMode::NONE;
+    const auto forcedFeed = silver_bridge::runSilverForcedActionReferences(
+        lethalFeedWire, forcedFeedConfig, 8, 1);
+    const auto feedReference = std::find_if(forcedFeed.begin(), forcedFeed.end(), [](const auto &ref) {
+        return ref.action.type == silver_bridge::SemanticActionType::CARD
+            && ref.action.card.id == static_cast<std::int16_t>(CardId::FEED);
+    });
+    check(feedReference != forcedFeed.end() && feedReference->accepted
+              && feedReference->rawReplicates.size() == 1
+              && feedReference->rawReplicates[0].terminalAfterAction
+              && feedReference->rawReplicates[0].simulations == 0
+              && feedReference->rawReplicates[0].victories == 1
+              && std::abs(feedReference->rawReplicates[0].victoryBaselineCorrection - 6.0) < 1e-12
+              && std::abs(feedReference->rawReplicates[0].appliedBaselineCorrection - 6.0) < 1e-12
+              && std::abs(feedReference->rawReplicates[0].value
+                  - feedReference->rawReplicates[0].leafRootValue - 6.0) < 1e-12,
+          "lethal Feed forced action must restore original-root max-HP victory utility");
+
     // The bridge session must retain the exact private child selected at one
     // Silver decision and reroot into it at the next. This is an entirely
     // native/private action execution: no live BattleContext is touched.

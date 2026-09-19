@@ -38,8 +38,28 @@ def main():
                        cwd=repo, check=True)
         result = json.loads(report.read_text())
         assert result["roots"] == 1 and result["source_seeds"] == 1
+        frozen_roots = repo / "docs/experiments/evidence/silver_forced_action_target_2026-09-19/roots.jsonl"
+        correction_root = tmp / "correction-root.jsonl"
+        correction_root.write_text(next(line for line in frozen_roots.read_text().splitlines()
+                                        if json.loads(line)["root_id"] == "12006015/1/13/7/3") + "\n")
+        correction_raw = tmp / "correction-audit.jsonl"
+        subprocess.run(["bash", str(repo / "tools/seed_guard.sh"), audit,
+                        str(correction_root), str(correction_raw), "20260919", sha,
+                        "--fixture", "8", "16", "2"], cwd=repo, env=env, check=True)
+        correction_rows = [json.loads(line) for line in correction_raw.read_text().splitlines()]
+        nonzero = [row for row in correction_rows
+                   if abs(row["victory_baseline_correction"]) > 1e-12]
+        assert nonzero and all(not row["terminal_after_action"] for row in nonzero)
+        assert all(0 <= row["victories"] <= row["simulations"]
+                   and abs(row["applied_baseline_correction"]
+                           - row["victory_baseline_correction"] * row["victories"]
+                           / row["simulations"]) < 1e-12
+                   and abs(row["value"] - row["leaf_root_value"]
+                           - row["applied_baseline_correction"]) < 1e-12
+                   for row in nonzero)
         print(json.dumps({"fixed_fixture_only": True, "rows": len(rows),
-                          "classification": result["classification"]}))
+                          "classification": result["classification"],
+                          "nonterminal_correction_rows": len(nonzero)}))
 
 
 if __name__ == "__main__":
