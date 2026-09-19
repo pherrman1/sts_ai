@@ -361,12 +361,30 @@ int main() {
         const auto disagreementImported = one_combat::advisor::importSilverRoot(disagreementSuccessor.observation);
         const auto disagreementDecision = runSilverDecision(
             *disagreementSession, disagreementImported.wire, config);
-        if (!disagreementDecision.accepted || disagreementDecision.diagnostic.exactReroot
-            || !disagreementDecision.diagnostic.fallback
-            || disagreementDecision.diagnostic.fallbackReason != SilverRerootFallbackReason::CANDIDATE_MISSING
-            || disagreementDecision.diagnostic.inheritedVisits != 0
+        if (!disagreementDecision.accepted || !disagreementDecision.diagnostic.exactReroot
+            || disagreementDecision.diagnostic.equivalentCopyReroot
+            || disagreementDecision.diagnostic.fallback
+            || disagreementDecision.diagnostic.fallbackReason != SilverRerootFallbackReason::NONE
+            || disagreementDecision.diagnostic.inheritedVisits <= 0
             || disagreementDecision.rootActionSummaries.empty())
-            throw std::runtime_error("different action did not produce a valid candidate-missing fallback");
+            throw std::runtime_error("different listed action did not reuse its retained branch");
+
+        auto otherEquivalentSession = silver_bridge::makeSilverSearchSession();
+        const auto otherEquivalentFirst = runSilverDecision(
+            *otherEquivalentSession, rerootImported.wire, config);
+        const auto otherEquivalentSuccessor = successorForSemantic(*rerootRoot, otherAction, true);
+        const auto otherEquivalentImported = one_combat::advisor::importSilverRoot(
+            otherEquivalentSuccessor.observation);
+        const auto otherEquivalentDecision = runSilverDecision(
+            *otherEquivalentSession, otherEquivalentImported.wire, config);
+        if (!otherEquivalentFirst.accepted || !otherEquivalentDecision.accepted
+            || otherEquivalentDecision.diagnostic.exactReroot
+            || !otherEquivalentDecision.diagnostic.equivalentCopyReroot
+            || otherEquivalentDecision.diagnostic.fallback
+            || otherEquivalentDecision.diagnostic.fallbackReason != SilverRerootFallbackReason::NONE
+            || otherEquivalentDecision.diagnostic.inheritedVisits <= 0)
+            throw std::runtime_error(
+                "different listed action's equivalent copy did not reuse its retained branch");
 
         auto equivalentSession = silver_bridge::makeSilverSearchSession();
         const auto equivalentFirst = runSilverDecision(*equivalentSession, rerootImported.wire, config);

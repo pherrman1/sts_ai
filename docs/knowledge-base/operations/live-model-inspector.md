@@ -21,8 +21,11 @@ One advisor-owned Silver session is retained for the active protocol session
 and `combatEntryHash`; a matching observed successor can therefore report an
 exact reroot with inherited visits. If the human plays a different physical
 copy of the same ordinary card, the immediate retained successor is narrowly
-rebased to that copy and also preserves inherited visits. A different
-supported human action safely reports a fresh `candidate_missing` fallback.
+rebased to that copy and also preserves inherited visits. Matching considers
+every explored action listed at the retained root, not only Silver's selected
+recommendation, so choosing another supported listed action also inherits its
+branch visits. An observation with no retained successor safely reports a
+fresh `candidate_missing` fallback.
 It returns the selected action, root action summaries containing
 edge visits, `visitShare`, and selection Q only when that edge has a valid Q
 value, plus the decision ordinal and reroot diagnostics.

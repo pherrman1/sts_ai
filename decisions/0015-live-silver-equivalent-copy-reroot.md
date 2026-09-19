@@ -6,7 +6,7 @@
 ## Context
 
 Silver deduplicates gameplay-equivalent cards while enumerating root actions,
-so its retained action names one physical card representative. The live panel
+so each retained action names one physical card representative. The live panel
 intentionally recommends only the card kind, not that hidden representative.
 When a human played another equivalent copy, the resulting gameplay state was
 supported but its card UIDs and hand order did not exactly match the retained
@@ -20,9 +20,11 @@ beyond this live input ambiguity.
 
 ## Decision
 
-Permit equivalent-copy reuse only while matching the immediate observed live
-root after an ordinary card action. The retained and observed actions must be
-gameplay-equivalent and differ only in physical UID. Swap exactly those two
+Match the immediate observed live root against every explored action edge at
+the retained root, not only Silver's selected recommendation. Permit
+equivalent-copy reuse only at that boundary after an ordinary card action.
+The retained and observed actions must be gameplay-equivalent and differ only
+in physical UID. Swap exactly those two
 UIDs throughout the reachable retained subtree, align the candidate root hand
 and card-edge source indices with the observation, and retain it only when the
 normal full search-state equality check succeeds. Compact the graph around the
@@ -52,7 +54,8 @@ starts a fresh root.
 - `include/sim/search/SilverBridge.h` and
   `apps/one_combat/advisor_stdio.cpp`: explicit equivalent-copy reroot
   diagnostic.
-- `apps/live_silver_importer_test.cpp`: equivalent-copy inherited-visit case,
-  strict global-state inequality, and changed-card-state fallback case.
+- `apps/live_silver_importer_test.cpp`: non-selected action and equivalent-copy
+  inherited-visit cases, strict global-state inequality, and changed-card-state
+  fallback case.
 - `mods/sts-model-inspector/src/main/java/stsmodelinspector/STSModelInspector.java`:
   distinguishes equivalent-copy reuse from fallback in the live panel.

@@ -915,9 +915,9 @@ public:
         searcher->leafObserver = config.leafObserver;
     }
 
-    // Exact pinned-SearchAgent boundary: state equality plus exact hand order;
-    // hand permutations are counted as misses and never reused. The 32k cap
-    // deliberately forces setRoot so the open-addressed table stays sparse.
+    // Retained-root boundary: match the observation against every explored
+    // root action, then require state equality plus exact hand order. The 32k
+    // cap deliberately forces setRoot so the open-addressed table stays sparse.
     void beginAt(const sts::BattleContext &state, const SilverSearchConfig &config) {
         inheritedVisits = 0;
         rerootMissDiagnostic.clear();
@@ -961,14 +961,23 @@ public:
             return;
         }
         if (previousBest != nullptr) {
-            auto *candidate = exactRerootCandidate(previousBest, state);
+            sts::search::BattleSearcher::Node *candidate = nullptr;
+            for (const auto &edge : searcher->root->edges) {
+                candidate = exactRerootCandidate(&edge, state);
+                if (candidate != nullptr) break;
+            }
             const bool exactCandidate = candidate != nullptr;
             bool equivalentCopyCandidate = false;
             EquivalentCopyCandidate equivalent;
             if (candidate == nullptr && searcher->root != nullptr && searcher->root->state != nullptr) {
-                equivalent = equivalentCopyRerootCandidate(
-                    previousBest, *searcher->root->state, state);
-                candidate = equivalent.node;
+                for (const auto &edge : searcher->root->edges) {
+                    equivalent = equivalentCopyRerootCandidate(
+                        &edge, *searcher->root->state, state);
+                    if (equivalent.node != nullptr) {
+                        candidate = equivalent.node;
+                        break;
+                    }
+                }
                 if (candidate != nullptr) {
                     equivalentCopyCandidate = remapReachableEquivalentCopy(
                         candidate, equivalent.retainedUid, equivalent.observedUid);
@@ -1011,12 +1020,16 @@ public:
                             ? SilverRerootFallbackReason::ALLOCATED_CAP
                             : SilverRerootFallbackReason::ACTIVE_CAP);
                 }
-                if (previousBest != nullptr && previousBest->node != nullptr) {
-                    if (!previousBest->node->isRandomNode) {
-                        rerootMissDiagnostic = selectionStateSummary(*previousBest->node->state, state);
+                // A successful reroot may reclaim every edge owned by the old
+                // root. Only inspect the still-live predecessor on a true
+                // candidate miss; cap fallbacks need no state-miss summary.
+                const auto *diagnosticEdge = candidate == nullptr ? previousBest : nullptr;
+                if (diagnosticEdge != nullptr && diagnosticEdge->node != nullptr) {
+                    if (!diagnosticEdge->node->isRandomNode) {
+                        rerootMissDiagnostic = selectionStateSummary(*diagnosticEdge->node->state, state);
                     } else {
                         std::ostringstream out;
-                        for (const auto &outcome : previousBest->node->edges) {
+                        for (const auto &outcome : diagnosticEdge->node->edges) {
                             if (outcome.node != nullptr)
                                 out << '[' << selectionStateSummary(*outcome.node->state, state) << ']';
                         }

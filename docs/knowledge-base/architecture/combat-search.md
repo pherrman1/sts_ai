@@ -222,8 +222,11 @@ nodes through `allNodes.size()`/`poolUsed`, never state slots or bytes. Pooled
 state swaps preserve scratch-buffer capacity reuse. All consumers of these
 structures must be rebuilt together after a layout change.
 
-The live adapter also supports one narrower reroot equivalence at the
-immediate observed root. When the retained best action and observed action are
+The live adapter matches an immediate observed root against every explored
+action edge retained at the prior root, rather than only the selected edge.
+This lets any supported listed action inherit the simulations already stored
+below its matching successor. It also supports one narrower reroot equivalence
+at that boundary. When a retained action and the observed action are
 ordinary gameplay-equivalent cards with different UIDs, it swaps exactly
 those two UIDs throughout the reachable retained subtree and accepts the
 candidate only if the resulting root passes the normal full search-state
