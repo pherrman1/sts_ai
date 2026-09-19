@@ -11,6 +11,7 @@ import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.megacrit.cardcrawl.dungeons.AbstractDungeon;
 import com.megacrit.cardcrawl.cards.AbstractCard;
 import com.megacrit.cardcrawl.monsters.AbstractMonster;
+import com.megacrit.cardcrawl.powers.AbstractPower;
 import com.megacrit.cardcrawl.helpers.FontHelper;
 import com.megacrit.cardcrawl.helpers.ImageMaster;
 import com.megacrit.cardcrawl.rooms.EventRoom;
@@ -20,6 +21,7 @@ import com.megacrit.cardcrawl.rooms.RestRoom;
 import com.megacrit.cardcrawl.rooms.TreasureRoom;
 import com.megacrit.cardcrawl.rooms.AbstractRoom;
 import com.megacrit.cardcrawl.core.Settings;
+import com.megacrit.cardcrawl.ui.panels.EnergyPanel;
 import com.evacipated.cardcrawl.modthespire.lib.SpireInitializer;
 import org.lwjgl.input.Keyboard;
 
@@ -69,6 +71,12 @@ public final class STSModelInspector implements PostInitializeSubscriber,
     private volatile String silverSelectedAction = "";
     private volatile String silverSelectedLabel = "";
     private volatile String silverRanking = "";
+    private volatile int silverDecisionOrdinal = -1;
+    private volatile boolean silverRerootExact;
+    private volatile boolean silverEquivalentCopyReroot;
+    private volatile boolean silverRerootFallback;
+    private volatile String silverFallbackReason = "";
+    private volatile long silverInheritedVisits;
     private volatile double ctmDeath = 0.0;
     private volatile int ctmHistogramMin = 1;
     private volatile double[] ctmHistogram = new double[0];
@@ -109,6 +117,12 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         silverSelectedAction = "";
         silverSelectedLabel = "";
         silverRanking = "";
+        silverDecisionOrdinal = -1;
+        silverRerootExact = false;
+        silverEquivalentCopyReroot = false;
+        silverRerootFallback = false;
+        silverFallbackReason = "";
+        silverInheritedVisits = 0;
         ctmDeath = 0.0;
         ctmHistogram = new double[0];
     }
@@ -201,11 +215,26 @@ public final class STSModelInspector implements PostInitializeSubscriber,
                 FontHelper.renderFontLeftTopAligned(sb, FontHelper.tipBodyFont, ctmReason,
                         x, y - 138.0f * Settings.scale, Color.ORANGE);
             }
-            FontHelper.renderFontLeftTopAligned(sb, FontHelper.tipBodyFont,
-                    silverStatus.isEmpty() ? "Silver — waiting" : "Silver — " + silverStatus,
+            String silverHeading = "Silver — waiting";
+            if (!silverStatus.isEmpty()) {
+                if ("OK".equals(silverStatus) && silverDecisionOrdinal == 0) {
+                    silverHeading = "Silver — decision 0 — fresh";
+                } else if ("OK".equals(silverStatus)
+                        && (silverRerootExact || silverEquivalentCopyReroot)) {
+                    silverHeading = "Silver — decision 1 — reused "
+                            + silverInheritedVisits + " visits";
+                } else if ("OK".equals(silverStatus) && silverRerootFallback) {
+                    silverHeading = "Silver — decision 1 — fresh fallback";
+                } else {
+                    silverHeading = "Silver — " + silverStatus;
+                }
+            }
+            FontHelper.renderFontLeftTopAligned(sb, FontHelper.tipBodyFont, silverHeading,
                     x, y - 320.0f * Settings.scale, white);
-            if (!silverReason.isEmpty()) FontHelper.renderFontLeftTopAligned(sb, FontHelper.tipBodyFont,
-                    silverReason, x, y - 342.0f * Settings.scale, Color.ORANGE);
+            String silverDetail = !silverReason.isEmpty() ? silverReason
+                    : silverRerootFallback ? silverFallbackReason : "";
+            if (!silverDetail.isEmpty()) FontHelper.renderFontLeftTopAligned(sb, FontHelper.tipBodyFont,
+                    silverDetail, x, y - 342.0f * Settings.scale, Color.ORANGE);
             if (!silverRanking.isEmpty()) {
                 int row = 0;
                 for (String value : silverRanking.split("\\n")) {
@@ -717,12 +746,29 @@ public final class STSModelInspector implements PostInitializeSubscriber,
     }
 
     private static String combatJson() {
+        int decisionOrdinal = AbstractDungeon.actionManager.cardsPlayedThisTurn.size();
         StringBuilder out = new StringBuilder("{\"turn\":");
         out.append(com.megacrit.cardcrawl.actions.GameActionManager.turn)
                 .append(",\"energy\":")
-                .append(AbstractDungeon.player.energy == null ? 0 : AbstractDungeon.player.energy.energy)
+                .append(EnergyPanel.totalCount)
                 .append(",\"block\":").append(AbstractDungeon.player.currentBlock)
-                .append(",\"cardsPlayedThisTurn\":").append(AbstractDungeon.actionManager.cardsPlayedThisTurn.size())
+                .append(",\"cardsPlayedThisTurn\":").append(decisionOrdinal)
+                .append(",\"playedThisTurn\":[");
+        boolean firstPlayed = true;
+        for (AbstractCard card : AbstractDungeon.actionManager.cardsPlayedThisTurn) {
+            if (!firstPlayed) out.append(',');
+            firstPlayed = false;
+            out.append(cardJson(card));
+        }
+        out.append("]")
+                .append(",\"playerPowers\":[");
+        boolean firstPower = true;
+        for (AbstractPower power : AbstractDungeon.player.powers) {
+            if (!firstPower) out.append(',');
+            firstPower = false;
+            out.append("{\"id\":\"").append(escapeJson(power.ID)).append("\"}");
+        }
+        out.append("]")
                 .append(",\"cardSelect\":false,\"resolving\":false")
                 .append(",\"runicDome\":").append(hasRunicDome())
                 .append(",\"frozenEye\":").append(hasRelic("Frozen Eye"))
@@ -770,7 +816,15 @@ public final class STSModelInspector implements PostInitializeSubscriber,
                         .append("\",\"hp\":").append(monster.currentHealth)
                         .append(",\"maxHp\":").append(monster.maxHealth)
                         .append(",\"block\":").append(monster.currentBlock)
-                        .append(",\"nextMove\":").append(monster.nextMove);
+                        .append(",\"nextMove\":").append(monster.nextMove)
+                        .append(",\"powers\":[");
+                boolean firstMonsterPower = true;
+                for (AbstractPower power : monster.powers) {
+                    if (!firstMonsterPower) out.append(',');
+                    firstMonsterPower = false;
+                    out.append("{\"id\":\"").append(escapeJson(power.ID)).append("\"}");
+                }
+                out.append(']');
                 if (!runicDome) {
                     out.append(",\"intent\":\"")
                             .append(escapeJson(monster.intent == null ? "UNKNOWN" : monster.intent.name()))
@@ -948,6 +1002,12 @@ public final class STSModelInspector implements PostInitializeSubscriber,
                             silverSelectedAction = "";
                             silverSelectedLabel = "";
                             silverRanking = "";
+                            silverDecisionOrdinal = -1;
+                            silverRerootExact = false;
+                            silverEquivalentCopyReroot = false;
+                            silverRerootFallback = false;
+                            silverFallbackReason = "";
+                            silverInheritedVisits = 0;
                             responseSequence = seq;
                             responseHash = hash;
                             advisorResponseJson = line;
@@ -963,12 +1023,18 @@ public final class STSModelInspector implements PostInitializeSubscriber,
                             } else {
                                 advisorReason = reason == null ? "" : reason;
                             }
-                            if (line.contains("\"id\":\"silver_first_turn_v1\"")) {
+                            if (line.contains("\"id\":\"silver_player_decision_v2\"")) {
                                 silverStatus = field(line, "silverStatus");
                                 silverReason = field(line, "silverReason");
                                 silverSelectedAction = field(line, "selectedAction");
                                 silverSelectedLabel = field(line, "selectedLabel");
                                 silverRanking = field(line, "silverRanking");
+                                silverDecisionOrdinal = (int) numberField(line, "decisionOrdinal");
+                                silverRerootExact = booleanField(line, "exact");
+                                silverEquivalentCopyReroot = booleanField(line, "equivalentCopy");
+                                silverRerootFallback = booleanField(line, "fallback");
+                                silverFallbackReason = field(line, "fallbackReason");
+                                silverInheritedVisits = numberField(line, "inheritedVisits");
                                 if (silverRanking != null) silverRanking = silverRanking.replace("\\n", "\n");
                             }
                             if (line.contains("\"id\":\"ctm_combat_entry_v2\"")) {
@@ -1018,6 +1084,14 @@ public final class STSModelInspector implements PostInitializeSubscriber,
             while (end < json.length() && Character.isDigit(json.charAt(end))) end++;
             try { return Long.parseLong(json.substring(start, end)); }
             catch (Exception e) { return -1; }
+        }
+
+        private boolean booleanField(String json, String key) {
+            String needle = "\"" + key + "\":";
+            int start = json.indexOf(needle);
+            if (start < 0) return false;
+            start += needle.length();
+            return json.startsWith("true", start);
         }
 
         private double[] numberArrayField(String json, String key) {
@@ -1257,13 +1331,26 @@ public final class STSModelInspector implements PostInitializeSubscriber,
                     (combat.isEmpty() ? "" : ",\"combat\":" + combat
                         + ",\"combatEntryHash\":\"" + combatEntryHash + "\""
                         + (combatEntry.isEmpty() ? "" : ",\"combatEntry\":" + combatEntry)
-                        + (combatEntry.isEmpty() ? "" : ",\"silverRoot\":{\"schemaVersion\":1,\"firstDecision\":true,\"character\":\""
+                        + (combatEntry.isEmpty() ? "" : ",\"silverRoot\":{\"schemaVersion\":2,\"decisionOrdinal\":"
+                            + playedDecisionOrdinal(combat) + ",\"firstDecision\":"
+                            + (playedDecisionOrdinal(combat) == 0) + ",\"character\":\""
                             + character + "\",\"ascension\":" + ascension + ",\"act\":" + act
                             + ",\"floor\":" + floor + ",\"hp\":" + hp + ",\"maxHp\":" + maxHp
                             + ",\"gold\":" + gold + ",\"potionCapacity\":" +
                             AbstractDungeon.player.potionSlots + ",\"roomClass\":\"" +
                             roomClass(AbstractDungeon.getCurrRoom()) + "\",\"burningElite\":" +
                             isBurningElite() + ",\"combat\":" + combat + "}")) + "}";
+        }
+
+        private static int playedDecisionOrdinal(String combatJson) {
+            String needle = "\"cardsPlayedThisTurn\":";
+            int start = combatJson.indexOf(needle);
+            if (start < 0) return -1;
+            start += needle.length();
+            int end = start;
+            while (end < combatJson.length() && Character.isDigit(combatJson.charAt(end))) ++end;
+            try { return Integer.parseInt(combatJson.substring(start, end)); }
+            catch (Exception error) { return -1; }
         }
 
         private static String escape(String s) {

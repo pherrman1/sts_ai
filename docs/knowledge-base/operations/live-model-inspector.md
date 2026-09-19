@@ -14,11 +14,21 @@ observation boundary. It never receives RNG state or controls the simulator.
 
 Combat observations now have two separate fail-closed evaluator paths. The
 existing CTM evaluator uses the public combat-entry importer when its model is
-available. The `silver_first_turn_v1` evaluator imports an Ironclad first-turn
-Silver root, verifies converted-state parity and legal actions, and runs the
-fixed 1,000-simulation Silver decision configuration. It returns the selected
-action plus root action summaries containing edge visits, `visitShare`, and
-selection Q only when that edge has a valid Q value.
+available. The `silver_player_decision_v2` evaluator imports an Ironclad
+decision-0 or decision-1 Silver root, verifies converted-state parity and legal
+actions, and runs the fixed 1,000-simulation Silver decision configuration.
+One advisor-owned Silver session is retained for the active protocol session
+and `combatEntryHash`; a matching observed successor can therefore report an
+exact reroot with inherited visits. If the human plays a different physical
+copy of the same ordinary card, the immediate retained successor is narrowly
+rebased to that copy and also preserves inherited visits. Matching considers
+every explored action listed at the retained root, not only Silver's selected
+recommendation, so choosing another supported listed action also inherits its
+branch visits. An observation with no retained successor safely reports a
+fresh `candidate_missing` fallback.
+It returns the selected action, root action summaries containing
+edge visits, `visitShare`, and selection Q only when that edge has a valid Q
+value, plus the decision ordinal and reroot diagnostics.
 Unsupported encounter, relic, information, or schema states remain explicit
 `UNSUPPORTED` results; this is a diagnostic ranking display, not a gameplay
 controller or a qualification of Silver policy quality. `STALE` responses
@@ -32,7 +42,8 @@ observations include only player-visible decision state: turn, energy, player
 block, cards played this turn, hand/draw/discard/exhaust card instances,
 potions, relics, and living-monster HP, max HP, block, next move, intent, and
 intent damage. The Silver root reuses this combat snapshot and adds the
-versioned first-decision envelope. Under Runic Dome, intent and intent damage
+version-2 decision envelope, ordered `playedThisTurn` history, and explicit
+player/monster power arrays. Under Runic Dome, intent and intent damage
 are omitted from both the payload and fingerprint because they are not
 player-visible. The combat boundary requires the installed runtime's
 waiting-for-user phase, no current action, empty action/card/monster queues,
@@ -47,11 +58,26 @@ launches the advisor with a direct `ProcessBuilder` call. The F8 panel remains
 diagnostic and read-only. Workshop and game/dependency JARs remain outside
 Git. Silver live support is fail-closed to ordinary Act-1 Ironclad Cultist and
 Jaw Worm combats plus non-burning Act-1 Gremlin Nob, Burning Blood only, empty
-potion slots, and the exact supported first public moves: Cultist `nextMove=3`,
-Jaw Worm `nextMove=1`, and Gremlin Nob `nextMove=3`. Later Jaw Worm/Nob moves
-are not supported in this milestone. Burning elites, Runic Dome, Frozen Eye,
-missing state, non-empty potions, and live RNG fields are rejected. The
-implementation does not reuse Silver sessions across later turns.
+potion slots, the exact 5 Strike / 4 Defend / 1 Bash unupgraded starter deck,
+and the exact supported first public moves: Cultist `nextMove=3`, Jaw Worm
+`nextMove=1`, and Gremlin Nob `nextMove=3`. Decision 1 is supported only after
+exactly one ordinary unupgraded Strike or Defend during Java turn 1. Bash,
+non-empty power arrays, later turns, later Jaw Worm/Nob moves, burning elites,
+Runic Dome, Frozen Eye, missing state, non-empty potions, and live RNG fields
+are rejected. A single deterministic search seed derived from
+`combatEntryHash` is retained across both decisions. Unsupported continuation,
+a new protocol session, or a new combat discards the prior Silver session; the
+implementation never crosses the monster turn.
+
+Live current energy comes from `EnergyPanel.totalCount`; the player's
+`EnergyManager.energy` field is the per-turn recharge amount and does not
+decrease when a card is played.
+
+Equivalent-copy rebasing is deliberately local to the immediate live reroot.
+It proves the candidate by swapping only the retained and observed card UIDs,
+then requiring the ordinary-card equivalence and full search-state checks to
+match. It does not relax `equalForSearch()`, merge UID-distinct states in the
+global dedup table, or make chance-node identity less strict.
 
 Rest observations are emitted only while the installed campfire UI exists, is
 visible, and has not selected an option. Selecting a campfire option therefore
@@ -90,12 +116,12 @@ so a future game UI can discard responses after a reload or newer capture.
 
 ## Required next work
 
-The Java process must own bounded background I/O and treat the endpoint as
-advisory only. Future work must not broaden this milestone's encounter or
-first-move support without a new contract and parity fixtures. CTM and Silver
-results remain separate evaluators, and neither path controls gameplay or
-establishes policy-quality evidence.
+The Java process owns bounded background I/O and treats the endpoint as
+advisory only. Future work must not broaden this milestone's encounter,
+continuation, or first-move support without a new contract and parity fixtures.
+CTM and Silver results remain separate evaluators, and neither path controls
+gameplay or establishes policy-quality evidence.
 
 Knowledge impact: this page records the protocol/lifecycle boundary, the
-player-visible combat gate, the Runic Dome redaction, the narrow Silver
-first-turn evaluator contract, and its diagnostic-only limitation.
+player-visible combat gate, the Runic Dome redaction, the narrow two-decision
+Silver evaluator contract, and its diagnostic-only limitation.

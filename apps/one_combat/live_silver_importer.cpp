@@ -140,10 +140,15 @@ SilverRootImportResult importSilverRoot(const json &observation) {
     if (!observation.contains("silverRoot") || !observation.at("silverRoot").is_object()) return unsupported("silver_root_missing");
     const auto &root = observation.at("silverRoot");
     if (hasForbiddenRngField(observation) || hasForbiddenRngField(root)) return unsupported("silver_rng_field");
-    int schema = 0, act = 0, floor = 0, ascension = 0, hp = 0, maxHp = 0, gold = 0, potionCapacity = 0;
+    int schema = 0, decisionOrdinal = -1, act = 0, floor = 0, ascension = 0;
+    int hp = 0, maxHp = 0, gold = 0, potionCapacity = 0;
     bool firstDecision = false, burningElite = false;
-    if (!requiredInt(root, "schemaVersion", schema) || schema != 1) return unsupported("silver_schema_version");
-    if (!requiredBool(root, "firstDecision", firstDecision) || !firstDecision) return unsupported("silver_not_first_decision");
+    if (!requiredInt(root, "schemaVersion", schema) || schema != 2) return unsupported("silver_schema_version");
+    if (!requiredInt(root, "decisionOrdinal", decisionOrdinal)
+        || (decisionOrdinal != 0 && decisionOrdinal != 1)) return unsupported("silver_decision_ordinal");
+    if (!requiredBool(root, "firstDecision", firstDecision)
+        || firstDecision != (decisionOrdinal == 0)) return unsupported("silver_first_decision_flag");
+    result.decisionOrdinal = decisionOrdinal;
     if (!requiredInt(root, "act", act) || act != 1) return unsupported("silver_act");
     if (!requiredInt(root, "floor", floor) || floor < 1) return unsupported("silver_floor");
     if (!requiredInt(root, "ascension", ascension) || !requiredInt(root, "hp", hp)
@@ -162,8 +167,13 @@ SilverRootImportResult importSilverRoot(const json &observation) {
     int cardsPlayed = 0;
     if (!requiredBool(combat, "runicDome", runicDome) || runicDome) return unsupported("silver_runic_dome");
     if (!requiredBool(combat, "frozenEye", frozenEye) || frozenEye) return unsupported("silver_frozen_eye");
-    if (!requiredInt(combat, "cardsPlayedThisTurn", cardsPlayed) || cardsPlayed != 0)
-        return unsupported("silver_not_first_decision");
+    if (!requiredInt(combat, "cardsPlayedThisTurn", cardsPlayed)
+        || cardsPlayed != decisionOrdinal) return unsupported("silver_cards_played_history");
+    if (!combat.contains("playedThisTurn") || !combat.at("playedThisTurn").is_array()
+        || combat.at("playedThisTurn").size() != static_cast<std::size_t>(decisionOrdinal))
+        return unsupported("silver_played_history");
+    if (!combat.contains("playerPowers") || !combat.at("playerPowers").is_array()
+        || !combat.at("playerPowers").empty()) return unsupported("silver_unmapped_player_power");
     if (!requiredBool(combat, "cardSelect", cardSelect) || !requiredBool(combat, "resolving", resolving)
         || cardSelect || resolving) return unsupported("silver_card_select");
     int turn = 0, energy = 0, block = 0;
@@ -180,14 +190,30 @@ SilverRootImportResult importSilverRoot(const json &observation) {
         || !parseCards(combat.at("draw"), "DRAW", cards)
         || !parseCards(combat.at("discard"), "DISCARD", cards)
         || !parseCards(combat.at("exhaust"), "EXHAUST", cards)) return unsupported("silver_unknown_card");
-    if (cards.size() < 5 || cards.size() > 50 || cards.size() != 10) return unsupported("silver_deck_size");
+    if (cards.size() != 10) return unsupported("silver_nonstarter_deck");
+    int strikes = 0, defends = 0, bashes = 0;
+    for (const auto &card : cards) {
+        const auto id = static_cast<sts::CardId>(card.wire.id);
+        if (id == sts::CardId::STRIKE_RED) ++strikes;
+        else if (id == sts::CardId::DEFEND_RED) ++defends;
+        else if (id == sts::CardId::BASH) ++bashes;
+        else return unsupported("silver_nonstarter_deck");
+        const int expectedCost = id == sts::CardId::BASH ? 2 : 1;
+        if (card.wire.upgraded || card.wire.specialData != 0
+            || card.wire.cost != expectedCost || card.wire.costForTurn != expectedCost
+            || card.wire.freeToPlayOnce || card.wire.retain)
+            return unsupported("silver_nonstarter_deck");
+    }
+    if (strikes != 5 || defends != 4 || bashes != 1)
+        return unsupported("silver_nonstarter_deck");
     std::sort(cards.begin(), cards.end(), [](const CardRecord &a, const CardRecord &b) { return a.uuid < b.uuid; });
     std::set<std::string> uuids;
     for (int i = 0; i < static_cast<int>(cards.size()); ++i) {
         if (!uuids.insert(cards[i].uuid).second || cards[i].uuid.empty()) return unsupported("silver_card_identity");
         cards[i].wire.uniqueId = static_cast<std::int16_t>(i);
     }
-    if (combat.at("hand").size() != 5) return unsupported("silver_first_hand_size");
+    if (combat.at("hand").size() != static_cast<std::size_t>(5 - decisionOrdinal))
+        return unsupported("silver_hand_size");
     wire.nextUniqueCardId = static_cast<int>(cards.size());
     // Reparse by source so the UUID mapping above is applied without exposing pile order.
     std::unordered_map<std::string, silver_bridge::CardWire> byUuid;
@@ -224,7 +250,7 @@ SilverRootImportResult importSilverRoot(const json &observation) {
     wire.floorNum = floor; wire.act = act; wire.ascension = ascension;
     // BattleContext::init reaches PLAYER_NORMAL after two executeActions loop
     // iterations: the initial draw and the final decision-boundary check.
-    wire.turn = 0; wire.cardsDrawn = 5; wire.loopCount = 2; wire.energyWasted = 0;
+    wire.turn = 0; wire.cardsDrawn = 5; wire.loopCount = decisionOrdinal == 0 ? 2 : 0; wire.energyWasted = 0;
     wire.outcome = 0; wire.inputState = 1; // PLAYER_NORMAL, proven by the live decision gate
     wire.monsterTurnIdx = 6; wire.endTurnQueued = false; wire.turnHasEnded = false; wire.skipMonsterTurn = false;
     wire.potionCapacity = potionCapacity; wire.potionCount = 0;
@@ -233,7 +259,8 @@ SilverRootImportResult importSilverRoot(const json &observation) {
     wire.player.curHp = hp; wire.player.maxHp = maxHp; wire.player.gold = gold;
     wire.player.energy = energy; wire.player.energyPerTurn = 3; wire.player.cardDrawPerTurn = 5;
     wire.player.lastTargetedMonster = 1; wire.player.block = block;
-    wire.player.cardsPlayedThisTurn = 0; wire.player.attacksPlayedThisTurn = 0;
+    wire.player.cardsPlayedThisTurn = static_cast<std::int16_t>(decisionOrdinal);
+    wire.player.attacksPlayedThisTurn = 0;
     wire.player.skillsPlayedThisTurn = 0; wire.player.cardsDiscardedThisTurn = 0;
     wire.player.lastAttackUnblockedDamage = 0; wire.player.timesDamagedThisCombat = 0;
     const int burningBlood = static_cast<int>(sts::RelicId::BURNING_BLOOD);
@@ -271,6 +298,8 @@ SilverRootImportResult importSilverRoot(const json &observation) {
         if (move == 0) return unsupported("silver_unknown_move");
         if ((id == "Gremlin Nob" || id == "GremlinNob") ? roomClass != "ELITE" : roomClass != "MONSTER")
             return unsupported("silver_room_class");
+        if (!item.contains("powers") || !item.at("powers").is_array()
+            || !item.at("powers").empty()) return unsupported("silver_unmapped_monster_power");
         auto &monster = wire.monsters[i]; monster.idx = static_cast<int>(i); monster.id = canonical;
         monster.moveHistory = {static_cast<std::int16_t>(move), 0};
     }
@@ -294,8 +323,38 @@ SilverRootImportResult importSilverRoot(const json &observation) {
     wire.limbo.assign(10, silver_bridge::CardWire{});
     for (auto &card : wire.limbo) card.uniqueId = -1;
     wire.curCardQueueItem.card.uniqueId = -1;
-    wire.isolatedSearchSeed = fnv1a(observation.value("observationHash", std::string()) + ":silver-root-v1");
-    wire.observedGeneration = 1;
+    if (decisionOrdinal == 1) {
+        const auto &played = combat.at("playedThisTurn")[0];
+        if (!played.is_object() || !played.contains("id") || !played.at("id").is_string()
+            || !played.contains("uuid") || !played.at("uuid").is_string()
+            || !played.contains("upgraded") || !played.at("upgraded").is_boolean())
+            return unsupported("silver_played_card");
+        const auto playedId = played.at("id").get<std::string>();
+        if (playedId != "Strike_R" && playedId != "Defend_R")
+            return unsupported("silver_unsupported_continuation");
+        if (played.at("upgraded").get<bool>()) return unsupported("silver_played_card");
+        const auto playedUuid = played.at("uuid").get<std::string>();
+        const auto mapped = byUuid.find(playedUuid);
+        if (playedUuid.empty() || mapped == byUuid.end()) return unsupported("silver_played_card");
+        const auto expectedId = playedId == "Strike_R" ? sts::CardId::STRIKE_RED : sts::CardId::DEFEND_RED;
+        if (mapped->second.id != static_cast<std::int16_t>(expectedId) || mapped->second.upgraded)
+            return unsupported("silver_played_card");
+        int discardMatches = 0;
+        for (const auto &item : combat.at("discard"))
+            if (item.is_object() && item.value("uuid", std::string()) == playedUuid) ++discardMatches;
+        if (discardMatches != 1) return unsupported("silver_played_card");
+        wire.curCardQueueItem.card = mapped->second;
+        wire.curCardQueueItem.target = 0;
+        wire.curCardQueueItem.energyOnUse = energy + 1;
+        wire.player.lastTargetedMonster = playedId == "Strike_R" ? 0 : 1;
+        wire.player.attacksPlayedThisTurn = playedId == "Strike_R" ? 1 : 0;
+        wire.player.skillsPlayedThisTurn = playedId == "Defend_R" ? 1 : 0;
+        wire.loopCount = 6;
+    }
+    const auto combatEntryHash = observation.value("combatEntryHash", std::string());
+    if (combatEntryHash.empty()) return unsupported("silver_combat_entry_hash");
+    wire.isolatedSearchSeed = fnv1a(combatEntryHash + ":silver-live-v2");
+    wire.observedGeneration = static_cast<std::uint64_t>(decisionOrdinal + 1);
     result.ok = true;
     return result;
 }
