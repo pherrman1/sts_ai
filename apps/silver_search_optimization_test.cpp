@@ -1,12 +1,15 @@
 // Exact hot-path regression checks against the isolated Silver implementation.
 #include <algorithm>
+#include <chrono>
 #include <cmath>
+#include <functional>
 #include <iostream>
 #include <limits>
+#include <set>
 #include <stdexcept>
-#include <vector>
-#include <unordered_set>
 #include <unordered_map>
+#include <unordered_set>
+#include <vector>
 #include <string>
 #include "combat/BattleContext.h"
 #include "game/GameContext.h"
@@ -197,6 +200,179 @@ void singleCardSelectCanonicalization(const sts::BattleContext &original) {
     require(execution.cards.cardsInHand == 2 && execution.cards.exhaustPile.size() == 1 &&
             execution.cards.exhaustPile[0].id == sts::CardId::STRIKE_RED,
             "select representative must still execute the expected pile transformation");
+}
+
+std::set<std::vector<int>> semanticGambleSurface(const sts::BattleContext &bc, bool canonical) {
+    std::vector<int> classIds(bc.cards.cardsInHand, -1);
+    std::vector<const sts::CardInstance *> classRepresentatives;
+    for (int i = 0; i < bc.cards.cardsInHand; ++i) {
+        for (std::size_t classId = 0; classId < classRepresentatives.size(); ++classId) {
+            if (sts::search::Action::areCardsEquivalentForSearch(
+                    bc.cards.hand[i], *classRepresentatives[classId])) {
+                classIds[i] = static_cast<int>(classId);
+                break;
+            }
+        }
+        if (classIds[i] < 0) {
+            classIds[i] = static_cast<int>(classRepresentatives.size());
+            classRepresentatives.push_back(&bc.cards.hand[i]);
+        }
+    }
+
+    std::set<std::vector<int>> surface;
+    auto record = [&](int selectedBits) {
+        std::vector<int> counts(classRepresentatives.size(), 0);
+        for (int i = 0; i < bc.cards.cardsInHand; ++i) {
+            if (selectedBits & (1 << i)) {
+                ++counts[classIds[i]];
+            }
+        }
+        surface.insert(std::move(counts));
+    };
+    if (!canonical) {
+        for (int selectedBits = 0; selectedBits < (1 << bc.cards.cardsInHand); ++selectedBits) {
+            record(selectedBits);
+        }
+        return surface;
+    }
+    std::set<int> visited;
+    std::function<void(int)> visit = [&](int selectedBits) {
+        if (!visited.insert(selectedBits).second) {
+            return;
+        }
+        auto state = bc;
+        state.inputState = sts::InputState::CARD_SELECT;
+        state.cardSelectInfo.cardSelectTask = sts::CardSelectTask::GAMBLE;
+        state.cardSelectInfo.canPickAnyNumber = true;
+        state.cardSelectInfo.selectedBits = selectedBits;
+        const auto actions = sts::search::Action::enumerateCardSelectActions(state);
+        for (const auto &action : actions) {
+            if (action.getActionType() == sts::search::ActionType::MULTI_CARD_SELECT) {
+                record(selectedBits);
+            } else {
+                visit(selectedBits | (1 << action.getSelectIdx()));
+            }
+        }
+    };
+    visit(0);
+    return surface;
+}
+
+void gambleMultiplicityCanonicalization(const sts::BattleContext &original) {
+    auto state = original;
+    state.inputState = sts::InputState::CARD_SELECT;
+    state.cardSelectInfo.cardSelectTask = sts::CardSelectTask::GAMBLE;
+    state.cardSelectInfo.canPickAnyNumber = true;
+    state.cards.cardsInHand = 4;
+    state.cards.hand[0] = sts::CardInstance(sts::CardId::STRIKE_RED);
+    state.cards.hand[1] = sts::CardInstance(sts::CardId::DEFEND_RED);
+    state.cards.hand[2] = sts::CardInstance(sts::CardId::STRIKE_RED);
+    state.cards.hand[3] = sts::CardInstance(sts::CardId::STRIKE_RED);
+
+    auto singleIndices = [](const std::vector<sts::search::Action> &actions) {
+        std::vector<int> indices;
+        for (const auto &action : actions) {
+            if (action.getActionType() == sts::search::ActionType::SINGLE_CARD_SELECT) {
+                indices.push_back(action.getSelectIdx());
+            }
+        }
+        return indices;
+    };
+    const auto initialActions = sts::search::Action::enumerateCardSelectActions(state);
+    require(singleIndices(initialActions) == std::vector<int>({0, 1}),
+            "GAMBLE must expose only first representatives at the initial state");
+    require(initialActions.size() == 3
+                && initialActions.back().getActionType() == sts::search::ActionType::MULTI_CARD_SELECT,
+            "GAMBLE initial representative reduction must retain confirmation");
+
+    state.cardSelectInfo.selectedBits = 1 << 0;
+    require(singleIndices(sts::search::Action::enumerateCardSelectActions(state))
+                == std::vector<int>({1, 2}),
+            "GAMBLE must expose the next equivalent copy after selecting one");
+    state.cardSelectInfo.selectedBits = (1 << 0) | (1 << 2);
+    require(singleIndices(sts::search::Action::enumerateCardSelectActions(state))
+                == std::vector<int>({1, 3}),
+            "GAMBLE must expose the third equivalent copy after selecting two");
+
+    state.cardSelectInfo.selectedBits = 1 << 2;
+    require(singleIndices(sts::search::Action::enumerateCardSelectActions(state))
+                == std::vector<int>({0, 1}),
+            "GAMBLE must handle a noncanonical incoming selectedBits state");
+    require(sts::search::Action::enumerateCardSelectActions(state).back().getActionType()
+                == sts::search::ActionType::MULTI_CARD_SELECT,
+            "GAMBLE noncanonical selectedBits must retain confirmation");
+
+    auto twoAndTwo = state;
+    twoAndTwo.cardSelectInfo.selectedBits = 0;
+    twoAndTwo.cards.cardsInHand = 4;
+    twoAndTwo.cards.hand[0] = sts::CardInstance(sts::CardId::STRIKE_RED);
+    twoAndTwo.cards.hand[1] = sts::CardInstance(sts::CardId::STRIKE_RED);
+    twoAndTwo.cards.hand[2] = sts::CardInstance(sts::CardId::DEFEND_RED);
+    twoAndTwo.cards.hand[3] = sts::CardInstance(sts::CardId::DEFEND_RED);
+    const auto twoAndTwoSurface = semanticGambleSurface(twoAndTwo, true);
+    const auto twoAndTwoReference = semanticGambleSurface(twoAndTwo, false);
+    require(twoAndTwoSurface == twoAndTwoReference && twoAndTwoSurface.size() == 9,
+            "GAMBLE 2+2 canonical surface must equal all 9 semantic subsets");
+
+    auto fiveAndFive = twoAndTwo;
+    fiveAndFive.cards.cardsInHand = 10;
+    for (int i = 0; i < 5; ++i) {
+        fiveAndFive.cards.hand[i] = sts::CardInstance(sts::CardId::STRIKE_RED);
+        fiveAndFive.cards.hand[i + 5] = sts::CardInstance(sts::CardId::DEFEND_RED);
+    }
+    const auto fiveAndFiveSurface = semanticGambleSurface(fiveAndFive, true);
+    const auto fiveAndFiveReference = semanticGambleSurface(fiveAndFive, false);
+    require(fiveAndFiveSurface == fiveAndFiveReference && fiveAndFiveSurface.size() == 36,
+            "GAMBLE 5+5 canonical surface must equal all 36 semantic subsets");
+
+    auto distinct = state;
+    distinct.cards.cardsInHand = 2;
+    distinct.cards.hand[0] = sts::CardInstance(sts::CardId::STRIKE_RED);
+    distinct.cards.hand[1] = distinct.cards.hand[0];
+    distinct.cards.hand[1].upgraded = true;
+    require(singleIndices(sts::search::Action::enumerateCardSelectActions(distinct)).size() == 2,
+            "GAMBLE must preserve upgraded same-name cards");
+    distinct.cards.hand[1].upgraded = distinct.cards.hand[0].upgraded;
+    distinct.cards.hand[1].costForTurn = distinct.cards.hand[0].costForTurn - 1;
+    require(singleIndices(sts::search::Action::enumerateCardSelectActions(distinct)).size() == 2,
+            "GAMBLE must preserve same-name cards with distinct costForTurn");
+    distinct.cards.hand[1].costForTurn = distinct.cards.hand[0].costForTurn;
+    distinct.cards.hand[1].retain = true;
+    require(singleIndices(sts::search::Action::enumerateCardSelectActions(distinct)).size() == 2,
+            "GAMBLE must preserve same-name cards with distinct retain state");
+
+    auto special = state;
+    special.cards.cardsInHand = 2;
+    special.cards.hand[0] = sts::CardInstance(sts::CardId::RAMPAGE);
+    special.cards.hand[1] = special.cards.hand[0];
+    special.cards.hand[0].setUniqueId(701);
+    special.cards.hand[1].setUniqueId(702);
+    require(singleIndices(sts::search::Action::enumerateCardSelectActions(special)).size() == 2,
+            "GAMBLE must preserve identity-sensitive special-data copies");
+}
+
+void gambleMicrobenchmark(sts::GameContext &gc, int simulations, std::size_t expectedRootActions) {
+    auto state = fixture(gc);
+    state.inputState = sts::InputState::CARD_SELECT;
+    state.cardSelectInfo.cardSelectTask = sts::CardSelectTask::GAMBLE;
+    state.cardSelectInfo.canPickAnyNumber = true;
+    state.cards.cardsInHand = 10;
+    for (int i = 0; i < 5; ++i) {
+        state.cards.hand[i] = sts::CardInstance(sts::CardId::STRIKE_RED);
+        state.cards.hand[i + 5] = sts::CardInstance(sts::CardId::DEFEND_RED);
+    }
+    const auto rootActions = sts::search::Action::enumerateCardSelectActions(state);
+    require(rootActions.size() == expectedRootActions, "GAMBLE microbenchmark root action count mismatch");
+    Search search(state);
+    const auto start = std::chrono::steady_clock::now();
+    search.search(simulations);
+    const auto elapsed = std::chrono::duration<double>(std::chrono::steady_clock::now() - start).count();
+    std::cout << "gamble_microbenchmark simulations=" << simulations
+              << " root_actions=" << rootActions.size()
+              << " steps=" << search.stats.steps
+              << " nodes_created=" << search.stats.nodesCreated
+              << " action_count=" << search.actionCount
+              << " wall_seconds=" << elapsed << '\n';
 }
 
 void widening(Search &search) {
@@ -735,9 +911,17 @@ int main(int argc, char **argv) {
             repeatedRerootCanary(stress, cap);
             return 0;
         }
+        if (argc > 1 && std::string(argv[1]) == "--gamble-microbenchmark") {
+            const int simulations = argc > 2 ? std::stoi(argv[2]) : 10000;
+            const auto expectedRootActions = argc > 3 ? static_cast<std::size_t>(std::stoul(argv[3])) : 3;
+            require(simulations > 0, "GAMBLE microbenchmark simulations must be positive");
+            gambleMicrobenchmark(gc, simulations, expectedRootActions);
+            return 0;
+        }
         dedupGrowth(bc);
         cardActionCanonicalization(bc);
         singleCardSelectCanonicalization(bc);
+        gambleMultiplicityCanonicalization(bc);
         lazyReroot(bc);
         compaction(bc, 0);
         selection(search); widening(search); rootPriorSelection(search);

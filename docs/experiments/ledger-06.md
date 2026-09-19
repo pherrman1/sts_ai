@@ -10075,3 +10075,32 @@ default or generalization claim is authorized. Evidence:
 - **Evidence:** [card-action canonicalization evidence](evidence/silver_card_action_canonicalization_20260919.md).
   **Knowledge impact:** experiment evidence only; no default, model, or
   gameplay-quality decision is authorized by this follow-up.
+
+## §318 — Silver `GAMBLE` multiplicity deduplication (2026-09-19)
+
+- **Implementation:** Silver's private sequential `GAMBLE` selector now emits
+  only the first currently-unselected representative of each existing search
+  equivalence class. It preserves confirmation, hand order, `selectedBits`,
+  and all multiplicities `0..m`. `EXHAUST_MANY` was deliberately unchanged.
+- **Structural result:** Deterministic tests reached all `9` semantic tuples
+  for `2 Strike + 2 Defend` and all `36` tuples for `5 Strike + 5 Defend`,
+  while removing only physical-copy permutations. Materially distinct copies,
+  identity-sensitive special-data copies, noncanonical incoming masks, and the
+  sequential bridge transaction all passed.
+- **Local screen:** At 10,000 simulations on the fixed `5 Strike + 5 Defend`
+  root, root actions fell `11 -> 3` and median wall time across seven runs fell
+  from `0.704419s` to `0.579643s`; nodes remained `10,000` and recorded action
+  counts were `23/24`. This is local selector evidence, not a whole-run claim.
+- **DEV no-harm:** On frozen `hard64-dev-snapshots.jsonl` at 1,000 simulations,
+  baseline and treatment both won `51/64`, had mean HP fraction `0.329883253`,
+  `2,234` decisions, `2,234,000` simulations, `2,069,231` nodes, zero failures,
+  and identical action traces/state hashes for all 64 cases. The null is
+  expected because duplicate-heavy `GAMBLE` states are rare.
+- **Decision:** **`SILVER_GAMBLE_MULTIPLICITY_DEDUP_ACCEPT`** for implementation
+  correctness and the bounded local efficiency screen. This is bounded
+  confirmation, not equivalence or default-promotion evidence. The concrete
+  `EXHAUST_MANY` trigger-ordering concern remains a separate open question.
+- **Evidence:** [GAMBLE multiplicity evidence](evidence/silver_gamble_multiplicity_20260919.md).
+  **Knowledge impact:** durable Silver action-enumeration behavior and
+  experiment evidence; no model, RNG, semantic schema, search budget, or
+  gameplay default change.
