@@ -26,6 +26,14 @@ Do not invent rationale. Label unsupported conclusions **Inference**,
 
 ## Task-dependent documentation routing
 
+For tasks requiring real Slay the Spire interaction, live-mod verification,
+game-state reproduction, or validation of CTM/Silver output, use the
+`sts-live-game` skill and the configured `slay_the_spire` MCP server. Prefer
+structured MCP control over native GUI interaction. Treat
+`~/.cache/sts-model-inspector/latest.json` as machine-readable
+inspector/advisor output and verify session/sequence/observationHash before
+using a response.
+
 Use [CODE_MAP.md](docs/knowledge-base/CODE_MAP.md) to locate unfamiliar code,
 understand subsystem boundaries, or assess cross-subsystem changes. Read
 maintained KB pages when the affected interface, invariant, procedure,
