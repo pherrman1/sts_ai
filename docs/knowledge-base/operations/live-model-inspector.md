@@ -1,8 +1,8 @@
 # Live model inspector
 
-Last verified: 2026-09-18. This page describes the private integration
-boundary currently present in the repository; it is not a claim that a game
-mod or live evaluator importer is complete.
+Last verified: 2026-09-19. This page describes the private integration
+boundary currently present in the repository; it is not a claim that every
+game boundary has a qualified live evaluator.
 
 ## Current boundary
 
@@ -12,29 +12,39 @@ returned as structured errors. It validates the protocol name, request kind,
 session, monotonic observation sequence, observation hash, and the required
 observation boundary. It never receives RNG state or controls the simulator.
 
-The current endpoint deliberately returns `UNSUPPORTED` for every validated
-observation. No Java-game importer exists in this checkout, so returning a
-native score here would be fabricated and could silently violate the
-player-information boundary. `STALE` responses reject a second observation
-with an equal or older sequence in the same session. A new process starts a
-new session state.
+Combat observations now have two separate fail-closed evaluator paths. The
+existing CTM evaluator uses the public combat-entry importer when its model is
+available. The `silver_first_turn_v1` evaluator imports an Ironclad first-turn
+Silver root, verifies converted-state parity and legal actions, and runs the
+fixed 1,000-simulation Silver decision configuration. It returns the selected
+action plus root action summaries containing edge visits and selection Q values.
+Unsupported encounter, relic, information, or schema states remain explicit
+`UNSUPPORTED` results; this is a diagnostic ranking display, not a gameplay
+controller or a qualification of Silver policy quality. `STALE` responses
+reject a second observation with an equal or older sequence in the same
+session. A new process starts a new session state.
 
 The Java frontend is under `mods/sts-model-inspector/`. It uses BaseMod
 post-update/render subscribers and captures detached Ironclad-compatible
 summary fields for card rewards, rest sites, and ordinary player turns. Combat
 observations include only player-visible decision state: turn, energy, player
-block, hand card instances/costs, and living-monster HP, block, intent, and
-intent damage. Under Runic Dome, intent and intent damage are omitted from
-both the payload and fingerprint because they are not player-visible. The
-combat boundary requires the installed runtime's waiting-for-user phase, no
-current action, empty action/card/monster queues, and an unended turn. The
-combat fingerprint includes that payload, so successive decisions are not
-collapsed into one observation. A stable-boundary loss clears the displayed
-observation and fences late responses from the prior decision. Advisor writes
-use one bounded latest-observation slot; intermediate captures are replaceable
-rather than queued without limit. It launches the advisor with a direct
-`ProcessBuilder` call. Its F8 panel remains diagnostic until a native importer
-proves parity. Workshop and game/dependency JARs remain outside Git.
+block, cards played this turn, hand/draw/discard/exhaust card instances,
+potions, relics, and living-monster HP, max HP, block, next move, intent, and
+intent damage. The Silver root reuses this combat snapshot and adds the
+versioned first-decision envelope. Under Runic Dome, intent and intent damage
+are omitted from both the payload and fingerprint because they are not
+player-visible. The combat boundary requires the installed runtime's
+waiting-for-user phase, no current action, empty action/card/monster queues,
+and an unended turn. The combat fingerprint includes that payload, so
+successive decisions are not collapsed into one observation. A battle-start
+hook can precede encounter population, so combat-entry and Silver-root
+identity are captured lazily at the first actionable decision. A stable-
+boundary loss clears the displayed observation and fences late responses from
+the prior decision. Advisor writes use one bounded latest-observation slot;
+intermediate captures are replaceable rather than queued without limit. It
+launches the advisor with a direct `ProcessBuilder` call. The F8 panel remains
+diagnostic and read-only. Workshop and game/dependency JARs remain outside
+Git.
 
 Rest observations are emitted only while the installed campfire UI exists, is
 visible, and has not selected an option. Selecting a campfire option therefore
@@ -76,10 +86,11 @@ so a future game UI can discard responses after a reload or newer capture.
 The next implementation must add the native importer for the expanded public
 deck/candidate snapshot and parity tests against the existing OOC contract.
 The Java process must own bounded background I/O and treat the endpoint as
-advisory only. Until the importer proves the required public-state parity, the
-endpoint must remain fail-closed and must not be described as a live
-evaluator. CTM and Silver remain separate later integrations.
+advisory only. Silver support remains intentionally narrow: Ironclad first-turn
+combat with the importer-supported cards, monsters, relics, potions, and
+information state. CTM and Silver results remain separate evaluators, and
+neither path controls gameplay or establishes policy-quality evidence.
 
 Knowledge impact: this page records the protocol/lifecycle boundary, the
-explicit unsupported state, the player-visible combat gate, and the Runic Dome
-redaction; evaluator semantics remain an open question.
+player-visible combat gate, the Runic Dome redaction, the narrow Silver
+first-turn evaluator contract, and its diagnostic-only limitation.
