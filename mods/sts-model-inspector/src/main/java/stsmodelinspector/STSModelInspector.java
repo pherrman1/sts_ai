@@ -34,6 +34,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.security.MessageDigest;
 import java.util.HashMap;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Properties;
 
@@ -171,7 +172,7 @@ public final class STSModelInspector implements PostInitializeSubscriber,
                 FontHelper.renderFontLeftTopAligned(sb, FontHelper.tipBodyFont,
                         String.format("Death chance: %.1f%%", 100.0 * ctmDeath),
                         x, y - 138.0f * Settings.scale, white);
-                renderHistogram(sb, x, y - 164.0f * Settings.scale);
+                renderHistogram(sb, x, y - 190.0f * Settings.scale);
             } else if (!ctmReason.isEmpty()) {
                 FontHelper.renderFontLeftTopAligned(sb, FontHelper.tipBodyFont, ctmReason,
                         x, y - 138.0f * Settings.scale, Color.ORANGE);
@@ -179,40 +180,100 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         }
         FontHelper.renderFontLeftTopAligned(sb, FontHelper.tipBodyFont,
                 "Toggle: " + Keyboard.getKeyName(loadToggleKey()), x,
-                y - ("combat".equals(newest.boundary) ? 270.0f : 94.0f) * Settings.scale, Color.GRAY);
+                y - ("combat".equals(newest.boundary) ? 410.0f : 94.0f) * Settings.scale, Color.GRAY);
     }
 
     private void renderHistogram(SpriteBatch sb, float x, float top) {
         if (ctmHistogram.length == 0) return;
         FontHelper.renderFontLeftTopAligned(sb, FontHelper.tipBodyFont,
                 "Surviving final HP distribution (absolute)", x, top, Color.WHITE);
-        final int buckets = Math.min(24, ctmHistogram.length);
+        int first = -1;
+        int last = -1;
+        for (int i = 0; i < ctmHistogram.length; ++i) {
+            if (ctmHistogram[i] > 0.000001) {
+                if (first < 0) first = i;
+                last = i;
+            }
+        }
+        if (first < 0) return;
+        final int span = last - first + 1;
+        final int buckets = Math.min(16, span);
         double maximum = 0.0;
         for (int bucket = 0; bucket < buckets; ++bucket) {
-            int begin = bucket * ctmHistogram.length / buckets;
-            int end = (bucket + 1) * ctmHistogram.length / buckets;
+            int begin = first + bucket * span / buckets;
+            int end = first + (bucket + 1) * span / buckets;
             double probability = 0.0;
             for (int i = begin; i < end; ++i) probability += ctmHistogram[i];
             maximum = Math.max(maximum, probability);
         }
         if (maximum <= 0.0) return;
-        float barWidth = 7.0f * Settings.scale;
-        float base = top - 58.0f * Settings.scale;
+        float chartX = x + 42.0f * Settings.scale;
+        float barWidth = 12.0f * Settings.scale;
+        // Leave a real gap below the forecast text.  The histogram is a
+        // secondary diagnostic, so its title and annotations must not collide
+        // with the CTM status lines above it.
+        float base = top - 118.0f * Settings.scale;
+        float chartHeight = 92.0f * Settings.scale;
+        float chartWidth = buckets * barWidth;
+        // A faint grid makes the distribution readable without competing with
+        // the game scene or the cyan bars.
+        sb.setColor(0.55f, 0.85f, 1.0f, 0.20f);
+        for (int tick = 0; tick <= 4; ++tick) {
+            float gridY = base + chartHeight * tick / 4.0f;
+            sb.draw(ImageMaster.WHITE_SQUARE_IMG, chartX, gridY,
+                    chartWidth, Settings.scale);
+        }
+        for (int tick = 0; tick <= 4; ++tick) {
+            float gridX = chartX + chartWidth * tick / 4.0f;
+            sb.draw(ImageMaster.WHITE_SQUARE_IMG, gridX, base,
+                    Settings.scale, chartHeight);
+        }
+        sb.setColor(Color.WHITE);
+        sb.draw(ImageMaster.WHITE_SQUARE_IMG, chartX, base,
+                chartWidth, 1.5f * Settings.scale);
+        sb.draw(ImageMaster.WHITE_SQUARE_IMG, chartX, base,
+                1.5f * Settings.scale, chartHeight);
+        float tickScaleX = FontHelper.tipBodyFont.getData().scaleX;
+        float tickScaleY = FontHelper.tipBodyFont.getData().scaleY;
+        FontHelper.tipBodyFont.getData().setScale(tickScaleX * 0.72f, tickScaleY * 0.72f);
+        for (int tick = 0; tick <= 4; ++tick) {
+            float gridY = base + chartHeight * tick / 4.0f;
+            sb.draw(ImageMaster.WHITE_SQUARE_IMG, chartX - 5.0f * Settings.scale,
+                    gridY, 5.0f * Settings.scale, Settings.scale);
+            FontHelper.renderFontLeftTopAligned(sb, FontHelper.tipBodyFont,
+                    String.format(Locale.ROOT, "%.0f%%", 100.0 * maximum * tick / 4.0),
+                    x, gridY + 5.0f * Settings.scale, Color.GRAY);
+        }
         for (int bucket = 0; bucket < buckets; ++bucket) {
-            int begin = bucket * ctmHistogram.length / buckets;
-            int end = (bucket + 1) * ctmHistogram.length / buckets;
+            int begin = first + bucket * span / buckets;
+            int end = first + (bucket + 1) * span / buckets;
             double probability = 0.0;
             for (int i = begin; i < end; ++i) probability += ctmHistogram[i];
-            float height = (float) (48.0 * Settings.scale * probability / maximum);
+            float height = (float) (chartHeight * probability / maximum);
             sb.setColor(Color.CYAN);
-            sb.draw(ImageMaster.WHITE_SQUARE_IMG, x + bucket * barWidth,
+            sb.draw(ImageMaster.WHITE_SQUARE_IMG, chartX + bucket * barWidth,
                     base, barWidth - Settings.scale, height);
         }
         sb.setColor(Color.WHITE);
-        int lastHp = ctmHistogramMin + ctmHistogram.length - 1;
-        FontHelper.renderFontLeftTopAligned(sb, FontHelper.tipBodyFont,
-                "HP " + ctmHistogramMin + "–" + lastHp, x, base - 14.0f * Settings.scale,
-                Color.GRAY);
+        int firstHp = ctmHistogramMin + first;
+        int lastHp = ctmHistogramMin + last;
+        float[] xTicks = {0.0f, 0.2f, 0.4f, 0.6f, 0.8f, 1.0f};
+        for (int tick = 0; tick < xTicks.length; ++tick) {
+            float tickX = chartX + chartWidth * xTicks[tick];
+            sb.draw(ImageMaster.WHITE_SQUARE_IMG, tickX, base - 5.0f * Settings.scale,
+                    Settings.scale, 5.0f * Settings.scale);
+            int hp = firstHp + Math.round((lastHp - firstHp) * xTicks[tick]);
+            boolean repeated = tick > 0
+                    && hp == firstHp + Math.round((lastHp - firstHp) * xTicks[tick - 1]);
+            if (!repeated) {
+                FontHelper.renderFontLeftTopAligned(sb, FontHelper.tipBodyFont,
+                        Integer.toString(hp), tickX - 4.0f * Settings.scale,
+                        base - 18.0f * Settings.scale, Color.GRAY);
+            }
+        }
+        FontHelper.renderFontRightTopAligned(sb, FontHelper.tipBodyFont, "HP",
+                chartX + chartWidth, base - 18.0f * Settings.scale, Color.GRAY);
+        FontHelper.tipBodyFont.getData().setScale(tickScaleX, tickScaleY);
     }
 
     private Snapshot captureStableSnapshot() {
@@ -288,11 +349,12 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         if (room instanceof com.megacrit.cardcrawl.rooms.MonsterRoomBoss) return "BOSS";
         if (room instanceof com.megacrit.cardcrawl.rooms.MonsterRoomElite) return "ELITE";
         if (room instanceof MonsterRoom) return "MONSTER";
+        if (room instanceof com.megacrit.cardcrawl.rooms.TreasureRoomBoss) return "BOSS_TREASURE";
         if (room instanceof ShopRoom) return "SHOP";
         if (room instanceof TreasureRoom) return "TREASURE";
         if (room instanceof RestRoom) return "REST";
         if (room instanceof EventRoom) return "EVENT";
-        return "EVENT";
+        return "NONE";
     }
 
     private String encounterName(AbstractRoom room) {
@@ -309,30 +371,37 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         if (!multi.isEmpty()) return multi;
         if (group.monsters.size() != 1) return "";
         String id = group.monsters.get(0).id;
-        if (id.equals(com.megacrit.cardcrawl.helpers.MonsterHelper.CULTIST_ENC)) return "CULTIST";
-        if (id.equals(com.megacrit.cardcrawl.helpers.MonsterHelper.JAW_WORM_ENC)) return "JAW_WORM";
-        if (id.equals(com.megacrit.cardcrawl.helpers.MonsterHelper.BLUE_SLAVER_ENC)) return "BLUE_SLAVER";
-        if (id.equals(com.megacrit.cardcrawl.helpers.MonsterHelper.LOOTER_ENC)) return "LOOTER";
-        if (id.equals(com.megacrit.cardcrawl.helpers.MonsterHelper.RED_SLAVER_ENC)) return "RED_SLAVER";
-        if (id.equals(com.megacrit.cardcrawl.helpers.MonsterHelper.GREMLIN_NOB_ENC)) return "GREMLIN_NOB";
-        if (id.equals(com.megacrit.cardcrawl.helpers.MonsterHelper.LAGAVULIN_ENC)) return "LAGAVULIN";
-        if (id.equals(com.megacrit.cardcrawl.helpers.MonsterHelper.SPHERE_GUARDIAN_ENC)) return "SPHERIC_GUARDIAN";
-        if (id.equals(com.megacrit.cardcrawl.helpers.MonsterHelper.CHOSEN_ENC)) return "CHOSEN";
-        if (id.equals(com.megacrit.cardcrawl.helpers.MonsterHelper.SHELL_PARASITE_ENC)) return "SHELL_PARASITE";
-        if (id.equals(com.megacrit.cardcrawl.helpers.MonsterHelper.SNAKE_PLANT_ENC)) return "SNAKE_PLANT";
-        if (id.equals(com.megacrit.cardcrawl.helpers.MonsterHelper.SNECKO_ENC)) return "SNECKO";
-        if (id.equals(com.megacrit.cardcrawl.helpers.MonsterHelper.TRANSIENT_ENC)) return "TRANSIENT";
-        if (id.equals(com.megacrit.cardcrawl.helpers.MonsterHelper.ORB_WALKER_ENC)) return "ORB_WALKER";
-        if (id.equals(com.megacrit.cardcrawl.helpers.MonsterHelper.SPIRE_GROWTH_ENC)) return "SPIRE_GROWTH";
-        if (id.equals(com.megacrit.cardcrawl.helpers.MonsterHelper.MAW_ENC)) return "MAW";
-        if (id.equals(com.megacrit.cardcrawl.helpers.MonsterHelper.WRITHING_MASS_ENC)) return "WRITHING_MASS";
-        if (id.equals(com.megacrit.cardcrawl.helpers.MonsterHelper.GIANT_HEAD_ENC)) return "GIANT_HEAD";
-        if (id.equals(com.megacrit.cardcrawl.helpers.MonsterHelper.NEMESIS_ENC)) return "NEMESIS";
-        if (id.equals(com.megacrit.cardcrawl.helpers.MonsterHelper.SLIME_BOSS_ENC)) return "SLIME_BOSS";
-        if (id.equals(com.megacrit.cardcrawl.helpers.MonsterHelper.GUARDIAN_ENC)) return "THE_GUARDIAN";
-        if (id.equals(com.megacrit.cardcrawl.helpers.MonsterHelper.HEXAGHOST_ENC)) return "HEXAGHOST";
-        if (id.equals(com.megacrit.cardcrawl.helpers.MonsterHelper.CHAMP_ENC)) return "CHAMP";
-        if (id.equals(com.megacrit.cardcrawl.helpers.MonsterHelper.TIME_EATER_ENC)) return "TIME_EATER";
+        // AbstractMonster.id is the stable save/runtime identifier.  Do not
+        // compare it with MonsterHelper's localized encounter display names.
+        if (id.equals("Cultist")) return "CULTIST";
+        if (id.equals("JawWorm")) return "JAW_WORM";
+        if (id.equals("BlueSlaver")) return "BLUE_SLAVER";
+        if (id.equals("Looter")) return "LOOTER";
+        if (id.equals("RedSlaver")) return "RED_SLAVER";
+        if (id.equals("GremlinNob")) return "GREMLIN_NOB";
+        if (id.equals("Lagavulin")) return "LAGAVULIN";
+        if (id.equals("SphericGuardian")) return "SPHERIC_GUARDIAN";
+        if (id.equals("Chosen")) return "CHOSEN";
+        if (id.equals("ShelledParasite")) return "SHELL_PARASITE";
+        if (id.equals("SnakePlant")) return "SNAKE_PLANT";
+        if (id.equals("Snecko")) return "SNECKO";
+        if (id.equals("Transient")) return "TRANSIENT";
+        if (id.equals("Orb Walker")) return "ORB_WALKER";
+        if (id.equals("Serpent")) return "SPIRE_GROWTH";
+        if (id.equals("Maw")) return "MAW";
+        if (id.equals("WrithingMass")) return "WRITHING_MASS";
+        if (id.equals("GiantHead")) return "GIANT_HEAD";
+        if (id.equals("Nemesis")) return "NEMESIS";
+        if (id.equals("SlimeBoss")) return "SLIME_BOSS";
+        if (id.equals("TheGuardian")) return "THE_GUARDIAN";
+        if (id.equals("Hexaghost")) return "HEXAGHOST";
+        if (id.equals("Champ")) return "CHAMP";
+        if (id.equals("BookOfStabbing")) return "BOOK_OF_STABBING";
+        if (id.equals("BronzeAutomaton")) return "AUTOMATON";
+        if (id.equals("TheCollector")) return "COLLECTOR";
+        if (id.equals("AwakenedOne")) return "AWAKENED_ONE";
+        if (id.equals("TimeEater")) return "TIME_EATER";
+        if (id.equals("CorruptHeart")) return "THE_HEART";
         return "";
     }
 
@@ -353,6 +422,12 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         if (shapeCount(counts) == 3 && total == 3) return "THREE_SHAPES";
         if (shapeCount(counts) == 4 && total == 4) return "FOUR_SHAPES";
         if (counts.size() == 2) {
+            if (count(counts, "Reptomancer") == 1
+                    && (count(counts, "SnakeDagger") == 1
+                        || count(counts, "SnakeDagger") == 2))
+                return "REPTOMANCER";
+            if (count(counts, "AwakenedOne") == 1 && count(counts, "Cultist") == 2)
+                return "AWAKENED_ONE";
             if (count(counts, "Cultist") == 1 && count(counts, "Chosen") == 1)
                 return "CULTIST_AND_CHOSEN";
             if (count(counts, "Chosen") == 1 && count(counts, "Byrd") == 2)
