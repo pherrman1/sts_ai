@@ -10114,9 +10114,10 @@ default or generalization claim is authorized. Evidence:
 ## §319 — Silver duplicate potion-slot deduplication (2026-09-19)
 
 - **Implementation:** Silver's ordinary potion enumeration now retains only
-  the first occupied slot for each potion enum. Existing Fairy/Smoke/Gambler
-  legality, targeted-potion target alternatives, action order, potion belt
-  order, semantic fingerprints, and exact potion-slot lowering are unchanged.
+  the first occupied slot for each potion enum using a bounded previous-slot
+  scan, avoiding a per-node allocation. Existing Fairy/Smoke/Gambler legality,
+  targeted-potion target alternatives, action order, potion belt order,
+  semantic fingerprints, and exact potion-slot lowering are unchanged.
   Successive decisions can consume every remaining identical copy.
 - **Structural result:** Focused Silver optimization and bridge tests passed
   for non-target and targeted reduction, multiplicity, distinct types,
@@ -10144,6 +10145,13 @@ default or generalization claim is authorized. Evidence:
   correctness and the bounded fixed-root efficiency screen. This is bounded
   confirmation, not equivalence or default-promotion evidence; trajectory
   differences are not interpreted as policy improvement.
+- **Hot-path correction:** The `unordered_set` implementation was replaced in
+  the same task by the bounded scan. The existing five-identical Release
+  microbenchmark remained at `1,033` nodes and `11` actions with a
+  `0.0245379s` median over seven runs. A five-distinct no-duplicate fixture
+  completed with `2,341` nodes and a `0.0250499s` median; because the root
+  action surface differs, this is a sanity screen rather than a causal timing
+  comparison.
 - **Evidence:** [duplicate potion-slot evidence](evidence/silver_potion_slot_dedup_20260919.md).
   **Knowledge impact:** durable Silver action-enumeration behavior and
   experiment evidence; no model, RNG, semantic schema, search budget, or

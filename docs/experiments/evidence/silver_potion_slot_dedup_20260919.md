@@ -7,11 +7,13 @@ proof or a production quality gate.
 ## Provenance and implementation
 
 - Baseline: `9c96f0f95751ba7f041a33a41f1b78a9721e27ab` (merged PR 240).
-- Treatment candidate: `4b0bda3083ef808cf23deb545b0e5301317f2d7f`.
+- Initial treatment candidate: `4b0bda3083ef808cf23deb545b0e5301317f2d7f`.
+- Final treatment candidate after the hot-path correction: `80db3c55743dcc28fa33929f249653c205f67564`.
 - Changed implementation: `third_party/silver_lightspeed/src/sim/search/BattleSearcher.cpp`.
 - Changed tests: `apps/silver_search_optimization_test.cpp` and
   `apps/silver_bridge_test.cpp`.
 - Conceptual scope: Silver retains the first occupied slot for each potion enum
+  using a bounded previous-slot scan, avoiding an allocation on the hot path,
   while preserving the existing legality and target loops. `Action`, live
   potion behavior, semantic fingerprints, exact potion-slot lowering, potion
   hashing, and production state canonicalization were unchanged.
@@ -84,6 +86,33 @@ treatment: 0.0266973, 0.0264213, 0.0266100, 0.0274337, 0.0258310, 0.0234443, 0.0
 
 The treatment median is `22.22%` lower. This is fixed-root selector evidence,
 not a whole-run runtime claim.
+
+### Post-correction Release sanity screen
+
+After replacing the per-node `unordered_set` with the bounded previous-slot
+scan, the existing five-identical-potion benchmark was rerun with the final
+treatment build. A second run used five distinct potion types to exercise the
+no-duplicate path. Both used 10,000 simulations and seven repetitions; the
+current benchmark source SHA-256 was
+`cf78bea5d8ead532e651cccf7573e46e86c1d2445bd8e170bc664d40cd4a2079`, and the
+final treatment executable SHA-256 was
+`52970a63dcfe419d7eb9db30103355bcef19dfcceea686f9fa27f23ad2ff9dd2`.
+
+```text
+five identical: 0.0283985, 0.0266859, 0.0248470, 0.0236601, 0.0245242, 0.0245379, 0.0241068s
+five distinct:  0.0248721, 0.0249195, 0.0247788, 0.0301023, 0.0255648, 0.0262865, 0.0250499s
+```
+
+| fixture | root actions | nodes created | action count | median wall seconds |
+|---|---:|---:|---:|---:|
+| five identical | 2 | 1,033 | 11 | 0.0245379 |
+| five distinct | 6 | 2,341 | 9 | 0.0250499 |
+
+The five-identical action surface and node count are unchanged from the
+original treatment screen. The five-distinct run exercises the bounded scan
+without duplicate suppression; because its root has a different action
+surface, its timing is a hot-path sanity screen rather than a causal overhead
+comparison.
 
 ## Frozen DEV screen
 
