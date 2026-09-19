@@ -62,7 +62,8 @@ class ForcedActionAuditTest(unittest.TestCase):
     def test_provenance_and_crn_mismatches_rejected(self):
         for index, field, value in ((0, "state_hash", "changed"),
                                     (0, "rng_identity", 42),
-                                    (0, "stochastic", True)):
+                                    (0, "stochastic", True),
+                                    (0, "applied_baseline_correction", 1.0)):
             rows = self.rows()
             rows[index][field] = value
             with self.assertRaises(ValueError):

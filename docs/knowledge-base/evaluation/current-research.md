@@ -1346,11 +1346,14 @@ The replacement target premise has now passed its fresh-population audit.  On
 32 hash-selected roots from 16 fresh source seeds, an independent eight-by-5k
 forced-action ensemble improved over same-root Teacher-A under a disjoint
 eight-by-10k judge: mean J-regret delta `-0.328487`, source-seed-clustered 95%
-CI `[-0.727297,-0.038122]`; pairwise-concordance delta `+0.120886`, CI
-`[+0.063730,+0.196073]`.  Tail and stochastic-action gates also passed.  This
-is **`FORCED_ACTION_TARGET_PASS`** and permits only a later bounded model
-experiment.  No model, replay integration, gameplay, or default change is yet
-qualified.  The separate known-harmful-root regression is still outstanding
+CI `[-0.727297,-0.038122]`; corrected pairwise-concordance delta `+0.119398`,
+CI `[+0.062275,+0.194979]`.  Tail and stochastic-action gates also passed.
+The evaluator was corrected to retain original-root effective-gold/max-HP
+victory utility; rerunning the same frozen roots left regret, selections, tails
+and every gate unchanged.  This is a **fresh-population target signal**, not
+authorization to train a model.  No model, replay integration, gameplay, or
+default change is qualified.  The separate known-harmful-root regression is
+still outstanding
 because the exact frozen snapshots were unavailable; do not replace it with
 recollected roots or interpret the primary pass as that regression.  See
 [ledger-06 §321](../../experiments/ledger-06.md) and the

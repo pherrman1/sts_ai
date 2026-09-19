@@ -10242,7 +10242,7 @@ default or generalization claim is authorized. Evidence:
 - **Result:** **`FORCED_ACTION_TARGET_PASS`**.  Mean J-regret(L)-J-regret(A)
   was `-0.3284866992`, with clustered 95% CI
   `[-0.7272965479,-0.0381220176]`.  Pairwise-concordance delta was
-  `+0.1208863185`, CI `[+0.0637300460,+0.1960730632]`.  L/A maximum regret was
+  `+0.1193982233`, CI `[+0.0622749256,+0.1949791723]`.  L/A maximum regret was
   `1.0854700000/5.5437900000`, upper-decile regret `0/0.4388132500`, and L
   introduced no new regret-3 harmful root.  All 32 roots had stochastic-action
   coverage; both stochastic-involving and deterministic-only pairwise deltas
@@ -10255,13 +10255,19 @@ default or generalization claim is authorized. Evidence:
   stochastic rows.  A non-object producer-SHA typo in generated metadata was
   corrected to the actual producer commit identified by branch history and the
   evaluator's parent; capture/selection/audit hashes were reissued and the
-  aggregate analysis reproduced byte-for-byte.
-- **Boundary:** This qualifies L only as a target for a later bounded model
-  experiment.  No model was trained, and no replay, gameplay, or default change
-  is authorized.  The separate historical harmful-root regression remains
+  aggregate analysis reproduced byte-for-byte.  A later review found that the
+  post-action continuation root absorbed immediate effective-gold/max-HP
+  changes.  Evaluator v2 now applies the established victory-only original-root
+  correction.  A cheap scan found one nonzero end-turn correction (`-3.75`), so
+  the full L/J audit was rerun on the same roots.  Regret, selections, tails and
+  all gates were unchanged; pairwise concordance changed slightly to the value
+  reported above.  The complete corrected raw stream is retained compressed.
+- **Boundary:** This confirms a fresh-population target signal, but model
+  training remains blocked.  No replay, gameplay, or default change is
+  authorized.  The separate historical harmful-root regression remains
   blocked because the exact frozen snapshots were unavailable locally and on
   the designated GCP worker; no substitute roots were recollected.
 - **Evidence:** [forced-action target audit](evidence/silver_forced_action_target_2026-09-19/README.md).
-  **Knowledge impact:** the independent target premise is now supported on the
-  fresh primary population; the historical regression and every downstream
-  learned-policy gate remain outstanding.
+  **Knowledge impact:** the independent target signal is supported on the
+  fresh primary population; the historical regression, model training and
+  every downstream learned-policy gate remain outstanding.
