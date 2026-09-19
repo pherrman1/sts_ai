@@ -1133,28 +1133,39 @@ public final class STSModelInspector implements PostInitializeSubscriber,
                     publication = pending;
                     pending = null;
                 }
-                synchronized (lock) {
-                    if (publication.generation != generation) continue;
-                }
+                Path temporary = null;
                 try {
-                    if (publication.delete) {
-                        Files.deleteIfExists(path);
-                    } else {
+                    if (!publication.delete) {
                         Files.createDirectories(path.getParent());
-                        Path temporary = path.resolveSibling(path.getFileName().toString()
+                        temporary = path.resolveSibling(path.getFileName().toString()
                                 + ".tmp-" + Long.toHexString(System.nanoTime()));
                         Files.write(temporary, publication.json.getBytes(StandardCharsets.UTF_8));
-                        try {
-                            Files.move(temporary, path,
-                                    java.nio.file.StandardCopyOption.ATOMIC_MOVE,
-                                    java.nio.file.StandardCopyOption.REPLACE_EXISTING);
-                        } catch (java.nio.file.AtomicMoveNotSupportedException unsupported) {
-                            Files.move(temporary, path,
-                                    java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+                    }
+
+                    synchronized (lock) {
+                        if (publication.generation != generation) {
+                            if (temporary != null) Files.deleteIfExists(temporary);
+                        } else if (publication.delete) {
+                            Files.deleteIfExists(path);
+                        } else {
+                            try {
+                                Files.move(temporary, path,
+                                        java.nio.file.StandardCopyOption.ATOMIC_MOVE,
+                                        java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+                            } catch (java.nio.file.AtomicMoveNotSupportedException unsupported) {
+                                Files.move(temporary, path,
+                                        java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+                            }
+                            temporary = null;
                         }
                     }
                 } catch (IOException ignored) {
-                        // Export is diagnostic-only and must never affect gameplay.
+                    // Export is diagnostic-only and must never affect gameplay.
+                } finally {
+                    if (temporary != null) {
+                        try { Files.deleteIfExists(temporary); }
+                        catch (IOException ignored) {}
+                    }
                 }
                 synchronized (lock) {
                     if (stopping && pending == null) return;
