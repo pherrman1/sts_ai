@@ -11,6 +11,7 @@ import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.megacrit.cardcrawl.dungeons.AbstractDungeon;
 import com.megacrit.cardcrawl.cards.AbstractCard;
 import com.megacrit.cardcrawl.monsters.AbstractMonster;
+import com.megacrit.cardcrawl.powers.AbstractPower;
 import com.megacrit.cardcrawl.helpers.FontHelper;
 import com.megacrit.cardcrawl.helpers.ImageMaster;
 import com.megacrit.cardcrawl.rooms.EventRoom;
@@ -702,12 +703,29 @@ public final class STSModelInspector implements PostInitializeSubscriber,
     }
 
     private static String combatJson() {
+        int decisionOrdinal = AbstractDungeon.actionManager.cardsPlayedThisTurn.size();
         StringBuilder out = new StringBuilder("{\"turn\":");
         out.append(com.megacrit.cardcrawl.actions.GameActionManager.turn)
                 .append(",\"energy\":")
                 .append(AbstractDungeon.player.energy == null ? 0 : AbstractDungeon.player.energy.energy)
                 .append(",\"block\":").append(AbstractDungeon.player.currentBlock)
-                .append(",\"cardsPlayedThisTurn\":").append(AbstractDungeon.actionManager.cardsPlayedThisTurn.size())
+                .append(",\"cardsPlayedThisTurn\":").append(decisionOrdinal)
+                .append(",\"playedThisTurn\":[");
+        boolean firstPlayed = true;
+        for (AbstractCard card : AbstractDungeon.actionManager.cardsPlayedThisTurn) {
+            if (!firstPlayed) out.append(',');
+            firstPlayed = false;
+            out.append(cardJson(card));
+        }
+        out.append("]")
+                .append(",\"playerPowers\":[");
+        boolean firstPower = true;
+        for (AbstractPower power : AbstractDungeon.player.powers) {
+            if (!firstPower) out.append(',');
+            firstPower = false;
+            out.append("{\"id\":\"").append(escapeJson(power.ID)).append("\"}");
+        }
+        out.append("]")
                 .append(",\"cardSelect\":false,\"resolving\":false")
                 .append(",\"runicDome\":").append(hasRunicDome())
                 .append(",\"frozenEye\":").append(hasRelic("Frozen Eye"))
@@ -755,7 +773,15 @@ public final class STSModelInspector implements PostInitializeSubscriber,
                         .append("\",\"hp\":").append(monster.currentHealth)
                         .append(",\"maxHp\":").append(monster.maxHealth)
                         .append(",\"block\":").append(monster.currentBlock)
-                        .append(",\"nextMove\":").append(monster.nextMove);
+                        .append(",\"nextMove\":").append(monster.nextMove)
+                        .append(",\"powers\":[");
+                boolean firstMonsterPower = true;
+                for (AbstractPower power : monster.powers) {
+                    if (!firstMonsterPower) out.append(',');
+                    firstMonsterPower = false;
+                    out.append("{\"id\":\"").append(escapeJson(power.ID)).append("\"}");
+                }
+                out.append(']');
                 if (!runicDome) {
                     out.append(",\"intent\":\"")
                             .append(escapeJson(monster.intent == null ? "UNKNOWN" : monster.intent.name()))
@@ -937,7 +963,7 @@ public final class STSModelInspector implements PostInitializeSubscriber,
                             } else {
                                 advisorReason = reason == null ? "" : reason;
                             }
-                            if (line.contains("\"id\":\"silver_first_turn_v1\"")) {
+                            if (line.contains("\"id\":\"silver_player_decision_v2\"")) {
                                 silverStatus = field(line, "silverStatus");
                                 silverReason = field(line, "silverReason");
                                 silverRanking = field(line, "silverRanking");
@@ -1059,13 +1085,26 @@ public final class STSModelInspector implements PostInitializeSubscriber,
                     (combat.isEmpty() ? "" : ",\"combat\":" + combat
                         + ",\"combatEntryHash\":\"" + combatEntryHash + "\""
                         + (combatEntry.isEmpty() ? "" : ",\"combatEntry\":" + combatEntry)
-                        + (combatEntry.isEmpty() ? "" : ",\"silverRoot\":{\"schemaVersion\":1,\"firstDecision\":true,\"character\":\""
+                        + (combatEntry.isEmpty() ? "" : ",\"silverRoot\":{\"schemaVersion\":2,\"decisionOrdinal\":"
+                            + playedDecisionOrdinal(combat) + ",\"firstDecision\":"
+                            + (playedDecisionOrdinal(combat) == 0) + ",\"character\":\""
                             + character + "\",\"ascension\":" + ascension + ",\"act\":" + act
                             + ",\"floor\":" + floor + ",\"hp\":" + hp + ",\"maxHp\":" + maxHp
                             + ",\"gold\":" + gold + ",\"potionCapacity\":" +
                             AbstractDungeon.player.potionSlots + ",\"roomClass\":\"" +
                             roomClass(AbstractDungeon.getCurrRoom()) + "\",\"burningElite\":" +
                             isBurningElite() + ",\"combat\":" + combat + "}")) + "}}";
+        }
+
+        private static int playedDecisionOrdinal(String combatJson) {
+            String needle = "\"cardsPlayedThisTurn\":";
+            int start = combatJson.indexOf(needle);
+            if (start < 0) return -1;
+            start += needle.length();
+            int end = start;
+            while (end < combatJson.length() && Character.isDigit(combatJson.charAt(end))) end++;
+            try { return Integer.parseInt(combatJson.substring(start, end)); }
+            catch (Exception e) { return -1; }
         }
 
         private static String escape(String s) { return s.replace("\\", "\\\\").replace("\"", "\\\""); }

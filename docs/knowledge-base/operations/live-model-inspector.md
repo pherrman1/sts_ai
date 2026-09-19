@@ -14,11 +14,15 @@ observation boundary. It never receives RNG state or controls the simulator.
 
 Combat observations now have two separate fail-closed evaluator paths. The
 existing CTM evaluator uses the public combat-entry importer when its model is
-available. The `silver_first_turn_v1` evaluator imports an Ironclad first-turn
-Silver root, verifies converted-state parity and legal actions, and runs the
-fixed 1,000-simulation Silver decision configuration. It returns the selected
-action plus root action summaries containing edge visits, `visitShare`, and
-selection Q only when that edge has a valid Q value.
+available. The `silver_player_decision_v2` evaluator imports an Ironclad
+decision-0 or decision-1 Silver root, verifies converted-state parity and legal
+actions, and runs the fixed 1,000-simulation Silver decision configuration.
+One advisor-owned Silver session is retained for the active protocol session
+and `combatEntryHash`; a matching observed successor can therefore report
+exact reroot and inherited visits, while a different human action reports a
+fresh `candidate_missing` fallback. It returns the selected action, root
+action summaries containing edge visits, `visitShare`, and selection Q only
+when that edge has a valid Q value, plus per-decision reroot diagnostics.
 Unsupported encounter, relic, information, or schema states remain explicit
 `UNSUPPORTED` results; this is a diagnostic ranking display, not a gameplay
 controller or a qualification of Silver policy quality. `STALE` responses
@@ -32,7 +36,8 @@ observations include only player-visible decision state: turn, energy, player
 block, cards played this turn, hand/draw/discard/exhaust card instances,
 potions, relics, and living-monster HP, max HP, block, next move, intent, and
 intent damage. The Silver root reuses this combat snapshot and adds the
-versioned first-decision envelope. Under Runic Dome, intent and intent damage
+version-2 decision envelope, ordered `playedThisTurn` history, and explicit
+player/monster power arrays. Under Runic Dome, intent and intent damage
 are omitted from both the payload and fingerprint because they are not
 player-visible. The combat boundary requires the installed runtime's
 waiting-for-user phase, no current action, empty action/card/monster queues,
@@ -48,10 +53,13 @@ diagnostic and read-only. Workshop and game/dependency JARs remain outside
 Git. Silver live support is fail-closed to ordinary Act-1 Ironclad Cultist and
 Jaw Worm combats plus non-burning Act-1 Gremlin Nob, Burning Blood only, empty
 potion slots, and the exact supported first public moves: Cultist `nextMove=3`,
-Jaw Worm `nextMove=1`, and Gremlin Nob `nextMove=3`. Later Jaw Worm/Nob moves
-are not supported in this milestone. Burning elites, Runic Dome, Frozen Eye,
-missing state, non-empty potions, and live RNG fields are rejected. The
-implementation does not reuse Silver sessions across later turns.
+Jaw Worm `nextMove=1`, and Gremlin Nob `nextMove=3`. Decision 1 is supported
+only after exactly one unupgraded Strike or Defend from the starter deck during
+Java turn 1; native successor fixtures cover both cards. Bash, any non-empty
+power array, later turns, later Jaw Worm/Nob moves, burning elites, Runic Dome,
+Frozen Eye, missing state, non-empty potions, and live RNG fields are rejected.
+The implementation does not cross combats or unsupported continuations with a
+retained Silver session.
 
 Rest observations are emitted only while the installed campfire UI exists, is
 visible, and has not selected an option. Selecting a campfire option therefore
