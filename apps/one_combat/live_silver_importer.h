@@ -11,7 +11,8 @@ namespace one_combat::advisor {
 struct SilverRootImportResult {
     bool ok = false;
     std::string reason;
-    int decisionOrdinal = -1;
+    int playerTurn = -1;
+    int decisionInTurn = -1;
     silver_bridge::BattleStateWire wire;
 };
 
