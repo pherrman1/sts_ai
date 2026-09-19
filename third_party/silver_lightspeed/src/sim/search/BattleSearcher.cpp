@@ -920,20 +920,10 @@ void search::BattleSearcher::enumerateCardActions(search::BattleSearcher::Node &
         }
 
         bool isUniqueAction = true;
-
-        if (handIdx > 0) {
-            const auto &lastCard = bc.cards.hand[handIdx-1];
-
-            bool isEqualToLastCard = c.id == lastCard.id &&
-                    c.getUpgradeCount() == lastCard.getUpgradeCount() &&
-                    // both should be less than deck size c.uniqueId < bc.cards.deck
-                    c.costForTurn == lastCard.costForTurn &&
-                    c.cost == lastCard.cost &&
-                    c.freeToPlayOnce == lastCard.freeToPlayOnce &&
-                    c.specialData == lastCard.specialData;
-
-            if (isEqualToLastCard) {
+        for (const auto retainedHandIdx : playableHandIdxs) {
+            if (Action::areCardsEquivalentForSearch(c, bc.cards.hand[retainedHandIdx.first])) {
                 isUniqueAction = false;
+                break;
             }
         }
 

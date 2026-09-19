@@ -11,6 +11,7 @@
 #include "combat/BattleContext.h"
 #include "game/GameContext.h"
 #include "sim/search/BattleSearcher.h"
+#include "sim/search/Action.h"
 
 // Keep the combat-only link closure consistent with SilverNativeFixtureRunner.
 bool sts::GameContext::hasRelic(sts::RelicId id) const { return relics.has(id); }
@@ -56,6 +57,78 @@ void selection(Search &search) {
     parent.edges[0].node = &finite;
     parent.edges[1].node = &nan; parent.edges[1].visitCount = 1;
     require(search.selectBestEdgeToSearch(parent) == 2, "later NaN must not hide first infinity");
+}
+
+void cardActionCanonicalization(const sts::BattleContext &original) {
+    sts::CardInstance equivalentA(sts::CardId::STRIKE_RED);
+    sts::CardInstance equivalentB = equivalentA;
+    equivalentA.setUniqueId(11); equivalentB.setUniqueId(22);
+    require(sts::search::Action::areCardsEquivalentForSearch(equivalentA, equivalentB),
+            "ordinary copies with different unique ids must be equivalent");
+    equivalentB.costForTurn = equivalentA.costForTurn - 1;
+    require(!sts::search::Action::areCardsEquivalentForSearch(equivalentA, equivalentB),
+            "different costForTurn must remain distinct");
+    equivalentB = equivalentA; equivalentB.upgraded = !equivalentA.upgraded;
+    require(!sts::search::Action::areCardsEquivalentForSearch(equivalentA, equivalentB),
+            "different upgrade state must remain distinct");
+    equivalentB = equivalentA; equivalentB.freeToPlayOnce = true;
+    require(!sts::search::Action::areCardsEquivalentForSearch(equivalentA, equivalentB),
+            "different freeToPlayOnce state must remain distinct");
+    equivalentB = equivalentA; equivalentB.retain = true;
+    require(!sts::search::Action::areCardsEquivalentForSearch(equivalentA, equivalentB),
+            "different retain state must remain distinct");
+    equivalentB = equivalentA; equivalentB.specialData = 1;
+    require(!sts::search::Action::areCardsEquivalentForSearch(equivalentA, equivalentB),
+            "different specialData must remain distinct");
+
+    auto bc = original;
+    bc.cards.cardsInHand = 3;
+    bc.cards.hand[0] = sts::CardInstance(sts::CardId::STRIKE_RED);
+    bc.cards.hand[1] = sts::CardInstance(sts::CardId::DEFEND_RED);
+    bc.cards.hand[2] = sts::CardInstance(sts::CardId::STRIKE_RED);
+    bc.cards.hand[0].setUniqueId(101);
+    bc.cards.hand[2].setUniqueId(202);
+
+    Search search(bc);
+    search.step();
+    std::vector<int> strikeIndices;
+    for (const auto &edge : search.getRootEdges()) {
+        if (edge.action.getActionType() == sts::search::ActionType::CARD &&
+            bc.cards.hand[edge.action.getSourceIdx()].id == sts::CardId::STRIKE_RED) {
+            strikeIndices.push_back(edge.action.getSourceIdx());
+        }
+    }
+    require(strikeIndices.size() == 1 && strikeIndices.front() == 0,
+            "separated equivalent card plays must retain the first representative");
+
+    auto differentiated = bc;
+    differentiated.cards.hand[2].retain = true;
+    Search distinct(differentiated);
+    distinct.step();
+    int strikeCount = 0;
+    for (const auto &edge : distinct.getRootEdges()) {
+        if (edge.action.getActionType() == sts::search::ActionType::CARD &&
+            differentiated.cards.hand[edge.action.getSourceIdx()].id == sts::CardId::STRIKE_RED) {
+            ++strikeCount;
+        }
+    }
+    require(strikeCount == 2, "different retain state must preserve separate card plays");
+
+    auto special = bc;
+    special.cards.hand[0] = sts::CardInstance(sts::CardId::RAMPAGE);
+    special.cards.hand[2] = special.cards.hand[0];
+    special.cards.hand[0].setUniqueId(303);
+    special.cards.hand[2].setUniqueId(404);
+    Search identitySensitive(special);
+    identitySensitive.step();
+    int specialCount = 0;
+    for (const auto &edge : identitySensitive.getRootEdges()) {
+        if (edge.action.getActionType() == sts::search::ActionType::CARD &&
+            special.cards.hand[edge.action.getSourceIdx()].id == sts::CardId::RAMPAGE) {
+            ++specialCount;
+        }
+    }
+    require(specialCount == 2, "identity-sensitive card copies must remain distinct");
 }
 
 void widening(Search &search) {
@@ -595,6 +668,7 @@ int main(int argc, char **argv) {
             return 0;
         }
         dedupGrowth(bc);
+        cardActionCanonicalization(bc);
         lazyReroot(bc);
         compaction(bc, 0);
         selection(search); widening(search); rootPriorSelection(search);

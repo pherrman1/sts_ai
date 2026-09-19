@@ -496,6 +496,16 @@ void search::Action::execute(BattleContext &bc) const {
     bc.executeActions();
 }
 
+bool search::Action::areCardsEquivalentForSearch(const CardInstance &lhs, const CardInstance &rhs) {
+    if (lhs.id != rhs.id || lhs.upgraded != rhs.upgraded || lhs.specialData != rhs.specialData ||
+        lhs.cost != rhs.cost || lhs.costForTurn != rhs.costForTurn ||
+        lhs.freeToPlayOnce != rhs.freeToPlayOnce || lhs.retain != rhs.retain) {
+        return false;
+    }
+
+    return lhs.uniqueId == rhs.uniqueId || (!lhs.usesSpecialData() && !rhs.usesSpecialData());
+}
+
 template <typename ForwardIt>
 void setupCardOptionsHelper(std::vector<search::Action> &actions, const ForwardIt begin, const ForwardIt end, const std::function<bool(const CardInstance &)> &p= nullptr) {
     for (int i = 0; begin+i != end; ++i) {
