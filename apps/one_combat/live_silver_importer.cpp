@@ -96,7 +96,7 @@ bool monsterPowers(const json&a,const std::string&id,silver_bridge::MonsterWire&
         if(p=="Strength"){m.strength=n;}
         else if(p=="Vulnerable"){m.vulnerable=n;m.statusBits|=1ULL<<int(sts::MonsterStatus::VULNERABLE);}
         else if(p=="Ritual"&&id=="Cultist"&&!unique){unique=true;m.uniquePower0=n;m.statusBits|=1ULL<<int(sts::MonsterStatus::RITUAL);}
-        else if(p=="Enrage"&&(id=="Gremlin Nob"||id=="GremlinNob")&&!unique){unique=true;m.uniquePower0=n;m.statusBits|=1ULL<<int(sts::MonsterStatus::ENRAGE);}
+        else if((p=="Enrage"||p=="Anger")&&(id=="Gremlin Nob"||id=="GremlinNob")&&!unique){unique=true;m.uniquePower0=n;m.statusBits|=1ULL<<int(sts::MonsterStatus::ENRAGE);}
         else return false;
     }return true;
 }

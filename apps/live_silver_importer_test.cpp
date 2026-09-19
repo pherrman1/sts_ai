@@ -440,6 +440,15 @@ int main() {
         if (one_combat::advisor::importSilverRoot(unsupported).reason
             != "silver_unmapped_monster_power")
             throw std::runtime_error("monster power was not rejected");
+        auto liveNobPower = fixtures[2].observation;
+        liveNobPower["silverRoot"]["combat"]["monsters"][0]["powers"] =
+            json::array({json{{"id", "Anger"}, {"amount", 2}}});
+        const auto importedLiveNobPower = one_combat::advisor::importSilverRoot(liveNobPower);
+        if (!importedLiveNobPower.ok
+            || importedLiveNobPower.wire.monsters[0].uniquePower0 != 2
+            || !(importedLiveNobPower.wire.monsters[0].statusBits
+                & (1ULL << static_cast<int>(MonsterStatus::ENRAGE))))
+            throw std::runtime_error("live Gremlin Nob Anger power was not imported as Enrage");
         auto nonstarter = fixtures[0].observation;
         nonstarter["silverRoot"]["combat"]["draw"][0]["upgraded"] = true;
         if (one_combat::advisor::importSilverRoot(nonstarter).reason != "silver_nonstarter_deck")

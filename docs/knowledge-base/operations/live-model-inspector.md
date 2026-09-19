@@ -64,8 +64,9 @@ Jaw Worm combats plus non-burning Act-1 Gremlin Nob, Burning Blood only, empty
 potion slots, the exact 5 Strike / 4 Defend / 1 Bash unupgraded starter deck,
 and every public move of those three monsters. Strike, Defend, Bash, End Turn,
 multiple cards per turn, later turns, reshuffles, Cultist Ritual/Strength, Jaw
-Worm Strength/block, Gremlin Nob Enrage/Strength, and player/monster Vulnerable
-are mapped. Unknown powers, burning elites, Runic Dome, Frozen Eye, missing
+Worm Strength/block, Gremlin Nob Enrage/Strength (the live game reports
+Enrage with power ID `Anger`), and player/monster Vulnerable are mapped.
+Unknown powers, burning elites, Runic Dome, Frozen Eye, missing
 state, non-empty potions, and live RNG fields are rejected. A single
 deterministic search seed derived from `combatEntryHash` is retained for the
 whole combat. A missing retained branch starts a fresh root rather than making
