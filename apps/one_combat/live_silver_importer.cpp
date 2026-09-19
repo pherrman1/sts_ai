@@ -4,378 +4,159 @@
 #include <cstdint>
 #include <map>
 #include <set>
-#include <sstream>
 #include <unordered_map>
 
+#include "combat/CardInstance.h"
 #include "constants/CharacterClasses.h"
 #include "constants/MonsterIds.h"
 #include "constants/MonsterMoves.h"
-#include "constants/SaveFileMappings.h"
+#include "constants/MonsterStatusEffects.h"
+#include "constants/PlayerStatusEffects.h"
 #include "constants/Potions.h"
-#include "combat/CardInstance.h"
+#include "constants/Relics.h"
+#include "constants/SaveFileMappings.h"
 
 namespace one_combat::advisor {
 namespace {
-
 using json = nlohmann::json;
+struct CardRecord { std::string uuid; silver_bridge::CardWire wire; };
 
-struct CardRecord {
-    std::string uuid;
-    silver_bridge::CardWire wire;
-};
-
-std::string fail(const char *reason) { return reason; }
-
-std::uint64_t fnv1a(const std::string &value, std::uint64_t hash = 1469598103934665603ULL) {
-    for (unsigned char c : value) { hash ^= c; hash *= 1099511628211ULL; }
-    return hash;
+std::uint64_t fnv1a(const std::string &s, std::uint64_t h=1469598103934665603ULL) {
+    for (unsigned char c : s) { h ^= c; h *= 1099511628211ULL; } return h;
 }
-
-bool requiredInt(const json &object, const char *name, int &out) {
-    if (!object.contains(name) || !object.at(name).is_number_integer()) return false;
-    out = object.at(name).get<int>();
-    return true;
+bool integer(const json &o, const char *n, int &v) {
+    if (!o.contains(n) || !o.at(n).is_number_integer()) return false;
+    v=o.at(n).get<int>(); return true;
 }
-
-bool requiredBool(const json &object, const char *name, bool &out) {
-    if (!object.contains(name) || !object.at(name).is_boolean()) return false;
-    out = object.at(name).get<bool>();
-    return true;
+bool boolean(const json &o, const char *n, bool &v) {
+    if (!o.contains(n) || !o.at(n).is_boolean()) return false;
+    v=o.at(n).get<bool>(); return true;
 }
-
-bool hasForbiddenRngField(const json &object) {
-    for (const char *name : {"rng", "aiRng", "cardRandomRng", "miscRng", "monsterHpRng",
-                             "potionRng", "shuffleRng", "seed"})
-        if (object.contains(name)) return true;
+bool forbiddenRng(const json &o) {
+    for (const char *n : {"rng","aiRng","cardRandomRng","miscRng","monsterHpRng","potionRng","shuffleRng","seed"})
+        if (o.contains(n)) return true;
     return false;
 }
-
-bool parseCard(const json &item, const std::string &location, CardRecord &out) {
-    if (!item.is_object() || !item.contains("id") || !item.at("id").is_string()
-        || !item.contains("uuid") || !item.at("uuid").is_string()
-        || !item.contains("misc") || !item.at("misc").is_number_integer()
-        || !item.contains("cost") || !item.at("cost").is_number_integer()
-        || !item.contains("costForTurn") || !item.at("costForTurn").is_number_integer()
-        || !item.contains("upgraded") || !item.at("upgraded").is_boolean()
-        || !item.contains("freeToPlayOnce") || !item.at("freeToPlayOnce").is_boolean()
-        || !item.contains("retain") || !item.at("retain").is_boolean()) return false;
+bool parseCard(const json &j, CardRecord &r) {
+    if (!j.is_object() || !j.contains("id") || !j.at("id").is_string()
+        || !j.contains("uuid") || !j.at("uuid").is_string()
+        || !j.contains("misc") || !j.at("misc").is_number_integer()
+        || !j.contains("cost") || !j.at("cost").is_number_integer()
+        || !j.contains("costForTurn") || !j.at("costForTurn").is_number_integer()
+        || !j.contains("upgraded") || !j.at("upgraded").is_boolean()
+        || !j.contains("freeToPlayOnce") || !j.at("freeToPlayOnce").is_boolean()
+        || !j.contains("retain") || !j.at("retain").is_boolean()) return false;
     try {
-        const auto cardId = item.at("id").get<sts::CardId>();
-        if (cardId == sts::CardId::INVALID) return false;
-        out.uuid = item.at("uuid").get<std::string>();
-        out.wire.id = static_cast<std::int16_t>(cardId);
-        out.wire.specialData = item.at("misc").get<std::int16_t>();
-        out.wire.cost = item.at("cost").get<std::int16_t>();
-        out.wire.costForTurn = item.at("costForTurn").get<std::int16_t>();
-        out.wire.upgraded = item.at("upgraded").get<bool>();
-        out.wire.freeToPlayOnce = item.at("freeToPlayOnce").get<bool>();
-        out.wire.retain = item.at("retain").get<bool>();
-        return location == "HAND" || location == "DRAW" || location == "DISCARD" || location == "EXHAUST";
+        const auto id=j.at("id").get<sts::CardId>(); if (id==sts::CardId::INVALID) return false;
+        r.uuid=j.at("uuid").get<std::string>(); r.wire.id=static_cast<std::int16_t>(id);
+        r.wire.specialData=j.at("misc").get<std::int16_t>(); r.wire.cost=j.at("cost").get<std::int16_t>();
+        r.wire.costForTurn=j.at("costForTurn").get<std::int16_t>(); r.wire.upgraded=j.at("upgraded").get<bool>();
+        r.wire.freeToPlayOnce=j.at("freeToPlayOnce").get<bool>(); r.wire.retain=j.at("retain").get<bool>();
+        return true;
     } catch (...) { return false; }
 }
+bool cardLess(const silver_bridge::CardWire &a,const silver_bridge::CardWire &b) {
+    if(a.id!=b.id)return a.id<b.id; if(a.uniqueId!=b.uniqueId)return a.uniqueId<b.uniqueId;
+    if(a.specialData!=b.specialData)return a.specialData<b.specialData; if(a.cost!=b.cost)return a.cost<b.cost;
+    if(a.costForTurn!=b.costForTurn)return a.costForTurn<b.costForTurn; if(a.upgraded!=b.upgraded)return a.upgraded<b.upgraded;
+    if(a.freeToPlayOnce!=b.freeToPlayOnce)return a.freeToPlayOnce<b.freeToPlayOnce; return a.retain<b.retain;
+}
+bool isStrike(const silver_bridge::CardWire &c){return sts::CardInstance(static_cast<sts::CardId>(c.id)).isStrikeCard();}
+bool isBlood(const silver_bridge::CardWire &c){return sts::CardInstance(static_cast<sts::CardId>(c.id)).isBloodCard();}
+bool isNormality(const silver_bridge::CardWire &c){return c.id==static_cast<std::int16_t>(sts::CardId::NORMALITY);}
+bool isPain(const silver_bridge::CardWire &c){return c.id==static_cast<std::int16_t>(sts::CardId::PAIN);}
+template<class P> int count(const std::vector<silver_bridge::CardWire>&v,P p){return std::count_if(v.begin(),v.end(),p);}
 
 int monsterId(const std::string &id) {
-    static const std::map<std::string, sts::MonsterId> ids = {
-        {"Cultist", sts::MonsterId::CULTIST}, {"JawWorm", sts::MonsterId::JAW_WORM},
-        {"Gremlin Nob", sts::MonsterId::GREMLIN_NOB}, {"GremlinNob", sts::MonsterId::GREMLIN_NOB},
-    };
-    const auto it = ids.find(id); return it == ids.end() ? 0 : static_cast<int>(it->second);
-}
-
-int moveId(const std::string &id, int nextMove) {
-    // These values are the explicit first-action mappings from the vanilla
-    // AbstractMonster nextMove field; no damage or localized intent text is used.
-    if (id == "Cultist")
-        return nextMove == 3 ? static_cast<int>(sts::MonsterMoveId::CULTIST_INCANTATION) : 0;
-    if (id == "JawWorm") {
-        if (nextMove == 1) return static_cast<int>(sts::MonsterMoveId::JAW_WORM_CHOMP);
-    }
-    if (id == "Gremlin Nob" || id == "GremlinNob") {
-        if (nextMove == 3) return static_cast<int>(sts::MonsterMoveId::GREMLIN_NOB_BELLOW);
-    }
+    if(id=="Cultist")return static_cast<int>(sts::MonsterId::CULTIST);
+    if(id=="JawWorm")return static_cast<int>(sts::MonsterId::JAW_WORM);
+    if(id=="Gremlin Nob"||id=="GremlinNob")return static_cast<int>(sts::MonsterId::GREMLIN_NOB);
     return 0;
 }
-
-bool cardLess(const silver_bridge::CardWire &a, const silver_bridge::CardWire &b) {
-    if (a.id != b.id) return a.id < b.id;
-    if (a.uniqueId != b.uniqueId) return a.uniqueId < b.uniqueId;
-    if (a.specialData != b.specialData) return a.specialData < b.specialData;
-    if (a.cost != b.cost) return a.cost < b.cost;
-    if (a.costForTurn != b.costForTurn) return a.costForTurn < b.costForTurn;
-    if (a.upgraded != b.upgraded) return a.upgraded < b.upgraded;
-    if (a.freeToPlayOnce != b.freeToPlayOnce) return a.freeToPlayOnce < b.freeToPlayOnce;
-    return a.retain < b.retain;
+int moveId(const std::string &id,int m) {
+    using M=sts::MonsterMoveId;
+    if(id=="Cultist")return m==3?int(M::CULTIST_INCANTATION):m==1?int(M::CULTIST_DARK_STRIKE):0;
+    if(id=="JawWorm")return m==1?int(M::JAW_WORM_CHOMP):m==2?int(M::JAW_WORM_THRASH):m==3?int(M::JAW_WORM_BELLOW):0;
+    if(id=="Gremlin Nob"||id=="GremlinNob")return m==3?int(M::GREMLIN_NOB_BELLOW):m==1?int(M::GREMLIN_NOB_RUSH):m==2?int(M::GREMLIN_NOB_SKULL_BASH):0;
+    return 0;
 }
-
-bool isStrike(const silver_bridge::CardWire &wire) {
-    sts::CardInstance card(static_cast<sts::CardId>(wire.id));
-    return card.isStrikeCard();
+bool power(const json &j,std::string &id,int &amount){return j.is_object()&&j.contains("id")&&j.at("id").is_string()&&integer(j,"amount",amount)&&(id=j.at("id").get<std::string>(),true);}
+bool playerPowers(const json &a,silver_bridge::PlayerWire &p) {
+    if(!a.is_array())return false;
+    for(const auto &j:a){std::string id;int n=0;if(!power(j,id,n)||n<=0)return false;
+        if(id!="Vulnerable")return false; constexpr int s=int(PlayerStatus::VULNERABLE);
+        p.statusBits0|=1ULL<<s;p.statusMap.emplace_back(s,n);
+    } return true;
 }
-
-bool isBlood(const silver_bridge::CardWire &wire) {
-    sts::CardInstance card(static_cast<sts::CardId>(wire.id));
-    return card.isBloodCard();
+bool monsterPowers(const json&a,const std::string&id,silver_bridge::MonsterWire&m){
+    if(!a.is_array())return false;bool unique=false;
+    for(const auto&j:a){std::string p;int n=0;if(!power(j,p,n)||n<=0)return false;
+        // Native Strength is a dedicated scalar; unlike ordinary monster
+        // statuses, applying it does not set the corresponding status bit.
+        if(p=="Strength"){m.strength=n;}
+        else if(p=="Vulnerable"){m.vulnerable=n;m.statusBits|=1ULL<<int(sts::MonsterStatus::VULNERABLE);}
+        else if(p=="Ritual"&&id=="Cultist"&&!unique){unique=true;m.uniquePower0=n;m.statusBits|=1ULL<<int(sts::MonsterStatus::RITUAL);}
+        else if(p=="Enrage"&&(id=="Gremlin Nob"||id=="GremlinNob")&&!unique){unique=true;m.uniquePower0=n;m.statusBits|=1ULL<<int(sts::MonsterStatus::ENRAGE);}
+        else return false;
+    }return true;
 }
-
-bool isNormality(const silver_bridge::CardWire &wire) {
-    return wire.id == static_cast<std::int16_t>(sts::CardId::NORMALITY);
 }
-
-bool isPain(const silver_bridge::CardWire &wire) {
-    return wire.id == static_cast<std::int16_t>(sts::CardId::PAIN);
-}
-
-bool parseCards(const json &array, const std::string &location, std::vector<CardRecord> &out) {
-    if (!array.is_array()) return false;
-    for (const auto &item : array) { CardRecord record; if (!parseCard(item, location, record)) return false; out.push_back(std::move(record)); }
-    return true;
-}
-
-} // namespace
 
 SilverRootImportResult importSilverRoot(const json &observation) {
-    SilverRootImportResult result;
-    auto &wire = result.wire;
-    const auto unsupported = [&](const char *reason) { result.reason = fail(reason); return result; };
-    if (!observation.contains("silverRoot") || !observation.at("silverRoot").is_object()) return unsupported("silver_root_missing");
-    const auto &root = observation.at("silverRoot");
-    if (hasForbiddenRngField(observation) || hasForbiddenRngField(root)) return unsupported("silver_rng_field");
-    int schema = 0, decisionOrdinal = -1, act = 0, floor = 0, ascension = 0;
-    int hp = 0, maxHp = 0, gold = 0, potionCapacity = 0;
-    bool firstDecision = false, burningElite = false;
-    if (!requiredInt(root, "schemaVersion", schema) || schema != 2) return unsupported("silver_schema_version");
-    if (!requiredInt(root, "decisionOrdinal", decisionOrdinal)
-        || (decisionOrdinal != 0 && decisionOrdinal != 1)) return unsupported("silver_decision_ordinal");
-    if (!requiredBool(root, "firstDecision", firstDecision)
-        || firstDecision != (decisionOrdinal == 0)) return unsupported("silver_first_decision_flag");
-    result.decisionOrdinal = decisionOrdinal;
-    if (!requiredInt(root, "act", act) || act != 1) return unsupported("silver_act");
-    if (!requiredInt(root, "floor", floor) || floor < 1) return unsupported("silver_floor");
-    if (!requiredInt(root, "ascension", ascension) || !requiredInt(root, "hp", hp)
-        || !requiredInt(root, "maxHp", maxHp) || !requiredInt(root, "gold", gold)
-        || !requiredInt(root, "potionCapacity", potionCapacity)
-        || !requiredBool(root, "burningElite", burningElite)) return unsupported("silver_root_state");
-    if (burningElite) return unsupported("silver_burning_elite");
-    if (!root.contains("roomClass") || !root.at("roomClass").is_string()) return unsupported("silver_room_class");
-    if (observation.value("character", std::string()) != "IRONCLAD"
-        || !root.contains("character") || !root.at("character").is_string()
-        || root.at("character").get<std::string>() != "IRONCLAD") return unsupported("silver_character");
-    if (!root.contains("combat") || !root.at("combat").is_object()) return unsupported("silver_combat_missing");
-    const auto &combat = root.at("combat");
-    if (hasForbiddenRngField(combat)) return unsupported("silver_rng_field");
-    bool runicDome = false, frozenEye = false, cardSelect = false, resolving = false;
-    int cardsPlayed = 0;
-    if (!requiredBool(combat, "runicDome", runicDome) || runicDome) return unsupported("silver_runic_dome");
-    if (!requiredBool(combat, "frozenEye", frozenEye) || frozenEye) return unsupported("silver_frozen_eye");
-    if (!requiredInt(combat, "cardsPlayedThisTurn", cardsPlayed)
-        || cardsPlayed != decisionOrdinal) return unsupported("silver_cards_played_history");
-    if (!combat.contains("playedThisTurn") || !combat.at("playedThisTurn").is_array()
-        || combat.at("playedThisTurn").size() != static_cast<std::size_t>(decisionOrdinal))
-        return unsupported("silver_played_history");
-    if (!combat.contains("playerPowers") || !combat.at("playerPowers").is_array()
-        || !combat.at("playerPowers").empty()) return unsupported("silver_unmapped_player_power");
-    if (!requiredBool(combat, "cardSelect", cardSelect) || !requiredBool(combat, "resolving", resolving)
-        || cardSelect || resolving) return unsupported("silver_card_select");
-    int turn = 0, energy = 0, block = 0;
-    // Java's GameActionManager is one-based at the first actionable decision;
-    // the native simulator's equivalent BattleContext root is zero-based.
-    if (!requiredInt(combat, "turn", turn) || !requiredInt(combat, "energy", energy) || !requiredInt(combat, "block", block) || turn != 1)
-        return unsupported("silver_first_turn_invariant");
-    if (potionCapacity != 3 || !combat.contains("hand") || !combat.contains("draw")
-        || !combat.contains("discard") || !combat.contains("exhaust") || !combat.contains("monsters")
-        || !combat.contains("relics") || !combat.contains("potions")) return unsupported("silver_missing_state");
+    SilverRootImportResult result; auto &w=result.wire;
+    const auto bad=[&](const char*r){result.reason=r;return result;};
+    if(!observation.contains("silverRoot")||!observation.at("silverRoot").is_object())return bad("silver_root_missing");
+    const auto&r=observation.at("silverRoot"); if(forbiddenRng(observation)||forbiddenRng(r))return bad("silver_rng_field");
+    int schema=0,playerTurn=0,decision=0,act=0,floor=0,asc=0,hp=0,maxHp=0,gold=0,potionCapacity=0;bool burning=false;
+    if(!integer(r,"schemaVersion",schema)||schema!=3)return bad("silver_schema_version");
+    if(!integer(r,"playerTurn",playerTurn)||playerTurn<1||!integer(r,"decisionInTurn",decision)||decision<0)return bad("silver_turn_state");
+    result.playerTurn=playerTurn;result.decisionInTurn=decision;
+    if(!integer(r,"act",act)||act!=1)return bad("silver_act"); if(!integer(r,"floor",floor)||floor<1)return bad("silver_floor");
+    if(!integer(r,"ascension",asc)||!integer(r,"hp",hp)||!integer(r,"maxHp",maxHp)||!integer(r,"gold",gold)||!integer(r,"potionCapacity",potionCapacity)||!boolean(r,"burningElite",burning))return bad("silver_root_state");
+    if(burning)return bad("silver_burning_elite"); if(!r.contains("roomClass")||!r.at("roomClass").is_string())return bad("silver_room_class");
+    if(observation.value("character",std::string())!="IRONCLAD"||r.value("character",std::string())!="IRONCLAD")return bad("silver_character");
+    if(!r.contains("combat")||!r.at("combat").is_object())return bad("silver_combat_missing");const auto&c=r.at("combat");
+    if(forbiddenRng(c))return bad("silver_rng_field");bool dome=false,eye=false,select=false,resolving=false;
+    if(!boolean(c,"runicDome",dome)||dome)return bad("silver_runic_dome");if(!boolean(c,"frozenEye",eye)||eye)return bad("silver_frozen_eye");
+    if(!boolean(c,"cardSelect",select)||!boolean(c,"resolving",resolving)||select||resolving)return bad("silver_card_select");
+    int turn=0,energy=0,block=0,played=0,attacks=0,skills=0,discarded=0,lastTarget=1,lastDamage=0,timesDamaged=0;bool vulnerableSeen=false;
+    if(!integer(c,"turn",turn)||turn!=playerTurn||!integer(c,"energy",energy)||!integer(c,"block",block)||!integer(c,"cardsPlayedThisTurn",played)||played!=decision||!integer(c,"attacksPlayedThisTurn",attacks)||!integer(c,"skillsPlayedThisTurn",skills)||!integer(c,"cardsDiscardedThisTurn",discarded)||!integer(c,"lastTargetedMonster",lastTarget)||!integer(c,"lastAttackUnblockedDamage",lastDamage)||!integer(c,"timesDamagedThisCombat",timesDamaged)||!boolean(c,"playerVulnerableSeen",vulnerableSeen))return bad("silver_player_state");
+    if(played<0||attacks<0||skills<0||discarded<0||attacks+skills!=played||lastTarget<0||lastTarget>1)return bad("silver_player_state");
+    if(potionCapacity!=3)return bad("silver_unmapped_potion_state");
 
     std::vector<CardRecord> cards;
-    if (!parseCards(combat.at("hand"), "HAND", cards)
-        || !parseCards(combat.at("draw"), "DRAW", cards)
-        || !parseCards(combat.at("discard"), "DISCARD", cards)
-        || !parseCards(combat.at("exhaust"), "EXHAUST", cards)) return unsupported("silver_unknown_card");
-    if (cards.size() != 10) return unsupported("silver_nonstarter_deck");
-    int strikes = 0, defends = 0, bashes = 0;
-    for (const auto &card : cards) {
-        const auto id = static_cast<sts::CardId>(card.wire.id);
-        if (id == sts::CardId::STRIKE_RED) ++strikes;
-        else if (id == sts::CardId::DEFEND_RED) ++defends;
-        else if (id == sts::CardId::BASH) ++bashes;
-        else return unsupported("silver_nonstarter_deck");
-        const int expectedCost = id == sts::CardId::BASH ? 2 : 1;
-        if (card.wire.upgraded || card.wire.specialData != 0
-            || card.wire.cost != expectedCost || card.wire.costForTurn != expectedCost
-            || card.wire.freeToPlayOnce || card.wire.retain)
-            return unsupported("silver_nonstarter_deck");
-    }
-    if (strikes != 5 || defends != 4 || bashes != 1)
-        return unsupported("silver_nonstarter_deck");
-    std::sort(cards.begin(), cards.end(), [](const CardRecord &a, const CardRecord &b) { return a.uuid < b.uuid; });
-    std::set<std::string> uuids;
-    for (int i = 0; i < static_cast<int>(cards.size()); ++i) {
-        if (!uuids.insert(cards[i].uuid).second || cards[i].uuid.empty()) return unsupported("silver_card_identity");
-        cards[i].wire.uniqueId = static_cast<std::int16_t>(i);
-    }
-    if (combat.at("hand").size() != static_cast<std::size_t>(5 - decisionOrdinal))
-        return unsupported("silver_hand_size");
-    wire.nextUniqueCardId = static_cast<int>(cards.size());
-    // Reparse by source so the UUID mapping above is applied without exposing pile order.
-    std::unordered_map<std::string, silver_bridge::CardWire> byUuid;
-    for (const auto &card : cards) byUuid.emplace(card.uuid, card.wire);
-    const auto appendPile = [&](const char *name, std::vector<silver_bridge::CardWire> &target,
-                                bool canonicalize) {
-        for (const auto &item : combat.value(name, json::array())) {
-            const auto uuid = item.value("uuid", std::string());
-            target.push_back(byUuid.at(uuid));
-        }
-        if (canonicalize) std::sort(target.begin(), target.end(), cardLess);
-    };
-    appendPile("hand", wire.hand, false);
-    appendPile("draw", wire.drawPile.unknown, true);
-    appendPile("discard", wire.discardPile.unknown, true); appendPile("exhaust", wire.exhaustPile.unknown, true);
-    wire.drawPile.valid = wire.discardPile.valid = wire.exhaustPile.valid = true;
-    wire.drawPile.fullOrderObserved = wire.discardPile.fullOrderObserved = wire.exhaustPile.fullOrderObserved = false;
-    const auto countWire = [](const std::vector<silver_bridge::CardWire> &pile,
-                              bool (*predicate)(const silver_bridge::CardWire &)) {
-        int count = 0;
-        for (const auto &card : pile) if (predicate(card)) ++count;
-        return count;
-    };
-    wire.strikeCount = 0;
-    for (const auto &card : cards) if (isStrike(card.wire)) ++wire.strikeCount;
-    wire.handNormalityCount = countWire(wire.hand, isNormality);
-    wire.handPainCount = countWire(wire.hand, isPain);
-    wire.handBloodCardCount = countWire(wire.hand, isBlood);
-    wire.drawPileBloodCardCount = countWire(wire.drawPile.unknown, isBlood);
-    wire.discardPileBloodCardCount = countWire(wire.discardPile.unknown, isBlood);
-
-    wire.version = silver_bridge::BattleStateWire::kVersion;
-    wire.valid = true; wire.fullDrawOrderObserved = false; wire.intentsHidden = false;
-    wire.floorNum = floor; wire.act = act; wire.ascension = ascension;
-    // BattleContext::init reaches PLAYER_NORMAL after two executeActions loop
-    // iterations: the initial draw and the final decision-boundary check.
-    wire.turn = 0; wire.cardsDrawn = 5; wire.loopCount = decisionOrdinal == 0 ? 2 : 0; wire.energyWasted = 0;
-    wire.outcome = 0; wire.inputState = 1; // PLAYER_NORMAL, proven by the live decision gate
-    wire.monsterTurnIdx = 6; wire.endTurnQueued = false; wire.turnHasEnded = false; wire.skipMonsterTurn = false;
-    wire.potionCapacity = potionCapacity; wire.potionCount = 0;
-    wire.potions.fill(static_cast<std::int16_t>(sts::Potion::EMPTY_POTION_SLOT));
-    wire.player.characterClass = static_cast<std::int16_t>(sts::CharacterClass::IRONCLAD);
-    wire.player.curHp = hp; wire.player.maxHp = maxHp; wire.player.gold = gold;
-    wire.player.energy = energy; wire.player.energyPerTurn = 3; wire.player.cardDrawPerTurn = 5;
-    wire.player.lastTargetedMonster = 1; wire.player.block = block;
-    wire.player.cardsPlayedThisTurn = static_cast<std::int16_t>(decisionOrdinal);
-    wire.player.attacksPlayedThisTurn = 0;
-    wire.player.skillsPlayedThisTurn = 0; wire.player.cardsDiscardedThisTurn = 0;
-    wire.player.lastAttackUnblockedDamage = 0; wire.player.timesDamagedThisCombat = 0;
-    const int burningBlood = static_cast<int>(sts::RelicId::BURNING_BLOOD);
-    wire.player.relicBits0 = burningBlood < 64 ? (1ULL << burningBlood) : 0;
-    wire.player.relicBits1 = burningBlood >= 64 ? (1ULL << (burningBlood - 64)) : 0;
-    if (!combat.at("relics").is_array() || combat.at("relics").size() != 1
-        || !combat.at("relics")[0].is_object()
-        || combat.at("relics")[0].value("id", std::string()) != "Burning Blood"
-        || !combat.at("relics")[0].contains("counter")
-        || !combat.at("relics")[0].at("counter").is_number_integer())
-        return unsupported("silver_unmapped_relic_state");
-    if (!combat.at("potions").is_array() || combat.at("potions").size() != static_cast<std::size_t>(potionCapacity))
-        return unsupported("silver_unmapped_potion_state");
-    for (std::size_t i = 0; i < combat.at("potions").size(); ++i) {
-        const auto &potion = combat.at("potions")[i];
-        if (!potion.is_object() || potion.value("slot", -1) != static_cast<int>(i)
-            || potion.value("id", std::string()) != "Potion Slot") return unsupported("silver_unmapped_potion_state");
-    }
-
-    const auto monsters = combat.value("monsters", json::array());
-    if (!monsters.is_array() || monsters.size() != 1) return unsupported("silver_unknown_monster");
-    const std::string roomClass = root.at("roomClass").get<std::string>();
-    wire.monsterCount = wire.monstersAlive = static_cast<int>(monsters.size());
-    for (std::size_t i = 0; i < monsters.size(); ++i) {
-        const auto &item = monsters[i];
-        if (!item.is_object() || !item.contains("id") || !item.at("id").is_string()
-            || !requiredInt(item, "hp", wire.monsters[i].curHp)
-            || !requiredInt(item, "maxHp", wire.monsters[i].maxHp)
-            || !requiredInt(item, "block", wire.monsters[i].block)
-            || !item.contains("nextMove") || !item.at("nextMove").is_number_integer())
-            return unsupported("silver_monster_state");
-        const auto id = item.at("id").get<std::string>();
-        const int canonical = monsterId(id), move = moveId(id, item.at("nextMove").get<int>());
-        if (canonical == 0) return unsupported("silver_unknown_monster");
-        if (move == 0) return unsupported("silver_unknown_move");
-        if ((id == "Gremlin Nob" || id == "GremlinNob") ? roomClass != "ELITE" : roomClass != "MONSTER")
-            return unsupported("silver_room_class");
-        if (!item.contains("powers") || !item.at("powers").is_array()
-            || !item.at("powers").empty()) return unsupported("silver_unmapped_monster_power");
-        auto &monster = wire.monsters[i]; monster.idx = static_cast<int>(i); monster.id = canonical;
-        monster.moveHistory = {static_cast<std::int16_t>(move), 0};
-    }
-    if (monsters.size() == 1) {
-        const auto id = monsters.front().value("id", std::string());
-        if (id == "Cultist") wire.encounter = static_cast<int>(sts::MonsterEncounter::CULTIST);
-        else if (id == "JawWorm") wire.encounter = static_cast<int>(sts::MonsterEncounter::JAW_WORM);
-        else if (id == "Gremlin Nob" || id == "GremlinNob") wire.encounter = static_cast<int>(sts::MonsterEncounter::GREMLIN_NOB);
-    }
-    for (auto &stasis : wire.stasisCards) {
-        stasis.uniqueId = -1;
-        // CardManager initializes the two inactive stasis slots with the
-        // default card cost sentinel used by the native first root.
-        stasis.cost = 1;
-        stasis.costForTurn = 1;
-    }
-    // CardManager::limbo is a fixed ten-slot array, not a sized container;
-    // native first-root conversion therefore carries ten default card slots.
-    // Preserve that materialized invariant even though the public observer has
-    // no meaningful limbo payload at PLAYER_NORMAL.
-    wire.limbo.assign(10, silver_bridge::CardWire{});
-    for (auto &card : wire.limbo) card.uniqueId = -1;
-    wire.curCardQueueItem.card.uniqueId = -1;
-    if (decisionOrdinal == 1) {
-        const auto &played = combat.at("playedThisTurn")[0];
-        if (!played.is_object() || !played.contains("id") || !played.at("id").is_string()
-            || !played.contains("uuid") || !played.at("uuid").is_string()
-            || !played.contains("upgraded") || !played.at("upgraded").is_boolean())
-            return unsupported("silver_played_card");
-        const auto playedId = played.at("id").get<std::string>();
-        if (playedId != "Strike_R" && playedId != "Defend_R")
-            return unsupported("silver_unsupported_continuation");
-        if (played.at("upgraded").get<bool>()) return unsupported("silver_played_card");
-        const auto playedUuid = played.at("uuid").get<std::string>();
-        const auto mapped = byUuid.find(playedUuid);
-        if (playedUuid.empty() || mapped == byUuid.end()) return unsupported("silver_played_card");
-        const auto expectedId = playedId == "Strike_R" ? sts::CardId::STRIKE_RED : sts::CardId::DEFEND_RED;
-        if (mapped->second.id != static_cast<std::int16_t>(expectedId) || mapped->second.upgraded)
-            return unsupported("silver_played_card");
-        int discardMatches = 0;
-        for (const auto &item : combat.at("discard"))
-            if (item.is_object() && item.value("uuid", std::string()) == playedUuid) ++discardMatches;
-        if (discardMatches != 1) return unsupported("silver_played_card");
-        wire.curCardQueueItem.card = mapped->second;
-        wire.curCardQueueItem.target = 0;
-        wire.curCardQueueItem.energyOnUse = energy + 1;
-        wire.player.lastTargetedMonster = playedId == "Strike_R" ? 0 : 1;
-        wire.player.attacksPlayedThisTurn = playedId == "Strike_R" ? 1 : 0;
-        wire.player.skillsPlayedThisTurn = playedId == "Defend_R" ? 1 : 0;
-        wire.loopCount = 6;
-    }
-    const auto combatEntryHash = observation.value("combatEntryHash", std::string());
-    if (combatEntryHash.empty()) return unsupported("silver_combat_entry_hash");
-    wire.isolatedSearchSeed = fnv1a(combatEntryHash + ":silver-live-v2");
-    wire.observedGeneration = static_cast<std::uint64_t>(decisionOrdinal + 1);
-    result.ok = true;
-    return result;
+    for(const char*p:{"hand","draw","discard","exhaust"}){if(!c.contains(p)||!c.at(p).is_array())return bad("silver_missing_state");for(const auto&j:c.at(p)){CardRecord x;if(!parseCard(j,x))return bad("silver_unknown_card");cards.push_back(x);}}
+    if(cards.size()!=10)return bad("silver_nonstarter_deck");int strikes=0,defends=0,bashes=0;
+    for(const auto&x:cards){auto id=static_cast<sts::CardId>(x.wire.id);int cost=1;if(id==sts::CardId::STRIKE_RED)++strikes;else if(id==sts::CardId::DEFEND_RED)++defends;else if(id==sts::CardId::BASH){++bashes;cost=2;}else return bad("silver_nonstarter_deck");if(x.wire.upgraded||x.wire.specialData||x.wire.cost!=cost||x.wire.costForTurn!=cost||x.wire.freeToPlayOnce||x.wire.retain)return bad("silver_nonstarter_deck");}
+    if(strikes!=5||defends!=4||bashes!=1)return bad("silver_nonstarter_deck");
+    std::sort(cards.begin(),cards.end(),[](const auto&a,const auto&b){return a.uuid<b.uuid;});std::set<std::string>ids;std::unordered_map<std::string,silver_bridge::CardWire>by;
+    for(int i=0;i<int(cards.size());++i){if(cards[i].uuid.empty()||!ids.insert(cards[i].uuid).second)return bad("silver_card_identity");cards[i].wire.uniqueId=i;by.emplace(cards[i].uuid,cards[i].wire);}
+    const auto pile=[&](const char*n,std::vector<silver_bridge::CardWire>&out,bool sort){for(const auto&j:c.at(n))out.push_back(by.at(j.at("uuid").get<std::string>()));if(sort)std::sort(out.begin(),out.end(),cardLess);};
+    pile("hand",w.hand,false);pile("draw",w.drawPile.unknown,true);pile("discard",w.discardPile.unknown,true);pile("exhaust",w.exhaustPile.unknown,true);
+    w.drawPile.valid=w.discardPile.valid=w.exhaustPile.valid=true;w.nextUniqueCardId=10;w.strikeCount=strikes;
+    w.handNormalityCount=count(w.hand,isNormality);w.handPainCount=count(w.hand,isPain);w.handBloodCardCount=count(w.hand,isBlood);w.drawPileBloodCardCount=count(w.drawPile.unknown,isBlood);w.discardPileBloodCardCount=count(w.discardPile.unknown,isBlood);
+    w.version=silver_bridge::BattleStateWire::kVersion;w.valid=true;w.floorNum=floor;w.act=act;w.ascension=asc;w.inputState=1;w.monsterTurnIdx=playerTurn==1?6:1;w.turn=playerTurn-1;w.cardsDrawn=playerTurn*5;w.potionCapacity=3;w.potions.fill(static_cast<std::int16_t>(sts::Potion::EMPTY_POTION_SLOT));
+    auto&p=w.player;p.characterClass=static_cast<std::int16_t>(sts::CharacterClass::IRONCLAD);p.curHp=hp;p.maxHp=maxHp;p.gold=gold;p.energy=energy;p.energyPerTurn=3;p.cardDrawPerTurn=5;p.block=block;p.lastTargetedMonster=lastTarget;p.cardsPlayedThisTurn=played;p.attacksPlayedThisTurn=attacks;p.skillsPlayedThisTurn=skills;p.cardsDiscardedThisTurn=discarded;p.lastAttackUnblockedDamage=lastDamage;p.timesDamagedThisCombat=timesDamaged;
+    if(!c.contains("playerPowers")||!playerPowers(c.at("playerPowers"),p))return bad("silver_unmapped_player_power");int bb=int(sts::RelicId::BURNING_BLOOD);p.relicBits0=bb<64?1ULL<<bb:0;p.relicBits1=bb>=64?1ULL<<(bb-64):0;
+    // Player::decrementStatus leaves an observable-history-dependent zero map
+    // entry after Vulnerable expires. Preserve it without relaxing Silver's
+    // strict state equality.
+    if(vulnerableSeen&&p.statusMap.empty())p.statusMap.emplace_back(static_cast<int>(PlayerStatus::VULNERABLE),0);
+    if(!c.contains("relics")||!c.at("relics").is_array()||c.at("relics").size()!=1||c.at("relics")[0].value("id",std::string())!="Burning Blood"||!c.at("relics")[0].contains("counter")||!c.at("relics")[0].at("counter").is_number_integer())return bad("silver_unmapped_relic_state");
+    if(!c.contains("potions")||!c.at("potions").is_array()||c.at("potions").size()!=3)return bad("silver_unmapped_potion_state");for(int i=0;i<3;++i)if(c.at("potions")[i].value("slot",-1)!=i||c.at("potions")[i].value("id",std::string())!="Potion Slot")return bad("silver_unmapped_potion_state");
+    if(!c.contains("monsters")||!c.at("monsters").is_array()||c.at("monsters").size()!=1)return bad("silver_unknown_monster");const auto&mj=c.at("monsters")[0];
+    if(!mj.is_object()||!mj.contains("id")||!mj.at("id").is_string()||!integer(mj,"hp",w.monsters[0].curHp)||!integer(mj,"maxHp",w.monsters[0].maxHp)||!integer(mj,"block",w.monsters[0].block)||!mj.contains("moveHistory")||!mj.at("moveHistory").is_array())return bad("silver_monster_state");
+    std::string mid=mj.at("id").get<std::string>();int canonical=monsterId(mid);if(!canonical)return bad("silver_unknown_monster");std::string room=r.at("roomClass").get<std::string>();if(((mid=="Gremlin Nob"||mid=="GremlinNob")?"ELITE":"MONSTER")!=room)return bad("silver_room_class");
+    auto&m=w.monsters[0];m.idx=0;m.id=canonical;const auto&hist=mj.at("moveHistory");if(hist.empty()||hist.size()>2)return bad("silver_unknown_move");for(std::size_t i=0;i<hist.size();++i){if(!hist[i].is_number_integer())return bad("silver_unknown_move");int mm=moveId(mid,hist[hist.size()-1-i].get<int>());if(!mm)return bad("silver_unknown_move");m.moveHistory[i]=mm;}
+    if(!mj.contains("powers")||!monsterPowers(mj.at("powers"),mid,m))return bad("silver_unmapped_monster_power");w.monsterCount=w.monstersAlive=1;if(mid=="Cultist")w.encounter=int(sts::MonsterEncounter::CULTIST);else if(mid=="JawWorm")w.encounter=int(sts::MonsterEncounter::JAW_WORM);else w.encounter=int(sts::MonsterEncounter::GREMLIN_NOB);
+    for(auto&s:w.stasisCards){s.uniqueId=-1;s.cost=s.costForTurn=1;}w.limbo.assign(10,silver_bridge::CardWire{});for(auto&x:w.limbo)x.uniqueId=-1;w.curCardQueueItem.card.uniqueId=-1;
+    if(c.contains("lastCard")&&!c.at("lastCard").is_null()){CardRecord x;const auto&j=c.at("lastCard");if(!parseCard(j,x)||!by.count(x.uuid))return bad("silver_last_card");w.curCardQueueItem.card=by.at(x.uuid);if(!integer(j,"target",w.curCardQueueItem.target)||!integer(j,"energyOnUse",w.curCardQueueItem.energyOnUse))return bad("silver_last_card");}else if(playerTurn>1&&played==0)w.curCardQueueItem.isEndTurn=true;
+    std::string entry=observation.value("combatEntryHash",std::string());if(entry.empty())return bad("silver_combat_entry_hash");w.isolatedSearchSeed=fnv1a(entry+":silver-live-v3");w.observedGeneration=std::uint64_t(playerTurn)*100+decision+1;result.ok=true;return result;
 }
 
-std::string silverActionLabel(const silver_bridge::SemanticAction &action,
-                              const silver_bridge::BattleStateWire &state) {
-    if (action.type == silver_bridge::SemanticActionType::END_TURN) return "End Turn";
-    if (action.type == silver_bridge::SemanticActionType::POTION) return "Potion";
-    if (action.type != silver_bridge::SemanticActionType::CARD) return "Card selection";
-    static const std::map<int, std::string> cards = {{static_cast<int>(sts::CardId::BASH), "Bash"}, {static_cast<int>(sts::CardId::STRIKE_RED), "Strike"}, {static_cast<int>(sts::CardId::DEFEND_RED), "Defend"}};
-    const auto it = cards.find(action.card.id); const std::string name = it == cards.end() ? "Card" : it->second;
-    if (action.target >= 0 && action.target < state.monsterCount) {
-        static const std::map<int, std::string> monsters = {
-            {static_cast<int>(sts::MonsterId::CULTIST), "Cultist"},
-            {static_cast<int>(sts::MonsterId::JAW_WORM), "Jaw Worm"},
-            {static_cast<int>(sts::MonsterId::GREMLIN_NOB), "Gremlin Nob"},
-        };
-        const auto monster = monsters.find(state.monsters[action.target].id);
-        return name + " -> " + (monster == monsters.end() ? "Monster " + std::to_string(action.target + 1) : monster->second);
-    }
-    return name;
+std::string silverActionLabel(const silver_bridge::SemanticAction&a,const silver_bridge::BattleStateWire&s){
+    if(a.type==silver_bridge::SemanticActionType::END_TURN)return "End Turn";if(a.type==silver_bridge::SemanticActionType::POTION)return "Potion";if(a.type!=silver_bridge::SemanticActionType::CARD)return "Card selection";
+    static const std::map<int,std::string>cards={{int(sts::CardId::BASH),"Bash"},{int(sts::CardId::STRIKE_RED),"Strike"},{int(sts::CardId::DEFEND_RED),"Defend"}};auto it=cards.find(a.card.id);std::string name=it==cards.end()?"Card":it->second;
+    if(a.target>=0&&a.target<s.monsterCount){static const std::map<int,std::string>monsters={{int(sts::MonsterId::CULTIST),"Cultist"},{int(sts::MonsterId::JAW_WORM),"Jaw Worm"},{int(sts::MonsterId::GREMLIN_NOB),"Gremlin Nob"}};auto m=monsters.find(s.monsters[a.target].id);return name+" -> "+(m==monsters.end()?"Monster "+std::to_string(a.target+1):m->second);}return name;
 }
-
-} // namespace one_combat::advisor
+}

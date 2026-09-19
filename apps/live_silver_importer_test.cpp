@@ -14,6 +14,7 @@
 #include "sim/search/CombatKnowledge.h"
 #include "sim/search/SilverBridge.h"
 #include "sim/search/SilverConversion.h"
+#include "sim/search/SilverWireJson.h"
 #include "sim/search/Action.h"
 
 using nlohmann::json;
@@ -39,6 +40,19 @@ const char *cardId(CardId id) {
     default: return "";
     }
 }
+int javaMove(MonsterMoveId move) {
+    switch (move) {
+    case MonsterMoveId::CULTIST_INCANTATION: return 3;
+    case MonsterMoveId::CULTIST_DARK_STRIKE: return 1;
+    case MonsterMoveId::JAW_WORM_CHOMP: return 1;
+    case MonsterMoveId::JAW_WORM_THRASH: return 2;
+    case MonsterMoveId::JAW_WORM_BELLOW: return 3;
+    case MonsterMoveId::GREMLIN_NOB_BELLOW: return 3;
+    case MonsterMoveId::GREMLIN_NOB_RUSH: return 1;
+    case MonsterMoveId::GREMLIN_NOB_SKULL_BASH: return 2;
+    default: return 0;
+    }
+}
 std::string uuid(const CardWire &c) { return "card-" + std::to_string(c.uniqueId); }
 json cardJson(const CardWire &c) {
     return {{"id", cardId(static_cast<CardId>(c.id))}, {"uuid", uuid(c)},
@@ -52,27 +66,59 @@ json pileJson(const std::vector<CardWire> &cards) {
 }
 json observation(const BattleStateWire &w, const char *name, int move, const char *room,
                  int ordinal = 0, json played = json::array()) {
-    json monsters = json::array();
+    json history = json::array();
+    if (w.monsters[0].moveHistory[1] != 0) {
+        history.push_back(javaMove(static_cast<MonsterMoveId>(w.monsters[0].moveHistory[1])));
+    }
+    history.push_back(move);
+    json monsterPowers = json::array();
     const auto &m = w.monsters[0];
+    if (m.strength != 0) monsterPowers.push_back({{"id", "Strength"}, {"amount", m.strength}});
+    if (m.vulnerable != 0) monsterPowers.push_back({{"id", "Vulnerable"}, {"amount", m.vulnerable}});
+    if (m.statusBits & (1ULL << static_cast<int>(MonsterStatus::RITUAL)))
+        monsterPowers.push_back({{"id", "Ritual"}, {"amount", m.uniquePower0}});
+    if (m.statusBits & (1ULL << static_cast<int>(MonsterStatus::ENRAGE)))
+        monsterPowers.push_back({{"id", "Enrage"}, {"amount", m.uniquePower0}});
+    json playerPowers = json::array();
+    for (const auto &[status, amount] : w.player.statusMap)
+        if (status == static_cast<int>(PlayerStatus::VULNERABLE) && amount > 0
+            && (w.player.statusBits0 & (1ULL << static_cast<int>(PlayerStatus::VULNERABLE))))
+            playerPowers.push_back({{"id", "Vulnerable"}, {"amount", amount}});
+    json monsters = json::array();
     monsters.push_back({{"id", name}, {"hp", m.curHp}, {"maxHp", m.maxHp},
-                        {"block", m.block}, {"nextMove", move}, {"powers", json::array()}});
+                        {"block", m.block}, {"nextMove", move}, {"moveHistory", history},
+                        {"powers", std::move(monsterPowers)}});
     json potions = json::array();
     for (int i = 0; i < w.potionCapacity; ++i)
         potions.push_back({{"slot", i}, {"id", "Potion Slot"}});
     json combat = {
-        {"turn", 1}, {"energy", w.player.energy}, {"block", w.player.block},
+        {"turn", w.turn + 1}, {"energy", w.player.energy}, {"block", w.player.block},
         {"cardsPlayedThisTurn", w.player.cardsPlayedThisTurn}, {"cardSelect", false},
+        {"attacksPlayedThisTurn", w.player.attacksPlayedThisTurn},
+        {"skillsPlayedThisTurn", w.player.skillsPlayedThisTurn},
+        {"cardsDiscardedThisTurn", w.player.cardsDiscardedThisTurn},
+        {"lastTargetedMonster", w.player.lastTargetedMonster},
+        {"lastAttackUnblockedDamage", w.player.lastAttackUnblockedDamage},
+        {"timesDamagedThisCombat", w.player.timesDamagedThisCombat},
+        {"playerVulnerableSeen", std::any_of(w.player.statusMap.begin(), w.player.statusMap.end(),
+            [](const auto &entry) { return entry.first == static_cast<int>(PlayerStatus::VULNERABLE); })},
         {"resolving", false}, {"runicDome", false}, {"frozenEye", false},
-        {"playedThisTurn", std::move(played)}, {"playerPowers", json::array()},
+        {"playedThisTurn", std::move(played)}, {"playerPowers", std::move(playerPowers)},
         {"hand", pileJson(w.hand)}, {"draw", pileJson(w.drawPile.unknown)},
         {"discard", pileJson(w.discardPile.unknown)}, {"exhaust", pileJson(w.exhaustPile.unknown)},
         {"relics", json::array({json{{"id", "Burning Blood"}, {"counter", 0}}})},
         {"potions", std::move(potions)}, {"monsters", std::move(monsters)}};
+    if (w.curCardQueueItem.card.uniqueId >= 0) {
+        auto last = cardJson(w.curCardQueueItem.card);
+        last["target"] = w.curCardQueueItem.target;
+        last["energyOnUse"] = w.curCardQueueItem.energyOnUse;
+        combat["lastCard"] = std::move(last);
+    } else combat["lastCard"] = nullptr;
     return {{"boundary", "combat"}, {"character", "IRONCLAD"},
         {"observationHash", std::string("parity-") + name},
         {"combatEntryHash", std::string("entry-") + name},
-        {"silverRoot", {{"schemaVersion", 2}, {"decisionOrdinal", ordinal},
-            {"firstDecision", ordinal == 0},
+        {"silverRoot", {{"schemaVersion", 3}, {"playerTurn", w.turn + 1},
+            {"decisionInTurn", ordinal},
             {"character", "IRONCLAD"}, {"ascension", w.ascension}, {"act", w.act},
             {"floor", w.floorNum}, {"hp", w.player.curHp}, {"maxHp", w.player.maxHp},
             {"gold", w.player.gold}, {"potionCapacity", w.potionCapacity},
@@ -177,6 +223,87 @@ int cardActionCount(const std::vector<silver_bridge::SemanticAction> &actions, C
             && action.card.id == static_cast<std::int16_t>(id);
     }));
 }
+
+int wholeCombatFixture(MonsterEncounter encounter, const char *name, const char *room,
+                       std::uint64_t seed, const SilverSearchConfig &config, int &moveMask) {
+    GameContext game(CharacterClass::IRONCLAD, seed, 0);
+    game.act = 1; game.floorNum = 1;
+    BattleContext live;
+    CombatKnowledgeState knowledge;
+    knowledge.configureHiddenMonsterIntents(false);
+    knowledge.beginCombatInitialization();
+    auto *priorObserver = g_combatKnowledgeObserver;
+    g_combatKnowledgeObserver = &knowledge;
+    live.init(game, encounter);
+    knowledge.synchronizeAfterCombatInitialization(live);
+    auto session = silver_bridge::makeSilverSearchSession();
+    int decisions = 0;
+    while (live.outcome == Outcome::UNDECIDED) {
+        if (live.inputState != InputState::PLAYER_NORMAL)
+            throw std::runtime_error(std::string("whole combat left decision boundary: ") + name);
+        knowledge.reconcilePublicDrawPileCardinality(live);
+        auto canonical = makeSilverBattleStateWire(
+            live, knowledge, makeSilverRunContext(game), seed);
+        const int visibleMove = javaMove(static_cast<MonsterMoveId>(canonical.monsters[0].moveHistory[0]));
+        moveMask |= 1 << visibleMove;
+        auto observed = observation(canonical, name, visibleMove, room,
+                                    canonical.player.cardsPlayedThisTurn);
+        observed["combatEntryHash"] = std::string("whole-") + name;
+        auto imported = one_combat::advisor::importSilverRoot(observed);
+        if (!imported.ok)
+            throw std::runtime_error(std::string("whole combat import failed: ") + name
+                                     + ":" + imported.reason + ":"
+                                     + observed["silverRoot"]["combat"]["playerPowers"].dump());
+        canonical.isolatedSearchSeed = imported.wire.isolatedSearchSeed;
+        if (!convertedStatesEqualForSearch(canonical, imported.wire)) {
+            json canonicalJson = canonical;
+            json importedJson = imported.wire;
+            std::string changed;
+            for (auto it = canonicalJson.begin(); it != canonicalJson.end(); ++it)
+                if (importedJson.at(it.key()) != it.value()) changed += it.key() + ",";
+            throw std::runtime_error(std::string("whole combat parity failed: ") + name
+                + " turn=" + std::to_string(live.turn + 1)
+                + " played=" + std::to_string(live.player.cardsPlayedThisTurn)
+                + " queue=" + std::to_string(canonical.curCardQueueItem.card.id)
+                + "/" + std::to_string(imported.wire.curCardQueueItem.card.id)
+                + " end=" + std::to_string(canonical.curCardQueueItem.isEndTurn)
+                + "/" + std::to_string(imported.wire.curCardQueueItem.isEndTurn)
+                + " monsterTurnIdx=" + std::to_string(canonical.monsterTurnIdx)
+                + "/" + std::to_string(imported.wire.monsterTurnIdx)
+                + " changed=" + changed
+                + " player=" + canonicalJson["player"].dump() + "/" + importedJson["player"].dump()
+                + " monster=" + canonicalJson["monsters"][0].dump() + "/" + importedJson["monsters"][0].dump());
+        }
+        auto silver = runSilverDecision(*session, imported.wire, config);
+        if (!silver.accepted)
+            throw std::runtime_error(std::string("whole combat Silver rejected: ") + name);
+        ++decisions;
+        if (decisions > 80) throw std::runtime_error(std::string("whole combat did not terminate: ") + name);
+
+        int selected = -1;
+        const int plays = live.player.cardsPlayedThisTurn;
+        if (plays < 3) {
+            const CardId priorities[] = {
+                encounter == MonsterEncounter::JAW_WORM && live.turn < 2
+                    ? CardId::DEFEND_RED
+                    : (plays == 0 ? CardId::BASH : CardId::STRIKE_RED),
+                CardId::STRIKE_RED, CardId::DEFEND_RED};
+            for (CardId wanted : priorities) {
+                for (int i = 0; i < live.cards.cardsInHand; ++i) {
+                    if (live.cards.hand[i].id == wanted
+                        && live.cards.hand[i].costForTurn <= live.player.energy) {
+                        selected = i; break;
+                    }
+                }
+                if (selected >= 0) break;
+            }
+        }
+        if (selected >= 0) sts::search::Action(ActionType::CARD, selected, 0).execute(live);
+        else sts::search::Action(ActionType::END_TURN).execute(live);
+    }
+    g_combatKnowledgeObserver = priorObserver;
+    return decisions;
+}
 }
 int main() {
     try {
@@ -234,6 +361,21 @@ int main() {
         }
         if (!duplicateStrikeSummariesCovered || !duplicateDefendSummariesCovered)
             throw std::runtime_error("starter fixtures did not cover duplicate Strike and Defend summaries");
+        int cultistMoves = 0, jawWormMoves = 0, nobMoves = 0;
+        const int cultistDecisions = wholeCombatFixture(
+            MonsterEncounter::CULTIST, "Cultist", "MONSTER", 0xC011u, config, cultistMoves);
+        const int jawWormDecisions = wholeCombatFixture(
+            MonsterEncounter::JAW_WORM, "JawWorm", "MONSTER", 0xA02u, config, jawWormMoves);
+        const int nobDecisions = wholeCombatFixture(
+            MonsterEncounter::GREMLIN_NOB, "Gremlin Nob", "ELITE", 0xB003u, config, nobMoves);
+        if (cultistDecisions < 4 || jawWormDecisions < 4 || nobDecisions < 4)
+            throw std::runtime_error("whole-combat fixtures did not span multiple decisions");
+        if (cultistMoves != ((1 << 1) | (1 << 3))
+            || jawWormMoves != ((1 << 1) | (1 << 2) | (1 << 3))
+            || nobMoves != ((1 << 1) | (1 << 2) | (1 << 3)))
+            throw std::runtime_error("whole-combat fixtures did not cover every supported move: "
+                + std::to_string(cultistMoves) + "/" + std::to_string(jawWormMoves)
+                + "/" + std::to_string(nobMoves));
         for (const auto &root : fixtures) {
             for (const auto card : {CardId::STRIKE_RED, CardId::DEFEND_RED}) {
                 const auto successor = successorFixture(root, card);
@@ -289,17 +431,12 @@ int main() {
         if (cardActionCount(distinctActions, CardId::STRIKE_RED) != 2)
             throw std::runtime_error("relevant card-state difference was incorrectly deduplicated");
         auto unsupported = successorFixture(fixtures[0], CardId::DEFEND_RED).observation;
-        unsupported["silverRoot"]["combat"]["playedThisTurn"][0]["id"] = "Bash";
-        if (one_combat::advisor::importSilverRoot(unsupported).reason
-            != "silver_unsupported_continuation")
-            throw std::runtime_error("Bash continuation was not rejected");
-        unsupported = successorFixture(fixtures[0], CardId::DEFEND_RED).observation;
-        unsupported["silverRoot"]["combat"]["playerPowers"] = json::array({json{{"id", "Metallicize"}}});
+        unsupported["silverRoot"]["combat"]["playerPowers"] = json::array({json{{"id", "Metallicize"}, {"amount", 1}}});
         if (one_combat::advisor::importSilverRoot(unsupported).reason
             != "silver_unmapped_player_power")
             throw std::runtime_error("player power was not rejected");
         unsupported = successorFixture(fixtures[0], CardId::DEFEND_RED).observation;
-        unsupported["silverRoot"]["combat"]["monsters"][0]["powers"] = json::array({json{{"id", "Ritual"}}});
+        unsupported["silverRoot"]["combat"]["monsters"][0]["powers"] = json::array({json{{"id", "Metallicize"}, {"amount", 1}}});
         if (one_combat::advisor::importSilverRoot(unsupported).reason
             != "silver_unmapped_monster_power")
             throw std::runtime_error("monster power was not rejected");
@@ -445,16 +582,28 @@ int main() {
         reject = fixtures[0].observation;
         reject["silverRoot"]["combat"]["rng"] = 1;
         if (one_combat::advisor::importSilverRoot(reject).reason != "silver_rng_field") return 5;
+        reject = fixtures[0].observation;
+        reject["silverRoot"]["combat"]["potions"][0]["id"] = "Fire Potion";
+        if (one_combat::advisor::importSilverRoot(reject).reason != "silver_unmapped_potion_state") return 9;
+        reject = fixtures[0].observation;
+        reject["silverRoot"]["combat"]["relics"].push_back({{"id", "Vajra"}, {"counter", -1}});
+        if (one_combat::advisor::importSilverRoot(reject).reason != "silver_unmapped_relic_state") return 10;
+        reject = fixtures[0].observation;
+        reject["silverRoot"]["combat"]["monsters"][0]["id"] = "Louse";
+        if (one_combat::advisor::importSilverRoot(reject).reason != "silver_unknown_monster") return 11;
         reject = fixtures[1].observation;
-        reject["silverRoot"]["combat"]["monsters"][0]["nextMove"] = 2;
+        reject["silverRoot"]["combat"]["monsters"][0]["moveHistory"] = json::array({9});
         if (one_combat::advisor::importSilverRoot(reject).ok) return 6;
         reject = fixtures[2].observation;
-        reject["silverRoot"]["combat"]["monsters"][0]["nextMove"] = 1;
+        reject["silverRoot"]["combat"]["monsters"][0]["moveHistory"] = json::array({9});
         if (one_combat::advisor::importSilverRoot(reject).ok) return 7;
         reject = fixtures[0].observation;
         reject["silverRoot"]["combat"]["turn"] = 2;
         if (one_combat::advisor::importSilverRoot(reject).ok) return 8;
-        std::cout << "live Silver native first-turn parity checks passed\n";
+        std::cout << "live Silver whole-combat parity checks passed"
+                  << " cultist_decisions=" << cultistDecisions
+                  << " jaw_worm_decisions=" << jawWormDecisions
+                  << " nob_decisions=" << nobDecisions << '\n';
         return 0;
     } catch (const std::exception &e) {
         std::cerr << "live Silver parity FAIL: " << e.what() << '\n';
