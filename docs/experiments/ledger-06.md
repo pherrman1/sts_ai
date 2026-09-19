@@ -10126,6 +10126,11 @@ default or generalization claim is authorized. Evidence:
   special-data and `CARD_SELECT` rejection, default-off parity, and a fixed-RNG
   `POMMEL_STRIKE` draw contraction fixture. The existing PR-244 diagnostic
   checks also passed.
+- **Pristine-main smoke:** A temporary reverse-patched Release source copy at
+  baseline `1b220712` matched candidate-control on the first eight fixed DEV
+  cases in all 12 observable replay fields, including action-trace hash,
+  nodes, and exact/fallback reroot counts. The temporary baseline binary was
+  independently built; it was not added to the repository.
 - **Protocol:** Baseline `1b220712`; frozen
   `hard64-dev-snapshots.jsonl`, 1,000 simulations per decision, Release GCC,
   `OMP_NUM_THREADS=4`, fixed replay configuration, all 64 DEV cases, and the

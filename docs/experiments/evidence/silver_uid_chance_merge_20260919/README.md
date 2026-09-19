@@ -40,6 +40,14 @@ The existing PR-244 diagnostic assertions also remain in that focused test.
 The default-off arm showed identical action/RNG/ordinary telemetry behavior to
 the diagnostic-enabled observation arm, with all treatment counters zero.
 
+A pristine-main smoke was also run from a temporary reverse-patched source copy
+at baseline `1b2207125b2737d6af41f27b314678bcc8f561bb`. Its Release replay
+binary was built independently and the first eight fixed DEV cases matched the
+candidate-control rows in all 12 observable fields: case/state identity,
+outcome/HP, decisions/simulations, nodes, exact/fallback reroot counts, and
+action-trace hash. The temporary baseline replay binary SHA-256 was
+`7354ddd46d031969cf03f9e4b20e33dae7882fdbbfd8cb843727c9a986bba400`.
+
 ## Frozen DEV screen
 
 Both arms used the same Release GCC executable source, `OMP_NUM_THREADS=4`,
