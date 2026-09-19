@@ -226,12 +226,15 @@ void sameTurnDominanceAuditFixtures(sts::GameContext &gc) {
               << " rng_counter=" << bashThenStrike.rngCounter
               << " omitted_eval_counters=energyWasted,cardsDrawn\n";
 
-    const auto reaperState = sameTurnState(gc, sts::MonsterEncounter::TWO_FUNGI_BEASTS,
-                                           17, 5, true, true);
+    const auto reaperState = sameTurnState(gc, sts::MonsterEncounter::JAW_WORM,
+                                           18, 5, true, false);
     const auto reaperAfterMoreDamage = resolveSameTurnPath(reaperState, {101, 102});
     const auto reaperAfterLessDamage = resolveSameTurnPath(reaperState, {102, 101});
-    require(reaperAfterMoreDamage.targetHp == 0 && reaperAfterLessDamage.targetHp == 3,
-            "Reaper counterexample must leave distinct remaining target HP");
+    require(reaperAfterMoreDamage.targetHp == 1 && reaperAfterLessDamage.targetHp == 4 &&
+                reaperAfterMoreDamage.targetHp > 0 && reaperAfterLessDamage.targetHp > 0 &&
+                reaperAfterMoreDamage.outcome == sts::Outcome::UNDECIDED &&
+                reaperAfterLessDamage.outcome == sts::Outcome::UNDECIDED,
+            "Reaper shared-continuation fixture must leave both endpoints nonterminal with the target alive");
     auto moreDamageContinuation = reaperAfterMoreDamage.state;
     auto lessDamageContinuation = reaperAfterLessDamage.state;
     require(resolveCardByIdentity(moreDamageContinuation, 103, 0) &&
@@ -239,14 +242,15 @@ void sameTurnDominanceAuditFixtures(sts::GameContext &gc) {
             "Reaper continuation must be legal after either same-turn path");
     require(moreDamageContinuation.outcome == sts::Outcome::PLAYER_VICTORY &&
                 lessDamageContinuation.outcome == sts::Outcome::PLAYER_VICTORY &&
-                moreDamageContinuation.player.curHp == 54 && lessDamageContinuation.player.curHp == 57 &&
-                moreDamageContinuation.postBattleHealedHp() == 54 &&
-                lessDamageContinuation.postBattleHealedHp() == 57,
-            "Reaper must heal more from the higher remaining enemy HP and preserve that reward state");
-    std::cout << "same_turn_reaper lower_hp=" << reaperAfterMoreDamage.targetHp
+                moreDamageContinuation.player.curHp == 51 && lessDamageContinuation.player.curHp == 54 &&
+                moreDamageContinuation.postBattleHealedHp() == 51 &&
+                lessDamageContinuation.postBattleHealedHp() == 54,
+            "shared Reaper continuation must reach victory and preserve distinct healing results");
+    std::cout << "same_turn_reaper shared_continuation lower_hp=" << reaperAfterMoreDamage.targetHp
               << " continuation_player_hp=" << moreDamageContinuation.player.curHp
               << " higher_hp=" << reaperAfterLessDamage.targetHp
-              << " continuation_player_hp=" << lessDamageContinuation.player.curHp << '\n';
+              << " continuation_player_hp=" << lessDamageContinuation.player.curHp
+              << " terminal=PLAYER_VICTORY/PLAYER_VICTORY\n";
 
     auto boundary = sameTurnState(gc, sts::MonsterEncounter::JAW_WORM, 100, 2, false, false);
     boundary.cards.hand[0] = sts::CardInstance(sts::CardId::WARCRY);
@@ -261,11 +265,25 @@ void sameTurnDominanceAuditFixtures(sts::GameContext &gc) {
 
     const auto insufficientEnergy = sameTurnState(gc, sts::MonsterEncounter::JAW_WORM,
                                                   100, 1, false, false);
-    auto oneCardOnly = resolveSameTurnPath(insufficientEnergy, {102});
-    require(oneCardOnly.state.player.energy == 0 &&
-                !resolveCardByIdentity(oneCardOnly.state, 102, 0),
-            "same-turn dominance must reject sequences that cannot legally finish in the turn");
-    std::cout << "same_turn_rejections information_boundary=CARD_SELECT energy_boundary=1+1>1 PASS\n";
+    require(handIndexForUniqueId(insufficientEnergy, 101) >= 0,
+            "insufficient-energy fixture must retain Bash ID 101 before execution");
+    auto insufficientPostStrike = insufficientEnergy;
+    require(resolveCardByIdentity(insufficientPostStrike, 102, 0) &&
+                insufficientPostStrike.player.energy == 0,
+            "insufficient-energy fixture must resolve the first Strike");
+    require(handIndexForUniqueId(insufficientPostStrike, 101) >= 0 &&
+                !resolveCardByIdentity(insufficientPostStrike, 101, 0),
+            "same-turn dominance must reject the remaining Bash ID 101 when energy is exhausted");
+    auto sufficientPostStrike = sameTurnState(gc, sts::MonsterEncounter::JAW_WORM,
+                                               100, 3, false, false);
+    require(resolveCardByIdentity(sufficientPostStrike, 102, 0) &&
+                sufficientPostStrike.player.energy == 2 &&
+                handIndexForUniqueId(sufficientPostStrike, 101) >= 0 &&
+                resolveCardByIdentity(sufficientPostStrike, 101, 0),
+            "sufficient-energy positive control must resolve the remaining Bash after Strike");
+    std::cout << "same_turn_rejections information_boundary=CARD_SELECT"
+              << " insufficient_energy=remaining_Bash_101_present_but_illegal"
+              << " positive_control=energy3 PASS\n";
 }
 
 void canonicalizePotionBelt(sts::BattleContext &bc) {
