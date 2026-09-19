@@ -957,14 +957,16 @@ void search::BattleSearcher::enumeratePotionActions(search::BattleSearcher::Node
 
     const auto hasValidTarget = bc.monsters.getTargetableCount() > 0;
 
-    int foundPotions = 0;
+    std::unordered_set<Potion> seenPotionTypes;
     for (int pIdx = 0; pIdx < bc.potionCapacity; ++pIdx) {
 
         const auto p = bc.potions[pIdx];
         if (p == Potion::EMPTY_POTION_SLOT) {
             continue;
         }
-        ++foundPotions;
+        if (!seenPotionTypes.insert(p).second) {
+            continue;
+        }
 
         // not enumerating the discard of a potion if it can be used
         if (p == Potion::FAIRY_POTION) {
