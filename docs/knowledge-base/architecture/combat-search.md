@@ -222,6 +222,23 @@ nodes through `allNodes.size()`/`poolUsed`, never state slots or bytes. Pooled
 state swaps preserve scratch-buffer capacity reuse. All consumers of these
 structures must be rebuilt together after a layout change.
 
+The live adapter matches an immediate observed root against every explored
+action edge retained at the prior root, rather than only the selected edge.
+This lets any supported listed action inherit the simulations already stored
+below its matching successor. It also supports one narrower reroot equivalence
+at that boundary. When a retained action and the observed action are
+ordinary gameplay-equivalent cards with different UIDs, it swaps exactly
+those two UIDs throughout the reachable retained subtree and accepts the
+candidate only if the resulting root passes the normal full search-state
+equality check. The retained root hand is then aligned to observed order and
+its card-edge source indices are retargeted by exact card identity before the
+unrelated graph is compacted. This preserves the visits for a human-selected
+equivalent copy without changing `equalForSearch()`, action equivalence,
+global transposition identity, or chance-node identity. Any other card-state
+difference or unsafe queued intermediate state still takes the ordinary fresh
+`candidate_missing` fallback. [ADR-0015](../../../decisions/0015-live-silver-equivalent-copy-reroot.md)
+records this boundary.
+
 
 The live Silver default uses the retained-root adaptive policy: fresh and
 one-action/forced roots search 10,000 simulations, while a retained non-forced

@@ -432,6 +432,7 @@ struct SilverSearchDecisionDiagnostic {
     bool rerootAttempted = false;
     bool exactCandidateFound = false;
     bool exactReroot = false;
+    bool equivalentCopyReroot = false;
     bool fallback = false;
     SilverRerootFallbackReason fallbackReason = SilverRerootFallbackReason::NONE;
     SilverReuseCapMode configuredCapMode = SilverReuseCapMode::ALLOCATED;
@@ -630,7 +631,7 @@ struct SilverDecisionResult {
     std::string failureReason;
     std::int64_t simulations = 0;
     // Existing visits retained at this root before this decision's new search.
-    // Non-zero only after a successful exact session reroot.
+    // Non-zero after a successful retained-root action reroot.
     std::int64_t inheritedVisits = 0;
     // Private-model comparison summary for a reroot miss; no live state or
     // hidden information is exposed here.

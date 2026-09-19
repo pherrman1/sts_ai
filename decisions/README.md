@@ -26,6 +26,9 @@ the replacement.
 
 ## Current architecture ADRs
 
+- [ADR-0015](0015-live-silver-equivalent-copy-reroot.md) preserves retained
+  live Silver visits when the human plays a different equivalent physical card
+  copy, without relaxing global search-state or transposition identity.
 - [ADR-0014](0014-live-ooc-visit-lock-stopping.md) enables live strict visit-lock
   stopping through an explicit policy override while retaining the false
   non-aborting provider guarantee and a rollback switch.
