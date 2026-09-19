@@ -1,6 +1,8 @@
 # Current research status
 
-Last verified: 2026-09-18 for the OOC 20% gap-stop quality gate and frozen
+Last verified: 2026-09-19 for forced-action historical artifact recovery and
+the PR #247 evaluator preflight; 2026-09-18 for the OOC 20% gap-stop quality
+gate and frozen
 six-arm Silver root-mechanism replay;
 2026-09-17 for shared transition-encoder historical chronology,
 staged retained-root adaptive Silver N32 scalar sweep and N16 Pareto held-out inspection;
@@ -96,6 +98,28 @@ evidence lives. Use [current-baselines.md](current-baselines.md) for executable
 configurations and benchmark numbers, the [research graph](../research/README.md)
 for topic synthesis, and the [experiment ledger](../../../EXPERIMENTS.md) for
 chronology.
+
+## Silver forced-action target and historical regression blocker
+
+The fresh-population forced-action target audit is **`FORCED_ACTION_TARGET_PASS`**,
+but the exact historical harmful-root regression remains
+**`HISTORICAL_FORCED_ACTION_REGRESSION_BLOCKED_ARTIFACT_UNAVAILABLE`**. The
+required frozen 64-root snapshot and its provenance hash were not recovered
+from the canonical checkout, retained local worktrees, local research
+directories, or the designated GCP path. The `sts-test` instance was
+unavailable during the 2026-09-19 recovery attempt. Do not recollect or
+substitute the historical root when it is unavailable. Local work may verify
+the existing evaluator/analyzer machinery, but learned-policy training remains closed until
+the exact artifact is recovered and the preregistered regression is run. The
+standalone PR #247 merge commit predates the PR #246 forced-action audit and
+therefore is not itself a valid evaluator snapshot for this regression.
+Current `main` after PR #246 contains both the live-reroot changes and the
+corrected forced-action evaluator/analyzer. When the historical artifact
+becomes available, verify that the current forced-action path remains
+equivalent to the reviewed PR #246 implementation before running the
+regression. See
+[ledger §321](../../experiments/ledger-06.md) and the
+[forced-action evidence packet](../../experiments/evidence/silver_forced_action_target_2026-09-19/README.md).
 
 ## Silver policy/value Phase-A cost diagnostic
 
