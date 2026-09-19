@@ -4,6 +4,7 @@ import argparse
 import csv
 import hashlib
 import json
+import re
 from pathlib import Path
 
 import numpy as np
@@ -12,9 +13,15 @@ import numpy as np
 SEED_START = 12005000
 SEED_COUNT = 128
 SOURCE_SHA = "495fa147517fdc42e631c513bde5a87b3bb25144"
+BINARY_SHA256 = "9a3b8c2bd1e563c691926d823c43767430d03c11b97a9c5f0d924e616beb1250"
+MAX_ELAPSED_SEC = 600.0
+EXIT_PATTERN = re.compile(
+    r"^arm=(?P<arm>control|treatment) seed=(?P<seed>\d+) "
+    r"rc=(?P<rc>-?\d+) elapsed_sec=(?P<elapsed>[0-9]+(?:\.[0-9]+)?)$"
+)
 
 
-def load_arm(paths, seeds, expected_gap):
+def load_arm(paths, seeds, expected_gap, expected_arm):
     rows, traces, support, exits = {}, {}, {}, {}
     for seed, directory in paths:
         base = directory / str(seed)
@@ -64,9 +71,16 @@ def load_arm(paths, seeds, expected_gap):
         support_rows = [json.loads(line) for line in receipt.read_text().splitlines()]
         if len(support_rows) != 1 or support_rows[0].get("seed") != seed:
             raise ValueError(f"support seed mismatch: {receipt}")
-        exit_text = exit_file.read_text()
-        if "rc=0" not in exit_text:
+        exit_text = exit_file.read_text().strip()
+        exit_match = EXIT_PATTERN.fullmatch(exit_text)
+        if not exit_match:
+            raise ValueError(f"malformed exit receipt: {exit_file}")
+        if exit_match["arm"] != expected_arm or int(exit_match["seed"]) != seed:
+            raise ValueError(f"exit identity mismatch: {exit_file}")
+        if int(exit_match["rc"]) != 0:
             raise ValueError(f"nonzero exit: {exit_file}")
+        if float(exit_match["elapsed"]) > MAX_ELAPSED_SEC:
+            raise ValueError(f"per-process timeout exceeded: {exit_file}")
         rows[seed] = result_rows[0]
         traces[seed] = trace_row
         support[seed] = support_rows[0]
@@ -98,8 +112,8 @@ def main():
     args = parser.parse_args()
     seeds = list(range(SEED_START, SEED_START + SEED_COUNT))
     control_paths = [(s, args.control if s < SEED_START + 60 else args.control_resumed) for s in seeds]
-    control = load_arm(control_paths, seeds, 0)
-    treatment = load_arm([(s, args.treatment) for s in seeds], seeds, 1)
+    control = load_arm(control_paths, seeds, 0, "control")
+    treatment = load_arm([(s, args.treatment) for s in seeds], seeds, 1, "treatment")
     cr, ct, cs, _ = control
     tr, tt, ts, _ = treatment
     keys = ("won", "floor", "hpEnd", "fightsLost", "sec")
@@ -128,12 +142,32 @@ def main():
             "unsupported_combats": sum(sum(v for v in supports[s].get("reasons", {}).values()) for s in seeds),
             "continuation_limit_aborts": sum(supports[s].get("continuation_limit_aborts", 0) for s in seeds),
         }
+    treatment_gap_stop_events = int(trace_totals["treatment"]["earlyStopVisitGap20"])
+    treatment_gap_stop_seeds = sum(int(tt[s]["earlyStopVisitGap20"]) > 0 for s in seeds)
+    if treatment_gap_stop_seeds != SEED_COUNT or treatment_gap_stop_events < SEED_COUNT:
+        raise ValueError(
+            "treatment gap-stop activity is not substantial: "
+            f"{treatment_gap_stop_events} events across "
+            f"{treatment_gap_stop_seeds}/{SEED_COUNT} seeds"
+        )
+    binary = Path("build/ooc_gap_stop_20_final_20260918/frozen_one_combat")
+    if not binary.is_file():
+        raise ValueError(f"missing frozen executable: {binary}")
+    binary_sha256 = hashlib.sha256(binary.read_bytes()).hexdigest()
+    if binary_sha256 != BINARY_SHA256:
+        raise ValueError(
+            f"frozen executable SHA256 mismatch: expected {BINARY_SHA256}, got {binary_sha256}"
+        )
+    win_ci_pp = [x * 100 for x in paired["won"]["paired_bootstrap_95_ci"]]
+    primary_rejection = win_ci_pp[1] < 0.0
     result = {
-        "classification": "OOC_GAP_STOP_20_FINAL_PASS",
+        "classification": (
+            "OOC_GAP_STOP_20_REJECTED" if primary_rejection else "OOC_GAP_STOP_20_FINAL_PASS"
+        ),
         "source_sha": SOURCE_SHA,
         "seed_range": [SEED_START, SEED_START + SEED_COUNT - 1],
         "seed_count_per_arm": SEED_COUNT,
-        "binary_sha256": hashlib.sha256(Path("build/ooc_gap_stop_20_final_20260918/frozen_one_combat").read_bytes()).hexdigest(),
+        "binary_sha256": binary_sha256,
         "control_wins": control_wins,
         "treatment_wins": treatment_wins,
         "both_win": sum(int(cr[s]["won"]) == 1 and int(tr[s]["won"]) == 1 for s in seeds),
@@ -141,12 +175,21 @@ def main():
         "control_only_wins": control_only,
         "treatment_only_wins": treatment_only,
         "treatment_minus_control_win_rate_pp": paired["won"]["treatment_minus_control"] * 100,
-        "win_rate_ci_pp": [x * 100 for x in paired["won"]["paired_bootstrap_95_ci"]],
+        "win_rate_ci_pp": win_ci_pp,
         "exact_two_sided_discordant_binomial_p": exact_binomial(control_only, treatment_only),
         "paired_metrics": paired,
         "trace_totals": trace_totals,
         "support_totals": support_totals,
-        "treatment_gap_stop_seeds": sum(int(tt[s]["earlyStopVisitGap20"]) > 0 for s in seeds),
+        "treatment_gap_stop_events": treatment_gap_stop_events,
+        "treatment_gap_stop_seeds": treatment_gap_stop_seeds,
+        "validation": {
+            "binary_sha256_matches_frozen": True,
+            "max_elapsed_sec": MAX_ELAPSED_SEC,
+            "exit_receipts_validated": 2 * SEED_COUNT,
+            "treatment_gap_stop_activity_substantial": True,
+            "primary_rejection_condition": "win_rate_ci_upper_pp < 0",
+            "primary_rejection_triggered": primary_rejection,
+        },
         "bootstrap": {"replicates": 200000, "rng": "NumPy PCG64", "seed": 20260914},
         "notes": ["All processes completed with rc=0 under the 600-second per-process ceiling.", "No meaningful quality regression detected at this bounded confirmation; this is not equivalence proof."],
     }

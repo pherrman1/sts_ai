@@ -146,7 +146,16 @@
       "continuation_limit_aborts": 0
     }
   },
+  "treatment_gap_stop_events": 11777,
   "treatment_gap_stop_seeds": 128,
+  "validation": {
+    "binary_sha256_matches_frozen": true,
+    "max_elapsed_sec": 600.0,
+    "exit_receipts_validated": 256,
+    "treatment_gap_stop_activity_substantial": true,
+    "primary_rejection_condition": "win_rate_ci_upper_pp < 0",
+    "primary_rejection_triggered": false
+  },
   "bootstrap": {
     "replicates": 200000,
     "rng": "NumPy PCG64",
