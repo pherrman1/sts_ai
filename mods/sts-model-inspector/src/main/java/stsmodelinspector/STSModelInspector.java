@@ -21,6 +21,7 @@ import com.megacrit.cardcrawl.rooms.RestRoom;
 import com.megacrit.cardcrawl.rooms.TreasureRoom;
 import com.megacrit.cardcrawl.rooms.AbstractRoom;
 import com.megacrit.cardcrawl.core.Settings;
+import com.megacrit.cardcrawl.ui.panels.EnergyPanel;
 import com.evacipated.cardcrawl.modthespire.lib.SpireInitializer;
 import org.lwjgl.input.Keyboard;
 
@@ -749,7 +750,7 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         StringBuilder out = new StringBuilder("{\"turn\":");
         out.append(com.megacrit.cardcrawl.actions.GameActionManager.turn)
                 .append(",\"energy\":")
-                .append(AbstractDungeon.player.energy == null ? 0 : AbstractDungeon.player.energy.energy)
+                .append(EnergyPanel.totalCount)
                 .append(",\"block\":").append(AbstractDungeon.player.currentBlock)
                 .append(",\"cardsPlayedThisTurn\":").append(decisionOrdinal)
                 .append(",\"playedThisTurn\":[");

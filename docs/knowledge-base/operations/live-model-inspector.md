@@ -69,6 +69,10 @@ are rejected. A single deterministic search seed derived from
 a new protocol session, or a new combat discards the prior Silver session; the
 implementation never crosses the monster turn.
 
+Live current energy comes from `EnergyPanel.totalCount`; the player's
+`EnergyManager.energy` field is the per-turn recharge amount and does not
+decrease when a card is played.
+
 Equivalent-copy rebasing is deliberately local to the immediate live reroot.
 It proves the candidate by swapping only the retained and observed card UIDs,
 then requiring the ordinary-card equivalence and full search-state checks to
