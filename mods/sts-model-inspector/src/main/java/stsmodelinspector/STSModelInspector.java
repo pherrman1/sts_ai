@@ -370,7 +370,8 @@ public final class STSModelInspector implements PostInitializeSubscriber,
             Integer count = counts.get(monster.id);
             counts.put(monster.id, count == null ? 1 : count + 1);
         }
-        String multi = multiEncounterName(counts);
+        boolean eventRoom = room instanceof EventRoom;
+        String multi = multiEncounterName(counts, eventRoom);
         if (!multi.isEmpty()) return multi;
         if (group.monsters.size() != 1) return "";
         String id = group.monsters.get(0).id;
@@ -382,7 +383,8 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         if (id.equals("Looter")) return "LOOTER";
         if (id.equals("RedSlaver")) return "RED_SLAVER";
         if (id.equals("GremlinNob")) return "GREMLIN_NOB";
-        if (id.equals("Lagavulin")) return "LAGAVULIN";
+        if (id.equals("Lagavulin")) return eventRoom ? "LAGAVULIN_EVENT" : "LAGAVULIN";
+        if (id.equals("AcidSlime_L") || id.equals("SpikeSlime_L")) return "LARGE_SLIME";
         if (id.equals("SphericGuardian")) return "SPHERIC_GUARDIAN";
         if (id.equals("Chosen")) return "CHOSEN";
         if (id.equals("ShelledParasite")) return "SHELL_PARASITE";
@@ -408,7 +410,7 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         return "";
     }
 
-    private static String multiEncounterName(Map<String, Integer> counts) {
+    private static String multiEncounterName(Map<String, Integer> counts, boolean eventRoom) {
         int total = 0;
         for (Integer value : counts.values()) total += value;
         if (counts.size() == 1) {
@@ -418,10 +420,21 @@ public final class STSModelInspector implements PostInitializeSubscriber,
             if (count(counts, "Byrd") == 4) return "FOUR_BYRDS";
             if (count(counts, "Darkling") == 3) return "THREE_DARKLINGS";
             if (count(counts, "FungiBeast") == 2) return "TWO_FUNGI_BEASTS";
+            if (count(counts, "FungiBeast") == 3) return "MUSHROOMS_EVENT";
         }
         int louseCount = count(counts, "FuzzyLouseNormal") + count(counts, "FuzzyLouseDefensive");
+        int smallSlimes = count(counts, "SpikeSlime_S") + count(counts, "AcidSlime_S");
+        int mediumSlimes = count(counts, "SpikeSlime_M") + count(counts, "AcidSlime_M");
+        int allSlimes = smallSlimes + mediumSlimes;
+        if (smallSlimes == 1 && mediumSlimes == 1 && total == 2) return "SMALL_SLIMES";
+        if (allSlimes == 5 && total == 5) return "LOTS_OF_SLIMES";
         if (louseCount == 2 && total == 2) return "TWO_LOUSE";
         if (louseCount == 3 && total == 3) return "THREE_LOUSE";
+        if (count(counts, "JawWorm") == 3 && total == 3) return "JAW_WORM_HORDE";
+        if (total == 2 && weakWildlifeCount(counts) == 1 && strongHumanoidCount(counts) == 1)
+            return "EXORDIUM_THUGS";
+        if (total == 2 && weakWildlifeCount(counts) == 1 && strongWildlifeCount(counts) == 1)
+            return "EXORDIUM_WILDLIFE";
         if (shapeCount(counts) == 3 && total == 3) return "THREE_SHAPES";
         if (shapeCount(counts) == 4 && total == 4) return "FOUR_SHAPES";
         if (counts.size() == 2) {
@@ -447,15 +460,22 @@ public final class STSModelInspector implements PostInitializeSubscriber,
                 return "SHIELD_AND_SPEAR";
             if (count(counts, "Looter") == 1 && count(counts, "Mugger") == 1)
                 return "TWO_THIEVES";
+            if (count(counts, "Taskmaster") == 1 && count(counts, "GremlinNob") == 1)
+                return "COLOSSEUM_EVENT_NOBS";
         }
         if (count(counts, "SlaverBlue") == 1 && count(counts, "SlaverRed") == 1
-                && count(counts, "Taskmaster") == 1)
-            return "SLAVERS";
+                && count(counts, "Taskmaster") == 0)
+            return "COLOSSEUM_EVENT_SLAVERS";
         if (count(counts, "BanditPointy") == 1 && count(counts, "BanditLeader") == 1
                 && count(counts, "BanditBear") == 1)
             return "MASKED_BANDITS_EVENT";
+        if (count(counts, "Orb Walker") == 2 && total == 2)
+            return "MYSTERIOUS_SPHERE_EVENT";
         if (count(counts, "SphericGuardian") == 1 && shapeCount(counts) == 2 && total == 3)
             return "SPHERE_AND_TWO_SHAPES";
+        if (count(counts, "Taskmaster") == 1
+                && count(counts, "GremlinNob") == 1 && total == 2)
+            return "COLOSSEUM_EVENT_NOBS";
         if (count(counts, "GremlinLeader") == 1 && total == 3) {
             int gremlins = total - count(counts, "GremlinLeader");
             if (gremlins == 2) return "GREMLIN_LEADER";
@@ -471,6 +491,20 @@ public final class STSModelInspector implements PostInitializeSubscriber,
 
     private static int shapeCount(Map<String, Integer> counts) {
         return count(counts, "Exploder") + count(counts, "Repulsor") + count(counts, "Spiker");
+    }
+
+    private static int weakWildlifeCount(Map<String, Integer> counts) {
+        return count(counts, "FuzzyLouseNormal") + count(counts, "FuzzyLouseDefensive")
+                + count(counts, "SpikeSlime_M") + count(counts, "AcidSlime_M");
+    }
+
+    private static int strongWildlifeCount(Map<String, Integer> counts) {
+        return count(counts, "FungiBeast") + count(counts, "JawWorm");
+    }
+
+    private static int strongHumanoidCount(Map<String, Integer> counts) {
+        return count(counts, "Cultist") + count(counts, "SlaverBlue")
+                + count(counts, "SlaverRed") + count(counts, "Looter");
     }
 
     private static boolean isGremlinGang(Map<String, Integer> counts) {
