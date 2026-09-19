@@ -10163,13 +10163,20 @@ default or generalization claim is authorized. Evidence:
   rule safely suppress Strike → Bash from the same decision context?
 - **Evidence:** The test-only identity-resolving fixture reproduces immediate
   damage `17` versus `14`, but the fully resolved endpoints also differ in
-  `curCardQueueItem`. `energyWasted` and `cardsDrawn` are evaluation inputs
-  omitted from `equalForSearch`/`hashBattleState`. A Reaper continuation turns
-  the lower-enemy-HP endpoint into the worse victory-HP result (`54` versus
-  `57`). Information-boundary and insufficient-energy rejection fixtures pass.
-- **Decision:** **`NO_GO_FOR_THIS_RULE`**. Only a terminal exact-value guard is
-  sufficient; no useful nonterminal guard survived, so the frozen 16-case
-  opportunity screen was not run.
+  `curCardQueueItem`; that inequality alone is not a semantic obstruction,
+  and the endpoints have different immediate parents requiring common-ancestor
+  context. `energyWasted` and `cardsDrawn` are evaluation inputs omitted from
+  `equalForSearch`/`hashBattleState`. A single ordinary target starting at HP
+  18 leaves both Reaper endpoints alive and nonterminal at HP `1` versus `4`;
+  one shared Reaper continuation reaches victory in both and yields player HP
+  `51` versus `54`. This compares a shared continuation, not optimal
+  continuation values. Information-boundary and corrected insufficient-energy
+  rejection fixtures pass, including Bash ID `101` presence and a sufficient-
+  energy positive control.
+- **Decision:** **unconditional HP/order rule rejected; useful restricted
+  nonterminal dominance `INCONCLUSIVE`**. The terminal exact-value case remains
+  a closed sufficient condition, but integration is unresolved and the frozen
+  16-case opportunity screen was not run.
 - **Evidence:** [same-turn dominance audit](evidence/silver_same_turn_dominance_audit_20260919.md).
   **Knowledge impact:** durable experiment evidence only; no Silver search
   behavior, model, RNG, schema, budget, or gameplay default changed.
