@@ -280,7 +280,8 @@ target_link_options(one_combat PRIVATE -Wl,--gc-sections)
 # Java-game importer can construct the native observation contracts.
 add_executable(one_combat_advisor
     apps/one_combat/advisor_stdio.cpp
-    apps/one_combat/advisor_protocol.cpp)
+    apps/one_combat/advisor_protocol.cpp
+    apps/one_combat/live_silver_importer.cpp)
 target_include_directories(one_combat_advisor PUBLIC json/include)
 target_sources(one_combat_advisor PRIVATE
     apps/one_combat/live_ooc_importer.cpp
@@ -289,7 +290,8 @@ target_sources(one_combat_advisor PRIVATE
     apps/one_combat/combat_transition_near_full.cpp
     apps/one_combat/combat_transition_runtime.cpp
     apps/one_combat/combat_transition_native_contract.cpp)
-target_link_libraries(one_combat_advisor PRIVATE sts_core_objects)
+target_link_libraries(one_combat_advisor PRIVATE sts_core_objects silver_live_backend)
+target_link_options(one_combat_advisor PRIVATE -Wl,--gc-sections)
 add_test(NAME live_advisor_protocol COMMAND python3
     ${CMAKE_SOURCE_DIR}/tests/live_advisor_protocol.py $<TARGET_FILE:one_combat_advisor>
     ${CMAKE_SOURCE_DIR}/selfplay/models/combat_transition_near_full_except_smoke_v2.native)
@@ -310,6 +312,13 @@ add_test(NAME live_ctm_importer
     ${CMAKE_SOURCE_DIR}/selfplay/models/combat_transition_near_full_except_smoke_v2.native)
 set_tests_properties(live_ctm_importer PROPERTIES
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "integration")
+
+add_executable(live_silver_importer_test apps/live_silver_importer_test.cpp
+    apps/one_combat/live_silver_importer.cpp $<TARGET_OBJECTS:sts_core_objects>)
+target_include_directories(live_silver_importer_test PRIVATE include json/include apps)
+target_link_libraries(live_silver_importer_test PRIVATE silver_live_backend)
+target_link_options(live_silver_importer_test PRIVATE -Wl,--gc-sections)
+add_test(NAME live_silver_importer COMMAND $<TARGET_FILE:live_silver_importer_test>)
 
 add_executable(one_combat_feature_test apps/one_combat_feature_test.cpp
     apps/one_combat/run_features.cpp $<TARGET_OBJECTS:sts_core_objects>)

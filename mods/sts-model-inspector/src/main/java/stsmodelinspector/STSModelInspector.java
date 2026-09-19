@@ -34,6 +34,10 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.security.MessageDigest;
 import java.util.HashMap;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Properties;
@@ -59,6 +63,9 @@ public final class STSModelInspector implements PostInitializeSubscriber,
     private volatile String responseHash = "";
     private volatile String ctmStatus = "";
     private volatile String ctmReason = "";
+    private volatile String silverStatus = "";
+    private volatile String silverReason = "";
+    private volatile String silverRanking = "";
     private volatile double ctmDeath = 0.0;
     private volatile int ctmHistogramMin = 1;
     private volatile double[] ctmHistogram = new double[0];
@@ -93,6 +100,9 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         combatEntryHash = "";
         ctmStatus = "";
         ctmReason = "";
+        silverStatus = "";
+        silverReason = "";
+        silverRanking = "";
         ctmDeath = 0.0;
         ctmHistogram = new double[0];
     }
@@ -176,10 +186,26 @@ public final class STSModelInspector implements PostInitializeSubscriber,
                 FontHelper.renderFontLeftTopAligned(sb, FontHelper.tipBodyFont, ctmReason,
                         x, y - 138.0f * Settings.scale, Color.ORANGE);
             }
+            FontHelper.renderFontLeftTopAligned(sb, FontHelper.tipBodyFont,
+                    silverStatus.isEmpty() ? "Silver — waiting" : "Silver — " + silverStatus,
+                    x, y - 320.0f * Settings.scale, white);
+            if (!silverReason.isEmpty()) FontHelper.renderFontLeftTopAligned(sb, FontHelper.tipBodyFont,
+                    silverReason, x, y - 342.0f * Settings.scale, Color.ORANGE);
+            if (!silverRanking.isEmpty()) {
+                int row = 0;
+                for (String value : silverRanking.split("\\n")) {
+                    String[] fields = value.split("\\|", -1);
+                    if (fields.length < 3) continue;
+                    FontHelper.renderFontLeftTopAligned(sb, FontHelper.tipBodyFont,
+                            (row + 1) + "  " + fields[0] + "  " + fields[1] + " visits  Q " + fields[2],
+                            x, y - (364.0f + row * 20.0f) * Settings.scale, white);
+                    ++row;
+                }
+            }
         }
         FontHelper.renderFontLeftTopAligned(sb, FontHelper.tipBodyFont,
                 "Toggle: " + Keyboard.getKeyName(loadToggleKey()), x,
-                y - ("combat".equals(newest.boundary) ? 410.0f : 94.0f) * Settings.scale, Color.GRAY);
+                y - ("combat".equals(newest.boundary) ? 470.0f : 94.0f) * Settings.scale, Color.GRAY);
     }
 
     private void renderHistogram(SpriteBatch sb, float x, float top) {
@@ -288,10 +314,16 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         } else {
             return null;
         }
-        if ("combat".equals(boundary) && !combatEntry.isEmpty()
-                && combatEntry.contains("\"encounter\":\"\"")) {
+        if ("combat".equals(boundary)) {
             String encounter = encounterName(room);
-            if (!encounter.isEmpty()) {
+            if (combatEntry.isEmpty()) {
+                // The battle-start callback can run before the map node and
+                // monster group are populated. Capture lazily at the first
+                // actionable decision so every Silver observation has the
+                // same stable combat-entry identity as CTM.
+                combatEntry = combatEntryJson(room, encounter);
+                combatEntryHash = combatEntry.isEmpty() ? "" : sha256(combatEntry);
+            } else if (combatEntry.contains("\"encounter\":\"\"") && !encounter.isEmpty()) {
                 combatEntry = combatEntry.replace("\"encounter\":\"\"",
                         "\"encounter\":\"" + encounter + "\"");
                 combatEntryHash = sha256(combatEntry);
@@ -622,7 +654,15 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         return "{\"id\":\"" + escapeJson(card.cardID) + "\",\"uuid\":\"" +
                 escapeJson(String.valueOf(card.uuid)) + "\",\"upgraded\":" +
                 (card.upgraded ? "true" : "false") + ",\"misc\":" + card.misc +
-                ",\"cost\":" + card.cost + ",\"costForTurn\":" + card.costForTurn + "}";
+                ",\"cost\":" + card.cost + ",\"costForTurn\":" + card.costForTurn +
+                ",\"freeToPlayOnce\":" + (card.freeToPlayOnce ? "true" : "false") +
+                ",\"retain\":" + (card.retain ? "true" : "false") + "}";
+    }
+
+    private static String cardJson(AbstractCard card, String location) {
+        String base = cardJson(card);
+        return base.substring(0, base.length() - 1) +
+                ",\"location\":\"" + location + "\"}";
     }
 
     private static boolean isPlayerDecisionPoint() {
@@ -650,18 +690,58 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         return false;
     }
 
+    private static boolean isBurningElite() {
+        return AbstractDungeon.currMapNode != null
+                && AbstractDungeon.currMapNode.hasEmeraldKey;
+    }
+
+    private static boolean hasRelic(String id) {
+        for (com.megacrit.cardcrawl.relics.AbstractRelic relic : AbstractDungeon.player.relics)
+            if (id.equals(relic.relicId)) return true;
+        return false;
+    }
+
     private static String combatJson() {
         StringBuilder out = new StringBuilder("{\"turn\":");
         out.append(com.megacrit.cardcrawl.actions.GameActionManager.turn)
                 .append(",\"energy\":")
                 .append(AbstractDungeon.player.energy == null ? 0 : AbstractDungeon.player.energy.energy)
                 .append(",\"block\":").append(AbstractDungeon.player.currentBlock)
+                .append(",\"cardsPlayedThisTurn\":").append(AbstractDungeon.actionManager.cardsPlayedThisTurn.size())
+                .append(",\"cardSelect\":false,\"resolving\":false")
+                .append(",\"runicDome\":").append(hasRunicDome())
+                .append(",\"frozenEye\":").append(hasRelic("Frozen Eye"))
                 .append(",\"hand\":[");
         boolean first = true;
         for (AbstractCard card : AbstractDungeon.player.hand.group) {
             if (!first) out.append(',');
             first = false;
-            out.append(cardJson(card));
+            out.append(cardJson(card, "HAND"));
+        }
+        out.append("],\"draw\":[");
+        first = true;
+        List<AbstractCard> draw = new ArrayList<>(AbstractDungeon.player.drawPile.group);
+        Collections.sort(draw, Comparator.comparing((AbstractCard card) -> card.cardID)
+                .thenComparing(card -> String.valueOf(card.uuid))
+                .thenComparingInt(card -> card.misc));
+        for (AbstractCard card : draw) {
+            if (!first) out.append(',');
+            first = false;
+            out.append(cardJson(card, "DRAW"));
+        }
+        out.append("],\"discard\":[");
+        first = true;
+        for (AbstractCard card : AbstractDungeon.player.discardPile.group) {
+            if (!first) out.append(',');
+            first = false;
+            out.append(cardJson(card, "DISCARD"));
+        }
+        out.append("],\"exhaust\":[");
+        first = true;
+        for (AbstractCard card : AbstractDungeon.player.exhaustPile.group) {
+            if (!first) out.append(',');
+            first = false;
+            out.append(cardJson(card, "EXHAUST"));
         }
         out.append("],\"monsters\":[");
         first = true;
@@ -673,7 +753,9 @@ public final class STSModelInspector implements PostInitializeSubscriber,
                 first = false;
                 out.append("{\"id\":\"").append(escapeJson(monster.id))
                         .append("\",\"hp\":").append(monster.currentHealth)
-                        .append(",\"block\":").append(monster.currentBlock);
+                        .append(",\"maxHp\":").append(monster.maxHealth)
+                        .append(",\"block\":").append(monster.currentBlock)
+                        .append(",\"nextMove\":").append(monster.nextMove);
                 if (!runicDome) {
                     out.append(",\"intent\":\"")
                             .append(escapeJson(monster.intent == null ? "UNKNOWN" : monster.intent.name()))
@@ -681,6 +763,26 @@ public final class STSModelInspector implements PostInitializeSubscriber,
                 }
                 out.append('}');
             }
+        }
+        out.append("],\"relics\":[");
+        first = true;
+        for (com.megacrit.cardcrawl.relics.AbstractRelic relic : AbstractDungeon.player.relics) {
+            if (!first) out.append(',');
+            first = false;
+            out.append("{\"id\":\"").append(escapeJson(relic.relicId))
+                    .append("\",\"counter\":").append(relic.counter).append('}');
+        }
+        out.append("],\"potions\":[");
+        first = true;
+        for (int slot = 0; slot < AbstractDungeon.player.potionSlots; ++slot) {
+            if (!first) out.append(',');
+            first = false;
+            String id = "Potion Slot";
+            if (slot < AbstractDungeon.player.potions.size()
+                    && AbstractDungeon.player.potions.get(slot) != null)
+                id = AbstractDungeon.player.potions.get(slot).ID;
+            out.append("{\"slot\":").append(slot).append(",\"id\":\"")
+                    .append(escapeJson(id)).append("\"}");
         }
         return out.append("]}").toString();
     }
@@ -835,6 +937,12 @@ public final class STSModelInspector implements PostInitializeSubscriber,
                             } else {
                                 advisorReason = reason == null ? "" : reason;
                             }
+                            if (line.contains("\"id\":\"silver_first_turn_v1\"")) {
+                                silverStatus = field(line, "silverStatus");
+                                silverReason = field(line, "silverReason");
+                                silverRanking = field(line, "silverRanking");
+                                if (silverRanking != null) silverRanking = silverRanking.replace("\\n", "\n");
+                            }
                             if (line.contains("\"id\":\"ctm_combat_entry_v2\"")) {
                                 if (line.contains("\"status\":\"UNSUPPORTED\"")) {
                                     ctmStatus = "unsupported";
@@ -950,7 +1058,14 @@ public final class STSModelInspector implements PostInitializeSubscriber,
                     ",\"candidates\":" + candidates +
                     (combat.isEmpty() ? "" : ",\"combat\":" + combat
                         + ",\"combatEntryHash\":\"" + combatEntryHash + "\""
-                        + (combatEntry.isEmpty() ? "" : ",\"combatEntry\":" + combatEntry)) + "}}";
+                        + (combatEntry.isEmpty() ? "" : ",\"combatEntry\":" + combatEntry)
+                        + (combatEntry.isEmpty() ? "" : ",\"silverRoot\":{\"schemaVersion\":1,\"firstDecision\":true,\"character\":\""
+                            + character + "\",\"ascension\":" + ascension + ",\"act\":" + act
+                            + ",\"floor\":" + floor + ",\"hp\":" + hp + ",\"maxHp\":" + maxHp
+                            + ",\"gold\":" + gold + ",\"potionCapacity\":" +
+                            AbstractDungeon.player.potionSlots + ",\"roomClass\":\"" +
+                            roomClass(AbstractDungeon.getCurrRoom()) + "\",\"burningElite\":" +
+                            isBurningElite() + ",\"combat\":" + combat + "}")) + "}}";
         }
 
         private static String escape(String s) { return s.replace("\\", "\\\\").replace("\"", "\\\""); }
