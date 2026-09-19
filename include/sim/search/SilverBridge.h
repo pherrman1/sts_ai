@@ -228,6 +228,27 @@ struct SilverLeafObservation {
 
 using SilverLeafObserver = std::function<void(SilverLeafObservation &)>;
 
+// Result of the diagnostic-only canonical SimpleAgent rollout seam. The
+// caller supplies one stored leaf and an earlier original root; no live state
+// or production search path crosses this interface.
+struct SilverSimpleRolloutResult {
+    bool accepted = false;
+    std::string failureReason;
+    std::uint64_t rngIdentity = 0;
+    int terminalOutcome = 0;
+    int terminalHp = 0;
+    int terminalMaxHp = 0;
+    int terminalTurn = 0;
+    int terminalPotionCount = 0;
+    double terminalEffectiveGold = 0.0;
+    double leafRootUtility = 0.0;
+    double originalRootCorrectedUtility = 0.0;
+    std::int64_t rolloutActionCount = 0;
+    std::int64_t rolloutTurnDelta = 0;
+    std::int64_t rolloutWallMicros = 0;
+    std::vector<std::string> rolloutActionFingerprints;
+};
+
 inline double silverBlendRolloutUtility(double rolloutUtility, double modelPrediction,
                                         double alpha) {
     return (1.0 - alpha) * rolloutUtility + alpha * modelPrediction;
@@ -321,6 +342,12 @@ double silverVictoryBaselineCorrection(const BattleStateWire &originalRoot,
 // Exact evaluateEndState value with `state` as the fresh Silver root. Valid
 // for terminal snapshots; nonterminal callers should run a normal search.
 double silverTerminalLeafRootValue(const BattleStateWire &state);
+
+// Diagnostic-only seam for replaying the canonical Silver SimpleAgent rollout
+// from a stored PLAYER_NORMAL BattleStateWire. It is intentionally not used
+// by runSilverDecision or the live backend.
+SilverSimpleRolloutResult runSilverSimpleRollout(
+    const BattleStateWire &leaf, const BattleStateWire &originalRoot);
 
 struct SilverSearchConfig {
     // Values copied from upstream SearchAgent defaults at the pinned SHA.

@@ -606,6 +606,8 @@ int main(int argc, char **argv) {
     // replace only the nonterminal rollout value.
     silver_bridge::SilverSearchConfig observerConfig;
     observerConfig.simulationsPerDecision = 12;
+    observerConfig.collectRootActionSummaries = true;
+    observerConfig.collectRolloutDiagnostics = true;
     int observedStarts = 0;
     int observedEnds = 0;
     bool observedRolloutFields = true;
@@ -633,6 +635,31 @@ int main(int argc, char **argv) {
               && silver_bridge::semanticActionFingerprint(noObserver.action)
                   == silver_bridge::semanticActionFingerprint(observed.action),
           "leaf observer must report every sampled rollout start and completed terminal result");
+    check(noObserver.accepted && observed.accepted
+              && silver_bridge::semanticActionFingerprint(noObserver.action)
+                  == silver_bridge::semanticActionFingerprint(observed.action)
+              && noObserver.simulations == observed.simulations
+              && noObserver.telemetry.rolloutCalls == observed.telemetry.rolloutCalls
+              && noObserver.telemetry.rolloutActionCount == observed.telemetry.rolloutActionCount
+              && noObserver.telemetry.rolloutTurnDelta == observed.telemetry.rolloutTurnDelta
+              && sameRootActionSummaries(noObserver.rootActionSummaries,
+                                          observed.rootActionSummaries),
+          "same-seed observer OFF/ON must preserve action, search counters, and root statistics");
+
+    const auto directRolloutA = silver_bridge::runSilverSimpleRollout(firstWire, firstWire);
+    const auto directRolloutB = silver_bridge::runSilverSimpleRollout(firstWire, firstWire);
+    check(directRolloutA.accepted && directRolloutA.terminalOutcome != static_cast<int>(Outcome::UNDECIDED)
+              && directRolloutA.rolloutActionCount > 0
+              && directRolloutA.rolloutActionCount == static_cast<std::int64_t>(
+                  directRolloutA.rolloutActionFingerprints.size())
+              && directRolloutA.originalRootCorrectedUtility == directRolloutA.leafRootUtility,
+          "stored PLAYER_NORMAL leaf must replay through the canonical SimpleAgent rollout seam");
+    check(directRolloutA.accepted == directRolloutB.accepted
+              && directRolloutA.terminalOutcome == directRolloutB.terminalOutcome
+              && directRolloutA.terminalHp == directRolloutB.terminalHp
+              && directRolloutA.leafRootUtility == directRolloutB.leafRootUtility
+              && directRolloutA.rolloutActionFingerprints == directRolloutB.rolloutActionFingerprints,
+          "canonical diagnostic rollout must be deterministic for a fixed stored RNG identity");
 
     auto directConfig = observerConfig;
     int directStarts = 0;
