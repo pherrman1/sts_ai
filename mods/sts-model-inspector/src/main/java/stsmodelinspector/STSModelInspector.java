@@ -690,6 +690,11 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         return false;
     }
 
+    private static boolean isBurningElite() {
+        return AbstractDungeon.currMapNode != null
+                && AbstractDungeon.currMapNode.hasEmeraldKey;
+    }
+
     private static boolean hasRelic(String id) {
         for (com.megacrit.cardcrawl.relics.AbstractRelic relic : AbstractDungeon.player.relics)
             if (id.equals(relic.relicId)) return true;
@@ -1058,7 +1063,9 @@ public final class STSModelInspector implements PostInitializeSubscriber,
                             + character + "\",\"ascension\":" + ascension + ",\"act\":" + act
                             + ",\"floor\":" + floor + ",\"hp\":" + hp + ",\"maxHp\":" + maxHp
                             + ",\"gold\":" + gold + ",\"potionCapacity\":" +
-                            AbstractDungeon.player.potionSlots + ",\"combat\":" + combat + "}")) + "}}";
+                            AbstractDungeon.player.potionSlots + ",\"roomClass\":\"" +
+                            roomClass(AbstractDungeon.getCurrRoom()) + "\",\"burningElite\":" +
+                            isBurningElite() + ",\"combat\":" + combat + "}")) + "}}";
         }
 
         private static String escape(String s) { return s.replace("\\", "\\\\").replace("\"", "\\\""); }

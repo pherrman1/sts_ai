@@ -44,11 +44,17 @@ json silverEvaluator(const one_combat::advisor::Request &request) {
     std::vector<const silver_bridge::SilverRootActionSummary *> ranked;
     for (const auto &summary : decision.rootActionSummaries) ranked.push_back(&summary);
     std::sort(ranked.begin(), ranked.end(), [](const auto *a, const auto *b) { return a->edgeVisits > b->edgeVisits; });
-    for (const auto *summary : ranked) evaluator["rootActionSummaries"].push_back({
-        {"fingerprint", silver_bridge::semanticActionFingerprint(summary->action)},
-        {"label", one_combat::advisor::silverActionLabel(summary->action, imported.wire)},
-        {"edgeVisits", summary->edgeVisits}, {"selectionQValid", summary->selectionQValid},
-        {"selectionQ", summary->selectionQ}});
+    std::int64_t totalVisits = 0;
+    for (const auto *summary : ranked) totalVisits += summary->edgeVisits;
+    for (const auto *summary : ranked) {
+        json item = {
+            {"fingerprint", silver_bridge::semanticActionFingerprint(summary->action)},
+            {"label", one_combat::advisor::silverActionLabel(summary->action, imported.wire)},
+            {"edgeVisits", summary->edgeVisits}, {"selectionQValid", summary->selectionQValid},
+            {"visitShare", totalVisits == 0 ? 0.0 : static_cast<double>(summary->edgeVisits) / totalVisits}};
+        if (summary->selectionQValid) item["selectionQ"] = summary->selectionQ;
+        evaluator["rootActionSummaries"].push_back(std::move(item));
+    }
     for (std::size_t i = 0; i < ranked.size() && i < 5; ++i) {
         if (!rankingText.empty()) rankingText += "\n";
         rankingText += one_combat::advisor::silverActionLabel(ranked[i]->action, imported.wire);

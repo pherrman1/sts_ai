@@ -17,7 +17,8 @@ existing CTM evaluator uses the public combat-entry importer when its model is
 available. The `silver_first_turn_v1` evaluator imports an Ironclad first-turn
 Silver root, verifies converted-state parity and legal actions, and runs the
 fixed 1,000-simulation Silver decision configuration. It returns the selected
-action plus root action summaries containing edge visits and selection Q values.
+action plus root action summaries containing edge visits, `visitShare`, and
+selection Q only when that edge has a valid Q value.
 Unsupported encounter, relic, information, or schema states remain explicit
 `UNSUPPORTED` results; this is a diagnostic ranking display, not a gameplay
 controller or a qualification of Silver policy quality. `STALE` responses
@@ -44,7 +45,13 @@ the prior decision. Advisor writes use one bounded latest-observation slot;
 intermediate captures are replaceable rather than queued without limit. It
 launches the advisor with a direct `ProcessBuilder` call. The F8 panel remains
 diagnostic and read-only. Workshop and game/dependency JARs remain outside
-Git.
+Git. Silver live support is fail-closed to ordinary Act-1 Ironclad Cultist and
+Jaw Worm combats plus non-burning Act-1 Gremlin Nob, Burning Blood only, empty
+potion slots, and the exact supported first public moves: Cultist `nextMove=3`,
+Jaw Worm `nextMove=1`, and Gremlin Nob `nextMove=3`. Later Jaw Worm/Nob moves
+are not supported in this milestone. Burning elites, Runic Dome, Frozen Eye,
+missing state, non-empty potions, and live RNG fields are rejected. The
+implementation does not reuse Silver sessions across later turns.
 
 Rest observations are emitted only while the installed campfire UI exists, is
 visible, and has not selected an option. Selecting a campfire option therefore
@@ -83,13 +90,11 @@ so a future game UI can discard responses after a reload or newer capture.
 
 ## Required next work
 
-The next implementation must add the native importer for the expanded public
-deck/candidate snapshot and parity tests against the existing OOC contract.
 The Java process must own bounded background I/O and treat the endpoint as
-advisory only. Silver support remains intentionally narrow: Ironclad first-turn
-combat with the importer-supported cards, monsters, relics, potions, and
-information state. CTM and Silver results remain separate evaluators, and
-neither path controls gameplay or establishes policy-quality evidence.
+advisory only. Future work must not broaden this milestone's encounter or
+first-move support without a new contract and parity fixtures. CTM and Silver
+results remain separate evaluators, and neither path controls gameplay or
+establishes policy-quality evidence.
 
 Knowledge impact: this page records the protocol/lifecycle boundary, the
 player-visible combat gate, the Runic Dome redaction, the narrow Silver
