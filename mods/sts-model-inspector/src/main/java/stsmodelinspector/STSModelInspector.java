@@ -432,15 +432,39 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         if (lastNodeX >= 0) {
             lastRoomClass = lastNodeRoomClass;
         } else {
-            // NONE is known only at a genuinely fresh run start.  If the
-            // observer attaches to an existing run, the preceding node is not
-            // observable and must remain unknown so CTM fails closed.
-            boolean freshRun = AbstractDungeon.actNum == 1 && AbstractDungeon.floorNum <= 1;
-            lastRoomClass = freshRun ? "NONE" : "";
+            // SaveFile.path_x/path_y are restored into these lists before the
+            // room becomes actionable.  The final coordinate is the current
+            // node, so a resumed run can recover the actual preceding node
+            // without guessing from the encounter or floor number.
+            lastRoomClass = previousRoomClassFromPath(x, y);
+            if (lastRoomClass.isEmpty()) {
+                // NONE is known only at a genuinely fresh run start.  If the
+                // persisted path is absent or inconsistent, keep failing
+                // closed rather than inventing CTM context.
+                boolean freshRun = AbstractDungeon.actNum == 1 && AbstractDungeon.floorNum <= 1;
+                lastRoomClass = freshRun ? "NONE" : "";
+            }
         }
         lastNodeX = x;
         lastNodeY = y;
         lastNodeRoomClass = current;
+    }
+
+    private static String previousRoomClassFromPath(int currentX, int currentY) {
+        if (AbstractDungeon.pathX == null || AbstractDungeon.pathY == null
+                || AbstractDungeon.map == null
+                || AbstractDungeon.pathX.size() != AbstractDungeon.pathY.size()
+                || AbstractDungeon.pathX.size() < 2) return "";
+        int currentIndex = AbstractDungeon.pathX.size() - 1;
+        if (AbstractDungeon.pathX.get(currentIndex) != currentX
+                || AbstractDungeon.pathY.get(currentIndex) != currentY) return "";
+        int previousX = AbstractDungeon.pathX.get(currentIndex - 1);
+        int previousY = AbstractDungeon.pathY.get(currentIndex - 1);
+        if (previousY < 0 || previousY >= AbstractDungeon.map.size()) return "";
+        List<com.megacrit.cardcrawl.map.MapRoomNode> row = AbstractDungeon.map.get(previousY);
+        if (row == null || previousX < 0 || previousX >= row.size()) return "";
+        com.megacrit.cardcrawl.map.MapRoomNode previous = row.get(previousX);
+        return previous == null || previous.room == null ? "" : roomClass(previous.room);
     }
 
     private static String roomClass(AbstractRoom room) {
@@ -1090,6 +1114,10 @@ public final class STSModelInspector implements PostInitializeSubscriber,
                             if ("ERROR".equals(status)) {
                                 advisorReason = (code == null ? "UNKNOWN" : code) +
                                         (message == null || message.isEmpty() ? "" : " - " + message);
+                                if ("combat".equals(current.boundary) && ctmStatus.isEmpty()) {
+                                    ctmStatus = code == null ? "error" : code.toLowerCase();
+                                    ctmReason = message == null ? advisorReason : message;
+                                }
                             } else {
                                 advisorReason = reason == null ? "" : reason;
                             }

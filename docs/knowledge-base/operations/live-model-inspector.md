@@ -1,6 +1,6 @@
 # Live model inspector
 
-Last verified: 2026-09-19. This page describes the private integration
+Last verified: 2026-09-20. This page describes the private integration
 boundary currently present in the repository; it is not a claim that every
 game boundary has a qualified live evaluator.
 
@@ -58,7 +58,12 @@ boundary loss clears the displayed observation and fences late responses from
 the prior decision. Advisor writes use one bounded latest-observation slot;
 intermediate captures are replaceable rather than queued without limit. It
 launches the advisor with a direct `ProcessBuilder` call. The F8 panel remains
-diagnostic and read-only. Workshop and game/dependency JARs remain outside
+diagnostic and read-only. When attaching to a resumed run, the observer
+recovers the preceding room identity from the persisted map path only when the
+path's final coordinate matches the current node; absent or inconsistent path
+state remains unknown and causes CTM to fail closed. A correlated top-level
+combat error is displayed as the CTM status instead of an indefinite waiting
+state. Workshop and game/dependency JARs remain outside
 Git. Silver live support is fail-closed to ordinary Act-1 Ironclad Cultist and
 Jaw Worm combats plus non-burning Act-1 Gremlin Nob, Burning Blood only, empty
 potion slots, the exact 5 Strike / 4 Defend / 1 Bash unupgraded starter deck,
@@ -126,6 +131,7 @@ support without a new contract and parity fixtures.
 CTM and Silver results remain separate evaluators, and neither path controls
 gameplay or establishes policy-quality evidence.
 
-Knowledge impact: this page records the protocol/lifecycle boundary, the
-player-visible combat gate, the Runic Dome redaction, the complete supported
-starter-combat Silver evaluator contract, and its diagnostic-only limitation.
+Knowledge impact: this page records the protocol/lifecycle boundary, resumed-
+run room recovery, the player-visible combat gate, the Runic Dome redaction,
+the complete supported starter-combat Silver evaluator contract, and its
+diagnostic-only limitation.
