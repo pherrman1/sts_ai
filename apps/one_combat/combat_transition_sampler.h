@@ -22,7 +22,8 @@ struct CombatTransitionExpectation {
     bool supported = false;
     float death = 0;
     float winningHpFraction = 0;
-    int winningHpMin = 1;
+    // winningHpHistogram is indexed directly by absolute final HP.
+    int winningHpMin = 0;
     std::vector<float> winningHpHistogram;
 };
 

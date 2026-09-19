@@ -124,11 +124,36 @@ class AdvisorProtocolTest(unittest.TestCase):
             histogram = row["evaluators"][0]["winningHpHistogram"]
             self.assertGreater(len(histogram), 1)
             self.assertAlmostEqual(sum(histogram), 1.0, places=4)
+            self.assertEqual(row["evaluators"][0]["winningHpHistogramMin"], 0)
             self.assertNotIn("rng", json.dumps(row).lower())
         self.assertEqual(rows[0]["evaluators"][0]["combatEntryHash"], "entry-1")
         self.assertEqual(rows[1]["evaluators"][0]["latencyMicros"], 0)
         self.assertGreaterEqual(rows[0]["evaluators"][0]["deathProbability"], 0.0)
         self.assertLessEqual(rows[0]["evaluators"][0]["deathProbability"], 1.0)
+
+    def test_ctm_room_history_categories_and_unknown_fail_closed(self):
+        base = {"boundary": "combat", "character": "IRONCLAD", "ascension": 0,
+                "act": 1, "floor": 7, "hp": 70, "maxHp": 80, "gold": 99,
+                "roomClass": "MONSTER", "encounter": "CULTIST",
+                "potionKeepValue": 4.0, "isBurningElite": False,
+                "potionCapacity": 3,
+                "deck": [{"id": "Strike_R", "upgraded": False, "misc": 0,
+                          "bottleBinding": 0}],
+                "relics": [], "potions": ["Potion Slot"] * 5}
+        rows = []
+        for sequence, previous in enumerate(("SHOP", "TREASURE", "BOSS_TREASURE", ""), 1):
+            entry = dict(base, previousRoomClass=previous)
+            rows.append({"protocol": "sts_model_inspector_v1", "kind": "observation",
+                         "session": "room-history", "sequence": sequence,
+                         "observationHash": "room-%d" % sequence,
+                         "observation": dict(entry, combatEntryHash="entry-%d" % sequence,
+                                              combatEntry=entry)})
+        results = self.run_advisor([json.dumps(row) for row in rows], self.model)
+        for row in results[:3]:
+            self.assertEqual(row["status"], "OK")
+            self.assertEqual(row["evaluators"][0]["status"], "OK")
+        self.assertEqual(results[3]["status"], "ERROR")
+        self.assertEqual(results[3]["code"], "UNSUPPORTED")
 
     def test_ctm_support_failures_and_missing_model_are_explicit(self):
         base = {"boundary": "combat", "character": "IRONCLAD", "ascension": 0,

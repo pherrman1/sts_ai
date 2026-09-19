@@ -65,10 +65,9 @@ public final class STSModelInspector implements PostInitializeSubscriber,
     private volatile boolean panelVisible = true;
     private volatile String combatEntry = "";
     private volatile String combatEntryHash = "";
-    private String lastRoomClass = "NONE";
+    private String lastRoomClass = "";
     private String lastNodeRoomClass = "";
     private int lastNodeX = -1, lastNodeY = -1;
-    private boolean previousRoomKnown;
     private boolean toggleDown;
 
     public static void initialize() {
@@ -323,19 +322,25 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         if (AbstractDungeon.currMapNode == null) return;
         int x = AbstractDungeon.currMapNode.x;
         int y = AbstractDungeon.currMapNode.y;
-        String current = roomClass(AbstractDungeon.currMapNode.room != null
-                ? AbstractDungeon.currMapNode.room : AbstractDungeon.getCurrRoom());
+        AbstractRoom mapRoom = AbstractDungeon.currMapNode.room != null
+                ? AbstractDungeon.currMapNode.room : AbstractDungeon.getCurrRoom();
+        String current = roomClass(mapRoom);
+        // The game inserts an EmptyRoom while advancing from boss treasure to
+        // the next act.  Native GameContext keeps BOSS_TREASURE as lastRoom;
+        // carry that identity across the transitional node.
+        if (mapRoom instanceof com.megacrit.cardcrawl.rooms.EmptyRoom
+                && "BOSS_TREASURE".equals(lastNodeRoomClass)) {
+            current = "BOSS_TREASURE";
+        }
         if (x == lastNodeX && y == lastNodeY) return;
         if (lastNodeX >= 0) {
             lastRoomClass = lastNodeRoomClass;
-            previousRoomKnown = true;
         } else {
-            // If the observer starts after a save is loaded, the preceding map
-            // node is not available. NONE is the native fail-closed category
-            // for the first observed node, and lets the entry payload exist so
-            // the advisor can apply its ordinary support checks.
-            lastRoomClass = "NONE";
-            previousRoomKnown = true;
+            // NONE is known only at a genuinely fresh run start.  If the
+            // observer attaches to an existing run, the preceding node is not
+            // observable and must remain unknown so CTM fails closed.
+            boolean freshRun = AbstractDungeon.actNum == 1 && AbstractDungeon.floorNum <= 1;
+            lastRoomClass = freshRun ? "NONE" : "";
         }
         lastNodeX = x;
         lastNodeY = y;

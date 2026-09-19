@@ -283,7 +283,7 @@ CombatTransitionExpectation calculateForecastExpectation(
         }
         expectedFraction += maxHp[delta] * conditional;
     }
-    return {true, 1 - survival, float(expectedFraction), 1, std::move(histogram)};
+    return {true, 1 - survival, float(expectedFraction), 0, std::move(histogram)};
 }
 }
 
