@@ -10029,3 +10029,49 @@ default or generalization claim is authorized. Evidence:
 - **Evidence:** [final OOC 20% gap-stop packet](evidence/ooc_gap_stop_20_final_20260918/README.md).
   **Knowledge impact:** current research status and final experiment evidence;
   no default, model, or gameplay implementation change.
+
+## §316 — Silver card-action canonicalization screen (2026-09-19)
+
+- **Implementation:** Commit A canonicalized ordinary playable-card actions
+  across the whole hand. Commit B reused the same conservative equivalence
+  helper for `ARMAMENTS`, `EXHAUST_ONE`, `FORETHOUGHT`, `WARCRY`, `HEADBUTT`,
+  `EXHUME`, and `LIQUID_MEMORIES_POTION`. Distinct cost, upgrade,
+  `specialData`, `freeToPlayOnce`, or `retain` state remained distinct;
+  different identities remained distinct for cards using special data.
+- **Protocol:** Control was baseline `338ce1e9`; A was `dc811044`; B was
+  `bbdd71cf`. All arms used the frozen `hard64-dev-snapshots.jsonl` cohort,
+  1,000 simulations per decision, Release GCC builds, `OMP_NUM_THREADS=4`,
+  and the existing fixed replay configuration. HOLDOUT was not used.
+- **Result:** Control won `48/64`, A won `51/64`, and B won `51/64`. B versus A
+  created `2,069,231` versus `2,099,430` nodes and made `2,234` versus `2,265`
+  decisions. No replay failures occurred. Two fixed-cohort A/B timing pairs
+  were collected: A `16.03s/15.91s`, B `16.54s/15.77s`; wall time is therefore
+  inconclusive rather than a stable speedup claim. B had no obvious win-count or
+  terminal-HP degradation on this bounded DEV screen.
+- **Decision:** **`SILVER_CARD_CANONICALIZATION_WORK_REDUCTION_SCREEN_PASS`**;
+  the result supports reduced redundant search work, but is not gameplay
+  equivalence proof, a production gate, or a runtime-promotion claim.
+- **Evidence:** [card-action canonicalization evidence](evidence/silver_card_action_canonicalization_20260919.md).
+  **Knowledge impact:** experiment evidence only; no default, model, or
+  gameplay-quality decision is authorized by this screen.
+
+## §317 — Silver card-action canonicalization 16-seed full-run follow-up (2026-09-19)
+
+- **Protocol:** Reused A `dc811044` and B `bbdd71cf` with identical fair Silver
+  configuration, Release binaries, four OpenMP cores, 10,000 simulations per
+  decision, and paired source seeds `12100032..12100047`. Each arm completed
+  16/16 seeds with zero conversion, semantic-resolution, transaction, or
+  knowledge failures.
+- **Result:** A won `13/16`, mean terminal HP fraction was `0.536789429`, and
+  B won `14/16`, mean terminal HP fraction was `0.565011767`. B was slower by
+  `34.2859s` total (`+2.1429s/seed`): `553.8370s` versus `588.1229s`. B was
+  faster on 5 seeds and A on 11. Aggregate Silver telemetry was A/B:
+  `7,839/8,065` decisions, `78.51M/80.75M` simulations, and
+  `65.68M/67.54M` nodes.
+- **Interpretation:** This full-run follow-up does not support a B efficiency
+  benefit. Because A and B can take different gameplay trajectories, aggregate
+  full-run nodes are outcome-coupled and do not isolate selection dedup; the
+  result is exploratory and does not establish a policy-quality conclusion.
+- **Evidence:** [card-action canonicalization evidence](evidence/silver_card_action_canonicalization_20260919.md).
+  **Knowledge impact:** experiment evidence only; no default, model, or
+  gameplay-quality decision is authorized by this follow-up.
