@@ -2527,8 +2527,11 @@ std::vector<SilverForcedActionReference> runSilverForcedActionReferences(
             const auto preActionRng = state.rng;
             rawAction.execute(state);
             const bool stochastic = state.rng.counter != preActionRng.counter;
+            const double victoryCorrection = silverVictoryBaselineCorrection(
+                replicateWire, leafStateWire(state));
 
             sts::search::BattleSearcher continuation(state);
+            continuation.collectVictoryCounts = true;
             auto continuationConfig = config;
             continuationConfig.simulationsPerDecision = continuationBudget;
             continuationConfig.collectRolloutDiagnostics = true;
@@ -2542,14 +2545,40 @@ std::vector<SilverForcedActionReference> runSilverForcedActionReferences(
             continuation.search(continuationBudget);
             if (continuation.root == nullptr || continuation.root->simulationCount <= 0) continue;
 
-            ++accepted;
-            valueSum += continuation.root->evaluationSum
-                / continuation.root->simulationCount;
+            const bool terminalAfterAction = state.outcome != sts::Outcome::UNDECIDED;
+            const std::int64_t victories = terminalAfterAction
+                ? (state.outcome == sts::Outcome::PLAYER_VICTORY ? 1 : 0)
+                : continuation.root->victoryCount;
+            const double appliedCorrection = victoryCorrection
+                * static_cast<double>(victories) / continuation.root->simulationCount;
             const double value = continuation.root->evaluationSum
+                / continuation.root->simulationCount + appliedCorrection;
+            const auto t = telemetry(continuation.stats);
+            SilverForcedActionReference::Replicate raw;
+            raw.index = replicate;
+            raw.rngIdentity = replicateWire.isolatedSearchSeed;
+            raw.immediateRngCounterBefore = preActionRng.counter;
+            raw.immediateRngCounterAfter = state.rng.counter;
+            raw.stochastic = stochastic;
+            raw.terminalAfterAction = terminalAfterAction;
+            raw.terminalVictory = terminalAfterAction
+                && state.outcome == sts::Outcome::PLAYER_VICTORY;
+            // A terminal forced action has an exact root utility and therefore
+            // needs no continuation samples. BattleSearcher still exposes that
+            // value through its one initialized terminal root.
+            raw.simulations = raw.terminalAfterAction ? 0 : continuation.root->simulationCount;
+            raw.victories = victories;
+            raw.victoryBaselineCorrection = victoryCorrection;
+            raw.appliedBaselineCorrection = appliedCorrection;
+            raw.leafRootValue = continuation.root->evaluationSum
                 / continuation.root->simulationCount;
+            raw.value = value;
+            raw.telemetry = t;
+            result.rawReplicates.push_back(std::move(raw));
+            ++accepted;
+            valueSum += value;
             valueSumSq += value * value;
             result.stochastic = result.stochastic || stochastic;
-            const auto t = telemetry(continuation.stats);
             totalTelemetry.add(t);
             if (t.rolloutCalls > 0) {
                 rolloutActions += static_cast<double>(t.rolloutActionCount) / t.rolloutCalls;
@@ -2558,9 +2587,12 @@ std::vector<SilverForcedActionReference> runSilverForcedActionReferences(
             }
         }
 
-        if (accepted != replicates) continue;
+        if (accepted != replicates || result.rawReplicates.size() != static_cast<std::size_t>(replicates))
+            continue;
         result.accepted = true;
-        result.simulations = static_cast<std::int64_t>(accepted) * continuationBudget;
+        result.simulations = std::accumulate(result.rawReplicates.begin(),
+            result.rawReplicates.end(), std::int64_t{0},
+            [](std::int64_t sum, const auto &raw) { return sum + raw.simulations; });
         result.meanValue = valueSum / accepted;
         const double variance = valueSumSq / accepted - result.meanValue * result.meanValue;
         result.valueStddev = std::sqrt(std::max(0.0, variance));
@@ -2569,6 +2601,31 @@ std::vector<SilverForcedActionReference> runSilverForcedActionReferences(
         result.rolloutWinRate = winRate / accepted;
         result.telemetry = std::move(totalTelemetry);
         output.push_back(std::move(result));
+    }
+    return output;
+}
+
+std::vector<SilverForcedActionBaselineProbe> probeSilverForcedActionBaselines(
+        const BattleStateWire &wire) {
+    std::vector<SilverForcedActionBaselineProbe> output;
+    for (const auto &action : enumerateSilverLegalActions(wire)) {
+        SilverForcedActionBaselineProbe probe;
+        probe.action = action;
+        auto actionWire = wire;
+        sts::GameContext runContext;
+        initializeRunContext(runContext, actionWire);
+        auto state = materialize(actionWire, &runContext);
+        sts::search::Action rawAction;
+        if (!rawActionForSemantic(state, action, rawAction) || !rawAction.isValidAction(state)) {
+            output.push_back(std::move(probe));
+            continue;
+        }
+        rawAction.execute(state);
+        probe.accepted = true;
+        probe.terminalAfterAction = state.outcome != sts::Outcome::UNDECIDED;
+        probe.victoryBaselineCorrection = silverVictoryBaselineCorrection(
+            actionWire, leafStateWire(state));
+        output.push_back(std::move(probe));
     }
     return output;
 }

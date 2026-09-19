@@ -318,6 +318,52 @@ as diagnostics. The untouched 25k-B parents compare the model with the exact
 current Silver root-edge ordering and the 1k-A, 10k-A, and 25k-A teachers. This
 pipeline is offline-only and does not install scores into Silver selection.
 
+### Silver forced-action target audit
+
+`silver_forced_action_audit` is a diagnostic-only target-validity boundary. It
+consumes 32 exact root snapshots selected as two deterministic hash-ranked
+roots from each of 16 source gameplay seeds, enumerates every legal semantic
+action, and records one frozen 10k Teacher-A search plus two disjoint
+forced-action estimators. L uses eight independently rematerialized action
+executions with 5k continuation simulations; J uses eight different executions
+with 10k continuations. Every sibling shares the replicate RNG identity for
+common-random-number pairing, while each replicate rematerializes and executes
+the root action afresh. Consequently an immediate stochastic action outcome is
+resampled rather than frozen before its continuation.
+
+The `silver_forced_action_target_v2` rows retain each original-root-corrected
+raw value, semantic
+action, stochastic classification, immediate RNG-counter transition,
+continuation RNG identity and budget, root/snapshot hashes, utility definition,
+evaluator configuration, executable/Silver SHAs, and Teacher-A Q/visit data.
+Snapshot-producer and audit-evaluator Git SHAs are recorded separately and may
+differ; this permits a frozen root population to survive a diagnostic-only
+evaluator repair without silently recollecting different gameplay states.
+The immediate action and continuation deliberately share one Silver RNG stream;
+the row records the common identity plus the pre-action and continuation-start
+counters rather than claiming two independent streams. A separate historical-
+regression mode evaluates known harmful roots without adding them to primary
+population statistics.
+If a forced action terminates combat immediately, its exact terminal utility is
+recorded with `terminal_after_action=true` and zero continuation simulations.
+For both terminal and nonterminal actions, gold/max-HP changes caused before
+the fresh continuation root are translated back to the original root and
+applied only in proportion to victorious outcomes. Rows retain the raw
+victory count, full victory-baseline correction, and applied correction;
+nonterminal replicates must consume their complete 5k or 10k budget.
+`tools/analyze_silver_forced_action_audit.py` derives root-centered continuous
+advantages and pairwise margins and evaluates L only against untouched J. Its
+primary confidence interval and ranking interval resample source gameplay
+seeds, not roots. The classification is fail closed unless independent-J
+regret and pairwise ranking improve, no new high-regret tail appears, maximum
+regret does not worsen, and roots containing stochastic actions do not regress
+on average in either selector regret or stochastic-involving pairwise ranking.
+Deterministic-only pairwise results are reported separately. A population with
+no stochastic roots or no independently ordered stochastic-involving pairs is
+classified `FORCED_ACTION_TARGET_DETERMINISTIC_ONLY`; it cannot authorize a
+global ranker or prior. This experiment does not train a model, create a policy prior,
+modify live Silver selection, or authorize gameplay.
+
 ### Phase-A policy/value cost diagnostic
 
 `apps/silver_policy_value_phase_a.cpp` is a bounded, diagnostic-only contract

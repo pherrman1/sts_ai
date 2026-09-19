@@ -123,6 +123,13 @@ target_include_directories(silver-root-mechanism PRIVATE include json/include)
 target_link_libraries(silver-root-mechanism PRIVATE silver_combat_search_bridge)
 target_link_options(silver-root-mechanism PRIVATE -Wl,--gc-sections)
 
+add_executable(silver-forced-action-audit apps/silver_forced_action_audit.cpp)
+set_target_properties(silver-forced-action-audit PROPERTIES
+    OUTPUT_NAME silver_forced_action_audit)
+target_include_directories(silver-forced-action-audit PRIVATE include json/include)
+target_link_libraries(silver-forced-action-audit PRIVATE silver_combat_search_bridge)
+target_link_options(silver-forced-action-audit PRIVATE -Wl,--gc-sections)
+
 add_executable(silver-hard-combat-fixture apps/silver_hard_combat_fixture.cpp)
 set_target_properties(silver-hard-combat-fixture PROPERTIES OUTPUT_NAME silver_hard_combat_fixture)
 target_include_directories(silver-hard-combat-fixture PRIVATE include json/include)
@@ -486,6 +493,12 @@ add_test(NAME silver_root_mechanism_fixture COMMAND python3
     $<TARGET_FILE:silver-root-mechanism>)
 set_tests_properties(silver_root_mechanism_fixture PROPERTIES
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "integration")
+add_test(NAME silver_forced_action_fixture COMMAND python3
+    ${CMAKE_SOURCE_DIR}/tests/silver_forced_action_fixture.py
+    $<TARGET_FILE:silver-bridge-test> $<TARGET_FILE:silver-forced-action-audit>
+    ${CMAKE_SOURCE_DIR}/tools/analyze_silver_forced_action_audit.py)
+set_tests_properties(silver_forced_action_fixture PROPERTIES
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "integration;research-repro" TIMEOUT 180)
 add_test(NAME silver_hard_combat_fixture COMMAND $<TARGET_FILE:silver-hard-combat-fixture>)
 set_tests_properties(silver_hard_combat_fixture PROPERTIES LABELS "integration")
 # tests/agent is owned by the separate pre-build unittest discovery step in CI.
