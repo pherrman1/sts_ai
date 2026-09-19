@@ -2394,14 +2394,23 @@ std::vector<SilverForcedActionReference> runSilverForcedActionReferences(
             continuation.search(continuationBudget);
             if (continuation.root == nullptr || continuation.root->simulationCount <= 0) continue;
 
-            ++accepted;
-            valueSum += continuation.root->evaluationSum
-                / continuation.root->simulationCount;
             const double value = continuation.root->evaluationSum
                 / continuation.root->simulationCount;
+            const auto t = telemetry(continuation.stats);
+            SilverForcedActionReference::Replicate raw;
+            raw.index = replicate;
+            raw.rngIdentity = replicateWire.isolatedSearchSeed;
+            raw.immediateRngCounterBefore = preActionRng.counter;
+            raw.immediateRngCounterAfter = state.rng.counter;
+            raw.stochastic = stochastic;
+            raw.simulations = continuation.root->simulationCount;
+            raw.value = value;
+            raw.telemetry = t;
+            result.rawReplicates.push_back(std::move(raw));
+            ++accepted;
+            valueSum += value;
             valueSumSq += value * value;
             result.stochastic = result.stochastic || stochastic;
-            const auto t = telemetry(continuation.stats);
             totalTelemetry.add(t);
             if (t.rolloutCalls > 0) {
                 rolloutActions += static_cast<double>(t.rolloutActionCount) / t.rolloutCalls;
@@ -2410,7 +2419,8 @@ std::vector<SilverForcedActionReference> runSilverForcedActionReferences(
             }
         }
 
-        if (accepted != replicates) continue;
+        if (accepted != replicates || result.rawReplicates.size() != static_cast<std::size_t>(replicates))
+            continue;
         result.accepted = true;
         result.simulations = static_cast<std::int64_t>(accepted) * continuationBudget;
         result.meanValue = valueSum / accepted;
