@@ -81,7 +81,8 @@ int main() {
                                         const auto result = ctm->forecastExpectation(input);
                                         evaluator["status"] = "OK";
                                         evaluator["deathProbability"] = result.death;
-                                        evaluator["winningHpFraction"] = result.winningHpFraction;
+                                        evaluator["winningHpHistogramMin"] = result.winningHpMin;
+                                        evaluator["winningHpHistogram"] = result.winningHpHistogram;
                                     }
                                     evaluator["latencyMicros"] = std::chrono::duration_cast<std::chrono::microseconds>(
                                         std::chrono::steady_clock::now() - started).count();

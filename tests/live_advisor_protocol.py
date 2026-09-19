@@ -121,6 +121,9 @@ class AdvisorProtocolTest(unittest.TestCase):
         for row in rows:
             self.assertEqual(row["status"], "OK")
             self.assertEqual(row["evaluators"][0]["status"], "OK")
+            histogram = row["evaluators"][0]["winningHpHistogram"]
+            self.assertGreater(len(histogram), 1)
+            self.assertAlmostEqual(sum(histogram), 1.0, places=4)
             self.assertNotIn("rng", json.dumps(row).lower())
         self.assertEqual(rows[0]["evaluators"][0]["combatEntryHash"], "entry-1")
         self.assertEqual(rows[1]["evaluators"][0]["latencyMicros"], 0)

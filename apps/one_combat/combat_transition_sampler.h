@@ -22,6 +22,8 @@ struct CombatTransitionExpectation {
     bool supported = false;
     float death = 0;
     float winningHpFraction = 0;
+    int winningHpMin = 1;
+    std::vector<float> winningHpHistogram;
 };
 
 // Prepared values have search/edge-local ownership. The originating sampler must

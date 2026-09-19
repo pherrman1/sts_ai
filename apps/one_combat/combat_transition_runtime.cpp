@@ -267,15 +267,23 @@ CombatTransitionExpectation calculateForecastExpectation(
     const float survival = runtime.survival(p);
     const auto maxHp = runtime.maxHp(p), z = runtime.hpEncoding(p);
     double expectedFraction = 0;
+    int maximumHp = p.globals.maxHp;
+    for (const int delta : domain.maxHpClasses)
+        maximumHp = std::max(maximumHp, p.globals.maxHp + delta);
+    std::vector<float> histogram(static_cast<size_t>(maximumHp + 1), 0.0f);
     for (size_t delta = 0; delta < maxHp.size(); ++delta) {
         const int maximum = p.globals.maxHp + domain.maxHpClasses.at(delta);
         const auto hp = runtime.signedHp(z, int(delta), p.globals.curHp, maximum);
         double conditional = 0;
-        for (size_t cls = 0; cls < hp.size(); ++cls)
-            conditional += hp[cls] * double(p.globals.curHp + domain.hpClasses.at(cls)) / maximum;
+        for (size_t cls = 0; cls < hp.size(); ++cls) {
+            const int finalHp = p.globals.curHp + domain.hpClasses.at(cls);
+            conditional += hp[cls] * double(finalHp) / maximum;
+            if (finalHp >= 0 && finalHp < static_cast<int>(histogram.size()))
+                histogram.at(static_cast<size_t>(finalHp)) += maxHp.at(delta) * hp.at(cls);
+        }
         expectedFraction += maxHp[delta] * conditional;
     }
-    return {true, 1 - survival, float(expectedFraction)};
+    return {true, 1 - survival, float(expectedFraction), 1, std::move(histogram)};
 }
 }
 

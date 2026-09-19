@@ -12,6 +12,7 @@ import com.megacrit.cardcrawl.dungeons.AbstractDungeon;
 import com.megacrit.cardcrawl.cards.AbstractCard;
 import com.megacrit.cardcrawl.monsters.AbstractMonster;
 import com.megacrit.cardcrawl.helpers.FontHelper;
+import com.megacrit.cardcrawl.helpers.ImageMaster;
 import com.megacrit.cardcrawl.rooms.EventRoom;
 import com.megacrit.cardcrawl.rooms.MonsterRoom;
 import com.megacrit.cardcrawl.rooms.ShopRoom;
@@ -58,7 +59,8 @@ public final class STSModelInspector implements PostInitializeSubscriber,
     private volatile String ctmStatus = "";
     private volatile String ctmReason = "";
     private volatile double ctmDeath = 0.0;
-    private volatile double ctmWinningHp = 0.0;
+    private volatile int ctmHistogramMin = 1;
+    private volatile double[] ctmHistogram = new double[0];
     private volatile boolean panelVisible = true;
     private volatile String combatEntry = "";
     private volatile String combatEntryHash = "";
@@ -92,7 +94,7 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         ctmStatus = "";
         ctmReason = "";
         ctmDeath = 0.0;
-        ctmWinningHp = 0.0;
+        ctmHistogram = new double[0];
     }
 
     private STSModelInspector() {}
@@ -133,7 +135,7 @@ public final class STSModelInspector implements PostInitializeSubscriber,
             ctmStatus = "";
             ctmReason = "";
             ctmDeath = 0.0;
-            ctmWinningHp = 0.0;
+            ctmHistogram = new double[0];
         }
         advisorStatus = "waiting";
         advisorReason = "";
@@ -167,9 +169,9 @@ public final class STSModelInspector implements PostInitializeSubscriber,
                     x, y - 116.0f * Settings.scale, white);
             if ("OK".equals(ctmStatus)) {
                 FontHelper.renderFontLeftTopAligned(sb, FontHelper.tipBodyFont,
-                        String.format("Death: %.1f%%   HP if survive: %.0f%%",
-                                100.0 * ctmDeath, 100.0 * ctmWinningHp),
+                        String.format("Death chance: %.1f%%", 100.0 * ctmDeath),
                         x, y - 138.0f * Settings.scale, white);
+                renderHistogram(sb, x, y - 164.0f * Settings.scale);
             } else if (!ctmReason.isEmpty()) {
                 FontHelper.renderFontLeftTopAligned(sb, FontHelper.tipBodyFont, ctmReason,
                         x, y - 138.0f * Settings.scale, Color.ORANGE);
@@ -177,7 +179,40 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         }
         FontHelper.renderFontLeftTopAligned(sb, FontHelper.tipBodyFont,
                 "Toggle: " + Keyboard.getKeyName(loadToggleKey()), x,
-                y - ("combat".equals(newest.boundary) ? 160.0f : 94.0f) * Settings.scale, Color.GRAY);
+                y - ("combat".equals(newest.boundary) ? 270.0f : 94.0f) * Settings.scale, Color.GRAY);
+    }
+
+    private void renderHistogram(SpriteBatch sb, float x, float top) {
+        if (ctmHistogram.length == 0) return;
+        FontHelper.renderFontLeftTopAligned(sb, FontHelper.tipBodyFont,
+                "Surviving final HP distribution (absolute)", x, top, Color.WHITE);
+        final int buckets = Math.min(24, ctmHistogram.length);
+        double maximum = 0.0;
+        for (int bucket = 0; bucket < buckets; ++bucket) {
+            int begin = bucket * ctmHistogram.length / buckets;
+            int end = (bucket + 1) * ctmHistogram.length / buckets;
+            double probability = 0.0;
+            for (int i = begin; i < end; ++i) probability += ctmHistogram[i];
+            maximum = Math.max(maximum, probability);
+        }
+        if (maximum <= 0.0) return;
+        float barWidth = 7.0f * Settings.scale;
+        float base = top - 58.0f * Settings.scale;
+        for (int bucket = 0; bucket < buckets; ++bucket) {
+            int begin = bucket * ctmHistogram.length / buckets;
+            int end = (bucket + 1) * ctmHistogram.length / buckets;
+            double probability = 0.0;
+            for (int i = begin; i < end; ++i) probability += ctmHistogram[i];
+            float height = (float) (48.0 * Settings.scale * probability / maximum);
+            sb.setColor(Color.CYAN);
+            sb.draw(ImageMaster.WHITE_SQUARE_IMG, x + bucket * barWidth,
+                    base, barWidth - Settings.scale, height);
+        }
+        sb.setColor(Color.WHITE);
+        int lastHp = ctmHistogramMin + ctmHistogram.length - 1;
+        FontHelper.renderFontLeftTopAligned(sb, FontHelper.tipBodyFont,
+                "HP " + ctmHistogramMin + "–" + lastHp, x, base - 14.0f * Settings.scale,
+                Color.GRAY);
     }
 
     private Snapshot captureStableSnapshot() {
@@ -695,7 +730,8 @@ public final class STSModelInspector implements PostInitializeSubscriber,
                                 } else if (line.contains("\"deathProbability\":")) {
                                     ctmStatus = "OK";
                                     ctmDeath = doubleField(line, "deathProbability");
-                                    ctmWinningHp = doubleField(line, "winningHpFraction");
+                                    ctmHistogramMin = (int) numberField(line, "winningHpHistogramMin");
+                                    ctmHistogram = numberArrayField(line, "winningHpHistogram");
                                 }
                             }
                         }
@@ -733,6 +769,25 @@ public final class STSModelInspector implements PostInitializeSubscriber,
             while (end < json.length() && Character.isDigit(json.charAt(end))) end++;
             try { return Long.parseLong(json.substring(start, end)); }
             catch (Exception e) { return -1; }
+        }
+
+        private double[] numberArrayField(String json, String key) {
+            String needle = "\"" + key + "\":[";
+            int start = json.indexOf(needle);
+            if (start < 0) return new double[0];
+            start += needle.length();
+            int end = json.indexOf(']', start);
+            if (end < 0) return new double[0];
+            String values = json.substring(start, end).trim();
+            if (values.isEmpty()) return new double[0];
+            String[] parts = values.split(",");
+            double[] result = new double[parts.length];
+            try {
+                for (int i = 0; i < parts.length; ++i) result[i] = Double.parseDouble(parts[i]);
+                return result;
+            } catch (NumberFormatException error) {
+                return new double[0];
+            }
         }
 
         private double doubleField(String json, String key) {
