@@ -503,6 +503,10 @@ SilverSearchTelemetry telemetry(const sts::search::SearchStats &stats) {
     out.chanceTranspositions = stats.chanceTranspositions;
     out.depthSum = stats.depthSum;
     out.chanceDepthSum = stats.chanceDepthSum;
+    out.raveUpdates = stats.raveUpdates;
+    out.raveEligibleEdges = stats.raveEligibleEdges;
+    out.raveEligibleNodes = stats.raveEligibleNodes;
+    out.raveCoveredNodes = stats.raveCoveredNodes;
     for (std::size_t i = 0; i < out.wideningSampled.size(); ++i) {
         out.wideningSampled[i] = stats.wSampled[i];
         out.wideningSiblingReuse[i] = stats.wSibReuse[i];
@@ -550,6 +554,10 @@ SilverSearchTelemetry telemetryDelta(const sts::search::SearchStats &after,
     result.chanceTranspositions -= prior.chanceTranspositions;
     result.depthSum -= prior.depthSum;
     result.chanceDepthSum -= prior.chanceDepthSum;
+    result.raveUpdates -= prior.raveUpdates;
+    result.raveEligibleEdges -= prior.raveEligibleEdges;
+    result.raveEligibleNodes -= prior.raveEligibleNodes;
+    result.raveCoveredNodes -= prior.raveCoveredNodes;
     for (std::size_t i = 0; i < result.wideningSampled.size(); ++i) {
         result.wideningSampled[i] -= prior.wideningSampled[i];
         result.wideningSiblingReuse[i] -= prior.wideningSiblingReuse[i];
@@ -2182,7 +2190,7 @@ SilverCombatReplayResult runSilverCombatReplay(
 
 SilverDecisionResult replaySilverRoot(const BattleStateWire &wire,
         const std::vector<std::string> &nativeOrder, const std::vector<std::string> &replayOrder,
-        const std::vector<double> &priors, bool usePuct) {
+        const std::vector<double> &priors, bool usePuct, int raveK) {
     SilverDecisionResult result;
     try {
         if (wire.inputState != static_cast<int>(sts::InputState::PLAYER_NORMAL)
@@ -2222,6 +2230,11 @@ SilverDecisionResult replaySilverRoot(const BattleStateWire &wire,
         }
         edges = std::move(reordered);
         if (usePuct) searcher.replayRootPriors = priors;
+        if (raveK != 0) {
+            if (raveK != 8 && raveK != 32 && raveK != 128)
+                throw std::invalid_argument("unsupported RAVE K");
+            searcher.setRave(raveK);
+        }
         result = runCurrentRootDecision(*session, config);
         if (result.simulations != 32 || result.inheritedVisits != 0)
             throw std::runtime_error("replay budget/reuse mismatch");

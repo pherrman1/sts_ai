@@ -9973,3 +9973,59 @@ unchanged. [Evidence packet](evidence/ooc_root_checkpoints_2026-09-18/README.md)
   including the checked-in raw bundle, analysis JSON, and SHA256 manifest.
   **Knowledge impact:** current research status and experiment evidence; no
   default, model, or gameplay implementation change.
+
+## §314 — Same-turn CARD RAVE/AMAF mechanism screen (2026-09-18)
+
+Implemented an opt-in, searcher-owned RAVE sidecar for Silver and ran the
+smallest frozen-root screen: A versus R8/R32/R128, 64 source-seed-0 roots,
+four common replicates, and 32 simulations. The key is semantic same-turn
+CARD state `(card id, upgraded, specialData, costForTurn, freeToPlayOnce,
+target)`; END_TURN, potions, selections, later turns, and chance nodes are
+excluded. Primary K=32 uses `beta=sqrt(K/(3*N+K))` and leaves UCT exploration
+unchanged. The R32-A root-bootstrap regret difference was -0.076467 with
+95% CI [-0.420937,+0.188419], with 11/17/36 improved/worsened/tied roots;
+B-best fell 5.08 pp. RAVE coverage was 100% of 1,789 eligible decision nodes
+and 2.994 samples per eligible edge. Classification:
+**RAVE_SCREEN_INCONCLUSIVE**. This is a mechanism screen only; no gameplay
+default or generalization claim is authorized. Evidence:
+`docs/experiments/evidence/silver_rave_mechanism_2026-09-18.md`.
+## §315 — OOC 20% gap-stop final 128-pair quality confirmation (2026-09-18)
+
+- **Protocol:** Reused the frozen source SHA
+  `495fa147517fdc42e631c513bde5a87b3bb25144` and unchanged Release binary
+  SHA256
+  `9a3b8c2bd1e563c691926d823c43767430d03c11b97a9c5f0d924e616beb1250`.
+  The predeclared paired cohort `12005000..12005127` ran with one OMP1 process
+  per seed, up to 12 external workers, control first, and a fixed 600-second
+  per-process ceiling. The interrupted control batch was resumed only for its
+  68 unconfirmed seeds into fresh paths; no seed was replaced and no partial
+  artifact was appended.
+- **Configuration:** The only gameplay/configuration difference was
+  `STS_OOC_MCTS_GAP_STOP_20=0` versus `1`. OOC remained at 2,048 simulations
+  with policy prior, cPuct 1.5, widening 2/0.5, depth 32, visit-root
+  selection, native leaf, V4 continuation policy, and existing exact
+  visit-lock stopping. Silver remained exact 10k, allocated reuse cap 32,768,
+  adaptive OFF, exact-root budgets ON, and exact-visit-lock/rho racing OFF.
+- **Result:** All 256 processes completed with valid provenance and clean
+  exits. Control won 95/128 and treatment 88/128; paired outcomes were 81
+  both-win, 26 both-lose, 14 control-only, and 7 treatment-only. The win-rate
+  delta was **-5.47 pp**, deterministic paired-bootstrap 95% CI
+  **[-12.50, +1.56] pp**, exact discordant-pair p **0.189**. Floor delta was
+  **+0.06** (CI [-1.26, +1.33]); ending-HP delta was **-1.47** (CI
+  [-7.01, +3.97]). Treatment fired 11,777 20%-gap stops across all 128
+  seeds; control fired zero. Trace ownership, fallback, simulation, root-stop,
+  and support accounting reconciled for every run.
+- **Decision:** **`OOC_GAP_STOP_20_FINAL_PASS`**. No meaningful quality
+  regression was detected at this bounded confirmation, combined with the
+  previously established speed benefit. This is not equivalence proof and no
+  default promotion is authorized before independent review.
+- **Unresolved verification note:** A seed-free `oocmctsselftest` run with the
+  full Silver environment emitted `FAIL oocmctsselftest: same sole wheel
+  primitive hides a fallback agent RNG draw`. This did not consume a cohort
+  seed or alter the frozen executable. The general 21-case OOC startup matrix
+  passed, and all 256 actual gameplay processes completed with clean exits and
+  validated Silver/provenance metadata. The assertion remains unresolved and
+  is not treated as cleared by the gameplay run.
+- **Evidence:** [final OOC 20% gap-stop packet](evidence/ooc_gap_stop_20_final_20260918/README.md).
+  **Knowledge impact:** current research status and final experiment evidence;
+  no default, model, or gameplay implementation change.

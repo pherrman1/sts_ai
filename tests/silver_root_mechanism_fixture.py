@@ -58,6 +58,19 @@ def main():
         run(args.replay, roots, labels, replay, "20260917", sha, "--fixture")
         rows = [json.loads(line) for line in replay.read_text().splitlines()]
         assert len(rows) == 24
+        rave_replay = temporary / "rave-replay.jsonl"
+        run(args.replay, roots, labels, rave_replay, "20260917", sha,
+            "--fixture", "--rave-screen")
+        rave_rows = [json.loads(line) for line in rave_replay.read_text().splitlines()]
+        assert len(rave_rows) == 16
+        assert {row["arm"] for row in rave_rows} == {"A", "R8", "R32", "R128"}
+        assert all(row["rave_k"] == 0 and row["rave_updates"] == 0
+                   for row in rave_rows if row["arm"] == "A")
+        assert all(row["rave_k"] in (8, 32, 128)
+                   and row["rave_updates"] > 0
+                   and row["rave_eligible_edges"] > 0
+                   and row["rave_eligible_nodes"] == row["rave_covered_nodes"]
+                   for row in rave_rows if row["arm"] != "A")
         strict_replay = temporary / "strict-rejected.jsonl"
         run(args.replay, roots, labels, strict_replay, "20260917", sha, success=False)
         assert not strict_replay.exists()
@@ -121,6 +134,7 @@ def main():
                 assert original[key] == changed_row[key], key
         print(json.dumps({"fixed_fixture_only": True, "capture_neutral": True,
                           "teacher_records": 2, "fixture_budget": 32, "replay_rows": 24,
+                          "rave_replay_rows": 16,
                           "teacher_b_treatment_neutral": True,
                           "hashes": {path.name: hashlib.sha256(path.read_bytes()).hexdigest()
                                      for path in (roots, labels, replay)}}))
