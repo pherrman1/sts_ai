@@ -10110,3 +10110,49 @@ default or generalization claim is authorized. Evidence:
   **Knowledge impact:** durable Silver action-enumeration behavior and
   experiment evidence; no model, RNG, semantic schema, search budget, or
   gameplay default change.
+
+## §319 — Silver duplicate potion-slot deduplication (2026-09-19)
+
+- **Implementation:** Silver's ordinary potion enumeration now retains only
+  the first occupied slot for each potion enum using a bounded previous-slot
+  scan, avoiding a per-node allocation. Existing Fairy/Smoke/Gambler legality,
+  targeted-potion target alternatives, action order, potion belt order,
+  semantic fingerprints, and exact potion-slot lowering are unchanged.
+  Successive decisions can consume every remaining identical copy.
+- **Structural result:** Focused Silver optimization and bridge tests passed
+  for non-target and targeted reduction, multiplicity, distinct types,
+  Fairy/blocked Smoke/Gambler legality, deterministic and targeted successor
+  permutation equivalence, Entropic Brew RNG/multiset equivalence, and live
+  semantic lowering.
+- **Local screen:** At 10,000 simulations on a fixed five-Strength root,
+  baseline root actions were `6` and treatment root actions were `2`; nodes
+  were `2,733` and `1,033`, respectively. Seven Release repetitions gave
+  baseline `0.0334482, 0.0343304, 0.0346002, 0.0339673, 0.0345303,
+  0.0285543, 0.0300224s` and treatment `0.0266973, 0.0264213, 0.0266100,
+  0.0274337, 0.0258310, 0.0234443, 0.0222240s`; medians were `0.0339673s`
+  and `0.0264213s` (`22.22%` lower). This is fixed-root selector evidence,
+  not a whole-run runtime claim.
+- **DEV screen:** On the frozen 64-case DEV snapshots at 1,000 simulations,
+  baseline/treatment both won `51/64`, with mean HP fractions
+  `0.329883253/0.344091151`, `2,234/2,232` decisions,
+  `2,234,000/2,232,000` simulations, `2,069,231/2,063,754` nodes, and
+  `15.628747/15.549843s` wall time; both had zero failures. Seven starting
+  states contained duplicate potion types; `5/7` changed the initial action
+  surface, and all `7/7` changed the action trace. The replay schema exposes
+  no terminal state hash, so final-hash differences were not available for
+  comparison. HOLDOUT was not used.
+- **Decision:** **`SILVER_POTION_SLOT_DEDUP_ACCEPT`** for implementation
+  correctness and the bounded fixed-root efficiency screen. This is bounded
+  confirmation, not equivalence or default-promotion evidence; trajectory
+  differences are not interpreted as policy improvement.
+- **Hot-path correction:** The `unordered_set` implementation was replaced in
+  the same task by the bounded scan. The existing five-identical Release
+  microbenchmark remained at `1,033` nodes and `11` actions with a
+  `0.0245379s` median over seven runs. A five-distinct no-duplicate fixture
+  completed with `2,341` nodes and a `0.0250499s` median; because the root
+  action surface differs, this is a sanity screen rather than a causal timing
+  comparison.
+- **Evidence:** [duplicate potion-slot evidence](evidence/silver_potion_slot_dedup_20260919.md).
+  **Knowledge impact:** durable Silver action-enumeration behavior and
+  experiment evidence; no model, RNG, semantic schema, search budget, or
+  gameplay default change.

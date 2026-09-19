@@ -143,6 +143,48 @@ int main(int argc, char **argv) {
     check(!silverOffersEmptyHandGamble,
           "Silver must not enumerate Gambler's Brew when the live hand is empty");
 
+    // Duplicate potion slots are reduced only inside Silver. The semantic
+    // boundary remains slot-exact: Silver must return the first representative
+    // and live lowering must resolve that exact identity without searching for
+    // an equivalent slot.
+    BattleContext duplicatePotionLive = first;
+    duplicatePotionLive.potions.fill(Potion::EMPTY_POTION_SLOT);
+    duplicatePotionLive.potions[0] = Potion::STRENGTH_POTION;
+    duplicatePotionLive.potions[2] = Potion::STRENGTH_POTION;
+    duplicatePotionLive.potionCapacity = 3;
+    duplicatePotionLive.potionCount = 2;
+    search::CombatKnowledgeState duplicatePotionKnowledge;
+    duplicatePotionKnowledge.initializeFromLiveBattle(duplicatePotionLive);
+    const auto duplicatePotionWire = convert(
+        duplicatePotionLive, gc, duplicatePotionKnowledge);
+    const auto duplicatePotionActions = silver_bridge::enumerateSilverLegalActions(
+        duplicatePotionWire);
+    std::vector<silver_bridge::SemanticAction> strengthActions;
+    for (const auto &action : duplicatePotionActions) {
+        if (action.type == silver_bridge::SemanticActionType::POTION
+                && action.potionId == static_cast<std::int16_t>(Potion::STRENGTH_POTION)) {
+            strengthActions.push_back(action);
+        }
+    }
+    check(strengthActions.size() == 1 && strengthActions.front().potionSlot == 0,
+          "Silver semantic enumeration must retain only the first duplicate potion slot");
+    if (strengthActions.size() == 1) {
+        const auto lowered = search::resolveSilverSemanticAction(
+            duplicatePotionLive, strengthActions.front());
+        check(lowered.ok
+                  && lowered.action == search::Action(search::ActionType::POTION, 0),
+              "representative duplicate potion must lower against the exact live slot");
+        if (lowered.ok) {
+            auto executedDuplicatePotion = duplicatePotionLive;
+            search::ScumSearchAgent2 executor;
+            executor.takeAction(executedDuplicatePotion, lowered.action);
+            check(executedDuplicatePotion.potionCount == 1
+                      && executedDuplicatePotion.potions[0] == Potion::EMPTY_POTION_SLOT
+                      && executedDuplicatePotion.potions[2] == Potion::STRENGTH_POTION,
+                  "lowered representative potion must remain live-valid when executed");
+        }
+    }
+
     BattleContext permuted = first;
     std::swap(permuted.cards.drawPile[0], permuted.cards.drawPile[2]);
     search::CombatKnowledgeState firstKnowledge, permutedKnowledge;

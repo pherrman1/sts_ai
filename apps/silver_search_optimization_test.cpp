@@ -41,6 +41,150 @@ sts::BattleContext fixture(sts::GameContext &gc) {
     return bc;
 }
 
+std::vector<sts::search::Action> rootActions(const sts::BattleContext &bc) {
+    Search search(bc);
+    search.step();
+    std::vector<sts::search::Action> actions;
+    actions.reserve(search.getRootEdges().size());
+    for (const auto &edge : search.getRootEdges()) actions.push_back(edge.action);
+    return actions;
+}
+
+std::vector<sts::search::Action> potionActions(const sts::BattleContext &bc, sts::Potion potion) {
+    std::vector<sts::search::Action> result;
+    for (const auto &action : rootActions(bc)) {
+        if (action.getActionType() == sts::search::ActionType::POTION
+                && bc.potions[action.getSourceIdx()] == potion) {
+            result.push_back(action);
+        }
+    }
+    return result;
+}
+
+void installPotions(sts::BattleContext &bc, std::initializer_list<sts::Potion> potions) {
+    bc.potions.fill(sts::Potion::EMPTY_POTION_SLOT);
+    bc.potionCapacity = static_cast<int>(potions.size());
+    bc.potionCount = static_cast<int>(potions.size());
+    std::copy(potions.begin(), potions.end(), bc.potions.begin());
+}
+
+void canonicalizePotionBelt(sts::BattleContext &bc) {
+    std::sort(bc.potions.begin(), bc.potions.begin() + bc.potionCapacity,
+              [](sts::Potion lhs, sts::Potion rhs) {
+                  return static_cast<int>(lhs) < static_cast<int>(rhs);
+              });
+}
+
+void executePotion(sts::BattleContext &bc, int slot, int target = 0) {
+    const sts::search::Action action(sts::search::ActionType::POTION, slot, target);
+    require(action.isValidAction(bc), "potion permutation fixture action must be valid");
+    action.execute(bc);
+}
+
+void potionActionCanonicalization(sts::GameContext &gc, const sts::BattleContext &original) {
+    auto duplicate = original;
+    installPotions(duplicate, {sts::Potion::STRENGTH_POTION, sts::Potion::EMPTY_POTION_SLOT,
+                               sts::Potion::STRENGTH_POTION});
+    duplicate.potionCount = 2;
+    const auto noPotions = original;
+    const auto noPotionActions = rootActions(noPotions);
+    auto nonPotionActions = [](const std::vector<sts::search::Action> &actions) {
+        std::vector<sts::search::Action> result;
+        for (const auto &action : actions) {
+            if (action.getActionType() != sts::search::ActionType::POTION) result.push_back(action);
+        }
+        return result;
+    };
+    require(nonPotionActions(rootActions(duplicate)) == nonPotionActions(noPotionActions),
+            "duplicate potions must not change ordinary root actions");
+    const auto strengthActions = potionActions(duplicate, sts::Potion::STRENGTH_POTION);
+    require(strengthActions.size() == 1 && strengthActions.front().getSourceIdx() == 0,
+            "duplicate non-target potion must retain only the first representative slot");
+
+    auto targetedGc = gc;
+    sts::BattleContext targeted{};
+    targeted.init(targetedGc, sts::MonsterEncounter::TWO_FUNGI_BEASTS);
+    installPotions(targeted, {sts::Potion::FIRE_POTION, sts::Potion::EMPTY_POTION_SLOT,
+                              sts::Potion::FIRE_POTION});
+    targeted.potionCount = 2;
+    const auto fireActions = potionActions(targeted, sts::Potion::FIRE_POTION);
+    require(fireActions.size() == 2, "duplicate targeted potion must retain both targets");
+    require(fireActions[0].getSourceIdx() == 0 && fireActions[1].getSourceIdx() == 0
+                && fireActions[0].getTargetIdx() != fireActions[1].getTargetIdx(),
+            "targeted potion reduction must retain target alternatives on its representative slot");
+
+    auto multiplicity = original;
+    installPotions(multiplicity, {sts::Potion::STRENGTH_POTION, sts::Potion::STRENGTH_POTION,
+                                 sts::Potion::STRENGTH_POTION});
+    for (int expectedRemaining = 3; expectedRemaining > 0; --expectedRemaining) {
+        const auto actions = potionActions(multiplicity, sts::Potion::STRENGTH_POTION);
+        require(actions.size() == 1, "each remaining identical potion must have one representative action");
+        require(actions.front().getSourceIdx() == 3 - expectedRemaining,
+                "successive identical potion uses must retain the first occupied slot");
+        executePotion(multiplicity, actions.front().getSourceIdx());
+        require(multiplicity.potionCount == expectedRemaining - 1,
+                "using a representative potion must consume exactly one copy");
+    }
+    require(potionActions(multiplicity, sts::Potion::STRENGTH_POTION).empty(),
+            "all identical potion copies must eventually be consumable");
+
+    auto differentTypes = original;
+    installPotions(differentTypes, {sts::Potion::STRENGTH_POTION, sts::Potion::DEXTERITY_POTION});
+    const auto strengthAndDexterity = rootActions(differentTypes);
+    int strengthCount = 0, dexterityCount = 0;
+    for (const auto &action : strengthAndDexterity) {
+        if (action.getActionType() != sts::search::ActionType::POTION) continue;
+        if (differentTypes.potions[action.getSourceIdx()] == sts::Potion::STRENGTH_POTION) ++strengthCount;
+        if (differentTypes.potions[action.getSourceIdx()] == sts::Potion::DEXTERITY_POTION) ++dexterityCount;
+    }
+    require(strengthCount == 1 && dexterityCount == 1,
+            "different potion types must retain separate representatives");
+
+    auto fairy = original;
+    installPotions(fairy, {sts::Potion::FAIRY_POTION, sts::Potion::FAIRY_POTION});
+    const auto fairyActions = potionActions(fairy, sts::Potion::FAIRY_POTION);
+    require(fairyActions.size() == 1 && fairyActions.front().getTargetIdx() > 5,
+            "duplicate Fairy Potions must retain one discard action and no use action");
+
+    auto blockedSmoke = original;
+    blockedSmoke.encounter = sts::MonsterEncounter::HEXAGHOST;
+    installPotions(blockedSmoke, {sts::Potion::SMOKE_BOMB, sts::Potion::SMOKE_BOMB});
+    const auto smokeActions = potionActions(blockedSmoke, sts::Potion::SMOKE_BOMB);
+    require(smokeActions.size() == 1 && smokeActions.front().getTargetIdx() > 5,
+            "blocked duplicate Smoke Bombs must retain one discard action and no use action");
+
+    auto gambler = original;
+    gambler.cards.cardsInHand = 1;
+    gambler.cards.hand[0] = sts::CardInstance(sts::CardId::STRIKE_RED);
+    installPotions(gambler, {sts::Potion::GAMBLERS_BREW, sts::Potion::GAMBLERS_BREW});
+    const auto usableGamblerActions = potionActions(gambler, sts::Potion::GAMBLERS_BREW);
+    require(usableGamblerActions.size() == 1 && usableGamblerActions.front().getTargetIdx() <= 5,
+            "duplicate Gambler's Brews with a nonempty hand must retain one use action");
+    gambler.cards.cardsInHand = 0;
+    require(potionActions(gambler, sts::Potion::GAMBLERS_BREW).empty(),
+            "duplicate Gambler's Brews with an empty hand must remain unavailable");
+
+    const auto permutation = [&](sts::Potion potion, int target) {
+        auto stateA = original;
+        auto stateB = original;
+        installPotions(stateA, {potion, sts::Potion::EMPTY_POTION_SLOT, potion});
+        installPotions(stateB, {potion, sts::Potion::EMPTY_POTION_SLOT, potion});
+        stateA.potionCount = stateB.potionCount = 2;
+        executePotion(stateA, 0, target);
+        executePotion(stateB, 2, target);
+        const auto rngA = stateA.rng;
+        const auto rngB = stateB.rng;
+        canonicalizePotionBelt(stateA);
+        canonicalizePotionBelt(stateB);
+        require(stateA.equalForSearch(stateB),
+                "identical potion slots must produce equivalent successor search states after normalization");
+        require(rngA == rngB, "identical potion slots must advance the same RNG state");
+    };
+    permutation(sts::Potion::STRENGTH_POTION, 0);
+    permutation(sts::Potion::FIRE_POTION, 0);
+    permutation(sts::Potion::ENTROPIC_BREW, 0);
+}
+
 void selection(Search &search) {
     Search::Node parent, finite, nan, negativeInfinity;
     parent.simulationCount = 20;
@@ -369,6 +513,33 @@ void gambleMicrobenchmark(sts::GameContext &gc, int simulations, std::size_t exp
     const auto elapsed = std::chrono::duration<double>(std::chrono::steady_clock::now() - start).count();
     std::cout << "gamble_microbenchmark simulations=" << simulations
               << " root_actions=" << rootActions.size()
+              << " steps=" << search.stats.steps
+              << " nodes_created=" << search.stats.nodesCreated
+              << " action_count=" << search.actionCount
+              << " wall_seconds=" << elapsed << '\n';
+}
+
+void potionMicrobenchmark(sts::GameContext &gc, int simulations, std::size_t expectedRootActions,
+                          bool distinctPotions) {
+    auto state = fixture(gc);
+    state.cards.cardsInHand = 0;
+    if (distinctPotions) {
+        installPotions(state, {sts::Potion::STRENGTH_POTION, sts::Potion::DEXTERITY_POTION,
+                               sts::Potion::BLOCK_POTION, sts::Potion::ENERGY_POTION,
+                               sts::Potion::FIRE_POTION});
+    } else {
+        installPotions(state, {sts::Potion::STRENGTH_POTION, sts::Potion::STRENGTH_POTION,
+                               sts::Potion::STRENGTH_POTION, sts::Potion::STRENGTH_POTION,
+                               sts::Potion::STRENGTH_POTION});
+    }
+    const auto rootActionSet = rootActions(state);
+    require(rootActionSet.size() == expectedRootActions, "potion microbenchmark root action count mismatch");
+    Search search(state);
+    const auto start = std::chrono::steady_clock::now();
+    search.search(simulations);
+    const auto elapsed = std::chrono::duration<double>(std::chrono::steady_clock::now() - start).count();
+    std::cout << "potion_microbenchmark simulations=" << simulations
+              << " root_actions=" << rootActionSet.size()
               << " steps=" << search.stats.steps
               << " nodes_created=" << search.stats.nodesCreated
               << " action_count=" << search.actionCount
@@ -918,10 +1089,20 @@ int main(int argc, char **argv) {
             gambleMicrobenchmark(gc, simulations, expectedRootActions);
             return 0;
         }
+        if (argc > 1 && std::string(argv[1]) == "--potion-microbenchmark") {
+            const int simulations = argc > 2 ? std::stoi(argv[2]) : 10000;
+            const auto expectedRootActions = argc > 3 ? static_cast<std::size_t>(std::stoul(argv[3])) : 2;
+            const bool distinctPotions = argc > 4 && std::string(argv[4]) == "distinct";
+            require(argc <= 4 || distinctPotions, "potion microbenchmark mode must be distinct when provided");
+            require(simulations > 0, "potion microbenchmark simulations must be positive");
+            potionMicrobenchmark(gc, simulations, expectedRootActions, distinctPotions);
+            return 0;
+        }
         dedupGrowth(bc);
         cardActionCanonicalization(bc);
         singleCardSelectCanonicalization(bc);
         gambleMultiplicityCanonicalization(bc);
+        potionActionCanonicalization(gc, bc);
         lazyReroot(bc);
         compaction(bc, 0);
         selection(search); widening(search); rootPriorSelection(search);

@@ -957,14 +957,22 @@ void search::BattleSearcher::enumeratePotionActions(search::BattleSearcher::Node
 
     const auto hasValidTarget = bc.monsters.getTargetableCount() > 0;
 
-    int foundPotions = 0;
     for (int pIdx = 0; pIdx < bc.potionCapacity; ++pIdx) {
 
         const auto p = bc.potions[pIdx];
         if (p == Potion::EMPTY_POTION_SLOT) {
             continue;
         }
-        ++foundPotions;
+        bool duplicate = false;
+        for (int j = 0; j < pIdx; ++j) {
+            if (bc.potions[j] == p) {
+                duplicate = true;
+                break;
+            }
+        }
+        if (duplicate) {
+            continue;
+        }
 
         // not enumerating the discard of a potion if it can be used
         if (p == Potion::FAIRY_POTION) {
