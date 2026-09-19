@@ -1340,8 +1340,21 @@ A visit-weighted T20 ensemble of A/A2 versus an independent J50 ensemble of
 B/B2 also fails the zero-search screen: top-action agreement is `44/64`, T20
 mean J50-regret is `0.534197` versus `0.495031` for original A, and the known
 harmful root remains misranked. The proposed ensemble ordering arm is therefore
-not run; the learned root-ordering line is stopped pending a new target
-definition. See the [ensemble audit](../../experiments/evidence/silver_root_teacher_ensemble_audit_2026-09-18.md).
+not run. See the [ensemble audit](../../experiments/evidence/silver_root_teacher_ensemble_audit_2026-09-18.md).
+
+The replacement target premise has now passed its fresh-population audit.  On
+32 hash-selected roots from 16 fresh source seeds, an independent eight-by-5k
+forced-action ensemble improved over same-root Teacher-A under a disjoint
+eight-by-10k judge: mean J-regret delta `-0.328487`, source-seed-clustered 95%
+CI `[-0.727297,-0.038122]`; pairwise-concordance delta `+0.120886`, CI
+`[+0.063730,+0.196073]`.  Tail and stochastic-action gates also passed.  This
+is **`FORCED_ACTION_TARGET_PASS`** and permits only a later bounded model
+experiment.  No model, replay integration, gameplay, or default change is yet
+qualified.  The separate known-harmful-root regression is still outstanding
+because the exact frozen snapshots were unavailable; do not replace it with
+recollected roots or interpret the primary pass as that regression.  See
+[ledger-06 §320](../../experiments/ledger-06.md) and the
+[forced-action evidence](../../experiments/evidence/silver_forced_action_target_2026-09-19/README.md).
 
 ### Combat leaf/model variants
 

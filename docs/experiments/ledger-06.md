@@ -10156,3 +10156,39 @@ default or generalization claim is authorized. Evidence:
   **Knowledge impact:** durable Silver action-enumeration behavior and
   experiment evidence; no model, RNG, semantic schema, search budget, or
   gameplay default change.
+
+## §320 — Independent Silver forced-action target audit (2026-09-19)
+
+- **Question and protocol:** After the visit-weighted learned-teacher target
+  failed, test a genuinely independent target before any more model work.  Two
+  roots per source were selected by deterministic hash from 16 fresh gameplay
+  seeds `12006000..12006015`.  Every legal semantic action received eight
+  independently executed 5k forced-action continuations (L) and a disjoint
+  eight-replicate 10k judge (J); frozen 10k Teacher-A was evaluated on the same
+  roots.  Bootstrap units were source seeds, not correlated decisions.
+- **Result:** **`FORCED_ACTION_TARGET_PASS`**.  Mean J-regret(L)-J-regret(A)
+  was `-0.3284866992`, with clustered 95% CI
+  `[-0.7272965479,-0.0381220176]`.  Pairwise-concordance delta was
+  `+0.1208863185`, CI `[+0.0637300460,+0.1960730632]`.  L/A maximum regret was
+  `1.0854700000/5.5437900000`, upper-decile regret `0/0.4388132500`, and L
+  introduced no new regret-3 harmful root.  All 32 roots had stochastic-action
+  coverage; both stochastic-involving and deterministic-only pairwise deltas
+  were positive.  All seven preregistered gates passed.
+- **Correction and exclusions:** Immediate-terminal actions correctly consume
+  zero continuation simulations, while all nonterminal replicates must consume
+  the full budget.  A partial pre-fix run and a stopped invocation with an
+  incorrect evaluator-SHA argument were quarantined and excluded.  The final
+  stream has 2,768 rows, 173 root-action pairs, 48 terminal rows, and 864
+  stochastic rows.  A non-object producer-SHA typo in generated metadata was
+  corrected to the actual producer commit identified by branch history and the
+  evaluator's parent; capture/selection/audit hashes were reissued and the
+  aggregate analysis reproduced byte-for-byte.
+- **Boundary:** This qualifies L only as a target for a later bounded model
+  experiment.  No model was trained, and no replay, gameplay, or default change
+  is authorized.  The separate historical harmful-root regression remains
+  blocked because the exact frozen snapshots were unavailable locally and on
+  the designated GCP worker; no substitute roots were recollected.
+- **Evidence:** [forced-action target audit](evidence/silver_forced_action_target_2026-09-19/README.md).
+  **Knowledge impact:** the independent target premise is now supported on the
+  fresh primary population; the historical regression and every downstream
+  learned-policy gate remain outstanding.
