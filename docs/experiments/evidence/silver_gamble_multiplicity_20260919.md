@@ -52,20 +52,62 @@ ctest --test-dir build/linux-gcc-debug-ccache \
 ## Fixed-state local microbenchmark
 
 Fixture: valid Silver Ironclad combat state with `5 Strike + 5 Defend` in hand;
-10,000 simulations; identical Debug GCC build settings, root state, RNG, and
-search budget. Seven repetitions per arm produced these medians:
+10,000 simulations; identical Release GCC build settings, root state, RNG, and
+search budget. The benchmark source was the same pushed
+`apps/silver_search_optimization_test.cpp` (`sha256=
+9abd4aff781fe6e1480a325b856276c4117c270b6bc34b9c4a80f76afba9c803`) for both
+arms. Seven repetitions per arm produced:
+
+```text
+baseline: 0.121032, 0.116324, 0.113559, 0.116201, 0.109390, 0.105897, 0.119517
+treatment: 0.0901018, 0.0893465, 0.0890767, 0.0907252, 0.0903225, 0.0946379, 0.0971926
+```
 
 | arm | root actions | action count | nodes created | median wall seconds |
 |---|---:|---:|---:|---:|
-| baseline | 11 | 23 | 10,000 | 0.704419 |
-| treatment | 3 | 24 | 10,000 | 0.579643 |
+| baseline | 11 | 23 | 10,000 | 0.1162010 |
+| treatment | 3 | 24 | 10,000 | 0.0903225 |
 
 The baseline root has ten physical card picks plus confirmation; treatment has
 one Strike representative, one Defend representative, plus confirmation. The
-local median was about `17.7%` lower for treatment. This is a local selector
-screen, not a whole-run runtime claim. Instrumented executable SHA-256 values
-were baseline `4220116ae1ccc08374a73cdd61e861b29e19195f0ceb05ea5f77d5e471ad8991`
-and treatment `d8d5aa09c28d8e4a057912822d919df645124e91574147a42c1895a065a21b59`.
+Release median was `22.27%` lower for treatment. This is a local selector
+screen, not a whole-run runtime claim.
+
+Treatment was built with:
+
+```text
+cmake --preset linux-gcc-release-ccache
+cmake --build --preset linux-gcc-release-ccache-build --target silver-search-optimization-test -j2
+```
+
+The pristine baseline libraries were exported with the repository baseline
+helper from `9cb66773d65e98f3e8a23ff582c52aaf151b47fc`, using the same
+`linux-gcc-release-ccache` configure/build presets. Because the baseline commit
+predates the optional microbenchmark mode, the identical current test source
+object was compiled with the generated Release flags and linked against those
+baseline libraries:
+
+```text
+/usr/bin/g++ -O3 -DNDEBUG -std=gnu++20 -Wno-shift-count-overflow -fopenmp -O3 -flto \
+  -DagentMtRunner=silver_agentMtRunner -Dfixed_list=silver_fixed_list -DinitMaps=silver_initMaps \
+  -Djava=sts_silver_java -DrollWeightedIdx=silver_rollWeightedIdx -DsimulationIdx=silver_simulationIdx -Dsts=sts_silver \
+  -I<worktree>/third_party/silver_lightspeed/include -I<worktree>/include \
+  -c apps/silver_search_optimization_test.cpp -o build/release-baseline-instrumented/silver_search_optimization_test.o
+/usr/bin/g++ -O3 -DNDEBUG -fopenmp -flto -Wl,--gc-sections \
+  build/release-baseline-instrumented/silver_search_optimization_test.o \
+  build/baselines/9cb66773d65e-release/libsilver_combat_model.a \
+  build/baselines/9cb66773d65e-release/libsilver_combat_search_bridge.a \
+  build/baselines/9cb66773d65e-release/libsilver_combat_model.a \
+  -o build/release-baseline-instrumented/silver_search_optimization_test
+```
+
+Release artifact SHA-256 values were baseline instrumented executable
+`672013e136cab4515e46fdc260f2d159e5c90673a4428bd83a7369c7e7b9f84f`, treatment
+executable `485100a35b95f991aff950aa305ae06090b03a1c841f2d40324beab194dede44`,
+baseline model library
+`2484ec31aca6b4772e563e62a52cdf2003d3f96d8e64d1c44b928d57e2ce36d5`, and
+baseline bridge library
+`c0d09b3fff8b429e66aaa7d83e098371792551dcef044e4979eee342612b3f10`.
 
 ## Frozen DEV no-harm screen
 

@@ -10088,9 +10088,15 @@ default or generalization claim is authorized. Evidence:
   identity-sensitive special-data copies, noncanonical incoming masks, and the
   sequential bridge transaction all passed.
 - **Local screen:** At 10,000 simulations on the fixed `5 Strike + 5 Defend`
-  root, root actions fell `11 -> 3` and median wall time across seven runs fell
-  from `0.704419s` to `0.579643s`; nodes remained `10,000` and recorded action
-  counts were `23/24`. This is local selector evidence, not a whole-run claim.
+  root, identical Release GCC benchmark-source arms reduced root actions
+  `11 -> 3`. All seven wall times were recorded: baseline
+  `0.121032, 0.116324, 0.113559, 0.116201, 0.109390, 0.105897, 0.119517s`;
+  treatment `0.0901018, 0.0893465, 0.0890767, 0.0907252, 0.0903225,
+  0.0946379, 0.0971926s`. Medians were `0.1162010s` and `0.0903225s`
+  (`22.27%` lower); nodes remained `10,000` and recorded action counts were
+  `23/24`. The baseline instrumented source was the same pushed test source,
+  compiled and linked against pristine baseline libraries with documented
+  Release commands. This is local selector evidence, not a whole-run claim.
 - **DEV no-harm:** On frozen `hard64-dev-snapshots.jsonl` at 1,000 simulations,
   baseline and treatment both won `51/64`, had mean HP fraction `0.329883253`,
   `2,234` decisions, `2,234,000` simulations, `2,069,231` nodes, zero failures,
