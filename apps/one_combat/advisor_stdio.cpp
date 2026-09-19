@@ -14,26 +14,68 @@
 using nlohmann::json;
 
 namespace {
-json silverEvaluator(const one_combat::advisor::Request &request) {
+json silverEvaluator(const one_combat::advisor::Request &request,
+                     std::shared_ptr<silver_bridge::SilverSearchSession> &session,
+                     std::string &sessionIdentity, std::string &combatEntryIdentity) {
     const auto imported = one_combat::advisor::importSilverRoot(request.observation);
-    json evaluator = {{"id", "silver_first_turn_v1"}, {"scope", "first_decision"},
+    json evaluator = {{"id", "silver_player_decision_v2"},
+                      {"scope", "combat_player_decision"},
                       {"simulations", 1000}, {"adaptiveEnabled", false},
                       {"exactVisitLockEnabled", false}, {"rhoRacingEnabled", false}};
-    if (!imported.ok) { evaluator["status"] = "UNSUPPORTED"; evaluator["reason"] = imported.reason; return evaluator; }
+    const auto clearSession = [&] {
+        session.reset();
+        sessionIdentity.clear();
+        combatEntryIdentity.clear();
+    };
+    if (!imported.ok) {
+        clearSession();
+        evaluator["status"] = "UNSUPPORTED";
+        evaluator["reason"] = imported.reason;
+        return evaluator;
+    }
+    const auto entry = request.observation.value("combatEntryHash", std::string());
+    const bool matchingSession = session != nullptr && sessionIdentity == request.session
+        && combatEntryIdentity == entry;
+    if (imported.decisionOrdinal == 0) {
+        session = silver_bridge::makeSilverSearchSession();
+        sessionIdentity = request.session;
+        combatEntryIdentity = entry;
+    } else if (!matchingSession) {
+        clearSession();
+        evaluator["status"] = "UNSUPPORTED";
+        evaluator["reason"] = "silver_missing_predecessor";
+        return evaluator;
+    }
     const auto digest = silver_bridge::inspectConvertedBattleState(imported.wire);
-    if (!digest.accepted) { evaluator["status"] = "UNSUPPORTED"; evaluator["reason"] = "silver_state_parity_failure"; return evaluator; }
+    if (!digest.accepted) {
+        clearSession();
+        evaluator["status"] = "UNSUPPORTED";
+        evaluator["reason"] = "silver_state_parity_failure";
+        return evaluator;
+    }
     const auto legal = silver_bridge::enumerateSilverLegalActions(imported.wire);
-    if (legal.empty()) { evaluator["status"] = "UNSUPPORTED"; evaluator["reason"] = "silver_no_legal_actions"; return evaluator; }
+    if (legal.empty()) {
+        clearSession();
+        evaluator["status"] = "UNSUPPORTED";
+        evaluator["reason"] = "silver_no_legal_actions";
+        return evaluator;
+    }
     const auto started = std::chrono::steady_clock::now();
     silver_bridge::SilverSearchConfig config;
     config.simulationsPerDecision = 1000;
     config.collectRootActionSummaries = true;
+    config.collectDecisionDiagnostics = true;
     config.adaptiveEnabled = false;
     config.exactVisitLockEnabled = false;
     config.rhoRacingEnabled = false;
-    const auto decision = silver_bridge::runSilverDecision(imported.wire, config);
+    const auto decision = silver_bridge::runSilverDecision(*session, imported.wire, config);
     evaluator["latencyMicros"] = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now() - started).count();
-    if (!decision.accepted) { evaluator["status"] = "UNSUPPORTED"; evaluator["reason"] = decision.failureReason; return evaluator; }
+    if (!decision.accepted) {
+        clearSession();
+        evaluator["status"] = "UNSUPPORTED";
+        evaluator["reason"] = decision.failureReason;
+        return evaluator;
+    }
     evaluator["status"] = "OK";
     evaluator["selectedAction"] = silver_bridge::semanticActionFingerprint(decision.action);
     evaluator["selectedLabel"] = one_combat::advisor::silverActionLabel(decision.action, imported.wire);
@@ -62,6 +104,14 @@ json silverEvaluator(const one_combat::advisor::Request &request) {
         rankingText += "|" + (ranked[i]->selectionQValid ? std::to_string(ranked[i]->selectionQ) : "");
     }
     evaluator["rankingText"] = rankingText;
+    evaluator["decisionOrdinal"] = imported.decisionOrdinal;
+    evaluator["reroot"] = {
+        {"exact", decision.diagnostic.exactReroot},
+        {"fallback", decision.diagnostic.fallback},
+        {"fallbackReason", silver_bridge::silverRerootFallbackReasonName(
+            decision.diagnostic.fallbackReason)},
+        {"inheritedVisits", decision.diagnostic.inheritedVisits},
+    };
     return evaluator;
 }
 }
@@ -72,6 +122,9 @@ int main() {
     std::string ctmStatus = "MODEL_UNAVAILABLE", ctmReason;
     std::string cachedEntryHash;
     json cachedEvaluator;
+    std::shared_ptr<silver_bridge::SilverSearchSession> silverSession;
+    std::string silverSessionIdentity;
+    std::string silverCombatEntryIdentity;
     if (const char *path = std::getenv("STS_CTM_MODEL"); path && *path) {
         try {
             ctm = std::make_unique<one_combat::NativeCombatTransitionSampler>(path);
@@ -100,7 +153,9 @@ int main() {
                     response = one_combat::advisor::staleResponse(request, "older sequence in session");
                 } else {
                     if (request.observation.value("boundary", std::string()) == "combat") {
-                        const auto silver = silverEvaluator(request);
+                        const auto silver = silverEvaluator(request, silverSession,
+                                                            silverSessionIdentity,
+                                                            silverCombatEntryIdentity);
                         if (!ctm) {
                             if (!request.observation.contains("combatEntry")) {
                                 response = one_combat::advisor::unsupportedResponse(
@@ -180,7 +235,7 @@ int main() {
         }
         if (response.contains("evaluators") && response["evaluators"].is_array()) {
             for (const auto &evaluator : response["evaluators"]) {
-                if (evaluator.value("id", std::string()) == "silver_first_turn_v1") {
+                if (evaluator.value("id", std::string()) == "silver_player_decision_v2") {
                     response["silverStatus"] = evaluator.value("status", std::string());
                     response["silverReason"] = evaluator.value("reason", std::string());
                     response["silverRanking"] = evaluator.value("rankingText", std::string());
