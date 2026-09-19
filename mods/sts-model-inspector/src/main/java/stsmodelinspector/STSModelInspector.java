@@ -61,10 +61,13 @@ public final class STSModelInspector implements PostInitializeSubscriber,
     private volatile String advisorReason = "not started";
     private volatile long responseSequence = -1;
     private volatile String responseHash = "";
+    private volatile String advisorResponseJson = "";
     private volatile String ctmStatus = "";
     private volatile String ctmReason = "";
     private volatile String silverStatus = "";
     private volatile String silverReason = "";
+    private volatile String silverSelectedAction = "";
+    private volatile String silverSelectedLabel = "";
     private volatile String silverRanking = "";
     private volatile double ctmDeath = 0.0;
     private volatile int ctmHistogramMin = 1;
@@ -72,6 +75,7 @@ public final class STSModelInspector implements PostInitializeSubscriber,
     private volatile boolean panelVisible = true;
     private volatile String combatEntry = "";
     private volatile String combatEntryHash = "";
+    private final LatestPublisher latestPublisher = new LatestPublisher();
     private String lastRoomClass = "";
     private String lastNodeRoomClass = "";
     private int lastNodeX = -1, lastNodeY = -1;
@@ -102,6 +106,8 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         ctmReason = "";
         silverStatus = "";
         silverReason = "";
+        silverSelectedAction = "";
+        silverSelectedLabel = "";
         silverRanking = "";
         ctmDeath = 0.0;
         ctmHistogram = new double[0];
@@ -111,8 +117,13 @@ public final class STSModelInspector implements PostInitializeSubscriber,
 
     @Override
     public void receivePostInitialize() {
+        latestPublisher.start();
+        latestPublisher.clear();
         advisor.start();
-        Runtime.getRuntime().addShutdownHook(new Thread(advisor::shutdown,
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+            advisor.shutdown();
+            latestPublisher.shutdown();
+        },
                 "sts-model-inspector-shutdown"));
     }
 
@@ -130,7 +141,9 @@ public final class STSModelInspector implements PostInitializeSubscriber,
                 lastFingerprint = "";
                 responseSequence = -1;
                 responseHash = "";
+                advisorResponseJson = "";
                 advisor.clearPending();
+                latestPublisher.clear();
             }
             return;
         }
@@ -140,6 +153,7 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         newest = emitted;
         responseSequence = -1;
         responseHash = "";
+        advisorResponseJson = "";
         if (!"combat".equals(snapshot.boundary)
                 || !snapshot.combatEntryHash.equals(combatEntryHash)) {
             ctmStatus = "";
@@ -150,6 +164,7 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         advisorStatus = "waiting";
         advisorReason = "";
         advisor.send(emitted);
+        latestPublisher.publishObservation(emitted);
     }
 
     @Override
@@ -923,8 +938,19 @@ public final class STSModelInspector implements PostInitializeSubscriber,
                         Snapshot current = newest;
                         if (current != null && current.session.equals(responseSession)
                                 && seq == current.sequence && current.hash.equals(hash)) {
+                            ctmStatus = "";
+                            ctmReason = "";
+                            ctmDeath = 0.0;
+                            ctmHistogramMin = 1;
+                            ctmHistogram = new double[0];
+                            silverStatus = "";
+                            silverReason = "";
+                            silverSelectedAction = "";
+                            silverSelectedLabel = "";
+                            silverRanking = "";
                             responseSequence = seq;
                             responseHash = hash;
+                            advisorResponseJson = line;
                             advisorStatus = status == null ? "error" : status.toLowerCase();
                             if ("MODEL_UNAVAILABLE".equals(status)
                                     || "SCHEMA_MISMATCH".equals(status)) {
@@ -940,6 +966,8 @@ public final class STSModelInspector implements PostInitializeSubscriber,
                             if (line.contains("\"id\":\"silver_first_turn_v1\"")) {
                                 silverStatus = field(line, "silverStatus");
                                 silverReason = field(line, "silverReason");
+                                silverSelectedAction = field(line, "selectedAction");
+                                silverSelectedLabel = field(line, "selectedLabel");
                                 silverRanking = field(line, "silverRanking");
                                 if (silverRanking != null) silverRanking = silverRanking.replace("\\n", "\n");
                             }
@@ -954,6 +982,7 @@ public final class STSModelInspector implements PostInitializeSubscriber,
                                     ctmHistogram = numberArrayField(line, "winningHpHistogram");
                                 }
                             }
+                            latestPublisher.publishResponse(current);
                         }
                     }
                 }
@@ -1022,10 +1051,174 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         }
     }
 
+    private final class LatestPublisher {
+        private final Path path = Paths.get(System.getProperty("user.home"),
+                ".cache", "sts-model-inspector", "latest.json");
+        private final Object lock = new Object();
+        private Publication pending;
+        private Thread worker;
+        private boolean stopping;
+        private long generation;
+        private Snapshot current;
+
+        void start() {
+            synchronized (lock) {
+                if (worker != null) return;
+                stopping = false;
+                worker = new Thread(this::run, "sts-model-inspector-latest-json");
+                worker.setDaemon(true);
+                worker.start();
+            }
+        }
+
+        void publishObservation(Snapshot snapshot) {
+            if (snapshot == null) return;
+            synchronized (lock) {
+                if (stopping) return;
+                ++generation;
+                current = snapshot;
+                pending = new Publication(generation, latestJson(snapshot), false);
+                lock.notifyAll();
+            }
+        }
+
+        void publishResponse(Snapshot snapshot) {
+            if (snapshot == null) return;
+            synchronized (lock) {
+                if (stopping || current == null || !sameIdentity(current, snapshot)) return;
+                pending = new Publication(generation, latestJson(snapshot), false);
+                lock.notifyAll();
+            }
+        }
+
+        void clear() {
+            synchronized (lock) {
+                if (stopping) return;
+                ++generation;
+                current = null;
+                pending = new Publication(generation, "", true);
+                lock.notifyAll();
+            }
+        }
+
+        void shutdown() {
+            Thread thread;
+            synchronized (lock) {
+                ++generation;
+                current = null;
+                stopping = true;
+                pending = null;
+                lock.notifyAll();
+                thread = worker;
+            }
+            if (thread != null) {
+                thread.interrupt();
+                try { thread.join(2000L); } catch (InterruptedException ignored) {
+                    Thread.currentThread().interrupt();
+                }
+            }
+            try { Files.deleteIfExists(path); } catch (IOException ignored) {
+                // Export is diagnostic-only and must never affect shutdown.
+            }
+        }
+
+        private void run() {
+            while (true) {
+                Publication publication;
+                synchronized (lock) {
+                    while (pending == null && !stopping) {
+                        try { lock.wait(); } catch (InterruptedException ignored) {}
+                    }
+                    if (pending == null && stopping) return;
+                    publication = pending;
+                    pending = null;
+                }
+                Path temporary = null;
+                try {
+                    if (!publication.delete) {
+                        Files.createDirectories(path.getParent());
+                        temporary = path.resolveSibling(path.getFileName().toString()
+                                + ".tmp-" + Long.toHexString(System.nanoTime()));
+                        Files.write(temporary, publication.json.getBytes(StandardCharsets.UTF_8));
+                    }
+
+                    synchronized (lock) {
+                        if (publication.generation != generation) {
+                            if (temporary != null) Files.deleteIfExists(temporary);
+                        } else if (publication.delete) {
+                            Files.deleteIfExists(path);
+                        } else {
+                            try {
+                                Files.move(temporary, path,
+                                        java.nio.file.StandardCopyOption.ATOMIC_MOVE,
+                                        java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+                            } catch (java.nio.file.AtomicMoveNotSupportedException unsupported) {
+                                Files.move(temporary, path,
+                                        java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+                            }
+                            temporary = null;
+                        }
+                    }
+                } catch (IOException ignored) {
+                    // Export is diagnostic-only and must never affect gameplay.
+                } finally {
+                    if (temporary != null) {
+                        try { Files.deleteIfExists(temporary); }
+                        catch (IOException ignored) {}
+                    }
+                }
+                synchronized (lock) {
+                    if (stopping && pending == null) return;
+                }
+            }
+        }
+
+        private boolean sameIdentity(Snapshot left, Snapshot right) {
+            return left.session.equals(right.session)
+                    && left.sequence == right.sequence
+                    && left.hash.equals(right.hash);
+        }
+
+        private String latestJson(Snapshot snapshot) {
+            boolean ready = responseSequence == snapshot.sequence
+                    && responseHash.equals(snapshot.hash);
+            String status = ready ? advisorStatus.toUpperCase(Locale.ROOT) : "WAITING";
+            String reason = ready ? advisorReason : "awaiting matching advisor response";
+            String responseObservationHash = ready ? responseHash : "";
+            StringBuilder out = new StringBuilder();
+            out.append("{\"protocol\":\"sts_model_inspector_latest_v1\",\"protocolVersion\":1")
+                    .append(",\"session\":\"").append(Snapshot.escape(snapshot.session))
+                    .append("\",\"sequence\":").append(snapshot.sequence)
+                    .append(",\"observationHash\":\"").append(Snapshot.escape(snapshot.hash))
+                    .append("\",\"observation\":").append(snapshot.observationJson)
+                    .append(",\"response\":{\"status\":\"").append(Snapshot.escape(status))
+                    .append("\",\"ready\":").append(ready)
+                    .append(",\"session\":\"").append(ready ? Snapshot.escape(snapshot.session) : "")
+                    .append("\",\"sequence\":").append(ready ? snapshot.sequence : -1)
+                    .append(",\"observationHash\":\"").append(Snapshot.escape(responseObservationHash))
+                    .append("\",\"reason\":\"").append(Snapshot.escape(reason == null ? "" : reason))
+                    .append("\",\"advisor\":");
+            return out.append(ready && !advisorResponseJson.isEmpty()
+                    ? advisorResponseJson : "null").append("}}").toString();
+        }
+
+        private final class Publication {
+            final long generation;
+            final String json;
+            final boolean delete;
+            Publication(long generation, String json, boolean delete) {
+                this.generation = generation;
+                this.json = json;
+                this.delete = delete;
+            }
+        }
+    }
+
     private static final class Snapshot {
         final String session, boundary, character, deck, candidates, hash;
         final String combat;
         final String combatEntry, combatEntryHash;
+        final String observationJson;
         final long sequence;
         final int ascension, act, floor, hp, maxHp, gold;
 
@@ -1039,6 +1232,7 @@ public final class STSModelInspector implements PostInitializeSubscriber,
             this.deck = deck; this.candidates = candidates; this.hash = hash;
             this.combat = combat; this.combatEntry = combatEntry;
             this.combatEntryHash = combatEntryHash;
+            this.observationJson = buildObservationJson();
         }
 
         Snapshot withSequence(long emittedSequence) {
@@ -1050,8 +1244,12 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         String toJson() {
             return "{\"protocol\":\"" + PROTOCOL + "\",\"kind\":\"observation\"" +
                     ",\"session\":\"" + escape(session) + "\",\"sequence\":" + sequence +
-                    ",\"observationHash\":\"" + hash + "\",\"observation\":{" +
-                    "\"boundary\":\"" + boundary + "\",\"character\":\"" + character +
+                    ",\"observationHash\":\"" + hash + "\",\"observation\":" + observationJson +
+                    "}";
+        }
+
+        private String buildObservationJson() {
+            return "{\"boundary\":\"" + boundary + "\",\"character\":\"" + character +
                     "\",\"ascension\":" + ascension + ",\"act\":" + act +
                     ",\"floor\":" + floor + ",\"hp\":" + hp + ",\"maxHp\":" + maxHp +
                     ",\"gold\":" + gold + ",\"deck\":" + deck +
@@ -1065,9 +1263,12 @@ public final class STSModelInspector implements PostInitializeSubscriber,
                             + ",\"gold\":" + gold + ",\"potionCapacity\":" +
                             AbstractDungeon.player.potionSlots + ",\"roomClass\":\"" +
                             roomClass(AbstractDungeon.getCurrRoom()) + "\",\"burningElite\":" +
-                            isBurningElite() + ",\"combat\":" + combat + "}")) + "}}";
+                            isBurningElite() + ",\"combat\":" + combat + "}")) + "}";
         }
 
-        private static String escape(String s) { return s.replace("\\", "\\\\").replace("\"", "\\\""); }
+        private static String escape(String s) {
+            return s.replace("\\", "\\\\").replace("\"", "\\\"")
+                    .replace("\n", "\\n").replace("\r", "\\r");
+        }
     }
 }
