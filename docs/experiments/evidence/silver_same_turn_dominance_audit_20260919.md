@@ -6,10 +6,10 @@ or search behavior changed.
 ## Provenance
 
 - Reviewed baseline: `46206a59817d1b664566b5f46682110c7bc991bc`
-- Tested implementation checkpoint: `7b7af0697d36f05eb459139c9fba270a760d7f77`
+- Tested implementation checkpoint: `a83c4a846448d62f248756661bffdfc77520d129`
 - Silver upstream revision: `84ab3ead9d88c01c4be09a6773fb9a947f57d5ff`
 - Debug executable: `build/linux-gcc-debug/silver_search_optimization_test`
-- Debug executable SHA-256: `a3765b4d8eecca7c9d9aca4177a71ef326f90eb693e3a34bf938025feb726675`
+- Debug executable SHA-256: `0487188fcad8dd7da509e6db77316d6951fcf81303a6d5dd09dd798eeba0e6ed`
 - Worktree: `/home/philippherrmann/.codex/worktrees/silver-same-turn-dominance-audit/sts_lightspeed`
 
 The canonical checkout remained untouched. The managed worktree was checked and
@@ -149,7 +149,7 @@ git diff --check
 
 The lifecycle preflight/check passed after the two pinned submodules were
 repaired; the doctor then passed. The guarded executable passed, and the
-focused CTest result was `1/1` in `0.72 sec`. No broad suite or gameplay
+focused CTest result was `1/1` in `0.73 sec`. No broad suite or gameplay
 benchmark was run. The focused test is implementation evidence only, not a
 universal dominance theorem or runtime measurement.
 
