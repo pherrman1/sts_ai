@@ -65,6 +65,8 @@ public final class STSModelInspector implements PostInitializeSubscriber,
     private volatile String ctmReason = "";
     private volatile String silverStatus = "";
     private volatile String silverReason = "";
+    private volatile String silverSelectedAction = "";
+    private volatile String silverSelectedLabel = "";
     private volatile String silverRanking = "";
     private volatile double ctmDeath = 0.0;
     private volatile int ctmHistogramMin = 1;
@@ -103,6 +105,8 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         ctmReason = "";
         silverStatus = "";
         silverReason = "";
+        silverSelectedAction = "";
+        silverSelectedLabel = "";
         silverRanking = "";
         ctmDeath = 0.0;
         ctmHistogram = new double[0];
@@ -113,10 +117,11 @@ public final class STSModelInspector implements PostInitializeSubscriber,
     @Override
     public void receivePostInitialize() {
         latestPublisher.start();
+        latestPublisher.clear();
         advisor.start();
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-            latestPublisher.shutdown();
             advisor.shutdown();
+            latestPublisher.shutdown();
         },
                 "sts-model-inspector-shutdown"));
     }
@@ -156,7 +161,7 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         advisorStatus = "waiting";
         advisorReason = "";
         advisor.send(emitted);
-        latestPublisher.publish(emitted);
+        latestPublisher.publishObservation(emitted);
     }
 
     @Override
@@ -930,6 +935,16 @@ public final class STSModelInspector implements PostInitializeSubscriber,
                         Snapshot current = newest;
                         if (current != null && current.session.equals(responseSession)
                                 && seq == current.sequence && current.hash.equals(hash)) {
+                            ctmStatus = "";
+                            ctmReason = "";
+                            ctmDeath = 0.0;
+                            ctmHistogramMin = 1;
+                            ctmHistogram = new double[0];
+                            silverStatus = "";
+                            silverReason = "";
+                            silverSelectedAction = "";
+                            silverSelectedLabel = "";
+                            silverRanking = "";
                             responseSequence = seq;
                             responseHash = hash;
                             advisorStatus = status == null ? "error" : status.toLowerCase();
@@ -947,6 +962,8 @@ public final class STSModelInspector implements PostInitializeSubscriber,
                             if (line.contains("\"id\":\"silver_first_turn_v1\"")) {
                                 silverStatus = field(line, "silverStatus");
                                 silverReason = field(line, "silverReason");
+                                silverSelectedAction = field(line, "selectedAction");
+                                silverSelectedLabel = field(line, "selectedLabel");
                                 silverRanking = field(line, "silverRanking");
                                 if (silverRanking != null) silverRanking = silverRanking.replace("\\n", "\n");
                             }
@@ -961,7 +978,7 @@ public final class STSModelInspector implements PostInitializeSubscriber,
                                     ctmHistogram = numberArrayField(line, "winningHpHistogram");
                                 }
                             }
-                            latestPublisher.publish(current);
+                            latestPublisher.publishResponse(current);
                         }
                     }
                 }
@@ -1037,6 +1054,8 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         private Publication pending;
         private Thread worker;
         private boolean stopping;
+        private long generation;
+        private Snapshot current;
 
         void start() {
             synchronized (lock) {
@@ -1048,12 +1067,22 @@ public final class STSModelInspector implements PostInitializeSubscriber,
             }
         }
 
-        void publish(Snapshot snapshot) {
+        void publishObservation(Snapshot snapshot) {
             if (snapshot == null) return;
-            Publication publication = new Publication(latestJson(snapshot), false);
             synchronized (lock) {
                 if (stopping) return;
-                pending = publication;
+                ++generation;
+                current = snapshot;
+                pending = new Publication(generation, latestJson(snapshot), false);
+                lock.notifyAll();
+            }
+        }
+
+        void publishResponse(Snapshot snapshot) {
+            if (snapshot == null) return;
+            synchronized (lock) {
+                if (stopping || current == null || !sameIdentity(current, snapshot)) return;
+                pending = new Publication(generation, latestJson(snapshot), false);
                 lock.notifyAll();
             }
         }
@@ -1061,15 +1090,19 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         void clear() {
             synchronized (lock) {
                 if (stopping) return;
-                pending = new Publication("", true);
+                ++generation;
+                current = null;
+                pending = new Publication(generation, "", true);
                 lock.notifyAll();
             }
         }
 
         void shutdown() {
             synchronized (lock) {
+                ++generation;
+                current = null;
                 stopping = true;
-                pending = null;
+                pending = new Publication(generation, "", true);
                 lock.notifyAll();
             }
             if (worker != null) worker.interrupt();
@@ -1082,9 +1115,12 @@ public final class STSModelInspector implements PostInitializeSubscriber,
                     while (pending == null && !stopping) {
                         try { lock.wait(); } catch (InterruptedException ignored) {}
                     }
-                    if (stopping) return;
+                    if (pending == null && stopping) return;
                     publication = pending;
                     pending = null;
+                }
+                synchronized (lock) {
+                    if (publication.generation != generation) continue;
                 }
                 try {
                     if (publication.delete) {
@@ -1104,9 +1140,18 @@ public final class STSModelInspector implements PostInitializeSubscriber,
                         }
                     }
                 } catch (IOException ignored) {
-                    // Export is diagnostic-only and must never affect gameplay.
+                        // Export is diagnostic-only and must never affect gameplay.
+                }
+                synchronized (lock) {
+                    if (stopping && pending == null) return;
                 }
             }
+        }
+
+        private boolean sameIdentity(Snapshot left, Snapshot right) {
+            return left.session.equals(right.session)
+                    && left.sequence == right.sequence
+                    && left.hash.equals(right.hash);
         }
 
         private String latestJson(Snapshot snapshot) {
@@ -1148,25 +1193,28 @@ public final class STSModelInspector implements PostInitializeSubscriber,
                     .append("\",\"reason\":\"")
                     .append(Snapshot.escape(ready ? silverReason : "awaiting matching advisor response"))
                     .append("\"");
-            if (ready && !silverRanking.isEmpty()) {
+            if (ready && !silverSelectedAction.isEmpty()) {
                 out.append(",\"selectedAction\":\"")
-                        .append(Snapshot.escape(selectedSilverAction(silverRanking))).append("\"")
-                        .append(",\"rankingText\":\"").append(Snapshot.escape(silverRanking)).append("\"");
+                        .append(Snapshot.escape(silverSelectedAction)).append("\"");
+                if (!silverSelectedLabel.isEmpty())
+                    out.append(",\"selectedLabel\":\"")
+                            .append(Snapshot.escape(silverSelectedLabel)).append("\"");
+                if (!silverRanking.isEmpty())
+                    out.append(",\"rankingText\":\"")
+                            .append(Snapshot.escape(silverRanking)).append("\"");
             }
             return out.append("}]}}").toString();
         }
 
-        private String selectedSilverAction(String ranking) {
-            int end = ranking.indexOf('\n');
-            String first = end < 0 ? ranking : ranking.substring(0, end);
-            int separator = first.indexOf('|');
-            return separator < 0 ? first : first.substring(0, separator);
-        }
-
         private final class Publication {
+            final long generation;
             final String json;
             final boolean delete;
-            Publication(String json, boolean delete) { this.json = json; this.delete = delete; }
+            Publication(long generation, String json, boolean delete) {
+                this.generation = generation;
+                this.json = json;
+                this.delete = delete;
+            }
         }
     }
 
