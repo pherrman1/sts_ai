@@ -262,7 +262,12 @@ validation. Conversion and lowering preserve live semantics.
 Silver potion legality and root enumeration must stay aligned with the live
 action validator. In particular, `GAMBLERS_BREW` is omitted when the live hand
 is empty: it would open a `GAMBLE` selector with no legal card selection, so
-the live simulator rejects that potion use.
+the live simulator rejects that potion use. For otherwise identical potion
+types, Silver retains only the first occupied potion slot as the search-local
+representative. It does not reorder or canonicalize the production belt, and
+the semantic bridge continues to carry and validate that exact representative
+slot. Distinct targeted-potion targets remain separate, and remaining copies
+remain available at later decisions after the representative is consumed.
 
 The default-off leaf observer runs where Silver would start `SimpleAgent`. It
 can receive a versioned wire snapshot and root/parent/leaf identity, project it
