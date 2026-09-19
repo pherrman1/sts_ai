@@ -57,7 +57,7 @@ json observation(const BattleStateWire &w, const char *name, int move, const cha
     for (int i = 0; i < w.potionCapacity; ++i)
         potions.push_back({{"slot", i}, {"id", "Potion Slot"}});
     json combat = {
-        {"turn", w.turn}, {"energy", w.player.energy}, {"block", w.player.block},
+        {"turn", 1}, {"energy", w.player.energy}, {"block", w.player.block},
         {"cardsPlayedThisTurn", w.player.cardsPlayedThisTurn}, {"cardSelect", false},
         {"resolving", false}, {"runicDome", false}, {"frozenEye", false},
         {"hand", pileJson(w.hand)}, {"draw", pileJson(w.drawPile.unknown)},
@@ -165,6 +165,9 @@ int main() {
         reject = fixtures[2].observation;
         reject["silverRoot"]["combat"]["monsters"][0]["nextMove"] = 1;
         if (one_combat::advisor::importSilverRoot(reject).ok) return 7;
+        reject = fixtures[0].observation;
+        reject["silverRoot"]["combat"]["turn"] = 2;
+        if (one_combat::advisor::importSilverRoot(reject).ok) return 8;
         std::cout << "live Silver native first-turn parity checks passed\n";
         return 0;
     } catch (const std::exception &e) {

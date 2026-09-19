@@ -167,7 +167,9 @@ SilverRootImportResult importSilverRoot(const json &observation) {
     if (!requiredBool(combat, "cardSelect", cardSelect) || !requiredBool(combat, "resolving", resolving)
         || cardSelect || resolving) return unsupported("silver_card_select");
     int turn = 0, energy = 0, block = 0;
-    if (!requiredInt(combat, "turn", turn) || !requiredInt(combat, "energy", energy) || !requiredInt(combat, "block", block) || turn != 0)
+    // Java's GameActionManager is one-based at the first actionable decision;
+    // the native simulator's equivalent BattleContext root is zero-based.
+    if (!requiredInt(combat, "turn", turn) || !requiredInt(combat, "energy", energy) || !requiredInt(combat, "block", block) || turn != 1)
         return unsupported("silver_first_turn_invariant");
     if (potionCapacity != 3 || !combat.contains("hand") || !combat.contains("draw")
         || !combat.contains("discard") || !combat.contains("exhaust") || !combat.contains("monsters")
@@ -222,7 +224,7 @@ SilverRootImportResult importSilverRoot(const json &observation) {
     wire.floorNum = floor; wire.act = act; wire.ascension = ascension;
     // BattleContext::init reaches PLAYER_NORMAL after two executeActions loop
     // iterations: the initial draw and the final decision-boundary check.
-    wire.turn = turn; wire.cardsDrawn = 5; wire.loopCount = 2; wire.energyWasted = 0;
+    wire.turn = 0; wire.cardsDrawn = 5; wire.loopCount = 2; wire.energyWasted = 0;
     wire.outcome = 0; wire.inputState = 1; // PLAYER_NORMAL, proven by the live decision gate
     wire.monsterTurnIdx = 6; wire.endTurnQueued = false; wire.turnHasEnded = false; wire.skipMonsterTurn = false;
     wire.potionCapacity = potionCapacity; wire.potionCount = 0;
