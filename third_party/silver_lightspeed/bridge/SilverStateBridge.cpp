@@ -2403,7 +2403,11 @@ std::vector<SilverForcedActionReference> runSilverForcedActionReferences(
             raw.immediateRngCounterBefore = preActionRng.counter;
             raw.immediateRngCounterAfter = state.rng.counter;
             raw.stochastic = stochastic;
-            raw.simulations = continuation.root->simulationCount;
+            raw.terminalAfterAction = state.outcome != sts::Outcome::UNDECIDED;
+            // A terminal forced action has an exact root utility and therefore
+            // needs no continuation samples. BattleSearcher still exposes that
+            // value through its one initialized terminal root.
+            raw.simulations = raw.terminalAfterAction ? 0 : continuation.root->simulationCount;
             raw.value = value;
             raw.telemetry = t;
             result.rawReplicates.push_back(std::move(raw));
@@ -2422,7 +2426,9 @@ std::vector<SilverForcedActionReference> runSilverForcedActionReferences(
         if (accepted != replicates || result.rawReplicates.size() != static_cast<std::size_t>(replicates))
             continue;
         result.accepted = true;
-        result.simulations = static_cast<std::int64_t>(accepted) * continuationBudget;
+        result.simulations = std::accumulate(result.rawReplicates.begin(),
+            result.rawReplicates.end(), std::int64_t{0},
+            [](std::int64_t sum, const auto &raw) { return sum + raw.simulations; });
         result.meanValue = valueSum / accepted;
         const double variance = valueSumSq / accepted - result.meanValue * result.meanValue;
         result.valueStddev = std::sqrt(std::max(0.0, variance));

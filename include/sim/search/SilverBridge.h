@@ -686,6 +686,7 @@ struct SilverForcedActionReference {
         std::int32_t immediateRngCounterBefore = 0;
         std::int32_t immediateRngCounterAfter = 0;
         bool stochastic = false;
+        bool terminalAfterAction = false;
         std::int64_t simulations = 0;
         double value = 0.0;
         SilverSearchTelemetry telemetry;

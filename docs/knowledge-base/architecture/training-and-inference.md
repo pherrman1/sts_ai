@@ -335,11 +335,17 @@ The `silver_forced_action_target_v1` rows retain each raw value, semantic
 action, stochastic classification, immediate RNG-counter transition,
 continuation RNG identity and budget, root/snapshot hashes, utility definition,
 evaluator configuration, executable/Silver SHAs, and Teacher-A Q/visit data.
+Snapshot-producer and audit-evaluator Git SHAs are recorded separately and may
+differ; this permits a frozen root population to survive a diagnostic-only
+evaluator repair without silently recollecting different gameplay states.
 The immediate action and continuation deliberately share one Silver RNG stream;
 the row records the common identity plus the pre-action and continuation-start
 counters rather than claiming two independent streams. A separate historical-
 regression mode evaluates known harmful roots without adding them to primary
 population statistics.
+If a forced action terminates combat immediately, its exact terminal utility is
+recorded with `terminal_after_action=true` and zero continuation simulations;
+nonterminal replicates must consume their complete 5k or 10k budget.
 `tools/analyze_silver_forced_action_audit.py` derives root-centered continuous
 advantages and pairwise margins and evaluates L only against untouched J. Its
 primary confidence interval and ranking interval resample source gameplay

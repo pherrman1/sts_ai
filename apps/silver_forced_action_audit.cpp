@@ -7,6 +7,7 @@
 #include <fstream>
 #include <iostream>
 #include <map>
+#include <numeric>
 #include <set>
 
 namespace {
@@ -53,16 +54,25 @@ void requireSurface(const Json &root,
     if (refs.size() != native.size()) throw std::runtime_error("forced-action surface incomplete");
     for (std::size_t i = 0; i < refs.size(); ++i) {
         const auto &ref = refs[i];
+        const auto rawSimulationSum = std::accumulate(ref.rawReplicates.begin(),
+            ref.rawReplicates.end(), std::int64_t{0},
+            [](std::int64_t sum, const auto &raw) { return sum + raw.simulations; });
         if (!ref.accepted || silver_bridge::semanticActionFingerprint(ref.action) != native[i]
-                || ref.simulations != budget * replicates
+                || ref.simulations != rawSimulationSum
                 || ref.rawReplicates.size() != static_cast<std::size_t>(replicates))
             throw std::runtime_error("forced-action replicate contract failed");
         std::set<std::uint64_t> identities;
         for (int r = 0; r < replicates; ++r) {
             const auto &raw = ref.rawReplicates[r];
-            if (raw.index != r || raw.rngIdentity == 0 || raw.simulations != budget
-                    || !std::isfinite(raw.value) || !identities.insert(raw.rngIdentity).second)
-                throw std::runtime_error("invalid forced-action raw replicate");
+            const auto expectedSimulations = raw.terminalAfterAction ? 0 : budget;
+            if (raw.index != r || raw.rngIdentity == 0 || raw.simulations != expectedSimulations
+                    || !std::isfinite(raw.value) || !identities.insert(raw.rngIdentity).second) {
+                throw std::runtime_error("invalid forced-action raw replicate action="
+                    + silver_bridge::semanticActionFingerprint(ref.action)
+                    + " replicate=" + std::to_string(r)
+                    + " simulations=" + std::to_string(raw.simulations)
+                    + " expected=" + std::to_string(expectedSimulations));
+            }
         }
     }
 }
@@ -101,8 +111,7 @@ int main(int argc, char **argv) {
         for (const auto &root : roots) {
             auto wire = silver_bridge::validateRootMechanismSnapshot(root);
             const auto id = root.at("root_id").get<std::string>();
-            if (!rootIds.insert(id).second
-                    || (!fixture && !historical && root.at("executable_git_sha") != argv[4]))
+            if (!rootIds.insert(id).second)
                 throw std::invalid_argument("root provenance mismatch");
             ++rootsBySource[root.at("source_seed").get<std::uint64_t>()];
             wires.push_back(std::move(wire));
@@ -161,6 +170,7 @@ int main(int argc, char **argv) {
                             {"root_snapshot_hash", silver_bridge::rootMechanismHash(root.dump())},
                             {"semantic_action", ref.action}, {"action_fingerprint", fp},
                             {"native_order", native}, {"stochastic", raw.stochastic},
+                            {"terminal_after_action", raw.terminalAfterAction},
                             {"estimator", spec.first}, {"replicate", raw.index},
                             {"value", raw.value}, {"continuation_budget", spec.second},
                             {"simulations", raw.simulations}, {"rng_identity", raw.rngIdentity},

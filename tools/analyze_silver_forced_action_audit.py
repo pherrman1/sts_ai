@@ -73,6 +73,7 @@ def _validate(rows, expected_roots, replicates, l_budget, j_budget, fixture,
         required = ("population", "root_id", "source_seed", "state_hash", "root_snapshot_hash",
                     "action_fingerprint", "native_order", "estimator", "replicate", "value",
                     "continuation_budget", "simulations", "rng_identity", "stochastic",
+                    "terminal_after_action",
                     "root_outcome_rng_identity", "immediate_rng_counter_before",
                     "immediate_rng_counter_after", "continuation_rng_identity",
                     "continuation_rng_counter",
@@ -92,7 +93,9 @@ def _validate(rows, expected_roots, replicates, l_budget, j_budget, fixture,
                 or type(row["source_seed"]) is not int or row["source_seed"] < 0
                 or type(row["stochastic"]) is not bool
                 or type(row["value"]) not in (int, float) or not math.isfinite(row["value"])
-                or row["continuation_budget"] != budget or row["simulations"] != budget
+                or row["continuation_budget"] != budget
+                or type(row["terminal_after_action"]) is not bool
+                or row["simulations"] != (0 if row["terminal_after_action"] else budget)
                 or type(row["rng_identity"]) is not int or row["rng_identity"] <= 0
                 or row["root_outcome_rng_identity"] != row["rng_identity"]
                 or row["continuation_rng_identity"] != row["rng_identity"]

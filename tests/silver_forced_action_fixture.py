@@ -24,7 +24,8 @@ def main():
         rows = [json.loads(line) for line in raw.read_text().splitlines()]
         assert rows and {row["estimator"] for row in rows} == {"L", "J"}
         assert all(row["fixture_only"] and row["population"] == "primary"
-                   and row["simulations"] == row["continuation_budget"]
+                   and row["simulations"] == (0 if row["terminal_after_action"]
+                                               else row["continuation_budget"])
                    and row["root_outcome_rng_identity"] == row["continuation_rng_identity"]
                    and row["continuation_rng_counter"] == row["immediate_rng_counter_after"]
                    for row in rows)

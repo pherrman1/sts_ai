@@ -27,7 +27,7 @@ class ForcedActionAuditTest(unittest.TestCase):
                                 "action_fingerprint": action, "native_order": native,
                                 "estimator": estimator, "replicate": replicate,
                                 "value": values[action_index], "continuation_budget": budget,
-                                "simulations": budget,
+                                "simulations": budget, "terminal_after_action": False,
                                 "rng_identity": identity, "root_outcome_rng_identity": identity,
                                 "immediate_rng_counter_before": 0,
                                 "immediate_rng_counter_after": 1 if action == "b" else 0,
@@ -64,6 +64,19 @@ class ForcedActionAuditTest(unittest.TestCase):
             with self.assertRaises(ValueError):
                 MODULE.analyze(rows, expected_roots=4, replicates=2,
                                l_budget=8, j_budget=16, fixture=True)
+
+    def test_terminal_action_requires_zero_continuation_simulations(self):
+        rows = self.rows()
+        for row in rows:
+            if row["action_fingerprint"] == "b":
+                row["terminal_after_action"] = True
+                row["simulations"] = 0
+        MODULE.analyze(rows, expected_roots=4, replicates=2,
+                       l_budget=8, j_budget=16, fixture=True)
+        rows[0]["terminal_after_action"] = True
+        with self.assertRaises(ValueError):
+            MODULE.analyze(rows, expected_roots=4, replicates=2,
+                           l_budget=8, j_budget=16, fixture=True)
 
     def test_selection_is_two_per_source_and_order_independent(self):
         rows = [{"root_id": f"{source}/fight/{index}", "source_seed": source}
