@@ -10156,3 +10156,20 @@ default or generalization claim is authorized. Evidence:
   **Knowledge impact:** durable Silver action-enumeration behavior and
   experiment evidence; no model, RNG, semantic schema, search budget, or
   gameplay default change.
+
+## §320 — Silver same-turn Bash/Strike dominance audit (2026-09-19)
+
+- **Question:** can a cheap, nonterminal same-turn Bash → Strike dominance
+  rule safely suppress Strike → Bash from the same decision context?
+- **Evidence:** The test-only identity-resolving fixture reproduces immediate
+  damage `17` versus `14`, but the fully resolved endpoints also differ in
+  `curCardQueueItem`. `energyWasted` and `cardsDrawn` are evaluation inputs
+  omitted from `equalForSearch`/`hashBattleState`. A Reaper continuation turns
+  the lower-enemy-HP endpoint into the worse victory-HP result (`54` versus
+  `57`). Information-boundary and insufficient-energy rejection fixtures pass.
+- **Decision:** **`NO_GO_FOR_THIS_RULE`**. Only a terminal exact-value guard is
+  sufficient; no useful nonterminal guard survived, so the frozen 16-case
+  opportunity screen was not run.
+- **Evidence:** [same-turn dominance audit](evidence/silver_same_turn_dominance_audit_20260919.md).
+  **Knowledge impact:** durable experiment evidence only; no Silver search
+  behavior, model, RNG, schema, budget, or gameplay default changed.
