@@ -61,6 +61,7 @@ public final class STSModelInspector implements PostInitializeSubscriber,
     private volatile String advisorReason = "not started";
     private volatile long responseSequence = -1;
     private volatile String responseHash = "";
+    private volatile String advisorResponseJson = "";
     private volatile String ctmStatus = "";
     private volatile String ctmReason = "";
     private volatile String silverStatus = "";
@@ -140,6 +141,7 @@ public final class STSModelInspector implements PostInitializeSubscriber,
                 lastFingerprint = "";
                 responseSequence = -1;
                 responseHash = "";
+                advisorResponseJson = "";
                 advisor.clearPending();
                 latestPublisher.clear();
             }
@@ -151,6 +153,7 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         newest = emitted;
         responseSequence = -1;
         responseHash = "";
+        advisorResponseJson = "";
         if (!"combat".equals(snapshot.boundary)
                 || !snapshot.combatEntryHash.equals(combatEntryHash)) {
             ctmStatus = "";
@@ -947,6 +950,7 @@ public final class STSModelInspector implements PostInitializeSubscriber,
                             silverRanking = "";
                             responseSequence = seq;
                             responseHash = hash;
+                            advisorResponseJson = line;
                             advisorStatus = status == null ? "error" : status.toLowerCase();
                             if ("MODEL_UNAVAILABLE".equals(status)
                                     || "SCHEMA_MISMATCH".equals(status)) {
@@ -1098,14 +1102,24 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         }
 
         void shutdown() {
+            Thread thread;
             synchronized (lock) {
                 ++generation;
                 current = null;
                 stopping = true;
-                pending = new Publication(generation, "", true);
+                pending = null;
                 lock.notifyAll();
+                thread = worker;
             }
-            if (worker != null) worker.interrupt();
+            if (thread != null) {
+                thread.interrupt();
+                try { thread.join(2000L); } catch (InterruptedException ignored) {
+                    Thread.currentThread().interrupt();
+                }
+            }
+            try { Files.deleteIfExists(path); } catch (IOException ignored) {
+                // Export is diagnostic-only and must never affect shutdown.
+            }
         }
 
         private void run() {
@@ -1172,38 +1186,9 @@ public final class STSModelInspector implements PostInitializeSubscriber,
                     .append("\",\"sequence\":").append(ready ? snapshot.sequence : -1)
                     .append(",\"observationHash\":\"").append(Snapshot.escape(responseObservationHash))
                     .append("\",\"reason\":\"").append(Snapshot.escape(reason == null ? "" : reason))
-                    .append("\",\"evaluators\":[");
-            out.append("{\"id\":\"ctm_combat_entry_v2\",\"status\":\"")
-                    .append(Snapshot.escape(!ready || ctmStatus.isEmpty() ? "WAITING" : ctmStatus.toUpperCase(Locale.ROOT)))
-                    .append("\",\"reason\":\"")
-                    .append(Snapshot.escape(ready ? ctmReason : "awaiting matching advisor response"))
-                    .append("\"");
-            if (ready && "OK".equals(ctmStatus)) {
-                out.append(",\"deathProbability\":").append(ctmDeath)
-                        .append(",\"winningHpHistogramMin\":").append(ctmHistogramMin)
-                        .append(",\"winningHpHistogram\":[");
-                for (int i = 0; i < ctmHistogram.length; ++i) {
-                    if (i > 0) out.append(',');
-                    out.append(ctmHistogram[i]);
-                }
-                out.append(']');
-            }
-            out.append("},{\"id\":\"silver_first_turn_v1\",\"status\":\"")
-                    .append(Snapshot.escape(!ready || silverStatus.isEmpty() ? "WAITING" : silverStatus))
-                    .append("\",\"reason\":\"")
-                    .append(Snapshot.escape(ready ? silverReason : "awaiting matching advisor response"))
-                    .append("\"");
-            if (ready && !silverSelectedAction.isEmpty()) {
-                out.append(",\"selectedAction\":\"")
-                        .append(Snapshot.escape(silverSelectedAction)).append("\"");
-                if (!silverSelectedLabel.isEmpty())
-                    out.append(",\"selectedLabel\":\"")
-                            .append(Snapshot.escape(silverSelectedLabel)).append("\"");
-                if (!silverRanking.isEmpty())
-                    out.append(",\"rankingText\":\"")
-                            .append(Snapshot.escape(silverRanking)).append("\"");
-            }
-            return out.append("}]}}").toString();
+                    .append("\",\"advisor\":");
+            return out.append(ready && !advisorResponseJson.isEmpty()
+                    ? advisorResponseJson : "null").append("}}").toString();
         }
 
         private final class Publication {

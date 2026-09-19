@@ -38,9 +38,12 @@ The file is atomically replaced and has protocol `sts_model_inspector_latest_v1`
 with `protocolVersion: 1`, top-level `session`, `sequence`,
 `observationHash`, `observation`, and `response` fields. `response.ready` is
 true only when the advisor response has the same session, sequence, and
-observation hash; otherwise the response is `WAITING` and contains no stale
-advisor result. The file is removed when the game no longer has a stable
-observation. Export failures are diagnostic-only and do not affect gameplay.
+observation hash. A ready response stores the validated advisor JSON verbatim
+under `response.advisor`, preserving all evaluator fields without a second
+Java evaluator serializer; otherwise `response.advisor` is `null` and the
+response contains no stale advisor result. The file is removed when the game
+no longer has a stable observation and is synchronously removed on normal
+shutdown. Export failures are diagnostic-only and do not affect gameplay.
 
 ## Build
 
