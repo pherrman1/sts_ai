@@ -10054,3 +10054,24 @@ default or generalization claim is authorized. Evidence:
 - **Evidence:** [card-action canonicalization evidence](evidence/silver_card_action_canonicalization_20260919.md).
   **Knowledge impact:** experiment evidence only; no default, model, or
   gameplay-quality decision is authorized by this screen.
+
+## §317 — Silver card-action canonicalization 16-seed full-run follow-up (2026-09-19)
+
+- **Protocol:** Reused A `dc811044` and B `bbdd71cf` with identical fair Silver
+  configuration, Release binaries, four OpenMP cores, 10,000 simulations per
+  decision, and paired source seeds `12100032..12100047`. Each arm completed
+  16/16 seeds with zero conversion, semantic-resolution, transaction, or
+  knowledge failures.
+- **Result:** A won `13/16`, mean terminal HP fraction was `0.536789429`, and
+  B won `14/16`, mean terminal HP fraction was `0.565011767`. B was slower by
+  `34.2859s` total (`+2.1429s/seed`): `553.8370s` versus `588.1229s`. B was
+  faster on 5 seeds and A on 11. Aggregate Silver telemetry was A/B:
+  `7,839/8,065` decisions, `78.51M/80.75M` simulations, and
+  `65.68M/67.54M` nodes.
+- **Interpretation:** This full-run follow-up does not support a B efficiency
+  benefit. Because A and B can take different gameplay trajectories, aggregate
+  full-run nodes are outcome-coupled and do not isolate selection dedup; the
+  result is exploratory and does not establish a policy-quality conclusion.
+- **Evidence:** [card-action canonicalization evidence](evidence/silver_card_action_canonicalization_20260919.md).
+  **Knowledge impact:** experiment evidence only; no default, model, or
+  gameplay-quality decision is authorized by this follow-up.

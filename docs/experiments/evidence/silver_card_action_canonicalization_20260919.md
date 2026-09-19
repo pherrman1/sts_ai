@@ -48,3 +48,39 @@ Raw JSONL result hashes:
 
 Knowledge impact: experiment evidence only; no default, model, or gameplay
 quality decision is authorized by this screen.
+
+## 16-seed full-run A/B follow-up
+
+To test the effect beyond isolated snapshots, A and B were run on the paired
+source-seed block `12100032..12100047` (16 seeds per arm) using:
+
+```text
+OMP_NUM_THREADS=4 STS_FAIR=1 STS_SEARCHER3=0 STS_SILVER_SEARCH=1
+STS_NATIVE_OOC=1 STS_SILVER_EXACT_ROOT_BUDGETS=1
+STS_SILVER_REUSE_CAP_MODE=allocated STS_SILVER_ADAPTIVE=0
+STS_SILVER_VNET_LEAF_DIRECT=0 STS_SILVER_TELEMETRY=1
+one_combat bestbench 10000 16 0 12100032 <results.csv>
+```
+
+| arm | wins | mean HP/maxHP, losses=0 | mean full-run sec | aggregate Silver decisions | aggregate simulations | aggregate nodes | failures |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| A | 13/16 | 0.536789429 | 34.6148 | 7,839 | 78,510,000 | 65,678,386 | 0 |
+| B | 14/16 | 0.565011767 | 36.7577 | 8,065 | 80,750,000 | 67,542,885 | 0 |
+
+Paired B-minus-A full-run wall time was `+2.1429s/seed` (`+34.2859s` total);
+B was faster on 5 seeds and A on 11. Wins were 13 both-win, 0 A-only,
+1 B-only, and 2 both-lose. This is an outcome-coupled full-run screen: the
+arms can take different trajectories, so aggregate decisions, simulations, and
+nodes are not a clean causal measure of selection dedup alone. It provides no
+runtime or search-work support for B over A in this small follow-up; the one
+additional B win and higher terminal HP are not a policy-quality claim.
+
+Raw artifacts were retained locally under
+`build/silver-card-canonicalization-32seed/`:
+
+- A CSV: `39a933af736408041fb9f77edade6f69cb5a674b371e742ad3cdfd7f291f6a0a`
+- A metadata: `204c30ef76cd022f64580f2543e62d5e5aa7016b0752c5ab623dab119a9839cf`
+- A log: `027057b3a0ca542761a76f27628f74b3005728a716ef6a90a67251e8cef45c40`
+- B CSV: `6c7b331dc7f1fb202b61402156d76fe31b5020d57f2d06c65a14b1867644b0d8`
+- B metadata: `9e0b9c09b85dd4803ab87098d2d98953578b3a98250c579cbc62607083a4bed4`
+- B log: `e5647df0044f52703a4002516e2b362b1622ea4955e511de809c3b0eb44fcf1e`
