@@ -68,6 +68,199 @@ void installPotions(sts::BattleContext &bc, std::initializer_list<sts::Potion> p
     std::copy(potions.begin(), potions.end(), bc.potions.begin());
 }
 
+struct SameTurnPath {
+    sts::BattleContext state;
+    int damageToTarget = 0;
+    int targetHp = 0;
+    int playerHp = 0;
+    int targetVulnerable = 0;
+    int targetBlock = 0;
+    int energy = 0;
+    int handSize = 0;
+    int discardSize = 0;
+    int actionQueueSize = 0;
+    int cardQueueSize = 0;
+    sts::InputState inputState = sts::InputState::EXECUTING_ACTIONS;
+    sts::Outcome outcome = sts::Outcome::UNDECIDED;
+    std::uint64_t rngCounter = 0;
+};
+
+int handIndexForUniqueId(const sts::BattleContext &bc, std::int16_t uniqueId) {
+    for (int i = 0; i < bc.cards.cardsInHand; ++i) {
+        if (bc.cards.hand[i].uniqueId == uniqueId) return i;
+    }
+    return -1;
+}
+
+bool resolveCardByIdentity(sts::BattleContext &bc, std::int16_t uniqueId, int target) {
+    if (bc.inputState != sts::InputState::PLAYER_NORMAL) return false;
+    const int handIdx = handIndexForUniqueId(bc, uniqueId);
+    if (handIdx < 0) return false;
+    const sts::search::Action action(sts::search::ActionType::CARD, handIdx, target);
+    if (!action.isValidAction(bc)) return false;
+    action.execute(bc);
+    return true;
+}
+
+sts::BattleContext sameTurnState(sts::GameContext &gc, sts::MonsterEncounter encounter,
+                                 int targetHp, int energy, bool includeReaper,
+                                 bool secondMonster) {
+    sts::BattleContext bc{};
+    bc.init(gc, encounter);
+    bc.cards.clear();
+    bc.cards.cardsInHand = includeReaper ? 3 : 2;
+    bc.cards.hand[0] = sts::CardInstance(sts::CardId::BASH);
+    bc.cards.hand[0].setUniqueId(101);
+    bc.cards.hand[1] = sts::CardInstance(sts::CardId::STRIKE_RED);
+    bc.cards.hand[1].setUniqueId(102);
+    if (includeReaper) {
+        bc.cards.hand[2] = sts::CardInstance(sts::CardId::REAPER);
+        bc.cards.hand[2].setUniqueId(103);
+    }
+    bc.cards.nextUniqueCardId = 200;
+    bc.cards.strikeCount = 1;
+    bc.player.energy = energy;
+    bc.player.curHp = 50;
+    bc.player.maxHp = 80;
+    bc.player.block = 0;
+    bc.player.cardsPlayedThisTurn = 0;
+    bc.player.attacksPlayedThisTurn = 0;
+    bc.player.skillsPlayedThisTurn = 0;
+    bc.inputState = sts::InputState::PLAYER_NORMAL;
+    bc.outcome = sts::Outcome::UNDECIDED;
+    bc.isBattleOver = false;
+    bc.endTurnQueued = false;
+    bc.turnHasEnded = false;
+    bc.actionQueue.clear();
+    bc.cardQueue.clear();
+    bc.monsters.arr[0].curHp = targetHp;
+    bc.monsters.arr[0].block = 0;
+    bc.monsters.arr[0].vulnerable = 0;
+    bc.monsters.arr[0].weak = 0;
+    bc.monsters.arr[0].poison = 0;
+    if (secondMonster) {
+        bc.monsters.arr[1].curHp = 4;
+        bc.monsters.arr[1].block = 0;
+        bc.monsters.arr[1].vulnerable = 0;
+        bc.monsters.arr[1].weak = 0;
+        bc.monsters.arr[1].poison = 0;
+        bc.monsters.monstersAlive = 2;
+    }
+    return bc;
+}
+
+SameTurnPath resolveSameTurnPath(const sts::BattleContext &original,
+                                 std::initializer_list<std::int16_t> cardIds,
+                                 int target = 0) {
+    SameTurnPath path{original};
+    const int originalTargetHp = original.monsters.arr[target].curHp;
+    for (const auto cardId : cardIds) {
+        require(resolveCardByIdentity(path.state, cardId, target),
+                "same-turn path card must remain legal and resolvable by identity");
+    }
+    path.damageToTarget = originalTargetHp - path.state.monsters.arr[target].curHp;
+    path.targetHp = path.state.monsters.arr[target].curHp;
+    path.playerHp = path.state.player.curHp;
+    path.targetVulnerable = path.state.monsters.arr[target].vulnerable;
+    path.targetBlock = path.state.monsters.arr[target].block;
+    path.energy = path.state.player.energy;
+    path.handSize = path.state.cards.cardsInHand;
+    path.discardSize = path.state.cards.discardPile.size();
+    path.actionQueueSize = path.state.actionQueue.size;
+    path.cardQueueSize = path.state.cardQueue.size;
+    path.inputState = path.state.inputState;
+    path.outcome = path.state.outcome;
+    path.rngCounter = static_cast<std::uint64_t>(path.state.rng.counter);
+    return path;
+}
+
+void sameTurnDominanceAuditFixtures(sts::GameContext &gc) {
+    const auto plain = sameTurnState(gc, sts::MonsterEncounter::JAW_WORM, 100, 3, false, false);
+    const auto initialRngCounter = plain.rng.counter;
+    const auto bashThenStrike = resolveSameTurnPath(plain, {101, 102});
+    const auto strikeThenBash = resolveSameTurnPath(plain, {102, 101});
+    require(bashThenStrike.damageToTarget == 17 && strikeThenBash.damageToTarget == 14,
+            "plain Bash/Strike fixture must reproduce 17 versus 14 damage");
+    require(bashThenStrike.state.inputState == sts::InputState::PLAYER_NORMAL &&
+                strikeThenBash.state.inputState == sts::InputState::PLAYER_NORMAL &&
+                bashThenStrike.state.actionQueue.size == 0 && bashThenStrike.state.cardQueue.size == 0 &&
+                strikeThenBash.state.actionQueue.size == 0 && strikeThenBash.state.cardQueue.size == 0,
+            "fully resolved card paths must return to a player decision boundary");
+    require(bashThenStrike.targetVulnerable == strikeThenBash.targetVulnerable &&
+                bashThenStrike.targetBlock == strikeThenBash.targetBlock &&
+                bashThenStrike.playerHp == strikeThenBash.playerHp &&
+                bashThenStrike.energy == strikeThenBash.energy &&
+                bashThenStrike.handSize == strikeThenBash.handSize &&
+                bashThenStrike.discardSize == strikeThenBash.discardSize &&
+                bashThenStrike.rngCounter == strikeThenBash.rngCounter &&
+                bashThenStrike.rngCounter == static_cast<std::uint64_t>(initialRngCounter),
+            "plain endpoints must match on non-damage fields");
+    require(!bashThenStrike.state.equalForSearch(strikeThenBash.state) &&
+                bashThenStrike.state.curCardQueueItem != strikeThenBash.state.curCardQueueItem,
+            "plain Bash/Strike endpoints must expose the last-card queue-item difference");
+    auto normalized = bashThenStrike.state;
+    normalized.monsters.arr[0].curHp = strikeThenBash.state.monsters.arr[0].curHp;
+    normalized.curCardQueueItem = strikeThenBash.state.curCardQueueItem;
+    require(normalized.equalForSearch(strikeThenBash.state),
+            "plain Bash/Strike differences must be target HP plus last-card queue item");
+    auto omittedCounterA = plain;
+    auto omittedCounterB = plain;
+    omittedCounterB.energyWasted = omittedCounterA.energyWasted + 1;
+    omittedCounterB.cardsDrawn = omittedCounterA.cardsDrawn + 1;
+    require(omittedCounterA.equalForSearch(omittedCounterB) &&
+                sts::search::hashBattleState(omittedCounterA) ==
+                    sts::search::hashBattleState(omittedCounterB),
+            "evaluation counters omitted from search equality must remain identified as omitted");
+    std::cout << "same_turn_plain BashThenStrike_damage=" << bashThenStrike.damageToTarget
+              << " StrikeThenBash_damage=" << strikeThenBash.damageToTarget
+              << " hp=" << bashThenStrike.targetHp << "/" << strikeThenBash.targetHp
+              << " vulnerable=" << bashThenStrike.targetVulnerable
+              << " endpoint_difference=target_hp+curCardQueueItem"
+              << " rng_counter=" << bashThenStrike.rngCounter
+              << " omitted_eval_counters=energyWasted,cardsDrawn\n";
+
+    const auto reaperState = sameTurnState(gc, sts::MonsterEncounter::TWO_FUNGI_BEASTS,
+                                           17, 5, true, true);
+    const auto reaperAfterMoreDamage = resolveSameTurnPath(reaperState, {101, 102});
+    const auto reaperAfterLessDamage = resolveSameTurnPath(reaperState, {102, 101});
+    require(reaperAfterMoreDamage.targetHp == 0 && reaperAfterLessDamage.targetHp == 3,
+            "Reaper counterexample must leave distinct remaining target HP");
+    auto moreDamageContinuation = reaperAfterMoreDamage.state;
+    auto lessDamageContinuation = reaperAfterLessDamage.state;
+    require(resolveCardByIdentity(moreDamageContinuation, 103, 0) &&
+                resolveCardByIdentity(lessDamageContinuation, 103, 0),
+            "Reaper continuation must be legal after either same-turn path");
+    require(moreDamageContinuation.outcome == sts::Outcome::PLAYER_VICTORY &&
+                lessDamageContinuation.outcome == sts::Outcome::PLAYER_VICTORY &&
+                moreDamageContinuation.player.curHp == 54 && lessDamageContinuation.player.curHp == 57 &&
+                moreDamageContinuation.postBattleHealedHp() == 54 &&
+                lessDamageContinuation.postBattleHealedHp() == 57,
+            "Reaper must heal more from the higher remaining enemy HP and preserve that reward state");
+    std::cout << "same_turn_reaper lower_hp=" << reaperAfterMoreDamage.targetHp
+              << " continuation_player_hp=" << moreDamageContinuation.player.curHp
+              << " higher_hp=" << reaperAfterLessDamage.targetHp
+              << " continuation_player_hp=" << lessDamageContinuation.player.curHp << '\n';
+
+    auto boundary = sameTurnState(gc, sts::MonsterEncounter::JAW_WORM, 100, 2, false, false);
+    boundary.cards.hand[0] = sts::CardInstance(sts::CardId::WARCRY);
+    boundary.cards.hand[0].setUniqueId(101);
+    boundary.cards.hand[2] = sts::CardInstance(sts::CardId::DEFEND_RED);
+    boundary.cards.hand[2].setUniqueId(104);
+    boundary.cards.cardsInHand = 3;
+    require(resolveCardByIdentity(boundary, 101, 0), "WARCRY must be a legal first action");
+    require(boundary.inputState == sts::InputState::CARD_SELECT &&
+                !resolveCardByIdentity(boundary, 102, 0),
+            "same-turn dominance must reject an intervening card-selection boundary");
+
+    const auto insufficientEnergy = sameTurnState(gc, sts::MonsterEncounter::JAW_WORM,
+                                                  100, 1, false, false);
+    auto oneCardOnly = resolveSameTurnPath(insufficientEnergy, {102});
+    require(oneCardOnly.state.player.energy == 0 &&
+                !resolveCardByIdentity(oneCardOnly.state, 102, 0),
+            "same-turn dominance must reject sequences that cannot legally finish in the turn");
+    std::cout << "same_turn_rejections information_boundary=CARD_SELECT energy_boundary=1+1>1 PASS\n";
+}
+
 void canonicalizePotionBelt(sts::BattleContext &bc) {
     std::sort(bc.potions.begin(), bc.potions.begin() + bc.potionCapacity,
               [](sts::Potion lhs, sts::Potion rhs) {
@@ -1103,6 +1296,7 @@ int main(int argc, char **argv) {
         singleCardSelectCanonicalization(bc);
         gambleMultiplicityCanonicalization(bc);
         potionActionCanonicalization(gc, bc);
+        sameTurnDominanceAuditFixtures(gc);
         lazyReroot(bc);
         compaction(bc, 0);
         selection(search); widening(search); rootPriorSelection(search);
