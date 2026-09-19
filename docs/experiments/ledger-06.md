@@ -10111,6 +10111,44 @@ default or generalization claim is authorized. Evidence:
   experiment evidence; no model, RNG, semantic schema, search budget, or
   gameplay default change.
 
+## §320 — Silver stochastic UID-chance merge screen (2026-09-19)
+
+- **Implementation:** Added a default-off `uidChanceMergeEnabled` treatment.
+  Only stochastic outcome states may reuse a strict PR-244-equivalent node:
+  both hand and unknown-draw regions must differ, both states must be
+  `PLAYER_NORMAL`, and the hand-plus-unknown-draw physical `CardInstance`
+  union must match by unique ID and exact value. Deterministic insertion,
+  known positions, selectors, discard/exhaust, queues, special-data cards,
+  and per-copy transient properties remain exact. Replay exposes the treatment
+  only through `--uid-chance-merge`; no live environment variable enables it.
+- **Focused checks:** Debug `silver_search_optimization_test` passed for pure
+  swap eligibility, physical UID-set rejection, per-copy cost reassignment,
+  special-data and `CARD_SELECT` rejection, default-off parity, and a fixed-RNG
+  `POMMEL_STRIKE` draw contraction fixture. The existing PR-244 diagnostic
+  checks also passed.
+- **Protocol:** Baseline `1b220712`; frozen
+  `hard64-dev-snapshots.jsonl`, 1,000 simulations per decision, Release GCC,
+  `OMP_NUM_THREADS=4`, fixed replay configuration, all 64 DEV cases, and the
+  predeclared PR-244 top-10 subset. HOLDOUT was untouched. Control omitted the
+  flag; treatment enabled it in the same candidate binary.
+- **Result:** All64 control/treatment created `2,063,754/2,079,940` nodes over
+  `2,232,000/2,246,000` simulations, or `0.924621/0.926064` nodes per
+  simulation (`+0.156%`). The predeclared top-10 was `0.937901/0.934340`
+  (`-0.380%`). Wall time was `15.77/15.90s` (`+0.82%` treatment), below the
+  preregistered repeat trigger. Treatment made `205,514` strict merges from
+  `2,317,751` sampled chance outcomes (8.866958%), with
+  `193,678` sibling and `11,836` global-transposition destinations. Exact
+  reroots changed `1,627 -> 1,613` and fallbacks `541 -> 569`; action traces
+  differed on `53/64` cases. Top-10 merges were `99,967/484,492` (20.633364%),
+  with `288` exact reroots versus `306` and `102` fallbacks versus `100`.
+- **Decision:** **`SILVER_UID_CHANCE_MERGE_REJECT`**. All64 work did not
+  decrease, top-10 reduction was below 2%, timing was slightly slower, and
+  reroot exactness deteriorated. The result is not a production promotion or
+  identity-canonicalization design authorization.
+- **Evidence:** [stochastic UID-chance merge packet](evidence/silver_uid_chance_merge_20260919/README.md).
+  **Knowledge impact:** durable experiment evidence only; no production
+  default, live boundary, model, RNG, or semantic-schema change.
+
 ## §319 — Silver duplicate potion-slot deduplication (2026-09-19)
 
 - **Implementation:** Silver's ordinary potion enumeration now retains only

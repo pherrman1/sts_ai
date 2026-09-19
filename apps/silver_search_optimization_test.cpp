@@ -301,6 +301,42 @@ void uidFragmentationDiagnostic(const sts::BattleContext &original) {
             "ordinary hand/draw UID swap must match the diagnostic comparator");
     require(sts::search::equalForSearchIgnoringBenignDrawIdentityDiagnostic(base, swapped),
             "diagnostic comparator wrapper must agree with detailed comparison");
+    require(sts::search::eligibleForUidChanceMerge(base, swapped),
+            "pure ordinary hand/draw UID swap must be treatment-eligible");
+
+    auto differentPhysicalSet = swapped;
+    differentPhysicalSet.cards.drawPile = {};
+    sts::CardInstance replacement(sts::CardId::STRIKE_RED);
+    replacement.setUniqueId(303);
+    differentPhysicalSet.cards.drawPile.assignInformationState({}, {replacement}, {}, false);
+    require(sts::search::equalForSearchIgnoringBenignDrawIdentityDiagnostic(
+                base, differentPhysicalSet),
+            "physical-set fixture must remain diagnostic-equivalent");
+    require(!sts::search::eligibleForUidChanceMerge(base, differentPhysicalSet),
+            "different physical UID set must not be treatment-eligible");
+
+    auto propertyA = base;
+    propertyA.cards.hand[0].costForTurn = 0;
+    sts::CardInstance propertyDraw(sts::CardId::STRIKE_RED);
+    propertyDraw.setUniqueId(202);
+    propertyDraw.costForTurn = 1;
+    propertyA.cards.drawPile.assignInformationState({}, {propertyDraw}, {}, false);
+    auto propertyB = propertyA;
+    propertyB.cards.hand[0].setUniqueId(202);
+    propertyB.cards.drawPile = {};
+    sts::CardInstance reassignedProperty(sts::CardId::STRIKE_RED);
+    reassignedProperty.setUniqueId(101);
+    reassignedProperty.costForTurn = 1;
+    propertyB.cards.drawPile.assignInformationState({}, {reassignedProperty}, {}, false);
+    require(sts::search::equalForSearchIgnoringBenignDrawIdentityDiagnostic(propertyA, propertyB),
+            "per-copy property fixture must remain diagnostic-equivalent");
+    require(!sts::search::eligibleForUidChanceMerge(propertyA, propertyB),
+            "per-copy property reassignment must not be treatment-eligible");
+
+    auto cardSelect = swapped;
+    cardSelect.inputState = sts::InputState::CARD_SELECT;
+    require(!sts::search::eligibleForUidChanceMerge(base, cardSelect),
+            "CARD_SELECT UID swap must not be treatment-eligible");
 
     auto special = base;
     special.cards.hand[0] = sts::CardInstance(sts::CardId::RAMPAGE);
@@ -317,6 +353,8 @@ void uidFragmentationDiagnostic(const sts::BattleContext &original) {
     require(!sts::search::equalForSearchIgnoringBenignDrawIdentityDiagnostic(
                 special, specialSwapped),
             "special-data card UID swap must remain distinct");
+    require(!sts::search::eligibleForUidChanceMerge(special, specialSwapped),
+            "special-data card UID swap must not be treatment-eligible");
 
     const auto ordinaryDifference = [&](auto mutate, const char *message) {
         auto changed = base;
@@ -438,6 +476,88 @@ void uidFragmentationDiagnostic(const sts::BattleContext &original) {
                     && lhs.node->evaluationSum == rhs.node->evaluationSum,
                 "UID diagnostics must not change root edge statistics");
     }
+}
+
+void uidChanceMergeContraction(const sts::BattleContext &original) {
+    auto drawFixture = original;
+    drawFixture.cards.cardsInHand = 1;
+    drawFixture.cards.hand[0] = sts::CardInstance(sts::CardId::POMMEL_STRIKE);
+    drawFixture.cards.hand[0].setUniqueId(900);
+    std::vector<sts::CardInstance> drawCards;
+    for (int i = 0; i < 4; ++i) {
+        sts::CardInstance card(sts::CardId::STRIKE_RED);
+        card.setUniqueId(901 + i);
+        drawCards.push_back(card);
+    }
+    drawFixture.cards.drawPile.assignInformationState({}, drawCards, {}, false);
+    drawFixture.cards.nextUniqueCardId = 905;
+    drawFixture.player.energy = 3;
+    const sts::search::Action drawAction(sts::search::ActionType::CARD, 0, 0);
+    require(drawAction.isValidAction(drawFixture), "synthetic Pommel Strike must be valid");
+
+    auto run = [&](bool treatment) {
+        Search search(drawFixture);
+        search.uidChanceMergeEnabled = treatment;
+        auto *chance = search.allocNode();
+        chance->isRandomNode = true;
+        chance->parent = search.root;
+        chance->stochasticAction = drawAction;
+        chance->randomnessBase = 0x123456789ULL;
+        chance->outcomesGenerated = 1;
+        chance->simulationCount = 1000;
+        auto first = drawFixture;
+        first.rng = sts::Random(chance->randomnessBase);
+        drawAction.execute(first);
+        chance->edges.push_back({{}, search.getOrCreateNode(std::move(first), true), 0, 0});
+        for (int i = 1; i < 16; ++i) search.selectChanceOutcome(*chance);
+        return std::pair<std::size_t, sts::search::SearchStats>{
+            search.poolUsed, search.stats};
+    };
+
+    const auto control = run(false);
+    const auto treatment = run(true);
+    require(control.second.chanceOutcomesSampled == treatment.second.chanceOutcomesSampled,
+            "UID chance treatment must preserve the sampled RNG count");
+    require(treatment.first < control.first,
+            "UID chance treatment must contract synthetic draw decision nodes");
+    require(treatment.second.uidChanceRelaxedMerges > 0,
+            "synthetic draw fixture must perform a UID chance merge");
+    require(treatment.second.uidChanceRelaxedCard > 0,
+            "synthetic Pommel Strike merge must be categorized as a card outcome");
+    require(treatment.second.uidChanceRelaxedSiblingReuse
+                + treatment.second.uidChanceRelaxedGlobalTransposition
+                == treatment.second.uidChanceRelaxedMerges,
+            "UID chance merge destination split must account for every merge");
+
+    auto modified = drawFixture;
+    modified.cards.hand[0] = sts::CardInstance(sts::CardId::STRIKE_RED);
+    modified.cards.hand[0].setUniqueId(900);
+    modified.cards.hand[0].costForTurn = 0;
+    std::vector<sts::CardInstance> modifiedDrawCards;
+    sts::CardInstance modifiedDraw(sts::CardId::STRIKE_RED);
+    modifiedDraw.setUniqueId(901);
+    modifiedDraw.costForTurn = 1;
+    modifiedDrawCards.push_back(modifiedDraw);
+    modified.cards.drawPile.assignInformationState({}, modifiedDrawCards, {}, false);
+    auto modifiedOther = modified;
+    modifiedOther.cards.hand[0].setUniqueId(901);
+    modifiedOther.cards.drawPile = {};
+    modifiedDraw.setUniqueId(900);
+    modifiedOther.cards.drawPile.assignInformationState({}, {modifiedDraw}, {}, false);
+    require(!sts::search::eligibleForUidChanceMerge(modified, modifiedOther),
+            "modified-cost synthetic fixture must not merge");
+
+    auto special = drawFixture;
+    special.cards.hand[0] = sts::CardInstance(sts::CardId::RAMPAGE);
+    special.cards.hand[0].setUniqueId(900);
+    auto specialOther = special;
+    specialOther.cards.hand[0].setUniqueId(901);
+    specialOther.cards.drawPile = {};
+    sts::CardInstance specialDraw(sts::CardId::STRIKE_RED);
+    specialDraw.setUniqueId(900);
+    specialOther.cards.drawPile.assignInformationState({}, {specialDraw}, {}, false);
+    require(!sts::search::eligibleForUidChanceMerge(special, specialOther),
+            "special-data synthetic fixture must not merge");
 }
 
 void singleCardSelectCanonicalization(const sts::BattleContext &original) {
@@ -757,6 +877,9 @@ void equalStats(const sts::search::SearchStats &a, const sts::search::SearchStat
 #define SAME(field) require(a.field == b.field, "trace changed stats: " #field)
     SAME(steps); SAME(nodesCreated); SAME(detTranspositions);
     SAME(chanceOutcomesSampled); SAME(chanceSiblingReuse); SAME(chanceTranspositions);
+    SAME(uidChanceRelaxedMerges); SAME(uidChanceRelaxedEndTurn); SAME(uidChanceRelaxedCard);
+    SAME(uidChanceRelaxedOther); SAME(uidChanceRelaxedSiblingReuse);
+    SAME(uidChanceRelaxedGlobalTransposition);
     SAME(depthSum); SAME(chanceDepthSum); SAME(rolloutCalls);
     SAME(rolloutTerminalWins); SAME(rolloutTerminalLosses); SAME(rolloutNonTerminalStops);
     SAME(rolloutActionCount); SAME(rolloutTurnDelta); SAME(rolloutSkippedVNet);
@@ -1263,6 +1386,7 @@ int main(int argc, char **argv) {
         dedupGrowth(bc);
         cardActionCanonicalization(bc);
         uidFragmentationDiagnostic(bc);
+        uidChanceMergeContraction(bc);
         singleCardSelectCanonicalization(bc);
         gambleMultiplicityCanonicalization(bc);
         potionActionCanonicalization(gc, bc);
