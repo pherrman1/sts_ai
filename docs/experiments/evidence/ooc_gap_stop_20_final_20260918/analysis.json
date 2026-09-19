@@ -1,0 +1,168 @@
+{
+  "classification": "OOC_GAP_STOP_20_FINAL_PASS",
+  "source_sha": "495fa147517fdc42e631c513bde5a87b3bb25144",
+  "seed_range": [
+    12005000,
+    12005127
+  ],
+  "seed_count_per_arm": 128,
+  "binary_sha256": "9a3b8c2bd1e563c691926d823c43767430d03c11b97a9c5f0d924e616beb1250",
+  "control_wins": 95,
+  "treatment_wins": 88,
+  "both_win": 81,
+  "both_lose": 26,
+  "control_only_wins": 14,
+  "treatment_only_wins": 7,
+  "treatment_minus_control_win_rate_pp": -5.46875,
+  "win_rate_ci_pp": [
+    -12.5,
+    1.5625
+  ],
+  "exact_two_sided_discordant_binomial_p": 0.18924713134765625,
+  "paired_metrics": {
+    "won": {
+      "control_mean": 0.7421875,
+      "treatment_mean": 0.6875,
+      "treatment_minus_control": -0.0546875,
+      "paired_bootstrap_95_ci": [
+        -0.125,
+        0.015625
+      ]
+    },
+    "floor": {
+      "control_mean": 48.3359375,
+      "treatment_mean": 48.3984375,
+      "treatment_minus_control": 0.0625,
+      "paired_bootstrap_95_ci": [
+        -1.2578125,
+        1.328125
+      ]
+    },
+    "hpEnd": {
+      "control_mean": 37.9453125,
+      "treatment_mean": 36.4765625,
+      "treatment_minus_control": -1.46875,
+      "paired_bootstrap_95_ci": [
+        -7.0078125,
+        3.96875
+      ]
+    },
+    "fightsLost": {
+      "control_mean": 0.2578125,
+      "treatment_mean": 0.3125,
+      "treatment_minus_control": 0.0546875,
+      "paired_bootstrap_95_ci": [
+        -0.015625,
+        0.125
+      ]
+    },
+    "sec": {
+      "control_mean": 82.71576328124999,
+      "treatment_mean": 75.52180390625,
+      "treatment_minus_control": -7.193959375,
+      "paired_bootstrap_95_ci": [
+        -10.65985095703125,
+        -3.7585856835937532
+      ]
+    }
+  },
+  "trace_totals": {
+    "control": {
+      "oocDecisions": 22414.0,
+      "mctsOwned": 18134.0,
+      "mctsFallback": 4280.0,
+      "simulations": 18590054.0,
+      "transitionSamples": 5836901.0,
+      "combatSurrogateSamples": 952269.0,
+      "leafEvaluations": 18559581.0,
+      "mctsWallSec": 4535.065792429,
+      "mctsCpuSec": 4118.377400991,
+      "realCombats": 3255.0,
+      "imaginedCombats": 952362.0,
+      "unsupportedCombats": 93.0,
+      "mctsSupportAborts": 93.0,
+      "discardedSimulations": 13721.0,
+      "simulationAttempts": 18590147.0,
+      "pendingLeaves": 16580223.0,
+      "battleLeaves": 0.0,
+      "mapLeaves": 1979358.0,
+      "projectionSteps": 27755566.0,
+      "outcomeParticles": 5836901.0,
+      "particleRevisits": 44364333.0,
+      "deterministicRevisits": 39286387.0,
+      "depthSum": 125005863.0,
+      "continuationLimitAborts": 0.0,
+      "trivialRootBypasses": 0.0,
+      "earlyStopLockedRoot": 18123.0,
+      "earlyStopVisitGap20": 0.0,
+      "savedSimulations": 18562099.0,
+      "metadataBuilds": 5849760.0,
+      "priorBuilds": 3178335.0,
+      "preparedCombats": 99930.0,
+      "combatEdgeSamples": 949990.0
+    },
+    "treatment": {
+      "oocDecisions": 22494.0,
+      "mctsOwned": 18231.0,
+      "mctsFallback": 4263.0,
+      "simulations": 10863751.0,
+      "transitionSamples": 3916884.0,
+      "combatSurrogateSamples": 693918.0,
+      "leafEvaluations": 10852965.0,
+      "mctsWallSec": 3195.452363221,
+      "mctsCpuSec": 2828.862738258,
+      "realCombats": 3274.0,
+      "imaginedCombats": 693993.0,
+      "unsupportedCombats": 75.0,
+      "mctsSupportAborts": 75.0,
+      "discardedSimulations": 12534.0,
+      "simulationAttempts": 10863826.0,
+      "pendingLeaves": 9572637.0,
+      "battleLeaves": 0.0,
+      "mapLeaves": 1280328.0,
+      "projectionSteps": 16830293.0,
+      "outcomeParticles": 3916884.0,
+      "particleRevisits": 24769890.0,
+      "deterministicRevisits": 21632054.0,
+      "depthSum": 68936622.0,
+      "continuationLimitAborts": 0.0,
+      "trivialRootBypasses": 0.0,
+      "earlyStopLockedRoot": 6445.0,
+      "earlyStopVisitGap20": 11777.0,
+      "savedSimulations": 26485871.0,
+      "metadataBuilds": 3932480.0,
+      "priorBuilds": 2200550.0,
+      "preparedCombats": 78074.0,
+      "combatEdgeSamples": 692469.0
+    }
+  },
+  "support_totals": {
+    "control": {
+      "unsupported_combats": 93,
+      "continuation_limit_aborts": 0
+    },
+    "treatment": {
+      "unsupported_combats": 75,
+      "continuation_limit_aborts": 0
+    }
+  },
+  "treatment_gap_stop_events": 11777,
+  "treatment_gap_stop_seeds": 128,
+  "validation": {
+    "binary_sha256_matches_frozen": true,
+    "max_elapsed_sec": 600.0,
+    "exit_receipts_validated": 256,
+    "treatment_gap_stop_activity_substantial": true,
+    "primary_rejection_condition": "win_rate_ci_upper_pp < 0",
+    "primary_rejection_triggered": false
+  },
+  "bootstrap": {
+    "replicates": 200000,
+    "rng": "NumPy PCG64",
+    "seed": 20260914
+  },
+  "notes": [
+    "All processes completed with rc=0 under the 600-second per-process ceiling.",
+    "No meaningful quality regression detected at this bounded confirmation; this is not equivalence proof."
+  ]
+}
