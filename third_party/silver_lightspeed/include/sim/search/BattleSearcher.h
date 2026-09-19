@@ -75,12 +75,6 @@ namespace sts::search {
         std::int64_t chanceOutcomesSampled = 0;  // chance-node widening samples executed
         std::int64_t chanceSiblingReuse = 0;     // sampled outcome collided with an existing sibling
         std::int64_t chanceTranspositions = 0;   // sampled outcome dedup-hit a non-sibling node
-        std::int64_t uidChanceRelaxedMerges = 0;
-        std::int64_t uidChanceRelaxedEndTurn = 0;
-        std::int64_t uidChanceRelaxedCard = 0;
-        std::int64_t uidChanceRelaxedOther = 0;
-        std::int64_t uidChanceRelaxedSiblingReuse = 0;
-        std::int64_t uidChanceRelaxedGlobalTransposition = 0;
         std::int64_t uidRelaxedNodeAllocationCandidates = 0;
         std::int64_t uidRelaxedNodeCandidatesWithDrawDifference = 0;
         std::int64_t uidRelaxedNodeCandidatesWithHandDifference = 0;
@@ -133,12 +127,6 @@ namespace sts::search {
             steps += o.steps; nodesCreated += o.nodesCreated; detTranspositions += o.detTranspositions;
             chanceOutcomesSampled += o.chanceOutcomesSampled; chanceSiblingReuse += o.chanceSiblingReuse;
             chanceTranspositions += o.chanceTranspositions;
-            uidChanceRelaxedMerges += o.uidChanceRelaxedMerges;
-            uidChanceRelaxedEndTurn += o.uidChanceRelaxedEndTurn;
-            uidChanceRelaxedCard += o.uidChanceRelaxedCard;
-            uidChanceRelaxedOther += o.uidChanceRelaxedOther;
-            uidChanceRelaxedSiblingReuse += o.uidChanceRelaxedSiblingReuse;
-            uidChanceRelaxedGlobalTransposition += o.uidChanceRelaxedGlobalTransposition;
             uidRelaxedNodeAllocationCandidates += o.uidRelaxedNodeAllocationCandidates;
             uidRelaxedNodeCandidatesWithDrawDifference += o.uidRelaxedNodeCandidatesWithDrawDifference;
             uidRelaxedNodeCandidatesWithHandDifference += o.uidRelaxedNodeCandidatesWithHandDifference;
@@ -197,11 +185,6 @@ namespace sts::search {
 
     bool equalForSearchIgnoringBenignDrawIdentityDiagnostic(
         const BattleContext &lhs, const BattleContext &rhs);
-
-    // Conservative experimental treatment eligibility. This is deliberately
-    // narrower than the PR-244 diagnostic comparator and never participates in
-    // ordinary equalForSearch().
-    bool eligibleForUidChanceMerge(const BattleContext &lhs, const BattleContext &rhs);
 
     // to find a solution to a battle with tree pruning
     struct BattleSearcher {
@@ -300,7 +283,6 @@ namespace sts::search {
         bool collectRolloutDiagnostics = false;
         bool collectVictoryCounts = false;
         bool collectUidFragmentationDiagnostics = false;
-        bool uidChanceMergeEnabled = false;
         silver_bridge::SilverLeafObserver leafObserver;
 
         std::default_random_engine randGen;
@@ -376,9 +358,8 @@ namespace sts::search {
         BattleContext* allocDecisionState(); // claim stable storage from the decision-state pool
 
         // Graph search deduplication
-        Node* getOrCreateNode(BattleContext &&state, bool allowUidChanceMerge = false);
+        Node* getOrCreateNode(BattleContext &&state);
         bool lastNodeWasCreated = false;   // whether the last getOrCreateNode allocated a new node
-        bool lastNodeWasUidChanceMerged = false;
 
         SearchStats stats;
 

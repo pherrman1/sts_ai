@@ -10113,14 +10113,15 @@ default or generalization claim is authorized. Evidence:
 
 ## §320 — Silver stochastic UID-chance merge screen (2026-09-19)
 
-- **Implementation:** Added a default-off `uidChanceMergeEnabled` treatment.
-  Only stochastic outcome states may reuse a strict PR-244-equivalent node:
-  both hand and unknown-draw regions must differ, both states must be
-  `PLAYER_NORMAL`, and the hand-plus-unknown-draw physical `CardInstance`
-  union must match by unique ID and exact value. Deterministic insertion,
-  known positions, selectors, discard/exhaust, queues, special-data cards,
-  and per-copy transient properties remain exact. Replay exposes the treatment
-  only through `--uid-chance-merge`; no live environment variable enables it.
+- **Experiment:** Evaluated an opt-in `uidChanceMergeEnabled` treatment at
+  source SHA `1717a41f6a233dada8192dda19b01b3358875912`. Only stochastic
+  outcome states could reuse a strict PR-244-equivalent node: both hand and
+  unknown-draw regions had to differ, both states had to be `PLAYER_NORMAL`,
+  and the hand-plus-unknown-draw physical `CardInstance` union had to match by
+  unique ID and exact value. Deterministic insertion, known positions,
+  selectors, discard/exhaust, queues, special-data cards, and per-copy
+  transient properties remained exact. Replay exposed the treatment only
+  through `--uid-chance-merge`; no live environment variable enabled it.
 - **Focused checks:** Debug `silver_search_optimization_test` passed for pure
   swap eligibility, physical UID-set rejection, per-copy cost reassignment,
   special-data and `CARD_SELECT` rejection, default-off parity, and a fixed-RNG
@@ -10150,9 +10151,14 @@ default or generalization claim is authorized. Evidence:
   decrease, top-10 reduction was below 2%, timing was slightly slower, and
   reroot exactness deteriorated. The result is not a production promotion or
   identity-canonicalization design authorization.
+- **Cleanup:** The rejected treatment machinery was removed after the frozen
+  result. The source SHA and raw control/treatment artifacts above preserve
+  the experimental provenance; no treatment config, telemetry, replay flag,
+  or production search path remains.
 - **Evidence:** [stochastic UID-chance merge packet](evidence/silver_uid_chance_merge_20260919/README.md).
-  **Knowledge impact:** durable experiment evidence only; no production
-  default, live boundary, model, RNG, or semantic-schema change.
+  **Knowledge impact:** durable experiment evidence only; the rejected
+  treatment is not retained in production, with no live boundary, model, RNG,
+  or semantic-schema change.
 
 ## §319 — Silver duplicate potion-slot deduplication (2026-09-19)
 

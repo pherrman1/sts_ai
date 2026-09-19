@@ -346,9 +346,6 @@ struct SilverSearchConfig {
     // Default-off diagnostic accounting for conservative UID-only search
     // fragmentation candidates. This never changes search behavior.
     bool collectUidFragmentationDiagnostics = false;
-    // Experimental, default-off treatment: only stochastic outcomes may reuse
-    // a strict pure hand<->unknown-draw physical-copy permutation.
-    bool uidChanceMergeEnabled = false;
     // Opt-in paired budget diagnostic: snapshot this same root after the
     // checkpoint budget and continue it to simulationsPerDecision. This is
     // observational only and is never enabled by the production path.
@@ -480,12 +477,6 @@ struct SilverSearchTelemetry {
     std::int64_t chanceOutcomesSampled = 0;
     std::int64_t chanceSiblingReuse = 0;
     std::int64_t chanceTranspositions = 0;
-    std::int64_t uidChanceRelaxedMerges = 0;
-    std::int64_t uidChanceRelaxedEndTurn = 0;
-    std::int64_t uidChanceRelaxedCard = 0;
-    std::int64_t uidChanceRelaxedOther = 0;
-    std::int64_t uidChanceRelaxedSiblingReuse = 0;
-    std::int64_t uidChanceRelaxedGlobalTransposition = 0;
     std::int64_t uidRelaxedNodeAllocationCandidates = 0;
     std::int64_t uidRelaxedNodeCandidatesWithDrawDifference = 0;
     std::int64_t uidRelaxedNodeCandidatesWithHandDifference = 0;
@@ -534,12 +525,6 @@ struct SilverSearchTelemetry {
         chanceOutcomesSampled += other.chanceOutcomesSampled;
         chanceSiblingReuse += other.chanceSiblingReuse;
         chanceTranspositions += other.chanceTranspositions;
-        uidChanceRelaxedMerges += other.uidChanceRelaxedMerges;
-        uidChanceRelaxedEndTurn += other.uidChanceRelaxedEndTurn;
-        uidChanceRelaxedCard += other.uidChanceRelaxedCard;
-        uidChanceRelaxedOther += other.uidChanceRelaxedOther;
-        uidChanceRelaxedSiblingReuse += other.uidChanceRelaxedSiblingReuse;
-        uidChanceRelaxedGlobalTransposition += other.uidChanceRelaxedGlobalTransposition;
         uidRelaxedNodeAllocationCandidates += other.uidRelaxedNodeAllocationCandidates;
         uidRelaxedNodeCandidatesWithDrawDifference += other.uidRelaxedNodeCandidatesWithDrawDifference;
         uidRelaxedNodeCandidatesWithHandDifference += other.uidRelaxedNodeCandidatesWithHandDifference;

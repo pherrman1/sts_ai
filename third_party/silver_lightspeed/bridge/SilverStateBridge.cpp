@@ -501,12 +501,6 @@ SilverSearchTelemetry telemetry(const sts::search::SearchStats &stats) {
     out.chanceOutcomesSampled = stats.chanceOutcomesSampled;
     out.chanceSiblingReuse = stats.chanceSiblingReuse;
     out.chanceTranspositions = stats.chanceTranspositions;
-    out.uidChanceRelaxedMerges = stats.uidChanceRelaxedMerges;
-    out.uidChanceRelaxedEndTurn = stats.uidChanceRelaxedEndTurn;
-    out.uidChanceRelaxedCard = stats.uidChanceRelaxedCard;
-    out.uidChanceRelaxedOther = stats.uidChanceRelaxedOther;
-    out.uidChanceRelaxedSiblingReuse = stats.uidChanceRelaxedSiblingReuse;
-    out.uidChanceRelaxedGlobalTransposition = stats.uidChanceRelaxedGlobalTransposition;
     out.uidRelaxedNodeAllocationCandidates = stats.uidRelaxedNodeAllocationCandidates;
     out.uidRelaxedNodeCandidatesWithDrawDifference = stats.uidRelaxedNodeCandidatesWithDrawDifference;
     out.uidRelaxedNodeCandidatesWithHandDifference = stats.uidRelaxedNodeCandidatesWithHandDifference;
@@ -567,12 +561,6 @@ SilverSearchTelemetry telemetryDelta(const sts::search::SearchStats &after,
     result.chanceOutcomesSampled -= prior.chanceOutcomesSampled;
     result.chanceSiblingReuse -= prior.chanceSiblingReuse;
     result.chanceTranspositions -= prior.chanceTranspositions;
-    result.uidChanceRelaxedMerges -= prior.uidChanceRelaxedMerges;
-    result.uidChanceRelaxedEndTurn -= prior.uidChanceRelaxedEndTurn;
-    result.uidChanceRelaxedCard -= prior.uidChanceRelaxedCard;
-    result.uidChanceRelaxedOther -= prior.uidChanceRelaxedOther;
-    result.uidChanceRelaxedSiblingReuse -= prior.uidChanceRelaxedSiblingReuse;
-    result.uidChanceRelaxedGlobalTransposition -= prior.uidChanceRelaxedGlobalTransposition;
     result.uidRelaxedNodeAllocationCandidates -= prior.uidRelaxedNodeAllocationCandidates;
     result.uidRelaxedNodeCandidatesWithDrawDifference -= prior.uidRelaxedNodeCandidatesWithDrawDifference;
     result.uidRelaxedNodeCandidatesWithHandDifference -= prior.uidRelaxedNodeCandidatesWithHandDifference;
@@ -805,7 +793,6 @@ public:
         searcher->collectRolloutDiagnostics = config.collectRolloutDiagnostics;
         searcher->collectVictoryCounts = config.collectRootActionSummaries;
         searcher->collectUidFragmentationDiagnostics = config.collectUidFragmentationDiagnostics;
-        searcher->uidChanceMergeEnabled = config.uidChanceMergeEnabled;
         searcher->leafObserver = config.leafObserver;
     }
 
@@ -1466,12 +1453,6 @@ bool sameSilverSearchTelemetry(const SilverSearchTelemetry &lhs,
         && lhs.chanceOutcomesSampled == rhs.chanceOutcomesSampled
         && lhs.chanceSiblingReuse == rhs.chanceSiblingReuse
         && lhs.chanceTranspositions == rhs.chanceTranspositions
-        && lhs.uidChanceRelaxedMerges == rhs.uidChanceRelaxedMerges
-        && lhs.uidChanceRelaxedEndTurn == rhs.uidChanceRelaxedEndTurn
-        && lhs.uidChanceRelaxedCard == rhs.uidChanceRelaxedCard
-        && lhs.uidChanceRelaxedOther == rhs.uidChanceRelaxedOther
-        && lhs.uidChanceRelaxedSiblingReuse == rhs.uidChanceRelaxedSiblingReuse
-        && lhs.uidChanceRelaxedGlobalTransposition == rhs.uidChanceRelaxedGlobalTransposition
         && lhs.depthSum == rhs.depthSum
         && lhs.chanceDepthSum == rhs.chanceDepthSum
         && lhs.wideningSampled == rhs.wideningSampled

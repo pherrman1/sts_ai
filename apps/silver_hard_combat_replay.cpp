@@ -12,8 +12,7 @@
 namespace {
 
 nlohmann::json replayRow(const nlohmann::json &input, std::int64_t budget,
-                         bool collectUidFragmentationDiagnostics,
-                         bool uidChanceMergeEnabled) {
+                         bool collectUidFragmentationDiagnostics) {
     const auto started = std::chrono::steady_clock::now();
     nlohmann::json row = {
         {"case_id", input.value("case_id", "")},
@@ -33,7 +32,6 @@ nlohmann::json replayRow(const nlohmann::json &input, std::int64_t budget,
         config.exactVisitLockEnabled = false;
         config.rhoRacingEnabled = false;
         config.collectUidFragmentationDiagnostics = collectUidFragmentationDiagnostics;
-        config.uidChanceMergeEnabled = uidChanceMergeEnabled;
 
         const auto result = silver_bridge::runSilverCombatReplay(wire, config);
         row["won"] = result.won;
@@ -48,16 +46,6 @@ nlohmann::json replayRow(const nlohmann::json &input, std::int64_t budget,
         row["status"] = result.accepted ? "ok" : result.failureReason;
         row["rollout_calls"] = result.telemetry.rolloutCalls;
         row["nodes_created"] = result.telemetry.nodesCreated;
-        if (uidChanceMergeEnabled) {
-            row["chance_outcomes_sampled"] = result.telemetry.chanceOutcomesSampled;
-            row["uid_chance_relaxed_merges"] = result.telemetry.uidChanceRelaxedMerges;
-            row["uid_chance_relaxed_end_turn"] = result.telemetry.uidChanceRelaxedEndTurn;
-            row["uid_chance_relaxed_card"] = result.telemetry.uidChanceRelaxedCard;
-            row["uid_chance_relaxed_other"] = result.telemetry.uidChanceRelaxedOther;
-            row["uid_chance_relaxed_sibling_reuse"] = result.telemetry.uidChanceRelaxedSiblingReuse;
-            row["uid_chance_relaxed_global_transposition"] =
-                result.telemetry.uidChanceRelaxedGlobalTransposition;
-        }
         if (collectUidFragmentationDiagnostics) {
             row["chance_outcomes_sampled"] = result.telemetry.chanceOutcomesSampled;
             row["uid_relaxed_node_allocation_candidates"] =
@@ -91,21 +79,15 @@ nlohmann::json replayRow(const nlohmann::json &input, std::int64_t budget,
 } // namespace
 
 int main(int argc, char **argv) {
-    if (argc < 3 || argc > 5) {
-        std::cerr << "usage: silver_hard_combat_replay SNAPSHOTS.jsonl BUDGET "
-                     "[--uid-fragmentation] [--uid-chance-merge]\n";
+    if (argc != 3 && argc != 4) {
+        std::cerr << "usage: silver_hard_combat_replay SNAPSHOTS.jsonl BUDGET [--uid-fragmentation]\n";
         return 2;
     }
-    bool collectUidFragmentationDiagnostics = false;
-    bool uidChanceMergeEnabled = false;
-    for (int i = 3; i < argc; ++i) {
-        const std::string option = argv[i];
-        if (option == "--uid-fragmentation") collectUidFragmentationDiagnostics = true;
-        else if (option == "--uid-chance-merge") uidChanceMergeEnabled = true;
-        else {
-            std::cerr << "unknown option\n";
-            return 2;
-        }
+    const bool collectUidFragmentationDiagnostics = argc == 4
+        && std::string(argv[3]) == "--uid-fragmentation";
+    if (argc == 4 && !collectUidFragmentationDiagnostics) {
+        std::cerr << "unknown option\n";
+        return 2;
     }
     std::int64_t budget = 0;
     try {
@@ -133,7 +115,7 @@ int main(int argc, char **argv) {
         if (line.empty()) continue;
         try {
             const auto row = replayRow(nlohmann::json::parse(line), budget,
-                                       collectUidFragmentationDiagnostics, uidChanceMergeEnabled);
+                                       collectUidFragmentationDiagnostics);
             hadFailure = hadFailure || row.value("status", "") != "ok";
             std::cout << row.dump() << '\n';
         } catch (const std::exception &error) {

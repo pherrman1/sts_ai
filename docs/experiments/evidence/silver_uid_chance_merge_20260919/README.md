@@ -1,17 +1,18 @@
 # Silver stochastic UID-chance merge screen
 
 Baseline: `1b2207125b2737d6af41f27b314678bcc8f561bb` (merged PR #244).
-The candidate is the final reviewed implementation commit recorded in the
-draft PR for this packet. The Release replay executable SHA-256 was
-`097fbad496099213c3384b06ee2073f2f32ef0a546188e28dd3577646bb3379e`.
+The experimental treatment was evaluated at source SHA
+`1717a41f6a233dada8192dda19b01b3358875912` (PR #245). The treatment was
+rejected and removed from the retained source; this packet preserves the
+implementation provenance and frozen results. The Release replay executable
+SHA-256 was `097fbad496099213c3384b06ee2073f2f32ef0a546188e28dd3577646bb3379e`.
 
-This is an opt-in research treatment. `SilverSearchConfig::uidChanceMergeEnabled`
-defaults to false, no live environment variable enables it, and the normal
-Silver path remains exact. No HOLDOUT was run.
+No production or live treatment remains. No HOLDOUT was run.
 
-## Treatment contract
+## Historical treatment contract
 
-Only decision states produced by stochastic outcomes may use the treatment.
+At source SHA `1717a41f6a233dada8192dda19b01b3358875912`, only decision states
+produced by stochastic outcomes could use the treatment.
 The exact hash/probe path and `equalForSearch()` remain unchanged. After an
 exact miss, a same-hash existing node is eligible only when:
 
@@ -28,6 +29,7 @@ exact. Exact matches retain priority over a remembered relaxed candidate.
 
 ## Focused verification
 
+The historical implementation's
 `build/linux-gcc-debug-ccache/silver_search_optimization_test` passed. It
 covers the pure swap, different physical UID set, per-copy cost reassignment,
 special-data and `CARD_SELECT` exclusions, default-off diagnostic parity, and a
@@ -90,7 +92,7 @@ The result is **`SILVER_UID_CHANCE_MERGE_REJECT`**: strict merges were common,
 but they did not reduce all64 work, did not reach the predeclared top-10
 benefit threshold, were slightly slower, and measurably reduced exact reroot
 success. This is a value-of-pursuing-canonicalization result, not a production
-promotion gate. The treatment remains default-off pending review; no
+promotion gate. The experimental code was removed after this rejection; no
 identity-canonicalization follow-up is authorized by this screen.
 
 ## Raw artifacts and provenance
@@ -116,5 +118,6 @@ OMP_NUM_THREADS=4 bash tools/seed_guard.sh \
 | [control.time](control.time) | `84c27ccc009a96745dff272faa10cb7f3963541d969221b8584ef9a95b188b4b` |
 | [treatment.time](treatment.time) | `e7b13b17d3766325c50cb5b8450baa67a915f392c0bda1336d5b49587a17e007` |
 
-Knowledge impact: durable experiment evidence only; no production default,
-live boundary, model, RNG, or semantic-schema change.
+Knowledge impact: durable experiment evidence only; the rejected treatment is
+not retained in production, and there is no live boundary, model, RNG, or
+semantic-schema change.

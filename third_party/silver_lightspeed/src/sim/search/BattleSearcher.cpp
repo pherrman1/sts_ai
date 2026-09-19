@@ -153,56 +153,6 @@ namespace sts::search {
         return compareForSearchIgnoringBenignDrawIdentityDiagnostic(lhs, rhs).equivalent;
     }
 
-    namespace {
-
-        int physicalUnionSize(const BattleContext &state) {
-            return state.cards.cardsInHand + state.cards.drawPile.size()
-                - state.cards.drawPile.knownCount() - state.cards.drawPile.knownBottom();
-        }
-
-        const CardInstance &physicalUnionCard(const BattleContext &state, int index) {
-            if (index < state.cards.cardsInHand) return state.cards.hand[index];
-            return state.cards.drawPile[state.cards.drawPile.knownBottom()
-                + index - state.cards.cardsInHand];
-        }
-
-        bool physicalUnionIsPurePermutation(const BattleContext &lhs,
-                                            const BattleContext &rhs) {
-            const int lhsSize = physicalUnionSize(lhs);
-            if (lhsSize != physicalUnionSize(rhs)) return false;
-            for (int side = 0; side < 2; ++side) {
-                const auto &state = side == 0 ? lhs : rhs;
-                for (int i = 0; i < lhsSize; ++i) {
-                    const auto &card = physicalUnionCard(state, i);
-                    if (card.uniqueId < 0) return false;
-                    for (int prior = 0; prior < i; ++prior) {
-                        if (physicalUnionCard(state, prior).uniqueId == card.uniqueId) return false;
-                    }
-                    const auto &other = side == 0 ? rhs : lhs;
-                    bool found = false;
-                    for (int j = 0; j < lhsSize; ++j) {
-                        const auto &otherCard = physicalUnionCard(other, j);
-                        if (otherCard.uniqueId == card.uniqueId) {
-                            if (found || !(otherCard == card)) return false;
-                            found = true;
-                        }
-                    }
-                    if (!found) return false;
-                }
-            }
-            return true;
-        }
-
-    } // namespace
-
-    bool eligibleForUidChanceMerge(const BattleContext &lhs, const BattleContext &rhs) {
-        if (lhs.inputState != InputState::PLAYER_NORMAL
-                || rhs.inputState != InputState::PLAYER_NORMAL) return false;
-        const auto comparison = compareForSearchIgnoringBenignDrawIdentityDiagnostic(lhs, rhs);
-        return comparison.equivalent && comparison.handDifferent && comparison.drawDifferent
-            && physicalUnionIsPurePermutation(lhs, rhs);
-    }
-
     // Arbitrary nonzero seed for the state hash accumulator.
     constexpr std::uint64_t HASH_SEED = 14695981039346656037ULL;
 
@@ -437,11 +387,8 @@ void search::BattleSearcher::growDedup() {
 
 // Moves `state` into the node only when a new node is created; on a match `state` is left
 // intact, so callers may still read it.
-search::BattleSearcher::Node* search::BattleSearcher::getOrCreateNode(
-        BattleContext &&state, bool allowUidChanceMerge) {
+search::BattleSearcher::Node* search::BattleSearcher::getOrCreateNode(BattleContext &&state) {
     const std::size_t hash = search::hashBattleState(state);
-    Node *uidChanceMergeCandidate = nullptr;
-    lastNodeWasUidChanceMerged = false;
     bool relaxedEquivalentSeen = false;
     bool relaxedHandDifference = false;
     bool relaxedDrawDifference = false;
@@ -453,12 +400,10 @@ search::BattleSearcher::Node* search::BattleSearcher::getOrCreateNode(
             lastNodeWasCreated = false;
             return stateToNode[i].node;
         }
-        if (stateToNode[i].hash == hash
-                && (collectUidFragmentationDiagnostics
-                    || (uidChanceMergeEnabled && allowUidChanceMerge))) {
+        if (collectUidFragmentationDiagnostics && stateToNode[i].hash == hash) {
             const auto comparison = compareForSearchIgnoringBenignDrawIdentityDiagnostic(
                 *stateToNode[i].node->state, state);
-            if (collectUidFragmentationDiagnostics && comparison.equivalent) {
+            if (comparison.equivalent) {
                 relaxedEquivalentSeen = true;
                 // Use the first relaxed-equivalent probe entry for the
                 // mutually exclusive difference classification. A later
@@ -470,36 +415,19 @@ search::BattleSearcher::Node* search::BattleSearcher::getOrCreateNode(
                     relaxedDrawDifference = comparison.drawDifferent;
                 }
             }
-            if (uidChanceMergeEnabled && allowUidChanceMerge
-                    && comparison.equivalent && comparison.handDifferent
-                    && comparison.drawDifferent && stateToNode[i].node->state->inputState
-                        == InputState::PLAYER_NORMAL
-                    && state.inputState == InputState::PLAYER_NORMAL
-                    && physicalUnionIsPurePermutation(*stateToNode[i].node->state, state)
-                    && uidChanceMergeCandidate == nullptr) {
-                uidChanceMergeCandidate = stateToNode[i].node;
-            }
         }
         i = (i + 1) & stateToNodeMask;
     }
 
-    if (collectUidFragmentationDiagnostics) {
-        if (relaxedEquivalentSeen) {
-            ++stats.uidRelaxedNodeAllocationCandidates;
-            if (relaxedHandDifference && relaxedDrawDifference) {
-                ++stats.uidRelaxedNodeCandidatesWithBothHandAndDrawDifference;
-            } else if (relaxedHandDifference) {
-                ++stats.uidRelaxedNodeCandidatesWithHandDifference;
-            } else if (relaxedDrawDifference) {
-                ++stats.uidRelaxedNodeCandidatesWithDrawDifference;
-            }
+    if (collectUidFragmentationDiagnostics && relaxedEquivalentSeen) {
+        ++stats.uidRelaxedNodeAllocationCandidates;
+        if (relaxedHandDifference && relaxedDrawDifference) {
+            ++stats.uidRelaxedNodeCandidatesWithBothHandAndDrawDifference;
+        } else if (relaxedHandDifference) {
+            ++stats.uidRelaxedNodeCandidatesWithHandDifference;
+        } else if (relaxedDrawDifference) {
+            ++stats.uidRelaxedNodeCandidatesWithDrawDifference;
         }
-    }
-
-    if (uidChanceMergeCandidate != nullptr) {
-        lastNodeWasCreated = false;
-        lastNodeWasUidChanceMerged = true;
-        return uidChanceMergeCandidate;
     }
 
     // Grow only on a miss, so duplicate lookups have no allocation side effects.
@@ -517,7 +445,6 @@ search::BattleSearcher::Node* search::BattleSearcher::getOrCreateNode(
     stateToNode[i] = {hash, newNode};
     ++stateToNodeUsed;
     lastNodeWasCreated = true;
-    lastNodeWasUidChanceMerged = false;
     ++stats.nodesCreated;
     return newNode;
 }
@@ -704,16 +631,7 @@ void search::BattleSearcher::step() {
             ++stats.wSampled[chanceCat(edge.action)];
             Edge outcomeEdge;
             outcomeEdge.action = Action{};
-            outcomeEdge.node = getOrCreateNode(std::move(next), true);
-            if (lastNodeWasUidChanceMerged) {
-                ++stats.uidChanceRelaxedMerges;
-                switch (chanceCat(edge.action)) {
-                    case 0: ++stats.uidChanceRelaxedEndTurn; break;
-                    case 1: ++stats.uidChanceRelaxedCard; break;
-                    default: ++stats.uidChanceRelaxedOther; break;
-                }
-                ++stats.uidChanceRelaxedGlobalTransposition;
-            }
+            outcomeEdge.node = getOrCreateNode(std::move(next));
             if (!lastNodeWasCreated) ++stats.chanceTranspositions;  // fresh chance node: no siblings yet
             outcomeEdge.rngAdvanceSteps = 0;
             chance->edges.push_back(outcomeEdge);
@@ -1069,24 +987,14 @@ search::BattleSearcher::Edge* search::BattleSearcher::selectChanceOutcome(search
 
         ++stats.chanceOutcomesSampled;
         ++stats.wSampled[wcat];
-        Node* child = getOrCreateNode(std::move(out), true);  // out unused afterward; safe to move
-        if (lastNodeWasUidChanceMerged) {
-            ++stats.uidChanceRelaxedMerges;
-            switch (wcat) {
-                case 0: ++stats.uidChanceRelaxedEndTurn; break;
-                case 1: ++stats.uidChanceRelaxedCard; break;
-                default: ++stats.uidChanceRelaxedOther; break;
-            }
-        }
+        Node* child = getOrCreateNode(std::move(out));  // out unused afterward; safe to move
         for (auto &e : chance.edges) {
             if (e.node == child) {
                 ++stats.chanceSiblingReuse;
                 ++stats.wSibReuse[wcat];
-                if (lastNodeWasUidChanceMerged) ++stats.uidChanceRelaxedSiblingReuse;
                 return &e;  // resampled an outcome we already have
             }
         }
-        if (lastNodeWasUidChanceMerged) ++stats.uidChanceRelaxedGlobalTransposition;
         if (collectUidFragmentationDiagnostics) {
             for (const auto &e : chance.edges) {
                 const auto comparison = compareForSearchIgnoringBenignDrawIdentityDiagnostic(
