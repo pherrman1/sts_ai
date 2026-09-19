@@ -10039,7 +10039,7 @@ default or generalization claim is authorized. Evidence:
   `specialData`, `freeToPlayOnce`, or `retain` state remained distinct;
   different identities remained distinct for cards using special data.
 - **Protocol:** Control was baseline `338ce1e9`; A was `dc811044`; B was
-  `05548a3e`. All arms used the frozen `hard64-dev-snapshots.jsonl` cohort,
+  `bbdd71cf`. All arms used the frozen `hard64-dev-snapshots.jsonl` cohort,
   1,000 simulations per decision, Release GCC builds, `OMP_NUM_THREADS=4`,
   and the existing fixed replay configuration. HOLDOUT was not used.
 - **Result:** Control won `48/64`, A won `51/64`, and B won `51/64`. B versus A

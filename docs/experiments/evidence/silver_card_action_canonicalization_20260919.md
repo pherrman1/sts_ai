@@ -7,7 +7,7 @@ PR review. It is not a gameplay-quality gate or a default-promotion claim.
 
 - Baseline: `338ce1e9f560ba3ade3447a0b02c099022b395f6`
 - Commit A: `dc811044` (ordinary card-play deduplication)
-- Commit B: `05548a3e` (ordinary card-play plus safe single-card selection deduplication)
+- Commit B: `bbdd71cf` (ordinary card-play plus safe single-card selection deduplication)
 - Cohort: `hard64-dev-snapshots.jsonl`, 64 frozen DEV snapshots; HOLDOUT was not used.
 - Command: `bash tools/seed_guard.sh <silver_hard_combat_replay> hard64-dev-snapshots.jsonl 1000`
 - Build: Linux GCC Release ccache preset, same host and `OMP_NUM_THREADS=4`.
@@ -21,7 +21,7 @@ Binary SHA-256 hashes:
 |---|---|---|
 | Control | baseline replay | `b20d6ccf97e1b24e1ed6f4db8691ec022a716a905d13f23595c4ef9377562b0e` |
 | A | `dc811044` replay | `3a441fbd1b96fa039c309081cd318f9e8b47f18b562c0feeab739b891253df92` |
-| B | `05548a3e` replay | `c2825bc4b3ceb98daa91c8293858f25a56da8e374eb47d17ab843496a3e42763` |
+| B | `bbdd71cf` replay | `c2825bc4b3ceb98daa91c8293858f25a56da8e374eb47d17ab843496a3e42763` |
 
 ## Results
 
