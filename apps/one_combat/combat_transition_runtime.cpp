@@ -260,6 +260,33 @@ Vec CombatTransitionRuntime::gold(const Vec &context,const std::vector<Vec>& can
 }
 
 namespace one_combat {
+namespace {
+CombatTransitionExpectation calculateForecastExpectation(
+    const CombatTransitionRuntime &runtime, const NativeComposedDomain &domain,
+    const CombatPredictorInputV1 &p) {
+    const float survival = runtime.survival(p);
+    const auto maxHp = runtime.maxHp(p), z = runtime.hpEncoding(p);
+    double expectedFraction = 0;
+    int maximumHp = p.globals.maxHp;
+    for (const int delta : domain.maxHpClasses)
+        maximumHp = std::max(maximumHp, p.globals.maxHp + delta);
+    std::vector<float> histogram(static_cast<size_t>(maximumHp + 1), 0.0f);
+    for (size_t delta = 0; delta < maxHp.size(); ++delta) {
+        const int maximum = p.globals.maxHp + domain.maxHpClasses.at(delta);
+        const auto hp = runtime.signedHp(z, int(delta), p.globals.curHp, maximum);
+        double conditional = 0;
+        for (size_t cls = 0; cls < hp.size(); ++cls) {
+            const int finalHp = p.globals.curHp + domain.hpClasses.at(cls);
+            conditional += hp[cls] * double(finalHp) / maximum;
+            if (finalHp >= 0 && finalHp < static_cast<int>(histogram.size()))
+                histogram.at(static_cast<size_t>(finalHp)) += maxHp.at(delta) * hp.at(cls);
+        }
+        expectedFraction += maxHp[delta] * conditional;
+    }
+    return {true, 1 - survival, float(expectedFraction), 0, std::move(histogram)};
+}
+}
+
 NativeCombatTransitionSampler::NativeCombatTransitionSampler(const std::string &path):runtime_(path) {
     const auto &m=runtime_.metadata(),&d=m.at("domain");
     domain_.preCurHpRange=d.at("preCurHpRange").get<std::array<int,2>>();
@@ -272,21 +299,19 @@ CombatRuntimeSupport NativeCombatTransitionSampler::support(const sts::GameConte
     auto reasons=nativeComposedSupportReasons(p,captureCombatTransitionState(gc),domain_);
     return {reasons.empty(),reasons.empty()?"supported":reasons.front()};
 }
+CombatRuntimeSupport NativeCombatTransitionSampler::forecastSupport(const CombatPredictorInputV1 &p) const {
+    auto reasons = nativeComposedForecastSupportReasons(p, domain_);
+    return {reasons.empty(), reasons.empty() ? "supported" : reasons.front()};
+}
+CombatTransitionExpectation NativeCombatTransitionSampler::forecastExpectation(
+    const CombatPredictorInputV1 &p) const {
+    if (!forecastSupport(p).supported) return {};
+    return calculateForecastExpectation(runtime_, domain_, p);
+}
 CombatTransitionExpectation NativeCombatTransitionSampler::expectation(
     const sts::GameContext &gc,const CombatPredictorInputV1 &p) const {
     if(!support(gc,p).supported)return {};
-    const float survival=runtime_.survival(p);
-    const auto maxHp=runtime_.maxHp(p),z=runtime_.hpEncoding(p);
-    double expectedFraction=0;
-    for(size_t delta=0;delta<maxHp.size();++delta) {
-        const int maximum=gc.maxHp+domain_.maxHpClasses.at(delta);
-        const auto hp=runtime_.signedHp(z,int(delta),gc.curHp,maximum);
-        double conditional=0;
-        for(size_t cls=0;cls<hp.size();++cls)
-            conditional+=hp[cls]*double(gc.curHp+domain_.hpClasses.at(cls))/maximum;
-        expectedFraction+=maxHp[delta]*conditional;
-    }
-    return {true,1-survival,float(expectedFraction)};
+    return calculateForecastExpectation(runtime_, domain_, p);
 }
 CombatRuntimeSample NativeCombatTransitionSampler::sample(const sts::GameContext &gc,const CombatPredictorInputV1 &p,std::mt19937_64 &rng) const {
     if(!support(gc,p).supported)return {};

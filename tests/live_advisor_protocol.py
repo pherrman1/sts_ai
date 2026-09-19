@@ -1,14 +1,21 @@
 import json
+import os
+from pathlib import Path
 import subprocess
 import sys
 import unittest
 
 
 class AdvisorProtocolTest(unittest.TestCase):
-    def run_advisor(self, rows):
+    def run_advisor(self, rows, model=None):
+        env = os.environ.copy()
+        if model is not None:
+            env["STS_CTM_MODEL"] = str(model)
+        else:
+            env.pop("STS_CTM_MODEL", None)
         proc = subprocess.run(
             [sys.argv[1]], input="\n".join(rows) + "\n", text=True,
-            capture_output=True, check=True)
+            capture_output=True, check=True, env=env)
         self.assertEqual(proc.stderr, "")
         return [json.loads(line) for line in proc.stdout.splitlines()]
 
@@ -92,8 +99,95 @@ class AdvisorProtocolTest(unittest.TestCase):
         self.assertNotIn("sequence", rows[0])
         self.assertNotIn("observationHash", rows[0])
 
+    def test_ctm_artifact_forecast_import_and_cache(self):
+        observation = {
+            "boundary": "combat", "character": "IRONCLAD", "ascension": 0,
+            "act": 1, "floor": 7, "hp": 70, "maxHp": 80, "gold": 99,
+            "roomClass": "MONSTER", "previousRoomClass": "SHOP",
+            "encounter": "CULTIST", "potionKeepValue": 4.0,
+            "isBurningElite": False, "potionCapacity": 3,
+            "deck": [{"id": "Strike_R", "upgraded": False, "misc": 0,
+                       "bottleBinding": 0}],
+            "relics": [{"id": "Pen Nib", "data": 4}],
+            "potions": ["Potion Slot", "Fire Potion", "Potion Slot",
+                         "Potion Slot", "Potion Slot"],
+        }
+        wire = {"protocol": "sts_model_inspector_v1", "kind": "observation",
+                "session": "ctm", "sequence": 1, "observationHash": "turn-1",
+                "observation": dict(observation, combatEntryHash="entry-1",
+                                     combatEntry=observation)}
+        repeat = dict(wire, sequence=2, observationHash="turn-2")
+        rows = self.run_advisor([json.dumps(wire), json.dumps(repeat)], self.model)
+        for row in rows:
+            self.assertEqual(row["status"], "OK")
+            self.assertEqual(row["evaluators"][0]["status"], "OK")
+            histogram = row["evaluators"][0]["winningHpHistogram"]
+            self.assertGreater(len(histogram), 1)
+            self.assertAlmostEqual(sum(histogram), 1.0, places=4)
+            self.assertEqual(row["evaluators"][0]["winningHpHistogramMin"], 0)
+            self.assertNotIn("rng", json.dumps(row).lower())
+        self.assertEqual(rows[0]["evaluators"][0]["combatEntryHash"], "entry-1")
+        self.assertEqual(rows[1]["evaluators"][0]["latencyMicros"], 0)
+        self.assertGreaterEqual(rows[0]["evaluators"][0]["deathProbability"], 0.0)
+        self.assertLessEqual(rows[0]["evaluators"][0]["deathProbability"], 1.0)
+
+    def test_ctm_room_history_categories_and_unknown_fail_closed(self):
+        base = {"boundary": "combat", "character": "IRONCLAD", "ascension": 0,
+                "act": 1, "floor": 7, "hp": 70, "maxHp": 80, "gold": 99,
+                "roomClass": "MONSTER", "encounter": "CULTIST",
+                "potionKeepValue": 4.0, "isBurningElite": False,
+                "potionCapacity": 3,
+                "deck": [{"id": "Strike_R", "upgraded": False, "misc": 0,
+                          "bottleBinding": 0}],
+                "relics": [], "potions": ["Potion Slot"] * 5}
+        rows = []
+        for sequence, previous in enumerate(("SHOP", "TREASURE", "BOSS_TREASURE", ""), 1):
+            entry = dict(base, previousRoomClass=previous)
+            rows.append({"protocol": "sts_model_inspector_v1", "kind": "observation",
+                         "session": "room-history", "sequence": sequence,
+                         "observationHash": "room-%d" % sequence,
+                         "observation": dict(entry, combatEntryHash="entry-%d" % sequence,
+                                              combatEntry=entry)})
+        results = self.run_advisor([json.dumps(row) for row in rows], self.model)
+        for row in results[:3]:
+            self.assertEqual(row["status"], "OK")
+            self.assertEqual(row["evaluators"][0]["status"], "OK")
+        self.assertEqual(results[3]["status"], "ERROR")
+        self.assertEqual(results[3]["code"], "UNSUPPORTED")
+
+    def test_ctm_support_failures_and_missing_model_are_explicit(self):
+        base = {"boundary": "combat", "character": "IRONCLAD", "ascension": 0,
+                "act": 1, "floor": 7, "hp": 70, "maxHp": 80, "gold": 99,
+                "roomClass": "MONSTER", "previousRoomClass": "NONE",
+                "encounter": "CULTIST", "potionKeepValue": 4.0,
+                "isBurningElite": False, "potionCapacity": 3,
+            "deck": [{"id": "RitualDagger", "upgraded": False, "misc": 0,
+                           "bottleBinding": -1}],
+                "relics": [], "potions": ["SmokeBomb", "Potion Slot",
+                                             "Potion Slot", "Potion Slot", "Potion Slot"]}
+        smoke = {"protocol": "sts_model_inspector_v1", "kind": "observation",
+                 "session": "fail", "sequence": 1, "observationHash": "smoke",
+                 "observation": dict(base, combatEntryHash="smoke",
+                                      combatEntry=base)}
+        writhing = dict(base, encounter="WRITHING_MASS", potions=["Potion Slot"] * 5)
+        writhing_wire = dict(smoke, sequence=2, observationHash="writhing",
+                             observation=dict(writhing, combatEntryHash="writhing",
+                                              combatEntry=writhing))
+        rows = self.run_advisor([json.dumps(smoke), json.dumps(writhing_wire)], self.model)
+        self.assertEqual(rows[0]["evaluators"][0]["status"], "UNSUPPORTED")
+        self.assertEqual(rows[0]["evaluators"][0]["reason"], "smoke_bomb")
+        self.assertEqual(rows[1]["evaluators"][0]["reason"], "writhing_ritual_intersection")
+
+        missing_wire = dict(smoke, observation=dict(base, combatEntryHash="smoke",
+                                                    combatEntry=base))
+        missing = self.run_advisor([json.dumps(missing_wire)])
+        self.assertEqual(missing[0]["status"], "MODEL_UNAVAILABLE")
+        invalid = self.run_advisor([json.dumps(missing_wire)], "/definitely/not/a/model.native")
+        self.assertEqual(invalid[0]["status"], "SCHEMA_MISMATCH")
+
 
 if __name__ == "__main__":
-    if len(sys.argv) != 2:
-        raise SystemExit("usage: live_advisor_protocol.py ADVISOR_BINARY")
+    if len(sys.argv) != 3:
+        raise SystemExit("usage: live_advisor_protocol.py ADVISOR_BINARY CTM_MODEL")
+    AdvisorProtocolTest.model = Path(sys.argv[2])
     unittest.main(argv=[sys.argv[0]])

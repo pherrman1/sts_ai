@@ -282,12 +282,34 @@ add_executable(one_combat_advisor
     apps/one_combat/advisor_stdio.cpp
     apps/one_combat/advisor_protocol.cpp)
 target_include_directories(one_combat_advisor PUBLIC json/include)
-target_sources(one_combat_advisor PRIVATE apps/one_combat/live_ooc_importer.cpp)
+target_sources(one_combat_advisor PRIVATE
+    apps/one_combat/live_ooc_importer.cpp
+    apps/one_combat/combat_predictor_input.cpp
+    apps/one_combat/combat_transition.cpp
+    apps/one_combat/combat_transition_near_full.cpp
+    apps/one_combat/combat_transition_runtime.cpp
+    apps/one_combat/combat_transition_native_contract.cpp)
 target_link_libraries(one_combat_advisor PRIVATE sts_core_objects)
 add_test(NAME live_advisor_protocol COMMAND python3
-    ${CMAKE_SOURCE_DIR}/tests/live_advisor_protocol.py $<TARGET_FILE:one_combat_advisor>)
+    ${CMAKE_SOURCE_DIR}/tests/live_advisor_protocol.py $<TARGET_FILE:one_combat_advisor>
+    ${CMAKE_SOURCE_DIR}/selfplay/models/combat_transition_near_full_except_smoke_v2.native)
 set_tests_properties(live_advisor_protocol PROPERTIES
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "integration;smoke")
+
+add_executable(live_ctm_importer_test apps/live_ctm_importer_test.cpp
+    apps/one_combat/live_ooc_importer.cpp
+    apps/one_combat/combat_predictor_input.cpp
+    apps/one_combat/combat_transition.cpp
+    apps/one_combat/combat_transition_near_full.cpp
+    apps/one_combat/combat_transition_runtime.cpp
+    apps/one_combat/combat_transition_native_contract.cpp
+    $<TARGET_OBJECTS:sts_core_objects>)
+target_include_directories(live_ctm_importer_test PRIVATE include json/include)
+add_test(NAME live_ctm_importer
+    COMMAND $<TARGET_FILE:live_ctm_importer_test>
+    ${CMAKE_SOURCE_DIR}/selfplay/models/combat_transition_near_full_except_smoke_v2.native)
+set_tests_properties(live_ctm_importer PROPERTIES
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "integration")
 
 add_executable(one_combat_feature_test apps/one_combat_feature_test.cpp
     apps/one_combat/run_features.cpp $<TARGET_OBJECTS:sts_core_objects>)

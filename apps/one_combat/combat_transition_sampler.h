@@ -22,6 +22,9 @@ struct CombatTransitionExpectation {
     bool supported = false;
     float death = 0;
     float winningHpFraction = 0;
+    // winningHpHistogram is indexed directly by absolute final HP.
+    int winningHpMin = 0;
+    std::vector<float> winningHpHistogram;
 };
 
 // Prepared values have search/edge-local ownership. The originating sampler must
@@ -44,6 +47,12 @@ public:
         const CombatPredictorInputV1 &) const;
     virtual CombatRuntimeSupport support(const sts::GameContext &,
         const CombatPredictorInputV1 &) const = 0;
+    // Observer qualification never imports inherited combat RNG.
+    virtual CombatRuntimeSupport forecastSupport(const CombatPredictorInputV1 &) const {
+        return {};
+    }
+    virtual CombatTransitionExpectation forecastExpectation(
+        const CombatPredictorInputV1 &) const { return {}; }
     virtual CombatTransitionExpectation expectation(const sts::GameContext &,
         const CombatPredictorInputV1 &) const { return {}; }
     virtual CombatRuntimeSample sample(const sts::GameContext &,

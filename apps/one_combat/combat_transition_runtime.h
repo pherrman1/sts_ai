@@ -43,6 +43,8 @@ class NativeCombatTransitionSampler final : public CombatTransitionSampler {
 public:
     explicit NativeCombatTransitionSampler(const std::string &path);
     CombatRuntimeSupport support(const sts::GameContext &,const CombatPredictorInputV1 &) const override;
+    CombatRuntimeSupport forecastSupport(const CombatPredictorInputV1 &) const override;
+    CombatTransitionExpectation forecastExpectation(const CombatPredictorInputV1 &) const override;
     CombatRuntimeSample sample(const sts::GameContext &,const CombatPredictorInputV1 &,std::mt19937_64 &) const override;
     std::unique_ptr<PreparedCombatTransition> prepare(const sts::GameContext &,
         const CombatPredictorInputV1 &) const override;
