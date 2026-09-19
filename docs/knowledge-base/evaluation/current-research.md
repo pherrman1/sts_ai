@@ -19,7 +19,7 @@ other sections retain their prior verification and linked evidence.
 
 The merged opt-in rule `512 -> stop when the top-two root visit gap is at
 least 20%, otherwise continue toward 2,048` has **mechanism/speed PASS** and
-the completed independent quality confirmation is **`PROMISING`**.
+the final independent quality confirmation is **`OOC_GAP_STOP_20_FINAL_PASS`**.
 At frozen source `495fa147517fdc42e631c513bde5a87b3bb25144` and the exact
 control/treatment configuration, the 16-pair OMP1 smoke reduced total OOC
 simulations by 41.4%, median MCTS CPU by 36.6%, and median full-run CPU by
@@ -47,16 +47,22 @@ point estimates warrant attention in the final confirmation but are not a
 convincing quality regression. The rule is therefore **PROMISING**, not
 “equivalent”; no default promotion has yet been made.
 
-The 20% threshold is frozen. One final independent 128-paired-seed
-confirmation, `12005000..12005127`, is predeclared before any default
-promotion. It will reuse this exact binary/configuration, use one OMP1 process
-per seed with external concurrency and a fixed 600-second ceiling, preserve
-control/treatment pairing, prohibit replacements, and make no other search
-change. Its primary question is whether the speed win persists without a
-meaningful gameplay-quality loss, especially the negative floor/HP tendency.
-If floor/HP disadvantage strengthens, investigate it before promotion even if
-win rate remains flat. See [ledger §305](../../experiments/ledger-06.md) and
-[the fresh-cohort evidence packet](../../experiments/evidence/ooc_gap_stop_20_20260918/README.md).
+The final independent paired cohort `12005000..12005127` completed all 256
+processes with valid provenance and clean exits. Control won 95/128 and
+treatment 88/128; the paired win-rate delta was **-5.47 pp**, with deterministic
+paired-bootstrap 95% CI **[-12.50, +1.56] pp** and exact discordant-pair
+binomial p **0.189**. Mean floor changed **+0.06** (CI [-1.26, +1.33]) and
+mean ending HP changed **-1.47** (CI [-7.01, +3.97]). Treatment produced
+11,777 gap stops across all 128 seeds; control produced zero. The result is
+**`OOC_GAP_STOP_20_FINAL_PASS`**: no meaningful quality regression was detected
+at this bounded confirmation, combined with the previously established speed
+benefit. This is not equivalence proof and does not promote the flag to the
+default; independent review remains required. See [ledger §315](../../experiments/ledger-06.md)
+and [the final evidence packet](../../experiments/evidence/ooc_gap_stop_20_final_20260918/README.md).
+The packet also records an unresolved self-test-only RNG assertion seen when
+the full Silver environment was supplied to `oocmctsselftest`; the 256 actual
+gameplay processes passed runtime/provenance validation, but the assertion is
+not considered cleared.
 
 Semantic confirmation section verified 2026-09-10 at producer `a6c2abb`;
 other sections retain their prior verification and linked evidence.
