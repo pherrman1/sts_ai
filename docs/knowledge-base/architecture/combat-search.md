@@ -231,6 +231,17 @@ when it is at least `0.2932885906040268`; otherwise the same root continues to
 at ordinary roots and private sequential-selection subdecisions; the first
 search is not discarded.
 
+Silver's search-local action enumeration canonically retains the first legal
+representative when ordinary playable cards match on all gameplay-relevant
+state (`id`, upgrade state, `specialData`, costs, `freeToPlayOnce`, and
+`retain`). Different `uniqueId`s remain distinct when either card uses
+per-copy special data. The same conservative equivalence is used for the safe
+single-card selectors `ARMAMENTS`, `EXHAUST_ONE`, `FORETHOUGHT`, `WARCRY`,
+`HEADBUTT`, `EXHUME`, and `LIQUID_MEMORIES_POTION`, after each selector's
+eligibility predicate is applied. `DUAL_WIELD`, multi-select tasks, generated
+choice lists, draw-pile Secret Technique/Weapon selectors, and incomplete
+selection tasks are not collapsed by this behavior.
+
 The multi-stage retained-root policy was evaluated offline and is not part of
 the live runtime. Its analyzer and frozen evidence remain under
 `tools/analyze_silver_staged.py` and

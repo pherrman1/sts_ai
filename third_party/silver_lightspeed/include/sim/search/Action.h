@@ -9,6 +9,7 @@
 #include "data_structure/fixed_list.h"
 
 #include "combat/BattleContext.h"
+#include "combat/CardInstance.h"
 
 
 #include <iostream>
@@ -56,6 +57,9 @@ namespace sts::search {
         std::ostream& printDesc(std::ostream &os, const sts::BattleContext &bc) const;
         void execute(BattleContext &bc) const;
 
+        // Search-only equivalence: cards with distinct implementation identities are
+        // interchangeable unless their per-copy special data may affect execution.
+        static bool areCardsEquivalentForSearch(const CardInstance &lhs, const CardInstance &rhs);
 
         static std::vector<Action> enumerateCardSelectActions(const BattleContext &bc);
     };
