@@ -599,8 +599,7 @@ std::vector<search::Action> search::Action::enumerateCardSelectActions(const Bat
                                    });
             break;
 
-        case CardSelectTask::EXHAUST_MANY:
-        case CardSelectTask::GAMBLE: {
+        case CardSelectTask::EXHAUST_MANY: {
             // Sequential multi-select: offer each not-yet-picked hand card (while more may be
             // picked), plus a confirm carrying the running selection. See CardSelectInfo::selectedBits.
             const auto &csi = bc.cardSelectInfo;
@@ -611,6 +610,37 @@ std::vector<search::Action> search::Action::enumerateCardSelectActions(const Bat
                     if (!(csi.selectedBits & (1 << i))) {
                         actions.push_back({search::Action(search::ActionType::SINGLE_CARD_SELECT, i)});
                     }
+                }
+            }
+            actions.push_back({search::Action(search::ActionType::MULTI_CARD_SELECT, csi.selectedBits)});
+            break;
+        }
+
+        case CardSelectTask::GAMBLE: {
+            // Sequential multi-select: offer each not-yet-picked hand card (while more may be
+            // picked), plus a confirm carrying the running selection. See CardSelectInfo::selectedBits.
+            const auto &csi = bc.cardSelectInfo;
+            const int numSelected = __builtin_popcount(static_cast<unsigned>(csi.selectedBits));
+            const bool canSelectMore = csi.canPickAnyNumber || numSelected < csi.pickCount;
+            if (canSelectMore) {
+                std::vector<const CardInstance *> representatives;
+                for (int i = 0; i < bc.cards.cardsInHand; ++i) {
+                    if (csi.selectedBits & (1 << i)) {
+                        continue;
+                    }
+                    const auto &card = bc.cards.hand[i];
+                    bool represented = false;
+                    for (const auto *representative : representatives) {
+                        if (search::Action::areCardsEquivalentForSearch(card, *representative)) {
+                            represented = true;
+                            break;
+                        }
+                    }
+                    if (represented) {
+                        continue;
+                    }
+                    actions.push_back({search::Action(search::ActionType::SINGLE_CARD_SELECT, i)});
+                    representatives.push_back(&card);
                 }
             }
             actions.push_back({search::Action(search::ActionType::MULTI_CARD_SELECT, csi.selectedBits)});

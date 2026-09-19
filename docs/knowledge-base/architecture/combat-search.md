@@ -1,6 +1,6 @@
 # Combat search
 
-Last verified: 2026-09-10 against the current working tree.
+Last verified: 2026-09-19 against the current working tree.
 
 ## Purpose
 
@@ -238,9 +238,15 @@ state (`id`, upgrade state, `specialData`, costs, `freeToPlayOnce`, and
 per-copy special data. The same conservative equivalence is used for the safe
 single-card selectors `ARMAMENTS`, `EXHAUST_ONE`, `FORETHOUGHT`, `WARCRY`,
 `HEADBUTT`, `EXHUME`, and `LIQUID_MEMORIES_POTION`, after each selector's
-eligibility predicate is applied. `DUAL_WIELD`, multi-select tasks, generated
-choice lists, draw-pile Secret Technique/Weapon selectors, and incomplete
-selection tasks are not collapsed by this behavior.
+eligibility predicate is applied. `GAMBLE` is a separate sequential private
+selector: among currently unselected hand cards it retains only the first
+representative of each equivalence class, so a class of size `m` still offers
+every count from zero through `m`. It does not reorder the hand or rewrite
+`selectedBits`. `EXHAUST_MANY` remains physical-index enumeration because its
+per-card exhaust processing can affect trigger ordering; it is not covered by
+the `GAMBLE` reduction. `DUAL_WIELD`, generated choice lists, draw-pile Secret
+Technique/Weapon selectors, and incomplete selection tasks are not collapsed
+by this behavior.
 
 The multi-stage retained-root policy was evaluated offline and is not part of
 the live runtime. Its analyzer and frozen evidence remain under
