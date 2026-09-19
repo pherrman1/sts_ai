@@ -271,8 +271,9 @@ public final class STSModelInspector implements PostInitializeSubscriber,
                         base - 18.0f * Settings.scale, Color.GRAY);
             }
         }
-        FontHelper.renderFontRightTopAligned(sb, FontHelper.tipBodyFont, "HP",
-                chartX + chartWidth, base - 18.0f * Settings.scale, Color.GRAY);
+        FontHelper.renderFontLeftTopAligned(sb, FontHelper.tipBodyFont, "HP",
+                chartX + chartWidth + 8.0f * Settings.scale,
+                base - 18.0f * Settings.scale, Color.GRAY);
         FontHelper.tipBodyFont.getData().setScale(tickScaleX, tickScaleY);
     }
 
