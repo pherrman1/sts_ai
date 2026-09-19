@@ -13,6 +13,7 @@
 #include <numeric>
 #include <sstream>
 #include <stdexcept>
+#include <unordered_set>
 
 #include "combat/BattleContext.h"
 #include "game/GameContext.h"
@@ -633,6 +634,124 @@ sts::search::BattleSearcher::Node *exactRerootCandidate(
     return nullptr;
 }
 
+struct EquivalentCopyCandidate {
+    sts::search::BattleSearcher::Node *node = nullptr;
+    std::int16_t retainedUid = -1;
+    std::int16_t observedUid = -1;
+};
+
+void swapCardUid(sts::CardInstance &card, std::int16_t a, std::int16_t b) {
+    if (card.uniqueId == a) card.uniqueId = b;
+    else if (card.uniqueId == b) card.uniqueId = a;
+}
+
+void swapCardUids(sts::BattleContext &state, std::int16_t a, std::int16_t b) {
+    for (int i = 0; i < state.cards.cardsInHand; ++i) swapCardUid(state.cards.hand[i], a, b);
+    state.cards.drawPile.mutateAll([&](auto &card) { swapCardUid(card, a, b); });
+    state.cards.discardPile.mutateAll([&](auto &card) { swapCardUid(card, a, b); });
+    state.cards.exhaustPile.mutateAll([&](auto &card) { swapCardUid(card, a, b); });
+    for (auto &card : state.cards.limbo) swapCardUid(card, a, b);
+    for (auto &card : state.cards.stasisCards) swapCardUid(card, a, b);
+    swapCardUid(state.curCardQueueItem.card, a, b);
+}
+
+bool exactDecisionState(const sts::BattleContext &candidate, const sts::BattleContext &observed) {
+    return candidate.equalForSearch(observed)
+        && std::equal(candidate.cards.hand.begin(),
+                      candidate.cards.hand.begin() + candidate.cards.cardsInHand,
+                      observed.cards.hand.begin());
+}
+
+EquivalentCopyCandidate equivalentCopyRerootCandidate(
+        const sts::search::BattleSearcher::Edge *bestEdge,
+        const sts::BattleContext &previousRoot, const sts::BattleContext &observed) {
+    using Node = sts::search::BattleSearcher::Node;
+    EquivalentCopyCandidate result;
+    if (bestEdge == nullptr || bestEdge->node == nullptr
+            || bestEdge->action.getActionType() != sts::search::ActionType::CARD) return result;
+    const int source = bestEdge->action.getSourceIdx();
+    if (source < 0 || source >= previousRoot.cards.cardsInHand) return result;
+    const auto &retained = previousRoot.cards.hand[source];
+    const auto &played = observed.curCardQueueItem.card;
+    if (retained.uniqueId < 0 || played.uniqueId < 0 || retained.uniqueId == played.uniqueId
+            || !sts::search::Action::areCardsEquivalentForSearch(retained, played)) return result;
+
+    const auto matchesAfterSwap = [&](Node *node) {
+        if (node == nullptr || node->state == nullptr || node->state->actionQueue.size != 0
+                || node->state->cardQueue.size != 0) return false;
+        auto remapped = *node->state;
+        swapCardUids(remapped, retained.uniqueId, played.uniqueId);
+        return remapped.equalForSearch(observed);
+    };
+    if (!bestEdge->node->isRandomNode) result.node = matchesAfterSwap(bestEdge->node)
+        ? bestEdge->node : nullptr;
+    else for (const auto &outcome : bestEdge->node->edges) {
+        if (matchesAfterSwap(outcome.node)) { result.node = outcome.node; break; }
+    }
+    if (result.node != nullptr) {
+        result.retainedUid = retained.uniqueId;
+        result.observedUid = played.uniqueId;
+    }
+    return result;
+}
+
+bool alignEquivalentCopyRoot(sts::search::BattleSearcher::Node &root,
+                             const sts::BattleContext &observed) {
+    if (root.state == nullptr || !root.state->equalForSearch(observed)
+            || root.state->cards.cardsInHand != observed.cards.cardsInHand) return false;
+    std::vector<sts::CardInstance> referencedCards;
+    std::vector<int> observedIndices;
+    referencedCards.reserve(root.edges.size());
+    observedIndices.reserve(root.edges.size());
+    for (const auto &edge : root.edges) {
+        if (edge.action.getActionType() != sts::search::ActionType::CARD) {
+            referencedCards.emplace_back();
+            observedIndices.push_back(-1);
+            continue;
+        }
+        const int source = edge.action.getSourceIdx();
+        if (source < 0 || source >= root.state->cards.cardsInHand) return false;
+        referencedCards.push_back(root.state->cards.hand[source]);
+        int observedIndex = -1;
+        for (int j = 0; j < observed.cards.cardsInHand; ++j) {
+            if (observed.cards.hand[j] == referencedCards.back()) {
+                observedIndex = j;
+                break;
+            }
+        }
+        if (observedIndex < 0) return false;
+        observedIndices.push_back(observedIndex);
+    }
+    for (int i = 0; i < observed.cards.cardsInHand; ++i)
+        root.state->cards.hand[i] = observed.cards.hand[i];
+    for (std::size_t i = 0; i < root.edges.size(); ++i) {
+        auto &edge = root.edges[i];
+        if (edge.action.getActionType() != sts::search::ActionType::CARD) continue;
+        edge.action = sts::search::Action(
+            sts::search::ActionType::CARD, observedIndices[i], edge.action.getTargetIdx());
+    }
+    return exactDecisionState(*root.state, observed);
+}
+
+bool remapReachableEquivalentCopy(sts::search::BattleSearcher::Node *root,
+                                  std::int16_t retainedUid, std::int16_t observedUid) {
+    using Node = sts::search::BattleSearcher::Node;
+    std::unordered_set<Node *> reachable;
+    std::vector<Node *> pending{root};
+    while (!pending.empty()) {
+        Node *node = pending.back();
+        pending.pop_back();
+        if (node == nullptr || !reachable.insert(node).second) continue;
+        if (node->state != nullptr
+                && (node->state->actionQueue.size != 0 || node->state->cardQueue.size != 0)) return false;
+        if (node->isRandomNode && node->parent != nullptr) pending.push_back(node->parent);
+        for (auto &edge : node->edges) if (edge.node != nullptr) pending.push_back(edge.node);
+    }
+    for (Node *node : reachable)
+        if (node->state != nullptr) swapCardUids(*node->state, retainedUid, observedUid);
+    return true;
+}
+
 } // namespace
 
 SilverLeafObservation makeSilverLeafObservation(
@@ -843,13 +962,28 @@ public:
         }
         if (previousBest != nullptr) {
             auto *candidate = exactRerootCandidate(previousBest, state);
+            const bool exactCandidate = candidate != nullptr;
+            bool equivalentCopyCandidate = false;
+            EquivalentCopyCandidate equivalent;
+            if (candidate == nullptr && searcher->root != nullptr && searcher->root->state != nullptr) {
+                equivalent = equivalentCopyRerootCandidate(
+                    previousBest, *searcher->root->state, state);
+                candidate = equivalent.node;
+                if (candidate != nullptr) {
+                    equivalentCopyCandidate = remapReachableEquivalentCopy(
+                        candidate, equivalent.retainedUid, equivalent.observedUid);
+                    if (!equivalentCopyCandidate || !alignEquivalentCopyRoot(*candidate, state))
+                        candidate = nullptr;
+                }
+            }
             // previousBest belongs to the old root and may be reclaimed by reroot.
             if (candidate != nullptr) {
                 previousBest = nullptr;
                 const auto oldCapMetric = config.reuseCapMode == SilverReuseCapMode::ALLOCATED
                     ? searcher->allNodes.size() : searcher->poolUsed;
                 searcher->rerootAt(candidate,
-                    oldCapMetric >= static_cast<std::size_t>(config.reuseCap));
+                    equivalentCopyCandidate
+                        || oldCapMetric >= static_cast<std::size_t>(config.reuseCap));
             }
             const std::size_t capMetric = config.reuseCapMode == SilverReuseCapMode::ALLOCATED
                 ? searcher->allNodes.size() : searcher->poolUsed;
@@ -858,13 +992,14 @@ public:
             if (collectDecisionDiagnostics) {
                 decisionDiagnostic.hadPredecessor = true;
                 decisionDiagnostic.rerootAttempted = true;
-                decisionDiagnostic.exactCandidateFound = candidate != nullptr;
+                decisionDiagnostic.exactCandidateFound = exactCandidate;
             }
             if (candidate != nullptr && !capBlocked) {
-                ++rerootExact;
+                if (exactCandidate) ++rerootExact;
                 inheritedVisits = searcher->root->simulationCount;
                 if (collectDecisionDiagnostics) {
-                    decisionDiagnostic.exactReroot = true;
+                    decisionDiagnostic.exactReroot = exactCandidate;
+                    decisionDiagnostic.equivalentCopyReroot = equivalentCopyCandidate;
                     decisionDiagnostic.inheritedVisits = inheritedVisits;
                 }
             } else {

@@ -19,9 +19,11 @@ decision-0 or decision-1 Silver root, verifies converted-state parity and legal
 actions, and runs the fixed 1,000-simulation Silver decision configuration.
 One advisor-owned Silver session is retained for the active protocol session
 and `combatEntryHash`; a matching observed successor can therefore report an
-exact reroot with inherited visits, while a different supported human action
-or equivalent physical copy safely reports a fresh `candidate_missing`
-fallback. It returns the selected action, root action summaries containing
+exact reroot with inherited visits. If the human plays a different physical
+copy of the same ordinary card, the immediate retained successor is narrowly
+rebased to that copy and also preserves inherited visits. A different
+supported human action safely reports a fresh `candidate_missing` fallback.
+It returns the selected action, root action summaries containing
 edge visits, `visitShare`, and selection Q only when that edge has a valid Q
 value, plus the decision ordinal and reroot diagnostics.
 Unsupported encounter, relic, information, or schema states remain explicit
@@ -63,6 +65,12 @@ are rejected. A single deterministic search seed derived from
 `combatEntryHash` is retained across both decisions. Unsupported continuation,
 a new protocol session, or a new combat discards the prior Silver session; the
 implementation never crosses the monster turn.
+
+Equivalent-copy rebasing is deliberately local to the immediate live reroot.
+It proves the candidate by swapping only the retained and observed card UIDs,
+then requiring the ordinary-card equivalence and full search-state checks to
+match. It does not relax `equalForSearch()`, merge UID-distinct states in the
+global dedup table, or make chance-node identity less strict.
 
 Rest observations are emitted only while the installed campfire UI exists, is
 visible, and has not selected an option. Selecting a campfire option therefore

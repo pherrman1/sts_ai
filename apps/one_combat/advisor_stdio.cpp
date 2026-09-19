@@ -107,6 +107,7 @@ json silverEvaluator(const one_combat::advisor::Request &request,
     evaluator["decisionOrdinal"] = imported.decisionOrdinal;
     evaluator["reroot"] = {
         {"exact", decision.diagnostic.exactReroot},
+        {"equivalentCopy", decision.diagnostic.equivalentCopyReroot},
         {"fallback", decision.diagnostic.fallback},
         {"fallbackReason", silver_bridge::silverRerootFallbackReasonName(
             decision.diagnostic.fallbackReason)},

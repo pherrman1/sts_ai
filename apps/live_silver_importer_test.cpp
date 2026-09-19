@@ -372,13 +372,38 @@ int main() {
         const auto equivalentFirst = runSilverDecision(*equivalentSession, rerootImported.wire, config);
         const auto equivalentSuccessor = successorForSemantic(*rerootRoot, equivalentFirst.action, true);
         const auto equivalentImported = one_combat::advisor::importSilverRoot(equivalentSuccessor.observation);
+        if (convertedStatesEqualForSearch(exactImported.wire, equivalentImported.wire))
+            throw std::runtime_error("equivalent-copy reroot test accidentally relaxed global equality");
         const auto equivalentDecision = runSilverDecision(*equivalentSession, equivalentImported.wire, config);
         if (!equivalentDecision.accepted || equivalentDecision.diagnostic.exactReroot
-            || !equivalentDecision.diagnostic.fallback
-            || equivalentDecision.diagnostic.fallbackReason != SilverRerootFallbackReason::CANDIDATE_MISSING
-            || equivalentDecision.diagnostic.inheritedVisits != 0
+            || !equivalentDecision.diagnostic.equivalentCopyReroot
+            || equivalentDecision.diagnostic.fallback
+            || equivalentDecision.diagnostic.fallbackReason != SilverRerootFallbackReason::NONE
+            || equivalentDecision.diagnostic.inheritedVisits <= 0
             || equivalentDecision.rootActionSummaries.empty())
-            throw std::runtime_error("equivalent physical copy did not safely fresh-fallback");
+            throw std::runtime_error("equivalent physical copy did not reuse the retained root: exact="
+                + std::to_string(equivalentDecision.diagnostic.exactReroot)
+                + " equivalent=" + std::to_string(equivalentDecision.diagnostic.equivalentCopyReroot)
+                + " fallback=" + std::to_string(equivalentDecision.diagnostic.fallback)
+                + " reason=" + silver_bridge::silverRerootFallbackReasonName(
+                    equivalentDecision.diagnostic.fallbackReason)
+                + " inherited=" + std::to_string(equivalentDecision.diagnostic.inheritedVisits)
+                + " miss=" + equivalentDecision.rerootMissDiagnostic);
+
+        auto changedStateSession = silver_bridge::makeSilverSearchSession();
+        const auto changedStateFirst = runSilverDecision(*changedStateSession, rerootImported.wire, config);
+        auto changedStateWire = equivalentImported.wire;
+        if (changedStateWire.hand.empty()) throw std::runtime_error("changed-state fixture has no hand");
+        changedStateWire.hand.front().retain = !changedStateWire.hand.front().retain;
+        const auto changedStateDecision = runSilverDecision(*changedStateSession, changedStateWire, config);
+        if (!changedStateFirst.accepted || !changedStateDecision.accepted
+            || changedStateDecision.diagnostic.exactReroot
+            || changedStateDecision.diagnostic.equivalentCopyReroot
+            || !changedStateDecision.diagnostic.fallback
+            || changedStateDecision.diagnostic.fallbackReason
+                != SilverRerootFallbackReason::CANDIDATE_MISSING
+            || changedStateDecision.diagnostic.inheritedVisits != 0)
+            throw std::runtime_error("non-equivalent card state incorrectly reused the retained root");
         auto hand = fixtures[0].observation;
         std::swap(hand["silverRoot"]["combat"]["hand"][0], hand["silverRoot"]["combat"]["hand"][1]);
         auto original = one_combat::advisor::importSilverRoot(fixtures[0].observation);

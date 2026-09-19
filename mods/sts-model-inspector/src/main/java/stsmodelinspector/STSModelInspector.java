@@ -72,6 +72,7 @@ public final class STSModelInspector implements PostInitializeSubscriber,
     private volatile String silverRanking = "";
     private volatile int silverDecisionOrdinal = -1;
     private volatile boolean silverRerootExact;
+    private volatile boolean silverEquivalentCopyReroot;
     private volatile boolean silverRerootFallback;
     private volatile String silverFallbackReason = "";
     private volatile long silverInheritedVisits;
@@ -117,6 +118,7 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         silverRanking = "";
         silverDecisionOrdinal = -1;
         silverRerootExact = false;
+        silverEquivalentCopyReroot = false;
         silverRerootFallback = false;
         silverFallbackReason = "";
         silverInheritedVisits = 0;
@@ -216,7 +218,8 @@ public final class STSModelInspector implements PostInitializeSubscriber,
             if (!silverStatus.isEmpty()) {
                 if ("OK".equals(silverStatus) && silverDecisionOrdinal == 0) {
                     silverHeading = "Silver — decision 0 — fresh";
-                } else if ("OK".equals(silverStatus) && silverRerootExact) {
+                } else if ("OK".equals(silverStatus)
+                        && (silverRerootExact || silverEquivalentCopyReroot)) {
                     silverHeading = "Silver — decision 1 — reused "
                             + silverInheritedVisits + " visits";
                 } else if ("OK".equals(silverStatus) && silverRerootFallback) {
@@ -1000,6 +1003,7 @@ public final class STSModelInspector implements PostInitializeSubscriber,
                             silverRanking = "";
                             silverDecisionOrdinal = -1;
                             silverRerootExact = false;
+                            silverEquivalentCopyReroot = false;
                             silverRerootFallback = false;
                             silverFallbackReason = "";
                             silverInheritedVisits = 0;
@@ -1026,6 +1030,7 @@ public final class STSModelInspector implements PostInitializeSubscriber,
                                 silverRanking = field(line, "silverRanking");
                                 silverDecisionOrdinal = (int) numberField(line, "decisionOrdinal");
                                 silverRerootExact = booleanField(line, "exact");
+                                silverEquivalentCopyReroot = booleanField(line, "equivalentCopy");
                                 silverRerootFallback = booleanField(line, "fallback");
                                 silverFallbackReason = field(line, "fallbackReason");
                                 silverInheritedVisits = numberField(line, "inheritedVisits");

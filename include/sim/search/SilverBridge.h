@@ -432,6 +432,7 @@ struct SilverSearchDecisionDiagnostic {
     bool rerootAttempted = false;
     bool exactCandidateFound = false;
     bool exactReroot = false;
+    bool equivalentCopyReroot = false;
     bool fallback = false;
     SilverRerootFallbackReason fallbackReason = SilverRerootFallbackReason::NONE;
     SilverReuseCapMode configuredCapMode = SilverReuseCapMode::ALLOCATED;
