@@ -1353,7 +1353,7 @@ experiment.  No model, replay integration, gameplay, or default change is yet
 qualified.  The separate known-harmful-root regression is still outstanding
 because the exact frozen snapshots were unavailable; do not replace it with
 recollected roots or interpret the primary pass as that regression.  See
-[ledger-06 §320](../../experiments/ledger-06.md) and the
+[ledger-06 §321](../../experiments/ledger-06.md) and the
 [forced-action evidence](../../experiments/evidence/silver_forced_action_target_2026-09-19/README.md).
 
 ### Combat leaf/model variants
