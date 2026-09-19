@@ -507,11 +507,30 @@ bool search::Action::areCardsEquivalentForSearch(const CardInstance &lhs, const 
 }
 
 template <typename ForwardIt>
-void setupCardOptionsHelper(std::vector<search::Action> &actions, const ForwardIt begin, const ForwardIt end, const std::function<bool(const CardInstance &)> &p= nullptr) {
+void setupCardOptionsHelper(std::vector<search::Action> &actions, const ForwardIt begin, const ForwardIt end,
+                            const std::function<bool(const CardInstance &)> &p = nullptr,
+                            bool deduplicateEquivalent = false) {
+    std::vector<const CardInstance *> retained;
     for (int i = 0; begin+i != end; ++i) {
         const auto &c = begin[i];
-        if (!p || (p(c))) {
-            actions.emplace_back(search::ActionType::SINGLE_CARD_SELECT, i);
+        if (p && !p(c)) {
+            continue;
+        }
+        if (deduplicateEquivalent) {
+            bool duplicate = false;
+            for (const auto *representative : retained) {
+                if (search::Action::areCardsEquivalentForSearch(c, *representative)) {
+                    duplicate = true;
+                    break;
+                }
+            }
+            if (duplicate) {
+                continue;
+            }
+        }
+        actions.emplace_back(search::ActionType::SINGLE_CARD_SELECT, i);
+        if (deduplicateEquivalent) {
+            retained.push_back(&c);
         }
     }
 }
@@ -522,7 +541,7 @@ std::vector<search::Action> search::Action::enumerateCardSelectActions(const Bat
     switch (bc.cardSelectInfo.cardSelectTask) {
         case CardSelectTask::ARMAMENTS:
             setupCardOptionsHelper( actions, bc.cards.hand.begin(), bc.cards.hand.begin() + bc.cards.cardsInHand,
-                                    [] (const CardInstance &c) { return c.canUpgrade(); });
+                                    [] (const CardInstance &c) { return c.canUpgrade(); }, true);
             break;
 
         case CardSelectTask::CODEX:
@@ -546,21 +565,24 @@ std::vector<search::Action> search::Action::enumerateCardSelectActions(const Bat
 
         case CardSelectTask::EXHUME:
             setupCardOptionsHelper(actions, bc.cards.exhaustPile.begin(), bc.cards.exhaustPile.end(),
-                                   [](const auto &c) { return c.getId() != CardId::EXHUME; });
+                                   [](const auto &c) { return c.getId() != CardId::EXHUME; }, true);
             break;
 
         case CardSelectTask::EXHAUST_ONE:
-            setupCardOptionsHelper(actions, bc.cards.hand.begin(), bc.cards.hand.begin() + bc.cards.cardsInHand);
+            setupCardOptionsHelper(actions, bc.cards.hand.begin(), bc.cards.hand.begin() + bc.cards.cardsInHand,
+                                   nullptr, true);
             break;
 
         case CardSelectTask::FORETHOUGHT:
         case CardSelectTask::WARCRY:
-            setupCardOptionsHelper(actions, bc.cards.hand.begin(), bc.cards.hand.begin() + bc.cards.cardsInHand);
+            setupCardOptionsHelper(actions, bc.cards.hand.begin(), bc.cards.hand.begin() + bc.cards.cardsInHand,
+                                   nullptr, true);
             break;
 
         case CardSelectTask::HEADBUTT:
         case CardSelectTask::LIQUID_MEMORIES_POTION:
-            setupCardOptionsHelper(actions, bc.cards.discardPile.begin(), bc.cards.discardPile.end());
+            setupCardOptionsHelper(actions, bc.cards.discardPile.begin(), bc.cards.discardPile.end(),
+                                   nullptr, true);
             break;
 
         case CardSelectTask::SECRET_TECHNIQUE:

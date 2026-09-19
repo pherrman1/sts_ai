@@ -131,6 +131,74 @@ void cardActionCanonicalization(const sts::BattleContext &original) {
     require(specialCount == 2, "identity-sensitive card copies must remain distinct");
 }
 
+void singleCardSelectCanonicalization(const sts::BattleContext &original) {
+    const std::array<sts::CardSelectTask, 7> tasks = {
+        sts::CardSelectTask::ARMAMENTS, sts::CardSelectTask::EXHAUST_ONE,
+        sts::CardSelectTask::FORETHOUGHT, sts::CardSelectTask::WARCRY,
+        sts::CardSelectTask::HEADBUTT, sts::CardSelectTask::EXHUME,
+        sts::CardSelectTask::LIQUID_MEMORIES_POTION,
+    };
+
+    for (const auto task : tasks) {
+        auto bc = original;
+        bc.inputState = sts::InputState::CARD_SELECT;
+        bc.cardSelectInfo.cardSelectTask = task;
+        bc.cardSelectInfo.selectedBits = 0;
+        const bool handSource = task == sts::CardSelectTask::ARMAMENTS ||
+                                task == sts::CardSelectTask::EXHAUST_ONE ||
+                                task == sts::CardSelectTask::FORETHOUGHT ||
+                                task == sts::CardSelectTask::WARCRY;
+        if (handSource) {
+            bc.cards.cardsInHand = 3;
+            bc.cards.hand[0] = sts::CardInstance(sts::CardId::STRIKE_RED);
+            bc.cards.hand[1] = sts::CardInstance(sts::CardId::DEFEND_RED);
+            bc.cards.hand[2] = sts::CardInstance(sts::CardId::STRIKE_RED);
+            bc.cards.hand[0].setUniqueId(501); bc.cards.hand[2].setUniqueId(502);
+        } else {
+            std::vector<sts::CardInstance> cards = {
+                sts::CardInstance(sts::CardId::STRIKE_RED),
+                sts::CardInstance(sts::CardId::DEFEND_RED),
+                sts::CardInstance(sts::CardId::STRIKE_RED),
+            };
+            cards[0].setUniqueId(501); cards[2].setUniqueId(502);
+            if (task == sts::CardSelectTask::EXHUME) {
+                bc.cards.exhaustPile.assignInformationState({}, cards, {}, false);
+            } else {
+                bc.cards.discardPile.assignInformationState({}, cards, {}, false);
+            }
+        }
+
+        const auto actions = sts::search::Action::enumerateCardSelectActions(bc);
+        require(actions.size() == 2 && actions[0].getSelectIdx() == 0 && actions[1].getSelectIdx() == 1,
+                "safe single-card selects must retain the first equivalent representative");
+    }
+
+    auto differentiated = original;
+    differentiated.inputState = sts::InputState::CARD_SELECT;
+    differentiated.cardSelectInfo.cardSelectTask = sts::CardSelectTask::HEADBUTT;
+    std::vector<sts::CardInstance> differentiatedCards = {
+        sts::CardInstance(sts::CardId::STRIKE_RED), sts::CardInstance(sts::CardId::STRIKE_RED),
+    };
+    differentiatedCards[1].retain = true;
+    differentiated.cards.discardPile.assignInformationState({}, differentiatedCards, {}, false);
+    require(sts::search::Action::enumerateCardSelectActions(differentiated).size() == 2,
+            "differing select card state must preserve separate choices");
+
+    auto execution = original;
+    execution.inputState = sts::InputState::CARD_SELECT;
+    execution.cardSelectInfo.cardSelectTask = sts::CardSelectTask::EXHAUST_ONE;
+    execution.cards.cardsInHand = 3;
+    execution.cards.hand[0] = sts::CardInstance(sts::CardId::STRIKE_RED);
+    execution.cards.hand[1] = sts::CardInstance(sts::CardId::DEFEND_RED);
+    execution.cards.hand[2] = sts::CardInstance(sts::CardId::STRIKE_RED);
+    execution.cards.hand[0].setUniqueId(601); execution.cards.hand[2].setUniqueId(602);
+    const auto representative = sts::search::Action::enumerateCardSelectActions(execution).front();
+    representative.execute(execution);
+    require(execution.cards.cardsInHand == 2 && execution.cards.exhaustPile.size() == 1 &&
+            execution.cards.exhaustPile[0].id == sts::CardId::STRIKE_RED,
+            "select representative must still execute the expected pile transformation");
+}
+
 void widening(Search &search) {
     // Exercise the complete bounded table, the fallback, both independent parameter
     // sets, and mutation after warming the cache. Compare the original expression.
@@ -669,6 +737,7 @@ int main(int argc, char **argv) {
         }
         dedupGrowth(bc);
         cardActionCanonicalization(bc);
+        singleCardSelectCanonicalization(bc);
         lazyReroot(bc);
         compaction(bc, 0);
         selection(search); widening(search); rootPriorSelection(search);
