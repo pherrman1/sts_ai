@@ -957,14 +957,20 @@ void search::BattleSearcher::enumeratePotionActions(search::BattleSearcher::Node
 
     const auto hasValidTarget = bc.monsters.getTargetableCount() > 0;
 
-    std::unordered_set<Potion> seenPotionTypes;
     for (int pIdx = 0; pIdx < bc.potionCapacity; ++pIdx) {
 
         const auto p = bc.potions[pIdx];
         if (p == Potion::EMPTY_POTION_SLOT) {
             continue;
         }
-        if (!seenPotionTypes.insert(p).second) {
+        bool duplicate = false;
+        for (int j = 0; j < pIdx; ++j) {
+            if (bc.potions[j] == p) {
+                duplicate = true;
+                break;
+            }
+        }
+        if (duplicate) {
             continue;
         }
 

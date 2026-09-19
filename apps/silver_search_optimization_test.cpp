@@ -519,12 +519,19 @@ void gambleMicrobenchmark(sts::GameContext &gc, int simulations, std::size_t exp
               << " wall_seconds=" << elapsed << '\n';
 }
 
-void potionMicrobenchmark(sts::GameContext &gc, int simulations, std::size_t expectedRootActions) {
+void potionMicrobenchmark(sts::GameContext &gc, int simulations, std::size_t expectedRootActions,
+                          bool distinctPotions) {
     auto state = fixture(gc);
     state.cards.cardsInHand = 0;
-    installPotions(state, {sts::Potion::STRENGTH_POTION, sts::Potion::STRENGTH_POTION,
-                           sts::Potion::STRENGTH_POTION, sts::Potion::STRENGTH_POTION,
-                           sts::Potion::STRENGTH_POTION});
+    if (distinctPotions) {
+        installPotions(state, {sts::Potion::STRENGTH_POTION, sts::Potion::DEXTERITY_POTION,
+                               sts::Potion::BLOCK_POTION, sts::Potion::ENERGY_POTION,
+                               sts::Potion::FIRE_POTION});
+    } else {
+        installPotions(state, {sts::Potion::STRENGTH_POTION, sts::Potion::STRENGTH_POTION,
+                               sts::Potion::STRENGTH_POTION, sts::Potion::STRENGTH_POTION,
+                               sts::Potion::STRENGTH_POTION});
+    }
     const auto rootActionSet = rootActions(state);
     require(rootActionSet.size() == expectedRootActions, "potion microbenchmark root action count mismatch");
     Search search(state);
@@ -1085,8 +1092,10 @@ int main(int argc, char **argv) {
         if (argc > 1 && std::string(argv[1]) == "--potion-microbenchmark") {
             const int simulations = argc > 2 ? std::stoi(argv[2]) : 10000;
             const auto expectedRootActions = argc > 3 ? static_cast<std::size_t>(std::stoul(argv[3])) : 2;
+            const bool distinctPotions = argc > 4 && std::string(argv[4]) == "distinct";
+            require(argc <= 4 || distinctPotions, "potion microbenchmark mode must be distinct when provided");
             require(simulations > 0, "potion microbenchmark simulations must be positive");
-            potionMicrobenchmark(gc, simulations, expectedRootActions);
+            potionMicrobenchmark(gc, simulations, expectedRootActions, distinctPotions);
             return 0;
         }
         dedupGrowth(bc);
