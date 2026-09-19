@@ -25,6 +25,7 @@ using Search = sts::search::BattleSearcher;
 void require(bool ok, const char *message) {
     if (!ok) throw std::runtime_error(message);
 }
+void equalStats(const sts::search::SearchStats &a, const sts::search::SearchStats &b);
 sts::BattleContext fixture(sts::GameContext &gc) {
     gc.cc = sts::CharacterClass::IRONCLAD;
     gc.seed = 0xBADC0DEu;
@@ -411,19 +412,20 @@ void uidFragmentationDiagnostic(const sts::BattleContext &original) {
             "UID diagnostics must not change the selected action");
     require(diagnosticsOff.randGen == diagnosticsOn.randGen,
             "UID diagnostics must not change search RNG");
+    require(diagnosticsOff.rolloutAgent.rng == diagnosticsOn.rolloutAgent.rng,
+            "UID diagnostics must not change rollout RNG");
     require(diagnosticsOff.actionStack == diagnosticsOn.actionStack,
             "UID diagnostics must not change the action trace");
-    require(diagnosticsOff.stats.steps == diagnosticsOn.stats.steps
-                && diagnosticsOff.stats.nodesCreated == diagnosticsOn.stats.nodesCreated
-                && diagnosticsOff.stats.detTranspositions == diagnosticsOn.stats.detTranspositions
-                && diagnosticsOff.stats.chanceOutcomesSampled == diagnosticsOn.stats.chanceOutcomesSampled
-                && diagnosticsOff.stats.chanceSiblingReuse == diagnosticsOn.stats.chanceSiblingReuse
-                && diagnosticsOff.stats.chanceTranspositions == diagnosticsOn.stats.chanceTranspositions
-                && diagnosticsOff.stats.depthSum == diagnosticsOn.stats.depthSum
-                && diagnosticsOff.stats.chanceDepthSum == diagnosticsOn.stats.chanceDepthSum,
-            "UID diagnostics must not change exact search counters");
+    equalStats(diagnosticsOff.stats, diagnosticsOn.stats);
     require(diagnosticsOff.stats.uidRelaxedNodeAllocationCandidates == 0
-                && diagnosticsOff.stats.uidRelaxedChanceSiblingCandidates == 0,
+                && diagnosticsOff.stats.uidRelaxedNodeCandidatesWithDrawDifference == 0
+                && diagnosticsOff.stats.uidRelaxedNodeCandidatesWithHandDifference == 0
+                && diagnosticsOff.stats.uidRelaxedNodeCandidatesWithBothHandAndDrawDifference == 0
+                && diagnosticsOff.stats.uidRelaxedChanceSiblingCandidates == 0
+                && diagnosticsOff.stats.uidRelaxedChanceSiblingCandidatesByCategory[0] == 0
+                && diagnosticsOff.stats.uidRelaxedChanceSiblingCandidatesByCategory[1] == 0
+                && diagnosticsOff.stats.uidRelaxedChanceSiblingCandidatesByCategory[2] == 0
+                && diagnosticsOff.stats.uidRelaxedChanceSiblingCandidatesWithHandDrawSwap == 0,
             "UID diagnostics must remain inactive by default");
     require(diagnosticsOff.getRootEdges().size() == diagnosticsOn.getRootEdges().size(),
             "UID diagnostics must not change root edge count");
