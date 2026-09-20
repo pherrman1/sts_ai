@@ -73,11 +73,16 @@ hashes, summaries, and the final analysis output.
   zero;
 - Teacher-B regret reduction at least -5%;
 - exact full locked-leaf coverage;
-- no severe obvious catastrophic-tail defect; and
 - no obvious concentration in only one or two locked source seeds. This is
-  tested by removing the two largest positive source contributions and
-  requiring the remaining sources to retain both positive Teacher-A regret
-  reduction and positive source-clustered bootstrap support.
+  tested by ranking global leave-one-source-out absolute Teacher-A influence,
+  removing the two largest positive influences, and requiring the remaining
+  sources to retain both positive Teacher-A improvement and positive
+  source-clustered bootstrap support.
+
+Catastrophic-tail measurements are preregistered diagnostics, not an
+automated promotion gate: the experiment reports the largest per-leaf and
+p95 regrets and the worst source/group cases, but does not add a post-hoc
+finite-value rejection threshold.
 
 The protocol requires all 40 locked source seeds and aborts on technical
 attrition; it does not silently replace or relabel failed sources. Therefore

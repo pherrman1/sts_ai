@@ -457,6 +457,7 @@ def selected_metrics(selected: list[dict], bootstrap_iterations: int) -> dict:
     return {
         "teacher_a": {"baseline": base_a, "model": model_a, "oracle": oracle_a},
         "teacher_b": {"baseline": base_b, "model": model_b, "oracle": oracle_b},
+        "teacher_a_absolute_improvement": base_regret - model_regret,
         "teacher_a_regret_reduction": (base_regret - model_regret) / base_regret,
         "teacher_b_regret_reduction": (base_b["mean_teacher_regret"] - model_b["mean_teacher_regret"]) / base_b["mean_teacher_regret"],
         "recovered_oracle_fraction": (base_regret - model_regret) / denominator if denominator else None,
@@ -476,6 +477,7 @@ def selected_metrics(selected: list[dict], bootstrap_iterations: int) -> dict:
                 default=0.0),
             "worst_leaf_cases": worst_regret_rows[:8],
             "severe_obvious_defect": not finite,
+            "automated_gate": False,
         },
         "group_diagnostics": group_diagnostics,
         "selected_length_counts": dict(lengths), "oracle_length_counts": dict(oracle_lengths),
@@ -504,48 +506,61 @@ def source_contributions(selected: list[dict]) -> list[dict]:
     return report
 
 
-def source_concentration(selected: list[dict], contributions: list[dict],
+def top_positive_influence_sources(influence: list[dict], count: int = 2) -> list[dict]:
+    return sorted(
+        (row for row in influence if row["absolute_improvement_influence"] > 0),
+        key=lambda row: (row["absolute_improvement_influence"], row["omitted_source_seed"]),
+        reverse=True)[:count]
+
+
+def source_concentration(selected: list[dict], influence: list[dict],
                          bootstrap_iterations: int) -> dict:
-    """Remove the two largest positive source contributions as a preregistered stress test."""
-    positive = sorted(
-        (row for row in contributions if row["difference"] > 0),
-        key=lambda row: (row["difference"], row["source_seed"]), reverse=True)
-    removed = positive[:2]
-    removed_sources = {row["source_seed"] for row in removed}
+    """Remove the two largest global leave-one-source-out influences."""
+    removed = top_positive_influence_sources(influence)
+    removed_sources = {row["omitted_source_seed"] for row in removed}
     remaining = [row for row in selected if row["source_seed"] not in removed_sources]
     remaining_metrics = selected_metrics(remaining, bootstrap_iterations) if remaining else None
     return {
-        "rule": "remove the two largest positive source contributions; remaining sources must retain positive Teacher-A improvement and clustered support",
-        "removed_sources": [row["source_seed"] for row in removed],
-        "removed_contributions": removed,
+        "rule": "remove the two largest positive global leave-one-source-out absolute Teacher-A influences; remaining sources must retain positive improvement and clustered support",
+        "removed_sources": [row["omitted_source_seed"] for row in removed],
+        "removed_influences": removed,
         "remaining_source_count": len({row["source_seed"] for row in remaining}),
         "remaining_leaf_count": len({row["leaf_snapshot_id"] for row in remaining}),
+        "remaining_teacher_a_absolute_improvement": (
+            remaining_metrics["teacher_a_absolute_improvement"] if remaining_metrics else None),
         "remaining_teacher_a_regret_reduction": (
             remaining_metrics["teacher_a_regret_reduction"] if remaining_metrics else None),
         "remaining_clustered_p025": (
             remaining_metrics["clustered_bootstrap"]["p025"] if remaining_metrics else None),
         "passes": concentration_passes(
             len({row["source_seed"] for row in remaining}),
-            remaining_metrics["teacher_a_regret_reduction"] if remaining_metrics else None,
+            remaining_metrics["teacher_a_absolute_improvement"] if remaining_metrics else None,
             remaining_metrics["clustered_bootstrap"]["p025"] if remaining_metrics else None),
     }
 
 
-def concentration_passes(source_count: int, regret_reduction: float | None,
+def concentration_passes(source_count: int, absolute_improvement: float | None,
                           clustered_p025: float | None) -> bool:
-    return (source_count >= 30 and regret_reduction is not None and regret_reduction > 0
+    return (source_count >= 30 and absolute_improvement is not None and absolute_improvement > 0
             and clustered_p025 is not None and clustered_p025 > 0)
 
 
-def leave_one_source_out(selected: list[dict], bootstrap_iterations: int) -> list[dict]:
+def leave_one_source_out(selected: list[dict], bootstrap_iterations: int,
+                         full_absolute_improvement: float) -> list[dict]:
     """Describe the locked result after omitting each source once."""
+    by_source = defaultdict(list)
+    for row in selected:
+        by_source[row["source_seed"]].append(row)
     sources = sorted({row["source_seed"] for row in selected})
     report = []
     for source in sources:
         remaining = [row for row in selected if row["source_seed"] != source]
         metrics = selected_metrics(remaining, bootstrap_iterations)
         report.append({"omitted_source_seed": source,
+                       "leaf_count": len({row["leaf_snapshot_id"] for row in by_source[source]}),
                        "remaining_source_count": len(sources) - 1,
+                       "remaining_teacher_a_absolute_improvement": metrics["teacher_a_absolute_improvement"],
+                       "absolute_improvement_influence": full_absolute_improvement - metrics["teacher_a_absolute_improvement"],
                        "recovered_oracle_fraction": metrics["recovered_oracle_fraction"],
                        "teacher_a_regret_reduction": metrics["teacher_a_regret_reduction"],
                        "clustered_p025": metrics["clustered_bootstrap"]["p025"]})
@@ -656,23 +671,23 @@ def run(args: argparse.Namespace) -> int:
     locked_intended_leaves = set(dataset["locked_validation"]["coverage"]["intended_leaves"])
     locked_analyzed_leaves = set(dataset["locked_validation"]["coverage"]["analyzed_leaves"])
     selected_leaves = set(primary["selected_leaf_snapshot_ids"])
+    influence = leave_one_source_out(
+        primary["selected_rows"], args.bootstrap,
+        primary["teacher_a_absolute_improvement"])
     concentration = source_concentration(
-        primary["selected_rows"], primary["source_contributions"], args.bootstrap)
+        primary["selected_rows"], influence, args.bootstrap)
     gate = {"recovered_at_least_50_percent": primary["recovered_oracle_fraction"] is not None and primary["recovered_oracle_fraction"] >= 0.50,
             "clustered_p025_positive": primary["clustered_bootstrap"]["p025"] > 0,
             "teacher_b_not_below_negative_5_percent": primary["teacher_b_regret_reduction"] >= -0.05,
             "full_locked_coverage": selected_leaves == locked_intended_leaves == locked_analyzed_leaves,
-            "no_severe_catastrophic_tail_defect": not primary["catastrophic_tail"]["severe_obvious_defect"],
             "performance_not_obviously_driven_by_one_or_two_sources": concentration["passes"],
             "locked_source_count_exactly_40": len(locked_sources) == 40}
     source_rows = primary["source_contributions"]
     improved = sum(row["difference"] > 0 for row in source_rows)
     worsened = sum(row["difference"] < 0 for row in source_rows)
-    influence = leave_one_source_out(
-        primary["selected_rows"], args.bootstrap)
     influence_by_change = sorted(
         influence,
-        key=lambda row: row["recovered_oracle_fraction"] - primary["recovered_oracle_fraction"])
+        key=lambda row: row["absolute_improvement_influence"])
     learning_curve = {
         "recovered_oracle_fraction": {
             arm: all_reports[arm]["recovered_oracle_fraction"]

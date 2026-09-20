@@ -130,6 +130,25 @@ class ScaleValidationContracts(unittest.TestCase):
         self.assertFalse(MODULE.concentration_passes(38, 0.10, 0.0))
         self.assertFalse(MODULE.concentration_passes(2, 0.10, 0.01))
 
+    def test_concentration_ranks_global_influence_not_per_source_mean(self):
+        # A's per-source mean looks larger, but B's 20 leaves make its
+        # leave-one-source-out effect larger on the global locked result.
+        per_source_means = [
+            {"source_seed": "A", "leaf_count": 1, "difference": 5.0},
+            {"source_seed": "B", "leaf_count": 20, "difference": 4.0},
+        ]
+        global_influence = [
+            {"omitted_source_seed": "A", "leaf_count": 1,
+             "absolute_improvement_influence": 0.10},
+            {"omitted_source_seed": "B", "leaf_count": 20,
+             "absolute_improvement_influence": 1.25},
+        ]
+        self.assertEqual(per_source_means[0]["difference"] > per_source_means[1]["difference"], True)
+        self.assertEqual(
+            MODULE.top_positive_influence_sources(global_influence, count=1)[0]["omitted_source_seed"],
+            "B",
+        )
+
     def test_bootstrap_floor_is_preregistered(self):
         self.assertEqual(MODULE.MIN_BOOTSTRAP_ITERATIONS, 5000)
 
