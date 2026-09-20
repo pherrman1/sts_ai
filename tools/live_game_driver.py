@@ -282,20 +282,27 @@ def build_legal_actions(screen: Mapping[str, Any], commands: Mapping[str, Any] |
             _append(actions, tool, {}, tool.replace("_", " ").title(), {"kind": tool})
         elif tool == "select_cards":
             options = screen.get("selection_options", screen.get("select_options", game_state.get("selection_options")))
+            selection = _first_mapping(screen.get("selection"), game_state.get("selection"))
+            selection_cards = _list(selection.get("cards", hand))
+            def card_uuids(args: Mapping[str, Any]) -> list[str]:
+                indexes = args.get("drop", args.get("keep", []))
+                return [_card_uuid(_mapping(selection_cards[index - 1])) for index in indexes
+                        if isinstance(index, int) and 0 < index <= len(selection_cards)]
             for option in _list(options):
                 args = _selection_arguments(option)
                 if args is not None:
-                    _append(actions, tool, args, f"Select cards: {args}", {"kind": "select_cards", **args})
+                    _append(actions, tool, args, f"Select cards: {args}",
+                             {"kind": "select_cards", **args, "card_uuids": card_uuids(args)})
             if not options:
-                selection = _first_mapping(screen.get("selection"), game_state.get("selection"))
-                cards = _list(selection.get("cards", hand))
+                cards = selection_cards
                 minimum = int(selection.get("min", selection.get("pick_count", selection.get("pickCount", 0))))
                 maximum = min(int(selection.get("max", selection.get("pick_count", selection.get("pickCount", len(cards))))), len(cards))
                 if maximum >= minimum:
                     for count in range(minimum, maximum + 1):
                         for indexes in itertools.combinations(range(1, len(cards) + 1), count):
                             _append(actions, tool, {"drop": list(indexes)}, f"Select cards to drop {list(indexes)}",
-                                     {"kind": "select_cards", "drop": list(indexes)})
+                                     {"kind": "select_cards", "drop": list(indexes),
+                                      "card_uuids": card_uuids({"drop": list(indexes)})})
     if len(actions) > max_candidates:
         raise CandidateEnumerationError(f"legal action set has {len(actions)} candidates; configured limit is {max_candidates}")
     actionable = [name for name in names if name in ACTION_TOOLS]
@@ -310,8 +317,8 @@ def _semantic_match(selected: Mapping[str, Any], action: LegalAction) -> bool:
     if selected_kind and selected_kind != semantic.get("kind"):
         if not (selected_kind == "card_select" and semantic.get("kind") == "select_cards"):
             return False
-    for selected_key, action_key in (("kind", "kind"), ("cardUuid", "card_uuid"),
-                                     ("card_uuid", "card_uuid"), ("targetIndex", "target_index"),
+    for selected_key, action_key in (("cardUuid", "card_uuid"), ("card_uuid", "card_uuid"),
+                                     ("targetIndex", "target_index"),
                                      ("target_index", "target_index"), ("potionSlot", "potion_slot"),
                                      ("potion_slot", "potion_slot"), ("choiceIndex", "choice_index"),
                                      ("choice_index", "choice_index"), ("discard", "discard")):
