@@ -76,6 +76,8 @@ public final class STSModelInspector implements PostInitializeSubscriber,
     // is not occupied by a live object in the current snapshot.
     private static final IdentityHashMap<AbstractMonster, Integer> monsterSlots =
             new IdentityHashMap<>();
+    private static final Set<AbstractMonster> replacedMonsterParents =
+            Collections.newSetFromMap(new IdentityHashMap<AbstractMonster, Boolean>());
     private static final IdentityHashMap<AbstractMonster, Integer> hexaghostDividerDamage =
             new IdentityHashMap<>();
 
@@ -140,6 +142,7 @@ public final class STSModelInspector implements PostInitializeSubscriber,
     @Override
     public void receiveOnBattleStart(AbstractRoom room) {
         monsterSlots.clear();
+        replacedMonsterParents.clear();
         hexaghostDividerDamage.clear();
         liveEncounter = encounterName(room);
         trackedLastUnblockedDamage = 0;
@@ -160,6 +163,7 @@ public final class STSModelInspector implements PostInitializeSubscriber,
     @Override
     public void receivePostBattle(AbstractRoom room) {
         monsterSlots.clear();
+        replacedMonsterParents.clear();
         hexaghostDividerDamage.clear();
         liveEncounter = "";
         combatEntry = "";
@@ -809,6 +813,30 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         return null;
     }
 
+    private static boolean replacedLargeSlimeParent(String encounter,
+                                                     AbstractMonster candidate,
+                                                     List<AbstractMonster> monsters) {
+        if (!"LARGE_SLIME".equals(encounter) || candidate == null
+                || !("AcidSlime_L".equals(candidate.id)
+                    || "SpikeSlime_L".equals(candidate.id))) return false;
+        if (replacedMonsterParents.contains(candidate)) return true;
+        if (candidate.currentHealth > 0 || !candidate.isDeadOrEscaped()) return false;
+        String childId = "AcidSlime_L".equals(candidate.id) ? "AcidSlime_M" : "SpikeSlime_M";
+        for (AbstractMonster monster : monsters) {
+            if (monster == null || monster == candidate || !childId.equals(monster.id)) continue;
+            if (monster.currentHealth > 0 && !monster.isDeadOrEscaped()) {
+                // Vanilla's SpawnMonsterAction leaves the replaced parent in
+                // MonsterGroup.monsters. Native largeSlimeSplit instead
+                // replaces it in-place at slots 0 and 1. Remember the
+                // identity so a later snapshot cannot resurrect the parent
+                // after both children have become dead/escaped.
+                replacedMonsterParents.add(candidate);
+                return true;
+            }
+        }
+        return false;
+    }
+
     private static int preferredMonsterSlot(String encounter, String id, int sameIdOrdinal,
                                             int nonLeaderOrdinal) {
         // MonsterGroup reserves physical array positions for bosses and for
@@ -892,6 +920,7 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         for (int monsterIndex = 0; monsterIndex < monsters.size(); ++monsterIndex) {
             AbstractMonster monster = monsters.get(monsterIndex);
             if (monster == null) continue;
+            if (replacedLargeSlimeParent(encounter, monster, monsters)) continue;
             int sameIdOrdinal = seenMonsterIds.containsKey(monster.id)
                     ? seenMonsterIds.get(monster.id) : 0;
             seenMonsterIds.put(monster.id, sameIdOrdinal + 1);
@@ -1653,6 +1682,7 @@ public final class STSModelInspector implements PostInitializeSubscriber,
             List<AbstractMonster> monsters = AbstractDungeon.getMonsters().monsters;
             for (AbstractMonster monster : monsters) {
                 if (monster == null) continue;
+                if (replacedLargeSlimeParent(encounter, monster, monsters)) continue;
                 if (!first) out.append(',');
                 first = false;
                 int slot = emittedSlots.containsKey(monster) ? emittedSlots.get(monster) : -1;
@@ -1679,6 +1709,10 @@ public final class STSModelInspector implements PostInitializeSubscriber,
                 out.append(",\"powers\":[");
                 boolean firstMonsterPower = true;
                 for (AbstractPower power : monster.powers) {
+                    // SplitPower is vanilla's UI marker for the large-slime
+                    // split intent (amount is -1). Native Silver represents
+                    // this through the translated nextMove, not a status bit.
+                    if ("Split".equals(power.ID)) continue;
                     if (!firstMonsterPower) out.append(',');
                     firstMonsterPower = false;
                     out.append("{\"id\":\"").append(escapeJson(power.ID))
