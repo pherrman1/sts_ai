@@ -14,9 +14,9 @@ observation boundary. It never receives RNG state or controls the simulator.
 
 Combat observations now have two separate fail-closed evaluator paths. The
 existing CTM evaluator uses the public combat-entry importer when its model is
-available. The `silver_player_decision_v2` evaluator imports any stable public
-decision in a supported starter-deck combat, verifies converted-state parity
-and legal actions, and runs the fixed 1,000-simulation Silver configuration.
+available. The `silver_player_decision_v2` evaluator imports an Ironclad
+decision-0 or decision-1 Silver root, verifies converted-state parity and legal
+actions, and runs the fixed 1,000-simulation Silver decision configuration.
 One advisor-owned Silver session is retained for the active protocol session
 and `combatEntryHash`; a matching observed successor can therefore report an
 exact reroot with inherited visits. If the human plays a different physical
@@ -28,7 +28,7 @@ branch visits. An observation with no retained successor safely reports a
 fresh `candidate_missing` fallback.
 It returns the selected action, root action summaries containing
 edge visits, `visitShare`, and selection Q only when that edge has a valid Q
-value, plus the player turn, in-turn decision number, and reroot diagnostics.
+value, plus the decision ordinal and reroot diagnostics.
 Unsupported encounter, relic, information, or schema states remain explicit
 `UNSUPPORTED` results; this is a diagnostic ranking display, not a gameplay
 controller or a qualification of Silver policy quality. `STALE` responses
@@ -37,46 +37,49 @@ session. A new process starts a new session state.
 
 The Java frontend is under `mods/sts-model-inspector/`. It uses BaseMod
 post-update/render subscribers and captures detached Ironclad-compatible
-summary fields for card rewards, rest sites, and ordinary player turns. Combat
-observations include only player-visible decision state: turn, energy, player
-block, cards played this turn, hand/draw/discard/exhaust card instances,
-potions, relics, and living-monster HP, max HP, block, next move, intent, and
-intent damage. The Silver root reuses this combat snapshot and adds the
-version-3 phase-independent decision envelope, stable card UUIDs, the public
-last-card state, the two latest public monster moves, public combat counters,
-and power IDs with amounts. A minimal observer-side tracker retains only public
-facts needed for exact reconstruction, including damage since the prior
-decision and whether player Vulnerable previously appeared. Under Runic Dome,
-intent and intent damage are omitted from both the payload and fingerprint
-because they are not player-visible. The combat boundary requires the installed runtime's
-waiting-for-user phase, no current action, empty action/card/monster queues,
-and an unended turn. The combat fingerprint includes that payload, so
-successive decisions are not collapsed into one observation. A battle-start
-hook can precede encounter population, so combat-entry and Silver-root
-identity are captured lazily at the first actionable decision. A stable-
-boundary loss clears the displayed observation and fences late responses from
-the prior decision. Advisor writes use one bounded latest-observation slot;
-intermediate captures are replaceable rather than queued without limit. It
-launches the advisor with a direct `ProcessBuilder` call. The F8 panel remains
-diagnostic and read-only. When attaching to a resumed run, the observer
-recovers the preceding room identity from the persisted map path only when the
-path's final coordinate matches the current node; absent or inconsistent path
-state remains unknown and causes CTM to fail closed. A correlated top-level
-combat error is displayed as the CTM status instead of an indefinite waiting
-state. Workshop and game/dependency JARs remain outside
-Git. Silver live support is fail-closed to ordinary Act-1 Ironclad Cultist and
-Jaw Worm combats plus non-burning Act-1 Gremlin Nob, Burning Blood only, empty
-potion slots, the exact 5 Strike / 4 Defend / 1 Bash unupgraded starter deck,
-and every public move of those three monsters. Strike, Defend, Bash, End Turn,
-multiple cards per turn, later turns, reshuffles, Cultist Ritual/Strength, Jaw
-Worm Strength/block, Gremlin Nob Enrage/Strength (the live game reports
-Enrage with power ID `Anger`), and player/monster Vulnerable are mapped.
-Unknown powers, burning elites, Runic Dome, Frozen Eye, missing
-state, non-empty potions, and live RNG fields are rejected. A single
-deterministic search seed derived from `combatEntryHash` is retained for the
-whole combat. A missing retained branch starts a fresh root rather than making
-an otherwise exact public state unsupported. A new protocol session, a new
-combat, or a genuinely unsupported state discards the prior Silver session.
+summary fields for card rewards, rest sites, and ordinary player turns. The
+combat producer now emits protocol-v4 Silver roots with physical card UUIDs,
+upgraded/misc/cost/retain/free-play fields, dead monster slots, relics,
+potion slots, the combat entry identity, and a centralized native mapping
+boundary for runtime IDs. Monster move-history bytes are emitted in Java's
+oldest-to-newest order and translated by the native importer through the
+per-monster mapping; they are never copied as native enum values. Ordinary
+draw order is sorted before emission; the actual runtime order is retained
+when Frozen Eye is present. Runic Dome roots are rejected because the public
+producer does not expose enough hidden-intent state. The installed game API
+does not expose a public `justApplied` power bit; sensitive player and monster
+powers therefore require an explicit serialized bit and are rejected when it
+is unavailable rather than receiving a fabricated default. Special bookkeeping
+for Combust, Echo Form, Panache, Deva Form, Orange Pellets, used-up relics,
+and Necronomicon is serialized when its runtime field is accessible; otherwise
+the importer rejects that state. Monster `miscInfo` is similarly serialized
+from known runtime trackers or omitted so the importer fails closed.
+The observer's post-`AbstractPlayer.damage()` patch records finalized damage
+once per public damage call, preserving multi-hit event counts and the final
+individual unblocked hit. The v4 importer rejects observations unless the
+producer asserts this exact tracking; the old per-turn combat-damage total is
+not an accepted approximation. Move bytes are likewise fail-closed: only the
+runtime-qualified Cultist, Jaw Worm, and Gremlin Nob mappings currently cross
+the live boundary until additional Java encounter constants are independently
+qualified.
+The combat boundary still requires the installed runtime's waiting-for-user
+phase, no current action, empty action/card/monster queues, and an unended turn.
+The combat fingerprint includes the payload, so successive decisions are not
+collapsed into one observation. A battle-start hook can precede encounter
+population, so combat-entry and Silver-root identity are captured lazily at the
+first actionable decision. A stable-boundary loss clears the displayed
+observation and fences late responses from the prior decision. Advisor writes
+use one bounded latest-observation slot; intermediate captures are replaceable
+rather than queued without limit. It launches the advisor with a direct
+`ProcessBuilder` call. The F8 panel remains diagnostic and read-only. Workshop
+and game/dependency JARs remain outside Git. The native v4 importer is
+fail-closed for unknown mappings, resolving snapshots, unsupported selection
+tasks or option capacities, and native mechanics absent from the pinned
+simulator. Its maintained capability census is
+`docs/knowledge-base/behavior/live-silver-capability-census.md`. A single
+isolated search seed derived from `combatEntryHash` is retained across an
+active protocol session and combat; the UUID registry is reset when either
+identity changes.
 
 Live current energy comes from `EnergyPanel.totalCount`; the player's
 `EnergyManager.energy` field is the per-turn recharge amount and does not
@@ -126,12 +129,19 @@ so a future game UI can discard responses after a reload or newer capture.
 ## Required next work
 
 The Java process owns bounded background I/O and treats the endpoint as
-advisory only. Future work must not broaden this milestone's encounter or deck
-support without a new contract and parity fixtures.
-CTM and Silver results remain separate evaluators, and neither path controls
-gameplay or establishes policy-quality evidence.
+advisory only. Common Grid and Hand card-selection screens are now mapped to
+the native selection tasks for Exhaust, Armaments, Dual Wield, Headbutt,
+Gambler's Brew, and Hologram. The mapping is deliberately bounded: an
+unrecognized selection prompt, an unavailable runtime tracker, or an option
+list larger than the native representation is rejected. The ordinary player
+limbo pile is serialized; Bronze Orb roots are rejected because its stasis
+card is not publicly trackable. Other unsupported queue metadata remains
+outside the supported boundary. CTM and Silver results remain separate
+evaluators, and neither path controls gameplay or establishes policy-quality
+evidence. Any expansion of the producer must add a native parity fixture and
+an explicit public-information contract before promotion.
 
-Knowledge impact: this page records the protocol/lifecycle boundary, resumed-
-run room recovery, the player-visible combat gate, the Runic Dome redaction,
-the complete supported starter-combat Silver evaluator contract, and its
-diagnostic-only limitation.
+Knowledge impact: this page records the protocol/lifecycle boundary, the
+player-visible combat gate, protocol-v4 producer/importer contract, explicit
+fail-closed state handling, selection coverage, and the producer coverage
+boundary.
