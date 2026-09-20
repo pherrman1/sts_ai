@@ -54,6 +54,14 @@ public final class STSModelInspector implements PostInitializeSubscriber,
     private static final String PROTOCOL = "sts_model_inspector_v1";
     private static final int PROTOCOL_VERSION = 1;
     private static final String TOGGLE = "stsmodelinspector.toggle";
+    private static final Color PANEL_BACKGROUND = new Color(0.015f, 0.075f, 0.115f, 0.96f);
+    private static final Color PANEL_INNER = new Color(0.02f, 0.12f, 0.18f, 0.94f);
+    private static final Color CARD_BACKGROUND = new Color(0.015f, 0.10f, 0.16f, 0.92f);
+    private static final Color CARD_BORDER = new Color(0.10f, 0.48f, 0.66f, 0.85f);
+    private static final Color CYAN = new Color(0.0f, 0.92f, 0.88f, 1.0f);
+    private static final Color CYAN_DIM = new Color(0.0f, 0.62f, 0.68f, 1.0f);
+    private static final Color MUTED = new Color(0.60f, 0.76f, 0.82f, 1.0f);
+    private static final Color WARNING = new Color(1.0f, 0.67f, 0.20f, 1.0f);
     private static int trackedLastUnblockedDamage;
     private static int trackedTimesDamaged;
     private static boolean trackedPlayerVulnerableSeen;
@@ -217,81 +225,194 @@ public final class STSModelInspector implements PostInitializeSubscriber,
     @Override
     public void receiveRender(SpriteBatch sb) {
         if (!panelVisible || newest == null) return;
-        float x = 28.0f * Settings.scale;
-        float y = Settings.HEIGHT - 120.0f * Settings.scale;
-        Color white = Color.WHITE;
-        FontHelper.renderFontLeftTopAligned(sb, FontHelper.tipHeaderFont,
-                "STS Model Inspector", x, y, white);
-        FontHelper.renderFontLeftTopAligned(sb, FontHelper.tipBodyFont,
-                "Advisor: " + advisorStatus, x, y - 28.0f * Settings.scale,
-                advisorStatus.equals("connected") ? Color.GREEN : Color.ORANGE);
-        FontHelper.renderFontLeftTopAligned(sb, FontHelper.tipBodyFont,
-                "State: " + newest.boundary + "  Floor: " + newest.floor +
-                        "  HP: " + newest.hp + "/" + newest.maxHp,
-                x, y - 50.0f * Settings.scale, white);
-        String result = responseSequence == newest.sequence && responseHash.equals(newest.hash)
-                ? advisorStatus.toUpperCase() + (advisorReason.isEmpty() ? "" : " - " + advisorReason)
-                : "WAITING / STALE";
-        FontHelper.renderFontLeftTopAligned(sb, FontHelper.tipBodyFont,
-                "Observation: " + newest.sequence + "  Advisor: " + result,
-                x, y - 72.0f * Settings.scale, white);
-        if ("combat".equals(newest.boundary)) {
-            String forecast = ctmStatus.isEmpty() ? "CTM — waiting" : "CTM — " + ctmStatus;
-            FontHelper.renderFontLeftTopAligned(sb, FontHelper.tipBodyFont, forecast,
-                    x, y - 116.0f * Settings.scale, white);
-            if ("OK".equals(ctmStatus)) {
-                FontHelper.renderFontLeftTopAligned(sb, FontHelper.tipBodyFont,
-                        String.format("Death chance: %.1f%%", 100.0 * ctmDeath),
-                        x, y - 138.0f * Settings.scale, white);
-                renderHistogram(sb, x, y - 190.0f * Settings.scale);
-            } else if (!ctmReason.isEmpty()) {
-                FontHelper.renderFontLeftTopAligned(sb, FontHelper.tipBodyFont, ctmReason,
-                        x, y - 138.0f * Settings.scale, Color.ORANGE);
-            }
-            String silverHeading = "Silver — waiting";
-            if (!silverStatus.isEmpty()) {
-                String decisionLabel = "turn " + silverPlayerTurn
-                        + " decision " + silverDecisionInTurn;
-                if ("OK".equals(silverStatus) && silverPlayerTurn == 1
-                        && silverDecisionInTurn == 0) {
-                    silverHeading = "Silver — " + decisionLabel + " — fresh";
-                } else if ("OK".equals(silverStatus)
-                        && (silverRerootExact || silverEquivalentCopyReroot)) {
-                    silverHeading = "Silver — " + decisionLabel + " — reused "
-                            + silverInheritedVisits + " visits";
-                } else if ("OK".equals(silverStatus) && silverRerootFallback) {
-                    silverHeading = "Silver — " + decisionLabel + " — fresh fallback";
-                } else {
-                    silverHeading = "Silver — " + silverStatus;
-                }
-            }
-            FontHelper.renderFontLeftTopAligned(sb, FontHelper.tipBodyFont, silverHeading,
-                    x, y - 320.0f * Settings.scale, white);
-            String silverDetail = !silverReason.isEmpty() ? silverReason
-                    : silverRerootFallback ? silverFallbackReason : "";
-            if (!silverDetail.isEmpty()) FontHelper.renderFontLeftTopAligned(sb, FontHelper.tipBodyFont,
-                    silverDetail, x, y - 342.0f * Settings.scale, Color.ORANGE);
-            if (!silverRanking.isEmpty()) {
-                int row = 0;
-                for (String value : silverRanking.split("\\n")) {
-                    String[] fields = value.split("\\|", -1);
-                    if (fields.length < 3) continue;
-                    FontHelper.renderFontLeftTopAligned(sb, FontHelper.tipBodyFont,
-                            (row + 1) + "  " + fields[0] + "  " + fields[1] + " visits  Q " + fields[2],
-                            x, y - (364.0f + row * 20.0f) * Settings.scale, white);
-                    ++row;
-                }
-            }
-        }
-        FontHelper.renderFontLeftTopAligned(sb, FontHelper.tipBodyFont,
-                "Toggle: " + Keyboard.getKeyName(loadToggleKey()), x,
-                y - ("combat".equals(newest.boundary) ? 470.0f : 94.0f) * Settings.scale, Color.GRAY);
+        renderAdvisorPanel(sb);
     }
 
-    private void renderHistogram(SpriteBatch sb, float x, float top) {
-        if (ctmHistogram.length == 0) return;
-        FontHelper.renderFontLeftTopAligned(sb, FontHelper.tipBodyFont,
-                "Surviving final HP distribution (absolute)", x, top, Color.WHITE);
+    private void renderAdvisorPanel(SpriteBatch sb) {
+        float scale = Settings.scale;
+        float x = 24.0f * scale;
+        float top = Settings.HEIGHT - 78.0f * scale;
+        float width = 500.0f * scale;
+        float height = "combat".equals(newest.boundary) ? 252.0f * scale : 188.0f * scale;
+        float bottom = top - height;
+
+        // Use the game's existing white texture for the glass panels so the mod
+        // stays self-contained and scales with the game's UI coordinates.
+        drawRect(sb, x + 5.0f * scale, bottom - 5.0f * scale, width, height,
+                new Color(0.0f, 0.0f, 0.0f, 0.42f));
+        drawRect(sb, x, bottom, width, height, PANEL_BACKGROUND);
+        drawBorder(sb, x, bottom, width, height, CYAN_DIM, 1.5f * scale);
+        drawRect(sb, x + 1.5f * scale, top - 56.0f * scale,
+                width - 3.0f * scale, 54.0f * scale, PANEL_INNER);
+        drawRect(sb, x + 2.0f * scale, top - 3.0f * scale,
+                width - 4.0f * scale, 2.0f * scale, CYAN_DIM);
+
+        renderAdvisorIcon(sb, x + 16.0f * scale, top - 18.0f * scale, scale);
+        renderHeaderText(sb, "STS Model Advisor", x + 70.0f * scale,
+                top - 14.0f * scale, Color.WHITE, 0.82f);
+        renderStatusPill(sb, x + 336.0f * scale, top - 12.0f * scale, scale);
+        renderGearIcon(sb, x + width - 31.0f * scale, top - 27.0f * scale, scale);
+
+        if ("combat".equals(newest.boundary)) {
+            renderCombatPanel(sb, x, top, width, bottom, scale);
+            renderSilverActionBadges(sb, scale);
+        } else {
+            renderNonCombatPanel(sb, x, top, width, bottom, scale);
+        }
+        sb.setColor(Color.WHITE);
+    }
+
+    private void renderCombatPanel(SpriteBatch sb, float x, float top, float width,
+                                   float bottom, float scale) {
+        float cardTop = top - 70.0f * scale;
+        float cardHeight = 118.0f * scale;
+        float cardBottom = cardTop - cardHeight;
+        float leftX = x + 14.0f * scale;
+        float leftWidth = 172.0f * scale;
+        float rightX = x + 198.0f * scale;
+        float rightWidth = width - 212.0f * scale;
+        drawCard(sb, leftX, cardBottom, leftWidth, cardHeight, scale);
+        drawCard(sb, rightX, cardBottom, rightWidth, cardHeight, scale);
+
+        renderSmallText(sb, "Death chance", leftX + 14.0f * scale,
+                cardTop - 13.0f * scale, Color.WHITE, 0.92f);
+        String death = "OK".equals(ctmStatus)
+                ? String.format(Locale.ROOT, "%.1f%%", 100.0 * ctmDeath) : "—";
+        FontHelper.renderFontLeftTopAligned(sb, FontHelper.tipHeaderFont, death,
+                leftX + 14.0f * scale, cardTop - 38.0f * scale,
+                "OK".equals(ctmStatus) ? CYAN : WARNING);
+        renderSmallText(sb, "(this combat)", leftX + 14.0f * scale,
+                cardBottom + 17.0f * scale,
+                "OK".equals(ctmStatus) ? MUTED : WARNING, 0.82f);
+
+        renderSmallText(sb, "Surviving final HP", rightX + 14.0f * scale,
+                cardTop - 13.0f * scale, Color.WHITE, 0.92f);
+        renderHistogram(sb, rightX + 12.0f * scale, cardBottom + 14.0f * scale,
+                rightWidth - 24.0f * scale, cardHeight - 38.0f * scale, scale);
+
+        String footer = "Floor " + newest.floor + "  ·  HP " + newest.hp + "/" + newest.maxHp;
+        renderSmallText(sb, footer, x + 16.0f * scale, bottom + 22.0f * scale,
+                MUTED, 0.84f);
+        String silver = silverSummary();
+        renderSmallText(sb, silver, x + 16.0f * scale, bottom + 48.0f * scale,
+                "OK".equals(silverStatus) ? CYAN : WARNING, 0.78f);
+        renderSmallText(sb, Keyboard.getKeyName(loadToggleKey()) + " hide",
+                x + width - 78.0f * scale, bottom + 22.0f * scale, MUTED, 0.78f);
+    }
+
+    private String silverSummary() {
+        if ("OK".equals(silverStatus)) {
+            String label = silverSelectedLabel == null ? "" : silverSelectedLabel;
+            if (!label.isEmpty()) return "Silver  ·  " + label;
+            return "Silver  ·  ready";
+        }
+        if (silverStatus == null || silverStatus.isEmpty()) return "Silver  ·  waiting";
+        return "Silver  ·  " + silverStatus.toLowerCase(Locale.ROOT);
+    }
+
+    private void renderNonCombatPanel(SpriteBatch sb, float x, float top, float width,
+                                      float bottom, float scale) {
+        float cardX = x + 14.0f * scale;
+        float cardBottom = bottom + 35.0f * scale;
+        float cardHeight = 73.0f * scale;
+        drawCard(sb, cardX, cardBottom, width - 28.0f * scale, cardHeight, scale);
+        String state = newest.boundary.replace('_', ' ');
+        FontHelper.renderFontLeftTopAligned(sb, FontHelper.tipHeaderFont,
+                capitalize(state), cardX + 16.0f * scale,
+                cardBottom + cardHeight - 14.0f * scale, Color.WHITE);
+        renderSmallText(sb, "Floor " + newest.floor + "  ·  HP " + newest.hp + "/" + newest.maxHp,
+                cardX + 16.0f * scale, cardBottom + 28.0f * scale, MUTED, 0.88f);
+        renderSmallText(sb, responseReady() ? "Advisor ready" : "Waiting for advisor",
+                cardX + 205.0f * scale, cardBottom + 28.0f * scale,
+                responseReady() ? CYAN : WARNING, 0.88f);
+        renderSmallText(sb, Keyboard.getKeyName(loadToggleKey()) + " hide",
+                x + width - 78.0f * scale, bottom + 18.0f * scale, MUTED, 0.78f);
+    }
+
+    private void renderSilverActionBadges(SpriteBatch sb, float scale) {
+        if (!"OK".equals(silverStatus) || silverRanking.isEmpty()
+                || AbstractDungeon.player == null || AbstractDungeon.player.hand == null) return;
+        List<AbstractCard> hand = AbstractDungeon.player.hand.group;
+        if (hand.isEmpty()) return;
+        String[] rows = silverRanking.split("\\n");
+        boolean[] used = new boolean[hand.size()];
+        float badgeBottom = 248.0f * scale;
+        float badgeWidth = 132.0f * scale;
+        float badgeHeight = 54.0f * scale;
+        for (int rank = 0; rank < rows.length && rank < 5; ++rank) {
+            String[] fields = rows[rank].split("\\|", -1);
+            if (fields.length < 3) continue;
+            String action = fields[0];
+            if (action.startsWith("End Turn")) {
+                float endTurnCenter = Settings.WIDTH - 290.0f * scale;
+                float endTurnX = endTurnCenter - badgeWidth / 2.0f;
+                renderSilverBadge(sb, endTurnX, badgeBottom, badgeWidth,
+                        30.0f * scale, rank, fields, "", scale);
+                continue;
+            }
+            int handIndex = findHandCard(hand, used, action);
+            if (handIndex < 0) continue;
+            used[handIndex] = true;
+            AbstractCard card = hand.get(handIndex);
+            float badgeX = card.current_x - badgeWidth / 2.0f;
+            String target = action;
+            int arrow = target.indexOf(" -> ");
+            if (arrow >= 0) target = target.substring(arrow + 4);
+            renderSilverBadge(sb, badgeX, badgeBottom, badgeWidth, badgeHeight,
+                    rank, fields, target, scale);
+        }
+    }
+
+    private void renderSilverBadge(SpriteBatch sb, float x, float bottom, float width,
+                                   float height, int rank, String[] fields,
+                                   String target, float scale) {
+        boolean best = rank == 0;
+        Color border = best ? WARNING : CARD_BORDER;
+        drawRect(sb, x + 3.0f * scale, bottom - 3.0f * scale,
+                width, height, new Color(0.0f, 0.0f, 0.0f, 0.35f));
+        drawRect(sb, x, bottom, width, height,
+                best ? new Color(0.10f, 0.14f, 0.18f, 0.97f) : PANEL_INNER);
+        drawBorder(sb, x, bottom, width, height, border,
+                best ? 2.0f * scale : scale);
+        renderSmallText(sb, "#" + (rank + 1) + "  ·  " + fields[1]
+                        + "v  ·  Q " + compactScore(fields[2]),
+                x + 8.0f * scale, bottom + (target.isEmpty() ? 20.0f : 43.0f) * scale,
+                best ? Color.WHITE : MUTED, 0.62f);
+        if (!target.isEmpty()) {
+            renderSmallText(sb, "→ " + target, x + 8.0f * scale,
+                    bottom + 20.0f * scale, best ? CYAN : Color.WHITE, 0.70f);
+        }
+    }
+
+    private static String compactScore(String value) {
+        try {
+            return String.format(Locale.ROOT, "%.1f", Double.parseDouble(value));
+        } catch (NumberFormatException ignored) {
+            return value;
+        }
+    }
+
+    private static int findHandCard(List<AbstractCard> hand, boolean[] used, String action) {
+        String name = action;
+        int arrow = name.indexOf(" -> ");
+        if (arrow >= 0) name = name.substring(0, arrow);
+        for (int i = 0; i < hand.size(); ++i) {
+            if (used[i]) continue;
+            AbstractCard card = hand.get(i);
+            if (name.equalsIgnoreCase(card.name) || name.equalsIgnoreCase(card.cardID)
+                    || card.cardID.toLowerCase(Locale.ROOT).contains(name.toLowerCase(Locale.ROOT)))
+                return i;
+        }
+        return -1;
+    }
+
+    private void renderHistogram(SpriteBatch sb, float x, float bottom, float width,
+                                 float height, float scale) {
+        if (ctmHistogram.length == 0) {
+            renderSmallText(sb, "Awaiting forecast", x, bottom + height - 12.0f * scale,
+                    WARNING, 0.78f);
+            return;
+        }
         int first = -1;
         int last = -1;
         for (int i = 0; i < ctmHistogram.length; ++i) {
@@ -302,7 +423,7 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         }
         if (first < 0) return;
         final int span = last - first + 1;
-        final int buckets = Math.min(16, span);
+        final int buckets = Math.min(14, span);
         double maximum = 0.0;
         for (int bucket = 0; bucket < buckets; ++bucket) {
             int begin = first + bucket * span / buckets;
@@ -312,71 +433,135 @@ public final class STSModelInspector implements PostInitializeSubscriber,
             maximum = Math.max(maximum, probability);
         }
         if (maximum <= 0.0) return;
-        float chartX = x + 42.0f * Settings.scale;
-        float barWidth = 12.0f * Settings.scale;
-        // Leave a real gap below the forecast text.  The histogram is a
-        // secondary diagnostic, so its title and annotations must not collide
-        // with the CTM status lines above it.
-        float base = top - 118.0f * Settings.scale;
-        float chartHeight = 92.0f * Settings.scale;
-        float chartWidth = buckets * barWidth;
-        // A faint grid makes the distribution readable without competing with
-        // the game scene or the cyan bars.
-        sb.setColor(0.55f, 0.85f, 1.0f, 0.20f);
-        for (int tick = 0; tick <= 4; ++tick) {
-            float gridY = base + chartHeight * tick / 4.0f;
+        float chartX = x + 8.0f * scale;
+        float chartWidth = width - 58.0f * scale;
+        float chartHeight = height - 5.0f * scale;
+        float chartBottom = bottom + 5.0f * scale;
+        float barWidth = chartWidth / buckets;
+        sb.setColor(0.35f, 0.78f, 0.80f, 0.20f);
+        for (int tick = 1; tick <= 3; ++tick) {
+            float gridY = chartBottom + chartHeight * tick / 4.0f;
             sb.draw(ImageMaster.WHITE_SQUARE_IMG, chartX, gridY,
-                    chartWidth, Settings.scale);
+                    chartWidth, scale);
         }
-        for (int tick = 0; tick <= 4; ++tick) {
-            float gridX = chartX + chartWidth * tick / 4.0f;
-            sb.draw(ImageMaster.WHITE_SQUARE_IMG, gridX, base,
-                    Settings.scale, chartHeight);
-        }
-        sb.setColor(Color.WHITE);
-        sb.draw(ImageMaster.WHITE_SQUARE_IMG, chartX, base,
-                chartWidth, 1.5f * Settings.scale);
-        sb.draw(ImageMaster.WHITE_SQUARE_IMG, chartX, base,
-                1.5f * Settings.scale, chartHeight);
-        float tickScaleX = FontHelper.tipBodyFont.getData().scaleX;
-        float tickScaleY = FontHelper.tipBodyFont.getData().scaleY;
-        FontHelper.tipBodyFont.getData().setScale(tickScaleX * 0.72f, tickScaleY * 0.72f);
-        for (int tick = 0; tick <= 4; ++tick) {
-            float gridY = base + chartHeight * tick / 4.0f;
-            sb.draw(ImageMaster.WHITE_SQUARE_IMG, chartX - 5.0f * Settings.scale,
-                    gridY, 5.0f * Settings.scale, Settings.scale);
-            FontHelper.renderFontLeftTopAligned(sb, FontHelper.tipBodyFont,
-                    String.format(Locale.ROOT, "%.0f%%", 100.0 * maximum * tick / 4.0),
-                    x, gridY + 5.0f * Settings.scale, Color.GRAY);
-        }
+        sb.setColor(CYAN_DIM);
+        sb.draw(ImageMaster.WHITE_SQUARE_IMG, chartX, chartBottom, chartWidth, scale);
         for (int bucket = 0; bucket < buckets; ++bucket) {
             int begin = first + bucket * span / buckets;
             int end = first + (bucket + 1) * span / buckets;
             double probability = 0.0;
             for (int i = begin; i < end; ++i) probability += ctmHistogram[i];
-            float height = (float) (chartHeight * probability / maximum);
-            sb.setColor(Color.CYAN);
+            float barHeight = (float) (chartHeight * probability / maximum);
+            sb.setColor(bucket < buckets / 2 ? CYAN_DIM : CYAN);
             sb.draw(ImageMaster.WHITE_SQUARE_IMG, chartX + bucket * barWidth,
-                    base, barWidth - Settings.scale, height);
+                    chartBottom, Math.max(scale, barWidth - scale), barHeight);
         }
-        sb.setColor(Color.WHITE);
         int firstHp = ctmHistogramMin + first;
         int lastHp = ctmHistogramMin + last;
-        float[] xTicks = {0.0f, 0.2f, 0.4f, 0.6f, 0.8f, 1.0f};
-        for (int tick = 0; tick < xTicks.length; ++tick) {
-            float tickX = chartX + chartWidth * xTicks[tick];
-            sb.draw(ImageMaster.WHITE_SQUARE_IMG, tickX, base - 5.0f * Settings.scale,
-                    Settings.scale, 5.0f * Settings.scale);
-            int hp = firstHp + Math.round((lastHp - firstHp) * xTicks[tick]);
-            boolean repeated = tick > 0
-                    && hp == firstHp + Math.round((lastHp - firstHp) * xTicks[tick - 1]);
-            if (!repeated) {
-                FontHelper.renderFontLeftTopAligned(sb, FontHelper.tipBodyFont,
-                        Integer.toString(hp), tickX - 4.0f * Settings.scale,
-                        base - 18.0f * Settings.scale, Color.GRAY);
-            }
+        renderSmallText(sb, Integer.toString(firstHp), chartX,
+                bottom + 1.0f * scale, MUTED, 0.70f);
+        renderSmallText(sb, Integer.toString(lastHp), chartX + chartWidth - 12.0f * scale,
+                bottom + 1.0f * scale, MUTED, 0.70f);
+        double mean = 0.0;
+        double mass = 0.0;
+        for (int i = first; i <= last; ++i) {
+            mean += (ctmHistogramMin + i) * ctmHistogram[i];
+            mass += ctmHistogram[i];
         }
-        FontHelper.tipBodyFont.getData().setScale(tickScaleX, tickScaleY);
+        if (mass > 0.0 && newest.maxHp > 0) {
+            renderSmallText(sb, "Mean", x + width - 42.0f * scale,
+                    bottom + height - 12.0f * scale, CYAN, 0.70f);
+            renderSmallText(sb, String.format(Locale.ROOT, "%.0f%%",
+                            100.0 * mean / mass / newest.maxHp),
+                    x + width - 42.0f * scale, bottom + height - 29.0f * scale,
+                    CYAN, 0.88f);
+        }
+    }
+
+    private void renderStatusPill(SpriteBatch sb, float x, float top, float scale) {
+        boolean online = responseReady() || "connected".equals(advisorStatus);
+        boolean waiting = !online && ("waiting".equals(advisorStatus)
+                || "disconnected".equals(advisorStatus));
+        String label = online ? "ONLINE" : waiting ? "WAITING"
+                : advisorStatus.toUpperCase(Locale.ROOT);
+        float width = 101.0f * scale;
+        float height = 30.0f * scale;
+        drawRect(sb, x, top - height, width, height,
+                online ? new Color(0.0f, 0.34f, 0.32f, 0.88f)
+                        : new Color(0.35f, 0.22f, 0.07f, 0.88f));
+        drawBorder(sb, x, top - height, width, height,
+                online ? CYAN_DIM : WARNING, scale);
+        drawRect(sb, x + 12.0f * scale, top - 19.0f * scale,
+                8.0f * scale, 8.0f * scale, online ? CYAN : WARNING);
+        renderSmallText(sb, label,
+                x + 28.0f * scale, top - 7.0f * scale,
+                online ? CYAN : WARNING, 0.82f);
+    }
+
+    private void renderAdvisorIcon(SpriteBatch sb, float x, float top, float scale) {
+        drawRect(sb, x, top - 28.0f * scale, 7.0f * scale, 28.0f * scale, CYAN);
+        drawRect(sb, x + 11.0f * scale, top - 22.0f * scale,
+                7.0f * scale, 22.0f * scale, CYAN);
+        drawRect(sb, x + 22.0f * scale, top - 14.0f * scale,
+                7.0f * scale, 14.0f * scale, CYAN);
+    }
+
+    private void renderGearIcon(SpriteBatch sb, float x, float top, float scale) {
+        Color gear = new Color(0.55f, 0.76f, 0.83f, 0.95f);
+        drawRect(sb, x - 8.0f * scale, top - 4.0f * scale,
+                16.0f * scale, 8.0f * scale, gear);
+        drawRect(sb, x - 4.0f * scale, top - 8.0f * scale,
+                8.0f * scale, 16.0f * scale, gear);
+        drawRect(sb, x - 3.0f * scale, top - 3.0f * scale,
+                6.0f * scale, 6.0f * scale, PANEL_INNER);
+    }
+
+    private void drawCard(SpriteBatch sb, float x, float bottom, float width,
+                          float height, float scale) {
+        drawRect(sb, x, bottom, width, height, CARD_BACKGROUND);
+        drawBorder(sb, x, bottom, width, height, CARD_BORDER, scale);
+    }
+
+    private static void drawBorder(SpriteBatch sb, float x, float bottom, float width,
+                                   float height, Color color, float thickness) {
+        drawRect(sb, x, bottom, width, thickness, color);
+        drawRect(sb, x, bottom + height - thickness, width, thickness, color);
+        drawRect(sb, x, bottom, thickness, height, color);
+        drawRect(sb, x + width - thickness, bottom, thickness, height, color);
+    }
+
+    private static void drawRect(SpriteBatch sb, float x, float bottom, float width,
+                                 float height, Color color) {
+        sb.setColor(color);
+        sb.draw(ImageMaster.WHITE_SQUARE_IMG, x, bottom, width, height);
+    }
+
+    private void renderSmallText(SpriteBatch sb, String text, float x, float top,
+                                 Color color, float factor) {
+        float oldX = FontHelper.tipBodyFont.getData().scaleX;
+        float oldY = FontHelper.tipBodyFont.getData().scaleY;
+        FontHelper.tipBodyFont.getData().setScale(oldX * factor, oldY * factor);
+        FontHelper.renderFontLeftTopAligned(sb, FontHelper.tipBodyFont, text, x, top, color);
+        FontHelper.tipBodyFont.getData().setScale(oldX, oldY);
+    }
+
+    private void renderHeaderText(SpriteBatch sb, String text, float x, float top,
+                                  Color color, float factor) {
+        float oldX = FontHelper.tipHeaderFont.getData().scaleX;
+        float oldY = FontHelper.tipHeaderFont.getData().scaleY;
+        FontHelper.tipHeaderFont.getData().setScale(oldX * factor, oldY * factor);
+        FontHelper.renderFontLeftTopAligned(sb, FontHelper.tipHeaderFont, text, x, top, color);
+        FontHelper.tipHeaderFont.getData().setScale(oldX, oldY);
+    }
+
+    private boolean responseReady() {
+        return newest != null && responseSequence == newest.sequence
+                && responseHash.equals(newest.hash);
+    }
+
+    private static String capitalize(String value) {
+        if (value == null || value.isEmpty()) return "State";
+        return Character.toUpperCase(value.charAt(0)) + value.substring(1);
     }
 
     private Snapshot captureStableSnapshot() {
