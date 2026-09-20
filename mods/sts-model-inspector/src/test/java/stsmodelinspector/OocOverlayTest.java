@@ -55,7 +55,7 @@ public final class OocOverlayTest {
 
         JsonObject mapResponse = parser.parse(response.toString()).getAsJsonObject();
         JsonObject mapEvaluator = mapResponse.getAsJsonArray("evaluators").get(0).getAsJsonObject();
-        JsonObject mapAction = parser.parse("{\"kind\":\"map\",\"x\":2,\"y\":3}").getAsJsonObject();
+        JsonObject mapAction = parser.parse("{\"kind\":\"choose\",\"choiceIndex\":2}").getAsJsonObject();
         mapEvaluator.add("selectedLiveAction", mapAction);
         mapEvaluator.addProperty("selectedSemanticKey", "node");
         JsonArray mapCandidates = new JsonArray();
@@ -63,8 +63,9 @@ public final class OocOverlayTest {
         mapCandidate.add("liveAction", mapAction); mapCandidates.add(mapCandidate);
         mapEvaluator.add("candidateSummaries", mapCandidates);
         OocOverlay mapView = OocOverlay.parse(mapResponse.toString(), "{\"ooc\":{\"screen\":\"map\",\"liveChoices\":[]}}");
-        if (!mapView.forAction(mapAction).selected || mapView.forAction(InlineChoices.action("choose", 1)) != null)
-            throw new AssertionError("map coordinates replaced with a physical ordinal");
+        if (!mapView.forAction(InlineChoices.mapAction(2)).selected
+                || mapView.forAction(InlineChoices.mapAction(1)) != null)
+            throw new AssertionError("map physical choice binding lost");
         JsonObject evaluator = response.getAsJsonArray("evaluators").get(0).getAsJsonObject();
         evaluator.addProperty("status", "UNSUPPORTED"); evaluator.addProperty("reason", "NATIVE_SCREEN_UNSUPPORTED");
         view = OocOverlay.parse(response.toString(), observation);

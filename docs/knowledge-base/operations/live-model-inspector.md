@@ -92,7 +92,8 @@ The panels omit floor/HP text already shown in the game HUD.
 OOC decisions use the same dark/cyan styling as Silver, with an amber border
 on the selected action. Event and Neow scores appear beside their active
 buttons. Shop scores sit by each affordable card, relic, potion, removal and
-leave control. Map scores follow the reachable nodes' scrolled hitboxes;
+leave control. Map scores bind through the same one-based `choose` indices
+as the live capture (coordinates are metadata), and follow the reachable nodes' scrolled hitboxes;
 offscreen nodes never acquire badges clamped onto the screen edge. Rest options
 and OOC card selectors also use physical-control badges. Upgrade selectors,
 including smithing, show each card's V4 score; remove/transform selectors remain

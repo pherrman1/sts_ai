@@ -12,3 +12,5 @@ java -cp "$classes:$root/build/classes:$1:$2:$3" stsmodelinspector.LiveOocCaptur
 java -cp "$classes:$root/build/classes:$1:$2:$3" stsmodelinspector.OocOverlayTest
 java -cp "$classes:$root/build/classes:$1:$2:$3" stsmodelinspector.CombatBoundaryTest
 java -cp "$classes:$root/build/classes:$1:$2:$3" stsmodelinspector.PotionOverlayTest
+java -cp "$classes:$root/build/classes:$1:$2:$3" stsmodelinspector.MapOverlayTest \
+  "$root/../../tests/fixtures/live_combat_boundaries/fresh-a0.jsonl.gz"
