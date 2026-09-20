@@ -14,6 +14,14 @@
 
 namespace silver_bridge {
 
+// Default-off isolated Silver search contracts. Live callers continue to use
+// CONTROL; the other modes are for the bounded offline experiment only.
+enum class SilverSearchContractMode : std::uint8_t {
+    CONTROL = 0,
+    FORCED_SELECTION = 1,
+    DETERMINISTIC_MACRO = 2,
+};
+
 // These wire values are the sole live->isolated-model protocol. They contain
 // values, never pointers/references to either simulator, and deliberately
 // have no representation for a live RNG stream or an unobserved pile index.
@@ -496,6 +504,7 @@ struct SilverSearchConfig {
     // the same semantic leader at two consecutive checkpoints. This mode
     // owns the exact-lock layer internally and cannot be composed with it.
     bool rhoRacingEnabled = false;
+    SilverSearchContractMode contractMode = SilverSearchContractMode::CONTROL;
 };
 
 struct SilverRootActionSummary {
@@ -637,6 +646,11 @@ struct SilverSearchTelemetry {
     double rolloutEnergyWasteSum = 0.0;
     double rolloutDrawSum = 0.0;
     double rolloutSurvivalSum = 0.0;
+    std::int64_t forcedSelectionsContracted = 0;
+    std::int64_t macroEligibleDecisionNodes = 0;
+    std::int64_t macroEdgesGenerated = 0;
+    std::int64_t macroOptionCountSum = 0;
+    std::array<std::int64_t, 22> macroOptionCountByTask {};
     void add(const SilverSearchTelemetry &other) {
         nodesCreated += other.nodesCreated;
         detTranspositions += other.detTranspositions;
@@ -693,6 +707,12 @@ struct SilverSearchTelemetry {
         rolloutEnergyWasteSum += other.rolloutEnergyWasteSum;
         rolloutDrawSum += other.rolloutDrawSum;
         rolloutSurvivalSum += other.rolloutSurvivalSum;
+        forcedSelectionsContracted += other.forcedSelectionsContracted;
+        macroEligibleDecisionNodes += other.macroEligibleDecisionNodes;
+        macroEdgesGenerated += other.macroEdgesGenerated;
+        macroOptionCountSum += other.macroOptionCountSum;
+        for (std::size_t i = 0; i < macroOptionCountByTask.size(); ++i)
+            macroOptionCountByTask[i] += other.macroOptionCountByTask[i];
     }
 };
 
@@ -786,6 +806,12 @@ struct SilverCombatReplayResult {
     int multiCardSelectActions = 0;
     bool traversedGamble = false;
     std::int64_t simulations = 0;
+    int mctsSearchInvocations = 0;
+    int cardSelectSearchInvocations = 0;
+    int primitiveActionsExecuted = 0;
+    int forcedSelectionsContracted = 0;
+    int macroSelectionsTaken = 0;
+    std::array<int, 22> macroSelectionsByTask {};
     int rerootExact = 0;
     int rerootFallback = 0;
     std::uint64_t actionTraceHash = 0;
