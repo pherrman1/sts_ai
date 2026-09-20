@@ -81,6 +81,37 @@ isolated search seed derived from `combatEntryHash` is retained across an
 active protocol session and combat; the UUID registry is reset when either
 identity changes.
 
+## Direct live-game driver
+
+`tools/live_game_driver.py` is the repository-local integration/debug harness
+for advancing a currently running game without a Codex or Luna turn between
+actions. It connects directly to MCPTheSpire over Streamable HTTP, reads the
+current screen and advertised commands, and materializes concrete MCP calls
+before asking JEV to choose a short candidate ID. The optional dependencies are
+isolated in the `live-driver` extra:
+
+```text
+uv run --extra live-driver python tools/live_game_driver.py
+```
+
+Combat reads the matching `~/.cache/sts-model-inspector/latest.json` response
+and uses Silver only when the snapshot is ready, identity-matched, and
+correlated with the MCP-visible state. A supported Silver fingerprint must map
+to exactly one current candidate; zero or multiple matches stop the driver.
+Only an explicit Silver `UNSUPPORTED` result may fall back to JEV, and
+`--strict-silver` turns that boundary into a stop. Non-combat screens use JEV
+over the generated legal candidates, so JEV never supplies an MCP tool name or
+arguments.
+
+The default MCP endpoint can be overridden with `STS_MCP_URL` or `--mcp-url`.
+Each decision is written as redacted JSONL under
+`~/.cache/sts-live-driver/` (override with `--trace`); `TYPESAFE_API_KEY` is
+never written. `--dry-run` performs the read, candidate, and decision path
+without a mutating MCP call, while `--max-steps N` bounds a smoke test. The
+driver intentionally stops on unavailable MCP, malformed or stale inspector
+data, unsupported candidate enumeration, illegal JEV choices, unresolved
+Silver mappings, lost state advancement, and unexpected advisor errors.
+
 Live current energy comes from `EnergyPanel.totalCount`; the player's
 `EnergyManager.energy` field is the per-turn recharge amount and does not
 decrease when a card is played.
