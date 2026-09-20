@@ -58,6 +58,19 @@ class TacticalPrefixContracts(unittest.TestCase):
             report = MODULE.reference_check({("l", 0, "a"): 3.5}, path)
             self.assertEqual(report["matched_rows"], 1)
             self.assertEqual(report["max_absolute_utility_difference"], 0.0)
+            self.assertTrue(report["passed"])
+
+    def test_reference_check_rejects_unmatched_reference_row(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "reference.jsonl"
+            path.write_text(
+                '{"accepted":true,"leaf_snapshot_id":"l","replicate":0,'
+                '"action_fingerprint":"a","original_root_corrected_utility":3.5}\n'
+                '{"accepted":true,"leaf_snapshot_id":"l","replicate":1,'
+                '"action_fingerprint":"a","original_root_corrected_utility":4.5}\n')
+            report = MODULE.reference_check({("l", 0, "a"): 3.5}, path)
+            self.assertFalse(report["passed"])
+            self.assertEqual(report["unmatched_reference_rows"], 1)
 
 
 if __name__ == "__main__":

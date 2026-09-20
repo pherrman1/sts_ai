@@ -101,17 +101,18 @@ Json prefixRow(const Json &corpus, int replicate, std::uint64_t rng,
 }
 
 int runGenerate(int argc, char **argv) {
-    if (argc < 6 || argc > 8) {
-        std::cerr << "usage: silver_tactical_prefix_oracle --generate CORPUS RAW MANIFEST EXECUTABLE_SHA [REPLICATES] [MAX_DEPTH]\n";
+    if (argc < 7 || argc > 9) {
+        std::cerr << "usage: silver_tactical_prefix_oracle --generate CORPUS RAW MANIFEST BASE_SHA IMPLEMENTATION_SHA [REPLICATES] [MAX_DEPTH]\n";
         return 2;
     }
     const auto corpusRows = readJsonLines(argv[2]);
     const std::filesystem::path rawPath = argv[3];
     const std::filesystem::path manifestPath = argv[4];
-    if (!silver_bridge::rootMechanismShaValid(argv[5]))
-        throw std::invalid_argument("invalid executable SHA");
-    const int replicates = argc >= 7 ? std::stoi(argv[6]) : 32;
-    const int maxDepth = argc == 8 ? std::stoi(argv[7]) : 3;
+    if (!silver_bridge::rootMechanismShaValid(argv[5])
+            || !silver_bridge::rootMechanismShaValid(argv[6]))
+        throw std::invalid_argument("invalid base or implementation SHA");
+    const int replicates = argc >= 8 ? std::stoi(argv[7]) : 32;
+    const int maxDepth = argc == 9 ? std::stoi(argv[8]) : 3;
     if (replicates <= 0 || replicates > 128)
         throw std::invalid_argument("replicates must be 1..128");
     if (maxDepth < 1 || maxDepth > 3)
@@ -123,7 +124,7 @@ int runGenerate(int argc, char **argv) {
 
     Json manifest = {
         {"schema", "silver_tactical_prefix_oracle_manifest_v1"},
-        {"implementation_git_sha", argv[5]},
+        {"base_git_sha", argv[5]}, {"implementation_git_sha", argv[6]},
         {"requested_max_depth", maxDepth}, {"replicates", replicates},
         {"rng_contract", "fnv1a(silver-rollout-variance/v1/group/replicate)"},
         {"controlled_action_surface", {"CARD", "END_TURN"}},

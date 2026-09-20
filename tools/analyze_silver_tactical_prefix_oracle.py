@@ -89,7 +89,7 @@ def leaf_blocks(path: Path):
         yield current_leaf, rows
 
 
-def complete_candidates(rows: list[dict]) -> tuple[dict[str, dict], dict[str, str]]:
+def complete_candidates(rows: list[dict]) -> tuple[dict[str, dict], dict[str, dict]]:
     values: dict[str, dict[int, float]] = defaultdict(dict)
     metadata: dict[str, dict] = {}
     for row in rows:
@@ -228,6 +228,12 @@ def reduce_metrics(rows: list[dict], bootstrap: int) -> dict:
     oracle_regret = a["oracle"]["mean_teacher_regret"]
     b_base = b["baseline"]["mean_teacher_regret"]
     b_oracle = b["oracle"]["mean_teacher_regret"]
+    selected_length_counts = {
+        "select_0_15_evaluate_16_31": dict(Counter(
+            row["selected_prefix_lengths"][0] for row in rows)),
+        "select_16_31_evaluate_0_15": dict(Counter(
+            row["selected_prefix_lengths"][1] for row in rows)),
+    }
     return {
         "teacher_a": a, "teacher_b": b,
         "teacher_a_regret_reduction": ((base_regret - oracle_regret) / base_regret
@@ -235,6 +241,7 @@ def reduce_metrics(rows: list[dict], bootstrap: int) -> dict:
         "teacher_b_regret_reduction": ((b_base - b_oracle) / b_base if b_base else None),
         "clustered_bootstrap": bootstrap_difference(rows, bootstrap),
         "group_improvement": group_improvement(rows),
+        "selected_prefix_length_counts": selected_length_counts,
         "leaves": len(rows), "groups": len({row["group_id"] for row in rows}),
     }
 
@@ -243,22 +250,35 @@ def reference_check(generated: dict[tuple[str, int, str], float], path: Path | N
     if path is None:
         return {"performed": False}
     reference = {}
+    accepted_rows = 0
+    duplicate_keys = 0
     for row in load_jsonl(path):
         if row.get("accepted"):
-            reference[(row["leaf_snapshot_id"], int(row["replicate"]),
-                       row["action_fingerprint"])] = row["original_root_corrected_utility"]
+            accepted_rows += 1
+            key = (row["leaf_snapshot_id"], int(row["replicate"]),
+                   row["action_fingerprint"])
+            if key in reference:
+                duplicate_keys += 1
+            reference[key] = row["original_root_corrected_utility"]
     differences = []
-    missing = 0
-    for key, value in generated.items():
-        if key not in reference:
-            missing += 1
-        else:
-            differences.append(abs(value - reference[key]))
+    generated_keys = set(generated)
+    reference_keys = set(reference)
+    for key in generated_keys & reference_keys:
+        differences.append(abs(generated[key] - reference[key]))
+    generated_missing_in_reference = generated_keys - reference_keys
+    unmatched_reference = reference_keys - generated_keys
+    passed = (not generated_missing_in_reference and not unmatched_reference
+              and duplicate_keys == 0 and all(value == 0 for value in differences))
     return {"performed": True, "generated_rows": len(generated), "reference_rows": len(reference),
-            "matched_rows": len(differences), "missing_reference_rows": missing,
+            "reference_accepted_rows": accepted_rows,
+            "matched_rows": len(differences),
+            "generated_missing_in_reference_rows": len(generated_missing_in_reference),
+            "unmatched_reference_rows": len(unmatched_reference),
+            "duplicate_reference_keys": duplicate_keys,
             "max_absolute_utility_difference": max(differences) if differences else None,
             "mean_absolute_utility_difference": statistics.fmean(differences) if differences else None,
-            "exact_matches": sum(value == 0 for value in differences)}
+            "exact_matches": sum(value == 0 for value in differences),
+            "passed": passed}
 
 
 def main(args: argparse.Namespace) -> int:
@@ -280,8 +300,8 @@ def main(args: argparse.Namespace) -> int:
         for key, row in metadata.items():
             fps = row["requested_prefix_fingerprints"]
             if len(fps) == 1:
-                generated_depth1[(leaf, int(row["replicate"]), fps[0])] = row[
-                    "original_root_corrected_utility"]
+                for replicate, value in candidates[key].items():
+                    generated_depth1[(leaf, replicate, fps[0])] = value
             for fp, description in zip(fps, row.get("requested_prefix_descriptions", [])):
                 description_by_fingerprint.setdefault(fp, description)
         for depth in (1, 2, 3):
@@ -355,6 +375,16 @@ def main(args: argparse.Namespace) -> int:
                 "oracle_predicted_value": row["oracle_value"],
             })
 
+    depth_1_reproduction = reference_check(generated_depth1, args.reference_counterfactual)
+    if depth_1_reproduction.get("performed") and not depth_1_reproduction["passed"]:
+        raise SystemExit(
+            "depth-1 reference comparison failed: "
+            f"generated_missing={depth_1_reproduction['generated_missing_in_reference_rows']} "
+            f"unmatched_reference={depth_1_reproduction['unmatched_reference_rows']} "
+            f"duplicates={depth_1_reproduction['duplicate_reference_keys']} "
+            f"max_abs_diff={depth_1_reproduction['max_absolute_utility_difference']}"
+        )
+
     report = {
         "schema": "silver_tactical_prefix_oracle_analysis_v1",
         "classification": classification,
@@ -379,7 +409,7 @@ def main(args: argparse.Namespace) -> int:
         "metrics": reports,
         "selected_prefix_changes": changes,
         "examples": examples,
-        "depth_1_reproduction": reference_check(generated_depth1, args.reference_counterfactual),
+        "depth_1_reproduction": depth_1_reproduction,
         "raw_input_note": "Teacher A/B are frozen approximate references inherited from #251, not ground truth.",
         "decision_note": "No production policy, Silver search path, gameplay seed, or hard64 holdout was used.",
     }
