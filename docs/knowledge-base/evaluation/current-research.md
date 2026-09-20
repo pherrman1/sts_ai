@@ -1,6 +1,7 @@
 # Current research status
 
-Last verified: 2026-09-19 for forced-action historical artifact recovery and
+Last verified: 2026-09-20 for the contextual first-action Silver selector
+headroom/policy screen; 2026-09-19 for forced-action historical artifact recovery and
 the PR #247 evaluator preflight; 2026-09-18 for the OOC 20% gap-stop quality
 gate and frozen
 six-arm Silver root-mechanism replay;
@@ -154,6 +155,19 @@ erase the earlier targeted first-action finding; no tuning or broadening should
 follow from this holdout. Do not infer a rollout-policy, model, search budget,
 or default change from either diagnostic. See [ledger §322](../../experiments/ledger-06.md)
 and the [diagnostic evidence packet](../../experiments/evidence/silver_rollout_variance_20260920/README.md).
+
+The subsequent frozen-DEV contextual first-action screen is
+**`FIRST_ACTION_HEADROOM_PRESENT_POLICY_INSUFFICIENT`**. Its cross-fitted
+first-action oracle reduced k=1 Teacher-A regret from `2.33796` to `1.41354`
+(`39.54%`) across 32 source groups, with Teacher-B direction consistent and
+no pairwise-concordance collapse. One fixed five-fold, regularized linear
+selector trained on exact forced-action `q0` values instead produced k=1
+regret `3.65020` (`-56.13%` reduction), a source-group bootstrap interval
+`[-1.30647, 0.84047]` for baseline-minus-candidate regret, and `1.74940x`
+mean rollout time. This rejects the tested linear selector while preserving
+the oracle headroom finding; do not tune additional selectors or launch fresh
+gameplay confirmation from this result. See [ledger §323](../../experiments/ledger-06.md)
+and the [selector evidence packet](../../experiments/evidence/silver_first_action_selector_20260920/README.md).
 
 ## Silver policy/value Phase-A cost diagnostic
 

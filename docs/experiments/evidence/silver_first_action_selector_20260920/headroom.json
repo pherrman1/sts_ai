@@ -1,0 +1,187 @@
+{
+  "best_action_differs_from_baseline": {
+    "leaves": 184,
+    "total": 247
+  },
+  "classification": "FIRST_ACTION_POLICY_HEADROOM_PRESENT",
+  "corpus": {
+    "counterfactual_rows": 40512,
+    "eligible_leaves": 247,
+    "fold_count": 5,
+    "groups": 32,
+    "replicates": 32,
+    "rng_contract": "fnv1a(silver-rollout-variance/v1/group/replicate)",
+    "selection_replicates": 16
+  },
+  "group_improvement": {
+    "concentration": {
+      "1": 0.23617645510865434,
+      "2": 0.3623096792210315,
+      "4": 0.5730672767753823,
+      "8": 0.8678427491173466
+    },
+    "improved": 15,
+    "largest": [
+      {
+        "baseline_regret": 10.492806019362845,
+        "group_id": "0530fe9984c813e2",
+        "improvement": 8.491752645174472,
+        "oracle_regret": 2.0010533741883734
+      },
+      {
+        "baseline_regret": 4.535135134481976,
+        "group_id": "ec798f48cfc7fbae",
+        "improvement": 4.535135134481976,
+        "oracle_regret": 0.0
+      },
+      {
+        "baseline_regret": 4.061735900322162,
+        "group_id": "1194824b92a5b6f5",
+        "improvement": 4.061735900322162,
+        "oracle_regret": 0.0
+      },
+      {
+        "baseline_regret": 11.776531467355056,
+        "group_id": "137c7885d87cacb7",
+        "improvement": 3.5160786862309834,
+        "oracle_regret": 8.260452781124073
+      },
+      {
+        "baseline_regret": 4.888282329227131,
+        "group_id": "f65dceb330b8045c",
+        "improvement": 3.264177817420034,
+        "oracle_regret": 1.6241045118070971
+      },
+      {
+        "baseline_regret": 8.027427147001013,
+        "group_id": "e2ab6a6437060dc5",
+        "improvement": 3.252261699441547,
+        "oracle_regret": 4.775165447559466
+      },
+      {
+        "baseline_regret": 11.859454424740363,
+        "group_id": "c20a2b9c8ce98855",
+        "improvement": 2.5654389625361276,
+        "oracle_regret": 9.294015462204236
+      },
+      {
+        "baseline_regret": 1.5168088276873135,
+        "group_id": "18b1b61ccc77b353",
+        "improvement": 1.5168088276873135,
+        "oracle_regret": 0.0
+      },
+      {
+        "baseline_regret": 1.318674977270959,
+        "group_id": "9131e6062ef2f3a9",
+        "improvement": 1.318674977270959,
+        "oracle_regret": 0.0
+      },
+      {
+        "baseline_regret": 1.3300720911699528,
+        "group_id": "e01ab8f5abdd8cb9",
+        "improvement": 1.1424001244403001,
+        "oracle_regret": 0.1876719667296527
+      },
+      {
+        "baseline_regret": 0.7382620187993325,
+        "group_id": "266c835ca79bd69c",
+        "improvement": 0.7382620187993325,
+        "oracle_regret": 0.0
+      },
+      {
+        "baseline_regret": 0.6718629500691407,
+        "group_id": "2ef80137dc5aa89b",
+        "improvement": 0.6718629500691407,
+        "oracle_regret": 0.0
+      },
+      {
+        "baseline_regret": 0.4894429413176056,
+        "group_id": "92994b5c8cdc0549",
+        "improvement": 0.4894429413176056,
+        "oracle_regret": 0.0
+      },
+      {
+        "baseline_regret": 0.2951189549807651,
+        "group_id": "c2173e160a94edaa",
+        "improvement": 0.2951189549807651,
+        "oracle_regret": 0.0
+      },
+      {
+        "baseline_regret": 0.09596776945595309,
+        "group_id": "9249765fac6ec320",
+        "improvement": 0.09596776945595309,
+        "oracle_regret": 0.0
+      },
+      {
+        "baseline_regret": 0.0,
+        "group_id": "88c7c1af25d91065",
+        "improvement": 0.0,
+        "oracle_regret": 0.0
+      }
+    ],
+    "unchanged": 14,
+    "worsened": 3
+  },
+  "headroom_gate": {
+    "not_one_group": true,
+    "pairwise_no_collapse": true,
+    "reduction_at_least_20_percent": true,
+    "teacher_b_direction_consistent": true
+  },
+  "inputs": {
+    "baseline_sha256": "253c60eb8bdd80f5476e1826295137985ec6101b9acf0a3f26b13855435e70be",
+    "counterfactual_sha256": "d706341c6863c98e507751b79b7c0a4354aaf25d08ac4e0747570d73e9d0b439",
+    "teachers_sha256": "01994f057b07add5067d095f17c413bf246c322fa63c4c6cd409efb787b3855e"
+  },
+  "metrics_teacher_a": {
+    "baseline": {
+      "centered_mae": 11.222582863215031,
+      "centered_rmse": 15.729737522881537,
+      "groups": 32,
+      "mean_teacher_regret": 2.3379638240584506,
+      "pairwise_concordance": 0.6346294937637564,
+      "pairwise_pairs": 1363,
+      "top_leaf_agreement": 0.40625,
+      "value_mae": 14.02712889693429
+    },
+    "oracle": {
+      "centered_mae": 3.9844307219481765,
+      "centered_rmse": 6.435529540058525,
+      "groups": 32,
+      "mean_teacher_regret": 1.4135385158245475,
+      "pairwise_concordance": 0.7517630465444288,
+      "pairwise_pairs": 1418,
+      "top_leaf_agreement": 0.625,
+      "value_mae": 4.857701855611859
+    }
+  },
+  "metrics_teacher_b": {
+    "baseline": {
+      "centered_mae": 11.387395696712787,
+      "centered_rmse": 16.01398680376318,
+      "groups": 32,
+      "mean_teacher_regret": 2.227881267430887,
+      "pairwise_concordance": 0.6360968451944241,
+      "pairwise_pairs": 1363,
+      "top_leaf_agreement": 0.375,
+      "value_mae": 13.994126734640817
+    },
+    "oracle": {
+      "centered_mae": 3.963564442189769,
+      "centered_rmse": 6.388884404903745,
+      "groups": 32,
+      "mean_teacher_regret": 1.3498820944914116,
+      "pairwise_concordance": 0.7595204513399154,
+      "pairwise_pairs": 1418,
+      "top_leaf_agreement": 0.5625,
+      "value_mae": 4.842775685053862
+    }
+  },
+  "oracle_bootstrap_reduction": {
+    "p025": 0.17315485708696832,
+    "p975": 1.7280098972647744
+  },
+  "oracle_regret_reduction": 0.39539760997208306,
+  "raw_input_note": "Teacher values are frozen PR #251 A/B references, not ground truth.",
+  "schema": "silver_first_action_headroom_v1"
+}

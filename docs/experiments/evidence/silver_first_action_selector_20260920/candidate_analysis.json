@@ -1,0 +1,325 @@
+{
+  "action_kind_counts": {
+    "card": 7328,
+    "end_turn": 576
+  },
+  "arms": {
+    "baseline_k1": {
+      "rows": 247,
+      "teacher_a": {
+        "centered_mae": 11.222582863215031,
+        "centered_rmse": 15.729737522881537,
+        "groups": 32,
+        "mean_teacher_regret": 2.3379638240584506,
+        "pairwise_concordance": 0.6346294937637564,
+        "pairwise_pairs": 1363,
+        "top_leaf_agreement": 0.40625,
+        "value_mae": 14.02712889693429
+      },
+      "teacher_b": {
+        "centered_mae": 11.387395696712787,
+        "centered_rmse": 16.01398680376318,
+        "groups": 32,
+        "mean_teacher_regret": 2.227881267430887,
+        "pairwise_concordance": 0.6360968451944241,
+        "pairwise_pairs": 1363,
+        "top_leaf_agreement": 0.375,
+        "value_mae": 13.994126734640817
+      }
+    },
+    "baseline_k32": {
+      "rows": 247,
+      "teacher_a": {
+        "centered_mae": 4.049411332285114,
+        "centered_rmse": 6.689277560296465,
+        "groups": 32,
+        "mean_teacher_regret": 1.513323903420704,
+        "pairwise_concordance": 0.7424135497529993,
+        "pairwise_pairs": 1417,
+        "top_leaf_agreement": 0.5625,
+        "value_mae": 5.219883703678893
+      },
+      "teacher_b": {
+        "centered_mae": 4.142839746476512,
+        "centered_rmse": 6.942563681395914,
+        "groups": 32,
+        "mean_teacher_regret": 1.4729049694877248,
+        "pairwise_concordance": 0.757939308398024,
+        "pairwise_pairs": 1417,
+        "top_leaf_agreement": 0.53125,
+        "value_mae": 5.1397941043458175
+      }
+    },
+    "baseline_k4": {
+      "rows": 247,
+      "teacher_a": {
+        "centered_mae": 6.701757974617944,
+        "centered_rmse": 10.011507701426662,
+        "groups": 32,
+        "mean_teacher_regret": 1.79781907378888,
+        "pairwise_concordance": 0.6719424460431654,
+        "pairwise_pairs": 1390,
+        "top_leaf_agreement": 0.4375,
+        "value_mae": 8.24152301452955
+      },
+      "teacher_b": {
+        "centered_mae": 6.763048316646318,
+        "centered_rmse": 10.224632921892479,
+        "groups": 32,
+        "mean_teacher_regret": 1.702533782636455,
+        "pairwise_concordance": 0.6820143884892086,
+        "pairwise_pairs": 1390,
+        "top_leaf_agreement": 0.53125,
+        "value_mae": 8.202563821569335
+      }
+    },
+    "candidate_k1": {
+      "rows": 247,
+      "teacher_a": {
+        "centered_mae": 11.835399515584813,
+        "centered_rmse": 16.012250549192515,
+        "groups": 32,
+        "mean_teacher_regret": 3.6502012709898466,
+        "pairwise_concordance": 0.6378181818181818,
+        "pairwise_pairs": 1375,
+        "top_leaf_agreement": 0.4375,
+        "value_mae": 15.25953215074061
+      },
+      "teacher_b": {
+        "centered_mae": 11.973932942246515,
+        "centered_rmse": 16.325226068187206,
+        "groups": 32,
+        "mean_teacher_regret": 3.581894040823455,
+        "pairwise_concordance": 0.6269090909090909,
+        "pairwise_pairs": 1375,
+        "top_leaf_agreement": 0.375,
+        "value_mae": 15.264872714329222
+      }
+    },
+    "candidate_k32": {
+      "rows": 247,
+      "teacher_a": {
+        "centered_mae": 4.317415143060939,
+        "centered_rmse": 6.789489827024799,
+        "groups": 32,
+        "mean_teacher_regret": 1.6343372286846822,
+        "pairwise_concordance": 0.7421163279607569,
+        "pairwise_pairs": 1427,
+        "top_leaf_agreement": 0.5625,
+        "value_mae": 5.491424835361179
+      },
+      "teacher_b": {
+        "centered_mae": 4.397687214697402,
+        "centered_rmse": 7.009585982859649,
+        "groups": 32,
+        "mean_teacher_regret": 1.6994277124126613,
+        "pairwise_concordance": 0.7715487035739313,
+        "pairwise_pairs": 1427,
+        "top_leaf_agreement": 0.5625,
+        "value_mae": 5.432390129573294
+      }
+    },
+    "candidate_k4": {
+      "rows": 247,
+      "teacher_a": {
+        "centered_mae": 7.120847493043394,
+        "centered_rmse": 10.33178597253789,
+        "groups": 32,
+        "mean_teacher_regret": 2.7971989157941772,
+        "pairwise_concordance": 0.7120567375886525,
+        "pairwise_pairs": 1410,
+        "top_leaf_agreement": 0.375,
+        "value_mae": 8.588192896596547
+      },
+      "teacher_b": {
+        "centered_mae": 7.209096821058231,
+        "centered_rmse": 10.543085420474236,
+        "groups": 32,
+        "mean_teacher_regret": 2.929000230287712,
+        "pairwise_concordance": 0.7156028368794326,
+        "pairwise_pairs": 1410,
+        "top_leaf_agreement": 0.4375,
+        "value_mae": 8.642242825033545
+      }
+    }
+  },
+  "candidate_reduction_k1": -0.561273631964713,
+  "candidate_sha256": "b7628ea056a8ffae88c4f1880ee09dbe707618072d9520f6440379264a45f59a",
+  "classification": "FIRST_ACTION_HEADROOM_PRESENT_POLICY_INSUFFICIENT",
+  "decision_checks": {
+    "no_obvious_catastrophic_tail": true,
+    "pairwise_no_5pp_collapse": true,
+    "quality_at_least_15_percent": false,
+    "runtime_under_5_percent": false,
+    "source_group_bootstrap_supports_improvement": false,
+    "teacher_b_not_materially_contradictory": false
+  },
+  "fold_rule": "fnv1a(group_id) % 5; model for held-out fold only",
+  "frozen_baseline_max_abs_utility_delta": 0.0,
+  "headroom_classification": "FIRST_ACTION_POLICY_HEADROOM_PRESENT",
+  "provenance": {
+    "candidate_evaluation": "fresh native rollout with same RNG identities",
+    "counterfactual_target": "q0 from disjoint selection half",
+    "teacher_values": "frozen PR #251 A/B approximate references",
+    "timing": "same native boundary, telemetry and action traces disabled"
+  },
+  "row_count": 7904,
+  "runtime": {
+    "baseline_mean_micros": 198.85995635121458,
+    "baseline_median_micros": 201.78199999999998,
+    "candidate_mean_micros": 347.88547849190286,
+    "candidate_median_micros": 353.7265,
+    "gate_under_1_05": false,
+    "mean_ratio": 1.7493993505534533
+  },
+  "schema": "silver_contextual_first_action_rollout_analysis_v1",
+  "source_group_comparison": {
+    "bootstrap_improvement": {
+      "p025": -1.3064742812278907,
+      "p975": 0.8404743213623369,
+      "replicates": 2000,
+      "seed": 20260920
+    },
+    "catastrophic_tail": 14.572571521975462,
+    "improved": 4,
+    "largest_improvements": [
+      {
+        "baseline_regret": 12.101449326763088,
+        "baseline_selected_leaf": "e07c8c989c425f5c01093a2576970348",
+        "candidate_regret": 5.037649431656845,
+        "candidate_selected_leaf": "c7cdd8a388d1818da2eec958810f7219",
+        "group_id": "73a930377101137b",
+        "regret_improvement": 7.063799895106243
+      },
+      {
+        "baseline_regret": 14.250399555276985,
+        "baseline_selected_leaf": "ee851262de94113f7f2fe0e11ef2e883",
+        "candidate_regret": 9.294015462204236,
+        "candidate_selected_leaf": "b3bb5dcd843fe829146de3467f37bded",
+        "group_id": "c20a2b9c8ce98855",
+        "regret_improvement": 4.956384093072749
+      },
+      {
+        "baseline_regret": 2.842862087474529,
+        "baseline_selected_leaf": "5dc54d3aa9eb743629d5ff07a9dd4cc2",
+        "candidate_regret": 0.0,
+        "candidate_selected_leaf": "5b2c129037d2a9969c573cd5c0007aca",
+        "group_id": "9701175810936dd2",
+        "regret_improvement": 2.842862087474529
+      },
+      {
+        "baseline_regret": 0.09596776945595309,
+        "baseline_selected_leaf": "0686eccc9b80e8ed1fbdd04e60ac4951",
+        "candidate_regret": 0.0024566501112559536,
+        "candidate_selected_leaf": "4a4462ff063db89d9595f91f9af74151",
+        "group_id": "9249765fac6ec320",
+        "regret_improvement": 0.09351111934469714
+      },
+      {
+        "baseline_regret": 0.0,
+        "baseline_selected_leaf": "5e550cb089836b00dd303a6314b968dc",
+        "candidate_regret": 0.0,
+        "candidate_selected_leaf": "5e550cb089836b00dd303a6314b968dc",
+        "group_id": "04df6dc6c7500524",
+        "regret_improvement": 0.0
+      },
+      {
+        "baseline_regret": 1.0644902106152188,
+        "baseline_selected_leaf": "5f827d298c2d47cd8ae2d2c26eeb0f61",
+        "candidate_regret": 1.0644902106152188,
+        "candidate_selected_leaf": "5f827d298c2d47cd8ae2d2c26eeb0f61",
+        "group_id": "04fcab644163af9e",
+        "regret_improvement": 0.0
+      },
+      {
+        "baseline_regret": 2.0010533741883734,
+        "baseline_selected_leaf": "de190638d885c54df4c6ca7924112b71",
+        "candidate_regret": 2.0010533741883734,
+        "candidate_selected_leaf": "de190638d885c54df4c6ca7924112b71",
+        "group_id": "0530fe9984c813e2",
+        "regret_improvement": 0.0
+      },
+      {
+        "baseline_regret": 0.0,
+        "baseline_selected_leaf": "7fa078db637d0dc6dc83d787cf7b5e42",
+        "candidate_regret": 0.0,
+        "candidate_selected_leaf": "7fa078db637d0dc6dc83d787cf7b5e42",
+        "group_id": "1194824b92a5b6f5",
+        "regret_improvement": 0.0
+      }
+    ],
+    "largest_regressions": [
+      {
+        "baseline_regret": 0.0,
+        "baseline_selected_leaf": "97965cfb51838d6b0d35ccbed821083f",
+        "candidate_regret": 14.572571521975462,
+        "candidate_selected_leaf": "64d82c92cfc954d94cc72fbc863cd00d",
+        "group_id": "91ce3829d47043e0",
+        "regret_improvement": -14.572571521975462
+      },
+      {
+        "baseline_regret": 4.391755053464209,
+        "baseline_selected_leaf": "ff6abcdf6d7f92b9251e3061faeda735",
+        "candidate_regret": 8.260452781124073,
+        "candidate_selected_leaf": "d57ae001ed141889e98cf94d5c9eb4e5",
+        "group_id": "137c7885d87cacb7",
+        "regret_improvement": -3.868697727659864
+      },
+      {
+        "baseline_regret": 0.4975903677322151,
+        "baseline_selected_leaf": "a65f95d6183074e9d3ca929417f7d935",
+        "candidate_regret": 0.8853047215424112,
+        "candidate_selected_leaf": "c4b3e1dd9fb6407b4e6b0eaf4d7c5cef",
+        "group_id": "49d948edcffe8323",
+        "regret_improvement": -0.38771435381019614
+      },
+      {
+        "baseline_regret": 0.0,
+        "baseline_selected_leaf": "5e550cb089836b00dd303a6314b968dc",
+        "candidate_regret": 0.0,
+        "candidate_selected_leaf": "5e550cb089836b00dd303a6314b968dc",
+        "group_id": "04df6dc6c7500524",
+        "regret_improvement": 0.0
+      },
+      {
+        "baseline_regret": 1.0644902106152188,
+        "baseline_selected_leaf": "5f827d298c2d47cd8ae2d2c26eeb0f61",
+        "candidate_regret": 1.0644902106152188,
+        "candidate_selected_leaf": "5f827d298c2d47cd8ae2d2c26eeb0f61",
+        "group_id": "04fcab644163af9e",
+        "regret_improvement": 0.0
+      },
+      {
+        "baseline_regret": 2.0010533741883734,
+        "baseline_selected_leaf": "de190638d885c54df4c6ca7924112b71",
+        "candidate_regret": 2.0010533741883734,
+        "candidate_selected_leaf": "de190638d885c54df4c6ca7924112b71",
+        "group_id": "0530fe9984c813e2",
+        "regret_improvement": 0.0
+      },
+      {
+        "baseline_regret": 0.0,
+        "baseline_selected_leaf": "7fa078db637d0dc6dc83d787cf7b5e42",
+        "candidate_regret": 0.0,
+        "candidate_selected_leaf": "7fa078db637d0dc6dc83d787cf7b5e42",
+        "group_id": "1194824b92a5b6f5",
+        "regret_improvement": 0.0
+      },
+      {
+        "baseline_regret": 0.1497346014443437,
+        "baseline_selected_leaf": "c0ecb8ae1f25b8f9c954c0c08296f785",
+        "candidate_regret": 0.1497346014443437,
+        "candidate_selected_leaf": "c0ecb8ae1f25b8f9c954c0c08296f785",
+        "group_id": "1315f2850118a51e",
+        "regret_improvement": 0.0
+      }
+    ],
+    "unchanged": 25,
+    "worsened": 3
+  },
+  "teacher_b_reduction_k1": -0.6077580494017829,
+  "trajectory_deltas": {
+    "mean_candidate_minus_baseline_actions": -0.053517206477732795,
+    "mean_candidate_minus_baseline_turns": -0.01353744939271255
+  }
+}

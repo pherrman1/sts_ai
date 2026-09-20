@@ -10342,3 +10342,44 @@ default or generalization claim is authorized. Evidence:
   **Knowledge impact:** durable Silver diagnostic evidence and current
   research status only; no Silver behavior, model, RNG, schema, budget, or
   gameplay default changed.
+
+## §323 — Contextual first-action Silver selector screen (2026-09-20)
+
+- **Question and protocol:** Can a small context-sensitive scorer replace only
+  the first canonical SimpleAgent rollout action while retaining the exact
+  continuation? Reuse the frozen PR #251 DEV corpus; do not recollect hard
+  states or run gameplay seeds. Enumerate exact legal card/target actions and
+  `END_TURN`, exclude potions, and evaluate every candidate with 32 common-RNG
+  forced-action continuations. Replicates `0..15` and `16..31` are disjoint
+  selection/evaluation halves, cross-fitted in both directions. Source sibling
+  groups remain intact in deterministic five-fold CV.
+- **Headroom result:** **`FIRST_ACTION_POLICY_HEADROOM_PRESENT`**. There are
+  32 groups / 247 leaves / 40,512 accepted counterfactual rows. Teacher-A k=1
+  mean regret is `2.33796`; the cross-fitted first-action oracle is `1.41354`
+  (`39.54%` reduction), pairwise concordance is `0.63463 -> 0.75176`, and
+  top-leaf agreement is `0.40625 -> 0.62500`. Teacher-B regret is
+  `2.22788 -> 1.34988` (`39.41%`). The source-group bootstrap interval for
+  baseline-minus-oracle regret is `[0.17315, 1.72801]`; 15 groups improve,
+  3 worsen, and 14 are unchanged. This is oracle headroom, not a policy.
+- **Policy result:** Fit exactly one 30-feature linear ridge scorer with
+  `lambda=1.0`, target = disjoint selection-half `q0(s,a)`, and five grouped
+  holdout models. The actual candidate ran 7,904/7,904 accepted paired native
+  rollouts. Teacher-A k=1 regret changed from `2.33796` to `3.65020`
+  (`-56.13%` reduction); Teacher-B changed from `2.22788` to `3.58189`
+  (`-60.78%`). Candidate source-group bootstrap improvement was
+  `[-1.30647, 0.84047]`, with 4 groups improved, 3 worsened, 25 unchanged;
+  the largest regression was `14.57257` regret points.
+- **Cost:** Same native boundary, with action traces and rollout telemetry
+  disabled. Baseline mean/median was `198.8600 / 201.7820` microseconds;
+  candidate feature extraction + scoring + forced action + continuation was
+  `347.8855 / 353.7265` microseconds, ratio `1.74940`. The `<5%` cost gate
+  failed. No optimized follow-up was built.
+- **Decision and boundary:** **`FIRST_ACTION_HEADROOM_PRESENT_POLICY_INSUFFICIENT`**.
+  The oracle signal is not captured by this small linear formulation. Do not
+  tune another model family, alter later rollout actions, use potion policy,
+  change Silver search/defaults, or launch fresh gameplay confirmation in
+  this task. The result is offline DEV evidence only.
+- **Evidence:** [contextual first-action selector packet](evidence/silver_first_action_selector_20260920/README.md).
+  **Knowledge impact:** durable benchmark result and current research status;
+  no production Silver behavior, model, RNG, schema, budget, or gameplay
+  default changed.
