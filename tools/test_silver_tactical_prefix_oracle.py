@@ -72,6 +72,20 @@ class TacticalPrefixContracts(unittest.TestCase):
             self.assertFalse(report["passed"])
             self.assertEqual(report["unmatched_reference_rows"], 1)
 
+    def test_reduce_metrics_distinguishes_represented_and_scorable_groups(self):
+        rows = []
+        for group, leaves in (("g1", ("a", "b")), ("g2", ("c", "d")),
+                              ("g3", ("e",))):
+            for leaf in leaves:
+                rows.append({"group_id": group, "leaf_snapshot_id": leaf,
+                             "source_seed": "s", "baseline_value": 1.0,
+                             "oracle_value": 1.0, "teacher_a": 2.0,
+                             "teacher_b": 2.0, "selected_prefix_lengths": [1, 1]})
+        report = MODULE.reduce_metrics(rows, 1)
+        self.assertEqual(report["leaves"], 5)
+        self.assertEqual(report["represented_groups"], 3)
+        self.assertEqual(report["scorable_sibling_groups"], 2)
+
 
 if __name__ == "__main__":
     unittest.main()

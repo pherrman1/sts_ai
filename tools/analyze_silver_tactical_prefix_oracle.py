@@ -234,6 +234,11 @@ def reduce_metrics(rows: list[dict], bootstrap: int) -> dict:
         "select_16_31_evaluate_0_15": dict(Counter(
             row["selected_prefix_lengths"][1] for row in rows)),
     }
+    represented_groups = len({row["group_id"] for row in rows})
+    scorable_sibling_groups = a["baseline"]["groups"]
+    if any(metric["groups"] != scorable_sibling_groups
+           for metric in (a["oracle"], b["baseline"], b["oracle"])):
+        raise ValueError("baseline and oracle sibling group counts disagree")
     return {
         "teacher_a": a, "teacher_b": b,
         "teacher_a_regret_reduction": ((base_regret - oracle_regret) / base_regret
@@ -242,7 +247,8 @@ def reduce_metrics(rows: list[dict], bootstrap: int) -> dict:
         "clustered_bootstrap": bootstrap_difference(rows, bootstrap),
         "group_improvement": group_improvement(rows),
         "selected_prefix_length_counts": selected_length_counts,
-        "leaves": len(rows), "groups": len({row["group_id"] for row in rows}),
+        "leaves": len(rows), "represented_groups": represented_groups,
+        "scorable_sibling_groups": scorable_sibling_groups,
     }
 
 
