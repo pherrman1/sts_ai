@@ -150,6 +150,14 @@ def state_identity(state: Mapping[str, Any]) -> str:
     return hashlib.sha256(encoded.encode()).hexdigest()
 
 
+def transition_identity(screen: Mapping[str, Any], game_state: Mapping[str, Any] | None = None) -> str:
+    """Hash the full visible transition state, not readiness-only metadata."""
+    payload = {"screen": _without_readiness(dict(screen)),
+               "game_state": _without_readiness(normalize_game_state(game_state or {}))}
+    encoded = json.dumps(payload, sort_keys=True, separators=(",", ":"), default=str)
+    return hashlib.sha256(encoded.encode()).hexdigest()
+
+
 def _ready(value: Any) -> bool:
     data = _mapping(value)
     return data.get("ready_for_command", data.get("readyForCommand", True)) is True
@@ -264,6 +272,10 @@ def build_legal_actions(screen: Mapping[str, Any], commands: Mapping[str, Any] |
                 potion_id = _text(potion.get("id", potion.get("name", "Potion Slot")))
                 if not potion_id or potion_id.lower() in {"potion slot", "empty", "none"}:
                     continue
+                if tool == "use_potion" and potion.get("can_use", potion.get("canUse", True)) is False:
+                    continue
+                if tool == "discard_potion" and potion.get("can_discard", potion.get("canDiscard", True)) is False:
+                    continue
                 semantic = {"kind": "potion", "potion_slot": index + 1, "discard": tool == "discard_potion"}
                 args = {"potion_slot": index + 1}
                 requires_target = potion.get("requires_target", potion.get("requiresTarget", potion.get("has_target", False)))
@@ -278,8 +290,12 @@ def build_legal_actions(screen: Mapping[str, Any], commands: Mapping[str, Any] |
                 _append(actions, tool, {"choice_index": index + 1},
                         f"Choose {index + 1}: {_choice_label(choice)}",
                         {"kind": "choice", "choice_index": index + 1})
-        elif tool in {"skip", "proceed", "cancel", "confirm", "start_game", "continue_game"}:
+        elif tool in {"skip", "proceed", "cancel", "confirm", "continue_game"}:
             _append(actions, tool, {}, tool.replace("_", " ").title(), {"kind": tool})
+        elif tool == "start_game":
+            character = screen.get("character", screen.get("character_class", screen.get("characterClass")))
+            if character is not None and _text(character):
+                _append(actions, tool, {"character": character}, "Start game", {"kind": tool, "character": character})
         elif tool == "select_cards":
             options = screen.get("selection_options", screen.get("select_options", game_state.get("selection_options")))
             selection = _first_mapping(screen.get("selection"), game_state.get("selection"))
@@ -395,11 +411,23 @@ class InspectorSnapshot:
             compared = bool(raw_uuids and current_uuids)
         raw_monsters, current_monsters = _list(combat.get("monsters")), _list(state.get("monsters"))
         if raw_monsters and current_monsters:
-            raw_summary = [(_mapping(monster).get("id"), _mapping(monster).get("hp")) for monster in raw_monsters]
-            current_summary = [(_mapping(monster).get("id"), _mapping(monster).get("current_hp", _mapping(monster).get("hp"))) for monster in current_monsters]
-            if raw_summary != current_summary:
+            def active(monster: Any) -> bool:
+                item = _mapping(monster)
+                hp = item.get("current_hp", item.get("curHp", item.get("hp")))
+                return not (item.get("dead") or item.get("is_gone") or item.get("isGone")
+                            or item.get("half_dead") or item.get("halfDead")
+                            or (isinstance(hp, (int, float)) and hp <= 0))
+            def monster_key(monster: Any) -> Any:
+                item = _mapping(monster)
+                return item.get("id", item.get("name"))
+            raw_summary = sorted((monster_key(monster), _mapping(monster).get("hp", _mapping(monster).get("curHp")))
+                                 for monster in raw_monsters if active(monster))
+            current_summary = sorted((monster_key(monster), _mapping(monster).get("current_hp", _mapping(monster).get("curHp", _mapping(monster).get("hp"))))
+                                    for monster in current_monsters if active(monster))
+            comparable = all(key is not None for key, _ in raw_summary + current_summary)
+            if comparable and raw_summary != current_summary:
                 raise DriverError("inspector monster identity/state does not match MCP state")
-            compared = True
+            compared = comparable
         if not any(key in state for key in ("session", "sequence", "observationHash")) and not compared:
             raise DriverError("cannot correlate inspector observation with MCP-visible state")
 
@@ -495,8 +523,9 @@ async def connected_mcp(url: str) -> AsyncIterator[McpGameClient]:
 
 
 def _is_combat(screen: Mapping[str, Any]) -> bool:
-    return (_text(screen.get("screen_type", screen.get("screenType", ""))).upper() in {"NONE", "COMBAT"}
-            or _text(screen.get("room_phase", screen.get("roomPhase", ""))).upper() == "COMBAT")
+    phase = _text(screen.get("room_phase", screen.get("roomPhase", ""))).upper()
+    screen_type = _text(screen.get("screen_type", screen.get("screenType", ""))).upper()
+    return phase == "COMBAT" or (not phase and screen_type == "COMBAT")
 
 
 def _is_terminal(screen: Mapping[str, Any]) -> bool:
@@ -547,6 +576,12 @@ class Driver:
             raise DriverError(f"MCP screen state is not an object: {screen!r}")
         return screen
 
+    async def read_game_state(self) -> dict[str, Any]:
+        if "get_game_state" not in self.client.tool_names:
+            return {}
+        value = await self.client.call("get_game_state")
+        return normalize_game_state(value)
+
     async def read_ready_state(self) -> tuple[Mapping[str, Any], Any]:
         deadline, last = time.monotonic() + self.poll_timeout, {}
         while time.monotonic() < deadline:
@@ -559,15 +594,16 @@ class Driver:
             await asyncio.sleep(self.poll_interval)
         raise DriverError(f"MCP state was not ready for a command within {self.poll_timeout:.1f}s: {last!r}")
 
-    async def wait_for_ready_advance(self, before: str) -> Mapping[str, Any]:
+    async def wait_for_ready_advance(self, before: str) -> tuple[Mapping[str, Any], dict[str, Any]]:
         deadline, last = time.monotonic() + self.poll_timeout, {}
         while time.monotonic() < deadline:
             screen = await self.read_screen()
             last = screen
             if _ready(screen):
                 commands = await self.client.call("get_available_commands")
-                if _ready(commands) and state_identity(screen) != before:
-                    return screen
+                game_state = await self.read_game_state()
+                if _ready(commands) and transition_identity(screen, game_state) != before:
+                    return screen, game_state
             await asyncio.sleep(self.poll_interval)
         raise DriverError(f"post-action MCP state did not become ready and advance within {self.poll_timeout:.1f}s: {last!r}")
 
@@ -575,18 +611,24 @@ class Driver:
         screen, commands = await self.read_ready_state()
         if _is_terminal(screen):
             return False
-        game_state: dict[str, Any] = {}
-        if "get_game_state" in self.client.tool_names:
-            game_state = normalize_game_state(await self.client.call("get_game_state"))
+        game_state = await self.read_game_state()
         candidates = build_legal_actions(screen, commands, game_state)
         if not candidates:
             raise DriverError("no legal candidates for a non-terminal screen")
         row: dict[str, Any] = {"timestamp": datetime.now(timezone.utc).isoformat(), "step": step,
                                "screen_type": screen.get("screen_type", screen.get("screenType")),
-                               "state_identity": state_identity(screen),
+                               "state_identity": transition_identity(screen, game_state),
                                "legal_candidates": [candidate.trace() for candidate in candidates]}
         if _is_combat(screen):
-            snapshot = await self.inspector.read_for(screen)
+            inspector_state = dict(screen)
+            # The lightweight screen uses display names and filters dead
+            # slots; prefer full game-state monster records for correlation.
+            if _list(game_state.get("monsters")):
+                inspector_state["monsters"] = game_state["monsters"]
+            for key in ("session", "sequence", "observationHash"):
+                if key not in inspector_state and key in game_state:
+                    inspector_state[key] = game_state[key]
+            snapshot = await self.inspector.read_for(inspector_state)
             evaluator = snapshot.silver_evaluator()
             status = _text(evaluator.get("status", evaluator.get("silverStatus"))).upper()
             row.update({"inspector_session": snapshot.session, "inspector_sequence": snapshot.sequence,
@@ -616,11 +658,13 @@ class Driver:
             return False
         row["mcp_result"] = await self.client.call(action.mcp_tool, action.mcp_arguments)
         try:
-            post = await self.wait_for_ready_advance(state_identity(screen))
+            post, post_game_state = await self.wait_for_ready_advance(
+                transition_identity(screen, game_state))
         except DriverError:
             self.trace.write(row)
             raise
-        row.update({"post_action_state": _compact(post), "post_action_identity": state_identity(post)})
+        row.update({"post_action_state": _compact({"screen": post, "game_state": post_game_state}),
+                    "post_action_identity": transition_identity(post, post_game_state)})
         for key in ("session", "sequence", "observationHash"):
             if key in post:
                 row[f"post_action_{key}"] = post[key]

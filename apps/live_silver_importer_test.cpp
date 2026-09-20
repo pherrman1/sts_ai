@@ -926,6 +926,9 @@ int main() {
             || lowered.value("cardUuid", std::string()) != "copy-b"
             || lowered.value("targetIndex", 0) != 2)
             throw std::runtime_error("selectedLiveAction did not preserve physical card UUID and target");
+        loweringAction.type = silver_bridge::SemanticActionType::SINGLE_CARD_SELECT;
+        if (!one_combat::advisor::selectedLiveAction(loweringAction, loweringContext).is_null())
+            throw std::runtime_error("unsupported single-card selection was lowered as executable");
         std::cout << "live Silver native first-turn parity checks passed\n";
         return 0;
     } catch (const std::exception &e) {

@@ -1010,16 +1010,12 @@ nlohmann::json selectedLiveAction(const silver_bridge::SemanticAction &action,
         return result;
     }
     case SemanticActionType::SINGLE_CARD_SELECT:
-    case SemanticActionType::MULTI_CARD_SELECT: {
-        nlohmann::json uuids = nlohmann::json::array();
-        for (const auto &card : action.selectedCards) {
-            const auto uuid = uuidForId(card.uniqueId);
-            if (uuid.empty()) return nullptr;
-            uuids.push_back(uuid);
-        }
-        return {{"kind", "card_select"}, {"cardUuids", std::move(uuids)},
-                {"task", action.cardSelectTask}, {"skip", action.skipCardSelect}};
-    }
+    case SemanticActionType::MULTI_CARD_SELECT:
+        // MCPTheSpire exposes these screens through its choice surface, not
+        // the indexed select_cards call. Until that exact lowering is wired,
+        // make the advisor fail closed so the driver uses deterministic
+        // fallback instead of emitting an unexecutable Silver OK action.
+        return nullptr;
     case SemanticActionType::INVALID:
         return nullptr;
     }

@@ -106,6 +106,17 @@ candidates, so no policy can invent an MCP tool name or arguments. The driver
 waits for `ready_for_command` before selecting and after execution, while
 readiness-only changes are ignored for state identity.
 
+Inspector correlation uses the full `get_game_state` monster records when
+available because the lightweight screen uses names and filters dead slots.
+Dead or escaped inspector slots are excluded before comparing the remaining
+live monsters. Potion candidates are emitted only when MCP advertises the
+corresponding `can_use` or `can_discard` capability. The post-action identity
+includes the full game-state payload when that read tool is available, so
+successful potion effects that do not change the lightweight screen still
+advance correctly. Silver card-selection actions remain explicitly
+unsupported until their mapping to MCPTheSpire's choice surface is qualified;
+they therefore use the deterministic fallback boundary.
+
 The default MCP endpoint can be overridden with `STS_MCP_URL` or `--mcp-url`.
 Each decision is written as redacted JSONL under
 `~/.cache/sts-live-driver/` (override with `--trace`). `--dry-run` performs the

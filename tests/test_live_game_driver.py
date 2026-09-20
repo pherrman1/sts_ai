@@ -5,9 +5,10 @@ import unittest
 from pathlib import Path
 
 from tools.live_game_driver import (
-    Driver, DriverError, InspectorSnapshot, InspectorReader, IntegrationFailure,
+    CandidateEnumerationError, Driver, DriverError, InspectorSnapshot, InspectorReader, IntegrationFailure,
     LegalAction, TraceWriter, build_legal_actions, choose_deterministic_action,
-    map_silver_action, normalize_game_state, state_identity,
+    map_silver_action, normalize_game_state, state_identity, transition_identity,
+    _is_combat,
 )
 
 
@@ -70,6 +71,22 @@ class LiveGameDriverTest(unittest.TestCase):
         actions = build_legal_actions({"screen_type": "NONE", "room_phase": "COMBAT"}, ["use_potion"], nested)
         self.assertEqual(actions[0].mcp_arguments, {"potion_slot": 1, "target_index": 1})
 
+    def test_potion_candidates_require_advertised_legality(self):
+        screen = {"screen_type": "NONE", "room_phase": "COMBAT", "potions": [
+            {"id": "Block Potion", "can_use": False, "can_discard": True},
+            {"id": "Dexterity Potion", "can_use": True, "can_discard": False},
+        ], "monsters": [{"name": "Cultist", "current_hp": 10}]}
+        self.assertEqual([a.mcp_arguments for a in build_legal_actions(screen, ["use_potion"])], [{"potion_slot": 2}])
+        self.assertEqual([a.mcp_arguments for a in build_legal_actions(screen, ["discard_potion"])], [{"potion_slot": 1}])
+
+    def test_start_game_requires_character_and_none_is_not_combat(self):
+        with self.assertRaises(CandidateEnumerationError):
+            build_legal_actions({"screen_type": "MAIN_MENU"}, ["start_game"])
+        self.assertEqual(build_legal_actions({"screen_type": "MAIN_MENU", "character": "IRONCLAD"}, ["start_game"])[0].mcp_arguments,
+                         {"character": "IRONCLAD"})
+        self.assertFalse(_is_combat({"screen_type": "NONE"}))
+        self.assertTrue(_is_combat({"screen_type": "NONE", "room_phase": "COMBAT"}))
+
     def test_selected_live_action_maps_duplicate_uuid(self):
         actions = build_legal_actions(combat_screen(), ["play_card"])
         self.assertEqual(map_silver_action({"kind": "card", "cardUuid": "strike-2", "targetIndex": 1}, actions).mcp_arguments,
@@ -124,6 +141,21 @@ class LiveGameDriverTest(unittest.TestCase):
 
     def test_state_identity_ignores_readiness(self):
         self.assertEqual(state_identity({"step": 1, "ready_for_command": True}), state_identity({"step": 1, "ready_for_command": False}))
+        self.assertNotEqual(transition_identity({"screen_type": "NONE"}, {"player": {"block": 0}}),
+                            transition_identity({"screen_type": "NONE"}, {"player": {"block": 5}}))
+
+    def test_inspector_compares_full_live_monsters_and_ignores_dead_slots(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "latest.json"
+            path.write_text(json.dumps({"session": "s", "sequence": 1, "observationHash": "h",
+                                        "observation": {"boundary": "combat", "combat": {"monsters": [
+                                            {"id": 7, "hp": 20}, {"id": 8, "hp": 0, "dead": True}]}},
+                                        "response": {"ready": True, "session": "s", "sequence": 1,
+                                                      "observationHash": "h", "advisor": {"evaluators": []}}}))
+            snapshot = InspectorSnapshot.load(path)
+            snapshot.validate_current({"session": "s", "sequence": 1, "observationHash": "h",
+                                       "monsters": [{"id": 7, "curHp": 20}],
+                                       "screen_monsters": [{"name": "Cultist", "current_hp": 20}]})
 
     def test_transient_ready_state_waits_for_advance(self):
         with tempfile.TemporaryDirectory() as directory:
