@@ -10498,3 +10498,86 @@ default or generalization claim is authorized. Evidence:
   **Knowledge impact:** durable current research and cost-quality evidence
   only; no production Silver behavior, model, RNG, schema, budget, gameplay
   result, or default changed.
+
+## §326 — Offline learned Silver variable-prefix scorer (2026-09-20)
+
+- **Question and protocol:** Can a tiny causal scorer predict the frozen mean
+  32-replicate continuation utility for the robust PR #256 length<=2
+  `CARD`/`END_TURN` prefix surface well enough to recover the variable-length
+  oracle gain at fixed inference cost? The experiment used one structured row
+  per unique `(leaf, prefix)`, exactly 6,194 candidates across 247 leaves,
+  20 source seeds, and 32 continuation outcomes per candidate. Targets were
+  `centered_q = q32 - leaf_baseline32`; Teacher A/B and oracle choices were
+  evaluation-only. Source-seed FNV-1a five-fold cross-fitting kept all rows
+  from a source seed in one fold, and normalization/epoch schedules were
+  fit without held-out rows.
+- **Frozen arms:** `RIDGE_PREFIX_V1` used fixed alpha 10.0;
+  `MLP_FLAT_V1` used a fixed 32/32 Huber MLP with card embeddings;
+  `MLP_FACTORIZED_V1` used shared `Q1(s,a1)` and `Delta2(s,a1,a2)` heads
+  with the fixed 32-wide state/trunk bottleneck. Training used seed
+  `20260920`, 80 fixed Adam epochs at `1e-3`, and no Teacher-based tuning.
+  Parameter counts were 2,859, 75,809, and 79,874 respectively.
+- **Result:** **`LEARNED_PREFIX_SCORER_INSUFFICIENT`**. Ridge reduced
+  Teacher-A regret from the frozen `1.513323903420704` baseline to
+  `1.4262050229284238` and recovered `9.20%` of the frozen `0.5666491930721915`
+  oracle gain. The flat MLP reached `0.8613674600695627` regret and recovered
+  `68.87%`, with `34.52%` Teacher-B reduction, but its source-seed-clustered
+  95% baseline-minus-model interval was `[-0.09000065975211802,
+  1.831220468655285]`; the preregistered strictly-positive lower bound was
+  not met. The factorized arm reached `1.3697387211290277` regret, recovered
+  `15.17%`, changed Teacher-B by `-18.37%`, and had interval
+  `[-1.2676092570298159, 1.6872395664624396]`.
+- **Selection/cost diagnostics:** Cross-fitted coverage was 247/247 leaves.
+  The flat MLP selected 119 length-1 and 128 length-2 prefixes, agreed with
+  the full q32 oracle on first action for `31.17%` of leaves and on prefix
+  length for `61.13%`. Per-leaf pure-forward CPU timing was median/p95
+  `0.555/1.131 ms` for the flat MLP, `0.077/0.148 ms` for Ridge, and
+  `0.587/1.202 ms` for the factorized arm, each with one CPU thread. The
+  factorized held-out Q1 MAE/RMSE was `4.14354/7.66258`; Delta2 was
+  `5.53187/9.63302`.
+- **Decision and boundary:** The compact feature/model family exposes
+  learnable tactical signal, but no arm passed the required 50% gain,
+  positive clustered support, Teacher-B, coverage, and model-size gate
+  together. The result authorizes no native causal integration, gameplay
+  run, hard64 holdout, MCTS change, or default promotion. A later experiment
+  may test richer causal state encoding while preserving source-seed
+  cross-fitting and the same frozen evaluation boundary.
+- **Evidence:** [learned prefix scorer packet](evidence/silver_learned_prefix_scorer_20260920/README.md).
+  **Knowledge impact:** durable current research and offline evidence only;
+  no production Silver behavior, model, RNG, schema, budget, gameplay result,
+  or default changed.
+
+## §327 — Review correction for learned Silver variable-prefix scorer (2026-09-20)
+
+- **Finding:** Independent review identified that the original
+  `MLP_FACTORIZED_V1` implementation supervised the shared Q1 head on every
+  training row. A length-1 target was therefore repeated once per child
+  prefix, weighting Q1 by branching factor rather than by the preregistered
+  one-row-per-length-1-prefix contract. The original factorized metrics in
+  §326 are superseded for this arm.
+- **Correction:** `fit_factorized()` now masks Q1 Huber loss to
+  `prefix_length == 1`; Delta2 remains masked to `prefix_length == 2`. A
+  focused contract test verifies the mask. The flat and Ridge prediction
+  values were not retrained; the flat arm was rerun only to refresh timing
+  under the corrected timer scope, with held-out predictions matching the
+  prior values to `1e-12` absolute tolerance.
+- **Corrected result:** The factorized arm reached Teacher-A regret
+  `1.9130594165447128`, recovered `-42.23%` of the frozen oracle gain, changed
+  Teacher-B by `-53.29%`, and had source-seed-clustered interval
+  `[-1.596671381394513, 0.7164551748765366]`. Its held-out Q1 MAE/RMSE was
+  `4.20910/7.42360`; Delta2 was `5.52571/9.64279`. The classification remains
+  **`LEARNED_PREFIX_SCORER_INSUFFICIENT`**; no partial or promotion gate was
+  crossed.
+- **Timing correction:** MLP input tensors and leaf indices are now
+  precomputed outside the timer. Pure per-leaf forward timing is flat MLP
+  median/p95 `0.108894/0.241373 ms`, Ridge `0.076873/0.148462 ms`, and
+  factorized `0.155411/0.315303 ms`, each with one CPU thread. These remain
+  descriptive offline timings, not native/OOC speed claims.
+- **Evidence:** [corrected learned prefix scorer packet](evidence/silver_learned_prefix_scorer_20260920/README.md);
+  candidate-feature SHA256 remains
+  `964eefcbd25fa1cf2453caaa12ef61a758f22dad089e17a5248d0e5dbf5414a5`, and
+  corrected cross-fit prediction SHA256 is
+  `5c4716c25b09ee7e2fe7de23e8d1cf1786099b64195207d8065451361827e437`.
+- **Boundary:** This correction changes no production Silver path, model,
+  RNG, schema, budget, gameplay, MCTS, holdout, or default. **Knowledge
+  impact:** durable current research and corrected offline evidence only.
