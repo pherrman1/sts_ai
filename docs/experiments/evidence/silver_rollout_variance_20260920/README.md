@@ -198,10 +198,10 @@ gameplay default is changed here.
 
 ```text
 first_action_probe_selection.json  4fc7c2f4631737bf94bad8de4be6eeea195df55508bc5ad8bac52e480c6e6e0d
-first_action_probe_raw.json        d00c676f935120a89539201c18d10a2ae3fc751d5469e46f9ae170573abf791e
-first_action_probe_analysis.json   93a67f0c287efe5e09919c681704f662973ed6f707063e046cbb7509f4aed97b
+first_action_probe_raw.json        254a7bd0ac0aee3ef27d31f613d1069947d24f0d1640058abdb8ad5b4b5ec31d
+first_action_probe_analysis.json   e24f27b26c3cf53b1ed7ba4b5bb5fb6019c82912563cde3e332d95c14cc7202f
 ```
 
-Follow-up implementation head: `ca455eb68015fe3f6939ac3b77d7f30813a9fb0e`.
+Follow-up implementation head: `1332d5bb68ba39f2daba4656ee5dc0f16555cdf6`.
 The probe executable SHA-256 was
-`66c6aa153e01d70f901f180614645ddcda3fb5a3731dcc99f6b27331a15e8aef`.
+`1dc897ef07793647a0a88b4d23d9cedb15fc8f6da7d4a91fd072455ad7f5533c`.
