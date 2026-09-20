@@ -29,6 +29,84 @@ GameContext detachedCopy(const GameContext &parent) {
     if (parent.map) child.map = std::make_shared<sts::Map>(*parent.map);
     return child;
 }
+// Re-determinize only a detached hypothetical state. Published offers, the
+// current map/boss, selected cards, and observed encounter history stay fixed.
+// A fresh seed also covers native per-floor RNG resets and next-act map setup.
+void sampleNoncombatFuture(GameContext &gc, std::mt19937_64 &rng) {
+    gc.seed = rng();
+    for (auto stream : {&gc.aiRng, &gc.cardRandomRng, &gc.cardRng, &gc.eventRng,
+            &gc.mathUtilRng, &gc.merchantRng, &gc.miscRng, &gc.monsterHpRng,
+            &gc.monsterRng, &gc.neowRng, &gc.potionRng, &gc.relicRng,
+            &gc.shuffleRng, &gc.treasureRng}) {
+        const auto counter = stream->counter;
+        *stream = sts::Random(rng());
+        stream->counter = counter; // native thresholds depend on past draw counts
+    }
+    const auto shuffleUnknown = [&](auto &pool) {
+        // Canonicalize first so the actual hidden ordering cannot affect samples.
+        std::sort(pool.begin(), pool.end());
+        std::shuffle(pool.begin(), pool.end(), rng);
+    };
+    for (auto pool : {&gc.commonRelicPool, &gc.uncommonRelicPool, &gc.rareRelicPool,
+                     &gc.shopRelicPool, &gc.bossRelicPool}) shuffleUnknown(*pool);
+    shuffleUnknown(gc.colorlessCardPool);
+    // Event pools are eligible sets, not queues. Canonical order removes any
+    // dependence on an unobserved representation without changing membership.
+    std::sort(gc.eventList.begin(), gc.eventList.end());
+    std::sort(gc.shrineList.begin(), gc.shrineList.end());
+    std::sort(gc.specialOneTimeEventList.begin(), gc.specialOneTimeEventList.end());
+    if (gc.act >= 1 && gc.act <= 3) {
+        const int count = gc.monsterList.size();
+        if (gc.monsterListOffset < 0 || gc.monsterListOffset > count
+            || gc.eliteMonsterListOffset < 0 || gc.eliteMonsterListOffset > gc.eliteMonsterList.size())
+            throw sts::search::OocSearchUnsupported("invalid_hidden_encounter_history");
+        const int weakCount = gc.act == 1 ? 3 : 2;
+        gc.monsterList.resize(gc.monsterListOffset);
+        for (int i = gc.monsterListOffset; i < count; ++i) {
+            const int act = gc.act - 1;
+            if (i < weakCount)
+                gc.populateMonsterList(sts::MonsterEncounterPool::weakEnemies[act],
+                    sts::MonsterEncounterPool::weakWeights[act], sts::MonsterEncounterPool::weakCount[act], 1);
+            else if (i == weakCount)
+                gc.populateFirstStrongEnemy(sts::MonsterEncounterPool::strongEnemies[act],
+                    sts::MonsterEncounterPool::strongWeights[act], sts::MonsterEncounterPool::strongCount[act]);
+            else
+                gc.populateMonsterList(sts::MonsterEncounterPool::strongEnemies[act],
+                    sts::MonsterEncounterPool::strongWeights[act], sts::MonsterEncounterPool::strongCount[act], 1);
+        }
+        for (int i = gc.eliteMonsterListOffset; i < gc.eliteMonsterList.size(); ++i) {
+            sts::MonsterEncounter draw;
+            do { draw = sts::MonsterEncounterPool::elites[gc.act-1][gc.monsterRng.random(2)]; }
+            while (i > 0 && draw == gc.eliteMonsterList[i-1]);
+            gc.eliteMonsterList[i] = draw;
+        }
+        if (gc.act == 3 && gc.ascension >= 20) {
+            const sts::MonsterEncounter bosses[] = {sts::MonsterEncounter::AWAKENED_ONE,
+                sts::MonsterEncounter::TIME_EATER, sts::MonsterEncounter::DONU_AND_DECA};
+            do { gc.secondBoss = bosses[gc.monsterRng.random(2)]; } while (gc.secondBoss == gc.boss);
+        }
+    }
+    if (gc.screenState == sts::ScreenState::TREASURE_ROOM) {
+        // Chest size is visible; contents are not. Keep native gold/tier
+        // correlation from the single roll used by setupTreasureRoom().
+        const int size = int(gc.info.chestSize);
+        if (size < 0 || size >= 3) throw sts::search::OocSearchUnsupported("invalid_hidden_chest");
+        const int roll = gc.treasureRng.random(99);
+        gc.info.haveGold = roll < sts::chestGoldChances[size];
+        const auto chances = sts::chestRelicTierChances[size];
+        gc.info.tier = roll < chances[0] ? sts::RelicTier::COMMON
+            : roll < chances[0] + chances[1] ? sts::RelicTier::UNCOMMON : sts::RelicTier::RARE;
+    }
+    if (gc.screenState == sts::ScreenState::EVENT_SCREEN && gc.curEvent == sts::Event::DEAD_ADVENTURER) {
+        // The description reveals the encounter, but unsearched rewards remain hidden.
+        if (gc.info.phase < 0 || gc.info.phase > int(gc.info.rewards.size()))
+            throw sts::search::OocSearchUnsupported("invalid_hidden_event_history");
+        auto first = gc.info.rewards.begin() + gc.info.phase;
+        std::sort(first, gc.info.rewards.end());
+        std::shuffle(first, gc.info.rewards.end(), rng);
+    }
+}
+
 void require(bool ok, const char *why) { if (!ok) throw std::runtime_error(why); }
 double bossLeafUtility(const CombatTransitionExpectation &estimate) {
     const double survival = 1.0 - estimate.death;
@@ -84,13 +162,37 @@ OocGameContextModel::Metadata &OocGameContextModel::mutableMetadata(sts::search:
     if (!snapshot.metadata) {
         OocProfileScope profile(OocProfileBucket::Metadata);
         Metadata value;
-        if (v4DecisionSupported(snapshot.gc)) {
-            value.candidates = v4CandidateActions(snapshot.gc);
-            value.boundary = value.candidates.empty();
+        const auto &gc = snapshot.gc;
+        if (gc.outcome == sts::GameOutcome::UNDECIDED && gc.screenState == sts::ScreenState::MAP_SCREEN
+            && v4DecisionSupported(gc)) {
             std::set<std::uint32_t> ids;
-            for (auto action : value.candidates)
-                if (!ids.insert(action.bits).second) value.boundary = true;
+            for (auto action : v4CandidateActions(gc)) {
+                if (!ids.insert(action.bits).second) { value.candidates.clear(); break; }
+                value.candidates.push_back({action.bits, "map:" + std::to_string(action.bits), {}, action});
+            }
+            value.sourcePriorCovered = true;
+        } else if (gc.outcome == sts::GameOutcome::UNDECIDED && gc.screenState != sts::ScreenState::BATTLE
+                   && gc.screenState != sts::ScreenState::MAP_SCREEN) {
+            const auto enumeration = sts::search::enumerateOocSemanticPrimitiveBindings(gc);
+            if (enumeration.supported && enumeration.complete) {
+                std::set<std::string> keys;
+                std::set<std::uint32_t> sources;
+                for (const auto &binding : enumeration.bindings) {
+                    const auto key = sts::search::canonicalOocSemanticActionKey(binding.semantic);
+                    if (!keys.insert(key).second) { value.candidates.clear(); break; }
+                    value.candidates.push_back({static_cast<sts::search::OocActionId>(value.candidates.size()),
+                        key, binding.semantic, GameAction(binding.primitiveBits), binding.compoundSelector});
+                    sources.insert(binding.primitiveBits);
+                }
+                if (v4DecisionSupported(gc)) {
+                    std::set<std::uint32_t> qualified;
+                    const auto primitives = v4CandidateActions(gc);
+                    for (auto action : primitives) qualified.insert(action.bits);
+                    value.sourcePriorCovered = qualified.size() == primitives.size() && qualified == sources;
+                }
+            }
         }
+        value.boundary = value.candidates.empty();
         value.edges.resize(value.candidates.size());
         snapshot.metadata = std::move(value);
         ++continuation_.metadataBuilds;
@@ -106,8 +208,16 @@ bool OocGameContextModel::isLeafBoundary(sts::search::OocStateId id) const {
 std::optional<sts::search::OocActionId> OocGameContextModel::soleLegalAction(sts::search::OocStateId id) const {
     if (terminalValue(id) || isLeafBoundary(id)) return std::nullopt;
     const auto &actions = metadata(id).candidates;
-    if (actions.size()==1 && actions.front().isValidAction(state(id))) return actions.front().bits;
+    if (actions.size()==1 && actions.front().primitive.isValidAction(state(id))) return actions.front().id;
     return std::nullopt;
+}
+const OocGameContextModel::Candidate &OocGameContextModel::candidate(sts::search::OocStateId id,
+    sts::search::OocActionId action) const {
+    const auto &candidates = metadata(id).candidates;
+    const auto it = std::find_if(candidates.begin(), candidates.end(),
+        [&](const auto &c) { return c.id == action; });
+    if (it == candidates.end()) throw std::runtime_error("OOC MCTS illegal action ID");
+    return *it;
 }
 std::vector<double> OocGameContextModel::policyLogits(sts::search::OocStateId id) const {
     OocProfileScope profile(OocProfileBucket::PolicyLogits);
@@ -118,6 +228,7 @@ std::vector<double> OocGameContextModel::policyLogits(sts::search::OocStateId id
     auto &cached = mutableMetadata(id);
     if (cached.logits) return *cached.logits;
     const auto &actions = cached.candidates;
+    if (!cached.sourcePriorCovered) return std::vector<double>(actions.size(), 0.0);
     ++continuation_.priorBuilds;
     OocProfileScope preparation(OocProfileBucket::PolicyPrepare);
     const TokState ts = buildTokState(gc, snapshot.path);
@@ -125,7 +236,11 @@ std::vector<double> OocGameContextModel::policyLogits(sts::search::OocStateId id
         ts.nRl, ts.rl, ts.nPt, ts.pt);
     std::vector<double> logits;
     preparation.stop();
-    for (auto a : actions) {
+    std::map<std::uint32_t, double> sourceLogits;
+    for (const auto &candidate : actions) {
+        const auto a = candidate.primitive;
+        const auto found = sourceLogits.find(a.bits);
+        if (found != sourceLogits.end()) { logits.push_back(found->second); continue; }
         OocProfileScope prediction(OocProfileBucket::PolicyPredict);
         int type, c1, c2, c3, d1, d2, d3, et, ei; float price;
         strategicCands(gc, a, type, c1, c2, c3, d1, d2, d3);
@@ -134,6 +249,7 @@ std::vector<double> OocGameContextModel::policyLogits(sts::search::OocStateId id
         const float entity[4] = {float(et==0),float(et==1),float(et==2),float(et==3)};
         const double logit = g_oocStrategicTokNet.predictPolicyLogit(prepared, a.bits, cats, type, int(gc.screenState), entity, ei, price);
         if (!std::isfinite(logit)) throw std::runtime_error("OOC MCTS nonfinite policy logit");
+        sourceLogits.emplace(a.bits, logit);
         logits.push_back(logit);
     }
     cached.logits = logits;
@@ -144,12 +260,18 @@ std::vector<sts::search::OocPlannerAction> OocGameContextModel::legalActions(sts
     auto &cached = mutableMetadata(id);
     if (cached.priors) return *cached.priors;
     const auto &actions = cached.candidates;
-    auto weights = options.uniformPrior ? std::vector<double>(actions.size(), 1.0)
+    const bool uniform = options.uniformPrior || !cached.sourcePriorCovered;
+    auto weights = uniform ? std::vector<double>(actions.size(), 1.0)
                                       : oocPolicyWeights(policyLogits(id), options.priorTemperature);
+    if (!uniform) {
+        std::map<std::uint32_t, std::size_t> counts;
+        for (const auto &a : actions) ++counts[a.primitive.bits];
+        for (std::size_t i=0; i<actions.size(); ++i) weights[i] /= counts.at(actions[i].primitive.bits);
+    }
     std::vector<sts::search::OocPlannerAction> result;
     result.reserve(actions.size());
     for (std::size_t i=0; i<actions.size(); ++i)
-        result.push_back({actions[i].bits, weights[i]});
+        result.push_back({actions[i].id, weights[i]});
     cached.priors = result;
     return result;
 }
@@ -159,27 +281,35 @@ sts::search::OocStateId OocGameContextModel::sampleSuccessor(sts::search::OocSta
     if (terminalValue(id) || isLeafBoundary(id)) throw std::runtime_error("OOC MCTS transition from leaf");
     auto &cached = mutableMetadata(id);
     const auto &actions = cached.candidates;
-    auto it = std::find_if(actions.begin(), actions.end(), [&](auto a) { return a.bits == action; });
+    auto it = std::find_if(actions.begin(), actions.end(), [&](const auto &a) { return a.id == action; });
     if (it == actions.end()) throw std::runtime_error("OOC MCTS illegal action ID");
     auto &edge = cached.edges.at(it - actions.begin());
-    if (edge.deterministic) return *edge.deterministic;
+    if (!options.sampleNoncombat && edge.deterministic) return *edge.deterministic;
     auto child = Snapshot{detachedCopy(state(id)), states.at(id).path, {}};
-    it->execute(child.gc);
+    if (options.sampleNoncombat) sampleNoncombatFuture(child.gc, rng);
+    if (it->semantic) {
+        const auto executed = sts::search::executeOocSemanticAction(child.gc, *it->semantic);
+        if (!executed.ok) throw sts::search::OocSearchUnsupported("semantic_execution:" + executed.error);
+    } else it->primitive.execute(child.gc);
     child.path.update(child.gc);
     const bool enteredCombat = child.gc.screenState == sts::ScreenState::BATTLE;
-    if (enteredCombat && combatSampler && !edge.combat) {
+    // A sampled future can change the encounter and predictor input on every
+    // visit. Never borrow a preparation from another hypothetical successor.
+    std::unique_ptr<PreparedCombatTransition> sampledCombat;
+    auto &preparationCache = options.sampleNoncombat ? sampledCombat : edge.combat;
+    if (enteredCombat && combatSampler && !preparationCache) {
         OocProfileScope preparation(OocProfileBucket::CombatPrepare);
         const auto input = captureCombatPredictorInput(child.gc, child.gc.info.encounter,
                                                        potionKeepValue(child.gc));
-        edge.combat = combatSampler->prepare(child.gc, input);
+        preparationCache = combatSampler->prepare(child.gc, input);
         ++continuation_.preparedCombats;
     }
     if (enteredCombat) ++continuation_.combatEdgeSamples;
-    if (options.checkpointLeaves && enteredCombat) resolveCombat(child, rng, edge.combat.get());
+    if (options.checkpointLeaves && enteredCombat) resolveCombat(child, rng, preparationCache.get());
     else if (combatSampler && enteredCombat) {
-        if (edge.combat->support().supported) {
+        if (preparationCache->support().supported) {
             ++combatSamples_;
-            const auto sampled = edge.combat->sample(rng);
+            const auto sampled = preparationCache->sample(rng);
             switch (sampled.outcome) {
                 case CombatRuntimeSample::Outcome::UNSUPPORTED: break;
                 case CombatRuntimeSample::Outcome::DEATH:
@@ -195,7 +325,7 @@ sts::search::OocStateId OocGameContextModel::sampleSuccessor(sts::search::OocSta
             }
         }
     }
-    if (options.checkpointLeaves && !enteredCombat) edge.deterministic = states.size();
+    if (!options.sampleNoncombat && options.checkpointLeaves && !enteredCombat) edge.deterministic = states.size();
     states.push_back(std::move(child));
     return states.size()-1;
 }
@@ -253,9 +383,10 @@ double OocGameContextModel::leafValue(sts::search::OocStateId id) const {
 }
 bool OocGameContextModel::isDeterministicTransition(sts::search::OocStateId id,
     sts::search::OocActionId action) const {
+    if (options.sampleNoncombat) return false;
     const auto &cached = metadata(id);
     const auto it = std::find_if(cached.candidates.begin(), cached.candidates.end(),
-        [&](auto candidate) { return candidate.bits == action; });
+        [&](auto candidate) { return candidate.id == action; });
     return it != cached.candidates.end() && cached.edges.at(it-cached.candidates.begin()).deterministic.has_value();
 }
 void OocGameContextModel::resolveCombat(Snapshot &child, std::mt19937_64 &rng,
@@ -344,10 +475,16 @@ double boundedContinuation(int maxSteps, Checkpoint checkpoint, Step advance) {
 }
 double OocGameContextModel::evaluateLeaf(sts::search::OocStateId id, std::mt19937_64 &rng) {
     OocProfileScope profile(OocProfileBucket::EvaluateLeaf);
-    if (!options.checkpointLeaves) return leafValue(id);
+    if (!options.checkpointLeaves && !options.sampleNoncombat) return leafValue(id);
     ImaginedScope scope;
     auto child = Snapshot{detachedCopy(state(id)), states.at(id).path, {}};
+    if (options.sampleNoncombat) sampleNoncombatFuture(child.gc, rng);
     t_curPath=&child.path;
+    if (!options.checkpointLeaves) {
+        if (child.gc.outcome == sts::GameOutcome::PLAYER_LOSS) return 0;
+        if (child.gc.outcome == sts::GameOutcome::PLAYER_VICTORY) return 1;
+        return options.bossLeaf ? bossLeafValue(child.gc) : vStateWinNative(child.gc);
+    }
     if (child.gc.screenState == sts::ScreenState::BATTLE) ++continuation_.battleLeaves;
     else if (child.gc.screenState == sts::ScreenState::MAP_SCREEN) ++continuation_.mapLeaves;
     else ++continuation_.pendingLeaves;
@@ -370,6 +507,7 @@ double OocGameContextModel::evaluateLeaf(sts::search::OocStateId id, std::mt1993
         ++continuation_.projectionSteps;
         if (child.gc.screenState == sts::ScreenState::BATTLE) { resolveCombat(child,rng); ++additionalCombats; }
         else {
+            if (options.sampleNoncombat) sampleNoncombatFuture(child.gc, rng);
             bool applied = false;
             if (options.uniformLeafPolicy && v4DecisionSupported(child.gc)) {
                 const auto actions = v4CandidateActions(child.gc);
@@ -456,6 +594,8 @@ void recordSearchAbort(const sts::search::OocMctsResult &result, OocContinuation
     if (result.abortReason.rfind("continuation_step_limit_",0) == 0) {
         ++continuation.continuationLimitAborts;
         ++continuation.continuationReasons[result.abortReason];
+    } else if (result.abortReason.rfind("semantic_execution:",0) == 0) {
+        ++continuation.supportReasons[result.abortReason];
     } else if (!continuation.unsupportedCombats) {
         // A continuation policy attempted a forbidden native combat before resolveCombat.
         ++continuation.imaginedCombats; ++continuation.unsupportedCombats;
@@ -509,6 +649,7 @@ void configureLiveOocMcts() {
         if (!liveSimulations) throw std::runtime_error("STS_OOC_MCTS_SIMS must be positive");
     }
     liveConfig = {}; liveOptions = {true};
+    liveOptions.sampleNoncombat = true;
     liveConfig.allowUnqualifiedRootStop = true; // May skip later aborts; provider guarantee remains false.
     for (const char *key : liveControlKeys)
         if (const char *value = std::getenv(key)) applyLiveControl(key, value, liveConfig, liveOptions);
@@ -544,7 +685,9 @@ void configureLiveOocMcts() {
         << " leaf_value=" << (liveOptions.bossLeaf ? "boss" : liveOptions.constantLeaf ? "constant" : "native")
         << " leaf_combats=" << liveOptions.leafCombats << " leaf_policy=" << (liveOptions.uniformLeafPolicy ? "uniform" : "v4")
         << "]\n";
-    std::cout << "[ooc-mcts-config] {\"prior\":\"" << (liveOptions.uniformPrior ? "uniform" : "policy")
+    std::cout << "[ooc-mcts-config] {\"noncombatOutcomes\":\""
+        << (liveOptions.sampleNoncombat ? "sampled" : "exact")
+        << "\",\"prior\":\"" << (liveOptions.uniformPrior ? "uniform" : "policy")
         << "\",\"temperature\":" << liveOptions.priorTemperature << ",\"cPuct\":" << liveConfig.cPuct
         << ",\"wideningK\":" << liveConfig.wideningK << ",\"wideningAlpha\":" << liveConfig.wideningAlpha
         << ",\"maxDepth\":" << liveConfig.maxDepth << ",\"rootSelection\":\"" << (liveConfig.selectByMeanQ ? "q" : "visits")
@@ -573,16 +716,18 @@ sts::search::OocMctsResult searchWithSoleRootShortcut(sts::search::OocGenerative
 sts::search::OocMctsResult selectOocMctsAction(const GameContext &gc, const PathHistory &path,
     std::uint64_t seed, std::uint64_t index, std::uint64_t simulations,
     std::shared_ptr<const CombatTransitionSampler> sampler, std::uint64_t &samples,
-    OocContinuationMetrics *continuation) {
+    OocContinuationMetrics *continuation, std::optional<OocGameContextModel::Candidate> *selected) {
     ImaginedScope scope;
     OocGameContextModel model(gc, path, std::move(sampler), liveOptions);
     samples = 0;
+    if (selected) selected->reset();
     if (model.terminalValue(0) || model.isLeafBoundary(0)) return {};
     auto config = liveConfig;
     config.seed = oocMctsSearchSeed(seed, index);
     if (!simulations) throw std::invalid_argument("OOC MCTS requires simulations > 0");
     const auto result = searchWithSoleRootShortcut(model, config, model.soleLegalAction(0), simulations);
     if (!result.selectedAction && !result.aborted) throw std::runtime_error("live OOC MCTS missing selected root action");
+    if (selected && result.selectedAction) *selected = model.candidate(0, *result.selectedAction);
     if (config.observeRootLock) {
         const auto &m = result.metrics;
         const bool completed = !result.aborted && m.simulations == simulations;
@@ -599,6 +744,7 @@ sts::search::OocMctsResult selectOocMctsAction(const GameContext &gc, const Path
             {"hypotheticalTailWallSeconds",m.hypotheticalTailWallSeconds},
             {"hypotheticalLockedAction",result.hypotheticalLockedAction
                 ? nlohmann::json(*result.hypotheticalLockedAction) : nlohmann::json(nullptr)},
+            {"selectedKey",result.selectedAction ? model.candidate(0,*result.selectedAction).key : ""},
             {"selectedAction",result.selectedAction ? nlohmann::json(*result.selectedAction) : nlohmann::json(nullptr)},
             {"searchGuaranteedNonAborting",model.searchGuaranteedNonAborting()},
             {"earlyStopLockedRoot",m.earlyStopLockedRoot},{"savedSimulations",m.savedSimulations}};
@@ -623,7 +769,11 @@ bool oocMctsPolicyStep(GameContext &gc, const PathHistory &path, std::uint64_t s
     std::uint64_t samples = 0;
     OocContinuationMetrics continuation;
     OocProfileScope profile(OocProfileBucket::Mcts);
-    const auto result = selectOocMctsAction(gc, path, seed, index, liveSimulations, liveSampler, samples, &continuation);
+    if (sts::search::g_onGameActionExecute && gc.screenState != sts::ScreenState::MAP_SCREEN) {
+        ++metrics.fallback; ++metrics.continuation.supportReasons["semantic_observer_active"]; return false;
+    }
+    std::optional<OocGameContextModel::Candidate> selected;
+    const auto result = selectOocMctsAction(gc, path, seed, index, liveSimulations, liveSampler, samples, &continuation, &selected);
     profile.stop();
     metrics.wallSeconds += std::chrono::duration<double>(std::chrono::steady_clock::now()-wallStart).count();
     metrics.cpuSeconds += threadCpuSeconds()-cpuStart;
@@ -641,7 +791,7 @@ bool oocMctsPolicyStep(GameContext &gc, const PathHistory &path, std::uint64_t s
             for (const auto &checkpoint : observed.rootCheckpoints) {
                 nlohmann::json actions=nlohmann::json::array();
                 for (const auto &action : checkpoint.actions)
-                    actions.push_back({{"id",action.id},{"prior",action.prior},
+                    actions.push_back({{"id",action.id},{"key",shadow.candidate(0,action.id).key},{"prior",action.prior},
                         {"visits",action.visits},{"q",action.q}});
                 checkpoints.push_back({{"simulations",checkpoint.simulations},{"actions",actions}});
             }
@@ -651,6 +801,7 @@ bool oocMctsPolicyStep(GameContext &gc, const PathHistory &path, std::uint64_t s
                 {"requestedSimulations",liveSimulations},
                 {"liveSimulations",result.metrics.simulations},
                 {"liveAborted",result.aborted},{"liveAbortReason",result.abortReason},
+                {"liveKey",selected ? selected->key : ""},
                 {"liveAction",result.selectedAction ? nlohmann::json(*result.selectedAction) : nlohmann::json(nullptr)},
                 {"liveGapStop20",result.metrics.earlyStopVisitGap20},
                 {"liveSavedSimulations",result.metrics.savedSimulations},
@@ -691,16 +842,61 @@ bool oocMctsPolicyStep(GameContext &gc, const PathHistory &path, std::uint64_t s
     if (result.aborted) {
         ++metrics.supportAborts; metrics.discardedSimulations+=result.metrics.simulations;
     }
-    if (!result.selectedAction) { ++metrics.fallback; return false; }
-    // Resolve from fresh live candidates; never transfer a sampled snapshot.
+    const auto rootScreen = gc.screenState;
+    const auto rootSelector = gc.info.selectScreenType;
+    const auto traceDecision = [&](bool executed, const std::string &reason) {
+        if (liveTrace.empty()) return;
+        std::lock_guard<std::mutex> lock(liveTraceMutex);
+        std::ofstream out(liveTrace + ".actions.jsonl", std::ios::app);
+        out << nlohmann::json{{"seed",seed},{"decisionIndex",index},
+            {"screen",int(rootScreen)},{"selector",int(rootSelector)},
+            {"selectedId",result.selectedAction ? nlohmann::json(*result.selectedAction) : nlohmann::json(nullptr)},
+            {"selectedKey",selected ? selected->key : ""},
+            {"semantic",selected && selected->semantic.has_value()},
+            {"compound",selected && selected->compoundSelector != sts::CardSelectScreenType::INVALID},
+            {"executed",executed},{"reason",reason}}.dump() << '\n';
+        if (!out) throw std::runtime_error("OOC MCTS action trace write failed");
+    };
+    if (!result.selectedAction) {
+        ++metrics.fallback;
+        traceDecision(false, result.aborted ? result.abortReason : "root_boundary");
+        return false;
+    }
+    std::string error;
+    if (!selected || !executeOocMctsRoot(gc, *selected, error)) {
+        ++metrics.fallback;
+        ++metrics.continuation.supportReasons[error.empty() ? "missing_root_identity" : error];
+        traceDecision(false,error);
+        return false;
+    }
+    ++metrics.owned;
+    traceDecision(true, "");
+    return true;
+}
+bool executeOocMctsRoot(GameContext &gc, const OocGameContextModel::Candidate &selected, std::string &error) {
+    if (selected.semantic) {
+        const auto fresh = sts::search::enumerateOocSemanticActions(gc);
+        if (!fresh.supported || !fresh.complete) { error = "semantic_root_incomplete"; return false; }
+        const sts::search::OocSemanticAction *match = nullptr;
+        for (const auto &action : fresh.actions) {
+            if (sts::search::canonicalOocSemanticActionKey(action) != selected.key) continue;
+            if (match) { error = "semantic_root_ambiguous"; return false; }
+            match = &action;
+        }
+        if (!match) { error = "semantic_root_stale"; return false; }
+        const auto execution = sts::search::executeOocSemanticAction(gc, *match);
+        if (!execution.ok) { error = "semantic_live_execution:" + execution.error; return false; }
+        return true;
+    }
+    if (gc.screenState != sts::ScreenState::MAP_SCREEN) { error = "map_root_stale"; return false; }
     const auto candidates = v4CandidateActions(gc);
     const auto action = std::find_if(candidates.begin(), candidates.end(),
-        [&](auto a) { return a.bits == *result.selectedAction; });
-    if (action == candidates.end()) throw std::runtime_error("live OOC MCTS selected illegal root action");
-    ++metrics.owned;
+        [&](auto a) { return a.bits == selected.primitive.bits; });
+    if (action == candidates.end()) { error = "map_root_stale"; return false; }
     action->execute(gc);
     return true;
 }
+
 void writeLiveOocMctsTrace(std::uint64_t seed, const LiveOocMctsMetrics &m, int realCombats) {
     if (oocProfileEnabled()) {
         static const char *names[] = {"mcts", "real_combat", "metadata", "policy_logits",
@@ -760,6 +956,9 @@ namespace one_combat {
 void oocMctsAdapterSelfTest() {
     using namespace sts;
     using namespace sts::search;
+    // Inspect the actual configured option before fixture-specific resets.
+    require(!liveEnabled || liveOptions.sampleNoncombat,
+        "enabled live OOC MCTS must sample noncombat outcomes after all startup resets");
     std::cout << std::setprecision(12);
     require(g_oocStrategicTokNet.path == "selfplay/models/ooc_strategic_tok_final.native"
         || g_oocStrategicTokNet.path.find("/selfplay/models/ooc_strategic_tok_final.native") != std::string::npos,
@@ -820,6 +1019,11 @@ void oocMctsAdapterSelfTest() {
     require(gc.map != nullptr, "real map fixture");
     PathHistory path; path.update(gc);
     OocGameContextModel model(gc,path);
+    auto sourceId = [](const OocGameContextModel &provider, std::uint32_t bits) {
+        for (const auto &action : provider.legalActions(0))
+            if (provider.candidate(0,action.id).primitive.bits==bits) return action.id;
+        throw std::runtime_error("required source primitive absent from adapter candidates");
+    };
     // Prior visit counts are external to GameContext and must survive root construction.
     PathHistory nonemptyHistory;
     nonemptyHistory.roomVisits[int(Room::SHOP)]=2;
@@ -910,67 +1114,440 @@ void oocMctsAdapterSelfTest() {
     require(model.state(0).map->nodes[0][0].room==room
         && gc.map->nodes[0][0].room==room,"child map mutation cannot affect ancestors");
     model.state(child).map->nodes[0][0].room=room;
-    // Audit all supported contracts against the pre-existing primitive set.
-    auto checkCandidates = [&](GameContext fixture) {
-        auto expectedActions=GameAction::getAllActionsInState(fixture);
-        require(!expectedActions.empty(),"supported candidate fixture is nonempty");
-        require(v4DecisionSupported(fixture),"supported screen classification");
+    // Compare the adapter against the complete semantic surface, independently
+    // execute each semantic edge, and audit the source-level prior bridge.
+    auto checkCandidates = [&](GameContext fixture, bool execute=true) {
+        const auto before=test::oocStateFingerprint(fixture);
+        const auto bindings=enumerateOocSemanticPrimitiveBindings(fixture);
+        const bool map=fixture.screenState==ScreenState::MAP_SCREEN;
+        const auto primitive=v4CandidateActions(fixture);
+        require(map || (bindings.supported && bindings.complete && !bindings.bindings.empty()),
+            "semantic coverage fixture must be complete");
         OocGameContextModel provider(fixture,path);
-        const auto tokens=buildTokState(fixture,path);
-        const auto prepared=g_oocStrategicTokNet.prepareState(tokens.glob,tokens.nDk,tokens.dk,
-            tokens.nRl,tokens.rl,tokens.nPt,tokens.pt);
-        // Another preparation must not invalidate a previously prepared value.
-        (void)g_oocStrategicTokNet.prepareState(glob,0,dk,0,rl,0,pt);
-        for (const auto action : expectedActions) {
-            int type,c1,c2,c3,d1,d2,d3,et,ei; float price;
-            strategicCands(fixture,action,type,c1,c2,c3,d1,d2,d3);
-            tokEntity(fixture,action,et,ei,price);
-            const int cats[6]={c1,c2,c3,d1,d2,d3};
-            const float entity[4]={float(et==0),float(et==1),float(et==2),float(et==3)};
-            const auto &net=g_oocStrategicTokNet;
-            require(net.predictPolicyLogit(prepared,action.bits,cats,type,int(fixture.screenState),entity,ei,price)
-                    == net.predictPolicyLogit(tokens.glob,tokens.nDk,tokens.dk,tokens.nRl,tokens.rl,tokens.nPt,tokens.pt,
-                        action.bits,cats,type,int(fixture.screenState),entity,ei,price)
-                && net.predictActionValue(prepared,action.bits,cats,type,int(fixture.screenState),entity,ei,price)
-                    == net.predictActionValue(tokens.glob,tokens.nDk,tokens.dk,tokens.nRl,tokens.rl,tokens.nPt,tokens.pt,
-                        action.bits,cats,type,int(fixture.screenState),entity,ei,price),
-                "prepared policy and Q exact across supported screens and interleaved states");
+        const auto actual=provider.legalActions(0);
+        require(actual.size()==(map?primitive.size():bindings.bindings.size()),
+            "adapter exposes complete semantic sibling set");
+        std::set<std::string> keys;
+        std::map<std::uint32_t,double> mass;
+        std::map<std::uint32_t,unsigned> counts;
+        for(std::size_t i=0;i<actual.size();++i) {
+            const auto &candidate=provider.candidate(0,actual[i].id);
+            require(keys.insert(candidate.key).second,"unique immutable semantic identities");
+            require(map ? actual[i].id==primitive[i].bits : actual[i].id==i,
+                "MAP preserves primitive IDs; semantic IDs are local ordinals");
+            if (!map) require(candidate.semantic
+                && candidate.key==canonicalOocSemanticActionKey(bindings.bindings[i].semantic)
+                && candidate.primitive.bits==bindings.bindings[i].primitiveBits,
+                "semantic keys and source projection match complete enumeration");
+            mass[candidate.primitive.bits]+=actual[i].prior;
+            ++counts[candidate.primitive.bits];
+            if (execute && !map) {
+                auto expected=detachedCopy(fixture);
+                const auto result=executeOocSemanticAction(expected,*candidate.semantic);
+                require(result.ok,"fixture semantic execution succeeds");
+                const auto child=provider.sampleSuccessor(0,actual[i].id,rng);
+                require(test::oocStateFingerprint(provider.state(child))==test::oocStateFingerprint(expected),
+                    "adapter semantic edge reaches complete transactional successor");
+                if(candidate.compoundSelector!=CardSelectScreenType::INVALID)
+                    require(result.executedPrimitiveBits.size()==2 && expected.screenState!=ScreenState::CARD_SELECT,
+                        "compound edge consumes both source and physical card target");
+            }
         }
-        auto actual=provider.legalActions(0);
-        require(actual.size()==expectedActions.size(),"exact V4 candidate count");
-        for(std::size_t i=0;i<actual.size();++i)
-            require(actual[i].id==expectedActions[i].bits,"exact V4 candidate bits/order");
-        std::cout<<"candidate_parity screen="<<int(fixture.screenState)
-                 <<" selector="<<int(fixture.info.selectScreenType)<<" count="<<actual.size()<<'\n';
+        bool qualified=v4DecisionSupported(fixture);
+        std::set<std::uint32_t> established;
+        for(auto a:primitive) qualified=established.insert(a.bits).second && qualified;
+        qualified=qualified && established.size()==counts.size();
+        for(const auto &[bits,count]:counts) qualified=qualified && established.count(bits);
+        if(qualified) {
+            const auto tokens=buildTokState(fixture,path);
+            std::vector<double> sourceLogits;
+            for(auto action:primitive) {
+                int type,c1,c2,c3,d1,d2,d3,et,ei; float price;
+                strategicCands(fixture,action,type,c1,c2,c3,d1,d2,d3);
+                tokEntity(fixture,action,et,ei,price);
+                const int cats[6]={c1,c2,c3,d1,d2,d3};
+                const float entity[4]={float(et==0),float(et==1),float(et==2),float(et==3)};
+                sourceLogits.push_back(g_oocStrategicTokNet.predictPolicyLogit(tokens.glob,
+                    tokens.nDk,tokens.dk,tokens.nRl,tokens.rl,tokens.nPt,tokens.pt,
+                    action.bits,cats,type,int(fixture.screenState),entity,ei,price));
+            }
+            const auto weights=oocPolicyWeights(sourceLogits);
+            for(std::size_t i=0;i<primitive.size();++i)
+                require(std::abs(mass.at(primitive[i].bits)-weights[i])<1e-12,
+                    "source prior mass conserved across semantic expansion and one-to-one actions");
+            for(auto action:actual) {
+                const auto bits=provider.candidate(0,action.id).primitive.bits;
+                require(std::abs(action.prior-mass.at(bits)/counts.at(bits))<1e-12,
+                    "compound target weights split equally");
+            }
+        } else for(auto action:actual) require(action.prior==1,"unqualified V4 semantic roots are wholly uniform");
+        OocAdapterOptions uniform; uniform.uniformPrior=true;
+        OocGameContextModel uniformProvider(fixture,path,{},uniform);
+        for(auto action:uniformProvider.legalActions(0)) require(action.prior==1,"explicit uniform semantic siblings");
+        require(test::oocStateFingerprint(fixture)==before
+            && test::oocStateFingerprint(provider.state(0))==before,"semantic testing preserves immutable root");
+        std::cout<<"semantic_adapter_coverage screen="<<int(fixture.screenState)
+            <<" event="<<int(fixture.curEvent)<<" selector="<<int(fixture.info.selectScreenType)
+            <<" count="<<actual.size()<<" v4_qualified="<<qualified<<'\n';
     };
     auto fixture=detachedCopy(gc);
-    fixture.screenState=ScreenState::REST_ROOM; checkCandidates(fixture);
-    fixture.openCardSelectScreen(CardSelectScreenType::UPGRADE,1); checkCandidates(fixture);
-    fixture=detachedCopy(gc); fixture.screenState=ScreenState::EVENT_SCREEN;
-    fixture.curEvent=Event::BIG_FISH; fixture.info.hpAmount0=20;
-    fixture.info.hpAmount1=5; checkCandidates(fixture);
+    fixture.screenState=ScreenState::REST_ROOM;
+    fixture.relics.add({RelicId::PEACE_PIPE,0});
+    fixture.relics.add({RelicId::GIRYA,0});
+    fixture.relics.add({RelicId::SHOVEL,0});
+    checkCandidates(fixture);
+    fixture=detachedCopy(gc); fixture.screenState=ScreenState::REST_ROOM;
+    fixture.relics.add({RelicId::COFFEE_DRIPPER,0});
+    fixture.relics.add({RelicId::FUSION_HAMMER,0}); fixture.obtainKey(Key::RUBY_KEY);
+    checkCandidates(fixture);
+    for(auto selector : {CardSelectScreenType::UPGRADE,CardSelectScreenType::REMOVE,
+        CardSelectScreenType::TRANSFORM,CardSelectScreenType::TRANSFORM_UPGRADE,
+        CardSelectScreenType::DUPLICATE,CardSelectScreenType::BONFIRE_SPIRITS}) {
+        fixture=detachedCopy(gc); fixture.openCardSelectScreen(selector,1); checkCandidates(fixture);
+    }
     fixture=detachedCopy(gc); fixture.screenState=ScreenState::SHOP_ROOM;
-    fixture.info.shop.setup(fixture); checkCandidates(fixture);
+    fixture.gold=500; fixture.info.shop.setup(fixture);
+    std::fill(std::begin(fixture.info.shop.prices), std::end(fixture.info.shop.prices), -1);
+    fixture.info.shop.relics[0]=RelicId::PRISMATIC_SHARD; fixture.info.shop.relicPrice(0)=50;
+    fixture.info.shop.relics[1]=RelicId::ANCHOR; fixture.info.shop.relicPrice(1)=50;
+    checkCandidates(fixture);
+    {
+        const auto all = GameAction::getAllActionsInState(fixture);
+        const auto v4 = v4CandidateActions(fixture);
+        const auto semantic = enumerateOocSemanticPrimitiveBindings(fixture);
+        const auto isShardPrimitive = [&](const GameAction primitive) {
+            return primitive.getRewardsActionType() == GameAction::RewardsActionType::RELIC
+                && primitive.getIdx1() >= 0 && primitive.getIdx1() < 3
+                && fixture.info.shop.relics[primitive.getIdx1()] == RelicId::PRISMATIC_SHARD;
+        };
+        const auto hasShardPrimitive = [&](const std::vector<GameAction> &actions) {
+            return std::any_of(actions.begin(), actions.end(), isShardPrimitive);
+        };
+        const auto hasRelicBinding = [&](RelicId relic) {
+            return std::any_of(semantic.bindings.begin(), semantic.bindings.end(), [&](const auto &binding) {
+                if (binding.semantic.effect != OocSemanticEffect::BUY_RELIC) return false;
+                const auto &target = std::get<OocShopTarget>(binding.semantic.target);
+                return std::get<RelicId>(target.entity) == relic;
+            });
+        };
+        require(hasShardPrimitive(all), "shop fixture did not retain displayed Prismatic Shard");
+        require(!hasShardPrimitive(v4), "V4 shop candidates retained Prismatic Shard");
+        require(semantic.supported && semantic.complete, "semantic shop enumeration unsupported");
+        require(!hasRelicBinding(RelicId::PRISMATIC_SHARD),
+            "semantic shop bindings retained Prismatic Shard");
+        require(hasRelicBinding(RelicId::ANCHOR), "semantic shop bindings lost ordinary relic");
+        require(std::any_of(semantic.bindings.begin(), semantic.bindings.end(), [](const auto &binding) {
+                    return binding.semantic.effect == OocSemanticEffect::LEAVE_SHOP;
+                }), "semantic shop bindings lost Leave");
+
+        OocGameContextModel shop(fixture,path);
+        const auto legal = shop.legalActions(0);
+        require(!shop.isLeafBoundary(0) && !legal.empty(),
+            "Prismatic Shard made semantic shop root unsupported");
+        bool mctsAnchor = false, mctsLeave = false;
+        for (const auto action : legal) {
+            const auto &candidate = shop.candidate(0, action.id);
+            require(candidate.semantic.has_value(), "shop MCTS candidate lost semantic identity");
+            if (candidate.semantic->effect == OocSemanticEffect::BUY_RELIC) {
+                const auto &target = std::get<OocShopTarget>(candidate.semantic->target);
+                const auto relic = std::get<RelicId>(target.entity);
+                require(relic != RelicId::PRISMATIC_SHARD,
+                    "semantic OOC MCTS retained Prismatic Shard");
+                mctsAnchor |= relic == RelicId::ANCHOR;
+            }
+            mctsLeave |= candidate.semantic->effect == OocSemanticEffect::LEAVE_SHOP;
+        }
+        require(mctsAnchor && mctsLeave,
+            "semantic OOC MCTS lost ordinary relic or Leave candidate");
+
+        auto fallbackShop = detachedCopy(fixture);
+        search::ScumSearchAgent2 fallbackAgent;
+        runFullRunOocPolicyStep(fallbackShop, fallbackAgent, false, true);
+        require(!fallbackShop.relics.has(RelicId::PRISMATIC_SHARD),
+            "full-run OOC shop fallback bought Prismatic Shard");
+    }
+    {
+        OocGameContextModel shop(fixture,path);
+        std::set<unsigned> strikeOccurrences;
+        unsigned removals=0;
+        for(auto a:shop.legalActions(0)) {
+            const auto &c=shop.candidate(0,a.id);
+            if(c.semantic->effect!=OocSemanticEffect::REMOVE_CARD) continue;
+            ++removals;
+            const auto &target=std::get<OocTransactionTarget>(c.semantic->target).card;
+            if(target.id==CardId::STRIKE_RED) strikeOccurrences.insert(target.occurrence);
+        }
+        auto selector=detachedCopy(fixture); GameAction(GameAction::RewardsActionType::CARD_REMOVE).execute(selector);
+        require(removals==selector.info.toSelectCards.size() && strikeOccurrences.size()>1,
+            "shop removal covers every physical card including distinct equivalent-card occurrences");
+    }
+    for(auto event : {Event::BIG_FISH,Event::THE_CLERIC,Event::LIVING_WALL,
+        Event::TRANSMORGRIFIER,Event::UPGRADE_SHRINE,Event::DUPLICATOR,
+        Event::OMINOUS_FORGE,Event::ANCIENT_WRITING,Event::OLD_BEGGAR,
+        Event::DESIGNER_IN_SPIRE,Event::PURIFIER,Event::WING_STATUE}) {
+        fixture=detachedCopy(gc); fixture.screenState=ScreenState::EVENT_SCREEN;
+        fixture.curEvent=event; fixture.gold=500; fixture.info.hpAmount0=20;
+        fixture.info.hpAmount1=5; fixture.info.upgradeOne=true;
+        fixture.info.cleanUpIsRemoveCard=true; checkCandidates(fixture);
+    }
     fixture=detachedCopy(gc); fixture.setupTreasureRoom(); checkCandidates(fixture);
+    {
+        OocGameContextModel chest(fixture,path);
+        const auto open=sourceId(chest,0);
+        const auto child=chest.sampleSuccessor(0,open,rng);
+        require(chest.candidate(0,open).semantic->effect==OocSemanticEffect::OPEN_CHEST
+            && chest.state(child).screenState==ScreenState::REWARDS,
+            "chest opening stops at newly revealed rewards");
+    }
     fixture=detachedCopy(gc); fixture.screenState=ScreenState::BOSS_RELIC_REWARDS;
-    fixture.info.bossRelics[0]=RelicId::BLACK_BLOOD;
+    fixture.info.bossRelics[0]=RelicId::ASTROLABE;
     fixture.info.bossRelics[1]=RelicId::COFFEE_DRIPPER;
     fixture.info.bossRelics[2]=RelicId::FUSION_HAMMER; checkCandidates(fixture);
-    checkCandidates(gc);
-    for(auto selector : {CardSelectScreenType::TRANSFORM,CardSelectScreenType::TRANSFORM_UPGRADE,
-        CardSelectScreenType::REMOVE,CardSelectScreenType::DUPLICATE,CardSelectScreenType::OBTAIN,
-        CardSelectScreenType::BOTTLE,CardSelectScreenType::BONFIRE_SPIRITS,CardSelectScreenType::INVALID}) {
-        fixture=detachedCopy(gc); fixture.screenState=ScreenState::CARD_SELECT;
-        fixture.info.selectScreenType=selector;
-        OocGameContextModel unsupported(fixture,path);
-        require(unsupported.isLeafBoundary(0),"uncovered selector is a leaf boundary");
+    checkCandidates(gc,false);
+    {
+        // Compare actual search choices/statistics with the former primitive
+        // root interface. Native transition parity is checked above separately.
+        struct PrimitiveMapRoot final : OocGenerativeModel {
+            OocGameContextModel adapter;
+            std::vector<OocPlannerAction> primitiveActions;
+            PrimitiveMapRoot(const GameContext &g,const PathHistory &p):adapter(g,p) {
+                const auto actions=v4CandidateActions(g);
+                const auto weights=oocPolicyWeights(adapter.policyLogits(0));
+                for(std::size_t i=0;i<actions.size();++i) primitiveActions.push_back({actions[i].bits,weights[i]});
+            }
+            std::optional<double> terminalValue(OocStateId id) const override { return adapter.terminalValue(id); }
+            bool isLeafBoundary(OocStateId id) const override { return adapter.isLeafBoundary(id); }
+            std::vector<OocPlannerAction> legalActions(OocStateId id) const override {
+                require(id==0,"bounded MAP comparison never expands a child"); return primitiveActions;
+            }
+            OocStateId sampleSuccessor(OocStateId id,OocActionId a,std::mt19937_64 &r) override {
+                return adapter.sampleSuccessor(id,a,r);
+            }
+            double leafValue(OocStateId id) const override { return adapter.leafValue(id); }
+        } baseline(gc,path);
+        OocGameContextModel current(gc,path);
+        OocMctsConfig config; config.maxDepth=1;
+        const auto expected=OocMctsPlanner(config).search(baseline,0,32);
+        const auto actual=OocMctsPlanner(config).search(current,0,32);
+        require(actual.selectedAction==expected.selectedAction && actual.rootActions.size()==expected.rootActions.size(),
+            "MAP selected primitive ID matches former candidate interface");
+        for(std::size_t i=0;i<actual.rootActions.size();++i) {
+            const auto &a=actual.rootActions[i], &b=expected.rootActions[i];
+            require(a.id==b.id && a.prior==b.prior && a.visits==b.visits && a.q==b.q,
+                "MAP planner statistics remain exactly equivalent");
+        }
     }
+    auto checkSequential=[&](GameContext source, std::uint32_t sourceBits,int picks) {
+        checkCandidates(source);
+        OocGameContextModel provider(source,path);
+        const auto id=sourceId(provider,sourceBits);
+        require(provider.candidate(0,id).compoundSelector==CardSelectScreenType::INVALID,
+            "multi-select/random-reveal source remains a separate edge");
+        auto child=provider.sampleSuccessor(0,id,rng);
+        for(int pick=0;pick<picks;++pick) {
+            const auto &state=provider.state(child);
+            require(state.screenState==ScreenState::CARD_SELECT,"source/pick retains selector boundary");
+            const auto actions=provider.legalActions(child);
+            require(actions.size()==state.info.toSelectCards.size(),"one current pick without subset cross-product");
+            for(auto a:actions) {
+                const auto &target=std::get<OocSelectorTarget>(provider.candidate(child,a.id).semantic->target);
+                require(target.completedPicks==pick && target.requiredPicks==picks,"selector progress re-enumerated");
+            }
+            checkCandidates(detachedCopy(state));
+            child=provider.sampleSuccessor(child,actions.front().id,rng);
+        }
+        require(provider.state(child).screenState!=ScreenState::CARD_SELECT,"last sequential pick completes");
+    };
+    checkSequential(fixture,0,3);
+    fixture=detachedCopy(gc); fixture.screenState=ScreenState::EVENT_SCREEN; fixture.curEvent=Event::AUGMENTER;
+    checkSequential(fixture,1,2);
+    fixture.curEvent=Event::THE_LIBRARY; checkSequential(fixture,0,1);
+    fixture=detachedCopy(gc); fixture.screenState=ScreenState::REWARDS;
+    Rewards visibleRewards; visibleRewards.addGold(25); visibleRewards.addRelic(RelicId::ANCHOR);
+    visibleRewards.addPotion(Potion::FIRE_POTION);
+    CardReward visibleCards; visibleCards.push_back(Card(CardId::INFLAME));
+    visibleCards.push_back(Card(CardId::BASH)); visibleRewards.addCardReward(visibleCards);
+    fixture.info.rewardsContainer=visibleRewards; checkCandidates(fixture);
+    fixture.relics.add({RelicId::SINGING_BOWL,0}); checkCandidates(fixture);
+    fixture.info.rewardsContainer.relics[0]=RelicId::BOTTLED_FLAME;
+    checkCandidates(fixture);
+    GameAction(GameAction::RewardsActionType::RELIC).execute(fixture);
+    require(fixture.info.selectScreenType==CardSelectScreenType::BOTTLE,"bottle fixture opens selector");
+    checkCandidates(fixture);
+    {
+        auto fresh=detachedCopy(gc); fresh.openCardSelectScreen(CardSelectScreenType::REMOVE,1);
+        OocGameContextModel provider(fresh,path);
+        const auto chosen=provider.candidate(0,provider.legalActions(0).front().id);
+        std::reverse(fresh.info.toSelectCards.begin(),fresh.info.toSelectCards.end());
+        auto expected=detachedCopy(fresh);
+        require(executeOocSemanticAction(expected,*chosen.semantic).ok,"fresh resolution oracle");
+        std::string error;
+        require(executeOocMctsRoot(fresh,chosen,error)
+            && test::oocStateFingerprint(fresh)==test::oocStateFingerprint(expected),
+            "fresh root resolves physical identity after selector order changes");
+        const auto before=test::oocStateFingerprint(fresh);
+        require(!executeOocMctsRoot(fresh,chosen,error)
+            && test::oocStateFingerprint(fresh)==before,"stale root identity executes nothing");
+        fresh=detachedCopy(gc); fresh.openCardSelectScreen(CardSelectScreenType::REMOVE,1);
+        const auto observerBefore=test::oocStateFingerprint(fresh);
+        auto savedObserver=std::move(g_onGameActionExecute); int callbacks=0;
+        g_onGameActionExecute=[&](std::uint32_t,const GameContext *) { ++callbacks; };
+        const bool executed=executeOocMctsRoot(fresh,chosen,error);
+        g_onGameActionExecute=std::move(savedObserver);
+        require(!executed && callbacks==0 && test::oocStateFingerprint(fresh)==observerBefore,
+            "active observer rejects semantic live execution before mutation");
+        fresh.info.toSelectCards.push_back(fresh.info.toSelectCards.front());
+        const auto ambiguousBefore=test::oocStateFingerprint(fresh);
+        require(!executeOocMctsRoot(fresh,chosen,error)
+            && test::oocStateFingerprint(fresh)==ambiguousBefore,
+            "ambiguous semantic enumeration rejects live root without mutation");
+    }
+    fixture=detachedCopy(gc); fixture.screenState=ScreenState::CARD_SELECT;
+    fixture.info.selectScreenType=CardSelectScreenType::INVALID;
+    OocGameContextModel unsupportedSelector(fixture,path);
+    require(unsupportedSelector.isLeafBoundary(0),"invalid selector remains boundary");
     fixture=detachedCopy(gc); fixture.curMapNodeY=14;
     OocGameContextModel lastRow(fixture,path); require(lastRow.isLeafBoundary(0),"map row 14 boundary");
     fixture=detachedCopy(gc); fixture.map=nullptr;
     OocGameContextModel noMap(fixture,path); require(noMap.isLeafBoundary(0),"missing map boundary");
     fixture=detachedCopy(gc); fixture.screenState=ScreenState::EVENT_SCREEN; fixture.curEvent=Event::MATCH_AND_KEEP;
     OocGameContextModel match(fixture,path); require(match.isLeafBoundary(0),"match and keep boundary");
+    // Live outcome sampling must not optimize against copied future streams or
+    // freeze random successors in the deterministic-edge cache.
+    {
+        OocAdapterOptions sampled; sampled.sampleNoncombat=true;
+        const auto visible = [](const GameContext &g) {
+            std::string result=std::to_string(int(g.screenState))+":"+std::to_string(g.curHp)+":"+std::to_string(g.gold);
+            for(const auto &c:g.deck.cards) result += ":"+std::to_string(int(c.id))+"/"+std::to_string(c.isUpgraded());
+            for(const auto &r:g.relics.relics) result += ":r"+std::to_string(int(r.id));
+            if(g.screenState==ScreenState::BATTLE) result += ":fight"+std::to_string(int(g.info.encounter));
+            const auto actions=enumerateOocSemanticActions(g);
+            for(const auto &a:actions.actions) result += ":"+canonicalOocSemanticActionKey(a);
+            return result;
+        };
+        const auto varied = [&](GameContext source,OocSemanticEffect effect,OocSemanticSource origin) {
+            OocGameContextModel adapter(source,path,{},sampled);
+            std::optional<OocActionId> selected;
+            for(auto a:adapter.legalActions(0)) {
+                const auto &c=adapter.candidate(0,a.id);
+                if(c.semantic && c.semantic->effect==effect && c.semantic->source==origin) { selected=a.id; break; }
+            }
+            require(selected.has_value(),"stochastic fixture has requested semantic edge");
+            const auto before=test::oocStateFingerprint(source);
+            std::set<std::string> outcomes;
+            std::mt19937_64 draws(91234);
+            for(int n=0;n<32;++n) {
+                auto child=adapter.sampleSuccessor(0,*selected,draws);
+                outcomes.insert(visible(adapter.state(child)));
+                require(!adapter.isDeterministicTransition(0,*selected),"random outcome never cached as deterministic");
+            }
+            require(outcomes.size()>1,"unknown noncombat effect produces multiple sampled outcomes");
+            require(test::oocStateFingerprint(source)==before && test::oocStateFingerprint(adapter.state(0))==before,
+                "sampled outcomes preserve live and immutable parent state");
+            std::cout<<"sampled_ooc effect="<<int(effect)<<" source="<<int(origin)<<" outcomes="<<outcomes.size()<<'\n';
+        };
+        for(auto event:{Event::LIVING_WALL,Event::TRANSMORGRIFIER}) {
+            auto source=detachedCopy(gc); source.screenState=ScreenState::EVENT_SCREEN; source.curEvent=event;
+            varied(source,OocSemanticEffect::TRANSFORM_CARD,OocSemanticSource::EVENT);
+        }
+        for(auto stream:{CARD_RNG,MISC_RNG,NEOW_RNG}) {
+            auto source=detachedCopy(gc); source.openCardSelectScreen(CardSelectScreenType::TRANSFORM,1);
+            source.info.transformRng=stream;
+            varied(source,OocSemanticEffect::TRANSFORM_CARD,OocSemanticSource::SELECTOR);
+        }
+        auto source=detachedCopy(gc); source.openCardSelectScreen(CardSelectScreenType::TRANSFORM_UPGRADE,1);
+        varied(source,OocSemanticEffect::TRANSFORM_UPGRADE_CARD,OocSemanticSource::SELECTOR);
+        source=detachedCopy(gc); source.screenState=ScreenState::EVENT_SCREEN; source.curEvent=Event::THE_LIBRARY;
+        varied(source,OocSemanticEffect::EVENT_CHOICE,OocSemanticSource::EVENT);
+        source=detachedCopy(gc); source.setupTreasureRoom();
+        varied(source,OocSemanticEffect::OPEN_CHEST,OocSemanticSource::TREASURE);
+        source=detachedCopy(gc); source.screenState=ScreenState::EVENT_SCREEN; source.curEvent=Event::DEAD_ADVENTURER;
+        source.setupEvent(); varied(source,OocSemanticEffect::EVENT_CHOICE,OocSemanticSource::EVENT);
+        source=detachedCopy(gc); source.screenState=ScreenState::BOSS_RELIC_REWARDS;
+        source.info.bossRelics[0]=RelicId::PANDORAS_BOX;
+        source.info.bossRelics[1]=RelicId::COFFEE_DRIPPER; source.info.bossRelics[2]=RelicId::FUSION_HAMMER;
+        // Select Pandora explicitly; canonical relic ordering need not put it first.
+        OocGameContextModel pandora(source,path,{},sampled); std::set<std::string> pandoraOutcomes;
+        std::mt19937_64 pandoraDraws(819);
+        for(auto action:pandora.legalActions(0)) {
+            const auto &c=pandora.candidate(0,action.id);
+            if(c.semantic->effect!=OocSemanticEffect::TAKE_BOSS_RELIC
+                || std::get<OocRelicTarget>(c.semantic->target).relic!=RelicId::PANDORAS_BOX) continue;
+            for(int n=0;n<16;++n) pandoraOutcomes.insert(visible(pandora.state(pandora.sampleSuccessor(0,action.id,pandoraDraws))));
+        }
+        require(pandoraOutcomes.size()>1,"Pandora random transformations resampled");
+        source=detachedCopy(gc); source.screenState=ScreenState::REST_ROOM; source.relics.add({RelicId::SHOVEL,0});
+        varied(source,OocSemanticEffect::DIG,OocSemanticSource::CAMPFIRE);
+        source=detachedCopy(gc); source.screenState=ScreenState::SHOP_ROOM; source.gold=999;
+        source.relics.add({RelicId::THE_COURIER,0}); source.info.shop.setup(source);
+        varied(source,OocSemanticEffect::BUY_CARD,OocSemanticSource::SHOP);
+        // A deterministic upgrade remains the same public effect, even though
+        // its unobserved future receives a fresh particle on every draw.
+        source=detachedCopy(gc); source.openCardSelectScreen(CardSelectScreenType::UPGRADE,1);
+        OocGameContextModel upgrades(source,path,{},sampled);
+        const auto upgrade=upgrades.legalActions(0).front().id;
+        std::mt19937_64 draws(712);
+        const auto first=upgrades.sampleSuccessor(0,upgrade,draws);
+        const auto second=upgrades.sampleSuccessor(0,upgrade,draws);
+        require(visible(upgrades.state(first))==visible(upgrades.state(second)),"deterministic public upgrade preserved");
+        // Same planner draws, different true seed/stream states/hidden order:
+        // both hypothetical futures must be exactly the same.
+        source=detachedCopy(gc); source.setupTreasureRoom();
+        auto altered=detachedCopy(source);
+        altered.seed ^= 0xCAFEBABE;
+        for(auto stream:{&altered.aiRng,&altered.cardRandomRng,&altered.cardRng,&altered.eventRng,
+                &altered.mathUtilRng,&altered.merchantRng,&altered.miscRng,&altered.monsterHpRng,
+                &altered.monsterRng,&altered.neowRng,&altered.potionRng,&altered.relicRng,
+                &altered.shuffleRng,&altered.treasureRng}) { stream->seed0 ^= 123; stream->seed1 ^= 456; }
+        for(auto pool:{&altered.commonRelicPool,&altered.uncommonRelicPool,&altered.rareRelicPool,
+                &altered.shopRelicPool,&altered.bossRelicPool}) std::reverse(pool->begin(),pool->end());
+        std::reverse(altered.monsterList.begin(),altered.monsterList.end());
+        std::reverse(altered.eliteMonsterList.begin(),altered.eliteMonsterList.end());
+        std::reverse(altered.colorlessCardPool.begin(),altered.colorlessCardPool.end());
+        altered.info.haveGold=!altered.info.haveGold; altered.info.tier=RelicTier::RARE;
+        std::mt19937_64 left(19),right(19);
+        sampleNoncombatFuture(source,left); sampleNoncombatFuture(altered,right);
+        require(test::oocStateFingerprint(source)==test::oocStateFingerprint(altered),
+            "hypothetical future independent of copied hidden seeds and queue ordering");
+        require(left==right,"sampling consumes reproducible planner draws");
+        // Revealed offers/selector progress, current map and visible boss survive.
+        source=detachedCopy(gc); source.openCardSelectScreen(CardSelectScreenType::TRANSFORM_UPGRADE,3);
+        GameAction(0).execute(source);
+        auto before=visible(source); auto map=source.map; auto boss=source.boss;
+        const auto progress=source.info.haveSelectedCards.size();
+        sampleNoncombatFuture(source,left);
+        require(visible(source)==before && source.map==map && source.boss==boss
+            && source.info.haveSelectedCards.size()==progress,"public state and sequential selector progress preserved");
+        source=detachedCopy(gc); source.screenState=ScreenState::MAP_SCREEN;
+        OocGameContextModel mapModel(source,path,{},sampled);
+        std::set<int> encounters;
+        const auto mapAction=mapModel.legalActions(0).front().id;
+        for(int n=0;n<32;++n) {
+            const auto child=mapModel.sampleSuccessor(0,mapAction,left);
+            encounters.insert(int(mapModel.state(child).info.encounter));
+        }
+        require(encounters.size()>1,"MAP samples hidden encounter queue rather than copied future");
+        struct CaptureSampler final : CombatTransitionSampler {
+            mutable std::set<std::uint64_t> seeds;
+            CombatRuntimeSupport support(const GameContext &g,const CombatPredictorInputV1 &) const override {
+                seeds.insert(g.seed); return {true,"sampled fixture"};
+            }
+            CombatRuntimeSample sample(const GameContext &,const CombatPredictorInputV1 &,std::mt19937_64 &) const override {
+                return {CombatRuntimeSample::Outcome::DEATH,{}};
+            }
+        };
+        auto capture=std::make_shared<CaptureSampler>(); sampled.checkpointLeaves=true;
+        OocGameContextModel prepared(source,path,capture,sampled);
+        for(int n=0;n<8;++n) prepared.sampleSuccessor(0,mapAction,left);
+        require(prepared.continuationMetrics().preparedCombats==8 && capture->seeds.size()==8,
+            "each sampled combat successor prepares its own predictor context");
+        auto alternate=detachedCopy(source);
+        std::reverse(alternate.monsterList.begin(),alternate.monsterList.end()); alternate.seed^=812;
+        OocGameContextModel leafA(source,path,{},sampled),leafB(alternate,path,{},sampled);
+        std::mt19937_64 aRng(198),bRng(198);
+        require(leafA.evaluateLeaf(0,aRng)==leafB.evaluateLeaf(0,bRng),
+            "native leaf uses sampled future features rather than actual hidden queue");
+    }
     OocAdapterOptions uniformOptions{true}; uniformOptions.uniformPrior = true;
     OocGameContextModel uniformPrior(gc,path,{},uniformOptions);
     const auto uniformActions = uniformPrior.legalActions(0);
@@ -1060,7 +1637,7 @@ void oocMctsAdapterSelfTest() {
         auto tr=OocMctsPlanner().search(terminal,0,3);
         require(tr.metrics.leafEvaluations==0 && tr.rootActions.empty(),"terminal precedence");
     }
-    for (auto screen : {ScreenState::INVALID,ScreenState::CARD_SELECT,ScreenState::REWARDS}) {
+    for (auto screen : {ScreenState::INVALID,ScreenState::CARD_SELECT}) {
         auto unsupported=detachedCopy(gc); unsupported.screenState=screen;
         OocGameContextModel leaf(unsupported,path);
         require(leaf.isLeafBoundary(0),"unsupported state boundary");
@@ -1072,7 +1649,7 @@ void oocMctsAdapterSelfTest() {
     require(std::count_if(rewardActions.begin(),rewardActions.end(),[&](auto a){return a.bits==skip.bits;})==1,
         "reward skip included exactly once");
     OocGameContextModel rewards(reward,path);
-    auto rewardChild=rewards.sampleSuccessor(0,skip.bits,rng);
+    auto rewardChild=rewards.sampleSuccessor(0,sourceId(rewards,skip.bits),rng);
     require(rewards.state(rewardChild).info.rewardsContainer.cardRewardCount
         ==reward.info.rewardsContainer.cardRewardCount-1,"reward skip execution");
     // Inject an equivalent RAW result from a deterministic native exit. The
@@ -1121,7 +1698,7 @@ void oocMctsAdapterSelfTest() {
     const auto ordinaryAction=v4CandidateActions(ordinary).front();
     ordinaryAction.execute(ordinaryExpected);
     OocGameContextModel ordinaryModel(ordinary,path,fake);
-    const auto ordinaryId=ordinaryModel.sampleSuccessor(0,ordinaryAction.bits,rng);
+    const auto ordinaryId=ordinaryModel.sampleSuccessor(0,sourceId(ordinaryModel,ordinaryAction.bits),rng);
     require(fake->supportCalls==0 && fake->sampleCalls==0
         && test::oocStateFingerprint(ordinaryModel.state(ordinaryId))==test::oocStateFingerprint(ordinaryExpected),
         "ordinary injected successor unchanged");
@@ -1143,7 +1720,7 @@ void oocMctsAdapterSelfTest() {
     regainCalls=0;
     OocGameContextModel crossed(combatRoot,path,fake);
     const auto rootFingerprint=test::oocStateFingerprint(crossed.state(0));
-    const auto crossedId=crossed.sampleSuccessor(0,restAction.bits,rng);
+    const auto crossedId=crossed.sampleSuccessor(0,sourceId(crossed,restAction.bits),rng);
     require(regainCalls==2 && fake->sampleCalls==1 && fake->supportCalls==1,
             "injected reward continuation exactly once");
     require(test::oocStateFingerprint(crossed.state(crossedId))==test::oocStateFingerprint(real),
@@ -1185,7 +1762,7 @@ void oocMctsAdapterSelfTest() {
         oraclePath.update(oracle);
         OocGameContextModel imagined(escapeRoot,path,escapeSampler);
         const auto parent=test::oocStateFingerprint(imagined.state(0));
-        const auto escaped=imagined.sampleSuccessor(0,restAction.bits,rng);
+        const auto escaped=imagined.sampleSuccessor(0,sourceId(imagined,restAction.bits),rng);
         require(escapeRawCalls==1 && escapeSampler->sampleCalls==1
             && test::oocStateFingerprint(imagined.state(escaped))==test::oocStateFingerprint(oracle)
             && combatTransitionFingerprint(imagined.state(escaped))==combatTransitionFingerprint(oracle),
@@ -1197,7 +1774,7 @@ void oocMctsAdapterSelfTest() {
             "ESCAPE no rewards, native PathHistory, unchanged parent");
         escapeSampler->escape=false;
         OocGameContextModel mislabeled(escapeRoot,path,escapeSampler);
-        rejects([&] { mislabeled.sampleSuccessor(0,restAction.bits,rng); });
+        rejects([&] { mislabeled.sampleSuccessor(0,sourceId(mislabeled,restAction.bits),rng); });
         auto boss=detachedCopy(escapeRoot);
         boss.info.encounter=MonsterEncounter::SLIME_BOSS;
         rejects([&] { applySampledCombatExit(boss,{CombatRuntimeSample::Outcome::ESCAPE,escapeSampler->raw}); });
@@ -1221,18 +1798,18 @@ void oocMctsAdapterSelfTest() {
     std::cout<<"smoke_escape_oracle native_origin=identical cleric=both raw_outcome=ESCAPE parity=exact\n";
     fake->enabled=false; regainCalls=0;
     OocGameContextModel unsupportedCombat(combatRoot,path,fake);
-    const auto unsupportedId=unsupportedCombat.sampleSuccessor(0,restAction.bits,rng);
+    const auto unsupportedId=unsupportedCombat.sampleSuccessor(0,sourceId(unsupportedCombat,restAction.bits),rng);
     require(fake->sampleCalls==1 && regainCalls==1 && unsupportedCombat.isLeafBoundary(unsupportedId)
         && test::oocStateFingerprint(unsupportedCombat.state(unsupportedId))==preFingerprint,
         "unsupported combat retains exact battle leaf");
     OocGameContextModel disabledCombat(combatRoot,path);
-    const auto disabledId=disabledCombat.sampleSuccessor(0,restAction.bits,rng);
+    const auto disabledId=disabledCombat.sampleSuccessor(0,sourceId(disabledCombat,restAction.bits),rng);
     require(test::oocStateFingerprint(disabledCombat.state(disabledId))==preFingerprint
         && disabledCombat.pathHistory(disabledId).roomVisits==unsupportedCombat.pathHistory(unsupportedId).roomVisits,
         "no sampler combat behavior unchanged");
     fake->enabled=true; fake->death=true; regainCalls=0;
     OocGameContextModel deathCombat(combatRoot,path,fake);
-    const auto deathId=deathCombat.sampleSuccessor(0,restAction.bits,rng);
+    const auto deathId=deathCombat.sampleSuccessor(0,sourceId(deathCombat,restAction.bits),rng);
     require(regainCalls==1 && deathCombat.terminalValue(deathId)==0
         && deathCombat.state(deathId).screenState==ScreenState::BATTLE,
         "death terminal without reward continuation");
@@ -1241,7 +1818,7 @@ void oocMctsAdapterSelfTest() {
     OocGameContextModel chanceCombat(combatRoot,path,fake);
     for(int i=0;i<8;++i) {
         const auto expectedDraw=expectedRng();
-        const auto sampleId=chanceCombat.sampleSuccessor(0,restAction.bits,plannerRng);
+        const auto sampleId=chanceCombat.sampleSuccessor(0,sourceId(chanceCombat,restAction.bits),plannerRng);
         require(fake->draws.back()==expectedDraw,"independent supplied planner RNG draw");
         require(bool(chanceCombat.terminalValue(sampleId))==bool(expectedDraw&1),
                 "chance outcome not value selected");
@@ -1265,7 +1842,7 @@ void oocMctsAdapterSelfTest() {
     fake->draws.clear();
     const auto samplesBefore=fake->sampleCalls;
     OocGameContextModel plannerCombat(combatRoot,path,fake);
-    SingleEntryModel entryModel(plannerCombat,restAction.bits);
+    SingleEntryModel entryModel(plannerCombat,sourceId(plannerCombat,restAction.bits));
     OocMctsConfig chanceConfig; chanceConfig.maxDepth=1; chanceConfig.seed=12345;
     OocMctsPlanner chancePlanner(chanceConfig);
     const auto chanceResult=chancePlanner.search(entryModel,0,32);
@@ -1301,7 +1878,7 @@ void oocMctsAdapterSelfTest() {
     };
     const auto chainSamplesBefore=fake->sampleCalls;
     OocGameContextModel chainedCombat(chainedRoot,path,fake);
-    const auto chainedId=chainedCombat.sampleSuccessor(0,restAction.bits,rng);
+    const auto chainedId=chainedCombat.sampleSuccessor(0,sourceId(chainedCombat,restAction.bits),rng);
     require(chainContinuations==1 && fake->sampleCalls==chainSamplesBefore+1
         && chainedCombat.state(chainedId).screenState==ScreenState::BATTLE
         && chainedCombat.isLeafBoundary(chainedId) && !chainedCombat.terminalValue(chainedId),
@@ -1478,7 +2055,7 @@ void oocMctsAdapterSelfTest() {
     const auto unsupportedBefore=test::oocStateFingerprint(unsupportedRoot.state(0));
     const auto samplesBeforeAbort=fake->sampleCalls;
     std::mt19937_64 adapterRng(77), untouchedRng(77);
-    rejects([&] { unsupportedRoot.sampleSuccessor(0,restAction.bits,adapterRng); });
+    rejects([&] { unsupportedRoot.sampleSuccessor(0,sourceId(unsupportedRoot,restAction.bits),adapterRng); });
     require(unsupportedRoot.continuationMetrics().imaginedCombats==1
         && unsupportedRoot.continuationMetrics().unsupportedCombats==1
         && unsupportedRoot.continuationMetrics().supportReasons.at("fake unsupported")==1
@@ -1486,7 +2063,7 @@ void oocMctsAdapterSelfTest() {
         && test::oocStateFingerprint(unsupportedRoot.state(0))==unsupportedBefore,
         "unsupported input aborts before any draw/combat/value and preserves root");
     OocGameContextModel unsupportedPlanner(combatRoot,path,fake,{true});
-    SingleEntryModel unsupportedEntry(unsupportedPlanner,restAction.bits);
+    SingleEntryModel unsupportedEntry(unsupportedPlanner,sourceId(unsupportedPlanner,restAction.bits));
     const auto aborted=OocMctsPlanner().search(unsupportedEntry,0,128);
     require(aborted.aborted && !aborted.selectedAction && aborted.rootActions.empty()
         && aborted.metrics.simulations==0 && aborted.metrics.simulationAttempts==1
@@ -1497,7 +2074,7 @@ void oocMctsAdapterSelfTest() {
         CombatRuntimeSample sample(const GameContext &,const CombatPredictorInputV1 &,std::mt19937_64 &) const override { return {}; }
     };
     OocGameContextModel unsupportedDraw(combatRoot,path,std::make_shared<UnsupportedDraw>(),{true});
-    SingleEntryModel unsupportedDrawEntry(unsupportedDraw,restAction.bits);
+    SingleEntryModel unsupportedDrawEntry(unsupportedDraw,sourceId(unsupportedDraw,restAction.bits));
     const auto abortedDraw=OocMctsPlanner().search(unsupportedDrawEntry,0,128);
     require(abortedDraw.aborted && !abortedDraw.selectedAction
         && unsupportedDraw.continuationMetrics().supportReasons.at("sample_returned_unsupported")==1,
@@ -1513,10 +2090,10 @@ void oocMctsAdapterSelfTest() {
     }
     require(sts::search::g_disallowImaginedCombat==beforeDisallow,"surrogate-only guard restores real combat permission");
     OocGameContextModel deterministicOoc(ordinary,path,{}, {true});
-    const auto deterministicId=deterministicOoc.sampleSuccessor(0,ordinaryAction.bits,adapterRng);
+    const auto deterministicId=deterministicOoc.sampleSuccessor(0,sourceId(deterministicOoc,ordinaryAction.bits),adapterRng);
     const auto rngBeforeCache=adapterRng;
-    require(deterministicOoc.isDeterministicTransition(0,ordinaryAction.bits)
-        && deterministicOoc.sampleSuccessor(0,ordinaryAction.bits,adapterRng)==deterministicId
+    require(deterministicOoc.isDeterministicTransition(0,sourceId(deterministicOoc,ordinaryAction.bits))
+        && deterministicOoc.sampleSuccessor(0,sourceId(deterministicOoc,ordinaryAction.bits),adapterRng)==deterministicId
         && adapterRng==rngBeforeCache,"deterministic OOC child reused without RNG draw");
     std::cout << "corrected_continuations reward_oracle=exact unsupported_root=V4 unsupported_sample=V4 native_imagination=forbidden deterministic_reuse=exact\n";
     // No fallback even if availability changes after construction.
@@ -1698,6 +2275,7 @@ void oocMctsAdapterSelfTest() {
     auto uncovered=GameContext(CharacterClass::IRONCLAD,42,0);
     uncovered.regainControlAction=[](GameContext &g) { g.screenState=ScreenState::MAP_SCREEN; };
     uncovered.openCardSelectScreen(CardSelectScreenType::REMOVE,1);
+    uncovered.info.toSelectCount=0; // Deliberately incomplete semantic enumeration.
     const auto uncoveredBefore=test::oocStateFingerprint(uncovered);
     auto fallbackExpected=detachedCopy(uncovered);
     LiveOocMctsMetrics fallbackMetrics;
@@ -1715,17 +2293,9 @@ void oocMctsAdapterSelfTest() {
     multipleGold.info.rewardsContainer.gold[0]=12;
     multipleGold.info.rewardsContainer.gold[1]=13;
     OocGameContextModel duplicateRoot(multipleGold,livePath,lethal);
-    require(duplicateRoot.isLeafBoundary(0), "duplicate native gold IDs are a boundary");
-    auto goldExpected=detachedCopy(multipleGold);
-    LiveOocMctsMetrics goldMetrics;
-    require(!oocMctsPolicyStep(multipleGold,livePath,42,9,goldMetrics)
-        && goldMetrics.fallback==1 && goldMetrics.search.simulations==0,
-        "multi-gold root uses fallback without searching/deduplicating");
-    runFullRunOocPolicyStep(multipleGold,fallbackAgent,false,true);
-    runFullRunOocPolicyStep(goldExpected,expectedAgent,false,true);
-    require(test::oocStateFingerprint(multipleGold)==test::oocStateFingerprint(goldExpected)
-        && multipleGold.info.rewardsContainer.goldRewardCount==1,
-        "multi-gold fallback retains existing first-gold collection");
+    require(!duplicateRoot.isLeafBoundary(0), "semantic identity supports distinct gold rewards");
+    for(auto action:duplicateRoot.legalActions(0))
+        require(action.prior==1,"incomplete primitive gold coverage makes whole semantic prior uniform");
     std::cout<<"PASS live OOC MCTS OFF/isolation/execution/real-combat/fallback/determinism\n";
     // Opt-in captured-model microbenchmark. Runs only detached search states;
     // this is not a gameplay cohort or a decision-quality experiment.

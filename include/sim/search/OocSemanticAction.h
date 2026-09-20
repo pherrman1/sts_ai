@@ -10,6 +10,8 @@
 
 namespace sts::search {
 
+struct GameAction;
+
 // Append only. These IDs, including Smith's original zeros, are wire identity.
 enum class OocSemanticEffect : std::uint8_t {
     UPGRADE_CARD = 0,
@@ -139,6 +141,10 @@ struct OocExecutionResult {
     std::string error;
     std::vector<std::uint32_t> executedPrimitiveBits;
 };
+
+// Policy support for autonomous OOC action candidates.  Physical shop
+// enumeration remains separate so live/manual UI can still expose every item.
+bool isSupportedAutonomousOocAction(const GameContext &gc, const GameAction &action);
 
 // Read-only bindings for current primitives. Compound target expansion is
 // retained for callers that need semantic successor identity; a live one-screen

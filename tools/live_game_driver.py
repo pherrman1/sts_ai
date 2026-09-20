@@ -914,27 +914,38 @@ class Driver:
                           if not (candidate.mcp_tool == "choose"
                                   and candidate.mcp_arguments.get("choice_index") in declined_indexes)]
             # MCP can advertise a potion reward even when the inventory is
-            # full, but the inspector's exact liveChoices deliberately omits
-            # that primitive because this boundary has no discard command.
-            # Keep deterministic fallback inside the producer-qualified
-            # action set; otherwise a potion-only reward would still select
-            # the raw first MCP choice and fail at the game boundary.
+            # full, but the inspector deliberately omits that primitive
+            # because this boundary has no discard command.  Only suppress
+            # that specifically identified potion occurrence.  Unopened card
+            # rewards are also absent from liveChoices by design, but remain
+            # valid raw MCP fallback actions that open the hidden card group.
             live_choices = _list(ooc.get("liveChoices"))
-            if live_choices:
-                def matches_live_choice(candidate: LegalAction, choice: Any) -> bool:
-                    hint = _mapping(choice).get("liveAction")
-                    hint = _mapping(hint)
-                    kind = hint.get("kind")
-                    if kind == "choose":
-                        return (candidate.mcp_tool == "choose"
-                                and candidate.mcp_arguments == {"choice_index": hint.get("choiceIndex")})
-                    return (isinstance(kind, str) and candidate.mcp_tool == kind
-                            and not candidate.mcp_arguments)
-                filtered = [candidate for candidate in candidates
-                            if any(matches_live_choice(candidate, choice) for choice in live_choices)]
-                if not filtered:
-                    raise IntegrationFailure("COMBAT_REWARD inspector liveChoices filtered all MCP fallback candidates")
-                candidates = filtered
+            public = _mapping(ooc.get("publicState"))
+            capacity = public.get("potionCapacity")
+            potions = _list(public.get("potions"))
+            occupied = sum(
+                _text(_mapping(potion).get("id", potion)).lower()
+                not in {"", "potion slot", "empty", "none"}
+                for potion in potions)
+            full_potions = type(capacity) is int and occupied >= capacity
+            if full_potions and live_choices:
+                live_choice_indexes = {
+                    hint.get("choiceIndex")
+                    for choice in live_choices
+                    for hint in [_mapping(_mapping(choice).get("liveAction"))]
+                    if hint.get("kind") == "choose" and type(hint.get("choiceIndex")) is int
+                }
+                absent_potions = {
+                    item.get("index") + 1
+                    for item in occurrences
+                    if isinstance(item, Mapping)
+                    and type(item.get("index")) is int
+                    and _text(item.get("type")).upper() == "POTION"
+                    and item.get("index") + 1 not in live_choice_indexes
+                }
+                candidates = [candidate for candidate in candidates
+                              if not (candidate.mcp_tool == "choose"
+                                      and candidate.mcp_arguments.get("choice_index") in absent_potions)]
         if _text(screen.get("screen_type", screen.get("screenType"))).upper() != "SHOP_ROOM":
             return choose_deterministic_action(screen, candidates), None
         act, floor = game.get("act", screen.get("act")), screen.get("floor", game.get("floor"))

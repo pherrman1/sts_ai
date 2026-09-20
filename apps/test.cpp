@@ -57,6 +57,40 @@ int runOocSemanticTransactionsTests();
 
 using namespace sts;
 
+int testIroncladCombatCardCoverage() {
+    const GameContext game(CharacterClass::IRONCLAD, 0xC0DEu, 0);
+    const int expected = TrulyRandomCardPool::getPoolSizeForClass(CharacterClass::IRONCLAD);
+    int covered = 0;
+    for (int i = 0; i < expected; ++i) {
+        const auto id = TrulyRandomCardPool::getPoolForClass(CharacterClass::IRONCLAD)[i];
+        BattleContext battle;
+        battle.init(game, MonsterEncounter::CULTIST);
+        battle.actionQueue.clear();
+        battle.cards.cardsInHand = 0;
+        battle.player.energy = 99;
+        battle.curCardQueueItem.card = CardInstance(id);
+        battle.curCardQueueItem.card.uniqueId = 0;
+        battle.curCardQueueItem.target = 0;
+        battle.curCardQueueItem.energyOnUse = 3;
+        const int before = battle.actionQueue.size;
+        const bool beforeBarricade = battle.player.hasStatus<PS::BARRICADE>();
+        switch (id == CardId::INVALID ? CardType::INVALID : getCardType(id)) {
+        case CardType::ATTACK: battle.useAttackCard(); break;
+        case CardType::SKILL: battle.useSkillCard(); break;
+        case CardType::POWER: battle.usePowerCard(); break;
+        default: break;
+        }
+        if (battle.actionQueue.size > before
+            || beforeBarricade != battle.player.hasStatus<PS::BARRICADE>()) {
+            ++covered;
+        } else {
+            std::cerr << "uncovered Ironclad combat card: " << getCardEnumName(id) << '\n';
+        }
+    }
+    std::cout << "ironclad combat card dispatcher coverage: " << covered << '/' << expected << '\n';
+    return covered == expected ? 0 : 1;
+}
+
 void printSizes() {
     std::cout << "sizeof Map:" << sizeof(Map) << '\n';
     std::cout << "sizeof Player: " << sizeof(Player) << '\n';
@@ -1787,6 +1821,29 @@ int testSilverSemanticActionResolution() {
     check(normalResolved.ok && normalResolved.action.getActionType() == search::ActionType::CARD
           && normalResolved.action.getSourceIdx() == 0,
           "indistinguishable duplicate hand cards must lower deterministically for ordinary play");
+    // The bridge exports absent targets as -1, whereas native Action stores
+    // an unsigned packed target and uses zero for untargeted plays.
+    auto untargeted = normal;
+    untargeted.cards.cardsInHand = 1;
+    untargeted.cards.hand[0] = defend;
+    auto defendPlay = cardPlay;
+    defendPlay.card = wire(defend);
+    defendPlay.target = -1;
+    const auto loweredDefend = search::resolveSilverSemanticAction(untargeted, defendPlay);
+    check(loweredDefend.ok
+          && loweredDefend.action == search::Action(search::ActionType::CARD, 0),
+          "absent semantic card target must lower to canonical native untargeted action");
+    if (loweredDefend.ok) {
+        auto actual = untargeted, expected = untargeted;
+        loweredDefend.action.execute(actual);
+        search::Action(search::ActionType::CARD, 0).execute(expected);
+        check(actual.player.block == expected.player.block && actual.player.block > untargeted.player.block
+              && actual.player.energy == expected.player.energy,
+              "lowered untargeted card must execute native block and energy effects");
+    }
+    auto invalidTargetedCard = cardPlay; invalidTargetedCard.target = -1;
+    check(!search::resolveSilverSemanticAction(normal, invalidTargetedCard).ok,
+          "targeted card with absent semantic target must fail closed");
     silver_bridge::SemanticAction end; end.type = silver_bridge::SemanticActionType::END_TURN;
     check(search::resolveSilverSemanticAction(normal, end).ok,
           "semantic END_TURN must lower to a legal live action");
@@ -1798,6 +1855,34 @@ int testSilverSemanticActionResolution() {
     fire.discardPotion = true;
     check(search::resolveSilverSemanticAction(normal, fire).ok,
           "semantic potion discard must lower to a legal live action");
+
+    auto strengthState = normal;
+    strengthState.potions[0] = Potion::STRENGTH_POTION;
+    auto strength = fire;
+    strength.potionId = static_cast<std::int16_t>(Potion::STRENGTH_POTION);
+    strength.target = -1; strength.discardPotion = false;
+    const auto loweredStrength = search::resolveSilverSemanticAction(strengthState, strength);
+    check(loweredStrength.ok
+          && loweredStrength.action == search::Action(search::ActionType::POTION, 0),
+          "absent semantic potion target must mean use rather than packed discard");
+    if (loweredStrength.ok) {
+        const auto beforeStrength = strengthState.player.getStatus<PlayerStatus::STRENGTH>();
+        loweredStrength.action.execute(strengthState);
+        check(strengthState.player.getStatus<PlayerStatus::STRENGTH>() == beforeStrength + 2
+              && strengthState.potions[0] == Potion::EMPTY_POTION_SLOT,
+              "untargeted potion must apply its effect before consuming the slot");
+    }
+    for (int invalidTarget : {-1, 5, 6, 8192}) {
+        auto invalidPotion = fire; invalidPotion.discardPotion = false; invalidPotion.target = invalidTarget;
+        check(!search::resolveSilverSemanticAction(normal, invalidPotion).ok,
+              "targeted potion invalid target must not alias discard or a packed target");
+    }
+    auto explicitDiscardState = normal;
+    explicitDiscardState.potions[0] = Potion::STRENGTH_POTION;
+    strength.discardPotion = true;
+    const auto loweredDiscard = search::resolveSilverSemanticAction(explicitDiscardState, strength);
+    check(loweredDiscard.ok && loweredDiscard.action.getTargetIdx() == 6,
+          "explicit semantic discard must retain native discard encoding");
 
     const auto selectCase = [&](CardSelectTask task, silver_bridge::CardSource source, const CardInstance &chosen,
                                 const char *message) {
@@ -4105,6 +4190,8 @@ int main(int argc, const char* argv[]) {
         return runOocSemanticPipelineTests();
     } else if (command == "ooc_semantic_transactions") {
         return runOocSemanticTransactionsTests();
+    } else if (command == "ironclad_card_coverage") {
+        return testIroncladCombatCardCoverage();
     } else if (command == "ooc_reward_continuation") {
         return runOocRewardContinuationTests();
     } else if (command == "ooc_semantic_smith") {

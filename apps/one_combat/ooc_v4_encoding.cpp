@@ -1,6 +1,7 @@
 #include "ooc_v4_encoding.h"
 #include <algorithm>
 #include "game/Map.h"
+#include "sim/search/OocSemanticAction.h"
 using namespace sts;
 using sts::search::GameAction;
 using namespace one_combat;
@@ -105,6 +106,9 @@ bool v4DecisionSupported(const GameContext &gc) {
 }
 std::vector<GameAction> v4CandidateActions(const GameContext &gc) {
     auto actions = GameAction::getAllActionsInState(gc);
+    actions.erase(std::remove_if(actions.begin(), actions.end(), [&](const auto &action) {
+        return !sts::search::isSupportedAutonomousOocAction(gc, action);
+    }), actions.end());
     if (gc.screenState == ScreenState::REWARDS
         && gc.info.rewardsContainer.cardRewardCount > 0 && !actions.empty()) {
         const GameAction skip(GameAction::RewardsActionType::CARD,
