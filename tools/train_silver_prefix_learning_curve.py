@@ -45,6 +45,7 @@ REPLICATES = FROZEN.REPLICATES
 TRAINING_SEED = FROZEN.TRAINING_SEED
 BOOTSTRAP_SEED = FROZEN.BOOTSTRAP_SEED
 PARAMETERS = 75809
+MIN_BOOTSTRAP_ITERATIONS = 5000
 
 
 def sha256(path: Path) -> str:
@@ -63,12 +64,38 @@ def jsonl(path: Path):
                 yield json.loads(line)
 
 
+def validate_intended_leaf_coverage(role: str, intended: set[str], baseline: set[str],
+                                    teachers: set[str], prefix_leaves: set[str],
+                                    incomplete_prefix_leaves: set[str]) -> None:
+    missing = {
+        "baseline32": sorted(intended - baseline),
+        "teacher_ab": sorted(intended - teachers),
+        "prefix_surface": sorted(intended - prefix_leaves),
+    }
+    incomplete = sorted(incomplete_prefix_leaves & intended)
+    if any(missing.values()) or incomplete:
+        raise SystemExit(
+            f"{role}: selected-corpus leaf coverage incomplete; "
+            f"intended={len(intended)} baseline32_missing={missing['baseline32'][:5]} "
+            f"teacher_ab_missing={missing['teacher_ab'][:5]} "
+            f"prefix_missing={missing['prefix_surface'][:5]} "
+            f"prefix_incomplete={incomplete[:5]}")
+
+
 def load_packet(packet: dict, role: str) -> tuple[list[dict], dict]:
-    """Load one packet without applying the old 247-leaf cardinality checks."""
+    """Load one packet and fail closed against its selected-corpus manifest."""
     paths = {key: Path(packet[key]) for key in ("prefix", "corpus", "baseline", "teachers", "manifest")}
     for key, path in paths.items():
         if not path.is_file():
             raise SystemExit(f"{role}: missing {key} artifact: {path}")
+
+    selected_manifest = json.loads(paths["manifest"].read_text(encoding="utf-8"))
+    intended_list = selected_manifest.get("leaf_snapshot_ids")
+    if not isinstance(intended_list, list) or not intended_list:
+        raise SystemExit(f"{role}: selected-corpus manifest has no leaf_snapshot_ids")
+    intended = {str(leaf) for leaf in intended_list}
+    if len(intended) != len(intended_list):
+        raise SystemExit(f"{role}: selected-corpus manifest contains duplicate leaf_snapshot_ids")
 
     leaves = {}
     for row in jsonl(paths["corpus"]):
@@ -76,42 +103,88 @@ def load_packet(packet: dict, role: str) -> tuple[list[dict], dict]:
         if leaf in leaves:
             raise SystemExit(f"{role}: duplicate corpus leaf {leaf}")
         leaves[leaf] = row
+    corpus_leaves = set(leaves)
+    if corpus_leaves != intended:
+        raise SystemExit(
+            f"{role}: corpus does not match selected-corpus manifest "
+            f"missing={sorted(intended - corpus_leaves)[:5]} "
+            f"unexpected={sorted(corpus_leaves - intended)[:5]}")
 
+    baseline_all = defaultdict(list)
     baseline_rows = defaultdict(list)
     for row in jsonl(paths["baseline"]):
+        leaf = row["leaf_snapshot_id"]
+        baseline_all[leaf].append(row)
         if row.get("accepted"):
-            baseline_rows[row["leaf_snapshot_id"]].append(row)
+            baseline_rows[leaf].append(row)
     baseline = {}
-    for leaf, rows in baseline_rows.items():
-        rows = sorted(rows, key=lambda row: int(row["replicate"]))
-        if len(rows) != REPLICATES or {int(row["replicate"]) for row in rows} != set(range(REPLICATES)):
-            continue
-        baseline[leaf] = {
-            "value": statistics.fmean(row["original_root_corrected_utility"] for row in rows),
-            "source_seed": str(rows[0]["source_seed"]),
-        }
+    for leaf, all_rows in baseline_all.items():
+        all_replicates = [int(row["replicate"]) for row in all_rows]
+        if len(all_replicates) != len(set(all_replicates)):
+            raise SystemExit(f"{role}: duplicate baseline replicate for {leaf}")
+        rows = sorted(baseline_rows[leaf], key=lambda row: int(row["replicate"]))
+        if len(rows) == REPLICATES and {int(row["replicate"]) for row in rows} == set(range(REPLICATES)):
+            baseline[leaf] = {
+                "value": statistics.fmean(row["original_root_corrected_utility"] for row in rows),
+                "source_seed": str(rows[0]["source_seed"]),
+            }
 
     teachers = defaultdict(dict)
     for row in jsonl(paths["teachers"]):
-        if row.get("state_kind") == "leaf" and row.get("teacher_valid") and row.get("selected_q_valid"):
-            teachers[row["leaf_snapshot_id"]][str(row["replicate"])] = row["original_root_corrected_teacher_value"]
+        if row.get("state_kind") != "leaf":
+            continue
+        leaf = row["leaf_snapshot_id"]
+        if row.get("teacher_valid") and row.get("selected_q_valid"):
+            replicate = str(row["replicate"])
+            if replicate in teachers[leaf]:
+                raise SystemExit(f"{role}: duplicate teacher replicate {leaf}/{replicate}")
+            teachers[leaf][replicate] = row["original_root_corrected_teacher_value"]
     teachers = {leaf: values for leaf, values in teachers.items() if "A" in values and "B" in values}
 
+    prefix_all = defaultdict(list)
     values = defaultdict(dict)
     metadata = {}
     for row in jsonl(paths["prefix"]):
-        if not row.get("accepted") or int(row["requested_prefix_length"]) > 2:
+        if int(row["requested_prefix_length"]) > 2:
             continue
         key = row["requested_prefix_key"]
         leaf = row["leaf_snapshot_id"]
         rep = int(row["replicate"])
         identity = (leaf, key)
-        if rep in values[identity]:
-            raise SystemExit(f"{role}: duplicate candidate replicate {leaf}/{key}/{rep}")
-        values[identity][rep] = row["original_root_corrected_utility"]
-        old = metadata.setdefault(identity, row)
-        if old["requested_prefix_fingerprints"] != row["requested_prefix_fingerprints"]:
-            raise SystemExit(f"{role}: candidate key metadata mismatch: {identity}")
+        prefix_all[identity].append(row)
+        if row.get("accepted"):
+            if rep in values[identity]:
+                raise SystemExit(f"{role}: duplicate candidate replicate {leaf}/{key}/{rep}")
+            values[identity][rep] = row["original_root_corrected_utility"]
+            old = metadata.setdefault(identity, row)
+            if old["requested_prefix_fingerprints"] != row["requested_prefix_fingerprints"]:
+                raise SystemExit(f"{role}: candidate key metadata mismatch: {identity}")
+
+    expected_replicates = set(range(REPLICATES))
+    incomplete_prefixes = []
+    complete_prefixes = set()
+    for identity, all_rows in prefix_all.items():
+        all_replicates = [int(row["replicate"]) for row in all_rows]
+        if (len(all_replicates) != REPLICATES
+                or set(all_replicates) != expected_replicates
+                or set(values[identity]) != expected_replicates):
+            incomplete_prefixes.append(identity)
+        else:
+            complete_prefixes.add(identity)
+    prefix_leaves = {leaf for leaf, _ in complete_prefixes}
+    incomplete_by_leaf = {leaf for leaf, _ in incomplete_prefixes}
+    coverage = {
+        "intended_leaves": sorted(intended),
+        "intended_leaf_count": len(intended),
+        "corpus_leaves": sorted(corpus_leaves),
+        "baseline32_leaves": sorted(set(baseline) & intended),
+        "teacher_ab_leaves": sorted(set(teachers) & intended),
+        "complete_prefix_leaves": sorted(prefix_leaves & intended),
+        "incomplete_prefix_leaves": sorted(incomplete_by_leaf & intended),
+    }
+    validate_intended_leaf_coverage(
+        role, intended, set(baseline), set(teachers), prefix_leaves,
+        incomplete_by_leaf)
 
     rows = []
     state_names = None
@@ -164,17 +237,69 @@ def load_packet(packet: dict, role: str) -> tuple[list[dict], dict]:
         raise SystemExit(f"{role}: sibling group spans multiple source seeds")
     if not rows:
         raise SystemExit(f"{role}: no usable candidate rows")
-    manifest = json.loads(paths["manifest"].read_text(encoding="utf-8"))
-    return rows, {"role": role, "manifest": manifest, "paths": {k: str(v) for k, v in paths.items()},
+    analyzed_leaves = {row["leaf_snapshot_id"] for row in rows}
+    coverage["analyzed_leaves"] = sorted(analyzed_leaves)
+    coverage["analyzed_leaf_count"] = len(analyzed_leaves)
+    if analyzed_leaves != intended:
+        raise SystemExit(
+            f"{role}: analyzed leaves do not match selected-corpus manifest "
+            f"missing={sorted(intended - analyzed_leaves)[:5]} "
+            f"unexpected={sorted(analyzed_leaves - intended)[:5]}")
+    return rows, {"role": role, "manifest": selected_manifest, "paths": {k: str(v) for k, v in paths.items()},
                   "sha256": {k: sha256(v) for k, v in paths.items()},
-                  "state_feature_names": state_names}
+                  "state_feature_names": state_names, "coverage": coverage}
 
 
-def validate_partition(config: dict, packets: dict[str, dict]) -> dict:
+def load_preregistered_manifest(config: dict) -> tuple[dict, dict]:
+    """Load and hash-bind the committed seed and frozen-scorer contracts."""
+    manifest_value = config.get("source_seed_manifest")
+    expected_manifest_sha = config.get("source_seed_manifest_sha256")
+    if not manifest_value or not expected_manifest_sha:
+        raise SystemExit("config must bind source_seed_manifest and source_seed_manifest_sha256")
+    manifest_path = Path(manifest_value)
+    if not manifest_path.is_absolute():
+        manifest_path = ROOT / manifest_path
+    if not manifest_path.is_file():
+        raise SystemExit(f"missing source seed manifest: {manifest_path}")
+    actual_manifest_sha = sha256(manifest_path)
+    if actual_manifest_sha != expected_manifest_sha:
+        raise SystemExit(
+            f"source seed manifest hash mismatch: {actual_manifest_sha} != {expected_manifest_sha}")
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    frozen_contract = manifest.get("frozen_scorer", {})
+    scorer_path = ROOT / frozen_contract.get("path", "")
+    expected_scorer_sha = frozen_contract.get("sha256")
+    if not expected_scorer_sha or not scorer_path.is_file():
+        raise SystemExit("source seed manifest must bind an existing frozen scorer implementation")
+    actual_scorer_sha = sha256(scorer_path)
+    if actual_scorer_sha != expected_scorer_sha:
+        raise SystemExit(
+            f"frozen scorer hash mismatch: {actual_scorer_sha} != {expected_scorer_sha}")
+    if frozen_contract.get("model") != "MLP_FLAT_V1" or frozen_contract.get("parameter_count") != PARAMETERS:
+        raise SystemExit("source seed manifest frozen scorer contract is invalid")
+    return manifest, {
+        "path": str(manifest_path), "sha256": actual_manifest_sha,
+        "frozen_scorer_path": str(scorer_path), "frozen_scorer_sha256": actual_scorer_sha,
+    }
+
+
+def validate_partition(config: dict, packets: dict[str, dict], seed_manifest: dict) -> dict:
     roles = config["roles"]
+    expected_roles = {
+        "base_training_pool": [str(value) for value in seed_manifest["existing_20"]],
+        "expansion_training_pool": [
+            str(value) for value in seed_manifest["new_expansion_training"]["source_seeds"]],
+        "locked_validation": [
+            str(value) for value in seed_manifest["new_locked_validation"]["source_seeds"]],
+    }
+    if set(roles) != set(expected_roles):
+        raise SystemExit("config roles must exactly match the three preregistered roles")
     role_sources = {}
     for role, spec in roles.items():
-        source_ids = {str(value) for value in spec["source_seeds"]}
+        configured_list = [str(value) for value in spec["source_seeds"]]
+        if role not in expected_roles or configured_list != expected_roles[role]:
+            raise SystemExit(f"{role}: source seeds do not exactly match committed preregistration")
+        source_ids = set(configured_list)
         if len(source_ids) != len(spec["source_seeds"]):
             raise SystemExit(f"{role}: duplicate source seed in role manifest")
         role_sources[role] = source_ids
@@ -195,6 +320,11 @@ def validate_partition(config: dict, packets: dict[str, dict]) -> dict:
         raise SystemExit("expansion_training_pool must contain exactly 40 source seeds")
     if len(role_sources["locked_validation"]) != 40:
         raise SystemExit("locked_validation must contain exactly 40 source seeds")
+    configured_first = [str(value) for value in roles["expansion_training_pool"]["primary_first_20"]]
+    expected_first = [
+        str(value) for value in seed_manifest["new_expansion_training"]["primary_first_20"]]
+    if configured_first != expected_first:
+        raise SystemExit("primary_first_20 does not exactly match committed preregistration")
     return {role: sorted(sources) for role, sources in role_sources.items()}
 
 
@@ -353,6 +483,7 @@ def selected_metrics(selected: list[dict], bootstrap_iterations: int) -> dict:
         "full_prefix_agreement": sum(row["selected_prefix"] == row["oracle_prefix"] for row in selected) / len(selected),
         "prefix_length_agreement": sum(row["selected_length"] == row["oracle_length"] for row in selected) / len(selected),
         "leaves": len(selected), "represented_groups": len({row["group_id"] for row in selected}),
+        "selected_leaf_snapshot_ids": sorted({row["leaf_snapshot_id"] for row in selected}),
         "selected_rows": selected,
     }
 
@@ -371,6 +502,39 @@ def source_contributions(selected: list[dict]) -> list[dict]:
                        "baseline_regret": base, "model_regret": value,
                        "difference": base - value})
     return report
+
+
+def source_concentration(selected: list[dict], contributions: list[dict],
+                         bootstrap_iterations: int) -> dict:
+    """Remove the two largest positive source contributions as a preregistered stress test."""
+    positive = sorted(
+        (row for row in contributions if row["difference"] > 0),
+        key=lambda row: (row["difference"], row["source_seed"]), reverse=True)
+    removed = positive[:2]
+    removed_sources = {row["source_seed"] for row in removed}
+    remaining = [row for row in selected if row["source_seed"] not in removed_sources]
+    remaining_metrics = selected_metrics(remaining, bootstrap_iterations) if remaining else None
+    return {
+        "rule": "remove the two largest positive source contributions; remaining sources must retain positive Teacher-A improvement and clustered support",
+        "removed_sources": [row["source_seed"] for row in removed],
+        "removed_contributions": removed,
+        "remaining_source_count": len({row["source_seed"] for row in remaining}),
+        "remaining_leaf_count": len({row["leaf_snapshot_id"] for row in remaining}),
+        "remaining_teacher_a_regret_reduction": (
+            remaining_metrics["teacher_a_regret_reduction"] if remaining_metrics else None),
+        "remaining_clustered_p025": (
+            remaining_metrics["clustered_bootstrap"]["p025"] if remaining_metrics else None),
+        "passes": concentration_passes(
+            len({row["source_seed"] for row in remaining}),
+            remaining_metrics["teacher_a_regret_reduction"] if remaining_metrics else None,
+            remaining_metrics["clustered_bootstrap"]["p025"] if remaining_metrics else None),
+    }
+
+
+def concentration_passes(source_count: int, regret_reduction: float | None,
+                          clustered_p025: float | None) -> bool:
+    return (source_count >= 30 and regret_reduction is not None and regret_reduction > 0
+            and clustered_p025 is not None and clustered_p025 > 0)
 
 
 def leave_one_source_out(selected: list[dict], bootstrap_iterations: int) -> list[dict]:
@@ -408,12 +572,13 @@ def write_predictions(rows: list[dict], path: Path) -> None:
 
 def run(args: argparse.Namespace) -> int:
     config = json.loads(args.config.read_text(encoding="utf-8"))
+    seed_manifest, manifest_binding = load_preregistered_manifest(config)
     packets = {}
     for role, spec in config["roles"].items():
         rows, metadata = load_packet(spec["packet"], role)
         metadata["rows"] = rows
         packets[role] = metadata
-    partition = validate_partition(config, packets)
+    partition = validate_partition(config, packets, seed_manifest)
 
     base = packets["base_training_pool"]["rows"]
     expansion = packets["expansion_training_pool"]["rows"]
@@ -483,18 +648,23 @@ def run(args: argparse.Namespace) -> int:
                          "length_1_candidates": lengths[1], "length_2_candidates": lengths[2],
                          "total_candidates": len(rows),
                          "candidates_per_leaf": {"mean": statistics.fmean(per_leaf.values()),
-                                                  "median": statistics.median(per_leaf.values()),
-                                                  "p95": float(np.percentile(list(per_leaf.values()), 95))}}
+                          "median": statistics.median(per_leaf.values()),
+                                                  "p95": float(np.percentile(list(per_leaf.values()), 95))},
+                         "coverage": packet["coverage"]}
 
     primary = all_reports["TRAIN60"]
-    locked_leaves = dataset["locked_validation"]["leaves"]
+    locked_intended_leaves = set(dataset["locked_validation"]["coverage"]["intended_leaves"])
+    locked_analyzed_leaves = set(dataset["locked_validation"]["coverage"]["analyzed_leaves"])
+    selected_leaves = set(primary["selected_leaf_snapshot_ids"])
+    concentration = source_concentration(
+        primary["selected_rows"], primary["source_contributions"], args.bootstrap)
     gate = {"recovered_at_least_50_percent": primary["recovered_oracle_fraction"] is not None and primary["recovered_oracle_fraction"] >= 0.50,
             "clustered_p025_positive": primary["clustered_bootstrap"]["p025"] > 0,
             "teacher_b_not_below_negative_5_percent": primary["teacher_b_regret_reduction"] >= -0.05,
-            "full_locked_coverage": primary["leaves"] == locked_leaves,
+            "full_locked_coverage": selected_leaves == locked_intended_leaves == locked_analyzed_leaves,
             "no_severe_catastrophic_tail_defect": not primary["catastrophic_tail"]["severe_obvious_defect"],
-            "performance_not_obviously_driven_by_one_or_two_sources": len(primary["source_contributions"]) >= 3,
-            "source_seed_count_at_least_30": len(locked_sources) >= 30}
+            "performance_not_obviously_driven_by_one_or_two_sources": concentration["passes"],
+            "locked_source_count_exactly_40": len(locked_sources) == 40}
     source_rows = primary["source_contributions"]
     improved = sum(row["difference"] > 0 for row in source_rows)
     worsened = sum(row["difference"] < 0 for row in source_rows)
@@ -524,8 +694,6 @@ def run(args: argparse.Namespace) -> int:
         classification = "FLAT_MLP_SCALE_VALIDATED"
     elif primary["recovered_oracle_fraction"] is not None and primary["recovered_oracle_fraction"] >= 0.25 and primary["clustered_bootstrap"]["p025"] > 0:
         classification = "FLAT_MLP_SCALE_PARTIAL"
-    elif len(locked_sources) < 30:
-        classification = "FLAT_MLP_SCALE_UNDERPOWERED"
     else:
         classification = "FLAT_MLP_GENERALIZATION_FAILED"
 
@@ -541,15 +709,18 @@ def run(args: argparse.Namespace) -> int:
                                        "max_recovered": max(r["recovered_oracle_fraction"] for r in robustness)},
                 "source_seed_robustness": {"improved": improved, "unchanged": len(source_rows) - improved - worsened,
                                            "worsened": worsened, "rows": source_rows,
+                                           "concentration_stress_test": concentration,
                                            "leave_one_source_out": influence,
                                            "largest_positive_influence": influence_by_change[-1] if influence_by_change else None,
                                            "largest_negative_influence": influence_by_change[0] if influence_by_change else None},
-                "training": {"configuration": "MLP_FLAT_V1", "parameter_count": PARAMETERS,
-                              "training_seed": TRAINING_SEED, "bootstrap_iterations": args.bootstrap,
-                              "teacher_fields_in_training": False, "locked_values_used_for_selection": False},
-                "partition": partition, "config_sha256": config_hash,
+        "training": {"configuration": "MLP_FLAT_V1", "parameter_count": PARAMETERS,
+                      "training_seed": TRAINING_SEED, "bootstrap_iterations": args.bootstrap,
+                              "teacher_fields_in_training": False, "locked_values_used_for_selection": False,
+                              "frozen_scorer_sha256": manifest_binding["frozen_scorer_sha256"]},
+                "partition": partition, "source_seed_manifest": manifest_binding,
+                "config_sha256": config_hash,
                 "inputs": {role: packet["sha256"] for role, packet in packets.items()},
-                "decision_rule": "TRAIN60 gate: recovered >= 50%, clustered Teacher-A p025 > 0, Teacher-B reduction >= -5%, full coverage, >=30 locked sources",
+                "decision_rule": "TRAIN60 gate: recovered >= 50%, clustered Teacher-A p025 > 0, Teacher-B reduction >= -5%, exact full coverage, exactly 40 locked sources, and positive clustered Teacher-A support after removing the two largest positive source contributions",
                 "boundary": "offline evidence only; no SimpleAgent integration, rollout-policy change, learned gameplay, hard64 holdout, or architecture tuning"}
     (args.output / "analysis.json").write_text(json.dumps(analysis, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     (args.output / "dataset-summary.json").write_text(json.dumps(dataset, indent=2, sort_keys=True) + "\n", encoding="utf-8")
@@ -562,8 +733,8 @@ def main() -> int:
     parser.add_argument("output", type=Path)
     parser.add_argument("--bootstrap", type=int, default=5000)
     args = parser.parse_args()
-    if args.bootstrap < 1000:
-        parser.error("--bootstrap must be at least 1000")
+    if args.bootstrap < MIN_BOOTSTRAP_ITERATIONS:
+        parser.error(f"--bootstrap must be at least {MIN_BOOTSTRAP_ITERATIONS}")
     return run(args)
 
 

@@ -1,7 +1,9 @@
 # Silver frozen-prefix scorer scale validation
 
 Status: preregistered collection and analysis packet. No locked validation
-result is present in this worktree yet.
+result is present in this worktree yet. The analyzer requires the committed
+`source-seed-manifest.json` and its SHA-256 binding before it will load a
+future collection config.
 
 ## Question and frozen boundary
 
@@ -24,7 +26,7 @@ The preregistered source roles and exact seeds are in
 
 The primary decision is made on TRAIN60 and the locked 40-source validation
 set. Bootstrap resampling is clustered by source seed with at least 5,000
-iterations. The analysis reports the learning curve, exact locked coverage,
+iterations; the CLI rejects smaller values. The analysis reports the learning curve, exact locked coverage,
 candidate and direct-prediction diagnostics, five fixed initialization seeds,
 per-source contributions, leave-one-source-out influence, and catastrophic-tail
 diagnostics.
@@ -52,6 +54,12 @@ The intended sequence for each new 40-source role is:
 6. run `tools/train_silver_prefix_learning_curve.py` only after the source
    artifacts and their hashes are recorded.
 
+The analyzer treats the selected-corpus manifest as authoritative: every
+intended leaf must have exactly 32 accepted baseline replicates, valid Teacher
+A and B rows, and a complete accepted 32-replicate prefix surface. It records
+intended and analyzed leaf IDs separately and aborts before writing analysis
+if any artifact silently drops a leaf.
+
 The large raw JSONL streams stay outside the Git review commit unless they are
 small enough to audit comfortably. The committed packet contains manifests,
 hashes, summaries, and the final analysis output.
@@ -66,19 +74,25 @@ hashes, summaries, and the final analysis output.
 - Teacher-B regret reduction at least -5%;
 - exact full locked-leaf coverage;
 - no severe obvious catastrophic-tail defect; and
-- no obvious concentration in only one or two locked source seeds.
+- no obvious concentration in only one or two locked source seeds. This is
+  tested by removing the two largest positive source contributions and
+  requiring the remaining sources to retain both positive Teacher-A regret
+  reduction and positive source-clustered bootstrap support.
 
-If fewer than 30 usable locked source seeds remain after technical failures,
-the result is `FLAT_MLP_SCALE_UNDERPOWERED`. Otherwise the final
-classification is one of `FLAT_MLP_SCALE_VALIDATED`,
-`FLAT_MLP_SCALE_PARTIAL`, or `FLAT_MLP_GENERALIZATION_FAILED`, according to
-the frozen gate in the analysis driver and the recorded diagnostics.
+The protocol requires all 40 locked source seeds and aborts on technical
+attrition; it does not silently replace or relabel failed sources. Therefore
+`FLAT_MLP_SCALE_UNDERPOWERED` is not emitted by this exact-40 protocol. The
+final classification is one of `FLAT_MLP_SCALE_VALIDATED`,
+`FLAT_MLP_SCALE_PARTIAL`, or `FLAT_MLP_GENERALIZATION_FAILED` only after the
+required 40-source packet exists.
 
 ## Implementation and parity
 
 `tools/train_silver_prefix_learning_curve.py` imports the feature extraction,
 action encoding, normalization, model, and prediction-selection definitions
-from the PR #258 scorer module. It asserts the frozen 75,809 parameter count,
+from the PR #258 scorer module. The committed seed manifest pins that scorer
+file by SHA-256, and analysis fails closed if the implementation hash changes.
+The driver also asserts the frozen 75,809 parameter count,
 fits normalization on training rows only, and never reads locked q32 values
 until after prediction-only selection. The existing
 `tools/learn_silver_prefix_scorer.py` remains the PR #258 parity oracle.

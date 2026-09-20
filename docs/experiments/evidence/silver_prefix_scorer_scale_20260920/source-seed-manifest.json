@@ -1,7 +1,13 @@
 {
-  "schema": "silver_prefix_scorer_scale_source_seed_manifest_v1",
+  "schema": "silver_prefix_scorer_scale_source_seed_manifest_v2",
   "base_git_sha": "cccddd52d04c50772a114006d5863408e9917429",
   "created_before_new_results": true,
+  "frozen_scorer": {
+    "path": "tools/learn_silver_prefix_scorer.py",
+    "sha256": "a2c14b9c6259ce6262e949aa9bf93be729fe74d9411afe05fbc4f65913bdaa9b",
+    "model": "MLP_FLAT_V1",
+    "parameter_count": 75809
+  },
   "existing_20": [
     12100001, 12100003, 12100007, 12100008, 12100009,
     12100012, 12100013, 12100017, 12100018, 12100021,
