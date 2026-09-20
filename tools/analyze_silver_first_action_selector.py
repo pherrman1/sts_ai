@@ -213,6 +213,7 @@ def cross_fitted_oracle(cf: dict, base: list[dict], teacher_values: dict) -> lis
         output.append({"leaf_snapshot_id": leaf, "group_id": first["group_id"],
                        "oracle_value": statistics.fmean(values),
                        "baseline_value": statistics.fmean(base_samples),
+                       "baseline_k1_value": base_by_key[(leaf, 0)]["original_root_corrected_utility"],
                        "teacher_a": teacher_values[leaf]["A"],
                        "teacher_b": teacher_values[leaf].get("B", teacher_values[leaf]["A"]),
                        "selected_actions": selected,
@@ -226,7 +227,7 @@ def report_headroom(args: argparse.Namespace) -> int:
     base = baseline_rows(args.baseline, teacher_values)
     cf = action_rows(args.counterfactual)
     oracle = cross_fitted_oracle(cf, base, teacher_values)
-    baseline = [{**row, "value": row["baseline_value"]} for row in oracle]
+    baseline = [{**row, "value": row["baseline_k1_value"]} for row in oracle]
     oracle_rows = [{**row, "value": row["oracle_value"]} for row in oracle]
     metrics_a = {
         "baseline": sibling_metrics(baseline, "value", "teacher_a"),
@@ -241,7 +242,7 @@ def report_headroom(args: argparse.Namespace) -> int:
         by_group[row["group_id"]][row["leaf_snapshot_id"]] = row
     improvements = []
     for group_id, members in by_group.items():
-        baseline_top = max(members.values(), key=lambda row: row["baseline_value"])
+        baseline_top = max(members.values(), key=lambda row: row["baseline_k1_value"])
         oracle_top = max(members.values(), key=lambda row: row["oracle_value"])
         baseline_regret = baseline_top["teacher_a"] - baseline_top["teacher_value"] if "teacher_value" in baseline_top else None
         # Group regret is the reference top value minus the reference value at
@@ -271,7 +272,7 @@ def report_headroom(args: argparse.Namespace) -> int:
             for row in by_group[group_id].values():
                 copy = dict(row)
                 copy["group_id"] = f"{group_id}#{occurrence}"
-                copy["value"] = copy["baseline_value"]
+                copy["value"] = copy["baseline_k1_value"]
                 sample.append(copy)
         b = sibling_metrics(sample, "value", "teacher_a")["mean_teacher_regret"]
         for occurrence, group_id in enumerate(selected):
