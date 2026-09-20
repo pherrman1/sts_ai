@@ -101,10 +101,12 @@ identity changes.
 ### Start and discover the live control boundary
 
 The canonical local live-test setup is provided by
-`tools/live_game_start.sh`. It validates the installed artifacts and advisor
-configuration, reuses an already-running modded game, otherwise starts
-ModTheSpire in its own background session, waits for MCP port `8080`, and
-prints the driver command. Use:
+`tools/live_game_start.sh`. It first ensures a self-contained user runtime at
+`${STS_LIVE_RUNTIME_DIR:-${XDG_DATA_HOME:-$HOME/.local/share}/sts-ai/live-runtime}`,
+repairs the managed inspector properties without replacing unrelated keys,
+reuses an already-running modded game, or starts ModTheSpire in its own
+background session, waits for MCP port `8080`, and prints the driver command.
+Use:
 
 ```bash
 tools/live_game_start.sh --probe
@@ -113,9 +115,15 @@ tools/live_game_start.sh --probe
 `--probe` performs a read-only driver dry-run after the game reaches a
 command-ready screen. Use `--check` to validate without starting anything and
 `--foreground` when the Codex terminal should retain the ModTheSpire process
-directly. `--allow-missing-advisor` is only for MCP-only control; normal Silver
-testing should keep the advisor check enabled. Background launch output is
-written to `~/.cache/sts-live-driver/modthespire.log`. The installed artifacts
+directly. `--refresh-runtime` builds only `one_combat_advisor`, copies it and
+the tracked CTM/OOC model artifacts into a new release, validates their hashes,
+and atomically changes `current`. A running game is never silently restarted;
+when it is using another release, the helper prints both identities and
+requires the explicit `--restart-game` option. `--deploy-inspector` invokes the
+existing Java build and atomically installs its JAR. `--allow-missing-advisor`
+is only for MCP-only control. Background launch output is written to
+`~/.cache/sts-live-driver/modthespire.log`, and launch identity is recorded in
+`~/.cache/sts-live-driver/active-runtime.json`. The installed game artifacts
 are:
 
 ```text
@@ -124,6 +132,12 @@ ModTheSpire:   /home/philippherrmann/.local/share/Steam/steamapps/workshop/conte
 MCPTheSpire:   <game directory>/mods/MCPTheSpire.jar
 inspector:     <game directory>/mods/sts-model-inspector.jar
 ```
+
+The active-runtime record is written only after port `8080` is verified as
+owned by the exact `java -jar <ModTheSpire.jar>` process. It includes that
+process's PID, Linux start ticks, and command-line hash; stale metadata is not
+reported as the currently running runtime. Explicit `--allow-missing-advisor`
+startup remains MCP-only and neither validates nor records a stable runtime.
 
 Start the modded game with the MCP and inspector mods enabled:
 
@@ -155,20 +169,48 @@ then correlate that observation with `get_screen_state`/`get_game_state`).
 The endpoint and snapshot paths can be overridden with `STS_MCP_URL` and
 `STS_INSPECTOR_PATH` when an isolated game instance is required.
 
-The inspector launches the advisor configured in
-`~/.sts-model-inspector.properties`; keep both paths aligned with the checkout
-being tested. For this repository the relevant entries are:
+The inspector launches the stable advisor configured in
+`~/.sts-model-inspector.properties`. Managed keys point through the stable
+`current` symlink, never into a Codex worktree:
 
 ```properties
-advisor=<repository root>/build/linux-gcc-debug/one_combat_advisor
-ctmModel=<repository root>/selfplay/models/combat_transition_near_full_except_smoke_v2.native
+advisor=<XDG data>/sts-ai/live-runtime/current/one_combat_advisor
+ctmModel=<XDG data>/sts-ai/live-runtime/current/models/combat_transition_near_full_except_smoke_v2.native
+oocModel=<XDG data>/sts-ai/live-runtime/current/models/ooc_strategic_tok_final.native
 ```
 
-If `latest.json` remains `WAITING` after a combat observation, check these
-paths first and restart the game after changing them. A ready response can
+`STS_MODEL_INSPECTOR_ADVISOR`, `STS_CTM_MODEL`, and `STS_LIVE_OOC_MODEL`
+override their corresponding properties when nonempty.
+`STS_MODEL_INSPECTOR_CONFIG` selects a different properties file. These
+environment-first rules provide an isolated development/test escape hatch.
+If `latest.json` remains `WAITING` after a combat observation, run
+`tools/live_game_runtime.py status` and restart the game explicitly after a
+runtime change. A ready response can
 still be `UNSUPPORTED` for an encounter or state outside the maintained live
 capability boundary; that is an advisor result, not an MCP connectivity
 failure.
+
+### Fresh-worktree workflow
+
+An unchanged worktree reuses the installed known-good runtime:
+
+```bash
+python tools/agent/worktree.py preflight .
+python tools/agent/worktree.py check .
+tools/live_game_start.sh --probe
+```
+
+After changing live advisor, bridge, or relevant model code, publish the
+current worktree first:
+
+```bash
+tools/live_game_start.sh --refresh-runtime --probe
+```
+
+No dotfile editing or worktree path is part of either workflow. Codex-exposed
+`slay_the_spire` tools remain useful for interactive control when available,
+but their absence is not a blocker: the repository driver connects directly
+to `http://127.0.0.1:8080/mcp`. GUI/mouse control remains unsupported.
 
 `tools/live_game_driver.py` is the repository-local integration/debug harness
 for advancing a currently running game without a Codex or Luna turn between

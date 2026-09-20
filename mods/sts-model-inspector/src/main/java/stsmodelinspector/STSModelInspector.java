@@ -1887,21 +1887,34 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         private Snapshot pendingObservation;
         private boolean stopping;
 
+        private String environmentFirst(Properties properties, String environmentName, String propertyName) {
+            String value = System.getenv(environmentName);
+            if (value != null && !value.trim().isEmpty()) return value.trim();
+            value = properties.getProperty(propertyName);
+            return value == null || value.trim().isEmpty() ? null : value.trim();
+        }
+
         synchronized void start() {
             try {
                 Properties p = new Properties();
-                Path config = Paths.get(System.getProperty("user.home"), ".sts-model-inspector.properties");
+                String configOverride = System.getenv("STS_MODEL_INSPECTOR_CONFIG");
+                Path config = configOverride == null || configOverride.trim().isEmpty()
+                        ? Paths.get(System.getProperty("user.home"), ".sts-model-inspector.properties")
+                        : Paths.get(configOverride.trim());
                 if (Files.isRegularFile(config)) try (BufferedReader r = Files.newBufferedReader(config)) { p.load(r); }
-                String executable = p.getProperty("advisor", System.getenv("STS_MODEL_INSPECTOR_ADVISOR"));
-                if (executable == null || executable.trim().isEmpty()) {
+                String executable = environmentFirst(p, "STS_MODEL_INSPECTOR_ADVISOR", "advisor");
+                if (executable == null) {
                     advisorStatus = "disconnected";
-                    advisorReason = "set advisor in ~/.sts-model-inspector.properties";
+                    advisorReason = "set STS_MODEL_INSPECTOR_ADVISOR or advisor in the inspector config";
                     return;
                 }
                 ProcessBuilder builder = new ProcessBuilder(executable);
-                String ctmModel = p.getProperty("ctmModel", System.getenv("STS_CTM_MODEL"));
-                if (ctmModel != null && !ctmModel.trim().isEmpty())
+                String ctmModel = environmentFirst(p, "STS_CTM_MODEL", "ctmModel");
+                if (ctmModel != null)
                     builder.environment().put("STS_CTM_MODEL", ctmModel);
+                String oocModel = environmentFirst(p, "STS_LIVE_OOC_MODEL", "oocModel");
+                if (oocModel != null)
+                    builder.environment().put("STS_LIVE_OOC_MODEL", oocModel);
                 Process started = builder.redirectErrorStream(false).start();
                 process = started;
                 stopping = false;
