@@ -10435,8 +10435,9 @@ default or generalization claim is authorized. Evidence:
   materially different from the monotonic headline. Exactly length 2 gives
   only `6.91%` Teacher-A reduction and a `-34.76%` Teacher-B change, with
   clustered Teacher-A CI `[-1.37089, 1.64439]`. Exactly length 3 gives
-  `48.69%` Teacher-A and `21.16%` Teacher-B reduction, but covers 245 leaves
-  and its CI is `[-0.41122, 2.41505]`. In the up-to-depth-2 oracle, selected
+  `48.69%` Teacher-A and `21.16%` Teacher-B reduction, but covers 245 leaves,
+  32 represented groups, and only 31 scorable sibling groups; its CI is
+  `[-0.41122, 2.41505]`. In the up-to-depth-2 oracle, selected
   lengths are 148/99 and 138/109 (length 1/2) across the two cross-fit
   directions; at up-to-depth 3 they are 130/49/68 and 120/45/82 (length
   1/2/3). The large gain is therefore evidence for a variable-length oracle,

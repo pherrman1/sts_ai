@@ -194,7 +194,8 @@ zero absolute difference.
 The exact-length secondary views change the scientific interpretation: exactly
 length 2 gives only `6.91%` Teacher-A reduction and a `-34.76%` Teacher-B
 change, while exactly length 3 gives `48.69%` and `21.16%` respectively on
-245 leaves, with bootstrap intervals crossing zero. Selected-length counts in
+245 leaves represented across 32 groups but only 31 scorable sibling groups,
+with bootstrap intervals crossing zero. Selected-length counts in
 the up-to-depth-2 oracle are 148/99 and 138/109 (length 1/2) across the two
 cross-fit directions; at up-to-depth 3 they are 130/49/68 and 120/45/82
 (length 1/2/3). The large result is therefore evidence for variable-length

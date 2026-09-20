@@ -56,7 +56,8 @@ the same baseline and Teacher-B values are used for every depth.
 | depth 2, up to 2 | 1.51332 | 0.56665 | 62.56% | 1.47290 | 1.04505 | 29.05% | [0.23573, 2.13812] |
 | depth 3, up to 3 | 1.51332 | 0.58686 | 61.22% | 1.47290 | 0.98334 | 33.24% | [0.24809, 2.10558] |
 
-All three views contain 247 leaves and 32 groups. Depth 1 reproduces the
+All three up-to-depth views contain 247 leaves, 32 represented groups, and 32
+scorable sibling groups. Depth 1 reproduces the
 retained PR #254 counterfactual exactly across the full paired reference:
 40,512 of 40,512 `(leaf, replicate, action)` values match, with zero missing
 or unmatched rows and zero absolute utility difference. This is the boundary
@@ -73,10 +74,10 @@ prefixes.
 The preregistered classification uses the monotonic up-to-depth oracle. Exact
 length is a secondary diagnostic and changes the interpretation materially:
 
-| view | leaves / groups | baseline A -> oracle A | A reduction | baseline B -> oracle B | B reduction | clustered 95% CI for baseline minus oracle A regret |
-|---|---:|---:|---:|---:|---:|---:|
-| exactly length 2 | 247 / 32 | 1.51332 -> 1.40874 | 6.91% | 1.47290 -> 1.98487 | -34.76% | [-1.37089, 1.64439] |
-| exactly length 3 | 245 / 32 | 1.60117 -> 0.82149 | 48.69% | 1.54723 -> 1.21988 | 21.16% | [-0.41122, 2.41505] |
+| view | leaves | represented groups | scorable sibling groups | baseline A -> oracle A | A reduction | baseline B -> oracle B | B reduction | clustered 95% CI for baseline minus oracle A regret |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|
+| exactly length 2 | 247 | 32 | 32 | 1.51332 -> 1.40874 | 6.91% | 1.47290 -> 1.98487 | -34.76% | [-1.37089, 1.64439] |
+| exactly length 3 | 245 | 32 | 31 | 1.60117 -> 0.82149 | 48.69% | 1.54723 -> 1.21988 | 21.16% | [-0.41122, 2.41505] |
 
 The large up-to-depth-2 result therefore does not support the simple claim
 that always forcing exactly two controlled actions is better. It is a
@@ -146,8 +147,10 @@ These are oracle examples, not recommended gameplay rules.
 
 The diagnostic source was run from base/main SHA
 `124f99a75d15a74508e58ebdf69b5a0862d8eed9`, the merged PR #254 state. The
-generator and analyzer implementation is frozen at
-`71867f3ddb5a3f29352b213330097d1fb2b10c67`, which contains the generator.
+native generator implementation is frozen at
+`71867f3ddb5a3f29352b213330097d1fb2b10c67`, which contains the generator;
+the analyzer/reporting correction is frozen at
+`57654a14`.
 The generator executable SHA-256 is
 `91d556fadeefc6c4e37e9851877c684ed5cd0b5708be55bb40c87dea0675e307`.
 
@@ -165,7 +168,7 @@ SHA-256:
 ```text
 raw-prefix-rollouts.jsonl.gz  38125aa3bf2ba264e61b5ff723219dc4377d1e97eb70db42fb9d111f1bd38315
 selection-manifest.json       cebad9be4637f0452d78dfffb5279f2a08ab253cf24ac38ba08566aa8c37605f
-analysis.json                 eea388b664f08456ca1e8ec7d3f62463be6cafe5362de6378cdc8e1a889293be
+analysis.json                 37640c6fbe08b7fffa24133d21cdb0a9b379b79aaae59297ba0a1b374ba3da2b
 ```
 
 Frozen input hashes are retained in `analysis.json`; the principal corpus

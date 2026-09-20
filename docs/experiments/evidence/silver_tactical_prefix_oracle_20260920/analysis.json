@@ -852,8 +852,9 @@
         "unchanged": 26,
         "worsened": 2
       },
-      "groups": 32,
       "leaves": 247,
+      "represented_groups": 32,
+      "scorable_sibling_groups": 32,
       "selected_prefix_length_counts": {
         "select_0_15_evaluate_16_31": {
           "1": 247
@@ -1127,8 +1128,9 @@
         "unchanged": 22,
         "worsened": 2
       },
-      "groups": 32,
       "leaves": 247,
+      "represented_groups": 32,
+      "scorable_sibling_groups": 32,
       "selected_prefix_length_counts": {
         "select_0_15_evaluate_16_31": {
           "1": 148,
@@ -1404,8 +1406,9 @@
         "unchanged": 22,
         "worsened": 2
       },
-      "groups": 32,
       "leaves": 247,
+      "represented_groups": 32,
+      "scorable_sibling_groups": 32,
       "selected_prefix_length_counts": {
         "select_0_15_evaluate_16_31": {
           "1": 130,
@@ -1683,8 +1686,9 @@
         "unchanged": 18,
         "worsened": 6
       },
-      "groups": 32,
       "leaves": 247,
+      "represented_groups": 32,
+      "scorable_sibling_groups": 32,
       "selected_prefix_length_counts": {
         "select_0_15_evaluate_16_31": {
           "2": 247
@@ -1958,8 +1962,9 @@
         "unchanged": 16,
         "worsened": 6
       },
-      "groups": 32,
       "leaves": 245,
+      "represented_groups": 32,
+      "scorable_sibling_groups": 31,
       "selected_prefix_length_counts": {
         "select_0_15_evaluate_16_31": {
           "3": 245
