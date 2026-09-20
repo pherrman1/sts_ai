@@ -10317,13 +10317,15 @@ default or generalization claim is authorized. Evidence:
 - **Fresh holdout follow-up:** The frozen `SPOT_WEAKNESS_FIRST_V1` rule was
   evaluated on the separate 64-root `hard64-holdout` cohort, selecting 32
   complete eligible groups / 251 leaves and 112 active leaves. With paired
-  32-replicate baseline/treatment rows and independent A/B 25k teachers, k=32
-  mean teacher regret worsened from `1.1743` to `1.2616` (`-7.43%`), pairwise
-  concordance fell from `0.7049` to `0.6892`, grouped-bootstrap probability of
-  lower treatment regret was `36.76%`, and mean direct rollout cost increased
-  `100.84%` (`106.44` to `213.78` microseconds). Top agreement improved from
-  `0.3438` to `0.4375`, but the primary and runtime gates failed. The result is
-  **`SPOT_WEAKNESS_FIRST_REJECT`** for this exact treatment. The collector's
+  32-replicate baseline/treatment rows and independent A/B 25k teachers, the
+  corrected k=32 teacher regret improved from `1.8767` to `1.2212` (`34.93%`)
+  and the grouped-bootstrap probability of lower treatment regret was
+  `95.37%`. Pairwise concordance still fell from `0.7049` to `0.6892`, while
+  top agreement improved from `0.3438` to `0.4375`. The direct rollout cost
+  gate is unmeasured: baseline canonical `rollout_wall_micros` and treatment
+  `totalWallMicros` include different setup scopes, and the raw treatment
+  stream does not retain a comparable treatment-only timer. The result is
+  **`INCONCLUSIVE` / not promotable** for this exact treatment. The collector's
   completed corpus required baseline-only recovery because `case_id` was
   omitted from its first serializer; the manifest records that the complete
   eligible group count was not serialized. This does not alter the selected

@@ -142,15 +142,17 @@ were excluded from the causal decision. This is a mechanistic finding on a
 targeted frozen subset, not a policy qualification. A fresh matched
 `hard64-holdout` cohort then evaluated the one narrow
 `SPOT_WEAKNESS_FIRST_V1` intervention on 32 complete groups / 251 leaves (112
-active leaves). The exact treatment is **`SPOT_WEAKNESS_FIRST_REJECT`**:
-k=32 mean teacher regret worsened from `1.1743` to `1.2616`, pairwise
-concordance fell from `0.7049` to `0.6892`, the grouped-bootstrap probability
-of lower treatment regret was `36.76%`, and mean direct rollout cost rose
-`100.84%`. Top-leaf agreement improved descriptively, but the primary quality
-and <5% runtime gates failed. This rejects the exact Spot Weakness rule on the
-fresh cohort; it does not erase the earlier targeted first-action finding or
-authorize tuning/broadening it. Do not infer a rollout-policy, model, search
-budget, or default change from either diagnostic. See [ledger §322](../../experiments/ledger-06.md)
+active leaves). The corrected result is **`INCONCLUSIVE` / not promotable**:
+k=32 mean teacher regret improved from `1.8767` to `1.2212` (`34.93%`), and
+the grouped-bootstrap probability of lower treatment regret was `95.37%`, but
+pairwise concordance fell from `0.7049` to `0.6892`. Top-leaf agreement
+improved descriptively. The <5% runtime gate is unmeasured because baseline
+canonical `rollout_wall_micros` and treatment `totalWallMicros` include
+different setup scopes; the raw treatment stream lacks a comparable
+treatment-only timer. This does not validate the exact Spot Weakness rule or
+erase the earlier targeted first-action finding; no tuning or broadening should
+follow from this holdout. Do not infer a rollout-policy, model, search budget,
+or default change from either diagnostic. See [ledger §322](../../experiments/ledger-06.md)
 and the [diagnostic evidence packet](../../experiments/evidence/silver_rollout_variance_20260920/README.md).
 
 ## Silver policy/value Phase-A cost diagnostic

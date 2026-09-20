@@ -50,7 +50,10 @@ def sibling_metrics(rows):
         candidate_top = max(group_rows, key=lambda row: (row["value"], row["leaf_snapshot_id"]))
         teacher_top = max(group_rows, key=lambda row: (row["teacher_a"], row["leaf_snapshot_id"]))
         top_agree += candidate_top["leaf_snapshot_id"] == teacher_top["leaf_snapshot_id"]
-        regrets.append(max(0.0, teacher_top["teacher_a"] - candidate_top["value"]))
+        # Regret is the teacher value lost by selecting the candidate's top leaf,
+        # not the candidate estimate of that leaf. The candidate top leaf is
+        # selected by candidate value; its teacher value is the reference.
+        regrets.append(teacher_top["teacher_a"] - candidate_top["teacher_a"])
         candidate_mean = mean([row["value"] for row in group_rows])
         teacher_mean = mean([row["teacher_a"] for row in group_rows])
         centered.extend((row["value"] - candidate_mean) -
@@ -212,11 +215,13 @@ def production_stats(base_rows, treatment_rows):
     treatment_action = [paired[(row["leaf_snapshot_id"], row["replicate"])] ["treatment_action_count"] for row in base_rows]
     base_turn = [row["turn_delta"] for row in base_rows]
     treatment_turn = [paired[(row["leaf_snapshot_id"], row["replicate"])] ["treatment_turn_delta"] for row in base_rows]
-    return {"baseline_wall_micros": stats(base_wall), "treatment_wall_micros": stats(treatment_wall),
+    return {"baseline_rollout_wall_micros": stats(base_wall),
+            "treatment_total_wall_micros_noncomparable": stats(treatment_wall),
             "baseline_action_count": stats(base_action), "treatment_action_count": stats(treatment_action),
             "baseline_turn_delta": stats(base_turn), "treatment_turn_delta": stats(treatment_turn),
-            "mean_wall_overhead": (mean(treatment_wall) - mean(base_wall)) / mean(base_wall),
-            "paired_rows": len(base_rows)}
+            "mean_wall_overhead": None, "comparable_wall_cost_measured": False,
+            "paired_rows": len(base_rows),
+            "note": "baseline wall_micros is canonical rollout time; treatment total_wall_micros includes setup/materialization and cannot be used for the production cost gate"}
 
 
 def classify(base, treatment, bootstrap, production, group_count):
@@ -233,11 +238,13 @@ def classify(base, treatment, bootstrap, production, group_count):
         "pairwise_no_regression": pair_delta >= 0,
         "top_no_material_regression": top_delta >= -0.05,
         "bootstrap_probability_ge_90pct": bootstrap["probability_treatment_regret_lower"] >= 0.90,
-        "mean_wall_overhead_lt_5pct": overhead < 0.05,
+        "mean_wall_overhead_lt_5pct": None if overhead is None else overhead < 0.05,
     }
-    if all(gates.values()): label = "SPOT_WEAKNESS_FIRST_PROMISING"
-    elif (t_regret > b_regret or pair_delta <= -0.05 or
-          (overhead > 0.05 and not gates["regret_improvement_ge_15pct"])):
+    quality_gates_pass = all(value is True for key, value in gates.items()
+                             if key != "mean_wall_overhead_lt_5pct")
+    if quality_gates_pass and overhead is not None and overhead < 0.05:
+        label = "SPOT_WEAKNESS_FIRST_PROMISING"
+    elif t_regret > b_regret or pair_delta <= -0.05:
         label = "SPOT_WEAKNESS_FIRST_REJECT"
     else:
         label = "INCONCLUSIVE"
@@ -323,10 +330,10 @@ def main():
         "classification": classify(base, treatment_metrics, boot, production,
                                      len({row["group_id"] for row in corpus})),
         "definitions": {
-            "teacher_regret": "within-group teacher-A top value minus candidate value at the candidate top leaf",
+            "teacher_regret": "within-group teacher-A top value minus teacher-A value at the candidate-selected top leaf",
             "bootstrap": "10,000 complete sibling groups resampled with replacement, seed 20260920",
             "top_material_regression": "treatment top-leaf agreement at least 5 percentage points below baseline is material",
-            "runtime": "paired raw rollout wall_micros mean over all 8,032 rows; filesystem/teacher cost excluded",
+            "runtime": "not comparable: baseline stores canonical rollout wall_micros while treatment stores total wall time including setup/materialization",
         },
     }
     args.output.write_text(json.dumps(report, indent=2, sort_keys=True) + "\n")

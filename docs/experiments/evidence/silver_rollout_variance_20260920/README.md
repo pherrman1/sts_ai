@@ -189,10 +189,9 @@ wrong first-action choice accounts for a substantial part of the persistent
 residual. The smallest next intervention to test is a **single narrow
 rollout-policy change affecting first card choice at the rollout leaf**, with
 the existing SimpleAgent continuation unchanged. This task does not implement
-that intervention. It should first be tested on a fresh matched diagnostic
-cohort with A/B-action-stability filtering and the same original-root
-correction. No rollout policy, learned evaluator, prior, PUCT, budget, or
-gameplay default is changed here.
+that intervention. It was subsequently tested on the fresh matched diagnostic
+cohort documented below. No rollout policy, learned evaluator, prior, PUCT,
+budget, or gameplay default is changed here.
 
 ### Follow-up artifact hashes
 
@@ -247,46 +246,53 @@ selection change.
 
 ### Result
 
-The classification is **`SPOT_WEAKNESS_FIRST_REJECT`**. The primary k=32
+The classification is **`INCONCLUSIVE`**. The primary k=32
 metrics are:
 
 | arm | value MAE | value RMSE | mean teacher regret | pairwise concordance | top-leaf agreement | centered MAE | centered RMSE |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
-| baseline | 4.2321 | 5.9279 | 1.1743 | 0.7049 | 0.3438 | 3.5570 | 5.0025 |
-| Spot Weakness first | 4.4318 | 6.2228 | 1.2616 | 0.6892 | 0.4375 | 3.3973 | 4.8073 |
+| baseline | 4.2321 | 5.9279 | 1.8767 | 0.7049 | 0.3438 | 3.5570 | 5.0025 |
+| Spot Weakness first | 4.4318 | 6.2228 | 1.2212 | 0.6892 | 0.4375 | 3.3973 | 4.8073 |
 
-Mean teacher regret therefore worsened by `7.43%`, pairwise concordance fell
-by `0.0157`, and the grouped-bootstrap probability that treatment regret was
-lower was only `36.76%` (10,000 complete-group resamples, seed `20260920`).
-Top-leaf agreement improved descriptively by `0.0938`, and centered errors
-also improved, but those changes do not overcome the primary regret and
-ordering regressions. The A/B teacher noise floor was mean absolute difference
+Using the corrected definition—teacher-A top value minus teacher-A value at
+the candidate-selected top leaf—mean teacher regret improved by `34.93%` and
+the grouped-bootstrap probability that treatment regret was lower was `95.37%`
+(10,000 complete-group resamples, seed `20260920`). Pairwise concordance still
+fell by `0.0157`, from `0.7049` to `0.6892`; top-leaf agreement improved by
+`0.0938`, and centered errors also improved. The quality result is therefore
+mixed and concentrated in a small number of groups rather than a clean
+promotion signal. The A/B teacher noise floor was mean absolute difference
 `1.1835`, RMSE `2.0289`, with A/B sibling pairwise concordance `0.8407`.
 
-The production-cost gate fails decisively: mean direct rollout wall time rose
-from `106.44` to `213.78` microseconds (`+100.84%`), versus the predeclared
-`<5%` limit. The treatment emitted 8,032 accepted rows and applied the
-candidate on 3,584 rows; no inactive identity mismatch occurred. On the
-112-leaf active subset, mean absolute residual changed from `4.1172` to
-`4.5647`, an aggregate absolute-residual change of `-10.87%`.
+The production-cost gate is **unmeasured**, not failed: baseline
+`rollout_wall_micros` is canonical rollout time, while treatment
+`totalWallMicros` includes setup/materialization/searcher construction. The
+raw treatment artifact does not retain a comparable treatment-only
+`rolloutWallMicros`, so the `<5%` gate cannot be evaluated analytically. The
+treatment emitted 8,032 accepted rows and applied the candidate on 3,584 rows;
+no inactive identity mismatch occurred. On the 112-leaf active subset, mean
+absolute residual changed from `4.1172` to `4.5647`, an aggregate
+absolute-residual change of `-10.87%`.
 
 For the secondary production-realistic k=1 slice, mean teacher regret changed
-from `1.9354` to `2.6690`, pairwise concordance from `0.6804` to `0.6765`,
-and top-leaf agreement from `0.2813` to `0.2500`.
+from `2.7121` to `2.4410` (`10.00%` improvement), pairwise concordance from
+`0.6804` to `0.6765`, and top-leaf agreement from `0.2813` to `0.2500`.
 
 ### Interpretation and boundary
 
-This fresh holdout does not support the narrow Spot Weakness first-card rule.
-It is a rejection of this exact diagnostic treatment, not evidence that the
+This fresh holdout is **inconclusive and not promotable** for the narrow Spot
+Weakness first-card rule. The corrected regret result is favorable, but
+pairwise ordering regresses, the gain is concentrated in a few groups, and
+runtime is not measured under a comparable timer. It is not evidence that the
 broader first-action mechanism is absent: the earlier targeted causal result
-and this fresh matched cohort answer different questions. Do not tune the
-rule, broaden it to Reaper or other cards, or reuse this holdout for a second
-Spot Weakness treatment. No rollout policy, learned evaluator, prior, PUCT,
-budget, or gameplay default is changed or promoted.
+and this fresh matched cohort answer different questions. Do not tune or
+broaden the rule on this holdout, or treat it as a validated policy change.
+No rollout policy, learned evaluator, prior, PUCT, budget, or gameplay default
+is changed or promoted.
 
-After the evidence was frozen and independently reviewed, the candidate
-treatment and its collector-only implementation were reverted from the branch.
-The raw corpus, paired rollouts, teacher references, analysis, and provenance
+After the corrected evidence was frozen and reviewed, the candidate treatment
+and its collector-only implementation were reverted from the branch. The raw
+corpus, paired rollouts, teacher references, corrected analysis, and provenance
 documents remain retained for auditability; the analyzer remains as a
 reproduction tool.
 
@@ -298,7 +304,7 @@ raw-baseline-rollouts.jsonl  16fdaa3a1cd73da5a492f0a448728639252f8f342d1c98a4fae
 raw-treatment-rollouts.jsonl ffc41e6fd6d83cee6b4b6cabf87fe549c19f3c7a4f4e043c2fcf656db189cc89
 teachers.jsonl               157addf7dba28d506be7eb44e60661d2e1b8793b0b5a41214bb6861e7fbc17d3
 selection-manifest.json      0a54efe81dcaf96b55b7ef15c293d90f0355ff9df4b861717df4dcd733e29f77
-analysis.json                3aef09148ee524cd847daa5e35740cc3d5f8ddc89d3e613657c5c214f60e56cf
+analysis.json                0bf3f96de90b5a85a77d151a931d4e32449d0c55824afb8ea27bf5164d34a6fa
 diagnostic executable        01c94e29f2757db3132aba4853d209e7c2144d379f642baf4d5ff7ad6539d73f
 teacher executable           0ed26a7fcb0e1ce95ed62b4734be47fa6a3ce923e750fc58ef1116037fc40b89
 ```

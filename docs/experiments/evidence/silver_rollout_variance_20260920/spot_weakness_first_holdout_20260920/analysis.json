@@ -181,8 +181,8 @@
       "centered_mae": 11.95671187114657,
       "centered_rmse": 16.581138955129155,
       "groups": 32,
-      "mean_teacher_regret": 1.9353986900066098,
-      "median_teacher_regret": 0.0,
+      "mean_teacher_regret": 2.7120965572610563,
+      "median_teacher_regret": 0.22904920424620556,
       "pairwise_concordance": 0.6803503010399562,
       "pairwise_pairs": 1827,
       "top_leaf_agreement": 0.28125
@@ -204,8 +204,8 @@
       "centered_mae": 3.5569841530571136,
       "centered_rmse": 5.0024984810437,
       "groups": 32,
-      "mean_teacher_regret": 1.1743299241016272,
-      "median_teacher_regret": 0.0,
+      "mean_teacher_regret": 1.8767270565873844,
+      "median_teacher_regret": 0.15518567253621285,
       "pairwise_concordance": 0.70489443378119,
       "pairwise_pairs": 2084,
       "top_leaf_agreement": 0.34375
@@ -216,24 +216,24 @@
   "baseline_rows": 8032,
   "candidate": "SPOT_WEAKNESS_FIRST_V1",
   "classification": {
-    "classification": "SPOT_WEAKNESS_FIRST_REJECT",
+    "classification": "INCONCLUSIVE",
     "gates": {
-      "bootstrap_probability_ge_90pct": false,
-      "mean_wall_overhead_lt_5pct": false,
+      "bootstrap_probability_ge_90pct": true,
+      "mean_wall_overhead_lt_5pct": null,
       "pairwise_no_regression": false,
-      "regret_improvement_ge_15pct": false,
+      "regret_improvement_ge_15pct": true,
       "top_no_material_regression": true
     },
     "pairwise_delta": -0.015653319468029614,
-    "regret_improvement": -0.07434939116894194,
+    "regret_improvement": 0.3493104105729645,
     "top_agreement_delta": 0.09375,
     "top_material_regression_threshold": -0.05
   },
   "corpus_rows": 251,
   "definitions": {
     "bootstrap": "10,000 complete sibling groups resampled with replacement, seed 20260920",
-    "runtime": "paired raw rollout wall_micros mean over all 8,032 rows; filesystem/teacher cost excluded",
-    "teacher_regret": "within-group teacher-A top value minus candidate value at the candidate top leaf",
+    "runtime": "not comparable: baseline stores canonical rollout wall_micros while treatment stores total wall time including setup/materialization",
+    "teacher_regret": "within-group teacher-A top value minus teacher-A value at the candidate-selected top leaf",
     "top_material_regression": "treatment top-leaf agreement at least 5 percentage points below baseline is material"
   },
   "group_bootstrap": {
@@ -243,8 +243,8 @@
         "p975": 0.021841194957471166
       },
       "regret": {
-        "p025": -0.18011626519602975,
-        "p975": 0.49686260279605343
+        "p025": -1.6858879914677813,
+        "p975": 0.004729604886177574
       },
       "top": {
         "p025": 0.0,
@@ -255,7 +255,7 @@
     "method": "resample complete sibling groups with replacement",
     "probability_pairwise_not_lower": 0.2681,
     "probability_top_agreement_not_materially_lower": 1.0,
-    "probability_treatment_regret_lower": 0.3676,
+    "probability_treatment_regret_lower": 0.9537,
     "replicates": 10000,
     "seed": 20260920
   },
@@ -271,32 +271,34 @@
       "median": 18.0,
       "p95": 45
     },
+    "baseline_rollout_wall_micros": {
+      "mean": 106.44073705179282,
+      "median": 97.0,
+      "p95": 222
+    },
     "baseline_turn_delta": {
       "mean": 3.3443725099601593,
       "median": 3.0,
       "p95": 9
     },
-    "baseline_wall_micros": {
-      "mean": 106.44073705179282,
-      "median": 97.0,
-      "p95": 222
-    },
-    "mean_wall_overhead": 1.0084310798987521,
+    "comparable_wall_cost_measured": false,
+    "mean_wall_overhead": null,
+    "note": "baseline wall_micros is canonical rollout time; treatment total_wall_micros includes setup/materialization and cannot be used for the production cost gate",
     "paired_rows": 8032,
     "treatment_action_count": {
       "mean": 20.07171314741036,
       "median": 18.0,
       "p95": 44
     },
+    "treatment_total_wall_micros_noncomparable": {
+      "mean": 213.77888446215138,
+      "median": 206.0,
+      "p95": 328
+    },
     "treatment_turn_delta": {
       "mean": 3.3159860557768925,
       "median": 3.0,
       "p95": 8
-    },
-    "treatment_wall_micros": {
-      "mean": 213.77888446215138,
-      "median": 206.0,
-      "p95": 328
     }
   },
   "schema": "silver_spot_weakness_first_analysis_v1",
@@ -315,7 +317,7 @@
       "centered_mae": 1.056070763954418,
       "centered_rmse": 1.7072489482146656,
       "groups": 32,
-      "mean_teacher_regret": 0.3040116278149806,
+      "mean_teacher_regret": 0.5583252042483835,
       "median_teacher_regret": 0.0,
       "pairwise_concordance": 0.840661938534279,
       "pairwise_pairs": 2115,
@@ -336,8 +338,8 @@
       "centered_mae": 11.14060209989483,
       "centered_rmse": 15.656835980631332,
       "groups": 32,
-      "mean_teacher_regret": 2.6690424460772384,
-      "median_teacher_regret": 0.0,
+      "mean_teacher_regret": 2.441027949903575,
+      "median_teacher_regret": 0.3314112897828281,
       "pairwise_concordance": 0.6764866339334424,
       "pairwise_pairs": 1833,
       "top_leaf_agreement": 0.25
@@ -359,8 +361,8 @@
       "centered_mae": 3.3973447953575793,
       "centered_rmse": 4.807320323225711,
       "groups": 32,
-      "mean_teacher_regret": 1.261640638990053,
-      "median_teacher_regret": 0.0,
+      "mean_teacher_regret": 1.2211667579174539,
+      "median_teacher_regret": 0.09089478317392974,
       "pairwise_concordance": 0.6892411143131604,
       "pairwise_pairs": 2082,
       "top_leaf_agreement": 0.4375
