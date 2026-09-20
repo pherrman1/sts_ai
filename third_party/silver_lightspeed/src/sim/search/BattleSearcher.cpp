@@ -488,6 +488,83 @@ void search::BattleSearcher::search(int64_t simulations) {
     }
 }
 
+void search::BattleSearcher::recordEdgeActions(const Edge &edge, const BattleContext &bc) {
+    recordAction(edge.action, bc);
+    if (edge.hasContinuation()) {
+        // The continuation is always a CARD_SELECT action in the only macro
+        // mode that can create it.  It is intentionally recorded after the
+        // first primitive, preserving the actual trace order.  RAVE ignores
+        // selection actions, so no temporary state copy is needed here.
+        recordAction(edge.continuation, bc);
+    }
+}
+
+void search::BattleSearcher::executeEdge(BattleContext &bc, const Edge &edge) const {
+    edge.action.execute(bc);
+    if (!edge.hasContinuation()) return;
+    if (bc.inputState != InputState::CARD_SELECT
+            || !edge.continuation.isValidAction(bc)) {
+        throw std::runtime_error("BattleSearcher macro edge lost its expected CARD_SELECT state");
+    }
+    edge.continuation.execute(bc);
+}
+
+bool search::BattleSearcher::resolveForcedSelections(BattleContext &bc) {
+    if (contractMode == silver_bridge::SilverSearchContractMode::CONTROL) return false;
+    bool resolvedAny = false;
+    while (bc.inputState == InputState::CARD_SELECT) {
+        if (!Action::hasEnumeratedCardSelectActions(bc.cardSelectInfo.cardSelectTask)) break;
+        const auto actions = Action::enumerateCardSelectActions(bc);
+        if (actions.size() != 1) break;
+        const auto &action = actions.front();
+        BattleContext next = bc;
+        next.rng = bc.rng;
+        next.inputState = bc.inputState;
+        action.execute(next);
+        // A forced choice may only be folded into its predecessor when the
+        // choice itself is deterministic.  Otherwise leave the screen for
+        // the ordinary chance/search path.
+        if (!(next.rng == bc.rng)) break;
+        recordAction(action, bc);
+        bc = std::move(next);
+        ++stats.forcedSelectionsContracted;
+        resolvedAny = true;
+    }
+    return resolvedAny;
+}
+
+bool search::BattleSearcher::macroFollowUps(const BattleContext &bc, const Action &first,
+                                            std::vector<Action> &followUps,
+                                            CardSelectTask *task) const {
+    if (contractMode != silver_bridge::SilverSearchContractMode::DETERMINISTIC_MACRO
+            || (first.getActionType() != ActionType::CARD
+                && first.getActionType() != ActionType::POTION)) {
+        return false;
+    }
+    BattleContext next = bc;
+    const Random before = next.rng;
+    first.execute(next);
+    if (!(next.rng == before) || next.outcome != Outcome::UNDECIDED
+            || next.inputState != InputState::CARD_SELECT) {
+        return false;
+    }
+    switch (next.cardSelectInfo.cardSelectTask) {
+        case CardSelectTask::ARMAMENTS:
+        case CardSelectTask::EXHAUST_ONE:
+        case CardSelectTask::FORETHOUGHT:
+        case CardSelectTask::WARCRY:
+        case CardSelectTask::HEADBUTT:
+        case CardSelectTask::EXHUME:
+        case CardSelectTask::LIQUID_MEMORIES_POTION:
+            break;
+        default:
+            return false;
+    }
+    followUps = Action::enumerateCardSelectActions(next);
+    if (task != nullptr) *task = next.cardSelectInfo.cardSelectTask;
+    return followUps.size() >= 2;
+}
+
 void search::BattleSearcher::searchForMicros(int64_t maxMicros) {
     g_debug_scum_search = this;
     if (isTerminalState(*root->state)) return;
@@ -517,6 +594,13 @@ void search::BattleSearcher::step() {
     }
     actionStack.clear();
     actionCount = 0;
+
+    // A fresh search may be handed a one-option CARD_SELECT root by an
+    // offline caller.  Resolve it before creating any MCTS decision edges;
+    // replay callers also apply this rule at their public action boundary.
+    if (resolveForcedSelections(*root->state)) {
+        *rootState = *root->state;
+    }
 
     // Cycle guard: is `n` already on the descent path? Linear scan; depth is small in practice.
     auto onPath = [&](Node* n) {
@@ -595,14 +679,14 @@ void search::BattleSearcher::step() {
             // Already expanded: descend (transposition or revisit).
             if (onPath(edge.node)) {
                 // Descending would revisit an on-path node -> cycle. Roll out instead.
-                recordAction(edge.action, *cur->state);
+                recordEdgeActions(edge, *cur->state);
                 BattleContext &rollout = (rolloutScratch = *edge.node->state);
                 const auto evaluation = rolloutToEnd(rollout, actionStack,
                     cur, &edge.action, depth);
                 updateFromPlayout(searchStack, actionStack, rollout, evaluation);
                 return;
             }
-            recordAction(edge.action, *cur->state);
+            recordEdgeActions(edge, *cur->state);
             cur = edge.node;
             searchStack.push_back(cur);
             if (raveEnabled) traceStarts.push_back(actionCount);
@@ -617,8 +701,8 @@ void search::BattleSearcher::step() {
         Random baseGen = preActionRng;
         const auto randomnessBase = static_cast<std::uint64_t>(baseGen.randomLong());
         next.rng = Random(randomnessBase);
-        edge.action.execute(next);
-        recordAction(edge.action, *cur->state);
+        executeEdge(next, edge);
+        recordEdgeActions(edge, *cur->state);
         const bool rngChanged = next.rng.counter != 0;
 
         if (rngChanged) {
@@ -638,6 +722,7 @@ void search::BattleSearcher::step() {
             ++stats.wSampled[chanceCat(edge.action)];
             Edge outcomeEdge;
             outcomeEdge.action = Action{};
+            resolveForcedSelections(next);
             outcomeEdge.node = getOrCreateNode(std::move(next));
             if (!lastNodeWasCreated) ++stats.chanceTranspositions;  // fresh chance node: no siblings yet
             outcomeEdge.rngAdvanceSteps = 0;
@@ -654,6 +739,7 @@ void search::BattleSearcher::step() {
         // into a decision node. Move `next` in: it is consumed only if a new node is created
         // (see getOrCreateNode), so the two reads of `next` below are safe -- each is reached
         // only when the node already existed and `next` was left intact.
+        resolveForcedSelections(next);
         next.rng = preActionRng;
         Node* child = getOrCreateNode(std::move(next));
         if (!lastNodeWasCreated) ++stats.detTranspositions;
@@ -991,6 +1077,7 @@ search::BattleSearcher::Edge* search::BattleSearcher::selectChanceOutcome(search
         BattleContext &out = (widenScratch = *chance.parent->state);
         out.rng = Random(chance.randomnessBase + N);
         chance.stochasticAction.execute(out);
+        resolveForcedSelections(out);
 
         ++stats.chanceOutcomesSampled;
         ++stats.wSampled[wcat];
@@ -1050,11 +1137,44 @@ search::BattleSearcher::Edge* search::BattleSearcher::selectChanceOutcome(search
 void search::BattleSearcher::enumerateActionsForNode(search::BattleSearcher::Node &node,
                                                                const BattleContext &bc) {
     switch (bc.inputState) {
-        case InputState::PLAYER_NORMAL:
-            enumerateCardActions(node, bc);
-            enumeratePotionActions(node, bc);
-            node.edges.push_back({Action(ActionType::END_TURN)});
+        case InputState::PLAYER_NORMAL: {
+            if (contractMode != silver_bridge::SilverSearchContractMode::DETERMINISTIC_MACRO) {
+                enumerateCardActions(node, bc);
+                enumeratePotionActions(node, bc);
+                node.edges.push_back({Action(ActionType::END_TURN)});
+                break;
+            }
+
+            // Build the ordinary primitive surface first, then replace only
+            // the explicitly safe deterministic card/potion edges with one
+            // edge per canonical follow-up selection.
+            Node primitive;
+            enumerateCardActions(primitive, bc);
+            enumeratePotionActions(primitive, bc);
+            primitive.edges.push_back({Action(ActionType::END_TURN)});
+            bool foundEligible = false;
+            for (const auto &edge : primitive.edges) {
+                std::vector<Action> followUps;
+                CardSelectTask macroTask = CardSelectTask::INVALID;
+                if (!macroFollowUps(bc, edge.action, followUps, &macroTask)) {
+                    node.edges.push_back(edge);
+                    continue;
+                }
+                foundEligible = true;
+                stats.macroOptionCountSum += static_cast<std::int64_t>(followUps.size());
+                stats.macroEdgesGenerated += static_cast<std::int64_t>(followUps.size());
+                const auto taskIndex = static_cast<std::size_t>(macroTask);
+                if (taskIndex < stats.macroOptionCountByTask.size())
+                    stats.macroOptionCountByTask[taskIndex] += static_cast<std::int64_t>(followUps.size());
+                for (const auto &followUp : followUps) {
+                    Edge macro = edge;
+                    macro.continuation = followUp;
+                    node.edges.push_back(std::move(macro));
+                }
+            }
+            if (foundEligible) ++stats.macroEligibleDecisionNodes;
             break;
+        }
 
         case InputState::CARD_SELECT:
             enumerateCardSelectActions(node, bc);
@@ -1410,6 +1530,24 @@ search::Action search::BattleSearcher::getBestAction() const {
     }
 
     return root->edges[bestEdgeIdx].action;
+}
+
+std::vector<search::Action> search::BattleSearcher::getBestActionSequence() const {
+    if (root->edges.empty()) {
+        throw std::runtime_error("BattleSearcher::getBestActionSequence() called with no available actions");
+    }
+    int bestEdgeIdx = 0;
+    std::int32_t maxVisits = root->edges[0].visitCount;
+    for (int i = 1; i < static_cast<int>(root->edges.size()); ++i) {
+        if (root->edges[i].visitCount > maxVisits) {
+            maxVisits = root->edges[i].visitCount;
+            bestEdgeIdx = i;
+        }
+    }
+    std::vector<search::Action> result {root->edges[bestEdgeIdx].action};
+    if (root->edges[bestEdgeIdx].hasContinuation())
+        result.push_back(root->edges[bestEdgeIdx].continuation);
+    return result;
 }
 
 // (edge, state-to-describe-the-action-in). Reads stored node state directly -- no replay.

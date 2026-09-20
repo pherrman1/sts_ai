@@ -726,6 +726,113 @@ void singleCardSelectCanonicalization(const sts::BattleContext &original) {
             "select representative must still execute the expected pile transformation");
 }
 
+void contractedSelectionExperimentFixtures(sts::GameContext &gc) {
+    auto headbutt = sameTurnState(gc, sts::MonsterEncounter::TWO_FUNGI_BEASTS,
+                                  100, 3, false, true);
+    headbutt.cards.clear();
+    headbutt.cards.cardsInHand = 1;
+    headbutt.cards.hand[0] = sts::CardInstance(sts::CardId::HEADBUTT);
+    headbutt.cards.hand[0].setUniqueId(701);
+    headbutt.cards.nextUniqueCardId = 702;
+    std::vector<sts::CardInstance> discard = {
+        sts::CardInstance(sts::CardId::STRIKE_RED),
+        sts::CardInstance(sts::CardId::BASH),
+        sts::CardInstance(sts::CardId::STRIKE_RED),
+    };
+    discard[0].setUniqueId(711);
+    discard[1].setUniqueId(712);
+    discard[2].setUniqueId(713);
+    headbutt.cards.discardPile.assignInformationState({}, discard, {}, false);
+    headbutt.inputState = sts::InputState::PLAYER_NORMAL;
+    headbutt.outcome = sts::Outcome::UNDECIDED;
+    headbutt.isBattleOver = false;
+    headbutt.monsters.monsterCount = 2;
+    headbutt.monsters.monstersAlive = 2;
+
+    Search control(headbutt);
+    control.step();
+    Search macro(headbutt);
+    macro.contractMode = silver_bridge::SilverSearchContractMode::DETERMINISTIC_MACRO;
+    macro.step();
+    int macroEdges = 0;
+    for (const auto &edge : macro.getRootEdges()) {
+        if (edge.hasContinuation()) ++macroEdges;
+    }
+    require(macroEdges == 4, "Headbutt macro surface must be two targets by two canonical selections");
+    require(macro.stats.macroEligibleDecisionNodes == 1
+                && macro.stats.macroEdgesGenerated == 4
+                && macro.stats.macroOptionCountSum == 4,
+            "macro telemetry must count the one eligible root and four generated edges");
+    int ordinaryEdges = 0;
+    for (const auto &edge : control.getRootEdges()) if (edge.hasContinuation()) ++ordinaryEdges;
+    require(ordinaryEdges == 0, "control must retain primitive edges without continuations");
+
+    Search selected(headbutt);
+    selected.contractMode = silver_bridge::SilverSearchContractMode::DETERMINISTIC_MACRO;
+    selected.search(32);
+    const auto sequence = selected.getBestActionSequence();
+    require(sequence.size() == 2 && selected.getBestAction() == sequence.front(),
+            "experimental sequence accessor must preserve getBestAction compatibility");
+    const Search::Edge *selectedEdge = nullptr;
+    for (const auto &edge : selected.getRootEdges()) {
+        if (edge.action == sequence[0] && edge.hasContinuation()
+                && edge.continuation == sequence[1]) {
+            selectedEdge = &edge;
+            break;
+        }
+    }
+    require(selectedEdge != nullptr && selectedEdge->node != nullptr && !selectedEdge->node->isRandomNode,
+            "selected macro must point directly to its final deterministic state");
+    auto sequential = headbutt;
+    const auto rngBefore = sequential.rng;
+    for (const auto &action : sequence) {
+        require(action.isValidAction(sequential), "macro primitive must be valid in sequence order");
+        action.execute(sequential);
+    }
+    require(sequential.equalForSearch(*selectedEdge->node->state)
+                && sequential.rng == selectedEdge->node->state->rng
+                && sequential.rng == rngBefore,
+            "macro endpoint must equal ordinary sequential execution including RNG state");
+
+    auto forced = headbutt;
+    forced.inputState = sts::InputState::CARD_SELECT;
+    forced.cardSelectInfo.cardSelectTask = sts::CardSelectTask::HEADBUTT;
+    forced.cards.discardPile.assignInformationState({}, {discard.front()}, {}, false);
+    Search forcedSearch(forced);
+    forcedSearch.contractMode = silver_bridge::SilverSearchContractMode::FORCED_SELECTION;
+    forcedSearch.search(1);
+    require(forcedSearch.stats.forcedSelectionsContracted == 1
+                && forcedSearch.root->state->inputState == sts::InputState::PLAYER_NORMAL,
+            "arm A must auto-resolve a one-option CARD_SELECT without a selection search");
+
+    require(!sts::search::Action::hasEnumeratedCardSelectActions(sts::CardSelectTask::HOLOGRAM),
+            "Hologram must not claim a deterministic enumerator it does not implement");
+    auto hologram = headbutt;
+    hologram.inputState = sts::InputState::CARD_SELECT;
+    // Hologram is deliberately absent from the seven-task allowlist.  Use a
+    // supported non-allowlisted selector here so the fallback path can be
+    // exercised without invoking the simulator's intentionally unimplemented
+    // Hologram execution action.
+    hologram.cardSelectInfo.cardSelectTask = sts::CardSelectTask::DUAL_WIELD;
+    hologram.cards.cardsInHand = 2;
+    hologram.cards.hand[0] = sts::CardInstance(sts::CardId::STRIKE_RED);
+    hologram.cards.hand[1] = sts::CardInstance(sts::CardId::BASH);
+    Search hologramSearch(hologram);
+    hologramSearch.contractMode = silver_bridge::SilverSearchContractMode::DETERMINISTIC_MACRO;
+    hologramSearch.step();
+    for (const auto &edge : hologramSearch.getRootEdges())
+        require(!edge.hasContinuation(), "unsupported selectors including Hologram must remain uncontracted");
+
+    auto stochastic = headbutt;
+    stochastic.cards.hand[0] = sts::CardInstance(sts::CardId::DISCOVERY);
+    stochastic.cards.hand[0].setUniqueId(731);
+    Search stochasticSearch(stochastic);
+    stochasticSearch.contractMode = silver_bridge::SilverSearchContractMode::DETERMINISTIC_MACRO;
+    stochasticSearch.step();
+    for (const auto &edge : stochasticSearch.getRootEdges())
+        require(!edge.hasContinuation(), "RNG-consuming CARD_SELECT parents must not form macros");
+}
+
 std::set<std::vector<int>> semanticGambleSurface(const sts::BattleContext &bc, bool canonical) {
     std::vector<int> classIds(bc.cards.cardsInHand, -1);
     std::vector<const sts::CardInstance *> classRepresentatives;
@@ -1482,6 +1589,7 @@ int main(int argc, char **argv) {
         cardActionCanonicalization(bc);
         uidFragmentationDiagnostic(bc);
         singleCardSelectCanonicalization(bc);
+        contractedSelectionExperimentFixtures(gc);
         gambleMultiplicityCanonicalization(bc);
         potionActionCanonicalization(gc, bc);
         sameTurnDominanceAuditFixtures(gc);
