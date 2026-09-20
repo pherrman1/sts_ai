@@ -62,7 +62,7 @@ namespace sts {
         static Action VampireAttack(int damage); // only used by shelled parasite
 
         static Action PlayerLoseHp(int hp, bool selfDamage=false);
-        static Action HealPlayer(int amount);
+        static Action HealPlayer(int amount, bool executeAfterCombatVictory=false);
 
         static Action MonsterGainBlock(int idx, int amount);
         static Action RollMove(int monsterIdx);

@@ -20,10 +20,13 @@ namespace sts {
     struct Action {
         ActionFunction actFunc;
         bool clearOnCombatVictory = true;
+        bool executeAfterCombatVictory = false;
 
         Action() = default;
         Action(ActionFunction a) : actFunc(std::move(a)) {}
         Action(ActionFunction a, bool b) : actFunc(std::move(a)), clearOnCombatVictory(b) {}
+        Action(ActionFunction a, bool b, bool c)
+            : actFunc(std::move(a)), clearOnCombatVictory(b), executeAfterCombatVictory(c) {}
     };
 
 
@@ -35,11 +38,14 @@ namespace sts {
         int back = 0;
         int size = 0;
         std::bitset<capacity> bits; // for the shouldClear field
+        std::bitset<capacity> postVictoryBits;
 
 #ifdef sts_action_queue_use_raw_array
         ActionFunction arr[capacity];
         ActionQueue() = default;
-        ActionQueue(const ActionQueue &rhs) : size(rhs.size), back(rhs.back), front(rhs.front), bits(rhs.bits) {
+        ActionQueue(const ActionQueue &rhs)
+            : size(rhs.size), back(rhs.back), front(rhs.front), bits(rhs.bits),
+              postVictoryBits(rhs.postVictoryBits) {
             int cur = rhs.front;
             for (int i = 0; i < rhs.size; ++i) {
                 if (cur >= capacity) {
@@ -56,6 +62,8 @@ namespace sts {
         void pushFront(Action a);
         void pushBack(Action a);
         bool isEmpty();
+        bool hasPostVictoryAction() const;
+        ActionFunction popPostVictoryAction();
         ActionFunction popFront();
         [[nodiscard]] int getCapacity() const;
     };
@@ -65,6 +73,8 @@ namespace sts {
         size = 0;
         back = 0;
         front = 0;
+        bits.reset();
+        postVictoryBits.reset();
     }
 
     template <int capacity>
@@ -78,6 +88,7 @@ namespace sts {
             front = capacity-1;
         }
         bits.set(front, a.clearOnCombatVictory);
+        postVictoryBits.set(front, a.executeAfterCombatVictory);
         arr[front] = std::move(a.actFunc);
     }
 
@@ -92,6 +103,7 @@ namespace sts {
             back = 0;
         }
         bits.set(back, a.clearOnCombatVictory);
+        postVictoryBits.set(back, a.executeAfterCombatVictory);
         arr[back] = std::move(a.actFunc);
         ++back;
         ++size;
@@ -100,6 +112,38 @@ namespace sts {
     template<int capacity>
     bool ActionQueue<capacity>::isEmpty() {
         return size == 0;
+    }
+
+    template<int capacity>
+    bool ActionQueue<capacity>::hasPostVictoryAction() const {
+        int cur = front;
+        for (int i = 0; i < size; ++i) {
+            if (cur >= capacity) {
+                cur = 0;
+            }
+            if (postVictoryBits[cur]) {
+                return true;
+            }
+            ++cur;
+        }
+        return false;
+    }
+
+    template<int capacity>
+    ActionFunction ActionQueue<capacity>::popPostVictoryAction() {
+        int cur = front;
+        for (int i = 0; i < size; ++i) {
+            if (cur >= capacity) {
+                cur = 0;
+            }
+            if (postVictoryBits[cur]) {
+                ActionFunction a = arr[cur];
+                clear();
+                return a;
+            }
+            ++cur;
+        }
+        return {};
     }
 
     template<int capacity>

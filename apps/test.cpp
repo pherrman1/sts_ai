@@ -659,6 +659,22 @@ int testSimulatorCorrectnessPr9To19() {
         }
     }
 
+    // #17c: a lethal Fire Potion still completes the Toy trigger after the
+    // potion effect wins the fight.
+    {
+        auto bc = simulatorCorrectnessBattle({RelicId::TOY_ORNITHOPTER});
+        bc.player.maxHp = 80;
+        bc.player.curHp = 70;
+        bc.monsters.arr[0].curHp = 1;
+        bc.potions[0] = Potion::FIRE_POTION;
+        bc.potionCount = 1;
+        search::Action(search::ActionType::POTION, 0, 0).execute(bc);
+        if (bc.outcome != Outcome::PLAYER_VICTORY || bc.player.curHp != 75 ||
+                !bc.actionQueue.isEmpty()) {
+            return fail("#17c lethal Fire Potion abandoned Toy Ornithopter heal");
+        }
+    }
+
     // #18: direct positive HP loss consumes Buffer before Tungsten Rod.
     {
         auto bc = simulatorCorrectnessBattle({RelicId::FOSSILIZED_HELIX, RelicId::TUNGSTEN_ROD});

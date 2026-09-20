@@ -732,6 +732,7 @@ void BattleContext::clearPostCombatActions() {
 
             actionQueue.arr[placeIdx] = actionQueue.arr[curIdx];
             actionQueue.bits[placeIdx] = actionQueue.bits[curIdx];
+            actionQueue.postVictoryBits[placeIdx] = actionQueue.postVictoryBits[curIdx];
             ++placeIdx;
         }
         ++curIdx;
@@ -792,6 +793,10 @@ void BattleContext::executeActions() {
         // the killing blow ends the fight immediately, so queued retaliation
         // actions such as Thorns/Spikes must never execute after victory).
         if (outcome != Outcome::UNDECIDED) {
+            if (outcome == Outcome::PLAYER_VICTORY && actionQueue.hasPostVictoryAction()) {
+                auto a = std::move(actionQueue.popPostVictoryAction());
+                a(*this);
+            }
             break;
         }
 
@@ -2508,7 +2513,9 @@ void BattleContext::drinkPotion(int idx, int target) {
     // Potion effects resolve before Toy Ornithopter's heal.  This ordering is
     // observable when the heal crosses the Red Skull threshold.
     if (player.hasRelic<R::TOY_ORNITHOPTER>()) {
-        addToBot(Actions::HealPlayer(5));
+        // This remains after every potion effect.  The explicit post-victory
+        // marker lets only this trigger survive a lethal potion effect.
+        addToBot(Actions::HealPlayer(5, true));
     }
 
 }
