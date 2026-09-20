@@ -1,0 +1,1992 @@
+{
+  "classification": "SHORT_PREFIX_HEADROOM_PRESENT",
+  "coverage": {
+    "candidate_totals_by_depth": {
+      "1": 1266,
+      "2": 6194,
+      "3": 21558
+    },
+    "complete_selection_evaluation_leaves": {
+      "1": 247,
+      "2": 247,
+      "3": 247
+    },
+    "manifest_accepted_rows": 689856,
+    "manifest_raw_rows": 689856,
+    "note": "all baseline leaves have complete up-to-depth selection/evaluation coverage"
+  },
+  "decision_note": "No production policy, Silver search path, gameplay seed, or hard64 holdout was used.",
+  "depth_1_reproduction": {
+    "exact_matches": 1266,
+    "generated_rows": 1266,
+    "matched_rows": 1266,
+    "max_absolute_utility_difference": 0.0,
+    "mean_absolute_utility_difference": 0.0,
+    "missing_reference_rows": 0,
+    "performed": true,
+    "reference_rows": 40512
+  },
+  "examples": {
+    "1": [
+      {
+        "baseline_predicted_value": 83.05625,
+        "baseline_rollout_prefix": [
+          "{ use card (0) (Double Tap,26,1,1) }"
+        ],
+        "best_prefixes": [
+          [
+            "{ use card (4) (Blood for Blood,20,0,0) -> (0) Nemesis }"
+          ],
+          [
+            "{ use card (4) (Blood for Blood,20,0,0) -> (0) Nemesis }"
+          ]
+        ],
+        "group_id": "88c7c1af25d91065",
+        "leaf_snapshot_id": "7a97662f7a0aadbeed6675a1e918eb7a",
+        "oracle_predicted_value": 83.05625,
+        "teacher_a_value": 134.76541025119747
+      },
+      {
+        "baseline_predicted_value": 80.728125,
+        "baseline_rollout_prefix": [
+          "{ use card (0) (Double Tap,26,1,1) }"
+        ],
+        "best_prefixes": [
+          [
+            "{ use card (1) (Strike,0,1,1) -> (0) Nemesis }"
+          ],
+          [
+            "{ use card (1) (Strike,0,1,1) -> (0) Nemesis }"
+          ]
+        ],
+        "group_id": "88c7c1af25d91065",
+        "leaf_snapshot_id": "bc908fc84bce883ec3dc8590c8a9b90a",
+        "oracle_predicted_value": 80.728125,
+        "teacher_a_value": 123.79518938175062
+      },
+      {
+        "baseline_predicted_value": 80.94062500000001,
+        "baseline_rollout_prefix": [
+          "{ use card (0) (Double Tap,26,1,1) }"
+        ],
+        "best_prefixes": [
+          [
+            "{ use card (1) (Strike,0,1,1) -> (0) Nemesis }"
+          ],
+          [
+            "{ use card (1) (Strike,0,1,1) -> (0) Nemesis }"
+          ]
+        ],
+        "group_id": "88c7c1af25d91065",
+        "leaf_snapshot_id": "8741adb454f31aaaf63a17e1f461e23e",
+        "oracle_predicted_value": 80.94062500000001,
+        "teacher_a_value": 123.84944798551234
+      },
+      {
+        "baseline_predicted_value": 94.91656250000001,
+        "baseline_rollout_prefix": [
+          "{ use card (6) (Magnetism,39,2,0) }"
+        ],
+        "best_prefixes": [
+          [
+            "{ use card (6) (Blind,38,0,0) -> (0) Nemesis }"
+          ],
+          [
+            "{ use card (0) (Double Tap,26,1,1) }"
+          ]
+        ],
+        "group_id": "88c7c1af25d91065",
+        "leaf_snapshot_id": "b234ac79597c783983341b6efc092fa5",
+        "oracle_predicted_value": 94.91656250000001,
+        "teacher_a_value": 123.40395343181379
+      },
+      {
+        "baseline_predicted_value": 44.32780427631579,
+        "baseline_rollout_prefix": [
+          "{ use card (2) (Immolate+,29,2,2) }"
+        ],
+        "best_prefixes": [
+          [
+            "{ use card (0) (Flame Barrier,31,2,2) }"
+          ],
+          [
+            "{ use card (3) (Immolate+,29,2,2) }"
+          ]
+        ],
+        "group_id": "e2ab6a6437060dc5",
+        "leaf_snapshot_id": "41567cb5cba3f9060340fc6000da5a4a",
+        "oracle_predicted_value": 38.689128289473686,
+        "teacher_a_value": 57.54579953535638
+      },
+      {
+        "baseline_predicted_value": 36.44708333333333,
+        "baseline_rollout_prefix": [
+          "{ use card (1) (Thunderclap,12,1,1) }"
+        ],
+        "best_prefixes": [
+          [
+            "{ use card (0) (Spot Weakness+,8,1,1) -> (2) BronzeOrb }"
+          ],
+          [
+            "{ use card (1) (Thunderclap,12,1,1) }"
+          ]
+        ],
+        "group_id": "137c7885d87cacb7",
+        "leaf_snapshot_id": "d6aa5b7faf18bacd5444edf0a06f30b1",
+        "oracle_predicted_value": 34.458749999999995,
+        "teacher_a_value": 51.49898568390576
+      },
+      {
+        "baseline_predicted_value": 65.4771875,
+        "baseline_rollout_prefix": [
+          "{ use card (1) (Combust,13,1,1) }"
+        ],
+        "best_prefixes": [
+          [
+            "{ use card (3) (Clothesline,10,2,2) -> (1) BronzeAutomaton }"
+          ],
+          [
+            "{ use card (1) (Combust,13,1,1) }"
+          ]
+        ],
+        "group_id": "137c7885d87cacb7",
+        "leaf_snapshot_id": "069a41c2e31e021f2bbf66032fa78d6b",
+        "oracle_predicted_value": 62.56854166666667,
+        "teacher_a_value": 78.18138326286471
+      },
+      {
+        "baseline_predicted_value": 36.329803240740745,
+        "baseline_rollout_prefix": [
+          "{ use card (1) (Thunderclap,9,1,1) }"
+        ],
+        "best_prefixes": [
+          [
+            "{ use card (3) (Twin Strike,25,1,1) -> (1) Cultist }"
+          ],
+          [
+            "{ use card (3) (Twin Strike,25,1,1) -> (1) Cultist }"
+          ]
+        ],
+        "group_id": "c20a2b9c8ce98855",
+        "leaf_snapshot_id": "d9dabfaa1c492d0d6b2f57a591a4ed61",
+        "oracle_predicted_value": 36.329803240740745,
+        "teacher_a_value": 49.80143681854845
+      }
+    ],
+    "2": [
+      {
+        "baseline_predicted_value": 80.728125,
+        "baseline_rollout_prefix": [
+          "{ use card (0) (Double Tap,26,1,1) }"
+        ],
+        "best_prefixes": [
+          [
+            "{ use card (1) (Strike,0,1,1) -> (0) Nemesis }"
+          ],
+          [
+            "{ use card (1) (Strike,0,1,1) -> (0) Nemesis }",
+            "{ use card (1) (Bash+,7,2,2) -> (0) Nemesis }"
+          ]
+        ],
+        "group_id": "88c7c1af25d91065",
+        "leaf_snapshot_id": "bc908fc84bce883ec3dc8590c8a9b90a",
+        "oracle_predicted_value": 80.728125,
+        "teacher_a_value": 123.79518938175062
+      },
+      {
+        "baseline_predicted_value": 80.94062500000001,
+        "baseline_rollout_prefix": [
+          "{ use card (0) (Double Tap,26,1,1) }"
+        ],
+        "best_prefixes": [
+          [
+            "{ use card (0) (Double Tap,26,1,1) }",
+            "{ use card (2) (Sever Soul,27,2,2) -> (0) Nemesis }"
+          ],
+          [
+            "{ use card (0) (Double Tap,26,1,1) }",
+            "{ use card (2) (Sever Soul,27,2,2) -> (0) Nemesis }"
+          ]
+        ],
+        "group_id": "88c7c1af25d91065",
+        "leaf_snapshot_id": "8741adb454f31aaaf63a17e1f461e23e",
+        "oracle_predicted_value": 82.10625,
+        "teacher_a_value": 123.84944798551234
+      },
+      {
+        "baseline_predicted_value": 94.91656250000001,
+        "baseline_rollout_prefix": [
+          "{ use card (6) (Magnetism,39,2,0) }"
+        ],
+        "best_prefixes": [
+          [
+            "{ use card (6) (Blind,38,0,0) -> (0) Nemesis }",
+            "{ use card (3) (Sever Soul,27,2,2) -> (0) Nemesis }"
+          ],
+          [
+            "{ use card (1) (Strike,0,1,1) -> (0) Nemesis }",
+            "{ use card (0) (Double Tap,26,1,1) }"
+          ]
+        ],
+        "group_id": "88c7c1af25d91065",
+        "leaf_snapshot_id": "b234ac79597c783983341b6efc092fa5",
+        "oracle_predicted_value": 96.65625,
+        "teacher_a_value": 123.40395343181379
+      },
+      {
+        "baseline_predicted_value": 59.6965625,
+        "baseline_rollout_prefix": [
+          "{ use card (2) (Strike,0,1,1) -> (1) BronzeAutomaton }"
+        ],
+        "best_prefixes": [
+          [
+            "{ use card (1) (Reckless Charge,25,0,0) -> (1) BronzeAutomaton }",
+            "{ use card (0) (Dramatic Entrance,14,0,0) }"
+          ],
+          [
+            "{ use card (3) (Strike,0,1,1) -> (1) BronzeAutomaton }",
+            "{ end turn }"
+          ]
+        ],
+        "group_id": "1194824b92a5b6f5",
+        "leaf_snapshot_id": "a7d591d4ef9a675b1c2fffaef701ee87",
+        "oracle_predicted_value": 47.625,
+        "teacher_a_value": 65.17687545543896
+      },
+      {
+        "baseline_predicted_value": 87.1771875,
+        "baseline_rollout_prefix": [
+          "{ use card (3) (Havoc,35,1,0) }"
+        ],
+        "best_prefixes": [
+          [
+            "{ use card (1) (Strike,0,1,1) -> (0) Nemesis }",
+            "{ use card (0) (Double Tap,26,1,1) }"
+          ],
+          [
+            "{ use card (0) (Double Tap,26,1,1) }",
+            "{ use card (1) (Bash+,7,2,2) -> (0) Nemesis }"
+          ]
+        ],
+        "group_id": "88c7c1af25d91065",
+        "leaf_snapshot_id": "2f2059013229dd2d1b8c122bbd434d41",
+        "oracle_predicted_value": 83.19906250000001,
+        "teacher_a_value": 99.70618698289393
+      },
+      {
+        "baseline_predicted_value": 58.141062500000004,
+        "baseline_rollout_prefix": [
+          "{ use card (1) (Metallicize+,34,1,1) }"
+        ],
+        "best_prefixes": [
+          [
+            "{ use card (2) (Cleave,27,1,1) }",
+            "{ use card (2) (Twin Strike,8,1,1) -> (1) Donu }"
+          ],
+          [
+            "{ use card (1) (Metallicize+,34,1,1) }",
+            "{ end turn }"
+          ]
+        ],
+        "group_id": "a4247c55175c1388",
+        "leaf_snapshot_id": "a10bf55e87c46c70e6b0ce3dc7356524",
+        "oracle_predicted_value": 44.72825,
+        "teacher_a_value": 58.35035188494809
+      },
+      {
+        "baseline_predicted_value": 39.59591282894737,
+        "baseline_rollout_prefix": [
+          "{ use card (0) (Twin Strike+,38,1,1) -> (0) TimeEater }"
+        ],
+        "best_prefixes": [
+          [
+            "{ end turn }"
+          ],
+          [
+            "{ end turn }",
+            "{ end turn }"
+          ]
+        ],
+        "group_id": "e2ab6a6437060dc5",
+        "leaf_snapshot_id": "94d95b7a62a9d1aeb4f5584145656e0a",
+        "oracle_predicted_value": 33.988371710526316,
+        "teacher_a_value": 47.56754847781165
+      },
+      {
+        "baseline_predicted_value": 36.329803240740745,
+        "baseline_rollout_prefix": [
+          "{ use card (1) (Thunderclap,9,1,1) }"
+        ],
+        "best_prefixes": [
+          [
+            "{ use card (3) (Twin Strike,25,1,1) -> (1) Cultist }"
+          ],
+          [
+            "{ use card (3) (Twin Strike,25,1,1) -> (1) Cultist }"
+          ]
+        ],
+        "group_id": "c20a2b9c8ce98855",
+        "leaf_snapshot_id": "d9dabfaa1c492d0d6b2f57a591a4ed61",
+        "oracle_predicted_value": 36.329803240740745,
+        "teacher_a_value": 49.80143681854845
+      }
+    ],
+    "3": [
+      {
+        "baseline_predicted_value": 80.728125,
+        "baseline_rollout_prefix": [
+          "{ use card (0) (Double Tap,26,1,1) }"
+        ],
+        "best_prefixes": [
+          [
+            "{ use card (1) (Strike,0,1,1) -> (0) Nemesis }"
+          ],
+          [
+            "{ use card (1) (Strike,0,1,1) -> (0) Nemesis }",
+            "{ use card (1) (Bash+,7,2,2) -> (0) Nemesis }"
+          ]
+        ],
+        "group_id": "88c7c1af25d91065",
+        "leaf_snapshot_id": "bc908fc84bce883ec3dc8590c8a9b90a",
+        "oracle_predicted_value": 80.728125,
+        "teacher_a_value": 123.79518938175062
+      },
+      {
+        "baseline_predicted_value": 80.94062500000001,
+        "baseline_rollout_prefix": [
+          "{ use card (0) (Double Tap,26,1,1) }"
+        ],
+        "best_prefixes": [
+          [
+            "{ use card (1) (Strike,0,1,1) -> (0) Nemesis }",
+            "{ use card (0) (Double Tap,26,1,1) }",
+            "{ use card (1) (Sever Soul,27,2,2) -> (0) Nemesis }"
+          ],
+          [
+            "{ use card (1) (Strike,0,1,1) -> (0) Nemesis }",
+            "{ use card (0) (Double Tap,26,1,1) }",
+            "{ use card (1) (Sever Soul,27,2,2) -> (0) Nemesis }"
+          ]
+        ],
+        "group_id": "88c7c1af25d91065",
+        "leaf_snapshot_id": "8741adb454f31aaaf63a17e1f461e23e",
+        "oracle_predicted_value": 82.10625,
+        "teacher_a_value": 123.84944798551234
+      },
+      {
+        "baseline_predicted_value": 94.91656250000001,
+        "baseline_rollout_prefix": [
+          "{ use card (6) (Magnetism,39,2,0) }"
+        ],
+        "best_prefixes": [
+          [
+            "{ use card (6) (Blind,38,0,0) -> (0) Nemesis }",
+            "{ use card (1) (Strike,0,1,1) -> (0) Nemesis }",
+            "{ use card (2) (Sever Soul,27,2,2) -> (0) Nemesis }"
+          ],
+          [
+            "{ use card (0) (Double Tap,26,1,1) }",
+            "{ use card (3) (Forethought,36,0,0) }",
+            "{ use card (2) (Mind Blast,37,2,0) -> (0) Nemesis }"
+          ]
+        ],
+        "group_id": "88c7c1af25d91065",
+        "leaf_snapshot_id": "b234ac79597c783983341b6efc092fa5",
+        "oracle_predicted_value": 96.203125,
+        "teacher_a_value": 123.40395343181379
+      },
+      {
+        "baseline_predicted_value": 63.494375000000005,
+        "baseline_rollout_prefix": [
+          "{ use card (2) (Strike,0,1,1) -> (1) BronzeAutomaton }"
+        ],
+        "best_prefixes": [
+          [
+            "{ use card (1) (Reckless Charge,25,0,0) -> (1) BronzeAutomaton }",
+            "{ use card (0) (Dramatic Entrance,14,0,0) }",
+            "{ end turn }"
+          ],
+          [
+            "{ use card (5) (Sword Boomerang,28,1,0) }",
+            "{ use card (3) (Strike,0,1,1) -> (1) BronzeAutomaton }",
+            "{ use card (1) (Reckless Charge,25,0,0) -> (1) BronzeAutomaton }"
+          ]
+        ],
+        "group_id": "1194824b92a5b6f5",
+        "leaf_snapshot_id": "1a776a0722ae58f55cd479dd61002f41",
+        "oracle_predicted_value": 49.13885416666667,
+        "teacher_a_value": 64.67229341784943
+      },
+      {
+        "baseline_predicted_value": 87.1771875,
+        "baseline_rollout_prefix": [
+          "{ use card (3) (Havoc,35,1,0) }"
+        ],
+        "best_prefixes": [
+          [
+            "{ use card (1) (Strike,0,1,1) -> (0) Nemesis }",
+            "{ use card (0) (Double Tap,26,1,1) }"
+          ],
+          [
+            "{ use card (1) (Strike,0,1,1) -> (0) Nemesis }",
+            "{ use card (0) (Double Tap,26,1,1) }",
+            "{ use card (0) (Bash+,7,2,2) -> (0) Nemesis }"
+          ]
+        ],
+        "group_id": "88c7c1af25d91065",
+        "leaf_snapshot_id": "2f2059013229dd2d1b8c122bbd434d41",
+        "oracle_predicted_value": 84.181875,
+        "teacher_a_value": 99.70618698289393
+      },
+      {
+        "baseline_predicted_value": 38.369067982456144,
+        "baseline_rollout_prefix": [
+          "{ use card (1) (Offering,17,0,0) }"
+        ],
+        "best_prefixes": [
+          [
+            "{ use card (3) (Strike,1,1,1) -> (0) TimeEater }",
+            "{ use card (0) (Perfected Strike+,25,2,2) -> (0) TimeEater }",
+            "{ end turn }"
+          ],
+          [
+            "{ use card (0) (Perfected Strike+,25,2,2) -> (0) TimeEater }",
+            "{ use card (1) (Offering,17,0,0) }",
+            "{ end turn }"
+          ]
+        ],
+        "group_id": "e2ab6a6437060dc5",
+        "leaf_snapshot_id": "89f7f33a6891f956ffa62680a564650a",
+        "oracle_predicted_value": 33.15068804824561,
+        "teacher_a_value": 47.7937191057811
+      },
+      {
+        "baseline_predicted_value": 32.550679824561406,
+        "baseline_rollout_prefix": [
+          "{ use card (0) (Twin Strike+,38,1,1) -> (0) TimeEater }"
+        ],
+        "best_prefixes": [
+          [
+            "{ end turn }"
+          ],
+          [
+            "{ use card (0) (Twin Strike+,38,1,1) -> (0) TimeEater }",
+            "{ end turn }",
+            "{ end turn }"
+          ]
+        ],
+        "group_id": "e2ab6a6437060dc5",
+        "leaf_snapshot_id": "f2772ad3e5992db608bba255a392880a",
+        "oracle_predicted_value": 30.68391173245614,
+        "teacher_a_value": 44.415645554782586
+      },
+      {
+        "baseline_predicted_value": 39.59591282894737,
+        "baseline_rollout_prefix": [
+          "{ use card (0) (Twin Strike+,38,1,1) -> (0) TimeEater }"
+        ],
+        "best_prefixes": [
+          [
+            "{ end turn }"
+          ],
+          [
+            "{ end turn }",
+            "{ end turn }"
+          ]
+        ],
+        "group_id": "e2ab6a6437060dc5",
+        "leaf_snapshot_id": "94d95b7a62a9d1aeb4f5584145656e0a",
+        "oracle_predicted_value": 33.988371710526316,
+        "teacher_a_value": 47.56754847781165
+      }
+    ]
+  },
+  "frozen_corpus": {
+    "baseline_leaves": 247,
+    "replicates": 32,
+    "rng_contract": "fnv1a(silver-rollout-variance/v1/group/replicate)",
+    "selection_replicates": 16,
+    "source_seed_contract": {
+      "all_groups_have_one_source_seed": true,
+      "cluster_key": "source_seed",
+      "group_count": 32,
+      "group_to_source_seed": {
+        "04df6dc6c7500524": "12100052",
+        "04fcab644163af9e": "12100036",
+        "0530fe9984c813e2": "12100035",
+        "1194824b92a5b6f5": "12100017",
+        "1315f2850118a51e": "12100012",
+        "137c7885d87cacb7": "12100017",
+        "18b1b61ccc77b353": "12100007",
+        "266c835ca79bd69c": "12100053",
+        "2ef80137dc5aa89b": "12100018",
+        "49d948edcffe8323": "12100013",
+        "73a4aa7fd7623aea": "12100036",
+        "73a930377101137b": "12100031",
+        "75c1988f2ab3e8f3": "12100008",
+        "7637a54651c33a3e": "12100039",
+        "769677ba17731ec7": "12100013",
+        "88c7c1af25d91065": "12100003",
+        "9131e6062ef2f3a9": "12100039",
+        "91ce3829d47043e0": "12100041",
+        "9249765fac6ec320": "12100009",
+        "92994b5c8cdc0549": "12100003",
+        "9701175810936dd2": "12100025",
+        "9a58cddc9df01b19": "12100041",
+        "a190dfa42b78cdfc": "12100034",
+        "a4247c55175c1388": "12100037",
+        "b18c90a0df8c39e7": "12100053",
+        "b4249959cb43bc6f": "12100025",
+        "c20a2b9c8ce98855": "12100021",
+        "c2173e160a94edaa": "12100001",
+        "e01ab8f5abdd8cb9": "12100018",
+        "e2ab6a6437060dc5": "12100034",
+        "ec798f48cfc7fbae": "12100012",
+        "f65dceb330b8045c": "12100053"
+      },
+      "groups_per_source_seed": {
+        "12100001": [
+          "c2173e160a94edaa"
+        ],
+        "12100003": [
+          "88c7c1af25d91065",
+          "92994b5c8cdc0549"
+        ],
+        "12100007": [
+          "18b1b61ccc77b353"
+        ],
+        "12100008": [
+          "75c1988f2ab3e8f3"
+        ],
+        "12100009": [
+          "9249765fac6ec320"
+        ],
+        "12100012": [
+          "1315f2850118a51e",
+          "ec798f48cfc7fbae"
+        ],
+        "12100013": [
+          "49d948edcffe8323",
+          "769677ba17731ec7"
+        ],
+        "12100017": [
+          "1194824b92a5b6f5",
+          "137c7885d87cacb7"
+        ],
+        "12100018": [
+          "2ef80137dc5aa89b",
+          "e01ab8f5abdd8cb9"
+        ],
+        "12100021": [
+          "c20a2b9c8ce98855"
+        ],
+        "12100025": [
+          "9701175810936dd2",
+          "b4249959cb43bc6f"
+        ],
+        "12100031": [
+          "73a930377101137b"
+        ],
+        "12100034": [
+          "a190dfa42b78cdfc",
+          "e2ab6a6437060dc5"
+        ],
+        "12100035": [
+          "0530fe9984c813e2"
+        ],
+        "12100036": [
+          "04fcab644163af9e",
+          "73a4aa7fd7623aea"
+        ],
+        "12100037": [
+          "a4247c55175c1388"
+        ],
+        "12100039": [
+          "7637a54651c33a3e",
+          "9131e6062ef2f3a9"
+        ],
+        "12100041": [
+          "91ce3829d47043e0",
+          "9a58cddc9df01b19"
+        ],
+        "12100052": [
+          "04df6dc6c7500524"
+        ],
+        "12100053": [
+          "266c835ca79bd69c",
+          "b18c90a0df8c39e7",
+          "f65dceb330b8045c"
+        ]
+      },
+      "shared_source_seed_count": 11,
+      "source_seed_count": 20
+    },
+    "teacher_leaves": 247
+  },
+  "inputs": {
+    "baseline_sha256": "253c60eb8bdd80f5476e1826295137985ec6101b9acf0a3f26b13855435e70be",
+    "manifest_sha256": "a941becae452b647ca65f0898ae9a41eb2cf08b9278b70e5cf8a965e42a4ee98",
+    "raw_sha256": "c7ffacab90e2946a88da7a6a476b3836c4f690522226957a319c0efb7ea9e760",
+    "teachers_sha256": "01994f057b07add5067d095f17c413bf246c322fa63c4c6cd409efb787b3855e"
+  },
+  "metrics": {
+    "1": {
+      "clustered_bootstrap": {
+        "baseline_minus_oracle_regret": {
+          "p025": -0.29749173215674274,
+          "p975": 0.584285320239005
+        },
+        "bootstrap_seed": 20260920,
+        "cluster_count": 20,
+        "cluster_key": "source_seed",
+        "iterations": 2000
+      },
+      "group_improvement": {
+        "concentration": {
+          "1": 0.6653271355522481,
+          "2": 0.8969291718281782,
+          "4": 1.0,
+          "8": 1.0
+        },
+        "improved": 4,
+        "largest": [
+          {
+            "baseline_leaf": "ee851262de94113f7f2fe0e11ef2e883",
+            "baseline_regret": 14.250399555276985,
+            "group_id": "c20a2b9c8ce98855",
+            "improvement": 4.956384093072749,
+            "oracle_leaf": "b3bb5dcd843fe829146de3467f37bded",
+            "oracle_regret": 9.294015462204236
+          },
+          {
+            "baseline_leaf": "e07c8c989c425f5c01093a2576970348",
+            "baseline_regret": 12.101449326763088,
+            "group_id": "73a930377101137b",
+            "improvement": 1.7253296719492255,
+            "oracle_leaf": "c846f92f8b5da0f2e16a33e2eaacea9e",
+            "oracle_regret": 10.376119654813863
+          },
+          {
+            "baseline_leaf": "357ee19c3583c0927d5484409e419386",
+            "baseline_regret": 0.6718629500691407,
+            "group_id": "2ef80137dc5aa89b",
+            "improvement": 0.6718629500691407,
+            "oracle_leaf": "cd87eaa5cecee0e0544dafd3b070239c",
+            "oracle_regret": 0.0
+          },
+          {
+            "baseline_leaf": "0686eccc9b80e8ed1fbdd04e60ac4951",
+            "baseline_regret": 0.09596776945595309,
+            "group_id": "9249765fac6ec320",
+            "improvement": 0.09596776945595309,
+            "oracle_leaf": "42b71d5e6fbffd21245bd17a4c30a735",
+            "oracle_regret": 0.0
+          },
+          {
+            "baseline_leaf": "6f47589a9b4a7916214975ee1078265a",
+            "baseline_regret": 0.0,
+            "group_id": "9a58cddc9df01b19",
+            "improvement": 0.0,
+            "oracle_leaf": "6f47589a9b4a7916214975ee1078265a",
+            "oracle_regret": 0.0
+          },
+          {
+            "baseline_leaf": "7fa078db637d0dc6dc83d787cf7b5e42",
+            "baseline_regret": 0.0,
+            "group_id": "1194824b92a5b6f5",
+            "improvement": 0.0,
+            "oracle_leaf": "7fa078db637d0dc6dc83d787cf7b5e42",
+            "oracle_regret": 0.0
+          },
+          {
+            "baseline_leaf": "f95d7e766e92a3dd8862624fbbba6639",
+            "baseline_regret": 4.775165447559466,
+            "group_id": "e2ab6a6437060dc5",
+            "improvement": 0.0,
+            "oracle_leaf": "f95d7e766e92a3dd8862624fbbba6639",
+            "oracle_regret": 4.775165447559466
+          },
+          {
+            "baseline_leaf": "97965cfb51838d6b0d35ccbed821083f",
+            "baseline_regret": 0.0,
+            "group_id": "91ce3829d47043e0",
+            "improvement": 0.0,
+            "oracle_leaf": "97965cfb51838d6b0d35ccbed821083f",
+            "oracle_regret": 0.0
+          },
+          {
+            "baseline_leaf": "6aa2163b1fcba054528d9d2063d1d3c0",
+            "baseline_regret": 0.0,
+            "group_id": "b18c90a0df8c39e7",
+            "improvement": 0.0,
+            "oracle_leaf": "6aa2163b1fcba054528d9d2063d1d3c0",
+            "oracle_regret": 0.0
+          },
+          {
+            "baseline_leaf": "bc667d1b18e2cc8c17e467c02c68c698",
+            "baseline_regret": 0.0,
+            "group_id": "9131e6062ef2f3a9",
+            "improvement": 0.0,
+            "oracle_leaf": "bc667d1b18e2cc8c17e467c02c68c698",
+            "oracle_regret": 0.0
+          },
+          {
+            "baseline_leaf": "81fbc9c6cc2445f43c819c8b109e7e10",
+            "baseline_regret": 0.0,
+            "group_id": "b4249959cb43bc6f",
+            "improvement": 0.0,
+            "oracle_leaf": "81fbc9c6cc2445f43c819c8b109e7e10",
+            "oracle_regret": 0.0
+          },
+          {
+            "baseline_leaf": "346333833ac1360ea928aef9d05ac7b2",
+            "baseline_regret": 0.1876719667296527,
+            "group_id": "e01ab8f5abdd8cb9",
+            "improvement": 0.0,
+            "oracle_leaf": "346333833ac1360ea928aef9d05ac7b2",
+            "oracle_regret": 0.1876719667296527
+          },
+          {
+            "baseline_leaf": "1abc7ab9c9550a53b8b9819c18a80277",
+            "baseline_regret": 0.0,
+            "group_id": "18b1b61ccc77b353",
+            "improvement": 0.0,
+            "oracle_leaf": "1abc7ab9c9550a53b8b9819c18a80277",
+            "oracle_regret": 0.0
+          },
+          {
+            "baseline_leaf": "ea6378831d67673f08a48574d45e323b",
+            "baseline_regret": 0.0,
+            "group_id": "75c1988f2ab3e8f3",
+            "improvement": 0.0,
+            "oracle_leaf": "ea6378831d67673f08a48574d45e323b",
+            "oracle_regret": 0.0
+          },
+          {
+            "baseline_leaf": "cf0cb4d4ea6ce517b6a2d75726a6186b",
+            "baseline_regret": 0.0,
+            "group_id": "88c7c1af25d91065",
+            "improvement": 0.0,
+            "oracle_leaf": "cf0cb4d4ea6ce517b6a2d75726a6186b",
+            "oracle_regret": 0.0
+          },
+          {
+            "baseline_leaf": "c0ecb8ae1f25b8f9c954c0c08296f785",
+            "baseline_regret": 0.1497346014443437,
+            "group_id": "1315f2850118a51e",
+            "improvement": 0.0,
+            "oracle_leaf": "c0ecb8ae1f25b8f9c954c0c08296f785",
+            "oracle_regret": 0.1497346014443437
+          }
+        ],
+        "smallest": [
+          {
+            "baseline_leaf": "8001a33207d40aab619f87c189d59c0f",
+            "baseline_regret": 1.6241045118070971,
+            "group_id": "f65dceb330b8045c",
+            "improvement": 0.0,
+            "oracle_leaf": "8001a33207d40aab619f87c189d59c0f",
+            "oracle_regret": 1.6241045118070971
+          },
+          {
+            "baseline_leaf": "de190638d885c54df4c6ca7924112b71",
+            "baseline_regret": 2.0010533741883734,
+            "group_id": "0530fe9984c813e2",
+            "improvement": 0.0,
+            "oracle_leaf": "de190638d885c54df4c6ca7924112b71",
+            "oracle_regret": 2.0010533741883734
+          },
+          {
+            "baseline_leaf": "05f8dd02fd6f5b4e36846c29571a4892",
+            "baseline_regret": 0.0,
+            "group_id": "c2173e160a94edaa",
+            "improvement": 0.0,
+            "oracle_leaf": "05f8dd02fd6f5b4e36846c29571a4892",
+            "oracle_regret": 0.0
+          },
+          {
+            "baseline_leaf": "5dc54d3aa9eb743629d5ff07a9dd4cc2",
+            "baseline_regret": 2.842862087474529,
+            "group_id": "9701175810936dd2",
+            "improvement": 0.0,
+            "oracle_leaf": "5dc54d3aa9eb743629d5ff07a9dd4cc2",
+            "oracle_regret": 2.842862087474529
+          },
+          {
+            "baseline_leaf": "17001cfcccf9f8d8e68bc49024c9e2ec",
+            "baseline_regret": 0.0,
+            "group_id": "a4247c55175c1388",
+            "improvement": 0.0,
+            "oracle_leaf": "17001cfcccf9f8d8e68bc49024c9e2ec",
+            "oracle_regret": 0.0
+          },
+          {
+            "baseline_leaf": "3418a6e67d5936691ca6e9a7c3f0a9f5",
+            "baseline_regret": 0.0,
+            "group_id": "92994b5c8cdc0549",
+            "improvement": 0.0,
+            "oracle_leaf": "3418a6e67d5936691ca6e9a7c3f0a9f5",
+            "oracle_regret": 0.0
+          },
+          {
+            "baseline_leaf": "a65f95d6183074e9d3ca929417f7d935",
+            "baseline_regret": 0.4975903677322151,
+            "group_id": "49d948edcffe8323",
+            "improvement": -0.38771435381019614,
+            "oracle_leaf": "c4b3e1dd9fb6407b4e6b0eaf4d7c5cef",
+            "oracle_regret": 0.8853047215424112
+          },
+          {
+            "baseline_leaf": "ff6abcdf6d7f92b9251e3061faeda735",
+            "baseline_regret": 4.391755053464209,
+            "group_id": "137c7885d87cacb7",
+            "improvement": -3.868697727659864,
+            "oracle_leaf": "d57ae001ed141889e98cf94d5c9eb4e5",
+            "oracle_regret": 8.260452781124073
+          }
+        ],
+        "unchanged": 26,
+        "worsened": 2
+      },
+      "groups": 32,
+      "leaves": 247,
+      "teacher_a": {
+        "baseline": {
+          "centered_mae": 4.049411332285114,
+          "centered_rmse": 6.689277560296465,
+          "groups": 32,
+          "mean_teacher_regret": 1.513323903420704,
+          "pairwise_concordance": 0.7424135497529993,
+          "pairwise_pairs": 1417,
+          "top_leaf_agreement": 0.5625,
+          "value_mae": 5.219883703678893
+        },
+        "oracle": {
+          "centered_mae": 3.9844307219481765,
+          "centered_rmse": 6.435529540058525,
+          "groups": 32,
+          "mean_teacher_regret": 1.4135385158245475,
+          "pairwise_concordance": 0.7517630465444288,
+          "pairwise_pairs": 1418,
+          "top_leaf_agreement": 0.625,
+          "value_mae": 4.857701855611859
+        }
+      },
+      "teacher_a_regret_reduction": 0.06593789166390784,
+      "teacher_b": {
+        "baseline": {
+          "centered_mae": 4.142839746476512,
+          "centered_rmse": 6.942563681395914,
+          "groups": 32,
+          "mean_teacher_regret": 1.4729049694877248,
+          "pairwise_concordance": 0.757939308398024,
+          "pairwise_pairs": 1417,
+          "top_leaf_agreement": 0.53125,
+          "value_mae": 5.1397941043458175
+        },
+        "oracle": {
+          "centered_mae": 3.963564442189769,
+          "centered_rmse": 6.388884404903745,
+          "groups": 32,
+          "mean_teacher_regret": 1.3498820944914116,
+          "pairwise_concordance": 0.7595204513399154,
+          "pairwise_pairs": 1418,
+          "top_leaf_agreement": 0.5625,
+          "value_mae": 4.842775685053862
+        }
+      },
+      "teacher_b_regret_reduction": 0.08352397306331338
+    },
+    "2": {
+      "clustered_bootstrap": {
+        "baseline_minus_oracle_regret": {
+          "p025": 0.23572861982679671,
+          "p975": 2.1381214615864907
+        },
+        "bootstrap_seed": 20260920,
+        "cluster_count": 20,
+        "cluster_key": "source_seed",
+        "iterations": 2000
+      },
+      "group_improvement": {
+        "concentration": {
+          "1": 0.4634694026809105,
+          "2": 0.6187733342723144,
+          "4": 0.8842936162525185,
+          "8": 1.0
+        },
+        "improved": 8,
+        "largest": [
+          {
+            "baseline_leaf": "ee851262de94113f7f2fe0e11ef2e883",
+            "baseline_regret": 14.250399555276985,
+            "group_id": "c20a2b9c8ce98855",
+            "improvement": 14.250399555276985,
+            "oracle_leaf": "657bcaf9e29d271bcd75329d8f708d7f",
+            "oracle_regret": 0.0
+          },
+          {
+            "baseline_leaf": "f95d7e766e92a3dd8862624fbbba6639",
+            "baseline_regret": 4.775165447559466,
+            "group_id": "e2ab6a6437060dc5",
+            "improvement": 4.775165447559466,
+            "oracle_leaf": "fe5b258b99dd5122e8eae2fd11dcc986",
+            "oracle_regret": 0.0
+          },
+          {
+            "baseline_leaf": "ff6abcdf6d7f92b9251e3061faeda735",
+            "baseline_regret": 4.391755053464209,
+            "group_id": "137c7885d87cacb7",
+            "improvement": 4.391755053464209,
+            "oracle_leaf": "069a41c2e31e021f2bbf66032fa78d6b",
+            "oracle_regret": 0.0
+          },
+          {
+            "baseline_leaf": "156255b965fc257be6698532ee46ffdf",
+            "baseline_regret": 3.7722576868822557,
+            "group_id": "769677ba17731ec7",
+            "improvement": 3.7722576868822557,
+            "oracle_leaf": "0820b9dd14ff38b23146e6fb88431f5e",
+            "oracle_regret": 0.0
+          },
+          {
+            "baseline_leaf": "e07c8c989c425f5c01093a2576970348",
+            "baseline_regret": 12.101449326763088,
+            "group_id": "73a930377101137b",
+            "improvement": 1.7253296719492255,
+            "oracle_leaf": "c846f92f8b5da0f2e16a33e2eaacea9e",
+            "oracle_regret": 10.376119654813863
+          },
+          {
+            "baseline_leaf": "5f827d298c2d47cd8ae2d2c26eeb0f61",
+            "baseline_regret": 1.0644902106152188,
+            "group_id": "04fcab644163af9e",
+            "improvement": 1.0644902106152188,
+            "oracle_leaf": "96314089db305e9a61b6024532cd055e",
+            "oracle_regret": 0.0
+          },
+          {
+            "baseline_leaf": "357ee19c3583c0927d5484409e419386",
+            "baseline_regret": 0.6718629500691407,
+            "group_id": "2ef80137dc5aa89b",
+            "improvement": 0.6718629500691407,
+            "oracle_leaf": "cd87eaa5cecee0e0544dafd3b070239c",
+            "oracle_regret": 0.0
+          },
+          {
+            "baseline_leaf": "0686eccc9b80e8ed1fbdd04e60ac4951",
+            "baseline_regret": 0.09596776945595309,
+            "group_id": "9249765fac6ec320",
+            "improvement": 0.09596776945595309,
+            "oracle_leaf": "42b71d5e6fbffd21245bd17a4c30a735",
+            "oracle_regret": 0.0
+          },
+          {
+            "baseline_leaf": "6f47589a9b4a7916214975ee1078265a",
+            "baseline_regret": 0.0,
+            "group_id": "9a58cddc9df01b19",
+            "improvement": 0.0,
+            "oracle_leaf": "6f47589a9b4a7916214975ee1078265a",
+            "oracle_regret": 0.0
+          },
+          {
+            "baseline_leaf": "7fa078db637d0dc6dc83d787cf7b5e42",
+            "baseline_regret": 0.0,
+            "group_id": "1194824b92a5b6f5",
+            "improvement": 0.0,
+            "oracle_leaf": "7fa078db637d0dc6dc83d787cf7b5e42",
+            "oracle_regret": 0.0
+          },
+          {
+            "baseline_leaf": "97965cfb51838d6b0d35ccbed821083f",
+            "baseline_regret": 0.0,
+            "group_id": "91ce3829d47043e0",
+            "improvement": 0.0,
+            "oracle_leaf": "97965cfb51838d6b0d35ccbed821083f",
+            "oracle_regret": 0.0
+          },
+          {
+            "baseline_leaf": "6aa2163b1fcba054528d9d2063d1d3c0",
+            "baseline_regret": 0.0,
+            "group_id": "b18c90a0df8c39e7",
+            "improvement": 0.0,
+            "oracle_leaf": "6aa2163b1fcba054528d9d2063d1d3c0",
+            "oracle_regret": 0.0
+          },
+          {
+            "baseline_leaf": "bc667d1b18e2cc8c17e467c02c68c698",
+            "baseline_regret": 0.0,
+            "group_id": "9131e6062ef2f3a9",
+            "improvement": 0.0,
+            "oracle_leaf": "bc667d1b18e2cc8c17e467c02c68c698",
+            "oracle_regret": 0.0
+          },
+          {
+            "baseline_leaf": "81fbc9c6cc2445f43c819c8b109e7e10",
+            "baseline_regret": 0.0,
+            "group_id": "b4249959cb43bc6f",
+            "improvement": 0.0,
+            "oracle_leaf": "81fbc9c6cc2445f43c819c8b109e7e10",
+            "oracle_regret": 0.0
+          },
+          {
+            "baseline_leaf": "346333833ac1360ea928aef9d05ac7b2",
+            "baseline_regret": 0.1876719667296527,
+            "group_id": "e01ab8f5abdd8cb9",
+            "improvement": 0.0,
+            "oracle_leaf": "346333833ac1360ea928aef9d05ac7b2",
+            "oracle_regret": 0.1876719667296527
+          },
+          {
+            "baseline_leaf": "1abc7ab9c9550a53b8b9819c18a80277",
+            "baseline_regret": 0.0,
+            "group_id": "18b1b61ccc77b353",
+            "improvement": 0.0,
+            "oracle_leaf": "1abc7ab9c9550a53b8b9819c18a80277",
+            "oracle_regret": 0.0
+          }
+        ],
+        "smallest": [
+          {
+            "baseline_leaf": "8001a33207d40aab619f87c189d59c0f",
+            "baseline_regret": 1.6241045118070971,
+            "group_id": "f65dceb330b8045c",
+            "improvement": 0.0,
+            "oracle_leaf": "8001a33207d40aab619f87c189d59c0f",
+            "oracle_regret": 1.6241045118070971
+          },
+          {
+            "baseline_leaf": "de190638d885c54df4c6ca7924112b71",
+            "baseline_regret": 2.0010533741883734,
+            "group_id": "0530fe9984c813e2",
+            "improvement": 0.0,
+            "oracle_leaf": "de190638d885c54df4c6ca7924112b71",
+            "oracle_regret": 2.0010533741883734
+          },
+          {
+            "baseline_leaf": "05f8dd02fd6f5b4e36846c29571a4892",
+            "baseline_regret": 0.0,
+            "group_id": "c2173e160a94edaa",
+            "improvement": 0.0,
+            "oracle_leaf": "05f8dd02fd6f5b4e36846c29571a4892",
+            "oracle_regret": 0.0
+          },
+          {
+            "baseline_leaf": "5dc54d3aa9eb743629d5ff07a9dd4cc2",
+            "baseline_regret": 2.842862087474529,
+            "group_id": "9701175810936dd2",
+            "improvement": 0.0,
+            "oracle_leaf": "5dc54d3aa9eb743629d5ff07a9dd4cc2",
+            "oracle_regret": 2.842862087474529
+          },
+          {
+            "baseline_leaf": "17001cfcccf9f8d8e68bc49024c9e2ec",
+            "baseline_regret": 0.0,
+            "group_id": "a4247c55175c1388",
+            "improvement": 0.0,
+            "oracle_leaf": "17001cfcccf9f8d8e68bc49024c9e2ec",
+            "oracle_regret": 0.0
+          },
+          {
+            "baseline_leaf": "3418a6e67d5936691ca6e9a7c3f0a9f5",
+            "baseline_regret": 0.0,
+            "group_id": "92994b5c8cdc0549",
+            "improvement": 0.0,
+            "oracle_leaf": "3418a6e67d5936691ca6e9a7c3f0a9f5",
+            "oracle_regret": 0.0
+          },
+          {
+            "baseline_leaf": "cf0cb4d4ea6ce517b6a2d75726a6186b",
+            "baseline_regret": 0.0,
+            "group_id": "88c7c1af25d91065",
+            "improvement": -0.06592326030985873,
+            "oracle_leaf": "7a97662f7a0aadbeed6675a1e918eb7a",
+            "oracle_regret": 0.06592326030985873
+          },
+          {
+            "baseline_leaf": "a65f95d6183074e9d3ca929417f7d935",
+            "baseline_regret": 0.4975903677322151,
+            "group_id": "49d948edcffe8323",
+            "improvement": -0.38771435381019614,
+            "oracle_leaf": "c4b3e1dd9fb6407b4e6b0eaf4d7c5cef",
+            "oracle_regret": 0.8853047215424112
+          }
+        ],
+        "unchanged": 22,
+        "worsened": 2
+      },
+      "groups": 32,
+      "leaves": 247,
+      "teacher_a": {
+        "baseline": {
+          "centered_mae": 4.049411332285114,
+          "centered_rmse": 6.689277560296465,
+          "groups": 32,
+          "mean_teacher_regret": 1.513323903420704,
+          "pairwise_concordance": 0.7424135497529993,
+          "pairwise_pairs": 1417,
+          "top_leaf_agreement": 0.5625,
+          "value_mae": 5.219883703678893
+        },
+        "oracle": {
+          "centered_mae": 3.554527339247345,
+          "centered_rmse": 5.595631766733864,
+          "groups": 32,
+          "mean_teacher_regret": 0.5666491930721915,
+          "pairwise_concordance": 0.797887323943662,
+          "pairwise_pairs": 1420,
+          "top_leaf_agreement": 0.75,
+          "value_mae": 4.8060359897350855
+        }
+      },
+      "teacher_a_regret_reduction": 0.6255598740022921,
+      "teacher_b": {
+        "baseline": {
+          "centered_mae": 4.142839746476512,
+          "centered_rmse": 6.942563681395914,
+          "groups": 32,
+          "mean_teacher_regret": 1.4729049694877248,
+          "pairwise_concordance": 0.757939308398024,
+          "pairwise_pairs": 1417,
+          "top_leaf_agreement": 0.53125,
+          "value_mae": 5.1397941043458175
+        },
+        "oracle": {
+          "centered_mae": 3.7055053972626495,
+          "centered_rmse": 5.936316680218648,
+          "groups": 32,
+          "mean_teacher_regret": 1.0450469791084764,
+          "pairwise_concordance": 0.795774647887324,
+          "pairwise_pairs": 1420,
+          "top_leaf_agreement": 0.65625,
+          "value_mae": 4.960519459583102
+        }
+      },
+      "teacher_b_regret_reduction": 0.29048580814284103
+    },
+    "3": {
+      "clustered_bootstrap": {
+        "baseline_minus_oracle_regret": {
+          "p025": 0.248093254696774,
+          "p975": 2.1055772208425387
+        },
+        "bootstrap_seed": 20260920,
+        "cluster_count": 20,
+        "cluster_key": "source_seed",
+        "iterations": 2000
+      },
+      "group_improvement": {
+        "concentration": {
+          "1": 0.4734250953110402,
+          "2": 0.6320650792895727,
+          "4": 0.8352861474372492,
+          "8": 1.0
+        },
+        "improved": 8,
+        "largest": [
+          {
+            "baseline_leaf": "ee851262de94113f7f2fe0e11ef2e883",
+            "baseline_regret": 14.250399555276985,
+            "group_id": "c20a2b9c8ce98855",
+            "improvement": 14.250399555276985,
+            "oracle_leaf": "657bcaf9e29d271bcd75329d8f708d7f",
+            "oracle_regret": 0.0
+          },
+          {
+            "baseline_leaf": "f95d7e766e92a3dd8862624fbbba6639",
+            "baseline_regret": 4.775165447559466,
+            "group_id": "e2ab6a6437060dc5",
+            "improvement": 4.775165447559466,
+            "oracle_leaf": "fe5b258b99dd5122e8eae2fd11dcc986",
+            "oracle_regret": 0.0
+          },
+          {
+            "baseline_leaf": "ff6abcdf6d7f92b9251e3061faeda735",
+            "baseline_regret": 4.391755053464209,
+            "group_id": "137c7885d87cacb7",
+            "improvement": 4.391755053464209,
+            "oracle_leaf": "069a41c2e31e021f2bbf66032fa78d6b",
+            "oracle_regret": 0.0
+          },
+          {
+            "baseline_leaf": "e07c8c989c425f5c01093a2576970348",
+            "baseline_regret": 12.101449326763088,
+            "group_id": "73a930377101137b",
+            "improvement": 1.7253296719492255,
+            "oracle_leaf": "c846f92f8b5da0f2e16a33e2eaacea9e",
+            "oracle_regret": 10.376119654813863
+          },
+          {
+            "baseline_leaf": "8001a33207d40aab619f87c189d59c0f",
+            "baseline_regret": 1.6241045118070971,
+            "group_id": "f65dceb330b8045c",
+            "improvement": 1.6241045118070971,
+            "oracle_leaf": "5c8b3c18a2271b5e6868ef48af8f054a",
+            "oracle_regret": 0.0
+          },
+          {
+            "baseline_leaf": "156255b965fc257be6698532ee46ffdf",
+            "baseline_regret": 3.7722576868822557,
+            "group_id": "769677ba17731ec7",
+            "improvement": 1.597535122051994,
+            "oracle_leaf": "46fd1bb2c8b96e32c9a481070099362e",
+            "oracle_regret": 2.1747225648302617
+          },
+          {
+            "baseline_leaf": "5f827d298c2d47cd8ae2d2c26eeb0f61",
+            "baseline_regret": 1.0644902106152188,
+            "group_id": "04fcab644163af9e",
+            "improvement": 1.0644902106152188,
+            "oracle_leaf": "96314089db305e9a61b6024532cd055e",
+            "oracle_regret": 0.0
+          },
+          {
+            "baseline_leaf": "357ee19c3583c0927d5484409e419386",
+            "baseline_regret": 0.6718629500691407,
+            "group_id": "2ef80137dc5aa89b",
+            "improvement": 0.6718629500691407,
+            "oracle_leaf": "cd87eaa5cecee0e0544dafd3b070239c",
+            "oracle_regret": 0.0
+          },
+          {
+            "baseline_leaf": "6f47589a9b4a7916214975ee1078265a",
+            "baseline_regret": 0.0,
+            "group_id": "9a58cddc9df01b19",
+            "improvement": 0.0,
+            "oracle_leaf": "6f47589a9b4a7916214975ee1078265a",
+            "oracle_regret": 0.0
+          },
+          {
+            "baseline_leaf": "7fa078db637d0dc6dc83d787cf7b5e42",
+            "baseline_regret": 0.0,
+            "group_id": "1194824b92a5b6f5",
+            "improvement": 0.0,
+            "oracle_leaf": "7fa078db637d0dc6dc83d787cf7b5e42",
+            "oracle_regret": 0.0
+          },
+          {
+            "baseline_leaf": "97965cfb51838d6b0d35ccbed821083f",
+            "baseline_regret": 0.0,
+            "group_id": "91ce3829d47043e0",
+            "improvement": 0.0,
+            "oracle_leaf": "97965cfb51838d6b0d35ccbed821083f",
+            "oracle_regret": 0.0
+          },
+          {
+            "baseline_leaf": "6aa2163b1fcba054528d9d2063d1d3c0",
+            "baseline_regret": 0.0,
+            "group_id": "b18c90a0df8c39e7",
+            "improvement": 0.0,
+            "oracle_leaf": "6aa2163b1fcba054528d9d2063d1d3c0",
+            "oracle_regret": 0.0
+          },
+          {
+            "baseline_leaf": "bc667d1b18e2cc8c17e467c02c68c698",
+            "baseline_regret": 0.0,
+            "group_id": "9131e6062ef2f3a9",
+            "improvement": 0.0,
+            "oracle_leaf": "bc667d1b18e2cc8c17e467c02c68c698",
+            "oracle_regret": 0.0
+          },
+          {
+            "baseline_leaf": "81fbc9c6cc2445f43c819c8b109e7e10",
+            "baseline_regret": 0.0,
+            "group_id": "b4249959cb43bc6f",
+            "improvement": 0.0,
+            "oracle_leaf": "81fbc9c6cc2445f43c819c8b109e7e10",
+            "oracle_regret": 0.0
+          },
+          {
+            "baseline_leaf": "346333833ac1360ea928aef9d05ac7b2",
+            "baseline_regret": 0.1876719667296527,
+            "group_id": "e01ab8f5abdd8cb9",
+            "improvement": 0.0,
+            "oracle_leaf": "346333833ac1360ea928aef9d05ac7b2",
+            "oracle_regret": 0.1876719667296527
+          },
+          {
+            "baseline_leaf": "1abc7ab9c9550a53b8b9819c18a80277",
+            "baseline_regret": 0.0,
+            "group_id": "18b1b61ccc77b353",
+            "improvement": 0.0,
+            "oracle_leaf": "1abc7ab9c9550a53b8b9819c18a80277",
+            "oracle_regret": 0.0
+          }
+        ],
+        "smallest": [
+          {
+            "baseline_leaf": "de190638d885c54df4c6ca7924112b71",
+            "baseline_regret": 2.0010533741883734,
+            "group_id": "0530fe9984c813e2",
+            "improvement": 0.0,
+            "oracle_leaf": "de190638d885c54df4c6ca7924112b71",
+            "oracle_regret": 2.0010533741883734
+          },
+          {
+            "baseline_leaf": "05f8dd02fd6f5b4e36846c29571a4892",
+            "baseline_regret": 0.0,
+            "group_id": "c2173e160a94edaa",
+            "improvement": 0.0,
+            "oracle_leaf": "05f8dd02fd6f5b4e36846c29571a4892",
+            "oracle_regret": 0.0
+          },
+          {
+            "baseline_leaf": "5dc54d3aa9eb743629d5ff07a9dd4cc2",
+            "baseline_regret": 2.842862087474529,
+            "group_id": "9701175810936dd2",
+            "improvement": 0.0,
+            "oracle_leaf": "5dc54d3aa9eb743629d5ff07a9dd4cc2",
+            "oracle_regret": 2.842862087474529
+          },
+          {
+            "baseline_leaf": "0686eccc9b80e8ed1fbdd04e60ac4951",
+            "baseline_regret": 0.09596776945595309,
+            "group_id": "9249765fac6ec320",
+            "improvement": 0.0,
+            "oracle_leaf": "0686eccc9b80e8ed1fbdd04e60ac4951",
+            "oracle_regret": 0.09596776945595309
+          },
+          {
+            "baseline_leaf": "17001cfcccf9f8d8e68bc49024c9e2ec",
+            "baseline_regret": 0.0,
+            "group_id": "a4247c55175c1388",
+            "improvement": 0.0,
+            "oracle_leaf": "17001cfcccf9f8d8e68bc49024c9e2ec",
+            "oracle_regret": 0.0
+          },
+          {
+            "baseline_leaf": "3418a6e67d5936691ca6e9a7c3f0a9f5",
+            "baseline_regret": 0.0,
+            "group_id": "92994b5c8cdc0549",
+            "improvement": 0.0,
+            "oracle_leaf": "3418a6e67d5936691ca6e9a7c3f0a9f5",
+            "oracle_regret": 0.0
+          },
+          {
+            "baseline_leaf": "cf0cb4d4ea6ce517b6a2d75726a6186b",
+            "baseline_regret": 0.0,
+            "group_id": "88c7c1af25d91065",
+            "improvement": -0.06592326030985873,
+            "oracle_leaf": "7a97662f7a0aadbeed6675a1e918eb7a",
+            "oracle_regret": 0.06592326030985873
+          },
+          {
+            "baseline_leaf": "a65f95d6183074e9d3ca929417f7d935",
+            "baseline_regret": 0.4975903677322151,
+            "group_id": "49d948edcffe8323",
+            "improvement": -0.38771435381019614,
+            "oracle_leaf": "c4b3e1dd9fb6407b4e6b0eaf4d7c5cef",
+            "oracle_regret": 0.8853047215424112
+          }
+        ],
+        "unchanged": 22,
+        "worsened": 2
+      },
+      "groups": 32,
+      "leaves": 247,
+      "teacher_a": {
+        "baseline": {
+          "centered_mae": 4.049411332285114,
+          "centered_rmse": 6.689277560296465,
+          "groups": 32,
+          "mean_teacher_regret": 1.513323903420704,
+          "pairwise_concordance": 0.7424135497529993,
+          "pairwise_pairs": 1417,
+          "top_leaf_agreement": 0.5625,
+          "value_mae": 5.219883703678893
+        },
+        "oracle": {
+          "centered_mae": 3.5019481648778266,
+          "centered_rmse": 5.5745063848830725,
+          "groups": 32,
+          "mean_teacher_regret": 0.586855000024664,
+          "pairwise_concordance": 0.7953422724064926,
+          "pairwise_pairs": 1417,
+          "top_leaf_agreement": 0.71875,
+          "value_mae": 4.92313329530821
+        }
+      },
+      "teacher_a_regret_reduction": 0.6122079359890226,
+      "teacher_b": {
+        "baseline": {
+          "centered_mae": 4.142839746476512,
+          "centered_rmse": 6.942563681395914,
+          "groups": 32,
+          "mean_teacher_regret": 1.4729049694877248,
+          "pairwise_concordance": 0.757939308398024,
+          "pairwise_pairs": 1417,
+          "top_leaf_agreement": 0.53125,
+          "value_mae": 5.1397941043458175
+        },
+        "oracle": {
+          "centered_mae": 3.699052571904046,
+          "centered_rmse": 5.968373073523758,
+          "groups": 32,
+          "mean_teacher_regret": 0.9833382452104891,
+          "pairwise_concordance": 0.7953422724064926,
+          "pairwise_pairs": 1417,
+          "top_leaf_agreement": 0.71875,
+          "value_mae": 5.066463291839243
+        }
+      },
+      "teacher_b_regret_reduction": 0.3323817452034985
+    },
+    "exact_length_2": {
+      "clustered_bootstrap": {
+        "baseline_minus_oracle_regret": {
+          "p025": -1.37088684246008,
+          "p975": 1.644387872086801
+        },
+        "bootstrap_seed": 20260920,
+        "cluster_count": 20,
+        "cluster_key": "source_seed",
+        "iterations": 2000
+      },
+      "group_improvement": {
+        "concentration": {
+          "1": 0.4634694026809105,
+          "2": 0.6187733342723144,
+          "4": 0.8842936162525185,
+          "8": 1.0
+        },
+        "improved": 8,
+        "largest": [
+          {
+            "baseline_leaf": "ee851262de94113f7f2fe0e11ef2e883",
+            "baseline_regret": 14.250399555276985,
+            "group_id": "c20a2b9c8ce98855",
+            "improvement": 14.250399555276985,
+            "oracle_leaf": "657bcaf9e29d271bcd75329d8f708d7f",
+            "oracle_regret": 0.0
+          },
+          {
+            "baseline_leaf": "f95d7e766e92a3dd8862624fbbba6639",
+            "baseline_regret": 4.775165447559466,
+            "group_id": "e2ab6a6437060dc5",
+            "improvement": 4.775165447559466,
+            "oracle_leaf": "fe5b258b99dd5122e8eae2fd11dcc986",
+            "oracle_regret": 0.0
+          },
+          {
+            "baseline_leaf": "ff6abcdf6d7f92b9251e3061faeda735",
+            "baseline_regret": 4.391755053464209,
+            "group_id": "137c7885d87cacb7",
+            "improvement": 4.391755053464209,
+            "oracle_leaf": "069a41c2e31e021f2bbf66032fa78d6b",
+            "oracle_regret": 0.0
+          },
+          {
+            "baseline_leaf": "156255b965fc257be6698532ee46ffdf",
+            "baseline_regret": 3.7722576868822557,
+            "group_id": "769677ba17731ec7",
+            "improvement": 3.7722576868822557,
+            "oracle_leaf": "0820b9dd14ff38b23146e6fb88431f5e",
+            "oracle_regret": 0.0
+          },
+          {
+            "baseline_leaf": "e07c8c989c425f5c01093a2576970348",
+            "baseline_regret": 12.101449326763088,
+            "group_id": "73a930377101137b",
+            "improvement": 1.7253296719492255,
+            "oracle_leaf": "c846f92f8b5da0f2e16a33e2eaacea9e",
+            "oracle_regret": 10.376119654813863
+          },
+          {
+            "baseline_leaf": "5f827d298c2d47cd8ae2d2c26eeb0f61",
+            "baseline_regret": 1.0644902106152188,
+            "group_id": "04fcab644163af9e",
+            "improvement": 1.0644902106152188,
+            "oracle_leaf": "96314089db305e9a61b6024532cd055e",
+            "oracle_regret": 0.0
+          },
+          {
+            "baseline_leaf": "357ee19c3583c0927d5484409e419386",
+            "baseline_regret": 0.6718629500691407,
+            "group_id": "2ef80137dc5aa89b",
+            "improvement": 0.6718629500691407,
+            "oracle_leaf": "cd87eaa5cecee0e0544dafd3b070239c",
+            "oracle_regret": 0.0
+          },
+          {
+            "baseline_leaf": "0686eccc9b80e8ed1fbdd04e60ac4951",
+            "baseline_regret": 0.09596776945595309,
+            "group_id": "9249765fac6ec320",
+            "improvement": 0.09596776945595309,
+            "oracle_leaf": "42b71d5e6fbffd21245bd17a4c30a735",
+            "oracle_regret": 0.0
+          },
+          {
+            "baseline_leaf": "6f47589a9b4a7916214975ee1078265a",
+            "baseline_regret": 0.0,
+            "group_id": "9a58cddc9df01b19",
+            "improvement": 0.0,
+            "oracle_leaf": "6f47589a9b4a7916214975ee1078265a",
+            "oracle_regret": 0.0
+          },
+          {
+            "baseline_leaf": "7fa078db637d0dc6dc83d787cf7b5e42",
+            "baseline_regret": 0.0,
+            "group_id": "1194824b92a5b6f5",
+            "improvement": 0.0,
+            "oracle_leaf": "7fa078db637d0dc6dc83d787cf7b5e42",
+            "oracle_regret": 0.0
+          },
+          {
+            "baseline_leaf": "97965cfb51838d6b0d35ccbed821083f",
+            "baseline_regret": 0.0,
+            "group_id": "91ce3829d47043e0",
+            "improvement": 0.0,
+            "oracle_leaf": "97965cfb51838d6b0d35ccbed821083f",
+            "oracle_regret": 0.0
+          },
+          {
+            "baseline_leaf": "346333833ac1360ea928aef9d05ac7b2",
+            "baseline_regret": 0.1876719667296527,
+            "group_id": "e01ab8f5abdd8cb9",
+            "improvement": 0.0,
+            "oracle_leaf": "346333833ac1360ea928aef9d05ac7b2",
+            "oracle_regret": 0.1876719667296527
+          },
+          {
+            "baseline_leaf": "1abc7ab9c9550a53b8b9819c18a80277",
+            "baseline_regret": 0.0,
+            "group_id": "18b1b61ccc77b353",
+            "improvement": 0.0,
+            "oracle_leaf": "1abc7ab9c9550a53b8b9819c18a80277",
+            "oracle_regret": 0.0
+          },
+          {
+            "baseline_leaf": "ea6378831d67673f08a48574d45e323b",
+            "baseline_regret": 0.0,
+            "group_id": "75c1988f2ab3e8f3",
+            "improvement": 0.0,
+            "oracle_leaf": "ea6378831d67673f08a48574d45e323b",
+            "oracle_regret": 0.0
+          },
+          {
+            "baseline_leaf": "c0ecb8ae1f25b8f9c954c0c08296f785",
+            "baseline_regret": 0.1497346014443437,
+            "group_id": "1315f2850118a51e",
+            "improvement": 0.0,
+            "oracle_leaf": "c0ecb8ae1f25b8f9c954c0c08296f785",
+            "oracle_regret": 0.1497346014443437
+          },
+          {
+            "baseline_leaf": "5e550cb089836b00dd303a6314b968dc",
+            "baseline_regret": 0.0,
+            "group_id": "04df6dc6c7500524",
+            "improvement": 0.0,
+            "oracle_leaf": "5e550cb089836b00dd303a6314b968dc",
+            "oracle_regret": 0.0
+          }
+        ],
+        "smallest": [
+          {
+            "baseline_leaf": "17001cfcccf9f8d8e68bc49024c9e2ec",
+            "baseline_regret": 0.0,
+            "group_id": "a4247c55175c1388",
+            "improvement": 0.0,
+            "oracle_leaf": "17001cfcccf9f8d8e68bc49024c9e2ec",
+            "oracle_regret": 0.0
+          },
+          {
+            "baseline_leaf": "3418a6e67d5936691ca6e9a7c3f0a9f5",
+            "baseline_regret": 0.0,
+            "group_id": "92994b5c8cdc0549",
+            "improvement": 0.0,
+            "oracle_leaf": "3418a6e67d5936691ca6e9a7c3f0a9f5",
+            "oracle_regret": 0.0
+          },
+          {
+            "baseline_leaf": "cf0cb4d4ea6ce517b6a2d75726a6186b",
+            "baseline_regret": 0.0,
+            "group_id": "88c7c1af25d91065",
+            "improvement": -0.06592326030985873,
+            "oracle_leaf": "7a97662f7a0aadbeed6675a1e918eb7a",
+            "oracle_regret": 0.06592326030985873
+          },
+          {
+            "baseline_leaf": "a65f95d6183074e9d3ca929417f7d935",
+            "baseline_regret": 0.4975903677322151,
+            "group_id": "49d948edcffe8323",
+            "improvement": -0.38771435381019614,
+            "oracle_leaf": "c4b3e1dd9fb6407b4e6b0eaf4d7c5cef",
+            "oracle_regret": 0.8853047215424112
+          },
+          {
+            "baseline_leaf": "bc667d1b18e2cc8c17e467c02c68c698",
+            "baseline_regret": 0.0,
+            "group_id": "9131e6062ef2f3a9",
+            "improvement": -1.318674977270959,
+            "oracle_leaf": "c3715791adb49e3dfbaa44ac22b47b99",
+            "oracle_regret": 1.318674977270959
+          },
+          {
+            "baseline_leaf": "6aa2163b1fcba054528d9d2063d1d3c0",
+            "baseline_regret": 0.0,
+            "group_id": "b18c90a0df8c39e7",
+            "improvement": -3.4731195939710133,
+            "oracle_leaf": "b14f02a6ee26b72d5802e7924f7954d1",
+            "oracle_regret": 3.4731195939710133
+          },
+          {
+            "baseline_leaf": "d2a50536eb1f58c09525f22aee0aac4c",
+            "baseline_regret": 0.0,
+            "group_id": "a190dfa42b78cdfc",
+            "improvement": -5.745286984265871,
+            "oracle_leaf": "ea41f2204e8f7fccebf13f4af4bc43a0",
+            "oracle_regret": 5.745286984265871
+          },
+          {
+            "baseline_leaf": "81fbc9c6cc2445f43c819c8b109e7e10",
+            "baseline_regret": 0.0,
+            "group_id": "b4249959cb43bc6f",
+            "improvement": -16.409974566528778,
+            "oracle_leaf": "fbb268a52325f4db3929ef457d349947",
+            "oracle_regret": 16.409974566528778
+          }
+        ],
+        "unchanged": 18,
+        "worsened": 6
+      },
+      "groups": 32,
+      "leaves": 247,
+      "teacher_a": {
+        "baseline": {
+          "centered_mae": 4.049411332285114,
+          "centered_rmse": 6.689277560296465,
+          "groups": 32,
+          "mean_teacher_regret": 1.513323903420704,
+          "pairwise_concordance": 0.7424135497529993,
+          "pairwise_pairs": 1417,
+          "top_leaf_agreement": 0.5625,
+          "value_mae": 5.219883703678893
+        },
+        "oracle": {
+          "centered_mae": 4.552152399032187,
+          "centered_rmse": 6.768208789839739,
+          "groups": 32,
+          "mean_teacher_regret": 1.408744696885836,
+          "pairwise_concordance": 0.8,
+          "pairwise_pairs": 1420,
+          "top_leaf_agreement": 0.625,
+          "value_mae": 5.757394796054277
+        }
+      },
+      "teacher_a_regret_reduction": 0.06910563316846985,
+      "teacher_b": {
+        "baseline": {
+          "centered_mae": 4.142839746476512,
+          "centered_rmse": 6.942563681395914,
+          "groups": 32,
+          "mean_teacher_regret": 1.4729049694877248,
+          "pairwise_concordance": 0.757939308398024,
+          "pairwise_pairs": 1417,
+          "top_leaf_agreement": 0.53125,
+          "value_mae": 5.1397941043458175
+        },
+        "oracle": {
+          "centered_mae": 4.78677531941378,
+          "centered_rmse": 7.148903495150006,
+          "groups": 32,
+          "mean_teacher_regret": 1.9848717572852785,
+          "pairwise_concordance": 0.7950704225352113,
+          "pairwise_pairs": 1420,
+          "top_leaf_agreement": 0.53125,
+          "value_mae": 5.922244205498761
+        }
+      },
+      "teacher_b_regret_reduction": -0.3475898298962325
+    },
+    "exact_length_3": {
+      "clustered_bootstrap": {
+        "baseline_minus_oracle_regret": {
+          "p025": -0.4112210353234428,
+          "p975": 2.415050608434952
+        },
+        "bootstrap_seed": 20260920,
+        "cluster_count": 20,
+        "cluster_key": "source_seed",
+        "iterations": 2000
+      },
+      "group_improvement": {
+        "concentration": {
+          "1": 0.3304749505766905,
+          "2": 0.6111145110785169,
+          "4": 0.8237006626292246,
+          "8": 0.97287970587049
+        },
+        "improved": 10,
+        "largest": [
+          {
+            "baseline_leaf": "ee851262de94113f7f2fe0e11ef2e883",
+            "baseline_regret": 14.250399555276985,
+            "group_id": "c20a2b9c8ce98855",
+            "improvement": 14.250399555276985,
+            "oracle_leaf": "657bcaf9e29d271bcd75329d8f708d7f",
+            "oracle_regret": 0.0
+          },
+          {
+            "baseline_leaf": "e07c8c989c425f5c01093a2576970348",
+            "baseline_regret": 12.101449326763088,
+            "group_id": "73a930377101137b",
+            "improvement": 12.101449326763088,
+            "oracle_leaf": "8833a5cebd095a5922c01c7201ae04a5",
+            "oracle_regret": 0.0
+          },
+          {
+            "baseline_leaf": "f95d7e766e92a3dd8862624fbbba6639",
+            "baseline_regret": 4.775165447559466,
+            "group_id": "e2ab6a6437060dc5",
+            "improvement": 4.775165447559466,
+            "oracle_leaf": "fe5b258b99dd5122e8eae2fd11dcc986",
+            "oracle_regret": 0.0
+          },
+          {
+            "baseline_leaf": "ff6abcdf6d7f92b9251e3061faeda735",
+            "baseline_regret": 4.391755053464209,
+            "group_id": "137c7885d87cacb7",
+            "improvement": 4.391755053464209,
+            "oracle_leaf": "069a41c2e31e021f2bbf66032fa78d6b",
+            "oracle_regret": 0.0
+          },
+          {
+            "baseline_leaf": "de190638d885c54df4c6ca7924112b71",
+            "baseline_regret": 2.0010533741883734,
+            "group_id": "0530fe9984c813e2",
+            "improvement": 2.0010533741883734,
+            "oracle_leaf": "56933c46265890c5623f5e1469d77b11",
+            "oracle_regret": 0.0
+          },
+          {
+            "baseline_leaf": "8001a33207d40aab619f87c189d59c0f",
+            "baseline_regret": 1.6241045118070971,
+            "group_id": "f65dceb330b8045c",
+            "improvement": 1.6241045118070971,
+            "oracle_leaf": "5c8b3c18a2271b5e6868ef48af8f054a",
+            "oracle_regret": 0.0
+          },
+          {
+            "baseline_leaf": "156255b965fc257be6698532ee46ffdf",
+            "baseline_regret": 3.7722576868822557,
+            "group_id": "769677ba17731ec7",
+            "improvement": 1.597535122051994,
+            "oracle_leaf": "46fd1bb2c8b96e32c9a481070099362e",
+            "oracle_regret": 2.1747225648302617
+          },
+          {
+            "baseline_leaf": "1a0082d8ee35854772509c8f6bbdad8b",
+            "baseline_regret": 1.2100516455254393,
+            "group_id": "b4249959cb43bc6f",
+            "improvement": 1.2100516455254393,
+            "oracle_leaf": "a7ef0b8fc7d185e2fa7e6fa28fce6da6",
+            "oracle_regret": 0.0
+          },
+          {
+            "baseline_leaf": "357ee19c3583c0927d5484409e419386",
+            "baseline_regret": 0.6718629500691407,
+            "group_id": "2ef80137dc5aa89b",
+            "improvement": 0.6718629500691407,
+            "oracle_leaf": "cd87eaa5cecee0e0544dafd3b070239c",
+            "oracle_regret": 0.0
+          },
+          {
+            "baseline_leaf": "a65f95d6183074e9d3ca929417f7d935",
+            "baseline_regret": 0.4975903677322151,
+            "group_id": "49d948edcffe8323",
+            "improvement": 0.4975903677322151,
+            "oracle_leaf": "68c75acd0ec18c6b7b5a317e112e4fa7",
+            "oracle_regret": 0.0
+          },
+          {
+            "baseline_leaf": "6f47589a9b4a7916214975ee1078265a",
+            "baseline_regret": 0.0,
+            "group_id": "9a58cddc9df01b19",
+            "improvement": 0.0,
+            "oracle_leaf": "6f47589a9b4a7916214975ee1078265a",
+            "oracle_regret": 0.0
+          },
+          {
+            "baseline_leaf": "7fa078db637d0dc6dc83d787cf7b5e42",
+            "baseline_regret": 0.0,
+            "group_id": "1194824b92a5b6f5",
+            "improvement": 0.0,
+            "oracle_leaf": "7fa078db637d0dc6dc83d787cf7b5e42",
+            "oracle_regret": 0.0
+          },
+          {
+            "baseline_leaf": "97965cfb51838d6b0d35ccbed821083f",
+            "baseline_regret": 0.0,
+            "group_id": "91ce3829d47043e0",
+            "improvement": 0.0,
+            "oracle_leaf": "97965cfb51838d6b0d35ccbed821083f",
+            "oracle_regret": 0.0
+          },
+          {
+            "baseline_leaf": "c3715791adb49e3dfbaa44ac22b47b99",
+            "baseline_regret": 0.0,
+            "group_id": "9131e6062ef2f3a9",
+            "improvement": 0.0,
+            "oracle_leaf": "c3715791adb49e3dfbaa44ac22b47b99",
+            "oracle_regret": 0.0
+          },
+          {
+            "baseline_leaf": "346333833ac1360ea928aef9d05ac7b2",
+            "baseline_regret": 0.1876719667296527,
+            "group_id": "e01ab8f5abdd8cb9",
+            "improvement": 0.0,
+            "oracle_leaf": "346333833ac1360ea928aef9d05ac7b2",
+            "oracle_regret": 0.1876719667296527
+          },
+          {
+            "baseline_leaf": "1abc7ab9c9550a53b8b9819c18a80277",
+            "baseline_regret": 0.0,
+            "group_id": "18b1b61ccc77b353",
+            "improvement": 0.0,
+            "oracle_leaf": "1abc7ab9c9550a53b8b9819c18a80277",
+            "oracle_regret": 0.0
+          }
+        ],
+        "smallest": [
+          {
+            "baseline_leaf": "17001cfcccf9f8d8e68bc49024c9e2ec",
+            "baseline_regret": 0.0,
+            "group_id": "a4247c55175c1388",
+            "improvement": 0.0,
+            "oracle_leaf": "17001cfcccf9f8d8e68bc49024c9e2ec",
+            "oracle_regret": 0.0
+          },
+          {
+            "baseline_leaf": "3418a6e67d5936691ca6e9a7c3f0a9f5",
+            "baseline_regret": 0.0,
+            "group_id": "92994b5c8cdc0549",
+            "improvement": 0.0,
+            "oracle_leaf": "3418a6e67d5936691ca6e9a7c3f0a9f5",
+            "oracle_regret": 0.0
+          },
+          {
+            "baseline_leaf": "cf0cb4d4ea6ce517b6a2d75726a6186b",
+            "baseline_regret": 0.0,
+            "group_id": "88c7c1af25d91065",
+            "improvement": -0.06592326030985873,
+            "oracle_leaf": "7a97662f7a0aadbeed6675a1e918eb7a",
+            "oracle_regret": 0.06592326030985873
+          },
+          {
+            "baseline_leaf": "5e550cb089836b00dd303a6314b968dc",
+            "baseline_regret": 0.0,
+            "group_id": "04df6dc6c7500524",
+            "improvement": -0.2818954659951771,
+            "oracle_leaf": "d33994f6a27cd29128d411b4db88a52d",
+            "oracle_regret": 0.2818954659951771
+          },
+          {
+            "baseline_leaf": "76d47b3131c2e7636d78aa6f1d936727",
+            "baseline_regret": 0.0,
+            "group_id": "266c835ca79bd69c",
+            "improvement": -0.7382620187993325,
+            "oracle_leaf": "5c6380b4c76a33b0cd9cfbe13d033cb4",
+            "oracle_regret": 0.7382620187993325
+          },
+          {
+            "baseline_leaf": "6aa2163b1fcba054528d9d2063d1d3c0",
+            "baseline_regret": 0.0,
+            "group_id": "b18c90a0df8c39e7",
+            "improvement": -3.4731195939710133,
+            "oracle_leaf": "b14f02a6ee26b72d5802e7924f7954d1",
+            "oracle_regret": 3.4731195939710133
+          },
+          {
+            "baseline_leaf": "d2a50536eb1f58c09525f22aee0aac4c",
+            "baseline_regret": 0.0,
+            "group_id": "a190dfa42b78cdfc",
+            "improvement": -5.745286984265871,
+            "oracle_leaf": "ea41f2204e8f7fccebf13f4af4bc43a0",
+            "oracle_regret": 5.745286984265871
+          },
+          {
+            "baseline_leaf": "c0ecb8ae1f25b8f9c954c0c08296f785",
+            "baseline_regret": 0.1497346014443437,
+            "group_id": "1315f2850118a51e",
+            "improvement": -8.646106259680856,
+            "oracle_leaf": "1fa99db8e8eaf46749a627031b9f8a1b",
+            "oracle_regret": 8.7958408611252
+          }
+        ],
+        "unchanged": 16,
+        "worsened": 6
+      },
+      "groups": 32,
+      "leaves": 245,
+      "teacher_a": {
+        "baseline": {
+          "centered_mae": 4.08845369918622,
+          "centered_rmse": 6.725302811560415,
+          "groups": 31,
+          "mean_teacher_regret": 1.601174727580257,
+          "pairwise_concordance": 0.7415014164305949,
+          "pairwise_pairs": 1412,
+          "top_leaf_agreement": 0.5161290322580645,
+          "value_mae": 5.249909145885804
+        },
+        "oracle": {
+          "centered_mae": 6.940823189221828,
+          "centered_rmse": 10.477920817068814,
+          "groups": 31,
+          "mean_teacher_regret": 0.8214852510829699,
+          "pairwise_concordance": 0.7997159090909091,
+          "pairwise_pairs": 1408,
+          "top_leaf_agreement": 0.6451612903225806,
+          "value_mae": 8.313622722650841
+        }
+      },
+      "teacher_a_regret_reduction": 0.4869484029863356,
+      "teacher_b": {
+        "baseline": {
+          "centered_mae": 4.185444270009876,
+          "centered_rmse": 6.983724079608141,
+          "groups": 31,
+          "mean_teacher_regret": 1.5472320254970078,
+          "pairwise_concordance": 0.7570821529745042,
+          "pairwise_pairs": 1412,
+          "top_leaf_agreement": 0.4838709677419355,
+          "value_mae": 5.1665693015694645
+        },
+        "oracle": {
+          "centered_mae": 7.154742873819699,
+          "centered_rmse": 10.818790801762777,
+          "groups": 31,
+          "mean_teacher_regret": 1.2198762000170105,
+          "pairwise_concordance": 0.78125,
+          "pairwise_pairs": 1408,
+          "top_leaf_agreement": 0.5806451612903226,
+          "value_mae": 8.381240233683217
+        }
+      },
+      "teacher_b_regret_reduction": 0.2115751355229626
+    }
+  },
+  "preregistered_gate": {
+    "coverage_requirement": "all baseline leaves complete under monotonic up-to-depth view",
+    "qualifying_depths": [
+      2,
+      3
+    ],
+    "teacher_a_threshold": 0.2,
+    "teacher_b_minimum_reduction": -0.05
+  },
+  "raw_input_note": "Teacher A/B are frozen approximate references inherited from #251, not ground truth.",
+  "schema": "silver_tactical_prefix_oracle_analysis_v1",
+  "selected_prefix_changes": {
+    "depth_1_to_2": {
+      "fraction_changed": 0.5263157894736842,
+      "leaves_changed": 130,
+      "leaves_compared": 247
+    },
+    "depth_2_to_3": {
+      "fraction_changed": 0.39271255060728744,
+      "leaves_changed": 97,
+      "leaves_compared": 247
+    }
+  }
+}

@@ -1,7 +1,7 @@
 # Current research status
 
-Last verified: 2026-09-20 for the contextual first-action Silver selector
-headroom/policy screen; 2026-09-19 for forced-action historical artifact recovery and
+Last verified: 2026-09-20 for the tactical-prefix Silver oracle headroom screen
+and contextual first-action Silver selector headroom/policy screen; 2026-09-19 for forced-action historical artifact recovery and
 the PR #247 evaluator preflight; 2026-09-18 for the OOC 20% gap-stop quality
 gate and frozen
 six-arm Silver root-mechanism replay;
@@ -176,6 +176,26 @@ and does not establish that all small linear contextual policies fail. Do not
 tune additional selectors or launch fresh gameplay confirmation from this
 result. See [ledger §323](../../experiments/ledger-06.md) and the [selector
 evidence packet](../../experiments/evidence/silver_first_action_selector_20260920/README.md).
+
+The follow-up coordinated-prefix oracle screen is **`SHORT_PREFIX_HEADROOM_PRESENT`**.
+It reused the same frozen 32-group / 247-leaf / 20-source-seed DEV corpus and
+allowed common semantic `CARD`/`END_TURN` prefixes of length one through three,
+with canonical `CARD_SELECT` handling and fail-closed unsupported states. The
+all-replicate prefix intersection evaluated 689,856 accepted rows. Cross-fitted
+selection/evaluation reduced Teacher-A k=32 regret from `1.51332` to `0.56665`
+(`62.56%`) at depth 2 and to `0.58686` (`61.22%`) at depth 3; Teacher-B
+reductions were `29.05%` and `33.24%`. All 247 leaves had complete monotonic
+coverage at both qualifying depths, and the source-seed-clustered bootstrap
+intervals for baseline-minus-oracle regret were `[0.23573, 2.13812]` and
+`[0.24809, 2.10558]`. The generalized depth-1 seam exactly reproduced the
+1,266 common PR #254 counterfactual values, with zero absolute difference.
+This is an upper-bound diagnostic, not a deployable policy: the oracle observes
+cross-fitted rollout values per leaf. Do not promote a rollout policy, selector,
+search default, model, budget, or gameplay behavior from this result. The next
+distinct question is a bounded causal prefix-policy screen that measures how
+much of the depth-2/3 oracle gain can be recovered without exhaustive-prefix
+cost. See [ledger §324](../../experiments/ledger-06.md) and the [tactical-prefix
+evidence packet](../../experiments/evidence/silver_tactical_prefix_oracle_20260920/README.md).
 
 ## Silver policy/value Phase-A cost diagnostic
 

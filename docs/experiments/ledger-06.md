@@ -10394,3 +10394,55 @@ default or generalization claim is authorized. Evidence:
   **Knowledge impact:** durable benchmark result and current research status;
   no production Silver behavior, model, RNG, schema, budget, or gameplay
   default changed.
+
+## §324 — Coordinated short-prefix Silver oracle headroom (2026-09-20)
+
+- **Question and protocol:** After the merged PR #254 first-action seam, does
+  a coordinated semantic prefix of one, two, or three `PLAYER_NORMAL` actions
+  expose material oracle headroom? Reuse the frozen PR #251/#254 DEV corpus;
+  do not train, recollect gameplay seeds, use the hard64 holdout, or alter
+  production behavior. The native seam enumerates only `CARD` and `END_TURN`,
+  resolves canonical `CARD_SELECT` transitions with `SimpleAgent`, and fails
+  closed on unsupported non-`PLAYER_NORMAL` states. Prefix keys are intersected
+  across all 32 replicates. Selection is cross-fitted between replicates 0–15
+  and 16–31 in both directions; source-seed-clustered bootstrap uses 2,000
+  iterations and seed `20260920`.
+- **Depth-1 boundary:** The generalized prefix implementation exactly matches
+  the retained PR #254 counterfactual on all 1,266 common depth-1 candidates:
+  zero missing values and zero absolute utility difference. The root step keeps
+  the historical forced-first-action pending-intent behavior; later steps
+  materialize pending intents before the next supplied action.
+- **Result:** **`SHORT_PREFIX_HEADROOM_PRESENT`**. The frozen cohort has 32
+  groups / 247 leaves / 20 source seeds. Teacher-A k=32 regret is
+  `1.51332 -> 1.41354` (`6.59%`) at depth 1,
+  `1.51332 -> 0.56665` (`62.56%`) at depth 2, and
+  `1.51332 -> 0.58686` (`61.22%`) at depth 3. Teacher-B reductions are
+  `8.35%`, `29.05%`, and `33.24%`, respectively. The clustered bootstrap
+  intervals for baseline-minus-oracle Teacher-A regret are
+  `[-0.29749, 0.58429]`, `[0.23573, 2.13812]`, and
+  `[0.24809, 2.10558]`. All 247 leaves have complete monotonic selection and
+  evaluation coverage at depths 2 and 3, satisfying the preregistered gate.
+- **Surface and concentration:** The all-replicate common surface contains
+  1,266 exact length-1, 4,928 exact length-2, and 15,364 exact length-3
+  prefixes, for 21,558 unique keys and 689,856 accepted native rows. The
+  selected prefix changes on 130/247 leaves from depth 1 to 2 and 97/247 from
+  depth 2 to 3. At both qualifying depths, 8 sibling groups improve, 22 are
+  unchanged, and 2 worsen. The largest 1/2/4/8 positive-improvement groups
+  account for 46.35/61.88/88.43/100% at depth 2 and
+  47.34/63.21/83.53/100% at depth 3.
+- **Cost:** The 689,856 accepted prefix evaluations recorded diagnostic
+  `total_wall_micros` of 155.13 mean / 162 median / 191 p95 per row; the
+  canonical continuation portion was 9.13 mean / 9 median / 17 p95
+  microseconds. These timings include exhaustive diagnostic semantic-prefix
+  setup and are not a production runtime comparison or policy-cost gate.
+- **Decision and boundary:** This establishes short-prefix oracle headroom,
+  not a deployable policy or value-equivalence result. The oracle may choose a
+  different prefix per frozen leaf after observing cross-fitted continuation
+  values. Do not launch gameplay confirmation, tune a selector, change Silver
+  search/defaults, train a model, or promote a rollout behavior from this
+  packet. The next distinct experiment is a bounded causal prefix-policy screen
+  with explicit cost measurement and no holdout substitution.
+- **Evidence:** [coordinated short-prefix oracle packet](evidence/silver_tactical_prefix_oracle_20260920/README.md).
+  **Knowledge impact:** durable tactical-prefix oracle evidence and current
+  research status only; no production Silver behavior, model, RNG, schema,
+  budget, or gameplay default changed.
