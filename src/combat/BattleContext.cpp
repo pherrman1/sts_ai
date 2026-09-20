@@ -2300,16 +2300,17 @@ void BattleContext::drinkPotion(int idx, int target) {
             return;
         }
         discardPotion(idx);
+        if (player.hasRelic<R::TOY_ORNITHOPTER>()) {
+            // Smoke Bomb ends combat immediately, so a queued heal would be
+            // abandoned by executeActions after the victory outcome is set.
+            player.heal(5);
+        }
         smokeBombUsed = true;
         outcome = Outcome::PLAYER_VICTORY;
         return;
     }
 
     discardPotion(idx);
-
-    if (player.hasRelic<R::TOY_ORNITHOPTER>()) {
-        addToBot(Actions::HealPlayer(5));
-    }
 
     // todo - dont need to add to bot because always will have nothing in actionQueue?
 
@@ -2502,6 +2503,12 @@ void BattleContext::drinkPotion(int idx, int target) {
             std::cerr << seed << "invalid drink potion: " << static_cast<int>(p) << std::endl;
             assert(false);
             break;
+    }
+
+    // Potion effects resolve before Toy Ornithopter's heal.  This ordering is
+    // observable when the heal crosses the Red Skull threshold.
+    if (player.hasRelic<R::TOY_ORNITHOPTER>()) {
+        addToBot(Actions::HealPlayer(5));
     }
 
 }

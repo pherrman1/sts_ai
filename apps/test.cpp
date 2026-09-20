@@ -626,6 +626,39 @@ int testSimulatorCorrectnessPr9To19() {
         }
     }
 
+    // #17a: Smoke Bomb resolves Toy Ornithopter before its immediate escape.
+    {
+        auto bc = simulatorCorrectnessBattle({RelicId::TOY_ORNITHOPTER});
+        bc.player.maxHp = 80;
+        bc.player.curHp = 70;
+        bc.potions[0] = Potion::SMOKE_BOMB;
+        bc.potionCount = 1;
+        search::Action(search::ActionType::POTION, 0, 0).execute(bc);
+        if (bc.player.curHp != 75 || bc.potionCount != 0 ||
+                bc.potions[0] != Potion::EMPTY_POTION_SLOT ||
+                bc.outcome != Outcome::PLAYER_VICTORY ||
+                !bc.actionQueue.isEmpty()) {
+            return fail("#17a Smoke Bomb abandoned Toy Ornithopter heal");
+        }
+    }
+
+    // #17b: Ancient Potion's Artifact resolves before Toy Ornithopter crosses
+    // Red Skull's half-HP threshold, so the debuff consumes Artifact.
+    {
+        auto bc = simulatorCorrectnessBattle({RelicId::RED_SKULL,
+                                               RelicId::TOY_ORNITHOPTER});
+        bc.player.maxHp = 80;
+        bc.player.curHp = 40;
+        bc.player.strength = 3;
+        bc.potions[0] = Potion::ANCIENT_POTION;
+        bc.potionCount = 1;
+        search::Action(search::ActionType::POTION, 0, 0).execute(bc);
+        if (bc.player.curHp != 45 || bc.player.strength != 3 ||
+                bc.player.hasStatus<PS::ARTIFACT>()) {
+            return fail("#17b Ancient Potion resolved after Toy Ornithopter heal");
+        }
+    }
+
     // #18: direct positive HP loss consumes Buffer before Tungsten Rod.
     {
         auto bc = simulatorCorrectnessBattle({RelicId::FOSSILIZED_HELIX, RelicId::TUNGSTEN_ROD});
