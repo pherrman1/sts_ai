@@ -34,6 +34,47 @@ int main(int argc, char **argv) {
         require(missingModel.candidates.size() == v4CandidateActions(gc).size(),
                 "missing model did not retain current candidates for mapping validation");
         model->ok = true; // zero weights give exact ties for every action
+
+        GameContext shop = gc;
+        shop.screenState = ScreenState::SHOP_ROOM;
+        shop.gold = 200;
+        for (int i = 0; i < 7; ++i) shop.info.shop.cardPrice(i) = -1;
+        for (int i = 0; i < 3; ++i) shop.info.shop.potionPrice(i) = -1;
+        shop.info.shop.removeCost = -1;
+        shop.info.shop.relics[0] = RelicId::PRISMATIC_SHARD;
+        shop.info.shop.relicPrice(0) = 50;
+        shop.info.shop.relics[1] = RelicId::ANCHOR;
+        shop.info.shop.relicPrice(1) = 50;
+        shop.info.shop.relicPrice(2) = -1;
+        const auto allShopActions = search::GameAction::getAllActionsInState(shop);
+        const auto shopCandidates = v4CandidateActions(shop);
+        const auto isRelic = [](const auto &action) {
+            return action.getRewardsActionType() == search::GameAction::RewardsActionType::RELIC
+                && action.getIdx1() >= 0 && action.getIdx1() < 3;
+        };
+        require(std::any_of(allShopActions.begin(), allShopActions.end(), [&](const auto &action) {
+                    return isRelic(action)
+                        && shop.info.shop.relics[action.getIdx1()] == RelicId::PRISMATIC_SHARD;
+                }), "shop fixture did not expose Prismatic Shard");
+        require(std::none_of(shopCandidates.begin(), shopCandidates.end(), [&](const auto &action) {
+                    return isRelic(action)
+                        && shop.info.shop.relics[action.getIdx1()] == RelicId::PRISMATIC_SHARD;
+                }), "Prismatic Shard remained an autonomous OOC candidate");
+        require(std::any_of(shopCandidates.begin(), shopCandidates.end(), [&](const auto &action) {
+                    return isRelic(action)
+                        && shop.info.shop.relics[action.getIdx1()] == RelicId::ANCHOR;
+                }), "normal relic was removed with Prismatic Shard");
+        require(std::any_of(shopCandidates.begin(), shopCandidates.end(), [](const auto &action) {
+                    return action.getRewardsActionType() == search::GameAction::RewardsActionType::SKIP;
+                }), "shop leave action was removed with Prismatic Shard");
+        const auto shopDecision = scoreLiveOocV4(shop, path, *model);
+        require(shopDecision.supported, "shop with Prismatic Shard became unsupported: " + shopDecision.reason);
+        require(std::none_of(shopDecision.candidates.begin(), shopDecision.candidates.end(), [&](const auto &candidate) {
+                    const auto action = search::GameAction(candidate.primitiveBits);
+                    return isRelic(action)
+                        && shop.info.shop.relics[action.getIdx1()] == RelicId::PRISMATIC_SHARD;
+                }), "scored OOC candidates still contain Prismatic Shard");
+
         const auto before = test::oocStateFingerprint(gc);
         int callbacks = 0;
         g_onGameActionExecute = [&](std::uint32_t, const GameContext *) { ++callbacks; };

@@ -13,6 +13,7 @@
 #include "../ooc_strategic_net.h"
 #include "../ooc_strategic_tok_net.h"
 #include "sim/search/CombatCpsiNet.h"
+#include "sim/search/OocSemanticAction.h"
 
 using namespace sts;
 
@@ -84,7 +85,10 @@ void resetPathPolicyState() {
 
 bool oocActionNNPolicy(GameContext &gc) {
     if (!g_oocActionNN || gc.act < 1 || gc.act > 3) return false;
-    const auto actions = search::GameAction::getAllActionsInState(gc);
+    auto actions = search::GameAction::getAllActionsInState(gc);
+    actions.erase(std::remove_if(actions.begin(), actions.end(), [&](const auto &action) {
+        return !search::isSupportedAutonomousOocAction(gc, action);
+    }), actions.end());
     if (actions.empty()) return false;
 
     // Native checkpoint-distilled inference (no server)
@@ -1041,7 +1045,11 @@ void shopVPolicy(GameContext &gc) {
     if (!(is >> tok) || tok.empty()) { search::GameAction(RT::SKIP).execute(gc); return; }
     const int idx = tok.size() > 1 ? std::atoi(tok.c_str() + 1) : 0;
     if (tok[0] == 'c')      search::GameAction(RT::CARD,  idx).execute(gc);
-    else if (tok[0] == 'r') search::GameAction(RT::RELIC, idx).execute(gc);
+    else if (tok[0] == 'r') {
+        const search::GameAction action(RT::RELIC, idx);
+        if (search::isSupportedAutonomousOocAction(gc, action)) action.execute(gc);
+        else search::GameAction(RT::SKIP).execute(gc);
+    }
     else if (tok[0] == 'x') search::GameAction(RT::CARD_REMOVE).execute(gc);
     else                    search::GameAction(RT::SKIP).execute(gc);
 }

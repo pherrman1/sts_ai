@@ -1092,6 +1092,7 @@ int nativeFloorCardPick(GameContext &gc, int rIdx) {
 }
 
 std::string nativeShopPlan(GameContext &gc) {
+    using RT = search::GameAction::RewardsActionType;
     const Shop &sh = gc.info.shop;
     const auto &idx = richIdxMap();
     const int goldIdx = idx.at("gold"), dsz = idx.at("deckSize");
@@ -1100,8 +1101,11 @@ std::string nativeShopPlan(GameContext &gc) {
     std::vector<Item> items;
     for (int i = 0; i < 7; ++i) if (sh.cardPrice(i) >= 0)
         items.push_back({'c', i, sh.cardPrice(i), (int)sh.cards[i].getId()});
-    for (int i = 0; i < 3; ++i) if (sh.relicPrice(i) >= 0)
-        items.push_back({'r', i, sh.relicPrice(i), (int)sh.relics[i]});
+    for (int i = 0; i < 3; ++i) {
+        const search::GameAction action(RT::RELIC, i);
+        if (sh.relicPrice(i) >= 0 && search::isSupportedAutonomousOocAction(gc, action))
+            items.push_back({'r', i, sh.relicPrice(i), (int)sh.relics[i]});
+    }
     if (items.size() > 16) items.resize(16);
     int removeId = -1; double removeGain = 0.0;
     if (sh.removeCost >= 0) {
@@ -1322,7 +1326,9 @@ std::string vQueryShop(GameContext &gc) {
     }
     for (int j = 0; j < 3; ++j) {
         if (j) relicsCsv += ',';
-        relicsCsv += std::to_string((int)sh.relics[j]) + ":" + std::to_string(sh.relicPrice(j));
+        const search::GameAction action(search::GameAction::RewardsActionType::RELIC, j);
+        const int price = search::isSupportedAutonomousOocAction(gc, action) ? sh.relicPrice(j) : -1;
+        relicsCsv += std::to_string((int)sh.relics[j]) + ":" + std::to_string(price);
     }
     std::string req = std::string(g_shopWin ? "SW;" : "S;") + std::to_string(sh.removeCost)
                     + ";" + cardsCsv + ";" + relicsCsv + ";" + vFeatCsv(gc) + "\n";
@@ -5262,8 +5268,10 @@ bool oocShopBeamPolicy(GameContext &gc) {
         for (std::size_t bi = 0; bi < beam.size(); ++bi) {
             const BeamNode &node = beam[bi];
             const bool nodeShop = node.state.screenState == ScreenState::SHOP_ROOM;
-            const std::vector<search::GameAction> legal =
-                search::GameAction::getAllActionsInState(node.state);
+            auto legal = search::GameAction::getAllActionsInState(node.state);
+            legal.erase(std::remove_if(legal.begin(), legal.end(), [&](const auto &action) {
+                return !search::isSupportedAutonomousOocAction(node.state, action);
+            }), legal.end());
             if (legal.empty()) continue;
 
             if (nodeShop) {

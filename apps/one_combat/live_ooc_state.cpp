@@ -290,7 +290,19 @@ J lowerLiveOocAction(const LiveOocStateV1 &state,std::uint32_t bits) {
 void validateLiveOocActionSet(const LiveOocStateV1 &state,const std::vector<std::uint32_t> &bits) {
     std::set<std::uint32_t> expected(bits.begin(),bits.end()), observed;
     require(expected.size()==bits.size(),"native duplicate primitive candidates");
-    for(const auto &c:state.ooc.at("liveChoices"))require(observed.insert(primitive(c,state.projected.screenState)).second,"duplicate observed primitive mapping");
+    for(const auto &c:state.ooc.at("liveChoices")) {
+        const auto bit = primitive(c,state.projected.screenState);
+        if (!expected.count(bit)) {
+            const auto action = search::GameAction(bit);
+            const bool displayedPrismaticShard = state.projected.screenState == ScreenState::SHOP_ROOM
+                && action.getRewardsActionType() == search::GameAction::RewardsActionType::RELIC
+                && action.getIdx1() >= 0 && action.getIdx1() < 3
+                && state.projected.info.shop.relics[action.getIdx1()] == RelicId::PRISMATIC_SHARD;
+            require(displayedPrismaticShard, "native/live candidate enumeration disagreement");
+            continue;
+        }
+        require(observed.insert(bit).second,"duplicate observed primitive mapping");
+    }
     require(expected==observed,"native/live candidate enumeration disagreement");
     for(const auto b:bits)lowerLiveOocAction(state,b);
 }

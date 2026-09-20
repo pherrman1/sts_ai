@@ -183,6 +183,15 @@ class LiveGameDriverTest(unittest.TestCase):
         actions = build_legal_actions(screen, ["cancel", "proceed"])
         self.assertEqual(choose_deterministic_action(screen, actions).mcp_tool, "cancel")
 
+    def test_shop_fallback_does_not_buy_prismatic_shard(self):
+        screen = {"screen_type": "SHOP_SCREEN", "ready_for_command": True}
+        actions = [
+            LegalAction("choose", "Buy Prismatic Shard", "choose", {"choice_index": 1},
+                        {"kind": "choose", "choice": "PRISMATIC_SHARD"}),
+            LegalAction("cancel", "Leave shop", "cancel", {}, {"kind": "cancel"}),
+        ]
+        self.assertEqual(choose_deterministic_action(screen, actions).mcp_tool, "cancel")
+
     def test_state_identity_ignores_readiness(self):
         self.assertEqual(state_identity({"step": 1, "ready_for_command": True}), state_identity({"step": 1, "ready_for_command": False}))
         self.assertNotEqual(transition_identity({"screen_type": "NONE"}, {"player": {"block": 0}}),

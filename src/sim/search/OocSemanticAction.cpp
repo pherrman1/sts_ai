@@ -193,6 +193,8 @@ void addShop(Bindings &out, const GameContext &gc) {
         const int i = primitive.getIdx1();
         Effect effect;
         OocShopTarget target;
+        if (!isSupportedAutonomousOocAction(gc, primitive))
+            continue;
         switch (primitive.getRewardsActionType()) {
             case RT::CARD: effect = Effect::BUY_CARD; target.entity = shop.cards[i]; target.expectedPrice = shop.cardPrice(i); break;
             case RT::RELIC: effect = Effect::BUY_RELIC; target.entity = shop.relics[i]; target.expectedPrice = shop.relicPrice(i); break;
@@ -425,6 +427,15 @@ int liveDeckSelection(const GameContext &gc, const OocCardTarget &target, std::s
     return found;
 }
 } // namespace
+
+bool isSupportedAutonomousOocAction(const GameContext &gc, const GameAction &action) {
+    if (gc.screenState != ScreenState::SHOP_ROOM
+        || action.getRewardsActionType() != GameAction::RewardsActionType::RELIC)
+        return true;
+    const int index = action.getIdx1();
+    return index < 0 || index >= 3
+        || gc.info.shop.relics[index] != RelicId::PRISMATIC_SHARD;
+}
 
 std::string canonicalOocSemanticActionKey(const OocSemanticAction &action) {
     std::ostringstream out;
