@@ -218,7 +218,10 @@ void setPlayerPower(silver_bridge::PlayerWire &player, PlayerStatus status, int 
 void setMonsterPower(silver_bridge::MonsterWire &monster, sts::MonsterStatus status, int amount,
                      bool justApplied) {
     const int value = amount;
-    if (value < 0) return;
+    // Java boolean powers are presence states.  Vanilla may expose a
+    // negative/sentinel amount for them; presence must still set the native
+    // status bit before numeric powers are rejected as invalid.
+    if (value < 0 && !sts::isBooleanPower(status)) return;
     switch (status) {
     case sts::MonsterStatus::ARTIFACT: monster.smallPowers[0] = static_cast<std::int16_t>(value); break;
     case sts::MonsterStatus::BLOCK_RETURN: monster.smallPowers[1] = static_cast<std::int16_t>(value); break;

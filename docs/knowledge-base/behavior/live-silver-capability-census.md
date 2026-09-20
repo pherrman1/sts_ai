@@ -30,6 +30,8 @@ The pinned native boundary has explicit representations for:
 - up to five encounter slots, including dead/escaped slots when the observer
   supplies them, with a battle-lifetime Java-object-to-slot registry so target
   indices are not compacted after a death, escape, summon, or replacement.
+- the ordinary `LARGE_SLIME` split preserves native child slots 0 and 1;
+  `SLIME_BOSS` remains the separate 0 and 2 layout.
 - the separate non-native exclusion manifest records `FOUR_BYRDS`: vanilla can
   form that event composition, but this pinned simulator has no
   `MonsterEncounter` or faithful four-slot layout for it; the live importer
@@ -97,8 +99,13 @@ power/relic/potion mapping, active Stasis card identity, sparse stable slots,
 burning-elite acceptance, group-bit preservation, and card selection. The same
 test contains independent literal move-byte checks and a native construction,
 public-render, import, exact search-state parity, and one-simulation
-Silver-decision sweep for all 63 reachable encounters. Existing schema-v2
-native-parity fixtures remain in place as a compatibility regression.
+Silver-decision sweep for all 63 reachable encounters. It also runs a bounded
+dynamic-transition corpus using producer-shaped public observations rather than
+copying native status fields: ordinary Large Slime split (slots 0/1),
+Reptomancer summon, Darkling Regrow, Bronze Orb Stasis, and Awakened One stage
+2. Negative/sentinel amounts are covered for the boolean monster powers Minion,
+Asleep, Regrow, Stasis, and Painful Stabs. Existing schema-v2 native-parity
+fixtures remain in place as a compatibility regression.
 
 Knowledge impact: this page records the current importer/native boundary and
 the explicit live exceptions; it does not claim gameplay equivalence for any

@@ -9,6 +9,7 @@
 #include <set>
 #include <vector>
 
+#include "combat/Actions.h"
 #include "combat/BattleContext.h"
 #include "constants/Cards.h"
 #include "constants/MonsterMoves.h"
@@ -36,6 +37,7 @@ namespace {
 struct Fixture { const char *name; int move; const char *room; BattleStateWire wire; json observation; };
 json observation(const BattleStateWire &, const char *, int, const char *,
                  int = 0, json = json::array());
+json cardJson(const CardWire &);
 
 const char *cardId(CardId id) {
     switch (id) {
@@ -265,6 +267,14 @@ json nativeObservation(const BattleStateWire &wire, const char *room, const char
     combat["skipMonsterTurnBits"] = wire.skipMonsterTurnBits;
     combat["monsterCount"] = wire.monsterCount;
     combat["monstersAlive"] = wire.monstersAlive;
+    combat["stasis"] = json::array();
+    for (std::size_t slot = 0; slot < wire.stasisCards.size(); ++slot) {
+        const auto &card = wire.stasisCards[slot];
+        if (card.id == static_cast<std::int16_t>(CardId::INVALID)) continue;
+        auto serialized = cardJson(card);
+        serialized["slot"] = slot;
+        combat["stasis"].push_back(std::move(serialized));
+    }
     combat["monsters"] = json::array();
     for (int i = 0; i < wire.monsterCount; ++i) {
         const auto &monster = wire.monsters[i];
@@ -294,6 +304,37 @@ json nativeObservation(const BattleStateWire &wire, const char *room, const char
     }
     return out;
 }
+json javaLikeDynamicObservation(const BattleStateWire &wire, const char *room,
+                                const char *instance) {
+    auto out = nativeObservation(wire, room, instance);
+    auto &monsters = out["silverRoot"]["combat"]["monsters"];
+    for (auto &monster : monsters) {
+        const auto id = monster.value("id", std::string());
+        // These are native convenience fields, not fields emitted by the
+        // Java observer.  Dynamic parity must cross the same public boundary
+        // as production observations and reconstruct status bits from powers.
+        monster.erase("statusBits");
+        monster.erase("strength");
+        monster.erase("vulnerable");
+        monster.erase("weak");
+        monster.erase("uniquePower1");
+        if (id != "Hexaghost") monster.erase("uniquePower0");
+        if (id == "AwakenedOne") {
+            const auto &powers = monster["powers"];
+            const bool phase2 = std::any_of(powers.begin(), powers.end(), [](const json &power) {
+                return power.value("id", std::string()) == "MinionLeader";
+            });
+            monster["miscInfo"] = phase2 ? 1 : 0;
+        } else if (id == "BronzeOrb") {
+            const auto &powers = monster["powers"];
+            const bool usedStasis = std::any_of(powers.begin(), powers.end(), [](const json &power) {
+                return power.value("id", std::string()) == "Stasis";
+            });
+            monster["miscInfo"] = usedStasis ? 1 : 0;
+        }
+    }
+    return out;
+}
 void normalizeFirstObservationIdentity(BattleStateWire &wire) {
     for (std::size_t i = 0; i < wire.drawPile.unknown.size(); ++i)
         wire.drawPile.unknown[i].uniqueId = static_cast<std::int16_t>(i);
@@ -304,6 +345,159 @@ void normalizeFirstObservationIdentity(BattleStateWire &wire) {
     wire.limbo.assign(10, CardWire{});
     for (auto &card : wire.limbo) card.uniqueId = -1;
     wire.stasisCards.fill(CardWire{});
+}
+void normalizeDynamicObservationIdentity(BattleStateWire &wire) {
+    int nextId = 0;
+    const auto assign = [&nextId](auto &cards) {
+        for (auto &card : cards) card.uniqueId = static_cast<std::int16_t>(nextId++);
+    };
+    assign(wire.drawPile.unknown);
+    assign(wire.discardPile.unknown);
+    assign(wire.exhaustPile.unknown);
+    assign(wire.hand);
+    wire.limbo.clear();
+    const auto stasisCards = wire.stasisCards;
+    wire.stasisCards.fill(CardWire{});
+    for (std::size_t i = 0; i < wire.stasisCards.size(); ++i) {
+        auto &card = wire.stasisCards[i];
+        if (stasisCards[i].id != static_cast<std::int16_t>(CardId::INVALID))
+            card = stasisCards[i];
+        if (card.id != static_cast<std::int16_t>(CardId::INVALID))
+            card.uniqueId = static_cast<std::int16_t>(nextId++);
+    }
+    wire.nextUniqueCardId = nextId;
+    wire.observedGeneration = 1;
+}
+void resolveMonsterTransition(BattleContext &live, int monsterIdx) {
+    if (monsterIdx < 0 || monsterIdx >= live.monsters.monsterCount)
+        throw std::runtime_error("dynamic transition monster index is out of range");
+    live.setState(InputState::EXECUTING_ACTIONS);
+    live.monsterTurnIdx = monsterIdx;
+    live.monsters.arr[monsterIdx].takeTurn(live);
+    // The transition under test is the selected monster's action.  Skip the
+    // remaining monster turns and drain its queued actions to reach the next
+    // ordinary player decision boundary.
+    live.monsterTurnIdx = live.monsters.monsterCount;
+    live.setState(InputState::EXECUTING_ACTIONS);
+    live.executeActions();
+    if (live.inputState != InputState::PLAYER_NORMAL)
+        throw std::runtime_error("dynamic transition did not reach PLAYER_NORMAL");
+}
+void assertDynamicParity(const char *name, BattleContext &live, CombatKnowledgeState &knowledge,
+                         const GameContext &game) {
+    auto wire = makeSilverBattleStateWire(live, knowledge, makeSilverRunContext(game), live.seed);
+    if (!wire.valid) throw std::runtime_error(std::string(name) + " native conversion failed");
+    normalizeDynamicObservationIdentity(wire);
+    const auto rendered = javaLikeDynamicObservation(wire, "MONSTER", name);
+    one_combat::advisor::SilverImportContext context;
+    context.session = "dynamic-transition";
+    const auto imported = one_combat::advisor::importSilverRoot(rendered, context);
+    if (!imported.ok)
+        throw std::runtime_error(std::string(name) + " Java-like observation rejected: "
+            + imported.reason);
+    auto canonical = wire;
+    canonical.isolatedSearchSeed = imported.wire.isolatedSearchSeed;
+    if (!convertedStatesEqualForSearch(canonical, imported.wire))
+        throw std::runtime_error(std::string(name) + " dynamic search-state parity failed: native="
+            + battleStateWireEnvelope(canonical).dump() + " imported="
+            + battleStateWireEnvelope(imported.wire).dump());
+    SilverSearchConfig config;
+    config.simulationsPerDecision = 1;
+    config.adaptiveEnabled = false;
+    config.exactVisitLockEnabled = false;
+    config.rhoRacingEnabled = false;
+    const auto decision = runSilverDecision(imported.wire, config);
+    if (!decision.accepted)
+        throw std::runtime_error(std::string(name) + " dynamic Silver decision was rejected");
+}
+void verifyDynamicTransitionCorpus() {
+    {
+        GameContext game(CharacterClass::IRONCLAD, 0xD501u, 0);
+        game.act = 1; game.floorNum = 1;
+        BattleContext live;
+        live.init(game, MonsterEncounter::LARGE_SLIME);
+        CombatKnowledgeState knowledge;
+        knowledge.initializeFromLiveBattle(live);
+        const auto split = live.monsters.arr[0].id == MonsterId::ACID_SLIME_L
+            ? MonsterMoveId::ACID_SLIME_L_SPLIT : MonsterMoveId::SPIKE_SLIME_L_SPLIT;
+        live.monsters.arr[0].moveHistory[0] = split;
+        resolveMonsterTransition(live, 0);
+        if (live.monsters.monsterCount != 2 || live.monsters.arr[0].idx != 0
+            || live.monsters.arr[1].idx != 1
+            || live.monsters.arr[0].id != live.monsters.arr[1].id)
+            throw std::runtime_error("Large Slime split did not occupy native slots 0/1");
+        assertDynamicParity("LARGE_SLIME_SPLIT", live, knowledge, game);
+    }
+    {
+        GameContext game(CharacterClass::IRONCLAD, 0xD502u, 0);
+        game.act = 2; game.floorNum = 1;
+        BattleContext live;
+        live.init(game, MonsterEncounter::REPTOMANCER);
+        CombatKnowledgeState knowledge;
+        knowledge.initializeFromLiveBattle(live);
+        live.monsters.arr[2].moveHistory[0] = MonsterMoveId::REPTOMANCER_SUMMON;
+        resolveMonsterTransition(live, 2);
+        if (live.monsters.monsterCount != 5 || live.monsters.arr[3].id != MonsterId::DAGGER)
+            throw std::runtime_error("Reptomancer summon did not preserve native slot 3");
+        assertDynamicParity("REPTOMANCER_SUMMON", live, knowledge, game);
+    }
+    {
+        GameContext game(CharacterClass::IRONCLAD, 0xD503u, 0);
+        game.act = 3; game.floorNum = 1;
+        BattleContext live;
+        live.init(game, MonsterEncounter::THREE_DARKLINGS);
+        CombatKnowledgeState knowledge;
+        knowledge.initializeFromLiveBattle(live);
+        if (!live.monsters.arr[0].hasStatus<MonsterStatus::REGROW>())
+            throw std::runtime_error("Darkling root did not expose Java Regrow power");
+        live.setState(InputState::EXECUTING_ACTIONS);
+        live.addToBot(Actions::DamageEnemy(0, 9999));
+        live.executeActions();
+        if (live.inputState != InputState::PLAYER_NORMAL
+            || !live.monsters.arr[0].isHalfDead()
+            || live.monsters.arr[0].moveHistory[0] != MonsterMoveId::DARKLING_REGROW)
+            throw std::runtime_error("Darkling Regrow transition did not produce public state");
+        assertDynamicParity("DARKLING_REGROW", live, knowledge, game);
+    }
+    {
+        GameContext game(CharacterClass::IRONCLAD, 0xD504u, 0);
+        game.act = 2; game.floorNum = 1;
+        BattleContext live;
+        live.init(game, MonsterEncounter::AUTOMATON);
+        CombatKnowledgeState knowledge;
+        knowledge.initializeFromLiveBattle(live);
+        live.monsters.arr[1].moveHistory[0] = MonsterMoveId::BRONZE_AUTOMATON_SPAWN_ORBS;
+        resolveMonsterTransition(live, 1);
+        live.monsters.arr[0].moveHistory[0] = MonsterMoveId::BRONZE_ORB_STASIS;
+        resolveMonsterTransition(live, 0);
+        if (live.cards.stasisCards[0].id == CardId::INVALID
+            || !live.monsters.arr[0].hasStatus<MonsterStatus::STASIS>())
+            throw std::runtime_error("Bronze Orb Stasis transition did not produce public state");
+        assertDynamicParity("BRONZE_ORB_STASIS", live, knowledge, game);
+    }
+    {
+        GameContext game(CharacterClass::IRONCLAD, 0xD505u, 0);
+        game.act = 3; game.floorNum = 1;
+        BattleContext live;
+        live.init(game, MonsterEncounter::AWAKENED_ONE);
+        CombatKnowledgeState knowledge;
+        knowledge.initializeFromLiveBattle(live);
+        live.setState(InputState::EXECUTING_ACTIONS);
+        live.addToBot(Actions::DamageEnemy(2, 9999));
+        live.addToBot(Actions::DamageEnemy(0, 9999));
+        live.addToBot(Actions::DamageEnemy(1, 9999));
+        live.executeActions();
+        live.monsters.arr[2].takeTurn(live);
+        live.monsterTurnIdx = live.monsters.monsterCount;
+        live.setState(InputState::EXECUTING_ACTIONS);
+        live.executeActions();
+        if (live.inputState != InputState::PLAYER_NORMAL
+            || live.monsters.arr[2].isHalfDead()
+            || !live.monsters.arr[2].hasStatus<MonsterStatus::MINION_LEADER>())
+            throw std::runtime_error("Awakened One stage-2 transition did not produce public state");
+        assertDynamicParity("AWAKENED_ONE_STAGE2", live, knowledge, game);
+    }
+    std::cout << "live Silver dynamic transition corpus passed: split/summon/regrow/stasis/phase\n";
 }
 std::string uuid(const CardWire &c) { return "card-" + std::to_string(c.uniqueId); }
 json cardJson(const CardWire &c) {
@@ -871,6 +1065,7 @@ int main() {
     try {
         verifyRuntimeMoveBoundary();
         verifyEncounterManifestAndNativeSweep();
+        verifyDynamicTransitionCorpus();
         const std::vector<Fixture> fixtures = {
             fixture(MonsterEncounter::CULTIST, "Cultist", 3, "MONSTER", 0xC011u),
             fixture(MonsterEncounter::JAW_WORM, "JawWorm", 1, "MONSTER", 0xA01u),
@@ -1365,6 +1560,20 @@ int main() {
             || !(powerImported.wire.monsters[0].statusBits
                 & (1ULL << static_cast<int>(MonsterStatus::VULNERABLE))))
             throw std::runtime_error("monster Vulnerable amount/activation parity failed");
+        const char *booleanPowerNames[] = {"Minion", "Asleep", "Regrow", "Stasis", "PainfulStabs"};
+        const MonsterStatus booleanPowerStatuses[] = {
+            MonsterStatus::MINION, MonsterStatus::ASLEEP, MonsterStatus::REGROW,
+            MonsterStatus::STASIS, MonsterStatus::PAINFUL_STABS};
+        for (int i = 0; i < 5; ++i) {
+            auto booleanPower = general;
+            booleanPower["silverRoot"]["combat"]["monsters"][0]["powers"] = json::array({
+                json{{"id", booleanPowerNames[i]}, {"amount", -1}}});
+            const auto imported = one_combat::advisor::importSilverRoot(booleanPower);
+            if (!imported.ok || !(imported.wire.monsters[0].statusBits
+                    & (1ULL << static_cast<int>(booleanPowerStatuses[i]))))
+                throw std::runtime_error(std::string("negative boolean power was discarded: ")
+                    + booleanPowerNames[i] + " reason=" + imported.reason);
+        }
         auto missingMisc = general;
         missingMisc["silverRoot"]["combat"]["monsters"][0].erase("miscInfo");
         if (one_combat::advisor::importSilverRoot(missingMisc).reason

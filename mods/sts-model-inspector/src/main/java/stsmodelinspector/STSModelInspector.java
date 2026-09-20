@@ -873,7 +873,7 @@ public final class STSModelInspector implements PostInitializeSubscriber,
             if ("Orb Walker".equals(id)) return sameIdOrdinal < 2 ? sameIdOrdinal : -1;
         } else if ("LARGE_SLIME".equals(encounter)) {
             if ("AcidSlime_M".equals(id) || "SpikeSlime_M".equals(id))
-                return sameIdOrdinal == 0 ? 0 : (sameIdOrdinal == 1 ? 2 : -1);
+                return sameIdOrdinal == 0 ? 0 : (sameIdOrdinal == 1 ? 1 : -1);
         } else if ("SLIME_BOSS".equals(encounter)) {
             if ("SpikeSlime_L".equals(id)) return 0;
             if ("AcidSlime_L".equals(id)) return 2;
