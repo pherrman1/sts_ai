@@ -357,6 +357,11 @@ def standardize(train: np.ndarray, values: np.ndarray) -> tuple[np.ndarray, np.n
     return (train - mean) / scale, (values - mean) / scale, (mean, scale)
 
 
+def factorized_q_mask(rows: list[dict]) -> np.ndarray:
+    """Supervise Q1 once per length-1 prefix, never once per child row."""
+    return np.asarray([float(row["prefix_length"] == 1) for row in rows], dtype=np.float32)
+
+
 class FlatMLP(nn.Module):
     def __init__(self, numeric_width: int):
         super().__init__()
@@ -429,13 +434,15 @@ def fit_flat(train: list[dict], test: list[dict], fold: int) -> tuple[np.ndarray
         loss.backward()
         optimizer.step()
     with torch.no_grad():
-        prediction = model(torch.from_numpy(numeric_test), torch.from_numpy(card_ids(test))).numpy()
+        test_numeric = torch.from_numpy(numeric_test)
+        test_cards = torch.from_numpy(card_ids(test))
+        prediction = model(test_numeric, test_cards).numpy()
         timings = []
         by_leaf = defaultdict(list)
         for index, row in enumerate(test): by_leaf[row["leaf_snapshot_id"]].append(index)
         for indices in by_leaf.values():
             start = time.perf_counter()
-            model(torch.from_numpy(numeric_test[indices]), torch.from_numpy(card_ids(test)[indices]))
+            model(test_numeric[indices], test_cards[indices])
             timings.append((time.perf_counter() - start) * 1000.0)
     params = sum(parameter.numel() for parameter in model.parameters())
     return prediction, {"parameters": params, "serialized_bytes": params * 4,
@@ -477,16 +484,22 @@ def fit_factorized(train: list[dict], test: list[dict], fold: int) -> tuple[np.n
     q_targets = torch.tensor(q_targets, dtype=torch.float32)
     delta_targets = torch.tensor(delta_targets, dtype=torch.float32)
     delta_mask = torch.tensor(delta_mask, dtype=torch.float32)
+    q_mask = torch.from_numpy(factorized_q_mask(train))
+    if float(q_mask.sum()) == 0.0 or float(delta_mask.sum()) == 0.0:
+        raise ValueError("factorized training fold lacks Q1 or Delta2 supervision")
     for _ in range(80):
         optimizer.zero_grad(set_to_none=True)
         q_pred, delta_pred = model(states, x1, x2, cards)
-        q_loss = nn.functional.huber_loss(q_pred, q_targets)
+        q_loss = (nn.functional.huber_loss(q_pred, q_targets, reduction="none") * q_mask).sum() / q_mask.sum()
         d_loss = (nn.functional.huber_loss(delta_pred, delta_targets, reduction="none") * delta_mask).sum() / delta_mask.sum()
         (q_loss + d_loss).backward()
         optimizer.step()
     with torch.no_grad():
-        q_pred, delta_pred = model(torch.from_numpy(s_test), torch.from_numpy(a1_test),
-                                   torch.from_numpy(a2_test), torch.from_numpy(card_ids(test)))
+        test_states = torch.from_numpy(s_test)
+        test_a1 = torch.from_numpy(a1_test)
+        test_a2 = torch.from_numpy(a2_test)
+        test_cards = torch.from_numpy(card_ids(test))
+        q_pred, delta_pred = model(test_states, test_a1, test_a2, test_cards)
         q_values = q_pred.numpy()
         delta_values = delta_pred.numpy()
         prediction = np.asarray([q if row["prefix_length"] == 1 else q + delta
@@ -496,8 +509,7 @@ def fit_factorized(train: list[dict], test: list[dict], fold: int) -> tuple[np.n
         for index, row in enumerate(test): by_leaf[row["leaf_snapshot_id"]].append(index)
         for indices in by_leaf.values():
             start = time.perf_counter()
-            model(torch.from_numpy(s_test[indices]), torch.from_numpy(a1_test[indices]),
-                  torch.from_numpy(a2_test[indices]), torch.from_numpy(card_ids(test)[indices]))
+            model(test_states[indices], test_a1[indices], test_a2[indices], test_cards[indices])
             timings.append((time.perf_counter() - start) * 1000.0)
     params = sum(parameter.numel() for parameter in model.parameters())
     aux = {"q1_prediction": q_values, "delta2_prediction": delta_values}
@@ -603,7 +615,9 @@ def group_diagnostics(rows: list[dict]) -> dict:
 
 def timing_summary(arm_meta: dict) -> dict:
     values = [time_ms for fold in arm_meta["folds"] for time_ms in fold.get("forward_times_ms", [])]
-    return {"batch": "all candidates for one leaf", "threading": "single torch thread / sklearn predict",
+    return {"batch": "all candidates for one leaf",
+            "scope": "pure model forward; input tensors and leaf indices precomputed outside the timer",
+            "threading": "single torch thread / sklearn predict",
             "median_ms": float(np.percentile(values, 50)), "p95_ms": float(np.percentile(values, 95)),
             "samples": len(values)}
 

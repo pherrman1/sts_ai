@@ -10546,3 +10546,38 @@ default or generalization claim is authorized. Evidence:
   **Knowledge impact:** durable current research and offline evidence only;
   no production Silver behavior, model, RNG, schema, budget, gameplay result,
   or default changed.
+
+## §327 — Review correction for learned Silver variable-prefix scorer (2026-09-20)
+
+- **Finding:** Independent review identified that the original
+  `MLP_FACTORIZED_V1` implementation supervised the shared Q1 head on every
+  training row. A length-1 target was therefore repeated once per child
+  prefix, weighting Q1 by branching factor rather than by the preregistered
+  one-row-per-length-1-prefix contract. The original factorized metrics in
+  §326 are superseded for this arm.
+- **Correction:** `fit_factorized()` now masks Q1 Huber loss to
+  `prefix_length == 1`; Delta2 remains masked to `prefix_length == 2`. A
+  focused contract test verifies the mask. The flat and Ridge prediction
+  values were not retrained; the flat arm was rerun only to refresh timing
+  under the corrected timer scope, with held-out predictions matching the
+  prior values to `1e-12` absolute tolerance.
+- **Corrected result:** The factorized arm reached Teacher-A regret
+  `1.9130594165447128`, recovered `-42.23%` of the frozen oracle gain, changed
+  Teacher-B by `-53.29%`, and had source-seed-clustered interval
+  `[-1.596671381394513, 0.7164551748765366]`. Its held-out Q1 MAE/RMSE was
+  `4.20910/7.42360`; Delta2 was `5.52571/9.64279`. The classification remains
+  **`LEARNED_PREFIX_SCORER_INSUFFICIENT`**; no partial or promotion gate was
+  crossed.
+- **Timing correction:** MLP input tensors and leaf indices are now
+  precomputed outside the timer. Pure per-leaf forward timing is flat MLP
+  median/p95 `0.108894/0.241373 ms`, Ridge `0.076873/0.148462 ms`, and
+  factorized `0.155411/0.315303 ms`, each with one CPU thread. These remain
+  descriptive offline timings, not native/OOC speed claims.
+- **Evidence:** [corrected learned prefix scorer packet](evidence/silver_learned_prefix_scorer_20260920/README.md);
+  candidate-feature SHA256 remains
+  `964eefcbd25fa1cf2453caaa12ef61a758f22dad089e17a5248d0e5dbf5414a5`, and
+  corrected cross-fit prediction SHA256 is
+  `5c4716c25b09ee7e2fe7de23e8d1cf1786099b64195207d8065451361827e437`.
+- **Boundary:** This correction changes no production Silver path, model,
+  RNG, schema, budget, gameplay, MCTS, holdout, or default. **Knowledge
+  impact:** durable current research and corrected offline evidence only.

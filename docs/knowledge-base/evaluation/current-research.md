@@ -239,14 +239,19 @@ The flat MLP recovered `68.87%` of the frozen Teacher-A oracle gain and
 reduced Teacher-B regret by `34.52%`, but its source-seed-clustered
 baseline-minus-model interval was `[-0.09000, 1.83122]`, so the positive-support
 gate was not met. Ridge recovered `9.20%` with a boundary lower endpoint of
-`0.00000`; the factorized arm recovered `15.17%`, had Teacher-B reduction
-`-18.37%`, and interval `[-1.26761, 1.68724]`. This is evidence that the
-current compact feature/model family exposes some learnable signal but does
-not qualify a learned selector. Do not run gameplay, promote a model, alter
-Silver/MCTS, or use hard64 holdout from this result; the next research step,
-if pursued, is a richer causal state encoding with the same held-out contract.
-See [ledger §326](../../experiments/ledger-06.md) and the [learned-scorer
-evidence packet](../../experiments/evidence/silver_learned_prefix_scorer_20260920/README.md).
+`0.00000`. Review found that the original factorized Q1 loss repeated each
+length-1 target once per child; the corrected arm masks Q1 supervision to
+length-1 rows and recovers `-42.23%`, changes Teacher-B by `-53.29%`, and has
+interval `[-1.59667, 0.71646]`. The corrected packet therefore remains
+insufficient and does not qualify a learned selector. The refreshed pure
+forward per-leaf timings are flat MLP `0.109/0.241 ms` median/p95, Ridge
+`0.077/0.148 ms`, and factorized `0.155/0.315 ms`, with input tensors and
+leaf indices precomputed outside the timers. Do not run gameplay, promote a
+model, alter Silver/MCTS, or use hard64 holdout from this result; the next
+research step, if pursued, is a richer causal state encoding with the same
+held-out contract. See [ledger §327](../../experiments/ledger-06.md), the
+[original experiment §326](../../experiments/ledger-06.md), and the
+[corrected learned-scorer evidence packet](../../experiments/evidence/silver_learned_prefix_scorer_20260920/README.md).
 
 ## Silver policy/value Phase-A cost diagnostic
 

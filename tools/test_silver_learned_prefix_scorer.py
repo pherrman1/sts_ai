@@ -6,7 +6,7 @@ import numpy as np
 
 from learn_silver_prefix_scorer import (
     CARD_COUNT, FORBIDDEN_FIELDS, FOLD_COUNT, action_numeric, add_parent_q,
-    choose_predicted, fnv1a, linear_vector, none_action, parse_action,
+    choose_predicted, factorized_q_mask, fnv1a, linear_vector, none_action, parse_action,
     source_fold, standardize,
 )
 
@@ -46,6 +46,11 @@ class LearnedPrefixContracts(unittest.TestCase):
         self.assertAlmostEqual((rows[1]["q32"] - rows[1]["leaf_baseline32"]),
                                (rows[1]["parent_q32"] - rows[1]["leaf_baseline32"]) +
                                (rows[1]["q32"] - rows[1]["parent_q32"]))
+
+    def test_factorized_q_supervision_is_only_length_one(self):
+        rows = [{"prefix_length": 1}, {"prefix_length": 2}, {"prefix_length": 2},
+                {"prefix_length": 1}]
+        np.testing.assert_array_equal(factorized_q_mask(rows), [1.0, 0.0, 0.0, 1.0])
 
     def test_centered_target(self):
         self.assertEqual(7.5 - 3.0, 4.5)
