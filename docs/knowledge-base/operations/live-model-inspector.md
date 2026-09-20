@@ -407,6 +407,10 @@ request is required. Ascension and seed are passed through to MCP.
 In-combat potion/discovery `CARD_REWARD` modals follow the inspector's OOC
 boundary, with explicit unsupported fallback when skipping is unavailable.
 Combat `GRID`/`HAND_SELECT` boundaries continue to use Silver.
+An unqualified combat hand selector can fall through the inspector's capture
+gate to an OOC snapshot. The driver stops on that boundary mismatch; it does
+not reinterpret an OOC unsupported result as a Silver recommendation. Such
+selectors require separate combat capture qualification before continuation.
 
 Card-reward skips are retained by session and an opaque, read-only identity of
 that physical reward. Returning to the combat-reward list collects other
