@@ -528,6 +528,11 @@ int runSpotWeaknessHoldout(int argc, char **argv) {
     rejectExisting(corpusPath);
     rejectExisting(rolloutsPath);
     rejectExisting(selectionPath);
+    const auto spoolPath = corpusPath.string() + ".spool.jsonl";
+    rejectExisting(spoolPath);
+    std::ofstream spool(spoolPath);
+    if (!spool) throw std::runtime_error("cannot create holdout spool");
+
     std::ifstream input(snapshotsPath);
     if (!input) throw std::runtime_error("cannot open snapshots: " + snapshotsPath.string());
     std::unordered_map<std::string, Group> groups;
@@ -593,7 +598,14 @@ int runSpotWeaknessHoldout(int argc, char **argv) {
                 if (!probe.accepted)
                     throw std::runtime_error("candidate probe failed closed at holdout leaf: "
                         + probe.failureReason);
+                const auto candidateFingerprint = probe.applicable
+                    ? silver_bridge::semanticActionFingerprint(probe.action) : std::string{};
                 group.incomingActionFingerprints.insert(observation.incomingActionFingerprint);
+                const Capture capture{caseId, sourceSeed, benchmarkSeed,
+                    roomType, sourceExecutableSha, sourceStateHash, groupId, leafId,
+                    probe.applicable, candidateFingerprint, observation};
+                spool << spotCorpusRow(capture, executableSha, maxLeaves).dump() << '\n';
+                if (!spool) throw std::runtime_error("holdout spool write failure");
             }
         };
         const auto replay = silver_bridge::runSilverCombatReplay(replayWire, config);
@@ -606,6 +618,10 @@ int runSpotWeaknessHoldout(int argc, char **argv) {
     if (replayFailures != 0)
         throw std::runtime_error("replay population has technical failures: "
             + std::to_string(replayFailures));
+    spool.flush();
+    spool.close();
+    if (!spool) throw std::runtime_error("holdout spool write failure");
+
     std::vector<Group *> complete;
     for (auto &[ignored, group] : groups) {
         if (!group.candidateActive || group.inconsistentLegal || group.tooLarge || group.leafIds.empty()) continue;
@@ -635,74 +651,21 @@ int runSpotWeaknessHoldout(int argc, char **argv) {
         throw std::runtime_error("INSUFFICIENT_FRESH_COVERAGE: selected only "
             + std::to_string(selected.size()) + " groups within leaf cap");
 
-    // Re-run the identical fixed-1k replay population with collection enabled only for the
-    // selected complete groups. This second pass preserves the exact leaf identities while
-    // avoiding retention or serialization of every unselected wire state.
-    std::set<std::string> selectedGroupIds;
-    for (const Group *group : selected) selectedGroupIds.insert(group->id);
-    std::map<std::string, Capture> selectedCaptures;
-    std::ifstream selectedInput(snapshotsPath);
-    if (!selectedInput) throw std::runtime_error("cannot reopen snapshots: " + snapshotsPath.string());
-    int selectedReplayFailures = 0;
-    while (std::getline(selectedInput, line)) {
-        if (line.empty()) continue;
-        const auto row = Json::parse(line);
-        const auto wire = silver_bridge::validateHardCombatSnapshot(row);
-        auto replayWire = wire;
-        replayWire.isolatedSearchSeed = row.at("benchmark_seed").get<std::uint64_t>();
-        const auto caseId = row.at("case_id").get<std::string>();
-        const auto sourceSeed = row.at("source_seed").get<std::uint64_t>();
-        const auto benchmarkSeed = row.at("benchmark_seed").get<std::uint64_t>();
-        const auto sourceExecutableSha = row.at("executable_git_sha").get<std::string>();
-        const auto sourceStateHash = row.at("state_hash").get<std::string>();
-        const auto roomType = row.at("room_type").get<std::string>();
-        silver_bridge::SilverSearchConfig config;
-        config.simulationsPerDecision = budget;
-        config.reuseCap = silver_bridge::kSilverProductionReuseCap;
-        config.reuseCapMode = silver_bridge::SilverReuseCapMode::ALLOCATED;
-        config.adaptiveEnabled = false;
-        config.exactVisitLockEnabled = false;
-        config.rhoRacingEnabled = false;
-        config.leafObserver = [&](silver_bridge::SilverLeafObservation &observation) {
-            const auto groupId = groupIdFor(caseId, observation);
-            if (!selectedGroupIds.count(groupId)) return;
-            if (observation.phase == silver_bridge::SilverLeafObservationPhase::START) {
-                if (observation.state.inputState == 1
-                        && observation.parentLegalActionFingerprints.size() >= 2)
-                    observation.collectResult = true;
-                return;
-            }
-            const auto probe = silver_bridge::probeSilverSpotWeaknessFirst(observation.state);
-            if (!probe.accepted)
-                throw std::runtime_error("candidate probe failed closed at selected holdout leaf: "
-                    + probe.failureReason);
-            const auto leafId = leafIdFor(groupId, observation.state);
-            const auto candidateFingerprint = probe.applicable
-                ? silver_bridge::semanticActionFingerprint(probe.action) : std::string{};
-            selectedCaptures.emplace(leafId, Capture{caseId, sourceSeed, benchmarkSeed,
-                roomType, sourceExecutableSha, sourceStateHash, groupId, leafId,
-                probe.applicable, candidateFingerprint, observation});
-        };
-        const auto replay = silver_bridge::runSilverCombatReplay(replayWire, config);
-        if (!replay.accepted) {
-            ++selectedReplayFailures;
-            std::cerr << "selected replay failure case=" << caseId
-                << " reason=" << replay.failureReason << '\n';
-        }
-    }
-    if (selectedInput.bad()) throw std::runtime_error("selected snapshot read failure");
-    if (selectedReplayFailures != 0)
-        throw std::runtime_error("selected replay population has technical failures: "
-            + std::to_string(selectedReplayFailures));
-    if (static_cast<int>(selectedCaptures.size()) != selectedLeaves)
-        throw std::runtime_error("selected replay captured " + std::to_string(selectedCaptures.size())
-            + " leaves, expected " + std::to_string(selectedLeaves));
-
     std::ofstream corpus(corpusPath);
     std::ofstream rollouts(rolloutsPath);
     std::ofstream selection(selectionPath);
     if (!corpus || !rollouts || !selection) throw std::runtime_error("cannot create holdout outputs");
-    std::vector<Json> selectedRows;
+    std::vector<Json> spooledRows;
+    std::ifstream spoolInput(spoolPath);
+    if (!spoolInput) throw std::runtime_error("cannot reopen holdout spool");
+    std::map<std::string, Json> spoolByLeaf;
+    while (std::getline(spoolInput, line)) {
+        if (!line.empty()) {
+            const auto row = Json::parse(line);
+            spoolByLeaf.emplace(row.at("leaf_snapshot_id").get<std::string>(), row);
+        }
+    }
+    if (spoolInput.bad()) throw std::runtime_error("holdout spool read failure");
     Json selectedGroups = Json::array();
     std::vector<std::string> leafIds;
     for (const Group *group : selected) {
@@ -711,25 +674,24 @@ int runSpotWeaknessHoldout(int argc, char **argv) {
             {"leaf_count", group->leafIds.size()}, {"legal_action_count", group->legal.size()}};
         Json activeLeaves = Json::array();
         for (const auto &leafId : group->leafIds) {
-            const auto captureIt = selectedCaptures.find(leafId);
-            if (captureIt == selectedCaptures.end()) throw std::runtime_error("selected leaf missing from replay");
-            const auto &capture = captureIt->second;
-            const auto row = spotCorpusRow(capture, executableSha, maxLeaves);
+            const auto rowIt = spoolByLeaf.find(leafId);
+            if (rowIt == spoolByLeaf.end()) throw std::runtime_error("selected leaf missing from spool");
+            const auto &row = rowIt->second;
             corpus << row.dump() << '\n';
-            selectedRows.push_back(row);
+            spooledRows.push_back(row);
             leafIds.push_back(leafId);
-            if (capture.candidateApplicable) activeLeaves.push_back(leafId);
+            if (row.at("candidate_applicable").get<bool>()) activeLeaves.push_back(leafId);
         }
         groupRow["candidate_active_leaf_ids"] = std::move(activeLeaves);
         selectedGroups.push_back(std::move(groupRow));
     }
     corpus.flush();
     if (!corpus) throw std::runtime_error("holdout corpus write failure");
-    std::sort(selectedRows.begin(), selectedRows.end(), [](const Json &lhs, const Json &rhs) {
-        return std::make_pair(lhs.at("group_id").get<std::string>(), lhs.at("leaf_snapshot_id").get<std::string>())
-            < std::make_pair(rhs.at("group_id").get<std::string>(), rhs.at("leaf_snapshot_id").get<std::string>());
+    std::sort(spooledRows.begin(), spooledRows.end(), [](const Json &lhs, const Json &rhs) {
+        return std::tie(lhs.at("group_id"), lhs.at("leaf_snapshot_id"))
+            < std::tie(rhs.at("group_id"), rhs.at("leaf_snapshot_id"));
     });
-    for (const auto &corpusRow : selectedRows) {
+    for (const auto &corpusRow : spooledRows) {
         const auto leaf = silver_bridge::battleStateWireFromEnvelope(corpusRow.at("leaf_state"));
         const auto originalRoot = silver_bridge::battleStateWireFromEnvelope(
             corpusRow.at("original_root_state"));
