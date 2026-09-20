@@ -629,20 +629,20 @@ public final class STSModelInspector implements PostInitializeSubscriber,
     }
 
     private Snapshot captureStableSnapshot() {
+        final long capturedNanos = System.nanoTime();
         if (AbstractDungeon.player == null
                 || AbstractDungeon.currMapNode == null
                 || AbstractDungeon.getCurrRoom() == null) return null;
         AbstractRoom room = AbstractDungeon.getCurrRoom();
         String boundary;
-        if (AbstractDungeon.screen == AbstractDungeon.CurrentScreen.CARD_REWARD) {
-            boundary = "card_reward";
-        } else if (room instanceof RestRoom && isActionableRestDecision((RestRoom) room)) {
-            boundary = "rest";
-        } else if (room instanceof MonsterRoom
+        String ooc = "";
+        if (room instanceof MonsterRoom && room.phase == AbstractRoom.RoomPhase.COMBAT
                 && (isPlayerDecisionPoint() || isCardSelectionBoundary())) {
             boundary = "combat";
         } else {
-            return null;
+            ooc = LiveOocCapture.capture();
+            if (ooc == null) return null;
+            boundary = "ooc";
         }
         if ("combat".equals(boundary)) {
             String encounter = encounterName(room);
@@ -674,11 +674,11 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         String raw = boundary + "|" + character + "|" + AbstractDungeon.ascensionLevel +
                 "|" + act + "|" + floor + "|" + hp + "|" + maxHp + "|" + gold +
                 "|" + room.getClass().getName() + "|" + AbstractDungeon.screen.name() +
-                "|" + deck + "|" + candidates + "|" + combat;
+                "|" + deck + "|" + candidates + "|" + combat + "|" + ooc;
         return new Snapshot(session, 0, boundary, character,
                 AbstractDungeon.ascensionLevel, act, floor, hp, maxHp, gold,
                 deck, candidates, combat, "combat".equals(boundary) ? combatEntry : "",
-                "combat".equals(boundary) ? combatEntryHash : "", sha256(raw));
+                "combat".equals(boundary) ? combatEntryHash : "", ooc, sha256(raw), capturedNanos);
     }
 
     private void observeRoomTransition() {
@@ -761,14 +761,17 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         String multi = multiEncounterName(counts, eventRoom);
         if (!multi.isEmpty()) return multi;
         if (group.monsters.size() != 1) return "";
-        String id = group.monsters.get(0).id;
+        return singleEncounterName(group.monsters.get(0).id, eventRoom);
+    }
+
+    static String singleEncounterName(String id, boolean eventRoom) {
         // AbstractMonster.id is the stable save/runtime identifier.  Do not
         // compare it with MonsterHelper's localized encounter display names.
         if (id.equals("Cultist")) return "CULTIST";
         if (id.equals("JawWorm")) return "JAW_WORM";
-        if (id.equals("BlueSlaver")) return "BLUE_SLAVER";
+        if (id.equals("BlueSlaver") || id.equals("SlaverBlue")) return "BLUE_SLAVER";
         if (id.equals("Looter")) return "LOOTER";
-        if (id.equals("RedSlaver")) return "RED_SLAVER";
+        if (id.equals("RedSlaver") || id.equals("SlaverRed")) return "RED_SLAVER";
         if (id.equals("GremlinNob")) return "GREMLIN_NOB";
         if (id.equals("Lagavulin")) return eventRoom ? "LAGAVULIN_EVENT" : "LAGAVULIN";
         if (id.equals("AcidSlime_L") || id.equals("SpikeSlime_L")) return "LARGE_SLIME";
@@ -2024,6 +2027,8 @@ public final class STSModelInspector implements PostInitializeSubscriber,
                             silverRerootFallback = false;
                             silverFallbackReason = "";
                             silverInheritedVisits = 0;
+                            current.responseLatencyMicros = Math.max(0L,
+                                    (System.nanoTime() - current.capturedNanos) / 1000L);
                             responseSequence = seq;
                             responseHash = hash;
                             advisorResponseJson = line;
@@ -2288,6 +2293,7 @@ public final class STSModelInspector implements PostInitializeSubscriber,
                     .append("\",\"observation\":").append(snapshot.observationJson)
                     .append(",\"response\":{\"status\":\"").append(Snapshot.escape(status))
                     .append("\",\"ready\":").append(ready)
+                    .append(",\"latencyMicros\":").append(ready ? Long.toString(snapshot.responseLatencyMicros) : "null")
                     .append(",\"session\":\"").append(ready ? Snapshot.escape(snapshot.session) : "")
                     .append("\",\"sequence\":").append(ready ? snapshot.sequence : -1)
                     .append(",\"observationHash\":\"").append(Snapshot.escape(responseObservationHash))
@@ -2311,21 +2317,23 @@ public final class STSModelInspector implements PostInitializeSubscriber,
 
     private static final class Snapshot {
         final String session, boundary, character, deck, candidates, hash;
-        final String combat;
+        final String combat, ooc;
         final String combatEntry, combatEntryHash;
         final String observationJson;
-        final long sequence;
+        final long sequence, capturedNanos;
+        volatile long responseLatencyMicros = -1L;
         final int ascension, act, floor, hp, maxHp, gold;
 
         Snapshot(String session, long sequence, String boundary, String character,
                  int ascension, int act, int floor, int hp, int maxHp, int gold,
                  String deck, String candidates, String combat, String combatEntry,
-                 String combatEntryHash, String hash) {
+                 String combatEntryHash, String ooc, String hash, long capturedNanos) {
             this.session = session; this.sequence = sequence; this.boundary = boundary;
+            this.capturedNanos = capturedNanos;
             this.character = character; this.ascension = ascension; this.act = act;
             this.floor = floor; this.hp = hp; this.maxHp = maxHp; this.gold = gold;
             this.deck = deck; this.candidates = candidates; this.hash = hash;
-            this.combat = combat; this.combatEntry = combatEntry;
+            this.combat = combat; this.ooc = ooc; this.combatEntry = combatEntry;
             this.combatEntryHash = combatEntryHash;
             this.observationJson = buildObservationJson();
         }
@@ -2333,7 +2341,7 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         Snapshot withSequence(long emittedSequence) {
             return new Snapshot(session, emittedSequence, boundary, character, ascension, act,
                     floor, hp, maxHp, gold, deck, candidates, combat, combatEntry,
-                    combatEntryHash, hash);
+                    combatEntryHash, ooc, hash, capturedNanos);
         }
 
         String toJson() {
@@ -2349,6 +2357,7 @@ public final class STSModelInspector implements PostInitializeSubscriber,
                     ",\"floor\":" + floor + ",\"hp\":" + hp + ",\"maxHp\":" + maxHp +
                     ",\"gold\":" + gold + ",\"deck\":" + deck +
                     ",\"candidates\":" + candidates +
+                    (ooc.isEmpty() ? "" : ",\"ooc\":" + ooc) +
                     (combat.isEmpty() ? "" : ",\"combat\":" + combat
                         + ",\"combatEntryHash\":\"" + combatEntryHash + "\""
                         + (combatEntry.isEmpty() ? "" : ",\"combatEntry\":" + combatEntry)

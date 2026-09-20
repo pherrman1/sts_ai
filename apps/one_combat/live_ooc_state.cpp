@@ -1,0 +1,297 @@
+#include "live_ooc_state.h"
+
+#include <algorithm>
+#include <limits>
+#include <set>
+#include <stdexcept>
+#include "constants/SaveFileMappings.h"
+#include "sim/search/GameAction.h"
+
+namespace one_combat::advisor {
+namespace {
+using J = nlohmann::json;
+using namespace sts;
+using A = search::GameAction;
+using RT = A::RewardsActionType;
+
+void require(bool yes, const std::string &why) {
+    if (!yes) throw std::invalid_argument(why);
+}
+int integerValue(const J &v, int lo, int hi, const std::string &key) {
+    require(v.is_number_integer(), key + " must be an integer");
+    if (v.is_number_unsigned()) {
+        const auto n=v.get<std::uint64_t>();
+        require(hi>=0 && n<=static_cast<std::uint64_t>(hi) && (lo<=0 || n>=static_cast<std::uint64_t>(lo)),key+" out of range");
+        return static_cast<int>(n);
+    }
+    const auto n=v.get<std::int64_t>();
+    require(n>=lo && n<=hi,key+" out of range");
+    return static_cast<int>(n);
+}
+int integer(const J &o, const char *key, int lo, int hi) {
+    return integerValue(o.at(key),lo,hi,key);
+}
+bool boolean(const J &o, const char *key) {
+    require(o.at(key).is_boolean(), std::string(key) + " must be a boolean");
+    return o.at(key).get<bool>();
+}
+std::string string(const J &o, const char *key) {
+    require(o.at(key).is_string(), std::string(key) + " must be a string");
+    return o.at(key).get<std::string>();
+}
+const J &array(const J &o, const char *key, std::size_t max) {
+    const auto &v = o.at(key);
+    require(v.is_array() && v.size() <= max, std::string(key) + " invalid array");
+    return v;
+}
+template<class T> T id(const J &v, T invalid) {
+    require(v.is_string(), "entity ID must be a save-file string");
+    const auto result = v.get<T>();
+    require(result != invalid, "unknown entity ID: " + v.dump());
+    return result;
+}
+Card card(const J &v) {
+    const auto cid = id<CardId>(v.at("id"), CardId::INVALID);
+    Card c(cid, boolean(v, "upgraded") ? 1 : 0);
+    c.misc = integer(v, "misc", std::numeric_limits<std::int16_t>::min(), std::numeric_limits<std::int16_t>::max());
+    return c;
+}
+Room room(const J &v) {
+    require(v.is_string(), "room must be a canonical name");
+    for (int i=0; i<10; ++i) if (v == roomStrings[i]) return static_cast<Room>(i);
+    throw std::invalid_argument("unknown room");
+}
+ScreenState screen(const std::string &name) {
+    if (name == "card_reward" || name == "combat_reward" || name == "rewards") return ScreenState::REWARDS;
+    if (name == "rest") return ScreenState::REST_ROOM;
+    if (name == "shop") return ScreenState::SHOP_ROOM;
+    if (name == "map") return ScreenState::MAP_SCREEN;
+    if (name == "treasure") return ScreenState::TREASURE_ROOM;
+    if (name == "boss_relic") return ScreenState::BOSS_RELIC_REWARDS;
+    if (name == "event" || name == "neow") return ScreenState::EVENT_SCREEN;
+    if (name == "selector" || name == "upgrade" || name == "remove") return ScreenState::CARD_SELECT;
+    throw std::invalid_argument("unknown OOC screen");
+}
+std::uint32_t primitive(const J &choice, ScreenState s) {
+    const auto &n = choice.at("nativeAction");
+    const auto kind = string(n, "kind");
+    const int index = integer(n, "index", 0, 255);
+    if (s == ScreenState::REWARDS || s == ScreenState::SHOP_ROOM) {
+        if (kind == "card") return A(RT::CARD, s == ScreenState::REWARDS ? integer(n,"group",0,4) : index,
+                                    s == ScreenState::REWARDS ? index : 0).bits;
+        if (kind == "gold") return A(RT::GOLD,index).bits;
+        if (kind == "relic") return A(RT::RELIC,index).bits;
+        if (kind == "potion") return A(RT::POTION,index).bits;
+        if (kind == "key") return A(RT::KEY,index).bits;
+        if (kind == "remove") return A(RT::CARD_REMOVE,index).bits;
+        if (kind == "skip") return A(RT::SKIP,index).bits;
+    } else if (kind == "option") return A(index).bits;
+    throw std::invalid_argument("invalid nativeAction for screen");
+}
+void validateHint(const J &hint) {
+    const auto k = string(hint, "kind");
+    if (k == "choose") {
+        integer(hint,"choiceIndex",1,1000);
+        require(hint.size() == 2, "unexpected choose hint fields");
+    } else {
+        require(k == "skip" || k == "proceed" || k == "cancel" || k == "confirm", "unknown liveAction kind");
+        require(hint.size() == 1, "unexpected liveAction fields");
+    }
+}
+} // namespace
+
+ImportResult importLiveOocStateV1(const J &observation, LiveOocStateV1 &out) {
+    try {
+        require(string(observation,"boundary") == "ooc", "OOC boundary required");
+        const auto &o = observation.at("ooc");
+        integer(o,"schemaVersion",1,1);
+        const auto screenName = string(o,"screen");
+        require(!screenName.empty(),"OOC screen is empty");
+        if (o.contains("captureError"))
+            throw std::runtime_error("live capture integrity failure: " + string(o,"captureError"));
+        if (o.contains("unsupportedReason")) {
+            const auto reason = string(o,"unsupportedReason");
+            if (!reason.empty()) return {false,"UNSUPPORTED",reason};
+        }
+        LiveOocStateV1 next;
+        next.ooc = o;
+        auto &g = next.projected;
+        const auto &p = o.at("publicState");
+        require(string(p,"character") == "IRONCLAD", "only Ironclad is representable");
+        g.cc = CharacterClass::IRONCLAD;
+        g.seed = 0; // Never used. No live RNG or hidden queue is imported.
+        g.ascension=integer(p,"ascension",0,20); g.act=integer(p,"act",1,4);
+        g.floorNum=integer(p,"floor",0,1000); g.curHp=integer(p,"hp",0,32767);
+        g.maxHp=integer(p,"maxHp",1,32767); require(g.curHp<=g.maxHp,"hp exceeds maxHp");
+        g.gold=integer(p,"gold",0,1000000);
+        g.potionChance=integer(p,"potionChance",-100,100);
+        g.cardRarityFactor=integer(p,"cardRarityFactor",-100,100);
+        g.blueKey=boolean(p,"blueKey"); g.greenKey=boolean(p,"greenKey"); g.redKey=boolean(p,"redKey");
+        g.potionCapacity=integer(p,"potionCapacity",0,5);
+        const auto &potions=array(p,"potions",5); require(potions.size()==5,"five potion slots required");
+        for (int i=0;i<5;++i) {
+            g.potions[i]=id<Potion>(potions[i],Potion::INVALID);
+            require(i<g.potionCapacity || g.potions[i]==Potion::EMPTY_POTION_SLOT,"potion outside capacity");
+            g.potionCount += g.potions[i]!=Potion::EMPTY_POTION_SLOT;
+        }
+        bool unqualifiedUpgradeHistory = false;
+        for (const auto &v:array(p,"deck",Deck::MAX_SIZE)) {
+            const Card c = card(v);
+            const auto type = c.getType();
+            // Native Deck::upgrade decrements its cached count even though
+            // Searing Blow remains upgradeable. Public card fields cannot
+            // recover whether upgrades happened before or after acquisition.
+            unqualifiedUpgradeHistory |= c.getId() == CardId::SEARING_BLOW
+                    && (c.isUpgraded() || c.misc != 0);
+            require(type == CardType::ATTACK || type == CardType::SKILL
+                    || type == CardType::POWER || type == CardType::CURSE,
+                    "non-permanent card in deck");
+            // Reconstruct bookkeeping without acquisition effects or obtainRaw's
+            // historical double-counting. Match ordinary Deck::obtain state.
+            g.deck.cards.push_back(c);
+            if (type != CardType::CURSE || c.canTransform()) {
+                ++g.deck.cardTypeCounts[static_cast<int>(type)];
+                ++g.deck.transformableCount;
+            }
+            if (c.canUpgrade()) ++g.deck.upgradeableCount;
+            const int binding=integer(v,"bottleBinding",-1,2);
+            if(binding>=0) {
+                require(g.deck.bottleIdxs[binding]==-1,"duplicate bottle binding");
+                const CardType types[]={CardType::ATTACK,CardType::SKILL,CardType::POWER};
+                require(g.deck.cards[g.deck.size()-1].getType()==types[binding],"bottle type mismatch");
+                g.deck.bottleCard(g.deck.size()-1,types[binding]);
+            }
+        }
+        std::set<RelicId> relicIds;
+        for(const auto &v:array(p,"relics",181)) {
+            const auto r=id<RelicId>(v.at("id"),RelicId::INVALID);
+            require(relicIds.insert(r).second,"duplicate relic identity");
+            g.relics.add({r,integer(v,"data",-1000000,1000000)});
+        }
+        g.boss=id<MonsterEncounter>(p.at("boss"),MonsterEncounter::INVALID);
+        const auto &m=p.at("map");
+        g.curMapNodeX=integer(m,"x",-1,6); g.curMapNodeY=integer(m,"y",-1,16);
+        require(g.curMapNodeY<0 || g.curMapNodeX>=0,"invalid current map coordinate");
+        g.map=std::make_shared<Map>();
+        g.map->burningEliteX=integer(m,"burningEliteX",-1,6);
+        g.map->burningEliteY=integer(m,"burningEliteY",-1,14);
+        require((g.map->burningEliteX<0)==(g.map->burningEliteY<0),"partial burning elite coordinate");
+        for(int y=0;y<15;++y)for(int x=0;x<7;++x){g.map->nodes[y][x].x=x;g.map->nodes[y][x].y=y;}
+        std::set<std::pair<int,int>> seen;
+        const auto &nodes=array(m,"nodes",105);
+        require(nodes.size()==105,"complete 15 by 7 visible map required");
+        for(const auto &n:nodes) {
+            const int x=integer(n,"x",0,6),y=integer(n,"y",0,14);
+            require(seen.insert({x,y}).second,"duplicate map node");
+            auto &node=g.map->nodes[y][x]; node.room=room(n.at("room"));
+            std::set<int> children;
+            for(const auto &e:array(n,"edges",3)) {
+                const auto cx=integerValue(e,0,6,"edge child x");
+                require(children.insert(cx).second,"duplicate map edge");
+                node.addEdge(cx);
+            }
+        }
+        // Reconstruct parent lists from the complete visible edge set.
+        for(int y=0;y<14;++y)for(int x=0;x<7;++x) {
+            auto &n=g.map->nodes[y][x];
+            for(int e=0;e<n.edgeCount;++e) {
+                require(seen.count({n.edges[e],y+1}),"map edge target missing");
+                auto &child=g.map->nodes[y+1][n.edges[e]];
+                require(child.parentCount < static_cast<int>(child.parents.size()), "map parent capacity exceeded");
+                child.addParent(x);
+            }
+        }
+        require(boolean(p,"pathComplete"),"path history not reconstructed");
+        const auto &visits=array(p,"pathVisits",10); require(visits.size()==10,"ten path counters required");
+        for(int i=0;i<10;++i) {
+            require(visits[i].is_number_integer(),"path count must be integer");
+            const auto n=visits[i].get<std::int64_t>();require(n>=0 && n<=1000,"path count out of range");
+            next.path.roomVisits[i]=static_cast<int>(n);
+        }
+        g.screenState=screen(screenName);
+        if (g.screenState==ScreenState::MAP_SCREEN && g.curMapNodeY>=14)
+            return {false,"UNSUPPORTED","V4_BOSS_MAP_TRANSITION"};
+        const auto &d=o.at("details"); require(d.is_object(),"details must be an object");
+        if(g.screenState==ScreenState::REWARDS) {
+            auto &r=g.info.rewardsContainer;
+            for(const auto &v:array(d,"gold",2)) r.addGold(integerValue(v,0,1000000,"gold reward"));
+            for(const auto &group:array(d,"cardRewards",5)) {
+                require(group.is_array() && !group.empty() && group.size()<=4,"invalid card reward group");
+                CardReward reward;for(const auto &v:group)reward.push_back(card(v));r.addCardReward(reward);
+            }
+            for(const auto &v:array(d,"relics",3))r.addRelic(id<RelicId>(v,RelicId::INVALID));
+            for(const auto &v:array(d,"potions",5))r.addPotion(id<Potion>(v,Potion::INVALID));
+            r.emeraldKey=boolean(d,"emeraldKey");r.sapphireKey=boolean(d,"sapphireKey");
+            require(!(r.emeraldKey&&r.sapphireKey),"native reward keys are mutually exclusive");
+        } else if(g.screenState==ScreenState::SHOP_ROOM) {
+            auto &s=g.info.shop;
+            auto offers=[&](const char *key,int count,auto load) {
+                const auto &vs=array(d,key,count);require(vs.size()==static_cast<std::size_t>(count),"shop slot count mismatch");
+                for(int i=0;i<count;++i)load(vs[i],i);
+            };
+            offers("cards",7,[&](const J &v,int i){ s.cardPrice(i)=integer(v,"price",-1,1000000);if(s.cardPrice(i)>=0)s.cards[i]=card(v.at("card")); });
+            offers("relics",3,[&](const J &v,int i){ s.relicPrice(i)=integer(v,"price",-1,1000000);if(s.relicPrice(i)>=0)s.relics[i]=id<RelicId>(v.at("id"),RelicId::INVALID); });
+            offers("potions",3,[&](const J &v,int i){ s.potionPrice(i)=integer(v,"price",-1,1000000);if(s.potionPrice(i)>=0)s.potions[i]=id<Potion>(v.at("id"),Potion::INVALID); });
+            s.removeCost=integer(d,"removeCost",-1,1000000);
+        } else if(g.screenState==ScreenState::BOSS_RELIC_REWARDS) {
+            const auto &rs=array(d,"relics",3);require(rs.size()==3,"three boss relics required");
+            for(int i=0;i<3;++i)g.info.bossRelics[i]=id<RelicId>(rs[i],RelicId::INVALID);
+        } else if(g.screenState==ScreenState::CARD_SELECT) {
+            const auto kind=string(d,"type");
+            if(kind=="upgrade")g.info.selectScreenType=CardSelectScreenType::UPGRADE;
+            else if(kind=="remove")g.info.selectScreenType=CardSelectScreenType::REMOVE;
+            else return {false,"UNSUPPORTED","selector_type:"+kind};
+            g.info.toSelectCount=integer(d,"requiredPicks",1,3);
+            for(const auto &v:array(d,"cards",96)) {
+                const auto idx=integer(v,"deckIndex",0,g.deck.size()-1);
+                const auto c=card(v.at("card"));require(c==g.deck.cards[idx],"selector card does not match deck");
+                for(const auto &prev:g.info.toSelectCards)require(prev.deckIdx!=idx,"duplicate physical selector target");
+                g.info.toSelectCards.push_back(SelectScreenCard(c,idx));
+            }
+            require(integer(d,"completedPicks",0,3)==0,"partially selected grid unsupported");
+        } else if(g.screenState==ScreenState::EVENT_SCREEN) {
+            const auto event=string(d,"event");
+            g.curEvent=event=="Neow" ? Event::NEOW : id<Event>(d.at("event"),Event::INVALID);
+            g.info.eventData=integer(d,"eventData",0,100);
+            g.info.phase=integer(d,"phase",0,100);
+            // Fields used by native candidate/semantic enumeration are explicit even when inactive.
+            g.info.upgradeOne=boolean(d,"upgradeOne");g.info.cleanUpIsRemoveCard=boolean(d,"cleanUpIsRemoveCard");
+            g.info.skillCardDeckIdx=integer(d,"skillCardDeckIdx",-1,g.deck.size()-1);
+            g.info.powerCardDeckIdx=integer(d,"powerCardDeckIdx",-1,g.deck.size()-1);
+            g.info.attackCardDeckIdx=integer(d,"attackCardDeckIdx",-1,g.deck.size()-1);
+            g.info.potionIdx=integer(d,"potionIdx",-1,4);g.info.gold=integer(d,"gold",-1,1000000);
+            g.info.cardIdx=integer(d,"cardIdx",-1,g.deck.size()-1);
+            if(g.curEvent==Event::NEOW) {
+                const auto &ns=array(d,"neow",4);require(ns.size()==4,"four Neow offers required");
+                for(int i=0;i<4;++i) {
+                    g.info.neowRewards[i].r=id<Neow::Bonus>(ns[i].at("bonus"),Neow::Bonus::INVALID);
+                    g.info.neowRewards[i].d=id<Neow::Drawback>(ns[i].at("drawback"),Neow::Drawback::INVALID);
+                }
+            }
+        }
+        for(const auto &choice:array(o,"liveChoices",1024)) {
+            primitive(choice,g.screenState);validateHint(choice.at("liveAction"));
+        }
+        if (unqualifiedUpgradeHistory)
+            return {false,"UNSUPPORTED","SEARING_BLOW_UPGRADE_HISTORY_UNQUALIFIED"};
+        out=std::move(next);
+        return {true,{},{}};
+    } catch(const std::exception &e) {
+        return {false,"SCHEMA_MISMATCH",e.what()};
+    }
+}
+
+J lowerLiveOocAction(const LiveOocStateV1 &state,std::uint32_t bits) {
+    J found;int count=0;
+    for(const auto &c:state.ooc.at("liveChoices"))if(primitive(c,state.projected.screenState)==bits){found=c.at("liveAction");++count;}
+    require(count==1,"OOC primitive mapping expected one occurrence; matches="+std::to_string(count));
+    return found;
+}
+void validateLiveOocActionSet(const LiveOocStateV1 &state,const std::vector<std::uint32_t> &bits) {
+    std::set<std::uint32_t> expected(bits.begin(),bits.end()), observed;
+    require(expected.size()==bits.size(),"native duplicate primitive candidates");
+    for(const auto &c:state.ooc.at("liveChoices"))require(observed.insert(primitive(c,state.projected.screenState)).second,"duplicate observed primitive mapping");
+    require(expected==observed,"native/live candidate enumeration disagreement");
+    for(const auto b:bits)lowerLiveOocAction(state,b);
+}
+} // namespace one_combat::advisor

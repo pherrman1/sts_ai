@@ -1,5 +1,11 @@
 #include "advisor_protocol.h"
 #include "live_ooc_importer.h"
+#include "live_ooc_state.h"
+#include "live_ooc_policy.h"
+#include "../ooc_strategic_tok_net.h"
+#include <fstream>
+#include <iomanip>
+#include <sstream>
 #include "combat_transition_runtime.h"
 #include "live_silver_importer.h"
 #include "sim/search/SilverBridge.h"
@@ -14,6 +20,77 @@
 using nlohmann::json;
 
 namespace {
+// Content fingerprint is diagnostic identity, not an artifact trust decision.
+std::string modelIdentity(const std::string &path) {
+    std::ifstream stream(path, std::ios::binary);
+    std::uint64_t hash = 14695981039346656037ULL;
+    char byte;
+    while (stream.get(byte)) { hash ^= static_cast<unsigned char>(byte); hash *= 1099511628211ULL; }
+    if (!stream.eof()) return "unavailable";
+    std::ostringstream out; out << "fnv1a64:" << std::hex << std::setw(16) << std::setfill('0') << hash;
+    return out.str();
+}
+json oocResponse(const one_combat::advisor::Request &request,
+                 const one_combat::LiveOocPolicy &policy, const std::string &identity) {
+    using namespace one_combat;
+    const auto started = std::chrono::steady_clock::now();
+    json evaluator = {{"id", "live_ooc_decision_v1"}, {"scope", "ooc_decision"},
+                      {"policy", policy.name()}, {"status", "UNSUPPORTED"}};
+    advisor::LiveOocStateV1 state;
+    const auto imported = advisor::importLiveOocStateV1(request.observation, state);
+    if (!imported.ok && imported.code != "UNSUPPORTED")
+        return advisor::errorResponse(request, imported.code, imported.message);
+    if (!imported.ok) evaluator["reason"] = imported.message;
+    else {
+        const auto scoreStarted = std::chrono::steady_clock::now();
+        const auto decision = policy.score(state.projected, state.path);
+        evaluator["scorerLatencyMicros"] = std::chrono::duration_cast<std::chrono::microseconds>(
+            std::chrono::steady_clock::now() - scoreStarted).count();
+        // Qualified candidate identities remain checkable without model weights.
+        // A missing model must not turn corrupt live mappings into fallback.
+        if (!decision.candidates.empty()) {
+            try {
+                std::vector<std::uint32_t> bits;
+                for (const auto &c : decision.candidates) bits.push_back(c.primitiveBits);
+                advisor::validateLiveOocActionSet(state, bits);
+            } catch (const std::exception &error) {
+                return advisor::errorResponse(request, "OOC_ACTION_MAPPING", error.what());
+            }
+        }
+        if (!decision.supported) {
+            // Missing support/model may fall back; malformed/ambiguous native
+            // candidates and nonfinite scores are integration errors.
+            if (decision.reason != "MODEL_UNAVAILABLE" && decision.reason != "V4_SCREEN_UNSUPPORTED"
+                    && decision.reason.rfind("SEMANTIC_ENUMERATION_UNSUPPORTED:", 0) != 0)
+                return advisor::errorResponse(request, "OOC_POLICY_FAILURE", decision.reason);
+            evaluator["reason"] = decision.reason;
+        } else {
+            try {
+                evaluator["candidateSummaries"] = json::array();
+                for (const auto &c : decision.candidates) {
+                    evaluator["candidateSummaries"].push_back({{"semanticKey", c.semanticKey},
+                        {"semanticPayload", json::parse(c.payload)}, {"label", c.semanticKey}, {"q", c.q},
+                        {"liveAction", advisor::lowerLiveOocAction(state, c.primitiveBits)}});
+                }
+                const auto &selected = decision.candidates.at(decision.selectedIndex);
+                evaluator["status"] = "OK";
+                evaluator["selectedSemanticKey"] = selected.semanticKey;
+                evaluator["selectedLabel"] = selected.semanticKey;
+                evaluator["selectedLiveAction"] = advisor::lowerLiveOocAction(state, selected.primitiveBits);
+                evaluator["model"] = {{"kind", "ooc_strategic_tok_v4"}, {"identity", identity}};
+            } catch (const std::exception &error) {
+                return advisor::errorResponse(request, "OOC_ACTION_MAPPING", error.what());
+            }
+        }
+    }
+    evaluator["latencyMicros"] = std::chrono::duration_cast<std::chrono::microseconds>(
+        std::chrono::steady_clock::now() - started).count();
+    return {{"protocol", advisor::kProtocol}, {"protocolVersion", advisor::kProtocolVersion},
+            {"kind", "analysis"}, {"status", evaluator.at("status")},
+            {"session", request.session}, {"sequence", request.sequence},
+            {"observationHash", request.observationHash}, {"evaluators", json::array({evaluator})}};
+}
+
 json silverEvaluator(const one_combat::advisor::Request &request,
                      std::shared_ptr<silver_bridge::SilverSearchSession> &session,
                      std::string &sessionIdentity, std::string &combatEntryIdentity,
@@ -138,6 +215,12 @@ json silverEvaluator(const one_combat::advisor::Request &request,
 
 int main() {
     one_combat::advisor::LatestObservation latest;
+    auto oocModel = std::make_unique<OocStrategicTokNet>();
+    std::string oocIdentity = "unavailable";
+    if (const char *path = std::getenv("STS_LIVE_OOC_MODEL"); path && *path) {
+        if (oocModel->load(path, true)) oocIdentity = modelIdentity(path);
+    }
+    const one_combat::LiveOocV4QPolicy oocPolicy(*oocModel);
     std::unique_ptr<one_combat::NativeCombatTransitionSampler> ctm;
     std::string ctmStatus = "MODEL_UNAVAILABLE", ctmReason;
     std::string cachedEntryHash;
@@ -233,6 +316,8 @@ int main() {
                                     {"modelStatus", ctmStatus}};
                             }
                         }
+                    } else if (request.observation.value("boundary", std::string()) == "ooc") {
+                        response = oocResponse(request, oocPolicy, oocIdentity);
                     } else {
                         one_combat::advisor::PublicOocState imported;
                         const auto importedResult =

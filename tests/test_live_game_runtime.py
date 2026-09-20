@@ -1,5 +1,6 @@
 import json
 import os
+import shlex
 import stat
 import subprocess
 import tempfile
@@ -179,6 +180,33 @@ class LiveGameRuntimeTest(unittest.TestCase):
         source = (Path(__file__).parents[1] / "tools/live_game_start.sh").read_text()
         self.assertIn('kill -TERM "${mcp_owner_pids[@]}"', source)
         self.assertNotIn('kill -TERM "${game_pids[@]}"', source)
+
+    def test_immediate_driver_preserves_arguments_and_skips_probe(self):
+        root = Path(__file__).parents[1]
+        source = (root / "tools/live_game_start.sh").read_text()
+        body = source.split("run_requested_driver() {", 1)[1].split("\n}\n", 1)[0]
+        base = Path(self.temp.name)
+        output = base / "arguments.json"
+        uv = base / "uv"
+        uv.write_text("#!/usr/bin/env python3\nimport json,sys,pathlib\n"
+                      f"pathlib.Path({str(output)!r}).write_text(json.dumps(sys.argv[1:]))\n")
+        uv.chmod(0o755)
+        args = ["--new-run", "--max-steps", "1", "--trace", "trace with spaces.jsonl"]
+        script = ("set -euo pipefail\nrun_driver=1\nprobe=1\n"
+                  f"repo_root={shlex.quote(str(root))}\nmcp_url='http://127.0.0.1:8080/mcp'\n"
+                  f"driver_args=({shlex.join(args)})\n"
+                  "run_probe() { exit 99; }\nrun_requested_driver() {" + body + "\n}\nrun_requested_driver\n")
+        result = subprocess.run(["bash", "-c", script], env={**os.environ, "PATH": str(base) + os.pathsep + os.environ["PATH"]},
+                                capture_output=True, text=True)
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertEqual(json.loads(output.read_text()), ["run", "--extra", "live-driver", "python",
+            "tools/live_game_driver.py", "--mcp-url", "http://127.0.0.1:8080/mcp", *args])
+
+    def test_immediate_driver_rejects_conflicting_launcher_modes(self):
+        launcher = str(Path(__file__).parents[1] / "tools/live_game_start.sh")
+        for args in (["--run", "--check"], ["--run", "--foreground"], ["--", "--new-run"]):
+            result = subprocess.run([launcher, *args], capture_output=True, text=True)
+            self.assertEqual(result.returncode, 2)
 
     def test_java_configuration_uses_environment_first_seam(self):
         source = (Path(__file__).parents[1] /

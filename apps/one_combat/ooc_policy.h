@@ -11,6 +11,7 @@
 #include "sim/search/ScumSearchAgent2.h"
 #include "compact_tree.h"
 #include "run_features.h"
+#include "ooc_v4_encoding.h"
 
 struct OocCheckpointNet;
 struct OocStrategicNet;
@@ -80,15 +81,6 @@ using sts::search::GameAction;
 using sts::search::ScumSearchAgent2;
 using one_combat::PathHistory;
 
-constexpr int TOK_NGLOB = 42;
-struct TokState {
-    float glob[TOK_NGLOB];
-    int nDk, nRl, nPt;
-    int dk[96][3];
-    int rl[64][2];
-    int pt[8][2];
-};
-
 // Shared live/driver seams. These are used by retained strategic generators or
 // driver diagnostics as well as by the moved fallback policies. buildTokState
 // additionally remains coupled to the driver's token-parity hook.
@@ -139,13 +131,6 @@ bool configurePathActionPolicyFromEnvironment();
 void configureVPathPolicyFromEnvironment();
 void configureRestVPolicyFromEnvironment();
 void resetPathPolicyState();
-
-bool v4DecisionSupported(const GameContext &);
-std::vector<GameAction> v4CandidateActions(const GameContext &);
-
-void strategicCands(const GameContext &, const GameAction &,
-                    int &, int &, int &, int &, int &, int &, int &);
-void tokEntity(const GameContext &, const GameAction &, int &, int &, float &);
 
 bool oocActionNNPolicy(GameContext &);
 bool oocOnePlyCardRewardPolicy(GameContext &, const ScumSearchAgent2 &);

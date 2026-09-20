@@ -37,7 +37,7 @@ session. A new process starts a new session state.
 
 The Java frontend is under `mods/sts-model-inspector/`. It uses BaseMod
 post-update/render subscribers and captures detached Ironclad-compatible
-summary fields for card rewards, rest sites, and ordinary player turns. The
+summary fields for actionable OOC screens and ordinary player turns. The
 combat producer now emits protocol-v4 Silver roots with physical card UUIDs,
 upgraded/misc/cost/retain/free-play fields, battle-lifetime stable monster
 slots, dead/half-dead/escaping state, relics, potion slots, the combat entry
@@ -115,7 +115,26 @@ tools/live_game_start.sh --probe
 `--probe` performs a read-only driver dry-run after the game reaches a
 command-ready screen. Use `--check` to validate without starting anything and
 `--foreground` when the Codex terminal should retain the ModTheSpire process
-directly. `--refresh-runtime` builds only `one_combat_advisor`, copies it and
+directly. `--run -- <driver options>` starts the autonomous driver immediately
+after MCP becomes available, without a separate probe or manual launch gap.
+The driver's initial menu-readiness budget is 45 seconds (`--startup-timeout`);
+this is a timeout, not a delay. Gameplay transition timeouts stay separate.
+It uses the seed guard and forwards arguments as an array; `--run` cannot be
+combined with `--check` or `--foreground`. For a fresh run with no existing save:
+
+```bash
+tools/live_game_start.sh --super-fast --run -- \
+  --new-run --character IRONCLAD --ascension 0 --run-until-error
+```
+
+`--super-fast` enables an already installed `mods/SuperFastMode.jar` (mod ID
+`superfastmode`). Use `--restart-game` once if the running game lacks that mod.
+Its local configuration is under `~/.config/ModTheSpire/SuperFastMode/`; the
+debug setup uses `deltaMultiplier=4.0`, `isDeltaMultiplied=true`, and
+`isInstantLerp=true`. The external JAR is not a repository artifact. Speed
+changes remain subject to the same readiness and observation checks.
+
+`--refresh-runtime` builds only `one_combat_advisor`, copies it and
 the tracked CTM/OOC model artifacts into a new release, validates their hashes,
 and atomically changes `current`. A running game is never silently restarted;
 when it is using another release, the helper prints both identities and
@@ -233,7 +252,24 @@ fallback policy, and `--strict-silver` turns that boundary into a stop.
 Non-combat screens use deterministic priorities over the generated legal
 candidates, so no policy can invent an MCP tool name or arguments. The driver
 waits for `ready_for_command` before selecting and after execution, while
-readiness-only changes are ignored for state identity.
+readiness-only changes are ignored for state identity. Combat draw/discard
+pile card display caches have one additional normalization: a positive
+`damage`, `block`, or `magic_number` with an explicit positive `base_*` value
+is compared using that base value. MCP emits `base_*` only while the derived
+value differs, and vanilla `Soul` animation completion calls
+`AbstractCard.clearPowers()`/`resetAttributes()` to restore those cached values.
+The driver retains intrinsic base values, UUIDs, card IDs, costs, pile order,
+all hand values, HP and energy; ambiguous zero/absent values and every OOC
+field remain strict. This prevents an animation-only reset from looking like
+a new decision while still stopping on actual state changes. It never
+refreshes or substitutes the selected action after a mismatch.
+A live monster whose intent is exactly `DEBUG` is also not a decision-ready
+state, even if MCP advertises readiness: vanilla initializes that sentinel in
+`AbstractMonster` and replaces it in `createIntent()`. The driver waits for it
+to resolve before consulting the advisor and when waiting for post-action
+advance. This does not reinterpret legitimate `UNKNOWN` or Runic Dome's
+`NONE`, nor dead/escaped/half-dead monster slots; later real intent changes
+still fail the pre-action comparison.
 
 Inspector correlation uses the full `get_game_state` monster records when
 available because the lightweight screen uses names and filters dead slots.
@@ -272,13 +308,126 @@ Rest observations are emitted only while the installed campfire UI exists, is
 visible, and has not selected an option. Selecting a campfire option therefore
 clears the old rest observation while the option resolves.
 
-For `card_reward` and `rest`, the native endpoint now validates the detached
-deck and candidate card-instance arrays (canonical save-file card ID, upgrade
-flag, and misc value). Valid observations still fail closed because validation
-is not yet a native `GameContext` import. Importer and post-identity validation
-errors carry the observation session, sequence, and hash; malformed or
-pre-identity envelopes remain uncorrelated because their identity cannot be
-trusted.
+### Autonomous OOC decisions
+
+The versioned live OOC boundary is `boundary: "ooc"`, `ooc.schemaVersion: 1`.
+`LiveOocCapture` captures only command-ready screens through MCPTheSpire's
+read-only screen and choice converters. The observation contains:
+
+- `publicState`: Ironclad class, ascension, act/floor, HP/max HP, gold, keys,
+  potion capacity and five exact slots, physical deck instances with bottle
+  binding, relic data, visible boss, the complete visible 15-by-7 map and edges,
+  current/burning-elite coordinates, and exact path-visit counts.
+- `details`: current reward groups, campfire options, physical upgrade targets,
+  supported event/Neow phase and options, shop slots/prices, chest state, or
+  ordered boss relic offers.
+- `liveChoices`: occurrence-bound native action identities and single-command
+  structured MCP hints. Duplicate labels are never action identity.
+- `mcpState`: the exact current MCP screen conversion used by the driver to
+  reject observation/screen/offer mismatches before mutation.
+- `unsupportedReason`: an explicit producer qualification boundary, when the
+  live state cannot be represented exactly. Missing or malformed schema fields
+  are errors, not permission to guess an action.
+- `captureError`: an unexpected capture or identity failure. This always stops
+  the driver, including when an unsupported reason is also present.
+
+Path counts derive from persisted `metricData.path_taken`, whose original map
+symbols survive event-to-room conversion and save/resume. Missing history is
+unsupported. `potionChance` and `cardRarityFactor` are captured live/debug
+integration counters. **This is a debug integration policy, not fair-play
+performance evidence.** No RNG state, future encounter queue, or unrevealed
+outcome is captured.
+
+`live_ooc_state` creates a detached `GameContext` for features and candidates
+only. It has no continuation callback and imports no hidden queues or RNG.
+`ooc_v4_encoding` is the shared pure implementation of the existing 42-global
+V4 token and candidate encodings; the ordinary driver's `buildTokState` wrapper
+retains its diagnostic hook. `LiveOocPolicy` is the policy-provider interface.
+The only provider is `v4_q`: prepare the token state once, score every existing
+legal V4 primitive with the tracked native model, and select maximum Q with
+ascending canonical semantic identity as the tie-break. No deployed policy
+chain, margin gate, or OOC MCTS is invoked or qualified by this path.
+
+The stable evaluator is `live_ooc_decision_v1`, with `policy: "v4_q"`.
+An OK result contains semantic identities/payloads, finite per-action Q scores,
+model content identity, latency, and one structured `selectedLiveAction`.
+Smith and removal source choices carry a `:current-screen` semantic identity;
+the revealed selector is a separate observation and decision. Map identity is
+`ooc-live:v1:map:x=X:y=Y`. Native semantic bindings supply the other identities.
+Exact duplicate/missing primitive mappings, incomplete semantic enumeration,
+nonfinite Q, and invalid schema produce errors. Only explicit unsupported
+support/model states permit the driver's deterministic fallback.
+
+`STS_LIVE_OOC_MODEL` (inspector property `oocModel`) loads the native V4 model
+once in the advisor process. The stable runtime manifest records its SHA-256;
+the evaluator also reports a content fingerprint. Missing/incompatible OOC
+models report `MODEL_UNAVAILABLE` without disabling Silver. The launcher
+validates/displays the OOC path; `--allow-missing-ooc` permits Silver-only work.
+
+Supported native fixtures cover map choices, reward take/skip and repeated
+card groups, mixed combat rewards, rest/smith, upgrade selectors with physical
+duplicate cards, initial supported events/Neow, all shop purchase types,
+shop-removal entry, chest open/leave and boss relic take/skip. The existing V4
+support gate still excludes non-card reward collection, removal/other
+selectors and the final map-to-boss transition. The live producer additionally
+qualifies event phases, path history, special maps, shop slot provenance,
+relic-counter representation, and key-disabled campfires. Unopened card reward
+groups expose only their occurrence/type and require fallback to open the
+group; their concealed card identities are not serialized or scored. Active
+Wing Boots, Matryoshka, Lizard Tail and N’loth’s Hungry Face are unsupported
+where live/native counter initialization differs. Maw Bank has an explicit
+source-derived active/spent conversion; other unqualified positive counters
+are unsupported. A deck containing upgraded Searing Blow returns
+`SEARING_BLOW_UPGRADE_HISTORY_UNQUALIFIED`, because public card fields cannot
+reconstruct the native history-dependent upgradeable count. Confirmation-only
+screens and unsupported dialogue phases are explicitly accounted fallbacks.
+These limits must not be presented as whole-game equivalence.
+
+### Full-run driver and failure packets
+
+```bash
+tools/live_game_start.sh --probe
+uv run --extra live-driver python tools/live_game_driver.py --run-until-error
+# Only when there is no saved/live run:
+uv run --extra live-driver python tools/live_game_driver.py \
+  --new-run --character IRONCLAD --ascension 0 --run-until-error
+```
+
+The driver owns the loop and performs one MCP command per iteration. It waits
+for command readiness, checks observation/session/sequence/hash and exact MCP
+correlation, lowers the selected action to exactly one legal candidate,
+rechecks the state immediately before mutation, and waits for an advanced
+command-ready state. It consumes Silver in combat and the generic OOC
+provider elsewhere; no LLM chooses ordinary gameplay actions. `--ooc-policy
+v4`, `--strict-ooc`, `--strict-silver`, and `--max-steps` control coverage and
+stopping. The default resumes an advertised save; `--new-run` refuses to
+replace a save or live run. Without a save, an explicit new-run/character
+request is required. Ascension and seed are passed through to MCP.
+
+Card-reward skips are retained by session and an opaque, read-only identity of
+that physical reward. Returning to the combat-reward list collects other
+rewards or proceeds instead of reopening the skipped group. These identities
+do not expose unopened card contents. A repeated OOC state/action pair stops
+before another mutation and emits a failure packet; distinct physical rewards
+remain distinguishable even when their visible offers match.
+
+A real integration error exits nonzero and atomically writes
+`<trace>.failure.json`: current MCP state/identity, inspector snapshot and
+identity, evaluators, selected hint and mapping diagnostics, exact error,
+recent trace rows, Git identity, and reproduction command. A
+`LIVE_DRIVER_ERROR` line identifies the packet. Terminal outcomes and step
+bounds exit zero. The final JSONL summary records reached act/floor/HP,
+Silver/OOC/fallback counts, exact unsupported reasons and latency count/mean/
+p50/p95/max. The trace is integration evidence only, never a win-rate benchmark.
+
+Focused checks are `live_ooc_parity`, `live_ooc_policy`, `live_ooc_protocol`,
+`live_game_driver` and the existing Silver/protocol regressions. Native fixtures
+project ordinary states into the live JSON schema and compare all 42 globals,
+deck/relic/potion tokens, candidate order/encodings, semantic keys/payloads,
+per-action Q and argmax. Driver fixtures prove stale/malformed actions cause
+zero mutations, a failure packet and nonzero exit. Live screen coverage and
+run progress are recorded in the task's PR evidence packet, not promoted into
+benchmark evidence.
 
 Run the endpoint after building:
 

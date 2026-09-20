@@ -41,7 +41,7 @@ ValidationResult parseRequest(const nlohmann::json &wire, Request &request) {
     if (!request.observation.contains("boundary") || !request.observation.at("boundary").is_string())
         return bad("MALFORMED_OBSERVATION", "observation.boundary must be a string");
     const std::string boundary = request.observation.at("boundary").get<std::string>();
-    if (boundary != "combat" && boundary != "card_reward" && boundary != "rest")
+    if (boundary != "combat" && boundary != "card_reward" && boundary != "rest" && boundary != "ooc")
         return bad("UNSUPPORTED_BOUNDARY", "observation.boundary is not supported");
     if (boundary == "card_reward" || boundary == "rest") {
         for (const char *field : {"deck", "candidates"}) {
