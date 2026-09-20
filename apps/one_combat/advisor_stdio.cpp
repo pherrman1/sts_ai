@@ -86,7 +86,8 @@ json silverEvaluator(const one_combat::advisor::Request &request,
     evaluator["status"] = "OK";
     evaluator["selectedAction"] = silver_bridge::semanticActionFingerprint(decision.action);
     evaluator["selectedLabel"] = one_combat::advisor::silverActionLabel(decision.action, imported.wire);
-    evaluator["selectedLiveAction"] = one_combat::advisor::selectedLiveAction(decision.action, importContext);
+    evaluator["selectedLiveAction"] = one_combat::advisor::selectedLiveAction(
+        decision.action, importContext, request.observation);
     if (evaluator["selectedLiveAction"].is_null()) {
         clearSession();
         evaluator["status"] = "UNSUPPORTED";

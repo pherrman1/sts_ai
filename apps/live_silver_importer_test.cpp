@@ -921,14 +921,42 @@ int main() {
         loweringAction.type = silver_bridge::SemanticActionType::CARD;
         loweringAction.card.uniqueId = 23;
         loweringAction.target = 1;
-        const auto lowered = one_combat::advisor::selectedLiveAction(loweringAction, loweringContext);
+        const auto targetObservation = json{{"combat", json{{"monsters", json::array({
+            json{{"name", "Cultist"}, {"dead", true}},
+            json{{"name", "Louse"}, {"dead", false}},
+            json{{"name", "Slaver"}, {"dead", false}}})}}}};
+        const auto lowered = one_combat::advisor::selectedLiveAction(
+            loweringAction, loweringContext, targetObservation);
         if (lowered.value("kind", std::string()) != "card"
             || lowered.value("cardUuid", std::string()) != "copy-b"
-            || lowered.value("targetIndex", 0) != 2)
+            || lowered.value("targetIndex", 0) != 1)
             throw std::runtime_error("selectedLiveAction did not preserve physical card UUID and target");
+        loweringAction.target = 2;
+        const auto secondTarget = one_combat::advisor::selectedLiveAction(
+            loweringAction, loweringContext, targetObservation);
+        if (secondTarget.value("targetIndex", 0) != 2)
+            throw std::runtime_error("selectedLiveAction did not compact the second live target");
+        loweringAction.target = 0;
+        if (!one_combat::advisor::selectedLiveAction(
+                loweringAction, loweringContext, targetObservation).is_null())
+            throw std::runtime_error("dead Silver target was not rejected");
         loweringAction.type = silver_bridge::SemanticActionType::SINGLE_CARD_SELECT;
-        if (!one_combat::advisor::selectedLiveAction(loweringAction, loweringContext).is_null())
+        if (!one_combat::advisor::selectedLiveAction(
+                loweringAction, loweringContext, targetObservation).is_null())
             throw std::runtime_error("unsupported single-card selection was lowered as executable");
+        loweringAction.type = silver_bridge::SemanticActionType::POTION;
+        loweringAction.potionSlot = 0;
+        loweringAction.target = 1;
+        loweringAction.discardPotion = false;
+        const auto potionTarget = one_combat::advisor::selectedLiveAction(
+            loweringAction, loweringContext, targetObservation);
+        if (potionTarget.value("targetIndex", 0) != 1)
+            throw std::runtime_error("targeted potion did not compact the Silver target");
+        loweringAction.target = 2;
+        const auto secondPotionTarget = one_combat::advisor::selectedLiveAction(
+            loweringAction, loweringContext, targetObservation);
+        if (secondPotionTarget.value("targetIndex", 0) != 2)
+            throw std::runtime_error("targeted potion did not compact the second live target");
         std::cout << "live Silver native first-turn parity checks passed\n";
         return 0;
     } catch (const std::exception &e) {

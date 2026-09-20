@@ -65,7 +65,7 @@ class LiveGameDriverTest(unittest.TestCase):
 
     def test_nested_game_state_potions_are_candidates(self):
         nested = {"ready_for_command": True, "in_game": True, "game_state": {
-            "potions": [{"id": "Fire Potion", "requires_target": True}],
+            "potions": [{"id": "Fire Potion", "requires_target": True, "can_use": True}],
             "combat_state": {"monsters": [{"id": "Cultist", "current_hp": 10}]}}}
         self.assertEqual(normalize_game_state(nested)["potions"][0]["id"], "Fire Potion")
         actions = build_legal_actions({"screen_type": "NONE", "room_phase": "COMBAT"}, ["use_potion"], nested)
@@ -73,8 +73,8 @@ class LiveGameDriverTest(unittest.TestCase):
 
     def test_potion_candidates_require_advertised_legality(self):
         screen = {"screen_type": "NONE", "room_phase": "COMBAT", "potions": [
-            {"id": "Block Potion", "can_use": False, "can_discard": True},
-            {"id": "Dexterity Potion", "can_use": True, "can_discard": False},
+            {"id": "Block Potion", "can_discard": True},
+            {"id": "Dexterity Potion", "can_use": True},
         ], "monsters": [{"name": "Cultist", "current_hp": 10}]}
         self.assertEqual([a.mcp_arguments for a in build_legal_actions(screen, ["use_potion"])], [{"potion_slot": 2}])
         self.assertEqual([a.mcp_arguments for a in build_legal_actions(screen, ["discard_potion"])], [{"potion_slot": 1}])

@@ -109,8 +109,11 @@ readiness-only changes are ignored for state identity.
 Inspector correlation uses the full `get_game_state` monster records when
 available because the lightweight screen uses names and filters dead slots.
 Dead or escaped inspector slots are excluded before comparing the remaining
-live monsters. Potion candidates are emitted only when MCP advertises the
-corresponding `can_use` or `can_discard` capability. The post-action identity
+live monsters. Silver target slots are compacted through that same ordered
+public monster observation before becoming MCP's 1-based living-monster index;
+dead or missing targets fail closed. Potion candidates are emitted only when
+MCP explicitly advertises the corresponding `can_use` or `can_discard`
+capability; absent sparse fields mean unavailable. The post-action identity
 includes the full game-state payload when that read tool is available, so
 successful potion effects that do not change the lightweight screen still
 advance correctly. Silver card-selection actions remain explicitly

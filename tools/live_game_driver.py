@@ -272,9 +272,11 @@ def build_legal_actions(screen: Mapping[str, Any], commands: Mapping[str, Any] |
                 potion_id = _text(potion.get("id", potion.get("name", "Potion Slot")))
                 if not potion_id or potion_id.lower() in {"potion slot", "empty", "none"}:
                     continue
-                if tool == "use_potion" and potion.get("can_use", potion.get("canUse", True)) is False:
+                can_use = potion.get("can_use", potion.get("canUse")) is True
+                can_discard = potion.get("can_discard", potion.get("canDiscard")) is True
+                if tool == "use_potion" and not can_use:
                     continue
-                if tool == "discard_potion" and potion.get("can_discard", potion.get("canDiscard", True)) is False:
+                if tool == "discard_potion" and not can_discard:
                     continue
                 semantic = {"kind": "potion", "potion_slot": index + 1, "discard": tool == "discard_potion"}
                 args = {"potion_slot": index + 1}
