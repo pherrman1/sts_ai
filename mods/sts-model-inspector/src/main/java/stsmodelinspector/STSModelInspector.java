@@ -372,9 +372,31 @@ public final class STSModelInspector implements PostInitializeSubscriber,
                 x + width - 78.0f * scale, bottom + 22.0f * scale, MUTED, 0.78f);
     }
 
+    private static List<String> liveMonsterNames(boolean livingOnly) {
+        List<String> names = new ArrayList<>();
+        if (AbstractDungeon.getMonsters() != null)
+            for (AbstractMonster monster : AbstractDungeon.getMonsters().monsters) {
+                if (livingOnly && (monster == null || monster.isDeadOrEscaped())) continue;
+                names.add(monster == null ? "" : monster.name);
+            }
+        return names;
+    }
+
+    private String displaySilverLabel(String label) {
+        Map<Integer, Integer> indices = new HashMap<>();
+        if (AbstractDungeon.getMonsters() != null) {
+            List<AbstractMonster> monsters = AbstractDungeon.getMonsters().monsters;
+            for (int i = 0; i < monsters.size(); ++i) {
+                Integer slot = monsterSlots.get(monsters.get(i));
+                if (slot != null) indices.put(slot, i + 1);
+            }
+        }
+        return TargetLabels.silver(label, indices, liveMonsterNames(false));
+    }
+
     private String silverSummary() {
         if ("OK".equals(silverStatus)) {
-            String label = silverSelectedLabel == null ? "" : silverSelectedLabel;
+            String label = displaySilverLabel(silverSelectedLabel == null ? "" : silverSelectedLabel);
             if (!label.isEmpty()) return "Silver  ·  " + label;
             return "Silver  ·  ready";
         }
@@ -454,23 +476,27 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         if (popup != null && popup.targetMode) return;
         PotionOverlay view = potionOverlay;
         if (view == null || !responseReady() || !view.matches(newest.session, newest.sequence, newest.hash)) view = null;
+        float width = 220 * scale;
+        float gap = 8 * scale;
+        float groupWidth = AbstractDungeon.player.potions.size() * (width + gap) - gap;
+        float firstX = AbstractDungeon.player.potions.isEmpty() ? 0 : Math.max(8 * scale,
+                Math.min(Math.max(540 * scale, AbstractDungeon.player.potions.get(0).hb.cX - width / 2),
+                        Settings.WIDTH - groupWidth - 8 * scale));
         for (int slot = 0; slot < AbstractDungeon.player.potions.size(); ++slot) {
             com.megacrit.cardcrawl.potions.AbstractPotion potion = AbstractDungeon.player.potions.get(slot);
             if (potion == null || "Potion Slot".equals(potion.ID)) continue;
             try {
-                boolean open = popup != null && !popup.isHidden
-                        && ((Number)InlineChoices.field(popup, "slot")).intValue() == slot;
-                // Full-width labels follow the hovered/open potion, avoiding
-                // overlapping labels across the tightly spaced inventory slots.
-                if (!open && ((popup != null && !popup.isHidden) || !potion.hb.hovered)) continue;
-                com.megacrit.cardcrawl.helpers.Hitbox useHb = open
-                        ? (com.megacrit.cardcrawl.helpers.Hitbox)InlineChoices.field(popup, "hbTop") : potion.hb;
-                com.megacrit.cardcrawl.helpers.Hitbox discardHb = open
-                        ? (com.megacrit.cardcrawl.helpers.Hitbox)InlineChoices.field(popup, "hbBot") : potion.hb;
-                float width = 260 * scale;
-                float x = Math.min(Settings.WIDTH - width - 8 * scale,
-                        useHb.x + useHb.width + (open ? 12 : 180) * scale);
-                float bottom = open ? useHb.cY - 16 * scale : Settings.HEIGHT - 172 * scale;
+                // Persistent columns identify the physical slot and stay readable
+                // even when several potions have ranked use/discard actions.
+                float x = firstX + slot * (width + gap);
+                float bottom = Settings.HEIGHT - 190 * scale;
+                if (popup != null && !popup.isHidden) {
+                    com.megacrit.cardcrawl.helpers.Hitbox menuBottom =
+                            (com.megacrit.cardcrawl.helpers.Hitbox)InlineChoices.field(popup, "hbBot");
+                    bottom = Math.min(bottom, menuBottom.y - 74 * scale);
+                }
+                renderFittedText(sb, "P" + (slot + 1) + " · " + potion.name,
+                        x + 8 * scale, bottom + 52 * scale, width - 16 * scale, MUTED, .68f);
                 List<PotionOverlay.Entry> use = view == null ? Collections.emptyList() : view.forSlot(slot + 1, false);
                 List<PotionOverlay.Entry> discard = view == null ? Collections.emptyList() : view.forSlot(slot + 1, true);
                 if (!potion.canUse() || use.isEmpty()) {
@@ -478,15 +504,14 @@ public final class STSModelInspector implements PostInitializeSubscriber,
                             false, false, scale);
                     bottom -= 36 * scale;
                 } else for (PotionOverlay.Entry entry : use) {
-                    renderInlineBadge(sb, x, bottom, width, entry.text(), entry.selected, entry.q != null, scale);
+                    renderInlineBadge(sb, x, bottom, width, entry.text(TargetLabels.name(liveMonsterNames(true), entry.target)), entry.selected, entry.q != null, scale);
                     bottom -= 36 * scale;
                 }
-                if (open) bottom = Math.min(bottom, discardHb.cY - 16 * scale);
                 if (!potion.canDiscard() || discard.isEmpty())
                     renderInlineBadge(sb, x, bottom, width, "Discard · " + (potion.canDiscard() ? "not scored" : "unavailable"),
                             false, false, scale);
                 else for (PotionOverlay.Entry entry : discard) {
-                    renderInlineBadge(sb, x, bottom, width, entry.text(), entry.selected, entry.q != null, scale);
+                    renderInlineBadge(sb, x, bottom, width, entry.text(TargetLabels.name(liveMonsterNames(true), entry.target)), entry.selected, entry.q != null, scale);
                     bottom -= 36 * scale;
                 }
             } catch (ReflectiveOperationException | RuntimeException unavailable) { /* Hide unbound UI. */ }
@@ -595,7 +620,7 @@ public final class STSModelInspector implements PostInitializeSubscriber,
             used[handIndex] = true;
             AbstractCard card = hand.get(handIndex);
             float badgeX = card.current_x - badgeWidth / 2.0f;
-            String target = action;
+            String target = displaySilverLabel(action);
             int arrow = target.indexOf(" -> ");
             if (arrow >= 0) target = target.substring(arrow + 4);
             renderSilverBadge(sb, badgeX, badgeBottom, badgeWidth, badgeHeight,
@@ -619,8 +644,8 @@ public final class STSModelInspector implements PostInitializeSubscriber,
                 x + 8.0f * scale, bottom + (target.isEmpty() ? 20.0f : 43.0f) * scale,
                 best ? Color.WHITE : MUTED, 0.62f);
         if (!target.isEmpty()) {
-            renderSmallText(sb, "→ " + target, x + 8.0f * scale,
-                    bottom + 20.0f * scale, best ? CYAN : Color.WHITE, 0.70f);
+            renderFittedText(sb, "→ " + target, x + 8.0f * scale,
+                    bottom + 20.0f * scale, width - 16 * scale, best ? CYAN : Color.WHITE, 0.70f);
         }
     }
 
@@ -649,8 +674,11 @@ public final class STSModelInspector implements PostInitializeSubscriber,
     private void renderHistogram(SpriteBatch sb, float x, float bottom, float width,
                                  float height, float scale) {
         if (ctmHistogram.length == 0) {
-            renderSmallText(sb, "Awaiting forecast", x, bottom + height - 12.0f * scale,
-                    WARNING, 0.78f);
+            renderFittedText(sb, ctmStatus.isEmpty() ? "Awaiting forecast" : "Forecast unavailable",
+                    x, bottom + height - 12.0f * scale, width, WARNING, 0.78f);
+            if (!ctmStatus.isEmpty()) renderFittedText(sb,
+                    (ctmReason.isEmpty() ? ctmStatus : ctmReason).replace('_', ' '),
+                    x, bottom + height - 36.0f * scale, width, MUTED, 0.65f);
             return;
         }
         int first = -1;
@@ -1321,12 +1349,27 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         return out.append(']').toString();
     }
 
+    static String ctmResponseJson(String response) {
+        com.google.gson.JsonObject root = new com.google.gson.JsonParser().parse(response).getAsJsonObject();
+        if (root.has("evaluators")) for (com.google.gson.JsonElement item : root.getAsJsonArray("evaluators")) {
+            com.google.gson.JsonObject evaluator = item.getAsJsonObject();
+            if ("ctm_combat_entry_v2".equals(evaluator.get("id").getAsString())) return evaluator.toString();
+        }
+        return "";
+    }
+
+    static int combatEntryRelicData(String id, int counter, boolean usedUp) {
+        // Java's spent Neow's Lament uses -2; native CTM stores remaining
+        // charges in [0, 3]. Keep every other value exact and fail closed.
+        return "NeowsBlessing".equals(id) && usedUp && counter == -2 ? 0 : counter;
+    }
+
     private static String relicEntryJson() {
         StringBuilder out = new StringBuilder("["); boolean first = true;
         for (com.megacrit.cardcrawl.relics.AbstractRelic relic : AbstractDungeon.player.relics) {
             if (!first) out.append(','); first = false;
             out.append("{\"id\":\"").append(escapeJson(relic.relicId))
-                    .append("\",\"data\":").append(relic.counter)
+                    .append("\",\"data\":").append(combatEntryRelicData(relic.relicId, relic.counter, relic.usedUp))
                     .append(",\"usedUp\":").append(relic.usedUp);
             if ("Necronomicon".equals(relic.relicId)) {
                 Boolean activated = readBooleanField(relic, "activated");
@@ -2248,15 +2291,17 @@ public final class STSModelInspector implements PostInitializeSubscriber,
                                 silverInheritedVisits = numberField(line, "inheritedVisits");
                                 if (silverRanking != null) silverRanking = silverRanking.replace("\\n", "\n");
                             }
-                            if (line.contains("\"id\":\"ctm_combat_entry_v2\"")) {
-                                if (line.contains("\"status\":\"UNSUPPORTED\"")) {
-                                    ctmStatus = "unsupported";
-                                    ctmReason = reason == null ? "unsupported" : reason;
-                                } else if (line.contains("\"deathProbability\":")) {
-                                    ctmStatus = "OK";
-                                    ctmDeath = doubleField(line, "deathProbability");
-                                    ctmHistogramMin = (int) numberField(line, "winningHpHistogramMin");
-                                    ctmHistogram = numberArrayField(line, "winningHpHistogram");
+                            String ctm = ctmResponseJson(line);
+                            if (!ctm.isEmpty()) {
+                                String forecastStatus = field(ctm, "status");
+                                ctmStatus = "OK".equals(forecastStatus) ? "OK" :
+                                        forecastStatus == null ? "error" : forecastStatus.toLowerCase(Locale.ROOT);
+                                String forecastReason = field(ctm, "reason");
+                                ctmReason = forecastReason == null ? ctmStatus : forecastReason;
+                                if ("OK".equals(ctmStatus)) {
+                                    ctmDeath = doubleField(ctm, "deathProbability");
+                                    ctmHistogramMin = (int) numberField(ctm, "winningHpHistogramMin");
+                                    ctmHistogram = numberArrayField(ctm, "winningHpHistogram");
                                 }
                             }
                             try { potionOverlay = PotionOverlay.parse(line); }

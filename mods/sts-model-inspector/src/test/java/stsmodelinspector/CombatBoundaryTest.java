@@ -29,6 +29,21 @@ public final class CombatBoundaryTest {
                     || selection.get("pickCount").getAsInt() != 99)
                 throw new AssertionError("unknown selector or canPickZero lost");
         }
-        System.out.println("CombatBoundaryTest: 8 boundary and 2 exact selection projections passed");
+        for (int counter : new int[]{0, 1, 2, 3, -1, -2}) {
+            if (STSModelInspector.combatEntryRelicData("NeowsBlessing", counter, false) != counter)
+                throw new AssertionError("active/invalid Neow counter changed");
+        }
+        if (STSModelInspector.combatEntryRelicData("NeowsBlessing", -2, true) != 0
+                || STSModelInspector.combatEntryRelicData("NeowsBlessing", -1, true) != -1
+                || STSModelInspector.combatEntryRelicData("Omamori", -2, true) != -2)
+            throw new AssertionError("spent Neow mapping is not exact and relic-specific");
+        String forecast = STSModelInspector.ctmResponseJson(
+                "{\"evaluators\":[{\"id\":\"silver_player_decision_v2\",\"status\":\"UNSUPPORTED\"},"
+                + "{\"id\":\"ctm_combat_entry_v2\",\"status\":\"OK\",\"deathProbability\":0.2}]}");
+        JsonObject ctm = new Gson().fromJson(forecast, JsonObject.class);
+        if (!"OK".equals(ctm.get("status").getAsString()) || ctm.get("deathProbability").getAsDouble() != 0.2
+                || !STSModelInspector.ctmResponseJson("{\"evaluators\":[]}").isEmpty())
+            throw new AssertionError("another evaluator contaminated CTM forecast status");
+        System.out.println("CombatBoundaryTest: 8 boundary, 2 selection and 9 entry-relic and 2 CTM isolation checks passed");
     }
 }

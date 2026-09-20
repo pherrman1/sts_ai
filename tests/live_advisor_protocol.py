@@ -131,6 +131,35 @@ class AdvisorProtocolTest(unittest.TestCase):
         self.assertGreaterEqual(rows[0]["evaluators"][0]["deathProbability"], 0.0)
         self.assertLessEqual(rows[0]["evaluators"][0]["deathProbability"], 1.0)
 
+    def test_live_spent_neow_entry_requires_native_zero_charges(self):
+        # Floor-12 EXORDIUM_THUGS live capture: Java's spent relic is -2.
+        # The Java projection regression covers the exact -2/usedUp -> 0 map;
+        # this checks the resulting native forecast, without relaxing its gate.
+        source = json.loads((Path(__file__).parent / "fixtures" /
+                             "live_ctm_spent_neow.json").read_text())
+        requests = []
+        for sequence, counter in enumerate((-2, 0), 1):
+            entry = json.loads(json.dumps(source))
+            neow = next(r for r in entry["relics"] if r["id"] == "NeowsBlessing")
+            self.assertTrue(neow["usedUp"])
+            neow["data"] = counter
+            requests.append(json.dumps({
+                "protocol": "sts_model_inspector_v1", "kind": "observation",
+                "session": "spent-neow", "sequence": sequence,
+                "observationHash": "neow-%d" % sequence,
+                "observation": dict(entry, boundary="combat",
+                                    combatEntryHash="entry-%d" % sequence,
+                                    combatEntry=entry)}))
+        rows = self.run_advisor(requests, self.model)
+        before, after = (next(e for e in r["evaluators"]
+                             if e["id"] == "ctm_combat_entry_v2") for r in rows)
+        self.assertEqual(before["status"], "UNSUPPORTED")
+        self.assertEqual(before["reason"], "invalid_relic_counter")
+        self.assertEqual(after["status"], "OK")
+        self.assertAlmostEqual(sum(after["winningHpHistogram"]), 1.0, places=4)
+        self.assertGreaterEqual(after["deathProbability"], 0.0)
+        self.assertLessEqual(after["deathProbability"], 1.0)
+
     def test_ctm_room_history_categories_and_unknown_fail_closed(self):
         base = {"boundary": "combat", "character": "IRONCLAD", "ascension": 0,
                 "act": 1, "floor": 7, "hp": 70, "maxHp": 80, "gold": 99,

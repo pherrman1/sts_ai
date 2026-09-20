@@ -29,7 +29,7 @@ actual choices instead of a separate upper-left list. Reward cards keep their
 score badges, with an extra badge beside Skip. Smith and Living Wall Upgrade
 also preview the next card using the separate V4 selector score. Remove and
 transform target scoring is not supported by the current V4 provider.
-Potion menus/hover labels distinguish use, discard and target;
+Persistent potion columns below the inventory distinguish use, discard and target;
 actions without model coverage are explicitly unscored. All rankings require
 the current session/sequence/hash, and the inspector remains read-only.
 
