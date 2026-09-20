@@ -6,12 +6,15 @@
 #include <nlohmann/json.hpp>
 
 #include <algorithm>
+#include <cmath>
 #include <cstdint>
 #include <filesystem>
 #include <fstream>
 #include <iostream>
 #include <map>
+#include <numeric>
 #include <set>
+#include <sstream>
 #include <stdexcept>
 #include <string>
 #include <tuple>
@@ -185,10 +188,234 @@ int parseInt(const char *text, const char *name, int minimum) {
     return value;
 }
 
+std::vector<Json> readJsonLines(const std::filesystem::path &path) {
+    std::ifstream input(path);
+    if (!input) throw std::runtime_error("cannot open JSONL: " + path.string());
+    std::vector<Json> rows;
+    std::string line;
+    while (std::getline(input, line)) if (!line.empty()) rows.push_back(Json::parse(line));
+    if (input.bad()) throw std::runtime_error("cannot read JSONL: " + path.string());
+    return rows;
+}
+
+double average(const std::vector<double> &values) {
+    if (values.empty()) return 0.0;
+    return std::accumulate(values.begin(), values.end(), 0.0) / values.size();
+}
+
+double populationStddev(const std::vector<double> &values) {
+    if (values.empty()) return 0.0;
+    const auto center = average(values);
+    double sum = 0.0;
+    for (const auto value : values) sum += (value - center) * (value - center);
+    return std::sqrt(sum / values.size());
+}
+
+Json selectedTeacherAction(const Json &teacher, const std::string &fingerprint) {
+    for (const auto &action : teacher.at("root_actions"))
+        if (action.at("action_fingerprint").get<std::string>() == fingerprint) return action;
+    return Json();
+}
+
+Json firstActionProbeLeaf(const Json &selection, const std::map<std::string, Json> &corpus,
+                          const std::map<std::string, std::map<std::string, Json>> &teachers,
+                          const std::map<std::string, std::vector<Json>> &rawByLeaf) {
+    const auto leafId = selection.at("leaf_snapshot_id").get<std::string>();
+    const auto corpusIt = corpus.find(leafId);
+    const auto teacherIt = teachers.find(leafId);
+    const auto rawIt = rawByLeaf.find(leafId);
+    if (corpusIt == corpus.end() || teacherIt == teachers.end() || rawIt == rawByLeaf.end())
+        throw std::runtime_error("first-action probe provenance missing for leaf " + leafId);
+    const auto &teacherA = teacherIt->second.at("A");
+    const auto &teacherB = teacherIt->second.at("B");
+    const auto &rawRows = rawIt->second;
+    if (rawRows.size() != 32 || !teacherA.at("teacher_valid").get<bool>()
+            || !teacherB.at("teacher_valid").get<bool>())
+        throw std::runtime_error("first-action probe requires 32 valid baselines and A/B teachers for " + leafId);
+
+    const auto leaf = silver_bridge::battleStateWireFromEnvelope(corpusIt->second.at("leaf_state"));
+    const auto originalRoot = silver_bridge::battleStateWireFromEnvelope(
+        corpusIt->second.at("original_root_state"));
+    const auto teacherAFingerprint = teacherA.at("selected_action_fingerprint").get<std::string>();
+    const auto teacherBFingerprint = teacherB.at("selected_action_fingerprint").get<std::string>();
+    const auto legal = silver_bridge::enumerateSilverLegalActions(leaf);
+    const auto actionIt = std::find_if(legal.begin(), legal.end(), [&](const auto &action) {
+        return silver_bridge::semanticActionFingerprint(action) == teacherAFingerprint;
+    });
+    Json result = {
+        {"schema", "silver_first_action_probe_leaf_v1"},
+        {"selection_rank", selection.at("selection_rank")},
+        {"group_id", selection.at("group_id")},
+        {"leaf_snapshot_id", leafId},
+        {"depth", selection.at("depth")},
+        {"encounter_category", selection.at("encounter_category")},
+        {"teacher_a_value", teacherA.at("original_root_corrected_teacher_value")},
+        {"teacher_b_value", teacherB.at("original_root_corrected_teacher_value")},
+        {"teacher_a_selected_action_fingerprint", teacherAFingerprint},
+        {"teacher_b_selected_action_fingerprint", teacherBFingerprint},
+        {"teacher_a_b_action_agree", teacherAFingerprint == teacherBFingerprint},
+        {"teacher_a_selected_q", selectedTeacherAction(teacherA, teacherAFingerprint).value("original_root_corrected_q", nullptr)},
+        {"teacher_a_selected_visits", selectedTeacherAction(teacherA, teacherAFingerprint).value("visits", nullptr)},
+        {"teacher_b_selected_q", selectedTeacherAction(teacherB, teacherBFingerprint).value("original_root_corrected_q", nullptr)},
+        {"teacher_b_selected_visits", selectedTeacherAction(teacherB, teacherBFingerprint).value("visits", nullptr)},
+        {"baseline_replicate_count", rawRows.size()},
+    };
+    if (actionIt == legal.end()) {
+        result["accepted"] = false;
+        result["failure_reason"] = "teacher_a_action_not_in_exact_leaf_legal_surface";
+        return result;
+    }
+    const auto &teacherAction = *actionIt;
+    result["accepted"] = true;
+    result["teacher_a_action_description"] = silver_bridge::describeSilverSemanticAction(leaf, teacherAction);
+    if (teacherAFingerprint == teacherBFingerprint) {
+        result["teacher_b_action_description"] = result["teacher_a_action_description"];
+    } else {
+        const auto teacherBIt = std::find_if(legal.begin(), legal.end(), [&](const auto &action) {
+            return silver_bridge::semanticActionFingerprint(action) == teacherBFingerprint;
+        });
+        result["teacher_b_action_description"] = teacherBIt == legal.end()
+            ? "" : silver_bridge::describeSilverSemanticAction(leaf, *teacherBIt);
+    }
+
+    std::vector<double> baselineValues, treatmentValues, pairedDeltas;
+    std::vector<double> baselineActions, treatmentActions, baselineTurns, treatmentTurns,
+        baselineWall, treatmentWall;
+    std::map<std::string, int> baselineFirstActions;
+    Json replicates = Json::array();
+    for (const auto &raw : rawRows) {
+        if (!raw.at("accepted").get<bool>() || raw.at("action_fingerprints").empty())
+            throw std::runtime_error("invalid baseline row for first-action probe leaf " + leafId);
+        auto treatmentLeaf = leaf;
+        treatmentLeaf.isolatedSearchSeed = raw.at("rng_identity").get<std::uint64_t>();
+        const auto treatment = silver_bridge::runSilverSimpleRolloutWithFirstAction(
+            treatmentLeaf, originalRoot, teacherAction);
+        Json replicate = {
+            {"replicate", raw.at("replicate")},
+            {"rng_identity", raw.at("rng_identity")},
+            {"baseline_utility", raw.at("original_root_corrected_utility")},
+            {"baseline_first_action_fingerprint", raw.at("action_fingerprints").at(0)},
+            {"baseline_action_count", raw.at("action_count")},
+            {"baseline_turn_delta", raw.at("turn_delta")},
+            {"baseline_wall_micros", raw.at("wall_micros")},
+            {"treatment_accepted", treatment.accepted},
+            {"treatment_failure_reason", treatment.failureReason},
+            {"treatment_utility", treatment.accepted
+                ? Json(treatment.originalRootCorrectedUtility) : Json(nullptr)},
+            {"treatment_first_action_fingerprint", treatment.firstActionFingerprint},
+            {"treatment_action_fingerprints", treatment.allActionFingerprints},
+            {"treatment_action_count", treatment.totalActionCount},
+            {"treatment_turn_delta", treatment.totalTurnDelta},
+            {"treatment_wall_micros", treatment.totalWallMicros},
+        };
+        replicates.push_back(std::move(replicate));
+        baselineValues.push_back(raw.at("original_root_corrected_utility").get<double>());
+        baselineActions.push_back(raw.at("action_count").get<double>());
+        baselineTurns.push_back(raw.at("turn_delta").get<double>());
+        baselineWall.push_back(raw.at("wall_micros").get<double>());
+        baselineFirstActions[raw.at("action_fingerprints").at(0).get<std::string>()]++;
+        if (!treatment.accepted) continue;
+        treatmentValues.push_back(treatment.originalRootCorrectedUtility);
+        treatmentActions.push_back(treatment.totalActionCount);
+        treatmentTurns.push_back(treatment.totalTurnDelta);
+        treatmentWall.push_back(treatment.totalWallMicros);
+        pairedDeltas.push_back(treatment.originalRootCorrectedUtility
+            - raw.at("original_root_corrected_utility").get<double>());
+    }
+    if (treatmentValues.size() != rawRows.size()) {
+        result["replicates"] = std::move(replicates);
+        result["failure_reason"] = "one_or_more_teacher_first_action_rows_failed_closed";
+        result["treatment_accepted_count"] = treatmentValues.size();
+        return result;
+    }
+    const auto baselineMean = average(baselineValues);
+    const auto treatmentMean = average(treatmentValues);
+    const auto teacherAValue = teacherA.at("original_root_corrected_teacher_value").get<double>();
+    const auto teacherBValue = teacherB.at("original_root_corrected_teacher_value").get<double>();
+    const auto baselineResidual = baselineMean - teacherAValue;
+    const auto treatmentResidual = treatmentMean - teacherAValue;
+    const auto baselineAbs = std::abs(baselineResidual);
+    result["replicates"] = std::move(replicates);
+    result["baseline"] = {
+        {"mean", baselineMean}, {"std", populationStddev(baselineValues)},
+        {"se", populationStddev(baselineValues) / std::sqrt(baselineValues.size())},
+        {"first_action_agreement_rate", static_cast<double>(baselineFirstActions[teacherAFingerprint]) / rawRows.size()},
+        {"action_count_mean", average(baselineActions)}, {"turn_delta_mean", average(baselineTurns)},
+        {"wall_micros_mean", average(baselineWall)}, {"first_action_counts", baselineFirstActions},
+    };
+    result["treatment"] = {
+        {"mean", treatmentMean}, {"std", populationStddev(treatmentValues)},
+        {"se", populationStddev(treatmentValues) / std::sqrt(treatmentValues.size())},
+        {"action_count_mean", average(treatmentActions)}, {"turn_delta_mean", average(treatmentTurns)},
+        {"wall_micros_mean", average(treatmentWall)},
+    };
+    result["baseline_residual_vs_teacher_a"] = baselineResidual;
+    result["treatment_residual_vs_teacher_a"] = treatmentResidual;
+    result["absolute_residual_reduction"] = baselineAbs - std::abs(treatmentResidual);
+    result["fraction_baseline_absolute_error_removed"] = baselineAbs > 0.0
+        ? Json(1.0 - std::abs(treatmentResidual) / baselineAbs) : Json(nullptr);
+    result["paired_utility_delta_mean"] = average(pairedDeltas);
+    result["teacher_a_b_value_delta"] = teacherBValue - teacherAValue;
+    return result;
+}
+
+int runFirstActionProbe(int argc, char **argv) {
+    if (argc != 8) {
+        std::cerr << "usage: silver_rollout_variance_diagnostic --first-action-probe "
+                     "CORPUS SELECTION TEACHERS RAW_ROLLOUTS OUTPUT EXECUTABLE_SHA\n";
+        return 2;
+    }
+    const std::filesystem::path corpusPath = argv[2];
+    const std::filesystem::path selectionPath = argv[3];
+    const std::filesystem::path teachersPath = argv[4];
+    const std::filesystem::path rawPath = argv[5];
+    const std::filesystem::path outputPath = argv[6];
+    if (!silver_bridge::rootMechanismShaValid(argv[7]))
+        throw std::invalid_argument("invalid executable SHA");
+    rejectExisting(outputPath);
+    std::ifstream selectionInput(selectionPath);
+    if (!selectionInput) throw std::runtime_error("cannot open selection: " + selectionPath.string());
+    const auto selection = Json::parse(selectionInput);
+    if (selection.value("schema", std::string{}) != "silver_first_action_probe_selection_v1"
+            || selection.at("rows").size() != 8)
+        throw std::invalid_argument("selection must contain exactly eight frozen probe leaves");
+    const auto corpusRows = readJsonLines(corpusPath);
+    const auto teacherRows = readJsonLines(teachersPath);
+    const auto rawRows = readJsonLines(rawPath);
+    std::map<std::string, Json> corpus;
+    for (const auto &row : corpusRows) corpus.emplace(row.at("leaf_snapshot_id"), row);
+    std::map<std::string, std::map<std::string, Json>> teachers;
+    for (const auto &row : teacherRows)
+        teachers[row.at("leaf_snapshot_id")][row.at("replicate")] = row;
+    std::map<std::string, std::vector<Json>> rawByLeaf;
+    for (const auto &row : rawRows) rawByLeaf[row.at("leaf_snapshot_id")].push_back(row);
+    for (auto &[ignored, rows] : rawByLeaf)
+        std::sort(rows.begin(), rows.end(), [](const Json &lhs, const Json &rhs) {
+            return lhs.at("replicate").get<int>() < rhs.at("replicate").get<int>();
+        });
+    std::set<std::string> groups;
+    Json leaves = Json::array();
+    for (const auto &row : selection.at("rows")) {
+        if (!groups.insert(row.at("group_id").get<std::string>()).second)
+            throw std::invalid_argument("selection contains duplicate sibling group");
+        leaves.push_back(firstActionProbeLeaf(row, corpus, teachers, rawByLeaf));
+    }
+    std::ofstream output(outputPath);
+    if (!output) throw std::runtime_error("cannot create output: " + outputPath.string());
+    output << Json{{"schema", "silver_first_action_probe_v1"},
+        {"selection", selection}, {"executable_git_sha", argv[7]},
+        {"leaf_count", leaves.size()}, {"group_count", groups.size()},
+        {"leaves", leaves}}.dump() << '\n';
+    if (!output) throw std::runtime_error("first-action probe write failure");
+    return 0;
+}
+
 } // namespace
 
 int main(int argc, char **argv) {
     try {
+        if (argc >= 2 && std::string(argv[1]) == "--first-action-probe")
+            return runFirstActionProbe(argc, argv);
         if (argc < 5 || argc > 10) {
             std::cerr << "usage: silver_rollout_variance_diagnostic SNAPSHOTS CORPUS ROLLOUTS "
                          "EXECUTABLE_SHA [BUDGET GROUPS MAX_LEAVES REPLICATES CANDIDATE_MODULUS]\n";

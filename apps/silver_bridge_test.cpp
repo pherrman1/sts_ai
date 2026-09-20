@@ -661,6 +661,54 @@ int main(int argc, char **argv) {
               && directRolloutA.rolloutActionFingerprints == directRolloutB.rolloutActionFingerprints,
           "canonical diagnostic rollout must be deterministic for a fixed stored RNG identity");
 
+    const auto legalFirstActions = silver_bridge::enumerateSilverLegalActions(firstWire);
+    check(!legalFirstActions.empty(),
+          "stored PLAYER_NORMAL leaf must expose at least one legal semantic first action");
+    const auto forcedRolloutA = silver_bridge::runSilverSimpleRolloutWithFirstAction(
+        firstWire, firstWire, legalFirstActions.front());
+    const auto forcedRolloutB = silver_bridge::runSilverSimpleRolloutWithFirstAction(
+        firstWire, firstWire, legalFirstActions.front());
+    const auto forcedFingerprint = silver_bridge::semanticActionFingerprint(legalFirstActions.front());
+    check(forcedRolloutA.accepted && forcedRolloutA.forcedFirstAction
+              && forcedRolloutA.firstActionExecuted
+              && forcedRolloutA.firstActionFingerprint == forcedFingerprint
+              && !forcedRolloutA.firstActionDescription.empty()
+              && forcedRolloutA.totalActionCount == forcedRolloutA.rolloutActionCount + 1
+              && forcedRolloutA.allActionFingerprints.size()
+                  == static_cast<std::size_t>(forcedRolloutA.totalActionCount)
+              && !forcedRolloutA.allActionFingerprints.empty()
+              && forcedRolloutA.allActionFingerprints.front() == forcedFingerprint,
+          "teacher-first-action treatment must execute exactly one supplied action before canonical rollout");
+    check(forcedRolloutA.accepted == forcedRolloutB.accepted
+              && forcedRolloutA.terminalOutcome == forcedRolloutB.terminalOutcome
+              && forcedRolloutA.originalRootCorrectedUtility == forcedRolloutB.originalRootCorrectedUtility
+              && forcedRolloutA.allActionFingerprints == forcedRolloutB.allActionFingerprints
+              && forcedRolloutA.rngIdentity == forcedRolloutB.rngIdentity,
+          "teacher-first-action treatment must preserve fixed RNG identity deterministically");
+    auto alteredOriginalRoot = firstWire;
+    ++alteredOriginalRoot.player.maxHp;
+    const auto alteredForcedRollout = silver_bridge::runSilverSimpleRolloutWithFirstAction(
+        firstWire, alteredOriginalRoot, legalFirstActions.front());
+    const bool correctionPreserved = forcedRolloutA.terminalOutcome
+            == static_cast<int>(Outcome::PLAYER_VICTORY)
+        ? alteredForcedRollout.originalRootCorrectedUtility
+              == forcedRolloutA.originalRootCorrectedUtility - 2.0
+        : alteredForcedRollout.originalRootCorrectedUtility
+              == forcedRolloutA.originalRootCorrectedUtility;
+    check(alteredForcedRollout.accepted && correctionPreserved,
+          "teacher-first-action treatment must preserve original-root victory correction");
+    silver_bridge::SemanticAction invalidFirstAction;
+    const auto invalidForcedRollout = silver_bridge::runSilverSimpleRolloutWithFirstAction(
+        firstWire, firstWire, invalidFirstAction);
+    check(!invalidForcedRollout.accepted
+              && invalidForcedRollout.failureReason
+                  == "teacher_first_action_unresolvable_or_illegal",
+          "unresolvable teacher-first action must fail closed");
+    check(!directRolloutA.forcedFirstAction
+              && directRolloutA.totalActionCount == directRolloutA.rolloutActionCount
+              && directRolloutA.allActionFingerprints == directRolloutA.rolloutActionFingerprints,
+          "baseline canonical rollout path must remain unchanged by treatment seam");
+
     auto directConfig = observerConfig;
     int directStarts = 0;
     directConfig.leafObserver = [&](silver_bridge::SilverLeafObservation &observation) {
