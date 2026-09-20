@@ -249,7 +249,6 @@ public final class STSModelInspector implements PostInitializeSubscriber,
     @Override
     public void receivePostUpdate() {
         observeRoomTransition();
-        trackLastCardQueueItem();
         boolean down = Keyboard.isKeyDown(loadToggleKey());
         if (down && !toggleDown) panelVisible = !panelVisible;
         toggleDown = down;
@@ -1260,45 +1259,37 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         return cardSelectionJson() != null;
     }
 
-    private static void trackLastCardQueueItem() {
-        // BaseMod publishes post-update while the title/menu bootstrap is still
-        // active.  The queue item is the public source of truth while vanilla
-        // is processing a card; actionManager.lastCard is only a summary and
-        // does not retain the resolved target or queue flags.
-        if (AbstractDungeon.currMapNode == null || AbstractDungeon.actionManager == null)
-            return;
+    static void recordCardQueueItem(CardQueueItem item) {
+        if (item == null || (item.card == null && !item.isEndTurnAutoPlay)) return;
         String encounter = liveEncounter;
         if (encounter.isEmpty() && AbstractDungeon.getCurrRoom() != null)
             encounter = INSTANCE.encounterName(AbstractDungeon.getCurrRoom());
         IdentityHashMap<AbstractMonster, Integer> emittedSlots =
                 emittedMonsterSlots(encounter);
-        for (CardQueueItem item : AbstractDungeon.actionManager.cardQueue) {
-            if (item == null || (item.card == null && !item.isEndTurnAutoPlay)) continue;
-            if (item.monster != null && AbstractDungeon.getMonsters() != null
-                    && AbstractDungeon.getMonsters().monsters.indexOf(item.monster) >= 0)
-                trackedLastTargetedMonster = item.monster;
+        if (item.monster != null && AbstractDungeon.getMonsters() != null
+                && AbstractDungeon.getMonsters().monsters.indexOf(item.monster) >= 0)
+            trackedLastTargetedMonster = item.monster;
 
-            trackedLastCardQueueItem.present = true;
-            trackedLastCardQueueItem.cardJson = item.card == null ? "null" : cardJson(item.card);
-            Integer target = item.monster == null ? null : emittedSlots.get(item.monster);
-            if (target == null && item.monster != null) target = monsterSlots.get(item.monster);
-            trackedLastCardQueueItem.target = target == null || target < 0 ? 0 : target;
-            trackedLastCardQueueItem.energyOnUse = item.energyOnUse;
-            trackedLastCardQueueItem.isEndTurn = item.isEndTurnAutoPlay;
-            trackedLastCardQueueItem.triggerOnUse = item.card == null
-                    || !item.card.dontTriggerOnUseCard;
-            trackedLastCardQueueItem.ignoreEnergyTotal = item.ignoreEnergyTotal;
-            trackedLastCardQueueItem.freeToPlay = item.card != null && item.card.freeToPlayOnce;
-            trackedLastCardQueueItem.randomTarget = item.randomTarget;
-            trackedLastCardQueueItem.autoplay = item.autoplayCard;
-            Integer regretCount = readIntField(item, "regretCardCount", "regretCount");
-            if (regretCount == null && item.card != null)
-                regretCount = readIntField(item.card, "regretCardCount", "regretCount");
-            trackedLastCardQueueItem.regretCardCount = regretCount == null ? 0 : regretCount;
-            trackedLastCardQueueItem.purgeOnUse = item.card != null && item.card.purgeOnUse;
-            trackedLastCardQueueItem.exhaustOnUse = item.card != null
-                    && (item.card.exhaust || item.card.exhaustOnUseOnce || item.card.exhaustOnFire);
-        }
+        trackedLastCardQueueItem.present = true;
+        trackedLastCardQueueItem.cardJson = item.card == null ? "null" : cardJson(item.card);
+        Integer target = item.monster == null ? null : emittedSlots.get(item.monster);
+        if (target == null && item.monster != null) target = monsterSlots.get(item.monster);
+        trackedLastCardQueueItem.target = target == null || target < 0 ? 0 : target;
+        trackedLastCardQueueItem.energyOnUse = item.energyOnUse;
+        trackedLastCardQueueItem.isEndTurn = item.isEndTurnAutoPlay;
+        trackedLastCardQueueItem.triggerOnUse = item.card == null
+                || !item.card.dontTriggerOnUseCard;
+        trackedLastCardQueueItem.ignoreEnergyTotal = item.ignoreEnergyTotal;
+        trackedLastCardQueueItem.freeToPlay = item.card != null && item.card.freeToPlayOnce;
+        trackedLastCardQueueItem.randomTarget = item.randomTarget;
+        trackedLastCardQueueItem.autoplay = item.autoplayCard;
+        Integer regretCount = readIntField(item, "regretCardCount", "regretCount");
+        if (regretCount == null && item.card != null)
+            regretCount = readIntField(item.card, "regretCardCount", "regretCount");
+        trackedLastCardQueueItem.regretCardCount = regretCount == null ? 0 : regretCount;
+        trackedLastCardQueueItem.purgeOnUse = item.card != null && item.card.purgeOnUse;
+        trackedLastCardQueueItem.exhaustOnUse = item.card != null
+                && (item.card.exhaust || item.card.exhaustOnUseOnce || item.card.exhaustOnFire);
     }
 
     private static boolean isActionableRestDecision(RestRoom room) {

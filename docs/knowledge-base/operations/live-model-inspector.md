@@ -62,11 +62,14 @@ The observer's post-`AbstractPlayer.damage()` patch records finalized damage
 once per public damage call, preserving multi-hit event counts and the final
 individual unblocked hit. The v4 importer rejects observations unless the
 producer asserts this exact tracking; the old per-turn combat-damage total is
-not an accepted approximation. Boolean monster powers are presence states at
-the importer boundary, so a negative or sentinel Java amount still sets the
-status bit before numeric amount validation. The stable slot registry keeps
-ordinary Large Slime split children at native slots 0/1; the separate Slime
-Boss layout uses 0/2. Move bytes are likewise fail-closed, with all
+not an accepted approximation. The resolved `CardQueueItem` is captured by a
+prefix on `AbstractPlayer.useCard(...)`, after vanilla resolves random
+targeting and before `GameActionManager` removes the queue entry; post-update
+observation is too late to retain that public item. Boolean monster powers are
+presence states at the importer boundary, so a negative or sentinel Java amount
+still sets the status bit before numeric amount validation. The stable slot
+registry keeps ordinary Large Slime split children at native slots 0/1; the
+separate Slime Boss layout uses 0/2. Move bytes are likewise fail-closed, with all
 simulator-supported vanilla class constants independently qualified against the
 installed `desktop-1.0.jar`. The native construction, public-render, import,
 exact search-state parity, and one-simulation Silver-decision sweep covers all
