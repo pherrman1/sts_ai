@@ -13,9 +13,9 @@ public final class OocOverlayTest {
                 + "\"id\":\"live_ooc_decision_v1\",\"policy\":\"v4_q\",\"status\":\"OK\","
                 + "\"selectedSemanticKey\":\"second\",\"selectedLiveAction\":{\"kind\":\"choose\",\"choiceIndex\":2},"
                 + "\"candidateSummaries\":["
-                + "{\"semanticKey\":\"first\",\"q\":0.1,\"liveAction\":{\"kind\":\"choose\",\"choiceIndex\":1}},"
-                + "{\"semanticKey\":\"skip\",\"q\":0.2,\"liveAction\":{\"kind\":\"skip\"}},"
-                + "{\"semanticKey\":\"second\",\"q\":0.3,\"liveAction\":{\"kind\":\"choose\",\"choiceIndex\":2}}]}]}").getAsJsonObject();
+                + "{\"semanticKey\":\"first\",\"q\":0.1,\"visits\":10,\"visitShare\":0.2,\"prior\":0.3,\"liveAction\":{\"kind\":\"choose\",\"choiceIndex\":1}},"
+                + "{\"semanticKey\":\"skip\",\"q\":0.2,\"visits\":20,\"visitShare\":0.4,\"prior\":0.3,\"liveAction\":{\"kind\":\"skip\"}},"
+                + "{\"semanticKey\":\"second\",\"q\":0.3,\"visits\":20,\"visitShare\":0.4,\"prior\":0.4,\"liveAction\":{\"kind\":\"choose\",\"choiceIndex\":2}}]}]}").getAsJsonObject();
         OocOverlay view = OocOverlay.parse(response.toString(), observation);
         if (!view.choices.get(0).selected || view.choices.get(0).index != 2
                 || !view.choices.get(0).label.equals("Bash+") || !view.choices.get(1).label.equals("Skip")
@@ -59,7 +59,7 @@ public final class OocOverlayTest {
         mapEvaluator.add("selectedLiveAction", mapAction);
         mapEvaluator.addProperty("selectedSemanticKey", "node");
         JsonArray mapCandidates = new JsonArray();
-        JsonObject mapCandidate = parser.parse("{\"semanticKey\":\"node\",\"q\":2.5}").getAsJsonObject();
+        JsonObject mapCandidate = parser.parse("{\"semanticKey\":\"node\",\"q\":2.5,\"visits\":1,\"visitShare\":1.0,\"prior\":1.0}").getAsJsonObject();
         mapCandidate.add("liveAction", mapAction); mapCandidates.add(mapCandidate);
         mapEvaluator.add("candidateSummaries", mapCandidates);
         OocOverlay mapView = OocOverlay.parse(mapResponse.toString(), "{\"ooc\":{\"screen\":\"map\",\"liveChoices\":[]}}");

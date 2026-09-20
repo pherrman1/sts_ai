@@ -8,15 +8,19 @@ final class OocOverlay {
     static final class Choice {
         final String key, label, kind;
         final double q;
+        final long visits;
+        final double visitShare, prior;
         final int index;
         final boolean selected;
         final JsonObject action;
         final JsonObject followUp;
         final String followUpUuid;
-        Choice(String key, String label, String kind, double q, int index, boolean selected, JsonObject action,
+        Choice(String key, String label, String kind, double q, long visits, double visitShare, double prior,
+               int index, boolean selected, JsonObject action,
                JsonObject followUp, String followUpUuid) {
             this.key = key; this.label = label; this.kind = kind;
-            this.q = q; this.index = index; this.selected = selected; this.action = action;
+            this.q = q; this.visits = visits; this.visitShare = visitShare; this.prior = prior;
+            this.index = index; this.selected = selected; this.action = action;
             this.followUp = followUp; this.followUpUuid = followUpUuid;
         }
     }
@@ -71,15 +75,29 @@ final class OocOverlay {
             String selected = text(evaluator, "selectedSemanticKey");
             Set<String> keys = new HashSet<>();
             int selectedCount = 0;
+            long totalVisits = 0;
+            double totalShare = 0.0;
+            long selectedVisits = -1;
+            long maximumVisits = 0;
             for (JsonElement e : evaluator.getAsJsonArray("candidateSummaries")) {
                 JsonObject c = e.getAsJsonObject(), action = c.getAsJsonObject("liveAction");
                 String key = text(c, "semanticKey"), kind = text(action, "kind");
                 double q = c.get("q").getAsDouble();
-                if (!Double.isFinite(q) || key.isEmpty() || !keys.add(key))
+                boolean hasMctsStats = c.has("visits") && c.has("visitShare") && c.has("prior");
+                long visits = hasMctsStats ? c.get("visits").getAsLong() : 0;
+                double visitShare = hasMctsStats ? c.get("visitShare").getAsDouble() : 0.0;
+                double prior = hasMctsStats ? c.get("prior").getAsDouble() : 0.0;
+                if (("mcts_ctm".equals(policy) && !hasMctsStats) || !Double.isFinite(q) || visits < 0 || !Double.isFinite(visitShare)
+                        || visitShare < 0 || visitShare > 1.0 || !Double.isFinite(prior) || prior < 0
+                        || key.isEmpty() || !keys.add(key))
                     throw new IllegalArgumentException("invalid OOC ranking");
+                totalVisits += visits;
+                totalShare += visitShare;
+                maximumVisits = Math.max(maximumVisits, visits);
                 boolean best = key.equals(selected);
                 if (best) {
                     ++selectedCount;
+                    selectedVisits = visits;
                     if (!action.equals(evaluator.get("selectedLiveAction")))
                         throw new IllegalArgumentException("selected OOC action mismatch");
                 }
@@ -99,10 +117,14 @@ final class OocOverlay {
                     previewUuid = text(card, "uuid");
                     if (previewUuid.isEmpty()) throw new IllegalArgumentException("preview physical card missing");
                 }
-                choices.add(new Choice(key, label(action, ooc), kind, q, index, best, action, preview, previewUuid));
+                choices.add(new Choice(key, label(action, ooc), kind, q, visits, visitShare, prior,
+                        index, best, action, preview, previewUuid));
             }
             if (selectedCount != 1) throw new IllegalArgumentException("missing selected OOC choice");
-            choices.sort(Comparator.comparingDouble((Choice c) -> -c.q).thenComparing(c -> c.key));
+            if ("mcts_ctm".equals(policy) && (totalVisits <= 0 || Math.abs(totalShare - 1.0) > 1e-6
+                    || selectedVisits != maximumVisits))
+                throw new IllegalArgumentException("invalid OOC visit distribution");
+            choices.sort(Comparator.comparingLong((Choice c) -> -c.visits).thenComparing(c -> c.key));
         }
         return new OocOverlay(response, status, text(evaluator, "reason"), policy, screen, choices);
     }

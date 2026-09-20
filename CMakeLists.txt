@@ -319,6 +319,8 @@ target_sources(one_combat_advisor PRIVATE
     apps/one_combat/ooc_v4_encoding.cpp
     apps/one_combat/run_features.cpp
     apps/one_combat/live_ooc_importer.cpp
+    apps/one_combat/ooc_mcts_adapter.cpp
+    apps/one_combat/compact_tree.cpp
     apps/one_combat/combat_predictor_input.cpp
     apps/one_combat/combat_transition.cpp
     apps/one_combat/combat_transition_near_full.cpp
@@ -326,6 +328,7 @@ target_sources(one_combat_advisor PRIVATE
     apps/one_combat/combat_transition_native_contract.cpp)
 target_link_libraries(one_combat_advisor PRIVATE sts_core_objects silver_live_backend)
 target_link_options(one_combat_advisor PRIVATE -Wl,--gc-sections)
+target_compile_definitions(one_combat_advisor PRIVATE STS_LIVE_ADVISOR=1)
 add_test(NAME live_advisor_protocol COMMAND python3
     ${CMAKE_SOURCE_DIR}/tests/live_advisor_protocol.py $<TARGET_FILE:one_combat_advisor>
     ${CMAKE_SOURCE_DIR}/selfplay/models/combat_transition_near_full_except_smoke_v2.native)
@@ -337,8 +340,13 @@ set_tests_properties(live_game_runtime PROPERTIES
 
 add_executable(test_live_ooc_policy apps/test_live_ooc_policy.cpp
     apps/one_combat/live_ooc_policy.cpp apps/one_combat/ooc_v4_encoding.cpp
-    apps/one_combat/run_features.cpp $<TARGET_OBJECTS:sts_core_objects>)
+    apps/one_combat/run_features.cpp apps/one_combat/ooc_mcts_adapter.cpp
+    apps/one_combat/compact_tree.cpp apps/one_combat/combat_predictor_input.cpp
+    apps/one_combat/combat_transition.cpp apps/one_combat/combat_transition_near_full.cpp
+    apps/one_combat/combat_transition_runtime.cpp apps/one_combat/combat_transition_native_contract.cpp
+    $<TARGET_OBJECTS:sts_core_objects>)
 target_include_directories(test_live_ooc_policy PRIVATE include json/include apps)
+target_compile_definitions(test_live_ooc_policy PRIVATE STS_LIVE_ADVISOR=1)
 add_test(NAME live_ooc_policy COMMAND bash ${CMAKE_SOURCE_DIR}/tools/seed_guard.sh
     $<TARGET_FILE:test_live_ooc_policy> ${CMAKE_SOURCE_DIR}/selfplay/models/ooc_strategic_tok_final.native)
 set_tests_properties(live_ooc_policy PROPERTIES WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "integration;smoke")
@@ -346,8 +354,13 @@ set_tests_properties(live_ooc_policy PROPERTIES WORKING_DIRECTORY ${CMAKE_SOURCE
 add_executable(live_ooc_parity_test apps/live_ooc_parity_test.cpp
     apps/one_combat/live_ooc_state.cpp apps/one_combat/live_ooc_policy.cpp
     apps/one_combat/ooc_v4_encoding.cpp apps/one_combat/run_features.cpp
+    apps/one_combat/ooc_mcts_adapter.cpp apps/one_combat/compact_tree.cpp
+    apps/one_combat/combat_predictor_input.cpp apps/one_combat/combat_transition.cpp
+    apps/one_combat/combat_transition_near_full.cpp apps/one_combat/combat_transition_runtime.cpp
+    apps/one_combat/combat_transition_native_contract.cpp
     $<TARGET_OBJECTS:sts_core_objects>)
 target_include_directories(live_ooc_parity_test PRIVATE include json/include apps)
+target_compile_definitions(live_ooc_parity_test PRIVATE STS_LIVE_ADVISOR=1)
 add_test(NAME live_ooc_parity COMMAND bash ${CMAKE_SOURCE_DIR}/tools/seed_guard.sh
     $<TARGET_FILE:live_ooc_parity_test>
     ${CMAKE_SOURCE_DIR}/selfplay/models/ooc_strategic_tok_final.native)
@@ -355,7 +368,9 @@ set_tests_properties(live_ooc_parity PROPERTIES WORKING_DIRECTORY ${CMAKE_SOURCE
 
 add_test(NAME live_ooc_protocol COMMAND python3 ${CMAKE_SOURCE_DIR}/tests/live_ooc_protocol.py
     $<TARGET_FILE:one_combat_advisor> $<TARGET_FILE:live_ooc_parity_test>
-    ${CMAKE_SOURCE_DIR}/selfplay/models/ooc_strategic_tok_final.native)
+    ${CMAKE_SOURCE_DIR}/selfplay/models/ooc_strategic_tok_final.native
+    ${CMAKE_SOURCE_DIR}/selfplay/models/combat_transition_near_full_except_smoke_v2.native
+    ${CMAKE_SOURCE_DIR}/models/v_win_trees.txt)
 set_tests_properties(live_ooc_protocol PROPERTIES WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "integration;smoke")
 add_test(NAME live_game_driver COMMAND python3 -m unittest tests.test_live_game_driver)
 set_tests_properties(live_game_driver PROPERTIES WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "tooling;smoke")

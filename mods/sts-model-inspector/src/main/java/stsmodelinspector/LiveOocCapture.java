@@ -355,7 +355,6 @@ final class LiveOocCapture {
                 "requiredPicks", ((Number)field(AbstractDungeon.gridSelectScreen, "numCards")).intValue(),
                 "completedPicks", selected.size(), "cards", selectionCards,
                 "selectedDeckIndices", selected, "confirm", confirm));
-        if (!upgrade) { out.put("unsupportedReason", "NATIVE_SELECTOR_UNSUPPORTED"); }
         if (confirm) out.put("unsupportedReason", "SELECTOR_CONFIRMATION_ONLY");
     }
     private static void boss(Map<String,Object> out, List<Map<String,Object>> cs, List<?> labels) {

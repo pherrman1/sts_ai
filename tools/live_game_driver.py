@@ -590,16 +590,37 @@ class InspectorSnapshot:
             if not isinstance(summaries, list) or not summaries:
                 raise DriverError("OOC OK evaluator has no candidate summaries")
             keys = []
+            require_mcts_stats = policy == "mcts_ctm"
+            total_visits = 0
+            total_share = 0.0
             for candidate in summaries:
                 if not isinstance(candidate, Mapping) or not isinstance(candidate.get("semanticKey"), str):
                     raise DriverError("malformed OOC candidate summary")
                 q = candidate.get("q")
                 if type(q) not in (int, float) or not math.isfinite(q):
                     raise DriverError("OOC candidate has a non-finite/missing score")
+                visits = candidate.get("visits")
+                share = candidate.get("visitShare")
+                prior = candidate.get("prior")
+                if require_mcts_stats and (type(visits) is not int or visits < 0 or type(share) not in (int, float) \
+                        or not math.isfinite(share) or share < 0 \
+                        or type(prior) not in (int, float) or not math.isfinite(prior) or prior < 0):
+                    raise DriverError("OOC candidate has malformed MCTS statistics")
+                if require_mcts_stats and share > 1.0 + 1e-9:
+                    raise DriverError("OOC candidate visit share exceeds one")
+                if require_mcts_stats:
+                    total_visits += visits
+                    total_share += float(share)
                 keys.append(candidate["semanticKey"])
             if len(keys) != len(set(keys)) or keys.count(evaluator["selectedSemanticKey"]) != 1:
                 raise DriverError("ambiguous/missing OOC selected semantic candidate")
             selected = summaries[keys.index(evaluator["selectedSemanticKey"])]
+            if require_mcts_stats:
+                max_visits = max(candidate["visits"] for candidate in summaries)
+                if selected["visits"] != max_visits:
+                    raise DriverError("OOC selected candidate is not the visit winner")
+            if require_mcts_stats and (total_visits <= 0 or abs(total_share - 1.0) > 1e-6):
+                raise DriverError("OOC MCTS root visits/shares do not form a complete root distribution")
             if selected.get("liveAction") != evaluator.get("selectedLiveAction"):
                 raise DriverError("OOC selected action disagrees with candidate summary")
         return evaluator
@@ -789,7 +810,7 @@ def _git_identity() -> dict[str, str]:
 class Driver:
     def __init__(self, client: McpGameClient, inspector: InspectorReader, trace: TraceWriter, *,
                  dry_run: bool = False, strict_silver: bool = False, strict_ooc: bool = False,
-                 ooc_policy: str = "v4", max_steps: int | None = None,
+                 ooc_policy: str = "mcts", max_steps: int | None = None,
                  new_run: bool = False, continue_run: bool = False, character: str | None = None,
                  ascension: int | None = None, seed: str | None = None,
                  poll_timeout: float = 8.0, poll_interval: float = 0.1,
@@ -797,7 +818,7 @@ class Driver:
                  reproduction_command: str | None = None):
         self.client, self.inspector, self.trace = client, inspector, trace
         self.dry_run, self.strict_silver, self.max_steps = dry_run, strict_silver, max_steps
-        self.strict_ooc, self.ooc_policy = strict_ooc, {"v4": "v4_q"}.get(ooc_policy, ooc_policy)
+        self.strict_ooc, self.ooc_policy = strict_ooc, {"v4": "v4_q", "mcts": "mcts_ctm"}.get(ooc_policy, ooc_policy)
         self.new_run, self.continue_run, self.character = new_run, continue_run, character
         self.ascension, self.seed = ascension, seed
         self.poll_timeout, self.poll_interval = poll_timeout, poll_interval
@@ -1191,7 +1212,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser.add_argument("--dry-run", action="store_true")
     parser.add_argument("--strict-silver", action="store_true")
     parser.add_argument("--strict-ooc", action="store_true")
-    parser.add_argument("--ooc-policy", choices=("v4", "v4_q"), default="v4")
+    parser.add_argument("--ooc-policy", choices=("mcts", "mcts_ctm", "v4", "v4_q"), default="mcts")
     run = parser.add_mutually_exclusive_group()
     run.add_argument("--new-run", action="store_true")
     run.add_argument("--continue-run", action="store_true")

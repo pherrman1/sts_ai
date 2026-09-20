@@ -20,7 +20,8 @@ from typing import Any
 
 CTM_NAME = "combat_transition_near_full_except_smoke_v2.native"
 OOC_NAME = "ooc_strategic_tok_final.native"
-MANAGED_KEYS = ("advisor", "ctmModel", "oocModel")
+OOC_WIN_NAME = "v_win_trees.txt"
+MANAGED_KEYS = ("advisor", "ctmModel", "oocModel", "oocWinModel")
 
 
 class RuntimeFailure(RuntimeError):
@@ -126,6 +127,8 @@ class RuntimeManager:
         checks = (("one_combat_advisor", "advisorSha256", True), (f"models/{CTM_NAME}", "ctmSha256", False))
         if manifest.get("oocModelSha256"):
             checks += ((f"models/{OOC_NAME}", "oocModelSha256", False),)
+        if manifest.get("oocWinModelSha256"):
+            checks += ((f"models/{OOC_WIN_NAME}", "oocWinModelSha256", False),)
         for relative, key, executable in checks:
             artifact = release / relative
             if not artifact.is_file():
@@ -156,6 +159,8 @@ class RuntimeManager:
         }
         if manifest.get("oocModelSha256"):
             desired["oocModel"] = str(self.current / "models" / OOC_NAME)
+        if manifest.get("oocWinModelSha256"):
+            desired["oocWinModel"] = str(self.current / "models" / OOC_WIN_NAME)
         return desired
 
     def repair_config(self, manifest: dict[str, Any] | None = None) -> bool:
@@ -236,6 +241,7 @@ class RuntimeManager:
                 manifest.get("advisorSha256") == hashes.get("advisor")
                 and manifest.get("ctmSha256") == hashes.get("ctm")
                 and manifest.get("oocModelSha256") == hashes.get("ooc")
+                and manifest.get("oocWinModelSha256") == hashes.get("oocWin")
             )
             if manifest.get("gitHead") == git_head and matches_hashes:
                 return release
@@ -265,11 +271,15 @@ class RuntimeManager:
             raise RuntimeFailure(f"advisor is missing or not executable: {advisor_source}")
         ctm = self.repo / "selfplay/models" / CTM_NAME
         ooc = self.repo / "selfplay/models" / OOC_NAME
+        ooc_win = self.repo / "models" / OOC_WIN_NAME
         if not ctm.is_file():
             raise RuntimeFailure(f"tracked CTM model missing: {ctm}")
+        if not ooc_win.is_file():
+            raise RuntimeFailure(f"tracked OOC win model missing: {ooc_win}")
         hashes = {"advisor": sha256(advisor_source), "ctm": sha256(ctm)}
         if ooc.is_file():
             hashes["ooc"] = sha256(ooc)
+        hashes["oocWin"] = sha256(ooc_win)
         cached = self.find_cached(head, hashes)
         if cached:
             manifest = self.validate_release(cached)
@@ -289,6 +299,7 @@ class RuntimeManager:
             shutil.copy2(ctm, staging / "models" / CTM_NAME)
             if ooc.is_file():
                 shutil.copy2(ooc, staging / "models" / OOC_NAME)
+            shutil.copy2(ooc_win, staging / "models" / OOC_WIN_NAME)
             manifest: dict[str, Any] = {
                 "runtimeId": runtime_id,
                 "gitHead": head,
@@ -299,6 +310,7 @@ class RuntimeManager:
             }
             if "ooc" in hashes:
                 manifest["oocModelSha256"] = hashes["ooc"]
+            manifest["oocWinModelSha256"] = hashes["oocWin"]
             atomic_json(staging / "manifest.json", manifest)
             self.validate_release(staging)
             os.replace(staging, final)
@@ -381,6 +393,8 @@ class RuntimeManager:
         value = {key: manifest[key] for key in ("runtimeId", "gitHead", "advisorSha256", "ctmSha256")}
         if manifest.get("oocModelSha256"):
             value["oocModelSha256"] = manifest["oocModelSha256"]
+        if manifest.get("oocWinModelSha256"):
+            value["oocWinModelSha256"] = manifest["oocWinModelSha256"]
         value["inspectorJarSha256"] = sha256(inspector_jar) if inspector_jar.is_file() else None
         value["startedAt"] = utc_now()
         value.update(self.process_identity(process_pid))

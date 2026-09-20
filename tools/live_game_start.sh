@@ -113,6 +113,9 @@ runtime_root=${STS_LIVE_RUNTIME_DIR:-${XDG_DATA_HOME:-$home_dir/.local/share}/st
 if ((runtime_available)); then
   export STS_MODEL_INSPECTOR_ADVISOR=${STS_MODEL_INSPECTOR_ADVISOR:-$runtime_root/current/one_combat_advisor}
   export STS_CTM_MODEL=${STS_CTM_MODEL:-$runtime_root/current/models/combat_transition_near_full_except_smoke_v2.native}
+  if [[ -f "$runtime_root/current/models/v_win_trees.txt" ]]; then
+    export STS_LIVE_OOC_WIN_MODEL=${STS_LIVE_OOC_WIN_MODEL:-$runtime_root/current/models/v_win_trees.txt}
+  fi
   if [[ -f "$runtime_root/current/models/ooc_strategic_tok_final.native" ]]; then
     export STS_LIVE_OOC_MODEL=${STS_LIVE_OOC_MODEL:-$runtime_root/current/models/ooc_strategic_tok_final.native}
   fi
@@ -121,6 +124,9 @@ if ((runtime_available)); then
   if [[ -z "${STS_LIVE_OOC_MODEL:-}" || ! -f "$STS_LIVE_OOC_MODEL" ]]; then
     ((allow_missing_ooc)) || die "OOC model unavailable: ${STS_LIVE_OOC_MODEL:-<unset>}; use --allow-missing-ooc for Silver-only debugging"
     warn "OOC model unavailable; live OOC policy will report MODEL_UNAVAILABLE"
+  fi
+  if [[ -z "${STS_LIVE_OOC_WIN_MODEL:-}" || ! -f "$STS_LIVE_OOC_WIN_MODEL" ]]; then
+    warn "OOC win model unavailable; live OOC MCTS will report OOC_WIN_MODEL_UNAVAILABLE"
   fi
 else
   warn "advisor validation and active-runtime recording are disabled for MCP-only startup"

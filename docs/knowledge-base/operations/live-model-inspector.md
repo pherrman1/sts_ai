@@ -1,6 +1,6 @@
 # Live model inspector
 
-Last verified: 2026-09-20. This page describes the private integration
+Last verified: 2026-09-21. This page describes the private integration
 boundary currently present in the repository; it is not a claim that every
 game boundary has a qualified live evaluator.
 
@@ -34,6 +34,28 @@ Unsupported encounter, relic, information, or schema states remain explicit
 controller or a qualification of Silver policy quality. `STALE` responses
 reject a second observation with an equal or older sequence in the same
 session. A new process starts a new session state.
+
+The default live OOC evaluator is `mcts_ctm`. It imports the public OOC
+observation into a separate transition-capable root, uses the shared
+`CombatTransitionSampler` for combat-entry chance transitions, the loaded V4
+strategic model for policy priors, and `v_win_trees.txt` for compact-tree leaf
+values. The default search budget is exactly 512 simulations with the native
+OOC MCTS planner's default PUCT and progressive-widening configuration. The
+search seed is derived from the request observation hash, so repeated
+observations are reproducible without importing live RNG state. V4 remains
+available only as the explicit `STS_LIVE_OOC_POLICY=v4` diagnostic path; it is
+not the default and is not used as a post-hoc selector.
+
+Each supported OOC candidate reports a semantic key/payload, physical live
+action, Q, visit count, visit share, and prior. The selected candidate is the
+visit winner, with the planner's Q tie-break. The driver and Java overlay
+validate finite nonnegative statistics, a complete root visit/share
+distribution, and selected-candidate consistency before displaying or
+executing a choice. A selected smith, peace-pipe, shop-removal, or supported
+event transaction records a session/sequence-bound pending compound plan; the
+next matching selector must resolve the same physical card identity before a
+selector action is emitted. Missing, ambiguous, stale, or interrupted plans
+fail closed.
 
 The Java frontend is under `mods/sts-model-inspector/`. It uses BaseMod
 post-update/render subscribers and captures detached Ironclad-compatible
@@ -95,9 +117,9 @@ buttons. Shop scores sit by each affordable card, relic, potion, removal and
 leave control. Map scores bind through the same one-based `choose` indices
 as the live capture (coordinates are metadata), and follow the reachable nodes' scrolled hitboxes;
 offscreen nodes never acquire badges clamped onto the screen edge. Rest options
-and OOC card selectors also use physical-control badges. Upgrade selectors,
-including smithing, show each card's V4 score; remove/transform selectors remain
-explicitly unscored because V4 only supports the upgrade selector type. Grid
+and OOC card selectors also use physical-control badges. Upgrade, remove, and
+transform selectors show the shared MCTS ranking when the public selector
+boundary is supported. Grid
 scores hide during peek/confirmation and cull offscreen cards.
 Card rewards retain scores below each card and add a separate
 skip-button badge (and Singing Bowl badge when present). These screens replace
@@ -108,14 +130,12 @@ responses display scores; waiting, unsupported and error states show no
 recommendation. If a scored action cannot be bound to its exact physical
 control, the ranked panel remains as a fallback rather than silently hiding it.
 
-Smith and Living Wall's Upgrade option expose `followUpPreview`: a separate
-V4 evaluation of the deterministic upgrade-selector state, including the target
-card's physical deck index and selector Q. The UI resolves that index through
-the captured card UUID and shows a `Next` row beside the parent option. Parent
-Q, argmax, and live command remain unchanged; this is not a combined transaction
-score. Removal/transform parents retain their existing action scores without
-invented target recommendations. Other upgrade parents with preceding effects
-remain unqualified for previews.
+Compound actions are represented as a source click followed by the pending
+selector plan; the source score is not silently combined with a fabricated
+selector score. The selector response carries an `APPLIED` compound-plan
+marker after the exact target is resolved. Unsupported effects, incomplete
+public continuations, and screens whose target cannot be matched remain
+explicit `UNSUPPORTED` results.
 
 Potion use and discard labels remain visible in named, physically ordered
 columns below the inventory without requiring hover. Columns clear the combat
@@ -124,7 +144,8 @@ They retain physical slot and target distinctions. Card and potion target labels
 use live monster names, with indices only to distinguish duplicate names. Native
 Silver slots and compact live potion targets resolve separately. Silver root summaries include
 an additive `liveAction` binding for this display; unsupported lowering is
-`null`. OOC inventory potion actions are not scored by the current V4 provider:
+`null`. OOC inventory potion actions remain outside the current MCTS semantic
+support boundary:
 the UI says `not scored`, or `unavailable` when the actual potion rejects that
 operation. Freshness and unsupported/error suppression apply to potion scores
 as well. The overlay is presentation-only and does not change policy

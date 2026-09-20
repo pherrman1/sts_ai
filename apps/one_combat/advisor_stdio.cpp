@@ -2,6 +2,7 @@
 #include "live_ooc_importer.h"
 #include "live_ooc_state.h"
 #include "live_ooc_policy.h"
+#include "ooc_v4_encoding.h"
 #include "../ooc_strategic_tok_net.h"
 #include <fstream>
 #include <iomanip>
@@ -30,8 +31,86 @@ std::string modelIdentity(const std::string &path) {
     std::ostringstream out; out << "fnv1a64:" << std::hex << std::setw(16) << std::setfill('0') << hash;
     return out.str();
 }
+std::uint64_t stableHash(const std::string &value) {
+    std::uint64_t hash = 14695981039346656037ULL;
+    for (const unsigned char byte : value) { hash ^= byte; hash *= 1099511628211ULL; }
+    return hash;
+}
+struct PendingCompoundPlan {
+    bool active = false;
+    std::string session;
+    std::int64_t sequence = 0;
+    int selectorType = 0;
+    std::string selectorName;
+    json card;
+};
+
+int keyInteger(const std::string &key, const char *field) {
+    const std::string prefix = std::string(field) + "=";
+    const auto start = key.find(prefix);
+    if (start == std::string::npos) return -1;
+    const auto valueStart = start + prefix.size();
+    const auto end = key.find(':', valueStart);
+    try { return std::stoi(key.substr(valueStart, end - valueStart)); }
+    catch (...) { return -1; }
+}
+
+PendingCompoundPlan pendingCompoundPlan(const one_combat::advisor::Request &request,
+                                        const json &selected) {
+    PendingCompoundPlan plan;
+    const auto targetType = selected.value("type", std::string());
+    if (targetType != "transaction" && targetType != "deck_card") return plan;
+    const auto source = keyInteger(selected.value("semanticKey", std::string()), "source");
+    const auto effect = keyInteger(selected.value("semanticKey", std::string()), "effect");
+    // These are the only public source primitives whose semantic enumeration
+    // expands to a deterministic single-card selector. The numeric selector
+    // IDs are the append-only native CardSelectScreenType wire values.
+    if (source == 0) { plan.selectorType = 3; plan.selectorName = "upgrade"; }
+    else if (source == 2 || source == 4) { plan.selectorType = 4; plan.selectorName = "remove"; }
+    else if (source == 5 && effect == 0) { plan.selectorType = 3; plan.selectorName = "upgrade"; }
+    else if (source == 5 && effect == 1) { plan.selectorType = 4; plan.selectorName = "remove"; }
+    else if (source == 5 && effect == 2) { plan.selectorType = 1; plan.selectorName = "transform"; }
+    else if (source == 5 && effect == 3) { plan.selectorType = 2; plan.selectorName = "transform_upgrade"; }
+    else return plan;
+    if (!selected.contains("card") || !selected.at("card").is_object()) return PendingCompoundPlan{};
+    plan.active = true;
+    plan.session = request.session;
+    plan.sequence = request.sequence;
+    plan.card = selected.at("card");
+    return plan;
+}
+
+bool sameCardTarget(const json &candidate, int selectorType, const json &target) {
+    if (candidate.value("type", std::string()) != "selector") return false;
+    if (candidate.value("selectorType", -1) != selectorType) return false;
+    const auto &candidateTarget = candidate.value("target", json::object());
+    if (candidateTarget.value("type", std::string()) != "deck_card") return false;
+    const auto &card = candidateTarget.value("card", json::object());
+    for (const char *field : {"id", "misc", "upgraded", "bottle", "occurrence"})
+        if (!card.contains(field) || !target.contains(field) || card.at(field) != target.at(field)) return false;
+    return true;
+}
+
+void validateCapturedLiveOocMapping(const one_combat::advisor::LiveOocStateV1 &state) {
+    std::vector<std::uint32_t> expected;
+    // Rewards can contain simulator-only synthetic card-skip primitives for
+    // groups that Java does not expose as live choices. For those screens the
+    // observed primitive set is the source boundary; other screens have an
+    // exact native candidate set that can detect missing mappings as well as
+    // duplicate ones before policy/model fallback.
+    if (state.projected.screenState == sts::ScreenState::REWARDS) {
+        expected = one_combat::advisor::liveOocPrimitiveBits(state);
+    } else {
+        for (const auto &action : one_combat::v4CandidateActions(state.projected))
+            if (action.isValidAction(state.projected)) expected.push_back(action.bits);
+    }
+    if (expected.empty()) return;
+    one_combat::advisor::validateLiveOocActionSet(state, expected);
+}
+
 json oocResponse(const one_combat::advisor::Request &request,
-                 const one_combat::LiveOocPolicy &policy, const std::string &identity) {
+                 one_combat::LiveOocPolicy &policy, const std::string &identity,
+                 PendingCompoundPlan &pending) {
     using namespace one_combat;
     const auto started = std::chrono::steady_clock::now();
     json evaluator = {{"id", "live_ooc_decision_v1"}, {"scope", "ooc_decision"},
@@ -42,8 +121,15 @@ json oocResponse(const one_combat::advisor::Request &request,
         return advisor::errorResponse(request, imported.code, imported.message);
     if (!imported.ok) evaluator["reason"] = imported.message;
     else {
+        try {
+            validateCapturedLiveOocMapping(state);
+            policy.setRootPrimitiveBits(advisor::liveOocPrimitiveBits(state));
+        } catch (const std::exception &error) {
+            return advisor::errorResponse(request, "OOC_ACTION_MAPPING", error.what());
+        }
+        policy.setSearchSeed(stableHash(request.observationHash + ":live-ooc-mcts"));
         const auto scoreStarted = std::chrono::steady_clock::now();
-        const auto decision = policy.score(state.projected, state.path);
+        auto decision = policy.score(state.mctsRoot.state, state.mctsRoot.path);
         evaluator["scorerLatencyMicros"] = std::chrono::duration_cast<std::chrono::microseconds>(
             std::chrono::steady_clock::now() - scoreStarted).count();
         // Qualified candidate identities remain checkable without model weights.
@@ -61,15 +147,53 @@ json oocResponse(const one_combat::advisor::Request &request,
             // Missing support/model may fall back; malformed/ambiguous native
             // candidates and nonfinite scores are integration errors.
             if (decision.reason != "MODEL_UNAVAILABLE" && decision.reason != "V4_SCREEN_UNSUPPORTED"
-                    && decision.reason.rfind("SEMANTIC_ENUMERATION_UNSUPPORTED:", 0) != 0)
+                    && decision.reason != "CTM_MODEL_UNAVAILABLE"
+                    && decision.reason != "OOC_WIN_MODEL_UNAVAILABLE"
+                    && decision.reason.rfind("COMPOUND_TARGET_UNAVAILABLE:", 0) != 0
+                    && decision.reason.rfind("SEMANTIC_ENUMERATION_UNSUPPORTED:", 0) != 0
+                    && decision.reason.rfind("OOC_MCTS_", 0) != 0)
                 return advisor::errorResponse(request, "OOC_POLICY_FAILURE", decision.reason);
             evaluator["reason"] = decision.reason;
         } else {
+            bool appliedPending = false;
+            json appliedTarget;
+            if (pending.active) {
+                if (pending.session != request.session || request.sequence <= pending.sequence) {
+                    pending = PendingCompoundPlan{};
+                } else if (state.projected.screenState == sts::ScreenState::CARD_SELECT) {
+                    int matches = 0;
+                    int matchingIndex = -1;
+                    for (int i = 0; i < static_cast<int>(decision.candidates.size()); ++i) {
+                        const auto payload = json::parse(decision.candidates[i].payload);
+                        if (sameCardTarget(payload, pending.selectorType, pending.card)) {
+                            ++matches;
+                            matchingIndex = i;
+                        }
+                    }
+                    if (matches != 1) {
+                        decision.supported = false;
+                        decision.reason = "COMPOUND_TARGET_UNAVAILABLE:" + pending.selectorName;
+                        pending = PendingCompoundPlan{};
+                    } else {
+                        decision.selectedIndex = matchingIndex;
+                        appliedPending = true;
+                        appliedTarget = pending.card;
+                    }
+                } else {
+                    // A source transaction was interrupted by an unrelated
+                    // boundary. Do not carry a stale target into a later grid.
+                    pending = PendingCompoundPlan{};
+                }
+            }
+            if (!decision.supported) {
+                evaluator["reason"] = decision.reason;
+            } else {
             try {
                 evaluator["candidateSummaries"] = json::array();
                 for (const auto &c : decision.candidates) {
                     json summary = {{"semanticKey", c.semanticKey},
                         {"semanticPayload", json::parse(c.payload)}, {"label", c.semanticKey}, {"q", c.q},
+                        {"visits", c.visits}, {"visitShare", c.visitShare}, {"prior", c.prior},
                         {"liveAction", advisor::lowerLiveOocAction(state, c.primitiveBits)}};
                     if (!c.followUpPreview.empty()) summary["followUpPreview"] = json::parse(c.followUpPreview);
                     evaluator["candidateSummaries"].push_back(std::move(summary));
@@ -79,9 +203,30 @@ json oocResponse(const one_combat::advisor::Request &request,
                 evaluator["selectedSemanticKey"] = selected.semanticKey;
                 evaluator["selectedLabel"] = selected.semanticKey;
                 evaluator["selectedLiveAction"] = advisor::lowerLiveOocAction(state, selected.primitiveBits);
-                evaluator["model"] = {{"kind", "ooc_strategic_tok_v4"}, {"identity", identity}};
+                if (appliedPending) {
+                    evaluator["compoundPlan"] = json{{"status", "APPLIED"},
+                        {"selectorType", pending.selectorName}, {"target", appliedTarget}};
+                    pending = PendingCompoundPlan{};
+                } else {
+                    const auto plan = pendingCompoundPlan(request,
+                        json::parse(selected.payload));
+                    if (plan.active) {
+                        pending = plan;
+                        evaluator["compoundPlan"] = json{{"status", "PENDING"},
+                            {"selectorType", plan.selectorName}, {"target", plan.card}};
+                    }
+                }
+                if (policy.name() == std::string("mcts_ctm")) {
+                    evaluator["model"] = {{"kind", "ooc_mcts_ctm"},
+                                           {"prior", "ooc_strategic_tok_v4"},
+                                           {"leaf", "v_win_compact_tree"}, {"simulations", 512},
+                                           {"selection", "visits_then_q"}, {"identity", identity}};
+                } else {
+                    evaluator["model"] = {{"kind", "ooc_v4_q"}, {"identity", identity}};
+                }
             } catch (const std::exception &error) {
                 return advisor::errorResponse(request, "OOC_ACTION_MAPPING", error.what());
+            }
             }
         }
     }
@@ -224,10 +369,30 @@ int main() {
     if (const char *path = std::getenv("STS_LIVE_OOC_MODEL"); path && *path) {
         if (oocModel->load(path, true)) oocIdentity = modelIdentity(path);
     }
-    const one_combat::LiveOocV4QPolicy oocPolicy(*oocModel);
-    std::unique_ptr<one_combat::NativeCombatTransitionSampler> ctm;
+    one_combat::CompactTreeNet oocWinModel;
+    std::string oocWinIdentity = "unavailable";
+    if (const char *path = std::getenv("STS_LIVE_OOC_WIN_MODEL"); path && *path) {
+        // CompactTreeNet is also used by the simulator and reports successful
+        // loads on stdout. The advisor stdout is a strict JSONL protocol, so
+        // keep that diagnostic out of the wire stream.
+        std::ostringstream discardedLoadBanner;
+        auto *const stdoutBuffer = std::cout.rdbuf(discardedLoadBanner.rdbuf());
+        bool loaded = false;
+        try {
+            loaded = oocWinModel.load(path, one_combat::richIdxMap(), "LiveOocWinModel");
+        } catch (...) {
+            std::cout.rdbuf(stdoutBuffer);
+            throw;
+        }
+        std::cout.rdbuf(stdoutBuffer);
+        if (loaded)
+            oocWinIdentity = modelIdentity(path);
+    }
+    std::shared_ptr<one_combat::NativeCombatTransitionSampler> ctm;
     std::string ctmStatus = "MODEL_UNAVAILABLE", ctmReason;
+    std::string ctmIdentity = "unavailable";
     std::string cachedEntryHash;
+    PendingCompoundPlan pendingCompound;
     json cachedEvaluator;
     std::shared_ptr<silver_bridge::SilverSearchSession> silverSession;
     std::string silverSessionIdentity;
@@ -235,12 +400,19 @@ int main() {
     one_combat::advisor::SilverImportContext silverImportContext;
     if (const char *path = std::getenv("STS_CTM_MODEL"); path && *path) {
         try {
-            ctm = std::make_unique<one_combat::NativeCombatTransitionSampler>(path);
+            ctm = std::make_shared<one_combat::NativeCombatTransitionSampler>(path);
             ctmStatus = "OK";
+            ctmIdentity = modelIdentity(path);
         } catch (const std::exception &e) {
             ctmStatus = "SCHEMA_MISMATCH"; ctmReason = e.what();
         }
     }
+    std::unique_ptr<one_combat::LiveOocPolicy> oocPolicy;
+    if (const char *selected = std::getenv("STS_LIVE_OOC_POLICY"); selected && std::string(selected) == "v4")
+        oocPolicy = std::make_unique<one_combat::LiveOocV4QPolicy>(*oocModel);
+    else
+        oocPolicy = std::make_unique<one_combat::LiveOocMctsPolicy>(*oocModel, ctm,
+                                                                      &oocWinModel);
     std::string line;
     while (std::getline(std::cin, line)) {
         json response;
@@ -321,7 +493,9 @@ int main() {
                             }
                         }
                     } else if (request.observation.value("boundary", std::string()) == "ooc") {
-                        response = oocResponse(request, oocPolicy, oocIdentity);
+                        response = oocResponse(request, *oocPolicy, oocIdentity + ":ctm=" + ctmIdentity
+                                                + ":win=" + oocWinIdentity,
+                                                pendingCompound);
                     } else {
                         one_combat::advisor::PublicOocState imported;
                         const auto importedResult =

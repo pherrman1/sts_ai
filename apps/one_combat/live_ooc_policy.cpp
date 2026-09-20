@@ -175,4 +175,126 @@ LiveOocDecision LiveOocV4QPolicy::score(const sts::GameContext &projected,
                                       const PathHistory &path) const {
     return scoreLiveOocV4(projected, path, model_);
 }
+
+LiveOocMctsPolicy::LiveOocMctsPolicy(const OocStrategicTokNet &model,
+                                     std::shared_ptr<const CombatTransitionSampler> sampler,
+                                     const CompactTreeNet *oocWinModel)
+    : model_(model), sampler_(std::move(sampler)), winModel_(oocWinModel) {}
+
+void LiveOocMctsPolicy::setRootPrimitiveBits(const std::vector<std::uint32_t> &bits) {
+    rootPrimitiveBits_ = std::set<std::uint32_t>(bits.begin(), bits.end());
+    hasRootPrimitiveBits_ = true;
+}
+
+LiveOocDecision LiveOocMctsPolicy::score(const sts::GameContext &projected,
+                                         const PathHistory &path) const {
+    LiveOocDecision unsupportedResult;
+    unsupportedResult.policy = name();
+    if (!v4DecisionSupported(projected)) {
+        unsupportedResult.reason = "V4_SCREEN_UNSUPPORTED";
+        return unsupportedResult;
+    }
+    if (!model_.ok) { unsupportedResult.reason = "MODEL_UNAVAILABLE"; return unsupportedResult; }
+    if (!sampler_) { unsupportedResult.reason = "CTM_MODEL_UNAVAILABLE"; return unsupportedResult; }
+    if (!winModel_ || !winModel_->ok) {
+        unsupportedResult.reason = "OOC_WIN_MODEL_UNAVAILABLE";
+        return unsupportedResult;
+    }
+
+    OocAdapterOptions options;
+    options.sampleNoncombat = true;
+    if (hasRootPrimitiveBits_) options.rootPrimitiveBits = rootPrimitiveBits_;
+    OocMctsDependencies dependencies;
+    dependencies.policyAvailable = [this] { return model_.ok; };
+    dependencies.policyLogit = [this](const sts::GameContext &gc, const PathHistory &history,
+                                      const sts::search::GameAction &action) {
+        const TokState tokens = buildTokStatePure(gc, history);
+        const auto prepared = model_.prepareState(tokens.glob, tokens.nDk, tokens.dk,
+            tokens.nRl, tokens.rl, tokens.nPt, tokens.pt);
+        int actionType, c1, c2, c3, cand1, cand2, cand3;
+        strategicCands(gc, action, actionType, c1, c2, c3, cand1, cand2, cand3);
+        const int cats[6] = {c1, c2, c3, cand1, cand2, cand3};
+        int entityType, entityId;
+        float price;
+        tokEntity(gc, action, entityType, entityId, price);
+        const float entity[4] = {float(entityType == 0), float(entityType == 1),
+                                 float(entityType == 2), float(entityType == 3)};
+        const double logit = model_.predictPolicyLogit(prepared, action.bits, cats,
+            actionType, static_cast<int>(gc.screenState), entity, entityId, price);
+        if (!std::isfinite(logit)) throw std::runtime_error("OOC MCTS nonfinite policy logit");
+        return logit;
+    };
+    dependencies.leafValue = [this](const sts::GameContext &gc, const PathHistory &history) {
+        const double value = winModel_->predict(richFeatureVec(gc, history));
+        if (!std::isfinite(value) || value < 0 || value > 1)
+            throw std::runtime_error("OOC MCTS invalid native v_win value");
+        return value;
+    };
+
+    try {
+        OocGameContextModel provider(projected, path, sampler_, options, std::move(dependencies));
+        if (provider.terminalValue(0) || provider.isLeafBoundary(0)) {
+            unsupportedResult.reason = "OOC_ROOT_UNSUPPORTED";
+            return unsupportedResult;
+        }
+        sts::search::OocMctsConfig config;
+        config.seed = searchSeed_;
+        const auto search = sts::search::OocMctsPlanner(config).search(provider, 0, 512);
+        if (search.aborted) {
+            unsupportedResult.reason = "OOC_MCTS_ABORTED:" + search.abortReason;
+            return unsupportedResult;
+        }
+        const auto &rootActions = search.rootActions;
+        if (!search.selectedAction || rootActions.empty()) {
+            unsupportedResult.reason = "OOC_MCTS_EMPTY_ROOT";
+            return unsupportedResult;
+        }
+        LiveOocDecision result;
+        result.policy = name();
+        result.candidates.reserve(rootActions.size());
+        for (const auto &root : rootActions) {
+            const auto &candidate = provider.candidate(0, root.id);
+            std::string key;
+            std::string payload;
+            if (candidate.semantic) {
+                key = canonicalOocSemanticActionKey(*candidate.semantic);
+                payload = oocSemanticActionPayloadJson(*candidate.semantic);
+            } else {
+                const int x = candidate.primitive.getIdx1();
+                const int y = projected.curMapNodeY + 1;
+                key = "ooc-live:v1:map:x=" + std::to_string(x) + ":y=" + std::to_string(y);
+                payload = nlohmann::json({{"type", "map_node"}, {"x", x}, {"y", y}}).dump();
+            }
+            const double share = search.metrics.simulations
+                ? static_cast<double>(root.visits) / search.metrics.simulations : 0.0;
+            result.candidates.push_back({key, payload, candidate.primitive.bits, root.q,
+                                         root.visits, share, root.prior});
+        }
+        std::sort(result.candidates.begin(), result.candidates.end(),
+            [](const auto &a, const auto &b) { return a.semanticKey < b.semanticKey; });
+        const auto selected = provider.candidate(0, *search.selectedAction);
+        const std::string selectedKey = selected.semantic
+            ? canonicalOocSemanticActionKey(*selected.semantic)
+            : "ooc-live:v1:map:x=" + std::to_string(selected.primitive.getIdx1())
+                + ":y=" + std::to_string(projected.curMapNodeY + 1);
+        for (int i = 0; i < static_cast<int>(result.candidates.size()); ++i) {
+            if (result.candidates[i].semanticKey == selectedKey) {
+                result.selectedIndex = i;
+                break;
+            }
+        }
+        if (result.selectedIndex < 0) {
+            unsupportedResult.reason = "OOC_MCTS_SELECTED_ROOT_MISSING";
+            return unsupportedResult;
+        }
+        result.supported = true;
+        return result;
+    } catch (const sts::search::OocSearchUnsupported &error) {
+        unsupportedResult.reason = std::string("OOC_MCTS_UNSUPPORTED:") + error.what();
+        return unsupportedResult;
+    } catch (const std::exception &error) {
+        unsupportedResult.reason = std::string("OOC_MCTS_FAILURE:") + error.what();
+        return unsupportedResult;
+    }
+}
 } // namespace one_combat

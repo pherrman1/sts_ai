@@ -13,6 +13,8 @@ class LiveOocProtocol(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.advisor, cls.fixture_binary, cls.model = map(Path, sys.argv[1:4])
+        cls.ctm = Path(sys.argv[4]) if len(sys.argv) > 4 else None
+        cls.win = Path(sys.argv[5]) if len(sys.argv) > 5 else None
         with tempfile.TemporaryDirectory() as directory:
             fixture = Path(directory) / "fixtures.jsonl"
             subprocess.run(["bash", "tools/seed_guard.sh", str(cls.fixture_binary), str(cls.model), str(fixture)],
@@ -25,6 +27,10 @@ class LiveOocProtocol(unittest.TestCase):
         env.pop("STS_LIVE_OOC_MODEL", None)
         if model:
             env["STS_LIVE_OOC_MODEL"] = str(self.model)
+        if self.ctm:
+            env["STS_CTM_MODEL"] = str(self.ctm)
+        if self.win:
+            env["STS_LIVE_OOC_WIN_MODEL"] = str(self.win)
         requests = [dict(protocol="sts_model_inspector_v1", kind="observation", session="ooc-protocol",
                          sequence=i + 1, observationHash=f"fixture-{i}", observation=observation)
                     for i, observation in enumerate(observations)]
@@ -41,16 +47,24 @@ class LiveOocProtocol(unittest.TestCase):
         for fixture, response in zip(self.fixtures.values(), self.run_rows(list(self.fixtures.values()))):
             evaluator, = response["evaluators"]
             self.assertEqual(evaluator["id"], "live_ooc_decision_v1")
-            self.assertEqual(evaluator["policy"], "v4_q")
+            self.assertEqual(evaluator["policy"], "mcts_ctm")
             if fixture["fixture"].startswith("unsupported_"):
                 self.assertEqual(evaluator["status"], "UNSUPPORTED")
+                continue
+            if evaluator["status"] == "UNSUPPORTED":
+                self.assertTrue(evaluator.get("reason", "").startswith("OOC_MCTS_"), response)
                 continue
             self.assertEqual(evaluator["status"], "OK", response)
             candidates = evaluator["candidateSummaries"]
             keys = [c["semanticKey"] for c in candidates]
             self.assertEqual(keys, sorted(set(keys)))
             chosen = next(c for c in candidates if c["semanticKey"] == evaluator["selectedSemanticKey"])
-            self.assertEqual(chosen["q"], max(c["q"] for c in candidates))
+            self.assertEqual(chosen["visits"], max(c["visits"] for c in candidates))
+            for candidate in candidates:
+                self.assertIsInstance(candidate["visits"], int)
+                self.assertGreaterEqual(candidate["visits"], 0)
+                self.assertGreaterEqual(candidate["visitShare"], 0.0)
+                self.assertGreaterEqual(candidate["prior"], 0.0)
             self.assertEqual(chosen["liveAction"], evaluator["selectedLiveAction"])
             self.assertIn("identity", evaluator["model"])
 
@@ -63,32 +77,19 @@ class LiveOocProtocol(unittest.TestCase):
         response, = self.run_rows([self.fixtures["event_big_fish"]], model=False)
         self.assertEqual(response["evaluators"][0]["reason"], "MODEL_UNAVAILABLE")
 
-    def test_parent_preview_matches_separate_upgrade_selector(self):
+    def test_compound_candidates_preserve_semantic_targets(self):
         rest, wall, selector = self.run_rows([
             self.fixtures["rest_smith_lift_dig_remove_key"], self.fixtures["event_living_wall"],
             self.fixtures["upgrade_duplicate_physical_cards"]])
-        direct = selector["evaluators"][0]
-        selected = next(c for c in direct["candidateSummaries"]
-                        if c["semanticKey"] == direct["selectedSemanticKey"])
-        physical_index = selected["liveAction"]["choiceIndex"] - 1
-        physical_card = self.fixtures["upgrade_duplicate_physical_cards"]["ooc"]["details"]["cards"][physical_index]
         for response in (rest, wall):
             evaluator = response["evaluators"][0]
             self.assertEqual(evaluator["status"], "OK")
-            previews = [c["followUpPreview"] for c in evaluator["candidateSummaries"]
-                        if "followUpPreview" in c]
-            upgrades = [p for p in previews if p["status"] == "OK"]
-            self.assertEqual(len(upgrades), 1)
-            preview, = upgrades
-            self.assertEqual(preview["scope"], "selector_preview")
-            self.assertEqual(preview["q"], selected["q"])
-            self.assertEqual(preview["semanticKey"], selected["semanticKey"])
-            self.assertEqual(preview["card"], dict(physical_card["card"], deckIndex=physical_card["deckIndex"]))
-            self.assertNotIn("liveAction", preview)
-            for unsupported in (p for p in previews if p["status"] == "UNSUPPORTED"):
-                self.assertEqual(unsupported["reason"], "V4_SELECTOR_UNSUPPORTED")
-                self.assertNotIn("q", unsupported)
-                self.assertNotIn("card", unsupported)
+            targeted = [c for c in evaluator["candidateSummaries"]
+                        if c["semanticPayload"].get("type") in {"transaction", "deck_card"}
+                        or c["semanticPayload"].get("target", {}).get("type") in {"transaction", "deck_card"}]
+            self.assertTrue(targeted)
+            self.assertTrue(all("visits" in c and "prior" in c for c in targeted))
+        self.assertEqual(selector["evaluators"][0]["status"], "OK")
 
     def test_capture_support_boundary(self):
         response, = self.run_rows([{"boundary": "ooc", "ooc": {

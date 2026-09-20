@@ -1,6 +1,9 @@
 #pragma once
 #include <deque>
+#include <functional>
 #include <map>
+#include <optional>
+#include <set>
 #include "combat_transition_sampler.h"
 #include "ooc_policy.h"
 #include "sim/search/OocMctsPlanner.h"
@@ -28,7 +31,25 @@ struct OocAdapterOptions {
     bool uniformLeafPolicy = false;
     // Live search samples unknown futures. False is retained for exact native replay fixtures.
     bool sampleNoncombat = false;
+    // Optional live-capture root restriction; child states remain semantic.
+    std::optional<std::set<std::uint32_t>> rootPrimitiveBits;
 };
+
+// Host-provided model seams keep the scientific OOC MCTS substrate reusable
+// by the simulator and the live advisor.  The callbacks receive the explicit
+// public/hypothetical path rather than consulting process-global run state.
+struct OocMctsDependencies {
+    std::function<bool()> policyAvailable;
+    std::function<double(const GameContext &, const PathHistory &,
+                         const GameAction &)> policyLogit;
+    std::function<double(const GameContext &, const PathHistory &)> leafValue;
+    std::function<void(GameContext &, PathHistory &, std::mt19937_64 &)> continuationStep;
+    std::function<double(const GameContext &)> potionKeepValue;
+    std::function<int()> stopAfterAct;
+};
+
+OocMctsDependencies defaultOocMctsDependencies();
+
 class OocGameContextModel final : public sts::search::OocGenerativeModel {
 public:
     struct Candidate {
@@ -57,6 +78,7 @@ private:
     std::deque<Snapshot> states;
     std::uint64_t combatSamples_ = 0;
     OocAdapterOptions options;
+    OocMctsDependencies dependencies;
     mutable OocContinuationMetrics continuation_;
     const Metadata &metadata(sts::search::OocStateId) const;
     Metadata &mutableMetadata(sts::search::OocStateId) const;
@@ -66,6 +88,9 @@ public:
     // Root history is required: prior room visits cannot be recovered from GameContext.
     explicit OocGameContextModel(const GameContext &, const PathHistory &,
         std::shared_ptr<const CombatTransitionSampler> = {}, OocAdapterOptions = {});
+    OocGameContextModel(const GameContext &, const PathHistory &,
+        std::shared_ptr<const CombatTransitionSampler>, OocAdapterOptions,
+        OocMctsDependencies);
     // Separate combat-support qualification must exclude every intentional abort path.
     bool searchGuaranteedNonAborting() const override { return false; }
     std::uint64_t combatSamples() const { return combatSamples_; }

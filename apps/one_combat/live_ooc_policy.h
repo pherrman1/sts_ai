@@ -4,7 +4,9 @@
 #include <cstdint>
 #include <string>
 #include <vector>
+#include <memory>
 #include "run_features.h"
+#include "ooc_mcts_adapter.h"
 
 struct OocStrategicTokNet;
 
@@ -15,6 +17,9 @@ struct LiveOocCandidateScore {
     std::string payload;
     std::uint32_t primitiveBits = 0;
     double q = 0;
+    std::uint64_t visits = 0;
+    double visitShare = 0;
+    double prior = 0;
     // Optional display-only preview of the separate selector decision.
     // Never an executable compound action or part of the parent's Q value.
     std::string followUpPreview;
@@ -34,6 +39,8 @@ class LiveOocPolicy {
 public:
     virtual ~LiveOocPolicy() = default;
     virtual const char *name() const = 0;
+    virtual void setSearchSeed(std::uint64_t) {}
+    virtual void setRootPrimitiveBits(const std::vector<std::uint32_t> &) {}
     virtual LiveOocDecision score(const sts::GameContext &, const PathHistory &) const = 0;
 };
 
@@ -50,6 +57,24 @@ private:
 // No transition execution, path updates, global model, or diagnostic callbacks.
 LiveOocDecision scoreLiveOocV4(const sts::GameContext &, const PathHistory &,
                              const OocStrategicTokNet &);
+
+class LiveOocMctsPolicy final : public LiveOocPolicy {
+public:
+    LiveOocMctsPolicy(const OocStrategicTokNet &,
+                      std::shared_ptr<const CombatTransitionSampler>,
+                      const CompactTreeNet *oocWinModel);
+    const char *name() const override { return "mcts_ctm"; }
+    void setSearchSeed(std::uint64_t seed) override { searchSeed_ = seed; }
+    void setRootPrimitiveBits(const std::vector<std::uint32_t> &bits) override;
+    LiveOocDecision score(const sts::GameContext &, const PathHistory &) const override;
+private:
+    const OocStrategicTokNet &model_;
+    std::shared_ptr<const CombatTransitionSampler> sampler_;
+    const CompactTreeNet *winModel_;
+    mutable std::uint64_t searchSeed_ = 0;
+    mutable std::set<std::uint32_t> rootPrimitiveBits_;
+    mutable bool hasRootPrimitiveBits_ = false;
+};
 
 } // namespace one_combat
 #endif

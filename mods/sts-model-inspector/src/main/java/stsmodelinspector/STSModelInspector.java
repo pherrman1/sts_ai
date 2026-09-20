@@ -537,7 +537,7 @@ public final class STSModelInspector implements PostInitializeSubscriber,
                 renderFittedText(sb, (choice.selected ? "▶ " : "") + "#" + (rank + 1) + "  " + choice.label,
                         x + 23 * scale, rowBottom + 26 * scale, width - 150 * scale,
                         choice.selected ? CYAN : Color.WHITE, .78f);
-                renderSmallText(sb, String.format(Locale.ROOT, "Q %.3f", choice.q),
+                renderSmallText(sb, String.format(Locale.ROOT, "N %d · Q %.3f", choice.visits, choice.q),
                         x + width - 104 * scale, rowBottom + 26 * scale, MUTED, .72f);
             }
             if ("card_reward".equals(view.screen))

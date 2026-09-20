@@ -12,10 +12,18 @@ struct LiveOocStateV1 {
     sts::GameContext projected{};
     PathHistory path;
     nlohmann::json ooc;
+    // Separate transition-capable public-information root. Its hidden pools
+    // and RNG streams come from a fixed hypothetical distribution and are
+    // re-sampled by OOC MCTS; they are never copied from the live game.
+    struct LiveOocMctsRootV1 {
+        sts::GameContext state{};
+        PathHistory path;
+    } mctsRoot;
 };
 ImportResult importLiveOocStateV1(const nlohmann::json &observation, LiveOocStateV1 &out);
 // Resolves one primitive against the complete captured current-screen mapping.
 // A schema/mapping error throws; it is never a policy UNSUPPORTED fallback.
 nlohmann::json lowerLiveOocAction(const LiveOocStateV1 &state, std::uint32_t primitiveBits);
 void validateLiveOocActionSet(const LiveOocStateV1 &state, const std::vector<std::uint32_t> &bits);
+std::vector<std::uint32_t> liveOocPrimitiveBits(const LiveOocStateV1 &state);
 } // namespace one_combat::advisor

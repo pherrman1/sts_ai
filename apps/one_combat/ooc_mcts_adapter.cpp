@@ -122,6 +122,51 @@ void applySampledCombatExit(GameContext &gc, const CombatRuntimeSample &sample) 
     gc.regainControl();
 }
 }
+#ifndef STS_LIVE_ADVISOR
+OocMctsDependencies defaultOocMctsDependencies() {
+    OocMctsDependencies dependencies;
+    dependencies.policyAvailable = [] { return g_oocStrategicTokNet.ok; };
+    dependencies.policyLogit = [](const GameContext &gc, const PathHistory &path,
+                                  const GameAction &action) {
+        if (!g_oocStrategicTokNet.ok) throw std::runtime_error("OOC MCTS V4 unavailable");
+        const TokState ts = buildTokState(gc, path);
+        const auto prepared = g_oocStrategicTokNet.prepareState(ts.glob, ts.nDk, ts.dk,
+            ts.nRl, ts.rl, ts.nPt, ts.pt);
+        int type, c1, c2, c3, d1, d2, d3, entityType, entityId;
+        float price;
+        strategicCands(gc, action, type, c1, c2, c3, d1, d2, d3);
+        tokEntity(gc, action, entityType, entityId, price);
+        const int cats[6] = {c1, c2, c3, d1, d2, d3};
+        const float entity[4] = {float(entityType == 0), float(entityType == 1),
+                                 float(entityType == 2), float(entityType == 3)};
+        const double logit = g_oocStrategicTokNet.predictPolicyLogit(prepared, action.bits,
+            cats, type, int(gc.screenState), entity, entityId, price);
+        if (!std::isfinite(logit)) throw std::runtime_error("OOC MCTS nonfinite policy logit");
+        return logit;
+    };
+    dependencies.leafValue = [](const GameContext &source, const PathHistory &path) {
+        auto gc = detachedCopy(source);
+        const auto *saved = t_curPath;
+        t_curPath = &path;
+        try {
+            const double value = vStateWinNative(gc);
+            t_curPath = saved;
+            return value;
+        } catch (...) {
+            t_curPath = saved;
+            throw;
+        }
+    };
+    dependencies.continuationStep = [](GameContext &gc, PathHistory &, std::mt19937_64 &) {
+        ScumSearchAgent2 agent;
+        agent.simulationCountBase = 10000;
+        runFullRunOocPolicyStep(gc, agent, false, true);
+    };
+    dependencies.potionKeepValue = [](const GameContext &gc) { return ::potionKeepValue(gc); };
+    dependencies.stopAfterAct = [] { return g_stopAfterAct; };
+    return dependencies;
+}
+#endif
 std::vector<double> oocPolicyWeights(const std::vector<double> &logits, double temperature) {
     if (!std::isfinite(temperature) || temperature <= 0)
         throw std::invalid_argument("OOC MCTS invalid policy temperature");
@@ -136,13 +181,27 @@ std::vector<double> oocPolicyWeights(const std::vector<double> &logits, double t
     }
     return weights;
 }
+#ifndef STS_LIVE_ADVISOR
 OocGameContextModel::OocGameContextModel(const GameContext &gc, const PathHistory &path,
     std::shared_ptr<const CombatTransitionSampler> sampler, OocAdapterOptions opts)
-    : combatSampler(std::move(sampler)), options(std::move(opts)) {
+    : OocGameContextModel(gc, path, std::move(sampler), std::move(opts),
+                          defaultOocMctsDependencies()) {}
+#endif
+
+OocGameContextModel::OocGameContextModel(const GameContext &gc, const PathHistory &path,
+    std::shared_ptr<const CombatTransitionSampler> sampler, OocAdapterOptions opts,
+    OocMctsDependencies deps)
+    : combatSampler(std::move(sampler)), options(std::move(opts)),
+      dependencies(std::move(deps)) {
     if (!std::isfinite(options.priorTemperature) || options.priorTemperature <= 0 || (options.leafCombats != 0 && options.leafCombats != 1 && options.leafCombats != 3))
         throw std::invalid_argument("OOC MCTS invalid adapter options");
-    if (!options.bossLeaf && !winNetOk()) throw std::runtime_error("OOC MCTS requires native v_win");
-    if (!g_oocStrategicTokNet.ok) throw std::runtime_error("OOC MCTS requires native V4 policy");
+    if (!options.bossLeaf && !dependencies.leafValue)
+        throw std::runtime_error("OOC MCTS requires a leaf-value dependency");
+    if (!dependencies.policyAvailable || !dependencies.policyLogit
+            || !dependencies.policyAvailable())
+        throw std::runtime_error("OOC MCTS requires native V4 policy dependencies");
+    if (!dependencies.potionKeepValue) dependencies.potionKeepValue = [](const GameContext &) { return 0.0; };
+    if (!dependencies.stopAfterAct) dependencies.stopAfterAct = [] { return 0; };
     auto history = path;
     history.update(gc);
     states.push_back({detachedCopy(gc), history, {}});
@@ -178,6 +237,7 @@ OocGameContextModel::Metadata &OocGameContextModel::mutableMetadata(sts::search:
                 std::set<std::string> keys;
                 std::set<std::uint32_t> sources;
                 for (const auto &binding : enumeration.bindings) {
+                    if (!GameAction(binding.primitiveBits).isValidAction(gc)) continue;
                     const auto key = sts::search::canonicalOocSemanticActionKey(binding.semantic);
                     if (!keys.insert(key).second) { value.candidates.clear(); break; }
                     value.candidates.push_back({static_cast<sts::search::OocActionId>(value.candidates.size()),
@@ -190,6 +250,20 @@ OocGameContextModel::Metadata &OocGameContextModel::mutableMetadata(sts::search:
                     for (auto action : primitives) qualified.insert(action.bits);
                     value.sourcePriorCovered = qualified.size() == primitives.size() && qualified == sources;
                 }
+            }
+        }
+        if (id == 0 && options.rootPrimitiveBits) {
+            const auto &allowed = *options.rootPrimitiveBits;
+            value.candidates.erase(std::remove_if(value.candidates.begin(), value.candidates.end(),
+                [&](const auto &candidate) { return !allowed.count(candidate.primitive.bits); }),
+                value.candidates.end());
+            if (v4DecisionSupported(gc)) {
+                std::set<std::uint32_t> qualified;
+                for (const auto &action : v4CandidateActions(gc))
+                    if (allowed.count(action.bits)) qualified.insert(action.bits);
+                std::set<std::uint32_t> sources;
+                for (const auto &candidate : value.candidates) sources.insert(candidate.primitive.bits);
+                value.sourcePriorCovered = qualified == sources;
             }
         }
         value.boundary = value.candidates.empty();
@@ -222,7 +296,7 @@ const OocGameContextModel::Candidate &OocGameContextModel::candidate(sts::search
 std::vector<double> OocGameContextModel::policyLogits(sts::search::OocStateId id) const {
     OocProfileScope profile(OocProfileBucket::PolicyLogits);
     if (terminalValue(id) || isLeafBoundary(id)) throw std::runtime_error("OOC MCTS actions requested at leaf");
-    if (!g_oocStrategicTokNet.ok) throw std::runtime_error("OOC MCTS V4 unavailable");
+    if (!dependencies.policyAvailable()) throw std::runtime_error("OOC MCTS V4 unavailable");
     const auto &snapshot = states.at(id);
     const auto &gc = snapshot.gc;
     auto &cached = mutableMetadata(id);
@@ -230,24 +304,14 @@ std::vector<double> OocGameContextModel::policyLogits(sts::search::OocStateId id
     const auto &actions = cached.candidates;
     if (!cached.sourcePriorCovered) return std::vector<double>(actions.size(), 0.0);
     ++continuation_.priorBuilds;
-    OocProfileScope preparation(OocProfileBucket::PolicyPrepare);
-    const TokState ts = buildTokState(gc, snapshot.path);
-    const auto prepared = g_oocStrategicTokNet.prepareState(ts.glob, ts.nDk, ts.dk,
-        ts.nRl, ts.rl, ts.nPt, ts.pt);
     std::vector<double> logits;
-    preparation.stop();
     std::map<std::uint32_t, double> sourceLogits;
     for (const auto &candidate : actions) {
         const auto a = candidate.primitive;
         const auto found = sourceLogits.find(a.bits);
         if (found != sourceLogits.end()) { logits.push_back(found->second); continue; }
         OocProfileScope prediction(OocProfileBucket::PolicyPredict);
-        int type, c1, c2, c3, d1, d2, d3, et, ei; float price;
-        strategicCands(gc, a, type, c1, c2, c3, d1, d2, d3);
-        tokEntity(gc, a, et, ei, price);
-        const int cats[6] = {c1,c2,c3,d1,d2,d3};
-        const float entity[4] = {float(et==0),float(et==1),float(et==2),float(et==3)};
-        const double logit = g_oocStrategicTokNet.predictPolicyLogit(prepared, a.bits, cats, type, int(gc.screenState), entity, ei, price);
+        const double logit = dependencies.policyLogit(gc, snapshot.path, a);
         if (!std::isfinite(logit)) throw std::runtime_error("OOC MCTS nonfinite policy logit");
         sourceLogits.emplace(a.bits, logit);
         logits.push_back(logit);
@@ -300,7 +364,7 @@ sts::search::OocStateId OocGameContextModel::sampleSuccessor(sts::search::OocSta
     if (enteredCombat && combatSampler && !preparationCache) {
         OocProfileScope preparation(OocProfileBucket::CombatPrepare);
         const auto input = captureCombatPredictorInput(child.gc, child.gc.info.encounter,
-                                                       potionKeepValue(child.gc));
+                                                       dependencies.potionKeepValue(child.gc));
         preparationCache = combatSampler->prepare(child.gc, input);
         ++continuation_.preparedCombats;
     }
@@ -352,7 +416,8 @@ double OocGameContextModel::bossLeafValue(const GameContext &source) const {
         probe.floorNum = boss.floor;
         probe.curRoom = sts::Room::BOSS;
         probe.info.encounter = encounter;
-        const auto input = captureCombatPredictorInput(probe, encounter, potionKeepValue(probe));
+        const auto input = captureCombatPredictorInput(probe, encounter,
+                                                       dependencies.potionKeepValue(probe));
         const auto estimate = combatSampler->expectation(probe, input);
         if (!estimate.supported)
             throw sts::search::OocSearchUnsupported("boss_leaf_unsupported_" + std::to_string((int)encounter));
@@ -371,15 +436,8 @@ double OocGameContextModel::leafValue(sts::search::OocStateId id) const {
     if (auto terminal = terminalValue(id)) return *terminal;
     if (options.checkpointLeaves && options.constantLeaf) return 0.5;
     if (options.bossLeaf) return bossLeafValue(state(id));
-    // Native-only seam; its implementation has no server fallback branch.
-    auto gc = detachedCopy(state(id));
-    struct PathScope {
-        const PathHistory *saved = t_curPath;
-        explicit PathScope(const PathHistory &path) { t_curPath = &path; }
-        ~PathScope() { t_curPath = saved; }
-    } scope(states.at(id).path);
     OocProfileScope inference(OocProfileBucket::LeafValue);
-    return vStateWinNative(gc);
+    return dependencies.leafValue(state(id), states.at(id).path);
 }
 bool OocGameContextModel::isDeterministicTransition(sts::search::OocStateId id,
     sts::search::OocActionId action) const {
@@ -397,7 +455,8 @@ void OocGameContextModel::resolveCombat(Snapshot &child, std::mt19937_64 &rng,
     const auto battleRoom = child.gc.curRoom;
     bool victory = false;
     const auto input = prepared ? CombatPredictorInputV1{}
-        : captureCombatPredictorInput(child.gc, child.gc.info.encounter, potionKeepValue(child.gc));
+        : captureCombatPredictorInput(child.gc, child.gc.info.encounter,
+                                      dependencies.potionKeepValue(child.gc));
     const auto support = prepared ? prepared->support()
         : combatSampler ? combatSampler->support(child.gc, input)
                         : CombatRuntimeSupport{false, "missing_sampler"};
@@ -419,10 +478,12 @@ void OocGameContextModel::resolveCombat(Snapshot &child, std::mt19937_64 &rng,
         ++continuation_.supportReasons[reason.empty() ? "unspecified" : reason];
         throw sts::search::OocSearchUnsupported(reason.empty() ? "unspecified" : reason);
     }
-    if (victory && g_stopAfterAct > 0 && battleAct == g_stopAfterAct && battleRoom == sts::Room::BOSS)
+    if (victory && dependencies.stopAfterAct() > 0 && battleAct == dependencies.stopAfterAct()
+            && battleRoom == sts::Room::BOSS)
         child.gc.outcome = sts::GameOutcome::PLAYER_VICTORY;
     child.path.update(child.gc);
 }
+#ifndef STS_LIVE_ADVISOR
 namespace {
 // Preserve observers and run-local policy bookkeeping across detached work.
 struct ImaginedScope {
@@ -473,18 +534,30 @@ double boundedContinuation(int maxSteps, Checkpoint checkpoint, Step advance) {
 }
 
 }
+#endif
 double OocGameContextModel::evaluateLeaf(sts::search::OocStateId id, std::mt19937_64 &rng) {
     OocProfileScope profile(OocProfileBucket::EvaluateLeaf);
-    if (!options.checkpointLeaves && !options.sampleNoncombat) return leafValue(id);
-    ImaginedScope scope;
+#ifdef STS_LIVE_ADVISOR
+    if (options.checkpointLeaves)
+        throw sts::search::OocSearchUnsupported("checkpoint_leaves_unavailable_in_live_advisor");
     auto child = Snapshot{detachedCopy(state(id)), states.at(id).path, {}};
     if (options.sampleNoncombat) sampleNoncombatFuture(child.gc, rng);
-    t_curPath=&child.path;
+    if (child.gc.outcome == sts::GameOutcome::PLAYER_LOSS) return 0;
+    if (child.gc.outcome == sts::GameOutcome::PLAYER_VICTORY) return 1;
+    return options.bossLeaf ? bossLeafValue(child.gc)
+        : dependencies.leafValue(child.gc, child.path);
+#else
+    if (!options.checkpointLeaves && !options.sampleNoncombat) return leafValue(id);
+    auto child = Snapshot{detachedCopy(state(id)), states.at(id).path, {}};
+    if (options.sampleNoncombat) sampleNoncombatFuture(child.gc, rng);
     if (!options.checkpointLeaves) {
         if (child.gc.outcome == sts::GameOutcome::PLAYER_LOSS) return 0;
         if (child.gc.outcome == sts::GameOutcome::PLAYER_VICTORY) return 1;
-        return options.bossLeaf ? bossLeafValue(child.gc) : vStateWinNative(child.gc);
+        return options.bossLeaf ? bossLeafValue(child.gc)
+            : dependencies.leafValue(child.gc, child.path);
     }
+    ImaginedScope scope;
+    t_curPath=&child.path;
     if (child.gc.screenState == sts::ScreenState::BATTLE) ++continuation_.battleLeaves;
     else if (child.gc.screenState == sts::ScreenState::MAP_SCREEN) ++continuation_.mapLeaves;
     else ++continuation_.pendingLeaves;
@@ -499,7 +572,7 @@ double OocGameContextModel::evaluateLeaf(sts::search::OocStateId id, std::mt1993
             if (options.constantLeaf) return 0.5;
             if (options.bossLeaf) return bossLeafValue(child.gc);
             OocProfileScope inference(OocProfileBucket::LeafValue);
-            return vStateWinNative(child.gc);
+            return dependencies.leafValue(child.gc, child.path);
         }
         return std::nullopt;
     };
@@ -519,13 +592,19 @@ double OocGameContextModel::evaluateLeaf(sts::search::OocStateId id, std::mt1993
                     actions[selected].execute(child.gc); applied = true;
                 }
             }
-            if (!applied) runFullRunOocPolicyStep(child.gc,agent,false,true);
+            if (!applied) {
+                if (!dependencies.continuationStep)
+                    throw sts::search::OocSearchUnsupported("missing_continuation_step");
+                dependencies.continuationStep(child.gc, child.path, rng);
+            }
         }
     });
+#endif
 }
 
 }
 
+#ifndef STS_LIVE_ADVISOR
 namespace one_combat {
 
 namespace {
@@ -2368,3 +2447,4 @@ void oocMctsAdapterSelfTest() {
     std::cout<<"PASS OOC MCTS adapter (offline native integration only)\n";
 }
 }
+#endif

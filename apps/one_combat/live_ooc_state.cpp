@@ -1,8 +1,10 @@
 #include "live_ooc_state.h"
 
 #include <algorithm>
+#include <cstdint>
 #include <limits>
 #include <set>
+#include <sstream>
 #include <stdexcept>
 #include "constants/SaveFileMappings.h"
 #include "sim/search/GameAction.h"
@@ -97,6 +99,69 @@ void validateHint(const J &hint) {
         require(k == "skip" || k == "proceed" || k == "cancel" || k == "confirm", "unknown liveAction kind");
         require(hint.size() == 1, "unexpected liveAction fields");
     }
+}
+LiveOocStateV1::LiveOocMctsRootV1 makeMctsRoot(const LiveOocStateV1 &source) {
+    // The constructor supplies canonical act/pool/history support from a
+    // fixed hypothetical seed. It is deliberately overwritten with the
+    // public observation below and re-randomized by sampleNoncombatFuture.
+    constexpr std::uint64_t hypotheticalSeed = 0x4f4f435f4c495645ULL;
+    sts::GameContext root(sts::CharacterClass::IRONCLAD, hypotheticalSeed,
+                          source.projected.ascension);
+    if (source.projected.act != 1)
+        root.transitionToAct(source.projected.act);
+
+    root.seed = 0;
+    root.outcome = source.projected.outcome;
+    root.screenState = source.projected.screenState;
+    root.lastRoom = source.projected.lastRoom;
+    root.curEvent = source.projected.curEvent;
+    root.boss = source.projected.boss;
+    root.monsterChance = source.projected.monsterChance;
+    root.shopChance = source.projected.shopChance;
+    root.treasureChance = source.projected.treasureChance;
+    root.potionChance = source.projected.potionChance;
+    root.cardRarityFactor = source.projected.cardRarityFactor;
+    root.shopRemoveCount = source.projected.shopRemoveCount;
+    root.curMapNodeX = source.projected.curMapNodeX;
+    root.curMapNodeY = source.projected.curMapNodeY;
+    root.floorNum = source.projected.floorNum;
+    root.act = source.projected.act;
+    root.ascension = source.projected.ascension;
+    root.cc = source.projected.cc;
+    root.curHp = source.projected.curHp;
+    root.maxHp = source.projected.maxHp;
+    root.gold = source.projected.gold;
+    root.potionCount = source.projected.potionCount;
+    root.potionCapacity = source.projected.potionCapacity;
+    root.potions = source.projected.potions;
+    root.relics = source.projected.relics;
+    root.deck = source.projected.deck;
+    root.blueKey = source.projected.blueKey;
+    root.greenKey = source.projected.greenKey;
+    root.redKey = source.projected.redKey;
+    root.info = source.projected.info;
+    root.map = source.projected.map ? std::make_shared<sts::Map>(*source.projected.map) : root.map;
+
+    if (root.curMapNodeY >= 0 && root.curMapNodeY < 15
+            && root.curMapNodeX >= 0 && root.curMapNodeX < 7 && root.map)
+        root.curRoom = root.map->getNode(root.curMapNodeX, root.curMapNodeY).room;
+    root.lastRoom = source.projected.lastRoom == sts::Room::INVALID
+        ? root.curRoom : source.projected.lastRoom;
+
+    // These callbacks are only the public-screen continuation boundary. Any
+    // callback that depends on an unrevealed prior room remains unsupported by
+    // the importer rather than borrowing live Java state.
+    root.regainControlAction = [](sts::GameContext &gc) {
+        gc.screenState = sts::ScreenState::MAP_SCREEN;
+        gc.regainControlAction = nullptr;
+    };
+    if (root.screenState == sts::ScreenState::BOSS_RELIC_REWARDS)
+        root.regainControlAction = [](sts::GameContext &gc) { gc.transitionToAct(gc.act + 1); };
+
+    LiveOocStateV1::LiveOocMctsRootV1 result;
+    result.state = std::move(root);
+    result.path = source.path;
+    return result;
 }
 } // namespace
 
@@ -208,6 +273,13 @@ ImportResult importLiveOocStateV1(const J &observation, LiveOocStateV1 &out) {
             const auto n=visits[i].get<std::int64_t>();require(n>=0 && n<=1000,"path count out of range");
             next.path.roomVisits[i]=static_cast<int>(n);
         }
+        // Java's path counters already include the currently visible room.
+        // Preserve the current node identity so the shared OOC provider does
+        // not count that room a second time at its root.
+        if (g.curMapNodeY >= 0 && g.curMapNodeY < 15
+                && g.curMapNodeX >= 0 && g.curMapNodeX < 7)
+            next.path.lastNodeKey = static_cast<long>(g.act) * 100000L
+                + static_cast<long>(g.curMapNodeY) * 100L + g.curMapNodeX;
         g.screenState=screen(screenName);
         if (g.screenState==ScreenState::MAP_SCREEN && g.curMapNodeY>=14)
             return {false,"UNSUPPORTED","V4_BOSS_MAP_TRANSITION"};
@@ -240,6 +312,7 @@ ImportResult importLiveOocStateV1(const J &observation, LiveOocStateV1 &out) {
             const auto kind=string(d,"type");
             if(kind=="upgrade")g.info.selectScreenType=CardSelectScreenType::UPGRADE;
             else if(kind=="remove")g.info.selectScreenType=CardSelectScreenType::REMOVE;
+            else if(kind=="transform")g.info.selectScreenType=CardSelectScreenType::TRANSFORM;
             else return {false,"UNSUPPORTED","selector_type:"+kind};
             g.info.toSelectCount=integer(d,"requiredPicks",1,3);
             for(const auto &v:array(d,"cards",96)) {
@@ -274,6 +347,7 @@ ImportResult importLiveOocStateV1(const J &observation, LiveOocStateV1 &out) {
         }
         if (unqualifiedUpgradeHistory)
             return {false,"UNSUPPORTED","SEARING_BLOW_UPGRADE_HISTORY_UNQUALIFIED"};
+        next.mctsRoot = makeMctsRoot(next);
         out=std::move(next);
         return {true,{},{}};
     } catch(const std::exception &e) {
@@ -289,9 +363,24 @@ J lowerLiveOocAction(const LiveOocStateV1 &state,std::uint32_t bits) {
 }
 void validateLiveOocActionSet(const LiveOocStateV1 &state,const std::vector<std::uint32_t> &bits) {
     std::set<std::uint32_t> expected(bits.begin(),bits.end()), observed;
-    require(expected.size()==bits.size(),"native duplicate primitive candidates");
+    // Multiple semantic MCTS candidates may intentionally share one source
+    // click; validate the source mapping as a set, not as a semantic list.
     for(const auto &c:state.ooc.at("liveChoices"))require(observed.insert(primitive(c,state.projected.screenState)).second,"duplicate observed primitive mapping");
-    require(expected==observed,"native/live candidate enumeration disagreement");
+    if (expected != observed) {
+        std::ostringstream detail;
+        detail << "native/live candidate enumeration disagreement expected={";
+        for (const auto bit : expected) detail << bit << ',';
+        detail << "} observed={";
+        for (const auto bit : observed) detail << bit << ',';
+        detail << '}';
+        throw std::invalid_argument(detail.str());
+    }
     for(const auto b:bits)lowerLiveOocAction(state,b);
+}
+std::vector<std::uint32_t> liveOocPrimitiveBits(const LiveOocStateV1 &state) {
+    std::vector<std::uint32_t> bits;
+    for (const auto &choice : state.ooc.at("liveChoices"))
+        bits.push_back(primitive(choice, state.projected.screenState));
+    return bits;
 }
 } // namespace one_combat::advisor

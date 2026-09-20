@@ -60,10 +60,11 @@ def inspector_file(directory, status="UNSUPPORTED", **fields):
 def ooc_inspector_file(directory, screen, status="UNSUPPORTED", **fields):
     path = Path(directory) / "latest.json"
     selected = fields.pop("selectedLiveAction", {"kind": "choose", "choiceIndex": 1})
-    evaluator = {"id": "live_ooc_decision_v1", "policy": "v4_q", "status": status,
+    evaluator = {"id": "live_ooc_decision_v1", "policy": "mcts_ctm", "status": status,
                  "reason": "fixture", "selectedSemanticKey": "choice:1",
                  "selectedLiveAction": selected, "latencyMicros": 12, "scorerLatencyMicros": 5,
-                 "candidateSummaries": [{"semanticKey": "choice:1", "q": 1.0, "liveAction": selected}], **fields}
+                 "candidateSummaries": [{"semanticKey": "choice:1", "q": 1.0, "visits": 1,
+                                          "visitShare": 1.0, "prior": 1.0, "liveAction": selected}], **fields}
     path.write_text(json.dumps({"session": "s", "sequence": 1, "observationHash": "h",
         "observation": {"boundary": "ooc", "ooc": {"schemaVersion": 1,
             "screen": {"CARD_REWARD": "card_reward", "MAP": "map", "SHOP_ROOM": "shop_room",
