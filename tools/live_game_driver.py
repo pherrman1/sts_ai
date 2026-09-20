@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """Drive a live Slay the Spire run through MCPTheSpire.
 
-This is an integration/debug harness.  It deliberately keeps the MCP server as
-the only game-control boundary and keeps JEV restricted to choosing among
-already-materialized candidate IDs.
+The MCP server is the only game-control boundary. Silver supplies structured
+combat actions when its evaluator is qualified; all other choices use the
+small, deterministic policy in this file.
 """
 
 from __future__ import annotations
@@ -22,7 +22,6 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, AsyncIterator, Mapping, Sequence
 
-
 DEFAULT_MCP_URL = "http://127.0.0.1:8080/mcp"
 DEFAULT_INSPECTOR = Path.home() / ".cache" / "sts-model-inspector" / "latest.json"
 DEFAULT_TRACE_DIR = Path.home() / ".cache" / "sts-live-driver"
@@ -33,7 +32,7 @@ EXPECTED_TOOLS = READ_TOOLS | {
     "select_cards", "start_game", "continue_game",
 }
 ACTION_TOOLS = EXPECTED_TOOLS - READ_TOOLS - {"get_game_state", "get_card_info"}
-MAX_JEV_CANDIDATES = 128
+MAX_CANDIDATES = 128
 SILVER_END_TURN_FINGERPRINT = "sa/t=5/s=0/c=0_0_0_0_0_0_0_0/o=0/p=0_-1/x=-1/d=0/k=0/task=0/sel="
 
 
@@ -80,7 +79,6 @@ def _tool_names(commands: Any) -> list[str]:
 
 
 def _unwrap_mcp_result(result: Any) -> Any:
-    """Convert an MCP SDK result to its structured JSON payload."""
     if isinstance(result, Mapping):
         if result.get("isError") or result.get("is_error"):
             raise DriverError(str(result))
@@ -96,7 +94,7 @@ def _unwrap_mcp_result(result: Any) -> Any:
             return value
     content = getattr(result, "content", None)
     if content is not None:
-        parts: list[Any] = []
+        parts: list[str] = []
         for item in content:
             text = getattr(item, "text", None)
             if text is None and isinstance(item, Mapping):
@@ -121,7 +119,6 @@ def _exception_text(error: BaseException) -> str:
 
 
 def _compact(value: Any, limit: int = 12000) -> Any:
-    """Keep JEV prompts and traces bounded without changing candidate identity."""
     if isinstance(value, Mapping):
         result = {str(k): _compact(v, limit) for k, v in value.items()}
     elif isinstance(value, list):
@@ -131,18 +128,42 @@ def _compact(value: Any, limit: int = 12000) -> Any:
     encoded = json.dumps(result, sort_keys=True, separators=(",", ":"), default=str)
     if len(encoded) <= limit:
         return result
-    return {"truncated": True, "sha256": hashlib.sha256(encoded.encode()).hexdigest(),
-            "bytes": len(encoded)}
+    return {"truncated": True, "sha256": hashlib.sha256(encoded.encode()).hexdigest(), "bytes": len(encoded)}
+
+
+def _without_readiness(value: Any) -> Any:
+    if isinstance(value, Mapping):
+        return {key: _without_readiness(item) for key, item in value.items()
+                if key not in {"ready_for_command", "readyForCommand"}}
+    if isinstance(value, list):
+        return [_without_readiness(item) for item in value]
+    return value
 
 
 def state_identity(state: Mapping[str, Any]) -> str:
-    """Return a stable identity for transition verification."""
+    """Return state identity while ignoring only ephemeral command readiness."""
     explicit = {key: state[key] for key in ("session", "sequence", "observationHash") if key in state}
     if len(explicit) == 3:
         return json.dumps(explicit, sort_keys=True, separators=(",", ":"))
-    payload = _compact(dict(state), 50000)
+    payload = _compact(_without_readiness(dict(state)), 50000)
     encoded = json.dumps(payload, sort_keys=True, separators=(",", ":"), default=str)
     return hashlib.sha256(encoded.encode()).hexdigest()
+
+
+def _ready(value: Any) -> bool:
+    data = _mapping(value)
+    return data.get("ready_for_command", data.get("readyForCommand", True)) is True
+
+
+def normalize_game_state(value: Any) -> dict[str, Any]:
+    """Flatten nested MCP `game_state` and `combat_state` fields."""
+    outer = dict(_mapping(value))
+    nested = dict(_mapping(outer.get("game_state")))
+    combat = dict(_mapping(nested.get("combat_state", nested.get("combatState"))))
+    result = {key: item for key, item in outer.items() if key != "game_state"}
+    result.update(nested)
+    result.update(combat)
+    return result
 
 
 def _is_live_target(monster: Any) -> bool:
@@ -180,7 +201,8 @@ class LegalAction:
 
     def trace(self) -> dict[str, Any]:
         return {"id": self.id, "human_description": self.human_description,
-                "mcp_tool": self.mcp_tool, "mcp_arguments": self.mcp_arguments}
+                "mcp_tool": self.mcp_tool, "mcp_arguments": self.mcp_arguments,
+                "semantic": self.semantic, "silver_fingerprint": self.silver_fingerprint}
 
 
 def _append(actions: list[LegalAction], tool: str, args: dict[str, Any], description: str,
@@ -199,16 +221,12 @@ def _selection_arguments(option: Any) -> dict[str, Any] | None:
     return None
 
 
-def build_legal_actions(
-    screen: Mapping[str, Any],
-    commands: Mapping[str, Any] | Sequence[str],
-    game_state: Mapping[str, Any] | None = None,
-    *,
-    max_candidates: int = MAX_JEV_CANDIDATES,
-) -> list[LegalAction]:
-    """Materialize concrete MCP calls from the current advertised surface."""
+def build_legal_actions(screen: Mapping[str, Any], commands: Mapping[str, Any] | Sequence[str],
+                        game_state: Mapping[str, Any] | None = None, *,
+                        max_candidates: int = MAX_CANDIDATES) -> list[LegalAction]:
+    """Materialize concrete MCP calls from the advertised surface."""
     screen = dict(screen)
-    game_state = dict(game_state or {})
+    game_state = normalize_game_state(game_state or {})
     names = _tool_names(commands) if isinstance(commands, Mapping) else list(commands)
     hand = _list(screen.get("hand", game_state.get("hand")))
     monsters = _list(screen.get("monsters", game_state.get("monsters")))
@@ -216,29 +234,26 @@ def build_legal_actions(
     potions = _list(screen.get("potions", game_state.get("potions")))
     choices = _list(screen.get("choice_list", screen.get("choices", screen.get("options", game_state.get("choices")))))
     actions: list[LegalAction] = []
-
     for tool in names:
         if tool == "play_card":
             for index, raw_card in enumerate(hand):
                 card = _mapping(raw_card)
                 if card.get("is_playable") is False or card.get("isPlayable") is False:
                     continue
-                name = _card_name(card)
-                uuid = _card_uuid(card)
+                name, uuid = _card_name(card), _card_uuid(card)
                 suffix = f" uuid={uuid}" if uuid else f" index={index + 1}"
-                base = {"card_index": index + 1}
                 semantic = {"kind": "card", "card_uuid": uuid, "card_id": card.get("id"),
                             "card_index": index + 1, "silver_label": name}
                 fingerprint = card.get("silver_fingerprint", card.get("semantic_fingerprint"))
                 if card.get("has_target") or card.get("hasTarget"):
                     for target in targets:
-                        _append(actions, tool, {**base, "target_index": target},
+                        _append(actions, tool, {"card_index": index + 1, "target_index": target},
                                 f"Play {name}{suffix} -> monster {target}",
                                 {**semantic, "target_index": target,
                                  "silver_label": f"{name} -> Monster {target}"},
                                 _text(fingerprint) if fingerprint else None)
                 else:
-                    _append(actions, tool, base, f"Play {name}{suffix}", semantic,
+                    _append(actions, tool, {"card_index": index + 1}, f"Play {name}{suffix}", semantic,
                              _text(fingerprint) if fingerprint else None)
         elif tool == "end_turn":
             _append(actions, tool, {}, "End turn", {"kind": "end_turn", "silver_label": "End Turn"},
@@ -249,24 +264,21 @@ def build_legal_actions(
                 potion_id = _text(potion.get("id", potion.get("name", "Potion Slot")))
                 if not potion_id or potion_id.lower() in {"potion slot", "empty", "none"}:
                     continue
+                semantic = {"kind": "potion", "potion_slot": index + 1, "discard": tool == "discard_potion"}
                 args = {"potion_slot": index + 1}
                 requires_target = potion.get("requires_target", potion.get("requiresTarget", potion.get("has_target", False)))
-                if requires_target:
-                    for target in targets:
-                        _append(actions, tool, {**args, "target_index": target},
-                                f"{tool.replace('_', ' ').title()} {potion_id} slot {index + 1} -> monster {target}",
-                                {"kind": "potion", "potion_slot": index + 1, "target_index": target,
-                                 "silver_label": f"Use {potion_id} -> Monster {target}"})
-                else:
-                    _append(actions, tool, args, f"{tool.replace('_', ' ').title()} {potion_id} slot {index + 1}",
-                             {"kind": "potion", "potion_slot": index + 1,
-                              "silver_label": f"Use {potion_id}"})
+                for target in (targets if requires_target else [None]):
+                    target_args = {**args, **({"target_index": target} if target is not None else {})}
+                    target_semantic = {**semantic, **({"target_index": target} if target is not None else {})}
+                    suffix = f" -> monster {target}" if target is not None else ""
+                    _append(actions, tool, target_args,
+                            f"{tool.replace('_', ' ').title()} {potion_id} slot {index + 1}{suffix}", target_semantic)
         elif tool == "choose":
             for index, choice in enumerate(choices):
                 _append(actions, tool, {"choice_index": index + 1},
                         f"Choose {index + 1}: {_choice_label(choice)}",
                         {"kind": "choice", "choice_index": index + 1})
-        elif tool in {"skip", "proceed", "cancel", "confirm"}:
+        elif tool in {"skip", "proceed", "cancel", "confirm", "start_game", "continue_game"}:
             _append(actions, tool, {}, tool.replace("_", " ").title(), {"kind": tool})
         elif tool == "select_cards":
             options = screen.get("selection_options", screen.get("select_options", game_state.get("selection_options")))
@@ -278,51 +290,45 @@ def build_legal_actions(
                 selection = _first_mapping(screen.get("selection"), game_state.get("selection"))
                 cards = _list(selection.get("cards", hand))
                 minimum = int(selection.get("min", selection.get("pick_count", selection.get("pickCount", 0))))
-                maximum = int(selection.get("max", selection.get("pick_count", selection.get("pickCount", len(cards)))))
-                maximum = min(maximum, len(cards))
+                maximum = min(int(selection.get("max", selection.get("pick_count", selection.get("pickCount", len(cards))))), len(cards))
                 if maximum >= minimum:
                     for count in range(minimum, maximum + 1):
                         for indexes in itertools.combinations(range(1, len(cards) + 1), count):
-                            args = {"drop": list(indexes)}
-                            _append(actions, tool, args, f"Select cards to drop {list(indexes)}",
+                            _append(actions, tool, {"drop": list(indexes)}, f"Select cards to drop {list(indexes)}",
                                      {"kind": "select_cards", "drop": list(indexes)})
-
     if len(actions) > max_candidates:
-        raise CandidateEnumerationError(
-            f"legal action set has {len(actions)} candidates; configured JEV limit is {max_candidates}")
-    actionable_advertised = [name for name in names if name in ACTION_TOOLS]
-    if actionable_advertised and not actions:
-        raise CandidateEnumerationError(
-            f"MCP advertises actionable tools {actionable_advertised} but no legal candidate was constructed")
+        raise CandidateEnumerationError(f"legal action set has {len(actions)} candidates; configured limit is {max_candidates}")
+    actionable = [name for name in names if name in ACTION_TOOLS]
+    if actionable and not actions:
+        raise CandidateEnumerationError(f"MCP advertises actionable tools {actionable} but no legal candidate was constructed")
     return actions
 
 
 def _semantic_match(selected: Mapping[str, Any], action: LegalAction) -> bool:
     semantic = action.semantic
-    if selected.get("kind") and selected.get("kind") != semantic.get("kind"):
-        return False
-    for left, right in (("card_uuid", "card_uuid"), ("target_index", "target_index"),
-                        ("potion_slot", "potion_slot"), ("choice_index", "choice_index")):
-        if left in selected and selected[left] != semantic.get(right):
+    selected_kind = selected.get("kind")
+    if selected_kind and selected_kind != semantic.get("kind"):
+        if not (selected_kind == "card_select" and semantic.get("kind") == "select_cards"):
             return False
-    return bool(selected) and all(key in semantic or key not in {"kind", "card_uuid", "target_index", "potion_slot", "choice_index"}
-                                 for key in selected)
+    for selected_key, action_key in (("kind", "kind"), ("cardUuid", "card_uuid"),
+                                     ("card_uuid", "card_uuid"), ("targetIndex", "target_index"),
+                                     ("target_index", "target_index"), ("potionSlot", "potion_slot"),
+                                     ("potion_slot", "potion_slot"), ("choiceIndex", "choice_index"),
+                                     ("choice_index", "choice_index"), ("discard", "discard")):
+        if selected_key in selected and selected[selected_key] != semantic.get(action_key):
+            return False
+    if "cardUuids" in selected:
+        return selected["cardUuids"] == semantic.get("card_uuids")
+    return bool(selected)
 
 
-def map_silver_action(selected_action: Any, candidates: Sequence[LegalAction], *, selected_label: str | None = None) -> LegalAction:
-    """Map Silver's semantic recommendation to exactly one MCP candidate."""
-    matches = [candidate for candidate in candidates
-               if candidate.silver_fingerprint is not None and candidate.silver_fingerprint == selected_action]
-    if not matches and isinstance(selected_action, Mapping):
-        matches = [candidate for candidate in candidates if _semantic_match(selected_action, candidate)]
-    if not matches and selected_label:
-        # Labels are only a last-resort bridge for protocols that omit the
-        # stable fingerprint.  Ambiguous labels are never guessed.
-        matches = [candidate for candidate in candidates
-                   if candidate.semantic.get("silver_label") == selected_label]
+def map_silver_action(selected_live_action: Any, candidates: Sequence[LegalAction]) -> LegalAction:
+    """Map Silver's structured live action to exactly one MCP candidate."""
+    if not isinstance(selected_live_action, Mapping):
+        raise IntegrationFailure("Silver response has no structured selectedLiveAction")
+    matches = [candidate for candidate in candidates if _semantic_match(selected_live_action, candidate)]
     if len(matches) != 1:
-        raise IntegrationFailure(
-            f"Silver action mapping expected exactly one candidate, got {len(matches)} for {selected_action!r}")
+        raise IntegrationFailure(f"Silver action mapping expected exactly one candidate, got {len(matches)} for {selected_live_action!r}")
     return matches[0]
 
 
@@ -348,9 +354,7 @@ class InspectorSnapshot:
         response = _mapping(raw.get("response"))
         if response.get("ready") is not True:
             raise DriverError(f"inspector snapshot is not ready: {response.get('status', 'unknown')}")
-        session = _text(raw.get("session"))
-        sequence = raw.get("sequence")
-        observation_hash = _text(raw.get("observationHash"))
+        session, sequence, observation_hash = _text(raw.get("session")), raw.get("sequence"), _text(raw.get("observationHash"))
         if not session or not isinstance(sequence, int) or not observation_hash:
             raise DriverError("inspector snapshot has incomplete observation identity")
         if (_text(response.get("session")) != session or response.get("sequence") != sequence
@@ -362,8 +366,7 @@ class InspectorSnapshot:
         return cls(raw, session, sequence, observation_hash, response, advisor)
 
     def validate_current(self, state: Mapping[str, Any]) -> None:
-        for key, expected in (("session", self.session), ("sequence", self.sequence),
-                              ("observationHash", self.observation_hash)):
+        for key, expected in (("session", self.session), ("sequence", self.sequence), ("observationHash", self.observation_hash)):
             if key in state and state[key] != expected:
                 raise DriverError(f"inspector {key} does not match MCP state: {state[key]!r} != {expected!r}")
         observation = _mapping(self.raw.get("observation"))
@@ -373,13 +376,9 @@ class InspectorSnapshot:
         phase = _text(state.get("room_phase", state.get("roomPhase", ""))).upper()
         if screen_type not in {"", "NONE", "COMBAT"} and phase != "COMBAT":
             raise DriverError(f"inspector combat observation does not correspond to screen {screen_type!r}")
-        # If the MCP surface exposes card/monster identity, compare it with the
-        # raw observation.  Lack of these optional fields is tolerated because
-        # older MCPTheSpire builds only expose screen state and identity.
         silver_root = _mapping(observation.get("silverRoot"))
         combat = _mapping(silver_root.get("combat", observation.get("combat")))
-        raw_hand = _list(combat.get("hand"))
-        current_hand = _list(state.get("hand"))
+        raw_hand, current_hand = _list(combat.get("hand")), _list(state.get("hand"))
         compared = False
         if raw_hand and current_hand:
             raw_uuids = {_card_uuid(_mapping(card)) for card in raw_hand}
@@ -387,14 +386,10 @@ class InspectorSnapshot:
             if raw_uuids and current_uuids and raw_uuids != current_uuids:
                 raise DriverError("inspector hand identity does not match MCP state")
             compared = bool(raw_uuids and current_uuids)
-        raw_monsters = _list(combat.get("monsters"))
-        current_monsters = _list(state.get("monsters"))
+        raw_monsters, current_monsters = _list(combat.get("monsters")), _list(state.get("monsters"))
         if raw_monsters and current_monsters:
-            raw_summary = [(_mapping(monster).get("id"), _mapping(monster).get("hp"))
-                           for monster in raw_monsters]
-            current_summary = [(_mapping(monster).get("id"),
-                                _mapping(monster).get("current_hp", _mapping(monster).get("hp")))
-                               for monster in current_monsters]
+            raw_summary = [(_mapping(monster).get("id"), _mapping(monster).get("hp")) for monster in raw_monsters]
+            current_summary = [(_mapping(monster).get("id"), _mapping(monster).get("current_hp", _mapping(monster).get("hp"))) for monster in current_monsters]
             if raw_summary != current_summary:
                 raise DriverError("inspector monster identity/state does not match MCP state")
             compared = True
@@ -402,8 +397,7 @@ class InspectorSnapshot:
             raise DriverError("cannot correlate inspector observation with MCP-visible state")
 
     def silver_evaluator(self) -> Mapping[str, Any]:
-        evaluators = _list(self.advisor.get("evaluators"))
-        for evaluator in evaluators:
+        for evaluator in _list(self.advisor.get("evaluators")):
             if _mapping(evaluator).get("id") == "silver_player_decision_v2":
                 return _mapping(evaluator)
         if self.advisor.get("silverStatus") is not None:
@@ -416,8 +410,7 @@ class InspectorReader:
         self.path, self.timeout, self.poll_interval = path, timeout, poll_interval
 
     async def read_for(self, state: Mapping[str, Any]) -> InspectorSnapshot:
-        deadline = time.monotonic() + self.timeout
-        last_error: Exception | None = None
+        deadline, last_error = time.monotonic() + self.timeout, None
         while time.monotonic() < deadline:
             try:
                 snapshot = InspectorSnapshot.load(self.path)
@@ -430,9 +423,8 @@ class InspectorReader:
 
 
 class TraceWriter:
-    def __init__(self, path: Path, secret: str | None = None):
+    def __init__(self, path: Path):
         self.path = path
-        self.secret = secret
         self.path.parent.mkdir(parents=True, exist_ok=True)
 
     def _sanitize(self, value: Any) -> Any:
@@ -441,61 +433,11 @@ class TraceWriter:
                                else self._sanitize(item)) for key, item in value.items()}
         if isinstance(value, list):
             return [self._sanitize(item) for item in value]
-        if isinstance(value, str) and self.secret:
-            return value.replace(self.secret, "[REDACTED]")
         return value
 
     def write(self, row: Mapping[str, Any]) -> None:
         with self.path.open("a", encoding="utf-8") as handle:
             handle.write(json.dumps(self._sanitize(dict(row)), sort_keys=True, default=str) + "\n")
-
-
-class JevPolicy:
-    def __init__(self, client: Any = None):
-        self.client = client
-        self._owned = client is None
-
-    async def __aenter__(self) -> "JevPolicy":
-        if self._owned:
-            try:
-                from typesafe_sdk import AsyncTypeSafeClient
-            except ImportError as error:
-                raise DriverError("live-driver extra is missing typesafe-sdk") from error
-            if not os.environ.get("TYPESAFE_API_KEY"):
-                raise DriverError("TYPESAFE_API_KEY is required for non-combat JEV decisions")
-            self.client = AsyncTypeSafeClient()
-            await self.client.__aenter__()
-        return self
-
-    async def __aexit__(self, exc_type: Any, exc: Any, tb: Any) -> None:
-        if self._owned and self.client is not None:
-            await self.client.__aexit__(exc_type, exc, tb)
-
-    async def choose(self, state: Mapping[str, Any], candidates: Sequence[LegalAction]) -> dict[str, Any]:
-        if not candidates:
-            raise DriverError("JEV cannot choose from an empty legal action set")
-        try:
-            from typesafe_sdk import Choice
-        except ImportError as error:
-            raise DriverError("live-driver extra is missing typesafe-sdk") from error
-        criteria = {candidate.id: candidate.human_description for candidate in candidates}
-        started = time.monotonic()
-        response = await self.client.system_one(
-            state={"game": _compact(state), "legal_actions": criteria},
-            questions={"action": Choice(
-                instructions="Choose one supplied legal action ID for the current Slay the Spire state. Return only an ID.",
-                criteria=criteria,
-            )},
-        )
-        latency_ms = (time.monotonic() - started) * 1000.0
-        answer = response.choices.get("action") if hasattr(response, "choices") else response.answers.get("action")
-        choice = getattr(answer, "choice", None)
-        probabilities = getattr(answer, "probabilities", None)
-        confidence = getattr(answer, "confidence", None)
-        if choice not in {candidate.id for candidate in candidates}:
-            raise DriverError(f"JEV selected illegal candidate {choice!r}")
-        return {"choice": choice, "probabilities": probabilities, "confidence": confidence,
-                "latency_ms": latency_ms}
 
 
 class McpGameClient:
@@ -546,22 +488,49 @@ async def connected_mcp(url: str) -> AsyncIterator[McpGameClient]:
 
 
 def _is_combat(screen: Mapping[str, Any]) -> bool:
-    screen_type = _text(screen.get("screen_type", screen.get("screenType", ""))).upper()
-    phase = _text(screen.get("room_phase", screen.get("roomPhase", ""))).upper()
-    return screen_type in {"NONE", "COMBAT"} or phase == "COMBAT"
+    return (_text(screen.get("screen_type", screen.get("screenType", ""))).upper() in {"NONE", "COMBAT"}
+            or _text(screen.get("room_phase", screen.get("roomPhase", ""))).upper() == "COMBAT")
 
 
 def _is_terminal(screen: Mapping[str, Any]) -> bool:
-    text = " ".join(_text(screen.get(key, "")).upper() for key in ("screen_type", "screenType", "room_phase", "roomPhase", "outcome", "run_state"))
+    text = " ".join(_text(screen.get(key, "")).upper() for key in
+                     ("screen_type", "screenType", "room_phase", "roomPhase", "outcome", "run_state"))
     return any(marker in text for marker in ("VICTORY", "DEATH", "GAME_OVER", "GAME OVER", "RUN_COMPLETE"))
 
 
+def choose_deterministic_action(screen: Mapping[str, Any], candidates: Sequence[LegalAction]) -> LegalAction:
+    """Choose from materialized candidates using a stable screen-specific policy."""
+    if not candidates:
+        raise DriverError("deterministic policy cannot choose from an empty candidate set")
+    screen_type = _text(screen.get("screen_type", screen.get("screenType", ""))).upper()
+    phase = _text(screen.get("room_phase", screen.get("roomPhase", ""))).upper()
+    if phase == "COMBAT" or screen_type in {"NONE", "COMBAT"}:
+        for tool in ("play_card", "use_potion", "discard_potion", "end_turn"):
+            match = next((candidate for candidate in candidates if candidate.mcp_tool == tool), None)
+            if match:
+                return match
+    if screen_type == "COMBAT_REWARD":
+        for tool in ("choose", "proceed"):
+            match = next((candidate for candidate in candidates if candidate.mcp_tool == tool), None)
+            if match:
+                return match
+    if "SHOP" in screen_type or phase == "SHOP":
+        for tool in ("leave", "cancel", "proceed"):
+            match = next((candidate for candidate in candidates if candidate.mcp_tool == tool), None)
+            if match:
+                return match
+    for tool in ("choose", "select_cards", "confirm", "skip", "proceed", "continue_game", "start_game", "cancel"):
+        match = next((candidate for candidate in candidates if candidate.mcp_tool == tool), None)
+        if match:
+            return match
+    return candidates[0]
+
+
 class Driver:
-    def __init__(self, client: McpGameClient, jev: JevPolicy, inspector: InspectorReader,
-                 trace: TraceWriter, *, dry_run: bool = False, strict_silver: bool = False,
-                 max_steps: int | None = None, poll_timeout: float = 8.0,
-                 poll_interval: float = 0.1):
-        self.client, self.jev, self.inspector, self.trace = client, jev, inspector, trace
+    def __init__(self, client: McpGameClient, inspector: InspectorReader, trace: TraceWriter, *,
+                 dry_run: bool = False, strict_silver: bool = False, max_steps: int | None = None,
+                 poll_timeout: float = 8.0, poll_interval: float = 0.1):
+        self.client, self.inspector, self.trace = client, inspector, trace
         self.dry_run, self.strict_silver, self.max_steps = dry_run, strict_silver, max_steps
         self.poll_timeout, self.poll_interval = poll_timeout, poll_interval
 
@@ -571,77 +540,80 @@ class Driver:
             raise DriverError(f"MCP screen state is not an object: {screen!r}")
         return screen
 
-    async def wait_for_change(self, before: str) -> Mapping[str, Any]:
-        deadline = time.monotonic() + self.poll_timeout
-        last: Mapping[str, Any] = {}
+    async def read_ready_state(self) -> tuple[Mapping[str, Any], Any]:
+        deadline, last = time.monotonic() + self.poll_timeout, {}
         while time.monotonic() < deadline:
-            last = await self.read_screen()
-            if state_identity(last) != before:
-                return last
+            screen = await self.read_screen()
+            last = screen
+            if _ready(screen):
+                commands = await self.client.call("get_available_commands")
+                if _ready(commands):
+                    return screen, commands
             await asyncio.sleep(self.poll_interval)
-        raise DriverError(f"post-action MCP state did not advance within {self.poll_timeout:.1f}s")
+        raise DriverError(f"MCP state was not ready for a command within {self.poll_timeout:.1f}s: {last!r}")
+
+    async def wait_for_ready_advance(self, before: str) -> Mapping[str, Any]:
+        deadline, last = time.monotonic() + self.poll_timeout, {}
+        while time.monotonic() < deadline:
+            screen = await self.read_screen()
+            last = screen
+            if _ready(screen):
+                commands = await self.client.call("get_available_commands")
+                if _ready(commands) and state_identity(screen) != before:
+                    return screen
+            await asyncio.sleep(self.poll_interval)
+        raise DriverError(f"post-action MCP state did not become ready and advance within {self.poll_timeout:.1f}s: {last!r}")
 
     async def step(self, step: int) -> bool:
-        screen = await self.read_screen()
+        screen, commands = await self.read_ready_state()
         if _is_terminal(screen):
             return False
-        commands = await self.client.call("get_available_commands")
-        game_state: Mapping[str, Any] = {}
+        game_state: dict[str, Any] = {}
         if "get_game_state" in self.client.tool_names:
-            value = await self.client.call("get_game_state")
-            if isinstance(value, Mapping):
-                game_state = value
+            game_state = normalize_game_state(await self.client.call("get_game_state"))
         candidates = build_legal_actions(screen, commands, game_state)
         if not candidates:
             raise DriverError("no legal candidates for a non-terminal screen")
-        row: dict[str, Any] = {
-            "timestamp": datetime.now(timezone.utc).isoformat(), "step": step,
-            "screen_type": screen.get("screen_type", screen.get("screenType")),
-            "state_identity": state_identity(screen),
-            "legal_candidates": [candidate.trace() for candidate in candidates],
-        }
+        row: dict[str, Any] = {"timestamp": datetime.now(timezone.utc).isoformat(), "step": step,
+                               "screen_type": screen.get("screen_type", screen.get("screenType")),
+                               "state_identity": state_identity(screen),
+                               "legal_candidates": [candidate.trace() for candidate in candidates]}
         if _is_combat(screen):
             snapshot = await self.inspector.read_for(screen)
             evaluator = snapshot.silver_evaluator()
-            row.update({"inspector_session": snapshot.session, "inspector_sequence": snapshot.sequence,
-                        "inspector_observationHash": snapshot.observation_hash,
-                        "silver_status": evaluator.get("status", evaluator.get("silverStatus")),
-                        "silver_selected_action": evaluator.get("selectedAction")})
             status = _text(evaluator.get("status", evaluator.get("silverStatus"))).upper()
+            row.update({"inspector_session": snapshot.session, "inspector_sequence": snapshot.sequence,
+                        "inspector_observationHash": snapshot.observation_hash, "silver_status": status,
+                        "silver_selected_action": evaluator.get("selectedAction"),
+                        "silver_selected_live_action": evaluator.get("selectedLiveAction")})
             if status == "OK":
-                selected = evaluator.get("selectedAction")
-                action = map_silver_action(selected, candidates, selected_label=evaluator.get("selectedLabel"))
+                action = map_silver_action(evaluator.get("selectedLiveAction"), candidates)
                 row.update({"decision_source": "silver", "silver_mapping_result": action.id})
             elif status == "UNSUPPORTED":
                 reason = _text(evaluator.get("reason", evaluator.get("silverReason", "unknown")))
-                row.update({"fallback_reason": f"silver_unsupported:{reason}"})
                 if self.strict_silver:
                     raise DriverError(f"Silver explicitly unsupported: {reason}")
-                jev_result = await self.jev.choose({"screen": screen, "game": game_state}, candidates)
-                action = next(candidate for candidate in candidates if candidate.id == jev_result["choice"])
-                row.update({"decision_source": "jev", "jev": jev_result})
+                action = choose_deterministic_action(screen, candidates)
+                row.update({"decision_source": "deterministic_fallback", "fallback_reason": f"silver_unsupported:{reason}"})
             else:
                 raise DriverError(f"unexpected Silver advisor status: {status!r}")
         else:
-            jev_result = await self.jev.choose({"screen": screen, "game": game_state}, candidates)
-            action = next(candidate for candidate in candidates if candidate.id == jev_result["choice"])
-            row.update({"decision_source": "jev", "jev": jev_result})
-        row["selected_candidate"] = action.id
-        row["executed_mcp_tool"] = action.mcp_tool
-        row["executed_mcp_arguments"] = action.mcp_arguments
+            action = choose_deterministic_action(screen, candidates)
+            row.update({"decision_source": "deterministic_fallback",
+                        "fallback_reason": f"non_combat_policy:{_text(screen.get('screen_type', screen.get('screenType', 'UNKNOWN')))}"})
+        row.update({"selected_candidate": action.id, "executed_mcp_tool": action.mcp_tool,
+                    "executed_mcp_arguments": action.mcp_arguments})
         if self.dry_run:
             row["dry_run"] = True
             self.trace.write(row)
             return False
-        result = await self.client.call(action.mcp_tool, action.mcp_arguments)
-        row["mcp_result"] = result
+        row["mcp_result"] = await self.client.call(action.mcp_tool, action.mcp_arguments)
         try:
-            post = await self.wait_for_change(state_identity(screen))
+            post = await self.wait_for_ready_advance(state_identity(screen))
         except DriverError:
             self.trace.write(row)
             raise
-        row["post_action_state"] = _compact(post)
-        row["post_action_identity"] = state_identity(post)
+        row.update({"post_action_state": _compact(post), "post_action_identity": state_identity(post)})
         for key in ("session", "sequence", "observationHash"):
             if key in post:
                 row[f"post_action_{key}"] = post[key]
@@ -663,14 +635,12 @@ def _default_trace_path() -> Path:
 
 async def async_main(args: argparse.Namespace) -> int:
     trace_path = Path(args.trace) if args.trace else _default_trace_path()
-    secret = os.environ.get("TYPESAFE_API_KEY")
-    trace = TraceWriter(trace_path, secret)
+    trace = TraceWriter(trace_path)
     inspector = InspectorReader(Path(args.inspector), timeout=args.inspector_timeout)
     try:
         async with connected_mcp(args.mcp_url) as client:
-            async with JevPolicy() as jev:
-                await Driver(client, jev, inspector, trace, dry_run=args.dry_run,
-                              strict_silver=args.strict_silver, max_steps=args.max_steps).run()
+            await Driver(client, inspector, trace, dry_run=args.dry_run,
+                         strict_silver=args.strict_silver, max_steps=args.max_steps).run()
     except DriverError as error:
         print(f"live-game-driver: {error}\ntrace: {trace_path}", file=sys.stderr)
         return 2

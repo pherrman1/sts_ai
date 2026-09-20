@@ -24,7 +24,6 @@ research = [
 ]
 live-driver = [
     "mcp>=2.2.0",
-    "typesafe-sdk>=0.7.0",
 ]
 
 [tool.uv]

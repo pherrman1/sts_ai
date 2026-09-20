@@ -44,5 +44,7 @@ SilverRootImportResult importSilverRoot(const nlohmann::json &observation,
                                         SilverImportContext &context);
 std::string silverActionLabel(const silver_bridge::SemanticAction &action,
                               const silver_bridge::BattleStateWire &state);
+nlohmann::json selectedLiveAction(const silver_bridge::SemanticAction &action,
+                                  const SilverImportContext &context);
 
 } // namespace one_combat::advisor

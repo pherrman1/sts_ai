@@ -980,4 +980,50 @@ std::string silverActionLabel(const silver_bridge::SemanticAction &action,
     return name;
 }
 
+nlohmann::json selectedLiveAction(const silver_bridge::SemanticAction &action,
+                                  const SilverImportContext &context) {
+    const auto uuidForId = [&context](const std::int16_t uniqueId) -> std::string {
+        for (const auto &[uuid, id] : context.cardIds)
+            if (id == uniqueId) return uuid;
+        return {};
+    };
+    const auto targetFields = [&action](nlohmann::json &result) {
+        if (action.target >= 0) result["targetIndex"] = action.target + 1;
+    };
+    using silver_bridge::SemanticActionType;
+    switch (action.type) {
+    case SemanticActionType::END_TURN:
+        return {{"kind", "end_turn"}};
+    case SemanticActionType::CARD: {
+        const auto uuid = uuidForId(action.card.uniqueId);
+        if (uuid.empty()) return nullptr;
+        nlohmann::json result = {{"kind", "card"}, {"cardUuid", uuid}};
+        targetFields(result);
+        return result;
+    }
+    case SemanticActionType::POTION: {
+        if (action.potionSlot < 0) return nullptr;
+        nlohmann::json result = {{"kind", "potion"},
+                                 {"potionSlot", action.potionSlot + 1},
+                                 {"discard", action.discardPotion}};
+        targetFields(result);
+        return result;
+    }
+    case SemanticActionType::SINGLE_CARD_SELECT:
+    case SemanticActionType::MULTI_CARD_SELECT: {
+        nlohmann::json uuids = nlohmann::json::array();
+        for (const auto &card : action.selectedCards) {
+            const auto uuid = uuidForId(card.uniqueId);
+            if (uuid.empty()) return nullptr;
+            uuids.push_back(uuid);
+        }
+        return {{"kind", "card_select"}, {"cardUuids", std::move(uuids)},
+                {"task", action.cardSelectTask}, {"skip", action.skipCardSelect}};
+    }
+    case SemanticActionType::INVALID:
+        return nullptr;
+    }
+    return nullptr;
+}
+
 } // namespace one_combat::advisor

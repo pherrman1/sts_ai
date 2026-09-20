@@ -915,6 +915,17 @@ int main() {
             || selectionImported.wire.cardSelect.task
                 != static_cast<std::int16_t>(CardSelectTask::EXHAUST_ONE))
             throw std::runtime_error("schema-v4 card-select contract failed");
+        one_combat::advisor::SilverImportContext loweringContext;
+        loweringContext.cardIds = {{"copy-a", 17}, {"copy-b", 23}};
+        silver_bridge::SemanticAction loweringAction;
+        loweringAction.type = silver_bridge::SemanticActionType::CARD;
+        loweringAction.card.uniqueId = 23;
+        loweringAction.target = 1;
+        const auto lowered = one_combat::advisor::selectedLiveAction(loweringAction, loweringContext);
+        if (lowered.value("kind", std::string()) != "card"
+            || lowered.value("cardUuid", std::string()) != "copy-b"
+            || lowered.value("targetIndex", 0) != 2)
+            throw std::runtime_error("selectedLiveAction did not preserve physical card UUID and target");
         std::cout << "live Silver native first-turn parity checks passed\n";
         return 0;
     } catch (const std::exception &e) {
