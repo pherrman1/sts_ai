@@ -1821,6 +1821,29 @@ int testSilverSemanticActionResolution() {
     check(normalResolved.ok && normalResolved.action.getActionType() == search::ActionType::CARD
           && normalResolved.action.getSourceIdx() == 0,
           "indistinguishable duplicate hand cards must lower deterministically for ordinary play");
+    // The bridge exports absent targets as -1, whereas native Action stores
+    // an unsigned packed target and uses zero for untargeted plays.
+    auto untargeted = normal;
+    untargeted.cards.cardsInHand = 1;
+    untargeted.cards.hand[0] = defend;
+    auto defendPlay = cardPlay;
+    defendPlay.card = wire(defend);
+    defendPlay.target = -1;
+    const auto loweredDefend = search::resolveSilverSemanticAction(untargeted, defendPlay);
+    check(loweredDefend.ok
+          && loweredDefend.action == search::Action(search::ActionType::CARD, 0),
+          "absent semantic card target must lower to canonical native untargeted action");
+    if (loweredDefend.ok) {
+        auto actual = untargeted, expected = untargeted;
+        loweredDefend.action.execute(actual);
+        search::Action(search::ActionType::CARD, 0).execute(expected);
+        check(actual.player.block == expected.player.block && actual.player.block > untargeted.player.block
+              && actual.player.energy == expected.player.energy,
+              "lowered untargeted card must execute native block and energy effects");
+    }
+    auto invalidTargetedCard = cardPlay; invalidTargetedCard.target = -1;
+    check(!search::resolveSilverSemanticAction(normal, invalidTargetedCard).ok,
+          "targeted card with absent semantic target must fail closed");
     silver_bridge::SemanticAction end; end.type = silver_bridge::SemanticActionType::END_TURN;
     check(search::resolveSilverSemanticAction(normal, end).ok,
           "semantic END_TURN must lower to a legal live action");
@@ -1832,6 +1855,34 @@ int testSilverSemanticActionResolution() {
     fire.discardPotion = true;
     check(search::resolveSilverSemanticAction(normal, fire).ok,
           "semantic potion discard must lower to a legal live action");
+
+    auto strengthState = normal;
+    strengthState.potions[0] = Potion::STRENGTH_POTION;
+    auto strength = fire;
+    strength.potionId = static_cast<std::int16_t>(Potion::STRENGTH_POTION);
+    strength.target = -1; strength.discardPotion = false;
+    const auto loweredStrength = search::resolveSilverSemanticAction(strengthState, strength);
+    check(loweredStrength.ok
+          && loweredStrength.action == search::Action(search::ActionType::POTION, 0),
+          "absent semantic potion target must mean use rather than packed discard");
+    if (loweredStrength.ok) {
+        const auto beforeStrength = strengthState.player.getStatus<PlayerStatus::STRENGTH>();
+        loweredStrength.action.execute(strengthState);
+        check(strengthState.player.getStatus<PlayerStatus::STRENGTH>() == beforeStrength + 2
+              && strengthState.potions[0] == Potion::EMPTY_POTION_SLOT,
+              "untargeted potion must apply its effect before consuming the slot");
+    }
+    for (int invalidTarget : {-1, 5, 6, 8192}) {
+        auto invalidPotion = fire; invalidPotion.discardPotion = false; invalidPotion.target = invalidTarget;
+        check(!search::resolveSilverSemanticAction(normal, invalidPotion).ok,
+              "targeted potion invalid target must not alias discard or a packed target");
+    }
+    auto explicitDiscardState = normal;
+    explicitDiscardState.potions[0] = Potion::STRENGTH_POTION;
+    strength.discardPotion = true;
+    const auto loweredDiscard = search::resolveSilverSemanticAction(explicitDiscardState, strength);
+    check(loweredDiscard.ok && loweredDiscard.action.getTargetIdx() == 6,
+          "explicit semantic discard must retain native discard encoding");
 
     const auto selectCase = [&](CardSelectTask task, silver_bridge::CardSource source, const CardInstance &chosen,
                                 const char *message) {

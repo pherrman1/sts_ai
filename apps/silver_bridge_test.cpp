@@ -143,6 +143,39 @@ int main(int argc, char **argv) {
     check(!silverOffersEmptyHandGamble,
           "Silver must not enumerate Gambler's Brew when the live hand is empty");
 
+    // Exercise the real bridge's absent-target sentinel through live lowering,
+    // rather than constructing a native-style zero target in the test itself.
+    auto targetlessLive = first;
+    targetlessLive.cards.cardsInHand = 2;
+    targetlessLive.cards.hand[0] = card(CardId::DEFEND_RED, 701);
+    targetlessLive.cards.hand[1] = card(CardId::STRIKE_RED, 702);
+    targetlessLive.potions.fill(Potion::EMPTY_POTION_SLOT);
+    targetlessLive.potions[0] = Potion::STRENGTH_POTION;
+    targetlessLive.potionCount = 1;
+    search::CombatKnowledgeState targetlessKnowledge;
+    targetlessKnowledge.initializeFromLiveBattle(targetlessLive);
+    const auto targetlessActions = silver_bridge::enumerateSilverLegalActions(
+        convert(targetlessLive, gc, targetlessKnowledge));
+    bool foundDefend = false, foundStrength = false;
+    for (const auto &semantic : targetlessActions) {
+        const auto resolved = search::resolveSilverSemanticAction(targetlessLive, semantic);
+        check(resolved.ok, "every enumerated normal Silver action must lower legally on the unchanged live root");
+        if (semantic.type == silver_bridge::SemanticActionType::CARD
+                && semantic.card.id == static_cast<std::int16_t>(CardId::DEFEND_RED)) {
+            foundDefend = true;
+            check(semantic.target == -1 && resolved.ok
+                      && resolved.action == search::Action(search::ActionType::CARD, 0),
+                  "bridge Defend absent target must become native zero target");
+        }
+        if (semantic.type == silver_bridge::SemanticActionType::POTION && !semantic.discardPotion) {
+            foundStrength = true;
+            check(semantic.target == -1 && resolved.ok
+                      && resolved.action == search::Action(search::ActionType::POTION, 0),
+                  "bridge untargeted potion must lower to use rather than discard");
+        }
+    }
+    check(foundDefend && foundStrength, "absent-target bridge fixture must include card and potion use");
+
     // Duplicate potion slots are reduced only inside Silver. The semantic
     // boundary remains slot-exact: Silver must return the first representative
     // and live lowering must resolve that exact identity without searching for
@@ -482,7 +515,7 @@ int main(int argc, char **argv) {
     entropicAction.type = silver_bridge::SemanticActionType::POTION;
     entropicAction.potionId = static_cast<std::int16_t>(Potion::ENTROPIC_BREW);
     entropicAction.potionSlot = 0;
-    entropicAction.target = 0;
+    entropicAction.target = -1; // Canonical untargeted semantic identity.
     const auto entropicFingerprint = silver_bridge::semanticActionFingerprint(entropicAction);
     bool observedCycleIdentity = false;
     auto cycleConfig = serializedSearchConfig;

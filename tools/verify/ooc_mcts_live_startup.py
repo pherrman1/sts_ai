@@ -1,10 +1,19 @@
 #!/usr/bin/env python3
 """Seed-free startup contract checks; optional qualified artifact for ON success."""
 import argparse
+import json
 import os
 from pathlib import Path
 import subprocess
 import tempfile
+
+
+def assert_sampled_configuration(output):
+    prefix = '[ooc-mcts-config] '
+    configs = [json.loads(line[len(prefix):]) for line in output.splitlines()
+               if line.startswith(prefix)]
+    if len(configs) != 1 or configs[0].get('noncombatOutcomes') != 'sampled':
+        raise AssertionError(f'enabled live configuration must sample noncombat outcomes: {configs}')
 
 
 def main():
@@ -42,6 +51,7 @@ def main():
                 stdout=subprocess.PIPE, stderr=subprocess.STDOUT, timeout=120)
             if result.returncode or 'live_policy_unchanged=1' not in result.stdout:
                 raise AssertionError(result.stdout)
+            assert_sampled_configuration(result.stdout)
             print('PASS checkpoint shadow startup rc=0')
         cases.append(('checkpoint wrong budget', {'STS_OOC_MCTS': '1', 'STS_OOC_MCTS_SIMS': '512',
             'STS_OOC_MCTS_CHECKPOINT_TRACE': bad, 'STS_OOC_MCTS_COMBAT_MODEL': str(Path(args.artifact).resolve())},
@@ -62,6 +72,8 @@ def main():
         result = subprocess.run(command, env=env | override, cwd=root, text=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, timeout=120)
         if (result.returncode == 0) != success or message not in result.stdout:
             raise AssertionError(f'{name}: rc={result.returncode}\n{result.stdout}')
+        if success and override.get('STS_OOC_MCTS') == '1':
+            assert_sampled_configuration(result.stdout)
         print(f'PASS {name} rc={result.returncode}')
     print(f'PASS {len(cases)} live OOC MCTS startup cases')
 
