@@ -499,6 +499,43 @@ def classify_arm(report: dict) -> str | None:
     return None
 
 
+def classify_experiment(reports: dict[str, dict], arm_names: Iterable[str]) -> dict:
+    """Apply the global preregistered classification to all non-oracle arms."""
+    signal_arms = []
+    promising = []
+    expensive = []
+    for name in arm_names:
+        report = reports[name]
+        supported = report["clustered_bootstrap"]["baseline_minus_arm_regret"]["p025"] > 0
+        enough = report["recovered_oracle_fraction"] >= 0.50
+        if enough and supported:
+            signal_arms.append(name)
+        arm_classification = classify_arm(report)
+        if arm_classification == "promising":
+            promising.append(name)
+        elif arm_classification == "expensive":
+            expensive.append(name)
+    if promising:
+        classification = "BOUNDED_PREFIX_SELECTOR_PROMISING"
+        winner = min(promising, key=lambda name: (
+            reports[name]["cost"]["mean"],
+            -reports[name]["recovered_oracle_fraction"],
+            reports[name]["cost"]["p95"],
+            0 if reports[name]["candidate_counts"]["retained_first_action_count"]["maximum"] == 1 else 1,
+            reports[name]["candidate_counts"]["retained_first_action_count"]["maximum"],
+        ))
+    elif signal_arms and all(reports[name]["cost"]["mean"] > 12
+                             for name in signal_arms):
+        classification = "PREFIX_SIGNAL_RECOVERABLE_BUT_EXPENSIVE"
+        winner = min(signal_arms, key=lambda name: reports[name]["cost"]["mean"])
+    else:
+        classification = "BOUNDED_PREFIX_SELECTOR_INSUFFICIENT"
+        winner = None
+    return {"classification": classification, "winner": winner,
+            "signal_arms": signal_arms, "promising_arms": promising,
+            "expensive_arms": expensive}
+
+
 def run(args: argparse.Namespace) -> int:
     teachers = load_teachers(args.teachers)
     baseline = load_baseline(args.baseline, teachers)
@@ -542,8 +579,6 @@ def run(args: argparse.Namespace) -> int:
     canonical_a = sibling_metrics(baseline_rows, "value", "teacher_a")
     canonical_b = sibling_metrics(baseline_rows, "value", "teacher_b")
 
-    promising = []
-    expensive = []
     gate_checks = {}
     for name in ARM_NAMES:
         if name == "FLAT_K16":
@@ -560,30 +595,18 @@ def run(args: argparse.Namespace) -> int:
             "mean_cost_at_most_12": cost_ok,
             "catastrophic_tail_review": report["catastrophic_tail_regression"],
         }
-        classification = classify_arm(report)
-        if classification == "promising":
-            promising.append(name)
-        elif classification == "expensive":
-            expensive.append(name)
-    if promising:
-        classification = "BOUNDED_PREFIX_SELECTOR_PROMISING"
-        winner = min(promising, key=lambda name: (
-            reports[name]["cost"]["mean"],
-            -reports[name]["recovered_oracle_fraction"],
-            reports[name]["cost"]["p95"],
-            0 if reports[name]["candidate_counts"]["retained_first_action_count"]["maximum"] == 1 else 1,
-            reports[name]["candidate_counts"]["retained_first_action_count"]["maximum"],
-        ))
-    elif expensive:
-        classification = "PREFIX_SIGNAL_RECOVERABLE_BUT_EXPENSIVE"
-        winner = min(expensive, key=lambda name: reports[name]["cost"]["mean"])
-    else:
-        classification = "BOUNDED_PREFIX_SELECTOR_INSUFFICIENT"
-        winner = None
+    global_classification = classify_experiment(
+        reports, tuple(name for name in ARM_NAMES if name != "FLAT_K16"))
+    classification = global_classification["classification"]
+    winner = global_classification["winner"]
+    signal_arms = global_classification["signal_arms"]
+    promising = global_classification["promising_arms"]
+    expensive = global_classification["expensive_arms"]
 
     report = {
         "schema": "silver_bounded_variable_prefix_phase_a_v1",
         "classification": classification, "winner": winner,
+        "signal_arms": signal_arms,
         "promising_arms": promising, "expensive_arms": expensive,
         "gate_checks": gate_checks,
         "preregistered_gate": {

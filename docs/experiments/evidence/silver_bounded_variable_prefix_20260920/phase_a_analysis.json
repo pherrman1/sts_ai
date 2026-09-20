@@ -27621,5 +27621,6 @@
   },
   "promising_arms": [],
   "schema": "silver_bounded_variable_prefix_phase_a_v1",
+  "signal_arms": [],
   "winner": null
 }

@@ -74,6 +74,10 @@ bounded screen does not establish a safe causal controller.
 The result is `BOUNDED_PREFIX_SELECTOR_INSUFFICIENT`: no bounded arm recovered
 50% of the measured Teacher-A oracle gain with positive source-seed-clustered
 support and acceptable Teacher-B behavior at the 12-call mean-cost gate.
+The global expensive-signal classification is evaluated over all statistically
+supported signal arms before applying the cost-only boundary; a cheap signal
+arm with unacceptable Teacher B therefore prevents an expensive classification
+when another signal arm is costly.
 
 Phase B was **not run**. Consequently this change adds no native selector,
 selection RNG, outer-rollout RNG behavior, fallback event, timing claim, live
@@ -106,7 +110,7 @@ selection-manifest.json       cebad9be4637f0452d78dfffb5279f2a08ab253cf24ac38ba0
 prior analysis.json           37640f6cbe08b7fffa24133d21cdb0a9b379b79aaae59297ba0a1b374ba3da2b
 baseline raw-rollouts.jsonl   253c60eb8bdd80f5476e1826295137985ec6101b9acf0a3f26b13855435e70be
 teachers.jsonl                01994f057b07add5067d095f17c413bf246c322fa63c4c6cd409efb787b3855e
-phase_a_analysis.json         5ef939815e9d85d4eadb5950a36c159599e4f79f0155a7131b65261124a0c503
+phase_a_analysis.json         592e98dbbaf5cbf4409e284274c901dce79a9784069cc6e644ab05c60020440d
 ```
 
 Focused contracts are in

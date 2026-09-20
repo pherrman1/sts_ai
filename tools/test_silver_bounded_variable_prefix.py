@@ -114,6 +114,26 @@ class BoundedPrefixContracts(unittest.TestCase):
                   "cost": {"mean": 12.0}}
         self.assertIsNone(MODULE.classify_arm(report))
 
+    def test_cheap_bad_teacher_b_blocks_global_expensive_classification(self):
+        def report(cost, teacher_b):
+            return {"recovered_oracle_fraction": 0.60,
+                    "teacher_b_regret_reduction": teacher_b,
+                    "clustered_bootstrap": {
+                        "baseline_minus_arm_regret": {"p025": 0.10}},
+                    "cost": {"mean": cost, "p95": cost},
+                    "candidate_counts": {
+                        "retained_first_action_count": {"maximum": 1}}}
+
+        result = MODULE.classify_experiment(
+            {"cheap_bad_teacher_b": report(10.0, -0.50),
+             "expensive_signal": report(20.0, -0.50)},
+            ("cheap_bad_teacher_b", "expensive_signal"))
+        self.assertEqual(result["signal_arms"],
+                         ["cheap_bad_teacher_b", "expensive_signal"])
+        self.assertEqual(result["expensive_arms"], ["expensive_signal"])
+        self.assertEqual(result["classification"],
+                         "BOUNDED_PREFIX_SELECTOR_INSUFFICIENT")
+
     def test_bootstrap_contract_clusters_shared_source_seed(self):
         rows = []
         for group, source in (("g1", "s"), ("g2", "s"), ("g3", "t")):
