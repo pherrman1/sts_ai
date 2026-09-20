@@ -326,6 +326,9 @@ add_test(NAME live_advisor_protocol COMMAND python3
     ${CMAKE_SOURCE_DIR}/selfplay/models/combat_transition_near_full_except_smoke_v2.native)
 set_tests_properties(live_advisor_protocol PROPERTIES
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "integration;smoke")
+add_test(NAME live_game_runtime COMMAND python3 -m unittest tests.test_live_game_runtime)
+set_tests_properties(live_game_runtime PROPERTIES
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "tooling;smoke")
 
 add_executable(live_ctm_importer_test apps/live_ctm_importer_test.cpp
     apps/one_combat/live_ooc_importer.cpp

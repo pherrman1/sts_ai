@@ -17,9 +17,12 @@ Copy `config.properties.example` to:
 ~/.sts-model-inspector.properties
 ```
 
-Set `advisor` to the absolute path of `one_combat_advisor`. The environment
-variable `STS_MODEL_INSPECTOR_ADVISOR` is accepted when the property is not
-set. F8 toggles the panel.
+Set `advisor` to the absolute path of `one_combat_advisor`. Explicit environment
+values take precedence over properties: `STS_MODEL_INSPECTOR_ADVISOR` overrides
+`advisor`, `STS_CTM_MODEL` overrides `ctmModel`, and `STS_LIVE_OOC_MODEL`
+overrides the future-facing `oocModel` property. `STS_MODEL_INSPECTOR_CONFIG`
+selects a properties file instead of `~/.sts-model-inspector.properties`. F8
+toggles the panel.
 
 Set `ctmModel` to the tracked `combat_transition_near_full_except_smoke_v2.native`
 artifact. The advisor loads it once at startup and reports an unavailable or
