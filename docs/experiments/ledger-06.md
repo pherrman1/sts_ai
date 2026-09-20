@@ -10631,11 +10631,16 @@ default or generalization claim is authorized. Evidence:
   the evidence packet.
 - **Paired interpretation:** At 1k, CONTROL vs A/B had 3/23 outcome and 8/35
   trace discordances. At 10k, the counts were 4/26 and 11/41. B had real
-  coverage and reduced search work, but did not improve wall time and had
-  lower wins and mean HP at both budgets. A passed the technical forced-select
-  contract but its small work reduction was accompanied by one fewer win at
-  each budget. This is bounded offline DEV evidence, not live-game, whole-run,
-  holdout, or production qualification.
+  coverage and reduced search work, but did not improve wall time: it had equal
+  wins with CONTROL but lower mean HP at 1k, and lower wins and mean HP at 10k.
+  The corrected implementation validates every candidate continuation on a
+  copied state; at 10k this is roughly 2.08 million candidate-continuation
+  validations. The wall-time result therefore includes safe-macro
+  implementation overhead and is not a universal claim that macro contraction
+  cannot work. A passed the technical forced-select contract but its small work
+  reduction was accompanied by one fewer win at each budget. This is bounded
+  offline DEV evidence, not live-game, whole-run, holdout, or production
+  qualification.
 - **Decision:** `FORCED_SELECT_CONTRACTION_PASS` and
   `SAFE_SELECT_MACRO_REJECTED`. Do not promote B or change Silver defaults
   from this experiment. **Evidence:** [Silver deterministic contraction

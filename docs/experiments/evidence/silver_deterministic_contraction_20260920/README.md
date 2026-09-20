@@ -119,7 +119,7 @@ eligible search nodes. “Selected” counts macros actually chosen during repla
 | HEADBUTT | 177,174 | 21 | 1,720,507 | 20 |
 | LIQUID_MEMORIES_POTION | 17,220 | 3 | 134,697 | 3 |
 | WARCRY | 198 | 0 | 3,150 | 0 |
-| **Total** | **226,432** | **37** | **2,081,955** | **32** |
+| **Total** | **221,432** | **37** | **2,082,455** | **32** |
 
 ## Correctness and interpretation
 
@@ -148,10 +148,15 @@ SAFE_SELECT_MACRO_REJECTED
 A measurably removed a small amount of search work, but its one-win DEV
 difference and lower mean HP do not establish a quality-neutral improvement.
 B had real coverage and reduced CARD_SELECT searches, simulations, and nodes;
-however, it did not improve wall time and was lower on both wins and mean HP at
-both budgets. The macro flattening hypothesis is therefore rejected for this
-bounded DEV screen, with no production/default promotion. These are frozen
-offline results, not live-game or whole-run evidence.
+however, it did not improve wall time: B had equal wins with CONTROL but lower
+mean HP at 1k, and lower wins and mean HP at 10k. The corrected implementation
+also performs a copied-state execution for every candidate continuation to
+establish RNG safety; at 10k this is roughly 2.08 million candidate-continuation
+validations. The wall-time result therefore includes safe-macro implementation
+overhead and is not a universal claim that macro contraction cannot work. The
+macro flattening hypothesis is rejected for this implementation and bounded DEV
+screen, with no production/default promotion. These are frozen offline results,
+not live-game or whole-run evidence.
 
 ## Raw artifacts
 
