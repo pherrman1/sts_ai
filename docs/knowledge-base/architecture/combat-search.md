@@ -348,6 +348,13 @@ fourteen. Older compact models consume their declared count and PVNet consumes
 the original fourteen. Two fields come from `ExpertKnowledge` play/obtain
 weights, so learned policy intentionally includes hand-authored guidance.
 
+At the live semantic boundary, Silver's absent target (`-1`) for an untargeted
+card or potion lowers to native target zero. It must never be packed directly
+into the unsigned target field: that produces 8191, which is invalid for cards
+and denotes discard for potions. Only `discardPotion=true` lowers to native
+discard; targeted actions require an explicit in-range target and native
+legality validation.
+
 Silver maps native actions into its private model and back using semantic card
 and selection identity, not transient position alone. The final lowered action
 is revalidated against the live battle.

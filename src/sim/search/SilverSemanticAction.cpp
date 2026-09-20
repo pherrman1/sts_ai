@@ -76,16 +76,29 @@ SemanticActionResolution resolveSilverSemanticAction(
         // matching because selecting a subset can require distinct entries.
         const int idx = firstEquivalentHandIndex(live, semantic.card, error);
         if (idx < 0) return {false, {}, error};
-        return finalise(live, Action(ActionType::CARD, idx, semantic.target));
+        // Silver's semantic -1 means no target; native Action packs an
+        // unsigned index, so encoding -1 directly produces invalid target 8191.
+        const bool requiresTarget = live.cards.hand[idx].requiresTarget();
+        if (semantic.target < (requiresTarget ? 0 : -1) || semantic.target >= 5)
+            return {false, {}, "semantic card target is missing or out of range"};
+        return finalise(live, Action(ActionType::CARD, idx,
+                                    semantic.target == -1 ? 0 : semantic.target));
     }
     case SAT::POTION: {
         if (semantic.potionSlot < 0 || semantic.potionSlot >= live.potionCapacity)
             return {false, {}, "semantic potion slot is out of range"};
         if (static_cast<std::int16_t>(live.potions[semantic.potionSlot]) != semantic.potionId)
             return {false, {}, "semantic potion identity does not match live slot"};
-        // Current action encoding uses any target >5 to denote discarding.
+        // Only the explicit semantic flag may become native discard. Packing
+        // an absent target (-1) would otherwise silently discard an untargeted
+        // potion instead of applying its effect.
+        if (semantic.discardPotion)
+            return finalise(live, Action(ActionType::POTION, semantic.potionSlot, 6));
+        const bool requiresTarget = potionRequiresTarget(live.potions[semantic.potionSlot]);
+        if (semantic.target < (requiresTarget ? 0 : -1) || semantic.target >= 5)
+            return {false, {}, "semantic potion target is missing or out of range"};
         return finalise(live, Action(ActionType::POTION, semantic.potionSlot,
-                                    semantic.discardPotion ? 6 : semantic.target));
+                                    semantic.target == -1 ? 0 : semantic.target));
     }
     case SAT::SINGLE_CARD_SELECT: {
         if (live.inputState != InputState::CARD_SELECT

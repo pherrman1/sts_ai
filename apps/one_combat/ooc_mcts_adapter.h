@@ -4,10 +4,11 @@
 #include "combat_transition_sampler.h"
 #include "ooc_policy.h"
 #include "sim/search/OocMctsPlanner.h"
+#include "sim/search/OocSemanticAction.h"
 
 namespace one_combat {
-// Exact native-state integration only: copied RNG streams are not a fair
-// stochastic environment model. Live use is explicitly opt-in.
+// Live opt-in search samples hidden native futures. Exact copied-state replay
+// remains available to offline parity fixtures through OocAdapterOptions.
 std::vector<double> oocPolicyWeights(const std::vector<double> &logits, double temperature = 1.0);
 struct OocContinuationMetrics {
     std::uint64_t imaginedCombats = 0, unsupportedCombats = 0;
@@ -25,15 +26,27 @@ struct OocAdapterOptions {
     bool bossLeaf = false;
     unsigned leafCombats = 0;
     bool uniformLeafPolicy = false;
+    // Live search samples unknown futures. False is retained for exact native replay fixtures.
+    bool sampleNoncombat = false;
 };
 class OocGameContextModel final : public sts::search::OocGenerativeModel {
+public:
+    struct Candidate {
+        sts::search::OocActionId id;
+        std::string key;
+        std::optional<sts::search::OocSemanticAction> semantic;
+        GameAction primitive;
+        sts::CardSelectScreenType compoundSelector = sts::CardSelectScreenType::INVALID;
+    };
+private:
     struct Edge {
         std::optional<sts::search::OocStateId> deterministic;
         std::unique_ptr<PreparedCombatTransition> combat;
     };
     struct Metadata {
         bool boundary = true;
-        std::vector<GameAction> candidates;
+        std::vector<Candidate> candidates;
+        bool sourcePriorCovered = false;
         std::vector<Edge> edges;
         std::optional<std::vector<double>> logits;
         std::optional<std::vector<sts::search::OocPlannerAction>> priors;
@@ -63,6 +76,7 @@ public:
     std::optional<double> terminalValue(sts::search::OocStateId) const override;
     bool isLeafBoundary(sts::search::OocStateId) const override;
     std::vector<sts::search::OocPlannerAction> legalActions(sts::search::OocStateId) const override;
+    const Candidate &candidate(sts::search::OocStateId, sts::search::OocActionId) const;
     std::vector<double> policyLogits(sts::search::OocStateId) const;
     std::optional<sts::search::OocActionId> soleLegalAction(sts::search::OocStateId) const;
     sts::search::OocStateId sampleSuccessor(sts::search::OocStateId, sts::search::OocActionId,
@@ -86,7 +100,10 @@ std::uint64_t oocMctsSearchSeed(std::uint64_t runSeed, std::uint64_t decisionInd
 sts::search::OocMctsResult selectOocMctsAction(const GameContext &, const PathHistory &,
     std::uint64_t runSeed, std::uint64_t decisionIndex, std::uint64_t simulations,
     std::shared_ptr<const CombatTransitionSampler>, std::uint64_t &combatSamples,
-    OocContinuationMetrics * = nullptr);
+    OocContinuationMetrics * = nullptr,
+    std::optional<OocGameContextModel::Candidate> *selected = nullptr);
+// Fresh semantic identity resolution; failure leaves live state untouched.
+bool executeOocMctsRoot(GameContext &, const OocGameContextModel::Candidate &, std::string &error);
 bool oocMctsPolicyStep(GameContext &, const PathHistory &, std::uint64_t runSeed,
     std::uint64_t decisionIndex, LiveOocMctsMetrics &);
 void writeLiveOocMctsTrace(std::uint64_t seed, const LiveOocMctsMetrics &, int realCombats);
