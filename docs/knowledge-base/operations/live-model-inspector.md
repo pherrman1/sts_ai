@@ -404,6 +404,10 @@ stopping. The default resumes an advertised save; `--new-run` refuses to
 replace a save or live run. Without a save, an explicit new-run/character
 request is required. Ascension and seed are passed through to MCP.
 
+In-combat potion/discovery `CARD_REWARD` modals follow the inspector's OOC
+boundary, with explicit unsupported fallback when skipping is unavailable.
+Combat `GRID`/`HAND_SELECT` boundaries continue to use Silver.
+
 Card-reward skips are retained by session and an opaque, read-only identity of
 that physical reward. Returning to the combat-reward list collects other
 rewards or proceeds instead of reopening the skipped group. These identities

@@ -711,6 +711,11 @@ async def connected_mcp(url: str) -> AsyncIterator[McpGameClient]:
 def _is_combat(screen: Mapping[str, Any]) -> bool:
     phase = _text(screen.get("room_phase", screen.get("roomPhase", ""))).upper()
     screen_type = _text(screen.get("screen_type", screen.get("screenType", ""))).upper()
+    # Potion/discovery choices reuse CARD_REWARD during combat. The inspector
+    # routes this modal through OOC with an explicit unsupported boundary;
+    # GRID/HAND_SELECT remain Silver combat selection boundaries.
+    if screen_type == "CARD_REWARD":
+        return False
     return phase == "COMBAT" or (not phase and screen_type == "COMBAT")
 
 

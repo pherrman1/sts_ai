@@ -407,6 +407,21 @@ class OocDriverTest(unittest.TestCase):
                 self.assertEqual(packet["summary"]["outcome"], "error")
                 self.assertIsNotNone(packet["inspector_snapshot"])
 
+    def test_in_combat_card_reward_consumes_explicit_ooc_boundary(self):
+        with tempfile.TemporaryDirectory() as directory:
+            screen = {**self.screen(), "room_phase": "COMBAT"}
+            self.assertFalse(_is_combat(screen))
+            for kind in ("NONE", "GRID", "HAND_SELECT"):
+                self.assertTrue(_is_combat({**screen, "screen_type": kind}))
+            client = FakeClient(screen, ["choose"])
+            path = ooc_inspector_file(directory, screen, "UNSUPPORTED", reason="CARD_REWARD_SKIP_UNAVAILABLE")
+            driver = Driver(client, InspectorReader(path), TraceWriter(Path(directory) / "trace"), max_steps=1)
+            asyncio.run(driver.run())
+            self.assertEqual(driver.counters["silver_unsupported"], 0)
+            self.assertEqual(driver.counters["ooc_v4_unsupported"], 1)
+            self.assertEqual([(t, a) for t, a in client.calls if t == "choose"],
+                             [("choose", {"choice_index": 1})])
+
     def test_top_level_advisor_error_reports_root_cause_without_fallback(self):
         with tempfile.TemporaryDirectory() as directory:
             driver, client, path = self.make(directory)
