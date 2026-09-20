@@ -284,6 +284,12 @@ rule, broaden it to Reaper or other cards, or reuse this holdout for a second
 Spot Weakness treatment. No rollout policy, learned evaluator, prior, PUCT,
 budget, or gameplay default is changed or promoted.
 
+After the evidence was frozen and independently reviewed, the candidate
+treatment and its collector-only implementation were reverted from the branch.
+The raw corpus, paired rollouts, teacher references, analysis, and provenance
+documents remain retained for auditability; the analyzer remains as a
+reproduction tool.
+
 ### Fresh artifact hashes
 
 ```text

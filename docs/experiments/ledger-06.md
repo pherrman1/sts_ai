@@ -10332,6 +10332,10 @@ default or generalization claim is authorized. Evidence:
   on this holdout, and do not infer that the broader first-action mechanism is
   absent from the earlier targeted result. No rollout policy, evaluator,
   prior, PUCT, budget, or gameplay default change is authorized.
+- **Post-result cleanup:** After the evidence was frozen and reviewed, the
+  rejected candidate treatment and collector-only implementation were reverted
+  from the task branch. The raw evidence and analyzer remain retained for
+  reproducibility; no production behavior was left enabled.
 - **Evidence:** [rollout variance/bias diagnostic](evidence/silver_rollout_variance_20260920/README.md).
   **Knowledge impact:** durable Silver diagnostic evidence and current
   research status only; no Silver behavior, model, RNG, schema, budget, or
