@@ -10460,3 +10460,41 @@ default or generalization claim is authorized. Evidence:
   **Knowledge impact:** durable tactical-prefix oracle evidence and current
   research status only; no production Silver behavior, model, RNG, schema,
   budget, or gameplay default changed.
+
+## §325 — Bounded variable-prefix Silver selector Phase A (2026-09-20)
+
+- **Question and protocol:** Can limited continuation samples recover at least
+  50% of the PR #256 up-to-depth-2 variable-length oracle gain at no more than
+  12 mean continuation evaluations per leaf? Reuse the frozen robust
+  all-replicate common-prefix surface, baseline, and Teacher A/B packet; do
+  not use gameplay seeds, hard64, training, or production Silver behavior.
+  The screen evaluated `FLAT_K1/K2/K4/K8/K16` and the six preregistered
+  hierarchical beam arms. Selection used deterministic half-local replicate
+  order, Stage 2 used fresh samples disjoint from Stage 1, length-1 parents
+  were explicit STOP finalists, and evaluation always used the opposite full
+  16-replicate half. Source-seed-clustered bootstrap used 2,000 iterations and
+  seed `20260920`.
+- **Reproduction:** `FLAT_K16` exactly reproduced #256 up-to-depth-2
+  Teacher-A regret `0.5666491930721915`, Teacher-B regret
+  `1.0450469791084764`, and clustered baseline-minus-oracle interval
+  `[0.23572861982679671, 2.1381214615864907]`. The analyzer also retains the
+  exact frozen input hashes and fails closed on incomplete paired coverage.
+- **Result:** **`BOUNDED_PREFIX_SELECTOR_INSUFFICIENT`**. The best bounded arm
+  was `BEAM2_K1_1_K2_1`: it recovered `26.82%` of the measured oracle gain,
+  used `13.74` mean calls (`25` p95), reduced Teacher-A regret from `1.51332`
+  to `1.25941`, but changed Teacher-B regret by `-38.77%` and had clustered
+  lower bound `-0.40184`. The cheapest beam,
+  `BEAM1_K1_1_K2_1`, used `9.40` mean calls and recovered `18.30%`, with
+  clustered lower bound `-0.24005`. Flat `K4` recovered `60.56%` but cost
+  `100.31` mean calls, had clustered lower bound `-0.31005`, and regressed
+  Teacher B by `13.20%`. No non-`FLAT_K16` arm cleared all preregistered
+  requirements.
+- **Decision and boundary:** Phase B native causal confirmation was not
+  triggered. This result supports a cheap learned pair-plus-STOP/value
+  evaluator as the next direction and does not support a rollout-heavy
+  tactical controller. Do not use the packet to alter Silver rollout behavior,
+  search budgets, RNG contracts, defaults, gameplay, or holdout policy.
+- **Evidence:** [bounded variable-prefix Phase-A packet](evidence/silver_bounded_variable_prefix_20260920/README.md).
+  **Knowledge impact:** durable current research and cost-quality evidence
+  only; no production Silver behavior, model, RNG, schema, budget, gameplay
+  result, or default changed.
