@@ -28,6 +28,16 @@ final class OocOverlay {
     boolean matches(String session, long sequence, String hash) {
         return this.session.equals(session) && this.sequence == sequence && this.hash.equals(hash);
     }
+    List<Choice> panelChoices() {
+        if (!"card_reward".equals(screen) || choices.size() <= 2)
+            return choices.subList(0, Math.min(6, choices.size()));
+        // Card scores also appear below each physical card. Keep this panel
+        // above the reward cards, including four-card Question Card layouts.
+        Choice first = choices.get(0), second = choices.get(1);
+        for (Choice choice : choices)
+            if ("skip".equals(choice.kind) && choice != first) second = choice;
+        return Arrays.asList(first, second);
+    }
     static OocOverlay parse(String responseJson, String observationJson) {
         JsonObject response = new JsonParser().parse(responseJson).getAsJsonObject();
         JsonObject ooc = new JsonParser().parse(observationJson).getAsJsonObject().getAsJsonObject("ooc");

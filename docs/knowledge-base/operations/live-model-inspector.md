@@ -91,7 +91,8 @@ edge sits 170 scaled pixels below the screen top, clearing the relic row.
 The panels omit floor/HP text already shown in the game HUD.
 OOC decisions use the same dark/cyan styling as Silver: a ranked Q list (up to
 six choices), an amber border on the selected action, and score badges under
-visible reward cards. Labels and badges bind to current structured choice
+visible reward cards. Card rewards use a compact best-choice/skip panel above
+the card row, with individual scores below the cards. Labels and badges bind to current structured choice
 occurrences, not card names. Only identity-matched `live_ooc_decision_v1`
 responses display scores; waiting, unsupported and error states show no
 recommendation. The overlay is presentation-only and does not change policy

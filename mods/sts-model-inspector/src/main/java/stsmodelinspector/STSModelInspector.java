@@ -300,7 +300,7 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         boolean combat = "combat".equals(newest.boundary);
         OocOverlay overlay = currentOocOverlay();
         float width = (combat ? 500.0f : 420.0f) * scale;
-        int rows = overlay == null ? 0 : Math.min(6, overlay.choices.size());
+        int rows = overlay == null ? 0 : overlay.panelChoices().size();
         float height = (combat ? 252.0f : rows == 0 ? 220.0f : 130.0f + 44.0f * rows) * scale;
         float bottom = top - height;
 
@@ -390,9 +390,11 @@ public final class STSModelInspector implements PostInitializeSubscriber,
                 + "  ·  " + capitalize(view.screen.replace('_', ' '));
         renderSmallText(sb, subtitle, x + 16 * scale, top - 69 * scale, MUTED, .82f);
         if (view != null && "OK".equals(view.status) && !view.choices.isEmpty()) {
-            for (int rank = 0; rank < view.choices.size() && rank < 6; ++rank) {
-                OocOverlay.Choice choice = view.choices.get(rank);
-                float rowBottom = top - (122 + 44 * rank) * scale;
+            List<OocOverlay.Choice> panelChoices = view.panelChoices();
+            for (int row = 0; row < panelChoices.size(); ++row) {
+                OocOverlay.Choice choice = panelChoices.get(row);
+                int rank = view.choices.indexOf(choice);
+                float rowBottom = top - (122 + 44 * row) * scale;
                 drawCard(sb, x + 14 * scale, rowBottom, width - 28 * scale, 38 * scale, scale);
                 if (choice.selected) drawBorder(sb, x + 14 * scale, rowBottom,
                         width - 28 * scale, 38 * scale, WARNING, 2 * scale);
@@ -402,8 +404,10 @@ public final class STSModelInspector implements PostInitializeSubscriber,
                 renderSmallText(sb, String.format(Locale.ROOT, "Q %.3f", choice.q),
                         x + width - 104 * scale, rowBottom + 26 * scale, MUTED, .72f);
             }
-            if (view.choices.size() > 6) renderSmallText(sb, "+ " + (view.choices.size() - 6) + " more choices",
-                    x + 16 * scale, bottom + 43 * scale, MUTED, .72f);
+            if ("card_reward".equals(view.screen))
+                renderSmallText(sb, "Scores below cards", x + 16 * scale, bottom + 22 * scale, MUTED, .72f);
+            else if (view.choices.size() > 6) renderSmallText(sb, "+ " + (view.choices.size() - 6) + " more choices",
+                    x + 16 * scale, bottom + 22 * scale, MUTED, .72f);
             renderOocCardBadges(sb, view, scale);
         } else {
             renderSmallText(sb, view == null ? (responseReady() ? "Advisor unavailable" : "Waiting for advisor") :
