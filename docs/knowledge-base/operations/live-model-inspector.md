@@ -85,8 +85,23 @@ identity changes.
 
 ### Start and discover the live control boundary
 
-The canonical local live-test setup is a foreground ModTheSpire launch from
-the Steam game directory. The installed artifacts are:
+The canonical local live-test setup is provided by
+`tools/live_game_start.sh`. It validates the installed artifacts and advisor
+configuration, reuses an already-running modded game, otherwise starts
+ModTheSpire in its own background session, waits for MCP port `8080`, and
+prints the driver command. Use:
+
+```bash
+tools/live_game_start.sh --probe
+```
+
+`--probe` performs a read-only driver dry-run after the game reaches a
+command-ready screen. Use `--check` to validate without starting anything and
+`--foreground` when the Codex terminal should retain the ModTheSpire process
+directly. `--allow-missing-advisor` is only for MCP-only control; normal Silver
+testing should keep the advisor check enabled. Background launch output is
+written to `~/.cache/sts-live-driver/modthespire.log`. The installed artifacts
+are:
 
 ```text
 game directory: /home/philippherrmann/.local/share/Steam/steamapps/common/SlayTheSpire
@@ -98,6 +113,7 @@ inspector:     <game directory>/mods/sts-model-inspector.jar
 Start the modded game with the MCP and inspector mods enabled:
 
 ```bash
+# Equivalent manual launch when the helper is unavailable.
 cd /home/philippherrmann/.local/share/Steam/steamapps/common/SlayTheSpire
 /usr/bin/java -jar \
   /home/philippherrmann/.local/share/Steam/steamapps/workshop/content/646570/1605060445/ModTheSpire.jar \
