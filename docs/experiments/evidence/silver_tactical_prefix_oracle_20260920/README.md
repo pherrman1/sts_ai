@@ -57,14 +57,43 @@ the same baseline and Teacher-B values are used for every depth.
 | depth 3, up to 3 | 1.51332 | 0.58686 | 61.22% | 1.47290 | 0.98334 | 33.24% | [0.24809, 2.10558] |
 
 All three views contain 247 leaves and 32 groups. Depth 1 reproduces the
-retained PR #254 counterfactual exactly on the common candidates: 1,266 of
-1,266 values match, with zero missing candidates and zero absolute utility
-difference. This is the boundary check for the generalized prefix seam.
+retained PR #254 counterfactual exactly across the full paired reference:
+40,512 of 40,512 `(leaf, replicate, action)` values match, with zero missing
+or unmatched rows and zero absolute utility difference. This is the boundary
+check for the generalized prefix seam, including the direct-enumeration change
+from the PR #254 implementation.
 
 The oracle is intentionally an upper-bound diagnostic. It can choose a
 different prefix for each frozen leaf after observing the cross-fitted rollout
 values; it does not establish that a deployable policy can identify those
 prefixes.
+
+### Exact-length secondary views
+
+The preregistered classification uses the monotonic up-to-depth oracle. Exact
+length is a secondary diagnostic and changes the interpretation materially:
+
+| view | leaves / groups | baseline A -> oracle A | A reduction | baseline B -> oracle B | B reduction | clustered 95% CI for baseline minus oracle A regret |
+|---|---:|---:|---:|---:|---:|---:|
+| exactly length 2 | 247 / 32 | 1.51332 -> 1.40874 | 6.91% | 1.47290 -> 1.98487 | -34.76% | [-1.37089, 1.64439] |
+| exactly length 3 | 245 / 32 | 1.60117 -> 0.82149 | 48.69% | 1.54723 -> 1.21988 | 21.16% | [-0.41122, 2.41505] |
+
+The large up-to-depth-2 result therefore does not support the simple claim
+that always forcing exactly two controlled actions is better. It is a
+variable-length oracle: it may stop after one action or extend to two.
+
+Selected prefix lengths are counted over the 247 leaves for each cross-fit
+direction:
+
+| up-to view | select 0--15 / evaluate 16--31 | select 16--31 / evaluate 0--15 |
+|---|---:|---:|
+| depth 1 | 247 length 1 | 247 length 1 |
+| depth 2 | 148 length 1 / 99 length 2 | 138 length 1 / 109 length 2 |
+| depth 3 | 130 length 1 / 49 length 2 / 68 length 3 | 120 length 1 / 45 length 2 / 82 length 3 |
+
+This supports the more precise conclusion: there is large headroom from a
+variable-length short tactical prefix, and a useful next mechanism must learn
+both the action sequence and whether extending the prefix is worthwhile.
 
 ## Prefix surface and cost
 
@@ -115,10 +144,12 @@ These are oracle examples, not recommended gameplay rules.
 
 ## Artifacts and reproduction
 
-The diagnostic source was run from the worktree at base/main SHA
+The diagnostic source was run from base/main SHA
 `124f99a75d15a74508e58ebdf69b5a0862d8eed9`, the merged PR #254 state. The
-generator executable SHA-256 is
-`a54ed52f8e0e23530c81b53fae04b4f5c26f68e3fa4fa920a966f8a16356f81d`.
+generator and analyzer implementation is frozen at
+`71867f3ddb5a3f29352b213330097d1fb2b10c67`, which contains the generator.
+The generator executable SHA-256 is
+`91d556fadeefc6c4e37e9851877c684ed5cd0b5708be55bb40c87dea0675e307`.
 
 Primary artifacts:
 
@@ -132,9 +163,9 @@ Primary artifacts:
 SHA-256:
 
 ```text
-raw-prefix-rollouts.jsonl.gz  6b471c0e973ff560756ca4dea83f04de850fb5029bcc18696ec53e38bd98d9d7
-selection-manifest.json    a941becae452b647ca65f0898ae9a41eb2cf08b9278b70e5cf8a965e42a4ee98
-analysis.json              b496ccac12e553bf9e74a087b20ed581a46ed5b5ce3b726bba028abf0dd2bc48
+raw-prefix-rollouts.jsonl.gz  38125aa3bf2ba264e61b5ff723219dc4377d1e97eb70db42fb9d111f1bd38315
+selection-manifest.json       cebad9be4637f0452d78dfffb5279f2a08ab253cf24ac38ba08566aa8c37605f
+analysis.json                 eea388b664f08456ca1e8ec7d3f62463be6cafe5362de6378cdc8e1a889293be
 ```
 
 Frozen input hashes are retained in `analysis.json`; the principal corpus
@@ -155,7 +186,8 @@ build/linux-gcc-release-ccache/silver_tactical_prefix_oracle \
   docs/experiments/evidence/silver_rollout_variance_20260920/selected-corpus.jsonl \
   docs/experiments/evidence/silver_tactical_prefix_oracle_20260920/raw-prefix-rollouts.jsonl \
   docs/experiments/evidence/silver_tactical_prefix_oracle_20260920/selection-manifest.json \
-  124f99a75d15a74508e58ebdf69b5a0862d8eed9 32 3
+  124f99a75d15a74508e58ebdf69b5a0862d8eed9 \
+  71867f3ddb5a3f29352b213330097d1fb2b10c67 32 3
 
 # Or expand the committed packet before analysis:
 gzip -dc docs/experiments/evidence/silver_tactical_prefix_oracle_20260920/raw-prefix-rollouts.jsonl.gz \
@@ -174,12 +206,14 @@ python3 tools/analyze_silver_tactical_prefix_oracle.py \
 ## Boundary and next research
 
 This result supports a distinct next question: whether a bounded, causal
-prefix policy can recover a substantial fraction of the depth-2/3 oracle gain
-without paying the full exhaustive-prefix cost. It does not authorize a
+variable-length prefix policy can recover a substantial fraction of the
+up-to-depth-2/3 oracle gain without paying the full exhaustive-prefix cost,
+including learning when to stop after one action. It does not authorize a
 production rollout change, selector tuning, new gameplay seeds, holdout use,
 model training, or promotion of a default. The exact-length secondary views
-are descriptive only; the preregistered decision is based on monotonic
-up-to-depth selection with disjoint replicate evaluation.
+are descriptive only and do not support an always-exactly-two policy; the
+preregistered decision is based on monotonic up-to-depth selection with
+disjoint replicate evaluation.
 
 **Knowledge impact:** durable tactical-prefix oracle evidence and current
 research status only; no production Silver behavior, model, RNG, schema,

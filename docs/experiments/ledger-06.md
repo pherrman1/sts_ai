@@ -10408,10 +10408,11 @@ default or generalization claim is authorized. Evidence:
   and 16–31 in both directions; source-seed-clustered bootstrap uses 2,000
   iterations and seed `20260920`.
 - **Depth-1 boundary:** The generalized prefix implementation exactly matches
-  the retained PR #254 counterfactual on all 1,266 common depth-1 candidates:
-  zero missing values and zero absolute utility difference. The root step keeps
-  the historical forced-first-action pending-intent behavior; later steps
-  materialize pending intents before the next supplied action.
+  the retained PR #254 counterfactual across all 40,512 paired
+  `(leaf, replicate, action)` rows: zero missing or unmatched rows and zero
+  absolute utility difference. The root step keeps the historical
+  forced-first-action pending-intent behavior; later steps materialize pending
+  intents before the next supplied action.
 - **Result:** **`SHORT_PREFIX_HEADROOM_PRESENT`**. The frozen cohort has 32
   groups / 247 leaves / 20 source seeds. Teacher-A k=32 regret is
   `1.51332 -> 1.41354` (`6.59%`) at depth 1,
@@ -10430,18 +10431,30 @@ default or generalization claim is authorized. Evidence:
   unchanged, and 2 worsen. The largest 1/2/4/8 positive-improvement groups
   account for 46.35/61.88/88.43/100% at depth 2 and
   47.34/63.21/83.53/100% at depth 3.
+- **Variable-length interpretation:** The exact-length secondary views are
+  materially different from the monotonic headline. Exactly length 2 gives
+  only `6.91%` Teacher-A reduction and a `-34.76%` Teacher-B change, with
+  clustered Teacher-A CI `[-1.37089, 1.64439]`. Exactly length 3 gives
+  `48.69%` Teacher-A and `21.16%` Teacher-B reduction, but covers 245 leaves
+  and its CI is `[-0.41122, 2.41505]`. In the up-to-depth-2 oracle, selected
+  lengths are 148/99 and 138/109 (length 1/2) across the two cross-fit
+  directions; at up-to-depth 3 they are 130/49/68 and 120/45/82 (length
+  1/2/3). The large gain is therefore evidence for a variable-length oracle,
+  not for always forcing exactly two actions.
 - **Cost:** The 689,856 accepted prefix evaluations recorded diagnostic
   `total_wall_micros` of 155.13 mean / 162 median / 191 p95 per row; the
   canonical continuation portion was 9.13 mean / 9 median / 17 p95
   microseconds. These timings include exhaustive diagnostic semantic-prefix
   setup and are not a production runtime comparison or policy-cost gate.
-- **Decision and boundary:** This establishes short-prefix oracle headroom,
-  not a deployable policy or value-equivalence result. The oracle may choose a
-  different prefix per frozen leaf after observing cross-fitted continuation
-  values. Do not launch gameplay confirmation, tune a selector, change Silver
-  search/defaults, train a model, or promote a rollout behavior from this
-  packet. The next distinct experiment is a bounded causal prefix-policy screen
-  with explicit cost measurement and no holdout substitution.
+- **Decision and boundary:** This establishes variable-length short-prefix
+  oracle headroom, not a deployable policy or value-equivalence result. The
+  oracle may choose a different prefix per frozen leaf after observing
+  cross-fitted continuation values. Do not launch gameplay confirmation, tune
+  a fixed-depth selector, change Silver search/defaults, train a model, or
+  promote a rollout behavior from this packet. The next distinct experiment is
+  a bounded causal mechanism that learns both the action sequence and whether
+  to extend the prefix, with explicit cost measurement and no holdout
+  substitution.
 - **Evidence:** [coordinated short-prefix oracle packet](evidence/silver_tactical_prefix_oracle_20260920/README.md).
   **Knowledge impact:** durable tactical-prefix oracle evidence and current
   research status only; no production Silver behavior, model, RNG, schema,

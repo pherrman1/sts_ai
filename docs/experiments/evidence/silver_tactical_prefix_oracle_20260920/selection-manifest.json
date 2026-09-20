@@ -1,11 +1,12 @@
 {
   "accepted_rows": 689856,
+  "base_git_sha": "124f99a75d15a74508e58ebdf69b5a0862d8eed9",
   "canonical_non_player_normal_handling": "SimpleAgent CARD_SELECT only; unsupported states fail closed",
   "controlled_action_surface": [
     "CARD",
     "END_TURN"
   ],
-  "implementation_git_sha": "124f99a75d15a74508e58ebdf69b5a0862d8eed9",
+  "implementation_git_sha": "71867f3ddb5a3f29352b213330097d1fb2b10c67",
   "leaves": [
     {
       "common_prefix_counts": {

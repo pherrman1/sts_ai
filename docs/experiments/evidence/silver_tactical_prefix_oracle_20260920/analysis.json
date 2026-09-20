@@ -17,14 +17,18 @@
   },
   "decision_note": "No production policy, Silver search path, gameplay seed, or hard64 holdout was used.",
   "depth_1_reproduction": {
-    "exact_matches": 1266,
-    "generated_rows": 1266,
-    "matched_rows": 1266,
+    "duplicate_reference_keys": 0,
+    "exact_matches": 40512,
+    "generated_missing_in_reference_rows": 0,
+    "generated_rows": 40512,
+    "matched_rows": 40512,
     "max_absolute_utility_difference": 0.0,
     "mean_absolute_utility_difference": 0.0,
-    "missing_reference_rows": 0,
+    "passed": true,
     "performed": true,
-    "reference_rows": 40512
+    "reference_accepted_rows": 40512,
+    "reference_rows": 40512,
+    "unmatched_reference_rows": 0
   },
   "examples": {
     "1": [
@@ -625,8 +629,8 @@
   },
   "inputs": {
     "baseline_sha256": "253c60eb8bdd80f5476e1826295137985ec6101b9acf0a3f26b13855435e70be",
-    "manifest_sha256": "a941becae452b647ca65f0898ae9a41eb2cf08b9278b70e5cf8a965e42a4ee98",
-    "raw_sha256": "c7ffacab90e2946a88da7a6a476b3836c4f690522226957a319c0efb7ea9e760",
+    "manifest_sha256": "cebad9be4637f0452d78dfffb5279f2a08ab253cf24ac38ba08566aa8c37605f",
+    "raw_sha256": "069629099567402a01cb5dd67df0c571344148d8533a48bcb5763c7f9c648ab5",
     "teachers_sha256": "01994f057b07add5067d095f17c413bf246c322fa63c4c6cd409efb787b3855e"
   },
   "metrics": {
@@ -850,6 +854,14 @@
       },
       "groups": 32,
       "leaves": 247,
+      "selected_prefix_length_counts": {
+        "select_0_15_evaluate_16_31": {
+          "1": 247
+        },
+        "select_16_31_evaluate_0_15": {
+          "1": 247
+        }
+      },
       "teacher_a": {
         "baseline": {
           "centered_mae": 4.049411332285114,
@@ -1117,6 +1129,16 @@
       },
       "groups": 32,
       "leaves": 247,
+      "selected_prefix_length_counts": {
+        "select_0_15_evaluate_16_31": {
+          "1": 148,
+          "2": 99
+        },
+        "select_16_31_evaluate_0_15": {
+          "1": 138,
+          "2": 109
+        }
+      },
       "teacher_a": {
         "baseline": {
           "centered_mae": 4.049411332285114,
@@ -1384,6 +1406,18 @@
       },
       "groups": 32,
       "leaves": 247,
+      "selected_prefix_length_counts": {
+        "select_0_15_evaluate_16_31": {
+          "1": 130,
+          "2": 49,
+          "3": 68
+        },
+        "select_16_31_evaluate_0_15": {
+          "1": 120,
+          "2": 45,
+          "3": 82
+        }
+      },
       "teacher_a": {
         "baseline": {
           "centered_mae": 4.049411332285114,
@@ -1651,6 +1685,14 @@
       },
       "groups": 32,
       "leaves": 247,
+      "selected_prefix_length_counts": {
+        "select_0_15_evaluate_16_31": {
+          "2": 247
+        },
+        "select_16_31_evaluate_0_15": {
+          "2": 247
+        }
+      },
       "teacher_a": {
         "baseline": {
           "centered_mae": 4.049411332285114,
@@ -1918,6 +1960,14 @@
       },
       "groups": 32,
       "leaves": 245,
+      "selected_prefix_length_counts": {
+        "select_0_15_evaluate_16_31": {
+          "3": 245
+        },
+        "select_16_31_evaluate_0_15": {
+          "3": 245
+        }
+      },
       "teacher_a": {
         "baseline": {
           "centered_mae": 4.08845369918622,
