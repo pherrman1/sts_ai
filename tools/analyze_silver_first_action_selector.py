@@ -384,7 +384,8 @@ def fit_models(args: argparse.Namespace) -> int:
               "regularization": args.regularization, "selection_replicates": SELECTION_REPLICATES,
               "target": "mean q0 over selection half; canonical continuation after one first action",
               "group_fold_rule": "fnv1a(group_id) % 5", "models": models, "fit_rows": fit_rows,
-              "counterfactual_sha256": sha256(args.counterfactual)}
+              "counterfactual_sha256": sha256(args.counterfactual),
+              "group_folds": {group_id: fold(group_id) for group_id in sorted(groups)}}
     args.output.write_text(json.dumps(report, indent=2, sort_keys=True) + "\n")
     print(json.dumps({"models": len(models), "features": len(FEATURE_NAMES),
                       "regularization": args.regularization}, indent=2))
@@ -393,6 +394,7 @@ def fit_models(args: argparse.Namespace) -> int:
 
 def candidate_report(args: argparse.Namespace) -> int:
     candidate = load_jsonl(args.candidate)
+    headroom = json.loads(args.headroom.read_text())
     teachers_by_leaf = teachers(args.teachers)
     grouped = defaultdict(list)
     for row in candidate:
@@ -431,18 +433,85 @@ def candidate_report(args: argparse.Namespace) -> int:
             arms[f"{arm}_k{k}"] = {"teacher_a": sibling_metrics(compact, "value", "teacher_a"),
                                     "teacher_b": sibling_metrics(compact, "value", "teacher_b"),
                                     "rows": len(compact)}
-    group_deltas = defaultdict(lambda: {"baseline": [], "candidate": []})
-    for row in rows:
-        group_deltas[row["group_id"]]["baseline"].append(row["baseline"])
-        group_deltas[row["group_id"]]["candidate"].append(row["candidate"])
     runtime_base = [row["baseline_wall_micros"] for row in rows]
     runtime_candidate = [row["candidate_wall_micros"] for row in rows]
-    descriptions = Counter(row["selected_action_description"].split(" ")[0]
+    def action_kind(description: str) -> str:
+        text = description.lower()
+        if "end turn" in text:
+            return "end_turn"
+        if "drink potion" in text or "discard potion" in text:
+            return "potion"
+        if "use card" in text:
+            return "card"
+        return "other"
+
+    descriptions = Counter(action_kind(row["selected_action_description"])
                            if row["selected_action_description"] else "unknown" for row in rows)
+    compact_by_arm = {}
+    for arm in ("baseline", "candidate"):
+        compact_by_arm[arm] = {}
+        for leaf_group in sorted({row["leaf_snapshot_id"] for row in rows}):
+            samples = [row for row in rows if row["leaf_snapshot_id"] == leaf_group]
+            if len(samples) != 32:
+                continue
+            first = samples[0]
+            compact_by_arm[arm][leaf_group] = {
+                "group_id": first["group_id"], "leaf_snapshot_id": leaf_group,
+                "value": statistics.fmean(row[arm] for row in samples),
+                "teacher_a": first["teacher_a"], "teacher_b": first["teacher_b"]}
+    group_rows = []
+    for group_id in sorted({row["group_id"] for row in rows}):
+        members = [row for row in compact_by_arm["baseline"].values()
+                   if row["group_id"] == group_id]
+        if len(members) < 2:
+            continue
+        reference_top = max(members, key=lambda row: row["teacher_a"])
+        arm_result = {"group_id": group_id}
+        for arm in ("baseline", "candidate"):
+            arm_members = [row for row in compact_by_arm[arm].values()
+                           if row["group_id"] == group_id]
+            selected_top = max(arm_members, key=lambda row: row["value"])
+            arm_result[f"{arm}_regret"] = reference_top["teacher_a"] - selected_top["teacher_a"]
+            arm_result[f"{arm}_selected_leaf"] = selected_top["leaf_snapshot_id"]
+        arm_result["regret_improvement"] = arm_result["baseline_regret"] - arm_result["candidate_regret"]
+        group_rows.append(arm_result)
+    group_rows.sort(key=lambda row: row["regret_improvement"], reverse=True)
+    group_ids = [row["group_id"] for row in group_rows]
+    rng = random.Random(BOOTSTRAP_SEED)
+    bootstrap_deltas = []
+    for _ in range(args.bootstrap):
+        selected = [rng.choice(group_ids) for _ in group_ids]
+        baseline_sample, candidate_sample = [], []
+        for occurrence, group_id in enumerate(selected):
+            for arm, target in (("baseline", baseline_sample), ("candidate", candidate_sample)):
+                for row in compact_by_arm[arm].values():
+                    if row["group_id"] == group_id:
+                        copy = dict(row)
+                        copy["group_id"] = f"{group_id}#{occurrence}"
+                        target.append(copy)
+        baseline_regret = sibling_metrics(baseline_sample, "value", "teacher_a")["mean_teacher_regret"]
+        candidate_regret = sibling_metrics(candidate_sample, "value", "teacher_a")["mean_teacher_regret"]
+        bootstrap_deltas.append(baseline_regret - candidate_regret)
+    frozen_deltas = [abs(row["baseline_utility"] - row["frozen_baseline_utility"])
+                     for row in candidate if row.get("accepted") and "frozen_baseline_utility" in row]
     report = {"schema": "silver_contextual_first_action_rollout_analysis_v1",
               "candidate_sha256": sha256(args.candidate), "row_count": len(rows),
+              "headroom_classification": headroom.get("classification"),
               "fold_rule": "fnv1a(group_id) % 5; model for held-out fold only",
               "arms": arms,
+              "source_group_comparison": {
+                  "improved": sum(row["regret_improvement"] > 0 for row in group_rows),
+                  "unchanged": sum(row["regret_improvement"] == 0 for row in group_rows),
+                  "worsened": sum(row["regret_improvement"] < 0 for row in group_rows),
+                  "largest_improvements": group_rows[:8],
+                  "largest_regressions": sorted(group_rows, key=lambda row: row["regret_improvement"])[:8],
+                  "bootstrap_improvement": {"replicates": args.bootstrap,
+                                             "seed": BOOTSTRAP_SEED,
+                                             "p025": ci(bootstrap_deltas)["p025"],
+                                             "p975": ci(bootstrap_deltas)["p975"]},
+                  "catastrophic_tail": max((-row["regret_improvement"] for row in group_rows), default=0.0),
+              },
+              "frozen_baseline_max_abs_utility_delta": max(frozen_deltas, default=0.0),
               "runtime": {"baseline_mean_micros": mean(runtime_base),
                           "candidate_mean_micros": mean(runtime_candidate),
                           "baseline_median_micros": statistics.median(runtime_base) if runtime_base else None,
@@ -464,17 +533,31 @@ def candidate_report(args: argparse.Namespace) -> int:
     candidate_k1 = arms["candidate_k1"]["teacher_a"]["mean_teacher_regret"]
     reduction = ((baseline_k1 - candidate_k1) / baseline_k1
                  if baseline_k1 and candidate_k1 is not None else None)
+    baseline_b = arms["baseline_k1"]["teacher_b"]["mean_teacher_regret"]
+    candidate_b = arms["candidate_k1"]["teacher_b"]["mean_teacher_regret"]
+    teacher_b_reduction = ((baseline_b - candidate_b) / baseline_b
+                           if baseline_b and candidate_b is not None else None)
     b_pair = arms["baseline_k1"]["teacher_a"]["pairwise_concordance"]
     c_pair = arms["candidate_k1"]["teacher_a"]["pairwise_concordance"]
     report["candidate_reduction_k1"] = reduction
+    report["teacher_b_reduction_k1"] = teacher_b_reduction
     report["decision_checks"] = {
         "quality_at_least_15_percent": reduction is not None and reduction >= 0.15,
         "pairwise_no_5pp_collapse": b_pair is not None and c_pair is not None and c_pair >= b_pair - 0.05,
         "runtime_under_5_percent": report["runtime"]["gate_under_1_05"],
+        "source_group_bootstrap_supports_improvement": report["source_group_comparison"][
+            "bootstrap_improvement"]["p025"] is not None
+            and report["source_group_comparison"]["bootstrap_improvement"]["p025"] > 0,
+        "teacher_b_not_materially_contradictory": teacher_b_reduction is not None and teacher_b_reduction >= -0.05,
+        "no_obvious_catastrophic_tail": report["source_group_comparison"]["catastrophic_tail"] < 20.0,
     }
     checks = report["decision_checks"]
-    report["classification"] = ("CONTEXTUAL_FIRST_ACTION_ROLLOUT_PROMISING"
-                                 if all(checks.values()) else "CONTEXTUAL_FIRST_ACTION_ROLLOUT_REJECTED")
+    if all(checks.values()):
+        report["classification"] = "CONTEXTUAL_FIRST_ACTION_ROLLOUT_PROMISING"
+    elif headroom.get("classification") == "FIRST_ACTION_POLICY_HEADROOM_PRESENT":
+        report["classification"] = "FIRST_ACTION_HEADROOM_PRESENT_POLICY_INSUFFICIENT"
+    else:
+        report["classification"] = "CONTEXTUAL_FIRST_ACTION_ROLLOUT_REJECTED"
     args.output.write_text(json.dumps(report, indent=2, sort_keys=True) + "\n")
     print(json.dumps({"classification": report["classification"],
                       "k1_reduction": reduction,
@@ -501,7 +584,9 @@ def main() -> int:
     candidate = subparsers.add_parser("candidate")
     candidate.add_argument("candidate", type=Path)
     candidate.add_argument("teachers", type=Path)
+    candidate.add_argument("headroom", type=Path)
     candidate.add_argument("output", type=Path)
+    candidate.add_argument("--bootstrap", type=int, default=2000)
     candidate.set_defaults(func=candidate_report)
     args = parser.parse_args()
     return args.func(args)
