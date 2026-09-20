@@ -76,6 +76,12 @@ SemanticActionResolution resolveSilverSemanticAction(
         // matching because selecting a subset can require distinct entries.
         const int idx = firstEquivalentHandIndex(live, semantic.card, error);
         if (idx < 0) return {false, {}, error};
+        // The packed Action encoding has no negative target representation.
+        // Silver uses target=-1 for cards that do not require a target, so
+        // lower those through the one-index constructor; passing -1 through
+        // the packed constructor makes an otherwise legal card invalid.
+        if (!live.cards.hand[idx].requiresTarget())
+            return finalise(live, Action(ActionType::CARD, idx));
         return finalise(live, Action(ActionType::CARD, idx, semantic.target));
     }
     case SAT::POTION: {
