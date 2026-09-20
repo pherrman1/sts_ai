@@ -1744,6 +1744,37 @@ int main() {
         if (generalImported.wire.extraRollMoveOnTurn != 0
             || generalImported.wire.skipMonsterTurnBits != 0)
             throw std::runtime_error("explicit stable-boundary group state was not preserved");
+        const char *offColorLocations[] = {"hand", "draw", "discard", "exhaust"};
+        const char *offColorCards[] = {"Neutralize", "Zap", "Eruption", "Neutralize"};
+        const auto placeOffColorCard = [&](json &combat, const char *location, const char *cardName) {
+            auto &pile = combat[location];
+            json card = combat["hand"].at(0);
+            card["id"] = cardName;
+            card["uuid"] = std::string("off-color-") + location;
+            if (pile.is_array()) {
+                if (pile.empty()) pile.push_back(std::move(card));
+                else pile[0] = std::move(card);
+            } else {
+                auto &unknown = pile["unknown"];
+                if (!unknown.is_array()) unknown = json::array();
+                if (unknown.empty()) unknown.push_back(std::move(card));
+                else unknown[0] = std::move(card);
+            }
+        };
+        for (int i = 0; i < 4; ++i) {
+            auto offColor = general;
+            placeOffColorCard(offColor["silverRoot"]["combat"], offColorLocations[i], offColorCards[i]);
+            const auto imported = one_combat::advisor::importSilverRoot(offColor);
+            if (imported.ok || imported.reason != "silver_off_color_card")
+                throw std::runtime_error(std::string("off-color ") + offColorLocations[i]
+                    + " was not rejected before Silver search: " + imported.reason);
+        }
+        auto redAndColorless = general;
+        redAndColorless["silverRoot"]["combat"]["hand"][0]["id"] = "Strike_R";
+        redAndColorless["silverRoot"]["combat"]["draw"][0]["id"] = "Dramatic Entrance";
+        const auto redAndColorlessImported = one_combat::advisor::importSilverRoot(redAndColorless);
+        if (!redAndColorlessImported.ok)
+            throw std::runtime_error("RED/COLORLESS cards were rejected: " + redAndColorlessImported.reason);
         auto burningGeneric = general;
         burningGeneric["silverRoot"]["burningElite"] = true;
         const auto burningImported = one_combat::advisor::importSilverRoot(burningGeneric);

@@ -1206,7 +1206,66 @@ void oocMctsAdapterSelfTest() {
         fixture=detachedCopy(gc); fixture.openCardSelectScreen(selector,1); checkCandidates(fixture);
     }
     fixture=detachedCopy(gc); fixture.screenState=ScreenState::SHOP_ROOM;
-    fixture.gold=500; fixture.info.shop.setup(fixture); checkCandidates(fixture);
+    fixture.gold=500; fixture.info.shop.setup(fixture);
+    std::fill(std::begin(fixture.info.shop.prices), std::end(fixture.info.shop.prices), -1);
+    fixture.info.shop.relics[0]=RelicId::PRISMATIC_SHARD; fixture.info.shop.relicPrice(0)=50;
+    fixture.info.shop.relics[1]=RelicId::ANCHOR; fixture.info.shop.relicPrice(1)=50;
+    checkCandidates(fixture);
+    {
+        const auto all = GameAction::getAllActionsInState(fixture);
+        const auto v4 = v4CandidateActions(fixture);
+        const auto semantic = enumerateOocSemanticPrimitiveBindings(fixture);
+        const auto isShardPrimitive = [&](const GameAction primitive) {
+            return primitive.getRewardsActionType() == GameAction::RewardsActionType::RELIC
+                && primitive.getIdx1() >= 0 && primitive.getIdx1() < 3
+                && fixture.info.shop.relics[primitive.getIdx1()] == RelicId::PRISMATIC_SHARD;
+        };
+        const auto hasShardPrimitive = [&](const std::vector<GameAction> &actions) {
+            return std::any_of(actions.begin(), actions.end(), isShardPrimitive);
+        };
+        const auto hasRelicBinding = [&](RelicId relic) {
+            return std::any_of(semantic.bindings.begin(), semantic.bindings.end(), [&](const auto &binding) {
+                if (binding.semantic.effect != OocSemanticEffect::BUY_RELIC) return false;
+                const auto &target = std::get<OocShopTarget>(binding.semantic.target);
+                return std::get<RelicId>(target.entity) == relic;
+            });
+        };
+        require(hasShardPrimitive(all), "shop fixture did not retain displayed Prismatic Shard");
+        require(!hasShardPrimitive(v4), "V4 shop candidates retained Prismatic Shard");
+        require(semantic.supported && semantic.complete, "semantic shop enumeration unsupported");
+        require(!hasRelicBinding(RelicId::PRISMATIC_SHARD),
+            "semantic shop bindings retained Prismatic Shard");
+        require(hasRelicBinding(RelicId::ANCHOR), "semantic shop bindings lost ordinary relic");
+        require(std::any_of(semantic.bindings.begin(), semantic.bindings.end(), [](const auto &binding) {
+                    return binding.semantic.effect == OocSemanticEffect::LEAVE_SHOP;
+                }), "semantic shop bindings lost Leave");
+
+        OocGameContextModel shop(fixture,path);
+        const auto legal = shop.legalActions(0);
+        require(!shop.isLeafBoundary(0) && !legal.empty(),
+            "Prismatic Shard made semantic shop root unsupported");
+        bool mctsAnchor = false, mctsLeave = false;
+        for (const auto action : legal) {
+            const auto &candidate = shop.candidate(0, action.id);
+            require(candidate.semantic.has_value(), "shop MCTS candidate lost semantic identity");
+            if (candidate.semantic->effect == OocSemanticEffect::BUY_RELIC) {
+                const auto &target = std::get<OocShopTarget>(candidate.semantic->target);
+                const auto relic = std::get<RelicId>(target.entity);
+                require(relic != RelicId::PRISMATIC_SHARD,
+                    "semantic OOC MCTS retained Prismatic Shard");
+                mctsAnchor |= relic == RelicId::ANCHOR;
+            }
+            mctsLeave |= candidate.semantic->effect == OocSemanticEffect::LEAVE_SHOP;
+        }
+        require(mctsAnchor && mctsLeave,
+            "semantic OOC MCTS lost ordinary relic or Leave candidate");
+
+        auto fallbackShop = detachedCopy(fixture);
+        search::ScumSearchAgent2 fallbackAgent;
+        runFullRunOocPolicyStep(fallbackShop, fallbackAgent, false, true);
+        require(!fallbackShop.relics.has(RelicId::PRISMATIC_SHARD),
+            "full-run OOC shop fallback bought Prismatic Shard");
+    }
     {
         OocGameContextModel shop(fixture,path);
         std::set<unsigned> strikeOccurrences;
