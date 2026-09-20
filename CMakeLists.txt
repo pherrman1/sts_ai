@@ -131,6 +131,13 @@ target_include_directories(silver-first-action-selector PRIVATE include json/inc
 target_link_libraries(silver-first-action-selector PRIVATE silver_combat_search_bridge)
 target_link_options(silver-first-action-selector PRIVATE -Wl,--gc-sections)
 
+add_executable(silver-tactical-prefix-oracle apps/silver_tactical_prefix_oracle.cpp)
+set_target_properties(silver-tactical-prefix-oracle PROPERTIES
+    OUTPUT_NAME silver_tactical_prefix_oracle)
+target_include_directories(silver-tactical-prefix-oracle PRIVATE include json/include)
+target_link_libraries(silver-tactical-prefix-oracle PRIVATE silver_combat_search_bridge)
+target_link_options(silver-tactical-prefix-oracle PRIVATE -Wl,--gc-sections)
+
 add_executable(silver-root-mechanism apps/silver_root_mechanism.cpp)
 set_target_properties(silver-root-mechanism PROPERTIES OUTPUT_NAME silver_root_mechanism)
 target_include_directories(silver-root-mechanism PRIVATE include json/include)
@@ -530,6 +537,8 @@ add_test(NAME analyze_combat_budget_diag_selftest COMMAND python3 ${CMAKE_SOURCE
 add_test(NAME analyze_combat_sequential_diag_selftest COMMAND python3 ${CMAKE_SOURCE_DIR}/tools/analyze_combat_sequential_diag.py --self-test)
 add_test(NAME analyze_silver_staged_selftest COMMAND python3 ${CMAKE_SOURCE_DIR}/tools/analyze_silver_staged.py --self-test)
 add_test(NAME analyze_silver_adaptive_selftest COMMAND python3 ${CMAKE_SOURCE_DIR}/tools/analyze_silver_adaptive.py --self-test)
+add_test(NAME analyze_silver_tactical_prefix_oracle
+    COMMAND python3 ${CMAKE_SOURCE_DIR}/tools/test_silver_tactical_prefix_oracle.py -q)
 add_test(NAME analyze_postcombat_raw_terminal_selftest COMMAND python3 ${CMAKE_SOURCE_DIR}/tools/test_postcombat_raw_terminal_selftest.py)
 add_test(NAME export_win_model_selftest COMMAND python3 ${CMAKE_SOURCE_DIR}/tools/test_export_win_model_selftest.py)
 add_test(NAME runwin_e2c_native_parity COMMAND ${CMAKE_COMMAND} -E env
