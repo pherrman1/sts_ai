@@ -831,6 +831,51 @@ void contractedSelectionExperimentFixtures(sts::GameContext &gc) {
     stochasticSearch.step();
     for (const auto &edge : stochasticSearch.getRootEdges())
         require(!edge.hasContinuation(), "RNG-consuming CARD_SELECT parents must not form macros");
+
+    auto deadBranch = sameTurnState(gc, sts::MonsterEncounter::TWO_FUNGI_BEASTS,
+                                    100, 3, false, true);
+    deadBranch.cards.clear();
+    deadBranch.cards.cardsInHand = 3;
+    deadBranch.cards.hand[0] = sts::CardInstance(sts::CardId::TRUE_GRIT, true);
+    deadBranch.cards.hand[1] = sts::CardInstance(sts::CardId::STRIKE_RED);
+    deadBranch.cards.hand[2] = sts::CardInstance(sts::CardId::DEFEND_RED);
+    deadBranch.cards.hand[0].setUniqueId(741);
+    deadBranch.cards.hand[1].setUniqueId(742);
+    deadBranch.cards.hand[2].setUniqueId(743);
+    deadBranch.cards.nextUniqueCardId = 744;
+    deadBranch.player.setHasRelic<sts::RelicId::DEAD_BRANCH>(true);
+
+    const sts::search::Action trueGrit(sts::search::ActionType::CARD, 0);
+    require(trueGrit.isValidAction(deadBranch), "True Grit+ Dead Branch fixture must be playable");
+    auto afterTrueGrit = deadBranch;
+    const auto trueGritRng = afterTrueGrit.rng;
+    trueGrit.execute(afterTrueGrit);
+    require(afterTrueGrit.rng == trueGritRng
+                && afterTrueGrit.inputState == sts::InputState::CARD_SELECT
+                && afterTrueGrit.cardSelectInfo.cardSelectTask == sts::CardSelectTask::EXHAUST_ONE,
+            "True Grit+ must reach a deterministic EXHAUST_ONE screen");
+    const auto exhaustChoices = sts::search::Action::enumerateCardSelectActions(afterTrueGrit);
+    require(exhaustChoices.size() >= 2,
+            "True Grit+ Dead Branch fixture must expose at least two exhaust choices");
+    auto afterExhaust = afterTrueGrit;
+    exhaustChoices.front().execute(afterExhaust);
+    require(afterExhaust.rng != trueGritRng,
+            "Dead Branch must make the EXHAUST_ONE continuation stochastic");
+
+    Search deadBranchSearch(deadBranch);
+    deadBranchSearch.contractMode = silver_bridge::SilverSearchContractMode::DETERMINISTIC_MACRO;
+    deadBranchSearch.step();
+    int trueGritEdges = 0;
+    for (const auto &edge : deadBranchSearch.getRootEdges()) {
+        if (edge.action.getActionType() == sts::search::ActionType::CARD
+                && edge.action.getSourceIdx() == 0) {
+            ++trueGritEdges;
+            require(!edge.hasContinuation(),
+                    "True Grit+ with Dead Branch must remain an uncontracted primitive edge");
+        }
+    }
+    require(trueGritEdges == 1,
+            "True Grit+ Dead Branch fixture must retain exactly one primitive card edge");
 }
 
 std::set<std::vector<int>> semanticGambleSurface(const sts::BattleContext &bc, bool canonical) {

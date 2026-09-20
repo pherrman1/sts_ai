@@ -561,8 +561,25 @@ bool search::BattleSearcher::macroFollowUps(const BattleContext &bc, const Actio
             return false;
     }
     followUps = Action::enumerateCardSelectActions(next);
+    if (followUps.size() < 2) {
+        return false;
+    }
+
+    // The first primitive can be RNG-neutral while a selectable continuation is
+    // not.  A macro edge stores only the first action as its stochastic parent,
+    // so contracting such a sequence would make chance outcomes replay the
+    // wrong action sequence.  Validate every candidate continuation on its own
+    // copy of the post-first-action state before exposing any macro edges.
+    for (const auto &followUp : followUps) {
+        BattleContext afterFollowUp = next;
+        const Random followUpBefore = afterFollowUp.rng;
+        followUp.execute(afterFollowUp);
+        if (!(afterFollowUp.rng == followUpBefore)) {
+            return false;
+        }
+    }
     if (task != nullptr) *task = next.cardSelectInfo.cardSelectTask;
-    return followUps.size() >= 2;
+    return true;
 }
 
 void search::BattleSearcher::searchForMicros(int64_t maxMicros) {
