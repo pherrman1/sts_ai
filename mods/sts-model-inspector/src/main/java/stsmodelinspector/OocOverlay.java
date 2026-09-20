@@ -10,9 +10,14 @@ final class OocOverlay {
         final double q;
         final int index;
         final boolean selected;
-        Choice(String key, String label, String kind, double q, int index, boolean selected) {
+        final JsonObject action;
+        final JsonObject followUp;
+        final String followUpUuid;
+        Choice(String key, String label, String kind, double q, int index, boolean selected, JsonObject action,
+               JsonObject followUp, String followUpUuid) {
             this.key = key; this.label = label; this.kind = kind;
-            this.q = q; this.index = index; this.selected = selected;
+            this.q = q; this.index = index; this.selected = selected; this.action = action;
+            this.followUp = followUp; this.followUpUuid = followUpUuid;
         }
     }
     final String session, hash, status, reason, policy, screen;
@@ -27,6 +32,14 @@ final class OocOverlay {
     }
     boolean matches(String session, long sequence, String hash) {
         return this.session.equals(session) && this.sequence == sequence && this.hash.equals(hash);
+    }
+    Choice forAction(JsonObject action) {
+        Choice first = null;
+        for (Choice choice : choices) if (choice.action.equals(action)) {
+            if (choice.selected) return choice;
+            if (first == null) first = choice;
+        }
+        return first;
     }
     List<Choice> panelChoices() {
         if (!"card_reward".equals(screen) || choices.size() <= 2)
@@ -71,7 +84,22 @@ final class OocOverlay {
                         throw new IllegalArgumentException("selected OOC action mismatch");
                 }
                 int index = action.has("choiceIndex") ? action.get("choiceIndex").getAsInt() : -1;
-                choices.add(new Choice(key, label(action, ooc), kind, q, index, best));
+                JsonObject preview = c.has("followUpPreview") ? c.getAsJsonObject("followUpPreview") : null;
+                String previewUuid = "";
+                if (preview != null && "OK".equals(text(preview, "status"))) {
+                    if (!"v4_q".equals(text(preview, "policy")) || !"selector_preview".equals(text(preview, "scope"))
+                            || !"upgrade".equals(text(preview, "selectorType")) || !Double.isFinite(preview.get("q").getAsDouble()))
+                        throw new IllegalArgumentException("invalid next-choice preview");
+                    JsonObject target = preview.getAsJsonObject("card");
+                    JsonObject card = ooc.getAsJsonObject("publicState").getAsJsonArray("deck")
+                            .get(target.get("deckIndex").getAsInt()).getAsJsonObject();
+                    for (String field : new String[]{"id", "upgraded", "misc"})
+                        if (!Objects.equals(target.get(field), card.get(field)))
+                            throw new IllegalArgumentException("preview physical card mismatch");
+                    previewUuid = text(card, "uuid");
+                    if (previewUuid.isEmpty()) throw new IllegalArgumentException("preview physical card missing");
+                }
+                choices.add(new Choice(key, label(action, ooc), kind, q, index, best, action, preview, previewUuid));
             }
             if (selectedCount != 1) throw new IllegalArgumentException("missing selected OOC choice");
             choices.sort(Comparator.comparingDouble((Choice c) -> -c.q).thenComparing(c -> c.key));

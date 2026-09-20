@@ -8,6 +8,7 @@
 #include <nlohmann/json.hpp>
 #include "../ooc_strategic_tok_net.h"
 #include "sim/search/OocSemanticAction.h"
+#include "constants/SaveFileMappings.h"
 
 namespace one_combat {
 namespace {
@@ -131,6 +132,42 @@ LiveOocDecision scoreLiveOocV4(const sts::GameContext &projected, const PathHist
         if (result.candidates[i].q > result.candidates[result.selectedIndex].q)
             result.selectedIndex = i;
     result.supported = true;
+    // Only these parents open an upgrade selector without a preceding gold,
+    // deck, relic or random effect. Other compounds remain explicit display
+    // support boundaries. The parent's action set, score and argmax are fixed
+    // above and are not affected by this separate selector preview.
+    for (auto &candidate : result.candidates) {
+        const auto payload = nlohmann::json::parse(candidate.payload);
+        if (!payload.value("currentScreenOnly", false)) continue;
+        const auto type = static_cast<CardSelectScreenType>(payload.at("selectorType").get<int>());
+        const char *typeName = type == CardSelectScreenType::UPGRADE ? "upgrade"
+            : type == CardSelectScreenType::REMOVE ? "remove"
+            : type == CardSelectScreenType::TRANSFORM ? "transform" : "other";
+        nlohmann::json preview = {{"status", "UNSUPPORTED"}, {"selectorType", typeName},
+            {"reason", type == CardSelectScreenType::UPGRADE
+                ? "PARENT_STATE_TRANSITION_UNQUALIFIED" : "V4_SELECTOR_UNSUPPORTED"}};
+        const bool smith = projected.screenState == ScreenState::REST_ROOM
+            && candidate.primitiveBits == GameAction(1).bits;
+        const bool wallUpgrade = projected.screenState == ScreenState::EVENT_SCREEN
+            && projected.curEvent == Event::LIVING_WALL
+            && candidate.primitiveBits == GameAction(2).bits;
+        if (type == CardSelectScreenType::UPGRADE && (smith || wallUpgrade)) {
+            auto selector = projected;
+            // This value-only helper builds public eligible cards. It executes
+            // no primitive, continuation callback or random transition.
+            selector.openCardSelectScreen(CardSelectScreenType::UPGRADE, 1);
+            const auto followUp = scoreLiveOocV4(selector, path, model);
+            if (followUp.supported) {
+                const auto &selected = followUp.candidates.at(followUp.selectedIndex);
+                const auto &target = selector.info.toSelectCards[GameAction(selected.primitiveBits).getIdx1()];
+                preview = {{"status", "OK"}, {"scope", "selector_preview"}, {"policy", "v4_q"},
+                    {"selectorType", "upgrade"}, {"q", selected.q}, {"semanticKey", selected.semanticKey},
+                    {"card", {{"id", nlohmann::json(target.card.id)}, {"upgraded", target.card.isUpgraded()},
+                        {"misc", target.card.misc}, {"deckIndex", target.deckIdx}}}};
+            } else preview["reason"] = followUp.reason;
+        }
+        candidate.followUpPreview = preview.dump();
+    }
     return result;
 }
 

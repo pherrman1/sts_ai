@@ -350,7 +350,8 @@ final class LiveOocCapture {
         List<Object> selectionCards = new ArrayList<>();
         for (int i = 0; i < offered.size(); ++i)
             selectionCards.add(object("deckIndex", indices.get(i), "card", card((AbstractCard)offered.get(i))));
-        out.put("details", object("type", upgrade ? "upgrade" : AbstractDungeon.gridSelectScreen.forPurge ? "remove" : "other",
+        out.put("details", object("type", upgrade ? "upgrade" : AbstractDungeon.gridSelectScreen.forPurge ? "remove"
+                        : AbstractDungeon.gridSelectScreen.forTransform ? "transform" : "other",
                 "requiredPicks", ((Number)field(AbstractDungeon.gridSelectScreen, "numCards")).intValue(),
                 "completedPicks", selected.size(), "cards", selectionCards,
                 "selectedDeckIndices", selected, "confirm", confirm));

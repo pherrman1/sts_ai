@@ -122,6 +122,7 @@ int main(int argc,char **argv){try{
     g=base;g.openCardSelectScreen(CardSelectScreenType::UPGRADE,1);add("upgrade_duplicate_physical_cards",g);
     g=base;g.openCardSelectScreen(CardSelectScreenType::REMOVE,1);add("unsupported_shop_removal_selector",g);
     g=base;g.screenState=ScreenState::EVENT_SCREEN;g.curEvent=Event::BIG_FISH;add("event_big_fish",g);
+    g.curEvent=Event::LIVING_WALL;add("event_living_wall",g);
     g=base;g.screenState=ScreenState::EVENT_SCREEN;g.curEvent=Event::NEOW;add("neow",g);
     g=base;g.deck=Deck{};g.deck.obtain(g,Card(CardId::BASH));g.screenState=ScreenState::EVENT_SCREEN;
     g.curEvent=Event::AUGMENTER;add("thin_deck_augmenter",g);
@@ -170,6 +171,7 @@ int main(int argc,char **argv){try{
         std::vector<std::uint32_t> bits;
         for(std::size_t i=0;i<qa.candidates.size();++i){const auto &a=qa.candidates[i],&b=qb.candidates[i];
             check(a.semanticKey==b.semanticKey&&a.payload==b.payload&&a.primitiveBits==b.primitiveBits,name+" candidate identity");
+            check(a.followUpPreview==b.followUpPreview,name+" follow-up preview parity");
             check(std::abs(a.q-b.q)<=1e-6,name+" Q parity");bits.push_back(a.primitiveBits);}
         if(qa.supported)advisor::validateLiveOocActionSet(live,bits);
         if(output)output<<wire.dump()<<'\n';

@@ -25,6 +25,46 @@ public final class OocOverlayTest {
             throw new AssertionError("card panel must remain above the card row and retain skip");
         if (!view.matches("s", 7, "h") || view.matches("s", 8, "h") || view.matches("other", 7, "h")
                 || view.matches("s", 7, "changed")) throw new AssertionError("stale ranking accepted");
+        for (String screen : new String[]{"card_reward", "event", "neow", "shop"}) {
+            OocOverlay inline = OocOverlay.parse(response.toString(), observation.replace("card_reward", screen));
+            if (inline.forAction(InlineChoices.action("choose", 1)).index != 1
+                    || !inline.forAction(InlineChoices.action("choose", 2)).selected
+                    || !inline.forAction(InlineChoices.action("skip", 0)).kind.equals("skip")
+                    || inline.forAction(InlineChoices.action("choose", 3)) != null)
+                throw new AssertionError("inline action/physical occurrence binding lost: " + screen);
+        }
+        JsonObject previewResponse = parser.parse(response.toString()).getAsJsonObject();
+        JsonObject preview = parser.parse("{\"status\":\"OK\",\"policy\":\"v4_q\",\"scope\":\"selector_preview\","
+                + "\"selectorType\":\"upgrade\",\"q\":7.5,\"card\":{\"id\":\"Bash\",\"upgraded\":false,\"misc\":0,\"deckIndex\":1}}")
+                .getAsJsonObject();
+        previewResponse.getAsJsonArray("evaluators").get(0).getAsJsonObject().getAsJsonArray("candidateSummaries")
+                .get(2).getAsJsonObject().add("followUpPreview", preview);
+        JsonObject previewObservation = parser.parse(observation).getAsJsonObject();
+        previewObservation.getAsJsonObject("ooc").add("publicState", parser.parse("{\"deck\":["
+                + "{\"id\":\"Bash\",\"upgraded\":false,\"misc\":0,\"uuid\":\"first\"},"
+                + "{\"id\":\"Bash\",\"upgraded\":false,\"misc\":0,\"uuid\":\"second\"}]}"));
+        OocOverlay withPreview = OocOverlay.parse(previewResponse.toString(), previewObservation.toString());
+        if (!withPreview.choices.get(0).followUpUuid.equals("second") || withPreview.choices.get(0).q != .3
+                || withPreview.choices.get(0).followUp.get("q").getAsDouble() != 7.5)
+            throw new AssertionError("preview mixed parent Q or lost duplicate physical target");
+        preview.getAsJsonObject("card").addProperty("id", "Strike_R");
+        boolean invalidPreview = false;
+        try { OocOverlay.parse(previewResponse.toString(), previewObservation.toString()); }
+        catch (IllegalArgumentException expected) { invalidPreview = true; }
+        if (!invalidPreview) throw new AssertionError("mismatched preview target displayed");
+
+        JsonObject mapResponse = parser.parse(response.toString()).getAsJsonObject();
+        JsonObject mapEvaluator = mapResponse.getAsJsonArray("evaluators").get(0).getAsJsonObject();
+        JsonObject mapAction = parser.parse("{\"kind\":\"map\",\"x\":2,\"y\":3}").getAsJsonObject();
+        mapEvaluator.add("selectedLiveAction", mapAction);
+        mapEvaluator.addProperty("selectedSemanticKey", "node");
+        JsonArray mapCandidates = new JsonArray();
+        JsonObject mapCandidate = parser.parse("{\"semanticKey\":\"node\",\"q\":2.5}").getAsJsonObject();
+        mapCandidate.add("liveAction", mapAction); mapCandidates.add(mapCandidate);
+        mapEvaluator.add("candidateSummaries", mapCandidates);
+        OocOverlay mapView = OocOverlay.parse(mapResponse.toString(), "{\"ooc\":{\"screen\":\"map\",\"liveChoices\":[]}}");
+        if (!mapView.forAction(mapAction).selected || mapView.forAction(InlineChoices.action("choose", 1)) != null)
+            throw new AssertionError("map coordinates replaced with a physical ordinal");
         JsonObject evaluator = response.getAsJsonArray("evaluators").get(0).getAsJsonObject();
         evaluator.addProperty("status", "UNSUPPORTED"); evaluator.addProperty("reason", "NATIVE_SCREEN_UNSUPPORTED");
         view = OocOverlay.parse(response.toString(), observation);

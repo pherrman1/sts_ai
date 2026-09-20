@@ -2,6 +2,7 @@
 #include <iostream>
 #include <limits>
 #include <memory>
+#include <set>
 #include <stdexcept>
 #include <nlohmann/json.hpp>
 
@@ -54,10 +55,44 @@ int main(int argc, char **argv) {
                 const auto payload = nlohmann::json::parse(candidate.payload);
                 require(payload.at("currentScreenOnly") == true && payload.at("type") == "none"
                         && !payload.contains("card"), "smith returned a target or compound plan");
+                const auto preview = nlohmann::json::parse(candidate.followUpPreview);
+                require(preview.at("status") == "OK" && preview.at("scope") == "selector_preview"
+                        && preview.at("policy") == "v4_q" && !preview.contains("liveAction"),
+                        "smith preview is not a separate display-only selector decision");
                 smith = true;
             }
         }
         require(smith, "smith current-screen intent missing");
+        auto wall = gc;
+        wall.screenState = ScreenState::EVENT_SCREEN;
+        wall.curEvent = Event::LIVING_WALL;
+        const auto wallBefore = test::oocStateFingerprint(wall);
+        const auto wallDecision = provider.score(wall, path);
+        require(wallDecision.supported && wallBefore == test::oocStateFingerprint(wall),
+                "Living Wall preview changed native state");
+        auto selector = wall;
+        selector.openCardSelectScreen(CardSelectScreenType::UPGRADE, 1);
+        const auto selectorDecision = provider.score(selector, path);
+        require(selectorDecision.supported, "direct upgrade selector unavailable");
+        const auto &selectorBest = selectorDecision.candidates.at(selectorDecision.selectedIndex);
+        const int expectedDeckIndex = selector.info.toSelectCards[GameAction(selectorBest.primitiveBits).getIdx1()].deckIdx;
+        std::set<int> physicalDeckIndices;
+        for (const auto &candidate : selectorDecision.candidates)
+            physicalDeckIndices.insert(selector.info.toSelectCards[GameAction(candidate.primitiveBits).getIdx1()].deckIdx);
+        require(physicalDeckIndices.size() == static_cast<std::size_t>(selector.deck.size()),
+                "duplicate physical upgrade cards were collapsed");
+        for (const auto &candidate : wallDecision.candidates) {
+            const auto preview = nlohmann::json::parse(candidate.followUpPreview);
+            if (candidate.primitiveBits == GameAction(2).bits) {
+                require(preview.at("status") == "OK" && preview.at("q") == selectorBest.q
+                        && preview.at("semanticKey") == selectorBest.semanticKey
+                        && preview.at("card").at("deckIndex") == expectedDeckIndex,
+                        "Living Wall upgrade preview differs from separate native selector");
+            } else require(preview.at("status") == "UNSUPPORTED"
+                        && preview.at("reason") == "V4_SELECTOR_UNSUPPORTED"
+                        && !preview.contains("q") && !preview.contains("card"),
+                        "remove/transform preview invented a scored target");
+        }
         model->q2b = std::numeric_limits<float>::infinity();
         require(scoreLiveOocV4(gc, path, *model).reason == "NONFINITE_Q", "infinite Q accepted");
         model->q2b = std::numeric_limits<float>::quiet_NaN();

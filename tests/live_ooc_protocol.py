@@ -63,6 +63,33 @@ class LiveOocProtocol(unittest.TestCase):
         response, = self.run_rows([self.fixtures["event_big_fish"]], model=False)
         self.assertEqual(response["evaluators"][0]["reason"], "MODEL_UNAVAILABLE")
 
+    def test_parent_preview_matches_separate_upgrade_selector(self):
+        rest, wall, selector = self.run_rows([
+            self.fixtures["rest_smith_lift_dig_remove_key"], self.fixtures["event_living_wall"],
+            self.fixtures["upgrade_duplicate_physical_cards"]])
+        direct = selector["evaluators"][0]
+        selected = next(c for c in direct["candidateSummaries"]
+                        if c["semanticKey"] == direct["selectedSemanticKey"])
+        physical_index = selected["liveAction"]["choiceIndex"] - 1
+        physical_card = self.fixtures["upgrade_duplicate_physical_cards"]["ooc"]["details"]["cards"][physical_index]
+        for response in (rest, wall):
+            evaluator = response["evaluators"][0]
+            self.assertEqual(evaluator["status"], "OK")
+            previews = [c["followUpPreview"] for c in evaluator["candidateSummaries"]
+                        if "followUpPreview" in c]
+            upgrades = [p for p in previews if p["status"] == "OK"]
+            self.assertEqual(len(upgrades), 1)
+            preview, = upgrades
+            self.assertEqual(preview["scope"], "selector_preview")
+            self.assertEqual(preview["q"], selected["q"])
+            self.assertEqual(preview["semanticKey"], selected["semanticKey"])
+            self.assertEqual(preview["card"], dict(physical_card["card"], deckIndex=physical_card["deckIndex"]))
+            self.assertNotIn("liveAction", preview)
+            for unsupported in (p for p in previews if p["status"] == "UNSUPPORTED"):
+                self.assertEqual(unsupported["reason"], "V4_SELECTOR_UNSUPPORTED")
+                self.assertNotIn("q", unsupported)
+                self.assertNotIn("card", unsupported)
+
     def test_capture_support_boundary(self):
         response, = self.run_rows([{"boundary": "ooc", "ooc": {
             "schemaVersion": 1, "screen": "selector", "unsupportedReason": "SELECTOR_CONFIRMATION_ONLY"}}])

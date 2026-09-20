@@ -24,6 +24,15 @@ overrides the future-facing `oocModel` property. `STS_MODEL_INSPECTOR_CONFIG`
 selects a properties file instead of `~/.sts-model-inspector.properties`. F8
 toggles the panel.
 
+Event/Neow, map, rest, card selector, and shop recommendations attach to the
+actual choices instead of a separate upper-left list. Reward cards keep their
+score badges, with an extra badge beside Skip. Smith and Living Wall Upgrade
+also preview the next card using the separate V4 selector score. Remove and
+transform target scoring is not supported by the current V4 provider.
+Potion menus/hover labels distinguish use, discard and target;
+actions without model coverage are explicitly unscored. All rankings require
+the current session/sequence/hash, and the inspector remains read-only.
+
 Set `ctmModel` to the tracked `combat_transition_near_full_except_smoke_v2.native`
 artifact. The advisor loads it once at startup and reports an unavailable or
 schema-mismatched artifact without affecting the game.

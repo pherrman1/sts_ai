@@ -89,13 +89,41 @@ rather than queued without limit. It launches the advisor with a direct
 `ProcessBuilder` call. The F8 panel remains diagnostic and read-only. Its top
 edge sits 170 scaled pixels below the screen top, clearing the relic row.
 The panels omit floor/HP text already shown in the game HUD.
-OOC decisions use the same dark/cyan styling as Silver: a ranked Q list (up to
-six choices), an amber border on the selected action, and score badges under
-visible reward cards. Card rewards use a compact best-choice/skip panel above
-the card row, with individual scores below the cards. Labels and badges bind to current structured choice
+OOC decisions use the same dark/cyan styling as Silver, with an amber border
+on the selected action. Event and Neow scores appear beside their active
+buttons. Shop scores sit by each affordable card, relic, potion, removal and
+leave control. Map scores follow the reachable nodes' scrolled hitboxes;
+offscreen nodes never acquire badges clamped onto the screen edge. Rest options
+and OOC card selectors also use physical-control badges. Upgrade selectors,
+including smithing, show each card's V4 score; remove/transform selectors remain
+explicitly unscored because V4 only supports the upgrade selector type. Grid
+scores hide during peek/confirmation and cull offscreen cards.
+Card rewards retain scores below each card and add a separate
+skip-button badge (and Singing Bowl badge when present). These screens replace
+the upper-left recommendation list with inline labels and a small status footer;
+other screens retain the ranked panel. Labels and badges bind to current structured choice
 occurrences, not card names. Only identity-matched `live_ooc_decision_v1`
 responses display scores; waiting, unsupported and error states show no
-recommendation. The overlay is presentation-only and does not change policy
+recommendation. If a scored action cannot be bound to its exact physical
+control, the ranked panel remains as a fallback rather than silently hiding it.
+
+Smith and Living Wall's Upgrade option expose `followUpPreview`: a separate
+V4 evaluation of the deterministic upgrade-selector state, including the target
+card's physical deck index and selector Q. The UI resolves that index through
+the captured card UUID and shows a `Next` row beside the parent option. Parent
+Q, argmax, and live command remain unchanged; this is not a combined transaction
+score. Removal/transform parents retain their existing action scores without
+invented target recommendations. Other upgrade parents with preceding effects
+remain unqualified for previews.
+
+Potion use and discard labels appear beside the hovered potion or its open
+menu. They retain physical slot and target distinctions and never overlap
+adjacent inventory slots with full-width labels. Silver root summaries include
+an additive `liveAction` binding for this display; unsupported lowering is
+`null`. OOC inventory potion actions are not scored by the current V4 provider:
+the UI says `not scored`, or `unavailable` when the actual potion rejects that
+operation. Freshness and unsupported/error suppression apply to potion scores
+as well. The overlay is presentation-only and does not change policy
 or driver decisions. Workshop
 and game/dependency JARs remain outside Git. The native v4 importer is
 fail-closed for unknown mappings, resolving snapshots, unsupported selection

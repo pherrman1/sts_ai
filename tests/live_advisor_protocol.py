@@ -155,6 +155,51 @@ class AdvisorProtocolTest(unittest.TestCase):
         self.assertEqual(results[3]["status"], "ERROR")
         self.assertEqual(results[3]["code"], "UNSUPPORTED")
 
+    def test_silver_rankings_include_physical_live_actions(self):
+        entry = {
+            "boundary": "combat", "character": "IRONCLAD", "ascension": 0,
+            "act": 1, "floor": 1, "hp": 80, "maxHp": 80, "gold": 99,
+            "roomClass": "MONSTER", "previousRoomClass": "NONE",
+            "encounter": "CULTIST", "potionCapacity": 3,
+            "deck": [{"id": "Strike_R", "upgraded": False, "misc": 0,
+                      "bottleBinding": -1}],
+            "relics": [], "potions": ["Potion Slot", "Fire Potion", "FairyPotion",
+                                       "Potion Slot", "Potion Slot"],
+        }
+        root = dict(entry, schemaVersion=4, playerTurn=1, decisionInTurn=0,
+                    combatInstance="ranked-actions-entry")
+        root["combat"] = {
+            "damageTrackingExact": True, "turn": 1, "energy": 3,
+            "hand": [{"id": "Strike_R", "uuid": "physical-strike", "upgraded": False,
+                      "misc": 0, "cost": 1, "costForTurn": 1}],
+            "draw": [], "discard": [], "exhaust": [], "limbo": [], "stasis": [],
+            "relics": [], "potions": ["Potion Slot", "Fire Potion", "FairyPotion"],
+            "monsters": [{"id": "Cultist", "hp": 50, "maxHp": 50, "block": 0,
+                          "nextMove": 3, "moveHistory": [3], "miscInfo": 0,
+                          "dead": False, "powers": []}],
+        }
+        observation = dict(entry, combatEntry=entry, combatEntryHash="ranked-actions-entry",
+                           silverRoot=root)
+        wire = {"protocol": "sts_model_inspector_v1", "kind": "observation",
+                "session": "ranked-actions", "sequence": 1,
+                "observationHash": "ranked-actions-hash", "observation": observation}
+        result, = self.run_advisor([json.dumps(wire)], self.model)
+        self.assertEqual(result["status"], "OK")
+        silver = next(row for row in result["evaluators"]
+                      if row["id"] == "silver_player_decision_v2")
+        self.assertEqual(silver["status"], "OK", silver)
+        summaries = silver["rootActionSummaries"]
+        self.assertTrue(summaries)
+        self.assertTrue(all("liveAction" in row for row in summaries))
+        actions = [row["liveAction"] for row in summaries]
+        self.assertIn({"kind": "end_turn"}, actions)
+        self.assertIn({"kind": "card", "cardUuid": "physical-strike", "targetIndex": 1}, actions)
+        self.assertIn({"kind": "potion", "potionSlot": 2, "discard": False, "targetIndex": 1}, actions)
+        self.assertIn({"kind": "potion", "potionSlot": 3, "discard": True}, actions)
+        selected = next(row for row in summaries
+                        if row["fingerprint"] == silver["selectedAction"])
+        self.assertEqual(selected["liveAction"], silver["selectedLiveAction"])
+
     def test_unknown_combat_selection_remains_silver_with_ctm_enabled(self):
         for room, encounter in (("MONSTER", "SHELL_PARASITE"),
                                 ("EVENT", "LAGAVULIN_EVENT")):

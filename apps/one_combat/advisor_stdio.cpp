@@ -68,9 +68,11 @@ json oocResponse(const one_combat::advisor::Request &request,
             try {
                 evaluator["candidateSummaries"] = json::array();
                 for (const auto &c : decision.candidates) {
-                    evaluator["candidateSummaries"].push_back({{"semanticKey", c.semanticKey},
+                    json summary = {{"semanticKey", c.semanticKey},
                         {"semanticPayload", json::parse(c.payload)}, {"label", c.semanticKey}, {"q", c.q},
-                        {"liveAction", advisor::lowerLiveOocAction(state, c.primitiveBits)}});
+                        {"liveAction", advisor::lowerLiveOocAction(state, c.primitiveBits)}};
+                    if (!c.followUpPreview.empty()) summary["followUpPreview"] = json::parse(c.followUpPreview);
+                    evaluator["candidateSummaries"].push_back(std::move(summary));
                 }
                 const auto &selected = decision.candidates.at(decision.selectedIndex);
                 evaluator["status"] = "OK";
@@ -187,6 +189,8 @@ json silverEvaluator(const one_combat::advisor::Request &request,
         json item = {
             {"fingerprint", silver_bridge::semanticActionFingerprint(summary->action)},
             {"label", one_combat::advisor::silverActionLabel(summary->action, imported.wire)},
+            {"liveAction", one_combat::advisor::selectedLiveAction(
+                summary->action, importContext, request.observation)},
             {"edgeVisits", summary->edgeVisits}, {"selectionQValid", summary->selectionQValid},
             {"visitShare", totalVisits == 0 ? 0.0 : static_cast<double>(summary->edgeVisits) / totalVisits}};
         if (summary->selectionQValid) item["selectionQ"] = summary->selectionQ;

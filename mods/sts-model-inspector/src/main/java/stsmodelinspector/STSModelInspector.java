@@ -150,6 +150,7 @@ public final class STSModelInspector implements PostInitializeSubscriber,
     private volatile int ctmHistogramMin = 1;
     private volatile double[] ctmHistogram = new double[0];
     private volatile OocOverlay oocOverlay;
+    private volatile PotionOverlay potionOverlay;
     private volatile boolean panelVisible = true;
     private volatile String combatEntry = "";
     private volatile String combatEntryHash = "";
@@ -291,6 +292,8 @@ public final class STSModelInspector implements PostInitializeSubscriber,
     public void receiveRender(SpriteBatch sb) {
         if (!panelVisible || newest == null) return;
         renderAdvisorPanel(sb);
+        renderPotionBadges(sb, Settings.scale);
+        sb.setColor(Color.WHITE);
     }
 
     private void renderAdvisorPanel(SpriteBatch sb) {
@@ -299,6 +302,10 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         float top = Settings.HEIGHT - 170.0f * scale;
         boolean combat = "combat".equals(newest.boundary);
         OocOverlay overlay = currentOocOverlay();
+        if (!combat && renderInlineChoices(sb, overlay, scale)) {
+            sb.setColor(Color.WHITE);
+            return;
+        }
         float width = (combat ? 500.0f : 420.0f) * scale;
         int rows = overlay == null ? 0 : overlay.panelChoices().size();
         float height = (combat ? 252.0f : rows == 0 ? 220.0f : 130.0f + 44.0f * rows) * scale;
@@ -380,6 +387,110 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         Snapshot snapshot = newest;
         return snapshot != null && view != null && responseReady()
                 && view.matches(snapshot.session, snapshot.sequence, snapshot.hash) ? view : null;
+    }
+
+    private boolean renderInlineChoices(SpriteBatch sb, OocOverlay view, float scale) {
+        String screen;
+        try {
+            screen = new com.google.gson.JsonParser().parse(newest.observationJson).getAsJsonObject()
+                    .getAsJsonObject("ooc").get("screen").getAsString();
+        } catch (RuntimeException unavailable) { return false; }
+        if ("selector".equals(screen) && com.megacrit.cardcrawl.ui.buttons.PeekButton.isPeeking) return true;
+        List<InlineChoices.Anchor> anchors = InlineChoices.capture(screen);
+        if (anchors.isEmpty()) return false;
+        // Keep the existing panel as a fail-safe if an API change prevents a
+        // scored action from being attached to its exact physical control.
+        if (view != null) for (OocOverlay.Choice choice : view.choices) {
+            boolean bound = false;
+            for (InlineChoices.Anchor anchor : anchors) if (anchor.action.equals(choice.action)) bound = true;
+            if (!bound) return false;
+        }
+        for (InlineChoices.Anchor anchor : anchors) {
+            if (!anchor.visible) continue;
+            OocOverlay.Choice choice = view == null ? null : view.forAction(anchor.action);
+            String prefix = anchor.label.isEmpty() ? "" : anchor.label + " · ";
+            String label = choice == null ? prefix + (view == null ? "Waiting" : "Not scored")
+                    : prefix + String.format(Locale.ROOT, "#%d · Q %.3f", view.choices.indexOf(choice) + 1, choice.q);
+            String detail = followUpText(choice);
+            renderInlineBadge(sb, anchor.x, anchor.bottom, anchor.width, label,
+                    choice != null && choice.selected, choice != null, scale, detail);
+        }
+        String status = view == null ? "Waiting for advisor" : "OK".equals(view.status)
+                ? "V4 · amber = recommended" : "UNSUPPORTED".equals(view.status)
+                ? "V4 · no supported recommendation" : "Advisor unavailable";
+        renderSmallText(sb, status + " · " + Keyboard.getKeyName(loadToggleKey()) + " hide",
+                24 * scale, 28 * scale, MUTED, .72f);
+        return true;
+    }
+
+    private void renderInlineBadge(SpriteBatch sb, float x, float bottom, float width,
+                                   String label, boolean selected, boolean scored, float scale) {
+        renderInlineBadge(sb, x, bottom, width, label, selected, scored, scale, "");
+    }
+
+    private String followUpText(OocOverlay.Choice choice) {
+        if (choice == null || choice.followUpUuid.isEmpty() || AbstractDungeon.player == null) return "";
+        for (AbstractCard card : AbstractDungeon.player.masterDeck.group)
+            if (choice.followUpUuid.equals(String.valueOf(card.uuid)))
+                return String.format(Locale.ROOT, "Next: %s · Q %.2f", card.name, choice.followUp.get("q").getAsDouble());
+        return "";
+    }
+
+    private void renderInlineBadge(SpriteBatch sb, float x, float bottom, float width,
+                                   String label, boolean selected, boolean scored, float scale, String detail) {
+        float extra = detail.isEmpty() ? 0 : 22 * scale;
+        drawRect(sb, x, bottom - extra, width, 32 * scale + extra, PANEL_INNER);
+        drawBorder(sb, x, bottom - extra, width, 32 * scale + extra, selected ? WARNING : CARD_BORDER,
+                (selected ? 2 : 1) * scale);
+        renderFittedText(sb, label, x + 8 * scale, bottom + 23 * scale, width - 16 * scale,
+                selected ? CYAN : scored ? Color.WHITE : MUTED, .70f);
+        if (!detail.isEmpty()) renderFittedText(sb, detail, x + 8 * scale, bottom + 2 * scale,
+                width - 16 * scale, MUTED, .65f);
+    }
+
+    private void renderPotionBadges(SpriteBatch sb, float scale) {
+        if (AbstractDungeon.player == null || AbstractDungeon.topPanel == null) return;
+        com.megacrit.cardcrawl.ui.panels.PotionPopUp popup = AbstractDungeon.topPanel.potionUi;
+        if (popup != null && popup.targetMode) return;
+        PotionOverlay view = potionOverlay;
+        if (view == null || !responseReady() || !view.matches(newest.session, newest.sequence, newest.hash)) view = null;
+        for (int slot = 0; slot < AbstractDungeon.player.potions.size(); ++slot) {
+            com.megacrit.cardcrawl.potions.AbstractPotion potion = AbstractDungeon.player.potions.get(slot);
+            if (potion == null || "Potion Slot".equals(potion.ID)) continue;
+            try {
+                boolean open = popup != null && !popup.isHidden
+                        && ((Number)InlineChoices.field(popup, "slot")).intValue() == slot;
+                // Full-width labels follow the hovered/open potion, avoiding
+                // overlapping labels across the tightly spaced inventory slots.
+                if (!open && ((popup != null && !popup.isHidden) || !potion.hb.hovered)) continue;
+                com.megacrit.cardcrawl.helpers.Hitbox useHb = open
+                        ? (com.megacrit.cardcrawl.helpers.Hitbox)InlineChoices.field(popup, "hbTop") : potion.hb;
+                com.megacrit.cardcrawl.helpers.Hitbox discardHb = open
+                        ? (com.megacrit.cardcrawl.helpers.Hitbox)InlineChoices.field(popup, "hbBot") : potion.hb;
+                float width = 260 * scale;
+                float x = Math.min(Settings.WIDTH - width - 8 * scale,
+                        useHb.x + useHb.width + (open ? 12 : 180) * scale);
+                float bottom = open ? useHb.cY - 16 * scale : Settings.HEIGHT - 172 * scale;
+                List<PotionOverlay.Entry> use = view == null ? Collections.emptyList() : view.forSlot(slot + 1, false);
+                List<PotionOverlay.Entry> discard = view == null ? Collections.emptyList() : view.forSlot(slot + 1, true);
+                if (!potion.canUse() || use.isEmpty()) {
+                    renderInlineBadge(sb, x, bottom, width, "Use · " + (potion.canUse() ? "not scored" : "unavailable"),
+                            false, false, scale);
+                    bottom -= 36 * scale;
+                } else for (PotionOverlay.Entry entry : use) {
+                    renderInlineBadge(sb, x, bottom, width, entry.text(), entry.selected, entry.q != null, scale);
+                    bottom -= 36 * scale;
+                }
+                if (open) bottom = Math.min(bottom, discardHb.cY - 16 * scale);
+                if (!potion.canDiscard() || discard.isEmpty())
+                    renderInlineBadge(sb, x, bottom, width, "Discard · " + (potion.canDiscard() ? "not scored" : "unavailable"),
+                            false, false, scale);
+                else for (PotionOverlay.Entry entry : discard) {
+                    renderInlineBadge(sb, x, bottom, width, entry.text(), entry.selected, entry.q != null, scale);
+                    bottom -= 36 * scale;
+                }
+            } catch (ReflectiveOperationException | RuntimeException unavailable) { /* Hide unbound UI. */ }
+        }
     }
 
     private void renderNonCombatPanel(SpriteBatch sb, float x, float top, float width,
@@ -2148,6 +2259,8 @@ public final class STSModelInspector implements PostInitializeSubscriber,
                                     ctmHistogram = numberArrayField(line, "winningHpHistogram");
                                 }
                             }
+                            try { potionOverlay = PotionOverlay.parse(line); }
+                            catch (RuntimeException invalidDisplay) { potionOverlay = null; }
                             if (!"combat".equals(current.boundary)) {
                                 try { oocOverlay = OocOverlay.parse(line, current.observationJson); }
                                 catch (RuntimeException invalidDisplay) { oocOverlay = null; }

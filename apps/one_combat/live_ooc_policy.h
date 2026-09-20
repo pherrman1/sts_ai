@@ -15,6 +15,9 @@ struct LiveOocCandidateScore {
     std::string payload;
     std::uint32_t primitiveBits = 0;
     double q = 0;
+    // Optional display-only preview of the separate selector decision.
+    // Never an executable compound action or part of the parent's Q value.
+    std::string followUpPreview;
 };
 
 // Common provider output. MCP lowering is separate and consumes these stable
