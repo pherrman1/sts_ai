@@ -157,17 +157,25 @@ or default change from either diagnostic. See [ledger §322](../../experiments/l
 and the [diagnostic evidence packet](../../experiments/evidence/silver_rollout_variance_20260920/README.md).
 
 The subsequent frozen-DEV contextual first-action screen is
-**`FIRST_ACTION_HEADROOM_PRESENT_POLICY_INSUFFICIENT`**. Its cross-fitted
-first-action oracle reduced k=1 Teacher-A regret from `2.33796` to `1.41354`
-(`39.54%`) across 32 source groups, with Teacher-B direction consistent and
-no pairwise-concordance collapse. One fixed five-fold, regularized linear
-selector trained on exact forced-action `q0` values instead produced k=1
-regret `3.65020` (`-56.13%` reduction), a source-group bootstrap interval
-`[-1.30647, 0.84047]` for baseline-minus-candidate regret, and `1.74940x`
-mean rollout time. This rejects the tested linear selector while preserving
-the oracle headroom finding; do not tune additional selectors or launch fresh
-gameplay confirmation from this result. See [ledger §323](../../experiments/ledger-06.md)
-and the [selector evidence packet](../../experiments/evidence/silver_first_action_selector_20260920/README.md).
+**`FIRST_ACTION_POLICY_HEADROOM_INSUFFICIENT`** after correcting the
+variance-matched comparator. Its cross-fitted first-action oracle reduced
+k=32 Teacher-A regret from `1.51332` to `1.41354` (`6.59%`) across 32 groups,
+with pairwise concordance `0.74241 -> 0.75176`, top agreement
+`0.56250 -> 0.62500`, and Teacher-B direction consistent. The corpus contains
+32 groups from 20 source seeds, with 11 source seeds shared by multiple groups;
+regenerated folds/bootstrap use `source_seed` clusters where needed. The retained fixed linear selector,
+trained on exact forced-action `q0` values under the historical group-id fold
+assignment, produced k=1 regret `3.65020` versus `2.33796` and k=32 regret
+`1.63434` versus `1.51332`; its source-seed-clustered bootstrap interval for
+baseline-minus-candidate regret is `[-1.33542, 0.93203]`, with the largest
+regression `14.57257`. The candidate path's raw `1.74940x` timing is
+non-production-comparable because it includes diagnostic semantic-action
+resolution through a fresh `BattleSearcher.search(1)`; the `<5%` runtime gate
+is unmeasured, not failed. This rejects the tested feature/scoring formulation
+and does not establish that all small linear contextual policies fail. Do not
+tune additional selectors or launch fresh gameplay confirmation from this
+result. See [ledger §323](../../experiments/ledger-06.md) and the [selector
+evidence packet](../../experiments/evidence/silver_first_action_selector_20260920/README.md).
 
 ## Silver policy/value Phase-A cost diagnostic
 

@@ -251,9 +251,14 @@ double score(const Model &model, const std::vector<double> &x) {
     return value;
 }
 
-const Model &modelFor(const std::vector<Model> &models, const std::string &group) {
+const Model &modelFor(const std::vector<Model> &models,
+                      const std::map<std::string, int> &groupFolds,
+                      const std::string &group) {
     if (models.empty()) throw std::invalid_argument("no contextual models");
-    const int fold = static_cast<int>(fnv(group) % static_cast<std::uint64_t>(models.front().foldCount));
+    const auto foldIt = groupFolds.find(group);
+    const int fold = foldIt == groupFolds.end()
+        ? static_cast<int>(fnv(group) % static_cast<std::uint64_t>(models.front().foldCount))
+        : foldIt->second;
     for (const auto &model : models) if (model.heldoutFold == fold) return model;
     throw std::invalid_argument("missing heldout contextual model fold");
 }
@@ -272,6 +277,11 @@ int runSelectorEvaluation(int argc, char **argv) {
         throw std::invalid_argument("invalid contextual models schema");
     std::vector<Model> models;
     for (const auto &entry : modelJson.at("models")) models.push_back(parseModel(entry));
+    std::map<std::string, int> groupFolds;
+    if (modelJson.contains("group_folds")) {
+        for (const auto &[group, fold] : modelJson.at("group_folds").items())
+            groupFolds.emplace(group, fold.get<int>());
+    }
     if (!silver_bridge::rootMechanismShaValid(argv[6])) throw std::invalid_argument("invalid executable SHA");
     const std::filesystem::path outputPath = argv[5];
     rejectExisting(outputPath);
@@ -288,7 +298,8 @@ int runSelectorEvaluation(int argc, char **argv) {
         const auto originalRoot = silver_bridge::battleStateWireFromEnvelope(corpus.at("original_root_state"));
         const auto actions = eligibleActions(leaf);
         if (actions.empty()) continue;
-        const auto &model = modelFor(models, corpus.at("group_id"));
+        const auto groupId = corpus.at("group_id").get<std::string>();
+        const auto &model = modelFor(models, groupFolds, groupId);
         for (int replicate = 0; replicate < 128; ++replicate) {
             const auto baseIt = baseline.find({corpus.at("leaf_snapshot_id"), replicate});
             if (baseIt == baseline.end()) break;
@@ -323,10 +334,9 @@ int runSelectorEvaluation(int argc, char **argv) {
                 std::chrono::steady_clock::now() - candidateStart).count();
             output << Json{
                 {"schema", "silver_contextual_first_action_rollout_v1"},
-                {"implementation_git_sha", argv[6]}, {"group_id", corpus.at("group_id")},
+                {"implementation_git_sha", argv[6]}, {"group_id", groupId},
                 {"leaf_snapshot_id", corpus.at("leaf_snapshot_id")}, {"replicate", replicate},
-                {"rng_identity", rng}, {"fold", static_cast<int>(fnv(corpus.at("group_id"))
-                    % static_cast<std::uint64_t>(model.foldCount))},
+                {"rng_identity", rng}, {"fold", model.heldoutFold},
                 {"selected_action_fingerprint", silver_bridge::semanticActionFingerprint(*best)},
                 {"selected_action_description", silver_bridge::describeSilverSemanticAction(leaf, *best)},
                 {"selected_features", bestFeatures}, {"predicted_score", bestScore},

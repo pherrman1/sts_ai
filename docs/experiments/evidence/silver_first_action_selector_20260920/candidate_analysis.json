@@ -143,20 +143,22 @@
       }
     }
   },
+  "bootstrap_cluster_rule": "source_seed; all groups sharing a source seed resampled together",
   "candidate_reduction_k1": -0.561273631964713,
   "candidate_sha256": "b7628ea056a8ffae88c4f1880ee09dbe707618072d9520f6440379264a45f59a",
-  "classification": "FIRST_ACTION_HEADROOM_PRESENT_POLICY_INSUFFICIENT",
+  "classification": "CONTEXTUAL_FIRST_ACTION_ROLLOUT_REJECTED",
   "decision_checks": {
     "no_obvious_catastrophic_tail": true,
     "pairwise_no_5pp_collapse": true,
     "quality_at_least_15_percent": false,
-    "runtime_under_5_percent": false,
+    "runtime_gate_status": "UNMEASURED_NON_PRODUCTION_COMPARABLE",
+    "runtime_under_5_percent": null,
     "source_group_bootstrap_supports_improvement": false,
     "teacher_b_not_materially_contradictory": false
   },
-  "fold_rule": "fnv1a(group_id) % 5; model for held-out fold only",
+  "fold_rule": "historical candidate models: fnv1a(group_id) % 5; no new candidate run after source-seed correction",
   "frozen_baseline_max_abs_utility_delta": 0.0,
-  "headroom_classification": "FIRST_ACTION_POLICY_HEADROOM_PRESENT",
+  "headroom_classification": "FIRST_ACTION_POLICY_HEADROOM_INSUFFICIENT",
   "provenance": {
     "candidate_evaluation": "fresh native rollout with same RNG identities",
     "counterfactual_target": "q0 from disjoint selection half",
@@ -169,14 +171,17 @@
     "baseline_median_micros": 201.78199999999998,
     "candidate_mean_micros": 347.88547849190286,
     "candidate_median_micros": 353.7265,
-    "gate_under_1_05": false,
-    "mean_ratio": 1.7493993505534533
+    "comparability_note": "Candidate timing includes rawActionForSemantic(), which creates a fresh BattleSearcher and calls search(1) before the forced-action rollout; baseline does not pay that diagnostic semantic-resolution cost.",
+    "gate_status": "UNMEASURED_NON_PRODUCTION_COMPARABLE",
+    "gate_under_1_05": null,
+    "mean_ratio": 1.7493993505534533,
+    "production_comparable": false
   },
   "schema": "silver_contextual_first_action_rollout_analysis_v1",
   "source_group_comparison": {
     "bootstrap_improvement": {
-      "p025": -1.3064742812278907,
-      "p975": 0.8404743213623369,
+      "p025": -1.3354179438815739,
+      "p975": 0.9320332115319823,
       "replicates": 2000,
       "seed": 20260920
     },
@@ -316,6 +321,121 @@
     ],
     "unchanged": 25,
     "worsened": 3
+  },
+  "source_seed_contract": {
+    "all_groups_have_one_source_seed": true,
+    "cluster_key": "source_seed",
+    "group_count": 32,
+    "group_to_source_seed": {
+      "04df6dc6c7500524": "12100052",
+      "04fcab644163af9e": "12100036",
+      "0530fe9984c813e2": "12100035",
+      "1194824b92a5b6f5": "12100017",
+      "1315f2850118a51e": "12100012",
+      "137c7885d87cacb7": "12100017",
+      "18b1b61ccc77b353": "12100007",
+      "266c835ca79bd69c": "12100053",
+      "2ef80137dc5aa89b": "12100018",
+      "49d948edcffe8323": "12100013",
+      "73a4aa7fd7623aea": "12100036",
+      "73a930377101137b": "12100031",
+      "75c1988f2ab3e8f3": "12100008",
+      "7637a54651c33a3e": "12100039",
+      "769677ba17731ec7": "12100013",
+      "88c7c1af25d91065": "12100003",
+      "9131e6062ef2f3a9": "12100039",
+      "91ce3829d47043e0": "12100041",
+      "9249765fac6ec320": "12100009",
+      "92994b5c8cdc0549": "12100003",
+      "9701175810936dd2": "12100025",
+      "9a58cddc9df01b19": "12100041",
+      "a190dfa42b78cdfc": "12100034",
+      "a4247c55175c1388": "12100037",
+      "b18c90a0df8c39e7": "12100053",
+      "b4249959cb43bc6f": "12100025",
+      "c20a2b9c8ce98855": "12100021",
+      "c2173e160a94edaa": "12100001",
+      "e01ab8f5abdd8cb9": "12100018",
+      "e2ab6a6437060dc5": "12100034",
+      "ec798f48cfc7fbae": "12100012",
+      "f65dceb330b8045c": "12100053"
+    },
+    "groups_per_source_seed": {
+      "12100001": [
+        "c2173e160a94edaa"
+      ],
+      "12100003": [
+        "88c7c1af25d91065",
+        "92994b5c8cdc0549"
+      ],
+      "12100007": [
+        "18b1b61ccc77b353"
+      ],
+      "12100008": [
+        "75c1988f2ab3e8f3"
+      ],
+      "12100009": [
+        "9249765fac6ec320"
+      ],
+      "12100012": [
+        "1315f2850118a51e",
+        "ec798f48cfc7fbae"
+      ],
+      "12100013": [
+        "49d948edcffe8323",
+        "769677ba17731ec7"
+      ],
+      "12100017": [
+        "1194824b92a5b6f5",
+        "137c7885d87cacb7"
+      ],
+      "12100018": [
+        "2ef80137dc5aa89b",
+        "e01ab8f5abdd8cb9"
+      ],
+      "12100021": [
+        "c20a2b9c8ce98855"
+      ],
+      "12100025": [
+        "9701175810936dd2",
+        "b4249959cb43bc6f"
+      ],
+      "12100031": [
+        "73a930377101137b"
+      ],
+      "12100034": [
+        "a190dfa42b78cdfc",
+        "e2ab6a6437060dc5"
+      ],
+      "12100035": [
+        "0530fe9984c813e2"
+      ],
+      "12100036": [
+        "04fcab644163af9e",
+        "73a4aa7fd7623aea"
+      ],
+      "12100037": [
+        "a4247c55175c1388"
+      ],
+      "12100039": [
+        "7637a54651c33a3e",
+        "9131e6062ef2f3a9"
+      ],
+      "12100041": [
+        "91ce3829d47043e0",
+        "9a58cddc9df01b19"
+      ],
+      "12100052": [
+        "04df6dc6c7500524"
+      ],
+      "12100053": [
+        "266c835ca79bd69c",
+        "b18c90a0df8c39e7",
+        "f65dceb330b8045c"
+      ]
+    },
+    "shared_source_seed_count": 11,
+    "source_seed_count": 20
   },
   "teacher_b_reduction_k1": -0.6077580494017829,
   "trajectory_deltas": {

@@ -47,8 +47,37 @@ def fnv(value: str) -> int:
     return result
 
 
-def fold(group_id: str) -> int:
-    return fnv(group_id) % FOLD_COUNT
+def fold(cluster_id: str) -> int:
+    return fnv(cluster_id) % FOLD_COUNT
+
+
+def source_seed_contract(rows: list[dict]) -> dict:
+    group_seeds: dict[str, set[str]] = defaultdict(set)
+    for row in rows:
+        source_seed = row.get("source_seed", row.get("run_seed"))
+        if source_seed is None:
+            continue
+        group_seeds[row["group_id"]].add(str(source_seed))
+    source_groups: dict[str, list[str]] = defaultdict(list)
+    for group_id, seeds in group_seeds.items():
+        if len(seeds) == 1:
+            source_groups[next(iter(seeds))].append(group_id)
+    return {
+        "group_count": len(group_seeds),
+        "source_seed_count": len(source_groups),
+        "all_groups_have_one_source_seed": (
+            bool(group_seeds) and all(len(seeds) == 1 for seeds in group_seeds.values())
+        ),
+        "shared_source_seed_count": sum(len(groups) > 1 for groups in source_groups.values()),
+        "groups_per_source_seed": {
+            source_seed: sorted(groups) for source_seed, groups in sorted(source_groups.items())
+        },
+        "group_to_source_seed": {
+            group_id: next(iter(seeds)) for group_id, seeds in sorted(group_seeds.items())
+            if len(seeds) == 1
+        },
+        "cluster_key": "source_seed",
+    }
 
 
 def sha256(path: Path) -> str:
@@ -110,21 +139,24 @@ def sibling_metrics(rows: list[dict], value_key: str, reference_key: str) -> dic
 
 
 def group_bootstrap(rows: list[dict], value_key: str, reference_key: str,
-                    replicates: int = 2000) -> dict:
-    grouped: dict[str, list[dict]] = defaultdict(list)
+                    replicates: int = 2000, cluster_key: str = "group_id") -> dict:
+    clusters: dict[str, set[str]] = defaultdict(set)
     for row in rows:
-        grouped[row["group_id"]].append(row)
-    ids = sorted(grouped)
+        clusters[str(row[cluster_key])].add(row["group_id"])
+    ids = sorted(clusters)
     rng = random.Random(BOOTSTRAP_SEED)
     samples = {key: [] for key in ("regret", "pairwise", "top")}
     for _ in range(replicates):
         selected = [rng.choice(ids) for _ in ids]
         sample = []
-        for occurrence, group_id in enumerate(selected):
-            for row in grouped[group_id]:
-                copy = dict(row)
-                copy["group_id"] = f"{group_id}#{occurrence}"
-                sample.append(copy)
+        for occurrence, cluster_id in enumerate(selected):
+            for group_id in sorted(clusters[cluster_id]):
+                for row in rows:
+                    if row["group_id"] != group_id or str(row[cluster_key]) != cluster_id:
+                        continue
+                    copy = dict(row)
+                    copy["group_id"] = f"{group_id}#{occurrence}"
+                    sample.append(copy)
         metrics = sibling_metrics(sample, value_key, reference_key)
         for metric, output in (("mean_teacher_regret", "regret"),
                                ("pairwise_concordance", "pairwise"),
@@ -227,7 +259,7 @@ def report_headroom(args: argparse.Namespace) -> int:
     base = baseline_rows(args.baseline, teacher_values)
     cf = action_rows(args.counterfactual)
     oracle = cross_fitted_oracle(cf, base, teacher_values)
-    baseline = [{**row, "value": row["baseline_k1_value"]} for row in oracle]
+    baseline = [{**row, "value": row["baseline_value"]} for row in oracle]
     oracle_rows = [{**row, "value": row["oracle_value"]} for row in oracle]
     metrics_a = {
         "baseline": sibling_metrics(baseline, "value", "teacher_a"),
@@ -242,7 +274,7 @@ def report_headroom(args: argparse.Namespace) -> int:
         by_group[row["group_id"]][row["leaf_snapshot_id"]] = row
     improvements = []
     for group_id, members in by_group.items():
-        baseline_top = max(members.values(), key=lambda row: row["baseline_k1_value"])
+        baseline_top = max(members.values(), key=lambda row: row["baseline_value"])
         oracle_top = max(members.values(), key=lambda row: row["oracle_value"])
         baseline_regret = baseline_top["teacher_a"] - baseline_top["teacher_value"] if "teacher_value" in baseline_top else None
         # Group regret is the reference top value minus the reference value at
@@ -262,28 +294,33 @@ def report_headroom(args: argparse.Namespace) -> int:
     oracle_regret = metrics_a["oracle"]["mean_teacher_regret"]
     reduction = ((baseline_regret - oracle_regret) / baseline_regret
                  if baseline_regret and oracle_regret is not None else None)
+    source_contract = source_seed_contract(
+        [row for rows in cf.values() for row in rows]
+    )
+    if not source_contract["all_groups_have_one_source_seed"]:
+        raise SystemExit("counterfactual source-seed contract is incomplete or inconsistent")
+    source_groups = defaultdict(list)
+    for group_id, source_seed in source_contract["group_to_source_seed"].items():
+        source_groups[source_seed].append(group_id)
     bootstrap_rows = []
     rng = random.Random(BOOTSTRAP_SEED)
-    group_ids = sorted(by_group)
+    source_seed_ids = sorted(source_groups)
     for _ in range(args.bootstrap):
-        selected = [rng.choice(group_ids) for _ in group_ids]
-        sample = []
-        for occurrence, group_id in enumerate(selected):
-            for row in by_group[group_id].values():
-                copy = dict(row)
-                copy["group_id"] = f"{group_id}#{occurrence}"
-                copy["value"] = copy["baseline_k1_value"]
-                sample.append(copy)
-        b = sibling_metrics(sample, "value", "teacher_a")["mean_teacher_regret"]
-        for occurrence, group_id in enumerate(selected):
-            for row in by_group[group_id].values():
-                copy = dict(row)
-                copy["group_id"] = f"{group_id}#{occurrence}"
-                copy["value"] = copy["oracle_value"]
-                sample.append(copy)
-        # Split the duplicated sample into the two arms before scoring.
-        half = len(sample) // 2
-        o = sibling_metrics(sample[half:], "value", "teacher_a")["mean_teacher_regret"]
+        selected = [rng.choice(source_seed_ids) for _ in source_seed_ids]
+        baseline_sample, oracle_sample = [], []
+        for occurrence, source_seed in enumerate(selected):
+            for group_id in source_groups[source_seed]:
+                for row in by_group[group_id].values():
+                    baseline_copy = dict(row)
+                    baseline_copy["group_id"] = f"{group_id}#{occurrence}"
+                    baseline_copy["value"] = baseline_copy["baseline_value"]
+                    baseline_sample.append(baseline_copy)
+                    oracle_copy = dict(row)
+                    oracle_copy["group_id"] = f"{group_id}#{occurrence}"
+                    oracle_copy["value"] = oracle_copy["oracle_value"]
+                    oracle_sample.append(oracle_copy)
+        b = sibling_metrics(baseline_sample, "value", "teacher_a")["mean_teacher_regret"]
+        o = sibling_metrics(oracle_sample, "value", "teacher_a")["mean_teacher_regret"]
         bootstrap_rows.append(b - o)
     report = {
         "schema": "silver_first_action_headroom_v1",
@@ -292,7 +329,9 @@ def report_headroom(args: argparse.Namespace) -> int:
         "corpus": {"counterfactual_rows": sum(len(v) for v in cf.values()),
                    "eligible_leaves": len(oracle), "groups": len(by_group),
                    "replicates": 32, "selection_replicates": SELECTION_REPLICATES,
-                   "fold_count": FOLD_COUNT, "rng_contract": "fnv1a(silver-rollout-variance/v1/group/replicate)"},
+                   "fold_count": FOLD_COUNT, "rng_contract": "fnv1a(silver-rollout-variance/v1/group/replicate)",
+                   "bootstrap_cluster_count": len(source_seed_ids)},
+        "source_seed_contract": source_contract,
         "metrics_teacher_a": metrics_a, "metrics_teacher_b": metrics_b,
         "oracle_regret_reduction": reduction,
         "oracle_bootstrap_reduction": ci(bootstrap_rows),
@@ -348,6 +387,10 @@ def fit_models(args: argparse.Namespace) -> int:
         raise SystemExit("headroom gate did not pass; refusing policy fit")
     rows = [row for row in load_jsonl(args.counterfactual) if row.get("accepted")]
     groups = {row["group_id"] for row in rows}
+    source_contract = source_seed_contract(rows)
+    if not source_contract["all_groups_have_one_source_seed"]:
+        raise SystemExit("counterfactual source-seed contract is incomplete or inconsistent")
+    source_seed_by_group = source_contract["group_to_source_seed"]
     models = []
     fit_rows = []
     for heldout in range(FOLD_COUNT):
@@ -357,7 +400,7 @@ def fit_models(args: argparse.Namespace) -> int:
             by_action[(row["leaf_snapshot_id"], row["action_fingerprint"])].append(row)
         for (leaf, _action), samples in by_action.items():
             group_id = samples[0]["group_id"]
-            if fold(group_id) == heldout:
+            if fold(source_seed_by_group[group_id]) == heldout:
                 continue
             selected = [row for row in samples if row["replicate"] < SELECTION_REPLICATES]
             if len(selected) != SELECTION_REPLICATES:
@@ -383,9 +426,11 @@ def fit_models(args: argparse.Namespace) -> int:
               "feature_names": FEATURE_NAMES, "fold_count": FOLD_COUNT,
               "regularization": args.regularization, "selection_replicates": SELECTION_REPLICATES,
               "target": "mean q0 over selection half; canonical continuation after one first action",
-              "group_fold_rule": "fnv1a(group_id) % 5", "models": models, "fit_rows": fit_rows,
+              "group_fold_rule": "fnv1a(source_seed) % 5", "models": models, "fit_rows": fit_rows,
               "counterfactual_sha256": sha256(args.counterfactual),
-              "group_folds": {group_id: fold(group_id) for group_id in sorted(groups)}}
+              "group_folds": {group_id: fold(source_seed_by_group[group_id])
+                              for group_id in sorted(groups)},
+              "source_seed_contract": source_contract}
     args.output.write_text(json.dumps(report, indent=2, sort_keys=True) + "\n")
     print(json.dumps({"models": len(models), "features": len(FEATURE_NAMES),
                       "regularization": args.regularization}, indent=2))
@@ -476,19 +521,24 @@ def candidate_report(args: argparse.Namespace) -> int:
         arm_result["regret_improvement"] = arm_result["baseline_regret"] - arm_result["candidate_regret"]
         group_rows.append(arm_result)
     group_rows.sort(key=lambda row: row["regret_improvement"], reverse=True)
-    group_ids = [row["group_id"] for row in group_rows]
+    source_seed_by_group = headroom.get("source_seed_contract", {}).get("group_to_source_seed", {})
+    source_groups = defaultdict(list)
+    for row in group_rows:
+        source_groups[source_seed_by_group.get(row["group_id"], row["group_id"])].append(row["group_id"])
+    source_seed_ids = sorted(source_groups)
     rng = random.Random(BOOTSTRAP_SEED)
     bootstrap_deltas = []
     for _ in range(args.bootstrap):
-        selected = [rng.choice(group_ids) for _ in group_ids]
+        selected = [rng.choice(source_seed_ids) for _ in source_seed_ids]
         baseline_sample, candidate_sample = [], []
-        for occurrence, group_id in enumerate(selected):
-            for arm, target in (("baseline", baseline_sample), ("candidate", candidate_sample)):
-                for row in compact_by_arm[arm].values():
-                    if row["group_id"] == group_id:
-                        copy = dict(row)
-                        copy["group_id"] = f"{group_id}#{occurrence}"
-                        target.append(copy)
+        for occurrence, source_seed in enumerate(selected):
+            for group_id in source_groups[source_seed]:
+                for arm, target in (("baseline", baseline_sample), ("candidate", candidate_sample)):
+                    for row in compact_by_arm[arm].values():
+                        if row["group_id"] == group_id:
+                            copy = dict(row)
+                            copy["group_id"] = f"{group_id}#{occurrence}"
+                            target.append(copy)
         baseline_regret = sibling_metrics(baseline_sample, "value", "teacher_a")["mean_teacher_regret"]
         candidate_regret = sibling_metrics(candidate_sample, "value", "teacher_a")["mean_teacher_regret"]
         bootstrap_deltas.append(baseline_regret - candidate_regret)
@@ -497,7 +547,12 @@ def candidate_report(args: argparse.Namespace) -> int:
     report = {"schema": "silver_contextual_first_action_rollout_analysis_v1",
               "candidate_sha256": sha256(args.candidate), "row_count": len(rows),
               "headroom_classification": headroom.get("classification"),
-              "fold_rule": "fnv1a(group_id) % 5; model for held-out fold only",
+              "fold_rule": (
+                  "historical candidate models: fnv1a(group_id) % 5; no new candidate run "
+                  "after source-seed correction"
+              ),
+              "bootstrap_cluster_rule": "source_seed; all groups sharing a source seed resampled together",
+              "source_seed_contract": headroom.get("source_seed_contract"),
               "arms": arms,
               "source_group_comparison": {
                   "improved": sum(row["regret_improvement"] > 0 for row in group_rows),
@@ -518,8 +573,14 @@ def candidate_report(args: argparse.Namespace) -> int:
                           "candidate_median_micros": statistics.median(runtime_candidate) if runtime_candidate else None,
                           "mean_ratio": mean(runtime_candidate) / mean(runtime_base)
                           if runtime_base and mean(runtime_base) else None,
-                          "gate_under_1_05": bool(runtime_base and mean(runtime_candidate)
-                                                  <= mean(runtime_base) * 1.05)},
+                          "gate_under_1_05": None,
+                          "production_comparable": False,
+                          "gate_status": "UNMEASURED_NON_PRODUCTION_COMPARABLE",
+                          "comparability_note": (
+                              "Candidate timing includes rawActionForSemantic(), which creates "
+                              "a fresh BattleSearcher and calls search(1) before the forced-action "
+                              "rollout; baseline does not pay that diagnostic semantic-resolution cost."
+                          )},
               "action_kind_counts": dict(descriptions),
               "trajectory_deltas": {"mean_candidate_minus_baseline_actions": mean([
                   row["candidate_action_count"] - row["baseline_action_count"] for row in rows]),
@@ -544,7 +605,8 @@ def candidate_report(args: argparse.Namespace) -> int:
     report["decision_checks"] = {
         "quality_at_least_15_percent": reduction is not None and reduction >= 0.15,
         "pairwise_no_5pp_collapse": b_pair is not None and c_pair is not None and c_pair >= b_pair - 0.05,
-        "runtime_under_5_percent": report["runtime"]["gate_under_1_05"],
+        "runtime_under_5_percent": None,
+        "runtime_gate_status": report["runtime"]["gate_status"],
         "source_group_bootstrap_supports_improvement": report["source_group_comparison"][
             "bootstrap_improvement"]["p025"] is not None
             and report["source_group_comparison"]["bootstrap_improvement"]["p025"] > 0,

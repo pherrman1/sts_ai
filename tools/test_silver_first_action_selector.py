@@ -24,6 +24,18 @@ class SelectorContracts(unittest.TestCase):
                  "teacher": 2}]
         self.assertEqual(MODULE.sibling_metrics(rows, "value", "teacher")["groups"], 1)
 
+    def test_source_seed_contract_clusters_shared_groups(self):
+        contract = MODULE.source_seed_contract([
+            {"group_id": "g1", "source_seed": 7},
+            {"group_id": "g1", "source_seed": 7},
+            {"group_id": "g2", "source_seed": 7},
+            {"group_id": "g3", "source_seed": 8},
+        ])
+        self.assertTrue(contract["all_groups_have_one_source_seed"])
+        self.assertEqual(contract["source_seed_count"], 2)
+        self.assertEqual(contract["shared_source_seed_count"], 1)
+        self.assertEqual(contract["groups_per_source_seed"]["7"], ["g1", "g2"])
+
     def test_ridge_fit_is_reproducible_and_regularized(self):
         x = np.asarray([[1., 0.], [1., 1.], [1., 2.], [1., 3.]])
         y = np.asarray([0., 1., 2., 3.])
