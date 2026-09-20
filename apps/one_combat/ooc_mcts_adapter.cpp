@@ -1259,6 +1259,12 @@ void oocMctsAdapterSelfTest() {
         }
         require(mctsAnchor && mctsLeave,
             "semantic OOC MCTS lost ordinary relic or Leave candidate");
+
+        auto fallbackShop = detachedCopy(fixture);
+        search::ScumSearchAgent2 fallbackAgent;
+        runFullRunOocPolicyStep(fallbackShop, fallbackAgent, false, true);
+        require(!fallbackShop.relics.has(RelicId::PRISMATIC_SHARD),
+            "full-run OOC shop fallback bought Prismatic Shard");
     }
     {
         OocGameContextModel shop(fixture,path);
