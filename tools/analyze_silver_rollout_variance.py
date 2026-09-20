@@ -251,7 +251,10 @@ def main() -> int:
     for k in KS:
         metrics[k]["rollout_observables"] = rollout_stats(
             [row for row in raw_rollouts if row.get("accepted") and row["replicate"] < k])
-    residuals = sorted(((abs(row["value"] - row["teacher_a"]), row) for row in rows32), reverse=True)
+    residuals = sorted(
+        ((abs(row["value"] - row["teacher_a"]), row) for row in rows32),
+        key=lambda item: (-item[0], item[1]["group_id"], item[1]["leaf_snapshot_id"]),
+    )
     report = {"schema": "silver_rollout_variance_analysis_v1", "k_values": list(KS),
               "rollout_rows": len(raw_rollouts), "teacher_rows": len(raw_teachers),
               "teacher_noise_floor_B_vs_A": noise, "margin_noise": margin_noise(rows32),

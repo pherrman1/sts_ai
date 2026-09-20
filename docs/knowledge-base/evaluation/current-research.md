@@ -121,6 +121,20 @@ regression. See
 [ledger §321](../../experiments/ledger-06.md) and the
 [forced-action evidence packet](../../experiments/evidence/silver_forced_action_target_2026-09-19/README.md).
 
+## Silver rollout variance/bias diagnostic
+
+The frozen hard-combat rollout diagnostic is **`INCONCLUSIVE`**. It evaluated
+32 complete sibling groups / 247 leaves from the 64-root DEV snapshot set,
+with 32 fixed SimpleAgent replicates per leaf and independent A/B 25k-Silver
+teachers. One-rollout noise is material descriptively: 85.64% of within-sibling
+teacher margins were below the one-rollout noise estimate. Moving from `k=1`
+to `k=4` reduced mean teacher regret by 23.10% and improved pairwise
+concordance from 0.6346 to 0.6719, but the clustered bootstrap interval did
+not satisfy the predeclared variance rule; the systematic-error and
+not-primary rules also failed. Do not infer a rollout-policy, model, search
+budget, or default change from this result. See [ledger §322](../../experiments/ledger-06.md)
+and the [diagnostic evidence packet](../../experiments/evidence/silver_rollout_variance_20260920/README.md).
+
 ## Silver policy/value Phase-A cost diagnostic
 
 The corrected clean-baseline result is **`PV_COST_NOT_FEASIBLE_CLEAN_BASELINE`**:

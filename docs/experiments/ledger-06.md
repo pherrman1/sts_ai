@@ -10271,3 +10271,33 @@ default or generalization claim is authorized. Evidence:
   **Knowledge impact:** the independent target signal is supported on the
   fresh primary population; the historical regression, model training and
   every downstream learned-policy gate remain outstanding.
+
+## §322 — Silver rollout variance/bias diagnostic (2026-09-20)
+
+- **Question and protocol:** Determine whether one fixed SimpleAgent rollout
+  per sibling leaf is materially noisy or systematically biased relative to
+  independent Silver continuation values. The diagnostic used the frozen 64
+  hard DEV snapshots, ordinary fixed-1,000-simulation Silver to collect 32
+  complete sibling groups, 247 leaves, and 32 fixed-seed SimpleAgent
+  replicates per leaf. Each leaf also received independent A/B 25,000-
+  simulation Silver teachers with the established original-root correction.
+  The four independent teacher workers were split by complete sibling group
+  and merged deterministically; no treatment or default was changed.
+- **Result:** **`INCONCLUSIVE`** under the predeclared rules. At `k=1`, mean
+  teacher regret was `2.3380`, pairwise concordance `0.6346`, and top-leaf
+  agreement `0.4062`. At `k=4`, regret was `1.7978` (23.10% lower), pairwise
+  concordance `0.6719`, and top-leaf agreement `0.4375`; the clustered
+  bootstrap 95% interval for `k=4` regret was `[0.8513, 2.9146]`, so the
+  variance-material rule did not pass. The systematic-error and not-primary
+  rules also did not pass. Teacher A/B mean absolute noise was `1.0541` and
+  85.64% of within-sibling teacher margins were below the one-rollout noise
+  estimate.
+- **Boundary:** This is bounded diagnostic evidence, not ranking,
+  equivalence, model-training, rollout-policy, or default-promotion evidence.
+  No holdout or broad seed campaign was run. Large residuals remain in a
+  small number of groups and require separate causal investigation if they
+  become decision-relevant.
+- **Evidence:** [rollout variance/bias diagnostic](evidence/silver_rollout_variance_20260920/README.md).
+  **Knowledge impact:** durable Silver diagnostic evidence and current
+  research status only; no Silver behavior, model, RNG, schema, budget, or
+  gameplay default changed.
