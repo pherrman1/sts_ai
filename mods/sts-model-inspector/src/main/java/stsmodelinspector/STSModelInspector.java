@@ -786,7 +786,11 @@ public final class STSModelInspector implements PostInitializeSubscriber,
     }
 
     private static void trackLastTargetedMonster() {
-        if (AbstractDungeon.actionManager == null || AbstractDungeon.getMonsters() == null) return;
+        // BaseMod publishes post-update while the title/menu bootstrap is still
+        // active.  getMonsters() dereferences the current room, so do not call
+        // it until the dungeon has a map node.
+        if (AbstractDungeon.currMapNode == null || AbstractDungeon.actionManager == null
+                || AbstractDungeon.getMonsters() == null) return;
         for (com.megacrit.cardcrawl.cards.CardQueueItem item
                 : AbstractDungeon.actionManager.cardQueue) {
             if (item == null || item.card == null || item.monster == null) continue;
