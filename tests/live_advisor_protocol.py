@@ -209,13 +209,23 @@ class AdvisorProtocolTest(unittest.TestCase):
         }
         observation = dict(entry, combatEntry=entry, combatEntryHash="ranked-actions-entry",
                            silverRoot=root)
-        wire = {"protocol": "sts_model_inspector_v1", "kind": "observation",
-                "session": "ranked-actions", "sequence": 1,
-                "observationHash": "ranked-actions-hash", "observation": observation}
-        result, = self.run_advisor([json.dumps(wire)], self.model)
+        wires = []
+        for sequence, budget in enumerate((1000, 10000, 20000), 1):
+            wires.append({"protocol": "sts_model_inspector_v1", "kind": "observation",
+                          "session": "ranked-actions", "sequence": sequence,
+                          "observationHash": "ranked-actions-%d" % sequence,
+                          "observation": dict(observation, silverSearchBudget=budget)})
+        results = self.run_advisor([json.dumps(wire) for wire in wires], self.model)
+        result = results[0]
+        silver_results = [next(row for row in current["evaluators"]
+                               if row["id"] == "silver_player_decision_v2")
+                          for current in results]
+        self.assertEqual([silver["simulations"] for silver in silver_results], [1000, 10000, 20000])
+        self.assertEqual([silver["additionalSimulations"] for silver in silver_results],
+                         [1000, 9000, 10000])
+        self.assertEqual([silver["totalSimulations"] for silver in silver_results], [1000, 10000, 20000])
         self.assertEqual(result["status"], "OK")
-        silver = next(row for row in result["evaluators"]
-                      if row["id"] == "silver_player_decision_v2")
+        silver = silver_results[0]
         self.assertEqual(silver["status"], "OK", silver)
         summaries = silver["rootActionSummaries"]
         self.assertTrue(summaries)
