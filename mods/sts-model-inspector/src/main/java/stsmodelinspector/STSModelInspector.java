@@ -701,8 +701,8 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         AbstractRoom room = AbstractDungeon.getCurrRoom();
         String boundary;
         String ooc = "";
-        if (room instanceof MonsterRoom && room.phase == AbstractRoom.RoomPhase.COMBAT
-                && (isPlayerDecisionPoint() || isCardSelectionBoundary())) {
+        if (isCombatBoundary(room.phase, AbstractDungeon.screen,
+                isPlayerDecisionPoint(), isCardSelectionBoundary())) {
             boundary = "combat";
         } else {
             ooc = LiveOocCapture.capture();
@@ -1319,12 +1319,22 @@ public final class STSModelInspector implements PostInitializeSubscriber,
                 && !actions.turnHasEnded;
     }
 
+    static boolean isCombatBoundary(AbstractRoom.RoomPhase phase, AbstractDungeon.CurrentScreen screen,
+                                    boolean playerDecision, boolean selectionAvailable) {
+        // EventRoom fights are combat too. Serializer support is a separate
+        // question: an unknown selection must reach Silver as UNSUPPORTED.
+        return phase == AbstractRoom.RoomPhase.COMBAT
+                && ((screen == AbstractDungeon.CurrentScreen.NONE && playerDecision)
+                    || ((screen == AbstractDungeon.CurrentScreen.GRID
+                         || screen == AbstractDungeon.CurrentScreen.HAND_SELECT) && selectionAvailable));
+    }
+
     private static boolean isCardSelectionBoundary() {
         if (AbstractDungeon.actionManager == null) return false;
-        if (AbstractDungeon.screen != AbstractDungeon.CurrentScreen.GRID
-                && AbstractDungeon.screen != AbstractDungeon.CurrentScreen.HAND_SELECT)
-            return false;
-        return cardSelectionJson() != null;
+        return (AbstractDungeon.screen == AbstractDungeon.CurrentScreen.GRID
+                    && AbstractDungeon.gridSelectScreen != null)
+                || (AbstractDungeon.screen == AbstractDungeon.CurrentScreen.HAND_SELECT
+                    && AbstractDungeon.handCardSelectScreen != null);
     }
 
     static void recordCardQueueItem(CardQueueItem item) {
@@ -1599,10 +1609,11 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         return "";
     }
 
-    private static String selectionJson(String task, boolean anyNumber, int pickCount,
+    static String selectionJson(String task, boolean canPickZero, boolean anyNumber, int pickCount,
                                         List<AbstractCard> source) {
         StringBuilder out = new StringBuilder("{\"task\":\"")
-                .append(task).append("\",\"canPickZero\":false,\"canPickAnyNumber\":")
+                .append(task).append("\",\"canPickZero\":").append(canPickZero)
+                .append(",\"canPickAnyNumber\":")
                 .append(anyNumber).append(",\"pickCount\":").append(Math.max(0, pickCount))
                 .append(",\"data0\":0,\"setCostToZero\":true,\"selectedBits\":0,\"cards\":[");
         boolean offerCards = "DISCOVERY".equals(task) || "CODEX".equals(task);
@@ -1651,8 +1662,7 @@ public final class STSModelInspector implements PostInitializeSubscriber,
             Integer amount = readIntField(screen, "numCards", "cardSelectAmount");
             String task = selectionTask(readStringField(screen, "tipMsg", "lastTip"), screen.anyNumber);
             if (task.isEmpty() && screen.forUpgrade) task = "ARMAMENTS";
-            if (task.isEmpty()) return null;
-            return selectionJson(task, screen.anyNumber, amount == null ? 1 : amount,
+            return selectionJson(task, false, screen.anyNumber, amount == null ? 1 : amount,
                     screen.targetGroup == null ? null : screen.targetGroup.group);
         }
         if (AbstractDungeon.screen == AbstractDungeon.CurrentScreen.HAND_SELECT
@@ -1660,8 +1670,7 @@ public final class STSModelInspector implements PostInitializeSubscriber,
             com.megacrit.cardcrawl.screens.select.HandCardSelectScreen screen =
                     AbstractDungeon.handCardSelectScreen;
             String task = selectionTask(screen.selectionReason, screen.upTo);
-            if (task.isEmpty()) return null;
-            return selectionJson(task, screen.upTo, screen.numCardsToSelect,
+            return selectionJson(task, screen.canPickZero, screen.upTo, screen.numCardsToSelect,
                     AbstractDungeon.player.hand.group);
         }
         return null;

@@ -155,6 +155,47 @@ class AdvisorProtocolTest(unittest.TestCase):
         self.assertEqual(results[3]["status"], "ERROR")
         self.assertEqual(results[3]["code"], "UNSUPPORTED")
 
+    def test_unknown_combat_selection_remains_silver_with_ctm_enabled(self):
+        for room, encounter in (("MONSTER", "SHELL_PARASITE"),
+                                ("EVENT", "LAGAVULIN_EVENT")):
+            with self.subTest(room=room, encounter=encounter):
+                entry = {
+                    "boundary": "combat", "character": "IRONCLAD", "ascension": 0,
+                    "act": 2, "floor": 22, "hp": 15, "maxHp": 80, "gold": 99,
+                    "roomClass": room, "previousRoomClass": "MONSTER",
+                    "encounter": encounter, "potionKeepValue": 4.0,
+                    "isBurningElite": False, "potionCapacity": 3,
+                    "deck": [{"id": "Strike_R", "upgraded": False, "misc": 0,
+                              "bottleBinding": -1}],
+                    "relics": [], "potions": ["Potion Slot"] * 5,
+                }
+                observation = dict(entry, combatEntryHash="selection-entry", combatEntry=entry)
+                observation["silverRoot"] = {
+                    "schemaVersion": 4, "character": "IRONCLAD", "roomClass": room,
+                    "encounter": encounter, "playerTurn": 3, "decisionInTurn": 1,
+                    "combatInstance": "selection-entry",
+                    "combat": {"damageTrackingExact": False, "cardSelect": {
+                        "task": "", "canPickZero": True, "canPickAnyNumber": False,
+                        "pickCount": 1, "cards": ["Strike_R"],
+                    }},
+                }
+                wire = {"protocol": "sts_model_inspector_v1", "kind": "observation",
+                        "session": "selection-session", "sequence": 1,
+                        "observationHash": "selection-hash", "observation": observation}
+                result, = self.run_advisor([json.dumps(wire)], self.model)
+                self.assertEqual(result["status"], "OK")
+                self.assertEqual(result["modelStatus"], "OK")
+                self.assertEqual(result["session"], wire["session"])
+                self.assertEqual(result["sequence"], wire["sequence"])
+                self.assertEqual(result["observationHash"], wire["observationHash"])
+                evaluators = {row["id"]: row for row in result["evaluators"]}
+                self.assertIn(evaluators["ctm_combat_entry_v2"]["status"], ("OK", "UNSUPPORTED"))
+                silver = evaluators["silver_player_decision_v2"]
+                self.assertEqual(silver["status"], "UNSUPPORTED")
+                self.assertEqual(silver["reason"], "silver_unmapped_selection_task")
+                self.assertNotIn("live_ooc_decision_v1", evaluators)
+                self.assertNotIn("selectedLiveAction", silver)
+
     def test_ctm_support_failures_and_missing_model_are_explicit(self):
         base = {"boundary": "combat", "character": "IRONCLAD", "ascension": 0,
                 "act": 1, "floor": 7, "hp": 70, "maxHp": 80, "gold": 99,

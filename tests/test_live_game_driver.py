@@ -1,4 +1,5 @@
 import asyncio
+import gzip
 import json
 import tempfile
 import unittest
@@ -140,6 +141,32 @@ class LiveGameDriverTest(unittest.TestCase):
             with self.assertRaises(DriverError):
                 asyncio.run(driver.step(0))
             self.assertFalse(any(call[0] == "play_card" for call in client.calls))
+
+    def test_unknown_hand_selection_in_monster_and_event_combat_falls_back_once(self):
+        fixture = Path(__file__).parent / "fixtures/live_combat_boundaries/fresh-a0.jsonl.failure.json.gz"
+        with gzip.open(fixture, "rt") as stream:
+            recorded_screen = json.load(stream)["screen"]
+        for room_type in ("MonsterRoom", "EventRoom"):
+            with self.subTest(room_type=room_type), tempfile.TemporaryDirectory() as directory:
+                screen = {**recorded_screen, "room_type": room_type}
+                self.assertTrue(screen["screen_state"]["can_pick_zero"])
+                client = FakeClient(screen, ["choose", "confirm"])
+                path = inspector_file(directory, reason="silver_unmapped_selection_task")
+                raw = json.loads(path.read_text())
+                raw["observation"]["combat"] = {"hand": screen["hand"], "cardSelect": {
+                    "task": "", "canPickZero": True}}
+                path.write_text(json.dumps(raw))
+                trace = Path(directory) / "trace"
+                driver = Driver(client, InspectorReader(path), TraceWriter(trace), max_steps=1)
+                asyncio.run(driver.run())
+                self.assertEqual([(tool, args) for tool, args in client.calls
+                                  if tool in {"choose", "confirm"}], [("choose", {"choice_index": 1})])
+                self.assertEqual(driver.counters["silver_unsupported"], 1)
+                self.assertEqual(driver.counters["deterministic_fallback_combat"], 1)
+                self.assertEqual(driver.counters["ooc_v4_unsupported"], 0)
+                row = json.loads(trace.read_text().splitlines()[0])
+                self.assertEqual(row["inspector_boundary"], "combat")
+                self.assertEqual(row["fallback_reason"], "silver_unsupported:silver_unmapped_selection_task")
 
     def test_policy_is_deterministic(self):
         screen = {"screen_type": "CARD_REWARD", "choice_list": ["Bash"], "ready_for_command": True}

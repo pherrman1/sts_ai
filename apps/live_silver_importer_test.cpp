@@ -1446,6 +1446,21 @@ int main() {
         nativeSelectionExpected.isolatedSearchSeed = nativeSelectionImported.wire.isolatedSearchSeed;
         if (!convertedStatesEqualForSearch(nativeSelectionExpected, nativeSelectionImported.wire))
             throw std::runtime_error("native selection parity failed");
+        nativeSelection["silverRoot"]["combat"]["cardSelect"]["canPickZero"] = true;
+        nativeSelectionImported = one_combat::advisor::importSilverRoot(nativeSelection);
+        nativeSelectionExpected.cardSelect.canPickZero = true;
+        if (!nativeSelectionImported.ok
+            || !convertedStatesEqualForSearch(nativeSelectionExpected, nativeSelectionImported.wire))
+            throw std::runtime_error("optional native selection parity failed");
+        auto unknownSelection = nativeSelection;
+        unknownSelection["silverRoot"]["combat"]["cardSelect"]["task"] = "";
+        // Unknown selectors must not become normal play or be obscured by an
+        // unrelated unsupported projection field at a resumed combat boundary.
+        unknownSelection["silverRoot"]["combat"]["damageTrackingExact"] = false;
+        const auto unknownSelectionImported = one_combat::advisor::importSilverRoot(unknownSelection);
+        if (unknownSelectionImported.ok
+            || unknownSelectionImported.reason != "silver_unmapped_selection_task")
+            throw std::runtime_error("unknown combat selection was not explicitly unsupported");
 
         for (const auto &root : fixtures) {
             for (const auto card : {CardId::STRIKE_RED, CardId::DEFEND_RED}) {

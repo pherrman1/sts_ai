@@ -1,0 +1,43 @@
+{
+  "purpose": "Live integration correctness evidence; not a policy-quality benchmark",
+  "files": {
+    "fresh-a0.jsonl": {
+      "sha256": "e330e59696525bcf025e2d957e6a1dd764957a6a875343ee0bd8534065c64759",
+      "bytes": 3155248
+    },
+    "fresh-a0.jsonl.failure.json": {
+      "sha256": "9aebb65f87330e9f6f0b2717c0c08d2a3bf93e04be2385d0acfeff7404c7dd5a",
+      "bytes": 222189
+    },
+    "review-continuation.jsonl": {
+      "sha256": "e0c0e4e498ab318a558070fe512d0ad46430aa068d97a87804dfa9e43f98cff9",
+      "bytes": 163450
+    },
+    "review-python-tests.log": {
+      "sha256": "f2a29406638d7f2298828afade05a69be3289279421aac8f7b2347dfe2499f2a",
+      "bytes": 165
+    },
+    "review-java-tests.log": {
+      "sha256": "b306e227f0dced16211e08ba482288a427eee21d69ab885f45c762d1492ad3cf",
+      "bytes": 864
+    },
+    "review-focused-tests.log": {
+      "sha256": "b91dc0fcf98784fb3318b3d70426760e1a6761c39c5541cc8a88b39f4caa5962",
+      "bytes": 1534
+    }
+  },
+  "runtime": {
+    "advisorSha256": "6fff147688f7bd02d0ca2829b20f3d5e6b112da38e54cb9b430081a34db4be31",
+    "ctmSha256": "e9a18951710fdfe9e1a81a2703090a41f039067c670a1d8a0393b5e7e8e0ddfd",
+    "gitHead": "c967048c6f32e98c3bfb870cf2a46e3f22d3d09a",
+    "inspectorJarSha256": "33aebc1723f03a131741b7d9e546ec6ef5ecb47fd261740fc001dece3cc0c218",
+    "oocModelSha256": "e62abd833fc8cb9081a1cec4a1a012832ac3b0e3166da3892841911664f1184c",
+    "processCommandSha256": "2cfcb88e35e95553a04cd3fee317dea3da9edf3993101b13757fe886ca8667e1",
+    "processPid": 553871,
+    "processStartTicks": 7198995,
+    "runtimeId": "c967048c6f32-6fff147688f7",
+    "startedAt": "2026-09-20T19:18:56.432252+00:00"
+  },
+  "source_base": "c967048c6f32e98c3bfb870cf2a46e3f22d3d09a",
+  "source_note": "Current boundary correction built from this base plus the source diff committed alongside this manifest; runtime ID carries the base SHA and advisor binary digest."
+}
