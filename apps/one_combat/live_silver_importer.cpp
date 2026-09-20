@@ -221,7 +221,11 @@ bool setMonsterPower(silver_bridge::MonsterWire &monster, sts::MonsterStatus sta
     // Java boolean powers are presence states.  Vanilla may expose a
     // negative/sentinel amount for them; presence must still set the native
     // status bit before numeric powers are rejected as invalid.
-    if (value < 0 && !sts::isBooleanPower(status)) return false;
+    // Strength is the one signed numeric monster power: Disarm legitimately
+    // exposes negative values.  Other negative numeric powers are not a
+    // representable Java/native state and must fail closed.
+    if (value < 0 && status != sts::MonsterStatus::STRENGTH
+        && !sts::isBooleanPower(status)) return false;
     switch (status) {
     case sts::MonsterStatus::ARTIFACT: monster.smallPowers[0] = static_cast<std::int16_t>(value); break;
     case sts::MonsterStatus::BLOCK_RETURN: monster.smallPowers[1] = static_cast<std::int16_t>(value); break;

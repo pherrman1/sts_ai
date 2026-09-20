@@ -448,6 +448,25 @@ void verifyDynamicTransitionCorpus() {
         assertDynamicParity("WRITHING_MASS_REACTIVE_ZERO", live, knowledge, game);
     }
     {
+        GameContext game(CharacterClass::IRONCLAD, 0xD509u, 0);
+        game.act = 1; game.floorNum = 1;
+        BattleContext live;
+        live.init(game, MonsterEncounter::CULTIST);
+        CombatKnowledgeState knowledge;
+        knowledge.initializeFromLiveBattle(live);
+        // This is the native effect queued by CardId::DISARM.  Apply the
+        // effect directly so the producer-shaped root remains a starter-deck
+        // observation rather than introducing a non-starter card into the
+        // exhaust pile solely for this transition fixture.
+        live.setState(InputState::EXECUTING_ACTIONS);
+        live.addToBot(Actions::DebuffEnemy<MonsterStatus::STRENGTH>(0, -2, false));
+        live.executeActions();
+        if (live.inputState != InputState::PLAYER_NORMAL
+            || live.monsters.arr[0].strength != -2)
+            throw std::runtime_error("Disarm did not produce native Strength -2 state");
+        assertDynamicParity("DISARM_NEGATIVE_STRENGTH", live, knowledge, game);
+    }
+    {
         GameContext game(CharacterClass::IRONCLAD, 0xD501u, 0);
         game.act = 1; game.floorNum = 1;
         BattleContext live;
@@ -533,7 +552,7 @@ void verifyDynamicTransitionCorpus() {
             throw std::runtime_error("Awakened One stage-2 transition did not produce public state");
         assertDynamicParity("AWAKENED_ONE_STAGE2", live, knowledge, game);
     }
-    std::cout << "live Silver dynamic transition corpus passed: split/summon/regrow/stasis/phase/zero-powers\n";
+    std::cout << "live Silver dynamic transition corpus passed: split/summon/regrow/stasis/phase/zero-powers/negative-strength\n";
 }
 std::string uuid(const CardWire &c) { return "card-" + std::to_string(c.uniqueId); }
 json cardJson(const CardWire &c) {
@@ -1298,6 +1317,19 @@ int main() {
         nativePowerExpected.isolatedSearchSeed = nativePowerImported.wire.isolatedSearchSeed;
         if (!convertedStatesEqualForSearch(nativePowerExpected, nativePowerImported.wire))
             throw std::runtime_error("native monster power parity failed");
+
+        auto negativeStrength = genericObservation(fixtures[0], "negative-strength-entry");
+        negativeStrength["silverRoot"]["combat"]["monsters"][0]["powers"] = json::array({
+            json{{"id", "Strength"}, {"amount", -2}}});
+        auto negativeStrengthImported = one_combat::advisor::importSilverRoot(negativeStrength);
+        if (!negativeStrengthImported.ok)
+            throw std::runtime_error("negative Strength import failed: " + negativeStrengthImported.reason);
+        auto negativeStrengthExpected = fixtures[0].wire;
+        normalizeFirstObservationIdentity(negativeStrengthExpected);
+        negativeStrengthExpected.monsters[0].strength = -2;
+        negativeStrengthExpected.isolatedSearchSeed = negativeStrengthImported.wire.isolatedSearchSeed;
+        if (!convertedStatesEqualForSearch(negativeStrengthExpected, negativeStrengthImported.wire))
+            throw std::runtime_error("negative Strength parity failed");
 
         auto nativeSelection = genericObservation(fixtures[0], "native-selection-entry");
         nativeSelection["silverRoot"]["combat"]["cardSelect"] = json{
