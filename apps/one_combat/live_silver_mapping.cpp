@@ -18,7 +18,7 @@ const std::map<std::string, sts::MonsterId> kMonsters = {
     {"BookOfStabbing", sts::MonsterId::BOOK_OF_STABBING},
     {"BronzeAutomaton", sts::MonsterId::BRONZE_AUTOMATON}, {"BronzeOrb", sts::MonsterId::BRONZE_ORB},
     {"Byrd", sts::MonsterId::BYRD}, {"Centurion", sts::MonsterId::CENTURION},
-    {"Healer", sts::MonsterId::MYSTIC},
+    {"Healer", sts::MonsterId::MYSTIC}, {"Mystic", sts::MonsterId::MYSTIC},
     {"Chosen", sts::MonsterId::CHOSEN}, {"CorruptHeart", sts::MonsterId::CORRUPT_HEART},
     {"Cultist", sts::MonsterId::CULTIST}, {"Dagger", sts::MonsterId::DAGGER},
     {"SnakeDagger", sts::MonsterId::DAGGER},
@@ -36,14 +36,17 @@ const std::map<std::string, sts::MonsterId> kMonsters = {
     {"Hexaghost", sts::MonsterId::HEXAGHOST}, {"JawWorm", sts::MonsterId::JAW_WORM},
     {"Lagavulin", sts::MonsterId::LAGAVULIN}, {"Looter", sts::MonsterId::LOOTER},
     {"MadGremlin", sts::MonsterId::MAD_GREMLIN}, {"Mugger", sts::MonsterId::MUGGER},
-    {"Mystic", sts::MonsterId::MYSTIC}, {"Nemesis", sts::MonsterId::NEMESIS},
+    {"Nemesis", sts::MonsterId::NEMESIS},
     {"Orb Walker", sts::MonsterId::ORB_WALKER}, {"OrbWalker", sts::MonsterId::ORB_WALKER},
     {"Pointy", sts::MonsterId::POINTY}, {"BanditPointy", sts::MonsterId::POINTY},
-    {"BanditLeader", sts::MonsterId::MUGGER}, {"BanditBear", sts::MonsterId::BEAR},
+    {"BanditChild", sts::MonsterId::POINTY},
+    {"BanditLeader", sts::MonsterId::ROMEO}, {"BanditBear", sts::MonsterId::BEAR},
     {"RedSlaver", sts::MonsterId::RED_SLAVER}, {"SlaverRed", sts::MonsterId::RED_SLAVER},
     {"Reptomancer", sts::MonsterId::REPTOMANCER}, {"Repulsor", sts::MonsterId::REPULSOR},
     {"Romeo", sts::MonsterId::ROMEO}, {"Sentry", sts::MonsterId::SENTRY},
-    {"ShelledParasite", sts::MonsterId::SHELLED_PARASITE}, {"Shield Gremlin", sts::MonsterId::SHIELD_GREMLIN},
+    {"ShelledParasite", sts::MonsterId::SHELLED_PARASITE},
+    {"Shelled Parasite", sts::MonsterId::SHELLED_PARASITE},
+    {"Shield Gremlin", sts::MonsterId::SHIELD_GREMLIN},
     {"ShieldGremlin", sts::MonsterId::SHIELD_GREMLIN}, {"SlimeBoss", sts::MonsterId::SLIME_BOSS},
     {"SnakePlant", sts::MonsterId::SNAKE_PLANT}, {"SneakyGremlin", sts::MonsterId::SNEAKY_GREMLIN},
     {"Snecko", sts::MonsterId::SNECKO}, {"SphericGuardian", sts::MonsterId::SPHERIC_GUARDIAN},
@@ -55,6 +58,7 @@ const std::map<std::string, sts::MonsterId> kMonsters = {
     {"TheCollector", sts::MonsterId::THE_COLLECTOR}, {"TheGuardian", sts::MonsterId::THE_GUARDIAN},
     {"Maw", sts::MonsterId::THE_MAW}, {"TimeEater", sts::MonsterId::TIME_EATER},
     {"TorchHead", sts::MonsterId::TORCH_HEAD}, {"Transient", sts::MonsterId::TRANSIENT},
+    {"SlaverBoss", sts::MonsterId::TASKMASTER},
     {"WrithingMass", sts::MonsterId::WRITHING_MASS},
     // Runtime spelling used by old Java versions.
     {"Gremlin Nob", sts::MonsterId::GREMLIN_NOB},
@@ -196,18 +200,47 @@ const std::map<std::string, sts::CardSelectTask> kSelectionTasks = {
 
 std::optional<sts::MonsterId> monsterId(const std::string &id) { return find(kMonsters, id); }
 std::optional<sts::MonsterEncounter> encounterId(const std::string &id) { return find(kEncounters, id); }
+const std::vector<LiveEncounterSupportEntry> &encounterSupportManifest() {
+    static const std::vector<LiveEncounterSupportEntry> manifest = [] {
+        std::vector<LiveEncounterSupportEntry> entries;
+        const auto count = sizeof(sts::monsterEncounterEnumNames)
+            / sizeof(sts::monsterEncounterEnumNames[0]);
+        entries.reserve(count);
+        for (std::size_t i = 0; i < count; ++i) {
+            const bool reachable = i != static_cast<std::size_t>(sts::MonsterEncounter::INVALID);
+            entries.push_back({static_cast<sts::MonsterEncounter>(i),
+                sts::monsterEncounterEnumNames[i], reachable,
+                reachable ? "public encounter state is represented by the native simulator"
+                          : "INVALID is a sentinel, not a reachable Ironclad combat"});
+        }
+        return entries;
+    }();
+    return manifest;
+}
+const std::vector<LiveEncounterExclusionEntry> &encounterExclusionManifest() {
+    // FOUR_BYRDS is a valid vanilla event formation, but the pinned native
+    // simulator has no MonsterEncounter/slot layout for it.  Keep it explicit
+    // instead of allowing encounter detection to fall through as unknown.
+    static const std::vector<LiveEncounterExclusionEntry> exclusions = {
+        {"FOUR_BYRDS", "native simulator has no FOUR_BYRDS encounter or faithful four-slot layout"},
+    };
+    return exclusions;
+}
 std::optional<sts::MonsterStatus> monsterStatus(const std::string &id) { return find(kMonsterStatuses, id); }
 std::optional<PlayerStatus> playerStatus(const std::string &id) { return find(kPlayerStatuses, id); }
 std::optional<sts::CardSelectTask> cardSelectTask(const std::string &id) { return find(kSelectionTasks, id); }
 
 std::optional<sts::MonsterMoveId> monsterMove(const std::string &id, int nextMove) {
     const auto monster = monsterId(id);
-    if (!monster || nextMove <= 0) return std::nullopt;
+    // Java's byte constants are not all positive: Donu, Deca, and Writhing
+    // Mass legitimately use byte 0.  Reject only negative values here.
+    if (!monster || nextMove < 0) return std::nullopt;
     // These are the move bytes established by the PR 248 live observer and
     // checked against the installed desktop-1.0.jar.  Do not infer the byte
     // from the order of native enum values: many vanilla monsters use sparse
-    // or state-dependent byte constants.  Additional encounters stay
-    // unsupported until their actual Java class constants are qualified.
+    // or state-dependent byte constants.  Every entry below is a literal byte
+    // qualified against the installed
+    // desktop-1.0.jar; an absent entry is intentionally rejected.
     using M = sts::MonsterMoveId;
     switch (*monster) {
     case sts::MonsterId::CULTIST:
@@ -303,6 +336,175 @@ std::optional<sts::MonsterMoveId> monsterMove(const std::string &id, int nextMov
         return nextMove == 3 ? std::optional<M>{M::GREMLIN_NOB_BELLOW}
             : nextMove == 1 ? std::optional<M>{M::GREMLIN_NOB_RUSH}
             : nextMove == 2 ? std::optional<M>{M::GREMLIN_NOB_SKULL_BASH} : std::nullopt;
+    case sts::MonsterId::AWAKENED_ONE:
+        return nextMove == 1 ? std::optional<M>{M::AWAKENED_ONE_SLASH}
+            : nextMove == 2 ? std::optional<M>{M::AWAKENED_ONE_SOUL_STRIKE}
+            : nextMove == 3 ? std::optional<M>{M::AWAKENED_ONE_REBIRTH}
+            : nextMove == 5 ? std::optional<M>{M::AWAKENED_ONE_DARK_ECHO}
+            : nextMove == 6 ? std::optional<M>{M::AWAKENED_ONE_SLUDGE}
+            : nextMove == 8 ? std::optional<M>{M::AWAKENED_ONE_TACKLE} : std::nullopt;
+    case sts::MonsterId::DARKLING:
+        return nextMove == 1 ? std::optional<M>{M::DARKLING_CHOMP}
+            : nextMove == 2 ? std::optional<M>{M::DARKLING_HARDEN}
+            : nextMove == 3 ? std::optional<M>{M::DARKLING_NIP}
+            : nextMove == 4 ? std::optional<M>{M::DARKLING_REGROW}
+            : nextMove == 5 ? std::optional<M>{M::DARKLING_REINCARNATE} : std::nullopt;
+    case sts::MonsterId::DECA:
+        return nextMove == 0 ? std::optional<M>{M::DECA_BEAM}
+            : nextMove == 2 ? std::optional<M>{M::DECA_SQUARE_OF_PROTECTION} : std::nullopt;
+    case sts::MonsterId::DONU:
+        return nextMove == 0 ? std::optional<M>{M::DONU_BEAM}
+            : nextMove == 2 ? std::optional<M>{M::DONU_CIRCLE_OF_POWER} : std::nullopt;
+    case sts::MonsterId::EXPLODER:
+        return nextMove == 1 ? std::optional<M>{M::EXPLODER_SLAM}
+            : nextMove == 2 ? std::optional<M>{M::EXPLODER_EXPLODE} : std::nullopt;
+    case sts::MonsterId::GIANT_HEAD:
+        return nextMove == 1 ? std::optional<M>{M::GIANT_HEAD_GLARE}
+            : nextMove == 2 ? std::optional<M>{M::GIANT_HEAD_IT_IS_TIME}
+            : nextMove == 3 ? std::optional<M>{M::GIANT_HEAD_COUNT} : std::nullopt;
+    case sts::MonsterId::GREMLIN_LEADER:
+        return nextMove == 2 ? std::optional<M>{M::GREMLIN_LEADER_RALLY}
+            : nextMove == 3 ? std::optional<M>{M::GREMLIN_LEADER_ENCOURAGE}
+            : nextMove == 4 ? std::optional<M>{M::GREMLIN_LEADER_STAB} : std::nullopt;
+    case sts::MonsterId::MUGGER:
+        return nextMove == 1 ? std::optional<M>{M::MUGGER_MUG}
+            : nextMove == 2 ? std::optional<M>{M::MUGGER_SMOKE_BOMB}
+            : nextMove == 3 ? std::optional<M>{M::MUGGER_ESCAPE}
+            : nextMove == 4 ? std::optional<M>{M::MUGGER_LUNGE} : std::nullopt;
+    case sts::MonsterId::NEMESIS:
+        return nextMove == 2 ? std::optional<M>{M::NEMESIS_ATTACK}
+            : nextMove == 3 ? std::optional<M>{M::NEMESIS_SCYTHE}
+            : nextMove == 4 ? std::optional<M>{M::NEMESIS_DEBUFF} : std::nullopt;
+    case sts::MonsterId::ORB_WALKER:
+        return nextMove == 1 ? std::optional<M>{M::ORB_WALKER_LASER}
+            : nextMove == 2 ? std::optional<M>{M::ORB_WALKER_CLAW} : std::nullopt;
+    case sts::MonsterId::REPTOMANCER:
+        return nextMove == 1 ? std::optional<M>{M::REPTOMANCER_SNAKE_STRIKE}
+            : nextMove == 2 ? std::optional<M>{M::REPTOMANCER_SUMMON}
+            : nextMove == 3 ? std::optional<M>{M::REPTOMANCER_BIG_BITE} : std::nullopt;
+    case sts::MonsterId::REPULSOR:
+        return nextMove == 1 ? std::optional<M>{M::REPULSOR_REPULSE}
+            : nextMove == 2 ? std::optional<M>{M::REPULSOR_BASH} : std::nullopt;
+    case sts::MonsterId::SPIKER:
+        return nextMove == 1 ? std::optional<M>{M::SPIKER_CUT}
+            : nextMove == 2 ? std::optional<M>{M::SPIKER_SPIKE} : std::nullopt;
+    case sts::MonsterId::SPIRE_GROWTH:
+        return nextMove == 1 ? std::optional<M>{M::SPIRE_GROWTH_QUICK_TACKLE}
+            : nextMove == 2 ? std::optional<M>{M::SPIRE_GROWTH_CONSTRICT}
+            : nextMove == 3 ? std::optional<M>{M::SPIRE_GROWTH_SMASH} : std::nullopt;
+    case sts::MonsterId::TIME_EATER:
+        return nextMove == 2 ? std::optional<M>{M::TIME_EATER_REVERBERATE}
+            : nextMove == 3 ? std::optional<M>{M::TIME_EATER_RIPPLE}
+            : nextMove == 4 ? std::optional<M>{M::TIME_EATER_HEAD_SLAM}
+            : nextMove == 5 ? std::optional<M>{M::TIME_EATER_HASTE} : std::nullopt;
+    case sts::MonsterId::TRANSIENT:
+        return nextMove == 1 ? std::optional<M>{M::TRANSIENT_ATTACK} : std::nullopt;
+    case sts::MonsterId::WRITHING_MASS:
+        return nextMove == 0 ? std::optional<M>{M::WRITHING_MASS_STRONG_STRIKE}
+            : nextMove == 1 ? std::optional<M>{M::WRITHING_MASS_MULTI_STRIKE}
+            : nextMove == 2 ? std::optional<M>{M::WRITHING_MASS_FLAIL}
+            : nextMove == 3 ? std::optional<M>{M::WRITHING_MASS_WITHER}
+            : nextMove == 4 ? std::optional<M>{M::WRITHING_MASS_IMPLANT} : std::nullopt;
+    case sts::MonsterId::BOOK_OF_STABBING:
+        return nextMove == 1 ? std::optional<M>{M::BOOK_OF_STABBING_MULTI_STAB}
+            : nextMove == 2 ? std::optional<M>{M::BOOK_OF_STABBING_SINGLE_STAB} : std::nullopt;
+    case sts::MonsterId::BRONZE_AUTOMATON:
+        return nextMove == 1 ? std::optional<M>{M::BRONZE_AUTOMATON_FLAIL}
+            : nextMove == 2 ? std::optional<M>{M::BRONZE_AUTOMATON_HYPER_BEAM}
+            : nextMove == 3 ? std::optional<M>{M::BRONZE_AUTOMATON_STUNNED}
+            : nextMove == 4 ? std::optional<M>{M::BRONZE_AUTOMATON_SPAWN_ORBS}
+            : nextMove == 5 ? std::optional<M>{M::BRONZE_AUTOMATON_BOOST} : std::nullopt;
+    case sts::MonsterId::BRONZE_ORB:
+        return nextMove == 1 ? std::optional<M>{M::BRONZE_ORB_BEAM}
+            : nextMove == 2 ? std::optional<M>{M::BRONZE_ORB_SUPPORT_BEAM}
+            : nextMove == 3 ? std::optional<M>{M::BRONZE_ORB_STASIS} : std::nullopt;
+    case sts::MonsterId::BYRD:
+        return nextMove == 1 ? std::optional<M>{M::BYRD_PECK}
+            : nextMove == 2 ? std::optional<M>{M::BYRD_FLY}
+            : nextMove == 3 ? std::optional<M>{M::BYRD_SWOOP}
+            : nextMove == 4 ? std::optional<M>{M::BYRD_STUNNED}
+            : nextMove == 5 ? std::optional<M>{M::BYRD_HEADBUTT}
+            : nextMove == 6 ? std::optional<M>{M::BYRD_CAW} : std::nullopt;
+    case sts::MonsterId::CENTURION:
+        return nextMove == 1 ? std::optional<M>{M::CENTURION_SLASH}
+            : nextMove == 2 ? std::optional<M>{M::CENTURION_DEFEND}
+            : nextMove == 3 ? std::optional<M>{M::CENTURION_FURY} : std::nullopt;
+    case sts::MonsterId::CHOSEN:
+        return nextMove == 1 ? std::optional<M>{M::CHOSEN_ZAP}
+            : nextMove == 2 ? std::optional<M>{M::CHOSEN_DRAIN}
+            : nextMove == 3 ? std::optional<M>{M::CHOSEN_DEBILITATE}
+            : nextMove == 4 ? std::optional<M>{M::CHOSEN_HEX}
+            : nextMove == 5 ? std::optional<M>{M::CHOSEN_POKE} : std::nullopt;
+    case sts::MonsterId::CORRUPT_HEART:
+        return nextMove == 1 ? std::optional<M>{M::CORRUPT_HEART_BLOOD_SHOTS}
+            : nextMove == 2 ? std::optional<M>{M::CORRUPT_HEART_ECHO}
+            : nextMove == 3 ? std::optional<M>{M::CORRUPT_HEART_DEBILITATE}
+            : nextMove == 4 ? std::optional<M>{M::CORRUPT_HEART_BUFF} : std::nullopt;
+    case sts::MonsterId::DAGGER:
+        return nextMove == 1 ? std::optional<M>{M::DAGGER_STAB}
+            : nextMove == 2 ? std::optional<M>{M::DAGGER_EXPLODE} : std::nullopt;
+    case sts::MonsterId::MYSTIC:
+        return nextMove == 1 ? std::optional<M>{M::MYSTIC_ATTACK_DEBUFF}
+            : nextMove == 2 ? std::optional<M>{M::MYSTIC_HEAL}
+            : nextMove == 3 ? std::optional<M>{M::MYSTIC_BUFF} : std::nullopt;
+    case sts::MonsterId::SHELLED_PARASITE:
+        return nextMove == 1 ? std::optional<M>{M::SHELLED_PARASITE_FELL}
+            : nextMove == 2 ? std::optional<M>{M::SHELLED_PARASITE_DOUBLE_STRIKE}
+            : nextMove == 3 ? std::optional<M>{M::SHELLED_PARASITE_SUCK}
+            : nextMove == 4 ? std::optional<M>{M::SHELLED_PARASITE_STUNNED} : std::nullopt;
+    case sts::MonsterId::SNAKE_PLANT:
+        return nextMove == 1 ? std::optional<M>{M::SNAKE_PLANT_CHOMP}
+            : nextMove == 2 ? std::optional<M>{M::SNAKE_PLANT_ENFEEBLING_SPORES} : std::nullopt;
+    case sts::MonsterId::SNECKO:
+        return nextMove == 1 ? std::optional<M>{M::SNECKO_PERPLEXING_GLARE}
+            : nextMove == 2 ? std::optional<M>{M::SNECKO_BITE}
+            : nextMove == 3 ? std::optional<M>{M::SNECKO_TAIL_WHIP} : std::nullopt;
+    case sts::MonsterId::SPHERIC_GUARDIAN:
+        return nextMove == 1 ? std::optional<M>{M::SPHERIC_GUARDIAN_SLAM}
+            : nextMove == 2 ? std::optional<M>{M::SPHERIC_GUARDIAN_ACTIVATE}
+            : nextMove == 3 ? std::optional<M>{M::SPHERIC_GUARDIAN_HARDEN}
+            : nextMove == 4 ? std::optional<M>{M::SPHERIC_GUARDIAN_ATTACK_DEBUFF} : std::nullopt;
+    case sts::MonsterId::SPIRE_SHIELD:
+        return nextMove == 1 ? std::optional<M>{M::SPIRE_SHIELD_BASH}
+            : nextMove == 2 ? std::optional<M>{M::SPIRE_SHIELD_FORTIFY}
+            : nextMove == 3 ? std::optional<M>{M::SPIRE_SHIELD_SMASH} : std::nullopt;
+    case sts::MonsterId::SPIRE_SPEAR:
+        return nextMove == 1 ? std::optional<M>{M::SPIRE_SPEAR_BURN_STRIKE}
+            : nextMove == 2 ? std::optional<M>{M::SPIRE_SPEAR_PIERCER}
+            : nextMove == 3 ? std::optional<M>{M::SPIRE_SPEAR_SKEWER} : std::nullopt;
+    case sts::MonsterId::TASKMASTER:
+        return nextMove == 2 ? std::optional<M>{M::TASKMASTER_SCOURING_WHIP} : std::nullopt;
+    case sts::MonsterId::THE_CHAMP:
+        return nextMove == 1 ? std::optional<M>{M::THE_CHAMP_HEAVY_SLASH}
+            : nextMove == 2 ? std::optional<M>{M::THE_CHAMP_DEFENSIVE_STANCE}
+            : nextMove == 3 ? std::optional<M>{M::THE_CHAMP_EXECUTE}
+            : nextMove == 4 ? std::optional<M>{M::THE_CHAMP_FACE_SLAP}
+            : nextMove == 5 ? std::optional<M>{M::THE_CHAMP_GLOAT}
+            : nextMove == 6 ? std::optional<M>{M::THE_CHAMP_TAUNT}
+            : nextMove == 7 ? std::optional<M>{M::THE_CHAMP_ANGER} : std::nullopt;
+    case sts::MonsterId::THE_COLLECTOR:
+        return nextMove == 1 ? std::optional<M>{M::THE_COLLECTOR_SPAWN}
+            : nextMove == 2 ? std::optional<M>{M::THE_COLLECTOR_FIREBALL}
+            : nextMove == 3 ? std::optional<M>{M::THE_COLLECTOR_BUFF}
+            : nextMove == 4 ? std::optional<M>{M::THE_COLLECTOR_MEGA_DEBUFF}
+            : nextMove == 5 ? std::optional<M>{M::THE_COLLECTOR_SPAWN} : std::nullopt;
+    case sts::MonsterId::THE_MAW:
+        return nextMove == 2 ? std::optional<M>{M::THE_MAW_ROAR}
+            : nextMove == 3 ? std::optional<M>{M::THE_MAW_SLAM}
+            : nextMove == 4 ? std::optional<M>{M::THE_MAW_DROOL}
+            : nextMove == 5 ? std::optional<M>{M::THE_MAW_NOM} : std::nullopt;
+    case sts::MonsterId::TORCH_HEAD:
+        return nextMove == 1 ? std::optional<M>{M::TORCH_HEAD_TACKLE} : std::nullopt;
+    case sts::MonsterId::ROMEO:
+        return nextMove == 1 ? std::optional<M>{M::ROMEO_CROSS_SLASH}
+            : nextMove == 2 ? std::optional<M>{M::ROMEO_MOCK}
+            : nextMove == 3 ? std::optional<M>{M::ROMEO_AGONIZING_SLASH} : std::nullopt;
+    case sts::MonsterId::BEAR:
+        return nextMove == 1 ? std::optional<M>{M::BEAR_MAUL}
+            : nextMove == 2 ? std::optional<M>{M::BEAR_BEAR_HUG}
+            : nextMove == 3 ? std::optional<M>{M::BEAR_LUNGE} : std::nullopt;
+    case sts::MonsterId::POINTY:
+        return nextMove == 1 ? std::optional<M>{M::POINTY_ATTACK} : std::nullopt;
     default: return std::nullopt;
     }
 }

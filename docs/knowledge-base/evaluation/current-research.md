@@ -208,6 +208,26 @@ whether to extend the prefix, with explicit cost measurement. See [ledger
 §324](../../experiments/ledger-06.md) and the [tactical-prefix evidence
 packet](../../experiments/evidence/silver_tactical_prefix_oracle_20260920/README.md).
 
+The bounded variable-prefix Phase-A screen is **`BOUNDED_PREFIX_SELECTOR_INSUFFICIENT`**.
+It reused the same frozen PR #256 robust common-prefix packet and tested all
+preregistered `FLAT_K1/K2/K4/K8/K16` and hierarchical
+`BEAM{1,2}_K1_{1,2}_K2_{1,2}` arms with disjoint Stage-1/Stage-2 selection
+replicates, explicit STOP finalists, opposite-half evaluation, and
+source-seed-clustered bootstrap. `FLAT_K16` exactly reproduced the #256
+up-to-depth-2 oracle (`0.56665` Teacher-A regret, `1.04505` Teacher-B regret,
+and `[0.23573, 2.13812]` clustered interval). The best bounded arm recovered
+only `26.82%` of measured oracle gain; its Teacher-B regret reduction was
+`-38.77%` and its clustered lower bound was `-0.40184`. The cheapest beam
+(`BEAM1_K1_1_K2_1`) used `9.40` mean continuation calls but recovered only
+`18.30%`, with clustered lower bound `-0.24005`. Flat `K4` recovered `60.56%`
+but cost `100.31` mean calls and had no positive clustered support. No arm
+cleared the 50% gain, positive-CI, Teacher-B, and 12-call gate together, so
+Phase B native causal confirmation was not run. The next direction is a cheap
+learned pair-plus-STOP/value evaluator; do not add rollout-heavy tactical
+control, use gameplay or hard64 evidence, or change Silver defaults from this
+screen. See [ledger §325](../../experiments/ledger-06.md) and the [bounded
+variable-prefix evidence packet](../../experiments/evidence/silver_bounded_variable_prefix_20260920/README.md).
+
 ## Silver policy/value Phase-A cost diagnostic
 
 The corrected clean-baseline result is **`PV_COST_NOT_FEASIBLE_CLEAN_BASELINE`**:

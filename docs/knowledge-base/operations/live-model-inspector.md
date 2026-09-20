@@ -39,29 +39,44 @@ The Java frontend is under `mods/sts-model-inspector/`. It uses BaseMod
 post-update/render subscribers and captures detached Ironclad-compatible
 summary fields for card rewards, rest sites, and ordinary player turns. The
 combat producer now emits protocol-v4 Silver roots with physical card UUIDs,
-upgraded/misc/cost/retain/free-play fields, dead monster slots, relics,
-potion slots, the combat entry identity, and a centralized native mapping
+upgraded/misc/cost/retain/free-play fields, battle-lifetime stable monster
+slots, dead/half-dead/escaping state, relics, potion slots, the combat entry
+identity, and a centralized native mapping
 boundary for runtime IDs. Monster move-history bytes are emitted in Java's
 oldest-to-newest order and translated by the native importer through the
 per-monster mapping; they are never copied as native enum values. Ordinary
 draw order is sorted before emission; the actual runtime order is retained
-when Frozen Eye is present. Runic Dome roots are rejected because the public
-producer does not expose enough hidden-intent state. The installed game API
-does not expose a public `justApplied` power bit; sensitive player and monster
-powers therefore require an explicit serialized bit and are rejected when it
-is unavailable rather than receiving a fabricated default. Special bookkeeping
-for Combust, Echo Form, Panache, Deva Form, Orange Pellets, used-up relics,
-and Necronomicon is serialized when its runtime field is accessible; otherwise
-the importer rejects that state. Monster `miscInfo` is similarly serialized
-from known runtime trackers or omitted so the importer fails closed.
+when Frozen Eye is present. Under Runic Dome, the observer omits `nextMove`,
+`moveHistory`, `intent`, and `intentDamage`; the root remains rejected because
+the public producer does not expose enough pre-roll state for a fair import.
+Sensitive player and monster powers carry the runtime `justApplied` bit when
+the bounded reflection helper can read it and are rejected when it cannot.
+Special bookkeeping for Combust, Echo Form, Panache, Deva Form, Orange
+Pellets, used-up relics, and Necronomicon is serialized when its runtime field
+is accessible; otherwise the importer rejects that state. Monster `miscInfo`
+is similarly serialized from known runtime trackers or omitted so the importer
+fails closed. Bronze Orb Stasis uses the runtime `StasisPower.card` object to
+preserve the exact physical card UUID and state, rejecting only the active-
+Stasis snapshot when that field is unavailable.
 The observer's post-`AbstractPlayer.damage()` patch records finalized damage
 once per public damage call, preserving multi-hit event counts and the final
 individual unblocked hit. The v4 importer rejects observations unless the
 producer asserts this exact tracking; the old per-turn combat-damage total is
-not an accepted approximation. Move bytes are likewise fail-closed: only the
-runtime-qualified Cultist, Jaw Worm, and Gremlin Nob mappings currently cross
-the live boundary until additional Java encounter constants are independently
-qualified.
+not an accepted approximation. The resolved `CardQueueItem` is captured by a
+prefix on `AbstractPlayer.useCard(...)`, after vanilla resolves random
+targeting and before `GameActionManager` removes the queue entry; post-update
+observation is too late to retain that public item. Boolean monster powers are
+presence states at the importer boundary, so a negative or sentinel Java amount
+still sets the status bit before numeric amount validation. The stable slot
+registry keeps ordinary Large Slime split children at native slots 0/1; the
+separate Slime Boss layout uses 0/2. Move bytes are likewise fail-closed, with all
+simulator-supported vanilla class constants independently qualified against the
+installed `desktop-1.0.jar`. The native construction, public-render, import,
+exact search-state parity, and one-simulation Silver-decision sweep covers all
+63 reachable `MonsterEncounter` values; the focused test additionally covers
+producer-shaped dynamic transitions for Large Slime split, Reptomancer summon,
+Darkling Regrow, Bronze Orb Stasis, and Awakened One stage 2. The only manifest
+exclusion is the `INVALID` sentinel.
 The combat boundary still requires the installed runtime's waiting-for-user
 phase, no current action, empty action/card/monster queues, and an unended turn.
 The combat fingerprint includes the payload, so successive decisions are not
@@ -246,20 +261,21 @@ An observation must include `session`, `sequence`, `observationHash`, and an
 object containing a string `boundary`. The response echoes the identity fields
 so a future game UI can discard responses after a reload or newer capture.
 
-## Required next work
+## Remaining bounded boundary
 
 The Java process owns bounded background I/O and treats the endpoint as
-advisory only. Common Grid and Hand card-selection screens are now mapped to
-the native selection tasks for Exhaust, Armaments, Dual Wield, Headbutt,
-Gambler's Brew, and Hologram. The mapping is deliberately bounded: an
-unrecognized selection prompt, an unavailable runtime tracker, or an option
-list larger than the native representation is rejected. The ordinary player
-limbo pile is serialized; Bronze Orb roots are rejected because its stasis
-card is not publicly trackable. Other unsupported queue metadata remains
-outside the supported boundary. CTM and Silver results remain separate
-evaluators, and neither path controls gameplay or establishes policy-quality
-evidence. Any expansion of the producer must add a native parity fixture and
-an explicit public-information contract before promotion.
+advisory only. Common Grid and Hand card-selection screens are mapped to the
+native selection tasks for Exhaust, Armaments, Dual Wield, Headbutt, Exhume,
+Warcry, Gambler's Brew, Liquid Memories, and Hologram. The mapping remains
+deliberately bounded: an unrecognized selection prompt, an unavailable runtime
+tracker, or an option list larger than the native representation is rejected.
+The ordinary player limbo pile is serialized. The remaining common combat
+exclusion is live Runic Dome because exact public pre-roll reconstruction has
+not been proven. Other unsupported queue metadata remains outside the
+supported boundary. CTM and Silver results remain separate evaluators, and
+neither path controls gameplay or establishes policy-quality evidence. Any
+future public-state expansion must add a native parity fixture and an explicit
+public-information contract before promotion.
 
 Knowledge impact: this page records the protocol/lifecycle boundary, the
 player-visible combat gate, protocol-v4 producer/importer contract, explicit
