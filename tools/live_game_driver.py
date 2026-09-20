@@ -1121,7 +1121,11 @@ class Driver:
 
 
 def _terminal_outcome(screen: Mapping[str, Any]) -> str:
-    text = " ".join(str(value).upper() for value in screen.values())
+    victory = _mapping(screen.get("screen_state")).get("victory")
+    if type(victory) is bool:
+        return "victory" if victory else "death"
+    text = " ".join(_text(screen.get(key, "")).upper() for key in
+                    ("screen_type", "screenType", "screen_name", "outcome", "run_state"))
     return "victory" if "VICTORY" in text else "death" if "DEATH" in text else "run_complete"
 
 

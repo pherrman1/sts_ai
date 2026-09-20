@@ -506,6 +506,19 @@ class OocDriverTest(unittest.TestCase):
             self.assertEqual(driver.outcome, "max_steps")
             self.assertFalse(client.calls)
 
+    def test_actual_game_over_boolean_distinguishes_death_and_victory(self):
+        for victory in (False, True):
+            with self.subTest(victory=victory), tempfile.TemporaryDirectory() as directory:
+                screen = {"screen_type": "GAME_OVER", "screen_state": {"victory": victory, "score": 116},
+                          "screen_name": "VICTORY" if victory else "DEATH", "ready_for_command": True}
+                client = FakeClient(screen, ["proceed"])
+                driver = Driver(client, InspectorReader(Path(directory) / "missing"),
+                                TraceWriter(Path(directory) / "trace"))
+                asyncio.run(driver.run())
+                self.assertEqual(driver.outcome, "victory" if victory else "death")
+                self.assertFalse(any(tool == "proceed" for tool, _ in client.calls))
+                self.assertIsNone(driver.failure_path)
+
     def test_save_controls_never_destroy_existing_run(self):
         with tempfile.TemporaryDirectory() as directory:
             driver, _, _ = self.make(directory)
