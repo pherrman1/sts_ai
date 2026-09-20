@@ -92,7 +92,8 @@ The panels omit floor/HP text already shown in the game HUD.
 OOC decisions use the same dark/cyan styling as Silver, with an amber border
 on the selected action. Event and Neow scores appear beside their active
 buttons. Shop scores sit by each affordable card, relic, potion, removal and
-leave control. Map scores follow the reachable nodes' scrolled hitboxes;
+leave control. Map scores bind through the same one-based `choose` indices
+as the live capture (coordinates are metadata), and follow the reachable nodes' scrolled hitboxes;
 offscreen nodes never acquire badges clamped onto the screen edge. Rest options
 and OOC card selectors also use physical-control badges. Upgrade selectors,
 including smithing, show each card's V4 score; remove/transform selectors remain
@@ -116,15 +117,23 @@ score. Removal/transform parents retain their existing action scores without
 invented target recommendations. Other upgrade parents with preceding effects
 remain unqualified for previews.
 
-Potion use and discard labels appear beside the hovered potion or its open
-menu. They retain physical slot and target distinctions and never overlap
-adjacent inventory slots with full-width labels. Silver root summaries include
+Potion use and discard labels remain visible in named, physically ordered
+columns below the inventory without requiring hover. Columns clear the combat
+panel and move below an open potion menu; target selection hides the rankings.
+They retain physical slot and target distinctions. Card and potion target labels
+use live monster names, with indices only to distinguish duplicate names. Native
+Silver slots and compact live potion targets resolve separately. Silver root summaries include
 an additive `liveAction` binding for this display; unsupported lowering is
 `null`. OOC inventory potion actions are not scored by the current V4 provider:
 the UI says `not scored`, or `unavailable` when the actual potion rejects that
 operation. Freshness and unsupported/error suppression apply to potion scores
 as well. The overlay is presentation-only and does not change policy
-or driver decisions. Workshop
+or driver decisions. Combat-entry projection translates only the spent
+Neow's Lament sentinel (`counter=-2`, `usedUp=true`) to native zero remaining
+charges. Active charges and other relic counters remain exact; the CTM support
+gate is unchanged. Unavailable CTM forecasts show their reason instead of an
+indefinite waiting message. CTM display status comes from its own evaluator,
+so unsupported Silver decisions cannot suppress a valid CTM forecast. Workshop
 and game/dependency JARs remain outside Git. The native v4 importer is
 fail-closed for unknown mappings, resolving snapshots, unsupported selection
 tasks or option capacities, and native mechanics absent from the pinned

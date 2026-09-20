@@ -17,8 +17,8 @@ final class PotionOverlay {
                 throw new IllegalArgumentException("invalid physical potion action");
             this.rank = rank; this.selected = selected; this.q = q;
         }
-        String text() {
-            return (discard ? "Discard" : "Use") + (target > 0 ? " → enemy " + target : "")
+        String text(String targetName) {
+            return (discard ? "Discard" : "Use") + (target > 0 ? " → " + targetName : "")
                     + "  #" + rank + (q == null ? " · no score" : String.format(Locale.ROOT, " · Q %.2f", q));
         }
     }

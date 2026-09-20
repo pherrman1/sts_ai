@@ -32,6 +32,11 @@ final class InlineChoices {
         if (index > 0) action.addProperty("choiceIndex", index);
         return action;
     }
+    static JsonObject mapAction(int choiceIndex) {
+        // LiveOocCapture keeps coordinates as metadata, but the executable
+        // binding is MCP's one-based choice index, including for map nodes.
+        return action("choose", choiceIndex);
+    }
     static List<Anchor> capture(String screen) {
         List<Anchor> result = new ArrayList<>();
         try {
@@ -48,12 +53,13 @@ final class InlineChoices {
                 }
             } else if ("map".equals(screen) && AbstractDungeon.screen == AbstractDungeon.CurrentScreen.MAP) {
                 if (Boolean.TRUE.equals(call("bossNodeAvailable"))) {
-                    result.add(node(action("choose", 1), AbstractDungeon.dungeonMapScreen.map.bossHb));
-                } else for (Object item : choices("getMapScreenNodeChoices")) {
-                    com.megacrit.cardcrawl.map.MapRoomNode node = (com.megacrit.cardcrawl.map.MapRoomNode)item;
-                    JsonObject action = action("map", 0);
-                    action.addProperty("x", node.x); action.addProperty("y", node.y);
-                    result.add(node(action, node.hb));
+                    result.add(node(mapAction(1), AbstractDungeon.dungeonMapScreen.map.bossHb));
+                } else {
+                    List<?> nodes = choices("getMapScreenNodeChoices");
+                    for (int i = 0; i < nodes.size(); ++i) {
+                        com.megacrit.cardcrawl.map.MapRoomNode node = (com.megacrit.cardcrawl.map.MapRoomNode)nodes.get(i);
+                        result.add(node(mapAction(i + 1), node.hb));
+                    }
                 }
             } else if ("selector".equals(screen) && AbstractDungeon.screen == AbstractDungeon.CurrentScreen.GRID) {
                 if (com.megacrit.cardcrawl.ui.buttons.PeekButton.isPeeking) return result;
