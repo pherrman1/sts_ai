@@ -175,6 +175,11 @@ class LiveGameRuntimeTest(unittest.TestCase):
         self.assertIn("MCP-only mode", completed.stdout + completed.stderr)
         self.assertEqual(calls.read_text().splitlines(), ["ensure"])
 
+    def test_restart_targets_only_verified_mcp_owner_pids(self):
+        source = (Path(__file__).parents[1] / "tools/live_game_start.sh").read_text()
+        self.assertIn('kill -TERM "${mcp_owner_pids[@]}"', source)
+        self.assertNotIn('kill -TERM "${game_pids[@]}"', source)
+
     def test_java_configuration_uses_environment_first_seam(self):
         source = (Path(__file__).parents[1] /
                   "mods/sts-model-inspector/src/main/java/stsmodelinspector/STSModelInspector.java").read_text()

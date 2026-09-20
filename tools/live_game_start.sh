@@ -201,9 +201,8 @@ if port_is_open; then
     ((probe)) && run_probe
     exit 0
   fi
-  ((${#game_pids[@]})) || die "expected ModTheSpire process disappeared before restart"
-  echo "Stopping expected ModTheSpire process for explicit restart: ${game_pids[*]}"
-  kill -TERM "${game_pids[@]}"
+  echo "Stopping MCP-owning ModTheSpire process for explicit restart: ${mcp_owner_pids[*]}"
+  kill -TERM "${mcp_owner_pids[@]}"
   for ((attempt=0; attempt<100; attempt++)); do
     port_is_open || break
     sleep 0.1
