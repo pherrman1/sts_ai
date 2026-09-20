@@ -1,6 +1,6 @@
 # Out-of-combat policy
 
-Last verified: 2026-09-15 for qualified V2 combat support; 2026-09-14 for opt-in MCTS controls and continuation-limit accounting; 2026-09-10 against the current working tree (semantic OOC
+Last verified: 2026-09-20 for semantic MCTS ownership and source-prior projection; 2026-09-15 for qualified V2 combat support; 2026-09-14 for opt-in MCTS controls and continuation-limit accounting; 2026-09-10 against the current working tree (semantic OOC
 decision coverage and reward continuation).
 Previously verified 2026-08-09 (key collection
 gated behind STS_COLLECT_KEYS=1, default off; BEST banner includes keys=collect/skip).
@@ -134,26 +134,34 @@ no mutable process-wide cache. The uncached native sampler remains a parity
 reference. Leaf-policy continuations retain their original uncached sampling.
 Map ownership and `GameContext` detachment semantics remain unchanged.
 
-The exact primitive candidate contract is shared with those gates through
-`v4CandidateActions`, including the last card-reward group's `CARD(group,5)`
-skip. Supported decisions are REWARDS with at least one card group,
-REST_ROOM, CARD_SELECT/UPGRADE, EVENT_SCREEN with a native nonempty candidate
-set (excluding INVALID and MATCH_AND_KEEP), SHOP_ROOM, TREASURE_ROOM,
-BOSS_RELIC_REWARDS, and MAP_SCREEN with a map except row 14. Other selectors,
-non-card reward states, invalid/empty decisions, missing maps and map row 14
-are explicit leaf boundaries. Decisions whose native candidates contain duplicate
-primitive IDs (including multiple gold rewards) also use the leaf/fallback
-contract; the V4 candidate enumeration remains unchanged. BATTLE states are decision boundaries, with the leaf evaluator determining the
-continuation contract; UNDECIDED battles are never fabricated terminals. Run loss/victory
-remain exact 0/1, with precedence over any boundary.
+The adapter owns complete semantic sibling sets from
+`enumerateOocSemanticPrimitiveBindings` on rewards, shop, campfire, events,
+treasure, boss relics and already-open supported selectors. Unsupported,
+incomplete or empty enumeration is a leaf/fallback boundary; it never narrows
+the tree to primitive V4 candidates. BATTLE remains a boundary and exact run
+loss/victory retain precedence. MAP alone keeps its existing primitive V4
+candidate contract (including missing-map and row-14 boundaries).
+
+V4 remains a primitive-trained source-level prior. When the state's unique
+semantic source primitives exactly match the complete, duplicate-free V4
+candidate set, each source is scored once with the existing policy head and
+temperature. Its raw prior weight is divided equally among its semantic children.
+One-to-one actions retain the original prior. Unqualified source coverage,
+including REMOVE/TRANSFORM selector roots, yields uniform priors across the
+entire sibling set; explicit `STS_OOC_MCTS_PRIOR=uniform` does the same.
+Compound target preference is searched, not learned by V4. This adoption does
+not imply semantic V4 training or change its artifact/schema.
 
 Root construction requires an explicit `PathHistory`: prior room visits are not
 recoverable from `GameContext` and feed both V4 globals and native win features.
 The nonempty-history regression verifies both routes against direct evaluation
 using the supplied history. Snapshots live in a deque, with detached map copies at root and each native
-`GameAction::execute` successor and branch-local updated `PathHistory`.
-Action IDs are the primitive action bits and are validated against the
-parent's complete candidates before execution. Leaves call the native-only
+semantic or primitive successor and branch-local updated `PathHistory`.
+Semantic action IDs are state-local ordinals bound to immutable candidates,
+which retain canonical semantic keys, source primitives and typed actions. MAP
+IDs remain primitive bits. Successors execute transactionally through
+`executeOocSemanticAction`; an enumeration/execution disagreement aborts the
+whole root without trusting partial visits/Q. Leaves call the native-only
 `vStateWinNative` seam: unavailable models or nonfinite/out-of-range values
 throw, with no server fallback and no clamping. Leaf feature evaluation
 scopes the stored path history and restores the caller's history.
@@ -161,7 +169,7 @@ scopes the stored path history and restores the caller's history.
 `OocGameContextModel` accepts an optional shared `CombatTransitionSampler`.
 The default adapter options retain the offline scaffold contract described here;
 opt-in live selection uses the corrected checkpoint contract below.
-After the ordinary primitive action and prebattle history update, it captures
+After the semantic action (or primitive MAP action) and prebattle history update, it captures
 `combat_predictor_input_v1` before battle initialization, using the current
 `potionKeepValue`. Unsupported states retain the existing BATTLE leaf and native
 win-value seam. Death sets PLAYER_LOSS without continuation. Victory applies a
@@ -233,8 +241,8 @@ Its search seed is `SplitMix64(runSeed XOR SplitMix64(decisionIndex))`, using
 explicit unsigned 64-bit arithmetic. The index increments once per actual
 nonbattle run-loop decision, including unsupported roots. It consumes no
 simulator RNG. Terminal/boundary roots and whole-root support aborts return no
-action; completed supported searches must return a legal primitive ID.
-A root with one valid, unique V4 candidate may return that primitive without
+action; completed supported searches must return a legal adapter candidate ID.
+A root with one valid, unique candidate may return that candidate without
 constructing a tree only under the explicit `searchGuaranteedNonAborting()`
 contract. `OocGameContextModel` explicitly returns false: separate combat-support
 qualification must exclude every intentional abort path before this can change.
@@ -243,8 +251,11 @@ before its lock retains whole-root fallback, whose ordered
 policy can consume `ScumSearchAgent2::rng` even for a singleton candidate set.
 Qualified bypasses report `trivialRootBypasses` with zero simulations/attempts/
 combat draws; the current live model is ineligible. Snapshots are discarded before
-`oocMctsPolicyStep` resolves a selected ID against fresh live candidates and executes
-it exactly once. If it enters BATTLE, real combat remains pending for the
+`oocMctsPolicyStep` resolves the retained canonical key against fresh complete
+semantic candidates, requires exactly one match, and executes transactionally.
+Stale/missing/ambiguous identities execute nothing. An active live action
+observer causes fallback before mutation; it is never silently disabled. MAP
+continues to resolve fresh primitive bits. If it enters BATTLE, real combat remains pending for the
 ordinary next run-loop iteration. No sampled combat result transfers to live
 state.
 
@@ -285,7 +296,7 @@ on their copied RNG state. The adapter caches those `(parent, action)` successor
 and advertises them to the core. Only these children are reused as deterministic;
 sampled combat outcomes retain independent equal-weight particles, including
 equal outcomes. Default PUCT/widening are `1.5`, `2`, `0.5`, with512 simulations;
-opt-in controls below override these only inside detached OOC search. Depth counts searched primitive transitions and excludes
+opt-in controls below override these only inside detached OOC search. Depth counts searched semantic transitions (primitive transitions on MAP) and excludes
 policy-chain steps used only to project leaves.
 
 The following `STS_OOC_MCTS_` suffixes configure ON searches. Invalid finite
@@ -303,7 +314,7 @@ settings in `[ooc-mcts-config]` JSON for artifact validation.
 | `CPUCT` |1.5|finite nonnegative PUCT exploration multiplier|
 | `WIDEN_K` |2|finite positive chance-particle width coefficient|
 | `WIDEN_ALPHA` |0.5|finite exponent strictly between0 and1|
-| `MAX_DEPTH` |32|integer1..32 searched primitive transitions|
+| `MAX_DEPTH` |32|integer1..32 searched action transitions|
 | `ROOT_SELECTION` |visits|`visits` or `q`; Q selects only visited actions, ties by visits|
 | `LEAF_VALUE` |native|`native`; `constant`0.5; or `boss`, the mean across all ten Act1--4 bosses of `0.75*survival + 0.25*survival*winningHpFraction` from the configured combat evaluator|
 | `LEAF_COMBATS` |0|0,1,3 additional surrogate combats before resolved checkpoint|
@@ -321,6 +332,12 @@ The boss leaf is evaluated through one shared helper from both ordinary
 gameplay RNG, never calls `v_win`, and fails the simulation/root closed if any
 boss is outside combat-evaluator support. Each probe preserves the leaf's player
 state but uses that encounter's canonical act and boss floor.
+
+The existing trace also writes `.actions.jsonl` decision records with selected
+canonical keys, planner IDs, screen/selector, compound status and execution or
+fallback reason. Root-lock and checkpoint diagnostics include canonical keys.
+Copied hidden noncombat RNG remains unchanged: semantic adoption does not
+qualify a fair hidden-information generative model or establish policy quality.
 
 Optional `STS_OOC_MCTS_TRACE` appends one CSV row per completed run, including
 OFF runs when explicitly requested.
@@ -373,7 +390,7 @@ not qualify deployment or remove copied hidden noncombat RNG limitations.
 
 ## Semantic OOC decisions
 
-`OocSemanticAction` is an opt-in intent representation above the primitive
+`OocSemanticAction` is the opt-in OOC MCTS action representation above the primitive
 `GameAction` interface (`include/sim/search/OocSemanticAction.h`,
 `src/sim/search/OocSemanticAction.cpp`). It does not replace the deployed
 policy chain, model inputs, trained artifacts, or fallback choices. The
