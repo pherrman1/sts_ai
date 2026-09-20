@@ -1,6 +1,7 @@
 # Current research status
 
-Last verified: 2026-09-19 for forced-action historical artifact recovery and
+Last verified: 2026-09-20 for the contextual first-action Silver selector
+headroom/policy screen; 2026-09-19 for forced-action historical artifact recovery and
 the PR #247 evaluator preflight; 2026-09-18 for the OOC 20% gap-stop quality
 gate and frozen
 six-arm Silver root-mechanism replay;
@@ -154,6 +155,27 @@ erase the earlier targeted first-action finding; no tuning or broadening should
 follow from this holdout. Do not infer a rollout-policy, model, search budget,
 or default change from either diagnostic. See [ledger §322](../../experiments/ledger-06.md)
 and the [diagnostic evidence packet](../../experiments/evidence/silver_rollout_variance_20260920/README.md).
+
+The subsequent frozen-DEV contextual first-action screen is
+**`FIRST_ACTION_POLICY_HEADROOM_INSUFFICIENT`** after correcting the
+variance-matched comparator. Its cross-fitted first-action oracle reduced
+k=32 Teacher-A regret from `1.51332` to `1.41354` (`6.59%`) across 32 groups,
+with pairwise concordance `0.74241 -> 0.75176`, top agreement
+`0.56250 -> 0.62500`, and Teacher-B direction consistent. The corpus contains
+32 groups from 20 source seeds, with 11 source seeds shared by multiple groups;
+regenerated folds/bootstrap use `source_seed` clusters where needed. The retained fixed linear selector,
+trained on exact forced-action `q0` values under the historical group-id fold
+assignment, produced k=1 regret `3.65020` versus `2.33796` and k=32 regret
+`1.63434` versus `1.51332`; its source-seed-clustered bootstrap interval for
+baseline-minus-candidate regret is `[-1.33542, 0.93203]`, with the largest
+regression `14.57257`. The candidate path's raw `1.74940x` timing is
+non-production-comparable because it includes diagnostic semantic-action
+resolution through a fresh `BattleSearcher.search(1)`; the `<5%` runtime gate
+is unmeasured, not failed. This rejects the tested feature/scoring formulation
+and does not establish that all small linear contextual policies fail. Do not
+tune additional selectors or launch fresh gameplay confirmation from this
+result. See [ledger §323](../../experiments/ledger-06.md) and the [selector
+evidence packet](../../experiments/evidence/silver_first_action_selector_20260920/README.md).
 
 ## Silver policy/value Phase-A cost diagnostic
 
