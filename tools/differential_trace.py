@@ -204,13 +204,15 @@ class DifferentialTraceWriter:
             "record_type": "decision", "schema": SCHEMA, "schemaVersion": SCHEMA_VERSION,
             "traceId": self.run_id, "decisionIndex": row.get("step"), "boundary": boundary,
             "seed": row.get("seed"), "act": row.get("act"), "floor": row.get("floor"),
-            "before": normalize_state(before), "legalActions": row.get("legal_candidates", []),
+            "before": normalize_state(before),
+            "legalActions": row.get("differential_legal_actions", []),
             "selectedAction": {"identity": identity, "action": selected},
             "mcpAction": {"tool": row.get("executed_mcp_tool", row.get("selected_mcp_tool")),
                           "arguments": row.get("executed_mcp_arguments", row.get("selected_mcp_arguments", {}))},
             "after": normalize_state(after),
             "liveObservation": row.get("live_observation"),
-            "debugRng": row.get(RNG_KEY) if RNG_KEY in row else None,
+            "preRng": row.get("preRng"), "postRng": row.get("postRng"),
+            "runtime": row.get("runtime_provenance"),
             "provenance": self.provenance,
         })
 

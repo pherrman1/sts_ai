@@ -1,5 +1,6 @@
 import tempfile
 import unittest
+import os
 from pathlib import Path
 
 from tools.differential_replay import replay
@@ -25,7 +26,7 @@ class DifferentialTraceTests(unittest.TestCase):
             writer = DifferentialTraceWriter(path, run_id="run-1", provenance={"seed": 42})
             writer.write_decision({
                 "step": 0, "pre_action_state": {"hp": 80, "ready_for_command": True},
-                "post_action_state": {"hp": 75}, "legal_candidates": [combat("a")],
+                "post_action_state": {"hp": 75}, "differential_legal_actions": [combat("a")],
                 "selected_candidate": combat("a"), "executed_mcp_tool": "play_card",
                 "executed_mcp_arguments": {"card_index": 1}}, boundary="combat")
             writer.write_summary({"outcome": "complete"})
@@ -56,7 +57,10 @@ class DifferentialTraceTests(unittest.TestCase):
                                          {"hp": 1, "debugRng": {"x": 2}})["category"], "EQUIVALENT")
 
     def test_vanilla_rng_preflight(self):
-        jar = Path.home() / ".local/share/Steam/steamapps/common/SlayTheSpire/desktop-1.0.jar"
+        configured = os.environ.get("STS_VANILLA_JAR")
+        if not configured:
+            self.skipTest("set STS_VANILLA_JAR for the local installed-game integration probe")
+        jar = Path(configured)
         result = inspect_vanilla_rng(jar)
         self.assertTrue(result["available"], result)
         self.assertEqual(result["captureContract"],
@@ -65,6 +69,31 @@ class DifferentialTraceTests(unittest.TestCase):
     def test_identity_requires_native_replayable_key(self):
         with self.assertRaises(DifferentialTraceError):
             action_identity({"semantic": {"kind": "choose"}}, "ooc")
+
+    def test_trace_unsupported_boundary_is_not_a_state_mismatch(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "trace.jsonl"
+            writer = DifferentialTraceWriter(path, run_id="run-unsupported")
+            writer._write({"record_type": "decision", "schema": "sts_differential_trace",
+                           "schemaVersion": 1, "traceId": writer.run_id, "decisionIndex": 3,
+                           "boundary": "ooc", "traceError": {
+                               "category": "UNSUPPORTED_BOUNDARY", "reason": "selector_type:transform"}})
+            result = replay(path, [])
+            self.assertEqual(result["category"], "UNSUPPORTED_BOUNDARY")
+            self.assertEqual(result["reason"], "selector_type:transform")
+
+    def test_post_action_rng_only_difference_is_classified(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "trace.jsonl"
+            writer = DifferentialTraceWriter(path, run_id="run-rng")
+            writer.write_decision({"step": 0, "pre_action_state": {"hp": 80},
+                "post_action_state": {"hp": 80}, "differential_legal_actions": [combat("a")],
+                "selected_candidate": combat("a"), "preRng": {"ai": [0, "1", "2"]},
+                "postRng": {"ai": [1, "3", "4"]}}, boundary="combat")
+            result = replay(path, [{"state": {"hp": 80}, "legalActions": [combat("a")],
+                "rng": {"ai": [0, "1", "2"]}, "after": {"hp": 80},
+                "postRng": {"ai": [1, "3", "5"]}}])
+            self.assertEqual(result["category"], "RNG_CONSUMPTION_DIVERGENCE")
 
 
 if __name__ == "__main__":

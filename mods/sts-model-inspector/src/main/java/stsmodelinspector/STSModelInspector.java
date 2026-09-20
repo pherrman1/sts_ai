@@ -2547,8 +2547,14 @@ public final class STSModelInspector implements PostInitializeSubscriber,
                     .append(",\"observationHash\":\"").append(Snapshot.escape(responseObservationHash))
                     .append("\",\"reason\":\"").append(Snapshot.escape(reason == null ? "" : reason))
                     .append("\",\"advisor\":");
-            return out.append(ready && !advisorResponseJson.isEmpty()
-                    ? advisorResponseJson : "null").append("}}").toString();
+            out.append(ready && !advisorResponseJson.isEmpty()
+                    ? advisorResponseJson : "null").append("}");
+            // Deliberately outside observation/observationHash and advisor
+            // request: hidden state is debug-only and cannot affect policy.
+            String debugRng = DebugRngCapture.json();
+            if (!debugRng.isEmpty()) out.append(",\"debugRng\":").append(debugRng);
+            out.append(",\"runtime\":").append(DebugRngCapture.runtimeJson());
+            return out.append("}").toString();
         }
 
         private final class Publication {

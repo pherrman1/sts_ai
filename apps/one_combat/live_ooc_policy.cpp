@@ -25,7 +25,10 @@ LiveOocDecision unsupported(const std::string &reason) {
 // Compound semantic enumeration describes a completed transaction. A live
 // decision performs only its source action, with the selector scored afresh.
 // Its separate identity cannot accidentally be executed as that transaction.
-std::pair<std::string, std::string> currentIdentity(const OocSemanticPrimitiveBinding &binding) {
+} // namespace
+
+std::pair<std::string, std::string> currentLiveOocIdentity(
+        const OocSemanticPrimitiveBinding &binding) {
     auto semantic = binding.semantic;
     if (binding.compoundSelector == CardSelectScreenType::INVALID)
         return {canonicalOocSemanticActionKey(semantic), oocSemanticActionPayloadJson(semantic)};
@@ -42,7 +45,6 @@ std::pair<std::string, std::string> currentIdentity(const OocSemanticPrimitiveBi
     payload["selectorType"] = static_cast<int>(binding.compoundSelector);
     return {canonicalOocSemanticActionKey(semantic) + ":current-screen", payload.dump()};
 }
-} // namespace
 
 LiveOocDecision scoreLiveOocV4(const sts::GameContext &projected, const PathHistory &path,
                              const OocStrategicTokNet &model) {
@@ -68,7 +70,7 @@ LiveOocDecision scoreLiveOocV4(const sts::GameContext &projected, const PathHist
         if (!semantic.complete)
             return unsupported("SEMANTIC_ENUMERATION_FAILURE: " + semantic.error);
         for (const auto &binding : semantic.bindings) {
-            auto identity = currentIdentity(binding);
+            auto identity = currentLiveOocIdentity(binding);
             const auto existing = identities.find(binding.primitiveBits);
             if (existing != identities.end() && existing->second != identity)
                 return unsupported("AMBIGUOUS_SEMANTIC_MAPPING");

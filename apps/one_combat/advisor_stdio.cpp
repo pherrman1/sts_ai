@@ -2,6 +2,7 @@
 #include "live_ooc_importer.h"
 #include "live_ooc_state.h"
 #include "live_ooc_policy.h"
+#include "differential_state.h"
 #include "../ooc_strategic_tok_net.h"
 #include <fstream>
 #include <iomanip>
@@ -42,6 +43,8 @@ json oocResponse(const one_combat::advisor::Request &request,
         return advisor::errorResponse(request, imported.code, imported.message);
     if (!imported.ok) evaluator["reason"] = imported.message;
     else {
+        evaluator["differentialState"] = differential::canonicalOocState(
+            state.projected, state.path);
         const auto scoreStarted = std::chrono::steady_clock::now();
         const auto decision = policy.score(state.projected, state.path);
         evaluator["scorerLatencyMicros"] = std::chrono::duration_cast<std::chrono::microseconds>(
@@ -146,6 +149,7 @@ json silverEvaluator(const one_combat::advisor::Request &request,
         evaluator["reason"] = "silver_no_legal_actions";
         return evaluator;
     }
+    evaluator["differentialState"] = one_combat::differential::canonicalCombatState(imported.wire);
     const auto started = std::chrono::steady_clock::now();
     silver_bridge::SilverSearchConfig config;
     config.simulationsPerDecision = 1000;

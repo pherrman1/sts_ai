@@ -5,10 +5,14 @@
 #include <string>
 #include <vector>
 #include "run_features.h"
+#include "sim/search/OocSemanticAction.h"
 
 struct OocStrategicTokNet;
 
 namespace one_combat {
+
+std::pair<std::string, std::string> currentLiveOocIdentity(
+    const sts::search::OocSemanticPrimitiveBinding &binding);
 
 struct LiveOocCandidateScore {
     std::string semanticKey;

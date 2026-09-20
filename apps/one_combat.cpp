@@ -61,6 +61,7 @@
 #include "one_combat/particle_diagnostics.h"
 #include "one_combat/ooc_policy.h"
 #include "one_combat/run_driver.h"
+#include "one_combat/differential_replay_native.h"
 
 #ifdef _OPENMP
 #include <omp.h>
@@ -8450,6 +8451,9 @@ int main(int argc, char **argv) {
     g_mainArgv.clear();
     for (int i = 1; i < argc; ++i) g_mainArgv.emplace_back(argv[i]);
     std::string mode = argc > 1 ? argv[1] : "";
+
+    if (mode == "differentialreplay")
+        return one_combat::runDifferentialReplayNative(std::cin, std::cout);
 
     if (const char *d = std::getenv("VPORT")) g_vPort = std::atoi(d);
 

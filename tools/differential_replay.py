@@ -27,11 +27,21 @@ def replay(trace: Path, native_rows: list[Mapping[str, Any]]) -> dict[str, Any]:
     rows = read_trace(trace)
     decisions = [row for row in rows if row.get("record_type") == "decision"]
     for index, decision in enumerate(decisions):
+        trace_error = decision.get("traceError")
+        if isinstance(trace_error, Mapping):
+            return {"category": trace_error.get("category", "UNSUPPORTED_BOUNDARY"),
+                    "decisionIndex": decision.get("decisionIndex"),
+                    "reason": trace_error.get("reason", "unspecified trace boundary")}
         if index >= len(native_rows):
             return {"category": "TRACE_OR_SCHEMA_ERROR",
                     "decisionIndex": decision.get("decisionIndex"),
                     "reason": "native adapter ended before trace"}
         native = native_rows[index]
+        native_error = native.get("traceError")
+        if isinstance(native_error, Mapping):
+            return {"category": native_error.get("category", "UNSUPPORTED_BOUNDARY"),
+                    "decisionIndex": decision.get("decisionIndex"),
+                    "reason": native_error.get("reason", "native replay stopped")}
         boundary = decision.get("boundary")
         if boundary not in {"combat", "ooc"}:
             return {"category": "UNSUPPORTED_BOUNDARY", "decisionIndex": decision.get("decisionIndex"),
@@ -41,7 +51,7 @@ def replay(trace: Path, native_rows: list[Mapping[str, Any]]) -> dict[str, Any]:
             return {"category": "TRACE_OR_SCHEMA_ERROR", "decisionIndex": decision.get("decisionIndex"),
                     "reason": "native row has no state"}
         state_result = compare_states(
-            decision.get("before"), state, java_rng=decision.get("debugRng"),
+            decision.get("before"), state, java_rng=decision.get("preRng"),
             native_rng=native.get("rng"), state_before_equal=True,
             action=decision.get("selectedAction", {}).get("identity"))
         if state_result["category"] != "EQUIVALENT":
@@ -60,9 +70,9 @@ def replay(trace: Path, native_rows: list[Mapping[str, Any]]) -> dict[str, Any]:
             return {"category": "TRACE_OR_SCHEMA_ERROR", "decisionIndex": decision.get("decisionIndex"),
                     "reason": "native adapter has no post-action state"}
         after_result = compare_states(decision.get("after"), native.get("after"),
-                                      java_rng=decision.get("debugRng"),
+                                      java_rng=decision.get("postRng"),
                                       native_rng=native.get("postRng"),
-                                      action=identity)
+                                      state_before_equal=True, action=identity)
         if after_result["category"] != "EQUIVALENT":
             return {"decisionIndex": decision.get("decisionIndex"), **after_result}
     if len(native_rows) != len(decisions):
@@ -82,10 +92,9 @@ def main(argv: list[str] | None = None) -> int:
                 native_rows = [json.loads(line) for line in handle if line.strip()]
         elif args.native_command:
             rows = read_trace(args.trace)
-            decisions = [row for row in rows if row.get("record_type") == "decision"]
             proc = subprocess.run(
                 shlex.split(args.native_command),
-                input="".join(json.dumps(row) + "\n" for row in decisions),
+                input="".join(json.dumps(row) + "\n" for row in rows),
                 text=True, capture_output=True, check=False)
             if proc.returncode:
                 raise DifferentialTraceError(f"native adapter exit {proc.returncode}: {proc.stderr.strip()}")
