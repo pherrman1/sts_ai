@@ -543,6 +543,8 @@ add_test(NAME analyze_silver_bounded_variable_prefix
     COMMAND python3 ${CMAKE_SOURCE_DIR}/tools/test_silver_bounded_variable_prefix.py -q)
 add_test(NAME analyze_silver_learned_prefix_scorer
     COMMAND python3 ${CMAKE_SOURCE_DIR}/tools/test_silver_learned_prefix_scorer.py -q)
+add_test(NAME analyze_silver_prefix_learning_curve
+    COMMAND python3 ${CMAKE_SOURCE_DIR}/tools/test_silver_prefix_learning_curve.py -q)
 add_test(NAME analyze_postcombat_raw_terminal_selftest COMMAND python3 ${CMAKE_SOURCE_DIR}/tools/test_postcombat_raw_terminal_selftest.py)
 add_test(NAME export_win_model_selftest COMMAND python3 ${CMAKE_SOURCE_DIR}/tools/test_export_win_model_selftest.py)
 add_test(NAME runwin_e2c_native_parity COMMAND ${CMAKE_COMMAND} -E env

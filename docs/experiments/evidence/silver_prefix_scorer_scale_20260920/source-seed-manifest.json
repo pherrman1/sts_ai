@@ -1,0 +1,48 @@
+{
+  "schema": "silver_prefix_scorer_scale_source_seed_manifest_v1",
+  "base_git_sha": "cccddd52d04c50772a114006d5863408e9917429",
+  "created_before_new_results": true,
+  "existing_20": [
+    12100001, 12100003, 12100007, 12100008, 12100009,
+    12100012, 12100013, 12100017, 12100018, 12100021,
+    12100025, 12100031, 12100034, 12100035, 12100036,
+    12100037, 12100039, 12100041, 12100052, 12100053
+  ],
+  "new_expansion_training": {
+    "range": {"start": 12100128, "end": 12100167, "inclusive": true},
+    "source_seeds": [
+      12100128, 12100129, 12100130, 12100131, 12100132,
+      12100133, 12100134, 12100135, 12100136, 12100137,
+      12100138, 12100139, 12100140, 12100141, 12100142,
+      12100143, 12100144, 12100145, 12100146, 12100147,
+      12100148, 12100149, 12100150, 12100151, 12100152,
+      12100153, 12100154, 12100155, 12100156, 12100157,
+      12100158, 12100159, 12100160, 12100161, 12100162,
+      12100163, 12100164, 12100165, 12100166, 12100167
+    ],
+    "primary_first_20": [
+      12100128, 12100129, 12100130, 12100131, 12100132,
+      12100133, 12100134, 12100135, 12100136, 12100137,
+      12100138, 12100139, 12100140, 12100141, 12100142,
+      12100143, 12100144, 12100145, 12100146, 12100147
+    ]
+  },
+  "new_locked_validation": {
+    "range": {"start": 12100168, "end": 12100207, "inclusive": true},
+    "source_seeds": [
+      12100168, 12100169, 12100170, 12100171, 12100172,
+      12100173, 12100174, 12100175, 12100176, 12100177,
+      12100178, 12100179, 12100180, 12100181, 12100182,
+      12100183, 12100184, 12100185, 12100186, 12100187,
+      12100188, 12100189, 12100190, 12100191, 12100192,
+      12100193, 12100194, 12100195, 12100196, 12100197,
+      12100198, 12100199, 12100200, 12100201, 12100202,
+      12100203, 12100204, 12100205, 12100206, 12100207
+    ]
+  },
+  "split_rule": "existing_20 are base_training_pool; expansion seeds 12100128..12100147 are primary TRAIN40 addition; all expansion seeds are TRAIN60 addition; locked seeds 12100168..12100207 are never used in fitting or normalization",
+  "source_policy": "canonical Silver behavior; learned scorer off; no experimental tactical selector; no model-in-the-loop action selection",
+  "capture_boundary": "existing Silver leaf corpus boundary with actionable PLAYER_NORMAL leaves and complete sibling legal-parent coverage",
+  "replicates": 32,
+  "candidate_surface": {"max_length": 2, "actions": ["CARD", "END_TURN"]}
+}
