@@ -10314,6 +10314,24 @@ default or generalization claim is authorized. Evidence:
   No holdout or broad seed campaign was run. Large residuals remain in a
   small number of groups and require separate causal investigation if they
   become decision-relevant.
+- **Fresh holdout follow-up:** The frozen `SPOT_WEAKNESS_FIRST_V1` rule was
+  evaluated on the separate 64-root `hard64-holdout` cohort, selecting 32
+  complete eligible groups / 251 leaves and 112 active leaves. With paired
+  32-replicate baseline/treatment rows and independent A/B 25k teachers, k=32
+  mean teacher regret worsened from `1.1743` to `1.2616` (`-7.43%`), pairwise
+  concordance fell from `0.7049` to `0.6892`, grouped-bootstrap probability of
+  lower treatment regret was `36.76%`, and mean direct rollout cost increased
+  `100.84%` (`106.44` to `213.78` microseconds). Top agreement improved from
+  `0.3438` to `0.4375`, but the primary and runtime gates failed. The result is
+  **`SPOT_WEAKNESS_FIRST_REJECT`** for this exact treatment. The collector's
+  completed corpus required baseline-only recovery because `case_id` was
+  omitted from its first serializer; the manifest records that the complete
+  eligible group count was not serialized. This does not alter the selected
+  cohort, but remains an evidence limitation.
+- **Fresh follow-up boundary:** Do not tune or broaden the Spot Weakness rule
+  on this holdout, and do not infer that the broader first-action mechanism is
+  absent from the earlier targeted result. No rollout policy, evaluator,
+  prior, PUCT, budget, or gameplay default change is authorized.
 - **Evidence:** [rollout variance/bias diagnostic](evidence/silver_rollout_variance_20260920/README.md).
   **Knowledge impact:** durable Silver diagnostic evidence and current
   research status only; no Silver behavior, model, RNG, schema, budget, or

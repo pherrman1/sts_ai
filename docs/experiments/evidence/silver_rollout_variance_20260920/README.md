@@ -205,3 +205,110 @@ first_action_probe_analysis.json   e24f27b26c3cf53b1ed7ba4b5bb5fb6019c82912563cd
 Follow-up implementation head: `1332d5bb68ba39f2daba4656ee5dc0f16555cdf6`.
 The probe executable SHA-256 was
 `1dc897ef07793647a0a88b4d23d9cedb15fc8f6da7d4a91fd072455ad7f5533c`.
+
+## Fresh SPOT_WEAKNESS_FIRST_V1 holdout diagnostic
+
+### Protocol and provenance
+
+This is the fresh matched confirmatory diagnostic requested after the causal
+first-action follow-up. The candidate was frozen before opening the holdout:
+at the first `PLAYER_NORMAL` card choice only, a playable Spot Weakness is
+allowed to preempt ordinary SimpleAgent priority when intents are visible and
+resolved and a targetable monster has an attacking move. It targets the
+largest current incoming attack damage, breaks exact ties by monster index,
+prefers upgraded copies, and then preserves hand order. The continuation is
+the unchanged canonical SimpleAgent rollout. The rule remains diagnostic-only
+and default-off.
+
+- Holdout source: `hard64-holdout-snapshots.jsonl`, SHA-256
+  `e8b914ad74ca0508ee6b1db329c5f454e92e7785cd60af1475d53b35a9d8af34`.
+- Frozen collector/candidate SHA used to capture the selected corpus:
+  `eea154a08ca0ed26a5b3164597cb49157c07e385`.
+- Recovery/analysis harness SHA after the collector completed the corpus but
+  failed while serializing the baseline stream:
+  `91c3d8f6af5c7d420c49c705ac1ddd9bd5e87071`.
+- Selection: 32 complete eligible groups / 251 leaves; 112 leaves were
+  candidate-active across all 32 selected groups. Selection used only state
+  applicability, complete sibling coverage, and deterministic FNV ordering;
+  no rollout outcome or teacher value was used.
+- Replicate contract: 32 baseline and 32 treatment rows per leaf, paired by
+  `fnv1a("silver-rollout-variance/v1/" + group_id + "/" + replicate)`.
+  Inactive treatment identity was exact over 4,448 rows.
+- Teacher references: 251 valid A/B rows, each an independent fresh 25,000-
+  simulation Silver continuation with original-root correction.
+
+The collector completed the selected corpus and then failed closed because its
+baseline serializer expected a `case_id` field that the corpus row omitted.
+The completed corpus was preserved; a recovery-only mode generated the 8,032
+baseline rows and selection manifest without recollecting or changing the
+cohort. The recovered manifest records that the first-pass complete-eligible
+group count was not serialized. This is a provenance limitation, not a
+selection change.
+
+### Result
+
+The classification is **`SPOT_WEAKNESS_FIRST_REJECT`**. The primary k=32
+metrics are:
+
+| arm | value MAE | value RMSE | mean teacher regret | pairwise concordance | top-leaf agreement | centered MAE | centered RMSE |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| baseline | 4.2321 | 5.9279 | 1.1743 | 0.7049 | 0.3438 | 3.5570 | 5.0025 |
+| Spot Weakness first | 4.4318 | 6.2228 | 1.2616 | 0.6892 | 0.4375 | 3.3973 | 4.8073 |
+
+Mean teacher regret therefore worsened by `7.43%`, pairwise concordance fell
+by `0.0157`, and the grouped-bootstrap probability that treatment regret was
+lower was only `36.76%` (10,000 complete-group resamples, seed `20260920`).
+Top-leaf agreement improved descriptively by `0.0938`, and centered errors
+also improved, but those changes do not overcome the primary regret and
+ordering regressions. The A/B teacher noise floor was mean absolute difference
+`1.1835`, RMSE `2.0289`, with A/B sibling pairwise concordance `0.8407`.
+
+The production-cost gate fails decisively: mean direct rollout wall time rose
+from `106.44` to `213.78` microseconds (`+100.84%`), versus the predeclared
+`<5%` limit. The treatment emitted 8,032 accepted rows and applied the
+candidate on 3,584 rows; no inactive identity mismatch occurred. On the
+112-leaf active subset, mean absolute residual changed from `4.1172` to
+`4.5647`, an aggregate absolute-residual change of `-10.87%`.
+
+For the secondary production-realistic k=1 slice, mean teacher regret changed
+from `1.9354` to `2.6690`, pairwise concordance from `0.6804` to `0.6765`,
+and top-leaf agreement from `0.2813` to `0.2500`.
+
+### Interpretation and boundary
+
+This fresh holdout does not support the narrow Spot Weakness first-card rule.
+It is a rejection of this exact diagnostic treatment, not evidence that the
+broader first-action mechanism is absent: the earlier targeted causal result
+and this fresh matched cohort answer different questions. Do not tune the
+rule, broaden it to Reaper or other cards, or reuse this holdout for a second
+Spot Weakness treatment. No rollout policy, learned evaluator, prior, PUCT,
+budget, or gameplay default is changed or promoted.
+
+### Fresh artifact hashes
+
+```text
+selected-corpus.jsonl        a2cc9af0ec9a25a790975148eb3047330d77ac67d77060e8e989b1fb5ef18bf7
+raw-baseline-rollouts.jsonl  16fdaa3a1cd73da5a492f0a448728639252f8f342d1c98a4fae37d1ed7c10432
+raw-treatment-rollouts.jsonl ffc41e6fd6d83cee6b4b6cabf87fe549c19f3c7a4f4e043c2fcf656db189cc89
+teachers.jsonl               157addf7dba28d506be7eb44e60661d2e1b8793b0b5a41214bb6861e7fbc17d3
+selection-manifest.json      0a54efe81dcaf96b55b7ef15c293d90f0355ff9df4b861717df4dcd733e29f77
+analysis.json                3aef09148ee524cd847daa5e35740cc3d5f8ddc89d3e613657c5c214f60e56cf
+diagnostic executable        01c94e29f2757db3132aba4853d209e7c2144d379f642baf4d5ff7ad6539d73f
+teacher executable           0ed26a7fcb0e1ce95ed62b4734be47fa6a3ce923e750fc58ef1116037fc40b89
+```
+
+Analysis reproduction:
+
+```bash
+python3 tools/analyze_silver_spot_weakness_first.py \
+  docs/experiments/evidence/silver_rollout_variance_20260920/spot_weakness_first_holdout_20260920/selected-corpus.jsonl \
+  docs/experiments/evidence/silver_rollout_variance_20260920/spot_weakness_first_holdout_20260920/raw-baseline-rollouts.jsonl \
+  docs/experiments/evidence/silver_rollout_variance_20260920/spot_weakness_first_holdout_20260920/raw-treatment-rollouts.jsonl \
+  docs/experiments/evidence/silver_rollout_variance_20260920/spot_weakness_first_holdout_20260920/teachers.jsonl \
+  docs/experiments/evidence/silver_rollout_variance_20260920/spot_weakness_first_holdout_20260920/analysis.json \
+  --bootstrap 10000
+```
+
+**Knowledge impact:** durable fresh-holdout rejection evidence and current
+research status only; no production Silver behavior, model, RNG, schema,
+budget, or gameplay default changed.

@@ -139,10 +139,18 @@ semantic action on the highest-residual leaf from each of the first eight
 distinct groups removed 74.65% of aggregate absolute residual across the
 three leaves whose Teacher A/B first actions agreed; the five unstable leaves
 were excluded from the causal decision. This is a mechanistic finding on a
-targeted frozen subset, not a policy qualification. The next experiment is a
-fresh matched cohort for one narrow first-card-choice intervention with the
-existing continuation unchanged. Do not infer a rollout-policy, model, search
-budget, or default change from this result. See [ledger §322](../../experiments/ledger-06.md)
+targeted frozen subset, not a policy qualification. A fresh matched
+`hard64-holdout` cohort then evaluated the one narrow
+`SPOT_WEAKNESS_FIRST_V1` intervention on 32 complete groups / 251 leaves (112
+active leaves). The exact treatment is **`SPOT_WEAKNESS_FIRST_REJECT`**:
+k=32 mean teacher regret worsened from `1.1743` to `1.2616`, pairwise
+concordance fell from `0.7049` to `0.6892`, the grouped-bootstrap probability
+of lower treatment regret was `36.76%`, and mean direct rollout cost rose
+`100.84%`. Top-leaf agreement improved descriptively, but the primary quality
+and <5% runtime gates failed. This rejects the exact Spot Weakness rule on the
+fresh cohort; it does not erase the earlier targeted first-action finding or
+authorize tuning/broadening it. Do not infer a rollout-policy, model, search
+budget, or default change from either diagnostic. See [ledger §322](../../experiments/ledger-06.md)
 and the [diagnostic evidence packet](../../experiments/evidence/silver_rollout_variance_20260920/README.md).
 
 ## Silver policy/value Phase-A cost diagnostic
