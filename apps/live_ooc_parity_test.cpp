@@ -77,6 +77,15 @@ static J project(const GameContext &g,const PathHistory &path,const std::string 
         }
         o["liveChoices"].push_back({{"nativeAction",native},{"liveAction",{{"kind","choose"},{"choiceIndex",ix++}}}});
     }
+    if (g.screenState == ScreenState::SHOP_ROOM) {
+        const auto &s = g.info.shop;
+        for (int i = 0; i < 3; ++i) {
+            if (s.relics[i] != RelicId::PRISMATIC_SHARD || s.relicPrice(i) < 0) continue;
+            o["liveChoices"].push_back({
+                {"nativeAction", {{"kind", "relic"}, {"index", i}}},
+                {"liveAction", {{"kind", "choose"}, {"choiceIndex", ix++}}}});
+        }
+    }
     return {{"boundary","ooc"},{"ooc",o},{"fixture",name}};
 }
 static std::array<int,7> cats(const GameContext &g,A a){std::array<int,7> r{};strategicCands(g,a,r[0],r[1],r[2],r[3],r[4],r[5],r[6]);return r;}
@@ -118,6 +127,8 @@ int main(int argc,char **argv){try{
     g.info.shop.cards[0]=Card(CardId::BASH);g.info.shop.cardPrice(0)=51;g.info.shop.cards[1]=Card(CardId::BASH);g.info.shop.cardPrice(1)=51;
     g.info.shop.relics[0]=RelicId::ANCHOR;g.info.shop.relicPrice(0)=150;
     g.info.shop.potions[0]=Potion::FIRE_POTION;g.info.shop.potionPrice(0)=45;g.info.shop.removeCost=75;add("shop_all_purchases_duplicates_leave_remove",g);
+    g.info.shop.relics[0]=RelicId::PRISMATIC_SHARD;g.info.shop.relicPrice(0)=150;
+    add("shop_prismatic_shard_displayed_but_excluded",g);
     g=base;g.screenState=ScreenState::BOSS_RELIC_REWARDS;g.info.bossRelics[0]=RelicId::BLACK_BLOOD;g.info.bossRelics[1]=RelicId::COFFEE_DRIPPER;g.info.bossRelics[2]=RelicId::FUSION_HAMMER;add("boss_relic_take_skip",g);
     g=base;g.openCardSelectScreen(CardSelectScreenType::UPGRADE,1);add("upgrade_duplicate_physical_cards",g);
     g=base;g.openCardSelectScreen(CardSelectScreenType::REMOVE,1);add("unsupported_shop_removal_selector",g);

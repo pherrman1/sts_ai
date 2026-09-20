@@ -105,6 +105,13 @@ bool v4DecisionSupported(const GameContext &gc) {
 }
 std::vector<GameAction> v4CandidateActions(const GameContext &gc) {
     auto actions = GameAction::getAllActionsInState(gc);
+    if (gc.screenState == ScreenState::SHOP_ROOM) {
+        actions.erase(std::remove_if(actions.begin(), actions.end(), [&](const auto &action) {
+            return action.getRewardsActionType() == GameAction::RewardsActionType::RELIC
+                && action.getIdx1() >= 0 && action.getIdx1() < 3
+                && gc.info.shop.relics[action.getIdx1()] == RelicId::PRISMATIC_SHARD;
+        }), actions.end());
+    }
     if (gc.screenState == ScreenState::REWARDS
         && gc.info.rewardsContainer.cardRewardCount > 0 && !actions.empty()) {
         const GameAction skip(GameAction::RewardsActionType::CARD,

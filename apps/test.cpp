@@ -57,6 +57,40 @@ int runOocSemanticTransactionsTests();
 
 using namespace sts;
 
+int testIroncladCombatCardCoverage() {
+    const GameContext game(CharacterClass::IRONCLAD, 0xC0DEu, 0);
+    const int expected = TrulyRandomCardPool::getPoolSizeForClass(CharacterClass::IRONCLAD);
+    int covered = 0;
+    for (int i = 0; i < expected; ++i) {
+        const auto id = TrulyRandomCardPool::getPoolForClass(CharacterClass::IRONCLAD)[i];
+        BattleContext battle;
+        battle.init(game, MonsterEncounter::CULTIST);
+        battle.actionQueue.clear();
+        battle.cards.cardsInHand = 0;
+        battle.player.energy = 99;
+        battle.curCardQueueItem.card = CardInstance(id);
+        battle.curCardQueueItem.card.uniqueId = 0;
+        battle.curCardQueueItem.target = 0;
+        battle.curCardQueueItem.energyOnUse = 3;
+        const int before = battle.actionQueue.size;
+        const bool beforeBarricade = battle.player.hasStatus<PS::BARRICADE>();
+        switch (id == CardId::INVALID ? CardType::INVALID : getCardType(id)) {
+        case CardType::ATTACK: battle.useAttackCard(); break;
+        case CardType::SKILL: battle.useSkillCard(); break;
+        case CardType::POWER: battle.usePowerCard(); break;
+        default: break;
+        }
+        if (battle.actionQueue.size > before
+            || beforeBarricade != battle.player.hasStatus<PS::BARRICADE>()) {
+            ++covered;
+        } else {
+            std::cerr << "uncovered Ironclad combat card: " << getCardEnumName(id) << '\n';
+        }
+    }
+    std::cout << "ironclad combat card dispatcher coverage: " << covered << '/' << expected << '\n';
+    return covered == expected ? 0 : 1;
+}
+
 void printSizes() {
     std::cout << "sizeof Map:" << sizeof(Map) << '\n';
     std::cout << "sizeof Player: " << sizeof(Player) << '\n';
@@ -4105,6 +4139,8 @@ int main(int argc, const char* argv[]) {
         return runOocSemanticPipelineTests();
     } else if (command == "ooc_semantic_transactions") {
         return runOocSemanticTransactionsTests();
+    } else if (command == "ironclad_card_coverage") {
+        return testIroncladCombatCardCoverage();
     } else if (command == "ooc_reward_continuation") {
         return runOocRewardContinuationTests();
     } else if (command == "ooc_semantic_smith") {

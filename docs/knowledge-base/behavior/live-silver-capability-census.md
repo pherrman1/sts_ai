@@ -72,6 +72,15 @@ selection tasks. Cards, relics, and potions continue to use the canonical
 
 ## Explicit current exclusions
 
+The currently qualified live Silver combat domain is Ironclad. Autonomous
+live OOC shop candidates exclude Prismatic Shard, while a displayed Shard is
+allowed to remain a visible shop choice and is not treated as a wholly
+unsupported shop. An Ironclad combat import fails closed with
+`silver_off_color_card` when a GREEN, BLUE, or PURPLE card is present in the
+projected combat card state; RED, COLORLESS, curse, and status cards remain
+accepted. The existence of other-character enums and card pools does not mean
+those cards are implemented by `BattleContext`.
+
 These are deliberate boundaries, not silently fabricated defaults:
 
 - live OOC `GameContext + PathHistory` import and OOC MCTS;
