@@ -191,7 +191,6 @@ Json spotCorpusRow(const Capture &capture, const std::string &executableSha,
     row["diagnostic_schema"] = "silver_spot_weakness_first_v1";
     row["sampling_rule"] = "complete sibling groups sorted by fnv1a(spot-weakness-first-selection-v1/group_id)";
     row["candidate"] = "SPOT_WEAKNESS_FIRST_V1";
-    row["case_id"] = capture.caseId;
     row["candidate_applicable"] = capture.candidateApplicable;
     row["candidate_action_fingerprint"] = capture.candidateActionFingerprint;
     return row;
@@ -217,8 +216,7 @@ Json spotBaselineRowFromCorpus(const Json &corpus, const silver_bridge::SilverSi
         {"schema", "silver_spot_weakness_first_v1"},
         {"diagnostic_schema", "silver_spot_weakness_first_v1"},
         {"group_id", corpus.at("group_id")}, {"leaf_snapshot_id", corpus.at("leaf_snapshot_id")},
-        {"case_id", corpus.value("case_id", corpus.at("group_id"))},
-        {"source_seed", corpus.at("run_seed")},
+        {"case_id", corpus.at("case_id")}, {"source_seed", corpus.at("run_seed")},
         {"source_snapshot_hash", corpus.at("source_snapshot_hash")},
         {"act", corpus.at("act")}, {"floor", corpus.at("floor")},
         {"encounter", corpus.at("encounter")}, {"encounter_category", corpus.at("encounter_category")},
@@ -768,95 +766,6 @@ int runSpotWeaknessHoldout(int argc, char **argv) {
     return 0;
 }
 
-int runSpotWeaknessBaselineRecovery(int argc, char **argv) {
-    if (argc != 8) {
-        std::cerr << "usage: silver_rollout_variance_diagnostic --spot-weakness-first-baseline "
-                     "CORPUS RAW SELECTION SNAPSHOTS EXECUTABLE_SHA REPLICATES\n";
-        return 2;
-    }
-    const std::filesystem::path corpusPath = argv[2];
-    const std::filesystem::path rolloutsPath = argv[3];
-    const std::filesystem::path selectionPath = argv[4];
-    const std::filesystem::path snapshotsPath = argv[5];
-    const std::string executableSha = argv[6];
-    const int replicates = parseInt(argv[7], "replicates", 1);
-    if (!silver_bridge::rootMechanismShaValid(executableSha))
-        throw std::invalid_argument("invalid executable SHA");
-    rejectExisting(rolloutsPath);
-    rejectExisting(selectionPath);
-    const auto corpusRows = readJsonLines(corpusPath);
-    if (corpusRows.empty()) throw std::runtime_error("recovery corpus is empty");
-
-    std::ofstream rollouts(rolloutsPath);
-    std::ofstream selection(selectionPath);
-    if (!rollouts || !selection) throw std::runtime_error("cannot create recovery outputs");
-    std::map<std::string, Json> groupRows;
-    std::map<std::string, std::vector<std::string>> groupLeaves;
-    std::map<std::string, std::vector<std::string>> activeLeaves;
-    for (const auto &corpus : corpusRows) {
-        const auto groupId = corpus.at("group_id").get<std::string>();
-        const auto leafId = corpus.at("leaf_snapshot_id").get<std::string>();
-        groupLeaves[groupId].push_back(leafId);
-        if (corpus.at("candidate_applicable").get<bool>()) activeLeaves[groupId].push_back(leafId);
-        if (!groupRows.count(groupId)) groupRows.emplace(groupId, corpus);
-        const auto leaf = silver_bridge::battleStateWireFromEnvelope(corpus.at("leaf_state"));
-        const auto originalRoot = silver_bridge::battleStateWireFromEnvelope(
-            corpus.at("original_root_state"));
-        for (int replicate = 0; replicate < replicates; ++replicate) {
-            auto seededLeaf = leaf;
-            seededLeaf.isolatedSearchSeed = rolloutSeed(groupId, replicate);
-            const auto result = silver_bridge::runSilverSimpleRollout(seededLeaf, originalRoot);
-            if (!result.accepted)
-                throw std::runtime_error("baseline rollout failed for " + leafId
-                    + " replicate " + std::to_string(replicate) + ": " + result.failureReason);
-            rollouts << spotBaselineRowFromCorpus(corpus, result, replicate).dump() << '\n';
-        }
-    }
-    rollouts.flush();
-    if (!rollouts) throw std::runtime_error("recovery rollout write failure");
-
-    Json selectedGroups = Json::array();
-    Json leafIds = Json::array();
-    for (const auto &[groupId, firstCorpus] : groupRows) {
-        Json active = Json::array();
-        for (const auto &leafId : activeLeaves[groupId]) active.push_back(leafId);
-        Json group = {
-            {"group_id", groupId},
-            {"case_id", firstCorpus.value("case_id", groupId)},
-            {"candidate_active", !activeLeaves[groupId].empty()},
-            {"leaf_count", groupLeaves[groupId].size()},
-            {"legal_action_count", firstCorpus.at("parent_legal_action_fingerprints").size()},
-            {"candidate_active_leaf_ids", std::move(active)}
-        };
-        selectedGroups.push_back(std::move(group));
-        for (const auto &leafId : groupLeaves[groupId]) leafIds.push_back(leafId);
-    }
-    const auto sourceSnapshotCount = static_cast<int>(readJsonLines(snapshotsPath).size());
-    selection << Json{
-        {"manifest_schema", "silver_leaf_manifest_v1"},
-        {"schema", "silver_spot_weakness_first_selection_v1"},
-        {"candidate", "SPOT_WEAKNESS_FIRST_V1"},
-        {"candidate_implementation_sha", executableSha},
-        {"source_snapshot_file", snapshotsPath.string()},
-        {"source_snapshot_count", sourceSnapshotCount},
-        {"budget", 1000}, {"replicates", replicates},
-        {"selected_group_count", groupRows.size()},
-        {"selected_leaf_count", corpusRows.size()},
-        {"complete_eligible_group_count", nullptr},
-        {"candidate_active_group_count", activeLeaves.size()},
-        {"selected_groups", std::move(selectedGroups)},
-        {"leaf_snapshot_ids", std::move(leafIds)},
-        {"selection_rule", "candidate applicability only; complete sibling groups; sorted FNV-1a; no teacher/outcome fields"},
-        {"recovery_note", "baseline-only recovery from a completed selected corpus; complete eligible group count was not serialized by the interrupted collector"}
-    }.dump() << '\n';
-    if (!selection) throw std::runtime_error("recovery selection write failure");
-    std::cout << Json{{"schema", "silver_spot_weakness_first_baseline_recovery_v1"},
-        {"rows", corpusRows.size() * static_cast<std::size_t>(replicates)},
-        {"groups", groupRows.size()}, {"leaves", corpusRows.size()}}
-        .dump() << '\n';
-    return 0;
-}
-
 int runSpotWeaknessTreatment(int argc, char **argv) {
     if (argc != 6) {
         std::cerr << "usage: silver_rollout_variance_diagnostic --spot-weakness-first-treatment "
@@ -909,8 +818,6 @@ int main(int argc, char **argv) {
             return runFirstActionProbe(argc, argv);
         if (argc >= 2 && std::string(argv[1]) == "--spot-weakness-first-holdout")
             return runSpotWeaknessHoldout(argc, argv);
-        if (argc >= 2 && std::string(argv[1]) == "--spot-weakness-first-baseline")
-            return runSpotWeaknessBaselineRecovery(argc, argv);
         if (argc >= 2 && std::string(argv[1]) == "--spot-weakness-first-treatment")
             return runSpotWeaknessTreatment(argc, argv);
         if (argc < 5 || argc > 10) {
