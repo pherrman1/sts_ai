@@ -539,6 +539,49 @@ int main(int argc, char **argv) {
               && std::abs(feedReference->rawReplicates[0].value
                   - feedReference->rawReplicates[0].leafRootValue - 6.0) < 1e-12,
           "lethal Feed forced action must restore original-root max-HP victory utility");
+    if (feedReference != forcedFeed.end()) {
+        const silver_bridge::SilverTacticalActionPrefix feedPrefix{feedReference->action};
+        const auto feedRollout = silver_bridge::runSilverSimpleRolloutWithActionPrefix(
+            lethalFeedWire, lethalFeedWire, feedPrefix);
+        check(feedRollout.accepted && feedRollout.terminalAfterPrefix
+                  && feedRollout.terminalAfterFirstAction
+                  && feedRollout.rolloutActionCount == 0
+                  && feedRollout.controlledPrefixLength == 1
+                  && std::abs(feedRollout.originalRootCorrectedUtility
+                      - feedReference->rawReplicates[0].value) < 1e-12,
+              "terminal first tactical action must terminate cleanly with corrected utility");
+    }
+
+    // A nonterminal first action may make the next supplied action lethal. The
+    // generalized seam must stop after that second controlled decision and
+    // retain the original-root victory correction with no continuation rollouts.
+    BattleContext lethalSecond = first;
+    lethalSecond.cards.cardsInHand = 2;
+    lethalSecond.cards.hand[0] = card(CardId::STRIKE_RED, 91);
+    lethalSecond.cards.hand[1] = card(CardId::FEED, 92);
+    lethalSecond.player.energy = 2;
+    lethalSecond.monsters.arr[0].curHp = 7;
+    search::CombatKnowledgeState lethalSecondKnowledge;
+    lethalSecondKnowledge.initializeFromLiveBattle(lethalSecond);
+    const auto lethalSecondWire = convert(lethalSecond, gc, lethalSecondKnowledge);
+    const auto lethalSecondPrefixes = silver_bridge::enumerateSilverTacticalActionPrefixes(
+        lethalSecondWire, 2);
+    const auto lethalSecondPrefix = std::find_if(
+        lethalSecondPrefixes.candidates.begin(), lethalSecondPrefixes.candidates.end(),
+        [](const auto &candidate) {
+            return candidate.actions.size() == 2 && candidate.terminalAfterPrefix;
+        });
+    check(lethalSecondPrefix != lethalSecondPrefixes.candidates.end(),
+          "fixture must expose a terminal second tactical action");
+    if (lethalSecondPrefix != lethalSecondPrefixes.candidates.end()) {
+        const auto secondTerminal = silver_bridge::runSilverSimpleRolloutWithActionPrefix(
+            lethalSecondWire, lethalSecondWire, lethalSecondPrefix->actions);
+        check(secondTerminal.accepted && secondTerminal.terminalAfterPrefix
+                  && !secondTerminal.terminalAfterFirstAction
+                  && secondTerminal.rolloutActionCount == 0
+                  && secondTerminal.controlledPrefixLength == 2,
+              "terminal second tactical action must stop before continuation rollout");
+    }
 
     // The bridge session must retain the exact private child selected at one
     // Silver decision and reroot into it at the next. This is an entirely
@@ -660,6 +703,88 @@ int main(int argc, char **argv) {
               && directRolloutA.leafRootUtility == directRolloutB.leafRootUtility
               && directRolloutA.rolloutActionFingerprints == directRolloutB.rolloutActionFingerprints,
           "canonical diagnostic rollout must be deterministic for a fixed stored RNG identity");
+    const auto emptyPrefix = silver_bridge::runSilverSimpleRolloutWithActionPrefix(
+        firstWire, firstWire, {});
+    check(emptyPrefix.accepted
+              && emptyPrefix.originalRootCorrectedUtility == directRolloutA.originalRootCorrectedUtility
+              && emptyPrefix.allActionFingerprints == directRolloutA.allActionFingerprints
+              && emptyPrefix.controlledPrefixLength == 0,
+          "empty tactical prefix must be exactly the canonical baseline rollout");
+
+    const auto prefixEnumeration = silver_bridge::enumerateSilverTacticalActionPrefixes(firstWire, 3);
+    check(prefixEnumeration.accepted && !prefixEnumeration.candidates.empty(),
+          "tactical prefix enumeration must expose replayable PLAYER_NORMAL candidates");
+    auto firstPrefixIt = std::find_if(prefixEnumeration.candidates.begin(),
+                                      prefixEnumeration.candidates.end(),
+                                      [](const auto &candidate) { return candidate.actions.size() == 1; });
+    auto secondPrefixIt = std::find_if(prefixEnumeration.candidates.begin(),
+                                       prefixEnumeration.candidates.end(),
+                                       [](const auto &candidate) { return candidate.actions.size() == 2; });
+    auto thirdPrefixIt = std::find_if(prefixEnumeration.candidates.begin(),
+                                      prefixEnumeration.candidates.end(),
+                                      [](const auto &candidate) { return candidate.actions.size() == 3; });
+    check(firstPrefixIt != prefixEnumeration.candidates.end(),
+          "tactical prefix enumeration must expose one-action prefixes");
+    check(secondPrefixIt != prefixEnumeration.candidates.end(),
+          "tactical prefix enumeration must expose deterministic two-action prefixes");
+    check(thirdPrefixIt != prefixEnumeration.candidates.end(),
+          "tactical prefix enumeration must expose deterministic three-action prefixes");
+    if (firstPrefixIt != prefixEnumeration.candidates.end()) {
+        const auto generalizedOne = silver_bridge::runSilverSimpleRolloutWithActionPrefix(
+            firstWire, firstWire, firstPrefixIt->actions);
+        const auto legacyOne = silver_bridge::runSilverSimpleRolloutWithFirstAction(
+            firstWire, firstWire, firstPrefixIt->actions.front());
+        check(generalizedOne.accepted && legacyOne.accepted
+                  && generalizedOne.originalRootCorrectedUtility == legacyOne.originalRootCorrectedUtility
+                  && generalizedOne.allActionFingerprints == legacyOne.allActionFingerprints
+                  && generalizedOne.requestedPrefixFingerprints == firstPrefixIt->fingerprints
+                  && generalizedOne.executedPrefixFingerprints == firstPrefixIt->fingerprints,
+              "one-action tactical prefix must agree with the #254 forced-first-action seam");
+        const auto repeatOne = silver_bridge::runSilverSimpleRolloutWithActionPrefix(
+            firstWire, firstWire, firstPrefixIt->actions);
+        check(generalizedOne.accepted == repeatOne.accepted
+                  && generalizedOne.originalRootCorrectedUtility == repeatOne.originalRootCorrectedUtility
+                  && generalizedOne.allActionFingerprints == repeatOne.allActionFingerprints,
+              "identical stored RNG identity and prefix must be deterministic");
+        const auto quietOne = silver_bridge::runSilverSimpleRolloutWithActionPrefix(
+            firstWire, firstWire, firstPrefixIt->actions,
+            silver_bridge::SilverSimpleRolloutOptions{false, false});
+        check(quietOne.accepted
+                  && quietOne.originalRootCorrectedUtility == generalizedOne.originalRootCorrectedUtility
+                  && quietOne.rolloutActionFingerprints.empty()
+                  && quietOne.allActionFingerprints == generalizedOne.executedPrefixFingerprints
+                  && quietOne.totalActionCount == generalizedOne.totalActionCount,
+              "quiet tactical-prefix diagnostics must preserve utility while suppressing traces");
+    }
+    if (secondPrefixIt != prefixEnumeration.candidates.end()) {
+        const auto two = silver_bridge::runSilverSimpleRolloutWithActionPrefix(
+            firstWire, firstWire, secondPrefixIt->actions);
+        check(two.accepted && two.controlledPrefixLength == 2
+                  && two.requestedPrefixFingerprints == secondPrefixIt->fingerprints
+                  && two.executedPrefixFingerprints.size() >= 2
+                  && two.executedPrefixFingerprints[0] == secondPrefixIt->fingerprints[0]
+                  && two.executedPrefixFingerprints.back() == secondPrefixIt->fingerprints[1],
+              "deterministic two-action prefix must execute both supplied decisions in order");
+    }
+    if (thirdPrefixIt != prefixEnumeration.candidates.end()) {
+        const auto three = silver_bridge::runSilverSimpleRolloutWithActionPrefix(
+            firstWire, firstWire, thirdPrefixIt->actions);
+        check(three.accepted && three.controlledPrefixLength == 3
+                  && three.requestedPrefixFingerprints == thirdPrefixIt->fingerprints
+                  && three.executedPrefixFingerprints.size() >= 3
+                  && three.executedPrefixFingerprints[0] == thirdPrefixIt->fingerprints[0]
+                  && three.executedPrefixFingerprints.back() == thirdPrefixIt->fingerprints[2],
+              "deterministic three-action prefix must execute all supplied decisions in order");
+    }
+    if (firstPrefixIt != prefixEnumeration.candidates.end()) {
+        silver_bridge::SemanticAction invalidSecond;
+        const silver_bridge::SilverTacticalActionPrefix invalidPrefix{
+            firstPrefixIt->actions.front(), invalidSecond};
+        const auto invalid = silver_bridge::runSilverSimpleRolloutWithActionPrefix(
+            firstWire, firstWire, invalidPrefix);
+        check(!invalid.accepted && invalid.failureReason == "prefix_action_unresolvable_or_illegal",
+              "illegal second tactical action must fail closed");
+    }
     const silver_bridge::SilverSimpleRolloutOptions quietRolloutOptions{false, false};
     const auto quietRollout = silver_bridge::runSilverSimpleRollout(
         firstWire, firstWire, quietRolloutOptions);

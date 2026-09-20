@@ -27,8 +27,14 @@ bool rawActionForSemantic(const sts::BattleContext &state, const SemanticAction 
                           sts::search::Action &raw);
 SilverSimpleRolloutResult runSilverSimpleRolloutImpl(
     const BattleStateWire &leaf, const BattleStateWire &originalRoot,
-    const SemanticAction *firstAction,
+    const SilverTacticalActionPrefix *prefix,
     const SilverSimpleRolloutOptions &options);
+void enumeratePrefixRec(
+    const sts::BattleContext &inputState, const sts::search::SimpleAgent &inputAgent,
+    int maxDepth, SilverTacticalActionPrefix &prefix,
+    std::vector<std::string> &controlledDescriptions,
+    std::int64_t automaticActionCount,
+    SilverTacticalPrefixEnumeration &result);
 
 sts::CardInstance card(const CardWire &in) {
     sts::CardInstance out;
@@ -907,13 +913,59 @@ SilverSimpleRolloutResult runSilverSimpleRollout(
 SilverSimpleRolloutResult runSilverSimpleRolloutWithFirstAction(
         const BattleStateWire &leaf, const BattleStateWire &originalRoot,
         const SemanticAction &firstAction) {
-    return runSilverSimpleRolloutImpl(leaf, originalRoot, &firstAction, {});
+    const SilverTacticalActionPrefix prefix{firstAction};
+    return runSilverSimpleRolloutImpl(leaf, originalRoot, &prefix, {});
 }
 
 SilverSimpleRolloutResult runSilverSimpleRolloutWithFirstAction(
         const BattleStateWire &leaf, const BattleStateWire &originalRoot,
         const SemanticAction &firstAction, const SilverSimpleRolloutOptions &options) {
-    return runSilverSimpleRolloutImpl(leaf, originalRoot, &firstAction, options);
+    const SilverTacticalActionPrefix prefix{firstAction};
+    return runSilverSimpleRolloutImpl(leaf, originalRoot, &prefix, options);
+}
+
+SilverTacticalPrefixEnumeration enumerateSilverTacticalActionPrefixes(
+        const BattleStateWire &leaf, int maxDepth) {
+    SilverTacticalPrefixEnumeration result;
+    result.requestedMaxDepth = maxDepth;
+    if (maxDepth <= 0 || maxDepth > 3) {
+        result.failureReason = "prefix_depth_must_be_1_to_3";
+        return result;
+    }
+    if (!leaf.valid || leaf.version != BattleStateWire::kVersion
+            || leaf.inputState != static_cast<int>(sts::InputState::PLAYER_NORMAL)
+            || leaf.outcome != static_cast<int>(sts::Outcome::UNDECIDED)) {
+        result.failureReason = "prefix_enumeration_requires_nonterminal_player_normal_leaf";
+        return result;
+    }
+    try {
+        sts::GameContext runContext;
+        initializeRunContext(runContext, leaf);
+        const auto state = materialize(leaf, &runContext);
+        const sts::search::SimpleAgent agent(true, state.seed + state.floorNum);
+        SilverTacticalActionPrefix prefix;
+        std::vector<std::string> descriptions;
+        enumeratePrefixRec(state, agent, maxDepth, prefix, descriptions, 0, result);
+        result.accepted = !result.candidates.empty();
+        if (!result.accepted && result.failureReason.empty())
+            result.failureReason = "no_replayable_tactical_prefixes";
+    } catch (const std::exception &error) {
+        result.failureReason = std::string("prefix_enumeration_exception: ") + error.what();
+    }
+    return result;
+}
+
+SilverSimpleRolloutResult runSilverSimpleRolloutWithActionPrefix(
+        const BattleStateWire &leaf, const BattleStateWire &originalRoot,
+        const SilverTacticalActionPrefix &prefix) {
+    return runSilverSimpleRolloutImpl(leaf, originalRoot, &prefix, {});
+}
+
+SilverSimpleRolloutResult runSilverSimpleRolloutWithActionPrefix(
+        const BattleStateWire &leaf, const BattleStateWire &originalRoot,
+        const SilverTacticalActionPrefix &prefix,
+        const SilverSimpleRolloutOptions &options) {
+    return runSilverSimpleRolloutImpl(leaf, originalRoot, &prefix, options);
 }
 
 class SilverSearchSession {
@@ -2502,8 +2554,8 @@ bool sameSemantic(const SemanticAction &lhs, const SemanticAction &rhs) {
 bool rawActionForSemantic(const sts::BattleContext &state, const SemanticAction &wanted,
                           sts::search::Action &raw) {
     sts::search::BattleSearcher enumerator(state);
-    enumerator.search(1);
     if (enumerator.root == nullptr) return false;
+    enumerator.enumerateActionsForNode(*enumerator.root, *enumerator.root->state);
     for (const auto &edge : enumerator.root->edges) {
         if (sameSemantic(semanticFromAction(*enumerator.root->state, edge.action), wanted)) {
             raw = edge.action;
@@ -2513,12 +2565,122 @@ bool rawActionForSemantic(const sts::BattleContext &state, const SemanticAction 
     return false;
 }
 
+bool appendCanonicalAutomaticActions(
+        sts::BattleContext &state, sts::search::SimpleAgent &agent,
+        std::vector<std::string> &fingerprints,
+        std::vector<std::string> &descriptions,
+        std::int64_t &automaticActionCount,
+        std::string &failureReason) {
+    while (state.outcome == sts::Outcome::UNDECIDED
+            && state.inputState != sts::InputState::PLAYER_NORMAL) {
+        if (state.inputState != sts::InputState::CARD_SELECT) {
+            failureReason = "unsupported_non_player_normal_state";
+            return false;
+        }
+        const auto action = agent.chooseBattleCardSelect(state);
+        if (!action.isValidAction(state)) {
+            failureReason = "canonical_card_select_unresolvable_or_illegal";
+            return false;
+        }
+        std::ostringstream description;
+        action.printDesc(description, state);
+        fingerprints.push_back(silverActionFingerprint(state, action));
+        descriptions.push_back(description.str());
+        action.execute(state);
+        ++automaticActionCount;
+    }
+    return true;
+}
+
+void materializePendingMoves(sts::BattleContext &state) {
+    for (int i = 0; i < state.monsters.monsterCount; ++i) {
+        auto &monster = state.monsters.arr[i];
+        if (monster.pendingMoveRolls > 0 && !monster.isDeadOrEscaped())
+            monster.materializePendingMove(state);
+    }
+}
+
+void enumeratePrefixRec(
+        const sts::BattleContext &inputState, const sts::search::SimpleAgent &inputAgent,
+        int maxDepth, SilverTacticalActionPrefix &prefix,
+        std::vector<std::string> &controlledDescriptions,
+        std::int64_t automaticActionCount,
+        SilverTacticalPrefixEnumeration &result) {
+    auto state = inputState;
+    auto agent = inputAgent;
+    std::vector<std::string> automaticFingerprints;
+    std::vector<std::string> automaticDescriptions;
+    std::string failure;
+    if (!appendCanonicalAutomaticActions(state, agent, automaticFingerprints,
+                                         automaticDescriptions, automaticActionCount,
+                                         failure)) {
+        ++result.unsupportedStates;
+        return;
+    }
+    result.canonicalAutomaticActions = std::max(
+        result.canonicalAutomaticActions, static_cast<int>(automaticActionCount));
+    if (state.outcome != sts::Outcome::UNDECIDED) return;
+    if (state.inputState != sts::InputState::PLAYER_NORMAL) {
+        ++result.unsupportedStates;
+        return;
+    }
+    // The root prefix step must preserve the #254 forced-first-action seam
+    // exactly.  Canonical rollout materializes hidden intents immediately
+    // before a SimpleAgent PLAYER_NORMAL choice, but the historical forced
+    // first action executed the stored leaf as-is.  Later coordinated steps
+    // are prepared below after the prior supplied action has executed.
+    if (!prefix.empty()) materializePendingMoves(state);
+    ++result.playerNormalDecisions;
+    if (static_cast<int>(prefix.size()) >= maxDepth) return;
+
+    sts::search::BattleSearcher enumerator(state);
+    if (enumerator.root == nullptr) return;
+    enumerator.enumerateActionsForNode(*enumerator.root, *enumerator.root->state);
+    for (const auto &edge : enumerator.root->edges) {
+        const auto semantic = semanticFromAction(*enumerator.root->state, edge.action);
+        if (semantic.type != SemanticActionType::CARD
+                && semantic.type != SemanticActionType::END_TURN)
+            continue;
+        auto nextState = state;
+        auto nextAgent = agent;
+        // The edge was enumerated against this exact state above.  Reuse it
+        // directly instead of constructing a second BattleSearcher merely to
+        // resolve the same semantic action.
+        auto raw = edge.action;
+        std::ostringstream description;
+        raw.printDesc(description, nextState);
+        raw.execute(nextState);
+        prefix.push_back(semantic);
+        controlledDescriptions.push_back(description.str());
+
+        SilverTacticalPrefixCandidate candidate;
+        candidate.actions = prefix;
+        candidate.fingerprints.reserve(prefix.size());
+        for (const auto &action : prefix)
+            candidate.fingerprints.push_back(semanticActionFingerprint(action));
+        candidate.descriptions = controlledDescriptions;
+        candidate.terminalAfterPrefix = nextState.outcome != sts::Outcome::UNDECIDED;
+        candidate.automaticActionCount = automaticActionCount;
+        result.candidates.push_back(std::move(candidate));
+        if (nextState.outcome == sts::Outcome::UNDECIDED)
+            enumeratePrefixRec(nextState, nextAgent, maxDepth, prefix,
+                               controlledDescriptions, automaticActionCount, result);
+        prefix.pop_back();
+        controlledDescriptions.pop_back();
+    }
+}
+
 SilverSimpleRolloutResult runSilverSimpleRolloutImpl(
         const BattleStateWire &leaf, const BattleStateWire &originalRoot,
-        const SemanticAction *firstAction,
+        const SilverTacticalActionPrefix *prefix,
         const SilverSimpleRolloutOptions &options) {
     SilverSimpleRolloutResult result;
-    result.forcedFirstAction = firstAction != nullptr;
+    const SilverTacticalActionPrefix emptyPrefix;
+    const auto &requestedPrefix = prefix == nullptr ? emptyPrefix : *prefix;
+    result.forcedFirstAction = requestedPrefix.size() == 1;
+    result.controlledPrefixLength = static_cast<std::int64_t>(requestedPrefix.size());
+    for (const auto &action : requestedPrefix)
+        result.requestedPrefixFingerprints.push_back(semanticActionFingerprint(action));
     if (!leaf.valid || leaf.version != BattleStateWire::kVersion
             || leaf.inputState != static_cast<int>(sts::InputState::PLAYER_NORMAL)
             || leaf.outcome != static_cast<int>(sts::Outcome::UNDECIDED)) {
@@ -2535,25 +2697,73 @@ SilverSimpleRolloutResult runSilverSimpleRolloutImpl(
         auto state = materialize(leaf, &runContext);
         const auto leafTurn = state.turn;
         const auto totalStart = std::chrono::steady_clock::now();
-        if (firstAction != nullptr) {
-            sts::search::Action rawAction;
-            if (!rawActionForSemantic(state, *firstAction, rawAction)
-                    || !rawAction.isValidAction(state)) {
-                result.failureReason = "teacher_first_action_unresolvable_or_illegal";
+        sts::search::SimpleAgent canonicalAgent(true, state.seed + state.floorNum);
+        std::vector<std::string> executedPrefixFingerprints;
+        std::vector<std::string> executedPrefixDescriptions;
+        std::vector<std::string> requestedPrefixDescriptions;
+        if (!requestedPrefix.empty()) {
+            for (std::size_t index = 0; index < requestedPrefix.size(); ++index) {
+                std::string automaticFailure;
+                if (!appendCanonicalAutomaticActions(state, canonicalAgent,
+                                                     executedPrefixFingerprints,
+                                                     executedPrefixDescriptions,
+                                                     result.automaticPrefixActionCount,
+                                                     automaticFailure)) {
+                    result.failureReason = automaticFailure;
+                    return result;
+                }
+                if (state.outcome != sts::Outcome::UNDECIDED
+                        || state.inputState != sts::InputState::PLAYER_NORMAL) {
+                    result.failureReason = "prefix_terminated_before_requested_length";
+                    return result;
+                }
+                if (index > 0) materializePendingMoves(state);
+                sts::search::Action rawAction;
+                if (!rawActionForSemantic(state, requestedPrefix[index], rawAction)
+                        || !rawAction.isValidAction(state)) {
+                    result.failureReason = index == 0
+                        ? "teacher_first_action_unresolvable_or_illegal"
+                        : "prefix_action_unresolvable_or_illegal";
+                    return result;
+                }
+                std::ostringstream description;
+                rawAction.printDesc(description, state);
+                const auto fingerprint = semanticActionFingerprint(requestedPrefix[index]);
+                executedPrefixFingerprints.push_back(fingerprint);
+                executedPrefixDescriptions.push_back(description.str());
+                requestedPrefixDescriptions.push_back(description.str());
+                if (index == 0) {
+                    result.firstActionFingerprint = fingerprint;
+                    result.firstActionDescription = description.str();
+                    result.firstActionExecuted = true;
+                    result.forcedActionTurnDelta = state.turn - leafTurn;
+                }
+                rawAction.execute(state);
+                if (index == 0)
+                    result.terminalAfterFirstAction = state.outcome != sts::Outcome::UNDECIDED;
+                if (state.outcome != sts::Outcome::UNDECIDED
+                        && index + 1 < requestedPrefix.size()) {
+                    result.failureReason = "prefix_terminated_before_requested_length";
+                    return result;
+                }
+            }
+            std::string automaticFailure;
+            if (!appendCanonicalAutomaticActions(state, canonicalAgent,
+                                                 executedPrefixFingerprints,
+                                                 executedPrefixDescriptions,
+                                                 result.automaticPrefixActionCount,
+                                                 automaticFailure)) {
+                result.failureReason = automaticFailure;
                 return result;
             }
-            std::ostringstream description;
-            rawAction.printDesc(description, state);
-            result.firstActionFingerprint = semanticActionFingerprint(*firstAction);
-            result.firstActionDescription = description.str();
-            rawAction.execute(state);
-            result.firstActionExecuted = true;
-            result.forcedActionTurnDelta = state.turn - leafTurn;
-            result.terminalAfterFirstAction = state.outcome != sts::Outcome::UNDECIDED;
         }
+        result.executedPrefixFingerprints = executedPrefixFingerprints;
+        result.executedPrefixDescriptions = executedPrefixDescriptions;
+        result.terminalAfterPrefix = state.outcome != sts::Outcome::UNDECIDED;
 
         const auto canonicalStart = std::chrono::steady_clock::now();
         sts::search::BattleSearcher searcher(state);
+        if (!requestedPrefix.empty()) searcher.rolloutAgent = canonicalAgent;
         searcher.collectRolloutDiagnostics = options.collectRolloutDiagnostics;
         SilverLeafObservation completed;
         bool sawStart = false;
@@ -2600,14 +2810,16 @@ SilverSimpleRolloutResult runSilverSimpleRolloutImpl(
         result.rolloutTurnDelta = terminal ? 0 : completed.rolloutTurnDelta;
         result.rolloutWallMicros = terminal ? 0
             : (completed.rolloutWallMicros > 0 ? completed.rolloutWallMicros : canonicalWallMicros);
-        result.totalActionCount = result.rolloutActionCount + (firstAction != nullptr ? 1 : 0);
+        result.totalActionCount = result.rolloutActionCount
+            + static_cast<std::int64_t>(result.executedPrefixFingerprints.size());
         result.totalTurnDelta = result.terminalTurn - leafTurn;
         result.totalWallMicros = totalWallMicros;
         result.rolloutActionFingerprints = std::move(completed.rolloutActionFingerprints);
         result.allActionFingerprints = result.rolloutActionFingerprints;
-        if (firstAction != nullptr)
-            result.allActionFingerprints.insert(result.allActionFingerprints.begin(),
-                                                result.firstActionFingerprint);
+        result.allActionFingerprints.insert(result.allActionFingerprints.begin(),
+                                            result.executedPrefixFingerprints.begin(),
+                                            result.executedPrefixFingerprints.end());
+        result.requestedPrefixDescriptions = std::move(requestedPrefixDescriptions);
     } catch (const std::exception &error) {
         result.failureReason = std::string("diagnostic_rollout_exception: ") + error.what();
     }

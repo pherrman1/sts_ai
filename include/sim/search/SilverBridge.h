@@ -260,6 +260,17 @@ struct SilverSimpleRolloutResult {
     std::int64_t totalWallMicros = 0;
     std::vector<std::string> rolloutActionFingerprints;
     std::vector<std::string> allActionFingerprints;
+    // Diagnostic-only tactical-prefix provenance.  The controlled prefix is
+    // expressed in semantic PLAYER_NORMAL decisions; canonical automatic
+    // actions resolved between those decisions are retained in the executed
+    // trace but are not counted in controlledPrefixLength.
+    std::vector<std::string> requestedPrefixFingerprints;
+    std::vector<std::string> requestedPrefixDescriptions;
+    std::vector<std::string> executedPrefixFingerprints;
+    std::vector<std::string> executedPrefixDescriptions;
+    std::int64_t controlledPrefixLength = 0;
+    std::int64_t automaticPrefixActionCount = 0;
+    bool terminalAfterPrefix = false;
 };
 
 // Controls diagnostic-only bookkeeping around the canonical rollout. The
@@ -389,6 +400,44 @@ SilverSimpleRolloutResult runSilverSimpleRolloutWithFirstAction(
 SilverSimpleRolloutResult runSilverSimpleRolloutWithFirstAction(
     const BattleStateWire &leaf, const BattleStateWire &originalRoot,
     const SemanticAction &firstAction, const SilverSimpleRolloutOptions &options);
+
+// Ordered semantic PLAYER_NORMAL decision prefix used only by offline
+// diagnostics.  A prefix excludes potion intervention and card-select
+// decisions; canonical SimpleAgent behavior resolves any CARD_SELECT state
+// encountered between controlled decisions.
+using SilverTacticalActionPrefix = std::vector<SemanticAction>;
+
+struct SilverTacticalPrefixCandidate {
+    SilverTacticalActionPrefix actions;
+    std::vector<std::string> fingerprints;
+    std::vector<std::string> descriptions;
+    bool terminalAfterPrefix = false;
+    std::int64_t automaticActionCount = 0;
+};
+
+struct SilverTacticalPrefixEnumeration {
+    bool accepted = false;
+    std::string failureReason;
+    int requestedMaxDepth = 0;
+    int playerNormalDecisions = 0;
+    int canonicalAutomaticActions = 0;
+    int unsupportedStates = 0;
+    std::vector<SilverTacticalPrefixCandidate> candidates;
+};
+
+// Enumerate replayable semantic prefixes under the stored leaf RNG identity.
+// This performs no terminal continuation evaluation and never enters the
+// production Silver selection path.
+SilverTacticalPrefixEnumeration enumerateSilverTacticalActionPrefixes(
+    const BattleStateWire &leaf, int maxDepth);
+
+SilverSimpleRolloutResult runSilverSimpleRolloutWithActionPrefix(
+    const BattleStateWire &leaf, const BattleStateWire &originalRoot,
+    const SilverTacticalActionPrefix &prefix);
+
+SilverSimpleRolloutResult runSilverSimpleRolloutWithActionPrefix(
+    const BattleStateWire &leaf, const BattleStateWire &originalRoot,
+    const SilverTacticalActionPrefix &prefix, const SilverSimpleRolloutOptions &options);
 
 struct SilverSearchConfig {
     // Values copied from upstream SearchAgent defaults at the pinned SHA.
