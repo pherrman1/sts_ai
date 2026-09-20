@@ -83,6 +83,62 @@ identity changes.
 
 ## Direct live-game driver
 
+### Start and discover the live control boundary
+
+The canonical local live-test setup is a foreground ModTheSpire launch from
+the Steam game directory. The installed artifacts are:
+
+```text
+game directory: /home/philippherrmann/.local/share/Steam/steamapps/common/SlayTheSpire
+ModTheSpire:   /home/philippherrmann/.local/share/Steam/steamapps/workshop/content/646570/1605060445/ModTheSpire.jar
+MCPTheSpire:   <game directory>/mods/MCPTheSpire.jar
+inspector:     <game directory>/mods/sts-model-inspector.jar
+```
+
+Start the modded game with the MCP and inspector mods enabled:
+
+```bash
+cd /home/philippherrmann/.local/share/Steam/steamapps/common/SlayTheSpire
+/usr/bin/java -jar \
+  /home/philippherrmann/.local/share/Steam/steamapps/workshop/content/646570/1605060445/ModTheSpire.jar \
+  --skip-launcher --mods basemod,MCPTheSpire,stsmodelinspector
+```
+
+MCPTheSpire starts a Streamable HTTP server at
+`http://127.0.0.1:8080/mcp`. It is the live game's control boundary; use its
+MCP tools rather than GUI automation. The driver discovers the available
+surface at startup and requires `get_screen_state`,
+`get_available_commands`, and at least one supported action tool. A quick
+endpoint check is:
+
+```bash
+uv run --extra live-driver python tools/live_game_driver.py \
+  --dry-run --max-steps 1
+```
+
+The asynchronous inspector snapshot is written to
+`~/.cache/sts-model-inspector/latest.json`. Before using an advisor response,
+verify that `response.ready` is true and that `response.session`,
+`response.sequence`, and `response.observationHash` match the observation (and
+then correlate that observation with `get_screen_state`/`get_game_state`).
+The endpoint and snapshot paths can be overridden with `STS_MCP_URL` and
+`STS_INSPECTOR_PATH` when an isolated game instance is required.
+
+The inspector launches the advisor configured in
+`~/.sts-model-inspector.properties`; keep both paths aligned with the checkout
+being tested. For this repository the relevant entries are:
+
+```properties
+advisor=<repository root>/build/linux-gcc-debug/one_combat_advisor
+ctmModel=<repository root>/selfplay/models/combat_transition_near_full_except_smoke_v2.native
+```
+
+If `latest.json` remains `WAITING` after a combat observation, check these
+paths first and restart the game after changing them. A ready response can
+still be `UNSUPPORTED` for an encounter or state outside the maintained live
+capability boundary; that is an advisor result, not an MCP connectivity
+failure.
+
 `tools/live_game_driver.py` is the repository-local integration/debug harness
 for advancing a currently running game without a Codex or Luna turn between
 actions. It connects directly to MCPTheSpire over Streamable HTTP, reads the
