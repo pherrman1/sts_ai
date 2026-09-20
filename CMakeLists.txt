@@ -358,7 +358,9 @@ add_test(NAME live_ooc_protocol COMMAND python3 ${CMAKE_SOURCE_DIR}/tests/live_o
     ${CMAKE_SOURCE_DIR}/selfplay/models/ooc_strategic_tok_final.native)
 set_tests_properties(live_ooc_protocol PROPERTIES WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "integration;smoke")
 add_test(NAME live_game_driver COMMAND python3 -m unittest tests.test_live_game_driver)
+add_test(NAME differential_trace COMMAND python3 -m unittest tests.test_differential_trace)
 set_tests_properties(live_game_driver PROPERTIES WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "tooling;smoke")
+set_tests_properties(differential_trace PROPERTIES WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "tooling;smoke")
 
 add_executable(live_ctm_importer_test apps/live_ctm_importer_test.cpp
     apps/one_combat/live_ooc_importer.cpp

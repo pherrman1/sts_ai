@@ -38,18 +38,19 @@ For evaluation and operation:
 
 1. [Current baselines](evaluation/current-baselines.md)
 2. [Benchmark protocol](evaluation/benchmark-protocol.md)
-3. [Environment variables](operations/environment-variables.md)
-4. [Self-play loop](operations/selfplay-loop.md)
-5. [Agent context and workflow](operations/agent-context-and-workflow.md) —
+3. [Java/native differential correctness](evaluation/differential-correctness.md)
+4. [Environment variables](operations/environment-variables.md)
+5. [Self-play loop](operations/selfplay-loop.md)
+6. [Agent context and workflow](operations/agent-context-and-workflow.md) —
    progressive-disclosure workflow, Git procedure, recording rules, and the
    `AGENTS.md` relocation audit.
-6. [Repository health](operations/repo-health.md) — bounded inventory and CI
+7. [Repository health](operations/repo-health.md) — bounded inventory and CI
    guard for repository bloat.
-7. [Refactor-on-contact candidates](operations/refactor-on-contact.md)
-8. [Coding-agent evaluation harness](evaluation/coding-agent-evals.md)
-9. [SkillOpt-Sleep pilot](operations/skillopt-sleep.md) — on-demand transcript
+8. [Refactor-on-contact candidates](operations/refactor-on-contact.md)
+9. [Coding-agent evaluation harness](evaluation/coding-agent-evals.md)
+10. [SkillOpt-Sleep pilot](operations/skillopt-sleep.md) — on-demand transcript
    review, bounded skill proposals, and evaluator-gated adoption.
-10. [Session retrospective](operations/session-retrospective.md) — manual review
+11. [Session retrospective](operations/session-retrospective.md) — manual review
    of recent sessions and routing of small, evidence-backed maintenance.
 
 For correctness:
