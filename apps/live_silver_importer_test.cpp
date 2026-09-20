@@ -6,6 +6,7 @@
 #include <iostream>
 #include <stdexcept>
 #include <string>
+#include <set>
 #include <vector>
 
 #include "combat/BattleContext.h"
@@ -15,6 +16,7 @@
 #include "sim/search/CombatKnowledge.h"
 #include "sim/search/SilverBridge.h"
 #include "sim/search/SilverConversion.h"
+#include "sim/search/SilverWireJson.h"
 #include "sim/search/Action.h"
 
 using nlohmann::json;
@@ -22,6 +24,7 @@ using namespace sts;
 using namespace sts::search;
 using silver_bridge::BattleStateWire;
 using silver_bridge::CardWire;
+using silver_bridge::MonsterWire;
 using silver_bridge::SilverRootActionSummary;
 using silver_bridge::SilverSearchConfig;
 using silver_bridge::SilverRerootFallbackReason;
@@ -31,6 +34,8 @@ using silver_bridge::semanticActionFingerprint;
 
 namespace {
 struct Fixture { const char *name; int move; const char *room; BattleStateWire wire; json observation; };
+json observation(const BattleStateWire &, const char *, int, const char *,
+                 int = 0, json = json::array());
 
 const char *cardId(CardId id) {
     switch (id) {
@@ -63,6 +68,232 @@ const char *monsterName(MonsterId id) {
     default: return "";
     }
 }
+const char *nativeJavaMonsterName(MonsterId id) {
+    switch (id) {
+    case MonsterId::ACID_SLIME_L: return "AcidSlime_L";
+    case MonsterId::ACID_SLIME_M: return "AcidSlime_M";
+    case MonsterId::ACID_SLIME_S: return "AcidSlime_S";
+    case MonsterId::AWAKENED_ONE: return "AwakenedOne";
+    case MonsterId::BEAR: return "BanditBear";
+    case MonsterId::BLUE_SLAVER: return "SlaverBlue";
+    case MonsterId::BOOK_OF_STABBING: return "BookOfStabbing";
+    case MonsterId::BRONZE_AUTOMATON: return "BronzeAutomaton";
+    case MonsterId::BRONZE_ORB: return "BronzeOrb";
+    case MonsterId::BYRD: return "Byrd";
+    case MonsterId::CENTURION: return "Centurion";
+    case MonsterId::CHOSEN: return "Chosen";
+    case MonsterId::CORRUPT_HEART: return "CorruptHeart";
+    case MonsterId::CULTIST: return "Cultist";
+    case MonsterId::DAGGER: return "SnakeDagger";
+    case MonsterId::DARKLING: return "Darkling";
+    case MonsterId::DECA: return "Deca";
+    case MonsterId::DONU: return "Donu";
+    case MonsterId::EXPLODER: return "Exploder";
+    case MonsterId::FAT_GREMLIN: return "GremlinFat";
+    case MonsterId::FUNGI_BEAST: return "FungiBeast";
+    case MonsterId::GIANT_HEAD: return "GiantHead";
+    case MonsterId::GREEN_LOUSE: return "FuzzyLouseDefensive";
+    case MonsterId::GREMLIN_LEADER: return "GremlinLeader";
+    case MonsterId::GREMLIN_NOB: return "GremlinNob";
+    case MonsterId::GREMLIN_WIZARD: return "GremlinWizard";
+    case MonsterId::HEXAGHOST: return "Hexaghost";
+    case MonsterId::JAW_WORM: return "JawWorm";
+    case MonsterId::LAGAVULIN: return "Lagavulin";
+    case MonsterId::LOOTER: return "Looter";
+    case MonsterId::MAD_GREMLIN: return "GremlinWarrior";
+    case MonsterId::MUGGER: return "Mugger";
+    case MonsterId::MYSTIC: return "Healer";
+    case MonsterId::NEMESIS: return "Nemesis";
+    case MonsterId::ORB_WALKER: return "Orb Walker";
+    case MonsterId::POINTY: return "BanditPointy";
+    case MonsterId::RED_LOUSE: return "FuzzyLouseNormal";
+    case MonsterId::RED_SLAVER: return "SlaverRed";
+    case MonsterId::REPTOMANCER: return "Reptomancer";
+    case MonsterId::REPULSOR: return "Repulsor";
+    case MonsterId::ROMEO: return "BanditLeader";
+    case MonsterId::SENTRY: return "Sentry";
+    case MonsterId::SHELLED_PARASITE: return "Shelled Parasite";
+    case MonsterId::SHIELD_GREMLIN: return "GremlinTsundere";
+    case MonsterId::SLIME_BOSS: return "SlimeBoss";
+    case MonsterId::SNAKE_PLANT: return "SnakePlant";
+    case MonsterId::SNEAKY_GREMLIN: return "GremlinThief";
+    case MonsterId::SNECKO: return "Snecko";
+    case MonsterId::SPHERIC_GUARDIAN: return "SphericGuardian";
+    case MonsterId::SPIKER: return "Spiker";
+    case MonsterId::SPIKE_SLIME_L: return "SpikeSlime_L";
+    case MonsterId::SPIKE_SLIME_M: return "SpikeSlime_M";
+    case MonsterId::SPIKE_SLIME_S: return "SpikeSlime_S";
+    case MonsterId::SPIRE_GROWTH: return "Serpent";
+    case MonsterId::SPIRE_SHIELD: return "SpireShield";
+    case MonsterId::SPIRE_SPEAR: return "SpireSpear";
+    case MonsterId::TASKMASTER: return "SlaverBoss";
+    case MonsterId::THE_CHAMP: return "Champ";
+    case MonsterId::THE_COLLECTOR: return "TheCollector";
+    case MonsterId::THE_GUARDIAN: return "TheGuardian";
+    case MonsterId::THE_MAW: return "Maw";
+    case MonsterId::TIME_EATER: return "TimeEater";
+    case MonsterId::TORCH_HEAD: return "TorchHead";
+    case MonsterId::TRANSIENT: return "Transient";
+    case MonsterId::WRITHING_MASS: return "WrithingMass";
+    default: return "";
+    }
+}
+int javaMoveByte(const char *name, MonsterMoveId nativeMove) {
+    if (nativeMove == MonsterMoveId::INVALID) return -1;
+    // The independent literal table above proves the Java byte -> native
+    // direction.  This inverse is only a test renderer for native fixtures;
+    // it is not production mapping logic.
+    for (int byte = 0; byte <= 8; ++byte) {
+        const auto mapped = one_combat::advisor::live_silver::monsterMove(name, byte);
+        if (mapped && *mapped == nativeMove) return byte;
+    }
+    return -1;
+}
+const char *nativeMonsterPowerName(int status) {
+    static constexpr const char *names[] = {
+        "Artifact", "BlockReturnPower", "ChokedPower", "CorpseExplosionPower",
+        "LockOnPower", "MarkPower", "Metallicize", "Plated Armor", "Poison",
+        "Regeneration", "ShackledPower", "Strength", "Vulnerable", "Weak", "Angry",
+        "BeatOfDeath", "Curiosity", "Curl Up", "Enrage", "Fading", "Flight",
+        "GenericStrengthUp", "Intangible", "Malleable", "Mode Shift", "Ritual", "Slow",
+        "Spore Cloud", "Thievery", "Thorns", "Time Warp", "Invincible", "Reactive",
+        "Sharp Hide", "Asleep", "Barricade", "Minion", "MinionLeader", "PainfulStabs",
+        "Regrow", "Shifting", "Stasis",
+    };
+    return status >= 0 && status < static_cast<int>(sizeof(names) / sizeof(names[0]))
+        ? names[status] : "";
+}
+int nativeMonsterPowerAmount(const MonsterWire &monster, int status) {
+    if (status == static_cast<int>(MonsterStatus::STRENGTH)) return monster.strength;
+    if (status == static_cast<int>(MonsterStatus::VULNERABLE)) return monster.vulnerable;
+    if (status == static_cast<int>(MonsterStatus::WEAK)) return monster.weak;
+    if (status >= static_cast<int>(MonsterStatus::INVINCIBLE)
+        && status <= static_cast<int>(MonsterStatus::SHARP_HIDE)) return monster.uniquePower1;
+    if (status >= static_cast<int>(MonsterStatus::ANGRY)
+        && status <= static_cast<int>(MonsterStatus::TIME_WARP)) return monster.uniquePower0;
+    if (status < static_cast<int>(MonsterStatus::ARTIFACT)
+        || status > static_cast<int>(MonsterStatus::SHACKLED)) return 1;
+    return monster.smallPowers[static_cast<std::size_t>(status)];
+}
+json nativeMonsterPowers(const MonsterWire &monster) {
+    json powers = json::array();
+    for (int status = 0; status <= static_cast<int>(MonsterStatus::STASIS); ++status) {
+        const bool active = status == static_cast<int>(MonsterStatus::STRENGTH)
+            ? monster.strength != 0
+            : (monster.statusBits & (1ULL << status)) != 0;
+        if (!active) continue;
+        const auto name = nativeMonsterPowerName(status);
+        if (*name == '\0') throw std::runtime_error("native power renderer missing status name");
+        json power = {{"id", name}, {"amount", nativeMonsterPowerAmount(monster, status)}};
+        if (status == static_cast<int>(MonsterStatus::VULNERABLE)
+            || status == static_cast<int>(MonsterStatus::WEAK)
+            || status == static_cast<int>(MonsterStatus::RITUAL)) {
+            const int bit = status == static_cast<int>(MonsterStatus::VULNERABLE) ? 63
+                : status == static_cast<int>(MonsterStatus::WEAK) ? 62 : 61;
+            power["justApplied"] = (monster.statusBits & (1ULL << bit)) != 0;
+        }
+        powers.push_back(std::move(power));
+    }
+    return powers;
+}
+json nativeObservation(const BattleStateWire &wire, const char *room, const char *instance) {
+    const char *firstName = "Cultist";
+    int firstMove = 3;
+    for (int i = 0; i < wire.monsterCount; ++i) {
+        if (wire.monsters[i].idx < 0) continue;
+        firstName = nativeJavaMonsterName(static_cast<MonsterId>(wire.monsters[i].id));
+        firstMove = javaMoveByte(firstName,
+            static_cast<MonsterMoveId>(wire.monsters[i].moveHistory[0]));
+        if (firstMove < 0) throw std::runtime_error("native sweep current move has no Java byte");
+        break;
+    }
+    auto out = observation(wire, firstName, firstMove, room, 0, json::array());
+    out["sequence"] = wire.observedGeneration;
+    auto &root = out["silverRoot"];
+    root["schemaVersion"] = 4;
+    root.erase("decisionOrdinal");
+    root.erase("firstDecision");
+    root["decisionInTurn"] = 0;
+    root["playerTurn"] = wire.turn + 1;
+    root["combatInstance"] = instance;
+    root["encounter"] = monsterEncounterEnumNames[wire.encounter];
+    root["act"] = wire.act;
+    root["floor"] = wire.floorNum;
+    root["ascension"] = wire.ascension;
+    root["hp"] = wire.player.curHp;
+    root["maxHp"] = wire.player.maxHp;
+    root["gold"] = wire.player.gold;
+    root["potionCapacity"] = wire.potionCapacity;
+    root["burningElite"] = false;
+    auto &combat = root["combat"];
+    combat["turn"] = wire.turn + 1;
+    combat["energy"] = wire.player.energy;
+    combat["block"] = wire.player.block;
+    combat["cardsPlayedThisTurn"] = wire.player.cardsPlayedThisTurn;
+    combat["attacksPlayedThisTurn"] = wire.player.attacksPlayedThisTurn;
+    combat["skillsPlayedThisTurn"] = wire.player.skillsPlayedThisTurn;
+    combat["cardsDiscardedThisTurn"] = wire.player.cardsDiscardedThisTurn;
+    combat["lastAttackUnblockedDamage"] = wire.player.lastAttackUnblockedDamage;
+    combat["timesDamagedThisCombat"] = wire.player.timesDamagedThisCombat;
+    combat["lastTargetedMonster"] = wire.player.lastTargetedMonster;
+    combat["energyPerTurn"] = wire.player.energyPerTurn;
+    combat["cardDrawPerTurn"] = wire.player.cardDrawPerTurn;
+    combat["artifact"] = wire.player.artifact;
+    combat["dexterity"] = wire.player.dexterity;
+    combat["focus"] = wire.player.focus;
+    combat["strength"] = wire.player.strength;
+    combat["stance"] = wire.player.stance;
+    combat["orbSlots"] = wire.player.orbSlots;
+    combat["statusBits0"] = wire.player.statusBits0;
+    combat["statusBits1"] = wire.player.statusBits1;
+    combat["justAppliedBits"] = wire.player.justAppliedBits;
+    combat["statusMap"] = json::array();
+    for (const auto &[status, amount] : wire.player.statusMap)
+        combat["statusMap"].push_back(json::array({status, amount}));
+    combat["playedThisTurn"] = json::array();
+    combat["playerPowers"] = json::array();
+    combat["loopCount"] = wire.loopCount;
+    combat["cardsDrawn"] = wire.cardsDrawn;
+    combat["energyWasted"] = wire.energyWasted;
+    combat["monsterTurnIdx"] = wire.monsterTurnIdx;
+    combat["outcome"] = wire.outcome;
+    combat["endTurnQueued"] = wire.endTurnQueued;
+    combat["turnHasEnded"] = wire.turnHasEnded;
+    combat["skipMonsterTurn"] = wire.skipMonsterTurn;
+    combat["miscBits"] = wire.miscBits;
+    combat["extraRollMoveOnTurn"] = wire.extraRollMoveOnTurn;
+    combat["skipMonsterTurnBits"] = wire.skipMonsterTurnBits;
+    combat["monsterCount"] = wire.monsterCount;
+    combat["monstersAlive"] = wire.monstersAlive;
+    combat["monsters"] = json::array();
+    for (int i = 0; i < wire.monsterCount; ++i) {
+        const auto &monster = wire.monsters[i];
+        if (monster.idx < 0) continue;
+        const auto id = static_cast<MonsterId>(monster.id);
+        const auto name = nativeJavaMonsterName(id);
+        if (*name == '\0') throw std::runtime_error("native sweep monster has no Java id");
+        const auto current = javaMoveByte(name,
+            static_cast<MonsterMoveId>(monster.moveHistory[0]));
+        if (current < 0) throw std::runtime_error("native sweep current move is not mapped");
+        json history = json::array();
+        const auto previous = javaMoveByte(name,
+            static_cast<MonsterMoveId>(monster.moveHistory[1]));
+        if (previous >= 0) history.push_back(previous);
+        history.push_back(current);
+        combat["monsters"].push_back({
+            {"id", name}, {"slot", monster.idx}, {"idx", monster.idx},
+            {"hp", monster.curHp}, {"maxHp", monster.maxHp}, {"block", monster.block},
+            {"dead", monster.curHp <= 0 || monster.isEscapingB},
+            {"escaping", monster.isEscapingB}, {"halfDead", monster.halfDead},
+            {"escapeNext", monster.escapeNext}, {"nextMove", current},
+            {"moveHistory", std::move(history)}, {"statusBits", monster.statusBits},
+            {"strength", monster.strength}, {"vulnerable", monster.vulnerable},
+            {"weak", monster.weak}, {"uniquePower0", monster.uniquePower0},
+            {"uniquePower1", monster.uniquePower1}, {"miscInfo", monster.miscInfo},
+            {"powers", nativeMonsterPowers(monster)}});
+    }
+    return out;
+}
 void normalizeFirstObservationIdentity(BattleStateWire &wire) {
     for (std::size_t i = 0; i < wire.drawPile.unknown.size(); ++i)
         wire.drawPile.unknown[i].uniqueId = static_cast<std::int16_t>(i);
@@ -86,7 +317,7 @@ json pileJson(const std::vector<CardWire> &cards) {
     return out;
 }
 json observation(const BattleStateWire &w, const char *name, int move, const char *room,
-                 int ordinal = 0, json played = json::array()) {
+                 int ordinal, json played) {
     json monsters = json::array();
     const auto &m = w.monsters[0];
     monsters.push_back({{"id", name}, {"hp", m.curHp}, {"maxHp", m.maxHp},
@@ -356,9 +587,246 @@ void verifyRuntimeMoveBoundary() {
     expect("TheGuardian", 5, MonsterMoveId::THE_GUARDIAN_WHIRLWIND);
     expect("TheGuardian", 6, MonsterMoveId::THE_GUARDIAN_CHARGING_UP);
     expect("TheGuardian", 7, MonsterMoveId::THE_GUARDIAN_VENT_STEAM);
+    expect("AwakenedOne", 1, MonsterMoveId::AWAKENED_ONE_SLASH);
+    expect("AwakenedOne", 2, MonsterMoveId::AWAKENED_ONE_SOUL_STRIKE);
+    expect("AwakenedOne", 3, MonsterMoveId::AWAKENED_ONE_REBIRTH);
+    expect("AwakenedOne", 5, MonsterMoveId::AWAKENED_ONE_DARK_ECHO);
+    expect("AwakenedOne", 6, MonsterMoveId::AWAKENED_ONE_SLUDGE);
+    expect("AwakenedOne", 8, MonsterMoveId::AWAKENED_ONE_TACKLE);
+    expect("Darkling", 1, MonsterMoveId::DARKLING_CHOMP);
+    expect("Darkling", 2, MonsterMoveId::DARKLING_HARDEN);
+    expect("Darkling", 3, MonsterMoveId::DARKLING_NIP);
+    expect("Darkling", 4, MonsterMoveId::DARKLING_REGROW);
+    expect("Darkling", 5, MonsterMoveId::DARKLING_REINCARNATE);
+    expect("Deca", 0, MonsterMoveId::DECA_BEAM);
+    expect("Deca", 2, MonsterMoveId::DECA_SQUARE_OF_PROTECTION);
+    expect("Donu", 0, MonsterMoveId::DONU_BEAM);
+    expect("Donu", 2, MonsterMoveId::DONU_CIRCLE_OF_POWER);
+    expect("Exploder", 1, MonsterMoveId::EXPLODER_SLAM);
+    expect("Exploder", 2, MonsterMoveId::EXPLODER_EXPLODE);
+    expect("GiantHead", 1, MonsterMoveId::GIANT_HEAD_GLARE);
+    expect("GiantHead", 2, MonsterMoveId::GIANT_HEAD_IT_IS_TIME);
+    expect("GiantHead", 3, MonsterMoveId::GIANT_HEAD_COUNT);
+    expect("GremlinLeader", 2, MonsterMoveId::GREMLIN_LEADER_RALLY);
+    expect("GremlinLeader", 3, MonsterMoveId::GREMLIN_LEADER_ENCOURAGE);
+    expect("GremlinLeader", 4, MonsterMoveId::GREMLIN_LEADER_STAB);
+    expect("Mugger", 1, MonsterMoveId::MUGGER_MUG);
+    expect("Mugger", 2, MonsterMoveId::MUGGER_SMOKE_BOMB);
+    expect("Mugger", 3, MonsterMoveId::MUGGER_ESCAPE);
+    expect("Mugger", 4, MonsterMoveId::MUGGER_LUNGE);
+    expect("Nemesis", 2, MonsterMoveId::NEMESIS_ATTACK);
+    expect("Nemesis", 3, MonsterMoveId::NEMESIS_SCYTHE);
+    expect("Nemesis", 4, MonsterMoveId::NEMESIS_DEBUFF);
+    expect("Orb Walker", 1, MonsterMoveId::ORB_WALKER_LASER);
+    expect("Orb Walker", 2, MonsterMoveId::ORB_WALKER_CLAW);
+    expect("Reptomancer", 1, MonsterMoveId::REPTOMANCER_SNAKE_STRIKE);
+    expect("Reptomancer", 2, MonsterMoveId::REPTOMANCER_SUMMON);
+    expect("Reptomancer", 3, MonsterMoveId::REPTOMANCER_BIG_BITE);
+    expect("Repulsor", 1, MonsterMoveId::REPULSOR_REPULSE);
+    expect("Repulsor", 2, MonsterMoveId::REPULSOR_BASH);
+    expect("Spiker", 1, MonsterMoveId::SPIKER_CUT);
+    expect("Spiker", 2, MonsterMoveId::SPIKER_SPIKE);
+    expect("Serpent", 1, MonsterMoveId::SPIRE_GROWTH_QUICK_TACKLE);
+    expect("Serpent", 2, MonsterMoveId::SPIRE_GROWTH_CONSTRICT);
+    expect("Serpent", 3, MonsterMoveId::SPIRE_GROWTH_SMASH);
+    expect("TimeEater", 2, MonsterMoveId::TIME_EATER_REVERBERATE);
+    expect("TimeEater", 3, MonsterMoveId::TIME_EATER_RIPPLE);
+    expect("TimeEater", 4, MonsterMoveId::TIME_EATER_HEAD_SLAM);
+    expect("TimeEater", 5, MonsterMoveId::TIME_EATER_HASTE);
+    expect("Transient", 1, MonsterMoveId::TRANSIENT_ATTACK);
+    expect("WrithingMass", 0, MonsterMoveId::WRITHING_MASS_STRONG_STRIKE);
+    expect("WrithingMass", 1, MonsterMoveId::WRITHING_MASS_MULTI_STRIKE);
+    expect("WrithingMass", 2, MonsterMoveId::WRITHING_MASS_FLAIL);
+    expect("WrithingMass", 3, MonsterMoveId::WRITHING_MASS_WITHER);
+    expect("WrithingMass", 4, MonsterMoveId::WRITHING_MASS_IMPLANT);
+    expect("BookOfStabbing", 1, MonsterMoveId::BOOK_OF_STABBING_MULTI_STAB);
+    expect("BookOfStabbing", 2, MonsterMoveId::BOOK_OF_STABBING_SINGLE_STAB);
+    expect("BronzeAutomaton", 1, MonsterMoveId::BRONZE_AUTOMATON_FLAIL);
+    expect("BronzeAutomaton", 2, MonsterMoveId::BRONZE_AUTOMATON_HYPER_BEAM);
+    expect("BronzeAutomaton", 3, MonsterMoveId::BRONZE_AUTOMATON_STUNNED);
+    expect("BronzeAutomaton", 4, MonsterMoveId::BRONZE_AUTOMATON_SPAWN_ORBS);
+    expect("BronzeAutomaton", 5, MonsterMoveId::BRONZE_AUTOMATON_BOOST);
+    expect("BronzeOrb", 1, MonsterMoveId::BRONZE_ORB_BEAM);
+    expect("BronzeOrb", 2, MonsterMoveId::BRONZE_ORB_SUPPORT_BEAM);
+    expect("BronzeOrb", 3, MonsterMoveId::BRONZE_ORB_STASIS);
+    expect("Byrd", 1, MonsterMoveId::BYRD_PECK);
+    expect("Byrd", 2, MonsterMoveId::BYRD_FLY);
+    expect("Byrd", 3, MonsterMoveId::BYRD_SWOOP);
+    expect("Byrd", 4, MonsterMoveId::BYRD_STUNNED);
+    expect("Byrd", 5, MonsterMoveId::BYRD_HEADBUTT);
+    expect("Byrd", 6, MonsterMoveId::BYRD_CAW);
+    expect("Centurion", 1, MonsterMoveId::CENTURION_SLASH);
+    expect("Centurion", 2, MonsterMoveId::CENTURION_DEFEND);
+    expect("Centurion", 3, MonsterMoveId::CENTURION_FURY);
+    expect("Chosen", 1, MonsterMoveId::CHOSEN_ZAP);
+    expect("Chosen", 2, MonsterMoveId::CHOSEN_DRAIN);
+    expect("Chosen", 3, MonsterMoveId::CHOSEN_DEBILITATE);
+    expect("Chosen", 4, MonsterMoveId::CHOSEN_HEX);
+    expect("Chosen", 5, MonsterMoveId::CHOSEN_POKE);
+    expect("CorruptHeart", 1, MonsterMoveId::CORRUPT_HEART_BLOOD_SHOTS);
+    expect("CorruptHeart", 2, MonsterMoveId::CORRUPT_HEART_ECHO);
+    expect("CorruptHeart", 3, MonsterMoveId::CORRUPT_HEART_DEBILITATE);
+    expect("CorruptHeart", 4, MonsterMoveId::CORRUPT_HEART_BUFF);
+    expect("Dagger", 1, MonsterMoveId::DAGGER_STAB);
+    expect("Dagger", 2, MonsterMoveId::DAGGER_EXPLODE);
+    expect("Healer", 1, MonsterMoveId::MYSTIC_ATTACK_DEBUFF);
+    expect("Healer", 2, MonsterMoveId::MYSTIC_HEAL);
+    expect("Healer", 3, MonsterMoveId::MYSTIC_BUFF);
+    expect("Mystic", 1, MonsterMoveId::MYSTIC_ATTACK_DEBUFF);
+    expect("Mystic", 2, MonsterMoveId::MYSTIC_HEAL);
+    expect("Mystic", 3, MonsterMoveId::MYSTIC_BUFF);
+    expect("SlaverBoss", 2, MonsterMoveId::TASKMASTER_SCOURING_WHIP);
+    expect("Shelled Parasite", 1, MonsterMoveId::SHELLED_PARASITE_FELL);
+    expect("Shelled Parasite", 2, MonsterMoveId::SHELLED_PARASITE_DOUBLE_STRIKE);
+    expect("Shelled Parasite", 3, MonsterMoveId::SHELLED_PARASITE_SUCK);
+    expect("Shelled Parasite", 4, MonsterMoveId::SHELLED_PARASITE_STUNNED);
+    expect("SnakePlant", 1, MonsterMoveId::SNAKE_PLANT_CHOMP);
+    expect("SnakePlant", 2, MonsterMoveId::SNAKE_PLANT_ENFEEBLING_SPORES);
+    expect("Snecko", 1, MonsterMoveId::SNECKO_PERPLEXING_GLARE);
+    expect("Snecko", 2, MonsterMoveId::SNECKO_BITE);
+    expect("Snecko", 3, MonsterMoveId::SNECKO_TAIL_WHIP);
+    expect("SphericGuardian", 1, MonsterMoveId::SPHERIC_GUARDIAN_SLAM);
+    expect("SphericGuardian", 2, MonsterMoveId::SPHERIC_GUARDIAN_ACTIVATE);
+    expect("SphericGuardian", 3, MonsterMoveId::SPHERIC_GUARDIAN_HARDEN);
+    expect("SphericGuardian", 4, MonsterMoveId::SPHERIC_GUARDIAN_ATTACK_DEBUFF);
+    expect("SpireShield", 1, MonsterMoveId::SPIRE_SHIELD_BASH);
+    expect("SpireShield", 2, MonsterMoveId::SPIRE_SHIELD_FORTIFY);
+    expect("SpireShield", 3, MonsterMoveId::SPIRE_SHIELD_SMASH);
+    expect("SpireSpear", 1, MonsterMoveId::SPIRE_SPEAR_BURN_STRIKE);
+    expect("SpireSpear", 2, MonsterMoveId::SPIRE_SPEAR_PIERCER);
+    expect("SpireSpear", 3, MonsterMoveId::SPIRE_SPEAR_SKEWER);
+    expect("Champ", 1, MonsterMoveId::THE_CHAMP_HEAVY_SLASH);
+    expect("Champ", 2, MonsterMoveId::THE_CHAMP_DEFENSIVE_STANCE);
+    expect("Champ", 3, MonsterMoveId::THE_CHAMP_EXECUTE);
+    expect("Champ", 4, MonsterMoveId::THE_CHAMP_FACE_SLAP);
+    expect("Champ", 5, MonsterMoveId::THE_CHAMP_GLOAT);
+    expect("Champ", 6, MonsterMoveId::THE_CHAMP_TAUNT);
+    expect("Champ", 7, MonsterMoveId::THE_CHAMP_ANGER);
+    expect("TheCollector", 1, MonsterMoveId::THE_COLLECTOR_SPAWN);
+    expect("TheCollector", 2, MonsterMoveId::THE_COLLECTOR_FIREBALL);
+    expect("TheCollector", 3, MonsterMoveId::THE_COLLECTOR_BUFF);
+    expect("TheCollector", 4, MonsterMoveId::THE_COLLECTOR_MEGA_DEBUFF);
+    expect("TheCollector", 5, MonsterMoveId::THE_COLLECTOR_SPAWN);
+    expect("Maw", 2, MonsterMoveId::THE_MAW_ROAR);
+    expect("Maw", 3, MonsterMoveId::THE_MAW_SLAM);
+    expect("Maw", 4, MonsterMoveId::THE_MAW_DROOL);
+    expect("Maw", 5, MonsterMoveId::THE_MAW_NOM);
+    expect("TorchHead", 1, MonsterMoveId::TORCH_HEAD_TACKLE);
+    expect("BanditLeader", 1, MonsterMoveId::ROMEO_CROSS_SLASH);
+    expect("BanditLeader", 2, MonsterMoveId::ROMEO_MOCK);
+    expect("BanditLeader", 3, MonsterMoveId::ROMEO_AGONIZING_SLASH);
+    expect("BanditBear", 1, MonsterMoveId::BEAR_MAUL);
+    expect("BanditBear", 2, MonsterMoveId::BEAR_BEAR_HUG);
+    expect("BanditBear", 3, MonsterMoveId::BEAR_LUNGE);
+    expect("Pointy", 1, MonsterMoveId::POINTY_ATTACK);
     if (monsterMove("JawWorm", 4) || monsterMove("Hexaghost", 7)
-        || monsterMove("BookOfStabbing", 1))
+        || monsterMove("BookOfStabbing", 3) || monsterMove("Donu", 1))
         throw std::runtime_error("invalid or unqualified monster move was accepted");
+}
+
+void verifyEncounterManifestAndNativeSweep() {
+    const auto &manifest = one_combat::advisor::live_silver::encounterSupportManifest();
+    const auto &exclusions = one_combat::advisor::live_silver::encounterExclusionManifest();
+    if (exclusions.size() != 1 || std::string(exclusions[0].encounterName) != "FOUR_BYRDS"
+        || std::string(exclusions[0].reason).empty())
+        throw std::runtime_error("non-native encounter exclusion manifest is incomplete");
+    const auto expectedCount = sizeof(monsterEncounterEnumNames)
+        / sizeof(monsterEncounterEnumNames[0]);
+    if (manifest.size() != expectedCount)
+        throw std::runtime_error("encounter manifest does not cover every native enum value");
+    std::set<int> seen;
+    int supported = 0, excluded = 0;
+    SilverSearchConfig sweepConfig;
+    sweepConfig.simulationsPerDecision = 1;
+    sweepConfig.adaptiveEnabled = false;
+    sweepConfig.exactVisitLockEnabled = false;
+    sweepConfig.rhoRacingEnabled = false;
+    for (const auto &entry : manifest) {
+        const int value = static_cast<int>(entry.encounter);
+        if (!seen.insert(value).second || value < 0 || value >= static_cast<int>(expectedCount))
+            throw std::runtime_error("encounter manifest has duplicate or invalid value");
+        if (std::string(entry.enumName) != monsterEncounterEnumNames[value]
+            || !entry.reason || std::string(entry.reason).empty())
+            throw std::runtime_error("encounter manifest entry is not self-describing");
+        if (!entry.supported) {
+            ++excluded;
+            continue;
+        }
+        ++supported;
+        if (entry.encounter == MonsterEncounter::INVALID)
+            throw std::runtime_error("INVALID cannot be marked live-supported");
+
+        // This is a native state-construction sweep, not a policy benchmark:
+        // every declared live encounter must at least construct its physical
+        // monster slots and cross the ordinary Silver conversion boundary.
+        GameContext game(CharacterClass::IRONCLAD, 0x51L + value, 0);
+        game.act = value <= static_cast<int>(MonsterEncounter::HEXAGHOST) ? 1
+            : value <= static_cast<int>(MonsterEncounter::CHAMP) ? 2
+            : value <= static_cast<int>(MonsterEncounter::DONU_AND_DECA) ? 3
+            : 4;
+        game.floorNum = 1;
+        BattleContext battle;
+        battle.init(game, entry.encounter);
+        if (battle.monsters.monsterCount <= 0 || battle.monsters.monsterCount > 5)
+            throw std::runtime_error("native encounter did not construct bounded monster slots: "
+                + std::string(entry.enumName));
+        for (int i = 0; i < battle.monsters.monsterCount; ++i) {
+            const auto &monster = battle.monsters.arr[i];
+            if (monster.idx != -1 && monster.idx != i)
+                throw std::runtime_error("native encounter changed initial slot identity: "
+                    + std::string(entry.enumName));
+        }
+        CombatKnowledgeState knowledge;
+        knowledge.initializeFromLiveBattle(battle);
+        const auto wire = makeSilverBattleStateWire(
+            battle, knowledge, makeSilverRunContext(game), 0x510000ULL + value);
+        if (!wire.valid || wire.encounter != value
+            || wire.outcome != static_cast<int>(Outcome::UNDECIDED)
+            || wire.inputState != static_cast<int>(InputState::PLAYER_NORMAL))
+            throw std::runtime_error("native encounter failed Silver wire conversion: "
+                + std::string(entry.enumName));
+        auto normalized = wire;
+        normalizeFirstObservationIdentity(normalized);
+        // The simulator's JAW_WORM_HORDE fixture can retain a stale previous
+        // move byte in the fresh reserved array.  A Java first observation has
+        // no previous move at this boundary, so model the public state as an
+        // absent history entry rather than inventing an impossible Jaw Worm
+        // byte.
+        if (entry.encounter == MonsterEncounter::JAW_WORM_HORDE) {
+            for (int i = 0; i < normalized.monsterCount; ++i)
+                if (normalized.monsters[i].idx >= 0)
+                    normalized.monsters[i].moveHistory[1] = static_cast<std::int16_t>(MonsterMoveId::INVALID);
+        }
+        const auto rendered = nativeObservation(normalized, "MONSTER", entry.enumName);
+        one_combat::advisor::SilverImportContext context;
+        context.session = "native-sweep";
+        const auto imported = one_combat::advisor::importSilverRoot(rendered, context);
+        if (!imported.ok) {
+            throw std::runtime_error("native encounter observation was not importable: "
+                + std::string(entry.enumName) + " reason=" + imported.reason
+                + " nativeCount=" + std::to_string(normalized.monsterCount)
+                + " renderedCount=" + std::to_string(rendered["silverRoot"]["combat"]["monsters"].size())
+                + " slots=" + rendered["silverRoot"]["combat"]["monsters"].dump());
+        }
+        auto canonical = normalized;
+        canonical.isolatedSearchSeed = imported.wire.isolatedSearchSeed;
+        if (!convertedStatesEqualForSearch(canonical, imported.wire)) {
+            throw std::runtime_error("native encounter observation lost search state: "
+                + std::string(entry.enumName) + " canonical="
+                + battleStateWireEnvelope(canonical).dump()
+                + " imported=" + battleStateWireEnvelope(imported.wire).dump());
+        }
+        const auto decision = runSilverDecision(imported.wire, sweepConfig);
+        if (!decision.accepted)
+            throw std::runtime_error("native encounter could not reach a Silver decision: "
+                + std::string(entry.enumName));
+    }
+    if (static_cast<int>(seen.size()) != static_cast<int>(expectedCount)
+        || supported + excluded != static_cast<int>(expectedCount)
+        || excluded != 1)
+        throw std::runtime_error("encounter manifest counts are inconsistent");
+    std::cout << "live Silver encounter manifest/native sweep passed: supported="
+              << supported << " excluded=" << excluded << '\n';
 }
 json genericObservation(const Fixture &fixture, const char *instance) {
     auto out = fixture.observation;
@@ -402,6 +870,7 @@ int cardActionCount(const std::vector<silver_bridge::SemanticAction> &actions, C
 int main() {
     try {
         verifyRuntimeMoveBoundary();
+        verifyEncounterManifestAndNativeSweep();
         const std::vector<Fixture> fixtures = {
             fixture(MonsterEncounter::CULTIST, "Cultist", 3, "MONSTER", 0xC011u),
             fixture(MonsterEncounter::JAW_WORM, "JawWorm", 1, "MONSTER", 0xA01u),
@@ -423,6 +892,21 @@ int main() {
                 + std::to_string(multiImported.wire.monsters[0].moveHistory[0])
                 + " m1move=" + std::to_string(multiCanonical.monsters[1].moveHistory[0]) + "/"
                 + std::to_string(multiImported.wire.monsters[1].moveHistory[0]));
+        auto sparseSlots = multi.observation;
+        sparseSlots["silverRoot"]["combat"]["monsters"].erase(
+            sparseSlots["silverRoot"]["combat"]["monsters"].begin() + 1);
+        const auto sparseImported = one_combat::advisor::importSilverRoot(sparseSlots);
+        if (!sparseImported.ok || sparseImported.wire.monsterCount != 3
+            || sparseImported.wire.monsters[1].id != static_cast<std::int16_t>(MonsterId::INVALID)
+            || sparseImported.wire.monsters[2].idx != 2)
+            throw std::runtime_error("stable monster-slot identity was compacted after a death");
+        auto halfDead = multi.observation;
+        halfDead["silverRoot"]["combat"]["monsters"][0]["halfDead"] = true;
+        halfDead["silverRoot"]["combat"]["monsters"][0]["dead"] = false;
+        const auto halfDeadImported = one_combat::advisor::importSilverRoot(halfDead);
+        if (!halfDeadImported.ok || !halfDeadImported.wire.monsters[0].halfDead
+            || halfDeadImported.wire.monstersAlive != 2)
+            throw std::runtime_error("half-dead monster state was not preserved");
         const auto multiHit = multiHitFixture();
         auto multiHitImported = one_combat::advisor::importSilverRoot(
             genericObservation(multiHit, "multi-hit-damage-entry"));
@@ -859,6 +1343,20 @@ int main() {
                 + std::to_string(generalImported.wire.potionCount) + " powers="
                 + std::to_string(generalImported.wire.player.statusMap.size()) + " next="
                 + std::to_string(generalImported.wire.nextUniqueCardId));
+        if (generalImported.wire.extraRollMoveOnTurn != 0
+            || generalImported.wire.skipMonsterTurnBits != 0)
+            throw std::runtime_error("explicit stable-boundary group state was not preserved");
+        auto burningGeneric = general;
+        burningGeneric["silverRoot"]["burningElite"] = true;
+        const auto burningImported = one_combat::advisor::importSilverRoot(burningGeneric);
+        if (!burningImported.ok)
+            throw std::runtime_error("fully represented generic burning-elite state was rejected: "
+                + burningImported.reason);
+        auto fourByrds = general;
+        fourByrds["silverRoot"]["encounter"] = "FOUR_BYRDS";
+        if (one_combat::advisor::importSilverRoot(fourByrds).reason
+            != "silver_unsupported_four_byrds")
+            throw std::runtime_error("FOUR_BYRDS exclusion was not reported explicitly");
         auto powerBits = general;
         powerBits["silverRoot"]["combat"]["monsters"][0]["powers"] = json::array({
             json{{"id", "Vulnerable"}, {"amount", 2}, {"justApplied", false}}});
@@ -906,6 +1404,24 @@ int main() {
                 + std::to_string(eyeImported.ok) + " reason=" + eyeImported.reason
                 + " full=" + std::to_string(eyeImported.wire.fullDrawOrderObserved)
                 + " size=" + std::to_string(eyeImported.wire.drawPile.knownTop.size()));
+        auto stasis = general;
+        stasis["silverRoot"]["encounter"] = "AUTOMATON";
+        stasis["silverRoot"]["combat"]["monsters"][0]["id"] = "BronzeOrb";
+        stasis["silverRoot"]["combat"]["monsters"][0]["nextMove"] = 3;
+        stasis["silverRoot"]["combat"]["monsters"][0]["moveHistory"] = json::array({3});
+        stasis["silverRoot"]["combat"]["monsters"][0]["miscInfo"] = 1;
+        stasis["silverRoot"]["combat"]["monsters"][0]["powers"] = json::array({
+            json{{"id", "Stasis"}, {"amount", 1}}});
+        stasis["silverRoot"]["combat"]["stasis"] = json::array({
+            json{{"id", "Strike_R"}, {"uuid", "stasis-card"}, {"slot", 0}, {"upgraded", false},
+                 {"misc", 0}, {"cost", 1}, {"costForTurn", 1},
+                 {"freeToPlayOnce", false}, {"retain", false}}});
+        const auto stasisImported = one_combat::advisor::importSilverRoot(stasis);
+        if (!stasisImported.ok || stasisImported.wire.stasisCards[0].id
+                != static_cast<std::int16_t>(CardId::STRIKE_RED)
+            || !(stasisImported.wire.monsters[0].statusBits
+                & (1ULL << static_cast<int>(MonsterStatus::STASIS))))
+            throw std::runtime_error("Bronze Orb Stasis card/state was not imported exactly");
         general["silverRoot"]["combat"]["cardSelect"] = json{
             {"task", "EXHAUST_ONE"}, {"cards", json::array({"Strike_R"})},
             {"pickCount", 1}, {"canPickZero", false}};
