@@ -27,7 +27,7 @@ bool rawActionForSemantic(const sts::BattleContext &state, const SemanticAction 
                           sts::search::Action &raw);
 SilverSimpleRolloutResult runSilverSimpleRolloutImpl(
     const BattleStateWire &leaf, const BattleStateWire &originalRoot,
-    const SemanticAction *firstAction, bool spotWeaknessFirst);
+    const SemanticAction *firstAction);
 
 sts::CardInstance card(const CardWire &in) {
     sts::CardInstance out;
@@ -894,45 +894,13 @@ double silverTerminalLeafRootValue(const BattleStateWire &wire) {
 
 SilverSimpleRolloutResult runSilverSimpleRollout(
         const BattleStateWire &leaf, const BattleStateWire &originalRoot) {
-    return runSilverSimpleRolloutImpl(leaf, originalRoot, nullptr, false);
+    return runSilverSimpleRolloutImpl(leaf, originalRoot, nullptr);
 }
 
 SilverSimpleRolloutResult runSilverSimpleRolloutWithFirstAction(
         const BattleStateWire &leaf, const BattleStateWire &originalRoot,
         const SemanticAction &firstAction) {
-    return runSilverSimpleRolloutImpl(leaf, originalRoot, &firstAction, false);
-}
-
-SilverSimpleRolloutResult runSilverSimpleRolloutWithSpotWeaknessFirst(
-        const BattleStateWire &leaf, const BattleStateWire &originalRoot) {
-    return runSilverSimpleRolloutImpl(leaf, originalRoot, nullptr, true);
-}
-
-SilverSpotWeaknessFirstProbe probeSilverSpotWeaknessFirst(const BattleStateWire &wire) {
-    SilverSpotWeaknessFirstProbe result;
-    if (!wire.valid || wire.version != BattleStateWire::kVersion
-            || wire.inputState != static_cast<int>(sts::InputState::PLAYER_NORMAL)
-            || wire.outcome != static_cast<int>(sts::Outcome::UNDECIDED)) {
-        result.failureReason = "probe_requires_nonterminal_player_normal_state";
-        return result;
-    }
-    try {
-        sts::GameContext runContext;
-        initializeRunContext(runContext, wire);
-        const auto state = materialize(wire, &runContext);
-        sts::search::SimpleAgent agent;
-        sts::search::Action rawAction;
-        result.accepted = true;
-        result.applicable = agent.chooseSpotWeaknessFirstAction(state, rawAction);
-        if (result.applicable) {
-            result.handIndex = rawAction.getSourceIdx();
-            result.targetIndex = rawAction.getTargetIdx();
-            result.action = semanticFromAction(state, rawAction);
-        }
-    } catch (const std::exception &error) {
-        result.failureReason = std::string("probe_exception: ") + error.what();
-    }
-    return result;
+    return runSilverSimpleRolloutImpl(leaf, originalRoot, &firstAction);
 }
 
 class SilverSearchSession {
@@ -2534,10 +2502,9 @@ bool rawActionForSemantic(const sts::BattleContext &state, const SemanticAction 
 
 SilverSimpleRolloutResult runSilverSimpleRolloutImpl(
         const BattleStateWire &leaf, const BattleStateWire &originalRoot,
-        const SemanticAction *firstAction, bool spotWeaknessFirst) {
+        const SemanticAction *firstAction) {
     SilverSimpleRolloutResult result;
     result.forcedFirstAction = firstAction != nullptr;
-    result.spotWeaknessFirstEnabled = spotWeaknessFirst;
     if (!leaf.valid || leaf.version != BattleStateWire::kVersion
             || leaf.inputState != static_cast<int>(sts::InputState::PLAYER_NORMAL)
             || leaf.outcome != static_cast<int>(sts::Outcome::UNDECIDED)) {
@@ -2573,7 +2540,6 @@ SilverSimpleRolloutResult runSilverSimpleRolloutImpl(
 
         const auto canonicalStart = std::chrono::steady_clock::now();
         sts::search::BattleSearcher searcher(state);
-        searcher.diagnosticSpotWeaknessFirst = spotWeaknessFirst;
         searcher.collectRolloutDiagnostics = true;
         SilverLeafObservation completed;
         bool sawStart = false;
@@ -2599,7 +2565,6 @@ SilverSimpleRolloutResult runSilverSimpleRolloutImpl(
         }
 
         result.accepted = true;
-        result.spotWeaknessFirstApplied = searcher.diagnosticSpotWeaknessFirstApplied;
         result.rngIdentity = leaf.isolatedSearchSeed;
         result.terminalOutcome = terminal ? static_cast<int>(state.outcome) : completed.terminalOutcome;
         result.terminalHp = terminal ? state.player.curHp : completed.terminalHp;

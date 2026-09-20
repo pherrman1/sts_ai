@@ -33,9 +33,6 @@ namespace sts::search {
         void playoutBattle(BattleContext &bc);
 
         Action chooseBattleCardPlay(BattleContext &bc);
-        // Diagnostic-only first-card correction. This is deliberately separate from the
-        // ordinary priority policy and is never consulted unless the caller opts in.
-        bool chooseSpotWeaknessFirstAction(const BattleContext &bc, Action &outAction) const;
         Action chooseBattleCardSelect(BattleContext &bc);
 
         void stepOutOfCombat(GameContext &gc);

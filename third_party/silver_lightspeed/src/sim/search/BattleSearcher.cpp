@@ -291,8 +291,6 @@ search::BattleSearcher::~BattleSearcher() = default;
 double search::BattleSearcher::runDiagnosticRollout() {
     if (root == nullptr || root->state == nullptr || root->isRandomNode)
         throw std::invalid_argument("diagnostic rollout requires a decision-state root");
-    diagnosticSpotWeaknessFirstApplied = false;
-    diagnosticSpotWeaknessFirstConsidered = false;
     std::vector<Action> diagnosticActionStack;
     return rolloutToEnd(*root->state, diagnosticActionStack, root, nullptr, 0);
 }
@@ -876,17 +874,15 @@ double search::BattleSearcher::rolloutToEnd(BattleContext &bc, std::vector<Actio
         ++simulationIdx;
         Action action;
         switch (bc.inputState) {
-            case InputState::PLAYER_NORMAL: {
+            case InputState::PLAYER_NORMAL:
                 // Resolve any hidden (Runic Dome) intent with a sample roll before the rollout agent
                 // decides, so it sees the real incoming damage and blocks sensibly. Each rollout's
                 // rng samples a different move, so leaf values average to the true EV -- far better
                 // than the flat 5*act guess, which made the agent under-block and die, leaving
                 // card-play nodes underestimated and unexplored. Isolated to this rollout's scratch
                 // bc; the tree still models the hidden intent honestly via its END_TURN chance node.
-                bool hadUnresolvedIntent = false;
                 for (int i = 0; i < bc.monsters.monsterCount; ++i) {
                     auto &m = bc.monsters.arr[i];
-                    hadUnresolvedIntent = hadUnresolvedIntent || m.pendingMoveRolls > 0;
                     if (m.pendingMoveRolls > 0 && !m.isDeadOrEscaped()) {
                         m.materializePendingMove(bc);
                     }
@@ -894,19 +890,9 @@ double search::BattleSearcher::rolloutToEnd(BattleContext &bc, std::vector<Actio
                 // Rollout potion policy (STS_ROLLOUT_POTION_MODE) gets first refusal; default
                 // mode never drinks, leaving potion plays to the search tree.
                 if (!rolloutAgent.choosePotionAction(bc, action)) {
-                    bool appliedSpotWeaknessFirst = false;
-                    if (diagnosticSpotWeaknessFirst && !diagnosticSpotWeaknessFirstConsidered) {
-                        diagnosticSpotWeaknessFirstConsidered = true;
-                        if (!hadUnresolvedIntent
-                                && rolloutAgent.chooseSpotWeaknessFirstAction(bc, action)) {
-                            diagnosticSpotWeaknessFirstApplied = true;
-                            appliedSpotWeaknessFirst = true;
-                        }
-                    }
-                    if (!appliedSpotWeaknessFirst) action = rolloutAgent.chooseBattleCardPlay(bc);
+                    action = rolloutAgent.chooseBattleCardPlay(bc);
                 }
                 break;
-            }
 
             case InputState::CARD_SELECT:
                 action = rolloutAgent.chooseBattleCardSelect(bc);

@@ -283,13 +283,6 @@ namespace sts::search {
         bool collectRolloutDiagnostics = false;
         bool collectVictoryCounts = false;
         bool collectUidFragmentationDiagnostics = false;
-        // Default-off diagnostic treatment: at the first card choice in a rollout, allow the
-        // narrow Spot Weakness rule to preempt ordinary SimpleAgent priority once. This is
-        // observation/experiment control only; search selection and the normal rollout path do
-        // not read it.
-        bool diagnosticSpotWeaknessFirst = false;
-        bool diagnosticSpotWeaknessFirstApplied = false;
-        bool diagnosticSpotWeaknessFirstConsidered = false;
         silver_bridge::SilverLeafObserver leafObserver;
 
         std::default_random_engine randGen;

@@ -58,8 +58,6 @@ struct Capture {
     std::string sourceStateHash;
     std::string groupId;
     std::string leafId;
-    bool candidateApplicable = false;
-    std::string candidateActionFingerprint;
     silver_bridge::SilverLeafObservation observation;
 };
 
@@ -75,7 +73,6 @@ struct Group {
     std::map<std::string, Capture> leaves;
     bool inconsistentLegal = false;
     bool tooLarge = false;
-    bool candidateActive = false;
 };
 
 std::string groupIdFor(const std::string &caseId,
@@ -180,56 +177,6 @@ Json rolloutRow(const Capture &capture, const silver_bridge::SilverSimpleRollout
         {"wall_micros", rollout.rolloutWallMicros},
         {"action_fingerprints", rollout.rolloutActionFingerprints},
         {"replicate_contract", "seed=fnv1a(silver-rollout-variance/v1/group_id/replicate); same seed across sibling leaves"}
-    };
-}
-
-Json spotCorpusRow(const Capture &capture, const std::string &executableSha,
-                   int maxLeavesPerGroup) {
-    auto row = corpusRow(capture, executableSha, 1, maxLeavesPerGroup);
-    row["diagnostic_schema"] = "silver_spot_weakness_first_v1";
-    row["sampling_rule"] = "complete sibling groups sorted by fnv1a(spot-weakness-first-selection-v1/group_id)";
-    row["candidate"] = "SPOT_WEAKNESS_FIRST_V1";
-    row["candidate_applicable"] = capture.candidateApplicable;
-    row["candidate_action_fingerprint"] = capture.candidateActionFingerprint;
-    return row;
-}
-
-Json spotBaselineRow(const Capture &capture, const silver_bridge::SilverSimpleRolloutResult &rollout,
-                     int replicate) {
-    auto row = rolloutRow(capture, rollout, replicate);
-    row["diagnostic_schema"] = "silver_spot_weakness_first_v1";
-    row["candidate"] = "SPOT_WEAKNESS_FIRST_V1";
-    row["candidate_applicable"] = capture.candidateApplicable;
-    row["candidate_action_fingerprint"] = capture.candidateActionFingerprint;
-    return row;
-}
-
-Json spotTreatmentRow(const Json &baseline, const silver_bridge::SilverSimpleRolloutResult &treatment) {
-    return {
-        {"schema", "silver_spot_weakness_first_treatment_v1"},
-        {"candidate", "SPOT_WEAKNESS_FIRST_V1"},
-        {"group_id", baseline.at("group_id")},
-        {"leaf_snapshot_id", baseline.at("leaf_snapshot_id")},
-        {"replicate", baseline.at("replicate")},
-        {"rng_identity", baseline.at("rng_identity")},
-        {"candidate_applicable", baseline.at("candidate_applicable")},
-        {"candidate_action_fingerprint", baseline.at("candidate_action_fingerprint")},
-        {"baseline_accepted", baseline.at("accepted")},
-        {"baseline_utility", baseline.at("original_root_corrected_utility")},
-        {"baseline_action_fingerprints", baseline.at("action_fingerprints")},
-        {"baseline_action_count", baseline.at("action_count")},
-        {"baseline_turn_delta", baseline.at("turn_delta")},
-        {"baseline_wall_micros", baseline.at("wall_micros")},
-        {"treatment_accepted", treatment.accepted},
-        {"treatment_failure_reason", treatment.failureReason},
-        {"treatment_candidate_enabled", treatment.spotWeaknessFirstEnabled},
-        {"treatment_candidate_applied", treatment.spotWeaknessFirstApplied},
-        {"treatment_utility", treatment.accepted
-            ? Json(treatment.originalRootCorrectedUtility) : Json(nullptr)},
-        {"treatment_action_fingerprints", treatment.allActionFingerprints},
-        {"treatment_action_count", treatment.totalActionCount},
-        {"treatment_turn_delta", treatment.totalTurnDelta},
-        {"treatment_wall_micros", treatment.totalWallMicros}
     };
 }
 
@@ -471,255 +418,12 @@ int runFirstActionProbe(int argc, char **argv) {
     return 0;
 }
 
-int runSpotWeaknessHoldout(int argc, char **argv) {
-    if (argc != 11) {
-        std::cerr << "usage: silver_rollout_variance_diagnostic --spot-weakness-first-holdout "
-                     "SNAPSHOTS CORPUS RAW SELECTION EXECUTABLE_SHA BUDGET GROUPS MAX_LEAVES REPLICATES\n";
-        return 2;
-    }
-    const std::filesystem::path snapshotsPath = argv[2];
-    const std::filesystem::path corpusPath = argv[3];
-    const std::filesystem::path rolloutsPath = argv[4];
-    const std::filesystem::path selectionPath = argv[5];
-    const std::string executableSha = argv[6];
-    if (!silver_bridge::rootMechanismShaValid(executableSha))
-        throw std::invalid_argument("invalid executable SHA");
-    const int budget = parseInt(argv[7], "budget", 1);
-    const int targetGroups = parseInt(argv[8], "groups", 1);
-    const int maxLeaves = parseInt(argv[9], "max leaves", 2);
-    const int replicates = parseInt(argv[10], "replicates", 1);
-    rejectExisting(corpusPath);
-    rejectExisting(rolloutsPath);
-    rejectExisting(selectionPath);
-
-    std::ifstream input(snapshotsPath);
-    if (!input) throw std::runtime_error("cannot open snapshots: " + snapshotsPath.string());
-    std::unordered_map<std::string, Group> groups;
-    int snapshots = 0;
-    int replayFailures = 0;
-    std::string line;
-    while (std::getline(input, line)) {
-        if (line.empty()) continue;
-        const auto row = Json::parse(line);
-        const auto wire = silver_bridge::validateHardCombatSnapshot(row);
-        auto replayWire = wire;
-        replayWire.isolatedSearchSeed = row.at("benchmark_seed").get<std::uint64_t>();
-        const auto caseId = row.at("case_id").get<std::string>();
-        const auto sourceSeed = row.at("source_seed").get<std::uint64_t>();
-        const auto benchmarkSeed = row.at("benchmark_seed").get<std::uint64_t>();
-        const auto sourceExecutableSha = row.at("executable_git_sha").get<std::string>();
-        const auto sourceStateHash = row.at("state_hash").get<std::string>();
-        const auto roomType = row.at("room_type").get<std::string>();
-        ++snapshots;
-        silver_bridge::SilverSearchConfig config;
-        config.simulationsPerDecision = budget;
-        config.reuseCap = silver_bridge::kSilverProductionReuseCap;
-        config.reuseCapMode = silver_bridge::SilverReuseCapMode::ALLOCATED;
-        config.adaptiveEnabled = false;
-        config.exactVisitLockEnabled = false;
-        config.rhoRacingEnabled = false;
-        config.leafObserver = [&](silver_bridge::SilverLeafObservation &observation) {
-            const auto groupId = groupIdFor(caseId, observation);
-            if (observation.phase == silver_bridge::SilverLeafObservationPhase::START) {
-                if (observation.state.inputState != 1
-                        || observation.parentLegalActionFingerprints.size() < 2) return;
-                auto &group = groups[groupId];
-                if (group.id.empty()) {
-                    group.id = groupId; group.caseId = caseId; group.sourceSeed = sourceSeed;
-                    group.benchmarkSeed = benchmarkSeed; group.roomType = roomType;
-                    group.sourceExecutableSha = sourceExecutableSha;
-                    group.sourceStateHash = sourceStateHash;
-                    group.legal = observation.parentLegalActionFingerprints;
-                    std::sort(group.legal.begin(), group.legal.end());
-                } else {
-                    auto legal = observation.parentLegalActionFingerprints;
-                    std::sort(legal.begin(), legal.end());
-                    if (legal != group.legal) group.inconsistentLegal = true;
-                }
-                const auto probe = silver_bridge::probeSilverSpotWeaknessFirst(observation.state);
-                if (!probe.accepted)
-                    throw std::runtime_error("candidate probe failed closed during holdout selection: "
-                        + probe.failureReason);
-                if (probe.applicable) group.candidateActive = true;
-                observation.collectResult = true;
-            } else {
-                const auto groupIt = groups.find(groupId);
-                if (groupIt == groups.end()) return;
-                auto &group = groupIt->second;
-                if (group.tooLarge) return;
-                const auto leafId = leafIdFor(groupId, observation.state);
-                if (group.leaves.find(leafId) != group.leaves.end()) return;
-                if (static_cast<int>(group.leaves.size()) >= maxLeaves) {
-                    group.tooLarge = true;
-                    group.leaves.clear();
-                    return;
-                }
-                const auto probe = silver_bridge::probeSilverSpotWeaknessFirst(observation.state);
-                if (!probe.accepted)
-                    throw std::runtime_error("candidate probe failed closed at holdout leaf: "
-                        + probe.failureReason);
-                const auto candidateFingerprint = probe.applicable
-                    ? silver_bridge::semanticActionFingerprint(probe.action) : std::string{};
-                group.leaves.emplace(leafId, Capture{caseId, sourceSeed, benchmarkSeed,
-                    roomType, sourceExecutableSha, sourceStateHash, groupId, leafId,
-                    probe.applicable, candidateFingerprint, observation});
-            }
-        };
-        const auto replay = silver_bridge::runSilverCombatReplay(replayWire, config);
-        if (!replay.accepted) {
-            ++replayFailures;
-            std::cerr << "replay failure case=" << caseId << " reason=" << replay.failureReason << '\n';
-        }
-    }
-    if (input.bad()) throw std::runtime_error("snapshot read failure");
-    if (replayFailures != 0)
-        throw std::runtime_error("replay population has technical failures: "
-            + std::to_string(replayFailures));
-
-    std::vector<Group *> complete;
-    for (auto &[ignored, group] : groups) {
-        if (!group.candidateActive || group.inconsistentLegal || group.tooLarge || group.leaves.empty()) continue;
-        std::set<std::string> mapped;
-        for (const auto &[ignoredLeaf, capture] : group.leaves)
-            mapped.insert(capture.observation.incomingActionFingerprint);
-        if (std::includes(mapped.begin(), mapped.end(), group.legal.begin(), group.legal.end()))
-            complete.push_back(&group);
-    }
-    std::sort(complete.begin(), complete.end(), [](const Group *lhs, const Group *rhs) {
-        const auto lh = fnv("spot-weakness-first-selection-v1/" + lhs->id);
-        const auto rh = fnv("spot-weakness-first-selection-v1/" + rhs->id);
-        return std::tie(lh, lhs->id) < std::tie(rh, rhs->id);
-    });
-    if (complete.size() < 12)
-        throw std::runtime_error("INSUFFICIENT_FRESH_COVERAGE: only "
-            + std::to_string(complete.size()) + " complete eligible groups");
-
-    std::vector<Group *> selected;
-    int selectedLeaves = 0;
-    for (Group *group : complete) {
-        if (static_cast<int>(selected.size()) >= targetGroups) break;
-        const int count = static_cast<int>(group->leaves.size());
-        if (selectedLeaves + count > maxLeaves) continue;
-        selected.push_back(group);
-        selectedLeaves += count;
-    }
-    if (selected.size() < 12)
-        throw std::runtime_error("INSUFFICIENT_FRESH_COVERAGE: selected only "
-            + std::to_string(selected.size()) + " groups within leaf cap");
-
-    std::ofstream corpus(corpusPath);
-    std::ofstream rollouts(rolloutsPath);
-    std::ofstream selection(selectionPath);
-    if (!corpus || !rollouts || !selection) throw std::runtime_error("cannot create holdout outputs");
-    std::vector<Capture> selectedCaptures;
-    Json selectedGroups = Json::array();
-    std::vector<std::string> leafIds;
-    for (const Group *group : selected) {
-        Json groupRow = {{"group_id", group->id}, {"case_id", group->caseId},
-            {"candidate_active", group->candidateActive},
-            {"leaf_count", group->leaves.size()}, {"legal_action_count", group->legal.size()}};
-        Json activeLeaves = Json::array();
-        for (const auto &[ignored, capture] : group->leaves) {
-            corpus << spotCorpusRow(capture, executableSha, maxLeaves).dump() << '\n';
-            selectedCaptures.push_back(capture);
-            leafIds.push_back(capture.leafId);
-            if (capture.candidateApplicable) activeLeaves.push_back(capture.leafId);
-        }
-        groupRow["candidate_active_leaf_ids"] = std::move(activeLeaves);
-        selectedGroups.push_back(std::move(groupRow));
-    }
-    corpus.flush();
-    if (!corpus) throw std::runtime_error("holdout corpus write failure");
-    std::sort(selectedCaptures.begin(), selectedCaptures.end(), [](const Capture &lhs, const Capture &rhs) {
-        return std::tie(lhs.groupId, lhs.leafId) < std::tie(rhs.groupId, rhs.leafId);
-    });
-    for (const auto &capture : selectedCaptures) {
-        for (int replicate = 0; replicate < replicates; ++replicate) {
-            auto leaf = capture.observation.state;
-            leaf.isolatedSearchSeed = rolloutSeed(capture.groupId, replicate);
-            const auto result = silver_bridge::runSilverSimpleRollout(
-                leaf, capture.observation.originalRootState);
-            if (!result.accepted)
-                throw std::runtime_error("baseline rollout failed for " + capture.leafId
-                    + " replicate " + std::to_string(replicate) + ": " + result.failureReason);
-            rollouts << spotBaselineRow(capture, result, replicate).dump() << '\n';
-        }
-    }
-    rollouts.flush();
-    if (!rollouts) throw std::runtime_error("holdout rollout write failure");
-    selection << Json{{"manifest_schema", "silver_leaf_manifest_v1"},
-        {"schema", "silver_spot_weakness_first_selection_v1"},
-        {"candidate", "SPOT_WEAKNESS_FIRST_V1"}, {"candidate_implementation_sha", executableSha},
-        {"source_snapshot_file", snapshotsPath.string()}, {"source_snapshot_count", snapshots},
-        {"budget", budget}, {"replicates", replicates}, {"selected_group_count", selected.size()},
-        {"selected_leaf_count", selectedLeaves}, {"complete_eligible_group_count", complete.size()},
-        {"candidate_active_group_count", selected.size()},
-        {"selected_groups", selectedGroups}, {"leaf_snapshot_ids", leafIds},
-        {"selection_rule", "candidate applicability only; complete sibling groups; sorted FNV-1a; no teacher/outcome fields"}}
-        .dump() << '\n';
-    if (!selection) throw std::runtime_error("holdout selection write failure");
-    std::cout << Json{{"schema", "silver_spot_weakness_first_selection_v1"},
-        {"snapshots", snapshots}, {"replay_failures", replayFailures},
-        {"complete_eligible_groups", complete.size()}, {"selected_groups", selected.size()},
-        {"selected_leaves", selectedLeaves}, {"budget", budget}, {"replicates", replicates}}
-        .dump() << '\n';
-    return 0;
-}
-
-int runSpotWeaknessTreatment(int argc, char **argv) {
-    if (argc != 6) {
-        std::cerr << "usage: silver_rollout_variance_diagnostic --spot-weakness-first-treatment "
-                     "CORPUS RAW OUTPUT EXECUTABLE_SHA\n";
-        return 2;
-    }
-    const std::filesystem::path corpusPath = argv[2];
-    const std::filesystem::path rawPath = argv[3];
-    const std::filesystem::path outputPath = argv[4];
-    const std::string executableSha = argv[5];
-    if (!silver_bridge::rootMechanismShaValid(executableSha))
-        throw std::invalid_argument("invalid executable SHA");
-    rejectExisting(outputPath);
-    const auto corpusRows = readJsonLines(corpusPath);
-    const auto rawRows = readJsonLines(rawPath);
-    std::map<std::string, Json> corpus;
-    for (const auto &row : corpusRows) corpus.emplace(row.at("leaf_snapshot_id"), row);
-    std::ofstream output(outputPath);
-    if (!output) throw std::runtime_error("cannot create treatment output");
-    int treatments = 0;
-    for (const auto &baseline : rawRows) {
-        const auto corpusIt = corpus.find(baseline.at("leaf_snapshot_id"));
-        if (corpusIt == corpus.end()) throw std::runtime_error("baseline leaf missing from corpus");
-        const auto leaf = silver_bridge::battleStateWireFromEnvelope(corpusIt->second.at("leaf_state"));
-        const auto originalRoot = silver_bridge::battleStateWireFromEnvelope(
-            corpusIt->second.at("original_root_state"));
-        auto treatmentLeaf = leaf;
-        treatmentLeaf.isolatedSearchSeed = baseline.at("rng_identity").get<std::uint64_t>();
-        const auto treatment = silver_bridge::runSilverSimpleRolloutWithSpotWeaknessFirst(
-            treatmentLeaf, originalRoot);
-        if (!treatment.accepted)
-            throw std::runtime_error("treatment rollout failed for "
-                + baseline.at("leaf_snapshot_id").get<std::string>() + ": " + treatment.failureReason);
-        output << spotTreatmentRow(baseline, treatment).dump() << '\n';
-        ++treatments;
-    }
-    output.flush();
-    if (!output) throw std::runtime_error("treatment output write failure");
-    std::cout << Json{{"schema", "silver_spot_weakness_first_treatment_v1"},
-        {"rows", treatments}, {"candidate_implementation_sha", executableSha}}
-        .dump() << '\n';
-    return 0;
-}
-
 } // namespace
 
 int main(int argc, char **argv) {
     try {
         if (argc >= 2 && std::string(argv[1]) == "--first-action-probe")
             return runFirstActionProbe(argc, argv);
-        if (argc >= 2 && std::string(argv[1]) == "--spot-weakness-first-holdout")
-            return runSpotWeaknessHoldout(argc, argv);
-        if (argc >= 2 && std::string(argv[1]) == "--spot-weakness-first-treatment")
-            return runSpotWeaknessTreatment(argc, argv);
         if (argc < 5 || argc > 10) {
             std::cerr << "usage: silver_rollout_variance_diagnostic SNAPSHOTS CORPUS ROLLOUTS "
                          "EXECUTABLE_SHA [BUDGET GROUPS MAX_LEAVES REPLICATES CANDIDATE_MODULUS]\n";
@@ -799,8 +503,7 @@ int main(int argc, char **argv) {
                         return;
                     }
                     group.leaves.emplace(leafId, Capture{caseId, sourceSeed, benchmarkSeed,
-                        roomType, sourceExecutableSha, sourceStateHash, groupId, leafId,
-                        false, "", observation});
+                        roomType, sourceExecutableSha, sourceStateHash, groupId, leafId, observation});
                 }
             };
             const auto replay = silver_bridge::runSilverCombatReplay(replayWire, config);

@@ -236,8 +236,6 @@ struct SilverSimpleRolloutResult {
     std::string failureReason;
     std::uint64_t rngIdentity = 0;
     bool forcedFirstAction = false;
-    bool spotWeaknessFirstEnabled = false;
-    bool spotWeaknessFirstApplied = false;
     bool firstActionExecuted = false;
     bool terminalAfterFirstAction = false;
     std::string firstActionFingerprint;
@@ -331,19 +329,6 @@ struct SemanticAction {
     std::int16_t cardSelectTask = 0;
 };
 
-// Read-only native-state eligibility result for the diagnostic candidate. It is used for
-// state-only holdout selection and focused boundary tests; it never runs a rollout or consumes
-// Silver RNG.
-struct SilverSpotWeaknessFirstProbe {
-    bool accepted = false;
-    bool applicable = false;
-    std::string failureReason;
-    int handIndex = -1;
-    int targetIndex = -1;
-    int targetIncomingDamage = 0;
-    SemanticAction action {};
-};
-
 // Stable, index-free rendering of the existing semantic action value.  This
 // is diagnostic identity only: it deliberately contains no Silver hand/pile
 // index and can therefore cross the isolated-search/live-action boundary.
@@ -387,15 +372,6 @@ SilverSimpleRolloutResult runSilverSimpleRollout(
 SilverSimpleRolloutResult runSilverSimpleRolloutWithFirstAction(
     const BattleStateWire &leaf, const BattleStateWire &originalRoot,
     const SemanticAction &firstAction);
-
-// Diagnostic-only dynamic Spot Weakness treatment: the canonical SimpleAgent rollout is
-// unchanged except that the first eligible card choice may be replaced once.
-SilverSimpleRolloutResult runSilverSimpleRolloutWithSpotWeaknessFirst(
-    const BattleStateWire &leaf, const BattleStateWire &originalRoot);
-
-// Evaluate the same candidate predicate against a stored PLAYER_NORMAL state without running
-// a rollout. Unresolved hidden intents fail closed.
-SilverSpotWeaknessFirstProbe probeSilverSpotWeaknessFirst(const BattleStateWire &state);
 
 struct SilverSearchConfig {
     // Values copied from upstream SearchAgent defaults at the pinned SHA.
