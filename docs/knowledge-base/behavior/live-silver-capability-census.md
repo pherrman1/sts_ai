@@ -47,7 +47,9 @@ selection tasks. Cards, relics, and potions continue to use the canonical
 `SaveFileMappings` converters rather than a second copy of those tables.
 The producer-side exceptions are part of that contract: Cultist Ritual reads
 `RitualPower.skipFirst` as native `justApplied`, `SlaverBlue` emits native
-`miscInfo` zero, and Java `Weakened` maps to native player `Weak`.
+`miscInfo` zero, Java `Weakened` maps to native player `Weak`, and Java
+`Flex`/`FlexPower` maps to native player `LoseStrength` (the pending temporary
+Strength loss).
 
 ## Public-information rules
 
@@ -66,7 +68,8 @@ The producer-side exceptions are part of that contract: Cultist Ritual reads
   runtime exposes the actual field through the bounded observer reflection
   helper; the importer rejects required powers when that field is unavailable.
   `RitualPower.skipFirst` is the qualified producer exception for Cultist
-  Ritual, and `Weakened` is the qualified Java alias for native `Weak`.
+  Ritual, `Weakened` is the qualified Java alias for native `Weak`, and Flex's
+  temporary Strength loss is represented by native `LoseStrength`.
 - Bronze Orb Stasis is represented when the runtime exposes the public-facing
   `StasisPower.card` and Bronze Orb constructor slot: the exact physical card
   UUID/state is placed into native stasis slot 0 or 1. If either field is

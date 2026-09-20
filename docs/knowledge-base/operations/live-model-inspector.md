@@ -383,6 +383,12 @@ read-only screen and choice converters. The observation contains:
 - `captureError`: an unexpected capture or identity failure. This always stops
   the driver, including when an unsupported reason is also present.
 
+Combat rewards with a full potion inventory are fail-closed at this boundary:
+the native OOC candidate set and the inspector omit the potion-take candidate,
+leaving other rewards and `proceed` available. The current MCP reward surface
+does not expose the vanilla discard-potion command, so this is not discard
+support or a claim of whole-game reward equivalence.
+
 Path counts derive from persisted `metricData.path_taken`, whose original map
 symbols survive event-to-room conversion and save/resume. Missing history is
 unsupported. `potionChance` and `cardRarityFactor` are captured live/debug

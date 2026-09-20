@@ -230,6 +230,23 @@ void testRewardsAndTreasure(bool includeSelectors) {
         }
         if (effect == Effect::TAKE_GOLD) unchangedFailure(after, a);
     }
+
+    auto full = rewards();
+    full.potionCapacity = 3;
+    full.potionCount = 3;
+    full.potions[0] = Potion::FIRE_POTION;
+    full.potions[1] = Potion::STRENGTH_POTION;
+    full.potions[2] = Potion::DEXTERITY_POTION;
+    full.potions[3] = Potion::EMPTY_POTION_SLOT;
+    full.potions[4] = Potion::EMPTY_POTION_SLOT;
+    auto fullActions = enumerate(full);
+    require(std::none_of(fullActions.begin(), fullActions.end(), [](const auto &action) {
+        return action.effect == Effect::TAKE_POTION;
+    }), "full potion inventory exposed an executable potion reward");
+    (void)find(full, Effect::TAKE_CARD);
+    (void)find(full, Effect::LEAVE_REWARDS);
+    require(!GameAction(Type::POTION, 0).isValidAction(full),
+            "full potion inventory accepted a direct potion reward primitive");
     parity(g, find(g, Effect::SKIP_CARD_REWARD), direct(GameAction(Type::CARD, 0, 5)));
     g.relics.add({RelicId::SINGING_BOWL, 0});
     auto bowl = parity(g, find(g, Effect::SINGING_BOWL), direct(GameAction(Type::CARD, 0, 5)));

@@ -158,7 +158,13 @@ void addRewards(Bindings &out, const GameContext &gc) {
     for (int i = 0; i < r.goldRewardCount; ++i) item(Effect::TAKE_GOLD, r.gold[i], RT::GOLD, i);
     for (int i = 0; i < r.relicCount; ++i)
         item(Effect::TAKE_RELIC, r.relics[i], RT::RELIC, i, r.sapphireKey && i == r.relicCount-1);
-    for (int i = 0; i < r.potionCount; ++i) item(Effect::TAKE_POTION, r.potions[i], RT::POTION, i);
+    // The live MCP reward boundary has no discard-potion command.  Do not
+    // present a potion take that cannot execute with a full inventory; leave
+    // the reward available for another reward or the screen skip action.
+    if (gc.potionCount < gc.potionCapacity) {
+        for (int i = 0; i < r.potionCount; ++i)
+            item(Effect::TAKE_POTION, r.potions[i], RT::POTION, i);
+    }
     if (r.sapphireKey) item(Effect::TAKE_KEY, Key::SAPPHIRE_KEY, RT::KEY, 0, true);
     if (r.emeraldKey) item(Effect::TAKE_KEY, Key::EMERALD_KEY, RT::KEY, 0);
     for (int group = 0; group < r.cardRewardCount; ++group) {

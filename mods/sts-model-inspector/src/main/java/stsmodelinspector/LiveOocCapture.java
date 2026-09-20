@@ -245,6 +245,15 @@ final class LiveOocCapture {
                 "relics", new ArrayList<>(), "potions", new ArrayList<>(),
                 "emeraldKey", false, "sapphireKey", false);
     }
+    private static boolean hasPotionSlot() {
+        int occupied = 0;
+        int capacity = AbstractDungeon.player.potionSlots;
+        for (int i = 0; i < capacity && i < AbstractDungeon.player.potions.size(); ++i) {
+            if (AbstractDungeon.player.potions.get(i) != null
+                    && !"Potion Slot".equals(AbstractDungeon.player.potions.get(i).ID)) ++occupied;
+        }
+        return occupied < capacity;
+    }
     private static void cardReward(Map<String,Object> out, List<Map<String,Object>> cs, List<?> labels)
             throws ReflectiveOperationException {
         out.put("screen", "card_reward");
@@ -287,7 +296,7 @@ final class LiveOocCapture {
                 add(cs, labels, i, "relic", idx, 0);
             } else if ("POTION".equals(kind)) {
                 int idx = list(r.get("potions")).size(); mutableList(r.get("potions")).add(reward.potion.ID);
-                add(cs, labels, i, "potion", idx, 0);
+                if (hasPotionSlot()) add(cs, labels, i, "potion", idx, 0);
             } else if ("EMERALD_KEY".equals(kind) || "SAPPHIRE_KEY".equals(kind)) {
                 r.put("EMERALD_KEY".equals(kind) ? "emeraldKey" : "sapphireKey", true);
                 add(cs, labels, i, "key", 0, 0);

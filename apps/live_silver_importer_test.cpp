@@ -1770,6 +1770,15 @@ int main() {
             || !(weakenedImported.wire.player.justAppliedBits
                 & (1U << static_cast<int>(PlayerStatus::WEAK))))
             throw std::runtime_error("player Weakened alias/justApplied parity failed");
+        auto flexPower = general;
+        flexPower["silverRoot"]["combat"]["playerPowers"] = json::array({
+            json{{"id", "Flex"}, {"amount", 5}}});
+        const auto flexImported = one_combat::advisor::importSilverRoot(flexPower);
+        bool flexMapped = false;
+        for (const auto &[status, amount] : flexImported.wire.player.statusMap)
+            flexMapped |= status == static_cast<std::int16_t>(PlayerStatus::LOSE_STRENGTH) && amount == 5;
+        if (!flexImported.ok || !flexMapped)
+            throw std::runtime_error("player Flex temporary-strength-loss parity failed");
         auto blueSlaver = general;
         blueSlaver["silverRoot"]["encounter"] = "BLUE_SLAVER";
         auto &blueSlaverMonster = blueSlaver["silverRoot"]["combat"]["monsters"][0];

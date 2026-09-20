@@ -394,6 +394,24 @@ class OocDriverTest(unittest.TestCase):
             self.assertEqual(decision["ooc_v4_latency_micros"], 12)
             self.assertEqual(decision["ooc_scorer_latency_micros"], 5)
 
+    def test_full_potion_reward_fallback_honors_filtered_inspector_choices(self):
+        with tempfile.TemporaryDirectory() as directory:
+            screen = {"screen_type": "COMBAT_REWARD", "choice_list": ["add potion"],
+                      "ready_for_command": True}
+            path = ooc_inspector_file(directory, screen, "UNSUPPORTED")
+            raw = json.loads(path.read_text())
+            raw["observation"]["ooc"]["screen"] = "combat_reward"
+            raw["observation"]["ooc"]["liveChoices"] = [
+                {"liveAction": {"kind": "proceed"},
+                 "nativeAction": {"kind": "skip", "index": 0, "group": 0}}]
+            path.write_text(json.dumps(raw))
+            snapshot = InspectorSnapshot.load(path)
+            driver = Driver(FakeClient(screen, ["choose", "proceed"]), InspectorReader(path),
+                            TraceWriter(Path(directory) / "trace"))
+            action, _ = driver.fallback_action(
+                screen, {}, build_legal_actions(screen, ["choose", "proceed"]), snapshot)
+            self.assertEqual(action.mcp_tool, "proceed")
+
     def test_strict_unsupported_failure_packet_no_mutation(self):
         with tempfile.TemporaryDirectory() as directory:
             driver, client, _ = self.make(directory, "UNSUPPORTED")

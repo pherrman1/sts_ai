@@ -913,6 +913,28 @@ class Driver:
             candidates = [candidate for candidate in candidates
                           if not (candidate.mcp_tool == "choose"
                                   and candidate.mcp_arguments.get("choice_index") in declined_indexes)]
+            # MCP can advertise a potion reward even when the inventory is
+            # full, but the inspector's exact liveChoices deliberately omits
+            # that primitive because this boundary has no discard command.
+            # Keep deterministic fallback inside the producer-qualified
+            # action set; otherwise a potion-only reward would still select
+            # the raw first MCP choice and fail at the game boundary.
+            live_choices = _list(ooc.get("liveChoices"))
+            if live_choices:
+                def matches_live_choice(candidate: LegalAction, choice: Any) -> bool:
+                    hint = _mapping(choice).get("liveAction")
+                    hint = _mapping(hint)
+                    kind = hint.get("kind")
+                    if kind == "choose":
+                        return (candidate.mcp_tool == "choose"
+                                and candidate.mcp_arguments == {"choice_index": hint.get("choiceIndex")})
+                    return (isinstance(kind, str) and candidate.mcp_tool == kind
+                            and not candidate.mcp_arguments)
+                filtered = [candidate for candidate in candidates
+                            if any(matches_live_choice(candidate, choice) for choice in live_choices)]
+                if not filtered:
+                    raise IntegrationFailure("COMBAT_REWARD inspector liveChoices filtered all MCP fallback candidates")
+                candidates = filtered
         if _text(screen.get("screen_type", screen.get("screenType"))).upper() != "SHOP_ROOM":
             return choose_deterministic_action(screen, candidates), None
         act, floor = game.get("act", screen.get("act")), screen.get("floor", game.get("floor"))
