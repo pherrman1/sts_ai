@@ -117,6 +117,13 @@ target_include_directories(silver-leaf-relabel PRIVATE include json/include)
 target_link_libraries(silver-leaf-relabel PRIVATE silver_combat_search_bridge)
 target_link_options(silver-leaf-relabel PRIVATE -Wl,--gc-sections)
 
+add_executable(silver-rollout-variance-diagnostic apps/silver_rollout_variance_diagnostic.cpp)
+set_target_properties(silver-rollout-variance-diagnostic PROPERTIES
+    OUTPUT_NAME silver_rollout_variance_diagnostic)
+target_include_directories(silver-rollout-variance-diagnostic PRIVATE include json/include)
+target_link_libraries(silver-rollout-variance-diagnostic PRIVATE silver_combat_search_bridge)
+target_link_options(silver-rollout-variance-diagnostic PRIVATE -Wl,--gc-sections)
+
 add_executable(silver-root-mechanism apps/silver_root_mechanism.cpp)
 set_target_properties(silver-root-mechanism PROPERTIES OUTPUT_NAME silver_root_mechanism)
 target_include_directories(silver-root-mechanism PRIVATE include json/include)

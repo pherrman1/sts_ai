@@ -288,6 +288,13 @@ search::BattleSearcher::BattleSearcher(const BattleContext &bc, search::EvalFnc 
 
 search::BattleSearcher::~BattleSearcher() = default;
 
+double search::BattleSearcher::runDiagnosticRollout() {
+    if (root == nullptr || root->state == nullptr || root->isRandomNode)
+        throw std::invalid_argument("diagnostic rollout requires a decision-state root");
+    std::vector<Action> diagnosticActionStack;
+    return rolloutToEnd(*root->state, diagnosticActionStack, root, nullptr, 0);
+}
+
 void search::BattleSearcher::setRoot(const BattleContext &bc) {
     *rootState = bc;
     // Reseed exactly as the constructor does, so each decision's rollouts are independent of the

@@ -23,6 +23,12 @@
 namespace silver_bridge {
 namespace {
 
+bool rawActionForSemantic(const sts::BattleContext &state, const SemanticAction &wanted,
+                          sts::search::Action &raw);
+SilverSimpleRolloutResult runSilverSimpleRolloutImpl(
+    const BattleStateWire &leaf, const BattleStateWire &originalRoot,
+    const SemanticAction *firstAction);
+
 sts::CardInstance card(const CardWire &in) {
     sts::CardInstance out;
     out.id = static_cast<sts::CardId>(in.id);
@@ -884,6 +890,17 @@ double silverTerminalLeafRootValue(const BattleStateWire &wire) {
     if (searcher.root == nullptr || searcher.root->simulationCount != 1)
         throw std::invalid_argument("Silver snapshot is not terminal");
     return searcher.root->evaluationSum;
+}
+
+SilverSimpleRolloutResult runSilverSimpleRollout(
+        const BattleStateWire &leaf, const BattleStateWire &originalRoot) {
+    return runSilverSimpleRolloutImpl(leaf, originalRoot, nullptr);
+}
+
+SilverSimpleRolloutResult runSilverSimpleRolloutWithFirstAction(
+        const BattleStateWire &leaf, const BattleStateWire &originalRoot,
+        const SemanticAction &firstAction) {
+    return runSilverSimpleRolloutImpl(leaf, originalRoot, &firstAction);
 }
 
 class SilverSearchSession {
@@ -2483,7 +2500,123 @@ bool rawActionForSemantic(const sts::BattleContext &state, const SemanticAction 
     return false;
 }
 
+SilverSimpleRolloutResult runSilverSimpleRolloutImpl(
+        const BattleStateWire &leaf, const BattleStateWire &originalRoot,
+        const SemanticAction *firstAction) {
+    SilverSimpleRolloutResult result;
+    result.forcedFirstAction = firstAction != nullptr;
+    if (!leaf.valid || leaf.version != BattleStateWire::kVersion
+            || leaf.inputState != static_cast<int>(sts::InputState::PLAYER_NORMAL)
+            || leaf.outcome != static_cast<int>(sts::Outcome::UNDECIDED)) {
+        result.failureReason = "diagnostic_rollout_requires_nonterminal_player_normal_leaf";
+        return result;
+    }
+    if (!originalRoot.valid || originalRoot.version != BattleStateWire::kVersion) {
+        result.failureReason = "invalid_original_root";
+        return result;
+    }
+    try {
+        sts::GameContext runContext;
+        initializeRunContext(runContext, leaf);
+        auto state = materialize(leaf, &runContext);
+        const auto leafTurn = state.turn;
+        const auto totalStart = std::chrono::steady_clock::now();
+        if (firstAction != nullptr) {
+            sts::search::Action rawAction;
+            if (!rawActionForSemantic(state, *firstAction, rawAction)
+                    || !rawAction.isValidAction(state)) {
+                result.failureReason = "teacher_first_action_unresolvable_or_illegal";
+                return result;
+            }
+            std::ostringstream description;
+            rawAction.printDesc(description, state);
+            result.firstActionFingerprint = semanticActionFingerprint(*firstAction);
+            result.firstActionDescription = description.str();
+            rawAction.execute(state);
+            result.firstActionExecuted = true;
+            result.forcedActionTurnDelta = state.turn - leafTurn;
+            result.terminalAfterFirstAction = state.outcome != sts::Outcome::UNDECIDED;
+        }
+
+        const auto canonicalStart = std::chrono::steady_clock::now();
+        sts::search::BattleSearcher searcher(state);
+        searcher.collectRolloutDiagnostics = true;
+        SilverLeafObservation completed;
+        bool sawStart = false;
+        bool sawEnd = false;
+        searcher.leafObserver = [&](SilverLeafObservation &observation) {
+            if (observation.phase == SilverLeafObservationPhase::START) {
+                observation.collectResult = true;
+                sawStart = true;
+            } else {
+                completed = observation;
+                sawEnd = true;
+            }
+        };
+        const double leafUtility = searcher.runDiagnosticRollout();
+        const auto totalWallMicros = std::chrono::duration_cast<std::chrono::microseconds>(
+            std::chrono::steady_clock::now() - totalStart).count();
+        const auto canonicalWallMicros = std::chrono::duration_cast<std::chrono::microseconds>(
+            std::chrono::steady_clock::now() - canonicalStart).count();
+        const bool terminal = state.outcome != sts::Outcome::UNDECIDED;
+        if (!terminal && (!sawStart || !sawEnd
+                || completed.terminalOutcome == static_cast<int>(sts::Outcome::UNDECIDED))) {
+            throw std::runtime_error("canonical rollout did not produce a terminal observation");
+        }
+
+        result.accepted = true;
+        result.rngIdentity = leaf.isolatedSearchSeed;
+        result.terminalOutcome = terminal ? static_cast<int>(state.outcome) : completed.terminalOutcome;
+        result.terminalHp = terminal ? state.player.curHp : completed.terminalHp;
+        result.terminalMaxHp = terminal ? state.player.maxHp : completed.terminalMaxHp;
+        result.terminalTurn = terminal ? state.turn : completed.terminalTurn;
+        result.terminalPotionCount = terminal ? state.potionCount : completed.terminalPotionCount;
+        result.terminalEffectiveGold = terminal
+            ? silverRootReferenceScalars(leafStateWire(state)).effectiveGold
+            : completed.terminalEffectiveGold;
+        result.leafRootUtility = leafUtility;
+        const auto terminalState = leafStateWire(*searcher.root->state);
+        result.victoryBaselineCorrection = silverVictoryBaselineCorrection(originalRoot, terminalState);
+        result.appliedVictoryBaselineCorrection = result.terminalOutcome
+                == static_cast<int>(sts::Outcome::PLAYER_VICTORY)
+            ? result.victoryBaselineCorrection : 0.0;
+        result.originalRootCorrectedUtility = leafUtility + result.appliedVictoryBaselineCorrection;
+        result.rolloutActionCount = terminal ? 0 : completed.rolloutActionCount;
+        result.rolloutTurnDelta = terminal ? 0 : completed.rolloutTurnDelta;
+        result.rolloutWallMicros = terminal ? 0
+            : (completed.rolloutWallMicros > 0 ? completed.rolloutWallMicros : canonicalWallMicros);
+        result.totalActionCount = result.rolloutActionCount + (firstAction != nullptr ? 1 : 0);
+        result.totalTurnDelta = result.terminalTurn - leafTurn;
+        result.totalWallMicros = totalWallMicros;
+        result.rolloutActionFingerprints = std::move(completed.rolloutActionFingerprints);
+        result.allActionFingerprints = result.rolloutActionFingerprints;
+        if (firstAction != nullptr)
+            result.allActionFingerprints.insert(result.allActionFingerprints.begin(),
+                                                result.firstActionFingerprint);
+    } catch (const std::exception &error) {
+        result.failureReason = std::string("diagnostic_rollout_exception: ") + error.what();
+    }
+    return result;
+}
+
 } // namespace
+
+std::string describeSilverSemanticAction(const BattleStateWire &wire,
+                                         const SemanticAction &action) {
+    if (!wire.valid || wire.version != BattleStateWire::kVersion) return {};
+    try {
+        sts::GameContext runContext;
+        initializeRunContext(runContext, wire);
+        const auto state = materialize(wire, &runContext);
+        sts::search::Action rawAction;
+        if (!rawActionForSemantic(state, action, rawAction) || !rawAction.isValidAction(state)) return {};
+        std::ostringstream description;
+        rawAction.printDesc(description, state);
+        return description.str();
+    } catch (const std::exception &) {
+        return {};
+    }
+}
 
 std::vector<SilverForcedActionReference> runSilverForcedActionReferences(
         const BattleStateWire &wire, const SilverSearchConfig &config,

@@ -177,10 +177,77 @@ json relabelOne(const Entry &entry, const silver_bridge::BattleStateWire &input,
         {"wall_micros", wallMicros}};
 }
 
+std::vector<Entry> readSelectedEntries(const std::string &corpusPath,
+                                       const std::string &manifestPath) {
+    std::ifstream manifestIn(manifestPath);
+    if (!manifestIn) throw std::runtime_error("cannot open manifest");
+    json manifest; manifestIn >> manifest;
+    if (manifest.value("manifest_schema", std::string{}) != "silver_leaf_manifest_v1")
+        throw std::runtime_error("incompatible manifest schema");
+    std::unordered_set<std::string> selected;
+    for (const auto &id : manifest.at("leaf_snapshot_ids")) selected.insert(id.get<std::string>());
+
+    std::ifstream corpus(corpusPath);
+    if (!corpus) throw std::runtime_error("cannot open corpus");
+    std::vector<Entry> entries;
+    std::unordered_set<std::string> seen;
+    std::string line;
+    while (std::getline(corpus, line)) {
+        if (line.empty()) continue;
+        const auto row = json::parse(line);
+        if (row.value("corpus_schema", std::string{}) != "silver_leaf_corpus_v1")
+            throw std::runtime_error("incompatible corpus schema");
+        const auto leafId = row.at("leaf_snapshot_id").get<std::string>();
+        if (!selected.count(leafId)) continue;
+        if (!seen.insert(leafId).second) throw std::runtime_error("duplicate selected leaf in corpus");
+        entries.push_back({row.at("group_id").get<std::string>(), leafId,
+            silver_bridge::battleStateWireFromEnvelope(row.at("leaf_state")),
+            silver_bridge::battleStateWireFromEnvelope(row.at("parent_state")),
+            silver_bridge::battleStateWireFromEnvelope(row.at("original_root_state")),
+            row.at("act").get<int>(),
+            static_cast<double>(row.at("cur_hp").get<int>()) / std::max(1, row.at("max_hp").get<int>()),
+            row.at("aux_rollout").at("turn_delta").get<std::int64_t>(),
+            row.at("encounter_category").get<std::string>(),
+            row.at("executable_git_sha").get<std::string>(),
+            row.at("silver_upstream_sha").get<std::string>()});
+    }
+    if (entries.size() != selected.size())
+        throw std::runtime_error("manifest leaf missing or duplicated in corpus");
+    std::sort(entries.begin(), entries.end(), [](const auto &a, const auto &b) {
+        return std::tie(a.groupId, a.leafId) < std::tie(b.groupId, b.leafId);
+    });
+    return entries;
+}
+
 } // namespace
 
 int main(int argc, char **argv) {
     try {
+        if (argc >= 2 && std::string(argv[1]) == "--rollout-variance") {
+            if (argc != 7)
+                throw std::invalid_argument(
+                    "usage: silver_leaf_relabel --rollout-variance CORPUS MANIFEST OUTPUT RELABEL_SEED EXECUTABLE_SHA");
+            if (std::filesystem::exists(argv[4]))
+                throw std::invalid_argument("refusing existing label output");
+            const auto relabelSeed = std::stoull(argv[5]);
+            const std::string executableSha = argv[6];
+            if (!silver_bridge::rootMechanismShaValid(executableSha))
+                throw std::invalid_argument("invalid executable SHA");
+            const auto entries = readSelectedEntries(argv[2], argv[3]);
+            std::ofstream output(argv[4]);
+            if (!output) throw std::runtime_error("cannot open relabel output");
+            for (const auto &entry : entries) {
+                if (entry.executableGitSha != executableSha
+                        || entry.silverUpstreamSha != silver_bridge::kRootMechanismSilverSha)
+                    throw std::invalid_argument("corpus provenance does not match diagnostic executable/upstream");
+                for (const std::string replicate : {"A", "B"})
+                    output << relabelOne(entry, entry.leaf, "leaf", 25000,
+                        replicate, relabelSeed).dump() << '\n';
+            }
+            output.flush();
+            if (!output) throw std::runtime_error("relabel write failed");
+            return 0;
+        }
         if (argc >= 2 && std::string(argv[1]) == "--roots") {
             if (argc != 6 && argc != 7)
                 throw std::invalid_argument("usage: silver_leaf_relabel --roots ROOTS OUTPUT SEED EXECUTABLE_SHA [SMOKE_BUDGET]");

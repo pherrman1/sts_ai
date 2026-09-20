@@ -121,6 +121,40 @@ regression. See
 [ledger §321](../../experiments/ledger-06.md) and the
 [forced-action evidence packet](../../experiments/evidence/silver_forced_action_target_2026-09-19/README.md).
 
+## Silver rollout variance/bias diagnostic
+
+The frozen hard-combat rollout diagnostic initially classified as
+**`INCONCLUSIVE`** on the global variance/bias rules. Its bounded causal
+follow-up classifies **`FIRST_ACTION_BIAS_MATERIAL`** on the targeted stable
+subset. It evaluated
+32 complete sibling groups / 247 leaves from the 64-root DEV snapshot set,
+with 32 fixed SimpleAgent replicates per leaf and independent A/B 25k-Silver
+teachers. One-rollout noise is material descriptively: 85.64% of within-sibling
+teacher margins were below the one-rollout noise estimate. Moving from `k=1`
+to `k=4` reduced mean teacher regret by 23.10% and improved pairwise
+concordance from 0.6346 to 0.6719, but the clustered bootstrap interval did
+not satisfy the predeclared variance rule; the systematic-error and
+not-primary rules also failed. In the follow-up, forcing Teacher A's first
+semantic action on the highest-residual leaf from each of the first eight
+distinct groups removed 74.65% of aggregate absolute residual across the
+three leaves whose Teacher A/B first actions agreed; the five unstable leaves
+were excluded from the causal decision. This is a mechanistic finding on a
+targeted frozen subset, not a policy qualification. A fresh matched
+`hard64-holdout` cohort then evaluated the one narrow
+`SPOT_WEAKNESS_FIRST_V1` intervention on 32 complete groups / 251 leaves (112
+active leaves). The corrected result is **`INCONCLUSIVE` / not promotable**:
+k=32 mean teacher regret improved from `1.8767` to `1.2212` (`34.93%`), and
+the grouped-bootstrap probability of lower treatment regret was `95.37%`, but
+pairwise concordance fell from `0.7049` to `0.6892`. Top-leaf agreement
+improved descriptively. The <5% runtime gate is unmeasured because baseline
+canonical `rollout_wall_micros` and treatment `totalWallMicros` include
+different setup scopes; the raw treatment stream lacks a comparable
+treatment-only timer. This does not validate the exact Spot Weakness rule or
+erase the earlier targeted first-action finding; no tuning or broadening should
+follow from this holdout. Do not infer a rollout-policy, model, search budget,
+or default change from either diagnostic. See [ledger §322](../../experiments/ledger-06.md)
+and the [diagnostic evidence packet](../../experiments/evidence/silver_rollout_variance_20260920/README.md).
+
 ## Silver policy/value Phase-A cost diagnostic
 
 The corrected clean-baseline result is **`PV_COST_NOT_FEASIBLE_CLEAN_BASELINE`**:
