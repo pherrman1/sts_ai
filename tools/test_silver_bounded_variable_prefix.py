@@ -92,6 +92,28 @@ class BoundedPrefixContracts(unittest.TestCase):
         with self.assertRaises(ValueError):
             MODULE.complete_candidates(rows)
 
+    def test_expected_oracle_mismatch_fails_closed(self):
+        with self.assertRaises(SystemExit):
+            MODULE.require_k16_reproduction({"passed": False}, Path("expected.json"))
+        MODULE.require_k16_reproduction({"passed": True}, Path("expected.json"))
+        MODULE.require_k16_reproduction({"passed": False}, None)
+
+    def test_expensive_classification_does_not_require_teacher_b(self):
+        report = {"recovered_oracle_fraction": 0.60,
+                  "teacher_b_regret_reduction": -0.50,
+                  "clustered_bootstrap": {
+                      "baseline_minus_arm_regret": {"p025": 0.10}},
+                  "cost": {"mean": 13.0}}
+        self.assertEqual(MODULE.classify_arm(report), "expensive")
+
+    def test_promising_classification_still_requires_teacher_b(self):
+        report = {"recovered_oracle_fraction": 0.60,
+                  "teacher_b_regret_reduction": -0.06,
+                  "clustered_bootstrap": {
+                      "baseline_minus_arm_regret": {"p025": 0.10}},
+                  "cost": {"mean": 12.0}}
+        self.assertIsNone(MODULE.classify_arm(report))
+
     def test_bootstrap_contract_clusters_shared_source_seed(self):
         rows = []
         for group, source in (("g1", "s"), ("g2", "s"), ("g3", "t")):

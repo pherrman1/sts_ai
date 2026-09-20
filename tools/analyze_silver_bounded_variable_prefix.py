@@ -472,8 +472,31 @@ def expected_k16_check(report: dict, expected_path: Path | None) -> dict:
                                    "exact": (math.isclose(left, right, rel_tol=0.0,
                                                            abs_tol=1e-12)
                                              if isinstance(left, (int, float))
-                                             else left == right)}
+                                   else left == right)}
                              for key, (left, right) in comparisons.items()}}
+
+
+def require_k16_reproduction(check: dict, expected_path: Path | None) -> None:
+    if expected_path is not None and not check.get("passed", False):
+        raise SystemExit(
+            "FLAT_K16 reproduction failed against the supplied #256 oracle analysis; "
+            "refusing to write Phase-A evidence")
+
+
+def classify_arm(report: dict) -> str | None:
+    """Apply the preregistered arm classification boundaries."""
+    supported = report["clustered_bootstrap"]["baseline_minus_arm_regret"]["p025"] > 0
+    enough = report["recovered_oracle_fraction"] >= 0.50
+    teacher_b_ok = report["teacher_b_regret_reduction"] >= -0.05
+    cost_ok = report["cost"]["mean"] <= 12
+    if enough and supported:
+        if cost_ok and teacher_b_ok:
+            return "promising"
+        if not cost_ok:
+            # The preregistered expensive-signal classification requires only
+            # recovery + statistical support; Teacher B belongs to PROMISING.
+            return "expensive"
+    return None
 
 
 def run(args: argparse.Namespace) -> int:
@@ -512,6 +535,9 @@ def run(args: argparse.Namespace) -> int:
     reports = {}
     for name, rows in by_arm.items():
         reports[name] = reduce_metrics(rows, "arm_value", oracle_a, oracle_b, args.bootstrap)
+    k16_reproduction = expected_k16_check(
+        report={"arms": reports}, expected_path=args.expected_oracle_analysis)
+    require_k16_reproduction(k16_reproduction, args.expected_oracle_analysis)
     baseline_rows = [{**row, "value": row["baseline_value"]} for row in k16]
     canonical_a = sibling_metrics(baseline_rows, "value", "teacher_a")
     canonical_b = sibling_metrics(baseline_rows, "value", "teacher_b")
@@ -534,11 +560,11 @@ def run(args: argparse.Namespace) -> int:
             "mean_cost_at_most_12": cost_ok,
             "catastrophic_tail_review": report["catastrophic_tail_regression"],
         }
-        if enough and supported and teacher_b_ok:
-            if cost_ok:
-                promising.append(name)
-            else:
-                expensive.append(name)
+        classification = classify_arm(report)
+        if classification == "promising":
+            promising.append(name)
+        elif classification == "expensive":
+            expensive.append(name)
     if promising:
         classification = "BOUNDED_PREFIX_SELECTOR_PROMISING"
         winner = min(promising, key=lambda name: (
@@ -581,7 +607,7 @@ def run(args: argparse.Namespace) -> int:
             "surface": "PR #256 all-replicate common-prefix intersection, CARD/END_TURN, length <= 2",
             "selection_order": "ascending replicate indices within each half",
             "stage_2_order": "selection indices start at k1; disjoint from Stage 1",
-            "tie_break": "ascending JSON prefix key",
+            "tie_break": "descending JSON prefix key, matching max(mean, prefix_key)",
         },
         "coverage": {"manifest_raw_rows": manifest.get("raw_rows"),
                      "manifest_accepted_rows": manifest.get("accepted_rows"),
@@ -591,8 +617,7 @@ def run(args: argparse.Namespace) -> int:
                                "selector_cost": {"mean": 0, "median": 0,
                                                   "p90": 0, "p95": 0, "maximum": 0}},
         "arms": reports,
-        "k16_reproduction": expected_k16_check(report={"arms": reports},
-                                                expected_path=args.expected_oracle_analysis),
+        "k16_reproduction": k16_reproduction,
         "phase_boundary": (
             "Phase A is a frozen budget-estimation screen on the PR #256 robust common-prefix surface; "
             "it is not proof of a deployable causal policy. Phase B, if triggered, must use native "

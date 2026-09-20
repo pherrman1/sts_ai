@@ -26857,7 +26857,7 @@
     "stage_2_order": "selection indices start at k1; disjoint from Stage 1",
     "surface": "PR #256 all-replicate common-prefix intersection, CARD/END_TURN, length <= 2",
     "teacher_leaves": 247,
-    "tie_break": "ascending JSON prefix key"
+    "tie_break": "descending JSON prefix key, matching max(mean, prefix_key)"
   },
   "gate_checks": {
     "BEAM1_K1_1_K2_1": {
