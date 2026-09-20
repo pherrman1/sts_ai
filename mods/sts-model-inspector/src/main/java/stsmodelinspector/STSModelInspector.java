@@ -882,6 +882,26 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         return "";
     }
 
+    private static Object readObjectField(Object object, String... names) {
+        if (object == null) return null;
+        Class<?> type = object.getClass();
+        while (type != null) {
+            for (String name : names) {
+                try {
+                    Field field = type.getDeclaredField(name);
+                    field.setAccessible(true);
+                    return field.get(object);
+                } catch (NoSuchFieldException ignored) {
+                    // Continue through the class hierarchy and aliases.
+                } catch (IllegalAccessException | SecurityException denied) {
+                    return null;
+                }
+            }
+            type = type.getSuperclass();
+        }
+        return null;
+    }
+
     private static Integer monsterMiscInfo(AbstractMonster monster) {
         String id = monster.id;
         if ("FuzzyLouseNormal".equals(id) || "FuzzyLouseDefensive".equals(id))
@@ -954,6 +974,18 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         return out.append("]}").toString();
     }
 
+    private static String stasisJson() {
+        if (AbstractDungeon.getMonsters() != null) {
+            for (AbstractMonster monster : AbstractDungeon.getMonsters().monsters) {
+                // Bronze Orb's Stasis card is not exposed as a stable public
+                // field.  Omit the tracker so the native importer rejects the
+                // root instead of accepting an invented empty stasis pile.
+                if (monster != null && "BronzeOrb".equals(monster.id)) return null;
+            }
+        }
+        return "[]";
+    }
+
     private static String cardSelectionJson() {
         if (AbstractDungeon.screen == AbstractDungeon.CurrentScreen.GRID
                 && AbstractDungeon.gridSelectScreen != null) {
@@ -981,6 +1013,7 @@ public final class STSModelInspector implements PostInitializeSubscriber,
     private static String combatJson() {
         int decisionOrdinal = AbstractDungeon.actionManager.cardsPlayedThisTurn.size();
         String selection = cardSelectionJson();
+        String stasis = stasisJson();
         int visibleTurn = com.megacrit.cardcrawl.actions.GameActionManager.turn;
         int damageTotal = com.megacrit.cardcrawl.actions.GameActionManager.damageReceivedThisCombat;
         if (visibleTurn == 1 && decisionOrdinal == 0) {
@@ -1094,7 +1127,15 @@ public final class STSModelInspector implements PostInitializeSubscriber,
             first = false;
             out.append(cardJson(card, "EXHAUST"));
         }
-        out.append("],\"monsters\":[");
+        out.append("],\"limbo\":[");
+        first = true;
+        for (AbstractCard card : AbstractDungeon.player.limbo.group) {
+            if (!first) out.append(',');
+            first = false;
+            out.append(cardJson(card, "LIMBO"));
+        }
+        out.append("],\"stasis\":").append(stasis == null ? "null" : stasis)
+                .append(",\"monsters\":[");
         first = true;
         boolean runicDome = hasRunicDome();
         if (AbstractDungeon.getMonsters() != null) {

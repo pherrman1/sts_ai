@@ -125,12 +125,13 @@ advisory only. Common Grid and Hand card-selection screens are now mapped to
 the native selection tasks for Exhaust, Armaments, Dual Wield, Headbutt,
 Gambler's Brew, and Hologram. The mapping is deliberately bounded: an
 unrecognized selection prompt, an unavailable runtime tracker, or an option
-list larger than the native representation is rejected. Queue/limbo/stasis
-metadata and other unsupported runtime trackers remain outside the supported
-boundary. CTM and Silver results remain separate evaluators, and neither path
-controls gameplay or establishes policy-quality evidence. Any expansion of the
-producer must add a native parity fixture and an explicit public-information
-contract before promotion.
+list larger than the native representation is rejected. The ordinary player
+limbo pile is serialized; Bronze Orb roots are rejected because its stasis
+card is not publicly trackable. Other unsupported queue metadata remains
+outside the supported boundary. CTM and Silver results remain separate
+evaluators, and neither path controls gameplay or establishes policy-quality
+evidence. Any expansion of the producer must add a native parity fixture and
+an explicit public-information contract before promotion.
 
 Knowledge impact: this page records the protocol/lifecycle boundary, the
 player-visible combat gate, protocol-v4 producer/importer contract, explicit

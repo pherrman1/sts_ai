@@ -104,7 +104,8 @@ json observation(const BattleStateWire &w, const char *name, int move, const cha
         {"cardsPlayedThisTurn", w.player.cardsPlayedThisTurn}, {"cardSelect", false},
         {"resolving", false}, {"runicDome", false}, {"frozenEye", false},
         {"playedThisTurn", std::move(played)}, {"playerPowers", json::array()},
-        {"hand", pileJson(w.hand)}, {"draw", pileJson(w.drawPile.unknown)},
+        {"hand", pileJson(w.hand)}, {"limbo", json::array()}, {"stasis", json::array()},
+        {"draw", pileJson(w.drawPile.unknown)},
         {"discard", pileJson(w.discardPile.unknown)}, {"exhaust", pileJson(w.exhaustPile.unknown)},
         {"relics", json::array({json{{"id", "Burning Blood"}, {"counter", 0}, {"usedUp", false}}})},
         {"potions", std::move(potions)}, {"monsters", std::move(monsters)}};

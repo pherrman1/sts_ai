@@ -576,6 +576,8 @@ SilverRootImportResult importSilverRootGeneric(const json &observation,
         for (const auto &item : *it) { CardRecord card; if (!parseGenericCard(item, card)) return false; out.push_back(std::move(card)); }
         return true;
     };
+    if (!combat.contains("limbo") || !combat.contains("stasis"))
+        return unsupported("silver_unmapped_card_state");
     if (!parseVector("hand", hand) || !parseVector("limbo", limbo)
         || !parseVector("stasis", stasis) || !parseGenericPile(combat.value("draw", json::array()), draw)
         || !parseGenericPile(combat.value("discard", json::array()), discard)
