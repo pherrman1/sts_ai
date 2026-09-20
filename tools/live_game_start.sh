@@ -28,7 +28,7 @@ die() { echo "live-game-start: $*" >&2; exit 2; }
 warn() { echo "live-game-start: warning: $*" >&2; }
 
 repo_root=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)
-runtime_tool="$repo_root/tools/live_game_runtime.py"
+runtime_tool=${STS_LIVE_RUNTIME_TOOL:-$repo_root/tools/live_game_runtime.py}
 check_only=0 probe=0 foreground=0 allow_missing_advisor=0 refresh_runtime=0
 deploy_inspector=0 restart_game=0 wait_seconds=45
 while (($#)); do
@@ -82,8 +82,10 @@ inspector_jar=${STS_MODEL_INSPECTOR_JAR:-$game_dir/mods/sts-model-inspector.jar}
 
 runtime_command=ensure
 ((refresh_runtime)) && runtime_command=install
+runtime_available=1
 if ! python3 "$runtime_tool" "$runtime_command"; then
   ((allow_missing_advisor)) || die "stable runtime $runtime_command failed"
+  runtime_available=0
   warn "stable runtime unavailable; continuing in explicit MCP-only mode"
 fi
 if ((deploy_inspector)); then
@@ -92,16 +94,17 @@ fi
 [[ -f "$inspector_jar" ]] || die "sts-model-inspector.jar not found: $inspector_jar"
 
 runtime_root=${STS_LIVE_RUNTIME_DIR:-${XDG_DATA_HOME:-$home_dir/.local/share}/sts-ai/live-runtime}
-export STS_MODEL_INSPECTOR_ADVISOR=${STS_MODEL_INSPECTOR_ADVISOR:-$runtime_root/current/one_combat_advisor}
-export STS_CTM_MODEL=${STS_CTM_MODEL:-$runtime_root/current/models/combat_transition_near_full_except_smoke_v2.native}
-if [[ -f "$runtime_root/current/models/ooc_strategic_tok_final.native" ]]; then
-  export STS_LIVE_OOC_MODEL=${STS_LIVE_OOC_MODEL:-$runtime_root/current/models/ooc_strategic_tok_final.native}
+if ((runtime_available)); then
+  export STS_MODEL_INSPECTOR_ADVISOR=${STS_MODEL_INSPECTOR_ADVISOR:-$runtime_root/current/one_combat_advisor}
+  export STS_CTM_MODEL=${STS_CTM_MODEL:-$runtime_root/current/models/combat_transition_near_full_except_smoke_v2.native}
+  if [[ -f "$runtime_root/current/models/ooc_strategic_tok_final.native" ]]; then
+    export STS_LIVE_OOC_MODEL=${STS_LIVE_OOC_MODEL:-$runtime_root/current/models/ooc_strategic_tok_final.native}
+  fi
+  [[ -x "$STS_MODEL_INSPECTOR_ADVISOR" ]] || die "stable advisor missing or not executable: $STS_MODEL_INSPECTOR_ADVISOR"
+  [[ -f "$STS_CTM_MODEL" ]] || warn "CTM model unavailable: $STS_CTM_MODEL"
+else
+  warn "advisor validation and active-runtime recording are disabled for MCP-only startup"
 fi
-if [[ ! -x "$STS_MODEL_INSPECTOR_ADVISOR" ]]; then
-  ((allow_missing_advisor)) || die "stable advisor missing or not executable: $STS_MODEL_INSPECTOR_ADVISOR"
-  warn "advisor unavailable; inspector responses will not be ready"
-fi
-[[ -f "$STS_CTM_MODEL" ]] || warn "CTM model unavailable: $STS_CTM_MODEL"
 
 mcp_port=${STS_MCP_PORT:-8080}
 [[ "$mcp_port" =~ ^[0-9]+$ ]] || die "STS_MCP_PORT must be numeric"
@@ -114,9 +117,39 @@ port_is_open() {
     timeout 1 bash -c ": </dev/tcp/127.0.0.1/$mcp_port" >/dev/null 2>&1
   fi
 }
-game_process_present() { ps -eo args= | awk -v jar="$modthespire_jar" 'index($0, jar) { found=1 } END { exit !found }'; }
+find_modthespire_pids() {
+  python3 - "$modthespire_jar" <<'PY'
+import os, sys
+jar = sys.argv[1]
+for entry in os.scandir("/proc"):
+    if not entry.name.isdigit():
+        continue
+    try:
+        argv = open(entry.path + "/cmdline", "rb").read().split(b"\0")
+        argv = [value.decode(errors="surrogateescape") for value in argv if value]
+    except (OSError, PermissionError):
+        continue
+    if any(argv[index] == "-jar" and argv[index + 1] == jar for index in range(len(argv) - 1)):
+        print(entry.name)
+PY
+}
+refresh_game_pids() { mapfile -t game_pids < <(find_modthespire_pids); }
+refresh_mcp_owner_pids() {
+  mcp_owner_pids=()
+  command -v ss >/dev/null 2>&1 || die "ss is required to verify MCP listener process ownership"
+  local listeners pid
+  listeners=$(ss -ltnpH | awk -v port=":$mcp_port" '$4 ~ port "$" || $4 ~ "\\]:" port "$"')
+  for pid in "${game_pids[@]}"; do
+    [[ "$listeners" == *"pid=$pid,"* ]] && mcp_owner_pids+=("$pid")
+  done
+}
 
 show_runtime_identity() {
+  if ((!runtime_available)); then
+    echo "running runtime: unavailable (MCP-only mode)"
+    echo "current installed runtime: unavailable"
+    return
+  fi
   local status
   status=$(python3 "$runtime_tool" status --json 2>/dev/null || true)
   python3 - "$status" <<'PY'
@@ -124,7 +157,7 @@ import json, sys
 try: status=json.loads(sys.argv[1])
 except Exception: print("runtime identity: unavailable"); raise SystemExit
 current=status.get("manifest", {}).get("runtimeId", "unavailable")
-active=status.get("activeRuntime", {}).get("runtimeId", "unknown")
+active=status.get("activeRuntime", {}).get("runtimeId", "unknown") if status.get("activeProcessMatches") else "unknown"
 print("running runtime: " + active)
 print("current installed runtime: " + current)
 if active == "unknown": print("warning: running runtime identity is unknown; restart before claiming the current runtime is loaded")
@@ -134,7 +167,11 @@ PY
 print_ready() {
   echo "MCP endpoint: $mcp_url"
   echo "Inspector snapshot: $home_dir/.cache/sts-model-inspector/latest.json"
-  echo "Stable runtime: $runtime_root/current"
+  if ((runtime_available)); then
+    echo "Stable runtime: $runtime_root/current"
+  else
+    echo "Stable runtime: unavailable (MCP-only mode)"
+  fi
   echo "Driver: (cd $repo_root && uv run --extra live-driver python tools/live_game_driver.py --strict-silver --max-steps 10)"
   echo "Log: $log_path"
 }
@@ -151,7 +188,9 @@ run_probe() {
 }
 
 if port_is_open; then
-  game_process_present || die "port $mcp_port is occupied but the expected ModTheSpire process is absent: $mcp_url"
+  refresh_game_pids
+  refresh_mcp_owner_pids
+  ((${#mcp_owner_pids[@]})) || die "port $mcp_port is not owned by the expected ModTheSpire process: $mcp_url"
   show_runtime_identity
   if ((refresh_runtime || deploy_inspector)) && ((!restart_game)); then
     die "runtime change requires game restart; rerun with --restart-game when safe"
@@ -162,7 +201,6 @@ if port_is_open; then
     ((probe)) && run_probe
     exit 0
   fi
-  mapfile -t game_pids < <(pgrep -f -- "$modthespire_jar" || true)
   ((${#game_pids[@]})) || die "expected ModTheSpire process disappeared before restart"
   echo "Stopping expected ModTheSpire process for explicit restart: ${game_pids[*]}"
   kill -TERM "${game_pids[@]}"
@@ -175,13 +213,15 @@ fi
 
 if ((check_only)); then
   echo "MCPTheSpire is not running."
-  python3 "$runtime_tool" status
+  if ((runtime_available)); then
+    python3 "$runtime_tool" status
+  fi
   print_ready
   exit 1
 fi
 
 mkdir -p "$(dirname "$log_path")"
-python3 "$runtime_tool" record-active --inspector-jar "$inspector_jar"
+python3 "$runtime_tool" clear-active >/dev/null
 if ((foreground)); then
   echo "Starting ModTheSpire in the foreground..."; print_ready
   cd "$game_dir"
@@ -200,12 +240,18 @@ game_pid=$!
 echo "ModTheSpire PID: $game_pid"
 for ((elapsed=0; elapsed<wait_seconds*10; elapsed++)); do
   if port_is_open; then
-    game_process_present || die "port $mcp_port opened without the expected ModTheSpire process"
+    refresh_game_pids
+    refresh_mcp_owner_pids
+    ((${#mcp_owner_pids[@]})) || die "port $mcp_port opened without the expected ModTheSpire listener"
+    if ((runtime_available)); then
+      python3 "$runtime_tool" record-active --inspector-jar "$inspector_jar" --process-pid "${mcp_owner_pids[0]}"
+    fi
     echo "MCPTheSpire is ready."; print_ready
     ((probe)) && run_probe
     exit 0
   fi
-  if ! game_process_present && ! kill -0 "$game_pid" 2>/dev/null; then
+  refresh_game_pids
+  if ((${#game_pids[@]} == 0)) && ! kill -0 "$game_pid" 2>/dev/null; then
     echo "ModTheSpire exited before MCP became ready. Recent log:" >&2
     tail -40 "$log_path" >&2 || true
     exit 1

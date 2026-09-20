@@ -7,6 +7,7 @@ import argparse
 import hashlib
 import json
 import os
+import re
 import shutil
 import socket
 import subprocess
@@ -39,6 +40,19 @@ def run(command: list[str], cwd: Path) -> None:
         subprocess.run(command, cwd=cwd, check=True)
     except (OSError, subprocess.CalledProcessError) as exc:
         raise RuntimeFailure(f"command failed: {' '.join(command)}: {exc}") from exc
+
+
+def run_output(command: list[str], cwd: Path) -> str:
+    try:
+        completed = subprocess.run(command, cwd=cwd, check=True, text=True,
+                                   stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+    except (OSError, subprocess.CalledProcessError) as exc:
+        output = getattr(exc, "stdout", "") or ""
+        if output:
+            print(output, end="" if output.endswith("\n") else "\n")
+        raise RuntimeFailure(f"command failed: {' '.join(command)}: {exc}") from exc
+    print(completed.stdout, end="" if completed.stdout.endswith("\n") else "\n")
+    return completed.stdout
 
 
 def utc_now() -> str:
@@ -230,16 +244,19 @@ class RuntimeManager:
     def build_advisor(self) -> Path:
         run([sys.executable, "tools/agent/worktree.py", "preflight", "."], self.repo)
         run([sys.executable, "tools/agent/worktree.py", "check", "."], self.repo)
-        run([sys.executable, "tools/agent/build.py",
-             "--configure-preset", "linux-gcc-debug-ccache",
-             "--build-preset", "linux-gcc-debug-ccache-build",
-             "--target", "one_combat_advisor"], self.repo)
-        candidates = [self.repo / "build" / name / "one_combat_advisor"
-                      for name in ("linux-gcc-debug-ccache", "linux-gcc-debug")]
-        built = [path for path in candidates if path.is_file() and os.access(path, os.X_OK)]
-        if not built:
-            raise RuntimeFailure(f"focused build did not create executable advisor under {self.repo / 'build'}")
-        return max(built, key=lambda path: path.stat().st_mtime_ns)
+        requested_preset = "linux-gcc-debug-ccache"
+        output = run_output([sys.executable, "tools/agent/build.py",
+                             "--configure-preset", requested_preset,
+                             "--build-preset", "linux-gcc-debug-ccache-build",
+                             "--target", "one_combat_advisor"], self.repo)
+        fallback = re.findall(r"^ccache_fallback=(\S+)\s", output, re.MULTILINE)
+        if len(fallback) > 1:
+            raise RuntimeFailure("build wrapper reported more than one selected fallback preset")
+        selected_preset = fallback[0] if fallback else requested_preset
+        advisor = self.repo / "build" / selected_preset / "one_combat_advisor"
+        if not advisor.is_file() or not os.access(advisor, os.X_OK):
+            raise RuntimeFailure(f"selected build preset did not create executable advisor: {advisor}")
+        return advisor
 
     def install(self, advisor_source: Path | None = None) -> dict[str, Any]:
         head, dirty = self.git_state()
@@ -328,20 +345,52 @@ class RuntimeManager:
                 active = json.loads(self.active.read_text(encoding="utf-8"))
                 result["activeRuntime"] = active
                 installed_id = result.get("manifest", {}).get("runtimeId")
-                result["activeRuntimeMatchesCurrent"] = active.get("runtimeId") == installed_id
+                process_matches = self.active_process_matches(active)
+                result["activeProcessMatches"] = process_matches
+                result["activeRuntimeMatchesCurrent"] = process_matches and active.get("runtimeId") == installed_id
             except (OSError, json.JSONDecodeError) as exc:
                 result["activeRuntimeError"] = str(exc)
         return result
 
-    def record_active(self, inspector_jar: Path) -> dict[str, Any]:
+    @staticmethod
+    def process_identity(pid: int) -> dict[str, Any]:
+        proc = Path("/proc") / str(pid)
+        try:
+            stat_text = (proc / "stat").read_text(encoding="utf-8")
+            fields = stat_text[stat_text.rfind(")") + 2:].split()
+            start_ticks = int(fields[19])
+            cmdline = (proc / "cmdline").read_bytes()
+        except (OSError, ValueError, IndexError) as exc:
+            raise RuntimeFailure(f"cannot identify live game process {pid}: {exc}") from exc
+        if not cmdline:
+            raise RuntimeFailure(f"live game process {pid} has an empty command line")
+        return {"processPid": pid, "processStartTicks": start_ticks,
+                "processCommandSha256": hashlib.sha256(cmdline).hexdigest()}
+
+    def active_process_matches(self, active: dict[str, Any]) -> bool:
+        try:
+            pid = int(active["processPid"])
+            identity = self.process_identity(pid)
+        except (KeyError, TypeError, ValueError, RuntimeFailure):
+            return False
+        return all(active.get(key) == identity[key]
+                   for key in ("processPid", "processStartTicks", "processCommandSha256"))
+
+    def record_active(self, inspector_jar: Path, process_pid: int) -> dict[str, Any]:
         manifest = self.validate_release()
         value = {key: manifest[key] for key in ("runtimeId", "gitHead", "advisorSha256", "ctmSha256")}
         if manifest.get("oocModelSha256"):
             value["oocModelSha256"] = manifest["oocModelSha256"]
         value["inspectorJarSha256"] = sha256(inspector_jar) if inspector_jar.is_file() else None
         value["startedAt"] = utc_now()
+        value.update(self.process_identity(process_pid))
         atomic_json(self.active, value)
         return value
+
+    def clear_active(self) -> bool:
+        existed = self.active.exists()
+        self.active.unlink(missing_ok=True)
+        return existed
 
     def deploy_inspector(self, game_dir: Path, modthespire: Path) -> str:
         basemod = game_dir / "mods/BaseMod.jar"
@@ -364,7 +413,7 @@ class RuntimeManager:
 
 def parser() -> argparse.ArgumentParser:
     result = argparse.ArgumentParser(description=__doc__)
-    result.add_argument("command", choices=("status", "ensure", "install", "repair-config", "deploy-inspector", "record-active"))
+    result.add_argument("command", choices=("status", "ensure", "install", "repair-config", "deploy-inspector", "record-active", "clear-active"))
     result.add_argument("--runtime-dir", type=Path, default=default_runtime_root())
     result.add_argument("--config", type=Path, default=default_config_path())
     result.add_argument("--active-runtime", type=Path, default=default_active_path())
@@ -373,6 +422,7 @@ def parser() -> argparse.ArgumentParser:
     result.add_argument("--game-dir", type=Path)
     result.add_argument("--modthespire-jar", type=Path)
     result.add_argument("--inspector-jar", type=Path)
+    result.add_argument("--process-pid", type=int)
     result.add_argument("--json", action="store_true")
     return result
 
@@ -398,10 +448,13 @@ def main() -> int:
                 raise RuntimeFailure("deploy-inspector requires --game-dir and --modthespire-jar")
             value = {"inspectorJarSha256": manager.deploy_inspector(args.game_dir, args.modthespire_jar)}
             code = 0
+        elif args.command == "record-active":
+            if not args.inspector_jar or args.process_pid is None:
+                raise RuntimeFailure("record-active requires --inspector-jar and --process-pid")
+            value = manager.record_active(args.inspector_jar, args.process_pid)
+            code = 0
         else:
-            if not args.inspector_jar:
-                raise RuntimeFailure("record-active requires --inspector-jar")
-            value = manager.record_active(args.inspector_jar)
+            value = {"changed": manager.clear_active()}
             code = 0
         if args.json:
             print(json.dumps(value, sort_keys=True))

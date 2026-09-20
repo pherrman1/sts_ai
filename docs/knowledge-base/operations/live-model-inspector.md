@@ -133,6 +133,12 @@ MCPTheSpire:   <game directory>/mods/MCPTheSpire.jar
 inspector:     <game directory>/mods/sts-model-inspector.jar
 ```
 
+The active-runtime record is written only after port `8080` is verified as
+owned by the exact `java -jar <ModTheSpire.jar>` process. It includes that
+process's PID, Linux start ticks, and command-line hash; stale metadata is not
+reported as the currently running runtime. Explicit `--allow-missing-advisor`
+startup remains MCP-only and neither validates nor records a stable runtime.
+
 Start the modded game with the MCP and inspector mods enabled:
 
 ```bash

@@ -5,6 +5,7 @@ import subprocess
 import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
 
 from tools.live_game_runtime import CTM_NAME, OOC_NAME, RuntimeFailure, RuntimeManager, sha256
 
@@ -97,6 +98,7 @@ class LiveGameRuntimeTest(unittest.TestCase):
         self.assertTrue(status["usable"])
         self.assertIn(status["mcpEndpoint"], ("offline", "reachable"))
         self.assertFalse(status["activeRuntimeMatchesCurrent"])
+        self.assertFalse(status["activeProcessMatches"])
         self.assertEqual(status["manifest"]["runtimeId"], manifest["runtimeId"])
 
     def test_manifest_hash_is_checked(self):
@@ -112,10 +114,66 @@ class LiveGameRuntimeTest(unittest.TestCase):
         manifest = self.install()
         inspector = Path(self.temp.name) / "inspector.jar"
         inspector.write_bytes(b"jar")
-        active = self.manager.record_active(inspector)
+        active = self.manager.record_active(inspector, os.getpid())
         self.assertEqual(active["runtimeId"], manifest["runtimeId"])
         self.assertEqual(active["inspectorJarSha256"], sha256(inspector))
+        self.assertEqual(active["processPid"], os.getpid())
+        self.assertTrue(self.manager.active_process_matches(active))
         self.assertEqual(json.loads(self.active.read_text()), active)
+        status = self.manager.status()
+        self.assertTrue(status["activeProcessMatches"])
+        self.assertTrue(status["activeRuntimeMatchesCurrent"])
+
+    def test_build_advisor_packages_only_wrapper_selected_fallback_preset(self):
+        fallback = self.repo / "build/linux-gcc-debug/one_combat_advisor"
+        requested = self.repo / "build/linux-gcc-debug-ccache/one_combat_advisor"
+        fallback.parent.mkdir(parents=True)
+        requested.parent.mkdir(parents=True)
+        fallback.write_text("fallback")
+        requested.write_text("wrong-newer")
+        fallback.chmod(fallback.stat().st_mode | stat.S_IXUSR)
+        requested.chmod(requested.stat().st_mode | stat.S_IXUSR)
+        os.utime(requested, (fallback.stat().st_mtime + 10, fallback.stat().st_mtime + 10))
+        wrapper_output = ("ccache_fallback=linux-gcc-debug build_preset=linux-gcc-debug-build "
+                          "configure_forced=false reason=test\nbuild_route=native root=test\n")
+        with mock.patch("tools.live_game_runtime.run"), \
+             mock.patch("tools.live_game_runtime.run_output", return_value=wrapper_output):
+            self.assertEqual(self.manager.build_advisor(), fallback)
+
+    def test_allow_missing_advisor_does_not_require_or_record_runtime(self):
+        base = Path(self.temp.name)
+        game = base / "game"
+        mods = game / "mods"
+        mods.mkdir(parents=True)
+        (mods / "MCPTheSpire.jar").write_bytes(b"mcp")
+        (mods / "sts-model-inspector.jar").write_bytes(b"inspector")
+        modthespire = base / "ModTheSpire.jar"
+        modthespire.write_bytes(b"mts")
+        calls = base / "runtime-calls"
+        runtime = base / "runtime-tool"
+        runtime.write_text("import pathlib, sys\n"
+                           f"pathlib.Path({str(calls)!r}).open('a').write(sys.argv[1] + '\\n')\n"
+                           "raise SystemExit(2)\n")
+        runtime.chmod(runtime.stat().st_mode | stat.S_IXUSR)
+        environment = {
+            **os.environ,
+            "HOME": str(base / "home"),
+            "STS_GAME_DIR": str(game),
+            "STS_MODTHESPIRE_JAR": str(modthespire),
+            "STS_MCP_THE_SPIRE_JAR": str(mods / "MCPTheSpire.jar"),
+            "STS_MODEL_INSPECTOR_JAR": str(mods / "sts-model-inspector.jar"),
+            "STS_JAVA_BIN": "/bin/true",
+            "STS_LIVE_RUNTIME_TOOL": str(runtime),
+            "STS_MCP_PORT": "49151",
+        }
+        completed = subprocess.run(
+            [str(Path(__file__).parents[1] / "tools/live_game_start.sh"),
+             "--allow-missing-advisor", "--check"],
+            env=environment, text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+        )
+        self.assertEqual(completed.returncode, 1, completed.stdout + completed.stderr)
+        self.assertIn("MCP-only mode", completed.stdout + completed.stderr)
+        self.assertEqual(calls.read_text().splitlines(), ["ensure"])
 
     def test_java_configuration_uses_environment_first_seam(self):
         source = (Path(__file__).parents[1] /
