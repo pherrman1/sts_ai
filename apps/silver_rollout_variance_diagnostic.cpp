@@ -217,6 +217,10 @@ Json selectedTeacherAction(const Json &teacher, const std::string &fingerprint) 
     return Json();
 }
 
+Json optionalJsonField(const Json &row, const char *field) {
+    return row.contains(field) ? row.at(field) : Json(nullptr);
+}
+
 Json firstActionProbeLeaf(const Json &selection, const std::map<std::string, Json> &corpus,
                           const std::map<std::string, std::map<std::string, Json>> &teachers,
                           const std::map<std::string, std::vector<Json>> &rawByLeaf) {
@@ -254,10 +258,10 @@ Json firstActionProbeLeaf(const Json &selection, const std::map<std::string, Jso
         {"teacher_a_selected_action_fingerprint", teacherAFingerprint},
         {"teacher_b_selected_action_fingerprint", teacherBFingerprint},
         {"teacher_a_b_action_agree", teacherAFingerprint == teacherBFingerprint},
-        {"teacher_a_selected_q", selectedTeacherAction(teacherA, teacherAFingerprint).value("original_root_corrected_q", nullptr)},
-        {"teacher_a_selected_visits", selectedTeacherAction(teacherA, teacherAFingerprint).value("visits", nullptr)},
-        {"teacher_b_selected_q", selectedTeacherAction(teacherB, teacherBFingerprint).value("original_root_corrected_q", nullptr)},
-        {"teacher_b_selected_visits", selectedTeacherAction(teacherB, teacherBFingerprint).value("visits", nullptr)},
+        {"teacher_a_selected_q", optionalJsonField(selectedTeacherAction(teacherA, teacherAFingerprint), "original_root_corrected_q")},
+        {"teacher_a_selected_visits", optionalJsonField(selectedTeacherAction(teacherA, teacherAFingerprint), "visits")},
+        {"teacher_b_selected_q", optionalJsonField(selectedTeacherAction(teacherB, teacherBFingerprint), "original_root_corrected_q")},
+        {"teacher_b_selected_visits", optionalJsonField(selectedTeacherAction(teacherB, teacherBFingerprint), "visits")},
         {"baseline_replicate_count", rawRows.size()},
     };
     if (actionIt == legal.end()) {
