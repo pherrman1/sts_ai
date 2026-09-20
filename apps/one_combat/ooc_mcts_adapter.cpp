@@ -626,7 +626,6 @@ void configureLiveOocMcts() {
     liveRootLockTrace.clear();
     liveCheckpointTrace.clear();
     liveSimulations = 512; liveConfig = {}; liveOptions = {true};
-    liveOptions.sampleNoncombat = true;
     if (!liveEnabled) return;
     if (sts::search::silverLiveReuseCap() != 32768)
         throw std::runtime_error("live OOC MCTS requires frozen Silver reuse cap 32768");
@@ -650,6 +649,7 @@ void configureLiveOocMcts() {
         if (!liveSimulations) throw std::runtime_error("STS_OOC_MCTS_SIMS must be positive");
     }
     liveConfig = {}; liveOptions = {true};
+    liveOptions.sampleNoncombat = true;
     liveConfig.allowUnqualifiedRootStop = true; // May skip later aborts; provider guarantee remains false.
     for (const char *key : liveControlKeys)
         if (const char *value = std::getenv(key)) applyLiveControl(key, value, liveConfig, liveOptions);
@@ -685,7 +685,9 @@ void configureLiveOocMcts() {
         << " leaf_value=" << (liveOptions.bossLeaf ? "boss" : liveOptions.constantLeaf ? "constant" : "native")
         << " leaf_combats=" << liveOptions.leafCombats << " leaf_policy=" << (liveOptions.uniformLeafPolicy ? "uniform" : "v4")
         << "]\n";
-    std::cout << "[ooc-mcts-config] {\"noncombatOutcomes\":\"sampled\",\"prior\":\"" << (liveOptions.uniformPrior ? "uniform" : "policy")
+    std::cout << "[ooc-mcts-config] {\"noncombatOutcomes\":\""
+        << (liveOptions.sampleNoncombat ? "sampled" : "exact")
+        << "\",\"prior\":\"" << (liveOptions.uniformPrior ? "uniform" : "policy")
         << "\",\"temperature\":" << liveOptions.priorTemperature << ",\"cPuct\":" << liveConfig.cPuct
         << ",\"wideningK\":" << liveConfig.wideningK << ",\"wideningAlpha\":" << liveConfig.wideningAlpha
         << ",\"maxDepth\":" << liveConfig.maxDepth << ",\"rootSelection\":\"" << (liveConfig.selectByMeanQ ? "q" : "visits")
@@ -954,6 +956,9 @@ namespace one_combat {
 void oocMctsAdapterSelfTest() {
     using namespace sts;
     using namespace sts::search;
+    // Inspect the actual configured option before fixture-specific resets.
+    require(!liveEnabled || liveOptions.sampleNoncombat,
+        "enabled live OOC MCTS must sample noncombat outcomes after all startup resets");
     std::cout << std::setprecision(12);
     require(g_oocStrategicTokNet.path == "selfplay/models/ooc_strategic_tok_final.native"
         || g_oocStrategicTokNet.path.find("/selfplay/models/ooc_strategic_tok_final.native") != std::string::npos,
