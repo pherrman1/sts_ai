@@ -86,6 +86,17 @@ json silverEvaluator(const one_combat::advisor::Request &request,
     evaluator["status"] = "OK";
     evaluator["selectedAction"] = silver_bridge::semanticActionFingerprint(decision.action);
     evaluator["selectedLabel"] = one_combat::advisor::silverActionLabel(decision.action, imported.wire);
+    evaluator["selectedLiveAction"] = one_combat::advisor::selectedLiveAction(
+        decision.action, importContext, request.observation);
+    if (evaluator["selectedLiveAction"].is_null()) {
+        clearSession();
+        evaluator["status"] = "UNSUPPORTED";
+        evaluator["reason"] = "silver_live_action_lowering";
+        evaluator.erase("selectedAction");
+        evaluator.erase("selectedLabel");
+        evaluator.erase("selectedLiveAction");
+        return evaluator;
+    }
     evaluator["legalActions"] = json::array();
     for (const auto &action : legal) evaluator["legalActions"].push_back(silver_bridge::semanticActionFingerprint(action));
     evaluator["rootActionSummaries"] = json::array();

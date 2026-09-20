@@ -22,6 +22,9 @@ research = [
     "catboost>=1.2",
     "optuna>=3.0",
 ]
+live-driver = [
+    "mcp>=2.2.0",
+]
 
 [tool.uv]
 package = false

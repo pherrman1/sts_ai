@@ -96,6 +96,126 @@ isolated search seed derived from `combatEntryHash` is retained across an
 active protocol session and combat; the UUID registry is reset when either
 identity changes.
 
+## Direct live-game driver
+
+### Start and discover the live control boundary
+
+The canonical local live-test setup is provided by
+`tools/live_game_start.sh`. It validates the installed artifacts and advisor
+configuration, reuses an already-running modded game, otherwise starts
+ModTheSpire in its own background session, waits for MCP port `8080`, and
+prints the driver command. Use:
+
+```bash
+tools/live_game_start.sh --probe
+```
+
+`--probe` performs a read-only driver dry-run after the game reaches a
+command-ready screen. Use `--check` to validate without starting anything and
+`--foreground` when the Codex terminal should retain the ModTheSpire process
+directly. `--allow-missing-advisor` is only for MCP-only control; normal Silver
+testing should keep the advisor check enabled. Background launch output is
+written to `~/.cache/sts-live-driver/modthespire.log`. The installed artifacts
+are:
+
+```text
+game directory: /home/philippherrmann/.local/share/Steam/steamapps/common/SlayTheSpire
+ModTheSpire:   /home/philippherrmann/.local/share/Steam/steamapps/workshop/content/646570/1605060445/ModTheSpire.jar
+MCPTheSpire:   <game directory>/mods/MCPTheSpire.jar
+inspector:     <game directory>/mods/sts-model-inspector.jar
+```
+
+Start the modded game with the MCP and inspector mods enabled:
+
+```bash
+# Equivalent manual launch when the helper is unavailable.
+cd /home/philippherrmann/.local/share/Steam/steamapps/common/SlayTheSpire
+/usr/bin/java -jar \
+  /home/philippherrmann/.local/share/Steam/steamapps/workshop/content/646570/1605060445/ModTheSpire.jar \
+  --skip-launcher --mods basemod,MCPTheSpire,stsmodelinspector
+```
+
+MCPTheSpire starts a Streamable HTTP server at
+`http://127.0.0.1:8080/mcp`. It is the live game's control boundary; use its
+MCP tools rather than GUI automation. The driver discovers the available
+surface at startup and requires `get_screen_state`,
+`get_available_commands`, and at least one supported action tool. A quick
+endpoint check is:
+
+```bash
+uv run --extra live-driver python tools/live_game_driver.py \
+  --dry-run --max-steps 1
+```
+
+The asynchronous inspector snapshot is written to
+`~/.cache/sts-model-inspector/latest.json`. Before using an advisor response,
+verify that `response.ready` is true and that `response.session`,
+`response.sequence`, and `response.observationHash` match the observation (and
+then correlate that observation with `get_screen_state`/`get_game_state`).
+The endpoint and snapshot paths can be overridden with `STS_MCP_URL` and
+`STS_INSPECTOR_PATH` when an isolated game instance is required.
+
+The inspector launches the advisor configured in
+`~/.sts-model-inspector.properties`; keep both paths aligned with the checkout
+being tested. For this repository the relevant entries are:
+
+```properties
+advisor=<repository root>/build/linux-gcc-debug/one_combat_advisor
+ctmModel=<repository root>/selfplay/models/combat_transition_near_full_except_smoke_v2.native
+```
+
+If `latest.json` remains `WAITING` after a combat observation, check these
+paths first and restart the game after changing them. A ready response can
+still be `UNSUPPORTED` for an encounter or state outside the maintained live
+capability boundary; that is an advisor result, not an MCP connectivity
+failure.
+
+`tools/live_game_driver.py` is the repository-local integration/debug harness
+for advancing a currently running game without a Codex or Luna turn between
+actions. It connects directly to MCPTheSpire over Streamable HTTP, reads the
+current screen and advertised commands, and materializes concrete MCP calls
+before selecting through Silver or its deterministic fallback policy. The
+optional dependencies are isolated in the `live-driver` extra:
+
+```text
+uv run --extra live-driver python tools/live_game_driver.py
+```
+
+Combat reads the matching `~/.cache/sts-model-inspector/latest.json` response
+and uses Silver only when the snapshot is ready, identity-matched, and
+correlated with the MCP-visible state. A Silver `OK` response must include a
+structured `selectedLiveAction` lowered from the imported physical identity
+and map to exactly one current candidate; zero or multiple matches stop the
+driver. Only an explicit Silver `UNSUPPORTED` result may use the deterministic
+fallback policy, and `--strict-silver` turns that boundary into a stop.
+Non-combat screens use deterministic priorities over the generated legal
+candidates, so no policy can invent an MCP tool name or arguments. The driver
+waits for `ready_for_command` before selecting and after execution, while
+readiness-only changes are ignored for state identity.
+
+Inspector correlation uses the full `get_game_state` monster records when
+available because the lightweight screen uses names and filters dead slots.
+Dead or escaped inspector slots are excluded before comparing the remaining
+live monsters. Silver target slots are compacted through that same ordered
+public monster observation before becoming MCP's 1-based living-monster index;
+dead or missing targets fail closed. Potion candidates are emitted only when
+MCP explicitly advertises the corresponding `can_use` or `can_discard`
+capability; absent sparse fields mean unavailable. The post-action identity
+includes the full game-state payload when that read tool is available, so
+successful potion effects that do not change the lightweight screen still
+advance correctly. Silver card-selection actions remain explicitly
+unsupported until their mapping to MCPTheSpire's choice surface is qualified;
+they therefore use the deterministic fallback boundary.
+
+The default MCP endpoint can be overridden with `STS_MCP_URL` or `--mcp-url`.
+Each decision is written as redacted JSONL under
+`~/.cache/sts-live-driver/` (override with `--trace`). `--dry-run` performs the
+read, candidate, and decision path without a mutating MCP call, while
+`--max-steps N` bounds a smoke test. The driver intentionally stops on
+unavailable MCP, malformed or stale inspector data, unsupported candidate
+enumeration, absent or ambiguous structured Silver lowering, readiness or
+transition timeout, and unexpected advisor errors.
+
 Live current energy comes from `EnergyPanel.totalCount`; the player's
 `EnergyManager.energy` field is the per-turn recharge amount and does not
 decrease when a card is played.

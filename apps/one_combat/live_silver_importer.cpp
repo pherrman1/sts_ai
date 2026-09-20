@@ -8,6 +8,7 @@
 #include <unordered_map>
 #include <limits>
 #include <iterator>
+#include <optional>
 
 #include "constants/CharacterClasses.h"
 #include "constants/Relics.h"
@@ -1066,6 +1067,73 @@ std::string silverActionLabel(const silver_bridge::SemanticAction &action,
         return name + " -> Monster " + std::to_string(action.target + 1);
     }
     return name;
+}
+
+nlohmann::json selectedLiveAction(const silver_bridge::SemanticAction &action,
+                                  const SilverImportContext &context,
+                                  const nlohmann::json &observation) {
+    const auto uuidForId = [&context](const std::int16_t uniqueId) -> std::string {
+        for (const auto &[uuid, id] : context.cardIds)
+            if (id == uniqueId) return uuid;
+        return {};
+    };
+    const auto targetIndex = [&observation](const int silverSlot) -> std::optional<int> {
+        if (silverSlot < 0) return std::nullopt;
+        nlohmann::json combat = nlohmann::json::object();
+        if (observation.contains("combat") && observation["combat"].is_object()) {
+            combat = observation["combat"];
+        } else if (observation.contains("silverRoot") && observation["silverRoot"].is_object()) {
+            combat = observation["silverRoot"].value("combat", nlohmann::json::object());
+        }
+        const auto monsters = combat.value("monsters", nlohmann::json::array());
+        if (!monsters.is_array() || silverSlot >= static_cast<int>(monsters.size())) return std::nullopt;
+        int liveIndex = 0;
+        for (int slot = 0; slot < static_cast<int>(monsters.size()); ++slot) {
+            const auto &monster = monsters[slot];
+            if (!monster.is_object()) return std::nullopt;
+            if (!monster.contains("dead") || !monster["dead"].is_boolean()) return std::nullopt;
+            const bool dead = monster["dead"].get<bool>();
+            if (slot == silverSlot) return dead ? std::nullopt : std::optional<int>(liveIndex + 1);
+            if (!dead) ++liveIndex;
+        }
+        return std::nullopt;
+    };
+    const auto targetFields = [&action, &targetIndex](nlohmann::json &result) -> bool {
+        const auto compact = targetIndex(action.target);
+        if (action.target >= 0 && !compact) return false;
+        if (compact) result["targetIndex"] = *compact;
+        return true;
+    };
+    using silver_bridge::SemanticActionType;
+    switch (action.type) {
+    case SemanticActionType::END_TURN:
+        return {{"kind", "end_turn"}};
+    case SemanticActionType::CARD: {
+        const auto uuid = uuidForId(action.card.uniqueId);
+        if (uuid.empty()) return nullptr;
+        nlohmann::json result = {{"kind", "card"}, {"cardUuid", uuid}};
+        if (!targetFields(result)) return nullptr;
+        return result;
+    }
+    case SemanticActionType::POTION: {
+        if (action.potionSlot < 0) return nullptr;
+        nlohmann::json result = {{"kind", "potion"},
+                                 {"potionSlot", action.potionSlot + 1},
+                                 {"discard", action.discardPotion}};
+        if (!action.discardPotion && !targetFields(result)) return nullptr;
+        return result;
+    }
+    case SemanticActionType::SINGLE_CARD_SELECT:
+    case SemanticActionType::MULTI_CARD_SELECT:
+        // MCPTheSpire exposes these screens through its choice surface, not
+        // the indexed select_cards call. Until that exact lowering is wired,
+        // make the advisor fail closed so the driver uses deterministic
+        // fallback instead of emitting an unexecutable Silver OK action.
+        return nullptr;
+    case SemanticActionType::INVALID:
+        return nullptr;
+    }
+    return nullptr;
 }
 
 } // namespace one_combat::advisor
