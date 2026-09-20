@@ -30,6 +30,7 @@ import java.io.BufferedWriter;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
+import java.lang.reflect.Field;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -52,6 +53,12 @@ public final class STSModelInspector implements PostInitializeSubscriber,
     private static final String PROTOCOL = "sts_model_inspector_v1";
     private static final int PROTOCOL_VERSION = 1;
     private static final String TOGGLE = "stsmodelinspector.toggle";
+    private static int trackedDamageTotal;
+    private static int trackedDamageTurn;
+    private static int trackedLastUnblockedDamage;
+    private static int trackedTimesDamaged;
+    private static boolean trackedPlayerVulnerableSeen;
+    private static int trackedLastTargetedMonster = 1;
 
     private static final STSModelInspector INSTANCE = new STSModelInspector();
     private final Advisor advisor = new Advisor();
@@ -71,7 +78,8 @@ public final class STSModelInspector implements PostInitializeSubscriber,
     private volatile String silverSelectedAction = "";
     private volatile String silverSelectedLabel = "";
     private volatile String silverRanking = "";
-    private volatile int silverDecisionOrdinal = -1;
+    private volatile int silverPlayerTurn = -1;
+    private volatile int silverDecisionInTurn = -1;
     private volatile boolean silverRerootExact;
     private volatile boolean silverEquivalentCopyReroot;
     private volatile boolean silverRerootFallback;
@@ -95,6 +103,12 @@ public final class STSModelInspector implements PostInitializeSubscriber,
 
     @Override
     public void receiveOnBattleStart(AbstractRoom room) {
+        trackedDamageTotal = 0;
+        trackedDamageTurn = 1;
+        trackedLastUnblockedDamage = 0;
+        trackedTimesDamaged = 0;
+        trackedPlayerVulnerableSeen = false;
+        trackedLastTargetedMonster = 1;
         // BaseMod's hook is at AbstractRoom's battle-start boundary, before
         // player/monster start-of-combat effects are applied.
         // The encounter group may not be populated at this exact hook. Capture
@@ -117,7 +131,14 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         silverSelectedAction = "";
         silverSelectedLabel = "";
         silverRanking = "";
-        silverDecisionOrdinal = -1;
+        silverPlayerTurn = -1;
+        silverDecisionInTurn = -1;
+        trackedDamageTotal = 0;
+        trackedDamageTurn = 0;
+        trackedLastUnblockedDamage = 0;
+        trackedTimesDamaged = 0;
+        trackedPlayerVulnerableSeen = false;
+        trackedLastTargetedMonster = 1;
         silverRerootExact = false;
         silverEquivalentCopyReroot = false;
         silverRerootFallback = false;
@@ -143,6 +164,7 @@ public final class STSModelInspector implements PostInitializeSubscriber,
 
     @Override
     public void receivePostUpdate() {
+        trackLastTargetedMonster();
         observeRoomTransition();
         boolean down = Keyboard.isKeyDown(loadToggleKey());
         if (down && !toggleDown) panelVisible = !panelVisible;
@@ -217,14 +239,17 @@ public final class STSModelInspector implements PostInitializeSubscriber,
             }
             String silverHeading = "Silver — waiting";
             if (!silverStatus.isEmpty()) {
-                if ("OK".equals(silverStatus) && silverDecisionOrdinal == 0) {
-                    silverHeading = "Silver — decision 0 — fresh";
+                String decisionLabel = "turn " + silverPlayerTurn
+                        + " decision " + silverDecisionInTurn;
+                if ("OK".equals(silverStatus) && silverPlayerTurn == 1
+                        && silverDecisionInTurn == 0) {
+                    silverHeading = "Silver — " + decisionLabel + " — fresh";
                 } else if ("OK".equals(silverStatus)
                         && (silverRerootExact || silverEquivalentCopyReroot)) {
-                    silverHeading = "Silver — decision 1 — reused "
+                    silverHeading = "Silver — " + decisionLabel + " — reused "
                             + silverInheritedVisits + " visits";
                 } else if ("OK".equals(silverStatus) && silverRerootFallback) {
-                    silverHeading = "Silver — decision 1 — fresh fallback";
+                    silverHeading = "Silver — " + decisionLabel + " — fresh fallback";
                 } else {
                     silverHeading = "Silver — " + silverStatus;
                 }
@@ -353,7 +378,8 @@ public final class STSModelInspector implements PostInitializeSubscriber,
             boundary = "card_reward";
         } else if (room instanceof RestRoom && isActionableRestDecision((RestRoom) room)) {
             boundary = "rest";
-        } else if (room instanceof MonsterRoom && isPlayerDecisionPoint()) {
+        } else if (room instanceof MonsterRoom
+                && (isPlayerDecisionPoint() || isCardSelectionBoundary())) {
             boundary = "combat";
         } else {
             return null;
@@ -412,15 +438,39 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         if (lastNodeX >= 0) {
             lastRoomClass = lastNodeRoomClass;
         } else {
-            // NONE is known only at a genuinely fresh run start.  If the
-            // observer attaches to an existing run, the preceding node is not
-            // observable and must remain unknown so CTM fails closed.
-            boolean freshRun = AbstractDungeon.actNum == 1 && AbstractDungeon.floorNum <= 1;
-            lastRoomClass = freshRun ? "NONE" : "";
+            // SaveFile.path_x/path_y are restored into these lists before the
+            // room becomes actionable.  The final coordinate is the current
+            // node, so a resumed run can recover the actual preceding node
+            // without guessing from the encounter or floor number.
+            lastRoomClass = previousRoomClassFromPath(x, y);
+            if (lastRoomClass.isEmpty()) {
+                // NONE is known only at a genuinely fresh run start.  If the
+                // persisted path is absent or inconsistent, keep failing
+                // closed rather than inventing CTM context.
+                boolean freshRun = AbstractDungeon.actNum == 1 && AbstractDungeon.floorNum <= 1;
+                lastRoomClass = freshRun ? "NONE" : "";
+            }
         }
         lastNodeX = x;
         lastNodeY = y;
         lastNodeRoomClass = current;
+    }
+
+    private static String previousRoomClassFromPath(int currentX, int currentY) {
+        if (AbstractDungeon.pathX == null || AbstractDungeon.pathY == null
+                || AbstractDungeon.map == null
+                || AbstractDungeon.pathX.size() != AbstractDungeon.pathY.size()
+                || AbstractDungeon.pathX.size() < 2) return "";
+        int currentIndex = AbstractDungeon.pathX.size() - 1;
+        if (AbstractDungeon.pathX.get(currentIndex) != currentX
+                || AbstractDungeon.pathY.get(currentIndex) != currentY) return "";
+        int previousX = AbstractDungeon.pathX.get(currentIndex - 1);
+        int previousY = AbstractDungeon.pathY.get(currentIndex - 1);
+        if (previousY < 0 || previousY >= AbstractDungeon.map.size()) return "";
+        List<com.megacrit.cardcrawl.map.MapRoomNode> row = AbstractDungeon.map.get(previousY);
+        if (row == null || previousX < 0 || previousX >= row.size()) return "";
+        com.megacrit.cardcrawl.map.MapRoomNode previous = row.get(previousX);
+        return previous == null || previous.room == null ? "" : roomClass(previous.room);
     }
 
     private static String roomClass(AbstractRoom room) {
@@ -640,7 +690,13 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         for (com.megacrit.cardcrawl.relics.AbstractRelic relic : AbstractDungeon.player.relics) {
             if (!first) out.append(','); first = false;
             out.append("{\"id\":\"").append(escapeJson(relic.relicId))
-                    .append("\",\"data\":").append(relic.counter).append('}');
+                    .append("\",\"data\":").append(relic.counter)
+                    .append(",\"usedUp\":").append(relic.usedUp);
+            if ("Necronomicon".equals(relic.relicId)) {
+                Boolean activated = readBooleanField(relic, "activated");
+                if (activated != null) out.append(",\"usedThisTurn\":").append(activated);
+            }
+            out.append('}');
         }
         return out.append(']').toString();
     }
@@ -721,6 +777,24 @@ public final class STSModelInspector implements PostInitializeSubscriber,
                 && !actions.turnHasEnded;
     }
 
+    private static boolean isCardSelectionBoundary() {
+        if (AbstractDungeon.actionManager == null) return false;
+        if (AbstractDungeon.screen != AbstractDungeon.CurrentScreen.GRID
+                && AbstractDungeon.screen != AbstractDungeon.CurrentScreen.HAND_SELECT)
+            return false;
+        return cardSelectionJson() != null;
+    }
+
+    private static void trackLastTargetedMonster() {
+        if (AbstractDungeon.actionManager == null || AbstractDungeon.getMonsters() == null) return;
+        for (com.megacrit.cardcrawl.cards.CardQueueItem item
+                : AbstractDungeon.actionManager.cardQueue) {
+            if (item == null || item.card == null || item.monster == null) continue;
+            int index = AbstractDungeon.getMonsters().monsters.indexOf(item.monster);
+            if (index >= 0) trackedLastTargetedMonster = index;
+        }
+    }
+
     private static boolean isActionableRestDecision(RestRoom room) {
         return room.campfireUI != null
                 && !com.megacrit.cardcrawl.rooms.CampfireUI.hidden
@@ -745,14 +819,204 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         return false;
     }
 
+    private static Integer readIntField(Object object, String... names) {
+        if (object == null) return null;
+        Class<?> type = object.getClass();
+        while (type != null) {
+            for (String name : names) {
+                try {
+                    Field field = type.getDeclaredField(name);
+                    field.setAccessible(true);
+                    Object value = field.get(object);
+                    return value instanceof Number ? ((Number) value).intValue() : null;
+                } catch (NoSuchFieldException ignored) {
+                    // Continue through the class hierarchy and aliases.
+                } catch (IllegalAccessException | SecurityException denied) {
+                    return null;
+                }
+            }
+            type = type.getSuperclass();
+        }
+        return null;
+    }
+
+    private static Boolean readBooleanField(Object object, String... names) {
+        if (object == null) return null;
+        Class<?> type = object.getClass();
+        while (type != null) {
+            for (String name : names) {
+                try {
+                    Field field = type.getDeclaredField(name);
+                    field.setAccessible(true);
+                    Object value = field.get(object);
+                    return value instanceof Boolean ? (Boolean) value : null;
+                } catch (NoSuchFieldException ignored) {
+                    // Continue through the class hierarchy and aliases.
+                } catch (IllegalAccessException | SecurityException denied) {
+                    return null;
+                }
+            }
+            type = type.getSuperclass();
+        }
+        return null;
+    }
+
+    private static String readStringField(Object object, String... names) {
+        if (object == null) return "";
+        Class<?> type = object.getClass();
+        while (type != null) {
+            for (String name : names) {
+                try {
+                    Field field = type.getDeclaredField(name);
+                    field.setAccessible(true);
+                    Object value = field.get(object);
+                    return value == null ? "" : String.valueOf(value);
+                } catch (NoSuchFieldException ignored) {
+                    // Continue through the class hierarchy and aliases.
+                } catch (IllegalAccessException | SecurityException denied) {
+                    return "";
+                }
+            }
+            type = type.getSuperclass();
+        }
+        return "";
+    }
+
+    private static Integer monsterMiscInfo(AbstractMonster monster) {
+        String id = monster.id;
+        if ("FuzzyLouseNormal".equals(id) || "FuzzyLouseDefensive".equals(id))
+            return readIntField(monster, "biteDamage", "dmg");
+        if ("GremlinWizard".equals(id)) return readIntField(monster, "currentCharge");
+        if ("BookOfStabbing".equals(id)) return readIntField(monster, "stabCount");
+        if ("SlaverRed".equals(id)) {
+            Boolean used = readBooleanField(monster, "usedEntangle");
+            return used == null ? null : (used ? 1 : 0);
+        }
+        if ("Champ".equals(id)) {
+            Boolean phase2 = readBooleanField(monster, "thresholdReached");
+            return phase2 == null ? null : (phase2 ? 1 : 0);
+        }
+        if ("BronzeOrb".equals(id)) {
+            Boolean used = readBooleanField(monster, "usedStasis");
+            return used == null ? null : (used ? 1 : 0);
+        }
+        if ("Spiker".equals(id)) return readIntField(monster, "thornsCount");
+        if ("TimeEater".equals(id)) {
+            Boolean used = readBooleanField(monster, "usedHaste");
+            return used == null ? null : (used ? 1 : 0);
+        }
+        if ("AwakenedOne".equals(id)) {
+            Boolean form1 = readBooleanField(monster, "form1");
+            return form1 == null ? null : (form1 ? 0 : 1);
+        }
+        // Explicit zero is safe only for monsters whose native move logic does
+        // not consult miscInfo. Unknown/reflectively inaccessible state is
+        // omitted and therefore rejected by the importer.
+        if ("Cultist".equals(id) || "JawWorm".equals(id) || "GremlinNob".equals(id)
+                || "FungiBeast".equals(id) || "AcidSlime_L".equals(id)
+                || "AcidSlime_M".equals(id) || "AcidSlime_S".equals(id)
+                || "SpikeSlime_L".equals(id) || "SpikeSlime_M".equals(id)
+                || "SpikeSlime_S".equals(id) || "BlueSlaver".equals(id)
+                || "Looter".equals(id) || "Mugger".equals(id)
+                || "GremlinFat".equals(id) || "GremlinSneaky".equals(id)
+                || "GremlinShield".equals(id) || "GremlinThief".equals(id)) return 0;
+        return null;
+    }
+
+    private static String selectionTask(String text, boolean anyNumber) {
+        String lower = text == null ? "" : text.toLowerCase(Locale.ROOT);
+        if (lower.contains("exhaust")) return anyNumber ? "EXHAUST_MANY" : "EXHAUST_ONE";
+        if (lower.contains("upgrade")) return "ARMAMENTS";
+        if (lower.contains("copy") || lower.contains("duplicate")) return "DUAL_WIELD";
+        if (lower.contains("top") && lower.contains("draw")) return "HEADBUTT";
+        if (lower.contains("discard")) return "GAMBLE";
+        if (lower.contains("return") || lower.contains("hand")) return "HOLOGRAM";
+        return "";
+    }
+
+    private static String selectionJson(String task, boolean anyNumber, int pickCount,
+                                        List<AbstractCard> source) {
+        StringBuilder out = new StringBuilder("{\"task\":\"")
+                .append(task).append("\",\"canPickZero\":false,\"canPickAnyNumber\":")
+                .append(anyNumber).append(",\"pickCount\":").append(Math.max(0, pickCount))
+                .append(",\"data0\":0,\"setCostToZero\":true,\"selectedBits\":0,\"cards\":[");
+        boolean offerCards = "DISCOVERY".equals(task) || "CODEX".equals(task);
+        boolean first = true;
+        if (offerCards && source != null) {
+            int count = 0;
+            for (AbstractCard card : source) {
+                if (count++ == 3) break;
+                if (!first) out.append(',');
+                first = false;
+                out.append('\"').append(escapeJson(card.cardID)).append('\"');
+            }
+        }
+        return out.append("]}").toString();
+    }
+
+    private static String cardSelectionJson() {
+        if (AbstractDungeon.screen == AbstractDungeon.CurrentScreen.GRID
+                && AbstractDungeon.gridSelectScreen != null) {
+            com.megacrit.cardcrawl.screens.select.GridCardSelectScreen screen =
+                    AbstractDungeon.gridSelectScreen;
+            Integer amount = readIntField(screen, "numCards", "cardSelectAmount");
+            String task = selectionTask(readStringField(screen, "tipMsg", "lastTip"), screen.anyNumber);
+            if (task.isEmpty() && screen.forUpgrade) task = "ARMAMENTS";
+            if (task.isEmpty()) return null;
+            return selectionJson(task, screen.anyNumber, amount == null ? 1 : amount,
+                    screen.targetGroup == null ? null : screen.targetGroup.group);
+        }
+        if (AbstractDungeon.screen == AbstractDungeon.CurrentScreen.HAND_SELECT
+                && AbstractDungeon.handCardSelectScreen != null) {
+            com.megacrit.cardcrawl.screens.select.HandCardSelectScreen screen =
+                    AbstractDungeon.handCardSelectScreen;
+            String task = selectionTask(screen.selectionReason, screen.upTo);
+            if (task.isEmpty()) return null;
+            return selectionJson(task, screen.upTo, screen.numCardsToSelect,
+                    AbstractDungeon.player.hand.group);
+        }
+        return null;
+    }
+
     private static String combatJson() {
         int decisionOrdinal = AbstractDungeon.actionManager.cardsPlayedThisTurn.size();
+        String selection = cardSelectionJson();
+        int visibleTurn = com.megacrit.cardcrawl.actions.GameActionManager.turn;
+        int damageTotal = com.megacrit.cardcrawl.actions.GameActionManager.damageReceivedThisCombat;
+        if (visibleTurn == 1 && decisionOrdinal == 0) {
+            trackedDamageTotal = damageTotal;
+            trackedDamageTurn = visibleTurn;
+            trackedLastUnblockedDamage = 0;
+            trackedTimesDamaged = 0;
+        } else if (visibleTurn != trackedDamageTurn) {
+            trackedLastUnblockedDamage = Math.max(0, damageTotal - trackedDamageTotal);
+            if (trackedLastUnblockedDamage > 0) ++trackedTimesDamaged;
+            trackedDamageTotal = damageTotal;
+            trackedDamageTurn = visibleTurn;
+        }
+        int attacksPlayed = 0;
+        int skillsPlayed = 0;
+        for (AbstractCard card : AbstractDungeon.actionManager.cardsPlayedThisTurn) {
+            if (card.type == AbstractCard.CardType.ATTACK) ++attacksPlayed;
+            else if (card.type == AbstractCard.CardType.SKILL) ++skillsPlayed;
+        }
+        int lastTargetedMonster = trackedLastTargetedMonster;
+        for (AbstractPower power : AbstractDungeon.player.powers)
+            if ("Vulnerable".equals(power.ID)) trackedPlayerVulnerableSeen = true;
         StringBuilder out = new StringBuilder("{\"turn\":");
         out.append(com.megacrit.cardcrawl.actions.GameActionManager.turn)
                 .append(",\"energy\":")
                 .append(EnergyPanel.totalCount)
                 .append(",\"block\":").append(AbstractDungeon.player.currentBlock)
                 .append(",\"cardsPlayedThisTurn\":").append(decisionOrdinal)
+                .append(",\"attacksPlayedThisTurn\":").append(attacksPlayed)
+                .append(",\"skillsPlayedThisTurn\":").append(skillsPlayed)
+                .append(",\"cardsDiscardedThisTurn\":")
+                .append(com.megacrit.cardcrawl.actions.GameActionManager.totalDiscardedThisTurn)
+                .append(",\"lastTargetedMonster\":").append(lastTargetedMonster)
+                .append(",\"lastAttackUnblockedDamage\":").append(trackedLastUnblockedDamage)
+                .append(",\"timesDamagedThisCombat\":").append(trackedTimesDamaged)
+                .append(",\"playerVulnerableSeen\":").append(trackedPlayerVulnerableSeen)
                 .append(",\"playedThisTurn\":[");
         boolean firstPlayed = true;
         for (AbstractCard card : AbstractDungeon.actionManager.cardsPlayedThisTurn) {
@@ -767,14 +1031,35 @@ public final class STSModelInspector implements PostInitializeSubscriber,
             if (!firstPower) out.append(',');
             firstPower = false;
             out.append("{\"id\":\"").append(escapeJson(power.ID))
-                    .append("\",\"amount\":").append(power.amount)
-                    // The installed game API has no public just-applied bit;
-                    // stable user boundaries are emitted with the conservative
-                    // settled value until a runtime tracker is available.
-                    .append(",\"justApplied\":false}");
+                    .append("\",\"amount\":").append(power.amount).append('}');
         }
-        out.append("]")
-                .append(",\"cardSelect\":false,\"resolving\":false")
+        out.append("]");
+        for (AbstractPower power : AbstractDungeon.player.powers) {
+            if ("Combust".equals(power.ID)) {
+                Integer value = readIntField(power, "hpLoss");
+                if (value != null) out.append(",\"combustHpLoss\":").append(value);
+            } else if ("Echo Form".equals(power.ID) || "EchoFormPower".equals(power.ID)) {
+                Integer value = readIntField(power, "cardsDoubled", "cardsPlayed");
+                if (value != null) out.append(",\"echoFormCardsDoubled\":").append(value);
+            } else if ("Panache".equals(power.ID)) {
+                Integer value = readIntField(power, "panacheCounter", "cardsUntilTrigger");
+                if (value != null) out.append(",\"panacheCounter\":").append(value);
+            } else if ("Deva Form".equals(power.ID) || "DevaFormPower".equals(power.ID)) {
+                Integer value = readIntField(power, "energyPerTurn", "energyAmount");
+                if (value != null) out.append(",\"devaFormEnergyPerTurn\":").append(value);
+            } else if ("Orange Pellets".equals(power.ID) || "OrangePelletsPower".equals(power.ID)) {
+                int cardTypes = 0;
+                for (AbstractCard card : AbstractDungeon.actionManager.cardsPlayedThisTurn) {
+                    if (card.type == AbstractCard.CardType.ATTACK) cardTypes |= 1;
+                    else if (card.type == AbstractCard.CardType.SKILL) cardTypes |= 2;
+                    else if (card.type == AbstractCard.CardType.POWER) cardTypes |= 4;
+                }
+                out.append(",\"orangePelletsCardTypesPlayed\":")
+                        .append(cardTypes == 7 ? 0 : cardTypes);
+            }
+        }
+        out.append(",\"cardSelect\":").append(selection == null ? "false" : selection)
+                .append(",\"resolving\":false")
                 .append(",\"runicDome\":").append(hasRunicDome())
                 .append(",\"frozenEye\":").append(hasRelic("Frozen Eye"))
                 .append(",\"hand\":[");
@@ -787,11 +1072,9 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         out.append("],\"draw\":[");
         first = true;
         List<AbstractCard> draw = new ArrayList<>(AbstractDungeon.player.drawPile.group);
-        if (!hasRelic("Frozen Eye")) {
-            Collections.sort(draw, Comparator.comparing((AbstractCard card) -> card.cardID)
-                    .thenComparing(card -> String.valueOf(card.uuid))
-                    .thenComparingInt(card -> card.misc));
-        }
+        Collections.sort(draw, Comparator.comparing((AbstractCard card) -> card.cardID)
+                .thenComparing(card -> String.valueOf(card.uuid))
+                .thenComparingInt(card -> card.misc));
         for (AbstractCard card : draw) {
             if (!first) out.append(',');
             first = false;
@@ -824,17 +1107,26 @@ public final class STSModelInspector implements PostInitializeSubscriber,
                         .append(",\"maxHp\":").append(monster.maxHealth)
                         .append(",\"block\":").append(monster.currentBlock)
                         .append(",\"dead\":").append(monster.isDeadOrEscaped())
-                        .append(",\"nextMove\":").append(runicDome ? 0 : monster.nextMove)
+                        .append(",\"escaping\":").append(monster.escaped)
+                        .append(",\"nextMove\":").append(monster.nextMove)
+                        .append(",\"moveHistory\":[");
+                int historyStart = Math.max(0, monster.moveHistory.size() - 2);
+                for (int historyIndex = historyStart; historyIndex < monster.moveHistory.size(); ++historyIndex) {
+                    if (historyIndex > historyStart) out.append(',');
+                    out.append(monster.moveHistory.get(historyIndex));
+                }
+                out.append(']')
                         .append(",\"powers\":[");
                 boolean firstMonsterPower = true;
                 for (AbstractPower power : monster.powers) {
                     if (!firstMonsterPower) out.append(',');
                     firstMonsterPower = false;
                     out.append("{\"id\":\"").append(escapeJson(power.ID))
-                            .append("\",\"amount\":").append(power.amount)
-                            .append(",\"justApplied\":false}");
+                            .append("\",\"amount\":").append(power.amount).append('}');
                 }
                 out.append(']');
+                Integer miscInfo = monsterMiscInfo(monster);
+                if (miscInfo != null) out.append(",\"miscInfo\":").append(miscInfo);
                 if (!runicDome) {
                     out.append(",\"intent\":\"")
                             .append(escapeJson(monster.intent == null ? "UNKNOWN" : monster.intent.name()))
@@ -843,13 +1135,27 @@ public final class STSModelInspector implements PostInitializeSubscriber,
                 out.append('}');
             }
         }
-        out.append("],\"relics\":[");
+        out.append("],\"lastCard\":");
+        AbstractCard lastCard = AbstractDungeon.actionManager.lastCard;
+        if (decisionOrdinal > 0 && lastCard != null) {
+            String serialized = cardJson(lastCard);
+            out.append(serialized, 0, serialized.length() - 1)
+                    .append(",\"target\":0,\"energyOnUse\":")
+                    .append(EnergyPanel.totalCount + lastCard.costForTurn).append('}');
+        } else out.append("null");
+        out.append(",\"relics\":[");
         first = true;
         for (com.megacrit.cardcrawl.relics.AbstractRelic relic : AbstractDungeon.player.relics) {
             if (!first) out.append(',');
             first = false;
             out.append("{\"id\":\"").append(escapeJson(relic.relicId))
-                    .append("\",\"counter\":").append(relic.counter).append('}');
+                    .append("\",\"counter\":").append(relic.counter)
+                    .append(",\"usedUp\":").append(relic.usedUp);
+            if ("Necronomicon".equals(relic.relicId)) {
+                Boolean activated = readBooleanField(relic, "activated");
+                if (activated != null) out.append(",\"usedThisTurn\":").append(activated);
+            }
+            out.append('}');
         }
         out.append("],\"potions\":[");
         first = true;
@@ -1012,7 +1318,8 @@ public final class STSModelInspector implements PostInitializeSubscriber,
                             silverSelectedAction = "";
                             silverSelectedLabel = "";
                             silverRanking = "";
-                            silverDecisionOrdinal = -1;
+                            silverPlayerTurn = -1;
+                            silverDecisionInTurn = -1;
                             silverRerootExact = false;
                             silverEquivalentCopyReroot = false;
                             silverRerootFallback = false;
@@ -1030,6 +1337,10 @@ public final class STSModelInspector implements PostInitializeSubscriber,
                             if ("ERROR".equals(status)) {
                                 advisorReason = (code == null ? "UNKNOWN" : code) +
                                         (message == null || message.isEmpty() ? "" : " - " + message);
+                                if ("combat".equals(current.boundary) && ctmStatus.isEmpty()) {
+                                    ctmStatus = code == null ? "error" : code.toLowerCase();
+                                    ctmReason = message == null ? advisorReason : message;
+                                }
                             } else {
                                 advisorReason = reason == null ? "" : reason;
                             }
@@ -1039,7 +1350,8 @@ public final class STSModelInspector implements PostInitializeSubscriber,
                                 silverSelectedAction = field(line, "selectedAction");
                                 silverSelectedLabel = field(line, "selectedLabel");
                                 silverRanking = field(line, "silverRanking");
-                                silverDecisionOrdinal = (int) numberField(line, "decisionOrdinal");
+                                silverPlayerTurn = (int) numberField(line, "playerTurn");
+                                silverDecisionInTurn = (int) numberField(line, "decisionInTurn");
                                 silverRerootExact = booleanField(line, "exact");
                                 silverEquivalentCopyReroot = booleanField(line, "equivalentCopy");
                                 silverRerootFallback = booleanField(line, "fallback");
@@ -1341,18 +1653,17 @@ public final class STSModelInspector implements PostInitializeSubscriber,
                     (combat.isEmpty() ? "" : ",\"combat\":" + combat
                         + ",\"combatEntryHash\":\"" + combatEntryHash + "\""
                         + (combatEntry.isEmpty() ? "" : ",\"combatEntry\":" + combatEntry)
-                        + (combatEntry.isEmpty() ? "" : ",\"silverRoot\":{\"schemaVersion\":4,\"decisionInTurn\":"
-                            + playedDecisionOrdinal(combat) + ",\"firstDecision\":"
-                            + (playedDecisionOrdinal(combat) == 0) + ",\"character\":\""
+                        + (combatEntry.isEmpty() ? "" : ",\"silverRoot\":{\"schemaVersion\":4,\"playerTurn\":"
+                            + com.megacrit.cardcrawl.actions.GameActionManager.turn
+                            + ",\"decisionInTurn\":" + playedDecisionOrdinal(combat) + ",\"character\":\""
                             + character + "\",\"ascension\":" + ascension + ",\"act\":" + act
-                            + ",\"combatInstance\":\"" + escape(combatEntryHash) + "\",\"playerTurn\":"
-                            + combatTurn(combat) + ",\"encounter\":\""
-                            + entryEncounter(combatEntry) + "\",\"floor\":" + floor
-                            + ",\"hp\":" + hp + ",\"maxHp\":" + maxHp
+                            + ",\"floor\":" + floor + ",\"hp\":" + hp + ",\"maxHp\":" + maxHp
                             + ",\"gold\":" + gold + ",\"potionCapacity\":" +
                             AbstractDungeon.player.potionSlots + ",\"roomClass\":\"" +
                             roomClass(AbstractDungeon.getCurrRoom()) + "\",\"burningElite\":" +
-                            isBurningElite() + ",\"combat\":" + combat + "}")) + "}";
+                            isBurningElite() + ",\"combatInstance\":\"" + escape(combatEntryHash)
+                            + "\",\"encounter\":\"" + escape(entryEncounter(combatEntry))
+                            + "\",\"combat\":" + combat + "}")) + "}";
         }
 
         private static int playedDecisionOrdinal(String combatJson) {
@@ -1364,17 +1675,6 @@ public final class STSModelInspector implements PostInitializeSubscriber,
             while (end < combatJson.length() && Character.isDigit(combatJson.charAt(end))) ++end;
             try { return Integer.parseInt(combatJson.substring(start, end)); }
             catch (Exception error) { return -1; }
-        }
-
-        private static int combatTurn(String combatJson) {
-            String needle = "\"turn\":";
-            int start = combatJson.indexOf(needle);
-            if (start < 0) return 1;
-            start += needle.length();
-            int end = start;
-            while (end < combatJson.length() && Character.isDigit(combatJson.charAt(end))) ++end;
-            try { return Integer.parseInt(combatJson.substring(start, end)); }
-            catch (Exception error) { return 1; }
         }
 
         private static String entryEncounter(String entryJson) {

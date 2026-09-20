@@ -13,6 +13,10 @@ namespace one_combat::advisor {
 struct SilverRootImportResult {
     bool ok = false;
     std::string reason;
+    int playerTurn = -1;
+    int decisionInTurn = -1;
+    // Legacy v2 tests and fixtures still name the in-turn ordinal directly.
+    // v4 responses publish the explicit playerTurn/decisionInTurn pair.
     int decisionOrdinal = -1;
     silver_bridge::BattleStateWire wire;
 };

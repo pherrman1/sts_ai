@@ -210,7 +210,8 @@ void setPlayerPower(silver_bridge::PlayerWire &player, PlayerStatus status, int 
 
 void setMonsterPower(silver_bridge::MonsterWire &monster, sts::MonsterStatus status, int amount,
                      bool justApplied) {
-    const int value = std::max(0, amount);
+    const int value = amount;
+    if (value < 0) return;
     switch (status) {
     case sts::MonsterStatus::ARTIFACT: monster.smallPowers[0] = static_cast<std::int16_t>(value); break;
     case sts::MonsterStatus::BLOCK_RETURN: monster.smallPowers[1] = static_cast<std::int16_t>(value); break;
@@ -246,9 +247,15 @@ void setMonsterPower(silver_bridge::MonsterWire &monster, sts::MonsterStatus sta
     case sts::MonsterStatus::THIEVERY:
     case sts::MonsterStatus::THORNS:
     case sts::MonsterStatus::TIME_WARP: monster.uniquePower0 = value; break;
-    default:
-        if (static_cast<int>(status) < 64) monster.statusBits |= 1ULL << static_cast<int>(status);
-        break;
+    default: break;
+    }
+    // The wire carries both the public amount and the native activation bit.
+    // Keeping only the amount is unsafe: Silver's monster logic gates every
+    // status through hasStatus(), so an otherwise correct Vulnerable/Ritual/
+    // Enrage import would be logically inactive.
+    if (status != sts::MonsterStatus::STRENGTH
+        && (value > 0 || sts::isBooleanPower(status))) {
+        monster.statusBits |= 1ULL << static_cast<int>(status);
     }
     if (justApplied) {
         if (status == sts::MonsterStatus::VULNERABLE) monster.statusBits |= 1ULL << 63;
@@ -287,6 +294,8 @@ SilverRootImportResult importSilverRootLegacy(const json &observation) {
     if (!requiredBool(root, "firstDecision", firstDecision)
         || firstDecision != (decisionOrdinal == 0)) return unsupported("silver_first_decision_flag");
     result.decisionOrdinal = decisionOrdinal;
+    result.playerTurn = 1;
+    result.decisionInTurn = decisionOrdinal;
     if (!requiredInt(root, "act", act) || act != 1) return unsupported("silver_act");
     if (!requiredInt(root, "floor", floor) || floor < 1) return unsupported("silver_floor");
     if (!requiredInt(root, "ascension", ascension) || !requiredInt(root, "hp", hp)
@@ -525,6 +534,8 @@ SilverRootImportResult importSilverRootGeneric(const json &observation,
     int decision = root.value("decisionInTurn", root.value("decisionOrdinal", 0));
     if (decision < 0) return unsupported("silver_decision_ordinal");
     result.decisionOrdinal = decision;
+    result.playerTurn = root.value("playerTurn", combat.value("turn", 1));
+    result.decisionInTurn = decision;
     int act = root.value("act", 1), floor = root.value("floor", 0), ascension = root.value("ascension", 0);
     if (floor < 1 || act < 1 || ascension < 0) return unsupported("silver_root_state");
     wire.act = act; wire.floorNum = floor; wire.ascension = ascension;
@@ -690,9 +701,34 @@ SilverRootImportResult importSilverRootGeneric(const json &observation,
     if (combat.contains("playerPowers")) {
         if (!combat.at("playerPowers").is_array()) return unsupported("silver_unmapped_player_power");
         for (const auto &power : combat.at("playerPowers")) {
-            if (!power.is_object() || !power.contains("id") || !power.at("id").is_string()) return unsupported("silver_unmapped_player_power");
+            if (!power.is_object() || !power.contains("id") || !power.at("id").is_string()
+                || !power.contains("amount") || !power.at("amount").is_number_integer())
+                return unsupported("silver_unmapped_player_power");
             const auto mapped = live_silver::playerStatus(power.at("id").get<std::string>());
             if (!mapped) return unsupported("silver_unmapped_player_power");
+            const auto powerId = power.at("id").get<std::string>();
+            // These fields are not derivable from a generic Java power ID and
+            // amount.  Accept them only when the producer has serialized the
+            // native bookkeeping explicitly.
+            const bool needsCombust = powerId == "Combust";
+            const bool needsEcho = powerId == "Echo Form" || powerId == "EchoFormPower";
+            const bool needsPanache = powerId == "Panache";
+            const bool needsDeva = powerId == "Deva Form" || powerId == "DevaFormPower";
+            const bool needsPellets = powerId == "Orange Pellets" || powerId == "OrangePelletsPower";
+            const bool needsJustApplied = powerId == "Double Damage" || powerId == "DoubleDamagePower"
+                || powerId == "Draw Reduction" || powerId == "DrawReductionPower"
+                || powerId == "Frail" || powerId == "FrailPower"
+                || powerId == "Intangible" || powerId == "IntangiblePlayerPower"
+                || powerId == "Vulnerable" || powerId == "VulnerablePower"
+                || powerId == "Weak" || powerId == "WeakPower";
+            if ((needsCombust && !combat.contains("combustHpLoss"))
+                || (needsEcho && !combat.contains("echoFormCardsDoubled"))
+                || (needsPanache && !combat.contains("panacheCounter"))
+                || (needsDeva && !combat.contains("devaFormEnergyPerTurn"))
+                || (needsPellets && !combat.contains("orangePelletsCardTypesPlayed"))
+                || (needsJustApplied && (!power.contains("justApplied")
+                    || !power.at("justApplied").is_boolean())))
+                return unsupported("silver_unmapped_player_power");
             setPlayerPower(p, *mapped, power.value("amount", 1), power.value("justApplied", false));
         }
     }
@@ -704,14 +740,20 @@ SilverRootImportResult importSilverRootGeneric(const json &observation,
     for (const auto &relic : relics) {
         if (!relic.is_object()) return unsupported("silver_unmapped_relic_state");
         sts::RelicId id; if (!parseEnumId(relic, "id", id)) return unsupported("silver_unmapped_relic_state");
-        if (relic.value("usedUp", false)) continue;
+        if (!relic.contains("usedUp") || !relic.at("usedUp").is_boolean()
+            || !relic.contains("counter") || !relic.at("counter").is_number_integer())
+            return unsupported("silver_unmapped_relic_state");
+        if (id == sts::RelicId::NECRONOMICON
+            && (!relic.contains("usedThisTurn") || !relic.at("usedThisTurn").is_boolean()))
+            return unsupported("silver_unmapped_relic_state");
+        if (relic.at("usedUp").get<bool>()) continue;
         const int rid = static_cast<int>(id);
         if (rid < 64) p.relicBits0 |= 1ULL << rid; else p.relicBits1 |= 1ULL << (rid - 64);
-        const auto counter = static_cast<std::int8_t>(relic.value("counter", relic.value("data", 0)));
+        const auto counter = static_cast<std::int8_t>(relic.at("counter").get<int>());
         const std::array<sts::RelicId, 7> counterRelics = {sts::RelicId::HAPPY_FLOWER, sts::RelicId::INCENSE_BURNER,
             sts::RelicId::INK_BOTTLE, sts::RelicId::INSERTER, sts::RelicId::NUNCHAKU, sts::RelicId::PEN_NIB, sts::RelicId::SUNDIAL};
         for (std::size_t i = 0; i < counterRelics.size(); ++i) if (id == counterRelics[i]) p.relicCounters[i] = counter;
-        if (id == sts::RelicId::NECRONOMICON) p.haveUsedNecronomiconThisTurn = relic.value("usedThisTurn", false);
+        if (id == sts::RelicId::NECRONOMICON) p.haveUsedNecronomiconThisTurn = relic.at("usedThisTurn").get<bool>();
     }
 
     wire.potions.fill(static_cast<std::int16_t>(sts::Potion::EMPTY_POTION_SLOT));
@@ -738,13 +780,27 @@ SilverRootImportResult importSilverRootGeneric(const json &observation,
         auto &m = wire.monsters[i]; m.idx = item.value("idx", static_cast<int>(i)); m.id = static_cast<std::int16_t>(*id);
         m.curHp = item.value("hp", 0); m.maxHp = item.value("maxHp", 0); m.block = item.value("block", 0);
         m.isEscapingB = item.value("escaping", item.value("escaped", false)); m.halfDead = item.value("halfDead", false);
-        m.escapeNext = item.value("escapeNext", false); m.miscInfo = item.value("miscInfo", 0);
+        m.escapeNext = item.value("escapeNext", false);
+        if (!item.contains("miscInfo") || !item.at("miscInfo").is_number_integer())
+            return unsupported("silver_unmapped_monster_state");
+        m.miscInfo = item.at("miscInfo").get<int>();
         m.statusBits = item.value("statusBits", 0ULL); m.strength = item.value("strength", 0);
         m.vulnerable = item.value("vulnerable", 0); m.weak = item.value("weak", 0);
         int nextMove = item.value("nextMove", 0);
+        // Java exposes its history oldest-to-newest as move bytes.  Native
+        // Monster stores current-to-previous MonsterMoveId values.  Translate
+        // every byte explicitly; copying Java bytes as native IDs silently
+        // changes monster behavior whenever the enum layouts differ.
         if (item.contains("moveHistory") && item.at("moveHistory").is_array()) {
-            for (std::size_t j = 0; j < item.at("moveHistory").size() && j < 2; ++j)
-                m.moveHistory[j] = item.at("moveHistory")[j].get<std::int16_t>();
+            const auto &history = item.at("moveHistory");
+            if (history.empty() || history.size() > 2) return unsupported("silver_unmapped_move");
+            for (std::size_t j = 0; j < history.size(); ++j) {
+                if (!history[j].is_number_integer()) return unsupported("silver_unmapped_move");
+                const auto move = live_silver::monsterMove(idText,
+                    history[history.size() - 1 - j].get<int>());
+                if (!move) return unsupported("silver_unmapped_move");
+                m.moveHistory[j] = static_cast<std::int16_t>(*move);
+            }
         } else if (nextMove > 0) {
             const auto move = live_silver::monsterMove(idText, nextMove);
             if (!move) return unsupported("silver_unmapped_move");
@@ -759,7 +815,15 @@ SilverRootImportResult importSilverRootGeneric(const json &observation,
         if (item.contains("powers")) {
             if (!item.at("powers").is_array()) return unsupported("silver_unmapped_monster_power");
             for (const auto &power : item.at("powers")) {
-                if (!power.is_object() || !power.contains("id") || !power.at("id").is_string()) return unsupported("silver_unmapped_monster_power");
+                if (!power.is_object() || !power.contains("id") || !power.at("id").is_string()
+                    || !power.contains("amount") || !power.at("amount").is_number_integer())
+                    return unsupported("silver_unmapped_monster_power");
+                const auto powerId = power.at("id").get<std::string>();
+                if ((powerId == "Vulnerable" || powerId == "VulnerablePower"
+                        || powerId == "Weak" || powerId == "WeakPower"
+                        || powerId == "Ritual")
+                    && (!power.contains("justApplied") || !power.at("justApplied").is_boolean()))
+                    return unsupported("silver_unmapped_monster_power");
                 const auto mapped = live_silver::monsterStatus(power.at("id").get<std::string>());
                 if (!mapped) return unsupported("silver_unmapped_monster_power");
                 setMonsterPower(m, *mapped, power.value("amount", 1), power.value("justApplied", false));

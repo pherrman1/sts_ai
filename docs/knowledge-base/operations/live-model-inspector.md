@@ -39,14 +39,21 @@ The Java frontend is under `mods/sts-model-inspector/`. It uses BaseMod
 post-update/render subscribers and captures detached Ironclad-compatible
 summary fields for card rewards, rest sites, and ordinary player turns. The
 combat producer now emits protocol-v4 Silver roots with physical card UUIDs,
-upgraded/misc/cost/retain/free-play fields, powers with amount and
-`justApplied`, dead monster slots, relics, potion slots, the combat entry
-identity, and a centralized native mapping boundary for runtime IDs. Ordinary
-draw order is sorted before emission; the actual runtime order is retained when
-Frozen Eye is present. Runic Dome move bytes are redacted and the importer
-rejects that root until a complete public hidden-intent tracker is available.
-The installed game API has no public `justApplied` power bit, so that schema
-field is emitted conservatively as `false` at stable user boundaries.
+upgraded/misc/cost/retain/free-play fields, dead monster slots, relics,
+potion slots, the combat entry identity, and a centralized native mapping
+boundary for runtime IDs. Monster move-history bytes are emitted in Java's
+oldest-to-newest order and translated by the native importer through the
+per-monster mapping; they are never copied as native enum values. Ordinary
+draw order is sorted before emission; the actual runtime order is retained
+when Frozen Eye is present. Runic Dome roots are rejected because the public
+producer does not expose enough hidden-intent state. The installed game API
+does not expose a public `justApplied` power bit; sensitive player and monster
+powers therefore require an explicit serialized bit and are rejected when it
+is unavailable rather than receiving a fabricated default. Special bookkeeping
+for Combust, Echo Form, Panache, Deva Form, Orange Pellets, used-up relics,
+and Necronomicon is serialized when its runtime field is accessible; otherwise
+the importer rejects that state. Monster `miscInfo` is similarly serialized
+from known runtime trackers or omitted so the importer fails closed.
 The combat boundary still requires the installed runtime's waiting-for-user
 phase, no current action, empty action/card/monster queues, and an unended turn.
 The combat fingerprint includes the payload, so successive decisions are not
@@ -114,14 +121,18 @@ so a future game UI can discard responses after a reload or newer capture.
 ## Required next work
 
 The Java process owns bounded background I/O and treats the endpoint as
-advisory only. The current producer does not yet serialize every native
-runtime tracker (notably live card-selection screens and all queue/limbo/
-stasis metadata), so those roots must not be treated as fully supported merely
-because the native wire can represent them. CTM and Silver results remain
-separate evaluators, and neither path controls gameplay or establishes
-policy-quality evidence. Any expansion of the producer must add a fixture and
-an explicit public-information contract before promotion.
+advisory only. Common Grid and Hand card-selection screens are now mapped to
+the native selection tasks for Exhaust, Armaments, Dual Wield, Headbutt,
+Gambler's Brew, and Hologram. The mapping is deliberately bounded: an
+unrecognized selection prompt, an unavailable runtime tracker, or an option
+list larger than the native representation is rejected. Queue/limbo/stasis
+metadata and other unsupported runtime trackers remain outside the supported
+boundary. CTM and Silver results remain separate evaluators, and neither path
+controls gameplay or establishes policy-quality evidence. Any expansion of the
+producer must add a native parity fixture and an explicit public-information
+contract before promotion.
 
 Knowledge impact: this page records the protocol/lifecycle boundary, the
-player-visible combat gate, protocol-v4 producer/importer contract, the Runic
-Dome redaction, and the explicit producer coverage boundary.
+player-visible combat gate, protocol-v4 producer/importer contract, explicit
+fail-closed state handling, selection coverage, and the producer coverage
+boundary.

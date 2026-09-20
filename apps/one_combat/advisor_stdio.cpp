@@ -43,7 +43,7 @@ json silverEvaluator(const one_combat::advisor::Request &request,
     const auto entry = request.observation.value("combatEntryHash", std::string());
     const bool matchingSession = session != nullptr && sessionIdentity == request.session
         && combatEntryIdentity == entry;
-    if (imported.decisionOrdinal == 0) {
+    if (imported.playerTurn == 1 && imported.decisionInTurn == 0) {
         session = silver_bridge::makeSilverSearchSession();
         sessionIdentity = request.session;
         combatEntryIdentity = entry;
@@ -111,7 +111,8 @@ json silverEvaluator(const one_combat::advisor::Request &request,
         rankingText += "|" + (ranked[i]->selectionQValid ? std::to_string(ranked[i]->selectionQ) : "");
     }
     evaluator["rankingText"] = rankingText;
-    evaluator["decisionOrdinal"] = imported.decisionOrdinal;
+    evaluator["playerTurn"] = imported.playerTurn;
+    evaluator["decisionInTurn"] = imported.decisionInTurn;
     evaluator["reroot"] = {
         {"exact", decision.diagnostic.exactReroot},
         {"equivalentCopy", decision.diagnostic.equivalentCopyReroot},
