@@ -412,6 +412,42 @@ void assertDynamicParity(const char *name, BattleContext &live, CombatKnowledgeS
 }
 void verifyDynamicTransitionCorpus() {
     {
+        GameContext game(CharacterClass::IRONCLAD, 0xD506u, 0);
+        game.act = 3; game.floorNum = 1;
+        BattleContext live;
+        live.init(game, MonsterEncounter::GIANT_HEAD);
+        CombatKnowledgeState knowledge;
+        knowledge.initializeFromLiveBattle(live);
+        if (!live.monsters.arr[0].hasStatus<MonsterStatus::SLOW>()
+            || live.monsters.arr[0].getStatus<MonsterStatus::SLOW>() != 0)
+            throw std::runtime_error("Giant Head did not expose active Slow(0)");
+        assertDynamicParity("GIANT_HEAD_SLOW_ZERO", live, knowledge, game);
+    }
+    {
+        GameContext game(CharacterClass::IRONCLAD, 0xD507u, 0);
+        game.act = 3; game.floorNum = 1;
+        BattleContext live;
+        live.init(game, MonsterEncounter::TIME_EATER);
+        CombatKnowledgeState knowledge;
+        knowledge.initializeFromLiveBattle(live);
+        if (!live.monsters.arr[0].hasStatus<MonsterStatus::TIME_WARP>()
+            || live.monsters.arr[0].getStatus<MonsterStatus::TIME_WARP>() != 0)
+            throw std::runtime_error("Time Eater did not expose active Time Warp(0)");
+        assertDynamicParity("TIME_EATER_TIME_WARP_ZERO", live, knowledge, game);
+    }
+    {
+        GameContext game(CharacterClass::IRONCLAD, 0xD508u, 0);
+        game.act = 3; game.floorNum = 1;
+        BattleContext live;
+        live.init(game, MonsterEncounter::WRITHING_MASS);
+        CombatKnowledgeState knowledge;
+        knowledge.initializeFromLiveBattle(live);
+        if (!live.monsters.arr[0].hasStatus<MonsterStatus::REACTIVE>()
+            || live.monsters.arr[0].getStatus<MonsterStatus::REACTIVE>() != 0)
+            throw std::runtime_error("Writhing Mass did not expose active Reactive(0)");
+        assertDynamicParity("WRITHING_MASS_REACTIVE_ZERO", live, knowledge, game);
+    }
+    {
         GameContext game(CharacterClass::IRONCLAD, 0xD501u, 0);
         game.act = 1; game.floorNum = 1;
         BattleContext live;
@@ -497,7 +533,7 @@ void verifyDynamicTransitionCorpus() {
             throw std::runtime_error("Awakened One stage-2 transition did not produce public state");
         assertDynamicParity("AWAKENED_ONE_STAGE2", live, knowledge, game);
     }
-    std::cout << "live Silver dynamic transition corpus passed: split/summon/regrow/stasis/phase\n";
+    std::cout << "live Silver dynamic transition corpus passed: split/summon/regrow/stasis/phase/zero-powers\n";
 }
 std::string uuid(const CardWire &c) { return "card-" + std::to_string(c.uniqueId); }
 json cardJson(const CardWire &c) {
@@ -1574,6 +1610,12 @@ int main() {
                 throw std::runtime_error(std::string("negative boolean power was discarded: ")
                     + booleanPowerNames[i] + " reason=" + imported.reason);
         }
+        auto invalidNegativePower = general;
+        invalidNegativePower["silverRoot"]["combat"]["monsters"][0]["powers"] = json::array({
+            json{{"id", "Slow"}, {"amount", -1}}});
+        if (one_combat::advisor::importSilverRoot(invalidNegativePower).reason
+            != "silver_unmapped_monster_power")
+            throw std::runtime_error("negative numeric monster power was silently accepted");
         auto missingMisc = general;
         missingMisc["silverRoot"]["combat"]["monsters"][0].erase("miscInfo");
         if (one_combat::advisor::importSilverRoot(missingMisc).reason

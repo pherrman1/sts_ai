@@ -215,13 +215,13 @@ void setPlayerPower(silver_bridge::PlayerWire &player, PlayerStatus status, int 
         player.justAppliedBits |= 1U << static_cast<int>(status);
 }
 
-void setMonsterPower(silver_bridge::MonsterWire &monster, sts::MonsterStatus status, int amount,
+bool setMonsterPower(silver_bridge::MonsterWire &monster, sts::MonsterStatus status, int amount,
                      bool justApplied) {
     const int value = amount;
     // Java boolean powers are presence states.  Vanilla may expose a
     // negative/sentinel amount for them; presence must still set the native
     // status bit before numeric powers are rejected as invalid.
-    if (value < 0 && !sts::isBooleanPower(status)) return;
+    if (value < 0 && !sts::isBooleanPower(status)) return false;
     switch (status) {
     case sts::MonsterStatus::ARTIFACT: monster.smallPowers[0] = static_cast<std::int16_t>(value); break;
     case sts::MonsterStatus::BLOCK_RETURN: monster.smallPowers[1] = static_cast<std::int16_t>(value); break;
@@ -259,12 +259,11 @@ void setMonsterPower(silver_bridge::MonsterWire &monster, sts::MonsterStatus sta
     case sts::MonsterStatus::TIME_WARP: monster.uniquePower0 = value; break;
     default: break;
     }
-    // The wire carries both the public amount and the native activation bit.
-    // Keeping only the amount is unsafe: Silver's monster logic gates every
-    // status through hasStatus(), so an otherwise correct Vulnerable/Ritual/
-    // Enrage import would be logically inactive.
-    if (status != sts::MonsterStatus::STRENGTH
-        && (value > 0 || sts::isBooleanPower(status))) {
+    // The Java power object establishes presence; its amount is only the
+    // associated scalar. Keeping activation amount-dependent is wrong for
+    // vanilla powers such as Giant Head Slow(0), Time Eater Time Warp(0),
+    // and Writhing Mass Reactive(0).
+    if (status != sts::MonsterStatus::STRENGTH) {
         monster.statusBits |= 1ULL << static_cast<int>(status);
     }
     if (justApplied) {
@@ -272,6 +271,7 @@ void setMonsterPower(silver_bridge::MonsterWire &monster, sts::MonsterStatus sta
         if (status == sts::MonsterStatus::WEAK) monster.statusBits |= 1ULL << 62;
         if (status == sts::MonsterStatus::RITUAL) monster.statusBits |= 1ULL << 61;
     }
+    return true;
 }
 
 template <typename T>
@@ -926,7 +926,9 @@ SilverRootImportResult importSilverRootGeneric(const json &observation,
                     return unsupported("silver_unmapped_monster_power");
                 const auto mapped = live_silver::monsterStatus(power.at("id").get<std::string>());
                 if (!mapped) return unsupported("silver_unmapped_monster_power");
-                setMonsterPower(m, *mapped, power.value("amount", 1), power.value("justApplied", false));
+                if (!setMonsterPower(m, *mapped, power.value("amount", 1),
+                                     power.value("justApplied", false)))
+                    return unsupported("silver_unmapped_monster_power");
             }
         }
         if (m.curHp > 0 && !m.isEscapingB && !m.halfDead && !item.value("dead", false)) ++wire.monstersAlive;
