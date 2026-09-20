@@ -1,6 +1,6 @@
 # Important invariants
 
-Last verified: 2026-08-26 against the current working tree.
+Last verified: 2026-09-20 against the current working tree.
 
 ## Purpose
 
@@ -76,6 +76,18 @@ See
   (`src/sim/search/Action.cpp`; `GameAction.cpp`).
 - `BattleContext::init` must reset transient queues, cards, monsters, player
   state, counters, and outcome before loading an encounter.
+- Ironclad card/relic correctness is covered by the focused native regression
+  `simulator_correctness_pr9_19` (upstream references
+  `gamerpuppy/sts_lightspeed` PRs #9-#19): Iron Wave applies Dexterity/Frail
+  once; relic-pool shuffles use counted RNG draws; Red Mask applies a
+  player-sourced one-turn Weak; Velvet Choker limits ordinary/autoplay queue
+  entries while allowing purge-on-use replays; Unceasing Top resolves queued
+  draws before player control; Meat on the Bone settles before victory healing;
+  Red Skull removes three Strength when healing crosses above half HP; Magic
+  Flower rounds positive healing; Toy Ornithopter heals on ordinary potion use;
+  Buffer intercepts direct positive HP loss before Tungsten Rod; and Neow's
+  Lament skips invalid reserved monster slots. The test records the affected
+  path and old/new observable behavior for each correction.
 - A project-fair combat policy commits only one searched root action before
   observing and searching again.
 - Counterfactual `GameContext` map mutation requires detaching the shared map.
