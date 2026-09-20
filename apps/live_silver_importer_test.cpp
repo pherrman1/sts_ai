@@ -1744,6 +1744,45 @@ int main() {
         if (generalImported.wire.extraRollMoveOnTurn != 0
             || generalImported.wire.skipMonsterTurnBits != 0)
             throw std::runtime_error("explicit stable-boundary group state was not preserved");
+        auto ritualPower = general;
+        ritualPower["silverRoot"]["combat"]["monsters"][0]["powers"] = json::array({
+            json{{"id", "Ritual"}, {"amount", 3}, {"justApplied", false}}});
+        auto ritualImported = one_combat::advisor::importSilverRoot(ritualPower);
+        if (!ritualImported.ok
+            || ritualImported.wire.monsters[0].uniquePower0 != 3
+            || !(ritualImported.wire.monsters[0].statusBits
+                & (1ULL << static_cast<int>(MonsterStatus::RITUAL)))
+            || (ritualImported.wire.monsters[0].statusBits & (1ULL << 61)))
+            throw std::runtime_error("monster Ritual false justApplied parity failed");
+        ritualPower["silverRoot"]["combat"]["monsters"][0]["powers"][0]["justApplied"] = true;
+        ritualImported = one_combat::advisor::importSilverRoot(ritualPower);
+        if (!ritualImported.ok
+            || !(ritualImported.wire.monsters[0].statusBits & (1ULL << 61)))
+            throw std::runtime_error("monster Ritual true justApplied parity failed");
+        auto weakenedPower = general;
+        weakenedPower["silverRoot"]["combat"]["playerPowers"] = json::array({
+            json{{"id", "Weakened"}, {"amount", 1}, {"justApplied", true}}});
+        auto weakenedImported = one_combat::advisor::importSilverRoot(weakenedPower);
+        bool weakenedMapped = false;
+        for (const auto &[status, amount] : weakenedImported.wire.player.statusMap)
+            weakenedMapped |= status == static_cast<std::int16_t>(PlayerStatus::WEAK) && amount == 1;
+        if (!weakenedImported.ok || !weakenedMapped
+            || !(weakenedImported.wire.player.justAppliedBits
+                & (1U << static_cast<int>(PlayerStatus::WEAK))))
+            throw std::runtime_error("player Weakened alias/justApplied parity failed");
+        auto blueSlaver = general;
+        blueSlaver["silverRoot"]["encounter"] = "BLUE_SLAVER";
+        auto &blueSlaverMonster = blueSlaver["silverRoot"]["combat"]["monsters"][0];
+        blueSlaverMonster["id"] = "SlaverBlue";
+        blueSlaverMonster["nextMove"] = javaMoveByte("SlaverBlue", MonsterMoveId::BLUE_SLAVER_STAB);
+        blueSlaverMonster["moveHistory"] = json::array({blueSlaverMonster["nextMove"]});
+        blueSlaverMonster["powers"] = json::array();
+        blueSlaverMonster["miscInfo"] = 0;
+        const auto blueSlaverImported = one_combat::advisor::importSilverRoot(blueSlaver);
+        if (!blueSlaverImported.ok || blueSlaverImported.wire.monsters[0].miscInfo != 0)
+            throw std::runtime_error("Blue Slaver zero miscInfo parity failed: reason="
+                + blueSlaverImported.reason + " move="
+                + std::to_string(blueSlaverMonster["nextMove"].get<int>()));
         auto burningGeneric = general;
         burningGeneric["silverRoot"]["burningElite"] = true;
         const auto burningImported = one_combat::advisor::importSilverRoot(burningGeneric);

@@ -104,7 +104,7 @@ const std::map<std::string, PlayerStatus> kPlayerStatuses = {
     {"Dexterity", PlayerStatus::DEXTERITY}, {"DexterityPower", PlayerStatus::DEXTERITY},
     {"Strength", PlayerStatus::STRENGTH}, {"StrengthPower", PlayerStatus::STRENGTH},
     {"Focus", PlayerStatus::FOCUS}, {"FocusPower", PlayerStatus::FOCUS},
-    {"Weak", PlayerStatus::WEAK}, {"WeakPower", PlayerStatus::WEAK},
+    {"Weak", PlayerStatus::WEAK}, {"WeakPower", PlayerStatus::WEAK}, {"Weakened", PlayerStatus::WEAK},
     {"Frail", PlayerStatus::FRAIL}, {"FrailPower", PlayerStatus::FRAIL},
     {"Vulnerable", PlayerStatus::VULNERABLE}, {"VulnerablePower", PlayerStatus::VULNERABLE},
     {"No Draw", PlayerStatus::NO_DRAW},

@@ -792,7 +792,7 @@ SilverRootImportResult importSilverRootGeneric(const json &observation,
                 || powerId == "Frail" || powerId == "FrailPower"
                 || powerId == "Intangible" || powerId == "IntangiblePlayerPower"
                 || powerId == "Vulnerable" || powerId == "VulnerablePower"
-                || powerId == "Weak" || powerId == "WeakPower";
+                || powerId == "Weak" || powerId == "WeakPower" || powerId == "Weakened";
             if ((needsCombust && !combat.contains("combustHpLoss"))
                 || (needsEcho && !combat.contains("echoFormCardsDoubled"))
                 || (needsPanache && !combat.contains("panacheCounter"))

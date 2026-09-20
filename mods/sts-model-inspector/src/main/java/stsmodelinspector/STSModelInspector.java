@@ -1590,6 +1590,17 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         return null;
     }
 
+    private static Boolean monsterPowerJustApplied(AbstractPower power) {
+        Boolean justApplied = readBooleanField(power, "justApplied");
+        if (justApplied != null) return justApplied;
+        // RitualPower uses its own turn-local name for the same public
+        // contract represented natively by MonsterStatus::RITUAL's
+        // just-applied bit.
+        if ("Ritual".equals(power.ID) || "RitualPower".equals(power.ID))
+            return readBooleanField(power, "skipFirst");
+        return null;
+    }
+
     private static String readStringField(Object object, String... names) {
         if (object == null) return "";
         Class<?> type = object.getClass();
@@ -1679,6 +1690,7 @@ public final class STSModelInspector implements PostInitializeSubscriber,
             return null;
         }
         if ("BookOfStabbing".equals(id)) return readIntField(monster, "stabCount");
+        if ("SlaverBlue".equals(id)) return 0;
         if ("SlaverRed".equals(id)) {
             Boolean used = readBooleanField(monster, "usedEntangle");
             return used == null ? null : (used ? 1 : 0);
@@ -2025,7 +2037,7 @@ public final class STSModelInspector implements PostInitializeSubscriber,
                     firstMonsterPower = false;
                     out.append("{\"id\":\"").append(escapeJson(power.ID))
                             .append("\",\"amount\":").append(power.amount);
-                    Boolean justApplied = readBooleanField(power, "justApplied");
+                    Boolean justApplied = monsterPowerJustApplied(power);
                     if (justApplied != null) out.append(",\"justApplied\":").append(justApplied);
                     out.append('}');
                 }
