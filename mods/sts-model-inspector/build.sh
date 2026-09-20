@@ -22,7 +22,7 @@ fi
 rm -rf "$out/classes"
 mkdir -p "$out/classes"
 mapfile -t sources < <(find "$root/src/main/java" -name '*.java' -print)
-"$javac_bin" -source 8 -target 8 -encoding UTF-8 \
+"$javac_bin" -g -source 8 -target 8 -encoding UTF-8 \
   -cp "$mod_the_spire:$base_mod:$game_jar" -d "$out/classes" "${sources[@]}"
 cp "$root/ModTheSpire.json" "$out/classes/"
 (cd "$out/classes" && jar cf "$out/sts-model-inspector.jar" .)

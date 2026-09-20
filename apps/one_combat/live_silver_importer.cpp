@@ -215,10 +215,17 @@ void setPlayerPower(silver_bridge::PlayerWire &player, PlayerStatus status, int 
         player.justAppliedBits |= 1U << static_cast<int>(status);
 }
 
-void setMonsterPower(silver_bridge::MonsterWire &monster, sts::MonsterStatus status, int amount,
+bool setMonsterPower(silver_bridge::MonsterWire &monster, sts::MonsterStatus status, int amount,
                      bool justApplied) {
     const int value = amount;
-    if (value < 0) return;
+    // Java boolean powers are presence states.  Vanilla may expose a
+    // negative/sentinel amount for them; presence must still set the native
+    // status bit before numeric powers are rejected as invalid.
+    // Strength is the one signed numeric monster power: Disarm legitimately
+    // exposes negative values.  Other negative numeric powers are not a
+    // representable Java/native state and must fail closed.
+    if (value < 0 && status != sts::MonsterStatus::STRENGTH
+        && !sts::isBooleanPower(status)) return false;
     switch (status) {
     case sts::MonsterStatus::ARTIFACT: monster.smallPowers[0] = static_cast<std::int16_t>(value); break;
     case sts::MonsterStatus::BLOCK_RETURN: monster.smallPowers[1] = static_cast<std::int16_t>(value); break;
@@ -256,12 +263,11 @@ void setMonsterPower(silver_bridge::MonsterWire &monster, sts::MonsterStatus sta
     case sts::MonsterStatus::TIME_WARP: monster.uniquePower0 = value; break;
     default: break;
     }
-    // The wire carries both the public amount and the native activation bit.
-    // Keeping only the amount is unsafe: Silver's monster logic gates every
-    // status through hasStatus(), so an otherwise correct Vulnerable/Ritual/
-    // Enrage import would be logically inactive.
-    if (status != sts::MonsterStatus::STRENGTH
-        && (value > 0 || sts::isBooleanPower(status))) {
+    // The Java power object establishes presence; its amount is only the
+    // associated scalar. Keeping activation amount-dependent is wrong for
+    // vanilla powers such as Giant Head Slow(0), Time Eater Time Warp(0),
+    // and Writhing Mass Reactive(0).
+    if (status != sts::MonsterStatus::STRENGTH) {
         monster.statusBits |= 1ULL << static_cast<int>(status);
     }
     if (justApplied) {
@@ -269,6 +275,7 @@ void setMonsterPower(silver_bridge::MonsterWire &monster, sts::MonsterStatus sta
         if (status == sts::MonsterStatus::WEAK) monster.statusBits |= 1ULL << 62;
         if (status == sts::MonsterStatus::RITUAL) monster.statusBits |= 1ULL << 61;
     }
+    return true;
 }
 
 template <typename T>
@@ -560,6 +567,17 @@ SilverRootImportResult importSilverRootGeneric(const json &observation,
     wire.skipMonsterTurn = combat.value("skipMonsterTurn", false);
     wire.miscBits = static_cast<std::uint32_t>(combat.value("miscBits", 0));
     wire.outcome = combat.value("outcome", 0);
+    const auto parseGroupBits = [&](const char *name, std::uint8_t &out) {
+        if (!combat.contains(name)) return true;
+        if (!combat.at(name).is_number_integer()) return false;
+        const int value = combat.at(name).get<int>();
+        if (value < 0 || value > 31) return false;
+        out = static_cast<std::uint8_t>(value);
+        return true;
+    };
+    if (!parseGroupBits("extraRollMoveOnTurn", wire.extraRollMoveOnTurn)
+        || !parseGroupBits("skipMonsterTurnBits", wire.skipMonsterTurnBits))
+        return unsupported("silver_unmapped_group_state");
 
     bool runicDome = combat.value("runicDome", false);
     if (runicDome) return unsupported("silver_hidden_information_required");
@@ -579,6 +597,7 @@ SilverRootImportResult importSilverRootGeneric(const json &observation,
 
     std::vector<CardRecord> allCards;
     std::vector<CardRecord> hand, limbo, stasis;
+    std::vector<int> stasisSlots;
     GenericPile draw, discard, exhaust;
     const auto parseVector = [&](const char *name, std::vector<CardRecord> &out) {
         const auto it = combat.find(name);
@@ -594,6 +613,30 @@ SilverRootImportResult importSilverRootGeneric(const json &observation,
         || !parseGenericPile(combat.value("discard", json::array()), discard)
         || !parseGenericPile(combat.value("exhaust", json::array()), exhaust))
         return unsupported("silver_unknown_card");
+    if (stasis.size() > wire.stasisCards.size()) return unsupported("silver_unmapped_stasis");
+    if (!stasis.empty()) {
+        std::array<CardRecord, 2> orderedStasis;
+        std::array<bool, 2> seenStasis {};
+        const auto &stasisJson = combat.at("stasis");
+        for (std::size_t i = 0; i < stasis.size(); ++i) {
+            if (!stasisJson[i].is_object() || !stasisJson[i].contains("slot")
+                || !stasisJson[i].at("slot").is_number_integer())
+                return unsupported("silver_unmapped_stasis");
+            const int slot = stasisJson[i].at("slot").get<int>();
+            if (slot < 0 || slot >= static_cast<int>(orderedStasis.size()) || seenStasis[slot])
+                return unsupported("silver_unmapped_stasis");
+            seenStasis[slot] = true;
+            orderedStasis[slot] = std::move(stasis[i]);
+        }
+        stasis.clear();
+        for (std::size_t slot = 0; slot < orderedStasis.size(); ++slot) {
+            if (!seenStasis[slot]) continue;
+            stasis.push_back(std::move(orderedStasis[slot]));
+            stasisSlots.push_back(static_cast<int>(slot));
+        }
+    } else if (!combat.at("stasis").empty()) {
+        return unsupported("silver_unmapped_stasis");
+    }
     if (!frozenEye && (draw.fullOrderObserved || combat.value("drawOrderVisible", false)))
         return unsupported("silver_hidden_information_required");
     if (frozenEye && draw.fullOrderObserved
@@ -641,7 +684,9 @@ SilverRootImportResult importSilverRootGeneric(const json &observation,
     };
     wire.hand = indexCards(hand); wire.limbo = indexCards(limbo);
     wire.stasisCards.fill(silver_bridge::CardWire{});
-    for (std::size_t i = 0; i < stasis.size() && i < wire.stasisCards.size(); ++i) wire.stasisCards[i] = indexCards(stasis)[i];
+    const auto indexedStasis = indexCards(stasis);
+    for (std::size_t i = 0; i < indexedStasis.size() && i < stasisSlots.size(); ++i)
+        wire.stasisCards[stasisSlots[i]] = indexedStasis[i];
     wire.drawPile.valid = wire.discardPile.valid = wire.exhaustPile.valid = true;
     wire.drawPile.fullOrderObserved = wire.discardPile.fullOrderObserved = wire.exhaustPile.fullOrderObserved = false;
     wire.drawPile.knownBottom = indexCards(draw.bottom); wire.drawPile.unknown = indexCards(draw.unknown);
@@ -815,18 +860,34 @@ SilverRootImportResult importSilverRootGeneric(const json &observation,
 
     const auto monsters = combat.value("monsters", json::array());
     if (!monsters.is_array() || monsters.empty() || monsters.size() > wire.monsters.size()) return unsupported("silver_unknown_monster");
-    wire.monsterCount = static_cast<int>(monsters.size()); wire.monstersAlive = 0;
+    wire.monsterCount = 0; wire.monstersAlive = 0;
+    std::array<bool, 5> seenMonsterSlots {};
     for (std::size_t i = 0; i < monsters.size(); ++i) {
         const auto &item = monsters[i]; if (!item.is_object()) return unsupported("silver_monster_state");
         const auto idText = item.value("id", std::string()); const auto id = live_silver::monsterId(idText);
         if (!id) return unsupported("silver_unknown_monster");
-        auto &m = wire.monsters[i]; m.idx = item.value("idx", static_cast<int>(i)); m.id = static_cast<std::int16_t>(*id);
+        const int slot = item.value("slot", item.value("idx", static_cast<int>(i)));
+        const int idx = item.value("idx", slot);
+        if (slot < 0 || slot >= static_cast<int>(wire.monsters.size()) || seenMonsterSlots[slot]
+            || idx != slot)
+            return unsupported("silver_monster_slot");
+        seenMonsterSlots[slot] = true;
+        wire.monsterCount = std::max(wire.monsterCount, slot + 1);
+        auto &m = wire.monsters[slot]; m.idx = idx; m.id = static_cast<std::int16_t>(*id);
         m.curHp = item.value("hp", 0); m.maxHp = item.value("maxHp", 0); m.block = item.value("block", 0);
         m.isEscapingB = item.value("escaping", item.value("escaped", false)); m.halfDead = item.value("halfDead", false);
         m.escapeNext = item.value("escapeNext", false);
         if (!item.contains("miscInfo") || !item.at("miscInfo").is_number_integer())
             return unsupported("silver_unmapped_monster_state");
         m.miscInfo = item.at("miscInfo").get<int>();
+        if (item.contains("uniquePower0") && !item.at("uniquePower0").is_number_integer())
+            return unsupported("silver_unmapped_monster_state");
+        if (item.contains("uniquePower1") && !item.at("uniquePower1").is_number_integer())
+            return unsupported("silver_unmapped_monster_state");
+        m.uniquePower0 = item.value("uniquePower0", 0);
+        m.uniquePower1 = static_cast<std::int16_t>(item.value("uniquePower1", 0));
+        if (idText == "Hexaghost" && !item.contains("uniquePower0"))
+            return unsupported("silver_unmapped_monster_state");
         m.statusBits = item.value("statusBits", 0ULL); m.strength = item.value("strength", 0);
         m.vulnerable = item.value("vulnerable", 0); m.weak = item.value("weak", 0);
         int nextMove = item.value("nextMove", 0);
@@ -844,12 +905,12 @@ SilverRootImportResult importSilverRootGeneric(const json &observation,
                 if (!move) return unsupported("silver_unmapped_move");
                 m.moveHistory[j] = static_cast<std::int16_t>(*move);
             }
-        } else if (nextMove > 0) {
+        } else if (nextMove >= 0 && item.contains("nextMove")) {
             const auto move = live_silver::monsterMove(idText, nextMove);
             if (!move) return unsupported("silver_unmapped_move");
             m.moveHistory[0] = static_cast<std::int16_t>(*move);
             const int previous = item.value("previousMove", 0);
-            if (previous > 0) {
+            if (item.contains("previousMove")) {
                 const auto oldMove = live_silver::monsterMove(idText, previous);
                 if (!oldMove) return unsupported("silver_unmapped_move");
                 m.moveHistory[1] = static_cast<std::int16_t>(*oldMove);
@@ -869,13 +930,33 @@ SilverRootImportResult importSilverRootGeneric(const json &observation,
                     return unsupported("silver_unmapped_monster_power");
                 const auto mapped = live_silver::monsterStatus(power.at("id").get<std::string>());
                 if (!mapped) return unsupported("silver_unmapped_monster_power");
-                setMonsterPower(m, *mapped, power.value("amount", 1), power.value("justApplied", false));
+                if (!setMonsterPower(m, *mapped, power.value("amount", 1),
+                                     power.value("justApplied", false)))
+                    return unsupported("silver_unmapped_monster_power");
             }
         }
-        if (m.curHp > 0 && !m.isEscapingB && !item.value("dead", false)) ++wire.monstersAlive;
+        if (m.curHp > 0 && !m.isEscapingB && !m.halfDead && !item.value("dead", false)) ++wire.monstersAlive;
+    }
+    if (combat.contains("monsterCount")) {
+        if (!combat.at("monsterCount").is_number_integer())
+            return unsupported("silver_monster_slot");
+        const int declaredCount = combat.at("monsterCount").get<int>();
+        if (declaredCount < wire.monsterCount
+            || declaredCount > static_cast<int>(wire.monsters.size()))
+            return unsupported("silver_monster_slot");
+        // Native encounters reserve physical positions for future summons
+        // (Automaton/Collector/Reptomancer). Preserve that extent even when
+        // the corresponding Java objects do not exist yet.
+        wire.monsterCount = declaredCount;
+    }
+    if (combat.contains("monstersAlive")) {
+        if (!combat.at("monstersAlive").is_number_integer()
+            || combat.at("monstersAlive").get<int>() != wire.monstersAlive)
+            return unsupported("silver_monster_state");
     }
     const std::string encounterText = combat.value("encounter", root.value("encounter", std::string()));
     if (!encounterText.empty()) {
+        if (encounterText == "FOUR_BYRDS") return unsupported("silver_unsupported_four_byrds");
         const auto encounter = live_silver::encounterId(encounterText);
         if (!encounter) return unsupported("silver_unmapped_encounter");
         wire.encounter = static_cast<int>(*encounter);
@@ -916,9 +997,16 @@ SilverRootImportResult importSilverRootGeneric(const json &observation,
 
     wire.curCardQueueItem.card.uniqueId = -1;
     const auto queueIt = combat.find("curCardQueueItem");
+    if (decision > 0 && (queueIt == combat.end() || !queueIt->is_object()
+        || !queueIt->contains("card") || queueIt->at("card").is_null()))
+        return unsupported("silver_card_queue_item");
     if (queueIt != combat.end() && queueIt->is_object()) {
         CardRecord queueCard;
-        if (queueIt->contains("card") && parseGenericCard(queueIt->at("card"), queueCard)) {
+        if (queueIt->contains("card") && queueIt->at("card").is_null()) {
+            // Vanilla end-turn autoplay items have no card object.  The
+            // remaining public queue flags still belong in the retained
+            // native CardQueueItem.
+        } else if (queueIt->contains("card") && parseGenericCard(queueIt->at("card"), queueCard)) {
             auto id = context.cardIds.find(queueCard.uuid);
             if (id == context.cardIds.end()) id = context.cardIds.emplace(queueCard.uuid, static_cast<std::int16_t>(context.nextUniqueCardId++)).first;
             queueCard.wire.uniqueId = id->second; wire.curCardQueueItem.card = queueCard.wire;
