@@ -86,7 +86,16 @@ first actionable decision. A stable-boundary loss clears the displayed
 observation and fences late responses from the prior decision. Advisor writes
 use one bounded latest-observation slot; intermediate captures are replaceable
 rather than queued without limit. It launches the advisor with a direct
-`ProcessBuilder` call. The F8 panel remains diagnostic and read-only. Workshop
+`ProcessBuilder` call. The F8 panel remains diagnostic and read-only. Its top
+edge sits 170 scaled pixels below the screen top, clearing the relic row.
+The panels omit floor/HP text already shown in the game HUD.
+OOC decisions use the same dark/cyan styling as Silver: a ranked Q list (up to
+six choices), an amber border on the selected action, and score badges under
+visible reward cards. Labels and badges bind to current structured choice
+occurrences, not card names. Only identity-matched `live_ooc_decision_v1`
+responses display scores; waiting, unsupported and error states show no
+recommendation. The overlay is presentation-only and does not change policy
+or driver decisions. Workshop
 and game/dependency JARs remain outside Git. The native v4 importer is
 fail-closed for unknown mappings, resolving snapshots, unsupported selection
 tasks or option capacities, and native mechanics absent from the pinned

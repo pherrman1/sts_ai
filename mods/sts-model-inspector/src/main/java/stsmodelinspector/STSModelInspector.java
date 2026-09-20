@@ -149,6 +149,7 @@ public final class STSModelInspector implements PostInitializeSubscriber,
     private volatile double ctmDeath = 0.0;
     private volatile int ctmHistogramMin = 1;
     private volatile double[] ctmHistogram = new double[0];
+    private volatile OocOverlay oocOverlay;
     private volatile boolean panelVisible = true;
     private volatile String combatEntry = "";
     private volatile String combatEntryHash = "";
@@ -295,9 +296,12 @@ public final class STSModelInspector implements PostInitializeSubscriber,
     private void renderAdvisorPanel(SpriteBatch sb) {
         float scale = Settings.scale;
         float x = 24.0f * scale;
-        float top = Settings.HEIGHT - 78.0f * scale;
-        float width = 500.0f * scale;
-        float height = "combat".equals(newest.boundary) ? 252.0f * scale : 188.0f * scale;
+        float top = Settings.HEIGHT - 170.0f * scale;
+        boolean combat = "combat".equals(newest.boundary);
+        OocOverlay overlay = currentOocOverlay();
+        float width = (combat ? 500.0f : 420.0f) * scale;
+        int rows = overlay == null ? 0 : Math.min(6, overlay.choices.size());
+        float height = (combat ? 252.0f : rows == 0 ? 220.0f : 130.0f + 44.0f * rows) * scale;
         float bottom = top - height;
 
         // Use the game's existing white texture for the glass panels so the mod
@@ -312,9 +316,9 @@ public final class STSModelInspector implements PostInitializeSubscriber,
                 width - 4.0f * scale, 2.0f * scale, CYAN_DIM);
 
         renderAdvisorIcon(sb, x + 16.0f * scale, top - 18.0f * scale, scale);
-        renderHeaderText(sb, "STS Model Advisor", x + 70.0f * scale,
+        renderHeaderText(sb, combat ? "STS Model Advisor" : "OOC Advisor", x + 70.0f * scale,
                 top - 14.0f * scale, Color.WHITE, 0.82f);
-        renderStatusPill(sb, x + 336.0f * scale, top - 12.0f * scale, scale);
+        renderStatusPill(sb, x + width - 164.0f * scale, top - 12.0f * scale, scale);
         renderGearIcon(sb, x + width - 31.0f * scale, top - 27.0f * scale, scale);
 
         if ("combat".equals(newest.boundary)) {
@@ -354,9 +358,6 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         renderHistogram(sb, rightX + 12.0f * scale, cardBottom + 14.0f * scale,
                 rightWidth - 24.0f * scale, cardHeight - 38.0f * scale, scale);
 
-        String footer = "Floor " + newest.floor + "  ·  HP " + newest.hp + "/" + newest.maxHp;
-        renderSmallText(sb, footer, x + 16.0f * scale, bottom + 22.0f * scale,
-                MUTED, 0.84f);
         String silver = silverSummary();
         renderSmallText(sb, silver, x + 16.0f * scale, bottom + 48.0f * scale,
                 "OK".equals(silverStatus) ? CYAN : WARNING, 0.78f);
@@ -374,23 +375,83 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         return "Silver  ·  " + silverStatus.toLowerCase(Locale.ROOT);
     }
 
+    private OocOverlay currentOocOverlay() {
+        OocOverlay view = oocOverlay;
+        Snapshot snapshot = newest;
+        return snapshot != null && view != null && responseReady()
+                && view.matches(snapshot.session, snapshot.sequence, snapshot.hash) ? view : null;
+    }
+
     private void renderNonCombatPanel(SpriteBatch sb, float x, float top, float width,
                                       float bottom, float scale) {
-        float cardX = x + 14.0f * scale;
-        float cardBottom = bottom + 35.0f * scale;
-        float cardHeight = 73.0f * scale;
-        drawCard(sb, cardX, cardBottom, width - 28.0f * scale, cardHeight, scale);
-        String state = newest.boundary.replace('_', ' ');
-        FontHelper.renderFontLeftTopAligned(sb, FontHelper.tipHeaderFont,
-                capitalize(state), cardX + 16.0f * scale,
-                cardBottom + cardHeight - 14.0f * scale, Color.WHITE);
-        renderSmallText(sb, "Floor " + newest.floor + "  ·  HP " + newest.hp + "/" + newest.maxHp,
-                cardX + 16.0f * scale, cardBottom + 28.0f * scale, MUTED, 0.88f);
-        renderSmallText(sb, responseReady() ? "Advisor ready" : "Waiting for advisor",
-                cardX + 205.0f * scale, cardBottom + 28.0f * scale,
-                responseReady() ? CYAN : WARNING, 0.88f);
+        OocOverlay view = currentOocOverlay();
+        String subtitle = view == null ? "Waiting for current choices" :
+                ("v4_q".equals(view.policy) ? "V4" : view.policy.toUpperCase(Locale.ROOT))
+                + "  ·  " + capitalize(view.screen.replace('_', ' '));
+        renderSmallText(sb, subtitle, x + 16 * scale, top - 69 * scale, MUTED, .82f);
+        if (view != null && "OK".equals(view.status) && !view.choices.isEmpty()) {
+            for (int rank = 0; rank < view.choices.size() && rank < 6; ++rank) {
+                OocOverlay.Choice choice = view.choices.get(rank);
+                float rowBottom = top - (122 + 44 * rank) * scale;
+                drawCard(sb, x + 14 * scale, rowBottom, width - 28 * scale, 38 * scale, scale);
+                if (choice.selected) drawBorder(sb, x + 14 * scale, rowBottom,
+                        width - 28 * scale, 38 * scale, WARNING, 2 * scale);
+                renderFittedText(sb, (choice.selected ? "▶ " : "") + "#" + (rank + 1) + "  " + choice.label,
+                        x + 23 * scale, rowBottom + 26 * scale, width - 150 * scale,
+                        choice.selected ? CYAN : Color.WHITE, .78f);
+                renderSmallText(sb, String.format(Locale.ROOT, "Q %.3f", choice.q),
+                        x + width - 104 * scale, rowBottom + 26 * scale, MUTED, .72f);
+            }
+            if (view.choices.size() > 6) renderSmallText(sb, "+ " + (view.choices.size() - 6) + " more choices",
+                    x + 16 * scale, bottom + 43 * scale, MUTED, .72f);
+            renderOocCardBadges(sb, view, scale);
+        } else {
+            renderSmallText(sb, view == null ? (responseReady() ? "Advisor unavailable" : "Waiting for advisor") :
+                    "UNSUPPORTED".equals(view.status) ? "No supported recommendation" : "Advisor unavailable",
+                    x + 18 * scale, top - 105 * scale, WARNING, .86f);
+            String reason = view == null ? "Scores appear when the current response is ready." : view.reason.replace('_', ' ');
+            renderFittedText(sb, reason, x + 18 * scale, top - 138 * scale, width - 36 * scale, MUTED, .72f);
+        }
         renderSmallText(sb, Keyboard.getKeyName(loadToggleKey()) + " hide",
-                x + width - 78.0f * scale, bottom + 18.0f * scale, MUTED, 0.78f);
+                x + width - 78 * scale, bottom + 22 * scale, MUTED, .78f);
+    }
+
+    private void renderOocCardBadges(SpriteBatch sb, OocOverlay view, float scale) {
+        if (AbstractDungeon.screen != AbstractDungeon.CurrentScreen.CARD_REWARD
+                || AbstractDungeon.cardRewardScreen == null) return;
+        List<AbstractCard> cards = AbstractDungeon.cardRewardScreen.rewardGroup;
+        if (cards == null) return;
+        for (int rank = 0; rank < view.choices.size(); ++rank) {
+            OocOverlay.Choice choice = view.choices.get(rank);
+            if (!"choose".equals(choice.kind) || choice.index < 1 || choice.index > cards.size()) continue;
+            AbstractCard card = cards.get(choice.index - 1);
+            float width = 166 * scale;
+            float x = Math.max(0, Math.min(Settings.WIDTH - width, card.current_x - width / 2));
+            float bottom = Math.max(95 * scale, card.current_y - AbstractCard.IMG_HEIGHT * card.drawScale / 2 - 48 * scale);
+            drawRect(sb, x, bottom, width, 34 * scale, PANEL_INNER);
+            drawBorder(sb, x, bottom, width, 34 * scale, choice.selected ? WARNING : CARD_BORDER, 2 * scale);
+            renderSmallText(sb, String.format(Locale.ROOT, "#%d  ·  Q %.3f", rank + 1, choice.q),
+                    x + 10 * scale, bottom + 24 * scale, choice.selected ? CYAN : Color.WHITE, .76f);
+        }
+    }
+
+    private void renderFittedText(SpriteBatch sb, String text, float x, float top,
+                                  float maxWidth, Color color, float factor) {
+        float oldX = FontHelper.tipBodyFont.getData().scaleX;
+        float oldY = FontHelper.tipBodyFont.getData().scaleY;
+        FontHelper.tipBodyFont.getData().setScale(oldX * factor, oldY * factor);
+        com.badlogic.gdx.graphics.g2d.GlyphLayout layout = new com.badlogic.gdx.graphics.g2d.GlyphLayout();
+        layout.setText(FontHelper.tipBodyFont, text);
+        if (layout.width > maxWidth) {
+            String shortened = text;
+            do {
+                shortened = shortened.substring(0, Math.max(0, shortened.length() - 1));
+                layout.setText(FontHelper.tipBodyFont, shortened + "…");
+            } while (!shortened.isEmpty() && layout.width > maxWidth);
+            text = shortened + "…";
+        }
+        FontHelper.renderFontLeftTopAligned(sb, FontHelper.tipBodyFont, text, x, top, color);
+        FontHelper.tipBodyFont.getData().setScale(oldX, oldY);
     }
 
     private void renderSilverActionBadges(SpriteBatch sb, float scale) {
@@ -2073,6 +2134,10 @@ public final class STSModelInspector implements PostInitializeSubscriber,
                                     ctmHistogramMin = (int) numberField(line, "winningHpHistogramMin");
                                     ctmHistogram = numberArrayField(line, "winningHpHistogram");
                                 }
+                            }
+                            if (!"combat".equals(current.boundary)) {
+                                try { oocOverlay = OocOverlay.parse(line, current.observationJson); }
+                                catch (RuntimeException invalidDisplay) { oocOverlay = null; }
                             }
                             latestPublisher.publishResponse(current);
                         }
