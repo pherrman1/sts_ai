@@ -1,6 +1,6 @@
 # Out-of-combat policy
 
-Last verified: 2026-09-20 for semantic MCTS ownership and source-prior projection; 2026-09-15 for qualified V2 combat support; 2026-09-14 for opt-in MCTS controls and continuation-limit accounting; 2026-09-10 against the current working tree (semantic OOC
+Last verified: 2026-09-20 for semantic MCTS, source-prior projection and sampled noncombat outcomes; 2026-09-15 for qualified V2 combat support; 2026-09-14 for opt-in MCTS controls and continuation-limit accounting; 2026-09-10 against the current working tree (semantic OOC
 decision coverage and reward continuation).
 Previously verified 2026-08-09 (key collection
 gated behind STS_COLLECT_KEYS=1, default off; BEST banner includes keys=collect/skip).
@@ -123,16 +123,14 @@ leaf continuation and ordinary live fallback. Each loop rebuilds after state or
 path changes; no cache survives the loop or model reload. Candidate ordering,
 Q margins/ties, fallback dispatch and RNG consumption are unchanged. Legacy
 single-action inference entry points remain available.
-Subsequent queries for the same state reuse cached logits/priors. Edge-local storage holds deterministic
-successor IDs and prepared combat objects. A prepared native combat transition
-computes support, survival probability, max-HP probabilities, and HP/potion
-encodings once for its fixed precombat input. Each draw still computes the
-conditional heads and consumes the original survival → maxHP → signedHP → potion
-→ relic draw sequence. Preparation consumes no RNG. Objects die with the search,
-retain immutable persistent pre-state, and borrow their owning sampler; there is
-no mutable process-wide cache. The uncached native sampler remains a parity
-reference. Leaf-policy continuations retain their original uncached sampling.
-Map ownership and `GameContext` detachment semantics remain unchanged.
+Subsequent queries for the same immutable state reuse cached logits/priors.
+A prepared native combat transition computes support and encodings for one
+fixed precombat input; each draw retains the native conditional heads and RNG
+sequence. Live sampled noncombat successors prepare their own combat input:
+encounter, persistent state and RNG can differ between samples of one edge.
+Preparations never cross these sampled successors. Exact copied-state offline
+fixtures retain the original edge cache for parity checks. No mutable
+process-wide cache exists; maps remain detached from the live run.
 
 The adapter owns complete semantic sibling sets from
 `enumerateOocSemanticPrimitiveBindings` on rewards, shop, campfire, events,
@@ -285,19 +283,43 @@ chained supported battles; the stop-after-act boss is an exact win horizon.
 Live MCTS requires real ordinary Silver at exactly10,000 simulations, allocated
 reuse and no adaptive escalation; per-room budget changes fail. The corpus teacher
 was `silver-ordinary-fair-exact10k-combat-transition-runtime16-f0bbd77`; this aligns
-actual policy configuration/budget, not teacher/model accuracy. Native copied RNG
-still governs noncombat transitions. Fail-closed root fallback may reduce MCTS
+actual policy configuration/budget, not teacher/model accuracy. Live noncombat
+transitions use planner-owned sampled futures. Fail-closed root fallback may reduce MCTS
 ownership substantially, and low ownership is evidence about support, not policy
 improvement. The leaf fallback uses the standard bestbench chain options
 `restV=false, shopV=true`; other driver configurations are not qualified here.
 
-Native OOC successors that enter no sampled combat are deterministic conditional
-on their copied RNG state. The adapter caches those `(parent, action)` successors
-and advertises them to the core. Only these children are reused as deterministic;
-sampled combat outcomes retain independent equal-weight particles, including
-equal outcomes. Default PUCT/widening are `1.5`, `2`, `0.5`, with512 simulations;
-opt-in controls below override these only inside detached OOC search. Depth counts searched semantic transitions (primitive transitions on MAP) and excludes
-policy-chain steps used only to project leaves.
+Live MCTS calls `sampleNoncombatFuture` on a detached copy before every searched
+transition and during leaf continuation. It replaces native RNG states using
+full-width planner draws while preserving historical counters, and replaces
+the hypothetical run seed so native per-floor resets and next-act generation
+cannot recover the live future. It shuffles remaining relic/colorless pools,
+resamples unseen normal/elite queues with native weights and history rules,
+and samples the hidden second Act-3 boss, chest contents and Dead Adventurer's
+unsearched reward order. Current map/boss, chest size, public event options,
+shop/reward offers, selector targets and completed picks remain fixed.
+
+This covers transform streams (card/misc/Neow), random event effects, Library,
+Pandora's Box and other random relic effects, chest/dig rewards, Courier
+restocks, room generation and post-combat rewards. Semantic identity remains
+the chosen operation/target, never its sampled outcome. Only the fresh semantic
+action is executed live, using the live game's own RNG.
+
+Live edges are never marked deterministic merely because their simulator copy
+has fixed RNG. Progressive widening samples outcome particles normally, even
+when a particular action has a deterministic public effect. Native leaf
+features receive sampled hidden queues rather than the real future queue.
+`OocAdapterOptions::sampleNoncombat=false` retains exact replay solely for the
+offline/native parity seam; live startup always enables sampling and reports
+`noncombatOutcomes=sampled`. There is no live known-RNG override.
+
+Default PUCT/widening remain `1.5`, `2`, `0.5`, with 512 simulations. Depth counts
+searched semantic transitions (primitive transitions on MAP), excluding
+policy-chain steps used only to project leaves. Sampling removes the concrete
+future-stream leak; it is not a proof of an exact joint hidden-state posterior,
+a belief-tree policy, or stronger gameplay quality. Remaining-pool membership
+and historical counters are conditioned on native state; chance particles and
+leaf policies are still the existing planner approximation.
 
 The following `STS_OOC_MCTS_` suffixes configure ON searches. Invalid finite
 ranges/enums fail startup; OFF does not parse or apply search overrides. Native
@@ -336,8 +358,8 @@ state but uses that encounter's canonical act and boss floor.
 The existing trace also writes `.actions.jsonl` decision records with selected
 canonical keys, planner IDs, screen/selector, compound status and execution or
 fallback reason. Root-lock and checkpoint diagnostics include canonical keys.
-Copied hidden noncombat RNG remains unchanged: semantic adoption does not
-qualify a fair hidden-information generative model or establish policy quality.
+Sampled hidden noncombat outcomes are covered by focused independence and
+variation tests; this does not establish policy quality or full belief-model qualification.
 
 Optional `STS_OOC_MCTS_TRACE` appends one CSV row per completed run, including
 OFF runs when explicitly requested.
@@ -385,7 +407,7 @@ is per-run steady-clock elapsed time, so wall time is the matching denominator.
 Focused adapter tests cover search isolation, indexed determinism, exact live
 primitive execution, pending real combat and unchanged fallback dispatch;
 `ooc_mcts_live_startup` covers startup failure contracts. This opt-in seam does
-not qualify deployment or remove copied hidden noncombat RNG limitations.
+not by itself qualify deployment or an exact hidden-information belief model.
 
 
 ## Semantic OOC decisions

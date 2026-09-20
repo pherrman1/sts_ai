@@ -42,8 +42,9 @@ The semantic core is opt-in. Its action features are not compatible inputs for
 models trained on primitive bits. Opt-in OOC MCTS uses semantic transitions
 with V4 only as a source-primitive prior: qualified source mass is split equally
 among targets; states without complete V4 source coverage use uniform priors.
-This adapter bridge requires no retraining and does not qualify copied hidden
-noncombat RNG as a fair generative environment. Feeding semantic features to
+This adapter bridge requires no retraining. Live MCTS samples hidden noncombat
+futures on detached copies; outcomes remain separate from action identity,
+without claiming an exact hidden-state posterior. Feeding semantic features to
 a learned scorer still requires a separate schema/model change.
 
 ## Alternatives and consequences

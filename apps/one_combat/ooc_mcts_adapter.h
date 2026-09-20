@@ -7,8 +7,8 @@
 #include "sim/search/OocSemanticAction.h"
 
 namespace one_combat {
-// Exact native-state integration only: copied RNG streams are not a fair
-// stochastic environment model. Live use is explicitly opt-in.
+// Live opt-in search samples hidden native futures. Exact copied-state replay
+// remains available to offline parity fixtures through OocAdapterOptions.
 std::vector<double> oocPolicyWeights(const std::vector<double> &logits, double temperature = 1.0);
 struct OocContinuationMetrics {
     std::uint64_t imaginedCombats = 0, unsupportedCombats = 0;
@@ -26,6 +26,8 @@ struct OocAdapterOptions {
     bool bossLeaf = false;
     unsigned leafCombats = 0;
     bool uniformLeafPolicy = false;
+    // Live search samples unknown futures. False is retained for exact native replay fixtures.
+    bool sampleNoncombat = false;
 };
 class OocGameContextModel final : public sts::search::OocGenerativeModel {
 public:
