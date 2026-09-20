@@ -660,6 +660,14 @@ int main(int argc, char **argv) {
               && directRolloutA.leafRootUtility == directRolloutB.leafRootUtility
               && directRolloutA.rolloutActionFingerprints == directRolloutB.rolloutActionFingerprints,
           "canonical diagnostic rollout must be deterministic for a fixed stored RNG identity");
+    const silver_bridge::SilverSimpleRolloutOptions quietRolloutOptions{false, false};
+    const auto quietRollout = silver_bridge::runSilverSimpleRollout(
+        firstWire, firstWire, quietRolloutOptions);
+    check(quietRollout.accepted
+              && quietRollout.rolloutActionFingerprints.empty()
+              && quietRollout.originalRootCorrectedUtility == directRolloutA.originalRootCorrectedUtility
+              && quietRollout.rolloutActionCount == directRolloutA.rolloutActionCount,
+          "quiet rollout timing mode must preserve canonical utility/path while disabling diagnostics");
 
     const auto legalFirstActions = silver_bridge::enumerateSilverLegalActions(firstWire);
     check(!legalFirstActions.empty(),

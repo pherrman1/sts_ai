@@ -10342,3 +10342,55 @@ default or generalization claim is authorized. Evidence:
   **Knowledge impact:** durable Silver diagnostic evidence and current
   research status only; no Silver behavior, model, RNG, schema, budget, or
   gameplay default changed.
+
+## §323 — Contextual first-action Silver selector screen (2026-09-20)
+
+- **Question and protocol:** Can a small context-sensitive scorer replace only
+  the first canonical SimpleAgent rollout action while retaining the exact
+  continuation? Reuse the frozen PR #251 DEV corpus; do not recollect hard
+  states or run gameplay seeds. Enumerate exact legal card/target actions and
+  `END_TURN`, exclude potions, and evaluate every candidate with 32 common-RNG
+  forced-action continuations. Replicates `0..15` and `16..31` are disjoint
+  selection/evaluation halves, cross-fitted in both directions. The corpus has
+  32 groups from 20 source seeds, so the regenerated bootstrap clusters all
+  groups sharing a source seed; the corrected model-fit path uses the same
+  source-seed fold key.
+- **Headroom result:** **`FIRST_ACTION_POLICY_HEADROOM_INSUFFICIENT`**. There
+  are 32 groups / 247 leaves / 40,512 accepted counterfactual rows. The fair
+  Teacher-A comparison is baseline k=32 mean regret `1.51332` versus the
+  cross-fitted first-action oracle `1.41354`, only `6.59%` reduction (below the
+  preregistered `>=20%` gate). Pairwise concordance is `0.74241 -> 0.75176`,
+  top-leaf agreement is `0.56250 -> 0.62500`, and Teacher-B regret is
+  `1.47290 -> 1.34988` (`8.35%`). The source-seed-clustered bootstrap interval
+  for baseline-minus-oracle regret is `[-0.29749, 0.58429]`; 4 groups improve,
+  2 worsen, and 26 are unchanged. This is modest oracle signal below the
+  decision gate, not policy headroom.
+- **Policy result:** The retained run fit exactly one 30-feature linear ridge
+  scorer with `lambda=1.0`, target = disjoint selection-half `q0(s,a)`, and
+  historical group-id holdout folds. The actual candidate ran 7,904/7,904
+  accepted paired native rollouts. Teacher-A k=1 regret changed from `2.33796`
+  to `3.65020` (`-56.13%` reduction); k=32 regret changed from `1.51332` to
+  `1.63434`; Teacher-B k=1 changed from `2.22788` to `3.58189` (`-60.78%`).
+  The source-seed-clustered candidate bootstrap improvement was
+  `[-1.33542, 0.93203]`, with 4 groups improved, 3 worsened, 25 unchanged;
+  the largest regression was `14.57257` regret points. This preserves a
+  negative result for this feature/scoring formulation; it does not rule out
+  every linear contextual policy. No model refit or candidate rerun was made
+  after the source-seed correction.
+- **Cost:** The retained raw diagnostic timing, with action traces and rollout
+  telemetry disabled, was `198.8600 / 201.7820` microseconds mean/median for
+  baseline and `347.8855 / 353.7265` for candidate, ratio `1.74940`. The
+  `<5%` runtime gate is **unmeasured**, not failed: candidate timing includes
+  `rawActionForSemantic()` creating a fresh `BattleSearcher` and calling
+  `search(1)` before the forced-action continuation, a cost baseline does not
+  pay. It is not production-comparable.
+- **Decision and boundary:** **`FIRST_ACTION_POLICY_HEADROOM_INSUFFICIENT`**.
+  The fair oracle does not clear the predefined headroom threshold, and the
+  retained linear formulation is negative. Do not tune another model family,
+  alter later rollout actions, use potion policy, change Silver search/defaults,
+  or launch fresh gameplay confirmation in this task. The result is offline
+  DEV evidence only.
+- **Evidence:** [contextual first-action selector packet](evidence/silver_first_action_selector_20260920/README.md).
+  **Knowledge impact:** durable benchmark result and current research status;
+  no production Silver behavior, model, RNG, schema, budget, or gameplay
+  default changed.

@@ -205,6 +205,7 @@ struct SilverLeafObservation {
     int depth = 0;
     int actionCountBeforeRollout = 0;
     bool collectResult = false;
+    bool collectActionTrace = true;
     bool corpusSelected = false;
     bool vnetCollected = false;
     bool skipRollout = false;
@@ -259,6 +260,14 @@ struct SilverSimpleRolloutResult {
     std::int64_t totalWallMicros = 0;
     std::vector<std::string> rolloutActionFingerprints;
     std::vector<std::string> allActionFingerprints;
+};
+
+// Controls diagnostic-only bookkeeping around the canonical rollout. The
+// experiment harness can disable per-action traces and rollout telemetry while
+// retaining the exact same SimpleAgent continuation semantics for timing.
+struct SilverSimpleRolloutOptions {
+    bool collectRolloutDiagnostics = true;
+    bool collectActionTrace = true;
 };
 
 inline double silverBlendRolloutUtility(double rolloutUtility, double modelPrediction,
@@ -366,12 +375,20 @@ double silverTerminalLeafRootValue(const BattleStateWire &state);
 SilverSimpleRolloutResult runSilverSimpleRollout(
     const BattleStateWire &leaf, const BattleStateWire &originalRoot);
 
+SilverSimpleRolloutResult runSilverSimpleRollout(
+    const BattleStateWire &leaf, const BattleStateWire &originalRoot,
+    const SilverSimpleRolloutOptions &options);
+
 // Diagnostic-only counterfactual: execute exactly one supplied legal semantic
 // action, then resume the canonical SimpleAgent rollout. This is intentionally
 // not used by runSilverDecision or the live backend.
 SilverSimpleRolloutResult runSilverSimpleRolloutWithFirstAction(
     const BattleStateWire &leaf, const BattleStateWire &originalRoot,
     const SemanticAction &firstAction);
+
+SilverSimpleRolloutResult runSilverSimpleRolloutWithFirstAction(
+    const BattleStateWire &leaf, const BattleStateWire &originalRoot,
+    const SemanticAction &firstAction, const SilverSimpleRolloutOptions &options);
 
 struct SilverSearchConfig {
     // Values copied from upstream SearchAgent defaults at the pinned SHA.

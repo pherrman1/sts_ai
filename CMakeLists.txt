@@ -124,6 +124,13 @@ target_include_directories(silver-rollout-variance-diagnostic PRIVATE include js
 target_link_libraries(silver-rollout-variance-diagnostic PRIVATE silver_combat_search_bridge)
 target_link_options(silver-rollout-variance-diagnostic PRIVATE -Wl,--gc-sections)
 
+add_executable(silver-first-action-selector apps/silver_first_action_selector.cpp)
+set_target_properties(silver-first-action-selector PROPERTIES
+    OUTPUT_NAME silver_first_action_selector)
+target_include_directories(silver-first-action-selector PRIVATE include json/include)
+target_link_libraries(silver-first-action-selector PRIVATE silver_combat_search_bridge)
+target_link_options(silver-first-action-selector PRIVATE -Wl,--gc-sections)
+
 add_executable(silver-root-mechanism apps/silver_root_mechanism.cpp)
 set_target_properties(silver-root-mechanism PROPERTIES OUTPUT_NAME silver_root_mechanism)
 target_include_directories(silver-root-mechanism PRIVATE include json/include)
