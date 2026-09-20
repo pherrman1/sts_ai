@@ -27,7 +27,8 @@ bool rawActionForSemantic(const sts::BattleContext &state, const SemanticAction 
                           sts::search::Action &raw);
 SilverSimpleRolloutResult runSilverSimpleRolloutImpl(
     const BattleStateWire &leaf, const BattleStateWire &originalRoot,
-    const SemanticAction *firstAction);
+    const SemanticAction *firstAction,
+    const SilverSimpleRolloutOptions &options);
 
 sts::CardInstance card(const CardWire &in) {
     sts::CardInstance out;
@@ -894,13 +895,25 @@ double silverTerminalLeafRootValue(const BattleStateWire &wire) {
 
 SilverSimpleRolloutResult runSilverSimpleRollout(
         const BattleStateWire &leaf, const BattleStateWire &originalRoot) {
-    return runSilverSimpleRolloutImpl(leaf, originalRoot, nullptr);
+    return runSilverSimpleRolloutImpl(leaf, originalRoot, nullptr, {});
+}
+
+SilverSimpleRolloutResult runSilverSimpleRollout(
+        const BattleStateWire &leaf, const BattleStateWire &originalRoot,
+        const SilverSimpleRolloutOptions &options) {
+    return runSilverSimpleRolloutImpl(leaf, originalRoot, nullptr, options);
 }
 
 SilverSimpleRolloutResult runSilverSimpleRolloutWithFirstAction(
         const BattleStateWire &leaf, const BattleStateWire &originalRoot,
         const SemanticAction &firstAction) {
-    return runSilverSimpleRolloutImpl(leaf, originalRoot, &firstAction);
+    return runSilverSimpleRolloutImpl(leaf, originalRoot, &firstAction, {});
+}
+
+SilverSimpleRolloutResult runSilverSimpleRolloutWithFirstAction(
+        const BattleStateWire &leaf, const BattleStateWire &originalRoot,
+        const SemanticAction &firstAction, const SilverSimpleRolloutOptions &options) {
+    return runSilverSimpleRolloutImpl(leaf, originalRoot, &firstAction, options);
 }
 
 class SilverSearchSession {
@@ -2502,7 +2515,8 @@ bool rawActionForSemantic(const sts::BattleContext &state, const SemanticAction 
 
 SilverSimpleRolloutResult runSilverSimpleRolloutImpl(
         const BattleStateWire &leaf, const BattleStateWire &originalRoot,
-        const SemanticAction *firstAction) {
+        const SemanticAction *firstAction,
+        const SilverSimpleRolloutOptions &options) {
     SilverSimpleRolloutResult result;
     result.forcedFirstAction = firstAction != nullptr;
     if (!leaf.valid || leaf.version != BattleStateWire::kVersion
@@ -2540,13 +2554,14 @@ SilverSimpleRolloutResult runSilverSimpleRolloutImpl(
 
         const auto canonicalStart = std::chrono::steady_clock::now();
         sts::search::BattleSearcher searcher(state);
-        searcher.collectRolloutDiagnostics = true;
+        searcher.collectRolloutDiagnostics = options.collectRolloutDiagnostics;
         SilverLeafObservation completed;
         bool sawStart = false;
         bool sawEnd = false;
         searcher.leafObserver = [&](SilverLeafObservation &observation) {
             if (observation.phase == SilverLeafObservationPhase::START) {
                 observation.collectResult = true;
+                observation.collectActionTrace = options.collectActionTrace;
                 sawStart = true;
             } else {
                 completed = observation;
