@@ -45,8 +45,8 @@ int javaMove(MonsterMoveId move) {
     case MonsterMoveId::CULTIST_INCANTATION: return 3;
     case MonsterMoveId::CULTIST_DARK_STRIKE: return 1;
     case MonsterMoveId::JAW_WORM_CHOMP: return 1;
-    case MonsterMoveId::JAW_WORM_THRASH: return 2;
-    case MonsterMoveId::JAW_WORM_BELLOW: return 3;
+    case MonsterMoveId::JAW_WORM_BELLOW: return 2;
+    case MonsterMoveId::JAW_WORM_THRASH: return 3;
     case MonsterMoveId::GREMLIN_NOB_BELLOW: return 3;
     case MonsterMoveId::GREMLIN_NOB_RUSH: return 1;
     case MonsterMoveId::GREMLIN_NOB_SKULL_BASH: return 2;
@@ -55,8 +55,8 @@ int javaMove(MonsterMoveId move) {
 }
 const char *monsterName(MonsterId id) {
     switch (id) {
-    case MonsterId::GREEN_LOUSE: return "FuzzyLouseNormal";
-    case MonsterId::RED_LOUSE: return "FuzzyLouseDefensive";
+    case MonsterId::GREEN_LOUSE: return "FuzzyLouseDefensive";
+    case MonsterId::RED_LOUSE: return "FuzzyLouseNormal";
     case MonsterId::CULTIST: return "Cultist";
     case MonsterId::JAW_WORM: return "JawWorm";
     case MonsterId::GREMLIN_NOB: return "GremlinNob";
@@ -285,13 +285,80 @@ void verifyRuntimeMoveBoundary() {
     expect("Cultist", 3, MonsterMoveId::CULTIST_INCANTATION);
     expect("Cultist", 1, MonsterMoveId::CULTIST_DARK_STRIKE);
     expect("JawWorm", 1, MonsterMoveId::JAW_WORM_CHOMP);
-    expect("JawWorm", 2, MonsterMoveId::JAW_WORM_THRASH);
-    expect("JawWorm", 3, MonsterMoveId::JAW_WORM_BELLOW);
+    expect("JawWorm", 2, MonsterMoveId::JAW_WORM_BELLOW);
+    expect("JawWorm", 3, MonsterMoveId::JAW_WORM_THRASH);
     expect("GremlinNob", 1, MonsterMoveId::GREMLIN_NOB_RUSH);
     expect("GremlinNob", 2, MonsterMoveId::GREMLIN_NOB_SKULL_BASH);
     expect("GremlinNob", 3, MonsterMoveId::GREMLIN_NOB_BELLOW);
-    if (monsterMove("Hexaghost", 2) || monsterMove("BookOfStabbing", 1))
-        throw std::runtime_error("unqualified monster move mapping was accepted");
+
+    // Literal byte constants from desktop-1.0.jar (verified with javap -p
+    // -constants).  This table is intentionally independent of the
+    // production mapping implementation; reverse-generating bytes from
+    // MonsterMoveId would only test that the two sides agree with themselves.
+    expect("AcidSlime_L", 1, MonsterMoveId::ACID_SLIME_L_CORROSIVE_SPIT);
+    expect("AcidSlime_L", 2, MonsterMoveId::ACID_SLIME_L_TACKLE);
+    expect("AcidSlime_L", 3, MonsterMoveId::ACID_SLIME_L_SPLIT);
+    expect("AcidSlime_L", 4, MonsterMoveId::ACID_SLIME_L_LICK);
+    expect("AcidSlime_M", 1, MonsterMoveId::ACID_SLIME_M_CORROSIVE_SPIT);
+    expect("AcidSlime_M", 2, MonsterMoveId::ACID_SLIME_M_TACKLE);
+    expect("AcidSlime_M", 4, MonsterMoveId::ACID_SLIME_M_LICK);
+    expect("AcidSlime_S", 1, MonsterMoveId::ACID_SLIME_S_TACKLE);
+    expect("AcidSlime_S", 2, MonsterMoveId::ACID_SLIME_S_LICK);
+    expect("FungiBeast", 1, MonsterMoveId::FUNGI_BEAST_BITE);
+    expect("FungiBeast", 2, MonsterMoveId::FUNGI_BEAST_GROW);
+    expect("GremlinFat", 2, MonsterMoveId::FAT_GREMLIN_SMASH);
+    expect("GremlinThief", 1, MonsterMoveId::SNEAKY_GREMLIN_PUNCTURE);
+    expect("GremlinTsundere", 1, MonsterMoveId::SHIELD_GREMLIN_PROTECT);
+    expect("GremlinTsundere", 2, MonsterMoveId::SHIELD_GREMLIN_SHIELD_BASH);
+    expect("GremlinWarrior", 1, MonsterMoveId::MAD_GREMLIN_SCRATCH);
+    expect("GremlinWizard", 1, MonsterMoveId::GREMLIN_WIZARD_ULTIMATE_BLAST);
+    expect("GremlinWizard", 2, MonsterMoveId::GREMLIN_WIZARD_CHARGING);
+    expect("Hexaghost", 1, MonsterMoveId::HEXAGHOST_DIVIDER);
+    expect("Hexaghost", 2, MonsterMoveId::HEXAGHOST_TACKLE);
+    expect("Hexaghost", 3, MonsterMoveId::HEXAGHOST_INFLAME);
+    expect("Hexaghost", 4, MonsterMoveId::HEXAGHOST_SEAR);
+    expect("Hexaghost", 5, MonsterMoveId::HEXAGHOST_ACTIVATE);
+    expect("Hexaghost", 6, MonsterMoveId::HEXAGHOST_INFERNO);
+    expect("Lagavulin", 1, MonsterMoveId::LAGAVULIN_SIPHON_SOUL);
+    expect("Lagavulin", 3, MonsterMoveId::LAGAVULIN_ATTACK);
+    expect("Lagavulin", 4, MonsterMoveId::LAGAVULIN_SLEEP);
+    expect("Lagavulin", 5, MonsterMoveId::LAGAVULIN_SLEEP);
+    expect("Lagavulin", 6, MonsterMoveId::LAGAVULIN_SLEEP);
+    expect("Looter", 1, MonsterMoveId::LOOTER_MUG);
+    expect("Looter", 2, MonsterMoveId::LOOTER_SMOKE_BOMB);
+    expect("Looter", 3, MonsterMoveId::LOOTER_ESCAPE);
+    expect("Looter", 4, MonsterMoveId::LOOTER_LUNGE);
+    expect("FuzzyLouseDefensive", 3, MonsterMoveId::GREEN_LOUSE_BITE);
+    expect("FuzzyLouseDefensive", 4, MonsterMoveId::GREEN_LOUSE_SPIT_WEB);
+    expect("FuzzyLouseNormal", 3, MonsterMoveId::RED_LOUSE_BITE);
+    expect("FuzzyLouseNormal", 4, MonsterMoveId::RED_LOUSE_GROW);
+    expect("Sentry", 3, MonsterMoveId::SENTRY_BOLT);
+    expect("Sentry", 4, MonsterMoveId::SENTRY_BEAM);
+    expect("SlaverBlue", 1, MonsterMoveId::BLUE_SLAVER_STAB);
+    expect("SlaverBlue", 4, MonsterMoveId::BLUE_SLAVER_RAKE);
+    expect("SlaverRed", 1, MonsterMoveId::RED_SLAVER_STAB);
+    expect("SlaverRed", 2, MonsterMoveId::RED_SLAVER_ENTANGLE);
+    expect("SlaverRed", 3, MonsterMoveId::RED_SLAVER_SCRAPE);
+    expect("SlimeBoss", 1, MonsterMoveId::SLIME_BOSS_SLAM);
+    expect("SlimeBoss", 2, MonsterMoveId::SLIME_BOSS_PREPARING);
+    expect("SlimeBoss", 3, MonsterMoveId::SLIME_BOSS_SPLIT);
+    expect("SlimeBoss", 4, MonsterMoveId::SLIME_BOSS_GOOP_SPRAY);
+    expect("SpikeSlime_L", 1, MonsterMoveId::SPIKE_SLIME_L_FLAME_TACKLE);
+    expect("SpikeSlime_L", 3, MonsterMoveId::SPIKE_SLIME_L_SPLIT);
+    expect("SpikeSlime_L", 4, MonsterMoveId::SPIKE_SLIME_L_LICK);
+    expect("SpikeSlime_M", 1, MonsterMoveId::SPIKE_SLIME_M_FLAME_TACKLE);
+    expect("SpikeSlime_M", 4, MonsterMoveId::SPIKE_SLIME_M_LICK);
+    expect("SpikeSlime_S", 1, MonsterMoveId::SPIKE_SLIME_S_TACKLE);
+    expect("TheGuardian", 1, MonsterMoveId::THE_GUARDIAN_DEFENSIVE_MODE);
+    expect("TheGuardian", 2, MonsterMoveId::THE_GUARDIAN_FIERCE_BASH);
+    expect("TheGuardian", 3, MonsterMoveId::THE_GUARDIAN_ROLL_ATTACK);
+    expect("TheGuardian", 4, MonsterMoveId::THE_GUARDIAN_TWIN_SLAM);
+    expect("TheGuardian", 5, MonsterMoveId::THE_GUARDIAN_WHIRLWIND);
+    expect("TheGuardian", 6, MonsterMoveId::THE_GUARDIAN_CHARGING_UP);
+    expect("TheGuardian", 7, MonsterMoveId::THE_GUARDIAN_VENT_STEAM);
+    if (monsterMove("JawWorm", 4) || monsterMove("Hexaghost", 7)
+        || monsterMove("BookOfStabbing", 1))
+        throw std::runtime_error("invalid or unqualified monster move was accepted");
 }
 json genericObservation(const Fixture &fixture, const char *instance) {
     auto out = fixture.observation;
@@ -444,6 +511,63 @@ int main() {
         mechanicsNative.isolatedSearchSeed = mechanicsImported.wire.isolatedSearchSeed;
         if (!convertedStatesEqualForSearch(mechanicsNative, mechanicsImported.wire))
             throw std::runtime_error("native power/relic/potion parity failed");
+
+        const auto verifyPlayerPowerParity = [&](const char *name, json power,
+                                                 const auto &materialize) {
+            auto observation = genericObservation(fixtures[0], name);
+            observation["silverRoot"]["combat"]["playerPowers"] = json::array({std::move(power)});
+            auto imported = one_combat::advisor::importSilverRoot(observation);
+            if (!imported.ok)
+                throw std::runtime_error(std::string("player power import failed: ")
+                    + name + ":" + imported.reason);
+            auto expected = fixtures[0].wire;
+            normalizeFirstObservationIdentity(expected);
+            materialize(expected.player);
+            expected.isolatedSearchSeed = imported.wire.isolatedSearchSeed;
+            if (!convertedStatesEqualForSearch(expected, imported.wire))
+                throw std::runtime_error(std::string("player power parity failed: ") + name);
+        };
+        verifyPlayerPowerParity("barricade-parity", json{{"id", "Barricade"}, {"amount", -1}},
+            [](auto &player) { player.statusBits0 |= 1ULL << static_cast<int>(PlayerStatus::BARRICADE); });
+        verifyPlayerPowerParity("corruption-parity", json{{"id", "Corruption"}, {"amount", -1}},
+            [](auto &player) { player.statusBits0 |= 1ULL << static_cast<int>(PlayerStatus::CORRUPTION); });
+        verifyPlayerPowerParity("confused-parity", json{{"id", "Confused"}, {"amount", -1}},
+            [](auto &player) { player.statusBits0 |= 1ULL << static_cast<int>(PlayerStatus::CONFUSED); });
+        verifyPlayerPowerParity("hex-parity", json{{"id", "Hex"}, {"amount", 1}},
+            [](auto &player) { player.statusBits0 |= 1ULL << static_cast<int>(PlayerStatus::HEX); });
+        verifyPlayerPowerParity("pen-nib-parity", json{{"id", "Pen Nib"}, {"amount", 1}},
+            [](auto &player) { player.statusBits0 |= 1ULL << static_cast<int>(PlayerStatus::PEN_NIB); });
+        auto drawReduction = genericObservation(fixtures[0], "draw-reduction-parity");
+        drawReduction["silverRoot"]["combat"]["cardDrawPerTurn"] = 4;
+        drawReduction["silverRoot"]["combat"]["playerPowers"] = json::array({
+            json{{"id", "DrawReductionPower"}, {"amount", 1}, {"justApplied", true}}});
+        auto drawReductionImported = one_combat::advisor::importSilverRoot(drawReduction);
+        if (!drawReductionImported.ok)
+            throw std::runtime_error("draw reduction import failed: " + drawReductionImported.reason);
+        auto drawReductionExpected = fixtures[0].wire;
+        normalizeFirstObservationIdentity(drawReductionExpected);
+        drawReductionExpected.player.cardDrawPerTurn = 4;
+        drawReductionExpected.player.statusBits0 |= 1ULL << static_cast<int>(PlayerStatus::DRAW_REDUCTION);
+        drawReductionExpected.player.justAppliedBits |= 1U << static_cast<int>(PlayerStatus::DRAW_REDUCTION);
+        drawReductionExpected.isolatedSearchSeed = drawReductionImported.wire.isolatedSearchSeed;
+        if (!convertedStatesEqualForSearch(drawReductionExpected, drawReductionImported.wire))
+            throw std::runtime_error("draw reduction parity failed");
+        verifyPlayerPowerParity("bomb-parity", json{{"id", "TheBomb0"}, {"amount", 3}, {"bombDamage", 40}},
+            [](auto &player) { player.bombs[2] = 40; });
+        auto penNibRelic = genericObservation(fixtures[0], "pen-nib-relic-parity");
+        penNibRelic["silverRoot"]["combat"]["relics"].push_back(
+            json{{"id", "Pen Nib"}, {"counter", 9}, {"usedUp", false}});
+        auto penNibRelicImported = one_combat::advisor::importSilverRoot(penNibRelic);
+        if (!penNibRelicImported.ok)
+            throw std::runtime_error("Pen Nib relic import failed: " + penNibRelicImported.reason);
+        auto penNibRelicExpected = fixtures[0].wire;
+        normalizeFirstObservationIdentity(penNibRelicExpected);
+        penNibRelicExpected.player.relicBits0 |= 1ULL << static_cast<int>(RelicId::PEN_NIB);
+        penNibRelicExpected.player.relicCounters[5] = -1;
+        penNibRelicExpected.player.statusBits0 |= 1ULL << static_cast<int>(PlayerStatus::PEN_NIB);
+        penNibRelicExpected.isolatedSearchSeed = penNibRelicImported.wire.isolatedSearchSeed;
+        if (!convertedStatesEqualForSearch(penNibRelicExpected, penNibRelicImported.wire))
+            throw std::runtime_error("Pen Nib relic parity failed");
 
         auto nativePower = genericObservation(fixtures[0], "native-power-entry");
         nativePower["silverRoot"]["combat"]["monsters"][0]["powers"] = json::array({
@@ -690,10 +814,10 @@ int main() {
         reject["silverRoot"]["combat"]["rng"] = 1;
         if (one_combat::advisor::importSilverRoot(reject).reason != "silver_rng_field") return 5;
         reject = fixtures[1].observation;
-        reject["silverRoot"]["combat"]["monsters"][0]["nextMove"] = 2;
+        reject["silverRoot"]["combat"]["monsters"][0]["nextMove"] = 4;
         if (one_combat::advisor::importSilverRoot(reject).ok) return 6;
         reject = fixtures[2].observation;
-        reject["silverRoot"]["combat"]["monsters"][0]["nextMove"] = 1;
+        reject["silverRoot"]["combat"]["monsters"][0]["nextMove"] = 4;
         if (one_combat::advisor::importSilverRoot(reject).ok) return 7;
         reject = fixtures[0].observation;
         reject["silverRoot"]["combat"]["turn"] = 2;

@@ -81,26 +81,13 @@ bool parseCard(const json &item, const std::string &location, CardRecord &out) {
 }
 
 int monsterId(const std::string &id) {
-    static const std::map<std::string, sts::MonsterId> ids = {
-        {"Cultist", sts::MonsterId::CULTIST}, {"JawWorm", sts::MonsterId::JAW_WORM},
-        {"Gremlin Nob", sts::MonsterId::GREMLIN_NOB}, {"GremlinNob", sts::MonsterId::GREMLIN_NOB},
-    };
-    const auto it = ids.find(id); return it == ids.end() ? 0 : static_cast<int>(it->second);
+    const auto mapped = live_silver::monsterId(id);
+    return mapped ? static_cast<int>(*mapped) : 0;
 }
 
 int moveId(const std::string &id, int nextMove) {
-    // These values are the explicit first-action mappings from the vanilla
-    // AbstractMonster nextMove field; no damage or localized intent text is used.
-    if (id == "Cultist")
-        return nextMove == 3 ? static_cast<int>(sts::MonsterMoveId::CULTIST_INCANTATION)
-            : nextMove == 1 ? static_cast<int>(sts::MonsterMoveId::CULTIST_DARK_STRIKE) : 0;
-    if (id == "JawWorm") {
-        if (nextMove == 1) return static_cast<int>(sts::MonsterMoveId::JAW_WORM_CHOMP);
-    }
-    if (id == "Gremlin Nob" || id == "GremlinNob") {
-        if (nextMove == 3) return static_cast<int>(sts::MonsterMoveId::GREMLIN_NOB_BELLOW);
-    }
-    return 0;
+    const auto mapped = live_silver::monsterMove(id, nextMove);
+    return mapped ? static_cast<int>(*mapped) : 0;
 }
 
 bool cardLess(const silver_bridge::CardWire &a, const silver_bridge::CardWire &b) {
@@ -193,12 +180,31 @@ bool parseGenericPile(const json &value, GenericPile &pile) {
 }
 
 void setPlayerPower(silver_bridge::PlayerWire &player, PlayerStatus status, int amount,
-                    bool justApplied) {
+                    bool justApplied, int bombDamage = 0) {
     switch (status) {
     case PlayerStatus::ARTIFACT: player.artifact = amount; break;
     case PlayerStatus::DEXTERITY: player.dexterity = amount; break;
     case PlayerStatus::FOCUS: player.focus = amount; break;
     case PlayerStatus::STRENGTH: player.strength = amount; break;
+    case PlayerStatus::THE_BOMB:
+        // Java's TheBombPower amount is turns remaining, while Silver stores
+        // the damage in one of its three future-turn slots.
+        if (amount >= 1 && amount <= 3)
+            player.bombs[static_cast<std::size_t>(amount - 1)] = static_cast<std::int8_t>(bombDamage);
+        break;
+    case PlayerStatus::BARRICADE:
+    case PlayerStatus::CORRUPTION:
+    case PlayerStatus::CONFUSED:
+    case PlayerStatus::HEX:
+    case PlayerStatus::PEN_NIB:
+    case PlayerStatus::SURROUNDED:
+    case PlayerStatus::DRAW_REDUCTION:
+        // These are active native flags without a statusMap payload.  In
+        // particular, Draw Reduction's exact scalar is cardDrawPerTurn and
+        // its lifetime is represented by justApplied, not by amount.
+        if (static_cast<int>(status) < 64) player.statusBits0 |= 1ULL << static_cast<int>(status);
+        else player.statusBits1 |= 1U << (static_cast<int>(status) - 64);
+        break;
     default:
         if (static_cast<int>(status) < 64) player.statusBits0 |= 1ULL << static_cast<int>(status);
         else player.statusBits1 |= 1U << (static_cast<int>(status) - 64);
@@ -711,9 +717,14 @@ SilverRootImportResult importSilverRootGeneric(const json &observation,
             if (!power.is_object() || !power.contains("id") || !power.at("id").is_string()
                 || !power.contains("amount") || !power.at("amount").is_number_integer())
                 return unsupported("silver_unmapped_player_power");
-            const auto mapped = live_silver::playerStatus(power.at("id").get<std::string>());
-            if (!mapped) return unsupported("silver_unmapped_player_power");
             const auto powerId = power.at("id").get<std::string>();
+            auto mapped = live_silver::playerStatus(powerId);
+            // The vanilla power ID is suffixed with a process-local counter
+            // (TheBomb0, TheBomb1, ...), so its mapping cannot be a plain
+            // string-table lookup.
+            if (!mapped && powerId.rfind("TheBomb", 0) == 0)
+                mapped = PlayerStatus::THE_BOMB;
+            if (!mapped) return unsupported("silver_unmapped_player_power");
             // These fields are not derivable from a generic Java power ID and
             // amount.  Accept them only when the producer has serialized the
             // native bookkeeping explicitly.
@@ -722,6 +733,7 @@ SilverRootImportResult importSilverRootGeneric(const json &observation,
             const bool needsPanache = powerId == "Panache";
             const bool needsDeva = powerId == "Deva Form" || powerId == "DevaFormPower";
             const bool needsPellets = powerId == "Orange Pellets" || powerId == "OrangePelletsPower";
+            const bool needsBomb = *mapped == PlayerStatus::THE_BOMB;
             const bool needsJustApplied = powerId == "Double Damage" || powerId == "DoubleDamagePower"
                 || powerId == "Draw Reduction" || powerId == "DrawReductionPower"
                 || powerId == "Frail" || powerId == "FrailPower"
@@ -733,10 +745,23 @@ SilverRootImportResult importSilverRootGeneric(const json &observation,
                 || (needsPanache && !combat.contains("panacheCounter"))
                 || (needsDeva && !combat.contains("devaFormEnergyPerTurn"))
                 || (needsPellets && !combat.contains("orangePelletsCardTypesPlayed"))
+                || (needsBomb && (!power.contains("bombDamage")
+                    || !power.at("bombDamage").is_number_integer()
+                    || power.value("amount", 0) < 1 || power.value("amount", 0) > 3))
+                || (*mapped == PlayerStatus::DRAW_REDUCTION && !combat.contains("cardDrawPerTurn"))
                 || (needsJustApplied && (!power.contains("justApplied")
                     || !power.at("justApplied").is_boolean())))
                 return unsupported("silver_unmapped_player_power");
-            setPlayerPower(p, *mapped, power.value("amount", 1), power.value("justApplied", false));
+            const int amount = power.value("amount", 1);
+            if (needsBomb) {
+                const int damage = power.at("bombDamage").get<int>();
+                if (damage <= 0 || damage > 127) return unsupported("silver_unmapped_player_power");
+                if (p.bombs[static_cast<std::size_t>(amount - 1)])
+                    return unsupported("silver_unmapped_player_power");
+                setPlayerPower(p, *mapped, amount, false, damage);
+            } else {
+                setPlayerPower(p, *mapped, amount, power.value("justApplied", false));
+            }
         }
     }
 
@@ -759,7 +784,18 @@ SilverRootImportResult importSilverRootGeneric(const json &observation,
         const auto counter = static_cast<std::int8_t>(relic.at("counter").get<int>());
         const std::array<sts::RelicId, 7> counterRelics = {sts::RelicId::HAPPY_FLOWER, sts::RelicId::INCENSE_BURNER,
             sts::RelicId::INK_BOTTLE, sts::RelicId::INSERTER, sts::RelicId::NUNCHAKU, sts::RelicId::PEN_NIB, sts::RelicId::SUNDIAL};
-        for (std::size_t i = 0; i < counterRelics.size(); ++i) if (id == counterRelics[i]) p.relicCounters[i] = counter;
+        for (std::size_t i = 0; i < counterRelics.size(); ++i) {
+            if (id != counterRelics[i]) continue;
+            if (id == sts::RelicId::PEN_NIB && counter == 9) {
+                // Vanilla uses counter 9 as the armed sentinel. Silver turns
+                // that sentinel into the Pen Nib status bit and stores -1 in
+                // its relic counter, matching BattleContext::init.
+                p.statusBits0 |= 1ULL << static_cast<int>(PlayerStatus::PEN_NIB);
+                p.relicCounters[i] = -1;
+            } else {
+                p.relicCounters[i] = counter;
+            }
+        }
         if (id == sts::RelicId::NECRONOMICON) p.haveUsedNecronomiconThisTurn = relic.at("usedThisTurn").get<bool>();
     }
 

@@ -25,8 +25,13 @@ const std::map<std::string, sts::MonsterId> kMonsters = {
     {"Darkling", sts::MonsterId::DARKLING}, {"Deca", sts::MonsterId::DECA},
     {"Donu", sts::MonsterId::DONU}, {"Exploder", sts::MonsterId::EXPLODER},
     {"FungiBeast", sts::MonsterId::FUNGI_BEAST}, {"GiantHead", sts::MonsterId::GIANT_HEAD},
-    {"FuzzyLouseNormal", sts::MonsterId::GREEN_LOUSE}, {"FuzzyLouseDefensive", sts::MonsterId::RED_LOUSE},
+    // The Java class names are color-independent: LouseNormal is the red
+    // louse (Strengthen), while LouseDefensive is the green louse (Weaken).
+    {"FuzzyLouseNormal", sts::MonsterId::RED_LOUSE}, {"FuzzyLouseDefensive", sts::MonsterId::GREEN_LOUSE},
     {"GremlinLeader", sts::MonsterId::GREMLIN_LEADER}, {"GremlinNob", sts::MonsterId::GREMLIN_NOB},
+    {"GremlinFat", sts::MonsterId::FAT_GREMLIN}, {"GremlinThief", sts::MonsterId::SNEAKY_GREMLIN},
+    {"GremlinTsundere", sts::MonsterId::SHIELD_GREMLIN}, {"GremlinWarrior", sts::MonsterId::MAD_GREMLIN},
+    {"GremlinSneaky", sts::MonsterId::SNEAKY_GREMLIN}, {"GremlinShield", sts::MonsterId::SHIELD_GREMLIN},
     {"Gremlin Wizard", sts::MonsterId::GREMLIN_WIZARD}, {"GremlinWizard", sts::MonsterId::GREMLIN_WIZARD},
     {"Hexaghost", sts::MonsterId::HEXAGHOST}, {"JawWorm", sts::MonsterId::JAW_WORM},
     {"Lagavulin", sts::MonsterId::LAGAVULIN}, {"Looter", sts::MonsterId::LOOTER},
@@ -103,6 +108,7 @@ const std::map<std::string, PlayerStatus> kPlayerStatuses = {
     {"NoBlockPower", PlayerStatus::NO_BLOCK}, {"Entangled", PlayerStatus::ENTANGLED}, {"EntanglePower", PlayerStatus::ENTANGLED},
     {"Intangible", PlayerStatus::INTANGIBLE}, {"IntangiblePlayerPower", PlayerStatus::INTANGIBLE}, {"Barricade", PlayerStatus::BARRICADE},
     {"Corruption", PlayerStatus::CORRUPTION}, {"Confused", PlayerStatus::CONFUSED},
+    {"Hex", PlayerStatus::HEX}, {"Pen Nib", PlayerStatus::PEN_NIB},
     {"DoubleTapPower", PlayerStatus::DOUBLE_TAP}, {"Metallicize", PlayerStatus::METALLICIZE}, {"MetallicizePower", PlayerStatus::METALLICIZE},
     {"Plated Armor", PlayerStatus::PLATED_ARMOR}, {"PlatedArmorPower", PlayerStatus::PLATED_ARMOR}, {"Feel No Pain", PlayerStatus::FEEL_NO_PAIN}, {"FeelNoPain", PlayerStatus::FEEL_NO_PAIN},
     {"Dark Embrace", PlayerStatus::DARK_EMBRACE}, {"DarkEmbrace", PlayerStatus::DARK_EMBRACE}, {"Demon Form", PlayerStatus::DEMON_FORM}, {"DemonForm", PlayerStatus::DEMON_FORM},
@@ -113,6 +119,7 @@ const std::map<std::string, PlayerStatus> kPlayerStatuses = {
     {"RitualPower", PlayerStatus::RITUAL}, {"Wraith Form v2", PlayerStatus::WRAITH_FORM}, {"WraithForm", PlayerStatus::WRAITH_FORM}, {"Panache", PlayerStatus::PANACHE},
     // Vanilla power IDs with their Java Power suffixes.
     {"DoubleDamagePower", PlayerStatus::DOUBLE_DAMAGE}, {"DrawReductionPower", PlayerStatus::DRAW_REDUCTION},
+    {"The Bomb", PlayerStatus::THE_BOMB}, {"TheBomb", PlayerStatus::THE_BOMB},
     {"BiasPower", PlayerStatus::BIAS}, {"ConfusionPower", PlayerStatus::CONFUSED},
     {"ConstrictedPower", PlayerStatus::CONSTRICTED}, {"FastingPower", PlayerStatus::FASTING},
     {"HexPower", PlayerStatus::HEX}, {"LoseDexterityPower", PlayerStatus::LOSE_DEXTERITY},
@@ -208,8 +215,90 @@ std::optional<sts::MonsterMoveId> monsterMove(const std::string &id, int nextMov
             : nextMove == 1 ? std::optional<M>{M::CULTIST_DARK_STRIKE} : std::nullopt;
     case sts::MonsterId::JAW_WORM:
         return nextMove == 1 ? std::optional<M>{M::JAW_WORM_CHOMP}
-            : nextMove == 2 ? std::optional<M>{M::JAW_WORM_THRASH}
-            : nextMove == 3 ? std::optional<M>{M::JAW_WORM_BELLOW} : std::nullopt;
+            : nextMove == 2 ? std::optional<M>{M::JAW_WORM_BELLOW}
+            : nextMove == 3 ? std::optional<M>{M::JAW_WORM_THRASH} : std::nullopt;
+    case sts::MonsterId::ACID_SLIME_L:
+        return nextMove == 1 ? std::optional<M>{M::ACID_SLIME_L_CORROSIVE_SPIT}
+            : nextMove == 2 ? std::optional<M>{M::ACID_SLIME_L_TACKLE}
+            : nextMove == 3 ? std::optional<M>{M::ACID_SLIME_L_SPLIT}
+            : nextMove == 4 ? std::optional<M>{M::ACID_SLIME_L_LICK} : std::nullopt;
+    case sts::MonsterId::ACID_SLIME_M:
+        return nextMove == 1 ? std::optional<M>{M::ACID_SLIME_M_CORROSIVE_SPIT}
+            : nextMove == 2 ? std::optional<M>{M::ACID_SLIME_M_TACKLE}
+            : nextMove == 4 ? std::optional<M>{M::ACID_SLIME_M_LICK} : std::nullopt;
+    case sts::MonsterId::ACID_SLIME_S:
+        return nextMove == 1 ? std::optional<M>{M::ACID_SLIME_S_TACKLE}
+            : nextMove == 2 ? std::optional<M>{M::ACID_SLIME_S_LICK} : std::nullopt;
+    case sts::MonsterId::FUNGI_BEAST:
+        return nextMove == 1 ? std::optional<M>{M::FUNGI_BEAST_BITE}
+            : nextMove == 2 ? std::optional<M>{M::FUNGI_BEAST_GROW} : std::nullopt;
+    case sts::MonsterId::FAT_GREMLIN:
+        return nextMove == 2 ? std::optional<M>{M::FAT_GREMLIN_SMASH} : std::nullopt;
+    case sts::MonsterId::SNEAKY_GREMLIN:
+        return nextMove == 1 ? std::optional<M>{M::SNEAKY_GREMLIN_PUNCTURE} : std::nullopt;
+    case sts::MonsterId::SHIELD_GREMLIN:
+        return nextMove == 1 ? std::optional<M>{M::SHIELD_GREMLIN_PROTECT}
+            : nextMove == 2 ? std::optional<M>{M::SHIELD_GREMLIN_SHIELD_BASH} : std::nullopt;
+    case sts::MonsterId::MAD_GREMLIN:
+        return nextMove == 1 ? std::optional<M>{M::MAD_GREMLIN_SCRATCH} : std::nullopt;
+    case sts::MonsterId::GREMLIN_WIZARD:
+        return nextMove == 1 ? std::optional<M>{M::GREMLIN_WIZARD_ULTIMATE_BLAST}
+            : nextMove == 2 ? std::optional<M>{M::GREMLIN_WIZARD_CHARGING} : std::nullopt;
+    case sts::MonsterId::HEXAGHOST:
+        return nextMove == 1 ? std::optional<M>{M::HEXAGHOST_DIVIDER}
+            : nextMove == 2 ? std::optional<M>{M::HEXAGHOST_TACKLE}
+            : nextMove == 3 ? std::optional<M>{M::HEXAGHOST_INFLAME}
+            : nextMove == 4 ? std::optional<M>{M::HEXAGHOST_SEAR}
+            : nextMove == 5 ? std::optional<M>{M::HEXAGHOST_ACTIVATE}
+            : nextMove == 6 ? std::optional<M>{M::HEXAGHOST_INFERNO} : std::nullopt;
+    case sts::MonsterId::LAGAVULIN:
+        return nextMove == 1 ? std::optional<M>{M::LAGAVULIN_SIPHON_SOUL}
+            : nextMove == 3 ? std::optional<M>{M::LAGAVULIN_ATTACK}
+            : (nextMove == 4 || nextMove == 5 || nextMove == 6)
+                ? std::optional<M>{M::LAGAVULIN_SLEEP} : std::nullopt;
+    case sts::MonsterId::LOOTER:
+        return nextMove == 1 ? std::optional<M>{M::LOOTER_MUG}
+            : nextMove == 2 ? std::optional<M>{M::LOOTER_SMOKE_BOMB}
+            : nextMove == 3 ? std::optional<M>{M::LOOTER_ESCAPE}
+            : nextMove == 4 ? std::optional<M>{M::LOOTER_LUNGE} : std::nullopt;
+    case sts::MonsterId::GREEN_LOUSE:
+        return nextMove == 3 ? std::optional<M>{M::GREEN_LOUSE_BITE}
+            : nextMove == 4 ? std::optional<M>{M::GREEN_LOUSE_SPIT_WEB} : std::nullopt;
+    case sts::MonsterId::RED_LOUSE:
+        return nextMove == 3 ? std::optional<M>{M::RED_LOUSE_BITE}
+            : nextMove == 4 ? std::optional<M>{M::RED_LOUSE_GROW} : std::nullopt;
+    case sts::MonsterId::SENTRY:
+        return nextMove == 3 ? std::optional<M>{M::SENTRY_BOLT}
+            : nextMove == 4 ? std::optional<M>{M::SENTRY_BEAM} : std::nullopt;
+    case sts::MonsterId::BLUE_SLAVER:
+        return nextMove == 1 ? std::optional<M>{M::BLUE_SLAVER_STAB}
+            : nextMove == 4 ? std::optional<M>{M::BLUE_SLAVER_RAKE} : std::nullopt;
+    case sts::MonsterId::RED_SLAVER:
+        return nextMove == 1 ? std::optional<M>{M::RED_SLAVER_STAB}
+            : nextMove == 2 ? std::optional<M>{M::RED_SLAVER_ENTANGLE}
+            : nextMove == 3 ? std::optional<M>{M::RED_SLAVER_SCRAPE} : std::nullopt;
+    case sts::MonsterId::SLIME_BOSS:
+        return nextMove == 1 ? std::optional<M>{M::SLIME_BOSS_SLAM}
+            : nextMove == 2 ? std::optional<M>{M::SLIME_BOSS_PREPARING}
+            : nextMove == 3 ? std::optional<M>{M::SLIME_BOSS_SPLIT}
+            : nextMove == 4 ? std::optional<M>{M::SLIME_BOSS_GOOP_SPRAY} : std::nullopt;
+    case sts::MonsterId::SPIKE_SLIME_L:
+        return nextMove == 1 ? std::optional<M>{M::SPIKE_SLIME_L_FLAME_TACKLE}
+            : nextMove == 3 ? std::optional<M>{M::SPIKE_SLIME_L_SPLIT}
+            : nextMove == 4 ? std::optional<M>{M::SPIKE_SLIME_L_LICK} : std::nullopt;
+    case sts::MonsterId::SPIKE_SLIME_M:
+        return nextMove == 1 ? std::optional<M>{M::SPIKE_SLIME_M_FLAME_TACKLE}
+            : nextMove == 4 ? std::optional<M>{M::SPIKE_SLIME_M_LICK} : std::nullopt;
+    case sts::MonsterId::SPIKE_SLIME_S:
+        return nextMove == 1 ? std::optional<M>{M::SPIKE_SLIME_S_TACKLE} : std::nullopt;
+    case sts::MonsterId::THE_GUARDIAN:
+        return nextMove == 1 ? std::optional<M>{M::THE_GUARDIAN_DEFENSIVE_MODE}
+            : nextMove == 2 ? std::optional<M>{M::THE_GUARDIAN_FIERCE_BASH}
+            : nextMove == 3 ? std::optional<M>{M::THE_GUARDIAN_ROLL_ATTACK}
+            : nextMove == 4 ? std::optional<M>{M::THE_GUARDIAN_TWIN_SLAM}
+            : nextMove == 5 ? std::optional<M>{M::THE_GUARDIAN_WHIRLWIND}
+            : nextMove == 6 ? std::optional<M>{M::THE_GUARDIAN_CHARGING_UP}
+            : nextMove == 7 ? std::optional<M>{M::THE_GUARDIAN_VENT_STEAM} : std::nullopt;
     case sts::MonsterId::GREMLIN_NOB:
         return nextMove == 3 ? std::optional<M>{M::GREMLIN_NOB_BELLOW}
             : nextMove == 1 ? std::optional<M>{M::GREMLIN_NOB_RUSH}

@@ -922,6 +922,17 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         if ("FuzzyLouseNormal".equals(id) || "FuzzyLouseDefensive".equals(id))
             return readIntField(monster, "biteDamage", "dmg");
         if ("GremlinWizard".equals(id)) return readIntField(monster, "currentCharge");
+        if ("Hexaghost".equals(id)) {
+            // Native Silver keeps the per-hit Divider damage in miscInfo. The
+            // Java intent damage is the same finalized value once Divider is
+            // selected; other Hexaghost moves do not consume miscInfo.
+            return monster.nextMove == 1 ? monster.getIntentDmg() : 0;
+        }
+        if ("TheGuardian".equals(id)) {
+            for (AbstractPower power : monster.powers)
+                if ("Mode Shift".equals(power.ID)) return power.amount;
+            return null;
+        }
         if ("BookOfStabbing".equals(id)) return readIntField(monster, "stabCount");
         if ("SlaverRed".equals(id)) {
             Boolean used = readBooleanField(monster, "usedEntangle");
@@ -1053,6 +1064,8 @@ public final class STSModelInspector implements PostInitializeSubscriber,
                 .append(",\"lastAttackUnblockedDamage\":").append(trackedLastUnblockedDamage)
                 .append(",\"timesDamagedThisCombat\":").append(trackedTimesDamaged)
                 .append(",\"playerVulnerableSeen\":").append(trackedPlayerVulnerableSeen)
+                .append(",\"cardDrawPerTurn\":").append(readIntField(AbstractDungeon.player, "gameHandSize") == null
+                        ? 5 : readIntField(AbstractDungeon.player, "gameHandSize"))
                 .append(",\"playedThisTurn\":[");
         boolean firstPlayed = true;
         for (AbstractCard card : AbstractDungeon.actionManager.cardsPlayedThisTurn) {
@@ -1066,8 +1079,20 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         for (AbstractPower power : AbstractDungeon.player.powers) {
             if (!firstPower) out.append(',');
             firstPower = false;
-            out.append("{\"id\":\"").append(escapeJson(power.ID))
-                    .append("\",\"amount\":").append(power.amount).append('}');
+            String powerId = power.ID;
+            out.append("{\"id\":\"").append(escapeJson(powerId))
+                    .append("\",\"amount\":").append(power.amount);
+            // Several native statuses have a turn-local justApplied bit.  It
+            // is private in vanilla powers, so emit it only when reflection
+            // can read the actual field; the importer remains fail-closed if
+            // a required power does not expose it.
+            Boolean justApplied = readBooleanField(power, "justApplied");
+            if (justApplied != null) out.append(",\"justApplied\":").append(justApplied);
+            if (powerId.startsWith("TheBomb")) {
+                Integer damage = readIntField(power, "damage");
+                if (damage != null) out.append(",\"bombDamage\":").append(damage);
+            }
+            out.append('}');
         }
         out.append("]");
         for (AbstractPower power : AbstractDungeon.player.powers) {
