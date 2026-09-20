@@ -913,6 +913,39 @@ class Driver:
             candidates = [candidate for candidate in candidates
                           if not (candidate.mcp_tool == "choose"
                                   and candidate.mcp_arguments.get("choice_index") in declined_indexes)]
+            # MCP can advertise a potion reward even when the inventory is
+            # full, but the inspector deliberately omits that primitive
+            # because this boundary has no discard command.  Only suppress
+            # that specifically identified potion occurrence.  Unopened card
+            # rewards are also absent from liveChoices by design, but remain
+            # valid raw MCP fallback actions that open the hidden card group.
+            live_choices = _list(ooc.get("liveChoices"))
+            public = _mapping(ooc.get("publicState"))
+            capacity = public.get("potionCapacity")
+            potions = _list(public.get("potions"))
+            occupied = sum(
+                _text(_mapping(potion).get("id", potion)).lower()
+                not in {"", "potion slot", "empty", "none"}
+                for potion in potions)
+            full_potions = type(capacity) is int and occupied >= capacity
+            if full_potions and live_choices:
+                live_choice_indexes = {
+                    hint.get("choiceIndex")
+                    for choice in live_choices
+                    for hint in [_mapping(_mapping(choice).get("liveAction"))]
+                    if hint.get("kind") == "choose" and type(hint.get("choiceIndex")) is int
+                }
+                absent_potions = {
+                    item.get("index") + 1
+                    for item in occurrences
+                    if isinstance(item, Mapping)
+                    and type(item.get("index")) is int
+                    and _text(item.get("type")).upper() == "POTION"
+                    and item.get("index") + 1 not in live_choice_indexes
+                }
+                candidates = [candidate for candidate in candidates
+                              if not (candidate.mcp_tool == "choose"
+                                      and candidate.mcp_arguments.get("choice_index") in absent_potions)]
         if _text(screen.get("screen_type", screen.get("screenType"))).upper() != "SHOP_ROOM":
             return choose_deterministic_action(screen, candidates), None
         act, floor = game.get("act", screen.get("act")), screen.get("floor", game.get("floor"))

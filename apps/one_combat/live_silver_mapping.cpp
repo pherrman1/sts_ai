@@ -104,9 +104,12 @@ const std::map<std::string, PlayerStatus> kPlayerStatuses = {
     {"Dexterity", PlayerStatus::DEXTERITY}, {"DexterityPower", PlayerStatus::DEXTERITY},
     {"Strength", PlayerStatus::STRENGTH}, {"StrengthPower", PlayerStatus::STRENGTH},
     {"Focus", PlayerStatus::FOCUS}, {"FocusPower", PlayerStatus::FOCUS},
-    {"Weak", PlayerStatus::WEAK}, {"WeakPower", PlayerStatus::WEAK},
+    {"Weak", PlayerStatus::WEAK}, {"WeakPower", PlayerStatus::WEAK}, {"Weakened", PlayerStatus::WEAK},
     {"Frail", PlayerStatus::FRAIL}, {"FrailPower", PlayerStatus::FRAIL},
     {"Vulnerable", PlayerStatus::VULNERABLE}, {"VulnerablePower", PlayerStatus::VULNERABLE},
+    // Flex is temporary Strength in Java; the native combat model stores its
+    // pending end-of-turn loss as LOSE_STRENGTH.
+    {"Flex", PlayerStatus::LOSE_STRENGTH}, {"FlexPower", PlayerStatus::LOSE_STRENGTH},
     {"No Draw", PlayerStatus::NO_DRAW},
     {"NoDrawPower", PlayerStatus::NO_DRAW}, {"No Block", PlayerStatus::NO_BLOCK},
     {"NoBlockPower", PlayerStatus::NO_BLOCK}, {"Entangled", PlayerStatus::ENTANGLED}, {"EntanglePower", PlayerStatus::ENTANGLED},

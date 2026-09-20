@@ -10583,3 +10583,68 @@ default or generalization claim is authorized. Evidence:
 - **Boundary:** This correction changes no production Silver path, model,
   RNG, schema, budget, gameplay, MCTS, holdout, or default. **Knowledge
   impact:** durable current research and corrected offline evidence only.
+
+## §328 — Silver deterministic action contraction (2026-09-20)
+
+- **Question and protocol:** Does contracting deterministic multi-step Silver
+  decisions reduce search work without changing the sequential endpoint? The
+  corrected frozen implementation was `796fa5cd`, based on main
+  `d5e61ae2078244a27ffea8842821aae2304263b8`. CONTROL retained primitive
+  edges; A folded only RNG-neutral one-option `CARD_SELECT` states; B added
+  one-edge-per-follow-up macros for the seven safe PR #237 tasks when the
+  primitive was RNG-neutral, nonterminal, immediately entered `CARD_SELECT`,
+  and had at least two deduplicated follow-ups. All arms used the same Release
+  replay binary, allocated 32,768-node reuse cap, adaptive/exact-lock/rho off,
+  common benchmark seeds, and frozen `hard64-dev` only. HOLDOUT was not used.
+- **Correctness correction:** Review found that B validated only the first
+  primitive action's RNG state. The corrected `macroFollowUps()` now executes
+  every candidate follow-up on a copy of the post-first-action state and
+  rejects the entire macro if any follow-up changes RNG. The focused test now
+  includes True Grit+ with Dead Branch and at least two selectable cards,
+  proving the first action is RNG-neutral while the EXHAUST_ONE continuation
+  is stochastic. `silver_search_optimization_test` passed the four-choice
+  Headbutt canonicalization fixture, A forced-selection resolution, macro
+  endpoint/RNG equality, stochastic-parent rejection, unsupported-task and
+  Hologram fallback, and sequence-accessor compatibility. All six 64-row
+  Release replays completed with zero replay failures. The unrelated existing
+  `silver_bridge_test` still fails its representative non-target potion
+  expectation and then an existing restored CARD_SELECT lowering exception;
+  no live-combat source was changed to repair it.
+- **1,000 simulations:** CONTROL/A/B won `51/64`, `50/64`, and `51/64`, with
+  mean HP fractions `0.344091`, `0.326269`, and `0.333693`. Total MCTS
+  invocations were `2,232 / 2,220 / 2,230`; total simulations were
+  `2,232,000 / 2,220,000 / 2,230,000`; nodes were
+  `2,063,754 / 2,048,089 / 2,060,113`; and wall seconds were
+  `17.591 / 16.918 / 18.770`. A contracted 5 forced selections; B also took
+  37 macros across 22,772 eligible nodes and reduced CARD_SELECT searches
+  from 104 to 79.
+- **10,000 simulations:** CONTROL/A/B won `59/64`, `58/64`, and `57/64`, with
+  mean HP fractions `0.469434`, `0.453714`, and `0.458448`. Total MCTS
+  invocations were `2,230 / 2,216 / 2,176`; total simulations were
+  `22,300,000 / 22,160,000 / 21,760,000`; nodes were
+  `19,756,757 / 19,640,433 / 19,170,926`; and wall seconds were
+  `201.453 / 201.980 / 210.446`. A contracted 7 forced selections; B took
+  32 macros across 215,040 eligible nodes and reduced CARD_SELECT searches
+  from 105 to 68. B macro eligibility was concentrated in HEADBUTT, with
+  additional ARMAMENTS, EXHAUST_ONE, EXHUME, FORETHOUGHT,
+  LIQUID_MEMORIES_POTION, and WARCRY coverage; the raw task breakdown is in
+  the evidence packet.
+- **Paired interpretation:** At 1k, CONTROL vs A/B had 3/23 outcome and 8/35
+  trace discordances. At 10k, the counts were 4/26 and 11/41. B had real
+  coverage and reduced search work, but did not improve wall time: it had equal
+  wins with CONTROL but lower mean HP at 1k, and lower wins and mean HP at 10k.
+  The corrected implementation validates every candidate continuation on a
+  copied state; at 10k this is roughly 2.08 million candidate-continuation
+  validations. The wall-time result therefore includes safe-macro
+  implementation overhead and is not a universal claim that macro contraction
+  cannot work. A passed the technical forced-select contract but its small work
+  reduction was accompanied by one fewer win at each budget. This is bounded
+  offline DEV evidence, not live-game, whole-run, holdout, or production
+  qualification.
+- **Decision:** `FORCED_SELECT_CONTRACTION_PASS` and
+  `SAFE_SELECT_MACRO_REJECTED`. Do not promote B or change Silver defaults
+  from this experiment. **Evidence:** [Silver deterministic contraction
+  packet](evidence/silver_deterministic_contraction_20260920/README.md).
+  **Knowledge impact:** durable negative efficiency/quality result and current
+  research evidence only; no production Silver behavior, model, RNG, schema,
+  budget, gameplay result, holdout, or default changed.
