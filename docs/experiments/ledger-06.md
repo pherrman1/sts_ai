@@ -10588,7 +10588,7 @@ default or generalization claim is authorized. Evidence:
 
 - **Question and protocol:** Does contracting deterministic multi-step Silver
   decisions reduce search work without changing the sequential endpoint? The
-  frozen implementation was `3a53d8a0`, based on main
+  corrected frozen implementation was `796fa5cd`, based on main
   `d5e61ae2078244a27ffea8842821aae2304263b8`. CONTROL retained primitive
   edges; A folded only RNG-neutral one-option `CARD_SELECT` states; B added
   one-edge-per-follow-up macros for the seven safe PR #237 tasks when the
@@ -10596,7 +10596,13 @@ default or generalization claim is authorized. Evidence:
   and had at least two deduplicated follow-ups. All arms used the same Release
   replay binary, allocated 32,768-node reuse cap, adaptive/exact-lock/rho off,
   common benchmark seeds, and frozen `hard64-dev` only. HOLDOUT was not used.
-- **Correctness:** `silver_search_optimization_test` passed the four-choice
+- **Correctness correction:** Review found that B validated only the first
+  primitive action's RNG state. The corrected `macroFollowUps()` now executes
+  every candidate follow-up on a copy of the post-first-action state and
+  rejects the entire macro if any follow-up changes RNG. The focused test now
+  includes True Grit+ with Dead Branch and at least two selectable cards,
+  proving the first action is RNG-neutral while the EXHAUST_ONE continuation
+  is stochastic. `silver_search_optimization_test` passed the four-choice
   Headbutt canonicalization fixture, A forced-selection resolution, macro
   endpoint/RNG equality, stochastic-parent rejection, unsupported-task and
   Hologram fallback, and sequence-accessor compatibility. All six 64-row
@@ -10605,26 +10611,26 @@ default or generalization claim is authorized. Evidence:
   expectation and then an existing restored CARD_SELECT lowering exception;
   no live-combat source was changed to repair it.
 - **1,000 simulations:** CONTROL/A/B won `51/64`, `50/64`, and `51/64`, with
-  mean HP fractions `0.344091`, `0.326269`, and `0.339315`. Total MCTS
-  invocations were `2,232 / 2,220 / 2,220`; total simulations were
-  `2,232,000 / 2,220,000 / 2,220,000`; nodes were
-  `2,063,754 / 2,048,089 / 2,050,013`; and wall seconds were
-  `23.640 / 23.457 / 24.562`. A contracted 5 forced selections; B also took
-  40 macros across 27,203 eligible nodes and reduced CARD_SELECT searches
-  from 104 to 75.
+  mean HP fractions `0.344091`, `0.326269`, and `0.333693`. Total MCTS
+  invocations were `2,232 / 2,220 / 2,230`; total simulations were
+  `2,232,000 / 2,220,000 / 2,230,000`; nodes were
+  `2,063,754 / 2,048,089 / 2,060,113`; and wall seconds were
+  `17.591 / 16.918 / 18.770`. A contracted 5 forced selections; B also took
+  37 macros across 22,772 eligible nodes and reduced CARD_SELECT searches
+  from 104 to 79.
 - **10,000 simulations:** CONTROL/A/B won `59/64`, `58/64`, and `57/64`, with
-  mean HP fractions `0.469434`, `0.453714`, and `0.449982`. Total MCTS
-  invocations were `2,230 / 2,216 / 2,154`; total simulations were
-  `22,300,000 / 22,160,000 / 21,540,000`; nodes were
-  `19,756,757 / 19,640,433 / 18,933,106`; and wall seconds were
-  `271.403 / 268.640 / 274.189`. A contracted 7 forced selections; B took
-  36 macros across 234,233 eligible nodes and reduced CARD_SELECT searches
-  from 105 to 64. B macro eligibility was concentrated in HEADBUTT, with
+  mean HP fractions `0.469434`, `0.453714`, and `0.458448`. Total MCTS
+  invocations were `2,230 / 2,216 / 2,176`; total simulations were
+  `22,300,000 / 22,160,000 / 21,760,000`; nodes were
+  `19,756,757 / 19,640,433 / 19,170,926`; and wall seconds were
+  `201.453 / 201.980 / 210.446`. A contracted 7 forced selections; B took
+  32 macros across 215,040 eligible nodes and reduced CARD_SELECT searches
+  from 105 to 68. B macro eligibility was concentrated in HEADBUTT, with
   additional ARMAMENTS, EXHAUST_ONE, EXHUME, FORETHOUGHT,
   LIQUID_MEMORIES_POTION, and WARCRY coverage; the raw task breakdown is in
   the evidence packet.
-- **Paired interpretation:** At 1k, CONTROL vs A/B had 3/26 outcome and 8/36
-  trace discordances. At 10k, the counts were 4/30 and 11/43. B had real
+- **Paired interpretation:** At 1k, CONTROL vs A/B had 3/23 outcome and 8/35
+  trace discordances. At 10k, the counts were 4/26 and 11/41. B had real
   coverage and reduced search work, but did not improve wall time and had
   lower wins and mean HP at both budgets. A passed the technical forced-select
   contract but its small work reduction was accompanied by one fewer win at
