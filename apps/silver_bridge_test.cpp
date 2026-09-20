@@ -709,6 +709,94 @@ int main(int argc, char **argv) {
               && directRolloutA.allActionFingerprints == directRolloutA.rolloutActionFingerprints,
           "baseline canonical rollout path must remain unchanged by treatment seam");
 
+    // Spot Weakness V1 boundary fixture. This uses the ordinary wire materializer and native
+    // monster/card legality, but does not enter gameplay search. It covers the candidate's
+    // positive predicate, damage/index target ordering, copy ordering, and fail-closed gates.
+    const auto spotCard = [](std::int16_t uid, bool upgraded) {
+        silver_bridge::CardWire cardWire;
+        cardWire.id = static_cast<std::int16_t>(CardId::SPOT_WEAKNESS);
+        cardWire.uniqueId = uid;
+        cardWire.cost = 1;
+        cardWire.costForTurn = 1;
+        cardWire.upgraded = upgraded;
+        return cardWire;
+    };
+    auto spotWire = firstWire;
+    spotWire.intentsHidden = false;
+    spotWire.inputState = static_cast<int>(InputState::PLAYER_NORMAL);
+    spotWire.outcome = static_cast<int>(Outcome::UNDECIDED);
+    spotWire.player.energy = 3;
+    spotWire.hand = {spotCard(201, false), spotCard(202, true)};
+    spotWire.monsterCount = 2;
+    spotWire.monstersAlive = 2;
+    spotWire.monsters[0] = firstWire.monsters[0];
+    spotWire.monsters[1] = firstWire.monsters[0];
+    spotWire.monsters[0].idx = 0;
+    spotWire.monsters[1].idx = 1;
+    spotWire.monsters[0].curHp = spotWire.monsters[0].maxHp = 100;
+    spotWire.monsters[1].curHp = spotWire.monsters[1].maxHp = 100;
+    spotWire.monsters[0].moveHistory[0] = static_cast<std::int16_t>(MonsterMoveId::CULTIST_DARK_STRIKE);
+    spotWire.monsters[1].moveHistory[0] = static_cast<std::int16_t>(MonsterMoveId::JAW_WORM_CHOMP);
+    spotWire.monsters[0].pendingMoveRolls = 0;
+    spotWire.monsters[1].pendingMoveRolls = 0;
+    const auto spotProbe = silver_bridge::probeSilverSpotWeaknessFirst(spotWire);
+    check(spotProbe.accepted && spotProbe.applicable && spotProbe.handIndex == 1
+              && spotProbe.targetIndex == 1
+              && spotProbe.action.type == silver_bridge::SemanticActionType::CARD
+              && spotProbe.action.target == 1,
+          "Spot Weakness V1 must fire on a playable visible attack and choose upgraded copy plus max damage target");
+
+    auto tieWire = spotWire;
+    tieWire.monsters[1].moveHistory[0] = tieWire.monsters[0].moveHistory[0];
+    const auto tieProbe = silver_bridge::probeSilverSpotWeaknessFirst(tieWire);
+    check(tieProbe.accepted && tieProbe.applicable && tieProbe.targetIndex == 0,
+          "Spot Weakness V1 must choose the lowest monster index on equal incoming damage");
+    auto noSpotWire = spotWire;
+    noSpotWire.hand.clear();
+    check(!silver_bridge::probeSilverSpotWeaknessFirst(noSpotWire).applicable,
+          "Spot Weakness V1 must not fire when Spot Weakness is absent");
+    auto unplayableSpotWire = spotWire;
+    unplayableSpotWire.player.energy = 0;
+    check(!silver_bridge::probeSilverSpotWeaknessFirst(unplayableSpotWire).applicable,
+          "Spot Weakness V1 must not fire when every Spot Weakness copy is unplayable");
+    auto noAttackWire = spotWire;
+    noAttackWire.monsters[0].moveHistory[0] = static_cast<std::int16_t>(MonsterMoveId::CULTIST_INCANTATION);
+    noAttackWire.monsters[1].moveHistory[0] = static_cast<std::int16_t>(MonsterMoveId::CULTIST_INCANTATION);
+    check(!silver_bridge::probeSilverSpotWeaknessFirst(noAttackWire).applicable,
+          "Spot Weakness V1 must not fire when no targetable monster is attacking");
+    auto hiddenSpotWire = spotWire;
+    hiddenSpotWire.intentsHidden = true;
+    hiddenSpotWire.monsters[0].pendingMoveRolls = 1;
+    check(!silver_bridge::probeSilverSpotWeaknessFirst(hiddenSpotWire).applicable,
+          "Spot Weakness V1 must fail closed for hidden unresolved intents");
+
+    const auto spotBaseline = silver_bridge::runSilverSimpleRollout(spotWire, spotWire);
+    const auto spotTreatment = silver_bridge::runSilverSimpleRolloutWithSpotWeaknessFirst(
+        spotWire, spotWire);
+    const auto spotForced = silver_bridge::runSilverSimpleRolloutWithFirstAction(
+        spotWire, spotWire, spotProbe.action);
+    const auto spotFingerprint = silver_bridge::semanticActionFingerprint(spotProbe.action);
+    check(spotBaseline.accepted && !spotBaseline.spotWeaknessFirstEnabled
+              && spotTreatment.accepted && spotTreatment.spotWeaknessFirstEnabled
+              && spotTreatment.spotWeaknessFirstApplied
+              && !spotTreatment.forcedFirstAction
+              && !spotTreatment.allActionFingerprints.empty()
+              && spotTreatment.allActionFingerprints.front() == spotFingerprint,
+          "Spot Weakness V1 treatment must alter exactly the first canonical card action when eligible");
+    check(spotForced.accepted && spotTreatment.accepted
+              && spotForced.allActionFingerprints == spotTreatment.allActionFingerprints
+              && spotForced.originalRootCorrectedUtility == spotTreatment.originalRootCorrectedUtility,
+          "Spot Weakness V1 treatment must resume the unchanged canonical continuation after one action");
+    auto inactiveSpotWire = noSpotWire;
+    const auto inactiveBaseline = silver_bridge::runSilverSimpleRollout(inactiveSpotWire, inactiveSpotWire);
+    const auto inactiveTreatment = silver_bridge::runSilverSimpleRolloutWithSpotWeaknessFirst(
+        inactiveSpotWire, inactiveSpotWire);
+    check(inactiveBaseline.accepted && inactiveTreatment.accepted
+              && !inactiveTreatment.spotWeaknessFirstApplied
+              && inactiveBaseline.allActionFingerprints == inactiveTreatment.allActionFingerprints
+              && inactiveBaseline.originalRootCorrectedUtility == inactiveTreatment.originalRootCorrectedUtility,
+          "inactive Spot Weakness V1 treatment must be identical to baseline");
+
     auto directConfig = observerConfig;
     int directStarts = 0;
     directConfig.leafObserver = [&](silver_bridge::SilverLeafObservation &observation) {

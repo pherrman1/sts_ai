@@ -564,6 +564,53 @@ void search::SimpleAgent::playoutBattle(BattleContext &bc) {
     }
 }
 
+bool search::SimpleAgent::chooseSpotWeaknessFirstAction(
+        const BattleContext &bc, Action &outAction) const {
+    if (bc.inputState != InputState::PLAYER_NORMAL || !bc.isCardPlayAllowed()
+            || bc.intentsHidden) {
+        return false;
+    }
+
+    // The candidate is intentionally fail-closed if any visible decision still carries a
+    // deferred move roll. The normal rollout path may materialize that roll for its unchanged
+    // policy, but this correction is only allowed on already-resolved intents.
+    for (int i = 0; i < bc.monsters.monsterCount; ++i) {
+        const auto &monster = bc.monsters.arr[i];
+        if (!monster.isDeadOrEscaped() && monster.pendingMoveRolls > 0) return false;
+    }
+
+    int targetIndex = -1;
+    int targetIncomingDamage = -1;
+    for (int i = 0; i < bc.monsters.monsterCount; ++i) {
+        const auto &monster = bc.monsters.arr[i];
+        if (!monster.isTargetable() || !isMoveAttack(monster.moveHistory[0])) continue;
+        DamageInfo damage = monster.getMoveBaseDamage(bc);
+        damage.damage = monster.calculateDamageToPlayer(bc, damage.damage);
+        const int total = damage.damage * damage.attackCount;
+        if (targetIndex < 0 || total > targetIncomingDamage) {
+            targetIndex = i;
+            targetIncomingDamage = total;
+        }
+    }
+    if (targetIndex < 0) return false;
+
+    // Existing hand order is the deterministic tie-break; upgrade status is the primary key.
+    int handIndex = -1;
+    for (int i = 0; i < bc.cards.cardsInHand; ++i) {
+        const auto &card = bc.cards.hand[i];
+        if (card.getId() != CardId::SPOT_WEAKNESS) continue;
+        const Action candidate(ActionType::CARD, i, targetIndex);
+        if (!candidate.isValidAction(bc)) continue;
+        if (handIndex < 0 || (card.isUpgraded() && !bc.cards.hand[handIndex].isUpgraded())) {
+            handIndex = i;
+        }
+    }
+    if (handIndex < 0) return false;
+
+    outAction = Action(ActionType::CARD, handIndex, targetIndex);
+    return true;
+}
+
 sts::search::Action search::SimpleAgent::chooseBattleCardPlay(BattleContext &bc) {
     if (rolloutEndTurnAlways) {
         return Action(ActionType::END_TURN);
