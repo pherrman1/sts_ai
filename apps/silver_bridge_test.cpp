@@ -606,6 +606,8 @@ int main(int argc, char **argv) {
     // replace only the nonterminal rollout value.
     silver_bridge::SilverSearchConfig observerConfig;
     observerConfig.simulationsPerDecision = 12;
+    observerConfig.collectRootActionSummaries = true;
+    observerConfig.collectRolloutDiagnostics = true;
     int observedStarts = 0;
     int observedEnds = 0;
     bool observedRolloutFields = true;
@@ -633,6 +635,79 @@ int main(int argc, char **argv) {
               && silver_bridge::semanticActionFingerprint(noObserver.action)
                   == silver_bridge::semanticActionFingerprint(observed.action),
           "leaf observer must report every sampled rollout start and completed terminal result");
+    check(noObserver.accepted && observed.accepted
+              && silver_bridge::semanticActionFingerprint(noObserver.action)
+                  == silver_bridge::semanticActionFingerprint(observed.action)
+              && noObserver.simulations == observed.simulations
+              && noObserver.telemetry.rolloutCalls == observed.telemetry.rolloutCalls
+              && noObserver.telemetry.rolloutActionCount == observed.telemetry.rolloutActionCount
+              && noObserver.telemetry.rolloutTurnDelta == observed.telemetry.rolloutTurnDelta
+              && sameRootActionSummaries(noObserver.rootActionSummaries,
+                                          observed.rootActionSummaries),
+          "same-seed observer OFF/ON must preserve action, search counters, and root statistics");
+
+    const auto directRolloutA = silver_bridge::runSilverSimpleRollout(firstWire, firstWire);
+    const auto directRolloutB = silver_bridge::runSilverSimpleRollout(firstWire, firstWire);
+    check(directRolloutA.accepted && directRolloutA.terminalOutcome != static_cast<int>(Outcome::UNDECIDED)
+              && directRolloutA.rolloutActionCount > 0
+              && directRolloutA.rolloutActionCount == static_cast<std::int64_t>(
+                  directRolloutA.rolloutActionFingerprints.size())
+              && directRolloutA.originalRootCorrectedUtility == directRolloutA.leafRootUtility,
+          "stored PLAYER_NORMAL leaf must replay through the canonical SimpleAgent rollout seam");
+    check(directRolloutA.accepted == directRolloutB.accepted
+              && directRolloutA.terminalOutcome == directRolloutB.terminalOutcome
+              && directRolloutA.terminalHp == directRolloutB.terminalHp
+              && directRolloutA.leafRootUtility == directRolloutB.leafRootUtility
+              && directRolloutA.rolloutActionFingerprints == directRolloutB.rolloutActionFingerprints,
+          "canonical diagnostic rollout must be deterministic for a fixed stored RNG identity");
+
+    const auto legalFirstActions = silver_bridge::enumerateSilverLegalActions(firstWire);
+    check(!legalFirstActions.empty(),
+          "stored PLAYER_NORMAL leaf must expose at least one legal semantic first action");
+    const auto forcedRolloutA = silver_bridge::runSilverSimpleRolloutWithFirstAction(
+        firstWire, firstWire, legalFirstActions.front());
+    const auto forcedRolloutB = silver_bridge::runSilverSimpleRolloutWithFirstAction(
+        firstWire, firstWire, legalFirstActions.front());
+    const auto forcedFingerprint = silver_bridge::semanticActionFingerprint(legalFirstActions.front());
+    check(forcedRolloutA.accepted && forcedRolloutA.forcedFirstAction
+              && forcedRolloutA.firstActionExecuted
+              && forcedRolloutA.firstActionFingerprint == forcedFingerprint
+              && !forcedRolloutA.firstActionDescription.empty()
+              && forcedRolloutA.totalActionCount == forcedRolloutA.rolloutActionCount + 1
+              && forcedRolloutA.allActionFingerprints.size()
+                  == static_cast<std::size_t>(forcedRolloutA.totalActionCount)
+              && !forcedRolloutA.allActionFingerprints.empty()
+              && forcedRolloutA.allActionFingerprints.front() == forcedFingerprint,
+          "teacher-first-action treatment must execute exactly one supplied action before canonical rollout");
+    check(forcedRolloutA.accepted == forcedRolloutB.accepted
+              && forcedRolloutA.terminalOutcome == forcedRolloutB.terminalOutcome
+              && forcedRolloutA.originalRootCorrectedUtility == forcedRolloutB.originalRootCorrectedUtility
+              && forcedRolloutA.allActionFingerprints == forcedRolloutB.allActionFingerprints
+              && forcedRolloutA.rngIdentity == forcedRolloutB.rngIdentity,
+          "teacher-first-action treatment must preserve fixed RNG identity deterministically");
+    auto alteredOriginalRoot = firstWire;
+    ++alteredOriginalRoot.player.maxHp;
+    const auto alteredForcedRollout = silver_bridge::runSilverSimpleRolloutWithFirstAction(
+        firstWire, alteredOriginalRoot, legalFirstActions.front());
+    const bool correctionPreserved = forcedRolloutA.terminalOutcome
+            == static_cast<int>(Outcome::PLAYER_VICTORY)
+        ? alteredForcedRollout.originalRootCorrectedUtility
+              == forcedRolloutA.originalRootCorrectedUtility - 2.0
+        : alteredForcedRollout.originalRootCorrectedUtility
+              == forcedRolloutA.originalRootCorrectedUtility;
+    check(alteredForcedRollout.accepted && correctionPreserved,
+          "teacher-first-action treatment must preserve original-root victory correction");
+    silver_bridge::SemanticAction invalidFirstAction;
+    const auto invalidForcedRollout = silver_bridge::runSilverSimpleRolloutWithFirstAction(
+        firstWire, firstWire, invalidFirstAction);
+    check(!invalidForcedRollout.accepted
+              && invalidForcedRollout.failureReason
+                  == "teacher_first_action_unresolvable_or_illegal",
+          "unresolvable teacher-first action must fail closed");
+    check(!directRolloutA.forcedFirstAction
+              && directRolloutA.totalActionCount == directRolloutA.rolloutActionCount
+              && directRolloutA.allActionFingerprints == directRolloutA.rolloutActionFingerprints,
+          "baseline canonical rollout path must remain unchanged by treatment seam");
 
     auto directConfig = observerConfig;
     int directStarts = 0;

@@ -1,0 +1,21 @@
+{
+  "executable_git_sha": "94eba8f90db41f44e336951cfc5156e87150ec18",
+  "relabel_seed": 20260920,
+  "replicate_labels": [
+    "A",
+    "B"
+  ],
+  "rows_per_leaf": 2,
+  "schema": "silver_rollout_teacher_parallel_manifest_v1",
+  "selected_leaves": 247,
+  "teacher_rows": 494,
+  "teacher_schema": "silver_leaf_teacher_v1",
+  "teachers_sha256": "01994f057b07add5067d095f17c413bf246c322fa63c4c6cd409efb787b3855e",
+  "worker_count": 4,
+  "worker_outputs": [
+    "teachers-0.jsonl",
+    "teachers-1.jsonl",
+    "teachers-2.jsonl",
+    "teachers-3.jsonl"
+  ]
+}

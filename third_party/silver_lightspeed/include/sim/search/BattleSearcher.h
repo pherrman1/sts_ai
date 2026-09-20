@@ -342,6 +342,10 @@ namespace sts::search {
         void rerootAt(Node* newRoot, bool compact = false); // baseline reuse; optional cap-pressure collection
         void search(int64_t simulations);
         void searchForMicros(int64_t maxMicros);   // run steps until the wall-clock budget (microseconds) is spent
+        // Diagnostic-only access to the same rolloutToEnd path used by search.
+        // The caller must provide a decision-state root; this method never
+        // participates in ordinary search or live backend execution.
+        double runDiagnosticRollout();
         void step();
         Action getBestAction() const;
         const std::vector<Edge>& getRootEdges() const { return root->edges; }

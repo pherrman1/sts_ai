@@ -228,6 +228,39 @@ struct SilverLeafObservation {
 
 using SilverLeafObserver = std::function<void(SilverLeafObservation &)>;
 
+// Result of the diagnostic-only canonical SimpleAgent rollout seam. The
+// caller supplies one stored leaf and an earlier original root; no live state
+// or production search path crosses this interface.
+struct SilverSimpleRolloutResult {
+    bool accepted = false;
+    std::string failureReason;
+    std::uint64_t rngIdentity = 0;
+    bool forcedFirstAction = false;
+    bool firstActionExecuted = false;
+    bool terminalAfterFirstAction = false;
+    std::string firstActionFingerprint;
+    std::string firstActionDescription;
+    std::int64_t forcedActionTurnDelta = 0;
+    int terminalOutcome = 0;
+    int terminalHp = 0;
+    int terminalMaxHp = 0;
+    int terminalTurn = 0;
+    int terminalPotionCount = 0;
+    double terminalEffectiveGold = 0.0;
+    double leafRootUtility = 0.0;
+    double victoryBaselineCorrection = 0.0;
+    double appliedVictoryBaselineCorrection = 0.0;
+    double originalRootCorrectedUtility = 0.0;
+    std::int64_t rolloutActionCount = 0;
+    std::int64_t rolloutTurnDelta = 0;
+    std::int64_t rolloutWallMicros = 0;
+    std::int64_t totalActionCount = 0;
+    std::int64_t totalTurnDelta = 0;
+    std::int64_t totalWallMicros = 0;
+    std::vector<std::string> rolloutActionFingerprints;
+    std::vector<std::string> allActionFingerprints;
+};
+
 inline double silverBlendRolloutUtility(double rolloutUtility, double modelPrediction,
                                         double alpha) {
     return (1.0 - alpha) * rolloutUtility + alpha * modelPrediction;
@@ -301,6 +334,11 @@ struct SemanticAction {
 // index and can therefore cross the isolated-search/live-action boundary.
 std::string semanticActionFingerprint(const SemanticAction &action);
 
+// Human-readable rendering of a semantic action against a stored state.
+// Invalid or unresolvable actions return an empty string.
+std::string describeSilverSemanticAction(const BattleStateWire &state,
+                                         const SemanticAction &action);
+
 // Materialize the observed root and return the exact run-relative scalars
 // needed by the candidate value input.  This is read-only and does not run a
 // search or consume RNG.
@@ -321,6 +359,19 @@ double silverVictoryBaselineCorrection(const BattleStateWire &originalRoot,
 // Exact evaluateEndState value with `state` as the fresh Silver root. Valid
 // for terminal snapshots; nonterminal callers should run a normal search.
 double silverTerminalLeafRootValue(const BattleStateWire &state);
+
+// Diagnostic-only seam for replaying the canonical Silver SimpleAgent rollout
+// from a stored PLAYER_NORMAL BattleStateWire. It is intentionally not used
+// by runSilverDecision or the live backend.
+SilverSimpleRolloutResult runSilverSimpleRollout(
+    const BattleStateWire &leaf, const BattleStateWire &originalRoot);
+
+// Diagnostic-only counterfactual: execute exactly one supplied legal semantic
+// action, then resume the canonical SimpleAgent rollout. This is intentionally
+// not used by runSilverDecision or the live backend.
+SilverSimpleRolloutResult runSilverSimpleRolloutWithFirstAction(
+    const BattleStateWire &leaf, const BattleStateWire &originalRoot,
+    const SemanticAction &firstAction);
 
 struct SilverSearchConfig {
     // Values copied from upstream SearchAgent defaults at the pinned SHA.

@@ -10271,3 +10271,74 @@ default or generalization claim is authorized. Evidence:
   **Knowledge impact:** the independent target signal is supported on the
   fresh primary population; the historical regression, model training and
   every downstream learned-policy gate remain outstanding.
+
+## §322 — Silver rollout variance/bias diagnostic (2026-09-20)
+
+- **Question and protocol:** Determine whether one fixed SimpleAgent rollout
+  per sibling leaf is materially noisy or systematically biased relative to
+  independent Silver continuation values. The diagnostic used the frozen 64
+  hard DEV snapshots, ordinary fixed-1,000-simulation Silver to collect 32
+  complete sibling groups, 247 leaves, and 32 fixed-seed SimpleAgent
+  replicates per leaf. Each leaf also received independent A/B 25,000-
+  simulation Silver teachers with the established original-root correction.
+  The four independent teacher workers were split by complete sibling group
+  and merged deterministically; no treatment or default was changed.
+- **Result:** **`INCONCLUSIVE`** under the predeclared rules. At `k=1`, mean
+  teacher regret was `2.3380`, pairwise concordance `0.6346`, and top-leaf
+  agreement `0.4062`. At `k=4`, regret was `1.7978` (23.10% lower), pairwise
+  concordance `0.6719`, and top-leaf agreement `0.4375`; the clustered
+  bootstrap 95% interval for `k=4` regret was `[0.8513, 2.9146]`, so the
+  variance-material rule did not pass. The systematic-error and not-primary
+  rules also did not pass. Teacher A/B mean absolute noise was `1.0541` and
+  85.64% of within-sibling teacher margins were below the one-rollout noise
+  estimate.
+- **Causal follow-up:** The highest stable-residual leaf from each of the first
+  eight distinct `largest_stable_residuals` groups was selected before the
+  probe. Teacher A's exact semantic first action was forced once, then the
+  canonical SimpleAgent continuation resumed under the same 32 replicate RNG
+  identities. All 256 rows were accepted. Among the three A/B-action-stable
+  leaves, spanning three groups, aggregate absolute residual fell from
+  `54.8644` to `13.9072`: `74.6516%` removed, passing the preregistered
+  `FIRST_ACTION_BIAS_MATERIAL` threshold. The five teacher-action-unstable
+  leaves were retained descriptively but excluded from the causal decision.
+  Stable mismatches were deterministic card-choice substitutions on all 32
+  replicates: Reaper, Spot Weakness+ → Time Eater, and Spot Weakness+ → Bronze
+  Orb were each replaced by another SimpleAgent card.
+- **Follow-up boundary:** This supports first-action bias as a substantial
+  mechanism on the targeted frozen subset, but does not authorize a rollout
+  policy change. The next experiment is a fresh matched diagnostic cohort for
+  one narrow first-card-choice intervention with the existing continuation
+  unchanged. No intervention was implemented here.
+- **Boundary:** This is bounded diagnostic evidence, not ranking,
+  equivalence, model-training, rollout-policy, or default-promotion evidence.
+  No holdout or broad seed campaign was run. Large residuals remain in a
+  small number of groups and require separate causal investigation if they
+  become decision-relevant.
+- **Fresh holdout follow-up:** The frozen `SPOT_WEAKNESS_FIRST_V1` rule was
+  evaluated on the separate 64-root `hard64-holdout` cohort, selecting 32
+  complete eligible groups / 251 leaves and 112 active leaves. With paired
+  32-replicate baseline/treatment rows and independent A/B 25k teachers, the
+  corrected k=32 teacher regret improved from `1.8767` to `1.2212` (`34.93%`)
+  and the grouped-bootstrap probability of lower treatment regret was
+  `95.37%`. Pairwise concordance still fell from `0.7049` to `0.6892`, while
+  top agreement improved from `0.3438` to `0.4375`. The direct rollout cost
+  gate is unmeasured: baseline canonical `rollout_wall_micros` and treatment
+  `totalWallMicros` include different setup scopes, and the raw treatment
+  stream does not retain a comparable treatment-only timer. The result is
+  **`INCONCLUSIVE` / not promotable** for this exact treatment. The collector's
+  completed corpus required baseline-only recovery because `case_id` was
+  omitted from its first serializer; the manifest records that the complete
+  eligible group count was not serialized. This does not alter the selected
+  cohort, but remains an evidence limitation.
+- **Fresh follow-up boundary:** Do not tune or broaden the Spot Weakness rule
+  on this holdout, and do not infer that the broader first-action mechanism is
+  absent from the earlier targeted result. No rollout policy, evaluator,
+  prior, PUCT, budget, or gameplay default change is authorized.
+- **Post-result cleanup:** After the evidence was frozen and reviewed, the
+  rejected candidate treatment and collector-only implementation were reverted
+  from the task branch. The raw evidence and analyzer remain retained for
+  reproducibility; no production behavior was left enabled.
+- **Evidence:** [rollout variance/bias diagnostic](evidence/silver_rollout_variance_20260920/README.md).
+  **Knowledge impact:** durable Silver diagnostic evidence and current
+  research status only; no Silver behavior, model, RNG, schema, budget, or
+  gameplay default changed.
