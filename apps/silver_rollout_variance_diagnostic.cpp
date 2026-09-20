@@ -589,6 +589,10 @@ int runSpotWeaknessHoldout(int argc, char **argv) {
                     group.tooLarge = true;
                     return;
                 }
+                const auto probe = silver_bridge::probeSilverSpotWeaknessFirst(observation.state);
+                if (!probe.accepted)
+                    throw std::runtime_error("candidate probe failed closed at holdout leaf: "
+                        + probe.failureReason);
                 group.incomingActionFingerprints.insert(observation.incomingActionFingerprint);
             }
         };
@@ -597,9 +601,6 @@ int runSpotWeaknessHoldout(int argc, char **argv) {
             ++replayFailures;
             std::cerr << "replay failure case=" << caseId << " reason=" << replay.failureReason << '\n';
         }
-        if ((snapshots % 4) == 0)
-            std::cerr << "holdout selection replay snapshots=" << snapshots
-                << " groups=" << groups.size() << '\n';
     }
     if (input.bad()) throw std::runtime_error("snapshot read failure");
     if (replayFailures != 0)
