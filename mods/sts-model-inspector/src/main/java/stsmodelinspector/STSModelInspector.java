@@ -11,6 +11,7 @@ import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.megacrit.cardcrawl.cards.DamageInfo;
 import com.megacrit.cardcrawl.dungeons.AbstractDungeon;
 import com.megacrit.cardcrawl.cards.AbstractCard;
+import com.megacrit.cardcrawl.cards.CardQueueItem;
 import com.megacrit.cardcrawl.monsters.AbstractMonster;
 import com.megacrit.cardcrawl.powers.AbstractPower;
 import com.megacrit.cardcrawl.helpers.FontHelper;
@@ -69,6 +70,8 @@ public final class STSModelInspector implements PostInitializeSubscriber,
     private static int trackedTimesDamaged;
     private static boolean trackedPlayerVulnerableSeen;
     private static AbstractMonster trackedLastTargetedMonster;
+    private static final TrackedCardQueueItem trackedLastCardQueueItem =
+            new TrackedCardQueueItem();
     // AbstractMonster has no stable public slot number.  Keep object identity
     // for the life of one combat so a surviving monster is never renumbered
     // merely because another list entry died or escaped.  A newly-created
@@ -80,6 +83,43 @@ public final class STSModelInspector implements PostInitializeSubscriber,
             Collections.newSetFromMap(new IdentityHashMap<AbstractMonster, Boolean>());
     private static final IdentityHashMap<AbstractMonster, Integer> hexaghostDividerDamage =
             new IdentityHashMap<>();
+
+    /**
+     * Vanilla removes a CardQueueItem before the stable player boundary is
+     * published.  Retain the item while it is public so v4 can describe the
+     * exact item that was processed, including the resolved target object.
+     */
+    private static final class TrackedCardQueueItem {
+        boolean present;
+        String cardJson;
+        int target;
+        int energyOnUse;
+        boolean isEndTurn;
+        boolean triggerOnUse = true;
+        boolean ignoreEnergyTotal;
+        boolean freeToPlay;
+        boolean randomTarget;
+        boolean autoplay;
+        int regretCardCount;
+        boolean purgeOnUse;
+        boolean exhaustOnUse;
+
+        void clear() {
+            present = false;
+            cardJson = null;
+            target = 0;
+            energyOnUse = 0;
+            isEndTurn = false;
+            triggerOnUse = true;
+            ignoreEnergyTotal = false;
+            freeToPlay = false;
+            randomTarget = false;
+            autoplay = false;
+            regretCardCount = 0;
+            purgeOnUse = false;
+            exhaustOnUse = false;
+        }
+    }
 
     private static final STSModelInspector INSTANCE = new STSModelInspector();
     private final Advisor advisor = new Advisor();
@@ -149,6 +189,7 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         trackedTimesDamaged = 0;
         trackedPlayerVulnerableSeen = false;
         trackedLastTargetedMonster = null;
+        trackedLastCardQueueItem.clear();
         // BaseMod's hook is at AbstractRoom's battle-start boundary, before
         // player/monster start-of-combat effects are applied.
         // The encounter group may not be populated at this exact hook. Capture
@@ -181,6 +222,7 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         trackedTimesDamaged = 0;
         trackedPlayerVulnerableSeen = false;
         trackedLastTargetedMonster = null;
+        trackedLastCardQueueItem.clear();
         silverRerootExact = false;
         silverEquivalentCopyReroot = false;
         silverRerootFallback = false;
@@ -206,8 +248,8 @@ public final class STSModelInspector implements PostInitializeSubscriber,
 
     @Override
     public void receivePostUpdate() {
-        trackLastTargetedMonster();
         observeRoomTransition();
+        trackLastCardQueueItem();
         boolean down = Keyboard.isKeyDown(loadToggleKey());
         if (down && !toggleDown) panelVisible = !panelVisible;
         toggleDown = down;
@@ -1181,6 +1223,23 @@ public final class STSModelInspector implements PostInitializeSubscriber,
                 ",\"location\":\"" + location + "\"}";
     }
 
+    private static String cardQueueItemJson() {
+        if (!trackedLastCardQueueItem.present) return "null";
+        TrackedCardQueueItem item = trackedLastCardQueueItem;
+        return "{\"card\":" + item.cardJson
+                + ",\"target\":" + item.target
+                + ",\"energyOnUse\":" + item.energyOnUse
+                + ",\"isEndTurn\":" + item.isEndTurn
+                + ",\"triggerOnUse\":" + item.triggerOnUse
+                + ",\"ignoreEnergyTotal\":" + item.ignoreEnergyTotal
+                + ",\"freeToPlay\":" + item.freeToPlay
+                + ",\"randomTarget\":" + item.randomTarget
+                + ",\"autoplay\":" + item.autoplay
+                + ",\"regretCardCount\":" + item.regretCardCount
+                + ",\"purgeOnUse\":" + item.purgeOnUse
+                + ",\"exhaustOnUse\":" + item.exhaustOnUse + "}";
+    }
+
     private static boolean isPlayerDecisionPoint() {
         if (AbstractDungeon.screen != AbstractDungeon.CurrentScreen.NONE
                 || AbstractDungeon.actionManager == null) return false;
@@ -1201,17 +1260,44 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         return cardSelectionJson() != null;
     }
 
-    private static void trackLastTargetedMonster() {
+    private static void trackLastCardQueueItem() {
         // BaseMod publishes post-update while the title/menu bootstrap is still
-        // active.  getMonsters() dereferences the current room, so do not call
-        // it until the dungeon has a map node.
-        if (AbstractDungeon.currMapNode == null || AbstractDungeon.actionManager == null
-                || AbstractDungeon.getMonsters() == null) return;
-        for (com.megacrit.cardcrawl.cards.CardQueueItem item
-                : AbstractDungeon.actionManager.cardQueue) {
-            if (item == null || item.card == null || item.monster == null) continue;
-            int index = AbstractDungeon.getMonsters().monsters.indexOf(item.monster);
-            if (index >= 0) trackedLastTargetedMonster = item.monster;
+        // active.  The queue item is the public source of truth while vanilla
+        // is processing a card; actionManager.lastCard is only a summary and
+        // does not retain the resolved target or queue flags.
+        if (AbstractDungeon.currMapNode == null || AbstractDungeon.actionManager == null)
+            return;
+        String encounter = liveEncounter;
+        if (encounter.isEmpty() && AbstractDungeon.getCurrRoom() != null)
+            encounter = INSTANCE.encounterName(AbstractDungeon.getCurrRoom());
+        IdentityHashMap<AbstractMonster, Integer> emittedSlots =
+                emittedMonsterSlots(encounter);
+        for (CardQueueItem item : AbstractDungeon.actionManager.cardQueue) {
+            if (item == null || (item.card == null && !item.isEndTurnAutoPlay)) continue;
+            if (item.monster != null && AbstractDungeon.getMonsters() != null
+                    && AbstractDungeon.getMonsters().monsters.indexOf(item.monster) >= 0)
+                trackedLastTargetedMonster = item.monster;
+
+            trackedLastCardQueueItem.present = true;
+            trackedLastCardQueueItem.cardJson = item.card == null ? "null" : cardJson(item.card);
+            Integer target = item.monster == null ? null : emittedSlots.get(item.monster);
+            if (target == null && item.monster != null) target = monsterSlots.get(item.monster);
+            trackedLastCardQueueItem.target = target == null || target < 0 ? 0 : target;
+            trackedLastCardQueueItem.energyOnUse = item.energyOnUse;
+            trackedLastCardQueueItem.isEndTurn = item.isEndTurnAutoPlay;
+            trackedLastCardQueueItem.triggerOnUse = item.card == null
+                    || !item.card.dontTriggerOnUseCard;
+            trackedLastCardQueueItem.ignoreEnergyTotal = item.ignoreEnergyTotal;
+            trackedLastCardQueueItem.freeToPlay = item.card != null && item.card.freeToPlayOnce;
+            trackedLastCardQueueItem.randomTarget = item.randomTarget;
+            trackedLastCardQueueItem.autoplay = item.autoplayCard;
+            Integer regretCount = readIntField(item, "regretCardCount", "regretCount");
+            if (regretCount == null && item.card != null)
+                regretCount = readIntField(item.card, "regretCardCount", "regretCount");
+            trackedLastCardQueueItem.regretCardCount = regretCount == null ? 0 : regretCount;
+            trackedLastCardQueueItem.purgeOnUse = item.card != null && item.card.purgeOnUse;
+            trackedLastCardQueueItem.exhaustOnUse = item.card != null
+                    && (item.card.exhaust || item.card.exhaustOnUseOnce || item.card.exhaustOnFire);
         }
     }
 
@@ -1734,12 +1820,22 @@ public final class STSModelInspector implements PostInitializeSubscriber,
                 out.append('}');
             }
         }
-        out.append("],\"lastCard\":");
+        out.append("],\"curCardQueueItem\":").append(cardQueueItemJson())
+                .append(",\"lastCard\":");
         AbstractCard lastCard = AbstractDungeon.actionManager.lastCard;
-        if (decisionOrdinal > 0 && lastCard != null) {
+        if (decisionOrdinal > 0 && trackedLastCardQueueItem.present
+                && trackedLastCardQueueItem.cardJson != null
+                && !"null".equals(trackedLastCardQueueItem.cardJson)) {
+            String serialized = trackedLastCardQueueItem.cardJson;
+            out.append(serialized, 0, serialized.length() - 1)
+                    .append(",\"target\":").append(trackedLastCardQueueItem.target)
+                    .append(",\"energyOnUse\":")
+                    .append(trackedLastCardQueueItem.energyOnUse).append('}');
+        } else if (decisionOrdinal > 0 && lastCard != null) {
             String serialized = cardJson(lastCard);
             out.append(serialized, 0, serialized.length() - 1)
-                    .append(",\"target\":0,\"energyOnUse\":")
+                    .append(",\"target\":").append(targetedSlot == null ? 0 : targetedSlot)
+                    .append(",\"energyOnUse\":")
                     .append(EnergyPanel.totalCount + lastCard.costForTurn).append('}');
         } else out.append("null");
         out.append(",\"relics\":[");

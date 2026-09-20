@@ -25,6 +25,7 @@ using namespace sts;
 using namespace sts::search;
 using silver_bridge::BattleStateWire;
 using silver_bridge::CardWire;
+using silver_bridge::CardQueueItemWire;
 using silver_bridge::MonsterWire;
 using silver_bridge::SilverRootActionSummary;
 using silver_bridge::SilverSearchConfig;
@@ -38,6 +39,8 @@ struct Fixture { const char *name; int move; const char *room; BattleStateWire w
 json observation(const BattleStateWire &, const char *, int, const char *,
                  int = 0, json = json::array());
 json cardJson(const CardWire &);
+json genericObservation(const Fixture &, const char *);
+void setProducerV4CardObservation(json &, const BattleStateWire &);
 
 const char *cardId(CardId id) {
     switch (id) {
@@ -642,10 +645,18 @@ Fixture successorForSemantic(const Fixture &root,
     CombatKnowledgeState knowledge;
     knowledge.initializeFromLiveBattle(live);
     int handIndex = -1;
+    int selectedNativeUniqueId = semantic.card.uniqueId;
+    const auto &combat = root.observation["silverRoot"]["combat"];
+    const int handBase = static_cast<int>(combat.value("draw", json::array()).size()
+        + combat.value("discard", json::array()).size()
+        + combat.value("exhaust", json::array()).size());
+    const int protocolHandIndex = semantic.card.uniqueId - handBase;
+    if (protocolHandIndex >= 0 && protocolHandIndex < static_cast<int>(root.wire.hand.size()))
+        selectedNativeUniqueId = root.wire.hand[protocolHandIndex].uniqueId;
     for (int i = 0; i < live.cards.cardsInHand; ++i) {
         const auto &candidate = live.cards.hand[i];
         if (candidate.id != wanted) continue;
-        const bool selectedIdentity = candidate.uniqueId == semantic.card.uniqueId;
+        const bool selectedIdentity = candidate.uniqueId == selectedNativeUniqueId;
         if ((!differentEquivalentCopy && selectedIdentity)
             || (differentEquivalentCopy && !selectedIdentity)) {
             handIndex = i;
@@ -657,11 +668,17 @@ Fixture successorForSemantic(const Fixture &root,
     auto wire = makeSilverBattleStateWire(live, knowledge, makeSilverRunContext(game),
                                            root.wire.isolatedSearchSeed);
     if (!wire.valid) throw std::runtime_error("semantic successor conversion failed");
-    return {root.name, root.move, root.room, wire,
-            observation(wire, root.name, root.move, root.room, 1,
-                        json::array({{{"id", cardId(wanted)},
-                                      {"uuid", uuid(wire.curCardQueueItem.card)},
-                                      {"upgraded", false}}}))};
+    Fixture successor{root.name, root.move, root.room, wire,
+        observation(wire, root.name, root.move, root.room, 1,
+                    json::array({{{"id", cardId(wanted)},
+                                  {"uuid", uuid(wire.curCardQueueItem.card)},
+                                  {"upgraded", false}}}))};
+    // The retained-branch tests intentionally use the producer-shaped v4
+    // boundary.  The older schema-v2 path has a synthetic queue item and
+    // cannot prove that Java's public CardQueueItem was preserved.
+    const auto entry = root.observation.value("combatEntryHash", "entry-v4");
+    successor.observation = genericObservation(successor, entry.c_str());
+    return successor;
 }
 Fixture fixture(MonsterEncounter encounter, const char *name, int move,
                 const char *room, std::uint64_t seed) {
@@ -1084,7 +1101,7 @@ json genericObservation(const Fixture &fixture, const char *instance) {
     root["schemaVersion"] = 4;
     root.erase("decisionOrdinal");
     root.erase("firstDecision");
-    root["decisionInTurn"] = 0;
+    root["decisionInTurn"] = fixture.wire.player.cardsPlayedThisTurn;
     root["playerTurn"] = fixture.wire.turn + 1;
     root["combatInstance"] = instance;
     root["encounter"] = std::string(fixture.name).rfind("Cultist", 0) == 0 ? "CULTIST"
@@ -1095,7 +1112,39 @@ json genericObservation(const Fixture &fixture, const char *instance) {
     root["combat"]["energyWasted"] = fixture.wire.energyWasted;
     root["combat"]["monsterTurnIdx"] = fixture.wire.monsterTurnIdx;
     root["combat"]["lastTargetedMonster"] = fixture.wire.player.lastTargetedMonster;
+    setProducerV4CardObservation(out, fixture.wire);
     return out;
+}
+json producerQueueJson(const CardQueueItemWire &queue) {
+    json out = { {"card", nullptr},
+        {"target", queue.target}, {"energyOnUse", queue.energyOnUse},
+        {"isEndTurn", queue.isEndTurn}, {"triggerOnUse", queue.triggerOnUse},
+        {"ignoreEnergyTotal", queue.ignoreEnergyTotal},
+        {"freeToPlay", queue.freeToPlay}, {"randomTarget", queue.randomTarget},
+        {"autoplay", queue.autoplay}, {"regretCardCount", queue.regretCardCount},
+        {"purgeOnUse", queue.purgeOnUse}, {"exhaustOnUse", queue.exhaustOnUse} };
+    if (queue.card.id != static_cast<std::int16_t>(CardId::INVALID))
+        out["card"] = cardJson(queue.card);
+    return out;
+}
+void setProducerV4CardObservation(json &observationJson, const BattleStateWire &wire) {
+    auto &root = observationJson["silverRoot"];
+    auto &combat = root["combat"];
+    root["decisionInTurn"] = wire.player.cardsPlayedThisTurn;
+    combat["cardsPlayedThisTurn"] = wire.player.cardsPlayedThisTurn;
+    combat["attacksPlayedThisTurn"] = wire.player.attacksPlayedThisTurn;
+    combat["skillsPlayedThisTurn"] = wire.player.skillsPlayedThisTurn;
+    combat["lastTargetedMonster"] = wire.player.lastTargetedMonster;
+    combat["curCardQueueItem"] = producerQueueJson(wire.curCardQueueItem);
+    if (wire.curCardQueueItem.card.id == static_cast<std::int16_t>(CardId::INVALID)) {
+        combat["lastCard"] = nullptr;
+        return;
+    }
+    json played = cardJson(wire.curCardQueueItem.card);
+    combat["playedThisTurn"] = json::array({played});
+    combat["lastCard"] = played;
+    combat["lastCard"]["target"] = wire.curCardQueueItem.target;
+    combat["lastCard"]["energyOnUse"] = wire.curCardQueueItem.energyOnUse;
 }
 bool sameSummaries(const std::vector<SilverRootActionSummary> &a,
                    const std::vector<SilverRootActionSummary> &b) {
@@ -1142,6 +1191,46 @@ int main() {
                 + std::to_string(multiImported.wire.monsters[0].moveHistory[0])
                 + " m1move=" + std::to_string(multiCanonical.monsters[1].moveHistory[0]) + "/"
                 + std::to_string(multiImported.wire.monsters[1].moveHistory[0]));
+        {
+            // Render an actual targeted card successor through the public v4
+            // fields.  Do not copy native status bits or infer the target from
+            // actionManager.lastCard: the Java queue item owns the resolved
+            // AbstractMonster identity.
+            GameContext game(CharacterClass::IRONCLAD, multi.wire.isolatedSearchSeed, 0);
+            game.act = 1;
+            game.floorNum = 1;
+            BattleContext live;
+            live.init(game, MonsterEncounter::THREE_CULTIST);
+            for (int i = 0; i < multi.wire.monsterCount; ++i)
+                live.monsters.arr[i].moveHistory[0] = static_cast<MMID>(
+                    multi.wire.monsters[i].moveHistory[0]);
+            CombatKnowledgeState knowledge;
+            knowledge.initializeFromLiveBattle(live);
+            int handIndex = -1;
+            for (int i = 0; i < live.cards.cardsInHand; ++i) {
+                if (live.cards.hand[i].id == CardId::STRIKE_RED) {
+                    handIndex = i;
+                    break;
+                }
+            }
+            if (handIndex < 0) throw std::runtime_error("multi-target Strike is absent");
+            sts::search::Action(sts::search::ActionType::CARD, handIndex, 2).execute(live);
+            auto successorWire = makeSilverBattleStateWire(
+                live, knowledge, makeSilverRunContext(game), multi.wire.isolatedSearchSeed);
+            if (!successorWire.valid || successorWire.curCardQueueItem.target != 2
+                || successorWire.player.lastTargetedMonster != 2)
+                throw std::runtime_error("native multi-target queue state did not resolve slot 2");
+            auto rendered = javaLikeDynamicObservation(
+                successorWire, "MONSTER", "three-cultist-card-successor");
+            setProducerV4CardObservation(rendered, successorWire);
+            const auto imported = one_combat::advisor::importSilverRoot(rendered);
+            if (!imported.ok)
+                throw std::runtime_error("v4 multi-target successor import failed: "
+                    + imported.reason);
+            if (imported.wire.curCardQueueItem.target != 2
+                || imported.wire.player.lastTargetedMonster != 2)
+                throw std::runtime_error("v4 multi-target queue target was not preserved");
+        }
         auto sparseSlots = multi.observation;
         sparseSlots["silverRoot"]["combat"]["monsters"].erase(
             sparseSlots["silverRoot"]["combat"]["monsters"].begin() + 1);
@@ -1379,6 +1468,26 @@ int main() {
                     throw std::runtime_error(std::string("card identity changed: ") + cardId(card));
             }
         }
+        const auto v4Successor = successorFixture(fixtures[0], CardId::STRIKE_RED);
+        const auto v4Continuation = genericObservation(v4Successor, "v4-normal-card");
+        const auto v4ContinuationImported = one_combat::advisor::importSilverRoot(v4Continuation);
+        if (!v4ContinuationImported.ok)
+            throw std::runtime_error("v4 continuation import failed: "
+                + v4ContinuationImported.reason);
+        auto v4ContinuationCanonical = v4Successor.wire;
+        normalizeDynamicObservationIdentity(v4ContinuationCanonical);
+        if (!v4ContinuationCanonical.discardPile.unknown.empty())
+            v4ContinuationCanonical.curCardQueueItem.card.uniqueId =
+                v4ContinuationCanonical.discardPile.unknown.front().uniqueId;
+        v4ContinuationCanonical.isolatedSearchSeed = v4ContinuationImported.wire.isolatedSearchSeed;
+        if (!convertedStatesEqualForSearch(v4ContinuationCanonical,
+                                           v4ContinuationImported.wire))
+            throw std::runtime_error("v4 continuation search-state parity failed");
+        auto missingV4Queue = v4Continuation;
+        missingV4Queue["silverRoot"]["combat"].erase("curCardQueueItem");
+        if (one_combat::advisor::importSilverRoot(missingV4Queue).reason
+            != "silver_card_queue_item")
+            throw std::runtime_error("v4 continuation without CardQueueItem was accepted");
         auto dedupWire = one_combat::advisor::importSilverRoot(fixtures[0].observation).wire;
         std::vector<CardWire> allCards = dedupWire.hand;
         allCards.insert(allCards.end(), dedupWire.drawPile.unknown.begin(), dedupWire.drawPile.unknown.end());
@@ -1434,7 +1543,9 @@ int main() {
         silver_bridge::SilverDecisionResult rerootFirst;
         std::shared_ptr<silver_bridge::SilverSearchSession> rerootSession;
         for (const auto &candidate : fixtures) {
-            auto imported = one_combat::advisor::importSilverRoot(candidate.observation);
+            const auto entry = candidate.observation.value("combatEntryHash", "entry-v4");
+            auto imported = one_combat::advisor::importSilverRoot(
+                genericObservation(candidate, entry.c_str()));
             auto session = silver_bridge::makeSilverSearchSession();
             auto decision = runSilverDecision(*session, imported.wire, config);
             if (decision.accepted && decision.action.type == silver_bridge::SemanticActionType::CARD

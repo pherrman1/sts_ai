@@ -997,9 +997,16 @@ SilverRootImportResult importSilverRootGeneric(const json &observation,
 
     wire.curCardQueueItem.card.uniqueId = -1;
     const auto queueIt = combat.find("curCardQueueItem");
+    if (decision > 0 && (queueIt == combat.end() || !queueIt->is_object()
+        || !queueIt->contains("card") || queueIt->at("card").is_null()))
+        return unsupported("silver_card_queue_item");
     if (queueIt != combat.end() && queueIt->is_object()) {
         CardRecord queueCard;
-        if (queueIt->contains("card") && parseGenericCard(queueIt->at("card"), queueCard)) {
+        if (queueIt->contains("card") && queueIt->at("card").is_null()) {
+            // Vanilla end-turn autoplay items have no card object.  The
+            // remaining public queue flags still belong in the retained
+            // native CardQueueItem.
+        } else if (queueIt->contains("card") && parseGenericCard(queueIt->at("card"), queueCard)) {
             auto id = context.cardIds.find(queueCard.uuid);
             if (id == context.cardIds.end()) id = context.cardIds.emplace(queueCard.uuid, static_cast<std::int16_t>(context.nextUniqueCardId++)).first;
             queueCard.wire.uniqueId = id->second; wire.curCardQueueItem.card = queueCard.wire;
