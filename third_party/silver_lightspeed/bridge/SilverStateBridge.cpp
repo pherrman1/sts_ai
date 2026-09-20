@@ -378,14 +378,22 @@ SemanticAction semanticFromAction(const sts::BattleContext &state, const sts::se
     case sts::search::ActionType::CARD:
         out = selectedHandCard(state, action.getSourceIdx());
         out.type = SemanticActionType::CARD;
-        out.target = action.getTargetIdx();
+        // Action's one-index constructor leaves the packed target bits at
+        // zero.  That is an encoding detail, not a target for cards such as
+        // Defend.  Preserve a target only for cards whose canonical card
+        // definition actually requires one; otherwise the live lowering
+        // must see the target as absent.
+        out.target = state.cards.hand[action.getSourceIdx()].requiresTarget()
+            ? action.getTargetIdx() : -1;
         return out;
     case sts::search::ActionType::POTION:
         if (action.getSourceIdx() < 0 || action.getSourceIdx() >= state.potionCapacity) throw std::runtime_error("Silver selected invalid potion");
         out.type = SemanticActionType::POTION;
         out.potionSlot = action.getSourceIdx();
         out.potionId = static_cast<std::int16_t>(state.potions[out.potionSlot]);
-        out.target = action.getTargetIdx();
+        out.target = sts::potionRequiresTarget(
+            static_cast<sts::Potion>(state.potions[out.potionSlot]))
+            ? action.getTargetIdx() : -1;
         out.discardPotion = action.getTargetIdx() > 5;
         return out;
     case sts::search::ActionType::MULTI_CARD_SELECT:

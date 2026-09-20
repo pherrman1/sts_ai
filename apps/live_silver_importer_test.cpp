@@ -664,7 +664,10 @@ Fixture successorForSemantic(const Fixture &root,
         }
     }
     if (handIndex < 0) throw std::runtime_error("requested semantic card copy is absent");
-    sts::search::Action(sts::search::ActionType::CARD, handIndex, semantic.target).execute(live);
+    const auto rawAction = semantic.target >= 0
+        ? sts::search::Action(sts::search::ActionType::CARD, handIndex, semantic.target)
+        : sts::search::Action(sts::search::ActionType::CARD, handIndex);
+    rawAction.execute(live);
     auto wire = makeSilverBattleStateWire(live, knowledge, makeSilverRunContext(game),
                                            root.wire.isolatedSearchSeed);
     if (!wire.valid) throw std::runtime_error("semantic successor conversion failed");
@@ -1303,6 +1306,12 @@ int main() {
                     if (id == CardId::STRIKE_RED) duplicateStrikeSummariesCovered = true;
                     else duplicateDefendSummariesCovered = true;
                 }
+            }
+            for (const auto &summary : b.rootActionSummaries) {
+                if (summary.action.type == silver_bridge::SemanticActionType::CARD
+                    && summary.action.card.id == static_cast<std::int16_t>(CardId::DEFEND_RED)
+                    && summary.action.target != -1)
+                    throw std::runtime_error(std::string("Defend retained packed target: ") + f.name);
             }
         }
         if (!duplicateStrikeSummariesCovered || !duplicateDefendSummariesCovered)
