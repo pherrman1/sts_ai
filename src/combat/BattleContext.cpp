@@ -314,7 +314,9 @@ void BattleContext::initRelics(const GameContext &gc) {
                 if (r.data > 0) {
                     for (int i = 0; i < monsters.monsterCount; ++i) {
                         Monster &m = monsters.arr[i];
-                        m.curHp = 1;
+                        if (m.idx != -1) {
+                            m.curHp = 1;
+                        }
                     }
                 }
                 break;
@@ -433,7 +435,7 @@ void BattleContext::initRelics(const GameContext &gc) {
                 break;
 
             case R::RED_MASK:
-                addToBot( Actions::DebuffAllEnemy<MS::WEAK>(1) );
+                addToBot( Actions::DebuffAllEnemy<MS::WEAK>(1, false) );
                 break;
 
             case R::RING_OF_THE_SNAKE:
@@ -554,6 +556,12 @@ void BattleContext::exitBattle(GameContext &g) const {
 }
 
 void BattleContext::updateRelicsOnExit(GameContext &g) const {
+    // Meat on the Bone triggers before the other victory-relic healing.
+    if (outcome == Outcome::PLAYER_VICTORY && g.relics.has(RelicId::MEAT_ON_THE_BONE) &&
+            g.curHp > 0 && g.curHp <= g.maxHp / 2) {
+        g.playerHeal(12);
+    }
+
     for (auto &r : g.relics.relics) {
         switch (r.id) {
             case RelicId::HAPPY_FLOWER:
@@ -609,12 +617,6 @@ void BattleContext::updateRelicsOnExit(GameContext &g) const {
 
             case RelicId::BLACK_BLOOD:
                 if (outcome == Outcome::PLAYER_VICTORY) {
-                    g.playerHeal(12);
-                }
-                break;
-
-            case RelicId::MEAT_ON_THE_BONE:
-                if (outcome == Outcome::PLAYER_VICTORY && g.curHp <= g.maxHp / 2) {
                     g.playerHeal(12);
                 }
                 break;
@@ -864,6 +866,10 @@ void BattleContext::executeActions() {
 
             if (cards.cardsInHand == 0) {
                 drawCards(1);
+                // A shuffle or on-draw effect must finish before player control.
+                if (!actionQueue.isEmpty()) {
+                    continue;
+                }
             }
         }
 
@@ -893,7 +899,8 @@ void BattleContext::playCardQueueItem(CardQueueItem playItem) {
     }
 
 //    bool canPlayCard = false; // not really sure what this is used for
-    const bool canUseCard = item.purgeOnUse || (item.triggerOnUse && c.canUse(*this, item.target, item.autoplay) && (!c.requiresTarget() || monsters.arr[item.target].isTargetable()));
+    const bool chokerAllowsPlay = !player.hasRelic<R::VELVET_CHOKER>() || player.cardsPlayedThisTurn < 6;
+    const bool canUseCard = item.purgeOnUse || (item.triggerOnUse && chokerAllowsPlay && c.canUse(*this, item.target, item.autoplay) && (!c.requiresTarget() || monsters.arr[item.target].isTargetable()));
     if (canUseCard) { // not sure if this is correct,
 //        canPlayCard = true; // what is this for......
 
@@ -1121,7 +1128,7 @@ void BattleContext::useAttackCard() {
         }
 
         case CardId::IRON_WAVE: {
-            addToBot( Actions::GainBlock(calculateCardBlock(calculateCardBlock(up  ? 7 : 5))) );
+            addToBot( Actions::GainBlock(calculateCardBlock(up  ? 7 : 5)) );
             addToBot( Actions::AttackEnemy(t, calculateCardDamage(c, t, up ? 7 : 5)) );
             break;
         }
@@ -2299,6 +2306,10 @@ void BattleContext::drinkPotion(int idx, int target) {
     }
 
     discardPotion(idx);
+
+    if (player.hasRelic<R::TOY_ORNITHOPTER>()) {
+        addToBot(Actions::HealPlayer(5));
+    }
 
     // todo - dont need to add to bot because always will have nothing in actionQueue?
 

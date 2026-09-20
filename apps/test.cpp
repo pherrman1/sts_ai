@@ -468,6 +468,200 @@ int testRelicRewardSapphire() {
     return 0;
 }
 
+static BattleContext simulatorCorrectnessBattle(std::initializer_list<RelicId> relics,
+                                                Card card = Card(CardId::FLEX),
+                                                int cardCount = 10,
+                                                MonsterEncounter encounter = MonsterEncounter::JAW_WORM) {
+    GameContext gc(CharacterClass::IRONCLAD, 100123, 20);
+    gc.curRoom = Room::MONSTER;
+    gc.relics = {};
+    for (const RelicId relic : relics) {
+        gc.relics.add({relic, relic == RelicId::NEOWS_LAMENT ? 1 : 0});
+    }
+    gc.deck = {};
+    for (int i = 0; i < cardCount; ++i) {
+        gc.deck.obtainRaw(card);
+    }
+
+    BattleContext bc;
+    bc.init(gc, encounter);
+    return bc;
+}
+
+static void simulatorCorrectnessPlay(BattleContext &bc, int handIdx = 0, int targetIdx = 0) {
+    search::Action(search::ActionType::CARD, handIdx, targetIdx).execute(bc);
+}
+
+// Focused semantic regressions for upstream gamerpuppy/sts_lightspeed PRs #9-#19.
+// Each block is deliberately a small native fixture so the check fails on the
+// pre-port behavior without depending on a gameplay sweep.
+int testSimulatorCorrectnessPr9To19() {
+    auto fail = [&](const char *msg) {
+        std::cout << "simulator_correctness_pr9_19 FAIL: " << msg << '\n';
+        return 1;
+    };
+
+    // #9: Iron Wave applies block modifiers exactly once.
+    {
+        auto bc = simulatorCorrectnessBattle({}, Card(CardId::IRON_WAVE), 10);
+        bc.player.dexterity = 2;
+        simulatorCorrectnessPlay(bc);
+        if (bc.player.block != 7) return fail("#9 Iron Wave double-counted Dexterity");
+
+        auto frail = simulatorCorrectnessBattle({}, Card(CardId::IRON_WAVE), 10);
+        frail.player.debuff<PS::FRAIL>(1, false);
+        simulatorCorrectnessPlay(frail);
+        if (frail.player.block != 3) return fail("#9 Iron Wave double-applied Frail");
+    }
+
+    // #10: every relic-pool shuffle consumes one counted relic RNG draw.
+    {
+        GameContext gc(CharacterClass::IRONCLAD, 123456789, 0);
+        if (gc.relicRng.counter != 5) return fail("#10 relic pool shuffles did not advance the counter");
+    }
+
+    // #11: Red Mask's opening Weak is player-sourced and expires after one
+    // enemy turn, while Artifact still consumes the attempted debuff.
+    {
+        auto bc = simulatorCorrectnessBattle({RelicId::RED_MASK}, Card(CardId::FLEX), 10);
+        if (bc.monsters.arr[0].getStatus<MS::WEAK>() != 1) {
+            return fail("#11 Red Mask did not apply one Weak");
+        }
+        search::Action(search::ActionType::END_TURN).execute(bc);
+        if (bc.monsters.arr[0].getStatus<MS::WEAK>() != 0) {
+            return fail("#11 Red Mask Weak lasted an extra enemy turn");
+        }
+        auto artifact = simulatorCorrectnessBattle({RelicId::RED_MASK}, Card(CardId::FLEX), 10,
+                                                   MonsterEncounter::THREE_SENTRIES);
+        for (int i = 0; i < artifact.monsters.monsterCount; ++i) {
+            if (artifact.monsters.arr[i].getStatus<MS::WEAK>() != 0 ||
+                    artifact.monsters.arr[i].getStatus<MS::ARTIFACT>() != 0) {
+                return fail("#11 Red Mask did not preserve Artifact handling");
+            }
+        }
+    }
+
+    // #12: Choker limits ordinary/autoplay queue entries but retains the
+    // purge-on-use exception used by queued replay effects.
+    {
+        auto bc = simulatorCorrectnessBattle({RelicId::VELVET_CHOKER}, Card(CardId::HAVOC, true), 20);
+        simulatorCorrectnessPlay(bc);
+        if (bc.player.cardsPlayedThisTurn != 6 || !bc.actionQueue.isEmpty() || !bc.cardQueue.isEmpty()) {
+            return fail("#12 Velvet Choker allowed an autoplay chain past six cards");
+        }
+
+        auto replay = simulatorCorrectnessBattle({RelicId::VELVET_CHOKER}, Card(CardId::FLEX), 10);
+        replay.player.cardsPlayedThisTurn = 6;
+        CardQueueItem item(CardInstance(CardId::STRIKE_RED), 0, 0);
+        item.purgeOnUse = true;
+        item.autoplay = true;
+        replay.playCardQueueItem(item);
+        if (replay.player.cardsPlayedThisTurn != 7) {
+            return fail("#12 Choker blocked a purge-on-use replay");
+        }
+    }
+
+    // #13: Unceasing Top resolves the shuffle/draw work before returning control.
+    {
+        auto bc = simulatorCorrectnessBattle({RelicId::UNCEASING_TOP}, Card(CardId::FLEX), 5);
+        for (int i = 0; i < 5; ++i) simulatorCorrectnessPlay(bc);
+        if (bc.cards.cardsInHand != 1 || bc.cards.drawPile.size() != 4 ||
+                !bc.actionQueue.isEmpty() || !bc.cardQueue.isEmpty()) {
+            return fail("#13 Unceasing Top returned before its queued draw resolved");
+        }
+    }
+
+    // #14: Meat on the Bone settles before Burning/Black Blood regardless of
+    // relic acquisition order, and never heals a defeat.
+    auto combatExitHp = [](std::initializer_list<RelicId> relics, Outcome outcome) {
+        GameContext gc(CharacterClass::IRONCLAD, 100123, 0);
+        gc.curHp = 40;
+        gc.maxHp = 80;
+        gc.relics = {};
+        for (const RelicId relic : relics) gc.relics.add({relic, 0});
+        BattleContext bc;
+        bc.outcome = outcome;
+        bc.updateRelicsOnExit(gc);
+        return gc.curHp;
+    };
+    if (combatExitHp({RelicId::BURNING_BLOOD, RelicId::MEAT_ON_THE_BONE}, Outcome::PLAYER_VICTORY) != 58 ||
+            combatExitHp({RelicId::MEAT_ON_THE_BONE, RelicId::BURNING_BLOOD}, Outcome::PLAYER_VICTORY) != 58 ||
+            combatExitHp({RelicId::BLACK_BLOOD, RelicId::MEAT_ON_THE_BONE}, Outcome::PLAYER_VICTORY) != 64 ||
+            combatExitHp({RelicId::MEAT_ON_THE_BONE}, Outcome::PLAYER_LOSS) != 40) {
+        return fail("#14 Meat on the Bone ordering or defeat guard is wrong");
+    }
+
+    // #15: crossing above half HP removes Red Skull strength.
+    {
+        auto bc = simulatorCorrectnessBattle({RelicId::RED_SKULL});
+        bc.player.maxHp = 80;
+        bc.player.curHp = 40;
+        bc.player.strength = 3;
+        bc.player.heal(5);
+        if (bc.player.curHp != 45 || bc.player.strength != 0) {
+            return fail("#15 Red Skull added instead of removing Strength");
+        }
+    }
+
+    // #16: Magic Flower rounds positive odd healing, rather than truncating it.
+    {
+        auto bc = simulatorCorrectnessBattle({RelicId::MAGIC_FLOWER});
+        bc.player.maxHp = 80;
+        bc.player.curHp = 60;
+        bc.player.heal(5);
+        if (bc.player.curHp != 68) return fail("#16 Magic Flower truncated 7.5 healing");
+    }
+
+    // #17: Toy Ornithopter is routed through ordinary potion consumption.
+    {
+        auto bc = simulatorCorrectnessBattle({RelicId::TOY_ORNITHOPTER});
+        bc.player.maxHp = 80;
+        bc.player.curHp = 70;
+        bc.potions[0] = Potion::BLOCK_POTION;
+        bc.potionCount = 1;
+        search::Action(search::ActionType::POTION, 0, 0).execute(bc);
+        if (bc.player.curHp != 75 || bc.potionCount != 0 ||
+                bc.potions[0] != Potion::EMPTY_POTION_SLOT) {
+            return fail("#17 Toy Ornithopter did not heal on potion use");
+        }
+    }
+
+    // #18: direct positive HP loss consumes Buffer before Tungsten Rod.
+    {
+        auto bc = simulatorCorrectnessBattle({RelicId::FOSSILIZED_HELIX, RelicId::TUNGSTEN_ROD});
+        const int before = bc.player.curHp;
+        bc.player.loseHp(bc, 5, false);
+        if (bc.player.curHp != before || bc.player.hasStatus<PS::BUFFER>()) {
+            return fail("#18 Buffer did not intercept direct HP loss before Rod");
+        }
+        auto rodOnly = simulatorCorrectnessBattle({RelicId::TUNGSTEN_ROD});
+        const int rodBefore = rodOnly.player.curHp;
+        rodOnly.player.loseHp(rodOnly, 5, false);
+        if (rodOnly.player.curHp != rodBefore - 4) {
+            return fail("#18 Tungsten Rod direct-loss control changed");
+        }
+    }
+
+    // #19: Neow's Lament only changes actual encounter entities, not the
+    // reserved Gremlin Leader placeholder at slot zero.
+    {
+        auto bc = simulatorCorrectnessBattle({RelicId::NEOWS_LAMENT}, Card(CardId::FLEX), 10,
+                                              MonsterEncounter::GREMLIN_LEADER);
+        if (bc.monsters.monsterCount != 4 || bc.monsters.arr[0].idx != -1 ||
+                bc.monsters.arr[0].curHp != 0) {
+            return fail("#19 Neow's Lament assigned HP to a reserved monster slot");
+        }
+        for (int i = 1; i < bc.monsters.monsterCount; ++i) {
+            if (bc.monsters.arr[i].idx < 0 || bc.monsters.arr[i].curHp != 1) {
+                return fail("#19 Neow's Lament missed an actual monster");
+            }
+        }
+    }
+
+    std::cout << "simulator_correctness_pr9_19 PASS\n";
+    return 0;
+}
+
 int testIssueFixes() {
     auto fail = [&](const char *msg) {
         std::cout << "issue_fixes FAIL: " << msg << '\n';
@@ -4104,6 +4298,8 @@ int main(int argc, const char* argv[]) {
         return testHappyFlowerCounter(std::stoull(argv[2]));
     } else if (command == "issue_fixes") {
         return testIssueFixes();
+    } else if (command == "simulator_correctness_pr9_19") {
+        return testSimulatorCorrectnessPr9To19();
     } else if (command == "relic_reward_sapphire") {
         return testRelicRewardSapphire();
     } else if (command == "cardselect_parity") {
