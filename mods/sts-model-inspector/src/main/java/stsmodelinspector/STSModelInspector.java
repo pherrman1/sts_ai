@@ -766,7 +766,12 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         for (AbstractPower power : AbstractDungeon.player.powers) {
             if (!firstPower) out.append(',');
             firstPower = false;
-            out.append("{\"id\":\"").append(escapeJson(power.ID)).append("\"}");
+            out.append("{\"id\":\"").append(escapeJson(power.ID))
+                    .append("\",\"amount\":").append(power.amount)
+                    // The installed game API has no public just-applied bit;
+                    // stable user boundaries are emitted with the conservative
+                    // settled value until a runtime tracker is available.
+                    .append(",\"justApplied\":false}");
         }
         out.append("]")
                 .append(",\"cardSelect\":false,\"resolving\":false")
@@ -782,9 +787,11 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         out.append("],\"draw\":[");
         first = true;
         List<AbstractCard> draw = new ArrayList<>(AbstractDungeon.player.drawPile.group);
-        Collections.sort(draw, Comparator.comparing((AbstractCard card) -> card.cardID)
-                .thenComparing(card -> String.valueOf(card.uuid))
-                .thenComparingInt(card -> card.misc));
+        if (!hasRelic("Frozen Eye")) {
+            Collections.sort(draw, Comparator.comparing((AbstractCard card) -> card.cardID)
+                    .thenComparing(card -> String.valueOf(card.uuid))
+                    .thenComparingInt(card -> card.misc));
+        }
         for (AbstractCard card : draw) {
             if (!first) out.append(',');
             first = false;
@@ -809,20 +816,23 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         boolean runicDome = hasRunicDome();
         if (AbstractDungeon.getMonsters() != null) {
             for (AbstractMonster monster : AbstractDungeon.getMonsters().monsters) {
-                if (monster == null || monster.isDeadOrEscaped()) continue;
+                if (monster == null) continue;
                 if (!first) out.append(',');
                 first = false;
                 out.append("{\"id\":\"").append(escapeJson(monster.id))
                         .append("\",\"hp\":").append(monster.currentHealth)
                         .append(",\"maxHp\":").append(monster.maxHealth)
                         .append(",\"block\":").append(monster.currentBlock)
-                        .append(",\"nextMove\":").append(monster.nextMove)
+                        .append(",\"dead\":").append(monster.isDeadOrEscaped())
+                        .append(",\"nextMove\":").append(runicDome ? 0 : monster.nextMove)
                         .append(",\"powers\":[");
                 boolean firstMonsterPower = true;
                 for (AbstractPower power : monster.powers) {
                     if (!firstMonsterPower) out.append(',');
                     firstMonsterPower = false;
-                    out.append("{\"id\":\"").append(escapeJson(power.ID)).append("\"}");
+                    out.append("{\"id\":\"").append(escapeJson(power.ID))
+                            .append("\",\"amount\":").append(power.amount)
+                            .append(",\"justApplied\":false}");
                 }
                 out.append(']');
                 if (!runicDome) {
@@ -1331,11 +1341,14 @@ public final class STSModelInspector implements PostInitializeSubscriber,
                     (combat.isEmpty() ? "" : ",\"combat\":" + combat
                         + ",\"combatEntryHash\":\"" + combatEntryHash + "\""
                         + (combatEntry.isEmpty() ? "" : ",\"combatEntry\":" + combatEntry)
-                        + (combatEntry.isEmpty() ? "" : ",\"silverRoot\":{\"schemaVersion\":2,\"decisionOrdinal\":"
+                        + (combatEntry.isEmpty() ? "" : ",\"silverRoot\":{\"schemaVersion\":4,\"decisionInTurn\":"
                             + playedDecisionOrdinal(combat) + ",\"firstDecision\":"
                             + (playedDecisionOrdinal(combat) == 0) + ",\"character\":\""
                             + character + "\",\"ascension\":" + ascension + ",\"act\":" + act
-                            + ",\"floor\":" + floor + ",\"hp\":" + hp + ",\"maxHp\":" + maxHp
+                            + ",\"combatInstance\":\"" + escape(combatEntryHash) + "\",\"playerTurn\":"
+                            + combatTurn(combat) + ",\"encounter\":\""
+                            + entryEncounter(combatEntry) + "\",\"floor\":" + floor
+                            + ",\"hp\":" + hp + ",\"maxHp\":" + maxHp
                             + ",\"gold\":" + gold + ",\"potionCapacity\":" +
                             AbstractDungeon.player.potionSlots + ",\"roomClass\":\"" +
                             roomClass(AbstractDungeon.getCurrRoom()) + "\",\"burningElite\":" +
@@ -1351,6 +1364,26 @@ public final class STSModelInspector implements PostInitializeSubscriber,
             while (end < combatJson.length() && Character.isDigit(combatJson.charAt(end))) ++end;
             try { return Integer.parseInt(combatJson.substring(start, end)); }
             catch (Exception error) { return -1; }
+        }
+
+        private static int combatTurn(String combatJson) {
+            String needle = "\"turn\":";
+            int start = combatJson.indexOf(needle);
+            if (start < 0) return 1;
+            start += needle.length();
+            int end = start;
+            while (end < combatJson.length() && Character.isDigit(combatJson.charAt(end))) ++end;
+            try { return Integer.parseInt(combatJson.substring(start, end)); }
+            catch (Exception error) { return 1; }
+        }
+
+        private static String entryEncounter(String entryJson) {
+            String needle = "\"encounter\":\"";
+            int start = entryJson.indexOf(needle);
+            if (start < 0) return "";
+            start += needle.length();
+            int end = entryJson.indexOf('"', start);
+            return end < 0 ? "" : entryJson.substring(start, end);
         }
 
         private static String escape(String s) {

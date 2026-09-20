@@ -454,6 +454,75 @@ int main() {
         reject = fixtures[0].observation;
         reject["silverRoot"]["combat"]["turn"] = 2;
         if (one_combat::advisor::importSilverRoot(reject).ok) return 8;
+
+        // Protocol v4 is deliberately exercised with a non-starter card,
+        // upgraded state, a public power, a real potion, and the persistent
+        // UUID registry.  The draw array is an information-state multiset;
+        // swapping it must not change the imported search state.
+        auto general = fixtures[0].observation;
+        auto &generalRoot = general["silverRoot"];
+        generalRoot["schemaVersion"] = 4;
+        generalRoot.erase("decisionOrdinal");
+        generalRoot.erase("firstDecision");
+        generalRoot["decisionInTurn"] = 0;
+        generalRoot["combatInstance"] = "generic-entry";
+        generalRoot["playerTurn"] = 4;
+        generalRoot["encounter"] = "CULTIST";
+        generalRoot["combat"]["playerPowers"] = json::array({
+            json{{"id", "Metallicize"}, {"amount", 2}}});
+        generalRoot["combat"]["potions"][0] = json{{"slot", 0}, {"id", "Strength Potion"}};
+        generalRoot["combat"]["relics"].push_back(
+            json{{"id", "Happy Flower"}, {"counter", 2}});
+        generalRoot["combat"]["draw"].push_back(json{
+            {"id", "Shrug It Off"}, {"uuid", "generated-shrug"}, {"upgraded", true},
+            {"misc", 0}, {"cost", 1}, {"costForTurn", 1},
+            {"freeToPlayOnce", false}, {"retain", false}});
+        one_combat::advisor::SilverImportContext generalContext;
+        generalContext.session = "generic-session";
+        general["session"] = "generic-session";
+        auto generalImported = one_combat::advisor::importSilverRoot(general, generalContext);
+        if (!generalImported.ok) throw std::runtime_error("schema-v4 import failed: " + generalImported.reason);
+        if (generalImported.wire.inputState != static_cast<int>(InputState::PLAYER_NORMAL)
+            || generalImported.wire.potionCount != 1
+            || generalImported.wire.player.statusMap.empty()
+            || generalImported.wire.nextUniqueCardId <= 10)
+            throw std::runtime_error("schema-v4 state fields were not materialized: potion="
+                + std::to_string(generalImported.wire.potionCount) + " powers="
+                + std::to_string(generalImported.wire.player.statusMap.size()) + " next="
+                + std::to_string(generalImported.wire.nextUniqueCardId));
+        const auto generatedId = generalContext.cardIds.at("generated-shrug");
+        auto generalAgain = general;
+        std::swap(generalAgain["silverRoot"]["combat"]["draw"][0],
+                  generalAgain["silverRoot"]["combat"]["draw"][1]);
+        auto generalAgainImported = one_combat::advisor::importSilverRoot(generalAgain, generalContext);
+        if (!generalAgainImported.ok || generalAgainImported.wire.drawPile.unknown.empty()
+            || generalContext.cardIds.at("generated-shrug") != generatedId
+            || !convertedStatesEqualForSearch(generalImported.wire, generalAgainImported.wire))
+            throw std::runtime_error("schema-v4 UUID or hidden draw contract failed");
+        general["silverRoot"]["combat"]["frozenEye"] = true;
+        general["silverRoot"]["combat"]["draw"] = json::array({
+            json{{"id", "Strike_R"}, {"uuid", "eye-a"}, {"upgraded", false}, {"cost", 1}, {"costForTurn", 1}},
+            json{{"id", "Defend_R"}, {"uuid", "eye-b"}, {"upgraded", false}, {"cost", 1}, {"costForTurn", 1}}});
+        one_combat::advisor::SilverImportContext eyeContext;
+        eyeContext.session = "eye-session";
+        auto eyeImported = one_combat::advisor::importSilverRoot(general, eyeContext);
+        if (!eyeImported.ok || !eyeImported.wire.fullDrawOrderObserved
+            || eyeImported.wire.drawPile.knownTop.size() != 2
+            || eyeImported.wire.drawPile.knownTop[0].uniqueId
+                == eyeImported.wire.drawPile.knownTop[1].uniqueId)
+            throw std::runtime_error("Frozen Eye order/identity contract failed: ok="
+                + std::to_string(eyeImported.ok) + " reason=" + eyeImported.reason
+                + " full=" + std::to_string(eyeImported.wire.fullDrawOrderObserved)
+                + " size=" + std::to_string(eyeImported.wire.drawPile.knownTop.size()));
+        general["silverRoot"]["combat"]["cardSelect"] = json{
+            {"task", "EXHAUST_ONE"}, {"cards", json::array({"Strike_R"})},
+            {"pickCount", 1}, {"canPickZero", false}};
+        auto selectionImported = one_combat::advisor::importSilverRoot(general, eyeContext);
+        if (!selectionImported.ok || selectionImported.wire.inputState
+                != static_cast<int>(InputState::CARD_SELECT)
+            || selectionImported.wire.cardSelect.task
+                != static_cast<std::int16_t>(CardSelectTask::EXHAUST_ONE))
+            throw std::runtime_error("schema-v4 card-select contract failed");
         std::cout << "live Silver native first-turn parity checks passed\n";
         return 0;
     } catch (const std::exception &e) {

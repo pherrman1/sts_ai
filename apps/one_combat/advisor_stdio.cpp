@@ -16,8 +16,15 @@ using nlohmann::json;
 namespace {
 json silverEvaluator(const one_combat::advisor::Request &request,
                      std::shared_ptr<silver_bridge::SilverSearchSession> &session,
-                     std::string &sessionIdentity, std::string &combatEntryIdentity) {
-    const auto imported = one_combat::advisor::importSilverRoot(request.observation);
+                     std::string &sessionIdentity, std::string &combatEntryIdentity,
+                     one_combat::advisor::SilverImportContext &importContext) {
+    const auto entryIdentity = request.observation.value(
+        "combatEntryHash", request.observation.value("silverRoot", json::object())
+            .value("combatInstance", std::string()));
+    // Reset before importing so a new protocol session cannot inherit the
+    // previous session's UUID registry when the combat hash happens to repeat.
+    importContext.reset(request.session, entryIdentity);
+    const auto imported = one_combat::advisor::importSilverRoot(request.observation, importContext);
     json evaluator = {{"id", "silver_player_decision_v2"},
                       {"scope", "combat_player_decision"},
                       {"simulations", 1000}, {"adaptiveEnabled", false},
@@ -126,6 +133,7 @@ int main() {
     std::shared_ptr<silver_bridge::SilverSearchSession> silverSession;
     std::string silverSessionIdentity;
     std::string silverCombatEntryIdentity;
+    one_combat::advisor::SilverImportContext silverImportContext;
     if (const char *path = std::getenv("STS_CTM_MODEL"); path && *path) {
         try {
             ctm = std::make_unique<one_combat::NativeCombatTransitionSampler>(path);
@@ -156,7 +164,8 @@ int main() {
                     if (request.observation.value("boundary", std::string()) == "combat") {
                         const auto silver = silverEvaluator(request, silverSession,
                                                             silverSessionIdentity,
-                                                            silverCombatEntryIdentity);
+                                                            silverCombatEntryIdentity,
+                                                            silverImportContext);
                         if (!ctm) {
                             if (!request.observation.contains("combatEntry")) {
                                 response = one_combat::advisor::unsupportedResponse(

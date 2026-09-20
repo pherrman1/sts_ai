@@ -1,6 +1,6 @@
 # Live model inspector
 
-Last verified: 2026-09-19. This page describes the private integration
+Last verified: 2026-09-20. This page describes the private integration
 boundary currently present in the repository; it is not a claim that every
 game boundary has a qualified live evaluator.
 
@@ -37,37 +37,34 @@ session. A new process starts a new session state.
 
 The Java frontend is under `mods/sts-model-inspector/`. It uses BaseMod
 post-update/render subscribers and captures detached Ironclad-compatible
-summary fields for card rewards, rest sites, and ordinary player turns. Combat
-observations include only player-visible decision state: turn, energy, player
-block, cards played this turn, hand/draw/discard/exhaust card instances,
-potions, relics, and living-monster HP, max HP, block, next move, intent, and
-intent damage. The Silver root reuses this combat snapshot and adds the
-version-2 decision envelope, ordered `playedThisTurn` history, and explicit
-player/monster power arrays. Under Runic Dome, intent and intent damage
-are omitted from both the payload and fingerprint because they are not
-player-visible. The combat boundary requires the installed runtime's
-waiting-for-user phase, no current action, empty action/card/monster queues,
-and an unended turn. The combat fingerprint includes that payload, so
-successive decisions are not collapsed into one observation. A battle-start
-hook can precede encounter population, so combat-entry and Silver-root
-identity are captured lazily at the first actionable decision. A stable-
-boundary loss clears the displayed observation and fences late responses from
-the prior decision. Advisor writes use one bounded latest-observation slot;
-intermediate captures are replaceable rather than queued without limit. It
-launches the advisor with a direct `ProcessBuilder` call. The F8 panel remains
-diagnostic and read-only. Workshop and game/dependency JARs remain outside
-Git. Silver live support is fail-closed to ordinary Act-1 Ironclad Cultist and
-Jaw Worm combats plus non-burning Act-1 Gremlin Nob, Burning Blood only, empty
-potion slots, the exact 5 Strike / 4 Defend / 1 Bash unupgraded starter deck,
-and the exact supported first public moves: Cultist `nextMove=3`, Jaw Worm
-`nextMove=1`, and Gremlin Nob `nextMove=3`. Decision 1 is supported only after
-exactly one ordinary unupgraded Strike or Defend during Java turn 1. Bash,
-non-empty power arrays, later turns, later Jaw Worm/Nob moves, burning elites,
-Runic Dome, Frozen Eye, missing state, non-empty potions, and live RNG fields
-are rejected. A single deterministic search seed derived from
-`combatEntryHash` is retained across both decisions. Unsupported continuation,
-a new protocol session, or a new combat discards the prior Silver session; the
-implementation never crosses the monster turn.
+summary fields for card rewards, rest sites, and ordinary player turns. The
+combat producer now emits protocol-v4 Silver roots with physical card UUIDs,
+upgraded/misc/cost/retain/free-play fields, powers with amount and
+`justApplied`, dead monster slots, relics, potion slots, the combat entry
+identity, and a centralized native mapping boundary for runtime IDs. Ordinary
+draw order is sorted before emission; the actual runtime order is retained when
+Frozen Eye is present. Runic Dome move bytes are redacted and the importer
+rejects that root until a complete public hidden-intent tracker is available.
+The installed game API has no public `justApplied` power bit, so that schema
+field is emitted conservatively as `false` at stable user boundaries.
+The combat boundary still requires the installed runtime's waiting-for-user
+phase, no current action, empty action/card/monster queues, and an unended turn.
+The combat fingerprint includes the payload, so successive decisions are not
+collapsed into one observation. A battle-start hook can precede encounter
+population, so combat-entry and Silver-root identity are captured lazily at the
+first actionable decision. A stable-boundary loss clears the displayed
+observation and fences late responses from the prior decision. Advisor writes
+use one bounded latest-observation slot; intermediate captures are replaceable
+rather than queued without limit. It launches the advisor with a direct
+`ProcessBuilder` call. The F8 panel remains diagnostic and read-only. Workshop
+and game/dependency JARs remain outside Git. The native v4 importer is
+fail-closed for unknown mappings, resolving snapshots, unsupported selection
+tasks or option capacities, and native mechanics absent from the pinned
+simulator. Its maintained capability census is
+`docs/knowledge-base/behavior/live-silver-capability-census.md`. A single
+isolated search seed derived from `combatEntryHash` is retained across an
+active protocol session and combat; the UUID registry is reset when either
+identity changes.
 
 Live current energy comes from `EnergyPanel.totalCount`; the player's
 `EnergyManager.energy` field is the per-turn recharge amount and does not
@@ -117,11 +114,14 @@ so a future game UI can discard responses after a reload or newer capture.
 ## Required next work
 
 The Java process owns bounded background I/O and treats the endpoint as
-advisory only. Future work must not broaden this milestone's encounter,
-continuation, or first-move support without a new contract and parity fixtures.
-CTM and Silver results remain separate evaluators, and neither path controls
-gameplay or establishes policy-quality evidence.
+advisory only. The current producer does not yet serialize every native
+runtime tracker (notably live card-selection screens and all queue/limbo/
+stasis metadata), so those roots must not be treated as fully supported merely
+because the native wire can represent them. CTM and Silver results remain
+separate evaluators, and neither path controls gameplay or establishes
+policy-quality evidence. Any expansion of the producer must add a fixture and
+an explicit public-information contract before promotion.
 
 Knowledge impact: this page records the protocol/lifecycle boundary, the
-player-visible combat gate, the Runic Dome redaction, the narrow two-decision
-Silver evaluator contract, and its diagnostic-only limitation.
+player-visible combat gate, protocol-v4 producer/importer contract, the Runic
+Dome redaction, and the explicit producer coverage boundary.
