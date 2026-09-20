@@ -92,7 +92,8 @@ int moveId(const std::string &id, int nextMove) {
     // These values are the explicit first-action mappings from the vanilla
     // AbstractMonster nextMove field; no damage or localized intent text is used.
     if (id == "Cultist")
-        return nextMove == 3 ? static_cast<int>(sts::MonsterMoveId::CULTIST_INCANTATION) : 0;
+        return nextMove == 3 ? static_cast<int>(sts::MonsterMoveId::CULTIST_INCANTATION)
+            : nextMove == 1 ? static_cast<int>(sts::MonsterMoveId::CULTIST_DARK_STRIKE) : 0;
     if (id == "JawWorm") {
         if (nextMove == 1) return static_cast<int>(sts::MonsterMoveId::JAW_WORM_CHOMP);
     }
@@ -525,6 +526,10 @@ SilverRootImportResult importSilverRootGeneric(const json &observation,
     if (combatIt == root.end() || !combatIt->is_object()) return unsupported("silver_combat_missing");
     const auto &combat = *combatIt;
     if (hasForbiddenRngField(combat)) return unsupported("silver_rng_field");
+    if (!combat.contains("damageTrackingExact")
+        || !combat.at("damageTrackingExact").is_boolean()
+        || !combat.at("damageTrackingExact").get<bool>())
+        return unsupported("silver_damage_tracking");
 
     const std::string entry = root.value("combatInstance",
         observation.value("combatEntryHash", std::string()));

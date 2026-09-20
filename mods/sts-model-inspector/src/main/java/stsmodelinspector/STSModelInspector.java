@@ -8,6 +8,7 @@ import basemod.interfaces.OnStartBattleSubscriber;
 import basemod.interfaces.PostBattleSubscriber;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
+import com.megacrit.cardcrawl.cards.DamageInfo;
 import com.megacrit.cardcrawl.dungeons.AbstractDungeon;
 import com.megacrit.cardcrawl.cards.AbstractCard;
 import com.megacrit.cardcrawl.monsters.AbstractMonster;
@@ -53,8 +54,6 @@ public final class STSModelInspector implements PostInitializeSubscriber,
     private static final String PROTOCOL = "sts_model_inspector_v1";
     private static final int PROTOCOL_VERSION = 1;
     private static final String TOGGLE = "stsmodelinspector.toggle";
-    private static int trackedDamageTotal;
-    private static int trackedDamageTurn;
     private static int trackedLastUnblockedDamage;
     private static int trackedTimesDamaged;
     private static boolean trackedPlayerVulnerableSeen;
@@ -101,10 +100,24 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         BaseMod.subscribe(INSTANCE);
     }
 
+    /** Called by the post-AbstractPlayer.damage ModTheSpire patch. */
+    static void recordPlayerDamage(DamageInfo info, int finalDamage) {
+        if (info == null || AbstractDungeon.player == null
+                || AbstractDungeon.currMapNode == null) return;
+        if (info.type == DamageInfo.DamageType.HP_LOSS) {
+            if (finalDamage > 0) ++trackedTimesDamaged;
+            return;
+        }
+        // lastDamageTaken is assigned by vanilla after block, powers, relics,
+        // Buffer, Torii, and Tungsten Rod have resolved.  The patch invokes
+        // this once per public damage() call, so multi-hit attacks remain
+        // events rather than being collapsed into a turn total.
+        trackedLastUnblockedDamage = Math.max(0, finalDamage);
+        if (finalDamage > 0) ++trackedTimesDamaged;
+    }
+
     @Override
     public void receiveOnBattleStart(AbstractRoom room) {
-        trackedDamageTotal = 0;
-        trackedDamageTurn = 1;
         trackedLastUnblockedDamage = 0;
         trackedTimesDamaged = 0;
         trackedPlayerVulnerableSeen = false;
@@ -133,8 +146,6 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         silverRanking = "";
         silverPlayerTurn = -1;
         silverDecisionInTurn = -1;
-        trackedDamageTotal = 0;
-        trackedDamageTurn = 0;
         trackedLastUnblockedDamage = 0;
         trackedTimesDamaged = 0;
         trackedPlayerVulnerableSeen = false;
@@ -1018,19 +1029,6 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         int decisionOrdinal = AbstractDungeon.actionManager.cardsPlayedThisTurn.size();
         String selection = cardSelectionJson();
         String stasis = stasisJson();
-        int visibleTurn = com.megacrit.cardcrawl.actions.GameActionManager.turn;
-        int damageTotal = com.megacrit.cardcrawl.actions.GameActionManager.damageReceivedThisCombat;
-        if (visibleTurn == 1 && decisionOrdinal == 0) {
-            trackedDamageTotal = damageTotal;
-            trackedDamageTurn = visibleTurn;
-            trackedLastUnblockedDamage = 0;
-            trackedTimesDamaged = 0;
-        } else if (visibleTurn != trackedDamageTurn) {
-            trackedLastUnblockedDamage = Math.max(0, damageTotal - trackedDamageTotal);
-            if (trackedLastUnblockedDamage > 0) ++trackedTimesDamaged;
-            trackedDamageTotal = damageTotal;
-            trackedDamageTurn = visibleTurn;
-        }
         int attacksPlayed = 0;
         int skillsPlayed = 0;
         for (AbstractCard card : AbstractDungeon.actionManager.cardsPlayedThisTurn) {
@@ -1050,6 +1048,7 @@ public final class STSModelInspector implements PostInitializeSubscriber,
                 .append(",\"skillsPlayedThisTurn\":").append(skillsPlayed)
                 .append(",\"cardsDiscardedThisTurn\":")
                 .append(com.megacrit.cardcrawl.actions.GameActionManager.totalDiscardedThisTurn)
+                .append(",\"damageTrackingExact\":true")
                 .append(",\"lastTargetedMonster\":").append(lastTargetedMonster)
                 .append(",\"lastAttackUnblockedDamage\":").append(trackedLastUnblockedDamage)
                 .append(",\"timesDamagedThisCombat\":").append(trackedTimesDamaged)

@@ -25,6 +25,9 @@ The pinned native boundary has explicit representations for:
   discard forms;
 - up to five encounter slots, including dead/escaped slots when the observer
   supplies them, so target indices are not compacted after a death.
+- exact player damage-event bookkeeping when the observer's post-
+  `AbstractPlayer.damage()` boundary is installed; each finalized public damage
+  call is one event, and the last such unblocked damage is retained.
 
 Protocol-v4 import now has one centralized mapping table for Java monster IDs,
 encounter IDs, monster move bytes, player powers, monster powers, and selection
@@ -57,6 +60,11 @@ These are deliberate boundaries, not silently fabricated defaults:
 - unknown Java card/relic/potion/power/task IDs;
 - encounter, move, or monster `miscInfo` values that are not present in the
   public schema or cannot be derived from the current public tracker;
+- monster move bytes without a per-class runtime qualification against the
+  installed Java classes; the accepted boundary currently retains only the
+  PR-248-qualified Cultist, Jaw Worm, and Gremlin Nob mappings;
+- combat observations from a producer that does not assert exact damage-event
+  tracking; turn-level damage totals are not accepted as a substitute;
 - resolving/action-queue snapshots;
 - selection options that exceed the native `CardSelectWire` public option
   capacity or require unrevealed random choices;

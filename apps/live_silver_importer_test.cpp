@@ -1,4 +1,5 @@
 #include "one_combat/live_silver_importer.h"
+#include "one_combat/live_silver_mapping.h"
 
 #include <algorithm>
 #include <cmath>
@@ -42,17 +43,13 @@ const char *cardId(CardId id) {
 int javaMove(MonsterMoveId move) {
     switch (move) {
     case MonsterMoveId::CULTIST_INCANTATION: return 3;
-    case MonsterMoveId::CULTIST_DARK_STRIKE: return 2;
+    case MonsterMoveId::CULTIST_DARK_STRIKE: return 1;
     case MonsterMoveId::JAW_WORM_CHOMP: return 1;
     case MonsterMoveId::JAW_WORM_THRASH: return 2;
     case MonsterMoveId::JAW_WORM_BELLOW: return 3;
+    case MonsterMoveId::GREMLIN_NOB_BELLOW: return 3;
     case MonsterMoveId::GREMLIN_NOB_RUSH: return 1;
     case MonsterMoveId::GREMLIN_NOB_SKULL_BASH: return 2;
-    case MonsterMoveId::GREMLIN_NOB_BELLOW: return 3;
-    case MonsterMoveId::GREEN_LOUSE_BITE: return 1;
-    case MonsterMoveId::GREEN_LOUSE_SPIT_WEB: return 2;
-    case MonsterMoveId::RED_LOUSE_BITE: return 1;
-    case MonsterMoveId::RED_LOUSE_GROW: return 2;
     default: return 0;
     }
 }
@@ -103,6 +100,9 @@ json observation(const BattleStateWire &w, const char *name, int move, const cha
         {"turn", 1}, {"energy", w.player.energy}, {"block", w.player.block},
         {"cardsPlayedThisTurn", w.player.cardsPlayedThisTurn}, {"cardSelect", false},
         {"resolving", false}, {"runicDome", false}, {"frozenEye", false},
+        {"damageTrackingExact", true},
+        {"lastAttackUnblockedDamage", w.player.lastAttackUnblockedDamage},
+        {"timesDamagedThisCombat", w.player.timesDamagedThisCombat},
         {"playedThisTurn", std::move(played)}, {"playerPowers", json::array()},
         {"hand", pileJson(w.hand)}, {"limbo", json::array()}, {"stasis", json::array()},
         {"draw", pileJson(w.drawPile.unknown)},
@@ -205,11 +205,11 @@ Fixture multiFixture() {
     game.act = 1;
     game.floorNum = 1;
     BattleContext live;
-    live.init(game, MonsterEncounter::TWO_LOUSE);
+    live.init(game, MonsterEncounter::THREE_CULTIST);
     CombatKnowledgeState knowledge;
     knowledge.initializeFromLiveBattle(live);
     auto wire = makeSilverBattleStateWire(live, knowledge, makeSilverRunContext(game), 0x1A11u);
-    if (!wire.valid || wire.monsterCount != 2) throw std::runtime_error("two-louse native fixture failed");
+    if (!wire.valid || wire.monsterCount != 3) throw std::runtime_error("three-cultist native fixture failed");
     // A first live observation allocates persistent UUIDs in the producer's
     // visible-pile order.  Give this native fixture the same assignment.
     normalizeFirstObservationIdentity(wire);
@@ -222,8 +222,8 @@ Fixture multiFixture() {
     root.erase("firstDecision");
     root["decisionInTurn"] = 0;
     root["playerTurn"] = wire.turn + 1;
-    root["combatInstance"] = "two-louse-entry";
-    root["encounter"] = "TWO_LOUSE";
+    root["combatInstance"] = "three-cultist-entry";
+    root["encounter"] = "THREE_CULTIST";
     auto &combat = root["combat"];
     combat["turn"] = wire.turn + 1;
     combat["loopCount"] = wire.loopCount;
@@ -235,7 +235,7 @@ Fixture multiFixture() {
     for (int i = 0; i < wire.monsterCount; ++i) {
         const auto &monster = wire.monsters[i];
         const auto current = javaMove(static_cast<MonsterMoveId>(monster.moveHistory[0]));
-        if (current == 0) throw std::runtime_error("two-louse current move mapping missing");
+        if (current == 0) throw std::runtime_error("three-cultist current move mapping missing");
         json history = json::array();
         const auto previous = javaMove(static_cast<MonsterMoveId>(monster.moveHistory[1]));
         if (previous != 0) history.push_back(previous);
@@ -252,7 +252,46 @@ Fixture multiFixture() {
             {"miscInfo", monster.miscInfo}, {"powers", std::move(powers)}};
         combat["monsters"].push_back(std::move(monsterJson));
     }
-    return {"TwoLouse", 0, "MONSTER", wire, std::move(out)};
+    return {"ThreeCultist", 3, "MONSTER", wire, std::move(out)};
+}
+Fixture multiHitFixture() {
+    GameContext game(CharacterClass::IRONCLAD, 0xD1A3u, 0);
+    game.act = 1;
+    game.floorNum = 1;
+    BattleContext live;
+    live.init(game, MonsterEncounter::CULTIST);
+    CombatKnowledgeState knowledge;
+    knowledge.initializeFromLiveBattle(live);
+    for (const int damage : {2, 3, 4, 5, 6, 4})
+        live.player.attacked(live, 0, damage);
+    auto wire = makeSilverBattleStateWire(live, knowledge, makeSilverRunContext(game), 0xD1A3u);
+    if (!wire.valid || wire.player.timesDamagedThisCombat != 6
+        || wire.player.lastAttackUnblockedDamage != 4)
+        throw std::runtime_error("native multi-hit damage fixture failed");
+    normalizeFirstObservationIdentity(wire);
+    return {"CultistMultiHit", 3, "MONSTER", wire,
+            observation(wire, "Cultist", 3, "MONSTER")};
+}
+void verifyRuntimeMoveBoundary() {
+    using one_combat::advisor::live_silver::monsterMove;
+    const auto expect = [](const char *id, int javaByte, MonsterMoveId native) {
+        const auto actual = monsterMove(id, javaByte);
+        if (!actual || *actual != native)
+            throw std::runtime_error(std::string("runtime move mapping failed: ")
+                + id + ":" + std::to_string(javaByte));
+    };
+    // These bytes are the actual constants used by the installed vanilla
+    // classes and by the PR 248 producer, not values generated by this table.
+    expect("Cultist", 3, MonsterMoveId::CULTIST_INCANTATION);
+    expect("Cultist", 1, MonsterMoveId::CULTIST_DARK_STRIKE);
+    expect("JawWorm", 1, MonsterMoveId::JAW_WORM_CHOMP);
+    expect("JawWorm", 2, MonsterMoveId::JAW_WORM_THRASH);
+    expect("JawWorm", 3, MonsterMoveId::JAW_WORM_BELLOW);
+    expect("GremlinNob", 1, MonsterMoveId::GREMLIN_NOB_RUSH);
+    expect("GremlinNob", 2, MonsterMoveId::GREMLIN_NOB_SKULL_BASH);
+    expect("GremlinNob", 3, MonsterMoveId::GREMLIN_NOB_BELLOW);
+    if (monsterMove("Hexaghost", 2) || monsterMove("BookOfStabbing", 1))
+        throw std::runtime_error("unqualified monster move mapping was accepted");
 }
 json genericObservation(const Fixture &fixture, const char *instance) {
     auto out = fixture.observation;
@@ -264,7 +303,7 @@ json genericObservation(const Fixture &fixture, const char *instance) {
     root["decisionInTurn"] = 0;
     root["playerTurn"] = fixture.wire.turn + 1;
     root["combatInstance"] = instance;
-    root["encounter"] = std::string(fixture.name) == "Cultist" ? "CULTIST"
+    root["encounter"] = std::string(fixture.name).rfind("Cultist", 0) == 0 ? "CULTIST"
         : (std::string(fixture.name) == "JawWorm" ? "JAW_WORM" : "GREMLIN_NOB");
     root["combat"]["turn"] = fixture.wire.turn + 1;
     root["combat"]["loopCount"] = fixture.wire.loopCount;
@@ -295,6 +334,7 @@ int cardActionCount(const std::vector<silver_bridge::SemanticAction> &actions, C
 }
 int main() {
     try {
+        verifyRuntimeMoveBoundary();
         const std::vector<Fixture> fixtures = {
             fixture(MonsterEncounter::CULTIST, "Cultist", 3, "MONSTER", 0xC011u),
             fixture(MonsterEncounter::JAW_WORM, "JawWorm", 1, "MONSTER", 0xA01u),
@@ -316,6 +356,17 @@ int main() {
                 + std::to_string(multiImported.wire.monsters[0].moveHistory[0])
                 + " m1move=" + std::to_string(multiCanonical.monsters[1].moveHistory[0]) + "/"
                 + std::to_string(multiImported.wire.monsters[1].moveHistory[0]));
+        const auto multiHit = multiHitFixture();
+        auto multiHitImported = one_combat::advisor::importSilverRoot(
+            genericObservation(multiHit, "multi-hit-damage-entry"));
+        if (!multiHitImported.ok)
+            throw std::runtime_error("multi-hit damage import failed: " + multiHitImported.reason);
+        auto multiHitCanonical = multiHit.wire;
+        multiHitCanonical.isolatedSearchSeed = multiHitImported.wire.isolatedSearchSeed;
+        if (multiHitImported.wire.player.timesDamagedThisCombat != 6
+            || multiHitImported.wire.player.lastAttackUnblockedDamage != 4
+            || !convertedStatesEqualForSearch(multiHitCanonical, multiHitImported.wire))
+            throw std::runtime_error("multi-hit damage parity failed");
         SilverSearchConfig config;
         config.simulationsPerDecision = 1000;
         config.collectRootActionSummaries = true;
@@ -702,6 +753,11 @@ int main() {
         if (one_combat::advisor::importSilverRoot(missingRelicState).reason
             != "silver_unmapped_relic_state")
             throw std::runtime_error("missing relic usedUp state was accepted");
+        auto missingDamageTracking = general;
+        missingDamageTracking["silverRoot"]["combat"].erase("damageTrackingExact");
+        if (one_combat::advisor::importSilverRoot(missingDamageTracking).reason
+            != "silver_damage_tracking")
+            throw std::runtime_error("missing exact damage tracking was accepted");
         const auto generatedId = generalContext.cardIds.at("generated-shrug");
         auto generalAgain = general;
         std::swap(generalAgain["silverRoot"]["combat"]["draw"][0],

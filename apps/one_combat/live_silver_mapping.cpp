@@ -1,6 +1,5 @@
 #include "live_silver_mapping.h"
 
-#include <initializer_list>
 #include <map>
 
 namespace one_combat::advisor::live_silver {
@@ -197,80 +196,24 @@ std::optional<sts::CardSelectTask> cardSelectTask(const std::string &id) { retur
 std::optional<sts::MonsterMoveId> monsterMove(const std::string &id, int nextMove) {
     const auto monster = monsterId(id);
     if (!monster || nextMove <= 0) return std::nullopt;
-    // Vanilla AbstractMonster move slots are stable per encounter.  Keep the
-    // table explicit: an unknown byte is a hard boundary, never an intent
-    // guessed from localized text or damage.
+    // These are the move bytes established by the PR 248 live observer and
+    // checked against the installed desktop-1.0.jar.  Do not infer the byte
+    // from the order of native enum values: many vanilla monsters use sparse
+    // or state-dependent byte constants.  Additional encounters stay
+    // unsupported until their actual Java class constants are qualified.
     using M = sts::MonsterMoveId;
-    const auto ordinal = [nextMove](std::initializer_list<M> moves) -> std::optional<M> {
-        return nextMove >= 1 && static_cast<std::size_t>(nextMove) <= moves.size()
-            ? std::optional<M>{*(moves.begin() + (nextMove - 1))} : std::nullopt;
-    };
     switch (*monster) {
-    case sts::MonsterId::ACID_SLIME_L: return ordinal({M::ACID_SLIME_L_CORROSIVE_SPIT, M::ACID_SLIME_L_LICK, M::ACID_SLIME_L_TACKLE, M::ACID_SLIME_L_SPLIT});
-    case sts::MonsterId::ACID_SLIME_M: return ordinal({M::ACID_SLIME_M_CORROSIVE_SPIT, M::ACID_SLIME_M_LICK, M::ACID_SLIME_M_TACKLE});
-    case sts::MonsterId::ACID_SLIME_S: return ordinal({M::ACID_SLIME_S_LICK, M::ACID_SLIME_S_TACKLE});
-    case sts::MonsterId::AWAKENED_ONE: return ordinal({M::AWAKENED_ONE_SLASH, M::AWAKENED_ONE_SOUL_STRIKE, M::AWAKENED_ONE_REBIRTH, M::AWAKENED_ONE_DARK_ECHO, M::AWAKENED_ONE_SLUDGE, M::AWAKENED_ONE_TACKLE});
-    case sts::MonsterId::BEAR: return ordinal({M::BEAR_BEAR_HUG, M::BEAR_LUNGE, M::BEAR_MAUL});
-    case sts::MonsterId::BRONZE_AUTOMATON: return ordinal({M::BRONZE_AUTOMATON_BOOST, M::BRONZE_AUTOMATON_FLAIL, M::BRONZE_AUTOMATON_HYPER_BEAM, M::BRONZE_AUTOMATON_SPAWN_ORBS, M::BRONZE_AUTOMATON_STUNNED});
-    case sts::MonsterId::BRONZE_ORB: return ordinal({M::BRONZE_ORB_BEAM, M::BRONZE_ORB_STASIS, M::BRONZE_ORB_SUPPORT_BEAM});
-    case sts::MonsterId::BYRD: return ordinal({M::BYRD_CAW, M::BYRD_FLY, M::BYRD_HEADBUTT, M::BYRD_PECK, M::BYRD_STUNNED, M::BYRD_SWOOP});
-    case sts::MonsterId::CENTURION: return ordinal({M::CENTURION_SLASH, M::CENTURION_FURY, M::CENTURION_DEFEND});
-    case sts::MonsterId::CHOSEN: return ordinal({M::CHOSEN_POKE, M::CHOSEN_ZAP, M::CHOSEN_DEBILITATE, M::CHOSEN_DRAIN, M::CHOSEN_HEX});
-    case sts::MonsterId::CORRUPT_HEART: return ordinal({M::CORRUPT_HEART_DEBILITATE, M::CORRUPT_HEART_BLOOD_SHOTS, M::CORRUPT_HEART_ECHO, M::CORRUPT_HEART_BUFF});
-    case sts::MonsterId::DAGGER: return ordinal({M::DAGGER_STAB, M::DAGGER_EXPLODE});
-    case sts::MonsterId::DARKLING: return ordinal({M::DARKLING_NIP, M::DARKLING_CHOMP, M::DARKLING_HARDEN, M::DARKLING_REINCARNATE, M::DARKLING_REGROW});
-    case sts::MonsterId::DECA: return ordinal({M::DECA_SQUARE_OF_PROTECTION, M::DECA_BEAM});
-    case sts::MonsterId::DONU: return ordinal({M::DONU_CIRCLE_OF_POWER, M::DONU_BEAM});
-    case sts::MonsterId::EXPLODER: return ordinal({M::EXPLODER_SLAM, M::EXPLODER_EXPLODE});
-    case sts::MonsterId::FAT_GREMLIN: return ordinal({M::FAT_GREMLIN_SMASH});
-    case sts::MonsterId::FUNGI_BEAST: return ordinal({M::FUNGI_BEAST_BITE, M::FUNGI_BEAST_GROW});
-    case sts::MonsterId::GREEN_LOUSE: return ordinal({M::GREEN_LOUSE_BITE, M::GREEN_LOUSE_SPIT_WEB});
-    case sts::MonsterId::RED_LOUSE: return ordinal({M::RED_LOUSE_BITE, M::RED_LOUSE_GROW});
-    case sts::MonsterId::GREMLIN_LEADER: return ordinal({M::GREMLIN_LEADER_ENCOURAGE, M::GREMLIN_LEADER_RALLY, M::GREMLIN_LEADER_STAB});
-    case sts::MonsterId::GREMLIN_WIZARD: return ordinal({M::GREMLIN_WIZARD_CHARGING, M::GREMLIN_WIZARD_ULTIMATE_BLAST});
-    case sts::MonsterId::HEXAGHOST: return ordinal({M::HEXAGHOST_ACTIVATE, M::HEXAGHOST_DIVIDER, M::HEXAGHOST_INFERNO, M::HEXAGHOST_SEAR, M::HEXAGHOST_TACKLE, M::HEXAGHOST_INFLAME});
-    case sts::MonsterId::CULTIST: return nextMove == 3 ? M::CULTIST_INCANTATION : nextMove == 2 ? M::CULTIST_DARK_STRIKE : std::optional<M>{};
-    case sts::MonsterId::JAW_WORM: return nextMove == 1 ? M::JAW_WORM_CHOMP : nextMove == 2 ? M::JAW_WORM_THRASH : nextMove == 3 ? M::JAW_WORM_BELLOW : std::optional<M>{};
-    case sts::MonsterId::GREMLIN_NOB: return nextMove == 1 ? M::GREMLIN_NOB_RUSH : nextMove == 2 ? M::GREMLIN_NOB_SKULL_BASH : nextMove == 3 ? M::GREMLIN_NOB_BELLOW : std::optional<M>{};
-    case sts::MonsterId::BLUE_SLAVER: return nextMove == 1 ? M::BLUE_SLAVER_STAB : nextMove == 2 ? M::BLUE_SLAVER_RAKE : std::optional<M>{};
-    case sts::MonsterId::RED_SLAVER: return nextMove == 1 ? M::RED_SLAVER_STAB : nextMove == 2 ? M::RED_SLAVER_SCRAPE : nextMove == 3 ? M::RED_SLAVER_ENTANGLE : std::optional<M>{};
-    case sts::MonsterId::LOOTER: return nextMove == 1 ? M::LOOTER_MUG : nextMove == 2 ? M::LOOTER_LUNGE : nextMove == 3 ? M::LOOTER_SMOKE_BOMB : nextMove == 4 ? M::LOOTER_ESCAPE : std::optional<M>{};
-    case sts::MonsterId::MUGGER: return nextMove == 1 ? M::MUGGER_MUG : nextMove == 2 ? M::MUGGER_LUNGE : nextMove == 3 ? M::MUGGER_SMOKE_BOMB : nextMove == 4 ? M::MUGGER_ESCAPE : std::optional<M>{};
-    case sts::MonsterId::LAGAVULIN: return nextMove == 1 ? M::LAGAVULIN_ATTACK : nextMove == 2 ? M::LAGAVULIN_SIPHON_SOUL : nextMove == 3 ? M::LAGAVULIN_SLEEP : std::optional<M>{};
-    case sts::MonsterId::BOOK_OF_STABBING: return nextMove == 1 ? M::BOOK_OF_STABBING_MULTI_STAB : nextMove == 2 ? M::BOOK_OF_STABBING_SINGLE_STAB : std::optional<M>{};
-    case sts::MonsterId::SNAKE_PLANT: return nextMove == 1 ? M::SNAKE_PLANT_CHOMP : nextMove == 2 ? M::SNAKE_PLANT_ENFEEBLING_SPORES : std::optional<M>{};
-    case sts::MonsterId::SNECKO: return nextMove == 1 ? M::SNECKO_PERPLEXING_GLARE : nextMove == 2 ? M::SNECKO_TAIL_WHIP : nextMove == 3 ? M::SNECKO_BITE : std::optional<M>{};
-    case sts::MonsterId::MAD_GREMLIN: return ordinal({M::MAD_GREMLIN_SCRATCH});
-    case sts::MonsterId::MYSTIC: return ordinal({M::MYSTIC_HEAL, M::MYSTIC_BUFF, M::MYSTIC_ATTACK_DEBUFF});
-    case sts::MonsterId::NEMESIS: return ordinal({M::NEMESIS_DEBUFF, M::NEMESIS_ATTACK, M::NEMESIS_SCYTHE});
-    case sts::MonsterId::ORB_WALKER: return ordinal({M::ORB_WALKER_LASER, M::ORB_WALKER_CLAW});
-    case sts::MonsterId::POINTY: return ordinal({M::POINTY_ATTACK});
-    case sts::MonsterId::REPULSOR: return ordinal({M::REPULSOR_BASH, M::REPULSOR_REPULSE});
-    case sts::MonsterId::REPTOMANCER: return ordinal({M::REPTOMANCER_SUMMON, M::REPTOMANCER_SNAKE_STRIKE, M::REPTOMANCER_BIG_BITE});
-    case sts::MonsterId::ROMEO: return ordinal({M::ROMEO_MOCK, M::ROMEO_AGONIZING_SLASH, M::ROMEO_CROSS_SLASH});
-    case sts::MonsterId::SENTRY: return ordinal({M::SENTRY_BEAM, M::SENTRY_BOLT});
-    case sts::MonsterId::SHELLED_PARASITE: return ordinal({M::SHELLED_PARASITE_DOUBLE_STRIKE, M::SHELLED_PARASITE_FELL, M::SHELLED_PARASITE_STUNNED, M::SHELLED_PARASITE_SUCK});
-    case sts::MonsterId::SHIELD_GREMLIN: return ordinal({M::SHIELD_GREMLIN_PROTECT, M::SHIELD_GREMLIN_SHIELD_BASH});
-    case sts::MonsterId::SLIME_BOSS: return ordinal({M::SLIME_BOSS_GOOP_SPRAY, M::SLIME_BOSS_PREPARING, M::SLIME_BOSS_SLAM, M::SLIME_BOSS_SPLIT});
-    case sts::MonsterId::SNEAKY_GREMLIN: return ordinal({M::SNEAKY_GREMLIN_PUNCTURE});
-    case sts::MonsterId::SPHERIC_GUARDIAN: return ordinal({M::SPHERIC_GUARDIAN_SLAM, M::SPHERIC_GUARDIAN_ACTIVATE, M::SPHERIC_GUARDIAN_HARDEN, M::SPHERIC_GUARDIAN_ATTACK_DEBUFF});
-    case sts::MonsterId::SPIKER: return ordinal({M::SPIKER_CUT, M::SPIKER_SPIKE});
-    case sts::MonsterId::SPIKE_SLIME_L: return ordinal({M::SPIKE_SLIME_L_FLAME_TACKLE, M::SPIKE_SLIME_L_LICK, M::SPIKE_SLIME_L_SPLIT});
-    case sts::MonsterId::SPIKE_SLIME_M: return ordinal({M::SPIKE_SLIME_M_FLAME_TACKLE, M::SPIKE_SLIME_M_LICK});
-    case sts::MonsterId::SPIKE_SLIME_S: return ordinal({M::SPIKE_SLIME_S_TACKLE});
-    case sts::MonsterId::SPIRE_GROWTH: return ordinal({M::SPIRE_GROWTH_QUICK_TACKLE, M::SPIRE_GROWTH_SMASH, M::SPIRE_GROWTH_CONSTRICT});
-    case sts::MonsterId::SPIRE_SHIELD: return ordinal({M::SPIRE_SHIELD_BASH, M::SPIRE_SHIELD_FORTIFY, M::SPIRE_SHIELD_SMASH});
-    case sts::MonsterId::SPIRE_SPEAR: return ordinal({M::SPIRE_SPEAR_BURN_STRIKE, M::SPIRE_SPEAR_PIERCER, M::SPIRE_SPEAR_SKEWER});
-    case sts::MonsterId::TASKMASTER: return ordinal({M::TASKMASTER_SCOURING_WHIP});
-    case sts::MonsterId::THE_CHAMP: return ordinal({M::THE_CHAMP_DEFENSIVE_STANCE, M::THE_CHAMP_FACE_SLAP, M::THE_CHAMP_TAUNT, M::THE_CHAMP_HEAVY_SLASH, M::THE_CHAMP_GLOAT, M::THE_CHAMP_EXECUTE, M::THE_CHAMP_ANGER});
-    case sts::MonsterId::THE_COLLECTOR: return ordinal({M::THE_COLLECTOR_BUFF, M::THE_COLLECTOR_FIREBALL, M::THE_COLLECTOR_MEGA_DEBUFF, M::THE_COLLECTOR_SPAWN});
-    case sts::MonsterId::THE_GUARDIAN: return ordinal({M::THE_GUARDIAN_CHARGING_UP, M::THE_GUARDIAN_FIERCE_BASH, M::THE_GUARDIAN_VENT_STEAM, M::THE_GUARDIAN_WHIRLWIND, M::THE_GUARDIAN_DEFENSIVE_MODE, M::THE_GUARDIAN_ROLL_ATTACK, M::THE_GUARDIAN_TWIN_SLAM});
-    case sts::MonsterId::THE_MAW: return ordinal({M::THE_MAW_ROAR, M::THE_MAW_DROOL, M::THE_MAW_SLAM, M::THE_MAW_NOM});
-    case sts::MonsterId::TORCH_HEAD: return ordinal({M::TORCH_HEAD_TACKLE});
-    case sts::MonsterId::GIANT_HEAD: return nextMove == 1 ? M::GIANT_HEAD_COUNT : nextMove == 2 ? M::GIANT_HEAD_GLARE : nextMove == 3 ? M::GIANT_HEAD_IT_IS_TIME : std::optional<M>{};
-    case sts::MonsterId::TIME_EATER: return nextMove == 1 ? M::TIME_EATER_REVERBERATE : nextMove == 2 ? M::TIME_EATER_HEAD_SLAM : nextMove == 3 ? M::TIME_EATER_RIPPLE : nextMove == 4 ? M::TIME_EATER_HASTE : std::optional<M>{};
-    case sts::MonsterId::TRANSIENT: return nextMove == 1 ? M::TRANSIENT_ATTACK : std::optional<M>{};
-    case sts::MonsterId::WRITHING_MASS: return nextMove == 1 ? M::WRITHING_MASS_IMPLANT : nextMove == 2 ? M::WRITHING_MASS_FLAIL : nextMove == 3 ? M::WRITHING_MASS_WITHER : nextMove == 4 ? M::WRITHING_MASS_MULTI_STRIKE : nextMove == 5 ? M::WRITHING_MASS_STRONG_STRIKE : std::optional<M>{};
+    case sts::MonsterId::CULTIST:
+        return nextMove == 3 ? std::optional<M>{M::CULTIST_INCANTATION}
+            : nextMove == 1 ? std::optional<M>{M::CULTIST_DARK_STRIKE} : std::nullopt;
+    case sts::MonsterId::JAW_WORM:
+        return nextMove == 1 ? std::optional<M>{M::JAW_WORM_CHOMP}
+            : nextMove == 2 ? std::optional<M>{M::JAW_WORM_THRASH}
+            : nextMove == 3 ? std::optional<M>{M::JAW_WORM_BELLOW} : std::nullopt;
+    case sts::MonsterId::GREMLIN_NOB:
+        return nextMove == 3 ? std::optional<M>{M::GREMLIN_NOB_BELLOW}
+            : nextMove == 1 ? std::optional<M>{M::GREMLIN_NOB_RUSH}
+            : nextMove == 2 ? std::optional<M>{M::GREMLIN_NOB_SKULL_BASH} : std::nullopt;
     default: return std::nullopt;
     }
 }

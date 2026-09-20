@@ -54,6 +54,14 @@ for Combust, Echo Form, Panache, Deva Form, Orange Pellets, used-up relics,
 and Necronomicon is serialized when its runtime field is accessible; otherwise
 the importer rejects that state. Monster `miscInfo` is similarly serialized
 from known runtime trackers or omitted so the importer fails closed.
+The observer's post-`AbstractPlayer.damage()` patch records finalized damage
+once per public damage call, preserving multi-hit event counts and the final
+individual unblocked hit. The v4 importer rejects observations unless the
+producer asserts this exact tracking; the old per-turn combat-damage total is
+not an accepted approximation. Move bytes are likewise fail-closed: only the
+runtime-qualified Cultist, Jaw Worm, and Gremlin Nob mappings currently cross
+the live boundary until additional Java encounter constants are independently
+qualified.
 The combat boundary still requires the installed runtime's waiting-for-user
 phase, no current action, empty action/card/monster queues, and an unended turn.
 The combat fingerprint includes the payload, so successive decisions are not
