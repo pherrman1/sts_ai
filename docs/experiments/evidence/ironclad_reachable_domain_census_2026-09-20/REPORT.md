@@ -2,7 +2,7 @@
 
 Audit/measurement only. No simulator behavior, model input, model artifact, or search behavior is changed.
 
-Audited source head: `1c0d396dd911a5a062f105c066d0eb5f19e55117` (requested baseline was `15f3eaed1f1bc3866e2686e7d6043f9e11c799cd`).
+Audited source head: `d79b1e801fa10f75949b4395331ad42cb238d108` (requested baseline was `15f3eaed1f1bc3866e2686e7d6043f9e11c799cd`).
 
 ## Results
 
