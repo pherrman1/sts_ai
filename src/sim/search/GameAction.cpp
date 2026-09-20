@@ -198,7 +198,8 @@ bool isValidRewardsAction(const GameContext &gc, const search::GameAction a) {
             return r.sapphireKey || r.emeraldKey;
 
         case search::GameAction::RewardsActionType::POTION:
-            return a.getIdx1() < r.potionCount;
+            return gc.potionCount < gc.potionCapacity && a.getIdx1() >= 0
+                && a.getIdx1() < r.potionCount;
 
         case search::GameAction::RewardsActionType::GOLD:
             return a.getIdx1() < r.goldRewardCount;
@@ -613,8 +614,10 @@ std::vector<search::GameAction> getAllRewardActions(const sts::GameContext &gc) 
         actions.emplace_back(search::GameAction::RewardsActionType::KEY);
     }
 
-    for (int i = 0; i < r.potionCount; ++i) {
-        actions.emplace_back(search::GameAction::RewardsActionType::POTION, i);
+    if (gc.potionCount < gc.potionCapacity) {
+        for (int i = 0; i < r.potionCount; ++i) {
+            actions.emplace_back(search::GameAction::RewardsActionType::POTION, i);
+        }
     }
     actions.emplace_back(search::GameAction::RewardsActionType::SKIP);
 

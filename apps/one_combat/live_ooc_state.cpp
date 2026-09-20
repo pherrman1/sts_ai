@@ -365,16 +365,20 @@ void validateLiveOocActionSet(const LiveOocStateV1 &state,const std::vector<std:
     std::set<std::uint32_t> expected(bits.begin(),bits.end()), observed;
     // Multiple semantic MCTS candidates may intentionally share one source
     // click; validate the source mapping as a set, not as a semantic list.
-    for(const auto &c:state.ooc.at("liveChoices"))require(observed.insert(primitive(c,state.projected.screenState)).second,"duplicate observed primitive mapping");
-    if (expected != observed) {
-        std::ostringstream detail;
-        detail << "native/live candidate enumeration disagreement expected={";
-        for (const auto bit : expected) detail << bit << ',';
-        detail << "} observed={";
-        for (const auto bit : observed) detail << bit << ',';
-        detail << '}';
-        throw std::invalid_argument(detail.str());
+    for(const auto &c:state.ooc.at("liveChoices")) {
+        const auto bit = primitive(c,state.projected.screenState);
+        if (!expected.count(bit)) {
+            const auto action = search::GameAction(bit);
+            const bool displayedPrismaticShard = state.projected.screenState == ScreenState::SHOP_ROOM
+                && action.getRewardsActionType() == search::GameAction::RewardsActionType::RELIC
+                && action.getIdx1() >= 0 && action.getIdx1() < 3
+             && state.projected.info.shop.relics[action.getIdx1()] == RelicId::PRISMATIC_SHARD;
+            require(displayedPrismaticShard, "native/live candidate enumeration disagreement");
+            continue;
+        }
+        require(observed.insert(bit).second,"duplicate observed primitive mapping");
     }
+    require(expected==observed,"native/live candidate enumeration disagreement");
     for(const auto b:bits)lowerLiveOocAction(state,b);
 }
 std::vector<std::uint32_t> liveOocPrimitiveBits(const LiveOocStateV1 &state) {

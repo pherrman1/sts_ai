@@ -120,6 +120,15 @@ bool isPain(const silver_bridge::CardWire &wire) {
     return wire.id == static_cast<std::int16_t>(sts::CardId::PAIN);
 }
 
+bool isOffColorIroncladCard(sts::CardId id) {
+    const auto color = sts::getCardColor(id);
+    return color == sts::CardColor::GREEN || color == sts::CardColor::BLUE
+        || color == sts::CardColor::PURPLE;
+}
+bool isOffColorIroncladCard(const silver_bridge::CardWire &wire) {
+    return isOffColorIroncladCard(static_cast<sts::CardId>(wire.id));
+}
+
 bool parseCards(const json &array, const std::string &location, std::vector<CardRecord> &out) {
     if (!array.is_array()) return false;
     for (const auto &item : array) { CardRecord record; if (!parseCard(item, location, record)) return false; out.push_back(std::move(record)); }
@@ -352,6 +361,10 @@ SilverRootImportResult importSilverRootLegacy(const json &observation) {
         || !parseCards(combat.at("draw"), "DRAW", cards)
         || !parseCards(combat.at("discard"), "DISCARD", cards)
         || !parseCards(combat.at("exhaust"), "EXHAUST", cards)) return unsupported("silver_unknown_card");
+    if (std::any_of(cards.begin(), cards.end(), [](const auto &card) {
+            return isOffColorIroncladCard(card.wire);
+        }))
+        return unsupported("silver_off_color_card");
     if (cards.size() != 10) return unsupported("silver_nonstarter_deck");
     int strikes = 0, defends = 0, bashes = 0;
     for (const auto &card : cards) {
@@ -668,6 +681,10 @@ SilverRootImportResult importSilverRootGeneric(const json &observation,
     appendGenericCards(draw, allCards); appendGenericCards(discard, allCards);
     appendGenericCards(exhaust, allCards); allCards.insert(allCards.end(), hand.begin(), hand.end());
     allCards.insert(allCards.end(), limbo.begin(), limbo.end()); allCards.insert(allCards.end(), stasis.begin(), stasis.end());
+    if (std::any_of(allCards.begin(), allCards.end(), [](const auto &card) {
+            return isOffColorIroncladCard(card.wire);
+        }))
+        return unsupported("silver_off_color_card");
     std::set<std::string> seen;
     int highestId = -1;
     for (auto &card : allCards) {
@@ -792,7 +809,7 @@ SilverRootImportResult importSilverRootGeneric(const json &observation,
                 || powerId == "Frail" || powerId == "FrailPower"
                 || powerId == "Intangible" || powerId == "IntangiblePlayerPower"
                 || powerId == "Vulnerable" || powerId == "VulnerablePower"
-                || powerId == "Weak" || powerId == "WeakPower";
+                || powerId == "Weak" || powerId == "WeakPower" || powerId == "Weakened";
             if ((needsCombust && !combat.contains("combustHpLoss"))
                 || (needsEcho && !combat.contains("echoFormCardsDoubled"))
                 || (needsPanache && !combat.contains("panacheCounter"))
@@ -996,7 +1013,9 @@ SilverRootImportResult importSilverRootGeneric(const json &observation,
         for (std::size_t i = 0; i < options.size(); ++i) {
             try {
                 const std::string cardName = options[i].is_string() ? options[i].get<std::string>() : options[i].value("id", std::string());
-                wire.cardSelect.cards[i] = static_cast<std::int16_t>(json(cardName).get<sts::CardId>());
+                const auto cardId = json(cardName).get<sts::CardId>();
+                if (isOffColorIroncladCard(cardId)) return unsupported("silver_off_color_card");
+                wire.cardSelect.cards[i] = static_cast<std::int16_t>(cardId);
             } catch (...) { return unsupported("silver_unmapped_selection_task"); }
         }
     }
@@ -1013,6 +1032,7 @@ SilverRootImportResult importSilverRootGeneric(const json &observation,
             // remaining public queue flags still belong in the retained
             // native CardQueueItem.
         } else if (queueIt->contains("card") && parseGenericCard(queueIt->at("card"), queueCard)) {
+            if (isOffColorIroncladCard(queueCard.wire)) return unsupported("silver_off_color_card");
             auto id = context.cardIds.find(queueCard.uuid);
             if (id == context.cardIds.end()) id = context.cardIds.emplace(queueCard.uuid, static_cast<std::int16_t>(context.nextUniqueCardId++)).first;
             queueCard.wire.uniqueId = id->second; wire.curCardQueueItem.card = queueCard.wire;

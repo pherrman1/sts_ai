@@ -73,6 +73,11 @@ when Frozen Eye is present. Under Runic Dome, the observer omits `nextMove`,
 the public producer does not expose enough pre-roll state for a fair import.
 Sensitive player and monster powers carry the runtime `justApplied` bit when
 the bounded reflection helper can read it and are rejected when it cannot.
+The producer maps vanilla `RitualPower.skipFirst` to this field because that
+power uses a different turn-local member name; `SlaverBlue` has stable native
+`miscInfo` zero and is emitted explicitly as zero. The player-side
+`Weakened` ID is an alias of native `Weak` and follows the same
+`justApplied` requirement.
 Special bookkeeping for Combust, Echo Form, Panache, Deva Form, Orange
 Pellets, used-up relics, and Necronomicon is serialized when its runtime field
 is accessible; otherwise the importer rejects that state. Monster `miscInfo`
@@ -398,6 +403,12 @@ read-only screen and choice converters. The observation contains:
   are errors, not permission to guess an action.
 - `captureError`: an unexpected capture or identity failure. This always stops
   the driver, including when an unsupported reason is also present.
+
+Combat rewards with a full potion inventory are fail-closed at this boundary:
+the native OOC candidate set and the inspector omit the potion-take candidate,
+leaving other rewards and `proceed` available. The current MCP reward surface
+does not expose the vanilla discard-potion command, so this is not discard
+support or a claim of whole-game reward equivalence.
 
 Path counts derive from persisted `metricData.path_taken`, whose original map
 symbols survive event-to-room conversion and save/resume. Missing history is

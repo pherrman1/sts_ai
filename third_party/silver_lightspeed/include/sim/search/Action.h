@@ -61,6 +61,10 @@ namespace sts::search {
         // interchangeable unless their per-copy special data may affect execution.
         static bool areCardsEquivalentForSearch(const CardInstance &lhs, const CardInstance &rhs);
 
+        // Whether enumerateCardSelectActions has a defined action surface for
+        // this task. Unsupported simulator tasks remain on the ordinary path.
+        static bool hasEnumeratedCardSelectActions(CardSelectTask task);
+
         static std::vector<Action> enumerateCardSelectActions(const BattleContext &bc);
     };
 

@@ -571,6 +571,11 @@ SilverSearchTelemetry telemetry(const sts::search::SearchStats &stats) {
     out.rolloutEnergyWasteSum = stats.rolloutEnergyWasteSum;
     out.rolloutDrawSum = stats.rolloutDrawSum;
     out.rolloutSurvivalSum = stats.rolloutSurvivalSum;
+    out.forcedSelectionsContracted = stats.forcedSelectionsContracted;
+    out.macroEligibleDecisionNodes = stats.macroEligibleDecisionNodes;
+    out.macroEdgesGenerated = stats.macroEdgesGenerated;
+    out.macroOptionCountSum = stats.macroOptionCountSum;
+    out.macroOptionCountByTask = stats.macroOptionCountByTask;
     return out;
 }
 
@@ -634,6 +639,12 @@ SilverSearchTelemetry telemetryDelta(const sts::search::SearchStats &after,
     result.rolloutEnergyWasteSum -= prior.rolloutEnergyWasteSum;
     result.rolloutDrawSum -= prior.rolloutDrawSum;
     result.rolloutSurvivalSum -= prior.rolloutSurvivalSum;
+    result.forcedSelectionsContracted -= prior.forcedSelectionsContracted;
+    result.macroEligibleDecisionNodes -= prior.macroEligibleDecisionNodes;
+    result.macroEdgesGenerated -= prior.macroEdgesGenerated;
+    result.macroOptionCountSum -= prior.macroOptionCountSum;
+    for (std::size_t i = 0; i < result.macroOptionCountByTask.size(); ++i)
+        result.macroOptionCountByTask[i] -= prior.macroOptionCountByTask[i];
     return result;
 }
 
@@ -1003,6 +1014,7 @@ public:
         searcher->collectVictoryCounts = config.collectRootActionSummaries;
         searcher->collectUidFragmentationDiagnostics = config.collectUidFragmentationDiagnostics;
         searcher->leafObserver = config.leafObserver;
+        searcher->contractMode = config.contractMode;
     }
 
     // Retained-root boundary: match the observation against every explored
@@ -1984,13 +1996,23 @@ ReuseCapFixtureProbe probeSilverReuseCapFixture(const BattleStateWire &wire) {
                     child->state = session.searcher->allocDecisionState();
                     *child->state = state;
                     child->state->player.curHp -= static_cast<int>(i);
-                    candidate->edges.push_back({sts::search::Action{}, child, 0, 0});
+                    sts::search::BattleSearcher::Edge edge;
+                    edge.action = sts::search::Action{};
+                    edge.node = child;
+                    edge.rngAdvanceSteps = 0;
+                    edge.visitCount = 0;
+                    candidate->edges.push_back(std::move(edge));
                 }
             }
             if (permuteHand && candidate->state->cards.cardsInHand >= 2)
                 std::swap(candidate->state->cards.hand[0], candidate->state->cards.hand[1]);
             session.searcher->root->edges.clear();
-            session.searcher->root->edges.push_back({sts::search::Action{}, candidate, 0, 0});
+            sts::search::BattleSearcher::Edge rootEdge;
+            rootEdge.action = sts::search::Action{};
+            rootEdge.node = candidate;
+            rootEdge.rngAdvanceSteps = 0;
+            rootEdge.visitCount = 0;
+            session.searcher->root->edges.push_back(std::move(rootEdge));
             session.previousBest = &session.searcher->root->edges.front();
         };
         const auto run = [&state, cap](SilverSearchSession &session, bool explicitMode,
@@ -2377,15 +2399,40 @@ SilverCombatReplayResult runSilverCombatReplay(
         const int initialRerootExact = session->rerootExact;
         const int initialRerootFallback = session->rerootFallback;
         result.actionTraceHash = 0;
+        const auto resolveForcedReplaySelections = [&]() {
+            if (config.contractMode == SilverSearchContractMode::CONTROL) return;
+            while (state.inputState == sts::InputState::CARD_SELECT) {
+                if (!sts::search::Action::hasEnumeratedCardSelectActions(
+                        state.cardSelectInfo.cardSelectTask)) break;
+                const auto actions = sts::search::Action::enumerateCardSelectActions(state);
+                if (actions.size() != 1) break;
+                const auto &action = actions.front();
+                auto next = state;
+                action.execute(next);
+                if (!(next.rng == state.rng)) break;
+                result.actionTraceHash = extendSilverReplayTraceHash(
+                    result.actionTraceHash, silverActionFingerprint(state, action));
+                state = std::move(next);
+                ++result.forcedSelectionsContracted;
+                ++result.primitiveActionsExecuted;
+                ++result.telemetry.forcedSelectionsContracted;
+            }
+        };
         while (state.outcome == sts::Outcome::UNDECIDED) {
             if (result.decisions >= kMaxSilverCombatReplayDecisions) {
                 result.failureReason = "decision_bound_exceeded";
                 return result;
             }
 
+            resolveForcedReplaySelections();
+            if (state.outcome != sts::Outcome::UNDECIDED) break;
+
             const auto beforeHash = sts::search::hashBattleState(state);
             const auto beforeInputState = state.inputState;
             const auto beforeSelectedBits = state.cardSelectInfo.selectedBits;
+            ++result.mctsSearchInvocations;
+            if (state.inputState == sts::InputState::CARD_SELECT)
+                ++result.cardSelectSearchInvocations;
             const auto decision = runCurrentRootDecision(*session, config);
             result.simulations += decision.simulations;
             result.telemetry.add(decision.telemetry);
@@ -2401,18 +2448,39 @@ SilverCombatReplayResult runSilverCombatReplay(
                 result.failureReason = "selected_action_invalid_in_private_state";
                 return result;
             }
-            if (selected->action.getActionType() == sts::search::ActionType::SINGLE_CARD_SELECT) {
-                ++result.singleCardSelectActions;
-                if (state.cardSelectInfo.cardSelectTask == sts::CardSelectTask::GAMBLE)
-                    result.traversedGamble = true;
-            } else if (selected->action.getActionType() == sts::search::ActionType::MULTI_CARD_SELECT) {
-                ++result.multiCardSelectActions;
-                if (state.cardSelectInfo.cardSelectTask == sts::CardSelectTask::GAMBLE)
-                    result.traversedGamble = true;
+            std::vector<sts::search::Action> sequence {selected->action};
+            if (selected->hasContinuation()) {
+                sequence.push_back(selected->continuation);
+                ++result.macroSelectionsTaken;
             }
-            result.actionTraceHash = extendSilverReplayTraceHash(
-                result.actionTraceHash, silverActionFingerprint(state, selected->action));
-            selected->action.execute(state);
+            for (std::size_t sequenceIndex = 0; sequenceIndex < sequence.size(); ++sequenceIndex) {
+                const auto &action = sequence[sequenceIndex];
+                if (!action.isValidAction(state)) {
+                    result.failureReason = "selected_action_sequence_invalid_in_private_state";
+                    return result;
+                }
+                if (action.getActionType() == sts::search::ActionType::SINGLE_CARD_SELECT) {
+                    ++result.singleCardSelectActions;
+                    if (state.cardSelectInfo.cardSelectTask == sts::CardSelectTask::GAMBLE)
+                        result.traversedGamble = true;
+                } else if (action.getActionType() == sts::search::ActionType::MULTI_CARD_SELECT) {
+                    ++result.multiCardSelectActions;
+                    if (state.cardSelectInfo.cardSelectTask == sts::CardSelectTask::GAMBLE)
+                        result.traversedGamble = true;
+                }
+                result.actionTraceHash = extendSilverReplayTraceHash(
+                    result.actionTraceHash, silverActionFingerprint(state, action));
+                action.execute(state);
+                ++result.primitiveActionsExecuted;
+                if (sequence.size() == 2 && sequenceIndex == 0
+                        && state.inputState == sts::InputState::CARD_SELECT) {
+                    const auto taskIndex = static_cast<std::size_t>(
+                        state.cardSelectInfo.cardSelectTask);
+                    if (taskIndex < result.macroSelectionsByTask.size())
+                        ++result.macroSelectionsByTask[taskIndex];
+                }
+            }
+            resolveForcedReplaySelections();
             const auto afterHash = sts::search::hashBattleState(state);
             const bool privateSelectionProgressed = beforeInputState != state.inputState
                 || beforeSelectedBits != state.cardSelectInfo.selectedBits;

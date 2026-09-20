@@ -112,10 +112,10 @@ Action Actions::PlayerLoseHp(int hp, bool selfDamage) { // TODO this doesn't tak
     }, false};
 }
 
-Action Actions::HealPlayer(int amount) {
+Action Actions::HealPlayer(int amount, bool executeAfterCombatVictory) {
     return {[=] (BattleContext &bc) {
         bc.player.heal(amount);
-    }, false};
+    }, false, executeAfterCombatVictory};
 }
 
 Action Actions::MonsterGainBlock(int idx, int amount) {
