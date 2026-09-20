@@ -907,7 +907,7 @@ double search::BattleSearcher::rolloutToEnd(BattleContext &bc, std::vector<Actio
         }
 
         recordAction(action, bc);
-        if (leafObservation && leafObservation->collectResult) {
+        if (leafObservation && leafObservation->collectResult && leafObservation->collectActionTrace) {
             leafObservation->rolloutActionFingerprints.push_back(
                 silver_bridge::silverActionFingerprint(bc, action));
         }
