@@ -4,8 +4,9 @@ from __future__ import annotations
 
 import json
 import unittest
+from pathlib import Path
 
-from tools.ironclad_reachable_domain_census import build_census
+from tools.ironclad_reachable_domain_census import ROOT, build_census
 
 
 class IroncladReachableDomainCensusTests(unittest.TestCase):
@@ -47,6 +48,34 @@ class IroncladReachableDomainCensusTests(unittest.TestCase):
         self.assertFalse(relics["prismaticShardInSupportedEdges"])
         shard = next(entry for entry in relics["entries"] if entry["enumName"] == "PRISMATIC_SHARD")
         self.assertEqual(shard["classification"], "PROVABLY_UNREACHABLE")
+        source = (Path(ROOT) / "src/sim/search/OocSemanticAction.cpp").read_text(encoding="utf-8")
+        self.assertIn("isSupportedAutonomousOocAction", source)
+        self.assertIn("gc.info.shop.relics[index] != RelicId::PRISMATIC_SHARD", source)
+
+    def test_generated_cards_require_reachable_generators(self) -> None:
+        cards = {entry["enumName"]: entry for entry in self.census["domains"]["cards"]["entries"]}
+        self.assertEqual(cards["MIRACLE"]["classification"], "UNKNOWN")
+        self.assertEqual(cards["SHIV"]["classification"], "UNKNOWN")
+        self.assertEqual(cards["NECRONOMICURSE"]["classification"], "UNKNOWN")
+        self.assertEqual(cards["RITUAL_DAGGER"]["classification"], "REACHABLE")
+        self.assertIn("Event::THE_NEST", cards["RITUAL_DAGGER"]["evidence"][0]["symbol"])
+
+    def test_disabled_colosseum_encounters_are_not_reachable(self) -> None:
+        encounters = {entry["enumName"]: entry for entry in self.census["domains"]["encounters"]["entries"]}
+        for name in ("COLOSSEUM_EVENT_SLAVERS", "COLOSSEUM_EVENT_NOBS"):
+            self.assertEqual(encounters[name]["classification"], "PROVABLY_UNREACHABLE")
+            self.assertEqual(encounters[name]["reasonClass"], "disabled_event_path")
+
+    def test_reachable_encounter_spawns_are_closed_over(self) -> None:
+        monsters = {entry["enumName"]: entry for entry in self.census["domains"]["monsters"]["entries"]}
+        for name in ("BRONZE_ORB", "TORCH_HEAD"):
+            self.assertEqual(monsters[name]["classification"], "REACHABLE")
+
+    def test_model_capacity_has_source_contracts(self) -> None:
+        contracts = self.census["sourceContracts"]
+        self.assertEqual(contracts["combatFeatureContract"], 1766)
+        self.assertEqual(contracts["oocTrainableFloatParameterTotalExcludingNormalizationBuffers"], 199690)
+        self.assertGreaterEqual(len(contracts["checkedPatterns"]), 10)
 
     def test_domain_drift_is_retained_as_unknown(self) -> None:
         for domain_name, expected_names in {

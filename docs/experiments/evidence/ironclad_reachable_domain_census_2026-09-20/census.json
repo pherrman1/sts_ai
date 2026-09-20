@@ -4,8 +4,8 @@
       "canonicalDomainSize": 372,
       "counts": {
         "PROVABLY_UNREACHABLE": 214,
-        "REACHABLE": 134,
-        "UNKNOWN": 24
+        "REACHABLE": 131,
+        "UNKNOWN": 27
       },
       "entries": [
         {
@@ -4064,19 +4064,29 @@
           "reasonClass": "source_pool_or_explicit_generation"
         },
         {
-          "classification": "REACHABLE",
+          "classification": "UNKNOWN",
           "declaredColor": "COLORLESS",
           "enumName": "MIRACLE",
           "evidence": [
             {
               "path": "src/combat/BattleContext.cpp",
-              "reason": "relic-generated temporary card",
+              "reason": "temporary card requires a reachable relic generator",
               "symbol": "Holy Water/Pure Water"
+            },
+            {
+              "path": "include/constants/RelicPools.h",
+              "reason": "generator relic is not in the reachable Ironclad relic closure",
+              "symbol": "HOLY_WATER"
+            },
+            {
+              "path": "include/constants/RelicPools.h",
+              "reason": "generator relic is not in the reachable Ironclad relic closure",
+              "symbol": "PURE_WATER"
             }
           ],
           "id": 226,
           "poolColor": null,
-          "reasonClass": "source_pool_or_explicit_generation"
+          "reasonClass": "unresolved_acquisition_closure"
         },
         {
           "classification": "PROVABLY_UNREACHABLE",
@@ -4099,19 +4109,19 @@
           "reasonClass": "non_ironclad_color_without_prismatic_shard"
         },
         {
-          "classification": "REACHABLE",
+          "classification": "UNKNOWN",
           "declaredColor": "CURSE",
           "enumName": "NECRONOMICURSE",
           "evidence": [
             {
-              "path": "src/game/GameContext.cpp",
-              "reason": "Calling Bell adds the curse",
-              "symbol": "Calling Bell event"
+              "path": "src/combat/BattleContext.cpp",
+              "reason": "combat behavior exists, but no supported acquisition edge was found",
+              "symbol": "CardId::NECRONOMICURSE"
             }
           ],
           "id": 228,
           "poolColor": null,
-          "reasonClass": "source_pool_or_explicit_generation"
+          "reasonClass": "unresolved_acquisition_closure"
         },
         {
           "classification": "UNKNOWN",
@@ -5000,8 +5010,8 @@
           "evidence": [
             {
               "path": "src/game/GameContext.cpp",
-              "reason": "event card acquisition",
-              "symbol": "Colosseum/event card acquisition"
+              "reason": "The Nest event card acquisition",
+              "symbol": "Event::THE_NEST"
             }
           ],
           "id": 278,
@@ -5354,19 +5364,24 @@
           "reasonClass": "source_pool_or_explicit_generation"
         },
         {
-          "classification": "REACHABLE",
+          "classification": "UNKNOWN",
           "declaredColor": "COLORLESS",
           "enumName": "SHIV",
           "evidence": [
             {
               "path": "src/combat/BattleContext.cpp",
-              "reason": "relic-generated temporary card",
+              "reason": "temporary card requires a reachable relic generator",
               "symbol": "Ninja Scroll"
+            },
+            {
+              "path": "include/constants/RelicPools.h",
+              "reason": "generator relic is not in the reachable Ironclad relic closure",
+              "symbol": "NINJA_SCROLL"
             }
           ],
           "id": 299,
           "poolColor": null,
-          "reasonClass": "source_pool_or_explicit_generation"
+          "reasonClass": "unresolved_acquisition_closure"
         },
         {
           "classification": "REACHABLE",
@@ -6665,8 +6680,8 @@
     "encounters": {
       "canonicalDomainSize": 128,
       "counts": {
-        "PROVABLY_UNREACHABLE": 1,
-        "REACHABLE": 63,
+        "PROVABLY_UNREACHABLE": 3,
+        "REACHABLE": 61,
         "UNKNOWN": 64
       },
       "entries": [
@@ -6688,819 +6703,1134 @@
           "enumName": "CULTIST",
           "evidence": [
             {
+              "path": "include/constants/MonsterEncounters.h",
+              "reason": "normal/strong/elite encounter pool",
+              "symbol": "MonsterEncounterPool"
+            },
+            {
               "path": "src/game/GameContext.cpp",
-              "reason": "supported run encounter generation",
-              "symbol": "monster/elite/boss/event generation"
+              "reason": "boss or enabled event encounter generation",
+              "symbol": "generateBoss/event generation"
             }
           ],
           "id": 1,
-          "reasonClass": "supported_act_or_event_encounter"
+          "reasonClass": "normal_elite_boss_or_enabled_event_path"
         },
         {
           "classification": "REACHABLE",
           "enumName": "JAW_WORM",
           "evidence": [
             {
+              "path": "include/constants/MonsterEncounters.h",
+              "reason": "normal/strong/elite encounter pool",
+              "symbol": "MonsterEncounterPool"
+            },
+            {
               "path": "src/game/GameContext.cpp",
-              "reason": "supported run encounter generation",
-              "symbol": "monster/elite/boss/event generation"
+              "reason": "boss or enabled event encounter generation",
+              "symbol": "generateBoss/event generation"
             }
           ],
           "id": 2,
-          "reasonClass": "supported_act_or_event_encounter"
+          "reasonClass": "normal_elite_boss_or_enabled_event_path"
         },
         {
           "classification": "REACHABLE",
           "enumName": "TWO_LOUSE",
           "evidence": [
             {
+              "path": "include/constants/MonsterEncounters.h",
+              "reason": "normal/strong/elite encounter pool",
+              "symbol": "MonsterEncounterPool"
+            },
+            {
               "path": "src/game/GameContext.cpp",
-              "reason": "supported run encounter generation",
-              "symbol": "monster/elite/boss/event generation"
+              "reason": "boss or enabled event encounter generation",
+              "symbol": "generateBoss/event generation"
             }
           ],
           "id": 3,
-          "reasonClass": "supported_act_or_event_encounter"
+          "reasonClass": "normal_elite_boss_or_enabled_event_path"
         },
         {
           "classification": "REACHABLE",
           "enumName": "SMALL_SLIMES",
           "evidence": [
             {
+              "path": "include/constants/MonsterEncounters.h",
+              "reason": "normal/strong/elite encounter pool",
+              "symbol": "MonsterEncounterPool"
+            },
+            {
               "path": "src/game/GameContext.cpp",
-              "reason": "supported run encounter generation",
-              "symbol": "monster/elite/boss/event generation"
+              "reason": "boss or enabled event encounter generation",
+              "symbol": "generateBoss/event generation"
             }
           ],
           "id": 4,
-          "reasonClass": "supported_act_or_event_encounter"
+          "reasonClass": "normal_elite_boss_or_enabled_event_path"
         },
         {
           "classification": "REACHABLE",
           "enumName": "BLUE_SLAVER",
           "evidence": [
             {
+              "path": "include/constants/MonsterEncounters.h",
+              "reason": "normal/strong/elite encounter pool",
+              "symbol": "MonsterEncounterPool"
+            },
+            {
               "path": "src/game/GameContext.cpp",
-              "reason": "supported run encounter generation",
-              "symbol": "monster/elite/boss/event generation"
+              "reason": "boss or enabled event encounter generation",
+              "symbol": "generateBoss/event generation"
             }
           ],
           "id": 5,
-          "reasonClass": "supported_act_or_event_encounter"
+          "reasonClass": "normal_elite_boss_or_enabled_event_path"
         },
         {
           "classification": "REACHABLE",
           "enumName": "GREMLIN_GANG",
           "evidence": [
             {
+              "path": "include/constants/MonsterEncounters.h",
+              "reason": "normal/strong/elite encounter pool",
+              "symbol": "MonsterEncounterPool"
+            },
+            {
               "path": "src/game/GameContext.cpp",
-              "reason": "supported run encounter generation",
-              "symbol": "monster/elite/boss/event generation"
+              "reason": "boss or enabled event encounter generation",
+              "symbol": "generateBoss/event generation"
             }
           ],
           "id": 6,
-          "reasonClass": "supported_act_or_event_encounter"
+          "reasonClass": "normal_elite_boss_or_enabled_event_path"
         },
         {
           "classification": "REACHABLE",
           "enumName": "LOOTER",
           "evidence": [
             {
+              "path": "include/constants/MonsterEncounters.h",
+              "reason": "normal/strong/elite encounter pool",
+              "symbol": "MonsterEncounterPool"
+            },
+            {
               "path": "src/game/GameContext.cpp",
-              "reason": "supported run encounter generation",
-              "symbol": "monster/elite/boss/event generation"
+              "reason": "boss or enabled event encounter generation",
+              "symbol": "generateBoss/event generation"
             }
           ],
           "id": 7,
-          "reasonClass": "supported_act_or_event_encounter"
+          "reasonClass": "normal_elite_boss_or_enabled_event_path"
         },
         {
           "classification": "REACHABLE",
           "enumName": "LARGE_SLIME",
           "evidence": [
             {
+              "path": "include/constants/MonsterEncounters.h",
+              "reason": "normal/strong/elite encounter pool",
+              "symbol": "MonsterEncounterPool"
+            },
+            {
               "path": "src/game/GameContext.cpp",
-              "reason": "supported run encounter generation",
-              "symbol": "monster/elite/boss/event generation"
+              "reason": "boss or enabled event encounter generation",
+              "symbol": "generateBoss/event generation"
             }
           ],
           "id": 8,
-          "reasonClass": "supported_act_or_event_encounter"
+          "reasonClass": "normal_elite_boss_or_enabled_event_path"
         },
         {
           "classification": "REACHABLE",
           "enumName": "LOTS_OF_SLIMES",
           "evidence": [
             {
+              "path": "include/constants/MonsterEncounters.h",
+              "reason": "normal/strong/elite encounter pool",
+              "symbol": "MonsterEncounterPool"
+            },
+            {
               "path": "src/game/GameContext.cpp",
-              "reason": "supported run encounter generation",
-              "symbol": "monster/elite/boss/event generation"
+              "reason": "boss or enabled event encounter generation",
+              "symbol": "generateBoss/event generation"
             }
           ],
           "id": 9,
-          "reasonClass": "supported_act_or_event_encounter"
+          "reasonClass": "normal_elite_boss_or_enabled_event_path"
         },
         {
           "classification": "REACHABLE",
           "enumName": "EXORDIUM_THUGS",
           "evidence": [
             {
+              "path": "include/constants/MonsterEncounters.h",
+              "reason": "normal/strong/elite encounter pool",
+              "symbol": "MonsterEncounterPool"
+            },
+            {
               "path": "src/game/GameContext.cpp",
-              "reason": "supported run encounter generation",
-              "symbol": "monster/elite/boss/event generation"
+              "reason": "boss or enabled event encounter generation",
+              "symbol": "generateBoss/event generation"
             }
           ],
           "id": 10,
-          "reasonClass": "supported_act_or_event_encounter"
+          "reasonClass": "normal_elite_boss_or_enabled_event_path"
         },
         {
           "classification": "REACHABLE",
           "enumName": "EXORDIUM_WILDLIFE",
           "evidence": [
             {
+              "path": "include/constants/MonsterEncounters.h",
+              "reason": "normal/strong/elite encounter pool",
+              "symbol": "MonsterEncounterPool"
+            },
+            {
               "path": "src/game/GameContext.cpp",
-              "reason": "supported run encounter generation",
-              "symbol": "monster/elite/boss/event generation"
+              "reason": "boss or enabled event encounter generation",
+              "symbol": "generateBoss/event generation"
             }
           ],
           "id": 11,
-          "reasonClass": "supported_act_or_event_encounter"
+          "reasonClass": "normal_elite_boss_or_enabled_event_path"
         },
         {
           "classification": "REACHABLE",
           "enumName": "RED_SLAVER",
           "evidence": [
             {
+              "path": "include/constants/MonsterEncounters.h",
+              "reason": "normal/strong/elite encounter pool",
+              "symbol": "MonsterEncounterPool"
+            },
+            {
               "path": "src/game/GameContext.cpp",
-              "reason": "supported run encounter generation",
-              "symbol": "monster/elite/boss/event generation"
+              "reason": "boss or enabled event encounter generation",
+              "symbol": "generateBoss/event generation"
             }
           ],
           "id": 12,
-          "reasonClass": "supported_act_or_event_encounter"
+          "reasonClass": "normal_elite_boss_or_enabled_event_path"
         },
         {
           "classification": "REACHABLE",
           "enumName": "THREE_LOUSE",
           "evidence": [
             {
+              "path": "include/constants/MonsterEncounters.h",
+              "reason": "normal/strong/elite encounter pool",
+              "symbol": "MonsterEncounterPool"
+            },
+            {
               "path": "src/game/GameContext.cpp",
-              "reason": "supported run encounter generation",
-              "symbol": "monster/elite/boss/event generation"
+              "reason": "boss or enabled event encounter generation",
+              "symbol": "generateBoss/event generation"
             }
           ],
           "id": 13,
-          "reasonClass": "supported_act_or_event_encounter"
+          "reasonClass": "normal_elite_boss_or_enabled_event_path"
         },
         {
           "classification": "REACHABLE",
           "enumName": "TWO_FUNGI_BEASTS",
           "evidence": [
             {
+              "path": "include/constants/MonsterEncounters.h",
+              "reason": "normal/strong/elite encounter pool",
+              "symbol": "MonsterEncounterPool"
+            },
+            {
               "path": "src/game/GameContext.cpp",
-              "reason": "supported run encounter generation",
-              "symbol": "monster/elite/boss/event generation"
+              "reason": "boss or enabled event encounter generation",
+              "symbol": "generateBoss/event generation"
             }
           ],
           "id": 14,
-          "reasonClass": "supported_act_or_event_encounter"
+          "reasonClass": "normal_elite_boss_or_enabled_event_path"
         },
         {
           "classification": "REACHABLE",
           "enumName": "GREMLIN_NOB",
           "evidence": [
             {
+              "path": "include/constants/MonsterEncounters.h",
+              "reason": "normal/strong/elite encounter pool",
+              "symbol": "MonsterEncounterPool"
+            },
+            {
               "path": "src/game/GameContext.cpp",
-              "reason": "supported run encounter generation",
-              "symbol": "monster/elite/boss/event generation"
+              "reason": "boss or enabled event encounter generation",
+              "symbol": "generateBoss/event generation"
             }
           ],
           "id": 15,
-          "reasonClass": "supported_act_or_event_encounter"
+          "reasonClass": "normal_elite_boss_or_enabled_event_path"
         },
         {
           "classification": "REACHABLE",
           "enumName": "LAGAVULIN",
           "evidence": [
             {
+              "path": "include/constants/MonsterEncounters.h",
+              "reason": "normal/strong/elite encounter pool",
+              "symbol": "MonsterEncounterPool"
+            },
+            {
               "path": "src/game/GameContext.cpp",
-              "reason": "supported run encounter generation",
-              "symbol": "monster/elite/boss/event generation"
+              "reason": "boss or enabled event encounter generation",
+              "symbol": "generateBoss/event generation"
             }
           ],
           "id": 16,
-          "reasonClass": "supported_act_or_event_encounter"
+          "reasonClass": "normal_elite_boss_or_enabled_event_path"
         },
         {
           "classification": "REACHABLE",
           "enumName": "THREE_SENTRIES",
           "evidence": [
             {
+              "path": "include/constants/MonsterEncounters.h",
+              "reason": "normal/strong/elite encounter pool",
+              "symbol": "MonsterEncounterPool"
+            },
+            {
               "path": "src/game/GameContext.cpp",
-              "reason": "supported run encounter generation",
-              "symbol": "monster/elite/boss/event generation"
+              "reason": "boss or enabled event encounter generation",
+              "symbol": "generateBoss/event generation"
             }
           ],
           "id": 17,
-          "reasonClass": "supported_act_or_event_encounter"
+          "reasonClass": "normal_elite_boss_or_enabled_event_path"
         },
         {
           "classification": "REACHABLE",
           "enumName": "SLIME_BOSS",
           "evidence": [
             {
+              "path": "include/constants/MonsterEncounters.h",
+              "reason": "normal/strong/elite encounter pool",
+              "symbol": "MonsterEncounterPool"
+            },
+            {
               "path": "src/game/GameContext.cpp",
-              "reason": "supported run encounter generation",
-              "symbol": "monster/elite/boss/event generation"
+              "reason": "boss or enabled event encounter generation",
+              "symbol": "generateBoss/event generation"
             }
           ],
           "id": 18,
-          "reasonClass": "supported_act_or_event_encounter"
+          "reasonClass": "normal_elite_boss_or_enabled_event_path"
         },
         {
           "classification": "REACHABLE",
           "enumName": "THE_GUARDIAN",
           "evidence": [
             {
+              "path": "include/constants/MonsterEncounters.h",
+              "reason": "normal/strong/elite encounter pool",
+              "symbol": "MonsterEncounterPool"
+            },
+            {
               "path": "src/game/GameContext.cpp",
-              "reason": "supported run encounter generation",
-              "symbol": "monster/elite/boss/event generation"
+              "reason": "boss or enabled event encounter generation",
+              "symbol": "generateBoss/event generation"
             }
           ],
           "id": 19,
-          "reasonClass": "supported_act_or_event_encounter"
+          "reasonClass": "normal_elite_boss_or_enabled_event_path"
         },
         {
           "classification": "REACHABLE",
           "enumName": "HEXAGHOST",
           "evidence": [
             {
+              "path": "include/constants/MonsterEncounters.h",
+              "reason": "normal/strong/elite encounter pool",
+              "symbol": "MonsterEncounterPool"
+            },
+            {
               "path": "src/game/GameContext.cpp",
-              "reason": "supported run encounter generation",
-              "symbol": "monster/elite/boss/event generation"
+              "reason": "boss or enabled event encounter generation",
+              "symbol": "generateBoss/event generation"
             }
           ],
           "id": 20,
-          "reasonClass": "supported_act_or_event_encounter"
+          "reasonClass": "normal_elite_boss_or_enabled_event_path"
         },
         {
           "classification": "REACHABLE",
           "enumName": "SPHERIC_GUARDIAN",
           "evidence": [
             {
+              "path": "include/constants/MonsterEncounters.h",
+              "reason": "normal/strong/elite encounter pool",
+              "symbol": "MonsterEncounterPool"
+            },
+            {
               "path": "src/game/GameContext.cpp",
-              "reason": "supported run encounter generation",
-              "symbol": "monster/elite/boss/event generation"
+              "reason": "boss or enabled event encounter generation",
+              "symbol": "generateBoss/event generation"
             }
           ],
           "id": 21,
-          "reasonClass": "supported_act_or_event_encounter"
+          "reasonClass": "normal_elite_boss_or_enabled_event_path"
         },
         {
           "classification": "REACHABLE",
           "enumName": "CHOSEN",
           "evidence": [
             {
+              "path": "include/constants/MonsterEncounters.h",
+              "reason": "normal/strong/elite encounter pool",
+              "symbol": "MonsterEncounterPool"
+            },
+            {
               "path": "src/game/GameContext.cpp",
-              "reason": "supported run encounter generation",
-              "symbol": "monster/elite/boss/event generation"
+              "reason": "boss or enabled event encounter generation",
+              "symbol": "generateBoss/event generation"
             }
           ],
           "id": 22,
-          "reasonClass": "supported_act_or_event_encounter"
+          "reasonClass": "normal_elite_boss_or_enabled_event_path"
         },
         {
           "classification": "REACHABLE",
           "enumName": "SHELL_PARASITE",
           "evidence": [
             {
+              "path": "include/constants/MonsterEncounters.h",
+              "reason": "normal/strong/elite encounter pool",
+              "symbol": "MonsterEncounterPool"
+            },
+            {
               "path": "src/game/GameContext.cpp",
-              "reason": "supported run encounter generation",
-              "symbol": "monster/elite/boss/event generation"
+              "reason": "boss or enabled event encounter generation",
+              "symbol": "generateBoss/event generation"
             }
           ],
           "id": 23,
-          "reasonClass": "supported_act_or_event_encounter"
+          "reasonClass": "normal_elite_boss_or_enabled_event_path"
         },
         {
           "classification": "REACHABLE",
           "enumName": "THREE_BYRDS",
           "evidence": [
             {
+              "path": "include/constants/MonsterEncounters.h",
+              "reason": "normal/strong/elite encounter pool",
+              "symbol": "MonsterEncounterPool"
+            },
+            {
               "path": "src/game/GameContext.cpp",
-              "reason": "supported run encounter generation",
-              "symbol": "monster/elite/boss/event generation"
+              "reason": "boss or enabled event encounter generation",
+              "symbol": "generateBoss/event generation"
             }
           ],
           "id": 24,
-          "reasonClass": "supported_act_or_event_encounter"
+          "reasonClass": "normal_elite_boss_or_enabled_event_path"
         },
         {
           "classification": "REACHABLE",
           "enumName": "TWO_THIEVES",
           "evidence": [
             {
+              "path": "include/constants/MonsterEncounters.h",
+              "reason": "normal/strong/elite encounter pool",
+              "symbol": "MonsterEncounterPool"
+            },
+            {
               "path": "src/game/GameContext.cpp",
-              "reason": "supported run encounter generation",
-              "symbol": "monster/elite/boss/event generation"
+              "reason": "boss or enabled event encounter generation",
+              "symbol": "generateBoss/event generation"
             }
           ],
           "id": 25,
-          "reasonClass": "supported_act_or_event_encounter"
+          "reasonClass": "normal_elite_boss_or_enabled_event_path"
         },
         {
           "classification": "REACHABLE",
           "enumName": "CHOSEN_AND_BYRDS",
           "evidence": [
             {
+              "path": "include/constants/MonsterEncounters.h",
+              "reason": "normal/strong/elite encounter pool",
+              "symbol": "MonsterEncounterPool"
+            },
+            {
               "path": "src/game/GameContext.cpp",
-              "reason": "supported run encounter generation",
-              "symbol": "monster/elite/boss/event generation"
+              "reason": "boss or enabled event encounter generation",
+              "symbol": "generateBoss/event generation"
             }
           ],
           "id": 26,
-          "reasonClass": "supported_act_or_event_encounter"
+          "reasonClass": "normal_elite_boss_or_enabled_event_path"
         },
         {
           "classification": "REACHABLE",
           "enumName": "SENTRY_AND_SPHERE",
           "evidence": [
             {
+              "path": "include/constants/MonsterEncounters.h",
+              "reason": "normal/strong/elite encounter pool",
+              "symbol": "MonsterEncounterPool"
+            },
+            {
               "path": "src/game/GameContext.cpp",
-              "reason": "supported run encounter generation",
-              "symbol": "monster/elite/boss/event generation"
+              "reason": "boss or enabled event encounter generation",
+              "symbol": "generateBoss/event generation"
             }
           ],
           "id": 27,
-          "reasonClass": "supported_act_or_event_encounter"
+          "reasonClass": "normal_elite_boss_or_enabled_event_path"
         },
         {
           "classification": "REACHABLE",
           "enumName": "SNAKE_PLANT",
           "evidence": [
             {
+              "path": "include/constants/MonsterEncounters.h",
+              "reason": "normal/strong/elite encounter pool",
+              "symbol": "MonsterEncounterPool"
+            },
+            {
               "path": "src/game/GameContext.cpp",
-              "reason": "supported run encounter generation",
-              "symbol": "monster/elite/boss/event generation"
+              "reason": "boss or enabled event encounter generation",
+              "symbol": "generateBoss/event generation"
             }
           ],
           "id": 28,
-          "reasonClass": "supported_act_or_event_encounter"
+          "reasonClass": "normal_elite_boss_or_enabled_event_path"
         },
         {
           "classification": "REACHABLE",
           "enumName": "SNECKO",
           "evidence": [
             {
+              "path": "include/constants/MonsterEncounters.h",
+              "reason": "normal/strong/elite encounter pool",
+              "symbol": "MonsterEncounterPool"
+            },
+            {
               "path": "src/game/GameContext.cpp",
-              "reason": "supported run encounter generation",
-              "symbol": "monster/elite/boss/event generation"
+              "reason": "boss or enabled event encounter generation",
+              "symbol": "generateBoss/event generation"
             }
           ],
           "id": 29,
-          "reasonClass": "supported_act_or_event_encounter"
+          "reasonClass": "normal_elite_boss_or_enabled_event_path"
         },
         {
           "classification": "REACHABLE",
           "enumName": "CENTURION_AND_HEALER",
           "evidence": [
             {
+              "path": "include/constants/MonsterEncounters.h",
+              "reason": "normal/strong/elite encounter pool",
+              "symbol": "MonsterEncounterPool"
+            },
+            {
               "path": "src/game/GameContext.cpp",
-              "reason": "supported run encounter generation",
-              "symbol": "monster/elite/boss/event generation"
+              "reason": "boss or enabled event encounter generation",
+              "symbol": "generateBoss/event generation"
             }
           ],
           "id": 30,
-          "reasonClass": "supported_act_or_event_encounter"
+          "reasonClass": "normal_elite_boss_or_enabled_event_path"
         },
         {
           "classification": "REACHABLE",
           "enumName": "CULTIST_AND_CHOSEN",
           "evidence": [
             {
+              "path": "include/constants/MonsterEncounters.h",
+              "reason": "normal/strong/elite encounter pool",
+              "symbol": "MonsterEncounterPool"
+            },
+            {
               "path": "src/game/GameContext.cpp",
-              "reason": "supported run encounter generation",
-              "symbol": "monster/elite/boss/event generation"
+              "reason": "boss or enabled event encounter generation",
+              "symbol": "generateBoss/event generation"
             }
           ],
           "id": 31,
-          "reasonClass": "supported_act_or_event_encounter"
+          "reasonClass": "normal_elite_boss_or_enabled_event_path"
         },
         {
           "classification": "REACHABLE",
           "enumName": "THREE_CULTIST",
           "evidence": [
             {
+              "path": "include/constants/MonsterEncounters.h",
+              "reason": "normal/strong/elite encounter pool",
+              "symbol": "MonsterEncounterPool"
+            },
+            {
               "path": "src/game/GameContext.cpp",
-              "reason": "supported run encounter generation",
-              "symbol": "monster/elite/boss/event generation"
+              "reason": "boss or enabled event encounter generation",
+              "symbol": "generateBoss/event generation"
             }
           ],
           "id": 32,
-          "reasonClass": "supported_act_or_event_encounter"
+          "reasonClass": "normal_elite_boss_or_enabled_event_path"
         },
         {
           "classification": "REACHABLE",
           "enumName": "SHELLED_PARASITE_AND_FUNGI",
           "evidence": [
             {
+              "path": "include/constants/MonsterEncounters.h",
+              "reason": "normal/strong/elite encounter pool",
+              "symbol": "MonsterEncounterPool"
+            },
+            {
               "path": "src/game/GameContext.cpp",
-              "reason": "supported run encounter generation",
-              "symbol": "monster/elite/boss/event generation"
+              "reason": "boss or enabled event encounter generation",
+              "symbol": "generateBoss/event generation"
             }
           ],
           "id": 33,
-          "reasonClass": "supported_act_or_event_encounter"
+          "reasonClass": "normal_elite_boss_or_enabled_event_path"
         },
         {
           "classification": "REACHABLE",
           "enumName": "GREMLIN_LEADER",
           "evidence": [
             {
+              "path": "include/constants/MonsterEncounters.h",
+              "reason": "normal/strong/elite encounter pool",
+              "symbol": "MonsterEncounterPool"
+            },
+            {
               "path": "src/game/GameContext.cpp",
-              "reason": "supported run encounter generation",
-              "symbol": "monster/elite/boss/event generation"
+              "reason": "boss or enabled event encounter generation",
+              "symbol": "generateBoss/event generation"
             }
           ],
           "id": 34,
-          "reasonClass": "supported_act_or_event_encounter"
+          "reasonClass": "normal_elite_boss_or_enabled_event_path"
         },
         {
           "classification": "REACHABLE",
           "enumName": "SLAVERS",
           "evidence": [
             {
+              "path": "include/constants/MonsterEncounters.h",
+              "reason": "normal/strong/elite encounter pool",
+              "symbol": "MonsterEncounterPool"
+            },
+            {
               "path": "src/game/GameContext.cpp",
-              "reason": "supported run encounter generation",
-              "symbol": "monster/elite/boss/event generation"
+              "reason": "boss or enabled event encounter generation",
+              "symbol": "generateBoss/event generation"
             }
           ],
           "id": 35,
-          "reasonClass": "supported_act_or_event_encounter"
+          "reasonClass": "normal_elite_boss_or_enabled_event_path"
         },
         {
           "classification": "REACHABLE",
           "enumName": "BOOK_OF_STABBING",
           "evidence": [
             {
+              "path": "include/constants/MonsterEncounters.h",
+              "reason": "normal/strong/elite encounter pool",
+              "symbol": "MonsterEncounterPool"
+            },
+            {
               "path": "src/game/GameContext.cpp",
-              "reason": "supported run encounter generation",
-              "symbol": "monster/elite/boss/event generation"
+              "reason": "boss or enabled event encounter generation",
+              "symbol": "generateBoss/event generation"
             }
           ],
           "id": 36,
-          "reasonClass": "supported_act_or_event_encounter"
+          "reasonClass": "normal_elite_boss_or_enabled_event_path"
         },
         {
           "classification": "REACHABLE",
           "enumName": "AUTOMATON",
           "evidence": [
             {
+              "path": "include/constants/MonsterEncounters.h",
+              "reason": "normal/strong/elite encounter pool",
+              "symbol": "MonsterEncounterPool"
+            },
+            {
               "path": "src/game/GameContext.cpp",
-              "reason": "supported run encounter generation",
-              "symbol": "monster/elite/boss/event generation"
+              "reason": "boss or enabled event encounter generation",
+              "symbol": "generateBoss/event generation"
             }
           ],
           "id": 37,
-          "reasonClass": "supported_act_or_event_encounter"
+          "reasonClass": "normal_elite_boss_or_enabled_event_path"
         },
         {
           "classification": "REACHABLE",
           "enumName": "COLLECTOR",
           "evidence": [
             {
+              "path": "include/constants/MonsterEncounters.h",
+              "reason": "normal/strong/elite encounter pool",
+              "symbol": "MonsterEncounterPool"
+            },
+            {
               "path": "src/game/GameContext.cpp",
-              "reason": "supported run encounter generation",
-              "symbol": "monster/elite/boss/event generation"
+              "reason": "boss or enabled event encounter generation",
+              "symbol": "generateBoss/event generation"
             }
           ],
           "id": 38,
-          "reasonClass": "supported_act_or_event_encounter"
+          "reasonClass": "normal_elite_boss_or_enabled_event_path"
         },
         {
           "classification": "REACHABLE",
           "enumName": "CHAMP",
           "evidence": [
             {
+              "path": "include/constants/MonsterEncounters.h",
+              "reason": "normal/strong/elite encounter pool",
+              "symbol": "MonsterEncounterPool"
+            },
+            {
               "path": "src/game/GameContext.cpp",
-              "reason": "supported run encounter generation",
-              "symbol": "monster/elite/boss/event generation"
+              "reason": "boss or enabled event encounter generation",
+              "symbol": "generateBoss/event generation"
             }
           ],
           "id": 39,
-          "reasonClass": "supported_act_or_event_encounter"
+          "reasonClass": "normal_elite_boss_or_enabled_event_path"
         },
         {
           "classification": "REACHABLE",
           "enumName": "THREE_DARKLINGS",
           "evidence": [
             {
+              "path": "include/constants/MonsterEncounters.h",
+              "reason": "normal/strong/elite encounter pool",
+              "symbol": "MonsterEncounterPool"
+            },
+            {
               "path": "src/game/GameContext.cpp",
-              "reason": "supported run encounter generation",
-              "symbol": "monster/elite/boss/event generation"
+              "reason": "boss or enabled event encounter generation",
+              "symbol": "generateBoss/event generation"
             }
           ],
           "id": 40,
-          "reasonClass": "supported_act_or_event_encounter"
+          "reasonClass": "normal_elite_boss_or_enabled_event_path"
         },
         {
           "classification": "REACHABLE",
           "enumName": "ORB_WALKER",
           "evidence": [
             {
+              "path": "include/constants/MonsterEncounters.h",
+              "reason": "normal/strong/elite encounter pool",
+              "symbol": "MonsterEncounterPool"
+            },
+            {
               "path": "src/game/GameContext.cpp",
-              "reason": "supported run encounter generation",
-              "symbol": "monster/elite/boss/event generation"
+              "reason": "boss or enabled event encounter generation",
+              "symbol": "generateBoss/event generation"
             }
           ],
           "id": 41,
-          "reasonClass": "supported_act_or_event_encounter"
+          "reasonClass": "normal_elite_boss_or_enabled_event_path"
         },
         {
           "classification": "REACHABLE",
           "enumName": "THREE_SHAPES",
           "evidence": [
             {
+              "path": "include/constants/MonsterEncounters.h",
+              "reason": "normal/strong/elite encounter pool",
+              "symbol": "MonsterEncounterPool"
+            },
+            {
               "path": "src/game/GameContext.cpp",
-              "reason": "supported run encounter generation",
-              "symbol": "monster/elite/boss/event generation"
+              "reason": "boss or enabled event encounter generation",
+              "symbol": "generateBoss/event generation"
             }
           ],
           "id": 42,
-          "reasonClass": "supported_act_or_event_encounter"
+          "reasonClass": "normal_elite_boss_or_enabled_event_path"
         },
         {
           "classification": "REACHABLE",
           "enumName": "SPIRE_GROWTH",
           "evidence": [
             {
+              "path": "include/constants/MonsterEncounters.h",
+              "reason": "normal/strong/elite encounter pool",
+              "symbol": "MonsterEncounterPool"
+            },
+            {
               "path": "src/game/GameContext.cpp",
-              "reason": "supported run encounter generation",
-              "symbol": "monster/elite/boss/event generation"
+              "reason": "boss or enabled event encounter generation",
+              "symbol": "generateBoss/event generation"
             }
           ],
           "id": 43,
-          "reasonClass": "supported_act_or_event_encounter"
+          "reasonClass": "normal_elite_boss_or_enabled_event_path"
         },
         {
           "classification": "REACHABLE",
           "enumName": "TRANSIENT",
           "evidence": [
             {
+              "path": "include/constants/MonsterEncounters.h",
+              "reason": "normal/strong/elite encounter pool",
+              "symbol": "MonsterEncounterPool"
+            },
+            {
               "path": "src/game/GameContext.cpp",
-              "reason": "supported run encounter generation",
-              "symbol": "monster/elite/boss/event generation"
+              "reason": "boss or enabled event encounter generation",
+              "symbol": "generateBoss/event generation"
             }
           ],
           "id": 44,
-          "reasonClass": "supported_act_or_event_encounter"
+          "reasonClass": "normal_elite_boss_or_enabled_event_path"
         },
         {
           "classification": "REACHABLE",
           "enumName": "FOUR_SHAPES",
           "evidence": [
             {
+              "path": "include/constants/MonsterEncounters.h",
+              "reason": "normal/strong/elite encounter pool",
+              "symbol": "MonsterEncounterPool"
+            },
+            {
               "path": "src/game/GameContext.cpp",
-              "reason": "supported run encounter generation",
-              "symbol": "monster/elite/boss/event generation"
+              "reason": "boss or enabled event encounter generation",
+              "symbol": "generateBoss/event generation"
             }
           ],
           "id": 45,
-          "reasonClass": "supported_act_or_event_encounter"
+          "reasonClass": "normal_elite_boss_or_enabled_event_path"
         },
         {
           "classification": "REACHABLE",
           "enumName": "MAW",
           "evidence": [
             {
+              "path": "include/constants/MonsterEncounters.h",
+              "reason": "normal/strong/elite encounter pool",
+              "symbol": "MonsterEncounterPool"
+            },
+            {
               "path": "src/game/GameContext.cpp",
-              "reason": "supported run encounter generation",
-              "symbol": "monster/elite/boss/event generation"
+              "reason": "boss or enabled event encounter generation",
+              "symbol": "generateBoss/event generation"
             }
           ],
           "id": 46,
-          "reasonClass": "supported_act_or_event_encounter"
+          "reasonClass": "normal_elite_boss_or_enabled_event_path"
         },
         {
           "classification": "REACHABLE",
           "enumName": "SPHERE_AND_TWO_SHAPES",
           "evidence": [
             {
+              "path": "include/constants/MonsterEncounters.h",
+              "reason": "normal/strong/elite encounter pool",
+              "symbol": "MonsterEncounterPool"
+            },
+            {
               "path": "src/game/GameContext.cpp",
-              "reason": "supported run encounter generation",
-              "symbol": "monster/elite/boss/event generation"
+              "reason": "boss or enabled event encounter generation",
+              "symbol": "generateBoss/event generation"
             }
           ],
           "id": 47,
-          "reasonClass": "supported_act_or_event_encounter"
+          "reasonClass": "normal_elite_boss_or_enabled_event_path"
         },
         {
           "classification": "REACHABLE",
           "enumName": "JAW_WORM_HORDE",
           "evidence": [
             {
+              "path": "include/constants/MonsterEncounters.h",
+              "reason": "normal/strong/elite encounter pool",
+              "symbol": "MonsterEncounterPool"
+            },
+            {
               "path": "src/game/GameContext.cpp",
-              "reason": "supported run encounter generation",
-              "symbol": "monster/elite/boss/event generation"
+              "reason": "boss or enabled event encounter generation",
+              "symbol": "generateBoss/event generation"
             }
           ],
           "id": 48,
-          "reasonClass": "supported_act_or_event_encounter"
+          "reasonClass": "normal_elite_boss_or_enabled_event_path"
         },
         {
           "classification": "REACHABLE",
           "enumName": "WRITHING_MASS",
           "evidence": [
             {
+              "path": "include/constants/MonsterEncounters.h",
+              "reason": "normal/strong/elite encounter pool",
+              "symbol": "MonsterEncounterPool"
+            },
+            {
               "path": "src/game/GameContext.cpp",
-              "reason": "supported run encounter generation",
-              "symbol": "monster/elite/boss/event generation"
+              "reason": "boss or enabled event encounter generation",
+              "symbol": "generateBoss/event generation"
             }
           ],
           "id": 49,
-          "reasonClass": "supported_act_or_event_encounter"
+          "reasonClass": "normal_elite_boss_or_enabled_event_path"
         },
         {
           "classification": "REACHABLE",
           "enumName": "GIANT_HEAD",
           "evidence": [
             {
+              "path": "include/constants/MonsterEncounters.h",
+              "reason": "normal/strong/elite encounter pool",
+              "symbol": "MonsterEncounterPool"
+            },
+            {
               "path": "src/game/GameContext.cpp",
-              "reason": "supported run encounter generation",
-              "symbol": "monster/elite/boss/event generation"
+              "reason": "boss or enabled event encounter generation",
+              "symbol": "generateBoss/event generation"
             }
           ],
           "id": 50,
-          "reasonClass": "supported_act_or_event_encounter"
+          "reasonClass": "normal_elite_boss_or_enabled_event_path"
         },
         {
           "classification": "REACHABLE",
           "enumName": "NEMESIS",
           "evidence": [
             {
+              "path": "include/constants/MonsterEncounters.h",
+              "reason": "normal/strong/elite encounter pool",
+              "symbol": "MonsterEncounterPool"
+            },
+            {
               "path": "src/game/GameContext.cpp",
-              "reason": "supported run encounter generation",
-              "symbol": "monster/elite/boss/event generation"
+              "reason": "boss or enabled event encounter generation",
+              "symbol": "generateBoss/event generation"
             }
           ],
           "id": 51,
-          "reasonClass": "supported_act_or_event_encounter"
+          "reasonClass": "normal_elite_boss_or_enabled_event_path"
         },
         {
           "classification": "REACHABLE",
           "enumName": "REPTOMANCER",
           "evidence": [
             {
+              "path": "include/constants/MonsterEncounters.h",
+              "reason": "normal/strong/elite encounter pool",
+              "symbol": "MonsterEncounterPool"
+            },
+            {
               "path": "src/game/GameContext.cpp",
-              "reason": "supported run encounter generation",
-              "symbol": "monster/elite/boss/event generation"
+              "reason": "boss or enabled event encounter generation",
+              "symbol": "generateBoss/event generation"
             }
           ],
           "id": 52,
-          "reasonClass": "supported_act_or_event_encounter"
+          "reasonClass": "normal_elite_boss_or_enabled_event_path"
         },
         {
           "classification": "REACHABLE",
           "enumName": "AWAKENED_ONE",
           "evidence": [
             {
+              "path": "include/constants/MonsterEncounters.h",
+              "reason": "normal/strong/elite encounter pool",
+              "symbol": "MonsterEncounterPool"
+            },
+            {
               "path": "src/game/GameContext.cpp",
-              "reason": "supported run encounter generation",
-              "symbol": "monster/elite/boss/event generation"
+              "reason": "boss or enabled event encounter generation",
+              "symbol": "generateBoss/event generation"
             }
           ],
           "id": 53,
-          "reasonClass": "supported_act_or_event_encounter"
+          "reasonClass": "normal_elite_boss_or_enabled_event_path"
         },
         {
           "classification": "REACHABLE",
           "enumName": "TIME_EATER",
           "evidence": [
             {
+              "path": "include/constants/MonsterEncounters.h",
+              "reason": "normal/strong/elite encounter pool",
+              "symbol": "MonsterEncounterPool"
+            },
+            {
               "path": "src/game/GameContext.cpp",
-              "reason": "supported run encounter generation",
-              "symbol": "monster/elite/boss/event generation"
+              "reason": "boss or enabled event encounter generation",
+              "symbol": "generateBoss/event generation"
             }
           ],
           "id": 54,
-          "reasonClass": "supported_act_or_event_encounter"
+          "reasonClass": "normal_elite_boss_or_enabled_event_path"
         },
         {
           "classification": "REACHABLE",
           "enumName": "DONU_AND_DECA",
           "evidence": [
             {
+              "path": "include/constants/MonsterEncounters.h",
+              "reason": "normal/strong/elite encounter pool",
+              "symbol": "MonsterEncounterPool"
+            },
+            {
               "path": "src/game/GameContext.cpp",
-              "reason": "supported run encounter generation",
-              "symbol": "monster/elite/boss/event generation"
+              "reason": "boss or enabled event encounter generation",
+              "symbol": "generateBoss/event generation"
             }
           ],
           "id": 55,
-          "reasonClass": "supported_act_or_event_encounter"
+          "reasonClass": "normal_elite_boss_or_enabled_event_path"
         },
         {
           "classification": "REACHABLE",
           "enumName": "SHIELD_AND_SPEAR",
           "evidence": [
             {
+              "path": "include/constants/MonsterEncounters.h",
+              "reason": "normal/strong/elite encounter pool",
+              "symbol": "MonsterEncounterPool"
+            },
+            {
               "path": "src/game/GameContext.cpp",
-              "reason": "supported run encounter generation",
-              "symbol": "monster/elite/boss/event generation"
+              "reason": "boss or enabled event encounter generation",
+              "symbol": "generateBoss/event generation"
             }
           ],
           "id": 56,
-          "reasonClass": "supported_act_or_event_encounter"
+          "reasonClass": "normal_elite_boss_or_enabled_event_path"
         },
         {
           "classification": "REACHABLE",
           "enumName": "THE_HEART",
           "evidence": [
             {
+              "path": "include/constants/MonsterEncounters.h",
+              "reason": "normal/strong/elite encounter pool",
+              "symbol": "MonsterEncounterPool"
+            },
+            {
               "path": "src/game/GameContext.cpp",
-              "reason": "supported run encounter generation",
-              "symbol": "monster/elite/boss/event generation"
+              "reason": "boss or enabled event encounter generation",
+              "symbol": "generateBoss/event generation"
             }
           ],
           "id": 57,
-          "reasonClass": "supported_act_or_event_encounter"
+          "reasonClass": "normal_elite_boss_or_enabled_event_path"
         },
         {
           "classification": "REACHABLE",
           "enumName": "LAGAVULIN_EVENT",
           "evidence": [
             {
+              "path": "include/constants/MonsterEncounters.h",
+              "reason": "normal/strong/elite encounter pool",
+              "symbol": "MonsterEncounterPool"
+            },
+            {
               "path": "src/game/GameContext.cpp",
-              "reason": "supported run encounter generation",
-              "symbol": "monster/elite/boss/event generation"
+              "reason": "boss or enabled event encounter generation",
+              "symbol": "generateBoss/event generation"
             }
           ],
           "id": 58,
-          "reasonClass": "supported_act_or_event_encounter"
+          "reasonClass": "normal_elite_boss_or_enabled_event_path"
         },
         {
-          "classification": "REACHABLE",
+          "classification": "PROVABLY_UNREACHABLE",
           "enumName": "COLOSSEUM_EVENT_SLAVERS",
           "evidence": [
             {
+              "path": "include/game/GameContext.h",
+              "reason": "Colosseum event path is disabled in the simulator",
+              "symbol": "disableColosseum"
+            },
+            {
               "path": "src/game/GameContext.cpp",
-              "reason": "supported run encounter generation",
-              "symbol": "monster/elite/boss/event generation"
+              "reason": "Colosseum requires !disableColosseum",
+              "symbol": "GameContext::eventAppears"
             }
           ],
           "id": 59,
-          "reasonClass": "supported_act_or_event_encounter"
+          "reasonClass": "disabled_event_path"
         },
         {
-          "classification": "REACHABLE",
+          "classification": "PROVABLY_UNREACHABLE",
           "enumName": "COLOSSEUM_EVENT_NOBS",
           "evidence": [
             {
+              "path": "include/game/GameContext.h",
+              "reason": "Colosseum event path is disabled in the simulator",
+              "symbol": "disableColosseum"
+            },
+            {
               "path": "src/game/GameContext.cpp",
-              "reason": "supported run encounter generation",
-              "symbol": "monster/elite/boss/event generation"
+              "reason": "Colosseum requires !disableColosseum",
+              "symbol": "GameContext::eventAppears"
             }
           ],
           "id": 60,
-          "reasonClass": "supported_act_or_event_encounter"
+          "reasonClass": "disabled_event_path"
         },
         {
           "classification": "REACHABLE",
           "enumName": "MASKED_BANDITS_EVENT",
           "evidence": [
             {
+              "path": "include/constants/MonsterEncounters.h",
+              "reason": "normal/strong/elite encounter pool",
+              "symbol": "MonsterEncounterPool"
+            },
+            {
               "path": "src/game/GameContext.cpp",
-              "reason": "supported run encounter generation",
-              "symbol": "monster/elite/boss/event generation"
+              "reason": "boss or enabled event encounter generation",
+              "symbol": "generateBoss/event generation"
             }
           ],
           "id": 61,
-          "reasonClass": "supported_act_or_event_encounter"
+          "reasonClass": "normal_elite_boss_or_enabled_event_path"
         },
         {
           "classification": "REACHABLE",
           "enumName": "MUSHROOMS_EVENT",
           "evidence": [
             {
+              "path": "include/constants/MonsterEncounters.h",
+              "reason": "normal/strong/elite encounter pool",
+              "symbol": "MonsterEncounterPool"
+            },
+            {
               "path": "src/game/GameContext.cpp",
-              "reason": "supported run encounter generation",
-              "symbol": "monster/elite/boss/event generation"
+              "reason": "boss or enabled event encounter generation",
+              "symbol": "generateBoss/event generation"
             }
           ],
           "id": 62,
-          "reasonClass": "supported_act_or_event_encounter"
+          "reasonClass": "normal_elite_boss_or_enabled_event_path"
         },
         {
           "classification": "REACHABLE",
           "enumName": "MYSTERIOUS_SPHERE_EVENT",
           "evidence": [
             {
+              "path": "include/constants/MonsterEncounters.h",
+              "reason": "normal/strong/elite encounter pool",
+              "symbol": "MonsterEncounterPool"
+            },
+            {
               "path": "src/game/GameContext.cpp",
-              "reason": "supported run encounter generation",
-              "symbol": "monster/elite/boss/event generation"
+              "reason": "boss or enabled event encounter generation",
+              "symbol": "generateBoss/event generation"
             }
           ],
           "id": 63,
-          "reasonClass": "supported_act_or_event_encounter"
+          "reasonClass": "normal_elite_boss_or_enabled_event_path"
         },
         {
           "classification": "UNKNOWN",
@@ -8364,12 +8694,12 @@
           "evidence": [
             {
               "path": "src/combat/MonsterGroup.cpp",
-              "reason": "encounter construction",
+              "reason": "reachable encounter constructors and their helper spawns",
               "symbol": "MonsterGroup::createMonsters"
             }
           ],
           "id": 1,
-          "reasonClass": "constructed_by_supported_encounter"
+          "reasonClass": "constructed_by_supported_encounter_or_spawn"
         },
         {
           "classification": "REACHABLE",
@@ -8377,12 +8707,12 @@
           "evidence": [
             {
               "path": "src/combat/MonsterGroup.cpp",
-              "reason": "encounter construction",
+              "reason": "reachable encounter constructors and their helper spawns",
               "symbol": "MonsterGroup::createMonsters"
             }
           ],
           "id": 2,
-          "reasonClass": "constructed_by_supported_encounter"
+          "reasonClass": "constructed_by_supported_encounter_or_spawn"
         },
         {
           "classification": "REACHABLE",
@@ -8390,12 +8720,12 @@
           "evidence": [
             {
               "path": "src/combat/MonsterGroup.cpp",
-              "reason": "encounter construction",
+              "reason": "reachable encounter constructors and their helper spawns",
               "symbol": "MonsterGroup::createMonsters"
             }
           ],
           "id": 3,
-          "reasonClass": "constructed_by_supported_encounter"
+          "reasonClass": "constructed_by_supported_encounter_or_spawn"
         },
         {
           "classification": "REACHABLE",
@@ -8403,12 +8733,12 @@
           "evidence": [
             {
               "path": "src/combat/MonsterGroup.cpp",
-              "reason": "encounter construction",
+              "reason": "reachable encounter constructors and their helper spawns",
               "symbol": "MonsterGroup::createMonsters"
             }
           ],
           "id": 4,
-          "reasonClass": "constructed_by_supported_encounter"
+          "reasonClass": "constructed_by_supported_encounter_or_spawn"
         },
         {
           "classification": "REACHABLE",
@@ -8416,12 +8746,12 @@
           "evidence": [
             {
               "path": "src/combat/MonsterGroup.cpp",
-              "reason": "encounter construction",
+              "reason": "reachable encounter constructors and their helper spawns",
               "symbol": "MonsterGroup::createMonsters"
             }
           ],
           "id": 5,
-          "reasonClass": "constructed_by_supported_encounter"
+          "reasonClass": "constructed_by_supported_encounter_or_spawn"
         },
         {
           "classification": "REACHABLE",
@@ -8429,12 +8759,12 @@
           "evidence": [
             {
               "path": "src/combat/MonsterGroup.cpp",
-              "reason": "encounter construction",
+              "reason": "reachable encounter constructors and their helper spawns",
               "symbol": "MonsterGroup::createMonsters"
             }
           ],
           "id": 6,
-          "reasonClass": "constructed_by_supported_encounter"
+          "reasonClass": "constructed_by_supported_encounter_or_spawn"
         },
         {
           "classification": "REACHABLE",
@@ -8442,12 +8772,12 @@
           "evidence": [
             {
               "path": "src/combat/MonsterGroup.cpp",
-              "reason": "encounter construction",
+              "reason": "reachable encounter constructors and their helper spawns",
               "symbol": "MonsterGroup::createMonsters"
             }
           ],
           "id": 7,
-          "reasonClass": "constructed_by_supported_encounter"
+          "reasonClass": "constructed_by_supported_encounter_or_spawn"
         },
         {
           "classification": "REACHABLE",
@@ -8455,25 +8785,25 @@
           "evidence": [
             {
               "path": "src/combat/MonsterGroup.cpp",
-              "reason": "encounter construction",
+              "reason": "reachable encounter constructors and their helper spawns",
               "symbol": "MonsterGroup::createMonsters"
             }
           ],
           "id": 8,
-          "reasonClass": "constructed_by_supported_encounter"
+          "reasonClass": "constructed_by_supported_encounter_or_spawn"
         },
         {
           "classification": "REACHABLE",
           "enumName": "BRONZE_ORB",
           "evidence": [
             {
-              "path": "src/combat/MonsterGroup.cpp",
-              "reason": "encounter construction",
-              "symbol": "MonsterGroup::createMonsters"
+              "path": "src/combat/MonsterSpecific.cpp",
+              "reason": "reachable Automaton orb spawn",
+              "symbol": "orb1.construct(bc, MonsterId::BRONZE_ORB"
             }
           ],
           "id": 9,
-          "reasonClass": "constructed_by_supported_encounter"
+          "reasonClass": "constructed_by_supported_encounter_or_spawn"
         },
         {
           "classification": "REACHABLE",
@@ -8481,12 +8811,12 @@
           "evidence": [
             {
               "path": "src/combat/MonsterGroup.cpp",
-              "reason": "encounter construction",
+              "reason": "reachable encounter constructors and their helper spawns",
               "symbol": "MonsterGroup::createMonsters"
             }
           ],
           "id": 10,
-          "reasonClass": "constructed_by_supported_encounter"
+          "reasonClass": "constructed_by_supported_encounter_or_spawn"
         },
         {
           "classification": "REACHABLE",
@@ -8494,12 +8824,12 @@
           "evidence": [
             {
               "path": "src/combat/MonsterGroup.cpp",
-              "reason": "encounter construction",
+              "reason": "reachable encounter constructors and their helper spawns",
               "symbol": "MonsterGroup::createMonsters"
             }
           ],
           "id": 11,
-          "reasonClass": "constructed_by_supported_encounter"
+          "reasonClass": "constructed_by_supported_encounter_or_spawn"
         },
         {
           "classification": "REACHABLE",
@@ -8507,12 +8837,12 @@
           "evidence": [
             {
               "path": "src/combat/MonsterGroup.cpp",
-              "reason": "encounter construction",
+              "reason": "reachable encounter constructors and their helper spawns",
               "symbol": "MonsterGroup::createMonsters"
             }
           ],
           "id": 12,
-          "reasonClass": "constructed_by_supported_encounter"
+          "reasonClass": "constructed_by_supported_encounter_or_spawn"
         },
         {
           "classification": "REACHABLE",
@@ -8520,12 +8850,12 @@
           "evidence": [
             {
               "path": "src/combat/MonsterGroup.cpp",
-              "reason": "encounter construction",
+              "reason": "reachable encounter constructors and their helper spawns",
               "symbol": "MonsterGroup::createMonsters"
             }
           ],
           "id": 13,
-          "reasonClass": "constructed_by_supported_encounter"
+          "reasonClass": "constructed_by_supported_encounter_or_spawn"
         },
         {
           "classification": "REACHABLE",
@@ -8533,12 +8863,12 @@
           "evidence": [
             {
               "path": "src/combat/MonsterGroup.cpp",
-              "reason": "encounter construction",
+              "reason": "reachable encounter constructors and their helper spawns",
               "symbol": "MonsterGroup::createMonsters"
             }
           ],
           "id": 14,
-          "reasonClass": "constructed_by_supported_encounter"
+          "reasonClass": "constructed_by_supported_encounter_or_spawn"
         },
         {
           "classification": "REACHABLE",
@@ -8546,12 +8876,12 @@
           "evidence": [
             {
               "path": "src/combat/MonsterGroup.cpp",
-              "reason": "encounter construction",
+              "reason": "reachable encounter constructors and their helper spawns",
               "symbol": "MonsterGroup::createMonsters"
             }
           ],
           "id": 15,
-          "reasonClass": "constructed_by_supported_encounter"
+          "reasonClass": "constructed_by_supported_encounter_or_spawn"
         },
         {
           "classification": "REACHABLE",
@@ -8559,12 +8889,12 @@
           "evidence": [
             {
               "path": "src/combat/MonsterGroup.cpp",
-              "reason": "encounter construction",
+              "reason": "reachable encounter constructors and their helper spawns",
               "symbol": "MonsterGroup::createMonsters"
             }
           ],
           "id": 16,
-          "reasonClass": "constructed_by_supported_encounter"
+          "reasonClass": "constructed_by_supported_encounter_or_spawn"
         },
         {
           "classification": "REACHABLE",
@@ -8572,12 +8902,12 @@
           "evidence": [
             {
               "path": "src/combat/MonsterGroup.cpp",
-              "reason": "encounter construction",
+              "reason": "reachable encounter constructors and their helper spawns",
               "symbol": "MonsterGroup::createMonsters"
             }
           ],
           "id": 17,
-          "reasonClass": "constructed_by_supported_encounter"
+          "reasonClass": "constructed_by_supported_encounter_or_spawn"
         },
         {
           "classification": "REACHABLE",
@@ -8585,12 +8915,12 @@
           "evidence": [
             {
               "path": "src/combat/MonsterGroup.cpp",
-              "reason": "encounter construction",
+              "reason": "reachable encounter constructors and their helper spawns",
               "symbol": "MonsterGroup::createMonsters"
             }
           ],
           "id": 18,
-          "reasonClass": "constructed_by_supported_encounter"
+          "reasonClass": "constructed_by_supported_encounter_or_spawn"
         },
         {
           "classification": "REACHABLE",
@@ -8598,12 +8928,12 @@
           "evidence": [
             {
               "path": "src/combat/MonsterGroup.cpp",
-              "reason": "encounter construction",
+              "reason": "reachable encounter constructors and their helper spawns",
               "symbol": "MonsterGroup::createMonsters"
             }
           ],
           "id": 19,
-          "reasonClass": "constructed_by_supported_encounter"
+          "reasonClass": "constructed_by_supported_encounter_or_spawn"
         },
         {
           "classification": "REACHABLE",
@@ -8611,12 +8941,12 @@
           "evidence": [
             {
               "path": "src/combat/MonsterGroup.cpp",
-              "reason": "encounter construction",
+              "reason": "reachable encounter constructors and their helper spawns",
               "symbol": "MonsterGroup::createMonsters"
             }
           ],
           "id": 20,
-          "reasonClass": "constructed_by_supported_encounter"
+          "reasonClass": "constructed_by_supported_encounter_or_spawn"
         },
         {
           "classification": "REACHABLE",
@@ -8624,12 +8954,12 @@
           "evidence": [
             {
               "path": "src/combat/MonsterGroup.cpp",
-              "reason": "encounter construction",
+              "reason": "reachable encounter constructors and their helper spawns",
               "symbol": "MonsterGroup::createMonsters"
             }
           ],
           "id": 21,
-          "reasonClass": "constructed_by_supported_encounter"
+          "reasonClass": "constructed_by_supported_encounter_or_spawn"
         },
         {
           "classification": "REACHABLE",
@@ -8637,12 +8967,12 @@
           "evidence": [
             {
               "path": "src/combat/MonsterGroup.cpp",
-              "reason": "encounter construction",
+              "reason": "reachable encounter constructors and their helper spawns",
               "symbol": "MonsterGroup::createMonsters"
             }
           ],
           "id": 22,
-          "reasonClass": "constructed_by_supported_encounter"
+          "reasonClass": "constructed_by_supported_encounter_or_spawn"
         },
         {
           "classification": "REACHABLE",
@@ -8650,12 +8980,12 @@
           "evidence": [
             {
               "path": "src/combat/MonsterGroup.cpp",
-              "reason": "encounter construction",
+              "reason": "reachable encounter constructors and their helper spawns",
               "symbol": "MonsterGroup::createMonsters"
             }
           ],
           "id": 23,
-          "reasonClass": "constructed_by_supported_encounter"
+          "reasonClass": "constructed_by_supported_encounter_or_spawn"
         },
         {
           "classification": "REACHABLE",
@@ -8663,12 +8993,12 @@
           "evidence": [
             {
               "path": "src/combat/MonsterGroup.cpp",
-              "reason": "encounter construction",
+              "reason": "reachable encounter constructors and their helper spawns",
               "symbol": "MonsterGroup::createMonsters"
             }
           ],
           "id": 24,
-          "reasonClass": "constructed_by_supported_encounter"
+          "reasonClass": "constructed_by_supported_encounter_or_spawn"
         },
         {
           "classification": "REACHABLE",
@@ -8676,12 +9006,12 @@
           "evidence": [
             {
               "path": "src/combat/MonsterGroup.cpp",
-              "reason": "encounter construction",
+              "reason": "reachable encounter constructors and their helper spawns",
               "symbol": "MonsterGroup::createMonsters"
             }
           ],
           "id": 25,
-          "reasonClass": "constructed_by_supported_encounter"
+          "reasonClass": "constructed_by_supported_encounter_or_spawn"
         },
         {
           "classification": "REACHABLE",
@@ -8689,12 +9019,12 @@
           "evidence": [
             {
               "path": "src/combat/MonsterGroup.cpp",
-              "reason": "encounter construction",
+              "reason": "reachable encounter constructors and their helper spawns",
               "symbol": "MonsterGroup::createMonsters"
             }
           ],
           "id": 26,
-          "reasonClass": "constructed_by_supported_encounter"
+          "reasonClass": "constructed_by_supported_encounter_or_spawn"
         },
         {
           "classification": "REACHABLE",
@@ -8702,12 +9032,12 @@
           "evidence": [
             {
               "path": "src/combat/MonsterGroup.cpp",
-              "reason": "encounter construction",
+              "reason": "reachable encounter constructors and their helper spawns",
               "symbol": "MonsterGroup::createMonsters"
             }
           ],
           "id": 27,
-          "reasonClass": "constructed_by_supported_encounter"
+          "reasonClass": "constructed_by_supported_encounter_or_spawn"
         },
         {
           "classification": "REACHABLE",
@@ -8715,12 +9045,12 @@
           "evidence": [
             {
               "path": "src/combat/MonsterGroup.cpp",
-              "reason": "encounter construction",
+              "reason": "reachable encounter constructors and their helper spawns",
               "symbol": "MonsterGroup::createMonsters"
             }
           ],
           "id": 28,
-          "reasonClass": "constructed_by_supported_encounter"
+          "reasonClass": "constructed_by_supported_encounter_or_spawn"
         },
         {
           "classification": "REACHABLE",
@@ -8728,12 +9058,12 @@
           "evidence": [
             {
               "path": "src/combat/MonsterGroup.cpp",
-              "reason": "encounter construction",
+              "reason": "reachable encounter constructors and their helper spawns",
               "symbol": "MonsterGroup::createMonsters"
             }
           ],
           "id": 29,
-          "reasonClass": "constructed_by_supported_encounter"
+          "reasonClass": "constructed_by_supported_encounter_or_spawn"
         },
         {
           "classification": "REACHABLE",
@@ -8741,12 +9071,12 @@
           "evidence": [
             {
               "path": "src/combat/MonsterGroup.cpp",
-              "reason": "encounter construction",
+              "reason": "reachable encounter constructors and their helper spawns",
               "symbol": "MonsterGroup::createMonsters"
             }
           ],
           "id": 30,
-          "reasonClass": "constructed_by_supported_encounter"
+          "reasonClass": "constructed_by_supported_encounter_or_spawn"
         },
         {
           "classification": "REACHABLE",
@@ -8754,12 +9084,12 @@
           "evidence": [
             {
               "path": "src/combat/MonsterGroup.cpp",
-              "reason": "encounter construction",
+              "reason": "reachable encounter constructors and their helper spawns",
               "symbol": "MonsterGroup::createMonsters"
             }
           ],
           "id": 31,
-          "reasonClass": "constructed_by_supported_encounter"
+          "reasonClass": "constructed_by_supported_encounter_or_spawn"
         },
         {
           "classification": "REACHABLE",
@@ -8767,12 +9097,12 @@
           "evidence": [
             {
               "path": "src/combat/MonsterGroup.cpp",
-              "reason": "encounter construction",
+              "reason": "reachable encounter constructors and their helper spawns",
               "symbol": "MonsterGroup::createMonsters"
             }
           ],
           "id": 32,
-          "reasonClass": "constructed_by_supported_encounter"
+          "reasonClass": "constructed_by_supported_encounter_or_spawn"
         },
         {
           "classification": "REACHABLE",
@@ -8780,12 +9110,12 @@
           "evidence": [
             {
               "path": "src/combat/MonsterGroup.cpp",
-              "reason": "encounter construction",
+              "reason": "reachable encounter constructors and their helper spawns",
               "symbol": "MonsterGroup::createMonsters"
             }
           ],
           "id": 33,
-          "reasonClass": "constructed_by_supported_encounter"
+          "reasonClass": "constructed_by_supported_encounter_or_spawn"
         },
         {
           "classification": "REACHABLE",
@@ -8793,12 +9123,12 @@
           "evidence": [
             {
               "path": "src/combat/MonsterGroup.cpp",
-              "reason": "encounter construction",
+              "reason": "reachable encounter constructors and their helper spawns",
               "symbol": "MonsterGroup::createMonsters"
             }
           ],
           "id": 34,
-          "reasonClass": "constructed_by_supported_encounter"
+          "reasonClass": "constructed_by_supported_encounter_or_spawn"
         },
         {
           "classification": "REACHABLE",
@@ -8806,12 +9136,12 @@
           "evidence": [
             {
               "path": "src/combat/MonsterGroup.cpp",
-              "reason": "encounter construction",
+              "reason": "reachable encounter constructors and their helper spawns",
               "symbol": "MonsterGroup::createMonsters"
             }
           ],
           "id": 35,
-          "reasonClass": "constructed_by_supported_encounter"
+          "reasonClass": "constructed_by_supported_encounter_or_spawn"
         },
         {
           "classification": "REACHABLE",
@@ -8819,12 +9149,12 @@
           "evidence": [
             {
               "path": "src/combat/MonsterGroup.cpp",
-              "reason": "encounter construction",
+              "reason": "reachable encounter constructors and their helper spawns",
               "symbol": "MonsterGroup::createMonsters"
             }
           ],
           "id": 36,
-          "reasonClass": "constructed_by_supported_encounter"
+          "reasonClass": "constructed_by_supported_encounter_or_spawn"
         },
         {
           "classification": "REACHABLE",
@@ -8832,12 +9162,12 @@
           "evidence": [
             {
               "path": "src/combat/MonsterGroup.cpp",
-              "reason": "encounter construction",
+              "reason": "reachable encounter constructors and their helper spawns",
               "symbol": "MonsterGroup::createMonsters"
             }
           ],
           "id": 37,
-          "reasonClass": "constructed_by_supported_encounter"
+          "reasonClass": "constructed_by_supported_encounter_or_spawn"
         },
         {
           "classification": "REACHABLE",
@@ -8845,12 +9175,12 @@
           "evidence": [
             {
               "path": "src/combat/MonsterGroup.cpp",
-              "reason": "encounter construction",
+              "reason": "reachable encounter constructors and their helper spawns",
               "symbol": "MonsterGroup::createMonsters"
             }
           ],
           "id": 38,
-          "reasonClass": "constructed_by_supported_encounter"
+          "reasonClass": "constructed_by_supported_encounter_or_spawn"
         },
         {
           "classification": "REACHABLE",
@@ -8858,12 +9188,12 @@
           "evidence": [
             {
               "path": "src/combat/MonsterGroup.cpp",
-              "reason": "encounter construction",
+              "reason": "reachable encounter constructors and their helper spawns",
               "symbol": "MonsterGroup::createMonsters"
             }
           ],
           "id": 39,
-          "reasonClass": "constructed_by_supported_encounter"
+          "reasonClass": "constructed_by_supported_encounter_or_spawn"
         },
         {
           "classification": "REACHABLE",
@@ -8871,12 +9201,12 @@
           "evidence": [
             {
               "path": "src/combat/MonsterGroup.cpp",
-              "reason": "encounter construction",
+              "reason": "reachable encounter constructors and their helper spawns",
               "symbol": "MonsterGroup::createMonsters"
             }
           ],
           "id": 40,
-          "reasonClass": "constructed_by_supported_encounter"
+          "reasonClass": "constructed_by_supported_encounter_or_spawn"
         },
         {
           "classification": "REACHABLE",
@@ -8884,12 +9214,12 @@
           "evidence": [
             {
               "path": "src/combat/MonsterGroup.cpp",
-              "reason": "encounter construction",
+              "reason": "reachable encounter constructors and their helper spawns",
               "symbol": "MonsterGroup::createMonsters"
             }
           ],
           "id": 41,
-          "reasonClass": "constructed_by_supported_encounter"
+          "reasonClass": "constructed_by_supported_encounter_or_spawn"
         },
         {
           "classification": "REACHABLE",
@@ -8897,12 +9227,12 @@
           "evidence": [
             {
               "path": "src/combat/MonsterGroup.cpp",
-              "reason": "encounter construction",
+              "reason": "reachable encounter constructors and their helper spawns",
               "symbol": "MonsterGroup::createMonsters"
             }
           ],
           "id": 42,
-          "reasonClass": "constructed_by_supported_encounter"
+          "reasonClass": "constructed_by_supported_encounter_or_spawn"
         },
         {
           "classification": "REACHABLE",
@@ -8910,12 +9240,12 @@
           "evidence": [
             {
               "path": "src/combat/MonsterGroup.cpp",
-              "reason": "encounter construction",
+              "reason": "reachable encounter constructors and their helper spawns",
               "symbol": "MonsterGroup::createMonsters"
             }
           ],
           "id": 43,
-          "reasonClass": "constructed_by_supported_encounter"
+          "reasonClass": "constructed_by_supported_encounter_or_spawn"
         },
         {
           "classification": "REACHABLE",
@@ -8923,12 +9253,12 @@
           "evidence": [
             {
               "path": "src/combat/MonsterGroup.cpp",
-              "reason": "encounter construction",
+              "reason": "reachable encounter constructors and their helper spawns",
               "symbol": "MonsterGroup::createMonsters"
             }
           ],
           "id": 44,
-          "reasonClass": "constructed_by_supported_encounter"
+          "reasonClass": "constructed_by_supported_encounter_or_spawn"
         },
         {
           "classification": "REACHABLE",
@@ -8936,12 +9266,12 @@
           "evidence": [
             {
               "path": "src/combat/MonsterGroup.cpp",
-              "reason": "encounter construction",
+              "reason": "reachable encounter constructors and their helper spawns",
               "symbol": "MonsterGroup::createMonsters"
             }
           ],
           "id": 45,
-          "reasonClass": "constructed_by_supported_encounter"
+          "reasonClass": "constructed_by_supported_encounter_or_spawn"
         },
         {
           "classification": "REACHABLE",
@@ -8949,12 +9279,12 @@
           "evidence": [
             {
               "path": "src/combat/MonsterGroup.cpp",
-              "reason": "encounter construction",
+              "reason": "reachable encounter constructors and their helper spawns",
               "symbol": "MonsterGroup::createMonsters"
             }
           ],
           "id": 46,
-          "reasonClass": "constructed_by_supported_encounter"
+          "reasonClass": "constructed_by_supported_encounter_or_spawn"
         },
         {
           "classification": "REACHABLE",
@@ -8962,12 +9292,12 @@
           "evidence": [
             {
               "path": "src/combat/MonsterGroup.cpp",
-              "reason": "encounter construction",
+              "reason": "reachable encounter constructors and their helper spawns",
               "symbol": "MonsterGroup::createMonsters"
             }
           ],
           "id": 47,
-          "reasonClass": "constructed_by_supported_encounter"
+          "reasonClass": "constructed_by_supported_encounter_or_spawn"
         },
         {
           "classification": "REACHABLE",
@@ -8975,12 +9305,12 @@
           "evidence": [
             {
               "path": "src/combat/MonsterGroup.cpp",
-              "reason": "encounter construction",
+              "reason": "reachable encounter constructors and their helper spawns",
               "symbol": "MonsterGroup::createMonsters"
             }
           ],
           "id": 48,
-          "reasonClass": "constructed_by_supported_encounter"
+          "reasonClass": "constructed_by_supported_encounter_or_spawn"
         },
         {
           "classification": "REACHABLE",
@@ -8988,12 +9318,12 @@
           "evidence": [
             {
               "path": "src/combat/MonsterGroup.cpp",
-              "reason": "encounter construction",
+              "reason": "reachable encounter constructors and their helper spawns",
               "symbol": "MonsterGroup::createMonsters"
             }
           ],
           "id": 49,
-          "reasonClass": "constructed_by_supported_encounter"
+          "reasonClass": "constructed_by_supported_encounter_or_spawn"
         },
         {
           "classification": "REACHABLE",
@@ -9001,12 +9331,12 @@
           "evidence": [
             {
               "path": "src/combat/MonsterGroup.cpp",
-              "reason": "encounter construction",
+              "reason": "reachable encounter constructors and their helper spawns",
               "symbol": "MonsterGroup::createMonsters"
             }
           ],
           "id": 50,
-          "reasonClass": "constructed_by_supported_encounter"
+          "reasonClass": "constructed_by_supported_encounter_or_spawn"
         },
         {
           "classification": "REACHABLE",
@@ -9014,12 +9344,12 @@
           "evidence": [
             {
               "path": "src/combat/MonsterGroup.cpp",
-              "reason": "encounter construction",
+              "reason": "reachable encounter constructors and their helper spawns",
               "symbol": "MonsterGroup::createMonsters"
             }
           ],
           "id": 51,
-          "reasonClass": "constructed_by_supported_encounter"
+          "reasonClass": "constructed_by_supported_encounter_or_spawn"
         },
         {
           "classification": "REACHABLE",
@@ -9027,12 +9357,12 @@
           "evidence": [
             {
               "path": "src/combat/MonsterGroup.cpp",
-              "reason": "encounter construction",
+              "reason": "reachable encounter constructors and their helper spawns",
               "symbol": "MonsterGroup::createMonsters"
             }
           ],
           "id": 52,
-          "reasonClass": "constructed_by_supported_encounter"
+          "reasonClass": "constructed_by_supported_encounter_or_spawn"
         },
         {
           "classification": "REACHABLE",
@@ -9040,12 +9370,12 @@
           "evidence": [
             {
               "path": "src/combat/MonsterGroup.cpp",
-              "reason": "encounter construction",
+              "reason": "reachable encounter constructors and their helper spawns",
               "symbol": "MonsterGroup::createMonsters"
             }
           ],
           "id": 53,
-          "reasonClass": "constructed_by_supported_encounter"
+          "reasonClass": "constructed_by_supported_encounter_or_spawn"
         },
         {
           "classification": "REACHABLE",
@@ -9053,12 +9383,12 @@
           "evidence": [
             {
               "path": "src/combat/MonsterGroup.cpp",
-              "reason": "encounter construction",
+              "reason": "reachable encounter constructors and their helper spawns",
               "symbol": "MonsterGroup::createMonsters"
             }
           ],
           "id": 54,
-          "reasonClass": "constructed_by_supported_encounter"
+          "reasonClass": "constructed_by_supported_encounter_or_spawn"
         },
         {
           "classification": "REACHABLE",
@@ -9066,12 +9396,12 @@
           "evidence": [
             {
               "path": "src/combat/MonsterGroup.cpp",
-              "reason": "encounter construction",
+              "reason": "reachable encounter constructors and their helper spawns",
               "symbol": "MonsterGroup::createMonsters"
             }
           ],
           "id": 55,
-          "reasonClass": "constructed_by_supported_encounter"
+          "reasonClass": "constructed_by_supported_encounter_or_spawn"
         },
         {
           "classification": "REACHABLE",
@@ -9079,12 +9409,12 @@
           "evidence": [
             {
               "path": "src/combat/MonsterGroup.cpp",
-              "reason": "encounter construction",
+              "reason": "reachable encounter constructors and their helper spawns",
               "symbol": "MonsterGroup::createMonsters"
             }
           ],
           "id": 56,
-          "reasonClass": "constructed_by_supported_encounter"
+          "reasonClass": "constructed_by_supported_encounter_or_spawn"
         },
         {
           "classification": "REACHABLE",
@@ -9092,12 +9422,12 @@
           "evidence": [
             {
               "path": "src/combat/MonsterGroup.cpp",
-              "reason": "encounter construction",
+              "reason": "reachable encounter constructors and their helper spawns",
               "symbol": "MonsterGroup::createMonsters"
             }
           ],
           "id": 57,
-          "reasonClass": "constructed_by_supported_encounter"
+          "reasonClass": "constructed_by_supported_encounter_or_spawn"
         },
         {
           "classification": "REACHABLE",
@@ -9105,12 +9435,12 @@
           "evidence": [
             {
               "path": "src/combat/MonsterGroup.cpp",
-              "reason": "encounter construction",
+              "reason": "reachable encounter constructors and their helper spawns",
               "symbol": "MonsterGroup::createMonsters"
             }
           ],
           "id": 58,
-          "reasonClass": "constructed_by_supported_encounter"
+          "reasonClass": "constructed_by_supported_encounter_or_spawn"
         },
         {
           "classification": "REACHABLE",
@@ -9118,12 +9448,12 @@
           "evidence": [
             {
               "path": "src/combat/MonsterGroup.cpp",
-              "reason": "encounter construction",
+              "reason": "reachable encounter constructors and their helper spawns",
               "symbol": "MonsterGroup::createMonsters"
             }
           ],
           "id": 59,
-          "reasonClass": "constructed_by_supported_encounter"
+          "reasonClass": "constructed_by_supported_encounter_or_spawn"
         },
         {
           "classification": "REACHABLE",
@@ -9131,12 +9461,12 @@
           "evidence": [
             {
               "path": "src/combat/MonsterGroup.cpp",
-              "reason": "encounter construction",
+              "reason": "reachable encounter constructors and their helper spawns",
               "symbol": "MonsterGroup::createMonsters"
             }
           ],
           "id": 60,
-          "reasonClass": "constructed_by_supported_encounter"
+          "reasonClass": "constructed_by_supported_encounter_or_spawn"
         },
         {
           "classification": "REACHABLE",
@@ -9144,12 +9474,12 @@
           "evidence": [
             {
               "path": "src/combat/MonsterGroup.cpp",
-              "reason": "encounter construction",
+              "reason": "reachable encounter constructors and their helper spawns",
               "symbol": "MonsterGroup::createMonsters"
             }
           ],
           "id": 61,
-          "reasonClass": "constructed_by_supported_encounter"
+          "reasonClass": "constructed_by_supported_encounter_or_spawn"
         },
         {
           "classification": "REACHABLE",
@@ -9157,25 +9487,25 @@
           "evidence": [
             {
               "path": "src/combat/MonsterGroup.cpp",
-              "reason": "encounter construction",
+              "reason": "reachable encounter constructors and their helper spawns",
               "symbol": "MonsterGroup::createMonsters"
             }
           ],
           "id": 62,
-          "reasonClass": "constructed_by_supported_encounter"
+          "reasonClass": "constructed_by_supported_encounter_or_spawn"
         },
         {
           "classification": "REACHABLE",
           "enumName": "TORCH_HEAD",
           "evidence": [
             {
-              "path": "src/combat/MonsterGroup.cpp",
-              "reason": "encounter construction",
-              "symbol": "MonsterGroup::createMonsters"
+              "path": "src/combat/Actions.cpp",
+              "reason": "reachable Collector torch-head spawn",
+              "symbol": "torchHead.construct(bc, MonsterId::TORCH_HEAD"
             }
           ],
           "id": 63,
-          "reasonClass": "constructed_by_supported_encounter"
+          "reasonClass": "constructed_by_supported_encounter_or_spawn"
         },
         {
           "classification": "REACHABLE",
@@ -9183,12 +9513,12 @@
           "evidence": [
             {
               "path": "src/combat/MonsterGroup.cpp",
-              "reason": "encounter construction",
+              "reason": "reachable encounter constructors and their helper spawns",
               "symbol": "MonsterGroup::createMonsters"
             }
           ],
           "id": 64,
-          "reasonClass": "constructed_by_supported_encounter"
+          "reasonClass": "constructed_by_supported_encounter_or_spawn"
         },
         {
           "classification": "REACHABLE",
@@ -9196,12 +9526,12 @@
           "evidence": [
             {
               "path": "src/combat/MonsterGroup.cpp",
-              "reason": "encounter construction",
+              "reason": "reachable encounter constructors and their helper spawns",
               "symbol": "MonsterGroup::createMonsters"
             }
           ],
           "id": 65,
-          "reasonClass": "constructed_by_supported_encounter"
+          "reasonClass": "constructed_by_supported_encounter_or_spawn"
         },
         {
           "classification": "UNKNOWN",
@@ -16200,5 +16530,25 @@
     "vanilla": true
   },
   "sourceBaselineRequested": "15f3eaed1f1bc3866e2686e7d6043f9e11c799cd",
-  "sourceHeadAudited": "7f239baa8bbea3c5db815176c0f91887d70fb841"
+  "sourceContracts": {
+    "checkedPatterns": [
+      "combatCardEmbedding",
+      "combatCards",
+      "combatFeatureCount",
+      "combatPotionEmbedding",
+      "combatPotions",
+      "combatRelicEmbedding",
+      "combatRelics",
+      "oocCardEmbedding",
+      "oocPotionEmbedding",
+      "oocRelicEmbedding",
+      "transitionDeepSetsCards",
+      "transitionDeepSetsPotions",
+      "transitionDeepSetsRelics",
+      "transitionPhase2PotionHead"
+    ],
+    "combatFeatureContract": 1766,
+    "oocTrainableFloatParameterTotalExcludingNormalizationBuffers": 199690
+  },
+  "sourceHeadAudited": "1c0d396dd911a5a062f105c066d0eb5f19e55117"
 }

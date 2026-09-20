@@ -2,16 +2,16 @@
 
 Audit/measurement only. No simulator behavior, model input, model artifact, or search behavior is changed.
 
-Audited source head: `7f239baa8bbea3c5db815176c0f91887d70fb841` (requested baseline was `15f3eaed1f1bc3866e2686e7d6043f9e11c799cd`).
+Audited source head: `1c0d396dd911a5a062f105c066d0eb5f19e55117` (requested baseline was `15f3eaed1f1bc3866e2686e7d6043f9e11c799cd`).
 
 ## Results
 
 | Domain | Canonical | Reachable | Provably unreachable | Unknown |
 | --- | ---: | ---: | ---: | ---: |
-| cards | 372 | 134 | 214 | 24 |
+| cards | 372 | 131 | 214 | 27 |
 | relics | 181 | 147 | 1 | 33 |
 | potions | 48 | 34 | 10 | 4 |
-| encounters | 128 | 63 | 1 | 64 |
+| encounters | 128 | 61 | 3 | 64 |
 | monsters | 256 | 65 | 1 | 190 |
 | statuses | 87 | 22 | 1 | 64 |
 
@@ -23,6 +23,8 @@ The exhaustive ID/name/classification/evidence record is in `census.json`. `UNKN
 - `kNumRelics` is 181 (IDs 0..180), and `PRISMATIC_SHARD` is enum ID 161 inside that canonical relic model domain. It is retained in the exhaustive census but explicitly excluded from the supported Ironclad closure.
 - `kNumPotions` is 48, while the current Potion enum has 44 values. IDs 44..47 are `UNKNOWN`, not silently dead.
 - Cards in the non-Ironclad class-pool rows are marked provably unreachable under the Ironclad/no-Prismatic-Shard contract. The source also has two class-pool/cardColors metadata conflicts (`BRUTALITY`, `COMBUST`); the census preserves those conflicts and uses explicit class-pool membership for the reachability decision.
+- Generated-card edges are transitive: `MIRACLE` and `SHIV` remain `UNKNOWN` because their `HOLY_WATER`/`PURE_WATER`/`NINJA_SCROLL` generators are not in the reachable Ironclad relic closure. `NECRONOMICURSE` is also `UNKNOWN`; its combat behavior is present, but no supported acquisition edge was found. `RITUAL_DAGGER` is evidenced through `Event::THE_NEST`.
+- Encounter reachability is derived from the normal, strong, elite, boss, and enabled event paths. `COLOSSEUM_EVENT_SLAVERS` and `COLOSSEUM_EVENT_NOBS` are provably unreachable because `disableColosseum` is true; monster reachability closes over the resulting encounter constructors and helper spawns.
 - `PRISMATIC_SHARD` is present at relic ID 161 and in the Ironclad shop pool, but is explicitly excluded from the supported closure and therefore marked provably unreachable. It is never used as an edge to any other entity.
 
 ## Model capacity
@@ -136,8 +138,9 @@ The exhaustive ID/name/classification/evidence record is in `census.json`. `UNKN
 ## Reproduction and checks
 
 - Census command: `python3 tools/ironclad_reachable_domain_census.py`
-- Focused checks: `python3 -m unittest tools.test_ironclad_reachable_domain_census -v` (5 tests passed).
+- Focused checks: `python3 -m unittest tools.test_ironclad_reachable_domain_census -v` (9 tests passed).
 - JSON syntax check: `python3 -m json.tool docs/experiments/evidence/ironclad_reachable_domain_census_2026-09-20/census.json` (passed).
+- Source contracts: the census asserts the combat/PVNet, transition-model, and OOC embedding dimensions and independently counts the OOC trainable float arrays (199690, excluding normalization buffers).
 - No gameplay seeds, corpus regeneration, retraining, binary rebuild, or expensive run was performed.
 
 ## Verification boundary

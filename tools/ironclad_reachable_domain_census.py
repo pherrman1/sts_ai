@@ -10,6 +10,7 @@ from __future__ import annotations
 import argparse
 import json
 import re
+import subprocess
 from collections import Counter
 from pathlib import Path
 from typing import Iterable
@@ -108,7 +109,7 @@ def classify_entry(idx: int, name: str, status: str, reason: str,
     return out
 
 
-def card_census() -> dict[str, object]:
+def card_census(relic_domain: dict[str, object]) -> dict[str, object]:
     rel = "include/constants/Cards.h"
     members = enum_members(rel, "CardId")
     header = read(rel)
@@ -152,18 +153,27 @@ def card_census() -> dict[str, object]:
         "ASCENDERS_BANE": [source_evidence("src/game/GameContext.cpp", "GameContext::init", "Ascension-added card")],
         "APPARITION": [source_evidence("src/game/GameContext.cpp", "Council of Ghosts event", "event card acquisition")],
         "BITE": [source_evidence("src/game/GameContext.cpp", "Vampires event", "event card acquisition")],
-        "RITUAL_DAGGER": [source_evidence("src/game/GameContext.cpp", "Colosseum/event card acquisition", "event card acquisition")],
+        "RITUAL_DAGGER": [source_evidence("src/game/GameContext.cpp", "Event::THE_NEST", "The Nest event card acquisition")],
         "JAX": [source_evidence("src/game/GameContext.cpp", "JAX event", "event card acquisition")],
         "CURSE_OF_THE_BELL": [source_evidence("src/game/GameContext.cpp", "GameContext::obtainRelic/Calling Bell", "Calling Bell adds the curse")],
-        "NECRONOMICURSE": [source_evidence("src/game/GameContext.cpp", "Calling Bell event", "Calling Bell adds the curse")],
         "BURN": [source_evidence("src/combat/BattleContext.cpp", "card status generation", "enemy/card-generated status")],
         "DAZED": [source_evidence("src/combat/BattleContext.cpp", "card status generation", "enemy/card-generated status")],
         "SLIMED": [source_evidence("src/combat/MonsterSpecific.cpp", "Monster status generation", "enemy-generated status")],
         "VOID": [source_evidence("src/combat/MonsterSpecific.cpp", "Awakened One status generation", "enemy-generated status")],
         "WOUND": [source_evidence("src/combat/BattleContext.cpp", "card/relic status generation", "enemy/card-generated status")],
-        "MIRACLE": [source_evidence("src/combat/BattleContext.cpp", "Holy Water/Pure Water", "relic-generated temporary card")],
-        "SHIV": [source_evidence("src/combat/BattleContext.cpp", "Ninja Scroll", "relic-generated temporary card")],
     }
+    reachable_relics = {
+        str(entry["enumName"])
+        for entry in relic_domain["entries"]
+        if entry["classification"] == "REACHABLE"
+    }
+    generated_cards = {
+        "MIRACLE": ({"HOLY_WATER", "PURE_WATER"}, "Holy Water/Pure Water"),
+        "SHIV": ({"NINJA_SCROLL"}, "Ninja Scroll"),
+    }
+    for card, (generators, symbol) in generated_cards.items():
+        if reachable_relics & generators:
+            special[card] = [source_evidence("src/combat/BattleContext.cpp", symbol, "relic-generated temporary card")]
     supported = ({x for x in pools if x in members} | set(special)) - {"PRISMATIC_SHARD"}
     entries: list[dict[str, object]] = []
     for idx in range(canonical):
@@ -184,7 +194,16 @@ def card_census() -> dict[str, object]:
                   source_evidence("src/game/Game.cpp", "getAnyColorCard", "only Prismatic Shard path is excluded by supported-domain contract")]
         else:
             status, reason = "UNKNOWN", "unresolved_acquisition_closure"
-            ev = [source_evidence(rel, "CardId/cardColors", "enum member is model-visible but no supported closure rule was added")]
+            if name in generated_cards:
+                generators, symbol = generated_cards[name]
+                ev = [source_evidence("src/combat/BattleContext.cpp", symbol, "temporary card requires a reachable relic generator")] + [
+                    source_evidence("include/constants/RelicPools.h", generator, "generator relic is not in the reachable Ironclad relic closure")
+                    for generator in sorted(generators)
+                ]
+            elif name == "NECRONOMICURSE":
+                ev = [source_evidence("src/combat/BattleContext.cpp", "CardId::NECRONOMICURSE", "combat behavior exists, but no supported acquisition edge was found")]
+            else:
+                ev = [source_evidence(rel, "CardId/cardColors", "enum member is model-visible but no supported closure rule was added")]
         pool_color = "RED" if name in ironclad_pool else ("OTHER_CHARACTER" if name in non_ironclad_class_pool else None)
         entries.append(classify_entry(idx, name, status, reason, ev, declaredColor=color, poolColor=pool_color))
     metadata_conflicts = [
@@ -275,6 +294,18 @@ def encounter_census() -> dict[str, object]:
     rel = "include/constants/MonsterEncounters.h"
     members = enum_members(rel, "MonsterEncounter")
     domain = 128
+    pool_text = strip_comments(read(rel))
+    pool_refs = set().union(
+        *matrix_row_refs(pool_text, "static constexpr MonsterEncounter weakEnemies[3][5]", "ME"),
+        *matrix_row_refs(pool_text, "static constexpr MonsterEncounter strongEnemies[3][10]", "ME"),
+        *matrix_row_refs(pool_text, "static const MonsterEncounter elites[3][3]", "ME"),
+    )
+    game_source = strip_comments(read("src/game/GameContext.cpp"))
+    game_refs = refs(game_source, "ME") | refs(game_source, "MonsterEncounter")
+    reachable = pool_refs | game_refs
+    colosseum_disabled = "disableColosseum = true" in read("include/game/GameContext.h")
+    if colosseum_disabled:
+        reachable -= {"COLOSSEUM_EVENT_SLAVERS", "COLOSSEUM_EVENT_NOBS"}
     entries = []
     for idx in range(domain):
         if idx >= len(members):
@@ -285,9 +316,19 @@ def encounter_census() -> dict[str, object]:
             entries.append(classify_entry(idx, members[idx], "PROVABLY_UNREACHABLE", "sentinel", [
                 source_evidence(rel, "MonsterEncounter::INVALID", "no battle is entered with INVALID")
             ]))
+        elif members[idx] in {"COLOSSEUM_EVENT_SLAVERS", "COLOSSEUM_EVENT_NOBS"} and colosseum_disabled:
+            entries.append(classify_entry(idx, members[idx], "PROVABLY_UNREACHABLE", "disabled_event_path", [
+                source_evidence("include/game/GameContext.h", "disableColosseum", "Colosseum event path is disabled in the simulator"),
+                source_evidence("src/game/GameContext.cpp", "GameContext::eventAppears", "Colosseum requires !disableColosseum"),
+            ]))
+        elif members[idx] in reachable:
+            entries.append(classify_entry(idx, members[idx], "REACHABLE", "normal_elite_boss_or_enabled_event_path", [
+                source_evidence("include/constants/MonsterEncounters.h", "MonsterEncounterPool", "normal/strong/elite encounter pool"),
+                source_evidence("src/game/GameContext.cpp", "generateBoss/event generation", "boss or enabled event encounter generation"),
+            ]))
         else:
-            entries.append(classify_entry(idx, members[idx], "REACHABLE", "supported_act_or_event_encounter", [
-                source_evidence("src/game/GameContext.cpp", "monster/elite/boss/event generation", "supported run encounter generation")
+            entries.append(classify_entry(idx, members[idx], "UNKNOWN", "enum_member_not_seen_in_enabled_generation_path", [
+                source_evidence(rel, "MonsterEncounter", "enum member is not established by the normal/elite/boss/event closure"),
             ]))
     return {"canonicalDomainSize": domain, "enumSize": len(members), "entries": entries}
 
@@ -296,9 +337,54 @@ def monster_census() -> dict[str, object]:
     rel = "include/constants/MonsterIds.h"
     members = enum_members(rel, "MonsterId")
     domain = 256
-    active = set()
-    for path in sorted((ROOT / "src").rglob("*.cpp")):
-        active |= refs(path.read_text(encoding="utf-8"), "MonsterId")
+    encounter_domain = encounter_census()
+    reachable_encounters = {
+        str(entry["enumName"])
+        for entry in encounter_domain["entries"]
+        if entry["classification"] == "REACHABLE"
+    }
+    constructor_source = strip_comments(read("src/combat/MonsterGroup.cpp"))
+    active: set[str] = set()
+    explicit_spawns = {
+        "BRONZE_ORB": ("src/combat/MonsterSpecific.cpp", "orb1.construct(bc, MonsterId::BRONZE_ORB", "reachable Automaton orb spawn"),
+        "TORCH_HEAD": ("src/combat/Actions.cpp", "torchHead.construct(bc, MonsterId::TORCH_HEAD", "reachable Collector torch-head spawn"),
+    }
+    for monster, (path, marker, _reason) in explicit_spawns.items():
+        if marker not in strip_comments(read(path)):
+            raise RuntimeError(f"missing explicit reachable monster spawn: {monster}")
+    active.update(explicit_spawns)
+    helper_names: set[str] = set()
+
+    def add_helper_body(name: str) -> None:
+        nonlocal helper_names
+        if name in helper_names:
+            return
+        helper_names.add(name)
+        match = re.search(rf"\b{re.escape(name)}\s*\([^;{{}}]*\)\s*\{{", constructor_source)
+        if not match:
+            return
+        depth = 1
+        cursor = match.end()
+        while cursor < len(constructor_source) and depth:
+            if constructor_source[cursor] == "{":
+                depth += 1
+            elif constructor_source[cursor] == "}":
+                depth -= 1
+            cursor += 1
+        body = constructor_source[match.end():cursor - 1]
+        active.update(refs(body, "MonsterId"))
+        for called in re.findall(r"\b(create[A-Z][A-Za-z0-9_]*|get[A-Z][A-Za-z0-9_]*)\s*\(", body):
+            add_helper_body(called)
+
+    case_matches = list(re.finditer(r"case\s+MonsterEncounter::([A-Z][A-Z0-9_]*)\s*:", constructor_source))
+    for index, match in enumerate(case_matches):
+        end = case_matches[index + 1].start() if index + 1 < len(case_matches) else len(constructor_source)
+        body = constructor_source[match.end():end]
+        if match.group(1) not in reachable_encounters:
+            continue
+        active.update(refs(body, "MonsterId"))
+        for called in re.findall(r"\b(create[A-Z][A-Za-z0-9_]*|get[A-Z][A-Za-z0-9_]*)\s*\(", body):
+            add_helper_body(called)
     entries = []
     for idx in range(domain):
         if idx >= len(members):
@@ -310,8 +396,13 @@ def monster_census() -> dict[str, object]:
                 source_evidence(rel, "MonsterId::INVALID", "not a constructed monster")
             ]))
         elif members[idx] in active:
-            entries.append(classify_entry(idx, members[idx], "REACHABLE", "constructed_by_supported_encounter", [
-                source_evidence("src/combat/MonsterGroup.cpp", "MonsterGroup::createMonsters", "encounter construction")
+            if members[idx] in explicit_spawns:
+                path, symbol, reason = explicit_spawns[members[idx]]
+                evidence = [source_evidence(path, symbol, reason)]
+            else:
+                evidence = [source_evidence("src/combat/MonsterGroup.cpp", "MonsterGroup::createMonsters", "reachable encounter constructors and their helper spawns")]
+            entries.append(classify_entry(idx, members[idx], "REACHABLE", "constructed_by_supported_encounter_or_spawn", [
+                *evidence
             ]))
         else:
             entries.append(classify_entry(idx, members[idx], "UNKNOWN", "enum_member_not_seen_in_constructor_scan", [
@@ -352,6 +443,69 @@ def status_census() -> dict[str, object]:
             ev = [source_evidence(rel, "PlayerStatus", "enum member is outside the audited selected power block")]
         entries.append(classify_entry(idx, name, status, reason, ev, modelVisible=name in model_visible))
     return {"canonicalDomainSize": len(members), "enumSize": len(members), "modelVisibleNames": model_visible, "entries": entries}
+
+
+def _ooc_trainable_parameter_count() -> int:
+    """Count the checked-in OOC float arrays, excluding normalization buffers."""
+    text = read("apps/ooc_strategic_tok_net.h")
+    field_text = text[text.index("struct OocStrategicTokNet"):text.index("    bool ok = false;")]
+    constants: dict[str, int] = {}
+    for name, expression in re.findall(r"\b([A-Z][A-Z0-9_]*)\s*=\s*([^,;]+)", field_text):
+        try:
+            constants[name] = int(eval(expression, {"__builtins__": {}}, constants))
+        except (NameError, SyntaxError, ValueError):
+            continue
+    total = 0
+    for line in field_text.splitlines():
+        match = re.search(r"\bfloat\s+(.+);", line)
+        if not match:
+            continue
+        for declaration in match.group(1).split(","):
+            item = re.fullmatch(r"\s*(\w+)((?:\[[^\]]+\])*)\s*", declaration)
+            if not item:
+                continue
+            name, dimensions = item.groups()
+            size = 1
+            for dimension in re.findall(r"\[([^]]+)\]", dimensions):
+                size *= int(eval(dimension, {"__builtins__": {}}, constants))
+            if name not in {"globMean", "globInv"}:
+                total += size
+    return total
+
+
+def source_contracts() -> dict[str, object]:
+    combat = read("src/sim/search/CombatValueNet.cpp")
+    train = read("train_combat_pvnet.py")
+    transition = read("tools/combat_transition_model_experiment.py")
+    surrogate = read("tools/combat_transition_surrogate.py")
+    ooc = read("apps/ooc_strategic_tok_net.h")
+    required = {
+        "combatCards": (combat, r"constexpr int kNumCards\s*=\s*371\b"),
+        "combatRelics": (combat, r"constexpr int kNumRelics\s*=\s*128\b"),
+        "combatPotions": (combat, r"constexpr int kNumPotions\s*=\s*44\b"),
+        "combatFeatureCount": (train, r"assert len\(canonical\) == 1766"),
+        "combatCardEmbedding": (train, r"torch\.randn\(371, dim\)"),
+        "combatRelicEmbedding": (train, r"torch\.randn\(128, 64\)"),
+        "combatPotionEmbedding": (train, r"torch\.randn\(44, 32\)"),
+        "transitionDeepSetsCards": (transition, r"nn\.Embedding\(CARD_COUNT, 48\)"),
+        "transitionDeepSetsRelics": (transition, r"nn\.Embedding\(RELIC_COUNT, 48\)"),
+        "transitionDeepSetsPotions": (transition, r"nn\.Embedding\(POTION_COUNT, 32\)"),
+        "transitionPhase2PotionHead": (surrogate, r"nn\.Linear\(64 \+ 8, POTION_COUNT\)"),
+        "oocCardEmbedding": (ooc, r"NCARD\s*=\s*372"),
+        "oocRelicEmbedding": (ooc, r"NREL\s*=\s*181"),
+        "oocPotionEmbedding": (ooc, r"NPOT\s*=\s*48"),
+    }
+    missing = [name for name, (text, pattern) in required.items() if not re.search(pattern, text)]
+    if missing:
+        raise RuntimeError(f"model source contract drift: {', '.join(missing)}")
+    ooc_total = _ooc_trainable_parameter_count()
+    if ooc_total != 199690:
+        raise RuntimeError(f"OOC trainable parameter total drift: expected 199690, got {ooc_total}")
+    return {
+        "checkedPatterns": sorted(required),
+        "combatFeatureContract": 1766,
+        "oocTrainableFloatParameterTotalExcludingNormalizationBuffers": ooc_total,
+    }
 
 
 def counts(domain: dict[str, object]) -> dict[str, int]:
@@ -472,9 +626,11 @@ def model_capacity(domains: dict[str, dict[str, object]]) -> dict[str, object]:
 
 
 def build_census() -> dict[str, object]:
+    contracts = source_contracts()
+    relics = relic_census()
     domains = {
-        "cards": card_census(),
-        "relics": relic_census(),
+        "cards": card_census(relics),
+        "relics": relics,
         "potions": potion_census(),
         "encounters": encounter_census(),
         "monsters": monster_census(),
@@ -484,7 +640,8 @@ def build_census() -> dict[str, object]:
         "schemaVersion": "ironclad_reachable_domain_census_v1",
         "scope": {"character": "IRONCLAD", "vanilla": True, "acts": "simulator-supported", "prismaticShard": "excluded"},
         "sourceBaselineRequested": "15f3eaed1f1bc3866e2686e7d6043f9e11c799cd",
-        "sourceHeadAudited": "7f239baa8bbea3c5db815176c0f91887d70fb841",
+        "sourceHeadAudited": subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=ROOT, text=True).strip(),
+        "sourceContracts": contracts,
         "domains": {name: {**value, "counts": counts(value)} for name, value in domains.items()},
         "modelCapacity": model_capacity(domains),
         "rules": [
@@ -524,6 +681,8 @@ def render_report(census: dict[str, object]) -> str:
         "- `kNumRelics` is 181 (IDs 0..180), and `PRISMATIC_SHARD` is enum ID 161 inside that canonical relic model domain. It is retained in the exhaustive census but explicitly excluded from the supported Ironclad closure.",
         "- `kNumPotions` is 48, while the current Potion enum has 44 values. IDs 44..47 are `UNKNOWN`, not silently dead.",
         "- Cards in the non-Ironclad class-pool rows are marked provably unreachable under the Ironclad/no-Prismatic-Shard contract. The source also has two class-pool/cardColors metadata conflicts (`BRUTALITY`, `COMBUST`); the census preserves those conflicts and uses explicit class-pool membership for the reachability decision.",
+        "- Generated-card edges are transitive: `MIRACLE` and `SHIV` remain `UNKNOWN` because their `HOLY_WATER`/`PURE_WATER`/`NINJA_SCROLL` generators are not in the reachable Ironclad relic closure. `NECRONOMICURSE` is also `UNKNOWN`; its combat behavior is present, but no supported acquisition edge was found. `RITUAL_DAGGER` is evidenced through `Event::THE_NEST`.",
+        "- Encounter reachability is derived from the normal, strong, elite, boss, and enabled event paths. `COLOSSEUM_EVENT_SLAVERS` and `COLOSSEUM_EVENT_NOBS` are provably unreachable because `disableColosseum` is true; monster reachability closes over the resulting encounter constructors and helper spawns.",
         "- `PRISMATIC_SHARD` is present at relic ID 161 and in the Ironclad shop pool, but is explicitly excluded from the supported closure and therefore marked provably unreachable. It is never used as an edge to any other entity.",
         "",
         "## Model capacity",
@@ -535,8 +694,9 @@ def render_report(census: dict[str, object]) -> str:
         "## Reproduction and checks",
         "",
         "- Census command: `python3 tools/ironclad_reachable_domain_census.py`",
-        "- Focused checks: `python3 -m unittest tools.test_ironclad_reachable_domain_census -v` (5 tests passed).",
+        "- Focused checks: `python3 -m unittest tools.test_ironclad_reachable_domain_census -v` (9 tests passed).",
         "- JSON syntax check: `python3 -m json.tool docs/experiments/evidence/ironclad_reachable_domain_census_2026-09-20/census.json` (passed).",
+        "- Source contracts: the census asserts the combat/PVNet, transition-model, and OOC embedding dimensions and independently counts the OOC trainable float arrays (199690, excluding normalization buffers).",
         "- No gameplay seeds, corpus regeneration, retraining, binary rebuild, or expensive run was performed.",
         "",
         "## Verification boundary",
