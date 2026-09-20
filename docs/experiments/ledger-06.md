@@ -10292,6 +10292,23 @@ default or generalization claim is authorized. Evidence:
   rules also did not pass. Teacher A/B mean absolute noise was `1.0541` and
   85.64% of within-sibling teacher margins were below the one-rollout noise
   estimate.
+- **Causal follow-up:** The highest stable-residual leaf from each of the first
+  eight distinct `largest_stable_residuals` groups was selected before the
+  probe. Teacher A's exact semantic first action was forced once, then the
+  canonical SimpleAgent continuation resumed under the same 32 replicate RNG
+  identities. All 256 rows were accepted. Among the three A/B-action-stable
+  leaves, spanning three groups, aggregate absolute residual fell from
+  `54.8644` to `13.9072`: `74.6516%` removed, passing the preregistered
+  `FIRST_ACTION_BIAS_MATERIAL` threshold. The five teacher-action-unstable
+  leaves were retained descriptively but excluded from the causal decision.
+  Stable mismatches were deterministic card-choice substitutions on all 32
+  replicates: Reaper, Spot Weakness+ → Time Eater, and Spot Weakness+ → Bronze
+  Orb were each replaced by another SimpleAgent card.
+- **Follow-up boundary:** This supports first-action bias as a substantial
+  mechanism on the targeted frozen subset, but does not authorize a rollout
+  policy change. The next experiment is a fresh matched diagnostic cohort for
+  one narrow first-card-choice intervention with the existing continuation
+  unchanged. No intervention was implemented here.
 - **Boundary:** This is bounded diagnostic evidence, not ranking,
   equivalence, model-training, rollout-policy, or default-promotion evidence.
   No holdout or broad seed campaign was run. Large residuals remain in a

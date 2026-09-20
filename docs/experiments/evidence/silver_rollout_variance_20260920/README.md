@@ -105,3 +105,103 @@ performed.
 **Knowledge impact:** durable Silver diagnostic evidence and current research
 status only; no Silver behavior, model, RNG, schema, budget, or gameplay
 default changed.
+
+## Teacher-first-action causal follow-up
+
+### Frozen selection
+
+The follow-up selected the highest stable-residual leaf from each of the first
+eight distinct groups in `analysis.json`'s frozen `k=32`
+`largest_stable_residuals` order. The exact pre-probe selection is recorded in
+`first_action_probe_selection.json`; it contains eight leaves from eight
+distinct sibling groups. No new hard-combat collection was used.
+
+### Counterfactual protocol
+
+For each selected leaf, the probe resolved Teacher A's emitted semantic action
+against the exact stored leaf legal-action surface, executed exactly that one
+action through the existing Silver semantic lowering / `Action::execute`
+path, and resumed the existing canonical SimpleAgent rollout. Each treatment
+used the same `rng_identity` as the corresponding baseline replicate. There
+was no subsequent teacher guidance. Invalid or unresolvable actions fail
+closed. Victory-only original-root correction was applied to the final
+terminal state in both arms.
+
+All 256 treatment rows were accepted (`8 leaves * 32 replicates`). The bridge
+self-test also covers one-action execution, baseline neutrality, fixed-RNG
+determinism, correction behavior, and invalid-action fail-closed behavior.
+
+### Result
+
+The classification is **`FIRST_ACTION_BIAS_MATERIAL`**. Only the three leaves
+where Teacher A and B selected the same first action are used for the causal
+decision. Across those three distinct groups, forcing Teacher A's first action
+removed `74.6516%` of aggregate absolute baseline residual:
+
+```text
+stable baseline absolute residual:   54.8644
+stable treatment absolute residual:   13.9072
+aggregate fraction removed:            0.7465
+stable leaves / groups:                 3 / 3
+```
+
+The five A/B-action-disagreement leaves remain descriptive only and are not
+used for the strong causal claim. Across all eight selected leaves, including
+those unstable cases, the descriptive aggregate fraction removed was
+`31.1387%`.
+
+| rank | group / leaf | A/B action | Teacher A action | SimpleAgent first-action agreement | baseline mean | treatment mean | baseline residual | treatment residual | absolute residual removed |
+| ---: | --- | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| 1 | `88c7c1af25d91065` / `7a97662f7a0aadbeed6675a1e918eb7a` | unstable | `{ use card (0) (Double Tap,26,1,1) }` | 1.00 | 83.0563 | 83.0563 | -51.7092 | -51.7092 | 0.0000 |
+| 2 | `a4247c55175c1388` / `4215ecbfac9ddcd7907abc3d85529f33` | unstable | `{ drink potion (0) Liquid Bronze }` | 0.00 | -10.6581 | 0.5975 | -30.5434 | -19.2878 | 0.3685 |
+| 3 | `73a930377101137b` / `13537c6f57dc2f8eae5b89f155beda92` | stable | `{ use card (4) (Reaper,15,2,2) }` | 0.00 | 78.4361 | 105.1687 | -21.6585 | 5.0741 | 0.7657 |
+| 4 | `e2ab6a6437060dc5` / `79ea7c5d4f4c92d418d25f43684183c8` | stable | `{ use card (2) (Spot Weakness+,11,1,1) -> (0) TimeEater }` | 0.00 | 41.7289 | 59.1581 | -18.1539 | -0.7248 | 0.9601 |
+| 5 | `9a58cddc9df01b19` / `6f47589a9b4a7916214975ee1078265a` | unstable | `{ use card (2) (Thunderclap,24,1,1) }` | 1.00 | 76.5216 | 76.5216 | -16.2468 | -16.2468 | 0.0000 |
+| 6 | `137c7885d87cacb7` / `d6aa5b7faf18bacd5444edf0a06f30b1` | stable | `{ use card (0) (Spot Weakness+,8,1,1) -> (2) BronzeOrb }` | 0.00 | 36.4471 | 43.3906 | -15.0519 | -8.1084 | 0.4613 |
+| 7 | `0530fe9984c813e2` / `e9c733533b4c550ef70286d0f233d3e2` | unstable | `{ use card (3) (Flame Barrier,30,2,2) }` | 1.00 | 65.8084 | 65.8084 | 13.8241 | 13.8241 | 0.0000 |
+| 8 | `c20a2b9c8ce98855` / `657bcaf9e29d271bcd75329d8f708d7f` | unstable | `{ use card (2) (Sentinel+,31,1,1) }` | 0.00 | 59.1073 | 63.1674 | -13.5290 | -9.4689 | 0.3001 |
+
+Among the three stable leaves, SimpleAgent selected a different card on all
+32 baseline replicates (`0/32` first-action agreement in each). The concrete
+mismatches were:
+
+- Reaper versus a different card (`73a930...`): 32/32 baseline first actions
+  were the other card.
+- Spot Weakness+ → Time Eater versus a different card (`e2ab6...`): 32/32.
+- Spot Weakness+ → Bronze Orb versus a different card (`137c78...`): 32/32.
+
+This is a recurring card-choice substitution pattern, not an End Turn versus
+card, potion omission, target-selection, or card-order pattern in the stable
+causal subset. The selected unstable leaves include potion-versus-card and
+card-versus-card teacher disagreements, so they are not used to attribute the
+effect to first-action bias.
+
+The forced arm costs more wall time because it executes an additional supplied
+action before the canonical continuation. In the stable subset, mean action
+counts were `29.28` baseline versus `26.31` treatment and mean turn deltas
+were `5.12` versus `4.68`; these are descriptive trajectory/cost measures,
+not a performance claim.
+
+### Interpretation and boundary
+
+The result supports the primary hypothesis on this targeted, frozen subset:
+wrong first-action choice accounts for a substantial part of the persistent
+residual. The smallest next intervention to test is a **single narrow
+rollout-policy change affecting first card choice at the rollout leaf**, with
+the existing SimpleAgent continuation unchanged. This task does not implement
+that intervention. It should first be tested on a fresh matched diagnostic
+cohort with A/B-action-stability filtering and the same original-root
+correction. No rollout policy, learned evaluator, prior, PUCT, budget, or
+gameplay default is changed here.
+
+### Follow-up artifact hashes
+
+```text
+first_action_probe_selection.json  4fc7c2f4631737bf94bad8de4be6eeea195df55508bc5ad8bac52e480c6e6e0d
+first_action_probe_raw.json        d00c676f935120a89539201c18d10a2ae3fc751d5469e46f9ae170573abf791e
+first_action_probe_analysis.json   93a67f0c287efe5e09919c681704f662973ed6f707063e046cbb7509f4aed97b
+```
+
+Follow-up implementation head: `ca455eb68015fe3f6939ac3b77d7f30813a9fb0e`.
+The probe executable SHA-256 was
+`66c6aa153e01d70f901f180614645ddcda3fb5a3731dcc99f6b27331a15e8aef`.

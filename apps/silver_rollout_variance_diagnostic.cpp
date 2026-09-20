@@ -306,6 +306,10 @@ Json firstActionProbeLeaf(const Json &selection, const std::map<std::string, Jso
             {"treatment_failure_reason", treatment.failureReason},
             {"treatment_utility", treatment.accepted
                 ? Json(treatment.originalRootCorrectedUtility) : Json(nullptr)},
+            {"paired_utility_delta", treatment.accepted
+                ? Json(treatment.originalRootCorrectedUtility
+                    - raw.at("original_root_corrected_utility").get<double>())
+                : Json(nullptr)},
             {"treatment_first_action_fingerprint", treatment.firstActionFingerprint},
             {"treatment_action_fingerprints", treatment.allActionFingerprints},
             {"treatment_action_count", treatment.totalActionCount},
