@@ -37,6 +37,7 @@ before broad repository search.
 | Checkpoint NN | `apps/ooc_checkpoint_net.h`, `apps/one_combat/ooc_policy.cpp` | `OocCheckpointNet`, `oocActionNNPolicy`, `STS_OOC_CHECKPOINT_NN` | [out-of-combat.md](architecture/out-of-combat.md) |
 | Strategic Q-gate (opt-in) | `apps/ooc_strategic_net.h`, `apps/one_combat/ooc_policy.{h,cpp}` | `OocStrategicNet`, `oocOnePlyCardRewardPolicy` et al., `STS_OOC_STRATEGIC_NN`, `STS_OOC_STRATEGIC_MARGIN` | [out-of-combat.md](architecture/out-of-combat.md) |
 | Strategic token net (opt-in) | `apps/ooc_strategic_tok_net.h`, `apps/one_combat/ooc_policy.{h,cpp}` | Token-based OOC network and live candidate glue, experimental | [out-of-combat.md](architecture/out-of-combat.md) |
+| Autonomous live OOC debugger | `apps/one_combat/live_ooc_state.{h,cpp}`, `live_ooc_policy.{h,cpp}`, `ooc_v4_encoding.{h,cpp}`, `tools/live_game_driver.py` | Versioned detached public-state import, pure shared V4 encoding, generic `LiveOocPolicy`, exact MCP lowering, failure packets and run accounting | [live-model-inspector.md](operations/live-model-inspector.md#autonomous-ooc-decisions) |
 
 ## Integration driver
 

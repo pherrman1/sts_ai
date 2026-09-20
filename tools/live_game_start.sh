@@ -3,17 +3,20 @@ set -euo pipefail
 
 usage() {
   cat <<'EOF'
-usage: tools/live_game_start.sh [options]
+usage: tools/live_game_start.sh [options] [-- driver-options]
 
 Ensure the stable runtime, then start or verify ModTheSpire + MCPTheSpire.
 
   --check                  validate without starting the game
   --probe                  run the direct driver's read-only MCP dry-run
+  --run                    start the driver immediately when MCP is ready
+  --super-fast             enable the installed SuperFastMode mod
   --refresh-runtime        build and atomically publish this worktree's advisor
   --deploy-inspector       build and atomically deploy the Java inspector JAR
   --restart-game           safely restart the expected ModTheSpire process
   --foreground             keep a newly started ModTheSpire attached
   --allow-missing-advisor  explicit MCP-only escape hatch
+  --allow-missing-ooc      allow Silver-only debugging without an OOC model
   --wait SECONDS           startup wait limit (default: 45)
   -h, --help               show this help
 
@@ -30,13 +33,19 @@ warn() { echo "live-game-start: warning: $*" >&2; }
 repo_root=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)
 runtime_tool=${STS_LIVE_RUNTIME_TOOL:-$repo_root/tools/live_game_runtime.py}
 check_only=0 probe=0 foreground=0 allow_missing_advisor=0 refresh_runtime=0
-deploy_inspector=0 restart_game=0 wait_seconds=45
+deploy_inspector=0 restart_game=0 allow_missing_ooc=0 wait_seconds=45
+run_driver=0 super_fast=0
+driver_args=()
 while (($#)); do
   case "$1" in
     --check) check_only=1 ;;
     --probe) probe=1 ;;
+    --run) run_driver=1 ;;
+    --super-fast) super_fast=1 ;;
+    --) shift; driver_args=("$@"); break ;;
     --foreground) foreground=1 ;;
     --allow-missing-advisor) allow_missing_advisor=1 ;;
+    --allow-missing-ooc) allow_missing_ooc=1 ;;
     --refresh-runtime) refresh_runtime=1 ;;
     --deploy-inspector) deploy_inspector=1 ;;
     --restart-game) restart_game=1 ;;
@@ -50,6 +59,8 @@ while (($#)); do
   esac
   shift
 done
+((run_driver || ${#driver_args[@]} == 0)) || die "driver options require --run"
+((!run_driver || (!check_only && !foreground))) || die "--run cannot be combined with --check or --foreground"
 
 home_dir=${HOME:?HOME is not set}
 game_dir=${STS_GAME_DIR:-}
@@ -79,6 +90,11 @@ fi
 mcp_jar=${STS_MCP_THE_SPIRE_JAR:-$game_dir/mods/MCPTheSpire.jar}
 inspector_jar=${STS_MODEL_INSPECTOR_JAR:-$game_dir/mods/sts-model-inspector.jar}
 [[ -f "$mcp_jar" ]] || die "MCPTheSpire.jar not found: $mcp_jar"
+enabled_mods=basemod,MCPTheSpire,stsmodelinspector
+if ((super_fast)); then
+  [[ -f "$game_dir/mods/SuperFastMode.jar" ]] || die "SuperFastMode.jar not installed in $game_dir/mods"
+  enabled_mods+=,superfastmode
+fi
 
 runtime_command=ensure
 ((refresh_runtime)) && runtime_command=install
@@ -102,6 +118,10 @@ if ((runtime_available)); then
   fi
   [[ -x "$STS_MODEL_INSPECTOR_ADVISOR" ]] || die "stable advisor missing or not executable: $STS_MODEL_INSPECTOR_ADVISOR"
   [[ -f "$STS_CTM_MODEL" ]] || warn "CTM model unavailable: $STS_CTM_MODEL"
+  if [[ -z "${STS_LIVE_OOC_MODEL:-}" || ! -f "$STS_LIVE_OOC_MODEL" ]]; then
+    ((allow_missing_ooc)) || die "OOC model unavailable: ${STS_LIVE_OOC_MODEL:-<unset>}; use --allow-missing-ooc for Silver-only debugging"
+    warn "OOC model unavailable; live OOC policy will report MODEL_UNAVAILABLE"
+  fi
 else
   warn "advisor validation and active-runtime recording are disabled for MCP-only startup"
 fi
@@ -169,6 +189,7 @@ print_ready() {
   echo "Inspector snapshot: $home_dir/.cache/sts-model-inspector/latest.json"
   if ((runtime_available)); then
     echo "Stable runtime: $runtime_root/current"
+    echo "OOC model: ${STS_LIVE_OOC_MODEL:-<unavailable>}"
   else
     echo "Stable runtime: unavailable (MCP-only mode)"
   fi
@@ -186,6 +207,15 @@ run_probe() {
   done
   cat "$probe_log" >&2; return 1
 }
+run_requested_driver() {
+  if ((run_driver)); then
+    echo "Starting autonomous driver immediately."
+    cd "$repo_root"
+    exec bash tools/seed_guard.sh uv run --extra live-driver python tools/live_game_driver.py \
+      --mcp-url "$mcp_url" "${driver_args[@]}"
+  fi
+  if ((probe)); then run_probe; fi
+}
 
 if port_is_open; then
   refresh_game_pids
@@ -196,9 +226,17 @@ if port_is_open; then
     die "runtime change requires game restart; rerun with --restart-game when safe"
   fi
   if ((!restart_game)); then
+    if ((super_fast)); then
+      python3 - "${mcp_owner_pids[0]}" <<'PY' || die "running game lacks SuperFastMode; use --restart-game"
+import sys
+args = open('/proc/' + sys.argv[1] + '/cmdline', 'rb').read().decode().split('\0')
+mods = args[args.index('--mods') + 1].split(',') if '--mods' in args else []
+raise SystemExit(0 if 'superfastmode' in mods else 1)
+PY
+    fi
     echo "MCPTheSpire is already running; reusing the existing modded game."
     print_ready
-    ((probe)) && run_probe
+    run_requested_driver
     exit 0
   fi
   echo "Stopping MCP-owning ModTheSpire process for explicit restart: ${mcp_owner_pids[*]}"
@@ -224,16 +262,16 @@ python3 "$runtime_tool" clear-active >/dev/null
 if ((foreground)); then
   echo "Starting ModTheSpire in the foreground..."; print_ready
   cd "$game_dir"
-  exec "$java_bin" -jar "$modthespire_jar" --skip-launcher --mods basemod,MCPTheSpire,stsmodelinspector
+  exec "$java_bin" -jar "$modthespire_jar" --skip-launcher --mods "$enabled_mods"
 fi
 
 echo "Starting ModTheSpire in the background; log=$log_path"
 (
   cd "$game_dir"
   if command -v setsid >/dev/null 2>&1; then
-    exec nohup setsid -f "$java_bin" -jar "$modthespire_jar" --skip-launcher --mods basemod,MCPTheSpire,stsmodelinspector
+    exec nohup setsid -f "$java_bin" -jar "$modthespire_jar" --skip-launcher --mods "$enabled_mods"
   fi
-  exec nohup "$java_bin" -jar "$modthespire_jar" --skip-launcher --mods basemod,MCPTheSpire,stsmodelinspector
+  exec nohup "$java_bin" -jar "$modthespire_jar" --skip-launcher --mods "$enabled_mods"
 ) >>"$log_path" 2>&1 </dev/null &
 game_pid=$!
 echo "ModTheSpire PID: $game_pid"
@@ -246,7 +284,7 @@ for ((elapsed=0; elapsed<wait_seconds*10; elapsed++)); do
       python3 "$runtime_tool" record-active --inspector-jar "$inspector_jar" --process-pid "${mcp_owner_pids[0]}"
     fi
     echo "MCPTheSpire is ready."; print_ready
-    ((probe)) && run_probe
+    run_requested_driver
     exit 0
   fi
   refresh_game_pids

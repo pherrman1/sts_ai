@@ -8617,7 +8617,9 @@ regime. Knowledge impact: current research status records a bounded negative
 result; runtime defaults, models, gameplay, and production budgets are
 unchanged.
 
-[Evidence packet, raw CSV, analysis and provenance](evidence/combat_budget_diag_2026-09-15/README.md).
+The referenced evidence packet, raw CSV, analysis and provenance at
+`evidence/combat_budget_diag_2026-09-15/README.md` are absent from the tracked
+repository. Independent verification of the raw diagnostic remains unavailable.
 
 
 ## §280 — Retained-root adaptive Silver prospective A/B smoke (2026-09-16)

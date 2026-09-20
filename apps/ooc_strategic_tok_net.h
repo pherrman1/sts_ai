@@ -81,7 +81,7 @@ struct OocStrategicTokNet {
     bool ok = false;
     std::string path;
 
-    bool load(const std::string &path) {
+    bool load(const std::string &path, bool quiet = false) {
         FILE *f = std::fopen(path.c_str(), "rb");
         if (!f) { std::fprintf(stderr, "[ooc-strat-tok-net] cannot open %s\n", path.c_str()); return false; }
         auto readBlock = [f](void *dst, size_t count) -> bool {
@@ -162,7 +162,7 @@ struct OocStrategicTokNet {
         }
         ok = true;
         this->path = path;
-        std::printf("[ooc-strat-tok-net] loaded %s\n", path.c_str());
+        if (!quiet) std::printf("[ooc-strat-tok-net] loaded %s\n", path.c_str());
         return true;
     }
 

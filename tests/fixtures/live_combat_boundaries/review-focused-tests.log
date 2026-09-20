@@ -1,0 +1,33 @@
+Test project /home/philippherrmann/.codex/worktrees/86fc/sts_lightspeed/build/linux-gcc-debug-ccache
+      Start  1: live_advisor_protocol
+ 1/11 Test  #1: live_advisor_protocol ............   Passed    0.34 sec
+      Start  2: live_game_runtime
+ 2/11 Test  #2: live_game_runtime ................   Passed    0.60 sec
+      Start  3: live_ooc_policy
+ 3/11 Test  #3: live_ooc_policy ..................   Passed    0.02 sec
+      Start  4: live_ooc_parity
+ 4/11 Test  #4: live_ooc_parity ..................   Passed    0.13 sec
+      Start  5: live_ooc_protocol
+ 5/11 Test  #5: live_ooc_protocol ................   Passed    0.40 sec
+      Start  6: live_game_driver
+ 6/11 Test  #6: live_game_driver .................   Passed    0.88 sec
+      Start  8: live_silver_importer
+ 7/11 Test  #8: live_silver_importer .............   Passed    1.06 sec
+      Start 29: ooc_reward_continuation
+ 8/11 Test #29: ooc_reward_continuation ..........   Passed    0.00 sec
+      Start 30: ooc_semantic
+ 9/11 Test #30: ooc_semantic .....................   Passed    0.14 sec
+      Start 31: ooc_semantic_pipeline
+10/11 Test #31: ooc_semantic_pipeline ............   Passed    0.02 sec
+      Start 38: ooc_semantic_smith
+11/11 Test #38: ooc_semantic_smith ...............   Passed    0.01 sec
+
+100% tests passed out of 11
+
+Label Time Summary:
+core           =   0.18 sec*proc (4 tests)
+integration    =   1.06 sec*proc (8 tests)
+smoke          =   2.36 sec*proc (6 tests)
+tooling        =   1.48 sec*proc (2 tests)
+
+Total Test time (real) =   3.61 sec

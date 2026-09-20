@@ -506,6 +506,14 @@ CardSelectScreenType oocSemanticPrimitiveCompoundSelector(const GameContext &gc,
     return Select::INVALID;
 }
 
+OocSemanticPrimitiveBindings enumerateOocSemanticPrimitiveBindings(const GameContext &gc) {
+    auto live = bindings(gc);
+    OocSemanticPrimitiveBindings result {live.supported, live.complete, live.error, {}};
+    for (auto &binding : live.values)
+        result.bindings.push_back({std::move(binding.action), binding.primitive.bits, binding.compound});
+    return result;
+}
+
 OocEnumerationResult enumerateOocSemanticActions(const GameContext &gc) {
     auto live = bindings(gc);
     OocEnumerationResult result {live.supported, live.complete, live.error, {}};

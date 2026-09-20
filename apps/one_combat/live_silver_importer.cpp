@@ -540,6 +540,13 @@ SilverRootImportResult importSilverRootGeneric(const json &observation,
     if (combatIt == root.end() || !combatIt->is_object()) return unsupported("silver_combat_missing");
     const auto &combat = *combatIt;
     if (hasForbiddenRngField(combat)) return unsupported("silver_rng_field");
+    const auto selectionIt = combat.find("cardSelect");
+    const bool cardSelect = selectionIt != combat.end() && selectionIt->is_object();
+    // A stable combat selection is still combat when its action has no native
+    // serializer. Reject that explicit support boundary before inspecting the
+    // unrelated normal-play state or requiring predecessor reconstruction.
+    if (cardSelect && !live_silver::cardSelectTask(selectionIt->value("task", std::string())))
+        return unsupported("silver_unmapped_selection_task");
     if (!combat.contains("damageTrackingExact")
         || !combat.at("damageTrackingExact").is_boolean()
         || !combat.at("damageTrackingExact").get<bool>())
@@ -970,8 +977,6 @@ SilverRootImportResult importSilverRootGeneric(const json &observation,
         }
     } else return unsupported("silver_unmapped_encounter");
 
-    const auto selectionIt = combat.find("cardSelect");
-    bool cardSelect = selectionIt != combat.end() && selectionIt->is_object();
     wire.inputState = cardSelect ? static_cast<int>(sts::InputState::CARD_SELECT)
                                  : static_cast<int>(sts::InputState::PLAYER_NORMAL);
     if (combat.value("resolving", false)) return unsupported("silver_unstable_boundary");

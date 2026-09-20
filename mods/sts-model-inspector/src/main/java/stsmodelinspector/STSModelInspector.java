@@ -149,6 +149,8 @@ public final class STSModelInspector implements PostInitializeSubscriber,
     private volatile double ctmDeath = 0.0;
     private volatile int ctmHistogramMin = 1;
     private volatile double[] ctmHistogram = new double[0];
+    private volatile OocOverlay oocOverlay;
+    private volatile PotionOverlay potionOverlay;
     private volatile boolean panelVisible = true;
     private volatile String combatEntry = "";
     private volatile String combatEntryHash = "";
@@ -290,14 +292,23 @@ public final class STSModelInspector implements PostInitializeSubscriber,
     public void receiveRender(SpriteBatch sb) {
         if (!panelVisible || newest == null) return;
         renderAdvisorPanel(sb);
+        renderPotionBadges(sb, Settings.scale);
+        sb.setColor(Color.WHITE);
     }
 
     private void renderAdvisorPanel(SpriteBatch sb) {
         float scale = Settings.scale;
         float x = 24.0f * scale;
-        float top = Settings.HEIGHT - 78.0f * scale;
-        float width = 500.0f * scale;
-        float height = "combat".equals(newest.boundary) ? 252.0f * scale : 188.0f * scale;
+        float top = Settings.HEIGHT - 170.0f * scale;
+        boolean combat = "combat".equals(newest.boundary);
+        OocOverlay overlay = currentOocOverlay();
+        if (!combat && renderInlineChoices(sb, overlay, scale)) {
+            sb.setColor(Color.WHITE);
+            return;
+        }
+        float width = (combat ? 500.0f : 420.0f) * scale;
+        int rows = overlay == null ? 0 : overlay.panelChoices().size();
+        float height = (combat ? 252.0f : rows == 0 ? 220.0f : 130.0f + 44.0f * rows) * scale;
         float bottom = top - height;
 
         // Use the game's existing white texture for the glass panels so the mod
@@ -312,9 +323,9 @@ public final class STSModelInspector implements PostInitializeSubscriber,
                 width - 4.0f * scale, 2.0f * scale, CYAN_DIM);
 
         renderAdvisorIcon(sb, x + 16.0f * scale, top - 18.0f * scale, scale);
-        renderHeaderText(sb, "STS Model Advisor", x + 70.0f * scale,
+        renderHeaderText(sb, combat ? "STS Model Advisor" : "OOC Advisor", x + 70.0f * scale,
                 top - 14.0f * scale, Color.WHITE, 0.82f);
-        renderStatusPill(sb, x + 336.0f * scale, top - 12.0f * scale, scale);
+        renderStatusPill(sb, x + width - 164.0f * scale, top - 12.0f * scale, scale);
         renderGearIcon(sb, x + width - 31.0f * scale, top - 27.0f * scale, scale);
 
         if ("combat".equals(newest.boundary)) {
@@ -354,9 +365,6 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         renderHistogram(sb, rightX + 12.0f * scale, cardBottom + 14.0f * scale,
                 rightWidth - 24.0f * scale, cardHeight - 38.0f * scale, scale);
 
-        String footer = "Floor " + newest.floor + "  ·  HP " + newest.hp + "/" + newest.maxHp;
-        renderSmallText(sb, footer, x + 16.0f * scale, bottom + 22.0f * scale,
-                MUTED, 0.84f);
         String silver = silverSummary();
         renderSmallText(sb, silver, x + 16.0f * scale, bottom + 48.0f * scale,
                 "OK".equals(silverStatus) ? CYAN : WARNING, 0.78f);
@@ -374,23 +382,191 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         return "Silver  ·  " + silverStatus.toLowerCase(Locale.ROOT);
     }
 
+    private OocOverlay currentOocOverlay() {
+        OocOverlay view = oocOverlay;
+        Snapshot snapshot = newest;
+        return snapshot != null && view != null && responseReady()
+                && view.matches(snapshot.session, snapshot.sequence, snapshot.hash) ? view : null;
+    }
+
+    private boolean renderInlineChoices(SpriteBatch sb, OocOverlay view, float scale) {
+        String screen;
+        try {
+            screen = new com.google.gson.JsonParser().parse(newest.observationJson).getAsJsonObject()
+                    .getAsJsonObject("ooc").get("screen").getAsString();
+        } catch (RuntimeException unavailable) { return false; }
+        if ("selector".equals(screen) && com.megacrit.cardcrawl.ui.buttons.PeekButton.isPeeking) return true;
+        List<InlineChoices.Anchor> anchors = InlineChoices.capture(screen);
+        if (anchors.isEmpty()) return false;
+        // Keep the existing panel as a fail-safe if an API change prevents a
+        // scored action from being attached to its exact physical control.
+        if (view != null) for (OocOverlay.Choice choice : view.choices) {
+            boolean bound = false;
+            for (InlineChoices.Anchor anchor : anchors) if (anchor.action.equals(choice.action)) bound = true;
+            if (!bound) return false;
+        }
+        for (InlineChoices.Anchor anchor : anchors) {
+            if (!anchor.visible) continue;
+            OocOverlay.Choice choice = view == null ? null : view.forAction(anchor.action);
+            String prefix = anchor.label.isEmpty() ? "" : anchor.label + " · ";
+            String label = choice == null ? prefix + (view == null ? "Waiting" : "Not scored")
+                    : prefix + String.format(Locale.ROOT, "#%d · Q %.3f", view.choices.indexOf(choice) + 1, choice.q);
+            String detail = followUpText(choice);
+            renderInlineBadge(sb, anchor.x, anchor.bottom, anchor.width, label,
+                    choice != null && choice.selected, choice != null, scale, detail);
+        }
+        String status = view == null ? "Waiting for advisor" : "OK".equals(view.status)
+                ? "V4 · amber = recommended" : "UNSUPPORTED".equals(view.status)
+                ? "V4 · no supported recommendation" : "Advisor unavailable";
+        renderSmallText(sb, status + " · " + Keyboard.getKeyName(loadToggleKey()) + " hide",
+                24 * scale, 28 * scale, MUTED, .72f);
+        return true;
+    }
+
+    private void renderInlineBadge(SpriteBatch sb, float x, float bottom, float width,
+                                   String label, boolean selected, boolean scored, float scale) {
+        renderInlineBadge(sb, x, bottom, width, label, selected, scored, scale, "");
+    }
+
+    private String followUpText(OocOverlay.Choice choice) {
+        if (choice == null || choice.followUpUuid.isEmpty() || AbstractDungeon.player == null) return "";
+        for (AbstractCard card : AbstractDungeon.player.masterDeck.group)
+            if (choice.followUpUuid.equals(String.valueOf(card.uuid)))
+                return String.format(Locale.ROOT, "Next: %s · Q %.2f", card.name, choice.followUp.get("q").getAsDouble());
+        return "";
+    }
+
+    private void renderInlineBadge(SpriteBatch sb, float x, float bottom, float width,
+                                   String label, boolean selected, boolean scored, float scale, String detail) {
+        float extra = detail.isEmpty() ? 0 : 22 * scale;
+        drawRect(sb, x, bottom - extra, width, 32 * scale + extra, PANEL_INNER);
+        drawBorder(sb, x, bottom - extra, width, 32 * scale + extra, selected ? WARNING : CARD_BORDER,
+                (selected ? 2 : 1) * scale);
+        renderFittedText(sb, label, x + 8 * scale, bottom + 23 * scale, width - 16 * scale,
+                selected ? CYAN : scored ? Color.WHITE : MUTED, .70f);
+        if (!detail.isEmpty()) renderFittedText(sb, detail, x + 8 * scale, bottom + 2 * scale,
+                width - 16 * scale, MUTED, .65f);
+    }
+
+    private void renderPotionBadges(SpriteBatch sb, float scale) {
+        if (AbstractDungeon.player == null || AbstractDungeon.topPanel == null) return;
+        com.megacrit.cardcrawl.ui.panels.PotionPopUp popup = AbstractDungeon.topPanel.potionUi;
+        if (popup != null && popup.targetMode) return;
+        PotionOverlay view = potionOverlay;
+        if (view == null || !responseReady() || !view.matches(newest.session, newest.sequence, newest.hash)) view = null;
+        for (int slot = 0; slot < AbstractDungeon.player.potions.size(); ++slot) {
+            com.megacrit.cardcrawl.potions.AbstractPotion potion = AbstractDungeon.player.potions.get(slot);
+            if (potion == null || "Potion Slot".equals(potion.ID)) continue;
+            try {
+                boolean open = popup != null && !popup.isHidden
+                        && ((Number)InlineChoices.field(popup, "slot")).intValue() == slot;
+                // Full-width labels follow the hovered/open potion, avoiding
+                // overlapping labels across the tightly spaced inventory slots.
+                if (!open && ((popup != null && !popup.isHidden) || !potion.hb.hovered)) continue;
+                com.megacrit.cardcrawl.helpers.Hitbox useHb = open
+                        ? (com.megacrit.cardcrawl.helpers.Hitbox)InlineChoices.field(popup, "hbTop") : potion.hb;
+                com.megacrit.cardcrawl.helpers.Hitbox discardHb = open
+                        ? (com.megacrit.cardcrawl.helpers.Hitbox)InlineChoices.field(popup, "hbBot") : potion.hb;
+                float width = 260 * scale;
+                float x = Math.min(Settings.WIDTH - width - 8 * scale,
+                        useHb.x + useHb.width + (open ? 12 : 180) * scale);
+                float bottom = open ? useHb.cY - 16 * scale : Settings.HEIGHT - 172 * scale;
+                List<PotionOverlay.Entry> use = view == null ? Collections.emptyList() : view.forSlot(slot + 1, false);
+                List<PotionOverlay.Entry> discard = view == null ? Collections.emptyList() : view.forSlot(slot + 1, true);
+                if (!potion.canUse() || use.isEmpty()) {
+                    renderInlineBadge(sb, x, bottom, width, "Use · " + (potion.canUse() ? "not scored" : "unavailable"),
+                            false, false, scale);
+                    bottom -= 36 * scale;
+                } else for (PotionOverlay.Entry entry : use) {
+                    renderInlineBadge(sb, x, bottom, width, entry.text(), entry.selected, entry.q != null, scale);
+                    bottom -= 36 * scale;
+                }
+                if (open) bottom = Math.min(bottom, discardHb.cY - 16 * scale);
+                if (!potion.canDiscard() || discard.isEmpty())
+                    renderInlineBadge(sb, x, bottom, width, "Discard · " + (potion.canDiscard() ? "not scored" : "unavailable"),
+                            false, false, scale);
+                else for (PotionOverlay.Entry entry : discard) {
+                    renderInlineBadge(sb, x, bottom, width, entry.text(), entry.selected, entry.q != null, scale);
+                    bottom -= 36 * scale;
+                }
+            } catch (ReflectiveOperationException | RuntimeException unavailable) { /* Hide unbound UI. */ }
+        }
+    }
+
     private void renderNonCombatPanel(SpriteBatch sb, float x, float top, float width,
                                       float bottom, float scale) {
-        float cardX = x + 14.0f * scale;
-        float cardBottom = bottom + 35.0f * scale;
-        float cardHeight = 73.0f * scale;
-        drawCard(sb, cardX, cardBottom, width - 28.0f * scale, cardHeight, scale);
-        String state = newest.boundary.replace('_', ' ');
-        FontHelper.renderFontLeftTopAligned(sb, FontHelper.tipHeaderFont,
-                capitalize(state), cardX + 16.0f * scale,
-                cardBottom + cardHeight - 14.0f * scale, Color.WHITE);
-        renderSmallText(sb, "Floor " + newest.floor + "  ·  HP " + newest.hp + "/" + newest.maxHp,
-                cardX + 16.0f * scale, cardBottom + 28.0f * scale, MUTED, 0.88f);
-        renderSmallText(sb, responseReady() ? "Advisor ready" : "Waiting for advisor",
-                cardX + 205.0f * scale, cardBottom + 28.0f * scale,
-                responseReady() ? CYAN : WARNING, 0.88f);
+        OocOverlay view = currentOocOverlay();
+        String subtitle = view == null ? "Waiting for current choices" :
+                ("v4_q".equals(view.policy) ? "V4" : view.policy.toUpperCase(Locale.ROOT))
+                + "  ·  " + capitalize(view.screen.replace('_', ' '));
+        renderSmallText(sb, subtitle, x + 16 * scale, top - 69 * scale, MUTED, .82f);
+        if (view != null && "OK".equals(view.status) && !view.choices.isEmpty()) {
+            List<OocOverlay.Choice> panelChoices = view.panelChoices();
+            for (int row = 0; row < panelChoices.size(); ++row) {
+                OocOverlay.Choice choice = panelChoices.get(row);
+                int rank = view.choices.indexOf(choice);
+                float rowBottom = top - (122 + 44 * row) * scale;
+                drawCard(sb, x + 14 * scale, rowBottom, width - 28 * scale, 38 * scale, scale);
+                if (choice.selected) drawBorder(sb, x + 14 * scale, rowBottom,
+                        width - 28 * scale, 38 * scale, WARNING, 2 * scale);
+                renderFittedText(sb, (choice.selected ? "▶ " : "") + "#" + (rank + 1) + "  " + choice.label,
+                        x + 23 * scale, rowBottom + 26 * scale, width - 150 * scale,
+                        choice.selected ? CYAN : Color.WHITE, .78f);
+                renderSmallText(sb, String.format(Locale.ROOT, "Q %.3f", choice.q),
+                        x + width - 104 * scale, rowBottom + 26 * scale, MUTED, .72f);
+            }
+            if ("card_reward".equals(view.screen))
+                renderSmallText(sb, "Scores below cards", x + 16 * scale, bottom + 22 * scale, MUTED, .72f);
+            else if (view.choices.size() > 6) renderSmallText(sb, "+ " + (view.choices.size() - 6) + " more choices",
+                    x + 16 * scale, bottom + 22 * scale, MUTED, .72f);
+            renderOocCardBadges(sb, view, scale);
+        } else {
+            renderSmallText(sb, view == null ? (responseReady() ? "Advisor unavailable" : "Waiting for advisor") :
+                    "UNSUPPORTED".equals(view.status) ? "No supported recommendation" : "Advisor unavailable",
+                    x + 18 * scale, top - 105 * scale, WARNING, .86f);
+            String reason = view == null ? "Scores appear when the current response is ready." : view.reason.replace('_', ' ');
+            renderFittedText(sb, reason, x + 18 * scale, top - 138 * scale, width - 36 * scale, MUTED, .72f);
+        }
         renderSmallText(sb, Keyboard.getKeyName(loadToggleKey()) + " hide",
-                x + width - 78.0f * scale, bottom + 18.0f * scale, MUTED, 0.78f);
+                x + width - 78 * scale, bottom + 22 * scale, MUTED, .78f);
+    }
+
+    private void renderOocCardBadges(SpriteBatch sb, OocOverlay view, float scale) {
+        if (AbstractDungeon.screen != AbstractDungeon.CurrentScreen.CARD_REWARD
+                || AbstractDungeon.cardRewardScreen == null) return;
+        List<AbstractCard> cards = AbstractDungeon.cardRewardScreen.rewardGroup;
+        if (cards == null) return;
+        for (int rank = 0; rank < view.choices.size(); ++rank) {
+            OocOverlay.Choice choice = view.choices.get(rank);
+            if (!"choose".equals(choice.kind) || choice.index < 1 || choice.index > cards.size()) continue;
+            AbstractCard card = cards.get(choice.index - 1);
+            float width = 166 * scale;
+            float x = Math.max(0, Math.min(Settings.WIDTH - width, card.current_x - width / 2));
+            float bottom = Math.max(95 * scale, card.current_y - AbstractCard.IMG_HEIGHT * card.drawScale / 2 - 48 * scale);
+            drawRect(sb, x, bottom, width, 34 * scale, PANEL_INNER);
+            drawBorder(sb, x, bottom, width, 34 * scale, choice.selected ? WARNING : CARD_BORDER, 2 * scale);
+            renderSmallText(sb, String.format(Locale.ROOT, "#%d  ·  Q %.3f", rank + 1, choice.q),
+                    x + 10 * scale, bottom + 24 * scale, choice.selected ? CYAN : Color.WHITE, .76f);
+        }
+    }
+
+    private void renderFittedText(SpriteBatch sb, String text, float x, float top,
+                                  float maxWidth, Color color, float factor) {
+        float oldX = FontHelper.tipBodyFont.getData().scaleX;
+        float oldY = FontHelper.tipBodyFont.getData().scaleY;
+        FontHelper.tipBodyFont.getData().setScale(oldX * factor, oldY * factor);
+        com.badlogic.gdx.graphics.g2d.GlyphLayout layout = new com.badlogic.gdx.graphics.g2d.GlyphLayout();
+        layout.setText(FontHelper.tipBodyFont, text);
+        if (layout.width > maxWidth) {
+            String shortened = text;
+            do {
+                shortened = shortened.substring(0, Math.max(0, shortened.length() - 1));
+                layout.setText(FontHelper.tipBodyFont, shortened + "…");
+            } while (!shortened.isEmpty() && layout.width > maxWidth);
+            text = shortened + "…";
+        }
+        FontHelper.renderFontLeftTopAligned(sb, FontHelper.tipBodyFont, text, x, top, color);
+        FontHelper.tipBodyFont.getData().setScale(oldX, oldY);
     }
 
     private void renderSilverActionBadges(SpriteBatch sb, float scale) {
@@ -629,20 +805,20 @@ public final class STSModelInspector implements PostInitializeSubscriber,
     }
 
     private Snapshot captureStableSnapshot() {
+        final long capturedNanos = System.nanoTime();
         if (AbstractDungeon.player == null
                 || AbstractDungeon.currMapNode == null
                 || AbstractDungeon.getCurrRoom() == null) return null;
         AbstractRoom room = AbstractDungeon.getCurrRoom();
         String boundary;
-        if (AbstractDungeon.screen == AbstractDungeon.CurrentScreen.CARD_REWARD) {
-            boundary = "card_reward";
-        } else if (room instanceof RestRoom && isActionableRestDecision((RestRoom) room)) {
-            boundary = "rest";
-        } else if (room instanceof MonsterRoom
-                && (isPlayerDecisionPoint() || isCardSelectionBoundary())) {
+        String ooc = "";
+        if (isCombatBoundary(room.phase, AbstractDungeon.screen,
+                isPlayerDecisionPoint(), isCardSelectionBoundary())) {
             boundary = "combat";
         } else {
-            return null;
+            ooc = LiveOocCapture.capture();
+            if (ooc == null) return null;
+            boundary = "ooc";
         }
         if ("combat".equals(boundary)) {
             String encounter = encounterName(room);
@@ -674,11 +850,11 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         String raw = boundary + "|" + character + "|" + AbstractDungeon.ascensionLevel +
                 "|" + act + "|" + floor + "|" + hp + "|" + maxHp + "|" + gold +
                 "|" + room.getClass().getName() + "|" + AbstractDungeon.screen.name() +
-                "|" + deck + "|" + candidates + "|" + combat;
+                "|" + deck + "|" + candidates + "|" + combat + "|" + ooc;
         return new Snapshot(session, 0, boundary, character,
                 AbstractDungeon.ascensionLevel, act, floor, hp, maxHp, gold,
                 deck, candidates, combat, "combat".equals(boundary) ? combatEntry : "",
-                "combat".equals(boundary) ? combatEntryHash : "", sha256(raw));
+                "combat".equals(boundary) ? combatEntryHash : "", ooc, sha256(raw), capturedNanos);
     }
 
     private void observeRoomTransition() {
@@ -761,14 +937,17 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         String multi = multiEncounterName(counts, eventRoom);
         if (!multi.isEmpty()) return multi;
         if (group.monsters.size() != 1) return "";
-        String id = group.monsters.get(0).id;
+        return singleEncounterName(group.monsters.get(0).id, eventRoom);
+    }
+
+    static String singleEncounterName(String id, boolean eventRoom) {
         // AbstractMonster.id is the stable save/runtime identifier.  Do not
         // compare it with MonsterHelper's localized encounter display names.
         if (id.equals("Cultist")) return "CULTIST";
         if (id.equals("JawWorm")) return "JAW_WORM";
-        if (id.equals("BlueSlaver")) return "BLUE_SLAVER";
+        if (id.equals("BlueSlaver") || id.equals("SlaverBlue")) return "BLUE_SLAVER";
         if (id.equals("Looter")) return "LOOTER";
-        if (id.equals("RedSlaver")) return "RED_SLAVER";
+        if (id.equals("RedSlaver") || id.equals("SlaverRed")) return "RED_SLAVER";
         if (id.equals("GremlinNob")) return "GREMLIN_NOB";
         if (id.equals("Lagavulin")) return eventRoom ? "LAGAVULIN_EVENT" : "LAGAVULIN";
         if (id.equals("AcidSlime_L") || id.equals("SpikeSlime_L")) return "LARGE_SLIME";
@@ -1251,12 +1430,22 @@ public final class STSModelInspector implements PostInitializeSubscriber,
                 && !actions.turnHasEnded;
     }
 
+    static boolean isCombatBoundary(AbstractRoom.RoomPhase phase, AbstractDungeon.CurrentScreen screen,
+                                    boolean playerDecision, boolean selectionAvailable) {
+        // EventRoom fights are combat too. Serializer support is a separate
+        // question: an unknown selection must reach Silver as UNSUPPORTED.
+        return phase == AbstractRoom.RoomPhase.COMBAT
+                && ((screen == AbstractDungeon.CurrentScreen.NONE && playerDecision)
+                    || ((screen == AbstractDungeon.CurrentScreen.GRID
+                         || screen == AbstractDungeon.CurrentScreen.HAND_SELECT) && selectionAvailable));
+    }
+
     private static boolean isCardSelectionBoundary() {
         if (AbstractDungeon.actionManager == null) return false;
-        if (AbstractDungeon.screen != AbstractDungeon.CurrentScreen.GRID
-                && AbstractDungeon.screen != AbstractDungeon.CurrentScreen.HAND_SELECT)
-            return false;
-        return cardSelectionJson() != null;
+        return (AbstractDungeon.screen == AbstractDungeon.CurrentScreen.GRID
+                    && AbstractDungeon.gridSelectScreen != null)
+                || (AbstractDungeon.screen == AbstractDungeon.CurrentScreen.HAND_SELECT
+                    && AbstractDungeon.handCardSelectScreen != null);
     }
 
     static void recordCardQueueItem(CardQueueItem item) {
@@ -1531,10 +1720,11 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         return "";
     }
 
-    private static String selectionJson(String task, boolean anyNumber, int pickCount,
+    static String selectionJson(String task, boolean canPickZero, boolean anyNumber, int pickCount,
                                         List<AbstractCard> source) {
         StringBuilder out = new StringBuilder("{\"task\":\"")
-                .append(task).append("\",\"canPickZero\":false,\"canPickAnyNumber\":")
+                .append(task).append("\",\"canPickZero\":").append(canPickZero)
+                .append(",\"canPickAnyNumber\":")
                 .append(anyNumber).append(",\"pickCount\":").append(Math.max(0, pickCount))
                 .append(",\"data0\":0,\"setCostToZero\":true,\"selectedBits\":0,\"cards\":[");
         boolean offerCards = "DISCOVERY".equals(task) || "CODEX".equals(task);
@@ -1583,8 +1773,7 @@ public final class STSModelInspector implements PostInitializeSubscriber,
             Integer amount = readIntField(screen, "numCards", "cardSelectAmount");
             String task = selectionTask(readStringField(screen, "tipMsg", "lastTip"), screen.anyNumber);
             if (task.isEmpty() && screen.forUpgrade) task = "ARMAMENTS";
-            if (task.isEmpty()) return null;
-            return selectionJson(task, screen.anyNumber, amount == null ? 1 : amount,
+            return selectionJson(task, false, screen.anyNumber, amount == null ? 1 : amount,
                     screen.targetGroup == null ? null : screen.targetGroup.group);
         }
         if (AbstractDungeon.screen == AbstractDungeon.CurrentScreen.HAND_SELECT
@@ -1592,8 +1781,7 @@ public final class STSModelInspector implements PostInitializeSubscriber,
             com.megacrit.cardcrawl.screens.select.HandCardSelectScreen screen =
                     AbstractDungeon.handCardSelectScreen;
             String task = selectionTask(screen.selectionReason, screen.upTo);
-            if (task.isEmpty()) return null;
-            return selectionJson(task, screen.upTo, screen.numCardsToSelect,
+            return selectionJson(task, screen.canPickZero, screen.upTo, screen.numCardsToSelect,
                     AbstractDungeon.player.hand.group);
         }
         return null;
@@ -2024,6 +2212,8 @@ public final class STSModelInspector implements PostInitializeSubscriber,
                             silverRerootFallback = false;
                             silverFallbackReason = "";
                             silverInheritedVisits = 0;
+                            current.responseLatencyMicros = Math.max(0L,
+                                    (System.nanoTime() - current.capturedNanos) / 1000L);
                             responseSequence = seq;
                             responseHash = hash;
                             advisorResponseJson = line;
@@ -2068,6 +2258,12 @@ public final class STSModelInspector implements PostInitializeSubscriber,
                                     ctmHistogramMin = (int) numberField(line, "winningHpHistogramMin");
                                     ctmHistogram = numberArrayField(line, "winningHpHistogram");
                                 }
+                            }
+                            try { potionOverlay = PotionOverlay.parse(line); }
+                            catch (RuntimeException invalidDisplay) { potionOverlay = null; }
+                            if (!"combat".equals(current.boundary)) {
+                                try { oocOverlay = OocOverlay.parse(line, current.observationJson); }
+                                catch (RuntimeException invalidDisplay) { oocOverlay = null; }
                             }
                             latestPublisher.publishResponse(current);
                         }
@@ -2288,6 +2484,7 @@ public final class STSModelInspector implements PostInitializeSubscriber,
                     .append("\",\"observation\":").append(snapshot.observationJson)
                     .append(",\"response\":{\"status\":\"").append(Snapshot.escape(status))
                     .append("\",\"ready\":").append(ready)
+                    .append(",\"latencyMicros\":").append(ready ? Long.toString(snapshot.responseLatencyMicros) : "null")
                     .append(",\"session\":\"").append(ready ? Snapshot.escape(snapshot.session) : "")
                     .append("\",\"sequence\":").append(ready ? snapshot.sequence : -1)
                     .append(",\"observationHash\":\"").append(Snapshot.escape(responseObservationHash))
@@ -2311,21 +2508,23 @@ public final class STSModelInspector implements PostInitializeSubscriber,
 
     private static final class Snapshot {
         final String session, boundary, character, deck, candidates, hash;
-        final String combat;
+        final String combat, ooc;
         final String combatEntry, combatEntryHash;
         final String observationJson;
-        final long sequence;
+        final long sequence, capturedNanos;
+        volatile long responseLatencyMicros = -1L;
         final int ascension, act, floor, hp, maxHp, gold;
 
         Snapshot(String session, long sequence, String boundary, String character,
                  int ascension, int act, int floor, int hp, int maxHp, int gold,
                  String deck, String candidates, String combat, String combatEntry,
-                 String combatEntryHash, String hash) {
+                 String combatEntryHash, String ooc, String hash, long capturedNanos) {
             this.session = session; this.sequence = sequence; this.boundary = boundary;
+            this.capturedNanos = capturedNanos;
             this.character = character; this.ascension = ascension; this.act = act;
             this.floor = floor; this.hp = hp; this.maxHp = maxHp; this.gold = gold;
             this.deck = deck; this.candidates = candidates; this.hash = hash;
-            this.combat = combat; this.combatEntry = combatEntry;
+            this.combat = combat; this.ooc = ooc; this.combatEntry = combatEntry;
             this.combatEntryHash = combatEntryHash;
             this.observationJson = buildObservationJson();
         }
@@ -2333,7 +2532,7 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         Snapshot withSequence(long emittedSequence) {
             return new Snapshot(session, emittedSequence, boundary, character, ascension, act,
                     floor, hp, maxHp, gold, deck, candidates, combat, combatEntry,
-                    combatEntryHash, hash);
+                    combatEntryHash, ooc, hash, capturedNanos);
         }
 
         String toJson() {
@@ -2349,6 +2548,7 @@ public final class STSModelInspector implements PostInitializeSubscriber,
                     ",\"floor\":" + floor + ",\"hp\":" + hp + ",\"maxHp\":" + maxHp +
                     ",\"gold\":" + gold + ",\"deck\":" + deck +
                     ",\"candidates\":" + candidates +
+                    (ooc.isEmpty() ? "" : ",\"ooc\":" + ooc) +
                     (combat.isEmpty() ? "" : ",\"combat\":" + combat
                         + ",\"combatEntryHash\":\"" + combatEntryHash + "\""
                         + (combatEntry.isEmpty() ? "" : ",\"combatEntry\":" + combatEntry)
