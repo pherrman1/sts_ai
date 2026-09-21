@@ -16,7 +16,12 @@ Combat observations now have two separate fail-closed evaluator paths. The
 existing CTM evaluator uses the public combat-entry importer when its model is
 available. The `silver_player_decision_v2` evaluator imports an Ironclad
 decision-0 or decision-1 Silver root, verifies converted-state parity and legal
-actions, and runs the fixed 1,000-simulation Silver decision configuration.
+actions, and runs a 1,000-simulation Silver decision by default. The combat
+panel's `Silver +9k` button raises the active root budget to 10,000; each later
+click adds another 10,000 (20,000, 30,000, ...). The retained Silver root is
+continued incrementally, and any gameplay state change resets the next decision
+to 1,000. The panel reports the requested budget, accumulated root visits, and
+total simulations returned by the advisor.
 One advisor-owned Silver session is retained for the active protocol session
 and `combatEntryHash`; a matching observed successor can therefore report an
 exact reroot with inherited visits. If the human plays a different physical
