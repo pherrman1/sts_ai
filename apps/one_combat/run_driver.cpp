@@ -14,6 +14,7 @@
 #include "e2c_capture.h"
 #include "fight_replay.h"
 #include "ooc_policy.h"
+#include "ooc_checkpoint_policy.h"
 #include "ooc_mcts_adapter.h"
 #include "ooc_profile.h"
 #include "particle_diagnostics.h"
@@ -45,16 +46,9 @@ void runFullRunOocPolicyStep(GameContext &gc, search::ScumSearchAgent2 &agent,
     } else if (g_eventV && gc.screenState == ScreenState::EVENT_SCREEN
                && gc.curEvent != Event::NEOW && one_combat::eventVPolicy(gc)) {
     } else if (gc.screenState == ScreenState::REWARDS) {
-        using RT = search::GameAction::RewardsActionType;
-        auto &r = gc.info.rewardsContainer;
         one_combat::captureE2cPost(gc);
         one_combat::recordE2cScreenState(gc.screenState);
-        if      (r.goldRewardCount > 0) search::GameAction(RT::GOLD, 0).execute(gc);
-        else if (r.relicCount > 0)      search::GameAction(RT::RELIC, 0).execute(gc);
-        else if (r.potionCount > 0)     search::GameAction(RT::POTION, 0).execute(gc);
-        else if (g_collectKeys && r.emeraldKey) search::GameAction(RT::KEY, 0).execute(gc);
-        else if (g_collectKeys && r.sapphireKey) search::GameAction(RT::KEY, 0).execute(gc);
-        else if (r.cardRewardCount == 0) search::GameAction(RT::SKIP).execute(gc);
+        if (one_combat::collectFreeOocReward(gc, g_collectKeys)) {}
         else if (actFightProbeDraftPolicy(gc)) {}
         else if (bossGatedDraftPolicy(gc)) {}
         else if (one_combat::oocOnePlyCardRewardPolicy(gc, agent)) {}

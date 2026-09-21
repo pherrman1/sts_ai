@@ -404,7 +404,10 @@ read-only screen and choice converters. The observation contains:
   counts, completed combat floors, acquired/lost relic identities, prior event
   identities, and the publicly recorded number of paid shop removals. A
   `seenRelics` list is accepted only when its producer marks the history
-  complete; vanilla metrics otherwise leave it explicitly incomplete.
+  complete; vanilla metrics otherwise leave it explicitly incomplete. An
+  optional `rewardPityHistoryComplete` marker is reserved for synthetic
+  captures with an exact reconstruction; the live Java producer leaves it
+  false.
 - `details`: current reward groups, campfire options, physical upgrade targets,
   supported event/Neow phase and options, shop slots/prices, chest state, or
   ordered boss relic offers.
@@ -436,23 +439,26 @@ consumes a relic when it is offered, not when it is acquired. Historical
 seen-but-skipped offers are not in vanilla metrics; random-relic branches fail
 closed with `PUBLIC_SEEN_RELIC_HISTORY_UNQUALIFIED` until a complete history is
 available. The private Java `potionChance` and `cardRarityFactor` counters are
-not captured. Roots such as Mushrooms and Mysterious Sphere whose pre-MAP
+not captured. Roots such as Library, Mushrooms and Mysterious Sphere whose pre-MAP
 continuation can generate potion or card rewards fail closed with
 `PUBLIC_REWARD_PITY_HISTORY_UNQUALIFIED`. The v_win leaf marginalizes those
-features over the native reachable ranges, while V4 uses the explicit midpoint
-prior, so neither path treats fresh-run `0`/`5` as observed state. No RNG state,
-future encounter queue, or unrevealed outcome is captured.
+features with the exact discrete mixture `E[sigmoid(margin)]` over the native
+reachable ranges, never applying the link to an expected margin. Real live
+captures do not claim an exact pity history: direct V4 requests fail closed and
+MCTS uses an equal public prior rather than a fabricated midpoint. Synthetic
+parity fixtures may mark an exact pity reconstruction explicitly. Hypothetical
+room-chance and pity counters are sampled from explicit reachable-state priors
+before transitions. An already-open boss chest with only native `proceed` is a
+pass-through state, not a fresh treasure decision; the advisor preserves that
+single live action.
+No RNG state, future encounter queue, or unrevealed outcome is captured.
 Checkpoint continuation preserves the simulator's reward-collection order and
-uses the same V4 Q/margin contract for actions it can qualify. The standalone
-live advisor cannot call `runFullRunOocPolicyStep(gc, agent, false, true)`
-directly because that driver is coupled to simulator-global heuristic fallback
-objects. When the live adapter cannot prove a unique qualified continuation,
-it fails closed rather than substituting an ungated policy-logit argmax. Full
-simulator/live checkpoint-policy parity remains an explicit seam to extract.
-Because a MAP-root transition immediately depends on the unreconstructable
-posterior over those counters, live MCTS fails closed there with
-`PUBLIC_EVENT_CHANCE_HISTORY_UNQUALIFIED`. Supported non-MAP roots resolve to
-MAP, and the live adapter marks every downstream MAP state as a hard planner
+uses the same V4 Q/margin contract where it qualifies. The fixed free-reward
+prefix is shared with the full-run driver; the live adapter uses the
+simulator's `ScumSearchAgent2` fallback when the gate does not fire, rather
+than an ungated policy-logit argmax. Full simulator/live checkpoint-policy
+parity remains an explicit seam to extract. MAP roots are searchable with the
+room-chance belief prior, while every downstream MAP state is a hard planner
 leaf before expansion. Revisited MAP particles therefore cannot choose a
 hypothetical room or consume hidden room-chance state.
 

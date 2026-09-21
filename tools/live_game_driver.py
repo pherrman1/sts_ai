@@ -376,7 +376,8 @@ def _semantic_match(selected: Mapping[str, Any], action: LegalAction) -> bool:
     semantic = action.semantic
     selected_kind = selected.get("kind")
     if selected_kind and selected_kind != semantic.get("kind"):
-        if not (selected_kind == "card_select" and semantic.get("kind") == "select_cards"):
+        if not ((selected_kind == "card_select" and semantic.get("kind") == "select_cards")
+                or (selected_kind == "choose" and semantic.get("kind") == "choice")):
             return False
     for selected_key, action_key in (("cardUuid", "card_uuid"), ("card_uuid", "card_uuid"),
                                      ("targetIndex", "target_index"),

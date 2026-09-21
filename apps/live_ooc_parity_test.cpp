@@ -31,6 +31,7 @@ static J project(const GameContext &g,const PathHistory &path,const std::string 
         {"currentActPathVisits",path.roomVisits},{"acquiredRelics",J::array()},
         {"pathHistory",J::array()},{"combatFloors",J::array()},
         {"seenRelics",J::array()},{"seenRelicsComplete",true},
+        {"rewardPityHistoryComplete",true},
         {"priorEvents",J::array()},{"shopRemoveCount",g.shopRemoveCount}};
     for(const auto pot:g.potions)p["potions"].push_back(J(pot));
     for(int i=0;i<g.deck.size();++i){auto c=cardWire(g.deck.cards[i]);int bottle=-1;
@@ -141,6 +142,7 @@ int main(int argc,char **argv){try{
     g=base;g.screenState=ScreenState::EVENT_SCREEN;g.curEvent=Event::BIG_FISH;add("event_big_fish",g);
     g.curEvent=Event::LIVING_WALL;add("event_living_wall",g);
     g.curEvent=Event::THE_WOMAN_IN_BLUE;add("event_woman_in_blue",g);
+    g.curEvent=Event::THE_LIBRARY;add("unsupported_library_reward_pity",g);
     g.curEvent=Event::HYPNOTIZING_COLORED_MUSHROOMS;add("unsupported_mushrooms_reward_pity",g);
     g.curEvent=Event::MYSTERIOUS_SPHERE;add("unsupported_sphere_reward_pity",g);
     g=base;g.screenState=ScreenState::EVENT_SCREEN;g.curEvent=Event::NEOW;add("neow",g);
@@ -163,6 +165,7 @@ int main(int argc,char **argv){try{
     for(const auto &[name,source]:fixtures){
         const auto wire=project(source,path,name);advisor::LiveOocStateV1 live;const auto result=advisor::importLiveOocStateV1(wire,live);
         if(name=="unsupported_searing_blow_upgrade_history"
+                || name=="unsupported_library_reward_pity"
                 || name=="unsupported_mushrooms_reward_pity"
                 || name=="unsupported_sphere_reward_pity") {
             const std::string expected = name=="unsupported_searing_blow_upgrade_history"

@@ -34,6 +34,14 @@ GameContext detachedCopy(const GameContext &parent) {
 // A fresh seed also covers native per-floor RNG resets and next-act map setup.
 void sampleNoncombatFuture(GameContext &gc, std::mt19937_64 &rng) {
     gc.seed = rng();
+    // These native counters are not present in the live observation. Sample
+    // their reachable discrete states for each hypothetical particle instead
+    // of carrying the fresh-run constructor defaults into a MAP transition.
+    gc.monsterChance = static_cast<float>(1 + (rng() % 10)) / 10.0f;
+    gc.shopChance = static_cast<float>(1 + (rng() % 33)) / 100.0f;
+    gc.treasureChance = static_cast<float>(1 + (rng() % 50)) / 100.0f;
+    gc.potionChance = -40 + 10 * static_cast<int>(rng() % 15);
+    gc.cardRarityFactor = -40 + static_cast<int>(rng() % 46);
     for (auto stream : {&gc.aiRng, &gc.cardRandomRng, &gc.cardRng, &gc.eventRng,
             &gc.mathUtilRng, &gc.merchantRng, &gc.miscRng, &gc.monsterHpRng,
             &gc.monsterRng, &gc.neowRng, &gc.potionRng, &gc.relicRng,
@@ -285,7 +293,7 @@ const OocGameContextModel::Metadata &OocGameContextModel::metadata(sts::search::
 }
 bool OocGameContextModel::isLeafBoundary(sts::search::OocStateId id) const {
     if (options.stopAtMapCheckpoint
-            && state(id).screenState == sts::ScreenState::MAP_SCREEN)
+            && id != 0 && state(id).screenState == sts::ScreenState::MAP_SCREEN)
         return true;
     return metadata(id).boundary;
 }
@@ -367,6 +375,9 @@ sts::search::OocStateId OocGameContextModel::sampleSuccessor(sts::search::OocSta
     auto &edge = cached.edges.at(it - actions.begin());
     if (!options.sampleNoncombat && edge.deterministic) return *edge.deterministic;
     auto child = Snapshot{detachedCopy(state(id)), states.at(id).path, {}};
+    // A live MAP root is searchable.  The hidden room outcome must be sampled
+    // before transitionToMapNode consumes monster/shop/treasure chances; a
+    // downstream MAP checkpoint is still evaluated as a leaf.
     if (options.sampleNoncombat) sampleNoncombatFuture(child.gc, rng);
     if (it->semantic) {
         const auto executed = sts::search::executeOocSemanticAction(child.gc, *it->semantic);
@@ -551,7 +562,7 @@ struct ImaginedScope {
 }
 double OocGameContextModel::evaluateLeaf(sts::search::OocStateId id, std::mt19937_64 &rng) {
     OocProfileScope profile(OocProfileBucket::EvaluateLeaf);
-    if (options.stopAtMapCheckpoint
+    if (options.stopAtMapCheckpoint && id != 0
             && state(id).screenState == sts::ScreenState::MAP_SCREEN)
         return leafValue(id);
     if (!options.checkpointLeaves && !options.sampleNoncombat) return leafValue(id);

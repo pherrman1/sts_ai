@@ -9,7 +9,9 @@
 #include <nlohmann/json.hpp>
 #include "../ooc_strategic_tok_net.h"
 #include "sim/search/OocSemanticAction.h"
+#include "sim/search/ScumSearchAgent2.h"
 #include "constants/SaveFileMappings.h"
+#include "ooc_checkpoint_policy.h"
 
 namespace one_combat {
 namespace {
@@ -30,6 +32,8 @@ std::pair<std::string, std::string> currentIdentity(const OocSemanticPrimitiveBi
     auto semantic = binding.semantic;
     if (binding.compoundSelector == CardSelectScreenType::INVALID)
         return {canonicalOocSemanticActionKey(semantic), oocSemanticActionPayloadJson(semantic)};
+    const auto sourceKey = canonicalOocSemanticActionKey(semantic);
+    const auto originalPayload = nlohmann::json::parse(oocSemanticActionPayloadJson(semantic));
     if (const auto *transaction = std::get_if<OocTransactionTarget>(&semantic.target)) {
         if (semantic.source == OocSemanticSource::SHOP_REMOVE)
             semantic.target = OocShopTarget{OocNoTarget{}, transaction->expectedGoldCost, 0};
@@ -41,12 +45,22 @@ std::pair<std::string, std::string> currentIdentity(const OocSemanticPrimitiveBi
     auto payload = nlohmann::json::parse(oocSemanticActionPayloadJson(semantic));
     payload["currentScreenOnly"] = true;
     payload["selectorType"] = static_cast<int>(binding.compoundSelector);
-    return {canonicalOocSemanticActionKey(semantic) + ":current-screen", payload.dump()};
+    // Keep the physical card target in the source identity even though the
+    // executable source primitive is intentionally screen-only.  The live
+    // protocol uses this retained target to resolve the following selector.
+    if (originalPayload.value("type", std::string()) == "transaction"
+            && originalPayload.contains("card"))
+        payload["compoundTarget"] = originalPayload.at("card");
+    const auto targetKey = originalPayload.contains("card")
+        ? ":target=" + originalPayload.at("card").dump() : std::string();
+    return {sourceKey + ":current-screen" + targetKey, payload.dump()};
 }
 } // namespace
 
 LiveOocDecision scoreLiveOocV4(const sts::GameContext &projected, const PathHistory &path,
-                             const OocStrategicTokNet &model) {
+                             const OocStrategicTokNet &model, bool rewardPityHistoryComplete) {
+    if (!rewardPityHistoryComplete)
+        return unsupported("PUBLIC_REWARD_PITY_HISTORY_UNQUALIFIED");
     if (!v4DecisionSupported(projected)) return unsupported("V4_SCREEN_UNSUPPORTED");
     const auto actions = v4CandidateActions(projected);
     if (actions.empty()) return unsupported("EMPTY_CANDIDATE_SET");
@@ -71,8 +85,18 @@ LiveOocDecision scoreLiveOocV4(const sts::GameContext &projected, const PathHist
         for (const auto &binding : semantic.bindings) {
             auto identity = currentIdentity(binding);
             const auto existing = identities.find(binding.primitiveBits);
-            if (existing != identities.end() && existing->second != identity)
-                return unsupported("AMBIGUOUS_SEMANTIC_MAPPING");
+            if (existing != identities.end()) {
+                // A compound source opens one selector and therefore has one
+                // source primitive with several possible retained physical
+                // targets. Keep the canonical first target for the one-screen
+                // V4 source score; MCTS retains its target-specific semantic
+                // candidate. A duplicate non-compound mapping is still an
+                // integration error.
+                if (binding.compoundSelector == CardSelectScreenType::INVALID
+                        || existing->second.first.find(":current-screen") == std::string::npos)
+                    return unsupported("AMBIGUOUS_SEMANTIC_MAPPING");
+                continue;
+            }
             identities.emplace(binding.primitiveBits, std::move(identity));
         }
     }
@@ -174,7 +198,7 @@ LiveOocDecision scoreLiveOocV4(const sts::GameContext &projected, const PathHist
 
 LiveOocDecision LiveOocV4QPolicy::score(const sts::GameContext &projected,
                                       const PathHistory &path) const {
-    return scoreLiveOocV4(projected, path, model_);
+    return scoreLiveOocV4(projected, path, model_, rewardPityHistoryComplete_);
 }
 
 LiveOocMctsPolicy::LiveOocMctsPolicy(const OocStrategicTokNet &model,
@@ -207,6 +231,12 @@ LiveOocDecision LiveOocMctsPolicy::score(const sts::GameContext &projected,
     dependencies.policyAvailable = [this] { return model_.ok; };
     const auto policyBatch = [this](const sts::GameContext &gc, const PathHistory &history,
                                       const std::vector<sts::search::GameAction> &actions) {
+        if (!rewardPityHistoryComplete_)
+            // Pity is a feature of the deployed V4 prior. Returning equal
+            // logits is the public-information prior; it avoids turning an
+            // unqualified hidden counter into a fake point estimate while the
+            // exact marginalized v_win leaf still evaluates each particle.
+            return std::vector<double>(actions.size(), 0.0);
         const TokState tokens = buildTokStatePure(gc, history);
         const auto prepared = model_.prepareState(tokens.glob, tokens.nDk, tokens.dk,
             tokens.nRl, tokens.rl, tokens.nPt, tokens.pt);
@@ -248,30 +278,23 @@ LiveOocDecision LiveOocMctsPolicy::score(const sts::GameContext &projected,
     };
     dependencies.continuationStep = [this, policyBatch](sts::GameContext &gc, PathHistory &history,
                                            std::mt19937_64 &) {
-        using RT = sts::search::GameAction::RewardsActionType;
-        if (gc.screenState == sts::ScreenState::REWARDS) {
-            auto &rewards = gc.info.rewardsContainer;
-            if (rewards.goldRewardCount > 0) {
-                sts::search::GameAction(RT::GOLD, 0).execute(gc); history.update(gc); return;
-            }
-            if (rewards.relicCount > 0) {
-                sts::search::GameAction(RT::RELIC, 0).execute(gc); history.update(gc); return;
-            }
-            if (rewards.potionCount > 0 && gc.potionCount < gc.potionCapacity) {
-                sts::search::GameAction(RT::POTION, 0).execute(gc); history.update(gc); return;
-            }
-            if (rewards.emeraldKey || rewards.sapphireKey) {
-                sts::search::GameAction(RT::KEY, 0).execute(gc); history.update(gc); return;
-            }
-        }
+        if (collectFreeOocReward(gc, gc.keysEnabled)) { history.update(gc); return; }
         if (!v4DecisionSupported(gc)) {
             const auto enumeration = sts::search::enumerateOocSemanticPrimitiveBindings(gc);
             std::set<std::uint32_t> unique;
             if (enumeration.supported && enumeration.complete)
                 for (const auto &binding : enumeration.bindings) unique.insert(binding.primitiveBits);
-            if (unique.size() != 1)
-                throw sts::search::OocSearchUnsupported("continuation_v4_contract_unavailable");
-            sts::search::GameAction(*unique.begin()).execute(gc);
+            if (unique.size() == 1) {
+                sts::search::GameAction(*unique.begin()).execute(gc);
+                history.update(gc);
+                return;
+            }
+            // Use the same simulator fallback object as the full-run driver
+            // when the V4 autonomous contract does not cover this checkpoint.
+            // This is a policy seam, not a second policy-head argmax.
+            sts::search::ScumSearchAgent2 fallback;
+            fallback.rng.seed(0);
+            fallback.stepOutOfCombatPolicy(gc);
             history.update(gc);
             return;
         }
@@ -303,13 +326,18 @@ LiveOocDecision LiveOocMctsPolicy::score(const sts::GameContext &projected,
         for (std::size_t i = 0; i < q.size(); ++i)
             if (static_cast<int>(i) != selected) second = std::max(second, q[i]);
         // The maintained simulator chain deploys its V4 action only after a
-        // one-ply margin gate.  The isolated live advisor has no access to the
-        // simulator's heuristic fallback objects, so fail closed when that
-        // gate does not prove a unique continuation rather than inventing an
-        // ungated policy-head continuation.
-        if (q.size() > 1 && q[selected] - second < 1.0)
-            throw sts::search::OocSearchUnsupported("continuation_policy_gate_not_proven");
-        sources.at(selected).execute(gc);
+        // one-ply margin gate. Use the same established agent fallback when
+        // that gate does not fire; do not substitute an ungated policy-head
+        // continuation.
+        if (q.size() > 1 && q[selected] - second < 1.0) {
+            // The simulator's qualified chain falls back to its established
+            // OOC policy when the V4 margin gate does not fire.
+            sts::search::ScumSearchAgent2 fallback;
+            fallback.rng.seed(0);
+            fallback.stepOutOfCombatPolicy(gc);
+        } else {
+            sources.at(selected).execute(gc);
+        }
         history.update(gc);
     };
 

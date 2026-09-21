@@ -12,6 +12,10 @@ struct LiveOocStateV1 {
     sts::GameContext projected{};
     PathHistory path;
     nlohmann::json ooc;
+    // Java does not expose the private reward pity counters. Synthetic parity
+    // fixtures may opt in when they provide an exact public reconstruction;
+    // real live captures remain false and must not use a fabricated midpoint.
+    bool rewardPityHistoryComplete = false;
     // Separate transition-capable public-information root. Its hidden pools
     // and RNG streams come from a fixed hypothetical distribution and are
     // re-sampled by OOC MCTS; they are never copied from the live game.

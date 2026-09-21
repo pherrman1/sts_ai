@@ -12,6 +12,7 @@ import com.megacrit.cardcrawl.cards.DamageInfo;
 import com.megacrit.cardcrawl.dungeons.AbstractDungeon;
 import com.megacrit.cardcrawl.cards.AbstractCard;
 import com.megacrit.cardcrawl.cards.CardQueueItem;
+import com.megacrit.cardcrawl.map.MapRoomNode;
 import com.megacrit.cardcrawl.monsters.AbstractMonster;
 import com.megacrit.cardcrawl.powers.AbstractPower;
 import com.megacrit.cardcrawl.helpers.FontHelper;
@@ -23,6 +24,7 @@ import com.megacrit.cardcrawl.rooms.ShopRoom;
 import com.megacrit.cardcrawl.rooms.RestRoom;
 import com.megacrit.cardcrawl.rooms.TreasureRoom;
 import com.megacrit.cardcrawl.rooms.AbstractRoom;
+import com.megacrit.cardcrawl.core.CardCrawlGame;
 import com.megacrit.cardcrawl.core.Settings;
 import com.megacrit.cardcrawl.ui.panels.EnergyPanel;
 import com.evacipated.cardcrawl.modthespire.lib.SpireInitializer;
@@ -1153,7 +1155,8 @@ public final class STSModelInspector implements PostInitializeSubscriber,
     private static boolean replacedLargeSlimeParent(String encounter,
                                                      AbstractMonster candidate,
                                                      List<AbstractMonster> monsters) {
-        if (!"LARGE_SLIME".equals(encounter) || candidate == null
+        if (!("LARGE_SLIME".equals(encounter) || "SLIME_BOSS".equals(encounter))
+                || candidate == null
                 || !("AcidSlime_L".equals(candidate.id)
                     || "SpikeSlime_L".equals(candidate.id))) return false;
         if (replacedMonsterParents.contains(candidate)) return true;
@@ -1170,6 +1173,18 @@ public final class STSModelInspector implements PostInitializeSubscriber,
                 replacedMonsterParents.add(candidate);
                 return true;
             }
+        }
+        return false;
+    }
+
+    private static boolean replacedSlimeBossParent(String encounter,
+                                                    AbstractMonster candidate,
+                                                    List<AbstractMonster> monsters) {
+        if (!"SLIME_BOSS".equals(encounter) || candidate == null
+                || !"SlimeBoss".equals(candidate.id) || !candidate.isDeadOrEscaped()) return false;
+        for (AbstractMonster monster : monsters) {
+            if (monster == null || monster == candidate || monster.isDeadOrEscaped()) continue;
+            if ("SpikeSlime_L".equals(monster.id) || "AcidSlime_L".equals(monster.id)) return true;
         }
         return false;
     }
@@ -1242,6 +1257,8 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         } else if ("SLIME_BOSS".equals(encounter)) {
             if ("SpikeSlime_L".equals(id)) return 0;
             if ("AcidSlime_L".equals(id)) return 2;
+            if ("SpikeSlime_M".equals(id)) return sameIdOrdinal < 2 ? sameIdOrdinal : -1;
+            if ("AcidSlime_M".equals(id)) return sameIdOrdinal < 2 ? 2 + sameIdOrdinal : -1;
         }
         return -1;
     }
@@ -1258,6 +1275,7 @@ public final class STSModelInspector implements PostInitializeSubscriber,
             AbstractMonster monster = monsters.get(monsterIndex);
             if (monster == null) continue;
             if (replacedLargeSlimeParent(encounter, monster, monsters)) continue;
+            if (replacedSlimeBossParent(encounter, monster, monsters)) continue;
             int sameIdOrdinal = seenMonsterIds.containsKey(monster.id)
                     ? seenMonsterIds.get(monster.id) : 0;
             seenMonsterIds.put(monster.id, sameIdOrdinal + 1);
@@ -1266,8 +1284,20 @@ public final class STSModelInspector implements PostInitializeSubscriber,
                     encounter, monster.id, sameIdOrdinal,
                     "GremlinLeader".equals(monster.id) ? -1 : nonLeaderOrdinal);
             if (!"GremlinLeader".equals(monster.id)) ++nonLeaderOrdinal;
-            emitted.put(monster, monsterSlot(monster,
-                    preferred >= 0 ? preferred : monsterIndex, usedMonsterSlots));
+            int slot;
+            if ("SLIME_BOSS".equals(encounter) && preferred >= 0) {
+                // Slime Boss and its large-child splits use a fixed native
+                // layout (0, 1, 2). Java leaves replaced parents in its
+                // monster list, so retain the native slot rather than the
+                // stale Java-object assignment from before the split.
+                slot = preferred;
+                monsterSlots.put(monster, slot);
+                usedMonsterSlots.add(slot);
+            } else {
+                slot = monsterSlot(monster, preferred >= 0 ? preferred : monsterIndex,
+                        usedMonsterSlots);
+            }
+            emitted.put(monster, slot);
         }
         return emitted;
     }
@@ -1402,6 +1432,46 @@ public final class STSModelInspector implements PostInitializeSubscriber,
 
     private String combatEntryJson(AbstractRoom room, String encounter) {
         if (AbstractDungeon.player == null || AbstractDungeon.currMapNode == null) return "";
+        String previous = lastRoomClass;
+        // A freshly started inspector can observe a saved run directly inside
+        // the act boss before observeRoomTransition has rebuilt its in-memory
+        // latch. The persisted metric path includes the boss sentinel, so use
+        // the last preceding non-boss room identity.
+        if (previous.isEmpty() && room instanceof com.megacrit.cardcrawl.rooms.MonsterRoomBoss
+                && CardCrawlGame.metricData != null
+                && CardCrawlGame.metricData.path_taken != null
+                && !CardCrawlGame.metricData.path_taken.isEmpty()) {
+            List<String> pathTaken = CardCrawlGame.metricData.path_taken;
+            for (int i = pathTaken.size() - 1; i >= 0 && previous.isEmpty(); --i) {
+                String candidate = metricRoomClass(pathTaken.get(i));
+                if (!"BOSS".equals(candidate)) previous = candidate;
+            }
+        }
+        if (previous.isEmpty() && room instanceof com.megacrit.cardcrawl.rooms.MonsterRoomBoss) {
+            List<MapRoomNode> parents = AbstractDungeon.currMapNode.getParents();
+            if (parents != null) {
+                for (MapRoomNode parent : parents) {
+                    if (parent != null && parent.taken && parent.room != null) {
+                        previous = roomClass(parent.room);
+                        break;
+                    }
+                }
+                if (previous.isEmpty() && parents.size() == 1 && parents.get(0) != null)
+                    previous = roomClass(parents.get(0).room);
+            }
+        }
+        if (previous.isEmpty() && room instanceof com.megacrit.cardcrawl.rooms.MonsterRoomBoss
+                && AbstractDungeon.pathX != null && AbstractDungeon.pathY != null
+                && AbstractDungeon.pathX.size() == AbstractDungeon.pathY.size()
+                && !AbstractDungeon.pathX.isEmpty()) {
+            int last = AbstractDungeon.pathX.size() - 1;
+            int x = AbstractDungeon.pathX.get(last), y = AbstractDungeon.pathY.get(last);
+            if (AbstractDungeon.map != null && y >= 0 && y < AbstractDungeon.map.size()) {
+                List<MapRoomNode> row = AbstractDungeon.map.get(y);
+                if (row != null && x >= 0 && x < row.size() && row.get(x) != null)
+                    previous = roomClass(row.get(x).room);
+            }
+        }
         boolean burningElite = room instanceof com.megacrit.cardcrawl.rooms.MonsterRoomElite
                 && AbstractDungeon.currMapNode.hasEmeraldKey;
         StringBuilder out = new StringBuilder("{\"character\":\"")
@@ -1413,7 +1483,7 @@ public final class STSModelInspector implements PostInitializeSubscriber,
                 .append(",\"maxHp\":").append(AbstractDungeon.player.maxHealth)
                 .append(",\"gold\":").append(AbstractDungeon.player.gold)
                 .append(",\"roomClass\":\"").append(roomClass(room))
-                .append("\",\"previousRoomClass\":\"").append(lastRoomClass)
+                .append("\",\"previousRoomClass\":\"").append(previous)
                 .append("\",\"encounter\":\"").append(encounter)
                 .append("\",\"potionKeepValue\":4.0,\"isBurningElite\":")
                 .append(burningElite)
@@ -1422,6 +1492,20 @@ public final class STSModelInspector implements PostInitializeSubscriber,
                 .append(",\"relics\":").append(relicEntryJson())
                 .append(",\"potions\":").append(potionEntryJson()).append('}');
         return out.toString();
+    }
+
+    private static String metricRoomClass(String symbol) {
+        if (symbol == null || "N".equals(symbol)) return "NONE";
+        switch (symbol) {
+            case "$": return "SHOP";
+            case "R": return "REST";
+            case "?": return "EVENT";
+            case "E": return "ELITE";
+            case "M": return "MONSTER";
+            case "T": return "TREASURE";
+            case "B": return "BOSS";
+            default: return "";
+        }
     }
 
     private static String deckEntryJson() {
@@ -1864,6 +1948,12 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         return "";
     }
 
+    static String handSelectionTask(String reason, boolean anyNumber, boolean canPickZero, int count) {
+        String task = selectionTask(reason, anyNumber);
+        if (task.isEmpty() && anyNumber && canPickZero && count == 99) return "GAMBLE";
+        return task;
+    }
+
     static String selectionJson(String task, boolean canPickZero, boolean anyNumber, int pickCount,
                                         List<AbstractCard> source) {
         StringBuilder out = new StringBuilder("{\"task\":\"")
@@ -1924,8 +2014,15 @@ public final class STSModelInspector implements PostInitializeSubscriber,
                 && AbstractDungeon.handCardSelectScreen != null) {
             com.megacrit.cardcrawl.screens.select.HandCardSelectScreen screen =
                     AbstractDungeon.handCardSelectScreen;
-            String task = selectionTask(screen.selectionReason, screen.upTo);
-            return selectionJson(task, screen.canPickZero, screen.upTo, screen.numCardsToSelect,
+            Boolean anyNumber = readBooleanField(screen, "anyNumber");
+            boolean canPickAnyNumber = anyNumber != null ? anyNumber : screen.upTo;
+            // DiscardAction(-1), used by Gambler's Brew and Gambling Chip,
+            // opens the hand selector with an empty selection reason and the
+            // vanilla sentinel amount 99.  That is the native GAMBLE task,
+            // not an unknown combat screen.
+            String task = handSelectionTask(screen.selectionReason, canPickAnyNumber,
+                    screen.canPickZero, screen.numCardsToSelect);
+            return selectionJson(task, screen.canPickZero, canPickAnyNumber, screen.numCardsToSelect,
                     AbstractDungeon.player.hand.group);
         }
         return null;
@@ -2092,6 +2189,7 @@ public final class STSModelInspector implements PostInitializeSubscriber,
             for (AbstractMonster monster : monsters) {
                 if (monster == null) continue;
                 if (replacedLargeSlimeParent(encounter, monster, monsters)) continue;
+                if (replacedSlimeBossParent(encounter, monster, monsters)) continue;
                 if (!first) out.append(',');
                 first = false;
                 int slot = emittedSlots.containsKey(monster) ? emittedSlots.get(monster) : -1;

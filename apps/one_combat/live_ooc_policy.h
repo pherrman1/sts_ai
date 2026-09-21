@@ -41,6 +41,7 @@ public:
     virtual const char *name() const = 0;
     virtual void setSearchSeed(std::uint64_t) {}
     virtual void setRootPrimitiveBits(const std::vector<std::uint32_t> &) {}
+    virtual void setRewardPityHistoryComplete(bool) {}
     virtual LiveOocDecision score(const sts::GameContext &, const PathHistory &) const = 0;
 };
 
@@ -48,15 +49,17 @@ class LiveOocV4QPolicy final : public LiveOocPolicy {
 public:
     explicit LiveOocV4QPolicy(const OocStrategicTokNet &model) : model_(model) {}
     const char *name() const override { return "v4_q"; }
+    void setRewardPityHistoryComplete(bool value) override { rewardPityHistoryComplete_ = value; }
     LiveOocDecision score(const sts::GameContext &, const PathHistory &) const override;
 private:
     const OocStrategicTokNet &model_;
+    bool rewardPityHistoryComplete_ = true;
 };
 
 // Pure single-screen Q evaluation. Ties use ascending canonical semantic key.
 // No transition execution, path updates, global model, or diagnostic callbacks.
 LiveOocDecision scoreLiveOocV4(const sts::GameContext &, const PathHistory &,
-                             const OocStrategicTokNet &);
+                             const OocStrategicTokNet &, bool rewardPityHistoryComplete = true);
 
 class LiveOocMctsPolicy final : public LiveOocPolicy {
 public:
@@ -66,6 +69,7 @@ public:
     const char *name() const override { return "mcts_ctm"; }
     void setSearchSeed(std::uint64_t seed) override { searchSeed_ = seed; }
     void setRootPrimitiveBits(const std::vector<std::uint32_t> &bits) override;
+    void setRewardPityHistoryComplete(bool value) override { rewardPityHistoryComplete_ = value; }
     LiveOocDecision score(const sts::GameContext &, const PathHistory &) const override;
 private:
     const OocStrategicTokNet &model_;
@@ -74,6 +78,7 @@ private:
     mutable std::uint64_t searchSeed_ = 0;
     mutable std::set<std::uint32_t> rootPrimitiveBits_;
     mutable bool hasRootPrimitiveBits_ = false;
+    bool rewardPityHistoryComplete_ = true;
 };
 
 } // namespace one_combat

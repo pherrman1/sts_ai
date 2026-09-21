@@ -29,9 +29,8 @@ struct CompactTreeNet {
     // Evaluate the tree ensemble after integrating selected raw features over
     // a discrete public-belief prior. This is intentionally separate from
     // predict(): callers must opt in and name the ranges they are marginalizing.
-    // The tree margin is integrated before the final link function, which is a
-    // deterministic, cheap belief evaluator and never conditions on one fake
-    // point value for the marginalized features.
+    // Logistic models return the exact discrete mixture E[sigmoid(margin)].
+    // Non-logistic models return the expected tree margin.
     double predictMarginalized(const std::vector<float> &raw,
                                const std::vector<MarginalFeature> &features) const;
 };

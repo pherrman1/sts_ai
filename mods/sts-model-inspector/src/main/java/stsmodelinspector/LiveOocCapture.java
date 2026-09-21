@@ -157,16 +157,65 @@ final class LiveOocCapture {
         boolean exact = path != null && (AbstractDungeon.floorNum == 0 || !path.isEmpty());
         if (path != null && path.size() < AbstractDungeon.floorNum - 2 * AbstractDungeon.actNum)
             exact = false; // Missing persisted earlier-act history, never invent zeroes.
-        if (path != null) for (String symbol : path) {
+        // At the act-boss transition vanilla can leave one non-room sentinel
+        // at the end of metricData.path_taken. It is not a missing historical
+        // room: the current MapRoomNode is row 15, above the visible map.
+        // Omit only that exact trailing sentinel; all other unknown symbols
+        // remain fail-closed.
+        boolean bossTransitionSentinel = AbstractDungeon.currMapNode.y == 15;
+        String inferredBossPrecedingRoom = "";
+        if (bossTransitionSentinel && AbstractDungeon.currMapNode.getParents() != null) {
+            for (MapRoomNode parent : AbstractDungeon.currMapNode.getParents()) {
+                if (parent != null && parent.room != null) {
+                    String candidate = roomSymbol(parent.room.getMapSymbol());
+                    if (!"INVALID".equals(candidate)) {
+                        inferredBossPrecedingRoom = candidate;
+                        break;
+                    }
+                }
+            }
+        }
+        if (bossTransitionSentinel && inferredBossPrecedingRoom.isEmpty()
+                && AbstractDungeon.pathX != null && AbstractDungeon.pathY != null
+                && AbstractDungeon.pathX.size() == AbstractDungeon.pathY.size()) {
+            for (int i = AbstractDungeon.pathX.size() - 1; i >= 0; --i) {
+                int x = AbstractDungeon.pathX.get(i), y = AbstractDungeon.pathY.get(i);
+                if (AbstractDungeon.map == null || y < 0 || y >= AbstractDungeon.map.size()) continue;
+                List<MapRoomNode> row = AbstractDungeon.map.get(y);
+                if (row == null || x < 0 || x >= row.size() || row.get(x) == null
+                        || row.get(x).room == null) continue;
+                String candidate = roomSymbol(row.get(x).room.getMapSymbol());
+                if (!"INVALID".equals(candidate)) {
+                    inferredBossPrecedingRoom = candidate;
+                    break;
+                }
+            }
+        }
+        if (path != null) for (int i = 0; i < path.size(); ++i) {
+            String canonical = roomSymbol(path.get(i));
+            if (bossTransitionSentinel && i == path.size() - 1 && "INVALID".equals(canonical)) {
+                // Vanilla can omit the last pre-boss map symbol while the
+                // public damage metric already records that floor's combat.
+                // Recover it only from the actual parent node; otherwise keep
+                // the history incomplete and fail closed below.
+                canonical = inferredBossPrecedingRoom;
+                if (canonical.isEmpty()) { exact = false; continue; }
+            }
             int idx = Arrays.asList("SHOP", "REST", "EVENT", "ELITE", "MONSTER", "TREASURE",
-                    "BOSS", "BOSS_TREASURE", "NONE", "INVALID").indexOf(roomSymbol(symbol));
+                    "BOSS", "BOSS_TREASURE", "NONE", "INVALID").indexOf(canonical);
             if (idx >= 0 && idx < 6) ++visits[idx];
             else if (idx != 6 && idx != 7 && idx != 8) exact = false;
         }
         p.put("pathVisits", visits);
         p.put("pathComplete", exact);
         List<String> canonicalPathHistory = new ArrayList<>();
-        if (path != null) for (String symbol : path) canonicalPathHistory.add(roomSymbol(symbol));
+        if (path != null) for (int i = 0; i < path.size(); ++i) {
+            String canonical = roomSymbol(path.get(i));
+            if (bossTransitionSentinel && i == path.size() - 1 && "INVALID".equals(canonical))
+                canonical = inferredBossPrecedingRoom;
+            if (canonical.isEmpty()) continue;
+            canonicalPathHistory.add(canonical);
+        }
         p.put("pathHistory", canonicalPathHistory);
         // MetricData preserves the completed combat floor and the encounter
         // key even when the original map symbol was '?'.  Keep only the

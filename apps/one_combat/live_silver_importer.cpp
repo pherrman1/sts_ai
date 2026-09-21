@@ -1148,12 +1148,31 @@ nlohmann::json selectedLiveAction(const silver_bridge::SemanticAction &action,
         if (!action.discardPotion && !targetFields(result)) return nullptr;
         return result;
     }
+    case SemanticActionType::MULTI_CARD_SELECT: {
+        // MCPTheSpire exposes a hand selector as repeated choose calls plus a
+        // final Proceed. Silver has already searched the complete private
+        // transaction; lower only the next still-unselected member of that
+        // final subset, or Proceed when the subset is complete.
+        nlohmann::json combat = observation.contains("combat") && observation["combat"].is_object()
+            ? observation["combat"]
+            : observation.value("silverRoot", nlohmann::json::object())
+                  .value("combat", nlohmann::json::object());
+        const auto hand = combat.value("hand", nlohmann::json::array());
+        const auto cardSelect = combat.value("cardSelect", nlohmann::json::object());
+        const int selectedBits = cardSelect.value("selectedBits", 0);
+        for (const auto &selected : action.selectedCards) {
+            const auto uuid = uuidForId(selected.uniqueId);
+            if (uuid.empty()) return nullptr;
+            for (std::size_t i = 0; i < hand.size(); ++i) {
+                if (!hand[i].is_object() || hand[i].value("uuid", std::string()) != uuid) continue;
+                if ((selectedBits & (1 << static_cast<int>(i))) == 0)
+                    return {{"kind", "choose"}, {"choiceIndex", static_cast<int>(i) + 1}};
+                break;
+            }
+        }
+        return {{"kind", "proceed"}};
+    }
     case SemanticActionType::SINGLE_CARD_SELECT:
-    case SemanticActionType::MULTI_CARD_SELECT:
-        // MCPTheSpire exposes these screens through its choice surface, not
-        // the indexed select_cards call. Until that exact lowering is wired,
-        // make the advisor fail closed so the driver uses deterministic
-        // fallback instead of emitting an unexecutable Silver OK action.
         return nullptr;
     case SemanticActionType::INVALID:
         return nullptr;

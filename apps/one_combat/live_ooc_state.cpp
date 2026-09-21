@@ -151,9 +151,11 @@ LiveOocStateV1::LiveOocMctsRootV1 makeMctsRoot(const LiveOocStateV1 &source) {
     const auto &actVisits = array(publicState, "currentActPathVisits", 10);
     require(actVisits.size() == 10, "ten current-act path counters required");
     // path_taken intentionally retains the original '?' symbol after an event
-    // converts it into a hallway fight.  Count completed combats from the
-    // public damage metric instead, then use the original map symbol only to
-    // distinguish a normal encounter from an elite.
+    // converts it into a hallway fight. Count completed combats from the
+    // public damage metric instead; use a matching map symbol only to
+    // distinguish an elite from an ordinary fight. A missing or conflicting
+    // symbol is still a public combat, and is conservatively ordinary rather
+    // than a reason to discard the complete public combat count.
     const auto &combatFloors = array(publicState, "combatFloors", 1000);
     const auto &pathHistory = array(publicState, "pathHistory", 1000);
     const int actStartFloor = source.projected.act <= 1 ? 0
@@ -163,12 +165,13 @@ LiveOocStateV1::LiveOocMctsRootV1 makeMctsRoot(const LiveOocStateV1 &source) {
     for (const auto &floorValue : combatFloors) {
         const int floor = integerValue(floorValue, 1, 1000, "combat floor");
         if (floor <= actStartFloor || floor > source.projected.floorNum) continue;
-        require(static_cast<std::size_t>(floor - 1) < pathHistory.size(),
-            "combat floor is missing its original path symbol");
-        const auto symbol = room(pathHistory.at(static_cast<std::size_t>(floor - 1)));
-        if (symbol == Room::ELITE) ++eliteCombats;
-        else if (symbol == Room::MONSTER || symbol == Room::EVENT) ++normalCombats;
-        else throw std::invalid_argument("combat floor has a non-combat path symbol");
+        if (static_cast<std::size_t>(floor - 1) < pathHistory.size()) {
+            const auto symbol = room(pathHistory.at(static_cast<std::size_t>(floor - 1)));
+            if (symbol == Room::ELITE) ++eliteCombats;
+            else ++normalCombats;
+        } else {
+            ++normalCombats;
+        }
     }
     root.monsterListOffset = normalCombats;
     root.eliteMonsterListOffset = eliteCombats;
@@ -241,14 +244,10 @@ LiveOocStateV1::LiveOocMctsRootV1 makeMctsRoot(const LiveOocStateV1 &source) {
     LiveOocStateV1::LiveOocMctsRootV1 result;
     result.state = std::move(root);
     result.path = source.path;
-    // A MAP root immediately samples event-vs-monster-vs-shop-vs-treasure.
-    // The exact posterior over native blizzard counters is not recoverable
-    // from persisted public history. Other supported OOC roots stop at MAP
-    // before those counters can affect a transition.
-    if (source.projected.screenState == ScreenState::MAP_SCREEN) {
-        result.supported = false;
-        result.reason = "PUBLIC_EVENT_CHANCE_HISTORY_UNQUALIFIED";
-    } else if (canDrawUnseenRelic) {
+    // MAP roots are searchable with sampled room-outcome belief particles;
+    // stopAtMapCheckpoint applies only after a searched transition. Random
+    // relic branches still require complete public offer history.
+    if (canDrawUnseenRelic) {
         result.supported = false;
         result.reason = "PUBLIC_SEEN_RELIC_HISTORY_UNQUALIFIED";
     }
@@ -267,12 +266,23 @@ ImportResult importLiveOocStateV1(const J &observation, LiveOocStateV1 &out) {
             throw std::runtime_error("live capture integrity failure: " + string(o,"captureError"));
         if (o.contains("unsupportedReason")) {
             const auto reason = string(o,"unsupportedReason");
-            if (!reason.empty()) return {false,"UNSUPPORTED",reason};
+            // Active Winged Boots only changes the semantics of selecting a
+            // map node. Non-MAP roots are safe under the live advisor's hard
+            // MAP checkpoint: the current decision is scored before that
+            // choice and the descendant MAP state is evaluated without
+            // selecting a hypothetical node. Direct MAP roots remain
+            // fail-closed until native Winged Boots map mechanics exist.
+            const bool boundedWinged = reason
+                    == "RELIC_NATIVE_STATE_UNREPRESENTABLE:WingedGreaves:active"
+                && screenName != "map";
+            if (!reason.empty() && !boundedWinged) return {false,"UNSUPPORTED",reason};
         }
         LiveOocStateV1 next;
         next.ooc = o;
         auto &g = next.projected;
         const auto &p = o.at("publicState");
+        next.rewardPityHistoryComplete = p.contains("rewardPityHistoryComplete")
+            ? boolean(p, "rewardPityHistoryComplete") : false;
         require(string(p,"character") == "IRONCLAD", "only Ironclad is representable");
         g.cc = CharacterClass::IRONCLAD;
         g.seed = 0; // Never used. No live RNG or hidden queue is imported.
@@ -280,11 +290,10 @@ ImportResult importLiveOocStateV1(const J &observation, LiveOocStateV1 &out) {
         g.floorNum=integer(p,"floor",0,1000); g.curHp=integer(p,"hp",0,32767);
         g.maxHp=integer(p,"maxHp",1,32767); require(g.curHp<=g.maxHp,"hp exceeds maxHp");
         g.gold=integer(p,"gold",0,1000000);
-        // Hidden native blizzard counters are intentionally absent.  The
-        // direct V4 prior uses the explicit midpoint of the same reachable
-        // belief ranges used by the marginalized v_win leaf; it is not the
-        // fresh-run constructor state (0/5), and the v_win leaf never
-        // conditions on this point value.
+        // Hidden native blizzard counters are intentionally absent. These
+        // compatibility fields are populated only for exact synthetic
+        // fixtures; real captures mark rewardPityHistoryComplete=false, so
+        // direct V4 fails closed and MCTS does not consume these values.
         g.potionChance=30;
         g.cardRarityFactor=-18;
         g.shopRemoveCount=integer(p,"shopRemoveCount",0,100);
@@ -334,7 +343,14 @@ ImportResult importLiveOocStateV1(const J &observation, LiveOocStateV1 &out) {
         g.boss=id<MonsterEncounter>(p.at("boss"),MonsterEncounter::INVALID);
         const auto &m=p.at("map");
         g.curMapNodeX=integer(m,"x",-1,6); g.curMapNodeY=integer(m,"y",-1,16);
-        require(g.curMapNodeY<0 || g.curMapNodeX>=0,"invalid current map coordinate");
+        // The native inspector uses (-1, 15) while the act-boss room is
+        // active: row 15 is the transition above the 15-row visible map and
+        // has no selectable map node. Preserve that sentinel instead of
+        // fabricating an x-coordinate; all ordinary map rows still require
+        // a real x when y is non-negative.
+        require(g.curMapNodeY < 0 || g.curMapNodeX >= 0
+                    || (g.curMapNodeY == 15 && g.curMapNodeX == -1),
+                "invalid current map coordinate");
         g.map=std::make_shared<Map>();
         g.map->burningEliteX=integer(m,"burningEliteX",-1,6);
         g.map->burningEliteY=integer(m,"burningEliteY",-1,14);
@@ -446,7 +462,8 @@ ImportResult importLiveOocStateV1(const J &observation, LiveOocStateV1 &out) {
                     g.info.neowRewards[i].d=id<Neow::Drawback>(ns[i].at("drawback"),Neow::Drawback::INVALID);
                 }
             }
-            if (g.curEvent == Event::HYPNOTIZING_COLORED_MUSHROOMS
+            if (g.curEvent == Event::THE_LIBRARY
+                    || g.curEvent == Event::HYPNOTIZING_COLORED_MUSHROOMS
                     || g.curEvent == Event::MYSTERIOUS_SPHERE)
                 return {false,"UNSUPPORTED","PUBLIC_REWARD_PITY_HISTORY_UNQUALIFIED"};
         }

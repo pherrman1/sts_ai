@@ -28,6 +28,10 @@ public final class LiveOocCaptureTest {
         check("NlothsMask", 1, false, 1, "RELIC_NATIVE_STATE_UNREPRESENTABLE:NlothsMask:active");
         check("Matryoshka", -2, true, 0, null);
         check("UnqualifiedCounter", 3, false, 3, "RELIC_NATIVE_COUNTER_UNQUALIFIED:UnqualifiedCounter");
+        if (!"GAMBLE".equals(STSModelInspector.handSelectionTask("", true, true, 99)))
+            throw new AssertionError("Gambler's Brew hand selector was not classified as GAMBLE");
+        if (!"".equals(STSModelInspector.handSelectionTask("", false, true, 99)))
+            throw new AssertionError("unknown fixed-size hand selector was over-promoted");
         if (LiveOocCapture.nativeEdgeDestination(14, 3, 16) != 3)
             throw new AssertionError("vanilla terminal boss edge lost");
         if (LiveOocCapture.nativeEdgeDestination(7, 6, 8) != 6)

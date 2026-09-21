@@ -21,7 +21,7 @@ class LiveOocProtocol(unittest.TestCase):
                            check=True, capture_output=True, text=True)
             cls.fixtures = {row["fixture"]: row for row in map(json.loads, fixture.read_text().splitlines())}
 
-    def run_rows(self, observations, model=True):
+    def run_rows(self, observations, model=True, policy=None):
         env = os.environ.copy()
         env.pop("STS_CTM_MODEL", None)
         env.pop("STS_LIVE_OOC_MODEL", None)
@@ -31,6 +31,8 @@ class LiveOocProtocol(unittest.TestCase):
             env["STS_CTM_MODEL"] = str(self.ctm)
         if self.win:
             env["STS_LIVE_OOC_WIN_MODEL"] = str(self.win)
+        if policy:
+            env["STS_LIVE_OOC_POLICY"] = policy
         requests = [dict(protocol="sts_model_inspector_v1", kind="observation", session="ooc-protocol",
                          sequence=i + 1, observationHash=f"fixture-{i}", observation=observation)
                     for i, observation in enumerate(observations)]
@@ -53,7 +55,7 @@ class LiveOocProtocol(unittest.TestCase):
                 continue
             if evaluator["status"] == "UNSUPPORTED":
                 self.assertTrue(evaluator.get("reason", "").startswith("OOC_MCTS_")
-                                or evaluator.get("reason") == "PUBLIC_EVENT_CHANCE_HISTORY_UNQUALIFIED",
+                                or evaluator.get("reason", "") == "PUBLIC_REWARD_PITY_HISTORY_UNQUALIFIED",
                                 response)
                 continue
             self.assertEqual(evaluator["status"], "OK", response)
@@ -101,6 +103,25 @@ class LiveOocProtocol(unittest.TestCase):
             self.assertTrue(all("visits" in c and "prior" in c for c in targeted))
         self.assertEqual(selector["evaluators"][0]["status"], "OK")
 
+    def test_compound_source_retains_target_before_selector_score(self):
+        selector = self.fixtures["upgrade_duplicate_physical_cards"]
+        standalone, = self.run_rows([selector], policy="v4")
+        source, retained = self.run_rows([
+            self.fixtures["event_living_wall"], selector], policy="v4")
+        standalone_eval = standalone["evaluators"][0]
+        source_eval = source["evaluators"][0]
+        retained_eval = retained["evaluators"][0]
+        self.assertEqual(source_eval["compoundPlan"]["status"], "PENDING")
+        self.assertEqual(retained_eval["compoundPlan"]["status"], "APPLIED")
+        self.assertEqual(retained_eval["compoundPlan"]["selectionMode"],
+                         "retained_compound_target")
+        self.assertNotEqual(standalone_eval["selectedSemanticKey"],
+                            retained_eval["selectedSemanticKey"])
+        chosen = next(c for c in retained_eval["candidateSummaries"]
+                      if c["semanticKey"] == retained_eval["selectedSemanticKey"])
+        self.assertEqual(chosen["visits"], max(c["visits"]
+                                                for c in retained_eval["candidateSummaries"]))
+
     def test_semantic_only_roots_use_uniform_prior_and_checkpoint_leaf(self):
         rows = self.run_rows([self.fixtures[name] for name in
                               ("remove_selector", "transform_selector", "rewards_without_cards")])
@@ -111,11 +132,44 @@ class LiveOocProtocol(unittest.TestCase):
             self.assertTrue(priors)
             self.assertTrue(all(abs(prior - priors[0]) < 1e-12 for prior in priors), response)
 
-    def test_map_root_fails_closed_without_public_chance_posterior(self):
+    def test_map_root_runs_mcts_and_stops_after_the_transition(self):
         response, = self.run_rows([self.fixtures["map_multiple_children"]])
         evaluator, = response["evaluators"]
-        self.assertEqual(evaluator["status"], "UNSUPPORTED")
-        self.assertEqual(evaluator["reason"], "PUBLIC_EVENT_CHANCE_HISTORY_UNQUALIFIED")
+        self.assertEqual(evaluator["status"], "OK", response)
+        self.assertEqual(evaluator["model"]["kind"], "ooc_mcts_ctm")
+        self.assertGreaterEqual(len(evaluator["candidateSummaries"]), 2)
+        chosen = next(c for c in evaluator["candidateSummaries"]
+                      if c["semanticKey"] == evaluator["selectedSemanticKey"])
+        self.assertEqual(chosen["visits"], max(c["visits"] for c in evaluator["candidateSummaries"]))
+        self.assertEqual(evaluator["selectedLiveAction"]["kind"], "map_node")
+
+    def test_unqualified_pity_never_becomes_a_v4_midpoint(self):
+        observation = copy.deepcopy(self.fixtures["map_multiple_children"])
+        observation["ooc"]["publicState"]["rewardPityHistoryComplete"] = False
+        v4_response, = self.run_rows([observation], policy="v4")
+        v4 = v4_response["evaluators"][0]
+        self.assertEqual(v4["status"], "UNSUPPORTED")
+        self.assertEqual(v4["reason"], "PUBLIC_REWARD_PITY_HISTORY_UNQUALIFIED")
+
+        mcts_response, = self.run_rows([observation])
+        mcts = mcts_response["evaluators"][0]
+        self.assertEqual(mcts["status"], "OK")
+        priors = [candidate["prior"] for candidate in mcts["candidateSummaries"]]
+        self.assertTrue(priors)
+        self.assertTrue(all(abs(prior - priors[0]) < 1e-12 for prior in priors), mcts)
+
+    def test_opened_boss_chest_is_native_proceed_passthrough(self):
+        observation = copy.deepcopy(self.fixtures["map_multiple_children"])
+        ooc = observation["ooc"]
+        ooc["screen"] = "treasure"
+        ooc["details"] = {"chestType": "BossChest", "opened": True}
+        ooc["liveChoices"] = [{"liveAction": {"kind": "proceed"},
+                               "nativeAction": {"kind": "option", "index": 0}}]
+        response, = self.run_rows([observation])
+        evaluator = response["evaluators"][0]
+        self.assertEqual(evaluator["status"], "OK")
+        self.assertEqual(evaluator["mode"], "native_pass_through")
+        self.assertEqual(evaluator["selectedLiveAction"], {"kind": "proceed"})
 
     def test_woman_in_blue_is_a_complete_live_mcts_root(self):
         response, = self.run_rows([self.fixtures["event_woman_in_blue"]])
@@ -138,6 +192,23 @@ class LiveOocProtocol(unittest.TestCase):
         response, = self.run_rows([{"boundary": "ooc", "ooc": {
             "schemaVersion": 1, "screen": "selector", "unsupportedReason": "SELECTOR_CONFIRMATION_ONLY"}}])
         self.assertEqual(response["evaluators"][0]["status"], "UNSUPPORTED")
+
+    def test_active_winged_is_bounded_to_non_map_roots(self):
+        selector = copy.deepcopy(self.fixtures["upgrade_duplicate_physical_cards"])
+        selector["ooc"]["publicState"]["relics"].append({"id": "WingedGreaves", "data": 3})
+        selector["ooc"]["unsupportedReason"] = \
+            "RELIC_NATIVE_STATE_UNREPRESENTABLE:WingedGreaves:active"
+        response, = self.run_rows([selector])
+        self.assertEqual(response["evaluators"][0]["status"], "OK", response)
+
+        direct_map = copy.deepcopy(self.fixtures["map_multiple_children"])
+        direct_map["ooc"]["publicState"]["relics"].append({"id": "WingedGreaves", "data": 3})
+        direct_map["ooc"]["unsupportedReason"] = \
+            "RELIC_NATIVE_STATE_UNREPRESENTABLE:WingedGreaves:active"
+        response, = self.run_rows([direct_map])
+        self.assertEqual(response["evaluators"][0]["status"], "UNSUPPORTED")
+        self.assertEqual(response["evaluators"][0]["reason"],
+                         "RELIC_NATIVE_STATE_UNREPRESENTABLE:WingedGreaves:active")
 
     def test_schema_and_mapping_errors_cannot_fallback(self):
         base = self.fixtures["event_big_fish"]
