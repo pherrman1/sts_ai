@@ -33,6 +33,24 @@ static int chanceCat(const search::Action &a) {
 namespace sts::search {
     thread_local search::BattleSearcher *g_debug_scum_search;
 
+    bool canCanonicalizeSettledQueueItem(const BattleContext &state) {
+        return state.inputState == InputState::PLAYER_NORMAL
+            && state.outcome == Outcome::UNDECIDED
+            && !state.isBattleOver && !state.endTurnQueued && !state.turnHasEnded
+            && state.actionQueue.size == 0 && state.cardQueue.size == 0;
+    }
+
+    bool equalForSearchIgnoringSettledQueueItem(BattleContext &scratch,
+                                                 const BattleContext &retained) {
+        if (!canCanonicalizeSettledQueueItem(scratch)
+                || !canCanonicalizeSettledQueueItem(retained)) return false;
+        const auto original = scratch.curCardQueueItem;
+        scratch.curCardQueueItem = retained.curCardQueueItem;
+        const bool equal = scratch.equalForSearch(retained);
+        scratch.curCardQueueItem = original;
+        return equal;
+    }
+
     namespace {
 
         template <typename LhsIt, typename RhsIt, typename Equal>
@@ -399,6 +417,7 @@ search::BattleSearcher::Node* search::BattleSearcher::getOrCreateNode(BattleCont
     bool relaxedEquivalentSeen = false;
     bool relaxedHandDifference = false;
     bool relaxedDrawDifference = false;
+    Node *canonicalCandidate = nullptr;
 
     // Linear probe the open-addressed table; equalForSearch resolves hash collisions exactly.
     std::size_t i = hash & stateToNodeMask;
@@ -407,6 +426,9 @@ search::BattleSearcher::Node* search::BattleSearcher::getOrCreateNode(BattleCont
             lastNodeWasCreated = false;
             return stateToNode[i].node;
         }
+        if (canonicalCandidate == nullptr && stateToNode[i].hash == hash
+                && equalForSearchIgnoringSettledQueueItem(state, *stateToNode[i].node->state))
+            canonicalCandidate = stateToNode[i].node;
         if (collectUidFragmentationDiagnostics && stateToNode[i].hash == hash) {
             const auto comparison = compareForSearchIgnoringBenignDrawIdentityDiagnostic(
                 *stateToNode[i].node->state, state);
@@ -424,6 +446,12 @@ search::BattleSearcher::Node* search::BattleSearcher::getOrCreateNode(BattleCont
             }
         }
         i = (i + 1) & stateToNodeMask;
+    }
+
+    if (canonicalCandidate != nullptr) {
+        ++stats.queueItemCanonicalHits;
+        lastNodeWasCreated = false;
+        return canonicalCandidate;
     }
 
     if (collectUidFragmentationDiagnostics && relaxedEquivalentSeen) {

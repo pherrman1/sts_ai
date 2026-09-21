@@ -35,6 +35,9 @@ the replacement.
 
 ## Current routing ADRs
 
+- [ADR-0016](0016-silver-settled-queue-item-identity.md) makes settled Silver
+  queue-item canonicalization the production retained-search identity rule.
+
 - [ADR-0012](0012-frozen-session-decision-log.md) routes historical session material to Git history and new knowledge to canonical maintained destinations.
 - [ADR-0011](0011-mcp-free-codex-skillopt-pilot.md) defines the MCP-free Codex
   path, authoritative tracked KB, bounded SkillOpt proposal pilot, and

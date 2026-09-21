@@ -207,7 +207,22 @@ supported opt-in. Reroot and fallback telemetry must state what occurred.
 Search nodes contain compact bookkeeping and a pointer to a separately pooled
 battle state. Only decision nodes claim state storage; chance nodes have a null
 state pointer and read their decision parent's state. Both pools retain stable
-object addresses and reuse capacity. Fresh reset resets both active counters;
+object addresses and reuse capacity.
+Silver retained-search identity treats `curCardQueueItem` as historical at a
+settled, unresolved `PLAYER_NORMAL` decision only when neither action nor card
+work is queued and no end-turn flag is set. Exact `equalForSearch()` is tried
+first; a matching search hash may then reuse a state differing only in that
+queue item. `CARD_SELECT`, `EXECUTING_ACTIONS`, terminal, queued, and end-turn
+states retain exact queue-item identity. The representative stays stable during
+ordinary dedup lookups. On a successful reroot, its queue item is aligned to
+the concrete observed state before any hand-order alignment. This applies to
+selected deterministic children, sampled chance outcomes, and live explored
+edges. Selected deterministic children must still reroot, be cap-blocked, or
+fail loudly; a missing selected child is never silently treated as stochastic.
+`queueItemCanonicalHits` counts exact-miss dedup lookups accepted through this
+narrow equivalence, not unique states or saved allocations.
+
+Fresh reset resets both active counters;
 exact reroot below the configured node cap preserves both pools and the global
 dedup table, including currently orphaned transposition statistics. Only when
 the old configured cap metric is at or above the cap does the session request
@@ -229,16 +244,15 @@ below its matching successor. It also supports one narrower reroot equivalence
 at that boundary. When a retained action and the observed action are
 ordinary gameplay-equivalent cards with different UIDs, it swaps exactly
 those two UIDs throughout the reachable retained subtree and accepts the
-candidate only if the resulting root passes the normal full search-state
-equality check. Hand-order alignment is limited to `PLAYER_NORMAL` roots
+candidate only if the resulting root passes Silver's retained-decision
+equivalence check. Hand-order alignment is limited to `PLAYER_NORMAL` roots
 without macro continuations. It retargets retained card-edge source indices by
 exact card identity and updates each attached chance node's cached stochastic
 card action, which later widening replays against the reordered parent hand.
 A `CARD_SELECT` root or a root with a continuation cannot be aligned safely
 without remapping selection indices and selected bits, so it is not mutated.
 This preserves visits for a human-selected equivalent copy without changing
-`equalForSearch()`, action equivalence, global transposition identity, or
-chance-node identity. Any other card-state difference or unsafe queued
+`equalForSearch()`, action equivalence, or chance-node identity. Any other card-state difference or unsafe queued
 intermediate state still takes the ordinary fresh `candidate_missing` fallback.
 [ADR-0015](../../../decisions/0015-live-silver-equivalent-copy-reroot.md)
 records this boundary.

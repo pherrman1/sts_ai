@@ -524,6 +524,7 @@ SilverSearchTelemetry telemetry(const sts::search::SearchStats &stats) {
     out.chanceSiblingReuse = stats.chanceSiblingReuse;
     out.chanceTranspositions = stats.chanceTranspositions;
     out.uidRelaxedNodeAllocationCandidates = stats.uidRelaxedNodeAllocationCandidates;
+    out.queueItemCanonicalHits = stats.queueItemCanonicalHits;
     out.uidRelaxedNodeCandidatesWithDrawDifference = stats.uidRelaxedNodeCandidatesWithDrawDifference;
     out.uidRelaxedNodeCandidatesWithHandDifference = stats.uidRelaxedNodeCandidatesWithHandDifference;
     out.uidRelaxedNodeCandidatesWithBothHandAndDrawDifference = stats.uidRelaxedNodeCandidatesWithBothHandAndDrawDifference;
@@ -592,6 +593,7 @@ SilverSearchTelemetry telemetryDelta(const sts::search::SearchStats &after,
     result.chanceSiblingReuse -= prior.chanceSiblingReuse;
     result.chanceTranspositions -= prior.chanceTranspositions;
     result.uidRelaxedNodeAllocationCandidates -= prior.uidRelaxedNodeAllocationCandidates;
+    result.queueItemCanonicalHits -= prior.queueItemCanonicalHits;
     result.uidRelaxedNodeCandidatesWithDrawDifference -= prior.uidRelaxedNodeCandidatesWithDrawDifference;
     result.uidRelaxedNodeCandidatesWithHandDifference -= prior.uidRelaxedNodeCandidatesWithHandDifference;
     result.uidRelaxedNodeCandidatesWithBothHandAndDrawDifference -= prior.uidRelaxedNodeCandidatesWithBothHandAndDrawDifference;
@@ -659,7 +661,9 @@ sts::search::BattleSearcher::Node *exactRerootCandidate(
         const sts::BattleContext &state) {
     using Node = sts::search::BattleSearcher::Node;
     const auto exactMatch = [&state](const Node *node) {
-        return node != nullptr && node->state != nullptr && node->state->equalForSearch(state)
+        return node != nullptr && node->state != nullptr
+            && (node->state->equalForSearch(state)
+                || sts::search::equalForSearchIgnoringSettledQueueItem(*node->state, state))
             && std::equal(node->state->cards.hand.begin(),
                           node->state->cards.hand.begin() + node->state->cards.cardsInHand,
                           state.cards.hand.begin());
@@ -700,6 +704,19 @@ bool exactDecisionState(const sts::BattleContext &candidate, const sts::BattleCo
                       observed.cards.hand.begin());
 }
 
+bool equivalentRetainedDecision(sts::BattleContext &candidate,
+                                const sts::BattleContext &observed) {
+    return candidate.equalForSearch(observed)
+        || sts::search::equalForSearchIgnoringSettledQueueItem(candidate, observed);
+}
+
+void alignRetainedRootQueueItem(sts::search::BattleSearcher::Node &root,
+                                const sts::BattleContext &observed) {
+    if (sts::search::canCanonicalizeSettledQueueItem(*root.state)
+            && sts::search::canCanonicalizeSettledQueueItem(observed))
+        root.state->curCardQueueItem = observed.curCardQueueItem;
+}
+
 EquivalentCopyCandidate equivalentCopyRerootCandidate(
         const sts::search::BattleSearcher::Edge *bestEdge,
         const sts::BattleContext &previousRoot, const sts::BattleContext &observed) {
@@ -719,7 +736,7 @@ EquivalentCopyCandidate equivalentCopyRerootCandidate(
                 || node->state->cardQueue.size != 0) return false;
         auto remapped = *node->state;
         swapCardUids(remapped, retained.uniqueId, played.uniqueId);
-        return remapped.equalForSearch(observed);
+        return equivalentRetainedDecision(remapped, observed);
     };
     if (!bestEdge->node->isRandomNode) result.node = matchesAfterSwap(bestEdge->node)
         ? bestEdge->node : nullptr;
@@ -1097,10 +1114,13 @@ public:
                 if (previousBest->node != nullptr && !previousBest->node->isRandomNode
                         && previousBest->node->state != nullptr) {
                     decisionDiagnostic.deterministicSemanticHandMismatch =
-                        previousBest->node->state->equalForSearch(state)
-                        && !exactDecisionState(*previousBest->node->state, state);
+                        equivalentRetainedDecision(*previousBest->node->state, state)
+                        && !std::equal(previousBest->node->state->cards.hand.begin(),
+                                       previousBest->node->state->cards.hand.begin()
+                                           + previousBest->node->state->cards.cardsInHand,
+                                       state.cards.hand.begin());
                     decisionDiagnostic.deterministicOtherMismatch =
-                        !previousBest->node->state->equalForSearch(state);
+                        !equivalentRetainedDecision(*previousBest->node->state, state);
                     if (decisionDiagnostic.deterministicOtherMismatch && searcher->root->state)
                         decisionDiagnostic.deterministicEquivalentCopyMatch =
                             equivalentCopyRerootCandidate(previousBest,
@@ -1111,16 +1131,22 @@ public:
             const bool selectedDeterministic = previousBest->node != nullptr
                 && !previousBest->node->isRandomNode;
             if (selectedDeterministic && previousBest->node->state != nullptr
-                    && previousBest->node->state->equalForSearch(state)) {
+                    && equivalentRetainedDecision(*previousBest->node->state, state)) {
                 candidate = previousBest->node;
+                const auto originalQueueItem = candidate->state->curCardQueueItem;
+                alignRetainedRootQueueItem(*candidate, state);
                 if (!exactDecisionState(*candidate->state, state)
-                        && !alignRetainedRootHand(*candidate, state)) candidate = nullptr;
+                        && !alignRetainedRootHand(*candidate, state)) {
+                    candidate->state->curCardQueueItem = originalQueueItem;
+                    candidate = nullptr;
+                }
             }
             if (candidate == nullptr && (!selectedDeterministic || !selectedActionExecuted)) {
                 for (const auto &edge : searcher->root->edges) {
                     candidate = exactRerootCandidate(&edge, state);
                     if (candidate != nullptr) break;
                 }
+                if (candidate != nullptr) alignRetainedRootQueueItem(*candidate, state);
             }
             const bool exactCandidate = candidate != nullptr;
             bool equivalentCopyCandidate = false;
@@ -1141,15 +1167,20 @@ public:
                     }
                 }
                 if (candidate != nullptr) {
+                    const auto originalQueueItem = candidate->state->curCardQueueItem;
                     equivalentCopyCandidate = remapReachableEquivalentCopy(
                         candidate, equivalent.retainedUid, equivalent.observedUid);
                     if (!equivalentCopyCandidate) candidate = nullptr;
-                    else if (!alignRetainedRootHand(*candidate, state)) {
+                    else {
+                        alignRetainedRootQueueItem(*candidate, state);
+                    }
+                    if (candidate != nullptr && !alignRetainedRootHand(*candidate, state)) {
                         // The UID swap is symmetric. Do not leave a rejected
                         // CARD_SELECT/macro candidate changed in the old tree.
                         if (!remapReachableEquivalentCopy(
                                 candidate, equivalent.retainedUid, equivalent.observedUid))
                             throw std::runtime_error("equivalent_copy_rollback_failed");
+                        candidate->state->curCardQueueItem = originalQueueItem;
                         candidate = nullptr;
                     }
                 }
@@ -2265,6 +2296,23 @@ ReuseCapFixtureProbe probeSilverReuseCapFixture(const BattleStateWire &wire) {
         result.activeExactReroot = result.activeDiagnostic.exactReroot;
         result.activeInheritsVisits = result.activeDiagnostic.inheritedVisits == 17;
 
+        auto staleQueueItem = sts::CardQueueItem{};
+        staleQueueItem.card = sts::CardInstance(sts::CardId::BASH);
+        if (staleQueueItem == state.curCardQueueItem)
+            throw std::runtime_error("queue-item fixture did not differ");
+        SilverSearchSession canonicalDeterministic;
+        arrangeCandidate(canonicalDeterministic, false, false);
+        canonicalDeterministic.searcher->root->edges.front().node->state->curCardQueueItem = staleQueueItem;
+        canonicalDeterministic.searcher->root->edges.front().visitCount = 9;
+        const auto canonicalDeterministicDiag = run(
+            canonicalDeterministic, true, SilverReuseCapMode::ACTIVE);
+        if (!canonicalDeterministicDiag.exactReroot
+                || canonicalDeterministicDiag.inheritedVisits != 17
+                || canonicalDeterministicDiag.fallback
+                || canonicalDeterministic.searcher->root->state->curCardQueueItem
+                    != state.curCardQueueItem)
+            throw std::runtime_error("deterministic queue-item reroot failed");
+
         SilverSearchSession allocatedAtCap;
         arrangeCandidate(allocatedAtCap, true, false);
         const auto retainedCapDiagnostic = run(allocatedAtCap, true, SilverReuseCapMode::ALLOCATED);
@@ -2326,6 +2374,18 @@ ReuseCapFixtureProbe probeSilverReuseCapFixture(const BattleStateWire &wire) {
                 && permuted.searcher->root->state->cards.hand[
                     permuted.searcher->root->edges[1].action.getSourceIdx()]
                     == state.cards.hand[0];
+
+            SilverSearchSession canonicalPermutation;
+            arrangeCandidate(canonicalPermutation, false, true);
+            canonicalPermutation.searcher->root->edges.front().node->state->curCardQueueItem = staleQueueItem;
+            const auto canonicalPermutationDiag = run(
+                canonicalPermutation, true, SilverReuseCapMode::ACTIVE);
+            if (!canonicalPermutationDiag.exactReroot
+                    || canonicalPermutationDiag.inheritedVisits != 17
+                    || !exactDecisionState(*canonicalPermutation.searcher->root->state, state)
+                    || canonicalPermutation.searcher->root->edges[0].action.getSourceIdx() != 1
+                    || canonicalPermutation.searcher->root->edges[1].action.getSourceIdx() != 0)
+                throw std::runtime_error("queue-item plus hand permutation reroot failed");
 
             // A chance node keeps its own copy of the CARD action. Widening
             // replays that copy against the aligned parent's hand.
@@ -2443,6 +2503,7 @@ ReuseCapFixtureProbe probeSilverReuseCapFixture(const BattleStateWire &wire) {
                 auto *child = equivalent.searcher->root->edges.front().node;
                 *child->state = observed;
                 swapCardUids(*child->state, firstUid, secondUid);
+                child->state->curCardQueueItem = staleQueueItem;
                 equivalent.searcher->root->edges.front().action = sts::search::Action(
                     sts::search::ActionType::CARD, 0, 0);
                 SilverSearchConfig equivalentConfig;
@@ -2471,6 +2532,22 @@ ReuseCapFixtureProbe probeSilverReuseCapFixture(const BattleStateWire &wire) {
         const auto chanceDiag = run(chance, true, SilverReuseCapMode::ACTIVE);
         result.chanceMissingAllowed = chanceDiag.selectedEdgeStochastic
             && chanceDiag.fallbackReason == SilverRerootFallbackReason::CANDIDATE_MISSING;
+
+        SilverSearchSession canonicalChance;
+        arrangeCandidate(canonicalChance, false, false);
+        auto *sampledOutcome = canonicalChance.searcher->root->edges.front().node;
+        sampledOutcome->state->curCardQueueItem = staleQueueItem;
+        auto *sampledChance = canonicalChance.searcher->allocNode();
+        sampledChance->isRandomNode = true;
+        sampledChance->parent = canonicalChance.searcher->root;
+        sts::search::BattleSearcher::Edge sampledEdge;
+        sampledEdge.node = sampledOutcome;
+        sampledChance->edges.push_back(std::move(sampledEdge));
+        canonicalChance.searcher->root->edges.front().node = sampledChance;
+        const auto sampledDiag = run(canonicalChance, true, SilverReuseCapMode::ACTIVE);
+        if (!sampledDiag.exactReroot || sampledDiag.inheritedVisits != 17
+                || canonicalChance.searcher->root->state->curCardQueueItem != state.curCardQueueItem)
+            throw std::runtime_error("sampled chance queue-item reroot failed");
 
         SilverSearchSession noChild;
         arrangeCandidate(noChild, false, false);

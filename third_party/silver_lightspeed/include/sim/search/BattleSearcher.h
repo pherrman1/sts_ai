@@ -35,6 +35,12 @@ namespace sts::search {
 
     std::size_t hashBattleState(const BattleContext &bc);
 
+    // Silver retained-node identity only: a settled player decision may carry
+    // a historical queue item. The global BattleContext equality stays exact.
+    bool canCanonicalizeSettledQueueItem(const BattleContext &state);
+    bool equalForSearchIgnoringSettledQueueItem(BattleContext &scratch,
+                                                 const BattleContext &retained);
+
     typedef std::function<double (const BattleContext&)> EvalFnc;
 
     // Tunable weights for evaluateEndState (the value backed up by the search).
@@ -81,6 +87,7 @@ namespace sts::search {
         static constexpr int kInputStateCount = 10;
         std::int64_t steps = 0;                  // simulations run
         std::int64_t nodesCreated = 0;           // new nodes allocated via dedup misses
+        std::int64_t queueItemCanonicalHits = 0; // exact miss, settled queue-item match
         std::int64_t detTranspositions = 0;      // deterministic-edge expansion hit an existing node
         std::int64_t chanceOutcomesSampled = 0;  // chance-node widening samples executed
         std::int64_t chanceSiblingReuse = 0;     // sampled outcome collided with an existing sibling

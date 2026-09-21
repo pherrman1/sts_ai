@@ -630,6 +630,7 @@ struct SilverSearchTelemetry {
     std::int64_t chanceSiblingReuse = 0;
     std::int64_t chanceTranspositions = 0;
     std::int64_t uidRelaxedNodeAllocationCandidates = 0;
+    std::int64_t queueItemCanonicalHits = 0;
     std::int64_t uidRelaxedNodeCandidatesWithDrawDifference = 0;
     std::int64_t uidRelaxedNodeCandidatesWithHandDifference = 0;
     std::int64_t uidRelaxedNodeCandidatesWithBothHandAndDrawDifference = 0;
@@ -686,6 +687,7 @@ struct SilverSearchTelemetry {
         chanceSiblingReuse += other.chanceSiblingReuse;
         chanceTranspositions += other.chanceTranspositions;
         uidRelaxedNodeAllocationCandidates += other.uidRelaxedNodeAllocationCandidates;
+        queueItemCanonicalHits += other.queueItemCanonicalHits;
         uidRelaxedNodeCandidatesWithDrawDifference += other.uidRelaxedNodeCandidatesWithDrawDifference;
         uidRelaxedNodeCandidatesWithHandDifference += other.uidRelaxedNodeCandidatesWithHandDifference;
         uidRelaxedNodeCandidatesWithBothHandAndDrawDifference += other.uidRelaxedNodeCandidatesWithBothHandAndDrawDifference;

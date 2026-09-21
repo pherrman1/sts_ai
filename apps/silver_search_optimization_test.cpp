@@ -301,6 +301,32 @@ void executePotion(sts::BattleContext &bc, int slot, int target = 0) {
 }
 
 void potionActionCanonicalization(sts::GameContext &gc, const sts::BattleContext &original) {
+    auto attackA = original;
+    auto attackB = original;
+    installPotions(attackA, {sts::Potion::ATTACK_POTION});
+    installPotions(attackB, {sts::Potion::ATTACK_POTION});
+    attackA.curCardQueueItem.card = sts::CardInstance(sts::CardId::STRIKE_RED);
+    attackB.curCardQueueItem.card = sts::CardInstance(sts::CardId::BASH);
+    require(sts::search::equalForSearchIgnoringSettledQueueItem(attackA, attackB),
+            "Attack Potion roots must be canonicalizable");
+    executePotion(attackA, 0);
+    executePotion(attackB, 0);
+    require(attackA.inputState == sts::InputState::CARD_SELECT
+                && attackB.inputState == sts::InputState::CARD_SELECT,
+            "Attack Potion must reach a selection state");
+    const auto attackOptions = rootActions(attackA);
+    require(attackOptions == rootActions(attackB),
+            "Attack Potion variants must expose identical legal options");
+    require(!sts::search::canCanonicalizeSettledQueueItem(attackA)
+                && !sts::search::equalForSearchIgnoringSettledQueueItem(attackA, attackB),
+            "CARD_SELECT queue items must remain exact");
+    require(!attackOptions.empty(), "Attack Potion must offer a selection");
+    attackOptions.front().execute(attackA);
+    attackOptions.front().execute(attackB);
+    require(attackA.inputState == attackB.inputState
+                && attackA.cards.equalForSearch(attackB.cards)
+                && rootActions(attackA) == rootActions(attackB),
+            "the same Attack Potion option must have the same legal continuation");
     auto duplicate = original;
     installPotions(duplicate, {sts::Potion::STRENGTH_POTION, sts::Potion::EMPTY_POTION_SLOT,
                                sts::Potion::STRENGTH_POTION});
@@ -1125,7 +1151,7 @@ void rootPriorSelection(Search &search) {
 
 void equalStats(const sts::search::SearchStats &a, const sts::search::SearchStats &b) {
 #define SAME(field) require(a.field == b.field, "trace changed stats: " #field)
-    SAME(steps); SAME(nodesCreated); SAME(detTranspositions);
+    SAME(steps); SAME(nodesCreated); SAME(queueItemCanonicalHits); SAME(detTranspositions);
     SAME(chanceOutcomesSampled); SAME(chanceSiblingReuse); SAME(chanceTranspositions);
     SAME(depthSum); SAME(chanceDepthSum); SAME(rolloutCalls);
     SAME(rolloutTerminalWins); SAME(rolloutTerminalLosses); SAME(rolloutNonTerminalStops);
@@ -1678,6 +1704,50 @@ int main(int argc, char **argv) {
         sts::GameContext gc{}; // BattleContext keeps a non-owning pointer to this run state.
         const auto bc = fixture(gc);
         Search search(bc);
+        {
+            auto a = bc;
+            auto b = bc;
+            a.curCardQueueItem.card = sts::CardInstance(sts::CardId::STRIKE_RED);
+            b.curCardQueueItem.card = sts::CardInstance(sts::CardId::BASH);
+            require(sts::search::canCanonicalizeSettledQueueItem(a),
+                    "fixture must be a settled player decision");
+            require(!a.equalForSearch(b) && sts::search::hashBattleState(a) == sts::search::hashBattleState(b),
+                    "queue-item variants must miss global equality and share a search hash");
+            auto *first = search.getOrCreateNode(std::move(a));
+            auto *second = search.getOrCreateNode(std::move(b));
+            require(first == second && search.stats.queueItemCanonicalHits == 1
+                    && first->state->curCardQueueItem.card == sts::CardInstance(sts::CardId::STRIKE_RED),
+                    "settled queue-item lookup must reuse a stable representative");
+            const auto excluded = [&](const auto &change) {
+                auto x = bc;
+                auto y = bc;
+                x.curCardQueueItem.card = sts::CardInstance(sts::CardId::STRIKE_RED);
+                y.curCardQueueItem.card = sts::CardInstance(sts::CardId::BASH);
+                change(x); change(y);
+                require(!sts::search::equalForSearchIgnoringSettledQueueItem(x, y),
+                        "non-settled state must preserve queue-item identity");
+                Search boundarySearch(bc);
+                auto *firstBoundary = boundarySearch.getOrCreateNode(std::move(x));
+                auto *secondBoundary = boundarySearch.getOrCreateNode(std::move(y));
+                require(firstBoundary != secondBoundary
+                            && boundarySearch.stats.queueItemCanonicalHits == 0,
+                        "non-settled queue-item variants must retain separate nodes");
+            };
+            excluded([](auto &s) { s.inputState = sts::InputState::CARD_SELECT; });
+            excluded([](auto &s) { s.inputState = sts::InputState::EXECUTING_ACTIONS; });
+            excluded([](auto &s) { s.actionQueue.pushBack(sts::Actions::GainEnergy(1)); });
+            excluded([](auto &s) { s.cardQueue.pushBack(sts::CardQueueItem{}); });
+            excluded([](auto &s) { s.outcome = sts::Outcome::PLAYER_VICTORY; });
+            excluded([](auto &s) { s.endTurnQueued = true; });
+            excluded([](auto &s) { s.turnHasEnded = true; });
+            auto differentEnergy = bc;
+            differentEnergy.player.energy++;
+            require(!sts::search::equalForSearchIgnoringSettledQueueItem(
+                        differentEnergy, *first->state),
+                    "ordinary state differences must stay distinct");
+            require(search.getOrCreateNode(std::move(differentEnergy)) != first,
+                    "energy difference must allocate a distinct node");
+        }
         if (argc > 1 && std::string(argv[1]) == "--reroot-canary") {
             compaction(bc, 10000);
             return 0;
