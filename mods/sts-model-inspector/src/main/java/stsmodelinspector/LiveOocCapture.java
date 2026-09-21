@@ -79,11 +79,14 @@ final class LiveOocCapture {
                 String line;
                 while ((line = reader.readLine()) != null) {
                     String[] fields = line.split("\\t", -1);
-                    if (fields.length != 2) { complete = false; break; }
+                    if (fields.length != 3) { complete = false; break; }
                     int floor = Integer.parseInt(fields[0]);
                     String kind = fields[1];
-                    if (floor < 1 || kind.isEmpty()) { complete = false; break; }
-                    entries.add(object("floor", floor, "kind", kind));
+                    String encounter = fields[2];
+                    if (floor < 1 || kind.isEmpty()
+                            || (("NORMAL_QUEUE".equals(kind) || "ELITE_QUEUE".equals(kind))
+                                && encounter.isEmpty())) { complete = false; break; }
+                    entries.add(object("floor", floor, "kind", kind, "encounter", encounter));
                     lastFloor = Math.max(lastFloor, floor);
                 }
             } catch (IOException | NumberFormatException failure) {
@@ -99,7 +102,8 @@ final class LiveOocCapture {
                 Path temp = path.resolveSibling(path.getFileName() + ".tmp");
                 try (BufferedWriter writer = Files.newBufferedWriter(temp, StandardCharsets.UTF_8)) {
                     for (Map<String,Object> entry : entries)
-                        writer.write(entry.get("floor") + "\t" + entry.get("kind") + "\n");
+                        writer.write(entry.get("floor") + "\t" + entry.get("kind") + "\t"
+                                + entry.getOrDefault("encounter", "") + "\n");
                 }
                 try { Files.move(temp, path, java.nio.file.StandardCopyOption.ATOMIC_MOVE,
                         java.nio.file.StandardCopyOption.REPLACE_EXISTING); }
@@ -112,7 +116,8 @@ final class LiveOocCapture {
         }
 
         void observe(Object currentPlayer, long currentSeed, int currentAct, int floor,
-                boolean noPriorActCombat, boolean inCombat, Object group, String kind) {
+                boolean noPriorActCombat, boolean inCombat, Object group, String kind,
+                String encounter) {
             if (player != currentPlayer || seed != currentSeed || act != currentAct
                     || floor < lastFloor) {
                 player = currentPlayer;
@@ -131,13 +136,17 @@ final class LiveOocCapture {
             // missing fights are caught against damage_taken at the next OOC.
             if (group == null) return;
             if (kind == null) { complete = false; return; }
+            if (("NORMAL_QUEUE".equals(kind) || "ELITE_QUEUE".equals(kind))
+                    && (encounter == null || encounter.isEmpty())) { complete = false; return; }
             if (group != lastGroup) {
                 if (!entries.isEmpty()
                         && ((Number)entries.get(entries.size() - 1).get("floor")).intValue() == floor) {
                     String previousKind = String.valueOf(entries.get(entries.size() - 1).get("kind"));
-                    if (!previousKind.equals(kind)) complete = false;
+                    String previousEncounter = String.valueOf(entries.get(entries.size() - 1).getOrDefault("encounter", ""));
+                    if (!previousKind.equals(kind) || !previousEncounter.equals(encounter)) complete = false;
                 } else {
-                    entries.add(object("floor", floor, "kind", kind));
+                    entries.add(object("floor", floor, "kind", kind,
+                            "encounter", encounter == null ? "" : encounter));
                 }
                 lastGroup = group;
                 persist();
@@ -146,9 +155,14 @@ final class LiveOocCapture {
         void invalidate() { complete = false; }
         boolean completeFor(List<Integer> completedFloors) {
             if (!complete || entries.size() != completedFloors.size()) return false;
-            for (int i = 0; i < entries.size(); ++i)
+            for (int i = 0; i < entries.size(); ++i) {
                 if (((Number)entries.get(i).get("floor")).intValue() != completedFloors.get(i))
                     return false;
+                String kind = String.valueOf(entries.get(i).get("kind"));
+                if (("NORMAL_QUEUE".equals(kind) || "ELITE_QUEUE".equals(kind))
+                        && String.valueOf(entries.get(i).getOrDefault("encounter", "")).isEmpty())
+                    return false;
+            }
             return true;
         }
         List<Map<String,Object>> snapshot() { return new ArrayList<>(entries); }
@@ -183,7 +197,8 @@ final class LiveOocCapture {
             else if ("MonsterRoom".equals(roomClass)) kind = "NORMAL_QUEUE";
         }
         combatClassHistory.observe(AbstractDungeon.player, Settings.seed, act, floor,
-                noPriorActCombat, inCombat, inCombat ? AbstractDungeon.getMonsters() : null, kind);
+                noPriorActCombat, inCombat, inCombat ? AbstractDungeon.getMonsters() : null, kind,
+                inCombat ? STSModelInspector.encounterName(room) : "");
     }
 
     static void invalidateCombatRoomHistory() { combatClassHistory.invalidate(); }
@@ -453,6 +468,12 @@ final class LiveOocCapture {
             if (idx >= 0 && idx < 6) ++actVisits[idx];
         }
         p.put("currentActPathVisits", actVisits);
+        // The immutable map symbol preserves '?' after conversion, but this
+        // capture does not yet persist the resolved public outcome. Do not
+        // let the native importer reconstruct those counters from a uniform
+        // hypothetical history.
+        p.put("questionOutcomes", new ArrayList<String>());
+        p.put("questionHistoryComplete", false);
         List<String> acquiredRelics = new ArrayList<>();
         List<String> priorEvents = new ArrayList<>();
         int shopRemovals = 0;
@@ -490,8 +511,8 @@ final class LiveOocCapture {
     }
 
     static boolean simpleInitialEventSupported(String simple) {
-        return Arrays.asList("BigFish", "GoldenShrine", "ShiningLight", "WorldOfGoop",
-                "LivingWall", "LiarsGame", "Mushrooms", "Ghosts", "WindingHalls", "TheLibrary",
+        return Arrays.asList("BigFish", "GoldenShrine",
+                "LivingWall", "LiarsGame", "Mushrooms", "TheLibrary",
                 "TheMausoleum", "MysteriousSphere", "SecretPortal", "FountainOfCurseRemoval", "UpgradeShrine",
                 "PurificationShrine", "Transmogrifier", "Duplicator", "Bonfire", "TheJoust",
                 "WomanInBlue").contains(simple);
@@ -712,6 +733,11 @@ final class LiveOocCapture {
     private static void treasure(Map<String,Object> out, List<Map<String,Object>> cs, List<?> labels)
             throws ReflectiveOperationException {
         out.put("screen", "treasure");
+        // The native chest particle depends on setupTreasureRoom() state
+        // (chest size, gold branch, and relic tier). The capture currently
+        // exposes only the Java chest class, so never score an unopened chest
+        // from a fabricated default StateInfo.
+        out.put("unsupportedReason", "TREASURE_STATE_UNREPRESENTABLE");
         Object chest = field(AbstractDungeon.getCurrRoom(), "chest");
         boolean opened = Boolean.TRUE.equals(field(chest, "isOpen"));
         out.put("details", object("chestType", chest.getClass().getSimpleName(), "opened", opened));

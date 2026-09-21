@@ -411,7 +411,10 @@ read-only screen and choice converters. The observation contains:
   or was a boss. The observer persists this public ledger in
   `~/.cache/sts-model-inspector/combat-history/<seed>-act<act>.tsv` and restores
   it on process restart, suppresses duplicate observations of the same current
-  fight, and clears the sidecar at a positively identified fresh Neow run. It
+  fight, and clears the sidecar at a positively identified fresh Neow run. Each
+  normal/elite queue entry also stores the canonical encounter identity, so
+  reconstruction restores the consumed native queue prefix rather than only
+  its length. Legacy two-column sidecars and unknown identities fail closed. It
   then validates it against `damage_taken`. It qualifies
   only when every combat in the act is represented; a missing or contradictory
   sidecar still fails closed with `PUBLIC_COMBAT_CLASS_HISTORY_UNQUALIFIED`.
@@ -465,6 +468,14 @@ seen-but-skipped offers are absent from vanilla metrics. An uninterrupted
 fresh-run observer accumulates them from each public screen; random-relic
 branches and direct MAP search fail closed with
 `PUBLIC_SEEN_RELIC_HISTORY_UNQUALIFIED` when that ledger is incomplete. The
+resolved `?`-room outcome ledger is not yet persisted in the live producer;
+therefore any current-act history containing event-room visits fails closed
+with `PUBLIC_QUESTION_ROOM_HISTORY_UNQUALIFIED`, and no uniform historical
+room sampler is used. Events whose native `StateInfo` fields are not captured
+(`ShiningLight`, `Ghosts`, `WindingHalls`, and `WorldOfGoop`) are unsupported.
+Unopened treasure is likewise unsupported until `setupTreasureRoom()` state
+(`chestSize`, `haveGold`, and `tier`) is imported; a Java chest class alone is
+not sufficient. The
 private Java `potionChance` and `cardRarityFactor` counters are
 not captured. Roots such as Library, Mushrooms and Mysterious Sphere whose pre-MAP
 continuation can generate potion or card rewards fail closed with

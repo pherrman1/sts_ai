@@ -170,6 +170,8 @@ LiveOocStateV1::LiveOocMctsRootV1 makeMctsRoot(const LiveOocStateV1 &source) {
         0, 1000, "current-act elite visits");
     const int eventVisits = integerValue(actVisits.at(static_cast<int>(Room::EVENT)),
         0, 1000, "current-act event visits");
+    const bool questionHistoryComplete = publicState.contains("questionHistoryComplete")
+        ? boolean(publicState, "questionHistoryComplete") : false;
     int normalCombats = 0, eliteCombats = 0;
     require(!combatHistoryComplete || combatHistory.size() == completedCombatFloors.size(),
         "complete combat history length differs from public combat metric");
@@ -181,8 +183,29 @@ LiveOocStateV1::LiveOocMctsRootV1 makeMctsRoot(const LiveOocStateV1 &source) {
                 || kind == "BOSS", "unknown public combat class");
         if (combatHistoryComplete)
             require(floor == completedCombatFloors.at(i), "combat history floor mismatch");
-        if (kind == "NORMAL_QUEUE") ++normalCombats;
-        if (kind == "ELITE_QUEUE") ++eliteCombats;
+        if (kind == "NORMAL_QUEUE" || kind == "ELITE_QUEUE") {
+            require(entry.contains("encounter") && entry.at("encounter").is_string()
+                    && !entry.at("encounter").get<std::string>().empty(),
+                    "queue combat identity is incomplete");
+            const auto encounterName = entry.at("encounter").get<std::string>();
+            MonsterEncounter encounter = MonsterEncounter::INVALID;
+            for (int candidate = 1; candidate < static_cast<int>(sizeof(monsterEncounterEnumNames)
+                    / sizeof(*monsterEncounterEnumNames)); ++candidate)
+                if (encounterName == monsterEncounterEnumNames[candidate]) {
+                    encounter = static_cast<MonsterEncounter>(candidate);
+                    break;
+                }
+            require(encounter != MonsterEncounter::INVALID, "unknown public encounter identity");
+            if (kind == "NORMAL_QUEUE") {
+                require(normalCombats < static_cast<int>(root.monsterList.size()),
+                        "normal encounter history exceeds native queue");
+                root.monsterList[normalCombats++] = encounter;
+            } else {
+                require(eliteCombats < static_cast<int>(root.eliteMonsterList.size()),
+                        "elite encounter history exceeds native queue");
+                root.eliteMonsterList[eliteCombats++] = encounter;
+            }
+        }
     }
     if (combatHistoryComplete)
         require(eliteCombats == eliteVisits,
@@ -272,6 +295,9 @@ LiveOocStateV1::LiveOocMctsRootV1 makeMctsRoot(const LiveOocStateV1 &source) {
     } else if (!combatHistoryComplete) {
         result.supported = false;
         result.reason = "PUBLIC_COMBAT_CLASS_HISTORY_UNQUALIFIED";
+    } else if (!questionHistoryComplete && eventVisits > 0) {
+        result.supported = false;
+        result.reason = "PUBLIC_QUESTION_ROOM_HISTORY_UNQUALIFIED";
     } else if (canDrawUnseenRelic) {
         result.supported = false;
         result.reason = "PUBLIC_SEEN_RELIC_HISTORY_UNQUALIFIED";

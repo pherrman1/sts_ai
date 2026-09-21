@@ -1049,7 +1049,7 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         return "NONE";
     }
 
-    private String encounterName(AbstractRoom room) {
+    static String encounterName(AbstractRoom room) {
         com.megacrit.cardcrawl.monsters.MonsterGroup group = room == null ? null : room.monsters;
         if (group == null) group = AbstractDungeon.getMonsters();
         if (group == null || group.monsters == null || group.monsters.isEmpty()) return "";

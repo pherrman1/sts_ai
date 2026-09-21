@@ -112,7 +112,11 @@ public final class LiveOocCaptureTest {
                 || !"Big Fish".equals(LiveOocCapture.canonicalEventId("Big Fish")))
             throw new AssertionError("event canonical save identity mismatch");
         if (!LiveOocCapture.simpleInitialEventSupported("WomanInBlue")
-                || LiveOocCapture.simpleInitialEventSupported("WomanInBlueDialogue"))
+                || LiveOocCapture.simpleInitialEventSupported("WomanInBlueDialogue")
+                || LiveOocCapture.simpleInitialEventSupported("ShiningLight")
+                || LiveOocCapture.simpleInitialEventSupported("Ghosts")
+                || LiveOocCapture.simpleInitialEventSupported("WindingHalls")
+                || LiveOocCapture.simpleInitialEventSupported("WorldOfGoop"))
             throw new AssertionError("Woman in Blue initial-phase support boundary mismatch");
         Object firstReward = new Object(), secondReward = new Object();
         String firstIdentity = LiveOocCapture.rewardIdentity(firstReward, null, null);
@@ -143,11 +147,11 @@ public final class LiveOocCaptureTest {
         java.nio.file.Path home = java.nio.file.Files.createTempDirectory("live-ooc-history");
         System.setProperty("user.home", home.toString());
         Object group = new Object();
-        combats.observe(player, 12345, 1, 3, true, true, group, "FIXED_EVENT");
-        combats.observe(player, 12345, 1, 3, true, true, new Object(), "FIXED_EVENT");
-        combats.observe(player, 12345, 1, 3, false, false, null, null);
-        combats.observe(player, 12345, 1, 5, false, true, new Object(), "NORMAL_QUEUE");
-        combats.observe(player, 12345, 1, 8, false, true, new Object(), "ELITE_QUEUE");
+        combats.observe(player, 12345, 1, 3, true, true, group, "FIXED_EVENT", "MUSHROOMS_EVENT");
+        combats.observe(player, 12345, 1, 3, true, true, new Object(), "FIXED_EVENT", "MUSHROOMS_EVENT");
+        combats.observe(player, 12345, 1, 3, false, false, null, null, "");
+        combats.observe(player, 12345, 1, 5, false, true, new Object(), "NORMAL_QUEUE", "JAW_WORM");
+        combats.observe(player, 12345, 1, 8, false, true, new Object(), "ELITE_QUEUE", "GREMLIN_NOB");
         if (!combats.completeFor(java.util.Arrays.asList(3, 5, 8))
                 || combats.snapshot().size() != 3
                 || !"FIXED_EVENT".equals(combats.snapshot().get(0).get("kind")))
@@ -158,13 +162,13 @@ public final class LiveOocCaptureTest {
         restored.restoreFor(player, 12345, 1);
         if (!restored.completeFor(java.util.Arrays.asList(3, 5, 8)))
             throw new AssertionError("persisted combat history did not restore");
-        restored.observe(player, 12345, 1, 8, false, true, new Object(), "ELITE_QUEUE");
+        restored.observe(player, 12345, 1, 8, false, true, new Object(), "ELITE_QUEUE", "GREMLIN_NOB");
         if (restored.snapshot().size() != 3)
             throw new AssertionError("restart during combat duplicated the current floor");
-        combats.observe(new Object(), 12345, 1, 9, false, true, new Object(), "NORMAL_QUEUE");
+        combats.observe(new Object(), 12345, 1, 9, false, true, new Object(), "NORMAL_QUEUE", "CULTIST");
         if (!combats.completeFor(java.util.Arrays.asList(3, 5, 8, 9)))
             throw new AssertionError("restored mid-act combat history did not remain complete");
-        combats.observe(player, 12345, 2, 18, true, true, new Object(), "NORMAL_QUEUE");
+        combats.observe(player, 12345, 2, 18, true, true, new Object(), "NORMAL_QUEUE", "CULTIST");
         if (!combats.completeFor(java.util.Arrays.asList(18)))
             throw new AssertionError("new act did not reset complete combat-class history");
         LiveOocCapture.CombatClassHistory sameSeed = new LiveOocCapture.CombatClassHistory();

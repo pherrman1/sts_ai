@@ -237,11 +237,12 @@ int main(int argc,char **argv){try{
         auto wire = project(source, path, "question_to_monster_history");
         auto &p = wire["ooc"]["publicState"];
         p["combatFloors"] = J::array({6});
-        p["combatHistory"] = J::array({{{"floor",6},{"kind","NORMAL_QUEUE"}}});
+        p["combatHistory"] = J::array({{{"floor",6},{"kind","NORMAL_QUEUE"},
+            {"encounter","JAW_WORM"}}});
         p["pathHistory"] = J::array({"MONSTER", "MONSTER", "MONSTER", "MONSTER", "MONSTER", "EVENT"});
         advisor::LiveOocStateV1 live;
         const auto result = advisor::importLiveOocStateV1(wire, live);
-        check(result.ok, "question-to-monster public combat history import");
+        check(result.ok, "question-to-monster public combat history import: " + result.message);
         check(live.mctsRoot.state.monsterListOffset == 1
                 && live.mctsRoot.state.eliteMonsterListOffset == 0,
                 "question-to-monster must consume the normal encounter queue");
@@ -259,6 +260,10 @@ int main(int argc,char **argv){try{
         p["combatFloors"] = J::array({20, 23});
         p["combatHistory"] = J::array({{{"floor",20},{"kind","NORMAL_QUEUE"}},
                                         {{"floor",23},{"kind","ELITE_QUEUE"}}});
+        p["combatHistory"][0]["encounter"] = "JAW_WORM";
+        p["combatHistory"][1]["encounter"] = "GREMLIN_NOB";
+        p["questionHistoryComplete"] = true;
+        p["questionOutcomes"] = J::array({"MONSTER"});
         // Earlier act transitions mean path_taken[22] does not exist.
         p["pathHistory"] = J::array({"MONSTER", "EVENT", "ELITE"});
         advisor::LiveOocStateV1 live;
@@ -278,8 +283,8 @@ int main(int argc,char **argv){try{
         auto &p = wire["ooc"]["publicState"];
         p["combatFloors"] = J::array({3, 5, 8});
         p["combatHistory"] = J::array({{{"floor",3},{"kind","FIXED_EVENT"}},
-                                        {{"floor",5},{"kind","NORMAL_QUEUE"}},
-                                        {{"floor",8},{"kind","ELITE_QUEUE"}}});
+                                        {{"floor",5},{"kind","NORMAL_QUEUE"},{"encounter","JAW_WORM"}},
+                                        {{"floor",8},{"kind","ELITE_QUEUE"},{"encounter","GREMLIN_NOB"}}});
         p["currentActPathVisits"][static_cast<int>(Room::ELITE)] = 1;
         advisor::LiveOocStateV1 live;
         check(advisor::importLiveOocStateV1(wire, live).ok, "fixed-event combat import");

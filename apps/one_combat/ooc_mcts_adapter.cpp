@@ -112,6 +112,8 @@ void sampleNoncombatFuture(GameContext &gc, std::mt19937_64 &rng) {
 
 void sampleLiveOocHiddenCountersImpl(GameContext &gc, std::mt19937_64 &rng,
                                      int priorEventRooms) {
+    if (priorEventRooms > 0)
+        throw sts::search::OocSearchUnsupported("public_question_room_history_unqualified");
     // Only '?' room transitions change these room chances. Bound increments
     // by the number of rooms already visited in this act, and reproduce the
     // native float-addition lattice (including Juzu's >1 monster chance).
