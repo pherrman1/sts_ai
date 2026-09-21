@@ -184,9 +184,15 @@ LiveOocStateV1::LiveOocMctsRootV1 makeMctsRoot(const LiveOocStateV1 &source) {
         if (combatHistoryComplete)
             require(floor == completedCombatFloors.at(i), "combat history floor mismatch");
         if (kind == "NORMAL_QUEUE" || kind == "ELITE_QUEUE") {
-            require(entry.contains("encounter") && entry.at("encounter").is_string()
-                    && !entry.at("encounter").get<std::string>().empty(),
-                    "queue combat identity is incomplete");
+            if (!entry.contains("encounter") || !entry.at("encounter").is_string()
+                    || entry.at("encounter").get<std::string>().empty()) {
+                // A resumed or otherwise incomplete ledger is already a
+                // fail-closed boundary below. Do not promote its missing
+                // queue identity into a schema error before that boundary can
+                // be reported to the live driver.
+                if (!combatHistoryComplete) continue;
+                require(false, "queue combat identity is incomplete");
+            }
             const auto encounterName = entry.at("encounter").get<std::string>();
             MonsterEncounter encounter = MonsterEncounter::INVALID;
             for (int candidate = 1; candidate < static_cast<int>(sizeof(monsterEncounterEnumNames)

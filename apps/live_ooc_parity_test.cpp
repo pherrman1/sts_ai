@@ -295,6 +295,11 @@ int main(int argc,char **argv){try{
         check(advisor::importLiveOocStateV1(wire, live).ok && !live.mctsRoot.supported
                 && live.mctsRoot.reason == "PUBLIC_COMBAT_CLASS_HISTORY_UNQUALIFIED",
               "resumed incomplete combat history must fail closed");
+        p["combatHistory"][1].erase("encounter");
+        const auto incompleteMissingIdentity = advisor::importLiveOocStateV1(wire, live);
+        check(incompleteMissingIdentity.ok && !live.mctsRoot.supported
+                && live.mctsRoot.reason == "PUBLIC_COMBAT_CLASS_HISTORY_UNQUALIFIED",
+              "incomplete queue identity must remain a clean unsupported boundary");
     }
     {
         auto source = base;
