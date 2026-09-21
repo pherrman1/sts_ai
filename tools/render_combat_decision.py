@@ -10,6 +10,7 @@ from __future__ import annotations
 import argparse
 import html
 import json
+import math
 import sys
 import webbrowser
 from pathlib import Path
@@ -84,7 +85,8 @@ def _source(raw: Mapping[str, Any], *, kind: str, evaluator: Mapping[str, Any] |
         before = state
         observation = _mapping(decision.get("observation"))
     else:
-        state = _first_mapping(decision, ("before", "liveObservation"))
+        observation = _mapping(decision.get("liveObservation"))
+        state = _combat_state(observation)
         raw_data = decision
         before = _first_mapping(decision, ("before",))
         after = _first_mapping(decision, ("after",))
@@ -94,7 +96,6 @@ def _source(raw: Mapping[str, Any], *, kind: str, evaluator: Mapping[str, Any] |
                      "selectedAction": selected.get("identity")}
         matched = _mapping(selected.get("action"))
         executed = _mapping(decision.get("mcpAction"))
-        observation = _mapping(decision.get("liveObservation"))
     return {
         "kind": kind,
         "raw": raw_data,
@@ -211,7 +212,14 @@ def load_differential_trace(path: Path, decision_index: int) -> dict[str, Any]:
         raise RenderError(f"differential trace contains no decision {decision_index}")
     if len(matches) != 1:
         raise RenderError(f"differential trace contains {len(matches)} records for decision {decision_index}")
-    return _source(matches[0], kind="differential", decision=matches[0])
+    record = matches[0]
+    if record.get("schema") != "sts_differential_trace":
+        raise RenderError(f"differential decision {decision_index} has unsupported schema")
+    if record.get("schemaVersion") != 1:
+        raise RenderError(f"differential decision {decision_index} has unsupported schema version")
+    if record.get("boundary") != "combat":
+        raise RenderError(f"differential decision {decision_index} is not a combat record")
+    return _source(record, kind="differential", decision=record)
 
 
 def _esc(value: Any) -> str:
@@ -245,14 +253,15 @@ def _header(source: Mapping[str, Any]) -> str:
     observation = _mapping(source.get("observation"))
     state = _state_packet(source)
     evaluator = _mapping(source.get("evaluator"))
+    silver_root = _mapping(observation.get("silverRoot"))
     player = _mapping(_pick(state, observation, keys=("player",), default={}))
     identity = [
-        ("session", _pick(raw, observation, keys=("session",), default=None)),
-        ("sequence", _pick(raw, observation, keys=("sequence",), default=None)),
-        ("observation hash", _pick(raw, observation, keys=("observationHash", "observation_hash"), default=None)),
+        ("session", _pick(raw, observation, keys=("session", "inspector_session"), default=None)),
+        ("sequence", _pick(raw, observation, keys=("sequence", "inspector_sequence"), default=None)),
+        ("observation hash", _pick(raw, observation, keys=("observationHash", "observation_hash", "inspector_observationHash"), default=None)),
         ("act", _pick(state, observation, raw, keys=("act", "act_num", "actNum"), default=None)),
         ("floor", _pick(state, observation, raw, keys=("floor", "floor_num", "floorNum"), default=None)),
-        ("encounter", _pick(state, observation, keys=("encounter", "encounterName", "room_type", "roomType"), default=None)),
+        ("encounter", _pick(state, observation, silver_root, keys=("encounter", "encounterName", "room_type", "roomType"), default=None)),
         ("turn", _pick(state, observation, keys=("turn", "turnNumber", "turn_num"), default=None)),
         ("decision in turn", evaluator.get("decisionInTurn")),
         ("HP", _pick(player, state, observation, keys=("current_hp", "currentHp", "current_health", "hp"), default=None)),
@@ -288,13 +297,14 @@ def _reroot_mode(value: Any) -> str:
 
 
 def _combat_section(source: Mapping[str, Any]) -> str:
+    observation = _mapping(source.get("observation"))
     state = _state_packet(source)
     if not state:
         return '<section><h2>Combat state</h2><p class="muted">not captured in this source</p></section>'
     player = _mapping(state.get("player")) or state
-    fields = [("HP", _pick(player, keys=("current_hp", "currentHp", "current_health", "hp"))),
-              ("block", _pick(player, keys=("block", "current_block", "currentBlock"))),
-              ("energy", _pick(player, keys=("energy",))),]
+    fields = [("HP", _pick(player, state, observation, keys=("current_hp", "currentHp", "current_health", "hp"))),
+              ("block", _pick(player, state, observation, keys=("block", "current_block", "currentBlock"))),
+              ("energy", _pick(player, state, observation, keys=("energy",))),]
     player_html = "".join(f"<div class=\"state-chip\"><span>{_esc(k)}</span><b>{_value(v)}</b></div>" for k, v in fields)
     enemies = _list(_pick(state, keys=("monsters", "enemies"), default=[]))
     enemy_rows = []
@@ -304,7 +314,7 @@ def _combat_section(source: Mapping[str, Any]) -> str:
         hp = _pick(enemy, keys=("current_hp", "currentHp", "curHp", "hp"))
         maximum = _pick(enemy, keys=("max_hp", "maxHp", "maxHealth"))
         intent = _pick(enemy, keys=("intent", "move", "moveName", "nextMove"))
-        damage = _pick(enemy, keys=("intended_damage", "intendedDamage", "damage", "moveDamage"))
+        damage = _pick(enemy, keys=("intended_damage", "intendedDamage", "intentDamage", "damage", "moveDamage"))
         hp_text = f"{_value(hp)}/{_value(maximum,)}" if maximum is not None else _value(hp)
         enemy_rows.append(f"<tr><td>{index}</td><td>{_value(name)}</td><td>{hp_text}</td>"
                           f"<td>{_value(_pick(enemy, keys=('block', 'current_block')))}</td>"
@@ -322,8 +332,9 @@ def _combat_section(source: Mapping[str, Any]) -> str:
                          f"<td>{_value(_pick(card, keys=('cost', 'current_cost', 'currentCost')))}</td></tr>")
     hand_html = ("<table><thead><tr><th>card</th><th>physical UUID</th><th>upgrade</th><th>cost</th></tr></thead><tbody>"
                  + "".join(hand_rows) + "</tbody></table>") if hand else '<p class="muted">hand not captured</p>'
-    pile_names = (("draw", "draw_pile", "drawPile"), ("discard", "discard_pile", "discardPile"),
-                  ("exhaust", "exhaust_pile", "exhaustPile"))
+    pile_names = (("draw", "draw", "draw_pile", "drawPile"),
+                  ("discard", "discard", "discard_pile", "discardPile"),
+                  ("exhaust", "exhaust", "exhaust_pile", "exhaustPile"))
     pile_html = "".join(f"<div class=\"state-chip\"><span>{_esc(label)}</span><b>{_value(_pile_value(state, keys))}</b></div>"
                         for label, *keys in pile_names)
     potions = _list(state.get("potions"))
@@ -361,10 +372,11 @@ def _root_section(source: Mapping[str, Any]) -> str:
         action = _mapping(item)
         fingerprint = action.get("fingerprint", action.get("semanticFingerprint"))
         is_selected = fingerprint == selected
-        share = action.get("visitShare")
-        if not isinstance(share, (int, float)) or isinstance(share, bool):
-            share = 0
-        share = max(0.0, min(1.0, float(share)))
+        raw_share = action.get("visitShare")
+        valid_share = (isinstance(raw_share, (int, float)) and not isinstance(raw_share, bool)
+                       and math.isfinite(float(raw_share)))
+        bar_share = max(0.0, min(1.0, float(raw_share))) if valid_share else 0.0
+        share_text = _value(raw_share) if raw_share is not None else "not captured"
         q_valid = action.get("selectionQValid") is True and "selectionQ" in action
         q = _value(action.get("selectionQ")) if q_valid else "unvisited / Q unavailable"
         live = action.get("liveAction")
@@ -373,7 +385,7 @@ def _root_section(source: Mapping[str, Any]) -> str:
         rows.append(f"<tr class=\"{klass}\"><td>{rank}</td><td>{_esc(marker)}</td>"
                     f"<td><strong>{_value(action.get('label', fingerprint))}</strong><br><code>{_esc(fingerprint)}</code></td>"
                     f"<td class=\"visits\">{_value(action.get('edgeVisits'))}</td>"
-                    f"<td><div class=\"share\"><span>{share:.3f}</span><i style=\"width:{share * 100:.3f}%\"></i></div></td>"
+                    f"<td><div class=\"share\"><span>{share_text}</span><i style=\"width:{bar_share * 100:.3f}%\"></i></div></td>"
                     f"<td>{q}</td><td><pre>{_pretty(live) if live is not None else 'not captured'}</pre></td></tr>")
     return ("<section><h2>Root action ranking</h2><table class=\"ranking\"><thead><tr>"
             "<th>#</th><th></th><th>action</th><th>visits</th><th>share</th><th>Q</th><th>live action</th>"

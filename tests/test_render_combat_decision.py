@@ -36,16 +36,18 @@ def snapshot_data(**extra):
         "boundary": "combat",
         "act": 1,
         "floor": 12,
-        "encounter": "Cultist",
+        "hp": 55,
+        "maxHp": 80,
         "turn": 3,
         "combat": {
-            "player": {"current_hp": 55, "max_hp": 80, "block": 6, "energy": 2},
-            "monsters": [{"id": "Cultist", "current_hp": 20, "max_hp": 48, "block": 0,
-                          "intent": "ATTACK", "intended_damage": 6}],
+            "block": 6, "energy": 2,
+            "monsters": [{"id": "Cultist", "hp": 20, "maxHp": 48, "block": 0,
+                          "intent": "ATTACK", "intentDamage": 6}],
             "hand": [{"id": "Bash", "name": "Bash", "uuid": "bash-1", "upgraded": False, "cost": 2}],
-            "draw_pile": ["Strike", "Defend"], "discard_pile": [], "exhaust_pile": [],
+            "draw": ["Strike", "Defend"], "discard": [], "exhaust": [],
             "potions": ["Fire Potion"], "relics": ["Burning Blood"],
         },
+        "silverRoot": {"encounter": "Cultist"},
     }
     observation.update(extra.pop("observation", {}))
     return {
@@ -71,6 +73,9 @@ class RenderCombatDecisionTest(unittest.TestCase):
             self.assertIn("Root action ranking", rendered)
             self.assertIn("Strike", rendered)
             self.assertIn("Bash", rendered)
+            self.assertIn("<span>HP</span><b>55</b>", rendered)
+            self.assertIn("<td>6</td></tr>", rendered)
+            self.assertIn("<span>draw</span><b>2</b>", rendered)
 
     def test_selected_action_is_matched_by_fingerprint_not_visit_rank(self):
         with tempfile.TemporaryDirectory() as directory:
@@ -87,8 +92,17 @@ class RenderCombatDecisionTest(unittest.TestCase):
             rendered = render_html(source)
             self.assertIn("unvisited / Q unavailable", rendered)
             self.assertIn("0.73", rendered)
-            self.assertIn("0.600", rendered)
+            self.assertIn(">0.6</span>", rendered)
             self.assertIn("width:60.000%", rendered)
+
+    def test_malformed_visit_share_is_preserved_but_bar_is_safe(self):
+        with tempfile.TemporaryDirectory() as directory:
+            value = snapshot_data()
+            value["response"]["advisor"]["evaluators"][0]["rootActionSummaries"][0]["visitShare"] = 1.5
+            source = load_snapshot(self.write_json(directory, "latest.json", value))
+            rendered = render_html(source)
+            self.assertIn(">1.5</span>", rendered)
+            self.assertIn("width:100.000%", rendered)
 
     def test_unsupported_response_is_first_class(self):
         with tempfile.TemporaryDirectory() as directory:
@@ -131,7 +145,9 @@ class RenderCombatDecisionTest(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             trace = Path(directory) / "trace.jsonl"
             rows = [
-                {"step": 4, "silver_evaluator": evaluator(), "post_action_state": {"player": {"current_hp": 49}},
+                {"step": 4, "inspector_session": "run-1", "inspector_sequence": 7,
+                 "inspector_observationHash": "hash-7", "silver_evaluator": evaluator(),
+                 "post_action_state": {"player": {"current_hp": 49}},
                  "legal_candidates": [{"id": "a0"}], "executed_mcp_tool": "play_card", "executed_mcp_arguments": {"card_index": 1}},
                 {"step": 5, "silver_evaluator": evaluator(selectedAction="attack:1"), "post_action_state": {"player": {"current_hp": 48}}},
             ]
@@ -141,6 +157,7 @@ class RenderCombatDecisionTest(unittest.TestCase):
             self.assertEqual(source["raw"]["step"], 4)
             self.assertIn("post-action state only", rendered)
             self.assertIn("play_card", rendered)
+            self.assertIn("run-1", rendered)
 
     def test_trace_duplicate_step_fails(self):
         with tempfile.TemporaryDirectory() as directory:
@@ -154,15 +171,35 @@ class RenderCombatDecisionTest(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             trace = Path(directory) / "differential.jsonl"
             record = {"record_type": "decision", "schema": "sts_differential_trace", "schemaVersion": 1,
-                      "decisionIndex": 123, "before": {"player": {"hp": 50}},
+                      "decisionIndex": 123, "boundary": "combat", "before": {"player": {"hp": 50}},
                       "after": {"player": {"hp": 44}}, "legalActions": [{"silver_fingerprint": "attack:1"}],
                       "selectedAction": {"identity": "silver:attack:1", "action": {"silver_fingerprint": "attack:1"}},
-                      "mcpAction": {"tool": "play_card", "arguments": {"card_index": 1}}}
+                      "mcpAction": {"tool": "play_card", "arguments": {"card_index": 1}},
+                      "liveObservation": snapshot_data()["observation"]}
             trace.write_text(json.dumps(record), encoding="utf-8")
             source = load_differential_trace(trace, 123)
             rendered = render_html(source)
             self.assertIn("Before → after", rendered)
             self.assertIn("play_card", rendered)
+            self.assertIn("Cultist", rendered)
+
+    def test_differential_adapter_rejects_wrong_schema_and_ooc(self):
+        with tempfile.TemporaryDirectory() as directory:
+            base = {"record_type": "decision", "schema": "sts_differential_trace", "schemaVersion": 1,
+                    "decisionIndex": 123, "boundary": "combat"}
+            wrong_schema = dict(base, schema="other")
+            path = self.write_jsonl(directory, "wrong-schema.jsonl", wrong_schema)
+            with self.assertRaisesRegex(RenderError, "unsupported schema"):
+                load_differential_trace(path, 123)
+            ooc = dict(base, boundary="ooc")
+            path = self.write_jsonl(directory, "ooc.jsonl", ooc)
+            with self.assertRaisesRegex(RenderError, "not a combat"):
+                load_differential_trace(path, 123)
+
+    def write_jsonl(self, directory, name, *rows):
+        path = Path(directory) / name
+        path.write_text("\n".join(json.dumps(row) for row in rows), encoding="utf-8")
+        return path
 
     def test_cli_writes_one_html_file(self):
         with tempfile.TemporaryDirectory() as directory:
