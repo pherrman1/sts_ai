@@ -99,7 +99,9 @@ json oocResponse(const one_combat::advisor::Request &request,
 json silverEvaluator(const one_combat::advisor::Request &request,
                      std::shared_ptr<silver_bridge::SilverSearchSession> &session,
                      std::string &sessionIdentity, std::string &combatEntryIdentity,
-                     one_combat::advisor::SilverImportContext &importContext) {
+                     one_combat::advisor::SilverImportContext &importContext,
+                     std::string &silverRootIdentity,
+                     std::int64_t &silverSimulations) {
     const auto entryIdentity = request.observation.value(
         "combatEntryHash", request.observation.value("silverRoot", json::object())
             .value("combatInstance", std::string()));
@@ -115,6 +117,8 @@ json silverEvaluator(const one_combat::advisor::Request &request,
         session.reset();
         sessionIdentity.clear();
         combatEntryIdentity.clear();
+        silverRootIdentity.clear();
+        silverSimulations = 0;
     };
     if (!imported.ok) {
         clearSession();
@@ -125,10 +129,12 @@ json silverEvaluator(const one_combat::advisor::Request &request,
     const auto entry = request.observation.value("combatEntryHash", std::string());
     const bool matchingSession = session != nullptr && sessionIdentity == request.session
         && combatEntryIdentity == entry;
-    if (imported.playerTurn == 1 && imported.decisionInTurn == 0) {
+    if (!matchingSession && imported.playerTurn == 1 && imported.decisionInTurn == 0) {
         session = silver_bridge::makeSilverSearchSession();
         sessionIdentity = request.session;
         combatEntryIdentity = entry;
+        silverRootIdentity.clear();
+        silverSimulations = 0;
     } else if (!matchingSession) {
         clearSession();
         evaluator["status"] = "UNSUPPORTED";
@@ -150,15 +156,31 @@ json silverEvaluator(const one_combat::advisor::Request &request,
         return evaluator;
     }
     evaluator["differentialState"] = one_combat::differential::canonicalCombatState(imported.wire);
+    const auto requestedSimulations = std::max<std::int64_t>(1000,
+        request.observation.value("silverSearchBudget", static_cast<std::int64_t>(1000)));
+    const auto rootIdentity = request.observation.value("silverRoot", json::object()).dump();
+    if (silverRootIdentity != rootIdentity) {
+        silverRootIdentity = rootIdentity;
+        silverSimulations = 0;
+    }
+    if (silverSimulations > requestedSimulations) {
+        clearSession();
+        evaluator["status"] = "UNSUPPORTED";
+        evaluator["reason"] = "silver_budget_regression";
+        return evaluator;
+    }
+    const auto additionalSimulations = requestedSimulations - silverSimulations;
     const auto started = std::chrono::steady_clock::now();
     silver_bridge::SilverSearchConfig config;
-    config.simulationsPerDecision = 1000;
+    config.simulationsPerDecision = additionalSimulations;
     config.collectRootActionSummaries = true;
     config.collectDecisionDiagnostics = true;
     config.adaptiveEnabled = false;
     config.exactVisitLockEnabled = false;
     config.rhoRacingEnabled = false;
-    const auto decision = silver_bridge::runSilverDecision(*session, imported.wire, config);
+    const auto decision = silverSimulations == 0
+        ? silver_bridge::runSilverDecision(*session, imported.wire, config)
+        : silver_bridge::continueSilverDecision(*session, additionalSimulations, config);
     evaluator["latencyMicros"] = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now() - started).count();
     if (!decision.accepted) {
         clearSession();
@@ -166,7 +188,13 @@ json silverEvaluator(const one_combat::advisor::Request &request,
         evaluator["reason"] = decision.failureReason;
         return evaluator;
     }
+    silverSimulations += decision.simulations;
     evaluator["status"] = "OK";
+    evaluator["simulations"] = silverSimulations;
+    evaluator["requestedSimulations"] = requestedSimulations;
+    evaluator["additionalSimulations"] = decision.simulations;
+    evaluator["totalSimulations"] = silverSimulations;
+    evaluator["rootVisits"] = decision.rootUncertainty.rootVisits;
     evaluator["selectedAction"] = silver_bridge::semanticActionFingerprint(decision.action);
     evaluator["selectedLabel"] = one_combat::advisor::silverActionLabel(decision.action, imported.wire);
     evaluator["selectedLiveAction"] = one_combat::advisor::selectedLiveAction(
@@ -237,6 +265,8 @@ int main() {
     std::string silverSessionIdentity;
     std::string silverCombatEntryIdentity;
     one_combat::advisor::SilverImportContext silverImportContext;
+    std::string silverRootIdentity;
+    std::int64_t silverSimulations = 0;
     if (const char *path = std::getenv("STS_CTM_MODEL"); path && *path) {
         try {
             ctm = std::make_unique<one_combat::NativeCombatTransitionSampler>(path);
@@ -268,7 +298,9 @@ int main() {
                         const auto silver = silverEvaluator(request, silverSession,
                                                             silverSessionIdentity,
                                                             silverCombatEntryIdentity,
-                                                            silverImportContext);
+                                                            silverImportContext,
+                                                            silverRootIdentity,
+                                                            silverSimulations);
                         if (!ctm) {
                             if (!request.observation.contains("combatEntry")) {
                                 response = one_combat::advisor::unsupportedResponse(

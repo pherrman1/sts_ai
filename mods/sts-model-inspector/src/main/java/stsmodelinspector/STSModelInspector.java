@@ -16,6 +16,7 @@ import com.megacrit.cardcrawl.monsters.AbstractMonster;
 import com.megacrit.cardcrawl.powers.AbstractPower;
 import com.megacrit.cardcrawl.helpers.FontHelper;
 import com.megacrit.cardcrawl.helpers.ImageMaster;
+import com.megacrit.cardcrawl.helpers.input.InputHelper;
 import com.megacrit.cardcrawl.rooms.EventRoom;
 import com.megacrit.cardcrawl.rooms.MonsterRoom;
 import com.megacrit.cardcrawl.rooms.ShopRoom;
@@ -57,6 +58,9 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         PostBattleSubscriber {
     private static final String PROTOCOL = "sts_model_inspector_v1";
     private static final int PROTOCOL_VERSION = 1;
+    private static final long DEFAULT_SILVER_SEARCH_BUDGET = 1000L;
+    private static final float SILVER_BOOST_BUTTON_X = 238.0f;
+    private static final float SILVER_BOOST_BUTTON_WIDTH = 90.0f;
     private static final String TOGGLE = "stsmodelinspector.toggle";
     private static final Color PANEL_BACKGROUND = new Color(0.015f, 0.075f, 0.115f, 0.96f);
     private static final Color PANEL_INNER = new Color(0.02f, 0.12f, 0.18f, 0.94f);
@@ -146,6 +150,10 @@ public final class STSModelInspector implements PostInitializeSubscriber,
     private volatile boolean silverRerootFallback;
     private volatile String silverFallbackReason = "";
     private volatile long silverInheritedVisits;
+    private volatile long silverTotalSimulations;
+    private volatile long silverRootVisits;
+    private long silverSearchBudget = DEFAULT_SILVER_SEARCH_BUDGET;
+    private String silverBudgetStateFingerprint = "";
     private volatile double ctmDeath = 0.0;
     private volatile int ctmHistogramMin = 1;
     private volatile double[] ctmHistogram = new double[0];
@@ -160,6 +168,13 @@ public final class STSModelInspector implements PostInitializeSubscriber,
     private int lastNodeX = -1, lastNodeY = -1;
     private static String liveEncounter = "";
     private boolean toggleDown;
+
+    private void resetSilverBudget() {
+        silverSearchBudget = DEFAULT_SILVER_SEARCH_BUDGET;
+        silverBudgetStateFingerprint = "";
+        silverTotalSimulations = 0;
+        silverRootVisits = 0;
+    }
 
     public static void initialize() {
         BaseMod.subscribe(INSTANCE);
@@ -183,6 +198,7 @@ public final class STSModelInspector implements PostInitializeSubscriber,
 
     @Override
     public void receiveOnBattleStart(AbstractRoom room) {
+        resetSilverBudget();
         monsterSlots.clear();
         replacedMonsterParents.clear();
         hexaghostDividerDamage.clear();
@@ -205,6 +221,7 @@ public final class STSModelInspector implements PostInitializeSubscriber,
 
     @Override
     public void receivePostBattle(AbstractRoom room) {
+        resetSilverBudget();
         monsterSlots.clear();
         replacedMonsterParents.clear();
         hexaghostDividerDamage.clear();
@@ -230,6 +247,8 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         silverRerootFallback = false;
         silverFallbackReason = "";
         silverInheritedVisits = 0;
+        silverTotalSimulations = 0;
+        silverRootVisits = 0;
         ctmDeath = 0.0;
         ctmHistogram = new double[0];
     }
@@ -254,6 +273,7 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         boolean down = Keyboard.isKeyDown(loadToggleKey());
         if (down && !toggleDown) panelVisible = !panelVisible;
         toggleDown = down;
+        handleSilverBoostClick();
 
         Snapshot snapshot = captureStableSnapshot();
         if (snapshot == null) {
@@ -271,6 +291,11 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         if (snapshot.hash.equals(lastFingerprint)) return;
         lastFingerprint = snapshot.hash;
         Snapshot emitted = snapshot.withSequence(++sequence);
+        if ("combat".equals(snapshot.boundary)
+                && snapshot.silverSearchBudget == DEFAULT_SILVER_SEARCH_BUDGET) {
+            silverTotalSimulations = 0;
+            silverRootVisits = 0;
+        }
         newest = emitted;
         responseSequence = -1;
         responseHash = "";
@@ -325,6 +350,7 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         renderAdvisorIcon(sb, x + 16.0f * scale, top - 18.0f * scale, scale);
         renderHeaderText(sb, combat ? "STS Model Advisor" : "OOC Advisor", x + 70.0f * scale,
                 top - 14.0f * scale, Color.WHITE, 0.82f);
+        if (combat) renderSilverBoostButton(sb, x, top, scale);
         renderStatusPill(sb, x + width - 164.0f * scale, top - 12.0f * scale, scale);
         renderGearIcon(sb, x + width - 31.0f * scale, top - 27.0f * scale, scale);
 
@@ -366,6 +392,8 @@ public final class STSModelInspector implements PostInitializeSubscriber,
                 rightWidth - 24.0f * scale, cardHeight - 38.0f * scale, scale);
 
         String silver = silverSummary();
+        renderSmallText(sb, silverBudgetSummary(), x + 16.0f * scale, bottom + 68.0f * scale,
+                CYAN_DIM, 0.70f);
         renderSmallText(sb, silver, x + 16.0f * scale, bottom + 48.0f * scale,
                 "OK".equals(silverStatus) ? CYAN : WARNING, 0.78f);
         renderSmallText(sb, Keyboard.getKeyName(loadToggleKey()) + " hide",
@@ -402,6 +430,52 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         }
         if (silverStatus == null || silverStatus.isEmpty()) return "Silver  ·  waiting";
         return "Silver  ·  " + silverStatus.toLowerCase(Locale.ROOT);
+    }
+
+    private String silverBudgetSummary() {
+        return "Silver budget " + compactSimulations(silverSearchBudget)
+                + "  ·  visits " + compactSimulations(silverRootVisits)
+                + "  ·  total " + compactSimulations(silverTotalSimulations);
+    }
+
+    private void renderSilverBoostButton(SpriteBatch sb, float x, float top, float scale) {
+        float buttonX = x + SILVER_BOOST_BUTTON_X * scale;
+        float buttonTop = top - 12.0f * scale;
+        float buttonHeight = 30.0f * scale;
+        drawRect(sb, buttonX, buttonTop - buttonHeight,
+                SILVER_BOOST_BUTTON_WIDTH * scale, buttonHeight, PANEL_INNER);
+        drawBorder(sb, buttonX, buttonTop - buttonHeight,
+                SILVER_BOOST_BUTTON_WIDTH * scale, buttonHeight, CYAN_DIM, scale);
+        String increment = silverSearchBudget == DEFAULT_SILVER_SEARCH_BUDGET ? "+9k" : "+10k";
+        renderSmallText(sb, "Silver " + increment, buttonX + 8.0f * scale,
+                buttonTop - 7.0f * scale, CYAN, 0.66f);
+    }
+
+    private void handleSilverBoostClick() {
+        if (!panelVisible || newest == null || !"combat".equals(newest.boundary)
+                || !InputHelper.justClickedLeft || !silverBoostButtonHit()) return;
+        silverSearchBudget = nextSilverSearchBudget(silverSearchBudget);
+        // This diagnostic control must not also activate an underlying game UI
+        // element when the click lands in the panel header.
+        InputHelper.justClickedLeft = false;
+    }
+
+    private boolean silverBoostButtonHit() {
+        float scale = Settings.scale;
+        float x = 24.0f * scale + SILVER_BOOST_BUTTON_X * scale;
+        float bottom = Settings.HEIGHT - 170.0f * scale - 42.0f * scale;
+        return InputHelper.mX >= x && InputHelper.mX <= x + SILVER_BOOST_BUTTON_WIDTH * scale
+                && InputHelper.mY >= bottom && InputHelper.mY <= bottom + 30.0f * scale;
+    }
+
+    static long nextSilverSearchBudget(long current) {
+        return current <= DEFAULT_SILVER_SEARCH_BUDGET ? 10000L : current + 10000L;
+    }
+
+    private static String compactSimulations(long simulations) {
+        if (simulations <= 0) return "0";
+        if (simulations % 1000L == 0) return (simulations / 1000L) + "k";
+        return Long.toString(simulations);
     }
 
     private OocOverlay currentOocOverlay() {
@@ -875,14 +949,26 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         String candidates = candidatesJson(boundary);
         String combat = "";
         if ("combat".equals(boundary)) combat = combatJson();
-        String raw = boundary + "|" + character + "|" + AbstractDungeon.ascensionLevel +
+        String stateRaw = boundary + "|" + character + "|" + AbstractDungeon.ascensionLevel +
                 "|" + act + "|" + floor + "|" + hp + "|" + maxHp + "|" + gold +
                 "|" + room.getClass().getName() + "|" + AbstractDungeon.screen.name() +
                 "|" + deck + "|" + candidates + "|" + combat + "|" + ooc;
+        if ("combat".equals(boundary)) {
+            String stateFingerprint = sha256(stateRaw);
+            if (!stateFingerprint.equals(silverBudgetStateFingerprint)) {
+                silverSearchBudget = DEFAULT_SILVER_SEARCH_BUDGET;
+                silverBudgetStateFingerprint = stateFingerprint;
+            }
+        } else {
+            silverSearchBudget = DEFAULT_SILVER_SEARCH_BUDGET;
+            silverBudgetStateFingerprint = "";
+        }
+        String raw = stateRaw + "|silverSearchBudget=" + silverSearchBudget;
         return new Snapshot(session, 0, boundary, character,
                 AbstractDungeon.ascensionLevel, act, floor, hp, maxHp, gold,
                 deck, candidates, combat, "combat".equals(boundary) ? combatEntry : "",
-                "combat".equals(boundary) ? combatEntryHash : "", ooc, sha256(raw), capturedNanos);
+                "combat".equals(boundary) ? combatEntryHash : "", ooc,
+                silverSearchBudget, sha256(raw), capturedNanos);
     }
 
     private void observeRoomTransition() {
@@ -2267,6 +2353,8 @@ public final class STSModelInspector implements PostInitializeSubscriber,
                             silverRerootFallback = false;
                             silverFallbackReason = "";
                             silverInheritedVisits = 0;
+                            silverTotalSimulations = 0;
+                            silverRootVisits = 0;
                             current.responseLatencyMicros = Math.max(0L,
                                     (System.nanoTime() - current.capturedNanos) / 1000L);
                             responseSequence = seq;
@@ -2301,6 +2389,8 @@ public final class STSModelInspector implements PostInitializeSubscriber,
                                 silverRerootFallback = booleanField(line, "fallback");
                                 silverFallbackReason = field(line, "fallbackReason");
                                 silverInheritedVisits = numberField(line, "inheritedVisits");
+                                silverTotalSimulations = numberField(line, "totalSimulations");
+                                silverRootVisits = numberField(line, "rootVisits");
                                 if (silverRanking != null) silverRanking = silverRanking.replace("\\n", "\n");
                             }
                             String ctm = ctmResponseJson(line);
@@ -2575,13 +2665,15 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         final String combatEntry, combatEntryHash;
         final String observationJson;
         final long sequence, capturedNanos;
+        final long silverSearchBudget;
         volatile long responseLatencyMicros = -1L;
         final int ascension, act, floor, hp, maxHp, gold;
 
         Snapshot(String session, long sequence, String boundary, String character,
                  int ascension, int act, int floor, int hp, int maxHp, int gold,
                  String deck, String candidates, String combat, String combatEntry,
-                 String combatEntryHash, String ooc, String hash, long capturedNanos) {
+                 String combatEntryHash, String ooc, long silverSearchBudget,
+                 String hash, long capturedNanos) {
             this.session = session; this.sequence = sequence; this.boundary = boundary;
             this.capturedNanos = capturedNanos;
             this.character = character; this.ascension = ascension; this.act = act;
@@ -2589,13 +2681,14 @@ public final class STSModelInspector implements PostInitializeSubscriber,
             this.deck = deck; this.candidates = candidates; this.hash = hash;
             this.combat = combat; this.ooc = ooc; this.combatEntry = combatEntry;
             this.combatEntryHash = combatEntryHash;
+            this.silverSearchBudget = silverSearchBudget;
             this.observationJson = buildObservationJson();
         }
 
         Snapshot withSequence(long emittedSequence) {
             return new Snapshot(session, emittedSequence, boundary, character, ascension, act,
                     floor, hp, maxHp, gold, deck, candidates, combat, combatEntry,
-                    combatEntryHash, ooc, hash, capturedNanos);
+                    combatEntryHash, ooc, silverSearchBudget, hash, capturedNanos);
         }
 
         String toJson() {
@@ -2614,6 +2707,7 @@ public final class STSModelInspector implements PostInitializeSubscriber,
                     (ooc.isEmpty() ? "" : ",\"ooc\":" + ooc) +
                     (combat.isEmpty() ? "" : ",\"combat\":" + combat
                         + ",\"combatEntryHash\":\"" + combatEntryHash + "\""
+                        + ",\"silverSearchBudget\":" + silverSearchBudget
                         + (combatEntry.isEmpty() ? "" : ",\"combatEntry\":" + combatEntry)
                         + (combatEntry.isEmpty() ? "" : ",\"silverRoot\":{\"schemaVersion\":4,\"playerTurn\":"
                             + com.megacrit.cardcrawl.actions.GameActionManager.turn
