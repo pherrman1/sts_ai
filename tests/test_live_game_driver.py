@@ -788,6 +788,26 @@ class OocDriverTest(unittest.TestCase):
         with self.assertRaises(IntegrationFailure):
             map_ooc_action({"kind": "map", "x": 9, "y": 2}, actions)
 
+    def test_sole_map_root_accepts_native_zero_visit_shortcut(self):
+        # Real floor-1 map had one path. Native sole-root bypass returned
+        # visits=0, visitShare=1; the driver rejected it before choosing.
+        screen = {"screen_type": "MAP", "choice_list": [{"x": 3, "y": 1}]}
+        selected = {"kind": "map", "x": 3, "y": 1}
+        sole = {"semanticKey": "map:3:1", "q": 0.0, "visits": 0,
+                "visitShare": 1.0, "prior": 1.0, "liveAction": selected}
+        with tempfile.TemporaryDirectory() as directory:
+            path = ooc_inspector_file(directory, screen, status="OK", selectedLiveAction=selected,
+                                      selectedSemanticKey="map:3:1", candidateSummaries=[sole])
+            self.assertEqual(InspectorSnapshot.load(path).ooc_evaluator("mcts_ctm")[
+                "selectedLiveAction"], selected)
+            extra = dict(sole, semanticKey="map:4:1", liveAction={"kind": "map", "x": 4, "y": 1},
+                         visitShare=0.0, prior=0.0)
+            raw = json.loads(path.read_text())
+            raw["response"]["advisor"]["evaluators"][0]["candidateSummaries"] = [sole, extra]
+            path.write_text(json.dumps(raw))
+            with self.assertRaisesRegex(DriverError, "root visits/shares"):
+                InspectorSnapshot.load(path).ooc_evaluator("mcts_ctm")
+
     def test_single_screen_compound_and_controls(self):
         for kind in ("skip", "proceed", "cancel", "confirm"):
             candidate = map_ooc_action({"kind": kind}, build_legal_actions({}, [kind]))

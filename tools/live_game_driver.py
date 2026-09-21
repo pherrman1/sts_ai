@@ -620,7 +620,14 @@ class InspectorSnapshot:
                 max_visits = max(candidate["visits"] for candidate in summaries)
                 if selected["visits"] != max_visits:
                     raise DriverError("OOC selected candidate is not the visit winner")
-            if require_mcts_stats and (total_visits <= 0 or abs(total_share - 1.0) > 1e-6):
+            # The native planner bypasses simulations for a qualified sole
+            # legal root. It reports that one forced action with zero visits
+            # and a full share; multi-action roots still require visits.
+            sole_root_bypass = (require_mcts_stats and len(summaries) == 1 and total_visits == 0
+                                and summaries[0]["visits"] == 0
+                                and summaries[0]["prior"] == 1.0)
+            if require_mcts_stats and ((total_visits <= 0 and not sole_root_bypass)
+                                       or abs(total_share - 1.0) > 1e-6):
                 raise DriverError("OOC MCTS root visits/shares do not form a complete root distribution")
             if selected.get("liveAction") != evaluator.get("selectedLiveAction"):
                 raise DriverError("OOC selected action disagrees with candidate summary")

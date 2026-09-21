@@ -62,7 +62,10 @@ action, Q, visit count, visit share, and prior. The selected candidate is the
 visit winner, with the planner's Q tie-break. The driver and Java overlay
 validate finite nonnegative statistics, a complete root visit/share
 distribution, and selected-candidate consistency before displaying or
-executing a choice. A selected smith, peace-pipe, shop-removal, or supported
+executing a choice. The native sole-root shortcut reports its one qualified
+action with zero visits and full visit share; the driver accepts that exact
+case, while roots with multiple actions still require positive visits. A
+selected smith, peace-pipe, shop-removal, or supported
 event transaction records a session/sequence-bound pending compound plan; the
 next matching selector must resolve the same physical card identity before a
 selector action is emitted. Missing, ambiguous, stale, or interrupted plans
