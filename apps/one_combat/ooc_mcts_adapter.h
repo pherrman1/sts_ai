@@ -40,8 +40,10 @@ struct OocAdapterOptions {
 // public/hypothetical path rather than consulting process-global run state.
 struct OocMctsDependencies {
     std::function<bool()> policyAvailable;
-    std::function<double(const GameContext &, const PathHistory &,
-                         const GameAction &)> policyLogit;
+    // One immutable state preparation per candidate set. The result must
+    // correspond one-for-one with the supplied distinct source primitives.
+    std::function<std::vector<double>(const GameContext &, const PathHistory &,
+                         const std::vector<GameAction> &)> policyLogits;
     std::function<double(const GameContext &, const PathHistory &)> leafValue;
     std::function<void(GameContext &, PathHistory &, std::mt19937_64 &)> continuationStep;
     std::function<double(const GameContext &)> potionKeepValue;

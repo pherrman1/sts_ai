@@ -186,6 +186,35 @@ int main(int argc, char **argv) {
                 int(gc.screenState), entity, entityId, goldGePrice);
             require(candidate.q == expected, "prepared scorer differs from direct V4 Q");
         }
+        GameContext pending(CharacterClass::IRONCLAD, 991, 0);
+        pending.openCardSelectScreen(CardSelectScreenType::REMOVE, 1);
+        pending.regainControlAction = [](GameContext &state) {
+            state.screenState = ScreenState::MAP_SCREEN;
+            state.regainControlAction = nullptr;
+        };
+        bool leafSawMap = false;
+        OocMctsDependencies deps;
+        deps.policyAvailable = [] { return true; };
+        deps.policyLogits = [](const GameContext &, const PathHistory &,
+                               const std::vector<GameAction> &actions) {
+            return std::vector<double>(actions.size(), 0.0);
+        };
+        deps.leafValue = [&](const GameContext &state, const PathHistory &) {
+            leafSawMap = state.screenState == ScreenState::MAP_SCREEN;
+            return 0.25;
+        };
+        deps.continuationStep = [](GameContext &state, PathHistory &, std::mt19937_64 &) {
+            const auto semantic = enumerateOocSemanticPrimitiveBindings(state);
+            if (!semantic.supported || !semantic.complete || semantic.bindings.empty())
+                throw OocSearchUnsupported("test continuation enumeration");
+            GameAction(semantic.bindings.front().primitiveBits).execute(state);
+        };
+        OocAdapterOptions checkpoint;checkpoint.checkpointLeaves=true;
+        OocGameContextModel checkpointModel(pending, path, {}, checkpoint, std::move(deps));
+        std::mt19937_64 checkpointRng(17);
+        require(checkpointModel.evaluateLeaf(0, checkpointRng) == 0.25 && leafSawMap
+                && checkpointModel.continuationMetrics().projectionSteps > 0,
+                "advisor checkpoint leaf evaluated an unresolved selector");
         std::cout << "live OOC policy contract PASS\n";
         return 0;
     } catch (const std::exception &error) {

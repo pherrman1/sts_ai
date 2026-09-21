@@ -91,6 +91,22 @@ class LiveOocProtocol(unittest.TestCase):
             self.assertTrue(all("visits" in c and "prior" in c for c in targeted))
         self.assertEqual(selector["evaluators"][0]["status"], "OK")
 
+    def test_semantic_only_roots_use_uniform_prior_and_checkpoint_leaf(self):
+        rows = self.run_rows([self.fixtures[name] for name in
+                              ("remove_selector", "transform_selector", "rewards_without_cards")])
+        for response in rows:
+            evaluator, = response["evaluators"]
+            self.assertEqual(evaluator["status"], "OK", response)
+            priors = [candidate["prior"] for candidate in evaluator["candidateSummaries"]]
+            self.assertTrue(priors)
+            self.assertTrue(all(abs(prior - priors[0]) < 1e-12 for prior in priors), response)
+
+    def test_map_root_fails_closed_without_public_chance_posterior(self):
+        response, = self.run_rows([self.fixtures["map_multiple_children"]])
+        evaluator, = response["evaluators"]
+        self.assertEqual(evaluator["status"], "UNSUPPORTED")
+        self.assertEqual(evaluator["reason"], "PUBLIC_EVENT_CHANCE_HISTORY_UNQUALIFIED")
+
     def test_woman_in_blue_is_a_complete_live_mcts_root(self):
         response, = self.run_rows([self.fixtures["event_woman_in_blue"]])
         evaluator, = response["evaluators"]

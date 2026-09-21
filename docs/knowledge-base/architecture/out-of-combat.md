@@ -313,6 +313,15 @@ features receive sampled hidden queues rather than the real future queue.
 offline/native parity seam; live startup always enables sampling and reports
 `noncombatOutcomes=sampled`. There is no live known-RNG override.
 
+The live root conditions that sampled support on public metric history before
+search: current-act normal/elite consumption, acquired or lost relics,
+observed events, and paid shop removals. Private Java potion/card-rarity
+counters are not copied; their hypothetical values come from the canonical
+constructor prior.
+Live MAP roots fail closed while the public-history posterior for those chance
+counters remains unqualified; non-MAP checkpoint searches stop at MAP before
+sampling a future room.
+
 Default PUCT/widening remain `1.5`, `2`, `0.5`, with 512 simulations. Depth counts
 searched semantic transitions (primitive transitions on MAP), excluding
 policy-chain steps used only to project leaves. Sampling removes the concrete

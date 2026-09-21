@@ -190,10 +190,6 @@ LiveOocDecision LiveOocMctsPolicy::score(const sts::GameContext &projected,
                                          const PathHistory &path) const {
     LiveOocDecision unsupportedResult;
     unsupportedResult.policy = name();
-    if (!v4DecisionSupported(projected)) {
-        unsupportedResult.reason = "V4_SCREEN_UNSUPPORTED";
-        return unsupportedResult;
-    }
     if (!model_.ok) { unsupportedResult.reason = "MODEL_UNAVAILABLE"; return unsupportedResult; }
     if (!sampler_) { unsupportedResult.reason = "CTM_MODEL_UNAVAILABLE"; return unsupportedResult; }
     if (!winModel_ || !winModel_->ok) {
@@ -203,32 +199,57 @@ LiveOocDecision LiveOocMctsPolicy::score(const sts::GameContext &projected,
 
     OocAdapterOptions options;
     options.sampleNoncombat = true;
+    options.checkpointLeaves = true;
     if (hasRootPrimitiveBits_) options.rootPrimitiveBits = rootPrimitiveBits_;
     OocMctsDependencies dependencies;
     dependencies.policyAvailable = [this] { return model_.ok; };
-    dependencies.policyLogit = [this](const sts::GameContext &gc, const PathHistory &history,
-                                      const sts::search::GameAction &action) {
+    const auto policyBatch = [this](const sts::GameContext &gc, const PathHistory &history,
+                                      const std::vector<sts::search::GameAction> &actions) {
         const TokState tokens = buildTokStatePure(gc, history);
         const auto prepared = model_.prepareState(tokens.glob, tokens.nDk, tokens.dk,
             tokens.nRl, tokens.rl, tokens.nPt, tokens.pt);
-        int actionType, c1, c2, c3, cand1, cand2, cand3;
-        strategicCands(gc, action, actionType, c1, c2, c3, cand1, cand2, cand3);
-        const int cats[6] = {c1, c2, c3, cand1, cand2, cand3};
-        int entityType, entityId;
-        float price;
-        tokEntity(gc, action, entityType, entityId, price);
-        const float entity[4] = {float(entityType == 0), float(entityType == 1),
-                                 float(entityType == 2), float(entityType == 3)};
-        const double logit = model_.predictPolicyLogit(prepared, action.bits, cats,
-            actionType, static_cast<int>(gc.screenState), entity, entityId, price);
-        if (!std::isfinite(logit)) throw std::runtime_error("OOC MCTS nonfinite policy logit");
-        return logit;
+        std::vector<double> result;
+        result.reserve(actions.size());
+        for (const auto action : actions) {
+            int actionType, c1, c2, c3, cand1, cand2, cand3;
+            strategicCands(gc, action, actionType, c1, c2, c3, cand1, cand2, cand3);
+            const int cats[6] = {c1, c2, c3, cand1, cand2, cand3};
+            int entityType, entityId;
+            float price;
+            tokEntity(gc, action, entityType, entityId, price);
+            const float entity[4] = {float(entityType == 0), float(entityType == 1),
+                                     float(entityType == 2), float(entityType == 3)};
+            const double logit = model_.predictPolicyLogit(prepared, action.bits, cats,
+                actionType, static_cast<int>(gc.screenState), entity, entityId, price);
+            if (!std::isfinite(logit)) throw std::runtime_error("OOC MCTS nonfinite policy logit");
+            result.push_back(logit);
+        }
+        return result;
     };
+    dependencies.policyLogits = policyBatch;
     dependencies.leafValue = [this](const sts::GameContext &gc, const PathHistory &history) {
         const double value = winModel_->predict(richFeatureVec(gc, history));
         if (!std::isfinite(value) || value < 0 || value > 1)
             throw std::runtime_error("OOC MCTS invalid native v_win value");
         return value;
+    };
+    dependencies.continuationStep = [policyBatch](sts::GameContext &gc, PathHistory &history,
+                                           std::mt19937_64 &) {
+        const auto enumeration = sts::search::enumerateOocSemanticPrimitiveBindings(gc);
+        if (!enumeration.supported || !enumeration.complete || enumeration.bindings.empty())
+            throw sts::search::OocSearchUnsupported("continuation_semantic_enumeration");
+        std::vector<sts::search::GameAction> sources;
+        std::set<std::uint32_t> seen;
+        for (const auto &binding : enumeration.bindings)
+            if (seen.insert(binding.primitiveBits).second)
+                sources.emplace_back(binding.primitiveBits);
+        std::size_t selected = 0;
+        if (v4DecisionSupported(gc)) {
+            const auto logits = policyBatch(gc, history, sources);
+            selected = std::max_element(logits.begin(), logits.end()) - logits.begin();
+        }
+        sources.at(selected).execute(gc);
+        history.update(gc);
     };
 
     try {

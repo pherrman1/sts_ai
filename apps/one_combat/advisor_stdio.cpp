@@ -127,6 +127,16 @@ json oocResponse(const one_combat::advisor::Request &request,
         } catch (const std::exception &error) {
             return advisor::errorResponse(request, "OOC_ACTION_MAPPING", error.what());
         }
+        if (std::string(policy.name()) == "mcts_ctm" && !state.mctsRoot.supported) {
+            evaluator["reason"] = state.mctsRoot.reason;
+            evaluator["latencyMicros"] = std::chrono::duration_cast<std::chrono::microseconds>(
+                std::chrono::steady_clock::now() - started).count();
+            return {{"protocol", advisor::kProtocol}, {"protocolVersion", advisor::kProtocolVersion},
+                    {"kind", "analysis"}, {"status", evaluator.at("status")},
+                    {"session", request.session}, {"sequence", request.sequence},
+                    {"observationHash", request.observationHash},
+                    {"evaluators", json::array({evaluator})}};
+        }
         policy.setSearchSeed(stableHash(request.observationHash + ":live-ooc-mcts"));
         const auto scoreStarted = std::chrono::steady_clock::now();
         auto decision = policy.score(state.mctsRoot.state, state.mctsRoot.path);

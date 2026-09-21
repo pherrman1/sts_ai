@@ -45,6 +45,11 @@ search seed is derived from the request observation hash, so repeated
 observations are reproducible without importing live RNG state. V4 remains
 available only as the explicit `STS_LIVE_OOC_POLICY=v4` diagnostic path; it is
 not the default and is not used as a post-hoc selector.
+Newly expanded reward, shop, event, and selector states are continued through
+the shared bounded dependency to a resolved map checkpoint before `v_win` is
+evaluated. Semantic roots outside V4's screen support use uniform source
+priors; REMOVE, TRANSFORM, and non-card reward roots are not rejected merely
+because V4 cannot supply their prior.
 
 Each supported OOC candidate reports a semantic key/payload, physical live
 action, Q, visit count, visit share, and prior. The selected candidate is the
@@ -390,7 +395,9 @@ read-only screen and choice converters. The observation contains:
 - `publicState`: Ironclad class, ascension, act/floor, HP/max HP, gold, keys,
   potion capacity and five exact slots, physical deck instances with bottle
   binding, relic data, visible boss, the complete visible 15-by-7 map and edges,
-  current/burning-elite coordinates, and exact path-visit counts.
+  current/burning-elite coordinates, exact whole-run and current-act path
+  counts, acquired/lost relic identities, prior event identities, and the
+  publicly recorded number of paid shop removals.
 - `details`: current reward groups, campfire options, physical upgrade targets,
   supported event/Neow phase and options, shop slots/prices, chest state, or
   ordered boss relic offers.
@@ -412,20 +419,25 @@ support or a claim of whole-game reward equivalence.
 
 Path counts derive from persisted `metricData.path_taken`, whose original map
 symbols survive event-to-room conversion and save/resume. Missing history is
-unsupported. `potionChance` and `cardRarityFactor` are captured live/debug
-integration counters. **This is a debug integration policy, not fair-play
-performance evidence.** No RNG state, future encounter queue, or unrevealed
+unsupported. Public metric history conditions current-act normal/elite
+encounter consumption, relic-pool membership, one-time/event membership, and
+shop-removal cost. The private Java `potionChance` and `cardRarityFactor`
+counters are not captured; the detached belief root retains the constructor's
+public prior for them. No RNG state, future encounter queue, or unrevealed
 outcome is captured.
+Because a MAP-root transition immediately depends on the unreconstructable
+posterior over those counters, live MCTS fails closed there with
+`PUBLIC_EVENT_CHANCE_HISTORY_UNQUALIFIED`. Supported non-MAP roots resolve to
+MAP and stop before that uncertainty can affect a transition.
 
-`live_ooc_state` creates a detached `GameContext` for features and candidates
-only. It has no continuation callback and imports no hidden queues or RNG.
+`live_ooc_state` creates both a value-only public projection and a separately
+conditioned transition root. It imports no hidden queue ordering or RNG.
 `ooc_v4_encoding` is the shared pure implementation of the existing 42-global
 V4 token and candidate encodings; the ordinary driver's `buildTokState` wrapper
 retains its diagnostic hook. `LiveOocPolicy` is the policy-provider interface.
-The only provider is `v4_q`: prepare the token state once, score every existing
-legal V4 primitive with the tracked native model, and select maximum Q with
-ascending canonical semantic identity as the tie-break. No deployed policy
-chain, margin gate, or OOC MCTS is invoked or qualified by this path.
+The explicit diagnostic provider is `v4_q`: prepare the token state once,
+score every existing legal V4 primitive with the tracked native model, and
+select maximum Q with ascending canonical semantic identity as the tie-break.
 
 The stable evaluator is `live_ooc_decision_v1`, with `policy: "v4_q"`.
 An OK result contains semantic identities/payloads, finite per-action Q scores,

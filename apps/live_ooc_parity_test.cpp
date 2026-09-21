@@ -24,14 +24,16 @@ static J cardWire(const Card &c){return {{"id",J(c.id)},{"upgraded",c.isUpgraded
 // memory, RNG states, pools, encounters, callbacks or future outcomes.
 static J project(const GameContext &g,const PathHistory &path,const std::string &name) {
     J p={{"character","IRONCLAD"},{"ascension",g.ascension},{"act",g.act},{"floor",g.floorNum},
-        {"hp",g.curHp},{"maxHp",g.maxHp},{"gold",g.gold},{"potionChance",g.potionChance},
-        {"cardRarityFactor",g.cardRarityFactor},{"blueKey",g.blueKey},{"greenKey",g.greenKey},{"redKey",g.redKey},
+        {"hp",g.curHp},{"maxHp",g.maxHp},{"gold",g.gold},
+        {"blueKey",g.blueKey},{"greenKey",g.greenKey},{"redKey",g.redKey},
         {"potionCapacity",g.potionCapacity},{"potions",J::array()},{"deck",J::array()},{"relics",J::array()},
-        {"boss",J(g.boss)},{"pathComplete",true},{"pathVisits",path.roomVisits}};
+        {"boss",J(g.boss)},{"pathComplete",true},{"pathVisits",path.roomVisits},
+        {"currentActPathVisits",path.roomVisits},{"acquiredRelics",J::array()},
+        {"priorEvents",J::array()},{"shopRemoveCount",g.shopRemoveCount}};
     for(const auto pot:g.potions)p["potions"].push_back(J(pot));
     for(int i=0;i<g.deck.size();++i){auto c=cardWire(g.deck.cards[i]);int bottle=-1;
         for(int j=0;j<3;++j)if(g.deck.bottleIdxs[j]==i)bottle=j;c["bottleBinding"]=bottle;p["deck"].push_back(c);}
-    for(const auto &r:g.relics.relics)p["relics"].push_back({{"id",J(r.id)},{"data",r.data}});
+    for(const auto &r:g.relics.relics){p["relics"].push_back({{"id",J(r.id)},{"data",r.data}});p["acquiredRelics"].push_back(J(r.id));}
     J m={{"x",g.curMapNodeX},{"y",g.curMapNodeY},{"burningEliteX",g.map->burningEliteX},
         {"burningEliteY",g.map->burningEliteY},{"nodes",J::array()}};
     for(const auto &row:g.map->nodes)for(const auto &n:row){J es=J::array();for(int i=0;i<n.edgeCount;++i)es.push_back(n.edges[i]);
@@ -50,7 +52,8 @@ static J project(const GameContext &g,const PathHistory &path,const std::string 
         case ScreenState::MAP_SCREEN:screen="map";break;
         case ScreenState::TREASURE_ROOM:screen="treasure";break;
         case ScreenState::BOSS_RELIC_REWARDS:screen="boss_relic";d["relics"]=J::array();for(auto r:g.info.bossRelics)d["relics"].push_back(J(r));break;
-        case ScreenState::CARD_SELECT:screen="selector";d={{"type",g.info.selectScreenType==CardSelectScreenType::UPGRADE?"upgrade":"remove"},
+        case ScreenState::CARD_SELECT:screen="selector";d={{"type",g.info.selectScreenType==CardSelectScreenType::UPGRADE?"upgrade":
+            g.info.selectScreenType==CardSelectScreenType::TRANSFORM?"transform":"remove"},
             {"requiredPicks",g.info.toSelectCount},{"completedPicks",g.info.haveSelectedCards.size()},{"cards",J::array()}};
             for(const auto &c:g.info.toSelectCards)d["cards"].push_back({{"deckIndex",c.deckIdx},{"card",cardWire(c.card)}});break;
         case ScreenState::SHOP_ROOM:{screen="shop";const auto &s=g.info.shop;
@@ -122,7 +125,7 @@ int main(int argc,char **argv){try{
     g.info.rewardsContainer.addCardReward(cards);add("multiple_card_groups",g);
     g.info.rewardsContainer.addGold(31);g.info.rewardsContainer.addRelic(RelicId::ANCHOR);
     g.info.rewardsContainer.addPotion(Potion::DEXTERITY_POTION);g.info.rewardsContainer.sapphireKey=true;add("mixed_combat_rewards_key",g);
-    g.info.rewardsContainer.clear();g.info.rewardsContainer.addGold(20);add("unsupported_rewards_without_cards",g);
+    g.info.rewardsContainer.clear();g.info.rewardsContainer.addGold(20);add("rewards_without_cards",g);
     g=base;g.screenState=ScreenState::SHOP_ROOM;std::fill(std::begin(g.info.shop.prices),std::end(g.info.shop.prices),-1);
     g.info.shop.cards[0]=Card(CardId::BASH);g.info.shop.cardPrice(0)=51;g.info.shop.cards[1]=Card(CardId::BASH);g.info.shop.cardPrice(1)=51;
     g.info.shop.relics[0]=RelicId::ANCHOR;g.info.shop.relicPrice(0)=150;
@@ -131,7 +134,8 @@ int main(int argc,char **argv){try{
     add("shop_prismatic_shard_displayed_but_excluded",g);
     g=base;g.screenState=ScreenState::BOSS_RELIC_REWARDS;g.info.bossRelics[0]=RelicId::BLACK_BLOOD;g.info.bossRelics[1]=RelicId::COFFEE_DRIPPER;g.info.bossRelics[2]=RelicId::FUSION_HAMMER;add("boss_relic_take_skip",g);
     g=base;g.openCardSelectScreen(CardSelectScreenType::UPGRADE,1);add("upgrade_duplicate_physical_cards",g);
-    g=base;g.openCardSelectScreen(CardSelectScreenType::REMOVE,1);add("unsupported_shop_removal_selector",g);
+    g=base;g.openCardSelectScreen(CardSelectScreenType::REMOVE,1);add("remove_selector",g);
+    g=base;g.openCardSelectScreen(CardSelectScreenType::TRANSFORM,1);add("transform_selector",g);
     g=base;g.screenState=ScreenState::EVENT_SCREEN;g.curEvent=Event::BIG_FISH;add("event_big_fish",g);
     g.curEvent=Event::LIVING_WALL;add("event_living_wall",g);
     g.curEvent=Event::THE_WOMAN_IN_BLUE;add("event_woman_in_blue",g);
@@ -162,7 +166,17 @@ int main(int argc,char **argv){try{
             continue;
         }
         check(result.ok,name+": "+result.message);
-        sameTokens(buildTokStatePure(source,path),buildTokStatePure(live.projected,live.path));
+        check(live.mctsRoot.state.monsterListOffset==path.roomVisits[int(Room::MONSTER)]
+                && live.mctsRoot.state.eliteMonsterListOffset==path.roomVisits[int(Room::ELITE)],
+                name+" current-act encounter history");
+        check(live.mctsRoot.state.potionChance==0 && live.mctsRoot.state.cardRarityFactor==5,
+                name+" hidden Java counters leaked into belief root");
+        for(const auto &owned:source.relics.relics) for(const auto *pool:{&live.mctsRoot.state.commonRelicPool,
+                &live.mctsRoot.state.uncommonRelicPool,&live.mctsRoot.state.rareRelicPool,
+                &live.mctsRoot.state.shopRelicPool,&live.mctsRoot.state.bossRelicPool})
+            check(std::find(pool->begin(),pool->end(),owned.id)==pool->end(),name+" acquired relic remained in support");
+        auto publicSource=source;publicSource.potionChance=0;publicSource.cardRarityFactor=5;
+        sameTokens(buildTokStatePure(publicSource,path),buildTokStatePure(live.projected,live.path));
         check(source.deck.cardTypeCounts==live.projected.deck.cardTypeCounts,name+" deck type counts");
         check(source.deck.transformableCount==live.projected.deck.transformableCount,name+" transformable count");
         check(source.deck.upgradeableCount==live.projected.deck.upgradeableCount,name+" upgradeable count");
@@ -176,9 +190,11 @@ int main(int argc,char **argv){try{
         check(sa.supported==sb.supported&&sa.complete==sb.complete&&sa.actions.size()==sb.actions.size(),name+" semantic support");
         for(std::size_t i=0;i<sa.actions.size();++i){check(search::canonicalOocSemanticActionKey(sa.actions[i])==search::canonicalOocSemanticActionKey(sb.actions[i]),name+" semantic key");
             check(search::oocSemanticActionPayloadJson(sa.actions[i])==search::oocSemanticActionPayloadJson(sb.actions[i]),name+" semantic payload");}
-        auto qa=scoreLiveOocV4(source,path,*model),qb=scoreLiveOocV4(live.projected,live.path,*model);
+        auto qa=scoreLiveOocV4(publicSource,path,*model),qb=scoreLiveOocV4(live.projected,live.path,*model);
         check(qa.supported==qb.supported&&qa.reason==qb.reason,name+" score support");
-        if(name.rfind("unsupported_",0)==0)check(!qa.supported,name+" must unsupported");else check(qa.supported,name+": "+qa.reason);
+        const bool v4Unsupported = name.rfind("unsupported_",0)==0
+            || name=="rewards_without_cards" || name=="remove_selector" || name=="transform_selector";
+        if(v4Unsupported)check(!qa.supported,name+" must be outside direct V4 support");else check(qa.supported,name+": "+qa.reason);
         check(qa.selectedIndex==qb.selectedIndex&&qa.candidates.size()==qb.candidates.size(),name+" argmax");
         std::vector<std::uint32_t> bits;
         for(std::size_t i=0;i<qa.candidates.size();++i){const auto &a=qa.candidates[i],&b=qb.candidates[i];
@@ -198,12 +214,19 @@ int main(int argc,char **argv){try{
     bad=wire;bad["ooc"]["publicState"]["potions"][0]="UNKNOWN";reject(bad);
     bad=wire;bad["ooc"]["publicState"]["pathComplete"]=false;reject(bad);
     bad=wire;bad["ooc"]["publicState"]["map"]["nodes"][0]["edges"]={7};reject(bad);
-    bad=wire;bad["ooc"]["publicState"].erase("potionChance");reject(bad);
+    bad=wire;bad["ooc"]["publicState"].erase("currentActPathVisits");reject(bad);
     bad=wire;bad["ooc"]["publicState"]["map"]["nodes"][0]["edges"]={4294967296ULL};reject(bad);
     bad=wire;bad["ooc"]["publicState"]["map"]["x"]=18446744073709551615ULL;reject(bad);
     bad=wire;bad["ooc"]["publicState"]["map"]["nodes"].erase(0);reject(bad);
     bad=wire;for(int x=0;x<7;++x)bad["ooc"]["publicState"]["map"]["nodes"][x]["edges"]={3};reject(bad);
     advisor::LiveOocStateV1 live;check(advisor::importLiveOocStateV1(wire,live).ok,"baseline import");
+    auto conditioned=wire;conditioned["ooc"]["publicState"]["priorEvents"]={"Big Fish"};
+    conditioned["ooc"]["publicState"]["shopRemoveCount"]=3;
+    advisor::LiveOocStateV1 conditionedLive;check(advisor::importLiveOocStateV1(conditioned,conditionedLive).ok,"history import");
+    check(conditionedLive.mctsRoot.state.shopRemoveCount==3,"shop removal history not reconstructed");
+    for(const auto *pool:{&conditionedLive.mctsRoot.state.eventList,&conditionedLive.mctsRoot.state.shrineList,
+            &conditionedLive.mctsRoot.state.specialOneTimeEventList})
+        check(std::find(pool->begin(),pool->end(),Event::BIG_FISH)==pool->end(),"prior event remained eligible");
     const auto first=v4CandidateActions(live.projected).front().bits;
     live.ooc["liveChoices"].push_back(live.ooc["liveChoices"][0]);
     bool failed=false;try{advisor::lowerLiveOocAction(live,first);}catch(...){failed=true;}check(failed,"duplicate lowering accepted");

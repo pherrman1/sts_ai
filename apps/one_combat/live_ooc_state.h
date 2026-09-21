@@ -18,6 +18,8 @@ struct LiveOocStateV1 {
     struct LiveOocMctsRootV1 {
         sts::GameContext state{};
         PathHistory path;
+        bool supported = true;
+        std::string reason;
     } mctsRoot;
 };
 ImportResult importLiveOocStateV1(const nlohmann::json &observation, LiveOocStateV1 &out);

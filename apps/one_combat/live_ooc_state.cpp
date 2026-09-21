@@ -116,11 +116,8 @@ LiveOocStateV1::LiveOocMctsRootV1 makeMctsRoot(const LiveOocStateV1 &source) {
     root.lastRoom = source.projected.lastRoom;
     root.curEvent = source.projected.curEvent;
     root.boss = source.projected.boss;
-    root.monsterChance = source.projected.monsterChance;
-    root.shopChance = source.projected.shopChance;
-    root.treasureChance = source.projected.treasureChance;
-    root.potionChance = source.projected.potionChance;
-    root.cardRarityFactor = source.projected.cardRarityFactor;
+    // Keep the constructor's public prior for hidden reward/event counters.
+    // Live Java's private blizzard counters are deliberately not imported.
     root.shopRemoveCount = source.projected.shopRemoveCount;
     root.curMapNodeX = source.projected.curMapNodeX;
     root.curMapNodeY = source.projected.curMapNodeY;
@@ -148,6 +145,28 @@ LiveOocStateV1::LiveOocMctsRootV1 makeMctsRoot(const LiveOocStateV1 &source) {
     root.lastRoom = source.projected.lastRoom == sts::Room::INVALID
         ? root.curRoom : source.projected.lastRoom;
 
+    const auto &publicState = source.ooc.at("publicState");
+    const auto &actVisits = array(publicState, "currentActPathVisits", 10);
+    require(actVisits.size() == 10, "ten current-act path counters required");
+    root.monsterListOffset = integerValue(actVisits.at(static_cast<int>(Room::MONSTER)), 0,
+        root.monsterList.size(), "current-act monster visits");
+    root.eliteMonsterListOffset = integerValue(actVisits.at(static_cast<int>(Room::ELITE)), 0,
+        root.eliteMonsterList.size(), "current-act elite visits");
+    const auto eraseRelic = [&](RelicId relic) {
+        for (auto pool : {&root.commonRelicPool, &root.uncommonRelicPool, &root.rareRelicPool,
+                          &root.shopRelicPool, &root.bossRelicPool})
+            pool->erase(std::remove(pool->begin(), pool->end(), relic), pool->end());
+    };
+    for (const auto &relic : array(publicState, "acquiredRelics", 181))
+        eraseRelic(id<RelicId>(relic, RelicId::INVALID));
+    const auto eraseEvent = [&](Event event) {
+        for (auto pool : {&root.eventList, &root.shrineList, &root.specialOneTimeEventList})
+            pool->erase(std::remove(pool->begin(), pool->end(), event), pool->end());
+    };
+    for (const auto &event : array(publicState, "priorEvents", 100))
+        eraseEvent(id<Event>(event, Event::INVALID));
+    if (root.curEvent != Event::INVALID && root.curEvent != Event::NEOW) eraseEvent(root.curEvent);
+
     // These callbacks are only the public-screen continuation boundary. Any
     // callback that depends on an unrevealed prior room remains unsupported by
     // the importer rather than borrowing live Java state.
@@ -161,6 +180,14 @@ LiveOocStateV1::LiveOocMctsRootV1 makeMctsRoot(const LiveOocStateV1 &source) {
     LiveOocStateV1::LiveOocMctsRootV1 result;
     result.state = std::move(root);
     result.path = source.path;
+    // A MAP root immediately samples event-vs-monster-vs-shop-vs-treasure.
+    // The exact posterior over native blizzard counters is not recoverable
+    // from persisted public history. Other supported OOC roots stop at MAP
+    // before those counters can affect a transition.
+    if (source.projected.screenState == ScreenState::MAP_SCREEN) {
+        result.supported = false;
+        result.reason = "PUBLIC_EVENT_CHANCE_HISTORY_UNQUALIFIED";
+    }
     return result;
 }
 } // namespace
@@ -189,8 +216,11 @@ ImportResult importLiveOocStateV1(const J &observation, LiveOocStateV1 &out) {
         g.floorNum=integer(p,"floor",0,1000); g.curHp=integer(p,"hp",0,32767);
         g.maxHp=integer(p,"maxHp",1,32767); require(g.curHp<=g.maxHp,"hp exceeds maxHp");
         g.gold=integer(p,"gold",0,1000000);
-        g.potionChance=integer(p,"potionChance",-100,100);
-        g.cardRarityFactor=integer(p,"cardRarityFactor",-100,100);
+        // Hidden native blizzard counters are intentionally absent. Projected
+        // V4 fallback gets the canonical public prior, never live private state.
+        g.potionChance=0;
+        g.cardRarityFactor=5;
+        g.shopRemoveCount=integer(p,"shopRemoveCount",0,100);
         g.blueKey=boolean(p,"blueKey"); g.greenKey=boolean(p,"greenKey"); g.redKey=boolean(p,"redKey");
         g.potionCapacity=integer(p,"potionCapacity",0,5);
         const auto &potions=array(p,"potions",5); require(potions.size()==5,"five potion slots required");

@@ -116,9 +116,6 @@ final class LiveOocCapture {
                 "blueKey", Settings.hasSapphireKey, "greenKey", Settings.hasEmeraldKey,
                 "redKey", Settings.hasRubyKey, "keysEnabled", Settings.isFinalActAvailable,
                 "potionCapacity", AbstractDungeon.player.potionSlots,
-                // These counters are debug integration state, NOT fair-play evidence.
-                "potionChance", AbstractRoom.blizzardPotionMod,
-                "cardRarityFactor", AbstractDungeon.cardBlizzRandomizer,
                 "boss", AbstractDungeon.bossKey == null ? "" : AbstractDungeon.bossKey));
         List<Object> deck = new ArrayList<>();
         for (AbstractCard c : AbstractDungeon.player.masterDeck.group) deck.add(card(c));
@@ -169,6 +166,41 @@ final class LiveOocCapture {
         p.put("pathVisits", visits);
         p.put("pathComplete", exact);
         p.put("pathHistory", path == null ? new ArrayList<String>() : new ArrayList<>(path));
+        int[] actVisits = new int[10];
+        int actStartFloor = AbstractDungeon.actNum <= 1 ? 0 : AbstractDungeon.actNum == 2 ? 17
+                : AbstractDungeon.actNum == 3 ? 34 : 51;
+        int currentActRooms = Math.max(0, AbstractDungeon.floorNum - actStartFloor);
+        if (path != null) for (String symbol : path.subList(Math.max(0, path.size() - currentActRooms), path.size())) {
+            int idx = Arrays.asList("SHOP", "REST", "EVENT", "ELITE", "MONSTER", "TREASURE",
+                    "BOSS", "BOSS_TREASURE", "NONE", "INVALID").indexOf(roomSymbol(symbol));
+            if (idx >= 0 && idx < 6) ++actVisits[idx];
+        }
+        p.put("currentActPathVisits", actVisits);
+        List<String> acquiredRelics = new ArrayList<>();
+        List<String> priorEvents = new ArrayList<>();
+        int shopRemovals = 0;
+        if (CardCrawlGame.metricData != null) {
+            for (Object raw : CardCrawlGame.metricData.relics_obtained) {
+                Object key = map(raw).get("key");
+                if (key != null && !acquiredRelics.contains(String.valueOf(key))) acquiredRelics.add(String.valueOf(key));
+            }
+            for (Object raw : CardCrawlGame.metricData.event_choices) {
+                Map<String,Object> event = map(raw);
+                Object name = event.get("event_name");
+                if (name != null && !priorEvents.contains(String.valueOf(name))) priorEvents.add(String.valueOf(name));
+                for (String key : Arrays.asList("relics_obtained", "relics_lost")) {
+                    Object values = event.get(key);
+                    if (values instanceof List) for (Object relic : (List<?>)values)
+                        if (!acquiredRelics.contains(String.valueOf(relic))) acquiredRelics.add(String.valueOf(relic));
+                }
+            }
+            shopRemovals = CardCrawlGame.metricData.purchased_purges;
+        }
+        for (AbstractRelic relic : AbstractDungeon.player.relics)
+            if (!acquiredRelics.contains(relic.relicId)) acquiredRelics.add(relic.relicId);
+        p.put("acquiredRelics", acquiredRelics);
+        p.put("priorEvents", priorEvents);
+        p.put("shopRemoveCount", shopRemovals);
     }
 
     static String canonicalEventId(String liveId) {
