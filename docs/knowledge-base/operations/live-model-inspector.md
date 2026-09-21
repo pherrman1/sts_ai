@@ -474,16 +474,16 @@ seen-but-skipped offers are absent from vanilla metrics. An uninterrupted
 fresh-run observer accumulates them from each public screen; random-relic
 branches and direct MAP search fail closed with
 `PUBLIC_SEEN_RELIC_HISTORY_UNQUALIFIED` when that ledger is incomplete. The
-resolved `?`-room outcome ledger is not yet persisted in the live producer;
-therefore any current-act history containing event-room visits fails closed
-with `PUBLIC_QUESTION_ROOM_HISTORY_UNQUALIFIED`, and no uniform historical
-room sampler is used. Events whose native `StateInfo` fields are not captured
-(`ShiningLight`, `Ghosts`, `WindingHalls`, and `WorldOfGoop`) are unsupported.
-Unopened treasure is likewise unsupported until `setupTreasureRoom()` state
-(`chestSize`, `haveGold`, and `tier`) is imported; a Java chest class alone is
-not sufficient. The
-private Java `potionChance` and `cardRarityFactor` counters are
-not captured. Roots such as Library, Mushrooms and Mysterious Sphere whose pre-MAP
+resolved `?`-room outcome ledger persists public floor and outcome pairs
+across game restarts. Complete current-act history reconstructs the native
+room-chance counters in floor order; missing or inconsistent history fails
+closed with `PUBLIC_QUESTION_ROOM_HISTORY_UNQUALIFIED`. Events whose native
+`StateInfo` fields are not captured (`Ghosts`, `WindingHalls`, and
+`WorldOfGoop`) remain unsupported. `ShiningLight` imports its public damage
+amount. Unopened treasure imports its public chest size; its unrevealed
+contents remain hidden in the hypothetical futures. The private Java
+`potionChance` and `cardRarityFactor` counters are not captured. Roots such
+as Library, Mushrooms and Mysterious Sphere whose pre-MAP
 continuation can generate potion or card rewards fail closed with
 `PUBLIC_REWARD_PITY_HISTORY_UNQUALIFIED`. The v_win leaf marginalizes those
 features with the exact discrete mixture `E[sigmoid(margin)]` over a bounded
@@ -491,15 +491,12 @@ native lattice (`potionChance` -40 through 60), never applying the link to an
 expected margin. Real live captures do not claim an exact pity history: direct V4 requests fail closed and
 MCTS uses an equal public prior rather than a fabricated midpoint. Synthetic
 parity fixtures may mark an exact pity reconstruction explicitly. Live
-hypothetical room-chance and pity counters are sampled once per root particle.
-Room chances use the public current-act `?` visit count and jointly advance
-all three counters for each sampled latent room outcome, so every sampled
-triple is reachable under the native update rule. The shared simulator
-sampler retains its previous copied-counter behavior. This is a support-safe
-prior, not an exact posterior conditioned on every prior `?` outcome. An
-already-open boss chest with only native `proceed` is a
-pass-through state, not a fresh treasure decision; the advisor preserves that
-single live action.
+hypothetical pity counters are sampled once per root particle. Complete
+question-outcome history reconstructs room chances exactly; incomplete
+current-act history remains unsupported. The shared simulator sampler retains
+its previous copied-counter behavior. An already-open boss chest with only
+native `proceed` is a pass-through state, not a fresh treasure decision; the
+advisor preserves that single live action.
 No RNG state, future encounter queue, or unrevealed outcome is captured.
 Checkpoint continuation preserves the simulator's reward-collection order and
 uses the V4 Q/margin contract for card rewards. The fixed free-reward prefix
@@ -562,7 +559,8 @@ source-derived active/spent conversion; other unqualified positive counters
 are unsupported. A deck containing upgraded Searing Blow returns
 `SEARING_BLOW_UPGRADE_HISTORY_UNQUALIFIED`, because public card fields cannot
 reconstruct the native history-dependent upgradeable count. Confirmation-only
-screens and unsupported dialogue phases are explicitly accounted fallbacks.
+screens without a recorded model choice, and unsupported dialogue phases,
+remain explicit unsupported boundaries in strict mode.
 These limits must not be presented as whole-game equivalence.
 
 ### Full-run driver and failure packets
