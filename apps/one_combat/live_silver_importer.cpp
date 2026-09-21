@@ -582,7 +582,10 @@ SilverRootImportResult importSilverRootGeneric(const json &observation,
     wire.loopCount = combat.value("loopCount", 0);
     wire.energyWasted = combat.value("energyWasted", 0);
     wire.cardsDrawn = combat.value("cardsDrawn", 0);
-    wire.monsterTurnIdx = combat.value("monsterTurnIdx", 0);
+    // Java omits this native-only field at a stable player decision. Silver's
+    // player-turn sentinel is 6; zero would immediately execute monsters after
+    // any card action and manufacture chance branches before End Turn.
+    wire.monsterTurnIdx = combat.value("monsterTurnIdx", 6);
     wire.endTurnQueued = combat.value("endTurnQueued", false);
     wire.turnHasEnded = combat.value("turnHasEnded", false);
     wire.skipMonsterTurn = combat.value("skipMonsterTurn", false);

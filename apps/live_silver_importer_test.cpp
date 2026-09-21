@@ -1195,6 +1195,40 @@ int main() {
                 + " m1move=" + std::to_string(multiCanonical.monsters[1].moveHistory[0]) + "/"
                 + std::to_string(multiImported.wire.monsters[1].moveHistory[0]));
         {
+            // The Java v4 producer does not emit monsterTurnIdx at a stable
+            // player decision. A missing field must retain the native player-
+            // turn sentinel, not schedule monsters after the next card play.
+            auto producerShaped = multi.observation;
+            producerShaped["silverRoot"]["combat"].erase("monsterTurnIdx");
+            const auto imported = one_combat::advisor::importSilverRoot(producerShaped);
+            if (!imported.ok || imported.wire.monsterTurnIdx != multi.wire.monsterTurnIdx)
+                throw std::runtime_error("missing producer monsterTurnIdx changed player-turn phase");
+            auto session = silver_bridge::makeSilverSearchSession();
+            SilverSearchConfig config;
+            config.simulationsPerDecision = 64;
+            config.adaptiveEnabled = false;
+            const auto decision = runSilverDecision(*session, imported.wire, config);
+            silver_bridge::SilverTreeSnapshotConfig treeConfig;
+            treeConfig.enabled = true;
+            treeConfig.maxNodes = 256;
+            const auto tree = silver_bridge::snapshotSilverSearchTree(*session, treeConfig);
+            if (!decision.accepted || !tree.accepted)
+                throw std::runtime_error("producer-shaped root search failed");
+            bool sawCard = false;
+            for (const auto &edge : tree.edges) {
+                if (edge.parentId != tree.rootId
+                    || edge.actionLabel.find("use card") == std::string::npos) continue;
+                sawCard = true;
+                const auto child = std::find_if(tree.nodes.begin(), tree.nodes.end(),
+                    [&](const auto &node) { return node.id == edge.childId; });
+                if (child == tree.nodes.end() || child->isChanceNode || !child->hasState
+                    || child->state.player.curHp != imported.wire.player.curHp
+                    || child->state.monsterTurnIdx != imported.wire.monsterTurnIdx)
+                    throw std::runtime_error("card play scheduled a monster turn at player boundary");
+            }
+            if (!sawCard) throw std::runtime_error("producer-shaped search explored no root card");
+        }
+        {
             // Render an actual targeted card successor through the public v4
             // fields.  Do not copy native status bits or infer the target from
             // actionManager.lastCard: the Java queue item owns the resolved

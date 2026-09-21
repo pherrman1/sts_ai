@@ -239,6 +239,13 @@ difference or unsafe queued intermediate state still takes the ordinary fresh
 `candidate_missing` fallback. [ADR-0015](../../../decisions/0015-live-silver-equivalent-copy-reroot.md)
 records this boundary.
 
+At a stable live player-decision boundary, the Java `silverRoot.combat`
+projection does not include Silver's native `monsterTurnIdx`. The generic
+importer defaults that missing field to the native player-turn sentinel `6`,
+while preserving an explicitly supplied value. Defaulting it to `0` would
+schedule monster actions immediately after a card play and create spurious
+chance branches in the retained search graph.
+
 
 The live Silver default uses the retained-root adaptive policy: fresh and
 one-action/forced roots search 10,000 simulations, while a retained non-forced
