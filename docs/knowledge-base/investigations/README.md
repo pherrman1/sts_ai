@@ -7,6 +7,8 @@ investigation is evidence collection, not a decision or a speculative design.
 
 ## Current investigations
 
+- [Silver retained-search queue-item audit (2026-09-21)](2026-09-21-silver-retained-search-audit.md) — bounded opportunity and native boundary audit for `curCardQueueItem`-only retained-state merging; narrow candidate remains unqualified and no search behavior changed.
+
 - [Stale implementation audit (2026-08-11)](2026-08-11-stale-implementation-audit.md) —
   ranked cleanup candidates from a reachability + scientific-status map of
   `apps/`, `src/`, `include/`, `bindings/`. Identified 14 high-confidence

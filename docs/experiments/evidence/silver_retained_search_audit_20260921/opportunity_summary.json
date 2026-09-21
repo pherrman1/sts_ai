@@ -1,0 +1,44 @@
+{
+  "source": {
+    "captureProvenance": {
+      "advisorPath": "/home/philippherrmann/.codex/worktrees/a428/sts_lightspeed/build/linux-gcc-debug/one_combat_advisor",
+      "liveObservationHash": "efb8bcf0367f908221521ab79f09c5f666ee5a6cf3d6e0b047b41f95558c84d8",
+      "liveSequence": 9,
+      "liveSession": "78c0ee4f9f67",
+      "method": "offline replay of the exact saved live observation using the corrected importer",
+      "nodeCap": 8192,
+      "sourceCapture": "/home/philippherrmann/.codex/visualizations/2026/09/21/01a0c2f7-9750-79e1-bb64-5eba6649b52d/live-small-slimes-silver-tree.json"
+    },
+    "fileSha256": "4d11c84a21785ddde99740c094e04774d1d5e4a903282381aba959479de08a28",
+    "observationHash": "efb8bcf0367f908221521ab79f09c5f666ee5a6cf3d6e0b047b41f95558c84d8",
+    "payloadSha256": "e20001e051e65e723c8cdf51e73890bc3df971454aa3713854acb2d9980ad22d",
+    "sequence": 9,
+    "session": "78c0ee4f9f67"
+  },
+  "tree": {
+    "candidate_boundary_counts": {
+      "inputState=1,outcome=0": 104
+    },
+    "candidate_edges": 124,
+    "candidate_groups": 49,
+    "candidate_groups_with_distinct_queue_items": 49,
+    "candidate_groups_with_matching_state_hash": 49,
+    "candidate_nodes": 104,
+    "candidate_pairs": 43,
+    "candidate_triples": 6,
+    "chance_nodes": 136,
+    "distinct_non_queue_keys": 942,
+    "excess_nodes": 55,
+    "player_normal_unresolved": 974,
+    "queue_variant_group_sizes": {
+      "2": 43,
+      "3": 6
+    },
+    "state_fraction": 0.055165496489468405,
+    "state_nodes": 997,
+    "total_edges": 2131,
+    "total_fraction": 0.04854368932038835,
+    "total_nodes": 1133,
+    "unordered_pairs": 61
+  }
+}
