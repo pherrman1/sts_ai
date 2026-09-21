@@ -11,10 +11,20 @@ CTM/Silver output in the real game, or performing a real-game smoke test.
 
 ## Control boundary
 
-- Check that the `slay_the_spire` MCP tools are available before attempting a
-  live run.
-- If they are unavailable, diagnose MCPTheSpire/game availability and stop
-  with the concrete blocker. Do not fall back to mouse or native GUI
+- Run `python tools/agent/worktree.py preflight .` and
+  `python tools/agent/worktree.py check .`, then use
+  `tools/live_game_start.sh --probe` to ensure/reuse the stable user runtime
+  and establish the local MCP endpoint. If the task changed advisor, live
+  bridge, or model code, use `--refresh-runtime --probe`; use the explicit
+  `--restart-game` option only when the running game must load that new runtime.
+- If `slay_the_spire` MCP session tools are exposed, they may be used for
+  interactive manual live control. Otherwise use `tools/live_game_start.sh`,
+  localhost MCPTheSpire, and `tools/live_game_driver.py`. Absence of
+  Codex-exposed `slay_the_spire` tools alone is not a blocker for live
+  integration tests supported by the repository direct driver.
+- Stop for MCP unavailability only when session tools are unavailable and the
+  direct localhost endpoint cannot be reached or started. Report that concrete
+  prerequisite or startup failure. Do not fall back to mouse or native GUI
   automation for game control.
 - Use MCPTheSpire for all game control. The inspector is read-only and must not
   be given control responsibilities.

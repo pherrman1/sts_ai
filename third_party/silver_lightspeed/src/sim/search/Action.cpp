@@ -506,6 +506,28 @@ bool search::Action::areCardsEquivalentForSearch(const CardInstance &lhs, const 
     return lhs.uniqueId == rhs.uniqueId || (!lhs.usesSpecialData() && !rhs.usesSpecialData());
 }
 
+bool search::Action::hasEnumeratedCardSelectActions(CardSelectTask task) {
+    switch (task) {
+        case CardSelectTask::ARMAMENTS:
+        case CardSelectTask::CODEX:
+        case CardSelectTask::DISCOVERY:
+        case CardSelectTask::DUAL_WIELD:
+        case CardSelectTask::EXHUME:
+        case CardSelectTask::EXHAUST_ONE:
+        case CardSelectTask::FORETHOUGHT:
+        case CardSelectTask::WARCRY:
+        case CardSelectTask::HEADBUTT:
+        case CardSelectTask::LIQUID_MEMORIES_POTION:
+        case CardSelectTask::SECRET_TECHNIQUE:
+        case CardSelectTask::SECRET_WEAPON:
+        case CardSelectTask::EXHAUST_MANY:
+        case CardSelectTask::GAMBLE:
+            return true;
+        default:
+            return false;
+    }
+}
+
 template <typename ForwardIt>
 void setupCardOptionsHelper(std::vector<search::Action> &actions, const ForwardIt begin, const ForwardIt end,
                             const std::function<bool(const CardInstance &)> &p = nullptr,

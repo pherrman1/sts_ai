@@ -1,0 +1,8 @@
+Note: /home/philippherrmann/.codex/worktrees/86fc/sts_lightspeed/mods/sts-model-inspector/src/main/java/stsmodelinspector/OocOverlay.java uses or overrides a deprecated API.
+Note: Recompile with -Xlint:deprecation for details.
+/home/philippherrmann/.codex/worktrees/86fc/sts_lightspeed/mods/sts-model-inspector/build/sts-model-inspector.jar
+Note: /home/philippherrmann/.codex/worktrees/86fc/sts_lightspeed/mods/sts-model-inspector/src/test/java/stsmodelinspector/OocOverlayTest.java uses or overrides a deprecated API.
+Note: Recompile with -Xlint:deprecation for details.
+LiveOocCaptureTest: 15 relic, 7 map edge, 3 screen, 2 integrity, 2 event, 3 reward identity, 4 Slaver identity checks passed
+OocOverlayTest: ranking, occurrence, freshness, unsupported, malformed and error checks passed
+CombatBoundaryTest: 8 boundary and 2 exact selection projections passed

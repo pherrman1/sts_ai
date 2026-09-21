@@ -288,6 +288,7 @@ add_executable(one_combat apps/one_combat.cpp apps/combat_model_diagnostics.cpp
     apps/one_combat/combat_transition_runtime.cpp
     apps/one_combat/combat_transition_native_contract.cpp
     apps/one_combat/ooc_policy.cpp
+    apps/one_combat/ooc_v4_encoding.cpp
     apps/one_combat/run_driver.cpp
     apps/one_combat/fight_replay.cpp
     apps/one_combat/search_diagnostics.cpp
@@ -313,6 +314,10 @@ add_executable(one_combat_advisor
     apps/one_combat/live_silver_mapping.cpp)
 target_include_directories(one_combat_advisor PUBLIC json/include)
 target_sources(one_combat_advisor PRIVATE
+    apps/one_combat/live_ooc_state.cpp
+    apps/one_combat/live_ooc_policy.cpp
+    apps/one_combat/ooc_v4_encoding.cpp
+    apps/one_combat/run_features.cpp
     apps/one_combat/live_ooc_importer.cpp
     apps/one_combat/combat_predictor_input.cpp
     apps/one_combat/combat_transition.cpp
@@ -326,6 +331,34 @@ add_test(NAME live_advisor_protocol COMMAND python3
     ${CMAKE_SOURCE_DIR}/selfplay/models/combat_transition_near_full_except_smoke_v2.native)
 set_tests_properties(live_advisor_protocol PROPERTIES
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "integration;smoke")
+add_test(NAME live_game_runtime COMMAND python3 -m unittest tests.test_live_game_runtime)
+set_tests_properties(live_game_runtime PROPERTIES
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "tooling;smoke")
+
+add_executable(test_live_ooc_policy apps/test_live_ooc_policy.cpp
+    apps/one_combat/live_ooc_policy.cpp apps/one_combat/ooc_v4_encoding.cpp
+    apps/one_combat/run_features.cpp $<TARGET_OBJECTS:sts_core_objects>)
+target_include_directories(test_live_ooc_policy PRIVATE include json/include apps)
+add_test(NAME live_ooc_policy COMMAND bash ${CMAKE_SOURCE_DIR}/tools/seed_guard.sh
+    $<TARGET_FILE:test_live_ooc_policy> ${CMAKE_SOURCE_DIR}/selfplay/models/ooc_strategic_tok_final.native)
+set_tests_properties(live_ooc_policy PROPERTIES WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "integration;smoke")
+
+add_executable(live_ooc_parity_test apps/live_ooc_parity_test.cpp
+    apps/one_combat/live_ooc_state.cpp apps/one_combat/live_ooc_policy.cpp
+    apps/one_combat/ooc_v4_encoding.cpp apps/one_combat/run_features.cpp
+    $<TARGET_OBJECTS:sts_core_objects>)
+target_include_directories(live_ooc_parity_test PRIVATE include json/include apps)
+add_test(NAME live_ooc_parity COMMAND bash ${CMAKE_SOURCE_DIR}/tools/seed_guard.sh
+    $<TARGET_FILE:live_ooc_parity_test>
+    ${CMAKE_SOURCE_DIR}/selfplay/models/ooc_strategic_tok_final.native)
+set_tests_properties(live_ooc_parity PROPERTIES WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "integration;smoke")
+
+add_test(NAME live_ooc_protocol COMMAND python3 ${CMAKE_SOURCE_DIR}/tests/live_ooc_protocol.py
+    $<TARGET_FILE:one_combat_advisor> $<TARGET_FILE:live_ooc_parity_test>
+    ${CMAKE_SOURCE_DIR}/selfplay/models/ooc_strategic_tok_final.native)
+set_tests_properties(live_ooc_protocol PROPERTIES WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "integration;smoke")
+add_test(NAME live_game_driver COMMAND python3 -m unittest tests.test_live_game_driver)
+set_tests_properties(live_game_driver PROPERTIES WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "tooling;smoke")
 
 add_executable(live_ctm_importer_test apps/live_ctm_importer_test.cpp
     apps/one_combat/live_ooc_importer.cpp
@@ -428,8 +461,11 @@ add_test(NAME scum_convroot_stale_outcome COMMAND $<TARGET_FILE:unit-test> scum_
 add_test(NAME cardqueue_overflow COMMAND $<TARGET_FILE:unit-test> cardqueue_overflow)
 add_test(NAME keys_collect COMMAND $<TARGET_FILE:unit-test> keys_collect)
 add_test(NAME issue_fixes COMMAND $<TARGET_FILE:unit-test> issue_fixes)
+add_test(NAME simulator_correctness_pr9_19 COMMAND $<TARGET_FILE:unit-test> simulator_correctness_pr9_19)
+set_tests_properties(simulator_correctness_pr9_19 PROPERTIES LABELS "core")
 add_test(NAME ooc_reward_continuation COMMAND $<TARGET_FILE:unit-test> ooc_reward_continuation)
 add_test(NAME ooc_semantic COMMAND $<TARGET_FILE:unit-test> ooc_semantic)
+add_test(NAME ironclad_card_coverage COMMAND $<TARGET_FILE:unit-test> ironclad_card_coverage)
 add_test(NAME ooc_semantic_pipeline COMMAND $<TARGET_FILE:unit-test> ooc_semantic_pipeline)
 add_test(NAME ooc_semantic_producer COMMAND $<TARGET_FILE:one_combat> oocsemanticselftest)
 add_test(NAME combat_evaluator_semantic_branch_contract

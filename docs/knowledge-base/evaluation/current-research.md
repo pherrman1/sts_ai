@@ -999,7 +999,7 @@ gap narrowed from **+40.2899%** to **+33.2944%**, but death NLL and low-pre-HP
 NLL still regressed **+37.6878%** and **+41.4150%**. This reduces but does not
 eliminate the stopping-rule explanation. Proceed to the matched tiny nonlinear
 S2 decoder before changing the encoder. See [ledger-06 §291](../../experiments/ledger-06.md)
-and the [S1 evidence](../../experiments/evidence/deepset_survival_lbfgs_2026-09-17.md).
+and the [S1 evidence](../../experiments/evidence/deepset_survival_lbfgs_2026-09-16.md).
 
 The scale-neutral S1b follow-up also remains **diagnostic**. Independent
 TRAIN-only z-scoring and unregularized L-BFGS reduced the DeepSets validation

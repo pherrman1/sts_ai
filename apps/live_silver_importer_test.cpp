@@ -1446,6 +1446,21 @@ int main() {
         nativeSelectionExpected.isolatedSearchSeed = nativeSelectionImported.wire.isolatedSearchSeed;
         if (!convertedStatesEqualForSearch(nativeSelectionExpected, nativeSelectionImported.wire))
             throw std::runtime_error("native selection parity failed");
+        nativeSelection["silverRoot"]["combat"]["cardSelect"]["canPickZero"] = true;
+        nativeSelectionImported = one_combat::advisor::importSilverRoot(nativeSelection);
+        nativeSelectionExpected.cardSelect.canPickZero = true;
+        if (!nativeSelectionImported.ok
+            || !convertedStatesEqualForSearch(nativeSelectionExpected, nativeSelectionImported.wire))
+            throw std::runtime_error("optional native selection parity failed");
+        auto unknownSelection = nativeSelection;
+        unknownSelection["silverRoot"]["combat"]["cardSelect"]["task"] = "";
+        // Unknown selectors must not become normal play or be obscured by an
+        // unrelated unsupported projection field at a resumed combat boundary.
+        unknownSelection["silverRoot"]["combat"]["damageTrackingExact"] = false;
+        const auto unknownSelectionImported = one_combat::advisor::importSilverRoot(unknownSelection);
+        if (unknownSelectionImported.ok
+            || unknownSelectionImported.reason != "silver_unmapped_selection_task")
+            throw std::runtime_error("unknown combat selection was not explicitly unsupported");
 
         for (const auto &root : fixtures) {
             for (const auto card : {CardId::STRIKE_RED, CardId::DEFEND_RED}) {
@@ -1729,6 +1744,85 @@ int main() {
         if (generalImported.wire.extraRollMoveOnTurn != 0
             || generalImported.wire.skipMonsterTurnBits != 0)
             throw std::runtime_error("explicit stable-boundary group state was not preserved");
+        auto ritualPower = general;
+        ritualPower["silverRoot"]["combat"]["monsters"][0]["powers"] = json::array({
+            json{{"id", "Ritual"}, {"amount", 3}, {"justApplied", false}}});
+        auto ritualImported = one_combat::advisor::importSilverRoot(ritualPower);
+        if (!ritualImported.ok
+            || ritualImported.wire.monsters[0].uniquePower0 != 3
+            || !(ritualImported.wire.monsters[0].statusBits
+                & (1ULL << static_cast<int>(MonsterStatus::RITUAL)))
+            || (ritualImported.wire.monsters[0].statusBits & (1ULL << 61)))
+            throw std::runtime_error("monster Ritual false justApplied parity failed");
+        ritualPower["silverRoot"]["combat"]["monsters"][0]["powers"][0]["justApplied"] = true;
+        ritualImported = one_combat::advisor::importSilverRoot(ritualPower);
+        if (!ritualImported.ok
+            || !(ritualImported.wire.monsters[0].statusBits & (1ULL << 61)))
+            throw std::runtime_error("monster Ritual true justApplied parity failed");
+        auto weakenedPower = general;
+        weakenedPower["silverRoot"]["combat"]["playerPowers"] = json::array({
+            json{{"id", "Weakened"}, {"amount", 1}, {"justApplied", true}}});
+        auto weakenedImported = one_combat::advisor::importSilverRoot(weakenedPower);
+        bool weakenedMapped = false;
+        for (const auto &[status, amount] : weakenedImported.wire.player.statusMap)
+            weakenedMapped |= status == static_cast<std::int16_t>(PlayerStatus::WEAK) && amount == 1;
+        if (!weakenedImported.ok || !weakenedMapped
+            || !(weakenedImported.wire.player.justAppliedBits
+                & (1U << static_cast<int>(PlayerStatus::WEAK))))
+            throw std::runtime_error("player Weakened alias/justApplied parity failed");
+        auto flexPower = general;
+        flexPower["silverRoot"]["combat"]["playerPowers"] = json::array({
+            json{{"id", "Flex"}, {"amount", 5}}});
+        const auto flexImported = one_combat::advisor::importSilverRoot(flexPower);
+        bool flexMapped = false;
+        for (const auto &[status, amount] : flexImported.wire.player.statusMap)
+            flexMapped |= status == static_cast<std::int16_t>(PlayerStatus::LOSE_STRENGTH) && amount == 5;
+        if (!flexImported.ok || !flexMapped)
+            throw std::runtime_error("player Flex temporary-strength-loss parity failed");
+        auto blueSlaver = general;
+        blueSlaver["silverRoot"]["encounter"] = "BLUE_SLAVER";
+        auto &blueSlaverMonster = blueSlaver["silverRoot"]["combat"]["monsters"][0];
+        blueSlaverMonster["id"] = "SlaverBlue";
+        blueSlaverMonster["nextMove"] = javaMoveByte("SlaverBlue", MonsterMoveId::BLUE_SLAVER_STAB);
+        blueSlaverMonster["moveHistory"] = json::array({blueSlaverMonster["nextMove"]});
+        blueSlaverMonster["powers"] = json::array();
+        blueSlaverMonster["miscInfo"] = 0;
+        const auto blueSlaverImported = one_combat::advisor::importSilverRoot(blueSlaver);
+        if (!blueSlaverImported.ok || blueSlaverImported.wire.monsters[0].miscInfo != 0)
+            throw std::runtime_error("Blue Slaver zero miscInfo parity failed: reason="
+                + blueSlaverImported.reason + " move="
+                + std::to_string(blueSlaverMonster["nextMove"].get<int>()));
+        const char *offColorLocations[] = {"hand", "draw", "discard", "exhaust"};
+        const char *offColorCards[] = {"Neutralize", "Zap", "Eruption", "Neutralize"};
+        const auto placeOffColorCard = [&](json &combat, const char *location, const char *cardName) {
+            auto &pile = combat[location];
+            json card = combat["hand"].at(0);
+            card["id"] = cardName;
+            card["uuid"] = std::string("off-color-") + location;
+            if (pile.is_array()) {
+                if (pile.empty()) pile.push_back(std::move(card));
+                else pile[0] = std::move(card);
+            } else {
+                auto &unknown = pile["unknown"];
+                if (!unknown.is_array()) unknown = json::array();
+                if (unknown.empty()) unknown.push_back(std::move(card));
+                else unknown[0] = std::move(card);
+            }
+        };
+        for (int i = 0; i < 4; ++i) {
+            auto offColor = general;
+            placeOffColorCard(offColor["silverRoot"]["combat"], offColorLocations[i], offColorCards[i]);
+            const auto imported = one_combat::advisor::importSilverRoot(offColor);
+            if (imported.ok || imported.reason != "silver_off_color_card")
+                throw std::runtime_error(std::string("off-color ") + offColorLocations[i]
+                    + " was not rejected before Silver search: " + imported.reason);
+        }
+        auto redAndColorless = general;
+        redAndColorless["silverRoot"]["combat"]["hand"][0]["id"] = "Strike_R";
+        redAndColorless["silverRoot"]["combat"]["draw"][0]["id"] = "Dramatic Entrance";
+        const auto redAndColorlessImported = one_combat::advisor::importSilverRoot(redAndColorless);
+        if (!redAndColorlessImported.ok)
+            throw std::runtime_error("RED/COLORLESS cards were rejected: " + redAndColorlessImported.reason);
         auto burningGeneric = general;
         burningGeneric["silverRoot"]["burningElite"] = true;
         const auto burningImported = one_combat::advisor::importSilverRoot(burningGeneric);

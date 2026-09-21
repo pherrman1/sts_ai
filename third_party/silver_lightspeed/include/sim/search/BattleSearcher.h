@@ -123,6 +123,11 @@ namespace sts::search {
         double rolloutEnergyWasteSum = 0.0;
         double rolloutDrawSum = 0.0;
         double rolloutSurvivalSum = 0.0;
+        std::int64_t forcedSelectionsContracted = 0;
+        std::int64_t macroEligibleDecisionNodes = 0;
+        std::int64_t macroEdgesGenerated = 0;
+        std::int64_t macroOptionCountSum = 0;
+        std::array<std::int64_t, 22> macroOptionCountByTask {};
         void add(const SearchStats &o) {
             steps += o.steps; nodesCreated += o.nodesCreated; detTranspositions += o.detTranspositions;
             chanceOutcomesSampled += o.chanceOutcomesSampled; chanceSiblingReuse += o.chanceSiblingReuse;
@@ -171,6 +176,12 @@ namespace sts::search {
             rolloutEnergyWasteSum += o.rolloutEnergyWasteSum;
             rolloutDrawSum += o.rolloutDrawSum;
             rolloutSurvivalSum += o.rolloutSurvivalSum;
+            forcedSelectionsContracted += o.forcedSelectionsContracted;
+            macroEligibleDecisionNodes += o.macroEligibleDecisionNodes;
+            macroEdgesGenerated += o.macroEdgesGenerated;
+            macroOptionCountSum += o.macroOptionCountSum;
+            for (std::size_t i = 0; i < macroOptionCountByTask.size(); ++i)
+                macroOptionCountByTask[i] += o.macroOptionCountByTask[i];
         }
     };
 
@@ -204,9 +215,15 @@ namespace sts::search {
 
         struct Edge {
             Action action;
+            // Present for every arm so CONTROL/A/B have the same edge layout.
+            Action continuation;
             Node* node = nullptr;               // child (shared across paths via transposition)
             int rngAdvanceSteps = 0;            // chance outcome edge: the N used for Random(base + N)
             std::int32_t visitCount = 0;        // times this edge was traversed (UCB / DPW reselection)
+
+            [[nodiscard]] bool hasContinuation() const {
+                return continuation.bits != static_cast<std::uint32_t>(-1);
+            }
         };
 
         struct RaveActionKey {
@@ -266,6 +283,8 @@ namespace sts::search {
         std::vector<double> replayRootPriors;
         bool raveEnabled = false;
         double raveK = 0.0;
+        silver_bridge::SilverSearchContractMode contractMode =
+            silver_bridge::SilverSearchContractMode::CONTROL;
         std::unordered_map<Node*, std::vector<RaveStat>> raveStats;
 
         // Double Progressive Widening for chance nodes: after n visits a chance node may
@@ -348,6 +367,7 @@ namespace sts::search {
         double runDiagnosticRollout();
         void step();
         Action getBestAction() const;
+        std::vector<Action> getBestActionSequence() const;
         const std::vector<Edge>& getRootEdges() const { return root->edges; }
 
         // private helpers
@@ -378,6 +398,12 @@ namespace sts::search {
         void enumerateCardActions(Node &node, const BattleContext &bc);
         void enumeratePotionActions(Node &node, const BattleContext &bc);
         void enumerateCardSelectActions(Node &node, const BattleContext &bc);
+        void recordEdgeActions(const Edge &edge, const BattleContext &bc);
+        void executeEdge(BattleContext &bc, const Edge &edge) const;
+        bool resolveForcedSelections(BattleContext &bc);
+        bool macroFollowUps(const BattleContext &bc, const Action &first,
+                            std::vector<Action> &followUps,
+                            CardSelectTask *task = nullptr) const;
         Edge* selectChanceOutcome(Node &chance);
         double evaluateEndState(const BattleContext &bc) const;
         void recordRolloutDiagnostic(const BattleContext &bc, int inputState,

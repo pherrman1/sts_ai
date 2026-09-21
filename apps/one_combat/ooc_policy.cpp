@@ -13,6 +13,7 @@
 #include "../ooc_strategic_net.h"
 #include "../ooc_strategic_tok_net.h"
 #include "sim/search/CombatCpsiNet.h"
+#include "sim/search/OocSemanticAction.h"
 
 using namespace sts;
 
@@ -84,7 +85,10 @@ void resetPathPolicyState() {
 
 bool oocActionNNPolicy(GameContext &gc) {
     if (!g_oocActionNN || gc.act < 1 || gc.act > 3) return false;
-    const auto actions = search::GameAction::getAllActionsInState(gc);
+    auto actions = search::GameAction::getAllActionsInState(gc);
+    actions.erase(std::remove_if(actions.begin(), actions.end(), [&](const auto &action) {
+        return !search::isSupportedAutonomousOocAction(gc, action);
+    }), actions.end());
     if (actions.empty()) return false;
 
     // Native checkpoint-distilled inference (no server)
@@ -191,30 +195,6 @@ double oocStrategicScore(const float *state, std::uint32_t bits,
     return g_oocStrategicNet.predictActionValue(state, bits, cats, actionType, screen);
 }
 // Exact primitive candidate contract shared with the V4 one-ply gates.
-bool v4DecisionSupported(const GameContext &gc) {
-    switch (gc.screenState) {
-        case ScreenState::REWARDS: return gc.info.rewardsContainer.cardRewardCount > 0;
-        case ScreenState::REST_ROOM:
-        case ScreenState::SHOP_ROOM:
-        case ScreenState::TREASURE_ROOM:
-        case ScreenState::BOSS_RELIC_REWARDS: return true;
-        case ScreenState::EVENT_SCREEN: return gc.curEvent != Event::INVALID && gc.curEvent != Event::MATCH_AND_KEEP;
-        case ScreenState::CARD_SELECT: return gc.info.selectScreenType == CardSelectScreenType::UPGRADE;
-        case ScreenState::MAP_SCREEN: return gc.map && gc.curMapNodeY != 14;
-        default: return false;
-    }
-}
-std::vector<GameAction> v4CandidateActions(const GameContext &gc) {
-    auto actions = GameAction::getAllActionsInState(gc);
-    if (gc.screenState == ScreenState::REWARDS
-        && gc.info.rewardsContainer.cardRewardCount > 0 && !actions.empty()) {
-        const GameAction skip(GameAction::RewardsActionType::CARD,
-                              gc.info.rewardsContainer.cardRewardCount - 1, 5);
-        if (std::none_of(actions.begin(), actions.end(), [&](const auto &a) { return a.bits == skip.bits; }))
-            actions.push_back(skip);
-    }
-    return actions;
-}
 bool oocOnePlyCardRewardPolicy(GameContext &gc, const search::ScumSearchAgent2 &agent) {
     if (!g_oocStrategicNet.ok && !g_oocStrategicTokNet.ok) return false;
     if (gc.screenState != ScreenState::REWARDS) return false;
@@ -650,148 +630,6 @@ bool oocOnePlyMapPolicy(GameContext &gc, const search::ScumSearchAgent2 &agent) 
 
 // Candidate identity and entity encodings are policy-owned; datagen callers
 // use the same concrete functions through the public module contract.
-void strategicCands(const GameContext &gc, const search::GameAction &a,
-                           int &actionType, int &c1, int &c2, int &c3,
-                           int &cand1, int &cand2, int &cand3) {
-    using RT = search::GameAction::RewardsActionType;
-    actionType = -1; c1 = a.getIdx1(); c2 = a.getIdx2(); c3 = a.getIdx3();
-    cand1 = cand2 = cand3 = -1;
-    switch (gc.screenState) {
-        case ScreenState::REWARDS: {
-            const auto t = a.getRewardsActionType();
-            actionType = (int)t;
-            const auto &r = gc.info.rewardsContainer;
-            switch (t) {
-                case RT::GOLD:
-                    if (c1 >= 0 && c1 < r.goldRewardCount) cand1 = r.gold[c1];
-                    break;
-                case RT::CARD:
-                    if (c1 >= 0 && c1 < r.cardRewardCount
-                        && c2 >= 0 && c2 < (int)r.cardRewards[c1].size()) {
-                        const Card &card = r.cardRewards[c1][c2];
-                        cand1 = (int)card.getId(); cand2 = card.isUpgraded() ? 1 : 0;
-                    }
-                    break;
-                case RT::RELIC: if (c1 >= 0 && c1 < r.relicCount) cand1 = (int)r.relics[c1]; break;
-                case RT::POTION: if (c1 >= 0 && c1 < r.potionCount) cand1 = (int)r.potions[c1]; break;
-                case RT::KEY: cand1 = r.emeraldKey ? 2 : 3; break;
-                default: break;
-            }
-            break;
-        }
-        case ScreenState::SHOP_ROOM: {
-            const auto t = a.getRewardsActionType();
-            actionType = (int)t;
-            const auto &s = gc.info.shop;
-            switch (t) {
-                case RT::CARD:
-                    if (c1 >= 0 && c1 < 7) {
-                        cand1 = (int)s.cards[c1].getId(); cand2 = s.cardPrice(c1);
-                        cand3 = s.cards[c1].isUpgraded() ? 1 : 0;
-                    }
-                    break;
-                case RT::RELIC: if (c1 >= 0 && c1 < 3) { cand1 = (int)s.relics[c1]; cand2 = s.relicPrice(c1); } break;
-                case RT::POTION: if (c1 >= 0 && c1 < 3) { cand1 = (int)s.potions[c1]; cand2 = s.potionPrice(c1); } break;
-                case RT::CARD_REMOVE: cand1 = s.removeCost; break;
-                default: break;
-            }
-            break;
-        }
-        case ScreenState::EVENT_SCREEN:
-            cand1 = (int)gc.curEvent; cand2 = c1;
-            break;
-        case ScreenState::MAP_SCREEN: {
-            cand1 = c1;
-            const int ty = (gc.curMapNodeY == -1) ? 0 : gc.curMapNodeY + 1;
-            cand2 = ty;
-            if (c1 >= 0 && ty >= 0 && ty < 15 && c1 < 7)
-                cand3 = (int)gc.map->nodes[ty][c1].room;
-            break;
-        }
-        case ScreenState::BOSS_RELIC_REWARDS:
-            if (c1 >= 0 && c1 < 3) cand1 = (int)gc.info.bossRelics[c1];
-            break;
-        case ScreenState::CARD_SELECT: {
-            actionType = (int)gc.info.selectScreenType;
-            if (c1 >= 0 && c1 < (int)gc.info.toSelectCards.size()) {
-                cand1 = (int)gc.info.toSelectCards[c1].card.getId();
-                cand2 = (int)gc.info.selectScreenType;
-            }
-            break;
-        }
-        default: break;
-    }
-}
-
-// V4 decision-context entity (ooc-strategic-v4.md §2.5): the candidate card/
-// relic/potion conditioning the action value (entType 0=none,1=card,2=relic,
-// 3=potion), plus the gold-vs-price threshold feature (SHOP_ROOM cand2=price,
-// REWARDS/GOLD cand1=gold amount; else 0).
-void tokEntity(const GameContext &gc, const search::GameAction &a,
-                      int &entType, int &entId, float &goldGePrice) {
-    using RT = search::GameAction::RewardsActionType;
-    entType = 0; entId = -1; goldGePrice = 0.0f;
-    switch (gc.screenState) {
-        case ScreenState::REWARDS: {
-            const RT t = a.getRewardsActionType();
-            const auto &r = gc.info.rewardsContainer;
-            switch (t) {
-                case RT::GOLD:
-                    if (a.getIdx1() >= 0 && a.getIdx1() < r.goldRewardCount)
-                        goldGePrice = gc.gold >= r.gold[a.getIdx1()] ? 1.0f : 0.0f;
-                    break;
-                case RT::CARD: {
-                    const int c1 = a.getIdx1(), c2 = a.getIdx2();
-                    if (c1 >= 0 && c1 < r.cardRewardCount
-                        && c2 >= 0 && c2 < (int)r.cardRewards[c1].size()) {
-                        entType = 1; entId = (int)r.cardRewards[c1][c2].getId();
-                    }
-                    break;
-                }
-                case RT::RELIC:
-                    if (a.getIdx1() >= 0 && a.getIdx1() < r.relicCount) { entType = 2; entId = (int)r.relics[a.getIdx1()]; }
-                    break;
-                case RT::POTION:
-                    if (a.getIdx1() >= 0 && a.getIdx1() < r.potionCount) { entType = 3; entId = (int)r.potions[a.getIdx1()]; }
-                    break;
-                default: break;
-            }
-            break;
-        }
-        case ScreenState::SHOP_ROOM: {
-            const RT t = a.getRewardsActionType();
-            const auto &s = gc.info.shop;
-            int price = -1;
-            switch (t) {
-                case RT::CARD:
-                    if (a.getIdx1() >= 0 && a.getIdx1() < 7) {
-                        entType = 1; entId = (int)s.cards[a.getIdx1()].getId(); price = s.cardPrice(a.getIdx1());
-                    }
-                    break;
-                case RT::RELIC:
-                    if (a.getIdx1() >= 0 && a.getIdx1() < 3) {
-                        entType = 2; entId = (int)s.relics[a.getIdx1()]; price = s.relicPrice(a.getIdx1());
-                    }
-                    break;
-                case RT::POTION:
-                    if (a.getIdx1() >= 0 && a.getIdx1() < 3) {
-                        entType = 3; entId = (int)s.potions[a.getIdx1()]; price = s.potionPrice(a.getIdx1());
-                    }
-                    break;
-                default: break;
-            }
-            goldGePrice = (price >= 0 && gc.gold >= price) ? 1.0f : 0.0f;  // trainer parity: price<0 -> 0
-            break;
-        }
-        case ScreenState::CARD_SELECT:
-            if (a.getIdx1() >= 0 && a.getIdx1() < (int)gc.info.toSelectCards.size()) {
-                entType = 1; entId = (int)gc.info.toSelectCards[a.getIdx1()].card.getId();
-            }
-            break;
-        default: break;
-    }
-}
-
 // ---------------------------------------------------------------------------
 // M2: short-horizon map route search (plan 5.6.2, spec A.11 "map routes").
 //
@@ -1207,7 +1045,11 @@ void shopVPolicy(GameContext &gc) {
     if (!(is >> tok) || tok.empty()) { search::GameAction(RT::SKIP).execute(gc); return; }
     const int idx = tok.size() > 1 ? std::atoi(tok.c_str() + 1) : 0;
     if (tok[0] == 'c')      search::GameAction(RT::CARD,  idx).execute(gc);
-    else if (tok[0] == 'r') search::GameAction(RT::RELIC, idx).execute(gc);
+    else if (tok[0] == 'r') {
+        const search::GameAction action(RT::RELIC, idx);
+        if (search::isSupportedAutonomousOocAction(gc, action)) action.execute(gc);
+        else search::GameAction(RT::SKIP).execute(gc);
+    }
     else if (tok[0] == 'x') search::GameAction(RT::CARD_REMOVE).execute(gc);
     else                    search::GameAction(RT::SKIP).execute(gc);
 }

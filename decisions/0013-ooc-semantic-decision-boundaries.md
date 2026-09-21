@@ -2,7 +2,7 @@
 
 - Status: accepted
 - Date: 2026-09-10
-- Last verified: 2026-09-10
+- Last verified: 2026-09-20
 
 ## Context
 
@@ -39,8 +39,13 @@ when compound preconditions fail, including affordability and survivable Wing
 Statue damage.
 
 The semantic core is opt-in. Its action features are not compatible inputs for
-models trained on primitive bits; adopting it in the clean OOC producer,
-validator, trainer and runtime scorer requires a separate schema/model change.
+models trained on primitive bits. Opt-in OOC MCTS uses semantic transitions
+with V4 only as a source-primitive prior: qualified source mass is split equally
+among targets; states without complete V4 source coverage use uniform priors.
+This adapter bridge requires no retraining. Live MCTS samples hidden noncombat
+futures on detached copies; outcomes remain separate from action identity,
+without claiming an exact hidden-state posterior. Feeding semantic features to
+a learned scorer still requires a separate schema/model change.
 
 ## Alternatives and consequences
 

@@ -1,0 +1,124 @@
+{
+  "character": "IRONCLAD",
+  "ascension": 0,
+  "act": 1,
+  "floor": 12,
+  "hp": 90,
+  "maxHp": 94,
+  "gold": 147,
+  "roomClass": "MONSTER",
+  "previousRoomClass": "MONSTER",
+  "encounter": "EXORDIUM_THUGS",
+  "potionKeepValue": 4.0,
+  "isBurningElite": false,
+  "potionCapacity": 3,
+  "deck": [
+    {
+      "id": "Strike_R",
+      "upgraded": false,
+      "misc": 0,
+      "bottleBinding": -1
+    },
+    {
+      "id": "Strike_R",
+      "upgraded": false,
+      "misc": 0,
+      "bottleBinding": -1
+    },
+    {
+      "id": "Strike_R",
+      "upgraded": false,
+      "misc": 0,
+      "bottleBinding": -1
+    },
+    {
+      "id": "Strike_R",
+      "upgraded": false,
+      "misc": 0,
+      "bottleBinding": -1
+    },
+    {
+      "id": "Defend_R",
+      "upgraded": false,
+      "misc": 0,
+      "bottleBinding": -1
+    },
+    {
+      "id": "Defend_R",
+      "upgraded": false,
+      "misc": 0,
+      "bottleBinding": -1
+    },
+    {
+      "id": "Defend_R",
+      "upgraded": false,
+      "misc": 0,
+      "bottleBinding": -1
+    },
+    {
+      "id": "Defend_R",
+      "upgraded": false,
+      "misc": 0,
+      "bottleBinding": -1
+    },
+    {
+      "id": "Bash",
+      "upgraded": false,
+      "misc": 0,
+      "bottleBinding": -1
+    },
+    {
+      "id": "Twin Strike",
+      "upgraded": false,
+      "misc": 0,
+      "bottleBinding": -1
+    },
+    {
+      "id": "Perfected Strike",
+      "upgraded": false,
+      "misc": 0,
+      "bottleBinding": -1
+    },
+    {
+      "id": "Reckless Charge",
+      "upgraded": true,
+      "misc": 0,
+      "bottleBinding": -1
+    },
+    {
+      "id": "Pummel",
+      "upgraded": true,
+      "misc": 0,
+      "bottleBinding": -1
+    }
+  ],
+  "relics": [
+    {
+      "id": "Burning Blood",
+      "data": -1,
+      "usedUp": false
+    },
+    {
+      "id": "NeowsBlessing",
+      "data": -2,
+      "usedUp": true
+    },
+    {
+      "id": "Mango",
+      "data": -1,
+      "usedUp": false
+    },
+    {
+      "id": "Toxic Egg 2",
+      "data": -1,
+      "usedUp": false
+    }
+  ],
+  "potions": [
+    "PowerPotion",
+    "Ancient Potion",
+    "Potion Slot",
+    "Potion Slot",
+    "Potion Slot"
+  ]
+}

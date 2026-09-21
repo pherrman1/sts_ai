@@ -1,6 +1,6 @@
 # Determinism and RNG
 
-Last verified: 2026-09-14 for supported-v1 RNG continuation;
+Last verified: 2026-09-20 for live OOC MCTS hypothetical noncombat futures; 2026-09-14 for supported-v1 RNG continuation;
 2026-08-02 against commit `6f7159f` and the current working tree (hidden-information boundary audit, plan 5.6.4 / spec §A.14).
 
 ## Purpose
@@ -61,6 +61,23 @@ contains all six seed pairs and a draw order
 applies particle RNG seeds even when `STS_FAIR` is off; its non-fair agent path
 reuses the tree. Both fair paths commit one root action and create a new
 searcher for the next observed decision.
+
+Live opt-in OOC MCTS separately samples unknown native futures in
+`apps/one_combat/ooc_mcts_adapter.cpp::sampleNoncombatFuture`. Before search
+transitions and leaf continuation, detached copies receive planner-owned RNG
+states and a hypothetical run seed, shuffled remaining relic/colorless pools,
+conditional unseen encounter queues, and unrevealed chest/event contents.
+Revealed offers, current map/boss and selector progress stay fixed. Hypothetical
+states are never committed to the live game. Random successors are chance
+particles, not deterministic cached edges; CTM preparation is specific to each
+sampled precombat state. The exact-replay adapter option exists for offline
+fixtures and is never selected by live MCTS configuration.
+
+This removes knowledge of the real future draws from this MCTS transition
+path. It does not qualify the exact joint posterior over all hidden native
+state or remove limitations of other counterfactual pipelines below. V4 priors
+already omit hidden encounter identities; native leaf features now consume
+sampled encounter queues.
 
 ## Important data flow
 
@@ -134,19 +151,19 @@ after `advanceRoot` (`BattleScumSearcher3::BattleScumSearcher3`;
   because this repo treats it as public). This is a known §A.14 leak
   ("do not copy the true future seed and then optimize against it"), flagged
   in the decision log, not fixed.
-- The strategic model features (`apps/one_combat.cpp::richRow`,
-  `buildTokState`) include the exact next-encounter identities
-  (`nextFight0..2`, `nextEliteId`) at every decision; the player only knows
-  the pool. Same §A.14 leak class; flagged, not fixed.
+- Native rich features (`apps/one_combat/run_features.cpp`) include exact
+  next-encounter identities (`nextFight0..2`, `nextEliteId`). Live MCTS feeds
+  them sampled queues; other copied-state consumers retain the hidden-future
+  limitation. V4 `buildTokStatePure` omits these hidden fields.
 - The one-ply Q gates (`oocOnePly*Policy`) score `predictActionValue` on the
   pre-decision state only, so they do not determinize hidden outcomes. The
   `STS_OOC_STRATEGIC_Q=0` V2 fallback instead executes the action on a probe
   copy and scores the successor, which contains the true post-choice draw
   (event outcomes, chest contents).
-- `ScumSearchAgent2::stepOutOfCombatPolicy` reads the hidden pre-rolled
-  `gc.info.chestSize` for the CURSED_KEY treasure open/skip choice; a player
-  cannot see chest size before opening. Flagged; not fixed (policy change
-  with benchmark impact).
+- `ScumSearchAgent2::stepOutOfCombatPolicy` reads
+  `gc.info.chestSize` for the CURSED_KEY treasure open/skip choice. Chest
+  size is treated as visible by the sampled OOC contract; contents (gold/tier
+  and relic identity) are sampled before opening.
 - Searcher2 leaves four combat RNG streams concrete under `STS_FAIR=1`.
 - Searcher3's stored `HiddenBattleState::drawPileOrder` is installed by
   `applyParticle` only when the copied pile's size and card multiset match the

@@ -158,7 +158,13 @@ void addRewards(Bindings &out, const GameContext &gc) {
     for (int i = 0; i < r.goldRewardCount; ++i) item(Effect::TAKE_GOLD, r.gold[i], RT::GOLD, i);
     for (int i = 0; i < r.relicCount; ++i)
         item(Effect::TAKE_RELIC, r.relics[i], RT::RELIC, i, r.sapphireKey && i == r.relicCount-1);
-    for (int i = 0; i < r.potionCount; ++i) item(Effect::TAKE_POTION, r.potions[i], RT::POTION, i);
+    // The live MCP reward boundary has no discard-potion command.  Do not
+    // present a potion take that cannot execute with a full inventory; leave
+    // the reward available for another reward or the screen skip action.
+    if (gc.potionCount < gc.potionCapacity) {
+        for (int i = 0; i < r.potionCount; ++i)
+            item(Effect::TAKE_POTION, r.potions[i], RT::POTION, i);
+    }
     if (r.sapphireKey) item(Effect::TAKE_KEY, Key::SAPPHIRE_KEY, RT::KEY, 0, true);
     if (r.emeraldKey) item(Effect::TAKE_KEY, Key::EMERALD_KEY, RT::KEY, 0);
     for (int group = 0; group < r.cardRewardCount; ++group) {
@@ -193,6 +199,8 @@ void addShop(Bindings &out, const GameContext &gc) {
         const int i = primitive.getIdx1();
         Effect effect;
         OocShopTarget target;
+        if (!isSupportedAutonomousOocAction(gc, primitive))
+            continue;
         switch (primitive.getRewardsActionType()) {
             case RT::CARD: effect = Effect::BUY_CARD; target.entity = shop.cards[i]; target.expectedPrice = shop.cardPrice(i); break;
             case RT::RELIC: effect = Effect::BUY_RELIC; target.entity = shop.relics[i]; target.expectedPrice = shop.relicPrice(i); break;
@@ -426,6 +434,15 @@ int liveDeckSelection(const GameContext &gc, const OocCardTarget &target, std::s
 }
 } // namespace
 
+bool isSupportedAutonomousOocAction(const GameContext &gc, const GameAction &action) {
+    if (gc.screenState != ScreenState::SHOP_ROOM
+        || action.getRewardsActionType() != GameAction::RewardsActionType::RELIC)
+        return true;
+    const int index = action.getIdx1();
+    return index < 0 || index >= 3
+        || gc.info.shop.relics[index] != RelicId::PRISMATIC_SHARD;
+}
+
 std::string canonicalOocSemanticActionKey(const OocSemanticAction &action) {
     std::ostringstream out;
     out.imbue(std::locale::classic());
@@ -504,6 +521,14 @@ CardSelectScreenType oocSemanticPrimitiveCompoundSelector(const GameContext &gc,
     for (const auto &binding : live.values)
         if (binding.primitive.bits == bits && binding.compound != Select::INVALID) return binding.compound;
     return Select::INVALID;
+}
+
+OocSemanticPrimitiveBindings enumerateOocSemanticPrimitiveBindings(const GameContext &gc) {
+    auto live = bindings(gc);
+    OocSemanticPrimitiveBindings result {live.supported, live.complete, live.error, {}};
+    for (auto &binding : live.values)
+        result.bindings.push_back({std::move(binding.action), binding.primitive.bits, binding.compound});
+    return result;
 }
 
 OocEnumerationResult enumerateOocSemanticActions(const GameContext &gc) {

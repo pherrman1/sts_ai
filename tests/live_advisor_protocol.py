@@ -131,6 +131,35 @@ class AdvisorProtocolTest(unittest.TestCase):
         self.assertGreaterEqual(rows[0]["evaluators"][0]["deathProbability"], 0.0)
         self.assertLessEqual(rows[0]["evaluators"][0]["deathProbability"], 1.0)
 
+    def test_live_spent_neow_entry_requires_native_zero_charges(self):
+        # Floor-12 EXORDIUM_THUGS live capture: Java's spent relic is -2.
+        # The Java projection regression covers the exact -2/usedUp -> 0 map;
+        # this checks the resulting native forecast, without relaxing its gate.
+        source = json.loads((Path(__file__).parent / "fixtures" /
+                             "live_ctm_spent_neow.json").read_text())
+        requests = []
+        for sequence, counter in enumerate((-2, 0), 1):
+            entry = json.loads(json.dumps(source))
+            neow = next(r for r in entry["relics"] if r["id"] == "NeowsBlessing")
+            self.assertTrue(neow["usedUp"])
+            neow["data"] = counter
+            requests.append(json.dumps({
+                "protocol": "sts_model_inspector_v1", "kind": "observation",
+                "session": "spent-neow", "sequence": sequence,
+                "observationHash": "neow-%d" % sequence,
+                "observation": dict(entry, boundary="combat",
+                                    combatEntryHash="entry-%d" % sequence,
+                                    combatEntry=entry)}))
+        rows = self.run_advisor(requests, self.model)
+        before, after = (next(e for e in r["evaluators"]
+                             if e["id"] == "ctm_combat_entry_v2") for r in rows)
+        self.assertEqual(before["status"], "UNSUPPORTED")
+        self.assertEqual(before["reason"], "invalid_relic_counter")
+        self.assertEqual(after["status"], "OK")
+        self.assertAlmostEqual(sum(after["winningHpHistogram"]), 1.0, places=4)
+        self.assertGreaterEqual(after["deathProbability"], 0.0)
+        self.assertLessEqual(after["deathProbability"], 1.0)
+
     def test_ctm_room_history_categories_and_unknown_fail_closed(self):
         base = {"boundary": "combat", "character": "IRONCLAD", "ascension": 0,
                 "act": 1, "floor": 7, "hp": 70, "maxHp": 80, "gold": 99,
@@ -154,6 +183,102 @@ class AdvisorProtocolTest(unittest.TestCase):
             self.assertEqual(row["evaluators"][0]["status"], "OK")
         self.assertEqual(results[3]["status"], "ERROR")
         self.assertEqual(results[3]["code"], "UNSUPPORTED")
+
+    def test_silver_rankings_include_physical_live_actions(self):
+        entry = {
+            "boundary": "combat", "character": "IRONCLAD", "ascension": 0,
+            "act": 1, "floor": 1, "hp": 80, "maxHp": 80, "gold": 99,
+            "roomClass": "MONSTER", "previousRoomClass": "NONE",
+            "encounter": "CULTIST", "potionCapacity": 3,
+            "deck": [{"id": "Strike_R", "upgraded": False, "misc": 0,
+                      "bottleBinding": -1}],
+            "relics": [], "potions": ["Potion Slot", "Fire Potion", "FairyPotion",
+                                       "Potion Slot", "Potion Slot"],
+        }
+        root = dict(entry, schemaVersion=4, playerTurn=1, decisionInTurn=0,
+                    combatInstance="ranked-actions-entry")
+        root["combat"] = {
+            "damageTrackingExact": True, "turn": 1, "energy": 3,
+            "hand": [{"id": "Strike_R", "uuid": "physical-strike", "upgraded": False,
+                      "misc": 0, "cost": 1, "costForTurn": 1}],
+            "draw": [], "discard": [], "exhaust": [], "limbo": [], "stasis": [],
+            "relics": [], "potions": ["Potion Slot", "Fire Potion", "FairyPotion"],
+            "monsters": [{"id": "Cultist", "hp": 50, "maxHp": 50, "block": 0,
+                          "nextMove": 3, "moveHistory": [3], "miscInfo": 0,
+                          "dead": False, "powers": []}],
+        }
+        observation = dict(entry, combatEntry=entry, combatEntryHash="ranked-actions-entry",
+                           silverRoot=root)
+        wires = []
+        for sequence, budget in enumerate((1000, 10000, 20000), 1):
+            wires.append({"protocol": "sts_model_inspector_v1", "kind": "observation",
+                          "session": "ranked-actions", "sequence": sequence,
+                          "observationHash": "ranked-actions-%d" % sequence,
+                          "observation": dict(observation, silverSearchBudget=budget)})
+        results = self.run_advisor([json.dumps(wire) for wire in wires], self.model)
+        result = results[0]
+        silver_results = [next(row for row in current["evaluators"]
+                               if row["id"] == "silver_player_decision_v2")
+                          for current in results]
+        self.assertEqual([silver["simulations"] for silver in silver_results], [1000, 10000, 20000])
+        self.assertEqual([silver["additionalSimulations"] for silver in silver_results],
+                         [1000, 9000, 10000])
+        self.assertEqual([silver["totalSimulations"] for silver in silver_results], [1000, 10000, 20000])
+        self.assertEqual(result["status"], "OK")
+        silver = silver_results[0]
+        self.assertEqual(silver["status"], "OK", silver)
+        summaries = silver["rootActionSummaries"]
+        self.assertTrue(summaries)
+        self.assertTrue(all("liveAction" in row for row in summaries))
+        actions = [row["liveAction"] for row in summaries]
+        self.assertIn({"kind": "end_turn"}, actions)
+        self.assertIn({"kind": "card", "cardUuid": "physical-strike", "targetIndex": 1}, actions)
+        self.assertIn({"kind": "potion", "potionSlot": 2, "discard": False, "targetIndex": 1}, actions)
+        self.assertIn({"kind": "potion", "potionSlot": 3, "discard": True}, actions)
+        selected = next(row for row in summaries
+                        if row["fingerprint"] == silver["selectedAction"])
+        self.assertEqual(selected["liveAction"], silver["selectedLiveAction"])
+
+    def test_unknown_combat_selection_remains_silver_with_ctm_enabled(self):
+        for room, encounter in (("MONSTER", "SHELL_PARASITE"),
+                                ("EVENT", "LAGAVULIN_EVENT")):
+            with self.subTest(room=room, encounter=encounter):
+                entry = {
+                    "boundary": "combat", "character": "IRONCLAD", "ascension": 0,
+                    "act": 2, "floor": 22, "hp": 15, "maxHp": 80, "gold": 99,
+                    "roomClass": room, "previousRoomClass": "MONSTER",
+                    "encounter": encounter, "potionKeepValue": 4.0,
+                    "isBurningElite": False, "potionCapacity": 3,
+                    "deck": [{"id": "Strike_R", "upgraded": False, "misc": 0,
+                              "bottleBinding": -1}],
+                    "relics": [], "potions": ["Potion Slot"] * 5,
+                }
+                observation = dict(entry, combatEntryHash="selection-entry", combatEntry=entry)
+                observation["silverRoot"] = {
+                    "schemaVersion": 4, "character": "IRONCLAD", "roomClass": room,
+                    "encounter": encounter, "playerTurn": 3, "decisionInTurn": 1,
+                    "combatInstance": "selection-entry",
+                    "combat": {"damageTrackingExact": False, "cardSelect": {
+                        "task": "", "canPickZero": True, "canPickAnyNumber": False,
+                        "pickCount": 1, "cards": ["Strike_R"],
+                    }},
+                }
+                wire = {"protocol": "sts_model_inspector_v1", "kind": "observation",
+                        "session": "selection-session", "sequence": 1,
+                        "observationHash": "selection-hash", "observation": observation}
+                result, = self.run_advisor([json.dumps(wire)], self.model)
+                self.assertEqual(result["status"], "OK")
+                self.assertEqual(result["modelStatus"], "OK")
+                self.assertEqual(result["session"], wire["session"])
+                self.assertEqual(result["sequence"], wire["sequence"])
+                self.assertEqual(result["observationHash"], wire["observationHash"])
+                evaluators = {row["id"]: row for row in result["evaluators"]}
+                self.assertIn(evaluators["ctm_combat_entry_v2"]["status"], ("OK", "UNSUPPORTED"))
+                silver = evaluators["silver_player_decision_v2"]
+                self.assertEqual(silver["status"], "UNSUPPORTED")
+                self.assertEqual(silver["reason"], "silver_unmapped_selection_task")
+                self.assertNotIn("live_ooc_decision_v1", evaluators)
+                self.assertNotIn("selectedLiveAction", silver)
 
     def test_ctm_support_failures_and_missing_model_are_explicit(self):
         base = {"boundary": "combat", "character": "IRONCLAD", "ascension": 0,

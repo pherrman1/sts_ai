@@ -1092,6 +1092,7 @@ int nativeFloorCardPick(GameContext &gc, int rIdx) {
 }
 
 std::string nativeShopPlan(GameContext &gc) {
+    using RT = search::GameAction::RewardsActionType;
     const Shop &sh = gc.info.shop;
     const auto &idx = richIdxMap();
     const int goldIdx = idx.at("gold"), dsz = idx.at("deckSize");
@@ -1100,8 +1101,11 @@ std::string nativeShopPlan(GameContext &gc) {
     std::vector<Item> items;
     for (int i = 0; i < 7; ++i) if (sh.cardPrice(i) >= 0)
         items.push_back({'c', i, sh.cardPrice(i), (int)sh.cards[i].getId()});
-    for (int i = 0; i < 3; ++i) if (sh.relicPrice(i) >= 0)
-        items.push_back({'r', i, sh.relicPrice(i), (int)sh.relics[i]});
+    for (int i = 0; i < 3; ++i) {
+        const search::GameAction action(RT::RELIC, i);
+        if (sh.relicPrice(i) >= 0 && search::isSupportedAutonomousOocAction(gc, action))
+            items.push_back({'r', i, sh.relicPrice(i), (int)sh.relics[i]});
+    }
     if (items.size() > 16) items.resize(16);
     int removeId = -1; double removeGain = 0.0;
     if (sh.removeCost >= 0) {
@@ -1322,7 +1326,9 @@ std::string vQueryShop(GameContext &gc) {
     }
     for (int j = 0; j < 3; ++j) {
         if (j) relicsCsv += ',';
-        relicsCsv += std::to_string((int)sh.relics[j]) + ":" + std::to_string(sh.relicPrice(j));
+        const search::GameAction action(search::GameAction::RewardsActionType::RELIC, j);
+        const int price = search::isSupportedAutonomousOocAction(gc, action) ? sh.relicPrice(j) : -1;
+        relicsCsv += std::to_string((int)sh.relics[j]) + ":" + std::to_string(price);
     }
     std::string req = std::string(g_shopWin ? "SW;" : "S;") + std::to_string(sh.removeCost)
                     + ";" + cardsCsv + ";" + relicsCsv + ";" + vFeatCsv(gc) + "\n";
@@ -2052,85 +2058,7 @@ static void tokCheckGlobParity(const GameContext &gc, const TokState &ts) {
 }
 
 TokState buildTokState(const GameContext &gc, const PathHistory &path) {
-    TokState ts;
-    std::array<int, kNumCardIds> d{}, u{};
-    int botAtk = -1, botSkill = -1, botPow = -1;
-    for (int i = 0; i < gc.deck.size(); ++i) {
-        const Card &c = gc.deck.cards[i];
-        const int id = (int)c.getId();
-        if (id >= 0 && id < kNumCardIds) { ++d[id]; if (c.isUpgraded()) ++u[id]; }
-        if (gc.deck.isCardBottled(i)) {
-            switch (c.getType()) {
-                case CardType::ATTACK: botAtk = id; break;
-                case CardType::SKILL:  botSkill = id; break;
-                case CardType::POWER:  botPow = id; break;
-                default: break;
-            }
-        }
-    }
-    std::array<int, kNumRelics> r{};
-    for (const auto &ri : gc.relics.relics) {
-        const int id = (int)ri.id;
-        if (id >= 0 && id < kNumRelics) r[id] = 1 + (ri.data > 0 ? ri.data : 0);
-    }
-    std::array<int, kNumPotions> pot{};
-    for (int i = 0; i < gc.potionCapacity && i < (int)gc.potions.size(); ++i) {
-        if (gc.potions[i] == Potion::EMPTY_POTION_SLOT) continue;
-        const int id = (int)gc.potions[i];
-        if (id >= 0 && id < kNumPotions) ++pot[id];
-    }
-    const FwdMap fm = forwardMapFeatures(gc);
-    // 36 raw scalars: same as richRow() minus the 8 hidden-information leaks
-    // (nextEliteId, nextFight0/1/2, remElites, remFights, monOffset,
-    //  eliteOffset at original indices 15-22); bossId is kept (visible on act map).
-    const float glob[TOK_NRAW] = {
-        (float)gc.ascension, (float)gc.act, (float)gc.floorNum, (float)gc.curHp,
-        (float)gc.maxHp, (float)gc.gold, (float)gc.deck.size(),
-        (float)gc.potionChance, (float)gc.cardRarityFactor,
-        (float)(gc.blueKey ? 1 : 0), (float)(gc.greenKey ? 1 : 0), (float)(gc.redKey ? 1 : 0),
-        (float)gc.potionCount, (float)gc.potionCapacity,
-        (float)gc.boss,
-        (float)path.roomVisits[(int)Room::SHOP], (float)path.roomVisits[(int)Room::REST],
-        (float)path.roomVisits[(int)Room::EVENT], (float)path.roomVisits[(int)Room::ELITE],
-        (float)path.roomVisits[(int)Room::MONSTER], (float)path.roomVisits[(int)Room::TREASURE],
-        (float)botAtk, (float)botSkill, (float)botPow,
-        (float)fm.dElite, (float)fm.dRest, (float)fm.dShop, (float)fm.dBoss,
-        (float)fm.cElite, (float)fm.cRest, (float)fm.cShop, (float)fm.cEvent,
-        (float)fm.cMonster, (float)fm.cTreasure,
-        (float)gc.curMapNodeX, (float)gc.curMapNodeY
-    };
-    for (int i = 0; i < TOK_NRAW; ++i) ts.glob[i] = glob[i];
-    // derived threshold features (ooc-strategic-v4.md §2.1)
-    // canTakeEliteKey now uses fmCElite (reachable elites on the visible map)
-    // instead of the removed remElites (exact hidden-queue count).
-    ts.glob[TOK_NRAW + 0] = gc.maxHp > 0 ? (float)gc.curHp / gc.maxHp : 0.0f;
-    ts.glob[TOK_NRAW + 1] = (float)(gc.maxHp - gc.curHp);
-    ts.glob[TOK_NRAW + 2] = gc.potionCount < gc.potionCapacity ? 1.0f : 0.0f;
-    ts.glob[TOK_NRAW + 3] = gc.gold >= 75 ? 1.0f : 0.0f;
-    ts.glob[TOK_NRAW + 4] = fm.cElite > 0
-                  && !(gc.blueKey && gc.greenKey && gc.redKey) ? 1.0f : 0.0f;
-    ts.glob[TOK_NRAW + 5] = fm.dBoss <= 3 ? 1.0f : 0.0f;
-
-    // deck tokens: canonical ascending cardId, upgraded=1 token before the
-    // unupgraded one, capped at MAXDK=96
-    ts.nDk = 0;
-    for (int id = 0; id < kNumCardIds && ts.nDk < 96; ++id) {
-        if (u[id] > 0) {
-            ts.dk[ts.nDk][0] = id; ts.dk[ts.nDk][1] = 1; ts.dk[ts.nDk][2] = u[id]; ++ts.nDk;
-        }
-        if (ts.nDk < 96 && d[id] - u[id] > 0) {
-            ts.dk[ts.nDk][0] = id; ts.dk[ts.nDk][1] = 0; ts.dk[ts.nDk][2] = d[id] - u[id]; ++ts.nDk;
-        }
-    }
-    // relic tokens: canonical ascending relicId (counter = 1 + relic data)
-    ts.nRl = 0;
-    for (int id = 0; id < kNumRelics && ts.nRl < 64; ++id)
-        if (r[id] > 0) { ts.rl[ts.nRl][0] = id; ts.rl[ts.nRl][1] = r[id]; ++ts.nRl; }
-    // potion tokens: canonical ascending potionId
-    ts.nPt = 0;
-    for (int id = 0; id < kNumPotions && ts.nPt < 8; ++id)
-        if (pot[id] > 0) { ts.pt[ts.nPt][0] = id; ts.pt[ts.nPt][1] = pot[id]; ++ts.nPt; }
-
+    const TokState ts = buildTokStatePure(gc, path);
     if (g_oocStrategicTokCheck && g_oocStrategicTokNet.ok && t_tokCheckPending) {
         t_tokCheckPending = false;
         tokCheckGlobParity(gc, ts);
@@ -5340,8 +5268,10 @@ bool oocShopBeamPolicy(GameContext &gc) {
         for (std::size_t bi = 0; bi < beam.size(); ++bi) {
             const BeamNode &node = beam[bi];
             const bool nodeShop = node.state.screenState == ScreenState::SHOP_ROOM;
-            const std::vector<search::GameAction> legal =
-                search::GameAction::getAllActionsInState(node.state);
+            auto legal = search::GameAction::getAllActionsInState(node.state);
+            legal.erase(std::remove_if(legal.begin(), legal.end(), [&](const auto &action) {
+                return !search::isSupportedAutonomousOocAction(node.state, action);
+            }), legal.end());
             if (legal.empty()) continue;
 
             if (nodeShop) {
