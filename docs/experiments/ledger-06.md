@@ -10802,26 +10802,39 @@ default or generalization claim is authorized. Evidence:
   finite FPU, and eventual unvisited exploration. The replay seam now emits
   initial semantic root action, simulations, nodes, depth, search wall time,
   and FPU opportunity/selection telemetry.
-- **Full 1k DEV:** On frozen `hard64-dev` snapshots
-  (snapshot SHA-256 `ab7c3298754864986c31273a0f1d23967b165fdd79a386261b680b8ad16d0eae`),
-  64/64 rows per arm were accepted. Control was 51/64 wins; FPU was 50/64.
-  FPU recorded 2,697,841 opportunities, 2,433,339 visited-edge selections
-  with an unvisited edge remaining, and 264,502 unvisited selections. FPU
-  changed the initial root action in 22/64 cases and had higher depth proxy
-  (14,346,649 vs 12,899,741) with fewer nodes and slightly lower aggregate
-  search wall time in this arm.
-- **10k smoke:** The mandated 8-case smoke was 7/8 wins and 8/8 accepted in
-  both arms; root actions agreed 8/8. FPU was more expensive in the smoke
-  (2,708,398 vs 2,609,631 nodes; 181,198.364 vs 176,349.130 ms) and had
-  greater depth. The required full 64-case 10k arm was not completed because
-  one-shot and managed-wrapper executions intermittently terminated without
-  rows; independently retried single cases completed, but partial rows were
-  excluded from cohort analysis.
-- **Decision:** **`INTERNAL_FPU_INCONCLUSIVE`**. The mechanism is materially
-  exercised, but the full high-budget DEV tail is missing and the available
-  1k/smoke evidence does not establish improved decisions or no runtime
-  regression. No tuning, holdout, gameplay qualification, or default
-  promotion was performed.
-- **Evidence:** [internal FPU evidence packet](evidence/silver_internal_fpu_20260921/README.md).
-  **Knowledge impact:** durable inconclusive Silver allocation result and
-  replay telemetry contract; no production/default behavior changed.
+- **Frozen implementation and provenance:** The implementation SHA was frozen
+  at `c9f58c20cd4879584fbe0d78828d33057350d914` before the expensive rerun.
+  The `hard64-dev` snapshot SHA-256 was
+  `ab7c3298754864986c31273a0f1d23967b165fdd79a386261b680b8ad16d0eae`.
+  Every case was run as one process through `tools/seed_guard.sh` with
+  `OMP_NUM_THREADS=4`, the same snapshot `benchmark_seed`, and the same fixed
+  configuration across arms; only budget and the default-off FPU flag differed.
+- **Complete 1k and 10k DEV cohorts:** All four arms had 64/64 accepted rows.
+  Control 1k was 51/64 wins and FPU 1k was 50/64; control 10k was 59/64 and
+  FPU 10k was 56/64. Full-combat nodes, depth, chance depth, simulations, and
+  wall time are retained as descriptive totals only: once root actions differ,
+  they are trajectory-confounded and are not causal FPU efficiency claims.
+- **Preregistered root metric:** Relative to high-budget CONTROL as a
+  reference, 1k CONTROL agreed in 45/64 cases and 1k FPU agreed in 39/64.
+  The 1k CONTROL/FPU actions disagreed in 22 cases: FPU moved toward the
+  reference in 6, away in 12, and both remained different in 4. The complete
+  case-by-case direction list and selected actions are in the evidence packet.
+- **First-decision efficiency:** A measurement-only replay seam covered the 59
+  ordinary roots common to both arms; five transactional `CARD_SELECT` roots
+  were excluded from this diagnostic but remained in the full-combat cohort.
+  At 1k, mean first-decision wall time was 90,739.926 us CONTROL versus
+  91,512.401 us FPU; at 10k it was 915,215.958 us versus 911,448.962 us.
+  These machine-dependent diagnostics are reported separately and are not a
+  production-performance qualification.
+- **Decision:** **`INTERNAL_FPU_INCONCLUSIVE`** after the complete high-budget
+  cohort. The mechanism is exercised, but the primary root metric is mixed and
+  leans against FPU; timing is inconsistent across budgets; and whole-combat
+  totals cannot support a causal efficiency claim. This does not support
+  `INTERNAL_FPU_PROMISING` or `INTERNAL_FPU_REJECTED` under the existing rule.
+  No tuning, holdout, gameplay qualification, or default promotion was
+  performed.
+- **Evidence:** [internal FPU evidence packet](evidence/silver_internal_fpu_20260921/README.md),
+  including compressed raw JSONL, deterministic analyzer, frozen summary, and
+  complete per-case table. **Knowledge impact:** durable complete-cohort
+  inconclusive Silver allocation result, first-decision telemetry seam, and
+  paired evidence contract; no production/default behavior changed.

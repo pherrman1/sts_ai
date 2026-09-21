@@ -27,7 +27,7 @@ nlohmann::json macroTaskCounts(const Counts &counts) {
 nlohmann::json replayRow(const nlohmann::json &input, std::int64_t budget,
                          bool collectUidFragmentationDiagnostics,
                          silver_bridge::SilverSearchContractMode contractMode,
-                         bool internalFpuEnabled) {
+                         bool internalFpuEnabled, bool firstDecisionOnly) {
     const auto started = std::chrono::steady_clock::now();
     nlohmann::json row = {
         {"case_id", input.value("case_id", "")},
@@ -50,6 +50,27 @@ nlohmann::json replayRow(const nlohmann::json &input, std::int64_t budget,
         config.internalFpuEnabled = internalFpuEnabled;
         config.collectSearchTiming = true;
         config.contractMode = contractMode;
+
+        if (firstDecisionOnly) {
+            config.collectDecisionDiagnostics = true;
+            const auto decision = silver_bridge::runSilverDecision(wire, config);
+            row["status"] = decision.accepted ? "ok" : decision.failureReason;
+            row["simulations"] = decision.simulations;
+            row["first_action_fingerprint"] = decision.initialActionFingerprint;
+            row["nodes_created"] = decision.telemetry.nodesCreated;
+            row["depth_sum"] = decision.telemetry.depthSum;
+            row["chance_depth_sum"] = decision.telemetry.chanceDepthSum;
+            row["search_wall_micros"] = decision.telemetry.searchWallMicros;
+            row["fpu_selection_opportunities"] =
+                decision.telemetry.fpuSelectionOpportunities;
+            row["fpu_visited_selected_with_unvisited_remaining"] =
+                decision.telemetry.fpuVisitedSelectedWithUnvisitedRemaining;
+            row["fpu_unvisited_selected"] = decision.telemetry.fpuUnvisitedSelected;
+            row["diagnostic_nodes_created"] = decision.diagnostic.nodesCreated;
+            row["diagnostic_root_visits"] = decision.diagnostic.rootVisitsAfterSearch;
+            row["diagnostic_chosen_edge_visits"] = decision.diagnostic.chosenEdgeVisits;
+            return row;
+        }
 
         const auto result = silver_bridge::runSilverCombatReplay(wire, config);
         row["won"] = result.won;
@@ -118,11 +139,13 @@ nlohmann::json replayRow(const nlohmann::json &input, std::int64_t budget,
 int main(int argc, char **argv) {
     if (argc < 3) {
         std::cerr << "usage: silver_hard_combat_replay SNAPSHOTS.jsonl BUDGET "
-                     "[--arm control|A|B] [--uid-fragmentation] [--internal-fpu]\n";
+                     "[--arm control|A|B] [--uid-fragmentation] [--internal-fpu] "
+                     "[--first-decision-only]\n";
         return 2;
     }
     bool collectUidFragmentationDiagnostics = false;
     bool internalFpuEnabled = false;
+    bool firstDecisionOnly = false;
     auto contractMode = silver_bridge::SilverSearchContractMode::CONTROL;
     for (int i = 3; i < argc; ++i) {
         const std::string option(argv[i]);
@@ -130,6 +153,8 @@ int main(int argc, char **argv) {
             collectUidFragmentationDiagnostics = true;
         } else if (option == "--internal-fpu") {
             internalFpuEnabled = true;
+        } else if (option == "--first-decision-only") {
+            firstDecisionOnly = true;
         } else if (option == "--arm" && i + 1 < argc) {
             const std::string arm(argv[++i]);
             if (arm == "control") contractMode = silver_bridge::SilverSearchContractMode::CONTROL;
@@ -171,7 +196,7 @@ int main(int argc, char **argv) {
         try {
             const auto row = replayRow(nlohmann::json::parse(line), budget,
                                        collectUidFragmentationDiagnostics, contractMode,
-                                       internalFpuEnabled);
+                                       internalFpuEnabled, firstDecisionOnly);
             hadFailure = hadFailure || row.value("status", "") != "ok";
             std::cout << row.dump() << '\n';
         } catch (const std::exception &error) {

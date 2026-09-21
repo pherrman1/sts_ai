@@ -1,6 +1,7 @@
 # Current research status
 
-Last verified: 2026-09-21 for the local 80-source learned-prefix scale validation;
+Last verified: 2026-09-21 for the complete frozen Silver internal-node FPU
+cohort and local 80-source learned-prefix scale validation;
 2026-09-20 for the tactical-prefix Silver oracle headroom screen
 and contextual first-action Silver selector headroom/policy screen; 2026-09-19 for forced-action historical artifact recovery and
 the PR #247 evaluator preflight; 2026-09-18 for the OOC 20% gap-stop quality
@@ -1495,6 +1496,18 @@ and [ledger-06 §173](../../experiments/ledger-06.md).
 Earlier lower root exploration, Sequential Halving, progressive unpruning,
 hard candidate pruning, learned ordering, and grouped/rank-4 visit-PUCT priors
 produced no stable promotable advantage; ordinary c=25 remains the default.
+
+The complete frozen internal-node finite FPU screen is **`INTERNAL_FPU_INCONCLUSIVE`**.
+At the preregistered root metric, 1k CONTROL agreed with 10k CONTROL in 45/64
+cases while 1k FPU agreed in 39/64; among 22 1k CONTROL/FPU disagreements, FPU
+moved toward the 10k CONTROL reference 6 times and away 12 times. Full 1k and
+10k `hard64-dev` cohorts were accepted 64/64 per arm, but whole-combat
+nodes/wall/simulation totals are trajectory-confounded after root divergence.
+The fixed FPU formulation remains unchanged and is not a production default;
+do not tune, promote, or run gameplay qualification from this result. See
+[ledger-06 §332](../../experiments/ledger-06.md) and the
+[complete internal-FPU evidence packet](../../experiments/evidence/silver_internal_fpu_20260921/README.md).
+
 The later six-arm root-mechanism replay was a **single-source-seed offline
 signal**, not a multi-seed confirmation: informative Teacher-A visit PUCT
 beats uniform PUCT (`C-E` mean B-regret delta `-0.412311`, 95% CI
