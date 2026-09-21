@@ -22,6 +22,28 @@ canonical hits 0 versus 7,763; summed search wall time 663,163.699 versus
 is not emitted by this seam. Wall time is a sequential local observation, not
 a performance gate.
 
+Changed paths versus baseline:
+
+```text
+EXPERIMENTS.md
+apps/silver_hard_combat_replay.cpp
+apps/silver_search_optimization_test.cpp
+decisions/0016-silver-settled-queue-item-identity.md
+decisions/README.md
+docs/experiments/evidence/silver_queue_item_canonical_20260922/README.md
+docs/experiments/evidence/silver_queue_item_canonical_20260922/baseline-dev.jsonl.gz
+docs/experiments/evidence/silver_queue_item_canonical_20260922/baseline-first.jsonl.gz
+docs/experiments/evidence/silver_queue_item_canonical_20260922/candidate-dev.jsonl.gz
+docs/experiments/evidence/silver_queue_item_canonical_20260922/candidate-first.jsonl.gz
+docs/experiments/evidence/silver_queue_item_canonical_20260922/candidate-holdout.jsonl.gz
+docs/experiments/ledger-06.md
+docs/knowledge-base/architecture/combat-search.md
+include/sim/search/SilverBridge.h
+third_party/silver_lightspeed/bridge/SilverStateBridge.cpp
+third_party/silver_lightspeed/include/sim/search/BattleSearcher.h
+third_party/silver_lightspeed/src/sim/search/BattleSearcher.cpp
+```
+
 DEV complete-fight replay returned 64/64 `ok`. Baseline versus candidate:
 51 versus 52 wins; mean terminal HP fraction 0.3440911508 versus
 0.3701368277; nodes/simulation 0.9246209677 versus 0.9203209877;
