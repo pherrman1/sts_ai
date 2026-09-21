@@ -426,14 +426,21 @@ Path counts derive from persisted `metricData.path_taken`, whose original map
 symbols survive event-to-room conversion and save/resume. Missing history is
 unsupported. Public metric history conditions current-act normal/elite
 encounter consumption, relic-pool membership, one-time/event membership, and
-shop-removal cost. The private Java `potionChance` and `cardRarityFactor`
-counters are not captured; the detached belief root retains the constructor's
-public prior for them. No RNG state, future encounter queue, or unrevealed
-outcome is captured.
+shop-removal cost. Currently visible shop, combat-reward, and boss-relic offers
+are also removed from every reconstructed relic pool because native generation
+consumes a relic when it is offered, not when it is acquired. The private Java
+`potionChance` and `cardRarityFactor` counters are not captured. Roots such as
+Mushrooms and Mysterious Sphere whose pre-MAP continuation can generate potion
+or card rewards fail closed with `PUBLIC_REWARD_PITY_HISTORY_UNQUALIFIED`; they
+must not use the hypothetical constructor's `0`/`5` defaults as a belief
+distribution. No RNG state, future encounter queue, or unrevealed outcome is
+captured.
 Because a MAP-root transition immediately depends on the unreconstructable
 posterior over those counters, live MCTS fails closed there with
 `PUBLIC_EVENT_CHANCE_HISTORY_UNQUALIFIED`. Supported non-MAP roots resolve to
-MAP and stop before that uncertainty can affect a transition.
+MAP, and the live adapter marks every downstream MAP state as a hard planner
+leaf before expansion. Revisited MAP particles therefore cannot choose a
+hypothetical room or consume hidden room-chance state.
 
 `live_ooc_state` creates both a value-only public projection and a separately
 conditioned transition root. It imports no hidden queue ordering or RNG.

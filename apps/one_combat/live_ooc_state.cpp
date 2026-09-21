@@ -159,6 +159,19 @@ LiveOocStateV1::LiveOocMctsRootV1 makeMctsRoot(const LiveOocStateV1 &source) {
     };
     for (const auto &relic : array(publicState, "acquiredRelics", 181))
         eraseRelic(id<RelicId>(relic, RelicId::INVALID));
+    // Native pools consume relics when they are offered, not when acquired.
+    // Condition every currently visible offer before Courier or another
+    // within-checkpoint transition can draw from the reconstructed pools.
+    if (source.projected.screenState == ScreenState::SHOP_ROOM) {
+        for (int i=0; i<3; ++i)
+            if (source.projected.info.shop.relicPrice(i) >= 0)
+                eraseRelic(source.projected.info.shop.relics[i]);
+    } else if (source.projected.screenState == ScreenState::REWARDS) {
+        const auto &rewards = source.projected.info.rewardsContainer;
+        for (int i=0; i<rewards.relicCount; ++i) eraseRelic(rewards.relics[i]);
+    } else if (source.projected.screenState == ScreenState::BOSS_RELIC_REWARDS) {
+        for (RelicId relic : source.projected.info.bossRelics) eraseRelic(relic);
+    }
     const auto eraseEvent = [&](Event event) {
         for (auto pool : {&root.eventList, &root.shrineList, &root.specialOneTimeEventList})
             pool->erase(std::remove(pool->begin(), pool->end(), event), pool->end());
@@ -371,6 +384,9 @@ ImportResult importLiveOocStateV1(const J &observation, LiveOocStateV1 &out) {
                     g.info.neowRewards[i].d=id<Neow::Drawback>(ns[i].at("drawback"),Neow::Drawback::INVALID);
                 }
             }
+            if (g.curEvent == Event::HYPNOTIZING_COLORED_MUSHROOMS
+                    || g.curEvent == Event::MYSTERIOUS_SPHERE)
+                return {false,"UNSUPPORTED","PUBLIC_REWARD_PITY_HISTORY_UNQUALIFIED"};
         }
         for(const auto &choice:array(o,"liveChoices",1024)) {
             primitive(choice,g.screenState);validateHint(choice.at("liveAction"));

@@ -203,18 +203,30 @@ int main(int argc, char **argv) {
             leafSawMap = state.screenState == ScreenState::MAP_SCREEN;
             return 0.25;
         };
-        deps.continuationStep = [](GameContext &state, PathHistory &, std::mt19937_64 &) {
+        int mapContinuationCalls = 0;
+        deps.continuationStep = [&](GameContext &state, PathHistory &, std::mt19937_64 &) {
+            if (state.screenState == ScreenState::MAP_SCREEN) {
+                ++mapContinuationCalls;
+                throw OocSearchUnsupported("MAP checkpoint was expanded");
+            }
             const auto semantic = enumerateOocSemanticPrimitiveBindings(state);
             if (!semantic.supported || !semantic.complete || semantic.bindings.empty())
                 throw OocSearchUnsupported("test continuation enumeration");
             GameAction(semantic.bindings.front().primitiveBits).execute(state);
         };
         OocAdapterOptions checkpoint;checkpoint.checkpointLeaves=true;
+        checkpoint.stopAtMapCheckpoint=true;
         OocGameContextModel checkpointModel(pending, path, {}, checkpoint, std::move(deps));
         std::mt19937_64 checkpointRng(17);
         require(checkpointModel.evaluateLeaf(0, checkpointRng) == 0.25 && leafSawMap
                 && checkpointModel.continuationMetrics().projectionSteps > 0,
                 "advisor checkpoint leaf evaluated an unresolved selector");
+        OocMctsConfig checkpointConfig;
+        checkpointConfig.seed = 19;
+        checkpointConfig.maxDepth = 32;
+        const auto checkpointSearch = OocMctsPlanner(checkpointConfig).search(checkpointModel, 0, 64);
+        require(checkpointSearch.metrics.simulations == 64 && mapContinuationCalls == 0,
+                "downstream MAP checkpoint was revisited and expanded");
         std::cout << "live OOC policy contract PASS\n";
         return 0;
     } catch (const std::exception &error) {

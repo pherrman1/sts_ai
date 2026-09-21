@@ -305,6 +305,15 @@ restocks, room generation and post-combat rewards. Semantic identity remains
 the chosen operation/target, never its sampled outcome. Only the fresh semantic
 action is executed live, using the live game's own RNG.
 
+The live advisor additionally sets `stopAtMapCheckpoint`: every downstream MAP
+state is a true planner leaf, including after the first visit. This prevents a
+revisited MAP particle from sampling a room with unreconstructed
+event/shop/treasure chance history. Live imports remove currently visible shop,
+combat-reward and boss-relic offers from the reconstructed relic pools.
+Pity-sensitive event fights that can generate card or potion rewards before
+MAP are unsupported until a public posterior for `cardRarityFactor` and
+`potionChance` exists.
+
 Live edges are never marked deterministic merely because their simulator copy
 has fixed RNG. Progressive widening samples outcome particles normally, even
 when a particular action has a deterministic public effect. Native leaf

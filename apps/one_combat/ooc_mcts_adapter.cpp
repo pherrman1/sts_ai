@@ -284,6 +284,9 @@ const OocGameContextModel::Metadata &OocGameContextModel::metadata(sts::search::
     return mutableMetadata(id);
 }
 bool OocGameContextModel::isLeafBoundary(sts::search::OocStateId id) const {
+    if (options.stopAtMapCheckpoint
+            && state(id).screenState == sts::ScreenState::MAP_SCREEN)
+        return true;
     return metadata(id).boundary;
 }
 std::optional<sts::search::OocActionId> OocGameContextModel::soleLegalAction(sts::search::OocStateId id) const {
@@ -548,6 +551,9 @@ struct ImaginedScope {
 }
 double OocGameContextModel::evaluateLeaf(sts::search::OocStateId id, std::mt19937_64 &rng) {
     OocProfileScope profile(OocProfileBucket::EvaluateLeaf);
+    if (options.stopAtMapCheckpoint
+            && state(id).screenState == sts::ScreenState::MAP_SCREEN)
+        return leafValue(id);
     if (!options.checkpointLeaves && !options.sampleNoncombat) return leafValue(id);
     auto child = Snapshot{detachedCopy(state(id)), states.at(id).path, {}};
     if (options.sampleNoncombat) sampleNoncombatFuture(child.gc, rng);

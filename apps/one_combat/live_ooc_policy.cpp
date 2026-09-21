@@ -200,6 +200,7 @@ LiveOocDecision LiveOocMctsPolicy::score(const sts::GameContext &projected,
     OocAdapterOptions options;
     options.sampleNoncombat = true;
     options.checkpointLeaves = true;
+    options.stopAtMapCheckpoint = true;
     if (hasRootPrimitiveBits_) options.rootPrimitiveBits = rootPrimitiveBits_;
     OocMctsDependencies dependencies;
     dependencies.policyAvailable = [this] { return model_.ok; };
@@ -235,19 +236,38 @@ LiveOocDecision LiveOocMctsPolicy::score(const sts::GameContext &projected,
     };
     dependencies.continuationStep = [policyBatch](sts::GameContext &gc, PathHistory &history,
                                            std::mt19937_64 &) {
-        const auto enumeration = sts::search::enumerateOocSemanticPrimitiveBindings(gc);
-        if (!enumeration.supported || !enumeration.complete || enumeration.bindings.empty())
-            throw sts::search::OocSearchUnsupported("continuation_semantic_enumeration");
-        std::vector<sts::search::GameAction> sources;
-        std::set<std::uint32_t> seen;
-        for (const auto &binding : enumeration.bindings)
-            if (seen.insert(binding.primitiveBits).second)
-                sources.emplace_back(binding.primitiveBits);
-        std::size_t selected = 0;
-        if (v4DecisionSupported(gc)) {
-            const auto logits = policyBatch(gc, history, sources);
-            selected = std::max_element(logits.begin(), logits.end()) - logits.begin();
+        using RT = sts::search::GameAction::RewardsActionType;
+        if (gc.screenState == sts::ScreenState::REWARDS) {
+            auto &rewards = gc.info.rewardsContainer;
+            if (rewards.goldRewardCount > 0) {
+                sts::search::GameAction(RT::GOLD, 0).execute(gc); history.update(gc); return;
+            }
+            if (rewards.relicCount > 0) {
+                sts::search::GameAction(RT::RELIC, 0).execute(gc); history.update(gc); return;
+            }
+            if (rewards.potionCount > 0 && gc.potionCount < gc.potionCapacity) {
+                sts::search::GameAction(RT::POTION, 0).execute(gc); history.update(gc); return;
+            }
+            if (rewards.emeraldKey || rewards.sapphireKey) {
+                sts::search::GameAction(RT::KEY, 0).execute(gc); history.update(gc); return;
+            }
         }
+        if (!v4DecisionSupported(gc)) {
+            const auto enumeration = sts::search::enumerateOocSemanticPrimitiveBindings(gc);
+            std::set<std::uint32_t> unique;
+            if (enumeration.supported && enumeration.complete)
+                for (const auto &binding : enumeration.bindings) unique.insert(binding.primitiveBits);
+            if (unique.size() != 1)
+                throw sts::search::OocSearchUnsupported("continuation_v4_contract_unavailable");
+            sts::search::GameAction(*unique.begin()).execute(gc);
+            history.update(gc);
+            return;
+        }
+        const auto sources = v4CandidateActions(gc);
+        if (sources.empty())
+            throw sts::search::OocSearchUnsupported("continuation_empty_v4_candidates");
+        const auto logits = policyBatch(gc, history, sources);
+        const auto selected = std::max_element(logits.begin(), logits.end()) - logits.begin();
         sources.at(selected).execute(gc);
         history.update(gc);
     };

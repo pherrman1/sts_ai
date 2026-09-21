@@ -52,7 +52,9 @@ class LiveOocProtocol(unittest.TestCase):
                 self.assertEqual(evaluator["status"], "UNSUPPORTED")
                 continue
             if evaluator["status"] == "UNSUPPORTED":
-                self.assertTrue(evaluator.get("reason", "").startswith("OOC_MCTS_"), response)
+                self.assertTrue(evaluator.get("reason", "").startswith("OOC_MCTS_")
+                                or evaluator.get("reason") == "PUBLIC_EVENT_CHANCE_HISTORY_UNQUALIFIED",
+                                response)
                 continue
             self.assertEqual(evaluator["status"], "OK", response)
             candidates = evaluator["candidateSummaries"]
@@ -72,6 +74,14 @@ class LiveOocProtocol(unittest.TestCase):
         response, = self.run_rows([self.fixtures["unsupported_searing_blow_upgrade_history"]])
         self.assertEqual(response["evaluators"][0]["status"], "UNSUPPORTED")
         self.assertEqual(response["evaluators"][0]["reason"], "SEARING_BLOW_UPGRADE_HISTORY_UNQUALIFIED")
+
+    def test_event_fights_fail_closed_without_public_reward_pity_history(self):
+        rows = self.run_rows([self.fixtures["unsupported_mushrooms_reward_pity"],
+                              self.fixtures["unsupported_sphere_reward_pity"]])
+        for response in rows:
+            evaluator, = response["evaluators"]
+            self.assertEqual(evaluator["status"], "UNSUPPORTED")
+            self.assertEqual(evaluator["reason"], "PUBLIC_REWARD_PITY_HISTORY_UNQUALIFIED")
 
     def test_missing_model_keeps_explicit_unsupported(self):
         response, = self.run_rows([self.fixtures["event_big_fish"]], model=False)

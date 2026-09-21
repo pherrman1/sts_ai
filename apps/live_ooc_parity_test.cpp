@@ -139,6 +139,8 @@ int main(int argc,char **argv){try{
     g=base;g.screenState=ScreenState::EVENT_SCREEN;g.curEvent=Event::BIG_FISH;add("event_big_fish",g);
     g.curEvent=Event::LIVING_WALL;add("event_living_wall",g);
     g.curEvent=Event::THE_WOMAN_IN_BLUE;add("event_woman_in_blue",g);
+    g.curEvent=Event::HYPNOTIZING_COLORED_MUSHROOMS;add("unsupported_mushrooms_reward_pity",g);
+    g.curEvent=Event::MYSTERIOUS_SPHERE;add("unsupported_sphere_reward_pity",g);
     g=base;g.screenState=ScreenState::EVENT_SCREEN;g.curEvent=Event::NEOW;add("neow",g);
     g=base;g.deck=Deck{};g.deck.obtain(g,Card(CardId::BASH));g.screenState=ScreenState::EVENT_SCREEN;
     g.curEvent=Event::AUGMENTER;add("thin_deck_augmenter",g);
@@ -158,9 +160,14 @@ int main(int argc,char **argv){try{
     int passed=0;
     for(const auto &[name,source]:fixtures){
         const auto wire=project(source,path,name);advisor::LiveOocStateV1 live;const auto result=advisor::importLiveOocStateV1(wire,live);
-        if(name=="unsupported_searing_blow_upgrade_history") {
+        if(name=="unsupported_searing_blow_upgrade_history"
+                || name=="unsupported_mushrooms_reward_pity"
+                || name=="unsupported_sphere_reward_pity") {
+            const std::string expected = name=="unsupported_searing_blow_upgrade_history"
+                ? "SEARING_BLOW_UPGRADE_HISTORY_UNQUALIFIED"
+                : "PUBLIC_REWARD_PITY_HISTORY_UNQUALIFIED";
             check(!result.ok && result.code=="UNSUPPORTED"
-                && result.message=="SEARING_BLOW_UPGRADE_HISTORY_UNQUALIFIED",name+" must fail closed before scoring");
+                && result.message==expected,name+" must fail closed before scoring");
             if(output)output<<wire.dump()<<'\n';
             std::cout<<name<<" parity=BOUNDARY_CONFIRMED status=UNSUPPORTED candidates=0\n";++passed;
             continue;
@@ -175,6 +182,20 @@ int main(int argc,char **argv){try{
                 &live.mctsRoot.state.uncommonRelicPool,&live.mctsRoot.state.rareRelicPool,
                 &live.mctsRoot.state.shopRelicPool,&live.mctsRoot.state.bossRelicPool})
             check(std::find(pool->begin(),pool->end(),owned.id)==pool->end(),name+" acquired relic remained in support");
+        const auto visibleRelicRemoved = [&](RelicId relic) {
+            for (const auto *pool:{&live.mctsRoot.state.commonRelicPool,
+                    &live.mctsRoot.state.uncommonRelicPool,&live.mctsRoot.state.rareRelicPool,
+                    &live.mctsRoot.state.shopRelicPool,&live.mctsRoot.state.bossRelicPool})
+                check(std::find(pool->begin(),pool->end(),relic)==pool->end(),
+                      name+" visible relic remained in support");
+        };
+        if (source.screenState==ScreenState::SHOP_ROOM)
+            for(int i=0;i<3;++i)if(source.info.shop.relicPrice(i)>=0)visibleRelicRemoved(source.info.shop.relics[i]);
+        if (source.screenState==ScreenState::REWARDS)
+            for(int i=0;i<source.info.rewardsContainer.relicCount;++i)
+                visibleRelicRemoved(source.info.rewardsContainer.relics[i]);
+        if (source.screenState==ScreenState::BOSS_RELIC_REWARDS)
+            for(RelicId relic:source.info.bossRelics)visibleRelicRemoved(relic);
         auto publicSource=source;publicSource.potionChance=0;publicSource.cardRarityFactor=5;
         sameTokens(buildTokStatePure(publicSource,path),buildTokStatePure(live.projected,live.path));
         check(source.deck.cardTypeCounts==live.projected.deck.cardTypeCounts,name+" deck type counts");
