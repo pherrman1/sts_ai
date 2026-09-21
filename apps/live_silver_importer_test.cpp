@@ -1854,6 +1854,14 @@ int main() {
         auto redAndColorless = general;
         redAndColorless["silverRoot"]["combat"]["hand"][0]["id"] = "Strike_R";
         redAndColorless["silverRoot"]["combat"]["draw"][0]["id"] = "Dramatic Entrance";
+        // The live Act-1 Jaw Worm failure had both Dramatic Entrance and Combust.
+        // Combust was incorrectly labeled GREEN by the native card-color table.
+        redAndColorless["silverRoot"]["combat"]["draw"][1]["id"] = "Combust";
+        if (getCardColor(CardId::COLLECT) != CardColor::PURPLE
+            || getCardColor(CardId::COMBUST) != CardColor::RED
+            || getCardColor(CardId::COMPILE_DRIVER) != CardColor::BLUE
+            || getCardColor(CardId::CONCENTRATE) != CardColor::GREEN)
+            throw std::runtime_error("native card colors around Combust are misordered");
         const auto redAndColorlessImported = one_combat::advisor::importSilverRoot(redAndColorless);
         if (!redAndColorlessImported.ok)
             throw std::runtime_error("RED/COLORLESS cards were rejected: " + redAndColorlessImported.reason);

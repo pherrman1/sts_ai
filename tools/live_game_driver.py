@@ -789,7 +789,7 @@ def choose_deterministic_action(screen: Mapping[str, Any], candidates: Sequence[
 
 def card_reward_reveal_action(screen: Mapping[str, Any], game: Mapping[str, Any],
                               candidates: Sequence[LegalAction]) -> LegalAction | None:
-    """Open a card reward only after claimable parent rewards are collected."""
+    """Open a card reward when only independent gold remains claimable."""
     if _text(screen.get("screen_type", screen.get("screenType"))).upper() != "COMBAT_REWARD":
         return None
     occurrences = _list(_mapping(game.get("screen_state", {})).get("rewards"))
@@ -803,10 +803,10 @@ def card_reward_reveal_action(screen: Mapping[str, Any], game: Mapping[str, Any]
     }
     for index, reward in enumerate(occurrences):
         kind = _text(_mapping(reward).get("reward_type", _mapping(reward).get("type", ""))).upper()
-        if kind in {"GOLD", "STOLEN_GOLD", "RELIC", "POTION"} and index + 1 in choice_indexes:
-            # The default simulator continuation collects gold, relics, and
-            # claimable potions before it evaluates the card group. Keys stay
-            # as normal OOC choices under the default policy.
+        if kind in {"RELIC", "POTION", "EMERALD_KEY", "SAPPHIRE_KEY"} and index + 1 in choice_indexes:
+            # Relic and potion claims can change the state used to evaluate
+            # the card group. Gold is independent and remains claimable after
+            # the free reveal.
             return None
     for index, reward in enumerate(occurrences):
         kind = _text(_mapping(reward).get("reward_type", _mapping(reward).get("type", ""))).upper()

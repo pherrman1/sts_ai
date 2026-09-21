@@ -216,6 +216,15 @@ class LiveGameDriverTest(unittest.TestCase):
         self.assertEqual(card_reward_reveal_action(screen, game, card_only).mcp_arguments,
                          {"choice_index": 3})
 
+    def test_card_reveal_with_gold_is_mechanical(self):
+        screen = {"screen_type": "COMBAT_REWARD", "choice_list": ["16(+0 bonus) gold", "card"],
+                  "ready_for_command": True}
+        game = {"screen_state": {"rewards": [
+            {"reward_type": "GOLD", "gold": 16}, {"reward_type": "CARD"}]}}
+        candidates = build_legal_actions(screen, ["choose", "proceed"])
+        self.assertEqual(card_reward_reveal_action(screen, game, candidates).mcp_arguments,
+                         {"choice_index": 2})
+
     def test_shop_leaves(self):
         screen = {"screen_type": "SHOP_SCREEN", "ready_for_command": True}
         actions = build_legal_actions(screen, ["cancel", "proceed"])
@@ -513,16 +522,18 @@ class OocDriverTest(unittest.TestCase):
             {"reward_type": "GOLD"}, {"reward_type": "EMERALD_KEY"}, {"reward_type": "CARD"}]}}
         candidates = build_legal_actions(screen, ["choose"])
         self.assertIsNone(card_reward_reveal_action(screen, game, candidates))
-        self.assertEqual(card_reward_reveal_action(screen, game, candidates[1:]).mcp_arguments,
+        self.assertIsNone(card_reward_reveal_action(screen, game, candidates[1:]))
+        self.assertEqual(card_reward_reveal_action(screen, game, candidates[2:]).mcp_arguments,
                          {"choice_index": 3})
 
-    def test_stolen_gold_reward_precedes_card_reveal(self):
+    def test_stolen_gold_reward_allows_card_reveal(self):
         screen = {"screen_type": "COMBAT_REWARD", "choice_list": ["Stolen Gold", "Card"],
                   "ready_for_command": True}
         game = {"screen_state": {"rewards": [
             {"reward_type": "STOLEN_GOLD"}, {"reward_type": "CARD"}]}}
         candidates = build_legal_actions(screen, ["choose"])
-        self.assertIsNone(card_reward_reveal_action(screen, game, candidates))
+        self.assertEqual(card_reward_reveal_action(screen, game, candidates).mcp_arguments,
+                         {"choice_index": 2})
         self.assertEqual(card_reward_reveal_action(screen, game, candidates[1:]).mcp_arguments,
                          {"choice_index": 2})
 
