@@ -1,0 +1,22 @@
+{
+  "schema": "terminal_reweight_untied_oracle_diagnostic_v1",
+  "status": "diagnostic_only",
+  "fit_scope": "20-source development corpus; all leaves; not compatible with EvalWeights",
+  "weights": {
+    "win_bonus": 2.8193907409025365,
+    "victory_hp": 0.8974214752898116,
+    "victory_potion": 10.662905120740062,
+    "victory_turn_penalty": 0.0,
+    "death_save": 0.8722986462654667,
+    "gold": 0.0,
+    "max_hp": 0.0,
+    "parasite_penalty": 0.00001235266567163292,
+    "monster_damage": 0.0,
+    "alive_penalty": 4.376356627670014,
+    "energy_waste": 1.1478905650222597,
+    "draw": 0.0,
+    "loss_potion": 0.0,
+    "survival": 0.0
+  },
+  "note": "Nonnegative transformed coefficients enforce the preregistered monotonic signs; the cross-fitted untied diagnostic also failed to improve the baseline gate."
+}

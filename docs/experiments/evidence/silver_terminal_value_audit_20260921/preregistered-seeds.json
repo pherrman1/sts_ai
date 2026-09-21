@@ -1,0 +1,12 @@
+{
+  "schema": "silver_terminal_value_audit_preregistered_seeds_v1",
+  "implementation_base": "43ef6a6d",
+  "development_scope": "preserved 20-source corpus from silver_rollout_variance_20260920",
+  "development_source_seeds": [12100001, 12100003, 12100007, 12100008, 12100009, 12100012, 12100013, 12100017, 12100018, 12100021, 12100025, 12100031, 12100034, 12100035, 12100036, 12100037, 12100039, 12100041, 12100052, 12100053],
+  "replicates_per_leaf": 32,
+  "grouped_split": "5-fold source_seed split; lambda selected inside each training partition",
+  "lambda_grid": [0.01, 0.1, 1.0, 10.0, 100.0],
+  "bootstrap": {"replicates": 1000, "seed": 20260921, "cluster": "source_seed"},
+  "fresh_holdout": null,
+  "note": "The former #260 40-source locked set is not treated as locked here. Its committed prefix rows do not contain replayable leaf wires, so no unsupported 100-source or fresh-holdout claim is made."
+}

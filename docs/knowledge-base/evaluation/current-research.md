@@ -1546,6 +1546,32 @@ K-rollout, one-turn bootstrap, policy-filtered rollout, and related variants
 were null or negative. Reopen only with a new premise; see the
 [leaf-evaluation synthesis](../research/combat-search/leaf-evaluation.md).
 
+### Silver terminal/value audit
+
+The bounded 20-source development audit following PR #260 is
+**`TERMINAL_REWEIGHT_HEADROOM_INSUFFICIENT`**. It replayed 247 preserved
+leaves with 32 paired SimpleAgent continuations each and added an exact raw
+`SilverTerminalValueFeatures` decomposition of the current terminal utility.
+The constrained compatible reweight worsened cross-fitted Teacher-A regret
+from `1.51332` to `1.71113`; the untied diagnostic also failed to improve
+regret (`1.55035`). Teacher B worsened for the compatible arm, and the
+source-clustered baseline-minus-candidate interval was `[-0.33315, 0.00000]`.
+Against an optimistic zero-regret ceiling, the compatible arm recovered
+`-13.07%` of the baseline gap; its development-only fit also left 48/75
+ordinary-loss leaves at or above the minimum victory value. The preserved
+corpus omits act, HP-band, and source-rollout-length metadata, so those
+subgroup diagnostics remain unavailable rather than inferred.
+This measures fixed rollout trajectories against the existing Silver objective;
+it is not a claim that Teacher A/B are the true game objective.
+
+The result is not a 100-source development qualification or an external
+holdout: the committed #260 expansion/locked prefix rows do not include
+replayable leaf wires, so they were not silently reused as terminal-feature
+data. No fresh holdout, hard64 replay, live gameplay, production override, or
+default promotion is authorized by this result. The current next target is
+continuation trajectory/policy quality. See [ledger-06 §330](../../experiments/ledger-06.md)
+and the [terminal/value audit packet](../../experiments/evidence/silver_terminal_value_audit_20260921/README.md).
+
 ## Routing / evidence
 
 - [Current baselines](current-baselines.md) — executable configuration and

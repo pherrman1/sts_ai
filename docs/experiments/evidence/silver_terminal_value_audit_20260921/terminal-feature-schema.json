@@ -1,0 +1,33 @@
+{
+  "schema": "silver_terminal_value_features_v1",
+  "diagnostic_only": true,
+  "raw_feature_semantics": {
+    "terminal_features": "features relative to the stored leaf search root; sufficient to reconstruct evaluateEndState exactly",
+    "original_root_terminal_features": "same terminal quantities relative to the original root; used only for the existing victory baseline correction contract",
+    "branch_fields": "victory fields are zero for losses, loss fields are zero for victories, and death-save value is available on both branches",
+    "loss_energy_wasted": "already zeroed for THREE_SHAPES and FOUR_SHAPES",
+    "loss_survival_turns": "already zeroed for turn > 100",
+    "compatible_potion": "victory_potion_count + 0.5 * loss_potion_count, multiplied by EvalWeights.potionWeight"
+  },
+  "fields": [
+    "terminal_outcome", "victory", "victory_post_battle_healed_hp",
+    "victory_potion_count", "victory_turn", "death_save_hp_equivalent",
+    "effective_gold_delta", "max_hp_delta", "parasite_implant",
+    "loss_monster_damage_fraction", "loss_monsters_alive",
+    "loss_energy_wasted", "loss_cards_drawn", "loss_potion_count",
+    "loss_survival_turns"
+  ],
+  "current_weights": {
+    "win_bonus": 53.0,
+    "potion_weight": 11.0,
+    "victory_turn_penalty": 0.4,
+    "monster_damage_weight": 37.0,
+    "alive_weight": 3.4,
+    "energy_waste_weight": 1.75,
+    "draw_weight": 0.03,
+    "turn_survival_weight": 1.5,
+    "gold_weight": 0.25,
+    "max_hp_weight": 2.0,
+    "parasite_penalty": 12.0
+  }
+}
