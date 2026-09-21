@@ -9,8 +9,11 @@ on:
       - synchronize
       - reopened
       - ready_for_review
+    # Evidence packets under docs/ can contain executable analyzers and
+    # immutable fixtures; run CI for those while keeping Markdown-only edits
+    # on the documentation fast path.
     paths-ignore:
-      - 'docs/**'
+      - 'docs/**/*.md'
 
 concurrency:
   group: ci-${{ github.workflow }}-${{ github.ref }}
