@@ -727,8 +727,8 @@ EquivalentCopyCandidate equivalentCopyRerootCandidate(
     return result;
 }
 
-bool alignEquivalentCopyRoot(sts::search::BattleSearcher::Node &root,
-                             const sts::BattleContext &observed) {
+bool alignRetainedRootHand(sts::search::BattleSearcher::Node &root,
+                           const sts::BattleContext &observed) {
     if (root.state == nullptr || !root.state->equalForSearch(observed)
             || root.state->cards.cardsInHand != observed.cards.cardsInHand) return false;
     std::vector<sts::CardInstance> referencedCards;
@@ -1017,10 +1017,12 @@ public:
         searcher->contractMode = config.contractMode;
     }
 
-    // Retained-root boundary: match the observation against every explored
-    // root action, then require state equality plus exact hand order. The 32k
-    // cap deliberately forces setRoot so the open-addressed table stays sparse.
-    void beginAt(const sts::BattleContext &state, const SilverSearchConfig &config) {
+    // Private replay can require the selected deterministic child. Live play
+    // may execute another explored action, so retains all-edge matching.
+    // Chance outcomes retain their existing matching policy.
+    // The 32k cap deliberately forces setRoot when the retained graph is full.
+    void beginAt(const sts::BattleContext &state, const SilverSearchConfig &config,
+                 bool selectedActionExecuted = false) {
         inheritedVisits = 0;
         rerootMissDiagnostic.clear();
         collectDecisionDiagnostics = config.collectDecisionDiagnostics
@@ -1063,27 +1065,63 @@ public:
             return;
         }
         if (previousBest != nullptr) {
+            if (previousBest->visitCount > 0 && previousBest->node == nullptr)
+                throw std::runtime_error("selected_positive_visit_edge_without_child");
+            if (collectDecisionDiagnostics) {
+                decisionDiagnostic.selectedEdgeStochastic = previousBest->node != nullptr
+                    && previousBest->node->isRandomNode;
+                decisionDiagnostic.selectedEdgeWithoutChild = previousBest->node == nullptr;
+                decisionDiagnostic.predecessorEdgeVisits = previousBest->visitCount;
+                if (previousBest->node != nullptr && !previousBest->node->isRandomNode
+                        && previousBest->node->state != nullptr) {
+                    decisionDiagnostic.deterministicSemanticHandMismatch =
+                        previousBest->node->state->equalForSearch(state)
+                        && !exactDecisionState(*previousBest->node->state, state);
+                    decisionDiagnostic.deterministicOtherMismatch =
+                        !previousBest->node->state->equalForSearch(state);
+                    if (decisionDiagnostic.deterministicOtherMismatch && searcher->root->state)
+                        decisionDiagnostic.deterministicEquivalentCopyMatch =
+                            equivalentCopyRerootCandidate(previousBest,
+                                *searcher->root->state, state).node != nullptr;
+                }
+            }
             sts::search::BattleSearcher::Node *candidate = nullptr;
-            for (const auto &edge : searcher->root->edges) {
-                candidate = exactRerootCandidate(&edge, state);
-                if (candidate != nullptr) break;
+            const bool selectedDeterministic = previousBest->node != nullptr
+                && !previousBest->node->isRandomNode;
+            if (selectedDeterministic && previousBest->node->state != nullptr
+                    && previousBest->node->state->equalForSearch(state)) {
+                candidate = previousBest->node;
+                if (!exactDecisionState(*candidate->state, state)
+                        && !alignRetainedRootHand(*candidate, state)) candidate = nullptr;
+            }
+            if (candidate == nullptr && (!selectedDeterministic || !selectedActionExecuted)) {
+                for (const auto &edge : searcher->root->edges) {
+                    candidate = exactRerootCandidate(&edge, state);
+                    if (candidate != nullptr) break;
+                }
             }
             const bool exactCandidate = candidate != nullptr;
             bool equivalentCopyCandidate = false;
             EquivalentCopyCandidate equivalent;
             if (candidate == nullptr && searcher->root != nullptr && searcher->root->state != nullptr) {
-                for (const auto &edge : searcher->root->edges) {
+                if (selectedDeterministic && selectedActionExecuted) {
                     equivalent = equivalentCopyRerootCandidate(
-                        &edge, *searcher->root->state, state);
-                    if (equivalent.node != nullptr) {
-                        candidate = equivalent.node;
-                        break;
+                        previousBest, *searcher->root->state, state);
+                    candidate = equivalent.node;
+                } else {
+                    for (const auto &edge : searcher->root->edges) {
+                        equivalent = equivalentCopyRerootCandidate(
+                            &edge, *searcher->root->state, state);
+                        if (equivalent.node != nullptr) {
+                            candidate = equivalent.node;
+                            break;
+                        }
                     }
                 }
                 if (candidate != nullptr) {
                     equivalentCopyCandidate = remapReachableEquivalentCopy(
                         candidate, equivalent.retainedUid, equivalent.observedUid);
-                    if (!equivalentCopyCandidate || !alignEquivalentCopyRoot(*candidate, state))
+                    if (!equivalentCopyCandidate || !alignRetainedRootHand(*candidate, state))
                         candidate = nullptr;
                 }
             }
@@ -1103,6 +1141,7 @@ public:
             if (collectDecisionDiagnostics) {
                 decisionDiagnostic.hadPredecessor = true;
                 decisionDiagnostic.rerootAttempted = true;
+                decisionDiagnostic.candidateFound = candidate != nullptr;
                 decisionDiagnostic.exactCandidateFound = exactCandidate;
             }
             if (candidate != nullptr && !capBlocked) {
@@ -2006,7 +2045,7 @@ SessionReuseProbe probeSilverSearchSessionReuse(const BattleStateWire &wire,
         // the edge selected above. The focused caller supplies a deterministic
         // fixture, making exact child reuse the required outcome.
         best->action.execute(state);
-        session.beginAt(state, comparisonConfig);
+        session.beginAt(state, comparisonConfig, true);
         result.inheritedVisits = session.searcher->root == nullptr
             ? 0 : session.searcher->root->simulationCount;
         auto secondDecision = runProbeDecision(session, nullptr, comparisonConfig);
@@ -2032,7 +2071,7 @@ SessionReuseProbe probeSilverSearchSessionReuse(const BattleStateWire &wire,
             if (referenceFirst.accepted && referenceSession.previousBest != nullptr
                     && referenceSession.previousBest->action.isValidAction(referenceState)) {
                 referenceSession.previousBest->action.execute(referenceState);
-                referenceSession.beginAt(referenceState, referenceConfig);
+                referenceSession.beginAt(referenceState, referenceConfig, true);
                 const auto referenceSecond = runCurrentRootDecision(
                     referenceSession, referenceConfig, true);
                 result.exactVisitLockActionMatchesFullBudget = referenceSecond.accepted
@@ -2069,7 +2108,7 @@ SessionReuseProbe probeSilverSearchSessionReuse(const BattleStateWire &wire,
             if (splitFirst.accepted && splitSession.previousBest != nullptr
                     && splitSession.previousBest->action.isValidAction(splitState)) {
                 splitSession.previousBest->action.execute(splitState);
-                splitSession.beginAt(splitState, comparisonConfig);
+                splitSession.beginAt(splitState, comparisonConfig, true);
                 auto splitConfig = comparisonConfig;
                 if (config.exactVisitLockEnabled || config.rhoRacingEnabled)
                     splitConfig.simulationsPerDecision = splitCheckpoints.back();
@@ -2134,6 +2173,15 @@ ReuseCapFixtureProbe probeSilverReuseCapFixture(const BattleStateWire &wire) {
             }
             if (permuteHand && candidate->state->cards.cardsInHand >= 2)
                 std::swap(candidate->state->cards.hand[0], candidate->state->cards.hand[1]);
+            if (permuteHand && candidate->state->cards.cardsInHand >= 2) {
+                for (int source = 0; source < 2; ++source) {
+                    sts::search::BattleSearcher::Edge cardEdge;
+                    cardEdge.action = sts::search::Action(
+                        sts::search::ActionType::CARD, source, 0);
+                    cardEdge.visitCount = 7 + source;
+                    candidate->edges.push_back(std::move(cardEdge));
+                }
+            }
             session.searcher->root->edges.clear();
             sts::search::BattleSearcher::Edge rootEdge;
             rootEdge.action = sts::search::Action{};
@@ -2149,7 +2197,7 @@ ReuseCapFixtureProbe probeSilverReuseCapFixture(const BattleStateWire &wire) {
             config.reuseCap = cap;
             if (explicitMode) config.reuseCapMode = mode;
             config.collectDecisionDiagnostics = true;
-            session.beginAt(state, config);
+            session.beginAt(state, config, true);
             return session.decisionDiagnostic;
         };
 
@@ -2202,10 +2250,76 @@ ReuseCapFixtureProbe probeSilverReuseCapFixture(const BattleStateWire &wire) {
         if (state.cards.cardsInHand >= 2) {
             SilverSearchSession permuted;
             arrangeCandidate(permuted, false, true);
+            result.handPermutationPrecondition =
+                permuted.searcher->root->edges.front().node->state->equalForSearch(state)
+                && !exactDecisionState(*permuted.searcher->root->edges.front().node->state, state);
             const auto permutedDiag = run(permuted, true, SilverReuseCapMode::ACTIVE);
             result.handOrderMandatory = true;
             result.handPermutationRejected = !permutedDiag.exactCandidateFound
                 && permutedDiag.fallbackReason == SilverRerootFallbackReason::CANDIDATE_MISSING;
+            result.handPermutationAligned = permutedDiag.exactReroot
+                && permutedDiag.inheritedVisits == 17
+                && exactDecisionState(*permuted.searcher->root->state, state);
+            result.handPermutationEdgesPreserved = result.handPermutationAligned
+                && permuted.searcher->root->edges.size() == 2
+                && permuted.searcher->root->edges[0].visitCount == 7
+                && permuted.searcher->root->edges[1].visitCount == 8
+                && permuted.searcher->root->state->cards.hand[
+                    permuted.searcher->root->edges[0].action.getSourceIdx()]
+                    == state.cards.hand[1]
+                && permuted.searcher->root->state->cards.hand[
+                    permuted.searcher->root->edges[1].action.getSourceIdx()]
+                    == state.cards.hand[0];
+
+            const auto firstUid = state.cards.hand[0].uniqueId;
+            const std::int16_t secondUid = 30000;
+            if (firstUid >= 0 && firstUid != secondUid) {
+                auto observed = state;
+                observed.curCardQueueItem.card = state.cards.hand[0];
+                observed.curCardQueueItem.card.uniqueId = secondUid;
+                SilverSearchSession equivalent;
+                arrangeCandidate(equivalent, false, false);
+                auto *child = equivalent.searcher->root->edges.front().node;
+                *child->state = observed;
+                swapCardUids(*child->state, firstUid, secondUid);
+                equivalent.searcher->root->edges.front().action = sts::search::Action(
+                    sts::search::ActionType::CARD, 0, 0);
+                SilverSearchConfig equivalentConfig;
+                equivalentConfig.reuseCap = cap;
+                equivalentConfig.reuseCapMode = SilverReuseCapMode::ACTIVE;
+                equivalentConfig.collectDecisionDiagnostics = true;
+                equivalent.beginAt(observed, equivalentConfig, true);
+                result.equivalentCopyRepaired = equivalent.decisionDiagnostic.equivalentCopyReroot
+                    && equivalent.inheritedVisits == 17
+                    && exactDecisionState(*equivalent.searcher->root->state, observed);
+            }
+        }
+
+        SilverSearchSession chance;
+        arrangeCandidate(chance, false, false);
+        auto *unmatchedOutcome = chance.searcher->root->edges.front().node;
+        unmatchedOutcome->state->player.curHp -= 1;
+        auto *chanceNode = chance.searcher->allocNode();
+        chanceNode->isRandomNode = true;
+        chanceNode->state = nullptr;
+        chanceNode->parent = chance.searcher->root;
+        sts::search::BattleSearcher::Edge outcome;
+        outcome.node = unmatchedOutcome;
+        chanceNode->edges.push_back(std::move(outcome));
+        chance.searcher->root->edges.front().node = chanceNode;
+        const auto chanceDiag = run(chance, true, SilverReuseCapMode::ACTIVE);
+        result.chanceMissingAllowed = chanceDiag.selectedEdgeStochastic
+            && chanceDiag.fallbackReason == SilverRerootFallbackReason::CANDIDATE_MISSING;
+
+        SilverSearchSession noChild;
+        arrangeCandidate(noChild, false, false);
+        noChild.searcher->root->edges.front().node = nullptr;
+        noChild.searcher->root->edges.front().visitCount = 1;
+        try {
+            (void)run(noChild, true, SilverReuseCapMode::ACTIVE);
+        } catch (const std::runtime_error &error) {
+            result.positiveVisitMissingChildRejected =
+                std::string(error.what()) == "selected_positive_visit_edge_without_child";
         }
 
         SilverSearchSession none;
@@ -2524,6 +2638,8 @@ SilverCombatReplayResult runSilverCombatReplay(
     try {
         auto session = makeSilverSearchSession();
         sts::BattleContext state = session->materializeAndBegin(wire, config);
+        if (config.collectDecisionDiagnostics)
+            result.rerootDiagnostics.push_back(session->decisionDiagnostic);
         const int initialRerootExact = session->rerootExact;
         const int initialRerootFallback = session->rerootFallback;
         result.actionTraceHash = 0;
@@ -2623,7 +2739,9 @@ SilverCombatReplayResult runSilverCombatReplay(
                 // compares it with the selected internal child and reroots
                 // the same BattleSearcher; no wire or live BattleContext is
                 // involved. Terminal actions do not need a next root.
-                session->beginAt(state, config);
+                session->beginAt(state, config, true);
+                if (config.collectDecisionDiagnostics)
+                    result.rerootDiagnostics.push_back(session->decisionDiagnostic);
             }
         }
 

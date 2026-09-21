@@ -682,8 +682,16 @@ int main(int argc, char **argv) {
           "active mode must still cap-block when active pool usage reaches the cap");
     check(capFixture.candidateMissingUnchanged,
           "candidate-missing fallback must remain identical in both cap modes");
-    check(capFixture.handOrderMandatory && capFixture.handPermutationRejected,
-          "exact hand order must remain mandatory and reject a hand-permuted candidate");
+    check(capFixture.handPermutationPrecondition
+              && capFixture.handOrderMandatory && !capFixture.handPermutationRejected
+              && capFixture.handPermutationAligned && capFixture.handPermutationEdgesPreserved,
+          "hand-permuted semantic child must retain visits and exact card edge identities");
+    check(capFixture.chanceMissingAllowed,
+          "unmatched stochastic outcome may still fall back as candidate-missing");
+    check(capFixture.positiveVisitMissingChildRejected,
+          "selected positive-visit edge without child must fail the invariant");
+    check(capFixture.equivalentCopyRepaired,
+          "equivalent card UID repair must still inherit the retained child");
     check(capFixture.noneDisablesReuse,
           "none mode must reset through the fresh-root path without candidate matching");
     check(capFixture.noneReportsDisabled,
