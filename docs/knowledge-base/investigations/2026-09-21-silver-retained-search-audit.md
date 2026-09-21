@@ -30,6 +30,9 @@ replayed offline on PR #272 head `f97f4015cb036fe2c46d049c6ea00e44e8be19af`.
 PR #272 is used only as capture provenance and motivation; all source facts
 below were revalidated at the audit baseline.
 
+The independently reviewable packet is
+`docs/experiments/evidence/silver_retained_search_audit_20260921/README.md`.
+
 ## Symptom and scope
 
 The corrected graph retains separate nodes for #9 and #21 even though their
@@ -76,13 +79,13 @@ produced:
 | Candidate groups that are pairs/triples | 43 / 6 |
 
 The 55 excess nodes are 5.52% of decision/state nodes and 4.85% of all
-retained nodes. The duplicate-member nodes own 124 of 2,131 outgoing edges
-(5.8%), but this is not a runtime saving estimate: sharing nodes also pools
+retained nodes. Candidate-group nodes own 124 of 2,131 outgoing edges (5.8%),
+but this is not a runtime saving estimate: sharing nodes also pools
 visits, values, expansion order, and reroot identity.
 
 All 104 candidates are unresolved, settled `PLAYER_NORMAL` nodes. No candidate
 group includes a chance, selection, pending-action, or terminal node. The
-capture therefore shows a real opportunity in one representative root, but not
+capture therefore shows a real opportunity in one observed root, but not
 a whole-run or cross-root rate.
 
 The supplied #9/#21 pair is one of these candidates. Its projected state is
@@ -167,10 +170,11 @@ but retained different queue items:
 potion_card_select_queue_difference=OBSERVED
 ```
 
-This is a concrete boundary counterexample to global canonicalization. Attack,
-Skill, Power, and Colorless Potions enter discovery selection; Gamble, Liquid
-Memories, and Stance Potion also create selection boundaries. Entropic Brew and
-Distilled Chaos introduce stochastic or queued-card behavior.
+This is a boundary observation, not a demonstrated downstream semantic
+counterexample. Attack, Skill, Power, and Colorless Potions enter discovery
+selection; Gamble, Liquid Memories, and Stance Potion also create selection
+boundaries. Entropic Brew and Distilled Chaos introduce stochastic or queued-card
+behavior.
 
 The saved graph supplied a limited stochastic screen: 22 candidate groups had
 both END_TURN chance parents expanded, and 310 common sampled outcome indices
@@ -203,7 +207,9 @@ match as complete evaluator equivalence.
   The paired native screen supports this for the tested fixtures only.
 - **Inference — global queue-item irrelevance:** `curCardQueueItem` can be
   ignored for all retained states. The Attack Potion to `CARD_SELECT`
-  counterexample eliminates this hypothesis.
+  observation leaves this hypothesis unqualified because the stale value
+  survives beyond the tested equivalence boundary; it does not demonstrate a
+  downstream semantic divergence.
 - **Eliminated explanation — hash collision:** the #9/#21 relationship is not
   merely a hash collision; the current source uses exact `equalForSearch` after
   the hash bucket, and the exact comparison rejects the queue-only pair.
@@ -219,9 +225,9 @@ Prior evidence remains constraining:
 - Ledger §320 rejected stochastic UID/chance merging: traces differed in
   53/64 cases, timing increased by 0.82%, and exact reroot/fallback behavior
   worsened.
-- Ledger §320 explicitly records that queue-item inequality alone is not a
-  semantic obstruction, but that this observation is not a general equality
-  proof.
+- The source-level same-turn audit records that queue-item inequality alone is
+  not necessarily a semantic obstruction; that observation is not a general
+  equality proof.
 
 ## Recommendation and smallest future change
 

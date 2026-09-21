@@ -1,0 +1,55 @@
+--- a/apps/silver_search_optimization_test.cpp
++++ b/apps/silver_search_optimization_test.cpp
+@@ -1596,0 +1597,50 @@
++void queueItemSeedPairAudit(sts::GameContext &gc) {
++    fixture(gc);
++    constexpr int seedCount = 32;
++    constexpr int steps = 32;
++    for (int seedIndex = 0; seedIndex < seedCount; ++seedIndex) {
++        gc.seed = 0x51000000u + static_cast<std::uint32_t>(seedIndex);
++        sts::BattleContext original{};
++        original.init(gc, sts::MonsterEncounter::LOOTER);
++        auto rootA = original;
++        auto rootB = original;
++        rootA.inputState = rootB.inputState = sts::InputState::PLAYER_NORMAL;
++        rootA.outcome = rootB.outcome = sts::Outcome::UNDECIDED;
++        rootA.isBattleOver = rootB.isBattleOver = false;
++        rootA.actionQueue.clear(); rootB.actionQueue.clear();
++        rootA.cardQueue.clear(); rootB.cardQueue.clear();
++        rootA.curCardQueueItem = rootB.curCardQueueItem = sts::CardQueueItem{};
++        rootA.curCardQueueItem.card = sts::CardInstance(sts::CardId::BASH);
++        rootA.curCardQueueItem.card.setUniqueId(701);
++        rootA.curCardQueueItem.energyOnUse = 2;
++        rootB.curCardQueueItem.card = sts::CardInstance(sts::CardId::DRAMATIC_ENTRANCE);
++        rootB.curCardQueueItem.card.setUniqueId(702);
++        rootB.curCardQueueItem.exhaustOnUse = true;
++        require(!rootA.equalForSearch(rootB), "seed pair roots must differ under current exact equality");
++
++        Search searchA(rootA), searchB(rootB);
++        for (int step = 0; step < steps; ++step) {
++            searchA.step();
++            searchB.step();
++            require(searchA.getBestAction() == searchB.getBestAction(),
++                    "queue-only seed pair changed the best action");
++            const auto &edgesA = searchA.getRootEdges();
++            const auto &edgesB = searchB.getRootEdges();
++            require(edgesA.size() == edgesB.size(), "queue-only seed pair changed action count");
++            for (std::size_t i = 0; i < edgesA.size(); ++i) {
++                require(edgesA[i].action == edgesB[i].action
++                            && edgesA[i].visitCount == edgesB[i].visitCount,
++                        "queue-only seed pair changed root statistics");
++                if (edgesA[i].node && edgesB[i].node
++                        && !edgesA[i].node->isRandomNode && !edgesB[i].node->isRandomNode) {
++                    auto normalizedA = *edgesA[i].node->state;
++                    normalizedA.curCardQueueItem = edgesB[i].node->state->curCardQueueItem;
++                    require(normalizedA.equalForSearch(*edgesB[i].node->state),
++                            "queue-only seed pair changed a deterministic successor");
++                }
++            }
++        }
++    }
++    std::cout << "queue_item_seed_pair_audit seeds=32 steps=32 result=PASS\n";
++}
++
+@@ -1640,0 +1691 @@
++        queueItemSeedPairAudit(gc);

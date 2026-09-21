@@ -10725,10 +10725,12 @@ default or generalization claim is authorized. Evidence:
   common seeds for 32 steps per arm through `tools/seed_guard.sh`. Best action,
   legal-action count, root action visits, and deterministic successors matched
   after normalizing only the queue item. A separate 128-step fixed-root probe
-  also passed direct statistics checks. An Attack Potion counterexample reached
-  `CARD_SELECT` while retaining different queue items, so the result does not
-  support global canonicalization. The partial END_TURN screen matched 310
-  common sampled outcomes but did not establish equal full distributions.
+  also passed direct statistics checks. An Attack Potion boundary observation
+  reached `CARD_SELECT` while retaining different queue items; this leaves
+  global canonicalization unqualified because the stale value survives outside
+  the tested equivalence boundary, without demonstrating a downstream semantic
+  divergence. The partial END_TURN screen matched 310 common sampled outcomes
+  but did not establish equal full distributions.
 - **Decision:** **`NARROW_QUEUE_CANONICALIZATION_PLAUSIBLE_BUT_UNQUALIFIED`**.
   Do not relax `equalForSearch`, change Silver search behavior, alter the reuse
   cap, or update PR #272. A future implementation, if separately authorized,

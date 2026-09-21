@@ -1,0 +1,17 @@
+probe=queue_item_seed_pair_audit
+baseline_sha=43ef6a6df2ea9af56840c9a298c92623c14bcff6
+source=apps/silver_search_optimization_test.cpp
+patch=queue_item_seed_pair_probe.patch
+seed_count=32
+seed_formula=0x51000000 + seed_index for seed_index in [0,31]
+steps_per_arm=32
+pairing=identical native BattleContext initialization and seed per arm; only curCardQueueItem differs
+root_a_card=BASH uid=701 energyOnUse=2 exhaustOnUse=false
+root_b_card=DRAMATIC_ENTRANCE uid=702 energyOnUse=0 exhaustOnUse=true
+budget=32 steps per arm; no production search configuration changed
+rng_regime=native simulator fixture; paired common RNG initialization; not a live/fair gameplay run
+guard=bash tools/seed_guard.sh /tmp/silver-retained-search-audit-build/silver_search_optimization_test
+
+command_output:
+queue_item_seed_pair_audit seeds=32 steps=32 result=PASS
+silver_search_optimization PASS
