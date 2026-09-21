@@ -311,8 +311,13 @@ revisited MAP particle from sampling a room with unreconstructed
 event/shop/treasure chance history. Live imports remove currently visible shop,
 combat-reward and boss-relic offers from the reconstructed relic pools.
 Pity-sensitive event fights that can generate card or potion rewards before
-MAP are unsupported until a public posterior for `cardRarityFactor` and
-`potionChance` exists.
+MAP remain unsupported because their branch-specific counter history is not
+public. The live v_win leaf itself integrates each tree margin over the native
+reachable ranges (`potionChance=-40..100` in steps of 10 and
+`cardRarityFactor=-40..5`) rather than conditioning on the hypothetical
+constructor's 0/5 values. The direct V4 state uses the corresponding midpoint
+prior (30/−18) for its token input; this is an explicit prior, not an observed
+Java counter.
 
 Live edges are never marked deterministic merely because their simulator copy
 has fixed RNG. Progressive widening samples outcome particles normally, even
@@ -323,10 +328,14 @@ offline/native parity seam; live startup always enables sampling and reports
 `noncombatOutcomes=sampled`. There is no live known-RNG override.
 
 The live root conditions that sampled support on public metric history before
-search: current-act normal/elite consumption, acquired or lost relics,
-observed events, and paid shop removals. Private Java potion/card-rarity
-counters are not copied; their hypothetical values come from the canonical
-constructor prior.
+search: current-act normal/elite consumption from completed combat floors,
+acquired or lost relics, observed events, and paid shop removals. A `?` floor
+that became a hallway combat is counted from `metricData.damage_taken`, not from
+the retained map symbol. Private Java potion/card-rarity counters are not
+copied. Historical relic offers that were seen and skipped are not present in
+vanilla metrics; the live root therefore fails closed for treasure, Shovel,
+Courier-restock, and random-relic event branches unless a complete
+`seenRelics` history is supplied.
 Live MAP roots fail closed while the public-history posterior for those chance
 counters remains unqualified; non-MAP checkpoint searches stop at MAP before
 sampling a future room.
@@ -337,7 +346,15 @@ policy-chain steps used only to project leaves. Sampling removes the concrete
 future-stream leak; it is not a proof of an exact joint hidden-state posterior,
 a belief-tree policy, or stronger gameplay quality. Remaining-pool membership
 and historical counters are conditioned on native state; chance particles and
-leaf policies are still the existing planner approximation.
+leaf policies are still the existing planner approximation. Live checkpoint
+continuation preserves the simulator's reward-collection order and uses the
+same V4 Q/margin contract for actions it can qualify. The standalone live
+advisor cannot call `runFullRunOocPolicyStep(gc, agent, false, true)` directly
+because that driver is coupled to simulator-global heuristic fallback
+objects. When the live adapter cannot prove a unique qualified continuation,
+it fails closed instead of substituting an ungated policy-logit argmax. Exact
+simulator/live checkpoint parity remains an explicit seam to extract before
+claiming full policy equivalence.
 
 The following `STS_OOC_MCTS_` suffixes configure ON searches. Invalid finite
 ranges/enums fail startup; OFF does not parse or apply search overrides. Native

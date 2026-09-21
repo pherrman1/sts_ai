@@ -401,8 +401,10 @@ read-only screen and choice converters. The observation contains:
   potion capacity and five exact slots, physical deck instances with bottle
   binding, relic data, visible boss, the complete visible 15-by-7 map and edges,
   current/burning-elite coordinates, exact whole-run and current-act path
-  counts, acquired/lost relic identities, prior event identities, and the
-  publicly recorded number of paid shop removals.
+  counts, completed combat floors, acquired/lost relic identities, prior event
+  identities, and the publicly recorded number of paid shop removals. A
+  `seenRelics` list is accepted only when its producer marks the history
+  complete; vanilla metrics otherwise leave it explicitly incomplete.
 - `details`: current reward groups, campfire options, physical upgrade targets,
   supported event/Neow phase and options, shop slots/prices, chest state, or
   ordered boss relic offers.
@@ -423,18 +425,30 @@ does not expose the vanilla discard-potion command, so this is not discard
 support or a claim of whole-game reward equivalence.
 
 Path counts derive from persisted `metricData.path_taken`, whose original map
-symbols survive event-to-room conversion and save/resume. Missing history is
+symbols survive event-to-room conversion and save/resume. Completed combat
+floors additionally come from `metricData.damage_taken`, so a `?` floor that
+became a hallway fight advances the normal encounter queue. Missing history is
 unsupported. Public metric history conditions current-act normal/elite
 encounter consumption, relic-pool membership, one-time/event membership, and
 shop-removal cost. Currently visible shop, combat-reward, and boss-relic offers
 are also removed from every reconstructed relic pool because native generation
-consumes a relic when it is offered, not when it is acquired. The private Java
-`potionChance` and `cardRarityFactor` counters are not captured. Roots such as
-Mushrooms and Mysterious Sphere whose pre-MAP continuation can generate potion
-or card rewards fail closed with `PUBLIC_REWARD_PITY_HISTORY_UNQUALIFIED`; they
-must not use the hypothetical constructor's `0`/`5` defaults as a belief
-distribution. No RNG state, future encounter queue, or unrevealed outcome is
-captured.
+consumes a relic when it is offered, not when it is acquired. Historical
+seen-but-skipped offers are not in vanilla metrics; random-relic branches fail
+closed with `PUBLIC_SEEN_RELIC_HISTORY_UNQUALIFIED` until a complete history is
+available. The private Java `potionChance` and `cardRarityFactor` counters are
+not captured. Roots such as Mushrooms and Mysterious Sphere whose pre-MAP
+continuation can generate potion or card rewards fail closed with
+`PUBLIC_REWARD_PITY_HISTORY_UNQUALIFIED`. The v_win leaf marginalizes those
+features over the native reachable ranges, while V4 uses the explicit midpoint
+prior, so neither path treats fresh-run `0`/`5` as observed state. No RNG state,
+future encounter queue, or unrevealed outcome is captured.
+Checkpoint continuation preserves the simulator's reward-collection order and
+uses the same V4 Q/margin contract for actions it can qualify. The standalone
+live advisor cannot call `runFullRunOocPolicyStep(gc, agent, false, true)`
+directly because that driver is coupled to simulator-global heuristic fallback
+objects. When the live adapter cannot prove a unique qualified continuation,
+it fails closed rather than substituting an ungated policy-logit argmax. Full
+simulator/live checkpoint-policy parity remains an explicit seam to extract.
 Because a MAP-root transition immediately depends on the unreconstructable
 posterior over those counters, live MCTS fails closed there with
 `PUBLIC_EVENT_CHANCE_HISTORY_UNQUALIFIED`. Supported non-MAP roots resolve to

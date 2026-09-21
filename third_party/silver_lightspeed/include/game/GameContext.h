@@ -226,6 +226,8 @@ namespace sts {
 
         bool blueKey = false;
         bool greenKey = false;
+        bool keysEnabled = true;
+        bool restRoomResolved = false;
         bool redKey = false;
 
         GameContextAction regainControlAction = nullptr;

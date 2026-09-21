@@ -135,6 +135,8 @@ LiveOocStateV1::LiveOocMctsRootV1 makeMctsRoot(const LiveOocStateV1 &source) {
     root.deck = source.projected.deck;
     root.blueKey = source.projected.blueKey;
     root.greenKey = source.projected.greenKey;
+    root.keysEnabled = source.projected.keysEnabled;
+    root.restRoomResolved = source.projected.restRoomResolved;
     root.redKey = source.projected.redKey;
     root.info = source.projected.info;
     root.map = source.projected.map ? std::make_shared<sts::Map>(*source.projected.map) : root.map;
@@ -148,10 +150,28 @@ LiveOocStateV1::LiveOocMctsRootV1 makeMctsRoot(const LiveOocStateV1 &source) {
     const auto &publicState = source.ooc.at("publicState");
     const auto &actVisits = array(publicState, "currentActPathVisits", 10);
     require(actVisits.size() == 10, "ten current-act path counters required");
-    root.monsterListOffset = integerValue(actVisits.at(static_cast<int>(Room::MONSTER)), 0,
-        root.monsterList.size(), "current-act monster visits");
-    root.eliteMonsterListOffset = integerValue(actVisits.at(static_cast<int>(Room::ELITE)), 0,
-        root.eliteMonsterList.size(), "current-act elite visits");
+    // path_taken intentionally retains the original '?' symbol after an event
+    // converts it into a hallway fight.  Count completed combats from the
+    // public damage metric instead, then use the original map symbol only to
+    // distinguish a normal encounter from an elite.
+    const auto &combatFloors = array(publicState, "combatFloors", 1000);
+    const auto &pathHistory = array(publicState, "pathHistory", 1000);
+    const int actStartFloor = source.projected.act <= 1 ? 0
+        : source.projected.act == 2 ? 17
+        : source.projected.act == 3 ? 34 : 51;
+    int normalCombats = 0, eliteCombats = 0;
+    for (const auto &floorValue : combatFloors) {
+        const int floor = integerValue(floorValue, 1, 1000, "combat floor");
+        if (floor <= actStartFloor || floor > source.projected.floorNum) continue;
+        require(static_cast<std::size_t>(floor - 1) < pathHistory.size(),
+            "combat floor is missing its original path symbol");
+        const auto symbol = room(pathHistory.at(static_cast<std::size_t>(floor - 1)));
+        if (symbol == Room::ELITE) ++eliteCombats;
+        else if (symbol == Room::MONSTER || symbol == Room::EVENT) ++normalCombats;
+        else throw std::invalid_argument("combat floor has a non-combat path symbol");
+    }
+    root.monsterListOffset = normalCombats;
+    root.eliteMonsterListOffset = eliteCombats;
     const auto eraseRelic = [&](RelicId relic) {
         for (auto pool : {&root.commonRelicPool, &root.uncommonRelicPool, &root.rareRelicPool,
                           &root.shopRelicPool, &root.bossRelicPool})
@@ -159,6 +179,13 @@ LiveOocStateV1::LiveOocMctsRootV1 makeMctsRoot(const LiveOocStateV1 &source) {
     };
     for (const auto &relic : array(publicState, "acquiredRelics", 181))
         eraseRelic(id<RelicId>(relic, RelicId::INVALID));
+    const bool seenRelicsComplete = boolean(publicState, "seenRelicsComplete");
+    require(array(publicState, "seenRelics", 181).size() <= 181,
+        "seen relic history too large");
+    if (seenRelicsComplete) {
+        for (const auto &relic : array(publicState, "seenRelics", 181))
+            eraseRelic(id<RelicId>(relic, RelicId::INVALID));
+    }
     // Native pools consume relics when they are offered, not when acquired.
     // Condition every currently visible offer before Courier or another
     // within-checkpoint transition can draw from the reconstructed pools.
@@ -180,6 +207,27 @@ LiveOocStateV1::LiveOocMctsRootV1 makeMctsRoot(const LiveOocStateV1 &source) {
         eraseEvent(id<Event>(event, Event::INVALID));
     if (root.curEvent != Event::INVALID && root.curEvent != Event::NEOW) eraseEvent(root.curEvent);
 
+    const bool canDrawUnseenRelic = [&] {
+        if (seenRelicsComplete) return false;
+        if (source.projected.screenState == ScreenState::TREASURE_ROOM) return true;
+        if (source.projected.screenState == ScreenState::REST_ROOM
+                && root.relics.has(RelicId::SHOVEL)) return true;
+        if (source.projected.screenState == ScreenState::SHOP_ROOM
+                && root.relics.has(RelicId::THE_COURIER)) {
+            for (int i = 0; i < 3; ++i)
+                if (source.projected.info.shop.relicPrice(i) >= 0) return true;
+        }
+        if (source.projected.screenState != ScreenState::EVENT_SCREEN) return false;
+        switch (root.curEvent) {
+            case Event::BIG_FISH:
+            case Event::PLEADING_VAGRANT:
+            case Event::DEAD_ADVENTURER:
+                return true;
+            default:
+                return false;
+        }
+    }();
+
     // These callbacks are only the public-screen continuation boundary. Any
     // callback that depends on an unrevealed prior room remains unsupported by
     // the importer rather than borrowing live Java state.
@@ -200,6 +248,9 @@ LiveOocStateV1::LiveOocMctsRootV1 makeMctsRoot(const LiveOocStateV1 &source) {
     if (source.projected.screenState == ScreenState::MAP_SCREEN) {
         result.supported = false;
         result.reason = "PUBLIC_EVENT_CHANCE_HISTORY_UNQUALIFIED";
+    } else if (canDrawUnseenRelic) {
+        result.supported = false;
+        result.reason = "PUBLIC_SEEN_RELIC_HISTORY_UNQUALIFIED";
     }
     return result;
 }
@@ -229,12 +280,16 @@ ImportResult importLiveOocStateV1(const J &observation, LiveOocStateV1 &out) {
         g.floorNum=integer(p,"floor",0,1000); g.curHp=integer(p,"hp",0,32767);
         g.maxHp=integer(p,"maxHp",1,32767); require(g.curHp<=g.maxHp,"hp exceeds maxHp");
         g.gold=integer(p,"gold",0,1000000);
-        // Hidden native blizzard counters are intentionally absent. Projected
-        // V4 fallback gets the canonical public prior, never live private state.
-        g.potionChance=0;
-        g.cardRarityFactor=5;
+        // Hidden native blizzard counters are intentionally absent.  The
+        // direct V4 prior uses the explicit midpoint of the same reachable
+        // belief ranges used by the marginalized v_win leaf; it is not the
+        // fresh-run constructor state (0/5), and the v_win leaf never
+        // conditions on this point value.
+        g.potionChance=30;
+        g.cardRarityFactor=-18;
         g.shopRemoveCount=integer(p,"shopRemoveCount",0,100);
-        g.blueKey=boolean(p,"blueKey"); g.greenKey=boolean(p,"greenKey"); g.redKey=boolean(p,"redKey");
+        g.blueKey=boolean(p,"blueKey"); g.greenKey=boolean(p,"greenKey");
+        g.keysEnabled=boolean(p,"keysEnabled"); g.redKey=boolean(p,"redKey");
         g.potionCapacity=integer(p,"potionCapacity",0,5);
         const auto &potions=array(p,"potions",5); require(potions.size()==5,"five potion slots required");
         for (int i=0;i<5;++i) {
@@ -324,6 +379,13 @@ ImportResult importLiveOocStateV1(const J &observation, LiveOocStateV1 &out) {
             next.path.lastNodeKey = static_cast<long>(g.act) * 100000L
                 + static_cast<long>(g.curMapNodeY) * 100L + g.curMapNodeX;
         g.screenState=screen(screenName);
+        if (g.screenState == ScreenState::REST_ROOM && o.contains("details")
+                && o.at("details").is_object() && o.at("details").contains("options")) {
+            const auto &options = o.at("details").at("options");
+            require(options.is_array(), "rest details.options must be an array");
+            g.restRoomResolved = options.size() == 1 && options.at(0).is_number_integer()
+                    && options.at(0).get<int>() == 6;
+        }
         if (g.screenState==ScreenState::MAP_SCREEN && g.curMapNodeY>=14)
             return {false,"UNSUPPORTED","V4_BOSS_MAP_TRANSITION"};
         const auto &d=o.at("details"); require(d.is_object(),"details must be an object");

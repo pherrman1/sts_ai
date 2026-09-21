@@ -102,6 +102,19 @@ double LegacyTreeNet::predict(const std::vector<float> &raw) const {
 
 int main(int argc, char **argv) {
     if (argc < 2) return 2;
+    // A repeated split on one marginalized feature must condition the second
+    // split on the first branch; reusing the unconditional prior at every
+    // node gives the wrong expectation.
+    one_combat::CompactTreeNet marginal;
+    marginal.ok = true; marginal.logistic = false;
+    marginal.nodes = {{0, 2.0f, 1, 2}, {0, 1.0f, 3, 4}, {-1, 30.0f, 0, 0},
+                      {-1, 10.0f, 0, 0}, {-1, 20.0f, 0, 0}};
+    marginal.roots = {0, 5}; marginal.sel = {0};
+    const double expected = marginal.predictMarginalized({0.0f}, {{0, 0, 2, 1}});
+    if (std::abs(expected - 20.0) > 1e-12) {
+        std::cerr << "marginal repeated-split expectation mismatch: " << expected << '\n';
+        return 1;
+    }
     std::uint64_t checks = 0;
     for (int a = 1; a < argc; ++a) {
         LegacyTreeNet old; one_combat::CompactTreeNet current;

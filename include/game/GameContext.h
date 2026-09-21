@@ -238,6 +238,14 @@ namespace sts {
 
         bool blueKey = false;
         bool greenKey = false;
+        // Whether the act exposes the Ruby-key campfire option.  The native
+        // simulator keeps this enabled for ordinary generated runs; the live
+        // importer sets it from Java's public final-act setting.
+        bool keysEnabled = true;
+        // Live OOC imports set this when Java has already resolved the
+        // campfire and exposes only the proceed button. Ordinary simulator
+        // rooms leave it false while the rest action is selectable.
+        bool restRoomResolved = false;
         bool redKey = false;
 
         GameContextAction regainControlAction = nullptr;

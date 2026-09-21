@@ -165,7 +165,25 @@ final class LiveOocCapture {
         }
         p.put("pathVisits", visits);
         p.put("pathComplete", exact);
-        p.put("pathHistory", path == null ? new ArrayList<String>() : new ArrayList<>(path));
+        List<String> canonicalPathHistory = new ArrayList<>();
+        if (path != null) for (String symbol : path) canonicalPathHistory.add(roomSymbol(symbol));
+        p.put("pathHistory", canonicalPathHistory);
+        // MetricData preserves the completed combat floor and the encounter
+        // key even when the original map symbol was '?'.  Keep only the
+        // public floor identity here; future encounter identities remain
+        // hidden and are sampled by the native belief root.
+        List<Integer> combatFloors = new ArrayList<>();
+        if (CardCrawlGame.metricData != null) {
+            for (Object raw : CardCrawlGame.metricData.damage_taken) {
+                Object floor = map(raw).get("floor");
+                if (floor instanceof Number) combatFloors.add(((Number) floor).intValue());
+                else exact = false;
+            }
+        } else {
+            exact = false;
+        }
+        p.put("combatFloors", combatFloors);
+        p.put("pathComplete", exact);
         int[] actVisits = new int[10];
         int actStartFloor = AbstractDungeon.actNum <= 1 ? 0 : AbstractDungeon.actNum == 2 ? 17
                 : AbstractDungeon.actNum == 3 ? 34 : 51;
@@ -199,6 +217,12 @@ final class LiveOocCapture {
         for (AbstractRelic relic : AbstractDungeon.player.relics)
             if (!acquiredRelics.contains(relic.relicId)) acquiredRelics.add(relic.relicId);
         p.put("acquiredRelics", acquiredRelics);
+        // Vanilla metrics record acquired relics, not relics merely offered
+        // and skipped.  Do not infer the latter from the current pool or from
+        // acquisition history: the live contract must fail closed for any
+        // branch that can draw from an incompletely observed relic pool.
+        p.put("seenRelics", new ArrayList<String>());
+        p.put("seenRelicsComplete", false);
         p.put("priorEvents", priorEvents);
         p.put("shopRemoveCount", shopRemovals);
     }
@@ -357,8 +381,6 @@ final class LiveOocCapture {
         }
         if (buttons.isEmpty()) { options.add(6); button(cs, "proceed", "option", 6, 0); }
         out.put("details", object("options", options));
-        if (!Settings.isFinalActAvailable && !Settings.hasRubyKey)
-            out.put("unsupportedReason", "KEYS_NOT_AVAILABLE");
     }
     private static void mapScreen(Map<String,Object> out, List<Map<String,Object>> cs, List<?> labels)
             throws ReflectiveOperationException {

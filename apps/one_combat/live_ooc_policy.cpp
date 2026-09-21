@@ -3,6 +3,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <limits>
 #include <map>
 #include <set>
 #include <nlohmann/json.hpp>
@@ -229,12 +230,23 @@ LiveOocDecision LiveOocMctsPolicy::score(const sts::GameContext &projected,
     };
     dependencies.policyLogits = policyBatch;
     dependencies.leafValue = [this](const sts::GameContext &gc, const PathHistory &history) {
-        const double value = winModel_->predict(richFeatureVec(gc, history));
+        // Java does not expose potionChance or cardRarityFactor through the
+        // public run metrics.  Do not evaluate every particle at the
+        // constructor's 0/5 point prior: v_win explicitly splits on both
+        // features.  Integrate each tree margin over the native reachable
+        // public-belief ranges instead.  The leaf remains deterministic and
+        // cheap enough for 512-simulation live searches, while no single
+        // hidden pity state is presented as observed fact.
+        static const std::vector<CompactTreeNet::MarginalFeature> pityPrior = {
+            {7, -40, 100, 10},   // potionChance
+            {8, -40, 5, 1},      // cardRarityFactor
+        };
+        const double value = winModel_->predictMarginalized(richFeatureVec(gc, history), pityPrior);
         if (!std::isfinite(value) || value < 0 || value > 1)
             throw std::runtime_error("OOC MCTS invalid native v_win value");
         return value;
     };
-    dependencies.continuationStep = [policyBatch](sts::GameContext &gc, PathHistory &history,
+    dependencies.continuationStep = [this, policyBatch](sts::GameContext &gc, PathHistory &history,
                                            std::mt19937_64 &) {
         using RT = sts::search::GameAction::RewardsActionType;
         if (gc.screenState == sts::ScreenState::REWARDS) {
@@ -266,8 +278,37 @@ LiveOocDecision LiveOocMctsPolicy::score(const sts::GameContext &projected,
         const auto sources = v4CandidateActions(gc);
         if (sources.empty())
             throw sts::search::OocSearchUnsupported("continuation_empty_v4_candidates");
-        const auto logits = policyBatch(gc, history, sources);
-        const auto selected = std::max_element(logits.begin(), logits.end()) - logits.begin();
+        const TokState tokens = buildTokStatePure(gc, history);
+        const auto prepared = model_.prepareState(tokens.glob, tokens.nDk, tokens.dk,
+            tokens.nRl, tokens.rl, tokens.nPt, tokens.pt);
+        std::vector<double> q;
+        q.reserve(sources.size());
+        for (const auto action : sources) {
+            int actionType, c1, c2, c3, cand1, cand2, cand3;
+            strategicCands(gc, action, actionType, c1, c2, c3, cand1, cand2, cand3);
+            const int cats[6] = {c1, c2, c3, cand1, cand2, cand3};
+            int entityType, entityId;
+            float price;
+            tokEntity(gc, action, entityType, entityId, price);
+            const float entity[4] = {float(entityType == 0), float(entityType == 1),
+                                     float(entityType == 2), float(entityType == 3)};
+            const double value = model_.predictActionValue(prepared, action.bits, cats,
+                actionType, static_cast<int>(gc.screenState), entity, entityId, price);
+            if (!std::isfinite(value))
+                throw sts::search::OocSearchUnsupported("continuation_nonfinite_q");
+            q.push_back(value);
+        }
+        const auto selected = std::max_element(q.begin(), q.end()) - q.begin();
+        double second = -std::numeric_limits<double>::infinity();
+        for (std::size_t i = 0; i < q.size(); ++i)
+            if (static_cast<int>(i) != selected) second = std::max(second, q[i]);
+        // The maintained simulator chain deploys its V4 action only after a
+        // one-ply margin gate.  The isolated live advisor has no access to the
+        // simulator's heuristic fallback objects, so fail closed when that
+        // gate does not prove a unique continuation rather than inventing an
+        // ungated policy-head continuation.
+        if (q.size() > 1 && q[selected] - second < 1.0)
+            throw sts::search::OocSearchUnsupported("continuation_policy_gate_not_proven");
         sources.at(selected).execute(gc);
         history.update(gc);
     };

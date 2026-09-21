@@ -25,10 +25,12 @@ static J cardWire(const Card &c){return {{"id",J(c.id)},{"upgraded",c.isUpgraded
 static J project(const GameContext &g,const PathHistory &path,const std::string &name) {
     J p={{"character","IRONCLAD"},{"ascension",g.ascension},{"act",g.act},{"floor",g.floorNum},
         {"hp",g.curHp},{"maxHp",g.maxHp},{"gold",g.gold},
-        {"blueKey",g.blueKey},{"greenKey",g.greenKey},{"redKey",g.redKey},
+        {"blueKey",g.blueKey},{"greenKey",g.greenKey},{"keysEnabled",g.keysEnabled},{"redKey",g.redKey},
         {"potionCapacity",g.potionCapacity},{"potions",J::array()},{"deck",J::array()},{"relics",J::array()},
         {"boss",J(g.boss)},{"pathComplete",true},{"pathVisits",path.roomVisits},
         {"currentActPathVisits",path.roomVisits},{"acquiredRelics",J::array()},
+        {"pathHistory",J::array()},{"combatFloors",J::array()},
+        {"seenRelics",J::array()},{"seenRelicsComplete",true},
         {"priorEvents",J::array()},{"shopRemoveCount",g.shopRemoveCount}};
     for(const auto pot:g.potions)p["potions"].push_back(J(pot));
     for(int i=0;i<g.deck.size();++i){auto c=cardWire(g.deck.cards[i]);int bottle=-1;
@@ -173,11 +175,9 @@ int main(int argc,char **argv){try{
             continue;
         }
         check(result.ok,name+": "+result.message);
-        check(live.mctsRoot.state.monsterListOffset==path.roomVisits[int(Room::MONSTER)]
-                && live.mctsRoot.state.eliteMonsterListOffset==path.roomVisits[int(Room::ELITE)],
-                name+" current-act encounter history");
-        check(live.mctsRoot.state.potionChance==0 && live.mctsRoot.state.cardRarityFactor==5,
-                name+" hidden Java counters leaked into belief root");
+        check(live.mctsRoot.state.monsterListOffset==0
+                && live.mctsRoot.state.eliteMonsterListOffset==0,
+                name+" empty public combat history must not borrow path-symbol counts");
         for(const auto &owned:source.relics.relics) for(const auto *pool:{&live.mctsRoot.state.commonRelicPool,
                 &live.mctsRoot.state.uncommonRelicPool,&live.mctsRoot.state.rareRelicPool,
                 &live.mctsRoot.state.shopRelicPool,&live.mctsRoot.state.bossRelicPool})
@@ -196,7 +196,7 @@ int main(int argc,char **argv){try{
                 visibleRelicRemoved(source.info.rewardsContainer.relics[i]);
         if (source.screenState==ScreenState::BOSS_RELIC_REWARDS)
             for(RelicId relic:source.info.bossRelics)visibleRelicRemoved(relic);
-        auto publicSource=source;publicSource.potionChance=0;publicSource.cardRarityFactor=5;
+        auto publicSource=source;publicSource.potionChance=30;publicSource.cardRarityFactor=-18;
         sameTokens(buildTokStatePure(publicSource,path),buildTokStatePure(live.projected,live.path));
         check(source.deck.cardTypeCounts==live.projected.deck.cardTypeCounts,name+" deck type counts");
         check(source.deck.transformableCount==live.projected.deck.transformableCount,name+" transformable count");
@@ -225,6 +225,32 @@ int main(int argc,char **argv){try{
         if(qa.supported)advisor::validateLiveOocActionSet(live,bits);
         if(output)output<<wire.dump()<<'\n';
         std::cout<<name<<" parity=PASS status="<<(qa.supported?"OK":"UNSUPPORTED")<<" candidates="<<qa.candidates.size()<<'\n';++passed;
+    }
+    {
+        auto source = base;
+        source.screenState = ScreenState::REWARDS;
+        auto wire = project(source, path, "question_to_monster_history");
+        auto &p = wire["ooc"]["publicState"];
+        p["combatFloors"] = J::array({6});
+        p["pathHistory"] = J::array({"MONSTER", "MONSTER", "MONSTER", "MONSTER", "MONSTER", "EVENT"});
+        advisor::LiveOocStateV1 live;
+        const auto result = advisor::importLiveOocStateV1(wire, live);
+        check(result.ok, "question-to-monster public combat history import");
+        check(live.mctsRoot.state.monsterListOffset == 1
+                && live.mctsRoot.state.eliteMonsterListOffset == 0,
+                "question-to-monster must consume the normal encounter queue");
+    }
+    {
+        auto source = base;
+        source.screenState = ScreenState::EVENT_SCREEN;
+        source.curEvent = Event::BIG_FISH;
+        auto wire = project(source, path, "incomplete_seen_relic_history");
+        wire["ooc"]["publicState"]["seenRelicsComplete"] = false;
+        advisor::LiveOocStateV1 live;
+        const auto result = advisor::importLiveOocStateV1(wire, live);
+        check(result.ok && !live.mctsRoot.supported
+                && live.mctsRoot.reason == "PUBLIC_SEEN_RELIC_HISTORY_UNQUALIFIED",
+            "random relic event must fail closed without seen relic history");
     }
     auto wire=project(base,path,"malformed"); // base is Neow
     const auto reject=[&](J w){advisor::LiveOocStateV1 live;check(!advisor::importLiveOocStateV1(w,live).ok,"malformed accepted");};
