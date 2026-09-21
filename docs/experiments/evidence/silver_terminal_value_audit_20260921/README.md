@@ -33,19 +33,27 @@ when fitting.
 | --- | ---: | ---: | ---: |
 | `DEFAULT_CURRENT` | 1.51332 | 0.74241 | 0.56250 |
 | cross-fitted `REWEIGHT_COMPAT_V1` | 1.71113 | 0.74292 | 0.53125 |
-| cross-fitted untied diagnostic | 1.55035 | 0.73050 | 0.53125 |
+| cross-fitted untied diagnostic | 1.61666 | 0.74346 | 0.53125 |
 
 The compatible fit failed the preregistered 15% development improvement gate;
 its source-clustered baseline-minus-candidate bootstrap interval was
-`[-0.33315, 0.00000]`. Teacher B also worsened (`1.47290 -> 1.82242` for the
+`[-0.46891, 0.00000]`. Teacher B also worsened (`1.47290 -> 1.82242` for the
 compatible arm), so this is classified:
 
 ```text
 TERMINAL_REWEIGHT_HEADROOM_INSUFFICIENT
 ```
 
-The untied diagnostic did not provide positive headroom either, so the
+The untied diagnostic now uses nested source-grouped lambda selection inside
+each training partition, as required by the preregistered contract. Its fold
+lambdas were `[1.0, 0.1, 0.01, 0.01, 0.01]`; the full development fit selected
+`1.0`. It did not provide positive headroom either, so the
 `TERMINAL_FORM_TOO_RESTRICTIVE` branch is not supported by this corpus.
+
+The source-clustered bootstrap now clones each sampled source occurrence with
+unique group and leaf identities before recomputing metrics. This preserves
+duplicate source draws as duplicate bootstrap weight rather than collapsing
+them back into one sibling group.
 
 Using zero sibling regret as an optimistic ceiling, the cross-fitted compatible
 arm recovered `-13.07%` of the available baseline gap: its regret increased
@@ -80,7 +88,7 @@ interpretation of Teacher A/B.
 
 ```text
 dev-terminal-features.jsonl.gz  sha256=2a1899cab6a3708504ec408486e9fd10b23938ef07ea6534230fd2527cd4bd3f
-dev-analysis.json               sha256=b9d3e9097679e9f79b4d48ce9196624f8235d2eeded2a04d64518ebf84e6a7f0
+dev-analysis.json               sha256=62d882765ddbaf01070fdbf74e819aab7f4d363959af606fdc3dd6667d0fe55c
 ```
 
 Knowledge impact: durable bounded negative terminal-scoring result and the

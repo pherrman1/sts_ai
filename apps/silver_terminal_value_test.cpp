@@ -55,6 +55,15 @@ void checkParity(const std::string &name, const BattleContext &root,
     }
 }
 
+void checkFeature(const std::string &name, double actual, double expected,
+                  int &failures) {
+    if (std::abs(actual - expected) > 1e-9) {
+        std::cerr << name << " feature mismatch actual=" << actual
+                  << " expected=" << expected << '\n';
+        ++failures;
+    }
+}
+
 } // namespace
 
 int main() {
@@ -70,6 +79,30 @@ int main() {
     victory.player.gold += 37;
     victory.player.maxHp += 3;
     checkParity("victory", victoryRoot, victory, failures);
+    const auto victoryFeatures = search::terminalValueFeatures(victoryRoot, victory);
+    checkFeature("Feed/max-HP delta", victoryFeatures.maxHpDelta, 3.0, failures);
+
+    StateFixture thiefFixture(MonsterEncounter::LOOTER);
+    auto &thiefRoot = thiefFixture.state;
+    thiefRoot.setRequiresStolenGoldCheck(true);
+    thiefRoot.monsters.arr[0].miscInfo = 0;
+    auto thiefVictory = thiefRoot;
+    thiefVictory.outcome = Outcome::PLAYER_VICTORY;
+    thiefVictory.monsters.arr[0].miscInfo = 37;
+    thiefVictory.monsters.arr[0].curHp = 0;
+    checkParity("thief effective gold", thiefRoot, thiefVictory, failures);
+    const auto thiefFeatures = search::terminalValueFeatures(thiefRoot, thiefVictory);
+    checkFeature("thief effective-gold delta", thiefFeatures.effectiveGoldDelta, 37.0, failures);
+
+    StateFixture parasiteFixture(MonsterEncounter::WRITHING_MASS);
+    auto &parasiteRoot = parasiteFixture.state;
+    auto parasiteVictory = parasiteRoot;
+    parasiteVictory.outcome = Outcome::PLAYER_VICTORY;
+    parasiteVictory.monsters.arr[0].miscInfo = 1;
+    parasiteVictory.monsters.arr[0].curHp = 0;
+    checkParity("Writhing Mass Parasite", parasiteRoot, parasiteVictory, failures);
+    const auto parasiteFeatures = search::terminalValueFeatures(parasiteRoot, parasiteVictory);
+    checkFeature("Writhing Mass parasite", parasiteFeatures.parasiteImplant, 1.0, failures);
 
     StateFixture lossFixture(MonsterEncounter::CULTIST);
     auto &lossRoot = lossFixture.state;

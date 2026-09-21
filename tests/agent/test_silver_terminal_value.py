@@ -91,6 +91,43 @@ class SilverTerminalValueContracts(unittest.TestCase):
         a_again, _ = MODULE.fit_compatible(a_changed_b, 1.0, "teacher_a")
         self.assertEqual(a, a_again)
 
+    def test_source_bootstrap_clones_duplicate_occurrences(self):
+        def leaf(source, group, name):
+            return {"source_seed": source, "group_id": group,
+                    "leaf_snapshot_id": name, "features": features(),
+                    "original_root_features": features(), "teacher_a": 0.0,
+                    "teacher_b": 0.0}
+
+        by_source = {
+            "a": [(leaf("a", "g", "l"), 1.0, 2.0)],
+            "b": [(leaf("b", "h", "m"), 3.0, 4.0)],
+        }
+
+        class AlwaysFirst:
+            def choice(self, values):
+                return values[0]
+
+        sample = MODULE.bootstrap_source_sample(
+            by_source, ["a", "b"], AlwaysFirst(), replicate=7)
+        self.assertEqual(len(sample), 2)
+        self.assertEqual(len({row[0]["group_id"] for row in sample}), 2)
+        self.assertEqual(len({row[0]["leaf_snapshot_id"] for row in sample}), 2)
+
+    def test_untied_crossfit_selects_lambda_inside_each_training_partition(self):
+        rows = []
+        for source in range(5):
+            for suffix, turn in enumerate((source, source + 1)):
+                rows.append({
+                    "source_seed": str(source), "group_id": f"g{source}",
+                    "leaf_snapshot_id": f"l{source}-{suffix}",
+                    "features": features(victory_turn=float(turn)),
+                    "original_root_features": features(),
+                    "teacher_a": float(source + suffix), "teacher_b": float(source),
+                })
+        _, folds, _ = MODULE.crossfit_untied(rows)
+        self.assertEqual(len(folds), 5)
+        self.assertTrue(all(fold["lambda"] in MODULE.LAMBDAS for fold in folds))
+
 
 if __name__ == "__main__":
     unittest.main()

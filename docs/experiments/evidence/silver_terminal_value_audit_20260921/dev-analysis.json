@@ -114,15 +114,15 @@
     },
     "NO_ENERGY_WASTE": {
       "source_bootstrap_baseline_minus_ablation_teacher_a": {
-        "p025": -0.399658596248738,
-        "p500": -0.2447991564669303,
-        "p975": -0.016395497498931322,
+        "p025": -0.5133605223565574,
+        "p500": -0.21158396271992008,
+        "p975": -0.017359938528280328,
         "replicates": 1000
       },
       "source_bootstrap_baseline_minus_ablation_teacher_b": {
-        "p025": -0.8907084032725816,
-        "p500": -0.439982753654115,
-        "p975": 0.0,
+        "p025": -1.1324232014699076,
+        "p500": -0.41766730498293203,
+        "p975": 0.08144952396468796,
         "replicates": 1000
       },
       "teacher_a": {
@@ -198,15 +198,15 @@
     },
     "NO_MONSTER_DAMAGE": {
       "source_bootstrap_baseline_minus_ablation_teacher_a": {
-        "p025": -0.37999359060194454,
-        "p500": -0.19043323910362298,
-        "p975": -0.013505747381385325,
+        "p025": -0.49864147482577015,
+        "p500": -0.2062872298549574,
+        "p975": -0.009222467343148466,
         "replicates": 1000
       },
       "source_bootstrap_baseline_minus_ablation_teacher_b": {
-        "p025": -0.5152538282918502,
-        "p500": -0.26435997550745194,
-        "p975": 0.14932412726859434,
+        "p025": -0.76531998051752,
+        "p500": -0.20594351723883375,
+        "p975": 0.1797030585031032,
         "replicates": 1000
       },
       "teacher_a": {
@@ -254,15 +254,15 @@
     },
     "NO_POTION_VALUE": {
       "source_bootstrap_baseline_minus_ablation_teacher_a": {
-        "p025": -2.914140429673804,
-        "p500": -1.8520756120195654,
-        "p975": -0.3797211711207147,
+        "p025": -3.807001155493926,
+        "p500": -1.7442891271515004,
+        "p975": -0.31955300164741707,
         "replicates": 1000
       },
       "source_bootstrap_baseline_minus_ablation_teacher_b": {
-        "p025": -2.832003447336078,
-        "p500": -1.8387093324290154,
-        "p975": -0.38986126441911323,
+        "p025": -3.5344214603282937,
+        "p500": -1.7467806627869304,
+        "p975": -0.4004993103447432,
         "replicates": 1000
       },
       "teacher_a": {
@@ -282,15 +282,15 @@
     },
     "NO_SURVIVAL": {
       "source_bootstrap_baseline_minus_ablation_teacher_a": {
-        "p025": -0.01844493468629782,
-        "p500": -0.012831258912207266,
+        "p025": -0.0316198880336529,
+        "p500": -0.008942998635780741,
         "p975": 0.0,
         "replicates": 1000
       },
       "source_bootstrap_baseline_minus_ablation_teacher_b": {
         "p025": 0.0,
-        "p500": 0.11686236047107412,
-        "p975": 0.1679896431771688,
+        "p500": 0.08144952396468796,
+        "p975": 0.2780518231897968,
         "replicates": 1000
       },
       "teacher_a": {
@@ -310,14 +310,14 @@
     },
     "NO_WIN_TURN_PENALTY": {
       "source_bootstrap_baseline_minus_ablation_teacher_a": {
-        "p025": -0.06720000732001785,
-        "p500": -0.049669570627839166,
+        "p025": -0.1105548507522871,
+        "p500": -0.034618185589100126,
         "p975": 0.0,
         "replicates": 1000
       },
       "source_bootstrap_baseline_minus_ablation_teacher_b": {
-        "p025": -0.06263159840319554,
-        "p500": -0.046292920558883566,
+        "p025": -0.10303908124396655,
+        "p500": -0.032264762813767334,
         "p975": 0.0,
         "replicates": 1000
       },
@@ -354,14 +354,14 @@
     }
   },
   "bootstrap_baseline_minus_candidate_teacher_a": {
-    "p025": -0.33314593838795403,
-    "p500": -0.2275704545682271,
+    "p025": -0.4689056094896955,
+    "p500": -0.17896778043214856,
     "p975": 0.0,
     "replicates": 1000
   },
   "bootstrap_baseline_minus_candidate_teacher_b": {
-    "p025": -0.6213522503832758,
-    "p500": -0.3763585953768285,
+    "p025": -0.8444110257246897,
+    "p500": -0.3218923834696219,
     "p975": 0.0,
     "replicates": 1000
   },
@@ -730,9 +730,9 @@
   "untied_diagnostic": {
     "cross_fitted_teacher_a": {
       "groups": 32,
-      "mean_teacher_regret": 1.5503528051080218,
-      "pairwise_concordance": 0.7304964539007093,
-      "pairwise_pairs": 1410,
+      "mean_teacher_regret": 1.6166583580136384,
+      "pairwise_concordance": 0.7434628975265017,
+      "pairwise_pairs": 1415,
       "top_leaf_agreement": 0.53125
     },
     "fitted_development_only": {
@@ -750,6 +750,144 @@
       "victory_potion": 10.662905120740062,
       "victory_turn_penalty": 5e-324,
       "win_bonus": 2.8193907409025365
-    }
+    },
+    "folds": [
+      {
+        "fold": 0,
+        "held_out_sources": [
+          "12100001",
+          "12100012",
+          "12100025",
+          "12100037"
+        ],
+        "lambda": 1.0,
+        "solver_success": true,
+        "weights": {
+          "alive_penalty": 0.9926075163012862,
+          "death_save": 0.8794363109412712,
+          "draw": 0.10599103046439676,
+          "energy_waste": 3.8756840716626337,
+          "gold": 5e-324,
+          "loss_potion": 0.8605324374567431,
+          "max_hp": 5e-324,
+          "monster_damage": 5e-324,
+          "parasite_penalty": 1.2207031250000043e-05,
+          "survival": 0.19546445865623893,
+          "victory_hp": 0.8065321905709547,
+          "victory_potion": 10.04431626686774,
+          "victory_turn_penalty": 0.08758937766222291,
+          "win_bonus": 0.9758378014882514
+        }
+      },
+      {
+        "fold": 1,
+        "held_out_sources": [
+          "12100003",
+          "12100013",
+          "12100031",
+          "12100039"
+        ],
+        "lambda": 0.1,
+        "solver_success": true,
+        "weights": {
+          "alive_penalty": 11.589202125610235,
+          "death_save": 2.481253201989187,
+          "draw": 2.0416013727728044e-49,
+          "energy_waste": 0.7677100494350537,
+          "gold": 3.840594164192508e-56,
+          "loss_potion": 0.6150160356763267,
+          "max_hp": 5e-324,
+          "monster_damage": 3.7826321943796066,
+          "parasite_penalty": 2.6082153504038923e-05,
+          "survival": 0.9184701419681556,
+          "victory_hp": 1.0369664836428667,
+          "victory_potion": 13.814486684235916,
+          "victory_turn_penalty": 5.678128267233569e-50,
+          "win_bonus": 5.972675181070163
+        }
+      },
+      {
+        "fold": 2,
+        "held_out_sources": [
+          "12100007",
+          "12100017",
+          "12100034",
+          "12100041"
+        ],
+        "lambda": 0.01,
+        "solver_success": true,
+        "weights": {
+          "alive_penalty": 19.919893034769995,
+          "death_save": 0.7987675486585779,
+          "draw": 0.1892555090196817,
+          "energy_waste": 0.7806501178862233,
+          "gold": 5.165739011238522e-47,
+          "loss_potion": 1.5606049200289798e-26,
+          "max_hp": 1.073884135098662e-35,
+          "monster_damage": 7.786481515130787,
+          "parasite_penalty": 0.00029053554237234915,
+          "survival": 1.5959136956246555e-43,
+          "victory_hp": 0.8308006890911999,
+          "victory_potion": 11.310568637566314,
+          "victory_turn_penalty": 1.0123486819615504,
+          "win_bonus": 18.44742721909923
+        }
+      },
+      {
+        "fold": 3,
+        "held_out_sources": [
+          "12100008",
+          "12100018",
+          "12100035",
+          "12100052"
+        ],
+        "lambda": 0.01,
+        "solver_success": true,
+        "weights": {
+          "alive_penalty": 20.924005317347913,
+          "death_save": 0.6395445867330841,
+          "draw": 0.00030423629020345105,
+          "energy_waste": 0.7450725090574479,
+          "gold": 5.245356782870705e-45,
+          "loss_potion": 1.0269141938542746e-25,
+          "max_hp": 2.755159967977586,
+          "monster_damage": 9.509238928201082,
+          "parasite_penalty": 6.1574545467171955e-06,
+          "survival": 1.2444415974622456,
+          "victory_hp": 0.5526116602984414,
+          "victory_potion": 15.095729916781409,
+          "victory_turn_penalty": 2.5266449238343016,
+          "win_bonus": 30.747933876303644
+        }
+      },
+      {
+        "fold": 4,
+        "held_out_sources": [
+          "12100009",
+          "12100021",
+          "12100036",
+          "12100053"
+        ],
+        "lambda": 0.01,
+        "solver_success": true,
+        "weights": {
+          "alive_penalty": 17.013305808898533,
+          "death_save": 0.6546720429548155,
+          "draw": 0.3558781905881602,
+          "energy_waste": 0.8527244926764636,
+          "gold": 1.2979997844396735e-27,
+          "loss_potion": 3.17618006592282e-21,
+          "max_hp": 2.617284937596918e-27,
+          "monster_damage": 10.610265131206766,
+          "parasite_penalty": 0.00012896047092520024,
+          "survival": 4.284125333922641e-21,
+          "victory_hp": 0.8097951385867368,
+          "victory_potion": 15.254146332277235,
+          "victory_turn_penalty": 0.029618873965986333,
+          "win_bonus": 21.603548258826343
+        }
+      }
+    ],
+    "selected_lambda_full_development": 1.0
   }
 }

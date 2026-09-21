@@ -10725,8 +10725,9 @@ default or generalization claim is authorized. Evidence:
   `REWEIGHT_COMPAT_V1` was worse at regret `1.71113`, concordance `0.74292`,
   and top agreement `0.53125`; Teacher-B regret also worsened from `1.47290`
   to `1.82242`. The source-clustered baseline-minus-candidate bootstrap was
-  `[-0.33315, 0.00000]`. The untied diagnostic also failed to improve
-  cross-fitted regret (`1.55035`).
+  `[-0.46891, 0.00000]`. The untied diagnostic also failed to improve
+  cross-fitted regret (`1.61666`) after its corrected nested source-grouped
+  lambda selection; its fold lambdas were `[1.0, 0.1, 0.01, 0.01, 0.01]`.
 - **Additional diagnostics:** Against an optimistic zero-regret ceiling, the
   compatible arm recovered `-13.07%` of the baseline gap. The fitted
   development-only objective left 48/75 ordinary-loss leaves at or above the

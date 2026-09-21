@@ -322,6 +322,25 @@ def select_lambda(train):
     return min(choices, key=lambda item: (item[0], item[1]))[1]
 
 
+def select_lambda_untied(train):
+    ids = source_ids(train)
+    if len(ids) < 3:
+        return 1.0
+    folds = [set(ids[i::3]) for i in range(3)]
+    choices = []
+    for lam in LAMBDAS:
+        fold_regrets = []
+        for held in folds:
+            fit_rows = [leaf for leaf in train if leaf["source_seed"] not in held]
+            eval_rows = [leaf for leaf in train if leaf["source_seed"] in held]
+            weights, _ = fit_untied(fit_rows, lam)
+            fold_regrets.append(metrics(eval_rows, [untied_score(
+                x["features"], x["original_root_features"], weights) for x in eval_rows])[
+                "mean_teacher_regret"])
+        choices.append((mean(fold_regrets), lam))
+    return min(choices, key=lambda item: (item[0], item[1]))[1]
+
+
 def crossfit(leaves):
     ids = source_ids(leaves)
     predictions = {}
@@ -343,14 +362,19 @@ def crossfit(leaves):
 def crossfit_untied(leaves):
     ids = source_ids(leaves)
     predictions = {}
-    for held in [set(ids[i::5]) for i in range(5)]:
+    fold_receipts = []
+    for fold, held in enumerate([set(ids[i::5]) for i in range(5)]):
         train = [leaf for leaf in leaves if leaf["source_seed"] not in held]
         test = [leaf for leaf in leaves if leaf["source_seed"] in held]
-        weights, _ = fit_untied(train, 1.0)
+        lam = select_lambda_untied(train)
+        weights, solver = fit_untied(train, lam)
         for leaf in test:
             predictions[leaf["leaf_snapshot_id"]] = untied_score(
                 leaf["features"], leaf["original_root_features"], weights)
-    return metrics(leaves, [predictions[leaf["leaf_snapshot_id"]] for leaf in leaves]), predictions
+        fold_receipts.append({"fold": fold, "held_out_sources": sorted(held), "lambda": lam,
+                              "weights": weights, "solver_success": bool(solver.success)})
+    return (metrics(leaves, [predictions[leaf["leaf_snapshot_id"]] for leaf in leaves]),
+            fold_receipts, predictions)
 
 
 def bootstrap_delta(leaves, baseline_values, candidate_values, teacher_key="teacher_a", replicates=2000):
@@ -360,10 +384,8 @@ def bootstrap_delta(leaves, baseline_values, candidate_values, teacher_key="teac
     source_list = sorted(by_source)
     rng = random.Random(20260921)
     deltas = []
-    for _ in range(replicates):
-        sample = []
-        for _ in source_list:
-            sample.extend(by_source[rng.choice(source_list)])
+    for replicate in range(replicates):
+        sample = bootstrap_source_sample(by_source, source_list, rng, replicate)
         sampled_leaves = [row[0] for row in sample]
         base = [row[1] for row in sample]
         candidate = [row[2] for row in sample]
@@ -373,6 +395,24 @@ def bootstrap_delta(leaves, baseline_values, candidate_values, teacher_key="teac
             deltas.append(base_metric - candidate_metric)
     return {"replicates": len(deltas), "p025": percentile(deltas, 0.025),
             "p500": percentile(deltas, 0.5), "p975": percentile(deltas, 0.975)}
+
+
+def bootstrap_source_sample(by_source, source_list, rng, replicate):
+    sample = []
+    for occurrence in range(len(source_list)):
+        source = rng.choice(source_list)
+        for leaf, base, candidate in by_source[source]:
+            # Each sampled source occurrence must have independent group and
+            # leaf identities. Otherwise metrics() collapses duplicate source
+            # draws back into one sibling group and silently underweights the
+            # resampled source.
+            sampled_leaf = dict(leaf)
+            sampled_leaf["group_id"] = (
+                f"{leaf['group_id']}::bootstrap:{replicate}:{occurrence}")
+            sampled_leaf["leaf_snapshot_id"] = (
+                f"{leaf['leaf_snapshot_id']}::bootstrap:{replicate}:{occurrence}")
+            sample.append((sampled_leaf, base, candidate))
+    return sample
 
 
 def component_audit(leaves):
@@ -512,7 +552,7 @@ def main():
     if reconstruction_error > 1e-7:
         raise SystemExit(f"original-root reconstruction mismatch max={reconstruction_error}")
     crossfit_metrics, folds, predictions = crossfit(leaves)
-    crossfit_untied_metrics, untied_predictions = crossfit_untied(leaves)
+    crossfit_untied_metrics, untied_folds, untied_predictions = crossfit_untied(leaves)
     candidate = [predictions[leaf["leaf_snapshot_id"]] for leaf in leaves]
     teacher_b_rows = [leaf for leaf in leaves if leaf["teacher_b"] is not None]
     teacher_b_candidate = [predictions[leaf["leaf_snapshot_id"]] for leaf in teacher_b_rows]
@@ -522,7 +562,8 @@ def main():
     baseline_b = metrics(teacher_b_rows, teacher_b_baseline, "teacher_b")
     candidate_b = metrics(teacher_b_rows, teacher_b_candidate, "teacher_b")
     full_weights, _ = fit_compatible(leaves, select_lambda(leaves))
-    full_untied_weights, _ = fit_untied(leaves, 1.0)
+    full_untied_lambda = select_lambda_untied(leaves)
+    full_untied_weights, _ = fit_untied(leaves, full_untied_lambda)
     dev_gain = ((baseline_a["mean_teacher_regret"] - crossfit_metrics["mean_teacher_regret"])
                 / baseline_a["mean_teacher_regret"] if baseline_a["mean_teacher_regret"] else None)
     result = {
@@ -539,6 +580,8 @@ def main():
                                     "dev_regret_reduction": dev_gain, "folds": folds},
         "fitted_compatible_development_only": full_weights,
         "untied_diagnostic": {"cross_fitted_teacher_a": crossfit_untied_metrics,
+                              "folds": untied_folds,
+                              "selected_lambda_full_development": full_untied_lambda,
                               "fitted_development_only": full_untied_weights},
         "bootstrap_baseline_minus_candidate_teacher_a": bootstrap_delta(
             leaves, baseline, candidate, "teacher_a", args.bootstrap),

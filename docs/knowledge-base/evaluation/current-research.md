@@ -1554,8 +1554,9 @@ leaves with 32 paired SimpleAgent continuations each and added an exact raw
 `SilverTerminalValueFeatures` decomposition of the current terminal utility.
 The constrained compatible reweight worsened cross-fitted Teacher-A regret
 from `1.51332` to `1.71113`; the untied diagnostic also failed to improve
-regret (`1.55035`). Teacher B worsened for the compatible arm, and the
-source-clustered baseline-minus-candidate interval was `[-0.33315, 0.00000]`.
+regret (`1.61666`) after corrected nested source-grouped lambda selection.
+Teacher B worsened for the compatible arm, and the corrected
+source-clustered baseline-minus-candidate interval was `[-0.46891, 0.00000]`.
 Against an optimistic zero-regret ceiling, the compatible arm recovered
 `-13.07%` of the baseline gap; its development-only fit also left 48/75
 ordinary-loss leaves at or above the minimum victory value. The preserved
