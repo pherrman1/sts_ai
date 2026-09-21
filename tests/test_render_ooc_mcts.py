@@ -5,9 +5,8 @@ from tools.render_ooc_mcts import render
 class RenderOocMctsTest(unittest.TestCase):
     def snapshot(self):
         return {
-            'observation': {'boundary': 'ooc', 'fixture': 'map_multiple_children',
-                            'session': 's', 'sequence': 4,
-                            'observationHash': 'h'},
+            'session': 's', 'sequence': 4, 'observationHash': 'h',
+            'observation': {'boundary': 'ooc', 'fixture': 'map_multiple_children'},
             'response': {'ready': True, 'session': 's', 'sequence': 4,
                          'observationHash': 'h', 'advisor': {'evaluators': [{
                              'id': 'live_ooc_decision_v1', 'status': 'OK',
@@ -40,6 +39,14 @@ class RenderOocMctsTest(unittest.TestCase):
         del snapshot['response']['advisor']['evaluators'][0]['tree']
         with self.assertRaisesRegex(ValueError, 'not captured'):
             render(snapshot)
+
+    def test_archived_real_observation_replay_is_labeled(self):
+        snapshot = self.snapshot()
+        snapshot['observation'].pop('fixture')
+        snapshot['captureProvenance'] = {'kind': 'archived_real_game_observation_replay'}
+        html = render(snapshot)
+        self.assertIn('ARCHIVED REAL-GAME OBSERVATION REPLAY', html)
+        self.assertNotIn('TEST FIXTURE: map_multiple_children', html)
 
 
 if __name__ == '__main__':

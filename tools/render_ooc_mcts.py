@@ -15,11 +15,16 @@ def render(snapshot: dict) -> str:
     response = snapshot.get("response") or {}
     if observation.get("boundary") == "combat":
         raise ValueError("snapshot is a combat observation")
-    if not response.get("ready") or response.get("session") != observation.get("session") \
-            or response.get("sequence") != observation.get("sequence") \
-            or response.get("observationHash") != observation.get("observationHash"):
+    identity = {key: snapshot.get(key) for key in ("session", "sequence", "observationHash")}
+    advisor = response.get("advisor") or {}
+    if (response.get("ready") is not True
+            or not isinstance(identity["session"], str) or not identity["session"]
+            or type(identity["sequence"]) is not int or identity["sequence"] < 0
+            or not isinstance(identity["observationHash"], str) or not identity["observationHash"]
+            or any(response.get(key) != value for key, value in identity.items())
+            or any(key in advisor and advisor[key] != value for key, value in identity.items())):
         raise ValueError("snapshot response is not ready or does not match its observation")
-    evaluators = [e for e in (response.get("advisor") or {}).get("evaluators", [])
+    evaluators = [e for e in advisor.get("evaluators", [])
                   if e.get("id") == "live_ooc_decision_v1"]
     if len(evaluators) != 1:
         raise ValueError("snapshot has no unique live OOC evaluator")
@@ -31,14 +36,15 @@ def render(snapshot: dict) -> str:
         raise ValueError("OOC tree has no captured root")
     # JSON.parse cannot preserve all uint64 IDs. Keep state identities as text.
     payload = {"tree": tree, "fixture": observation.get("fixture"),
+               "provenance": snapshot.get("captureProvenance"),
                "evaluator": {key: evaluator.get(key) for key in
                ("candidateSummaries", "selectedSemanticKey", "model", "status")},
-               "identity": {key: response.get(key) for key in
-                            ("session", "sequence", "observationHash")}}
+               "identity": identity}
     data = json.dumps(payload, ensure_ascii=True, separators=(",", ":")).replace("<", "\\u003c")
     scripts = "".join(f"<script>{(ASSETS / name).read_text(encoding='utf-8').replace('</script', '<\\/script')}</script>"
                       for name in ("vendor/elk.bundled.js", "vendor/d3.min.js", "visibility.js", "layout.js"))
     scripts += f"<script>window.__OOC_GRAPH__={data};</script>"
+    scripts += "<script>" + (SCRIPT.parent / "normalize.js").read_text(encoding="utf-8") + "</script>"
     scripts += "<script>" + SCRIPT.read_text(encoding="utf-8").replace("</script", "<\\/script") + "</script>"
     css = (ASSETS / "style.css").read_text(encoding="utf-8")
     css += "\n" + (SCRIPT.parent / "style.css").read_text(encoding="utf-8")

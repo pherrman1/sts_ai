@@ -4,10 +4,7 @@
   const root = String(tree.rootId);
   const nodes = new Map(tree.nodes.map(n => [String(n.id), {
     ...n, id:String(n.id), isChanceNode:n.kind === 'chance'}]));
-  const edges = tree.edges.map((e,i) => ({...e, id:'e'+i,
-    parentId:String(e.parentId), childId:e.childId == null ? null : String(e.childId),
-    childCaptured:e.childId != null, actionLabel:e.kind === 'particle' ? 'sample' :
-      (nodes.get(String(e.childId))?.label || 'action')}));
+  const edges = adaptOocEdges(tree,nodes);
   const outgoing = new Map(), incoming = new Map();
   for (const e of edges) {
     if (!outgoing.has(e.parentId)) outgoing.set(e.parentId, []);
@@ -28,7 +25,9 @@
   });
   d3.select(canvas).call(zoom).on('dblclick.zoom',null);
   $('identity').textContent=payload.identity.session+' · #'+payload.identity.sequence;
-  $('provenance').textContent=payload.fixture?'TEST FIXTURE: '+payload.fixture:'Advisor capture';
+  $('provenance').textContent=payload.fixture?'TEST FIXTURE: '+payload.fixture:
+    payload.provenance?.kind==='archived_real_game_observation_replay'?
+      'ARCHIVED REAL-GAME OBSERVATION REPLAY':'Advisor capture';
   $('capture').textContent=tree.truncated?'Capture truncated':'Capture complete';
   function label(n){return n.label || (n.kind==='chance'?'Action #'+n.actionId:
     'Particle state '+n.stateId);}

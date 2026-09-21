@@ -361,6 +361,12 @@ set_tests_properties(live_game_runtime PROPERTIES
 add_test(NAME render_ooc_mcts COMMAND python3 -m unittest tests.test_render_ooc_mcts)
 set_tests_properties(render_ooc_mcts PROPERTIES
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "tooling;smoke")
+find_program(STS_NODE_EXECUTABLE node)
+if(STS_NODE_EXECUTABLE)
+    add_test(NAME ooc_graph_logic COMMAND ${STS_NODE_EXECUTABLE} ${CMAKE_SOURCE_DIR}/tests/test_ooc_graph_logic.js)
+    set_tests_properties(ooc_graph_logic PROPERTIES
+        WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "tooling;smoke")
+endif()
 
 add_executable(test_live_ooc_policy apps/test_live_ooc_policy.cpp
     apps/one_combat/live_ooc_policy.cpp apps/one_combat/ooc_v4_encoding.cpp
