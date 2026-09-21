@@ -731,6 +731,18 @@ bool alignRetainedRootHand(sts::search::BattleSearcher::Node &root,
                            const sts::BattleContext &observed) {
     if (root.state == nullptr || !root.state->equalForSearch(observed)
             || root.state->cards.cardsInHand != observed.cards.cardsInHand) return false;
+    if (exactDecisionState(*root.state, observed)) return true;
+    // Selection actions and selectedBits contain hand positions. A macro
+    // continuation can also contain a post-card selection index. Neither is
+    // safe to retain across a hand permutation without a full remap.
+    if (root.state->inputState != sts::InputState::PLAYER_NORMAL) return false;
+    for (const auto &edge : root.edges) {
+        if (edge.hasContinuation()) return false;
+        if (edge.action.getActionType() == sts::search::ActionType::CARD
+                && edge.node != nullptr && edge.node->isRandomNode
+                && (edge.node->parent != &root
+                    || edge.node->stochasticAction != edge.action)) return false;
+    }
     std::vector<sts::CardInstance> referencedCards;
     std::vector<int> observedIndices;
     referencedCards.reserve(root.edges.size());
@@ -761,6 +773,8 @@ bool alignRetainedRootHand(sts::search::BattleSearcher::Node &root,
         if (edge.action.getActionType() != sts::search::ActionType::CARD) continue;
         edge.action = sts::search::Action(
             sts::search::ActionType::CARD, observedIndices[i], edge.action.getTargetIdx());
+        if (edge.node != nullptr && edge.node->isRandomNode)
+            edge.node->stochasticAction = edge.action;
     }
     return exactDecisionState(*root.state, observed);
 }
@@ -1122,8 +1136,15 @@ public:
                 if (candidate != nullptr) {
                     equivalentCopyCandidate = remapReachableEquivalentCopy(
                         candidate, equivalent.retainedUid, equivalent.observedUid);
-                    if (!equivalentCopyCandidate || !alignRetainedRootHand(*candidate, state))
+                    if (!equivalentCopyCandidate) candidate = nullptr;
+                    else if (!alignRetainedRootHand(*candidate, state)) {
+                        // The UID swap is symmetric. Do not leave a rejected
+                        // CARD_SELECT/macro candidate changed in the old tree.
+                        if (!remapReachableEquivalentCopy(
+                                candidate, equivalent.retainedUid, equivalent.observedUid))
+                            throw std::runtime_error("equivalent_copy_rollback_failed");
                         candidate = nullptr;
+                    }
                 }
             }
             if (selectedActionExecuted && selectedDeterministic && candidate == nullptr) {
@@ -2295,6 +2316,111 @@ ReuseCapFixtureProbe probeSilverReuseCapFixture(const BattleStateWire &wire) {
                 && permuted.searcher->root->state->cards.hand[
                     permuted.searcher->root->edges[1].action.getSourceIdx()]
                     == state.cards.hand[0];
+
+            // A chance node keeps its own copy of the CARD action. Widening
+            // replays that copy against the aligned parent's hand.
+            SilverSearchSession stochasticCard;
+            arrangeCandidate(stochasticCard, false, true);
+            auto *chanceParent = stochasticCard.searcher->root->edges.front().node;
+            auto &cardEdge = chanceParent->edges.front();
+            const auto selectedCard = chanceParent->state->cards.hand[cardEdge.action.getSourceIdx()];
+            auto *cachedChance = stochasticCard.searcher->allocNode();
+            cachedChance->isRandomNode = true;
+            cachedChance->parent = chanceParent;
+            cachedChance->stochasticAction = cardEdge.action;
+            cachedChance->randomnessBase = 12345;
+            cachedChance->outcomesGenerated = 1;
+            cachedChance->simulationCount = 16;
+            auto *oldOutcome = stochasticCard.searcher->allocNode();
+            oldOutcome->state = stochasticCard.searcher->allocDecisionState();
+            *oldOutcome->state = *chanceParent->state;
+            oldOutcome->state->player.curHp -= 1;
+            sts::search::BattleSearcher::Edge outcomeEdge;
+            outcomeEdge.node = oldOutcome;
+            cachedChance->edges.push_back(std::move(outcomeEdge));
+            cardEdge.node = cachedChance;
+            SilverSearchConfig chanceConfig;
+            chanceConfig.reuseCap = 64;
+            chanceConfig.reuseCapMode = SilverReuseCapMode::ACTIVE;
+            chanceConfig.collectDecisionDiagnostics = true;
+            stochasticCard.beginAt(state, chanceConfig, true);
+            auto &alignedEdge = stochasticCard.searcher->root->edges.front();
+            auto *alignedChance = alignedEdge.node;
+            if (alignedChance != nullptr && alignedChance->isRandomNode) {
+                auto expected = *stochasticCard.searcher->root->state;
+                expected.rng = sts::Random(alignedChance->randomnessBase + 1);
+                alignedEdge.action.execute(expected);
+                stochasticCard.searcher->resolveForcedSelections(expected);
+                stochasticCard.searcher->chanceWideningC = 4.0;
+                stochasticCard.searcher->chanceWideningAlpha = 0.5;
+                const auto beforeSamples = stochasticCard.searcher->stats.chanceOutcomesSampled;
+                auto *widened = stochasticCard.searcher->selectChanceOutcome(*alignedChance);
+                result.handPermutationChanceWideningPreserved =
+                    stochasticCard.decisionDiagnostic.exactReroot
+                    && stochasticCard.searcher->root->state->cards.hand[
+                        alignedEdge.action.getSourceIdx()] == selectedCard
+                    && alignedChance->stochasticAction == alignedEdge.action
+                    && alignedChance->outcomesGenerated == 2
+                    && stochasticCard.searcher->stats.chanceOutcomesSampled == beforeSamples + 1
+                    && widened != nullptr && widened->node != nullptr
+                    && widened->node->state->equalForSearch(expected);
+            }
+
+            // CARD_SELECT indices and selectedBits must not be reinterpreted
+            // when a semantically equal hand arrives in a different order.
+            auto selectionObserved = state;
+            selectionObserved.inputState = sts::InputState::CARD_SELECT;
+            selectionObserved.cardSelectInfo.cardSelectTask = sts::CardSelectTask::GAMBLE;
+            selectionObserved.cardSelectInfo.selectedBits = 1;
+            auto selectionRetained = selectionObserved;
+            std::swap(selectionRetained.cards.hand[0], selectionRetained.cards.hand[1]);
+            sts::search::BattleSearcher::Node selectionNode;
+            selectionNode.state = &selectionRetained;
+            sts::search::BattleSearcher::Edge selectionEdge;
+            selectionEdge.action = sts::search::Action(
+                sts::search::ActionType::SINGLE_CARD_SELECT, 0);
+            selectionNode.edges.push_back(selectionEdge);
+            const auto retainedSelectionHand = selectionRetained.cards.hand[0];
+            const auto retainedSelectionAction = selectionNode.edges.front().action;
+            result.cardSelectPermutationRejected =
+                selectionRetained.equalForSearch(selectionObserved)
+                && !alignRetainedRootHand(selectionNode, selectionObserved)
+                && selectionRetained.cards.hand[0] == retainedSelectionHand
+                && selectionRetained.cardSelectInfo.selectedBits == 1
+                && selectionNode.edges.front().action == retainedSelectionAction;
+            SilverSearchSession selectionSession;
+            arrangeCandidate(selectionSession, false, false);
+            *selectionSession.searcher->root->state = selectionObserved;
+            auto *selectionChild = selectionSession.searcher->root->edges.front().node;
+            *selectionChild->state = selectionRetained;
+            selectionChild->edges = selectionNode.edges;
+            SilverSearchConfig selectionConfig;
+            selectionConfig.reuseCap = cap;
+            selectionConfig.reuseCapMode = SilverReuseCapMode::ACTIVE;
+            try {
+                selectionSession.beginAt(selectionObserved, selectionConfig, true);
+                result.cardSelectPermutationRejected = false;
+            } catch (const std::runtime_error &error) {
+                result.cardSelectPermutationRejected = result.cardSelectPermutationRejected
+                    && std::string(error.what()).find(
+                        "selected_deterministic_state_mismatch") != std::string::npos;
+            }
+
+            auto macroRetained = state;
+            std::swap(macroRetained.cards.hand[0], macroRetained.cards.hand[1]);
+            sts::search::BattleSearcher::Node macroNode;
+            macroNode.state = &macroRetained;
+            sts::search::BattleSearcher::Edge macroEdge;
+            macroEdge.action = sts::search::Action(sts::search::ActionType::CARD, 0, 0);
+            macroEdge.continuation = sts::search::Action(
+                sts::search::ActionType::SINGLE_CARD_SELECT, 0);
+            macroNode.edges.push_back(macroEdge);
+            const auto retainedMacroHand = macroRetained.cards.hand[0];
+            result.continuationPermutationRejected = macroRetained.equalForSearch(state)
+                && !alignRetainedRootHand(macroNode, state)
+                && macroRetained.cards.hand[0] == retainedMacroHand
+                && macroNode.edges.front().action == macroEdge.action
+                && macroNode.edges.front().continuation == macroEdge.continuation;
 
             const auto firstUid = state.cards.hand[0].uniqueId;
             const std::int16_t secondUid = 30000;

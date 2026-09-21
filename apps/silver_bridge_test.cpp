@@ -686,6 +686,12 @@ int main(int argc, char **argv) {
               && capFixture.handOrderMandatory && !capFixture.handPermutationRejected
               && capFixture.handPermutationAligned && capFixture.handPermutationEdgesPreserved,
           "hand-permuted semantic child must retain visits and exact card edge identities");
+    check(capFixture.handPermutationChanceWideningPreserved,
+          "hand alignment must preserve the exact card replayed by later chance widening");
+    check(capFixture.cardSelectPermutationRejected,
+          "hand-permuted CARD_SELECT root must keep indexed actions and selected bits untouched");
+    check(capFixture.continuationPermutationRejected,
+          "hand alignment must reject an indexed macro continuation without mutating the root");
     check(capFixture.chanceMissingAllowed,
           "unmatched stochastic outcome may still fall back as candidate-missing");
     check(capFixture.positiveVisitMissingChildRejected,

@@ -1012,6 +1012,9 @@ struct ReuseCapFixtureProbe {
     bool handPermutationRejected = false;
     bool handPermutationAligned = false;
     bool handPermutationEdgesPreserved = false;
+    bool handPermutationChanceWideningPreserved = false;
+    bool cardSelectPermutationRejected = false;
+    bool continuationPermutationRejected = false;
     bool handPermutationPrecondition = false;
     bool equivalentCopyRepaired = false;
     bool chanceMissingAllowed = false;
