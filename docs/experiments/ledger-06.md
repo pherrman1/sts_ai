@@ -10807,18 +10807,26 @@ default or generalization claim is authorized. Evidence:
   terminal HP fractions `0.344091/0.355610`, decisions `2,232/2,252`, total
   simulations `2,232,000/2,252,000`, nodes `2,063,754/2,079,300`, and wall
   seconds `15.852071/15.821877`. Nodes/simulation changed from `0.924621` to
-  `0.923313` (`-0.1415%`), while `queueItemCanonicalMerges` was `0` versus
-  `317,084`, with merges in `0/64` versus `64/64` cases.
+  `0.923313` (`-0.1415%`), while the candidate's historical
+  `queueItemCanonicalMerges` counter recorded `0` versus `317,084` relaxed
+  lookup hits, with at least one hit in `0/64` versus `64/64` cases. These are
+  repeated exposure events, not unique exact variants, nodes avoided, or
+  unique merge groups; analysis names this metric `queueItemRelaxedHits`.
 - **Technical signal:** Exact/fallback reroot counts were `1,627/541` in
   CONTROL and `1,418/770` in TREATMENT. Fallback fraction rose from `24.954%`
   to `35.192%` (`+10.238` percentage points), beyond the preregistered
   two-point warning threshold. Action-trace hashes differed in `64/64`
-  paired cases. The treatment mean HP fraction was not lower, but wins were
-  down by one case; this does not offset the reroot and trace evidence.
+  paired cases, and fallback was higher in 57/64 cases, lower in 2/64. Because
+  the treatment also changed the played trajectory in every case, the
+  aggregate reroot regression does not isolate whether changed trajectories or
+  retained-tree identity caused the reroot-opportunity difference. It is still
+  sufficient to reject this exact treatment. The treatment mean HP fraction
+  was not lower, but wins were down by one case; this does not offset the
+  reroot and trace evidence.
 - **Decision and boundary:** **`QUEUE_ITEM_CANONICALIZATION_REJECT`**.
   Exposure was real, but structural reduction was below the approximately 1%
-  Phase-A signal and the unchanged exact-only reroot path showed an obvious
-  technical regression. Phase B at 10,000 simulations was not run. This is
+  Phase-A signal and aggregate fallback rerooting showed an obvious technical
+  regression. Phase B at 10,000 simulations was not run. This is
   bounded DEV evidence and authorizes no live support, reroot relaxation,
   holdout use, default promotion, or production-equivalence claim.
 - **Evidence:** [queue-item canonicalization packet](evidence/silver_queue_item_canonicalization_20260921/README.md).
@@ -10826,6 +10834,8 @@ default or generalization claim is authorized. Evidence:
   `ef09ce52b69aaae4bacbc76c7dc9c573e30bd70f772901420f683f871b797021` and
   frozen input SHA-256 is
   `ab7c3298754864986c31273a0f1d23967b165fdd79a386261b680b8ad16d0eae`.
+  The frozen candidate patch SHA-256 is
+  `874d45b52b99561a82747921c1f25ccfedf00a1fe298a5020dbe92befc80384a`.
   **Knowledge impact:** durable negative Silver search evidence only; no
   production behavior, default, RNG, schema, model, live gameplay, or holdout
   qualification changed.

@@ -1,0 +1,373 @@
+diff --git a/apps/silver_hard_combat_replay.cpp b/apps/silver_hard_combat_replay.cpp
+index a1f07e0a..e247dd6c 100644
+--- a/apps/silver_hard_combat_replay.cpp
++++ b/apps/silver_hard_combat_replay.cpp
+@@ -26,7 +26,8 @@ nlohmann::json macroTaskCounts(const Counts &counts) {
+ 
+ nlohmann::json replayRow(const nlohmann::json &input, std::int64_t budget,
+                          bool collectUidFragmentationDiagnostics,
+-                         silver_bridge::SilverSearchContractMode contractMode) {
++                         silver_bridge::SilverSearchContractMode contractMode,
++                         bool queueItemCanonicalizationEnabled) {
+     const auto started = std::chrono::steady_clock::now();
+     nlohmann::json row = {
+         {"case_id", input.value("case_id", "")},
+@@ -46,6 +47,7 @@ nlohmann::json replayRow(const nlohmann::json &input, std::int64_t budget,
+         config.exactVisitLockEnabled = false;
+         config.rhoRacingEnabled = false;
+         config.collectUidFragmentationDiagnostics = collectUidFragmentationDiagnostics;
++        config.queueItemCanonicalizationEnabled = queueItemCanonicalizationEnabled;
+         config.contractMode = contractMode;
+ 
+         const auto result = silver_bridge::runSilverCombatReplay(wire, config);
+@@ -66,6 +68,7 @@ nlohmann::json replayRow(const nlohmann::json &input, std::int64_t budget,
+         row["status"] = result.accepted ? "ok" : result.failureReason;
+         row["rollout_calls"] = result.telemetry.rolloutCalls;
+         row["nodes_created"] = result.telemetry.nodesCreated;
++        row["queueItemCanonicalMerges"] = result.telemetry.queueItemCanonicalMerges;
+         row["macro_eligible_decision_nodes"] = result.telemetry.macroEligibleDecisionNodes;
+         row["macro_edges_generated"] = result.telemetry.macroEdgesGenerated;
+         row["macro_option_count_sum"] = result.telemetry.macroOptionCountSum;
+@@ -107,15 +110,19 @@ nlohmann::json replayRow(const nlohmann::json &input, std::int64_t budget,
+ int main(int argc, char **argv) {
+     if (argc < 3) {
+         std::cerr << "usage: silver_hard_combat_replay SNAPSHOTS.jsonl BUDGET "
+-                     "[--arm control|A|B] [--uid-fragmentation]\n";
++                     "[--arm control|A|B] [--uid-fragmentation] "
++                     "[--queue-item-canonicalization]\n";
+         return 2;
+     }
+     bool collectUidFragmentationDiagnostics = false;
++    bool queueItemCanonicalizationEnabled = false;
+     auto contractMode = silver_bridge::SilverSearchContractMode::CONTROL;
+     for (int i = 3; i < argc; ++i) {
+         const std::string option(argv[i]);
+         if (option == "--uid-fragmentation") {
+             collectUidFragmentationDiagnostics = true;
++        } else if (option == "--queue-item-canonicalization") {
++            queueItemCanonicalizationEnabled = true;
+         } else if (option == "--arm" && i + 1 < argc) {
+             const std::string arm(argv[++i]);
+             if (arm == "control") contractMode = silver_bridge::SilverSearchContractMode::CONTROL;
+@@ -156,7 +163,8 @@ int main(int argc, char **argv) {
+         if (line.empty()) continue;
+         try {
+             const auto row = replayRow(nlohmann::json::parse(line), budget,
+-                                       collectUidFragmentationDiagnostics, contractMode);
++                                       collectUidFragmentationDiagnostics, contractMode,
++                                       queueItemCanonicalizationEnabled);
+             hadFailure = hadFailure || row.value("status", "") != "ok";
+             std::cout << row.dump() << '\n';
+         } catch (const std::exception &error) {
+diff --git a/apps/silver_search_optimization_test.cpp b/apps/silver_search_optimization_test.cpp
+index 41f2d259..94aa1c07 100644
+--- a/apps/silver_search_optimization_test.cpp
++++ b/apps/silver_search_optimization_test.cpp
+@@ -1125,7 +1125,7 @@ void rootPriorSelection(Search &search) {
+ 
+ void equalStats(const sts::search::SearchStats &a, const sts::search::SearchStats &b) {
+ #define SAME(field) require(a.field == b.field, "trace changed stats: " #field)
+-    SAME(steps); SAME(nodesCreated); SAME(detTranspositions);
++    SAME(steps); SAME(nodesCreated); SAME(queueItemCanonicalMerges); SAME(detTranspositions);
+     SAME(chanceOutcomesSampled); SAME(chanceSiblingReuse); SAME(chanceTranspositions);
+     SAME(depthSum); SAME(chanceDepthSum); SAME(rolloutCalls);
+     SAME(rolloutTerminalWins); SAME(rolloutTerminalLosses); SAME(rolloutNonTerminalStops);
+@@ -1139,6 +1139,140 @@ void equalStats(const sts::search::SearchStats &a, const sts::search::SearchStat
+ #undef SAME
+ }
+ 
++void queueItemCanonicalization(const sts::BattleContext &original) {
++    auto settled = original;
++    settled.inputState = sts::InputState::PLAYER_NORMAL;
++    settled.outcome = sts::Outcome::UNDECIDED;
++    settled.isBattleOver = false;
++    settled.endTurnQueued = false;
++    settled.turnHasEnded = false;
++    settled.actionQueue.clear();
++    settled.cardQueue.clear();
++
++    auto makeQueueItemState = [&](sts::CardId id) {
++        auto result = settled;
++        result.curCardQueueItem = sts::CardQueueItem(
++            sts::CardInstance(id), 0, result.player.energy);
++        return result;
++    };
++    const auto queueA = makeQueueItemState(sts::CardId::BASH);
++    const auto queueB = makeQueueItemState(sts::CardId::STRIKE_RED);
++    require(!queueA.equalForSearch(queueB),
++            "queue-item fixture must remain distinct under ordinary equality");
++    require(sts::search::hashBattleState(queueA) == sts::search::hashBattleState(queueB),
++            "queue-item fixture must share the existing search hash");
++
++    Search defaultOff(settled);
++    Search explicitOff(settled);
++    explicitOff.queueItemCanonicalizationEnabled = false;
++    defaultOff.search(32);
++    explicitOff.search(32);
++    equalStats(defaultOff.stats, explicitOff.stats);
++    require(defaultOff.getBestAction() == explicitOff.getBestAction(),
++            "default-off queue-item flag must preserve search behavior");
++
++    auto controlA = queueA;
++    auto controlB = queueB;
++    Search control(settled);
++    const auto *controlFirst = control.getOrCreateNode(std::move(controlA));
++    const auto *controlSecond = control.getOrCreateNode(std::move(controlB));
++    require(controlFirst != controlSecond && control.lastNodeWasCreated,
++            "default-off queue-item dedup must preserve distinct nodes");
++    require(control.stats.queueItemCanonicalMerges == 0,
++            "default-off queue-item dedup must not record merges");
++
++    auto treatmentA = queueA;
++    auto treatmentB = queueB;
++    Search treatment(settled);
++    treatment.queueItemCanonicalizationEnabled = true;
++    const auto *treatedFirst = treatment.getOrCreateNode(std::move(treatmentA));
++    const auto *treatedSecond = treatment.getOrCreateNode(std::move(treatmentB));
++    require(treatedFirst == treatedSecond && !treatment.lastNodeWasCreated,
++            "eligible settled queue-item states must merge under treatment");
++    require(treatment.stats.queueItemCanonicalMerges == 1,
++            "queue-item treatment must count the actual relaxed merge");
++
++    const auto verifyNoMerge = [&](const sts::BattleContext &candidate,
++                                   const char *message) {
++        auto retainedState = queueA;
++        auto incomingState = candidate;
++        Search search(settled);
++        search.queueItemCanonicalizationEnabled = true;
++        const auto *retained = search.getOrCreateNode(std::move(retainedState));
++        const auto *incoming = search.getOrCreateNode(std::move(incomingState));
++        require(incoming != retained && search.lastNodeWasCreated, message);
++        require(search.stats.queueItemCanonicalMerges == 0,
++                "ineligible queue-item state must not count a relaxed merge");
++    };
++
++    auto cardSelect = queueB;
++    cardSelect.inputState = sts::InputState::CARD_SELECT;
++    verifyNoMerge(cardSelect, "CARD_SELECT states must not relaxed-merge");
++    auto executing = queueB;
++    executing.inputState = sts::InputState::EXECUTING_ACTIONS;
++    verifyNoMerge(executing, "EXECUTING_ACTIONS states must not relaxed-merge");
++    auto actionQueued = queueB;
++    actionQueued.actionQueue.pushBack(sts::Actions::GainEnergy(1));
++    verifyNoMerge(actionQueued, "non-empty action queues must not relaxed-merge");
++    auto cardQueued = queueB;
++    cardQueued.cardQueue.pushBack(sts::CardQueueItem(
++        sts::CardInstance(sts::CardId::STRIKE_RED), 0, cardQueued.player.energy));
++    verifyNoMerge(cardQueued, "non-empty card queues must not relaxed-merge");
++    auto terminal = queueB;
++    terminal.outcome = sts::Outcome::PLAYER_VICTORY;
++    terminal.isBattleOver = true;
++    verifyNoMerge(terminal, "terminal states must not relaxed-merge");
++    auto endTurn = queueB;
++    endTurn.endTurnQueued = true;
++    verifyNoMerge(endTurn, "end-turn states must not relaxed-merge");
++    auto pendingTurn = queueB;
++    pendingTurn.turnHasEnded = true;
++    verifyNoMerge(pendingTurn, "pending-turn states must not relaxed-merge");
++    auto ordinaryDifference = queueB;
++    ++ordinaryDifference.player.energy;
++    verifyNoMerge(ordinaryDifference, "ordinary state differences must prevent merging");
++
++    auto continuationA = queueA;
++    auto continuationB = queueB;
++    sts::search::Action cardAction;
++    bool foundCardAction = false;
++    for (const auto &edge : rootActions(settled)) {
++        if (edge.getActionType() == sts::search::ActionType::CARD) {
++            cardAction = edge;
++            foundCardAction = true;
++            break;
++        }
++    }
++    require(foundCardAction, "queue-item continuation fixture needs a card action");
++    cardAction.execute(continuationA);
++    cardAction.execute(continuationB);
++    require(continuationA.equalForSearch(continuationB),
++            "ordinary card continuation must overwrite stale queue-item identity");
++
++    auto attackPotionA = queueA;
++    auto attackPotionB = queueB;
++    attackPotionA.potions[0] = attackPotionB.potions[0] = sts::Potion::ATTACK_POTION;
++    attackPotionA.potionCount = attackPotionB.potionCount = 1;
++    const sts::search::Action attackPotion(sts::search::ActionType::POTION, 0, 0);
++    require(attackPotion.isValidAction(attackPotionA),
++            "Attack Potion selection boundary must be playable");
++    attackPotion.execute(attackPotionA);
++    attackPotion.execute(attackPotionB);
++    require(attackPotionA.inputState == sts::InputState::CARD_SELECT
++                && attackPotionB.inputState == sts::InputState::CARD_SELECT
++                && !attackPotionA.equalForSearch(attackPotionB),
++            "Attack Potion CARD_SELECT states must remain a distinct boundary");
++    auto selectionRetained = attackPotionA;
++    auto selectionIncoming = attackPotionB;
++    Search selectionSearch(selectionRetained);
++    selectionSearch.queueItemCanonicalizationEnabled = true;
++    const auto *selectionNode = selectionSearch.getOrCreateNode(std::move(selectionRetained));
++    const auto *selectionOther = selectionSearch.getOrCreateNode(std::move(selectionIncoming));
++    require(selectionOther != selectionNode && selectionSearch.lastNodeWasCreated
++                && selectionSearch.stats.queueItemCanonicalMerges == 0,
++            "Attack Potion selection states must not relaxed-merge");
++}
++
+ void traceParity(const sts::BattleContext &bc, bool observe) {
+     Search plain(bc), traced(bc);
+     plain.collectRolloutDiagnostics = traced.collectRolloutDiagnostics = true;
+@@ -1631,6 +1765,7 @@ int main(int argc, char **argv) {
+             return 0;
+         }
+         dedupGrowth(bc);
++        queueItemCanonicalization(bc);
+         cardActionCanonicalization(bc);
+         uidFragmentationDiagnostic(bc);
+         singleCardSelectCanonicalization(bc);
+diff --git a/include/sim/search/SilverBridge.h b/include/sim/search/SilverBridge.h
+index 803af479..ff0921f5 100644
+--- a/include/sim/search/SilverBridge.h
++++ b/include/sim/search/SilverBridge.h
+@@ -483,6 +483,9 @@ struct SilverSearchConfig {
+     // Default-off diagnostic accounting for conservative UID-only search
+     // fragmentation candidates. This never changes search behavior.
+     bool collectUidFragmentationDiagnostics = false;
++    // Default-off offline experiment: relax only settled PLAYER_NORMAL dedup
++    // across stale curCardQueueItem values. No live/environment control exists.
++    bool queueItemCanonicalizationEnabled = false;
+     // Opt-in paired budget diagnostic: snapshot this same root after the
+     // checkpoint budget and continue it to simulationsPerDecision. This is
+     // observational only and is never enabled by the production path.
+@@ -612,6 +615,7 @@ struct SilverSearchDecisionDiagnostic {
+ // deliberately an observation boundary, not a replacement search policy.
+ struct SilverSearchTelemetry {
+     std::int64_t nodesCreated = 0;
++    std::int64_t queueItemCanonicalMerges = 0;
+     std::int64_t detTranspositions = 0;
+     std::int64_t chanceOutcomesSampled = 0;
+     std::int64_t chanceSiblingReuse = 0;
+@@ -665,6 +669,7 @@ struct SilverSearchTelemetry {
+     std::array<std::int64_t, 22> macroOptionCountByTask {};
+     void add(const SilverSearchTelemetry &other) {
+         nodesCreated += other.nodesCreated;
++        queueItemCanonicalMerges += other.queueItemCanonicalMerges;
+         detTranspositions += other.detTranspositions;
+         chanceOutcomesSampled += other.chanceOutcomesSampled;
+         chanceSiblingReuse += other.chanceSiblingReuse;
+diff --git a/third_party/silver_lightspeed/bridge/SilverStateBridge.cpp b/third_party/silver_lightspeed/bridge/SilverStateBridge.cpp
+index a4989ab3..eaed02cd 100644
+--- a/third_party/silver_lightspeed/bridge/SilverStateBridge.cpp
++++ b/third_party/silver_lightspeed/bridge/SilverStateBridge.cpp
+@@ -519,6 +519,7 @@ std::string selectionStateSummary(const sts::BattleContext &before, const sts::B
+ SilverSearchTelemetry telemetry(const sts::search::SearchStats &stats) {
+     SilverSearchTelemetry out;
+     out.nodesCreated = stats.nodesCreated;
++    out.queueItemCanonicalMerges = stats.queueItemCanonicalMerges;
+     out.detTranspositions = stats.detTranspositions;
+     out.chanceOutcomesSampled = stats.chanceOutcomesSampled;
+     out.chanceSiblingReuse = stats.chanceSiblingReuse;
+@@ -584,6 +585,7 @@ SilverSearchTelemetry telemetryDelta(const sts::search::SearchStats &after,
+     SilverSearchTelemetry result = telemetry(after);
+     const SilverSearchTelemetry prior = telemetry(before);
+     result.nodesCreated -= prior.nodesCreated;
++    result.queueItemCanonicalMerges -= prior.queueItemCanonicalMerges;
+     result.detTranspositions -= prior.detTranspositions;
+     result.chanceOutcomesSampled -= prior.chanceOutcomesSampled;
+     result.chanceSiblingReuse -= prior.chanceSiblingReuse;
+@@ -1013,6 +1015,7 @@ public:
+         searcher->collectRolloutDiagnostics = config.collectRolloutDiagnostics;
+         searcher->collectVictoryCounts = config.collectRootActionSummaries;
+         searcher->collectUidFragmentationDiagnostics = config.collectUidFragmentationDiagnostics;
++        searcher->queueItemCanonicalizationEnabled = config.queueItemCanonicalizationEnabled;
+         searcher->leafObserver = config.leafObserver;
+         searcher->contractMode = config.contractMode;
+     }
+@@ -1827,6 +1830,7 @@ bool sameRootActionSummaries(const std::vector<SilverRootActionSummary> &lhs,
+ bool sameSilverSearchTelemetry(const SilverSearchTelemetry &lhs,
+                                const SilverSearchTelemetry &rhs) {
+     return lhs.nodesCreated == rhs.nodesCreated
++        && lhs.queueItemCanonicalMerges == rhs.queueItemCanonicalMerges
+         && lhs.detTranspositions == rhs.detTranspositions
+         && lhs.chanceOutcomesSampled == rhs.chanceOutcomesSampled
+         && lhs.chanceSiblingReuse == rhs.chanceSiblingReuse
+diff --git a/third_party/silver_lightspeed/include/sim/search/BattleSearcher.h b/third_party/silver_lightspeed/include/sim/search/BattleSearcher.h
+index 32dfb6a4..95405b7a 100644
+--- a/third_party/silver_lightspeed/include/sim/search/BattleSearcher.h
++++ b/third_party/silver_lightspeed/include/sim/search/BattleSearcher.h
+@@ -81,6 +81,7 @@ namespace sts::search {
+         static constexpr int kInputStateCount = 10;
+         std::int64_t steps = 0;                  // simulations run
+         std::int64_t nodesCreated = 0;           // new nodes allocated via dedup misses
++        std::int64_t queueItemCanonicalMerges = 0; // settled-player queue-item relaxed dedup hits
+         std::int64_t detTranspositions = 0;      // deterministic-edge expansion hit an existing node
+         std::int64_t chanceOutcomesSampled = 0;  // chance-node widening samples executed
+         std::int64_t chanceSiblingReuse = 0;     // sampled outcome collided with an existing sibling
+@@ -139,7 +140,9 @@ namespace sts::search {
+         std::int64_t macroOptionCountSum = 0;
+         std::array<std::int64_t, 22> macroOptionCountByTask {};
+         void add(const SearchStats &o) {
+-            steps += o.steps; nodesCreated += o.nodesCreated; detTranspositions += o.detTranspositions;
++            steps += o.steps; nodesCreated += o.nodesCreated;
++            queueItemCanonicalMerges += o.queueItemCanonicalMerges;
++            detTranspositions += o.detTranspositions;
+             chanceOutcomesSampled += o.chanceOutcomesSampled; chanceSiblingReuse += o.chanceSiblingReuse;
+             chanceTranspositions += o.chanceTranspositions;
+             uidRelaxedNodeAllocationCandidates += o.uidRelaxedNodeAllocationCandidates;
+@@ -312,6 +315,10 @@ namespace sts::search {
+         bool collectRolloutDiagnostics = false;
+         bool collectVictoryCounts = false;
+         bool collectUidFragmentationDiagnostics = false;
++        // Default-off offline experiment: merge only settled PLAYER_NORMAL states whose
++        // difference is the stale current card queue item. This is deliberately local to
++        // getOrCreateNode and does not affect reroot identity or global equality.
++        bool queueItemCanonicalizationEnabled = false;
+         silver_bridge::SilverLeafObserver leafObserver;
+ 
+         std::default_random_engine randGen;
+diff --git a/third_party/silver_lightspeed/src/sim/search/BattleSearcher.cpp b/third_party/silver_lightspeed/src/sim/search/BattleSearcher.cpp
+index 66ac9546..3e7271c8 100644
+--- a/third_party/silver_lightspeed/src/sim/search/BattleSearcher.cpp
++++ b/third_party/silver_lightspeed/src/sim/search/BattleSearcher.cpp
+@@ -394,6 +394,32 @@ void search::BattleSearcher::growDedup() {
+ 
+ // Moves `state` into the node only when a new node is created; on a match `state` is left
+ // intact, so callers may still read it.
++namespace {
++
++bool eligibleForQueueItemCanonicalization(const BattleContext &state) {
++    return state.inputState == InputState::PLAYER_NORMAL
++        && state.outcome == Outcome::UNDECIDED
++        && !state.isBattleOver
++        && !state.endTurnQueued
++        && !state.turnHasEnded
++        && state.actionQueue.size == 0
++        && state.cardQueue.size == 0;
++}
++
++bool equalForSearchIgnoringQueueItem(BattleContext &incoming, const BattleContext &retained) {
++    if (!eligibleForQueueItemCanonicalization(incoming)
++            || !eligibleForQueueItemCanonicalization(retained)) {
++        return false;
++    }
++    const auto incomingQueueItem = incoming.curCardQueueItem;
++    incoming.curCardQueueItem = retained.curCardQueueItem;
++    const bool equivalent = retained.equalForSearch(incoming);
++    incoming.curCardQueueItem = incomingQueueItem;
++    return equivalent;
++}
++
++} // namespace
++
+ search::BattleSearcher::Node* search::BattleSearcher::getOrCreateNode(BattleContext &&state) {
+     const std::size_t hash = search::hashBattleState(state);
+     bool relaxedEquivalentSeen = false;
+@@ -407,6 +433,12 @@ search::BattleSearcher::Node* search::BattleSearcher::getOrCreateNode(BattleCont
+             lastNodeWasCreated = false;
+             return stateToNode[i].node;
+         }
++        if (queueItemCanonicalizationEnabled && stateToNode[i].hash == hash
++                && equalForSearchIgnoringQueueItem(state, *stateToNode[i].node->state)) {
++            lastNodeWasCreated = false;
++            ++stats.queueItemCanonicalMerges;
++            return stateToNode[i].node;
++        }
+         if (collectUidFragmentationDiagnostics && stateToNode[i].hash == hash) {
+             const auto comparison = compareForSearchIgnoringBenignDrawIdentityDiagnostic(
+                 *stateToNode[i].node->state, state);

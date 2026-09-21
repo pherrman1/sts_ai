@@ -483,9 +483,6 @@ struct SilverSearchConfig {
     // Default-off diagnostic accounting for conservative UID-only search
     // fragmentation candidates. This never changes search behavior.
     bool collectUidFragmentationDiagnostics = false;
-    // Default-off offline experiment: relax only settled PLAYER_NORMAL dedup
-    // across stale curCardQueueItem values. No live/environment control exists.
-    bool queueItemCanonicalizationEnabled = false;
     // Opt-in paired budget diagnostic: snapshot this same root after the
     // checkpoint budget and continue it to simulationsPerDecision. This is
     // observational only and is never enabled by the production path.
@@ -615,7 +612,6 @@ struct SilverSearchDecisionDiagnostic {
 // deliberately an observation boundary, not a replacement search policy.
 struct SilverSearchTelemetry {
     std::int64_t nodesCreated = 0;
-    std::int64_t queueItemCanonicalMerges = 0;
     std::int64_t detTranspositions = 0;
     std::int64_t chanceOutcomesSampled = 0;
     std::int64_t chanceSiblingReuse = 0;
@@ -669,7 +665,6 @@ struct SilverSearchTelemetry {
     std::array<std::int64_t, 22> macroOptionCountByTask {};
     void add(const SilverSearchTelemetry &other) {
         nodesCreated += other.nodesCreated;
-        queueItemCanonicalMerges += other.queueItemCanonicalMerges;
         detTranspositions += other.detTranspositions;
         chanceOutcomesSampled += other.chanceOutcomesSampled;
         chanceSiblingReuse += other.chanceSiblingReuse;
