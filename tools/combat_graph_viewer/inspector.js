@@ -55,7 +55,7 @@ function inspect(g, selection, onNavigate, onExpand, expanded) {
     for(const [name,key] of [["Draw pile","drawPile"],["Discard pile","discardPile"],
       ["Exhaust pile","exhaustPile"]]){const pile=s[key];if(pile)
         field(name,"known top "+(pile.knownTop?.length??"?")+" · unknown "+
-          (pile.unknown??"?")+" · known bottom "+(pile.knownBottom?.length??"?"));}
+          (pile.unknown?.length??"?")+" · known bottom "+(pile.knownBottom?.length??"?"));}
     if(p.statusMap!=null)field("Status map",JSON.stringify(p.statusMap));
     if(p.statusBits0!=null||p.statusBits1!=null)
       field("Status bits",String(p.statusBits0??"?")+" / "+String(p.statusBits1??"?"));}

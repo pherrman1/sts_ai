@@ -187,8 +187,8 @@
   for(const details of document.querySelectorAll("[data-raw]"))details.addEventListener("toggle",()=>{
     if(!details.open || details.dataset.loaded)return;
     const value=details.dataset.raw==="observation"?payload.observation:
-      details.dataset.raw==="evaluator"?payload.evaluator:window.__RAW_RECORD__;
-    details.querySelector("pre").textContent=JSON.stringify(value,null,2);
+      details.dataset.raw==="evaluator"?payload.evaluator:window.__RAW_RECORD_TEXT__;
+    details.querySelector("pre").textContent=typeof value==="string"?value:JSON.stringify(value,null,2);
     details.dataset.loaded="1";
   });
   renderRanking();inspect(g,null,select,id=>{controls.expanded.add(id);refresh();},controls.expanded);

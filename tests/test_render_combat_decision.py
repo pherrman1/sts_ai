@@ -161,6 +161,47 @@ class RenderCombatDecisionTest(unittest.TestCase):
             self.assertIn("chance outcome 2", rendered)
             self.assertIn('"childId":"2"', rendered)
 
+    def test_debug_tree_preserves_uint64_state_fields_for_browser(self):
+        large = 18446744073709551601
+        with tempfile.TemporaryDirectory() as directory:
+            value = snapshot_data()
+            value["response"]["advisor"]["evaluators"][0]["tree"] = {
+                "accepted": True, "rootId": large,
+                "nodes": [{"id": large, "parentId": large, "stateHash": large,
+                           "hasState": True, "state": {
+                               "isolatedSearchSeed": large,
+                               "observedGeneration": large,
+                               "player": {"curHp": 55, "statusBits0": large,
+                                          "relicBits0": large, "relicBits1": large},
+                               "monsters": [{"curHp": 20, "statusBits": large}],
+                           }}],
+                "edges": [],
+            }
+            source = load_snapshot(self.write_json(directory, "large.json", value))
+            rendered = render_html(source)
+            payload = json.loads(rendered.split("window.__COMBAT_VIEWER__=", 1)[1]
+                                 .split(";</script>", 1)[0])
+            node = payload["evaluator"]["tree"]["nodes"][0]
+            state = node["state"]
+            self.assertEqual(node["parentId"], str(large))
+            self.assertEqual(node["stateHash"], str(large))
+            for field in ("isolatedSearchSeed", "observedGeneration"):
+                self.assertEqual(state[field], str(large))
+            for field in ("statusBits0", "relicBits0", "relicBits1"):
+                self.assertEqual(state["player"][field], str(large))
+            self.assertEqual(state["monsters"][0]["statusBits"], str(large))
+            self.assertEqual(state["player"]["curHp"], 55)
+            self.assertIsInstance(source["evaluator"]["tree"]["nodes"][0]
+                                  ["state"]["isolatedSearchSeed"], int)
+            raw_text = json.loads(rendered.split("window.__RAW_RECORD_TEXT__=", 1)[1]
+                                  .split(";</script>", 1)[0])
+            self.assertIn(f'"isolatedSearchSeed": {large}', raw_text)
+
+    def test_graph_pile_label_counts_unknown_cards(self):
+        inspector = (Path(__file__).parent.parent / "tools" / "combat_graph_viewer" /
+                     "inspector.js").read_text(encoding="utf-8")
+        self.assertIn('pile.unknown?.length??"?"', inspector)
+
     def test_normal_snapshot_has_no_debug_tree_section(self):
         with tempfile.TemporaryDirectory() as directory:
             source = load_snapshot(self.write_json(directory, "normal.json", snapshot_data()))

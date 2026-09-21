@@ -8,6 +8,7 @@ game, run a simulator, or reinterpret Silver's root statistics.
 from __future__ import annotations
 
 import argparse
+import copy
 import html
 import json
 import math
@@ -467,6 +468,25 @@ def _inline_script(value: str) -> str:
     return value.replace("</", "<\\/").replace("<!--", "<\\!--")
 
 
+def _browser_state(state: Mapping[str, Any]) -> dict[str, Any]:
+    """Keep known uint64 BattleStateWire fields exact through JSON.parse."""
+    copied = copy.deepcopy(dict(state))
+
+    def stringify_fields(obj: Any, names: Sequence[str]) -> None:
+        if not isinstance(obj, dict):
+            return
+        for name in names:
+            value = obj.get(name)
+            if isinstance(value, int) and not isinstance(value, bool):
+                obj[name] = str(value)
+
+    stringify_fields(copied, ("isolatedSearchSeed", "observedGeneration"))
+    stringify_fields(copied.get("player"), ("statusBits0", "relicBits0", "relicBits1"))
+    for monster in _list(copied.get("monsters")):
+        stringify_fields(monster, ("statusBits",))
+    return copied
+
+
 def _workspace(source: Mapping[str, Any]) -> str:
     evaluator = _mapping(source.get("evaluator"))
     tree = _mapping(evaluator.get("tree"))
@@ -476,9 +496,14 @@ def _workspace(source: Mapping[str, Any]) -> str:
     # Browser JSON numbers cannot represent all native 64-bit IDs and hashes.
     copied_tree = dict(tree)
     copied_tree["rootId"] = str(tree.get("rootId"))
-    copied_tree["nodes"] = [dict(n, id=str(n["id"]),
-                                  stateHash=str(n["stateHash"]) if n.get("stateHash") is not None else None)
-                            for n in _list(tree.get("nodes"))]
+    copied_tree["nodes"] = []
+    for node in _list(tree.get("nodes")):
+        copied_node = dict(node, id=str(node["id"]),
+                           parentId=str(node["parentId"]) if node.get("parentId") is not None else None,
+                           stateHash=str(node["stateHash"]) if node.get("stateHash") is not None else None)
+        if isinstance(node.get("state"), Mapping):
+            copied_node["state"] = _browser_state(node["state"])
+        copied_tree["nodes"].append(copied_node)
     copied_tree["edges"] = [dict(e, parentId=str(e["parentId"]),
                                   childId=str(e["childId"]) if e.get("childId") is not None else None)
                             for e in _list(tree.get("edges"))]
@@ -489,9 +514,10 @@ def _workspace(source: Mapping[str, Any]) -> str:
                _inline_script(_asset("vendor/elk.bundled.js")) + "</script>")
     scripts += "<script>" + _inline_script(_asset("vendor/d3.min.js")) + "</script>"
     scripts += "<script>window.__COMBAT_VIEWER__=" + payload + ";</script>"
-    scripts += ("<script>window.__RAW_RECORD__=" +
-                _inline_script(json.dumps(source.get("raw", {}), ensure_ascii=True,
-                                          separators=(",", ":"))) + ";</script>")
+    # The original record is displayed as text, not parsed back into JS numbers.
+    raw_text = json.dumps(source.get("raw", {}), ensure_ascii=True, indent=2)
+    scripts += ("<script>window.__RAW_RECORD_TEXT__=" +
+                _inline_script(json.dumps(raw_text, ensure_ascii=True)) + ";</script>")
     scripts += "".join("<script>" + _inline_script(_asset(name)) + "</script>"
                        for name in ("normalize.js", "visibility.js", "layout.js",
                                     "render.js", "inspector.js", "app.js"))
