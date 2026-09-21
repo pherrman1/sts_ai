@@ -434,7 +434,10 @@ floors additionally come from `metricData.damage_taken`, so a `?` floor that
 became a hallway fight advances the normal encounter queue. The current-act
 ELITE visit count separates elite from normal combat consumption without
 indexing `path_taken` by absolute floor. Missing or contradictory history is
-unsupported. Public metric history conditions current-act normal/elite
+unsupported. A historical unknown boss-transition marker is qualified only
+after fifteen public map-room entries for that act and a matching public boss
+combat floor; other unknown path symbols remain unsupported. Public metric
+history conditions current-act normal/elite
 encounter consumption, relic-pool membership, one-time/event membership, and
 shop-removal cost. Currently visible shop, combat-reward, and boss-relic offers
 are also removed from every reconstructed relic pool because native generation

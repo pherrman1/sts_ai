@@ -206,6 +206,20 @@ final class LiveOocCapture {
         boolean exact = path != null && (AbstractDungeon.floorNum == 0 || !path.isEmpty());
         if (path != null && path.size() < AbstractDungeon.floorNum - 2 * AbstractDungeon.actNum)
             exact = false; // Missing persisted earlier-act history, never invent zeroes.
+        // Damage history identifies completed boss floors publicly. Read it
+        // before path normalization so a persisted boss-transition marker can
+        // be qualified after entering the next act.
+        List<Integer> combatFloors = new ArrayList<>();
+        if (CardCrawlGame.metricData != null) {
+            for (Object raw : CardCrawlGame.metricData.damage_taken) {
+                Object floor = map(raw).get("floor");
+                if (floor instanceof Number) combatFloors.add(((Number) floor).intValue());
+                else exact = false;
+            }
+        } else {
+            exact = false;
+        }
+        p.put("combatFloors", combatFloors);
         // At the act-boss transition vanilla can leave one non-room sentinel
         // at the end of metricData.path_taken. It is not a missing historical
         // room: the current MapRoomNode is row 15, above the visible map.
@@ -240,47 +254,17 @@ final class LiveOocCapture {
                 }
             }
         }
-        if (path != null) for (int i = 0; i < path.size(); ++i) {
-            String canonical = roomSymbol(path.get(i));
-            if (bossTransitionSentinel && i == path.size() - 1 && "INVALID".equals(canonical)) {
-                // Vanilla can omit the last pre-boss map symbol while the
-                // public damage metric already records that floor's combat.
-                // Recover it only from the actual parent node; otherwise keep
-                // the history incomplete and fail closed below.
-                canonical = inferredBossPrecedingRoom;
-                if (canonical.isEmpty()) { exact = false; continue; }
-            }
+        List<String> canonicalPathHistory = path == null ? new ArrayList<>()
+                : canonicalPathHistory(path, bossTransitionSentinel,
+                        inferredBossPrecedingRoom, AbstractDungeon.actNum, combatFloors);
+        for (String canonical : canonicalPathHistory) {
             int idx = Arrays.asList("SHOP", "REST", "EVENT", "ELITE", "MONSTER", "TREASURE",
                     "BOSS", "BOSS_TREASURE", "NONE", "INVALID").indexOf(canonical);
             if (idx >= 0 && idx < 6) ++visits[idx];
             else if (idx != 6 && idx != 7 && idx != 8) exact = false;
         }
         p.put("pathVisits", visits);
-        p.put("pathComplete", exact);
-        List<String> canonicalPathHistory = new ArrayList<>();
-        if (path != null) for (int i = 0; i < path.size(); ++i) {
-            String canonical = roomSymbol(path.get(i));
-            if (bossTransitionSentinel && i == path.size() - 1 && "INVALID".equals(canonical))
-                canonical = inferredBossPrecedingRoom;
-            if (canonical.isEmpty()) continue;
-            canonicalPathHistory.add(canonical);
-        }
         p.put("pathHistory", canonicalPathHistory);
-        // MetricData preserves the completed combat floor and the encounter
-        // key even when the original map symbol was '?'.  Keep only the
-        // public floor identity here; future encounter identities remain
-        // hidden and are sampled by the native belief root.
-        List<Integer> combatFloors = new ArrayList<>();
-        if (CardCrawlGame.metricData != null) {
-            for (Object raw : CardCrawlGame.metricData.damage_taken) {
-                Object floor = map(raw).get("floor");
-                if (floor instanceof Number) combatFloors.add(((Number) floor).intValue());
-                else exact = false;
-            }
-        } else {
-            exact = false;
-        }
-        p.put("combatFloors", combatFloors);
         p.put("pathComplete", exact);
         int[] actVisits = new int[10];
         int actStartFloor = AbstractDungeon.actNum <= 1 ? 0 : AbstractDungeon.actNum == 2 ? 17
@@ -687,6 +671,38 @@ final class LiveOocCapture {
         switch (s) { case "$": return "SHOP"; case "R": return "REST"; case "?": return "EVENT";
             case "E": return "ELITE"; case "M": return "MONSTER"; case "T": return "TREASURE";
             case "B": return "BOSS"; default: return "INVALID"; }
+    }
+    static List<String> canonicalPathHistory(List<String> raw, boolean bossTransitionSentinel,
+            String inferredBossPrecedingRoom, int act, List<Integer> combatFloors) {
+        List<String> result = new ArrayList<>();
+        for (int i = 0; i < raw.size(); ++i) {
+            String symbol = roomSymbol(raw.get(i));
+            if ("INVALID".equals(symbol) && bossTransitionSentinel && i == raw.size() - 1) {
+                // The current boss-transition sentinel may stand for the
+                // preceding visible map room, not for the boss itself.
+                symbol = inferredBossPrecedingRoom;
+            } else if ("INVALID".equals(symbol)
+                    && completedBossMarker(result, act, combatFloors)) {
+                symbol = "BOSS";
+            }
+            result.add(symbol);
+        }
+        return result;
+    }
+    private static boolean completedBossMarker(List<String> preceding, int act,
+            List<Integer> combatFloors) {
+        int completedBosses = 0, roomsSinceBoss = 0;
+        for (String symbol : preceding) {
+            if ("BOSS".equals(symbol)) { ++completedBosses; roomsSinceBoss = 0; }
+            else if (Arrays.asList("SHOP", "REST", "EVENT", "ELITE", "MONSTER", "TREASURE")
+                    .contains(symbol)) ++roomsSinceBoss;
+            else if (!"NONE".equals(symbol) && !"BOSS_TREASURE".equals(symbol)) return false;
+        }
+        // A completed act has exactly fifteen public map rooms. The combat
+        // metric then confirms the boss floor; arbitrary unknown symbols do
+        // not get promoted into a fabricated historical room.
+        return completedBosses < act - 1 && roomsSinceBoss == 15
+                && combatFloors.contains(16 + 17 * completedBosses);
     }
     private static Map<String,Object> object(Object... entries) {
         Map<String,Object> value = new LinkedHashMap<>();

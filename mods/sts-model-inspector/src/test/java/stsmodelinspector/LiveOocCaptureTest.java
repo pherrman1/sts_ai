@@ -52,6 +52,21 @@ public final class LiveOocCaptureTest {
                 || !"selector".equals(LiveOocCapture.canonicalScreen("GRID"))
                 || !"boss_relic".equals(LiveOocCapture.canonicalScreen("BOSS_REWARD")))
             throw new AssertionError("early canonical screen correlation lost");
+        java.util.List<String> persistedPath = new java.util.ArrayList<>();
+        for (int i = 0; i < 15; ++i) persistedPath.add("M");
+        persistedPath.add("unknown-boss-marker");
+        persistedPath.add("M");
+        java.util.List<String> qualified = LiveOocCapture.canonicalPathHistory(
+                persistedPath, false, "", 2, java.util.Arrays.asList(16, 18));
+        if (!"BOSS".equals(qualified.get(15)) || !"MONSTER".equals(qualified.get(16)))
+            throw new AssertionError("completed public boss marker stayed incomplete in Act 2");
+        if (!"INVALID".equals(LiveOocCapture.canonicalPathHistory(
+                persistedPath, false, "", 2, java.util.Arrays.asList(18)).get(15)))
+            throw new AssertionError("unknown path marker was promoted without a boss combat");
+        persistedPath.remove(0);
+        if (!"INVALID".equals(LiveOocCapture.canonicalPathHistory(
+                persistedPath, false, "", 2, java.util.Arrays.asList(16, 18)).get(14)))
+            throw new AssertionError("incomplete prior map history was promoted to a boss");
         Map<String,Object> openedChest = new HashMap<>();
         java.util.List<Map<String,Object>> openedChoices = new java.util.ArrayList<>();
         LiveOocCapture.captureOpenedTreasure(openedChest, openedChoices, true);
@@ -117,6 +132,6 @@ public final class LiveOocCaptureTest {
                 || !"BLUE_SLAVER".equals(STSModelInspector.singleEncounterName("SlaverBlue", false))
                 || !"BLUE_SLAVER".equals(STSModelInspector.singleEncounterName("BlueSlaver", false)))
             throw new AssertionError("canonical Slaver runtime identity mismatch");
-        System.out.println("LiveOocCaptureTest: 15 relic, 7 map edge, 5 screen, 2 integrity, 4 event, 3 reward identity, 4 Slaver identity checks passed");
+        System.out.println("LiveOocCaptureTest: 15 relic, 7 map edge, 5 screen, 3 path, 2 integrity, 4 event, 3 reward identity, 4 Slaver identity checks passed");
     }
 }
