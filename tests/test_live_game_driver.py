@@ -459,6 +459,27 @@ class OocDriverTest(unittest.TestCase):
             action, _ = driver.fallback_action(screen, {}, actions, snapshot)
             self.assertEqual(action.mcp_arguments, {"choice_index": 2})
 
+    def test_mixed_reward_unsupported_fallback_collects_gold_before_card(self):
+        with tempfile.TemporaryDirectory() as directory:
+            screen = {"screen_type": "COMBAT_REWARD", "choice_list": ["Gold", "Anchor", "Card"],
+                      "ready_for_command": True}
+            client = FakeClient(screen, ["choose"], game_state={"screen_state": {"rewards": [
+                {"reward_type": "GOLD"}, {"reward_type": "RELIC"}, {"reward_type": "CARD"}]}})
+            path = ooc_inspector_file(directory, screen, "UNSUPPORTED")
+            raw = json.loads(path.read_text())
+            ooc = raw["observation"]["ooc"]
+            ooc["screen"] = "combat_reward"
+            ooc["rewardOccurrences"] = [
+                {"index": 0, "type": "GOLD", "identity": "gold-1"},
+                {"index": 1, "type": "RELIC", "identity": "relic-1"},
+                {"index": 2, "type": "CARD", "identity": "card-1"}]
+            path.write_text(json.dumps(raw))
+            driver = Driver(client, InspectorReader(path, timeout=.01, poll_interval=.001),
+                            TraceWriter(Path(directory) / "trace"), max_steps=1)
+            asyncio.run(driver.run())
+            self.assertEqual([call for call in client.calls if call[0] == "choose"],
+                             [("choose", {"choice_index": 1})])
+
     def test_strict_unsupported_failure_packet_no_mutation(self):
         with tempfile.TemporaryDirectory() as directory:
             driver, client, _ = self.make(directory, "UNSUPPORTED")

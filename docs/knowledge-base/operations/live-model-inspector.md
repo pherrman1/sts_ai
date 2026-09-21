@@ -449,9 +449,9 @@ class distinguishes a `?` floor that became a hallway fight from a fixed event
 fight on the same map symbol: only the former advances the normal encounter
 queue. The combat-class ledger is checked against completed public combat
 floors without indexing `path_taken` by absolute floor. Wing Boots' public
-charge counter is copied into the native root; its map action set includes the
-vanilla same-next-row non-edge destinations and decrements the counter when
-such a move is executed. Missing or
+charge counter is copied into the native root only to identify the explicit
+active-MAP unsupported boundary; the frozen simulator/value-model integration
+does not enable Wing Boots map expansion here. Missing or
 contradictory history is unsupported. A historical unknown boss-transition marker is qualified only
 after fifteen public map-room entries for that act and a matching public boss
 combat floor; other unknown path symbols remain unsupported. Public metric
@@ -536,7 +536,7 @@ unsupported phase takes precedence over path and relic warnings, so a terminal
 event outro cannot be misread as its initial decision. Unopened card reward
 groups expose only their occurrence/type and require the driver to open the
 group after parent reward collection; their concealed card identities are not
-serialized or scored. Wing Boots is supported with a separate public charge
+serialized or scored. Wing Boots is imported with a separate public charge
   counter, while direct MAP roots with active charges fail closed because the
   frozen value models do not encode remaining charges; Matryoshka, Lizard Tail and N’loth’s Hungry Face are unsupported
 where live/native counter initialization differs. Maw Bank has an explicit

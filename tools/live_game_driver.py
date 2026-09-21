@@ -997,6 +997,17 @@ class Driver:
                 candidates = [candidate for candidate in candidates
                               if not (candidate.mcp_tool == "choose"
                                       and candidate.mcp_arguments.get("choice_index") in absent_potions)]
+            reward_order = ("GOLD", "RELIC", "POTION", "EMERALD_KEY", "SAPPHIRE_KEY", "CARD")
+            for reward_type in reward_order:
+                for item in occurrences:
+                    if _text(item.get("type")).upper() != reward_type:
+                        continue
+                    choice_index = item.get("index") + 1 if type(item.get("index")) is int else None
+                    match = next((candidate for candidate in candidates
+                                  if candidate.mcp_tool == "choose"
+                                  and candidate.mcp_arguments.get("choice_index") == choice_index), None)
+                    if match is not None:
+                        return match, None
         if _text(screen.get("screen_type", screen.get("screenType"))).upper() != "SHOP_ROOM":
             return choose_deterministic_action(screen, candidates), None
         act, floor = game.get("act", screen.get("act")), screen.get("floor", game.get("floor"))
