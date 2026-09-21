@@ -43,7 +43,8 @@ def snapshot_data(**extra):
             "block": 6, "energy": 2,
             "monsters": [{"id": "Cultist", "hp": 20, "maxHp": 48, "block": 0,
                           "intent": "ATTACK", "intentDamage": 6}],
-            "hand": [{"id": "Bash", "name": "Bash", "uuid": "bash-1", "upgraded": False, "cost": 2}],
+            "hand": [{"id": "Bash", "name": "Bash", "uuid": "bash-1", "upgraded": False,
+                      "cost": 2, "costForTurn": 2}],
             "draw": ["Strike", "Defend"], "discard": [], "exhaust": [],
             "potions": ["Fire Potion"], "relics": ["Burning Blood"],
         },
@@ -76,6 +77,14 @@ class RenderCombatDecisionTest(unittest.TestCase):
             self.assertIn("<span>HP</span><b>55</b>", rendered)
             self.assertIn("<td>6</td></tr>", rendered)
             self.assertIn("<span>draw</span><b>2</b>", rendered)
+
+    def test_card_panel_prefers_current_playable_cost(self):
+        with tempfile.TemporaryDirectory() as directory:
+            value = snapshot_data()
+            value["observation"]["combat"]["hand"][0]["costForTurn"] = 0
+            source = load_snapshot(self.write_json(directory, "latest.json", value))
+            rendered = render_html(source)
+            self.assertIn("<td>Bash</td><td>bash-1</td><td>no</td><td>0</td>", rendered)
 
     def test_selected_action_is_matched_by_fingerprint_not_visit_rank(self):
         with tempfile.TemporaryDirectory() as directory:

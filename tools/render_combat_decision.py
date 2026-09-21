@@ -329,7 +329,7 @@ def _combat_section(source: Mapping[str, Any]) -> str:
         hand_rows.append(f"<tr><td>{_value(_pick(card, keys=('name', 'id', 'card_id')))}</td>"
                          f"<td>{_value(_pick(card, keys=('uuid', 'unique_id', 'uniqueId')))}</td>"
                          f"<td>{_value(_pick(card, keys=('upgrade', 'upgraded', 'timesUpgraded')))}</td>"
-                         f"<td>{_value(_pick(card, keys=('cost', 'current_cost', 'currentCost')))}</td></tr>")
+                         f"<td>{_value(_pick(card, keys=('costForTurn', 'current_cost', 'currentCost', 'cost')))}</td></tr>")
     hand_html = ("<table><thead><tr><th>card</th><th>physical UUID</th><th>upgrade</th><th>cost</th></tr></thead><tbody>"
                  + "".join(hand_rows) + "</tbody></table>") if hand else '<p class="muted">hand not captured</p>'
     pile_names = (("draw", "draw", "draw_pile", "drawPile"),
