@@ -538,8 +538,21 @@ final class LiveOocCapture {
         Object chest = field(AbstractDungeon.getCurrRoom(), "chest");
         boolean opened = Boolean.TRUE.equals(field(chest, "isOpen"));
         out.put("details", object("chestType", chest.getClass().getSimpleName(), "opened", opened));
-        if (opened) out.put("unsupportedReason", "CHEST_ALREADY_OPEN");
-        else { add(cs, labels, 0, "option", 0, 0); button(cs, "proceed", "option", 1, 0); }
+        if (opened) {
+            // The completed boss chest exposes only MCP's Proceed button.
+            // Publish that actual action so the advisor's native pass-through
+            // can validate and return it without reopening the chest.
+            captureOpenedTreasure(out, cs,
+                    Boolean.TRUE.equals(map(out.get("mcpState")).get("can_proceed")));
+        } else {
+            add(cs, labels, 0, "option", 0, 0);
+            button(cs, "proceed", "option", 1, 0);
+        }
+    }
+    static void captureOpenedTreasure(Map<String,Object> out, List<Map<String,Object>> choices,
+            boolean canProceed) {
+        if (canProceed) button(choices, "proceed", "option", 1, 0);
+        else out.put("unsupportedReason", "CHEST_ALREADY_OPEN");
     }
     private static void event(Map<String,Object> out, List<Map<String,Object>> cs, List<?> labels)
             throws ReflectiveOperationException {

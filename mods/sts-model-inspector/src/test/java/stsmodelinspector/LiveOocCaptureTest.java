@@ -52,6 +52,18 @@ public final class LiveOocCaptureTest {
                 || !"selector".equals(LiveOocCapture.canonicalScreen("GRID"))
                 || !"boss_relic".equals(LiveOocCapture.canonicalScreen("BOSS_REWARD")))
             throw new AssertionError("early canonical screen correlation lost");
+        Map<String,Object> openedChest = new HashMap<>();
+        java.util.List<Map<String,Object>> openedChoices = new java.util.ArrayList<>();
+        LiveOocCapture.captureOpenedTreasure(openedChest, openedChoices, true);
+        if (openedChoices.size() != 1
+                || !"proceed".equals(((Map<?,?>)openedChoices.get(0).get("liveAction")).get("kind"))
+                || openedChest.containsKey("unsupportedReason"))
+            throw new AssertionError("open boss chest lost its sole live Proceed action");
+        openedChoices.clear();
+        LiveOocCapture.captureOpenedTreasure(openedChest, openedChoices, false);
+        if (!openedChoices.isEmpty()
+                || !"CHEST_ALREADY_OPEN".equals(openedChest.get("unsupportedReason")))
+            throw new AssertionError("open chest without Proceed exposed a false live action");
         Map<String,Object> failed = new HashMap<>();
         Map<String,Object> core = new HashMap<>();
         Map<String,Object> mcp = new HashMap<>();
@@ -105,6 +117,6 @@ public final class LiveOocCaptureTest {
                 || !"BLUE_SLAVER".equals(STSModelInspector.singleEncounterName("SlaverBlue", false))
                 || !"BLUE_SLAVER".equals(STSModelInspector.singleEncounterName("BlueSlaver", false)))
             throw new AssertionError("canonical Slaver runtime identity mismatch");
-        System.out.println("LiveOocCaptureTest: 15 relic, 7 map edge, 3 screen, 2 integrity, 4 event, 3 reward identity, 4 Slaver identity checks passed");
+        System.out.println("LiveOocCaptureTest: 15 relic, 7 map edge, 5 screen, 2 integrity, 4 event, 3 reward identity, 4 Slaver identity checks passed");
     }
 }
