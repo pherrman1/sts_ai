@@ -3,11 +3,13 @@
 #include <algorithm>
 #include <cstdint>
 #include <limits>
+#include <map>
 #include <set>
 #include <sstream>
 #include <stdexcept>
 #include "constants/SaveFileMappings.h"
 #include "sim/search/GameAction.h"
+#include "sim/search/OocSemanticAction.h"
 
 namespace one_combat::advisor {
 namespace {
@@ -547,8 +549,21 @@ J lowerLiveOocAction(const LiveOocStateV1 &state,std::uint32_t bits) {
     require(count==1,"OOC primitive mapping expected one occurrence; matches="+std::to_string(count));
     return found;
 }
-void validateLiveOocActionSet(const LiveOocStateV1 &state,const std::vector<std::uint32_t> &bits) {
+void validateLiveOocActionSet(const LiveOocStateV1 &state,const std::vector<std::uint32_t> &bits,
+                              bool allowEquivalentDeckCards) {
     std::set<std::uint32_t> expected(bits.begin(),bits.end()), observed;
+    std::set<std::string> retainedChoices;
+    std::map<std::uint32_t,std::string> choiceByPrimitive;
+    if (allowEquivalentDeckCards && state.projected.screenState == ScreenState::CARD_SELECT) {
+        const auto bindings=search::enumerateOocSemanticPrimitiveBindings(state.projected);
+        require(bindings.supported && bindings.complete,"native/live semantic enumeration incomplete");
+        for(const auto &binding:bindings.bindings) {
+            const auto key=search::canonicalOocMctsChoiceKey(binding.semantic);
+            require(choiceByPrimitive.emplace(binding.primitiveBits,key).second,
+                    "duplicate native selector primitive mapping");
+            if(expected.count(binding.primitiveBits)) retainedChoices.insert(key);
+        }
+    }
     // Multiple semantic MCTS candidates may intentionally share one source
     // click; validate the source mapping as a set, not as a semantic list.
     for(const auto &c:state.ooc.at("liveChoices")) {
@@ -559,7 +574,11 @@ void validateLiveOocActionSet(const LiveOocStateV1 &state,const std::vector<std:
                 && action.getRewardsActionType() == search::GameAction::RewardsActionType::RELIC
                 && action.getIdx1() >= 0 && action.getIdx1() < 3
              && state.projected.info.shop.relics[action.getIdx1()] == RelicId::PRISMATIC_SHARD;
-            require(displayedPrismaticShard, "native/live candidate enumeration disagreement");
+            const auto choice=choiceByPrimitive.find(bit);
+            const bool equivalent=choice!=choiceByPrimitive.end()
+                && retainedChoices.count(choice->second);
+            require(displayedPrismaticShard || equivalent,
+                    "native/live candidate enumeration disagreement");
             continue;
         }
         require(observed.insert(bit).second,"duplicate observed primitive mapping");
