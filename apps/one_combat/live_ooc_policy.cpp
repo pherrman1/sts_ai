@@ -228,6 +228,7 @@ LiveOocDecision LiveOocMctsPolicy::score(const sts::GameContext &projected,
     options.stopAtMapCheckpoint = true;
     if (hasRootPrimitiveBits_) options.rootPrimitiveBits = rootPrimitiveBits_;
     OocMctsDependencies dependencies;
+    dependencies.sampleHiddenCounters = sampleLiveOocHiddenCounters;
     dependencies.policyAvailable = [this] { return model_.ok; };
     const auto policyBatch = [this](const sts::GameContext &gc, const PathHistory &history,
                                       const std::vector<sts::search::GameAction> &actions) {
@@ -268,7 +269,7 @@ LiveOocDecision LiveOocMctsPolicy::score(const sts::GameContext &projected,
         // cheap enough for 512-simulation live searches, while no single
         // hidden pity state is presented as observed fact.
         static const std::vector<CompactTreeNet::MarginalFeature> pityPrior = {
-            {7, -40, 100, 10},   // potionChance
+            {7, -40, 60, 10},    // potionChance
             {8, -40, 5, 1},      // cardRarityFactor
         };
         const double value = winModel_->predictMarginalized(richFeatureVec(gc, history), pityPrior);
@@ -276,9 +277,30 @@ LiveOocDecision LiveOocMctsPolicy::score(const sts::GameContext &projected,
             throw std::runtime_error("OOC MCTS invalid native v_win value");
         return value;
     };
-    dependencies.continuationStep = [this, policyBatch](sts::GameContext &gc, PathHistory &history,
+    dependencies.continuationStep = [this](sts::GameContext &gc, PathHistory &history,
                                            std::mt19937_64 &) {
         if (collectFreeOocReward(gc, gc.keysEnabled)) { history.update(gc); return; }
+        // Under the qualified full-run defaults these screens use server-side
+        // rest/shop policies or the win-rate upgrade selector. The standalone
+        // advisor has no matching deployment of those models, so the particle
+        // cannot be valued through a different V4/fallback policy.
+        if (gc.screenState == ScreenState::SHOP_ROOM
+                || gc.screenState == ScreenState::REST_ROOM
+                || (gc.screenState == ScreenState::CARD_SELECT
+                    && (gc.info.selectScreenType == CardSelectScreenType::UPGRADE
+                        || (gc.curRoom == Room::SHOP
+                            && gc.info.selectScreenType == CardSelectScreenType::REMOVE))))
+            throw sts::search::OocSearchUnsupported("checkpoint_policy_model_unavailable");
+        // The simulator's V4 Q gate is enabled by default for card rewards,
+        // not for every V4-compatible event, treasure or boss-relic screen.
+        // Those screens use the same ScumSearchAgent2 fallback below.
+        if (gc.screenState != ScreenState::REWARDS) {
+            sts::search::ScumSearchAgent2 fallback;
+            fallback.rng.seed(0);
+            fallback.stepOutOfCombatPolicy(gc);
+            history.update(gc);
+            return;
+        }
         if (!v4DecisionSupported(gc)) {
             const auto enumeration = sts::search::enumerateOocSemanticPrimitiveBindings(gc);
             std::set<std::uint32_t> unique;
@@ -325,16 +347,11 @@ LiveOocDecision LiveOocMctsPolicy::score(const sts::GameContext &projected,
         double second = -std::numeric_limits<double>::infinity();
         for (std::size_t i = 0; i < q.size(); ++i)
             if (static_cast<int>(i) != selected) second = std::max(second, q[i]);
-        // The maintained simulator chain deploys its V4 action only after a
-        // one-ply margin gate. Use the same established agent fallback when
-        // that gate does not fire; do not substitute an ungated policy-head
-        // continuation.
+        // The simulator's card-reward fallback is serverCardRewardPolicy, not
+        // ScumSearchAgent2. Its server model is absent here, so fail closed
+        // whenever the V4 gate cannot select the same action.
         if (q.size() > 1 && q[selected] - second < 1.0) {
-            // The simulator's qualified chain falls back to its established
-            // OOC policy when the V4 margin gate does not fire.
-            sts::search::ScumSearchAgent2 fallback;
-            fallback.rng.seed(0);
-            fallback.stepOutOfCombatPolicy(gc);
+            throw sts::search::OocSearchUnsupported("checkpoint_card_fallback_unavailable");
         } else {
             sources.at(selected).execute(gc);
         }

@@ -9,6 +9,8 @@
 #include "ooc_test_state.h"
 #include "ooc_strategic_tok_net.h"
 #include "one_combat/live_ooc_policy.h"
+#include "one_combat/ooc_checkpoint_policy.h"
+#include "one_combat/ooc_mcts_adapter.h"
 #include "one_combat/ooc_v4_encoding.h"
 
 namespace {
@@ -24,6 +26,47 @@ int main(int argc, char **argv) {
         using namespace one_combat;
         // One fixed native fixture seed, no campaign traversal.
         GameContext gc(CharacterClass::IRONCLAD, 0x51514Du, 0);
+        {
+            auto counterState = gc;
+            counterState.floorNum = 16;
+            std::mt19937_64 draws(97);
+            bool sawJuzuAboveOne = false;
+            const auto onLattice = [](float value, float start, float step) {
+                for (int i = 0; i <= 16; ++i) {
+                    if (value == start) return true;
+                    start += step;
+                }
+                return false;
+            };
+            for (int i = 0; i < 256; ++i) {
+                sampleLiveOocHiddenCounters(counterState, draws);
+                require(onLattice(counterState.monsterChance, .1f, .1f)
+                        && onLattice(counterState.shopChance, .03f, .03f)
+                        && onLattice(counterState.treasureChance, .02f, .02f),
+                    "live room-chance prior left native increment lattice");
+                require(counterState.potionChance >= -40 && counterState.potionChance <= 60
+                        && counterState.potionChance % 10 == 0,
+                    "live potion prior left native reachable support");
+                require(counterState.cardRarityFactor >= -40 && counterState.cardRarityFactor <= 5,
+                    "live card-rarity prior left native reachable support");
+                sawJuzuAboveOne |= counterState.monsterChance > 1.0f;
+            }
+            require(sawJuzuAboveOne, "live monster prior excludes Juzu-reachable values");
+        }
+        {
+            auto fullBelt = gc;
+            fullBelt.screenState = ScreenState::REWARDS;
+            fullBelt.potionCount = fullBelt.potionCapacity;
+            fullBelt.info.rewardsContainer.clear();
+            fullBelt.info.rewardsContainer.addPotion(Potion::FIRE_POTION);
+            CardReward cards;
+            cards.push_back(Card(CardId::BASH));
+            fullBelt.info.rewardsContainer.addCardReward(cards);
+            require(!collectFreeOocReward(fullBelt, false)
+                    && fullBelt.info.rewardsContainer.potionCount == 1
+                    && fullBelt.info.rewardsContainer.cardRewardCount == 1,
+                "full potion belt claimed an invalid reward or hid the card decision");
+        }
         gc.screenState = ScreenState::REST_ROOM;
         gc.curHp = 40;
         const PathHistory path{};

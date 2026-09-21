@@ -143,6 +143,14 @@ class LiveOocProtocol(unittest.TestCase):
         self.assertEqual(chosen["visits"], max(c["visits"] for c in evaluator["candidateSummaries"]))
         self.assertEqual(evaluator["selectedLiveAction"]["kind"], "map_node")
 
+    def test_map_root_rejects_incomplete_offered_relic_history(self):
+        observation = copy.deepcopy(self.fixtures["map_multiple_children"])
+        observation["ooc"]["publicState"]["seenRelicsComplete"] = False
+        response, = self.run_rows([observation])
+        evaluator = response["evaluators"][0]
+        self.assertEqual(evaluator["status"], "UNSUPPORTED")
+        self.assertEqual(evaluator["reason"], "PUBLIC_SEEN_RELIC_HISTORY_UNQUALIFIED")
+
     def test_unqualified_pity_never_becomes_a_v4_midpoint(self):
         observation = copy.deepcopy(self.fixtures["map_multiple_children"])
         observation["ooc"]["publicState"]["rewardPityHistoryComplete"] = False

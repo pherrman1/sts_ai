@@ -5,6 +5,11 @@ import java.util.Map;
 
 /** Pure projection tests: no game, rendering context, RNG, or save is initialized. */
 public final class LiveOocCaptureTest {
+    private static Map<String,Object> obj(Object... values) {
+        Map<String,Object> out = new HashMap<>();
+        for (int i = 0; i < values.length; i += 2) out.put((String)values[i], values[i + 1]);
+        return out;
+    }
     private static void check(String id, int counter, boolean usedUp, int expected, String reason) {
         Map<String,Object> state = new HashMap<>();
         int actual = LiveOocCapture.nativeRelicData(id, counter, usedUp, state);
@@ -78,6 +83,23 @@ public final class LiveOocCaptureTest {
             throw new AssertionError("physical reward identity is unstable or ambiguous");
         if (firstIdentity.equals(LiveOocCapture.rewardIdentity(firstReward, new Object(), null)))
             throw new AssertionError("reward identity reused after run boundary");
+        LiveOocCapture.SeenRelicOffers seen = new LiveOocCapture.SeenRelicOffers();
+        Object player = new Object();
+        seen.observe(player, 10, 5, false, "shop", obj("relics",
+                java.util.Arrays.asList(obj("id", "Anchor", "price", 120))));
+        if (seen.complete()) throw new AssertionError("mid-run offer history became complete");
+        player = new Object();
+        seen.observe(player, 11, 0, true, "neow", obj());
+        if (!seen.complete() || !seen.snapshot().isEmpty())
+            throw new AssertionError("fresh-run offer history did not reset");
+        seen.observe(player, 11, 1, false, "shop", obj("relics",
+                java.util.Arrays.asList(obj("id", "Anchor", "price", 120))));
+        seen.observe(player, 11, 1, false, "combat_reward", obj("relics",
+                java.util.Arrays.asList("Vajra", "Anchor")));
+        if (!seen.complete() || !seen.snapshot().equals(java.util.Arrays.asList("Anchor", "Vajra")))
+            throw new AssertionError("visible offered relics were lost or duplicated");
+        seen.observe(player, 11, 3, false, "map", obj());
+        if (seen.complete()) throw new AssertionError("missed floors retained complete history");
         if (!"RED_SLAVER".equals(STSModelInspector.singleEncounterName("SlaverRed", false))
                 || !"RED_SLAVER".equals(STSModelInspector.singleEncounterName("RedSlaver", false))
                 || !"BLUE_SLAVER".equals(STSModelInspector.singleEncounterName("SlaverBlue", false))

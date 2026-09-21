@@ -1279,7 +1279,7 @@ void search::ScumSearchAgent2::stepRewardsPolicy(GameContext &gc) {
     } else if (r.relicCount > 0) {
         takeAction(gc, GameAction(GameAction::RewardsActionType::RELIC, 0));
 
-    } else if (r.potionCount > 0) {
+    } else if (r.potionCount > 0 && gc.potionCount < gc.potionCapacity) {
         takeAction(gc, GameAction(GameAction::RewardsActionType::POTION, 0));
 
     } else if (g_collectKeys && r.emeraldKey) {

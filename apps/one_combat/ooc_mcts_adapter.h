@@ -49,11 +49,15 @@ struct OocMctsDependencies {
                          const std::vector<GameAction> &)> policyLogits;
     std::function<double(const GameContext &, const PathHistory &)> leafValue;
     std::function<void(GameContext &, PathHistory &, std::mt19937_64 &)> continuationStep;
+    // Optional live public-belief counter prior. The simulator keeps its
+    // existing copied-counter semantics when this callback is absent.
+    std::function<void(GameContext &, std::mt19937_64 &)> sampleHiddenCounters;
     std::function<double(const GameContext &)> potionKeepValue;
     std::function<int()> stopAfterAct;
 };
 
 OocMctsDependencies defaultOocMctsDependencies();
+void sampleLiveOocHiddenCounters(GameContext &, std::mt19937_64 &);
 
 class OocGameContextModel final : public sts::search::OocGenerativeModel {
 public:

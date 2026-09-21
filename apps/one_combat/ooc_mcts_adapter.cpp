@@ -34,14 +34,6 @@ GameContext detachedCopy(const GameContext &parent) {
 // A fresh seed also covers native per-floor RNG resets and next-act map setup.
 void sampleNoncombatFuture(GameContext &gc, std::mt19937_64 &rng) {
     gc.seed = rng();
-    // These native counters are not present in the live observation. Sample
-    // their reachable discrete states for each hypothetical particle instead
-    // of carrying the fresh-run constructor defaults into a MAP transition.
-    gc.monsterChance = static_cast<float>(1 + (rng() % 10)) / 10.0f;
-    gc.shopChance = static_cast<float>(1 + (rng() % 33)) / 100.0f;
-    gc.treasureChance = static_cast<float>(1 + (rng() % 50)) / 100.0f;
-    gc.potionChance = -40 + 10 * static_cast<int>(rng() % 15);
-    gc.cardRarityFactor = -40 + static_cast<int>(rng() % 46);
     for (auto stream : {&gc.aiRng, &gc.cardRandomRng, &gc.cardRng, &gc.eventRng,
             &gc.mathUtilRng, &gc.merchantRng, &gc.miscRng, &gc.monsterHpRng,
             &gc.monsterRng, &gc.neowRng, &gc.potionRng, &gc.relicRng,
@@ -115,6 +107,25 @@ void sampleNoncombatFuture(GameContext &gc, std::mt19937_64 &rng) {
     }
 }
 
+void sampleLiveOocHiddenCountersImpl(GameContext &gc, std::mt19937_64 &rng) {
+    // Only '?' room transitions change these room chances. Bound increments
+    // by the number of rooms already visited in this act, and reproduce the
+    // native float-addition lattice (including Juzu's >1 monster chance).
+    const int actStart = gc.act <= 1 ? 0 : gc.act == 2 ? 17 : gc.act == 3 ? 34 : 51;
+    const int priorRooms = std::clamp(gc.floorNum - actStart, 0, 16);
+    const auto lattice = [&](float initial, float increment) {
+        float value = initial;
+        const int steps = std::uniform_int_distribution<int>(0, priorRooms)(rng);
+        for (int i = 0; i < steps; ++i) value += increment;
+        return value;
+    };
+    gc.monsterChance = lattice(0.1f, 0.1f);
+    gc.shopChance = lattice(0.03f, 0.03f);
+    gc.treasureChance = lattice(0.02f, 0.02f);
+    gc.potionChance = 10 * std::uniform_int_distribution<int>(-4, 6)(rng);
+    gc.cardRarityFactor = std::uniform_int_distribution<int>(-40, 5)(rng);
+}
+
 void require(bool ok, const char *why) { if (!ok) throw std::runtime_error(why); }
 double bossLeafUtility(const CombatTransitionExpectation &estimate) {
     const double survival = 1.0 - estimate.death;
@@ -129,6 +140,9 @@ void applySampledCombatExit(GameContext &gc, const CombatRuntimeSample &sample) 
     applyCombatTransitionState(gc, sample.rawPost);
     gc.regainControl();
 }
+}
+void sampleLiveOocHiddenCounters(GameContext &gc, std::mt19937_64 &rng) {
+    sampleLiveOocHiddenCountersImpl(gc, rng);
 }
 #ifndef STS_LIVE_ADVISOR
 OocMctsDependencies defaultOocMctsDependencies() {
@@ -378,7 +392,11 @@ sts::search::OocStateId OocGameContextModel::sampleSuccessor(sts::search::OocSta
     // A live MAP root is searchable.  The hidden room outcome must be sampled
     // before transitionToMapNode consumes monster/shop/treasure chances; a
     // downstream MAP checkpoint is still evaluated as a leaf.
-    if (options.sampleNoncombat) sampleNoncombatFuture(child.gc, rng);
+    if (options.sampleNoncombat) {
+        sampleNoncombatFuture(child.gc, rng);
+        if (id == 0 && dependencies.sampleHiddenCounters)
+            dependencies.sampleHiddenCounters(child.gc, rng);
+    }
     if (it->semantic) {
         const auto executed = sts::search::executeOocSemanticAction(child.gc, *it->semantic);
         if (!executed.ok) throw sts::search::OocSearchUnsupported("semantic_execution:" + executed.error);
@@ -567,7 +585,11 @@ double OocGameContextModel::evaluateLeaf(sts::search::OocStateId id, std::mt1993
         return leafValue(id);
     if (!options.checkpointLeaves && !options.sampleNoncombat) return leafValue(id);
     auto child = Snapshot{detachedCopy(state(id)), states.at(id).path, {}};
-    if (options.sampleNoncombat) sampleNoncombatFuture(child.gc, rng);
+    if (options.sampleNoncombat) {
+        sampleNoncombatFuture(child.gc, rng);
+        if (id == 0 && dependencies.sampleHiddenCounters)
+            dependencies.sampleHiddenCounters(child.gc, rng);
+    }
     if (!options.checkpointLeaves) {
         if (child.gc.outcome == sts::GameOutcome::PLAYER_LOSS) return 0;
         if (child.gc.outcome == sts::GameOutcome::PLAYER_VICTORY) return 1;
@@ -1607,6 +1629,16 @@ void oocMctsAdapterSelfTest() {
         require(test::oocStateFingerprint(source)==test::oocStateFingerprint(altered),
             "hypothetical future independent of copied hidden seeds and queue ordering");
         require(left==right,"sampling consumes reproducible planner draws");
+        // The shared simulator sampler must preserve native counters. Only
+        // the live advisor injects a public-belief prior at a root particle.
+        source.monsterChance=.7f; source.shopChance=.12f;
+        source.treasureChance=.08f; source.potionChance=20;
+        source.cardRarityFactor=-11;
+        sampleNoncombatFuture(source,left);
+        require(source.monsterChance==.7f && source.shopChance==.12f
+                && source.treasureChance==.08f && source.potionChance==20
+                && source.cardRarityFactor==-11,
+            "simulator hypothetical sampling changed native counters");
         // Revealed offers/selector progress, current map and visible boss survive.
         source=detachedCopy(gc); source.openCardSelectScreen(CardSelectScreenType::TRANSFORM_UPGRADE,3);
         GameAction(0).execute(source);

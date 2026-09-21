@@ -16,7 +16,7 @@ bool collectFreeOocReward(sts::GameContext &gc, bool collectKeys) {
         sts::search::GameAction(RT::RELIC, 0).execute(gc);
         return true;
     }
-    if (rewards.potionCount > 0) {
+    if (rewards.potionCount > 0 && gc.potionCount < gc.potionCapacity) {
         sts::search::GameAction(RT::POTION, 0).execute(gc);
         return true;
     }

@@ -18,6 +18,7 @@ import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 
@@ -28,6 +29,44 @@ final class LiveOocCapture {
     private static Object rewardPlayer, rewardNode;
     private static long nextRewardIdentity;
     private static final java.util.IdentityHashMap<Object,String> rewardIdentities = new java.util.IdentityHashMap<>();
+    private static final SeenRelicOffers seenRelicOffers = new SeenRelicOffers();
+
+    // Only an uninterrupted observation from a fresh Neow boundary can
+    // account for skipped offers. A resumed/mid-run observer stays incomplete.
+    static final class SeenRelicOffers {
+        private Object player;
+        private long seed;
+        private int lastFloor = -1;
+        private boolean complete;
+        private final LinkedHashSet<String> offers = new LinkedHashSet<>();
+
+        void observe(Object currentPlayer, long currentSeed, int floor,
+                     boolean freshRun, String screen, Map<String,Object> details) {
+            if (player != currentPlayer || seed != currentSeed || floor < lastFloor) {
+                player = currentPlayer;
+                seed = currentSeed;
+                lastFloor = -1;
+                complete = freshRun;
+                offers.clear();
+            }
+            if (lastFloor >= 0 && floor > lastFloor + 1) complete = false;
+            lastFloor = floor;
+            if ("shop".equals(screen)) {
+                for (Object entry : list(details.get("relics"))) {
+                    Map<String,Object> offer = map(entry);
+                    if (offer.get("id") != null && ((Number)offer.get("price")).intValue() >= 0)
+                        offers.add(String.valueOf(offer.get("id")));
+                }
+            } else if ("combat_reward".equals(screen) || "rewards".equals(screen)
+                    || "boss_relic".equals(screen)) {
+                for (Object relic : list(details.get("relics")))
+                    offers.add(String.valueOf(relic));
+            }
+        }
+        void invalidate() { complete = false; }
+        boolean complete() { return complete; }
+        List<String> snapshot() { return new ArrayList<>(offers); }
+    }
 
     static String rewardIdentity(Object reward) {
         return rewardIdentity(reward, AbstractDungeon.player, AbstractDungeon.currMapNode);
@@ -89,12 +128,22 @@ final class LiveOocCapture {
                     out.put("screen", type.toLowerCase(java.util.Locale.ROOT));
                     out.put("unsupportedReason", "NATIVE_SCREEN_UNSUPPORTED:" + type);
             }
+            boolean freshRun = AbstractDungeon.floorNum == 0
+                    && CardCrawlGame.metricData != null
+                    && CardCrawlGame.metricData.path_taken != null
+                    && CardCrawlGame.metricData.path_taken.isEmpty();
+            seenRelicOffers.observe(AbstractDungeon.player, Settings.seed,
+                    AbstractDungeon.floorNum, freshRun, String.valueOf(out.get("screen")),
+                    map(out.getOrDefault("details", object())));
+            core.put("seenRelics", seenRelicOffers.snapshot());
+            core.put("seenRelicsComplete", seenRelicOffers.complete());
             if (!Boolean.TRUE.equals(map(out.get("publicState")).get("pathComplete")))
                 out.put("unsupportedReason", "PATH_HISTORY_UNAVAILABLE");
             if (map(out.get("publicState")).containsKey("unsupportedReason"))
                 out.put("unsupportedReason", map(out.get("publicState")).get("unsupportedReason"));
             if (!out.containsKey("unsupportedReason")) out.put("unsupportedReason", "");
         } catch (ReflectiveOperationException | RuntimeException failure) {
+            seenRelicOffers.invalidate();
             recordCaptureError(out, failure);
         }
         return JSON.toJson(out);
@@ -266,10 +315,8 @@ final class LiveOocCapture {
         for (AbstractRelic relic : AbstractDungeon.player.relics)
             if (!acquiredRelics.contains(relic.relicId)) acquiredRelics.add(relic.relicId);
         p.put("acquiredRelics", acquiredRelics);
-        // Vanilla metrics record acquired relics, not relics merely offered
-        // and skipped.  Do not infer the latter from the current pool or from
-        // acquisition history: the live contract must fail closed for any
-        // branch that can draw from an incompletely observed relic pool.
+        // Vanilla metrics omit offered-but-skipped relics. The in-session
+        // observer fills these only after a fresh-run boundary has been seen.
         p.put("seenRelics", new ArrayList<String>());
         p.put("seenRelicsComplete", false);
         p.put("priorEvents", priorEvents);

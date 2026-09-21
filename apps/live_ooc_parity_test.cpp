@@ -28,7 +28,7 @@ static J project(const GameContext &g,const PathHistory &path,const std::string 
         {"blueKey",g.blueKey},{"greenKey",g.greenKey},{"keysEnabled",g.keysEnabled},{"redKey",g.redKey},
         {"potionCapacity",g.potionCapacity},{"potions",J::array()},{"deck",J::array()},{"relics",J::array()},
         {"boss",J(g.boss)},{"pathComplete",true},{"pathVisits",path.roomVisits},
-        {"currentActPathVisits",path.roomVisits},{"acquiredRelics",J::array()},
+        {"currentActPathVisits",J::array({0,0,0,0,0,0,0,0,0,0})},{"acquiredRelics",J::array()},
         {"pathHistory",J::array()},{"combatFloors",J::array()},
         {"seenRelics",J::array()},{"seenRelicsComplete",true},
         {"rewardPityHistoryComplete",true},
@@ -242,6 +242,36 @@ int main(int argc,char **argv){try{
         check(live.mctsRoot.state.monsterListOffset == 1
                 && live.mctsRoot.state.eliteMonsterListOffset == 0,
                 "question-to-monster must consume the normal encounter queue");
+    }
+    {
+        auto source = base;
+        source.screenState = ScreenState::REWARDS;
+        source.act = 2;
+        source.floorNum = 23;
+        auto wire = project(source, path, "act_two_elite_and_question_monster");
+        auto &p = wire["ooc"]["publicState"];
+        p["currentActPathVisits"][static_cast<int>(Room::ELITE)] = 1;
+        p["currentActPathVisits"][static_cast<int>(Room::EVENT)] = 1;
+        p["combatFloors"] = J::array({20, 23});
+        // Earlier act transitions mean path_taken[22] does not exist.
+        p["pathHistory"] = J::array({"MONSTER", "EVENT", "ELITE"});
+        advisor::LiveOocStateV1 live;
+        const auto result = advisor::importLiveOocStateV1(wire, live);
+        check(result.ok, "act-two public combat history import");
+        check(live.mctsRoot.state.monsterListOffset == 1
+                && live.mctsRoot.state.eliteMonsterListOffset == 1,
+                "act-two elite and question-monster must consume separate queues");
+    }
+    {
+        auto source = base;
+        source.screenState = ScreenState::MAP_SCREEN;
+        auto wire = project(source, path, "incomplete_seen_relic_map_history");
+        wire["ooc"]["publicState"]["seenRelicsComplete"] = false;
+        advisor::LiveOocStateV1 live;
+        const auto result = advisor::importLiveOocStateV1(wire, live);
+        check(result.ok && !live.mctsRoot.supported
+                && live.mctsRoot.reason == "PUBLIC_SEEN_RELIC_HISTORY_UNQUALIFIED",
+            "MAP search must fail closed without prior offered-relic history");
     }
     {
         auto source = base;

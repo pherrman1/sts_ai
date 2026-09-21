@@ -150,30 +150,26 @@ LiveOocStateV1::LiveOocMctsRootV1 makeMctsRoot(const LiveOocStateV1 &source) {
     const auto &publicState = source.ooc.at("publicState");
     const auto &actVisits = array(publicState, "currentActPathVisits", 10);
     require(actVisits.size() == 10, "ten current-act path counters required");
-    // path_taken intentionally retains the original '?' symbol after an event
-    // converts it into a hallway fight. Count completed combats from the
-    // public damage metric instead; use a matching map symbol only to
-    // distinguish an elite from an ordinary fight. A missing or conflicting
-    // symbol is still a public combat, and is conservatively ordinary rather
-    // than a reason to discard the complete public combat count.
+    // path_taken retains the original '?' after hallway conversion and can
+    // omit act-transition entries, so absolute combat floors cannot index it.
+    // The current-act visit count identifies elite map rooms independently of
+    // that indexing; the public combat metric counts consumed encounters.
     const auto &combatFloors = array(publicState, "combatFloors", 1000);
-    const auto &pathHistory = array(publicState, "pathHistory", 1000);
+    array(publicState, "pathHistory", 1000);
     const int actStartFloor = source.projected.act <= 1 ? 0
         : source.projected.act == 2 ? 17
         : source.projected.act == 3 ? 34 : 51;
-    int normalCombats = 0, eliteCombats = 0;
+    int completedCombats = 0;
     for (const auto &floorValue : combatFloors) {
         const int floor = integerValue(floorValue, 1, 1000, "combat floor");
         if (floor <= actStartFloor || floor > source.projected.floorNum) continue;
-        if (static_cast<std::size_t>(floor - 1) < pathHistory.size()) {
-            const auto symbol = room(pathHistory.at(static_cast<std::size_t>(floor - 1)));
-            if (symbol == Room::ELITE) ++eliteCombats;
-            else ++normalCombats;
-        } else {
-            ++normalCombats;
-        }
+        ++completedCombats;
     }
-    root.monsterListOffset = normalCombats;
+    const int eliteCombats = integerValue(actVisits.at(static_cast<int>(Room::ELITE)),
+        0, 1000, "current-act elite visits");
+    require(eliteCombats <= completedCombats,
+        "current-act elite visits exceed public completed combats");
+    root.monsterListOffset = completedCombats - eliteCombats;
     root.eliteMonsterListOffset = eliteCombats;
     const auto eraseRelic = [&](RelicId relic) {
         for (auto pool : {&root.commonRelicPool, &root.uncommonRelicPool, &root.rareRelicPool,
@@ -212,6 +208,9 @@ LiveOocStateV1::LiveOocMctsRootV1 makeMctsRoot(const LiveOocStateV1 &source) {
 
     const bool canDrawUnseenRelic = [&] {
         if (seenRelicsComplete) return false;
+        // A direct MAP root searches its next room before the hard downstream
+        // MAP checkpoint. Any branch may generate a relic offer there.
+        if (source.projected.screenState == ScreenState::MAP_SCREEN) return true;
         if (source.projected.screenState == ScreenState::TREASURE_ROOM) return true;
         if (source.projected.screenState == ScreenState::REST_ROOM
                 && root.relics.has(RelicId::SHOVEL)) return true;
