@@ -69,6 +69,7 @@ nlohmann::json replayRow(const nlohmann::json &input, std::int64_t budget,
             for (const auto &d : result.rerootDiagnostics) {
                 rerootDiagnostics.push_back({
                     {"stochastic", d.selectedEdgeStochastic},
+                    {"selected_action_executed", d.selectedActionExecuted},
                     {"without_child", d.selectedEdgeWithoutChild},
                     {"edge_visits", d.predecessorEdgeVisits},
                     {"exact", d.exactReroot},

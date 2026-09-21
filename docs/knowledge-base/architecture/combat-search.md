@@ -246,7 +246,11 @@ whose hand has a different internal order is aligned to the observed order;
 root card-edge source indices are remapped by exact card identity while visits
 and descendant states are retained. Equivalent-copy UID repair uses the same
 alignment. A selected positive-visit edge without a child fails the replay
-invariant. Chance-outcome matching and the configured reuse cap are unchanged.
+invariant. After those repairs, an unexplained mismatch between the selected
+deterministic child and the privately executed state fails with a state
+diagnostic rather than fresh-rooting. Private sequential card-selection
+subdecisions use this same selected-child contract. Chance-outcome matching
+and the configured reuse cap are unchanged.
 
 At a stable live player-decision boundary, the Java `silverRoot.combat`
 projection does not include Silver's native `monsterTurnIdx`. The generic

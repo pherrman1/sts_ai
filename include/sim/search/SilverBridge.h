@@ -567,6 +567,7 @@ bool silverRhoRacingStopHolds(const SilverRootUncertainty &root,
 // subdecision when collection is enabled.
 struct SilverSearchDecisionDiagnostic {
     bool hadPredecessor = false;
+    bool selectedActionExecuted = false;
     bool selectedEdgeStochastic = false;
     bool selectedEdgeWithoutChild = false;
     bool deterministicSemanticHandMismatch = false;
@@ -1015,6 +1016,7 @@ struct ReuseCapFixtureProbe {
     bool equivalentCopyRepaired = false;
     bool chanceMissingAllowed = false;
     bool positiveVisitMissingChildRejected = false;
+    bool privateDeterministicMismatchRejected = false;
     bool noneDisablesReuse = false;
     bool noneReportsDisabled = false;
     bool noneFreshRootBudget = false;

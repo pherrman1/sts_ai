@@ -690,6 +690,8 @@ int main(int argc, char **argv) {
           "unmatched stochastic outcome may still fall back as candidate-missing");
     check(capFixture.positiveVisitMissingChildRejected,
           "selected positive-visit edge without child must fail the invariant");
+    check(capFixture.privateDeterministicMismatchRejected,
+          "private selected deterministic state mismatch must fail with a state diagnostic");
     check(capFixture.equivalentCopyRepaired,
           "equivalent card UID repair must still inherit the retained child");
     check(capFixture.noneDisablesReuse,
@@ -1381,9 +1383,10 @@ int main(int argc, char **argv) {
     check(transaction.searchDiagnostics.size() == static_cast<std::size_t>(transaction.searchDecisions),
           "GAMBLE diagnostics must contain every private search subdecision");
     check(transaction.searchDiagnostics.size() >= 2
+              && transaction.searchDiagnostics[1].selectedActionExecuted
               && transaction.searchDiagnostics[1].exactReroot
               && transaction.searchDiagnostics[1].inheritedVisits > 0,
-          "GAMBLE second subdecision must prove exact reroot with inherited visits");
+          "GAMBLE second subdecision must use selected-child reroot with inherited visits");
 
     auto uninterruptedTransactionConfig = transactionConfig;
     uninterruptedTransactionConfig.collectRootActionSummaries = true;

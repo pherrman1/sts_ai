@@ -1029,6 +1029,7 @@ public:
             || config.exactVisitLockEnabled || config.rhoRacingEnabled;
         if (collectDecisionDiagnostics) {
             decisionDiagnostic = {};
+            decisionDiagnostic.selectedActionExecuted = selectedActionExecuted;
             decisionDiagnostic.configuredCapMode = config.reuseCapMode;
             decisionDiagnostic.configuredCap = config.reuseCap;
             if (searcher) {
@@ -1124,6 +1125,16 @@ public:
                     if (!equivalentCopyCandidate || !alignRetainedRootHand(*candidate, state))
                         candidate = nullptr;
                 }
+            }
+            if (selectedActionExecuted && selectedDeterministic && candidate == nullptr) {
+                std::ostringstream out;
+                out << "selected_deterministic_state_mismatch edge_visits="
+                    << previousBest->visitCount;
+                if (previousBest->node->state != nullptr)
+                    out << ' ' << selectionStateSummary(*previousBest->node->state, state);
+                else
+                    out << " retained_child_state=null";
+                throw std::runtime_error(out.str());
             }
             // previousBest belongs to the old root and may be reclaimed by reroot.
             if (candidate != nullptr) {
@@ -2192,12 +2203,13 @@ ReuseCapFixtureProbe probeSilverReuseCapFixture(const BattleStateWire &wire) {
             session.previousBest = &session.searcher->root->edges.front();
         };
         const auto run = [&state, cap](SilverSearchSession &session, bool explicitMode,
-                                       SilverReuseCapMode mode = SilverReuseCapMode::ALLOCATED) {
+                                       SilverReuseCapMode mode = SilverReuseCapMode::ALLOCATED,
+                                       bool selectedActionExecuted = true) {
             SilverSearchConfig config;
             config.reuseCap = cap;
             if (explicitMode) config.reuseCapMode = mode;
             config.collectDecisionDiagnostics = true;
-            session.beginAt(state, config, true);
+            session.beginAt(state, config, selectedActionExecuted);
             return session.decisionDiagnostic;
         };
 
@@ -2238,14 +2250,27 @@ ReuseCapFixtureProbe probeSilverReuseCapFixture(const BattleStateWire &wire) {
         SilverSearchSession missing;
         arrangeCandidate(missing, false, false);
         missing.searcher->root->edges.front().node->state->player.curHp -= 1;
-        const auto missingAllocated = run(missing, true, SilverReuseCapMode::ALLOCATED);
+        const auto missingAllocated = run(missing, true, SilverReuseCapMode::ALLOCATED, false);
         arrangeCandidate(missing, false, false);
         missing.searcher->root->edges.front().node->state->player.curHp -= 1;
-        const auto missingActive = run(missing, true, SilverReuseCapMode::ACTIVE);
+        const auto missingActive = run(missing, true, SilverReuseCapMode::ACTIVE, false);
         result.candidateMissingUnchanged = !missingAllocated.exactCandidateFound
             && !missingActive.exactCandidateFound
             && missingAllocated.fallbackReason == SilverRerootFallbackReason::CANDIDATE_MISSING
             && missingActive.fallbackReason == SilverRerootFallbackReason::CANDIDATE_MISSING;
+
+        SilverSearchSession privateMismatch;
+        arrangeCandidate(privateMismatch, false, false);
+        privateMismatch.searcher->root->edges.front().node->state->player.curHp -= 1;
+        privateMismatch.searcher->root->edges.front().visitCount = 9;
+        try {
+            (void)run(privateMismatch, true, SilverReuseCapMode::ACTIVE);
+        } catch (const std::runtime_error &error) {
+            const std::string message = error.what();
+            result.privateDeterministicMismatchRejected =
+                message.find("selected_deterministic_state_mismatch edge_visits=9") != std::string::npos
+                && message.find("player(hp/energy/block)") != std::string::npos;
+        }
 
         if (state.cards.cardsInHand >= 2) {
             SilverSearchSession permuted;
@@ -2436,7 +2461,7 @@ SelectionTransactionTrace runSequentialSelectionTransaction(
         // loop means the upstream UI state stopped making progress.
         const int maxSubdecisions = state.cards.cardsInHand + 1;
         for (int step = 0; step < maxSubdecisions; ++step) {
-            if (step > 0) session.beginAt(state, config);
+            if (step > 0) session.beginAt(state, config, true);
 
             SilverDecisionResult decision;
             if (config.exactVisitLockEnabled || config.rhoRacingEnabled) {
