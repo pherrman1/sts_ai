@@ -1,0 +1,19 @@
+{
+  "schema": "terminal_reweight_compat_v1",
+  "status": "development_only",
+  "fit_scope": "20-source development corpus; all leaves; not a deployment candidate",
+  "weights": {
+    "win_bonus": 50.87323622337984,
+    "potion_weight": 13.177089262180738,
+    "victory_turn_penalty": 0.0,
+    "monster_damage_weight": 34.82947522356764,
+    "alive_weight": 1.7673094255909703,
+    "energy_waste_weight": 0.8508498727040281,
+    "draw_weight": 0.0,
+    "turn_survival_weight": 2.7119481204109186,
+    "gold_weight": 0.0,
+    "max_hp_weight": 0.0,
+    "parasite_penalty": 12.0
+  },
+  "regularization_lambda": "selected by grouped development CV; full-data refit shown for diagnostic inspection only"
+}

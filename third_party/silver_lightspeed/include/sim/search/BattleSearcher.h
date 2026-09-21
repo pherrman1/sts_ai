@@ -18,6 +18,7 @@
 
 #include "sim/search/SimpleAgent.h"
 #include "sim/search/SilverBridge.h"
+#include "sim/search/SilverTerminalValue.h"
 
 namespace silver_bridge {
 SilverLeafObservation makeSilverLeafObservation(
@@ -64,6 +65,15 @@ namespace sts::search {
         double maxHpWeight = 2.0;     // per point of max HP gained vs the search root (Feed, Darkstone)
         double parasitePenalty = 12;  // flat penalty when Writhing Mass's implant will add a Parasite
     };
+
+    // Diagnostic-only decomposition of evaluateEndState. Production search
+    // continues to call evaluateEndState directly; these helpers are used by
+    // offline corpus collection and exact reconstruction tests.
+    silver_bridge::SilverTerminalValueFeatures terminalValueFeatures(
+        const BattleContext &root, const BattleContext &terminal);
+    double evaluateTerminalFeatures(
+        const silver_bridge::SilverTerminalValueFeatures &features,
+        const EvalWeights &weights = EvalWeights{});
 
     // Deterministic search-graph telemetry: counts are exact properties of the search
     // (machine/thread independent), summable across searchers.
@@ -365,6 +375,11 @@ namespace sts::search {
         // The caller must provide a decision-state root; this method never
         // participates in ordinary search or live backend execution.
         double runDiagnosticRollout();
+        // Diagnostic/test-only direct access to the unchanged production
+        // terminal evaluator with an explicitly supplied root baseline.
+        double evaluateEndStateForDiagnostics(const BattleContext &state) const {
+            return evaluateEndState(state);
+        }
         void step();
         Action getBestAction() const;
         std::vector<Action> getBestActionSequence() const;

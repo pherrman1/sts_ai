@@ -3005,6 +3005,18 @@ SilverSimpleRolloutResult runSilverSimpleRolloutImpl(
             : completed.terminalEffectiveGold;
         result.leafRootUtility = leafUtility;
         const auto terminalState = leafStateWire(*searcher.root->state);
+        result.terminalFeatures = sts::search::terminalValueFeatures(
+            *searcher.rootState, *searcher.root->state);
+        result.terminalFeaturesValid = true;
+        result.reconstructedTerminalValue = sts::search::evaluateTerminalFeatures(
+            result.terminalFeatures);
+        sts::GameContext originalRunContext;
+        initializeRunContext(originalRunContext, originalRoot);
+        const auto originalRootState = materialize(originalRoot, &originalRunContext);
+        result.originalRootTerminalFeatures = sts::search::terminalValueFeatures(
+            originalRootState, *searcher.root->state);
+        result.reconstructedOriginalRootValue = sts::search::evaluateTerminalFeatures(
+            result.originalRootTerminalFeatures);
         result.victoryBaselineCorrection = silverVictoryBaselineCorrection(originalRoot, terminalState);
         result.appliedVictoryBaselineCorrection = result.terminalOutcome
                 == static_cast<int>(sts::Outcome::PLAYER_VICTORY)

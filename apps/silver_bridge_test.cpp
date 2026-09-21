@@ -760,7 +760,10 @@ int main(int argc, char **argv) {
               && directRolloutA.rolloutActionCount > 0
               && directRolloutA.rolloutActionCount == static_cast<std::int64_t>(
                   directRolloutA.rolloutActionFingerprints.size())
-              && directRolloutA.originalRootCorrectedUtility == directRolloutA.leafRootUtility,
+              && directRolloutA.originalRootCorrectedUtility == directRolloutA.leafRootUtility
+              && directRolloutA.terminalFeaturesValid
+              && std::abs(directRolloutA.reconstructedTerminalValue
+                          - directRolloutA.leafRootUtility) < 1e-9,
           "stored PLAYER_NORMAL leaf must replay through the canonical SimpleAgent rollout seam");
     check(directRolloutA.accepted == directRolloutB.accepted
               && directRolloutA.terminalOutcome == directRolloutB.terminalOutcome

@@ -1041,6 +1041,10 @@ double search::BattleSearcher::rolloutToEnd(BattleContext &bc, std::vector<Actio
         leafObservation->terminalTurn = bc.turn;
         leafObservation->terminalPotionCount = bc.potionCount;
         leafObservation->terminalEffectiveGold = effectiveGold(bc);
+        leafObservation->terminalFeatures = terminalValueFeatures(*rootState, bc);
+        leafObservation->terminalFeaturesValid = true;
+        leafObservation->reconstructedTerminalValue = evaluateTerminalFeatures(
+            leafObservation->terminalFeatures, evalWeights);
         leafObserver(*leafObservation);
     }
     return backpropagatedUtility;
@@ -1370,6 +1374,81 @@ static double effectiveGold(const BattleContext &bc) {
         }
     }
     return gold;
+}
+
+namespace {
+
+double deathSaveHpEquivalent(const BattleContext &bc) {
+    double value = 0.0;
+    if (bc.player.hasRelic<RelicId::MARK_OF_THE_BLOOM>()) return value;
+    bool hasFairy = false;
+    for (int i = 0; i < bc.potionCapacity; ++i) {
+        if (bc.potions[i] == Potion::FAIRY_POTION) {
+            hasFairy = true;
+            break;
+        }
+    }
+    if (hasFairy) {
+        value += bc.player.maxHp
+            * (bc.player.hasRelic<RelicId::SACRED_BARK>() ? 0.6 : 0.3);
+    }
+    if (bc.player.hasRelic<RelicId::LIZARD_TAIL>()) value += 0.5 * bc.player.maxHp;
+    return value;
+}
+
+} // namespace
+
+silver_bridge::SilverTerminalValueFeatures search::terminalValueFeatures(
+        const BattleContext &root, const BattleContext &terminal) {
+    silver_bridge::SilverTerminalValueFeatures features;
+    features.terminalOutcome = static_cast<std::int32_t>(terminal.outcome);
+    features.victory = terminal.outcome == Outcome::PLAYER_VICTORY;
+    features.deathSaveHpEquivalent = deathSaveHpEquivalent(terminal);
+    if (features.victory) {
+        features.victoryPostBattleHealedHp = terminal.postBattleHealedHp();
+        features.victoryPotionCount = terminal.potionCount;
+        features.victoryTurn = terminal.turn;
+        features.effectiveGoldDelta = effectiveGold(terminal) - effectiveGold(root);
+        features.maxHpDelta = terminal.player.maxHp - root.player.maxHp;
+        const auto &wm = terminal.monsters.arr[0];
+        if (wm.id == MonsterId::WRITHING_MASS && wm.miscInfo
+                && (!terminal.player.hasRelic<RelicId::OMAMORI>()
+                    || terminal.gameContext->relics.getRelicValue(RelicId::OMAMORI) == 0)) {
+            features.parasiteImplant = 1.0;
+        }
+    } else {
+        const bool couldHaveSpikers = terminal.encounter == MonsterEncounter::THREE_SHAPES
+            || terminal.encounter == MonsterEncounter::FOUR_SHAPES;
+        features.lossMonsterDamageFraction = 1.0 - getNonMinionMonsterCurHpRatio(terminal);
+        features.lossMonstersAlive = terminal.monsters.monstersAlive;
+        features.lossEnergyWasted = terminal.energyWasted * (couldHaveSpikers ? 0.0 : 1.0);
+        features.lossCardsDrawn = terminal.cardsDrawn;
+        features.lossPotionCount = terminal.potionCount;
+        features.lossSurvivalTurns = terminal.turn > 100 ? 0.0 : terminal.turn;
+    }
+    return features;
+}
+
+double search::evaluateTerminalFeatures(
+        const silver_bridge::SilverTerminalValueFeatures &features,
+        const EvalWeights &weights) {
+    if (features.victory) {
+        return weights.winBonus
+            + features.victoryPostBattleHealedHp
+            + features.victoryPotionCount * weights.potionWeight
+            - features.victoryTurn * weights.victoryTurnPenalty
+            + features.deathSaveHpEquivalent
+            + features.effectiveGoldDelta * weights.goldWeight
+            + features.maxHpDelta * weights.maxHpWeight
+            - features.parasiteImplant * weights.parasitePenalty;
+    }
+    return features.lossMonsterDamageFraction * weights.monsterDamageWeight
+        - features.lossMonstersAlive * weights.aliveWeight
+        - features.lossEnergyWasted * weights.energyWasteWeight
+        + features.lossCardsDrawn * weights.drawWeight
+        + features.lossPotionCount * weights.potionWeight / 2.0
+        + features.lossSurvivalTurns * weights.turnSurvivalWeight
+        + features.deathSaveHpEquivalent;
 }
 
 double search::BattleSearcher::evaluateEndState(const BattleContext &bc) const {
