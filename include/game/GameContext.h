@@ -211,6 +211,7 @@ namespace sts {
         float treasureChance = 0.02f;
         int potionChance = 0;
         int cardRarityFactor = 5;
+        int wingBootsCharges = 0;
         int shopRemoveCount = 0;
         bool speedrunPace = false; // todo load from save
 
@@ -238,6 +239,14 @@ namespace sts {
 
         bool blueKey = false;
         bool greenKey = false;
+        // Whether the act exposes the Ruby-key campfire option.  The native
+        // simulator keeps this enabled for ordinary generated runs; the live
+        // importer sets it from Java's public final-act setting.
+        bool keysEnabled = true;
+        // Live OOC imports set this when Java has already resolved the
+        // campfire and exposes only the proceed button. Ordinary simulator
+        // rooms leave it false while the rest action is selectable.
+        bool restRoomResolved = false;
         bool redKey = false;
 
         GameContextAction regainControlAction = nullptr;

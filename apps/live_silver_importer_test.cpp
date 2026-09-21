@@ -1876,6 +1876,14 @@ int main() {
             || !(powerImported.wire.monsters[0].statusBits
                 & (1ULL << static_cast<int>(MonsterStatus::VULNERABLE))))
             throw std::runtime_error("monster Vulnerable amount/activation parity failed");
+        auto weakenedAlias = general;
+        weakenedAlias["silverRoot"]["combat"]["monsters"][0]["powers"] = json::array({
+            json{{"id", "Weakened"}, {"amount", 1}, {"justApplied", true}}});
+        const auto weakenedMonsterImported = one_combat::advisor::importSilverRoot(weakenedAlias);
+        if (!weakenedMonsterImported.ok || weakenedMonsterImported.wire.monsters[0].weak != 1
+            || !(weakenedMonsterImported.wire.monsters[0].statusBits
+                & (1ULL << static_cast<int>(MonsterStatus::WEAK))))
+            throw std::runtime_error("monster Weakened alias/activation parity failed");
         const char *booleanPowerNames[] = {"Minion", "Asleep", "Regrow", "Stasis", "PainfulStabs"};
         const MonsterStatus booleanPowerStatuses[] = {
             MonsterStatus::MINION, MonsterStatus::ASLEEP, MonsterStatus::REGROW,

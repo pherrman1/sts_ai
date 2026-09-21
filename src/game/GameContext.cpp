@@ -229,11 +229,8 @@ void GameContext::initRelicsFromSave(const SaveFile &s) {
 //        std::cout << getRelicName(r) << " " << s.relic_counters[i] << '\n';
 
         // todo lizard tail, and others
-        switch (r) {
-            default:
-                RelicInstance relic {r, s.relic_counters[i]};
-                relics.add(relic);
-        }
+        RelicInstance relic {r, s.relic_counters[i]};
+        relics.add(relic);
     }
 }
 
@@ -3387,17 +3384,20 @@ void GameContext::chooseEventOption(int idx) {
             Potion pArr[3];
             switch (idx) {
                 case 0: {
+                    loseGold(20);
                     pArr[0] = getRandomPotion(potionRng, cc);
                     openCombatRewardScreen(Rewards(pArr, 1));
                     break;
                 }
                 case 1: {
+                    loseGold(30);
                     pArr[0] = getRandomPotion(potionRng, cc);
                     pArr[1] = getRandomPotion(potionRng, cc);
                     openCombatRewardScreen(Rewards(pArr, 2));
                     break;
                 }
                 case 2: {
+                    loseGold(40);
                     pArr[0] = getRandomPotion(potionRng, cc);
                     pArr[1] = getRandomPotion(potionRng, cc);
                     pArr[2] = getRandomPotion(potionRng, cc);

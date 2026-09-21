@@ -2,6 +2,7 @@
 #include "live_ooc_importer.h"
 #include "live_ooc_state.h"
 #include "live_ooc_policy.h"
+#include "ooc_v4_encoding.h"
 #include "../ooc_strategic_tok_net.h"
 #include <fstream>
 #include <iomanip>
@@ -32,8 +33,128 @@ std::string modelIdentity(const std::string &path) {
     std::ostringstream out; out << "fnv1a64:" << std::hex << std::setw(16) << std::setfill('0') << hash;
     return out.str();
 }
+std::uint64_t stableHash(const std::string &value) {
+    std::uint64_t hash = 14695981039346656037ULL;
+    for (const unsigned char byte : value) { hash ^= byte; hash *= 1099511628211ULL; }
+    return hash;
+}
+struct PendingCompoundPlan {
+    bool active = false;
+    std::string session;
+    std::int64_t sequence = 0;
+    int selectorType = 0;
+    std::string selectorName;
+    json card;
+};
+
+int keyInteger(const std::string &key, const char *field) {
+    const std::string prefix = std::string(field) + "=";
+    const auto start = key.find(prefix);
+    if (start == std::string::npos) return -1;
+    const auto valueStart = start + prefix.size();
+    const auto end = key.find(':', valueStart);
+    try { return std::stoi(key.substr(valueStart, end - valueStart)); }
+    catch (...) { return -1; }
+}
+
+PendingCompoundPlan pendingCompoundPlan(const one_combat::advisor::Request &request,
+                                        const json &selected) {
+    PendingCompoundPlan plan;
+    const auto targetType = selected.value("type", std::string());
+    if (targetType != "transaction" && targetType != "deck_card"
+            && !selected.contains("compoundTarget")) return plan;
+    const auto source = keyInteger(selected.value("semanticKey", std::string()), "source");
+    const auto effect = keyInteger(selected.value("semanticKey", std::string()), "effect");
+    // These are the only public source primitives whose semantic enumeration
+    // expands to a deterministic single-card selector. The numeric selector
+    // IDs are the append-only native CardSelectScreenType wire values.
+    if (source == 0) { plan.selectorType = 3; plan.selectorName = "upgrade"; }
+    else if (source == 2 || source == 4) { plan.selectorType = 4; plan.selectorName = "remove"; }
+    else if (source == 5 && effect == 0) { plan.selectorType = 3; plan.selectorName = "upgrade"; }
+    else if (source == 5 && effect == 1) { plan.selectorType = 4; plan.selectorName = "remove"; }
+    else if (source == 5 && effect == 2) { plan.selectorType = 1; plan.selectorName = "transform"; }
+    else if (source == 5 && effect == 3) { plan.selectorType = 2; plan.selectorName = "transform_upgrade"; }
+    else return plan;
+    const auto &target = selected.contains("compoundTarget")
+        ? selected.at("compoundTarget") : selected.at("card");
+    if (!target.is_object()) return PendingCompoundPlan{};
+    plan.active = true;
+    plan.session = request.session;
+    plan.sequence = request.sequence;
+    plan.card = target;
+    return plan;
+}
+
+bool sameCardTarget(const json &candidate, int selectorType, const json &target) {
+    if (candidate.value("type", std::string()) != "selector") return false;
+    if (candidate.value("selectorType", -1) != selectorType) return false;
+    const auto &candidateTarget = candidate.value("target", json::object());
+    if (candidateTarget.value("type", std::string()) != "deck_card") return false;
+    const auto &card = candidateTarget.value("card", json::object());
+    for (const char *field : {"id", "misc", "upgraded", "bottle", "occurrence"})
+        if (!card.contains(field) || !target.contains(field) || card.at(field) != target.at(field)) return false;
+    return true;
+}
+
+one_combat::LiveOocDecision retainedCompoundDecision(
+        const one_combat::advisor::LiveOocStateV1 &state,
+        const PendingCompoundPlan &pending) {
+    one_combat::LiveOocDecision result;
+    result.policy = "mcts_ctm";
+    const auto bindings = sts::search::enumerateOocSemanticPrimitiveBindings(state.projected);
+    if (!bindings.supported || !bindings.complete) {
+        result.reason = "SEMANTIC_ENUMERATION_UNSUPPORTED:" + bindings.error;
+        return result;
+    }
+    const double prior = bindings.bindings.empty()
+        ? 0.0 : 1.0 / static_cast<double>(bindings.bindings.size());
+    int matches = 0;
+    for (const auto &binding : bindings.bindings) {
+        const auto payload = json::parse(sts::search::oocSemanticActionPayloadJson(binding.semantic));
+        result.candidates.push_back({
+            sts::search::canonicalOocSemanticActionKey(binding.semantic), payload.dump(),
+            binding.primitiveBits, 0.0, 0, 0.0, prior});
+        if (sameCardTarget(payload, pending.selectorType, pending.card)) {
+            ++matches;
+            result.selectedIndex = static_cast<int>(result.candidates.size()) - 1;
+        }
+    }
+    if (matches != 1) {
+        result.candidates.clear();
+        result.selectedIndex = -1;
+        result.reason = "COMPOUND_TARGET_UNAVAILABLE:" + pending.selectorName;
+        return result;
+    }
+    // This is the retained source transaction's target, not a new selector
+    // search. Give the client a coherent one-candidate visit distribution so
+    // the selected target and the reported MCTS statistics cannot disagree.
+    auto &selected = result.candidates.at(result.selectedIndex);
+    selected.visits = 1;
+    selected.visitShare = 1.0;
+    result.supported = true;
+    return result;
+}
+
+void validateCapturedLiveOocMapping(const one_combat::advisor::LiveOocStateV1 &state) {
+    std::vector<std::uint32_t> expected;
+    // Rewards can contain simulator-only synthetic card-skip primitives for
+    // groups that Java does not expose as live choices. For those screens the
+    // observed primitive set is the source boundary; other screens have an
+    // exact native candidate set that can detect missing mappings as well as
+    // duplicate ones before policy/model fallback.
+    if (state.projected.screenState == sts::ScreenState::REWARDS) {
+        expected = one_combat::advisor::liveOocPrimitiveBits(state);
+    } else {
+        for (const auto &action : one_combat::v4CandidateActions(state.projected))
+            if (action.isValidAction(state.projected)) expected.push_back(action.bits);
+    }
+    if (expected.empty()) return;
+    one_combat::advisor::validateLiveOocActionSet(state, expected);
+}
+
 json oocResponse(const one_combat::advisor::Request &request,
-                 const one_combat::LiveOocPolicy &policy, const std::string &identity) {
+                 one_combat::LiveOocPolicy &policy, const std::string &identity,
+                 PendingCompoundPlan &pending) {
     using namespace one_combat;
     const auto started = std::chrono::steady_clock::now();
     json evaluator = {{"id", "live_ooc_decision_v1"}, {"scope", "ooc_decision"},
@@ -44,10 +165,79 @@ json oocResponse(const one_combat::advisor::Request &request,
         return advisor::errorResponse(request, imported.code, imported.message);
     if (!imported.ok) evaluator["reason"] = imported.message;
     else {
-        const auto scoreStarted = std::chrono::steady_clock::now();
-        const auto decision = policy.score(state.projected, state.path);
-        evaluator["scorerLatencyMicros"] = std::chrono::duration_cast<std::chrono::microseconds>(
-            std::chrono::steady_clock::now() - scoreStarted).count();
+        // After choosing a boss relic, vanilla can expose the already-open
+        // boss chest as a completed room with only the native Proceed button.
+        // The simulator's TREASURE_ROOM action set describes the pre-open
+        // state, so it is not a valid mapping for this observed pass-through.
+        // Preserve the one legal live action without scoring hypothetical
+        // open/skip actions.
+        const auto &ooc = state.ooc;
+        const bool openedPassThrough = state.projected.screenState == sts::ScreenState::TREASURE_ROOM
+            && ooc.contains("details") && ooc.at("details").is_object()
+            && ooc.at("details").value("opened", false)
+            && ooc.contains("liveChoices") && ooc.at("liveChoices").is_array()
+            && ooc.at("liveChoices").size() == 1
+            && ooc.at("liveChoices").at(0).contains("liveAction")
+            && ooc.at("liveChoices").at(0).at("liveAction").value("kind", std::string()) == "proceed";
+        if (openedPassThrough) {
+            const auto liveAction = ooc.at("liveChoices").at(0).at("liveAction");
+            evaluator["status"] = "OK";
+            evaluator["mode"] = "native_pass_through";
+            evaluator["selectedSemanticKey"] = "ooc-live:v1:pass-through";
+            evaluator["selectedLabel"] = "proceed";
+            evaluator["selectedLiveAction"] = liveAction;
+            evaluator["candidateSummaries"] = json::array({json{
+                {"semanticKey", "ooc-live:v1:pass-through"},
+                {"semanticPayload", json{{"type", "pass_through"}}},
+                {"label", "proceed"}, {"q", 0.0}, {"visits", 1},
+                {"visitShare", 1.0}, {"prior", 1.0},
+                {"liveAction", liveAction}}});
+            evaluator["latencyMicros"] = std::chrono::duration_cast<std::chrono::microseconds>(
+                std::chrono::steady_clock::now() - started).count();
+            return {{"protocol", advisor::kProtocol}, {"protocolVersion", advisor::kProtocolVersion},
+                    {"kind", "analysis"}, {"status", evaluator.at("status")},
+                    {"session", request.session}, {"sequence", request.sequence},
+                    {"observationHash", request.observationHash},
+                    {"evaluators", json::array({evaluator})}};
+        }
+        try {
+            validateCapturedLiveOocMapping(state);
+            policy.setRootPrimitiveBits(advisor::liveOocPrimitiveBits(state));
+            policy.setRewardPityHistoryComplete(state.rewardPityHistoryComplete);
+        } catch (const std::exception &error) {
+            return advisor::errorResponse(request, "OOC_ACTION_MAPPING", error.what());
+        }
+        if (std::string(policy.name()) == "mcts_ctm" && !state.mctsRoot.supported) {
+            evaluator["reason"] = state.mctsRoot.reason;
+            evaluator["latencyMicros"] = std::chrono::duration_cast<std::chrono::microseconds>(
+                std::chrono::steady_clock::now() - started).count();
+            return {{"protocol", advisor::kProtocol}, {"protocolVersion", advisor::kProtocolVersion},
+                    {"kind", "analysis"}, {"status", evaluator.at("status")},
+                    {"session", request.session}, {"sequence", request.sequence},
+                    {"observationHash", request.observationHash},
+                    {"evaluators", json::array({evaluator})}};
+        }
+        LiveOocDecision decision;
+        bool appliedPending = false;
+        json appliedTarget;
+        if (pending.active && pending.session != request.session) pending = PendingCompoundPlan{};
+        if (pending.active && request.sequence <= pending.sequence) pending = PendingCompoundPlan{};
+        if (pending.active && state.projected.screenState == sts::ScreenState::CARD_SELECT) {
+            const auto scoreStarted = std::chrono::steady_clock::now();
+            decision = retainedCompoundDecision(state, pending);
+            evaluator["scorerLatencyMicros"] = std::chrono::duration_cast<std::chrono::microseconds>(
+                std::chrono::steady_clock::now() - scoreStarted).count();
+            appliedPending = decision.supported;
+            appliedTarget = pending.card;
+        } else {
+            if (pending.active) pending = PendingCompoundPlan{};
+            policy.setSearchSeed(stableHash(request.observationHash + ":live-ooc-mcts"));
+            const auto scoreStarted = std::chrono::steady_clock::now();
+            decision = policy.score(state.mctsRoot.state, state.mctsRoot.path,
+                                    state.mctsRoot.currentActEventVisits);
+            evaluator["scorerLatencyMicros"] = std::chrono::duration_cast<std::chrono::microseconds>(
+                std::chrono::steady_clock::now() - scoreStarted).count();
+        }
         // Qualified candidate identities remain checkable without model weights.
         // A missing model must not turn corrupt live mappings into fallback.
         if (!decision.candidates.empty()) {
@@ -63,7 +253,13 @@ json oocResponse(const one_combat::advisor::Request &request,
             // Missing support/model may fall back; malformed/ambiguous native
             // candidates and nonfinite scores are integration errors.
             if (decision.reason != "MODEL_UNAVAILABLE" && decision.reason != "V4_SCREEN_UNSUPPORTED"
-                    && decision.reason.rfind("SEMANTIC_ENUMERATION_UNSUPPORTED:", 0) != 0)
+                    && decision.reason != "CTM_MODEL_UNAVAILABLE"
+                    && decision.reason != "OOC_WIN_MODEL_UNAVAILABLE"
+                    && decision.reason != "OOC_FLOOR_MODEL_UNAVAILABLE"
+                    && decision.reason != "PUBLIC_REWARD_PITY_HISTORY_UNQUALIFIED"
+                    && decision.reason.rfind("COMPOUND_TARGET_UNAVAILABLE:", 0) != 0
+                    && decision.reason.rfind("SEMANTIC_ENUMERATION_UNSUPPORTED:", 0) != 0
+                    && decision.reason.rfind("OOC_MCTS_", 0) != 0)
                 return advisor::errorResponse(request, "OOC_POLICY_FAILURE", decision.reason);
             evaluator["reason"] = decision.reason;
         } else {
@@ -72,6 +268,7 @@ json oocResponse(const one_combat::advisor::Request &request,
                 for (const auto &c : decision.candidates) {
                     json summary = {{"semanticKey", c.semanticKey},
                         {"semanticPayload", json::parse(c.payload)}, {"label", c.semanticKey}, {"q", c.q},
+                        {"visits", c.visits}, {"visitShare", c.visitShare}, {"prior", c.prior},
                         {"liveAction", advisor::lowerLiveOocAction(state, c.primitiveBits)}};
                     if (!c.followUpPreview.empty()) summary["followUpPreview"] = json::parse(c.followUpPreview);
                     evaluator["candidateSummaries"].push_back(std::move(summary));
@@ -81,7 +278,29 @@ json oocResponse(const one_combat::advisor::Request &request,
                 evaluator["selectedSemanticKey"] = selected.semanticKey;
                 evaluator["selectedLabel"] = selected.semanticKey;
                 evaluator["selectedLiveAction"] = advisor::lowerLiveOocAction(state, selected.primitiveBits);
-                evaluator["model"] = {{"kind", "ooc_strategic_tok_v4"}, {"identity", identity}};
+                if (appliedPending) {
+                    evaluator["compoundPlan"] = json{{"status", "APPLIED"},
+                        {"selectorType", pending.selectorName}, {"target", appliedTarget},
+                        {"selectionMode", "retained_compound_target"}};
+                    pending = PendingCompoundPlan{};
+                } else {
+                    auto selectedPayload = json::parse(selected.payload);
+                    selectedPayload["semanticKey"] = selected.semanticKey;
+                    const auto plan = pendingCompoundPlan(request, selectedPayload);
+                    if (plan.active) {
+                        pending = plan;
+                        evaluator["compoundPlan"] = json{{"status", "PENDING"},
+                            {"selectorType", plan.selectorName}, {"target", plan.card}};
+                    }
+                }
+                if (policy.name() == std::string("mcts_ctm")) {
+                    evaluator["model"] = {{"kind", "ooc_mcts_ctm"},
+                                           {"prior", "ooc_strategic_tok_v4"},
+                                           {"leaf", "v_win_compact_tree"}, {"simulations", 512},
+                                           {"selection", "visits_then_q"}, {"identity", identity}};
+                } else {
+                    evaluator["model"] = {{"kind", "ooc_v4_q"}, {"identity", identity}};
+                }
             } catch (const std::exception &error) {
                 return advisor::errorResponse(request, "OOC_ACTION_MAPPING", error.what());
             }
@@ -214,6 +433,60 @@ json silverEvaluator(const one_combat::advisor::Request &request,
     }
     const auto requestedSimulations = std::max<std::int64_t>(1000,
         request.observation.value("silverSearchBudget", static_cast<std::int64_t>(1000)));
+    const bool transactionalSelection = imported.wire.inputState
+            == static_cast<int>(sts::InputState::CARD_SELECT)
+        && (imported.wire.cardSelect.task == static_cast<int>(sts::CardSelectTask::EXHAUST_MANY)
+            || imported.wire.cardSelect.task == static_cast<int>(sts::CardSelectTask::GAMBLE));
+    if (transactionalSelection) {
+        const auto started = std::chrono::steady_clock::now();
+        silver_bridge::SilverSearchConfig config;
+        config.simulationsPerDecision = requestedSimulations;
+        config.collectRootActionSummaries = true;
+        config.collectDecisionDiagnostics = true;
+        config.adaptiveEnabled = false;
+        config.exactVisitLockEnabled = false;
+        config.rhoRacingEnabled = false;
+        const auto transaction = silver_bridge::runSequentialSelectionTransaction(
+            *session, imported.wire, config);
+        evaluator["latencyMicros"] = std::chrono::duration_cast<std::chrono::microseconds>(
+            std::chrono::steady_clock::now() - started).count();
+        if (!transaction.accepted || !transaction.finalConfirmation) {
+            clearSession();
+            evaluator["status"] = "UNSUPPORTED";
+            evaluator["reason"] = transaction.failure.empty()
+                ? "silver_selection_transaction_failed" : transaction.failure;
+            return evaluator;
+        }
+        evaluator["status"] = "OK";
+        evaluator["selectionMode"] = "sequential_transaction";
+        evaluator["simulations"] = transaction.totalSimulations;
+        evaluator["requestedSimulations"] = requestedSimulations;
+        evaluator["additionalSimulations"] = transaction.totalSimulations;
+        evaluator["totalSimulations"] = transaction.totalSimulations;
+        evaluator["selectedAction"] = silver_bridge::semanticActionFingerprint(transaction.finalAction);
+        evaluator["selectedLabel"] = one_combat::advisor::silverActionLabel(
+            transaction.finalAction, imported.wire);
+        evaluator["selectedLiveAction"] = one_combat::advisor::selectedLiveAction(
+            transaction.finalAction, importContext, request.observation);
+        if (evaluator["selectedLiveAction"].is_null()) {
+            clearSession();
+            evaluator["status"] = "UNSUPPORTED";
+            evaluator["reason"] = "silver_live_action_lowering";
+            evaluator.erase("selectedAction");
+            evaluator.erase("selectedLabel");
+            evaluator.erase("selectedLiveAction");
+            return evaluator;
+        }
+        evaluator["playerTurn"] = imported.playerTurn;
+        evaluator["decisionInTurn"] = imported.decisionInTurn;
+        evaluator["transaction"] = {
+            {"searchDecisions", transaction.searchDecisions},
+            {"rerootExact", transaction.rerootExact},
+            {"rerootFallback", transaction.rerootFallback},
+            {"privateStateOnly", transaction.privateStateOnly},
+        };
+        return evaluator;
+    }
     const auto rootIdentity = request.observation.value("silverRoot", json::object()).dump();
     if (silverRootIdentity != rootIdentity) {
         silverRootIdentity = rootIdentity;
@@ -323,10 +596,45 @@ int main() {
     if (const char *path = std::getenv("STS_LIVE_OOC_MODEL"); path && *path) {
         if (oocModel->load(path, true)) oocIdentity = modelIdentity(path);
     }
-    const one_combat::LiveOocV4QPolicy oocPolicy(*oocModel);
-    std::unique_ptr<one_combat::NativeCombatTransitionSampler> ctm;
+    one_combat::CompactTreeNet oocWinModel;
+    std::string oocWinIdentity = "unavailable";
+    if (const char *path = std::getenv("STS_LIVE_OOC_WIN_MODEL"); path && *path) {
+        // CompactTreeNet is also used by the simulator and reports successful
+        // loads on stdout. The advisor stdout is a strict JSONL protocol, so
+        // keep that diagnostic out of the wire stream.
+        std::ostringstream discardedLoadBanner;
+        auto *const stdoutBuffer = std::cout.rdbuf(discardedLoadBanner.rdbuf());
+        bool loaded = false;
+        try {
+            loaded = oocWinModel.load(path, one_combat::richIdxMap(), "LiveOocWinModel");
+        } catch (...) {
+            std::cout.rdbuf(stdoutBuffer);
+            throw;
+        }
+        std::cout.rdbuf(stdoutBuffer);
+        if (loaded)
+            oocWinIdentity = modelIdentity(path);
+    }
+    one_combat::CompactTreeNet oocFloorModel;
+    std::string oocFloorIdentity = "unavailable";
+    if (const char *path = std::getenv("STS_LIVE_OOC_FLOOR_MODEL"); path && *path) {
+        std::ostringstream discardedLoadBanner;
+        auto *const stdoutBuffer = std::cout.rdbuf(discardedLoadBanner.rdbuf());
+        bool loaded = false;
+        try {
+            loaded = oocFloorModel.load(path, one_combat::richIdxMap(), "LiveOocFloorModel");
+        } catch (...) {
+            std::cout.rdbuf(stdoutBuffer);
+            throw;
+        }
+        std::cout.rdbuf(stdoutBuffer);
+        if (loaded) oocFloorIdentity = modelIdentity(path);
+    }
+    std::shared_ptr<one_combat::NativeCombatTransitionSampler> ctm;
     std::string ctmStatus = "MODEL_UNAVAILABLE", ctmReason;
+    std::string ctmIdentity = "unavailable";
     std::string cachedEntryHash;
+    PendingCompoundPlan pendingCompound;
     json cachedEvaluator;
     std::shared_ptr<silver_bridge::SilverSearchSession> silverSession;
     std::string silverSessionIdentity;
@@ -336,12 +644,19 @@ int main() {
     std::int64_t silverSimulations = 0;
     if (const char *path = std::getenv("STS_CTM_MODEL"); path && *path) {
         try {
-            ctm = std::make_unique<one_combat::NativeCombatTransitionSampler>(path);
+            ctm = std::make_shared<one_combat::NativeCombatTransitionSampler>(path);
             ctmStatus = "OK";
+            ctmIdentity = modelIdentity(path);
         } catch (const std::exception &e) {
             ctmStatus = "SCHEMA_MISMATCH"; ctmReason = e.what();
         }
     }
+    std::unique_ptr<one_combat::LiveOocPolicy> oocPolicy;
+    if (const char *selected = std::getenv("STS_LIVE_OOC_POLICY"); selected && std::string(selected) == "v4")
+        oocPolicy = std::make_unique<one_combat::LiveOocV4QPolicy>(*oocModel);
+    else
+        oocPolicy = std::make_unique<one_combat::LiveOocMctsPolicy>(*oocModel, ctm,
+                                                                      &oocWinModel, &oocFloorModel);
     std::string line;
     while (std::getline(std::cin, line)) {
         json response;
@@ -424,7 +739,9 @@ int main() {
                             }
                         }
                     } else if (request.observation.value("boundary", std::string()) == "ooc") {
-                        response = oocResponse(request, oocPolicy, oocIdentity);
+                        response = oocResponse(request, *oocPolicy, oocIdentity + ":ctm=" + ctmIdentity
+                                                + ":win=" + oocWinIdentity + ":floor=" + oocFloorIdentity,
+                                                pendingCompound);
                     } else {
                         one_combat::advisor::PublicOocState imported;
                         const auto importedResult =
