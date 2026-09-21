@@ -1,8 +1,9 @@
 # Live model inspector
 
-Last verified: 2026-09-21. This page describes the private integration
-boundary currently present in the repository; it is not a claim that every
-game boundary has a qualified live evaluator.
+Last verified: 2026-09-22 for strict live-driver selection and reward flow.
+This page describes the private integration boundary currently present in the
+repository; it is not a claim that every game boundary has a qualified live
+evaluator.
 
 ## Current boundary
 
@@ -583,24 +584,34 @@ provider elsewhere; no LLM chooses ordinary gameplay actions. `--ooc-policy
 v4`, `--strict-ooc`, `--strict-silver`, and `--max-steps` control coverage and
 stopping. The default resumes an advertised save; `--new-run` refuses to
 replace a save or live run. Without a save, an explicit new-run/character
-request is required. Ascension and seed are passed through to MCP.
+request is required. After a terminal outcome, a later explicit `--new-run`
+request can use the game-over Proceed control to reach the menu before starting
+the next seed. Ascension and seed are passed through to MCP.
 
-In-combat potion/discovery `CARD_REWARD` modals follow the inspector's OOC
-boundary, with explicit unsupported fallback when skipping is unavailable.
-Combat `GRID`/`HAND_SELECT` boundaries continue to use Silver.
+In-combat `CARD_REWARD` modals are combat selection boundaries. A vanilla
+`DiscoveryAction` offers three visible cards and supplies its actual copy
+count to the native Silver `DISCOVERY` task; Silver's selected card ID must
+uniquely resolve to one MCP choice. Unknown combat card-reward selectors stay
+fail-closed. Combat `GRID`/`HAND_SELECT` boundaries also use Silver.
 Combat capture uses the room's `COMBAT` phase, including event rooms, rather
 than requiring a monster-room subclass. Selection boundary detection is
 independent of native serializer support: an unknown selection task remains
 combat and returns Silver `UNSUPPORTED` with `silver_unmapped_selection_task`,
-allowing the normal deterministic combat fallback. Hand selections project the
+without making a gameplay choice in strict mode. Hand selections project the
 screen's actual `canPickZero` value. The driver still stops on any genuine
 boundary mismatch instead of reinterpreting OOC output as a Silver result.
 
 Card-reward skips are retained by session and an opaque, read-only identity of
 that physical reward. Returning to the combat-reward list collects other
 rewards or proceeds instead of reopening the skipped group. These identities
-do not expose unopened card contents. A repeated OOC state/action pair stops
-before another mutation and emits a failure packet; distinct physical rewards
+do not expose unopened card contents. Cleanup reads a correlated public OOC
+observation without waiting for an advisor result once the model has already
+declined that physical card reward; remaining potion or relic choices still
+wait for OOC MCTS. Opening a boss chest reveals the relic offer. If OOC selects
+Skip, the follow-up `Proceed` from the chest is mechanical. A single-card OOC
+grid selection likewise uses `Proceed` only after the model's card choice has
+opened its confirmation button. A repeated OOC state/action pair stops before
+another mutation and emits a failure packet; distinct physical rewards
 remain distinguishable even when their visible offers match.
 
 A real integration error exits nonzero and atomically writes

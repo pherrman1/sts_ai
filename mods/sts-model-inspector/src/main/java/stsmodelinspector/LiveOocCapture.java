@@ -38,6 +38,111 @@ final class LiveOocCapture {
     private static final java.util.IdentityHashMap<Object,String> rewardIdentities = new java.util.IdentityHashMap<>();
     private static final SeenRelicOffers seenRelicOffers = new SeenRelicOffers();
     private static final CombatClassHistory combatClassHistory = new CombatClassHistory();
+    private static final QuestionHistory questionHistory = new QuestionHistory();
+    private static final CardRewardVisits cardRewardVisits = new CardRewardVisits();
+
+    static final class CardRewardVisits {
+        private Object player, node;
+        private String opened;
+        private final LinkedHashSet<String> declined = new LinkedHashSet<>();
+        private void scope(Object currentPlayer, Object currentNode) {
+            if (player == currentPlayer && node == currentNode) return;
+            player = currentPlayer; node = currentNode; opened = null; declined.clear();
+        }
+        void opened(Object currentPlayer, Object currentNode, String identity) {
+            scope(currentPlayer, currentNode);
+            opened = identity;
+        }
+        void parent(Object currentPlayer, Object currentNode, List<String> cardIdentities) {
+            scope(currentPlayer, currentNode);
+            if (opened != null && cardIdentities.contains(opened)) declined.add(opened);
+            opened = null;
+        }
+        boolean declined(String identity) { return declined.contains(identity); }
+    }
+
+    static final class QuestionHistory {
+        private long seed = Long.MIN_VALUE;
+        private int act = -1;
+        private boolean invalid;
+        private final List<Map<String,Object>> entries = new ArrayList<>();
+
+        private Path path(long runSeed, int runAct) {
+            return Paths.get(System.getProperty("user.home", "."), ".cache",
+                    "sts-model-inspector", "question-history", runSeed + "-act" + runAct + ".tsv");
+        }
+        private void load(long runSeed, int runAct) {
+            if (seed == runSeed && act == runAct) return;
+            seed = runSeed; act = runAct; invalid = false; entries.clear();
+            Path ledger = path(seed, act);
+            if (!Files.isRegularFile(ledger)) return;
+            try (BufferedReader reader = Files.newBufferedReader(ledger, StandardCharsets.UTF_8)) {
+                String line;
+                int previous = 0;
+                while ((line = reader.readLine()) != null) {
+                    String[] fields = line.split("\\t", -1);
+                    if (fields.length != 2) throw new IllegalArgumentException("question ledger fields");
+                    int floor = Integer.parseInt(fields[0]);
+                    if (floor <= previous || !valid(fields[1]))
+                        throw new IllegalArgumentException("question ledger order or outcome");
+                    entries.add(object("floor", floor, "outcome", fields[1]));
+                    previous = floor;
+                }
+            } catch (IOException | RuntimeException failure) {
+                entries.clear(); invalid = true;
+            }
+        }
+        private static boolean valid(String outcome) {
+            return Arrays.asList("MONSTER", "SHOP", "TREASURE", "EVENT").contains(outcome);
+        }
+        private void persist() {
+            if (invalid) return;
+            Path ledger = path(seed, act);
+            try {
+                Files.createDirectories(ledger.getParent());
+                Path temp = ledger.resolveSibling(ledger.getFileName() + ".tmp");
+                try (BufferedWriter writer = Files.newBufferedWriter(temp, StandardCharsets.UTF_8)) {
+                    for (Map<String,Object> entry : entries)
+                        writer.write(entry.get("floor") + "\t" + entry.get("outcome") + "\n");
+                }
+                try { Files.move(temp, ledger, java.nio.file.StandardCopyOption.ATOMIC_MOVE,
+                        java.nio.file.StandardCopyOption.REPLACE_EXISTING); }
+                catch (java.nio.file.AtomicMoveNotSupportedException ignored) {
+                    Files.move(temp, ledger, java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+                }
+            } catch (IOException failure) { invalid = true; }
+        }
+        void observe(long runSeed, int runAct, int floor, int expectedCount,
+                boolean currentQuestion, String roomClass) {
+            load(runSeed, runAct);
+            if (floor == 0) {
+                entries.clear(); invalid = false;
+                try {
+                    for (int a = 1; a <= 4; ++a) Files.deleteIfExists(path(runSeed, a));
+                } catch (IOException failure) { invalid = true; }
+                return;
+            }
+            if (!currentQuestion || invalid) return;
+            String outcome = roomClass.startsWith("MonsterRoom") ? "MONSTER"
+                    : "ShopRoom".equals(roomClass) ? "SHOP"
+                    : roomClass.startsWith("TreasureRoom") ? "TREASURE"
+                    : "EventRoom".equals(roomClass) ? "EVENT" : "";
+            if (!valid(outcome)) return;
+            for (Map<String,Object> entry : entries) {
+                if (((Number)entry.get("floor")).intValue() != floor) continue;
+                if (!outcome.equals(entry.get("outcome"))) invalid = true;
+                return;
+            }
+            if (entries.size() >= expectedCount
+                    || (!entries.isEmpty() && floor <= ((Number)entries.get(entries.size()-1).get("floor")).intValue())) {
+                invalid = true; return;
+            }
+            entries.add(object("floor", floor, "outcome", outcome));
+            persist();
+        }
+        boolean completeFor(int expectedCount) { return !invalid && entries.size() == expectedCount; }
+        List<Map<String,Object>> snapshot() { return new ArrayList<>(entries); }
+    }
 
     // The public damage metric records a combat's floor but not whether that
     // combat consumed an encounter queue. Observe the live room class before
@@ -135,15 +240,24 @@ final class LiveOocCapture {
             // populated its monster group. Wait for the first real group;
             // missing fights are caught against damage_taken at the next OOC.
             if (group == null) return;
-            if (kind == null) { complete = false; return; }
+            if (kind == null) {
+                complete = false; return;
+            }
             if (("NORMAL_QUEUE".equals(kind) || "ELITE_QUEUE".equals(kind))
-                    && (encounter == null || encounter.isEmpty())) { complete = false; return; }
+                    && (encounter == null || encounter.isEmpty())) {
+                // Loading a completed combat can expose its room and group
+                // before the encounter identity is restored. The floor ledger
+                // still catches any fight never observed with an identity.
+                return;
+            }
             if (group != lastGroup) {
                 if (!entries.isEmpty()
                         && ((Number)entries.get(entries.size() - 1).get("floor")).intValue() == floor) {
                     String previousKind = String.valueOf(entries.get(entries.size() - 1).get("kind"));
                     String previousEncounter = String.valueOf(entries.get(entries.size() - 1).getOrDefault("encounter", ""));
-                    if (!previousKind.equals(kind) || !previousEncounter.equals(encounter)) complete = false;
+                    if (!previousKind.equals(kind) || !previousEncounter.equals(encounter)) {
+                        complete = false;
+                    }
                 } else {
                     entries.add(object("floor", floor, "kind", kind,
                             "encounter", encounter == null ? "" : encounter));
@@ -152,7 +266,9 @@ final class LiveOocCapture {
                 persist();
             }
         }
-        void invalidate() { complete = false; }
+        void invalidate() {
+            complete = false;
+        }
         boolean completeFor(List<Integer> completedFloors) {
             if (!complete || entries.size() != completedFloors.size()) return false;
             for (int i = 0; i < entries.size(); ++i) {
@@ -212,6 +328,55 @@ final class LiveOocCapture {
         private boolean complete;
         private final LinkedHashSet<String> offers = new LinkedHashSet<>();
 
+        private Path ledgerPath(long currentSeed) {
+            return Paths.get(System.getProperty("user.home", "."), ".cache",
+                    "sts-model-inspector", "seen-relic-offers", currentSeed + ".tsv");
+        }
+
+        private boolean restore(long currentSeed, int currentFloor) {
+            Path path = ledgerPath(currentSeed);
+            if (!Files.isRegularFile(path)) return false;
+            try (BufferedReader reader = Files.newBufferedReader(path, StandardCharsets.UTF_8)) {
+                String header = reader.readLine();
+                if (header == null) return false;
+                String[] fields = header.split("\\t", -1);
+                if (fields.length != 3 || !"v1".equals(fields[0])) return false;
+                int savedFloor = Integer.parseInt(fields[1]);
+                if (savedFloor < 0 || savedFloor > currentFloor
+                        || (!"0".equals(fields[2]) && !"1".equals(fields[2]))) return false;
+                LinkedHashSet<String> restoredOffers = new LinkedHashSet<>();
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    if (line.isEmpty() || line.indexOf('\t') >= 0 || restoredOffers.size() >= 181)
+                        return false;
+                    restoredOffers.add(line);
+                }
+                lastFloor = savedFloor;
+                complete = "1".equals(fields[2]);
+                offers.clear();
+                offers.addAll(restoredOffers);
+                return true;
+            } catch (IOException | NumberFormatException failure) { return false; }
+        }
+
+        private void persist() {
+            if (player == null) return;
+            Path path = ledgerPath(seed);
+            try {
+                Files.createDirectories(path.getParent());
+                Path temp = path.resolveSibling(path.getFileName() + ".tmp");
+                try (BufferedWriter writer = Files.newBufferedWriter(temp, StandardCharsets.UTF_8)) {
+                    writer.write("v1\t" + lastFloor + "\t" + (complete ? "1" : "0") + "\n");
+                    for (String offer : offers) writer.write(offer + "\n");
+                }
+                try { Files.move(temp, path, java.nio.file.StandardCopyOption.ATOMIC_MOVE,
+                        java.nio.file.StandardCopyOption.REPLACE_EXISTING); }
+                catch (java.nio.file.AtomicMoveNotSupportedException ignored) {
+                    Files.move(temp, path, java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+                }
+            } catch (IOException failure) { complete = false; }
+        }
+
         void observe(Object currentPlayer, long currentSeed, int floor,
                      boolean freshRun, String screen, Map<String,Object> details) {
             if (player != currentPlayer || seed != currentSeed || floor < lastFloor) {
@@ -220,6 +385,9 @@ final class LiveOocCapture {
                 lastFloor = -1;
                 complete = freshRun;
                 offers.clear();
+                if (!freshRun && restore(currentSeed, floor)) {
+                    // Preserve offers observed before a process restart.
+                }
             }
             if (lastFloor >= 0 && floor > lastFloor + 1) complete = false;
             lastFloor = floor;
@@ -234,8 +402,9 @@ final class LiveOocCapture {
                 for (Object relic : list(details.get("relics")))
                     offers.add(String.valueOf(relic));
             }
+            persist();
         }
-        void invalidate() { complete = false; }
+        void invalidate() { complete = false; persist(); }
         boolean complete() { return complete; }
         List<String> snapshot() { return new ArrayList<>(offers); }
     }
@@ -316,7 +485,6 @@ final class LiveOocCapture {
             finalizeSupportReason(out);
         } catch (ReflectiveOperationException | RuntimeException failure) {
             seenRelicOffers.invalidate();
-            combatClassHistory.invalidate();
             recordCaptureError(out, failure);
         }
         return JSON.toJson(out);
@@ -468,12 +636,12 @@ final class LiveOocCapture {
             if (idx >= 0 && idx < 6) ++actVisits[idx];
         }
         p.put("currentActPathVisits", actVisits);
-        // The immutable map symbol preserves '?' after conversion, but this
-        // capture does not yet persist the resolved public outcome. Do not
-        // let the native importer reconstruct those counters from a uniform
-        // hypothetical history.
-        p.put("questionOutcomes", new ArrayList<String>());
-        p.put("questionHistoryComplete", false);
+        boolean currentQuestion = !canonicalPathHistory.isEmpty()
+                && "EVENT".equals(canonicalPathHistory.get(canonicalPathHistory.size() - 1));
+        questionHistory.observe(Settings.seed, AbstractDungeon.actNum, AbstractDungeon.floorNum,
+                actVisits[2], currentQuestion, AbstractDungeon.getCurrRoom().getClass().getSimpleName());
+        p.put("questionOutcomes", questionHistory.snapshot());
+        p.put("questionHistoryComplete", questionHistory.completeFor(actVisits[2]));
         List<String> acquiredRelics = new ArrayList<>();
         List<String> priorEvents = new ArrayList<>();
         int shopRemovals = 0;
@@ -510,12 +678,50 @@ final class LiveOocCapture {
         return "NEOW".equals(liveId) ? "Neow" : liveId;
     }
 
+    static String visibleChestSize(String chestClass) {
+        if ("SmallChest".equals(chestClass)) return "SMALL";
+        if ("MediumChest".equals(chestClass)) return "MEDIUM";
+        if ("LargeChest".equals(chestClass)) return "LARGE";
+        return "";
+    }
+
+    static int scrapOozeRetryCount(int publicChance, int publicDamage, int ascension) {
+        int expectedDamage = ascension >= 15 ? 5 : 3;
+        if (publicDamage != expectedDamage || publicChance < 25 || publicChance > 95
+                || (publicChance - 25) % 10 != 0)
+            throw new IllegalArgumentException("Scrap Ooze public retry state differs from native event");
+        return (publicChance - 25) / 10;
+    }
+
     static boolean simpleInitialEventSupported(String simple) {
-        return Arrays.asList("BigFish", "GoldenShrine",
-                "LivingWall", "LiarsGame", "Mushrooms", "TheLibrary",
+        return Arrays.asList("BigFish", "Beggar", "GoldenIdolEvent", "GoldenShrine", "ShiningLight", "WeMeetAgain",
+                "LivingWall", "Sssserpent", "ScrapOoze", "Mushrooms", "TheLibrary",
                 "TheMausoleum", "MysteriousSphere", "SecretPortal", "FountainOfCurseRemoval", "UpgradeShrine",
                 "PurificationShrine", "Transmogrifier", "Duplicator", "Bonfire", "TheJoust",
                 "WomanInBlue").contains(simple);
+    }
+
+    static boolean nestDecisionVisible(String simple, Object phase, List<?> labels, List<?> options,
+            int ascension) {
+        if (!"Nest".equals(simple) || !"1".equals(String.valueOf(phase))
+                || labels.size() != 2 || options.size() != 2) return false;
+        int gold = ascension >= 15 ? 50 : 99;
+        return ((Number)map(options.get(0)).get("index")).intValue() == 0
+                && ((Number)map(options.get(1)).get("index")).intValue() == 1
+                && String.valueOf(labels.get(0)).contains("Obtain " + gold + " Gold")
+                && String.valueOf(labels.get(1)).contains("Ritual Dagger")
+                && String.valueOf(labels.get(1)).contains("Lose 6 HP");
+    }
+
+    static boolean goldenWingInitialVisible(Object phase, List<?> labels, List<?> options,
+            boolean canAttack, int damage) {
+        if (!"INTRO".equals(String.valueOf(phase)) || damage != 7
+                || labels.size() != (canAttack ? 3 : 2) || options.size() != labels.size()) return false;
+        int[] expected = canAttack ? new int[]{0, 1, 2} : new int[]{0, 2};
+        for (int i = 0; i < expected.length; ++i)
+            if (((Number)map(options.get(i)).get("index")).intValue() != expected[i]) return false;
+        return String.valueOf(labels.get(0)).contains("Lose 7 HP")
+                && String.valueOf(labels.get(labels.size() - 1)).contains("Leave");
     }
 
     static String canonicalScreen(String type) {
@@ -615,8 +821,11 @@ final class LiveOocCapture {
     private static void cardReward(Map<String,Object> out, List<Map<String,Object>> cs, List<?> labels)
             throws ReflectiveOperationException {
         out.put("screen", "card_reward");
-        if (AbstractDungeon.cardRewardScreen.rItem != null)
-            out.put("rewardIdentity", rewardIdentity(AbstractDungeon.cardRewardScreen.rItem));
+        if (AbstractDungeon.cardRewardScreen.rItem != null) {
+            String identity = rewardIdentity(AbstractDungeon.cardRewardScreen.rItem);
+            out.put("rewardIdentity", identity);
+            cardRewardVisits.opened(AbstractDungeon.player, AbstractDungeon.currMapNode, identity);
+        }
         Map<String,Object> r = emptyRewards();
         List<AbstractCard> offered = AbstractDungeon.cardRewardScreen.rewardGroup;
         mutableList(r.get("cardRewards")).add(cards(offered)); out.put("details", r);
@@ -636,15 +845,21 @@ final class LiveOocCapture {
         Map<String,Object> r = emptyRewards(); out.put("details", r);
         List<Object> occurrences = new ArrayList<>(); out.put("rewardOccurrences", occurrences);
         List<RewardItem> offered = AbstractDungeon.combatRewardScreen.rewards;
+        List<String> cardIdentities = new ArrayList<>();
+        for (RewardItem reward : offered)
+            if ("CARD".equals(reward.type.name())) cardIdentities.add(rewardIdentity(reward));
+        cardRewardVisits.parent(AbstractDungeon.player, AbstractDungeon.currMapNode, cardIdentities);
         for (int i = 0; i < offered.size(); ++i) {
             RewardItem reward = offered.get(i);
             String kind = reward.type.name();
-            occurrences.add(object("index", i, "type", kind, "identity", rewardIdentity(reward)));
+            String identity = rewardIdentity(reward);
+            occurrences.add(object("index", i, "type", kind, "identity", identity));
             if ("CARD".equals(kind)) {
                 // The unopened reward icon reveals only its type. Vanilla
                 // has already generated reward.cards, but those identities
                 // are not yet public and must never enter this observation.
-                out.put("unsupportedReason", "CARD_GROUP_NOT_REVEALED");
+                if (!cardRewardVisits.declined(identity))
+                    out.put("unsupportedReason", "CARD_GROUP_NOT_REVEALED");
             } else if ("GOLD".equals(kind) || "STOLEN_GOLD".equals(kind)) {
                 int idx = list(r.get("gold")).size();
                 mutableList(r.get("gold")).add(reward.goldAmt + reward.bonusGold);
@@ -728,7 +943,8 @@ final class LiveOocCapture {
         for (int i = 0; i < AbstractDungeon.bossRelicScreen.relics.size(); ++i) {
             relics.add(AbstractDungeon.bossRelicScreen.relics.get(i).relicId); add(cs, labels, i, "option", i, 0);
         }
-        out.put("details", object("relics", relics)); button(cs, "cancel", "option", 3, 0);
+        // MCPTheSpire advertises Skip for the boss relic screen's fourth option.
+        out.put("details", object("relics", relics)); button(cs, "skip", "option", 3, 0);
     }
     private static void treasure(Map<String,Object> out, List<Map<String,Object>> cs, List<?> labels)
             throws ReflectiveOperationException {
@@ -743,11 +959,14 @@ final class LiveOocCapture {
             captureOpenedTreasure(out, cs,
                     Boolean.TRUE.equals(map(out.get("mcpState")).get("can_proceed")));
         } else {
-            // The native chest particle depends on setupTreasureRoom() state
-            // (chest size, gold branch, and relic tier). The capture currently
-            // exposes only the Java chest class, so never score an unopened
-            // chest from a fabricated default StateInfo.
-            out.put("unsupportedReason", "TREASURE_STATE_UNREPRESENTABLE");
+            // Chest size is visible. Gold and relic tier remain hidden and
+            // are sampled together by the native root particle.
+            String size = visibleChestSize(chest.getClass().getSimpleName());
+            if (size.isEmpty()) out.put("unsupportedReason", "TREASURE_STATE_UNREPRESENTABLE:"
+                    + chest.getClass().getSimpleName());
+            if (!out.containsKey("unsupportedReason"))
+                out.put("details", object("chestType", chest.getClass().getSimpleName(),
+                        "opened", false, "chestSize", size));
             add(cs, labels, 0, "option", 0, 0);
             button(cs, "proceed", "option", 1, 0);
         }
@@ -772,7 +991,9 @@ final class LiveOocCapture {
             int index = ((Number)field(active.get(i), "slot")).intValue();
             if (index != all.indexOf(active.get(i))) throw new IllegalArgumentException("event slot/order disagreement");
             options.add(object("index", index, "disabled", false));
-            add(cs, labels, i, "option", index, 0);
+            int nativeIndex = "GoldenIdolEvent".equals(simple) && "1".equals(String.valueOf(phase))
+                    ? index + 2 : index;
+            add(cs, labels, i, "option", nativeIndex, 0);
         }
         Map<String,Object> e = object("id", id, "phase", String.valueOf(phase), "options", options, "eventData", 0);
         out.put("event", e);
@@ -780,9 +1001,62 @@ final class LiveOocCapture {
                 "upgradeOne", false, "cleanUpIsRemoveCard", false,
                 "skillCardDeckIdx", -1, "powerCardDeckIdx", -1, "attackCardDeckIdx", -1,
                 "potionIdx", -1, "gold", -1, "cardIdx", -1));
+        if ("ShiningLight".equals(simple))
+            map(out.get("details")).put("hpAmount0", field(event, "damage"));
+        if ("GoldenIdolEvent".equals(simple)) {
+            map(out.get("details")).put("hpAmount0", field(event, "damage"));
+            map(out.get("details")).put("hpAmount1", field(event, "maxHpLoss"));
+            map(out.get("details")).put("phase", ((Number)phase).intValue());
+        }
+        boolean goldenWing = "GoldenWing".equals(simple)
+                && goldenWingInitialVisible(phase, labels, options,
+                        Boolean.TRUE.equals(field(event, "canAttack")),
+                        ((Number)field(event, "damage")).intValue());
+        if ("ScrapOoze".equals(simple) && "0".equals(String.valueOf(phase)))
+            map(out.get("details")).put("eventData", scrapOozeRetryCount(
+                    ((Number)field(event, "relicObtainChance")).intValue(),
+                    ((Number)field(event, "dmg")).intValue(), AbstractDungeon.ascensionLevel));
+        if ("WeMeetAgain".equals(simple) && "INTRO".equals(String.valueOf(phase))) {
+            Map<String,Object> details = map(out.get("details"));
+            Object offeredPotion = field(event, "potionOption");
+            Object offeredCard = field(event, "cardOption");
+            int goldAmount = ((Number)field(event, "goldAmount")).intValue();
+            int potionIndex = -1, cardIndex = -1;
+            if (offeredPotion != null) {
+                for (int i = 0; i < AbstractDungeon.player.potions.size(); ++i)
+                    if (AbstractDungeon.player.potions.get(i) == offeredPotion) potionIndex = i;
+                if (potionIndex < 0) throw new IllegalArgumentException("We Meet Again potion identity lost");
+            }
+            if (offeredCard != null) {
+                AbstractCard card = (AbstractCard)offeredCard;
+                for (int i = 0; i < AbstractDungeon.player.masterDeck.group.size(); ++i)
+                    if (AbstractDungeon.player.masterDeck.group.get(i).uuid.equals(card.uuid)) cardIndex = i;
+                if (cardIndex < 0) throw new IllegalArgumentException("We Meet Again card identity lost");
+            }
+            details.put("potionIdx", potionIndex);
+            details.put("gold", goldAmount >= 50 ? goldAmount : -1);
+            details.put("cardIdx", cardIndex);
+            List<Integer> expected = new ArrayList<>();
+            if (potionIndex >= 0) expected.add(0);
+            if (goldAmount >= 50) expected.add(1);
+            if (cardIndex >= 0) expected.add(2);
+            expected.add(3);
+            if (expected.size() != options.size())
+                throw new IllegalArgumentException("We Meet Again public options differ from native availability");
+            for (int i = 0; i < expected.size(); ++i)
+                if (((Number)map(options.get(i)).get("index")).intValue() != expected.get(i))
+                    throw new IllegalArgumentException("We Meet Again option slots differ from native order");
+        }
         // Only initial phases with native one-to-one option indices qualify.
         boolean initial = "INTRO".equals(String.valueOf(phase)) || "0".equals(String.valueOf(phase));
-        if (!simpleInitialEventSupported(simple) || !initial)
+        boolean idolTrap = "GoldenIdolEvent".equals(simple) && "1".equals(String.valueOf(phase))
+                && options.size() == 3 && labels.size() == 3
+                && ((Number)map(options.get(0)).get("index")).intValue() == 0
+                && ((Number)map(options.get(1)).get("index")).intValue() == 1
+                && ((Number)map(options.get(2)).get("index")).intValue() == 2;
+        if (!(simpleInitialEventSupported(simple) && initial)
+                && !nestDecisionVisible(simple, phase, labels, options, AbstractDungeon.ascensionLevel)
+                && !idolTrap && !goldenWing)
             out.put("unsupportedReason", "EVENT_PHASE_UNREPRESENTABLE:" + id + ":" + phase);
         if ("NeowEvent".equals(simple)) {
             List<Object> offers = new ArrayList<>();

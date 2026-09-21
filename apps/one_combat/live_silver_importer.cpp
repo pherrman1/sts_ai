@@ -1114,15 +1114,23 @@ nlohmann::json selectedLiveAction(const silver_bridge::SemanticAction &action,
             combat = observation["silverRoot"].value("combat", nlohmann::json::object());
         }
         const auto monsters = combat.value("monsters", nlohmann::json::array());
-        if (!monsters.is_array() || silverSlot >= static_cast<int>(monsters.size())) return std::nullopt;
-        int liveIndex = 0;
-        for (int slot = 0; slot < static_cast<int>(monsters.size()); ++slot) {
-            const auto &monster = monsters[slot];
+        if (!monsters.is_array()) return std::nullopt;
+        std::vector<std::pair<int, bool>> physicalSlots;
+        for (int index = 0; index < static_cast<int>(monsters.size()); ++index) {
+            const auto &monster = monsters[index];
             if (!monster.is_object()) return std::nullopt;
             if (!monster.contains("dead") || !monster["dead"].is_boolean()) return std::nullopt;
-            const bool dead = monster["dead"].get<bool>();
+            const auto slotField = monster.value("slot", monster.value("idx", json(index)));
+            if (!slotField.is_number_integer()) return std::nullopt;
+            physicalSlots.emplace_back(slotField.get<int>(), monster["dead"].get<bool>());
+        }
+        std::sort(physicalSlots.begin(), physicalSlots.end());
+        int liveIndex = 0, previousSlot = -1;
+        for (const auto &[slot, dead] : physicalSlots) {
+            if (slot < 0 || slot == previousSlot) return std::nullopt;
             if (slot == silverSlot) return dead ? std::nullopt : std::optional<int>(liveIndex + 1);
             if (!dead) ++liveIndex;
+            previousSlot = slot;
         }
         return std::nullopt;
     };
@@ -1175,8 +1183,32 @@ nlohmann::json selectedLiveAction(const silver_bridge::SemanticAction &action,
         }
         return {{"kind", "proceed"}};
     }
-    case SemanticActionType::SINGLE_CARD_SELECT:
-        return nullptr;
+    case SemanticActionType::SINGLE_CARD_SELECT: {
+        if (action.cardSelectTask != static_cast<std::int16_t>(sts::CardSelectTask::DISCOVERY)
+            || action.source != silver_bridge::CardSource::CARD_SELECT_OPTION
+            || action.skipCardSelect) return nullptr;
+        nlohmann::json combat = observation.contains("combat") && observation["combat"].is_object()
+            ? observation["combat"]
+            : observation.value("silverRoot", nlohmann::json::object())
+                  .value("combat", nlohmann::json::object());
+        const auto select = combat.value("cardSelect", nlohmann::json::object());
+        if (!select.is_object() || select.value("task", std::string()) != "DISCOVERY")
+            return nullptr;
+        const auto options = select.value("cards", nlohmann::json::array());
+        if (!options.is_array() || options.size() != 3) return nullptr;
+        int matched = -1;
+        for (int i = 0; i < static_cast<int>(options.size()); ++i) {
+            if (!options[i].is_string()) return nullptr;
+            try {
+                if (static_cast<std::int16_t>(options[i].get<sts::CardId>()) != action.optionCardId)
+                    continue;
+            } catch (...) { return nullptr; }
+            if (matched >= 0) return nullptr;
+            matched = i;
+        }
+        if (matched < 0) return nullptr;
+        return {{"kind", "choose"}, {"choiceIndex", matched + 1}};
+    }
     case SemanticActionType::INVALID:
         return nullptr;
     }

@@ -172,6 +172,32 @@ LiveOocStateV1::LiveOocMctsRootV1 makeMctsRoot(const LiveOocStateV1 &source) {
         0, 1000, "current-act event visits");
     const bool questionHistoryComplete = publicState.contains("questionHistoryComplete")
         ? boolean(publicState, "questionHistoryComplete") : false;
+    const auto &questionOutcomes = array(publicState, "questionOutcomes", 100);
+    if (questionHistoryComplete) {
+        require(questionOutcomes.size() == static_cast<std::size_t>(eventVisits),
+                "complete question history length differs from event visits");
+        int previousFloor = actStartFloor;
+        root.monsterChance = 0.1f;
+        root.shopChance = 0.03f;
+        root.treasureChance = 0.02f;
+        for (const auto &entry : questionOutcomes) {
+            const int floor = integer(entry, "floor", actStartFloor + 1, source.projected.floorNum);
+            require(floor > previousFloor, "question outcomes must follow floor order");
+            previousFloor = floor;
+            const auto outcome = string(entry, "outcome");
+            Room room = Room::INVALID;
+            if (outcome == "MONSTER") room = Room::MONSTER;
+            else if (outcome == "SHOP") room = Room::SHOP;
+            else if (outcome == "TREASURE") room = Room::TREASURE;
+            else if (outcome == "EVENT") room = Room::EVENT;
+            require(room != Room::INVALID, "unknown public question outcome");
+            root.monsterChance = room == Room::MONSTER ? 0.1f : root.monsterChance + 0.1f;
+            root.shopChance = room == Room::SHOP ? 0.03f : root.shopChance + 0.03f;
+            root.treasureChance = room == Room::TREASURE ? 0.02f : root.treasureChance + 0.02f;
+            if (floor == source.projected.floorNum) root.curRoom = room;
+            if (floor + 1 == source.projected.floorNum) root.lastRoom = room;
+        }
+    }
     int normalCombats = 0, eliteCombats = 0;
     require(!combatHistoryComplete || combatHistory.size() == completedCombatFloors.size(),
         "complete combat history length differs from public combat metric");
@@ -466,6 +492,13 @@ ImportResult importLiveOocStateV1(const J &observation, LiveOocStateV1 &out) {
         if (g.screenState==ScreenState::MAP_SCREEN && g.curMapNodeY>=14)
             return {false,"UNSUPPORTED","V4_BOSS_MAP_TRANSITION"};
         const auto &d=o.at("details"); require(d.is_object(),"details must be an object");
+        if(g.screenState==ScreenState::TREASURE_ROOM && !d.value("opened",false)) {
+            const auto size=string(d,"chestSize");
+            if(size=="SMALL")g.info.chestSize=ChestSize::SMALL;
+            else if(size=="MEDIUM")g.info.chestSize=ChestSize::MEDIUM;
+            else if(size=="LARGE")g.info.chestSize=ChestSize::LARGE;
+            else return {false,"UNSUPPORTED","TREASURE_STATE_UNREPRESENTABLE:chest_size"};
+        }
         if(g.screenState==ScreenState::REWARDS) {
             auto &r=g.info.rewardsContainer;
             for(const auto &v:array(d,"gold",2)) r.addGold(integerValue(v,0,1000000,"gold reward"));
@@ -509,6 +542,12 @@ ImportResult importLiveOocStateV1(const J &observation, LiveOocStateV1 &out) {
             g.curEvent=event=="Neow" ? Event::NEOW : id<Event>(d.at("event"),Event::INVALID);
             g.info.eventData=integer(d,"eventData",0,100);
             g.info.phase=integer(d,"phase",0,100);
+            if(g.curEvent==Event::SHINING_LIGHT)
+                g.info.hpAmount0=integer(d,"hpAmount0",1,g.maxHp);
+            if(g.curEvent==Event::GOLDEN_IDOL) {
+                g.info.hpAmount0=integer(d,"hpAmount0",1,g.maxHp);
+                g.info.hpAmount1=integer(d,"hpAmount1",1,g.maxHp);
+            }
             // Fields used by native candidate/semantic enumeration are explicit even when inactive.
             g.info.upgradeOne=boolean(d,"upgradeOne");g.info.cleanUpIsRemoveCard=boolean(d,"cleanUpIsRemoveCard");
             g.info.skillCardDeckIdx=integer(d,"skillCardDeckIdx",-1,g.deck.size()-1);

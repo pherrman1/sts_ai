@@ -32,6 +32,7 @@ static J project(const GameContext &g,const PathHistory &path,const std::string 
         {"currentActPathVisits",J::array({0,0,0,0,0,0,0,0,0,0})},{"acquiredRelics",J::array()},
         {"pathHistory",J::array()},{"combatFloors",J::array()},
         {"combatHistory",J::array()},{"combatHistoryComplete",true},
+        {"questionOutcomes",J::array()},{"questionHistoryComplete",true},
         {"seenRelics",J::array()},{"seenRelicsComplete",true},
         {"rewardPityHistoryComplete",true},
         {"priorEvents",J::array()},{"shopRemoveCount",g.shopRemoveCount}};
@@ -55,7 +56,9 @@ static J project(const GameContext &g,const PathHistory &path,const std::string 
             for(int i=0;i<r.potionCount;++i)d["potions"].push_back(J(r.potions[i]));break;}
         case ScreenState::REST_ROOM:screen="rest";break;
         case ScreenState::MAP_SCREEN:screen="map";break;
-        case ScreenState::TREASURE_ROOM:screen="treasure";break;
+        case ScreenState::TREASURE_ROOM:screen="treasure";
+            d["chestSize"]=g.info.chestSize==ChestSize::SMALL?"SMALL":
+                g.info.chestSize==ChestSize::MEDIUM?"MEDIUM":"LARGE";break;
         case ScreenState::BOSS_RELIC_REWARDS:screen="boss_relic";d["relics"]=J::array();for(auto r:g.info.bossRelics)d["relics"].push_back(J(r));break;
         case ScreenState::CARD_SELECT:screen="selector";d={{"type",g.info.selectScreenType==CardSelectScreenType::UPGRADE?"upgrade":
             g.info.selectScreenType==CardSelectScreenType::TRANSFORM?"transform":"remove"},
@@ -68,6 +71,7 @@ static J project(const GameContext &g,const PathHistory &path,const std::string 
                 d["potions"].push_back({{"id",J(s.potions[i])},{"price",s.potionPrice(i)}});}break;}
         case ScreenState::EVENT_SCREEN:{screen="event";const auto &i=g.info;
             d={{"event",g.curEvent==Event::NEOW?J("Neow"):J(g.curEvent)},{"eventData",i.eventData},{"phase",i.phase},
+                {"hpAmount0",i.hpAmount0},{"hpAmount1",i.hpAmount1},
                 {"upgradeOne",i.upgradeOne},{"cleanUpIsRemoveCard",i.cleanUpIsRemoveCard},{"skillCardDeckIdx",i.skillCardDeckIdx},
                 {"powerCardDeckIdx",i.powerCardDeckIdx},{"attackCardDeckIdx",i.attackCardDeckIdx},{"potionIdx",i.potionIdx},
                 {"gold",i.gold},{"cardIdx",i.cardIdx}};
@@ -123,7 +127,8 @@ int main(int argc,char **argv){try{
     auto g=base;g.screenState=ScreenState::MAP_SCREEN;add("map_multiple_children",g);
     g=base;g.screenState=ScreenState::REST_ROOM;add("rest_smith_lift_dig_remove_key",g);
     g.blueKey=g.greenKey=g.redKey=true;add("rest_keys_collected",g);
-    g=base;g.screenState=ScreenState::TREASURE_ROOM;add("treasure_open_leave",g);
+    g=base;g.screenState=ScreenState::TREASURE_ROOM;g.info.chestSize=ChestSize::SMALL;
+    add("visible_small_chest_hidden_contents",g);
     g=base;g.screenState=ScreenState::REWARDS;g.info.rewardsContainer.clear();
     CardReward cards;cards.push_back(Card(CardId::STRIKE_RED));cards.push_back(Card(CardId::STRIKE_RED));cards.push_back(Card(CardId::BASH,1));
     g.info.rewardsContainer.addCardReward(cards);add("card_reward_duplicate_take_skip",g);
@@ -143,7 +148,15 @@ int main(int argc,char **argv){try{
     g=base;g.openCardSelectScreen(CardSelectScreenType::TRANSFORM,1);add("transform_selector",g);
     g=base;g.screenState=ScreenState::EVENT_SCREEN;g.curEvent=Event::BIG_FISH;add("event_big_fish",g);
     g.curEvent=Event::LIVING_WALL;add("event_living_wall",g);
+    g.curEvent=Event::SHINING_LIGHT;g.info.hpAmount0=16;add("event_shining_light_public_damage",g);
+    g.curEvent=Event::GOLDEN_IDOL;g.info.hpAmount0=20;g.info.hpAmount1=6;
+    add("event_golden_idol_public_trap",g);
+    g.curEvent=Event::WING_STATUE;add("event_golden_wing_locked_attack",g);
     g.curEvent=Event::THE_WOMAN_IN_BLUE;add("event_woman_in_blue",g);
+    g.curEvent=Event::THE_SSSSSERPENT;add("event_liars_game_serpent",g);
+    g.curEvent=Event::SCRAP_OOZE;g.info.eventData=3;add("event_scrap_ooze_public_retry",g);
+    g.curEvent=Event::WE_MEET_AGAIN;g.info.cardIdx=g.deck.size()-1;
+    g.info.potionIdx=-1;g.info.gold=-1;add("event_we_meet_again_card_or_attack",g);
     g.curEvent=Event::THE_LIBRARY;add("unsupported_library_reward_pity",g);
     g.curEvent=Event::HYPNOTIZING_COLORED_MUSHROOMS;add("unsupported_mushrooms_reward_pity",g);
     g.curEvent=Event::MYSTERIOUS_SPHERE;add("unsupported_sphere_reward_pity",g);
@@ -263,7 +276,7 @@ int main(int argc,char **argv){try{
         p["combatHistory"][0]["encounter"] = "JAW_WORM";
         p["combatHistory"][1]["encounter"] = "GREMLIN_NOB";
         p["questionHistoryComplete"] = true;
-        p["questionOutcomes"] = J::array({"MONSTER"});
+        p["questionOutcomes"] = J::array({{{"floor",22},{"outcome","MONSTER"}}});
         // Earlier act transitions mean path_taken[22] does not exist.
         p["pathHistory"] = J::array({"MONSTER", "EVENT", "ELITE"});
         advisor::LiveOocStateV1 live;
@@ -274,6 +287,26 @@ int main(int argc,char **argv){try{
                 "act-two elite and question-monster must consume separate queues");
         check(live.mctsRoot.currentActEventVisits == 1,
                 "room belief must use current-act event visits, not whole-run path visits");
+        check(std::abs(live.mctsRoot.state.monsterChance - 0.1f) < 1e-6f
+                && std::abs(live.mctsRoot.state.shopChance - 0.06f) < 1e-6f
+                && std::abs(live.mctsRoot.state.treasureChance - 0.04f) < 1e-6f,
+                "resolved public question monster did not update native room counters");
+    }
+    {
+        auto source = base;
+        source.screenState = ScreenState::EVENT_SCREEN;
+        source.curEvent = Event::SHINING_LIGHT;
+        source.info.hpAmount0 = 16;
+        auto wire = project(source, path, "current_question_shining_light");
+        auto &p = wire["ooc"]["publicState"];
+        p["currentActPathVisits"][static_cast<int>(Room::EVENT)] = 1;
+        p["questionOutcomes"] = J::array({{{"floor",7},{"outcome","EVENT"}}});
+        advisor::LiveOocStateV1 live;
+        check(advisor::importLiveOocStateV1(wire, live).ok, "current resolved question event import");
+        check(live.mctsRoot.state.curRoom == Room::EVENT
+                && live.mctsRoot.state.info.hpAmount0 == 16
+                && std::abs(live.mctsRoot.state.monsterChance - 0.2f) < 1e-6f,
+                "current public Shining Light outcome or damage lost");
     }
     {
         auto source = base;

@@ -1,6 +1,8 @@
 package stsmodelinspector;
 
 import java.util.HashMap;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 
 /** Pure projection tests: no game, rendering context, RNG, or save is initialized. */
@@ -111,13 +113,45 @@ public final class LiveOocCaptureTest {
         if (!"Neow".equals(LiveOocCapture.canonicalEventId("NEOW"))
                 || !"Big Fish".equals(LiveOocCapture.canonicalEventId("Big Fish")))
             throw new AssertionError("event canonical save identity mismatch");
-        if (!LiveOocCapture.simpleInitialEventSupported("WomanInBlue")
+        if (!LiveOocCapture.simpleInitialEventSupported("GoldenIdolEvent")
+                || !LiveOocCapture.simpleInitialEventSupported("Beggar")
+                || !LiveOocCapture.simpleInitialEventSupported("WomanInBlue")
+                || !LiveOocCapture.simpleInitialEventSupported("ShiningLight")
+                || !LiveOocCapture.simpleInitialEventSupported("WeMeetAgain")
+                || !LiveOocCapture.simpleInitialEventSupported("Sssserpent")
+                || !LiveOocCapture.simpleInitialEventSupported("ScrapOoze")
+                || LiveOocCapture.simpleInitialEventSupported("LiarsGame")
                 || LiveOocCapture.simpleInitialEventSupported("WomanInBlueDialogue")
-                || LiveOocCapture.simpleInitialEventSupported("ShiningLight")
                 || LiveOocCapture.simpleInitialEventSupported("Ghosts")
                 || LiveOocCapture.simpleInitialEventSupported("WindingHalls")
                 || LiveOocCapture.simpleInitialEventSupported("WorldOfGoop"))
             throw new AssertionError("Woman in Blue initial-phase support boundary mismatch");
+        if (!"SMALL".equals(LiveOocCapture.visibleChestSize("SmallChest"))
+                || !"MEDIUM".equals(LiveOocCapture.visibleChestSize("MediumChest"))
+                || !"LARGE".equals(LiveOocCapture.visibleChestSize("LargeChest"))
+                || !LiveOocCapture.visibleChestSize("BossChest").isEmpty())
+            throw new AssertionError("public chest size mapping did not stay bounded");
+        List<Object> nestOptions = Arrays.asList(obj("index", 0), obj("index", 1));
+        List<String> nestLabels = Arrays.asList("[Smash and Grab] Obtain 99 Gold.",
+                "[Stay in Line] Obtain Ritual Dagger. Lose 6 HP.");
+        if (!LiveOocCapture.nestDecisionVisible("Nest", 1, nestLabels, nestOptions, 0)
+                || LiveOocCapture.nestDecisionVisible("Nest", 0, nestLabels, nestOptions, 0)
+                || LiveOocCapture.nestDecisionVisible("Nest", 1, nestLabels, nestOptions, 15))
+            throw new AssertionError("Nest visible decision phase or ascension mismatch");
+        if (!LiveOocCapture.goldenWingInitialVisible("INTRO", Arrays.asList(
+                    "[Pray] Remove a card. Lose 7 HP.", "[Leave]"),
+                    Arrays.asList(obj("index", 0), obj("index", 2)), false, 7)
+                || LiveOocCapture.goldenWingInitialVisible("INTRO", Arrays.asList(
+                    "[Pray] Remove a card. Lose 7 HP.", "[Leave]"),
+                    Arrays.asList(obj("index", 0), obj("index", 1)), false, 7))
+            throw new AssertionError("Golden Wing locked-option slot mismatch");
+        if (LiveOocCapture.scrapOozeRetryCount(25, 3, 0) != 0
+                || LiveOocCapture.scrapOozeRetryCount(55, 5, 20) != 3)
+            throw new AssertionError("Scrap Ooze public chance lost native retry count");
+        try {
+            LiveOocCapture.scrapOozeRetryCount(30, 3, 0);
+            throw new AssertionError("non-native Scrap Ooze chance was accepted");
+        } catch (IllegalArgumentException expected) { /* fail closed */ }
         Object firstReward = new Object(), secondReward = new Object();
         String firstIdentity = LiveOocCapture.rewardIdentity(firstReward, null, null);
         if (!firstIdentity.equals(LiveOocCapture.rewardIdentity(firstReward, null, null))
@@ -125,6 +159,33 @@ public final class LiveOocCaptureTest {
             throw new AssertionError("physical reward identity is unstable or ambiguous");
         if (firstIdentity.equals(LiveOocCapture.rewardIdentity(firstReward, new Object(), null)))
             throw new AssertionError("reward identity reused after run boundary");
+        String oldHome = System.getProperty("user.home");
+        java.nio.file.Path home = java.nio.file.Files.createTempDirectory("live-ooc-history");
+        System.setProperty("user.home", home.toString());
+        LiveOocCapture.CardRewardVisits rewardVisits = new LiveOocCapture.CardRewardVisits();
+        Object rewardPlayer = new Object(), rewardNode = new Object();
+        rewardVisits.parent(rewardPlayer, rewardNode, java.util.Arrays.asList("card-a", "card-b"));
+        if (rewardVisits.declined("card-a"))
+            throw new AssertionError("unopened card was marked declined");
+        rewardVisits.opened(rewardPlayer, rewardNode, "card-a");
+        rewardVisits.parent(rewardPlayer, rewardNode, java.util.Arrays.asList("card-a", "card-b"));
+        if (!rewardVisits.declined("card-a") || rewardVisits.declined("card-b"))
+            throw new AssertionError("only the publicly skipped card should be declined");
+        rewardVisits.parent(rewardPlayer, new Object(), java.util.Arrays.asList("card-a"));
+        if (rewardVisits.declined("card-a"))
+            throw new AssertionError("declined card leaked into another room");
+        LiveOocCapture.QuestionHistory questions = new LiveOocCapture.QuestionHistory();
+        questions.observe(222, 1, 0, 0, false, "NeowRoom");
+        questions.observe(222, 1, 3, 1, true, "EventRoom");
+        if (!questions.completeFor(1) || !"EVENT".equals(questions.snapshot().get(0).get("outcome")))
+            throw new AssertionError("public question event outcome not captured");
+        LiveOocCapture.QuestionHistory restoredQuestions = new LiveOocCapture.QuestionHistory();
+        restoredQuestions.observe(222, 1, 3, 1, true, "EventRoom");
+        if (!restoredQuestions.completeFor(1))
+            throw new AssertionError("question outcome did not survive restart");
+        restoredQuestions.observe(222, 1, 5, 2, true, "ShopRoom");
+        if (!restoredQuestions.completeFor(2) || restoredQuestions.completeFor(3))
+            throw new AssertionError("question outcome count did not gate completeness");
         LiveOocCapture.SeenRelicOffers seen = new LiveOocCapture.SeenRelicOffers();
         Object player = new Object();
         seen.observe(player, 10, 5, false, "shop", obj("relics",
@@ -140,12 +201,20 @@ public final class LiveOocCaptureTest {
                 java.util.Arrays.asList("Vajra", "Anchor")));
         if (!seen.complete() || !seen.snapshot().equals(java.util.Arrays.asList("Anchor", "Vajra")))
             throw new AssertionError("visible offered relics were lost or duplicated");
+        LiveOocCapture.SeenRelicOffers restartedSeen = new LiveOocCapture.SeenRelicOffers();
+        restartedSeen.observe(new Object(), 11, 1, false, "map", obj());
+        if (!restartedSeen.complete()
+                || !restartedSeen.snapshot().equals(java.util.Arrays.asList("Anchor", "Vajra")))
+            throw new AssertionError("persisted public relic offers did not restore after restart");
+        LiveOocCapture.SeenRelicOffers menuThenSave = new LiveOocCapture.SeenRelicOffers();
+        menuThenSave.observe(new Object(), 99, 0, true, "event", obj());
+        menuThenSave.observe(new Object(), 11, 1, false, "map", obj());
+        if (!menuThenSave.complete()
+                || !menuThenSave.snapshot().equals(java.util.Arrays.asList("Anchor", "Vajra")))
+            throw new AssertionError("saved offer ledger did not restore after a transient fresh player");
         seen.observe(player, 11, 3, false, "map", obj());
         if (seen.complete()) throw new AssertionError("missed floors retained complete history");
         LiveOocCapture.CombatClassHistory combats = new LiveOocCapture.CombatClassHistory();
-        String oldHome = System.getProperty("user.home");
-        java.nio.file.Path home = java.nio.file.Files.createTempDirectory("live-ooc-history");
-        System.setProperty("user.home", home.toString());
         Object group = new Object();
         combats.observe(player, 12345, 1, 3, true, true, group, "FIXED_EVENT", "MUSHROOMS_EVENT");
         combats.observe(player, 12345, 1, 3, true, true, new Object(), "FIXED_EVENT", "MUSHROOMS_EVENT");
@@ -162,6 +231,9 @@ public final class LiveOocCaptureTest {
         restored.restoreFor(player, 12345, 1);
         if (!restored.completeFor(java.util.Arrays.asList(3, 5, 8)))
             throw new AssertionError("persisted combat history did not restore");
+        restored.observe(player, 12345, 1, 8, false, true, new Object(), "ELITE_QUEUE", "");
+        if (!restored.completeFor(java.util.Arrays.asList(3, 5, 8)))
+            throw new AssertionError("empty encounter during reward reload invalidated saved combat");
         restored.observe(player, 12345, 1, 8, false, true, new Object(), "ELITE_QUEUE", "GREMLIN_NOB");
         if (restored.snapshot().size() != 3)
             throw new AssertionError("restart during combat duplicated the current floor");

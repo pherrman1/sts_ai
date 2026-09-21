@@ -8,15 +8,22 @@ import com.google.gson.JsonObject;
 /** Pure boundary and selection projection checks, without game/render initialization. */
 public final class CombatBoundaryTest {
     public static void main(String[] args) {
+        if (STSModelInspector.guardianThresholdFromPublicPower(null, null) != null
+                || STSModelInspector.guardianThresholdFromPublicPower(null, 30) != 30
+                || STSModelInspector.guardianThresholdFromPublicPower(30, 12) != 30
+                || STSModelInspector.guardianThresholdFromPublicPower(30, null) != 30
+                || STSModelInspector.guardianThresholdFromPublicPower(30, 40) != 40)
+            throw new AssertionError("Guardian public Mode Shift threshold history was lost");
         if (!STSModelInspector.isCombatBoundary(RoomPhase.COMBAT, CurrentScreen.HAND_SELECT, false, true)
-                || !STSModelInspector.isCombatBoundary(RoomPhase.COMBAT, CurrentScreen.GRID, false, true))
+                || !STSModelInspector.isCombatBoundary(RoomPhase.COMBAT, CurrentScreen.GRID, false, true)
+                || !STSModelInspector.isCombatBoundary(RoomPhase.COMBAT, CurrentScreen.CARD_REWARD, false, true))
             throw new AssertionError("unknown selection must retain combat classification");
         // Event fights use this same phase-based gate; no room subclass is required.
         if (!STSModelInspector.isCombatBoundary(RoomPhase.COMBAT, CurrentScreen.NONE, true, false)
                 || STSModelInspector.isCombatBoundary(RoomPhase.EVENT, CurrentScreen.NONE, true, false))
             throw new AssertionError("event combat phase gate");
         if (STSModelInspector.isCombatBoundary(RoomPhase.COMBAT, CurrentScreen.NONE, false, false)
-                || STSModelInspector.isCombatBoundary(RoomPhase.COMBAT, CurrentScreen.CARD_REWARD, false, true)
+                || STSModelInspector.isCombatBoundary(RoomPhase.COMBAT, CurrentScreen.CARD_REWARD, false, false)
                 || STSModelInspector.isCombatBoundary(RoomPhase.COMBAT, CurrentScreen.GRID, false, false)
                 || STSModelInspector.isCombatBoundary(RoomPhase.COMPLETE, CurrentScreen.HAND_SELECT, false, true))
             throw new AssertionError("transitional or OOC modal misclassified");
@@ -29,6 +36,12 @@ public final class CombatBoundaryTest {
                     || selection.get("pickCount").getAsInt() != 99)
                 throw new AssertionError("unknown selector or canPickZero lost");
         }
+        JsonObject discovery = new Gson().fromJson(
+                STSModelInspector.selectionJson("DISCOVERY", false, false, 1, 2, null), JsonObject.class);
+        if (!"DISCOVERY".equals(discovery.get("task").getAsString())
+                || discovery.get("data0").getAsInt() != 2
+                || discovery.get("pickCount").getAsInt() != 1)
+            throw new AssertionError("Discovery copy count was not preserved");
         for (int counter : new int[]{0, 1, 2, 3, -1, -2}) {
             if (STSModelInspector.combatEntryRelicData("NeowsBlessing", counter, false) != counter)
                 throw new AssertionError("active/invalid Neow counter changed");

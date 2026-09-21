@@ -12,6 +12,7 @@
 #include "combat/Actions.h"
 #include "combat/BattleContext.h"
 #include "constants/Cards.h"
+#include "constants/CardPools.h"
 #include "constants/MonsterMoves.h"
 #include "game/GameContext.h"
 #include "sim/search/CombatKnowledge.h"
@@ -1399,10 +1400,17 @@ int main() {
             [](auto &player) { player.statusBits0 |= 1ULL << static_cast<int>(PlayerStatus::CORRUPTION); });
         verifyPlayerPowerParity("confused-parity", json{{"id", "Confused"}, {"amount", -1}},
             [](auto &player) { player.statusBits0 |= 1ULL << static_cast<int>(PlayerStatus::CONFUSED); });
+        verifyPlayerPowerParity("live-confusion-parity", json{{"id", "Confusion"}, {"amount", -1}},
+            [](auto &player) { player.statusBits0 |= 1ULL << static_cast<int>(PlayerStatus::CONFUSED); });
         verifyPlayerPowerParity("hex-parity", json{{"id", "Hex"}, {"amount", 1}},
             [](auto &player) { player.statusBits0 |= 1ULL << static_cast<int>(PlayerStatus::HEX); });
         verifyPlayerPowerParity("pen-nib-parity", json{{"id", "Pen Nib"}, {"amount", 1}},
             [](auto &player) { player.statusBits0 |= 1ULL << static_cast<int>(PlayerStatus::PEN_NIB); });
+        verifyPlayerPowerParity("live-flame-barrier-parity", json{{"id", "Flame Barrier"}, {"amount", 4}},
+            [](auto &player) {
+                player.statusBits0 |= 1ULL << static_cast<int>(PlayerStatus::FLAME_BARRIER);
+                player.statusMap.emplace_back(static_cast<std::int16_t>(PlayerStatus::FLAME_BARRIER), 4);
+            });
         auto drawReduction = genericObservation(fixtures[0], "draw-reduction-parity");
         drawReduction["silverRoot"]["combat"]["cardDrawPerTurn"] = 4;
         drawReduction["silverRoot"]["combat"]["playerPowers"] = json::array({
@@ -1862,6 +1870,12 @@ int main() {
             || getCardColor(CardId::COMPILE_DRIVER) != CardColor::BLUE
             || getCardColor(CardId::CONCENTRATE) != CardColor::GREEN)
             throw std::runtime_error("native card colors around Combust are misordered");
+        const CardColor classColors[] = {CardColor::RED, CardColor::GREEN,
+                                         CardColor::BLUE, CardColor::PURPLE};
+        for (int color = 0; color < 4; ++color)
+            for (int i = 0; i < TransformCardPool::cardPoolSize[color]; ++i)
+                if (getCardColor(TransformCardPool::colorCardPool[color][i]) != classColors[color])
+                    throw std::runtime_error("native class card color differs from its canonical pool");
         const auto redAndColorlessImported = one_combat::advisor::importSilverRoot(redAndColorless);
         if (!redAndColorlessImported.ok)
             throw std::runtime_error("RED/COLORLESS cards were rejected: " + redAndColorlessImported.reason);
@@ -2007,6 +2021,22 @@ int main() {
         if (!one_combat::advisor::selectedLiveAction(
                 loweringAction, loweringContext, targetObservation).is_null())
             throw std::runtime_error("unsupported single-card selection was lowered as executable");
+        loweringAction.source = silver_bridge::CardSource::CARD_SELECT_OPTION;
+        loweringAction.cardSelectTask = static_cast<std::int16_t>(CardSelectTask::DISCOVERY);
+        loweringAction.optionCardId = static_cast<std::int16_t>(CardId::MAGNETISM);
+        auto discoveryObservation = targetObservation;
+        discoveryObservation["combat"]["cardSelect"] = json{
+            {"task", "DISCOVERY"}, {"cards", json::array({"Forethought", "Magnetism", "Discovery"})}};
+        const auto discoveryChoice = one_combat::advisor::selectedLiveAction(
+            loweringAction, loweringContext, discoveryObservation);
+        if (discoveryChoice != json{{"kind", "choose"}, {"choiceIndex", 2}})
+            throw std::runtime_error("Discovery option did not lower to its unique visible choice");
+        discoveryObservation["combat"]["cardSelect"]["cards"][2] = "Magnetism";
+        if (!one_combat::advisor::selectedLiveAction(
+                loweringAction, loweringContext, discoveryObservation).is_null())
+            throw std::runtime_error("ambiguous Discovery option was lowered as executable");
+        loweringAction.source = silver_bridge::CardSource::NONE;
+        loweringAction.cardSelectTask = 0;
         loweringAction.type = silver_bridge::SemanticActionType::POTION;
         loweringAction.potionSlot = 0;
         loweringAction.target = 1;
@@ -2020,6 +2050,23 @@ int main() {
             loweringAction, loweringContext, targetObservation);
         if (secondPotionTarget.value("targetIndex", 0) != 2)
             throw std::runtime_error("targeted potion did not compact the second live target");
+        auto sparseObservation = targetObservation;
+        sparseObservation["combat"]["monsters"] = json::array({
+            json{{"slot", 1}, {"dead", false}},
+            json{{"slot", 2}, {"dead", true}},
+            json{{"slot", 3}, {"dead", false}}});
+        loweringAction.target = 1;
+        if (one_combat::advisor::selectedLiveAction(loweringAction, loweringContext,
+                sparseObservation).value("targetIndex", 0) != 1)
+            throw std::runtime_error("sparse live monster slot 1 did not lower to target 1");
+        loweringAction.target = 3;
+        if (one_combat::advisor::selectedLiveAction(loweringAction, loweringContext,
+                sparseObservation).value("targetIndex", 0) != 2)
+            throw std::runtime_error("sparse live monster slot 3 did not compact to target 2");
+        loweringAction.target = 2;
+        if (!one_combat::advisor::selectedLiveAction(loweringAction, loweringContext,
+                sparseObservation).is_null())
+            throw std::runtime_error("dead sparse live monster slot was accepted");
         std::cout << "live Silver native first-turn parity checks passed\n";
         return 0;
     } catch (const std::exception &e) {

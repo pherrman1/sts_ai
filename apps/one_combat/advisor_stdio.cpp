@@ -532,6 +532,8 @@ json silverEvaluator(const one_combat::advisor::Request &request,
         clearSession();
         evaluator["status"] = "UNSUPPORTED";
         evaluator["reason"] = "silver_live_action_lowering";
+        evaluator["failedActionLabel"] = evaluator["selectedLabel"];
+        evaluator["failedActionFingerprint"] = evaluator["selectedAction"];
         evaluator.erase("selectedAction");
         evaluator.erase("selectedLabel");
         evaluator.erase("selectedLiveAction");

@@ -91,6 +91,8 @@ public final class STSModelInspector implements PostInitializeSubscriber,
             Collections.newSetFromMap(new IdentityHashMap<AbstractMonster, Boolean>());
     private static final IdentityHashMap<AbstractMonster, Integer> hexaghostDividerDamage =
             new IdentityHashMap<>();
+    private static final IdentityHashMap<AbstractMonster, Integer> guardianPublicThreshold =
+            new IdentityHashMap<>();
 
     /**
      * Vanilla removes a CardQueueItem before the stable player boundary is
@@ -206,6 +208,7 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         monsterSlots.clear();
         replacedMonsterParents.clear();
         hexaghostDividerDamage.clear();
+        guardianPublicThreshold.clear();
         liveEncounter = encounterName(room);
         trackedLastUnblockedDamage = 0;
         trackedTimesDamaged = 0;
@@ -229,6 +232,7 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         monsterSlots.clear();
         replacedMonsterParents.clear();
         hexaghostDividerDamage.clear();
+        guardianPublicThreshold.clear();
         liveEncounter = "";
         combatEntry = "";
         combatEntryHash = "";
@@ -1306,6 +1310,15 @@ public final class STSModelInspector implements PostInitializeSubscriber,
             }
             emitted.put(monster, slot);
         }
+        // Summoned gremlins reuse physical slots. Java may retain the dead
+        // predecessor in its monster list; the native root has one monster
+        // state per slot, with the living replacement taking precedence.
+        Set<Integer> livingSlots = new HashSet<>();
+        for (Map.Entry<AbstractMonster, Integer> entry : emitted.entrySet())
+            if (entry.getValue() >= 0 && entry.getKey().currentHealth > 0
+                    && !entry.getKey().isDeadOrEscaped()) livingSlots.add(entry.getValue());
+        emitted.entrySet().removeIf(entry -> entry.getValue() >= 0
+                && entry.getKey().isDeadOrEscaped() && livingSlots.contains(entry.getValue()));
         return emitted;
     }
 
@@ -1660,7 +1673,8 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         return phase == AbstractRoom.RoomPhase.COMBAT
                 && ((screen == AbstractDungeon.CurrentScreen.NONE && playerDecision)
                     || ((screen == AbstractDungeon.CurrentScreen.GRID
-                         || screen == AbstractDungeon.CurrentScreen.HAND_SELECT) && selectionAvailable));
+                         || screen == AbstractDungeon.CurrentScreen.HAND_SELECT
+                         || screen == AbstractDungeon.CurrentScreen.CARD_REWARD) && selectionAvailable));
     }
 
     private static boolean isCardSelectionBoundary() {
@@ -1668,7 +1682,9 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         return (AbstractDungeon.screen == AbstractDungeon.CurrentScreen.GRID
                     && AbstractDungeon.gridSelectScreen != null)
                 || (AbstractDungeon.screen == AbstractDungeon.CurrentScreen.HAND_SELECT
-                    && AbstractDungeon.handCardSelectScreen != null);
+                    && AbstractDungeon.handCardSelectScreen != null)
+                || (AbstractDungeon.screen == AbstractDungeon.CurrentScreen.CARD_REWARD
+                    && AbstractDungeon.cardRewardScreen != null);
     }
 
     static void recordCardQueueItem(CardQueueItem item) {
@@ -1846,6 +1862,11 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         return null;
     }
 
+    static Integer guardianThresholdFromPublicPower(Integer previous, Integer visibleAmount) {
+        if (visibleAmount == null || visibleAmount <= 0) return previous;
+        return previous == null ? visibleAmount : Math.max(previous, visibleAmount);
+    }
+
     private static Integer monsterMiscInfo(AbstractMonster monster) {
         String id = monster.id;
         if ("FuzzyLouseNormal".equals(id) || "FuzzyLouseDefensive".equals(id))
@@ -1865,9 +1886,12 @@ public final class STSModelInspector implements PostInitializeSubscriber,
             return dividerDamage == null ? 0 : dividerDamage;
         }
         if ("TheGuardian".equals(id)) {
+            Integer threshold = guardianPublicThreshold.get(monster);
             for (AbstractPower power : monster.powers)
-                if ("Mode Shift".equals(power.ID)) return power.amount;
-            return null;
+                if ("Mode Shift".equals(power.ID))
+                    threshold = guardianThresholdFromPublicPower(threshold, power.amount);
+            if (threshold != null) guardianPublicThreshold.put(monster, threshold);
+            return threshold;
         }
         if ("BookOfStabbing".equals(id)) return readIntField(monster, "stabCount");
         if ("SlaverBlue".equals(id)) return 0;
@@ -1963,11 +1987,17 @@ public final class STSModelInspector implements PostInitializeSubscriber,
 
     static String selectionJson(String task, boolean canPickZero, boolean anyNumber, int pickCount,
                                         List<AbstractCard> source) {
+        return selectionJson(task, canPickZero, anyNumber, pickCount, 0, source);
+    }
+
+    static String selectionJson(String task, boolean canPickZero, boolean anyNumber, int pickCount,
+                                        int data0, List<AbstractCard> source) {
         StringBuilder out = new StringBuilder("{\"task\":\"")
                 .append(task).append("\",\"canPickZero\":").append(canPickZero)
                 .append(",\"canPickAnyNumber\":")
                 .append(anyNumber).append(",\"pickCount\":").append(Math.max(0, pickCount))
-                .append(",\"data0\":0,\"setCostToZero\":true,\"selectedBits\":0,\"cards\":[");
+                .append(",\"data0\":").append(data0)
+                .append(",\"setCostToZero\":true,\"selectedBits\":0,\"cards\":[");
         boolean offerCards = "DISCOVERY".equals(task) || "CODEX".equals(task);
         boolean first = true;
         if (offerCards && source != null) {
@@ -2007,6 +2037,23 @@ public final class STSModelInspector implements PostInitializeSubscriber,
     }
 
     private static String cardSelectionJson() {
+        if (AbstractDungeon.screen == AbstractDungeon.CurrentScreen.CARD_REWARD
+                && AbstractDungeon.cardRewardScreen != null) {
+            com.megacrit.cardcrawl.screens.CardRewardScreen screen = AbstractDungeon.cardRewardScreen;
+            Object current = AbstractDungeon.actionManager == null ? null
+                    : AbstractDungeon.actionManager.currentAction;
+            Boolean discovery = readBooleanField(screen, "discovery");
+            Boolean skippable = readBooleanField(screen, "skippable");
+            Integer copyCount = current instanceof com.megacrit.cardcrawl.actions.unique.DiscoveryAction
+                    ? readIntField(current, "amount") : null;
+            // DiscoveryAction holds the native copy count while its modal is open.
+            // An unknown combat card reward still reaches Silver as unsupported.
+            if (Boolean.TRUE.equals(discovery) && Boolean.FALSE.equals(skippable)
+                    && copyCount != null && (copyCount == 1 || copyCount == 2)
+                    && screen.rewardGroup != null && screen.rewardGroup.size() == 3)
+                return selectionJson("DISCOVERY", false, false, 1, copyCount, screen.rewardGroup);
+            return selectionJson("", false, false, 1, screen.rewardGroup);
+        }
         if (AbstractDungeon.screen == AbstractDungeon.CurrentScreen.GRID
                 && AbstractDungeon.gridSelectScreen != null) {
             com.megacrit.cardcrawl.screens.select.GridCardSelectScreen screen =
@@ -2195,6 +2242,7 @@ public final class STSModelInspector implements PostInitializeSubscriber,
             List<AbstractMonster> monsters = AbstractDungeon.getMonsters().monsters;
             for (AbstractMonster monster : monsters) {
                 if (monster == null) continue;
+                if (!emittedSlots.containsKey(monster)) continue;
                 if (replacedLargeSlimeParent(encounter, monster, monsters)) continue;
                 if (replacedSlimeBossParent(encounter, monster, monsters)) continue;
                 if (!first) out.append(',');
