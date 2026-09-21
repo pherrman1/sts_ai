@@ -10785,3 +10785,47 @@ default or generalization claim is authorized. Evidence:
   **Knowledge impact:** durable unresolved Silver search investigation and
   experiment evidence only; no production Silver behavior, model, RNG, schema,
   budget, gameplay result, or default changed.
+
+## §332 — Settled-player queue-item canonicalization rejects on reroot signal (2026-09-21)
+
+- **Question and protocol:** Can Silver reduce retained search work by ignoring
+  only stale `curCardQueueItem` values for settled `PLAYER_NORMAL` states with
+  unresolved outcomes, no pending turn, and empty action/card queues? The
+  implementation candidate was based on main
+  `39e91c8f6d33a842ddb378b681aeac681b4670c9` and frozen at
+  `16054615c6a122b0894bfd11840f5702a7d79285`. Both arms used the same Release
+  replay binary, allocated 32,768-node reuse cap, `OMP_NUM_THREADS=4`,
+  adaptive/exact-lock/rho off, and the frozen 64-case `hard64-dev` cohort.
+  `hard64-holdout` was not used.
+- **Implementation correctness:** The default-off flag is local to
+  `BattleSearcher::getOrCreateNode()` and does not change global equality,
+  state hashing, or reroot matching. Focused tests passed for default-off
+  parity, eligible/ineligible boundaries, ordinary field differences,
+  deterministic card continuation, and the Attack Potion `CARD_SELECT`
+  boundary. All 64 replay cases completed in both arms with zero failures.
+- **Phase A result:** CONTROL/TREATMENT had wins `51/64` and `50/64`, mean
+  terminal HP fractions `0.344091/0.355610`, decisions `2,232/2,252`, total
+  simulations `2,232,000/2,252,000`, nodes `2,063,754/2,079,300`, and wall
+  seconds `15.852071/15.821877`. Nodes/simulation changed from `0.924621` to
+  `0.923313` (`-0.1415%`), while `queueItemCanonicalMerges` was `0` versus
+  `317,084`, with merges in `0/64` versus `64/64` cases.
+- **Technical signal:** Exact/fallback reroot counts were `1,627/541` in
+  CONTROL and `1,418/770` in TREATMENT. Fallback fraction rose from `24.954%`
+  to `35.192%` (`+10.238` percentage points), beyond the preregistered
+  two-point warning threshold. Action-trace hashes differed in `64/64`
+  paired cases. The treatment mean HP fraction was not lower, but wins were
+  down by one case; this does not offset the reroot and trace evidence.
+- **Decision and boundary:** **`QUEUE_ITEM_CANONICALIZATION_REJECT`**.
+  Exposure was real, but structural reduction was below the approximately 1%
+  Phase-A signal and the unchanged exact-only reroot path showed an obvious
+  technical regression. Phase B at 10,000 simulations was not run. This is
+  bounded DEV evidence and authorizes no live support, reroot relaxation,
+  holdout use, default promotion, or production-equivalence claim.
+- **Evidence:** [queue-item canonicalization packet](evidence/silver_queue_item_canonicalization_20260921/README.md).
+  Candidate binary SHA-256 is
+  `ef09ce52b69aaae4bacbc76c7dc9c573e30bd70f772901420f683f871b797021` and
+  frozen input SHA-256 is
+  `ab7c3298754864986c31273a0f1d23967b165fdd79a386261b680b8ad16d0eae`.
+  **Knowledge impact:** durable negative Silver search evidence only; no
+  production behavior, default, RNG, schema, model, live gameplay, or holdout
+  qualification changed.
