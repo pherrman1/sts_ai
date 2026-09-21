@@ -150,26 +150,44 @@ LiveOocStateV1::LiveOocMctsRootV1 makeMctsRoot(const LiveOocStateV1 &source) {
     const auto &publicState = source.ooc.at("publicState");
     const auto &actVisits = array(publicState, "currentActPathVisits", 10);
     require(actVisits.size() == 10, "ten current-act path counters required");
-    // path_taken retains the original '?' after hallway conversion and can
-    // omit act-transition entries, so absolute combat floors cannot index it.
-    // The current-act visit count identifies elite map rooms independently of
-    // that indexing; the public combat metric counts consumed encounters.
+    // path_taken retains '?' after conversion and the damage metric has no
+    // encounter class. Only the observed, complete combat-class ledger may
+    // determine which native encounter queue was consumed.
     const auto &combatFloors = array(publicState, "combatFloors", 1000);
+    const auto &combatHistory = array(publicState, "combatHistory", 1000);
+    const bool combatHistoryComplete = boolean(publicState, "combatHistoryComplete");
     array(publicState, "pathHistory", 1000);
     const int actStartFloor = source.projected.act <= 1 ? 0
         : source.projected.act == 2 ? 17
         : source.projected.act == 3 ? 34 : 51;
-    int completedCombats = 0;
+    std::vector<int> completedCombatFloors;
     for (const auto &floorValue : combatFloors) {
         const int floor = integerValue(floorValue, 1, 1000, "combat floor");
         if (floor <= actStartFloor || floor > source.projected.floorNum) continue;
-        ++completedCombats;
+        completedCombatFloors.push_back(floor);
     }
-    const int eliteCombats = integerValue(actVisits.at(static_cast<int>(Room::ELITE)),
+    const int eliteVisits = integerValue(actVisits.at(static_cast<int>(Room::ELITE)),
         0, 1000, "current-act elite visits");
-    require(eliteCombats <= completedCombats,
-        "current-act elite visits exceed public completed combats");
-    root.monsterListOffset = completedCombats - eliteCombats;
+    const int eventVisits = integerValue(actVisits.at(static_cast<int>(Room::EVENT)),
+        0, 1000, "current-act event visits");
+    int normalCombats = 0, eliteCombats = 0;
+    require(!combatHistoryComplete || combatHistory.size() == completedCombatFloors.size(),
+        "complete combat history length differs from public combat metric");
+    for (std::size_t i = 0; i < combatHistory.size(); ++i) {
+        const auto &entry = combatHistory.at(i);
+        const int floor = integer(entry, "floor", 1, 1000);
+        const auto kind = string(entry, "kind");
+        require(kind == "NORMAL_QUEUE" || kind == "ELITE_QUEUE" || kind == "FIXED_EVENT"
+                || kind == "BOSS", "unknown public combat class");
+        if (combatHistoryComplete)
+            require(floor == completedCombatFloors.at(i), "combat history floor mismatch");
+        if (kind == "NORMAL_QUEUE") ++normalCombats;
+        if (kind == "ELITE_QUEUE") ++eliteCombats;
+    }
+    if (combatHistoryComplete)
+        require(eliteCombats == eliteVisits,
+            "elite combat history differs from elite map visits");
+    root.monsterListOffset = normalCombats;
     root.eliteMonsterListOffset = eliteCombats;
     const auto eraseRelic = [&](RelicId relic) {
         for (auto pool : {&root.commonRelicPool, &root.uncommonRelicPool, &root.rareRelicPool,
@@ -243,10 +261,14 @@ LiveOocStateV1::LiveOocMctsRootV1 makeMctsRoot(const LiveOocStateV1 &source) {
     LiveOocStateV1::LiveOocMctsRootV1 result;
     result.state = std::move(root);
     result.path = source.path;
+    result.currentActEventVisits = eventVisits;
     // MAP roots are searchable with sampled room-outcome belief particles;
     // stopAtMapCheckpoint applies only after a searched transition. Random
     // relic branches still require complete public offer history.
-    if (canDrawUnseenRelic) {
+    if (!combatHistoryComplete) {
+        result.supported = false;
+        result.reason = "PUBLIC_COMBAT_CLASS_HISTORY_UNQUALIFIED";
+    } else if (canDrawUnseenRelic) {
         result.supported = false;
         result.reason = "PUBLIC_SEEN_RELIC_HISTORY_UNQUALIFIED";
     }

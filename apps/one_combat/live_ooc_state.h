@@ -22,6 +22,7 @@ struct LiveOocStateV1 {
     struct LiveOocMctsRootV1 {
         sts::GameContext state{};
         PathHistory path;
+        int currentActEventVisits = 0;
         bool supported = true;
         std::string reason;
     } mctsRoot;

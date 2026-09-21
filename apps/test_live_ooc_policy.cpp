@@ -134,7 +134,7 @@ int main(int argc, char **argv) {
         int callbacks = 0;
         g_onGameActionExecute = [&](std::uint32_t, const GameContext *) { ++callbacks; };
         LiveOocV4QPolicy provider(*model);
-        const auto decision = provider.score(gc, path);
+        const auto decision = provider.score(gc, path, 0);
         g_onGameActionExecute = {};
         require(decision.supported, "campfire score failed: " + decision.reason);
         require(before == test::oocStateFingerprint(gc) && callbacks == 0,
@@ -163,12 +163,12 @@ int main(int argc, char **argv) {
         wall.screenState = ScreenState::EVENT_SCREEN;
         wall.curEvent = Event::LIVING_WALL;
         const auto wallBefore = test::oocStateFingerprint(wall);
-        const auto wallDecision = provider.score(wall, path);
+        const auto wallDecision = provider.score(wall, path, 0);
         require(wallDecision.supported && wallBefore == test::oocStateFingerprint(wall),
                 "Living Wall preview changed native state");
         auto selector = wall;
         selector.openCardSelectScreen(CardSelectScreenType::UPGRADE, 1);
-        const auto selectorDecision = provider.score(selector, path);
+        const auto selectorDecision = provider.score(selector, path, 0);
         require(selectorDecision.supported, "direct upgrade selector unavailable");
         const auto &selectorBest = selectorDecision.candidates.at(selectorDecision.selectedIndex);
         const int expectedDeckIndex = selector.info.toSelectCards[GameAction(selectorBest.primitiveBits).getIdx1()].deckIdx;

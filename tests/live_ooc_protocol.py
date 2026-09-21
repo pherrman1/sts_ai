@@ -95,6 +95,14 @@ class LiveOocProtocol(unittest.TestCase):
             self.assertEqual(evaluator["status"], "UNSUPPORTED")
             self.assertEqual(evaluator["reason"], "PUBLIC_REWARD_PITY_HISTORY_UNQUALIFIED")
 
+    def test_resumed_combat_class_history_fails_closed(self):
+        observation = copy.deepcopy(self.fixtures["event_big_fish"])
+        observation["ooc"]["publicState"]["combatHistoryComplete"] = False
+        response, = self.run_rows([observation])
+        evaluator, = response["evaluators"]
+        self.assertEqual(evaluator["status"], "UNSUPPORTED")
+        self.assertEqual(evaluator["reason"], "PUBLIC_COMBAT_CLASS_HISTORY_UNQUALIFIED")
+
     def test_missing_model_keeps_explicit_unsupported(self):
         response, = self.run_rows([self.fixtures["event_big_fish"]], model=False)
         self.assertEqual(response["evaluators"][0]["reason"], "MODEL_UNAVAILABLE")

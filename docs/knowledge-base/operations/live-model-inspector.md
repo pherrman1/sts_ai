@@ -401,14 +401,18 @@ read-only screen and choice converters. The observation contains:
   potion capacity and five exact slots, physical deck instances with bottle
   binding, relic data, visible boss, the complete visible 15-by-7 map and edges,
   current/burning-elite coordinates, exact whole-run and current-act path
-  counts, completed combat floors, acquired/lost relic identities, prior event
+  counts, completed combat floors and observed combat classes, acquired/lost relic identities, prior event
   identities, and the publicly recorded number of paid shop removals. A
   `seenRelics` list is accepted only when its producer marks the history
   complete. The Java observer accumulates visible shop, reward and boss offers
   from a fresh Neow boundary; a resumed or mid-run observer leaves the marker
-  incomplete. An optional `rewardPityHistoryComplete` marker is reserved for synthetic
-  captures with an exact reconstruction; the live Java producer leaves it
-  false.
+  incomplete. A separate current-act combat-class observer records whether each
+  fight consumed the normal or elite encounter queue, was a fixed event fight,
+  or was a boss. It qualifies only when every combat in the act was observed;
+  a resumed mid-act run fails closed with
+  `PUBLIC_COMBAT_CLASS_HISTORY_UNQUALIFIED`. An optional
+  `rewardPityHistoryComplete` marker is reserved for synthetic captures with
+  an exact reconstruction; the live Java producer leaves it false.
 - `details`: current reward groups, campfire options, physical upgrade targets,
   supported event/Neow phase and options, shop slots/prices, chest state, or
   ordered boss relic offers.
@@ -430,11 +434,12 @@ support or a claim of whole-game reward equivalence.
 
 Path counts derive from persisted `metricData.path_taken`, whose original map
 symbols survive event-to-room conversion and save/resume. Completed combat
-floors additionally come from `metricData.damage_taken`, so a `?` floor that
-became a hallway fight advances the normal encounter queue. The current-act
-ELITE visit count separates elite from normal combat consumption without
-indexing `path_taken` by absolute floor. Missing or contradictory history is
-unsupported. A historical unknown boss-transition marker is qualified only
+floors additionally come from `metricData.damage_taken`. The observed live room
+class distinguishes a `?` floor that became a hallway fight from a fixed event
+fight on the same map symbol: only the former advances the normal encounter
+queue. The combat-class ledger is checked against completed public combat
+floors without indexing `path_taken` by absolute floor. Missing or
+contradictory history is unsupported. A historical unknown boss-transition marker is qualified only
 after fifteen public map-room entries for that act and a matching public boss
 combat floor; other unknown path symbols remain unsupported. Public metric
 history conditions current-act normal/elite
@@ -455,11 +460,13 @@ native lattice (`potionChance` -40 through 60), never applying the link to an
 expected margin. Real live captures do not claim an exact pity history: direct V4 requests fail closed and
 MCTS uses an equal public prior rather than a fabricated midpoint. Synthetic
 parity fixtures may mark an exact pity reconstruction explicitly. Live
-hypothetical room-chance and pity counters are sampled on the native increment
-lattice once per root particle. Room-chance support is bounded by public
-current-act `?` visits; the shared simulator sampler retains its previous
-copied-counter behavior. This is not an exact posterior conditioned on every
-prior `?` outcome. An already-open boss chest with only native `proceed` is a
+hypothetical room-chance and pity counters are sampled once per root particle.
+Room chances use the public current-act `?` visit count and jointly advance
+all three counters for each sampled latent room outcome, so every sampled
+triple is reachable under the native update rule. The shared simulator
+sampler retains its previous copied-counter behavior. This is a support-safe
+prior, not an exact posterior conditioned on every prior `?` outcome. An
+already-open boss chest with only native `proceed` is a
 pass-through state, not a fresh treasure decision; the advisor preserves that
 single live action.
 No RNG state, future encounter queue, or unrevealed outcome is captured.

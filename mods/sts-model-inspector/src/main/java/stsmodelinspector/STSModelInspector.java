@@ -917,6 +917,13 @@ public final class STSModelInspector implements PostInitializeSubscriber,
                 || AbstractDungeon.currMapNode == null
                 || AbstractDungeon.getCurrRoom() == null) return null;
         AbstractRoom room = AbstractDungeon.getCurrRoom();
+        try {
+            LiveOocCapture.observeCombatRoom(room);
+        } catch (RuntimeException failure) {
+            // Observation never alters the game; a malformed metric or room
+            // leaves advisor history unsupported rather than breaking input.
+            LiveOocCapture.invalidateCombatRoomHistory();
+        }
         String boundary;
         String ooc = "";
         if (isCombatBoundary(room.phase, AbstractDungeon.screen,

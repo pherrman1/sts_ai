@@ -231,7 +231,8 @@ json oocResponse(const one_combat::advisor::Request &request,
             if (pending.active) pending = PendingCompoundPlan{};
             policy.setSearchSeed(stableHash(request.observationHash + ":live-ooc-mcts"));
             const auto scoreStarted = std::chrono::steady_clock::now();
-            decision = policy.score(state.mctsRoot.state, state.mctsRoot.path);
+            decision = policy.score(state.mctsRoot.state, state.mctsRoot.path,
+                                    state.mctsRoot.currentActEventVisits);
             evaluator["scorerLatencyMicros"] = std::chrono::duration_cast<std::chrono::microseconds>(
                 std::chrono::steady_clock::now() - scoreStarted).count();
         }

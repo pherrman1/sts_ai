@@ -30,6 +30,83 @@ final class LiveOocCapture {
     private static long nextRewardIdentity;
     private static final java.util.IdentityHashMap<Object,String> rewardIdentities = new java.util.IdentityHashMap<>();
     private static final SeenRelicOffers seenRelicOffers = new SeenRelicOffers();
+    private static final CombatClassHistory combatClassHistory = new CombatClassHistory();
+
+    // The public damage metric records a combat's floor but not whether that
+    // combat consumed an encounter queue. Observe the live room class before
+    // the fight, and only claim complete current-act history when no earlier
+    // current-act combat predates this observer.
+    static final class CombatClassHistory {
+        private Object player, lastGroup;
+        private long seed;
+        private int act = -1, lastFloor = -1;
+        private boolean complete;
+        private final List<Map<String,Object>> entries = new ArrayList<>();
+
+        void observe(Object currentPlayer, long currentSeed, int currentAct, int floor,
+                boolean noPriorActCombat, boolean inCombat, Object group, String kind) {
+            if (player != currentPlayer || seed != currentSeed || act != currentAct
+                    || floor < lastFloor) {
+                player = currentPlayer;
+                seed = currentSeed;
+                act = currentAct;
+                entries.clear();
+                lastGroup = null;
+                complete = noPriorActCombat;
+            }
+            lastFloor = floor;
+            if (!inCombat) { lastGroup = null; return; }
+            // A transition frame may already say COMBAT before vanilla has
+            // populated its monster group. Wait for the first real group;
+            // missing fights are caught against damage_taken at the next OOC.
+            if (group == null) return;
+            if (kind == null) { complete = false; return; }
+            if (group != lastGroup) {
+                entries.add(object("floor", floor, "kind", kind));
+                lastGroup = group;
+            }
+        }
+        void invalidate() { complete = false; }
+        boolean completeFor(List<Integer> completedFloors) {
+            if (!complete || entries.size() != completedFloors.size()) return false;
+            for (int i = 0; i < entries.size(); ++i)
+                if (((Number)entries.get(i).get("floor")).intValue() != completedFloors.get(i))
+                    return false;
+            return true;
+        }
+        List<Map<String,Object>> snapshot() { return new ArrayList<>(entries); }
+    }
+
+    static void observeCombatRoom(AbstractRoom room) {
+        if (AbstractDungeon.player == null || room == null) return;
+        final int act = AbstractDungeon.actNum, floor = AbstractDungeon.floorNum;
+        final int actStart = act <= 1 ? 0 : act == 2 ? 17 : act == 3 ? 34 : 51;
+        boolean noPriorActCombat = true;
+        if (CardCrawlGame.metricData != null) {
+            for (Object raw : CardCrawlGame.metricData.damage_taken) {
+                Object value = map(raw).get("floor");
+                if (!(value instanceof Number)) { noPriorActCombat = false; break; }
+                int priorFloor = ((Number)value).intValue();
+                if (priorFloor > actStart && priorFloor <= floor) {
+                    noPriorActCombat = false;
+                    break;
+                }
+            }
+        } else noPriorActCombat = false;
+        boolean inCombat = room.phase == AbstractRoom.RoomPhase.COMBAT;
+        String kind = null;
+        if (inCombat) {
+            String roomClass = room.getClass().getSimpleName();
+            if (room.event != null || "EventRoom".equals(roomClass)) kind = "FIXED_EVENT";
+            else if ("MonsterRoomElite".equals(roomClass)) kind = "ELITE_QUEUE";
+            else if ("MonsterRoomBoss".equals(roomClass)) kind = "BOSS";
+            else if ("MonsterRoom".equals(roomClass)) kind = "NORMAL_QUEUE";
+        }
+        combatClassHistory.observe(AbstractDungeon.player, Settings.seed, act, floor,
+                noPriorActCombat, inCombat, inCombat ? AbstractDungeon.getMonsters() : null, kind);
+    }
+
+    static void invalidateCombatRoomHistory() { combatClassHistory.invalidate(); }
 
     // Only an uninterrupted observation from a fresh Neow boundary can
     // account for skipped offers. A resumed/mid-run observer stays incomplete.
@@ -140,6 +217,7 @@ final class LiveOocCapture {
             finalizeSupportReason(out);
         } catch (ReflectiveOperationException | RuntimeException failure) {
             seenRelicOffers.invalidate();
+            combatClassHistory.invalidate();
             recordCaptureError(out, failure);
         }
         return JSON.toJson(out);
@@ -226,6 +304,14 @@ final class LiveOocCapture {
             exact = false;
         }
         p.put("combatFloors", combatFloors);
+        int combatActStart = AbstractDungeon.actNum <= 1 ? 0 : AbstractDungeon.actNum == 2 ? 17
+                : AbstractDungeon.actNum == 3 ? 34 : 51;
+        List<Integer> currentActCombatFloors = new ArrayList<>();
+        for (int floor : combatFloors)
+            if (floor > combatActStart && floor <= AbstractDungeon.floorNum)
+                currentActCombatFloors.add(floor);
+        p.put("combatHistory", combatClassHistory.snapshot());
+        p.put("combatHistoryComplete", combatClassHistory.completeFor(currentActCombatFloors));
         // At the act-boss transition vanilla can leave one non-room sentinel
         // at the end of metricData.path_taken. It is not a missing historical
         // room: the current MapRoomNode is row 15, above the visible map.

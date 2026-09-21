@@ -117,15 +117,18 @@ void sampleLiveOocHiddenCountersImpl(GameContext &gc, std::mt19937_64 &rng,
     // native float-addition lattice (including Juzu's >1 monster chance).
     const int actStart = gc.act <= 1 ? 0 : gc.act == 2 ? 17 : gc.act == 3 ? 34 : 51;
     const int priorRooms = std::clamp(std::min(gc.floorNum - actStart, priorEventRooms), 0, 16);
-    const auto lattice = [&](float initial, float increment) {
-        float value = initial;
-        const int steps = std::uniform_int_distribution<int>(0, priorRooms)(rng);
-        for (int i = 0; i < steps; ++i) value += increment;
-        return value;
-    };
-    gc.monsterChance = lattice(0.1f, 0.1f);
-    gc.shopChance = lattice(0.03f, 0.03f);
-    gc.treasureChance = lattice(0.02f, 0.02f);
+    gc.monsterChance = 0.1f;
+    gc.shopChance = 0.03f;
+    gc.treasureChance = 0.02f;
+    // Draw one latent outcome per observed '?' room, then update all three
+    // counters together by the native room-outcome rule. Independent lattice
+    // draws create counter triples that no room history could have produced.
+    for (int i = 0; i < priorRooms; ++i) {
+        const int outcome = std::uniform_int_distribution<int>(0, 3)(rng);
+        gc.monsterChance = outcome == 0 ? 0.1f : gc.monsterChance + 0.1f;
+        gc.shopChance = outcome == 1 ? 0.03f : gc.shopChance + 0.03f;
+        gc.treasureChance = outcome == 2 ? 0.02f : gc.treasureChance + 0.02f;
+    }
     gc.potionChance = 10 * std::uniform_int_distribution<int>(-4, 6)(rng);
     gc.cardRarityFactor = std::uniform_int_distribution<int>(-40, 5)(rng);
 }
@@ -1080,6 +1083,33 @@ namespace one_combat {
 void oocMctsAdapterSelfTest() {
     using namespace sts;
     using namespace sts::search;
+    {
+        GameContext counters(CharacterClass::IRONCLAD, 1234, 0);
+        counters.act = 2;
+        counters.floorNum = 23;
+        for (int seed = 0; seed < 128; ++seed) {
+            std::mt19937_64 rng(seed);
+            sampleLiveOocHiddenCounters(counters, rng, 0);
+            require(counters.monsterChance == 0.1f && counters.shopChance == 0.03f
+                    && counters.treasureChance == 0.02f,
+                    "zero current-act event rooms must reset room-chance counters");
+            sampleLiveOocHiddenCounters(counters, rng, 1);
+            const bool monster = counters.monsterChance == 0.1f
+                && counters.shopChance == 0.03f + 0.03f
+                && counters.treasureChance == 0.02f + 0.02f;
+            const bool shop = counters.monsterChance == 0.1f + 0.1f
+                && counters.shopChance == 0.03f
+                && counters.treasureChance == 0.02f + 0.02f;
+            const bool treasure = counters.monsterChance == 0.1f + 0.1f
+                && counters.shopChance == 0.03f + 0.03f
+                && counters.treasureChance == 0.02f;
+            const bool event = counters.monsterChance == 0.1f + 0.1f
+                && counters.shopChance == 0.03f + 0.03f
+                && counters.treasureChance == 0.02f + 0.02f;
+            require(monster || shop || treasure || event,
+                    "one event-room outcome must produce a reachable joint chance state");
+        }
+    }
     // Inspect the actual configured option before fixture-specific resets.
     require(!liveEnabled || liveOptions.sampleNoncombat,
         "enabled live OOC MCTS must sample noncombat outcomes after all startup resets");

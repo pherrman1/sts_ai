@@ -30,6 +30,7 @@ static J project(const GameContext &g,const PathHistory &path,const std::string 
         {"boss",J(g.boss)},{"pathComplete",true},{"pathVisits",path.roomVisits},
         {"currentActPathVisits",J::array({0,0,0,0,0,0,0,0,0,0})},{"acquiredRelics",J::array()},
         {"pathHistory",J::array()},{"combatFloors",J::array()},
+        {"combatHistory",J::array()},{"combatHistoryComplete",true},
         {"seenRelics",J::array()},{"seenRelicsComplete",true},
         {"rewardPityHistoryComplete",true},
         {"priorEvents",J::array()},{"shopRemoveCount",g.shopRemoveCount}};
@@ -235,6 +236,7 @@ int main(int argc,char **argv){try{
         auto wire = project(source, path, "question_to_monster_history");
         auto &p = wire["ooc"]["publicState"];
         p["combatFloors"] = J::array({6});
+        p["combatHistory"] = J::array({{{"floor",6},{"kind","NORMAL_QUEUE"}}});
         p["pathHistory"] = J::array({"MONSTER", "MONSTER", "MONSTER", "MONSTER", "MONSTER", "EVENT"});
         advisor::LiveOocStateV1 live;
         const auto result = advisor::importLiveOocStateV1(wire, live);
@@ -252,7 +254,10 @@ int main(int argc,char **argv){try{
         auto &p = wire["ooc"]["publicState"];
         p["currentActPathVisits"][static_cast<int>(Room::ELITE)] = 1;
         p["currentActPathVisits"][static_cast<int>(Room::EVENT)] = 1;
+        p["pathVisits"][static_cast<int>(Room::EVENT)] = 8;
         p["combatFloors"] = J::array({20, 23});
+        p["combatHistory"] = J::array({{{"floor",20},{"kind","NORMAL_QUEUE"}},
+                                        {{"floor",23},{"kind","ELITE_QUEUE"}}});
         // Earlier act transitions mean path_taken[22] does not exist.
         p["pathHistory"] = J::array({"MONSTER", "EVENT", "ELITE"});
         advisor::LiveOocStateV1 live;
@@ -261,6 +266,29 @@ int main(int argc,char **argv){try{
         check(live.mctsRoot.state.monsterListOffset == 1
                 && live.mctsRoot.state.eliteMonsterListOffset == 1,
                 "act-two elite and question-monster must consume separate queues");
+        check(live.mctsRoot.currentActEventVisits == 1,
+                "room belief must use current-act event visits, not whole-run path visits");
+    }
+    {
+        auto source = base;
+        source.screenState = ScreenState::MAP_SCREEN;
+        source.floorNum = 9;
+        auto wire = project(source, path, "fixed_event_combat_does_not_consume_hallway_queue");
+        auto &p = wire["ooc"]["publicState"];
+        p["combatFloors"] = J::array({3, 5, 8});
+        p["combatHistory"] = J::array({{{"floor",3},{"kind","FIXED_EVENT"}},
+                                        {{"floor",5},{"kind","NORMAL_QUEUE"}},
+                                        {{"floor",8},{"kind","ELITE_QUEUE"}}});
+        p["currentActPathVisits"][static_cast<int>(Room::ELITE)] = 1;
+        advisor::LiveOocStateV1 live;
+        check(advisor::importLiveOocStateV1(wire, live).ok, "fixed-event combat import");
+        check(live.mctsRoot.state.monsterListOffset == 1
+                && live.mctsRoot.state.eliteMonsterListOffset == 1,
+              "fixed event fight must not consume either encounter queue");
+        p["combatHistoryComplete"] = false;
+        check(advisor::importLiveOocStateV1(wire, live).ok && !live.mctsRoot.supported
+                && live.mctsRoot.reason == "PUBLIC_COMBAT_CLASS_HISTORY_UNQUALIFIED",
+              "resumed incomplete combat history must fail closed");
     }
     {
         auto source = base;

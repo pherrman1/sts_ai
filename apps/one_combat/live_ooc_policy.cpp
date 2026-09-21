@@ -198,7 +198,7 @@ LiveOocDecision scoreLiveOocV4(const sts::GameContext &projected, const PathHist
 }
 
 LiveOocDecision LiveOocV4QPolicy::score(const sts::GameContext &projected,
-                                      const PathHistory &path) const {
+                                      const PathHistory &path, int) const {
     return scoreLiveOocV4(projected, path, model_, rewardPityHistoryComplete_);
 }
 
@@ -215,7 +215,7 @@ void LiveOocMctsPolicy::setRootPrimitiveBits(const std::vector<std::uint32_t> &b
 }
 
 LiveOocDecision LiveOocMctsPolicy::score(const sts::GameContext &projected,
-                                         const PathHistory &path) const {
+                                         const PathHistory &path, int currentActEventVisits) const {
     LiveOocDecision unsupportedResult;
     unsupportedResult.policy = name();
     if (!model_.ok) { unsupportedResult.reason = "MODEL_UNAVAILABLE"; return unsupportedResult; }
@@ -235,7 +235,7 @@ LiveOocDecision LiveOocMctsPolicy::score(const sts::GameContext &projected,
     options.stopAtMapCheckpoint = true;
     if (hasRootPrimitiveBits_) options.rootPrimitiveBits = rootPrimitiveBits_;
     OocMctsDependencies dependencies;
-    const int observedEventRooms = path.roomVisits[static_cast<int>(Room::EVENT)];
+    const int observedEventRooms = currentActEventVisits;
     dependencies.sampleHiddenCounters = [observedEventRooms](sts::GameContext &gc,
                                                                std::mt19937_64 &rng) {
         sampleLiveOocHiddenCounters(gc, rng, observedEventRooms);
