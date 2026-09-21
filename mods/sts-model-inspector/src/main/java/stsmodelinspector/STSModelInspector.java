@@ -161,8 +161,28 @@ public final class STSModelInspector implements PostInitializeSubscriber,
     private long silverSearchBudget = DEFAULT_SILVER_SEARCH_BUDGET;
     private String silverBudgetStateFingerprint = "";
     private volatile double ctmDeath = 0.0;
-    private volatile int ctmHistogramMin = 1;
-    private volatile double[] ctmHistogram = new double[0];
+    static final class HistogramSnapshot {
+        final int min;
+        final double[] values;
+
+        HistogramSnapshot(int min, double[] values) {
+            this.min = min;
+            this.values = values.clone();
+        }
+    }
+    static int[] histogramNonzeroRange(HistogramSnapshot snapshot) {
+        int first = -1;
+        int last = -1;
+        final double[] values = snapshot.values;
+        for (int i = 0; i < values.length; ++i) {
+            if (values[i] > 0.000001) {
+                if (first < 0) first = i;
+                last = i;
+            }
+        }
+        return new int[]{first, last};
+    }
+    private volatile HistogramSnapshot ctmHistogram = new HistogramSnapshot(1, new double[0]);
     private volatile OocOverlay oocOverlay;
     private volatile PotionOverlay potionOverlay;
     private volatile boolean panelVisible = true;
@@ -258,7 +278,7 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         silverTotalSimulations = 0;
         silverRootVisits = 0;
         ctmDeath = 0.0;
-        ctmHistogram = new double[0];
+        ctmHistogram = new HistogramSnapshot(1, new double[0]);
     }
 
     private STSModelInspector() {}
@@ -313,7 +333,7 @@ public final class STSModelInspector implements PostInitializeSubscriber,
             ctmStatus = "";
             ctmReason = "";
             ctmDeath = 0.0;
-            ctmHistogram = new double[0];
+            ctmHistogram = new HistogramSnapshot(1, new double[0]);
         }
         advisorStatus = "waiting";
         advisorReason = "";
@@ -756,7 +776,9 @@ public final class STSModelInspector implements PostInitializeSubscriber,
 
     private void renderHistogram(SpriteBatch sb, float x, float bottom, float width,
                                  float height, float scale) {
-        if (ctmHistogram.length == 0) {
+        final HistogramSnapshot snapshot = ctmHistogram;
+        final double[] histogram = snapshot.values;
+        if (histogram.length == 0) {
             renderFittedText(sb, ctmStatus.isEmpty() ? "Awaiting forecast" : "Forecast unavailable",
                     x, bottom + height - 12.0f * scale, width, WARNING, 0.78f);
             if (!ctmStatus.isEmpty()) renderFittedText(sb,
@@ -764,14 +786,9 @@ public final class STSModelInspector implements PostInitializeSubscriber,
                     x, bottom + height - 36.0f * scale, width, MUTED, 0.65f);
             return;
         }
-        int first = -1;
-        int last = -1;
-        for (int i = 0; i < ctmHistogram.length; ++i) {
-            if (ctmHistogram[i] > 0.000001) {
-                if (first < 0) first = i;
-                last = i;
-            }
-        }
+        int[] range = histogramNonzeroRange(snapshot);
+        int first = range[0];
+        int last = range[1];
         if (first < 0) return;
         final int span = last - first + 1;
         final int buckets = Math.min(14, span);
@@ -780,7 +797,7 @@ public final class STSModelInspector implements PostInitializeSubscriber,
             int begin = first + bucket * span / buckets;
             int end = first + (bucket + 1) * span / buckets;
             double probability = 0.0;
-            for (int i = begin; i < end; ++i) probability += ctmHistogram[i];
+            for (int i = begin; i < end; ++i) probability += histogram[i];
             maximum = Math.max(maximum, probability);
         }
         if (maximum <= 0.0) return;
@@ -801,14 +818,14 @@ public final class STSModelInspector implements PostInitializeSubscriber,
             int begin = first + bucket * span / buckets;
             int end = first + (bucket + 1) * span / buckets;
             double probability = 0.0;
-            for (int i = begin; i < end; ++i) probability += ctmHistogram[i];
+            for (int i = begin; i < end; ++i) probability += histogram[i];
             float barHeight = (float) (chartHeight * probability / maximum);
             sb.setColor(bucket < buckets / 2 ? CYAN_DIM : CYAN);
             sb.draw(ImageMaster.WHITE_SQUARE_IMG, chartX + bucket * barWidth,
                     chartBottom, Math.max(scale, barWidth - scale), barHeight);
         }
-        int firstHp = ctmHistogramMin + first;
-        int lastHp = ctmHistogramMin + last;
+        int firstHp = snapshot.min + first;
+        int lastHp = snapshot.min + last;
         renderSmallText(sb, Integer.toString(firstHp), chartX,
                 bottom + 1.0f * scale, MUTED, 0.70f);
         renderSmallText(sb, Integer.toString(lastHp), chartX + chartWidth - 12.0f * scale,
@@ -816,8 +833,8 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         double mean = 0.0;
         double mass = 0.0;
         for (int i = first; i <= last; ++i) {
-            mean += (ctmHistogramMin + i) * ctmHistogram[i];
-            mass += ctmHistogram[i];
+            mean += (snapshot.min + i) * histogram[i];
+            mass += histogram[i];
         }
         if (mass > 0.0 && newest.maxHp > 0) {
             renderSmallText(sb, "Mean", x + width - 42.0f * scale,
@@ -2501,8 +2518,7 @@ public final class STSModelInspector implements PostInitializeSubscriber,
                             ctmStatus = "";
                             ctmReason = "";
                             ctmDeath = 0.0;
-                            ctmHistogramMin = 1;
-                            ctmHistogram = new double[0];
+                            ctmHistogram = new HistogramSnapshot(1, new double[0]);
                             silverStatus = "";
                             silverReason = "";
                             silverSelectedAction = "";
@@ -2564,8 +2580,9 @@ public final class STSModelInspector implements PostInitializeSubscriber,
                                 ctmReason = forecastReason == null ? ctmStatus : forecastReason;
                                 if ("OK".equals(ctmStatus)) {
                                     ctmDeath = doubleField(ctm, "deathProbability");
-                                    ctmHistogramMin = (int) numberField(ctm, "winningHpHistogramMin");
-                                    ctmHistogram = numberArrayField(ctm, "winningHpHistogram");
+                                    ctmHistogram = new HistogramSnapshot(
+                                            (int) numberField(ctm, "winningHpHistogramMin"),
+                                            numberArrayField(ctm, "winningHpHistogram"));
                                 }
                             }
                             try { potionOverlay = PotionOverlay.parse(line); }

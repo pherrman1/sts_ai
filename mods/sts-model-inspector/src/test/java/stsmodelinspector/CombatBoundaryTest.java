@@ -57,6 +57,25 @@ public final class CombatBoundaryTest {
         if (!"OK".equals(ctm.get("status").getAsString()) || ctm.get("deathProbability").getAsDouble() != 0.2
                 || !STSModelInspector.ctmResponseJson("{\"evaluators\":[]}").isEmpty())
             throw new AssertionError("another evaluator contaminated CTM forecast status");
-        System.out.println("CombatBoundaryTest: 8 boundary, 2 selection and 9 entry-relic and 2 CTM isolation checks passed");
+        // A render previously found bucket 72, then read a shorter volatile
+        // array after the advisor published its next forecast and crashed.
+        double[] wide = new double[73];
+        wide[72] = 1.0;
+        STSModelInspector.HistogramSnapshot previous =
+                new STSModelInspector.HistogramSnapshot(1, wide);
+        STSModelInspector.HistogramSnapshot replacement =
+                new STSModelInspector.HistogramSnapshot(20, new double[0]);
+        STSModelInspector.HistogramSnapshot[] published = {previous};
+        for (int i = 0; i < 1000; ++i) {
+            STSModelInspector.HistogramSnapshot captured = published[0];
+            published[0] = (i & 1) == 0 ? replacement : previous;
+            int[] range = STSModelInspector.histogramNonzeroRange(captured);
+            if (range[1] >= captured.values.length
+                    || (captured == previous && (range[0] != 72 || range[1] != 72
+                        || captured.min + range[1] != 73))
+                    || (captured == replacement && (range[0] != -1 || range[1] != -1)))
+                throw new AssertionError("histogram publication changed a captured render range");
+        }
+        System.out.println("CombatBoundaryTest: 8 boundary, 2 selection, 9 entry-relic, 2 CTM isolation and histogram snapshot checks passed");
     }
 }

@@ -71,6 +71,8 @@ fail closed.
 The Java frontend is under `mods/sts-model-inspector/`. It uses BaseMod
 post-update/render subscribers and captures detached Ironclad-compatible
 summary fields for actionable OOC screens and ordinary player turns. The
+CTM histogram display reads one immutable minimum/array snapshot per render;
+advisor publication may replace that snapshot while a frame is drawn. The
 combat producer now emits protocol-v4 Silver roots with physical card UUIDs,
 upgraded/misc/cost/retain/free-play fields, battle-lifetime stable monster
 slots, dead/half-dead/escaping state, relics, potion slots, the combat entry
