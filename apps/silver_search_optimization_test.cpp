@@ -1135,8 +1135,86 @@ void equalStats(const sts::search::SearchStats &a, const sts::search::SearchStat
     SAME(rolloutGoldSum); SAME(rolloutMaxHpSum); SAME(rolloutParasitePenaltySum);
     SAME(rolloutMonsterDamageSum); SAME(rolloutAliveSum); SAME(rolloutEnergyWasteSum);
     SAME(rolloutDrawSum); SAME(rolloutSurvivalSum);
+    SAME(fpuSelectionOpportunities);
+    SAME(fpuVisitedSelectedWithUnvisitedRemaining);
+    SAME(fpuUnvisitedSelected);
     for (int i = 0; i < 3; ++i) { SAME(wSampled[i]); SAME(wSibReuse[i]); SAME(wCapped[i]); }
 #undef SAME
+}
+
+void internalFpuSelectionFixtures(const sts::BattleContext &bc) {
+    Search search(bc);
+    Search::Node parent, visitedChild;
+    auto parentState = bc;
+    parentState.inputState = sts::InputState::PLAYER_NORMAL;
+    parent.state = &parentState;
+    parent.simulationCount = 2;
+    parent.evaluationSum = 0.0;
+    visitedChild.simulationCount = 1;
+    visitedChild.evaluationSum = 0.0;
+    parent.edges.resize(2);
+    parent.edges[0].visitCount = 1;
+    parent.edges[0].node = &visitedChild;
+    parent.edges[1].visitCount = 0;
+    parent.edges[1].node = nullptr;
+    search.internalFpuEnabled = true;
+    require(search.selectBestEdgeToSearch(parent) == 0,
+            "finite internal FPU must allow a promising visited edge to win");
+    require(search.stats.fpuSelectionOpportunities == 1
+            && search.stats.fpuVisitedSelectedWithUnvisitedRemaining == 1
+            && search.stats.fpuUnvisitedSelected == 0,
+            "internal FPU visited-selection telemetry");
+
+    parent.simulationCount = 100;
+    parent.edges[0].visitCount = 99;
+    visitedChild.simulationCount = 99;
+    require(search.selectBestEdgeToSearch(parent) == 1,
+            "finite internal FPU must eventually select the remaining edge");
+    require(search.stats.fpuSelectionOpportunities == 2
+            && search.stats.fpuUnvisitedSelected == 1,
+            "internal FPU eventual-exploration telemetry");
+
+    auto rootState = parentState;
+    search.root->state = &rootState;
+    search.root->simulationCount = 2;
+    search.root->evaluationSum = 0.0;
+    search.root->edges = parent.edges;
+    require(search.selectBestEdgeToSearch(*search.root) == 1,
+            "root must retain unvisited-first selection");
+    require(search.stats.fpuSelectionOpportunities == 2,
+            "root selection must not count as an internal FPU opportunity");
+
+    auto cardSelectState = parentState;
+    cardSelectState.inputState = sts::InputState::CARD_SELECT;
+    parent.state = &cardSelectState;
+    parent.simulationCount = 2;
+    parent.edges = search.root->edges;
+    require(search.selectBestEdgeToSearch(parent) == 1,
+            "CARD_SELECT must retain unvisited-first selection");
+    require(search.stats.fpuSelectionOpportunities == 2,
+            "CARD_SELECT must not count as an internal FPU opportunity");
+
+    parent.isRandomNode = true;
+    parent.state = nullptr;
+    require(search.selectBestEdgeToSearch(parent) == 1,
+            "chance nodes must retain unvisited-first selection");
+    require(search.stats.fpuSelectionOpportunities == 2,
+            "chance selection must not count as an internal FPU opportunity");
+
+    Search off(bc);
+    Search explicitOff(bc);
+    auto offState = parentState;
+    offState.inputState = sts::InputState::PLAYER_NORMAL;
+    off.root->state = &offState;
+    explicitOff.root->state = &offState;
+    off.root->simulationCount = explicitOff.root->simulationCount = 2;
+    off.root->edges = explicitOff.root->edges = parent.edges;
+    require(off.selectBestEdgeToSearch(*off.root)
+                == explicitOff.selectBestEdgeToSearch(*explicitOff.root),
+            "FPU flag-off selection parity");
+    require(off.stats.fpuSelectionOpportunities == 0
+            && explicitOff.stats.fpuSelectionOpportunities == 0,
+            "FPU flag-off telemetry parity");
 }
 
 void traceParity(const sts::BattleContext &bc, bool observe) {
@@ -1641,6 +1719,7 @@ int main(int argc, char **argv) {
         lazyReroot(bc);
         compaction(bc, 0);
         selection(search); widening(search); rootPriorSelection(search);
+        internalFpuSelectionFixtures(bc);
         traceParity(bc, false); traceParity(bc, true); rootHash(bc);
         retainedStateGrowth(bc);
         storage(bc, argc > 1 && std::string(argv[1]) == "--storage-metrics");

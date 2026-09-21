@@ -10785,3 +10785,43 @@ default or generalization claim is authorized. Evidence:
   **Knowledge impact:** durable unresolved Silver search investigation and
   experiment evidence only; no production Silver behavior, model, RNG, schema,
   budget, gameplay result, or default changed.
+
+## §332 — Silver internal-node finite FPU screen (2026-09-21)
+
+- **Question and intervention:** Does finite First-Play Urgency let Silver
+  revisit promising explored actions at internal `PLAYER_NORMAL` nodes instead
+  of forcing breadth? The treatment was default-off and changed only
+  non-root, non-random nodes with at least two edges and both visited and
+  unvisited edges. It used the fixed
+  `c_fpu=max(explorationParameter,explorationParameterChance)` formulation
+  from the experiment handoff. Roots, `CARD_SELECT`, chance DPW, rollouts,
+  value, priors, transpositions, and exploration constants were unchanged.
+- **Correctness:** The focused `silver_search_optimization` and
+  `silver_bridge_boundary` CTest checks passed 2/2. The fixture proved flag-off
+  parity, root/chance/card-select exclusions, visited-edge selection under
+  finite FPU, and eventual unvisited exploration. The replay seam now emits
+  initial semantic root action, simulations, nodes, depth, search wall time,
+  and FPU opportunity/selection telemetry.
+- **Full 1k DEV:** On frozen `hard64-dev` snapshots
+  (snapshot SHA-256 `ab7c3298754864986c31273a0f1d23967b165fdd79a386261b680b8ad16d0eae`),
+  64/64 rows per arm were accepted. Control was 51/64 wins; FPU was 50/64.
+  FPU recorded 2,697,841 opportunities, 2,433,339 visited-edge selections
+  with an unvisited edge remaining, and 264,502 unvisited selections. FPU
+  changed the initial root action in 22/64 cases and had higher depth proxy
+  (14,346,649 vs 12,899,741) with fewer nodes and slightly lower aggregate
+  search wall time in this arm.
+- **10k smoke:** The mandated 8-case smoke was 7/8 wins and 8/8 accepted in
+  both arms; root actions agreed 8/8. FPU was more expensive in the smoke
+  (2,708,398 vs 2,609,631 nodes; 181,198.364 vs 176,349.130 ms) and had
+  greater depth. The required full 64-case 10k arm was not completed because
+  one-shot and managed-wrapper executions intermittently terminated without
+  rows; independently retried single cases completed, but partial rows were
+  excluded from cohort analysis.
+- **Decision:** **`INTERNAL_FPU_INCONCLUSIVE`**. The mechanism is materially
+  exercised, but the full high-budget DEV tail is missing and the available
+  1k/smoke evidence does not establish improved decisions or no runtime
+  regression. No tuning, holdout, gameplay qualification, or default
+  promotion was performed.
+- **Evidence:** [internal FPU evidence packet](evidence/silver_internal_fpu_20260921/README.md).
+  **Knowledge impact:** durable inconclusive Silver allocation result and
+  replay telemetry contract; no production/default behavior changed.

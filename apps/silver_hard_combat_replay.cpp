@@ -26,7 +26,8 @@ nlohmann::json macroTaskCounts(const Counts &counts) {
 
 nlohmann::json replayRow(const nlohmann::json &input, std::int64_t budget,
                          bool collectUidFragmentationDiagnostics,
-                         silver_bridge::SilverSearchContractMode contractMode) {
+                         silver_bridge::SilverSearchContractMode contractMode,
+                         bool internalFpuEnabled) {
     const auto started = std::chrono::steady_clock::now();
     nlohmann::json row = {
         {"case_id", input.value("case_id", "")},
@@ -46,6 +47,8 @@ nlohmann::json replayRow(const nlohmann::json &input, std::int64_t budget,
         config.exactVisitLockEnabled = false;
         config.rhoRacingEnabled = false;
         config.collectUidFragmentationDiagnostics = collectUidFragmentationDiagnostics;
+        config.internalFpuEnabled = internalFpuEnabled;
+        config.collectSearchTiming = true;
         config.contractMode = contractMode;
 
         const auto result = silver_bridge::runSilverCombatReplay(wire, config);
@@ -55,6 +58,7 @@ nlohmann::json replayRow(const nlohmann::json &input, std::int64_t budget,
         row["turns"] = result.terminalTurn;
         row["decisions"] = result.decisions;
         row["simulations"] = result.simulations;
+        row["first_action_fingerprint"] = result.firstActionFingerprint;
         row["mcts_search_invocations"] = result.mctsSearchInvocations;
         row["card_select_search_invocations"] = result.cardSelectSearchInvocations;
         row["primitive_actions_executed"] = result.primitiveActionsExecuted;
@@ -66,6 +70,13 @@ nlohmann::json replayRow(const nlohmann::json &input, std::int64_t budget,
         row["status"] = result.accepted ? "ok" : result.failureReason;
         row["rollout_calls"] = result.telemetry.rolloutCalls;
         row["nodes_created"] = result.telemetry.nodesCreated;
+        row["depth_sum"] = result.telemetry.depthSum;
+        row["chance_depth_sum"] = result.telemetry.chanceDepthSum;
+        row["search_wall_micros"] = result.telemetry.searchWallMicros;
+        row["fpu_selection_opportunities"] = result.telemetry.fpuSelectionOpportunities;
+        row["fpu_visited_selected_with_unvisited_remaining"] =
+            result.telemetry.fpuVisitedSelectedWithUnvisitedRemaining;
+        row["fpu_unvisited_selected"] = result.telemetry.fpuUnvisitedSelected;
         row["macro_eligible_decision_nodes"] = result.telemetry.macroEligibleDecisionNodes;
         row["macro_edges_generated"] = result.telemetry.macroEdgesGenerated;
         row["macro_option_count_sum"] = result.telemetry.macroOptionCountSum;
@@ -107,15 +118,18 @@ nlohmann::json replayRow(const nlohmann::json &input, std::int64_t budget,
 int main(int argc, char **argv) {
     if (argc < 3) {
         std::cerr << "usage: silver_hard_combat_replay SNAPSHOTS.jsonl BUDGET "
-                     "[--arm control|A|B] [--uid-fragmentation]\n";
+                     "[--arm control|A|B] [--uid-fragmentation] [--internal-fpu]\n";
         return 2;
     }
     bool collectUidFragmentationDiagnostics = false;
+    bool internalFpuEnabled = false;
     auto contractMode = silver_bridge::SilverSearchContractMode::CONTROL;
     for (int i = 3; i < argc; ++i) {
         const std::string option(argv[i]);
         if (option == "--uid-fragmentation") {
             collectUidFragmentationDiagnostics = true;
+        } else if (option == "--internal-fpu") {
+            internalFpuEnabled = true;
         } else if (option == "--arm" && i + 1 < argc) {
             const std::string arm(argv[++i]);
             if (arm == "control") contractMode = silver_bridge::SilverSearchContractMode::CONTROL;
@@ -156,7 +170,8 @@ int main(int argc, char **argv) {
         if (line.empty()) continue;
         try {
             const auto row = replayRow(nlohmann::json::parse(line), budget,
-                                       collectUidFragmentationDiagnostics, contractMode);
+                                       collectUidFragmentationDiagnostics, contractMode,
+                                       internalFpuEnabled);
             hadFailure = hadFailure || row.value("status", "") != "ok";
             std::cout << row.dump() << '\n';
         } catch (const std::exception &error) {
