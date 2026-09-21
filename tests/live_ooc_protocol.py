@@ -192,6 +192,7 @@ class LiveOocProtocol(unittest.TestCase):
         ooc["details"] = {"chestType": "BossChest", "opened": True}
         ooc["liveChoices"] = [{"liveAction": {"kind": "proceed"},
                                "nativeAction": {"kind": "option", "index": 0}}]
+        self.assertNotIn("unsupportedReason", ooc)
         response, = self.run_rows([observation])
         evaluator = response["evaluators"][0]
         self.assertEqual(evaluator["status"], "OK")

@@ -733,11 +733,6 @@ final class LiveOocCapture {
     private static void treasure(Map<String,Object> out, List<Map<String,Object>> cs, List<?> labels)
             throws ReflectiveOperationException {
         out.put("screen", "treasure");
-        // The native chest particle depends on setupTreasureRoom() state
-        // (chest size, gold branch, and relic tier). The capture currently
-        // exposes only the Java chest class, so never score an unopened chest
-        // from a fabricated default StateInfo.
-        out.put("unsupportedReason", "TREASURE_STATE_UNREPRESENTABLE");
         Object chest = field(AbstractDungeon.getCurrRoom(), "chest");
         boolean opened = Boolean.TRUE.equals(field(chest, "isOpen"));
         out.put("details", object("chestType", chest.getClass().getSimpleName(), "opened", opened));
@@ -748,6 +743,11 @@ final class LiveOocCapture {
             captureOpenedTreasure(out, cs,
                     Boolean.TRUE.equals(map(out.get("mcpState")).get("can_proceed")));
         } else {
+            // The native chest particle depends on setupTreasureRoom() state
+            // (chest size, gold branch, and relic tier). The capture currently
+            // exposes only the Java chest class, so never score an unopened
+            // chest from a fabricated default StateInfo.
+            out.put("unsupportedReason", "TREASURE_STATE_UNREPRESENTABLE");
             add(cs, labels, 0, "option", 0, 0);
             button(cs, "proceed", "option", 1, 0);
         }
