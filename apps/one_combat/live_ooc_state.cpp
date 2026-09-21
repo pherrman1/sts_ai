@@ -546,6 +546,8 @@ ImportResult importLiveOocStateV1(const J &observation, LiveOocStateV1 &out) {
             g.info.phase=integer(d,"phase",0,100);
             if(g.curEvent==Event::SHINING_LIGHT)
                 g.info.hpAmount0=integer(d,"hpAmount0",1,g.maxHp);
+            if(g.curEvent==Event::WORLD_OF_GOOP)
+                g.info.goldLoss=integer(d,"goldLoss",0,g.gold);
             if(g.curEvent==Event::GOLDEN_IDOL) {
                 g.info.hpAmount0=integer(d,"hpAmount0",1,g.maxHp);
                 g.info.hpAmount1=integer(d,"hpAmount1",1,g.maxHp);

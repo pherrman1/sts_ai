@@ -148,6 +148,14 @@ public final class LiveOocCaptureTest {
         if (LiveOocCapture.scrapOozeRetryCount(25, 3, 0) != 0
                 || LiveOocCapture.scrapOozeRetryCount(55, 5, 20) != 3)
             throw new AssertionError("Scrap Ooze public chance lost native retry count");
+        List<Object> goopOptions = Arrays.asList(obj("index", 0), obj("index", 1));
+        List<String> goopLabels = Arrays.asList(
+                "[Gather Gold] Gain 75 Gold. Lose 11 HP.", "[Leave It] Lose 41 Gold.");
+        if (!LiveOocCapture.goopInitialVisible("INTRO", goopLabels, goopOptions, 11, 75, 41, 99)
+                || LiveOocCapture.goopInitialVisible("RESULT", goopLabels, goopOptions, 11, 75, 41, 99)
+                || LiveOocCapture.goopInitialVisible("INTRO", goopLabels, goopOptions, 11, 75, 42, 99)
+                || LiveOocCapture.goopInitialVisible("INTRO", goopLabels, goopOptions, 11, 75, 41, 40))
+            throw new AssertionError("World of Goop public loss or phase mismatch");
         try {
             LiveOocCapture.scrapOozeRetryCount(30, 3, 0);
             throw new AssertionError("non-native Scrap Ooze chance was accepted");

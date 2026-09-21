@@ -74,7 +74,7 @@ static J project(const GameContext &g,const PathHistory &path,const std::string 
                 {"hpAmount0",i.hpAmount0},{"hpAmount1",i.hpAmount1},
                 {"upgradeOne",i.upgradeOne},{"cleanUpIsRemoveCard",i.cleanUpIsRemoveCard},{"skillCardDeckIdx",i.skillCardDeckIdx},
                 {"powerCardDeckIdx",i.powerCardDeckIdx},{"attackCardDeckIdx",i.attackCardDeckIdx},{"potionIdx",i.potionIdx},
-                {"gold",i.gold},{"cardIdx",i.cardIdx}};
+                {"gold",i.gold},{"goldLoss",i.goldLoss},{"cardIdx",i.cardIdx}};
             if(g.curEvent==Event::NEOW){d["neow"]=J::array();for(const auto &n:i.neowRewards)d["neow"].push_back({{"bonus",J(n.r)},{"drawback",J(n.d)}});}break;}
         default:throw std::runtime_error("fixture screen missing");
     }
@@ -149,6 +149,7 @@ int main(int argc,char **argv){try{
     g=base;g.screenState=ScreenState::EVENT_SCREEN;g.curEvent=Event::BIG_FISH;add("event_big_fish",g);
     g.curEvent=Event::LIVING_WALL;add("event_living_wall",g);
     g.curEvent=Event::SHINING_LIGHT;g.info.hpAmount0=16;add("event_shining_light_public_damage",g);
+    g.curEvent=Event::WORLD_OF_GOOP;g.info.goldLoss=41;add("event_world_of_goop_public_gold_loss",g);
     g.curEvent=Event::GOLDEN_IDOL;g.info.hpAmount0=20;g.info.hpAmount1=6;
     add("event_golden_idol_public_trap",g);
     g.curEvent=Event::WING_STATUE;add("event_golden_wing_locked_attack",g);

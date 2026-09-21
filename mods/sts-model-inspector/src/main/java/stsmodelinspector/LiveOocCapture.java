@@ -701,6 +701,17 @@ final class LiveOocCapture {
                 "WomanInBlue").contains(simple);
     }
 
+    static boolean goopInitialVisible(Object phase, List<?> labels, List<?> options,
+                                      int damage, int gain, int goldLoss, int playerGold) {
+        return "INTRO".equals(String.valueOf(phase)) && labels.size() == 2 && options.size() == 2
+                && ((Number)map(options.get(0)).get("index")).intValue() == 0
+                && ((Number)map(options.get(1)).get("index")).intValue() == 1
+                && damage == 11 && gain == 75 && goldLoss >= 0 && goldLoss <= playerGold
+                && String.valueOf(labels.get(0)).contains(Integer.toString(gain))
+                && String.valueOf(labels.get(0)).contains(Integer.toString(damage))
+                && String.valueOf(labels.get(1)).contains(Integer.toString(goldLoss));
+    }
+
     static boolean nestDecisionVisible(String simple, Object phase, List<?> labels, List<?> options,
             int ascension) {
         if (!"Nest".equals(simple) || !"1".equals(String.valueOf(phase))
@@ -1016,6 +1027,15 @@ final class LiveOocCapture {
             map(out.get("details")).put("eventData", scrapOozeRetryCount(
                     ((Number)field(event, "relicObtainChance")).intValue(),
                     ((Number)field(event, "dmg")).intValue(), AbstractDungeon.ascensionLevel));
+        boolean goop = false;
+        if ("GoopPuddle".equals(simple) && "INTRO".equals(String.valueOf(phase))) {
+            int damage = ((Number)field(event, "damage")).intValue();
+            int gain = ((Number)field(event, "gold")).intValue();
+            int goldLoss = ((Number)field(event, "goldLoss")).intValue();
+            goop = goopInitialVisible(phase, labels, options, damage, gain, goldLoss,
+                    AbstractDungeon.player.gold);
+            if (goop) map(out.get("details")).put("goldLoss", goldLoss);
+        }
         if ("WeMeetAgain".equals(simple) && "INTRO".equals(String.valueOf(phase))) {
             Map<String,Object> details = map(out.get("details"));
             Object offeredPotion = field(event, "potionOption");
@@ -1055,6 +1075,7 @@ final class LiveOocCapture {
                 && ((Number)map(options.get(1)).get("index")).intValue() == 1
                 && ((Number)map(options.get(2)).get("index")).intValue() == 2;
         if (!(simpleInitialEventSupported(simple) && initial)
+                && !goop
                 && !nestDecisionVisible(simple, phase, labels, options, AbstractDungeon.ascensionLevel)
                 && !idolTrap && !goldenWing)
             out.put("unsupportedReason", "EVENT_PHASE_UNREPRESENTABLE:" + id + ":" + phase);

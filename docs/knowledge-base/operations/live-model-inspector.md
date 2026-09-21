@@ -484,9 +484,11 @@ resolved `?`-room outcome ledger persists public floor and outcome pairs
 across game restarts. Complete current-act history reconstructs the native
 room-chance counters in floor order; missing or inconsistent history fails
 closed with `PUBLIC_QUESTION_ROOM_HISTORY_UNQUALIFIED`. Events whose native
-`StateInfo` fields are not captured (`Ghosts`, `WindingHalls`, and
-`WorldOfGoop`) remain unsupported. `ShiningLight` imports its public damage
-amount. Unopened treasure imports its public chest size; its unrevealed
+`StateInfo` fields are not captured (`Ghosts` and `WindingHalls`) remain
+unsupported. `WorldOfGoop` imports its displayed gold loss from the native
+event field and checks the displayed gain/damage and intro phase.
+`ShiningLight` imports its public damage amount. Unopened treasure imports
+its public chest size; its unrevealed
 contents remain hidden in the hypothetical futures. The private Java
 `potionChance` and `cardRarityFactor` counters are not captured. Roots such
 as Library, Mushrooms and Mysterious Sphere whose pre-MAP
