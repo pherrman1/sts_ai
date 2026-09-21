@@ -824,6 +824,17 @@ def card_reward_reveal_action(screen: Mapping[str, Any], game: Mapping[str, Any]
     return None
 
 
+def empty_combat_reward_proceed_action(screen: Mapping[str, Any], game: Mapping[str, Any],
+                                       candidates: Sequence[LegalAction]) -> LegalAction | None:
+    """Advance only an explicitly empty combat reward with one Proceed command."""
+    if _text(screen.get("screen_type")).upper() != "COMBAT_REWARD" or len(candidates) != 1:
+        return None
+    rewards = _mapping(game.get("screen_state", screen.get("screen_state"))).get("rewards")
+    if rewards != [] or candidates[0].mcp_tool != "proceed":
+        return None
+    return candidates[0]
+
+
 def neow_navigation_action(screen: Mapping[str, Any], candidates: Sequence[LegalAction]) -> LegalAction | None:
     """Advance Neow's single Talk or Leave prompt around a model-selected bonus."""
     if (_text(screen.get("screen_type")).upper() != "EVENT"
@@ -1234,6 +1245,7 @@ class Driver:
         boss_chest_skip_cleanup = False
         selector_confirmation = False
         declined_reward_cleanup = False
+        empty_reward_proceed = False
         advisor_started = time.monotonic()
         declined_card_indexes: set[int] = set()
         reward_occurrences: list[Any] = []
@@ -1299,6 +1311,9 @@ class Driver:
                         action = declined_reward_cleanup_action(
                             reward_occurrences, declined_card_indexes, candidates)
                         declined_reward_cleanup = action is not None
+                    if action is None:
+                        action = empty_combat_reward_proceed_action(screen, game_state, candidates)
+                        empty_reward_proceed = action is not None
         row.update({"screen_type": screen.get("screen_type", screen.get("screenType")),
                     "state_identity": transition_identity(screen, game_state),
                     "legal_candidates": [candidate.trace() for candidate in candidates]})
@@ -1314,7 +1329,8 @@ class Driver:
                                       "selector_confirmation" if selector_confirmation else
                                       "boss_chest_skip_cleanup" if boss_chest_skip_cleanup else
                                       "boss_chest_reveal" if boss_chest_reveal else
-                                      "declined_reward_cleanup" if declined_reward_cleanup else "run_control")
+                                      "declined_reward_cleanup" if declined_reward_cleanup else
+                                      "empty_reward_proceed" if empty_reward_proceed else "run_control")
         else:
             combat = _is_combat(screen)
             inspector_state = {**game_state, **screen, "_expected_boundary": "combat" if combat else "ooc"}

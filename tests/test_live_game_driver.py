@@ -9,7 +9,8 @@ from tools.live_game_driver import (
     CandidateEnumerationError, Driver, DriverError, InspectorSnapshot, InspectorReader, IntegrationFailure,
     LegalAction, TraceWriter, build_legal_actions, choose_deterministic_action,
     map_silver_action, map_ooc_action, normalize_game_state, state_identity, transition_identity, main,
-    _is_combat, card_reward_reveal_action, neow_navigation_action, shop_entry_action,
+    _is_combat, card_reward_reveal_action, empty_combat_reward_proceed_action,
+    neow_navigation_action, shop_entry_action,
     event_completion_action, nest_intro_action, boss_door_action, boss_chest_reveal_action,
     boss_chest_skip_cleanup_action, selector_confirmation_action, declined_reward_cleanup_action,
 )
@@ -255,6 +256,30 @@ class LiveGameDriverTest(unittest.TestCase):
         screen = {"screen_type": "COMBAT_REWARD", "choice_list": ["Gold"], "ready_for_command": True}
         actions = build_legal_actions(screen, ["proceed", "choose"])
         self.assertEqual(choose_deterministic_action(screen, actions).mcp_tool, "choose")
+
+    def test_empty_combat_reward_proceeds_without_mcts_zero_visit_rejection(self):
+        # The floor-1 live failure offered only Proceed, while the forced OOC
+        # root reported visits=0, visitShare=1 and the driver rejected it.
+        screen = {"screen_type": "COMBAT_REWARD", "room_phase": "COMPLETE",
+                  "ready_for_command": True, "can_proceed": True, "floor": 1,
+                  "screen_state": {"rewards": []}}
+        game = {"act": 1, "screen_state": {"rewards": []}}
+        actions = build_legal_actions(screen, ["proceed"])
+        self.assertEqual(empty_combat_reward_proceed_action(screen, game, actions).mcp_tool,
+                         "proceed")
+        self.assertIsNone(empty_combat_reward_proceed_action(
+            screen, {"screen_state": {"rewards": [{"reward_type": "GOLD"}]}}, actions))
+        self.assertIsNone(empty_combat_reward_proceed_action(screen, game, actions + actions))
+        with tempfile.TemporaryDirectory() as directory:
+            trace = Path(directory) / "trace.jsonl"
+            client = FakeClient(screen, ["proceed"], game_state=game)
+            driver = Driver(client, InspectorReader(Path(directory) / "missing.json"),
+                            TraceWriter(trace), strict_ooc=True, max_steps=1)
+            asyncio.run(driver.run())
+            row = json.loads(trace.read_text().splitlines()[0])
+            self.assertEqual((row["decision_source"], row["executed_mcp_tool"]),
+                             ("empty_reward_proceed", "proceed"))
+            self.assertFalse(any(tool == "choose" for tool, _ in client.calls))
 
     def test_card_reveal_exposes_hidden_group_without_claiming_parent_rewards(self):
         screen = {"screen_type": "COMBAT_REWARD", "choice_list": ["Gold", "Anchor", "Card"],

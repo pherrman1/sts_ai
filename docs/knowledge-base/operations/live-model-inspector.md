@@ -448,11 +448,12 @@ leaving other rewards and `proceed` available. The current MCP reward surface
 does not expose the vanilla discard-potion command, so this is not discard
 support or a claim of whole-game reward equivalence.
 
-The live driver opens an unrevealed card reward only after all claimable
-non-card rewards in that combat reward have been collected. This preserves the
-simulator continuation order (gold, relic, potion, then card choice; keys stay
-normal OOC choices) and
-ensures the card scorer sees the post-collection root state.
+The live driver currently opens an unrevealed card reward before collecting
+visible parent gold, relic, or potion rewards. The card scorer sees the cards
+but not those still-pending parent rewards in its projected state. This is an
+unresolved public-context qualification gap. Once a combat reward has no
+remaining rewards and MCP exposes only `Proceed`, the driver advances that
+mechanical screen without waiting for an OOC search or requiring root visits.
 
 Path counts derive from persisted `metricData.path_taken`, whose original map
 symbols survive event-to-room conversion and save/resume. Completed combat
@@ -552,7 +553,7 @@ relic-counter representation, and key-disabled campfires. A screen-specific
 unsupported phase takes precedence over path and relic warnings, so a terminal
 event outro cannot be misread as its initial decision. Unopened card reward
 groups expose only their occurrence/type and require the driver to open the
-group after parent reward collection; their concealed card identities are not
+group before scoring; their concealed card identities are not
 serialized or scored. Wing Boots is imported with a separate public charge
   counter, while direct MAP roots with active charges fail closed because the
   frozen value models do not encode remaining charges; Matryoshka, Lizard Tail and N’loth’s Hungry Face are unsupported
