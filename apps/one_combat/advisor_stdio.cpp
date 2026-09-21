@@ -152,6 +152,17 @@ void validateCapturedLiveOocMapping(const one_combat::advisor::LiveOocStateV1 &s
     one_combat::advisor::validateLiveOocActionSet(state, expected);
 }
 
+std::size_t oocTreeNodeCap() {
+    const char *value = std::getenv("STS_OOC_DEBUG_TREE_NODE_CAP");
+    if (!value || !*value) return 4096;
+    for (const char *p = value; *p; ++p) if (*p < '0' || *p > '9') return 4096;
+    char *end = nullptr;
+    errno = 0;
+    const auto parsed = std::strtoull(value, &end, 10);
+    if (errno == ERANGE || end == value || *end || !parsed) return 4096;
+    return static_cast<std::size_t>(std::min<unsigned long long>(parsed, 100000));
+}
+
 json oocResponse(const one_combat::advisor::Request &request,
                  one_combat::LiveOocPolicy &policy, const std::string &identity,
                  PendingCompoundPlan &pending) {
@@ -204,6 +215,9 @@ json oocResponse(const one_combat::advisor::Request &request,
             validateCapturedLiveOocMapping(state);
             policy.setRootPrimitiveBits(advisor::liveOocPrimitiveBits(state));
             policy.setRewardPityHistoryComplete(state.rewardPityHistoryComplete);
+            const char *treeEnv = std::getenv("STS_OOC_DEBUG_TREE");
+            policy.setTreeCapture(request.observation.value("oocDebugTree", false)
+                || (treeEnv && std::string(treeEnv) == "1"), oocTreeNodeCap());
         } catch (const std::exception &error) {
             return advisor::errorResponse(request, "OOC_ACTION_MAPPING", error.what());
         }
@@ -305,6 +319,23 @@ json oocResponse(const one_combat::advisor::Request &request,
             } catch (const std::exception &error) {
                 return advisor::errorResponse(request, "OOC_ACTION_MAPPING", error.what());
             }
+        }
+        if (decision.tree) {
+            const auto &tree = *decision.tree;
+            json captured = {{"accepted", true}, {"rootId", 0},
+                {"truncated", tree.truncated}, {"nodes", json::array()},
+                {"edges", json::array()}};
+            for (const auto &node : tree.nodes)
+                captured["nodes"].push_back({{"id", node.id}, {"kind", node.chance ? "chance" : "state"},
+                    {"stateId", std::to_string(node.state)}, {"actionId", node.action},
+                    {"label", node.label}, {"depth", node.depth}, {"visits", node.visits},
+                    {"prior", node.chance ? json(node.prior) : json(nullptr)},
+                    {"q", node.chance && node.visits ? json(node.q) : json(nullptr)}});
+            for (const auto &edge : tree.edges)
+                captured["edges"].push_back({{"parentId", edge.parentId},
+                    {"childId", edge.childId ? json(*edge.childId) : json(nullptr)},
+                    {"visits", edge.visits}, {"kind", edge.particle ? "particle" : "action"}});
+            evaluator["tree"] = std::move(captured);
         }
     }
     evaluator["latencyMicros"] = std::chrono::duration_cast<std::chrono::microseconds>(
