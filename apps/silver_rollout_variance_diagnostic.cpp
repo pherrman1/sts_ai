@@ -19,6 +19,7 @@
 #include <string>
 #include <tuple>
 #include <unordered_map>
+#include <unordered_set>
 #include <vector>
 
 namespace {
@@ -196,6 +197,79 @@ std::vector<Json> readJsonLines(const std::filesystem::path &path) {
     while (std::getline(input, line)) if (!line.empty()) rows.push_back(Json::parse(line));
     if (input.bad()) throw std::runtime_error("cannot read JSONL: " + path.string());
     return rows;
+}
+
+Json selectedCorpusRolloutRow(const Json &corpus,
+                              const silver_bridge::SilverSimpleRolloutResult &rollout,
+                              int replicate) {
+    return {
+        {"schema", "silver_rollout_variance_v1"},
+        {"group_id", corpus.at("group_id")},
+        {"leaf_snapshot_id", corpus.at("leaf_snapshot_id")},
+        {"source_seed", corpus.at("run_seed")},
+        {"replicate", replicate},
+        {"rng_identity", rollout.rngIdentity},
+        {"accepted", rollout.accepted},
+        {"failure_reason", rollout.failureReason},
+        {"terminal_outcome", rollout.terminalOutcome},
+        {"terminal_hp", rollout.terminalHp},
+        {"terminal_max_hp", rollout.terminalMaxHp},
+        {"leaf_root_utility", rollout.leafRootUtility},
+        {"original_root_corrected_utility", rollout.originalRootCorrectedUtility},
+        {"action_count", rollout.rolloutActionCount},
+        {"turn_delta", rollout.rolloutTurnDelta},
+        {"wall_micros", rollout.rolloutWallMicros},
+        {"action_fingerprints", rollout.rolloutActionFingerprints},
+        {"replicate_contract", "seed=fnv1a(silver-rollout-variance/v1/group_id/replicate); same seed across sibling leaves"},
+        {"executable_git_sha", corpus.at("executable_git_sha")},
+        {"silver_upstream_sha", corpus.at("silver_upstream_sha")}
+    };
+}
+
+int runSelectedCorpusBaseline(int argc, char **argv) {
+    if (argc < 5 || argc > 6) {
+        std::cerr << "usage: silver_rollout_variance_diagnostic "
+                     "--selected-corpus-baseline CORPUS OUTPUT EXECUTABLE_SHA [REPLICATES]\n";
+        return 2;
+    }
+    const auto corpusRows = readJsonLines(argv[2]);
+    const std::filesystem::path outputPath = argv[3];
+    const std::string executableSha = argv[4];
+    if (!silver_bridge::rootMechanismShaValid(executableSha))
+        throw std::invalid_argument("invalid executable SHA");
+    const int replicates = argc == 6 ? std::stoi(argv[5]) : 32;
+    if (replicates <= 0 || replicates > 128)
+        throw std::invalid_argument("replicates must be in 1..128");
+    rejectExisting(outputPath);
+    std::ofstream output(outputPath);
+    if (!output) throw std::runtime_error("cannot create output: " + outputPath.string());
+    std::unordered_set<std::string> leaves;
+    std::size_t acceptedCount = 0;
+    for (const auto &corpus : corpusRows) {
+        const auto leafId = corpus.at("leaf_snapshot_id").get<std::string>();
+        if (!leaves.insert(leafId).second)
+            throw std::invalid_argument("duplicate selected leaf: " + leafId);
+        if (corpus.at("executable_git_sha").get<std::string>() != executableSha)
+            throw std::invalid_argument("selected corpus executable SHA mismatch for " + leafId);
+        const auto leaf = silver_bridge::battleStateWireFromEnvelope(corpus.at("leaf_state"));
+        const auto originalRoot = silver_bridge::battleStateWireFromEnvelope(
+            corpus.at("original_root_state"));
+        for (int replicate = 0; replicate < replicates; ++replicate) {
+            auto runLeaf = leaf;
+            runLeaf.isolatedSearchSeed = rolloutSeed(corpus.at("group_id").get<std::string>(), replicate);
+            const auto result = silver_bridge::runSilverSimpleRollout(runLeaf, originalRoot);
+            output << selectedCorpusRolloutRow(corpus, result, replicate).dump() << '\n';
+            acceptedCount += result.accepted ? 1 : 0;
+            if (!result.accepted)
+                throw std::runtime_error("selected-corpus baseline failed for " + leafId
+                    + " replicate " + std::to_string(replicate) + ": " + result.failureReason);
+        }
+    }
+    if (!output) throw std::runtime_error("selected-corpus baseline write failure");
+    std::cerr << "selected_corpus_baseline_rows=" << corpusRows.size() * replicates
+              << " accepted=" << acceptedCount << " leaves=" << corpusRows.size()
+              << " replicates=" << replicates << '\n';
+    return 0;
 }
 
 double average(const std::vector<double> &values) {
@@ -422,6 +496,8 @@ int runFirstActionProbe(int argc, char **argv) {
 
 int main(int argc, char **argv) {
     try {
+        if (argc >= 2 && std::string(argv[1]) == "--selected-corpus-baseline")
+            return runSelectedCorpusBaseline(argc, argv);
         if (argc >= 2 && std::string(argv[1]) == "--first-action-probe")
             return runFirstActionProbe(argc, argv);
         if (argc < 5 || argc > 10) {
