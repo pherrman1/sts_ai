@@ -57,13 +57,24 @@ def main():
     directory = Path(__file__).resolve().parent
     before = load(directory / 'baseline-diagnostic.jsonl.gz')
     after = load(directory / 'corrected-diagnostic.jsonl.gz')
+    final = load(directory / 'final-diagnostic.jsonl.gz')
     baseline = load(directory / 'baseline-uninstrumented.jsonl.gz')
     ids = [row['case_id'] for row in before]
-    if ids != [row['case_id'] for row in after] or ids != [row['case_id'] for row in baseline]:
+    if (ids != [row['case_id'] for row in after]
+            or ids != [row['case_id'] for row in final]
+            or ids != [row['case_id'] for row in baseline]):
         raise ValueError('case order or identity changed')
     print(json.dumps({
         'before': summarize(before),
         'after': summarize(after),
+        'final': summarize(final),
+        'final_vs_corrected_trace_discordance': sum(
+            a['action_trace_hash'] != b['action_trace_hash']
+            for a, b in zip(after, final)),
+        'final_vs_corrected_substantive_row_discordance': sum(
+            {k: v for k, v in a.items() if k != 'wall_seconds'}
+            != {k: v for k, v in b.items() if k != 'wall_seconds'}
+            for a, b in zip(after, final)),
         'trace_discordance': sum(a['action_trace_hash'] != b['action_trace_hash']
                                  for a, b in zip(before, after)),
         'uninstrumented_baseline_trace_discordance': sum(

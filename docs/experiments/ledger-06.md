@@ -10785,3 +10785,40 @@ default or generalization claim is authorized. Evidence:
   **Knowledge impact:** durable unresolved Silver search investigation and
   experiment evidence only; no production Silver behavior, model, RNG, schema,
   budget, gameplay result, or default changed.
+
+## §332 — Selected deterministic Silver reroot safety on frozen hard64-dev (2026-09-22)
+
+- **Question and frozen protocol:** Does selected-child hand alignment and its
+  chance-action safety correction change the hard64-dev replay or expose a
+  deterministic reroot miss? Replay the 64 fixed Ironclad A0 DEV battle
+  snapshots at 1,000 Silver simulations per decision, project-fair combat RNG,
+  `OMP_NUM_THREADS=4`, allocated reuse cap 32,768, with adaptive, exact-lock,
+  and rho modes off. Input SHA-256:
+  `ab7c3298754864986c31273a0f1d23967b165fdd79a386261b680b8ad16d0eae`.
+- **Provenance:** The original uninstrumented baseline was `289e1ab96d4a`;
+  the earlier corrected run used functional SHA `ea8a728802d3`. After the
+  reviewed cached chance-action repair, unrelated forced-action fixture repair
+  removal, and merge of `main` at `eb7c5fa76f13`, the final functional SHA was
+  `db4edf1cfeb7f8c81bd384c4f02d72f99d7bdc8c`. Its Release replay binary
+  SHA-256 was `ff1b458d1b5e4de3880112d6ac9ad0efdf5cf48a8965498e27a4c7a2e78ffdb2`.
+  All seed execution used `tools/seed_guard.sh`.
+- **Result:** The final 64/64 cases completed successfully: 51 wins, mean
+  terminal HP fraction `0.3440911508`, and `0.9246209677` nodes per simulation.
+  All 1,287 selected deterministic attempts rerooted exactly or through the
+  documented equivalence repair; none was candidate-missing or cap-blocked.
+  Of 881 stochastic attempts, 541 were candidate-missing. There were zero
+  selected edges with positive visits but no child. Final versus earlier
+  corrected action traces differed in 0/64 cases, and all JSONL fields except
+  elapsed wall seconds matched on all 64 rows. The cohort exercised no
+  hand-order mismatch, equivalent-copy UID match, or other selected-child
+  mismatch; focused native regressions cover those latent paths.
+- **Decision and limits:** The corrected reroot safety implementation passes
+  this bounded DEV sanity and correctness screen. The 541 observed fallbacks
+  are stochastic chance misses, not deterministic selected-child failures on
+  this cohort. This is neither holdout nor whole-run/live-game qualification;
+  it does not change Silver defaults or establish broader reroot rates.
+  **Evidence:** [reroot packet](evidence/silver_deterministic_reroot_20260921/README.md),
+  including compressed raw baseline, earlier corrected, and final JSONL and a
+  reproducible summarizer. **Knowledge impact:** bounded research evidence and
+  the maintained hand-alignment contract only; no model, RNG, budget, gameplay
+  policy, or default promotion.
