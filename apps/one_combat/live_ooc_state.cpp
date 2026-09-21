@@ -265,7 +265,11 @@ LiveOocStateV1::LiveOocMctsRootV1 makeMctsRoot(const LiveOocStateV1 &source) {
     // MAP roots are searchable with sampled room-outcome belief particles;
     // stopAtMapCheckpoint applies only after a searched transition. Random
     // relic branches still require complete public offer history.
-    if (!combatHistoryComplete) {
+    if (source.projected.screenState == ScreenState::MAP_SCREEN
+            && source.projected.wingBootsCharges > 0) {
+        result.supported = false;
+        result.reason = "RELIC_NATIVE_STATE_UNREPRESENTABLE:WingedGreaves:active";
+    } else if (!combatHistoryComplete) {
         result.supported = false;
         result.reason = "PUBLIC_COMBAT_CLASS_HISTORY_UNQUALIFIED";
     } else if (canDrawUnseenRelic) {
@@ -287,8 +291,9 @@ ImportResult importLiveOocStateV1(const J &observation, LiveOocStateV1 &out) {
             throw std::runtime_error("live capture integrity failure: " + string(o,"captureError"));
         if (o.contains("unsupportedReason")) {
             const auto reason = string(o,"unsupportedReason");
-            // Wing Boots is represented in the native map action set with its
-            // public charge counter, so it is no longer a support boundary.
+            // Non-MAP screens may carry the relic through continuation, but a
+            // direct MAP decision with active charges is fail-closed because
+            // the frozen value models do not encode remaining charges.
             const bool boundedWinged = reason
                     == "RELIC_NATIVE_STATE_UNREPRESENTABLE:WingedGreaves:active"
                 && screenName != "map";

@@ -171,6 +171,10 @@ public final class LiveOocCaptureTest {
         sameSeed.resetForFreshRun(player, 12345, 1);
         if (!sameSeed.snapshot().isEmpty() || !sameSeed.completeFor(java.util.Collections.emptyList()))
             throw new AssertionError("fresh run did not clear same-seed history");
+        LiveOocCapture.CombatClassHistory staleAct = new LiveOocCapture.CombatClassHistory();
+        staleAct.restoreFor(player, 12345, 2);
+        if (!staleAct.snapshot().isEmpty() || staleAct.completeFor(java.util.Arrays.asList(18)))
+            throw new AssertionError("fresh run retained same-seed Act-2 history");
         if (oldHome == null) System.clearProperty("user.home"); else System.setProperty("user.home", oldHome);
         if (!"RED_SLAVER".equals(STSModelInspector.singleEncounterName("SlaverRed", false))
                 || !"RED_SLAVER".equals(STSModelInspector.singleEncounterName("RedSlaver", false))

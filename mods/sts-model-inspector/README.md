@@ -140,7 +140,9 @@ persistent counters (Happy Flower, Incense Burner, Ink Bottle, Inserter,
 Nunchaku, Pen Nib, Sundial, Neow's Lament, Omamori, Girya, and Tiny Chest) copy
 exactly. Nonpositive counters retain the identical V4 clamped token value.
 Wing Boots keeps its historical native relic data value of zero while its
-public `liveCounter` is carried separately and consumed by map jumps. Active
+  public `liveCounter` is carried separately. Direct MAP roots with active
+  charges remain explicitly unsupported because the frozen value models do not
+  encode remaining charges. Active
 Lizard Tail, Matryoshka, and N'loth's Hungry Face are explicit
 `RELIC_NATIVE_STATE_UNREPRESENTABLE` boundaries because native fresh-run
 initialization differs from vanilla. Other unqualified positive counters

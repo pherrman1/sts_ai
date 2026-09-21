@@ -322,6 +322,19 @@ int main(int argc,char **argv){try{
     {
         auto source = base;
         source.screenState = ScreenState::MAP_SCREEN;
+        auto wire = project(source, path, "active_winged_map_boundary");
+        wire["ooc"]["publicState"]["relics"].push_back(
+                {{"id", J(RelicId::WING_BOOTS)}, {"data", 0}, {"liveCounter", 1}});
+        wire["ooc"]["publicState"]["acquiredRelics"].push_back(J(RelicId::WING_BOOTS));
+        advisor::LiveOocStateV1 live;
+        const auto imported = advisor::importLiveOocStateV1(wire, live);
+        check(imported.ok && !live.mctsRoot.supported
+                && live.mctsRoot.reason == "RELIC_NATIVE_STATE_UNREPRESENTABLE:WingedGreaves:active",
+              "active Wing Boots MAP roots must fail closed");
+    }
+    {
+        auto source = base;
+        source.screenState = ScreenState::MAP_SCREEN;
         auto wire = project(source, path, "incomplete_seen_relic_map_history");
         wire["ooc"]["publicState"]["seenRelicsComplete"] = false;
         advisor::LiveOocStateV1 live;

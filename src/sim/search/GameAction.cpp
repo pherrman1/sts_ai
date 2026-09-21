@@ -184,7 +184,7 @@ bool isValidMapAction(const GameContext &gc, const search::GameAction a) {
         const auto &target = gc.map->getNode(select, gc.curMapNodeY + 1);
         for (int i = 0; i < curNode.edgeCount; ++i) {
             if (curNode.edges[i] >= 0 && curNode.edges[i] < 7
-                    && (target.edgeCount > 0 || target.y == 14))
+                    && target.edgeCount > 0)
                 return true;
         }
     }

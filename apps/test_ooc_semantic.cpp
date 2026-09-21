@@ -74,6 +74,16 @@ void unchangedFailure(GameContext &gc, const OocSemanticAction &action) {
     require(before == test::oocStateFingerprint(gc), "rejected action mutated state/RNG");
 }
 
+void testFingerprintTracksWingBootsCharges() {
+    auto gc = fixture(ScreenState::MAP_SCREEN);
+    gc.relics.add({RelicId::WING_BOOTS, 0});
+    gc.wingBootsCharges = 3;
+    const auto full = test::oocStateFingerprint(gc);
+    gc.wingBootsCharges = 2;
+    require(full != test::oocStateFingerprint(gc),
+            "Wing Boots charge changes must affect OOC state identity");
+}
+
 int bottleSlot(const Deck &deck, int idx) {
     for (int slot = 0; slot < 3; ++slot) if (deck.bottleIdxs[slot] == idx) return slot;
     return -1;
@@ -636,6 +646,7 @@ void testLiteralKeys() {
 
 int runOocSemanticTests() {
     try {
+        testFingerprintTracksWingBootsCharges();
         testLiteralKeys();
         testCampfireAndShop();
         testRewardsAndTreasure(true);

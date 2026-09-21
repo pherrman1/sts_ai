@@ -537,7 +537,8 @@ event outro cannot be misread as its initial decision. Unopened card reward
 groups expose only their occurrence/type and require the driver to open the
 group after parent reward collection; their concealed card identities are not
 serialized or scored. Wing Boots is supported with a separate public charge
-counter; Matryoshka, Lizard Tail and N’loth’s Hungry Face are unsupported
+  counter, while direct MAP roots with active charges fail closed because the
+  frozen value models do not encode remaining charges; Matryoshka, Lizard Tail and N’loth’s Hungry Face are unsupported
 where live/native counter initialization differs. Maw Bank has an explicit
 source-derived active/spent conversion; other unqualified positive counters
 are unsupported. A deck containing upgraded Searing Blow returns
