@@ -51,6 +51,47 @@ class SilverLeafPipelineTest(unittest.TestCase):
             for path in paths:
                 path.unlink(missing_ok=True)
 
+    def test_selector_drops_terminal_leaves_and_incomplete_groups(self):
+        tmp = TEST_TMP
+        corpus = tmp / "selector_eligibility_corpus.jsonl"
+        output = tmp / "selector_eligibility.json"
+        try:
+            rows = []
+            for leaf, incoming, outcome in (("in-x", "x", 0), ("in-y", "y", 0),
+                                             ("terminal", "x", 1)):
+                rows.append({"corpus_schema": "silver_leaf_corpus_v1", "group_id": "complete",
+                    "leaf_snapshot_id": leaf, "act": 1, "cur_hp": 20, "max_hp": 80,
+                    "encounter_category": "hallway", "aux_rollout": {"turn_delta": 3},
+                    "parent_legal_action_fingerprints": ["x", "y"],
+                    "incoming_action_fingerprint": incoming,
+                    "run_seed": 1,
+                    "leaf_state": {"state": {"inputState": 1, "outcome": outcome}}})
+            rows.append({"corpus_schema": "silver_leaf_corpus_v1", "group_id": "incomplete",
+                "leaf_snapshot_id": "only-x", "act": 1, "cur_hp": 20, "max_hp": 80,
+                "encounter_category": "hallway", "aux_rollout": {"turn_delta": 3},
+                "parent_legal_action_fingerprints": ["x", "y"],
+                "incoming_action_fingerprint": "x",
+                "run_seed": 1,
+                "leaf_state": {"state": {"inputState": 1, "outcome": 0}}})
+            for leaf, incoming in (("required-x", "x"), ("required-y", "y")):
+                rows.append({"corpus_schema": "silver_leaf_corpus_v1", "group_id": "required",
+                    "leaf_snapshot_id": leaf, "act": 1, "cur_hp": 20, "max_hp": 80,
+                    "encounter_category": "hallway", "aux_rollout": {"turn_delta": 3},
+                    "parent_legal_action_fingerprints": ["x", "y"],
+                    "incoming_action_fingerprint": incoming, "run_seed": 2,
+                    "leaf_state": {"state": {"inputState": 1, "outcome": 0}}})
+            corpus.write_text("".join(json.dumps(row) + "\n" for row in rows), encoding="utf-8")
+            subprocess.run([sys.executable, ROOT / "tools/select_silver_leaf_corpus.py",
+                            corpus, output, "--target-groups", "1", "--required-source-seeds", "2"],
+                           check=True, capture_output=True, text=True)
+            manifest = json.loads(output.read_text())
+            self.assertIn("required", manifest["group_ids"])
+            self.assertEqual(manifest["required_source_seeds"], ["2"])
+            self.assertNotIn("terminal", manifest["leaf_snapshot_ids"])
+        finally:
+            corpus.unlink(missing_ok=True)
+            output.unlink(missing_ok=True)
+
     def test_analyzer_uses_independent_25k_b(self):
         def row(leaf, group, budget, replicate, selected, q):
             actions = [{"action_fingerprint": action, "leaf_root_q_valid": True,

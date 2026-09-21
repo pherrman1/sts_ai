@@ -2058,6 +2058,18 @@ int testSilverSemanticActionResolution() {
     check(normalResolved.ok && normalResolved.action.getActionType() == search::ActionType::CARD
           && normalResolved.action.getSourceIdx() == 0 && normalResolved.action.getTargetIdx() == 0,
           "targeted semantic card play must lower to the matching legal live action");
+    BattleContext nonTarget = normal;
+    CardInstance nonTargetCard(CardId::DEFEND_RED);
+    nonTargetCard.uniqueId = 171;
+    nonTarget.cards.hand[0] = nonTargetCard;
+    silver_bridge::SemanticAction nonTargetPlay = cardPlay;
+    nonTargetPlay.card = wire(nonTargetCard);
+    nonTargetPlay.target = -1;
+    const auto nonTargetResolved = search::resolveSilverSemanticAction(nonTarget, nonTargetPlay);
+    check(nonTargetResolved.ok && nonTargetResolved.action.getActionType() == search::ActionType::CARD
+          && nonTargetResolved.action.getSourceIdx() == 0
+          && nonTargetResolved.action.isValidAction(nonTarget),
+          "non-target semantic card with target=-1 must lower to a legal live action");
     normal.cards.hand[1] = normal.cards.hand[0];
     normal.cards.cardsInHand = 2;
     normalResolved = search::resolveSilverSemanticAction(normal, cardPlay);

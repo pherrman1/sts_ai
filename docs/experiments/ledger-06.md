@@ -10584,6 +10584,59 @@ default or generalization claim is authorized. Evidence:
   RNG, schema, budget, gameplay, MCTS, holdout, or default. **Knowledge
   impact:** durable current research and corrected offline evidence only.
 
+## §329 — Local 80-source learned Silver-prefix scale validation (2026-09-21)
+
+- **Question and protocol:** Does the frozen PR #258 `MLP_FLAT_V1` scorer
+  generalize from the existing 20 source seeds to the preregistered 40-source
+  expansion and 40-source locked validation cohorts? The native collection
+  used reviewed executable `891cf29f4ff2e318e0d605042732aec48fa1816c`,
+  `STS_SILVER_SEARCH=1`, `STS_SEARCHER3=0`,
+  `STS_SILVER_EXACT_ROOT_BUDGETS=1`, 8 threads, 10,000 exact root
+  simulations, 32 continuation replicates, and the frozen CARD/END_TURN
+  prefix surface through depth 2. No GCP path was used.
+- **Coverage correction:** The first 64-group selection was rejected by the
+  analyzer because five expansion source seeds were absent. The final
+  deterministic selector required every preregistered source seed and added
+  complete groups as needed, producing 81 groups / 702 leaves for expansion
+  and 81 groups / 525 leaves for locked validation. The final analyzer saw
+  525/525 intended/analyzed locked leaves, with complete baseline32,
+  Teacher A/B, and prefix coverage. Seed roles and `primary_first_20` were
+  SHA-bound to the committed source manifest.
+- **Result:** **`FLAT_MLP_GENERALIZATION_FAILED`**. TRAIN60 on the locked
+  set had Teacher-A regret `1.0405377287946858 -> 1.4789286717026773`,
+  a `-42.13%` regret reduction and recovered-oracle fraction `-1.08210`.
+  The source-clustered 5,000-draw Teacher-A interval was
+  `[-1.63530, 0.17031]`; Teacher-B regret reduction was `-39.46%`.
+  The five-seed diagnostic had recovered-oracle values from `-1.08210` to
+  `-0.44063`. Exact 40-source and full-leaf coverage gates passed; recovery,
+  positive-support, and Teacher-B gates failed.
+- **Influence concentration:** Global leave-one-source-out absolute
+  Teacher-A influence ranked locked sources `12100201` and `12100194` as the
+  two largest positive influences. Joint removal left absolute improvement
+  `-0.68545` and clustered `p025 = -2.13616`, so the preregistered
+  concentration stress test failed. Influence ranking uses deterministic
+  point estimates; only the joint two-source stress test performs the full
+  5,000-draw bootstrap.
+- **Learning curve:** The committed packet records the locked baseline/oracle
+  regrets and all three fits. Teacher-A regret was `1.04054` at baseline,
+  `1.44064`/`1.47075`/`1.47893` for TRAIN20/40/60, corresponding to
+  `-38.45%`/`-41.35%`/`-42.13%` regret reduction. Teacher-B was
+  `1.16868` at baseline and `1.58795`/`1.67065`/`1.62988` for TRAIN20/40/60,
+  or `-35.88%`/`-42.95%`/`-39.46%`. Recovered-oracle fractions were
+  `-0.98758`/`-1.06191`/`-1.08210`. All five fixed initializations were
+  negative (mean `-0.66518`, range `[-1.08210,-0.44063]`).
+- **Decision and boundary:** This is bounded negative external evidence for
+  scale validation of the frozen scorer. It authorizes no native integration,
+  gameplay run, model retraining, search change, default promotion, or
+  interpretation against the native `target=-1` lowering fix. The large raw
+  multi-GB replay streams remain at `/tmp/silver-prefix-scale-20260920-exact10k/`,
+  while the compact candidate features, all three prediction streams,
+  `analysis.json`, and `dataset-summary.json` are committed in
+  [the scale-validation evidence packet](evidence/silver_prefix_scorer_scale_20260920/)
+  and hash-bound by `analysis-summary.json`.
+  **Knowledge impact:** durable negative learned-prefix scale-validation
+  evidence and harness-contract corrections only; no production Silver
+  behavior, model, RNG, schema, budget, gameplay result, or default changed.
 ## §328 — Silver deterministic action contraction (2026-09-20)
 
 - **Question and protocol:** Does contracting deterministic multi-step Silver

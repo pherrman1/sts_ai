@@ -24,11 +24,23 @@ def stable(group_id: str) -> str:
     return hashlib.sha256(group_id.encode()).hexdigest()
 
 
+def eligible_leaf(row: dict) -> bool:
+    """Keep only nonterminal PLAYER_NORMAL leaves when state data is present."""
+    envelope = row.get("leaf_state")
+    if envelope is None:
+        # Preserve the small synthetic selector fixtures, which intentionally
+        # omit the full wire state.
+        return True
+    state = envelope.get("state", {})
+    return state.get("inputState") == 1 and state.get("outcome") == 0
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("corpus", type=Path)
     parser.add_argument("output", type=Path)
     parser.add_argument("--target-groups", type=int, default=500)
+    parser.add_argument("--required-source-seeds", nargs="+", default=[])
     args = parser.parse_args()
     if args.target_groups <= 0:
         parser.error("--target-groups must be positive")
@@ -44,6 +56,8 @@ def main() -> int:
             row = json.loads(raw_line)
             if row.get("corpus_schema") != "silver_leaf_corpus_v1":
                 raise SystemExit(f"{args.corpus}:{number}: incompatible corpus schema")
+            if not eligible_leaf(row):
+                continue
             leaf_id = row["leaf_snapshot_id"]
             if leaf_id in leaf_ids:
                 raise SystemExit(f"{args.corpus}:{number}: duplicate leaf_snapshot_id {leaf_id}")
@@ -58,17 +72,25 @@ def main() -> int:
                     "act": row["act"], "cur_hp": row["cur_hp"], "max_hp": row["max_hp"],
                     "encounter_category": row["encounter_category"],
                     "aux_rollout": {"turn_delta": row["aux_rollout"]["turn_delta"]},
+                    "source_seed": str(row.get("run_seed", "")),
                     "legal": legal, "mapped": set(), "leaf_ids": [],
                 }
             elif group["legal"] != legal:
                 raise SystemExit(f"{args.corpus}: group {group_id} has inconsistent legal-action sets")
+            elif group["source_seed"] != str(row.get("run_seed", "")):
+                raise SystemExit(f"{args.corpus}: group {group_id} spans source seeds")
             group["mapped"].add(row.get("incoming_action_fingerprint", ""))
             group["leaf_ids"].append(leaf_id)
 
+    incomplete_groups = {
+        group_id for group_id, group in groups.items()
+        if not set(group["legal"]) <= group["mapped"]
+    }
+    groups = {
+        group_id: group for group_id, group in groups.items()
+        if group_id not in incomplete_groups
+    }
     target = min(args.target_groups, len(groups))
-    for group_id, group in groups.items():
-        if not set(group["legal"]) <= group["mapped"]:
-            raise SystemExit(f"{args.corpus}: group {group_id} is incomplete")
     rollout_order = {"long": 0, "medium": 1, "short": 2}
     hp_order = {"low": 0, "mid": 1, "high": 2}
     category_order = {"boss": 0, "elite": 1, "hallway": 2}
@@ -136,6 +158,17 @@ def main() -> int:
         if not progressed:
             break
 
+    required_sources = {str(seed) for seed in args.required_source_seeds}
+    selected_sources = {groups[gid]["source_seed"] for gid in selected}
+    for source_seed in sorted(required_sources - selected_sources):
+        candidates = sorted(
+            (gid for gid, group in groups.items()
+             if group["source_seed"] == source_seed and gid not in selected_set),
+            key=stable)
+        if not candidates:
+            raise SystemExit(f"{args.corpus}: required source seed has no complete group: {source_seed}")
+        retain(candidates[0])
+
     selected.sort()
     selected_leaves = sorted(
         leaf_id for gid in selected for leaf_id in groups[gid]["leaf_ids"]
@@ -160,6 +193,7 @@ def main() -> int:
         "manifest_schema": "silver_leaf_manifest_v1",
         "source_corpus_sha256": corpus_hash.hexdigest(),
         "target_groups": args.target_groups,
+        "required_source_seeds": sorted(required_sources),
         "selected_groups": len(selected),
         "selected_leaves": len(selected_leaves),
         "group_ids": selected,
