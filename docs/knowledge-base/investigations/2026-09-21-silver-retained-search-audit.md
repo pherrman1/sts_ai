@@ -171,7 +171,7 @@ potion_card_select_queue_difference=OBSERVED
 ```
 
 This is a boundary observation, not a demonstrated downstream semantic
-counterexample. Attack, Skill, Power, and Colorless Potions enter discovery
+divergence. Attack, Skill, Power, and Colorless Potions enter discovery
 selection; Gamble, Liquid Memories, and Stance Potion also create selection
 boundaries. Entropic Brew and Distilled Chaos introduce stochastic or queued-card
 behavior.

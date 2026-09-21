@@ -10702,46 +10702,6 @@ default or generalization claim is authorized. Evidence:
   research evidence only; no production Silver behavior, model, RNG, schema,
   budget, gameplay result, holdout, or default changed.
 
-## §331 — Silver retained-search queue-item audit (2026-09-21)
-
-- **Question and provenance:** Can Silver merge more retained states by ignoring
-  only `curCardQueueItem` at settled player decisions? The audit baseline was
-  `43ef6a6df2ea9af56840c9a298c92623c14bcff6` in a separate managed worktree.
-  The motivating corrected Small Slimes capture was live session `78c0ee4f9f67`,
-  sequence `9`, observation hash
-  `efb8bcf0367f908221521ab79f09c5f666ee5a6cf3d6e0b047b41f95558c84d8`, and
-  artifact SHA-256
-  `e20001e051e65e723c8cdf51e73890bc3df971454aa3713854acb2d9980ad22d`.
-  PR #272 head was capture provenance only; current source facts were checked
-  against the audit baseline.
-- **Opportunity screen:** The 1,133-node tree contains 997 decision/state
-  nodes and 136 chance nodes. Omitting only the serialized queue item yields
-  49 duplicate groups, 104 participating nodes, 55 excess nodes, and 61
-  unordered pairs. The upper-bound reduction is 5.52% of decision/state nodes
-  and 4.85% of all retained nodes. Every candidate is an unresolved,
-  settled `PLAYER_NORMAL` node; no selection, chance, pending-action, or
-  terminal candidate appears in this capture.
-- **Native check:** A temporary test-only native probe compared 32 paired
-  common seeds for 32 steps per arm through `tools/seed_guard.sh`. Best action,
-  legal-action count, root action visits, and deterministic successors matched
-  after normalizing only the queue item. A separate 128-step fixed-root probe
-  also passed direct statistics checks. An Attack Potion boundary observation
-  reached `CARD_SELECT` while retaining different queue items; this leaves
-  global canonicalization unqualified because the stale value survives outside
-  the tested equivalence boundary, without demonstrating a downstream semantic
-  divergence. Full END_TURN outcome coverage and chance-parent statistics remain
-  an explicit proof obligation for any future implementation.
-- **Decision:** **`NARROW_QUEUE_CANONICALIZATION_PLAUSIBLE_BUT_UNQUALIFIED`**.
-  Do not relax `equalForSearch`, change Silver search behavior, alter the reuse
-  cap, or update PR #272. A future implementation, if separately authorized,
-  must be boundary-local to settled `PLAYER_NORMAL` with empty queues and must
-  separately qualify evaluation inputs, chance behavior, reroot identity,
-  retained statistics, and decision quality.
-- **Evidence:** [retained-search queue-item evidence packet](evidence/silver_retained_search_audit_20260921/README.md) and [investigation record](../knowledge-base/investigations/2026-09-21-silver-retained-search-audit.md).
-  **Knowledge impact:** durable unresolved Silver search investigation and
-  experiment evidence only; no production Silver behavior, model, RNG, schema,
-  budget, gameplay result, or default changed.
-
 ## §330 — Silver terminal/value audit: compatible reweight has insufficient development headroom (2026-09-21)
 
 - **Question and protocol:** Can a constrained, regularized reweight of the
@@ -10785,3 +10745,43 @@ default or generalization claim is authorized. Evidence:
   **Knowledge impact:** durable bounded negative terminal-scoring result and
   raw-feature diagnostic contract; no production behavior, default, RNG,
   model, live gameplay, or holdout qualification changed.
+
+## §331 — Silver retained-search queue-item audit (2026-09-21)
+
+- **Question and provenance:** Can Silver merge more retained states by ignoring
+  only `curCardQueueItem` at settled player decisions? The audit baseline was
+  `43ef6a6df2ea9af56840c9a298c92623c14bcff6` in a separate managed worktree.
+  The motivating corrected Small Slimes capture was live session `78c0ee4f9f67`,
+  sequence `9`, observation hash
+  `efb8bcf0367f908221521ab79f09c5f666ee5a6cf3d6e0b047b41f95558c84d8`, and
+  artifact SHA-256
+  `e20001e051e65e723c8cdf51e73890bc3df971454aa3713854acb2d9980ad22d`.
+  PR #272 head was capture provenance only; current source facts were checked
+  against the audit baseline.
+- **Opportunity screen:** The 1,133-node tree contains 997 decision/state
+  nodes and 136 chance nodes. Omitting only the serialized queue item yields
+  49 duplicate groups, 104 participating nodes, 55 excess nodes, and 61
+  unordered pairs. The upper-bound reduction is 5.52% of decision/state nodes
+  and 4.85% of all retained nodes. Every candidate is an unresolved,
+  settled `PLAYER_NORMAL` node; no selection, chance, pending-action, or
+  terminal candidate appears in this capture.
+- **Native check:** A temporary test-only native probe compared 32 paired
+  common seeds for 32 steps per arm through `tools/seed_guard.sh`. Best action,
+  legal-action count, root action visits, and deterministic successors matched
+  after normalizing only the queue item. A separate 128-step fixed-root probe
+  also passed direct statistics checks. An Attack Potion boundary observation
+  reached `CARD_SELECT` while retaining different queue items; this leaves
+  global canonicalization unqualified because the stale value survives outside
+  the tested equivalence boundary, without demonstrating a downstream semantic
+  divergence. Full END_TURN outcome coverage and chance-parent statistics remain
+  an explicit proof obligation for any future implementation.
+- **Decision:** **`NARROW_QUEUE_CANONICALIZATION_PLAUSIBLE_BUT_UNQUALIFIED`**.
+  Do not relax `equalForSearch`, change Silver search behavior, alter the reuse
+  cap, or update PR #272. A future implementation, if separately authorized,
+  must be boundary-local to settled `PLAYER_NORMAL` with empty queues and must
+  separately qualify evaluation inputs, chance behavior, reroot identity,
+  retained statistics, and decision quality.
+- **Evidence:** [retained-search queue-item evidence packet](evidence/silver_retained_search_audit_20260921/README.md) and [investigation record](../knowledge-base/investigations/2026-09-21-silver-retained-search-audit.md).
+  **Knowledge impact:** durable unresolved Silver search investigation and
+  experiment evidence only; no production Silver behavior, model, RNG, schema,
+  budget, gameplay result, or default changed.
