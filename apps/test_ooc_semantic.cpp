@@ -368,6 +368,33 @@ void testEvents() {
             unchangedFailure(stale, action);
         }
     }
+    for (int ascension : {0, 15}) {
+        for (int option = 0; option < 4; ++option) {
+            auto woman = fixture(ScreenState::EVENT_SCREEN);
+            woman.ascension = ascension;
+            woman.curEvent = Event::THE_WOMAN_IN_BLUE;
+            const auto action = find(woman, Effect::EVENT_CHOICE, [&](const auto &a) {
+                return std::get<OocEventTarget>(a.target).option == option;
+            });
+            const auto after = parity(woman, action, direct(GameAction(option)));
+            if (option < 3) {
+                constexpr int costs[] = {20, 30, 40};
+                require(after.gold == woman.gold - costs[option],
+                        "Woman in Blue purchase charged wrong gold");
+                require(after.screenState == ScreenState::REWARDS
+                        && after.info.rewardsContainer.potionCount == option + 1,
+                        "Woman in Blue purchase produced wrong potion reward");
+                require(after.potionRng.counter == woman.potionRng.counter + option + 1,
+                        "Woman in Blue purchase consumed wrong potion RNG count");
+            } else {
+                const int expectedHp = ascension < 15 ? woman.curHp
+                    : woman.curHp - woman.fractionMaxHp(0.05f, CEIL);
+                require(after.gold == woman.gold && after.curHp == expectedHp
+                        && after.screenState == ScreenState::MAP_SCREEN,
+                        "Woman in Blue leave transition mismatch");
+            }
+        }
+    }
     auto library = fixture(ScreenState::EVENT_SCREEN);
     library.curEvent = Event::THE_LIBRARY;
     const auto sourceActions = enumerate(library);

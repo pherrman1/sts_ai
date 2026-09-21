@@ -91,6 +91,23 @@ class LiveOocProtocol(unittest.TestCase):
             self.assertTrue(all("visits" in c and "prior" in c for c in targeted))
         self.assertEqual(selector["evaluators"][0]["status"], "OK")
 
+    def test_woman_in_blue_is_a_complete_live_mcts_root(self):
+        response, = self.run_rows([self.fixtures["event_woman_in_blue"]])
+        evaluator, = response["evaluators"]
+        self.assertEqual(evaluator["status"], "OK", response)
+        self.assertEqual(evaluator["model"]["kind"], "ooc_mcts_ctm")
+        self.assertEqual(evaluator["model"]["simulations"], 512)
+        self.assertEqual(len(evaluator["candidateSummaries"]), 4)
+        self.assertEqual(
+            {candidate["liveAction"]["choiceIndex"] for candidate in evaluator["candidateSummaries"]},
+            {1, 2, 3, 4},
+        )
+        chosen = next(candidate for candidate in evaluator["candidateSummaries"]
+                      if candidate["semanticKey"] == evaluator["selectedSemanticKey"])
+        self.assertEqual(chosen["visits"], max(candidate["visits"]
+                                                for candidate in evaluator["candidateSummaries"]))
+        self.assertEqual(chosen["liveAction"], evaluator["selectedLiveAction"])
+
     def test_capture_support_boundary(self):
         response, = self.run_rows([{"boundary": "ooc", "ooc": {
             "schemaVersion": 1, "screen": "selector", "unsupportedReason": "SELECTOR_CONFIRMATION_ONLY"}}])

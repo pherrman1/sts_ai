@@ -176,6 +176,14 @@ final class LiveOocCapture {
         return "NEOW".equals(liveId) ? "Neow" : liveId;
     }
 
+    static boolean simpleInitialEventSupported(String simple) {
+        return Arrays.asList("BigFish", "GoldenShrine", "ShiningLight", "WorldOfGoop",
+                "LivingWall", "LiarsGame", "Mushrooms", "Ghosts", "WindingHalls", "TheLibrary",
+                "TheMausoleum", "MysteriousSphere", "SecretPortal", "FountainOfCurseRemoval", "UpgradeShrine",
+                "PurificationShrine", "Transmogrifier", "Duplicator", "Bonfire", "TheJoust",
+                "WomanInBlue").contains(simple);
+    }
+
     static String canonicalScreen(String type) {
         switch (type) {
             case "SHOP_SCREEN": return "shop";
@@ -407,12 +415,8 @@ final class LiveOocCapture {
                 "skillCardDeckIdx", -1, "powerCardDeckIdx", -1, "attackCardDeckIdx", -1,
                 "potionIdx", -1, "gold", -1, "cardIdx", -1));
         // Only initial phases with native one-to-one option indices qualify.
-        List<String> simpleInitial = Arrays.asList("BigFish", "GoldenShrine", "ShiningLight", "WorldOfGoop",
-                "LivingWall", "LiarsGame", "Mushrooms", "Ghosts", "WindingHalls", "TheLibrary",
-                "TheMausoleum", "MysteriousSphere", "SecretPortal", "FountainOfCurseRemoval", "UpgradeShrine",
-                "PurificationShrine", "Transmogrifier", "Duplicator", "Bonfire", "TheJoust");
         boolean initial = "INTRO".equals(String.valueOf(phase)) || "0".equals(String.valueOf(phase));
-        if (!simpleInitial.contains(simple) || !initial)
+        if (!simpleInitialEventSupported(simple) || !initial)
             out.put("unsupportedReason", "EVENT_PHASE_UNREPRESENTABLE:" + id + ":" + phase);
         if ("NeowEvent".equals(simple)) {
             List<Object> offers = new ArrayList<>();

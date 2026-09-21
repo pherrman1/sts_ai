@@ -64,6 +64,9 @@ public final class LiveOocCaptureTest {
         if (!"Neow".equals(LiveOocCapture.canonicalEventId("NEOW"))
                 || !"Big Fish".equals(LiveOocCapture.canonicalEventId("Big Fish")))
             throw new AssertionError("event canonical save identity mismatch");
+        if (!LiveOocCapture.simpleInitialEventSupported("WomanInBlue")
+                || LiveOocCapture.simpleInitialEventSupported("WomanInBlueDialogue"))
+            throw new AssertionError("Woman in Blue initial-phase support boundary mismatch");
         Object firstReward = new Object(), secondReward = new Object();
         String firstIdentity = LiveOocCapture.rewardIdentity(firstReward, null, null);
         if (!firstIdentity.equals(LiveOocCapture.rewardIdentity(firstReward, null, null))
@@ -76,6 +79,6 @@ public final class LiveOocCaptureTest {
                 || !"BLUE_SLAVER".equals(STSModelInspector.singleEncounterName("SlaverBlue", false))
                 || !"BLUE_SLAVER".equals(STSModelInspector.singleEncounterName("BlueSlaver", false)))
             throw new AssertionError("canonical Slaver runtime identity mismatch");
-        System.out.println("LiveOocCaptureTest: 15 relic, 7 map edge, 3 screen, 2 integrity, 2 event, 3 reward identity, 4 Slaver identity checks passed");
+        System.out.println("LiveOocCaptureTest: 15 relic, 7 map edge, 3 screen, 2 integrity, 4 event, 3 reward identity, 4 Slaver identity checks passed");
     }
 }
