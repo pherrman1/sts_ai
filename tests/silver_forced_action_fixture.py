@@ -40,23 +40,8 @@ def main():
         assert result["roots"] == 1 and result["source_seeds"] == 1
         frozen_roots = repo / "docs/experiments/evidence/silver_forced_action_target_2026-09-19/roots.jsonl"
         correction_root = tmp / "correction-root.jsonl"
-        correction = next(json.loads(line) for line in frozen_roots.read_text().splitlines()
-                          if json.loads(line)["root_id"] == "12006015/1/13/7/3")
-        # fbad96eb changed untargeted card/potion semantics from the packed
-        # Action target 0 to the explicit no-target value -1. Adapt only this
-        # fixture input; the frozen scientific evidence remains byte-for-byte.
-        assert len(correction["actions"]) == len(correction["native_order"]) == 7
-        assert [(action["type"], action["card"]["id"], action["potionId"])
-                for action in correction["actions"]] == [
-                    (1, 193, 0), (1, 73, 0), (1, 147, 0),
-                    (2, 0, 10), (2, 0, 4), (2, 0, 14), (5, 0, 0)]
-        for index in (0, 1, 3, 4, 5):
-            assert correction["actions"][index]["target"] == 0
-            fingerprint = correction["native_order"][index]
-            assert fingerprint.count("/x=0/") == 1
-            correction["actions"][index]["target"] = -1
-            correction["native_order"][index] = fingerprint.replace("/x=0/", "/x=-1/")
-        correction_root.write_text(json.dumps(correction, separators=(",", ":")) + "\n")
+        correction_root.write_text(next(line for line in frozen_roots.read_text().splitlines()
+                                        if json.loads(line)["root_id"] == "12006015/1/13/7/3") + "\n")
         correction_raw = tmp / "correction-audit.jsonl"
         subprocess.run(["bash", str(repo / "tools/seed_guard.sh"), audit,
                         str(correction_root), str(correction_raw), "20260919", sha,
