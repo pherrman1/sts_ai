@@ -230,6 +230,10 @@ void GameContext::initRelicsFromSave(const SaveFile &s) {
 
         // todo lizard tail, and others
         switch (r) {
+            case RelicId::WING_BOOTS:
+                wingBootsCharges = std::max(0, std::min(3, s.relic_counters[i]));
+                relics.add({r, 0});
+                break;
             default:
                 RelicInstance relic {r, s.relic_counters[i]};
                 relics.add(relic);
@@ -754,14 +758,13 @@ void GameContext::transitionToAct(int targetAct) {
 
 void GameContext::transitionToMapNode(int mapNodeX) {
     bool usedWingBoots = false;
-    if (curMapNodeY >= 0 && curMapNodeY < 14 && map && wingBootsCharges > 0) {
+    if (curMapNodeY >= 0 && curMapNodeY < 14 && map
+            && relics.has(RelicId::WING_BOOTS) && wingBootsCharges > 0) {
         const auto &current = map->getNode(curMapNodeX, curMapNodeY);
         usedWingBoots = std::find(current.edges.begin(), current.edges.begin() + current.edgeCount,
                                   mapNodeX) == current.edges.begin() + current.edgeCount;
         if (usedWingBoots) {
             --wingBootsCharges;
-            if (relics.has(RelicId::WING_BOOTS))
-                relics.getRelicValueRef(RelicId::WING_BOOTS) = wingBootsCharges;
         }
     }
     lastRoom = curRoom;
@@ -1395,6 +1398,11 @@ bool GameContext::obtainRelic(RelicId r) {
             relicData = 3;
             break;
         }
+
+        case RelicId::WING_BOOTS:
+            wingBootsCharges = 3;
+            relicData = 0;
+            break;
 
         case RelicId::MANGO: {
             playerIncreaseMaxHp(14);

@@ -296,6 +296,7 @@ int main(int argc,char **argv){try{
         wing.screenState = ScreenState::MAP_SCREEN;
         wing.curMapNodeY = 1;
         wing.curMapNodeX = 0;
+        wing.relics.add({RelicId::WING_BOOTS, 0});
         wing.wingBootsCharges = 1;
         const auto current = wing.map->getNode(wing.curMapNodeX, wing.curMapNodeY);
         int jumpX = -1;

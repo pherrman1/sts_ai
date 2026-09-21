@@ -9,7 +9,7 @@ from tools.live_game_driver import (
     CandidateEnumerationError, Driver, DriverError, InspectorSnapshot, InspectorReader, IntegrationFailure,
     LegalAction, TraceWriter, build_legal_actions, choose_deterministic_action,
     map_silver_action, map_ooc_action, normalize_game_state, state_identity, transition_identity, main,
-    _is_combat,
+    _is_combat, card_reward_reveal_action,
 )
 
 
@@ -178,6 +178,17 @@ class LiveGameDriverTest(unittest.TestCase):
         screen = {"screen_type": "COMBAT_REWARD", "choice_list": ["Gold"], "ready_for_command": True}
         actions = build_legal_actions(screen, ["proceed", "choose"])
         self.assertEqual(choose_deterministic_action(screen, actions).mcp_tool, "choose")
+
+    def test_card_reveal_waits_for_parent_rewards(self):
+        screen = {"screen_type": "COMBAT_REWARD", "choice_list": ["Gold", "Anchor", "Card"],
+                  "ready_for_command": True}
+        game = {"screen_state": {"rewards": [
+            {"reward_type": "GOLD"}, {"reward_type": "RELIC"}, {"reward_type": "CARD"}]}}
+        candidates = build_legal_actions(screen, ["choose"])
+        self.assertIsNone(card_reward_reveal_action(screen, game, candidates))
+        card_only = [candidate for candidate in candidates if candidate.mcp_arguments == {"choice_index": 3}]
+        self.assertEqual(card_reward_reveal_action(screen, game, card_only).mcp_arguments,
+                         {"choice_index": 3})
 
     def test_shop_leaves(self):
         screen = {"screen_type": "SHOP_SCREEN", "ready_for_command": True}

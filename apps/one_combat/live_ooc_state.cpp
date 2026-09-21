@@ -355,10 +355,14 @@ ImportResult importLiveOocStateV1(const J &observation, LiveOocStateV1 &out) {
         for(const auto &v:array(p,"relics",181)) {
             const auto r=id<RelicId>(v.at("id"),RelicId::INVALID);
             require(relicIds.insert(r).second,"duplicate relic identity");
-            g.relics.add({r,integer(v,"data",-1000000,1000000)});
-        }
-        if (g.relics.has(RelicId::WING_BOOTS)) {
-            g.wingBootsCharges = std::max(0, g.relics.getRelicValue(RelicId::WING_BOOTS));
+            const int modelData = integer(v,"data",-1000000,1000000);
+            if (r == RelicId::WING_BOOTS) {
+                require(v.contains("liveCounter"), "Wing Boots liveCounter missing");
+                g.relics.add({r, 0});
+                g.wingBootsCharges = std::max(0, integer(v,"liveCounter",0,3));
+            } else {
+                g.relics.add({r, modelData});
+            }
         }
         g.boss=id<MonsterEncounter>(p.at("boss"),MonsterEncounter::INVALID);
         const auto &m=p.at("map");

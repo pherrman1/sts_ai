@@ -179,7 +179,8 @@ bool isValidMapAction(const GameContext &gc, const search::GameAction a) {
             return true;
         }
     }
-    if (gc.wingBootsCharges > 0 && gc.curMapNodeY + 1 < 15) {
+    if (gc.relics.has(RelicId::WING_BOOTS) && gc.wingBootsCharges > 0
+            && gc.curMapNodeY + 1 < 15) {
         const auto &target = gc.map->getNode(select, gc.curMapNodeY + 1);
         for (int i = 0; i < curNode.edgeCount; ++i) {
             if (curNode.edges[i] >= 0 && curNode.edges[i] < 7
@@ -658,7 +659,7 @@ std::vector<search::GameAction> getAllMapActions(const sts::GameContext &gc) {
         for (int i = 0; i < node.edgeCount; ++i) {
             actions.emplace_back(node.edges[i]);
         }
-        if (gc.wingBootsCharges > 0) {
+        if (gc.relics.has(RelicId::WING_BOOTS) && gc.wingBootsCharges > 0) {
             for (const auto &target : gc.map->nodes[gc.curMapNodeY + 1]) {
                 if (target.edgeCount > 0
                         && std::find_if(actions.begin(), actions.end(),

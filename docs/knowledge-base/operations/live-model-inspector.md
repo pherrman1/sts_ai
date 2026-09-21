@@ -410,7 +410,9 @@ read-only screen and choice converters. The observation contains:
   fight consumed the normal or elite encounter queue, was a fixed event fight,
   or was a boss. The observer persists this public ledger in
   `~/.cache/sts-model-inspector/combat-history/<seed>-act<act>.tsv` and restores
-  it on process restart, then validates it against `damage_taken`. It qualifies
+  it on process restart, suppresses duplicate observations of the same current
+  fight, and clears the sidecar at a positively identified fresh Neow run. It
+  then validates it against `damage_taken`. It qualifies
   only when every combat in the act is represented; a missing or contradictory
   sidecar still fails closed with `PUBLIC_COMBAT_CLASS_HISTORY_UNQUALIFIED`.
   An optional
@@ -434,6 +436,11 @@ the native OOC candidate set and the inspector omit the potion-take candidate,
 leaving other rewards and `proceed` available. The current MCP reward surface
 does not expose the vanilla discard-potion command, so this is not discard
 support or a claim of whole-game reward equivalence.
+
+The live driver opens an unrevealed card reward only after all claimable
+non-card rewards in that combat reward have been collected. This preserves the
+simulator continuation order (gold, relic, potion, keys, then card choice) and
+ensures the card scorer sees the post-collection root state.
 
 Path counts derive from persisted `metricData.path_taken`, whose original map
 symbols survive event-to-room conversion and save/resume. Completed combat
@@ -527,9 +534,10 @@ qualifies event phases, path history, special maps, shop slot provenance,
 relic-counter representation, and key-disabled campfires. A screen-specific
 unsupported phase takes precedence over path and relic warnings, so a terminal
 event outro cannot be misread as its initial decision. Unopened card reward
-groups expose only their occurrence/type and require fallback to open the
-group; their concealed card identities are not serialized or scored. Active
-Wing Boots, Matryoshka, Lizard Tail and N’loth’s Hungry Face are unsupported
+groups expose only their occurrence/type and require the driver to open the
+group after parent reward collection; their concealed card identities are not
+serialized or scored. Wing Boots is supported with a separate public charge
+counter; Matryoshka, Lizard Tail and N’loth’s Hungry Face are unsupported
 where live/native counter initialization differs. Maw Bank has an explicit
 source-derived active/spent conversion; other unqualified positive counters
 are unsupported. A deck containing upgraded Searing Blow returns

@@ -785,17 +785,30 @@ def choose_deterministic_action(screen: Mapping[str, Any], candidates: Sequence[
 
 def card_reward_reveal_action(screen: Mapping[str, Any], game: Mapping[str, Any],
                               candidates: Sequence[LegalAction]) -> LegalAction | None:
-    """Open a generated card reward before scoring the actual card choice."""
+    """Open a card reward only after claimable parent rewards are collected."""
     if _text(screen.get("screen_type", screen.get("screenType"))).upper() != "COMBAT_REWARD":
         return None
-    rewards = _list(_mapping(game.get("screen_state", {})).get("rewards"))
-    for index, reward in enumerate(rewards):
-        reward_map = _mapping(reward)
-        if _text(reward_map.get("reward_type", reward_map.get("type", ""))).upper() != "CARD":
-            continue
-        return next((candidate for candidate in candidates
-                     if candidate.mcp_tool == "choose"
-                     and candidate.mcp_arguments == {"choice_index": index + 1}), None)
+    occurrences = _list(_mapping(game.get("screen_state", {})).get("rewards"))
+    if not occurrences:
+        return None
+    choice_indexes = {
+        candidate.mcp_arguments.get("choice_index")
+        for candidate in candidates
+        if candidate.mcp_tool == "choose"
+        and type(candidate.mcp_arguments.get("choice_index")) is int
+    }
+    for index, reward in enumerate(occurrences):
+        kind = _text(_mapping(reward).get("reward_type", _mapping(reward).get("type", ""))).upper()
+        if kind != "CARD" and index + 1 in choice_indexes:
+            # The simulator's continuation policy collects gold, relics,
+            # claimable potions, and keys before it evaluates the card group.
+            return None
+    for index, reward in enumerate(occurrences):
+        kind = _text(_mapping(reward).get("reward_type", _mapping(reward).get("type", ""))).upper()
+        if kind == "CARD":
+            return next((candidate for candidate in candidates
+                         if candidate.mcp_tool == "choose"
+                         and candidate.mcp_arguments == {"choice_index": index + 1}), None)
     return None
 
 

@@ -17,7 +17,7 @@ public final class LiveOocCaptureTest {
                 : !reason.equals(state.get("unsupportedReason"))))
             throw new AssertionError(id + ": " + actual + " " + state);
     }
-    public static void main(String[] args) {
+    public static void main(String[] args) throws Exception {
         check("MawBank", -1, false, 1, null);
         check("MawBank", -2, true, 0, null);
         check("Happy Flower", 2, false, 2, null);
@@ -29,7 +29,7 @@ public final class LiveOocCaptureTest {
         check("Lizard Tail", -1, false, -1, "RELIC_NATIVE_STATE_UNREPRESENTABLE:Lizard Tail:active");
         check("Lizard Tail", -2, true, 0, null);
         check("Matryoshka", 2, false, 2, "RELIC_NATIVE_STATE_UNREPRESENTABLE:Matryoshka:active");
-        check("WingedGreaves", 3, false, 3, null);
+        check("WingedGreaves", 3, false, 0, null);
         check("NlothsMask", 1, false, 1, "RELIC_NATIVE_STATE_UNREPRESENTABLE:NlothsMask:active");
         check("Matryoshka", -2, true, 0, null);
         check("UnqualifiedCounter", 3, false, 3, "RELIC_NATIVE_COUNTER_UNQUALIFIED:UnqualifiedCounter");
@@ -139,24 +139,39 @@ public final class LiveOocCaptureTest {
         seen.observe(player, 11, 3, false, "map", obj());
         if (seen.complete()) throw new AssertionError("missed floors retained complete history");
         LiveOocCapture.CombatClassHistory combats = new LiveOocCapture.CombatClassHistory();
+        String oldHome = System.getProperty("user.home");
+        java.nio.file.Path home = java.nio.file.Files.createTempDirectory("live-ooc-history");
+        System.setProperty("user.home", home.toString());
         Object group = new Object();
-        combats.observe(player, 0, 1, 3, true, true, group, "FIXED_EVENT");
-        combats.observe(player, 0, 1, 3, true, true, group, "FIXED_EVENT");
-        combats.observe(player, 0, 1, 3, false, false, null, null);
-        combats.observe(player, 0, 1, 5, false, true, new Object(), "NORMAL_QUEUE");
-        combats.observe(player, 0, 1, 8, false, true, new Object(), "ELITE_QUEUE");
+        combats.observe(player, 12345, 1, 3, true, true, group, "FIXED_EVENT");
+        combats.observe(player, 12345, 1, 3, true, true, new Object(), "FIXED_EVENT");
+        combats.observe(player, 12345, 1, 3, false, false, null, null);
+        combats.observe(player, 12345, 1, 5, false, true, new Object(), "NORMAL_QUEUE");
+        combats.observe(player, 12345, 1, 8, false, true, new Object(), "ELITE_QUEUE");
         if (!combats.completeFor(java.util.Arrays.asList(3, 5, 8))
                 || combats.snapshot().size() != 3
                 || !"FIXED_EVENT".equals(combats.snapshot().get(0).get("kind")))
             throw new AssertionError("complete combat-class ledger lost fixed-event distinction");
         if (combats.completeFor(java.util.Arrays.asList(3, 5, 9)))
             throw new AssertionError("wrong combat metric floor qualified the ledger");
-        combats.observe(new Object(), 0, 1, 9, false, true, new Object(), "NORMAL_QUEUE");
-        if (combats.completeFor(java.util.Arrays.asList(3, 5, 8, 9)))
-            throw new AssertionError("resumed mid-act combat history became complete");
-        combats.observe(player, 0, 2, 18, true, true, new Object(), "NORMAL_QUEUE");
+        LiveOocCapture.CombatClassHistory restored = new LiveOocCapture.CombatClassHistory();
+        restored.restoreFor(player, 12345, 1);
+        if (!restored.completeFor(java.util.Arrays.asList(3, 5, 8)))
+            throw new AssertionError("persisted combat history did not restore");
+        restored.observe(player, 12345, 1, 8, false, true, new Object(), "ELITE_QUEUE");
+        if (restored.snapshot().size() != 3)
+            throw new AssertionError("restart during combat duplicated the current floor");
+        combats.observe(new Object(), 12345, 1, 9, false, true, new Object(), "NORMAL_QUEUE");
+        if (!combats.completeFor(java.util.Arrays.asList(3, 5, 8, 9)))
+            throw new AssertionError("restored mid-act combat history did not remain complete");
+        combats.observe(player, 12345, 2, 18, true, true, new Object(), "NORMAL_QUEUE");
         if (!combats.completeFor(java.util.Arrays.asList(18)))
             throw new AssertionError("new act did not reset complete combat-class history");
+        LiveOocCapture.CombatClassHistory sameSeed = new LiveOocCapture.CombatClassHistory();
+        sameSeed.resetForFreshRun(player, 12345, 1);
+        if (!sameSeed.snapshot().isEmpty() || !sameSeed.completeFor(java.util.Collections.emptyList()))
+            throw new AssertionError("fresh run did not clear same-seed history");
+        if (oldHome == null) System.clearProperty("user.home"); else System.setProperty("user.home", oldHome);
         if (!"RED_SLAVER".equals(STSModelInspector.singleEncounterName("SlaverRed", false))
                 || !"RED_SLAVER".equals(STSModelInspector.singleEncounterName("RedSlaver", false))
                 || !"BLUE_SLAVER".equals(STSModelInspector.singleEncounterName("SlaverBlue", false))

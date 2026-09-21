@@ -57,6 +57,14 @@ final class LiveOocCapture {
                     currentSeed + "-act" + currentAct + ".tsv");
         }
 
+        void resetForFreshRun(Object currentPlayer, long currentSeed, int currentAct) {
+            player = currentPlayer; seed = currentSeed; act = currentAct;
+            restored = true; lastFloor = -1; lastGroup = null;
+            entries.clear(); complete = true;
+            try { Files.deleteIfExists(ledgerPath(currentSeed, currentAct)); }
+            catch (IOException ignored) { complete = false; }
+        }
+
         private void restore(Object currentPlayer, long currentSeed, int currentAct) {
             if (restored && player == currentPlayer && seed == currentSeed && act == currentAct) return;
             restored = true;
@@ -122,7 +130,13 @@ final class LiveOocCapture {
             if (group == null) return;
             if (kind == null) { complete = false; return; }
             if (group != lastGroup) {
-                entries.add(object("floor", floor, "kind", kind));
+                if (!entries.isEmpty()
+                        && ((Number)entries.get(entries.size() - 1).get("floor")).intValue() == floor) {
+                    String previousKind = String.valueOf(entries.get(entries.size() - 1).get("kind"));
+                    if (!previousKind.equals(kind)) complete = false;
+                } else {
+                    entries.add(object("floor", floor, "kind", kind));
+                }
                 lastGroup = group;
                 persist();
             }
@@ -253,6 +267,12 @@ final class LiveOocCapture {
             out.put("publicState", core);
             List<Map<String,Object>> choices = new ArrayList<>();
             out.put("liveChoices", choices);
+            boolean freshRun = AbstractDungeon.floorNum == 0
+                    && CardCrawlGame.metricData != null
+                    && CardCrawlGame.metricData.path_taken != null
+                    && CardCrawlGame.metricData.path_taken.isEmpty();
+            if (freshRun) combatClassHistory.resetForFreshRun(
+                    AbstractDungeon.player, Settings.seed, AbstractDungeon.actNum);
             capturePublicState(core);
             List<?> labels = list(call(CHOICES, "getCurrentChoiceList"));
             switch (type) {
@@ -269,10 +289,6 @@ final class LiveOocCapture {
                     out.put("screen", type.toLowerCase(java.util.Locale.ROOT));
                     out.put("unsupportedReason", "NATIVE_SCREEN_UNSUPPORTED:" + type);
             }
-            boolean freshRun = AbstractDungeon.floorNum == 0
-                    && CardCrawlGame.metricData != null
-                    && CardCrawlGame.metricData.path_taken != null
-                    && CardCrawlGame.metricData.path_taken.isEmpty();
             seenRelicOffers.observe(AbstractDungeon.player, Settings.seed,
                     AbstractDungeon.floorNum, freshRun, String.valueOf(out.get("screen")),
                     map(out.getOrDefault("details", object())));
@@ -507,6 +523,12 @@ final class LiveOocCapture {
     }
 
     static int nativeRelicData(String id, int counter, boolean usedUp, Map<String,Object> state) {
+        if ("WingedGreaves".equals(id)) {
+            // Java's counter is the public remaining-use count. Native relic
+            // feature encoding has always represented Wing Boots as data=0;
+            // the live importer carries the counter in a separate field.
+            return 0;
+        }
         if ("MawBank".equals(id)) {
             // Java tests usedUp and writes counter=-2 on spending; native
             // obtainRelic starts at 1, loseGold(inShop) writes 0.
