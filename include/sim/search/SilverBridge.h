@@ -572,7 +572,15 @@ bool silverRhoRacingStopHolds(const SilverRootUncertainty &root,
 // subdecision when collection is enabled.
 struct SilverSearchDecisionDiagnostic {
     bool hadPredecessor = false;
+    bool selectedActionExecuted = false;
+    bool selectedEdgeStochastic = false;
+    bool selectedEdgeWithoutChild = false;
+    bool deterministicSemanticHandMismatch = false;
+    bool deterministicEquivalentCopyMatch = false;
+    bool deterministicOtherMismatch = false;
+    std::int64_t predecessorEdgeVisits = 0;
     bool rerootAttempted = false;
+    bool candidateFound = false;
     bool exactCandidateFound = false;
     bool exactReroot = false;
     bool equivalentCopyReroot = false;
@@ -888,6 +896,7 @@ struct SilverCombatReplayResult {
     std::array<int, 22> macroSelectionsByTask {};
     int rerootExact = 0;
     int rerootFallback = 0;
+    std::vector<SilverSearchDecisionDiagnostic> rerootDiagnostics;
     std::uint64_t actionTraceHash = 0;
     SilverSearchTelemetry telemetry;
     std::string failureReason;
@@ -1013,6 +1022,16 @@ struct ReuseCapFixtureProbe {
     bool candidateMissingUnchanged = false;
     bool handOrderMandatory = false;
     bool handPermutationRejected = false;
+    bool handPermutationAligned = false;
+    bool handPermutationEdgesPreserved = false;
+    bool handPermutationChanceWideningPreserved = false;
+    bool cardSelectPermutationRejected = false;
+    bool continuationPermutationRejected = false;
+    bool handPermutationPrecondition = false;
+    bool equivalentCopyRepaired = false;
+    bool chanceMissingAllowed = false;
+    bool positiveVisitMissingChildRejected = false;
+    bool privateDeterministicMismatchRejected = false;
     bool noneDisablesReuse = false;
     bool noneReportsDisabled = false;
     bool noneFreshRootBudget = false;

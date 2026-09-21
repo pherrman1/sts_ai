@@ -26,6 +26,7 @@ nlohmann::json macroTaskCounts(const Counts &counts) {
 
 nlohmann::json replayRow(const nlohmann::json &input, std::int64_t budget,
                          bool collectUidFragmentationDiagnostics,
+                         bool collectRerootDiagnostics,
                          silver_bridge::SilverSearchContractMode contractMode,
                          bool internalFpuEnabled, bool firstDecisionOnly) {
     const auto started = std::chrono::steady_clock::now();
@@ -47,6 +48,7 @@ nlohmann::json replayRow(const nlohmann::json &input, std::int64_t budget,
         config.exactVisitLockEnabled = false;
         config.rhoRacingEnabled = false;
         config.collectUidFragmentationDiagnostics = collectUidFragmentationDiagnostics;
+        config.collectDecisionDiagnostics = collectRerootDiagnostics;
         config.internalFpuEnabled = internalFpuEnabled;
         config.collectSearchTiming = true;
         config.contractMode = contractMode;
@@ -87,6 +89,26 @@ nlohmann::json replayRow(const nlohmann::json &input, std::int64_t budget,
         row["macro_selections_taken"] = result.macroSelectionsTaken;
         row["reroot_exact"] = result.rerootExact;
         row["reroot_fallback"] = result.rerootFallback;
+        if (collectRerootDiagnostics) {
+            nlohmann::json rerootDiagnostics = nlohmann::json::array();
+            for (const auto &d : result.rerootDiagnostics) {
+                rerootDiagnostics.push_back({
+                    {"stochastic", d.selectedEdgeStochastic},
+                    {"selected_action_executed", d.selectedActionExecuted},
+                    {"without_child", d.selectedEdgeWithoutChild},
+                    {"edge_visits", d.predecessorEdgeVisits},
+                    {"exact", d.exactReroot},
+                    {"equivalent_copy", d.equivalentCopyReroot},
+                    {"candidate_found", d.candidateFound},
+                    {"fallback", silver_bridge::silverRerootFallbackReasonName(d.fallbackReason)},
+                    {"hand_order_mismatch", d.deterministicSemanticHandMismatch},
+                    {"uid_copy_match", d.deterministicEquivalentCopyMatch},
+                    {"other_mismatch", d.deterministicOtherMismatch},
+                    {"inherited_visits", d.inheritedVisits},
+                });
+            }
+            row["reroot_diagnostics"] = std::move(rerootDiagnostics);
+        }
         row["action_trace_hash"] = result.actionTraceHash;
         row["status"] = result.accepted ? "ok" : result.failureReason;
         row["rollout_calls"] = result.telemetry.rolloutCalls;
@@ -139,11 +161,12 @@ nlohmann::json replayRow(const nlohmann::json &input, std::int64_t budget,
 int main(int argc, char **argv) {
     if (argc < 3) {
         std::cerr << "usage: silver_hard_combat_replay SNAPSHOTS.jsonl BUDGET "
-                     "[--arm control|A|B] [--uid-fragmentation] [--internal-fpu] "
-                     "[--first-decision-only]\n";
+                     "[--arm control|A|B] [--uid-fragmentation] [--reroot-diagnostics] "
+                     "[--internal-fpu] [--first-decision-only]\n";
         return 2;
     }
     bool collectUidFragmentationDiagnostics = false;
+    bool collectRerootDiagnostics = false;
     bool internalFpuEnabled = false;
     bool firstDecisionOnly = false;
     auto contractMode = silver_bridge::SilverSearchContractMode::CONTROL;
@@ -151,6 +174,8 @@ int main(int argc, char **argv) {
         const std::string option(argv[i]);
         if (option == "--uid-fragmentation") {
             collectUidFragmentationDiagnostics = true;
+        } else if (option == "--reroot-diagnostics") {
+            collectRerootDiagnostics = true;
         } else if (option == "--internal-fpu") {
             internalFpuEnabled = true;
         } else if (option == "--first-decision-only") {
@@ -195,7 +220,8 @@ int main(int argc, char **argv) {
         if (line.empty()) continue;
         try {
             const auto row = replayRow(nlohmann::json::parse(line), budget,
-                                       collectUidFragmentationDiagnostics, contractMode,
+                                       collectUidFragmentationDiagnostics,
+                                       collectRerootDiagnostics, contractMode,
                                        internalFpuEnabled, firstDecisionOnly);
             hadFailure = hadFailure || row.value("status", "") != "ok";
             std::cout << row.dump() << '\n';
