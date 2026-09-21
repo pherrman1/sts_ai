@@ -112,9 +112,10 @@ the ordinary 15-row map do not increment the native path counters.
 Screen-specific `details` contains card/reward groups, fixed shop slots and
 prices, selector deck indices, event identity/phase, or boss relic offers.
 `liveChoices` binds each exact native candidate descriptor to one current MCP
-command. The live driver collects claimable gold, relic, potion, and key
-rewards first, then opens an unopened combat card-reward icon as a reversible
-navigation step before asking OOC to score the visible card group.
+command. The live driver collects claimable gold, relic, and potion rewards
+first, then opens an unopened combat card-reward icon as a reversible
+navigation step before asking OOC to score the visible card group. Keys remain
+normal OOC choices under the default continuation policy.
 Direct inspector captures of an unopened icon still produce `CARD_GROUP_NOT_REVEALED`:
 its already-generated Java `RewardItem.cards` contents are never serialized.
 The driver therefore scores the card choice on the next card-reward

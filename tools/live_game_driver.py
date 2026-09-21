@@ -799,9 +799,10 @@ def card_reward_reveal_action(screen: Mapping[str, Any], game: Mapping[str, Any]
     }
     for index, reward in enumerate(occurrences):
         kind = _text(_mapping(reward).get("reward_type", _mapping(reward).get("type", ""))).upper()
-        if kind != "CARD" and index + 1 in choice_indexes:
-            # The simulator's continuation policy collects gold, relics,
-            # claimable potions, and keys before it evaluates the card group.
+        if kind in {"GOLD", "RELIC", "POTION"} and index + 1 in choice_indexes:
+            # The default simulator continuation collects gold, relics, and
+            # claimable potions before it evaluates the card group. Keys stay
+            # as normal OOC choices under the default policy.
             return None
     for index, reward in enumerate(occurrences):
         kind = _text(_mapping(reward).get("reward_type", _mapping(reward).get("type", ""))).upper()
@@ -997,7 +998,7 @@ class Driver:
                 candidates = [candidate for candidate in candidates
                               if not (candidate.mcp_tool == "choose"
                                       and candidate.mcp_arguments.get("choice_index") in absent_potions)]
-            reward_order = ("GOLD", "RELIC", "POTION", "EMERALD_KEY", "SAPPHIRE_KEY", "CARD")
+            reward_order = ("GOLD", "RELIC", "POTION", "CARD")
             for reward_type in reward_order:
                 for item in occurrences:
                     if _text(item.get("type")).upper() != reward_type:

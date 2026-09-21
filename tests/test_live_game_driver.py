@@ -480,6 +480,16 @@ class OocDriverTest(unittest.TestCase):
             self.assertEqual([call for call in client.calls if call[0] == "choose"],
                              [("choose", {"choice_index": 1})])
 
+    def test_mixed_key_reward_does_not_precede_card_reveal(self):
+        screen = {"screen_type": "COMBAT_REWARD", "choice_list": ["Gold", "Emerald Key", "Card"],
+                  "ready_for_command": True}
+        game = {"screen_state": {"rewards": [
+            {"reward_type": "GOLD"}, {"reward_type": "EMERALD_KEY"}, {"reward_type": "CARD"}]}}
+        candidates = build_legal_actions(screen, ["choose"])
+        self.assertIsNone(card_reward_reveal_action(screen, game, candidates))
+        self.assertEqual(card_reward_reveal_action(screen, game, candidates[1:]).mcp_arguments,
+                         {"choice_index": 3})
+
     def test_strict_unsupported_failure_packet_no_mutation(self):
         with tempfile.TemporaryDirectory() as directory:
             driver, client, _ = self.make(directory, "UNSUPPORTED")

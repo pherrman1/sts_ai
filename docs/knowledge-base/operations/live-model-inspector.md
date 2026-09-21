@@ -439,7 +439,8 @@ support or a claim of whole-game reward equivalence.
 
 The live driver opens an unrevealed card reward only after all claimable
 non-card rewards in that combat reward have been collected. This preserves the
-simulator continuation order (gold, relic, potion, keys, then card choice) and
+simulator continuation order (gold, relic, potion, then card choice; keys stay
+normal OOC choices) and
 ensures the card scorer sees the post-collection root state.
 
 Path counts derive from persisted `metricData.path_taken`, whose original map
