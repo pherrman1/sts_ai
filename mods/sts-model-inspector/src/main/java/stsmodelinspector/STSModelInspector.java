@@ -506,7 +506,7 @@ public final class STSModelInspector implements PostInitializeSubscriber,
             OocOverlay.Choice choice = view == null ? null : view.forAction(anchor.action);
             String prefix = anchor.label.isEmpty() ? "" : anchor.label + " · ";
             String label = choice == null ? prefix + (view == null ? "Waiting" : "Not scored")
-                    : prefix + String.format(Locale.ROOT, "#%d · Q %.3f", view.choices.indexOf(choice) + 1, choice.q);
+                    : prefix + choice.scoreLabel(view.choices.indexOf(choice) + 1);
             String detail = followUpText(choice);
             renderInlineBadge(sb, anchor.x, anchor.bottom, anchor.width, label,
                     choice != null && choice.selected, choice != null, scale, detail);
@@ -644,7 +644,7 @@ public final class STSModelInspector implements PostInitializeSubscriber,
             float bottom = Math.max(95 * scale, card.current_y - AbstractCard.IMG_HEIGHT * card.drawScale / 2 - 48 * scale);
             drawRect(sb, x, bottom, width, 34 * scale, PANEL_INNER);
             drawBorder(sb, x, bottom, width, 34 * scale, choice.selected ? WARNING : CARD_BORDER, 2 * scale);
-            renderSmallText(sb, String.format(Locale.ROOT, "#%d  ·  Q %.3f", rank + 1, choice.q),
+            renderSmallText(sb, choice.scoreLabel(rank + 1),
                     x + 10 * scale, bottom + 24 * scale, choice.selected ? CYAN : Color.WHITE, .76f);
         }
     }

@@ -23,6 +23,9 @@ final class OocOverlay {
             this.index = index; this.selected = selected; this.action = action;
             this.followUp = followUp; this.followUpUuid = followUpUuid;
         }
+        String scoreLabel(int rank) {
+            return String.format(Locale.ROOT, "#%d · N %d · Q %.3f", rank, visits, q);
+        }
     }
     final String session, hash, status, reason, policy, screen;
     final long sequence;

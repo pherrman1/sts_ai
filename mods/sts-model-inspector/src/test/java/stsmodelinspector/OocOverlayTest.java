@@ -20,6 +20,9 @@ public final class OocOverlayTest {
         if (!view.choices.get(0).selected || view.choices.get(0).index != 2
                 || !view.choices.get(0).label.equals("Bash+") || !view.choices.get(1).label.equals("Skip")
                 || !view.choices.get(2).label.equals("Bash")) throw new AssertionError("ranking or occurrence lost");
+        if (!view.choices.get(0).scoreLabel(1).equals("#1 · N 20 · Q 0.300")
+                || !view.choices.get(2).scoreLabel(3).equals("#3 · N 10 · Q 0.100"))
+            throw new AssertionError("display label omitted decision visits");
         if (view.panelChoices().size() != 2 || !view.panelChoices().get(0).selected
                 || !view.panelChoices().get(1).kind.equals("skip"))
             throw new AssertionError("card panel must remain above the card row and retain skip");
