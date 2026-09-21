@@ -59,8 +59,10 @@ public final class STSModelInspector implements PostInitializeSubscriber,
     private static final String PROTOCOL = "sts_model_inspector_v1";
     private static final int PROTOCOL_VERSION = 1;
     private static final long DEFAULT_SILVER_SEARCH_BUDGET = 1000L;
-    private static final float SILVER_BOOST_BUTTON_X = 238.0f;
+    private static final float SILVER_BOOST_BUTTON_X = 16.0f;
     private static final float SILVER_BOOST_BUTTON_WIDTH = 90.0f;
+    private static final float COMBAT_PANEL_HEIGHT = 288.0f;
+    private static final float SILVER_BOOST_BUTTON_BOTTOM = 12.0f;
     private static final String TOGGLE = "stsmodelinspector.toggle";
     private static final Color PANEL_BACKGROUND = new Color(0.015f, 0.075f, 0.115f, 0.96f);
     private static final Color PANEL_INNER = new Color(0.02f, 0.12f, 0.18f, 0.94f);
@@ -333,7 +335,7 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         }
         float width = (combat ? 500.0f : 420.0f) * scale;
         int rows = overlay == null ? 0 : overlay.panelChoices().size();
-        float height = (combat ? 252.0f : rows == 0 ? 220.0f : 130.0f + 44.0f * rows) * scale;
+        float height = (combat ? COMBAT_PANEL_HEIGHT : rows == 0 ? 220.0f : 130.0f + 44.0f * rows) * scale;
         float bottom = top - height;
 
         // Use the game's existing white texture for the glass panels so the mod
@@ -350,7 +352,6 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         renderAdvisorIcon(sb, x + 16.0f * scale, top - 18.0f * scale, scale);
         renderHeaderText(sb, combat ? "STS Model Advisor" : "OOC Advisor", x + 70.0f * scale,
                 top - 14.0f * scale, Color.WHITE, 0.82f);
-        if (combat) renderSilverBoostButton(sb, x, top, scale);
         renderStatusPill(sb, x + width - 164.0f * scale, top - 12.0f * scale, scale);
         renderGearIcon(sb, x + width - 31.0f * scale, top - 27.0f * scale, scale);
 
@@ -396,6 +397,7 @@ public final class STSModelInspector implements PostInitializeSubscriber,
                 CYAN_DIM, 0.70f);
         renderSmallText(sb, silver, x + 16.0f * scale, bottom + 48.0f * scale,
                 "OK".equals(silverStatus) ? CYAN : WARNING, 0.78f);
+        renderSilverBoostButton(sb, x, bottom, scale);
         renderSmallText(sb, Keyboard.getKeyName(loadToggleKey()) + " hide",
                 x + width - 78.0f * scale, bottom + 22.0f * scale, MUTED, 0.78f);
     }
@@ -438,17 +440,17 @@ public final class STSModelInspector implements PostInitializeSubscriber,
                 + "  ·  total " + compactSimulations(silverTotalSimulations);
     }
 
-    private void renderSilverBoostButton(SpriteBatch sb, float x, float top, float scale) {
+    private void renderSilverBoostButton(SpriteBatch sb, float x, float bottom, float scale) {
         float buttonX = x + SILVER_BOOST_BUTTON_X * scale;
-        float buttonTop = top - 12.0f * scale;
+        float buttonBottom = bottom + SILVER_BOOST_BUTTON_BOTTOM * scale;
         float buttonHeight = 30.0f * scale;
-        drawRect(sb, buttonX, buttonTop - buttonHeight,
+        drawRect(sb, buttonX, buttonBottom,
                 SILVER_BOOST_BUTTON_WIDTH * scale, buttonHeight, PANEL_INNER);
-        drawBorder(sb, buttonX, buttonTop - buttonHeight,
+        drawBorder(sb, buttonX, buttonBottom,
                 SILVER_BOOST_BUTTON_WIDTH * scale, buttonHeight, CYAN_DIM, scale);
         String increment = silverSearchBudget == DEFAULT_SILVER_SEARCH_BUDGET ? "+9k" : "+10k";
         renderSmallText(sb, "Silver " + increment, buttonX + 8.0f * scale,
-                buttonTop - 7.0f * scale, CYAN, 0.66f);
+                buttonBottom + 23.0f * scale, CYAN, 0.66f);
     }
 
     private void handleSilverBoostClick() {
@@ -463,7 +465,8 @@ public final class STSModelInspector implements PostInitializeSubscriber,
     private boolean silverBoostButtonHit() {
         float scale = Settings.scale;
         float x = 24.0f * scale + SILVER_BOOST_BUTTON_X * scale;
-        float bottom = Settings.HEIGHT - 170.0f * scale - 42.0f * scale;
+        float panelBottom = Settings.HEIGHT - (170.0f + COMBAT_PANEL_HEIGHT) * scale;
+        float bottom = panelBottom + SILVER_BOOST_BUTTON_BOTTOM * scale;
         return InputHelper.mX >= x && InputHelper.mX <= x + SILVER_BOOST_BUTTON_WIDTH * scale
                 && InputHelper.mY >= bottom && InputHelper.mY <= bottom + 30.0f * scale;
     }
