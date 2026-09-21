@@ -23,7 +23,7 @@ Ensure the stable runtime, then start or verify ModTheSpire + MCPTheSpire.
 Environment: STS_LIVE_RUNTIME_DIR, STS_GAME_DIR, STS_MODTHESPIRE_JAR,
 STS_MCP_THE_SPIRE_JAR, STS_MODEL_INSPECTOR_JAR, STS_MODEL_INSPECTOR_CONFIG,
 STS_MODEL_INSPECTOR_ADVISOR, STS_CTM_MODEL, STS_LIVE_OOC_MODEL, STS_MCP_PORT,
-STS_LIVE_GAME_LOG.
+STS_LIVE_OOC_WIN_MODEL, STS_LIVE_OOC_FLOOR_MODEL, STS_LIVE_GAME_LOG.
 EOF
 }
 
@@ -116,6 +116,9 @@ if ((runtime_available)); then
   if [[ -f "$runtime_root/current/models/v_win_trees.txt" ]]; then
     export STS_LIVE_OOC_WIN_MODEL=${STS_LIVE_OOC_WIN_MODEL:-$runtime_root/current/models/v_win_trees.txt}
   fi
+  if [[ -f "$runtime_root/current/models/v_rich_trees.txt" ]]; then
+    export STS_LIVE_OOC_FLOOR_MODEL=${STS_LIVE_OOC_FLOOR_MODEL:-$runtime_root/current/models/v_rich_trees.txt}
+  fi
   if [[ -f "$runtime_root/current/models/ooc_strategic_tok_final.native" ]]; then
     export STS_LIVE_OOC_MODEL=${STS_LIVE_OOC_MODEL:-$runtime_root/current/models/ooc_strategic_tok_final.native}
   fi
@@ -127,6 +130,9 @@ if ((runtime_available)); then
   fi
   if [[ -z "${STS_LIVE_OOC_WIN_MODEL:-}" || ! -f "$STS_LIVE_OOC_WIN_MODEL" ]]; then
     warn "OOC win model unavailable; live OOC MCTS will report OOC_WIN_MODEL_UNAVAILABLE"
+  fi
+  if [[ -z "${STS_LIVE_OOC_FLOOR_MODEL:-}" || ! -f "$STS_LIVE_OOC_FLOOR_MODEL" ]]; then
+    warn "OOC floor model unavailable; live OOC MCTS will report OOC_FLOOR_MODEL_UNAVAILABLE"
   fi
 else
   warn "advisor validation and active-runtime recording are disabled for MCP-only startup"

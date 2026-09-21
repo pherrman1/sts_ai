@@ -1,4 +1,6 @@
 #include "ooc_policy.h"
+#include "ooc_checkpoint_policy.h"
+#include "run_driver.h"
 
 #include <algorithm>
 #include <cmath>
@@ -200,6 +202,14 @@ bool oocOnePlyCardRewardPolicy(GameContext &gc, const search::ScumSearchAgent2 &
     if (gc.screenState != ScreenState::REWARDS) return false;
     auto &r = gc.info.rewardsContainer;
     if (r.cardRewardCount == 0) return false;
+    if (g_oocStrategicTokNet.ok && !g_oocStrategicGateRegret
+            && g_oocStrategicTracePath.empty() && !t_tokCheckPending) {
+        const PathHistory emptyPath;
+        const double margin = g_oocStrategicMarginCard >= 0.0
+            ? g_oocStrategicMarginCard : g_oocStrategicMargin;
+        return takeQualifiedV4CardReward(gc, t_curPath ? *t_curPath : emptyPath,
+                                         g_oocStrategicTokNet, margin);
+    }
     using RT = search::GameAction::RewardsActionType;
     std::vector<search::GameAction> actions = v4CandidateActions(gc);
     if (actions.empty()) return false;
@@ -987,6 +997,7 @@ void upgradeSelectVPolicy(GameContext &gc) {
 }
 
 bool restWinPolicy(GameContext &gc) {
+    if (nativeWinPolicyAvailable()) return nativeRestWinPolicy(gc);
     if (g_collectKeys && gc.act >= 3 && !gc.hasKey(Key::RUBY_KEY)) {
         search::GameAction(2, 0).execute(gc);
         return true;
@@ -1010,6 +1021,7 @@ bool restWinPolicy(GameContext &gc) {
 }
 
 void upgradeSelectWinPolicy(GameContext &gc) {
+    if (nativeWinPolicyAvailable()) { nativeUpgradeSelectWinPolicy(gc); return; }
     std::vector<int> ids;
     for (int i = 0; i < gc.info.toSelectCards.size(); ++i)
         ids.push_back((int)gc.info.toSelectCards[i].card.getId());
@@ -1019,6 +1031,9 @@ void upgradeSelectWinPolicy(GameContext &gc) {
 }
 
 void shopVPolicy(GameContext &gc) {
+    if (nativeFloorPolicyAvailable() && !g_actFightProbeTrace) {
+        nativeShopVPolicy(gc); return;
+    }
     using RT = search::GameAction::RewardsActionType;
     const std::string requestState = g_actFightProbeTrace ? vFeatCsv(gc) : std::string{};
     std::string plan = vQueryShop(gc);

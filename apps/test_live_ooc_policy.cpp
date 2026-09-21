@@ -39,7 +39,7 @@ int main(int argc, char **argv) {
                 return false;
             };
             for (int i = 0; i < 256; ++i) {
-                sampleLiveOocHiddenCounters(counterState, draws);
+                sampleLiveOocHiddenCounters(counterState, draws, 16);
                 require(onLattice(counterState.monsterChance, .1f, .1f)
                         && onLattice(counterState.shopChance, .03f, .03f)
                         && onLattice(counterState.treasureChance, .02f, .02f),
@@ -52,6 +52,18 @@ int main(int argc, char **argv) {
                 sawJuzuAboveOne |= counterState.monsterChance > 1.0f;
             }
             require(sawJuzuAboveOne, "live monster prior excludes Juzu-reachable values");
+            sampleLiveOocHiddenCounters(counterState, draws, 0);
+            require(counterState.monsterChance == .1f
+                    && counterState.shopChance == .03f
+                    && counterState.treasureChance == .02f,
+                "zero public event rooms allowed impossible chance increments");
+            for (int i = 0; i < 32; ++i) {
+                sampleLiveOocHiddenCounters(counterState, draws, 2);
+                require(counterState.monsterChance <= .1f + .1f + .1f
+                        && counterState.shopChance <= .03f + .03f + .03f
+                        && counterState.treasureChance <= .02f + .02f + .02f,
+                    "live room chance exceeded observed event-room support");
+            }
         }
         {
             auto fullBelt = gc;

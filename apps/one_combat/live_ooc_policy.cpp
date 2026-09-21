@@ -12,6 +12,7 @@
 #include "sim/search/ScumSearchAgent2.h"
 #include "constants/SaveFileMappings.h"
 #include "ooc_checkpoint_policy.h"
+#include "ooc_native_fallback.h"
 
 namespace one_combat {
 namespace {
@@ -203,8 +204,10 @@ LiveOocDecision LiveOocV4QPolicy::score(const sts::GameContext &projected,
 
 LiveOocMctsPolicy::LiveOocMctsPolicy(const OocStrategicTokNet &model,
                                      std::shared_ptr<const CombatTransitionSampler> sampler,
-                                     const CompactTreeNet *oocWinModel)
-    : model_(model), sampler_(std::move(sampler)), winModel_(oocWinModel) {}
+                                     const CompactTreeNet *oocWinModel,
+                                     const CompactTreeNet *oocFloorModel)
+    : model_(model), sampler_(std::move(sampler)), winModel_(oocWinModel),
+      floorModel_(oocFloorModel) {}
 
 void LiveOocMctsPolicy::setRootPrimitiveBits(const std::vector<std::uint32_t> &bits) {
     rootPrimitiveBits_ = std::set<std::uint32_t>(bits.begin(), bits.end());
@@ -221,6 +224,10 @@ LiveOocDecision LiveOocMctsPolicy::score(const sts::GameContext &projected,
         unsupportedResult.reason = "OOC_WIN_MODEL_UNAVAILABLE";
         return unsupportedResult;
     }
+    if (!floorModel_ || !floorModel_->ok) {
+        unsupportedResult.reason = "OOC_FLOOR_MODEL_UNAVAILABLE";
+        return unsupportedResult;
+    }
 
     OocAdapterOptions options;
     options.sampleNoncombat = true;
@@ -228,7 +235,11 @@ LiveOocDecision LiveOocMctsPolicy::score(const sts::GameContext &projected,
     options.stopAtMapCheckpoint = true;
     if (hasRootPrimitiveBits_) options.rootPrimitiveBits = rootPrimitiveBits_;
     OocMctsDependencies dependencies;
-    dependencies.sampleHiddenCounters = sampleLiveOocHiddenCounters;
+    const int observedEventRooms = path.roomVisits[static_cast<int>(Room::EVENT)];
+    dependencies.sampleHiddenCounters = [observedEventRooms](sts::GameContext &gc,
+                                                               std::mt19937_64 &rng) {
+        sampleLiveOocHiddenCounters(gc, rng, observedEventRooms);
+    };
     dependencies.policyAvailable = [this] { return model_.ok; };
     const auto policyBatch = [this](const sts::GameContext &gc, const PathHistory &history,
                                       const std::vector<sts::search::GameAction> &actions) {
@@ -279,21 +290,38 @@ LiveOocDecision LiveOocMctsPolicy::score(const sts::GameContext &projected,
     };
     dependencies.continuationStep = [this](sts::GameContext &gc, PathHistory &history,
                                            std::mt19937_64 &) {
-        if (collectFreeOocReward(gc, gc.keysEnabled)) { history.update(gc); return; }
-        // Under the qualified full-run defaults these screens use server-side
-        // rest/shop policies or the win-rate upgrade selector. The standalone
-        // advisor has no matching deployment of those models, so the particle
-        // cannot be valued through a different V4/fallback policy.
-        if (gc.screenState == ScreenState::SHOP_ROOM
-                || gc.screenState == ScreenState::REST_ROOM
-                || (gc.screenState == ScreenState::CARD_SELECT
-                    && (gc.info.selectScreenType == CardSelectScreenType::UPGRADE
-                        || (gc.curRoom == Room::SHOP
-                            && gc.info.selectScreenType == CardSelectScreenType::REMOVE))))
-            throw sts::search::OocSearchUnsupported("checkpoint_policy_model_unavailable");
-        // The simulator's V4 Q gate is enabled by default for card rewards,
-        // not for every V4-compatible event, treasure or boss-relic screen.
-        // Those screens use the same ScumSearchAgent2 fallback below.
+        if (collectFreeOocReward(gc, false)) { history.update(gc); return; }
+        // The default simulator checkpoint chain uses these same native
+        // compact-tree fallback decisions after its V4 gate. The shared
+        // functions prevent a second shop/rest/card policy from drifting.
+        if (gc.screenState == ScreenState::SHOP_ROOM) {
+            nativeFloorShopStep(gc, history, *floorModel_);
+            history.update(gc);
+            return;
+        }
+        if (gc.screenState == ScreenState::REST_ROOM
+                && nativeWinRestStep(gc, history, *winModel_, false)) {
+            history.update(gc);
+            return;
+        }
+        if (gc.screenState == ScreenState::CARD_SELECT
+                && gc.info.selectScreenType == CardSelectScreenType::UPGRADE) {
+            nativeWinUpgradeSelectStep(gc, history, *winModel_);
+            history.update(gc);
+            return;
+        }
+        if (gc.screenState == ScreenState::CARD_SELECT && gc.curRoom == Room::SHOP
+                && gc.info.selectScreenType == CardSelectScreenType::REMOVE) {
+            std::vector<int> ids;
+            for (int i = 0; i < gc.info.toSelectCards.size(); ++i)
+                ids.push_back(static_cast<int>(gc.info.toSelectCards[i].card.getId()));
+            const int choice = ids.empty() ? 0 : nativeFloorRemovePick(gc, history, *floorModel_, ids);
+            sts::search::GameAction(choice, 0).execute(gc);
+            history.update(gc);
+            return;
+        }
+        // The simulator's V4 gate is enabled by default only for card
+        // rewards. Other supported screens use the same fallback agent.
         if (gc.screenState != ScreenState::REWARDS) {
             sts::search::ScumSearchAgent2 fallback;
             fallback.rng.seed(0);
@@ -301,59 +329,14 @@ LiveOocDecision LiveOocMctsPolicy::score(const sts::GameContext &projected,
             history.update(gc);
             return;
         }
-        if (!v4DecisionSupported(gc)) {
-            const auto enumeration = sts::search::enumerateOocSemanticPrimitiveBindings(gc);
-            std::set<std::uint32_t> unique;
-            if (enumeration.supported && enumeration.complete)
-                for (const auto &binding : enumeration.bindings) unique.insert(binding.primitiveBits);
-            if (unique.size() == 1) {
-                sts::search::GameAction(*unique.begin()).execute(gc);
-                history.update(gc);
-                return;
+        if (!takeQualifiedV4CardReward(gc, history, model_, 1.0)) {
+            auto &rewards = gc.info.rewardsContainer;
+            while (rewards.cardRewardCount > 0) {
+                const int group = rewards.cardRewardCount - 1;
+                const int choice = nativeFloorCardPick(gc, history, *floorModel_, group, -0.5);
+                sts::search::GameAction(sts::search::GameAction::RewardsActionType::CARD,
+                                        group, choice).execute(gc);
             }
-            // Use the same simulator fallback object as the full-run driver
-            // when the V4 autonomous contract does not cover this checkpoint.
-            // This is a policy seam, not a second policy-head argmax.
-            sts::search::ScumSearchAgent2 fallback;
-            fallback.rng.seed(0);
-            fallback.stepOutOfCombatPolicy(gc);
-            history.update(gc);
-            return;
-        }
-        const auto sources = v4CandidateActions(gc);
-        if (sources.empty())
-            throw sts::search::OocSearchUnsupported("continuation_empty_v4_candidates");
-        const TokState tokens = buildTokStatePure(gc, history);
-        const auto prepared = model_.prepareState(tokens.glob, tokens.nDk, tokens.dk,
-            tokens.nRl, tokens.rl, tokens.nPt, tokens.pt);
-        std::vector<double> q;
-        q.reserve(sources.size());
-        for (const auto action : sources) {
-            int actionType, c1, c2, c3, cand1, cand2, cand3;
-            strategicCands(gc, action, actionType, c1, c2, c3, cand1, cand2, cand3);
-            const int cats[6] = {c1, c2, c3, cand1, cand2, cand3};
-            int entityType, entityId;
-            float price;
-            tokEntity(gc, action, entityType, entityId, price);
-            const float entity[4] = {float(entityType == 0), float(entityType == 1),
-                                     float(entityType == 2), float(entityType == 3)};
-            const double value = model_.predictActionValue(prepared, action.bits, cats,
-                actionType, static_cast<int>(gc.screenState), entity, entityId, price);
-            if (!std::isfinite(value))
-                throw sts::search::OocSearchUnsupported("continuation_nonfinite_q");
-            q.push_back(value);
-        }
-        const auto selected = std::max_element(q.begin(), q.end()) - q.begin();
-        double second = -std::numeric_limits<double>::infinity();
-        for (std::size_t i = 0; i < q.size(); ++i)
-            if (static_cast<int>(i) != selected) second = std::max(second, q[i]);
-        // The simulator's card-reward fallback is serverCardRewardPolicy, not
-        // ScumSearchAgent2. Its server model is absent here, so fail closed
-        // whenever the V4 gate cannot select the same action.
-        if (q.size() > 1 && q[selected] - second < 1.0) {
-            throw sts::search::OocSearchUnsupported("checkpoint_card_fallback_unavailable");
-        } else {
-            sources.at(selected).execute(gc);
         }
         history.update(gc);
     };

@@ -252,6 +252,7 @@ json oocResponse(const one_combat::advisor::Request &request,
             if (decision.reason != "MODEL_UNAVAILABLE" && decision.reason != "V4_SCREEN_UNSUPPORTED"
                     && decision.reason != "CTM_MODEL_UNAVAILABLE"
                     && decision.reason != "OOC_WIN_MODEL_UNAVAILABLE"
+                    && decision.reason != "OOC_FLOOR_MODEL_UNAVAILABLE"
                     && decision.reason != "PUBLIC_REWARD_PITY_HISTORY_UNQUALIFIED"
                     && decision.reason.rfind("COMPOUND_TARGET_UNAVAILABLE:", 0) != 0
                     && decision.reason.rfind("SEMANTIC_ENUMERATION_UNSUPPORTED:", 0) != 0
@@ -542,6 +543,21 @@ int main() {
         if (loaded)
             oocWinIdentity = modelIdentity(path);
     }
+    one_combat::CompactTreeNet oocFloorModel;
+    std::string oocFloorIdentity = "unavailable";
+    if (const char *path = std::getenv("STS_LIVE_OOC_FLOOR_MODEL"); path && *path) {
+        std::ostringstream discardedLoadBanner;
+        auto *const stdoutBuffer = std::cout.rdbuf(discardedLoadBanner.rdbuf());
+        bool loaded = false;
+        try {
+            loaded = oocFloorModel.load(path, one_combat::richIdxMap(), "LiveOocFloorModel");
+        } catch (...) {
+            std::cout.rdbuf(stdoutBuffer);
+            throw;
+        }
+        std::cout.rdbuf(stdoutBuffer);
+        if (loaded) oocFloorIdentity = modelIdentity(path);
+    }
     std::shared_ptr<one_combat::NativeCombatTransitionSampler> ctm;
     std::string ctmStatus = "MODEL_UNAVAILABLE", ctmReason;
     std::string ctmIdentity = "unavailable";
@@ -568,7 +584,7 @@ int main() {
         oocPolicy = std::make_unique<one_combat::LiveOocV4QPolicy>(*oocModel);
     else
         oocPolicy = std::make_unique<one_combat::LiveOocMctsPolicy>(*oocModel, ctm,
-                                                                      &oocWinModel);
+                                                                      &oocWinModel, &oocFloorModel);
     std::string line;
     while (std::getline(std::cin, line)) {
         json response;
@@ -652,7 +668,7 @@ int main() {
                         }
                     } else if (request.observation.value("boundary", std::string()) == "ooc") {
                         response = oocResponse(request, *oocPolicy, oocIdentity + ":ctm=" + ctmIdentity
-                                                + ":win=" + oocWinIdentity,
+                                                + ":win=" + oocWinIdentity + ":floor=" + oocFloorIdentity,
                                                 pendingCompound);
                     } else {
                         one_combat::advisor::PublicOocState imported;

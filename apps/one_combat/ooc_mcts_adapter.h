@@ -57,7 +57,7 @@ struct OocMctsDependencies {
 };
 
 OocMctsDependencies defaultOocMctsDependencies();
-void sampleLiveOocHiddenCounters(GameContext &, std::mt19937_64 &);
+void sampleLiveOocHiddenCounters(GameContext &, std::mt19937_64 &, int priorEventRooms);
 
 class OocGameContextModel final : public sts::search::OocGenerativeModel {
 public:

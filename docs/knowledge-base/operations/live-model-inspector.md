@@ -453,25 +453,26 @@ expected margin. Real live captures do not claim an exact pity history: direct V
 MCTS uses an equal public prior rather than a fabricated midpoint. Synthetic
 parity fixtures may mark an exact pity reconstruction explicitly. Live
 hypothetical room-chance and pity counters are sampled on the native increment
-lattice once per root particle; the shared simulator sampler retains its
-previous copied-counter behavior. This broad lattice is not a posterior
-conditioned on every prior `?` outcome. An already-open boss chest with only native `proceed` is a
+lattice once per root particle. Room-chance support is bounded by public
+current-act `?` visits; the shared simulator sampler retains its previous
+copied-counter behavior. This is not an exact posterior conditioned on every
+prior `?` outcome. An already-open boss chest with only native `proceed` is a
 pass-through state, not a fresh treasure decision; the advisor preserves that
 single live action.
 No RNG state, future encounter queue, or unrevealed outcome is captured.
 Checkpoint continuation preserves the simulator's reward-collection order and
 uses the V4 Q/margin contract for card rewards. The fixed free-reward prefix
-is shared with the full-run driver. The advisor uses `ScumSearchAgent2` on
-screens where the simulator's default chain uses it. It reports an unsupported
-particle if a continuation needs the simulator's server-backed rest, shop,
-upgrade, or card-reward fallback policy, since those models are not available
-in the standalone advisor. Full simulator/live checkpoint-policy parity
-requires deployment of those policies into the advisor. MAP roots require a complete
-seen-relic history, but can still fail closed on an unavailable checkpoint
-policy (a complete-history synthetic MAP fixture currently does). Every
-downstream MAP state is a hard planner
-leaf before expansion. Revisited MAP particles therefore cannot choose a
-hypothetical room or consume hidden room-chance state.
+is shared with the full-run driver. The default native floor/win fallback
+calculations for card rewards, shop, rest, upgrade and shop removal now live in
+`ooc_native_fallback` and are called by both the simulator policy and the
+standalone advisor. The runtime packages both tracked compact-tree models;
+absence of either is explicit unsupported, not a heuristic substitution.
+Other qualified screens use `ScumSearchAgent2` as in the simulator. A
+complete-history synthetic MAP fixture now returns 512-simulation scored
+paths. Every downstream MAP state is a hard planner leaf before expansion.
+The lattice-valid hidden-counter prior is still broad rather than an exact
+public-history posterior, so this test is not a general belief-equivalence
+claim.
 
 `live_ooc_state` creates both a value-only public projection and a separately
 conditioned transition root. It imports no hidden queue ordering or RNG.
@@ -482,7 +483,8 @@ The explicit diagnostic provider is `v4_q`: prepare the token state once,
 score every existing legal V4 primitive with the tracked native model, and
 select maximum Q with ascending canonical semantic identity as the tie-break.
 
-The stable evaluator is `live_ooc_decision_v1`, with `policy: "v4_q"`.
+The stable evaluator is `live_ooc_decision_v1`, with default `policy: "mcts_ctm"`
+and opt-in diagnostic `policy: "v4_q"`.
 An OK result contains semantic identities/payloads, finite per-action Q scores,
 model content identity, latency, and one structured `selectedLiveAction`.
 Smith and removal source choices carry a `:current-screen` semantic identity;

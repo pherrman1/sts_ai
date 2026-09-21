@@ -65,7 +65,8 @@ class LiveOocMctsPolicy final : public LiveOocPolicy {
 public:
     LiveOocMctsPolicy(const OocStrategicTokNet &,
                       std::shared_ptr<const CombatTransitionSampler>,
-                      const CompactTreeNet *oocWinModel);
+                      const CompactTreeNet *oocWinModel,
+                      const CompactTreeNet *oocFloorModel);
     const char *name() const override { return "mcts_ctm"; }
     void setSearchSeed(std::uint64_t seed) override { searchSeed_ = seed; }
     void setRootPrimitiveBits(const std::vector<std::uint32_t> &bits) override;
@@ -75,6 +76,7 @@ private:
     const OocStrategicTokNet &model_;
     std::shared_ptr<const CombatTransitionSampler> sampler_;
     const CompactTreeNet *winModel_;
+    const CompactTreeNet *floorModel_;
     mutable std::uint64_t searchSeed_ = 0;
     mutable std::set<std::uint32_t> rootPrimitiveBits_;
     mutable bool hasRootPrimitiveBits_ = false;

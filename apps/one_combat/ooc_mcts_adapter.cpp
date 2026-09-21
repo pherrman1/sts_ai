@@ -8,6 +8,9 @@
 #include <time.h>
 #include "../ooc_strategic_tok_net.h"
 #include "run_driver.h"
+#include "ooc_checkpoint_policy.h"
+#include "ooc_native_fallback.h"
+#include "ooc_policy.h"
 #include "combat/BattleContext.h"
 #include "sim/search/SilverLiveBackend.h"
 #include "sim/search/BattleScumSearcher2.h"
@@ -107,12 +110,13 @@ void sampleNoncombatFuture(GameContext &gc, std::mt19937_64 &rng) {
     }
 }
 
-void sampleLiveOocHiddenCountersImpl(GameContext &gc, std::mt19937_64 &rng) {
+void sampleLiveOocHiddenCountersImpl(GameContext &gc, std::mt19937_64 &rng,
+                                     int priorEventRooms) {
     // Only '?' room transitions change these room chances. Bound increments
     // by the number of rooms already visited in this act, and reproduce the
     // native float-addition lattice (including Juzu's >1 monster chance).
     const int actStart = gc.act <= 1 ? 0 : gc.act == 2 ? 17 : gc.act == 3 ? 34 : 51;
-    const int priorRooms = std::clamp(gc.floorNum - actStart, 0, 16);
+    const int priorRooms = std::clamp(std::min(gc.floorNum - actStart, priorEventRooms), 0, 16);
     const auto lattice = [&](float initial, float increment) {
         float value = initial;
         const int steps = std::uniform_int_distribution<int>(0, priorRooms)(rng);
@@ -141,8 +145,9 @@ void applySampledCombatExit(GameContext &gc, const CombatRuntimeSample &sample) 
     gc.regainControl();
 }
 }
-void sampleLiveOocHiddenCounters(GameContext &gc, std::mt19937_64 &rng) {
-    sampleLiveOocHiddenCountersImpl(gc, rng);
+void sampleLiveOocHiddenCounters(GameContext &gc, std::mt19937_64 &rng,
+                                 int priorEventRooms) {
+    sampleLiveOocHiddenCountersImpl(gc, rng, priorEventRooms);
 }
 #ifndef STS_LIVE_ADVISOR
 OocMctsDependencies defaultOocMctsDependencies() {
@@ -1082,6 +1087,107 @@ void oocMctsAdapterSelfTest() {
     require(g_oocStrategicTokNet.path == "selfplay/models/ooc_strategic_tok_final.native"
         || g_oocStrategicTokNet.path.find("/selfplay/models/ooc_strategic_tok_final.native") != std::string::npos,
         "policy parity requires tracked final V4 artifact");
+    {
+        // The simulator's actual ordered driver and the advisor's shared
+        // native fallback must reach identical checkpoints from the same
+        // public state. Disable the optional V4 gate for this fallback seam;
+        // its Q/margin gate has separate parity fixtures below.
+        CompactTreeNet floor, win;
+        require(floor.load("models/v_rich_trees.txt", richIdxMap(), "ParityFloor")
+                && win.load("models/v_win_trees.txt", richIdxMap(), "ParityWin"),
+            "checkpoint parity model artifacts unavailable");
+        const bool savedV4 = g_oocStrategicTokNet.ok;
+        const auto *savedPath = t_curPath;
+        g_oocStrategicTokNet.ok = false;
+        PathHistory parityPath;
+        t_curPath = &parityPath;
+        auto compare = [&](GameContext original, const std::function<void(GameContext &)> &advisorStep,
+                           const char *reason) {
+            original.regainControlAction = [](GameContext &state) {
+                state.screenState = ScreenState::MAP_SCREEN;
+                state.regainControlAction = nullptr;
+            };
+            auto oracle = detachedCopy(original), advisor = detachedCopy(original);
+            ScumSearchAgent2 agent;
+            agent.rng.seed(0);
+            runFullRunOocPolicyStep(oracle, agent, false, true);
+            advisorStep(advisor);
+            require(test::oocStateFingerprint(oracle) == test::oocStateFingerprint(advisor), reason);
+        };
+        GameContext parity(CharacterClass::IRONCLAD, 0x51514Du, 0);
+        parity.screenState = ScreenState::REWARDS;
+        parity.curRoom = Room::MONSTER;
+        parity.info.rewardsContainer.clear();
+        CardReward cards;
+        cards.push_back(Card(CardId::ANGER)); cards.push_back(Card(CardId::BASH));
+        parity.info.rewardsContainer.addCardReward(cards);
+        compare(parity, [&](GameContext &state) {
+            const int pick = nativeFloorCardPick(state, parityPath, floor, 0, -0.5);
+            GameAction(GameAction::RewardsActionType::CARD, 0, pick).execute(state);
+        }, "card-reward simulator/advisor checkpoint mismatch");
+        parity.screenState = ScreenState::REST_ROOM;
+        parity.curRoom = Room::REST;
+        parity.curHp = 30;
+        compare(parity, [&](GameContext &state) {
+            if (!nativeWinRestStep(state, parityPath, win, false)) {
+                ScumSearchAgent2 agent; agent.rng.seed(0); agent.stepOutOfCombatPolicy(state);
+            }
+        }, "rest simulator/advisor checkpoint mismatch");
+        parity.openCardSelectScreen(CardSelectScreenType::UPGRADE, 1);
+        compare(parity, [&](GameContext &state) {
+            nativeWinUpgradeSelectStep(state, parityPath, win);
+        }, "upgrade-selector simulator/advisor checkpoint mismatch");
+        parity = GameContext(CharacterClass::IRONCLAD, 0x51514Du, 0);
+        parity.screenState = ScreenState::SHOP_ROOM;
+        parity.curRoom = Room::SHOP;
+        parity.gold = 100;
+        for (int i = 0; i < 7; ++i) parity.info.shop.cardPrice(i) = -1;
+        for (int i = 0; i < 3; ++i) {
+            parity.info.shop.relicPrice(i) = -1;
+            parity.info.shop.potionPrice(i) = -1;
+        }
+        parity.info.shop.cards[0] = Card(CardId::ANGER);
+        parity.info.shop.cardPrice(0) = 50;
+        parity.info.shop.removeCost = -1;
+        compare(parity, [&](GameContext &state) {
+            nativeFloorShopStep(state, parityPath, floor);
+        }, "shop simulator/advisor checkpoint mismatch");
+        parity.openCardSelectScreen(CardSelectScreenType::REMOVE, 1);
+        compare(parity, [&](GameContext &state) {
+            std::vector<int> ids;
+            for (int i = 0; i < state.info.toSelectCards.size(); ++i)
+                ids.push_back(static_cast<int>(state.info.toSelectCards[i].card.getId()));
+            GameAction(nativeFloorRemovePick(state, parityPath, floor, ids), 0).execute(state);
+        }, "shop remove-selector simulator/advisor checkpoint mismatch");
+        parity = GameContext(CharacterClass::IRONCLAD, 0x51514Du, 0);
+        parity.screenState = ScreenState::EVENT_SCREEN;
+        parity.curRoom = Room::EVENT;
+        parity.curEvent = Event::THE_WOMAN_IN_BLUE;
+        parity.gold = 100;
+        compare(parity, [&](GameContext &state) {
+            ScumSearchAgent2 agent; agent.rng.seed(0); agent.stepOutOfCombatPolicy(state);
+        }, "event simulator/advisor checkpoint mismatch");
+        parity.openCardSelectScreen(CardSelectScreenType::TRANSFORM, 1);
+        compare(parity, [&](GameContext &state) {
+            ScumSearchAgent2 agent; agent.rng.seed(0); agent.stepOutOfCombatPolicy(state);
+        }, "transform-selector simulator/advisor checkpoint mismatch");
+        g_oocStrategicTokNet.ok = savedV4;
+        require(savedV4, "V4 checkpoint parity requires loaded token model");
+        parity = GameContext(CharacterClass::IRONCLAD, 0x51514Du, 0);
+        parity.screenState = ScreenState::REWARDS;
+        parity.curRoom = Room::MONSTER;
+        parity.info.rewardsContainer.clear();
+        parity.info.rewardsContainer.addCardReward(cards);
+        compare(parity, [&](GameContext &state) {
+            const double margin = g_oocStrategicMarginCard >= 0.0
+                ? g_oocStrategicMarginCard : g_oocStrategicMargin;
+            if (!takeQualifiedV4CardReward(state, parityPath, g_oocStrategicTokNet, margin)) {
+                const int pick = nativeFloorCardPick(state, parityPath, floor, 0, -0.5);
+                GameAction(GameAction::RewardsActionType::CARD, 0, pick).execute(state);
+            }
+        }, "V4 card-reward simulator/advisor checkpoint mismatch");
+        t_curPath = savedPath;
+    }
     float glob[42]; for (int i=0;i<42;++i) glob[i]=(i-20)*.125f;
     const int dk[96][3] = {{1,0,5},{42,1,2},{100,0,1}};
     const int rl[64][2] = {{1,1},{23,4}};

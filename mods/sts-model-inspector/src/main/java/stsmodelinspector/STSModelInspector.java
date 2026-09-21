@@ -2345,6 +2345,12 @@ public final class STSModelInspector implements PostInitializeSubscriber,
                 String oocModel = environmentFirst(p, "STS_LIVE_OOC_MODEL", "oocModel");
                 if (oocModel != null)
                     builder.environment().put("STS_LIVE_OOC_MODEL", oocModel);
+                String oocWinModel = environmentFirst(p, "STS_LIVE_OOC_WIN_MODEL", "oocWinModel");
+                if (oocWinModel != null)
+                    builder.environment().put("STS_LIVE_OOC_WIN_MODEL", oocWinModel);
+                String oocFloorModel = environmentFirst(p, "STS_LIVE_OOC_FLOOR_MODEL", "oocFloorModel");
+                if (oocFloorModel != null)
+                    builder.environment().put("STS_LIVE_OOC_FLOOR_MODEL", oocFloorModel);
                 Process started = builder.redirectErrorStream(false).start();
                 process = started;
                 stopping = false;

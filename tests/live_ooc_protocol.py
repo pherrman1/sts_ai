@@ -1,5 +1,6 @@
 """Native projection -> advisor provider -> structured one-screen action contract."""
 import copy
+from concurrent.futures import ThreadPoolExecutor
 import json
 import os
 from pathlib import Path
@@ -21,7 +22,7 @@ class LiveOocProtocol(unittest.TestCase):
                            check=True, capture_output=True, text=True)
             cls.fixtures = {row["fixture"]: row for row in map(json.loads, fixture.read_text().splitlines())}
 
-    def run_rows(self, observations, model=True, policy=None):
+    def run_rows(self, observations, model=True, policy=None, floor_model=True):
         env = os.environ.copy()
         env.pop("STS_CTM_MODEL", None)
         env.pop("STS_LIVE_OOC_MODEL", None)
@@ -31,6 +32,9 @@ class LiveOocProtocol(unittest.TestCase):
             env["STS_CTM_MODEL"] = str(self.ctm)
         if self.win:
             env["STS_LIVE_OOC_WIN_MODEL"] = str(self.win)
+        env.pop("STS_LIVE_OOC_FLOOR_MODEL", None)
+        if floor_model:
+            env["STS_LIVE_OOC_FLOOR_MODEL"] = "models/v_rich_trees.txt"
         if policy:
             env["STS_LIVE_OOC_POLICY"] = policy
         requests = [dict(protocol="sts_model_inspector_v1", kind="observation", session="ooc-protocol",
@@ -46,7 +50,13 @@ class LiveOocProtocol(unittest.TestCase):
         return rows
 
     def test_all_native_parity_fixtures(self):
-        for fixture, response in zip(self.fixtures.values(), self.run_rows(list(self.fixtures.values()))):
+        # Independent fixtures do not share a live session or compound plan.
+        # Running a few advisor processes concurrently keeps the 512-sim
+        # coverage without making this integration test serially prohibitive.
+        fixtures = list(self.fixtures.values())
+        with ThreadPoolExecutor(max_workers=4) as pool:
+            responses = list(pool.map(lambda row: self.run_rows([row])[0], fixtures))
+        for fixture, response in zip(fixtures, responses):
             evaluator, = response["evaluators"]
             self.assertEqual(evaluator["id"], "live_ooc_decision_v1")
             self.assertEqual(evaluator["policy"], "mcts_ctm")
@@ -90,9 +100,9 @@ class LiveOocProtocol(unittest.TestCase):
         self.assertEqual(response["evaluators"][0]["reason"], "MODEL_UNAVAILABLE")
 
     def test_compound_candidates_preserve_semantic_targets(self):
-        rest, wall, selector = self.run_rows([
-            self.fixtures["rest_smith_lift_dig_remove_key"], self.fixtures["event_living_wall"],
-            self.fixtures["upgrade_duplicate_physical_cards"]])
+        rest, wall = self.run_rows([
+            self.fixtures["rest_smith_lift_dig_remove_key"], self.fixtures["event_living_wall"]])
+        selector, = self.run_rows([self.fixtures["upgrade_duplicate_physical_cards"]])
         for response in (rest, wall):
             evaluator = response["evaluators"][0]
             self.assertEqual(evaluator["status"], "OK")
@@ -141,7 +151,8 @@ class LiveOocProtocol(unittest.TestCase):
         chosen = next(c for c in evaluator["candidateSummaries"]
                       if c["semanticKey"] == evaluator["selectedSemanticKey"])
         self.assertEqual(chosen["visits"], max(c["visits"] for c in evaluator["candidateSummaries"]))
-        self.assertEqual(evaluator["selectedLiveAction"]["kind"], "map_node")
+        self.assertEqual(evaluator["selectedLiveAction"]["kind"], "choose")
+        self.assertIsInstance(evaluator["selectedLiveAction"]["choiceIndex"], int)
 
     def test_map_root_rejects_incomplete_offered_relic_history(self):
         observation = copy.deepcopy(self.fixtures["map_multiple_children"])
@@ -195,6 +206,24 @@ class LiveOocProtocol(unittest.TestCase):
         self.assertEqual(chosen["visits"], max(candidate["visits"]
                                                 for candidate in evaluator["candidateSummaries"]))
         self.assertEqual(chosen["liveAction"], evaluator["selectedLiveAction"])
+
+    def test_complete_history_map_root_scores_paths(self):
+        observation = copy.deepcopy(self.fixtures["map_multiple_children"])
+        observation["ooc"]["publicState"]["seenRelicsComplete"] = True
+        response, = self.run_rows([observation])
+        evaluator, = response["evaluators"]
+        self.assertEqual(evaluator["status"], "OK", response)
+        self.assertEqual(evaluator["model"]["simulations"], 512)
+        self.assertGreater(len(evaluator["candidateSummaries"]), 1)
+        self.assertEqual(sum(c["visits"] for c in evaluator["candidateSummaries"]), 512)
+
+    def test_missing_floor_model_fails_closed(self):
+        observation = copy.deepcopy(self.fixtures["map_multiple_children"])
+        observation["ooc"]["publicState"]["seenRelicsComplete"] = True
+        response, = self.run_rows([observation], floor_model=False)
+        evaluator, = response["evaluators"]
+        self.assertEqual(evaluator["status"], "UNSUPPORTED")
+        self.assertEqual(evaluator["reason"], "OOC_FLOOR_MODEL_UNAVAILABLE")
 
     def test_capture_support_boundary(self):
         response, = self.run_rows([{"boundary": "ooc", "ooc": {

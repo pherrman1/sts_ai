@@ -98,6 +98,11 @@ std::string mapGraphCsv(const GameContext &gc, bool rooms);
 std::string mapSpecialCsv(const GameContext &gc);
 int nativeWinCardPick(GameContext &gc, int rIdx);
 bool winNetOk();
+bool nativeWinPolicyAvailable();
+bool nativeFloorPolicyAvailable();
+bool nativeRestWinPolicy(GameContext &gc);
+void nativeUpgradeSelectWinPolicy(GameContext &gc);
+void nativeShopVPolicy(GameContext &gc);
 int rowsToHardFight(const GameContext &gc);
 // Driver-owned model seams. The native branches directly use the loaded
 // compact-tree objects (g_winNet/g_floorNet), native shop planner, and rich

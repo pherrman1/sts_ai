@@ -284,6 +284,7 @@ add_executable(one_combat apps/one_combat.cpp apps/combat_model_diagnostics.cpp
     apps/one_combat/combat_transition.cpp
     apps/one_combat/e2c_capture.cpp
     apps/one_combat/ooc_mcts_adapter.cpp
+    apps/one_combat/ooc_native_fallback.cpp
     apps/one_combat/combat_transition_near_full.cpp
     apps/one_combat/combat_transition_runtime.cpp
     apps/one_combat/combat_transition_native_contract.cpp
@@ -321,6 +322,7 @@ target_sources(one_combat_advisor PRIVATE
     apps/one_combat/run_features.cpp
     apps/one_combat/live_ooc_importer.cpp
     apps/one_combat/ooc_mcts_adapter.cpp
+    apps/one_combat/ooc_native_fallback.cpp
     apps/one_combat/ooc_checkpoint_policy.cpp
     apps/one_combat/compact_tree.cpp
     apps/one_combat/combat_predictor_input.cpp
@@ -344,6 +346,7 @@ add_executable(test_live_ooc_policy apps/test_live_ooc_policy.cpp
     apps/one_combat/live_ooc_policy.cpp apps/one_combat/ooc_v4_encoding.cpp
     apps/one_combat/ooc_checkpoint_policy.cpp
     apps/one_combat/run_features.cpp apps/one_combat/ooc_mcts_adapter.cpp
+    apps/one_combat/ooc_native_fallback.cpp
     apps/one_combat/compact_tree.cpp apps/one_combat/combat_predictor_input.cpp
     apps/one_combat/combat_transition.cpp apps/one_combat/combat_transition_near_full.cpp
     apps/one_combat/combat_transition_runtime.cpp apps/one_combat/combat_transition_native_contract.cpp
@@ -359,6 +362,7 @@ add_executable(live_ooc_parity_test apps/live_ooc_parity_test.cpp
     apps/one_combat/ooc_checkpoint_policy.cpp
     apps/one_combat/ooc_v4_encoding.cpp apps/one_combat/run_features.cpp
     apps/one_combat/ooc_mcts_adapter.cpp apps/one_combat/compact_tree.cpp
+    apps/one_combat/ooc_native_fallback.cpp
     apps/one_combat/combat_predictor_input.cpp apps/one_combat/combat_transition.cpp
     apps/one_combat/combat_transition_near_full.cpp apps/one_combat/combat_transition_runtime.cpp
     apps/one_combat/combat_transition_native_contract.cpp
