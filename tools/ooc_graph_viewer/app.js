@@ -28,6 +28,7 @@
   });
   d3.select(canvas).call(zoom).on('dblclick.zoom',null);
   $('identity').textContent=payload.identity.session+' · #'+payload.identity.sequence;
+  $('provenance').textContent=payload.fixture?'TEST FIXTURE: '+payload.fixture:'Advisor capture';
   $('capture').textContent=tree.truncated?'Capture truncated':'Capture complete';
   function label(n){return n.label || (n.kind==='chance'?'Action #'+n.actionId:
     'Particle state '+n.stateId);}
@@ -42,12 +43,18 @@
       'From':data.parentId,'To':data.childId??'capture omitted','Kind':data.kind,
       'Visits':data.visits}:{
       'Node ID':data.id,'Kind':data.kind,'State ID':data.stateId,
-      'Depth':data.depth,'Visits':data.visits,'Prior':data.prior,'Q':data.q};
+      'Depth':data.depth,'Visits':data.visits,'Prior':data.prior,'Q':data.q,
+      'Outcome':data.outcome};
     for(const [name,value] of Object.entries(rows)){
       const line=document.createElement('div');line.className='fact';
       const a=document.createElement('span'),b=document.createElement('strong');
       a.textContent=name;b.textContent=value==null?'unavailable':String(value);
       line.append(a,b);pane.append(line);
+    }
+    if(data.outcome==='loss'){
+      const note=document.createElement('p');note.className='muted';
+      note.textContent='Sampled terminal loss. The stored HP field can retain its pre-combat value; it is not a post-death HP reading.';
+      pane.append(note);
     }
     if(item.kind==='node')for(const e of outgoing.get(item.id)||[]){
       const button=document.createElement('button');button.className='inspector-row';
@@ -102,7 +109,8 @@
         group.onclick=()=>inspect({kind:'edge',id:e.id});layer.append(group);
       }
       for(const n of visible.nodes){const pos=positions.get(n.id);if(!pos)continue;
-        const group=make('g',{class:'node '+(n.isChanceNode?'chance':'decision'),
+        const group=make('g',{class:'node '+(n.isChanceNode?'chance':'decision')+
+          (n.outcome==='loss'?' loss':''),
           transform:'translate('+pos.x+','+pos.y+')'});group.setAttribute('data-node',n.id);
         group.append(make('rect',{width:pos.width,height:pos.height,rx:9}));
         const title=make('text',{x:10,y:n.isChanceNode?17:23,class:'node-title'});

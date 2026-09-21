@@ -17,6 +17,9 @@ not observed game state. Q is the action mean backed-up value in `[0,1]`;
 unvisited actions have no Q. An edge ending at “capture omitted” exceeded the
 capture cap; a state with no outgoing edges can also be an unexpanded frontier.
 The capture does not include hidden game-state content.
+Reports generated from test fixtures are labeled `TEST FIXTURE`. A sampled
+terminal loss can retain the state's pre-combat HP field, so a loss card's HP
+is not a post-death HP reading.
 
 Browser layout libraries are reused from `tools/combat_graph_viewer/vendor/`,
 with licenses documented in its README.

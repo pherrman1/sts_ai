@@ -1,5 +1,6 @@
 .graph-stage{min-height:450px}
 .node.chance rect{fill:#443727;stroke:var(--amber)}
 .node.decision rect{fill:#273341;stroke:var(--blue)}
+.node.loss rect{fill:#493039;stroke:#ea8e91}
 .node.inspected rect,.link.inspected path{stroke:var(--green);stroke-width:4}
 .graph-fullscreen .graph-column{height:100vh}

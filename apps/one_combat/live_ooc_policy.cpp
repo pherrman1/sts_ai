@@ -393,7 +393,11 @@ LiveOocDecision LiveOocMctsPolicy::score(const sts::GameContext &projected,
                 static const char *screens[] = {"invalid", "event", "rewards", "boss relic",
                     "card select", "map", "treasure", "rest", "shop", "battle"};
                 const auto screen = static_cast<unsigned>(state.screenState);
-                node.label = "Floor " + std::to_string(state.floorNum) + " · HP "
+                node.outcome = state.outcome == GameOutcome::PLAYER_LOSS ? "loss"
+                    : state.outcome == GameOutcome::PLAYER_VICTORY ? "victory" : "undecided";
+                node.label = (node.outcome == "loss" ? "Sampled loss · "
+                    : node.outcome == "victory" ? "Victory · " : "")
+                    + std::string("Floor ") + std::to_string(state.floorNum) + " · HP "
                     + std::to_string(state.curHp) + "/" + std::to_string(state.maxHp)
                     + " · " + (screen < 10 ? screens[screen] : "unknown screen");
             }

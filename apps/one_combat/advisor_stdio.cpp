@@ -328,7 +328,8 @@ json oocResponse(const one_combat::advisor::Request &request,
             for (const auto &node : tree.nodes)
                 captured["nodes"].push_back({{"id", node.id}, {"kind", node.chance ? "chance" : "state"},
                     {"stateId", std::to_string(node.state)}, {"actionId", node.action},
-                    {"label", node.label}, {"depth", node.depth}, {"visits", node.visits},
+                    {"label", node.label}, {"outcome", node.outcome},
+                    {"depth", node.depth}, {"visits", node.visits},
                     {"prior", node.chance ? json(node.prior) : json(nullptr)},
                     {"q", node.chance && node.visits ? json(node.q) : json(nullptr)}});
             for (const auto &edge : tree.edges)

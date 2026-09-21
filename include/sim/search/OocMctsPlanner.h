@@ -68,6 +68,7 @@ struct OocTreeNode {
     OocActionId action;
     double prior, q;
     std::string label;
+    std::string outcome;
 };
 struct OocTreeEdge {
     std::uint64_t parentId;

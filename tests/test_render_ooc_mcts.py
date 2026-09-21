@@ -5,7 +5,8 @@ from tools.render_ooc_mcts import render
 class RenderOocMctsTest(unittest.TestCase):
     def snapshot(self):
         return {
-            'observation': {'boundary': 'ooc', 'session': 's', 'sequence': 4,
+            'observation': {'boundary': 'ooc', 'fixture': 'map_multiple_children',
+                            'session': 's', 'sequence': 4,
                             'observationHash': 'h'},
             'response': {'ready': True, 'session': 's', 'sequence': 4,
                          'observationHash': 'h', 'advisor': {'evaluators': [{
@@ -25,6 +26,8 @@ class RenderOocMctsTest(unittest.TestCase):
         html = render(self.snapshot())
         self.assertIn('OOC MCTS search', html)
         self.assertIn('ooc-action', html)
+        self.assertIn('map_multiple_children', html)
+        self.assertIn('TEST FIXTURE', html)
         self.assertIn('ELK', html)
         self.assertIn('d3', html)
 

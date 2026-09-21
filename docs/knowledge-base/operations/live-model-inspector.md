@@ -300,6 +300,8 @@ labels, state summaries, visits, priors, and action Q values. State IDs refer to
 search particles; they are not observed game states. Omitted edges indicate
 the capture cap. The renderer validates the snapshot session, sequence, and
 observation hash before producing a portable offline HTML file.
+Fixture snapshots are labeled in the report. Sampled terminal losses may retain
+the pre-combat HP field, which is not a post-death HP reading.
 If `latest.json` remains `WAITING` after a combat observation, run
 `tools/live_game_runtime.py status` and restart the game explicitly after a
 runtime change. A ready response can

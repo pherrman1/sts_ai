@@ -30,7 +30,8 @@ def render(snapshot: dict) -> str:
     if not tree.get("nodes") or tree.get("rootId") is None:
         raise ValueError("OOC tree has no captured root")
     # JSON.parse cannot preserve all uint64 IDs. Keep state identities as text.
-    payload = {"tree": tree, "evaluator": {key: evaluator.get(key) for key in
+    payload = {"tree": tree, "fixture": observation.get("fixture"),
+               "evaluator": {key: evaluator.get(key) for key in
                ("candidateSummaries", "selectedSemanticKey", "model", "status")},
                "identity": {key: response.get(key) for key in
                             ("session", "sequence", "observationHash")}}
@@ -43,7 +44,8 @@ def render(snapshot: dict) -> str:
     css += "\n" + (SCRIPT.parent / "style.css").read_text(encoding="utf-8")
     return ("<!doctype html><html><head><meta charset=\"utf-8\"><title>OOC MCTS graph</title>"
             f"<style>{css}</style></head><body>"
-            '<header><strong>OOC MCTS search</strong><span id="identity"></span>'
+            '<header><strong>OOC MCTS search</strong><span id="provenance"></span>'
+            '<span id="identity"></span>'
             '<span id="capture"></span><span class="spacer"></span>'
             '<button id="fullscreen">Graph only</button></header>'
             '<div class="workspace"><aside class="sidebar"><h2>Root actions</h2><div id="root-actions"></div>'
