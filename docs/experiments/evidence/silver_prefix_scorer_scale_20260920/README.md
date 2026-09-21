@@ -1,9 +1,9 @@
 # Silver frozen-prefix scorer scale validation
 
-Status: preregistered collection and analysis packet. No locked validation
-result is present in this worktree yet. The analyzer requires the committed
-`source-seed-manifest.json` and its SHA-256 binding before it will load a
-future collection config.
+Status: completed local collection and locked validation. The final result is
+recorded in `analysis-summary.json`; the large raw packets remain outside Git
+under `/tmp/silver-prefix-scale-20260920-exact10k/` and are bound by the
+input hashes in that summary.
 
 ## Question and frozen boundary
 
@@ -60,6 +60,11 @@ A and B rows, and a complete accepted 32-replicate prefix surface. It records
 intended and analyzed leaf IDs separately and aborts before writing analysis
 if any artifact silently drops a leaf.
 
+The final role selections requested 64 balanced groups plus deterministic
+complete-group additions for any missing preregistered source seed. This
+produced 81 groups in each new role, with 702 expansion leaves and 525 locked
+leaves, and all exact 40 expansion/40 locked source seeds represented.
+
 The large raw JSONL streams stay outside the Git review commit unless they are
 small enough to audit comfortably. The committed packet contains manifests,
 hashes, summaries, and the final analysis output.
@@ -91,6 +96,23 @@ final classification is one of `FLAT_MLP_SCALE_VALIDATED`,
 `FLAT_MLP_SCALE_PARTIAL`, or `FLAT_MLP_GENERALIZATION_FAILED` only after the
 required 40-source packet exists.
 
+## Final result
+
+The final local analysis classified the frozen scorer as
+`FLAT_MLP_GENERALIZATION_FAILED`. On the locked set, TRAIN60 recovered
+`-1.0821` of the oracle fraction, changed Teacher-A regret by `-42.13%`, and
+had a source-clustered Teacher-A improvement interval of
+`[-1.6353, 0.1703]` at 5,000 bootstrap iterations. Teacher-B regret change
+was `-39.46%`. Full locked-leaf coverage and the exact 40-source contract
+passed; recovered-oracle, Teacher-A support, Teacher-B, and concentration
+gates failed. The two largest positive global leave-one-source-out influences
+were locked sources `12100201` and `12100194`; removing both left absolute
+Teacher-A improvement `-0.6854` with clustered `p025 = -2.1362`.
+
+This is bounded external evidence against scale validation for the frozen
+MLP, not a production behavior change and not evidence that the native
+`target=-1` lowering fix is incorrect.
+
 ## Implementation and parity
 
 `tools/train_silver_prefix_learning_curve.py` imports the feature extraction,
@@ -103,5 +125,5 @@ until after prediction-only selection. The existing
 `tools/learn_silver_prefix_scorer.py` remains the PR #258 parity oracle.
 
 Knowledge impact: durable Silver scale-validation procedure and evidence
-boundary only; no Silver behavior, model, RNG, schema, budget, or gameplay
-default changed.
+boundary plus a completed negative external-validation result; no Silver
+behavior, model, RNG, schema, budget, or gameplay default changed.

@@ -128,6 +128,13 @@ class ScaleValidationContracts(unittest.TestCase):
     def test_concentration_gate_is_not_a_source_count_proxy(self):
         self.assertTrue(MODULE.concentration_passes(38, 0.10, 0.01))
         self.assertFalse(MODULE.concentration_passes(38, 0.10, 0.0))
+
+    def test_source_contributions_report_singleton_sources_without_crashing(self):
+        rows = [{"source_seed": "1", "group_id": "g", "baseline_value": 1.0,
+                 "value": 2.0, "teacher_a": 3.0}]
+        report = MODULE.source_contributions(rows)
+        self.assertEqual(report[0]["comparable_sibling_group_count"], 0)
+        self.assertIsNone(report[0]["difference"])
         self.assertFalse(MODULE.concentration_passes(2, 0.10, 0.01))
 
     def test_concentration_ranks_global_influence_not_per_source_mean(self):

@@ -414,6 +414,23 @@ def bootstrap(selected: list[dict], iterations: int) -> dict:
             "cluster_key": "source_seed", "cluster_count": len(sources)}
 
 
+def teacher_a_point_metrics(selected: list[dict]) -> dict:
+    baseline = [{**row, "value": row["baseline_value"]} for row in selected]
+    oracle = [{**row, "value": row["oracle_q32"]} for row in selected]
+    base_regret = FROZEN.sibling_metrics(baseline, "value", "teacher_a")["mean_teacher_regret"]
+    model_regret = FROZEN.sibling_metrics(selected, "value", "teacher_a")["mean_teacher_regret"]
+    oracle_regret = FROZEN.sibling_metrics(oracle, "value", "teacher_a")["mean_teacher_regret"]
+    improvement = base_regret - model_regret
+    return {"absolute_improvement": improvement,
+            "regret_reduction": improvement / base_regret,
+            "recovered_oracle_fraction": improvement / (base_regret - oracle_regret)
+            if base_regret != oracle_regret else None}
+
+
+def teacher_a_absolute_improvement(selected: list[dict]) -> float:
+    return teacher_a_point_metrics(selected)["absolute_improvement"]
+
+
 def selected_metrics(selected: list[dict], bootstrap_iterations: int) -> dict:
     baseline = [{**row, "value": row["baseline_value"]} for row in selected]
     oracle = [{**row, "value": row["oracle_q32"]} for row in selected]
@@ -496,13 +513,21 @@ def source_contributions(selected: list[dict]) -> list[dict]:
         grouped[row["source_seed"]].append(row)
     report = []
     for source, rows in sorted(grouped.items()):
-        baseline = [{**row, "value": row["baseline_value"]} for row in rows]
-        model = [{**row, "value": row["value"]} for row in rows]
-        base = FROZEN.sibling_metrics(baseline, "value", "teacher_a")["mean_teacher_regret"]
-        value = FROZEN.sibling_metrics(model, "value", "teacher_a")["mean_teacher_regret"]
+        by_group = defaultdict(list)
+        for row in rows:
+            by_group[row["group_id"]].append(row)
+        usable = [row for members in by_group.values() if len(members) >= 2 for row in members]
+        if usable:
+            baseline = [{**row, "value": row["baseline_value"]} for row in usable]
+            model = [{**row, "value": row["value"]} for row in usable]
+            base = FROZEN.sibling_metrics(baseline, "value", "teacher_a")["mean_teacher_regret"]
+            value = FROZEN.sibling_metrics(model, "value", "teacher_a")["mean_teacher_regret"]
+        else:
+            base = value = None
         report.append({"source_seed": source, "leaf_count": len(rows),
+                       "comparable_sibling_group_count": sum(len(members) >= 2 for members in by_group.values()),
                        "baseline_regret": base, "model_regret": value,
-                       "difference": base - value})
+                       "difference": base - value if base is not None and value is not None else None})
     return report
 
 
@@ -555,15 +580,17 @@ def leave_one_source_out(selected: list[dict], bootstrap_iterations: int,
     report = []
     for source in sources:
         remaining = [row for row in selected if row["source_seed"] != source]
-        metrics = selected_metrics(remaining, bootstrap_iterations)
+        point = teacher_a_point_metrics(remaining)
+        remaining_improvement = point["absolute_improvement"]
         report.append({"omitted_source_seed": source,
                        "leaf_count": len({row["leaf_snapshot_id"] for row in by_source[source]}),
                        "remaining_source_count": len(sources) - 1,
-                       "remaining_teacher_a_absolute_improvement": metrics["teacher_a_absolute_improvement"],
-                       "absolute_improvement_influence": full_absolute_improvement - metrics["teacher_a_absolute_improvement"],
-                       "recovered_oracle_fraction": metrics["recovered_oracle_fraction"],
-                       "teacher_a_regret_reduction": metrics["teacher_a_regret_reduction"],
-                       "clustered_p025": metrics["clustered_bootstrap"]["p025"]})
+                       "remaining_teacher_a_absolute_improvement": remaining_improvement,
+                       "absolute_improvement_influence": full_absolute_improvement - remaining_improvement,
+                       "recovered_oracle_fraction": point["recovered_oracle_fraction"],
+                       "teacher_a_regret_reduction": point["regret_reduction"],
+                       "clustered_p025": None,
+                       "clustered_p025_note": "not recomputed for source ranking; only the joint two-source stress test is bootstrapped"})
     return report
 
 
@@ -601,7 +628,9 @@ def run(args: argparse.Namespace) -> int:
     base_sources = set(partition["base_training_pool"])
     expansion_sources = set(partition["expansion_training_pool"])
     locked_sources = set(partition["locked_validation"])
-    expansion_first = set(config["roles"]["expansion_training_pool"]["primary_first_20"])
+    expansion_first = {
+        str(value) for value in config["roles"]["expansion_training_pool"]["primary_first_20"]
+    }
     if not expansion_first <= expansion_sources or len(expansion_first) != 20:
         raise SystemExit("primary_first_20 must contain exactly 20 expansion source seeds")
 
@@ -683,8 +712,9 @@ def run(args: argparse.Namespace) -> int:
             "performance_not_obviously_driven_by_one_or_two_sources": concentration["passes"],
             "locked_source_count_exactly_40": len(locked_sources) == 40}
     source_rows = primary["source_contributions"]
-    improved = sum(row["difference"] > 0 for row in source_rows)
-    worsened = sum(row["difference"] < 0 for row in source_rows)
+    comparable_source_rows = [row for row in source_rows if row["difference"] is not None]
+    improved = sum(row["difference"] > 0 for row in comparable_source_rows)
+    worsened = sum(row["difference"] < 0 for row in comparable_source_rows)
     influence_by_change = sorted(
         influence,
         key=lambda row: row["absolute_improvement_influence"])
@@ -722,7 +752,7 @@ def run(args: argparse.Namespace) -> int:
                                        "std_recovered": statistics.pstdev(r["recovered_oracle_fraction"] for r in robustness),
                                        "min_recovered": min(r["recovered_oracle_fraction"] for r in robustness),
                                        "max_recovered": max(r["recovered_oracle_fraction"] for r in robustness)},
-                "source_seed_robustness": {"improved": improved, "unchanged": len(source_rows) - improved - worsened,
+                "source_seed_robustness": {"improved": improved, "unchanged": len(comparable_source_rows) - improved - worsened,
                                            "worsened": worsened, "rows": source_rows,
                                            "concentration_stress_test": concentration,
                                            "leave_one_source_out": influence,
