@@ -154,12 +154,14 @@ class RenderCombatDecisionTest(unittest.TestCase):
             rendered = render_html(source)
             self.assertIn("MCTS tree", rendered)
             self.assertIn("native Silver graph retained", rendered)
+            self.assertIn("expanded along each path", rendered)
             self.assertIn("show Silver node states", rendered)
             self.assertIn("BattleStateWire state", rendered)
+            self.assertIn("leaf Q", rendered)
             self.assertIn("chance outcome 2", rendered)
             self.assertIn("shared/cyclic reference", rendered)
             self.assertIn("window.__SILVER_TREE__", rendered)
-            self.assertIn('wrap.open=Number(n.depth)<2', rendered)
+            self.assertIn('wrap.open=!isLeaf(n)', rendered)
 
     def test_normal_snapshot_has_no_debug_tree_section(self):
         with tempfile.TemporaryDirectory() as directory:
