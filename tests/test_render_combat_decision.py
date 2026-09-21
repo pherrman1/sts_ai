@@ -158,6 +158,7 @@ class RenderCombatDecisionTest(unittest.TestCase):
             self.assertIn("chance outcome 2", rendered)
             self.assertIn("shared/cyclic reference", rendered)
             self.assertIn("window.__SILVER_TREE__", rendered)
+            self.assertIn('wrap.open=Number(n.depth)<2', rendered)
 
     def test_normal_snapshot_has_no_debug_tree_section(self):
         with tempfile.TemporaryDirectory() as directory:
