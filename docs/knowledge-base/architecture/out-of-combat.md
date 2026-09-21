@@ -531,6 +531,16 @@ first an event choice without generated IDs, then TAKE_CARD actions for the
 revealed OBTAIN candidates. Wheel and other random event choices likewise
 contain no predicted outcome.
 
+For remove, upgrade, transform and transform-upgrade choices, the OOC MCTS
+adapter searches one representative of each equivalent deck card. It retains
+the first available physical occurrence and its full semantic key for live
+execution. The shared semantic enumerator still exposes every occurrence.
+Multi-card selectors re-enumerate after each pick, so a second copy remains
+available on the next decision without searching equivalent branches now.
+The live advisor checks that every omitted selector position matches the
+retained choice's search equivalence key while preserving the full physical
+action-set check before scoring.
+
 Rewards enumerate all available card, relic, gold, potion and key actions
 together, plus their distinct skip/leave choices. `CARD(group,5)` skips one
 card group; with Singing Bowl it is represented as `SINGING_BOWL` because the

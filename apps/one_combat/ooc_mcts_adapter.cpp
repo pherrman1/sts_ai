@@ -272,11 +272,13 @@ OocGameContextModel::Metadata &OocGameContextModel::mutableMetadata(sts::search:
             const auto enumeration = sts::search::enumerateOocSemanticPrimitiveBindings(gc);
             if (enumeration.supported && enumeration.complete) {
                 std::set<std::string> keys;
+                std::set<std::string> cardChoices;
                 std::set<std::uint32_t> sources;
                 for (const auto &binding : enumeration.bindings) {
                     if (!GameAction(binding.primitiveBits).isValidAction(gc)) continue;
                     const auto key = sts::search::canonicalOocSemanticActionKey(binding.semantic);
                     if (!keys.insert(key).second) { value.candidates.clear(); break; }
+                    if (!cardChoices.insert(sts::search::canonicalOocMctsChoiceKey(binding.semantic)).second) continue;
                     value.candidates.push_back({static_cast<sts::search::OocActionId>(value.candidates.size()),
                         key, binding.semantic, GameAction(binding.primitiveBits), binding.compoundSelector});
                     sources.insert(binding.primitiveBits);
@@ -1374,14 +1376,19 @@ void oocMctsAdapterSelfTest() {
     auto checkCandidates = [&](GameContext fixture, bool execute=true) {
         const auto before=test::oocStateFingerprint(fixture);
         const auto bindings=enumerateOocSemanticPrimitiveBindings(fixture);
+        std::vector<sts::search::OocSemanticPrimitiveBinding> representatives;
+        std::set<std::string> choiceKeys;
+        for (const auto &binding : bindings.bindings)
+            if (choiceKeys.insert(canonicalOocMctsChoiceKey(binding.semantic)).second)
+                representatives.push_back(binding);
         const bool map=fixture.screenState==ScreenState::MAP_SCREEN;
         const auto primitive=v4CandidateActions(fixture);
         require(map || (bindings.supported && bindings.complete && !bindings.bindings.empty()),
             "semantic coverage fixture must be complete");
         OocGameContextModel provider(fixture,path);
         const auto actual=provider.legalActions(0);
-        require(actual.size()==(map?primitive.size():bindings.bindings.size()),
-            "adapter exposes complete semantic sibling set");
+        require(actual.size()==(map?primitive.size():representatives.size()),
+            "adapter exposes one representative per equivalent card choice");
         std::set<std::string> keys;
         std::map<std::uint32_t,double> mass;
         std::map<std::uint32_t,unsigned> counts;
@@ -1391,8 +1398,8 @@ void oocMctsAdapterSelfTest() {
             require(map ? actual[i].id==primitive[i].bits : actual[i].id==i,
                 "MAP preserves primitive IDs; semantic IDs are local ordinals");
             if (!map) require(candidate.semantic
-                && candidate.key==canonicalOocSemanticActionKey(bindings.bindings[i].semantic)
-                && candidate.primitive.bits==bindings.bindings[i].primitiveBits,
+                && candidate.key==canonicalOocSemanticActionKey(representatives[i].semantic)
+                && candidate.primitive.bits==representatives[i].primitiveBits,
                 "semantic keys and source projection match complete enumeration");
             mass[candidate.primitive.bits]+=actual[i].prior;
             ++counts[candidate.primitive.bits];
@@ -1459,6 +1466,22 @@ void oocMctsAdapterSelfTest() {
         CardSelectScreenType::TRANSFORM,CardSelectScreenType::TRANSFORM_UPGRADE,
         CardSelectScreenType::DUPLICATE,CardSelectScreenType::BONFIRE_SPIRITS}) {
         fixture=detachedCopy(gc); fixture.openCardSelectScreen(selector,1); checkCandidates(fixture);
+        if (selector==CardSelectScreenType::UPGRADE || selector==CardSelectScreenType::REMOVE
+                || selector==CardSelectScreenType::TRANSFORM
+                || selector==CardSelectScreenType::TRANSFORM_UPGRADE) {
+            OocGameContextModel provider(fixture,path);
+            unsigned strikes=0;
+            for(auto action:provider.legalActions(0)) {
+                const auto &target=std::get<OocSelectorTarget>(provider.candidate(0,action.id).semantic->target);
+                const auto *card=std::get_if<OocCardTarget>(&target.card);
+                if(card && card->id==CardId::STRIKE_RED && !card->upgraded) {
+                    ++strikes;
+                    require(card->occurrence==0,"single-pick chooses first Strike occurrence");
+                }
+            }
+            require(strikes==1 && provider.legalActions(0).size()<fixture.info.toSelectCards.size(),
+                "single-pick remove/upgrade/transform collapses equivalent Strikes");
+        }
     }
     fixture=detachedCopy(gc); fixture.screenState=ScreenState::SHOP_ROOM;
     fixture.gold=500; fixture.info.shop.setup(fixture);
@@ -1533,8 +1556,8 @@ void oocMctsAdapterSelfTest() {
             if(target.id==CardId::STRIKE_RED) strikeOccurrences.insert(target.occurrence);
         }
         auto selector=detachedCopy(fixture); GameAction(GameAction::RewardsActionType::CARD_REMOVE).execute(selector);
-        require(removals==selector.info.toSelectCards.size() && strikeOccurrences.size()>1,
-            "shop removal covers every physical card including distinct equivalent-card occurrences");
+        require(removals<selector.info.toSelectCards.size() && strikeOccurrences==std::set<unsigned>{0},
+            "shop removal searches one first Strike occurrence");
     }
     for(auto event : {Event::BIG_FISH,Event::THE_CLERIC,Event::LIVING_WALL,
         Event::TRANSMORGRIFIER,Event::UPGRADE_SHRINE,Event::DUPLICATOR,
@@ -1603,7 +1626,8 @@ void oocMctsAdapterSelfTest() {
             const auto &state=provider.state(child);
             require(state.screenState==ScreenState::CARD_SELECT,"source/pick retains selector boundary");
             const auto actions=provider.legalActions(child);
-            require(actions.size()==state.info.toSelectCards.size(),"one current pick without subset cross-product");
+            require(!actions.empty() && actions.size()<=state.info.toSelectCards.size(),
+                "one current pick per equivalent card without subset cross-product");
             for(auto a:actions) {
                 const auto &target=std::get<OocSelectorTarget>(provider.candidate(child,a.id).semantic->target);
                 require(target.completedPicks==pick && target.requiredPicks==picks,"selector progress re-enumerated");
@@ -1614,6 +1638,29 @@ void oocMctsAdapterSelfTest() {
         require(provider.state(child).screenState!=ScreenState::CARD_SELECT,"last sequential pick completes");
     };
     checkSequential(fixture,0,3);
+    {
+        auto repeated=detachedCopy(gc);
+        repeated.openCardSelectScreen(CardSelectScreenType::TRANSFORM_UPGRADE,3);
+        OocGameContextModel provider(repeated,path);
+        OocStateId current=0;
+        for(unsigned pick=0;pick<3;++pick) {
+            unsigned strikes=0;
+            std::optional<OocActionId> selected;
+            for(auto action:provider.legalActions(current)) {
+                const auto &target=std::get<OocSelectorTarget>(provider.candidate(current,action.id).semantic->target);
+                const auto *card=std::get_if<OocCardTarget>(&target.card);
+                if(card && card->id==CardId::STRIKE_RED && !card->upgraded) {
+                    ++strikes;
+                    require(card->occurrence==pick,"multi-pick resolves first remaining Strike");
+                    selected=action.id;
+                }
+            }
+            require(strikes==1 && selected,"multi-pick searches one equivalent Strike");
+            current=provider.sampleSuccessor(current,*selected,rng);
+        }
+        require(provider.state(current).screenState!=ScreenState::CARD_SELECT,
+            "three equivalent picks complete the selector");
+    }
     fixture=detachedCopy(gc); fixture.screenState=ScreenState::EVENT_SCREEN; fixture.curEvent=Event::AUGMENTER;
     checkSequential(fixture,1,2);
     fixture.curEvent=Event::THE_LIBRARY; checkSequential(fixture,0,1);
