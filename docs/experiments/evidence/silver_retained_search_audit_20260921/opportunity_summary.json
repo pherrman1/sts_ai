@@ -21,6 +21,8 @@
     },
     "candidate_edges": 124,
     "candidate_groups": 49,
+    "candidate_groups_with_distinct_queue_items": 49,
+    "candidate_groups_with_matching_state_hash": 49,
     "candidate_nodes": 104,
     "candidate_pairs": 43,
     "candidate_triples": 6,
@@ -28,6 +30,10 @@
     "distinct_non_queue_keys": 942,
     "excess_nodes": 55,
     "player_normal_unresolved": 974,
+    "queue_variant_group_sizes": {
+      "2": 43,
+      "3": 6
+    },
     "state_fraction": 0.055165496489468405,
     "state_nodes": 997,
     "total_edges": 2131,

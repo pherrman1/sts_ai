@@ -30,7 +30,14 @@ EXPECTED = {
     "candidate_pairs": 43,
     "candidate_triples": 6,
     "candidate_edges": 124,
+    "candidate_groups_with_distinct_queue_items": 49,
+    "candidate_groups_with_matching_state_hash": 49,
 }
+
+EXPECTED_PAYLOAD_SHA256 = "e20001e051e65e723c8cdf51e73890bc3df971454aa3713854acb2d9980ad22d"
+EXPECTED_SESSION = "78c0ee4f9f67"
+EXPECTED_SEQUENCE = 9
+EXPECTED_OBSERVATION_HASH = "efb8bcf0367f908221521ab79f09c5f666ee5a6cf3d6e0b047b41f95558c84d8"
 
 
 def load(path: Path):
@@ -62,6 +69,19 @@ def main() -> int:
     args = parser.parse_args()
 
     document, tree, payload_sha, file_sha = load(args.capture)
+    if payload_sha != EXPECTED_PAYLOAD_SHA256:
+        raise SystemExit(f"unexpected capture payload SHA-256: {payload_sha}")
+    if document["session"] != EXPECTED_SESSION or document["sequence"] != EXPECTED_SEQUENCE:
+        raise SystemExit("capture session/sequence does not match the frozen provenance")
+    if document["observationHash"] != EXPECTED_OBSERVATION_HASH:
+        raise SystemExit("capture observation hash does not match the frozen provenance")
+    provenance = document.get("captureProvenance", {})
+    if (
+        provenance.get("liveSession") != EXPECTED_SESSION
+        or provenance.get("liveSequence") != EXPECTED_SEQUENCE
+        or provenance.get("liveObservationHash") != EXPECTED_OBSERVATION_HASH
+    ):
+        raise SystemExit("captureProvenance does not match the frozen live provenance")
     nodes = tree["nodes"]
     state_nodes = [node for node in nodes if node.get("hasState")]
     chance_nodes = [node for node in nodes if node.get("isChanceNode")]
@@ -69,6 +89,15 @@ def main() -> int:
     for node in state_nodes:
         groups[key(non_queue_state(node["state"]))].append(node)
     candidate_groups = [group for group in groups.values() if len(group) > 1]
+    queue_variant_counts = Counter()
+    matching_hash_groups = 0
+    for group in candidate_groups:
+        queue_variants = {key(node["state"].get("curCardQueueItem")) for node in group}
+        if len(queue_variants) < 2:
+            raise SystemExit("candidate group does not contain distinct queue items")
+        queue_variant_counts[len(queue_variants)] += 1
+        if len({node.get("stateHash") for node in group}) == 1:
+            matching_hash_groups += 1
     candidate_nodes = sum(len(group) for group in candidate_groups)
     excess_nodes = sum(len(group) - 1 for group in candidate_groups)
     unordered_pairs = sum(len(group) * (len(group) - 1) // 2 for group in candidate_groups)
@@ -106,6 +135,8 @@ def main() -> int:
             "candidate_pairs": group_size_counts[2],
             "candidate_triples": group_size_counts[3],
             "candidate_edges": candidate_edges,
+            "candidate_groups_with_distinct_queue_items": sum(queue_variant_counts.values()),
+            "candidate_groups_with_matching_state_hash": matching_hash_groups,
             "total_edges": len(tree["edges"]),
             "candidate_boundary_counts": {
                 f"inputState={input_state},outcome={outcome}": count
@@ -113,6 +144,7 @@ def main() -> int:
             },
             "state_fraction": excess_nodes / len(state_nodes),
             "total_fraction": excess_nodes / len(nodes),
+            "queue_variant_group_sizes": dict(sorted(queue_variant_counts.items())),
         },
     }
     observed = {name: result["tree"][name] for name in EXPECTED}

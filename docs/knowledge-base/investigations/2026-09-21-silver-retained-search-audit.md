@@ -176,11 +176,9 @@ selection; Gamble, Liquid Memories, and Stance Potion also create selection
 boundaries. Entropic Brew and Distilled Chaos introduce stochastic or queued-card
 behavior.
 
-The saved graph supplied a limited stochastic screen: 22 candidate groups had
-both END_TURN chance parents expanded, and 310 common sampled outcome indices
-had identical child projections after omitting the queue item. Unequal sample
-coverage and chance-parent statistics mean this is not a proof of equal full
-distributions.
+The packet does not claim a reproduced stochastic-distribution result. Full
+END_TURN outcome coverage and chance-parent statistics remain an explicit proof
+obligation for any future implementation.
 
 ## Unsafe boundaries and proof obligations
 

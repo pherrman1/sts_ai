@@ -10702,7 +10702,7 @@ default or generalization claim is authorized. Evidence:
   research evidence only; no production Silver behavior, model, RNG, schema,
   budget, gameplay result, holdout, or default changed.
 
-## §330 — Silver retained-search queue-item audit (2026-09-21)
+## §331 — Silver retained-search queue-item audit (2026-09-21)
 
 - **Question and provenance:** Can Silver merge more retained states by ignoring
   only `curCardQueueItem` at settled player decisions? The audit baseline was
@@ -10729,15 +10729,59 @@ default or generalization claim is authorized. Evidence:
   reached `CARD_SELECT` while retaining different queue items; this leaves
   global canonicalization unqualified because the stale value survives outside
   the tested equivalence boundary, without demonstrating a downstream semantic
-  divergence. The partial END_TURN screen matched 310 common sampled outcomes
-  but did not establish equal full distributions.
+  divergence. Full END_TURN outcome coverage and chance-parent statistics remain
+  an explicit proof obligation for any future implementation.
 - **Decision:** **`NARROW_QUEUE_CANONICALIZATION_PLAUSIBLE_BUT_UNQUALIFIED`**.
   Do not relax `equalForSearch`, change Silver search behavior, alter the reuse
   cap, or update PR #272. A future implementation, if separately authorized,
   must be boundary-local to settled `PLAYER_NORMAL` with empty queues and must
   separately qualify evaluation inputs, chance behavior, reroot identity,
   retained statistics, and decision quality.
-- **Evidence:** [retained-search queue-item investigation](../knowledge-base/investigations/2026-09-21-silver-retained-search-audit.md).
+- **Evidence:** [retained-search queue-item evidence packet](evidence/silver_retained_search_audit_20260921/README.md) and [investigation record](../knowledge-base/investigations/2026-09-21-silver-retained-search-audit.md).
   **Knowledge impact:** durable unresolved Silver search investigation and
   experiment evidence only; no production Silver behavior, model, RNG, schema,
   budget, gameplay result, or default changed.
+
+## §330 — Silver terminal/value audit: compatible reweight has insufficient development headroom (2026-09-21)
+
+- **Question and protocol:** Can a constrained, regularized reweight of the
+  current `BattleSearcher::evaluateEndState()` components improve sibling
+  ranking against the existing Silver Teacher A/B labels while every
+  SimpleAgent continuation trajectory remains fixed? The implementation base
+  was current `main` after PR #260 (`43ef6a6d`). The native diagnostic seam now
+  exposes raw terminal features and reconstructs the leaf-root production
+  value without changing the production evaluator. The preserved 20-source,
+  247-leaf corpus was replayed with 32 paired continuations per leaf (7,904 /
+  7,904 accepted rows). Teacher B was evaluation-only.
+- **Exact contract:** `SilverTerminalValueFeatures` records branch-specific
+  raw terms, including death-save value, root-relative gold/max-HP deltas,
+  the Spiker energy exception, and turn>100 survival handling. The existing
+  teacher-comparison value remains leaf-root evaluation plus the separate
+  victory baseline correction; the analyzer keeps that correction basis
+  explicit. Native raw reconstruction matched `evaluateEndState()` within
+  `1e-8` for every accepted rollout.
+- **Result:** DEFAULT Teacher-A sibling regret was `1.51332` with pairwise
+  concordance `0.74241` and top-leaf agreement `0.56250`. Cross-fitted
+  `REWEIGHT_COMPAT_V1` was worse at regret `1.71113`, concordance `0.74292`,
+  and top agreement `0.53125`; Teacher-B regret also worsened from `1.47290`
+  to `1.82242`. The source-clustered baseline-minus-candidate bootstrap was
+  `[-0.46891, 0.00000]`. The untied diagnostic also failed to improve
+  cross-fitted regret (`1.61666`) after its corrected nested source-grouped
+  lambda selection; its fold lambdas were `[1.0, 0.1, 0.01, 0.01, 0.01]`.
+- **Additional diagnostics:** Against an optimistic zero-regret ceiling, the
+  compatible arm recovered `-13.07%` of the baseline gap. The fitted
+  development-only objective left 48/75 ordinary-loss leaves at or above the
+  minimum victory value; this is a sanity warning, not a production candidate.
+  The preserved corpus omitted act, HP-band, and source-rollout-length
+  metadata, so those subgroup results remain explicitly unavailable.
+- **Decision and boundary:** `TERMINAL_REWEIGHT_HEADROOM_INSUFFICIENT` on
+  this bounded development corpus. The old #260 40-source expansion and
+  40-source locked artifacts contain prefix rows but no replayable leaf wires,
+  so they are not silently treated as a 100-source corpus. No fresh holdout,
+  hard64 replay, live gameplay, production weight override, or default
+  promotion was run. The next likely target is continuation trajectory/policy
+  quality, subject to a fresh corpus if the line is reopened.
+- **Evidence:** [terminal/value audit packet](evidence/silver_terminal_value_audit_20260921/README.md).
+  **Knowledge impact:** durable bounded negative terminal-scoring result and
+  raw-feature diagnostic contract; no production behavior, default, RNG,
+  model, live gameplay, or holdout qualification changed.

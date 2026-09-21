@@ -39,19 +39,26 @@ chance_nodes=136
 player_normal_unresolved=974
 distinct_non_queue_keys=942
 candidate_groups=49
+candidate_groups_with_distinct_queue_items=49
+candidate_groups_with_matching_state_hash=49
 candidate_nodes=104
 excess_nodes=55
 unordered_pairs=61
 candidate_pairs=43
 candidate_triples=6
 candidate_edges=124
+queue_variant_group_sizes={2:43,3:6}
 state_fraction=0.055165496489468405
 total_fraction=0.04854368932038835
 ```
 
 The committed `opportunity_summary.json` is the same output in structured form.
 The screen intentionally remains Wire-level: fields absent from the capture are
-not inferred as native equality.
+not inferred as native equality. Every candidate group is additionally checked
+to contain at least two distinct serialized queue items, and all 49 candidate
+groups report matching retained node hashes. The packet intentionally does not
+claim the earlier partial END_TURN count; full stochastic distribution identity
+remains a future proof obligation.
 
 `MANIFEST.sha256` hashes the script, compressed capture, derived summary, probe
 patches, captured outputs, and this README.
