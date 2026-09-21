@@ -144,6 +144,9 @@ V4 remains a primitive-trained source-level prior. When the state's unique
 semantic source primitives exactly match the complete, duplicate-free V4
 candidate set, each source is scored once with the existing policy head and
 temperature. Its raw prior weight is divided equally among its semantic children.
+For duplicate physical UPGRADE positions, coverage still checks the full
+physical set; their logits are averaged within each retained semantic card
+class before applying temperature, so extra copies do not increase its prior.
 One-to-one actions retain the original prior. Unqualified source coverage,
 including REMOVE/TRANSFORM selector roots, yields uniform priors across the
 entire sibling set; explicit `STS_OOC_MCTS_PRIOR=uniform` does the same.
@@ -535,6 +538,10 @@ For remove, upgrade, transform and transform-upgrade choices, the OOC MCTS
 adapter searches one representative of each equivalent deck card. It retains
 the first available physical occurrence and its full semantic key for live
 execution. The shared semantic enumerator still exposes every occurrence.
+This is search-level semantic/stochastic equivalence, not byte-for-byte
+`GameContext` identity: removing different identical occurrences may leave a
+different master-deck order. OOC futures are re-determinized and treat these
+copies as effectively permutation-invariant.
 Multi-card selectors re-enumerate after each pick, so a second copy remains
 available on the next decision without searching equivalent branches now.
 The live advisor checks that every omitted selector position matches the
