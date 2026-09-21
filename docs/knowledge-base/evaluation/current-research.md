@@ -1,6 +1,7 @@
 # Current research status
 
-Last verified: 2026-09-20 for the tactical-prefix Silver oracle headroom screen
+Last verified: 2026-09-21 for the local 80-source learned-prefix scale validation;
+2026-09-20 for the tactical-prefix Silver oracle headroom screen
 and contextual first-action Silver selector headroom/policy screen; 2026-09-19 for forced-action historical artifact recovery and
 the PR #247 evaluator preflight; 2026-09-18 for the OOC 20% gap-stop quality
 gate and frozen
@@ -252,6 +253,20 @@ research step, if pursued, is a richer causal state encoding with the same
 held-out contract. See [ledger §327](../../experiments/ledger-06.md), the
 [original experiment §326](../../experiments/ledger-06.md), and the
 [corrected learned-scorer evidence packet](../../experiments/evidence/silver_learned_prefix_scorer_20260920/README.md).
+
+## Silver learned-prefix scale validation (#260)
+
+The local 80-source external validation is **`FLAT_MLP_GENERALIZATION_FAILED`**.
+On the preregistered locked 40-source cohort, recovered-oracle fractions were
+negative for all three fits: TRAIN20 `-98.76%`, TRAIN40 `-106.19%`, and TRAIN60
+`-108.21%`. This is not a case where adding more training seeds repaired the
+frozen MLP: all five TRAIN60 initialization diagnostics were negative. The
+selected locked corpus had complete baseline32, Teacher-A/B, and prefix
+coverage for **525/525 leaves**, with exact 40 locked source seeds represented.
+This is bounded offline evidence only; it authorizes no native integration,
+gameplay qualification, model retraining, search change, or default promotion.
+See [ledger §329](../../experiments/ledger-06.md) and the
+[scale-validation evidence packet](../../experiments/evidence/silver_prefix_scorer_scale_20260920/README.md).
 
 ## Silver policy/value Phase-A cost diagnostic
 

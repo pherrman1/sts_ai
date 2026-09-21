@@ -10584,7 +10584,7 @@ default or generalization claim is authorized. Evidence:
   RNG, schema, budget, gameplay, MCTS, holdout, or default. **Knowledge
   impact:** durable current research and corrected offline evidence only.
 
-## §328 — Local 80-source learned Silver-prefix scale validation (2026-09-21)
+## §329 — Local 80-source learned Silver-prefix scale validation (2026-09-21)
 
 - **Question and protocol:** Does the frozen PR #258 `MLP_FLAT_V1` scorer
   generalize from the existing 20 source seeds to the preregistered 40-source
