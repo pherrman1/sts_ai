@@ -77,6 +77,8 @@ private:
         bool boundary = true;
         std::vector<Candidate> candidates;
         bool sourcePriorCovered = false;
+        // Physical V4 sources for each retained semantic choice (same order as candidates).
+        std::vector<std::vector<GameAction>> priorSourceGroups;
         std::vector<Edge> edges;
         std::optional<std::vector<double>> logits;
         std::optional<std::vector<sts::search::OocPlannerAction>> priors;

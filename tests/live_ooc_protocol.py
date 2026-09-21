@@ -147,6 +147,13 @@ class LiveOocProtocol(unittest.TestCase):
             priors = [candidate["prior"] for candidate in evaluator["candidateSummaries"]]
             self.assertTrue(priors)
             self.assertTrue(all(abs(prior - priors[0]) < 1e-12 for prior in priors), response)
+            self.assertLess(len(evaluator["candidateSummaries"]),
+                            len(self.fixtures["remove_selector"]["ooc"]["liveChoices"]))
+            strike_keys = [candidate["semanticKey"] for candidate in evaluator["candidateSummaries"]
+                           if ":card=321:" in candidate["semanticKey"]
+                           and ":upgraded=0:" in candidate["semanticKey"]]
+            self.assertEqual(len(strike_keys), 1)
+            self.assertIn(":occurrence=0", strike_keys[0])
 
     def test_map_root_runs_mcts_and_stops_after_the_transition(self):
         response, = self.run_rows([self.fixtures["map_multiple_children"]])
