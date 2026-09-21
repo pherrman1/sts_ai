@@ -576,6 +576,9 @@ SilverSearchTelemetry telemetry(const sts::search::SearchStats &stats) {
     out.macroEdgesGenerated = stats.macroEdgesGenerated;
     out.macroOptionCountSum = stats.macroOptionCountSum;
     out.macroOptionCountByTask = stats.macroOptionCountByTask;
+    out.fpuSelectionOpportunities = stats.fpuSelectionOpportunities;
+    out.fpuVisitedSelectedWithUnvisitedRemaining = stats.fpuVisitedSelectedWithUnvisitedRemaining;
+    out.fpuUnvisitedSelected = stats.fpuUnvisitedSelected;
     return out;
 }
 
@@ -645,6 +648,9 @@ SilverSearchTelemetry telemetryDelta(const sts::search::SearchStats &after,
     result.macroOptionCountSum -= prior.macroOptionCountSum;
     for (std::size_t i = 0; i < result.macroOptionCountByTask.size(); ++i)
         result.macroOptionCountByTask[i] -= prior.macroOptionCountByTask[i];
+    result.fpuSelectionOpportunities -= prior.fpuSelectionOpportunities;
+    result.fpuVisitedSelectedWithUnvisitedRemaining -= prior.fpuVisitedSelectedWithUnvisitedRemaining;
+    result.fpuUnvisitedSelected -= prior.fpuUnvisitedSelected;
     return result;
 }
 
@@ -1006,6 +1012,7 @@ public:
     void configure(const SilverSearchConfig &config) {
         searcher->explorationParameter = config.explorationParameter;
         searcher->explorationParameterChance = config.explorationParameterChance;
+        searcher->internalFpuEnabled = config.internalFpuEnabled;
         searcher->chanceWideningC = config.chanceWideningC;
         searcher->chanceWideningAlpha = config.chanceWideningAlpha;
         searcher->endTurnWideningC = config.endTurnWideningC;
@@ -1219,10 +1226,10 @@ public:
         rootActionSummaries.clear();
         searchStatsBefore = searcher->stats;
         const auto before = searchStatsBefore.steps;
-        const auto searchStart = config.collectRolloutDiagnostics
+        const auto searchStart = (config.collectRolloutDiagnostics || config.collectSearchTiming)
             ? std::chrono::steady_clock::now() : std::chrono::steady_clock::time_point{};
         searcher->search(config.simulationsPerDecision);
-        lastSearchWallMicros = config.collectRolloutDiagnostics
+        lastSearchWallMicros = (config.collectRolloutDiagnostics || config.collectSearchTiming)
             ? std::chrono::duration<double, std::micro>(
                 std::chrono::steady_clock::now() - searchStart).count() : 0.0;
         simulations = searcher->stats.steps - before;
@@ -1836,6 +1843,9 @@ bool sameSilverSearchTelemetry(const SilverSearchTelemetry &lhs,
         && lhs.wideningSampled == rhs.wideningSampled
         && lhs.wideningSiblingReuse == rhs.wideningSiblingReuse
         && lhs.wideningCapped == rhs.wideningCapped
+        && lhs.fpuSelectionOpportunities == rhs.fpuSelectionOpportunities
+        && lhs.fpuVisitedSelectedWithUnvisitedRemaining == rhs.fpuVisitedSelectedWithUnvisitedRemaining
+        && lhs.fpuUnvisitedSelected == rhs.fpuUnvisitedSelected
         && lhs.rolloutCalls == rhs.rolloutCalls
         && lhs.rolloutTerminalWins == rhs.rolloutTerminalWins
         && lhs.rolloutTerminalLosses == rhs.rolloutTerminalLosses
@@ -2575,6 +2585,9 @@ SilverCombatReplayResult runSilverCombatReplay(
             if (!selected->action.isValidAction(state)) {
                 result.failureReason = "selected_action_invalid_in_private_state";
                 return result;
+            }
+            if (result.decisions == 1) {
+                result.firstActionFingerprint = silverActionFingerprint(state, selected->action);
             }
             std::vector<sts::search::Action> sequence {selected->action};
             if (selected->hasContinuation()) {
