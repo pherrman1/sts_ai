@@ -10,9 +10,11 @@
 #include "combat_transition_runtime.h"
 #include "live_silver_importer.h"
 #include "sim/search/SilverBridge.h"
+#include "sim/search/SilverWireJson.h"
 
 #include <iostream>
 #include <algorithm>
+#include <cerrno>
 #include <cstdlib>
 #include <string>
 #include <chrono>
@@ -312,6 +314,64 @@ json oocResponse(const one_combat::advisor::Request &request,
             {"observationHash", request.observationHash}, {"evaluators", json::array({evaluator})}};
 }
 
+bool truthyEnvironment(const char *name) {
+    const char *value = std::getenv(name);
+    if (value == nullptr) return false;
+    return std::string(value) == "1" || std::string(value) == "true"
+        || std::string(value) == "TRUE" || std::string(value) == "yes";
+}
+
+std::size_t silverTreeNodeCap() {
+    const char *value = std::getenv("STS_SILVER_DEBUG_TREE_NODE_CAP");
+    if (value == nullptr || *value == '\0') return 8192;
+    for (const char *cursor = value; *cursor != '\0'; ++cursor) {
+        if (*cursor < '0' || *cursor > '9') return 8192;
+    }
+    char *end = nullptr;
+    errno = 0;
+    const auto parsed = std::strtoull(value, &end, 10);
+    if (errno == ERANGE || end == value || *end != '\0' || parsed == 0) return 8192;
+    return static_cast<std::size_t>(std::min<unsigned long long>(parsed, 100000));
+}
+
+json silverTreeSnapshotJson(const silver_bridge::SilverTreeSnapshot &snapshot) {
+    json output = {
+        {"accepted", snapshot.accepted},
+        {"failureReason", snapshot.failureReason},
+        {"truncated", snapshot.truncated},
+        {"rootId", snapshot.rootId},
+        {"retainedNodeCount", snapshot.retainedNodeCount},
+        {"retainedEdgeCount", snapshot.retainedEdgeCount},
+        {"nodes", json::array()},
+        {"edges", json::array()},
+    };
+    for (const auto &node : snapshot.nodes) {
+        json item = {
+            {"id", node.id}, {"parentId", node.parentId}, {"depth", node.depth},
+            {"isChanceNode", node.isChanceNode}, {"hasState", node.hasState},
+            {"stateHash", node.stateHash}, {"simulationCount", node.simulationCount},
+            {"victoryCount", node.victoryCount}, {"evaluationSum", node.evaluationSum},
+        };
+        if (node.hasState) item["state"] = node.state;
+        output["nodes"].push_back(std::move(item));
+    }
+    for (const auto &edge : snapshot.edges) {
+        json item = {
+            {"parentId", edge.parentId}, {"childId", edge.childId},
+            {"childCaptured", edge.childCaptured}, {"chanceOutcome", edge.chanceOutcome},
+            {"rngAdvanceSteps", edge.rngAdvanceSteps}, {"visitCount", edge.visitCount},
+            {"hasAction", edge.hasAction}, {"actionFingerprint", edge.actionFingerprint},
+            {"actionLabel", edge.actionLabel}, {"hasContinuation", edge.hasContinuation},
+            {"continuationFingerprint", edge.continuationFingerprint},
+            {"continuationLabel", edge.continuationLabel},
+        };
+        if (edge.hasAction) item["action"] = edge.action;
+        if (edge.hasContinuation) item["continuation"] = edge.continuation;
+        output["edges"].push_back(std::move(item));
+    }
+    return output;
+}
+
 json silverEvaluator(const one_combat::advisor::Request &request,
                      std::shared_ptr<silver_bridge::SilverSearchSession> &session,
                      std::string &sessionIdentity, std::string &combatEntryIdentity,
@@ -514,6 +574,17 @@ json silverEvaluator(const one_combat::advisor::Request &request,
             decision.diagnostic.fallbackReason)},
         {"inheritedVisits", decision.diagnostic.inheritedVisits},
     };
+    const bool debugTree = request.observation.value("silverDebugTree", false)
+        || truthyEnvironment("STS_SILVER_DEBUG_TREE");
+    if (debugTree) {
+        silver_bridge::SilverTreeSnapshotConfig treeConfig;
+        treeConfig.enabled = true;
+        treeConfig.maxNodes = silverTreeNodeCap();
+        auto tree = silverTreeSnapshotJson(
+            silver_bridge::snapshotSilverSearchTree(*session, treeConfig));
+        tree["nodeCap"] = treeConfig.maxNodes;
+        evaluator["tree"] = std::move(tree);
+    }
     return evaluator;
 }
 }

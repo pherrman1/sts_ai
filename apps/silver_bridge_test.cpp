@@ -225,6 +225,38 @@ int main(int argc, char **argv) {
     permutedKnowledge.initializeFromLiveBattle(permuted);
     const auto firstWire = convert(first, gc, firstKnowledge);
 
+    // The debug tree is an explicit observation of the retained native graph,
+    // not a default part of the decision result. Verify both boundaries.
+    auto treeSession = silver_bridge::makeSilverSearchSession();
+    silver_bridge::SilverSearchConfig treeConfig;
+    treeConfig.simulationsPerDecision = 8;
+    treeConfig.collectRootActionSummaries = true;
+    const auto treeDecision = silver_bridge::runSilverDecision(
+        *treeSession, firstWire, treeConfig);
+    const auto disabledTree = silver_bridge::snapshotSilverSearchTree(
+        *treeSession, silver_bridge::SilverTreeSnapshotConfig{});
+    check(!disabledTree.accepted && disabledTree.failureReason == "tree_snapshot_disabled",
+          "Silver tree export must remain disabled by default");
+    silver_bridge::SilverTreeSnapshotConfig enabledTreeConfig;
+    enabledTreeConfig.enabled = true;
+    enabledTreeConfig.maxNodes = 128;
+    const auto enabledTree = silver_bridge::snapshotSilverSearchTree(
+        *treeSession, enabledTreeConfig);
+    check(treeDecision.accepted && enabledTree.accepted
+              && enabledTree.rootId != 0 && !enabledTree.nodes.empty()
+              && !enabledTree.edges.empty(),
+          "opt-in Silver tree export must retain the searched root graph");
+    check(enabledTree.nodes.front().hasState
+              && enabledTree.nodes.front().state.player.curHp == firstWire.player.curHp,
+          "exported Silver tree root must preserve its producer-shaped state");
+    check(std::all_of(enabledTree.nodes.begin() + 1, enabledTree.nodes.end(),
+                      [previousDepth = enabledTree.nodes.front().depth](const auto &node) mutable {
+                          const bool nondecreasing = node.depth >= previousDepth;
+                          previousDepth = node.depth;
+                          return nondecreasing;
+                      }),
+          "exported Silver tree must retain nodes in breadth-first discovery order");
+
     silver_bridge::SilverSearchConfig completeReplayConfig;
     completeReplayConfig.simulationsPerDecision = 8;
     completeReplayConfig.reuseCap = silver_bridge::kSilverProductionReuseCap;
@@ -728,7 +760,10 @@ int main(int argc, char **argv) {
               && directRolloutA.rolloutActionCount > 0
               && directRolloutA.rolloutActionCount == static_cast<std::int64_t>(
                   directRolloutA.rolloutActionFingerprints.size())
-              && directRolloutA.originalRootCorrectedUtility == directRolloutA.leafRootUtility,
+              && directRolloutA.originalRootCorrectedUtility == directRolloutA.leafRootUtility
+              && directRolloutA.terminalFeaturesValid
+              && std::abs(directRolloutA.reconstructedTerminalValue
+                          - directRolloutA.leafRootUtility) < 1e-9,
           "stored PLAYER_NORMAL leaf must replay through the canonical SimpleAgent rollout seam");
     check(directRolloutA.accepted == directRolloutB.accepted
               && directRolloutA.terminalOutcome == directRolloutB.terminalOutcome

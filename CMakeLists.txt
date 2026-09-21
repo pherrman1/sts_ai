@@ -111,6 +111,23 @@ target_include_directories(silver-native-test PRIVATE include)
 target_link_libraries(silver-native-test PRIVATE silver_combat_search_bridge)
 target_link_options(silver-native-test PRIVATE -Wl,--gc-sections)
 
+add_executable(silver-terminal-value-test apps/silver_terminal_value_test.cpp)
+set_target_properties(silver-terminal-value-test PROPERTIES
+    OUTPUT_NAME silver_terminal_value_test
+    CXX_STANDARD 20
+    CXX_STANDARD_REQUIRED ON)
+target_include_directories(silver-terminal-value-test PRIVATE third_party/silver_lightspeed/include include)
+target_compile_definitions(silver-terminal-value-test PRIVATE
+    sts=sts_silver
+    java=sts_silver_java
+    fixed_list=silver_fixed_list
+    rollWeightedIdx=silver_rollWeightedIdx
+    simulationIdx=silver_simulationIdx
+    initMaps=silver_initMaps
+    agentMtRunner=silver_agentMtRunner)
+target_link_libraries(silver-terminal-value-test PRIVATE silver_combat_model)
+target_link_options(silver-terminal-value-test PRIVATE -Wl,--gc-sections)
+
 add_executable(silver-leaf-relabel apps/silver_leaf_relabel.cpp)
 set_target_properties(silver-leaf-relabel PROPERTIES OUTPUT_NAME silver_leaf_relabel)
 target_include_directories(silver-leaf-relabel PRIVATE include json/include)
@@ -539,6 +556,7 @@ add_test(NAME combat_knowledge COMMAND $<TARGET_FILE:unit-test> combat_knowledge
 add_test(NAME silver_random_bridge COMMAND $<TARGET_FILE:unit-test> silver_random_bridge)
 add_test(NAME silver_semantic_action COMMAND $<TARGET_FILE:unit-test> silver_semantic_action)
 add_test(NAME silver_searcher_link_closure COMMAND $<TARGET_FILE:silver-native-test>)
+add_test(NAME silver_terminal_value COMMAND $<TARGET_FILE:silver-terminal-value-test>)
 add_test(NAME silver_player_status COMMAND $<TARGET_FILE:silver-player-status-test>)
 add_test(NAME silver_search_optimization COMMAND bash ${CMAKE_SOURCE_DIR}/tools/seed_guard.sh
     $<TARGET_FILE:silver-search-optimization-test>)

@@ -42,6 +42,8 @@ The production reuse cap defaults to `32 * 1024`. The explicit experimental
 | Variable | Effect | Default | Parse site |
 |----------|--------|---------|------------|
 | `STS_SILVER_SEARCH` | Enable isolated Silver combat search | unset/off | `main`; `SilverLiveBackend` |
+| `STS_SILVER_DEBUG_TREE` | Default-off debug capture: attach the reachable native Silver search graph (node states, visits/Qs, semantic edge labels, chance metadata) to each advisor combat response. Does not alter search or ordinary responses when unset. | unset/off | `apps/one_combat/advisor_stdio.cpp`; `SilverStateBridge` |
+| `STS_SILVER_DEBUG_TREE_NODE_CAP` | Maximum native graph nodes included by `STS_SILVER_DEBUG_TREE`; oversized captures are marked truncated. | `8192` (maximum `100000`) | `apps/one_combat/advisor_stdio.cpp` |
 | `STS_SILVER_REUSE_CAP` | Effective node cap: `32768` or experimental `131072`; other values fail before gameplay. Frozen 32k teacher producers and live OOC MCTS reject the experimental cap. Collection remains cap-triggered. | `32768` | `SilverLiveBackend::installSilverLiveBackend` |
 | `STS_SILVER_REUSE_CAP_MODE` | Exact-reroot mode: `allocated` (`allNodes.size()` cap), experimental `active` (`poolUsed` cap), or experimental `none` (fresh root every decision); any other value fails before gameplay | `allocated` | `SilverLiveBackend::installSilverLiveBackend` |
 | `STS_SILVER_SCALING_DIAG_FILE` | Default-off per-search CSV for the reuse-cap experiment, including sequential GAMBLE/EXHAUST_MANY private subdecisions | unset/off | `SilverLiveBackend` |

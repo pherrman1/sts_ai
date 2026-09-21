@@ -285,6 +285,11 @@ oocModel=<XDG data>/sts-ai/live-runtime/current/models/ooc_strategic_tok_final.n
 override their corresponding properties when nonempty.
 `STS_MODEL_INSPECTOR_CONFIG` selects a different properties file. These
 environment-first rules provide an isolated development/test escape hatch.
+For an explicit Silver tree-debug capture, launch the advisor/runtime with
+`STS_SILVER_DEBUG_TREE=1`; the normal response remains unchanged when it is
+unset. The optional `STS_SILVER_DEBUG_TREE_NODE_CAP` bounds the attached graph
+(default `8192`). A captured `latest.json` can then be rendered with
+`python3 tools/render_combat_decision.py --snapshot ~/.cache/sts-model-inspector/latest.json --output /tmp/combat-decision.html`.
 If `latest.json` remains `WAITING` after a combat observation, run
 `tools/live_game_runtime.py status` and restart the game explicitly after a
 runtime change. A ready response can
