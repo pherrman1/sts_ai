@@ -394,6 +394,32 @@ void search::BattleSearcher::growDedup() {
 
 // Moves `state` into the node only when a new node is created; on a match `state` is left
 // intact, so callers may still read it.
+namespace {
+
+bool eligibleForQueueItemCanonicalization(const BattleContext &state) {
+    return state.inputState == InputState::PLAYER_NORMAL
+        && state.outcome == Outcome::UNDECIDED
+        && !state.isBattleOver
+        && !state.endTurnQueued
+        && !state.turnHasEnded
+        && state.actionQueue.size == 0
+        && state.cardQueue.size == 0;
+}
+
+bool equalForSearchIgnoringQueueItem(BattleContext &incoming, const BattleContext &retained) {
+    if (!eligibleForQueueItemCanonicalization(incoming)
+            || !eligibleForQueueItemCanonicalization(retained)) {
+        return false;
+    }
+    const auto incomingQueueItem = incoming.curCardQueueItem;
+    incoming.curCardQueueItem = retained.curCardQueueItem;
+    const bool equivalent = retained.equalForSearch(incoming);
+    incoming.curCardQueueItem = incomingQueueItem;
+    return equivalent;
+}
+
+} // namespace
+
 search::BattleSearcher::Node* search::BattleSearcher::getOrCreateNode(BattleContext &&state) {
     const std::size_t hash = search::hashBattleState(state);
     bool relaxedEquivalentSeen = false;
@@ -405,6 +431,12 @@ search::BattleSearcher::Node* search::BattleSearcher::getOrCreateNode(BattleCont
     while (stateToNode[i].node != nullptr) {
         if (stateToNode[i].hash == hash && stateToNode[i].node->state->equalForSearch(state)) {
             lastNodeWasCreated = false;
+            return stateToNode[i].node;
+        }
+        if (queueItemCanonicalizationEnabled && stateToNode[i].hash == hash
+                && equalForSearchIgnoringQueueItem(state, *stateToNode[i].node->state)) {
+            lastNodeWasCreated = false;
+            ++stats.queueItemCanonicalMerges;
             return stateToNode[i].node;
         }
         if (collectUidFragmentationDiagnostics && stateToNode[i].hash == hash) {

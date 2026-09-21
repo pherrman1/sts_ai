@@ -26,7 +26,8 @@ nlohmann::json macroTaskCounts(const Counts &counts) {
 
 nlohmann::json replayRow(const nlohmann::json &input, std::int64_t budget,
                          bool collectUidFragmentationDiagnostics,
-                         silver_bridge::SilverSearchContractMode contractMode) {
+                         silver_bridge::SilverSearchContractMode contractMode,
+                         bool queueItemCanonicalizationEnabled) {
     const auto started = std::chrono::steady_clock::now();
     nlohmann::json row = {
         {"case_id", input.value("case_id", "")},
@@ -46,6 +47,7 @@ nlohmann::json replayRow(const nlohmann::json &input, std::int64_t budget,
         config.exactVisitLockEnabled = false;
         config.rhoRacingEnabled = false;
         config.collectUidFragmentationDiagnostics = collectUidFragmentationDiagnostics;
+        config.queueItemCanonicalizationEnabled = queueItemCanonicalizationEnabled;
         config.contractMode = contractMode;
 
         const auto result = silver_bridge::runSilverCombatReplay(wire, config);
@@ -66,6 +68,7 @@ nlohmann::json replayRow(const nlohmann::json &input, std::int64_t budget,
         row["status"] = result.accepted ? "ok" : result.failureReason;
         row["rollout_calls"] = result.telemetry.rolloutCalls;
         row["nodes_created"] = result.telemetry.nodesCreated;
+        row["queueItemCanonicalMerges"] = result.telemetry.queueItemCanonicalMerges;
         row["macro_eligible_decision_nodes"] = result.telemetry.macroEligibleDecisionNodes;
         row["macro_edges_generated"] = result.telemetry.macroEdgesGenerated;
         row["macro_option_count_sum"] = result.telemetry.macroOptionCountSum;
@@ -107,15 +110,19 @@ nlohmann::json replayRow(const nlohmann::json &input, std::int64_t budget,
 int main(int argc, char **argv) {
     if (argc < 3) {
         std::cerr << "usage: silver_hard_combat_replay SNAPSHOTS.jsonl BUDGET "
-                     "[--arm control|A|B] [--uid-fragmentation]\n";
+                     "[--arm control|A|B] [--uid-fragmentation] "
+                     "[--queue-item-canonicalization]\n";
         return 2;
     }
     bool collectUidFragmentationDiagnostics = false;
+    bool queueItemCanonicalizationEnabled = false;
     auto contractMode = silver_bridge::SilverSearchContractMode::CONTROL;
     for (int i = 3; i < argc; ++i) {
         const std::string option(argv[i]);
         if (option == "--uid-fragmentation") {
             collectUidFragmentationDiagnostics = true;
+        } else if (option == "--queue-item-canonicalization") {
+            queueItemCanonicalizationEnabled = true;
         } else if (option == "--arm" && i + 1 < argc) {
             const std::string arm(argv[++i]);
             if (arm == "control") contractMode = silver_bridge::SilverSearchContractMode::CONTROL;
@@ -156,7 +163,8 @@ int main(int argc, char **argv) {
         if (line.empty()) continue;
         try {
             const auto row = replayRow(nlohmann::json::parse(line), budget,
-                                       collectUidFragmentationDiagnostics, contractMode);
+                                       collectUidFragmentationDiagnostics, contractMode,
+                                       queueItemCanonicalizationEnabled);
             hadFailure = hadFailure || row.value("status", "") != "ok";
             std::cout << row.dump() << '\n';
         } catch (const std::exception &error) {

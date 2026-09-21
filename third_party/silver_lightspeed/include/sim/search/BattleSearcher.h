@@ -81,6 +81,7 @@ namespace sts::search {
         static constexpr int kInputStateCount = 10;
         std::int64_t steps = 0;                  // simulations run
         std::int64_t nodesCreated = 0;           // new nodes allocated via dedup misses
+        std::int64_t queueItemCanonicalMerges = 0; // settled-player queue-item relaxed dedup hits
         std::int64_t detTranspositions = 0;      // deterministic-edge expansion hit an existing node
         std::int64_t chanceOutcomesSampled = 0;  // chance-node widening samples executed
         std::int64_t chanceSiblingReuse = 0;     // sampled outcome collided with an existing sibling
@@ -139,7 +140,9 @@ namespace sts::search {
         std::int64_t macroOptionCountSum = 0;
         std::array<std::int64_t, 22> macroOptionCountByTask {};
         void add(const SearchStats &o) {
-            steps += o.steps; nodesCreated += o.nodesCreated; detTranspositions += o.detTranspositions;
+            steps += o.steps; nodesCreated += o.nodesCreated;
+            queueItemCanonicalMerges += o.queueItemCanonicalMerges;
+            detTranspositions += o.detTranspositions;
             chanceOutcomesSampled += o.chanceOutcomesSampled; chanceSiblingReuse += o.chanceSiblingReuse;
             chanceTranspositions += o.chanceTranspositions;
             uidRelaxedNodeAllocationCandidates += o.uidRelaxedNodeAllocationCandidates;
@@ -312,6 +315,10 @@ namespace sts::search {
         bool collectRolloutDiagnostics = false;
         bool collectVictoryCounts = false;
         bool collectUidFragmentationDiagnostics = false;
+        // Default-off offline experiment: merge only settled PLAYER_NORMAL states whose
+        // difference is the stale current card queue item. This is deliberately local to
+        // getOrCreateNode and does not affect reroot identity or global equality.
+        bool queueItemCanonicalizationEnabled = false;
         silver_bridge::SilverLeafObserver leafObserver;
 
         std::default_random_engine randGen;

@@ -519,6 +519,7 @@ std::string selectionStateSummary(const sts::BattleContext &before, const sts::B
 SilverSearchTelemetry telemetry(const sts::search::SearchStats &stats) {
     SilverSearchTelemetry out;
     out.nodesCreated = stats.nodesCreated;
+    out.queueItemCanonicalMerges = stats.queueItemCanonicalMerges;
     out.detTranspositions = stats.detTranspositions;
     out.chanceOutcomesSampled = stats.chanceOutcomesSampled;
     out.chanceSiblingReuse = stats.chanceSiblingReuse;
@@ -584,6 +585,7 @@ SilverSearchTelemetry telemetryDelta(const sts::search::SearchStats &after,
     SilverSearchTelemetry result = telemetry(after);
     const SilverSearchTelemetry prior = telemetry(before);
     result.nodesCreated -= prior.nodesCreated;
+    result.queueItemCanonicalMerges -= prior.queueItemCanonicalMerges;
     result.detTranspositions -= prior.detTranspositions;
     result.chanceOutcomesSampled -= prior.chanceOutcomesSampled;
     result.chanceSiblingReuse -= prior.chanceSiblingReuse;
@@ -1013,6 +1015,7 @@ public:
         searcher->collectRolloutDiagnostics = config.collectRolloutDiagnostics;
         searcher->collectVictoryCounts = config.collectRootActionSummaries;
         searcher->collectUidFragmentationDiagnostics = config.collectUidFragmentationDiagnostics;
+        searcher->queueItemCanonicalizationEnabled = config.queueItemCanonicalizationEnabled;
         searcher->leafObserver = config.leafObserver;
         searcher->contractMode = config.contractMode;
     }
@@ -1827,6 +1830,7 @@ bool sameRootActionSummaries(const std::vector<SilverRootActionSummary> &lhs,
 bool sameSilverSearchTelemetry(const SilverSearchTelemetry &lhs,
                                const SilverSearchTelemetry &rhs) {
     return lhs.nodesCreated == rhs.nodesCreated
+        && lhs.queueItemCanonicalMerges == rhs.queueItemCanonicalMerges
         && lhs.detTranspositions == rhs.detTranspositions
         && lhs.chanceOutcomesSampled == rhs.chanceOutcomesSampled
         && lhs.chanceSiblingReuse == rhs.chanceSiblingReuse

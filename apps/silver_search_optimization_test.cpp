@@ -1125,7 +1125,7 @@ void rootPriorSelection(Search &search) {
 
 void equalStats(const sts::search::SearchStats &a, const sts::search::SearchStats &b) {
 #define SAME(field) require(a.field == b.field, "trace changed stats: " #field)
-    SAME(steps); SAME(nodesCreated); SAME(detTranspositions);
+    SAME(steps); SAME(nodesCreated); SAME(queueItemCanonicalMerges); SAME(detTranspositions);
     SAME(chanceOutcomesSampled); SAME(chanceSiblingReuse); SAME(chanceTranspositions);
     SAME(depthSum); SAME(chanceDepthSum); SAME(rolloutCalls);
     SAME(rolloutTerminalWins); SAME(rolloutTerminalLosses); SAME(rolloutNonTerminalStops);
@@ -1137,6 +1137,140 @@ void equalStats(const sts::search::SearchStats &a, const sts::search::SearchStat
     SAME(rolloutDrawSum); SAME(rolloutSurvivalSum);
     for (int i = 0; i < 3; ++i) { SAME(wSampled[i]); SAME(wSibReuse[i]); SAME(wCapped[i]); }
 #undef SAME
+}
+
+void queueItemCanonicalization(const sts::BattleContext &original) {
+    auto settled = original;
+    settled.inputState = sts::InputState::PLAYER_NORMAL;
+    settled.outcome = sts::Outcome::UNDECIDED;
+    settled.isBattleOver = false;
+    settled.endTurnQueued = false;
+    settled.turnHasEnded = false;
+    settled.actionQueue.clear();
+    settled.cardQueue.clear();
+
+    auto makeQueueItemState = [&](sts::CardId id) {
+        auto result = settled;
+        result.curCardQueueItem = sts::CardQueueItem(
+            sts::CardInstance(id), 0, result.player.energy);
+        return result;
+    };
+    const auto queueA = makeQueueItemState(sts::CardId::BASH);
+    const auto queueB = makeQueueItemState(sts::CardId::STRIKE_RED);
+    require(!queueA.equalForSearch(queueB),
+            "queue-item fixture must remain distinct under ordinary equality");
+    require(sts::search::hashBattleState(queueA) == sts::search::hashBattleState(queueB),
+            "queue-item fixture must share the existing search hash");
+
+    Search defaultOff(settled);
+    Search explicitOff(settled);
+    explicitOff.queueItemCanonicalizationEnabled = false;
+    defaultOff.search(32);
+    explicitOff.search(32);
+    equalStats(defaultOff.stats, explicitOff.stats);
+    require(defaultOff.getBestAction() == explicitOff.getBestAction(),
+            "default-off queue-item flag must preserve search behavior");
+
+    auto controlA = queueA;
+    auto controlB = queueB;
+    Search control(settled);
+    const auto *controlFirst = control.getOrCreateNode(std::move(controlA));
+    const auto *controlSecond = control.getOrCreateNode(std::move(controlB));
+    require(controlFirst != controlSecond && control.lastNodeWasCreated,
+            "default-off queue-item dedup must preserve distinct nodes");
+    require(control.stats.queueItemCanonicalMerges == 0,
+            "default-off queue-item dedup must not record merges");
+
+    auto treatmentA = queueA;
+    auto treatmentB = queueB;
+    Search treatment(settled);
+    treatment.queueItemCanonicalizationEnabled = true;
+    const auto *treatedFirst = treatment.getOrCreateNode(std::move(treatmentA));
+    const auto *treatedSecond = treatment.getOrCreateNode(std::move(treatmentB));
+    require(treatedFirst == treatedSecond && !treatment.lastNodeWasCreated,
+            "eligible settled queue-item states must merge under treatment");
+    require(treatment.stats.queueItemCanonicalMerges == 1,
+            "queue-item treatment must count the actual relaxed merge");
+
+    const auto verifyNoMerge = [&](const sts::BattleContext &candidate,
+                                   const char *message) {
+        auto retainedState = queueA;
+        auto incomingState = candidate;
+        Search search(settled);
+        search.queueItemCanonicalizationEnabled = true;
+        const auto *retained = search.getOrCreateNode(std::move(retainedState));
+        const auto *incoming = search.getOrCreateNode(std::move(incomingState));
+        require(incoming != retained && search.lastNodeWasCreated, message);
+        require(search.stats.queueItemCanonicalMerges == 0,
+                "ineligible queue-item state must not count a relaxed merge");
+    };
+
+    auto cardSelect = queueB;
+    cardSelect.inputState = sts::InputState::CARD_SELECT;
+    verifyNoMerge(cardSelect, "CARD_SELECT states must not relaxed-merge");
+    auto executing = queueB;
+    executing.inputState = sts::InputState::EXECUTING_ACTIONS;
+    verifyNoMerge(executing, "EXECUTING_ACTIONS states must not relaxed-merge");
+    auto actionQueued = queueB;
+    actionQueued.actionQueue.pushBack(sts::Actions::GainEnergy(1));
+    verifyNoMerge(actionQueued, "non-empty action queues must not relaxed-merge");
+    auto cardQueued = queueB;
+    cardQueued.cardQueue.pushBack(sts::CardQueueItem(
+        sts::CardInstance(sts::CardId::STRIKE_RED), 0, cardQueued.player.energy));
+    verifyNoMerge(cardQueued, "non-empty card queues must not relaxed-merge");
+    auto terminal = queueB;
+    terminal.outcome = sts::Outcome::PLAYER_VICTORY;
+    terminal.isBattleOver = true;
+    verifyNoMerge(terminal, "terminal states must not relaxed-merge");
+    auto endTurn = queueB;
+    endTurn.endTurnQueued = true;
+    verifyNoMerge(endTurn, "end-turn states must not relaxed-merge");
+    auto pendingTurn = queueB;
+    pendingTurn.turnHasEnded = true;
+    verifyNoMerge(pendingTurn, "pending-turn states must not relaxed-merge");
+    auto ordinaryDifference = queueB;
+    ++ordinaryDifference.player.energy;
+    verifyNoMerge(ordinaryDifference, "ordinary state differences must prevent merging");
+
+    auto continuationA = queueA;
+    auto continuationB = queueB;
+    sts::search::Action cardAction;
+    bool foundCardAction = false;
+    for (const auto &edge : rootActions(settled)) {
+        if (edge.getActionType() == sts::search::ActionType::CARD) {
+            cardAction = edge;
+            foundCardAction = true;
+            break;
+        }
+    }
+    require(foundCardAction, "queue-item continuation fixture needs a card action");
+    cardAction.execute(continuationA);
+    cardAction.execute(continuationB);
+    require(continuationA.equalForSearch(continuationB),
+            "ordinary card continuation must overwrite stale queue-item identity");
+
+    auto attackPotionA = queueA;
+    auto attackPotionB = queueB;
+    attackPotionA.potions[0] = attackPotionB.potions[0] = sts::Potion::ATTACK_POTION;
+    attackPotionA.potionCount = attackPotionB.potionCount = 1;
+    const sts::search::Action attackPotion(sts::search::ActionType::POTION, 0, 0);
+    require(attackPotion.isValidAction(attackPotionA),
+            "Attack Potion selection boundary must be playable");
+    attackPotion.execute(attackPotionA);
+    attackPotion.execute(attackPotionB);
+    require(attackPotionA.inputState == sts::InputState::CARD_SELECT
+                && attackPotionB.inputState == sts::InputState::CARD_SELECT
+                && !attackPotionA.equalForSearch(attackPotionB),
+            "Attack Potion CARD_SELECT states must remain a distinct boundary");
+    auto selectionRetained = attackPotionA;
+    auto selectionIncoming = attackPotionB;
+    Search selectionSearch(selectionRetained);
+    selectionSearch.queueItemCanonicalizationEnabled = true;
+    const auto *selectionNode = selectionSearch.getOrCreateNode(std::move(selectionRetained));
+    const auto *selectionOther = selectionSearch.getOrCreateNode(std::move(selectionIncoming));
+    require(selectionOther != selectionNode && selectionSearch.lastNodeWasCreated
+                && selectionSearch.stats.queueItemCanonicalMerges == 0,
+            "Attack Potion selection states must not relaxed-merge");
 }
 
 void traceParity(const sts::BattleContext &bc, bool observe) {
@@ -1631,6 +1765,7 @@ int main(int argc, char **argv) {
             return 0;
         }
         dedupGrowth(bc);
+        queueItemCanonicalization(bc);
         cardActionCanonicalization(bc);
         uidFragmentationDiagnostic(bc);
         singleCardSelectCanonicalization(bc);
