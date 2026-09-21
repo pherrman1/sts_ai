@@ -225,6 +225,31 @@ int main(int argc, char **argv) {
     permutedKnowledge.initializeFromLiveBattle(permuted);
     const auto firstWire = convert(first, gc, firstKnowledge);
 
+    // The debug tree is an explicit observation of the retained native graph,
+    // not a default part of the decision result. Verify both boundaries.
+    auto treeSession = silver_bridge::makeSilverSearchSession();
+    silver_bridge::SilverSearchConfig treeConfig;
+    treeConfig.simulationsPerDecision = 8;
+    treeConfig.collectRootActionSummaries = true;
+    const auto treeDecision = silver_bridge::runSilverDecision(
+        *treeSession, firstWire, treeConfig);
+    const auto disabledTree = silver_bridge::snapshotSilverSearchTree(
+        *treeSession, silver_bridge::SilverTreeSnapshotConfig{});
+    check(!disabledTree.accepted && disabledTree.failureReason == "tree_snapshot_disabled",
+          "Silver tree export must remain disabled by default");
+    silver_bridge::SilverTreeSnapshotConfig enabledTreeConfig;
+    enabledTreeConfig.enabled = true;
+    enabledTreeConfig.maxNodes = 128;
+    const auto enabledTree = silver_bridge::snapshotSilverSearchTree(
+        *treeSession, enabledTreeConfig);
+    check(treeDecision.accepted && enabledTree.accepted
+              && enabledTree.rootId != 0 && !enabledTree.nodes.empty()
+              && !enabledTree.edges.empty(),
+          "opt-in Silver tree export must retain the searched root graph");
+    check(enabledTree.nodes.front().hasState
+              && enabledTree.nodes.front().state.player.curHp == firstWire.player.curHp,
+          "exported Silver tree root must preserve its producer-shaped state");
+
     silver_bridge::SilverSearchConfig completeReplayConfig;
     completeReplayConfig.simulationsPerDecision = 8;
     completeReplayConfig.reuseCap = silver_bridge::kSilverProductionReuseCap;

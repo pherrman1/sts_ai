@@ -113,6 +113,57 @@ class RenderCombatDecisionTest(unittest.TestCase):
             self.assertIn(">1.5</span>", rendered)
             self.assertIn("width:100.000%", rendered)
 
+    def test_debug_tree_renders_expandable_graph_and_state_toggle(self):
+        with tempfile.TemporaryDirectory() as directory:
+            value = snapshot_data()
+            value["response"]["advisor"]["evaluators"][0]["tree"] = {
+                "accepted": True, "truncated": False, "rootId": 1,
+                "retainedNodeCount": 3, "retainedEdgeCount": 3,
+                "nodes": [
+                    {"id": 1, "parentId": 0, "depth": 0, "isChanceNode": False,
+                     "hasState": True, "stateHash": 11, "simulationCount": 10,
+                     "victoryCount": 4, "evaluationSum": 7.5,
+                     "state": {"turn": 3, "player": {"curHp": 55}}},
+                    {"id": 2, "parentId": 1, "depth": 1, "isChanceNode": False,
+                     "hasState": True, "stateHash": 12, "simulationCount": 6,
+                     "victoryCount": 3, "evaluationSum": 4.2,
+                     "state": {"turn": 3, "player": {"curHp": 49}}},
+                    {"id": 3, "parentId": 1, "depth": 1, "isChanceNode": True,
+                     "hasState": False, "stateHash": 13, "simulationCount": 4,
+                     "victoryCount": 1, "evaluationSum": 3.3},
+                ],
+                "edges": [
+                    {"parentId": 1, "childId": 2, "childCaptured": True,
+                     "chanceOutcome": False, "rngAdvanceSteps": 0, "visitCount": 6,
+                     "hasAction": True, "actionFingerprint": "attack:1",
+                     "actionLabel": "Strike", "hasContinuation": False,
+                     "continuationFingerprint": "", "continuationLabel": ""},
+                    {"parentId": 1, "childId": 3, "childCaptured": True,
+                     "chanceOutcome": False, "rngAdvanceSteps": 0, "visitCount": 4,
+                     "hasAction": True, "actionFingerprint": "end_turn",
+                     "actionLabel": "End turn", "hasContinuation": False,
+                     "continuationFingerprint": "", "continuationLabel": ""},
+                    {"parentId": 3, "childId": 2, "childCaptured": True,
+                     "chanceOutcome": True, "rngAdvanceSteps": 2, "visitCount": 4,
+                     "hasAction": False, "actionFingerprint": "",
+                     "actionLabel": "chance outcome 2", "hasContinuation": False,
+                     "continuationFingerprint": "", "continuationLabel": ""},
+                ],
+            }
+            source = load_snapshot(self.write_json(directory, "tree.json", value))
+            rendered = render_html(source)
+            self.assertIn("MCTS tree", rendered)
+            self.assertIn("native Silver graph retained", rendered)
+            self.assertIn("show full node states", rendered)
+            self.assertIn("chance outcome 2", rendered)
+            self.assertIn("shared/cyclic reference", rendered)
+            self.assertIn("window.__SILVER_TREE__", rendered)
+
+    def test_normal_snapshot_has_no_debug_tree_section(self):
+        with tempfile.TemporaryDirectory() as directory:
+            source = load_snapshot(self.write_json(directory, "normal.json", snapshot_data()))
+            self.assertNotIn("MCTS tree", render_html(source))
+
     def test_unsupported_response_is_first_class(self):
         with tempfile.TemporaryDirectory() as directory:
             value = snapshot_data(status="UNSUPPORTED", reason="silver_missing_predecessor")

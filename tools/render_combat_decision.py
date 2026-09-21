@@ -457,6 +457,43 @@ def _before_after(source: Mapping[str, Any]) -> str:
     return f"<section><h2>Before → after</h2>{body}</section>"
 
 
+def _tree_section(source: Mapping[str, Any]) -> str:
+    evaluator = _mapping(source.get("evaluator"))
+    tree = evaluator.get("tree")
+    if not isinstance(tree, Mapping):
+        return ""
+    payload = json.dumps(tree, ensure_ascii=True, separators=(",", ":"))
+    # Keep the JSON inside a script data island without allowing hostile labels
+    # to terminate the script element. The viewer inserts data via textContent.
+    payload = payload.replace("<", "\\u003c").replace(">", "\\u003e")
+    return (
+        '<section class="tree-section"><h2>MCTS tree <span class="debug-badge">debug capture</span></h2>'
+        '<p class="muted">This is the native Silver graph retained after the search. Shared/transposed nodes are shown as references, not duplicated as false tree nodes.</p>'
+        '<div class="tree-toolbar"><label for="tree-action-filter">root action</label>'
+        '<select id="tree-action-filter"><option value="">all root actions</option></select>'
+        '<label><input id="tree-show-states" type="checkbox"> show full node states</label>'
+        '<span id="tree-status" class="muted"></span></div>'
+        '<div id="tree-root" class="tree-view"></div>'
+        f'<script>window.__SILVER_TREE__={payload};</script>'
+        '<script>(function(){'
+        'const data=window.__SILVER_TREE__||{};'
+        'const nodes=new Map((data.nodes||[]).map(n=>[String(n.id),n]));const renderedNodes=new Set();'
+        'const byParent=new Map();'
+        '(data.edges||[]).forEach(e=>{const k=String(e.parentId);if(!byParent.has(k))byParent.set(k,[]);byParent.get(k).push(e);});'
+        'const root=document.getElementById("tree-root"),filter=document.getElementById("tree-action-filter"),states=document.getElementById("tree-show-states"),status=document.getElementById("tree-status");'
+        'const text=(tag,value,cls)=>{const e=document.createElement(tag);if(cls)e.className=cls;e.textContent=value==null?"not captured":String(value);return e;};'
+        'const q=(n)=>n&&Number(n.simulationCount)>0?(Number(n.evaluationSum)/Number(n.simulationCount)).toFixed(4):"unavailable";'
+        'const nodeTitle=(n)=>"node #"+n.id+" · "+(n.isChanceNode?"chance":"decision")+" · visits "+n.simulationCount+" · Q "+q(n);'
+        'const stateBlock=(n)=>{if(!states.checked||!n.hasState)return null;const d=document.createElement("details");d.className="tree-state";d.append(text("summary","full state"));const pre=document.createElement("pre");pre.textContent=JSON.stringify(n.state,null,2);d.append(pre);return d;};'
+        'const edgeTitle=(e,child)=>{let label=e.actionLabel||"edge";if(e.continuationLabel)label+=" → "+e.continuationLabel;if(e.chanceOutcome)label+=" (advance "+e.rngAdvanceSteps+")";return label+" · edge visits "+e.visitCount+(child?" · child visits "+child.simulationCount+" · child Q "+q(child):"");};'
+        'function renderNode(id,path){const key=String(id),n=nodes.get(key);if(!n)return text("p","missing node "+id,"muted");if(renderedNodes.has(key))return text("span","shared/cyclic reference to node #"+id,"tree-reference");renderedNodes.add(key);const wrap=document.createElement("details");wrap.open=Number(n.depth)<1;wrap.className="tree-node";const summary=document.createElement("summary");summary.append(text("span",nodeTitle(n),"tree-node-title"));wrap.append(summary);const meta=document.createElement("div");meta.className="tree-node-meta";meta.append(text("span","depth "+n.depth));meta.append(text("span","evaluation sum "+n.evaluationSum));meta.append(text("span","victories "+n.victoryCount));meta.append(text("span","state hash "+n.stateHash));wrap.append(meta);const sb=stateBlock(n);if(sb)wrap.append(sb);const edges=byParent.get(key)||[];const list=document.createElement("div");list.className="tree-edges";edges.forEach(e=>{const child=e.childCaptured?nodes.get(String(e.childId)):null;const row=document.createElement("div");row.className="tree-edge";row.append(text("div",edgeTitle(e,child),"tree-edge-label"));if(e.actionFingerprint)row.append(text("code",e.actionFingerprint,"tree-fingerprint"));if(e.childCaptured){if(path.has(String(e.childId)))row.append(text("span","shared/cyclic reference to node #"+e.childId,"tree-reference"));else{const next=new Set(path);next.add(String(e.childId));row.append(renderNode(e.childId,next));}}else row.append(text("span","child omitted by capture cap","tree-reference"));list.append(row);});wrap.append(list);return wrap;}'
+        'function refill(){const rootEdges=byParent.get(String(data.rootId))||[];while(filter.options.length>1)filter.remove(1);rootEdges.filter(e=>e.actionLabel).forEach((e,i)=>{const o=document.createElement("option");o.value=String(i);o.textContent=e.actionLabel+" ("+e.visitCount+" visits)";filter.append(o);});}'
+        'function render(){root.replaceChildren();renderedNodes.clear();const rootNode=nodes.get(String(data.rootId));if(!rootNode){root.append(text("p","tree root unavailable","muted"));return;}const selected=filter.value;const edges=byParent.get(String(data.rootId))||[];if(!selected)root.append(renderNode(data.rootId,new Set([String(data.rootId)])));else{const e=edges[Number(selected)];const holder=document.createElement("div");holder.className="tree-filtered";holder.append(text("h3","root action: "+(e.actionLabel||"edge")));if(e.childCaptured)holder.append(renderNode(e.childId,new Set([String(data.rootId),String(e.childId)])));else holder.append(text("p","child omitted by capture cap","muted"));root.append(holder);}}'
+        'filter.addEventListener("change",render);states.addEventListener("change",render);refill();status.textContent=(data.accepted?"captured ":"unavailable ")+(data.retainedNodeCount||0)+" nodes / "+(data.retainedEdgeCount||0)+" edges"+(data.truncated?" · truncated at node cap":"");render();'
+        '})()</script></section>'
+    )
+
+
 def render_html(source: Mapping[str, Any]) -> str:
     raw = source.get("raw", {})
     evaluator = source.get("evaluator", {})
@@ -464,7 +501,7 @@ def render_html(source: Mapping[str, Any]) -> str:
         "<!doctype html><html><head><meta charset=\"utf-8\"><title>Combat decision</title><style>"
         + _CSS + "</style></head><body><main><h1>Combat decision inspector</h1>"
         + _header(source) + _combat_section(source) + _root_section(source)
-        + _diagnostics(source) + _lowering(source) + _before_after(source)
+        + _tree_section(source) + _diagnostics(source) + _lowering(source) + _before_after(source)
         + f"<section><h2>Raw data</h2><details><summary>raw observation</summary><pre>{_pretty(source.get('observation', {}))}</pre></details>"
         + f"<details><summary>raw Silver evaluator</summary><pre>{_pretty(evaluator)}</pre></details>"
         + f"<details><summary>selected trace / differential row</summary><pre>{_pretty(raw)}</pre></details></section>"
@@ -482,6 +519,7 @@ section { background:var(--panel); border:1px solid var(--line); border-radius:1
 table { width:100%; border-collapse:collapse; } th,td { text-align:left; vertical-align:top; border-bottom:1px solid var(--line); padding:8px; } th { color:var(--muted); font-size:12px; } .selected-action { background:var(--selected); box-shadow:inset 3px 0 #6ee7a2; } .visits { font-weight:600; white-space:nowrap; }
 .share { min-width:130px; } .share i { display:block; height:6px; margin-top:5px; background:var(--accent); border-radius:5px; min-width:1px; } .chips { display:flex; flex-wrap:wrap; gap:8px; } .columns { display:grid; grid-template-columns:1fr 1fr; gap:12px; } .muted { color:var(--muted); }
 .status { display:inline-block; padding:5px 9px; border-radius:5px; background:#3a2f16; color:#ffd47a; } .chain { display:grid; grid-template-columns:1fr auto 1fr auto 1fr auto 1fr; gap:10px; align-items:center; } .chain > div { min-width:0; background:#11161d; border:1px solid var(--line); padding:10px; border-radius:7px; } .chain > b { color:var(--accent); font-size:20px; } details { margin:8px 0; } summary { cursor:pointer; color:var(--accent); }
+.debug-badge { color:#ffd47a; border:1px solid #846b2e; border-radius:4px; padding:2px 6px; font-size:10px; text-transform:uppercase; letter-spacing:.06em; vertical-align:middle; } .tree-toolbar { display:flex; flex-wrap:wrap; align-items:center; gap:10px; margin-bottom:14px; } .tree-toolbar select { background:#11161d; color:var(--text); border:1px solid var(--line); border-radius:5px; padding:6px; } .tree-toolbar input { accent-color:var(--accent); } .tree-view { overflow:auto; padding:4px 0; } .tree-node { margin:7px 0 7px 14px; padding-left:10px; border-left:1px solid #465266; } .tree-node > summary { list-style:disclosure-closed; } .tree-node[open] > summary { list-style:disclosure-open; } .tree-node-title { color:#d9e7ff; font-weight:600; } .tree-node-meta { display:flex; flex-wrap:wrap; gap:7px; margin:6px 0 8px 20px; color:var(--muted); font:11px ui-monospace,SFMono-Regular,Menlo,monospace; } .tree-node-meta span { background:#11161d; border:1px solid var(--line); border-radius:4px; padding:3px 6px; } .tree-edges { margin-left:12px; } .tree-edge { margin:7px 0; padding-left:12px; border-left:2px solid #365276; } .tree-edge-label { color:#f0c674; } .tree-fingerprint { display:block; color:var(--muted); font-size:11px; margin-top:2px; } .tree-reference { display:block; color:#e2a7a7; font-size:12px; margin:4px 0; } .tree-state { margin:8px 0 8px 20px; } .tree-state summary { font-size:12px; } .tree-state pre { max-height:360px; overflow:auto; background:#0d1117; border:1px solid var(--line); padding:10px; } .tree-filtered { border-left:2px solid #6ee7a2; padding-left:12px; }
 @media (max-width:900px) { .columns,.chain { grid-template-columns:1fr; } .chain > b { transform:rotate(90deg); justify-self:center; } }
 """
 

@@ -7,12 +7,16 @@ import unittest
 
 
 class AdvisorProtocolTest(unittest.TestCase):
-    def run_advisor(self, rows, model=None):
+    def run_advisor(self, rows, model=None, tree_debug=False):
         env = os.environ.copy()
         if model is not None:
             env["STS_CTM_MODEL"] = str(model)
         else:
             env.pop("STS_CTM_MODEL", None)
+        if tree_debug:
+            env["STS_SILVER_DEBUG_TREE"] = "1"
+        else:
+            env.pop("STS_SILVER_DEBUG_TREE", None)
         proc = subprocess.run(
             [sys.argv[1]], input="\n".join(rows) + "\n", text=True,
             capture_output=True, check=True, env=env)
@@ -227,6 +231,7 @@ class AdvisorProtocolTest(unittest.TestCase):
         self.assertEqual(result["status"], "OK")
         silver = silver_results[0]
         self.assertEqual(silver["status"], "OK", silver)
+        self.assertNotIn("tree", silver)
         summaries = silver["rootActionSummaries"]
         self.assertTrue(summaries)
         self.assertTrue(all("liveAction" in row for row in summaries))
@@ -238,6 +243,13 @@ class AdvisorProtocolTest(unittest.TestCase):
         selected = next(row for row in summaries
                         if row["fingerprint"] == silver["selectedAction"])
         self.assertEqual(selected["liveAction"], silver["selectedLiveAction"])
+        debug_result = self.run_advisor([json.dumps(wires[0])], self.model, tree_debug=True)[0]
+        debug_silver = next(row for row in debug_result["evaluators"]
+                            if row["id"] == "silver_player_decision_v2")
+        self.assertTrue(debug_silver["tree"]["accepted"])
+        self.assertEqual(debug_silver["tree"]["rootId"], 1)
+        self.assertGreater(debug_silver["tree"]["retainedNodeCount"], 0)
+        self.assertGreater(debug_silver["tree"]["retainedEdgeCount"], 0)
 
     def test_unknown_combat_selection_remains_silver_with_ctm_enabled(self):
         for room, encounter in (("MONSTER", "SHELL_PARASITE"),

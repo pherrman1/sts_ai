@@ -1255,6 +1255,134 @@ std::shared_ptr<SilverSearchSession> makeSilverSearchSession() {
     return std::make_shared<SilverSearchSession>();
 }
 
+SilverTreeSnapshot snapshotSilverSearchTree(
+        const SilverSearchSession &session, const SilverTreeSnapshotConfig &config) {
+    SilverTreeSnapshot result;
+    if (!config.enabled) {
+        result.failureReason = "tree_snapshot_disabled";
+        return result;
+    }
+    if (config.maxNodes == 0) {
+        result.failureReason = "tree_snapshot_node_cap_must_be_positive";
+        return result;
+    }
+    if (!session.searcher || !session.searcher->root || !session.searcher->root->state) {
+        result.failureReason = "silver_search_tree_unavailable";
+        return result;
+    }
+
+    using Node = sts::search::BattleSearcher::Node;
+    using Edge = sts::search::BattleSearcher::Edge;
+    struct Pending {
+        const Node *node = nullptr;
+        std::uint64_t id = 0;
+        std::uint64_t parentId = 0;
+        int depth = 0;
+    };
+
+    std::unordered_map<const Node *, std::uint64_t> ids;
+    std::vector<Pending> pending;
+    const auto assign = [&](const Node *node, std::uint64_t parentId, int depth,
+                            std::uint64_t &nextId) -> std::uint64_t {
+        if (node == nullptr) return 0;
+        const auto existing = ids.find(node);
+        if (existing != ids.end()) return existing->second;
+        if (ids.size() >= config.maxNodes) {
+            result.truncated = true;
+            return 0;
+        }
+        const auto id = nextId++;
+        ids.emplace(node, id);
+        pending.push_back({node, id, parentId, depth});
+        return id;
+    };
+
+    std::uint64_t nextId = 1;
+    result.rootId = assign(session.searcher->root, 0, 0, nextId);
+    if (result.rootId == 0) {
+        result.failureReason = "silver_search_tree_root_not_captured";
+        return result;
+    }
+
+    try {
+        while (!pending.empty()) {
+            const Pending current = pending.back();
+            pending.pop_back();
+            const Node &node = *current.node;
+
+            SilverTreeNodeSnapshot nodeSnapshot;
+            nodeSnapshot.id = current.id;
+            nodeSnapshot.parentId = current.parentId;
+            nodeSnapshot.depth = current.depth;
+            nodeSnapshot.isChanceNode = node.isRandomNode;
+            nodeSnapshot.simulationCount = node.simulationCount;
+            nodeSnapshot.victoryCount = node.victoryCount;
+            nodeSnapshot.evaluationSum = node.evaluationSum;
+            if (node.state != nullptr) {
+                nodeSnapshot.hasState = config.includeStates;
+                nodeSnapshot.stateHash = static_cast<std::uint64_t>(
+                    sts::search::hashBattleState(*node.state));
+                if (config.includeStates) nodeSnapshot.state = leafStateWire(*node.state);
+            } else if (node.parent != nullptr && node.parent->state != nullptr) {
+                nodeSnapshot.stateHash = static_cast<std::uint64_t>(
+                    sts::search::hashBattleState(*node.parent->state));
+            }
+            result.nodes.push_back(std::move(nodeSnapshot));
+
+            const sts::BattleContext *descriptionState = node.isRandomNode
+                ? (node.parent == nullptr ? nullptr : node.parent->state)
+                : node.state;
+            BattleStateWire descriptionWire;
+            if (descriptionState != nullptr) descriptionWire = leafStateWire(*descriptionState);
+
+            for (const Edge &edge : node.edges) {
+                SilverTreeEdgeSnapshot edgeSnapshot;
+                edgeSnapshot.parentId = current.id;
+                edgeSnapshot.chanceOutcome = node.isRandomNode;
+                edgeSnapshot.rngAdvanceSteps = edge.rngAdvanceSteps;
+                edgeSnapshot.visitCount = edge.visitCount;
+                if (edge.node != nullptr) {
+                    edgeSnapshot.childId = assign(edge.node, current.id, current.depth + 1, nextId);
+                    edgeSnapshot.childCaptured = edgeSnapshot.childId != 0;
+                }
+
+                if (descriptionState != nullptr && !node.isRandomNode) {
+                    edgeSnapshot.hasAction = true;
+                    edgeSnapshot.action = semanticFromAction(*descriptionState, edge.action);
+                    edgeSnapshot.actionFingerprint = semanticActionFingerprint(edgeSnapshot.action);
+                    edgeSnapshot.actionLabel = describeSilverSemanticAction(
+                        descriptionWire, edgeSnapshot.action);
+                    if (edge.hasContinuation()) {
+                        edgeSnapshot.hasContinuation = true;
+                        edgeSnapshot.continuation = semanticFromAction(
+                            *descriptionState, edge.continuation);
+                        edgeSnapshot.continuationFingerprint = semanticActionFingerprint(
+                            edgeSnapshot.continuation);
+                        edgeSnapshot.continuationLabel = describeSilverSemanticAction(
+                            descriptionWire, edgeSnapshot.continuation);
+                    }
+                } else if (node.isRandomNode) {
+                    edgeSnapshot.actionLabel = "chance outcome "
+                        + std::to_string(edge.rngAdvanceSteps);
+                }
+                result.edges.push_back(std::move(edgeSnapshot));
+            }
+        }
+    } catch (const std::exception &error) {
+        result.nodes.clear();
+        result.edges.clear();
+        result.rootId = 0;
+        result.failureReason = std::string("tree_snapshot_exception: ") + error.what();
+        return result;
+    }
+
+    result.accepted = true;
+    result.retainedNodeCount = result.nodes.size();
+    result.retainedEdgeCount = result.edges.size();
+    if (result.truncated) result.failureReason = "tree_snapshot_node_cap_reached";
+    return result;
+}
+
 SilverRootUncertainty summarizeSilverRoot(
         const std::vector<SilverRootActionSummary> &summaries) {
     SilverRootUncertainty result;

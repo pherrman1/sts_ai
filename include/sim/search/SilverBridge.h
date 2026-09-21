@@ -792,6 +792,56 @@ struct SilverDecisionResult {
     std::vector<SilverCheckpointDiagnostic> checkpointDiagnostics;
 };
 
+// Optional, debug-only snapshot of the actual retained Silver search graph.
+// This is deliberately separate from SilverDecisionResult's root summaries:
+// callers must opt into the potentially large state payload explicitly.
+struct SilverTreeSnapshotConfig {
+    bool enabled = false;
+    std::size_t maxNodes = 8192;
+    bool includeStates = true;
+};
+
+struct SilverTreeNodeSnapshot {
+    std::uint64_t id = 0;
+    std::uint64_t parentId = 0;
+    int depth = 0;
+    bool isChanceNode = false;
+    bool hasState = false;
+    std::uint64_t stateHash = 0;
+    std::int64_t simulationCount = 0;
+    std::int64_t victoryCount = 0;
+    double evaluationSum = 0.0;
+    BattleStateWire state;
+};
+
+struct SilverTreeEdgeSnapshot {
+    std::uint64_t parentId = 0;
+    std::uint64_t childId = 0;
+    bool childCaptured = false;
+    bool chanceOutcome = false;
+    std::int32_t rngAdvanceSteps = 0;
+    std::int32_t visitCount = 0;
+    bool hasAction = false;
+    SemanticAction action;
+    std::string actionFingerprint;
+    std::string actionLabel;
+    bool hasContinuation = false;
+    SemanticAction continuation;
+    std::string continuationFingerprint;
+    std::string continuationLabel;
+};
+
+struct SilverTreeSnapshot {
+    bool accepted = false;
+    std::string failureReason;
+    bool truncated = false;
+    std::uint64_t rootId = 0;
+    std::size_t retainedNodeCount = 0;
+    std::size_t retainedEdgeCount = 0;
+    std::vector<SilverTreeNodeSnapshot> nodes;
+    std::vector<SilverTreeEdgeSnapshot> edges;
+};
+
 // Complete-fight replay result for a frozen private Silver start state. The
 // replay owns one session and never lowers an action through the live model.
 struct SilverCombatReplayResult {
@@ -882,6 +932,9 @@ std::vector<SilverForcedActionReference> runSilverForcedActionReferences(
 // No live sts_ai type can enter this object.
 class SilverSearchSession;
 std::shared_ptr<SilverSearchSession> makeSilverSearchSession();
+
+SilverTreeSnapshot snapshotSilverSearchTree(
+    const SilverSearchSession &session, const SilverTreeSnapshotConfig &config);
 
 struct RandomProbe {
     std::int32_t firstRange = 0;
