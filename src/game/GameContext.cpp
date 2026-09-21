@@ -753,6 +753,17 @@ void GameContext::transitionToAct(int targetAct) {
 }
 
 void GameContext::transitionToMapNode(int mapNodeX) {
+    bool usedWingBoots = false;
+    if (curMapNodeY >= 0 && curMapNodeY < 14 && map && wingBootsCharges > 0) {
+        const auto &current = map->getNode(curMapNodeX, curMapNodeY);
+        usedWingBoots = std::find(current.edges.begin(), current.edges.begin() + current.edgeCount,
+                                  mapNodeX) == current.edges.begin() + current.edgeCount;
+        if (usedWingBoots) {
+            --wingBootsCharges;
+            if (relics.has(RelicId::WING_BOOTS))
+                relics.getRelicValueRef(RelicId::WING_BOOTS) = wingBootsCharges;
+        }
+    }
     lastRoom = curRoom;
     curMapNodeX = mapNodeX;
     ++floorNum;

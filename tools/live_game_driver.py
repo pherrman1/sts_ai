@@ -783,6 +783,22 @@ def choose_deterministic_action(screen: Mapping[str, Any], candidates: Sequence[
     return candidates[0]
 
 
+def card_reward_reveal_action(screen: Mapping[str, Any], game: Mapping[str, Any],
+                              candidates: Sequence[LegalAction]) -> LegalAction | None:
+    """Open a generated card reward before scoring the actual card choice."""
+    if _text(screen.get("screen_type", screen.get("screenType"))).upper() != "COMBAT_REWARD":
+        return None
+    rewards = _list(_mapping(game.get("screen_state", {})).get("rewards"))
+    for index, reward in enumerate(rewards):
+        reward_map = _mapping(reward)
+        if _text(reward_map.get("reward_type", reward_map.get("type", ""))).upper() != "CARD":
+            continue
+        return next((candidate for candidate in candidates
+                     if candidate.mcp_tool == "choose"
+                     and candidate.mcp_arguments == {"choice_index": index + 1}), None)
+    return None
+
+
 def _latency_summary(values: Sequence[float]) -> dict[str, Any]:
     ordered = sorted(values)
     if not ordered:
@@ -1010,11 +1026,17 @@ class Driver:
         candidates = [action] if action else build_legal_actions(screen, commands, game_state)
         if not candidates:
             raise DriverError("no legal candidates for a non-terminal screen")
+        reveal_card = False
+        if action is None:
+            reveal = card_reward_reveal_action(screen, game_state, candidates)
+            if reveal is not None:
+                action = reveal
+                reveal_card = True
         row.update({"screen_type": screen.get("screen_type", screen.get("screenType")),
                     "state_identity": transition_identity(screen, game_state),
                     "legal_candidates": [candidate.trace() for candidate in candidates]})
         if action:
-            row["decision_source"] = "run_control"
+            row["decision_source"] = "card_reward_reveal" if reveal_card else "run_control"
         else:
             combat = _is_combat(screen)
             inspector_state = {**game_state, **screen, "_expected_boundary": "combat" if combat else "ooc"}

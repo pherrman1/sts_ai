@@ -211,6 +211,7 @@ namespace sts {
         float treasureChance = 0.02f;
         int potionChance = 0;
         int cardRarityFactor = 5;
+        int wingBootsCharges = 0;
         int shopRemoveCount = 0;
         bool speedrunPace = false; // todo load from save
 

@@ -13,6 +13,13 @@ import com.megacrit.cardcrawl.rooms.AbstractRoom;
 import com.megacrit.cardcrawl.shop.ShopScreen;
 import com.megacrit.cardcrawl.shop.StorePotion;
 import com.megacrit.cardcrawl.shop.StoreRelic;
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
@@ -41,7 +48,58 @@ final class LiveOocCapture {
         private long seed;
         private int act = -1, lastFloor = -1;
         private boolean complete;
+        private boolean restored;
         private final List<Map<String,Object>> entries = new ArrayList<>();
+
+        private Path ledgerPath(long currentSeed, int currentAct) {
+            String home = System.getProperty("user.home", ".");
+            return Paths.get(home, ".cache", "sts-model-inspector", "combat-history",
+                    currentSeed + "-act" + currentAct + ".tsv");
+        }
+
+        private void restore(Object currentPlayer, long currentSeed, int currentAct) {
+            if (restored && player == currentPlayer && seed == currentSeed && act == currentAct) return;
+            restored = true;
+            player = currentPlayer; seed = currentSeed; act = currentAct; lastFloor = -1;
+            entries.clear(); lastGroup = null;
+            Path path = ledgerPath(currentSeed, currentAct);
+            if (!Files.isRegularFile(path)) return;
+            complete = true;
+            try (BufferedReader reader = Files.newBufferedReader(path, StandardCharsets.UTF_8)) {
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    String[] fields = line.split("\\t", -1);
+                    if (fields.length != 2) { complete = false; break; }
+                    int floor = Integer.parseInt(fields[0]);
+                    String kind = fields[1];
+                    if (floor < 1 || kind.isEmpty()) { complete = false; break; }
+                    entries.add(object("floor", floor, "kind", kind));
+                    lastFloor = Math.max(lastFloor, floor);
+                }
+            } catch (IOException | NumberFormatException failure) {
+                entries.clear(); complete = false;
+            }
+        }
+
+        private void persist() {
+            if (player == null || act < 1 || seed == 0 || !complete) return;
+            Path path = ledgerPath(seed, act);
+            try {
+                Files.createDirectories(path.getParent());
+                Path temp = path.resolveSibling(path.getFileName() + ".tmp");
+                try (BufferedWriter writer = Files.newBufferedWriter(temp, StandardCharsets.UTF_8)) {
+                    for (Map<String,Object> entry : entries)
+                        writer.write(entry.get("floor") + "\t" + entry.get("kind") + "\n");
+                }
+                try { Files.move(temp, path, java.nio.file.StandardCopyOption.ATOMIC_MOVE,
+                        java.nio.file.StandardCopyOption.REPLACE_EXISTING); }
+                catch (java.nio.file.AtomicMoveNotSupportedException ignored) {
+                    Files.move(temp, path, java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+                }
+            } catch (IOException ignored) {
+                complete = false;
+            }
+        }
 
         void observe(Object currentPlayer, long currentSeed, int currentAct, int floor,
                 boolean noPriorActCombat, boolean inCombat, Object group, String kind) {
@@ -53,7 +111,9 @@ final class LiveOocCapture {
                 entries.clear();
                 lastGroup = null;
                 complete = noPriorActCombat;
+                restored = false;
             }
+            restore(currentPlayer, currentSeed, currentAct);
             lastFloor = floor;
             if (!inCombat) { lastGroup = null; return; }
             // A transition frame may already say COMBAT before vanilla has
@@ -64,6 +124,7 @@ final class LiveOocCapture {
             if (group != lastGroup) {
                 entries.add(object("floor", floor, "kind", kind));
                 lastGroup = group;
+                persist();
             }
         }
         void invalidate() { complete = false; }
@@ -75,6 +136,9 @@ final class LiveOocCapture {
             return true;
         }
         List<Map<String,Object>> snapshot() { return new ArrayList<>(entries); }
+        void restoreFor(Object currentPlayer, long currentSeed, int currentAct) {
+            restore(currentPlayer, currentSeed, currentAct);
+        }
     }
 
     static void observeCombatRoom(AbstractRoom room) {
@@ -310,6 +374,7 @@ final class LiveOocCapture {
         for (int floor : combatFloors)
             if (floor > combatActStart && floor <= AbstractDungeon.floorNum)
                 currentActCombatFloors.add(floor);
+        combatClassHistory.restoreFor(AbstractDungeon.player, Settings.seed, AbstractDungeon.actNum);
         p.put("combatHistory", combatClassHistory.snapshot());
         p.put("combatHistoryComplete", combatClassHistory.completeFor(currentActCombatFloors));
         // At the act-boss transition vanilla can leave one non-room sentinel
@@ -435,7 +500,7 @@ final class LiveOocCapture {
 
     private static final List<String> PERSISTENT_RELIC_COUNTERS = Arrays.asList(
             "Happy Flower", "Incense Burner", "InkBottle", "Inserter", "Nunchaku", "Pen Nib", "Sundial",
-            "NeowsBlessing", "Omamori", "Girya", "Tiny Chest");
+            "NeowsBlessing", "Omamori", "Girya", "Tiny Chest", "WingedGreaves");
 
     private static void unsupported(Map<String,Object> state, String reason) {
         if (!state.containsKey("unsupportedReason")) state.put("unsupportedReason", reason);
@@ -453,8 +518,7 @@ final class LiveOocCapture {
             if (!usedUp) unsupported(state, "RELIC_NATIVE_STATE_UNREPRESENTABLE:Lizard Tail:active");
             return usedUp ? 0 : counter;
         }
-        if ("Matryoshka".equals(id) || "WingedGreaves".equals(id)
-                || "NlothsMask".equals(id)) {
+        if ("Matryoshka".equals(id) || "NlothsMask".equals(id)) {
             if (counter > 0)
                 unsupported(state, "RELIC_NATIVE_STATE_UNREPRESENTABLE:" + id + ":active");
             return usedUp ? 0 : counter;

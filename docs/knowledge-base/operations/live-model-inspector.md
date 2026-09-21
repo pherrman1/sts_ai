@@ -408,9 +408,12 @@ read-only screen and choice converters. The observation contains:
   from a fresh Neow boundary; a resumed or mid-run observer leaves the marker
   incomplete. A separate current-act combat-class observer records whether each
   fight consumed the normal or elite encounter queue, was a fixed event fight,
-  or was a boss. It qualifies only when every combat in the act was observed;
-  a resumed mid-act run fails closed with
-  `PUBLIC_COMBAT_CLASS_HISTORY_UNQUALIFIED`. An optional
+  or was a boss. The observer persists this public ledger in
+  `~/.cache/sts-model-inspector/combat-history/<seed>-act<act>.tsv` and restores
+  it on process restart, then validates it against `damage_taken`. It qualifies
+  only when every combat in the act is represented; a missing or contradictory
+  sidecar still fails closed with `PUBLIC_COMBAT_CLASS_HISTORY_UNQUALIFIED`.
+  An optional
   `rewardPityHistoryComplete` marker is reserved for synthetic captures with
   an exact reconstruction; the live Java producer leaves it false.
 - `details`: current reward groups, campfire options, physical upgrade targets,
@@ -438,7 +441,10 @@ floors additionally come from `metricData.damage_taken`. The observed live room
 class distinguishes a `?` floor that became a hallway fight from a fixed event
 fight on the same map symbol: only the former advances the normal encounter
 queue. The combat-class ledger is checked against completed public combat
-floors without indexing `path_taken` by absolute floor. Missing or
+floors without indexing `path_taken` by absolute floor. Wing Boots' public
+charge counter is copied into the native root; its map action set includes the
+vanilla same-next-row non-edge destinations and decrements the counter when
+such a move is executed. Missing or
 contradictory history is unsupported. A historical unknown boss-transition marker is qualified only
 after fifteen public map-room entries for that act and a matching public boss
 combat floor; other unknown path symbols remain unsupported. Public metric

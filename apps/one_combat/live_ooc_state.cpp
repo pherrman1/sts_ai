@@ -287,12 +287,8 @@ ImportResult importLiveOocStateV1(const J &observation, LiveOocStateV1 &out) {
             throw std::runtime_error("live capture integrity failure: " + string(o,"captureError"));
         if (o.contains("unsupportedReason")) {
             const auto reason = string(o,"unsupportedReason");
-            // Active Winged Boots only changes the semantics of selecting a
-            // map node. Non-MAP roots are safe under the live advisor's hard
-            // MAP checkpoint: the current decision is scored before that
-            // choice and the descendant MAP state is evaluated without
-            // selecting a hypothetical node. Direct MAP roots remain
-            // fail-closed until native Winged Boots map mechanics exist.
+            // Wing Boots is represented in the native map action set with its
+            // public charge counter, so it is no longer a support boundary.
             const bool boundedWinged = reason
                     == "RELIC_NATIVE_STATE_UNREPRESENTABLE:WingedGreaves:active"
                 && screenName != "map";
@@ -360,6 +356,9 @@ ImportResult importLiveOocStateV1(const J &observation, LiveOocStateV1 &out) {
             const auto r=id<RelicId>(v.at("id"),RelicId::INVALID);
             require(relicIds.insert(r).second,"duplicate relic identity");
             g.relics.add({r,integer(v,"data",-1000000,1000000)});
+        }
+        if (g.relics.has(RelicId::WING_BOOTS)) {
+            g.wingBootsCharges = std::max(0, g.relics.getRelicValue(RelicId::WING_BOOTS));
         }
         g.boss=id<MonsterEncounter>(p.at("boss"),MonsterEncounter::INVALID);
         const auto &m=p.at("map");

@@ -29,7 +29,7 @@ public final class LiveOocCaptureTest {
         check("Lizard Tail", -1, false, -1, "RELIC_NATIVE_STATE_UNREPRESENTABLE:Lizard Tail:active");
         check("Lizard Tail", -2, true, 0, null);
         check("Matryoshka", 2, false, 2, "RELIC_NATIVE_STATE_UNREPRESENTABLE:Matryoshka:active");
-        check("WingedGreaves", 3, false, 3, "RELIC_NATIVE_STATE_UNREPRESENTABLE:WingedGreaves:active");
+        check("WingedGreaves", 3, false, 3, null);
         check("NlothsMask", 1, false, 1, "RELIC_NATIVE_STATE_UNREPRESENTABLE:NlothsMask:active");
         check("Matryoshka", -2, true, 0, null);
         check("UnqualifiedCounter", 3, false, 3, "RELIC_NATIVE_COUNTER_UNQUALIFIED:UnqualifiedCounter");
@@ -140,21 +140,21 @@ public final class LiveOocCaptureTest {
         if (seen.complete()) throw new AssertionError("missed floors retained complete history");
         LiveOocCapture.CombatClassHistory combats = new LiveOocCapture.CombatClassHistory();
         Object group = new Object();
-        combats.observe(player, 11, 1, 3, true, true, group, "FIXED_EVENT");
-        combats.observe(player, 11, 1, 3, true, true, group, "FIXED_EVENT");
-        combats.observe(player, 11, 1, 3, false, false, null, null);
-        combats.observe(player, 11, 1, 5, false, true, new Object(), "NORMAL_QUEUE");
-        combats.observe(player, 11, 1, 8, false, true, new Object(), "ELITE_QUEUE");
+        combats.observe(player, 0, 1, 3, true, true, group, "FIXED_EVENT");
+        combats.observe(player, 0, 1, 3, true, true, group, "FIXED_EVENT");
+        combats.observe(player, 0, 1, 3, false, false, null, null);
+        combats.observe(player, 0, 1, 5, false, true, new Object(), "NORMAL_QUEUE");
+        combats.observe(player, 0, 1, 8, false, true, new Object(), "ELITE_QUEUE");
         if (!combats.completeFor(java.util.Arrays.asList(3, 5, 8))
                 || combats.snapshot().size() != 3
                 || !"FIXED_EVENT".equals(combats.snapshot().get(0).get("kind")))
             throw new AssertionError("complete combat-class ledger lost fixed-event distinction");
         if (combats.completeFor(java.util.Arrays.asList(3, 5, 9)))
             throw new AssertionError("wrong combat metric floor qualified the ledger");
-        combats.observe(new Object(), 11, 1, 9, false, true, new Object(), "NORMAL_QUEUE");
+        combats.observe(new Object(), 0, 1, 9, false, true, new Object(), "NORMAL_QUEUE");
         if (combats.completeFor(java.util.Arrays.asList(3, 5, 8, 9)))
             throw new AssertionError("resumed mid-act combat history became complete");
-        combats.observe(player, 11, 2, 18, true, true, new Object(), "NORMAL_QUEUE");
+        combats.observe(player, 0, 2, 18, true, true, new Object(), "NORMAL_QUEUE");
         if (!combats.completeFor(java.util.Arrays.asList(18)))
             throw new AssertionError("new act did not reset complete combat-class history");
         if (!"RED_SLAVER".equals(STSModelInspector.singleEncounterName("SlaverRed", false))

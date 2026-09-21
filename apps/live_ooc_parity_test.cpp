@@ -12,6 +12,7 @@
 #include "one_combat/ooc_v4_encoding.h"
 #include "ooc_strategic_tok_net.h"
 #include "sim/search/OocSemanticAction.h"
+#include "sim/search/GameAction.h"
 
 using namespace sts;
 using namespace one_combat;
@@ -289,6 +290,33 @@ int main(int argc,char **argv){try{
         check(advisor::importLiveOocStateV1(wire, live).ok && !live.mctsRoot.supported
                 && live.mctsRoot.reason == "PUBLIC_COMBAT_CLASS_HISTORY_UNQUALIFIED",
               "resumed incomplete combat history must fail closed");
+    }
+    {
+        GameContext wing(CharacterClass::IRONCLAD, 1234, 0);
+        wing.screenState = ScreenState::MAP_SCREEN;
+        wing.curMapNodeY = 1;
+        wing.curMapNodeX = 0;
+        wing.wingBootsCharges = 1;
+        const auto current = wing.map->getNode(wing.curMapNodeX, wing.curMapNodeY);
+        int jumpX = -1;
+        for (const auto &target : wing.map->nodes[wing.curMapNodeY + 1]) {
+            const bool isEdge = std::find(current.edges.begin(),
+                                          current.edges.begin() + current.edgeCount,
+                                          target.x) != current.edges.begin() + current.edgeCount;
+            if (!isEdge && (target.edgeCount > 0 || target.y == 14)) {
+                jumpX = target.x;
+                break;
+            }
+        }
+        check(jumpX >= 0, "fixture map must expose a non-edge Wing Boots target");
+        const auto actions = search::GameAction::getAllActionsInState(wing);
+        check(std::any_of(actions.begin(), actions.end(),
+                          [jumpX](const auto &a) { return a.getIdx1() == jumpX; }),
+              "Wing Boots target must be a legal map action");
+        search::GameAction(jumpX).execute(wing);
+        check(wing.curMapNodeX == jumpX && wing.curMapNodeY == 2
+                && wing.wingBootsCharges == 0,
+              "Wing Boots jump must advance one row and consume one charge");
     }
     {
         auto source = base;
