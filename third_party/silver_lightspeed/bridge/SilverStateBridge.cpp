@@ -1305,9 +1305,9 @@ SilverTreeSnapshot snapshotSilverSearchTree(
     }
 
     try {
-        while (!pending.empty()) {
-            const Pending current = pending.back();
-            pending.pop_back();
+        std::size_t nextPending = 0;
+        while (nextPending < pending.size()) {
+            const Pending current = pending[nextPending++];
             const Node &node = *current.node;
 
             SilverTreeNodeSnapshot nodeSnapshot;

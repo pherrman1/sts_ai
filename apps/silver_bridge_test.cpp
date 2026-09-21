@@ -249,6 +249,13 @@ int main(int argc, char **argv) {
     check(enabledTree.nodes.front().hasState
               && enabledTree.nodes.front().state.player.curHp == firstWire.player.curHp,
           "exported Silver tree root must preserve its producer-shaped state");
+    check(std::all_of(enabledTree.nodes.begin() + 1, enabledTree.nodes.end(),
+                      [previousDepth = enabledTree.nodes.front().depth](const auto &node) mutable {
+                          const bool nondecreasing = node.depth >= previousDepth;
+                          previousDepth = node.depth;
+                          return nondecreasing;
+                      }),
+          "exported Silver tree must retain nodes in breadth-first discovery order");
 
     silver_bridge::SilverSearchConfig completeReplayConfig;
     completeReplayConfig.simulationsPerDecision = 8;

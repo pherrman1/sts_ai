@@ -7,7 +7,7 @@ import unittest
 
 
 class AdvisorProtocolTest(unittest.TestCase):
-    def run_advisor(self, rows, model=None, tree_debug=False):
+    def run_advisor(self, rows, model=None, tree_debug=False, tree_node_cap=None):
         env = os.environ.copy()
         if model is not None:
             env["STS_CTM_MODEL"] = str(model)
@@ -17,6 +17,10 @@ class AdvisorProtocolTest(unittest.TestCase):
             env["STS_SILVER_DEBUG_TREE"] = "1"
         else:
             env.pop("STS_SILVER_DEBUG_TREE", None)
+        if tree_node_cap is None:
+            env.pop("STS_SILVER_DEBUG_TREE_NODE_CAP", None)
+        else:
+            env["STS_SILVER_DEBUG_TREE_NODE_CAP"] = str(tree_node_cap)
         proc = subprocess.run(
             [sys.argv[1]], input="\n".join(rows) + "\n", text=True,
             capture_output=True, check=True, env=env)
@@ -250,6 +254,34 @@ class AdvisorProtocolTest(unittest.TestCase):
         self.assertEqual(debug_silver["tree"]["rootId"], 1)
         self.assertGreater(debug_silver["tree"]["retainedNodeCount"], 0)
         self.assertGreater(debug_silver["tree"]["retainedEdgeCount"], 0)
+
+        capped_result = self.run_advisor(
+            [json.dumps(wires[0])], self.model, tree_debug=True, tree_node_cap="1")[0]
+        capped_tree = next(row for row in capped_result["evaluators"]
+                           if row["id"] == "silver_player_decision_v2")["tree"]
+        self.assertTrue(capped_tree["accepted"])
+        self.assertTrue(capped_tree["truncated"])
+        self.assertEqual(capped_tree["retainedNodeCount"], 1)
+
+        for invalid_cap in ("-1", "0", "junk"):
+            with self.subTest(invalid_cap=invalid_cap):
+                invalid_result = self.run_advisor(
+                    [json.dumps(wires[0])], self.model,
+                    tree_debug=True, tree_node_cap=invalid_cap)[0]
+                invalid_tree = next(row for row in invalid_result["evaluators"]
+                                    if row["id"] == "silver_player_decision_v2")["tree"]
+                self.assertTrue(invalid_tree["accepted"])
+                self.assertEqual(invalid_tree["nodeCap"], 8192)
+                self.assertEqual(invalid_tree["retainedNodeCount"],
+                                 debug_silver["tree"]["retainedNodeCount"])
+
+        over_max_result = self.run_advisor(
+            [json.dumps(wires[0])], self.model,
+            tree_debug=True, tree_node_cap="100001")[0]
+        over_max_tree = next(row for row in over_max_result["evaluators"]
+                             if row["id"] == "silver_player_decision_v2")["tree"]
+        self.assertTrue(over_max_tree["accepted"])
+        self.assertEqual(over_max_tree["nodeCap"], 100000)
 
     def test_unknown_combat_selection_remains_silver_with_ctm_enabled(self):
         for room, encounter in (("MONSTER", "SHELL_PARASITE"),

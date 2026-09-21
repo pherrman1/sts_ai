@@ -13,6 +13,7 @@
 
 #include <iostream>
 #include <algorithm>
+#include <cerrno>
 #include <cstdlib>
 #include <string>
 #include <chrono>
@@ -104,9 +105,13 @@ bool truthyEnvironment(const char *name) {
 std::size_t silverTreeNodeCap() {
     const char *value = std::getenv("STS_SILVER_DEBUG_TREE_NODE_CAP");
     if (value == nullptr || *value == '\0') return 8192;
+    for (const char *cursor = value; *cursor != '\0'; ++cursor) {
+        if (*cursor < '0' || *cursor > '9') return 8192;
+    }
     char *end = nullptr;
+    errno = 0;
     const auto parsed = std::strtoull(value, &end, 10);
-    if (end == value || *end != '\0' || parsed == 0) return 8192;
+    if (errno == ERANGE || end == value || *end != '\0' || parsed == 0) return 8192;
     return static_cast<std::size_t>(std::min<unsigned long long>(parsed, 100000));
 }
 
@@ -302,8 +307,10 @@ json silverEvaluator(const one_combat::advisor::Request &request,
         silver_bridge::SilverTreeSnapshotConfig treeConfig;
         treeConfig.enabled = true;
         treeConfig.maxNodes = silverTreeNodeCap();
-        evaluator["tree"] = silverTreeSnapshotJson(
+        auto tree = silverTreeSnapshotJson(
             silver_bridge::snapshotSilverSearchTree(*session, treeConfig));
+        tree["nodeCap"] = treeConfig.maxNodes;
+        evaluator["tree"] = std::move(tree);
     }
     return evaluator;
 }
