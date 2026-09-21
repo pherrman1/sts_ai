@@ -138,6 +138,9 @@ namespace sts::search {
         std::int64_t macroEdgesGenerated = 0;
         std::int64_t macroOptionCountSum = 0;
         std::array<std::int64_t, 22> macroOptionCountByTask {};
+        std::int64_t fpuSelectionOpportunities = 0;
+        std::int64_t fpuVisitedSelectedWithUnvisitedRemaining = 0;
+        std::int64_t fpuUnvisitedSelected = 0;
         void add(const SearchStats &o) {
             steps += o.steps; nodesCreated += o.nodesCreated; detTranspositions += o.detTranspositions;
             chanceOutcomesSampled += o.chanceOutcomesSampled; chanceSiblingReuse += o.chanceSiblingReuse;
@@ -192,6 +195,9 @@ namespace sts::search {
             macroOptionCountSum += o.macroOptionCountSum;
             for (std::size_t i = 0; i < macroOptionCountByTask.size(); ++i)
                 macroOptionCountByTask[i] += o.macroOptionCountByTask[i];
+            fpuSelectionOpportunities += o.fpuSelectionOpportunities;
+            fpuVisitedSelectedWithUnvisitedRemaining += o.fpuVisitedSelectedWithUnvisitedRemaining;
+            fpuUnvisitedSelected += o.fpuUnvisitedSelected;
         }
     };
 
@@ -290,6 +296,9 @@ namespace sts::search {
         // outcome variance on top of policy variance and may need a different exploration level).
         double explorationParameter = 9.9;         // deterministic edges; tuned default
         double explorationParameterChance = 9.9;   // stochastic (chance-node) edges
+        // Default-off internal finite First-Play Urgency experiment. Root, chance,
+        // and CARD_SELECT selection retain the ordinary infinity rule.
+        bool internalFpuEnabled = false;
         std::vector<double> replayRootPriors;
         bool raveEnabled = false;
         double raveK = 0.0;
@@ -403,6 +412,9 @@ namespace sts::search {
         SearchStats stats;
 
         double evaluateEdge(const Node &parent, int edgeIdx, double logParentVisits);
+        double evaluateEdgeWithInternalFpu(const Node &parent, int edgeIdx,
+                                            double logParentVisits, bool useFpu);
+        bool internalFpuOpportunity(const Node &parent) const;
         int selectBestEdgeToSearch(const Node &cur);
 
         double rolloutToEnd(BattleContext &state, std::vector<Action> &actionStack,

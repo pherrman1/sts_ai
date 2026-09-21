@@ -27,7 +27,8 @@ nlohmann::json macroTaskCounts(const Counts &counts) {
 nlohmann::json replayRow(const nlohmann::json &input, std::int64_t budget,
                          bool collectUidFragmentationDiagnostics,
                          bool collectRerootDiagnostics,
-                         silver_bridge::SilverSearchContractMode contractMode) {
+                         silver_bridge::SilverSearchContractMode contractMode,
+                         bool internalFpuEnabled, bool firstDecisionOnly) {
     const auto started = std::chrono::steady_clock::now();
     nlohmann::json row = {
         {"case_id", input.value("case_id", "")},
@@ -48,7 +49,30 @@ nlohmann::json replayRow(const nlohmann::json &input, std::int64_t budget,
         config.rhoRacingEnabled = false;
         config.collectUidFragmentationDiagnostics = collectUidFragmentationDiagnostics;
         config.collectDecisionDiagnostics = collectRerootDiagnostics;
+        config.internalFpuEnabled = internalFpuEnabled;
+        config.collectSearchTiming = true;
         config.contractMode = contractMode;
+
+        if (firstDecisionOnly) {
+            config.collectDecisionDiagnostics = true;
+            const auto decision = silver_bridge::runSilverDecision(wire, config);
+            row["status"] = decision.accepted ? "ok" : decision.failureReason;
+            row["simulations"] = decision.simulations;
+            row["first_action_fingerprint"] = decision.initialActionFingerprint;
+            row["nodes_created"] = decision.telemetry.nodesCreated;
+            row["depth_sum"] = decision.telemetry.depthSum;
+            row["chance_depth_sum"] = decision.telemetry.chanceDepthSum;
+            row["search_wall_micros"] = decision.telemetry.searchWallMicros;
+            row["fpu_selection_opportunities"] =
+                decision.telemetry.fpuSelectionOpportunities;
+            row["fpu_visited_selected_with_unvisited_remaining"] =
+                decision.telemetry.fpuVisitedSelectedWithUnvisitedRemaining;
+            row["fpu_unvisited_selected"] = decision.telemetry.fpuUnvisitedSelected;
+            row["diagnostic_nodes_created"] = decision.diagnostic.nodesCreated;
+            row["diagnostic_root_visits"] = decision.diagnostic.rootVisitsAfterSearch;
+            row["diagnostic_chosen_edge_visits"] = decision.diagnostic.chosenEdgeVisits;
+            return row;
+        }
 
         const auto result = silver_bridge::runSilverCombatReplay(wire, config);
         row["won"] = result.won;
@@ -57,6 +81,7 @@ nlohmann::json replayRow(const nlohmann::json &input, std::int64_t budget,
         row["turns"] = result.terminalTurn;
         row["decisions"] = result.decisions;
         row["simulations"] = result.simulations;
+        row["first_action_fingerprint"] = result.firstActionFingerprint;
         row["mcts_search_invocations"] = result.mctsSearchInvocations;
         row["card_select_search_invocations"] = result.cardSelectSearchInvocations;
         row["primitive_actions_executed"] = result.primitiveActionsExecuted;
@@ -88,6 +113,13 @@ nlohmann::json replayRow(const nlohmann::json &input, std::int64_t budget,
         row["status"] = result.accepted ? "ok" : result.failureReason;
         row["rollout_calls"] = result.telemetry.rolloutCalls;
         row["nodes_created"] = result.telemetry.nodesCreated;
+        row["depth_sum"] = result.telemetry.depthSum;
+        row["chance_depth_sum"] = result.telemetry.chanceDepthSum;
+        row["search_wall_micros"] = result.telemetry.searchWallMicros;
+        row["fpu_selection_opportunities"] = result.telemetry.fpuSelectionOpportunities;
+        row["fpu_visited_selected_with_unvisited_remaining"] =
+            result.telemetry.fpuVisitedSelectedWithUnvisitedRemaining;
+        row["fpu_unvisited_selected"] = result.telemetry.fpuUnvisitedSelected;
         row["macro_eligible_decision_nodes"] = result.telemetry.macroEligibleDecisionNodes;
         row["macro_edges_generated"] = result.telemetry.macroEdgesGenerated;
         row["macro_option_count_sum"] = result.telemetry.macroOptionCountSum;
@@ -129,11 +161,14 @@ nlohmann::json replayRow(const nlohmann::json &input, std::int64_t budget,
 int main(int argc, char **argv) {
     if (argc < 3) {
         std::cerr << "usage: silver_hard_combat_replay SNAPSHOTS.jsonl BUDGET "
-                     "[--arm control|A|B] [--uid-fragmentation] [--reroot-diagnostics]\n";
+                     "[--arm control|A|B] [--uid-fragmentation] [--reroot-diagnostics] "
+                     "[--internal-fpu] [--first-decision-only]\n";
         return 2;
     }
     bool collectUidFragmentationDiagnostics = false;
     bool collectRerootDiagnostics = false;
+    bool internalFpuEnabled = false;
+    bool firstDecisionOnly = false;
     auto contractMode = silver_bridge::SilverSearchContractMode::CONTROL;
     for (int i = 3; i < argc; ++i) {
         const std::string option(argv[i]);
@@ -141,6 +176,10 @@ int main(int argc, char **argv) {
             collectUidFragmentationDiagnostics = true;
         } else if (option == "--reroot-diagnostics") {
             collectRerootDiagnostics = true;
+        } else if (option == "--internal-fpu") {
+            internalFpuEnabled = true;
+        } else if (option == "--first-decision-only") {
+            firstDecisionOnly = true;
         } else if (option == "--arm" && i + 1 < argc) {
             const std::string arm(argv[++i]);
             if (arm == "control") contractMode = silver_bridge::SilverSearchContractMode::CONTROL;
@@ -182,7 +221,8 @@ int main(int argc, char **argv) {
         try {
             const auto row = replayRow(nlohmann::json::parse(line), budget,
                                        collectUidFragmentationDiagnostics,
-                                       collectRerootDiagnostics, contractMode);
+                                       collectRerootDiagnostics, contractMode,
+                                       internalFpuEnabled, firstDecisionOnly);
             hadFailure = hadFailure || row.value("status", "") != "ok";
             std::cout << row.dump() << '\n';
         } catch (const std::exception &error) {

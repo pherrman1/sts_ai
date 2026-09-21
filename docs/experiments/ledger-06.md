@@ -10786,7 +10786,60 @@ default or generalization claim is authorized. Evidence:
   experiment evidence only; no production Silver behavior, model, RNG, schema,
   budget, gameplay result, or default changed.
 
-## §332 — Selected deterministic Silver reroot safety on frozen hard64-dev (2026-09-22)
+## §332 — Silver internal-node finite FPU screen (2026-09-21)
+
+- **Question and intervention:** Does finite First-Play Urgency let Silver
+  revisit promising explored actions at internal `PLAYER_NORMAL` nodes instead
+  of forcing breadth? The treatment was default-off and changed only
+  non-root, non-random nodes with at least two edges and both visited and
+  unvisited edges. It used the fixed
+  `c_fpu=max(explorationParameter,explorationParameterChance)` formulation
+  from the experiment handoff. Roots, `CARD_SELECT`, chance DPW, rollouts,
+  value, priors, transpositions, and exploration constants were unchanged.
+- **Correctness:** The focused `silver_search_optimization` and
+  `silver_bridge_boundary` CTest checks passed 2/2. The fixture proved flag-off
+  parity, root/chance/card-select exclusions, visited-edge selection under
+  finite FPU, and eventual unvisited exploration. The replay seam now emits
+  initial semantic root action, simulations, nodes, depth, search wall time,
+  and FPU opportunity/selection telemetry.
+- **Frozen implementation and provenance:** The implementation SHA was frozen
+  at `c9f58c20cd4879584fbe0d78828d33057350d914` before the expensive rerun.
+  The `hard64-dev` snapshot SHA-256 was
+  `ab7c3298754864986c31273a0f1d23967b165fdd79a386261b680b8ad16d0eae`.
+  Every case was run as one process through `tools/seed_guard.sh` with
+  `OMP_NUM_THREADS=4`, the same snapshot `benchmark_seed`, and the same fixed
+  configuration across arms; only budget and the default-off FPU flag differed.
+- **Complete 1k and 10k DEV cohorts:** All four arms had 64/64 accepted rows.
+  Control 1k was 51/64 wins and FPU 1k was 50/64; control 10k was 59/64 and
+  FPU 10k was 56/64. Full-combat nodes, depth, chance depth, simulations, and
+  wall time are retained as descriptive totals only: once root actions differ,
+  they are trajectory-confounded and are not causal FPU efficiency claims.
+- **Preregistered root metric:** Relative to high-budget CONTROL as a
+  reference, 1k CONTROL agreed in 45/64 cases and 1k FPU agreed in 39/64.
+  The 1k CONTROL/FPU actions disagreed in 22 cases: FPU moved toward the
+  reference in 6, away in 12, and both remained different in 4. The complete
+  case-by-case direction list and selected actions are in the evidence packet.
+- **First-decision efficiency:** A measurement-only replay seam covered the 59
+  ordinary roots common to both arms; five transactional `CARD_SELECT` roots
+  were excluded from this diagnostic but remained in the full-combat cohort.
+  At 1k, mean first-decision wall time was 90,739.926 us CONTROL versus
+  91,512.401 us FPU; at 10k it was 915,215.958 us versus 911,448.962 us.
+  These machine-dependent diagnostics are reported separately and are not a
+  production-performance qualification.
+- **Decision:** **`INTERNAL_FPU_INCONCLUSIVE`** after the complete high-budget
+  cohort. The mechanism is exercised, but the primary root metric is mixed and
+  leans against FPU; timing is inconsistent across budgets; and whole-combat
+  totals cannot support a causal efficiency claim. This does not support
+  `INTERNAL_FPU_PROMISING` or `INTERNAL_FPU_REJECTED` under the existing rule.
+  No tuning, holdout, gameplay qualification, or default promotion was
+  performed.
+- **Evidence:** [internal FPU evidence packet](evidence/silver_internal_fpu_20260921/README.md),
+  including compressed raw JSONL, deterministic analyzer, frozen summary, and
+  complete per-case table. **Knowledge impact:** durable complete-cohort
+  inconclusive Silver allocation result, first-decision telemetry seam, and
+  paired evidence contract; no production/default behavior changed.
+
+## §333 — Selected deterministic Silver reroot safety on frozen hard64-dev (2026-09-22)
 
 - **Question and frozen protocol:** Does selected-child hand alignment and its
   chance-action safety correction change the hard64-dev replay or expose a

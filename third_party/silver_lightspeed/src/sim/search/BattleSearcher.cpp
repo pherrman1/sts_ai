@@ -896,6 +896,39 @@ double search::BattleSearcher::evaluateEdge(const search::BattleSearcher::Node &
     return qualityValue + explorationValue;
 }
 
+bool search::BattleSearcher::internalFpuOpportunity(
+        const search::BattleSearcher::Node &parent) const {
+    if (!internalFpuEnabled || &parent == root || parent.isRandomNode
+            || parent.state == nullptr
+            || parent.state->inputState != InputState::PLAYER_NORMAL
+            || parent.edges.size() < 2 || parent.simulationCount <= 0) {
+        return false;
+    }
+    bool hasVisited = false;
+    bool hasUnvisited = false;
+    for (const auto &edge : parent.edges) {
+        const bool unvisited = edge.visitCount == 0 || edge.node == nullptr;
+        hasVisited = hasVisited || !unvisited;
+        hasUnvisited = hasUnvisited || unvisited;
+    }
+    return hasVisited && hasUnvisited;
+}
+
+double search::BattleSearcher::evaluateEdgeWithInternalFpu(
+        const search::BattleSearcher::Node &parent, int edgeIdx,
+        double logParentVisits, bool useFpu) {
+    const auto &edge = parent.edges[edgeIdx];
+    const bool unvisited = edge.visitCount == 0 || edge.node == nullptr;
+    if (useFpu && unvisited) {
+        const double cFpu = std::max(explorationParameter, explorationParameterChance);
+        const double parentMean = parent.evaluationSum
+            / static_cast<double>(parent.simulationCount);
+        return (parentMean - cFpu)
+            + cFpu * std::sqrt(std::log(parent.simulationCount + 1.0));
+    }
+    return evaluateEdge(parent, edgeIdx, logParentVisits);
+}
+
 int search::BattleSearcher::selectBestEdgeToSearch(const search::BattleSearcher::Node &cur) {
     if (cur.edges.size() == 1) {
         return 0;
@@ -903,20 +936,31 @@ int search::BattleSearcher::selectBestEdgeToSearch(const search::BattleSearcher:
 
     // log(parent visits) is the same for every edge, so compute it once for the whole comparison.
     const double logParentVisits = std::log(cur.simulationCount + 1);
+    const bool fpuOpportunity = internalFpuOpportunity(cur);
+    if (fpuOpportunity) ++stats.fpuSelectionOpportunities;
 
     auto bestEdge = 0;
-    auto bestEdgeValue = evaluateEdge(cur, bestEdge, logParentVisits);
+    auto bestEdgeValue = evaluateEdgeWithInternalFpu(
+        cur, bestEdge, logParentVisits, fpuOpportunity);
 
     //std::cout << "  edges: " << bestEdgeValue;
     for (int i = 1; i < cur.edges.size(); ++i) {
         // Strict > keeps the first winner, including when a later value is NaN.
         if (bestEdgeValue == std::numeric_limits<double>::infinity()) break;
-        const auto value = evaluateEdge(cur, i, logParentVisits);
+        const auto value = evaluateEdgeWithInternalFpu(
+            cur, i, logParentVisits, fpuOpportunity);
         //std::cout << ", " << value;
         if (value > bestEdgeValue) {
             bestEdge = i;
             bestEdgeValue = value;
         }
+    }
+    if (fpuOpportunity) {
+        const auto &selected = cur.edges[bestEdge];
+        if (selected.visitCount == 0 || selected.node == nullptr)
+            ++stats.fpuUnvisitedSelected;
+        else
+            ++stats.fpuVisitedSelectedWithUnvisitedRemaining;
     }
     //std::cout << "\n";
     return bestEdge;

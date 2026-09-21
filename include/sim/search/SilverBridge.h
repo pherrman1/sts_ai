@@ -483,6 +483,11 @@ struct SilverSearchConfig {
     // Default-off diagnostic accounting for conservative UID-only search
     // fragmentation candidates. This never changes search behavior.
     bool collectUidFragmentationDiagnostics = false;
+    // Default-off internal finite First-Play Urgency experiment. This only
+    // changes selection at eligible non-root PLAYER_NORMAL nodes.
+    bool internalFpuEnabled = false;
+    // Default-off timing observation for fixed-budget replay diagnostics.
+    bool collectSearchTiming = false;
     // Opt-in paired budget diagnostic: snapshot this same root after the
     // checkpoint budget and continue it to simulationsPerDecision. This is
     // observational only and is never enabled by the production path.
@@ -671,6 +676,9 @@ struct SilverSearchTelemetry {
     std::int64_t macroEdgesGenerated = 0;
     std::int64_t macroOptionCountSum = 0;
     std::array<std::int64_t, 22> macroOptionCountByTask {};
+    std::int64_t fpuSelectionOpportunities = 0;
+    std::int64_t fpuVisitedSelectedWithUnvisitedRemaining = 0;
+    std::int64_t fpuUnvisitedSelected = 0;
     void add(const SilverSearchTelemetry &other) {
         nodesCreated += other.nodesCreated;
         detTranspositions += other.detTranspositions;
@@ -733,6 +741,9 @@ struct SilverSearchTelemetry {
         macroOptionCountSum += other.macroOptionCountSum;
         for (std::size_t i = 0; i < macroOptionCountByTask.size(); ++i)
             macroOptionCountByTask[i] += other.macroOptionCountByTask[i];
+        fpuSelectionOpportunities += other.fpuSelectionOpportunities;
+        fpuVisitedSelectedWithUnvisitedRemaining += other.fpuVisitedSelectedWithUnvisitedRemaining;
+        fpuUnvisitedSelected += other.fpuUnvisitedSelected;
     }
 };
 
@@ -876,6 +887,7 @@ struct SilverCombatReplayResult {
     int multiCardSelectActions = 0;
     bool traversedGamble = false;
     std::int64_t simulations = 0;
+    std::string firstActionFingerprint;
     int mctsSearchInvocations = 0;
     int cardSelectSearchInvocations = 0;
     int primitiveActionsExecuted = 0;
