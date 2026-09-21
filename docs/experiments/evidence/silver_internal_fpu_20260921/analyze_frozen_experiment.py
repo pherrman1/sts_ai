@@ -18,6 +18,12 @@ FULL_BINARY_SHA256 = "a416d451279cc8d9324240e67f615fff56f52d307b8c14a07a91650ef9
 FIRST_DECISION_BINARY_SHA256 = "d7a343f6e8e57bb48929443707bb8e63850f4c501fa31a203126a35713dcc722"
 THREADS = 4
 
+FPU_COUNTER_FIELDS = (
+    "fpu_selection_opportunities",
+    "fpu_visited_selected_with_unvisited_remaining",
+    "fpu_unvisited_selected",
+)
+
 CONFIG = {
     "exploration_parameter": 25.0,
     "exploration_parameter_chance": 25.0,
@@ -114,16 +120,67 @@ def main() -> None:
     }
     loaded = {}
     raw_hashes = {}
+    validation = {
+        "expected_budget_by_file": {},
+        "status_sets_by_file": {},
+        "arm_identity_by_file": {},
+        "snapshot_state_hash_verified": True,
+        "paired_status_sets_verified": True,
+    }
     for label, path in paths.items():
         rows, raw_hashes[label] = load_jsonl(path)
-        loaded[label] = by_case(rows, label, {"ok"} if not label.startswith("first_")
-                                 else {"ok", "transactional_selection_required"})
+        expected_statuses = ({"ok"} if not label.startswith("first_")
+                             else {"ok", "transactional_selection_required"})
+        loaded[label] = by_case(rows, label, expected_statuses)
+        expected_budget = 1000 if label.endswith("1k") else 10000
+        arm = label.split("_")[1] if label.startswith("first_") else label.split("_")[0]
+        if arm not in {"control", "fpu"}:
+            raise ValueError(f"{label}: cannot infer CONTROL/FPU arm identity")
+        validation["expected_budget_by_file"][label] = expected_budget
+        validation["status_sets_by_file"][label] = sorted({row["status"] for row in rows})
+        if set(validation["status_sets_by_file"][label]) != expected_statuses:
+            raise ValueError(
+                f"{label}: status set {validation['status_sets_by_file'][label]!r} "
+                f"does not equal {sorted(expected_statuses)!r}"
+            )
+        treatment_opportunities = 0
+        for row in rows:
+            case_id = row["case_id"]
+            if row.get("budget") != expected_budget:
+                raise ValueError(
+                    f"{label}/{case_id}: expected budget {expected_budget}, "
+                    f"got {row.get('budget')!r}"
+                )
+            for field in FPU_COUNTER_FIELDS:
+                value = row.get(field)
+                if not isinstance(value, int) or isinstance(value, bool) or value < 0:
+                    raise ValueError(f"{label}/{case_id}: invalid {field}: {value!r}")
+                if arm == "control" and value != 0:
+                    raise ValueError(
+                        f"{label}/{case_id}: CONTROL has nonzero {field}: {value}"
+                    )
+            if arm == "fpu":
+                treatment_opportunities += row["fpu_selection_opportunities"]
+        if arm == "fpu" and treatment_opportunities <= 0:
+            raise ValueError(f"{label}: FPU treatment has no selection opportunities")
+        validation["arm_identity_by_file"][label] = {
+            "arm": arm,
+            "expected_internal_fpu_enabled": arm == "fpu",
+            "counter_identity_verified": True,
+            "treatment_fpu_selection_opportunities": treatment_opportunities,
+        }
 
     for label, rows in loaded.items():
         for case_id, row in rows.items():
             snapshot = snapshot_by_case[case_id]
             if row.get("state_hash") != snapshot["state_hash"]:
                 raise ValueError(f"{label}/{case_id}: state hash mismatch")
+
+    for budget in ("1k", "10k"):
+        control_statuses = validation["status_sets_by_file"][f"first_control_{budget}"]
+        fpu_statuses = validation["status_sets_by_file"][f"first_fpu_{budget}"]
+        if control_statuses != fpu_statuses:
+            raise ValueError(f"first-decision status sets differ for {budget}")
 
     full_labels = ["control_1k", "fpu_1k", "control_10k", "fpu_10k"]
     first_labels = ["first_control_1k", "first_fpu_1k", "first_control_10k", "first_fpu_10k"]
@@ -254,6 +311,7 @@ def main() -> None:
         "config": CONFIG,
         "config_sha256": config_hash,
         "raw_jsonl_sha256": raw_hashes,
+        "validation": validation,
         "cohort_rows": 64,
         "full_aggregates": full_aggregates,
         "primary_root_metric": {
@@ -329,6 +387,8 @@ def main() -> None:
         "",
         "## Provenance",
         "",
+        "- Analyzer validation passed for expected per-file budgets, exact status sets, snapshot state hashes, and arm-specific FPU counter identity (CONTROL counters all zero; FPU treatment opportunities positive).",
+        "- The raw replay rows do not embed the CLI flag/configuration; CONTROL/FPU identity is therefore verified from the expected file arm plus its fail-closed counter semantics, while the fixed search configuration is recorded separately by `config_sha256`.",
         "- All four full-combat arms: `OMP_NUM_THREADS=4 bash tools/seed_guard.sh build/linux-gcc-debug/silver_hard_combat_replay CASE.jsonl BUDGET --arm control [--internal-fpu]`.",
         "- First-decision diagnostics used the same command with `--first-decision-only`; this is measurement-only harness output and does not change FPU/search policy.",
         "- Full-combat binary SHA-256: `" + FULL_BINARY_SHA256 + "`.",

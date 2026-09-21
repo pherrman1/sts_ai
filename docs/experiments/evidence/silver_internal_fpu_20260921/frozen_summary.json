@@ -494,5 +494,99 @@
     "fpu_1k": "f752bd8d3be51413839c42379bdad1b66fa745fc2e1867a3530e32bd9ef37bb3"
   },
   "snapshot_sha256": "ab7c3298754864986c31273a0f1d23967b165fdd79a386261b680b8ad16d0eae",
-  "threads": 4
+  "threads": 4,
+  "validation": {
+    "arm_identity_by_file": {
+      "control_10k": {
+        "arm": "control",
+        "counter_identity_verified": true,
+        "expected_internal_fpu_enabled": false,
+        "treatment_fpu_selection_opportunities": 0
+      },
+      "control_1k": {
+        "arm": "control",
+        "counter_identity_verified": true,
+        "expected_internal_fpu_enabled": false,
+        "treatment_fpu_selection_opportunities": 0
+      },
+      "first_control_10k": {
+        "arm": "control",
+        "counter_identity_verified": true,
+        "expected_internal_fpu_enabled": false,
+        "treatment_fpu_selection_opportunities": 0
+      },
+      "first_control_1k": {
+        "arm": "control",
+        "counter_identity_verified": true,
+        "expected_internal_fpu_enabled": false,
+        "treatment_fpu_selection_opportunities": 0
+      },
+      "first_fpu_10k": {
+        "arm": "fpu",
+        "counter_identity_verified": true,
+        "expected_internal_fpu_enabled": true,
+        "treatment_fpu_selection_opportunities": 836648
+      },
+      "first_fpu_1k": {
+        "arm": "fpu",
+        "counter_identity_verified": true,
+        "expected_internal_fpu_enabled": true,
+        "treatment_fpu_selection_opportunities": 83539
+      },
+      "fpu_10k": {
+        "arm": "fpu",
+        "counter_identity_verified": true,
+        "expected_internal_fpu_enabled": true,
+        "treatment_fpu_selection_opportunities": 27390379
+      },
+      "fpu_1k": {
+        "arm": "fpu",
+        "counter_identity_verified": true,
+        "expected_internal_fpu_enabled": true,
+        "treatment_fpu_selection_opportunities": 2697841
+      }
+    },
+    "expected_budget_by_file": {
+      "control_10k": 10000,
+      "control_1k": 1000,
+      "first_control_10k": 10000,
+      "first_control_1k": 1000,
+      "first_fpu_10k": 10000,
+      "first_fpu_1k": 1000,
+      "fpu_10k": 10000,
+      "fpu_1k": 1000
+    },
+    "paired_status_sets_verified": true,
+    "snapshot_state_hash_verified": true,
+    "status_sets_by_file": {
+      "control_10k": [
+        "ok"
+      ],
+      "control_1k": [
+        "ok"
+      ],
+      "first_control_10k": [
+        "ok",
+        "transactional_selection_required"
+      ],
+      "first_control_1k": [
+        "ok",
+        "transactional_selection_required"
+      ],
+      "first_fpu_10k": [
+        "ok",
+        "transactional_selection_required"
+      ],
+      "first_fpu_1k": [
+        "ok",
+        "transactional_selection_required"
+      ],
+      "fpu_10k": [
+        "ok"
+      ],
+      "fpu_1k": [
+        "ok"
+      ]
+    }
+  }
 }

@@ -62,6 +62,8 @@ First-decision wall time is diagnostic and machine-dependent; it is reported sep
 
 ## Provenance
 
+- Analyzer validation passed for expected per-file budgets, exact status sets, snapshot state hashes, and arm-specific FPU counter identity (CONTROL counters all zero; FPU treatment opportunities positive).
+- The raw replay rows do not embed the CLI flag/configuration; CONTROL/FPU identity is therefore verified from the expected file arm plus its fail-closed counter semantics, while the fixed search configuration is recorded separately by `config_sha256`.
 - All four full-combat arms: `OMP_NUM_THREADS=4 bash tools/seed_guard.sh build/linux-gcc-debug/silver_hard_combat_replay CASE.jsonl BUDGET --arm control [--internal-fpu]`.
 - First-decision diagnostics used the same command with `--first-decision-only`; this is measurement-only harness output and does not change FPU/search policy.
 - Full-combat binary SHA-256: `a416d451279cc8d9324240e67f615fff56f52d307b8c14a07a91650ef96d7311`.

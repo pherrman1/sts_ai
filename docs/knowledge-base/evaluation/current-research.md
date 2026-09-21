@@ -1504,7 +1504,9 @@ moved toward the 10k CONTROL reference 6 times and away 12 times. Full 1k and
 10k `hard64-dev` cohorts were accepted 64/64 per arm, but whole-combat
 nodes/wall/simulation totals are trajectory-confounded after root divergence.
 The fixed FPU formulation remains unchanged and is not a production default;
-do not tune, promote, or run gameplay qualification from this result. See
+park this particular formulation pending a new hypothesis. Do not tune,
+promote, spend holdout budget, or run gameplay qualification from this result.
+See
 [ledger-06 §332](../../experiments/ledger-06.md) and the
 [complete internal-FPU evidence packet](../../experiments/evidence/silver_internal_fpu_20260921/README.md).
 

@@ -88,10 +88,16 @@ OMP_NUM_THREADS=4 bash tools/seed_guard.sh \
   build/linux-gcc-debug/silver_hard_combat_replay CASE.jsonl 10000 --arm control --internal-fpu
 ```
 
-The analyzer verifies every result row against the snapshot's `state_hash` and
-joins the paired `benchmark_seed`, source seed, fight index, snapshot state,
-source executable SHA, and pinned Silver SHA. It also records the fixed
-configuration hash and raw decompressed-content hashes in
+The deterministic analyzer verifies 64 unique rows per file, the expected
+budget for each file, the exact allowed status set, every result row against
+the snapshot's `state_hash`, and arm-specific FPU counter identity: CONTROL
+rows must have all FPU counters at zero, while each FPU treatment cohort must
+have positive FPU selection opportunities. It joins the paired
+`benchmark_seed`, source seed, fight index, snapshot state, source executable
+SHA, and pinned Silver SHA. The raw replay rows do not embed the CLI arm/config
+flag, so the analyzer does not claim row-level verification of that flag; the
+fixed search configuration is recorded separately by its configuration hash.
+Raw decompressed-content hashes and these validation results are recorded in
 [`frozen_summary.json`](frozen_summary.json).
 
 ## Complete full-combat cohort
@@ -185,7 +191,9 @@ cannot establish causal efficiency because trajectories diverge. The complete
 `INTERNAL_FPU_REJECTED` under the existing decision rule.
 
 No coefficient tuning, holdout run, gameplay qualification, default promotion,
-or search-policy modification was performed.
+or search-policy modification was performed. Park this particular FPU
+formulation pending a new hypothesis; no holdout spend is justified by this
+mixed result.
 
 Knowledge impact: durable complete-cohort inconclusive Silver allocation result,
 first-decision telemetry seam, and paired evidence contract; no production or
