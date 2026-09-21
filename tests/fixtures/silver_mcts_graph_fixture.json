@@ -1,0 +1,81 @@
+{
+  "session": "tree-example",
+  "sequence": 1,
+  "observationHash": "tree-example-hash",
+  "observation": {
+    "boundary": "combat",
+    "act": 1,
+    "floor": 12,
+    "hp": 55,
+    "maxHp": 80,
+    "turn": 3,
+    "combat": {
+      "block": 6,
+      "energy": 2,
+      "monsters": [
+        {"id": "Cultist", "hp": 20, "maxHp": 48, "block": 0, "intent": "ATTACK", "intentDamage": 6}
+      ],
+      "hand": [
+        {"id": "Bash", "name": "Bash", "uuid": "bash-1", "upgraded": false, "cost": 2, "costForTurn": 2},
+        {"id": "Defend_R", "name": "Defend", "uuid": "defend-1", "upgraded": false, "cost": 1, "costForTurn": 1}
+      ],
+      "draw": ["Strike", "Defend", "Pommel Strike"],
+      "discard": ["Inflame"],
+      "exhaust": [],
+      "potions": ["Fire Potion"],
+      "relics": ["Burning Blood"]
+    },
+    "silverRoot": {"encounter": "Cultist"}
+  },
+  "response": {
+    "ready": true,
+    "session": "tree-example",
+    "sequence": 1,
+    "observationHash": "tree-example-hash",
+    "advisor": {
+      "evaluators": [
+        {
+          "id": "silver_player_decision_v2",
+          "status": "OK",
+          "requestedSimulations": 1000,
+          "additionalSimulations": 1000,
+          "totalSimulations": 1000,
+          "rootVisits": 1000,
+          "selectedAction": "card:Bash:uid=1:target=0",
+          "selectedLabel": "Bash",
+          "selectedLiveAction": {"kind": "card", "cardUuid": "bash-1", "targetIndex": 1},
+          "decisionInTurn": 0,
+          "reroot": {"exact": true, "fallback": false, "inheritedVisits": 0},
+          "rootActionSummaries": [
+            {"fingerprint": "card:Bash:uid=1:target=0", "label": "Bash", "edgeVisits": 610, "visitShare": 0.61, "selectionQValid": true, "selectionQ": 0.74},
+            {"fingerprint": "card:Defend_R:uid=2:target=-1", "label": "Defend", "edgeVisits": 270, "visitShare": 0.27, "selectionQValid": true, "selectionQ": 0.51},
+            {"fingerprint": "end_turn", "label": "End turn", "edgeVisits": 120, "visitShare": 0.12, "selectionQValid": true, "selectionQ": 0.18}
+          ],
+          "tree": {
+            "accepted": true,
+            "failureReason": "",
+            "truncated": false,
+            "rootId": 1,
+            "retainedNodeCount": 5,
+            "retainedEdgeCount": 6,
+            "nodes": [
+              {"id": 1, "parentId": 0, "depth": 0, "isChanceNode": false, "hasState": true, "stateHash": 1001, "simulationCount": 1000, "victoryCount": 612, "evaluationSum": 684.5, "state": {"turn": 3, "inputState": 0, "player": {"curHp": 55, "maxHp": 80, "block": 6, "energy": 2}, "monsters": [{"id": "Cultist", "curHp": 20, "maxHp": 48, "intentDamage": 6}], "hand": [{"id": "Bash", "cost": 2, "costForTurn": 2}, {"id": "Defend_R", "cost": 1, "costForTurn": 1}]}},
+              {"id": 2, "parentId": 1, "depth": 1, "isChanceNode": false, "hasState": true, "stateHash": 1002, "simulationCount": 610, "victoryCount": 451, "evaluationSum": 451.4, "state": {"turn": 3, "inputState": 0, "player": {"curHp": 55, "maxHp": 80, "block": 6, "energy": 0}, "monsters": [{"id": "Cultist", "curHp": 5, "maxHp": 48, "intentDamage": 6}]}},
+              {"id": 3, "parentId": 1, "depth": 1, "isChanceNode": false, "hasState": true, "stateHash": 1003, "simulationCount": 270, "victoryCount": 138, "evaluationSum": 137.7, "state": {"turn": 3, "inputState": 0, "player": {"curHp": 55, "maxHp": 80, "block": 11, "energy": 1}, "monsters": [{"id": "Cultist", "curHp": 20, "maxHp": 48, "intentDamage": 6}]}},
+              {"id": 4, "parentId": 1, "depth": 1, "isChanceNode": true, "hasState": false, "stateHash": 1004, "simulationCount": 120, "victoryCount": 23, "evaluationSum": 21.6},
+              {"id": 5, "parentId": 4, "depth": 2, "isChanceNode": false, "hasState": true, "stateHash": 1002, "simulationCount": 80, "victoryCount": 59, "evaluationSum": 59.2, "state": {"turn": 3, "inputState": 0, "player": {"curHp": 55, "maxHp": 80, "block": 6, "energy": 0}, "monsters": [{"id": "Cultist", "curHp": 5, "maxHp": 48, "intentDamage": 6}]}}
+            ],
+            "edges": [
+              {"parentId": 1, "childId": 2, "childCaptured": true, "chanceOutcome": false, "rngAdvanceSteps": 0, "visitCount": 610, "hasAction": true, "actionFingerprint": "card:Bash:uid=1:target=0", "actionLabel": "Bash", "hasContinuation": false, "continuationFingerprint": "", "continuationLabel": ""},
+              {"parentId": 1, "childId": 3, "childCaptured": true, "chanceOutcome": false, "rngAdvanceSteps": 0, "visitCount": 270, "hasAction": true, "actionFingerprint": "card:Defend_R:uid=2:target=-1", "actionLabel": "Defend", "hasContinuation": false, "continuationFingerprint": "", "continuationLabel": ""},
+              {"parentId": 1, "childId": 4, "childCaptured": true, "chanceOutcome": false, "rngAdvanceSteps": 0, "visitCount": 120, "hasAction": true, "actionFingerprint": "end_turn", "actionLabel": "End turn", "hasContinuation": false, "continuationFingerprint": "", "continuationLabel": ""},
+              {"parentId": 4, "childId": 5, "childCaptured": true, "chanceOutcome": true, "rngAdvanceSteps": 0, "visitCount": 80, "hasAction": false, "actionFingerprint": "", "actionLabel": "chance outcome 0", "hasContinuation": false, "continuationFingerprint": "", "continuationLabel": ""},
+              {"parentId": 4, "childId": 2, "childCaptured": true, "chanceOutcome": true, "rngAdvanceSteps": 1, "visitCount": 40, "hasAction": false, "actionFingerprint": "", "actionLabel": "chance outcome 1", "hasContinuation": false, "continuationFingerprint": "", "continuationLabel": ""},
+              {"parentId": 2, "childId": 2, "childCaptured": true, "chanceOutcome": false, "rngAdvanceSteps": 0, "visitCount": 12, "hasAction": true, "actionFingerprint": "end_turn", "actionLabel": "End turn (transposed continuation)", "hasContinuation": false, "continuationFingerprint": "", "continuationLabel": ""}
+            ]
+          }
+        }
+      ]
+    }
+  }
+}
