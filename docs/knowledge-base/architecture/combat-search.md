@@ -208,19 +208,13 @@ Search nodes contain compact bookkeeping and a pointer to a separately pooled
 battle state. Only decision nodes claim state storage; chance nodes have a null
 state pointer and read their decision parent's state. Both pools retain stable
 object addresses and reuse capacity.
-Silver retained-search identity treats `curCardQueueItem` as historical at a
-settled, unresolved `PLAYER_NORMAL` decision only when neither action nor card
-work is queued and no end-turn flag is set. Exact `equalForSearch()` is tried
-first; a matching search hash may then reuse a state differing only in that
-queue item. `CARD_SELECT`, `EXECUTING_ACTIONS`, terminal, queued, and end-turn
-states retain exact queue-item identity. The representative stays stable during
-ordinary dedup lookups. On a successful reroot, its queue item is aligned to
-the concrete observed state before any hand-order alignment. This applies to
-selected deterministic children, sampled chance outcomes, and live explored
-edges. Selected deterministic children must still reroot, be cap-blocked, or
-fail loudly; a missing selected child is never silently treated as stochastic.
-`queueItemCanonicalHits` counts exact-miss dedup lookups accepted through this
-narrow equivalence, not unique states or saved allocations.
+An unmerged settled-player queue-item canonicalization candidate is recorded
+in [ADR-0016](../../../decisions/0016-silver-settled-queue-item-identity.md).
+Its frozen HOLDOUT run exposed a selected deterministic `CARD_SELECT` child
+whose retained and observed states differed only in `curCardQueueItem`. Since
+`CARD_SELECT` identity remains exact, the candidate did not pass the reroot
+correctness gate and is not the production behavior. The candidate and its
+consumed HOLDOUT evidence are recorded in the current experiment ledger.
 
 Fresh reset resets both active counters;
 exact reroot below the configured node cap preserves both pools and the global

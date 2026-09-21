@@ -1,6 +1,6 @@
 # ADR-0016: Canonicalize historical queue items in settled Silver decisions
 
-- Status: accepted
+- Status: blocked candidate; not adopted
 - Date: 2026-09-22
 
 ## Context
@@ -13,7 +13,7 @@ The earlier default-off candidate in PR #275 was exploratory; its whole-combat
 efficiency comparison was trajectory-confounded. PR #277 established the
 selected deterministic child reroot invariant used here.
 
-## Decision
+## Intended decision and implementation boundary
 
 Silver retained-search identity ignores `curCardQueueItem` only when both
 states are unresolved, nonterminal `PLAYER_NORMAL` decisions with empty action
@@ -34,7 +34,11 @@ constants are unchanged.
 
 ## Evidence
 
-Focused search and bridge boundary tests cover dedup, excluded states, hand
+Focused search and bridge boundary tests covered dedup, excluded states, hand
 permutation, equivalent-copy repair, selected deterministic reroot, sampled
-chance outcomes, and Attack Potion selection. Frozen DEV and HOLDOUT results
-and same-root measurements are recorded in the next Silver ledger entry.
+chance outcomes, and Attack Potion selection. Frozen DEV passed, but the
+one planned HOLDOUT run exposed a selected deterministic `CARD_SELECT` child
+whose only reported state difference was `curCardQueueItem`. The exact
+`CARD_SELECT` boundary correctly rejected it. The candidate cannot be adopted
+without a new design that preserves that boundary and deterministic reroot
+correctness. The HOLDOUT is consumed; see Silver ledger §334.
