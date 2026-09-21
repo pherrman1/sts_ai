@@ -156,6 +156,14 @@ public final class LiveOocCaptureTest {
                 || LiveOocCapture.goopInitialVisible("INTRO", goopLabels, goopOptions, 11, 75, 42, 99)
                 || LiveOocCapture.goopInitialVisible("INTRO", goopLabels, goopOptions, 11, 75, 41, 40))
             throw new AssertionError("World of Goop public loss or phase mismatch");
+        List<Object> shrineOptions = Arrays.asList(obj("index", 0), obj("index", 1), obj("index", 2));
+        List<String> shrineLabels = Arrays.asList("[Pray] Gain 100 Gold.",
+                "[Desecrate] Gain 275 Gold. Become Cursed - Regret.", "[Leave]");
+        if (!LiveOocCapture.goldShrineInitialVisible("INTRO", shrineLabels, shrineOptions, 100, 0)
+                || LiveOocCapture.goldShrineInitialVisible("INTRO", shrineLabels, shrineOptions, 100, 20)
+                || LiveOocCapture.goldShrineInitialVisible("RESULT", shrineLabels, shrineOptions, 100, 0)
+                || LiveOocCapture.simpleInitialEventSupported("GoldenShrine"))
+            throw new AssertionError("GoldShrine runtime class or public amount mismatch");
         try {
             LiveOocCapture.scrapOozeRetryCount(30, 3, 0);
             throw new AssertionError("non-native Scrap Ooze chance was accepted");

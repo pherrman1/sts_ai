@@ -148,6 +148,7 @@ int main(int argc,char **argv){try{
     g=base;g.openCardSelectScreen(CardSelectScreenType::TRANSFORM,1);add("transform_selector",g);
     g=base;g.screenState=ScreenState::EVENT_SCREEN;g.curEvent=Event::BIG_FISH;add("event_big_fish",g);
     g.curEvent=Event::LIVING_WALL;add("event_living_wall",g);
+    g.curEvent=Event::GOLDEN_SHRINE;add("event_gold_shrine_public_amount",g);
     g.curEvent=Event::SHINING_LIGHT;g.info.hpAmount0=16;add("event_shining_light_public_damage",g);
     g.curEvent=Event::WORLD_OF_GOOP;g.info.goldLoss=41;add("event_world_of_goop_public_gold_loss",g);
     g.curEvent=Event::GOLDEN_IDOL;g.info.hpAmount0=20;g.info.hpAmount1=6;

@@ -694,7 +694,7 @@ final class LiveOocCapture {
     }
 
     static boolean simpleInitialEventSupported(String simple) {
-        return Arrays.asList("BigFish", "Beggar", "GoldenIdolEvent", "GoldenShrine", "ShiningLight", "WeMeetAgain",
+        return Arrays.asList("BigFish", "Beggar", "GoldenIdolEvent", "ShiningLight", "WeMeetAgain",
                 "LivingWall", "Sssserpent", "ScrapOoze", "Mushrooms", "TheLibrary",
                 "TheMausoleum", "MysteriousSphere", "SecretPortal", "FountainOfCurseRemoval", "UpgradeShrine",
                 "PurificationShrine", "Transmogrifier", "Duplicator", "Bonfire", "TheJoust",
@@ -710,6 +710,18 @@ final class LiveOocCapture {
                 && String.valueOf(labels.get(0)).contains(Integer.toString(gain))
                 && String.valueOf(labels.get(0)).contains(Integer.toString(damage))
                 && String.valueOf(labels.get(1)).contains(Integer.toString(goldLoss));
+    }
+
+    static boolean goldShrineInitialVisible(Object phase, List<?> labels, List<?> options,
+                                            int goldAmount, int ascension) {
+        int expected = ascension >= 15 ? 50 : 100;
+        return "INTRO".equals(String.valueOf(phase)) && labels.size() == 3 && options.size() == 3
+                && ((Number)map(options.get(0)).get("index")).intValue() == 0
+                && ((Number)map(options.get(1)).get("index")).intValue() == 1
+                && ((Number)map(options.get(2)).get("index")).intValue() == 2
+                && goldAmount == expected
+                && String.valueOf(labels.get(0)).contains(Integer.toString(expected))
+                && String.valueOf(labels.get(1)).contains("275");
     }
 
     static boolean nestDecisionVisible(String simple, Object phase, List<?> labels, List<?> options,
@@ -1036,6 +1048,9 @@ final class LiveOocCapture {
                     AbstractDungeon.player.gold);
             if (goop) map(out.get("details")).put("goldLoss", goldLoss);
         }
+        boolean goldShrine = "GoldShrine".equals(simple)
+                && goldShrineInitialVisible(phase, labels, options,
+                        ((Number)field(event, "goldAmt")).intValue(), AbstractDungeon.ascensionLevel);
         if ("WeMeetAgain".equals(simple) && "INTRO".equals(String.valueOf(phase))) {
             Map<String,Object> details = map(out.get("details"));
             Object offeredPotion = field(event, "potionOption");
@@ -1076,6 +1091,7 @@ final class LiveOocCapture {
                 && ((Number)map(options.get(2)).get("index")).intValue() == 2;
         if (!(simpleInitialEventSupported(simple) && initial)
                 && !goop
+                && !goldShrine
                 && !nestDecisionVisible(simple, phase, labels, options, AbstractDungeon.ascensionLevel)
                 && !idolTrap && !goldenWing)
             out.put("unsupportedReason", "EVENT_PHASE_UNREPRESENTABLE:" + id + ":" + phase);

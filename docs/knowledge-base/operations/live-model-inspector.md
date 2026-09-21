@@ -487,9 +487,11 @@ closed with `PUBLIC_QUESTION_ROOM_HISTORY_UNQUALIFIED`. Events whose native
 `StateInfo` fields are not captured (`Ghosts` and `WindingHalls`) remain
 unsupported. `WorldOfGoop` imports its displayed gold loss from the native
 event field and checks the displayed gain/damage and intro phase.
-`ShiningLight` imports its public damage amount. Unopened treasure imports
-its public chest size; its unrevealed
-contents remain hidden in the hypothetical futures. The private Java
+`ShiningLight` imports its public damage amount. The Java `GoldShrine` event
+is qualified by its intro options and ascension-dependent public gold amount
+before mapping to native `Golden Shrine`. Unopened treasure imports its public
+chest size; its unrevealed contents remain hidden in the hypothetical futures.
+The private Java
 `potionChance` and `cardRarityFactor` counters are not captured. Roots such
 as Library, Mushrooms and Mysterious Sphere whose pre-MAP
 continuation can generate potion or card rewards fail closed with
