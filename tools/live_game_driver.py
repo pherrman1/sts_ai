@@ -628,7 +628,11 @@ class InspectorSnapshot:
 
 
 class InspectorReader:
-    def __init__(self, path: Path, timeout: float = 8.0, poll_interval: float = 0.1):
+    # OOC MCTS may legitimately take tens of seconds; do not classify a
+    # healthy unchanged screen as stale while the advisor is still working.
+    # MCP transition/readiness timeouts are configured independently by the
+    # live-game client and are intentionally not changed here.
+    def __init__(self, path: Path, timeout: float = 120.0, poll_interval: float = 0.1):
         self.path, self.timeout, self.poll_interval = path, timeout, poll_interval
 
     async def read_for(self, state: Mapping[str, Any], previous: tuple[str, int] | None = None) -> InspectorSnapshot:
@@ -1300,7 +1304,8 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser.add_argument("--character", choices=("IRONCLAD", "SILENT", "DEFECT", "WATCHER"))
     parser.add_argument("--ascension", type=int)
     parser.add_argument("--seed")
-    parser.add_argument("--inspector-timeout", type=float, default=8.0)
+    parser.add_argument("--inspector-timeout", type=float, default=120.0,
+                        help="fresh inspector response budget; OOC MCTS may take tens of seconds")
     parser.add_argument("--startup-timeout", type=float, default=45.0,
                         help="initial menu readiness budget; starts immediately when ready")
     args = parser.parse_args(argv)

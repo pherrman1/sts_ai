@@ -76,6 +76,32 @@ def ooc_inspector_file(directory, screen, status="UNSUPPORTED", **fields):
 
 
 class LiveGameDriverTest(unittest.TestCase):
+    def test_inspector_reader_waits_for_delayed_matching_response(self):
+        async def delayed_write(path):
+            await asyncio.sleep(0.02)
+            path.write_text(json.dumps({"session": "s", "sequence": 1, "observationHash": "h",
+                                        "observation": {"boundary": "combat", "combat": {
+                                            "hand": [{"uuid": "strike-1"}],
+                                            "monsters": [{"id": "Cultist", "hp": 20}]}},
+                                        "response": {"ready": True, "session": "s", "sequence": 1,
+                                                      "observationHash": "h", "advisor": {"evaluators": [
+                                                          {"id": "silver_player_decision_v2", "status": "UNSUPPORTED",
+                                                           "reason": "delayed-test"}]}}}))
+
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "latest.json"
+            async def exercise():
+                writer = asyncio.create_task(delayed_write(path))
+                snapshot = await InspectorReader(path, timeout=0.2, poll_interval=0.001).read_for(
+                    {"screen_type": "NONE", "room_phase": "COMBAT",
+                     "hand": [{"uuid": "strike-1"}],
+                     "monsters": [{"id": "Cultist", "current_hp": 20}]})
+                await writer
+                return snapshot
+
+            snapshot = asyncio.run(exercise())
+            self.assertEqual((snapshot.session, snapshot.sequence, snapshot.observation_hash), ("s", 1, "h"))
+
     def test_duplicate_cards_preserve_uuid_and_single_target(self):
         actions = [a for a in build_legal_actions(combat_screen(), ["play_card"])
                    if a.semantic.get("card_uuid", "").startswith("strike-")]
