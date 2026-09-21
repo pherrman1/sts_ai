@@ -137,16 +137,22 @@ final class LiveOocCapture {
                     map(out.getOrDefault("details", object())));
             core.put("seenRelics", seenRelicOffers.snapshot());
             core.put("seenRelicsComplete", seenRelicOffers.complete());
-            if (!Boolean.TRUE.equals(map(out.get("publicState")).get("pathComplete")))
-                out.put("unsupportedReason", "PATH_HISTORY_UNAVAILABLE");
-            if (map(out.get("publicState")).containsKey("unsupportedReason"))
-                out.put("unsupportedReason", map(out.get("publicState")).get("unsupportedReason"));
-            if (!out.containsKey("unsupportedReason")) out.put("unsupportedReason", "");
+            finalizeSupportReason(out);
         } catch (ReflectiveOperationException | RuntimeException failure) {
             seenRelicOffers.invalidate();
             recordCaptureError(out, failure);
         }
         return JSON.toJson(out);
+    }
+
+    static void finalizeSupportReason(Map<String,Object> observation) {
+        if (observation.containsKey("unsupportedReason")) return;
+        Map<String,Object> publicState = map(observation.get("publicState"));
+        if (!Boolean.TRUE.equals(publicState.get("pathComplete")))
+            observation.put("unsupportedReason", "PATH_HISTORY_UNAVAILABLE");
+        else if (publicState.containsKey("unsupportedReason"))
+            observation.put("unsupportedReason", publicState.get("unsupportedReason"));
+        else observation.put("unsupportedReason", "");
     }
 
     static void recordCaptureError(Map<String,Object> observation, Exception failure) {

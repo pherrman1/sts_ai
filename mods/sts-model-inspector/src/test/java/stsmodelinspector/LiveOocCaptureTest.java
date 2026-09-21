@@ -79,6 +79,17 @@ public final class LiveOocCaptureTest {
         if (!openedChoices.isEmpty()
                 || !"CHEST_ALREADY_OPEN".equals(openedChest.get("unsupportedReason")))
             throw new AssertionError("open chest without Proceed exposed a false live action");
+        Map<String,Object> phaseUnsupported = obj("publicState", obj("pathComplete", true,
+                "unsupportedReason", "RELIC_NATIVE_STATE_UNREPRESENTABLE:WingedGreaves:active"),
+                "unsupportedReason", "EVENT_PHASE_UNREPRESENTABLE:Beggar:LEAVE");
+        LiveOocCapture.finalizeSupportReason(phaseUnsupported);
+        if (!"EVENT_PHASE_UNREPRESENTABLE:Beggar:LEAVE".equals(phaseUnsupported.get("unsupportedReason")))
+            throw new AssertionError("relic warning hid the unsupported event outro phase");
+        Map<String,Object> missingPath = obj("publicState", obj("pathComplete", false,
+                "unsupportedReason", "RELIC_NATIVE_STATE_UNREPRESENTABLE:WingedGreaves:active"));
+        LiveOocCapture.finalizeSupportReason(missingPath);
+        if (!"PATH_HISTORY_UNAVAILABLE".equals(missingPath.get("unsupportedReason")))
+            throw new AssertionError("relic warning hid incomplete public path history");
         Map<String,Object> failed = new HashMap<>();
         Map<String,Object> core = new HashMap<>();
         Map<String,Object> mcp = new HashMap<>();
@@ -132,6 +143,6 @@ public final class LiveOocCaptureTest {
                 || !"BLUE_SLAVER".equals(STSModelInspector.singleEncounterName("SlaverBlue", false))
                 || !"BLUE_SLAVER".equals(STSModelInspector.singleEncounterName("BlueSlaver", false)))
             throw new AssertionError("canonical Slaver runtime identity mismatch");
-        System.out.println("LiveOocCaptureTest: 15 relic, 7 map edge, 5 screen, 3 path, 2 integrity, 4 event, 3 reward identity, 4 Slaver identity checks passed");
+        System.out.println("LiveOocCaptureTest: 15 relic, 7 map edge, 5 screen, 3 path, 4 integrity, 4 event, 3 reward identity, 4 Slaver identity checks passed");
     }
 }

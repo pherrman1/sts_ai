@@ -511,7 +511,9 @@ purchase types, shop-removal entry, chest open/leave and boss relic take/skip. T
 support gate still excludes non-card reward collection, removal/other
 selectors and the final map-to-boss transition. The live producer additionally
 qualifies event phases, path history, special maps, shop slot provenance,
-relic-counter representation, and key-disabled campfires. Unopened card reward
+relic-counter representation, and key-disabled campfires. A screen-specific
+unsupported phase takes precedence over path and relic warnings, so a terminal
+event outro cannot be misread as its initial decision. Unopened card reward
 groups expose only their occurrence/type and require fallback to open the
 group; their concealed card identities are not serialized or scored. Active
 Wing Boots, Matryoshka, Lizard Tail and N’loth’s Hungry Face are unsupported
