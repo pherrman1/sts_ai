@@ -12,6 +12,8 @@
 #include <utility>
 #include <vector>
 
+#include "sim/search/SilverTerminalValue.h"
+
 namespace silver_bridge {
 
 // Default-off isolated Silver search contracts. Live callers continue to use
@@ -233,6 +235,11 @@ struct SilverLeafObservation {
     int terminalTurn = 0;
     int terminalPotionCount = 0;
     double terminalEffectiveGold = 0.0;
+    bool terminalFeaturesValid = false;
+    SilverTerminalValueFeatures terminalFeatures;
+    double reconstructedTerminalValue = 0.0;
+    SilverTerminalValueFeatures originalRootTerminalFeatures;
+    double reconstructedOriginalRootValue = 0.0;
 };
 
 using SilverLeafObserver = std::function<void(SilverLeafObservation &)>;
@@ -256,7 +263,12 @@ struct SilverSimpleRolloutResult {
     int terminalTurn = 0;
     int terminalPotionCount = 0;
     double terminalEffectiveGold = 0.0;
+    bool terminalFeaturesValid = false;
+    SilverTerminalValueFeatures terminalFeatures;
+    double reconstructedTerminalValue = 0.0;
     double leafRootUtility = 0.0;
+    SilverTerminalValueFeatures originalRootTerminalFeatures;
+    double reconstructedOriginalRootValue = 0.0;
     double victoryBaselineCorrection = 0.0;
     double appliedVictoryBaselineCorrection = 0.0;
     double originalRootCorrectedUtility = 0.0;
