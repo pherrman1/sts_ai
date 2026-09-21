@@ -71,8 +71,43 @@
     "stochastic_candidate_missing": 541,
     "wins": 51
   },
-  "final_vs_corrected_substantive_row_discordance": 0,
-  "final_vs_corrected_trace_discordance": 0,
+  "final_added_telemetry_fields": [
+    "chance_depth_sum",
+    "depth_sum",
+    "first_action_fingerprint",
+    "fpu_selection_opportunities",
+    "fpu_unvisited_selected",
+    "fpu_visited_selected_with_unvisited_remaining",
+    "search_wall_micros"
+  ],
+  "final_vs_pre_fpu_merge_shared_field_discordance": 0,
+  "final_vs_pre_fpu_merge_trace_discordance": 0,
+  "pre_fpu_merge": {
+    "cap_fallbacks": 0,
+    "cases": 64,
+    "deterministic_attempts": 1287,
+    "deterministic_candidate_missing": 0,
+    "deterministic_cap_blocked": 0,
+    "deterministic_exact_or_equivalent": 1287,
+    "deterministic_hand_order_mismatch": 0,
+    "deterministic_other_mismatch": 0,
+    "deterministic_uid_copy_match": 0,
+    "exact_reroots": 1627,
+    "initial_no_predecessor_records": 64,
+    "initial_roots": 64,
+    "mean_inherited_visits_per_attempt": 535.684963099631,
+    "mean_terminal_hp_fraction": 0.3440911508185911,
+    "nodes_per_simulation": 0.9246209677419355,
+    "selected_edge_without_child": 0,
+    "statuses": {
+      "ok": 64
+    },
+    "stochastic_attempts": 881,
+    "stochastic_candidate_missing": 541,
+    "wins": 51
+  },
+  "pre_fpu_merge_vs_corrected_substantive_row_discordance": 0,
+  "pre_fpu_merge_vs_corrected_trace_discordance": 0,
   "trace_discordance": 0,
   "uninstrumented_baseline_trace_discordance": 0
 }

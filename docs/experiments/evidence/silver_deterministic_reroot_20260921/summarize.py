@@ -57,24 +57,34 @@ def main():
     directory = Path(__file__).resolve().parent
     before = load(directory / 'baseline-diagnostic.jsonl.gz')
     after = load(directory / 'corrected-diagnostic.jsonl.gz')
+    pre_fpu_merge = load(directory / 'pre-fpu-merge-diagnostic.jsonl.gz')
     final = load(directory / 'final-diagnostic.jsonl.gz')
     baseline = load(directory / 'baseline-uninstrumented.jsonl.gz')
     ids = [row['case_id'] for row in before]
     if (ids != [row['case_id'] for row in after]
+            or ids != [row['case_id'] for row in pre_fpu_merge]
             or ids != [row['case_id'] for row in final]
             or ids != [row['case_id'] for row in baseline]):
         raise ValueError('case order or identity changed')
     print(json.dumps({
         'before': summarize(before),
         'after': summarize(after),
+        'pre_fpu_merge': summarize(pre_fpu_merge),
         'final': summarize(final),
-        'final_vs_corrected_trace_discordance': sum(
+        'pre_fpu_merge_vs_corrected_trace_discordance': sum(
             a['action_trace_hash'] != b['action_trace_hash']
-            for a, b in zip(after, final)),
-        'final_vs_corrected_substantive_row_discordance': sum(
+            for a, b in zip(after, pre_fpu_merge)),
+        'pre_fpu_merge_vs_corrected_substantive_row_discordance': sum(
             {k: v for k, v in a.items() if k != 'wall_seconds'}
             != {k: v for k, v in b.items() if k != 'wall_seconds'}
-            for a, b in zip(after, final)),
+            for a, b in zip(after, pre_fpu_merge)),
+        'final_vs_pre_fpu_merge_trace_discordance': sum(
+            a['action_trace_hash'] != b['action_trace_hash']
+            for a, b in zip(pre_fpu_merge, final)),
+        'final_vs_pre_fpu_merge_shared_field_discordance': sum(
+            any(a[key] != b[key] for key in a if key != 'wall_seconds')
+            for a, b in zip(pre_fpu_merge, final)),
+        'final_added_telemetry_fields': sorted(set(final[0]) - set(pre_fpu_merge[0])),
         'trace_discordance': sum(a['action_trace_hash'] != b['action_trace_hash']
                                  for a, b in zip(before, after)),
         'uninstrumented_baseline_trace_discordance': sum(

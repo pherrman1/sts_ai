@@ -10849,20 +10849,25 @@ default or generalization claim is authorized. Evidence:
   and rho modes off. Input SHA-256:
   `ab7c3298754864986c31273a0f1d23967b165fdd79a386261b680b8ad16d0eae`.
 - **Provenance:** The original uninstrumented baseline was `289e1ab96d4a`;
-  the earlier corrected run used functional SHA `ea8a728802d3`. After the
-  reviewed cached chance-action repair, unrelated forced-action fixture repair
-  removal, and merge of `main` at `eb7c5fa76f13`, the final functional SHA was
-  `db4edf1cfeb7f8c81bd384c4f02d72f99d7bdc8c`. Its Release replay binary
-  SHA-256 was `ff1b458d1b5e4de3880112d6ac9ad0efdf5cf48a8965498e27a4c7a2e78ffdb2`.
-  All seed execution used `tools/seed_guard.sh`.
+  the earlier corrected run used functional SHA `ea8a728802d3`. The
+  chance-action safety repair and merge of `main` at `eb7c5fa7` were replayed
+  at `db4edf1cfeb7f8c81bd384c4f02d72f99d7bdc8c`. When `main` advanced
+  again to `149954a3` with default-off internal Silver FPU work, the combined
+  final functional SHA was `ca45781abed16db3e440a8e20dedfe70be8759d4`.
+  Its Release replay binary SHA-256 was
+  `6e4a635dce114970eb4aef6d303498da20588d1d3297abb3611c2f129defea64`.
+  All seed execution used `tools/seed_guard.sh`; the final command left
+  `--internal-fpu` off.
 - **Result:** The final 64/64 cases completed successfully: 51 wins, mean
   terminal HP fraction `0.3440911508`, and `0.9246209677` nodes per simulation.
   All 1,287 selected deterministic attempts rerooted exactly or through the
   documented equivalence repair; none was candidate-missing or cap-blocked.
   Of 881 stochastic attempts, 541 were candidate-missing. There were zero
   selected edges with positive visits but no child. Final versus earlier
-  corrected action traces differed in 0/64 cases, and all JSONL fields except
-  elapsed wall seconds matched on all 64 rows. The cohort exercised no
+  corrected action traces differed in 0/64 cases. Pre-FPU-merge rows matched
+  the earlier corrected rows except for elapsed wall seconds. The final rows
+  added seven FPU/depth/timing telemetry fields, while every shared field
+  except elapsed wall seconds matched the pre-FPU rows. The cohort exercised no
   hand-order mismatch, equivalent-copy UID match, or other selected-child
   mismatch; focused native regressions cover those latent paths.
 - **Decision and limits:** The corrected reroot safety implementation passes
