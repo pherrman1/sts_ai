@@ -29,6 +29,34 @@
     "teacher_b_regret_reduction": -0.3946331421608439,
     "teacher_a_bootstrap": {"iterations": 5000, "p025": -1.6353036067190219, "p975": 0.17030582764294988}
   },
+  "learning_curve": {
+    "locked_baseline_oracle_regret": {
+      "teacher_a": {"baseline": 1.0405377287946858, "oracle": 0.6354094104620988},
+      "teacher_b": {"baseline": 1.1686794609840867, "oracle": 0.8189185433547236}
+    },
+    "TRAIN20": {
+      "teacher_a": {"model": 1.4406363718237662, "regret_reduction": -0.38451142323550114},
+      "teacher_b": {"model": 1.5879458411716496, "regret_reduction": -0.35875224489229884},
+      "recovered_oracle_fraction": -0.9875849821503284
+    },
+    "TRAIN40": {
+      "teacher_a": {"model": 1.4707490779926737, "regret_reduction": -0.41345098528654634},
+      "teacher_b": {"model": 1.6706495011849494, "regret_reduction": -0.42951900581719704},
+      "recovered_oracle_fraction": -1.0619137930634839
+    },
+    "TRAIN60": {
+      "teacher_a": {"model": 1.4789286717026773, "regret_reduction": -0.4213119147691115},
+      "teacher_b": {"model": 1.6298791088510782, "regret_reduction": -0.3946331421608439},
+      "recovered_oracle_fraction": -1.0821039237945786
+    }
+  },
+  "five_initialization_summary": {
+    "count": 5,
+    "recovered_oracle_fraction_mean": -0.6651803971824464,
+    "recovered_oracle_fraction_min": -1.0821039237945786,
+    "recovered_oracle_fraction_max": -0.4406328447523275,
+    "recovered_oracle_fraction_std": 0.217974927665257
+  },
   "concentration": {
     "removed_sources": ["12100201", "12100194"],
     "remaining_source_count": 38,
@@ -47,6 +75,15 @@
     "config_sha256": "6fb38025bfc726ce9060f56600a478c14b349918af548153efd60acf16db7829",
     "analysis_json_sha256": "fa7c234d180b3c43725661b124ad5c254c96565f248bc5b8d0b818ddbd6960aa",
     "dataset_summary_sha256": "23bbbcf01f075fcc8e201c96789c8b6979601a658e1f98240d2ffa751ac9f0629"
+  },
+  "analysis_artifacts_durable_files": {
+    "analysis.json": "fa7c234d180b3c43725661b124ad5c254c96565f248bc5b8d0b818ddbd6960aa",
+    "dataset-summary.json": "23bbbcf01f075fcc8e201c96789c8b6979601a658e1f98240d2ffa751ac9f062",
+    "expansion-candidate-features.jsonl.gz": "d37e26d7bd30e83719168cf6917984f84cec40668aadeb443b33a5fc0296cc99",
+    "locked-candidate-features.jsonl.gz": "c96bcd9cd6786fa2378571b9beba85572f457e34aefc83918672d6c2d91859fa",
+    "train20-predictions.jsonl.gz": "c1590535ffe58c3f2f51a488f43b896a82af760c275276bde686c8c464cc2005",
+    "train40-predictions.jsonl.gz": "34af8f33d2120ee87ef4d8a4f30b8268f51ed8dd513e7d845f031abeaffd6709",
+    "train60-predictions.jsonl.gz": "6a440b050774be961e00b6c95fc5caaa9cf467cd8790c7fec7f4e4323c2f252d"
   },
   "input_sha256": {
     "base_training_pool": {

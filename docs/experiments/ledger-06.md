@@ -10615,13 +10615,23 @@ default or generalization claim is authorized. Evidence:
   concentration stress test failed. Influence ranking uses deterministic
   point estimates; only the joint two-source stress test performs the full
   5,000-draw bootstrap.
+- **Learning curve:** The committed packet records the locked baseline/oracle
+  regrets and all three fits. Teacher-A regret was `1.04054` at baseline,
+  `1.44064`/`1.47075`/`1.47893` for TRAIN20/40/60, corresponding to
+  `-38.45%`/`-41.35%`/`-42.13%` regret reduction. Teacher-B was
+  `1.16868` at baseline and `1.58795`/`1.67065`/`1.62988` for TRAIN20/40/60,
+  or `-35.88%`/`-42.95%`/`-39.46%`. Recovered-oracle fractions were
+  `-0.98758`/`-1.06191`/`-1.08210`. All five fixed initializations were
+  negative (mean `-0.66518`, range `[-1.08210,-0.44063]`).
 - **Decision and boundary:** This is bounded negative external evidence for
   scale validation of the frozen scorer. It authorizes no native integration,
   gameplay run, model retraining, search change, default promotion, or
   interpretation against the native `target=-1` lowering fix. The large raw
-  packets and full analysis remain at
-  `/tmp/silver-prefix-scale-20260920-exact10k/`; the compact committed
-  summary is [the scale-validation evidence packet](evidence/silver_prefix_scorer_scale_20260920/README.md).
+  multi-GB replay streams remain at `/tmp/silver-prefix-scale-20260920-exact10k/`,
+  while the compact candidate features, all three prediction streams,
+  `analysis.json`, and `dataset-summary.json` are committed in
+  [the scale-validation evidence packet](evidence/silver_prefix_scorer_scale_20260920/)
+  and hash-bound by `analysis-summary.json`.
   **Knowledge impact:** durable negative learned-prefix scale-validation
   evidence and harness-contract corrections only; no production Silver
   behavior, model, RNG, schema, budget, gameplay result, or default changed.

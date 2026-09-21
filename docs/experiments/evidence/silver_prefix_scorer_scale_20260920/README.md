@@ -1,9 +1,9 @@
 # Silver frozen-prefix scorer scale validation
 
-Status: completed local collection and locked validation. The final result is
-recorded in `analysis-summary.json`; the large raw packets remain outside Git
-under `/tmp/silver-prefix-scale-20260920-exact10k/` and are bound by the
-input hashes in that summary.
+Status: completed local collection and locked validation. The final result and
+compact audit packet are committed here. The large raw packets remain outside
+Git under `/tmp/silver-prefix-scale-20260920-exact10k/` and are bound by the
+input hashes in `analysis-summary.json`.
 
 ## Question and frozen boundary
 
@@ -65,9 +65,23 @@ complete-group additions for any missing preregistered source seed. This
 produced 81 groups in each new role, with 702 expansion leaves and 525 locked
 leaves, and all exact 40 expansion/40 locked source seeds represented.
 
-The large raw JSONL streams stay outside the Git review commit unless they are
-small enough to audit comfortably. The committed packet contains manifests,
-hashes, summaries, and the final analysis output.
+The large raw JSONL replay streams stay outside the Git review commit. The
+compact processed packet is committed and contains the candidate features,
+all three learning-curve prediction streams, `analysis.json`,
+`dataset-summary.json`, manifests, and hashes:
+
+| artifact | compressed size | SHA-256 |
+|---|---:|---|
+| `expansion-candidate-features.jsonl.gz` | 2.61 MB | `d37e26d7bd30e83719168cf6917984f84cec40668aadeb443b33a5fc0296cc99` |
+| `locked-candidate-features.jsonl.gz` | 1.23 MB | `c96bcd9cd6786fa2378571b9beba85572f457e34aefc83918672d6c2d91859fa` |
+| `train20-predictions.jsonl.gz` | 374 KB | `c1590535ffe58c3f2f51a488f43b896a82af760c275276bde686c8c464cc2005` |
+| `train40-predictions.jsonl.gz` | 374 KB | `34af8f33d2120ee87ef4d8a4f30b8268f51ed8dd513e7d845f031abeaffd6709` |
+| `train60-predictions.jsonl.gz` | 374 KB | `6a440b050774be961e00b6c95fc5caaa9cf467cd8790c7fec7f4e4323c2f252d` |
+| `analysis.json` | 1.79 MB | `fa7c234d180b3c43725661b124ad5c254c96565f248bc5b8d0b818ddbd6960aa` |
+| `dataset-summary.json` | 391 KB | `23bbbcf01f075fcc8e201c96789c8b6979601a658e1f98240d2ffa751ac9f062` |
+
+The hashes are also recorded in `analysis-summary.json`, so the compact
+evidence can be checked independently after `/tmp` is removed.
 
 ## Predeclared decision
 
@@ -112,6 +126,22 @@ Teacher-A improvement `-0.6854` with clustered `p025 = -2.1362`.
 This is bounded external evidence against scale validation for the frozen
 MLP, not a production behavior change and not evidence that the native
 `target=-1` lowering fix is incorrect.
+
+The complete locked-set learning curve is:
+
+| fit | Teacher-A regret | Teacher-A regret reduction | Teacher-B regret | Teacher-B regret reduction | recovered oracle fraction |
+|---|---:|---:|---:|---:|---:|
+| baseline | 1.04054 | — | 1.16868 | — | — |
+| oracle | 0.63541 | — | 0.81892 | — | 1.00000 |
+| TRAIN20 | 1.44064 | -38.45% | 1.58795 | -35.88% | -0.98758 |
+| TRAIN40 | 1.47075 | -41.35% | 1.67065 | -42.95% | -1.06191 |
+| TRAIN60 | 1.47893 | -42.13% | 1.62988 | -39.46% | -1.08210 |
+
+Thus the new locked set already fails with TRAIN20; adding expansion data does
+not recover performance and makes the point estimate slightly worse for both
+the recovered-oracle fraction and Teacher-A regret. The five fixed
+initializations all remained negative: mean recovered-oracle fraction
+`-0.66518`, range `[-1.08210, -0.44063]`, standard deviation `0.21797`.
 
 ## Implementation and parity
 
