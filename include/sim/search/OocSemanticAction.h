@@ -172,6 +172,9 @@ std::string oocSemanticActionPayloadJson(const OocSemanticAction &action);
 // Source observers suppress only the deterministic selector consumed by this primitive.
 CardSelectScreenType oocSemanticPrimitiveCompoundSelector(const GameContext &gc, std::uint32_t bits);
 std::string canonicalOocSemanticActionKey(const OocSemanticAction &action);
+// Search-only equivalence key for first-occurrence deck-card decisions.
+// The full canonical key remains the wire and execution identity.
+std::string canonicalOocMctsChoiceKey(OocSemanticAction action);
 
 } // namespace sts::search
 #endif

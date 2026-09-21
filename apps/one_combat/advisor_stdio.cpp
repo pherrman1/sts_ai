@@ -244,7 +244,8 @@ json oocResponse(const one_combat::advisor::Request &request,
             try {
                 std::vector<std::uint32_t> bits;
                 for (const auto &c : decision.candidates) bits.push_back(c.primitiveBits);
-                advisor::validateLiveOocActionSet(state, bits);
+                advisor::validateLiveOocActionSet(state, bits,
+                    std::string(policy.name()) == "mcts_ctm");
             } catch (const std::exception &error) {
                 return advisor::errorResponse(request, "OOC_ACTION_MAPPING", error.what());
             }
