@@ -322,9 +322,10 @@ than applying the link to an expected margin or conditioning on 0/5. The
 direct V4 scoring fails closed for real live captures because Java does not
 expose an exact pity history. Live MCTS uses an equal public prior instead of a
 fabricated midpoint; synthetic parity fixtures may explicitly mark an exact
-pity reconstruction. Hypothetical room-chance and pity counters are sampled
-from explicit reachable-state priors before a transition; this is a qualified
-belief particle, not an exact joint posterior.
+pity reconstruction. The importer replays complete public `?` outcomes into
+the three room-chance counters, and live root sampling preserves that triple.
+Only the private potion and card-rarity pity counters are sampled before a
+transition; these particles are not an exact joint posterior.
 
 Live edges are never marked deterministic merely because their simulator copy
 has fixed RNG. Progressive widening samples outcome particles normally, even
@@ -343,7 +344,8 @@ copied. Historical relic offers that were seen and skipped are not present in
 vanilla metrics; the live root therefore fails closed for treasure, Shovel,
 Courier-restock, and random-relic event branches unless a complete
 `seenRelics` history is supplied.
-Live MAP roots are searchable with the explicit room-chance belief prior.
+Live MAP roots are searchable with the exact reconstructed public room-chance
+triple when the question-outcome ledger is complete.
 Non-root MAP states remain hard checkpoint leaves, so a search never chooses a
 hypothetical room after reaching the checkpoint.
 

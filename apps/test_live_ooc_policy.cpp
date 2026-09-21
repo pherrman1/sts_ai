@@ -82,6 +82,52 @@ int main(int argc, char **argv) {
         gc.screenState = ScreenState::REST_ROOM;
         gc.curHp = 40;
         const PathHistory path{};
+        {
+            // Two exact public histories: ? -> MONSTER -> EVENT and
+            // ? -> SHOP -> EVENT. Exercise the production live sampler through
+            // the actual MCTS root successor, after future RNG resampling.
+            const auto sampledRoot = [&](float monster, float shop, float treasure) {
+                auto root = gc;
+                root.floorNum = 5;
+                root.monsterChance = monster;
+                root.shopChance = shop;
+                root.treasureChance = treasure;
+                root.regainControlAction = [](GameContext &state) {
+                    state.screenState = ScreenState::MAP_SCREEN;
+                    state.regainControlAction = nullptr;
+                };
+                OocAdapterOptions options;
+                options.sampleNoncombat = true;
+                options.stopAtMapCheckpoint = true;
+                OocMctsDependencies deps;
+                deps.sampleHiddenCounters = sampleLiveOocHiddenPityCounters;
+                deps.policyAvailable = [] { return true; };
+                deps.policyLogits = [](const GameContext &, const PathHistory &,
+                                       const std::vector<GameAction> &actions) {
+                    return std::vector<double>(actions.size(), 0.0);
+                };
+                deps.leafValue = [](const GameContext &, const PathHistory &) { return 0.5; };
+                OocGameContextModel search(root, path, {}, options, std::move(deps));
+                const auto actions = search.legalActions(0);
+                const auto rest = std::find_if(actions.begin(), actions.end(), [&](const auto &action) {
+                    return search.candidate(0, action.id).primitive.bits == GameAction(0).bits;
+                });
+                require(rest != actions.end(), "rest action missing from MCTS root");
+                std::mt19937_64 rng(149);
+                for (int i = 0; i < 16; ++i) {
+                    const auto child = search.sampleSuccessor(0, rest->id, rng);
+                    const auto &state = search.state(child);
+                    require(state.monsterChance == monster && state.shopChance == shop
+                            && state.treasureChance == treasure,
+                        "MCTS root successor replaced exact public question history");
+                    require(state.potionChance >= -40 && state.potionChance <= 60
+                            && state.cardRarityFactor >= -40 && state.cardRarityFactor <= 5,
+                        "MCTS root successor did not sample hidden pity counters");
+                }
+            };
+            sampledRoot(.2f, .09f, .06f);
+            sampledRoot(.3f, .06f, .06f);
+        }
         auto model = std::make_unique<OocStrategicTokNet>();
         const auto missingModel = scoreLiveOocV4(gc, path, *model);
         require(!missingModel.supported && missingModel.reason == "MODEL_UNAVAILABLE"

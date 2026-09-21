@@ -215,7 +215,7 @@ void LiveOocMctsPolicy::setRootPrimitiveBits(const std::vector<std::uint32_t> &b
 }
 
 LiveOocDecision LiveOocMctsPolicy::score(const sts::GameContext &projected,
-                                         const PathHistory &path, int currentActEventVisits) const {
+                                         const PathHistory &path, int) const {
     LiveOocDecision unsupportedResult;
     unsupportedResult.policy = name();
     if (!model_.ok) { unsupportedResult.reason = "MODEL_UNAVAILABLE"; return unsupportedResult; }
@@ -235,11 +235,10 @@ LiveOocDecision LiveOocMctsPolicy::score(const sts::GameContext &projected,
     options.stopAtMapCheckpoint = true;
     if (hasRootPrimitiveBits_) options.rootPrimitiveBits = rootPrimitiveBits_;
     OocMctsDependencies dependencies;
-    const int observedEventRooms = currentActEventVisits;
-    dependencies.sampleHiddenCounters = [observedEventRooms](sts::GameContext &gc,
-                                                               std::mt19937_64 &rng) {
-        sampleLiveOocHiddenCounters(gc, rng, observedEventRooms);
-    };
+    // The importer qualified and replayed exact public '?' outcomes into the
+    // room-chance triple. Replacing it with a synthetic history would search a
+    // different run while still reporting a supported live decision.
+    dependencies.sampleHiddenCounters = sampleLiveOocHiddenPityCounters;
     dependencies.policyAvailable = [this] { return model_.ok; };
     const auto policyBatch = [this](const sts::GameContext &gc, const PathHistory &history,
                                       const std::vector<sts::search::GameAction> &actions) {

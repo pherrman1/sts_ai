@@ -130,8 +130,7 @@ void sampleLiveOocHiddenCountersImpl(GameContext &gc, std::mt19937_64 &rng,
         gc.shopChance = outcome == 1 ? 0.03f : gc.shopChance + 0.03f;
         gc.treasureChance = outcome == 2 ? 0.02f : gc.treasureChance + 0.02f;
     }
-    gc.potionChance = 10 * std::uniform_int_distribution<int>(-4, 6)(rng);
-    gc.cardRarityFactor = std::uniform_int_distribution<int>(-40, 5)(rng);
+    sampleLiveOocHiddenPityCounters(gc, rng);
 }
 
 void require(bool ok, const char *why) { if (!ok) throw std::runtime_error(why); }
@@ -152,6 +151,10 @@ void applySampledCombatExit(GameContext &gc, const CombatRuntimeSample &sample) 
 void sampleLiveOocHiddenCounters(GameContext &gc, std::mt19937_64 &rng,
                                  int priorEventRooms) {
     sampleLiveOocHiddenCountersImpl(gc, rng, priorEventRooms);
+}
+void sampleLiveOocHiddenPityCounters(GameContext &gc, std::mt19937_64 &rng) {
+    gc.potionChance = 10 * std::uniform_int_distribution<int>(-4, 6)(rng);
+    gc.cardRarityFactor = std::uniform_int_distribution<int>(-40, 5)(rng);
 }
 #ifndef STS_LIVE_ADVISOR
 OocMctsDependencies defaultOocMctsDependencies() {
