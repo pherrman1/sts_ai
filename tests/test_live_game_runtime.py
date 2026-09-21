@@ -8,7 +8,7 @@ import unittest
 from pathlib import Path
 from unittest import mock
 
-from tools.live_game_runtime import CTM_NAME, OOC_NAME, RuntimeFailure, RuntimeManager, sha256
+from tools.live_game_runtime import CTM_NAME, OOC_NAME, OOC_WIN_NAME, OOC_FLOOR_NAME, RuntimeFailure, RuntimeManager, sha256
 
 
 class LiveGameRuntimeTest(unittest.TestCase):
@@ -22,8 +22,12 @@ class LiveGameRuntimeTest(unittest.TestCase):
         subprocess.run(["git", "config", "user.name", "Test"], cwd=self.repo, check=True)
         models = self.repo / "selfplay/models"
         models.mkdir(parents=True)
+        root_models = self.repo / "models"
+        root_models.mkdir(parents=True)
         (models / CTM_NAME).write_bytes(b"ctm")
         (models / OOC_NAME).write_bytes(b"ooc")
+        (root_models / OOC_WIN_NAME).write_bytes(b"win")
+        (root_models / OOC_FLOOR_NAME).write_bytes(b"floor")
         subprocess.run(["git", "add", "."], cwd=self.repo, check=True)
         subprocess.run(["git", "commit", "-qm", "fixture"], cwd=self.repo, check=True)
         self.advisor = base / "advisor"
@@ -46,6 +50,10 @@ class LiveGameRuntimeTest(unittest.TestCase):
         self.assertTrue((release / "one_combat_advisor").is_file())
         self.assertEqual((release / f"models/{CTM_NAME}").read_bytes(), b"ctm")
         self.assertEqual((release / f"models/{OOC_NAME}").read_bytes(), b"ooc")
+        self.assertEqual((release / f"models/{OOC_WIN_NAME}").read_bytes(), b"win")
+        self.assertEqual((release / f"models/{OOC_FLOOR_NAME}").read_bytes(), b"floor")
+        self.assertEqual(manifest["oocWinModelSha256"], sha256(release / f"models/{OOC_WIN_NAME}"))
+        self.assertEqual(manifest["oocFloorModelSha256"], sha256(release / f"models/{OOC_FLOOR_NAME}"))
         self.assertEqual(manifest["advisorSha256"], sha256(release / "one_combat_advisor"))
         self.assertNotIn("/.codex/worktrees/", json.dumps(self.manager.desired_config(manifest)))
         self.assertFalse(any(path.name.startswith(".current.") for path in self.manager.root.iterdir()))
@@ -61,6 +69,8 @@ class LiveGameRuntimeTest(unittest.TestCase):
         self.assertIn(str(self.manager.current), text)
         self.assertNotIn("/.codex/worktrees/", text)
         self.assertIn(f"oocModel={self.manager.current}/models/{OOC_NAME}", text)
+        self.assertIn(f"oocWinModel={self.manager.current}/models/{OOC_WIN_NAME}", text)
+        self.assertIn(f"oocFloorModel={self.manager.current}/models/{OOC_FLOOR_NAME}", text)
 
     def test_valid_runtime_is_reused_without_install(self):
         first = self.install()
@@ -91,6 +101,16 @@ class LiveGameRuntimeTest(unittest.TestCase):
         with self.assertRaisesRegex(RuntimeFailure, "tracked CTM model missing"):
             self.install()
 
+    def test_missing_source_win_model_fails_clearly(self):
+        (self.repo / f"models/{OOC_WIN_NAME}").unlink()
+        with self.assertRaisesRegex(RuntimeFailure, "tracked OOC win model missing"):
+            self.install()
+
+    def test_missing_source_floor_model_fails_clearly(self):
+        (self.repo / f"models/{OOC_FLOOR_NAME}").unlink()
+        with self.assertRaisesRegex(RuntimeFailure, "tracked OOC floor model missing"):
+            self.install()
+
     def test_status_does_not_require_mcp_and_reports_active_mismatch(self):
         manifest = self.install()
         self.active.parent.mkdir(parents=True)
@@ -117,6 +137,7 @@ class LiveGameRuntimeTest(unittest.TestCase):
         inspector.write_bytes(b"jar")
         active = self.manager.record_active(inspector, os.getpid())
         self.assertEqual(active["runtimeId"], manifest["runtimeId"])
+        self.assertEqual(active["oocFloorModelSha256"], manifest["oocFloorModelSha256"])
         self.assertEqual(active["inspectorJarSha256"], sha256(inspector))
         self.assertEqual(active["processPid"], os.getpid())
         self.assertTrue(self.manager.active_process_matches(active))

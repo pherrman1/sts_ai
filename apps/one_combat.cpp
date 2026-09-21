@@ -52,6 +52,7 @@
 #include "ooc_strategic_tok_net.h"
 #include "combat_model_diagnostics.h"
 #include "one_combat/compact_tree.h"
+#include "one_combat/ooc_native_fallback.h"
 #include "one_combat/combat_transition.h"
 #include "one_combat/e2c_capture.h"
 #include "one_combat/run_features.h"
@@ -1057,6 +1058,23 @@ int g_neowV      = 0;   // STS_NEOW_V=1
 using WinNet = CompactTreeNet;
 static WinNet g_winNet;
 static WinNet g_floorNet;
+bool nativeWinPolicyAvailable() { return g_nativeOoc && g_winNet.ok; }
+bool nativeFloorPolicyAvailable() { return g_nativeOoc && !g_shopWin && g_floorNet.ok; }
+bool nativeRestWinPolicy(GameContext &gc) {
+    static const PathHistory emptyPath;
+    return one_combat::nativeWinRestStep(gc, t_curPath ? *t_curPath : emptyPath,
+                                        g_winNet, g_collectKeys);
+}
+void nativeUpgradeSelectWinPolicy(GameContext &gc) {
+    static const PathHistory emptyPath;
+    one_combat::nativeWinUpgradeSelectStep(gc, t_curPath ? *t_curPath : emptyPath,
+                                           g_winNet);
+}
+void nativeShopVPolicy(GameContext &gc) {
+    static const PathHistory emptyPath;
+    one_combat::nativeFloorShopStep(gc, t_curPath ? *t_curPath : emptyPath,
+                                    g_floorNet);
+}
 // The E2c module loads its native model only for the explicit parity-validation
 // mode; ordinary gameplay and e2cgen do not load or invoke it.
 bool   winNetOk() { return g_winNet.ok; }
@@ -1073,78 +1091,15 @@ double nativeFloorValue(GameContext &gc) {
 }
 
 int nativeFloorCardPick(GameContext &gc, int rIdx) {
-    auto &r = gc.info.rewardsContainer;
-    const std::vector<float> base = richFeatureVec(gc);
-    const auto &idx = richIdxMap();
-    const int dsz = idx.at("deckSize");
-    double best = -1e100; int bestIdx = 5;
-    const double v0 = g_floorNet.predict(base);
-    for (int i = 0; i < r.cardRewards[rIdx].size(); ++i) {
-        std::vector<float> row = base;
-        const int cid = (int)r.cardRewards[rIdx][i].getId();
-        auto it = idx.find("d" + std::to_string(cid));
-        if (it != idx.end()) row[it->second] += 1.0f;
-        row[dsz] += 1.0f;
-        const double marginal = g_floorNet.predict(row) - v0;
-        if (marginal > best) { best = marginal; bestIdx = i; }
-    }
-    return best < g_cardSkipThresh ? 5 : bestIdx;
+    static const PathHistory emptyPath;
+    return one_combat::nativeFloorCardPick(gc, t_curPath ? *t_curPath : emptyPath,
+                                          g_floorNet, rIdx, g_cardSkipThresh);
 }
 
 std::string nativeShopPlan(GameContext &gc) {
-    using RT = search::GameAction::RewardsActionType;
-    const Shop &sh = gc.info.shop;
-    const auto &idx = richIdxMap();
-    const int goldIdx = idx.at("gold"), dsz = idx.at("deckSize");
-    const std::vector<float> base = richFeatureVec(gc);
-    struct Item { char kind; int slot, price, id; };
-    std::vector<Item> items;
-    for (int i = 0; i < 7; ++i) if (sh.cardPrice(i) >= 0)
-        items.push_back({'c', i, sh.cardPrice(i), (int)sh.cards[i].getId()});
-    for (int i = 0; i < 3; ++i) {
-        const search::GameAction action(RT::RELIC, i);
-        if (sh.relicPrice(i) >= 0 && search::isSupportedAutonomousOocAction(gc, action))
-            items.push_back({'r', i, sh.relicPrice(i), (int)sh.relics[i]});
-    }
-    if (items.size() > 16) items.resize(16);
-    int removeId = -1; double removeGain = 0.0;
-    if (sh.removeCost >= 0) {
-        double v0 = g_floorNet.predict(base);
-        for (int id = 0; id < 372; ++id) {
-            auto it = idx.find("d" + std::to_string(id));
-            if (it == idx.end() || base[it->second] <= 0) continue;
-            auto row = base; row[it->second] -= 1.0f; row[dsz] -= 1.0f;
-            double gain = g_floorNet.predict(row) - v0;
-            if (removeId < 0 || gain > removeGain) { removeId = id; removeGain = gain; }
-        }
-    }
-    double best = -1e100; unsigned bestMask = 0; bool bestRemove = false;
-    const unsigned total = 1u << items.size();
-    for (unsigned mask = 0; mask < total; ++mask) {
-        int spend = 0, adds = 0;
-        for (unsigned k = 0; k < items.size(); ++k) if (mask & (1u << k)) { spend += items[k].price; ++adds; }
-        for (int rem = 0; rem <= 1; ++rem) {
-            if (rem && (sh.removeCost < 0 || removeId < 0)) continue;
-            if (spend + (rem ? sh.removeCost : 0) > gc.gold) continue;
-            auto row = base; row[goldIdx] -= spend + (rem ? sh.removeCost : 0); row[dsz] += adds;
-            for (unsigned k = 0; k < items.size(); ++k) if (mask & (1u << k)) {
-                if (items[k].kind == 'c') {
-                    auto it = idx.find("d" + std::to_string(items[k].id));
-                    if (it != idx.end()) row[it->second] += 1.0f;
-                } else {
-                    auto it = idx.find("r" + std::to_string(items[k].id));
-                    if (it != idx.end()) row[it->second] = std::max(row[it->second], 1.0f);
-                }
-            }
-            if (rem) { auto it = idx.find("d" + std::to_string(removeId)); if (it != idx.end()) row[it->second] -= 1.0f; }
-            const double value = g_floorNet.predict(row);
-            if (value > best) { best = value; bestMask = mask; bestRemove = rem != 0; }
-        }
-    }
-    std::ostringstream out;
-    for (unsigned k = 0; k < items.size(); ++k) if (bestMask & (1u << k)) out << items[k].kind << items[k].slot << ' ';
-    if (bestRemove) out << 'x';
-    return out.str();
+    static const PathHistory emptyPath;
+    return one_combat::nativeShopPlan(gc, t_curPath ? *t_curPath : emptyPath,
+                                      g_floorNet);
 }
 
 double vStateWinNative(GameContext &gc) {
@@ -1228,12 +1183,9 @@ bool g_restWin = true;
 // P(win, hp+healAmt) - P(win, hp) from the win model (0 on error).
 double vQueryHealWin(GameContext &gc, int healAmt) {
     if (g_nativeOoc && g_winNet.ok) {
-        const int old = gc.curHp;
-        const double before = g_winNet.predict(richFeatureVec(gc));
-        gc.curHp = std::min(gc.maxHp, old + healAmt);
-        const double after = g_winNet.predict(richFeatureVec(gc));
-        gc.curHp = old;
-        return after - before;
+        static const PathHistory emptyPath;
+        return one_combat::nativeWinHealGain(gc, t_curPath ? *t_curPath : emptyPath,
+                                            g_winNet, healAmt);
     }
     std::string req = "HW;" + std::to_string(healAmt) + ";" + vFeatCsv(gc) + "\n";
     std::string resp = vTransact(req);
@@ -1243,29 +1195,9 @@ double vQueryHealWin(GameContext &gc, int healAmt) {
 // Best upgrade by P(win): returns index into candIds and sets *gain to its win gain.
 int vQueryUpgradeWin(GameContext &gc, const std::vector<int> &candIds, double *gain) {
     if (g_nativeOoc && g_winNet.ok) {
-        const auto &idx = richIdxMap(); auto base = richFeatureVec(gc);
-        const double before = g_winNet.predict(base); double best = -1e100; int bestIdx = 0;
-        for (int i = 0; i < (int)candIds.size(); ++i) {
-            auto row = base; auto it = idx.find("u" + std::to_string(candIds[i]));
-            if (it != idx.end()) row[it->second] += 1.0f;
-            const double d = g_winNet.predict(row) - before;
-            if (d > best) { best = d; bestIdx = i; }
-        }
-        // Mirror v_server.py's deterministic fallback: the deployed win model
-        // has no useful upgrade head for some cards, so choose the card whose
-        // removal most improves the current state in that case.
-        if (std::abs(best) < 1e-6) {
-            best = -1e100; bestIdx = 0;
-            for (int i = 0; i < (int)candIds.size(); ++i) {
-                auto row = base; auto it = idx.find("d" + std::to_string(candIds[i]));
-                if (it != idx.end()) row[it->second] -= 1.0f;
-                auto ds = idx.find("deckSize"); if (ds != idx.end()) row[ds->second] -= 1.0f;
-                const double d = before - g_winNet.predict(row);
-                if (d > best) { best = d; bestIdx = i; }
-            }
-        }
-        if (gain) *gain = best;
-        return bestIdx;
+        static const PathHistory emptyPath;
+        return one_combat::nativeWinUpgradePick(gc, t_curPath ? *t_curPath : emptyPath,
+                                                g_winNet, candIds, gain);
     }
     std::string req = "UW;";
     for (size_t i = 0; i < candIds.size(); ++i) { if (i) req += ','; req += std::to_string(candIds[i]); }
@@ -1284,21 +1216,9 @@ int vQueryUpgradeWin(GameContext &gc, const std::vector<int> &candIds, double *g
 // index (into candIds) of the card whose REMOVAL most raises V (0 on error)
 int vQueryRemove(GameContext &gc, const std::vector<int> &candIds) {
     if (g_nativeOoc && !g_shopWin && g_floorNet.ok) {
-        const auto &idx = richIdxMap();
-        const int dsz = idx.at("deckSize");
-        const std::vector<float> base = richFeatureVec(gc);
-        const double v0 = g_floorNet.predict(base);
-        double best = -1e100;
-        int bestIdx = 0;
-        for (int i = 0; i < (int)candIds.size(); ++i) {
-            auto row = base;
-            auto it = idx.find("d" + std::to_string(candIds[i]));
-            if (it != idx.end()) row[it->second] -= 1.0f;
-            row[dsz] -= 1.0f;
-            const double gain = g_floorNet.predict(row) - v0;
-            if (gain > best) { best = gain; bestIdx = i; }
-        }
-        return bestIdx;
+        static const PathHistory emptyPath;
+        return one_combat::nativeFloorRemovePick(gc, t_curPath ? *t_curPath : emptyPath,
+                                                 g_floorNet, candIds);
     }
     std::string req = "X;";
     for (size_t i = 0; i < candIds.size(); ++i) { if (i) req += ','; req += std::to_string(candIds[i]); }

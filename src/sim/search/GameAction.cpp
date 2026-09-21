@@ -107,6 +107,9 @@ bool isValidRestAction(const GameContext &gc, const search::GameAction a) {
     if (a.getIdx1() < 0 || a.getIdx1() > 6) {
         return false;
     }
+    if (gc.restRoomResolved) {
+        return a.getIdx1() == 6;
+    }
     std::bitset<7> bits;
 
     if (!gc.relics.has(RelicId::COFFEE_DRIPPER)) {
@@ -117,7 +120,7 @@ bool isValidRestAction(const GameContext &gc, const search::GameAction a) {
         bits.set(1);
     }
 
-    if (!gc.hasKey(Key::RUBY_KEY)) {
+    if (gc.keysEnabled && !gc.hasKey(Key::RUBY_KEY)) {
         bits.set(2);
     }
 
@@ -561,6 +564,11 @@ std::vector<search::GameAction> getAllShopActions(const sts::GameContext &gc) {
 std::vector<search::GameAction> getAllRestActions(const sts::GameContext &gc) {
     std::vector<search::GameAction> actions;
 
+    if (gc.restRoomResolved) {
+        actions.emplace_back(6);
+        return actions;
+    }
+
     if (!gc.relics.has(RelicId::COFFEE_DRIPPER)) {
         actions.emplace_back(0);
     }
@@ -569,7 +577,7 @@ std::vector<search::GameAction> getAllRestActions(const sts::GameContext &gc) {
         actions.emplace_back(1);
     }
 
-    if (!gc.hasKey(Key::RUBY_KEY)) {
+    if (gc.keysEnabled && !gc.hasKey(Key::RUBY_KEY)) {
         actions.emplace_back(2);
     }
 

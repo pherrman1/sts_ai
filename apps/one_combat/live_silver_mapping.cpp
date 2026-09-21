@@ -157,7 +157,7 @@ const std::map<std::string, PlayerStatus> kPlayerStatuses = {
 
 const std::map<std::string, sts::MonsterStatus> kMonsterStatuses = {
     {"Artifact", sts::MonsterStatus::ARTIFACT}, {"ArtifactPower", sts::MonsterStatus::ARTIFACT}, {"Strength", sts::MonsterStatus::STRENGTH}, {"StrengthPower", sts::MonsterStatus::STRENGTH},
-    {"Vulnerable", sts::MonsterStatus::VULNERABLE}, {"VulnerablePower", sts::MonsterStatus::VULNERABLE}, {"Weak", sts::MonsterStatus::WEAK}, {"WeakPower", sts::MonsterStatus::WEAK},
+    {"Vulnerable", sts::MonsterStatus::VULNERABLE}, {"VulnerablePower", sts::MonsterStatus::VULNERABLE}, {"Weak", sts::MonsterStatus::WEAK}, {"WeakPower", sts::MonsterStatus::WEAK}, {"Weakened", sts::MonsterStatus::WEAK},
     {"Poison", sts::MonsterStatus::POISON}, {"PoisonPower", sts::MonsterStatus::POISON}, {"Metallicize", sts::MonsterStatus::METALLICIZE}, {"MetallicizePower", sts::MonsterStatus::METALLICIZE},
     {"Plated Armor", sts::MonsterStatus::PLATED_ARMOR}, {"PlatedArmorPower", sts::MonsterStatus::PLATED_ARMOR}, {"Regeneration", sts::MonsterStatus::REGEN},
     {"Regen", sts::MonsterStatus::REGEN}, {"Angry", sts::MonsterStatus::ANGRY},

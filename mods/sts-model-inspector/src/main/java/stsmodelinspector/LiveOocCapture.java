@@ -13,11 +13,19 @@ import com.megacrit.cardcrawl.rooms.AbstractRoom;
 import com.megacrit.cardcrawl.shop.ShopScreen;
 import com.megacrit.cardcrawl.shop.StorePotion;
 import com.megacrit.cardcrawl.shop.StoreRelic;
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 
@@ -28,6 +36,209 @@ final class LiveOocCapture {
     private static Object rewardPlayer, rewardNode;
     private static long nextRewardIdentity;
     private static final java.util.IdentityHashMap<Object,String> rewardIdentities = new java.util.IdentityHashMap<>();
+    private static final SeenRelicOffers seenRelicOffers = new SeenRelicOffers();
+    private static final CombatClassHistory combatClassHistory = new CombatClassHistory();
+
+    // The public damage metric records a combat's floor but not whether that
+    // combat consumed an encounter queue. Observe the live room class before
+    // the fight, and only claim complete current-act history when no earlier
+    // current-act combat predates this observer.
+    static final class CombatClassHistory {
+        private Object player, lastGroup;
+        private long seed;
+        private int act = -1, lastFloor = -1;
+        private boolean complete;
+        private boolean restored;
+        private final List<Map<String,Object>> entries = new ArrayList<>();
+
+        private Path ledgerPath(long currentSeed, int currentAct) {
+            String home = System.getProperty("user.home", ".");
+            return Paths.get(home, ".cache", "sts-model-inspector", "combat-history",
+                    currentSeed + "-act" + currentAct + ".tsv");
+        }
+
+        void resetForFreshRun(Object currentPlayer, long currentSeed, int currentAct) {
+            player = currentPlayer; seed = currentSeed; act = currentAct;
+            restored = true; lastFloor = -1; lastGroup = null;
+            entries.clear(); complete = true;
+            try {
+                for (int oldAct = 1; oldAct <= 4; ++oldAct)
+                    Files.deleteIfExists(ledgerPath(currentSeed, oldAct));
+            } catch (IOException ignored) { complete = false; }
+        }
+
+        private void restore(Object currentPlayer, long currentSeed, int currentAct) {
+            if (restored && player == currentPlayer && seed == currentSeed && act == currentAct) return;
+            restored = true;
+            player = currentPlayer; seed = currentSeed; act = currentAct; lastFloor = -1;
+            entries.clear(); lastGroup = null;
+            Path path = ledgerPath(currentSeed, currentAct);
+            if (!Files.isRegularFile(path)) return;
+            complete = true;
+            try (BufferedReader reader = Files.newBufferedReader(path, StandardCharsets.UTF_8)) {
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    String[] fields = line.split("\\t", -1);
+                    if (fields.length != 3) { complete = false; break; }
+                    int floor = Integer.parseInt(fields[0]);
+                    String kind = fields[1];
+                    String encounter = fields[2];
+                    if (floor < 1 || kind.isEmpty()
+                            || (("NORMAL_QUEUE".equals(kind) || "ELITE_QUEUE".equals(kind))
+                                && encounter.isEmpty())) { complete = false; break; }
+                    entries.add(object("floor", floor, "kind", kind, "encounter", encounter));
+                    lastFloor = Math.max(lastFloor, floor);
+                }
+            } catch (IOException | NumberFormatException failure) {
+                entries.clear(); complete = false;
+            }
+        }
+
+        private void persist() {
+            if (player == null || act < 1 || seed == 0 || !complete) return;
+            Path path = ledgerPath(seed, act);
+            try {
+                Files.createDirectories(path.getParent());
+                Path temp = path.resolveSibling(path.getFileName() + ".tmp");
+                try (BufferedWriter writer = Files.newBufferedWriter(temp, StandardCharsets.UTF_8)) {
+                    for (Map<String,Object> entry : entries)
+                        writer.write(entry.get("floor") + "\t" + entry.get("kind") + "\t"
+                                + entry.getOrDefault("encounter", "") + "\n");
+                }
+                try { Files.move(temp, path, java.nio.file.StandardCopyOption.ATOMIC_MOVE,
+                        java.nio.file.StandardCopyOption.REPLACE_EXISTING); }
+                catch (java.nio.file.AtomicMoveNotSupportedException ignored) {
+                    Files.move(temp, path, java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+                }
+            } catch (IOException ignored) {
+                complete = false;
+            }
+        }
+
+        void observe(Object currentPlayer, long currentSeed, int currentAct, int floor,
+                boolean noPriorActCombat, boolean inCombat, Object group, String kind,
+                String encounter) {
+            if (player != currentPlayer || seed != currentSeed || act != currentAct
+                    || floor < lastFloor) {
+                player = currentPlayer;
+                seed = currentSeed;
+                act = currentAct;
+                entries.clear();
+                lastGroup = null;
+                complete = noPriorActCombat;
+                restored = false;
+            }
+            restore(currentPlayer, currentSeed, currentAct);
+            lastFloor = floor;
+            if (!inCombat) { lastGroup = null; return; }
+            // A transition frame may already say COMBAT before vanilla has
+            // populated its monster group. Wait for the first real group;
+            // missing fights are caught against damage_taken at the next OOC.
+            if (group == null) return;
+            if (kind == null) { complete = false; return; }
+            if (("NORMAL_QUEUE".equals(kind) || "ELITE_QUEUE".equals(kind))
+                    && (encounter == null || encounter.isEmpty())) { complete = false; return; }
+            if (group != lastGroup) {
+                if (!entries.isEmpty()
+                        && ((Number)entries.get(entries.size() - 1).get("floor")).intValue() == floor) {
+                    String previousKind = String.valueOf(entries.get(entries.size() - 1).get("kind"));
+                    String previousEncounter = String.valueOf(entries.get(entries.size() - 1).getOrDefault("encounter", ""));
+                    if (!previousKind.equals(kind) || !previousEncounter.equals(encounter)) complete = false;
+                } else {
+                    entries.add(object("floor", floor, "kind", kind,
+                            "encounter", encounter == null ? "" : encounter));
+                }
+                lastGroup = group;
+                persist();
+            }
+        }
+        void invalidate() { complete = false; }
+        boolean completeFor(List<Integer> completedFloors) {
+            if (!complete || entries.size() != completedFloors.size()) return false;
+            for (int i = 0; i < entries.size(); ++i) {
+                if (((Number)entries.get(i).get("floor")).intValue() != completedFloors.get(i))
+                    return false;
+                String kind = String.valueOf(entries.get(i).get("kind"));
+                if (("NORMAL_QUEUE".equals(kind) || "ELITE_QUEUE".equals(kind))
+                        && String.valueOf(entries.get(i).getOrDefault("encounter", "")).isEmpty())
+                    return false;
+            }
+            return true;
+        }
+        List<Map<String,Object>> snapshot() { return new ArrayList<>(entries); }
+        void restoreFor(Object currentPlayer, long currentSeed, int currentAct) {
+            restore(currentPlayer, currentSeed, currentAct);
+        }
+    }
+
+    static void observeCombatRoom(AbstractRoom room) {
+        if (AbstractDungeon.player == null || room == null) return;
+        final int act = AbstractDungeon.actNum, floor = AbstractDungeon.floorNum;
+        final int actStart = act <= 1 ? 0 : act == 2 ? 17 : act == 3 ? 34 : 51;
+        boolean noPriorActCombat = true;
+        if (CardCrawlGame.metricData != null) {
+            for (Object raw : CardCrawlGame.metricData.damage_taken) {
+                Object value = map(raw).get("floor");
+                if (!(value instanceof Number)) { noPriorActCombat = false; break; }
+                int priorFloor = ((Number)value).intValue();
+                if (priorFloor > actStart && priorFloor <= floor) {
+                    noPriorActCombat = false;
+                    break;
+                }
+            }
+        } else noPriorActCombat = false;
+        boolean inCombat = room.phase == AbstractRoom.RoomPhase.COMBAT;
+        String kind = null;
+        if (inCombat) {
+            String roomClass = room.getClass().getSimpleName();
+            if (room.event != null || "EventRoom".equals(roomClass)) kind = "FIXED_EVENT";
+            else if ("MonsterRoomElite".equals(roomClass)) kind = "ELITE_QUEUE";
+            else if ("MonsterRoomBoss".equals(roomClass)) kind = "BOSS";
+            else if ("MonsterRoom".equals(roomClass)) kind = "NORMAL_QUEUE";
+        }
+        combatClassHistory.observe(AbstractDungeon.player, Settings.seed, act, floor,
+                noPriorActCombat, inCombat, inCombat ? AbstractDungeon.getMonsters() : null, kind,
+                inCombat ? STSModelInspector.encounterName(room) : "");
+    }
+
+    static void invalidateCombatRoomHistory() { combatClassHistory.invalidate(); }
+
+    // Only an uninterrupted observation from a fresh Neow boundary can
+    // account for skipped offers. A resumed/mid-run observer stays incomplete.
+    static final class SeenRelicOffers {
+        private Object player;
+        private long seed;
+        private int lastFloor = -1;
+        private boolean complete;
+        private final LinkedHashSet<String> offers = new LinkedHashSet<>();
+
+        void observe(Object currentPlayer, long currentSeed, int floor,
+                     boolean freshRun, String screen, Map<String,Object> details) {
+            if (player != currentPlayer || seed != currentSeed || floor < lastFloor) {
+                player = currentPlayer;
+                seed = currentSeed;
+                lastFloor = -1;
+                complete = freshRun;
+                offers.clear();
+            }
+            if (lastFloor >= 0 && floor > lastFloor + 1) complete = false;
+            lastFloor = floor;
+            if ("shop".equals(screen)) {
+                for (Object entry : list(details.get("relics"))) {
+                    Map<String,Object> offer = map(entry);
+                    if (offer.get("id") != null && ((Number)offer.get("price")).intValue() >= 0)
+                        offers.add(String.valueOf(offer.get("id")));
+                }
+            } else if ("combat_reward".equals(screen) || "rewards".equals(screen)
+                    || "boss_relic".equals(screen)) {
+                for (Object relic : list(details.get("relics")))
+                    offers.add(String.valueOf(relic));
+            }
+        }
+        void invalidate() { complete = false; }
+        boolean complete() { return complete; }
+        List<String> snapshot() { return new ArrayList<>(offers); }
+    }
 
     static String rewardIdentity(Object reward) {
         return rewardIdentity(reward, AbstractDungeon.player, AbstractDungeon.currMapNode);
@@ -73,6 +284,12 @@ final class LiveOocCapture {
             out.put("publicState", core);
             List<Map<String,Object>> choices = new ArrayList<>();
             out.put("liveChoices", choices);
+            boolean freshRun = AbstractDungeon.floorNum == 0
+                    && CardCrawlGame.metricData != null
+                    && CardCrawlGame.metricData.path_taken != null
+                    && CardCrawlGame.metricData.path_taken.isEmpty();
+            if (freshRun) combatClassHistory.resetForFreshRun(
+                    AbstractDungeon.player, Settings.seed, AbstractDungeon.actNum);
             capturePublicState(core);
             List<?> labels = list(call(CHOICES, "getCurrentChoiceList"));
             switch (type) {
@@ -89,15 +306,30 @@ final class LiveOocCapture {
                     out.put("screen", type.toLowerCase(java.util.Locale.ROOT));
                     out.put("unsupportedReason", "NATIVE_SCREEN_UNSUPPORTED:" + type);
             }
-            if (!Boolean.TRUE.equals(map(out.get("publicState")).get("pathComplete")))
-                out.put("unsupportedReason", "PATH_HISTORY_UNAVAILABLE");
-            if (map(out.get("publicState")).containsKey("unsupportedReason"))
-                out.put("unsupportedReason", map(out.get("publicState")).get("unsupportedReason"));
-            if (!out.containsKey("unsupportedReason")) out.put("unsupportedReason", "");
+            if ("map".equals(out.get("screen")) && activeWingBoots(core))
+                unsupported(out, "RELIC_NATIVE_STATE_UNREPRESENTABLE:WingedGreaves:active");
+            seenRelicOffers.observe(AbstractDungeon.player, Settings.seed,
+                    AbstractDungeon.floorNum, freshRun, String.valueOf(out.get("screen")),
+                    map(out.getOrDefault("details", object())));
+            core.put("seenRelics", seenRelicOffers.snapshot());
+            core.put("seenRelicsComplete", seenRelicOffers.complete());
+            finalizeSupportReason(out);
         } catch (ReflectiveOperationException | RuntimeException failure) {
+            seenRelicOffers.invalidate();
+            combatClassHistory.invalidate();
             recordCaptureError(out, failure);
         }
         return JSON.toJson(out);
+    }
+
+    static void finalizeSupportReason(Map<String,Object> observation) {
+        if (observation.containsKey("unsupportedReason")) return;
+        Map<String,Object> publicState = map(observation.get("publicState"));
+        if (!Boolean.TRUE.equals(publicState.get("pathComplete")))
+            observation.put("unsupportedReason", "PATH_HISTORY_UNAVAILABLE");
+        else if (publicState.containsKey("unsupportedReason"))
+            observation.put("unsupportedReason", publicState.get("unsupportedReason"));
+        else observation.put("unsupportedReason", "");
     }
 
     static void recordCaptureError(Map<String,Object> observation, Exception failure) {
@@ -116,9 +348,6 @@ final class LiveOocCapture {
                 "blueKey", Settings.hasSapphireKey, "greenKey", Settings.hasEmeraldKey,
                 "redKey", Settings.hasRubyKey, "keysEnabled", Settings.isFinalActAvailable,
                 "potionCapacity", AbstractDungeon.player.potionSlots,
-                // These counters are debug integration state, NOT fair-play evidence.
-                "potionChance", AbstractRoom.blizzardPotionMod,
-                "cardRarityFactor", AbstractDungeon.cardBlizzRandomizer,
                 "boss", AbstractDungeon.bossKey == null ? "" : AbstractDungeon.bossKey));
         List<Object> deck = new ArrayList<>();
         for (AbstractCard c : AbstractDungeon.player.masterDeck.group) deck.add(card(c));
@@ -160,20 +389,133 @@ final class LiveOocCapture {
         boolean exact = path != null && (AbstractDungeon.floorNum == 0 || !path.isEmpty());
         if (path != null && path.size() < AbstractDungeon.floorNum - 2 * AbstractDungeon.actNum)
             exact = false; // Missing persisted earlier-act history, never invent zeroes.
-        if (path != null) for (String symbol : path) {
+        // Damage history identifies completed boss floors publicly. Read it
+        // before path normalization so a persisted boss-transition marker can
+        // be qualified after entering the next act.
+        List<Integer> combatFloors = new ArrayList<>();
+        if (CardCrawlGame.metricData != null) {
+            for (Object raw : CardCrawlGame.metricData.damage_taken) {
+                Object floor = map(raw).get("floor");
+                if (floor instanceof Number) combatFloors.add(((Number) floor).intValue());
+                else exact = false;
+            }
+        } else {
+            exact = false;
+        }
+        p.put("combatFloors", combatFloors);
+        int combatActStart = AbstractDungeon.actNum <= 1 ? 0 : AbstractDungeon.actNum == 2 ? 17
+                : AbstractDungeon.actNum == 3 ? 34 : 51;
+        List<Integer> currentActCombatFloors = new ArrayList<>();
+        for (int floor : combatFloors)
+            if (floor > combatActStart && floor <= AbstractDungeon.floorNum)
+                currentActCombatFloors.add(floor);
+        combatClassHistory.restoreFor(AbstractDungeon.player, Settings.seed, AbstractDungeon.actNum);
+        p.put("combatHistory", combatClassHistory.snapshot());
+        p.put("combatHistoryComplete", combatClassHistory.completeFor(currentActCombatFloors));
+        // At the act-boss transition vanilla can leave one non-room sentinel
+        // at the end of metricData.path_taken. It is not a missing historical
+        // room: the current MapRoomNode is row 15, above the visible map.
+        // Omit only that exact trailing sentinel; all other unknown symbols
+        // remain fail-closed.
+        boolean bossTransitionSentinel = AbstractDungeon.currMapNode.y == 15;
+        String inferredBossPrecedingRoom = "";
+        if (bossTransitionSentinel && AbstractDungeon.currMapNode.getParents() != null) {
+            for (MapRoomNode parent : AbstractDungeon.currMapNode.getParents()) {
+                if (parent != null && parent.room != null) {
+                    String candidate = roomSymbol(parent.room.getMapSymbol());
+                    if (!"INVALID".equals(candidate)) {
+                        inferredBossPrecedingRoom = candidate;
+                        break;
+                    }
+                }
+            }
+        }
+        if (bossTransitionSentinel && inferredBossPrecedingRoom.isEmpty()
+                && AbstractDungeon.pathX != null && AbstractDungeon.pathY != null
+                && AbstractDungeon.pathX.size() == AbstractDungeon.pathY.size()) {
+            for (int i = AbstractDungeon.pathX.size() - 1; i >= 0; --i) {
+                int x = AbstractDungeon.pathX.get(i), y = AbstractDungeon.pathY.get(i);
+                if (AbstractDungeon.map == null || y < 0 || y >= AbstractDungeon.map.size()) continue;
+                List<MapRoomNode> row = AbstractDungeon.map.get(y);
+                if (row == null || x < 0 || x >= row.size() || row.get(x) == null
+                        || row.get(x).room == null) continue;
+                String candidate = roomSymbol(row.get(x).room.getMapSymbol());
+                if (!"INVALID".equals(candidate)) {
+                    inferredBossPrecedingRoom = candidate;
+                    break;
+                }
+            }
+        }
+        List<String> canonicalPathHistory = path == null ? new ArrayList<>()
+                : canonicalPathHistory(path, bossTransitionSentinel,
+                        inferredBossPrecedingRoom, AbstractDungeon.actNum, combatFloors);
+        for (String canonical : canonicalPathHistory) {
             int idx = Arrays.asList("SHOP", "REST", "EVENT", "ELITE", "MONSTER", "TREASURE",
-                    "BOSS", "BOSS_TREASURE", "NONE", "INVALID").indexOf(roomSymbol(symbol));
+                    "BOSS", "BOSS_TREASURE", "NONE", "INVALID").indexOf(canonical);
             if (idx >= 0 && idx < 6) ++visits[idx];
             else if (idx != 6 && idx != 7 && idx != 8) exact = false;
         }
         p.put("pathVisits", visits);
+        p.put("pathHistory", canonicalPathHistory);
         p.put("pathComplete", exact);
-        p.put("pathHistory", path == null ? new ArrayList<String>() : new ArrayList<>(path));
+        int[] actVisits = new int[10];
+        int actStartFloor = AbstractDungeon.actNum <= 1 ? 0 : AbstractDungeon.actNum == 2 ? 17
+                : AbstractDungeon.actNum == 3 ? 34 : 51;
+        int currentActRooms = Math.max(0, AbstractDungeon.floorNum - actStartFloor);
+        if (path != null) for (String symbol : path.subList(Math.max(0, path.size() - currentActRooms), path.size())) {
+            int idx = Arrays.asList("SHOP", "REST", "EVENT", "ELITE", "MONSTER", "TREASURE",
+                    "BOSS", "BOSS_TREASURE", "NONE", "INVALID").indexOf(roomSymbol(symbol));
+            if (idx >= 0 && idx < 6) ++actVisits[idx];
+        }
+        p.put("currentActPathVisits", actVisits);
+        // The immutable map symbol preserves '?' after conversion, but this
+        // capture does not yet persist the resolved public outcome. Do not
+        // let the native importer reconstruct those counters from a uniform
+        // hypothetical history.
+        p.put("questionOutcomes", new ArrayList<String>());
+        p.put("questionHistoryComplete", false);
+        List<String> acquiredRelics = new ArrayList<>();
+        List<String> priorEvents = new ArrayList<>();
+        int shopRemovals = 0;
+        if (CardCrawlGame.metricData != null) {
+            for (Object raw : CardCrawlGame.metricData.relics_obtained) {
+                Object key = map(raw).get("key");
+                if (key != null && !acquiredRelics.contains(String.valueOf(key))) acquiredRelics.add(String.valueOf(key));
+            }
+            for (Object raw : CardCrawlGame.metricData.event_choices) {
+                Map<String,Object> event = map(raw);
+                Object name = event.get("event_name");
+                if (name != null && !priorEvents.contains(String.valueOf(name))) priorEvents.add(String.valueOf(name));
+                for (String key : Arrays.asList("relics_obtained", "relics_lost")) {
+                    Object values = event.get(key);
+                    if (values instanceof List) for (Object relic : (List<?>)values)
+                        if (!acquiredRelics.contains(String.valueOf(relic))) acquiredRelics.add(String.valueOf(relic));
+                }
+            }
+            shopRemovals = CardCrawlGame.metricData.purchased_purges;
+        }
+        for (AbstractRelic relic : AbstractDungeon.player.relics)
+            if (!acquiredRelics.contains(relic.relicId)) acquiredRelics.add(relic.relicId);
+        p.put("acquiredRelics", acquiredRelics);
+        // Vanilla metrics omit offered-but-skipped relics. The in-session
+        // observer fills these only after a fresh-run boundary has been seen.
+        p.put("seenRelics", new ArrayList<String>());
+        p.put("seenRelicsComplete", false);
+        p.put("priorEvents", priorEvents);
+        p.put("shopRemoveCount", shopRemovals);
     }
 
     static String canonicalEventId(String liveId) {
         // The native save mapping spells Neow differently from the Java class.
         return "NEOW".equals(liveId) ? "Neow" : liveId;
+    }
+
+    static boolean simpleInitialEventSupported(String simple) {
+        return Arrays.asList("BigFish", "GoldenShrine",
+                "LivingWall", "LiarsGame", "Mushrooms", "TheLibrary",
+                "TheMausoleum", "MysteriousSphere", "SecretPortal", "FountainOfCurseRemoval", "UpgradeShrine",
+                "PurificationShrine", "Transmogrifier", "Duplicator", "Bonfire", "TheJoust",
+                "WomanInBlue").contains(simple);
     }
 
     static String canonicalScreen(String type) {
@@ -199,13 +541,19 @@ final class LiveOocCapture {
 
     private static final List<String> PERSISTENT_RELIC_COUNTERS = Arrays.asList(
             "Happy Flower", "Incense Burner", "InkBottle", "Inserter", "Nunchaku", "Pen Nib", "Sundial",
-            "NeowsBlessing", "Omamori", "Girya", "Tiny Chest");
+            "NeowsBlessing", "Omamori", "Girya", "Tiny Chest", "WingedGreaves");
 
     private static void unsupported(Map<String,Object> state, String reason) {
         if (!state.containsKey("unsupportedReason")) state.put("unsupportedReason", reason);
     }
 
     static int nativeRelicData(String id, int counter, boolean usedUp, Map<String,Object> state) {
+        if ("WingedGreaves".equals(id)) {
+            // Java's counter is the public remaining-use count. Native relic
+            // feature encoding has always represented Wing Boots as data=0;
+            // the live importer carries the counter in a separate field.
+            return 0;
+        }
         if ("MawBank".equals(id)) {
             // Java tests usedUp and writes counter=-2 on spending; native
             // obtainRelic starts at 1, loseGold(inShop) writes 0.
@@ -217,8 +565,7 @@ final class LiveOocCapture {
             if (!usedUp) unsupported(state, "RELIC_NATIVE_STATE_UNREPRESENTABLE:Lizard Tail:active");
             return usedUp ? 0 : counter;
         }
-        if ("Matryoshka".equals(id) || "WingedGreaves".equals(id)
-                || "NlothsMask".equals(id)) {
+        if ("Matryoshka".equals(id) || "NlothsMask".equals(id)) {
             if (counter > 0)
                 unsupported(state, "RELIC_NATIVE_STATE_UNREPRESENTABLE:" + id + ":active");
             return usedUp ? 0 : counter;
@@ -228,6 +575,17 @@ final class LiveOocCapture {
         // Nonpositive counters have the same V4 token encoding as native zero.
         // Known persistent counters are copied exactly, never reconstructed.
         return counter;
+    }
+
+    private static boolean activeWingBoots(Map<String,Object> state) {
+        for (Object raw : list(state.get("relics"))) {
+            Map<String,Object> relic = map(raw);
+            if ("WingedGreaves".equals(relic.get("id"))
+                    && relic.get("liveCounter") instanceof Number
+                    && ((Number)relic.get("liveCounter")).intValue() > 0)
+                return true;
+        }
+        return false;
     }
 
     private static Map<String,Object> card(AbstractCard c) throws ReflectiveOperationException {
@@ -317,8 +675,6 @@ final class LiveOocCapture {
         }
         if (buttons.isEmpty()) { options.add(6); button(cs, "proceed", "option", 6, 0); }
         out.put("details", object("options", options));
-        if (!Settings.isFinalActAvailable && !Settings.hasRubyKey)
-            out.put("unsupportedReason", "KEYS_NOT_AVAILABLE");
     }
     private static void mapScreen(Map<String,Object> out, List<Map<String,Object>> cs, List<?> labels)
             throws ReflectiveOperationException {
@@ -364,7 +720,6 @@ final class LiveOocCapture {
                 "requiredPicks", ((Number)field(AbstractDungeon.gridSelectScreen, "numCards")).intValue(),
                 "completedPicks", selected.size(), "cards", selectionCards,
                 "selectedDeckIndices", selected, "confirm", confirm));
-        if (!upgrade) { out.put("unsupportedReason", "NATIVE_SELECTOR_UNSUPPORTED"); }
         if (confirm) out.put("unsupportedReason", "SELECTOR_CONFIRMATION_ONLY");
     }
     private static void boss(Map<String,Object> out, List<Map<String,Object>> cs, List<?> labels) {
@@ -381,8 +736,26 @@ final class LiveOocCapture {
         Object chest = field(AbstractDungeon.getCurrRoom(), "chest");
         boolean opened = Boolean.TRUE.equals(field(chest, "isOpen"));
         out.put("details", object("chestType", chest.getClass().getSimpleName(), "opened", opened));
-        if (opened) out.put("unsupportedReason", "CHEST_ALREADY_OPEN");
-        else { add(cs, labels, 0, "option", 0, 0); button(cs, "proceed", "option", 1, 0); }
+        if (opened) {
+            // The completed boss chest exposes only MCP's Proceed button.
+            // Publish that actual action so the advisor's native pass-through
+            // can validate and return it without reopening the chest.
+            captureOpenedTreasure(out, cs,
+                    Boolean.TRUE.equals(map(out.get("mcpState")).get("can_proceed")));
+        } else {
+            // The native chest particle depends on setupTreasureRoom() state
+            // (chest size, gold branch, and relic tier). The capture currently
+            // exposes only the Java chest class, so never score an unopened
+            // chest from a fabricated default StateInfo.
+            out.put("unsupportedReason", "TREASURE_STATE_UNREPRESENTABLE");
+            add(cs, labels, 0, "option", 0, 0);
+            button(cs, "proceed", "option", 1, 0);
+        }
+    }
+    static void captureOpenedTreasure(Map<String,Object> out, List<Map<String,Object>> choices,
+            boolean canProceed) {
+        if (canProceed) button(choices, "proceed", "option", 1, 0);
+        else out.put("unsupportedReason", "CHEST_ALREADY_OPEN");
     }
     private static void event(Map<String,Object> out, List<Map<String,Object>> cs, List<?> labels)
             throws ReflectiveOperationException {
@@ -408,12 +781,8 @@ final class LiveOocCapture {
                 "skillCardDeckIdx", -1, "powerCardDeckIdx", -1, "attackCardDeckIdx", -1,
                 "potionIdx", -1, "gold", -1, "cardIdx", -1));
         // Only initial phases with native one-to-one option indices qualify.
-        List<String> simpleInitial = Arrays.asList("BigFish", "GoldenShrine", "ShiningLight", "WorldOfGoop",
-                "LivingWall", "LiarsGame", "Mushrooms", "Ghosts", "WindingHalls", "TheLibrary",
-                "TheMausoleum", "MysteriousSphere", "SecretPortal", "FountainOfCurseRemoval", "UpgradeShrine",
-                "PurificationShrine", "Transmogrifier", "Duplicator", "Bonfire", "TheJoust");
         boolean initial = "INTRO".equals(String.valueOf(phase)) || "0".equals(String.valueOf(phase));
-        if (!simpleInitial.contains(simple) || !initial)
+        if (!simpleInitialEventSupported(simple) || !initial)
             out.put("unsupportedReason", "EVENT_PHASE_UNREPRESENTABLE:" + id + ":" + phase);
         if ("NeowEvent".equals(simple)) {
             List<Object> offers = new ArrayList<>();
@@ -521,6 +890,38 @@ final class LiveOocCapture {
         switch (s) { case "$": return "SHOP"; case "R": return "REST"; case "?": return "EVENT";
             case "E": return "ELITE"; case "M": return "MONSTER"; case "T": return "TREASURE";
             case "B": return "BOSS"; default: return "INVALID"; }
+    }
+    static List<String> canonicalPathHistory(List<String> raw, boolean bossTransitionSentinel,
+            String inferredBossPrecedingRoom, int act, List<Integer> combatFloors) {
+        List<String> result = new ArrayList<>();
+        for (int i = 0; i < raw.size(); ++i) {
+            String symbol = roomSymbol(raw.get(i));
+            if ("INVALID".equals(symbol) && bossTransitionSentinel && i == raw.size() - 1) {
+                // The current boss-transition sentinel may stand for the
+                // preceding visible map room, not for the boss itself.
+                symbol = inferredBossPrecedingRoom;
+            } else if ("INVALID".equals(symbol)
+                    && completedBossMarker(result, act, combatFloors)) {
+                symbol = "BOSS";
+            }
+            result.add(symbol);
+        }
+        return result;
+    }
+    private static boolean completedBossMarker(List<String> preceding, int act,
+            List<Integer> combatFloors) {
+        int completedBosses = 0, roomsSinceBoss = 0;
+        for (String symbol : preceding) {
+            if ("BOSS".equals(symbol)) { ++completedBosses; roomsSinceBoss = 0; }
+            else if (Arrays.asList("SHOP", "REST", "EVENT", "ELITE", "MONSTER", "TREASURE")
+                    .contains(symbol)) ++roomsSinceBoss;
+            else if (!"NONE".equals(symbol) && !"BOSS_TREASURE".equals(symbol)) return false;
+        }
+        // A completed act has exactly fifteen public map rooms. The combat
+        // metric then confirms the boss floor; arbitrary unknown symbols do
+        // not get promoted into a fabricated historical room.
+        return completedBosses < act - 1 && roomsSinceBoss == 15
+                && combatFloors.contains(16 + 17 * completedBosses);
     }
     private static Map<String,Object> object(Object... entries) {
         Map<String,Object> value = new LinkedHashMap<>();

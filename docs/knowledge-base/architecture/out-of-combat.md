@@ -305,6 +305,24 @@ restocks, room generation and post-combat rewards. Semantic identity remains
 the chosen operation/target, never its sampled outcome. Only the fresh semantic
 action is executed live, using the live game's own RNG.
 
+The live advisor additionally sets `stopAtMapCheckpoint`: every downstream MAP
+state is a true planner leaf, including after the first visit. This prevents a
+revisited MAP particle from sampling a room with unreconstructed
+event/shop/treasure chance history. Live imports remove currently visible shop,
+combat-reward and boss-relic offers from the reconstructed relic pools.
+Pity-sensitive event branches whose reward generation depends on private
+counter history remain unsupported, including Library, Mushrooms and
+Mysterious Sphere. The live v_win leaf evaluates the exact discrete mixture
+`E[sigmoid(margin)]` over the native reachable ranges
+(`potionChance=-40..100` in steps of 10 and `cardRarityFactor=-40..5`) rather
+than applying the link to an expected margin or conditioning on 0/5. The
+direct V4 scoring fails closed for real live captures because Java does not
+expose an exact pity history. Live MCTS uses an equal public prior instead of a
+fabricated midpoint; synthetic parity fixtures may explicitly mark an exact
+pity reconstruction. Hypothetical room-chance and pity counters are sampled
+from explicit reachable-state priors before a transition; this is a qualified
+belief particle, not an exact joint posterior.
+
 Live edges are never marked deterministic merely because their simulator copy
 has fixed RNG. Progressive widening samples outcome particles normally, even
 when a particular action has a deterministic public effect. Native leaf
@@ -313,13 +331,35 @@ features receive sampled hidden queues rather than the real future queue.
 offline/native parity seam; live startup always enables sampling and reports
 `noncombatOutcomes=sampled`. There is no live known-RNG override.
 
+The live root conditions that sampled support on public metric history before
+search: current-act normal/elite consumption from completed combat floors,
+acquired or lost relics, observed events, and paid shop removals. A `?` floor
+that became a hallway combat is counted from `metricData.damage_taken`, not from
+the retained map symbol. Private Java potion/card-rarity counters are not
+copied. Historical relic offers that were seen and skipped are not present in
+vanilla metrics; the live root therefore fails closed for treasure, Shovel,
+Courier-restock, and random-relic event branches unless a complete
+`seenRelics` history is supplied.
+Live MAP roots are searchable with the explicit room-chance belief prior.
+Non-root MAP states remain hard checkpoint leaves, so a search never chooses a
+hypothetical room after reaching the checkpoint.
+
 Default PUCT/widening remain `1.5`, `2`, `0.5`, with 512 simulations. Depth counts
 searched semantic transitions (primitive transitions on MAP), excluding
 policy-chain steps used only to project leaves. Sampling removes the concrete
 future-stream leak; it is not a proof of an exact joint hidden-state posterior,
 a belief-tree policy, or stronger gameplay quality. Remaining-pool membership
 and historical counters are conditioned on native state; chance particles and
-leaf policies are still the existing planner approximation.
+leaf policies are still the existing planner approximation. Live checkpoint
+continuation preserves the simulator's reward-collection order and uses the
+same V4 Q/margin contract for actions it can qualify. The standalone live
+advisor cannot call `runFullRunOocPolicyStep(gc, agent, false, true)` directly
+because that driver is coupled to simulator-global heuristic fallback
+objects. The live continuation now shares the fixed free-reward prefix and
+uses the simulator `ScumSearchAgent2` fallback when the V4 margin gate does
+not fire; it never substitutes an ungated policy-logit argmax. Full
+simulator/live checkpoint parity remains an explicit seam to extract before
+claiming complete policy equivalence.
 
 The following `STS_OOC_MCTS_` suffixes configure ON searches. Invalid finite
 ranges/enums fail startup; OFF does not parse or apply search overrides. Native
