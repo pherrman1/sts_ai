@@ -168,6 +168,16 @@ target_include_directories(silver-forced-action-audit PRIVATE include json/inclu
 target_link_libraries(silver-forced-action-audit PRIVATE silver_combat_search_bridge)
 target_link_options(silver-forced-action-audit PRIVATE -Wl,--gc-sections)
 
+execute_process(COMMAND git rev-parse HEAD WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+    OUTPUT_VARIABLE STS_PRIOR_BUILD_SHA OUTPUT_STRIP_TRAILING_WHITESPACE
+    COMMAND_ERROR_IS_FATAL ANY)
+add_executable(silver-prior-label apps/silver_prior_label.cpp)
+set_target_properties(silver-prior-label PROPERTIES OUTPUT_NAME silver_prior_label)
+target_include_directories(silver-prior-label PRIVATE include json/include)
+target_compile_definitions(silver-prior-label PRIVATE STS_PRIOR_BUILD_SHA="${STS_PRIOR_BUILD_SHA}")
+target_link_libraries(silver-prior-label PRIVATE silver_combat_search_bridge)
+target_link_options(silver-prior-label PRIVATE -Wl,--gc-sections)
+
 add_executable(silver-hard-combat-fixture apps/silver_hard_combat_fixture.cpp)
 set_target_properties(silver-hard-combat-fixture PROPERTIES OUTPUT_NAME silver_hard_combat_fixture)
 target_include_directories(silver-hard-combat-fixture PRIVATE include json/include)
@@ -597,6 +607,12 @@ add_test(NAME silver_forced_action_fixture COMMAND python3
     ${CMAKE_SOURCE_DIR}/tests/silver_forced_action_fixture.py
     $<TARGET_FILE:silver-bridge-test> $<TARGET_FILE:silver-forced-action-audit>
     ${CMAKE_SOURCE_DIR}/tools/analyze_silver_forced_action_audit.py)
+add_test(NAME silver_prior_dataset_fixture COMMAND python3
+    ${CMAKE_SOURCE_DIR}/tests/silver_prior_dataset_fixture.py
+    $<TARGET_FILE:silver-bridge-test> $<TARGET_FILE:silver-prior-label>)
+set_tests_properties(silver_prior_dataset_fixture PROPERTIES TIMEOUT 180)
+add_test(NAME silver_prior_resume COMMAND python3
+    ${CMAKE_SOURCE_DIR}/tests/silver_prior_resume_test.py)
 set_tests_properties(silver_forced_action_fixture PROPERTIES
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "integration;research-repro" TIMEOUT 180)
 add_test(NAME silver_hard_combat_fixture COMMAND $<TARGET_FILE:silver-hard-combat-fixture>)

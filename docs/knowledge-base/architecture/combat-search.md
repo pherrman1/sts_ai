@@ -35,6 +35,11 @@ native searcher choice. The complete flag and parameter reference is
 
 ### Offline Silver root mechanism tooling
 
+For the policy-only structured observation/candidate dataset, its reviewed-SHA
+collection driver, and training-facing integrity boundary, see
+[Silver prior dataset](../operations/silver-prior-dataset.md). That pipeline
+uses a separate L/J label entry point and preserves the historical audits.
+
 `STS_SILVER_ROOT_MECHANISM_CAPTURE=<new path>` enables observation-only capture
 at the live Silver boundary, after visible-state conversion and before search.
 It requires a full `STS_EXECUTABLE_GIT_SHA` and refuses an existing output.
