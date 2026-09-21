@@ -349,7 +349,7 @@ LiveOocDecision LiveOocMctsPolicy::score(const sts::GameContext &projected,
         }
         sts::search::OocMctsConfig config;
         config.seed = searchSeed_;
-        const auto search = sts::search::OocMctsPlanner(config).search(provider, 0, 512);
+        const auto search = searchWithSoleRootShortcut(provider, config, provider.soleLegalAction(0), 512);
         if (search.aborted) {
             unsupportedResult.reason = "OOC_MCTS_ABORTED:" + search.abortReason;
             return unsupportedResult;
@@ -375,7 +375,7 @@ LiveOocDecision LiveOocMctsPolicy::score(const sts::GameContext &projected,
                 key = "ooc-live:v1:map:x=" + std::to_string(x) + ":y=" + std::to_string(y);
                 payload = nlohmann::json({{"type", "map_node"}, {"x", x}, {"y", y}}).dump();
             }
-            const double share = search.metrics.simulations
+            const double share = search.metrics.trivialRootBypasses ? 1.0 : search.metrics.simulations
                 ? static_cast<double>(root.visits) / search.metrics.simulations : 0.0;
             result.candidates.push_back({key, payload, candidate.primitive.bits, root.q,
                                          root.visits, share, root.prior});
