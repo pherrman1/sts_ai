@@ -124,6 +124,10 @@ public:
     double evaluateLeaf(sts::search::OocStateId, std::mt19937_64 &) override;
     bool isDeterministicTransition(sts::search::OocStateId, sts::search::OocActionId) const override;
 };
+// A validated singleton root needs no hypothetical continuation.
+sts::search::OocMctsResult searchWithSoleRootShortcut(sts::search::OocGenerativeModel &,
+    const sts::search::OocMctsConfig &, std::optional<sts::search::OocActionId>,
+    std::uint64_t simulations);
 struct LiveOocMctsMetrics {
     std::uint64_t decisions = 0, owned = 0, fallback = 0, combatSamples = 0;
     std::uint64_t supportAborts = 0, discardedSimulations = 0;

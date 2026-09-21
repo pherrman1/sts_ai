@@ -58,7 +58,8 @@ selection never uses this shortcut. Generic planner configuration requires
 `allowUnqualifiedRootStop=true` permits stopping without that guarantee.
 Live OOC MCTS enables this policy by default; `STS_OOC_MCTS_EARLY_STOP=0`
 restores the guarantee requirement. A singleton locks after its first completed
-simulation, rather than bypassing an unqualified root before sampling.
+simulation for direct planner callers; the live adapter bypasses a validated
+singleton root before search.
 
 This is an intentional fallback-policy tradeoff: a later support or continuation
 abort would invalidate the full-budget winner, but early stopping can skip that
@@ -68,7 +69,7 @@ zero aborts do not qualify that contract. Metrics count locked-root stops and
 saved simulations separately. See [ADR-0014](../../../decisions/0014-live-ooc-visit-lock-stopping.md).
 
 `OocMctsConfig::observeRootLock` is an opt-in diagnostic that suppresses both
-locked-root stopping and the qualified sole-root bypass.
+locked-root stopping and the sole-root bypass.
 
 `STS_OOC_MCTS_CHECKPOINT_TRACE=<fresh.jsonl>` instead preserves the live policy
 and runs a separate discarded full-budget shadow search from the same root,
@@ -87,7 +88,7 @@ checkpoints, not at every intervening simulation. No rule is deployed by this
 diagnostic. `tools/analyze_ooc_root_checkpoints.py` implements the offline report.
 
 The root-lock observer suppresses
-locked-root stopping and the qualified sole-root bypass. It records the first
+locked-root stopping and the sole-root bypass. It records the first
 strict visit lock (including a zero-remaining-budget lock), its action and
 remaining simulation budget, and wall time from that completed simulation to
 search completion/abort. No extra sampling draws are consumed. Mean-Q roots
@@ -243,15 +244,14 @@ explicit unsigned 64-bit arithmetic. The index increments once per actual
 nonbattle run-loop decision, including unsupported roots. It consumes no
 simulator RNG. Terminal/boundary roots and whole-root support aborts return no
 action; completed supported searches must return a legal adapter candidate ID.
-A root with one valid, unique candidate may return that candidate without
-constructing a tree only under the explicit `searchGuaranteedNonAborting()`
-contract. `OocGameContextModel` explicitly returns false: separate combat-support
-qualification must exclude every intentional abort path before this can change.
-An unqualified sole root must complete at least one simulation; an abort reached
-before its lock retains whole-root fallback, whose ordered
-policy can consume `ScumSearchAgent2::rng` even for a singleton candidate set.
-Qualified bypasses report `trivialRootBypasses` with zero simulations/attempts/
-combat draws; the current live model is ineligible. Snapshots are discarded before
+A root with one valid, unique semantic candidate returns that current action
+without constructing a tree, even though `OocGameContextModel` cannot guarantee
+hypothetical continuation support. A later unsupported real decision is handled
+at that later root. The bypass reports `trivialRootBypasses` with zero
+simulations, attempts, transitions, leaf evaluations, or combat draws. Explicit
+root-lock observation and root checkpoints still request search. Roots with
+multiple candidates retain whole-root search and abort/fallback behavior.
+Snapshots are discarded before
 `oocMctsPolicyStep` resolves the retained canonical key against fresh complete
 semantic candidates, requires exactly one match, and executes transactionally.
 Stale/missing/ambiguous identities execute nothing. An active live action

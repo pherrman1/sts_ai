@@ -136,6 +136,41 @@ int main(int argc, char **argv) {
                 "missing model did not retain current candidates for mapping validation");
         model->ok = true; // zero weights give exact ties for every action
 
+        auto forcedMap = gc;
+        forcedMap.screenState = ScreenState::MAP_SCREEN;
+        forcedMap.curEvent = Event::INVALID;
+        forcedMap.regainControlAction = [](GameContext &state) { state.screenState = ScreenState::MAP_SCREEN; };
+        for (auto &node : forcedMap.map->nodes[0]) node.room = Room::MONSTER;
+        bool keptEdge = false;
+        for (auto &node : forcedMap.map->nodes[0]) {
+            if (!keptEdge && node.edgeCount > 0) keptEdge = true;
+            else node.edgeCount = 0;
+        }
+        require(keptEdge, "forced live map fixture has no edge");
+        PathHistory forcedPath; forcedPath.update(forcedMap);
+        const auto forcedBefore = test::oocStateFingerprint(forcedMap);
+        struct NoCombatSample final : CombatTransitionSampler {
+            CombatRuntimeSupport support(const GameContext &, const CombatPredictorInputV1 &) const override {
+                throw std::runtime_error("forced root requested CTM support");
+            }
+            CombatRuntimeSample sample(const GameContext &, const CombatPredictorInputV1 &,
+                                       std::mt19937_64 &) const override {
+                throw std::runtime_error("forced root sampled CTM");
+            }
+        };
+        CompactTreeNet unusedWin, unusedFloor;
+        unusedWin.ok = unusedFloor.ok = true;
+        LiveOocMctsPolicy forcedPolicy(*model, std::make_shared<NoCombatSample>(), &unusedWin, &unusedFloor);
+        const auto forcedDecision = forcedPolicy.score(forcedMap, forcedPath, 0);
+        require(forcedDecision.supported && forcedDecision.selectedIndex == 0
+            && forcedDecision.candidates.size() == 1
+            && forcedDecision.candidates[0].prior == 1.0
+            && forcedDecision.candidates[0].visitShare == 1.0
+            && forcedDecision.candidates[0].visits == 0
+            && forcedBefore == test::oocStateFingerprint(forcedMap),
+            "live advisor returns sole map action without model sampling or mutation: "
+                + forcedDecision.reason + " candidates=" + std::to_string(forcedDecision.candidates.size()));
+
         GameContext shop = gc;
         shop.screenState = ScreenState::SHOP_ROOM;
         shop.gold = 200;
