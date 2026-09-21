@@ -457,68 +457,99 @@ def _before_after(source: Mapping[str, Any]) -> str:
     return f"<section><h2>Before → after</h2>{body}</section>"
 
 
-def _tree_section(source: Mapping[str, Any]) -> str:
+
+
+def _asset(name: str) -> str:
+    return (Path(__file__).parent / "combat_graph_viewer" / name).read_text(encoding="utf-8")
+
+
+def _inline_script(value: str) -> str:
+    return value.replace("</", "<\\/").replace("<!--", "<\\!--")
+
+
+def _workspace(source: Mapping[str, Any]) -> str:
     evaluator = _mapping(source.get("evaluator"))
-    tree = evaluator.get("tree")
-    if not isinstance(tree, Mapping):
-        return ""
-    payload = json.dumps(tree, ensure_ascii=True, separators=(",", ":"))
-    # Keep the JSON inside a script data island without allowing hostile labels
-    # to terminate the script element. The viewer inserts data via textContent.
-    payload = payload.replace("<", "\\u003c").replace(">", "\\u003e")
+    tree = _mapping(evaluator.get("tree"))
+    if not tree or not tree.get("accepted"):
+        reason = tree.get("failureReason") or "Silver graph not captured; enable opt-in debug capture."
+        return f'<section><h2>Retained graph unavailable</h2><p>{_esc(reason)}</p></section>'
+    # Browser JSON numbers cannot represent all native 64-bit IDs and hashes.
+    copied_tree = dict(tree)
+    copied_tree["rootId"] = str(tree.get("rootId"))
+    copied_tree["nodes"] = [dict(n, id=str(n["id"]),
+                                  stateHash=str(n["stateHash"]) if n.get("stateHash") is not None else None)
+                            for n in _list(tree.get("nodes"))]
+    copied_tree["edges"] = [dict(e, parentId=str(e["parentId"]),
+                                  childId=str(e["childId"]) if e.get("childId") is not None else None)
+                            for e in _list(tree.get("edges"))]
+    payload = _inline_script(json.dumps({"evaluator": dict(evaluator, tree=copied_tree),
+                                          "observation": source.get("observation", {})},
+                                         ensure_ascii=True, separators=(",", ":")))
+    scripts = ("<script id=\"elk-library\">" +
+               _inline_script(_asset("vendor/elk.bundled.js")) + "</script>")
+    scripts += "<script>" + _inline_script(_asset("vendor/d3.min.js")) + "</script>"
+    scripts += "<script>window.__COMBAT_VIEWER__=" + payload + ";</script>"
+    scripts += ("<script>window.__RAW_RECORD__=" +
+                _inline_script(json.dumps(source.get("raw", {}), ensure_ascii=True,
+                                          separators=(",", ":"))) + ";</script>")
+    scripts += "".join("<script>" + _inline_script(_asset(name)) + "</script>"
+                       for name in ("normalize.js", "visibility.js", "layout.js",
+                                    "render.js", "inspector.js", "app.js"))
     return (
-        '<section class="tree-section"><h2>MCTS tree <span class="debug-badge">debug capture</span></h2>'
-        '<p class="muted">This is the native Silver graph retained after the search. Shared/transposed nodes are expanded along each path; cycles are shown as references to prevent infinite recursion.</p>'
-        '<div class="tree-toolbar"><label for="tree-action-filter">root action</label>'
-        '<select id="tree-action-filter"><option value="">all root actions</option></select>'
-        '<label><input id="tree-show-states" type="checkbox"> show Silver node states</label>'
-        '<span id="tree-status" class="muted"></span></div>'
-        '<div class="tree-graph-shell"><div class="tree-graph-toolbar">'
-        '<button type="button" id="tree-graph-zoom-out">−</button>'
-        '<button type="button" id="tree-graph-zoom-reset">reset view</button>'
-        '<button type="button" id="tree-graph-zoom-in">+</button>'
-        '<label><input id="tree-graph-labels" type="checkbox" checked> edge labels</label>'
-        '<span id="tree-graph-status" class="muted"></span></div>'
-        '<div id="tree-graph-viewport" class="tree-graph-viewport">'
-        '<svg id="tree-graph-svg" role="img" aria-label="Silver MCTS node-link graph"><title>Silver MCTS node-link graph</title></svg>'
-        '</div><div id="tree-graph-details" class="tree-graph-details" aria-live="polite">click a node to inspect its state and outgoing edges</div></div>'
-        '<div id="tree-root" class="tree-view"></div>'
-        f'<script>window.__SILVER_TREE__={payload};</script>'
-        '<script>(function(){'
-        'const data=window.__SILVER_TREE__||{};'
-        'const nodes=new Map((data.nodes||[]).map(n=>[String(n.id),n]));'
-        'const byParent=new Map();'
-        '(data.edges||[]).forEach(e=>{const k=String(e.parentId);if(!byParent.has(k))byParent.set(k,[]);byParent.get(k).push(e);});'
-        'const root=document.getElementById("tree-root"),filter=document.getElementById("tree-action-filter"),states=document.getElementById("tree-show-states"),status=document.getElementById("tree-status");'
-        'const graphSvg=document.getElementById("tree-graph-svg"),graphDetails=document.getElementById("tree-graph-details"),graphLabels=document.getElementById("tree-graph-labels"),graphStatus=document.getElementById("tree-graph-status");let graphLayer=null,graphScale=1,graphOffsetX=0,graphOffsetY=0,graphSelected=null,graphDrag=null;'
-        'const text=(tag,value,cls)=>{const e=document.createElement(tag);if(cls)e.className=cls;e.textContent=value==null?"not captured":String(value);return e;};'
-        'const q=(n)=>n&&Number(n.simulationCount)>0?(Number(n.evaluationSum)/Number(n.simulationCount)).toFixed(4):"unavailable";'
-        'const childEdges=(n)=>byParent.get(String(n.id))||[];const isLeaf=(n)=>childEdges(n).length===0;'
-        'const nodeTitle=(n)=>"node #"+n.id+" · "+(n.isChanceNode?"chance":"decision")+" · visits "+n.simulationCount+" · "+(isLeaf(n)?"leaf Q ":"Q ")+q(n);'
-        'const svgEl=(tag,attrs)=>{const e=document.createElementNS("http://www.w3.org/2000/svg",tag);Object.entries(attrs||{}).forEach(([k,v])=>e.setAttribute(k,String(v)));return e;};'
-        'const shortLabel=(value,max=30)=>{const s=String(value||"edge");return s.length>max?s.slice(0,max-1)+"…":s;};'
-        'function graphLayout(){const levels=new Map();let maxDepth=0,maxPerLevel=0;nodes.forEach(n=>{const d=Number(n.depth)||0;if(!levels.has(d))levels.set(d,[]);levels.get(d).push(n);maxDepth=Math.max(maxDepth,d);});const positions=new Map();levels.forEach((list,d)=>{list.sort((a,b)=>Number(b.simulationCount||0)-Number(a.simulationCount||0)||Number(a.id)-Number(b.id));maxPerLevel=Math.max(maxPerLevel,list.length);list.forEach((n,i)=>positions.set(String(n.id),{x:120+i*210,y:90+d*145}));});return {positions,width:Math.max(1100,220+maxPerLevel*210),height:Math.max(620,180+(maxDepth+1)*145),count:nodes.size};}'
-        'function applyGraphTransform(){if(graphLayer)graphLayer.setAttribute("transform","translate("+graphOffsetX+" "+graphOffsetY+") scale("+graphScale+")");}'
-        'function showGraphDetails(n){graphDetails.replaceChildren();graphDetails.append(text("strong",nodeTitle(n),"graph-details-title"));const meta=document.createElement("div");meta.className="graph-details-meta";meta.append(text("span","depth "+n.depth));meta.append(text("span","evaluation sum "+n.evaluationSum));meta.append(text("span","victories "+n.victoryCount));meta.append(text("span","state hash "+n.stateHash));graphDetails.append(meta);const edges=childEdges(n);graphDetails.append(text("div",edges.length?"outgoing edges":"leaf node — no outgoing edges","muted"));if(edges.length){const list=document.createElement("ul");edges.forEach(e=>{const child=e.childCaptured?nodes.get(String(e.childId)):null;const item=document.createElement("li");item.textContent=edgeTitle(e,child);list.append(item);});graphDetails.append(list);}if(states.checked&&n.hasState){const pre=document.createElement("pre");pre.textContent=JSON.stringify(n.state,null,2);graphDetails.append(pre);}}'
-        'function renderGraph(){const layout=graphLayout();graphSvg.replaceChildren();const title=svgEl("title",{});title.textContent="Silver MCTS node-link graph with "+layout.count+" nodes";graphSvg.append(title);graphSvg.setAttribute("viewBox","0 0 "+layout.width+" "+layout.height);const defs=svgEl("defs",{});const marker=svgEl("marker",{id:"tree-graph-arrow",viewBox:"0 0 10 10",refX:"9",refY:"5",markerWidth:"7",markerHeight:"7",orient:"auto-start-reverse"});const arrow=svgEl("path",{d:"M 0 0 L 10 5 L 0 10 z",class:"graph-arrow"});marker.append(arrow);defs.append(marker);graphLayer=svgEl("g",{});graphSvg.append(defs,graphLayer);(data.edges||[]).forEach(e=>{if(!e.childCaptured)return;const a=layout.positions.get(String(e.parentId)),b=layout.positions.get(String(e.childId));if(!a||!b)return;const dy=Math.max(30,Math.abs(b.y-a.y)*.42);const path=svgEl("path",{d:"M "+a.x+" "+(a.y+25)+" C "+a.x+" "+(a.y+25+dy)+" "+b.x+" "+(b.y-25-dy)+" "+b.x+" "+(b.y-25),class:"graph-edge "+(e.chanceOutcome?"chance":"decision"),"marker-end":"url(#tree-graph-arrow)"});const full=edgeTitle(e,nodes.get(String(e.childId)));const pathTitle=svgEl("title",{});pathTitle.textContent=full;path.append(pathTitle);graphLayer.append(path);if(graphLabels.checked){const label=svgEl("text",{x:(a.x+b.x)/2,y:(a.y+b.y)/2-4,class:"graph-edge-label"});label.textContent=shortLabel(e.actionLabel||"edge");const labelTitle=svgEl("title",{});labelTitle.textContent=full;label.append(labelTitle);graphLayer.append(label);}});nodes.forEach(n=>{const p=layout.positions.get(String(n.id));if(!p)return;const g=svgEl("g",{class:"graph-node "+(n.isChanceNode?"chance":"decision")+(isLeaf(n)?" leaf":"")+(String(n.id)===String(graphSelected)?" selected":""),transform:"translate("+p.x+" "+p.y+")"});const box=svgEl("rect",{x:"-70",y:"-25",width:"140",height:"50",rx:"8"});const titleNode=svgEl("title",{});titleNode.textContent=nodeTitle(n);g.append(titleNode,box);const idText=svgEl("text",{x:"0",y:"-5",class:"graph-node-id","text-anchor":"middle"});idText.textContent="#"+n.id;const qText=svgEl("text",{x:"0",y:"13",class:"graph-node-q","text-anchor":"middle"});qText.textContent=(isLeaf(n)?"leaf Q ":"Q ")+q(n);g.append(idText,qText);g.addEventListener("click",event=>{event.stopPropagation();graphSelected=String(n.id);showGraphDetails(n);renderGraph();});graphLayer.append(g);});applyGraphTransform();graphStatus.textContent=layout.count+" unique nodes · "+(data.retainedEdgeCount||0)+" edges · drag to pan, wheel or buttons to zoom";if(graphSelected&&nodes.has(String(graphSelected)))showGraphDetails(nodes.get(String(graphSelected)));}'
-        'const stateBlock=(n)=>{if(!states.checked||!n.hasState)return null;const d=document.createElement("details");d.className="tree-state";d.append(text("summary","BattleStateWire state"));const pre=document.createElement("pre");pre.textContent=JSON.stringify(n.state,null,2);d.append(pre);return d;};'
-        'const edgeTitle=(e,child)=>{let label=e.actionLabel||"edge";if(e.continuationLabel)label+=" → "+e.continuationLabel;if(e.chanceOutcome)label+=" (advance "+e.rngAdvanceSteps+")";return label+" · edge visits "+e.visitCount+(child?" · child visits "+child.simulationCount+" · child Q "+q(child):"");};'
-        'function renderNode(id,path){const key=String(id),n=nodes.get(key);if(!n)return text("p","missing node "+id,"muted");if(path.has(key))return text("span","shared/cyclic reference to node #"+id,"tree-reference");const wrap=document.createElement("details");wrap.open=!isLeaf(n);wrap.className="tree-node";const summary=document.createElement("summary");summary.append(text("span",nodeTitle(n),"tree-node-title"));wrap.append(summary);const meta=document.createElement("div");meta.className="tree-node-meta";meta.append(text("span","depth "+n.depth));meta.append(text("span","evaluation sum "+n.evaluationSum));meta.append(text("span","victories "+n.victoryCount));meta.append(text("span","state hash "+n.stateHash));if(isLeaf(n))meta.append(text("strong","leaf Q "+q(n),"tree-leaf-q"));wrap.append(meta);const sb=stateBlock(n);if(sb)wrap.append(sb);const nextPath=new Set(path);nextPath.add(key);const edges=childEdges(n);const list=document.createElement("div");list.className="tree-edges";edges.forEach(e=>{const child=e.childCaptured?nodes.get(String(e.childId)):null;const row=document.createElement("div");row.className="tree-edge";row.append(text("div",edgeTitle(e,child),"tree-edge-label"));if(e.actionFingerprint)row.append(text("code",e.actionFingerprint,"tree-fingerprint"));if(e.childCaptured)row.append(renderNode(e.childId,nextPath));else row.append(text("span","child omitted by capture cap","tree-reference"));list.append(row);});wrap.append(list);return wrap;}'
-        'function refill(){const rootEdges=byParent.get(String(data.rootId))||[];while(filter.options.length>1)filter.remove(1);rootEdges.filter(e=>e.actionLabel).forEach((e,i)=>{const o=document.createElement("option");o.value=String(i);o.textContent=e.actionLabel+" ("+e.visitCount+" visits)";filter.append(o);});}'
-        'function render(){root.replaceChildren();const rootNode=nodes.get(String(data.rootId));if(!rootNode){root.append(text("p","tree root unavailable","muted"));return;}const selected=filter.value;const edges=byParent.get(String(data.rootId))||[];if(!selected)root.append(renderNode(data.rootId,new Set()));else{const e=edges[Number(selected)];const holder=document.createElement("div");holder.className="tree-filtered";holder.append(text("h3","root action: "+(e.actionLabel||"edge")));if(e.childCaptured)holder.append(renderNode(e.childId,new Set()));else holder.append(text("p","child omitted by capture cap","muted"));root.append(holder);}}'
-        'filter.addEventListener("change",render);states.addEventListener("change",()=>{renderGraph();render();});graphLabels.addEventListener("change",renderGraph);document.getElementById("tree-graph-zoom-in").addEventListener("click",()=>{graphScale=Math.min(4,graphScale*1.25);applyGraphTransform();});document.getElementById("tree-graph-zoom-out").addEventListener("click",()=>{graphScale=Math.max(.2,graphScale/1.25);applyGraphTransform();});document.getElementById("tree-graph-zoom-reset").addEventListener("click",()=>{graphScale=1;graphOffsetX=0;graphOffsetY=0;applyGraphTransform();});graphSvg.addEventListener("wheel",event=>{event.preventDefault();graphScale=Math.max(.2,Math.min(4,graphScale*(event.deltaY<0?1.1:.9)));applyGraphTransform();},{passive:false});graphSvg.addEventListener("pointerdown",event=>{graphDrag={x:event.clientX,y:event.clientY,ox:graphOffsetX,oy:graphOffsetY};graphSvg.setPointerCapture(event.pointerId);});graphSvg.addEventListener("pointermove",event=>{if(!graphDrag)return;graphOffsetX=graphDrag.ox+(event.clientX-graphDrag.x);graphOffsetY=graphDrag.oy+(event.clientY-graphDrag.y);applyGraphTransform();});graphSvg.addEventListener("pointerup",()=>{graphDrag=null;});graphSvg.addEventListener("pointercancel",()=>{graphDrag=null;});refill();status.textContent=(data.accepted?"captured ":"unavailable ")+(data.retainedNodeCount||0)+" nodes / "+(data.retainedEdgeCount||0)+" edges"+(data.truncated?" · truncated at node cap":"");renderGraph();render();'
-        '})()</script></section>'
+        '<header><b id="encounter"></b><span id="simulations"></span><strong id="choice"></strong>'
+        '<span id="capture"></span><span class="spacer"></span>'
+        '<button id="fullscreen" type="button">Graph only</button></header>'
+        '<div class="workspace"><aside class="sidebar"><h2>Root actions</h2>'
+        '<div id="root-actions"></div><label for="root-filter">Filter canvas to root action</label>'
+        '<select id="root-filter"><option value="">All captured actions</option></select>'
+        '<label for="search">Search ID, hash, action or fingerprint</label>'
+        '<input id="search" type="search" placeholder="Search capture">'
+        '<div id="search-results" class="search-results"></div></aside>'
+        '<div class="graph-column" id="graph-area"><div class="graph-tools">'
+        '<button id="back" type="button">Back</button><button id="focus" type="button">Focus here</button>'
+        '<button id="root" type="button">Return to root</button>'
+        '<button id="zoom-out" type="button">−</button><button id="zoom-in" type="button">+</button>'
+        '<button id="fit" type="button">Fit visible</button>'
+        '<span id="breadcrumb" class="breadcrumb">Root</span>'
+        '<label>Depth <input id="depth" type="number" min="1" value="3"></label>'
+        '<label>Top-K <input id="top-k" type="number" min="1" value="4"></label>'
+        '<label>Min visits <input id="min-visits" type="number" min="0" value="0"></label>'
+        '<label>Direction <select id="direction"><option value="RIGHT">Left → right</option>'
+        '<option value="DOWN">Top → bottom</option></select></label></div>'
+        '<div class="graph-stage"><svg id="graph" aria-label="Silver retained-search graph"></svg>'
+        '<span id="layout-status" class="layout-status" role="status"></span>'
+        '<svg id="minimap" class="minimap" aria-label="Clickable graph overview"></svg></div>'
+        '<div class="graph-footer" id="visible-count"></div></div>'
+        '<aside class="inspector"><h2>Inspector</h2><div id="inspector-content"></div></aside></div>'
+        '<nav class="tabs"><button data-tab="details" class="active">Details</button>'
+        '<button data-tab="execution">Execution</button><button data-tab="raw">Raw data</button></nav>'
+        '<div class="details-panel" data-panel="details">' + _header(source) + _combat_section(source)
+        + _diagnostics(source) + _root_section(source) + '</div>'
+        '<div class="details-panel" data-panel="execution" hidden>' + _lowering(source)
+        + _before_after(source) + '</div>'
+        '<div class="details-panel" data-panel="raw" hidden>'
+        '<details data-raw="observation"><summary>Raw observation</summary><pre></pre></details>'
+        '<details data-raw="evaluator"><summary>Raw Silver evaluator</summary><pre></pre></details>'
+        '<details data-raw="original"><summary>Original capture record</summary><pre></pre></details>'
+        '</div>' + scripts
     )
 
 
 def render_html(source: Mapping[str, Any]) -> str:
     raw = source.get("raw", {})
     evaluator = source.get("evaluator", {})
+    if _mapping(_mapping(source.get("evaluator")).get("tree")).get("accepted"):
+        return ("<!doctype html><html><head><meta charset=\"utf-8\"><title>Silver graph</title><style>"
+                + _asset("style.css") + _asset("overrides.css") + "</style></head><body>"
+                + _workspace(source) + "</body></html>")
     return (
         "<!doctype html><html><head><meta charset=\"utf-8\"><title>Combat decision</title><style>"
         + _CSS + "</style></head><body><main><h1>Combat decision inspector</h1>"
-        + _header(source) + _combat_section(source) + _root_section(source)
-        + _tree_section(source) + _diagnostics(source) + _lowering(source) + _before_after(source)
+        + _header(source) + '<section><h2>Retained graph unavailable</h2><p>'
+        + _esc(_mapping(_mapping(evaluator).get("tree")).get("failureReason") or
+               "Silver debug capture was not enabled for this decision.") + '</p></section>'
+        + _combat_section(source) + _root_section(source)
+        + _diagnostics(source) + _lowering(source) + _before_after(source)
         + f"<section><h2>Raw data</h2><details><summary>raw observation</summary><pre>{_pretty(source.get('observation', {}))}</pre></details>"
         + f"<details><summary>raw Silver evaluator</summary><pre>{_pretty(evaluator)}</pre></details>"
         + f"<details><summary>selected trace / differential row</summary><pre>{_pretty(raw)}</pre></details></section>"

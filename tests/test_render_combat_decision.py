@@ -152,25 +152,31 @@ class RenderCombatDecisionTest(unittest.TestCase):
             }
             source = load_snapshot(self.write_json(directory, "tree.json", value))
             rendered = render_html(source)
-            self.assertIn("MCTS tree", rendered)
-            self.assertIn("native Silver graph retained", rendered)
-            self.assertIn("expanded along each path", rendered)
-            self.assertIn("tree-graph-svg", rendered)
-            self.assertIn("graph-edge", rendered)
-            self.assertIn("graph-node", rendered)
-            self.assertIn("Silver MCTS node-link graph", rendered)
-            self.assertIn("show Silver node states", rendered)
+            self.assertIn("Silver retained-search graph", rendered)
+            self.assertIn("root-actions", rendered)
+            self.assertIn("graph-stage", rendered)
+            self.assertIn("layoutVisible", rendered)
+            self.assertIn("window.__COMBAT_VIEWER__", rendered)
             self.assertIn("BattleStateWire state", rendered)
-            self.assertIn("leaf Q", rendered)
             self.assertIn("chance outcome 2", rendered)
-            self.assertIn("shared/cyclic reference", rendered)
-            self.assertIn("window.__SILVER_TREE__", rendered)
-            self.assertIn('wrap.open=!isLeaf(n)', rendered)
+            self.assertIn('"childId":"2"', rendered)
 
     def test_normal_snapshot_has_no_debug_tree_section(self):
         with tempfile.TemporaryDirectory() as directory:
             source = load_snapshot(self.write_json(directory, "normal.json", snapshot_data()))
             self.assertNotIn("MCTS tree", render_html(source))
+
+    def test_rejected_capture_keeps_other_report_sections(self):
+        with tempfile.TemporaryDirectory() as directory:
+            value = snapshot_data()
+            value["response"]["advisor"]["evaluators"][0]["tree"] = {
+                "accepted": False, "failureReason": "capture cap unavailable"
+            }
+            source = load_snapshot(self.write_json(directory, "rejected.json", value))
+            rendered = render_html(source)
+            self.assertIn("capture cap unavailable", rendered)
+            self.assertIn("Combat state", rendered)
+            self.assertIn("Root action ranking", rendered)
 
     def test_unsupported_response_is_first_class(self):
         with tempfile.TemporaryDirectory() as directory:
