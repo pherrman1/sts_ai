@@ -680,6 +680,22 @@ double OocGameContextModel::evaluateLeaf(sts::search::OocStateId id, std::mt1993
 
 }
 
+namespace one_combat {
+sts::search::OocMctsResult searchWithSoleRootShortcut(sts::search::OocGenerativeModel &model,
+    const sts::search::OocMctsConfig &config, std::optional<sts::search::OocActionId> soleAction,
+    std::uint64_t simulations) {
+    if (!config.observeRootLock && config.rootCheckpointSimulations.empty()
+        && config.maxDepth && soleAction) {
+        sts::search::OocMctsResult result;
+        result.selectedAction = soleAction;
+        result.rootActions.push_back({*soleAction, 1.0, 0, 0.0});
+        result.metrics.trivialRootBypasses = 1;
+        return result;
+    }
+    return sts::search::OocMctsPlanner(config).search(model, 0, simulations);
+}
+}
+
 #ifndef STS_LIVE_ADVISOR
 namespace one_combat {
 
@@ -852,21 +868,6 @@ void configureLiveOocMcts() {
         << "\",\"leafCombats\":" << liveOptions.leafCombats << ",\"leafPolicy\":\"" << (liveOptions.uniformLeafPolicy ? "uniform" : "v4")
         << "\",\"simulations\":" << liveSimulations << "}\n";
     std::cout.precision(precision);
-}
-namespace {
-sts::search::OocMctsResult searchWithSoleRootShortcut(sts::search::OocGenerativeModel &model,
-    const sts::search::OocMctsConfig &config, std::optional<sts::search::OocActionId> soleAction,
-    std::uint64_t simulations) {
-    if (!config.observeRootLock && config.maxDepth && soleAction && model.searchGuaranteedNonAborting()) {
-        sts::search::OocMctsResult result;
-        result.selectedAction = soleAction;
-        result.metrics.trivialRootBypasses = 1;
-        return result;
-    }
-    // An abort hands control to the ordered fallback policy, which may consume
-    // agent RNG even when the primitive candidate set contains just one action.
-    return sts::search::OocMctsPlanner(config).search(model, 0, simulations);
-}
 }
 sts::search::OocMctsResult selectOocMctsAction(const GameContext &gc, const PathHistory &path,
     std::uint64_t seed, std::uint64_t index, std::uint64_t simulations,
@@ -2535,7 +2536,8 @@ void oocMctsAdapterSelfTest() {
     LiveOocMctsMetrics unsupportedMetrics;
     require(!oocMctsPolicyStep(live,livePath,42,7,unsupportedMetrics)
         && unsupportedMetrics.fallback==1 && unsupportedMetrics.supportAborts==1
-        && unsupportedMetrics.owned==0 && unsupportedMetrics.search.simulationAttempts==1
+        && unsupportedMetrics.owned==0 && unsupportedMetrics.search.trivialRootBypasses==0
+        && unsupportedMetrics.search.simulationAttempts==1
         && unsupportedMetrics.search.simulations==0 && unsupportedMetrics.continuation.unsupportedCombats==1
         && unsupportedMetrics.continuation.supportReasons.at("test unsupported")==1
         && test::oocStateFingerprint(live)==before && !sts::search::g_disallowImaginedCombat,
@@ -2550,6 +2552,41 @@ void oocMctsAdapterSelfTest() {
     const auto soleCandidates=v4CandidateActions(sole);
     require(soleCandidates.size()==1,"sole map candidate fixture");
     OocGameContextModel soleModel(sole,solePath,liveSampler,liveOptions);
+    const auto soleAction=soleModel.soleLegalAction(0);
+    const auto soleBypass=searchWithSoleRootShortcut(soleModel,liveConfig,soleAction,128);
+    require(soleAction && soleBypass.selectedAction==soleAction && !soleBypass.aborted
+        && soleBypass.metrics.trivialRootBypasses==1 && soleBypass.metrics.simulations==0
+        && soleBypass.metrics.simulationAttempts==0 && soleBypass.metrics.transitionSamples==0
+        && soleBypass.metrics.leafEvaluations==0 && soleModel.combatSamples()==0
+        && soleBypass.rootActions.size()==1 && soleBypass.rootActions[0].prior==1.0
+        && soleBypass.rootActions[0].visits==0,
+        "sole map root bypasses unsupported hypothetical continuation");
+    auto soleWithPotions=detachedCopy(sole);
+    soleWithPotions.potions[0]=Potion::FIRE_POTION;
+    soleWithPotions.potionCount=1;
+    OocGameContextModel potionModel(soleWithPotions,solePath,liveSampler,liveOptions);
+    const auto potionAction=potionModel.soleLegalAction(0);
+    const auto potionBypass=searchWithSoleRootShortcut(potionModel,liveConfig,potionAction,128);
+    require(potionAction && potionBypass.selectedAction==potionAction
+        && potionBypass.metrics.trivialRootBypasses==1
+        && potionBypass.metrics.simulationAttempts==0 && potionModel.combatSamples()==0,
+        "held potion does not create a competing standalone discard action");
+    auto observedConfig=liveConfig;
+    observedConfig.observeRootLock=true;
+    OocGameContextModel observedSole(sole,solePath,liveSampler,liveOptions);
+    const auto observedSearch=searchWithSoleRootShortcut(observedSole,observedConfig,
+        observedSole.soleLegalAction(0),128);
+    require(observedSearch.metrics.trivialRootBypasses==0
+        && observedSearch.metrics.simulationAttempts>0,
+        "root-lock observer searches a forced root");
+    auto checkpointConfig=liveConfig;
+    checkpointConfig.rootCheckpointSimulations={1};
+    OocGameContextModel checkpointSole(sole,solePath,liveSampler,liveOptions);
+    const auto checkpointSearch=searchWithSoleRootShortcut(checkpointSole,checkpointConfig,
+        checkpointSole.soleLegalAction(0),128);
+    require(checkpointSearch.metrics.trivialRootBypasses==0
+        && checkpointSearch.metrics.simulationAttempts>0,
+        "explicit root checkpoint searches a forced root");
     const auto soleSearch=OocMctsPlanner(liveConfig).search(soleModel,0,128);
     require(soleSearch.aborted && soleSearch.metrics.simulationAttempts==1,
         "normal sole-action search aborts after entering unsupported combat");
@@ -2561,12 +2598,14 @@ void oocMctsAdapterSelfTest() {
         "sole candidate equals original whole-root fallback primitive including live RNG");
     LiveOocMctsMetrics soleMetrics;
     const auto soleBefore=test::oocStateFingerprint(sole);
-    require(!oocMctsPolicyStep(sole,solePath,42,7,soleMetrics)
-        && soleMetrics.search.trivialRootBypasses==0 && soleMetrics.search.simulations==0
-        && soleMetrics.search.simulationAttempts==1 && soleMetrics.combatSamples==0
-        && soleMetrics.supportAborts==1 && soleMetrics.fallback==1
-        && test::oocStateFingerprint(sole)==soleBefore,
-        "abort-capable sole map root searches and returns untouched state to fallback");
+    require(oocMctsPolicyStep(sole,solePath,42,7,soleMetrics)
+        && soleMetrics.search.trivialRootBypasses==1 && soleMetrics.search.simulations==0
+        && soleMetrics.search.simulationAttempts==0 && soleMetrics.search.transitionSamples==0
+        && soleMetrics.search.leafEvaluations==0 && soleMetrics.combatSamples==0
+        && soleMetrics.supportAborts==0 && soleMetrics.fallback==0 && soleMetrics.owned==1
+        && test::oocStateFingerprint(sole)==test::oocStateFingerprint(solePrimitive)
+        && test::oocStateFingerprint(sole)!=soleBefore,
+        "sole map root executes its exact primitive without search or fallback");
 
     // Wheel has one legal primitive, but its existing fallback calls stepRandom:
     // choosing from a singleton still advances ScumSearchAgent2::rng.
@@ -2583,8 +2622,16 @@ void oocMctsAdapterSelfTest() {
     const auto wheelCandidates=v4CandidateActions(wheel);
     require(wheelCandidates.size()==1,"sole wheel candidate fixture");
     const auto savedEarlyStop=liveConfig.allowUnqualifiedRootStop;
-    liveConfig.allowUnqualifiedRootStop=false; // Verify rollback preserves legacy fallback/RNG.
+    liveConfig.allowUnqualifiedRootStop=false;
     OocGameContextModel wheelModel(wheel,wheelPath,liveSampler,liveOptions);
+    const auto wheelAction=wheelModel.soleLegalAction(0);
+    const auto wheelBypass=searchWithSoleRootShortcut(wheelModel,liveConfig,wheelAction,128);
+    require(wheelAction && wheelBypass.selectedAction==wheelAction
+        && wheelBypass.metrics.trivialRootBypasses==1
+        && wheelBypass.metrics.simulations==0 && wheelBypass.metrics.simulationAttempts==0
+        && wheelBypass.metrics.transitionSamples==0 && wheelBypass.metrics.leafEvaluations==0
+        && wheelModel.combatSamples()==0,
+        "sole wheel semantic action bypasses unsupported hypothetical continuation");
     const auto wheelSearch=OocMctsPlanner(liveConfig).search(wheelModel,0,128);
     require(!wheelModel.searchGuaranteedNonAborting() && wheelSearch.aborted
         && wheelSearch.metrics.simulationAttempts>0,
@@ -2600,15 +2647,15 @@ void oocMctsAdapterSelfTest() {
         "same sole wheel primitive hides a fallback agent RNG draw");
     const auto wheelBefore=test::oocStateFingerprint(wheel);
     LiveOocMctsMetrics wheelMetrics;
-    require(!oocMctsPolicyStep(wheel,wheelPath,42,7,wheelMetrics)
-        && wheelMetrics.search.trivialRootBypasses==0 && wheelMetrics.supportAborts==1
-        && wheelMetrics.fallback==1 && wheelMetrics.search.simulationAttempts>0
-        && wheelAgent.rng==agentBefore && test::oocStateFingerprint(wheel)==wheelBefore,
-        "unsafe sole wheel root cannot skip abort and RNG-consuming fallback");
-    runFullRunOocPolicyStep(wheel,wheelAgent,false,true);
-    require(wheelAgent.rng==wheelOracleAgent.rng && wheelAgent.rng!=agentBefore
-        && test::oocStateFingerprint(wheel)==test::oocStateFingerprint(wheelOracle),
-        "unsafe sole wheel dispatch preserves ordered fallback state and agent RNG");
+    require(oocMctsPolicyStep(wheel,wheelPath,42,7,wheelMetrics)
+        && wheelMetrics.search.trivialRootBypasses==1 && wheelMetrics.supportAborts==0
+        && wheelMetrics.fallback==0 && wheelMetrics.owned==1
+        && wheelMetrics.search.simulations==0 && wheelMetrics.search.simulationAttempts==0
+        && wheelMetrics.search.transitionSamples==0 && wheelMetrics.search.leafEvaluations==0
+        && wheelMetrics.combatSamples==0 && wheelAgent.rng==agentBefore
+        && test::oocStateFingerprint(wheel)==test::oocStateFingerprint(wheelPrimitive)
+        && test::oocStateFingerprint(wheel)!=wheelBefore,
+        "sole wheel root executes its exact action without hypothetical fallback");
     liveConfig.allowUnqualifiedRootStop=savedEarlyStop;
     struct QualifiedSoleRoot final : OocGenerativeModel {
         bool searchGuaranteedNonAborting() const override { return true; }
