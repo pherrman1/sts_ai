@@ -147,8 +147,8 @@ class LiveGameRuntimeTest(unittest.TestCase):
         self.assertTrue(status["activeRuntimeMatchesCurrent"])
 
     def test_build_advisor_packages_only_wrapper_selected_fallback_preset(self):
-        fallback = self.repo / "build/linux-gcc-debug/one_combat_advisor"
-        requested = self.repo / "build/linux-gcc-debug-ccache/one_combat_advisor"
+        fallback = self.repo / "build/linux-gcc-release/one_combat_advisor"
+        requested = self.repo / "build/linux-gcc-release-ccache/one_combat_advisor"
         fallback.parent.mkdir(parents=True)
         requested.parent.mkdir(parents=True)
         fallback.write_text("fallback")
@@ -156,7 +156,7 @@ class LiveGameRuntimeTest(unittest.TestCase):
         fallback.chmod(fallback.stat().st_mode | stat.S_IXUSR)
         requested.chmod(requested.stat().st_mode | stat.S_IXUSR)
         os.utime(requested, (fallback.stat().st_mtime + 10, fallback.stat().st_mtime + 10))
-        wrapper_output = ("ccache_fallback=linux-gcc-debug build_preset=linux-gcc-debug-build "
+        wrapper_output = ("ccache_fallback=linux-gcc-release build_preset=linux-gcc-build "
                           "configure_forced=false reason=test\nbuild_route=native root=test\n")
         with mock.patch("tools.live_game_runtime.run"), \
              mock.patch("tools.live_game_runtime.run_output", return_value=wrapper_output):

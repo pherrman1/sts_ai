@@ -256,10 +256,10 @@ class RuntimeManager:
     def build_advisor(self) -> Path:
         run([sys.executable, "tools/agent/worktree.py", "preflight", "."], self.repo)
         run([sys.executable, "tools/agent/worktree.py", "check", "."], self.repo)
-        requested_preset = "linux-gcc-debug-ccache"
+        requested_preset = "linux-gcc-release-ccache"
         output = run_output([sys.executable, "tools/agent/build.py",
                              "--configure-preset", requested_preset,
-                             "--build-preset", "linux-gcc-debug-ccache-build",
+                             "--build-preset", "linux-gcc-release-ccache-build",
                              "--target", "one_combat_advisor"], self.repo)
         fallback = re.findall(r"^ccache_fallback=(\S+)\s", output, re.MULTILINE)
         if len(fallback) > 1:
