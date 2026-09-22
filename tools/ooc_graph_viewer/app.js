@@ -57,7 +57,8 @@
         data.id===root?'Current decision state':'Sampled game state',
       'Screen':data.screen,'Room':data.room,'Floor':data.floor,
       'Map position':data.mapY>=0?'('+data.mapX+','+data.mapY+')':null,
-      'HP':data.hp>=0?data.hp+'/'+data.maxHp:null,'Gold':data.gold,
+      [data.outcome==='loss'?'HP before sampled combat':'HP']:
+        data.hp>=0?data.hp+'/'+data.maxHp:null,'Gold':data.gold,
       'Selected action':data.kind==='chance'?!!data.selected:null,
       'Outcome':data.outcome,'Visits':data.visits,'Prior':data.prior,'Q':data.q,
       'Action key':data.key,'Node ID':data.id,'State ID':data.stateId,'Depth':data.depth};
@@ -147,7 +148,8 @@
         group.append(heading,meaning,detail);
         if(!n.isChanceNode){
           const stats=make('text',{x:10,y:91,class:'node-secondary'});
-          stats.textContent='Floor '+n.floor+' · '+n.hp+'/'+n.maxHp+' HP · '+n.gold+' gold';
+          stats.textContent='Floor '+n.floor+' · '+(n.outcome==='loss'?'Entered at ':'')+
+            n.hp+'/'+n.maxHp+' HP · '+n.gold+' gold';
           group.append(stats);
         }
         const tip=make('title');tip.textContent=label(n);group.append(tip);

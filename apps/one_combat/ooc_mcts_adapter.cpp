@@ -346,7 +346,9 @@ void annotateOocTree(const OocGameContextModel &model, sts::search::OocTreeSnaps
             node.label = "Floor " + std::to_string(node.floor) + " · " + place
                 + " · HP " + std::to_string(node.hp) + "/" + std::to_string(node.maxHp)
                 + " · " + std::to_string(node.gold) + " gold";
-            if (node.outcome == "loss") node.label = "Sampled death · " + node.label;
+            if (node.outcome == "loss") node.label = "CTM sampled loss · entered combat at HP "
+                + std::to_string(node.hp) + "/" + std::to_string(node.maxHp)
+                + " · final HP unavailable · Floor " + std::to_string(node.floor);
             if (node.outcome == "victory") node.label = "Victory · " + node.label;
         }
     }

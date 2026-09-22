@@ -197,6 +197,11 @@ class LiveOocProtocol(unittest.TestCase):
         self.assertTrue(any(e["kind"] == "particle" for e in tree["edges"]))
         self.assertTrue(any(e["combatModelUsed"] and e["combatOutcome"] in ("death", "victory", "escape")
                             for e in tree["edges"] if e["kind"] == "particle"))
+        # The live CTM must receive the trained/default potion keep value 4.
+        # A missing callback supplied 0 and made even early hallway fights
+        # almost uniformly sampled losses at full health.
+        self.assertTrue(any(e["combatModelUsed"] and e["combatOutcome"] == "victory"
+                            for e in tree["edges"] if e["kind"] == "particle"))
 
     def test_map_root_rejects_incomplete_offered_relic_history(self):
         observation = copy.deepcopy(self.fixtures["map_multiple_children"])

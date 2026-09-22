@@ -22,8 +22,8 @@ unvisited actions have no Q. An edge ending at “capture omitted” exceeded th
 capture cap; a state with no outgoing edges can also be an unexpanded frontier.
 The capture does not include complete hidden game-state content.
 Reports generated from test fixtures are labeled `TEST FIXTURE`. A sampled
-terminal loss can retain the state's pre-combat HP field, so a loss card's HP
-is not a post-death HP reading.
+terminal loss retains its pre-combat HP field; loss cards identify that value
+as entry HP and do not claim a post-death HP reading.
 
 Native simulator captures use `STS_OOC_MCTS_GRAPH_FILE` and optional
 `STS_OOC_MCTS_GRAPH_DECISION_INDEX`; pass the written JSON to the same renderer.

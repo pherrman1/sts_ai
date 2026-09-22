@@ -240,6 +240,9 @@ LiveOocDecision LiveOocMctsPolicy::score(const sts::GameContext &projected,
                                                                std::mt19937_64 &rng) {
         sampleLiveOocHiddenCounters(gc, rng, observedEventRooms);
     };
+    // The deployed CTM was trained with the ordinary fixed search keep value.
+    // Omitting this dependency falls back to zero, far outside that input domain.
+    dependencies.potionKeepValue = [](const sts::GameContext &) { return 4.0; };
     dependencies.policyAvailable = [this] { return model_.ok; };
     const auto policyBatch = [this](const sts::GameContext &gc, const PathHistory &history,
                                       const std::vector<sts::search::GameAction> &actions) {
