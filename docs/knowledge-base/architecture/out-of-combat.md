@@ -326,9 +326,11 @@ state is a true planner leaf, including after the first visit. This prevents a
 revisited MAP particle from sampling a room with unreconstructed
 event/shop/treasure chance history. Live imports remove currently visible shop,
 combat-reward and boss-relic offers from the reconstructed relic pools.
-The advisor supplies the ordinary fixed `potionKeepValue=4` to the CTM,
-matching the native simulator default and the frozen model's constant training
-feature. A zero value causes unsupported predictions from this model.
+The advisor supplies the ordinary fixed `potionKeepValue=4` to the CTM;
+`OocGameContextModel` uses the same neutral value if a custom host omits the
+callback. This matches the native simulator default and the frozen model's
+constant training feature. A zero value causes unsupported predictions from
+this model.
 Pity-sensitive event branches whose reward generation depends on private
 counter history remain unsupported, including Library, Mushrooms and
 Mysterious Sphere. The live v_win leaf evaluates the exact discrete mixture

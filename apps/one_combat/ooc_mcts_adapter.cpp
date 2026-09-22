@@ -240,7 +240,7 @@ OocGameContextModel::OocGameContextModel(const GameContext &gc, const PathHistor
     if (!dependencies.policyAvailable || !dependencies.policyLogits
             || !dependencies.policyAvailable())
         throw std::runtime_error("OOC MCTS requires native V4 policy dependencies");
-    if (!dependencies.potionKeepValue) dependencies.potionKeepValue = [](const GameContext &) { return 0.0; };
+    if (!dependencies.potionKeepValue) dependencies.potionKeepValue = [](const GameContext &) { return 4.0; };
     if (!dependencies.stopAfterAct) dependencies.stopAfterAct = [] { return 0; };
     auto history = path;
     history.update(gc);
@@ -2325,6 +2325,22 @@ void oocMctsAdapterSelfTest() {
     require(crossed.pathHistory(crossedId).roomVisits==realPath.roomVisits
         && crossed.pathHistory(crossedId).lastNodeKey==realPath.lastNodeKey,"native PathHistory parity");
     require(test::oocStateFingerprint(crossed.state(0))==rootFingerprint,"combat parent unchanged");
+    // A custom host may omit the callback. Its CTM input must use the same
+    // neutral keep value as the native simulator, not the old zero fallback.
+    auto fallbackSampler=std::make_shared<FakeSampler>();
+    fallbackSampler->death=true;
+    auto fallbackPre=detachedCopy(combatRoot);
+    restAction.execute(fallbackPre);
+    fallbackSampler->expectedInput=captureCombatPredictorInput(
+        fallbackPre,fallbackPre.info.encounter,4.0);
+    auto fallbackDeps=defaultOocMctsDependencies();
+    fallbackDeps.potionKeepValue={};
+    OocGameContextModel fallback(combatRoot,path,fallbackSampler,{},std::move(fallbackDeps));
+    const auto fallbackId=fallback.sampleSuccessor(0,sourceId(fallback,restAction.bits),rng);
+    require(fallbackSampler->expectedInput.globals.potionKeepValue==4.0
+        && fallbackSampler->supportCalls==1 && fallbackSampler->sampleCalls==1
+        && fallback.state(fallbackId).outcome==GameOutcome::PLAYER_LOSS,
+        "omitted potion keep callback supplies neutral CTM input");
     // Compare an actual Smoke Bomb exit with explicit ESCAPE injection from
     // the identical prebattle origin. Includes Cleric's pre-reward maxHP gain.
     for (bool cleric : {false, true}) {
