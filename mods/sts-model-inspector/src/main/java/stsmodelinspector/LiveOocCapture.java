@@ -719,6 +719,23 @@ final class LiveOocCapture {
         return -1;
     }
 
+    static boolean forgottenAltarInitialVisible(Object phase, List<?> labels, List<?> options,
+            int hpLoss, int maxHp, int ascension, boolean hasGoldenIdol) {
+        int expectedLoss = Math.round(maxHp * (ascension >= 15 ? 0.35f : 0.25f));
+        int first = hasGoldenIdol ? 0 : 1;
+        if (!"0".equals(String.valueOf(phase)) || hpLoss != expectedLoss
+                || labels.size() != 3 - first || options.size() != 3 - first) return false;
+        for (int i = first; i < 3; ++i)
+            if (((Number)map(options.get(i - first)).get("index")).intValue() != i)
+                return false;
+        if (hasGoldenIdol && !String.valueOf(labels.get(0)).contains("[Offer]")) return false;
+        return String.valueOf(labels.get(1 - first)).contains("[Sacrifice]")
+                && String.valueOf(labels.get(1 - first)).contains("5 Max HP")
+                && String.valueOf(labels.get(1 - first)).contains(hpLoss + " HP")
+                && String.valueOf(labels.get(2 - first)).contains("[Desecrate]")
+                && String.valueOf(labels.get(2 - first)).contains("Decay");
+    }
+
     static boolean clericInitialVisible(Object phase, List<?> labels, List<?> options,
                                         int healAmount, int purifyCost, int maxHp, int gold,
                                         int ascension) {
@@ -1135,6 +1152,12 @@ final class LiveOocCapture {
                         AbstractDungeon.ascensionLevel) : -1;
         if (deadAdventurerEncounter >= 0)
             map(out.get("details")).put("deadAdventurerEncounter", deadAdventurerEncounter);
+        boolean forgottenAltar = "ForgottenAltar".equals(simple)
+                && forgottenAltarInitialVisible(phase, labels, options,
+                        ((Number)field(event, "hpLoss")).intValue(), AbstractDungeon.player.maxHealth,
+                        AbstractDungeon.ascensionLevel, AbstractDungeon.player.hasRelic("Golden Idol"));
+        if (forgottenAltar)
+            map(out.get("details")).put("hpAmount0", field(event, "hpLoss"));
         if ("WeMeetAgain".equals(simple) && "INTRO".equals(String.valueOf(phase))) {
             Map<String,Object> details = map(out.get("details"));
             Object offeredPotion = field(event, "potionOption");
@@ -1177,7 +1200,8 @@ final class LiveOocCapture {
                 && !goop
                 && !goldShrine
                 && !nestDecisionVisible(simple, phase, labels, options, AbstractDungeon.ascensionLevel)
-                && !idolTrap && !goldenWing && !cleric && deadAdventurerEncounter < 0)
+                && !idolTrap && !goldenWing && !cleric && deadAdventurerEncounter < 0
+                && !forgottenAltar)
             out.put("unsupportedReason", "EVENT_PHASE_UNREPRESENTABLE:" + id + ":" + phase);
         if ("NeowEvent".equals(simple)) {
             List<Object> offers = new ArrayList<>();

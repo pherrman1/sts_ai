@@ -544,6 +544,9 @@ Dead Adventurer's initial Search/Leave phase is qualified only when its public
 description identifies one of the three native elite encounters and the shown
 search chance matches ascension. The importer retains that public encounter and
 samples the hidden reward order. Later search phases remain unsupported.
+Forgotten Altar's initial phase imports its displayed HP loss when the option
+slots and ascension-scaled amount match the native event. The Golden Idol
+offer is included only when that relic is publicly owned.
 After a modeled Search triggers the elite, the sole `[Fight]` button is a
 mechanical transition into combat and the strict driver advances it.
 The private Java

@@ -196,6 +196,16 @@ public final class LiveOocCaptureTest {
                 || LiveOocCapture.deadAdventurerPublicEncounter("INTRO", deadLabels, deadOptions,
                         "unknown", deadDescriptions, 0) != -1)
             throw new AssertionError("Dead Adventurer public encounter or phase mismatch");
+        List<Object> altarOptions = Arrays.asList(obj("index", 1), obj("index", 2));
+        List<String> altarLabels = Arrays.asList("[Sacrifice] Gain 5 Max HP. Lose 22 HP.",
+                "[Desecrate] Become Cursed - Decay.");
+        if (!LiveOocCapture.forgottenAltarInitialVisible(0, altarLabels, altarOptions, 22, 87, 0, false)
+                || LiveOocCapture.forgottenAltarInitialVisible(1, altarLabels, altarOptions, 22, 87, 0, false)
+                || LiveOocCapture.forgottenAltarInitialVisible(0, altarLabels, altarOptions, 21, 87, 0, false)
+                || LiveOocCapture.forgottenAltarInitialVisible(0, altarLabels, altarOptions, 22, 87, 20, false)
+                || LiveOocCapture.forgottenAltarInitialVisible(0, altarLabels,
+                        Arrays.asList(obj("index", 0), obj("index", 2)), 22, 87, 0, false))
+            throw new AssertionError("Forgotten Altar public options or loss mismatch");
         try {
             LiveOocCapture.scrapOozeRetryCount(30, 3, 0);
             throw new AssertionError("non-native Scrap Ooze chance was accepted");
