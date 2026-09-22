@@ -105,6 +105,12 @@ void monster(sts::Monster &out, const MonsterWire &in, bool intentsHidden) {
         out.rollInputs = {r.curHp, r.maxHp, r.knightCurHp, r.knightMaxHp, r.monsterTurnNumber,
                           r.miscInfo, r.aliveCount, r.monstersAlive, r.knightAlive,
                           r.playerConstricted, r.asleep, r.halfDead};
+        for (const auto &entry : in.pendingRollInputHistory) {
+            out.pendingRollInputHistory.push_back({entry.curHp, entry.maxHp,
+                entry.knightCurHp, entry.knightMaxHp, entry.monsterTurnNumber,
+                entry.miscInfo, entry.aliveCount, entry.monstersAlive, entry.knightAlive,
+                entry.playerConstricted, entry.asleep, entry.halfDead});
+        }
     }
 }
 
@@ -215,6 +221,12 @@ BattleStateWire leafStateWire(const sts::BattleContext &state) {
                                 m.rollInputs.knightMaxHp, m.rollInputs.monsterTurnNumber, m.rollInputs.miscInfo,
                                 m.rollInputs.aliveCount, m.rollInputs.monstersAlive, m.rollInputs.knightAlive,
                                 m.rollInputs.playerConstricted, m.rollInputs.asleep, m.rollInputs.halfDead};
+        for (const auto &entry : m.pendingRollInputHistory) {
+            wm.pendingRollInputHistory.push_back({entry.curHp, entry.maxHp,
+                entry.knightCurHp, entry.knightMaxHp, entry.monsterTurnNumber,
+                entry.miscInfo, entry.aliveCount, entry.monstersAlive, entry.knightAlive,
+                entry.playerConstricted, entry.asleep, entry.halfDead});
+        }
     }
 
     out.nextUniqueCardId = state.cards.nextUniqueCardId;

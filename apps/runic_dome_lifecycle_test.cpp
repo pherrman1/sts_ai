@@ -154,6 +154,18 @@ void testReactiveChainAndIntentQuery() {
     Actions::ReactiveRollMove().actFunc(chained.bc);
     check(chained.knowledge.pendingHiddenIntentRolls[0] == 3,
           "two real reactive rerolls must extend the deferred chain from one to three");
+    check(chained.knowledge.pendingHiddenIntentInputHistory[0].size() == 3,
+          "every native hidden reroll must retain its own public inputs");
+
+    LiveFixture changed(MonsterEncounter::CULTIST, 0xD005u);
+    const int firstHp = changed.knowledge.pendingHiddenIntentInputHistory[0][0].curHp;
+    changed.bc.monsters.arr[0].curHp -= 1;
+    changed.bc.monsters.arr[0].rollMove(changed.bc);
+    check(changed.knowledge.pendingHiddenIntentInputHistory[0].size() == 2
+              && changed.knowledge.pendingHiddenIntentInputHistory[0][0].curHp == firstHp
+              && changed.knowledge.pendingHiddenIntentInputHistory[0][1].curHp == firstHp - 1
+              && changed.wire().monsters[0].pendingRollInputHistory.size() == 2,
+          "separate hidden rolls must preserve their distinct HP inputs through conversion");
 
     LiveFixture queried(MonsterEncounter::CULTIST, 0xD004u);
     check(queried.knowledge.pendingHiddenIntentRolls[0] == 1,

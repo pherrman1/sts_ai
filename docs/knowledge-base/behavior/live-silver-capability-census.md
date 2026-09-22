@@ -77,9 +77,10 @@ can reroot from the last modeled action after summon animations settle.
 - `Runic Dome` uses the native deferred hidden-intent boundary. The observer
   omits `nextMove`, `moveHistory`, `intent`, and `intentDamage` while the relic
   is active, and emits public pre-roll history with an explicit valid-entry
-  count, roll inputs, pending roll counts, and the bounded Looter/Mugger
-  direct-choice marker. Chained hidden rolls preserve the first public
-  history. Louse and Darkling use a public candidate mask for their persistent
+  count, ordered public inputs for every pending roll, pending roll counts, and the bounded Looter/Mugger
+  direct-choice marker. Hidden rolls preserve the first public move history
+  while retaining each roll's own volatile inputs, including rolls across
+  turns. An incomplete input sequence fails closed. Louse and Darkling use a public candidate mask for their persistent
   randomized damage. Observed player HP and block changes narrow the mask
   when they determine the attack amount. Multiple compatible values remain
   in the mask; unqualified or contradictory damage observations fail closed.

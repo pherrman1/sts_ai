@@ -106,6 +106,7 @@ void CombatKnowledgeState::initializeFromLiveBattle(const BattleContext &bc) {
     fullDrawPileOrderObserved = bc.player.hasRelic<RelicId::FROZEN_EYE>();
     pendingHiddenIntentRolls.fill(0);
     pendingHiddenIntentInputs.fill({});
+    for (auto &history : pendingHiddenIntentInputHistory) history.clear();
     publicMonsterMoveHistory.fill({});
     publicMonsterMiscInfo.fill(0);
     hasPublicMonsterState.fill(false);
@@ -125,6 +126,7 @@ void CombatKnowledgeState::beginCombatInitialization() {
     knownBottom.clear();
     pendingHiddenIntentRolls.fill(0);
     pendingHiddenIntentInputs.fill({});
+    for (auto &history : pendingHiddenIntentInputHistory) history.clear();
     publicMonsterMoveHistory.fill({});
     publicMonsterMiscInfo.fill(0);
     hasPublicMonsterState.fill(false);
@@ -283,6 +285,7 @@ void CombatKnowledgeState::observeCombatKnowledgeEvent(const CombatKnowledgeEven
         }
         if (pendingHiddenIntentRolls[event.monsterIdx] < 255) {
             ++pendingHiddenIntentRolls[event.monsterIdx];
+            pendingHiddenIntentInputHistory[event.monsterIdx].push_back(event.hiddenIntentInputs);
         }
         pendingHiddenIntentInputs[event.monsterIdx] = event.hiddenIntentInputs;
         ++generation;
@@ -296,6 +299,7 @@ void CombatKnowledgeState::observeCombatKnowledgeEvent(const CombatKnowledgeEven
         }
         pendingHiddenIntentRolls[event.monsterIdx] = 0;
         pendingHiddenIntentInputs[event.monsterIdx] = {};
+        pendingHiddenIntentInputHistory[event.monsterIdx].clear();
         publicMonsterMoveHistory[event.monsterIdx] = event.publicMoveHistory;
         publicMonsterMiscInfo[event.monsterIdx] = event.publicMonsterMiscInfo;
         hasPublicMonsterState[event.monsterIdx] = true;
@@ -315,6 +319,7 @@ void CombatKnowledgeState::observeCombatKnowledgeEvent(const CombatKnowledgeEven
         }
         pendingHiddenIntentRolls[event.monsterIdx] = 0;
         pendingHiddenIntentInputs[event.monsterIdx] = {};
+        pendingHiddenIntentInputHistory[event.monsterIdx].clear();
         publicMonsterMoveHistory[event.monsterIdx] = event.publicMoveHistory;
         publicMonsterMiscInfo[event.monsterIdx] = event.publicMonsterMiscInfo;
         hasPublicMonsterState[event.monsterIdx] = true;

@@ -26,7 +26,7 @@ NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(MonsterRollInputsWire, curHp, maxHp, knightCu
 NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(MonsterWire, idx, id, curHp, maxHp, block, isEscapingB,
     halfDead, escapeNext, moveHistory, statusBits, smallPowers, strength, vulnerable, weak,
     uniquePower0, uniquePower1, miscInfo, pendingMoveRolls, pendingDirectMoveChoice,
-    pendingRollInputs)
+    pendingRollInputs, pendingRollInputHistory)
 NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(CardSelectWire, cards, canPickZero, canPickAnyNumber,
                                    pickCount, data0, setCostToZero, selectedBits, task)
 NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(CardQueueItemWire, card, target, isEndTurn, triggerOnUse,

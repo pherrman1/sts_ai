@@ -1912,11 +1912,18 @@ int main() {
         }
         auto chainedRunic = runicGeneric;
         chainedRunic["silverRoot"]["combat"]["monsters"][0]["pendingMoveRolls"] = 2;
+        auto &chainedMonster = chainedRunic["silverRoot"]["combat"]["monsters"][0];
+        auto firstRoll = chainedMonster["pendingRollInputs"];
+        auto secondRoll = firstRoll;
+        secondRoll["monsterTurnNumber"] = 2;
+        chainedMonster["pendingRollInputHistory"] = json::array({firstRoll, secondRoll});
         chainedRunic["silverRoot"]["combat"]["monsters"][0]["publicMoveHistory"]
             = json::array({0, 0});
         chainedRunic["silverRoot"]["combat"]["monsters"][0]["publicMoveHistoryCount"] = 0;
         const auto chainedImported = one_combat::advisor::importSilverRoot(chainedRunic);
         if (!chainedImported.ok || chainedImported.wire.monsters[0].pendingMoveRolls != 2
+            || chainedImported.wire.monsters[0].pendingRollInputHistory.size() != 2
+            || chainedImported.wire.monsters[0].pendingRollInputHistory[1].monsterTurnNumber != 2
             || chainedImported.wire.monsters[0].moveHistory[0] != 0
             || chainedImported.wire.monsters[0].moveHistory[1] != 0)
             throw std::runtime_error("chained Runic hidden rolls changed public move history: "
@@ -1925,7 +1932,20 @@ int main() {
         overlongRunic["silverRoot"]["combat"]["monsters"][0]["pendingMoveRolls"] = 4;
         if (one_combat::advisor::importSilverRoot(overlongRunic).reason
                 != "silver_hidden_information_required")
-            throw std::runtime_error("out-of-domain chained Runic roll count was accepted");
+            throw std::runtime_error("incomplete Runic roll input history was accepted");
+        auto &overlongMonster = overlongRunic["silverRoot"]["combat"]["monsters"][0];
+        auto thirdRoll = secondRoll;
+        thirdRoll["monsterTurnNumber"] = 3;
+        auto fourthRoll = secondRoll;
+        fourthRoll["monsterTurnNumber"] = 4;
+        overlongMonster["pendingRollInputHistory"].push_back(thirdRoll);
+        overlongMonster["pendingRollInputHistory"].push_back(fourthRoll);
+        const auto fourRollImported = one_combat::advisor::importSilverRoot(overlongRunic);
+        if (!fourRollImported.ok
+            || fourRollImported.wire.monsters[0].pendingRollInputHistory.size() != 4
+            || fourRollImported.wire.monsters[0].pendingRollInputHistory[3].monsterTurnNumber != 4)
+            throw std::runtime_error("complete four-roll Runic history was rejected: "
+                + fourRollImported.reason);
         auto directRunic = runicGeneric;
         directRunic["silverRoot"]["combat"]["monsters"][0]["pendingMoveRolls"] = 0;
         directRunic["silverRoot"]["combat"]["monsters"][0]["pendingDirectMoveChoice"] = 1;

@@ -117,6 +117,7 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         int curHp, maxHp, knightCurHp, knightMaxHp, monsterTurnNumber, aliveCount, monstersAlive;
         int miscInfo;
         boolean knightAlive, playerConstricted, asleep, halfDead;
+        final List<HiddenIntentSnapshot> pendingRollInputHistory = new ArrayList<>();
     }
 
     /**
@@ -326,12 +327,26 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         // whether the snapshot is relevant to the current combat.
         if (monster == null || AbstractDungeon.getMonsters() == null) return;
         HiddenIntentSnapshot previous = hiddenIntentSnapshots.get(monster);
+        HiddenIntentSnapshot snapshot = captureHiddenRollInputs(monster);
         if (previous != null && previous.pendingMoveRolls > 0) {
-            recordHiddenMoveHistory(previous, monster.moveHistory);
-            return;
+            // Only the first pre-roll move history is public. Later rolls may
+            // happen on different turns, so retain each roll's own inputs.
+            System.arraycopy(previous.publicMoveHistory, 0,
+                    snapshot.publicMoveHistory, 0, 2);
+            snapshot.publicMoveHistoryCount = previous.publicMoveHistoryCount;
+            snapshot.publicMiscInfo = previous.publicMiscInfo;
+            snapshot.pendingMoveRolls = previous.pendingMoveRolls + 1;
+            snapshot.pendingRollInputHistory.addAll(previous.pendingRollInputHistory);
+        } else {
+            recordHiddenMoveHistory(snapshot, monster.moveHistory);
         }
+        snapshot.pendingRollInputHistory.add(copyHiddenRollInputs(snapshot));
+        snapshot.generation = previous == null ? 1 : previous.generation + 1;
+        hiddenIntentSnapshots.put(monster, snapshot);
+    }
+
+    private static HiddenIntentSnapshot captureHiddenRollInputs(AbstractMonster monster) {
         HiddenIntentSnapshot snapshot = new HiddenIntentSnapshot();
-        recordHiddenMoveHistory(snapshot, monster.moveHistory);
         Integer publicMisc = runicPrivateMiscInfo(monster.id)
                 ? null : monsterMiscInfo(monster);
         snapshot.publicMiscInfo = publicMisc == null ? 0 : publicMisc;
@@ -355,8 +370,41 @@ public final class STSModelInspector implements PostInitializeSubscriber,
             snapshot.knightMaxHp = knight.maxHealth;
             snapshot.knightAlive = !knight.isDeadOrEscaped();
         }
-        snapshot.generation = previous == null ? 1 : previous.generation + 1;
-        hiddenIntentSnapshots.put(monster, snapshot);
+        return snapshot;
+    }
+
+    private static HiddenIntentSnapshot copyHiddenRollInputs(HiddenIntentSnapshot source) {
+        HiddenIntentSnapshot copy = new HiddenIntentSnapshot();
+        copy.curHp = source.curHp;
+        copy.maxHp = source.maxHp;
+        copy.knightCurHp = source.knightCurHp;
+        copy.knightMaxHp = source.knightMaxHp;
+        copy.monsterTurnNumber = source.monsterTurnNumber;
+        copy.miscInfo = source.miscInfo;
+        copy.aliveCount = source.aliveCount;
+        copy.monstersAlive = source.monstersAlive;
+        copy.knightAlive = source.knightAlive;
+        copy.playerConstricted = source.playerConstricted;
+        copy.asleep = source.asleep;
+        copy.halfDead = source.halfDead;
+        return copy;
+    }
+
+    private static void appendHiddenRollInputs(StringBuilder out,
+                                               HiddenIntentSnapshot input,
+                                               boolean privateMisc) {
+        out.append("{\"curHp\":").append(input.curHp)
+                .append(",\"maxHp\":").append(input.maxHp)
+                .append(",\"knightCurHp\":").append(input.knightCurHp)
+                .append(",\"knightMaxHp\":").append(input.knightMaxHp)
+                .append(",\"monsterTurnNumber\":").append(input.monsterTurnNumber);
+        if (!privateMisc) out.append(",\"miscInfo\":").append(input.miscInfo);
+        out.append(",\"aliveCount\":").append(input.aliveCount)
+                .append(",\"monstersAlive\":").append(input.monstersAlive)
+                .append(",\"knightAlive\":").append(input.knightAlive)
+                .append(",\"playerConstricted\":").append(input.playerConstricted)
+                .append(",\"asleep\":").append(input.asleep)
+                .append(",\"halfDead\":").append(input.halfDead).append('}');
     }
 
     static void recordHiddenMoveHistory(HiddenIntentSnapshot snapshot,
@@ -2712,21 +2760,15 @@ public final class STSModelInspector implements PostInitializeSubscriber,
                                 .append(",\"pendingMoveRolls\":").append(hidden.pendingMoveRolls)
                                 .append(",\"pendingDirectMoveChoice\":")
                                 .append(hidden.pendingDirectMoveChoice)
-                                .append(",\"pendingRollInputs\":{")
-                                .append("\"curHp\":").append(hidden.curHp)
-                                .append(",\"maxHp\":").append(hidden.maxHp)
-                                .append(",\"knightCurHp\":").append(hidden.knightCurHp)
-                                .append(",\"knightMaxHp\":").append(hidden.knightMaxHp)
-                                .append(",\"monsterTurnNumber\":").append(hidden.monsterTurnNumber);
-                        if (!hiddenPrivateMisc)
-                            out.append(",\"miscInfo\":").append(hidden.miscInfo);
-                        out.append(",\"aliveCount\":").append(hidden.aliveCount)
-                                .append(",\"monstersAlive\":").append(hidden.monstersAlive)
-                                .append(",\"knightAlive\":").append(hidden.knightAlive)
-                                .append(",\"playerConstricted\":").append(hidden.playerConstricted)
-                                .append(",\"asleep\":").append(hidden.asleep)
-                                .append(",\"halfDead\":").append(hidden.halfDead)
-                                .append('}');
+                                .append(",\"pendingRollInputs\":");
+                        appendHiddenRollInputs(out, hidden, hiddenPrivateMisc);
+                        out.append(",\"pendingRollInputHistory\":[");
+                        for (int roll = 0; roll < hidden.pendingRollInputHistory.size(); ++roll) {
+                            if (roll > 0) out.append(',');
+                            appendHiddenRollInputs(out, hidden.pendingRollInputHistory.get(roll),
+                                    hiddenPrivateMisc);
+                        }
+                        out.append(']');
                     }
                 }
                 if (!runicDome) {

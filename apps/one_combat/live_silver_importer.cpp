@@ -1002,7 +1002,7 @@ SilverRootImportResult importSilverRootGeneric(const json &observation,
             }
             const int pending = item.value("pendingMoveRolls", -1);
             const int direct = item.value("pendingDirectMoveChoice", 0);
-            if (pending < 0 || pending > 3 || direct < 0 || direct > 2
+            if (pending < 0 || pending > 255 || direct < 0 || direct > 2
                 || (pending == 0 && direct == 0 && !item.contains("pendingRollInputs")))
                 return unsupported("silver_hidden_information_required");
             m.pendingMoveRolls = static_cast<std::uint8_t>(pending);
@@ -1016,6 +1016,26 @@ SilverRootImportResult importSilverRootGeneric(const json &observation,
                 if (!parseHiddenRollInputs(inputs, m.pendingRollInputs)
                     || (privateMisc && m.pendingRollInputs.miscInfo != m.miscInfo))
                     return unsupported("silver_hidden_information_required");
+                if (item.contains("pendingRollInputHistory")) {
+                    const auto &history = item.at("pendingRollInputHistory");
+                    if (!history.is_array() || history.size() != static_cast<std::size_t>(pending))
+                        return unsupported("silver_hidden_information_required");
+                    for (const auto &entry : history) {
+                        auto publicEntry = entry;
+                        if (privateMisc && publicEntry.is_object()
+                            && !publicEntry.contains("miscInfo"))
+                            publicEntry["miscInfo"] = m.miscInfo;
+                        silver_bridge::MonsterRollInputsWire parsed;
+                        if (!parseHiddenRollInputs(publicEntry, parsed)
+                            || (privateMisc && parsed.miscInfo != m.miscInfo))
+                            return unsupported("silver_hidden_information_required");
+                        m.pendingRollInputHistory.push_back(parsed);
+                    }
+                } else if (pending == 1) {
+                    m.pendingRollInputHistory.push_back(m.pendingRollInputs);
+                } else {
+                    return unsupported("silver_hidden_information_required");
+                }
             }
         }
         int nextMove = item.value("nextMove", 0);

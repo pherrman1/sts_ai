@@ -11,6 +11,7 @@
 #include <game/Random.h>
 #include <bitset>
 #include <cassert>
+#include <vector>
 
 #include "constants/MonsterStatusEffects.h"
 #include "constants/MonsterIds.h"
@@ -116,12 +117,11 @@ namespace sts {
         int miscInfo = 0;
 
         // Deferred move rolls (Runic Dome): how many roll evaluations have their rng draws
-        // postponed until the move becomes observable, plus the volatile inputs captured at the
-        // (latest) original roll site. Values >1 arise only from chained rerolls (Writhing Mass
-        // REACTIVE, Gremlin Leader rally) whose rolls read no volatile inputs, so keeping just
-        // the latest snapshot is exact. Both stay zeroed when nothing is pending.
+        // postponed until the move becomes observable. Each roll retains its
+        // own public inputs: hidden intents can remain pending across turns.
         std::uint8_t pendingMoveRolls = 0;
         MonsterRollInputs rollInputs;
+        std::vector<MonsterRollInputs> pendingRollInputHistory;
         DeferredDirectMoveChoice pendingDirectMoveChoice = DeferredDirectMoveChoice::NONE;
 
         Monster() = default;

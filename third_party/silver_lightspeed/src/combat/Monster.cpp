@@ -796,10 +796,11 @@ void Monster::rollMove(BattleContext &bc) {
     // now, at the real game's roll time, which keeps the deferred roll's distribution exactly
     // equal to an immediate one.
     if (bc.intentsHidden) {
+        if (pendingMoveRolls == 255)
+            throw std::runtime_error("deferred monster roll history exceeds wire limit");
         rollInputs = captureRollInputs(*this, bc);
-        if (pendingMoveRolls < 255) {
-            ++pendingMoveRolls;
-        }
+        ++pendingMoveRolls;
+        pendingRollInputHistory.push_back(rollInputs);
         return;
     }
     rollMoveFromInputs(bc, captureRollInputs(*this, bc));
@@ -831,6 +832,7 @@ void Monster::materializePendingMove(BattleContext &bc) {
             if (choice-- == 0) {
                 miscInfo = minimum + i;
                 rollInputs.miscInfo = miscInfo;
+                for (auto &inputs : pendingRollInputHistory) inputs.miscInfo = miscInfo;
                 break;
             }
         }
@@ -840,11 +842,15 @@ void Monster::materializePendingMove(BattleContext &bc) {
     // chance event for the hidden intent.
     int n = pendingMoveRolls;
     pendingMoveRolls = 0;
-    MonsterRollInputs in = rollInputs;
+    auto inputs = std::move(pendingRollInputHistory);
+    if (inputs.empty() && n == 1) inputs.push_back(rollInputs);
+    if (static_cast<int>(inputs.size()) != n)
+        throw std::runtime_error("incomplete deferred monster roll input history");
     rollInputs = MonsterRollInputs{};
     for (int i = 0; i < n; ++i) {
+        MonsterRollInputs in = inputs[i];
+        if (i > 0) in.miscInfo = miscInfo;
         rollMoveFromInputs(bc, in);
-        in.miscInfo = miscInfo;  // later chained rolls see the evolved value
     }
 }
 
@@ -875,6 +881,7 @@ void Monster::cancelPendingMove() {
     // check or a roll-time miscInfo write.
     pendingMoveRolls = 0;
     rollInputs = MonsterRollInputs{};
+    pendingRollInputHistory.clear();
     pendingDirectMoveChoice = DeferredDirectMoveChoice::NONE;
 }
 
@@ -931,6 +938,7 @@ bool Monster::operator==(const Monster &rhs) const {
            moveHistory[1] == rhs.moveHistory[1] &&
            pendingMoveRolls == rhs.pendingMoveRolls &&
            rollInputs == rhs.rollInputs &&
+           pendingRollInputHistory == rhs.pendingRollInputHistory &&
            pendingDirectMoveChoice == rhs.pendingDirectMoveChoice &&
            miscInfo == rhs.miscInfo;
 }

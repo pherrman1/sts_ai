@@ -87,10 +87,11 @@ draw order is sorted before emission; the actual runtime order is retained
 when Frozen Eye is present. Under Runic Dome, the observer omits `nextMove`,
 `moveHistory`, `intent`, and `intentDamage` and instead emits the public
 pre-roll history with an explicit valid-entry count, deferred roll count, and
-captured roll inputs required by the native hidden-intent model. Move byte zero
+an ordered sequence of captured public roll inputs required by the native
+hidden-intent model. Move byte zero
 is valid when its presence bit is set. Chained hidden rolls retain the first
-public snapshot and increment the pending-roll count without copying an
-intermediate hidden move into history. Louse and Darkling roots carry a public
+public move history and append a separate roll-input snapshot without copying
+an intermediate hidden move into history. Louse and Darkling roots carry a public
 candidate mask for persistent attack damage; the private `miscInfo` is omitted.
 Player HP and block changes narrow that mask when they determine the attack
 amount. Multiple compatible values remain possible; unqualified or
