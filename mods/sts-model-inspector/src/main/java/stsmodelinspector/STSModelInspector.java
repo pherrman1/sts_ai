@@ -88,6 +88,9 @@ public final class STSModelInspector implements PostInitializeSubscriber,
     // is not occupied by a live object in the current snapshot.
     private static final IdentityHashMap<AbstractMonster, Integer> monsterSlots =
             new IdentityHashMap<>();
+    private static final IdentityHashMap<AbstractMonster, Integer> monsterFirstSeen =
+            new IdentityHashMap<>();
+    private static int nextMonsterFirstSeen;
     private static final Set<AbstractMonster> replacedMonsterParents =
             Collections.newSetFromMap(new IdentityHashMap<AbstractMonster, Boolean>());
     private static final IdentityHashMap<AbstractMonster, Integer> hexaghostDividerDamage =
@@ -425,6 +428,8 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         resetSilverBudget();
         hiddenMiscMasks.clear();
         monsterSlots.clear();
+        monsterFirstSeen.clear();
+        nextMonsterFirstSeen = 0;
         replacedMonsterParents.clear();
         hexaghostDividerDamage.clear();
         guardianPublicThreshold.clear();
@@ -449,6 +454,8 @@ public final class STSModelInspector implements PostInitializeSubscriber,
     public void receivePostBattle(AbstractRoom room) {
         resetSilverBudget();
         monsterSlots.clear();
+        monsterFirstSeen.clear();
+        nextMonsterFirstSeen = 0;
         replacedMonsterParents.clear();
         hexaghostDividerDamage.clear();
         guardianPublicThreshold.clear();
@@ -1358,6 +1365,18 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         return replacement;
     }
 
+    static Map<Integer,Integer> latestDeadOrdinalBySlot(
+            Map<Integer,List<Integer>> deadOrdinals, Set<Integer> livingSlots) {
+        Map<Integer,Integer> latest = new HashMap<>();
+        for (Map.Entry<Integer,List<Integer>> entry : deadOrdinals.entrySet()) {
+            if (livingSlots.contains(entry.getKey())) continue;
+            for (Integer ordinal : entry.getValue())
+                if (ordinal != null && ordinal > latest.getOrDefault(entry.getKey(), -1))
+                    latest.put(entry.getKey(), ordinal);
+        }
+        return latest;
+    }
+
     private static Integer reflectedEncounterSlot(String encounter, AbstractMonster candidate) {
         if (AbstractDungeon.getMonsters() == null
                 || AbstractDungeon.getMonsters().monsters == null) return null;
@@ -1517,6 +1536,9 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         int nonLeaderOrdinal = 0;
         Set<Integer> usedMonsterSlots = new HashSet<>();
         List<AbstractMonster> monsters = AbstractDungeon.getMonsters().monsters;
+        for (AbstractMonster monster : monsters)
+            if (monster != null && !monsterFirstSeen.containsKey(monster))
+                monsterFirstSeen.put(monster, ++nextMonsterFirstSeen);
         Set<Integer> deadGremlinSlots = new HashSet<>();
         Set<Integer> livingGremlinSlots = new HashSet<>();
         if ("GREMLIN_LEADER".equals(encounter)) {
@@ -1574,8 +1596,15 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         for (Map.Entry<AbstractMonster, Integer> entry : emitted.entrySet())
             if (entry.getValue() >= 0 && entry.getKey().currentHealth > 0
                     && !entry.getKey().isDeadOrEscaped()) livingSlots.add(entry.getValue());
+        Map<Integer,List<Integer>> deadOrdinals = new HashMap<>();
+        for (Map.Entry<AbstractMonster, Integer> entry : emitted.entrySet())
+            if (entry.getValue() >= 0 && entry.getKey().isDeadOrEscaped())
+                deadOrdinals.computeIfAbsent(entry.getValue(), ignored -> new ArrayList<>())
+                        .add(monsterFirstSeen.get(entry.getKey()));
+        Map<Integer,Integer> latestDead = latestDeadOrdinalBySlot(deadOrdinals, livingSlots);
         emitted.entrySet().removeIf(entry -> entry.getValue() >= 0
-                && entry.getKey().isDeadOrEscaped() && livingSlots.contains(entry.getValue()));
+                && entry.getKey().isDeadOrEscaped()
+                && !monsterFirstSeen.get(entry.getKey()).equals(latestDead.get(entry.getValue())));
         return emitted;
     }
 

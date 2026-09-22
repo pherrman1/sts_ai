@@ -38,6 +38,13 @@ public final class CombatBoundaryTest {
                 || STSModelInspector.gremlinReplacementSlot(
                         new java.util.HashSet<Integer>(), liveSlots) != -1)
             throw new AssertionError("summoned Gremlin Leader minion took an ambiguous or leader slot");
+        java.util.Map<Integer,java.util.List<Integer>> deadOccupants = new java.util.HashMap<>();
+        deadOccupants.put(1, java.util.Arrays.asList(1, 4));
+        deadOccupants.put(2, java.util.Arrays.asList(2));
+        java.util.Map<Integer,Integer> latestDead = STSModelInspector.latestDeadOrdinalBySlot(
+                deadOccupants, new java.util.HashSet<>(java.util.Arrays.asList(2)));
+        if (latestDead.size() != 1 || latestDead.get(1) != 4)
+            throw new AssertionError("older dead Gremlin Leader slot occupant was retained");
         if (STSModelInspector.hiddenMiscMinimum("FuzzyLouseNormal", 0) != 5
                 || STSModelInspector.hiddenMiscMinimum("FuzzyLouseDefensive", 20) != 6
                 || STSModelInspector.hiddenMiscMinimum("Darkling", 20) != 11
