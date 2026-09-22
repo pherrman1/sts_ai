@@ -144,6 +144,8 @@ int main(int argc,char **argv){try{
         });
         check(first != choices.end(), "first forced gold choice missing from observation");
         choices.erase(first);
+        afterFirst["ooc"]["details"]["gold"].erase(
+            afterFirst["ooc"]["details"]["gold"].begin());
         advisor::LiveOocStateV1 secondLive;
         check(advisor::importLiveOocStateV1(afterFirst, secondLive).ok, "second gold fixture import");
         const auto secondAction = advisor::forcedRewardGoldLiveAction(secondLive);
@@ -155,6 +157,7 @@ int main(int argc,char **argv){try{
         remaining.erase(std::remove_if(remaining.begin(), remaining.end(), [](const auto &choice) {
             return choice.at("nativeAction").value("kind", std::string()) == "gold";
         }), remaining.end());
+        afterSecond["ooc"]["details"]["gold"] = nlohmann::json::array();
         advisor::LiveOocStateV1 noGold;
         check(advisor::importLiveOocStateV1(afterSecond, noGold).ok, "gold-removed fixture import");
         check(!advisor::forcedRewardGoldLiveAction(noGold).has_value(),

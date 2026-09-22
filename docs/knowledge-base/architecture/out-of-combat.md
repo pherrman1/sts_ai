@@ -152,8 +152,11 @@ semantic action resolution on the same state. The live advisor emits one
 captured gold choice as a single-action pass-through and re-observes before
 scoring any remaining reward decision. Multiple captured gold choices are
 handled one observation at a time, including when their native primitive bits
-coincide. Ectoplasm and Bloody Idol therefore retain their normal acquisition
-semantics.
+coincide. If the capture marks an unopened card group as
+`CARD_GROUP_NOT_REVEALED`, the importer still validates the complete schema and
+gold-to-live mappings before allowing that gold pass-through; after the gold is
+gone, the unsupported card-group boundary is returned unchanged. Ectoplasm and
+Bloody Idol therefore retain their normal acquisition semantics.
 
 V4 remains a primitive-trained source-level prior. When the state's unique
 semantic source primitives exactly match the complete, duplicate-free V4

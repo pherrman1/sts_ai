@@ -323,6 +323,7 @@ ImportResult importLiveOocStateV1(const J &observation, LiveOocStateV1 &out) {
         require(!screenName.empty(),"OOC screen is empty");
         if (o.contains("captureError"))
             throw std::runtime_error("live capture integrity failure: " + string(o,"captureError"));
+        std::string deferredUnsupportedReason;
         if (o.contains("unsupportedReason")) {
             const auto reason = string(o,"unsupportedReason");
             // Non-MAP screens may carry the relic through continuation, but a
@@ -331,7 +332,14 @@ ImportResult importLiveOocStateV1(const J &observation, LiveOocStateV1 &out) {
             const bool boundedWinged = reason
                     == "RELIC_NATIVE_STATE_UNREPRESENTABLE:WingedGreaves:active"
                 && screenName != "map";
-            if (!reason.empty() && !boundedWinged) return {false,"UNSUPPORTED",reason};
+            // A normal combat reward can expose gold alongside an unopened
+            // card group. Defer this one support boundary until the complete
+            // capture and its live mappings have been validated below.
+            const bool hiddenCardReward = reason == "CARD_GROUP_NOT_REVEALED"
+                && (screenName == "combat_reward" || screenName == "rewards");
+            if (!reason.empty() && !boundedWinged && !hiddenCardReward)
+                return {false,"UNSUPPORTED",reason};
+            if (hiddenCardReward) deferredUnsupportedReason = reason;
         }
         LiveOocStateV1 next;
         next.ooc = o;
@@ -533,6 +541,29 @@ ImportResult importLiveOocStateV1(const J &observation, LiveOocStateV1 &out) {
         for(const auto &choice:array(o,"liveChoices",1024)) {
             primitive(choice,g.screenState);validateHint(choice.at("liveAction"));
         }
+        if (!deferredUnsupportedReason.empty()) {
+            // Validate that every visible gold reward has exactly one
+            // distinct, well-formed captured click before allowing the
+            // narrowly scoped pass-through. The regular unsupported boundary
+            // remains in force after the last gold disappears.
+            std::set<std::string> goldActions;
+            int goldChoiceCount = 0;
+            const auto &gold = array(d,"gold",2);
+            for (const auto &choice : array(o,"liveChoices",1024)) {
+                if (string(choice.at("nativeAction"),"kind") != "gold") continue;
+                const int nativeIndex = integer(choice.at("nativeAction"),"index",0,255);
+                require(nativeIndex < static_cast<int>(gold.size()),
+                        "gold native index outside visible rewards");
+                const auto &action = choice.at("liveAction");
+                require(string(action,"kind") == "choose","gold choice must lower to choose");
+                require(goldActions.insert(action.dump()).second,"duplicate gold live mapping");
+                ++goldChoiceCount;
+            }
+            require(goldChoiceCount == static_cast<int>(gold.size()),
+                    "gold reward/live mapping count mismatch: rewards="
+                    + std::to_string(gold.size()) + " choices=" + std::to_string(goldChoiceCount));
+            if (goldChoiceCount == 0) return {false,"UNSUPPORTED",deferredUnsupportedReason};
+        }
         if (unqualifiedUpgradeHistory)
             return {false,"UNSUPPORTED","SEARING_BLOW_UPGRADE_HISTORY_UNQUALIFIED"};
         next.mctsRoot = makeMctsRoot(next);
@@ -594,14 +625,29 @@ std::vector<std::uint32_t> liveOocPrimitiveBits(const LiveOocStateV1 &state) {
 }
 std::optional<J> forcedRewardGoldLiveAction(const LiveOocStateV1 &state) {
     if (state.projected.screenState != sts::ScreenState::REWARDS) return std::nullopt;
+    int goldChoices = 0;
+    std::set<std::string> actions;
+    const J *first = nullptr;
     for (const auto &choice : state.ooc.at("liveChoices")) {
         if (choice.at("nativeAction").value("kind", std::string()) != "gold") continue;
         // Keep this tied to the captured choice entry because multiple Java
         // gold rows may lower to the same native primitive bits. Execute one
         // captured choice per observation and let the caller re-observe.
         primitive(choice, state.projected.screenState); // validate native identity
-        return choice.at("liveAction");
+        require(integer(choice.at("nativeAction"),"index",0,255)
+                    < static_cast<int>(state.ooc.at("details").at("gold").size()),
+                "gold native index outside visible rewards");
+        const auto &action = choice.at("liveAction");
+        require(string(action,"kind") == "choose","gold choice must lower to choose");
+        require(actions.insert(action.dump()).second,"duplicate gold live mapping");
+        if (!first) first = &choice;
+        ++goldChoices;
     }
-    return std::nullopt;
+    if (goldChoices == 0) return std::nullopt;
+    require(state.ooc.at("details").at("gold").size() == static_cast<std::size_t>(goldChoices),
+            "gold reward/live mapping count mismatch: rewards="
+            + std::to_string(state.ooc.at("details").at("gold").size())
+            + " choices=" + std::to_string(goldChoices));
+    return first->at("liveAction");
 }
 } // namespace one_combat::advisor
