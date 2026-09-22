@@ -141,6 +141,23 @@ the tree to primitive V4 candidates. BATTLE remains a boundary and exact run
 loss/victory retain precedence. MAP alone keeps its existing primitive V4
 candidate contract (including missing-map and row-14 boundaries).
 
+Before semantic OOC enumeration, detached reward states deterministically
+collect every ordinary gold reward through the normal `GameAction::GOLD`
+execution path. This gold-only normalization is applied at the root and after
+each hypothetical successor; it leaves the REWARDS screen and all non-gold
+choices intact, so `TAKE_GOLD` remains available to semantic execution and
+diagnostics but is not an MCTS candidate. The simulator's live OOC policy also
+applies the closure to its real `GameContext` before search, keeping subsequent
+semantic action resolution on the same state. The live advisor emits one
+captured gold choice as a single-action pass-through and re-observes before
+scoring any remaining reward decision. Multiple captured gold choices are
+handled one observation at a time, including when their native primitive bits
+coincide. If the capture marks an unopened card group as
+`CARD_GROUP_NOT_REVEALED`, the importer still validates the complete schema and
+gold-to-live mappings before allowing that gold pass-through; after the gold is
+gone, the unsupported card-group boundary is returned unchanged. Ectoplasm and
+Bloody Idol therefore retain their normal acquisition semantics.
+
 V4 remains a primitive-trained source-level prior. When the state's unique
 semantic source primitives exactly match the complete, duplicate-free V4
 candidate set, each source is scored once with the existing policy head and

@@ -240,6 +240,56 @@ class LiveOocProtocol(unittest.TestCase):
         self.assertEqual(evaluator["mode"], "native_pass_through")
         self.assertEqual(evaluator["selectedLiveAction"], {"kind": "proceed"})
 
+    def test_hidden_card_group_still_passes_through_captured_gold(self):
+        observation = copy.deepcopy(self.fixtures["rewards_without_cards"])
+        ooc = observation["ooc"]
+        ooc["screen"] = "combat_reward"
+        ooc["unsupportedReason"] = "CARD_GROUP_NOT_REVEALED"
+        # No model is configured: OK proves the gold path bypasses MCTS/V4.
+        first, = self.run_rows([observation], model=False, policy="mcts")
+        evaluator, = first["evaluators"]
+        self.assertEqual(evaluator["status"], "OK", first)
+        self.assertEqual(evaluator["mode"], "native_pass_through")
+        self.assertEqual(evaluator["selectedSemanticKey"], "ooc-live:v1:take-gold")
+        self.assertEqual(evaluator["selectedLiveAction"]["kind"], "choose")
+
+        after_gold = copy.deepcopy(observation)
+        after_gold["ooc"]["details"]["gold"] = []
+        after_gold["ooc"]["liveChoices"] = [
+            choice for choice in after_gold["ooc"]["liveChoices"]
+            if choice["nativeAction"]["kind"] != "gold"
+        ]
+        second, = self.run_rows([after_gold], model=False, policy="mcts")
+        second_evaluator, = second["evaluators"]
+        self.assertEqual(second_evaluator["status"], "UNSUPPORTED", second)
+        self.assertEqual(second_evaluator["reason"], "CARD_GROUP_NOT_REVEALED")
+
+    def test_hidden_card_group_rejects_duplicate_gold_mapping(self):
+        observation = copy.deepcopy(self.fixtures["rewards_without_cards"])
+        ooc = observation["ooc"]
+        ooc["screen"] = "combat_reward"
+        ooc["unsupportedReason"] = "CARD_GROUP_NOT_REVEALED"
+        gold_choice = next(choice for choice in ooc["liveChoices"]
+                           if choice["nativeAction"]["kind"] == "gold")
+        ooc["liveChoices"].append(copy.deepcopy(gold_choice))
+        response, = self.run_rows([observation], model=False, policy="mcts")
+        self.assertEqual(response["status"], "ERROR", response)
+
+    def test_hidden_card_group_rejects_invalid_gold_mapping(self):
+        for mutation in ("index", "action"):
+            observation = copy.deepcopy(self.fixtures["rewards_without_cards"])
+            ooc = observation["ooc"]
+            ooc["screen"] = "combat_reward"
+            ooc["unsupportedReason"] = "CARD_GROUP_NOT_REVEALED"
+            gold_choice = next(choice for choice in ooc["liveChoices"]
+                               if choice["nativeAction"]["kind"] == "gold")
+            if mutation == "index":
+                gold_choice["nativeAction"]["index"] = 255
+            else:
+                gold_choice["liveAction"] = {"kind": "proceed"}
+            response, = self.run_rows([observation], model=False, policy="mcts")
+            self.assertEqual(response["status"], "ERROR", response)
+
     def test_woman_in_blue_is_a_complete_live_mcts_root(self):
         response, = self.run_rows([self.fixtures["event_woman_in_blue"]])
         evaluator, = response["evaluators"]

@@ -40,6 +40,17 @@ bool collectFreeOocReward(sts::GameContext &gc, bool collectKeys) {
     return false;
 }
 
+bool collectForcedRewardGold(sts::GameContext &gc) {
+    if (gc.screenState != sts::ScreenState::REWARDS) return false;
+    using RT = sts::search::GameAction::RewardsActionType;
+    bool collected = false;
+    while (gc.info.rewardsContainer.goldRewardCount > 0) {
+        sts::search::GameAction(RT::GOLD, 0).execute(gc);
+        collected = true;
+    }
+    return collected;
+}
+
 bool takeQualifiedV4CardReward(sts::GameContext &gc, const PathHistory &path,
                                const OocStrategicTokNet &model, double margin) {
     if (!model.ok || gc.screenState != sts::ScreenState::REWARDS

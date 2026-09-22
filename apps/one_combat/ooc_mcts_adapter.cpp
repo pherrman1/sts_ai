@@ -245,9 +245,11 @@ OocGameContextModel::OocGameContextModel(const GameContext &gc, const PathHistor
         throw std::runtime_error("OOC MCTS requires native V4 policy dependencies");
     if (!dependencies.potionKeepValue) dependencies.potionKeepValue = [](const GameContext &) { return 4.0; };
     if (!dependencies.stopAfterAct) dependencies.stopAfterAct = [] { return 0; };
+    auto root = detachedCopy(gc);
+    collectForcedRewardGold(root);
     auto history = path;
-    history.update(gc);
-    states.push_back({detachedCopy(gc), history, {}});
+    history.update(root);
+    states.push_back({std::move(root), history, {}});
 }
 const GameContext &OocGameContextModel::state(sts::search::OocStateId id) const { return states.at(id).gc; }
 const PathHistory &OocGameContextModel::pathHistory(sts::search::OocStateId id) const { return states.at(id).path; }
@@ -560,6 +562,7 @@ sts::search::OocStateId OocGameContextModel::sampleSuccessor(sts::search::OocSta
         const auto executed = sts::search::executeOocSemanticAction(child.gc, *it->semantic);
         if (!executed.ok) throw sts::search::OocSearchUnsupported("semantic_execution:" + executed.error);
     } else it->primitive.execute(child.gc);
+    collectForcedRewardGold(child.gc);
     child.path.update(child.gc);
     const bool enteredCombat = child.gc.screenState == sts::ScreenState::BATTLE;
     const auto encounter = enteredCombat ? child.gc.info.encounter : sts::MonsterEncounter::INVALID;
@@ -1117,6 +1120,7 @@ bool oocMctsPolicyStep(GameContext &gc, const PathHistory &path, std::uint64_t s
     if (sts::search::g_onGameActionExecute && gc.screenState != sts::ScreenState::MAP_SCREEN) {
         ++metrics.fallback; ++metrics.continuation.supportReasons["semantic_observer_active"]; return false;
     }
+    collectForcedRewardGold(gc);
     std::optional<OocGameContextModel::Candidate> selected;
     const auto result = selectOocMctsAction(gc, path, seed, index, liveSimulations, liveSampler, samples, &continuation, &selected);
     profile.stop();
@@ -1590,18 +1594,20 @@ void oocMctsAdapterSelfTest() {
     // Compare the adapter against the complete semantic surface, independently
     // execute each semantic edge, and audit the source-level prior bridge.
     auto checkCandidates = [&](GameContext fixture, bool execute=true) {
-        const auto before=test::oocStateFingerprint(fixture);
-        const auto bindings=enumerateOocSemanticPrimitiveBindings(fixture);
+        auto canonical = detachedCopy(fixture);
+        collectForcedRewardGold(canonical);
+        const auto before=test::oocStateFingerprint(canonical);
+        const auto bindings=enumerateOocSemanticPrimitiveBindings(canonical);
         std::vector<sts::search::OocSemanticPrimitiveBinding> representatives;
         std::set<std::string> choiceKeys;
         for (const auto &binding : bindings.bindings)
             if (choiceKeys.insert(canonicalOocMctsChoiceKey(binding.semantic)).second)
                 representatives.push_back(binding);
-        const bool map=fixture.screenState==ScreenState::MAP_SCREEN;
-        const auto primitive=v4CandidateActions(fixture);
+        const bool map=canonical.screenState==ScreenState::MAP_SCREEN;
+        const auto primitive=v4CandidateActions(canonical);
         require(map || (bindings.supported && bindings.complete && !bindings.bindings.empty()),
             "semantic coverage fixture must be complete");
-        OocGameContextModel provider(fixture,path);
+        OocGameContextModel provider(canonical,path);
         const auto actual=provider.legalActions(0);
         require(actual.size()==(map?primitive.size():representatives.size()),
             "adapter exposes one representative per equivalent card choice");
@@ -1620,9 +1626,10 @@ void oocMctsAdapterSelfTest() {
             mass[candidate.primitive.bits]+=actual[i].prior;
             ++counts[candidate.primitive.bits];
             if (execute && !map) {
-                auto expected=detachedCopy(fixture);
+                auto expected=detachedCopy(canonical);
                 const auto result=executeOocSemanticAction(expected,*candidate.semantic);
                 require(result.ok,"fixture semantic execution succeeds");
+                collectForcedRewardGold(expected);
                 const auto child=provider.sampleSuccessor(0,actual[i].id,rng);
                 require(test::oocStateFingerprint(provider.state(child))==test::oocStateFingerprint(expected),
                     "adapter semantic edge reaches complete transactional successor");
@@ -1631,31 +1638,31 @@ void oocMctsAdapterSelfTest() {
                         "compound edge consumes both source and physical card target");
             }
         }
-        bool qualified=v4DecisionSupported(fixture);
+        bool qualified=v4DecisionSupported(canonical);
         std::set<std::uint32_t> established;
         for(auto a:primitive) qualified=established.insert(a.bits).second && qualified;
         std::set<std::uint32_t> completeSources;
         for(const auto &binding:bindings.bindings)
-            if(GameAction(binding.primitiveBits).isValidAction(fixture))
+            if(GameAction(binding.primitiveBits).isValidAction(canonical))
                 completeSources.insert(binding.primitiveBits);
         if(map) for(const auto &[bits,count]:counts) completeSources.insert(bits);
         qualified=qualified && established==completeSources;
         if(qualified) {
-            const auto tokens=buildTokState(fixture,path);
+            const auto tokens=buildTokState(canonical,path);
             std::map<std::uint32_t,double> sourceLogits;
             for(auto action:primitive) {
                 int type,c1,c2,c3,d1,d2,d3,et,ei; float price;
-                strategicCands(fixture,action,type,c1,c2,c3,d1,d2,d3);
-                tokEntity(fixture,action,et,ei,price);
+                strategicCands(canonical,action,type,c1,c2,c3,d1,d2,d3);
+                tokEntity(canonical,action,et,ei,price);
                 const int cats[6]={c1,c2,c3,d1,d2,d3};
                 const float entity[4]={float(et==0),float(et==1),float(et==2),float(et==3)};
                 sourceLogits.emplace(action.bits,g_oocStrategicTokNet.predictPolicyLogit(tokens.glob,
                     tokens.nDk,tokens.dk,tokens.nRl,tokens.rl,tokens.nPt,tokens.pt,
-                    action.bits,cats,type,int(fixture.screenState),entity,ei,price));
+                    action.bits,cats,type,int(canonical.screenState),entity,ei,price));
             }
             std::map<std::string,std::vector<double>> grouped;
             for(const auto &binding:bindings.bindings)
-                if(GameAction(binding.primitiveBits).isValidAction(fixture))
+                if(GameAction(binding.primitiveBits).isValidAction(canonical))
                     grouped[canonicalOocMctsChoiceKey(binding.semantic)].push_back(sourceLogits.at(binding.primitiveBits));
             std::vector<double> classLogits;
             if(map) for(auto action:primitive) classLogits.push_back(sourceLogits.at(action.bits));
@@ -1675,12 +1682,12 @@ void oocMctsAdapterSelfTest() {
             }
         } else for(auto action:actual) require(action.prior==1,"unqualified V4 semantic roots are wholly uniform");
         OocAdapterOptions uniform; uniform.uniformPrior=true;
-        OocGameContextModel uniformProvider(fixture,path,{},uniform);
+        OocGameContextModel uniformProvider(canonical,path,{},uniform);
         for(auto action:uniformProvider.legalActions(0)) require(action.prior==1,"explicit uniform semantic siblings");
-        require(test::oocStateFingerprint(fixture)==before
+        require(test::oocStateFingerprint(canonical)==before
             && test::oocStateFingerprint(provider.state(0))==before,"semantic testing preserves immutable root");
-        std::cout<<"semantic_adapter_coverage screen="<<int(fixture.screenState)
-            <<" event="<<int(fixture.curEvent)<<" selector="<<int(fixture.info.selectScreenType)
+        std::cout<<"semantic_adapter_coverage screen="<<int(canonical.screenState)
+            <<" event="<<int(canonical.curEvent)<<" selector="<<int(canonical.info.selectScreenType)
             <<" count="<<actual.size()<<" v4_qualified="<<qualified<<'\n';
     };
     auto fixture=detachedCopy(gc);
@@ -2547,12 +2554,13 @@ void oocMctsAdapterSelfTest() {
     // Rich features cannot see pending gold. Checkpoint projection must collect
     // it on a detached copy, and match the existing policy's completed oracle.
     std::vector<float> pendingFeatures;
-    for (int amount : {1,1000}) {
+    for (int amount : {1}) {
         auto pendingGold=detachedCopy(reward);
         auto &container=pendingGold.info.rewardsContainer;
         container.goldRewardCount=1; container.gold[0]=amount;
         container.cardRewardCount=container.relicCount=container.potionCount=0;
         container.emeraldKey=container.sapphireKey=false;
+        collectForcedRewardGold(pendingGold);
         const auto fingerprint=test::oocStateFingerprint(pendingGold);
         const auto features=richFeatureVec(pendingGold);
         if (pendingFeatures.empty()) pendingFeatures=features;
@@ -2561,7 +2569,7 @@ void oocMctsAdapterSelfTest() {
         ScumSearchAgent2 oracleAgent;
         for (int step=0;step<16 && completed.screenState!=ScreenState::MAP_SCREEN;++step)
             runFullRunOocPolicyStep(completed,oracleAgent,false,true);
-        require(completed.screenState==ScreenState::MAP_SCREEN && completed.gold==pendingGold.gold+amount,
+        require(completed.screenState==ScreenState::MAP_SCREEN && completed.gold==pendingGold.gold,
             "pending gold oracle reaches checkpoint after collection");
         OocGameContextModel projected(pendingGold,path,{}, {true});
         rejects([&] { projected.leafValue(0); });
@@ -2570,12 +2578,15 @@ void oocMctsAdapterSelfTest() {
         t_curPath=&projected.pathHistory(0);
         const auto oracleValue=vStateWinNative(completed);
         t_curPath=savedPath;
-        require(projected.evaluateLeaf(0,projectionRng)==oracleValue
-            && projected.continuationMetrics().pendingLeaves==1
-            && projected.continuationMetrics().projectionSteps>=2
-            && test::oocStateFingerprint(projected.state(0))==fingerprint
+        const auto projectedValue=projected.evaluateLeaf(0,projectionRng);
+        require(projectedValue==oracleValue,
+            "pending reward projection value differs from resolved oracle");
+        require(projected.continuationMetrics().pendingLeaves==1
+            && projected.continuationMetrics().projectionSteps>=1,
+            "pending reward projection did not retain continuation accounting");
+        require(test::oocStateFingerprint(projected.state(0))==fingerprint
             && test::oocStateFingerprint(pendingGold)==fingerprint && t_curPath==savedPath,
-            "pending reward projection matches resolved oracle and preserves caller");
+            "pending reward projection mutated canonical root or caller path");
     }
     // All pending screen families are evaluated only after the same policy
     // continuation. This also covers selectors outside MCTS-owned decisions.
@@ -2750,7 +2761,10 @@ void oocMctsAdapterSelfTest() {
         bool enabled = liveEnabled;
         std::uint64_t simulations = liveSimulations;
         std::shared_ptr<const CombatTransitionSampler> sampler = liveSampler;
-        ~LiveConfigScope() { liveEnabled=enabled; liveSimulations=simulations; liveSampler=sampler; }
+        sts::search::OocMctsConfig config = liveConfig;
+        OocAdapterOptions options = liveOptions;
+        ~LiveConfigScope() { liveEnabled=enabled; liveSimulations=simulations; liveSampler=sampler;
+            liveConfig=config; liveOptions=options; }
     } liveScope;
     auto live=GameContext(CharacterClass::IRONCLAD, 42, 0);
     live.screenState=ScreenState::MAP_SCREEN;
@@ -2845,6 +2859,82 @@ void oocMctsAdapterSelfTest() {
         && test::oocStateFingerprint(sole)==test::oocStateFingerprint(solePrimitive)
         && test::oocStateFingerprint(sole)!=soleBefore,
         "sole map root executes its exact primitive without search or fallback");
+
+    auto makeRewardRoot = [] {
+        auto root = GameContext(CharacterClass::IRONCLAD, 84321, 0);
+        root.screenState = ScreenState::REWARDS;
+        root.info.rewardsContainer.clear();
+        root.info.rewardsContainer.addGold(25);
+        root.regainControlAction = [](GameContext &g) {
+            g.screenState = ScreenState::MAP_SCREEN;
+            g.regainControlAction = nullptr;
+        };
+        return root;
+    };
+    liveEnabled = true;
+    liveSimulations = 128;
+    liveSampler = std::make_shared<AlwaysUnsupported>();
+    const auto optionsBeforeGoldRoots = liveOptions;
+    liveOptions = {};
+    auto goldOnly = makeRewardRoot();
+    const int goldOnlyBefore = goldOnly.gold;
+    PathHistory goldOnlyPath;
+    goldOnlyPath.update(goldOnly);
+    LiveOocMctsMetrics goldOnlyMetrics;
+    const bool goldOnlyHandled = oocMctsPolicyStep(goldOnly, goldOnlyPath, 42, 9, goldOnlyMetrics);
+    if (!(goldOnlyHandled && goldOnly.gold == goldOnlyBefore + 25
+            && goldOnly.info.rewardsContainer.goldRewardCount == 0
+            && goldOnly.screenState == ScreenState::MAP_SCREEN
+            && goldOnlyMetrics.search.trivialRootBypasses == 1
+            && goldOnlyMetrics.search.simulations == 0
+            && goldOnlyMetrics.search.simulationAttempts == 0))
+        throw std::runtime_error("live native gold-only root: handled=" + std::to_string(goldOnlyHandled)
+            + " gold=" + std::to_string(goldOnly.gold)
+            + " remaining=" + std::to_string(goldOnly.info.rewardsContainer.goldRewardCount)
+            + " screen=" + std::to_string(int(goldOnly.screenState))
+            + " bypass=" + std::to_string(goldOnlyMetrics.search.trivialRootBypasses)
+            + " simulations=" + std::to_string(goldOnlyMetrics.search.simulations)
+            + " fallback=" + std::to_string(goldOnlyMetrics.fallback));
+
+    auto goldAndCard = makeRewardRoot();
+    const int goldAndCardBefore = goldAndCard.gold;
+    const int goldAndCardDeckBefore = goldAndCard.deck.size();
+    CardReward meaningful;
+    meaningful.push_back(Card(CardId::BASH));
+    goldAndCard.info.rewardsContainer.addCardReward(meaningful);
+    const auto goldAndCardActions = enumerateOocSemanticPrimitiveBindings(goldAndCard);
+    const auto cardAction = std::find_if(goldAndCardActions.bindings.begin(), goldAndCardActions.bindings.end(),
+        [](const auto &binding) {
+            return binding.semantic.effect == OocSemanticEffect::TAKE_CARD;
+        });
+    require(cardAction != goldAndCardActions.bindings.end(), "gold plus card fixture lacks card action");
+    liveOptions.rootPrimitiveBits = std::set<std::uint32_t>{cardAction->primitiveBits};
+    PathHistory goldAndCardPath;
+    goldAndCardPath.update(goldAndCard);
+    LiveOocMctsMetrics goldAndCardMetrics;
+    const bool goldAndCardHandled = oocMctsPolicyStep(goldAndCard, goldAndCardPath, 42, 10, goldAndCardMetrics);
+    const bool cardAdded = goldAndCard.deck.size() == goldAndCardDeckBefore + 1;
+    const auto remainingSemantic = enumerateOocSemanticActions(goldAndCard);
+    const bool goldCandidateRemains = std::any_of(remainingSemantic.actions.begin(),
+        remainingSemantic.actions.end(), [](const auto &action) {
+            return action.effect == OocSemanticEffect::TAKE_GOLD;
+        });
+    if (!(goldAndCardHandled && goldAndCard.gold == goldAndCardBefore + 25
+            && goldAndCard.info.rewardsContainer.goldRewardCount == 0
+            && goldAndCard.screenState == ScreenState::REWARDS && cardAdded
+            && remainingSemantic.supported && remainingSemantic.complete && !goldCandidateRemains
+            && goldAndCardMetrics.search.trivialRootBypasses == 1
+            && goldAndCardMetrics.search.simulations == 0))
+        throw std::runtime_error("live native gold plus card root: handled=" + std::to_string(goldAndCardHandled)
+            + " gold=" + std::to_string(goldAndCard.gold)
+            + " before=" + std::to_string(goldAndCardBefore)
+            + " goldLeft=" + std::to_string(goldAndCard.info.rewardsContainer.goldRewardCount)
+            + " screen=" + std::to_string(int(goldAndCard.screenState))
+            + " cardAdded=" + std::to_string(cardAdded)
+            + " bypass=" + std::to_string(goldAndCardMetrics.search.trivialRootBypasses)
+            + " sims=" + std::to_string(goldAndCardMetrics.search.simulations)
+            + " fallback=" + std::to_string(goldAndCardMetrics.fallback));
+    liveOptions = optionsBeforeGoldRoots;
 
     // Wheel has one legal primitive, but its existing fallback calls stepRandom:
     // choosing from a singleton still advances ScumSearchAgent2::rng.
@@ -2974,9 +3064,25 @@ void oocMctsAdapterSelfTest() {
     multipleGold.info.rewardsContainer.gold[0]=12;
     multipleGold.info.rewardsContainer.gold[1]=13;
     OocGameContextModel duplicateRoot(multipleGold,livePath,lethal);
-    require(!duplicateRoot.isLeafBoundary(0), "semantic identity supports distinct gold rewards");
-    for(auto action:duplicateRoot.legalActions(0))
-        require(action.prior==1,"incomplete primitive gold coverage makes whole semantic prior uniform");
+    require(!duplicateRoot.isLeafBoundary(0), "multiple-gold normalization must retain reward continuation");
+    const auto duplicateActions=duplicateRoot.legalActions(0);
+    for (const auto action : duplicateActions) {
+        const auto &candidate=duplicateRoot.candidate(0,action.id);
+        require(!candidate.semantic || candidate.semantic->effect!=OocSemanticEffect::TAKE_GOLD,
+            "multiple-gold normalization left TAKE_GOLD in the candidate set");
+    }
+    auto goldOnlyFixture=multipleGold;
+    goldOnlyFixture.info.rewardsContainer.cardRewardCount=0;
+    goldOnlyFixture.info.rewardsContainer.relicCount=0;
+    goldOnlyFixture.info.rewardsContainer.potionCount=0;
+    OocGameContextModel goldOnlyRoot(goldOnlyFixture,livePath,lethal);
+    const auto goldOnlyActions=goldOnlyRoot.legalActions(0);
+    require(goldOnlyActions.size()==1 && goldOnlyActions.front().prior==1,
+        "gold-only normalization must expose one leave-rewards action");
+    const auto &goldOnlyCandidate=goldOnlyRoot.candidate(0,goldOnlyActions.front().id);
+    require(goldOnlyCandidate.semantic
+            && goldOnlyCandidate.semantic->effect==OocSemanticEffect::LEAVE_REWARDS,
+        "gold-only normalization exposed a non-leave reward action");
     std::cout<<"PASS live OOC MCTS OFF/isolation/execution/real-combat/fallback/determinism\n";
     // Opt-in captured-model microbenchmark. Runs only detached search states;
     // this is not a gameplay cohort or a decision-quality experiment.

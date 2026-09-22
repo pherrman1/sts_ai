@@ -211,6 +211,27 @@ json oocResponse(const one_combat::advisor::Request &request,
                     {"observationHash", request.observationHash},
                     {"evaluators", json::array({evaluator})}};
         }
+        if (const auto forcedGoldAction = advisor::forcedRewardGoldLiveAction(state)) {
+            const auto &liveAction = *forcedGoldAction;
+            evaluator["status"] = "OK";
+            evaluator["mode"] = "native_pass_through";
+            evaluator["selectedSemanticKey"] = "ooc-live:v1:take-gold";
+            evaluator["selectedLabel"] = "collect gold";
+            evaluator["selectedLiveAction"] = liveAction;
+            evaluator["candidateSummaries"] = json::array({json{
+                {"semanticKey", "ooc-live:v1:take-gold"},
+                {"semanticPayload", json{{"type", "take_gold"}}},
+                {"label", "collect gold"}, {"q", 0.0}, {"visits", 1},
+                {"visitShare", 1.0}, {"prior", 1.0},
+                {"liveAction", liveAction}}});
+            evaluator["latencyMicros"] = std::chrono::duration_cast<std::chrono::microseconds>(
+                std::chrono::steady_clock::now() - started).count();
+            return {{"protocol", advisor::kProtocol}, {"protocolVersion", advisor::kProtocolVersion},
+                    {"kind", "analysis"}, {"status", evaluator.at("status")},
+                    {"session", request.session}, {"sequence", request.sequence},
+                    {"observationHash", request.observationHash},
+                    {"evaluators", json::array({evaluator})}};
+        }
         try {
             validateCapturedLiveOocMapping(state);
             policy.setRootPrimitiveBits(advisor::liveOocPrimitiveBits(state));
