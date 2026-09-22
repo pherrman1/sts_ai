@@ -1,0 +1,66 @@
+{
+  "schema": "silver_prior_online_smoke_config_v1",
+  "baseline_main_sha": "3d28adfcf3c989e338eff9ef85e4a5c6d8794497",
+  "experiment_base_sha_before_main_merge": "9fe3cb05b4dfd367f9db1370d245cb8d1a4f978e",
+  "checkpoint": {
+    "architecture": "SilverPriorNetV1",
+    "arm": "T2",
+    "training_seed": 20260922,
+    "tau": 1.179975000005129,
+    "sha256": "b756c3e6576bdb53085f24aeb1102e4e2fe55fd7469c55546c99f068ccf40e24"
+  },
+  "native_artifact": {
+    "path": "/home/philippherrmann/Documents/sts/silver-prior-model-v1/native/T2.native",
+    "sha256": "b3a4c5e4bbe91b7f17dadf588408a95199ec5b8b25f732d99ef0966c0ff05fdb",
+    "bytes": 4792455
+  },
+  "smoke_seeds": [24109998, 24109999],
+  "arm_order": {
+    "24109998": ["CONTROL", "LEARNED"],
+    "24109999": ["LEARNED", "CONTROL"]
+  },
+  "common": {
+    "Ascension": 0,
+    "stop_after_act": 3,
+    "collect_keys": 0,
+    "simulations_per_combat_decision": 1000,
+    "fair_play": 1,
+    "searcher3": 0,
+    "native_ooc": 1,
+    "silver_search": 1,
+    "adaptive": 0,
+    "exact_root_budgets": 1,
+    "reuse_cap": 32768,
+    "reuse_cap_mode": "allocated",
+    "exact_visit_lock": 0,
+    "rho_racing": 0,
+    "threads": 1,
+    "OMP_NUM_THREADS": 1,
+    "vnet_leaf_direct": 0,
+    "OOC_MCTS": 0,
+    "SIM_ADAPT": 0,
+    "CONVERGE": 0,
+    "CONV_ROOT": 0,
+    "telemetry": 1
+  },
+  "control": {
+    "STS_SILVER_ROOT_PRIOR_MODEL": "unset",
+    "root_selection": "ordinary Silver UCT"
+  },
+  "learned": {
+    "STS_SILVER_ROOT_PRIOR_MODEL": "/tmp/T2.native",
+    "root_selection": "PUCT",
+    "c_puct": 2.5,
+    "eligibility": "PLAYER_NORMAL with at least two legal actions"
+  },
+  "latency_gate": {
+    "suggested_stop_threshold_us_per_root": 5000,
+    "user_waived": true,
+    "note": "User instructed to proceed regardless of the proposed 5 ms threshold."
+  },
+  "scientific_screen": {
+    "seeds": [24100000, 24100031],
+    "review_required_before_run": true,
+    "status": "not run"
+  }
+}

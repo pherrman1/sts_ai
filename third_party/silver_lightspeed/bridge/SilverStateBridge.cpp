@@ -2887,6 +2887,56 @@ SilverDecisionResult runSilverDecision(SilverSearchSession &session,
         result.rerootFallback = session.rerootFallback - rerootFallbackBefore;
         result.inheritedVisits = session.inheritedVisits;
         result.rerootMissDiagnostic = session.rerootMissDiagnostic;
+        if (session.searcher != nullptr) session.searcher->replayRootPriors.clear();
+        if (config.rootPuctEnabled) {
+            if (state.inputState != sts::InputState::PLAYER_NORMAL || config.rootPuctC != 2.5
+                    || config.rootPriors.size() < 2
+                    || config.rootPuctActionFingerprints.size() != config.rootPriors.size()) {
+                result.failureReason = "invalid_live_root_puct_contract";
+                return result;
+            }
+            if (session.searcher == nullptr || session.searcher->root == nullptr) {
+                result.failureReason = "root_puct_search_session_unavailable";
+                return result;
+            }
+            auto &searcher = *session.searcher;
+            // A retained reroot can already have a materialized legal edge
+            // surface. Re-enumerating appends a second copy of those edges,
+            // which breaks prior alignment and would change the search.
+            if (searcher.root->edges.empty())
+                searcher.enumerateActionsForNode(*searcher.root, state);
+            const auto &edges = searcher.root->edges;
+            std::vector<std::string> actual;
+            actual.reserve(edges.size());
+            for (const auto &edge : edges) actual.push_back(silverActionFingerprint(state, edge.action));
+            double priorSum = 0.0;
+            for (double prior : config.rootPriors) {
+                if (!std::isfinite(prior) || prior <= 0.0) {
+                    result.failureReason = "invalid_live_root_puct_prior";
+                    return result;
+                }
+                priorSum += prior;
+            }
+            if (actual != config.rootPuctActionFingerprints || actual.size() != config.rootPriors.size()
+                    || std::abs(priorSum - 1.0) > 1e-10) {
+                std::size_t mismatch = 0;
+                while (mismatch < actual.size()
+                        && mismatch < config.rootPuctActionFingerprints.size()
+                        && actual[mismatch] == config.rootPuctActionFingerprints[mismatch]) ++mismatch;
+                result.failureReason = "live_root_puct_surface_mismatch actual="
+                    + std::to_string(actual.size()) + " supplied="
+                    + std::to_string(config.rootPuctActionFingerprints.size());
+                if (mismatch < actual.size() && mismatch < config.rootPuctActionFingerprints.size())
+                    result.failureReason += " index=" + std::to_string(mismatch)
+                        + " actual_action=" + actual[mismatch]
+                        + " supplied_action=" + config.rootPuctActionFingerprints[mismatch];
+                return result;
+            }
+            searcher.replayRootPriors = config.rootPriors;
+        } else if (!config.rootPriors.empty() || !config.rootPuctActionFingerprints.empty()) {
+            result.failureReason = "disabled_root_puct_carries_prior_data";
+            return result;
+        }
         const auto task = state.cardSelectInfo.cardSelectTask;
         if (state.inputState == sts::InputState::CARD_SELECT
                 && (task == sts::CardSelectTask::EXHAUST_MANY || task == sts::CardSelectTask::GAMBLE)) {

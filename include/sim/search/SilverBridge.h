@@ -472,6 +472,12 @@ struct SilverSearchConfig {
     double chanceWideningAlpha = 0.52389;
     double endTurnWideningC = 3.7028;
     double endTurnWideningAlpha = 0.52389;
+    // Default-off learned root-only PUCT treatment. Priors and identities are
+    // aligned to native legal-action order; the bridge verifies that surface.
+    bool rootPuctEnabled = false;
+    double rootPuctC = 2.5;
+    std::vector<double> rootPriors;
+    std::vector<std::string> rootPuctActionFingerprints;
     // Test-only overrides may use a smaller value.  No gameplay environment
     // controls this value; production defaults to 32 * 1024; the live backend permits an experimental override.
     std::int64_t reuseCap = kSilverProductionReuseCap;

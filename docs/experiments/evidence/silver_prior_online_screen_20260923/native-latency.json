@@ -1,0 +1,16 @@
+{
+  "schema": "silver_prior_native_latency_v1",
+  "source": "native-parity.json",
+  "artifact_sha256": "b3a4c5e4bbe91b7f17dadf588408a95199ec5b8b25f732d99ef0966c0ff05fdb",
+  "roots": 64,
+  "warm_repeats_per_root": 32,
+  "mean_legal_actions_per_root": 6.421875,
+  "median_us_per_root": 7843.991,
+  "p95_us_per_root": 11582.133,
+  "mean_us_per_root": 7468.35085742186,
+  "median_us_per_action": 1221.4487201946472,
+  "model_load_us": 415031.092,
+  "artifact_bytes": 4792455,
+  "suggested_stop_threshold_us_per_root": 5000,
+  "threshold_user_waived": true
+}

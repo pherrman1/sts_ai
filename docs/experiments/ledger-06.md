@@ -11190,3 +11190,48 @@ screen. This is not a gameplay result, fresh generalization claim, or default
 promotion. [Evidence packet](evidence/silver_prior_root_replay_20260923/README.md).
 **Knowledge impact:** update the current research status; no stable
 implementation contract or Silver behavior changed.
+
+### User-authorized frozen Silver prior online integration smoke (2026-09-23)
+
+After the negative 64-root mechanism screen above, the user explicitly
+requested a separate full-run gameplay diagnostic using the same frozen
+`SilverPriorNetV1` T2 artifact. This did not alter or reinterpret
+`LEARNED_PRIOR_SEARCH_HEADROOM_NOT_CAPTURED`. The branch first merged main
+`3d28adfcf3c989e338eff9ef85e4a5c6d8794497` into experiment head
+`9fe3cb05b4dfd367f9db1370d245cb8d1a4f978e`; no history was rewritten.
+
+Native inference matched all 64 frozen VALIDATION roots: 411 actions,
+maximum prior error `8.799900734768329e-07`, maximum logit error
+`2.86102294921875e-06`, under the required `1e-5` prior and `1e-4` logit
+tolerances. Coverage included card occurrence cost/special data, potion
+target/discard, multi-monster targeting, unknown-pile permutation invariance,
+observed-pile order sensitivity, absent monsters, and END_TURN. Warm latency
+over 32 repeats/root was median `7,843.991 us`, p95 `11,582.133 us`, mean
+`7,468.351 us`; the model loaded in `415,031 us`, and the artifact was
+4,792,455 bytes. The user waived the proposed 5 ms/root stop threshold, so the
+bounded smoke continued at this measured cost.
+
+Paired smoke seeds `24109998` and `24109999` completed in both control and
+learned arms (each run Ascension 0, Act 3 stop, 1,000 simulations/decision,
+project-fair, native OOC, one thread, 32,768 allocated reuse cap, adaptive,
+visit-lock, and rho racing off). CONTROL made zero prior calls. LEARNED made
+25 evaluations / 25 PUCT roots on seed 24109998 and 17 / 17 on seed 24109999;
+both had zero surface failures and correct exact simulation budgets. All four
+runs recorded retained-root reuse and zero conversion, semantic-resolution,
+transaction, and knowledge failures. The first treatment attempt exposed a
+retained-root edge-surface duplication; live inference now validates existing
+retained edges without appending a duplicate surface. Smoke outcomes were
+seed 24109998: both lost; seed 24109999: both won. They are integration checks,
+not a gameplay-quality comparison.
+
+Focused checks passed: `silver_search_optimization`,
+`silver_repeated_reroot_canary`, `silver_prior_native_export`, and the two
+exporter identity-failure unit tests. All 64-root parity was rerun against the
+durable native artifact. The separate 32-seed screen (`24100000..24100031`) is
+not run and remains behind independent implementation review. No tuning,
+LOCKED_TEST access, or offline evidence rewrite occurred. See the [separate
+online evidence packet](evidence/silver_prior_online_screen_20260923/README.md).
+
+**Knowledge impact:** record the default-off runtime contract in
+`environment-variables.md`, route it in `CODE_MAP.md` and `combat-search.md`,
+and keep the negative mechanism result distinct in current research.

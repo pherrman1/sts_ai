@@ -1561,12 +1561,24 @@ L-target oracle beat uniform PUCT (`-0.26776`, 95% source-seed CI
 crossed zero (`+0.05916`, `[-0.28676,0.37000]`). Its predeclared
 classification is **`LEARNED_PRIOR_SEARCH_HEADROOM_NOT_CAPTURED`**: root PUCT
 has usable headroom on this development population, but the learned prior did
-not capture it. Stop the deployment line; do not export or port this network
-from this evidence. VALIDATION was used for model selection, so this is a
-mechanism screen rather than fresh generalization evidence. No gameplay or
-default search changed. See the [root-replay packet](../../experiments/evidence/silver_prior_root_replay_20260923/README.md),
+not capture it. Stop the deployment line based on this mechanism screen. A
+separately requested downstream whole-run gameplay diagnostic was subsequently
+allowed; that authorization does not revise this screen or establish
+deployment. VALIDATION was used for model selection, so this is a mechanism
+screen rather than fresh generalization evidence. No gameplay or default
+search changed by the offline experiment. See the [root-replay packet](../../experiments/evidence/silver_prior_root_replay_20260923/README.md),
 the [ledger-06 result](../../experiments/ledger-06.md), and the
 [locked-test evidence packet](../../experiments/evidence/silver_prior_locked_test_v1_20260922/README.md).
+
+The separate pre-review gameplay integration smoke used two explicitly
+reserved, non-scientific seeds. All four runs completed; treatment telemetry
+recorded 42 prior evaluations and 42 root-PUCT decisions total with zero
+surface failures, while control made no model calls. Native inference latency
+was above 5 ms/root; the user explicitly waived that proposed stop threshold.
+This confirms bounded runtime execution and retained reroot operation only.
+The planned 32-seed screen remains gated on independent implementation review
+and is not qualification or default-promotion evidence. See the [online smoke
+packet](../../experiments/evidence/silver_prior_online_screen_20260923/README.md).
 
 ### Combat leaf/model variants
 

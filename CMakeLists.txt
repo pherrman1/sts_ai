@@ -8,6 +8,7 @@ project(
 enable_testing()
 
 file (GLOB_RECURSE sts_lightspeed_SOURCES CONFIGURE_DEPENDS "src/*.cpp")
+list(REMOVE_ITEM sts_lightspeed_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/src/sim/search/SilverPriorNet.cpp")
 
 set(CMAKE_CXX_STANDARD 17)
 add_compile_options(
@@ -100,16 +101,27 @@ target_link_libraries(silver_combat_search_bridge PRIVATE silver_combat_model)
 # Normal-namespace live boundary. It is linked only by one_combat, while the
 # core agent reaches it through a default-null callback; this keeps ordinary
 # core/unit-test targets free of the full isolated Silver model.
+add_library(silver_prior_runtime STATIC src/sim/search/SilverPriorNet.cpp)
+set_target_properties(silver_prior_runtime PROPERTIES CXX_STANDARD 20 CXX_STANDARD_REQUIRED ON)
+target_include_directories(silver_prior_runtime PRIVATE include json/include)
+target_link_libraries(silver_prior_runtime PUBLIC silver_combat_search_bridge)
+
 add_library(silver_live_backend STATIC third_party/silver_lightspeed/bridge/SilverLiveBackend.cpp)
 set_target_properties(silver_live_backend PROPERTIES CXX_STANDARD 20 CXX_STANDARD_REQUIRED ON)
 target_include_directories(silver_live_backend PRIVATE include json/include)
-target_link_libraries(silver_live_backend PUBLIC silver_combat_search_bridge)
+target_link_libraries(silver_live_backend PUBLIC silver_combat_search_bridge silver_prior_runtime)
 
 add_executable(silver-native-test apps/silver_native_test.cpp)
 set_target_properties(silver-native-test PROPERTIES OUTPUT_NAME silver_native_test)
 target_include_directories(silver-native-test PRIVATE include)
 target_link_libraries(silver-native-test PRIVATE silver_combat_search_bridge)
 target_link_options(silver-native-test PRIVATE -Wl,--gc-sections)
+
+add_executable(silver-prior-native-parity apps/silver_prior_native_parity.cpp)
+set_target_properties(silver-prior-native-parity PROPERTIES OUTPUT_NAME silver_prior_native_parity)
+target_include_directories(silver-prior-native-parity PRIVATE include json/include)
+target_link_libraries(silver-prior-native-parity PRIVATE silver_prior_runtime silver_combat_search_bridge)
+target_link_options(silver-prior-native-parity PRIVATE -Wl,--gc-sections)
 
 add_executable(silver-terminal-value-test apps/silver_terminal_value_test.cpp)
 set_target_properties(silver-terminal-value-test PROPERTIES
@@ -632,6 +644,10 @@ set_tests_properties(silver_prior_resume PROPERTIES LABELS "tooling;smoke")
 add_test(NAME silver_prior_training COMMAND python3 -m unittest
     tests.test_train_silver_prior -v)
 set_tests_properties(silver_prior_training PROPERTIES
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "tooling;smoke")
+add_test(NAME silver_prior_native_export COMMAND python3 -m unittest
+    tests.test_export_silver_prior_native -v)
+set_tests_properties(silver_prior_native_export PROPERTIES
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "tooling;smoke")
 add_test(NAME silver_prior_root_screen COMMAND python3 -m unittest
     tests.test_silver_prior_root_screen -v)

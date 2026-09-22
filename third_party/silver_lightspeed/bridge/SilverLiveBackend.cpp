@@ -32,6 +32,7 @@
 #include "sim/search/SilverSemanticAction.h"
 #include "sim/search/SilverWireJson.h"
 #include "sim/search/SilverRootMechanism.h"
+#include "sim/search/SilverPriorNet.h"
 #include "sim/search/SilverHardCombat.h"
 #include <filesystem>
 
@@ -69,6 +70,7 @@ struct SilverLiveOptions {
     int leafVNetBlendMinDepth = 0;
     std::string leafCorpusFile;
     std::string executableGitSha;
+    std::string priorModelPath;
     int leafCorpusGroupModulus = 1;
     int leafCorpusMaxLeavesPerGroup = 256;
     bool adaptiveEnabled = true;
@@ -83,6 +85,7 @@ struct SilverLiveOptions {
 
 SilverLiveOptions g_silverLiveOptions;
 CombatValueNet g_silverLeafVNet;
+std::unique_ptr<SilverPriorNetV1> g_silverPriorModel;
 std::string g_silverLeafVNetLoadedPath;
 std::mutex g_scalingDiagnosticMutex;
 bool g_scalingDiagnosticHeaderWritten = false;
@@ -240,6 +243,15 @@ void parseSilverLiveOptions() {
     if (const char *raw = std::getenv("STS_SILVER_LEAF_CORPUS_MAX_PER_GROUP"))
         options.leafCorpusMaxLeavesPerGroup = std::atoi(raw);
     if (const char *raw = std::getenv("STS_EXECUTABLE_GIT_SHA")) options.executableGitSha = raw;
+    if (const char *raw = std::getenv("STS_SILVER_ROOT_PRIOR_MODEL")) options.priorModelPath = raw;
+    if (!options.priorModelPath.empty()) {
+        const std::filesystem::path modelPath(options.priorModelPath);
+        if (!modelPath.is_absolute() || !std::filesystem::is_regular_file(modelPath))
+            throw std::invalid_argument("STS_SILVER_ROOT_PRIOR_MODEL must be an absolute regular file");
+        g_silverPriorModel = std::make_unique<SilverPriorNetV1>(options.priorModelPath);
+    } else {
+        g_silverPriorModel.reset();
+    }
     if (!options.rootMechanismCapture.empty() || !options.hardCombatCapture.empty()) {
         if (!silver_bridge::rootMechanismShaValid(options.executableGitSha))
             throw std::invalid_argument("Silver capture requires full STS_EXECUTABLE_GIT_SHA");
@@ -1349,6 +1361,7 @@ void runSilverCombat(ScumSearchAgent2 &agent, GameContext &gc, BattleContext &bc
     CombatKnowledgeState knowledge;
     // Clear per-combat diagnostics before the observer sees initialization.
     g_silverLiveDiagnostics = {};
+    g_silverLiveDiagnostics.priorModelLoaded = static_cast<bool>(g_silverPriorModel);
     // Monster initialization rolls before BattleContext initializes Player
     // relics. Capture Runic Dome visibility from GameContext up front rather
     // than asking Monster::rollMove to inspect an uninitialized Player.
@@ -1519,6 +1532,39 @@ void runSilverCombat(ScumSearchAgent2 &agent, GameContext &gc, BattleContext &bc
         }
 
         auto config = configFor(agent, bc, collectDecisionDiagnostics);
+        if (g_silverPriorModel) {
+            if (wire.inputState != static_cast<int>(InputState::PLAYER_NORMAL)) {
+                ++g_silverLiveDiagnostics.priorSkippedNonPlayerNormal;
+            } else {
+                try {
+                    const auto legal = silver_bridge::enumerateSilverLegalActions(wire);
+                    if (legal.size() < 2) {
+                        ++g_silverLiveDiagnostics.priorSkippedForced;
+                    } else {
+                        ++g_silverLiveDiagnostics.priorEligibleDecisions;
+                        const auto inferenceStart = std::chrono::steady_clock::now();
+                        auto p = g_silverPriorModel->prior(wire, legal);
+                        const auto inferenceEnd = std::chrono::steady_clock::now();
+                        const auto elapsed = std::chrono::duration<double, std::micro>(
+                            inferenceEnd - inferenceStart).count();
+                        ++g_silverLiveDiagnostics.priorEvaluations;
+                        g_silverLiveDiagnostics.priorInferenceMicros +=
+                            static_cast<std::uint64_t>(std::llround(elapsed));
+                        g_silverLiveDiagnostics.priorInferenceLatencyMicros.push_back(elapsed);
+                        config.rootPuctEnabled = true;
+                        config.rootPuctC = SilverPriorNetV1::kPuctC;
+                        config.rootPriors = std::move(p);
+                        config.rootPuctActionFingerprints.reserve(legal.size());
+                        for (const auto &action : legal)
+                            config.rootPuctActionFingerprints.push_back(
+                                silver_bridge::semanticActionFingerprint(action));
+                    }
+                } catch (const std::exception &e) {
+                    ++g_silverLiveDiagnostics.priorSurfaceFailures;
+                    fail("root prior inference/surface", e.what());
+                }
+            }
+        }
         if (!hardCombatCaptured && !g_silverLiveOptions.hardCombatCapture.empty()) {
             const std::string roomType = gc.curRoom == Room::MONSTER ? "hallway"
                 : gc.curRoom == Room::ELITE ? "elite"
@@ -1643,8 +1689,10 @@ void runSilverCombat(ScumSearchAgent2 &agent, GameContext &gc, BattleContext &bc
                 : silver_bridge::runSilverDecision(*silverSession, wire, config);
             if (!result.accepted) {
                 ++g_silverLiveDiagnostics.conversionFailures;
-                fail("search", "Silver returned no semantic decision");
+                fail("search", "Silver returned no semantic decision: "
+                    + (result.failureReason.empty() ? std::string("unspecified") : result.failureReason));
             }
+            if (config.rootPuctEnabled) ++g_silverLiveDiagnostics.rootPuctDecisions;
             semantic = result.action;
             g_silverLiveDiagnostics.simulations += result.simulations;
             g_silverLiveDiagnostics.rerootExact += result.rerootExact;
@@ -1769,6 +1817,17 @@ void runSilverCombat(ScumSearchAgent2 &agent, GameContext &gc, BattleContext &bc
         std::ostringstream line;
         line << "[silver-combat] decisions=" << d.decisions
                   << " simulations=" << d.simulations
+                  << " prior_model_loaded=" << (d.priorModelLoaded ? 1 : 0)
+                  << " prior_eligible_decisions=" << d.priorEligibleDecisions
+                  << " prior_evaluations=" << d.priorEvaluations
+                  << " prior_skipped_forced=" << d.priorSkippedForced
+                  << " prior_skipped_non_player_normal=" << d.priorSkippedNonPlayerNormal
+                  << " prior_surface_failures=" << d.priorSurfaceFailures
+                  << " prior_inference_micros=" << d.priorInferenceMicros
+                  << " root_puct_decisions=" << d.rootPuctDecisions
+                  << " prior_inference_mean_micros=" << (d.priorInferenceLatencyMicros.empty() ? 0.0 : static_cast<double>(d.priorInferenceMicros)/d.priorInferenceLatencyMicros.size())
+                  << " prior_inference_p50_micros=" << rolloutPercentile(d.priorInferenceLatencyMicros,0.50)
+                  << " prior_inference_p95_micros=" << rolloutPercentile(d.priorInferenceLatencyMicros,0.95)
                   << " transaction_subdecisions=" << d.transactionSubdecisions
                   << " transaction_decisions=" << d.transactionDecisions
                   << " adaptive_escalations=" << d.adaptiveEscalations
