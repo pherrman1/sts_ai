@@ -162,6 +162,26 @@ int main(int argc,char **argv){try{
         check(advisor::importLiveOocStateV1(afterSecond, noGold).ok, "gold-removed fixture import");
         check(!advisor::forcedRewardGoldLiveAction(noGold).has_value(),
             "live gold pass-through persisted after all gold choices were removed");
+        for (auto relic : {RelicId::BOTTLED_FLAME, RelicId::BOTTLED_LIGHTNING,
+                           RelicId::BOTTLED_TORNADO}) {
+            auto bottle = base;
+            bottle.screenState = ScreenState::REWARDS;
+            bottle.info.rewardsContainer.clear();
+            bottle.info.rewardsContainer.addRelic(relic);
+            advisor::LiveOocStateV1 liveBottle;
+            check(advisor::importLiveOocStateV1(project(bottle, path, "bottle_take_or_skip"), liveBottle).ok,
+                "Bottled relic fixture import");
+            check(!advisor::forcedRewardGoldLiveAction(liveBottle),
+                "Bottled relic triggered forced reward pass-through");
+            bool canTakeBottle = false, canSkipBottle = false;
+            for (const auto &choice : liveBottle.ooc.at("liveChoices")) {
+                const auto kind = choice.at("nativeAction").value("kind", std::string());
+                canTakeBottle |= kind == "relic";
+                canSkipBottle |= kind == "skip";
+            }
+            check(canTakeBottle && canSkipBottle,
+                "Bottled relic live choice must retain take and skip");
+        }
     }
     std::vector<std::pair<std::string,GameContext>> fixtures;
     auto add=[&](std::string n,GameContext g){fixtures.emplace_back(n,g);};
