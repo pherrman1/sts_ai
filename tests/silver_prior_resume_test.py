@@ -83,6 +83,22 @@ class ResumeTest(unittest.TestCase):
         with patch.object(collect.socket, "gethostname", return_value="local"):
             with self.assertRaises(ValueError):
                 collect.require_execution_host(False)
+            collect.require_execution_host(False, local_512=True)
+
+    def test_local_mode_and_worker_bound_are_frozen(self):
+        with tempfile.TemporaryDirectory() as temp:
+            corpus = Path(temp)
+            binding = {"execution_mode": "local_512", "max_parallel_workers": 4}
+            with patch.object(collect, "check_binding", return_value=(binding, {}, {})), \
+                 patch.object(collect, "source_seeds", return_value=[]):
+                collect.capture(corpus, False, local_512=True, workers=4)
+                with self.assertRaisesRegex(ValueError, "locality differs"):
+                    collect.capture(corpus, False, local_512=False)
+                with self.assertRaisesRegex(ValueError, "worker count"):
+                    collect.capture(corpus, False, local_512=True, workers=5)
+                binding["max_parallel_workers"] = 2
+                with self.assertRaisesRegex(ValueError, "resource bound"):
+                    collect.capture(corpus, False, local_512=True, workers=4)
 
 
 class FinalizationTest(unittest.TestCase):

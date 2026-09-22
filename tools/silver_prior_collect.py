@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Reviewed-SHA collection driver. Run full phases only on designated GCP.
+"""Reviewed-SHA collection driver for the frozen Silver prior corpus.
 
 Durable layout: binding.json, sources/<seed>.json.gz, selection.json,
 jobs/<role>/<root hash>.json, raw/<role>/<root hash>.json.gz,
@@ -8,6 +8,7 @@ shards/L/<root hash>.json.gz, failures/, release.json, report.json.
 from __future__ import annotations
 
 import argparse
+from concurrent.futures import ThreadPoolExecutor
 from contextlib import contextmanager
 import os
 from pathlib import Path
@@ -32,8 +33,9 @@ def durable(path):
     return path
 
 
-def bind(plan, vocab, review, source_binary, label_binary, corpus):
+def bind(plan, vocab, review, source_binary, label_binary, corpus, local_512=False, workers=1):
     d.validate_plan(plan)
+    require(1 <= workers <= (4 if local_512 else 1), "unsupported collection worker count")
     require(plan["vocabulary_sha256"] == vocab["sha256"], "plan vocabulary")
     from ironclad_reachable_domain_census import build_census
     require(d.vocabulary(build_census()) == vocab, "execution-source census changed")
@@ -51,6 +53,8 @@ def bind(plan, vocab, review, source_binary, label_binary, corpus):
                       "models": {p: d.file_hash(d.ROOT / p) for p in
                                  ("models/v_rich_trees.txt", "models/v_win_trees.txt")},
                       "source_environment": {**d.ENV, "OMP_NUM_THREADS": "1"}, "silver_upstream_sha": d.SILVER,
+                      "execution_mode": "local_512" if local_512 else "designated_gcp",
+                      "max_parallel_workers": workers,
                       "source_worktree": str(d.ROOT)})
     d.publish(corpus / "binding.json", binding)
     d.publish(corpus / "plan.json", plan)
@@ -89,8 +93,8 @@ def guard_command(command, env):
                           cwd=d.ROOT, env=env, capture_output=True, text=True)
 
 
-def require_execution_host(pilot):
-    if not pilot:
+def require_execution_host(pilot, local_512=False):
+    if not pilot and not local_512:
         require(socket.gethostname() == "sts-test"
                 and os.environ.get("STS_GCP_RESEARCH_CONTEXT") == "sts-test"
                 and Path.cwd() == Path("/home/philippherrmann/sts_sweep"),
@@ -110,10 +114,14 @@ def attempt(corpus, prefix):
     yield Path(tempfile.mkdtemp(prefix=prefix, dir=directory))
 
 
-def capture(corpus, pilot):
-    require_execution_host(pilot)
+def capture(corpus, pilot, local_512=False, workers=1):
     binding, plan, _ = check_binding(corpus)
-    for seed in source_seeds(plan, pilot):
+    require(local_512 == (binding.get("execution_mode") == "local_512"),
+            "collection locality differs from frozen binding")
+    require(1 <= workers <= (4 if local_512 else 1), "unsupported collection worker count")
+    require(workers <= binding.get("max_parallel_workers", 1), "worker count exceeds frozen resource bound")
+    require_execution_host(pilot, local_512)
+    def capture_one(seed):
         target = corpus / "sources" / f"{seed}.json.gz"
         failure = corpus / "failures" / f"source-{seed}.json"
         if target.exists():
@@ -121,7 +129,7 @@ def capture(corpus, pilot):
             d.check_seal(saved)
             require(saved["binding_sha256"] == binding["sha256"] and saved["seed"] == seed,
                     "resumed capture binding")
-            continue
+            return
         require(not failure.exists(), f"preserved source failure needs review: {failure}")
         with attempt(corpus, f"capture-{seed}-") as temp:
             tmp = Path(temp)
@@ -160,6 +168,10 @@ def capture(corpus, pilot):
                 d.publish(failure, d.seal(saved))
                 raise ValueError(f"source failed; retained {failure}") from error
             d.publish(target, d.seal(saved))
+    with ThreadPoolExecutor(max_workers=workers) as executor:
+        for completed, _ in enumerate(executor.map(capture_one, source_seeds(plan, pilot)), start=1):
+            if completed % 16 == 0 or completed == len(source_seeds(plan, pilot)):
+                print(f"source_capture_completed={completed}/{len(source_seeds(plan, pilot))}", flush=True)
 
 
 def completed_sources(corpus, binding, plan, pilot):
@@ -194,13 +206,17 @@ def select(corpus, pilot):
     return selection
 
 
-def label(corpus, pilot):
-    require_execution_host(pilot)
+def label(corpus, pilot, local_512=False, workers=1):
     binding, plan, vocab = check_binding(corpus)
+    require(local_512 == (binding.get("execution_mode") == "local_512"),
+            "collection locality differs from frozen binding")
+    require(1 <= workers <= (4 if local_512 else 1), "unsupported collection worker count")
+    require(workers <= binding.get("max_parallel_workers", 1), "worker count exceeds frozen resource bound")
+    require_execution_host(pilot, local_512)
     selection = d.read(corpus / ("pilot-selection.json" if pilot else "selection.json"))
     d.check_seal(selection)
     require_selection_binding(selection, binding, plan, pilot)
-    for entry in selection["entries"]:
+    def label_one(entry):
         key = d.identity_hash(entry["root"])
         for role in (["L", "J"] if entry["judge_selected"] else ["L"]):
             job = d.job_for(entry, plan, binding["executable_git_sha"], role)
@@ -241,6 +257,10 @@ def label(corpus, pilot):
                     d.publish(failure, {"job": job, "stage": "projection", "failure": str(error),
                                         "raw_sha256": d.file_hash(raw_path)})
                     raise
+    with ThreadPoolExecutor(max_workers=workers) as executor:
+        for completed, _ in enumerate(executor.map(label_one, selection["entries"]), start=1):
+            if completed % 32 == 0 or completed == len(selection["entries"]):
+                print(f"root_label_completed={completed}/{len(selection['entries'])}", flush=True)
 
 
 def require_selection_binding(selection, binding, plan, pilot):
@@ -367,6 +387,10 @@ def main():
     parser.add_argument("phase", choices=("bind", "capture", "select", "label", "finalize"))
     parser.add_argument("corpus", type=durable)
     parser.add_argument("--pilot", action="store_true")
+    parser.add_argument("--local-512", action="store_true",
+                        help="explicitly authorized frozen 512-source local collection; native commands still use seed_guard.sh")
+    parser.add_argument("--workers", type=int, default=1,
+                        help="independent native processes (1 by default, at most 4 with --local-512)")
     parser.add_argument("--quarantine-overlap", action="store_true",
                         help="finalize only: explicitly exclude all aliases from a prior overlap attempt report")
     parser.add_argument("--plan")
@@ -375,16 +399,25 @@ def main():
     parser.add_argument("--source-binary")
     parser.add_argument("--label-binary")
     args = parser.parse_args()
+    require(args.workers == 1 or args.local_512, "multiple workers require --local-512")
+    require(1 <= args.workers <= (4 if args.local_512 else 1), "unsupported collection worker count")
     require(not args.quarantine_overlap or args.phase == "finalize", "quarantine is a finalization option")
     if args.phase == "bind":
         require(all((args.plan, args.vocabulary, args.review, args.source_binary, args.label_binary)),
                 "bind requires plan, vocabulary, review and both binaries")
+    if args.local_512:
+        plan_path = args.plan if args.phase == "bind" else args.corpus / "plan.json"
+        require(len(d.read(plan_path)["sources"]) == 512,
+                "local authorization applies only to the frozen 512-source plan")
+    if args.phase == "bind":
         bind(d.read(args.plan), d.read(args.vocabulary), d.read(args.review),
-             args.source_binary, args.label_binary, args.corpus)
+             args.source_binary, args.label_binary, args.corpus, args.local_512, args.workers)
     elif args.phase == "finalize":
         finalize(args.corpus, args.pilot, args.quarantine_overlap)
+    elif args.phase in ("capture", "label"):
+        {"capture": capture, "label": label}[args.phase](args.corpus, args.pilot, args.local_512, args.workers)
     else:
-        {"capture": capture, "select": select, "label": label, "finalize": finalize}[args.phase](args.corpus, args.pilot)
+        select(args.corpus, args.pilot)
 
 
 if __name__ == "__main__":

@@ -176,10 +176,33 @@ python3 tools/agent/gcp_benchmark.py run --foreground -- \
   python3 REVIEWED_CHECKOUT/tools/silver_prior_collect.py capture DURABLE_CORPUS
 ```
 
+For the explicitly authorized **512-source local collection** of this frozen
+plan, bind with `--local-512 --workers 4`, then pass `--local-512` to each
+`capture` and `label` phase. `--workers` may be 1–4 and cannot exceed the value
+frozen at bind. Every native one-source or one-root command still runs through
+`tools/seed_guard.sh`; this scoped authorization changes the aggregate local
+source allowance, not the native per-command guard, source configuration,
+teacher budgets, seed identities, or split boundaries. The local execution
+mode and worker bound are recorded in the binding. `select` and `finalize`
+remain read-only validation phases and do not need the locality option.
+
+```bash
+python3 tools/silver_prior_collect.py bind /durable/silver-prior-v1 \
+  --local-512 --workers 4 --plan docs/experiments/evidence/silver_prior_dataset_v1/plan.json \
+  --vocabulary docs/experiments/evidence/silver_prior_dataset_v1/vocabulary.json \
+  --review /durable/review.json \
+  --source-binary build/linux-gcc-release-ccache/one_combat \
+  --label-binary build/linux-gcc-release-ccache/silver_prior_label
+python3 tools/silver_prior_collect.py capture /durable/silver-prior-v1 --pilot --local-512 --workers 4
+python3 tools/silver_prior_collect.py select /durable/silver-prior-v1 --pilot
+python3 tools/silver_prior_collect.py label /durable/silver-prior-v1 --pilot --local-512 --workers 4
+python3 tools/silver_prior_collect.py finalize /durable/silver-prior-v1 --pilot
+```
+
 The launcher starts in `/home/philippherrmann/sts_sweep`; the driver invokes
 the native programs with the reviewed checkout as their working directory.
-Do not run the full collection as local batches or create substitute cloud
-infrastructure. Follow the exact-SHA remote deployment procedure in
+Without this task-specific local authorization, full collection remains on the
+designated remote path. Follow the exact-SHA remote deployment procedure in
 [build and debugging](build-and-debugging.md).
 
 Storage must be outside `/tmp` and disposable source worktrees. Capture/source

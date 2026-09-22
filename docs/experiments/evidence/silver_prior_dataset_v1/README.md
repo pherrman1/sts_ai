@@ -13,6 +13,11 @@ pilot teacher labeling, or full-corpus teacher labeling was launched. The
 checked-in representative shard is explicitly a fixture and is rejected by
 the training loader.
 
+Later execution note: the user explicitly authorized running this frozen
+512-source plan locally while GCP is unavailable. The collection driver now
+requires an explicit `--local-512` execution mode, recorded in its binding;
+this initial status and zero counts remain the pre-collection snapshot.
+
 ## Frozen plan and evidence
 
 - Inspected handoff baseline: `289e1ab96d4a022d894756b9108bb081e34be8a3`.
