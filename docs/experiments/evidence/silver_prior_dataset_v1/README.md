@@ -18,6 +18,9 @@ the training loader.
 - Inspected handoff baseline: `289e1ab96d4a022d894756b9108bb081e34be8a3`.
 - Implementation baseline/current main at preflight:
   `8613f9c7811ce19a81cb731e78b6b58d01ec91ca`.
+- Review-correction base: current main `ac9db6c2`, merged into the task branch
+  without conflicts. The original `dbeb3fcc` review freeze is superseded;
+  the updated candidate SHA is recorded in PR #284 for review before the pilot.
 - [plan.json](plan.json): exact 512 source seeds, 384 TRAIN / 64 VALIDATION /
   64 LOCKED_TEST, fixed 16-source TRAIN pilot, source config, teacher identity,
   selection rules, and hashed freshness inventory. Its seeds are
@@ -50,6 +53,8 @@ cmake --build --preset linux-gcc-debug-ccache-build \
   --target silver-prior-label silver-bridge-test silver-forced-action-audit -j 4
 ctest --test-dir build/linux-gcc-debug-ccache --output-on-failure \
   -R 'silver_prior_dataset_fixture|silver_prior_resume|silver_forced_action_fixture'
+ctest --test-dir build/linux-gcc-debug-ccache --output-on-failure \
+  -L 'core|smoke' -R 'silver_prior_dataset_fixture|silver_prior_resume'
 python3 -m unittest tools.test_ironclad_reachable_domain_census
 python3 tools/silver_prior_dataset.py validate-plan \
   docs/experiments/evidence/silver_prior_dataset_v1/plan.json
@@ -68,15 +73,23 @@ invariance, observed order, Runic Dome masking, excluded-card failure, complete
 surface/replicate rejection, deterministic replay, terminal zero-budget
 actions, original-root correction, wrong schema/SHA, disjoint L/J identities,
 source/act/combat caps, and capture-enabled/disabled gameplay/RNG neutrality.
-Resume tests simulate interruptions without running seeds and check durable
+The 12 resume/finalization tests execute no gameplay. They cover durable
 malformed-output preservation, idempotent publication, conflicting writes,
-and the full-run local prohibition. The existing forced-action fixture remains
+the full-run local prohibition, pilot/full selection binding, actual completed
+source counts, zero-root completed sources, partial-selection rejection, and
+explicit overlap quarantine followed by release/loader validation. Overlap
+attempts remain available and original captures/labels/shards remain unchanged.
+Both dataset tests are included in the existing CI smoke label selection.
+The existing forced-action fixture remains
 unchanged. Source census tests pass 9/9.
 
 Independent implementation review found and repaired timing/raw publication
 ordering, incomplete finalization, failure-evidence retention, an internal
 loop counter in model inputs, and an undecoded monster-slot bitfield. Final
 SHA-bound review and raw verification outcomes are recorded in the draft PR.
+The later requested corrections specifically close false full-corpus
+completion, immutable overlap-finalization dead ends, and missing CI labels;
+they do not change the accepted representation or teacher design.
 
 ## Accounting and remaining work
 

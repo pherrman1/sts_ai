@@ -162,17 +162,33 @@ def capture(corpus, pilot):
             d.publish(target, d.seal(saved))
 
 
-def select(corpus, pilot):
-    binding, plan, _ = check_binding(corpus)
-    captures = []
+def completed_sources(corpus, binding, plan, pilot):
+    """Count verified completion records, including successful zero-root sources."""
+    records, missing = [], []
     for seed in source_seeds(plan, pilot):
         path = corpus / "sources" / f"{seed}.json.gz"
-        require(path.exists(), f"missing source completion record {seed}")
+        if not path.exists():
+            missing.append(seed)
+            continue
         saved = d.read(path)
         d.check_seal(saved)
-        require(saved["binding_sha256"] == binding["sha256"] and saved["seed"] == seed,
+        require(saved["schema"] == "silver_prior_source_v1"
+                and saved["binding_sha256"] == binding["sha256"] and saved["seed"] == seed,
                 "source completion binding")
-        captures.extend(saved["capture"])
+        require(saved["returncode"] == 0 and "validation_failure" not in saved
+                and saved.get("canary", "").startswith("benchmark_canary PASS "),
+                "source completion did not pass validation")
+        require(isinstance(saved["capture"], list)
+                and all(r["source_seed"] == seed for r in saved["capture"]), "source identity mismatch")
+        records.append(saved)
+    return records, missing
+
+
+def select(corpus, pilot):
+    binding, plan, _ = check_binding(corpus)
+    records, missing = completed_sources(corpus, binding, plan, pilot)
+    require(not missing, f"missing source completion records: {missing}")
+    captures = [r for record in records for r in record["capture"]]
     selection = d.select(plan, captures, binding["executable_git_sha"], pilot)
     d.publish(corpus / ("pilot-selection.json" if pilot else "selection.json"), selection)
     return selection
@@ -183,8 +199,7 @@ def label(corpus, pilot):
     binding, plan, vocab = check_binding(corpus)
     selection = d.read(corpus / ("pilot-selection.json" if pilot else "selection.json"))
     d.check_seal(selection)
-    require(selection["plan_sha256"] == plan["sha256"]
-            and selection["executable_git_sha"] == binding["executable_git_sha"], "selection binding")
+    require_selection_binding(selection, binding, plan, pilot)
     for entry in selection["entries"]:
         key = d.identity_hash(entry["root"])
         for role in (["L", "J"] if entry["judge_selected"] else ["L"]):
@@ -228,11 +243,38 @@ def label(corpus, pilot):
                     raise
 
 
-def finalize(corpus, pilot):
+def require_selection_binding(selection, binding, plan, pilot):
+    d.check_seal(selection)
+    require(selection["schema"] == "silver_prior_selection_v1"
+            and selection["plan_sha256"] == plan["sha256"]
+            and selection["executable_git_sha"] == binding["executable_git_sha"]
+            and selection["pilot"] is pilot, "selection plan/SHA/phase binding")
+
+
+def finalize(corpus, pilot, quarantine_overlap=False):
     binding, plan, vocab = check_binding(corpus)
     selection = d.read(corpus / ("pilot-selection.json" if pilot else "selection.json"))
-    d.check_seal(selection)
+    require_selection_binding(selection, binding, plan, pilot)
+    records, missing_sources = completed_sources(corpus, binding, plan, pilot)
+    prefix = "pilot-" if pilot else ""
+    source_accounting = {"pilot": pilot, "source_seeds_completed": len(records),
+                         "source_seeds_intended": len(source_seeds(plan, pilot)),
+                         "source_seeds_missing": missing_sources,
+                         "completed_zero_root_sources": [r["seed"] for r in records if not r["capture"]]}
+    if missing_sources:
+        report = {"schema": "silver_prior_integrity_report_v1", **source_accounting,
+                  "binding_sha256": binding["sha256"], "selection_sha256": selection["sha256"],
+                  "training_ready": False, "failure": "incomplete source capture population"}
+        d.publish(corpus / "reports" / f"{prefix}incomplete-{digest(report)}.json", report)
+        print(canonical(report))
+        return report
+    captures = [r for record in records for r in record["capture"]]
+    expected = d.select(plan, captures, binding["executable_git_sha"], pilot)
+    require(selection == expected, "selection does not match completed source population")
     shards, files, l_seconds, actual_sims, j_roots, failures = [], [], 0.0, 0, 0, []
+    files.extend({"path": f'sources/{r["seed"]}.json.gz',
+                  "sha256": d.file_hash(corpus / "sources" / f'{r["seed"]}.json.gz')}
+                 for r in records)
     j_actions = j_replicates = j_simulations = 0
     for entry in selection["entries"]:
         key = d.identity_hash(entry["root"])
@@ -260,9 +302,9 @@ def finalize(corpus, pilot):
             l_seconds += timing["seconds"]
             actual_sims += sum(r["simulations"] for a in raw["actions"] for r in a["replicates"])
     report = d.audit(shards, selection["entries"])
-    report.update(pilot=pilot, failures=failures, judge_roots=j_roots,
-                  source_seeds_completed=len(source_seeds(plan, pilot)),
-                  source_seeds_intended=512, selected_sources_with_roots=report["source_seeds"],
+    report.update(**source_accounting, failures=failures, judge_roots=j_roots,
+                  binding_sha256=binding["sha256"], selection_sha256=selection["sha256"],
+                  selected_sources_with_roots=report["source_seeds"],
                   requested_L_simulations=40000 * report.get("legal_actions", 0),
                   actual_L_simulations=actual_sims, measured_L_seconds=l_seconds,
                   judge_legal_actions=j_actions, judge_replicate_rows=j_replicates,
@@ -283,17 +325,41 @@ def finalize(corpus, pilot):
                                                                 for f in files) / len(shards),
                               "limitation": "pilot is early/later coverage, at most 2 roots per act; serial extrapolation, no parallel wall-time claim"}
     overlaps = {r["root_id"] for group in report["cross_split_duplicates"] for r in group}
+    resolution = None
+    if overlaps and quarantine_overlap:
+        require(not failures and not report["missing_roots"], "cannot resolve overlap in incomplete labels")
+        # Resolution must apply to an already retained, exact attempt report.
+        attempt_path = corpus / "reports" / f"{prefix}incomplete-{digest(report)}.json"
+        require(attempt_path.exists() and d.read(attempt_path) == report,
+                "run finalize without --quarantine-overlap and inspect its attempt report first")
+        retained_entries = [e for e in selection["entries"] if e["root"]["root_id"] not in overlaps]
+        retained_shards = [s for s in shards if s["replay"]["job"]["root"]["root_id"] not in overlaps]
+        retained = d.audit(retained_shards, retained_entries)
+        require(not retained["cross_split_duplicates"] and not retained["missing_roots"],
+                "quarantine did not resolve retained membership")
+        required_splits = {"TRAIN"} if pilot else {"TRAIN", "VALIDATION", "LOCKED_TEST"}
+        require(required_splits <= {e["split"] for e in retained_entries},
+                "quarantine would empty a required split")
+        resolution = d.seal({"schema": "silver_prior_quarantine_v1",
+                             "binding_sha256": binding["sha256"], "selection_sha256": selection["sha256"],
+                             "attempt_report_sha256": digest(report), "quarantined_roots": sorted(overlaps),
+                             "rule": "exclude every root in every cross-split duplicate group"})
+        d.publish(corpus / "resolutions" / f'{resolution["sha256"]}.json', resolution)
+        report.update(quarantine_resolution_sha256=resolution["sha256"], retained_membership=retained,
+                      training_ready=not pilot and retained["training_ready"])
     release = d.seal({"schema": "silver_prior_release_v1", "binding_sha256": binding["sha256"],
                       "selection_sha256": selection["sha256"], "files": files,
-                      "quarantined_roots": sorted(overlaps), "training_ready": report["training_ready"]})
-    prefix = "pilot-" if pilot else ""
+                      "quarantined_roots": sorted(overlaps) if resolution else [],
+                      "quarantine_resolution_sha256": resolution["sha256"] if resolution else None,
+                      "training_ready": report["training_ready"]})
     # Incomplete reports are attempts, never immutable release markers blocking a resume.
-    if failures or report["missing_roots"]:
+    if failures or report["missing_roots"] or (overlaps and resolution is None):
         d.publish(corpus / "reports" / f"{prefix}incomplete-{digest(report)}.json", report)
     else:
         d.publish(corpus / f"{prefix}release.json", release)
         d.publish(corpus / f"{prefix}report.json", report)
     print(canonical(report))
+    return report
 
 
 def main():
@@ -301,17 +367,22 @@ def main():
     parser.add_argument("phase", choices=("bind", "capture", "select", "label", "finalize"))
     parser.add_argument("corpus", type=durable)
     parser.add_argument("--pilot", action="store_true")
+    parser.add_argument("--quarantine-overlap", action="store_true",
+                        help="finalize only: explicitly exclude all aliases from a prior overlap attempt report")
     parser.add_argument("--plan")
     parser.add_argument("--vocabulary")
     parser.add_argument("--review")
     parser.add_argument("--source-binary")
     parser.add_argument("--label-binary")
     args = parser.parse_args()
+    require(not args.quarantine_overlap or args.phase == "finalize", "quarantine is a finalization option")
     if args.phase == "bind":
         require(all((args.plan, args.vocabulary, args.review, args.source_binary, args.label_binary)),
                 "bind requires plan, vocabulary, review and both binaries")
         bind(d.read(args.plan), d.read(args.vocabulary), d.read(args.review),
              args.source_binary, args.label_binary, args.corpus)
+    elif args.phase == "finalize":
+        finalize(args.corpus, args.pilot, args.quarantine_overlap)
     else:
         {"capture": capture, "select": select, "label": label, "finalize": finalize}[args.phase](args.corpus, args.pilot)
 

@@ -105,11 +105,30 @@ accounting. Missing actions or replicates invalidate the whole root.
 
 Cross-split duplicate audit conservatively compares the full model observation
 plus the candidate multiset after removing native candidate order. It reports
-all aliases and lists all affected roots for quarantine. A release with
-unresolved cross-split overlap is not training-ready. No labels are used to
+all aliases and lists all affected roots for quarantine. Unresolved overlap
+produces an immutable attempt report under `reports/`, without creating
+`release.json` or `report.json`. No labels are used to
 select roots or detect overlap. J stays in `raw/J`; it is excluded from model
 observations and training loaders. Finalization reports only integrity/counts
 for locked-test artifacts, never values or rankings.
+
+After inspecting that report, explicitly rerun finalization with
+`--quarantine-overlap`. This excludes **every** root in every detected
+cross-split duplicate group; it does not permit arbitrary root exclusion or
+replacement. The resolver requires the exact previously saved attempt report,
+complete labels, no remaining overlap, complete retained membership, and a
+nonempty retained TRAIN/VALIDATION/LOCKED_TEST split (TRAIN only for the pilot).
+It saves a content-addressed resolution under `resolutions/`, bound to the
+execution and selection hashes, before publishing a release. Original source
+captures, labels, shards, and attempt/failure evidence remain unchanged. The
+report keeps original counts and separately reports `retained_membership`.
+Quarantined judged roots are excluded without selecting replacement J roots.
+
+```bash
+python3 tools/silver_prior_collect.py finalize /durable/silver-prior-v1
+# Inspect the saved overlap attempt, then explicitly resolve that same population:
+python3 tools/silver_prior_collect.py finalize /durable/silver-prior-v1 --quarantine-overlap
+```
 
 ## Execution and resumption
 
@@ -135,6 +154,16 @@ source capture seconds, legal-action/replicate counts, L throughput, and
 compressed bytes. Its forecast explicitly separates serial extrapolation from
 parallel wall time; it does not invent J throughput from a TRAIN-only pilot.
 Inspect that report against the configured resource budget before full capture.
+
+Finalization independently verifies the selection's schema, plan hash, source
+SHA, and exact pilot/full phase. It reads and validates the completion record
+for every required source, counts those verified records, and reconstructs the
+deterministic selection from their captures. The supplied selection must match
+that reconstruction exactly. Missing sources yield an incomplete attempt
+report, never a release; a completed source with zero eligible roots is counted
+and listed separately. Thus a pilot-sized or partial selection cannot stand in
+for the full corpus even when its individual labels are valid. Release checksums
+also cover all verified source completion records.
 
 Full gameplay/label phases must run via the designated launcher. Its `run`
 command supplies `tools/seed_guard.sh --gcp-research` and the required context;
@@ -163,7 +192,8 @@ inspection before retry; failures are never automatically erased or resampled.
 
 The release contains SHA-256 file checksums. `load_training_corpus(directory)`
 requires a finalized, valid release, checks shard hashes and frozen jobs, and
-yields only TRAIN L observations and aligned raw values. Lower-level
+yields only TRAIN L observations and aligned raw values. Quarantined membership
+must match the sealed resolution and its execution/selection binding. Lower-level
 `load_training(path, vocab, expected_job)` is for an already integrity-gated
 single root. Fixture shards are rejected by both training paths. Candidate
 permutation must use `permute_candidates()` so values remain aligned.
@@ -172,7 +202,9 @@ permutation must use `permute_candidates()` so values remain aligned.
 
 The focused CTests are `silver_prior_dataset_fixture` (native replay,
 representation, visibility, correction, terminal handling, and capture
-neutrality) and `silver_prior_resume` (crash/retry and failure evidence). The
+neutrality) and `silver_prior_resume` (crash/retry, failure evidence, source
+completion, selection binding, and overlap resolution). Both carry `smoke`
+labels and are included by the authoritative CI selection `-L 'core|smoke'`. The
 unchanged `silver_forced_action_fixture` protects the historical audit.
 Run `python3 -m unittest tools.test_ironclad_reachable_domain_census` for the
 source census. No policy-quality benchmark is appropriate for this tooling.

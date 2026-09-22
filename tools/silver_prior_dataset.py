@@ -314,6 +314,24 @@ def load_training_corpus(directory):
             and release["selection_sha256"] == selection["sha256"]
             and binding["plan_sha256"] == plan["sha256"]
             and plan["vocabulary_sha256"] == vocab["sha256"], "release binding")
+    require(selection["schema"] == "silver_prior_selection_v1" and selection["pilot"] is False
+            and selection["plan_sha256"] == plan["sha256"]
+            and selection["executable_git_sha"] == binding["executable_git_sha"], "release selection phase")
+    quarantined = release["quarantined_roots"]
+    resolution_hash = release.get("quarantine_resolution_sha256")
+    require(bool(quarantined) == bool(resolution_hash), "quarantine resolution required")
+    if resolution_hash:
+        require(isinstance(resolution_hash, str) and re.fullmatch(r"[0-9a-f]{64}", resolution_hash),
+                "quarantine resolution hash")
+        resolution = read(directory / "resolutions" / f"{resolution_hash}.json")
+        check_seal(resolution)
+        require(resolution["schema"] == "silver_prior_quarantine_v1"
+                and resolution["sha256"] == resolution_hash
+                and resolution["binding_sha256"] == binding["sha256"]
+                and resolution["selection_sha256"] == selection["sha256"]
+                and resolution["quarantined_roots"] == quarantined
+                and set(quarantined) <= {e["root"]["root_id"] for e in selection["entries"]},
+                "quarantine membership/binding")
     checksums = {f["path"]: f["sha256"] for f in release["files"]}
     require(len(checksums) == len(release["files"]), "duplicate checksum entry")
     for entry in selection["entries"]:

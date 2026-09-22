@@ -619,9 +619,10 @@ add_test(NAME silver_forced_action_fixture COMMAND python3
 add_test(NAME silver_prior_dataset_fixture COMMAND python3
     ${CMAKE_SOURCE_DIR}/tests/silver_prior_dataset_fixture.py
     $<TARGET_FILE:silver-bridge-test> $<TARGET_FILE:silver-prior-label>)
-set_tests_properties(silver_prior_dataset_fixture PROPERTIES TIMEOUT 180)
+set_tests_properties(silver_prior_dataset_fixture PROPERTIES TIMEOUT 180 LABELS "integration;smoke")
 add_test(NAME silver_prior_resume COMMAND python3
     ${CMAKE_SOURCE_DIR}/tests/silver_prior_resume_test.py)
+set_tests_properties(silver_prior_resume PROPERTIES LABELS "tooling;smoke")
 set_tests_properties(silver_forced_action_fixture PROPERTIES
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "integration;research-repro" TIMEOUT 180)
 add_test(NAME silver_hard_combat_fixture COMMAND $<TARGET_FILE:silver-hard-combat-fixture>)
