@@ -32,13 +32,11 @@ bool collectFreeOocReward(sts::GameContext &gc, bool collectKeys) {
         sts::search::GameAction(RT::GOLD, 0).execute(gc);
         return true;
     }
-    if (rewards.relicCount == 1 && !rewards.sapphireKey
-        && isForcedOrdinaryRelic(rewards.relics[0])) {
+    if (rewards.relicCount > 0) {
         sts::search::GameAction(RT::RELIC, 0).execute(gc);
         return true;
     }
-    if (rewards.potionCount == 1 && gc.potionCount < gc.potionCapacity
-        && !gc.hasRelic(sts::RelicId::SOZU)) {
+    if (rewards.potionCount > 0 && gc.potionCount < gc.potionCapacity) {
         sts::search::GameAction(RT::POTION, 0).execute(gc);
         return true;
     }
@@ -73,8 +71,13 @@ bool collectForcedOrdinaryRewards(sts::GameContext &gc) {
     if (gc.screenState != sts::ScreenState::REWARDS) return collected;
     using RT = sts::search::GameAction::RewardsActionType;
     auto &r = gc.info.rewardsContainer;
-    if (r.relicCount == 1 && !r.sapphireKey && isForcedOrdinaryRelic(r.relics[0])) {
-        sts::search::GameAction(RT::RELIC, 0).execute(gc);
+    while (gc.screenState == sts::ScreenState::REWARDS && !r.sapphireKey) {
+        int safe = -1;
+        for (int i = 0; i < r.relicCount; ++i) {
+            if (isForcedOrdinaryRelic(r.relics[i])) { safe = i; break; }
+        }
+        if (safe < 0) break;
+        sts::search::GameAction(RT::RELIC, safe).execute(gc);
         collected = true;
     }
     if (gc.screenState == sts::ScreenState::REWARDS && r.potionCount == 1

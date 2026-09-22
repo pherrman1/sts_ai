@@ -657,8 +657,15 @@ std::optional<std::pair<std::string, J>> forcedOrdinaryRewardLiveAction(
     if (state.projected.screenState != sts::ScreenState::REWARDS) return std::nullopt;
     const auto &r = state.projected.info.rewardsContainer;
     std::string kind;
-    if (r.relicCount == 1 && !r.sapphireKey && one_combat::isForcedOrdinaryRelic(r.relics[0]))
-        kind = "relic";
+    int selectedIndex = 0;
+    if (!r.sapphireKey) {
+        for (int i = 0; i < r.relicCount; ++i) {
+            if (!one_combat::isForcedOrdinaryRelic(r.relics[i])) continue;
+            kind = "relic";
+            selectedIndex = i;
+            break;
+        }
+    }
     if (kind.empty() && r.potionCount == 1
              && state.projected.potionCount < state.projected.potionCapacity
              && !state.projected.hasRelic(sts::RelicId::SOZU))
@@ -668,7 +675,7 @@ std::optional<std::pair<std::string, J>> forcedOrdinaryRewardLiveAction(
     for (const auto &choice : state.ooc.at("liveChoices")) {
         const auto &native = choice.at("nativeAction");
         if (native.value("kind", std::string()) != kind) continue;
-        require(integer(native, "index", 0, 255) == 0, "forced reward index mismatch");
+        if (integer(native, "index", 0, 255) != selectedIndex) continue;
         primitive(choice, state.projected.screenState);
         const auto &action = choice.at("liveAction");
         require(string(action, "kind") == "choose", "forced reward must lower to choose");

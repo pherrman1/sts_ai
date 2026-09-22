@@ -189,6 +189,41 @@ int main(int argc,char **argv){try{
             "potion pass-through fixture import");
         const auto potionPick = advisor::forcedOrdinaryRewardLiveAction(importedPotion);
         check(potionPick && potionPick->first == "potion", "free potion was not forced");
+        auto twoRelics = base;
+        twoRelics.screenState = ScreenState::REWARDS;
+        twoRelics.info.rewardsContainer.clear();
+        twoRelics.info.rewardsContainer.addRelic(RelicId::STRANGE_SPOON);
+        twoRelics.info.rewardsContainer.addRelic(RelicId::ANCHOR);
+        advisor::LiveOocStateV1 importedTwo;
+        check(advisor::importLiveOocStateV1(project(twoRelics, path, "two_relics"), importedTwo).ok,
+            "two-relic fixture import");
+        const auto safePick = advisor::forcedOrdinaryRewardLiveAction(importedTwo);
+        check(safePick && safePick->first == "relic"
+                && safePick->second.value("choiceIndex", -1) == 2,
+            "safe second relic did not retain its captured choice");
+        twoRelics.info.rewardsContainer.relics[0] = RelicId::HORN_CLEAT;
+        check(advisor::importLiveOocStateV1(project(twoRelics, path, "two_safe_relics"), importedTwo).ok,
+            "two-safe-relic fixture import");
+        const auto firstSafe = advisor::forcedOrdinaryRewardLiveAction(importedTwo);
+        check(firstSafe && firstSafe->first == "relic"
+                && firstSafe->second.value("choiceIndex", -1) == 1,
+            "first of two safe relics was not selected");
+        twoRelics.info.rewardsContainer.removeRelicReward(0);
+        check(advisor::importLiveOocStateV1(project(twoRelics, path, "remaining_safe_relic"), importedTwo).ok,
+            "remaining-safe-relic fixture import");
+        const auto secondSafe = advisor::forcedOrdinaryRewardLiveAction(importedTwo);
+        check(secondSafe && secondSafe->first == "relic",
+            "second safe relic was not selected after re-observation");
+        auto boss = base;
+        boss.screenState = ScreenState::BOSS_RELIC_REWARDS;
+        boss.info.bossRelics[0] = RelicId::BLACK_BLOOD;
+        boss.info.bossRelics[1] = RelicId::COFFEE_DRIPPER;
+        boss.info.bossRelics[2] = RelicId::FUSION_HAMMER;
+        advisor::LiveOocStateV1 importedBoss;
+        check(advisor::importLiveOocStateV1(project(boss, path, "boss_relic_not_forced"), importedBoss).ok,
+            "boss-relic fixture import");
+        check(!advisor::forcedOrdinaryRewardLiveAction(importedBoss),
+            "boss relic was forced");
     }
     std::vector<std::pair<std::string,GameContext>> fixtures;
     auto add=[&](std::string n,GameContext g){fixtures.emplace_back(n,g);};

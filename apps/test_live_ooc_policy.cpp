@@ -126,6 +126,26 @@ int main(int argc, char **argv) {
             require(collectForcedOrdinaryRewards(ordinary) && ordinary.hasRelic(RelicId::ANCHOR)
                     && ordinary.potionCount == gc.potionCount + 1,
                 "ordinary relic and free-slot potion were not collected");
+            auto doubleRelic = gc;
+            doubleRelic.screenState = ScreenState::REWARDS;
+            doubleRelic.info.rewardsContainer.clear();
+            doubleRelic.info.rewardsContainer.addRelic(RelicId::ANCHOR);
+            doubleRelic.info.rewardsContainer.addRelic(RelicId::HORN_CLEAT);
+            require(collectForcedOrdinaryRewards(doubleRelic)
+                    && doubleRelic.hasRelic(RelicId::ANCHOR)
+                    && doubleRelic.hasRelic(RelicId::HORN_CLEAT)
+                    && doubleRelic.info.rewardsContainer.relicCount == 0,
+                "two ordinary relics were not both collected");
+            auto mixedRelics = gc;
+            mixedRelics.screenState = ScreenState::REWARDS;
+            mixedRelics.info.rewardsContainer.clear();
+            mixedRelics.info.rewardsContainer.addRelic(RelicId::STRANGE_SPOON);
+            mixedRelics.info.rewardsContainer.addRelic(RelicId::ANCHOR);
+            require(collectForcedOrdinaryRewards(mixedRelics)
+                    && mixedRelics.hasRelic(RelicId::ANCHOR)
+                    && !mixedRelics.hasRelic(RelicId::STRANGE_SPOON)
+                    && mixedRelics.info.rewardsContainer.relicCount == 1,
+                "critical relic should remain after safe relic collection");
             for (auto relic : {RelicId::STRANGE_SPOON, RelicId::BOTTLED_FLAME,
                                RelicId::BOTTLED_LIGHTNING, RelicId::BOTTLED_TORNADO,
                                RelicId::UNCEASING_TOP}) {
@@ -142,6 +162,10 @@ int main(int argc, char **argv) {
             sapphire.info.rewardsContainer.addRelic(RelicId::ANCHOR);
             sapphire.info.rewardsContainer.sapphireKey = true;
             require(!collectForcedOrdinaryRewards(sapphire), "sapphire relic was forced");
+            auto boss = gc;
+            boss.screenState = ScreenState::BOSS_RELIC_REWARDS;
+            boss.info.bossRelics[0] = RelicId::ANCHOR;
+            require(!collectForcedOrdinaryRewards(boss), "boss relic choice was forced");
             auto sozu = gc;
             sozu.screenState = ScreenState::REWARDS;
             sozu.info.rewardsContainer.clear();
