@@ -1,7 +1,8 @@
 # Silver policy-prior dataset
 
-This is an offline, policy-only dataset contract. It does not train a network,
-change Silver search, or qualify a gameplay improvement. The original
+This page documents the offline, policy-only dataset contract and its separate
+trainer. Training does not change Silver search or qualify a gameplay
+improvement. The original
 [forced-action audit](../../experiments/evidence/silver_forced_action_target_2026-09-19/README.md)
 has a promising fresh-population result and an unresolved historical regression.
 That regression remains unresolved.
@@ -227,6 +228,37 @@ must match the sealed resolution and its execution/selection binding. Lower-leve
 single root. Fixture shards are rejected by both training paths. Candidate
 permutation must use `permute_candidates()` so values remain aligned.
 
+## Structured policy model v1
+
+`tools/train_silver_prior.py` trains the offline `SilverPriorNetV1` student.
+Its release-gated preparation path admits TRAIN L and VALIDATION L only; the
+separate `evaluate-validation-j` command can open only the 64 preselected
+VALIDATION J shards. There is no LOCKED_TEST evaluation command in this tool.
+The preparation cache is bound to the release, vocabulary, trainer source hash,
+and cache schema, and contains compact ragged tensors rather than decompressed
+shards. Put that cache and all checkpoints outside Git and outside `/tmp` for
+durable runs.
+
+```bash
+CORPUS=/home/philippherrmann/Documents/sts/silver-prior-v1-corpus-v2
+RUN=/home/philippherrmann/Documents/sts/silver-prior-model-v1
+python3 tools/train_silver_prior.py prepare "$CORPUS" "$RUN/cache/train-validation.pkl"
+python3 tools/train_silver_prior.py train-stage-a "$CORPUS" \
+  "$RUN/cache/train-validation.pkl" "$RUN/stage-a"
+python3 tools/train_silver_prior.py evaluate-validation-j "$CORPUS" \
+  "$RUN/cache/train-validation.pkl" "$RUN/stage-a"
+```
+
+The trainer uses source-grouped TRAIN/VALIDATION membership frozen by the
+corpus, TRAIN-only normalization and top-two-gap temperature scale, and three
+predeclared target temperatures. Every root contributes equally to grouped
+cross-entropy regardless of candidate count. Candidate softmax is grouped by
+root. Stage-A validation includes root-level metrics with 5,000 source-cluster
+bootstrap replicates. The independent J command is run only after all three
+Stage-A fits and VALIDATION-L metrics are complete. A positive result is an
+offline policy-prior finding only; no Silver integration or gameplay claim
+follows from it.
+
 ## Verification boundary
 
 The focused CTests are `silver_prior_dataset_fixture` (native replay,
@@ -236,4 +268,5 @@ completion, selection binding, and overlap resolution). Both carry `smoke`
 labels and are included by the authoritative CI selection `-L 'core|smoke'`. The
 unchanged `silver_forced_action_fixture` protects the historical audit.
 Run `python3 -m unittest tools.test_ironclad_reachable_domain_census` for the
-source census. No policy-quality benchmark is appropriate for this tooling.
+source census. Those integrity checks do not assess policy quality; that belongs
+to the separate structured-model experiment described above.
