@@ -2,6 +2,7 @@
 #define STS_LIGHTSPEED_OOCMCTSPLANNER_H
 
 #include <cstdint>
+#include <cstddef>
 #include <optional>
 #include <random>
 #include <stdexcept>
@@ -55,6 +56,36 @@ struct OocMctsConfig {
     // Explicit online candidate: after simulation 512, stop at a >=20% root
     // top-two visit gap. This is intentionally fixed and opt-in.
     bool stopAt512VisitGap20 = false;
+    // Diagnostic only: retain a bounded view of the completed search tree.
+    bool captureTree = false;
+    std::size_t treeNodeCap = 4096;
+};
+struct OocTreeNode {
+    std::uint64_t id, visits;
+    std::uint32_t depth;
+    bool chance;
+    OocStateId state;
+    OocActionId action;
+    double prior, q;
+    std::string label;
+    std::string outcome;
+    // Optional provider annotations; the generic planner leaves these empty.
+    std::string key, screen, room;
+    int floor = -1, mapX = -1, mapY = -1, hp = -1, maxHp = -1, gold = -1;
+    bool selected = false;
+};
+struct OocTreeEdge {
+    std::uint64_t parentId;
+    std::optional<std::uint64_t> childId;
+    std::uint64_t visits;
+    bool particle;
+    bool combatModelUsed = false;
+    std::string combatEncounter, combatOutcome;
+};
+struct OocTreeSnapshot {
+    bool truncated = false;
+    std::vector<OocTreeNode> nodes;
+    std::vector<OocTreeEdge> edges;
 };
 struct OocMctsMetrics {
     std::uint64_t simulations = 0, simulationAttempts = 0, decisionNodes = 0, chanceNodes = 0;
@@ -87,6 +118,7 @@ struct OocMctsResult {
     std::vector<OocRootActionStats> rootActions;
     std::vector<OocRootCheckpointStats> rootCheckpoints;
     OocMctsMetrics metrics;
+    std::optional<OocTreeSnapshot> tree;
 };
 class OocMctsPlanner {
 public:

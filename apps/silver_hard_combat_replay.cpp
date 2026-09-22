@@ -60,6 +60,7 @@ nlohmann::json replayRow(const nlohmann::json &input, std::int64_t budget,
             row["simulations"] = decision.simulations;
             row["first_action_fingerprint"] = decision.initialActionFingerprint;
             row["nodes_created"] = decision.telemetry.nodesCreated;
+            row["queue_item_canonical_hits"] = decision.telemetry.queueItemCanonicalHits;
             row["depth_sum"] = decision.telemetry.depthSum;
             row["chance_depth_sum"] = decision.telemetry.chanceDepthSum;
             row["search_wall_micros"] = decision.telemetry.searchWallMicros;
@@ -113,6 +114,7 @@ nlohmann::json replayRow(const nlohmann::json &input, std::int64_t budget,
         row["status"] = result.accepted ? "ok" : result.failureReason;
         row["rollout_calls"] = result.telemetry.rolloutCalls;
         row["nodes_created"] = result.telemetry.nodesCreated;
+        row["queue_item_canonical_hits"] = result.telemetry.queueItemCanonicalHits;
         row["depth_sum"] = result.telemetry.depthSum;
         row["chance_depth_sum"] = result.telemetry.chanceDepthSum;
         row["search_wall_micros"] = result.telemetry.searchWallMicros;

@@ -74,6 +74,24 @@ void tests() {
     // A strong prior can make visit choice differ from highest observed Q.
     auto rootChoice = deterministic(.999, .001);
     const auto byVisits = planner.search(rootChoice, 0, 4);
+    auto captureConfig = config; captureConfig.captureTree = true;
+    auto capturedModel = deterministic(.999, .001);
+    const auto captured = OocMctsPlanner(captureConfig).search(capturedModel, 0, 4);
+    require(!byVisits.tree && captured.tree && !captured.tree->truncated
+        && captured.selectedAction == byVisits.selectedAction
+        && captured.rootActions[0].visits == byVisits.rootActions[0].visits
+        && captured.tree->nodes.front().visits == captured.metrics.simulations,
+        "opt-in tree capture preserves selection and root statistics");
+    require(captured.tree->nodes.size() == 7 && captured.tree->edges.size() == 6
+        && captured.tree->nodes[1].chance && captured.tree->nodes[1].action == 1
+        && captured.tree->nodes[3].state == 1,
+        "capture retains sorted action nodes and sampled outcome particles");
+    auto smallCapture = captureConfig; smallCapture.treeNodeCap = 2;
+    auto smallModel = deterministic(.999, .001);
+    const auto small = OocMctsPlanner(smallCapture).search(smallModel, 0, 4);
+    require(small.tree && small.tree->truncated && small.tree->nodes.size() == 2
+        && small.tree->edges.size() >= 3 && !small.tree->edges[1].childId,
+        "bounded capture marks omitted edges without changing the search");
     auto qConfig = config; qConfig.selectByMeanQ = true;
     const auto byQ = OocMctsPlanner(qConfig).search(rootChoice, 0, 4);
     require(byVisits.selectedAction == 1 && byQ.selectedAction == 2,

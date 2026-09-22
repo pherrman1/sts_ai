@@ -1,0 +1,65 @@
+import unittest
+from tools.render_ooc_mcts import render
+
+
+class RenderOocMctsTest(unittest.TestCase):
+    def snapshot(self):
+        return {
+            'session': 's', 'sequence': 4, 'observationHash': 'h',
+            'observation': {'boundary': 'ooc', 'fixture': 'map_multiple_children'},
+            'response': {'ready': True, 'session': 's', 'sequence': 4,
+                         'observationHash': 'h', 'advisor': {'evaluators': [{
+                             'id': 'live_ooc_decision_v1', 'status': 'OK',
+                             'selectedSemanticKey': 'ooc-action',
+                             'tree': {'accepted': True, 'rootId': 0, 'truncated': False,
+                                      'nodes': [{'id': 0, 'kind': 'state', 'stateId': '0',
+                                                 'visits': 2, 'depth': 0},
+                                                {'id': 1, 'kind': 'chance', 'stateId': '0',
+                                                 'actionId': 3, 'label': 'ooc-action',
+                                                 'visits': 2, 'depth': 0, 'prior': 1.0, 'q': .7}],
+                                      'edges': [{'parentId': 0, 'childId': 1,
+                                                 'kind': 'action', 'visits': 2}]}}]}}
+        }
+
+    def test_standalone_html_contains_capture_and_browser_assets(self):
+        html = render(self.snapshot())
+        self.assertIn('OOC MCTS search', html)
+        self.assertIn('ooc-action', html)
+        self.assertIn('map_multiple_children', html)
+        self.assertIn('TEST FIXTURE', html)
+        self.assertIn('ELK', html)
+        self.assertIn('d3', html)
+
+    def test_rejects_stale_or_missing_capture(self):
+        snapshot = self.snapshot()
+        snapshot['response']['observationHash'] = 'stale'
+        with self.assertRaisesRegex(ValueError, 'does not match'):
+            render(snapshot)
+        snapshot = self.snapshot()
+        del snapshot['response']['advisor']['evaluators'][0]['tree']
+        with self.assertRaisesRegex(ValueError, 'not captured'):
+            render(snapshot)
+
+    def test_archived_real_observation_replay_is_labeled(self):
+        snapshot = self.snapshot()
+        snapshot['observation'].pop('fixture')
+        snapshot['captureProvenance'] = {'kind': 'archived_real_game_observation_replay'}
+        html = render(snapshot)
+        self.assertIn('ARCHIVED REAL-GAME OBSERVATION REPLAY', html)
+        self.assertNotIn('TEST FIXTURE: map_multiple_children', html)
+
+    def test_native_simulator_capture_is_labeled(self):
+        tree = self.snapshot()['response']['advisor']['evaluators'][0]['tree']
+        native = {'source': 'native_sts_lightspeed_search', 'seed': 17,
+                  'decisionIndex': 1, 'aborted': False,
+                  'selectedSemanticKey': 'ooc-action', 'tree': tree}
+        html = render(native)
+        self.assertIn('NATIVE STS_LIGHTSPEED SEARCH', html)
+        self.assertIn('Native seed 17', html)
+        native['aborted'] = True
+        with self.assertRaisesRegex(ValueError, 'no completed OOC decision'):
+            render(native)
+
+
+if __name__ == '__main__':
+    unittest.main()
