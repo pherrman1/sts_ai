@@ -362,6 +362,10 @@ class LiveGameDriverTest(unittest.TestCase):
         candidates = build_legal_actions(screen, ["choose"])
         self.assertEqual(event_completion_action(screen, candidates).mcp_arguments,
                          {"choice_index": 1})
+        screen["room_phase"] = "COMPLETE"
+        screen["screen_state"] = {"event_id": "The Woman in Blue"}
+        self.assertEqual(event_completion_action(screen, candidates).mcp_arguments,
+                         {"choice_index": 1})
         screen["choice_list"] = ["[Leave]", "[Fight]"]
         self.assertIsNone(event_completion_action(screen, build_legal_actions(screen, ["choose"])))
 

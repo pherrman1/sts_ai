@@ -487,6 +487,9 @@ the card group mechanically and asks OOC to choose among its revealed cards.
 Once a combat reward has no remaining rewards and MCP exposes only `Proceed`,
 the driver advances that mechanical screen without waiting for an OOC search or
 requiring root visits.
+An already resolved event with exactly one `[Leave]` command is also a
+mechanical completion in either MCP `EVENT` or `COMPLETE` room phase; other
+event choices remain OOC decisions.
 
 Path counts derive from persisted `metricData.path_taken`, whose original map
 symbols survive event-to-room conversion and save/resume. Completed combat

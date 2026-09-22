@@ -908,7 +908,7 @@ def event_completion_action(screen: Mapping[str, Any], candidates: Sequence[Lega
     """Dismiss an already resolved event's sole Leave button."""
     if (_text(screen.get("screen_type")).upper() != "EVENT"
             or _text(screen.get("room_type")) != "EventRoom"
-            or _text(screen.get("room_phase")) != "EVENT"
+            or _text(screen.get("room_phase")) not in {"EVENT", "COMPLETE"}
             or _list(screen.get("choice_list")) != ["[Leave]"]
             or len(candidates) != 1):
         return None
