@@ -11097,6 +11097,52 @@ reselects the arm nor establishes gameplay impact. No LOCKED_TEST labels,
 outcomes, predictions, or shards were opened. [Robustness raw metrics and
 provenance](evidence/silver_prior_model_v1_20260922/robustness-reviewed-f66aed7e/).
 
+### One-time LOCKED_TEST evaluator and result (2026-09-22)
+
+The sole candidate remains Stage-A T2, initialization seed `20260922`, target
+temperature `1.179975000005129`, and checkpoint SHA-256
+`b756c3e6576bdb53085f24aeb1102e4e2fe55fd7469c55546c99f068ccf40e24`.
+Before any LOCKED_TEST labels are opened, a dedicated evaluator is being
+reviewed at the supplied main baseline `60ece5403ec0a06d802c54aed8c7b85a9d4bc369`.
+It reads all non-quarantined LOCKED_TEST L shards and only preselected
+LOCKED_TEST J raw records, with create-only consumption receipt before label
+access. The trainer remains TRAIN/VALIDATION-only.
+
+The decision rule was frozen before opening labels: classify
+`PRIOR_MODEL_LOCKED_TEST_CONFIRMED` only when the upper 95% source-seed-cluster
+bootstrap CI (5,000 replicates) of model-minus-uniform expected regret is below
+zero on both L and J; otherwise classify
+`PRIOR_MODEL_LOCKED_TEST_NOT_CONFIRMED`. No top-action threshold is used. No
+LOCKED_TEST label was opened before independent review. The reviewed evaluator
+SHA was `f458ef51029ea53f9baaf361e87fba67c743d5a2`; the run used only the
+frozen candidate and completed once with 1,494 L roots / 64 sources and 64
+preselected J roots / 64 sources. L model-minus-uniform expected regret was
+`-3.23423 [-3.53464,-2.93676]`; J was `-2.89553 [-3.58717,-2.26012]`.
+Classification: **`PRIOR_MODEL_LOCKED_TEST_CONFIRMED`**.
+
+Descriptive diagnostics: validation-to-locked L delta changed from
+`-3.57885 [-3.89616,-3.30330]` to `-3.23423 [-3.53464,-2.93676]`; J changed
+from `-3.64892 [-4.17707,-3.14134]` to `-2.89553 [-3.58717,-2.26012]`.
+The frozen L target's locked-J delta versus uniform was
+`-4.11938 [-4.89133,-3.39374]`; soft-prior headroom recovery was 70.29%.
+These diagnostics do not affect the decision rule. The exact consumption
+receipt and per-root metrics are retained at
+`/home/philippherrmann/Documents/sts/silver-prior-model-v1/locked-test-v1/`;
+the compact committed packet is
+[here](evidence/silver_prior_locked_test_v1_20260922/README.md).
+The committed provenance now pins hashes for the receipt, full external L/J
+summaries, decision file, and imported trainer source. After this sole run, the
+evaluator CLI and `run()` entry point were disabled; any output-directory value
+is refused before checkpoint, manifest, or label access.
+
+LOCKED_TEST is consumed and must not be used for model tuning. This confirms
+offline policy-prior generalization under the frozen expected-regret criteria;
+it does not promote the model to Silver default or establish native cost or
+gameplay impact. The next experiment is separate oracle/native prior
+integration. **Knowledge impact:** current research status and this result are
+updated here and in `evaluation/current-research.md`; no stable implementation
+contract or Silver behavior changed.
+
 - **Fresh native production-path smoke and replayable provenance:** Functional
   SHA `06279a8644492e9ef9cea813455ddfe841425380` added trusted v2
   hard-combat capture of the source queue proof; v1 remains conservative.

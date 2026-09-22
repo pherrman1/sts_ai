@@ -1,0 +1,69 @@
+{
+  "bootstrap_replicates": 5000,
+  "classification": "PRIOR_MODEL_LOCKED_TEST_CONFIRMED",
+  "rule": "upper 95% source-seed cluster bootstrap CI of model-minus-uniform expected regret is < 0 for both LOCKED_TEST L and J",
+  "validation_comparison": {
+    "classification_role": "DESCRIPTIVE_ONLY",
+    "locked_j_model_minus_uniform": {
+      "bootstrap_replicates": 5000,
+      "ci95": [
+        -3.587173302035444,
+        -2.2601154279682216
+      ],
+      "cluster": "source_seed",
+      "mean": -2.8955348309232716,
+      "median": -2.345967131106299,
+      "roots": 64,
+      "sources": 64
+    },
+    "locked_j_soft_prior_headroom_recovery": 0.702905637936102,
+    "locked_j_teacher_minus_uniform": {
+      "bootstrap_replicates": 5000,
+      "ci95": [
+        -4.891327594166796,
+        -3.3937434178246746
+      ],
+      "cluster": "source_seed",
+      "mean": -4.119379152264663,
+      "median": -3.673444871905133,
+      "roots": 64,
+      "sources": 64
+    },
+    "locked_l_model_minus_uniform": {
+      "bootstrap_replicates": 5000,
+      "ci95": [
+        -3.5346373585736575,
+        -2.936763778160467
+      ],
+      "cluster": "source_seed",
+      "mean": -3.234230840528778,
+      "median": -2.89384201742606,
+      "roots": 1494,
+      "sources": 64
+    },
+    "validation_j_model_minus_uniform": {
+      "bootstrap_replicates": 5000,
+      "ci95": [
+        -4.17707049513724,
+        -3.141341611701822
+      ],
+      "cluster": "source_seed",
+      "mean": -3.6489180354299093,
+      "median": -3.1394319847040464,
+      "roots": 64,
+      "sources": 64
+    },
+    "validation_l_model_minus_uniform": {
+      "bootstrap_replicates": 5000,
+      "ci95": [
+        -3.896163365787103,
+        -3.303300632109759
+      ],
+      "cluster": "source_seed",
+      "mean": -3.578853829432219,
+      "median": -3.173622739507813,
+      "roots": 1512,
+      "sources": 64
+    }
+  }
+}

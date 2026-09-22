@@ -627,6 +627,10 @@ add_test(NAME silver_prior_training COMMAND python3 -m unittest
     tests.test_train_silver_prior -v)
 set_tests_properties(silver_prior_training PROPERTIES
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "tooling;smoke")
+add_test(NAME silver_prior_locked_evaluator COMMAND python3 -m unittest
+    tests.test_evaluate_silver_prior_locked -v)
+set_tests_properties(silver_prior_locked_evaluator PROPERTIES
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "tooling;smoke")
 set_tests_properties(silver_forced_action_fixture PROPERTIES
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "integration;research-repro" TIMEOUT 180)
 add_test(NAME silver_hard_combat_fixture COMMAND $<TARGET_FILE:silver-hard-combat-fixture>)
