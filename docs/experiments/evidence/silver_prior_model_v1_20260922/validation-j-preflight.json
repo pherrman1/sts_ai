@@ -2,10 +2,11 @@
   "release_sha256": "b32d8d79b44ee799af05892e79e45fb146f4859df58364722d7cd92531bd8419",
   "selection_sha256": "ed91b3bb4c6983be3701333320f1e6c12f7332e3e371ac24b857a76a47d3b5ed",
   "selected_validation_j_roots": 64,
-  "selected_validation_j_paths_present_on_disk": 0,
-  "selected_validation_j_paths_in_release_files": 0,
-  "evaluation_started": false,
-  "validation_j_labels_opened": false,
+  "raw_j_paths_present_on_disk": 64,
+  "raw_j_paths_in_release_files": 64,
+  "raw_j_records_opened": 0,
+  "locked_test_j_paths_inspected": 0,
   "locked_test_labels_opened": false,
+  "prior_shards_j_path_assumption": "incorrect; collection finalizer stores J at raw/J and does not materialize shards/J",
   "metadata_deviation": "LOCKED_TEST root/action counts observed before freeze; labels untouched"
 }

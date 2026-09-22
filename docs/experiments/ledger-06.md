@@ -11029,6 +11029,30 @@ default or generalization claim is authorized. Evidence:
   **Knowledge impact:** trainer workflow is in the maintained Silver prior
   operations page; no Silver behavior or model promotion changed.
 
+### Correction after PR #289 independent review
+
+The preceding Stage-A metrics and missing-J conclusion are **superseded and
+invalidated**. The epoch order used `len(train)` where `train` was the prepared
+split dictionary; only its 35 dictionary fields, not all 8,862 TRAIN roots,
+were presented to each epoch. The old validation-L metrics and checkpoints do
+not represent the preregistered run and cannot support the L gate. The full-set
+CPU throughput probe remains valid because it used
+`len(train["contexts"])` explicitly.
+
+The J path conclusion was also wrong. Collection finalization stores J raw
+records at `raw/J/<hash>.json.gz` and intentionally creates no `shards/J`
+projection. A path and release-manifest inventory of the 64 preselected
+VALIDATION J roots found 64/64 raw files present and 64/64 listed. This was a
+metadata-only inventory: no VALIDATION J raw record was opened and no
+LOCKED_TEST path or label was inspected. Correct the trainer to validate and
+project selected J raw records in memory. Rerun Stage A only after independent
+review of the corrected implementation SHA; open VALIDATION J only after the
+new all-root VALIDATION-L run completes.
+
+`locked_test_labels_opened=false`;
+`metadata_deviation="LOCKED_TEST root/action counts observed before freeze; labels untouched"`.
+The corrected evidence packet relabels the old Stage-A files as invalidated.
+
 - **Fresh native production-path smoke and replayable provenance:** Functional
   SHA `06279a8644492e9ef9cea813455ddfe841425380` added trusted v2
   hard-combat capture of the source queue proof; v1 remains conservative.

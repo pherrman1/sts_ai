@@ -138,13 +138,15 @@ def load_validation_j(directory, release, binding, selection):
     out = []
     for entry in selected:
         root = entry["root"]
-        rel = f"shards/J/{dataset.identity_hash(root)}.json.gz"
-        if checksums.get(rel) != dataset.file_hash(directory / rel): raise ValueError("J checksum mismatch")
-        stored = dataset.read(directory / rel); dataset.check_seal(stored)
+        rel = f"raw/J/{dataset.identity_hash(root)}.json.gz"
+        expected_checksum = checksums.get(rel)
+        if expected_checksum is None: raise ValueError(f"selected validation J raw record absent from release manifest: {rel}")
+        if expected_checksum != dataset.file_hash(directory / rel): raise ValueError("J raw checksum mismatch")
+        raw = dataset.read(directory / rel)
         job=dataset.job_for(entry,plan,binding["executable_git_sha"],role="J")
-        expected=dataset.shard(stored["replay"],job,vocab)
-        if stored != expected: raise ValueError("validation J shard/projection mismatch")
-        out.append((stored["observation"], stored["values"], root["source_seed"], root["root_id"]))
+        dataset.validate_raw(raw,job)
+        projected=dataset.shard(raw,job,vocab)
+        out.append((projected["observation"], projected["values"], root["source_seed"], root["root_id"]))
     return out
 
 
@@ -300,7 +302,7 @@ def select_prepared(full, root_indices):
     root_indices=torch.as_tensor(root_indices,dtype=torch.long).sort().values
     device=full["contexts"].device;total=len(full["contexts"]);batch=len(root_indices)
     root_map=torch.full((total,),-1,dtype=torch.long,device=device);root_map[root_indices.to(device)]=torch.arange(batch,device=device)
-    out={"batch_size":batch,"contexts":full["contexts"][root_indices.to(device)],
+    out={"batch_size":batch,"root_indices":root_indices.to(device),"contexts":full["contexts"][root_indices.to(device)],
          "context_cats":full["context_cats"][root_indices.to(device)],
          "source_seed":[full["source_seed"][int(i)] for i in root_indices],
          "root_id":[full["root_id"][int(i)] for i in root_indices],
@@ -633,6 +635,28 @@ def device_batch(batch, device):
     return batch
 
 
+def make_epoch_orders(prepared, rng, epochs=80):
+    """Generate one permutation of every prepared root for each epoch."""
+    root_count=len(prepared["contexts"])
+    if root_count<=0: raise ValueError("empty TRAIN roots")
+    orders=[rng.permutation(root_count) for _ in range(epochs)]
+    for order in orders: assert_epoch_accounting(order,prepared,optimizer_steps=(root_count+127)//128,batch_size=128)
+    return orders
+
+
+def assert_epoch_accounting(root_indices, prepared, optimizer_steps, batch_size=128, action_count=None):
+    root_count=len(prepared["contexts"]);expected_actions=len(prepared["labels"])
+    indices=np.asarray(root_indices,dtype=np.int64)
+    if (len(indices)!=root_count or not np.array_equal(np.sort(indices),np.arange(root_count))):
+        raise ValueError("training epoch did not visit every TRAIN root exactly once")
+    if action_count is not None and int(action_count)!=expected_actions:
+        raise ValueError(f"training epoch action count mismatch: {action_count} != {expected_actions}")
+    expected_steps=(root_count+batch_size-1)//batch_size
+    if int(optimizer_steps)!=expected_steps:
+        raise ValueError(f"training epoch optimizer-step count mismatch: {optimizer_steps} != {expected_steps}")
+    return {"train_roots_per_epoch":root_count,"train_actions":expected_actions,"optimizer_steps":expected_steps}
+
+
 def train_stage_a(corpus,cache_path,artifact_dir,seed=SEED,device="auto",probe_only=False):
     cache=cache_payload(corpus,cache_path); splits=cache["prepared"];train=splits["TRAIN"];val=splits["VALIDATION"]
     cache["by_root"]={rid:{"q":q,"source_seed":seed} for rid,q,seed in zip(val["root_id"],val["root_values"],val["source_seed"])}
@@ -647,9 +671,10 @@ def train_stage_a(corpus,cache_path,artifact_dir,seed=SEED,device="auto",probe_o
     params=sum(p.numel() for p in model.parameters())
     artifact_dir.mkdir(parents=True,exist_ok=True)
     np.savez(artifact_dir/"normalization.npz",**{k:v.numpy() for k,v in normalization.items()})
-    cfg={"seed":seed,"tau0":tau0,"temperatures":temps,"recipe":{"optimizer":"AdamW","lr":3e-4,"weight_decay":1e-4,"root_batch":128,"clip":1.0,"max_epochs":80,"patience":8,"precision":"FP32"},"release_sha256":cache["metadata"]["release_sha256"],"binding_sha256":cache["metadata"]["binding_sha256"],"selection_sha256":cache["metadata"]["selection_sha256"],"vocabulary_sha256":cache["metadata"]["vocabulary_sha256"],"trainer_sha256":cache["metadata"]["trainer_sha256"],"normalization_sha256":sha256(artifact_dir/"normalization.npz"),"parameter_count":params,"architecture":"SilverPriorNetV1","device":dev,"locked_test_labels_opened":False,"metadata_deviation":"LOCKED_TEST root/action counts observed before freeze; labels untouched"}
+    train_roots=len(train["contexts"]);train_actions=len(train["labels"]);steps_per_epoch=(train_roots+127)//128
+    cfg={"seed":seed,"tau0":tau0,"temperatures":temps,"recipe":{"optimizer":"AdamW","lr":3e-4,"weight_decay":1e-4,"root_batch":128,"clip":1.0,"max_epochs":80,"patience":8,"precision":"FP32"},"train_roots_per_epoch":train_roots,"train_actions":train_actions,"optimizer_steps_per_epoch":steps_per_epoch,"release_sha256":cache["metadata"]["release_sha256"],"binding_sha256":cache["metadata"]["binding_sha256"],"selection_sha256":cache["metadata"]["selection_sha256"],"vocabulary_sha256":cache["metadata"]["vocabulary_sha256"],"trainer_sha256":cache["metadata"]["trainer_sha256"],"normalization_sha256":sha256(artifact_dir/"normalization.npz"),"parameter_count":params,"architecture":"SilverPriorNetV1","device":dev,"locked_test_labels_opened":False,"metadata_deviation":"LOCKED_TEST root/action counts observed before freeze; labels untouched"}
     (artifact_dir/"config.json").write_text(json.dumps(cfg,indent=2)+"\n")
-    rng=np.random.default_rng(seed);orders=[rng.permutation(len(train)) for _ in range(80)]
+    rng=np.random.default_rng(seed);orders=make_epoch_orders(train,rng,80)
     probe={"started":time.monotonic(),"roots":0,"actions":0}
     def iterate(rows,ids):
         for st in range(0,len(ids),128):
@@ -666,12 +691,15 @@ def train_stage_a(corpus,cache_path,artifact_dir,seed=SEED,device="auto",probe_o
         (artifact_dir/"throughput-probe.json").write_text(json.dumps(out,indent=2)+"\n");print(json.dumps(out,indent=2));return out
     initial={k:v.detach().cpu().clone() for k,v in model.state_dict().items()};summaries={}
     for arm,tau in temps.items():
-        model.load_state_dict(initial);opt=torch.optim.AdamW(model.parameters(),lr=3e-4,weight_decay=1e-4);best=float("inf");patience=0;hist=[]
+        model.load_state_dict(initial);opt=torch.optim.AdamW(model.parameters(),lr=3e-4,weight_decay=1e-4);best=float("inf");patience=0;hist=[];accounting=[]
         for epoch,order in enumerate(orders,1):
             model.train()
+            seen_roots=[];seen_actions=0;optimizer_steps=0
             for x in iterate(train,order):
                 owner=x["candidate_root"];q=ragged_targets_flat(x["labels"],owner,x["batch_size"],tau);lengths=x["candidate_lengths"]
                 opt.zero_grad();loss=ragged_root_ce(model(x),q,owner,lengths);loss.backward();nn.utils.clip_grad_norm_(model.parameters(),1.0);opt.step()
+                seen_roots.extend(x["root_indices"].detach().cpu().tolist());seen_actions+=len(x["labels"]);optimizer_steps+=1
+            accounting.append(assert_epoch_accounting(seen_roots,train,optimizer_steps,batch_size=128,action_count=seen_actions))
             model.eval();vsum=0.;vcount=0
             with torch.no_grad():
                 for x in iterate(val,np.arange(len(val["contexts"]))):
@@ -682,7 +710,7 @@ def train_stage_a(corpus,cache_path,artifact_dir,seed=SEED,device="auto",probe_o
                 best=v;patience=0;torch.save({"state_dict":model.state_dict(),"config":cfg,"normalization":{k:v.clone() for k,v in normalization.items()},"arm":arm,"tau":tau,"epoch":epoch},artifact_dir/f"{arm}.pt")
             else:patience+=1
             if patience>=8:break
-        summaries[arm]={"best_validation_ce":best,"epochs":len(hist),"history":hist,"checkpoint_sha256":sha256(artifact_dir/f"{arm}.pt")}
+        summaries[arm]={"best_validation_ce":best,"epochs":len(hist),"history":hist,"epoch_accounting":accounting,"checkpoint_sha256":sha256(artifact_dir/f"{arm}.pt")}
     (artifact_dir/"train-summary.json").write_text(json.dumps(summaries,indent=2)+"\n")
     validation=write_validation_metrics(cache,artifact_dir,dev)
     print(json.dumps({"config":cfg,"summary":summaries,"validation_metrics_path":str(artifact_dir/"validation-metrics.json")},indent=2));return {"summary":summaries,"validation":validation}

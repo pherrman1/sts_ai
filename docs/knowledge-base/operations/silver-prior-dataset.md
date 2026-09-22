@@ -233,14 +233,17 @@ permutation must use `permute_candidates()` so values remain aligned.
 `tools/train_silver_prior.py` trains the offline `SilverPriorNetV1` student.
 Its release-gated preparation path admits TRAIN L and VALIDATION L only; the
 separate `evaluate-validation-j` command can open only the 64 preselected
-VALIDATION J shards after independently authenticating the release, binding,
-selection, plan, vocabulary, and quarantine resolution. Quarantined J roots are
-excluded without replacement. There is no LOCKED_TEST evaluation command in
-this tool. The preparation cache is bound to the release, vocabulary, trainer
-source hash, cache schema, and a content digest over prepared tensors and
-normalization, and contains compact ragged tensors rather than decompressed
-shards. Put that cache and all checkpoints outside Git and outside `/tmp` for
-durable runs.
+VALIDATION J raw records from `raw/J/<identity-hash>.json.gz`; the collection
+finalizer deliberately does not materialize `shards/J`. The loader authenticates
+the release, binding, selection, plan, vocabulary, and quarantine resolution,
+checks each selected raw record against `release.files`, constructs its exact J
+job, validates the raw record, and derives the model projection in memory.
+Quarantined J roots are excluded without replacement. There is no LOCKED_TEST
+evaluation command in this tool. The preparation cache is bound to the release,
+vocabulary, trainer source hash, cache schema, and a content digest over prepared
+tensors and normalization, and contains compact ragged tensors rather than
+decompressed shards. Put that cache and all checkpoints outside Git and outside
+`/tmp` for durable runs.
 
 ```bash
 CORPUS=/home/philippherrmann/Documents/sts/silver-prior-v1-corpus-v2
@@ -257,6 +260,8 @@ corpus, TRAIN-only normalization and top-two-gap temperature scale, and three
 predeclared target temperatures. Every root contributes equally to grouped
 cross-entropy regardless of candidate count. Candidate softmax is grouped by
 root. Empty limbo and stasis reference slots are explicit occupancy inputs.
+Each training epoch permutes all `len(TRAIN["contexts"])` roots and checks exact
+root coverage, action count, and optimizer-step count before validation.
 Stage-A validation includes root-level metrics with 5,000 source-cluster
 bootstrap replicates; each replicate resamples source seeds and pools their
 roots, matching the root-weighted point estimate. The independent J command is

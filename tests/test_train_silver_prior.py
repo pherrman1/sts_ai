@@ -138,7 +138,7 @@ class SilverPriorTrainingTests(unittest.TestCase):
         for i in range(64):
             root={"root_id":f"v{i}","source_seed":i}
             entries.append({"split":"VALIDATION","judge_selected":True,"root":root})
-            files.append({"path":f"shards/J/v{i}.json.gz","sha256":"h"})
+            files.append({"path":f"raw/J/v{i}.json.gz","sha256":"h"})
         entries.append({"split":"LOCKED_TEST","judge_selected":True,"root":{"root_id":"locked","source_seed":999}})
         release={"sha256":t.RELEASE,"training_ready":True,"binding_sha256":t.BINDING,"selection_sha256":t.SELECTION,"quarantined_roots":[],"files":files}
         binding={"sha256":t.BINDING,"plan_sha256":"p","executable_git_sha":"g"}
@@ -146,16 +146,30 @@ class SilverPriorTrainingTests(unittest.TestCase):
         plan={"sha256":"p","vocabulary_sha256":"v"};vocab={"sha256":"v"}
         def read(path):
             return {"release.json":release,"binding.json":binding,"selection.json":selection,"plan.json":plan,"vocabulary.json":vocab}.get(Path(path).name,{"replay":{"ok":1},"observation":{},"values":[1.,0.]})
-        with mock.patch.object(t.dataset,"read",side_effect=read),mock.patch.object(t.dataset,"check_seal"),mock.patch.object(t.projection,"validate_vocabulary"),mock.patch.object(t.dataset,"identity_hash",side_effect=lambda root:root["root_id"]),mock.patch.object(t.dataset,"file_hash",return_value="h") as fh,mock.patch.object(t.dataset,"job_for",side_effect=lambda e,*a,**kw:{"split":e["split"]}),mock.patch.object(t.dataset,"shard",side_effect=lambda raw,*a,**kw:{"replay":raw,"observation":{},"values":[1.,0.]}):
+        with mock.patch.object(t.dataset,"read",side_effect=read),mock.patch.object(t.dataset,"check_seal"),mock.patch.object(t.projection,"validate_vocabulary"),mock.patch.object(t.dataset,"identity_hash",side_effect=lambda root:root["root_id"]),mock.patch.object(t.dataset,"file_hash",return_value="h") as fh,mock.patch.object(t.dataset,"job_for",side_effect=lambda e,*a,**kw:{"split":e["split"],"estimator":kw["role"],"root":e["root"]}),mock.patch.object(t.dataset,"validate_raw",return_value=[1.,0.]) as vr,mock.patch.object(t.dataset,"shard",side_effect=lambda raw,*a,**kw:{"observation":{},"values":[1.,0.]}):
             loaded=t.load_validation_j(Path(tempfile.gettempdir()),None,None,None)
             self.assertEqual(len(loaded),64)
             self.assertEqual(fh.call_count,64)
-            self.assertTrue(all("locked" not in str(call.args[0]) for call in fh.call_args_list))
+            self.assertTrue(all("/raw/J/" in str(call.args[0]) for call in fh.call_args_list))
+            self.assertEqual(vr.call_count,64)
             selection["sha256"]="tampered"
             fh.reset_mock()
             with self.assertRaisesRegex(ValueError,"frozen binding/selection mismatch"):
                 t.load_validation_j(Path(tempfile.gettempdir()),None,None,None)
             fh.assert_not_called()
+
+    def test_epoch_orders_use_context_root_count_not_prepared_dict_key_count(self):
+        prepared={"contexts":torch.zeros((7,3)),"labels":torch.zeros(11),"source_seed":[1]*7,"root_id":[str(i) for i in range(7)]}
+        self.assertNotEqual(len(prepared),len(prepared["contexts"]))
+        orders=t.make_epoch_orders(prepared,__import__("numpy").random.default_rng(7),epochs=3)
+        self.assertEqual(len(orders),3)
+        for order in orders:
+            report=t.assert_epoch_accounting(order,prepared,optimizer_steps=1,batch_size=128,action_count=11)
+            self.assertEqual(report,{"train_roots_per_epoch":7,"train_actions":11,"optimizer_steps":1})
+        with self.assertRaisesRegex(ValueError,"every TRAIN root exactly once"):
+            t.assert_epoch_accounting([0,1,2,3,4,5,5],prepared,optimizer_steps=1,batch_size=128,action_count=11)
+        with self.assertRaisesRegex(ValueError,"action count mismatch"):
+            t.assert_epoch_accounting(range(7),prepared,optimizer_steps=1,batch_size=128,action_count=10)
 
     def test_batched_predictions_match_single_root_predictions(self):
         m=self.model();rows=[self.row(seed=1),self.row(seed=2,rid="r2")]
