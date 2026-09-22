@@ -2026,6 +2026,13 @@ public final class STSModelInspector implements PostInitializeSubscriber,
                 out.append('\"').append(escapeJson(card.cardID)).append('\"');
             }
         }
+        out.append("],\"liveUuids\":[");
+        first = true;
+        if (source != null) for (AbstractCard card : source) {
+            if (!first) out.append(',');
+            first = false;
+            out.append('"').append(escapeJson(String.valueOf(card.uuid))).append('"');
+        }
         return out.append("]}").toString();
     }
 

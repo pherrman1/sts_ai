@@ -609,6 +609,9 @@ fail-closed. Combat `GRID`/`HAND_SELECT` boundaries also use Silver.
 Liquid Memories' GRID task is identified from the live
 `BetterDiscardPileToHandAction` cost-zero fields. Its generic return-to-hand
 prompt also appears for Hologram and cannot classify the task by itself.
+The selection observation carries the visible GRID card UUIDs in display
+order, so Silver's physical discard-card identity lowers to one MCP choice
+even when two offered cards share a name.
 Selectors named in the shared enum but absent from the isolated Silver port
 return `silver_selection_task_not_in_port` before search instead of reaching
 its assertion path.

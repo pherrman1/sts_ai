@@ -2064,6 +2064,20 @@ int main() {
         if (!one_combat::advisor::selectedLiveAction(
                 loweringAction, loweringContext, discoveryObservation).is_null())
             throw std::runtime_error("ambiguous Discovery option was lowered as executable");
+        loweringAction.source = silver_bridge::CardSource::DISCARD;
+        loweringAction.cardSelectTask = static_cast<std::int16_t>(CardSelectTask::LIQUID_MEMORIES_POTION);
+        loweringAction.card.uniqueId = 23;
+        auto liquidObservation = targetObservation;
+        liquidObservation["combat"]["cardSelect"] = json{
+            {"task", "LIQUID_MEMORIES_POTION"}, {"liveUuids", json::array({"copy-a", "copy-b"})}};
+        if (one_combat::advisor::selectedLiveAction(
+                loweringAction, loweringContext, liquidObservation)
+                != json{{"kind", "choose"}, {"choiceIndex", 2}})
+            throw std::runtime_error("duplicate Liquid Memories cards lost physical GRID choice");
+        liquidObservation["combat"]["cardSelect"]["liveUuids"][1] = "copy-a";
+        if (!one_combat::advisor::selectedLiveAction(
+                loweringAction, loweringContext, liquidObservation).is_null())
+            throw std::runtime_error("missing Liquid Memories UUID was silently lowered");
         loweringAction.source = silver_bridge::CardSource::NONE;
         loweringAction.cardSelectTask = 0;
         loweringAction.type = silver_bridge::SemanticActionType::POTION;

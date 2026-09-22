@@ -1198,13 +1198,29 @@ nlohmann::json selectedLiveAction(const silver_bridge::SemanticAction &action,
         return {{"kind", "proceed"}};
     }
     case SemanticActionType::SINGLE_CARD_SELECT: {
-        if (action.cardSelectTask != static_cast<std::int16_t>(sts::CardSelectTask::DISCOVERY)
-            || action.source != silver_bridge::CardSource::CARD_SELECT_OPTION) return nullptr;
         nlohmann::json combat = observation.contains("combat") && observation["combat"].is_object()
             ? observation["combat"]
             : observation.value("silverRoot", nlohmann::json::object())
                   .value("combat", nlohmann::json::object());
         const auto select = combat.value("cardSelect", nlohmann::json::object());
+        if (action.cardSelectTask == static_cast<std::int16_t>(sts::CardSelectTask::LIQUID_MEMORIES_POTION)
+                && action.source == silver_bridge::CardSource::DISCARD
+                && select.is_object()
+                && select.value("task", std::string()) == "LIQUID_MEMORIES_POTION") {
+            const auto uuid = uuidForId(action.card.uniqueId);
+            const auto live = select.value("liveUuids", nlohmann::json::array());
+            if (uuid.empty() || !live.is_array()) return nullptr;
+            int index = -1;
+            for (int i = 0; i < static_cast<int>(live.size()); ++i) {
+                if (!live[i].is_string() || live[i].get<std::string>() != uuid) continue;
+                if (index >= 0) return nullptr;
+                index = i;
+            }
+            return index < 0 ? nlohmann::json(nullptr)
+                : nlohmann::json{{"kind", "choose"}, {"choiceIndex", index + 1}};
+        }
+        if (action.cardSelectTask != static_cast<std::int16_t>(sts::CardSelectTask::DISCOVERY)
+            || action.source != silver_bridge::CardSource::CARD_SELECT_OPTION) return nullptr;
         if (!select.is_object() || select.value("task", std::string()) != "DISCOVERY")
             return nullptr;
         if (action.skipCardSelect)
