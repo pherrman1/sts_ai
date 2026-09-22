@@ -1172,6 +1172,32 @@ int cardActionCount(const std::vector<silver_bridge::SemanticAction> &actions, C
 }
 int main() {
     try {
+        // Exact POWER_ID constants from the pinned desktop-1.0.jar, rather
+        // than Java class names. Keep this audit broad enough to catch the
+        // next vanilla player power before a live run reaches it.
+        const std::vector<std::pair<std::string, PlayerStatus>> vanillaPlayerPowers = {
+            {"Accuracy", PlayerStatus::ACCURACY}, {"After Image", PlayerStatus::AFTER_IMAGE},
+            {"Amplify", PlayerStatus::AMPLIFY}, {"Bias", PlayerStatus::BIAS},
+            {"Blur", PlayerStatus::BLUR}, {"Brutality", PlayerStatus::BRUTALITY},
+            {"Burst", PlayerStatus::BURST}, {"Collect", PlayerStatus::COLLECT},
+            {"Constricted", PlayerStatus::CONSTRICTED}, {"Creative AI", PlayerStatus::CREATIVE_AI},
+            {"Double Damage", PlayerStatus::DOUBLE_DAMAGE}, {"Draw Card", PlayerStatus::DRAW_CARD_NEXT_TURN},
+            {"Draw Reduction", PlayerStatus::DRAW_REDUCTION}, {"Energized", PlayerStatus::ENERGIZED},
+            {"Envenom", PlayerStatus::ENVENOM}, {"Equilibrium", PlayerStatus::EQUILIBRIUM},
+            {"Infinite Blades", PlayerStatus::INFINITE_BLADES}, {"IntangiblePlayer", PlayerStatus::INTANGIBLE},
+            {"Loop", PlayerStatus::LOOP}, {"DexLoss", PlayerStatus::LOSE_DEXTERITY},
+            {"Magnetism", PlayerStatus::MAGNETISM}, {"Mayhem", PlayerStatus::MAYHEM},
+            {"Next Turn Block", PlayerStatus::NEXT_TURN_BLOCK}, {"Noxious Fumes", PlayerStatus::NOXIOUS_FUMES},
+            {"Rebound", PlayerStatus::REBOUND}, {"StaticDischarge", PlayerStatus::STATIC_DISCHARGE},
+            {"Surrounded", PlayerStatus::SURROUNDED}, {"Thousand Cuts", PlayerStatus::THOUSAND_CUTS},
+            {"Tools Of The Trade", PlayerStatus::TOOLS_OF_THE_TRADE},
+            {"Echo Form", PlayerStatus::ECHO_FORM}, {"Electro", PlayerStatus::ELECTRO},
+            {"Double Tap", PlayerStatus::DOUBLE_TAP},
+            {"Sadistic", PlayerStatus::SADISTIC}, {"Phantasmal", PlayerStatus::PHANTASMAL},
+        };
+        for (const auto &[powerId, status] : vanillaPlayerPowers)
+            if (one_combat::advisor::live_silver::playerStatus(powerId) != status)
+                throw std::runtime_error("vanilla player POWER_ID mapping missing: " + powerId);
         {
             GameContext game(CharacterClass::IRONCLAD, 0x71517u, 0);
             game.act = 1;

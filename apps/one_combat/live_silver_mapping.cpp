@@ -157,6 +157,25 @@ const std::map<std::string, PlayerStatus> kPlayerStatuses = {
     {"PhantasmalKillerPower", PlayerStatus::PHANTASMAL}, {"SadisticNaturePower", PlayerStatus::SADISTIC},
     {"StaticDischargePower", PlayerStatus::STATIC_DISCHARGE}, {"ThousandCutsPower", PlayerStatus::THOUSAND_CUTS},
     {"ToolsOfTheTradePower", PlayerStatus::TOOLS_OF_THE_TRADE}, {"EquilibriumPower", PlayerStatus::EQUILIBRIUM},
+    // Exact vanilla POWER_ID constants from desktop-1.0.jar. Class-name
+    // aliases above are retained for recorded fixtures and compatibility.
+    {"Accuracy", PlayerStatus::ACCURACY}, {"After Image", PlayerStatus::AFTER_IMAGE},
+    {"Amplify", PlayerStatus::AMPLIFY}, {"Bias", PlayerStatus::BIAS},
+    {"Blur", PlayerStatus::BLUR}, {"Brutality", PlayerStatus::BRUTALITY},
+    {"Burst", PlayerStatus::BURST}, {"Collect", PlayerStatus::COLLECT},
+    {"Constricted", PlayerStatus::CONSTRICTED}, {"Creative AI", PlayerStatus::CREATIVE_AI},
+    {"Double Damage", PlayerStatus::DOUBLE_DAMAGE}, {"Draw Card", PlayerStatus::DRAW_CARD_NEXT_TURN},
+    {"Draw Reduction", PlayerStatus::DRAW_REDUCTION}, {"Energized", PlayerStatus::ENERGIZED},
+    {"Envenom", PlayerStatus::ENVENOM}, {"Equilibrium", PlayerStatus::EQUILIBRIUM},
+    {"Infinite Blades", PlayerStatus::INFINITE_BLADES}, {"IntangiblePlayer", PlayerStatus::INTANGIBLE},
+    {"Loop", PlayerStatus::LOOP}, {"DexLoss", PlayerStatus::LOSE_DEXTERITY},
+    {"Magnetism", PlayerStatus::MAGNETISM}, {"Mayhem", PlayerStatus::MAYHEM},
+    {"Next Turn Block", PlayerStatus::NEXT_TURN_BLOCK}, {"Noxious Fumes", PlayerStatus::NOXIOUS_FUMES},
+    {"Rebound", PlayerStatus::REBOUND}, {"StaticDischarge", PlayerStatus::STATIC_DISCHARGE},
+    {"Surrounded", PlayerStatus::SURROUNDED}, {"Thousand Cuts", PlayerStatus::THOUSAND_CUTS},
+    {"Tools Of The Trade", PlayerStatus::TOOLS_OF_THE_TRADE},
+    {"Echo Form", PlayerStatus::ECHO_FORM}, {"Electro", PlayerStatus::ELECTRO},
+    {"Sadistic", PlayerStatus::SADISTIC}, {"Phantasmal", PlayerStatus::PHANTASMAL},
 };
 
 const std::map<std::string, sts::MonsterStatus> kMonsterStatuses = {
@@ -188,6 +207,13 @@ const std::map<std::string, sts::MonsterStatus> kMonsterStatuses = {
     {"ModeShiftPower", sts::MonsterStatus::MODE_SHIFT}, {"SporeCloudPower", sts::MonsterStatus::SPORE_CLOUD},
     {"ThieveryPower", sts::MonsterStatus::THIEVERY}, {"SharpHidePower", sts::MonsterStatus::SHARP_HIDE},
     {"AsleepPower", sts::MonsterStatus::ASLEEP},
+    // Exact vanilla POWER_ID constants for statuses already represented by
+    // the native monster model.
+    {"Choked", sts::MonsterStatus::CHOKED}, {"Lockon", sts::MonsterStatus::LOCK_ON},
+    {"Shackled", sts::MonsterStatus::SHACKLED}, {"Regenerate", sts::MonsterStatus::REGEN},
+    {"Painful Stabs", sts::MonsterStatus::PAINFUL_STABS},
+    {"Generic Strength Up Power", sts::MonsterStatus::GENERIC_STRENGTH_UP},
+    {"Compulsive", sts::MonsterStatus::REACTIVE},
 };
 
 const std::map<std::string, sts::CardSelectTask> kSelectionTasks = {

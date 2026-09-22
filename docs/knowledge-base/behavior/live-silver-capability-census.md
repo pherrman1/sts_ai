@@ -57,6 +57,11 @@ Strength loss). The vanilla `Regeneration` player power from Regen Potion maps
 to native `Regen`, which heals and decrements at the end of each turn.
 Vanilla's visible `Double Tap` power maps to native `DoubleTap` for the next
 attack-copy count.
+The live mapping also accepts exact vanilla `POWER_ID` strings for native
+player and monster statuses; Java class-name aliases alone are insufficient
+because many emitted IDs differ (for example `After Image`, `Energized`, and
+`Painful Stabs`). The importer still checks extra state such as `justApplied`
+and Echo Form's doubled-card count before accepting those powers.
 Vanilla's Mad Gremlin uses the Java ID `GremlinWarrior`; its native move logic
 does not consult `miscInfo`, so the observer supplies an explicit zero.
 An unqualified transient combat observation leaves the last qualified Silver

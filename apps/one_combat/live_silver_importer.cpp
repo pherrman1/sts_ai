@@ -862,6 +862,7 @@ SilverRootImportResult importSilverRootGeneric(const json &observation,
                 || powerId == "Draw Reduction" || powerId == "DrawReductionPower"
                 || powerId == "Frail" || powerId == "FrailPower"
                 || powerId == "Intangible" || powerId == "IntangiblePlayerPower"
+                || powerId == "IntangiblePlayer"
                 || powerId == "Vulnerable" || powerId == "VulnerablePower"
                 || powerId == "Weak" || powerId == "WeakPower" || powerId == "Weakened";
             if ((needsCombust && !combat.contains("combustHpLoss"))
