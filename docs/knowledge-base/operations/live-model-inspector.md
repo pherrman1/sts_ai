@@ -524,6 +524,10 @@ event field and checks the displayed gain/damage and intro phase.
 is qualified by its intro options and ascension-dependent public gold amount
 before mapping to native `Golden Shrine`. Unopened treasure imports its public
 chest size; its unrevealed contents remain hidden in the hypothetical futures.
+The Cleric's initial three-option phase is qualified when the displayed heal
+and purge costs match the native values; its public heal amount enters
+`StateInfo.hpAmount0`. Other phases and unavailable purge choices still fail
+closed.
 The private Java
 `potionChance` and `cardRarityFactor` counters are not captured. Roots such
 as Library, Mushrooms and Mysterious Sphere whose pre-MAP

@@ -176,6 +176,14 @@ public final class LiveOocCaptureTest {
                 || LiveOocCapture.goldShrineInitialVisible("RESULT", shrineLabels, shrineOptions, 100, 0)
                 || LiveOocCapture.simpleInitialEventSupported("GoldenShrine"))
             throw new AssertionError("GoldShrine runtime class or public amount mismatch");
+        List<String> clericLabels = Arrays.asList("[Heal] 35 Gold: Heal 20 HP.",
+                "[Purify] 50 Gold: Remove a card from your deck.", "[Leave]");
+        if (!LiveOocCapture.clericInitialVisible(0, clericLabels, shrineOptions, 20, 50, 80, 117, 0)
+                || LiveOocCapture.clericInitialVisible(1, clericLabels, shrineOptions, 20, 50, 80, 117, 0)
+                || LiveOocCapture.clericInitialVisible(0, clericLabels, shrineOptions, 19, 50, 80, 117, 0)
+                || LiveOocCapture.clericInitialVisible(0, clericLabels, shrineOptions, 20, 50, 80, 49, 0)
+                || LiveOocCapture.clericInitialVisible(0, clericLabels, shrineOptions, 20, 50, 80, 117, 20))
+            throw new AssertionError("Cleric initial public options or amount mismatch");
         try {
             LiveOocCapture.scrapOozeRetryCount(30, 3, 0);
             throw new AssertionError("non-native Scrap Ooze chance was accepted");

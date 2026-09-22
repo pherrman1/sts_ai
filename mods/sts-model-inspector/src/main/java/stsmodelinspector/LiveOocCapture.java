@@ -703,6 +703,24 @@ final class LiveOocCapture {
                 "WomanInBlue").contains(simple);
     }
 
+    static boolean clericInitialVisible(Object phase, List<?> labels, List<?> options,
+                                        int healAmount, int purifyCost, int maxHp, int gold,
+                                        int ascension) {
+        int expectedCost = ascension >= 15 ? 75 : 50;
+        return "0".equals(String.valueOf(phase)) && labels.size() == 3 && options.size() == 3
+                && gold >= expectedCost && healAmount == (int)(maxHp * 0.25f)
+                && purifyCost == expectedCost
+                && ((Number)map(options.get(0)).get("index")).intValue() == 0
+                && ((Number)map(options.get(1)).get("index")).intValue() == 1
+                && ((Number)map(options.get(2)).get("index")).intValue() == 2
+                && String.valueOf(labels.get(0)).contains("[Heal]")
+                && String.valueOf(labels.get(0)).contains("35 Gold")
+                && String.valueOf(labels.get(0)).contains(Integer.toString(healAmount))
+                && String.valueOf(labels.get(1)).contains("[Purify]")
+                && String.valueOf(labels.get(1)).contains(purifyCost + " Gold")
+                && String.valueOf(labels.get(2)).contains("[Leave]");
+    }
+
     static boolean goopInitialVisible(Object phase, List<?> labels, List<?> options,
                                       int damage, int gain, int goldLoss, int playerGold) {
         return "INTRO".equals(String.valueOf(phase)) && labels.size() == 2 && options.size() == 2
@@ -1088,6 +1106,13 @@ final class LiveOocCapture {
         boolean goldShrine = "GoldShrine".equals(simple)
                 && goldShrineInitialVisible(phase, labels, options,
                         ((Number)field(event, "goldAmt")).intValue(), AbstractDungeon.ascensionLevel);
+        boolean cleric = "Cleric".equals(simple)
+                && clericInitialVisible(phase, labels, options,
+                        ((Number)field(event, "healAmt")).intValue(),
+                        ((Number)field(event, "purifyCost")).intValue(),
+                        AbstractDungeon.player.maxHealth, AbstractDungeon.player.gold,
+                        AbstractDungeon.ascensionLevel);
+        if (cleric) map(out.get("details")).put("hpAmount0", field(event, "healAmt"));
         if ("WeMeetAgain".equals(simple) && "INTRO".equals(String.valueOf(phase))) {
             Map<String,Object> details = map(out.get("details"));
             Object offeredPotion = field(event, "potionOption");
@@ -1130,7 +1155,7 @@ final class LiveOocCapture {
                 && !goop
                 && !goldShrine
                 && !nestDecisionVisible(simple, phase, labels, options, AbstractDungeon.ascensionLevel)
-                && !idolTrap && !goldenWing)
+                && !idolTrap && !goldenWing && !cleric)
             out.put("unsupportedReason", "EVENT_PHASE_UNREPRESENTABLE:" + id + ":" + phase);
         if ("NeowEvent".equals(simple)) {
             List<Object> offers = new ArrayList<>();
