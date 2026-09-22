@@ -11157,3 +11157,36 @@ contract or Silver behavior changed.
   production-path exercise and capture round-trip verification, not a
   gameplay-quality comparison or population qualification. The consumed
   HOLDOUT was not rerun. [Native-smoke raw packet](evidence/silver_quiescent_queue_item_20260922/README.md).
+
+### Frozen Silver prior root-PUCT replay screen (2026-09-23)
+
+At baseline `293c0704f0921688a6dc7066800b3bfcb1801bc5`, screened the frozen
+`SilverPriorNetV1` T2 checkpoint (seed `20260922`, tau `1.179975000005129`,
+checkpoint SHA-256 `b756c3e6576bdb53085f24aeb1102e4e2fe55fd7469c55546c99f068ccf40e24`)
+on exactly 64 preselected VALIDATION-J roots / 64 source seeds. This is a
+development mechanism screen because VALIDATION was already used for model
+selection. Preparation validated the frozen corpus binding and selected L
+shards only, then sealed native-order aligned learned, uniform, and L-oracle
+priors. The learned arm used `softmax(logits)` without another temperature;
+the oracle used `softmax(L / tau)`. Replay completed and was sealed before the
+analyzer read the matching 64 VALIDATION J raw files. No LOCKED_TEST root,
+label, count, or raw artifact was used.
+
+All four arms retained native Silver action order and ran fresh trees at 32
+simulations with four common-seed replicates per root. Root PUCT used its
+existing `c=2.5`; internal UCT, chance handling, rollout, and evaluator were
+unchanged. The 1,024-row replay was analyzed by 10,000 paired bootstrap
+replicates over source seeds. Mean J regrets were A_UCT 1.32065, U_UNIFORM
+1.41371, M_LEARNED 1.37981, and O_ORACLE_L 1.14595. M_LEARNED minus
+U_UNIFORM was `-0.03390 [-0.11794,0.03651]`; M_LEARNED minus A_UCT was
+`+0.05916 [-0.28676,0.37000]`; O_ORACLE_L minus U_UNIFORM was
+`-0.26776 [-0.56135,-0.07144]` (95% source-seed bootstrap CIs).
+
+Classification: **`LEARNED_PRIOR_SEARCH_HEADROOM_NOT_CAPTURED`**. The oracle
+confirms usable root-PUCT headroom on these roots, while the learned prior
+fails its predeclared comparison with uniform and does not beat ordinary UCT.
+Stop the deployment line; do not export or port the network based on this
+screen. This is not a gameplay result, fresh generalization claim, or default
+promotion. [Evidence packet](evidence/silver_prior_root_replay_20260923/README.md).
+**Knowledge impact:** update the current research status; no stable
+implementation contract or Silver behavior changed.

@@ -1,0 +1,15 @@
+{
+  "binding_sha256": "7febae9df90e427ad5db631a2004ff4c4cdd579346d22d25b3e1f4532af96e17",
+  "checkpoint_sha256": "b756c3e6576bdb53085f24aeb1102e4e2fe55fd7469c55546c99f068ccf40e24",
+  "experiment_id": "silver-prior-root-screen-v1/20260922",
+  "priors_sha256": "67ad785b6160e2264884ce4c142d0b4f3c701d9ab76651cad7e272566db8899d",
+  "raw_J_opened": false,
+  "release_sha256": "b32d8d79b44ee799af05892e79e45fb146f4859df58364722d7cd92531bd8419",
+  "roots": 64,
+  "roots_sha256": "c9b26024b92b4a44136e0b365940b818a52accedfe030adbedbe50b0bbcec111",
+  "schema": "silver_prior_root_screen_preparation_v1",
+  "selection_sha256": "ed91b3bb4c6983be3701333320f1e6c12f7332e3e371ac24b857a76a47d3b5ed",
+  "source_seeds": 64,
+  "status": "SEALED",
+  "vocabulary_sha256": "7e07db8b10618d7c1e9b9b1b31d8196950c03060c54fd4d25fd057ac7918cd46"
+}

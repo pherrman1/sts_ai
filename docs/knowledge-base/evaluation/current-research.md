@@ -1553,11 +1553,20 @@ itself improved locked-J regret over uniform by `4.11938` points; the student
 recovered 70.29% of that soft-prior headroom. This is frozen offline
 generalization evidence, not gameplay qualification or default promotion.
 LOCKED_TEST is consumed and must not be used for tuning; the evaluator command
-is now disabled for every output path. The next experiment is the separate
-oracle/native prior integration: export the frozen network,
-measure native inference cost, then compare uniform-PUCT and learned-prior
-PUCT under small paired Silver budgets. See the [ledger-06 result](../../experiments/ledger-06.md)
-and the [locked-test evidence packet](../../experiments/evidence/silver_prior_locked_test_v1_20260922/README.md).
+is now disabled for every output path. A bounded root-replay mechanism screen
+then evaluated the frozen T2 prior on 64 preselected VALIDATION roots. The
+L-target oracle beat uniform PUCT (`-0.26776`, 95% source-seed CI
+`[-0.56135,-0.07144]`), while learned-minus-uniform crossed zero
+(`-0.03390`, `[-0.11794,0.03651]`) and learned-minus-ordinary-UCT also
+crossed zero (`+0.05916`, `[-0.28676,0.37000]`). Its predeclared
+classification is **`LEARNED_PRIOR_SEARCH_HEADROOM_NOT_CAPTURED`**: root PUCT
+has usable headroom on this development population, but the learned prior did
+not capture it. Stop the deployment line; do not export or port this network
+from this evidence. VALIDATION was used for model selection, so this is a
+mechanism screen rather than fresh generalization evidence. No gameplay or
+default search changed. See the [root-replay packet](../../experiments/evidence/silver_prior_root_replay_20260923/README.md),
+the [ledger-06 result](../../experiments/ledger-06.md), and the
+[locked-test evidence packet](../../experiments/evidence/silver_prior_locked_test_v1_20260922/README.md).
 
 ### Combat leaf/model variants
 
