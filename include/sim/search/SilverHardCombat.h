@@ -8,9 +8,17 @@
 
 namespace silver_bridge {
 
-inline constexpr const char *kHardCombatSchema = "silver_hard_combat_v1";
+inline constexpr const char *kHardCombatSchema = "silver_hard_combat_v2";
+inline constexpr const char *kLegacyHardCombatSchema = "silver_hard_combat_v1";
 
 inline std::uint64_t hardCombatBenchmarkSeed(const std::string &stateHash);
+
+inline std::string hardCombatStateHash(const BattleStateWire &wire) {
+    const auto envelope = battleStateWireEnvelope(wire);
+    return rootMechanismHash(envelope.dump()
+        + (wire.historicalQueueItemAtSource ? "/source-queue-historical=1"
+                                            : "/source-queue-historical=0"));
+}
 
 inline bool hardCombatRoomTypeValid(const std::string &roomType) {
     return roomType == "hallway" || roomType == "elite"
@@ -27,6 +35,9 @@ inline nlohmann::json hardCombatSnapshot(const BattleStateWire &wire,
     if (!wire.valid || wire.inputState <= 0 || wire.outcome != 0)
         throw std::invalid_argument("invalid hard-combat start state");
     const auto envelope = battleStateWireEnvelope(wire);
+    const auto stateHash = hardCombatStateHash(wire);
+    if (benchmarkSeed != hardCombatBenchmarkSeed(stateHash))
+        throw std::invalid_argument("hard-combat benchmark seed mismatch");
     const auto caseId = std::to_string(sourceSeed) + "/" + std::to_string(fightIndex);
     return {{"schema", kHardCombatSchema}, {"case_id", caseId},
         {"source_seed", sourceSeed}, {"fight_index", fightIndex},
@@ -35,16 +46,22 @@ inline nlohmann::json hardCombatSnapshot(const BattleStateWire &wire,
         {"start_hp", wire.player.curHp}, {"start_max_hp", wire.player.maxHp},
         {"executable_git_sha", sourceSha}, {"silver_upstream_sha", kRootMechanismSilverSha},
         {"benchmark_seed", benchmarkSeed}, {"capture_config", captureConfig},
-        {"state", envelope}, {"state_hash", rootMechanismHash(envelope.dump())}};
+        {"state", envelope}, {"historical_queue_item_at_source", wire.historicalQueueItemAtSource},
+        {"state_hash", stateHash}};
 }
 
 inline BattleStateWire validateHardCombatSnapshot(const nlohmann::json &row) {
-    if (row.at("schema") != kHardCombatSchema
+    const auto schema = row.at("schema").get<std::string>();
+    if ((schema != kHardCombatSchema && schema != kLegacyHardCombatSchema)
             || row.at("silver_upstream_sha") != kRootMechanismSilverSha)
         throw std::invalid_argument("incompatible hard-combat schema/provenance");
-    const auto wire = battleStateWireFromEnvelope(row.at("state"));
+    auto wire = battleStateWireFromEnvelope(row.at("state"));
+    if (schema == kHardCombatSchema)
+        wire.historicalQueueItemAtSource =
+            row.at("historical_queue_item_at_source").get<bool>();
     const auto envelope = battleStateWireEnvelope(wire);
-    const auto stateHash = rootMechanismHash(envelope.dump());
+    const auto stateHash = schema == kHardCombatSchema
+        ? hardCombatStateHash(wire) : rootMechanismHash(envelope.dump());
     const auto sourceSeed = row.at("source_seed").get<std::uint64_t>();
     const auto fightIndex = row.at("fight_index").get<int>();
     const auto sourceSha = row.at("executable_git_sha").get<std::string>();
