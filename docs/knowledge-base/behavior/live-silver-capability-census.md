@@ -55,6 +55,10 @@ Strength loss). The vanilla `Regeneration` player power from Regen Potion maps
 to native `Regen`, which heals and decrements at the end of each turn.
 Vanilla's Mad Gremlin uses the Java ID `GremlinWarrior`; its native move logic
 does not consult `miscInfo`, so the observer supplies an explicit zero.
+An unqualified transient combat observation leaves the last qualified Silver
+search session intact. The strict driver still rejects that observation if it
+remains the current player decision; a later qualified root in the same combat
+can reroot from the last modeled action after summon animations settle.
 
 ## Public-information rules
 

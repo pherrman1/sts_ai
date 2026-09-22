@@ -456,7 +456,10 @@ json silverEvaluator(const one_combat::advisor::Request &request,
         silverSimulations = 0;
     };
     if (!imported.ok) {
-        clearSession();
+        // An animation/summon can emit a transient unqualified observation
+        // before the next actionable player root. The driver rejects that
+        // snapshot if it remains current; keep the last qualified search
+        // session so a later root in the same combat can reroot from it.
         evaluator["status"] = "UNSUPPORTED";
         evaluator["reason"] = imported.reason;
         return evaluator;

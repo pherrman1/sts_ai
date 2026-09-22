@@ -1,3 +1,4 @@
+import copy
 import json
 import os
 from pathlib import Path
@@ -26,6 +27,31 @@ class AdvisorProtocolTest(unittest.TestCase):
             capture_output=True, check=True, env=env)
         self.assertEqual(proc.stderr, "")
         return [json.loads(line) for line in proc.stdout.splitlines()]
+
+    def test_transient_unqualified_summon_preserves_silver_predecessor(self):
+        # Captured at a Gremlin Leader replacement on floor 24. Model two
+        # qualified player roots with one transient missing-misc observation
+        # between them; no player action executes for the transient snapshot.
+        fixture = Path(__file__).parent / "fixtures" / "live_gremlin_leader_summon.json"
+        observation = json.loads(fixture.read_text())
+        requests = []
+        for index in range(3):
+            current = copy.deepcopy(observation)
+            current["silverRoot"]["playerTurn"] = 1 if index < 2 else 2
+            current["silverRoot"]["decisionInTurn"] = 0
+            current["silverRoot"]["combat"]["turn"] = 1 if index < 2 else 2
+            if index == 1:
+                current["silverRoot"]["combat"]["monsters"][0].pop("miscInfo")
+            requests.append(json.dumps({
+                "protocol": "sts_model_inspector_v1", "kind": "observation",
+                "session": "gremlin-summon", "sequence": index + 1,
+                "observationHash": f"gremlin-{index + 1}", "observation": current,
+            }))
+        responses = self.run_advisor(requests)
+        silver = [next(e for e in response["evaluators"]
+                       if e["id"] == "silver_player_decision_v2") for response in responses]
+        self.assertEqual([row["status"] for row in silver], ["OK", "UNSUPPORTED", "OK"])
+        self.assertEqual(silver[1]["reason"], "silver_unmapped_monster_state")
 
     def test_handshake_and_fail_closed_observation(self):
         rows = self.run_advisor([
