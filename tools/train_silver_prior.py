@@ -496,7 +496,7 @@ def evaluate_validation_j(corpus,cache,artifact_dir,device="cpu"):
         for name in per[0]:
             if name in ("root_id","source_seed"):continue
             metrics[name]=bootstrap_summary([r[name] for r in per],[r["source_seed"] for r in per])
-        for name in metrics: 
+        for name in metrics:
             if name=="pairwise_concordance":metrics[name]=bootstrap_summary([np.nan if r[name] is None else r[name] for r in per],[r["source_seed"] for r in per])
         diff=[r["model_expected_regret"]-r["uniform_expected_regret"] for r in per]
         metrics["model_minus_uniform"]=bootstrap_summary(diff,[r["source_seed"] for r in per])
