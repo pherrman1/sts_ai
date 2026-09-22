@@ -1764,6 +1764,11 @@ void oocMctsAdapterSelfTest() {
     require(fixture.info.selectScreenType==CardSelectScreenType::BOTTLE,"bottle fixture opens selector");
     checkCandidates(fixture);
     {
+        OocGameContextModel bottleRoot(fixture,path);
+        require(!bottleRoot.isLeafBoundary(0) && !bottleRoot.legalActions(0).empty(),
+            "native bottle selector remains an MCTS decision root");
+    }
+    {
         auto fresh=detachedCopy(gc); fresh.openCardSelectScreen(CardSelectScreenType::REMOVE,1);
         OocGameContextModel provider(fresh,path);
         const auto chosen=provider.candidate(0,provider.legalActions(0).front().id);

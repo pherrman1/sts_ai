@@ -35,6 +35,13 @@ public final class LiveOocCaptureTest {
         check("NlothsMask", 1, false, 1, "RELIC_NATIVE_STATE_UNREPRESENTABLE:NlothsMask:active");
         check("Matryoshka", -2, true, 0, null);
         check("UnqualifiedCounter", 3, false, 3, "RELIC_NATIVE_COUNTER_UNQUALIFIED:UnqualifiedCounter");
+        if (!LiveOocCapture.bottlePromptMatches("Choose a card for Bottled Tornado.",
+                    "Choose a card for ", "Bottled Tornado", ".")
+                || LiveOocCapture.bottlePromptMatches("Choose a card to upgrade.",
+                    "Choose a card for ", "Bottled Tornado", ".")
+                || LiveOocCapture.bottlePromptMatches(null,
+                    "Choose a card for ", "Bottled Tornado", "."))
+            throw new AssertionError("bottle selector prompt identity widened");
         if (!"GAMBLE".equals(STSModelInspector.handSelectionTask("", true, true, 99)))
             throw new AssertionError("Gambler's Brew hand selector was not classified as GAMBLE");
         if (!"".equals(STSModelInspector.handSelectionTask("", false, true, 99)))

@@ -61,7 +61,8 @@ static J project(const GameContext &g,const PathHistory &path,const std::string 
                 g.info.chestSize==ChestSize::MEDIUM?"MEDIUM":"LARGE";break;
         case ScreenState::BOSS_RELIC_REWARDS:screen="boss_relic";d["relics"]=J::array();for(auto r:g.info.bossRelics)d["relics"].push_back(J(r));break;
         case ScreenState::CARD_SELECT:screen="selector";d={{"type",g.info.selectScreenType==CardSelectScreenType::UPGRADE?"upgrade":
-            g.info.selectScreenType==CardSelectScreenType::TRANSFORM?"transform":"remove"},
+            g.info.selectScreenType==CardSelectScreenType::TRANSFORM?"transform":
+            g.info.selectScreenType==CardSelectScreenType::BOTTLE?"bottle":"remove"},
             {"requiredPicks",g.info.toSelectCount},{"completedPicks",g.info.haveSelectedCards.size()},{"cards",J::array()}};
             for(const auto &c:g.info.toSelectCards)d["cards"].push_back({{"deckIndex",c.deckIdx},{"card",cardWire(c.card)}});break;
         case ScreenState::SHOP_ROOM:{screen="shop";const auto &s=g.info.shop;
@@ -146,6 +147,13 @@ int main(int argc,char **argv){try{
     g=base;g.openCardSelectScreen(CardSelectScreenType::UPGRADE,1);add("upgrade_duplicate_physical_cards",g);
     g=base;g.openCardSelectScreen(CardSelectScreenType::REMOVE,1);add("remove_selector",g);
     g=base;g.openCardSelectScreen(CardSelectScreenType::TRANSFORM,1);add("transform_selector",g);
+    g=base;g.deck.obtain(g,Card(CardId::INFLAME));g.deck.obtain(g,Card(CardId::INFLAME));
+    g.relics.add({RelicId::BOTTLED_TORNADO,0});
+    g.info.toSelectCards.clear();
+    g.info.toSelectCards.push_back({g.deck.cards[g.deck.size()-2],g.deck.size()-2});
+    g.info.toSelectCards.push_back({g.deck.cards[g.deck.size()-1],g.deck.size()-1});
+    g.openCardSelectScreen(CardSelectScreenType::BOTTLE,1,false);
+    add("bottle_power_selector_duplicate_physical_cards",g);
     g=base;g.screenState=ScreenState::EVENT_SCREEN;g.curEvent=Event::BIG_FISH;add("event_big_fish",g);
     g.curEvent=Event::LIVING_WALL;add("event_living_wall",g);
     g.curEvent=Event::GOLDEN_SHRINE;add("event_gold_shrine_public_amount",g);
@@ -234,7 +242,8 @@ int main(int argc,char **argv){try{
         auto qa=scoreLiveOocV4(publicSource,path,*model),qb=scoreLiveOocV4(live.projected,live.path,*model);
         check(qa.supported==qb.supported&&qa.reason==qb.reason,name+" score support");
         const bool v4Unsupported = name.rfind("unsupported_",0)==0
-            || name=="rewards_without_cards" || name=="remove_selector" || name=="transform_selector";
+            || name=="rewards_without_cards" || name=="remove_selector" || name=="transform_selector"
+            || name=="bottle_power_selector_duplicate_physical_cards";
         if(v4Unsupported)check(!qa.supported,name+" must be outside direct V4 support");else check(qa.supported,name+": "+qa.reason);
         check(qa.selectedIndex==qb.selectedIndex&&qa.candidates.size()==qb.candidates.size(),name+" argmax");
         std::vector<std::uint32_t> bits;

@@ -139,7 +139,7 @@ leave control. Map scores bind through the same one-based `choose` indices
 as the live capture (coordinates are metadata), and follow the reachable nodes' scrolled hitboxes;
 offscreen nodes never acquire badges clamped onto the screen edge. Rest options
 and OOC card selectors also use physical-control badges. Upgrade, remove, and
-transform selectors show the shared MCTS ranking when the public selector
+transform and bottle selectors show the shared MCTS ranking when the public selector
 boundary is supported. Grid
 scores hide during peek/confirmation and cull offscreen cards.
 Card rewards retain scores below each card and add a separate
@@ -550,11 +550,13 @@ validates/displays the OOC path; `--allow-missing-ooc` permits Silver-only work.
 
 Supported native fixtures cover map choices, reward take/skip and repeated
 card groups, mixed combat rewards, rest/smith, upgrade selectors with physical
-duplicate cards, initial supported events/Neow including the Woman in Blue's
+duplicate cards, bottle selectors with physical duplicate cards, initial supported events/Neow including the Woman in Blue's
 gold-correct potion purchases and Ascension-dependent leave outcome, all shop
 purchase types, shop-removal entry, chest open/leave and boss relic take/skip. The existing V4
-support gate still excludes non-card reward collection, removal/other
-selectors and the final map-to-boss transition. The live producer additionally
+support gate still excludes non-card reward collection, removal/bottle/other
+selectors and the final map-to-boss transition; MCTS can score these supported
+native selector roots through its value model. Bottle capture requires the
+unbound relic's exact localized prompt and matching card type. The live producer additionally
 qualifies event phases, path history, special maps, shop slot provenance,
 relic-counter representation, and key-disabled campfires. A screen-specific
 unsupported phase takes precedence over path and relic warnings, so a terminal

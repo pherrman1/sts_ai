@@ -530,6 +530,7 @@ ImportResult importLiveOocStateV1(const J &observation, LiveOocStateV1 &out) {
             if(kind=="upgrade")g.info.selectScreenType=CardSelectScreenType::UPGRADE;
             else if(kind=="remove")g.info.selectScreenType=CardSelectScreenType::REMOVE;
             else if(kind=="transform")g.info.selectScreenType=CardSelectScreenType::TRANSFORM;
+            else if(kind=="bottle")g.info.selectScreenType=CardSelectScreenType::BOTTLE;
             else return {false,"UNSUPPORTED","selector_type:"+kind};
             g.info.toSelectCount=integer(d,"requiredPicks",1,3);
             for(const auto &v:array(d,"cards",96)) {

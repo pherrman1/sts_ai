@@ -8,6 +8,10 @@ import com.megacrit.cardcrawl.dungeons.AbstractDungeon;
 import com.megacrit.cardcrawl.map.MapEdge;
 import com.megacrit.cardcrawl.map.MapRoomNode;
 import com.megacrit.cardcrawl.relics.AbstractRelic;
+import com.megacrit.cardcrawl.relics.BottledFlame;
+import com.megacrit.cardcrawl.relics.BottledLightning;
+import com.megacrit.cardcrawl.relics.BottledTornado;
+import com.megacrit.cardcrawl.localization.LocalizedStrings;
 import com.megacrit.cardcrawl.rewards.RewardItem;
 import com.megacrit.cardcrawl.rooms.AbstractRoom;
 import com.megacrit.cardcrawl.shop.ShopScreen;
@@ -953,12 +957,39 @@ final class LiveOocCapture {
         List<Object> selectionCards = new ArrayList<>();
         for (int i = 0; i < offered.size(); ++i)
             selectionCards.add(object("deckIndex", indices.get(i), "card", card((AbstractCard)offered.get(i))));
+        String bottle = bottleSelectorType((String)field(AbstractDungeon.gridSelectScreen, "tipMsg"), offered);
         out.put("details", object("type", upgrade ? "upgrade" : AbstractDungeon.gridSelectScreen.forPurge ? "remove"
-                        : AbstractDungeon.gridSelectScreen.forTransform ? "transform" : "other",
+                        : AbstractDungeon.gridSelectScreen.forTransform ? "transform" : bottle,
                 "requiredPicks", ((Number)field(AbstractDungeon.gridSelectScreen, "numCards")).intValue(),
                 "completedPicks", selected.size(), "cards", selectionCards,
                 "selectedDeckIndices", selected, "confirm", confirm));
         if (confirm) out.put("unsupportedReason", "SELECTOR_CONFIRMATION_ONLY");
+    }
+    private static String bottleSelectorType(String prompt, List<?> offered) {
+        if (prompt == null || offered.isEmpty() || AbstractDungeon.player == null) return "other";
+        for (AbstractRelic relic : AbstractDungeon.player.relics) {
+            AbstractCard.CardType type;
+            AbstractCard bound;
+            if (relic instanceof BottledFlame) {
+                type = AbstractCard.CardType.ATTACK; bound = ((BottledFlame)relic).card;
+            } else if (relic instanceof BottledLightning) {
+                type = AbstractCard.CardType.SKILL; bound = ((BottledLightning)relic).card;
+            } else if (relic instanceof BottledTornado) {
+                type = AbstractCard.CardType.POWER; bound = ((BottledTornado)relic).card;
+            } else continue;
+            if (bound != null || relic.DESCRIPTIONS.length < 2
+                    || !bottlePromptMatches(prompt, relic.DESCRIPTIONS[1], relic.name,
+                            LocalizedStrings.PERIOD)) continue;
+            boolean matching = true;
+            for (Object card : offered) if (!(card instanceof AbstractCard)
+                    || ((AbstractCard)card).type != type) matching = false;
+            if (matching) return "bottle";
+        }
+        return "other";
+    }
+    static boolean bottlePromptMatches(String prompt, String description, String relicName, String period) {
+        return prompt != null && description != null && relicName != null && period != null
+                && prompt.equals(description + relicName + period);
     }
     private static void boss(Map<String,Object> out, List<Map<String,Object>> cs, List<?> labels) {
         out.put("screen", "boss_relic");
