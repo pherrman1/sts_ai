@@ -155,6 +155,13 @@ def main():
         potions = project(correction, vocab, corrected["reference"])
         assert all(c["potion_id"] == potions["potions"][c["potion_slot"]]["potion_id"]
                    for c in potions["candidates"] if c["type"] == 2)
+        discard = copy.deepcopy(correction)
+        discard_action = next(a for a in discard["actions"] if a["type"] == 2)
+        discard_action.update(discardPotion=True, target=8191)
+        discard_observation = project(discard, vocab, corrected["reference"])
+        assert discard_observation["candidates"][discard["actions"].index(discard_action)]["target_ref"] is None
+        discard_action["discardPotion"] = False
+        rejects(lambda: project(discard, vocab, corrected["reference"]))
         stored = data.shard(raw, job, vocab, True)
         data.publish(tmp / "shard.json.gz", stored)
         before = (tmp / "shard.json.gz").read_bytes()

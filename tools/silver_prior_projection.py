@@ -151,6 +151,11 @@ def project(root, vocab, reference):
         require(a["type"] in (1, 2, 5) and not a["selectedCards"]
                 and a["optionCardId"] == 0 and not a["skipCardSelect"], "unsupported action surface")
         target = a["target"]
+        if a["type"] == 2 and a["discardPotion"]:
+            # Native potion discard packs a target index >5 (often -1 as 8191).
+            # It names no monster; retain the discard flag and clear only its reference.
+            require(target == -1 or target > 5, "discard target encoding")
+            target = -1
         require(target == -1 or (0 <= target < len(monsters) and monsters[target]["present"]),
                 "target reference")
         candidate = {"type": a["type"], "source_zone": a["source"], "card_ref": None,

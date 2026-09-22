@@ -54,6 +54,10 @@ even if a malformed producer supplies hidden values. Frozen Eye observed
 order is preserved. Unknown piles are multisets; their deterministic storage
 order does not assert draw order. The native materializer remains authoritative
 for wire validation and legal-action enumeration.
+For a potion-discard candidate, the native target field can contain the packed
+discard sentinel (8191 for an encoded -1). Projection keeps the explicit
+`discardPotion` flag and sets `target_ref` to null; it never treats that value
+as a monster slot. A non-discard action with the same invalid target fails.
 
 The card vocabulary is source-census-derived. Only `PROVABLY_UNREACHABLE`
 entries are excluded. `REACHABLE` and `UNKNOWN` retain distinct names and
