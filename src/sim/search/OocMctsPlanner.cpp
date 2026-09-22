@@ -164,6 +164,8 @@ OocMctsPlanner::OocMctsPlanner(OocMctsConfig config) : config(config) {
                               config.rootCheckpointSimulations.end())
             != config.rootCheckpointSimulations.end())
         throw std::invalid_argument("OOC MCTS invalid root checkpoint thresholds");
+    if (config.captureTree && (!config.treeNodeCap || config.treeNodeCap > 100000))
+        throw std::invalid_argument("OOC MCTS invalid tree node cap");
 }
 std::uint64_t OocMctsPlanner::chanceWideningLimit(std::uint64_t visits) const {
     double limit = std::ceil(config.wideningK * std::pow(static_cast<double>(std::max<std::uint64_t>(1, visits)), config.wideningAlpha));
@@ -250,6 +252,41 @@ OocMctsResult OocMctsPlanner::search(OocGenerativeModel &model, OocStateId root,
         if (better) best = &action;
     }
     if (best) result.selectedAction = best->action.id;
+    if (config.captureTree) {
+        OocTreeSnapshot tree;
+        tree.nodes.push_back({0, node.visits, 0, false, node.state, 0, 0, 0});
+        struct Pending { const DecisionNode *decision; const ChanceNode *chance;
+                         std::uint64_t id; std::uint32_t depth; };
+        std::deque<Pending> pending{{&node, nullptr, 0, 0}};
+        while (!pending.empty()) {
+            const auto item = pending.front();
+            pending.pop_front();
+            if (item.decision) {
+                for (const auto &action : item.decision->actions) {
+                    std::optional<std::uint64_t> child;
+                    if (tree.nodes.size() < config.treeNodeCap) {
+                        child = tree.nodes.size();
+                        tree.nodes.push_back({*child, action.visits, item.depth, true,
+                            item.decision->state, action.action.id, action.action.prior, action.q()});
+                        pending.push_back({nullptr, &action, *child, item.depth});
+                    } else tree.truncated = true;
+                    tree.edges.push_back({item.id, child, action.visits, false});
+                }
+            } else {
+                for (const auto *particle : item.chance->particles) {
+                    std::optional<std::uint64_t> child;
+                    if (tree.nodes.size() < config.treeNodeCap) {
+                        child = tree.nodes.size();
+                        tree.nodes.push_back({*child, particle->visits, item.depth + 1,
+                            false, particle->state, 0, 0, 0});
+                        pending.push_back({particle, nullptr, *child, item.depth + 1});
+                    } else tree.truncated = true;
+                    tree.edges.push_back({item.id, child, particle->visits, true});
+                }
+            }
+        }
+        result.tree = std::move(tree);
+    }
     return result;
 }
 }
