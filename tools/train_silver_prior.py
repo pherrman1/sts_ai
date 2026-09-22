@@ -37,7 +37,7 @@ PROJECTION_FIELD_CONSUMPTION = {
     "monsters": "MODEL_INPUT", "potions": "MODEL_INPUT",
     "candidates": "MODEL_INPUT", "miscFlags": "MODEL_INPUT",
     "extraRollMoveSlots": "MODEL_INPUT", "skipMonsterTurnSlots": "MODEL_INPUT",
-    "zones": "RELATIONSHIP_ONLY", "piles": "MODEL_INPUT",
+    "zones": "MODEL_INPUT", "piles": "MODEL_INPUT",
 }
 NUMERIC_GLOBAL = projection.GLOBAL
 NUMERIC_PLAYER = projection.PLAYER
@@ -96,19 +96,53 @@ def load_train_and_validation(directory):
 
 
 def load_validation_j(directory, release, binding, selection):
-    """Read only the 64 preselected VALIDATION J shards, never LOCKED_TEST."""
+    """Authenticate manifests, then read only preselected VALIDATION J shards."""
     directory = Path(directory)
+    release = dataset.read(directory / "release.json")
+    binding = dataset.read(directory / "binding.json")
+    selection = dataset.read(directory / "selection.json")
+    dataset.check_seal(release)
+    plan = dataset.read(directory / "plan.json")
+    vocab = dataset.read(directory / "vocabulary.json")
+    for item in (binding, selection, plan): dataset.check_seal(item)
+    projection.validate_vocabulary(vocab)
+    if release["sha256"] != RELEASE or not release["training_ready"]:
+        raise ValueError("unexpected or unready release")
+    if (binding["sha256"] != BINDING or selection["sha256"] != SELECTION or
+        release["binding_sha256"] != binding["sha256"] or
+        release["selection_sha256"] != selection["sha256"]):
+        raise ValueError("frozen binding/selection mismatch")
+    if (binding["plan_sha256"] != plan["sha256"] or
+        selection["plan_sha256"] != plan["sha256"] or
+        selection["executable_git_sha"] != binding["executable_git_sha"] or
+        selection["pilot"] or plan["vocabulary_sha256"] != vocab["sha256"]):
+        raise ValueError("release plan/selection/vocabulary mismatch")
     checksums = {f["path"]: f["sha256"] for f in release["files"]}
-    selected = [e for e in selection["entries"] if e["split"] == "VALIDATION" and e["judge_selected"]]
-    if len(selected) != 64 or len({e["root"]["source_seed"] for e in selected})!=64: raise ValueError(f"expected one of 64 validation J roots per source, got {len(selected)}")
+    quarantine = set(release["quarantined_roots"])
+    resolution_hash = release.get("quarantine_resolution_sha256")
+    if bool(quarantine) != bool(resolution_hash): raise ValueError("release quarantine resolution mismatch")
+    if resolution_hash:
+        resolution = dataset.read(directory / "resolutions" / f"{resolution_hash}.json")
+        dataset.check_seal(resolution)
+        if (resolution["schema"] != "silver_prior_quarantine_v1" or
+            resolution["sha256"] != resolution_hash or
+            resolution["binding_sha256"] != binding["sha256"] or
+            resolution["selection_sha256"] != selection["sha256"] or
+            set(resolution["quarantined_roots"]) != quarantine):
+            raise ValueError("sealed quarantine resolution mismatch")
+    all_selected = [e for e in selection["entries"] if e["split"] == "VALIDATION" and e["judge_selected"]]
+    selected = [e for e in all_selected if e["root"]["root_id"] not in quarantine]
+    expected_count = len(all_selected) - sum(e["root"]["root_id"] in quarantine for e in all_selected)
+    if len(all_selected) != 64 or len(selected) != expected_count or len({e["root"]["source_seed"] for e in selected}) != len(selected):
+        raise ValueError(f"expected 64 preselected validation J roots before quarantine, got {len(all_selected)}")
     out = []
     for entry in selected:
         root = entry["root"]
         rel = f"shards/J/{dataset.identity_hash(root)}.json.gz"
         if checksums.get(rel) != dataset.file_hash(directory / rel): raise ValueError("J checksum mismatch")
         stored = dataset.read(directory / rel); dataset.check_seal(stored)
-        job=dataset.job_for(entry,dataset.read(directory/"plan.json"),binding["executable_git_sha"],role="J")
-        expected=dataset.shard(stored["replay"],job,dataset.read(directory/"vocabulary.json"))
+        job=dataset.job_for(entry,plan,binding["executable_git_sha"],role="J")
+        expected=dataset.shard(stored["replay"],job,vocab)
         if stored != expected: raise ValueError("validation J shard/projection mismatch")
         out.append((stored["observation"], stored["values"], root["source_seed"], root["root_id"]))
     return out
@@ -129,6 +163,9 @@ def _numeric_fields(obs):
     vals += [sum(c["segment"]==s for c in obs["cards"]) for s in ("observed","knownBottom","unknown","knownTop")]
     vals += [float(x["amount"]) for x in p["bombs"]]
     vals += [float(i in p["orangePelletsCardTypesPlayed"]) for i in range(8)]
+    for z in ("limbo","stasisCards"):
+        refs=obs["zones"][z]
+        vals += [float(ref is not None) for ref in refs]
     return vals
 
 
@@ -158,7 +195,7 @@ def field_consumption_table(obs):
         if top not in PROJECTION_FIELD_CONSUMPTION: raise ValueError(f"unclassified projection root field: {path}")
         if top=="schema": return "REDUNDANT_BY_CONSTRUCTION"
         if path in redundant:return "REDUNDANT_BY_CONSTRUCTION"
-        if path in relation or path.startswith("zones.") or (path.startswith("piles.") and path.endswith("[]")): return "RELATIONSHIP_ONLY"
+        if path in relation or (path.startswith("zones.") and path not in ("zones.limbo[]","zones.stasisCards[]")) or (path.startswith("piles.") and path.endswith("[]")): return "RELATIONSHIP_ONLY"
         return PROJECTION_FIELD_CONSUMPTION[top]
     def walk(value,path):
         if isinstance(value,dict):
@@ -393,9 +430,11 @@ def ragged_root_ce(logits, target, owner, lengths):
 def bootstrap_summary(values, seeds, n_boot=5000, seed=20260922):
     values=np.asarray(values,dtype=np.float64);seeds=np.asarray(seeds);unique=np.unique(seeds)
     mask=np.isfinite(values);values=values[mask];seeds=seeds[mask];unique=np.unique(seeds)
-    grouped=np.asarray([values[seeds==s].mean() for s in unique],dtype=np.float64)
+    if len(values)==0:
+        return {"mean":None,"median":None,"ci95":None,"bootstrap_replicates":n_boot,"cluster":"source_seed","sources":0,"roots":0}
+    grouped=[values[seeds==s] for s in unique]
     rng=np.random.default_rng(seed);draws=rng.integers(0,len(unique),size=(n_boot,len(unique)))
-    boot=grouped[draws].mean(axis=1)
+    boot=np.asarray([np.concatenate([grouped[i] for i in draw]).mean() for draw in draws])
     return {"mean":float(values.mean()),"median":float(np.median(values)),"ci95":[float(np.quantile(boot,.025)),float(np.quantile(boot,.975))],"bootstrap_replicates":n_boot,"cluster":"source_seed","sources":len(unique),"roots":len(values)}
 
 
@@ -403,10 +442,15 @@ def root_metrics(logits,q,tau):
     logits=np.asarray(logits,dtype=np.float64);q=np.asarray(q,dtype=np.float64)
     z=logits-logits.max();p=np.exp(z);p/=p.sum();y=np.exp((q-q.max())/tau);y/=y.sum()
     qbest=float(q.max());qsecond=float(np.sort(q)[-2]);arg=int(np.argmax(logits));qarg=int(np.argmax(q))
-    pairs=[(i,j) for i in range(len(q)) for j in range(i+1,len(q)) if q[i]!=q[j]]
-    concord=sum((logits[i]-logits[j])*(q[i]-q[j])>0 for i,j in pairs)/len(pairs) if pairs else None
+    concord=pairwise_concordance(logits,q)
     ce=float(-(y*np.log(np.maximum(p,1e-300))).sum());kl=float((y*(np.log(np.maximum(y,1e-300))-np.log(np.maximum(p,1e-300)))).sum())
     return {"ce":ce,"kl":kl,"concordance":concord,"top_agreement":float(arg==qarg),"argmax_regret":qbest-float(q[arg]),"expected_regret":qbest-float(np.dot(p,q)),"uniform_regret":qbest-float(q.mean()),"entropy":float(-(p*np.log(np.maximum(p,1e-300))).sum()),"top_probability":float(p.max())}
+
+
+def pairwise_concordance(logits, q):
+    logits=np.asarray(logits,dtype=np.float64);q=np.asarray(q,dtype=np.float64)
+    pairs=[(i,j) for i in range(len(q)) for j in range(i+1,len(q)) if q[i]!=q[j]]
+    return sum((logits[i]-logits[j])*(q[i]-q[j])>0 for i,j in pairs)/len(pairs) if pairs else None
 
 
 def predict_prepared(model,full,device,batch_size=128):
@@ -446,9 +490,8 @@ def evaluate_validation_j(corpus,cache,artifact_dir,device="cpu"):
         for r in pred:
             qj=np.asarray(r["q"],dtype=np.float64);p=np.asarray(r["probabilities"]);ql=np.asarray(cache["by_root"][r["root_id"]]["q"],dtype=np.float64);yl=np.exp((ql-ql.max())/tau);yl/=yl.sum()
             jbest=qj.max();lbest=qj[int(np.argmax(ql))];modelbest=qj[int(np.argmax(p))]
-            pairs=[(i,j) for i in range(len(qj)) for j in range(i+1,len(qj)) if qj[i]!=qj[j]]
-            concord=sum((r["logits"][i]-r["logits"][j])*(qj[i]-qj[j])>0 for i,j in pairs)/len(pairs) if pairs else None
-            per.append({"root_id":r["root_id"],"source_seed":r["source_seed"],"model_expected_regret":float(jbest-p@qj),"uniform_expected_regret":float(jbest-qj.mean()),"l_target_expected_regret":float(jbest-yl@qj),"model_argmax_regret":float(jbest-modelbest),"l_argmax_regret":float(jbest-lbest),"pairwise_concordance":float(concord)})
+            concord=pairwise_concordance(r["logits"],qj)
+            per.append({"root_id":r["root_id"],"source_seed":r["source_seed"],"model_expected_regret":float(jbest-p@qj),"uniform_expected_regret":float(jbest-qj.mean()),"l_target_expected_regret":float(jbest-yl@qj),"model_argmax_regret":float(jbest-modelbest),"l_argmax_regret":float(jbest-lbest),"pairwise_concordance":None if concord is None else float(concord)})
         metrics={}
         for name in per[0]:
             if name in ("root_id","source_seed"):continue
@@ -525,6 +568,7 @@ def fit_normalization(train_rows):
         offs+=1
     no_scale += list(range(offs+2+6,offs+2+6+32+8+8+3))
     no_scale += list(range(offs+2+6+51+10+3,offs+2+6+51+10+3+8))
+    no_scale += list(range(len(context[0])-12,len(context[0])))
     cm,cs=stats(context,no_scale); am,ass=stats(cards,[5,6,7]); mm,ms=stats(mons or [[0.0]*13],[9,10,11,12])
     sm,ss=stats(small or [[0.0]*11]); stm,sts=stats([[v] for v in (status_amounts or [0.0])]); rm,rs=stats([[v] for v in (relic_amounts or [0.0])])
     return {"context_mean":cm,"context_std":cs,"card_mean":am,"card_std":ass,"monster_mean":mm,"monster_std":ms,"small_mean":sm,"small_std":ss,"status_mean":stm,"status_std":sts,"relic_mean":rm,"relic_std":rs}
@@ -541,17 +585,43 @@ def root_target(q,tau):
 def root_ce(logits,target): return -(target*torch.log_softmax(logits,0)).sum()
 
 
+def _update_content_hash(h, value):
+    if torch.is_tensor(value):
+        tensor=value.detach().cpu().contiguous()
+        h.update(b"tensor\0"+str(tensor.dtype).encode()+b"\0"+json.dumps(list(tensor.shape)).encode()+b"\0")
+        h.update(tensor.numpy().tobytes())
+    elif isinstance(value, dict):
+        h.update(b"dict\0")
+        for key in sorted(value):
+            _update_content_hash(h,key);_update_content_hash(h,value[key])
+    elif isinstance(value,(list,tuple)):
+        h.update((b"list\0" if isinstance(value,list) else b"tuple\0")+str(len(value)).encode()+b"\0")
+        for item in value:_update_content_hash(h,item)
+    elif isinstance(value,(str,int,float,bool)) or value is None:
+        h.update(type(value).__name__.encode()+b"\0"+json.dumps(value,sort_keys=True,allow_nan=False).encode()+b"\0")
+    else:
+        raise TypeError(f"unsupported cache content type: {type(value).__name__}")
+
+
+def cache_content_sha256(cached):
+    h=hashlib.sha256()
+    for key in ("metadata","prepared","normalization"):_update_content_hash(h,cached[key])
+    return h.hexdigest()
+
+
 def cache_payload(corpus, cache_path):
     if cache_path.exists():
         with cache_path.open("rb") as f: cached=pickle.load(f)
         expected={"schema":PREPROCESS_SCHEMA,"trainer_sha256":sha256(Path(__file__)),"release_sha256":RELEASE,"binding_sha256":BINDING,"selection_sha256":SELECTION,"vocabulary_sha256":dataset.read(Path(corpus)/"vocabulary.json")["sha256"]}
         if cached.get("metadata")!=expected: raise ValueError("preprocessed cache provenance/schema mismatch; prepare a fresh cache path")
+        if cached.get("content_sha256") != cache_content_sha256(cached): raise ValueError("preprocessed cache content integrity failure")
         return cached
     splits,release,binding,selection=load_train_and_validation(corpus)
     metadata={"schema":PREPROCESS_SCHEMA,"trainer_sha256":sha256(Path(__file__)),"release_sha256":release["sha256"],"binding_sha256":binding["sha256"],"selection_sha256":selection["sha256"],"vocabulary_sha256":dataset.read(Path(corpus)/"vocabulary.json")["sha256"]}
     prepared={split:collate_rows(rows) for split,rows in splits.items()}
     normalization=fit_normalization(splits["TRAIN"])
     result={"metadata":metadata,"prepared":prepared,"normalization":normalization}
+    result["content_sha256"]=cache_content_sha256(result)
     cache_path.parent.mkdir(parents=True,exist_ok=True)
     with cache_path.open("wb") as f: pickle.dump(result,f,protocol=5)
     return result

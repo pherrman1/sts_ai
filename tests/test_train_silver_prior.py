@@ -112,6 +112,50 @@ class SilverPriorTrainingTests(unittest.TestCase):
         path=Path(__file__).parents[1]/"docs/experiments/evidence/silver_prior_dataset_v1/representative-fixture.json.gz"
         shard=json.loads(gzip.open(path,"rt").read());table=t.validate_feature_table(shard["observation"])
         self.assertTrue(table);self.assertEqual(set(table.values())-{"MODEL_INPUT","RELATIONSHIP_ONLY","REDUNDANT_BY_CONSTRUCTION"},set())
+        self.assertEqual(table["zones.limbo[]"],"MODEL_INPUT")
+        self.assertEqual(table["zones.stasisCards[]"],"MODEL_INPUT")
+        self.assertEqual(len([k for k in t._numeric_fields(shard["observation"])][-12:]),12)
+
+    def test_pairwise_concordance_is_none_when_all_targets_tie(self):
+        self.assertIsNone(t.pairwise_concordance([0.1,0.2,0.3],[4,4,4]))
+        summary=t.bootstrap_summary([float("nan"),float("nan")],[1,2],n_boot=20)
+        self.assertIsNone(summary["mean"])
+        self.assertIsNone(summary["ci95"])
+
+    def test_cache_content_digest_detects_tensor_mutation(self):
+        cached={"metadata":{"schema":"v1"},"prepared":{"labels":torch.tensor([1.,2.])},"normalization":{"mean":torch.tensor([0.])}}
+        before=t.cache_content_sha256(cached);cached["prepared"]["labels"][0]=9.
+        self.assertNotEqual(before,t.cache_content_sha256(cached))
+
+    def test_source_cluster_bootstrap_matches_root_weighted_point_estimand(self):
+        summary=t.bootstrap_summary([0.,1.,1.,1.],[10,20,20,20],n_boot=2000)
+        self.assertEqual(summary["mean"],.75)
+        self.assertLess(summary["ci95"][0],.75)
+        self.assertGreater(summary["ci95"][1],.75)
+
+    def test_validation_j_loader_authenticates_manifests_and_never_hashes_locked_j(self):
+        entries=[];files=[]
+        for i in range(64):
+            root={"root_id":f"v{i}","source_seed":i}
+            entries.append({"split":"VALIDATION","judge_selected":True,"root":root})
+            files.append({"path":f"shards/J/v{i}.json.gz","sha256":"h"})
+        entries.append({"split":"LOCKED_TEST","judge_selected":True,"root":{"root_id":"locked","source_seed":999}})
+        release={"sha256":t.RELEASE,"training_ready":True,"binding_sha256":t.BINDING,"selection_sha256":t.SELECTION,"quarantined_roots":[],"files":files}
+        binding={"sha256":t.BINDING,"plan_sha256":"p","executable_git_sha":"g"}
+        selection={"sha256":t.SELECTION,"plan_sha256":"p","executable_git_sha":"g","pilot":False,"entries":entries}
+        plan={"sha256":"p","vocabulary_sha256":"v"};vocab={"sha256":"v"}
+        def read(path):
+            return {"release.json":release,"binding.json":binding,"selection.json":selection,"plan.json":plan,"vocabulary.json":vocab}.get(Path(path).name,{"replay":{"ok":1},"observation":{},"values":[1.,0.]})
+        with mock.patch.object(t.dataset,"read",side_effect=read),mock.patch.object(t.dataset,"check_seal"),mock.patch.object(t.projection,"validate_vocabulary"),mock.patch.object(t.dataset,"identity_hash",side_effect=lambda root:root["root_id"]),mock.patch.object(t.dataset,"file_hash",return_value="h") as fh,mock.patch.object(t.dataset,"job_for",side_effect=lambda e,*a,**kw:{"split":e["split"]}),mock.patch.object(t.dataset,"shard",side_effect=lambda raw,*a,**kw:{"replay":raw,"observation":{},"values":[1.,0.]}):
+            loaded=t.load_validation_j(Path(tempfile.gettempdir()),None,None,None)
+            self.assertEqual(len(loaded),64)
+            self.assertEqual(fh.call_count,64)
+            self.assertTrue(all("locked" not in str(call.args[0]) for call in fh.call_args_list))
+            selection["sha256"]="tampered"
+            fh.reset_mock()
+            with self.assertRaisesRegex(ValueError,"frozen binding/selection mismatch"):
+                t.load_validation_j(Path(tempfile.gettempdir()),None,None,None)
+            fh.assert_not_called()
 
     def test_batched_predictions_match_single_root_predictions(self):
         m=self.model();rows=[self.row(seed=1),self.row(seed=2,rid="r2")]
