@@ -23,10 +23,16 @@ class LiveOocProtocol(unittest.TestCase):
             cls.fixtures = {row["fixture"]: row for row in map(json.loads, fixture.read_text().splitlines())}
 
     def run_rows(self, observations, model=True, policy=None, floor_model=True,
-                 timeout=120, label="advisor request"):
+                 timeout=120, label="advisor request", debug_tree=False, tree_cap=None):
         env = os.environ.copy()
         env.pop("STS_CTM_MODEL", None)
         env.pop("STS_LIVE_OOC_MODEL", None)
+        env.pop("STS_OOC_DEBUG_TREE", None)
+        env.pop("STS_OOC_DEBUG_TREE_NODE_CAP", None)
+        if debug_tree:
+            env["STS_OOC_DEBUG_TREE"] = "1"
+        if tree_cap is not None:
+            env["STS_OOC_DEBUG_TREE_NODE_CAP"] = str(tree_cap)
         if model:
             env["STS_LIVE_OOC_MODEL"] = str(self.model)
         if self.ctm:
@@ -166,6 +172,36 @@ class LiveOocProtocol(unittest.TestCase):
         self.assertEqual(chosen["visits"], max(c["visits"] for c in evaluator["candidateSummaries"]))
         self.assertEqual(evaluator["selectedLiveAction"]["kind"], "choose")
         self.assertIsInstance(evaluator["selectedLiveAction"]["choiceIndex"], int)
+        self.assertNotIn("tree", evaluator)
+
+    def test_opt_in_mcts_tree_capture_is_bounded_and_keeps_root_scores(self):
+        observation = self.fixtures["map_multiple_children"]
+        baseline, = self.run_rows([observation])
+        captured, = self.run_rows([observation], debug_tree=True, tree_cap=8)
+        before = baseline["evaluators"][0]
+        after = captured["evaluators"][0]
+        self.assertEqual(after["status"], "OK", captured)
+        self.assertEqual(after["selectedSemanticKey"], before["selectedSemanticKey"])
+        self.assertEqual(after["candidateSummaries"], before["candidateSummaries"])
+        tree = after["tree"]
+        self.assertTrue(tree["accepted"])
+        self.assertTrue(tree["truncated"])
+        self.assertEqual(len(tree["nodes"]), 8)
+        self.assertEqual(tree["nodes"][0]["visits"], 512)
+        roots = [n for n in tree["nodes"] if n["kind"] == "chance" and n["depth"] == 0]
+        self.assertEqual(len(roots), len(after["candidateSummaries"]))
+        self.assertTrue(all(n["label"].startswith("Travel to Monster room at (") for n in roots))
+        self.assertEqual(sum(n["selected"] for n in roots), 1)
+        self.assertTrue(all(n["screen"] == "map" and n["floor"] == tree["nodes"][0]["floor"]
+                            for n in roots))
+        self.assertTrue(any(e["kind"] == "particle" for e in tree["edges"]))
+        self.assertTrue(any(e["combatModelUsed"] and e["combatOutcome"] in ("death", "victory", "escape")
+                            for e in tree["edges"] if e["kind"] == "particle"))
+        # The live CTM must receive the trained/default potion keep value 4.
+        # A missing callback supplied 0 and made even early hallway fights
+        # almost uniformly sampled losses at full health.
+        self.assertTrue(any(e["combatModelUsed"] and e["combatOutcome"] == "victory"
+                            for e in tree["edges"] if e["kind"] == "particle"))
 
     def test_map_root_rejects_incomplete_offered_relic_history(self):
         observation = copy.deepcopy(self.fixtures["map_multiple_children"])

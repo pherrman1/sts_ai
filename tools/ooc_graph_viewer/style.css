@@ -1,0 +1,11 @@
+.graph-stage{min-height:450px}
+.node.chance rect{fill:#443727;stroke:var(--amber)}
+.node.decision rect{fill:#273341;stroke:var(--blue)}
+.node.loss rect{fill:#493039;stroke:#ea8e91}
+.node.inspected rect,.link.inspected path{stroke:var(--green);stroke-width:4}
+.node.selected rect{stroke:var(--green);stroke-width:3}
+.node-meaning{font-size:13px;font-weight:600;fill:#f0f3f6}
+.link.ctm path{stroke:#f2b35d;stroke-width:2.5;stroke-dasharray:6 4}
+.ctm-label{fill:#ffd08a;font-size:11px;font-weight:700;paint-order:stroke;stroke:#18212c;stroke-width:4px}
+.graph-legend{font-size:12px;line-height:1.4;color:#b8c7d4;margin:8px 0 16px}
+.graph-fullscreen .graph-column{height:100vh}
