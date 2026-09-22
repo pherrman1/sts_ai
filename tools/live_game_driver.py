@@ -201,6 +201,16 @@ def transition_identity(screen: Mapping[str, Any], game_state: Mapping[str, Any]
     return hashlib.sha256(encoded.encode()).hexdigest()
 
 
+def _same_mcp_boundary(screen: Mapping[str, Any], game_state: Mapping[str, Any]) -> bool:
+    """Reject snapshots split across a combat-to-reward or similar transition."""
+    for key in ("screen_type", "room_phase"):
+        screen_value = screen.get(key)
+        game_value = game_state.get(key)
+        if screen_value is not None and game_value is not None and screen_value != game_value:
+            return False
+    return True
+
+
 def _ready(value: Any) -> bool:
     data = _mapping(value)
     return data.get("ready_for_command", data.get("readyForCommand", True)) is True
@@ -1157,7 +1167,8 @@ class Driver:
             screen, commands = await self.read_ready_state()
             game = await self.read_game_state()
             self.last_game = game
-            if not _has_uninitialized_combat_intent(screen, game):
+            if (_same_mcp_boundary(screen, game)
+                    and not _has_uninitialized_combat_intent(screen, game)):
                 return screen, commands, game
             await asyncio.sleep(self.poll_interval)
         raise DriverError("MCP combat monster intent remained DEBUG before the decision boundary")
@@ -1174,6 +1185,7 @@ class Driver:
                 commands = await self.client.call("get_available_commands")
                 game_state = await self.read_game_state()
                 if (_ready(commands) and (not ignore_terminal or not _is_terminal(screen))
+                        and _same_mcp_boundary(screen, game_state)
                         and not _has_uninitialized_combat_intent(screen, game_state)
                         and transition_identity(screen, game_state) != before):
                     return screen, game_state

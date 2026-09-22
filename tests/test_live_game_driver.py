@@ -596,6 +596,25 @@ class LiveGameDriverTest(unittest.TestCase):
             self.assertEqual(len(reads), 2)
             self.assertFalse(any(tool == "end_turn" for tool, _ in client.calls))
 
+    def test_split_combat_reward_boundary_waits_for_consistent_mcp_snapshot(self):
+        with tempfile.TemporaryDirectory() as directory:
+            screen = combat_screen()
+            client = FakeClient(screen, ["end_turn"], game_state={})
+            original = client.call
+            reads = []
+            async def call(tool, arguments=None):
+                if tool == "get_game_state":
+                    reads.append(tool)
+                    return {"screen_type": "COMBAT_REWARD", "room_phase": "COMPLETE"} if len(reads) == 1 else {
+                        "screen_type": "NONE", "room_phase": "COMBAT"}
+                return await original(tool, arguments)
+            client.call = call
+            driver = Driver(client, InspectorReader(Path(directory) / "missing"),
+                            TraceWriter(Path(directory) / "trace"), poll_timeout=.05, poll_interval=.001)
+            _, _, game = asyncio.run(driver.read_ready_snapshot())
+            self.assertEqual(game["screen_type"], "NONE")
+            self.assertEqual(len(reads), 2)
+
     def test_wait_ready_timeout_fails_closed(self):
         with tempfile.TemporaryDirectory() as directory:
             client = FakeClient({"screen_type": "CARD_REWARD", "choice_list": ["Bash"], "ready_for_command": False}, ["choose"])
