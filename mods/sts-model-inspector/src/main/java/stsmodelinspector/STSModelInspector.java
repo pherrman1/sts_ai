@@ -9,6 +9,7 @@ import basemod.interfaces.PostBattleSubscriber;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.megacrit.cardcrawl.cards.DamageInfo;
+import com.megacrit.cardcrawl.characters.AbstractPlayer;
 import com.megacrit.cardcrawl.dungeons.AbstractDungeon;
 import com.megacrit.cardcrawl.cards.AbstractCard;
 import com.megacrit.cardcrawl.cards.CardQueueItem;
@@ -94,6 +95,10 @@ public final class STSModelInspector implements PostInitializeSubscriber,
     private static final IdentityHashMap<AbstractMonster, Integer> guardianPublicThreshold =
             new IdentityHashMap<>();
     private static final IdentityHashMap<AbstractMonster, HiddenIntentSnapshot> hiddenIntentSnapshots =
+            new IdentityHashMap<>();
+    // Candidate bits come only from publicly observed player damage. A zero
+    // mask means that the public observation could not be represented safely.
+    private static final IdentityHashMap<AbstractMonster, Integer> hiddenMiscMasks =
             new IdentityHashMap<>();
     private static final Set<AbstractMonster> hiddenDirectTurnMarkers =
             Collections.newSetFromMap(new IdentityHashMap<AbstractMonster, Boolean>());
@@ -222,8 +227,63 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         BaseMod.subscribe(INSTANCE);
     }
 
+    static final class PublicDamageSnapshot {
+        final int hp, block;
+        final AbstractMonster owner;
+        final int[] candidateOutputs;
+        final boolean publicAmountQualified;
+        PublicDamageSnapshot(int hp, int block, AbstractMonster owner, int[] candidateOutputs,
+                             boolean publicAmountQualified) {
+            this.hp = hp;
+            this.block = block;
+            this.owner = owner;
+            this.candidateOutputs = candidateOutputs;
+            this.publicAmountQualified = publicAmountQualified;
+        }
+    }
+
+    static int hiddenMiscMinimum(String monsterId, int ascension) {
+        if ("FuzzyLouseNormal".equals(monsterId) || "FuzzyLouseDefensive".equals(monsterId))
+            return ascension >= 2 ? 6 : 5;
+        if ("Darkling".equals(monsterId)) return ascension >= 2 ? 11 : 7;
+        return -1;
+    }
+
+    static int hiddenMiscCount(String monsterId) {
+        return "Darkling".equals(monsterId) ? 5 : runicPrivateMiscInfo(monsterId) ? 3 : 0;
+    }
+
+    static int compatiblePrivateMiscMask(int prior, int[] outputs, int publicDamage) {
+        int compatible = 0;
+        for (int i = 0; i < outputs.length; ++i)
+            if (outputs[i] == publicDamage) compatible |= 1 << i;
+        return prior & compatible;
+    }
+
+    static PublicDamageSnapshot beginPlayerDamage(DamageInfo info, AbstractPlayer player) {
+        AbstractMonster owner = info != null && info.owner instanceof AbstractMonster
+                ? (AbstractMonster)info.owner : null;
+        int[] predicted = null;
+        if (owner != null && hasRunicDome() && runicPrivateMiscInfo(owner.id)) {
+            int minimum = hiddenMiscMinimum(owner.id, AbstractDungeon.ascensionLevel);
+            int count = hiddenMiscCount(owner.id);
+            predicted = new int[count];
+            for (int i = 0; i < count; ++i) {
+                DamageInfo candidate = new DamageInfo(owner, minimum + i, info.type);
+                candidate.applyPowers(owner, player);
+                predicted[i] = candidate.output;
+            }
+        }
+        // Buffer, Torii and Tungsten Rod can change the visible HP/block delta
+        // after DamageInfo's power calculation. Do not condition on those hits.
+        boolean qualified = !player.hasPower("Buffer") && !player.hasRelic("Torii")
+                && !player.hasRelic("TungstenRod");
+        return new PublicDamageSnapshot(player.currentHealth, player.currentBlock,
+                owner, predicted, qualified);
+    }
+
     /** Called by the post-AbstractPlayer.damage ModTheSpire patch. */
-    static void recordPlayerDamage(DamageInfo info, int finalDamage) {
+    static void recordPlayerDamage(DamageInfo info, int finalDamage, PublicDamageSnapshot before) {
         if (info == null || AbstractDungeon.player == null
                 || AbstractDungeon.currMapNode == null) return;
         if (info.type == DamageInfo.DamageType.HP_LOSS) {
@@ -236,6 +296,19 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         // events rather than being collapsed into a turn total.
         trackedLastUnblockedDamage = Math.max(0, finalDamage);
         if (finalDamage > 0) ++trackedTimesDamaged;
+        if (before != null && before.candidateOutputs != null && before.owner != null) {
+            int all = (1 << before.candidateOutputs.length) - 1;
+            int prior = hiddenMiscMasks.containsKey(before.owner)
+                    ? hiddenMiscMasks.get(before.owner) : all;
+            int publicDamage = before.block - AbstractDungeon.player.currentBlock + finalDamage;
+            if (!before.publicAmountQualified || before.hp <= finalDamage
+                    || publicDamage < 0 || AbstractDungeon.player.currentBlock > before.block) {
+                hiddenMiscMasks.put(before.owner, 0);
+                return;
+            }
+            hiddenMiscMasks.put(before.owner, compatiblePrivateMiscMask(
+                    prior, before.candidateOutputs, publicDamage));
+        }
     }
 
     static void recordHiddenIntentRoll(AbstractMonster monster) {
@@ -350,6 +423,7 @@ public final class STSModelInspector implements PostInitializeSubscriber,
     @Override
     public void receiveOnBattleStart(AbstractRoom room) {
         resetSilverBudget();
+        hiddenMiscMasks.clear();
         monsterSlots.clear();
         replacedMonsterParents.clear();
         hexaghostDividerDamage.clear();
@@ -379,6 +453,7 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         hexaghostDividerDamage.clear();
         guardianPublicThreshold.clear();
         hiddenIntentSnapshots.clear();
+        hiddenMiscMasks.clear();
         hiddenDirectTurnMarkers.clear();
         liveEncounter = "";
         combatEntry = "";
@@ -2460,11 +2535,16 @@ public final class STSModelInspector implements PostInitializeSubscriber,
                 }
                 out.append(']');
                 HiddenIntentSnapshot hidden = runicDome ? hiddenIntentSnapshots.get(monster) : null;
-                boolean hiddenPrivateMisc = hidden != null && hidden.pendingMoveRolls > 0
-                        && runicPrivateMiscInfo(monster.id);
+                boolean hiddenPrivateMisc = runicDome && runicPrivateMiscInfo(monster.id);
                 Integer miscInfo = hiddenPrivateMisc ? null : monsterMiscInfo(monster);
                 if (miscInfo != null) out.append(",\"miscInfo\":").append(miscInfo);
-                if (hiddenPrivateMisc) out.append(",\"privateMiscInfoUnderRunic\":true");
+                if (hiddenPrivateMisc) {
+                    int all = (1 << hiddenMiscCount(monster.id)) - 1;
+                    int mask = hiddenMiscMasks.containsKey(monster)
+                            ? hiddenMiscMasks.get(monster) : all;
+                    out.append(",\"privateMiscInfoUnderRunic\":true")
+                            .append(",\"publicMiscCandidateMask\":").append(mask);
+                }
                 Integer uniquePower0 = monsterUniquePower0(monster);
                 if (uniquePower0 != null) out.append(",\"uniquePower0\":").append(uniquePower0);
                 if (runicDome) {

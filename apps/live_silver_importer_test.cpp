@@ -1920,7 +1920,53 @@ int main() {
         privateMonster["pendingRollInputs"].erase("miscInfo");
         if (one_combat::advisor::importSilverRoot(privateRunic).reason
                 != "silver_hidden_information_required")
-            throw std::runtime_error("private randomized Runic miscInfo was accepted");
+            throw std::runtime_error("non-Louse private Runic miscInfo was accepted");
+        privateMonster["id"] = "FuzzyLouseNormal";
+        privateMonster.erase("privateMiscInfoUnderRunic");
+        privateMonster["miscInfo"] = 6;
+        if (one_combat::advisor::importSilverRoot(privateRunic).reason
+                != "silver_hidden_information_required")
+            throw std::runtime_error("Runic Louse private field was accepted without a posterior");
+        privateMonster.erase("miscInfo");
+        privateMonster["privateMiscInfoUnderRunic"] = true;
+        privateMonster["publicMiscCandidateMask"] = 7;
+        const auto privateImported = one_combat::advisor::importSilverRoot(privateRunic);
+        if (!privateImported.ok || privateImported.wire.monsters[0].miscInfo != -7
+            || privateImported.wire.monsters[0].pendingRollInputs.miscInfo != -7)
+            throw std::runtime_error("public Runic Louse damage support was not imported: "
+                + privateImported.reason);
+        std::set<int> sampledPrivateDamage;
+        for (int sample = 0; sample < 32; ++sample) {
+            auto particle = privateImported.wire;
+            particle.isolatedSearchSeed += sample;
+            const auto resolved = silver_bridge::materializeDeferredMonsterIntentsForTest(particle);
+            if (!resolved.accepted || resolved.monsterMiscInfo[0] < 5
+                || resolved.monsterMiscInfo[0] > 7)
+                throw std::runtime_error("Runic Louse prior sampled outside native support");
+            sampledPrivateDamage.insert(resolved.monsterMiscInfo[0]);
+        }
+        if (sampledPrivateDamage.size() < 2)
+            throw std::runtime_error("Runic Louse private damage prior was not sampled");
+        silver_bridge::SilverSearchConfig privateSearch;
+        privateSearch.simulationsPerDecision = 16;
+        privateSearch.reuseCapMode = silver_bridge::SilverReuseCapMode::NONE;
+        const auto privateDecision = silver_bridge::runSilverDecision(
+            privateImported.wire, privateSearch);
+        if (!privateDecision.accepted)
+            throw std::runtime_error("Silver could not search a Runic Louse belief root: "
+                + privateDecision.failureReason);
+        privateMonster["publicMiscCandidateMask"] = 4;
+        const auto singletonImported = one_combat::advisor::importSilverRoot(privateRunic);
+        if (!singletonImported.ok || singletonImported.wire.monsters[0].miscInfo != -4)
+            throw std::runtime_error("conditioned Runic Louse damage support was lost");
+        const auto resolvedPrivate = silver_bridge::materializeDeferredMonsterIntentsForTest(
+            singletonImported.wire);
+        if (!resolvedPrivate.accepted || resolvedPrivate.monsterMiscInfo[0] != 7)
+            throw std::runtime_error("Runic Louse posterior did not persist into deferred move");
+        privateMonster["publicMiscCandidateMask"] = 0;
+        if (one_combat::advisor::importSilverRoot(privateRunic).reason
+                != "silver_hidden_information_required")
+            throw std::runtime_error("contradictory public Runic damage evidence was accepted");
         auto ritualPower = general;
         ritualPower["silverRoot"]["combat"]["monsters"][0]["powers"] = json::array({
             json{{"id", "Ritual"}, {"amount", 3}, {"justApplied", false}}});

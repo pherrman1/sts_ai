@@ -61,8 +61,11 @@ Strength loss).
   is active, and emits public pre-roll history with an explicit valid-entry
   count, roll inputs, pending roll counts, and the bounded Looter/Mugger
   direct-choice marker. Chained hidden rolls preserve the first public
-  history. Pending Louse/Darkling rolls fail closed because their randomized
-  damage parameter is private under Runic Dome. A live Act-2 TWO_THIEVES root
+  history. Louse and Darkling use a public candidate mask for their persistent
+  randomized damage. Observed player HP and block changes narrow the mask
+  when they determine the attack amount. Multiple compatible values remain
+  in the mask; unqualified or contradictory damage observations fail closed.
+  Silver samples a candidate inside each search continuation. A live Act-2 TWO_THIEVES root
   was imported by Silver and returned a model-driven action with the temporary
   deployed advisor; this is implementation evidence, not whole-run
   qualification evidence.

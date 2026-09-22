@@ -7,6 +7,7 @@
 #include "game/Random.h"
 #include "combat/BattleContext.h"
 #include "game/GameContext.h"
+#include <stdexcept>
 
 using namespace sts;
 
@@ -814,6 +815,26 @@ void Monster::rollMoveFromInputs(BattleContext &bc, const MonsterRollInputs &in)
 }
 
 void Monster::materializePendingMove(BattleContext &bc) {
+    if (miscInfo < 0 && (id == MonsterId::GREEN_LOUSE || id == MonsterId::RED_LOUSE
+                         || id == MonsterId::DARKLING)) {
+        const int mask = -miscInfo;
+        const int minimum = id == MonsterId::DARKLING
+            ? (bc.ascension >= 2 ? 11 : 7) : (bc.ascension >= 2 ? 6 : 5);
+        const int count = id == MonsterId::DARKLING ? 5 : 3;
+        int remaining = 0;
+        for (int i = 0; i < count; ++i) remaining += (mask >> i) & 1;
+        if (remaining == 0 || (mask >> count) != 0)
+            throw std::runtime_error("invalid private monster damage support");
+        int choice = bc.rng.random(remaining - 1);
+        for (int i = 0; i < count; ++i) {
+            if (((mask >> i) & 1) == 0) continue;
+            if (choice-- == 0) {
+                miscInfo = minimum + i;
+                rollInputs.miscInfo = miscInfo;
+                break;
+            }
+        }
+    }
     // Replays deferred rolls in order; moveHistory and miscInfo evolve through the chain exactly
     // as immediate rolls would have. Consumes rng, so inside the search this point becomes the
     // chance event for the hidden intent.

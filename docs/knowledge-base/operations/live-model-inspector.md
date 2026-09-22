@@ -90,9 +90,12 @@ pre-roll history with an explicit valid-entry count, deferred roll count, and
 captured roll inputs required by the native hidden-intent model. Move byte zero
 is valid when its presence bit is set. Chained hidden rolls retain the first
 public snapshot and increment the pending-roll count without copying an
-intermediate hidden move into history. Louse and Darkling roots with unresolved
-hidden rolls fail closed because their randomized attack damage lives in
-private `miscInfo`; that value is omitted. Looter and Mugger post-Mug direct
+intermediate hidden move into history. Louse and Darkling roots carry a public
+candidate mask for persistent attack damage; the private `miscInfo` is omitted.
+Player HP and block changes narrow that mask when they determine the attack
+amount. Multiple compatible values remain possible; unqualified or
+contradictory damage evidence fails closed. Silver samples one
+candidate when that value first matters. Looter and Mugger post-Mug direct
 choices are emitted as deferred direct choices; rolled outcomes and RNG remain
 private.
 Sensitive player and monster powers carry the runtime `justApplied` bit when
@@ -492,9 +495,12 @@ class distinguishes a `?` floor that became a hallway fight from a fixed event
 fight on the same map symbol: only the former advances the normal encounter
 queue. The combat-class ledger is checked against completed public combat
 floors without indexing `path_taken` by absolute floor. Wing Boots' public
-charge counter is copied into the native root only to identify the explicit
-active-MAP unsupported boundary; the frozen simulator/value-model integration
-does not enable Wing Boots map expansion here. Missing or
+charge counter is copied into the native root. A live MAP root offers every
+existing node in the next row while charges remain; an ordinary edge is free,
+and an off-edge move spends one charge. Forward-map features follow charged
+reachable paths, so the frozen OOC model sees their effect through its existing
+map inputs; it still has no direct charge scalar or charge-specific training.
+Missing or
 contradictory history is unsupported. A historical unknown boss-transition marker is qualified only
 after fifteen public map-room entries for that act and a matching public boss
 combat floor; other unknown path symbols remain unsupported. Public metric
@@ -591,8 +597,7 @@ event outro cannot be misread as its initial decision. Unopened card reward
 groups expose only their occurrence/type and require the driver to open the
 group before scoring; their concealed card identities are not
 serialized or scored. Wing Boots is imported with a separate public charge
-  counter, while direct MAP roots with active charges fail closed because the
-  frozen value models do not encode remaining charges; Matryoshka, Lizard Tail and N’loth’s Hungry Face are unsupported
+counter; Matryoshka, Lizard Tail and N’loth’s Hungry Face are unsupported
 where live/native counter initialization differs. Maw Bank has an explicit
 source-derived active/spent conversion; other unqualified positive counters
 are unsupported. A deck containing upgraded Searing Blow returns
@@ -712,9 +717,9 @@ native selection tasks for Exhaust, Armaments, Dual Wield, Headbutt, Exhume,
 Warcry, Gambler's Brew, Liquid Memories, and Hologram. The mapping remains
 deliberately bounded: an unrecognized selection prompt, an unavailable runtime
 tracker, or an option list larger than the native representation is rejected.
-The ordinary player limbo pile is serialized. Active Wing Boots on a direct
-MAP root remains outside the frozen map value model because remaining charges
-are not part of that model's state. Other unsupported queue metadata remains
+The ordinary player limbo pile is serialized. Wing Boots charges are native
+search state and affect the existing forward-map features. The frozen model
+has no charge-specific training. Other unsupported queue metadata remains
 outside the supported boundary. CTM and Silver results remain separate evaluators, and
 neither path controls gameplay or establishes policy-quality evidence. Any
 future public-state expansion must add a native parity fixture and an explicit

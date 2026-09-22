@@ -355,9 +355,11 @@ int main(int argc,char **argv){try{
         wire["ooc"]["publicState"]["acquiredRelics"].push_back(J(RelicId::WING_BOOTS));
         advisor::LiveOocStateV1 live;
         const auto imported = advisor::importLiveOocStateV1(wire, live);
-        check(imported.ok && !live.mctsRoot.supported
-                && live.mctsRoot.reason == "RELIC_NATIVE_STATE_UNREPRESENTABLE:WingedGreaves:active",
-              "active Wing Boots MAP roots must fail closed");
+        check(imported.ok && live.mctsRoot.supported
+                && live.mctsRoot.state.wingBootsCharges == 1,
+              "active Wing Boots MAP roots must retain public charge count: "
+                  + imported.message + " / " + live.mctsRoot.reason + " / "
+                  + std::to_string(live.mctsRoot.state.wingBootsCharges));
     }
     {
         auto source = base;

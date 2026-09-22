@@ -94,13 +94,13 @@ public final class LiveOocCaptureTest {
                 || !"CHEST_ALREADY_OPEN".equals(openedChest.get("unsupportedReason")))
             throw new AssertionError("open chest without Proceed exposed a false live action");
         Map<String,Object> phaseUnsupported = obj("publicState", obj("pathComplete", true,
-                "unsupportedReason", "RELIC_NATIVE_STATE_UNREPRESENTABLE:WingedGreaves:active"),
+                "unsupportedReason", "RELIC_NATIVE_STATE_UNREPRESENTABLE:Lizard Tail:active"),
                 "unsupportedReason", "EVENT_PHASE_UNREPRESENTABLE:Beggar:LEAVE");
         LiveOocCapture.finalizeSupportReason(phaseUnsupported);
         if (!"EVENT_PHASE_UNREPRESENTABLE:Beggar:LEAVE".equals(phaseUnsupported.get("unsupportedReason")))
             throw new AssertionError("relic warning hid the unsupported event outro phase");
         Map<String,Object> missingPath = obj("publicState", obj("pathComplete", false,
-                "unsupportedReason", "RELIC_NATIVE_STATE_UNREPRESENTABLE:WingedGreaves:active"));
+                "unsupportedReason", "RELIC_NATIVE_STATE_UNREPRESENTABLE:Lizard Tail:active"));
         LiveOocCapture.finalizeSupportReason(missingPath);
         if (!"PATH_HISTORY_UNAVAILABLE".equals(missingPath.get("unsupportedReason")))
             throw new AssertionError("relic warning hid incomplete public path history");

@@ -281,13 +281,11 @@ class LiveOocProtocol(unittest.TestCase):
                                   policy="v4")
         self.assertEqual(response["evaluators"][0]["status"], "UNSUPPORTED")
 
-    def test_active_winged_is_bounded_to_non_map_roots(self):
+    def test_active_winged_map_root(self):
         selector = copy.deepcopy(self.fixtures["upgrade_duplicate_physical_cards"])
         selector["ooc"]["publicState"]["relics"].append(
             {"id": "WingedGreaves", "data": 0, "liveCounter": 3})
         selector["ooc"]["publicState"]["acquiredRelics"].append("WingedGreaves")
-        selector["ooc"]["unsupportedReason"] = \
-            "RELIC_NATIVE_STATE_UNREPRESENTABLE:WingedGreaves:active"
         response, = self.run_rows([selector])
         self.assertEqual(response["evaluators"][0]["status"], "OK", response)
 
@@ -295,12 +293,8 @@ class LiveOocProtocol(unittest.TestCase):
         direct_map["ooc"]["publicState"]["relics"].append(
             {"id": "WingedGreaves", "data": 0, "liveCounter": 3})
         direct_map["ooc"]["publicState"]["acquiredRelics"].append("WingedGreaves")
-        direct_map["ooc"]["unsupportedReason"] = \
-            "RELIC_NATIVE_STATE_UNREPRESENTABLE:WingedGreaves:active"
         response, = self.run_rows([direct_map], policy="v4")
-        self.assertEqual(response["evaluators"][0]["status"], "UNSUPPORTED")
-        self.assertEqual(response["evaluators"][0]["reason"],
-                         "RELIC_NATIVE_STATE_UNREPRESENTABLE:WingedGreaves:active")
+        self.assertEqual(response["evaluators"][0]["status"], "OK", response)
 
     def test_schema_and_mapping_errors_cannot_fallback(self):
         base = self.fixtures["event_big_fish"]

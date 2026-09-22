@@ -1061,7 +1061,7 @@ double search::BattleSearcher::rolloutToEnd(BattleContext &bc, std::vector<Actio
                 // bc; the tree still models the hidden intent honestly via its END_TURN chance node.
                 for (int i = 0; i < bc.monsters.monsterCount; ++i) {
                     auto &m = bc.monsters.arr[i];
-                    if (m.pendingMoveRolls > 0 && !m.isDeadOrEscaped()) {
+                    if ((m.pendingMoveRolls > 0 || m.miscInfo < 0) && !m.isDeadOrEscaped()) {
                         m.materializePendingMove(bc);
                     }
                 }

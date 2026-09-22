@@ -25,6 +25,13 @@ public final class CombatBoundaryTest {
                 throw new AssertionError("Runic private randomized miscInfo was not rejected: " + id);
         if (STSModelInspector.runicPrivateMiscInfo("Donu"))
             throw new AssertionError("public Runic miscInfo was rejected");
+        if (STSModelInspector.hiddenMiscMinimum("FuzzyLouseNormal", 0) != 5
+                || STSModelInspector.hiddenMiscMinimum("FuzzyLouseDefensive", 20) != 6
+                || STSModelInspector.hiddenMiscMinimum("Darkling", 20) != 11
+                || STSModelInspector.hiddenMiscCount("Darkling") != 5
+                || STSModelInspector.compatiblePrivateMiscMask(7, new int[]{5, 6, 7}, 6) != 2
+                || STSModelInspector.compatiblePrivateMiscMask(2, new int[]{5, 6, 7}, 7) != 0)
+            throw new AssertionError("Runic public damage posterior support is incorrect");
         if (STSModelInspector.guardianThresholdFromPublicPower(null, null) != null
                 || STSModelInspector.guardianThresholdFromPublicPower(null, 30) != 30
                 || STSModelInspector.guardianThresholdFromPublicPower(30, 12) != 30

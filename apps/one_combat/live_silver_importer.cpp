@@ -956,11 +956,25 @@ SilverRootImportResult importSilverRootGeneric(const json &observation,
         m.curHp = item.value("hp", 0); m.maxHp = item.value("maxHp", 0); m.block = item.value("block", 0);
         m.isEscapingB = item.value("escaping", item.value("escaped", false)); m.halfDead = item.value("halfDead", false);
         m.escapeNext = item.value("escapeNext", false);
-        if (runicDome && item.value("privateMiscInfoUnderRunic", false))
+        const bool privateMisc = runicDome && item.value("privateMiscInfoUnderRunic", false);
+        if (runicDome && (idText == "FuzzyLouseNormal"
+                         || idText == "FuzzyLouseDefensive" || idText == "Darkling")
+                && !privateMisc)
             return unsupported("silver_hidden_information_required");
-        if (!item.contains("miscInfo") || !item.at("miscInfo").is_number_integer())
-            return unsupported("silver_unmapped_monster_state");
-        m.miscInfo = item.at("miscInfo").get<int>();
+        if (privateMisc) {
+            const bool louse = idText == "FuzzyLouseNormal" || idText == "FuzzyLouseDefensive";
+            const int fullMask = louse ? 7 : idText == "Darkling" ? 31 : 0;
+            const int mask = item.value("publicMiscCandidateMask", 0);
+            if (!fullMask || mask <= 0 || (mask & ~fullMask) != 0 || item.contains("miscInfo"))
+                return unsupported("silver_hidden_information_required");
+            // A negative miscInfo encodes the exact public posterior support.
+            // Silver samples a member when the private value first matters.
+            m.miscInfo = -mask;
+        } else {
+            if (!item.contains("miscInfo") || !item.at("miscInfo").is_number_integer())
+                return unsupported("silver_unmapped_monster_state");
+            m.miscInfo = item.at("miscInfo").get<int>();
+        }
         if (item.contains("uniquePower0") && !item.at("uniquePower0").is_number_integer())
             return unsupported("silver_unmapped_monster_state");
         if (item.contains("uniquePower1") && !item.at("uniquePower1").is_number_integer())
@@ -993,8 +1007,13 @@ SilverRootImportResult importSilverRootGeneric(const json &observation,
             m.pendingMoveRolls = static_cast<std::uint8_t>(pending);
             m.pendingDirectMoveChoice = static_cast<std::uint8_t>(direct);
             if (pending > 0) {
-                if (!item.contains("pendingRollInputs")
-                    || !parseHiddenRollInputs(item.at("pendingRollInputs"), m.pendingRollInputs))
+                if (!item.contains("pendingRollInputs"))
+                    return unsupported("silver_hidden_information_required");
+                auto inputs = item.at("pendingRollInputs");
+                if (privateMisc && inputs.is_object() && !inputs.contains("miscInfo"))
+                    inputs["miscInfo"] = m.miscInfo;
+                if (!parseHiddenRollInputs(inputs, m.pendingRollInputs)
+                    || (privateMisc && m.pendingRollInputs.miscInfo != m.miscInfo))
                     return unsupported("silver_hidden_information_required");
             }
         }

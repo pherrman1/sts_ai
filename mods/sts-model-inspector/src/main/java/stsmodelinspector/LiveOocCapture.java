@@ -479,8 +479,6 @@ final class LiveOocCapture {
                     out.put("screen", type.toLowerCase(java.util.Locale.ROOT));
                     out.put("unsupportedReason", "NATIVE_SCREEN_UNSUPPORTED:" + type);
             }
-            if ("map".equals(out.get("screen")) && activeWingBoots(core))
-                unsupported(out, "RELIC_NATIVE_STATE_UNREPRESENTABLE:WingedGreaves:active");
             seenRelicOffers.observe(AbstractDungeon.player, Settings.seed,
                     AbstractDungeon.floorNum, freshRun, String.valueOf(out.get("screen")),
                     map(out.getOrDefault("details", object())));
@@ -808,17 +806,6 @@ final class LiveOocCapture {
         // Nonpositive counters have the same V4 token encoding as native zero.
         // Known persistent counters are copied exactly, never reconstructed.
         return counter;
-    }
-
-    private static boolean activeWingBoots(Map<String,Object> state) {
-        for (Object raw : list(state.get("relics"))) {
-            Map<String,Object> relic = map(raw);
-            if ("WingedGreaves".equals(relic.get("id"))
-                    && relic.get("liveCounter") instanceof Number
-                    && ((Number)relic.get("liveCounter")).intValue() > 0)
-                return true;
-        }
-        return false;
     }
 
     private static Map<String,Object> card(AbstractCard c) throws ReflectiveOperationException {

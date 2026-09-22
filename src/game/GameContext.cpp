@@ -750,6 +750,13 @@ void GameContext::transitionToAct(int targetAct) {
 }
 
 void GameContext::transitionToMapNode(int mapNodeX) {
+    if (curMapNodeY >= 0 && curMapNodeY < 14 && wingBootsCharges > 0) {
+        const auto &node = map->getNode(curMapNodeX, curMapNodeY);
+        bool connected = false;
+        for (int i = 0; i < node.edgeCount; ++i)
+            connected |= node.edges[i] == mapNodeX;
+        if (!connected) --wingBootsCharges;
+    }
     lastRoom = curRoom;
     curMapNodeX = mapNodeX;
     ++floorNum;
@@ -1394,6 +1401,11 @@ bool GameContext::obtainRelic(RelicId r) {
 
         case RelicId::OMAMORI: {
             relicData = 2;
+            break;
+        }
+
+        case RelicId::WING_BOOTS: {
+            wingBootsCharges = 3;
             break;
         }
 
