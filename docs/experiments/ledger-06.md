@@ -10936,3 +10936,18 @@ default or generalization claim is authorized. Evidence:
   51 wins, and zero candidate canonical hits; 59 paired first roots also
   matched. This verifies conservative legacy behavior, not positive
   live-policy qualification. [Corrected raw packet](evidence/silver_quiescent_queue_item_20260922/README.md).
+
+- **Fresh native production-path smoke and replayable provenance:** Functional
+  SHA `06279a8644492e9ef9cea813455ddfe841425380` added trusted v2
+  hard-combat capture of the source queue proof; v1 remains conservative.
+  Seven focused CTests passed. Eight fresh A0 seeds `2026100100..2026100107`
+  ran project-fair Silver through native `bestbench` at 300 simulations per
+  decision with the repository seed guard. All eight completed normally;
+  175 combats yielded 178,497 queue-item canonical hits and zero conversion,
+  semantic-resolution, transaction, knowledge-consistency, or fail-closed
+  selected-child failures. All captures were v2; replay of one trusted
+  capture per seed completed 8/8 with 2,303 canonical hits, zero deterministic
+  misses, and zero positive-visit childless edges. This is bounded positive
+  production-path exercise and capture round-trip verification, not a
+  gameplay-quality comparison or population qualification. The consumed
+  HOLDOUT was not rerun. [Native-smoke raw packet](evidence/silver_quiescent_queue_item_20260922/README.md).

@@ -80,3 +80,55 @@ conservative legacy-import boundary, not positive use of the new identity
 rule. The live conversion regression and native private-search tests prove
 the eligible and excluded cases; no independent live gameplay cohort has
 qualified their frequency or policy quality.
+
+## Trusted native capture and eight-seed end-to-end smoke
+
+Functional SHA `06279a8644492e9ef9cea813455ddfe841425380` adds
+`silver_hard_combat_v2`. Only the native hard-combat capture path writes the
+source-side queue proof outside the public Silver wire and binds it into the
+snapshot state hash and benchmark seed. The validator accepts frozen v1 rows
+with provenance `false`; a focused fixture rejects missing or altered v2
+proof. A native Gambler's Brew round trip through capture, JSON, and
+validation retains `true`. Seven affected CTests passed, including the v1/v2
+fixture and live importer.
+
+Fresh full-run seeds `2026100100..2026100107` were selected outside the
+frozen hard64 cohorts. The smoke used `one_combat bestbench 300 8 0
+2026100100 /tmp/silver-quiescent-native8.csv` through `tools/seed_guard.sh`,
+with `OMP_NUM_THREADS=2`, `STS_FAIR=1`, `STS_SEARCHER3=0`,
+`STS_SILVER_SEARCH=1`, `STS_SILVER_TELEMETRY=1`, `STS_SILVER_ADAPTIVE=0`,
+`STS_SILVER_HARD_COMBAT_CAPTURE=/tmp/silver-quiescent-native8-captures.jsonl`,
+and `STS_EXECUTABLE_GIT_SHA=06279a8644492e9ef9cea813455ddfe841425380`.
+The Release `one_combat` SHA-256 was
+`89af79a9f2ae3e26913616aa8c87af7f77e2277ce83ff222834139b9bb251a93`.
+The `.meta.json` sidecar records the effective Silver backend, project-fair
+mode, two threads, allocated reuse cap 32,768, adaptive off, model status,
+and exact argv. This was a production-path correctness smoke, not a paired
+gameplay or speed experiment.
+
+All eight runs returned rows and the command exited 0. Across 175 Silver
+combats, live telemetry recorded 178,497 queue-item canonical hits (positive
+in all 175), 3,749 decisions, 1,672,500 simulations, and zero conversion,
+semantic-resolution, transaction, or knowledge-consistency failures. The
+fail-closed selected-child checks raised no exceptions, so the completed
+combats had no deterministic reroot mismatch or positive-visit childless
+edge. The runs won 3/8; that count is descriptive and has no quality claim.
+
+All 175 captured rows use v2: 162 carry source proof `true`, 13 `false`.
+One `true` capture per run was replayed at budget 300 with
+`silver_hard_combat_replay --reroot-diagnostics` through the seed guard.
+All 8/8 completed, with 2,303 canonical hits, zero deterministic reroot
+misses, and zero positive-visit childless edges. This demonstrates that fresh
+trusted captures replay with the production identity rule. It does not
+qualify the rule on the consumed HOLDOUT or a larger population.
+
+Raw gzip artifacts in this directory and SHA-256 of their uncompressed bytes:
+
+| Artifact | SHA-256 |
+| --- | --- |
+| `native8.log.gz` | `f24686cf00ff286b60c8cadb657e4a3caadd54359fe30fd175824108e1055400` |
+| `native8.csv.gz` | `8dc02806784b425a5f447c700d41d91e2801c242b00939d091e7dc69956aa825` |
+| `native8.meta.json.gz` | `d0d7a2e264261d53ac245b1c1003148ef7d1ff281a5a8f06462f7e80cb372598` |
+| `native8-captures.jsonl.gz` | `9116fb92b1608d77716f732f695cce0790a578e10aa9fd6367a25d6902c045bf` |
+| `native8-first-captures.jsonl.gz` | `2b4069f91af2845dbddf830687edd7d85ff0199226d6567b9aaf1d4237bdd648` |
+| `native8-replay.jsonl.gz` | `ba2990ece1f6ee1d9bd3d2eb0690c86f122501dccdc8a3f42f749ca1f26fc158` |

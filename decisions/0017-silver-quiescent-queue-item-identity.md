@@ -37,6 +37,8 @@ empty before omitting them from `BattleStateWire`. An imported root without
 that proof, including legacy JSON/public observations, keeps exact queue-item
 identity throughout its private search. This conservative gate prevents a
 pending Headbutt `OnAfterCardUsed` from appearing quiescent after conversion.
+Trusted native hard-combat v2 captures persist the proof separately from the
+public wire; historical v1 snapshots remain conservative on replay.
 
 ## Evidence and limits
 
