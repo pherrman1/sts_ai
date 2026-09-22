@@ -100,6 +100,22 @@ class ResumeTest(unittest.TestCase):
                 with self.assertRaisesRegex(ValueError, "resource bound"):
                     collect.capture(corpus, False, local_512=True, workers=4)
 
+    def test_local_override_requires_exact_frozen_plan(self):
+        evidence = ROOT / "docs/experiments/evidence/silver_prior_dataset_v1/plan.json"
+        plan = d.read(evidence)
+        collect.require_local_plan(plan)
+        altered = copy.deepcopy(plan)
+        altered["sources"][0]["seed"] = 99999999
+        with self.assertRaisesRegex(ValueError, "checked-in frozen"):
+            collect.require_local_plan(d.seal({k: v for k, v in altered.items() if k != "sha256"}))
+
+    def test_only_one_native_collection_phase_per_corpus(self):
+        with tempfile.TemporaryDirectory() as temp:
+            corpus = Path(temp)
+            with collect.execution_lock(corpus):
+                with self.assertRaisesRegex(ValueError, "another capture or label"):
+                    collect.capture(corpus, True)
+
 
 class FinalizationTest(unittest.TestCase):
     """Synthetic scientific-format labels isolate finalization; no native execution."""

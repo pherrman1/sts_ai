@@ -10,6 +10,8 @@ from __future__ import annotations
 import argparse
 from concurrent.futures import ThreadPoolExecutor
 from contextlib import contextmanager
+import fcntl
+from functools import wraps
 import os
 from pathlib import Path
 import socket
@@ -19,6 +21,13 @@ import time
 
 import silver_prior_dataset as d
 from silver_prior_projection import canonical, digest, project, require
+
+LOCAL_512_PLAN_SHA256 = "419184e523b9c651489a0adf498a9a68a79c7e04478b116fc0854de577b18481"
+
+
+def require_local_plan(plan):
+    require(len(plan["sources"]) == 512 and plan["sha256"] == LOCAL_512_PLAN_SHA256,
+            "local authorization applies only to the checked-in frozen 512-source plan")
 
 
 def git(*args):
@@ -35,6 +44,8 @@ def durable(path):
 
 def bind(plan, vocab, review, source_binary, label_binary, corpus, local_512=False, workers=1):
     d.validate_plan(plan)
+    if local_512:
+        require_local_plan(plan)
     require(1 <= workers <= (4 if local_512 else 1), "unsupported collection worker count")
     require(plan["vocabulary_sha256"] == vocab["sha256"], "plan vocabulary")
     from ironclad_reachable_domain_census import build_census
@@ -114,6 +125,29 @@ def attempt(corpus, prefix):
     yield Path(tempfile.mkdtemp(prefix=prefix, dir=directory))
 
 
+@contextmanager
+def execution_lock(corpus):
+    corpus.mkdir(parents=True, exist_ok=True)
+    with (corpus / "execution.lock").open("a+") as handle:
+        try:
+            fcntl.flock(handle, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except BlockingIOError as error:
+            raise ValueError("another capture or label phase is running for this corpus") from error
+        try:
+            yield
+        finally:
+            fcntl.flock(handle, fcntl.LOCK_UN)
+
+
+def exclusive_execution(func):
+    @wraps(func)
+    def wrapped(corpus, *args, **kwargs):
+        with execution_lock(corpus):
+            return func(corpus, *args, **kwargs)
+    return wrapped
+
+
+@exclusive_execution
 def capture(corpus, pilot, local_512=False, workers=1):
     binding, plan, _ = check_binding(corpus)
     require(local_512 == (binding.get("execution_mode") == "local_512"),
@@ -206,6 +240,7 @@ def select(corpus, pilot):
     return selection
 
 
+@exclusive_execution
 def label(corpus, pilot, local_512=False, workers=1):
     binding, plan, vocab = check_binding(corpus)
     require(local_512 == (binding.get("execution_mode") == "local_512"),
@@ -407,8 +442,7 @@ def main():
                 "bind requires plan, vocabulary, review and both binaries")
     if args.local_512:
         plan_path = args.plan if args.phase == "bind" else args.corpus / "plan.json"
-        require(len(d.read(plan_path)["sources"]) == 512,
-                "local authorization applies only to the frozen 512-source plan")
+        require_local_plan(d.read(plan_path))
     if args.phase == "bind":
         bind(d.read(args.plan), d.read(args.vocabulary), d.read(args.review),
              args.source_binary, args.label_binary, args.corpus, args.local_512, args.workers)

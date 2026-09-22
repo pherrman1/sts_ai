@@ -181,7 +181,9 @@ plan, bind with `--local-512 --workers 4`, then pass `--local-512` to each
 `capture` and `label` phase. `--workers` may be 1–4 and cannot exceed the value
 frozen at bind. Every native one-source or one-root command still runs through
 `tools/seed_guard.sh`; this scoped authorization changes the aggregate local
-source allowance, not the native per-command guard, source configuration,
+source allowance only for the exact checked-in plan hash. A corpus execution
+lock prevents concurrent capture/label phases from exceeding the frozen worker
+bound or racing a resumed job. The exception does not change the native per-command guard, source configuration,
 teacher budgets, seed identities, or split boundaries. The local execution
 mode and worker bound are recorded in the binding. `select` and `finalize`
 remain read-only validation phases and do not need the locality option.
