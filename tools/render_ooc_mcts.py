@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import json
 from pathlib import Path
+import webbrowser
 
 ASSETS = Path(__file__).parent / "combat_graph_viewer"
 SCRIPT = Path(__file__).parent / "ooc_graph_viewer" / "app.js"
@@ -96,12 +97,15 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--snapshot", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument("--open", action="store_true", help="open the generated file with the default browser")
     args = parser.parse_args()
     try:
         document = render(json.loads(args.snapshot.read_text(encoding="utf-8")))
     except (OSError, ValueError, KeyError, TypeError) as error:
         parser.error(str(error))
     args.output.write_text(document, encoding="utf-8")
+    if args.open:
+        webbrowser.open(args.output.resolve().as_uri())
     print(args.output)
     return 0
 
