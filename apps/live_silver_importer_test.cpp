@@ -1992,6 +1992,15 @@ int main() {
             || selectionImported.wire.cardSelect.task
                 != static_cast<std::int16_t>(CardSelectTask::EXHAUST_ONE))
             throw std::runtime_error("schema-v4 card-select contract failed");
+        general["silverRoot"]["combat"]["cardSelect"] = json{
+            {"task", "DISCOVERY"}, {"cards", json::array({"Intimidate", "Second Wind", "Entrench"})},
+            {"pickCount", 1}, {"canPickZero", true}, {"data0", 1}};
+        auto potionDiscovery = one_combat::advisor::importSilverRoot(general, eyeContext);
+        if (!potionDiscovery.ok || potionDiscovery.wire.cardSelect.task
+                != static_cast<std::int16_t>(CardSelectTask::DISCOVERY)
+            || !potionDiscovery.wire.cardSelect.canPickZero
+            || potionDiscovery.wire.cardSelect.data0 != 1)
+            throw std::runtime_error("observed Skill Potion selector did not preserve optional Discovery");
         one_combat::advisor::SilverImportContext loweringContext;
         loweringContext.cardIds = {{"copy-a", 17}, {"copy-b", 23}};
         silver_bridge::SemanticAction loweringAction;
@@ -2031,6 +2040,15 @@ int main() {
             loweringAction, loweringContext, discoveryObservation);
         if (discoveryChoice != json{{"kind", "choose"}, {"choiceIndex", 2}})
             throw std::runtime_error("Discovery option did not lower to its unique visible choice");
+        loweringAction.skipCardSelect = true;
+        if (!one_combat::advisor::selectedLiveAction(
+                loweringAction, loweringContext, discoveryObservation).is_null())
+            throw std::runtime_error("mandatory Discovery gained an unsupported skip");
+        discoveryObservation["combat"]["cardSelect"]["canPickZero"] = true;
+        if (one_combat::advisor::selectedLiveAction(
+                loweringAction, loweringContext, discoveryObservation) != json{{"kind", "skip"}})
+            throw std::runtime_error("optional potion Discovery skip did not lower to MCP skip");
+        loweringAction.skipCardSelect = false;
         discoveryObservation["combat"]["cardSelect"]["cards"][2] = "Magnetism";
         if (!one_combat::advisor::selectedLiveAction(
                 loweringAction, loweringContext, discoveryObservation).is_null())

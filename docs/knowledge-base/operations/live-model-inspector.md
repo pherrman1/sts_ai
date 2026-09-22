@@ -601,7 +601,10 @@ the next seed. Ascension and seed are passed through to MCP.
 In-combat `CARD_REWARD` modals are combat selection boundaries. A vanilla
 `DiscoveryAction` offers three visible cards and supplies its actual copy
 count to the native Silver `DISCOVERY` task; Silver's selected card ID must
-uniquely resolve to one MCP choice. Unknown combat card-reward selectors stay
+uniquely resolve to one MCP choice. Attack, Skill, and Power Potions use the
+same native action with a public optional skip; capture preserves that flag,
+and Silver enumerates and lowers the skip alongside the three card choices.
+Mandatory Discovery remains a three-choice selector. Unknown combat card-reward selectors stay
 fail-closed. Combat `GRID`/`HAND_SELECT` boundaries also use Silver.
 Combat capture uses the room's `COMBAT` phase, including event rooms, rather
 than requiring a monster-room subclass. Selection boundary detection is

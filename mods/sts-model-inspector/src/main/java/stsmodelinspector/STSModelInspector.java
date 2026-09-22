@@ -2065,10 +2065,9 @@ public final class STSModelInspector implements PostInitializeSubscriber,
                     ? readIntField(current, "amount") : null;
             // DiscoveryAction holds the native copy count while its modal is open.
             // An unknown combat card reward still reaches Silver as unsupported.
-            if (Boolean.TRUE.equals(discovery) && Boolean.FALSE.equals(skippable)
-                    && copyCount != null && (copyCount == 1 || copyCount == 2)
-                    && screen.rewardGroup != null && screen.rewardGroup.size() == 3)
-                return selectionJson("DISCOVERY", false, false, 1, copyCount, screen.rewardGroup);
+            if (qualifiedDiscoverySelection(discovery, skippable, copyCount,
+                    screen.rewardGroup == null ? -1 : screen.rewardGroup.size()))
+                return selectionJson("DISCOVERY", skippable, false, 1, copyCount, screen.rewardGroup);
             return selectionJson("", false, false, 1, screen.rewardGroup);
         }
         if (AbstractDungeon.screen == AbstractDungeon.CurrentScreen.GRID
@@ -2097,6 +2096,13 @@ public final class STSModelInspector implements PostInitializeSubscriber,
                     AbstractDungeon.player.hand.group);
         }
         return null;
+    }
+
+    static boolean qualifiedDiscoverySelection(Boolean discovery, Boolean skippable,
+                                               Integer copyCount, int offerCount) {
+        return Boolean.TRUE.equals(discovery) && skippable != null
+                && copyCount != null && (copyCount == 1 || copyCount == 2)
+                && offerCount == 3;
     }
 
     private static String combatJson() {

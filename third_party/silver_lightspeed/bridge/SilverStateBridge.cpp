@@ -411,6 +411,10 @@ SemanticAction semanticFromAction(const sts::BattleContext &state, const sts::se
         }
         if (state.cardSelectInfo.cardSelectTask == sts::CardSelectTask::DISCOVERY) {
             out.source = CardSource::CARD_SELECT_OPTION;
+            if (idx == 3 && state.cardSelectInfo.canPickZero) {
+                out.skipCardSelect = true;
+                return out;
+            }
             out.optionCardId = static_cast<std::int16_t>(state.cardSelectInfo.cards[idx]);
             return out;
         }

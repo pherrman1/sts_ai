@@ -42,6 +42,14 @@ public final class CombatBoundaryTest {
                 || discovery.get("data0").getAsInt() != 2
                 || discovery.get("pickCount").getAsInt() != 1)
             throw new AssertionError("Discovery copy count was not preserved");
+        JsonObject potionDiscovery = new Gson().fromJson(
+                STSModelInspector.selectionJson("DISCOVERY", true, false, 1, 1, null), JsonObject.class);
+        if (!STSModelInspector.qualifiedDiscoverySelection(true, true, 1, 3)
+                || !STSModelInspector.qualifiedDiscoverySelection(true, false, 2, 3)
+                || STSModelInspector.qualifiedDiscoverySelection(true, null, 1, 3)
+                || STSModelInspector.qualifiedDiscoverySelection(true, true, 1, 2)
+                || !potionDiscovery.get("canPickZero").getAsBoolean())
+            throw new AssertionError("optional potion Discovery was not distinguished from mandatory Discovery");
         for (int counter : new int[]{0, 1, 2, 3, -1, -2}) {
             if (STSModelInspector.combatEntryRelicData("NeowsBlessing", counter, false) != counter)
                 throw new AssertionError("active/invalid Neow counter changed");

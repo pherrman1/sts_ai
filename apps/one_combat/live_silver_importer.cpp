@@ -1185,8 +1185,7 @@ nlohmann::json selectedLiveAction(const silver_bridge::SemanticAction &action,
     }
     case SemanticActionType::SINGLE_CARD_SELECT: {
         if (action.cardSelectTask != static_cast<std::int16_t>(sts::CardSelectTask::DISCOVERY)
-            || action.source != silver_bridge::CardSource::CARD_SELECT_OPTION
-            || action.skipCardSelect) return nullptr;
+            || action.source != silver_bridge::CardSource::CARD_SELECT_OPTION) return nullptr;
         nlohmann::json combat = observation.contains("combat") && observation["combat"].is_object()
             ? observation["combat"]
             : observation.value("silverRoot", nlohmann::json::object())
@@ -1194,6 +1193,10 @@ nlohmann::json selectedLiveAction(const silver_bridge::SemanticAction &action,
         const auto select = combat.value("cardSelect", nlohmann::json::object());
         if (!select.is_object() || select.value("task", std::string()) != "DISCOVERY")
             return nullptr;
+        if (action.skipCardSelect)
+            return select.value("canPickZero", false)
+                ? nlohmann::json{{"kind", "skip"}}
+                : nlohmann::json(nullptr);
         const auto options = select.value("cards", nlohmann::json::array());
         if (!options.is_array() || options.size() != 3) return nullptr;
         int matched = -1;

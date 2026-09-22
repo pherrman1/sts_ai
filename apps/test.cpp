@@ -2187,6 +2187,21 @@ int testSilverSemanticActionResolution() {
     offer.optionCardId = static_cast<std::int16_t>(CardId::DEFEND_RED);
     check(search::resolveSilverSemanticAction(discovery, offer).ok,
           "Discovery offer must lower by offered card identity");
+    silver_bridge::SemanticAction optionalSkip = offer;
+    optionalSkip.skipCardSelect = true;
+    check(!search::resolveSilverSemanticAction(discovery, optionalSkip).ok,
+          "mandatory Discovery cannot acquire a skip action");
+    discovery.cardSelectInfo.canPickZero = true;
+    auto skipDiscovery = search::resolveSilverSemanticAction(discovery, optionalSkip);
+    check(skipDiscovery.ok && skipDiscovery.action.getSelectIdx() == 3,
+          "optional potion Discovery must expose native skip");
+    check(search::Action::enumerateCardSelectActions(discovery).size() == 4,
+          "optional Discovery must enumerate all three cards and skip");
+    const int handBeforeSkip = discovery.cards.cardsInHand;
+    skipDiscovery.action.execute(discovery);
+    check(discovery.cards.cardsInHand == handBeforeSkip
+              && discovery.inputState != InputState::CARD_SELECT,
+          "optional Discovery skip must close the selector without generating a card");
     BattleContext codex = cardSelectFixture(CardSelectTask::CODEX, 1, false);
     silver_bridge::SemanticAction skip;
     skip.type = silver_bridge::SemanticActionType::SINGLE_CARD_SELECT;
