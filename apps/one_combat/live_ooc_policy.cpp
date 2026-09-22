@@ -364,7 +364,6 @@ LiveOocDecision LiveOocMctsPolicy::score(const sts::GameContext &projected,
         LiveOocDecision result;
         result.policy = name();
         result.tree = search.tree;
-        std::map<sts::search::OocActionId, std::string> rootLabels;
         result.candidates.reserve(rootActions.size());
         for (const auto &root : rootActions) {
             const auto &candidate = provider.candidate(0, root.id);
@@ -383,25 +382,8 @@ LiveOocDecision LiveOocMctsPolicy::score(const sts::GameContext &projected,
                 ? static_cast<double>(root.visits) / search.metrics.simulations : 0.0;
             result.candidates.push_back({key, payload, candidate.primitive.bits, root.q,
                                          root.visits, share, root.prior});
-            rootLabels.emplace(root.id, key);
         }
-        if (result.tree) for (auto &node : result.tree->nodes) {
-            if (node.chance && node.depth == 0) {
-                node.label = rootLabels.at(node.action);
-            } else if (!node.chance) {
-                const auto &state = provider.state(node.state);
-                static const char *screens[] = {"invalid", "event", "rewards", "boss relic",
-                    "card select", "map", "treasure", "rest", "shop", "battle"};
-                const auto screen = static_cast<unsigned>(state.screenState);
-                node.outcome = state.outcome == GameOutcome::PLAYER_LOSS ? "loss"
-                    : state.outcome == GameOutcome::PLAYER_VICTORY ? "victory" : "undecided";
-                node.label = (node.outcome == "loss" ? "Sampled loss · "
-                    : node.outcome == "victory" ? "Victory · " : "")
-                    + std::string("Floor ") + std::to_string(state.floorNum) + " · HP "
-                    + std::to_string(state.curHp) + "/" + std::to_string(state.maxHp)
-                    + " · " + (screen < 10 ? screens[screen] : "unknown screen");
-            }
-        }
+        if (result.tree) annotateOocTree(provider, *result.tree);
         std::sort(result.candidates.begin(), result.candidates.end(),
             [](const auto &a, const auto &b) { return a.semanticKey < b.semanticKey; });
         const auto selected = provider.candidate(0, *search.selectedAction);
@@ -409,6 +391,8 @@ LiveOocDecision LiveOocMctsPolicy::score(const sts::GameContext &projected,
             ? canonicalOocSemanticActionKey(*selected.semantic)
             : "ooc-live:v1:map:x=" + std::to_string(selected.primitive.getIdx1())
                 + ":y=" + std::to_string(projected.curMapNodeY + 1);
+        if (result.tree) for (auto &node : result.tree->nodes)
+            node.selected = node.chance && node.depth == 0 && node.action == *search.selectedAction;
         for (int i = 0; i < static_cast<int>(result.candidates.size()); ++i) {
             if (result.candidates[i].semanticKey == selectedKey) {
                 result.selectedIndex = i;

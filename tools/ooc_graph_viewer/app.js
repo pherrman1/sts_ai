@@ -3,7 +3,9 @@
   const $ = id => document.getElementById(id);
   const root = String(tree.rootId);
   const nodes = new Map(tree.nodes.map(n => [String(n.id), {
-    ...n, id:String(n.id), isChanceNode:n.kind === 'chance'}]));
+    ...n, id:String(n.id), isChanceNode:n.kind === 'chance',
+    graphWidth:n.kind === 'chance' ? 290 : 330,
+    graphHeight:n.kind === 'chance' ? 78 : 108}]));
   const edges = adaptOocEdges(tree,nodes);
   const outgoing = new Map(), incoming = new Map();
   for (const e of edges) {
@@ -16,7 +18,6 @@
   }
   const g = {root,nodes,edges,outgoing,incoming,validNumber:x=>typeof x==='number' && Number.isFinite(x)};
   const rootRows = outgoing.get(root) || [];
-  const selected = evaluator.selectedSemanticKey;
   const controls = {budget:300,depth:4,topK:4,minVisits:0,rootFilter:null,focus:null,
     direction:'RIGHT',expanded:new Set()};
   let rendered = null, transform = d3.zoomIdentity, revision=0, selectedItem=null, history=[];
@@ -44,13 +45,22 @@
     const data=item.kind==='edge'?edges.find(e=>e.id===item.id):nodes.get(item.id);
     if(!data)return;
     const title=document.createElement('h3');title.textContent=item.kind==='edge'?
-      (data.kind==='particle'?'Sampled outcome':'Action edge'):label(data);pane.append(title);
+      (data.combatModelUsed?'CTM combat prediction':
+        data.kind==='particle'?'Sampled state':'Game action'):label(data);pane.append(title);
     const rows=item.kind==='edge'?{
-      'From':data.parentId,'To':data.childId??'capture omitted','Kind':data.kind,
+      'From node':data.parentId,'To node':data.childId??'capture omitted',
+      'Transition':data.actionLabel,'CTM used':data.combatModelUsed?'yes':'no',
+      'Encounter':data.combatModelUsed?data.combatEncounter:null,
+      'Sampled combat result':data.combatModelUsed?data.combatOutcome:null,
       'Visits':data.visits}:{
-      'Node ID':data.id,'Kind':data.kind,'State ID':data.stateId,
-      'Depth':data.depth,'Visits':data.visits,'Prior':data.prior,'Q':data.q,
-      'Outcome':data.outcome};
+      'Meaning':label(data),'Node type':data.kind==='chance'?'Action choice':
+        data.id===root?'Current decision state':'Sampled game state',
+      'Screen':data.screen,'Room':data.room,'Floor':data.floor,
+      'Map position':data.mapY>=0?'('+data.mapX+','+data.mapY+')':null,
+      'HP':data.hp>=0?data.hp+'/'+data.maxHp:null,'Gold':data.gold,
+      'Selected action':data.kind==='chance'?!!data.selected:null,
+      'Outcome':data.outcome,'Visits':data.visits,'Prior':data.prior,'Q':data.q,
+      'Action key':data.key,'Node ID':data.id,'State ID':data.stateId,'Depth':data.depth};
     for(const [name,value] of Object.entries(rows)){
       const line=document.createElement('div');line.className='fact';
       const a=document.createElement('span'),b=document.createElement('strong');
@@ -59,7 +69,7 @@
     }
     if(data.outcome==='loss'){
       const note=document.createElement('p');note.className='muted';
-      note.textContent='Sampled terminal loss. The stored HP field can retain its pre-combat value; it is not a post-death HP reading.';
+      note.textContent='Model-sampled terminal death. The stored HP can retain its precombat value; it is not a post-death HP reading.';
       pane.append(note);
     }
     if(item.kind==='node')for(const e of outgoing.get(item.id)||[]){
@@ -103,11 +113,18 @@
       for(const e of visible.edges){
         const route=routes.get(e.id)?.sections?.[0],source=positions.get(e.parentId);
         if(!source)continue;
-        const group=make('g',{class:'link '+(e.kind==='particle'?'chance':'')});
+        const group=make('g',{class:'link '+(e.kind==='particle'?'chance':'')+
+          (e.combatModelUsed?' ctm':'')});
         group.setAttribute('data-edge',e.id);
         if(route){const points=[route.startPoint,...(route.bendPoints||[]),route.endPoint];
           group.append(make('path',{d:points.map((p,i)=>(i?'L':'M')+p.x+' '+p.y).join(' '),
             'marker-end':'url(#ooc-arrow)','stroke-width':1.5+Math.min(3,Math.sqrt(e.visits||0)/8)}));
+          if(e.combatModelUsed){
+            const anchor=points[Math.floor((points.length-1)/2)];
+            const text=make('text',{x:anchor.x+6,y:anchor.y-6,class:'ctm-label'});
+            text.textContent='CTM: '+oocEncounterName(e.combatEncounter)+' → '+e.combatOutcome;
+            group.append(text);
+          }
         }else if(!e.childCaptured){const text=make('text',{x:source.x+source.width+12,
             y:source.y+source.height/2,class:'omitted'});
           text.textContent='capture omitted';group.append(text);}
@@ -116,16 +133,24 @@
       }
       for(const n of visible.nodes){const pos=positions.get(n.id);if(!pos)continue;
         const group=make('g',{class:'node '+(n.isChanceNode?'chance':'decision')+
-          (n.outcome==='loss'?' loss':''),
+          (n.outcome==='loss'?' loss':'')+(n.selected?' selected':''),
           transform:'translate('+pos.x+','+pos.y+')'});group.setAttribute('data-node',n.id);
         group.append(make('rect',{width:pos.width,height:pos.height,rx:9}));
-        const title=make('text',{x:10,y:n.isChanceNode?17:23,class:'node-title'});
-        title.textContent=n.isChanceNode?'ACTION #'+n.actionId:'STATE #'+n.id;
-        const count=make('text',{x:10,y:n.isChanceNode?37:48,class:'node-count'});count.textContent='n '+n.visits;
-        const detail=make('text',{x:10,y:n.isChanceNode?54:74,class:'node-secondary'});
-        detail.textContent=n.isChanceNode?'Q '+(n.q==null?'—':n.q.toFixed(3))+
-          ' · P '+n.prior.toFixed(3):label(n).slice(0,29);
-        group.append(title,count,detail);const tip=make('title');tip.textContent=label(n);group.append(tip);
+        const heading=make('text',{x:10,y:20,class:'node-title'});
+        heading.textContent=n.isChanceNode?(n.selected?'CHOSEN ACTION':'ACTION'):
+          n.id===root?'CURRENT GAME STATE':'SAMPLED GAME STATE';
+        const meaning=make('text',{x:10,y:43,class:'node-meaning'});
+        meaning.textContent=label(n).slice(0,n.isChanceNode?37:42);
+        const detail=make('text',{x:10,y:n.isChanceNode?65:68,class:'node-secondary'});
+        detail.textContent=n.isChanceNode?'n '+n.visits+' · Q '+(n.q==null?'—':n.q.toFixed(3))+
+          ' · prior '+n.prior.toFixed(3):'n '+n.visits+' · '+n.screen+' · '+n.room;
+        group.append(heading,meaning,detail);
+        if(!n.isChanceNode){
+          const stats=make('text',{x:10,y:91,class:'node-secondary'});
+          stats.textContent='Floor '+n.floor+' · '+n.hp+'/'+n.maxHp+' HP · '+n.gold+' gold';
+          group.append(stats);
+        }
+        const tip=make('title');tip.textContent=label(n);group.append(tip);
         group.onclick=()=>inspect({kind:'node',id:n.id});layer.append(group);
       }
       layer.setAttribute('transform',transform);drawSelection();
@@ -134,7 +159,7 @@
   }
   const pane=$('root-actions');
   for(const e of rootRows){const n=nodes.get(e.childId),button=document.createElement('button');
-    button.className='action-row'+(n?.label===selected?' silver-choice':'');
+    button.className='action-row'+(n?.selected?' silver-choice':'');
     const name=document.createElement('span'),stats=document.createElement('span');
     name.className='action-title';stats.className='action-stats';
     name.textContent=n?.label||'Action #'+n?.actionId;

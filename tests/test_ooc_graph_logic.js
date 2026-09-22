@@ -9,13 +9,15 @@ for (const file of ['../tools/ooc_graph_viewer/normalize.js',
 // Root edges are all shown; top K applies at the first sampled state.
 const tree = {edges:[
   {parentId:0,childId:1,kind:'action',visits:10},
-  {parentId:1,childId:2,kind:'particle',visits:10},
+  {parentId:1,childId:2,kind:'particle',visits:10,
+   combatModelUsed:true,combatEncounter:'JAW_WORM',combatOutcome:'survived'},
   {parentId:2,childId:3,kind:'action',visits:2},
   {parentId:2,childId:4,kind:'action',visits:8},
 ]};
 const nodes = new Map([0,1,2,3,4].map(id => [String(id), {id:String(id)}]));
 const edges = adaptOocEdges(tree,nodes);
 assert.deepEqual(edges.map(e=>e.visitCount), [10,10,2,8]);
+assert.equal(edges[1].actionLabel,'CTM: Jaw Worm → survived');
 const outgoing = new Map();
 for (const edge of edges) {
   if (!outgoing.has(edge.parentId)) outgoing.set(edge.parentId, []);

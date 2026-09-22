@@ -328,14 +328,19 @@ json oocResponse(const one_combat::advisor::Request &request,
             for (const auto &node : tree.nodes)
                 captured["nodes"].push_back({{"id", node.id}, {"kind", node.chance ? "chance" : "state"},
                     {"stateId", std::to_string(node.state)}, {"actionId", node.action},
-                    {"label", node.label}, {"outcome", node.outcome},
+                    {"label", node.label}, {"key", node.key}, {"outcome", node.outcome},
+                    {"screen", node.screen}, {"room", node.room}, {"floor", node.floor},
+                    {"mapX", node.mapX}, {"mapY", node.mapY}, {"hp", node.hp},
+                    {"maxHp", node.maxHp}, {"gold", node.gold}, {"selected", node.selected},
                     {"depth", node.depth}, {"visits", node.visits},
                     {"prior", node.chance ? json(node.prior) : json(nullptr)},
                     {"q", node.chance && node.visits ? json(node.q) : json(nullptr)}});
             for (const auto &edge : tree.edges)
                 captured["edges"].push_back({{"parentId", edge.parentId},
                     {"childId", edge.childId ? json(*edge.childId) : json(nullptr)},
-                    {"visits", edge.visits}, {"kind", edge.particle ? "particle" : "action"}});
+                    {"visits", edge.visits}, {"kind", edge.particle ? "particle" : "action"},
+                    {"combatModelUsed", edge.combatModelUsed},
+                    {"combatEncounter", edge.combatEncounter}, {"combatOutcome", edge.combatOutcome}});
             evaluator["tree"] = std::move(captured);
         }
     }

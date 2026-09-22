@@ -69,12 +69,18 @@ struct OocTreeNode {
     double prior, q;
     std::string label;
     std::string outcome;
+    // Optional provider annotations; the generic planner leaves these empty.
+    std::string key, screen, room;
+    int floor = -1, mapX = -1, mapY = -1, hp = -1, maxHp = -1, gold = -1;
+    bool selected = false;
 };
 struct OocTreeEdge {
     std::uint64_t parentId;
     std::optional<std::uint64_t> childId;
     std::uint64_t visits;
     bool particle;
+    bool combatModelUsed = false;
+    std::string combatEncounter, combatOutcome;
 };
 struct OocTreeSnapshot {
     bool truncated = false;

@@ -188,9 +188,15 @@ class LiveOocProtocol(unittest.TestCase):
         self.assertTrue(tree["truncated"])
         self.assertEqual(len(tree["nodes"]), 8)
         self.assertEqual(tree["nodes"][0]["visits"], 512)
-        self.assertEqual({n["label"] for n in tree["nodes"] if n["kind"] == "chance" and n["depth"] == 0},
-                         {c["semanticKey"] for c in after["candidateSummaries"]})
+        roots = [n for n in tree["nodes"] if n["kind"] == "chance" and n["depth"] == 0]
+        self.assertEqual(len(roots), len(after["candidateSummaries"]))
+        self.assertTrue(all(n["label"].startswith("Travel to Monster room at (") for n in roots))
+        self.assertEqual(sum(n["selected"] for n in roots), 1)
+        self.assertTrue(all(n["screen"] == "map" and n["floor"] == tree["nodes"][0]["floor"]
+                            for n in roots))
         self.assertTrue(any(e["kind"] == "particle" for e in tree["edges"]))
+        self.assertTrue(any(e["combatModelUsed"] and e["combatOutcome"] in ("death", "victory", "escape")
+                            for e in tree["edges"] if e["kind"] == "particle"))
 
     def test_map_root_rejects_incomplete_offered_relic_history(self):
         observation = copy.deepcopy(self.fixtures["map_multiple_children"])
