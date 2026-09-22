@@ -1,6 +1,6 @@
 # ADR-0017: Treat queue items as historical at quiescent Silver decisions
 
-- Status: proposed for independent review
+- Status: accepted after independent implementation review
 - Date: 2026-09-22
 
 ## Context

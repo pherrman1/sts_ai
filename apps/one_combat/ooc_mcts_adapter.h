@@ -61,6 +61,11 @@ void sampleLiveOocHiddenCounters(GameContext &, std::mt19937_64 &, int priorEven
 
 class OocGameContextModel final : public sts::search::OocGenerativeModel {
 public:
+    struct CombatPrediction {
+        bool used = false;
+        sts::MonsterEncounter encounter = sts::MonsterEncounter::INVALID;
+        std::string outcome;
+    };
     struct Candidate {
         sts::search::OocActionId id;
         std::string key;
@@ -83,7 +88,8 @@ private:
         std::optional<std::vector<double>> logits;
         std::optional<std::vector<sts::search::OocPlannerAction>> priors;
     };
-    struct Snapshot { GameContext gc; PathHistory path; mutable std::optional<Metadata> metadata; };
+    struct Snapshot { GameContext gc; PathHistory path; mutable std::optional<Metadata> metadata;
+        CombatPrediction combatPrediction; };
     // Destroy preparations before their borrowed sampler/runtime.
     std::shared_ptr<const CombatTransitionSampler> combatSampler;
     std::deque<Snapshot> states;
@@ -94,7 +100,8 @@ private:
     const Metadata &metadata(sts::search::OocStateId) const;
     Metadata &mutableMetadata(sts::search::OocStateId) const;
     double bossLeafValue(const GameContext &) const;
-    void resolveCombat(Snapshot &, std::mt19937_64 &, const PreparedCombatTransition * = nullptr);
+    CombatRuntimeSample::Outcome resolveCombat(Snapshot &, std::mt19937_64 &,
+        const PreparedCombatTransition * = nullptr);
 public:
     // Root history is required: prior room visits cannot be recovered from GameContext.
     explicit OocGameContextModel(const GameContext &, const PathHistory &,
@@ -109,6 +116,7 @@ public:
     const OocContinuationMetrics &continuationMetrics() const { return continuation_; }
     const GameContext &state(sts::search::OocStateId id) const;
     const PathHistory &pathHistory(sts::search::OocStateId id) const;
+    const CombatPrediction &prediction(sts::search::OocStateId id) const;
     std::optional<double> terminalValue(sts::search::OocStateId) const override;
     bool isLeafBoundary(sts::search::OocStateId) const override;
     std::vector<sts::search::OocPlannerAction> legalActions(sts::search::OocStateId) const override;
@@ -121,6 +129,8 @@ public:
     double evaluateLeaf(sts::search::OocStateId, std::mt19937_64 &) override;
     bool isDeterministicTransition(sts::search::OocStateId, sts::search::OocActionId) const override;
 };
+// Adds game meanings and CTM provenance to a captured generic search tree.
+void annotateOocTree(const OocGameContextModel &, sts::search::OocTreeSnapshot &);
 // A validated singleton root needs no hypothetical continuation.
 sts::search::OocMctsResult searchWithSoleRootShortcut(sts::search::OocGenerativeModel &,
     const sts::search::OocMctsConfig &, std::optional<sts::search::OocActionId>,
