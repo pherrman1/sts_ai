@@ -36,6 +36,8 @@ The locked advantages are smaller in point estimate but still satisfy both gates
 
 See [provenance.json](provenance.json), [locked-l-summary.json](locked-l-summary.json), [locked-j-summary.json](locked-j-summary.json), and [decision.json](decision.json). Detailed per-root metrics and the consumption receipt remain in the durable external directory named in `provenance.json`; this Git packet contains aggregate summaries, not raw predictions.
 
+After consumption, the evaluator CLI and `run()` entry point were permanently disabled. Attempts to use the original or a different output directory now fail before checkpoint, manifest, or label access. The provenance packet pins SHA-256 hashes for all four exact external output files and the imported trainer source.
+
 Phase-A review initially requested the validation-to-locked comparisons. They were added and independently reviewed at `f458ef51029ea53f9baaf361e87fba67c743d5a2` before the run. No LOCKED_TEST label, outcome, prediction, or shard was opened before that review. No training, tuning, temperature selection, or alternate-candidate evaluation occurred.
 
 **LOCKED_TEST is now consumed and must not be used for model tuning.** Any future model change must use TRAIN/VALIDATION only. This result does not promote the model to Silver default and does not establish native inference cost or gameplay impact. After this pass, the next experiment is the separate oracle/native prior integration experiment described in the handoff.

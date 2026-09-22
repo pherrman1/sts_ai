@@ -1552,8 +1552,9 @@ uniform delta was `-3.23423` (95% source-seed CI `[-3.53464,-2.93676]`), and on
 itself improved locked-J regret over uniform by `4.11938` points; the student
 recovered 70.29% of that soft-prior headroom. This is frozen offline
 generalization evidence, not gameplay qualification or default promotion.
-LOCKED_TEST is consumed and must not be used for tuning. The next experiment is
-the separate oracle/native prior integration: export the frozen network,
+LOCKED_TEST is consumed and must not be used for tuning; the evaluator command
+is now disabled for every output path. The next experiment is the separate
+oracle/native prior integration: export the frozen network,
 measure native inference cost, then compare uniform-PUCT and learned-prior
 PUCT under small paired Silver budgets. See the [ledger-06 result](../../experiments/ledger-06.md)
 and the [locked-test evidence packet](../../experiments/evidence/silver_prior_locked_test_v1_20260922/README.md).

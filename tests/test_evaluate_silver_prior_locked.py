@@ -1,8 +1,9 @@
-import copy
 import importlib.util
+import io
 import json
-import tempfile
+import sys
 import unittest
+from contextlib import redirect_stderr
 from pathlib import Path
 from unittest import mock
 
@@ -26,7 +27,7 @@ class LockedEvaluatorTests(unittest.TestCase):
         with mock.patch.object(ev, "sha256", return_value="bad"), \
              mock.patch.object(ev.dataset, "read") as read:
             with self.assertRaisesRegex(ValueError, "checkpoint SHA"):
-                ev.run(Path("candidate.pt"), Path("corpus"), Path("output"))
+                ev.validate_checkpoint(Path("candidate.pt"))
             read.assert_not_called()
 
         for key, value in (("arm", "T1"), ("tau", 1.0), ("seed", 3),
@@ -42,7 +43,7 @@ class LockedEvaluatorTests(unittest.TestCase):
                  mock.patch.object(ev.torch, "load", return_value=cp):
                 with mock.patch.object(ev.dataset, "read") as read:
                     with self.assertRaisesRegex(ValueError, "metadata mismatch"):
-                        ev.run(Path("candidate.pt"), Path("corpus"), Path("unused-output"))
+                        ev.validate_checkpoint(Path("candidate.pt"))
                     read.assert_not_called()
 
     def test_only_locked_l_and_preselected_locked_j_entries_are_selected(self):
@@ -150,24 +151,29 @@ class LockedEvaluatorTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "empty or duplicate"):
                 ev._load_sealed_manifests(Path("c"))
 
-    def test_receipt_is_create_only_and_precedes_any_label_open(self):
-        with tempfile.TemporaryDirectory() as td:
-            out = Path(td) / "out"
-            manifests = (None,) * 7 + ([1], [1])
-            with mock.patch.object(ev, "validate_checkpoint", return_value=checkpoint()), \
-                 mock.patch.object(ev, "_load_sealed_manifests", return_value=manifests), \
-                 mock.patch.object(ev, "_load_l", side_effect=RuntimeError("simulated crash after receipt")) as load_l:
-                with self.assertRaisesRegex(RuntimeError, "simulated crash"):
-                    ev.run(Path("candidate"), Path("corpus"), out)
-                receipt = json.loads((out / "consumption-receipt.json").read_text())
-                self.assertEqual(receipt["status"], "LOCKED_TEST_OPENED")
-                load_l.assert_called_once()
-            with mock.patch.object(ev, "validate_checkpoint", return_value=checkpoint()), \
-                 mock.patch.object(ev, "_load_sealed_manifests", return_value=manifests), \
-                 mock.patch.object(ev, "_load_l") as load_l:
-                with self.assertRaises(FileExistsError):
-                    ev.run(Path("candidate"), Path("corpus"), out)
-                load_l.assert_not_called()
+    def test_cli_refuses_any_output_dir_after_consumption_before_label_access(self):
+        with mock.patch.object(ev, "validate_checkpoint") as checkpoint_loader, \
+             mock.patch.object(ev, "_load_sealed_manifests") as manifest_loader, \
+             mock.patch.object(ev, "_load_l") as l_loader, \
+             mock.patch.object(ev, "_load_j") as j_loader, \
+             mock.patch.object(ev.dataset, "read") as dataset_reader:
+            self.assertTrue(ev.LOCKED_TEST_CONSUMED)
+            for output_dir in ("/tmp/locked-test-v1", "/tmp/locked-test-v2", "/tmp/elsewhere/new-name"):
+                argv = ["evaluate_silver_prior_locked.py", "--checkpoint", "/unused/T2.pt",
+                        "--corpus", "/unused/corpus", "--output-dir", output_dir]
+                stderr = io.StringIO()
+                with mock.patch.object(sys, "argv", argv), redirect_stderr(stderr):
+                    with self.assertRaises(SystemExit) as exited:
+                        ev.main()
+                self.assertEqual(exited.exception.code, 2)
+                self.assertIn("LOCKED_TEST already consumed", stderr.getvalue())
+                self.assertIn(ev.CONSUMED_EVIDENCE, stderr.getvalue())
+            for target in (checkpoint_loader, manifest_loader, l_loader, j_loader, dataset_reader):
+                target.assert_not_called()
+            with self.assertRaisesRegex(RuntimeError, "already consumed"):
+                ev.run(Path("/unused/T2.pt"), Path("/unused/corpus"), Path("/tmp/new-output"))
+            for target in (checkpoint_loader, manifest_loader, l_loader, j_loader, dataset_reader):
+                target.assert_not_called()
 
     def test_source_cluster_bootstrap_uses_source_seed_and_5000_replicates(self):
         with mock.patch.object(ev.trainer, "bootstrap_summary", return_value={}) as bootstrap:
@@ -212,6 +218,17 @@ class LockedEvaluatorTests(unittest.TestCase):
         self.assertEqual(result["classification_role"], "DESCRIPTIVE_ONLY")
         self.assertEqual(result["locked_j_model_minus_uniform"]["mean"], -2.0)
         self.assertEqual(result["locked_j_soft_prior_headroom_recovery"], 2.0)
+
+    def test_consumed_provenance_pins_outputs_and_imported_trainer(self):
+        import hashlib
+        packet = Path(__file__).parents[1] / "docs/experiments/evidence/silver_prior_locked_test_v1_20260922/provenance.json"
+        provenance = json.loads(packet.read_text())
+        external = Path(provenance["durable_raw_summary_directory"])
+        for name, expected in provenance["external_output_sha256"].items():
+            actual = hashlib.sha256((external / name).read_bytes()).hexdigest()
+            self.assertEqual(actual, expected, name)
+        trainer = Path(__file__).parents[1] / "tools/train_silver_prior.py"
+        self.assertEqual(hashlib.sha256(trainer.read_bytes()).hexdigest(), provenance["trainer_source_sha256"])
 
 
 if __name__ == "__main__":

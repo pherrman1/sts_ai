@@ -11130,6 +11130,10 @@ receipt and per-root metrics are retained at
 `/home/philippherrmann/Documents/sts/silver-prior-model-v1/locked-test-v1/`;
 the compact committed packet is
 [here](evidence/silver_prior_locked_test_v1_20260922/README.md).
+The committed provenance now pins hashes for the receipt, full external L/J
+summaries, decision file, and imported trainer source. After this sole run, the
+evaluator CLI and `run()` entry point were disabled; any output-directory value
+is refused before checkpoint, manifest, or label access.
 
 LOCKED_TEST is consumed and must not be used for model tuning. This confirms
 offline policy-prior generalization under the frozen expected-regret criteria;

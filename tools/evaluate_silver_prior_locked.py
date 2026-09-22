@@ -31,6 +31,8 @@ HASHES = {
     "vocabulary": "7e07db8b10618d7c1e9b9b1b31d8196950c03060c54fd4d25fd057ac7918cd46",
 }
 BOOTSTRAPS = 5000
+LOCKED_TEST_CONSUMED = True
+CONSUMED_EVIDENCE = "docs/experiments/evidence/silver_prior_locked_test_v1_20260922/README.md"
 VALIDATION_DIR = ROOT / "docs/experiments/evidence/silver_prior_model_v1_20260922/stage-a-reviewed-863d7d5e"
 VALIDATION_HASHES = {
     "L": "b559dabec4d3e9fd5ceff1b702c3ca82c97d40a112d8b5a324717b919647153c",
@@ -255,6 +257,8 @@ def validation_comparison(validation, locked_l, locked_j):
 
 
 def run(checkpoint_path: Path, corpus: Path, output_dir: Path):
+    if LOCKED_TEST_CONSUMED:
+        raise RuntimeError(f"LOCKED_TEST already consumed; refusing another evaluation. See {CONSUMED_EVIDENCE}")
     cp = validate_checkpoint(checkpoint_path)
     (release, binding, selection, vocab, plan, checksums,
      quarantine, l_entries, j_entries) = _load_sealed_manifests(corpus)
@@ -318,6 +322,8 @@ def main():
     parser.add_argument("--corpus", type=Path, required=True)
     parser.add_argument("--output-dir", type=Path, required=True)
     args = parser.parse_args()
+    if LOCKED_TEST_CONSUMED:
+        parser.error(f"LOCKED_TEST already consumed; refusing another evaluation. See {CONSUMED_EVIDENCE}")
     print(json.dumps(run(args.checkpoint, args.corpus, args.output_dir), indent=2))
 
 
