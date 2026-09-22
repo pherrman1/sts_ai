@@ -8,6 +8,14 @@ import com.google.gson.JsonObject;
 /** Pure boundary and selection projection checks, without game/render initialization. */
 public final class CombatBoundaryTest {
     public static void main(String[] args) {
+        java.util.Map<String, Integer> chosenByrd = new java.util.HashMap<>();
+        chosenByrd.put("Chosen", 1);
+        chosenByrd.put("Byrd", 1);
+        if (!"CHOSEN_AND_BYRDS".equals(STSModelInspector.multiEncounterName(chosenByrd, false)))
+            throw new AssertionError("live Chosen plus one Byrd lost its canonical encounter");
+        chosenByrd.put("Byrd", 2);
+        if ("CHOSEN_AND_BYRDS".equals(STSModelInspector.multiEncounterName(chosenByrd, false)))
+            throw new AssertionError("unsupported two-Byrd shape was accepted as canonical");
         STSModelInspector.HiddenIntentSnapshot chained = new STSModelInspector.HiddenIntentSnapshot();
         STSModelInspector.recordHiddenMoveHistory(chained, java.util.Arrays.asList((byte)41));
         STSModelInspector.recordHiddenMoveHistory(chained,
