@@ -10880,3 +10880,46 @@ default or generalization claim is authorized. Evidence:
   reproducible summarizer. **Knowledge impact:** bounded research evidence and
   the maintained hand-alignment contract only; no model, RNG, budget, gameplay
   policy, or default promotion.
+
+## §335 — Quiescent Silver queue-item identity on frozen hard64 DEV (2026-09-22)
+
+- **Question and boundary:** Does ignoring only historical `curCardQueueItem`
+  at quiescent unresolved `PLAYER_NORMAL` or `CARD_SELECT` states preserve
+  selected-child reroot and expanded selection descendants without rewriting
+  the retained root? PR #285's §334 records a failed HOLDOUT and root rewrite;
+  this new conceptual branch leaves it as a failed record. §335 avoids
+  colliding with that proposed §334 identifier.
+- **Frozen implementation and protocol:** Current-main baseline
+  `8613f9c7811ce19a81cb731e78b6b58d01ec91ca` versus candidate functional
+  SHA `68b57f1bc644733e845a7bff15d717d481617dee`. The 64 frozen hard64
+  **DEV** snapshots (SHA-256
+  `ab7c3298754864986c31273a0f1d23967b165fdd79a386261b680b8ad16d0eae`)
+  were replayed at 1,000 simulations per decision through `seed_guard.sh`,
+  `OMP_NUM_THREADS=4`, default Silver settings, and `--reroot-diagnostics`.
+  The consumed HOLDOUT was not rerun.
+- **Focused verification:** Six focused CTest cases passed, covering Silver
+  optimization, bridge boundary, integration modes, and live importer. The
+  new expanded Gambler's Brew fixture reroots through selection, reopened
+  selection, and confirmation, preserves all retained queue items, and
+  continues searching. Headbutt's pending `OnAfterCardUsed` remains exact.
+- **DEV result:** Both arms completed 64/64. Main versus candidate: 51 versus
+  52 wins; mean terminal HP fraction 0.3440911508 versus 0.3701368277;
+  1,287 versus 1,312 selected deterministic reroots with no fallback; zero
+  deterministic misses and zero positive-visit selected edges without child
+  in either arm. Candidate counted 325,548 queue-item dedup hits. Action
+  traces changed in 64/64 cases and first actions in 12/64, so full-combat
+  node, simulation, time, win, and HP differences are trajectory-confounded.
+- **Same-root diagnostic:** A first-decision-only seam paired 59 ordinary
+  roots; five transactional selection roots were reported as such in both
+  arms. Both performed 59,000 root visits. First actions changed in 12/59;
+  candidate versus main created 54 fewer nodes in aggregate and recorded
+  7,763 queue-item dedup hits. Search time summed to 691,962.262 versus
+  656,110.242 microseconds in one run; this does not qualify a speed effect.
+- **Decision and limits:** Bounded DEV confirmation supports the proposed
+  identity rule and invariants for independent implementation review. It is
+  not a HOLDOUT result, scientific qualification, or default promotion. No
+  fresh independent cohort was run. **Evidence:** [raw DEV packet and
+  provenance](evidence/silver_quiescent_queue_item_20260922/README.md).
+  **Knowledge impact:** ADR-0017 records the scoped identity choice and the
+  combat-search KB records the current branch behavior; no gameplay policy,
+  RNG, budget, model, or default setting changed.
