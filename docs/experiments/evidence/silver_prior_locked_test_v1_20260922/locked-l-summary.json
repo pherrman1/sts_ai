@@ -1,0 +1,102 @@
+{
+  "metrics": {
+    "argmax_regret": {
+      "bootstrap_replicates": 5000,
+      "ci95": [
+        1.0853425499228682,
+        1.3981135715028745
+      ],
+      "cluster": "source_seed",
+      "mean": 1.2338550295601933,
+      "median": 0.07118749999986562,
+      "roots": 1494,
+      "sources": 64
+    },
+    "concordance": {
+      "bootstrap_replicates": 5000,
+      "ci95": [
+        0.7588522734233959,
+        0.7851661738526897
+      ],
+      "cluster": "source_seed",
+      "mean": 0.7723577906591891,
+      "median": 0.8,
+      "roots": 1494,
+      "sources": 64
+    },
+    "entropy": {
+      "bootstrap_replicates": 5000,
+      "ci95": [
+        1.2938865199564427,
+        1.3734871534892168
+      ],
+      "cluster": "source_seed",
+      "mean": 1.3328173156329226,
+      "median": 1.4194357826900035,
+      "roots": 1494,
+      "sources": 64
+    },
+    "expected_regret": {
+      "bootstrap_replicates": 5000,
+      "ci95": [
+        1.8685870362730383,
+        2.1631688713037667
+      ],
+      "cluster": "source_seed",
+      "mean": 2.0127113861039128,
+      "median": 1.284878718302906,
+      "roots": 1494,
+      "sources": 64
+    },
+    "model_minus_uniform": {
+      "bootstrap_replicates": 5000,
+      "ci95": [
+        -3.5346373585736575,
+        -2.936763778160467
+      ],
+      "cluster": "source_seed",
+      "mean": -3.234230840528778,
+      "median": -2.89384201742606,
+      "roots": 1494,
+      "sources": 64
+    },
+    "top_agreement": {
+      "bootstrap_replicates": 5000,
+      "ci95": [
+        0.4243237859373318,
+        0.47606699594731505
+      ],
+      "cluster": "source_seed",
+      "mean": 0.4497991967871486,
+      "median": 0.0,
+      "roots": 1494,
+      "sources": 64
+    },
+    "top_probability": {
+      "bootstrap_replicates": 5000,
+      "ci95": [
+        0.39107246845676347,
+        0.4188743718219285
+      ],
+      "cluster": "source_seed",
+      "mean": 0.4047706197557536,
+      "median": 0.32633489190392606,
+      "roots": 1494,
+      "sources": 64
+    },
+    "uniform_regret": {
+      "bootstrap_replicates": 5000,
+      "ci95": [
+        4.896794987995251,
+        5.601392358901445
+      ],
+      "cluster": "source_seed",
+      "mean": 5.24694222663269,
+      "median": 4.816287499999035,
+      "roots": 1494,
+      "sources": 64
+    }
+  },
+  "roots": 1494,
+  "sources": 64
+}

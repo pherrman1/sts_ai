@@ -10993,6 +10993,156 @@ default or generalization claim is authorized. Evidence:
   matched. This verifies conservative legacy behavior, not positive
   live-policy qualification. [Corrected raw packet](evidence/silver_quiescent_queue_item_20260922/README.md).
 
+## Silver prior model v1 — Stage A stopped before VALIDATION J (2026-09-22)
+
+- **Question and boundary:** Complete the predeclared structured policy-only
+  Stage A using TRAIN L, VALIDATION L, then the 64 preselected VALIDATION J
+  roots. No Silver integration, gameplay, or LOCKED_TEST evaluation was
+  permitted.
+- **Implementation and throughput:** Baseline `a2d50b1810ebac6cb3ae25009f3cadef3068c928`;
+  reviewed trainer commit `4c724e40`. The vectorized `SilverPriorNetV1` has
+  232,665 parameters. The one-epoch CPU T1 probe processed 8,862 roots and
+  57,012 actions in 1.361 seconds (6,513 roots/s; 41,900 actions/s; peak RSS
+  555,624 KiB). All 19 trainer tests passed and `git diff --check` passed.
+- **Stage-A L result:** With initialization seed `20260922`, TRAIN-only
+  `tau0=0.5899875000025645` and temperatures `0.29499375000128225`,
+  `0.5899875000025645`, `1.179975000005129`, all arms stopped at epoch 45 by
+  the declared patience rule. Their validation target CEs were 1.40496, 1.40160,
+  and 1.40785. The model-minus-uniform expected-regret differences were
+  -3.20118 [-3.47135, -2.96099], -3.17542 [-3.44476, -2.93642], and
+  -3.14024 [-3.40932, -2.90211], respectively (95% source-cluster bootstrap,
+  5,000 replicates). All arms pass the L gate only.
+- **J evaluation stop:** The sealed selection contains 64 preselected
+  VALIDATION J roots. All 64 corresponding J shard paths are absent from disk
+  and absent from the sealed release file list. The dedicated loader stopped
+  on the first selected J path before reading a J label. It did not substitute
+  roots. No J result, eligible temperature, candidate selection, or robustness
+  run exists.
+- **Locked-test boundary:** `locked_test_labels_opened=false`.
+  `metadata_deviation="LOCKED_TEST root/action counts observed before freeze; labels untouched"`.
+  No LOCKED_TEST labels, predictions, outcomes, or shards were inspected.
+- **Decision and limits:** The experiment is incomplete due to missing
+  permitted VALIDATION J artifacts, not a negative result. Continue only after
+  restoring those exact selected artifacts under the frozen release or
+  explicitly reviewing a new sealed corpus release. Do not select a model from
+  L-only evidence. [Evidence packet](evidence/silver_prior_model_v1_20260922/README.md).
+  **Knowledge impact:** trainer workflow is in the maintained Silver prior
+  operations page; no Silver behavior or model promotion changed.
+
+### Correction after PR #289 independent review
+
+The preceding Stage-A metrics and missing-J conclusion are **superseded and
+invalidated**. The epoch order used `len(train)` where `train` was the prepared
+split dictionary; only its 35 dictionary fields, not all 8,862 TRAIN roots,
+were presented to each epoch. The old validation-L metrics and checkpoints do
+not represent the preregistered run and cannot support the L gate. The full-set
+CPU throughput probe remains valid because it used
+`len(train["contexts"])` explicitly.
+
+The J path conclusion was also wrong. Collection finalization stores J raw
+records at `raw/J/<hash>.json.gz` and intentionally creates no `shards/J`
+projection. A path and release-manifest inventory of the 64 preselected
+VALIDATION J roots found 64/64 raw files present and 64/64 listed. This was a
+metadata-only inventory: no VALIDATION J raw record was opened and no
+LOCKED_TEST path or label was inspected. Correct the trainer to validate and
+project selected J raw records in memory. Rerun Stage A only after independent
+review of the corrected implementation SHA; open VALIDATION J only after the
+new all-root VALIDATION-L run completes.
+
+`locked_test_labels_opened=false`;
+`metadata_deviation="LOCKED_TEST root/action counts observed before freeze; labels untouched"`.
+The corrected evidence packet relabels the old Stage-A files as invalidated.
+
+### Corrected Stage A and VALIDATION J after review
+
+The corrected trainer SHA `863d7d5e09aa069fc3f4456cfa393c105729aa32` passed
+independent source/test review before this rerun. Every training epoch was
+accounted for as exactly 8,862 roots, 57,012 actions, and 70 optimizer steps.
+With unchanged seed `20260922` and recipe, the arms stopped at 18/20/20 epochs.
+Their VALIDATION-L model-minus-uniform mean-regret differences and 95% source
+cluster CIs were T0.5 `-3.67685 [-3.99284,-3.39745]`, T1
+`-3.62102 [-3.94162,-3.34120]`, and T2 `-3.57885 [-3.89616,-3.30330]`.
+
+After L metrics completed, the corrected loader opened only the 64 preselected
+VALIDATION J raw records from `raw/J`, verified their manifest checksums and
+J jobs, validated each record, and projected them in memory. It did not seek
+`shards/J`; collection deliberately materializes no such projection. All arms
+passed the VALIDATION-J upper-CI gate. Their J model-minus-uniform
+mean-regret differences and 95% source-cluster CIs were T0.5
+`-3.69322 [-4.22695,-3.16496]`, T1 `-3.66057 [-4.20016,-3.13460]`, and T2
+`-3.64892 [-4.17707,-3.14134]`.
+
+T0.5 had the largest mean J improvement. The paired T2-minus-T0.5 J regret
+interval was `[-0.12449,0.20423]`, containing zero, so the preregistered tie
+rule selected the higher temperature T2. This confirms the validation gates
+for the frozen v1 policy model, not gameplay utility or default promotion.
+No LOCKED_TEST label, outcome, prediction, or shard was opened. [Corrected
+Stage-A/J evidence and metrics]
+(evidence/silver_prior_model_v1_20260922/README.md).
+
+### Selected-arm robustness diagnostic after independent review
+
+The robustness runner passed independent source/test review at PR head
+`06b3383a`. Review identified that the Stage-A cache was bound to an earlier
+trainer SHA; a fresh cache was prepared for trainer source SHA-256
+`f66aed7ee1da9f48d0c21ea8392d23e83f22b0b2a281dc549380c4367cc9391f`, without
+rerunning Stage A or changing selected arm T2. The two preregistered seeds
+`20260923` and `20260924` each trained all 8,862 TRAIN roots per epoch, with
+57,012 actions and 70 optimizer steps. They stopped after 19 and 20 epochs.
+Their VALIDATION-L model-minus-uniform mean-regret differences were -3.57079
+and -3.54033; the VALIDATION-J differences were -3.65704 and -3.72922. Both
+seeds improved on both validation sets, satisfying the declared
+`PRIOR_MODEL_OPTIMIZATION_STABLE` rule. This bounded diagnostic neither
+reselects the arm nor establishes gameplay impact. No LOCKED_TEST labels,
+outcomes, predictions, or shards were opened. [Robustness raw metrics and
+provenance](evidence/silver_prior_model_v1_20260922/robustness-reviewed-f66aed7e/).
+
+### One-time LOCKED_TEST evaluator and result (2026-09-22)
+
+The sole candidate remains Stage-A T2, initialization seed `20260922`, target
+temperature `1.179975000005129`, and checkpoint SHA-256
+`b756c3e6576bdb53085f24aeb1102e4e2fe55fd7469c55546c99f068ccf40e24`.
+Before any LOCKED_TEST labels are opened, a dedicated evaluator is being
+reviewed at the supplied main baseline `60ece5403ec0a06d802c54aed8c7b85a9d4bc369`.
+It reads all non-quarantined LOCKED_TEST L shards and only preselected
+LOCKED_TEST J raw records, with create-only consumption receipt before label
+access. The trainer remains TRAIN/VALIDATION-only.
+
+The decision rule was frozen before opening labels: classify
+`PRIOR_MODEL_LOCKED_TEST_CONFIRMED` only when the upper 95% source-seed-cluster
+bootstrap CI (5,000 replicates) of model-minus-uniform expected regret is below
+zero on both L and J; otherwise classify
+`PRIOR_MODEL_LOCKED_TEST_NOT_CONFIRMED`. No top-action threshold is used. No
+LOCKED_TEST label was opened before independent review. The reviewed evaluator
+SHA was `f458ef51029ea53f9baaf361e87fba67c743d5a2`; the run used only the
+frozen candidate and completed once with 1,494 L roots / 64 sources and 64
+preselected J roots / 64 sources. L model-minus-uniform expected regret was
+`-3.23423 [-3.53464,-2.93676]`; J was `-2.89553 [-3.58717,-2.26012]`.
+Classification: **`PRIOR_MODEL_LOCKED_TEST_CONFIRMED`**.
+
+Descriptive diagnostics: validation-to-locked L delta changed from
+`-3.57885 [-3.89616,-3.30330]` to `-3.23423 [-3.53464,-2.93676]`; J changed
+from `-3.64892 [-4.17707,-3.14134]` to `-2.89553 [-3.58717,-2.26012]`.
+The frozen L target's locked-J delta versus uniform was
+`-4.11938 [-4.89133,-3.39374]`; soft-prior headroom recovery was 70.29%.
+These diagnostics do not affect the decision rule. The exact consumption
+receipt and per-root metrics are retained at
+`/home/philippherrmann/Documents/sts/silver-prior-model-v1/locked-test-v1/`;
+the compact committed packet is
+[here](evidence/silver_prior_locked_test_v1_20260922/README.md).
+The committed provenance now pins hashes for the receipt, full external L/J
+summaries, decision file, and imported trainer source. After this sole run, the
+evaluator CLI and `run()` entry point were disabled; any output-directory value
+is refused before checkpoint, manifest, or label access.
+
+LOCKED_TEST is consumed and must not be used for model tuning. This confirms
+offline policy-prior generalization under the frozen expected-regret criteria;
+it does not promote the model to Silver default or establish native cost or
+gameplay impact. The next experiment is separate oracle/native prior
+integration. **Knowledge impact:** current research status and this result are
+updated here and in `evaluation/current-research.md`; no stable implementation
+contract or Silver behavior changed.
+
 - **Fresh native production-path smoke and replayable provenance:** Functional
   SHA `06279a8644492e9ef9cea813455ddfe841425380` added trusted v2
   hard-combat capture of the source queue proof; v1 remains conservative.

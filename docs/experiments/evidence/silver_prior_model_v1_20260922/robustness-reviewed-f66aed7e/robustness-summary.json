@@ -1,0 +1,21 @@
+{
+  "classification": "PRIOR_MODEL_OPTIMIZATION_STABLE",
+  "selected_temperature": "T2",
+  "seed_outcomes": [
+    {
+      "seed": 20260923,
+      "arm": "T2",
+      "validation_l_model_minus_uniform": -3.570794687241286,
+      "validation_j_model_minus_uniform": -3.6570392929733746,
+      "positive_l_and_j_improvement": true
+    },
+    {
+      "seed": 20260924,
+      "arm": "T2",
+      "validation_l_model_minus_uniform": -3.5403289788959786,
+      "validation_j_model_minus_uniform": -3.729224672268531,
+      "positive_l_and_j_improvement": true
+    }
+  ],
+  "rule": "both diagnostic seeds must show positive mean expected-regret improvement over uniform on VALIDATION L and VALIDATION J"
+}

@@ -66,6 +66,7 @@ public final class STSModelInspector implements PostInitializeSubscriber,
     private static final float SILVER_BOOST_BUTTON_WIDTH = 90.0f;
     private static final float COMBAT_PANEL_HEIGHT = 288.0f;
     private static final float SILVER_BOOST_BUTTON_BOTTOM = 12.0f;
+    private static final float GRAPH_BUTTON_WIDTH = 112.0f;
     private static final String TOGGLE = "stsmodelinspector.toggle";
     private static final Color PANEL_BACKGROUND = new Color(0.015f, 0.075f, 0.115f, 0.96f);
     private static final Color PANEL_INNER = new Color(0.02f, 0.12f, 0.18f, 0.94f);
@@ -218,6 +219,11 @@ public final class STSModelInspector implements PostInitializeSubscriber,
     private int lastNodeX = -1, lastNodeY = -1;
     private static String liveEncounter = "";
     private boolean toggleDown;
+    private volatile String graphStatus = "";
+    private volatile boolean graphExportRunning;
+    private float graphButtonX = Float.NaN;
+    private float graphButtonBottom = Float.NaN;
+    private long graphButtonLayoutSequence = -1;
 
     private void resetSilverBudget() {
         silverSearchBudget = DEFAULT_SILVER_SEARCH_BUDGET;
@@ -511,6 +517,7 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         if (down && !toggleDown) panelVisible = !panelVisible;
         toggleDown = down;
         handleSilverBoostClick();
+        handleGraphButtonClick();
 
         Snapshot snapshot = captureStableSnapshot();
         if (snapshot == null) {
@@ -565,6 +572,10 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         boolean combat = "combat".equals(newest.boundary);
         OocOverlay overlay = currentOocOverlay();
         if (!combat && renderInlineChoices(sb, overlay, scale)) {
+            graphButtonX = 24.0f * scale;
+            graphButtonBottom = 50.0f * scale;
+            graphButtonLayoutSequence = newest.sequence;
+            renderGraphButton(sb, graphButtonX, graphButtonBottom, scale);
             sb.setColor(Color.WHITE);
             return;
         }
@@ -596,6 +607,10 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         } else {
             renderNonCombatPanel(sb, x, top, width, bottom, scale);
         }
+        graphButtonX = x + (SILVER_BOOST_BUTTON_X + SILVER_BOOST_BUTTON_WIDTH + 10.0f) * scale;
+        graphButtonBottom = bottom + SILVER_BOOST_BUTTON_BOTTOM * scale;
+        graphButtonLayoutSequence = newest.sequence;
+        renderGraphButton(sb, graphButtonX, graphButtonBottom, scale);
         sb.setColor(Color.WHITE);
     }
 
@@ -695,6 +710,80 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         // This diagnostic control must not also activate an underlying game UI
         // element when the click lands in the panel header.
         InputHelper.justClickedLeft = false;
+    }
+
+    private void renderGraphButton(SpriteBatch sb, float x, float bottom, float scale) {
+        float buttonX = x;
+        float buttonBottom = bottom;
+        drawRect(sb, buttonX, buttonBottom, GRAPH_BUTTON_WIDTH * scale, 30.0f * scale, PANEL_INNER);
+        drawBorder(sb, buttonX, buttonBottom, GRAPH_BUTTON_WIDTH * scale, 30.0f * scale, CYAN_DIM, scale);
+        String label = graphExportRunning ? "Opening graph…" : graphStatus.isEmpty() ? "Open MCTS graph" : graphStatus;
+        renderSmallText(sb, label, buttonX + 7.0f * scale, buttonBottom + 23.0f * scale,
+                graphExportRunning ? MUTED : CYAN, 0.62f);
+    }
+
+    private void handleGraphButtonClick() {
+        if (!panelVisible || newest == null || graphButtonLayoutSequence != newest.sequence
+                || !InputHelper.justClickedLeft || !graphButtonHit()) return;
+        InputHelper.justClickedLeft = false;
+        if (graphExportRunning) return;
+        final boolean combat = "combat".equals(newest.boundary);
+        graphExportRunning = true;
+        graphStatus = "";
+        Thread worker = new Thread(() -> exportAndOpenGraph(combat), "sts-model-inspector-graph");
+        worker.setDaemon(true);
+        worker.start();
+    }
+
+    private boolean graphButtonHit() {
+        float scale = Settings.scale;
+        return !Float.isNaN(graphButtonX) && !Float.isNaN(graphButtonBottom)
+                && InputHelper.mX >= graphButtonX && InputHelper.mX <= graphButtonX + GRAPH_BUTTON_WIDTH * scale
+                && InputHelper.mY >= graphButtonBottom && InputHelper.mY <= graphButtonBottom + 30.0f * scale;
+    }
+
+    private void exportAndOpenGraph(boolean combat) {
+        try {
+            Properties properties = new Properties();
+            String configOverride = System.getenv("STS_MODEL_INSPECTOR_CONFIG");
+            Path config = configOverride == null || configOverride.trim().isEmpty()
+                    ? Paths.get(System.getProperty("user.home"), ".sts-model-inspector.properties")
+                    : Paths.get(configOverride.trim());
+            if (Files.isRegularFile(config)) try (BufferedReader reader = Files.newBufferedReader(config)) {
+                properties.load(reader);
+            }
+            String toolsDir = System.getenv("STS_MODEL_INSPECTOR_GRAPH_TOOLS");
+            if (toolsDir == null || toolsDir.trim().isEmpty()) toolsDir = properties.getProperty("graphToolsDir");
+            if (toolsDir == null || toolsDir.trim().isEmpty())
+                throw new IOException("set graphToolsDir in ~/.sts-model-inspector.properties");
+            Path tools = Paths.get(toolsDir.trim()).toAbsolutePath().normalize();
+            Path snapshot = Paths.get(System.getProperty("user.home"), ".cache", "sts-model-inspector", "latest.json");
+            Path outputDir = snapshot.getParent().resolve("graphs");
+            Files.createDirectories(outputDir);
+            Path output = outputDir.resolve(combat ? "silver-mcts.html" : "ooc-mcts.html");
+            String python = properties.getProperty("python", "python3").trim();
+            List<String> command = new ArrayList<>();
+            command.add(python);
+            command.add(tools.resolve(combat ? "render_combat_decision.py" : "render_ooc_mcts.py").toString());
+            command.add("--snapshot"); command.add(snapshot.toString());
+            command.add("--output"); command.add(output.toString());
+            command.add("--open");
+            Process process = new ProcessBuilder(command).redirectErrorStream(true).start();
+            StringBuilder result = new StringBuilder();
+            try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream(), StandardCharsets.UTF_8))) {
+                String line;
+                while ((line = reader.readLine()) != null) result.append(line).append(' ');
+            }
+            int exit = process.waitFor();
+            if (exit != 0) throw new IOException(result.toString().trim().isEmpty()
+                    ? "renderer exited " + exit : result.toString().trim());
+            graphStatus = "Graph opened";
+        } catch (Exception error) {
+            graphStatus = "Graph unavailable";
+            System.err.println("STS Model Inspector graph export: " + error);
+        } finally {
+            graphExportRunning = false;
+        }
     }
 
     private boolean silverBoostButtonHit() {

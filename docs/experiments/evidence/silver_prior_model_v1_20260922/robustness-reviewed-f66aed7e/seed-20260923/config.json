@@ -1,0 +1,23 @@
+{
+  "seed": 20260923,
+  "arm": "T2",
+  "tau": 1.179975000005129,
+  "tau0": 0.5899875000025645,
+  "recipe": {
+    "optimizer": "AdamW",
+    "lr": 0.0003,
+    "weight_decay": 0.0001,
+    "root_batch": 128,
+    "clip": 1.0,
+    "max_epochs": 80,
+    "patience": 8,
+    "precision": "FP32"
+  },
+  "train_roots_per_epoch": 8862,
+  "train_actions": 57012,
+  "optimizer_steps_per_epoch": 70,
+  "base_stage_a_checkpoint_sha256": "b756c3e6576bdb53085f24aeb1102e4e2fe55fd7469c55546c99f068ccf40e24",
+  "trainer_sha256": "f66aed7ee1da9f48d0c21ea8392d23e83f22b0b2a281dc549380c4367cc9391f",
+  "locked_test_labels_opened": false,
+  "metadata_deviation": "LOCKED_TEST root/action counts observed before freeze; labels untouched"
+}
