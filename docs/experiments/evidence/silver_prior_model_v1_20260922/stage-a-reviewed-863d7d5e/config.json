@@ -1,0 +1,33 @@
+{
+  "seed": 20260922,
+  "tau0": 0.5899875000025645,
+  "temperatures": {
+    "T0.5": 0.29499375000128225,
+    "T1": 0.5899875000025645,
+    "T2": 1.179975000005129
+  },
+  "recipe": {
+    "optimizer": "AdamW",
+    "lr": 0.0003,
+    "weight_decay": 0.0001,
+    "root_batch": 128,
+    "clip": 1.0,
+    "max_epochs": 80,
+    "patience": 8,
+    "precision": "FP32"
+  },
+  "train_roots_per_epoch": 8862,
+  "train_actions": 57012,
+  "optimizer_steps_per_epoch": 70,
+  "release_sha256": "b32d8d79b44ee799af05892e79e45fb146f4859df58364722d7cd92531bd8419",
+  "binding_sha256": "7febae9df90e427ad5db631a2004ff4c4cdd579346d22d25b3e1f4532af96e17",
+  "selection_sha256": "ed91b3bb4c6983be3701333320f1e6c12f7332e3e371ac24b857a76a47d3b5ed",
+  "vocabulary_sha256": "7e07db8b10618d7c1e9b9b1b31d8196950c03060c54fd4d25fd057ac7918cd46",
+  "trainer_sha256": "5b965ed0ac2f62a9d3ecb532de7d5a235369ce2b7028f855b021f05020047d53",
+  "normalization_sha256": "4ebbd983e2cc15581539f055a5127db22ee359611ceba14d1a6e1f3fc57c4861",
+  "parameter_count": 232665,
+  "architecture": "SilverPriorNetV1",
+  "device": "cpu",
+  "locked_test_labels_opened": false,
+  "metadata_deviation": "LOCKED_TEST root/action counts observed before freeze; labels untouched"
+}
