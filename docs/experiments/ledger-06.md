@@ -11076,10 +11076,26 @@ T0.5 had the largest mean J improvement. The paired T2-minus-T0.5 J regret
 interval was `[-0.12449,0.20423]`, containing zero, so the preregistered tie
 rule selected the higher temperature T2. This confirms the validation gates
 for the frozen v1 policy model, not gameplay utility or default promotion.
-Two robustness runs with seeds `20260923` and `20260924` remain pending
-independent review of their diagnostic runner. No LOCKED_TEST label, outcome,
-prediction, or shard was opened. [Corrected Stage-A/J evidence and metrics]
+No LOCKED_TEST label, outcome, prediction, or shard was opened. [Corrected
+Stage-A/J evidence and metrics]
 (evidence/silver_prior_model_v1_20260922/README.md).
+
+### Selected-arm robustness diagnostic after independent review
+
+The robustness runner passed independent source/test review at PR head
+`06b3383a`. Review identified that the Stage-A cache was bound to an earlier
+trainer SHA; a fresh cache was prepared for trainer source SHA-256
+`f66aed7ee1da9f48d0c21ea8392d23e83f22b0b2a281dc549380c4367cc9391f`, without
+rerunning Stage A or changing selected arm T2. The two preregistered seeds
+`20260923` and `20260924` each trained all 8,862 TRAIN roots per epoch, with
+57,012 actions and 70 optimizer steps. They stopped after 19 and 20 epochs.
+Their VALIDATION-L model-minus-uniform mean-regret differences were -3.57079
+and -3.54033; the VALIDATION-J differences were -3.65704 and -3.72922. Both
+seeds improved on both validation sets, satisfying the declared
+`PRIOR_MODEL_OPTIMIZATION_STABLE` rule. This bounded diagnostic neither
+reselects the arm nor establishes gameplay impact. No LOCKED_TEST labels,
+outcomes, predictions, or shards were opened. [Robustness raw metrics and
+provenance](evidence/silver_prior_model_v1_20260922/robustness-reviewed-f66aed7e/).
 
 - **Fresh native production-path smoke and replayable provenance:** Functional
   SHA `06279a8644492e9ef9cea813455ddfe841425380` added trusted v2

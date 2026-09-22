@@ -253,15 +253,26 @@ python3 tools/train_silver_prior.py train-stage-a "$CORPUS" \
   "$RUN/cache/train-validation.pkl" "$RUN/stage-a"
 python3 tools/train_silver_prior.py evaluate-validation-j "$CORPUS" \
   "$RUN/cache/train-validation.pkl" "$RUN/stage-a"
-python3 tools/train_silver_prior.py robustness "$CORPUS" \
-  "$RUN/cache/train-validation.pkl" "$RUN/stage-a" "$RUN/robustness"
 ```
 
 Run `robustness` only when `temperature-comparison.json` confirms an eligible
 arm. It trains that selected temperature only with seeds `20260923` and
 `20260924`, evaluates both on VALIDATION L and J, and classifies stability only
 when both seeds improve mean expected regret over uniform on both validation
-sets. It does not compare or choose between diagnostic seeds.
+sets. It does not compare or choose between diagnostic seeds. Prepare a
+separate cache after the robustness implementation has passed review: the cache
+is bound to the exact trainer source hash, so the cache used by an earlier
+Stage-A implementation will be rejected even when the dataset is unchanged.
+This fresh preparation does not require rerunning Stage A or changing its
+selected arm.
+
+```bash
+python3 tools/train_silver_prior.py prepare "$CORPUS" \
+  "$RUN/cache/train-validation-robustness.pkl"
+python3 tools/train_silver_prior.py robustness "$CORPUS" \
+  "$RUN/cache/train-validation-robustness.pkl" "$RUN/stage-a" \
+  "$RUN/robustness"
+```
 
 The trainer uses source-grouped TRAIN/VALIDATION membership frozen by the
 corpus, TRAIN-only normalization and top-two-gap temperature scale, and three

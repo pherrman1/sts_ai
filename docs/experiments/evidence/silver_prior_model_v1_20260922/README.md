@@ -17,10 +17,17 @@ bootstrap tie rule selected **T2**: its J contrast with the best arm included
 zero, so the higher temperature won the tie. All 64 preselected VALIDATION J
 raw records were verified and opened only after corrected Stage A completed.
 
-The `robustness` command has since been added to train the selected T2 arm with
-seeds `20260923` and `20260924`. That code change is undergoing independent
-review now; no robustness run has started. Do not run it until the current PR
-head passes review.
+The `robustness` command trains the selected T2 arm with seeds `20260923` and
+`20260924`. Independent source/test review passed at PR head `06b3383a`; the
+reviewer found the robustness logic sound and required a fresh preparation
+cache because cache metadata binds the trainer source hash. Stage A was not
+repeated: a fresh cache bound to current trainer SHA-256
+`f66aed7ee1da9f48d0c21ea8392d23e83f22b0b2a281dc549380c4367cc9391f` was
+prepared and the two preregistered seeds were run. Both seeds improved mean
+expected regret over uniform on VALIDATION L and VALIDATION J, so the declared
+two-seed rule classifies the result as **PRIOR_MODEL_OPTIMIZATION_STABLE**.
+This is a robustness diagnostic for the selected arm; it does not change the
+Stage-A selection or establish gameplay impact.
 
 ## Provenance and boundary
 
@@ -71,6 +78,27 @@ and -5.98366 for T0.5, T1, and T2.
 Corrected epoch accounting was recorded for every epoch in the train summary;
 all rows show 8,862 roots, 57,012 actions, and 70 optimizer steps.
 
+## Selected-arm robustness diagnostic
+
+The reviewed implementation trained selected arm T2 using seeds `20260923`
+and `20260924`, retaining the Stage-A checkpoint and recipe. Each epoch
+accounted for 8,862 TRAIN roots, 57,012 actions, and 70 optimizer steps. Seed
+20260923 stopped after 19 epochs; seed 20260924 stopped after 20 epochs.
+Both seeds improved mean expected regret over uniform on VALIDATION L and J:
+
+| Seed | L model − uniform mean regret | J model − uniform mean regret | L and J improve | Epochs |
+| ---: | ---: | ---: | :---: | ---: |
+| 20260923 | -3.57079 | -3.65704 | yes | 19 |
+| 20260924 | -3.54033 | -3.72922 | yes | 20 |
+
+The predeclared rule therefore returns `PRIOR_MODEL_OPTIMIZATION_STABLE`.
+These two diagnostics do not compare seeds or reselect the arm. The robustness
+run used a fresh source-bound cache (SHA-256
+`ca88c0687c17c4eceae55e8ac94ccfa9d239c173f502e023a7d43348c8b0caf9`) and did
+not access LOCKED_TEST labels. Raw train summaries, configs, per-root
+VALIDATION L/J metrics, cache and checkpoint provenance are retained in
+[`robustness-reviewed-f66aed7e/`](robustness-reviewed-f66aed7e/).
+
 ## Throughput and artifacts
 
 The one-epoch T1 CPU throughput probe remains valid: 8,862 roots and 57,012
@@ -90,5 +118,6 @@ The invalidated first-run artifacts are retained as
 
 **Knowledge impact:** trainer, raw-J loading, and robustness procedure are
 maintained in `docs/knowledge-base/operations/silver-prior-dataset.md`. The
-initial invalidation and corrected Stage-A/J result are recorded in
-`docs/experiments/ledger-06.md`. No Silver behavior or default model changed.
+initial invalidation, corrected Stage-A/J result, and robustness diagnostics
+are recorded in `docs/experiments/ledger-06.md`. No Silver behavior or default
+model changed.
