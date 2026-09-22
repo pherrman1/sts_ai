@@ -28,6 +28,8 @@ namespace one_combat {
 static_assert(!std::is_constructible_v<OocGameContextModel, const GameContext &>,
               "OOC MCTS roots must require explicit PathHistory");
 namespace {
+std::string liveGraphPath;
+std::uint64_t liveGraphDecisionIndex = 1;
 GameContext detachedCopy(const GameContext &parent) {
     GameContext child = parent;
     if (parent.map) child.map = std::make_shared<sts::Map>(*parent.map);
@@ -241,7 +243,7 @@ OocGameContextModel::OocGameContextModel(const GameContext &gc, const PathHistor
     if (!dependencies.policyAvailable || !dependencies.policyLogits
             || !dependencies.policyAvailable())
         throw std::runtime_error("OOC MCTS requires native V4 policy dependencies");
-    if (!dependencies.potionKeepValue) dependencies.potionKeepValue = [](const GameContext &) { return 0.0; };
+    if (!dependencies.potionKeepValue) dependencies.potionKeepValue = [](const GameContext &) { return 4.0; };
     if (!dependencies.stopAfterAct) dependencies.stopAfterAct = [] { return 0; };
     auto history = path;
     history.update(gc);
@@ -249,6 +251,122 @@ OocGameContextModel::OocGameContextModel(const GameContext &gc, const PathHistor
 }
 const GameContext &OocGameContextModel::state(sts::search::OocStateId id) const { return states.at(id).gc; }
 const PathHistory &OocGameContextModel::pathHistory(sts::search::OocStateId id) const { return states.at(id).path; }
+const OocGameContextModel::CombatPrediction &OocGameContextModel::prediction(sts::search::OocStateId id) const {
+    return states.at(id).combatPrediction;
+}
+namespace {
+std::string graphRoomName(sts::Room room) {
+    switch (room) {
+        case sts::Room::MONSTER: return "Monster";
+        case sts::Room::ELITE: return "Elite";
+        case sts::Room::EVENT: return "Event";
+        case sts::Room::SHOP: return "Shop";
+        case sts::Room::REST: return "Rest";
+        case sts::Room::TREASURE: return "Treasure";
+        case sts::Room::BOSS: return "Boss";
+        case sts::Room::BOSS_TREASURE: return "Boss treasure";
+        default: return "Unknown";
+    }
+}
+std::string graphEntityName(const sts::search::OocEntity &entity) {
+    if (const auto *card = std::get_if<sts::Card>(&entity)) return card->getName();
+    if (const auto *relic = std::get_if<sts::RelicId>(&entity)) return sts::getRelicName(*relic);
+    if (const auto *potion = std::get_if<sts::Potion>(&entity)) return sts::getPotionName(*potion);
+    if (const auto *gold = std::get_if<int>(&entity)) return std::to_string(*gold) + " gold";
+    if (std::get_if<sts::Key>(&entity)) return "key";
+    return "";
+}
+std::string graphActionLabel(const OocGameContextModel &model, const sts::search::OocTreeNode &node) {
+    const auto &source = model.state(node.state);
+    const auto &action = model.candidate(node.state, node.action);
+    if (!action.semantic) {
+        if (source.screenState == sts::ScreenState::MAP_SCREEN) {
+            const int x = action.primitive.getIdx1(), y = source.curMapNodeY + 1;
+            const bool hasRoom = source.map && y >= 0 && y < 15 && x >= 0 && x < 7;
+            const std::string room = hasRoom ? graphRoomName(source.map->nodes[y][x].room) : "Unknown";
+            return "Travel to " + room + " room at (" + std::to_string(x) + "," + std::to_string(y) + ")";
+        }
+        return "Choose game action " + std::to_string(action.primitive.bits);
+    }
+    static constexpr const char *effects[] = {
+        "Upgrade card", "Remove card", "Transform card", "Transform and upgrade card",
+        "Duplicate card", "Take card", "Bottle card", "Sacrifice card", "Take relic",
+        "Collect gold", "Take potion", "Take key", "Skip card reward", "Use Singing Bowl",
+        "Leave rewards", "Open chest", "Leave treasure", "Rest", "Take Ruby Key",
+        "Lift", "Dig", "Leave campfire", "Buy card", "Buy relic", "Buy potion",
+        "Leave shop", "Choose event option", "Take boss relic", "Skip boss relic"
+    };
+    const auto effect = static_cast<unsigned>(action.semantic->effect);
+    std::string label = effect < std::size(effects) ? effects[effect] : "OOC action";
+    std::string target;
+    const auto &payload = action.semantic->target;
+    if (const auto *card = std::get_if<sts::search::OocCardTarget>(&payload))
+        target = sts::getCardName(card->id);
+    else if (const auto *selection = std::get_if<sts::search::OocSelectorTarget>(&payload)) {
+        if (const auto *card = std::get_if<sts::search::OocCardTarget>(&selection->card))
+            target = sts::getCardName(card->id);
+        else if (const auto *candidate = std::get_if<sts::search::OocCandidateTarget>(&selection->card))
+            target = candidate->card.getName();
+    } else if (const auto *reward = std::get_if<sts::search::OocRewardTarget>(&payload))
+        target = graphEntityName(reward->entity);
+    else if (const auto *shop = std::get_if<sts::search::OocShopTarget>(&payload))
+        target = graphEntityName(shop->entity);
+    else if (const auto *relic = std::get_if<sts::search::OocRelicTarget>(&payload))
+        target = sts::getRelicName(relic->relic);
+    else if (const auto *event = std::get_if<sts::search::OocEventTarget>(&payload))
+        target = std::to_string(event->option);
+    else if (const auto *transaction = std::get_if<sts::search::OocTransactionTarget>(&payload))
+        target = sts::getCardName(transaction->card.id);
+    if (!target.empty()) label = action.semantic->effect == sts::search::OocSemanticEffect::TAKE_GOLD
+        ? "Collect " + target : label + ": " + target;
+    return label;
+}
+}
+void annotateOocTree(const OocGameContextModel &model, sts::search::OocTreeSnapshot &tree) {
+    static const char *screens[] = {"invalid", "event", "rewards", "boss relic",
+        "card select", "map", "treasure", "rest", "shop", "battle"};
+    for (auto &node : tree.nodes) {
+        const auto &state = model.state(node.state);
+        node.floor = state.floorNum;
+        node.mapX = state.curMapNodeX;
+        node.mapY = state.curMapNodeY;
+        node.hp = state.curHp;
+        node.maxHp = state.maxHp;
+        node.gold = state.gold;
+        const auto screen = static_cast<unsigned>(state.screenState);
+        node.screen = screen < std::size(screens) ? screens[screen] : "unknown";
+        const auto room = static_cast<unsigned>(state.curRoom);
+        node.room = room < std::size(sts::roomStrings) ? sts::roomStrings[room] : "unknown";
+        if (node.chance) {
+            node.key = model.candidate(node.state, node.action).key;
+            node.label = graphActionLabel(model, node);
+        } else {
+            node.outcome = state.outcome == sts::GameOutcome::PLAYER_LOSS ? "loss"
+                : state.outcome == sts::GameOutcome::PLAYER_VICTORY ? "victory" : "undecided";
+            std::string place = node.screen == "map" ? "Map choice"
+                : graphRoomName(state.curRoom) + " room · " + node.screen;
+            if (node.mapY >= 0) place += " (" + std::to_string(node.mapX) + "," + std::to_string(node.mapY) + ")";
+            node.label = "Floor " + std::to_string(node.floor) + " · " + place
+                + " · HP " + std::to_string(node.hp) + "/" + std::to_string(node.maxHp)
+                + " · " + std::to_string(node.gold) + " gold";
+            if (node.outcome == "loss") node.label = "CTM sampled loss · entered combat at HP "
+                + std::to_string(node.hp) + "/" + std::to_string(node.maxHp)
+                + " · final HP unavailable · Floor " + std::to_string(node.floor);
+            if (node.outcome == "victory") node.label = "Victory · " + node.label;
+        }
+    }
+    for (auto &edge : tree.edges) {
+        if (!edge.particle || !edge.childId) continue;
+        const auto &node = tree.nodes.at(*edge.childId);
+        const auto &prediction = model.prediction(node.state);
+        if (!prediction.used) continue;
+        edge.combatModelUsed = true;
+        const auto encounter = static_cast<unsigned>(prediction.encounter);
+        edge.combatEncounter = encounter < std::size(sts::monsterEncounterEnumNames)
+            ? sts::monsterEncounterEnumNames[encounter] : "unknown encounter";
+        edge.combatOutcome = prediction.outcome;
+    }
+}
 std::optional<double> OocGameContextModel::terminalValue(sts::search::OocStateId id) const {
     switch (state(id).outcome) {
         case sts::GameOutcome::PLAYER_LOSS: return 0;
@@ -442,6 +560,7 @@ sts::search::OocStateId OocGameContextModel::sampleSuccessor(sts::search::OocSta
     } else it->primitive.execute(child.gc);
     child.path.update(child.gc);
     const bool enteredCombat = child.gc.screenState == sts::ScreenState::BATTLE;
+    const auto encounter = enteredCombat ? child.gc.info.encounter : sts::MonsterEncounter::INVALID;
     // A sampled future can change the encounter and predictor input on every
     // visit. Never borrow a preparation from another hypothetical successor.
     std::unique_ptr<PreparedCombatTransition> sampledCombat;
@@ -454,11 +573,20 @@ sts::search::OocStateId OocGameContextModel::sampleSuccessor(sts::search::OocSta
         ++continuation_.preparedCombats;
     }
     if (enteredCombat) ++continuation_.combatEdgeSamples;
-    if (options.checkpointLeaves && enteredCombat) resolveCombat(child, rng, preparationCache.get());
+    if (options.checkpointLeaves && enteredCombat) {
+        const auto outcome = resolveCombat(child, rng, preparationCache.get());
+        child.combatPrediction = {true, encounter,
+            outcome == CombatRuntimeSample::Outcome::DEATH ? "death"
+            : outcome == CombatRuntimeSample::Outcome::ESCAPE ? "escape" : "victory"};
+    }
     else if (combatSampler && enteredCombat) {
         if (preparationCache->support().supported) {
             ++combatSamples_;
             const auto sampled = preparationCache->sample(rng);
+            if (sampled.outcome != CombatRuntimeSample::Outcome::UNSUPPORTED)
+                child.combatPrediction = {true, encounter,
+                    sampled.outcome == CombatRuntimeSample::Outcome::DEATH ? "death"
+                    : sampled.outcome == CombatRuntimeSample::Outcome::ESCAPE ? "escape" : "victory"};
             switch (sampled.outcome) {
                 case CombatRuntimeSample::Outcome::UNSUPPORTED: break;
                 case CombatRuntimeSample::Outcome::DEATH:
@@ -532,13 +660,14 @@ bool OocGameContextModel::isDeterministicTransition(sts::search::OocStateId id,
         [&](auto candidate) { return candidate.id == action; });
     return it != cached.candidates.end() && cached.edges.at(it-cached.candidates.begin()).deterministic.has_value();
 }
-void OocGameContextModel::resolveCombat(Snapshot &child, std::mt19937_64 &rng,
+CombatRuntimeSample::Outcome OocGameContextModel::resolveCombat(Snapshot &child, std::mt19937_64 &rng,
     const PreparedCombatTransition *prepared) {
     OocProfileScope profile(OocProfileBucket::CombatResolve);
     ++continuation_.imaginedCombats;
     const int battleAct = child.gc.act;
     const auto battleRoom = child.gc.curRoom;
     bool victory = false;
+    auto sampledOutcome = CombatRuntimeSample::Outcome::UNSUPPORTED;
     const auto input = prepared ? CombatPredictorInputV1{}
         : captureCombatPredictorInput(child.gc, child.gc.info.encounter,
                                       dependencies.potionKeepValue(child.gc));
@@ -549,10 +678,11 @@ void OocGameContextModel::resolveCombat(Snapshot &child, std::mt19937_64 &rng,
     if (support.supported) {
         const auto sampled = prepared ? prepared->sample(rng) : combatSampler->sample(child.gc, input, rng);
         if (sampled.outcome != CombatRuntimeSample::Outcome::UNSUPPORTED) {
+            sampledOutcome = sampled.outcome;
             ++combatSamples_;
             if (sampled.outcome == CombatRuntimeSample::Outcome::DEATH) {
                 child.gc.outcome = sts::GameOutcome::PLAYER_LOSS;
-                return;
+                return sampledOutcome;
             }
             applySampledCombatExit(child.gc, sampled);
             victory = true;
@@ -567,6 +697,7 @@ void OocGameContextModel::resolveCombat(Snapshot &child, std::mt19937_64 &rng,
             && battleRoom == sts::Room::BOSS)
         child.gc.outcome = sts::GameOutcome::PLAYER_VICTORY;
     child.path.update(child.gc);
+    return sampledOutcome;
 }
 namespace {
 template<class Checkpoint, class Step>
@@ -800,7 +931,15 @@ void configureLiveOocMcts() {
     liveRootLockTrace.clear();
     liveCheckpointTrace.clear();
     liveSimulations = 512; liveConfig = {}; liveOptions = {true};
+    liveGraphPath.clear(); liveGraphDecisionIndex = 1;
     if (!liveEnabled) return;
+    if (const char *path = std::getenv("STS_OOC_MCTS_GRAPH_FILE")) liveGraphPath = path;
+    if (const char *index = std::getenv("STS_OOC_MCTS_GRAPH_DECISION_INDEX")) {
+        const std::string value(index);
+        if (value.empty() || value.find_first_not_of("0123456789") != std::string::npos)
+            throw std::runtime_error("STS_OOC_MCTS_GRAPH_DECISION_INDEX must be a nonnegative integer");
+        liveGraphDecisionIndex = std::stoull(value);
+    }
     if (sts::search::silverLiveReuseCap() != 32768)
         throw std::runtime_error("live OOC MCTS requires frozen Silver reuse cap 32768");
     if (!g_oocStrategicTokNet.ok) throw std::runtime_error("STS_OOC_MCTS requires native V4 policy");
@@ -883,8 +1022,53 @@ sts::search::OocMctsResult selectOocMctsAction(const GameContext &gc, const Path
     if (model.terminalValue(0) || model.isLeafBoundary(0)) return {};
     auto config = liveConfig;
     config.seed = oocMctsSearchSeed(seed, index);
+    config.captureTree = !liveGraphPath.empty() && index == liveGraphDecisionIndex;
     if (!simulations) throw std::invalid_argument("OOC MCTS requires simulations > 0");
-    const auto result = searchWithSoleRootShortcut(model, config, model.soleLegalAction(0), simulations);
+    auto result = searchWithSoleRootShortcut(model, config, model.soleLegalAction(0), simulations);
+    if (config.captureTree) {
+        if (result.tree) {
+            annotateOocTree(model, *result.tree);
+            for (auto &node : result.tree->nodes)
+                node.selected = node.chance && node.depth == 0
+                    && result.selectedAction && node.action == *result.selectedAction;
+        }
+        nlohmann::json captured = {{"accepted", result.tree.has_value()}, {"rootId", 0},
+            {"truncated", result.tree && result.tree->truncated},
+            {"nodes", nlohmann::json::array()}, {"edges", nlohmann::json::array()}};
+        if (result.tree) {
+            for (const auto &node : result.tree->nodes) {
+                captured["nodes"].push_back({{"id", node.id}, {"kind", node.chance ? "chance" : "state"},
+                    {"stateId", std::to_string(node.state)}, {"actionId", node.action},
+                    {"label", node.label}, {"key", node.key}, {"outcome", node.outcome},
+                    {"screen", node.screen}, {"room", node.room}, {"floor", node.floor},
+                    {"mapX", node.mapX}, {"mapY", node.mapY}, {"hp", node.hp},
+                    {"maxHp", node.maxHp}, {"gold", node.gold}, {"selected", node.selected}, {"depth", node.depth},
+                    {"visits", node.visits}, {"prior", node.chance ? nlohmann::json(node.prior) : nlohmann::json(nullptr)},
+                    {"q", node.chance && node.visits ? nlohmann::json(node.q) : nlohmann::json(nullptr)}});
+            }
+            for (const auto &edge : result.tree->edges)
+                captured["edges"].push_back({{"parentId", edge.parentId},
+                    {"childId", edge.childId ? nlohmann::json(*edge.childId) : nlohmann::json(nullptr)},
+                    {"visits", edge.visits}, {"kind", edge.particle ? "particle" : "action"},
+                    {"combatModelUsed", edge.combatModelUsed},
+                    {"combatEncounter", edge.combatEncounter}, {"combatOutcome", edge.combatOutcome}});
+        }
+        nlohmann::json actions = nlohmann::json::array();
+        for (const auto &action : result.rootActions)
+            actions.push_back({{"semanticKey", model.candidate(0, action.id).key},
+                {"visits", action.visits}, {"q", action.q}, {"prior", action.prior}});
+        const nlohmann::json capture = {{"source", "native_sts_lightspeed_search"},
+            {"seed", seed}, {"decisionIndex", index}, {"searchSeed", config.seed},
+            {"floor", gc.floorNum}, {"screen", int(gc.screenState)},
+            {"hp", gc.curHp}, {"maxHp", gc.maxHp},
+            {"requestedSimulations", simulations}, {"completedSimulations", result.metrics.simulations},
+            {"aborted", result.aborted}, {"abortReason", result.abortReason},
+            {"selectedSemanticKey", result.selectedAction ? model.candidate(0, *result.selectedAction).key : ""},
+            {"candidateSummaries", actions}, {"tree", captured}};
+        std::ofstream out(liveGraphPath, std::ios::trunc);
+        if (!out || !(out << capture.dump(2) << '\n'))
+            throw std::runtime_error("STS_OOC_MCTS_GRAPH_FILE write failed");
+    }
     if (!result.selectedAction && !result.aborted) throw std::runtime_error("live OOC MCTS missing selected root action");
     if (selected && result.selectedAction) *selected = model.candidate(0, *result.selectedAction);
     if (config.observeRootLock) {
@@ -2125,6 +2309,21 @@ void oocMctsAdapterSelfTest() {
     OocGameContextModel crossed(combatRoot,path,fake);
     const auto rootFingerprint=test::oocStateFingerprint(crossed.state(0));
     const auto crossedId=crossed.sampleSuccessor(0,sourceId(crossed,restAction.bits),rng);
+    sts::search::OocTreeSnapshot annotated;
+    annotated.nodes.push_back({0,1,0,false,0,0,0,0});
+    annotated.nodes.push_back({1,1,0,true,0,sourceId(crossed,restAction.bits),1,0});
+    annotated.nodes.push_back({2,1,1,false,crossedId,0,0,0});
+    annotated.edges.push_back({0,1,1,false});
+    annotated.edges.push_back({1,2,1,true});
+    annotateOocTree(crossed,annotated);
+    require(!annotated.nodes[1].label.empty()
+        && annotated.nodes[1].label!=annotated.nodes[1].key
+        && annotated.nodes[2].label.find("HP ")!=std::string::npos
+        && annotated.edges[1].combatModelUsed
+        && annotated.edges[1].combatEncounter=="CULTIST"
+        && annotated.edges[1].combatOutcome=="victory"
+        && !annotated.edges[0].combatModelUsed,
+        "graph annotates game action/state and only CTM-sampled edge");
     require(regainCalls==2 && fake->sampleCalls==1 && fake->supportCalls==1,
             "injected reward continuation exactly once");
     require(test::oocStateFingerprint(crossed.state(crossedId))==test::oocStateFingerprint(real),
@@ -2134,6 +2333,22 @@ void oocMctsAdapterSelfTest() {
     require(crossed.pathHistory(crossedId).roomVisits==realPath.roomVisits
         && crossed.pathHistory(crossedId).lastNodeKey==realPath.lastNodeKey,"native PathHistory parity");
     require(test::oocStateFingerprint(crossed.state(0))==rootFingerprint,"combat parent unchanged");
+    // A custom host may omit the callback. Its CTM input must use the same
+    // neutral keep value as the native simulator, not the old zero fallback.
+    auto fallbackSampler=std::make_shared<FakeSampler>();
+    fallbackSampler->death=true;
+    auto fallbackPre=detachedCopy(combatRoot);
+    restAction.execute(fallbackPre);
+    fallbackSampler->expectedInput=captureCombatPredictorInput(
+        fallbackPre,fallbackPre.info.encounter,4.0);
+    auto fallbackDeps=defaultOocMctsDependencies();
+    fallbackDeps.potionKeepValue={};
+    OocGameContextModel fallback(combatRoot,path,fallbackSampler,{},std::move(fallbackDeps));
+    const auto fallbackId=fallback.sampleSuccessor(0,sourceId(fallback,restAction.bits),rng);
+    require(fallbackSampler->expectedInput.globals.potionKeepValue==4.0
+        && fallbackSampler->supportCalls==1 && fallbackSampler->sampleCalls==1
+        && fallback.state(fallbackId).outcome==GameOutcome::PLAYER_LOSS,
+        "omitted potion keep callback supplies neutral CTM input");
     // Compare an actual Smoke Bomb exit with explicit ESCAPE injection from
     // the identical prebattle origin. Includes Cleric's pre-reward maxHP gain.
     for (bool cleric : {false, true}) {

@@ -239,6 +239,19 @@ same normal real combat branch and the same fallback OOC policy chain.
 
 `selectOocMctsAction` constructs detached snapshots and uses the existing PUCT,
 progressive widening and depth defaults with `STS_OOC_MCTS_SIMS` (default 512).
+For a native simulator graph, set `STS_OOC_MCTS_GRAPH_FILE` to a fresh JSON path
+and `STS_OOC_MCTS_GRAPH_DECISION_INDEX` to the zero-based nonbattle decision
+index (default 1). The selected search captures up to 4,096 tree nodes after
+search, labels them from the native `GameContext` and model action keys,
+and writes seed, search seed, root state, candidates, selected action, and
+truncation status. Captured game actions carry human-readable map destinations
+or semantic reward choices; state summaries carry floor, room, screen, map
+position, HP, and gold. Particle edges mark each combat transition sampled by
+the CTM with its encounter and sampled outcome. CTM work inside leaf evaluation
+does not create a retained edge. Render with `tools/render_ooc_mcts.py --snapshot JSON
+--output HTML`. This is an opt-in diagnostic of the ordinary simulator search;
+the graph's loss nodes are sampled terminal outcomes, not independently played
+games, and their stored HP can retain its precombat value.
 Its search seed is `SplitMix64(runSeed XOR SplitMix64(decisionIndex))`, using
 explicit unsigned 64-bit arithmetic. The index increments once per actual
 nonbattle run-loop decision, including unsupported roots. It consumes no
@@ -313,6 +326,11 @@ state is a true planner leaf, including after the first visit. This prevents a
 revisited MAP particle from sampling a room with unreconstructed
 event/shop/treasure chance history. Live imports remove currently visible shop,
 combat-reward and boss-relic offers from the reconstructed relic pools.
+The advisor supplies the ordinary fixed `potionKeepValue=4` to the CTM;
+`OocGameContextModel` uses the same neutral value if a custom host omits the
+callback. This matches the native simulator default and the frozen model's
+constant training feature. A zero value causes unsupported predictions from
+this model.
 Pity-sensitive event branches whose reward generation depends on private
 counter history remain unsupported, including Library, Mushrooms and
 Mysterious Sphere. The live v_win leaf evaluates the exact discrete mixture

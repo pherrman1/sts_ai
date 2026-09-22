@@ -239,6 +239,9 @@ LiveOocDecision LiveOocMctsPolicy::score(const sts::GameContext &projected,
     // room-chance triple. Replacing it with a synthetic history would search a
     // different run while still reporting a supported live decision.
     dependencies.sampleHiddenCounters = sampleLiveOocHiddenPityCounters;
+    // The deployed CTM was trained with the ordinary fixed search keep value.
+    // Omitting this dependency falls back to zero, far outside that input domain.
+    dependencies.potionKeepValue = [](const sts::GameContext &) { return 4.0; };
     dependencies.policyAvailable = [this] { return model_.ok; };
     const auto policyBatch = [this](const sts::GameContext &gc, const PathHistory &history,
                                       const std::vector<sts::search::GameAction> &actions) {
@@ -348,6 +351,8 @@ LiveOocDecision LiveOocMctsPolicy::score(const sts::GameContext &projected,
         }
         sts::search::OocMctsConfig config;
         config.seed = searchSeed_;
+        config.captureTree = captureTree_;
+        config.treeNodeCap = treeNodeCap_;
         const auto search = searchWithSoleRootShortcut(provider, config, provider.soleLegalAction(0), 512);
         if (search.aborted) {
             unsupportedResult.reason = "OOC_MCTS_ABORTED:" + search.abortReason;
@@ -360,6 +365,7 @@ LiveOocDecision LiveOocMctsPolicy::score(const sts::GameContext &projected,
         }
         LiveOocDecision result;
         result.policy = name();
+        result.tree = search.tree;
         result.candidates.reserve(rootActions.size());
         for (const auto &root : rootActions) {
             const auto &candidate = provider.candidate(0, root.id);
@@ -379,6 +385,7 @@ LiveOocDecision LiveOocMctsPolicy::score(const sts::GameContext &projected,
             result.candidates.push_back({key, payload, candidate.primitive.bits, root.q,
                                          root.visits, share, root.prior});
         }
+        if (result.tree) annotateOocTree(provider, *result.tree);
         std::sort(result.candidates.begin(), result.candidates.end(),
             [](const auto &a, const auto &b) { return a.semanticKey < b.semanticKey; });
         const auto selected = provider.candidate(0, *search.selectedAction);
@@ -386,6 +393,8 @@ LiveOocDecision LiveOocMctsPolicy::score(const sts::GameContext &projected,
             ? canonicalOocSemanticActionKey(*selected.semantic)
             : "ooc-live:v1:map:x=" + std::to_string(selected.primitive.getIdx1())
                 + ":y=" + std::to_string(projected.curMapNodeY + 1);
+        if (result.tree) for (auto &node : result.tree->nodes)
+            node.selected = node.chance && node.depth == 0 && node.action == *search.selectedAction;
         for (int i = 0; i < static_cast<int>(result.candidates.size()); ++i) {
             if (result.candidates[i].semanticKey == selectedKey) {
                 result.selectedIndex = i;

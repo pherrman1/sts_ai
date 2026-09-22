@@ -298,6 +298,18 @@ For an explicit Silver tree-debug capture, launch the advisor/runtime with
 unset. The optional `STS_SILVER_DEBUG_TREE_NODE_CAP` bounds the attached graph
 (default `8192`). A captured `latest.json` can then be rendered with
 `python3 tools/render_combat_decision.py --snapshot ~/.cache/sts-model-inspector/latest.json --output /tmp/combat-decision.html`.
+For an OOC MCTS search graph, launch the advisor with
+`STS_OOC_DEBUG_TREE=1` and select an OOC decision with the `mcts_ctm` policy.
+Then render the matching ready snapshot with
+`python3 tools/render_ooc_mcts.py --snapshot ~/.cache/sts-model-inspector/latest.json --output /tmp/ooc-mcts.html`.
+`STS_OOC_DEBUG_TREE_NODE_CAP` bounds the capture (default `4096`). The graph
+shows retained action nodes and sampled outcome particles, with root semantic
+labels, state summaries, visits, priors, and action Q values. State IDs refer to hypothetical
+search particles; they are not observed game states. Omitted edges indicate
+the capture cap. The renderer validates the snapshot session, sequence, and
+observation hash before producing a portable offline HTML file.
+Fixture snapshots are labeled in the report. Sampled terminal losses may retain
+the pre-combat HP field, which is not a post-death HP reading.
 If `latest.json` remains `WAITING` after a combat observation, run
 `tools/live_game_runtime.py status` and restart the game explicitly after a
 runtime change. A ready response can
