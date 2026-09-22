@@ -1288,6 +1288,7 @@ silver_bridge::SilverSearchConfig configFor(const ScumSearchAgent2 &agent, const
 
 void addTelemetry(const silver_bridge::SilverSearchTelemetry &telemetry) {
     g_silverLiveDiagnostics.nodesCreated += telemetry.nodesCreated;
+    g_silverLiveDiagnostics.queueItemCanonicalHits += telemetry.queueItemCanonicalHits;
     g_silverLiveDiagnostics.deterministicTranspositions += telemetry.detTranspositions;
     g_silverLiveDiagnostics.chanceOutcomes += telemetry.chanceOutcomesSampled;
     g_silverLiveDiagnostics.chanceSiblingReuse += telemetry.chanceSiblingReuse;
@@ -1522,8 +1523,7 @@ void runSilverCombat(ScumSearchAgent2 &agent, GameContext &gc, BattleContext &bc
             const std::string roomType = gc.curRoom == Room::MONSTER ? "hallway"
                 : gc.curRoom == Room::ELITE ? "elite"
                 : gc.curRoom == Room::BOSS ? "boss" : "other";
-            const auto stateHash = silver_bridge::rootMechanismHash(
-                silver_bridge::battleStateWireEnvelope(wire).dump());
+            const auto stateHash = silver_bridge::hardCombatStateHash(wire);
             const auto row = silver_bridge::hardCombatSnapshot(wire, gc.seed,
                 hardCombatFightIndex, roomType, g_silverLiveOptions.executableGitSha,
                 silver_bridge::hardCombatBenchmarkSeed(stateHash),
@@ -1785,6 +1785,7 @@ void runSilverCombat(ScumSearchAgent2 &agent, GameContext &gc, BattleContext &bc
                   << " reroot_allocated_cap=" << d.rerootAllocatedCapBlocked
                   << " reroot_active_cap=" << d.rerootActiveCapBlocked
                   << " nodes=" << d.nodesCreated
+                  << " queue_item_canonical_hits=" << d.queueItemCanonicalHits
                   << " chance_outcomes=" << d.chanceOutcomes
                   << " chance_sibling_reuse=" << d.chanceSiblingReuse
                   << " det_transpositions=" << d.deterministicTranspositions

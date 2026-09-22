@@ -44,6 +44,13 @@ For the frozen `silver_hard_combat_v1` benchmark, the intended funnel is:
 `hard64-dev` and `hard64-holdout` are screening artifacts, not production
 promotion gates. A change that improves the DEV screen still requires the
 normal unit/parity and paired whole-run gameplay funnel before promotion.
+These frozen cohorts use the v1 hard-combat schema and have no trusted
+source-queue provenance. New native v2 captures persist the source-side
+historical queue-item proof outside the public Silver wire and bind it into
+the snapshot state hash; v1 replay conservatively keeps queue-item identity
+exact. Therefore v1 hard64 remains a legacy-boundary safety screen for the
+quiescent identity rule, while fresh trusted v2 captures can reproduce the
+production identity policy.
 
 `STS_FAIR=1` selects the project-fair combat path. Searcher2 remains default;
 `STS_SEARCHER3=1` is an independent opt-in. Without `STS_FAIR=1`, default

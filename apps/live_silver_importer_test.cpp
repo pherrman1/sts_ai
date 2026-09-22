@@ -16,6 +16,7 @@
 #include "game/GameContext.h"
 #include "sim/search/CombatKnowledge.h"
 #include "sim/search/SilverBridge.h"
+#include "sim/search/SilverHardCombat.h"
 #include "sim/search/SilverConversion.h"
 #include "sim/search/SilverWireJson.h"
 #include "sim/search/Action.h"
@@ -1190,6 +1191,18 @@ int main() {
             if (!wire.valid || !wire.historicalQueueItemAtSource
                 || !silver_bridge::convertedStateHistoricalQueueItemForTest(wire))
                 throw std::runtime_error("quiescent live GAMBLE lost queue-item provenance");
+            const auto stateHash = silver_bridge::hardCombatStateHash(wire);
+            const auto snapshot = silver_bridge::hardCombatSnapshot(wire, game.seed,
+                0, "hallway", std::string(40, 'a'),
+                silver_bridge::hardCombatBenchmarkSeed(stateHash),
+                {{"simulations", 1000}, {"reuse_cap", 32768},
+                 {"reuse_mode", "allocated"}, {"adaptive", false},
+                 {"exact_lock", false}, {"rho", false}});
+            const auto replayWire = silver_bridge::validateHardCombatSnapshot(
+                json::parse(snapshot.dump()));
+            if (!replayWire.historicalQueueItemAtSource
+                || !silver_bridge::convertedStateHistoricalQueueItemForTest(replayWire))
+                throw std::runtime_error("trusted hard-combat capture lost queue provenance");
             live.cardSelectInfo.cardSelectTask = CardSelectTask::HEADBUTT;
             live.curCardQueueItem.card = CardInstance(CardId::HEADBUTT);
             live.actionQueue.pushBack(Actions::OnAfterCardUsed());
