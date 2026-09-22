@@ -51,6 +51,8 @@ The producer-side exceptions are part of that contract: Cultist Ritual reads
 `Flex`/`FlexPower` maps to native player `LoseStrength` (the pending temporary
 Strength loss). The vanilla `Regeneration` player power from Regen Potion maps
 to native `Regen`, which heals and decrements at the end of each turn.
+Vanilla's Mad Gremlin uses the Java ID `GremlinWarrior`; its native move logic
+does not consult `miscInfo`, so the observer supplies an explicit zero.
 
 ## Public-information rules
 

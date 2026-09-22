@@ -2091,6 +2091,41 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         return previous == null ? visibleAmount : Math.max(previous, visibleAmount);
     }
 
+    static boolean nativeMiscZeroForId(String id) {
+        return ("AcidSlime_L".equals(id) || "AcidSlime_M".equals(id)
+                || "AcidSlime_S".equals(id) || "AwakenedOne".equals(id)
+                || "BanditBear".equals(id) || "BanditChild".equals(id)
+                || "BanditLeader".equals(id) || "Bear".equals(id)
+                || "BlueSlaver".equals(id) || "BronzeOrb".equals(id)
+                || "Byrd".equals(id) || "Centurion".equals(id)
+                || "Chosen".equals(id) || "CorruptHeart".equals(id)
+                || "Cultist".equals(id) || "Dagger".equals(id)
+                || "Deca".equals(id) || "Donu".equals(id)
+                || "Exploder".equals(id) || "FungiBeast".equals(id)
+                || "GiantHead".equals(id) || "JawWorm".equals(id)
+                || "GremlinFat".equals(id) || "GremlinLeader".equals(id)
+                || "GremlinNob".equals(id) || "GremlinWarrior".equals(id)
+                || "SpikeSlime_L".equals(id) || "SpikeSlime_M".equals(id)
+                || "SpikeSlime_S".equals(id) || "Lagavulin".equals(id)
+                || "Healer".equals(id) || "Reptomancer".equals(id)
+                || "SlimeBoss".equals(id)
+                || "MadGremlin".equals(id) || "Mystic".equals(id)
+                || "Nemesis".equals(id) || "Orb Walker".equals(id)
+                || "Pointy".equals(id) || "RedSlaver".equals(id)
+                || "Repulsor".equals(id) || "Romeo".equals(id)
+                || "Sentry".equals(id) || "Shelled Parasite".equals(id)
+                || "ShelledParasite".equals(id) || "GremlinSneaky".equals(id)
+                || "GremlinShield".equals(id) || "GremlinThief".equals(id)
+                || "SnakePlant".equals(id) || "Snecko".equals(id)
+                || "SphericGuardian".equals(id) || "SpireGrowth".equals(id)
+                || "Serpent".equals(id) || "SpireShield".equals(id)
+                || "SpireSpear".equals(id) || "Taskmaster".equals(id)
+                || "SlaverBoss".equals(id) || "TheCollector".equals(id)
+                || "TheMaw".equals(id) || "Maw".equals(id)
+                || "TimeEater".equals(id) || "TorchHead".equals(id)
+                || "Transient".equals(id));
+    }
+
     private static Integer monsterMiscInfo(AbstractMonster monster) {
         String id = monster.id;
         if ("FuzzyLouseNormal".equals(id) || "FuzzyLouseDefensive".equals(id))
@@ -2153,38 +2188,7 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         // Explicit zero is safe only for monsters whose native move logic does
         // not consult miscInfo. Unknown/reflectively inaccessible state is
         // omitted and therefore rejected by the importer.
-        if ("AcidSlime_L".equals(id) || "AcidSlime_M".equals(id)
-                || "AcidSlime_S".equals(id) || "AwakenedOne".equals(id)
-                || "BanditBear".equals(id) || "BanditChild".equals(id)
-                || "BanditLeader".equals(id) || "Bear".equals(id)
-                || "BlueSlaver".equals(id) || "BronzeOrb".equals(id)
-                || "Byrd".equals(id) || "Centurion".equals(id)
-                || "Chosen".equals(id) || "CorruptHeart".equals(id)
-                || "Cultist".equals(id) || "Dagger".equals(id)
-                || "Deca".equals(id) || "Donu".equals(id)
-                || "Exploder".equals(id) || "FungiBeast".equals(id)
-                || "GiantHead".equals(id) || "JawWorm".equals(id)
-                || "GremlinFat".equals(id) || "GremlinLeader".equals(id)
-                || "GremlinNob".equals(id)
-                || "SpikeSlime_L".equals(id) || "SpikeSlime_M".equals(id)
-                || "SpikeSlime_S".equals(id) || "Lagavulin".equals(id)
-                || "Healer".equals(id) || "Reptomancer".equals(id)
-                || "SlimeBoss".equals(id)
-                || "MadGremlin".equals(id) || "Mystic".equals(id)
-                || "Nemesis".equals(id) || "Orb Walker".equals(id)
-                || "Pointy".equals(id) || "RedSlaver".equals(id)
-                || "Repulsor".equals(id) || "Romeo".equals(id)
-                || "Sentry".equals(id) || "Shelled Parasite".equals(id)
-                || "ShelledParasite".equals(id) || "GremlinSneaky".equals(id)
-                || "GremlinShield".equals(id) || "GremlinThief".equals(id)
-                || "SnakePlant".equals(id) || "Snecko".equals(id)
-                || "SphericGuardian".equals(id) || "SpireGrowth".equals(id)
-                || "Serpent".equals(id) || "SpireShield".equals(id)
-                || "SpireSpear".equals(id) || "Taskmaster".equals(id)
-                || "SlaverBoss".equals(id) || "TheCollector".equals(id)
-                || "TheMaw".equals(id) || "Maw".equals(id)
-                || "TimeEater".equals(id) || "TorchHead".equals(id)
-                || "Transient".equals(id)) return 0;
+        if (nativeMiscZeroForId(id)) return 0;
         return null;
     }
 

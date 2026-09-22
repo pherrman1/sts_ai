@@ -25,6 +25,10 @@ public final class CombatBoundaryTest {
                 throw new AssertionError("Runic private randomized miscInfo was not rejected: " + id);
         if (STSModelInspector.runicPrivateMiscInfo("Donu"))
             throw new AssertionError("public Runic miscInfo was rejected");
+        if (!STSModelInspector.nativeMiscZeroForId("GremlinWarrior")
+                || !STSModelInspector.nativeMiscZeroForId("GremlinLeader")
+                || STSModelInspector.nativeMiscZeroForId("GremlinWizard"))
+            throw new AssertionError("Gremlin Leader summons lost their native miscInfo contract");
         if (STSModelInspector.hiddenMiscMinimum("FuzzyLouseNormal", 0) != 5
                 || STSModelInspector.hiddenMiscMinimum("FuzzyLouseDefensive", 20) != 6
                 || STSModelInspector.hiddenMiscMinimum("Darkling", 20) != 11
