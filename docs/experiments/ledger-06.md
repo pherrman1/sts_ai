@@ -11157,3 +11157,31 @@ contract or Silver behavior changed.
   production-path exercise and capture round-trip verification, not a
   gameplay-quality comparison or population qualification. The consumed
   HOLDOUT was not rerun. [Native-smoke raw packet](evidence/silver_quiescent_queue_item_20260922/README.md).
+
+### OOC CTM encoder optimization screen (2026-09-23)
+
+From source baseline `3d28adfcf3c989e338eff9ef85e4a5c6d8794497`, two encoder
+changes were evaluated independently and then combined: (1) in the final
+Transformer layer, retain K/V for all tokens while evaluating Q/attention/output
+only for the global token; (2) flatten token/QKV/next buffers and reuse scratch
+vectors without changing accumulation order. The combined Release probe passed
+the near-full artifact tests and produced byte-identical JSON output for all 31
+fixtures versus baseline (SHA-256
+`dbcee67b1037c86e3f9e96b99c2baac47437e812ebb2629feb257a692fe2dd26`). The
+probe also checks prepared/reference parity over 128 draws per supported
+fixture.
+
+On one fixed fixture, candidate 1's Debug summed-encoder microbenchmark median
+fell from 26.695 ms to 16.465 ms across three process runs (ten component calls
+per process). This is promising but limited to one fixture and Debug; no
+end-to-end preparation or gameplay timing was measured. Candidate 2's Release
+median preparation changed from 5.812681 ms to 5.788186 ms across three samples,
+a noise-sized difference with no demonstrated overall speedup. Component
+changes were mixed and small. The combined implementation was not separately
+timed. No gameplay seed or quality comparison was run. The focused native
+contract test still fails at import on the unchanged baseline due to the relic
+write-back audit guard; this is not attributed to the optimization.
+
+Raw single-fixture timing JSON and exact inputs/hashes are recorded in the
+[optimization screen packet](evidence/ooc_ctm_encoder_optimization_20260923/README.md).
+This is a bounded performance screen, not runtime or gameplay qualification.
