@@ -49,7 +49,8 @@ static J project(const GameContext &g,const PathHistory &path,const std::string 
     switch(g.screenState){
         case ScreenState::REWARDS:{screen="card_reward";const auto &r=g.info.rewardsContainer;
             d={{"gold",J::array()},{"cardRewards",J::array()},{"relics",J::array()},{"potions",J::array()},
-                {"emeraldKey",r.emeraldKey},{"sapphireKey",r.sapphireKey}};
+                {"emeraldKey",r.emeraldKey},{"sapphireKey",r.sapphireKey},
+                {"opaqueCardRewardGroups",g.opaqueCardRewardGroups}};
             for(int i=0;i<r.goldRewardCount;++i)d["gold"].push_back(r.gold[i]);
             for(int i=0;i<r.cardRewardCount;++i){J cs=J::array();for(const auto &c:r.cardRewards[i])cs.push_back(cardWire(c));d["cardRewards"].push_back(cs);}
             for(int i=0;i<r.relicCount;++i)d["relics"].push_back(J(r.relics[i]));
@@ -396,6 +397,22 @@ int main(int argc,char **argv){try{
     bad=wire;bad["ooc"]["publicState"]["map"]["nodes"].erase(0);reject(bad);
     bad=wire;for(int x=0;x<7;++x)bad["ooc"]["publicState"]["map"]["nodes"][x]["edges"]={3};reject(bad);
     advisor::LiveOocStateV1 live;check(advisor::importLiveOocStateV1(wire,live).ok,"baseline import");
+    {
+        auto opaqueParent=base;
+        opaqueParent.screenState=ScreenState::REWARDS;
+        opaqueParent.info.rewardsContainer.clear();
+        opaqueParent.info.rewardsContainer.addRelic(RelicId::ANCHOR);
+        opaqueParent.info.rewardsContainer.sapphireKey=true;
+        opaqueParent.opaqueCardRewardGroups=1;
+        const auto opaqueWire=project(opaqueParent,path,"opaque_card_parent_rewards");
+        advisor::LiveOocStateV1 opaqueLive;
+        check(advisor::importLiveOocStateV1(opaqueWire,opaqueLive).ok,
+            "visible parent rewards with opaque card group failed import");
+        check(opaqueLive.projected.opaqueCardRewardGroups==1
+                && opaqueLive.mctsRoot.state.opaqueCardRewardGroups==1
+                && v4DecisionSupported(opaqueLive.projected),
+            "opaque card reward count was lost before model scoring");
+    }
     auto conditioned=wire;conditioned["ooc"]["publicState"]["priorEvents"]={"Big Fish"};
     conditioned["ooc"]["publicState"]["shopRemoveCount"]=3;
     advisor::LiveOocStateV1 conditionedLive;check(advisor::importLiveOocStateV1(conditioned,conditionedLive).ok,"history import");

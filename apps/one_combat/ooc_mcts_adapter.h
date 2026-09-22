@@ -92,7 +92,7 @@ private:
         std::optional<std::vector<sts::search::OocPlannerAction>> priors;
     };
     struct Snapshot { GameContext gc; PathHistory path; mutable std::optional<Metadata> metadata;
-        CombatPrediction combatPrediction; };
+        CombatPrediction combatPrediction; bool opaqueRewardCheckpoint = false; };
     // Destroy preparations before their borrowed sampler/runtime.
     std::shared_ptr<const CombatTransitionSampler> combatSampler;
     std::deque<Snapshot> states;

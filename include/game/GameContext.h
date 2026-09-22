@@ -212,6 +212,10 @@ namespace sts {
         int potionChance = 0;
         int cardRarityFactor = 5;
         int wingBootsCharges = 0;
+        // Live OOC roots may see the existence, but not the contents, of
+        // unopened combat card reward groups. The adapter checkpoints after
+        // selecting a visible parent reward instead of inventing their cards.
+        int opaqueCardRewardGroups = 0;
         int shopRemoveCount = 0;
         bool speedrunPace = false; // todo load from save
 

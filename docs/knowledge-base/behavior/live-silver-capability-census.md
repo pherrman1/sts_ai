@@ -58,11 +58,14 @@ Strength loss).
   retained only when `Frozen Eye` is present.
 - `Runic Dome` uses the native deferred hidden-intent boundary. The observer
   omits `nextMove`, `moveHistory`, `intent`, and `intentDamage` while the relic
-  is active, and emits only public pre-roll history, roll inputs, pending roll
-  counts, and the bounded Looter/Mugger direct-choice marker. A live Act-2
-  TWO_THIEVES root was imported by Silver and returned a model-driven action
-  with the temporary deployed advisor; this is implementation evidence, not
-  whole-run qualification evidence.
+  is active, and emits public pre-roll history with an explicit valid-entry
+  count, roll inputs, pending roll counts, and the bounded Looter/Mugger
+  direct-choice marker. Chained hidden rolls preserve the first public
+  history. Pending Louse/Darkling rolls fail closed because their randomized
+  damage parameter is private under Runic Dome. A live Act-2 TWO_THIEVES root
+  was imported by Silver and returned a model-driven action with the temporary
+  deployed advisor; this is implementation evidence, not whole-run
+  qualification evidence.
 - Java physical UUIDs are assigned monotonically by a battle-lifetime
   `SilverImportContext`. The registry resets only when the protocol session or
   combat instance changes and rejects duplicate UUID claims in one snapshot.

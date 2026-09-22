@@ -1852,6 +1852,7 @@ int main() {
         runicMonster.erase("intent");
         runicMonster.erase("intentDamage");
         runicMonster["publicMoveHistory"] = json::array({0, 0});
+        runicMonster["publicMoveHistoryCount"] = 0;
         runicMonster["pendingMoveRolls"] = 1;
         runicMonster["pendingDirectMoveChoice"] = 0;
         runicMonster["pendingRollInputs"] = {
@@ -1869,6 +1870,36 @@ int main() {
             || runicImported.wire.monsters[0].moveHistory[1] != 0)
             throw std::runtime_error("generic Runic Dome deferred-intent import failed: "
                 + runicImported.reason);
+        for (const auto &[monsterId, expectedMove] : {
+                std::pair{"Donu", static_cast<int>(MonsterMoveId::DONU_BEAM)},
+                std::pair{"Deca", static_cast<int>(MonsterMoveId::DECA_BEAM)},
+                std::pair{"WrithingMass", static_cast<int>(MonsterMoveId::WRITHING_MASS_STRONG_STRIKE)}}) {
+            auto publicZeroHistory = runicGeneric;
+            auto &zeroMonster = publicZeroHistory["silverRoot"]["combat"]["monsters"][0];
+            zeroMonster["id"] = monsterId;
+            zeroMonster["publicMoveHistory"] = json::array({0, 0});
+            zeroMonster["publicMoveHistoryCount"] = 1;
+            const auto zeroImported = one_combat::advisor::importSilverRoot(publicZeroHistory);
+            if (!zeroImported.ok || zeroImported.wire.monsters[0].moveHistory[0] != expectedMove)
+                throw std::runtime_error(std::string("Runic public move byte zero lost for ")
+                    + monsterId + ": " + zeroImported.reason);
+        }
+        auto chainedRunic = runicGeneric;
+        chainedRunic["silverRoot"]["combat"]["monsters"][0]["pendingMoveRolls"] = 2;
+        chainedRunic["silverRoot"]["combat"]["monsters"][0]["publicMoveHistory"]
+            = json::array({0, 0});
+        chainedRunic["silverRoot"]["combat"]["monsters"][0]["publicMoveHistoryCount"] = 0;
+        const auto chainedImported = one_combat::advisor::importSilverRoot(chainedRunic);
+        if (!chainedImported.ok || chainedImported.wire.monsters[0].pendingMoveRolls != 2
+            || chainedImported.wire.monsters[0].moveHistory[0] != 0
+            || chainedImported.wire.monsters[0].moveHistory[1] != 0)
+            throw std::runtime_error("chained Runic hidden rolls changed public move history: "
+                + chainedImported.reason);
+        auto overlongRunic = chainedRunic;
+        overlongRunic["silverRoot"]["combat"]["monsters"][0]["pendingMoveRolls"] = 4;
+        if (one_combat::advisor::importSilverRoot(overlongRunic).reason
+                != "silver_hidden_information_required")
+            throw std::runtime_error("out-of-domain chained Runic roll count was accepted");
         auto directRunic = runicGeneric;
         directRunic["silverRoot"]["combat"]["monsters"][0]["pendingMoveRolls"] = 0;
         directRunic["silverRoot"]["combat"]["monsters"][0]["pendingDirectMoveChoice"] = 1;
@@ -1882,6 +1913,14 @@ int main() {
         if (one_combat::advisor::importSilverRoot(malformedRunic).reason
                 != "silver_hidden_information_required")
             throw std::runtime_error("malformed generic Runic Dome inputs were accepted");
+        auto privateRunic = runicGeneric;
+        auto &privateMonster = privateRunic["silverRoot"]["combat"]["monsters"][0];
+        privateMonster["privateMiscInfoUnderRunic"] = true;
+        privateMonster.erase("miscInfo");
+        privateMonster["pendingRollInputs"].erase("miscInfo");
+        if (one_combat::advisor::importSilverRoot(privateRunic).reason
+                != "silver_hidden_information_required")
+            throw std::runtime_error("private randomized Runic miscInfo was accepted");
         auto ritualPower = general;
         ritualPower["silverRoot"]["combat"]["monsters"][0]["powers"] = json::array({
             json{{"id", "Ritual"}, {"amount", 3}, {"justApplied", false}}});

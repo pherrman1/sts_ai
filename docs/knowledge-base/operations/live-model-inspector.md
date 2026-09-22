@@ -86,9 +86,15 @@ per-monster mapping; they are never copied as native enum values. Ordinary
 draw order is sorted before emission; the actual runtime order is retained
 when Frozen Eye is present. Under Runic Dome, the observer omits `nextMove`,
 `moveHistory`, `intent`, and `intentDamage` and instead emits the public
-pre-roll history, deferred roll count, and captured roll inputs required by
-the native hidden-intent model. Looter and Mugger post-Mug direct choices are
-emitted as deferred direct choices; rolled outcomes and RNG remain private.
+pre-roll history with an explicit valid-entry count, deferred roll count, and
+captured roll inputs required by the native hidden-intent model. Move byte zero
+is valid when its presence bit is set. Chained hidden rolls retain the first
+public snapshot and increment the pending-roll count without copying an
+intermediate hidden move into history. Louse and Darkling roots with unresolved
+hidden rolls fail closed because their randomized attack damage lives in
+private `miscInfo`; that value is omitted. Looter and Mugger post-Mug direct
+choices are emitted as deferred direct choices; rolled outcomes and RNG remain
+private.
 Sensitive player and monster powers carry the runtime `justApplied` bit when
 the bounded reflection helper can read it and are rejected when it cannot.
 The producer maps vanilla `RitualPower.skipFirst` to this field because that
@@ -467,12 +473,17 @@ leaving other rewards and `proceed` available. The current MCP reward surface
 does not expose the vanilla discard-potion command, so this is not discard
 support or a claim of whole-game reward equivalence.
 
-The live driver collects visible parent gold, relic, potion, and key rewards
-before opening an unrevealed card reward group. The card scorer therefore sees
-the updated public parent-reward state together with the concealed card
-offers. Once a combat reward has no remaining rewards and MCP exposes only
-`Proceed`, the driver advances that mechanical screen without waiting for an
-OOC search or requiring root visits.
+The live driver mechanically collects only visible gold and stolen-gold
+rewards before opening an unrevealed card reward group. A visible relic, potion,
+or key next to an opaque card group remains an OOC decision: the observer
+exposes the public parent candidates and the number of hidden groups, while
+omitting card identities. OOC MCTS scores the current parent choices and
+checkpoints after one choice, so continuation does not pretend the hidden card
+group is empty. After all available parent choices are made, the driver opens
+the card group mechanically and asks OOC to choose among its revealed cards.
+Once a combat reward has no remaining rewards and MCP exposes only `Proceed`,
+the driver advances that mechanical screen without waiting for an OOC search or
+requiring root visits.
 
 Path counts derive from persisted `metricData.path_taken`, whose original map
 symbols survive event-to-room conversion and save/resume. Completed combat

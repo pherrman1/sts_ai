@@ -452,6 +452,7 @@ const OocGameContextModel::Metadata &OocGameContextModel::metadata(sts::search::
     return mutableMetadata(id);
 }
 bool OocGameContextModel::isLeafBoundary(sts::search::OocStateId id) const {
+    if (states.at(id).opaqueRewardCheckpoint) return true;
     if (options.stopAtMapCheckpoint
             && id != 0 && state(id).screenState == sts::ScreenState::MAP_SCREEN)
         return true;
@@ -545,7 +546,8 @@ sts::search::OocStateId OocGameContextModel::sampleSuccessor(sts::search::OocSta
     if (it == actions.end()) throw std::runtime_error("OOC MCTS illegal action ID");
     auto &edge = cached.edges.at(it - actions.begin());
     if (!options.sampleNoncombat && edge.deterministic) return *edge.deterministic;
-    auto child = Snapshot{detachedCopy(state(id)), states.at(id).path, {}};
+    auto child = Snapshot{detachedCopy(state(id)), states.at(id).path, {}, {},
+        id == 0 && state(id).opaqueCardRewardGroups > 0};
     // A live MAP root is searchable.  The hidden room outcome must be sampled
     // before transitionToMapNode consumes monster/shop/treasure chances; a
     // downstream MAP checkpoint is still evaluated as a leaf.
@@ -2240,6 +2242,20 @@ void oocMctsAdapterSelfTest() {
     auto rewardChild=rewards.sampleSuccessor(0,sourceId(rewards,skip.bits),rng);
     require(rewards.state(rewardChild).info.rewardsContainer.cardRewardCount
         ==reward.info.rewardsContainer.cardRewardCount-1,"reward skip execution");
+    auto opaqueParent=detachedCopy(gc);
+    opaqueParent.screenState=ScreenState::REWARDS;
+    opaqueParent.info.rewardsContainer.clear();
+    opaqueParent.info.rewardsContainer.addRelic(RelicId::ANCHOR);
+    opaqueParent.info.rewardsContainer.sapphireKey=true;
+    opaqueParent.opaqueCardRewardGroups=1;
+    OocGameContextModel opaqueRoot(opaqueParent,path);
+    const auto opaqueActions=opaqueRoot.legalActions(0);
+    require(!opaqueRoot.isLeafBoundary(0) && opaqueActions.size()>=3,
+        "visible relic/key choices remain searchable beside an opaque card group");
+    auto opaqueChild=opaqueRoot.sampleSuccessor(0,
+        sourceId(opaqueRoot,GameAction(GameAction::RewardsActionType::RELIC).bits),rng);
+    require(opaqueRoot.isLeafBoundary(opaqueChild),
+        "search stops after one visible parent choice instead of inventing the hidden card group");
     // Inject an equivalent RAW result from a deterministic native exit. The
     // callback dispatches the same native reward code in both branches.
     struct FakeSampler final : CombatTransitionSampler {

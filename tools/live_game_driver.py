@@ -822,6 +822,19 @@ def card_reward_reveal_action(screen: Mapping[str, Any], game: Mapping[str, Any]
     occurrences = _list(_mapping(game.get("screen_state", {})).get("rewards"))
     if not occurrences:
         return None
+    # A concealed card group may be opened mechanically only after OOC has
+    # chosen among any remaining visible parent rewards.  Those choices can
+    # conflict (notably Sapphire Key vs relic), so keep the card hidden until
+    # the model has consumed the public parent surface.
+    for index, reward in enumerate(occurrences):
+        if index in (declined_indexes or set()):
+            continue
+        kind = _text(_mapping(reward).get("reward_type", _mapping(reward).get("type", ""))).upper()
+        has_live_choice = any(candidate.mcp_tool == "choose"
+                              and candidate.mcp_arguments == {"choice_index": index + 1}
+                              for candidate in candidates)
+        if kind in {"RELIC", "POTION", "EMERALD_KEY", "SAPPHIRE_KEY"} and has_live_choice:
+            return None
     for index, reward in enumerate(occurrences):
         kind = _text(_mapping(reward).get("reward_type", _mapping(reward).get("type", ""))).upper()
         if kind == "CARD" and index not in (declined_indexes or set()):
@@ -833,13 +846,13 @@ def card_reward_reveal_action(screen: Mapping[str, Any], game: Mapping[str, Any]
 
 def parent_reward_action(screen: Mapping[str, Any], game: Mapping[str, Any],
                          candidates: Sequence[LegalAction]) -> LegalAction | None:
-    """Claim a visible non-card reward before opening a hidden card group."""
+    """Collect only unconditional gold before asking OOC about other rewards."""
     if _text(screen.get("screen_type", screen.get("screenType"))).upper() != "COMBAT_REWARD":
         return None
     occurrences = _list(_mapping(game.get("screen_state", {})).get("rewards"))
     if not occurrences:
         return None
-    visible_types = {"GOLD", "STOLEN_GOLD", "RELIC", "POTION", "EMERALD_KEY", "SAPPHIRE_KEY"}
+    visible_types = {"GOLD", "STOLEN_GOLD"}
     for index, reward in enumerate(occurrences):
         kind = _text(_mapping(reward).get("reward_type", _mapping(reward).get("type", ""))).upper()
         if kind not in visible_types:

@@ -281,17 +281,19 @@ class LiveGameDriverTest(unittest.TestCase):
                              ("empty_reward_proceed", "proceed"))
             self.assertFalse(any(tool == "choose" for tool, _ in client.calls))
 
-    def test_card_reveal_exposes_hidden_group_without_claiming_parent_rewards(self):
+    def test_card_reveal_waits_for_model_decisions_on_visible_parent_rewards(self):
         screen = {"screen_type": "COMBAT_REWARD", "choice_list": ["Gold", "Anchor", "Card"],
                   "ready_for_command": True}
         game = {"screen_state": {"rewards": [
             {"reward_type": "GOLD"}, {"reward_type": "RELIC"}, {"reward_type": "CARD"}]}}
         candidates = build_legal_actions(screen, ["choose"])
-        self.assertEqual(card_reward_reveal_action(screen, game, candidates).mcp_arguments,
-                         {"choice_index": 3})
-        card_only = [candidate for candidate in candidates if candidate.mcp_arguments == {"choice_index": 3}]
-        self.assertEqual(card_reward_reveal_action(screen, game, card_only).mcp_arguments,
-                         {"choice_index": 3})
+        self.assertIsNone(card_reward_reveal_action(screen, game, candidates))
+        parent_rewards_collected = {"screen_state": {"rewards": [{"reward_type": "CARD"}]}}
+        remaining_screen = {**screen, "choice_list": ["Card"]}
+        remaining_candidates = build_legal_actions(remaining_screen, ["choose"])
+        self.assertEqual(card_reward_reveal_action(remaining_screen, parent_rewards_collected,
+                                                   remaining_candidates).mcp_arguments,
+                         {"choice_index": 1})
 
     def test_card_reveal_with_gold_is_mechanical(self):
         screen = {"screen_type": "COMBAT_REWARD", "choice_list": ["16(+0 bonus) gold", "card"],
@@ -309,6 +311,32 @@ class LiveGameDriverTest(unittest.TestCase):
             {"reward_type": "GOLD", "gold": 16}, {"reward_type": "CARD"}]}}
         candidates = build_legal_actions(screen, ["choose"])
         self.assertEqual(parent_reward_action(screen, game, candidates).mcp_arguments,
+                         {"choice_index": 1})
+
+    def test_parent_reward_cleanup_does_not_choose_relic_potion_or_key(self):
+        screen = {"screen_type": "COMBAT_REWARD", "choice_list": ["relic", "card"],
+                  "ready_for_command": True}
+        for kind in ("RELIC", "POTION", "EMERALD_KEY", "SAPPHIRE_KEY"):
+            game = {"screen_state": {"rewards": [
+                {"reward_type": kind}, {"reward_type": "CARD"}]}}
+            candidates = build_legal_actions(screen, ["choose"])
+            self.assertIsNone(parent_reward_action(screen, game, candidates), kind)
+            self.assertIsNone(card_reward_reveal_action(screen, game, candidates), kind)
+
+    def test_card_reveal_waits_for_visible_parent_reward_decision(self):
+        screen = {"screen_type": "COMBAT_REWARD", "choice_list": ["card", "Sapphire Key"],
+                  "ready_for_command": True}
+        game = {"screen_state": {"rewards": [
+            {"reward_type": "CARD"}, {"reward_type": "SAPPHIRE_KEY"}]}}
+        candidates = build_legal_actions(screen, ["choose"])
+        self.assertIsNone(card_reward_reveal_action(screen, game, candidates))
+
+    def test_card_reveal_resumes_after_visible_parent_rewards_are_gone(self):
+        screen = {"screen_type": "COMBAT_REWARD", "choice_list": ["card"],
+                  "ready_for_command": True}
+        game = {"screen_state": {"rewards": [{"reward_type": "CARD"}]}}
+        candidates = build_legal_actions(screen, ["choose"])
+        self.assertEqual(card_reward_reveal_action(screen, game, candidates).mcp_arguments,
                          {"choice_index": 1})
 
     def test_neow_navigation_is_mechanical_only_around_bonus_choices(self):
@@ -671,16 +699,46 @@ class OocDriverTest(unittest.TestCase):
             self.assertEqual([call for call in client.calls if call[0] == "choose"],
                              [("choose", {"choice_index": 1})])
 
-    def test_mixed_key_reward_allows_free_card_reveal(self):
+    def test_model_selects_key_before_hidden_card_reveal(self):
+        with tempfile.TemporaryDirectory() as directory:
+            screen = {"screen_type": "COMBAT_REWARD",
+                      "choice_list": ["Anchor", "Sapphire Key", "Card"],
+                      "ready_for_command": True}
+            game = {"screen_state": {"rewards": [
+                {"reward_type": "RELIC"}, {"reward_type": "SAPPHIRE_KEY"},
+                {"reward_type": "CARD"}]}}
+            client = FakeClient(screen, ["choose"], game_state=game)
+            path = ooc_inspector_file(directory, screen, "OK", selectedLiveAction={
+                "kind": "choose", "choiceIndex": 2})
+            raw = json.loads(path.read_text())
+            ooc = raw["observation"]["ooc"]
+            ooc["screen"] = "combat_reward"
+            ooc["liveChoices"] = [
+                {"nativeAction": {"kind": "relic", "index": 0},
+                 "liveAction": {"kind": "choose", "choiceIndex": 1}},
+                {"nativeAction": {"kind": "key", "index": 0},
+                 "liveAction": {"kind": "choose", "choiceIndex": 2}}]
+            ooc["rewardOccurrences"] = [
+                {"index": 0, "type": "RELIC", "identity": "relic-1"},
+                {"index": 1, "type": "SAPPHIRE_KEY", "identity": "key-1"},
+                {"index": 2, "type": "CARD", "identity": "card-1"}]
+            path.write_text(json.dumps(raw))
+            driver = Driver(client, InspectorReader(path, timeout=.01, poll_interval=.001),
+                            TraceWriter(Path(directory) / "trace"),
+                            strict_ooc=True, max_steps=1)
+            asyncio.run(driver.run())
+            self.assertEqual([call for call in client.calls if call[0] == "choose"],
+                             [("choose", {"choice_index": 2})])
+            decision = json.loads(driver.trace.path.read_text().splitlines()[0])
+            self.assertEqual(decision["decision_source"], "ooc_v4")
+
+    def test_mixed_key_reward_stays_model_decision_before_card_reveal(self):
         screen = {"screen_type": "COMBAT_REWARD", "choice_list": ["Gold", "Emerald Key", "Card"],
                   "ready_for_command": True}
         game = {"screen_state": {"rewards": [
             {"reward_type": "GOLD"}, {"reward_type": "EMERALD_KEY"}, {"reward_type": "CARD"}]}}
         candidates = build_legal_actions(screen, ["choose"])
-        self.assertEqual(card_reward_reveal_action(screen, game, candidates).mcp_arguments,
-                         {"choice_index": 3})
-        self.assertEqual(card_reward_reveal_action(screen, game, candidates[1:]).mcp_arguments,
-                         {"choice_index": 3})
+        self.assertIsNone(card_reward_reveal_action(screen, game, candidates))
         self.assertEqual(card_reward_reveal_action(screen, game, candidates[2:]).mcp_arguments,
                          {"choice_index": 3})
 

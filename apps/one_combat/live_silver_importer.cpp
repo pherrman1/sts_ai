@@ -956,6 +956,8 @@ SilverRootImportResult importSilverRootGeneric(const json &observation,
         m.curHp = item.value("hp", 0); m.maxHp = item.value("maxHp", 0); m.block = item.value("block", 0);
         m.isEscapingB = item.value("escaping", item.value("escaped", false)); m.halfDead = item.value("halfDead", false);
         m.escapeNext = item.value("escapeNext", false);
+        if (runicDome && item.value("privateMiscInfoUnderRunic", false))
+            return unsupported("silver_hidden_information_required");
         if (!item.contains("miscInfo") || !item.at("miscInfo").is_number_integer())
             return unsupported("silver_unmapped_monster_state");
         m.miscInfo = item.at("miscInfo").get<int>();
@@ -974,15 +976,14 @@ SilverRootImportResult importSilverRootGeneric(const json &observation,
             if (!history.is_array() || history.size() != 2
                 || !history[0].is_number_integer() || !history[1].is_number_integer())
                 return unsupported("silver_hidden_information_required");
-            for (std::size_t j = 0; j < 2; ++j) {
+            const int historyCount = item.value("publicMoveHistoryCount", -1);
+            if (historyCount < 0 || historyCount > 2)
+                return unsupported("silver_hidden_information_required");
+            for (std::size_t j = 0; j < static_cast<std::size_t>(historyCount); ++j) {
                 const int publicMove = history[j].get<int>();
-                if (publicMove == 0) {
-                    m.moveHistory[j] = 0;
-                } else {
-                    const auto mapped = live_silver::monsterMove(idText, publicMove);
-                    if (!mapped) return unsupported("silver_hidden_information_required");
-                    m.moveHistory[j] = static_cast<std::int16_t>(*mapped);
-                }
+                const auto mapped = live_silver::monsterMove(idText, publicMove);
+                if (!mapped) return unsupported("silver_hidden_information_required");
+                m.moveHistory[j] = static_cast<std::int16_t>(*mapped);
             }
             const int pending = item.value("pendingMoveRolls", -1);
             const int direct = item.value("pendingDirectMoveChoice", 0);

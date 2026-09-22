@@ -834,7 +834,13 @@ final class LiveOocCapture {
     private static Map<String,Object> emptyRewards() {
         return object("cardRewards", new ArrayList<>(), "gold", new ArrayList<>(),
                 "relics", new ArrayList<>(), "potions", new ArrayList<>(),
-                "emeraldKey", false, "sapphireKey", false);
+                "emeraldKey", false, "sapphireKey", false, "opaqueCardRewardGroups", 0);
+    }
+    static boolean hasStrategicParentReward(List<String> rewardTypes) {
+        for (String kind : rewardTypes)
+            if ("RELIC".equals(kind) || "POTION".equals(kind)
+                    || "EMERALD_KEY".equals(kind) || "SAPPHIRE_KEY".equals(kind)) return true;
+        return false;
     }
     private static boolean hasPotionSlot() {
         int occupied = 0;
@@ -873,8 +879,16 @@ final class LiveOocCapture {
         List<Object> occurrences = new ArrayList<>(); out.put("rewardOccurrences", occurrences);
         List<RewardItem> offered = AbstractDungeon.combatRewardScreen.rewards;
         List<String> cardIdentities = new ArrayList<>();
+        List<String> rewardTypes = new ArrayList<>();
         for (RewardItem reward : offered)
-            if ("CARD".equals(reward.type.name())) cardIdentities.add(rewardIdentity(reward));
+            { rewardTypes.add(reward.type.name());
+              if ("CARD".equals(reward.type.name())) cardIdentities.add(rewardIdentity(reward)); }
+        boolean hasUnrevealedCard = false;
+        int opaqueCardRewardGroups = 0;
+        List<String> visibleTypes = new ArrayList<>();
+        for (String kind : rewardTypes)
+            if (!"CARD".equals(kind)) visibleTypes.add(kind);
+        boolean hasStrategicParentReward = hasStrategicParentReward(visibleTypes);
         cardRewardVisits.parent(AbstractDungeon.player, AbstractDungeon.currMapNode, cardIdentities);
         for (int i = 0; i < offered.size(); ++i) {
             RewardItem reward = offered.get(i);
@@ -885,8 +899,10 @@ final class LiveOocCapture {
                 // The unopened reward icon reveals only its type. Vanilla
                 // has already generated reward.cards, but those identities
                 // are not yet public and must never enter this observation.
-                if (!cardRewardVisits.declined(identity))
-                    out.put("unsupportedReason", "CARD_GROUP_NOT_REVEALED");
+                if (!cardRewardVisits.declined(identity)) {
+                    hasUnrevealedCard = true;
+                    ++opaqueCardRewardGroups;
+                }
             } else if ("GOLD".equals(kind) || "STOLEN_GOLD".equals(kind)) {
                 int idx = list(r.get("gold")).size();
                 mutableList(r.get("gold")).add(reward.goldAmt + reward.bonusGold);
@@ -902,6 +918,9 @@ final class LiveOocCapture {
                 add(cs, labels, i, "key", 0, 0);
             } else out.put("unsupportedReason", "REWARD_TYPE_UNREPRESENTABLE:" + kind);
         }
+        map(out.get("details")).put("opaqueCardRewardGroups", opaqueCardRewardGroups);
+        if (hasUnrevealedCard && !hasStrategicParentReward)
+            out.put("unsupportedReason", "CARD_GROUP_NOT_REVEALED");
         button(cs, "proceed", "skip", 0, 0);
     }
     private static void rest(Map<String,Object> out, List<Map<String,Object>> cs, List<?> labels)

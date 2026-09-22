@@ -8,6 +8,23 @@ import com.google.gson.JsonObject;
 /** Pure boundary and selection projection checks, without game/render initialization. */
 public final class CombatBoundaryTest {
     public static void main(String[] args) {
+        STSModelInspector.HiddenIntentSnapshot chained = new STSModelInspector.HiddenIntentSnapshot();
+        STSModelInspector.recordHiddenMoveHistory(chained, java.util.Arrays.asList((byte)41));
+        STSModelInspector.recordHiddenMoveHistory(chained,
+                java.util.Arrays.asList((byte)0, (byte)42));
+        if (chained.pendingMoveRolls != 2 || chained.publicMoveHistoryCount != 1
+                || chained.publicMoveHistory[0] != 41)
+            throw new AssertionError("chained hidden roll replaced its public pre-roll history");
+        STSModelInspector.HiddenIntentSnapshot byteZero = new STSModelInspector.HiddenIntentSnapshot();
+        STSModelInspector.recordHiddenMoveHistory(byteZero, java.util.Arrays.asList((byte)0));
+        if (byteZero.pendingMoveRolls != 1 || byteZero.publicMoveHistoryCount != 1
+                || byteZero.publicMoveHistory[0] != 0)
+            throw new AssertionError("public move byte zero was confused with absent history");
+        for (String id : new String[]{"FuzzyLouseNormal", "FuzzyLouseDefensive", "Darkling"})
+            if (!STSModelInspector.runicPrivateMiscInfo(id))
+                throw new AssertionError("Runic private randomized miscInfo was not rejected: " + id);
+        if (STSModelInspector.runicPrivateMiscInfo("Donu"))
+            throw new AssertionError("public Runic miscInfo was rejected");
         if (STSModelInspector.guardianThresholdFromPublicPower(null, null) != null
                 || STSModelInspector.guardianThresholdFromPublicPower(null, 30) != 30
                 || STSModelInspector.guardianThresholdFromPublicPower(30, 12) != 30

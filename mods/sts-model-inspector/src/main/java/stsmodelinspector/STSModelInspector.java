@@ -100,8 +100,9 @@ public final class STSModelInspector implements PostInitializeSubscriber,
 
     static final class HiddenIntentSnapshot {
         final int[] publicMoveHistory = new int[]{0, 0};
+        int publicMoveHistoryCount;
         int publicMiscInfo;
-        int pendingMoveRolls = 1;
+        int pendingMoveRolls;
         int pendingDirectMoveChoice;
         int generation;
         int curHp, maxHp, knightCurHp, knightMaxHp, monsterTurnNumber, aliveCount, monstersAlive;
@@ -242,11 +243,16 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         // Capture the pre-roll boundary regardless; serialization decides
         // whether the snapshot is relevant to the current combat.
         if (monster == null || AbstractDungeon.getMonsters() == null) return;
+        HiddenIntentSnapshot previous = hiddenIntentSnapshots.get(monster);
+        if (previous != null && previous.pendingMoveRolls > 0) {
+            recordHiddenMoveHistory(previous, monster.moveHistory);
+            return;
+        }
         HiddenIntentSnapshot snapshot = new HiddenIntentSnapshot();
-        int historySize = monster.moveHistory == null ? 0 : monster.moveHistory.size();
-        if (historySize > 0) snapshot.publicMoveHistory[0] = monster.moveHistory.get(historySize - 1);
-        if (historySize > 1) snapshot.publicMoveHistory[1] = monster.moveHistory.get(historySize - 2);
-        snapshot.publicMiscInfo = monsterMiscInfo(monster) == null ? 0 : monsterMiscInfo(monster);
+        recordHiddenMoveHistory(snapshot, monster.moveHistory);
+        Integer publicMisc = runicPrivateMiscInfo(monster.id)
+                ? null : monsterMiscInfo(monster);
+        snapshot.publicMiscInfo = publicMisc == null ? 0 : publicMisc;
         snapshot.curHp = monster.currentHealth;
         snapshot.maxHp = monster.maxHealth;
         snapshot.miscInfo = snapshot.publicMiscInfo;
@@ -267,9 +273,37 @@ public final class STSModelInspector implements PostInitializeSubscriber,
             snapshot.knightMaxHp = knight.maxHealth;
             snapshot.knightAlive = !knight.isDeadOrEscaped();
         }
-        HiddenIntentSnapshot previous = hiddenIntentSnapshots.get(monster);
         snapshot.generation = previous == null ? 1 : previous.generation + 1;
         hiddenIntentSnapshots.put(monster, snapshot);
+    }
+
+    static void recordHiddenMoveHistory(HiddenIntentSnapshot snapshot,
+                                        List<Byte> moveHistory) {
+        if (snapshot.pendingMoveRolls > 0) {
+            // Preserve the first public pre-roll snapshot. An intermediate
+            // move and its history are hidden until the chained reroll resolves.
+            snapshot.pendingMoveRolls = snapshot.pendingMoveRolls + 1;
+            return;
+        }
+        capturePublicMoveHistory(snapshot, moveHistory);
+        snapshot.pendingMoveRolls = 1;
+    }
+
+    private static void capturePublicMoveHistory(HiddenIntentSnapshot snapshot,
+                                                   List<Byte> moveHistory) {
+        int historySize = moveHistory == null ? 0 : moveHistory.size();
+        snapshot.publicMoveHistoryCount = Math.min(2, historySize);
+        if (historySize > 0) snapshot.publicMoveHistory[0] = moveHistory.get(historySize - 1);
+        if (historySize > 1) snapshot.publicMoveHistory[1] = moveHistory.get(historySize - 2);
+    }
+
+    static boolean runicPrivateMiscInfo(String monsterId) {
+        // These randomized damage parameters normally become public through
+        // visible intent damage. Runic Dome hides that damage, so the private
+        // Java fields cannot be copied into Silver's root.
+        return "FuzzyLouseNormal".equals(monsterId)
+                || "FuzzyLouseDefensive".equals(monsterId)
+                || "Darkling".equals(monsterId);
     }
 
     static void recordKnownIntent(AbstractMonster monster) {
@@ -279,9 +313,8 @@ public final class STSModelInspector implements PostInitializeSubscriber,
             snapshot = new HiddenIntentSnapshot();
             hiddenIntentSnapshots.put(monster, snapshot);
         }
-        int historySize = monster.moveHistory == null ? 0 : monster.moveHistory.size();
-        if (historySize > 0) snapshot.publicMoveHistory[0] = monster.moveHistory.get(historySize - 1);
-        if (historySize > 1) snapshot.publicMoveHistory[1] = monster.moveHistory.get(historySize - 2);
+        snapshot.pendingMoveRolls = 0;
+        capturePublicMoveHistory(snapshot, monster.moveHistory);
         snapshot.publicMiscInfo = monsterMiscInfo(monster) == null ? 0 : monsterMiscInfo(monster);
         snapshot.miscInfo = snapshot.publicMiscInfo;
         snapshot.pendingMoveRolls = 0;
@@ -295,9 +328,7 @@ public final class STSModelInspector implements PostInitializeSubscriber,
             snapshot = new HiddenIntentSnapshot();
             hiddenIntentSnapshots.put(monster, snapshot);
         }
-        int historySize = monster.moveHistory == null ? 0 : monster.moveHistory.size();
-        if (historySize > 0) snapshot.publicMoveHistory[0] = monster.moveHistory.get(historySize - 1);
-        if (historySize > 1) snapshot.publicMoveHistory[1] = monster.moveHistory.get(historySize - 2);
+        capturePublicMoveHistory(snapshot, monster.moveHistory);
         snapshot.publicMiscInfo = monsterMiscInfo(monster) == null ? 0 : monsterMiscInfo(monster);
         snapshot.miscInfo = snapshot.publicMiscInfo;
         snapshot.pendingMoveRolls = 0;
@@ -2428,16 +2459,21 @@ public final class STSModelInspector implements PostInitializeSubscriber,
                     out.append('}');
                 }
                 out.append(']');
-                Integer miscInfo = monsterMiscInfo(monster);
+                HiddenIntentSnapshot hidden = runicDome ? hiddenIntentSnapshots.get(monster) : null;
+                boolean hiddenPrivateMisc = hidden != null && hidden.pendingMoveRolls > 0
+                        && runicPrivateMiscInfo(monster.id);
+                Integer miscInfo = hiddenPrivateMisc ? null : monsterMiscInfo(monster);
                 if (miscInfo != null) out.append(",\"miscInfo\":").append(miscInfo);
+                if (hiddenPrivateMisc) out.append(",\"privateMiscInfoUnderRunic\":true");
                 Integer uniquePower0 = monsterUniquePower0(monster);
                 if (uniquePower0 != null) out.append(",\"uniquePower0\":").append(uniquePower0);
                 if (runicDome) {
-                    HiddenIntentSnapshot hidden = hiddenIntentSnapshots.get(monster);
                     if (hidden != null) {
                         out.append(",\"publicMoveHistory\":[")
                                 .append(hidden.publicMoveHistory[0]).append(',')
                                 .append(hidden.publicMoveHistory[1]).append(']')
+                                .append(",\"publicMoveHistoryCount\":")
+                                .append(hidden.publicMoveHistoryCount)
                                 .append(",\"pendingMoveRolls\":").append(hidden.pendingMoveRolls)
                                 .append(",\"pendingDirectMoveChoice\":")
                                 .append(hidden.pendingDirectMoveChoice)
@@ -2446,9 +2482,10 @@ public final class STSModelInspector implements PostInitializeSubscriber,
                                 .append(",\"maxHp\":").append(hidden.maxHp)
                                 .append(",\"knightCurHp\":").append(hidden.knightCurHp)
                                 .append(",\"knightMaxHp\":").append(hidden.knightMaxHp)
-                                .append(",\"monsterTurnNumber\":").append(hidden.monsterTurnNumber)
-                                .append(",\"miscInfo\":").append(hidden.miscInfo)
-                                .append(",\"aliveCount\":").append(hidden.aliveCount)
+                                .append(",\"monsterTurnNumber\":").append(hidden.monsterTurnNumber);
+                        if (!hiddenPrivateMisc)
+                            out.append(",\"miscInfo\":").append(hidden.miscInfo);
+                        out.append(",\"aliveCount\":").append(hidden.aliveCount)
                                 .append(",\"monstersAlive\":").append(hidden.monstersAlive)
                                 .append(",\"knightAlive\":").append(hidden.knightAlive)
                                 .append(",\"playerConstricted\":").append(hidden.playerConstricted)

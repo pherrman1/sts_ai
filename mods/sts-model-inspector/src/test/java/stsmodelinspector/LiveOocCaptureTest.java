@@ -20,6 +20,11 @@ public final class LiveOocCaptureTest {
             throw new AssertionError(id + ": " + actual + " " + state);
     }
     public static void main(String[] args) throws Exception {
+        if (LiveOocCapture.hasStrategicParentReward(Arrays.asList("CARD", "GOLD", "STOLEN_GOLD"))
+                || !LiveOocCapture.hasStrategicParentReward(Arrays.asList("CARD", "SAPPHIRE_KEY"))
+                || !LiveOocCapture.hasStrategicParentReward(Arrays.asList("RELIC"))
+                || !LiveOocCapture.hasStrategicParentReward(Arrays.asList("POTION")))
+            throw new AssertionError("opaque card reward boundary did not distinguish strategic parent rewards");
         check("MawBank", -1, false, 1, null);
         check("MawBank", -2, true, 0, null);
         check("Happy Flower", 2, false, 2, null);

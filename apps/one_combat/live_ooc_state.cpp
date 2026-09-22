@@ -121,6 +121,7 @@ LiveOocStateV1::LiveOocMctsRootV1 makeMctsRoot(const LiveOocStateV1 &source) {
     // Keep the constructor's public prior for hidden reward/event counters.
     // Live Java's private blizzard counters are deliberately not imported.
     root.shopRemoveCount = source.projected.shopRemoveCount;
+    root.opaqueCardRewardGroups = source.projected.opaqueCardRewardGroups;
     root.curMapNodeX = source.projected.curMapNodeX;
     root.curMapNodeY = source.projected.curMapNodeY;
     root.floorNum = source.projected.floorNum;
@@ -503,6 +504,9 @@ ImportResult importLiveOocStateV1(const J &observation, LiveOocStateV1 &out) {
         }
         if(g.screenState==ScreenState::REWARDS) {
             auto &r=g.info.rewardsContainer;
+            g.opaqueCardRewardGroups = d.value("opaqueCardRewardGroups", 0);
+            require(g.opaqueCardRewardGroups >= 0 && g.opaqueCardRewardGroups <= 5,
+                    "opaqueCardRewardGroups out of range");
             for(const auto &v:array(d,"gold",2)) r.addGold(integerValue(v,0,1000000,"gold reward"));
             for(const auto &group:array(d,"cardRewards",5)) {
                 require(group.is_array() && !group.empty() && group.size()<=4,"invalid card reward group");
