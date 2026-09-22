@@ -10886,9 +10886,9 @@ default or generalization claim is authorized. Evidence:
 - **Question and boundary:** Does ignoring only historical `curCardQueueItem`
   at quiescent unresolved `PLAYER_NORMAL` or `CARD_SELECT` states preserve
   selected-child reroot and expanded selection descendants without rewriting
-  the retained root? PR #285's §334 records a failed HOLDOUT and root rewrite;
-  this new conceptual branch leaves it as a failed record. §335 avoids
-  colliding with that proposed §334 identifier.
+  the retained root? PR #285's proposed §334 records a failed HOLDOUT and root
+  rewrite; separate docs-only PR #287 carries that record without its rejected
+  implementation. §335 avoids colliding with that pending §334 identifier.
 - **Frozen implementation and protocol:** Current-main baseline
   `8613f9c7811ce19a81cb731e78b6b58d01ec91ca` versus candidate functional
   SHA `68b57f1bc644733e845a7bff15d717d481617dee`. The 64 frozen hard64
@@ -10921,5 +10921,18 @@ default or generalization claim is authorized. Evidence:
   fresh independent cohort was run. **Evidence:** [raw DEV packet and
   provenance](evidence/silver_quiescent_queue_item_20260922/README.md).
   **Knowledge impact:** ADR-0017 records the scoped identity choice and the
-  combat-search KB records the current branch behavior; no gameplay policy,
-  RNG, budget, model, or default setting changed.
+  combat-search KB records the branch behavior. Eligible roots can change
+  default Silver action selection; no configuration setting, RNG, budget, or
+  model changed.
+
+- **Live-boundary correction:** Review found that live conversion omits pending
+  action/card queues. Functional SHA `14ad63b10dcbe820a9df3580a99d202ddbbf2fa8`
+  carries a source-side empty-queue proof and keeps identity exact for
+  legacy/imported wires without it. Six focused tests pass, including actual
+  quiescent Gambler's Brew and pending Headbutt after conversion. A permitted
+  DEV rerun at this SHA completed 64/64 with zero deterministic misses and
+  zero positive-visit childless edges. The frozen legacy JSON provides no
+  source proof, so candidate and main had identical 64/64 action traces,
+  51 wins, and zero candidate canonical hits; 59 paired first roots also
+  matched. This verifies conservative legacy behavior, not positive
+  live-policy qualification. [Corrected raw packet](evidence/silver_quiescent_queue_item_20260922/README.md).

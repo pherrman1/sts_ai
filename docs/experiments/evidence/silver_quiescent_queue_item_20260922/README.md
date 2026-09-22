@@ -1,4 +1,10 @@
-# Silver quiescent queue-item identity: frozen DEV evidence
+# Silver quiescent queue-item identity: frozen DEV evidence and live-boundary correction
+
+The original candidate below is preserved as private-search evidence. A later
+review found that live conversion drops pending queues. The final functional
+SHA and its corrected DEV rerun are documented in the final section. The
+original candidate's 64/64 replay and canonical-hit counts do not qualify
+the corrected live-import policy.
 
 ## Provenance and protocol
 
@@ -38,4 +44,39 @@ On the 59 paired first-decision roots, both arms performed 59,000 root visits. F
 
 The implementation audit inspected `curCardQueueItem` uses in Silver `BattleContext`, `Actions`, and selection execution. Gambler's Brew's quiescent `GAMBLE` selection and Attack Potion's quiescent `DISCOVERY` selection do not read it. Headbutt leaves queued `OnAfterCardUsed` work that does read it and is excluded by the nonempty action queue. Card play overwrites the field before active card processing. Focused tests cover exact priority, dedup and telemetry, excluded states, the expanded Gambler's Brew subtree through reopened selection and confirmation, retained queue stability and continuing search, Headbutt, ordinary action execution, hand permutation, equivalent-copy repair, and sampled chance reroot.
 
-This is bounded DEV confirmation of the new identity rule and reroot invariants. It is not independent scientific review, HOLDOUT, full-run qualification, or a default promotion. PR #285's HOLDOUT has already been consumed and was not rerun. No fresh independent sanity cohort was run.
+This is bounded private-search DEV confirmation of the identity rule and reroot invariants. It is not independent scientific review, HOLDOUT, full-run qualification, or a default promotion. PR #285's HOLDOUT has already been consumed and was not rerun. No fresh independent sanity cohort was run. This candidate changes Silver action choices at eligible roots; it is an identity correction, not an efficiency or gameplay-quality claim.
+
+## Final live-provenance correction and DEV rerun
+
+Independent review identified a live boundary: a `CARD_SELECT` with pending
+`OnAfterCardUsed` can cross `BattleStateWire` without its action queue. Final
+functional SHA `14ad63b10dcbe820a9df3580a99d202ddbbf2fa8` carries a
+source-side proof that the queues were empty before omission. The private
+materializer preserves this proof, and historical queue-item matching requires
+it. Legacy JSON and public imports without proof remain exact throughout the
+private search. The focused live regression executes actual Gambler's Brew to
+a quiescent selection, then checks a Headbutt selection with pending
+`OnAfterCardUsed`; six focused CTests pass.
+
+The corrected Release binary SHA-256 is
+`e1a3a7e7496c11b0629f5167242cbf7e180b7784d06d007ec29cec15cff20442`.
+The same 64 frozen DEV JSON snapshots and commands above were replayed; the
+input SHA, baseline binary, budget, guard, and thread count were unchanged.
+The corrected complete replay returned 64/64 `ok`; the first-decision seam
+returned 59 paired `ok` rows and the same five
+`transactional_selection_required` rows (exit 1). Corrected raw outputs are
+`candidate-provenance-dev.jsonl.gz` and
+`candidate-provenance-first.jsonl.gz`, with uncompressed SHA-256
+`2b80d4320f51d5e7901007f29baf6a9941e69ef52530023872311c5a41096f64`
+and `1e96e4786653b4afff361a84c94b61104efcc7b549d0cef77a935b70b6c32a81`.
+
+Because these legacy JSON snapshots have no source-queue proof, the corrected
+candidate recorded **zero** canonical hits. Its 64 complete action traces,
+51 wins, mean HP fraction `0.3440911508`, 1,287 deterministic reroots with
+zero misses, zero positive-visit childless edges, and 541 stochastic
+candidate misses matched current main exactly. The 59 paired first roots
+also matched in action and 58,966 total nodes. This rerun verifies the
+conservative legacy-import boundary, not positive use of the new identity
+rule. The live conversion regression and native private-search tests prove
+the eligible and excluded cases; no independent live gameplay cohort has
+qualified their frequency or policy quality.
