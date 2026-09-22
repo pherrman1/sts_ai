@@ -146,10 +146,14 @@ collect every ordinary gold reward through the normal `GameAction::GOLD`
 execution path. This gold-only normalization is applied at the root and after
 each hypothetical successor; it leaves the REWARDS screen and all non-gold
 choices intact, so `TAKE_GOLD` remains available to semantic execution and
-diagnostics but is not an MCTS candidate. The live advisor performs the same
-rule as a single-action native pass-through from the captured gold choice and
-re-observes before scoring any remaining reward decision. Ectoplasm and Bloody
-Idol therefore retain their normal acquisition semantics.
+diagnostics but is not an MCTS candidate. The simulator's live OOC policy also
+applies the closure to its real `GameContext` before search, keeping subsequent
+semantic action resolution on the same state. The live advisor emits one
+captured gold choice as a single-action pass-through and re-observes before
+scoring any remaining reward decision. Multiple captured gold choices are
+handled one observation at a time, including when their native primitive bits
+coincide. Ectoplasm and Bloody Idol therefore retain their normal acquisition
+semantics.
 
 V4 remains a primitive-trained source-level prior. When the state's unique
 semantic source primitives exactly match the complete, duplicate-free V4

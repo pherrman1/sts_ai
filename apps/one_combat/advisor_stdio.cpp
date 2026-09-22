@@ -211,8 +211,8 @@ json oocResponse(const one_combat::advisor::Request &request,
                     {"observationHash", request.observationHash},
                     {"evaluators", json::array({evaluator})}};
         }
-        if (const auto forcedGold = advisor::forcedRewardGoldPrimitive(state)) {
-            const auto liveAction = advisor::lowerLiveOocAction(state, *forcedGold);
+        if (const auto forcedGoldAction = advisor::forcedRewardGoldLiveAction(state)) {
+            const auto &liveAction = *forcedGoldAction;
             evaluator["status"] = "OK";
             evaluator["mode"] = "native_pass_through";
             evaluator["selectedSemanticKey"] = "ooc-live:v1:take-gold";

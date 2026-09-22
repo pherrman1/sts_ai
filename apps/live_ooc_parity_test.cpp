@@ -123,26 +123,42 @@ int main(int argc,char **argv){try{
         source.screenState = ScreenState::REWARDS;
         source.info.rewardsContainer.clear();
         source.info.rewardsContainer.addGold(25);
+        source.info.rewardsContainer.addGold(40);
         CardReward cards;
         cards.push_back(Card(CardId::BASH));
         source.info.rewardsContainer.addCardReward(cards);
         const auto wire = project(source, path, "forced_gold_pass_through");
         advisor::LiveOocStateV1 live;
         check(advisor::importLiveOocStateV1(wire, live).ok, "forced-gold fixture import");
-        const auto bits = advisor::forcedRewardGoldPrimitive(live);
-        check(bits.has_value(), "live reward gold was not recognized as forced");
-        const auto action = advisor::lowerLiveOocAction(live, *bits);
-        check(action.value("kind", std::string()) == "choose"
-                && action.value("choiceIndex", 0) > 0,
+        const auto action = advisor::forcedRewardGoldLiveAction(live);
+        check(action.has_value(), "live reward gold was not recognized as forced");
+        check(action->value("kind", std::string()) == "choose"
+                && action->value("choiceIndex", 0) > 0,
             "forced-gold live action did not retain its captured lowering");
 
-        auto removed = source;
-        removed.info.rewardsContainer.goldRewardCount = 0;
-        const auto noGoldWire = project(removed, path, "gold_removed");
+        auto afterFirst = wire;
+        auto &choices = afterFirst["ooc"]["liveChoices"];
+        const auto first = std::find_if(choices.begin(), choices.end(), [&](const auto &choice) {
+            return choice.at("nativeAction").value("kind", std::string()) == "gold"
+                && choice.at("liveAction") == *action;
+        });
+        check(first != choices.end(), "first forced gold choice missing from observation");
+        choices.erase(first);
+        advisor::LiveOocStateV1 secondLive;
+        check(advisor::importLiveOocStateV1(afterFirst, secondLive).ok, "second gold fixture import");
+        const auto secondAction = advisor::forcedRewardGoldLiveAction(secondLive);
+        check(secondAction.has_value() && *secondAction != *action,
+            "second observation did not select the other captured gold action");
+
+        auto afterSecond = afterFirst;
+        auto &remaining = afterSecond["ooc"]["liveChoices"];
+        remaining.erase(std::remove_if(remaining.begin(), remaining.end(), [](const auto &choice) {
+            return choice.at("nativeAction").value("kind", std::string()) == "gold";
+        }), remaining.end());
         advisor::LiveOocStateV1 noGold;
-        check(advisor::importLiveOocStateV1(noGoldWire, noGold).ok, "gold-removed fixture import");
-        check(!advisor::forcedRewardGoldPrimitive(noGold).has_value(),
-            "live gold pass-through persisted after gold was removed");
+        check(advisor::importLiveOocStateV1(afterSecond, noGold).ok, "gold-removed fixture import");
+        check(!advisor::forcedRewardGoldLiveAction(noGold).has_value(),
+            "live gold pass-through persisted after all gold choices were removed");
     }
     std::vector<std::pair<std::string,GameContext>> fixtures;
     auto add=[&](std::string n,GameContext g){fixtures.emplace_back(n,g);};
