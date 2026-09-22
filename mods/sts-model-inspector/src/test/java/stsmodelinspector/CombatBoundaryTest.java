@@ -55,6 +55,12 @@ public final class CombatBoundaryTest {
                 || STSModelInspector.zeroCostDiscardReturn(true, true, 1)
                 || STSModelInspector.zeroCostDiscardReturn(false, true, 0))
             throw new AssertionError("Liquid Memories selector was confused with Hologram");
+        for (String child : new String[]{"SpikeSlime_L", "AcidSlime_L", "SpikeSlime_M", "AcidSlime_M"})
+            if (!STSModelInspector.slimeBossDescendant(child))
+                throw new AssertionError("Slime Boss split child was not recognized: " + child);
+        if (STSModelInspector.slimeBossDescendant("SlimeBoss")
+                || STSModelInspector.slimeBossDescendant("SpikeSlime_S"))
+            throw new AssertionError("unrelated slime replaced Slime Boss parent");
         for (int counter : new int[]{0, 1, 2, 3, -1, -2}) {
             if (STSModelInspector.combatEntryRelicData("NeowsBlessing", counter, false) != counter)
                 throw new AssertionError("active/invalid Neow counter changed");

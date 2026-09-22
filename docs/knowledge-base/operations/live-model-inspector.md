@@ -112,7 +112,9 @@ observation is too late to retain that public item. Boolean monster powers are
 presence states at the importer boundary, so a negative or sentinel Java amount
 still sets the status bit before numeric amount validation. The stable slot
 registry keeps ordinary Large Slime split children at native slots 0/1; the
-separate Slime Boss layout uses 0/2. Move bytes are likewise fail-closed, with all
+separate Slime Boss layout uses 0/2 for large children and 0–3 for medium
+descendants. The dead Slime Boss parent is omitted whenever a descendant
+exists, including after both large children have split or died. Move bytes are likewise fail-closed, with all
 simulator-supported vanilla class constants independently qualified against the
 installed `desktop-1.0.jar`. The native construction, public-render, import,
 exact search-state parity, and one-simulation Silver-decision sweep covers all

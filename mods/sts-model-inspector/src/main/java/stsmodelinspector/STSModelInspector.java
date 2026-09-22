@@ -1211,10 +1211,15 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         if (!"SLIME_BOSS".equals(encounter) || candidate == null
                 || !"SlimeBoss".equals(candidate.id) || !candidate.isDeadOrEscaped()) return false;
         for (AbstractMonster monster : monsters) {
-            if (monster == null || monster == candidate || monster.isDeadOrEscaped()) continue;
-            if ("SpikeSlime_L".equals(monster.id) || "AcidSlime_L".equals(monster.id)) return true;
+            if (monster == null || monster == candidate) continue;
+            if (slimeBossDescendant(monster.id)) return true;
         }
         return false;
+    }
+
+    static boolean slimeBossDescendant(String id) {
+        return "SpikeSlime_L".equals(id) || "AcidSlime_L".equals(id)
+                || "SpikeSlime_M".equals(id) || "AcidSlime_M".equals(id);
     }
 
     private static int preferredMonsterSlot(String encounter, String id, int sameIdOrdinal,
