@@ -3,3 +3,7 @@
 # The mod launches this as one direct ProcessBuilder argument; no shell is used.
 advisor=/absolute/path/to/sts_ai/build/linux-gcc-debug/one_combat_advisor
 ctmModel=/absolute/path/to/sts_ai/selfplay/models/combat_transition_near_full_except_smoke_v2.native
+# Optional: repository tools directory containing render_combat_decision.py and render_ooc_mcts.py.
+graphToolsDir=/absolute/path/to/sts_ai/tools
+# Optional Python executable used for graph export (default: python3).
+python=python3
