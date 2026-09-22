@@ -11115,8 +11115,11 @@ zero on both L and J; otherwise classify
 `PRIOR_MODEL_LOCKED_TEST_NOT_CONFIRMED`. No top-action threshold is used. No
 label, outcome, prediction, or shard has been opened for this run. Evaluation
 is gated on independent implementation/scientific-design review of the
-committed evaluator SHA. **Knowledge impact:** none; the evaluator is a
-one-experiment tool and does not alter training or Silver integration.
+committed evaluator SHA. The output also reports hash-verified validation-L
+and validation-J contrasts beside their locked counterparts, teacher
+L-target-vs-uniform on locked J, and headroom recovery; these are descriptive
+only. **Knowledge impact:** none; the evaluator is a one-experiment tool and
+does not alter training or Silver integration.
 
 - **Fresh native production-path smoke and replayable provenance:** Functional
   SHA `06279a8644492e9ef9cea813455ddfe841425380` added trusted v2

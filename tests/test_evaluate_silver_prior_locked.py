@@ -200,6 +200,19 @@ class LockedEvaluatorTests(unittest.TestCase):
         self.assertTrue(np.isfinite(ev.TAU))
         self.assertEqual(ev.BOOTSTRAPS, 5000)
 
+    def test_validation_comparison_uses_hash_bound_t2_summaries_and_is_descriptive(self):
+        validation = ev.load_validation_diagnostics()
+        self.assertEqual(validation["L"]["roots"], 1512)
+        self.assertEqual(validation["J"]["roots"], 64)
+        locked_l = {"model_minus_uniform": {"mean": -1.0, "ci95": [-1.2, -0.8]}}
+        locked_j = {"metrics": {"model_minus_uniform": {"mean": -2.0, "ci95": [-2.4, -1.6]},
+                                 "teacher_minus_uniform": {"mean": -3.0, "ci95": [-3.4, -2.6]},
+                                 "soft_prior_headroom_recovery": 2.0}}
+        result = ev.validation_comparison(validation, locked_l, locked_j)
+        self.assertEqual(result["classification_role"], "DESCRIPTIVE_ONLY")
+        self.assertEqual(result["locked_j_model_minus_uniform"]["mean"], -2.0)
+        self.assertEqual(result["locked_j_soft_prior_headroom_recovery"], 2.0)
+
 
 if __name__ == "__main__":
     unittest.main()

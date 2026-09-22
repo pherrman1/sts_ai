@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import gzip
 import hashlib
 import json
 import os
@@ -30,6 +31,11 @@ HASHES = {
     "vocabulary": "7e07db8b10618d7c1e9b9b1b31d8196950c03060c54fd4d25fd057ac7918cd46",
 }
 BOOTSTRAPS = 5000
+VALIDATION_DIR = ROOT / "docs/experiments/evidence/silver_prior_model_v1_20260922/stage-a-reviewed-863d7d5e"
+VALIDATION_HASHES = {
+    "L": "b559dabec4d3e9fd5ceff1b702c3ca82c97d40a112d8b5a324717b919647153c",
+    "J": "1352b9b1acc1e34f146e5d8079f1e738ecbaa01337ab453267b4b5cda5e3c327",
+}
 
 
 def sha256(path: Path) -> str:
@@ -97,6 +103,28 @@ def _load_sealed_manifests(corpus: Path):
     if not l_entries or not j_entries or len({e["root"]["root_id"] for e in l_entries}) != len(l_entries):
         raise ValueError("empty or duplicate LOCKED_TEST selection")
     return release, binding, selection, vocab, plan, checksums, quarantine, l_entries, j_entries
+
+
+def load_validation_diagnostics():
+    """Read the committed validation summaries used only for descriptive comparison."""
+    paths = {
+        "L": VALIDATION_DIR / "validation-l-metrics.json.gz",
+        "J": VALIDATION_DIR / "validation-j-metrics.json.gz",
+    }
+    summaries = {}
+    for name, path in paths.items():
+        if sha256(path) != VALIDATION_HASHES[name]:
+            raise ValueError(f"committed VALIDATION-{name} summary hash mismatch")
+        with gzip.open(path, "rt", encoding="utf-8") as f:
+            summary = json.load(f)[ARM]
+        if summary.get("tau") != TAU:
+            raise ValueError(f"committed VALIDATION-{name} summary temperature mismatch")
+        metric = (summary.get("metrics", {}).get("expected_regret_minus_uniform") if name == "L"
+                  else summary.get("metrics", {}).get("model_minus_uniform"))
+        if not metric or metric.get("cluster") != "source_seed" or metric.get("bootstrap_replicates") != BOOTSTRAPS:
+            raise ValueError(f"committed VALIDATION-{name} contrast schema mismatch")
+        summaries[name] = metric
+    return summaries
 
 
 def _action_signature(observation):
@@ -213,10 +241,24 @@ def summarize(l_per, j_predictions, j_rows, l_by_root):
     return l_summary, {"metrics": j_summary, "per_root": j_per}, decision
 
 
+def validation_comparison(validation, locked_l, locked_j):
+    """Side-by-side descriptive validation/locked contrasts; never a decision gate."""
+    return {
+        "classification_role": "DESCRIPTIVE_ONLY",
+        "validation_l_model_minus_uniform": validation["L"],
+        "locked_l_model_minus_uniform": locked_l["model_minus_uniform"],
+        "validation_j_model_minus_uniform": validation["J"],
+        "locked_j_model_minus_uniform": locked_j["metrics"]["model_minus_uniform"],
+        "locked_j_teacher_minus_uniform": locked_j["metrics"]["teacher_minus_uniform"],
+        "locked_j_soft_prior_headroom_recovery": locked_j["metrics"]["soft_prior_headroom_recovery"],
+    }
+
+
 def run(checkpoint_path: Path, corpus: Path, output_dir: Path):
     cp = validate_checkpoint(checkpoint_path)
     (release, binding, selection, vocab, plan, checksums,
      quarantine, l_entries, j_entries) = _load_sealed_manifests(corpus)
+    validation = load_validation_diagnostics()
     if output_dir.exists():
         raise FileExistsError(f"LOCKED_TEST output directory already exists: {output_dir}")
     evaluator_sha = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=ROOT, text=True).strip()
@@ -228,6 +270,11 @@ def run(checkpoint_path: Path, corpus: Path, output_dir: Path):
         "selected_arm": ARM, "seed": SEED,
     }
     output_dir.mkdir(parents=True, exist_ok=False)
+    parentfd = os.open(output_dir.parent, os.O_RDONLY)
+    try:
+        os.fsync(parentfd)
+    finally:
+        os.close(parentfd)
     with (output_dir / "consumption-receipt.json").open("x") as f:
         json.dump(receipt, f, indent=2, sort_keys=True)
         f.write("\n")
@@ -258,6 +305,7 @@ def run(checkpoint_path: Path, corpus: Path, output_dir: Path):
         "classification": decision,
         "rule": "upper 95% source-seed cluster bootstrap CI of model-minus-uniform expected regret is < 0 for both LOCKED_TEST L and J",
         "bootstrap_replicates": BOOTSTRAPS,
+        "validation_comparison": validation_comparison(validation, l_summary, j_result),
     }, indent=2) + "\n")
     return {"l_roots": len(l_rows), "l_sources": len({r[2] for r in l_rows}),
             "j_roots": len(j_rows), "j_sources": len({r[2] for r in j_rows}),
