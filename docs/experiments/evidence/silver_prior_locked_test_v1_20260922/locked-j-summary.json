@@ -1,0 +1,103 @@
+{
+  "metrics": {
+    "l_argmax_regret": {
+      "bootstrap_replicates": 5000,
+      "ci95": [
+        0.09002779230972417,
+        0.3617073241475295
+      ],
+      "cluster": "source_seed",
+      "mean": 0.21210610335216784,
+      "median": 0.0,
+      "roots": 64,
+      "sources": 64
+    },
+    "l_target_expected_regret": {
+      "bootstrap_replicates": 5000,
+      "ci95": [
+        0.293296616847467,
+        0.5594188503824763
+      ],
+      "cluster": "source_seed",
+      "mean": 0.4148901442409819,
+      "median": 0.29721052324825337,
+      "roots": 64,
+      "sources": 64
+    },
+    "model_argmax_regret": {
+      "bootstrap_replicates": 5000,
+      "ci95": [
+        0.5771416878201062,
+        1.6623327452907553
+      ],
+      "cluster": "source_seed",
+      "mean": 1.063694371903883,
+      "median": 0.08801237500010473,
+      "roots": 64,
+      "sources": 64
+    },
+    "model_expected_regret": {
+      "bootstrap_replicates": 5000,
+      "ci95": [
+        1.1542009471343722,
+        2.2114566732082106
+      ],
+      "cluster": "source_seed",
+      "mean": 1.638734465582373,
+      "median": 0.9436192607514187,
+      "roots": 64,
+      "sources": 64
+    },
+    "model_minus_uniform": {
+      "bootstrap_replicates": 5000,
+      "ci95": [
+        -3.587173302035444,
+        -2.2601154279682216
+      ],
+      "cluster": "source_seed",
+      "mean": -2.8955348309232716,
+      "median": -2.345967131106299,
+      "roots": 64,
+      "sources": 64
+    },
+    "pairwise_concordance": {
+      "bootstrap_replicates": 5000,
+      "ci95": [
+        0.672212160669192,
+        0.7985382282647907
+      ],
+      "cluster": "source_seed",
+      "mean": 0.7375223858482787,
+      "median": 0.7654761904761904,
+      "roots": 64,
+      "sources": 64
+    },
+    "soft_prior_headroom_recovery": 0.702905637936102,
+    "teacher_minus_uniform": {
+      "bootstrap_replicates": 5000,
+      "ci95": [
+        -4.891327594166796,
+        -3.3937434178246746
+      ],
+      "cluster": "source_seed",
+      "mean": -4.119379152264663,
+      "median": -3.673444871905133,
+      "roots": 64,
+      "sources": 64
+    },
+    "uniform_expected_regret": {
+      "bootstrap_replicates": 5000,
+      "ci95": [
+        3.8283113305168754,
+        5.2923276994114214
+      ],
+      "cluster": "source_seed",
+      "mean": 4.534269296505645,
+      "median": 4.139700416287695,
+      "roots": 64,
+      "sources": 64
+    }
+  },
+  "roots": 64,
+  "sources": 64
+}

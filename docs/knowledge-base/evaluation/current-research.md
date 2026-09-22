@@ -1545,6 +1545,19 @@ recollected roots or interpret the primary pass as that regression.  See
 [ledger-06 §321](../../experiments/ledger-06.md) and the
 [forced-action evidence](../../experiments/evidence/silver_forced_action_target_2026-09-19/README.md).
 
+The frozen `SilverPriorNetV1` T2/seed-20260922 candidate passed its one-time
+LOCKED_TEST expected-regret gates: on 1,494 held-out L roots the model-minus-
+uniform delta was `-3.23423` (95% source-seed CI `[-3.53464,-2.93676]`), and on
+64 preselected J roots it was `-2.89553` (`[-3.58717,-2.26012]`). The L target
+itself improved locked-J regret over uniform by `4.11938` points; the student
+recovered 70.29% of that soft-prior headroom. This is frozen offline
+generalization evidence, not gameplay qualification or default promotion.
+LOCKED_TEST is consumed and must not be used for tuning. The next experiment is
+the separate oracle/native prior integration: export the frozen network,
+measure native inference cost, then compare uniform-PUCT and learned-prior
+PUCT under small paired Silver budgets. See the [ledger-06 result](../../experiments/ledger-06.md)
+and the [locked-test evidence packet](../../experiments/evidence/silver_prior_locked_test_v1_20260922/README.md).
+
 ### Combat leaf/model variants
 
 Raw deep-search utility targets, repeated DAgger, residual correction, sampled
