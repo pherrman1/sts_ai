@@ -230,14 +230,35 @@ at that boundary. When a retained action and the observed action are
 ordinary gameplay-equivalent cards with different UIDs, it swaps exactly
 those two UIDs throughout the reachable retained subtree and accepts the
 candidate only if the resulting root passes the normal full search-state
-equality check. The retained root hand is then aligned to observed order and
-its card-edge source indices are retargeted by exact card identity before the
-unrelated graph is compacted. This preserves the visits for a human-selected
-equivalent copy without changing `equalForSearch()`, action equivalence,
-global transposition identity, or chance-node identity. Any other card-state
-difference or unsafe queued intermediate state still takes the ordinary fresh
-`candidate_missing` fallback. [ADR-0015](../../../decisions/0015-live-silver-equivalent-copy-reroot.md)
+equality check. Hand-order alignment is limited to `PLAYER_NORMAL` roots
+without macro continuations. It retargets retained card-edge source indices by
+exact card identity and updates each attached chance node's cached stochastic
+card action, which later widening replays against the reordered parent hand.
+A `CARD_SELECT` root or a root with a continuation cannot be aligned safely
+without remapping selection indices and selected bits, so it is not mutated.
+This preserves visits for a human-selected equivalent copy without changing
+`equalForSearch()`, action equivalence, global transposition identity, or
+chance-node identity. Any other card-state difference or unsafe queued
+intermediate state still takes the ordinary fresh `candidate_missing` fallback.
+[ADR-0015](../../../decisions/0015-live-silver-equivalent-copy-reroot.md)
 records this boundary.
+
+In the private complete-fight replay, Silver executes its selected action.
+For a deterministic selected edge, rerooting therefore verifies the observed
+state against that edge's retained decision child. A search-equivalent
+`PLAYER_NORMAL` child whose hand has a different internal order is aligned to
+the observed order when no macro continuation is present. Root card-edge source
+indices and attached chance nodes' cached stochastic card actions are remapped
+by exact card identity while visits and descendant states are retained.
+`CARD_SELECT` permutations and roots with macro continuations are rejected
+without mutation; the private selected-action contract reports a deterministic
+state mismatch. Equivalent-copy UID repair uses the same safe alignment.
+A selected positive-visit edge without a child fails the replay
+invariant. After those repairs, an unexplained mismatch between the selected
+deterministic child and the privately executed state fails with a state
+diagnostic rather than fresh-rooting. Private sequential card-selection
+subdecisions use this same selected-child contract. Chance-outcome matching
+and the configured reuse cap are unchanged.
 
 At a stable live player-decision boundary, the Java `silverRoot.combat`
 projection does not include Silver's native `monsterTurnIdx`. The generic
