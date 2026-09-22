@@ -184,6 +184,18 @@ public final class LiveOocCaptureTest {
                 || LiveOocCapture.clericInitialVisible(0, clericLabels, shrineOptions, 20, 50, 80, 49, 0)
                 || LiveOocCapture.clericInitialVisible(0, clericLabels, shrineOptions, 20, 50, 80, 117, 20))
             throw new AssertionError("Cleric initial public options or amount mismatch");
+        List<Object> deadOptions = Arrays.asList(obj("index", 0), obj("index", 1));
+        List<String> deadLabels = Arrays.asList("[Search] Find Loot. 25%: monster returns.", "[Leave]");
+        String[] deadDescriptions = {"", "", "start", "sentries", "nob", "lagavulin", "end"};
+        if (LiveOocCapture.deadAdventurerPublicEncounter("INTRO", deadLabels, deadOptions,
+                "startnobend", deadDescriptions, 0) != 1
+                || LiveOocCapture.deadAdventurerPublicEncounter("RESULT", deadLabels, deadOptions,
+                        "startnobend", deadDescriptions, 0) != -1
+                || LiveOocCapture.deadAdventurerPublicEncounter("INTRO", deadLabels, deadOptions,
+                        "startnobend", deadDescriptions, 20) != -1
+                || LiveOocCapture.deadAdventurerPublicEncounter("INTRO", deadLabels, deadOptions,
+                        "unknown", deadDescriptions, 0) != -1)
+            throw new AssertionError("Dead Adventurer public encounter or phase mismatch");
         try {
             LiveOocCapture.scrapOozeRetryCount(30, 3, 0);
             throw new AssertionError("non-native Scrap Ooze chance was accepted");

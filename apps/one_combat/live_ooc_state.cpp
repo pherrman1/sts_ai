@@ -548,6 +548,14 @@ ImportResult importLiveOocStateV1(const J &observation, LiveOocStateV1 &out) {
             g.curEvent=event=="Neow" ? Event::NEOW : id<Event>(d.at("event"),Event::INVALID);
             g.info.eventData=integer(d,"eventData",0,100);
             g.info.phase=integer(d,"phase",0,100);
+            if (g.curEvent == Event::DEAD_ADVENTURER) {
+                require(g.info.phase == 0, "Dead Adventurer later phase unsupported");
+                const int encounter = integer(d,"deadAdventurerEncounter",0,2);
+                constexpr MonsterEncounter encounters[] {MonsterEncounter::THREE_SENTRIES,
+                    MonsterEncounter::GREMLIN_NOB, MonsterEncounter::LAGAVULIN_EVENT};
+                g.info.encounter = encounters[encounter];
+                g.info.rewards = {0,1,2}; // Hidden order is shuffled per root sample.
+            }
             if(g.curEvent==Event::SHINING_LIGHT)
                 g.info.hpAmount0=integer(d,"hpAmount0",1,g.maxHp);
             if(g.curEvent==Event::WORLD_OF_GOOP)

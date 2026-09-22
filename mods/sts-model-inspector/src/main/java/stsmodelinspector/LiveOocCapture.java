@@ -5,6 +5,7 @@ import com.megacrit.cardcrawl.cards.AbstractCard;
 import com.megacrit.cardcrawl.core.CardCrawlGame;
 import com.megacrit.cardcrawl.core.Settings;
 import com.megacrit.cardcrawl.dungeons.AbstractDungeon;
+import com.megacrit.cardcrawl.events.exordium.DeadAdventurer;
 import com.megacrit.cardcrawl.map.MapEdge;
 import com.megacrit.cardcrawl.map.MapRoomNode;
 import com.megacrit.cardcrawl.relics.AbstractRelic;
@@ -703,6 +704,21 @@ final class LiveOocCapture {
                 "WomanInBlue").contains(simple);
     }
 
+    static int deadAdventurerPublicEncounter(Object phase, List<?> labels, List<?> options,
+            String body, String[] descriptions, int ascension) {
+        if (!"INTRO".equals(String.valueOf(phase)) || labels.size() != 2 || options.size() != 2
+                || descriptions.length < 7
+                || ((Number)map(options.get(0)).get("index")).intValue() != 0
+                || ((Number)map(options.get(1)).get("index")).intValue() != 1
+                || !String.valueOf(labels.get(0)).contains("[Search]")
+                || !String.valueOf(labels.get(0)).contains((ascension >= 15 ? 35 : 25) + "%")
+                || !String.valueOf(labels.get(1)).contains("[Leave]")) return -1;
+        for (int encounter = 0; encounter < 3; ++encounter)
+            if (body.equals(descriptions[2] + descriptions[3 + encounter] + descriptions[6]))
+                return encounter;
+        return -1;
+    }
+
     static boolean clericInitialVisible(Object phase, List<?> labels, List<?> options,
                                         int healAmount, int purifyCost, int maxHp, int gold,
                                         int ascension) {
@@ -1113,6 +1129,12 @@ final class LiveOocCapture {
                         AbstractDungeon.player.maxHealth, AbstractDungeon.player.gold,
                         AbstractDungeon.ascensionLevel);
         if (cleric) map(out.get("details")).put("hpAmount0", field(event, "healAmt"));
+        int deadAdventurerEncounter = "DeadAdventurer".equals(simple)
+                ? deadAdventurerPublicEncounter(phase, labels, options,
+                        String.valueOf(field(event, "body")), DeadAdventurer.DESCRIPTIONS,
+                        AbstractDungeon.ascensionLevel) : -1;
+        if (deadAdventurerEncounter >= 0)
+            map(out.get("details")).put("deadAdventurerEncounter", deadAdventurerEncounter);
         if ("WeMeetAgain".equals(simple) && "INTRO".equals(String.valueOf(phase))) {
             Map<String,Object> details = map(out.get("details"));
             Object offeredPotion = field(event, "potionOption");
@@ -1155,7 +1177,7 @@ final class LiveOocCapture {
                 && !goop
                 && !goldShrine
                 && !nestDecisionVisible(simple, phase, labels, options, AbstractDungeon.ascensionLevel)
-                && !idolTrap && !goldenWing && !cleric)
+                && !idolTrap && !goldenWing && !cleric && deadAdventurerEncounter < 0)
             out.put("unsupportedReason", "EVENT_PHASE_UNREPRESENTABLE:" + id + ":" + phase);
         if ("NeowEvent".equals(simple)) {
             List<Object> offers = new ArrayList<>();

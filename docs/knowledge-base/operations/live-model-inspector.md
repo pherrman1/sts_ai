@@ -531,6 +531,10 @@ The Cleric's initial three-option phase is qualified when the displayed heal
 and purge costs match the native values; its public heal amount enters
 `StateInfo.hpAmount0`. Other phases and unavailable purge choices still fail
 closed.
+Dead Adventurer's initial Search/Leave phase is qualified only when its public
+description identifies one of the three native elite encounters and the shown
+search chance matches ascension. The importer retains that public encounter and
+samples the hidden reward order. Later search phases remain unsupported.
 The private Java
 `potionChance` and `cardRarityFactor` counters are not captured. Roots such
 as Library, Mushrooms and Mysterious Sphere whose pre-MAP

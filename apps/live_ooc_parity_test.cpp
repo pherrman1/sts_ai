@@ -446,6 +446,27 @@ int main(int argc,char **argv){try{
     bad=wire;for(int x=0;x<7;++x)bad["ooc"]["publicState"]["map"]["nodes"][x]["edges"]={3};reject(bad);
     advisor::LiveOocStateV1 live;check(advisor::importLiveOocStateV1(wire,live).ok,"baseline import");
     {
+        auto dead=base;
+        dead.screenState=ScreenState::EVENT_SCREEN;
+        dead.curEvent=Event::DEAD_ADVENTURER;
+        dead.info.phase=0;
+        dead.info.encounter=MonsterEncounter::GREMLIN_NOB;
+        dead.info.rewards={0,1,2};
+        auto deadWire=project(dead,path,"dead_adventurer_initial");
+        deadWire["ooc"]["details"]["deadAdventurerEncounter"]=1;
+        advisor::LiveOocStateV1 deadLive;
+        check(advisor::importLiveOocStateV1(deadWire,deadLive).ok,
+            "Dead Adventurer public encounter failed import");
+        check(deadLive.mctsRoot.state.info.encounter==MonsterEncounter::GREMLIN_NOB
+                && deadLive.mctsRoot.state.info.rewards==std::array<int,3>{0,1,2},
+            "Dead Adventurer encounter or hidden-reward support lost");
+        auto missing=deadWire;
+        missing["ooc"]["details"].erase("deadAdventurerEncounter");
+        advisor::LiveOocStateV1 unsupported;
+        check(!advisor::importLiveOocStateV1(missing,unsupported).ok,
+            "Dead Adventurer missing public encounter was accepted");
+    }
+    {
         auto opaqueParent=base;
         opaqueParent.screenState=ScreenState::REWARDS;
         opaqueParent.info.rewardsContainer.clear();
