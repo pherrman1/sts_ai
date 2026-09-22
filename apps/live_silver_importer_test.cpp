@@ -2011,6 +2011,15 @@ int main() {
             regenMapped |= status == static_cast<std::int16_t>(PlayerStatus::REGEN) && amount == 5;
         if (!regenImported.ok || !regenMapped)
             throw std::runtime_error("player Regeneration potion power parity failed");
+        auto doubleTapPower = general;
+        doubleTapPower["silverRoot"]["combat"]["playerPowers"] = json::array({
+            json{{"id", "Double Tap"}, {"amount", 1}}});
+        const auto doubleTapImported = one_combat::advisor::importSilverRoot(doubleTapPower);
+        bool doubleTapMapped = false;
+        for (const auto &[status, amount] : doubleTapImported.wire.player.statusMap)
+            doubleTapMapped |= status == static_cast<std::int16_t>(PlayerStatus::DOUBLE_TAP) && amount == 1;
+        if (!doubleTapImported.ok || !doubleTapMapped)
+            throw std::runtime_error("player Double Tap power parity failed");
         auto blueSlaver = general;
         blueSlaver["silverRoot"]["encounter"] = "BLUE_SLAVER";
         auto &blueSlaverMonster = blueSlaver["silverRoot"]["combat"]["monsters"][0];
