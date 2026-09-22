@@ -36,4 +36,6 @@ void validateLiveOocActionSet(const LiveOocStateV1 &state, const std::vector<std
                               bool allowEquivalentDeckCards = false);
 std::vector<std::uint32_t> liveOocPrimitiveBits(const LiveOocStateV1 &state);
 std::optional<nlohmann::json> forcedRewardGoldLiveAction(const LiveOocStateV1 &state);
+std::optional<std::pair<std::string, nlohmann::json>> forcedOrdinaryRewardLiveAction(
+    const LiveOocStateV1 &state);
 } // namespace one_combat::advisor

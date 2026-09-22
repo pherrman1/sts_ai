@@ -162,6 +162,33 @@ int main(int argc,char **argv){try{
         check(advisor::importLiveOocStateV1(afterSecond, noGold).ok, "gold-removed fixture import");
         check(!advisor::forcedRewardGoldLiveAction(noGold).has_value(),
             "live gold pass-through persisted after all gold choices were removed");
+
+        for (const auto &[relic, forced] : std::vector<std::pair<RelicId, bool>>{
+                 {RelicId::ANCHOR, true}, {RelicId::STRANGE_SPOON, false},
+                 {RelicId::BOTTLED_FLAME, false}, {RelicId::UNCEASING_TOP, false}}) {
+            auto offer = base;
+            offer.screenState = ScreenState::REWARDS;
+            offer.info.rewardsContainer.clear();
+            offer.info.rewardsContainer.addRelic(relic);
+            advisor::LiveOocStateV1 imported;
+            check(advisor::importLiveOocStateV1(project(offer, path, "forced_relic"), imported).ok,
+                "relic pass-through fixture import");
+            const auto pick = advisor::forcedOrdinaryRewardLiveAction(imported);
+            check(pick.has_value() == forced,
+                "relic pass-through exception mismatch id=" + std::to_string(static_cast<int>(relic))
+                + " selected=" + (pick ? pick->first : "none"));
+            if (pick) check(pick->first == "relic" && pick->second.value("kind", "") == "choose",
+                "relic pass-through lost live choice");
+        }
+        auto potion = base;
+        potion.screenState = ScreenState::REWARDS;
+        potion.info.rewardsContainer.clear();
+        potion.info.rewardsContainer.addPotion(Potion::FIRE_POTION);
+        advisor::LiveOocStateV1 importedPotion;
+        check(advisor::importLiveOocStateV1(project(potion, path, "forced_potion"), importedPotion).ok,
+            "potion pass-through fixture import");
+        const auto potionPick = advisor::forcedOrdinaryRewardLiveAction(importedPotion);
+        check(potionPick && potionPick->first == "potion", "free potion was not forced");
     }
     std::vector<std::pair<std::string,GameContext>> fixtures;
     auto add=[&](std::string n,GameContext g){fixtures.emplace_back(n,g);};

@@ -243,7 +243,7 @@ OocGameContextModel::OocGameContextModel(const GameContext &gc, const PathHistor
     if (!dependencies.potionKeepValue) dependencies.potionKeepValue = [](const GameContext &) { return 4.0; };
     if (!dependencies.stopAfterAct) dependencies.stopAfterAct = [] { return 0; };
     auto root = detachedCopy(gc);
-    collectForcedRewardGold(root);
+    collectForcedOrdinaryRewards(root);
     auto history = path;
     history.update(root);
     states.push_back({std::move(root), history, {}});
@@ -557,7 +557,7 @@ sts::search::OocStateId OocGameContextModel::sampleSuccessor(sts::search::OocSta
         const auto executed = sts::search::executeOocSemanticAction(child.gc, *it->semantic);
         if (!executed.ok) throw sts::search::OocSearchUnsupported("semantic_execution:" + executed.error);
     } else it->primitive.execute(child.gc);
-    collectForcedRewardGold(child.gc);
+    collectForcedOrdinaryRewards(child.gc);
     child.path.update(child.gc);
     const bool enteredCombat = child.gc.screenState == sts::ScreenState::BATTLE;
     const auto encounter = enteredCombat ? child.gc.info.encounter : sts::MonsterEncounter::INVALID;
@@ -1115,7 +1115,7 @@ bool oocMctsPolicyStep(GameContext &gc, const PathHistory &path, std::uint64_t s
     if (sts::search::g_onGameActionExecute && gc.screenState != sts::ScreenState::MAP_SCREEN) {
         ++metrics.fallback; ++metrics.continuation.supportReasons["semantic_observer_active"]; return false;
     }
-    collectForcedRewardGold(gc);
+    collectForcedOrdinaryRewards(gc);
     std::optional<OocGameContextModel::Candidate> selected;
     const auto result = selectOocMctsAction(gc, path, seed, index, liveSimulations, liveSampler, samples, &continuation, &selected);
     profile.stop();
@@ -1590,7 +1590,7 @@ void oocMctsAdapterSelfTest() {
     // execute each semantic edge, and audit the source-level prior bridge.
     auto checkCandidates = [&](GameContext fixture, bool execute=true) {
         auto canonical = detachedCopy(fixture);
-        collectForcedRewardGold(canonical);
+        collectForcedOrdinaryRewards(canonical);
         const auto before=test::oocStateFingerprint(canonical);
         const auto bindings=enumerateOocSemanticPrimitiveBindings(canonical);
         std::vector<sts::search::OocSemanticPrimitiveBinding> representatives;
@@ -1624,7 +1624,7 @@ void oocMctsAdapterSelfTest() {
                 auto expected=detachedCopy(canonical);
                 const auto result=executeOocSemanticAction(expected,*candidate.semantic);
                 require(result.ok,"fixture semantic execution succeeds");
-                collectForcedRewardGold(expected);
+                collectForcedOrdinaryRewards(expected);
                 const auto child=provider.sampleSuccessor(0,actual[i].id,rng);
                 require(test::oocStateFingerprint(provider.state(child))==test::oocStateFingerprint(expected),
                     "adapter semantic edge reaches complete transactional successor");
