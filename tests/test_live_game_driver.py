@@ -119,6 +119,21 @@ class LiveGameDriverTest(unittest.TestCase):
         actions = build_legal_actions({"screen_type": "NONE", "room_phase": "COMBAT"}, ["use_potion"], nested)
         self.assertEqual(actions[0].mcp_arguments, {"potion_slot": 1, "target_index": 1})
 
+    def test_smoke_bomb_ignores_mcp_monster_target(self):
+        screen = combat_screen(potions=[
+            {"id": "SmokeBomb", "requires_target": True, "can_use": True}],
+            monsters=[{"id": "Cultist", "current_hp": 52},
+                      {"id": "Chosen", "current_hp": 98}])
+        actions = build_legal_actions(screen, ["use_potion"])
+        self.assertEqual(len(actions), 2)
+        self.assertEqual(map_silver_action(
+            {"kind": "potion", "potionSlot": 1, "discard": False}, actions).mcp_arguments,
+            {"potion_slot": 1, "target_index": 1})
+        screen["potions"][0]["id"] = "FirePotion"
+        with self.assertRaises(IntegrationFailure):
+            map_silver_action({"kind": "potion", "potionSlot": 1, "discard": False},
+                              build_legal_actions(screen, ["use_potion"]))
+
     def test_potion_candidates_require_advertised_legality(self):
         screen = {"screen_type": "NONE", "room_phase": "COMBAT", "potions": [
             {"id": "Block Potion", "can_discard": True},

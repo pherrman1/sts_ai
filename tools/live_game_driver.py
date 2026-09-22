@@ -321,7 +321,8 @@ def build_legal_actions(screen: Mapping[str, Any], commands: Mapping[str, Any] |
                     continue
                 if tool == "discard_potion" and not can_discard:
                     continue
-                semantic = {"kind": "potion", "potion_slot": index + 1, "discard": tool == "discard_potion"}
+                semantic = {"kind": "potion", "potion_id": potion_id,
+                            "potion_slot": index + 1, "discard": tool == "discard_potion"}
                 args = {"potion_slot": index + 1}
                 requires_target = potion.get("requires_target", potion.get("requiresTarget", potion.get("has_target", False)))
                 for target in (targets if requires_target else [None]):
@@ -412,6 +413,18 @@ def map_silver_action(selected_live_action: Any, candidates: Sequence[LegalActio
     if not isinstance(selected_live_action, Mapping):
         raise IntegrationFailure("Silver response has no structured selectedLiveAction")
     matches = [candidate for candidate in candidates if _semantic_match(selected_live_action, candidate)]
+    if (len(matches) > 1 and selected_live_action.get("kind") == "potion"
+            and selected_live_action.get("discard") is False
+            and "targetIndex" not in selected_live_action
+            and "target_index" not in selected_live_action
+            and all(candidate.mcp_tool == "use_potion"
+                    and candidate.semantic.get("potion_id") == "SmokeBomb"
+                    and candidate.semantic.get("potion_slot") == selected_live_action.get("potionSlot")
+                    and isinstance(candidate.semantic.get("target_index"), int)
+                    for candidate in matches)):
+        # Vanilla SmokeBomb.use overwrites its AbstractCreature argument with
+        # the player, so the MCP-required monster target has no game effect.
+        return min(matches, key=lambda candidate: candidate.semantic["target_index"])
     if len(matches) != 1:
         raise IntegrationFailure(f"Silver action mapping expected exactly one candidate, got {len(matches)} for {selected_live_action!r}")
     return matches[0]
