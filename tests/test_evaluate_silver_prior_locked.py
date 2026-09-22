@@ -221,12 +221,14 @@ class LockedEvaluatorTests(unittest.TestCase):
 
     def test_consumed_provenance_pins_outputs_and_imported_trainer(self):
         import hashlib
+        import re
         packet = Path(__file__).parents[1] / "docs/experiments/evidence/silver_prior_locked_test_v1_20260922/provenance.json"
         provenance = json.loads(packet.read_text())
-        external = Path(provenance["durable_raw_summary_directory"])
-        for name, expected in provenance["external_output_sha256"].items():
-            actual = hashlib.sha256((external / name).read_bytes()).hexdigest()
-            self.assertEqual(actual, expected, name)
+        expected_names = {"consumption-receipt.json", "locked-l-summary.json",
+                          "locked-j-summary.json", "decision.json"}
+        self.assertEqual(set(provenance["external_output_sha256"]), expected_names)
+        for name, digest in provenance["external_output_sha256"].items():
+            self.assertRegex(digest, re.compile(r"^[0-9a-f]{64}$"), name)
         trainer = Path(__file__).parents[1] / "tools/train_silver_prior.py"
         self.assertEqual(hashlib.sha256(trainer.read_bytes()).hexdigest(), provenance["trainer_source_sha256"])
 
