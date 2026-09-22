@@ -2001,6 +2001,17 @@ int main() {
             || !potionDiscovery.wire.cardSelect.canPickZero
             || potionDiscovery.wire.cardSelect.data0 != 1)
             throw std::runtime_error("observed Skill Potion selector did not preserve optional Discovery");
+        general["silverRoot"]["combat"]["cardSelect"] = json{
+            {"task", "LIQUID_MEMORIES_POTION"}, {"cards", json::array()},
+            {"pickCount", 1}, {"canPickZero", false}};
+        auto liquidMemories = one_combat::advisor::importSilverRoot(general, eyeContext);
+        if (!liquidMemories.ok || liquidMemories.wire.cardSelect.task
+                != static_cast<std::int16_t>(CardSelectTask::LIQUID_MEMORIES_POTION))
+            throw std::runtime_error("observed Liquid Memories grid did not reach its supported native task");
+        general["silverRoot"]["combat"]["cardSelect"]["task"] = "HOLOGRAM";
+        auto unsupportedPortTask = one_combat::advisor::importSilverRoot(general, eyeContext);
+        if (unsupportedPortTask.ok || unsupportedPortTask.reason != "silver_selection_task_not_in_port")
+            throw std::runtime_error("unavailable Silver port selector was allowed to abort the advisor");
         one_combat::advisor::SilverImportContext loweringContext;
         loweringContext.cardIds = {{"copy-a", 17}, {"copy-b", 23}};
         silver_bridge::SemanticAction loweringAction;

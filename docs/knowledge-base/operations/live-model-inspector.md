@@ -606,6 +606,12 @@ same native action with a public optional skip; capture preserves that flag,
 and Silver enumerates and lowers the skip alongside the three card choices.
 Mandatory Discovery remains a three-choice selector. Unknown combat card-reward selectors stay
 fail-closed. Combat `GRID`/`HAND_SELECT` boundaries also use Silver.
+Liquid Memories' GRID task is identified from the live
+`BetterDiscardPileToHandAction` cost-zero fields. Its generic return-to-hand
+prompt also appears for Hologram and cannot classify the task by itself.
+Selectors named in the shared enum but absent from the isolated Silver port
+return `silver_selection_task_not_in_port` before search instead of reaching
+its assertion path.
 Combat capture uses the room's `COMBAT` phase, including event rooms, rather
 than requiring a monster-room subclass. Selection boundary detection is
 independent of native serializer support: an unknown selection task remains

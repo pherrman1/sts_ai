@@ -558,8 +558,22 @@ SilverRootImportResult importSilverRootGeneric(const json &observation,
     // A stable combat selection is still combat when its action has no native
     // serializer. Reject that explicit support boundary before inspecting the
     // unrelated normal-play state or requiring predecessor reconstruction.
-    if (cardSelect && !live_silver::cardSelectTask(selectionIt->value("task", std::string())))
-        return unsupported("silver_unmapped_selection_task");
+    if (cardSelect) {
+        const auto task = live_silver::cardSelectTask(selectionIt->value("task", std::string()));
+        if (!task) return unsupported("silver_unmapped_selection_task");
+        // The isolated Silver port enumerates a smaller selector set than the
+        // shared enum. Reject those tasks before its assertion-bearing search.
+        switch (*task) {
+        case sts::CardSelectTask::HOLOGRAM:
+        case sts::CardSelectTask::MEDITATE:
+        case sts::CardSelectTask::NIGHTMARE:
+        case sts::CardSelectTask::RECYCLE:
+        case sts::CardSelectTask::SEEK:
+        case sts::CardSelectTask::SETUP:
+            return unsupported("silver_selection_task_not_in_port");
+        default: break;
+        }
+    }
     if (!combat.contains("damageTrackingExact")
         || !combat.at("damageTrackingExact").is_boolean()
         || !combat.at("damageTrackingExact").get<bool>())

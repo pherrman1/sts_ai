@@ -2075,7 +2075,10 @@ public final class STSModelInspector implements PostInitializeSubscriber,
             com.megacrit.cardcrawl.screens.select.GridCardSelectScreen screen =
                     AbstractDungeon.gridSelectScreen;
             Integer amount = readIntField(screen, "numCards", "cardSelectAmount");
-            String task = selectionTask(readStringField(screen, "tipMsg", "lastTip"), screen.anyNumber);
+            Object current = AbstractDungeon.actionManager == null ? null
+                    : AbstractDungeon.actionManager.currentAction;
+            String task = liquidMemoriesSelection(current) ? "LIQUID_MEMORIES_POTION"
+                    : selectionTask(readStringField(screen, "tipMsg", "lastTip"), screen.anyNumber);
             if (task.isEmpty() && screen.forUpgrade) task = "ARMAMENTS";
             return selectionJson(task, false, screen.anyNumber, amount == null ? 1 : amount,
                     screen.targetGroup == null ? null : screen.targetGroup.group);
@@ -2103,6 +2106,16 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         return Boolean.TRUE.equals(discovery) && skippable != null
                 && copyCount != null && (copyCount == 1 || copyCount == 2)
                 && offerCount == 3;
+    }
+
+    private static boolean liquidMemoriesSelection(Object current) {
+        return zeroCostDiscardReturn(
+                current instanceof com.megacrit.cardcrawl.actions.common.BetterDiscardPileToHandAction,
+                readBooleanField(current, "setCost"), readIntField(current, "newCost"));
+    }
+
+    static boolean zeroCostDiscardReturn(boolean discardReturnAction, Boolean setCost, Integer newCost) {
+        return discardReturnAction && Boolean.TRUE.equals(setCost) && Integer.valueOf(0).equals(newCost);
     }
 
     private static String combatJson() {
@@ -2611,7 +2624,9 @@ public final class STSModelInspector implements PostInitializeSubscriber,
 
         private void drainErrors(Process p) {
             try (BufferedReader r = new BufferedReader(new InputStreamReader(p.getErrorStream(), StandardCharsets.UTF_8))) {
-                while (r.readLine() != null) { /* drain; diagnostics stay out of the game UI */ }
+                String line;
+                while ((line = r.readLine()) != null)
+                    System.err.println("sts-model-inspector advisor stderr: " + line);
             } catch (IOException ignored) {}
         }
 

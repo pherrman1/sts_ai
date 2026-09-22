@@ -50,6 +50,11 @@ public final class CombatBoundaryTest {
                 || STSModelInspector.qualifiedDiscoverySelection(true, true, 1, 2)
                 || !potionDiscovery.get("canPickZero").getAsBoolean())
             throw new AssertionError("optional potion Discovery was not distinguished from mandatory Discovery");
+        if (!STSModelInspector.zeroCostDiscardReturn(true, true, 0)
+                || STSModelInspector.zeroCostDiscardReturn(true, false, 0)
+                || STSModelInspector.zeroCostDiscardReturn(true, true, 1)
+                || STSModelInspector.zeroCostDiscardReturn(false, true, 0))
+            throw new AssertionError("Liquid Memories selector was confused with Hologram");
         for (int counter : new int[]{0, 1, 2, 3, -1, -2}) {
             if (STSModelInspector.combatEntryRelicData("NeowsBlessing", counter, false) != counter)
                 throw new AssertionError("active/invalid Neow counter changed");
