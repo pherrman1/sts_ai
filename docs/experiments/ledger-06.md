@@ -10993,6 +10993,42 @@ default or generalization claim is authorized. Evidence:
   matched. This verifies conservative legacy behavior, not positive
   live-policy qualification. [Corrected raw packet](evidence/silver_quiescent_queue_item_20260922/README.md).
 
+## Silver prior model v1 — Stage A stopped before VALIDATION J (2026-09-22)
+
+- **Question and boundary:** Complete the predeclared structured policy-only
+  Stage A using TRAIN L, VALIDATION L, then the 64 preselected VALIDATION J
+  roots. No Silver integration, gameplay, or LOCKED_TEST evaluation was
+  permitted.
+- **Implementation and throughput:** Baseline `a2d50b1810ebac6cb3ae25009f3cadef3068c928`;
+  reviewed trainer commit `4c724e40`. The vectorized `SilverPriorNetV1` has
+  232,665 parameters. The one-epoch CPU T1 probe processed 8,862 roots and
+  57,012 actions in 1.361 seconds (6,513 roots/s; 41,900 actions/s; peak RSS
+  555,624 KiB). All 19 trainer tests passed and `git diff --check` passed.
+- **Stage-A L result:** With initialization seed `20260922`, TRAIN-only
+  `tau0=0.5899875000025645` and temperatures `0.29499375000128225`,
+  `0.5899875000025645`, `1.179975000005129`, all arms stopped at epoch 45 by
+  the declared patience rule. Their validation target CEs were 1.40496, 1.40160,
+  and 1.40785. The model-minus-uniform expected-regret differences were
+  -3.20118 [-3.47135, -2.96099], -3.17542 [-3.44476, -2.93642], and
+  -3.14024 [-3.40932, -2.90211], respectively (95% source-cluster bootstrap,
+  5,000 replicates). All arms pass the L gate only.
+- **J evaluation stop:** The sealed selection contains 64 preselected
+  VALIDATION J roots. All 64 corresponding J shard paths are absent from disk
+  and absent from the sealed release file list. The dedicated loader stopped
+  on the first selected J path before reading a J label. It did not substitute
+  roots. No J result, eligible temperature, candidate selection, or robustness
+  run exists.
+- **Locked-test boundary:** `locked_test_labels_opened=false`.
+  `metadata_deviation="LOCKED_TEST root/action counts observed before freeze; labels untouched"`.
+  No LOCKED_TEST labels, predictions, outcomes, or shards were inspected.
+- **Decision and limits:** The experiment is incomplete due to missing
+  permitted VALIDATION J artifacts, not a negative result. Continue only after
+  restoring those exact selected artifacts under the frozen release or
+  explicitly reviewing a new sealed corpus release. Do not select a model from
+  L-only evidence. [Evidence packet](evidence/silver_prior_model_v1_20260922/README.md).
+  **Knowledge impact:** trainer workflow is in the maintained Silver prior
+  operations page; no Silver behavior or model promotion changed.
+
 - **Fresh native production-path smoke and replayable provenance:** Functional
   SHA `06279a8644492e9ef9cea813455ddfe841425380` added trusted v2
   hard-combat capture of the source queue proof; v1 remains conservative.
