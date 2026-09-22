@@ -48,6 +48,18 @@ class RenderOocMctsTest(unittest.TestCase):
         self.assertIn('ARCHIVED REAL-GAME OBSERVATION REPLAY', html)
         self.assertNotIn('TEST FIXTURE: map_multiple_children', html)
 
+    def test_native_simulator_capture_is_labeled(self):
+        tree = self.snapshot()['response']['advisor']['evaluators'][0]['tree']
+        native = {'source': 'native_sts_lightspeed_search', 'seed': 17,
+                  'decisionIndex': 1, 'aborted': False,
+                  'selectedSemanticKey': 'ooc-action', 'tree': tree}
+        html = render(native)
+        self.assertIn('NATIVE STS_LIGHTSPEED SEARCH', html)
+        self.assertIn('Native seed 17', html)
+        native['aborted'] = True
+        with self.assertRaisesRegex(ValueError, 'no completed OOC decision'):
+            render(native)
+
 
 if __name__ == '__main__':
     unittest.main()

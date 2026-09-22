@@ -28,6 +28,8 @@ namespace one_combat {
 static_assert(!std::is_constructible_v<OocGameContextModel, const GameContext &>,
               "OOC MCTS roots must require explicit PathHistory");
 namespace {
+std::string liveGraphPath;
+std::uint64_t liveGraphDecisionIndex = 1;
 GameContext detachedCopy(const GameContext &parent) {
     GameContext child = parent;
     if (parent.map) child.map = std::make_shared<sts::Map>(*parent.map);
@@ -797,7 +799,15 @@ void configureLiveOocMcts() {
     liveRootLockTrace.clear();
     liveCheckpointTrace.clear();
     liveSimulations = 512; liveConfig = {}; liveOptions = {true};
+    liveGraphPath.clear(); liveGraphDecisionIndex = 1;
     if (!liveEnabled) return;
+    if (const char *path = std::getenv("STS_OOC_MCTS_GRAPH_FILE")) liveGraphPath = path;
+    if (const char *index = std::getenv("STS_OOC_MCTS_GRAPH_DECISION_INDEX")) {
+        const std::string value(index);
+        if (value.empty() || value.find_first_not_of("0123456789") != std::string::npos)
+            throw std::runtime_error("STS_OOC_MCTS_GRAPH_DECISION_INDEX must be a nonnegative integer");
+        liveGraphDecisionIndex = std::stoull(value);
+    }
     if (sts::search::silverLiveReuseCap() != 32768)
         throw std::runtime_error("live OOC MCTS requires frozen Silver reuse cap 32768");
     if (!g_oocStrategicTokNet.ok) throw std::runtime_error("STS_OOC_MCTS requires native V4 policy");
@@ -880,8 +890,57 @@ sts::search::OocMctsResult selectOocMctsAction(const GameContext &gc, const Path
     if (model.terminalValue(0) || model.isLeafBoundary(0)) return {};
     auto config = liveConfig;
     config.seed = oocMctsSearchSeed(seed, index);
+    config.captureTree = !liveGraphPath.empty() && index == liveGraphDecisionIndex;
     if (!simulations) throw std::invalid_argument("OOC MCTS requires simulations > 0");
     const auto result = searchWithSoleRootShortcut(model, config, model.soleLegalAction(0), simulations);
+    if (config.captureTree) {
+        nlohmann::json captured = {{"accepted", result.tree.has_value()}, {"rootId", 0},
+            {"truncated", result.tree && result.tree->truncated},
+            {"nodes", nlohmann::json::array()}, {"edges", nlohmann::json::array()}};
+        if (result.tree) {
+            static const char *screens[] = {"invalid", "event", "rewards", "boss relic",
+                "card select", "map", "treasure", "rest", "shop", "battle"};
+            for (const auto &node : result.tree->nodes) {
+                std::string label, outcome;
+                if (node.chance) {
+                    label = model.candidate(node.state, node.action).key;
+                } else {
+                    const auto &state = model.state(node.state);
+                    const auto screen = static_cast<unsigned>(state.screenState);
+                    outcome = state.outcome == sts::GameOutcome::PLAYER_LOSS ? "loss"
+                        : state.outcome == sts::GameOutcome::PLAYER_VICTORY ? "victory" : "undecided";
+                    label = (outcome == "loss" ? "Sampled loss · " : outcome == "victory" ? "Victory · " : "")
+                        + std::string("Floor ") + std::to_string(state.floorNum) + " · HP "
+                        + std::to_string(state.curHp) + "/" + std::to_string(state.maxHp)
+                        + " · " + (screen < 10 ? screens[screen] : "unknown screen");
+                }
+                captured["nodes"].push_back({{"id", node.id}, {"kind", node.chance ? "chance" : "state"},
+                    {"stateId", std::to_string(node.state)}, {"actionId", node.action},
+                    {"label", label}, {"outcome", outcome}, {"depth", node.depth},
+                    {"visits", node.visits}, {"prior", node.chance ? nlohmann::json(node.prior) : nlohmann::json(nullptr)},
+                    {"q", node.chance && node.visits ? nlohmann::json(node.q) : nlohmann::json(nullptr)}});
+            }
+            for (const auto &edge : result.tree->edges)
+                captured["edges"].push_back({{"parentId", edge.parentId},
+                    {"childId", edge.childId ? nlohmann::json(*edge.childId) : nlohmann::json(nullptr)},
+                    {"visits", edge.visits}, {"kind", edge.particle ? "particle" : "action"}});
+        }
+        nlohmann::json actions = nlohmann::json::array();
+        for (const auto &action : result.rootActions)
+            actions.push_back({{"semanticKey", model.candidate(0, action.id).key},
+                {"visits", action.visits}, {"q", action.q}, {"prior", action.prior}});
+        const nlohmann::json capture = {{"source", "native_sts_lightspeed_search"},
+            {"seed", seed}, {"decisionIndex", index}, {"searchSeed", config.seed},
+            {"floor", gc.floorNum}, {"screen", int(gc.screenState)},
+            {"hp", gc.curHp}, {"maxHp", gc.maxHp},
+            {"requestedSimulations", simulations}, {"completedSimulations", result.metrics.simulations},
+            {"aborted", result.aborted}, {"abortReason", result.abortReason},
+            {"selectedSemanticKey", result.selectedAction ? model.candidate(0, *result.selectedAction).key : ""},
+            {"candidateSummaries", actions}, {"tree", captured}};
+        std::ofstream out(liveGraphPath, std::ios::trunc);
+        if (!out || !(out << capture.dump(2) << '\n'))
+            throw std::runtime_error("STS_OOC_MCTS_GRAPH_FILE write failed");
+    }
     if (!result.selectedAction && !result.aborted) throw std::runtime_error("live OOC MCTS missing selected root action");
     if (selected && result.selectedAction) *selected = model.candidate(0, *result.selectedAction);
     if (config.observeRootLock) {

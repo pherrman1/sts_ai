@@ -26,9 +26,16 @@
   d3.select(canvas).call(zoom).on('dblclick.zoom',null);
   $('identity').textContent=payload.identity.session+' · #'+payload.identity.sequence;
   $('provenance').textContent=payload.fixture?'TEST FIXTURE: '+payload.fixture:
+    payload.provenance?.kind==='native_sts_lightspeed_search'?
+      'NATIVE STS_LIGHTSPEED SEARCH':
     payload.provenance?.kind==='archived_real_game_observation_replay'?
       'ARCHIVED REAL-GAME OBSERVATION REPLAY':'Advisor capture';
-  $('capture').textContent=tree.truncated?'Capture truncated':'Capture complete';
+  const outcomes=tree.nodes.filter(n=>n.kind==='state').reduce((counts,n)=>{
+    counts[n.outcome]=(counts[n.outcome]||0)+1;return counts;
+  },{});
+  $('capture').textContent=(tree.truncated?'Capture truncated':'Capture complete')+
+    ' · '+(outcomes.loss||0)+' sampled loss states · '+
+    (outcomes.undecided||0)+' undecided states';
   function label(n){return n.label || (n.kind==='chance'?'Action #'+n.actionId:
     'Particle state '+n.stateId);}
   function inspect(item){

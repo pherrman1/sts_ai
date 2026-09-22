@@ -239,6 +239,15 @@ same normal real combat branch and the same fallback OOC policy chain.
 
 `selectOocMctsAction` constructs detached snapshots and uses the existing PUCT,
 progressive widening and depth defaults with `STS_OOC_MCTS_SIMS` (default 512).
+For a native simulator graph, set `STS_OOC_MCTS_GRAPH_FILE` to a fresh JSON path
+and `STS_OOC_MCTS_GRAPH_DECISION_INDEX` to the zero-based nonbattle decision
+index (default 1). The selected search captures up to 4,096 tree nodes after
+search, labels them from the native `GameContext` and model action keys,
+and writes seed, search seed, root state, candidates, selected action, and
+truncation status. Render with `tools/render_ooc_mcts.py --snapshot JSON
+--output HTML`. This is an opt-in diagnostic of the ordinary simulator search;
+the graph's loss nodes are sampled terminal outcomes, not independently played
+games, and their stored HP can retain its precombat value.
 Its search seed is `SplitMix64(runSeed XOR SplitMix64(decisionIndex))`, using
 explicit unsigned 64-bit arithmetic. The index increments once per actual
 nonbattle run-loop decision, including unsupported roots. It consumes no

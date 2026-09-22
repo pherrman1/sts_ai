@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Render an opt-in live OOC MCTS search capture as portable HTML."""
+"""Render an opt-in advisor or native OOC MCTS search capture as portable HTML."""
 from __future__ import annotations
 
 import argparse
@@ -11,32 +11,45 @@ SCRIPT = Path(__file__).parent / "ooc_graph_viewer" / "app.js"
 
 
 def render(snapshot: dict) -> str:
-    observation = snapshot.get("observation") or {}
-    response = snapshot.get("response") or {}
-    if observation.get("boundary") == "combat":
-        raise ValueError("snapshot is a combat observation")
-    identity = {key: snapshot.get(key) for key in ("session", "sequence", "observationHash")}
-    advisor = response.get("advisor") or {}
-    if (response.get("ready") is not True
-            or not isinstance(identity["session"], str) or not identity["session"]
-            or type(identity["sequence"]) is not int or identity["sequence"] < 0
-            or not isinstance(identity["observationHash"], str) or not identity["observationHash"]
-            or any(response.get(key) != value for key, value in identity.items())
-            or any(key in advisor and advisor[key] != value for key, value in identity.items())):
-        raise ValueError("snapshot response is not ready or does not match its observation")
-    evaluators = [e for e in advisor.get("evaluators", [])
-                  if e.get("id") == "live_ooc_decision_v1"]
-    if len(evaluators) != 1:
-        raise ValueError("snapshot has no unique live OOC evaluator")
-    evaluator = evaluators[0]
+    native = snapshot.get("source") == "native_sts_lightspeed_search"
+    if native:
+        if (type(snapshot.get("seed")) is not int or snapshot["seed"] < 0
+                or type(snapshot.get("decisionIndex")) is not int or snapshot["decisionIndex"] < 0
+                or snapshot.get("aborted") or not snapshot.get("selectedSemanticKey")):
+            raise ValueError("native capture has no completed OOC decision")
+        identity = {"session": f"Native seed {snapshot['seed']}",
+                    "sequence": snapshot["decisionIndex"], "observationHash": ""}
+        evaluator = {key: snapshot.get(key) for key in
+                     ("candidateSummaries", "selectedSemanticKey", "tree")}
+    else:
+        observation = snapshot.get("observation") or {}
+        response = snapshot.get("response") or {}
+        if observation.get("boundary") == "combat":
+            raise ValueError("snapshot is a combat observation")
+        identity = {key: snapshot.get(key) for key in ("session", "sequence", "observationHash")}
+        advisor = response.get("advisor") or {}
+        if (response.get("ready") is not True
+                or not isinstance(identity["session"], str) or not identity["session"]
+                or type(identity["sequence"]) is not int or identity["sequence"] < 0
+                or not isinstance(identity["observationHash"], str) or not identity["observationHash"]
+                or any(response.get(key) != value for key, value in identity.items())
+                or any(key in advisor and advisor[key] != value for key, value in identity.items())):
+            raise ValueError("snapshot response is not ready or does not match its observation")
+        evaluators = [e for e in advisor.get("evaluators", [])
+                      if e.get("id") == "live_ooc_decision_v1"]
+        if len(evaluators) != 1:
+            raise ValueError("snapshot has no unique live OOC evaluator")
+        evaluator = evaluators[0]
     tree = evaluator.get("tree") or {}
     if not tree.get("accepted"):
-        raise ValueError("OOC graph was not captured; enable STS_OOC_DEBUG_TREE=1 in the advisor")
+        raise ValueError("OOC graph was not captured")
     if not tree.get("nodes") or tree.get("rootId") is None:
         raise ValueError("OOC tree has no captured root")
     # JSON.parse cannot preserve all uint64 IDs. Keep state identities as text.
-    payload = {"tree": tree, "fixture": observation.get("fixture"),
-               "provenance": snapshot.get("captureProvenance"),
+    payload = {"tree": tree, "fixture": None if native else observation.get("fixture"),
+               "provenance": {"kind": "native_sts_lightspeed_search",
+                              "seed": snapshot["seed"], "decisionIndex": snapshot["decisionIndex"]}
+               if native else snapshot.get("captureProvenance"),
                "evaluator": {key: evaluator.get(key) for key in
                ("candidateSummaries", "selectedSemanticKey", "model", "status")},
                "identity": identity}
