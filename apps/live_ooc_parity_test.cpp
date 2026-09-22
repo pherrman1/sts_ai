@@ -118,6 +118,32 @@ int main(int argc,char **argv){try{
     base.deck.bottleCard(base.deck.size()-1,CardType::ATTACK);
     base.deck.obtain(base,Card(CardId::STRIKE_RED,1));
     PathHistory path;path.roomVisits={1,2,3,4,5,6,1,1,0,0};
+    {
+        auto source = base;
+        source.screenState = ScreenState::REWARDS;
+        source.info.rewardsContainer.clear();
+        source.info.rewardsContainer.addGold(25);
+        CardReward cards;
+        cards.push_back(Card(CardId::BASH));
+        source.info.rewardsContainer.addCardReward(cards);
+        const auto wire = project(source, path, "forced_gold_pass_through");
+        advisor::LiveOocStateV1 live;
+        check(advisor::importLiveOocStateV1(wire, live).ok, "forced-gold fixture import");
+        const auto bits = advisor::forcedRewardGoldPrimitive(live);
+        check(bits.has_value(), "live reward gold was not recognized as forced");
+        const auto action = advisor::lowerLiveOocAction(live, *bits);
+        check(action.value("kind", std::string()) == "choose"
+                && action.value("choiceIndex", 0) > 0,
+            "forced-gold live action did not retain its captured lowering");
+
+        auto removed = source;
+        removed.info.rewardsContainer.goldRewardCount = 0;
+        const auto noGoldWire = project(removed, path, "gold_removed");
+        advisor::LiveOocStateV1 noGold;
+        check(advisor::importLiveOocStateV1(noGoldWire, noGold).ok, "gold-removed fixture import");
+        check(!advisor::forcedRewardGoldPrimitive(noGold).has_value(),
+            "live gold pass-through persisted after gold was removed");
+    }
     std::vector<std::pair<std::string,GameContext>> fixtures;
     auto add=[&](std::string n,GameContext g){fixtures.emplace_back(n,g);};
     auto g=base;g.screenState=ScreenState::MAP_SCREEN;add("map_multiple_children",g);

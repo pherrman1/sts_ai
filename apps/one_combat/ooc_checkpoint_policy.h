@@ -12,6 +12,9 @@ namespace one_combat {
 // reward action was executed, so callers can continue with their respective
 // qualified card/policy step for the same screen.
 bool collectFreeOocReward(sts::GameContext &, bool collectKeys);
+// Consume ordinary reward gold without advancing or leaving the reward screen.
+// This is the only reward action treated as forced by semantic OOC search.
+bool collectForcedRewardGold(sts::GameContext &);
 
 // Default V4 Q/margin card-reward gate. Returns false without executing when
 // the gate defers to the native floor-model fallback.

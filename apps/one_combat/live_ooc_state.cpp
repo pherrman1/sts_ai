@@ -592,4 +592,15 @@ std::vector<std::uint32_t> liveOocPrimitiveBits(const LiveOocStateV1 &state) {
         bits.push_back(primitive(choice, state.projected.screenState));
     return bits;
 }
+std::optional<std::uint32_t> forcedRewardGoldPrimitive(const LiveOocStateV1 &state) {
+    if (state.projected.screenState != sts::ScreenState::REWARDS) return std::nullopt;
+    std::optional<std::uint32_t> result;
+    for (const auto &choice : state.ooc.at("liveChoices")) {
+        if (choice.at("nativeAction").value("kind", std::string()) != "gold") continue;
+        const auto bits = primitive(choice, state.projected.screenState);
+        if (result && *result != bits) throw std::invalid_argument("multiple distinct gold mappings");
+        result = bits;
+    }
+    return result;
+}
 } // namespace one_combat::advisor

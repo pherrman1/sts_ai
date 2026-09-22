@@ -79,6 +79,45 @@ int main(int argc, char **argv) {
                     && fullBelt.info.rewardsContainer.cardRewardCount == 1,
                 "full potion belt claimed an invalid reward or hid the card decision");
         }
+        {
+            auto gold = gc;
+            gold.screenState = ScreenState::REWARDS;
+            gold.gold = 100;
+            gold.curHp = 40;
+            gold.info.eventData = 17;
+            gold.info.rewardsContainer.clear();
+            gold.info.rewardsContainer.addGold(20);
+            gold.info.rewardsContainer.addGold(30);
+            CardReward cards;
+            cards.push_back(Card(CardId::BASH));
+            gold.info.rewardsContainer.addCardReward(cards);
+            gold.info.rewardsContainer.addPotion(Potion::FIRE_POTION);
+            require(collectForcedRewardGold(gold), "ordinary reward gold was not collected");
+            require(gold.gold == 150 && gold.info.rewardsContainer.goldRewardCount == 0
+                    && gold.info.rewardsContainer.cardRewardCount == 1
+                    && gold.info.rewardsContainer.potionCount == 1
+                    && gold.screenState == ScreenState::REWARDS && gold.info.eventData == 17,
+                "forced gold closure changed non-gold rewards or continued the room");
+
+            auto ectoplasm = gold;
+            ectoplasm.gold = 100;
+            ectoplasm.info.rewardsContainer.addGold(25);
+            ectoplasm.relics.add({RelicId::ECTOPLASM, 0});
+            require(collectForcedRewardGold(ectoplasm) && ectoplasm.gold == 100
+                    && ectoplasm.info.rewardsContainer.goldRewardCount == 0,
+                "Ectoplasm gold closure changed gold or left the reward");
+
+            auto idol = gc;
+            idol.screenState = ScreenState::REWARDS;
+            idol.curHp = idol.maxHp - 2;
+            idol.gold = 100;
+            idol.info.rewardsContainer.clear();
+            idol.info.rewardsContainer.addGold(25);
+            idol.relics.add({RelicId::BLOODY_IDOL, 0});
+            require(collectForcedRewardGold(idol) && idol.gold == 125
+                    && idol.curHp == idol.maxHp && idol.info.rewardsContainer.goldRewardCount == 0,
+                "Bloody Idol gold closure did not preserve native healing and cap behavior");
+        }
         gc.screenState = ScreenState::REST_ROOM;
         gc.curHp = 40;
         const PathHistory path{};
