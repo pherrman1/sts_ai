@@ -85,8 +85,10 @@ oldest-to-newest order and translated by the native importer through the
 per-monster mapping; they are never copied as native enum values. Ordinary
 draw order is sorted before emission; the actual runtime order is retained
 when Frozen Eye is present. Under Runic Dome, the observer omits `nextMove`,
-`moveHistory`, `intent`, and `intentDamage`; the root remains rejected because
-the public producer does not expose enough pre-roll state for a fair import.
+`moveHistory`, `intent`, and `intentDamage` and instead emits the public
+pre-roll history, deferred roll count, and captured roll inputs required by
+the native hidden-intent model. Looter and Mugger post-Mug direct choices are
+emitted as deferred direct choices; rolled outcomes and RNG remain private.
 Sensitive player and monster powers carry the runtime `justApplied` bit when
 the bounded reflection helper can read it and are rejected when it cannot.
 The producer maps vanilla `RitualPower.skipFirst` to this field because that
@@ -465,12 +467,12 @@ leaving other rewards and `proceed` available. The current MCP reward surface
 does not expose the vanilla discard-potion command, so this is not discard
 support or a claim of whole-game reward equivalence.
 
-The live driver currently opens an unrevealed card reward before collecting
-visible parent gold, relic, or potion rewards. The card scorer sees the cards
-but not those still-pending parent rewards in its projected state. This is an
-unresolved public-context qualification gap. Once a combat reward has no
-remaining rewards and MCP exposes only `Proceed`, the driver advances that
-mechanical screen without waiting for an OOC search or requiring root visits.
+The live driver collects visible parent gold, relic, potion, and key rewards
+before opening an unrevealed card reward group. The card scorer therefore sees
+the updated public parent-reward state together with the concealed card
+offers. Once a combat reward has no remaining rewards and MCP exposes only
+`Proceed`, the driver advances that mechanical screen without waiting for an
+OOC search or requiring root visits.
 
 Path counts derive from persisted `metricData.path_taken`, whose original map
 symbols survive event-to-room conversion and save/resume. Completed combat
@@ -699,10 +701,10 @@ native selection tasks for Exhaust, Armaments, Dual Wield, Headbutt, Exhume,
 Warcry, Gambler's Brew, Liquid Memories, and Hologram. The mapping remains
 deliberately bounded: an unrecognized selection prompt, an unavailable runtime
 tracker, or an option list larger than the native representation is rejected.
-The ordinary player limbo pile is serialized. The remaining common combat
-exclusion is live Runic Dome because exact public pre-roll reconstruction has
-not been proven. Other unsupported queue metadata remains outside the
-supported boundary. CTM and Silver results remain separate evaluators, and
+The ordinary player limbo pile is serialized. Active Wing Boots on a direct
+MAP root remains outside the frozen map value model because remaining charges
+are not part of that model's state. Other unsupported queue metadata remains
+outside the supported boundary. CTM and Silver results remain separate evaluators, and
 neither path controls gameplay or establishes policy-quality evidence. Any
 future public-state expansion must add a native parity fixture and an explicit
 public-information contract before promotion.

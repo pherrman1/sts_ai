@@ -1786,6 +1786,36 @@ int main() {
         if (generalImported.wire.extraRollMoveOnTurn != 0
             || generalImported.wire.skipMonsterTurnBits != 0)
             throw std::runtime_error("explicit stable-boundary group state was not preserved");
+        auto runicGeneric = general;
+        runicGeneric["silverRoot"]["combat"]["runicDome"] = true;
+        auto &runicMonster = runicGeneric["silverRoot"]["combat"]["monsters"][0];
+        runicMonster.erase("nextMove");
+        runicMonster.erase("moveHistory");
+        runicMonster.erase("intent");
+        runicMonster.erase("intentDamage");
+        runicMonster["publicMoveHistory"] = json::array({0, 0});
+        runicMonster["pendingMoveRolls"] = 1;
+        runicMonster["pendingDirectMoveChoice"] = 0;
+        runicMonster["pendingRollInputs"] = {
+            {"curHp", runicMonster["hp"]}, {"maxHp", runicMonster["maxHp"]},
+            {"knightCurHp", general["silverRoot"]["hp"]},
+            {"knightMaxHp", general["silverRoot"]["maxHp"]},
+            {"monsterTurnNumber", 1}, {"miscInfo", runicMonster.value("miscInfo", 0)},
+            {"aliveCount", 1}, {"monstersAlive", 1}, {"knightAlive", true},
+            {"playerConstricted", false}, {"asleep", false}, {"halfDead", false}};
+        const auto runicImported = one_combat::advisor::importSilverRoot(runicGeneric);
+        if (!runicImported.ok || !runicImported.wire.intentsHidden
+            || runicImported.wire.monsters[0].pendingMoveRolls != 1
+            || runicImported.wire.monsters[0].pendingDirectMoveChoice != 0
+            || runicImported.wire.monsters[0].moveHistory[0] != 0
+            || runicImported.wire.monsters[0].moveHistory[1] != 0)
+            throw std::runtime_error("generic Runic Dome deferred-intent import failed: "
+                + runicImported.reason);
+        auto malformedRunic = runicGeneric;
+        malformedRunic["silverRoot"]["combat"]["monsters"][0]["pendingRollInputs"].erase("miscInfo");
+        if (one_combat::advisor::importSilverRoot(malformedRunic).reason
+                != "silver_hidden_information_required")
+            throw std::runtime_error("malformed generic Runic Dome inputs were accepted");
         auto ritualPower = general;
         ritualPower["silverRoot"]["combat"]["monsters"][0]["powers"] = json::array({
             json{{"id", "Ritual"}, {"amount", 3}, {"justApplied", false}}});

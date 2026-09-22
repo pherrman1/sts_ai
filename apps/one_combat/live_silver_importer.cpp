@@ -149,6 +149,42 @@ bool optionalBool(const json &object, const char *name, bool &out) {
     return true;
 }
 
+bool parseHiddenRollInputs(const json &value, silver_bridge::MonsterRollInputsWire &out) {
+    if (!value.is_object()) return false;
+    const auto integerField = [&](const char *name, int &target) {
+        if (!value.contains(name) || !value.at(name).is_number_integer()) return false;
+        target = value.at(name).get<int>();
+        return true;
+    };
+    const auto boolField = [&](const char *name, bool &target) {
+        if (!value.contains(name) || !value.at(name).is_boolean()) return false;
+        target = value.at(name).get<bool>();
+        return true;
+    };
+    int curHp = 0, maxHp = 0, knightCurHp = 0, knightMaxHp = 0;
+    int monsterTurnNumber = 0, miscInfo = 0, aliveCount = 0, monstersAlive = 0;
+    if (!integerField("curHp", curHp) || !integerField("maxHp", maxHp)
+        || !integerField("knightCurHp", knightCurHp) || !integerField("knightMaxHp", knightMaxHp)
+        || !integerField("monsterTurnNumber", monsterTurnNumber)
+        || !integerField("miscInfo", miscInfo) || !integerField("aliveCount", aliveCount)
+        || !integerField("monstersAlive", monstersAlive)
+        || !boolField("knightAlive", out.knightAlive)
+        || !boolField("playerConstricted", out.playerConstricted)
+        || !boolField("asleep", out.asleep) || !boolField("halfDead", out.halfDead))
+        return false;
+    if (curHp < 0 || maxHp < 0 || knightCurHp < 0 || knightMaxHp < 0
+        || monsterTurnNumber < 0 || aliveCount < 0 || monstersAlive < 0) return false;
+    out.curHp = static_cast<std::int16_t>(curHp);
+    out.maxHp = static_cast<std::int16_t>(maxHp);
+    out.knightCurHp = static_cast<std::int16_t>(knightCurHp);
+    out.knightMaxHp = static_cast<std::int16_t>(knightMaxHp);
+    out.monsterTurnNumber = static_cast<std::int16_t>(monsterTurnNumber);
+    out.miscInfo = miscInfo;
+    out.aliveCount = static_cast<std::int8_t>(aliveCount);
+    out.monstersAlive = static_cast<std::int8_t>(monstersAlive);
+    return true;
+}
+
 bool parseGenericCard(const json &item, CardRecord &out) {
     if (!item.is_object() || !item.contains("id") || !item.at("id").is_string()
         || !item.contains("uuid") || !item.at("uuid").is_string()) return false;
@@ -618,7 +654,8 @@ SilverRootImportResult importSilverRootGeneric(const json &observation,
         return unsupported("silver_unmapped_group_state");
 
     bool runicDome = combat.value("runicDome", false);
-    if (runicDome) return unsupported("silver_hidden_information_required");
+    if (!combat.contains("runicDome") || !combat.at("runicDome").is_boolean())
+        return unsupported("silver_runic_dome_state");
     const bool frozenEye = combat.value("frozenEye", false);
     const auto getPlayer = [&]() -> const json * {
         const auto it = combat.find("player");
@@ -932,12 +969,43 @@ SilverRootImportResult importSilverRootGeneric(const json &observation,
             return unsupported("silver_unmapped_monster_state");
         m.statusBits = item.value("statusBits", 0ULL); m.strength = item.value("strength", 0);
         m.vulnerable = item.value("vulnerable", 0); m.weak = item.value("weak", 0);
+        if (runicDome) {
+            const auto history = item.value("publicMoveHistory", json::array());
+            if (!history.is_array() || history.size() != 2
+                || !history[0].is_number_integer() || !history[1].is_number_integer())
+                return unsupported("silver_hidden_information_required");
+            for (std::size_t j = 0; j < 2; ++j) {
+                const int publicMove = history[j].get<int>();
+                if (publicMove == 0) {
+                    m.moveHistory[j] = 0;
+                } else {
+                    const auto mapped = live_silver::monsterMove(idText, publicMove);
+                    if (!mapped) return unsupported("silver_hidden_information_required");
+                    m.moveHistory[j] = static_cast<std::int16_t>(*mapped);
+                }
+            }
+            const int pending = item.value("pendingMoveRolls", -1);
+            const int direct = item.value("pendingDirectMoveChoice", 0);
+            if (pending < 0 || pending > 3 || direct < 0 || direct > 2
+                || (pending == 0 && direct == 0 && !item.contains("pendingRollInputs")))
+                return unsupported("silver_hidden_information_required");
+            m.pendingMoveRolls = static_cast<std::uint8_t>(pending);
+            m.pendingDirectMoveChoice = static_cast<std::uint8_t>(direct);
+            if (pending > 0) {
+                if (!item.contains("pendingRollInputs")
+                    || !parseHiddenRollInputs(item.at("pendingRollInputs"), m.pendingRollInputs))
+                    return unsupported("silver_hidden_information_required");
+            }
+        }
         int nextMove = item.value("nextMove", 0);
         // Java exposes its history oldest-to-newest as move bytes.  Native
         // Monster stores current-to-previous MonsterMoveId values.  Translate
         // every byte explicitly; copying Java bytes as native IDs silently
         // changes monster behavior whenever the enum layouts differ.
-        if (item.contains("moveHistory") && item.at("moveHistory").is_array()) {
+        if (runicDome) {
+            // Runic Dome has no public current move. The public pre-roll
+            // history above is the complete move input for this root.
+        } else if (item.contains("moveHistory") && item.at("moveHistory").is_array()) {
             const auto &history = item.at("moveHistory");
             if (history.empty() || history.size() > 2) return unsupported("silver_unmapped_move");
             for (std::size_t j = 0; j < history.size(); ++j) {
@@ -1070,7 +1138,7 @@ SilverRootImportResult importSilverRootGeneric(const json &observation,
         return id != static_cast<std::int16_t>(sts::Potion::EMPTY_POTION_SLOT);
     });
     wire.version = silver_bridge::BattleStateWire::kVersion; wire.valid = true;
-    wire.fullDrawOrderObserved = frozenEye; wire.intentsHidden = false;
+    wire.fullDrawOrderObserved = frozenEye; wire.intentsHidden = runicDome;
     wire.isolatedSearchSeed = fnv1a(entry + ":silver-live-v2");
     wire.observedGeneration = observation.value("sequence", 0ULL);
     return (result.ok = true, result);

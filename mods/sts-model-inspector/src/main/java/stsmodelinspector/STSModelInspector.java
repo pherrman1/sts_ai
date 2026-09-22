@@ -93,6 +93,21 @@ public final class STSModelInspector implements PostInitializeSubscriber,
             new IdentityHashMap<>();
     private static final IdentityHashMap<AbstractMonster, Integer> guardianPublicThreshold =
             new IdentityHashMap<>();
+    private static final IdentityHashMap<AbstractMonster, HiddenIntentSnapshot> hiddenIntentSnapshots =
+            new IdentityHashMap<>();
+    private static final Set<AbstractMonster> hiddenDirectTurnMarkers =
+            Collections.newSetFromMap(new IdentityHashMap<AbstractMonster, Boolean>());
+
+    static final class HiddenIntentSnapshot {
+        final int[] publicMoveHistory = new int[]{0, 0};
+        int publicMiscInfo;
+        int pendingMoveRolls = 1;
+        int pendingDirectMoveChoice;
+        int generation;
+        int curHp, maxHp, knightCurHp, knightMaxHp, monsterTurnNumber, aliveCount, monstersAlive;
+        int miscInfo;
+        boolean knightAlive, playerConstricted, asleep, halfDead;
+    }
 
     /**
      * Vanilla removes a CardQueueItem before the stable player boundary is
@@ -222,6 +237,85 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         if (finalDamage > 0) ++trackedTimesDamaged;
     }
 
+    static void recordHiddenIntentRoll(AbstractMonster monster) {
+        // This hook can run before relic initialization publishes Runic Dome.
+        // Capture the pre-roll boundary regardless; serialization decides
+        // whether the snapshot is relevant to the current combat.
+        if (monster == null || AbstractDungeon.getMonsters() == null) return;
+        HiddenIntentSnapshot snapshot = new HiddenIntentSnapshot();
+        int historySize = monster.moveHistory == null ? 0 : monster.moveHistory.size();
+        if (historySize > 0) snapshot.publicMoveHistory[0] = monster.moveHistory.get(historySize - 1);
+        if (historySize > 1) snapshot.publicMoveHistory[1] = monster.moveHistory.get(historySize - 2);
+        snapshot.publicMiscInfo = monsterMiscInfo(monster) == null ? 0 : monsterMiscInfo(monster);
+        snapshot.curHp = monster.currentHealth;
+        snapshot.maxHp = monster.maxHealth;
+        snapshot.miscInfo = snapshot.publicMiscInfo;
+        snapshot.monsterTurnNumber = Math.max(1,
+                AbstractDungeon.actionManager == null ? 1 : AbstractDungeon.actionManager.turn);
+        snapshot.playerConstricted = AbstractDungeon.player != null
+                && AbstractDungeon.player.hasPower("Constricted");
+        snapshot.asleep = monster.hasPower("Sleep");
+        snapshot.halfDead = monster.halfDead;
+        int alive = 0;
+        for (AbstractMonster candidate : AbstractDungeon.getMonsters().monsters)
+            if (candidate != null && !candidate.isDeadOrEscaped()) ++alive;
+        snapshot.aliveCount = alive;
+        snapshot.monstersAlive = alive;
+        if (!AbstractDungeon.getMonsters().monsters.isEmpty()) {
+            AbstractMonster knight = AbstractDungeon.getMonsters().monsters.get(0);
+            snapshot.knightCurHp = knight.currentHealth;
+            snapshot.knightMaxHp = knight.maxHealth;
+            snapshot.knightAlive = !knight.isDeadOrEscaped();
+        }
+        HiddenIntentSnapshot previous = hiddenIntentSnapshots.get(monster);
+        snapshot.generation = previous == null ? 1 : previous.generation + 1;
+        hiddenIntentSnapshots.put(monster, snapshot);
+    }
+
+    static void recordKnownIntent(AbstractMonster monster) {
+        if (monster == null || !hasRunicDome()) return;
+        HiddenIntentSnapshot snapshot = hiddenIntentSnapshots.get(monster);
+        if (snapshot == null) {
+            snapshot = new HiddenIntentSnapshot();
+            hiddenIntentSnapshots.put(monster, snapshot);
+        }
+        int historySize = monster.moveHistory == null ? 0 : monster.moveHistory.size();
+        if (historySize > 0) snapshot.publicMoveHistory[0] = monster.moveHistory.get(historySize - 1);
+        if (historySize > 1) snapshot.publicMoveHistory[1] = monster.moveHistory.get(historySize - 2);
+        snapshot.publicMiscInfo = monsterMiscInfo(monster) == null ? 0 : monsterMiscInfo(monster);
+        snapshot.miscInfo = snapshot.publicMiscInfo;
+        snapshot.pendingMoveRolls = 0;
+        snapshot.pendingDirectMoveChoice = 0;
+    }
+
+    static void beginHiddenDirectTurn(AbstractMonster monster, int choice) {
+        if (monster == null || !hasRunicDome()) return;
+        HiddenIntentSnapshot snapshot = hiddenIntentSnapshots.get(monster);
+        if (snapshot == null) {
+            snapshot = new HiddenIntentSnapshot();
+            hiddenIntentSnapshots.put(monster, snapshot);
+        }
+        int historySize = monster.moveHistory == null ? 0 : monster.moveHistory.size();
+        if (historySize > 0) snapshot.publicMoveHistory[0] = monster.moveHistory.get(historySize - 1);
+        if (historySize > 1) snapshot.publicMoveHistory[1] = monster.moveHistory.get(historySize - 2);
+        snapshot.publicMiscInfo = monsterMiscInfo(monster) == null ? 0 : monsterMiscInfo(monster);
+        snapshot.miscInfo = snapshot.publicMiscInfo;
+        snapshot.pendingMoveRolls = 0;
+        snapshot.pendingDirectMoveChoice = choice;
+        hiddenDirectTurnMarkers.add(monster);
+    }
+
+    static void finishHiddenDirectTurn(AbstractMonster monster) {
+        if (monster == null || !hasRunicDome()) return;
+        if (!hiddenDirectTurnMarkers.remove(monster)) recordKnownIntent(monster);
+    }
+
+    static void finishHiddenIntentRoll(AbstractMonster monster) {
+        if (monster == null || !hasRunicDome()) return;
+        HiddenIntentSnapshot snapshot = hiddenIntentSnapshots.get(monster);
+        if (snapshot != null) snapshot.pendingDirectMoveChoice = 0;
+    }
+
     @Override
     public void receiveOnBattleStart(AbstractRoom room) {
         resetSilverBudget();
@@ -253,6 +347,8 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         replacedMonsterParents.clear();
         hexaghostDividerDamage.clear();
         guardianPublicThreshold.clear();
+        hiddenIntentSnapshots.clear();
+        hiddenDirectTurnMarkers.clear();
         liveEncounter = "";
         combatEntry = "";
         combatEntryHash = "";
@@ -2336,6 +2432,31 @@ public final class STSModelInspector implements PostInitializeSubscriber,
                 if (miscInfo != null) out.append(",\"miscInfo\":").append(miscInfo);
                 Integer uniquePower0 = monsterUniquePower0(monster);
                 if (uniquePower0 != null) out.append(",\"uniquePower0\":").append(uniquePower0);
+                if (runicDome) {
+                    HiddenIntentSnapshot hidden = hiddenIntentSnapshots.get(monster);
+                    if (hidden != null) {
+                        out.append(",\"publicMoveHistory\":[")
+                                .append(hidden.publicMoveHistory[0]).append(',')
+                                .append(hidden.publicMoveHistory[1]).append(']')
+                                .append(",\"pendingMoveRolls\":").append(hidden.pendingMoveRolls)
+                                .append(",\"pendingDirectMoveChoice\":")
+                                .append(hidden.pendingDirectMoveChoice)
+                                .append(",\"pendingRollInputs\":{")
+                                .append("\"curHp\":").append(hidden.curHp)
+                                .append(",\"maxHp\":").append(hidden.maxHp)
+                                .append(",\"knightCurHp\":").append(hidden.knightCurHp)
+                                .append(",\"knightMaxHp\":").append(hidden.knightMaxHp)
+                                .append(",\"monsterTurnNumber\":").append(hidden.monsterTurnNumber)
+                                .append(",\"miscInfo\":").append(hidden.miscInfo)
+                                .append(",\"aliveCount\":").append(hidden.aliveCount)
+                                .append(",\"monstersAlive\":").append(hidden.monstersAlive)
+                                .append(",\"knightAlive\":").append(hidden.knightAlive)
+                                .append(",\"playerConstricted\":").append(hidden.playerConstricted)
+                                .append(",\"asleep\":").append(hidden.asleep)
+                                .append(",\"halfDead\":").append(hidden.halfDead)
+                                .append('}');
+                    }
+                }
                 if (!runicDome) {
                     out.append(",\"intent\":\"")
                             .append(escapeJson(monster.intent == null ? "UNKNOWN" : monster.intent.name()))

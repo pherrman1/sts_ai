@@ -56,11 +56,13 @@ Strength loss).
 - The importer never consumes or accepts live RNG fields.
 - An ordinary draw array is imported as an unordered multiset. Concrete order is
   retained only when `Frozen Eye` is present.
-- `Runic Dome` remains fail-closed at the Java boundary. The observer now
+- `Runic Dome` uses the native deferred hidden-intent boundary. The observer
   omits `nextMove`, `moveHistory`, `intent`, and `intentDamage` while the relic
-  is active; native deferred hidden-intent support exists for native fixtures,
-  but the live producer still does not provide the complete public pre-roll
-  tracker needed to qualify a fair import.
+  is active, and emits only public pre-roll history, roll inputs, pending roll
+  counts, and the bounded Looter/Mugger direct-choice marker. A live Act-2
+  TWO_THIEVES root was imported by Silver and returned a model-driven action
+  with the temporary deployed advisor; this is implementation evidence, not
+  whole-run qualification evidence.
 - Java physical UUIDs are assigned monotonically by a battle-lifetime
   `SilverImportContext`. The registry resets only when the protocol session or
   combat instance changes and rejects duplicate UUID claims in one snapshot.
@@ -93,8 +95,6 @@ those cards are implemented by `BattleContext`.
 These are deliberate boundaries, not silently fabricated defaults:
 
 - live OOC `GameContext + PathHistory` import and OOC MCTS;
-- Runic Dome live import (`silver_hidden_information_required` until the
-  public pre-roll tracker is serialized);
 - unknown Java card/relic/potion/power/task IDs;
 - encounter or monster `miscInfo` values that are not present in the public
   runtime or cannot be derived from the current public tracker;
