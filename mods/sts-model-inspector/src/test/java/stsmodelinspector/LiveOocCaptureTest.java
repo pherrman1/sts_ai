@@ -74,6 +74,18 @@ public final class LiveOocCaptureTest {
                 persistedPath, false, "", 2, java.util.Arrays.asList(16, 18));
         if (!"BOSS".equals(qualified.get(15)) || !"MONSTER".equals(qualified.get(16)))
             throw new AssertionError("completed public boss marker stayed incomplete in Act 2");
+        java.util.List<String> act3Path = new java.util.ArrayList<>();
+        for (int i = 0; i < 15; ++i) act3Path.add("M");
+        act3Path.add("unknown-boss-marker");
+        for (int i = 0; i < 15; ++i) act3Path.add("R");
+        act3Path.add("unknown-boss-marker");
+        java.util.List<String> act3Qualified = LiveOocCapture.canonicalPathHistory(
+                act3Path, true, "", 3, java.util.Arrays.asList(16, 33));
+        if (!"BOSS".equals(act3Qualified.get(31)))
+            throw new AssertionError("completed Act 2 boss marker was lost at Act 3 map entry");
+        if (!"INVALID".equals(LiveOocCapture.canonicalPathHistory(
+                act3Path, true, "", 3, java.util.Arrays.asList(16)).get(31)))
+            throw new AssertionError("unconfirmed Act 2 boss marker was promoted");
         if (!"INVALID".equals(LiveOocCapture.canonicalPathHistory(
                 persistedPath, false, "", 2, java.util.Arrays.asList(18)).get(15)))
             throw new AssertionError("unknown path marker was promoted without a boss combat");

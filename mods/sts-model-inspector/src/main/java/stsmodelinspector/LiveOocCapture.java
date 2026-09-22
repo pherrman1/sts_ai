@@ -1315,7 +1315,8 @@ final class LiveOocCapture {
         List<String> result = new ArrayList<>();
         for (int i = 0; i < raw.size(); ++i) {
             String symbol = roomSymbol(raw.get(i));
-            if ("INVALID".equals(symbol) && bossTransitionSentinel && i == raw.size() - 1) {
+            if ("INVALID".equals(symbol) && bossTransitionSentinel && i == raw.size() - 1
+                    && !inferredBossPrecedingRoom.isEmpty()) {
                 // The current boss-transition sentinel may stand for the
                 // preceding visible map room, not for the boss itself.
                 symbol = inferredBossPrecedingRoom;
