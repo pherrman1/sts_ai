@@ -1,28 +1,33 @@
-# Silver prior model v1 — implementation correction before rerun
+# Silver prior model v1 — corrected Stage A and validation J
 
 ## Current status
 
-The initial Stage-A L metrics committed with PR #289 are **invalidated**. Review
-found that epoch orders were generated with `len(train)`, where `train` is the
-prepared split dictionary, rather than `len(train["contexts"])`. The previous
-run therefore trained on 35 roots per epoch in one batch instead of all 8,862
-TRAIN roots. Its checkpoints, validation-L metrics, and gate claim must not be
-used. Those files are retained with `invalidated-` names for auditability.
+The initial Stage-A outputs in the `invalidated-` files are not valid for the
+preregistered experiment. The first implementation used `len(train)` on the
+prepared split dictionary and trained on 35 roots per epoch. The corrected code
+uses the TRAIN context-root count and fails closed unless each actual epoch
+accounts for all roots exactly once, all actions, and the expected optimizer
+steps.
 
-Review also found that J is intentionally stored at `raw/J`, not `shards/J`.
-A metadata-only path inventory confirmed 64/64 selected VALIDATION J files are
-present at `raw/J` and 64/64 are listed in the sealed release. No J raw record
-has been opened. The prior “J missing” conclusion was wrong and is superseded.
+Corrected Stage A ran at implementation SHA `863d7d5e`, which passed an
+independent source/test review before the run. Every arm had exactly 8,862
+TRAIN roots, 57,012 actions, and 70 optimizer steps per epoch. All three arms
+passed the VALIDATION-L and VALIDATION-J upper-CI gates. The predeclared paired
+bootstrap tie rule selected **T2**: its J contrast with the best arm included
+zero, so the higher temperature won the tie. All 64 preselected VALIDATION J
+raw records were verified and opened only after corrected Stage A completed.
 
-The implementation fixes are being prepared for independent review. Do not
-rerun Stage A or open VALIDATION J records until the corrected implementation
-SHA is reviewed. No temperature has been selected; no robustness run occurred.
+The `robustness` command has since been added to train the selected T2 arm with
+seeds `20260923` and `20260924`. That code change is undergoing independent
+review now; no robustness run has started. Do not run it until the current PR
+head passes review.
 
 ## Provenance and boundary
 
-- Baseline/main: `a2d50b1810ebac6cb3ae25009f3cadef3068c928`.
-- PR #289 implementation before requested corrections: `33d7580a`.
-- Initial implementation review SHA: `4c724e405b0898a198b29faf7ebdc09c6a3d6a14`.
+- Experiment baseline/main: `a2d50b1810ebac6cb3ae25009f3cadef3068c928`.
+- Corrected Stage-A implementation SHA: `863d7d5e09aa069fc3f4456cfa393c105729aa32`.
+- Stage-A source SHA-256:
+  `5b965ed0ac2f62a9d3ecb532de7d5a235369ce2b7028f855b021f05020047d53`.
 - Dataset release SHA-256:
   `b32d8d79b44ee799af05892e79e45fb146f4859df58364722d7cd92531bd8419`.
 - Binding SHA-256:
@@ -34,51 +39,56 @@ SHA is reviewed. No temperature has been selected; no robustness run occurred.
 - `locked_test_labels_opened = false`.
 - `metadata_deviation = "LOCKED_TEST root/action counts observed before freeze; labels untouched"`.
 
-The incorrect Stage-A recipe itself used the intended seed, temperatures,
-optimizer, batch size, and early-stopping rule. The failure was the number of
-roots presented to each epoch; no inference about model quality follows from
-those outputs.
+The previously reported J-data blocker was false. Collection finalization
+stores J at `raw/J/<identity-hash>.json.gz` and does not materialize
+`shards/J`. Metadata-only inventory found 64/64 preselected VALIDATION J raw
+paths on disk and 64/64 in the sealed release file list. The corrected loader
+verified each checksum, constructed the exact J job, validated the raw record,
+and projected it in memory. No LOCKED_TEST path or label was inspected.
 
-## Valid measurement retained
+## Corrected Stage-A results
 
-The one-epoch T1 CPU throughput probe used an explicit
-`np.arange(len(train["contexts"]))`, so it did process the full training set:
-8,862 roots and 57,012 actions in 1.361 s (6,513 roots/s, 41,900 actions/s),
-with peak RSS 555,624 KiB. This is a throughput measurement only.
+The training recipe was unchanged: initialization seed `20260922`, TRAIN-only
+`tau0=0.5899875000025645`, target temperatures 0.29499375, 0.5899875, and
+1.179975, AdamW (`3e-4`, `1e-4`), root batch 128, gradient clip 1.0, FP32, max
+80 epochs, patience 8. The arms stopped after 18, 20, and 20 epochs.
 
-The initial 19-test suite passed, but it did not catch the dict-length bug.
-The corrected suite adds a prepared-dictionary regression test and checks
-every actual epoch's root, action, and optimizer-step accounting. Its results
-will be recorded with the reviewed implementation SHA.
+All intervals below use 5,000 source-cluster bootstrap replicates (64 sources,
+1,512 L roots; 64 J roots). Regret differences are model minus uniform; a
+negative value favors the model.
 
-## J path correction
+| Arm | L model − uniform mean [95% CI] | J model − uniform mean [95% CI] | J model regret | J uniform regret | J L-target regret | J model argmax regret | J L-argmax regret | J pairwise concordance |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| T0.5 | -3.67685 [-3.99284, -3.39745] | -3.69322 [-4.22695, -3.16496] | 2.78620 | 6.47943 | 0.22700 | 1.82046 | 0.19527 | 0.79818 |
+| T1 | -3.62102 [-3.94162, -3.34120] | -3.66057 [-4.20016, -3.13460] | 2.81886 | 6.47943 | 0.30807 | 1.69567 | 0.19527 | 0.79273 |
+| T2 | -3.57885 [-3.89616, -3.30330] | -3.64892 [-4.17707, -3.14134] | 2.83051 | 6.47943 | 0.49576 | 1.51601 | 0.19527 | 0.81105 |
 
-The collection contract in `tools/silver_prior_collect.py::finalize` includes
-each accepted J raw record in `release.files` at `raw/J/<hash>.json.gz`, then
-continues without materializing a J projection shard. The selected-file
-inventory found:
+All arms are eligible. T2's paired J-regret difference from the best mean arm
+has 95% CI `[-0.12449, 0.20423]`, which contains zero; the stated tie rule
+therefore selects T2. The J L-target-vs-uniform means are -6.25242, -6.17136,
+and -5.98366 for T0.5, T1, and T2.
 
-- selected VALIDATION J roots: 64
-- corresponding `raw/J` files present: 64
-- corresponding `raw/J` paths in `release.files`: 64
-- VALIDATION J raw records opened: 0
-- LOCKED_TEST J paths inspected: 0
+Corrected epoch accounting was recorded for every epoch in the train summary;
+all rows show 8,862 roots, 57,012 actions, and 70 optimizer steps.
 
-The corrected loader will verify the raw-file checksum, construct the exact J
-job, call `dataset.validate_raw`, and project with `dataset.shard` in memory.
-The code change and test are still subject to independent review.
+## Throughput and artifacts
 
-## Invalidated artifacts
+The one-epoch T1 CPU throughput probe remains valid: 8,862 roots and 57,012
+actions in 1.361 s (6,513 roots/s, 41,900 actions/s), peak RSS 555,624 KiB.
 
-- `invalidated-stage-a-config.json`
-- `invalidated-train-summary.json`
-- `invalidated-validation-l-metrics.json.gz`
+Corrected Stage-A artifacts, including full per-root L/J metrics and every
+epoch-accounting row, are in
+[`stage-a-reviewed-863d7d5e/`](stage-a-reviewed-863d7d5e/). The durable run
+directory is
+`/home/philippherrmann/Documents/sts/silver-prior-model-v1/stage-a-863d7d5e/`;
+the fresh content-bound cache is
+`/home/philippherrmann/Documents/sts/silver-prior-model-v1/cache/train-validation-reviewed-863d7d5e.pkl`.
 
-The prior checkpoint files remain in
-`/home/philippherrmann/Documents/sts/silver-prior-model-v1/stage-a/` and are
-invalid for the preregistered experiment. The throughput artifact in this
-directory remains valid.
+The invalidated first-run artifacts are retained as
+`invalidated-stage-a-config.json`, `invalidated-train-summary.json`, and
+`invalidated-validation-l-metrics.json.gz` for audit only.
 
-**Knowledge impact:** current training and J-loading contracts are maintained
-in `docs/knowledge-base/operations/silver-prior-dataset.md`. This review
-correction and invalidated result are recorded in `docs/experiments/ledger-06.md`.
+**Knowledge impact:** trainer, raw-J loading, and robustness procedure are
+maintained in `docs/knowledge-base/operations/silver-prior-dataset.md`. The
+initial invalidation and corrected Stage-A/J result are recorded in
+`docs/experiments/ledger-06.md`. No Silver behavior or default model changed.

@@ -171,6 +171,16 @@ class SilverPriorTrainingTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError,"action count mismatch"):
             t.assert_epoch_accounting(range(7),prepared,optimizer_steps=1,batch_size=128,action_count=10)
 
+    def test_robustness_requires_both_predeclared_seeds_and_both_metrics(self):
+        rows=[{"seed":seed,"arm":"T2","validation_l_model_minus_uniform":-0.3,
+               "validation_j_model_minus_uniform":-0.1,"positive_l_and_j_improvement":True}
+              for seed in (20260923,20260924)]
+        self.assertEqual(t.summarize_robustness(rows,"T2")["classification"],"PRIOR_MODEL_OPTIMIZATION_STABLE")
+        rows[1]["positive_l_and_j_improvement"]=False
+        self.assertEqual(t.summarize_robustness(rows,"T2")["classification"],"PRIOR_MODEL_OPTIMIZATION_UNSTABLE")
+        with self.assertRaisesRegex(ValueError,"both preregistered seeds"):
+            t.summarize_robustness(rows[:1],"T2")
+
     def test_batched_predictions_match_single_root_predictions(self):
         m=self.model();rows=[self.row(seed=1),self.row(seed=2,rid="r2")]
         batch=m(t.collate_rows(rows));single=torch.cat([m(t.collate_rows([r])) for r in rows])

@@ -1,0 +1,71 @@
+{
+  "classification": "PRIOR_MODEL_VALIDATION_CONFIRMED",
+  "selected_temperature": "T2",
+  "arms": {
+    "T0.5": {
+      "eligible": true,
+      "validation_l_upper_ci": -3.397452527071782,
+      "validation_j_upper_ci": -3.1649561757686784,
+      "validation_j_model_minus_uniform": -3.69322389463199
+    },
+    "T1": {
+      "eligible": true,
+      "validation_l_upper_ci": -3.3411969603418226,
+      "validation_j_upper_ci": -3.1346006433998186,
+      "validation_j_model_minus_uniform": -3.6605660655127066,
+      "paired_delta_vs_best_ci": [
+        -0.10890413885057272,
+        0.17071883546401886
+      ]
+    },
+    "T2": {
+      "eligible": true,
+      "validation_l_upper_ci": -3.303300632109759,
+      "validation_j_upper_ci": -3.141341611701822,
+      "validation_j_model_minus_uniform": -3.6489180354299093,
+      "paired_delta_vs_best_ci": [
+        -0.12449497145676076,
+        0.20422654913025073
+      ]
+    }
+  },
+  "validation_j_teacher_minus_uniform": {
+    "T0.5": {
+      "mean": -6.252423733479408,
+      "median": -5.0433152933864065,
+      "ci95": [
+        -7.267436384520616,
+        -5.3539426987467005
+      ],
+      "bootstrap_replicates": 5000,
+      "cluster": "source_seed",
+      "sources": 64,
+      "roots": 64
+    },
+    "T1": {
+      "mean": -6.171360576607517,
+      "median": -5.044003113671039,
+      "ci95": [
+        -7.1828110452501805,
+        -5.273825551501268
+      ],
+      "bootstrap_replicates": 5000,
+      "cluster": "source_seed",
+      "sources": 64,
+      "roots": 64
+    },
+    "T2": {
+      "mean": -5.983664064868313,
+      "median": -4.879100754641307,
+      "ci95": [
+        -6.975886477526765,
+        -5.097698550715905
+      ],
+      "bootstrap_replicates": 5000,
+      "cluster": "source_seed",
+      "sources": 64,
+      "roots": 64
+    }
+  },
+  "tie_rule": "highest temperature among eligible arms whose paired source-bootstrap contrast with the best includes zero"
+}

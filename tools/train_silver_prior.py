@@ -9,6 +9,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import math
 import random
 import sys
 import pickle
@@ -467,9 +468,9 @@ def predict_prepared(model,full,device,batch_size=128):
     return out
 
 
-def write_validation_metrics(cache,artifact_dir,device="cpu"):
+def write_validation_metrics(cache,artifact_dir,device="cpu",arms=("T0.5","T1","T2")):
     rows=cache["prepared"]["VALIDATION"];result={}
-    for arm in ("T0.5","T1","T2"):
+    for arm in arms:
         path=artifact_dir/f"{arm}.pt"
         cp=torch.load(path,map_location=device,weights_only=False);model=SilverPriorNetV1(rows["contexts"].shape[1]).to(device)
         model.load_state_dict(cp["state_dict"]);model.normalization=cp["normalization"]
@@ -482,10 +483,10 @@ def write_validation_metrics(cache,artifact_dir,device="cpu"):
     return result
 
 
-def evaluate_validation_j(corpus,cache,artifact_dir,device="cpu"):
+def evaluate_validation_j(corpus,cache,artifact_dir,device="cpu",arms=("T0.5","T1","T2")):
     release=dataset.read(Path(corpus)/"release.json");binding=dataset.read(Path(corpus)/"binding.json");selection=dataset.read(Path(corpus)/"selection.json")
     jrows=collate_rows(load_validation_j(corpus,release,binding,selection));result={}
-    for arm in ("T0.5","T1","T2"):
+    for arm in arms:
         cp=torch.load(artifact_dir/f"{arm}.pt",map_location=device,weights_only=False);model=SilverPriorNetV1(jrows["contexts"].shape[1]).to(device)
         model.load_state_dict(cp["state_dict"]);model.normalization=cp["normalization"];pred=predict_prepared(model,jrows,device);tau=cp["tau"]
         per=[]
@@ -540,6 +541,106 @@ def select_temperature(validation_l,validation_j,artifact_dir):
         selected=max(indist,key=lambda a:validation_j[a]["tau"])
         result={"classification":"PRIOR_MODEL_VALIDATION_CONFIRMED","selected_temperature":selected,"arms":detail,"validation_j_teacher_minus_uniform":head,"tie_rule":"highest temperature among eligible arms whose paired source-bootstrap contrast with the best includes zero"}
     (artifact_dir/"temperature-comparison.json").write_text(json.dumps(result,indent=2,allow_nan=False)+"\n")
+    return result
+
+
+def robustness_seed_outcome(seed, validation_l, validation_j, arm):
+    l_delta=validation_l[arm]["metrics"]["expected_regret_minus_uniform"]["mean"]
+    j_delta=validation_j[arm]["metrics"]["model_minus_uniform"]["mean"]
+    return {"seed":seed,"arm":arm,"validation_l_model_minus_uniform":l_delta,
+            "validation_j_model_minus_uniform":j_delta,
+            "positive_l_and_j_improvement":l_delta<0 and j_delta<0}
+
+
+def summarize_robustness(outcomes, arm):
+    if [row["seed"] for row in outcomes] != [20260923,20260924] or any(row["arm"]!=arm for row in outcomes):
+        raise ValueError("robustness must retain both preregistered seeds for the selected arm")
+    stable=all(row["positive_l_and_j_improvement"] for row in outcomes)
+    return {"classification":"PRIOR_MODEL_OPTIMIZATION_STABLE" if stable else "PRIOR_MODEL_OPTIMIZATION_UNSTABLE",
+            "selected_temperature":arm,"seed_outcomes":outcomes,
+            "rule":"both diagnostic seeds must show positive mean expected-regret improvement over uniform on VALIDATION L and VALIDATION J"}
+
+
+def train_robustness_seed(corpus, cache, stage_a_dir, output_dir, seed, arm, device="cpu"):
+    splits=cache["prepared"];train=splits["TRAIN"];val=splits["VALIDATION"]
+    selected_path=Path(stage_a_dir)/f"{arm}.pt"
+    selected_cp=torch.load(selected_path,map_location="cpu",weights_only=False)
+    base_config=selected_cp.get("config",{})
+    if selected_cp.get("arm")!=arm or base_config.get("seed")!=SEED:
+        raise ValueError("selected Stage-A checkpoint provenance mismatch")
+    for key in ("release_sha256","binding_sha256","selection_sha256","vocabulary_sha256"):
+        if base_config.get(key)!=cache["metadata"].get(key): raise ValueError(f"selected checkpoint {key} mismatch")
+    tau=float(selected_cp["tau"])
+    gaps=[max(q)-sorted(q)[-2] for q in train["root_values"] if len(q)>1 and max(q)-sorted(q)[-2]>1e-6]
+    tau0=float(np.median(gaps))
+    if not math.isclose(tau,float({"T0.5":.5,"T1":1.,"T2":2.}[arm]*tau0),rel_tol=1e-9,abs_tol=1e-12):
+        raise ValueError("selected temperature does not match TRAIN-only Stage-A scale")
+    torch.manual_seed(seed);np.random.seed(seed);random.seed(seed);torch.use_deterministic_algorithms(True)
+    model=SilverPriorNetV1(train["contexts"].shape[1]).to(device);model.normalization=cache["normalization"]
+    opt=torch.optim.AdamW(model.parameters(),lr=3e-4,weight_decay=1e-4)
+    rng=np.random.default_rng(seed);orders=make_epoch_orders(train,rng,80)
+    best=float("inf");patience=0;history=[];accounting=[]
+    def batches(rows,ids):
+        for start in range(0,len(ids),128):
+            yield device_batch(select_prepared(rows,ids[start:start+128]),device)
+    output_dir=Path(output_dir)
+    if output_dir.exists(): raise ValueError(f"refusing to overwrite robustness artifacts: {output_dir}")
+    output_dir.mkdir(parents=True)
+    normalization=cache["normalization"]
+    np.savez(output_dir/"normalization.npz",**{k:v.numpy() for k,v in normalization.items()})
+    config={"seed":seed,"arm":arm,"tau":tau,"tau0":tau0,
+            "recipe":{"optimizer":"AdamW","lr":3e-4,"weight_decay":1e-4,"root_batch":128,"clip":1.0,"max_epochs":80,"patience":8,"precision":"FP32"},
+            "train_roots_per_epoch":len(train["contexts"]),"train_actions":len(train["labels"]),
+            "optimizer_steps_per_epoch":(len(train["contexts"])+127)//128,
+            "base_stage_a_checkpoint_sha256":sha256(selected_path),
+            "trainer_sha256":cache["metadata"]["trainer_sha256"],
+            "locked_test_labels_opened":False,
+            "metadata_deviation":"LOCKED_TEST root/action counts observed before freeze; labels untouched"}
+    (output_dir/"config.json").write_text(json.dumps(config,indent=2)+"\n")
+    for epoch,order in enumerate(orders,1):
+        model.train();seen=[];actions=0;steps=0
+        for x in batches(train,order):
+            owner=x["candidate_root"];target=ragged_targets_flat(x["labels"],owner,x["batch_size"],tau)
+            opt.zero_grad();loss=ragged_root_ce(model(x),target,owner,x["candidate_lengths"])
+            loss.backward();nn.utils.clip_grad_norm_(model.parameters(),1.0);opt.step()
+            seen.extend(x["root_indices"].detach().cpu().tolist());actions+=len(x["labels"]);steps+=1
+        accounting.append(assert_epoch_accounting(seen,train,steps,batch_size=128,action_count=actions))
+        model.eval();total=0.;count=0
+        with torch.no_grad():
+            for x in batches(val,np.arange(len(val["contexts"]))):
+                target=ragged_targets_flat(x["labels"],x["candidate_root"],x["batch_size"],tau)
+                total+=float(ragged_root_ce(model(x),target,x["candidate_root"],x["candidate_lengths"]))*len(x["candidate_lengths"])
+                count+=len(x["candidate_lengths"])
+        val_ce=total/count;history.append(val_ce)
+        if val_ce<best:
+            best=val_ce;patience=0
+            torch.save({"state_dict":model.state_dict(),"config":config,"normalization":{k:v.clone() for k,v in normalization.items()},"arm":arm,"tau":tau,"epoch":epoch},output_dir/f"{arm}.pt")
+        else:patience+=1
+        if patience>=8:break
+    summary={"best_validation_ce":best,"epochs":len(history),"history":history,
+             "epoch_accounting":accounting,"checkpoint_sha256":sha256(output_dir/f"{arm}.pt")}
+    (output_dir/"train-summary.json").write_text(json.dumps({arm:summary},indent=2)+"\n")
+    lmetrics=write_validation_metrics(cache,output_dir,device,arms=(arm,))
+    cache["by_root"]={rid:{"q":q,"source_seed":src} for rid,q,src in zip(val["root_id"],val["root_values"],val["source_seed"])}
+    jmetrics=evaluate_validation_j(corpus,cache,output_dir,device,arms=(arm,))
+    return robustness_seed_outcome(seed,lmetrics,jmetrics,arm)
+
+
+def train_robustness(corpus,cache_path,stage_a_dir,output_dir,device="cpu"):
+    stage_a_dir=Path(stage_a_dir);output_dir=Path(output_dir)
+    decision=json.loads((stage_a_dir/"temperature-comparison.json").read_text())
+    if decision.get("classification")!="PRIOR_MODEL_VALIDATION_CONFIRMED" or decision.get("selected_temperature") not in ("T0.5","T1","T2"):
+        raise ValueError("robustness requires an eligible Stage-A selected temperature")
+    if output_dir.exists(): raise ValueError(f"refusing to overwrite robustness output: {output_dir}")
+    arm=decision["selected_temperature"]
+    if decision.get("arms",{}).get(arm,{}).get("eligible") is not True:
+        raise ValueError("selected temperature is not marked eligible in Stage-A comparison")
+    cache=cache_payload(corpus,cache_path)
+    outcomes=[]
+    for seed in (20260923,20260924):
+        outcomes.append(train_robustness_seed(corpus,cache,stage_a_dir,output_dir/f"seed-{seed}",seed,arm,device))
+    result=summarize_robustness(outcomes,arm)
+    (output_dir/"robustness-summary.json").write_text(json.dumps(result,indent=2,allow_nan=False)+"\n")
     return result
 
 
@@ -721,16 +822,18 @@ def main():
     p=sub.add_parser("prepare");p.add_argument("corpus",type=Path);p.add_argument("cache",type=Path)
     p=sub.add_parser("train-stage-a");p.add_argument("corpus",type=Path);p.add_argument("cache",type=Path);p.add_argument("artifact_dir",type=Path);p.add_argument("--seed",type=int,default=SEED);p.add_argument("--device",default="auto");p.add_argument("--probe-only",action="store_true")
     p=sub.add_parser("evaluate-validation-j");p.add_argument("corpus",type=Path);p.add_argument("cache",type=Path);p.add_argument("artifact_dir",type=Path);p.add_argument("--device",default="cpu")
+    p=sub.add_parser("robustness");p.add_argument("corpus",type=Path);p.add_argument("cache",type=Path);p.add_argument("stage_a_dir",type=Path);p.add_argument("output_dir",type=Path);p.add_argument("--device",default="cpu")
     args=ap.parse_args()
     if args.command=="prepare":
         c=cache_payload(args.corpus,args.cache);print(json.dumps({"metadata":c["metadata"],"train_roots":len(c["prepared"]["TRAIN"]["contexts"]),"validation_roots":len(c["prepared"]["VALIDATION"]["contexts"])},indent=2))
     elif args.command=="train-stage-a":train_stage_a(args.corpus,args.cache,args.artifact_dir,args.seed,args.device,args.probe_only)
-    else:
+    elif args.command=="evaluate-validation-j":
         c=cache_payload(args.corpus,args.cache);val=c["prepared"]["VALIDATION"];c["by_root"]={rid:{"q":q,"source_seed":seed} for rid,q,seed in zip(val["root_id"],val["root_values"],val["source_seed"])}
         lm=json.loads((args.artifact_dir/"validation-metrics.json").read_text())
         jm=evaluate_validation_j(args.corpus,c,args.artifact_dir,args.device)
         decision=select_temperature(lm,jm,args.artifact_dir)
         print(json.dumps(decision,indent=2))
+    else:print(json.dumps(train_robustness(args.corpus,args.cache,args.stage_a_dir,args.output_dir,args.device),indent=2))
 
 
 if __name__=="__main__":main()

@@ -11053,6 +11053,34 @@ new all-root VALIDATION-L run completes.
 `metadata_deviation="LOCKED_TEST root/action counts observed before freeze; labels untouched"`.
 The corrected evidence packet relabels the old Stage-A files as invalidated.
 
+### Corrected Stage A and VALIDATION J after review
+
+The corrected trainer SHA `863d7d5e09aa069fc3f4456cfa393c105729aa32` passed
+independent source/test review before this rerun. Every training epoch was
+accounted for as exactly 8,862 roots, 57,012 actions, and 70 optimizer steps.
+With unchanged seed `20260922` and recipe, the arms stopped at 18/20/20 epochs.
+Their VALIDATION-L model-minus-uniform mean-regret differences and 95% source
+cluster CIs were T0.5 `-3.67685 [-3.99284,-3.39745]`, T1
+`-3.62102 [-3.94162,-3.34120]`, and T2 `-3.57885 [-3.89616,-3.30330]`.
+
+After L metrics completed, the corrected loader opened only the 64 preselected
+VALIDATION J raw records from `raw/J`, verified their manifest checksums and
+J jobs, validated each record, and projected them in memory. It did not seek
+`shards/J`; collection deliberately materializes no such projection. All arms
+passed the VALIDATION-J upper-CI gate. Their J model-minus-uniform
+mean-regret differences and 95% source-cluster CIs were T0.5
+`-3.69322 [-4.22695,-3.16496]`, T1 `-3.66057 [-4.20016,-3.13460]`, and T2
+`-3.64892 [-4.17707,-3.14134]`.
+
+T0.5 had the largest mean J improvement. The paired T2-minus-T0.5 J regret
+interval was `[-0.12449,0.20423]`, containing zero, so the preregistered tie
+rule selected the higher temperature T2. This confirms the validation gates
+for the frozen v1 policy model, not gameplay utility or default promotion.
+Two robustness runs with seeds `20260923` and `20260924` remain pending
+independent review of their diagnostic runner. No LOCKED_TEST label, outcome,
+prediction, or shard was opened. [Corrected Stage-A/J evidence and metrics]
+(evidence/silver_prior_model_v1_20260922/README.md).
+
 - **Fresh native production-path smoke and replayable provenance:** Functional
   SHA `06279a8644492e9ef9cea813455ddfe841425380` added trusted v2
   hard-combat capture of the source queue proof; v1 remains conservative.
