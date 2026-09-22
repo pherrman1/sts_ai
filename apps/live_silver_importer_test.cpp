@@ -2002,6 +2002,15 @@ int main() {
             flexMapped |= status == static_cast<std::int16_t>(PlayerStatus::LOSE_STRENGTH) && amount == 5;
         if (!flexImported.ok || !flexMapped)
             throw std::runtime_error("player Flex temporary-strength-loss parity failed");
+        auto regenPower = general;
+        regenPower["silverRoot"]["combat"]["playerPowers"] = json::array({
+            json{{"id", "Regeneration"}, {"amount", 5}}});
+        const auto regenImported = one_combat::advisor::importSilverRoot(regenPower);
+        bool regenMapped = false;
+        for (const auto &[status, amount] : regenImported.wire.player.statusMap)
+            regenMapped |= status == static_cast<std::int16_t>(PlayerStatus::REGEN) && amount == 5;
+        if (!regenImported.ok || !regenMapped)
+            throw std::runtime_error("player Regeneration potion power parity failed");
         auto blueSlaver = general;
         blueSlaver["silverRoot"]["encounter"] = "BLUE_SLAVER";
         auto &blueSlaverMonster = blueSlaver["silverRoot"]["combat"]["monsters"][0];

@@ -124,6 +124,7 @@ const std::map<std::string, PlayerStatus> kPlayerStatuses = {
     {"Fire Breathing", PlayerStatus::FIRE_BREATHING}, {"FireBreathing", PlayerStatus::FIRE_BREATHING}, {"Juggernaut", PlayerStatus::JUGGERNAUT},
     {"Rage", PlayerStatus::RAGE}, {"Rupture", PlayerStatus::RUPTURE}, {"Thorns", PlayerStatus::THORNS},
     {"Vigor", PlayerStatus::VIGOR}, {"Buffer", PlayerStatus::BUFFER},
+    {"Regeneration", PlayerStatus::REGEN},
     {"RitualPower", PlayerStatus::RITUAL}, {"Wraith Form v2", PlayerStatus::WRAITH_FORM}, {"WraithForm", PlayerStatus::WRAITH_FORM}, {"Panache", PlayerStatus::PANACHE},
     // Vanilla power IDs with their Java Power suffixes.
     {"DoubleDamagePower", PlayerStatus::DOUBLE_DAMAGE}, {"DrawReductionPower", PlayerStatus::DRAW_REDUCTION},

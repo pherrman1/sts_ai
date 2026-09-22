@@ -49,7 +49,8 @@ The producer-side exceptions are part of that contract: Cultist Ritual reads
 `RitualPower.skipFirst` as native `justApplied`, `SlaverBlue` emits native
 `miscInfo` zero, Java `Weakened` maps to native player `Weak`, and Java
 `Flex`/`FlexPower` maps to native player `LoseStrength` (the pending temporary
-Strength loss).
+Strength loss). The vanilla `Regeneration` player power from Regen Potion maps
+to native `Regen`, which heals and decrements at the end of each turn.
 
 ## Public-information rules
 
