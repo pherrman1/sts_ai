@@ -494,6 +494,11 @@ requiring root visits.
 An already resolved event with exactly one `[Leave]` command is also a
 mechanical completion in either MCP `EVENT` or `COMPLETE` room phase; other
 event choices remain OOC decisions.
+For any other noncombat screen where MCP advertises exactly one concrete legal
+action, the strict driver advances it as `forced_ooc_action` without waiting for
+an OOC search. It excludes combat and menu states, and requires a single
+visible choice for `choose`. Screens with multiple legal actions still require
+OOC support and fail closed when unsupported.
 
 Path counts derive from persisted `metricData.path_taken`, whose original map
 symbols survive event-to-room conversion and save/resume. Completed combat

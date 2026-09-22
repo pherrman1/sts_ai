@@ -372,6 +372,22 @@ def build_legal_actions(screen: Mapping[str, Any], commands: Mapping[str, Any] |
     return actions
 
 
+def forced_ooc_action(screen: Mapping[str, Any], candidates: Sequence[LegalAction]) -> LegalAction | None:
+    """Advance a noncombat state only when MCP exposes one concrete action."""
+    if _is_combat(screen) or len(candidates) != 1:
+        return None
+    if _text(screen.get("screen_type", screen.get("screenType"))).upper() in {"MAIN_MENU", "GAME_OVER"}:
+        return None
+    candidate = candidates[0]
+    if candidate.mcp_tool == "choose":
+        choices = _list(screen.get("choice_list", screen.get("choices", screen.get("options"))))
+        if len(choices) != 1 or candidate.mcp_arguments != {"choice_index": 1}:
+            return None
+    elif candidate.mcp_tool not in {"skip", "proceed", "cancel", "confirm", "select_cards"}:
+        return None
+    return candidate
+
+
 def _semantic_match(selected: Mapping[str, Any], action: LegalAction) -> bool:
     semantic = action.semantic
     selected_kind = selected.get("kind")
@@ -1301,6 +1317,7 @@ class Driver:
         selector_confirmation = False
         declined_reward_cleanup = False
         empty_reward_proceed = False
+        forced_ooc = False
         advisor_started = time.monotonic()
         declined_card_indexes: set[int] = set()
         reward_occurrences: list[Any] = []
@@ -1377,6 +1394,9 @@ class Driver:
                         if action is None:
                             action = empty_combat_reward_proceed_action(screen, game_state, candidates)
                             empty_reward_proceed = action is not None
+                        if action is None:
+                            action = forced_ooc_action(screen, candidates)
+                            forced_ooc = action is not None
         row.update({"screen_type": screen.get("screen_type", screen.get("screenType")),
                     "state_identity": transition_identity(screen, game_state),
                     "legal_candidates": [candidate.trace() for candidate in candidates]})
@@ -1396,6 +1416,8 @@ class Driver:
                                       "boss_chest_reveal" if boss_chest_reveal else
                                       "declined_reward_cleanup" if declined_reward_cleanup else
                                       "empty_reward_proceed" if empty_reward_proceed else "run_control")
+            if forced_ooc:
+                row["decision_source"] = "forced_ooc_action"
         else:
             combat = _is_combat(screen)
             inspector_state = {**game_state, **screen, "_expected_boundary": "combat" if combat else "ooc"}

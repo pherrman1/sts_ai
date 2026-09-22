@@ -7,7 +7,7 @@ from pathlib import Path
 
 from tools.live_game_driver import (
     CandidateEnumerationError, Driver, DriverError, InspectorSnapshot, InspectorReader, IntegrationFailure,
-    LegalAction, TraceWriter, build_legal_actions, choose_deterministic_action,
+    LegalAction, TraceWriter, build_legal_actions, choose_deterministic_action, forced_ooc_action,
     map_silver_action, map_ooc_action, normalize_game_state, state_identity, transition_identity, main,
     _is_combat, card_reward_reveal_action, parent_reward_action, empty_combat_reward_proceed_action,
     neow_navigation_action, shop_entry_action,
@@ -377,6 +377,19 @@ class LiveGameDriverTest(unittest.TestCase):
                          {"choice_index": 1})
         screen["choice_list"] = ["[Fight]", "[Leave]"]
         self.assertIsNone(dead_adventurer_fight_action(screen, build_legal_actions(screen, ["choose"])))
+
+    def test_single_ooc_action_advances_without_model(self):
+        event = {"screen_type": "EVENT", "room_phase": "EVENT", "choice_list": ["[Fight]"]}
+        self.assertEqual(forced_ooc_action(event, build_legal_actions(event, ["choose"])).mcp_arguments,
+                         {"choice_index": 1})
+        event["choice_list"] = ["[Search]", "[Leave]"]
+        self.assertIsNone(forced_ooc_action(event, build_legal_actions(event, ["choose"])))
+        reward = {"screen_type": "CARD_REWARD", "choice_list": ["Take card"]}
+        self.assertIsNone(forced_ooc_action(reward, build_legal_actions(reward, ["choose", "skip"])))
+        combat = {"screen_type": "NONE", "room_phase": "COMBAT"}
+        self.assertIsNone(forced_ooc_action(combat, build_legal_actions(combat, ["end_turn"])))
+        menu = {"screen_type": "MAIN_MENU", "choice_list": ["Continue"]}
+        self.assertIsNone(forced_ooc_action(menu, build_legal_actions(menu, ["choose"])))
 
     def test_nest_intro_continue_only(self):
         screen = {"screen_type": "EVENT", "room_type": "EventRoom",
@@ -1082,8 +1095,10 @@ class OocDriverTest(unittest.TestCase):
             self.assertEqual(mutations, [("choose", {"choice_index": 1}), ("choose", {"choice_index": 1}),
                                          ("cancel", {}), ("proceed", {})])
             self.assertEqual(driver.entered_shop_rooms, {(1, 4)})
-            self.assertEqual(driver.counters["ooc_v4_ok"], 2)
+            self.assertEqual(driver.counters["ooc_v4_ok"], 1)
             self.assertEqual(driver.counters["deterministic_fallback_ooc"], 0)
+            rows = [json.loads(line) for line in (Path(directory) / "trace").read_text().splitlines()]
+            self.assertIn("forced_ooc_action", [row.get("decision_source") for row in rows])
 
     def test_shop_entry_is_not_recorded_on_dry_run_or_failed_call(self):
         for dry_run in (True, False):
