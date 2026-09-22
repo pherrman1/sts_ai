@@ -1811,6 +1811,14 @@ int main() {
             || runicImported.wire.monsters[0].moveHistory[1] != 0)
             throw std::runtime_error("generic Runic Dome deferred-intent import failed: "
                 + runicImported.reason);
+        auto directRunic = runicGeneric;
+        directRunic["silverRoot"]["combat"]["monsters"][0]["pendingMoveRolls"] = 0;
+        directRunic["silverRoot"]["combat"]["monsters"][0]["pendingDirectMoveChoice"] = 1;
+        const auto directImported = one_combat::advisor::importSilverRoot(directRunic);
+        if (!directImported.ok || directImported.wire.monsters[0].pendingMoveRolls != 0
+            || directImported.wire.monsters[0].pendingDirectMoveChoice != 1)
+            throw std::runtime_error("generic Runic Dome direct-choice import failed: "
+                + directImported.reason);
         auto malformedRunic = runicGeneric;
         malformedRunic["silverRoot"]["combat"]["monsters"][0]["pendingRollInputs"].erase("miscInfo");
         if (one_combat::advisor::importSilverRoot(malformedRunic).reason
