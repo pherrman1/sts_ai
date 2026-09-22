@@ -535,6 +535,8 @@ Dead Adventurer's initial Search/Leave phase is qualified only when its public
 description identifies one of the three native elite encounters and the shown
 search chance matches ascension. The importer retains that public encounter and
 samples the hidden reward order. Later search phases remain unsupported.
+After a modeled Search triggers the elite, the sole `[Fight]` button is a
+mechanical transition into combat and the strict driver advances it.
 The private Java
 `potionChance` and `cardRarityFactor` counters are not captured. Roots such
 as Library, Mushrooms and Mysterious Sphere whose pre-MAP

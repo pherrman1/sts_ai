@@ -11,7 +11,7 @@ from tools.live_game_driver import (
     map_silver_action, map_ooc_action, normalize_game_state, state_identity, transition_identity, main,
     _is_combat, card_reward_reveal_action, parent_reward_action, empty_combat_reward_proceed_action,
     neow_navigation_action, shop_entry_action,
-    event_completion_action, nest_intro_action, boss_door_action, boss_chest_reveal_action,
+    event_completion_action, dead_adventurer_fight_action, nest_intro_action, boss_door_action, boss_chest_reveal_action,
     boss_chest_skip_cleanup_action, selector_confirmation_action, declined_reward_cleanup_action,
 )
 
@@ -368,6 +368,15 @@ class LiveGameDriverTest(unittest.TestCase):
                          {"choice_index": 1})
         screen["choice_list"] = ["[Leave]", "[Fight]"]
         self.assertIsNone(event_completion_action(screen, build_legal_actions(screen, ["choose"])))
+
+    def test_dead_adventurer_forced_fight(self):
+        screen = {"screen_type": "EVENT", "room_type": "EventRoom", "room_phase": "EVENT",
+                  "screen_state": {"event_id": "Dead Adventurer"}, "choice_list": ["[Fight]"]}
+        candidates = build_legal_actions(screen, ["choose"])
+        self.assertEqual(dead_adventurer_fight_action(screen, candidates).mcp_arguments,
+                         {"choice_index": 1})
+        screen["choice_list"] = ["[Fight]", "[Leave]"]
+        self.assertIsNone(dead_adventurer_fight_action(screen, build_legal_actions(screen, ["choose"])))
 
     def test_nest_intro_continue_only(self):
         screen = {"screen_type": "EVENT", "room_type": "EventRoom",

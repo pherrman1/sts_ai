@@ -916,6 +916,18 @@ def event_completion_action(screen: Mapping[str, Any], candidates: Sequence[Lega
     return candidate if candidate.mcp_tool == "choose" and candidate.mcp_arguments == {"choice_index": 1} else None
 
 
+def dead_adventurer_fight_action(screen: Mapping[str, Any], candidates: Sequence[LegalAction]) -> LegalAction | None:
+    """Advance the sole Fight button after Dead Adventurer's modeled Search."""
+    if (_text(screen.get("screen_type")).upper() != "EVENT"
+            or _text(screen.get("room_type")) != "EventRoom"
+            or _text(_mapping(screen.get("screen_state")).get("event_id")) != "Dead Adventurer"
+            or _list(screen.get("choice_list")) != ["[Fight]"]
+            or len(candidates) != 1):
+        return None
+    candidate = candidates[0]
+    return candidate if candidate.mcp_tool == "choose" and candidate.mcp_arguments == {"choice_index": 1} else None
+
+
 def nest_intro_action(screen: Mapping[str, Any], candidates: Sequence[LegalAction]) -> LegalAction | None:
     """Advance the Nest's introductory Continue before its first choice."""
     if (_text(screen.get("screen_type")).upper() != "EVENT"
@@ -1281,6 +1293,7 @@ class Driver:
         neow_navigation = False
         shop_entry = False
         event_completion = False
+        dead_adventurer_fight = False
         nest_intro = False
         boss_door = False
         boss_chest_reveal = False
@@ -1333,6 +1346,9 @@ class Driver:
                             action = event_completion_action(screen, candidates)
                             event_completion = action is not None
                         if action is None:
+                            action = dead_adventurer_fight_action(screen, candidates)
+                            dead_adventurer_fight = action is not None
+                        if action is None:
                             action = nest_intro_action(screen, candidates)
                             nest_intro = action is not None
                         if action is None:
@@ -1372,6 +1388,7 @@ class Driver:
                                       "neow_navigation" if neow_navigation else
                                       "shop_navigation" if shop_entry else
                                       "event_completion" if event_completion else
+                                      "dead_adventurer_fight" if dead_adventurer_fight else
                                       "nest_intro" if nest_intro else
                                       "boss_door" if boss_door else
                                       "selector_confirmation" if selector_confirmation else
