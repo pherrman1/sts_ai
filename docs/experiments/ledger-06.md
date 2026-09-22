@@ -11097,6 +11097,27 @@ reselects the arm nor establishes gameplay impact. No LOCKED_TEST labels,
 outcomes, predictions, or shards were opened. [Robustness raw metrics and
 provenance](evidence/silver_prior_model_v1_20260922/robustness-reviewed-f66aed7e/).
 
+### One-time LOCKED_TEST evaluator preregistered (2026-09-22)
+
+The sole candidate remains Stage-A T2, initialization seed `20260922`, target
+temperature `1.179975000005129`, and checkpoint SHA-256
+`b756c3e6576bdb53085f24aeb1102e4e2fe55fd7469c55546c99f068ccf40e24`.
+Before any LOCKED_TEST labels are opened, a dedicated evaluator is being
+reviewed at the supplied main baseline `60ece5403ec0a06d802c54aed8c7b85a9d4bc369`.
+It reads all non-quarantined LOCKED_TEST L shards and only preselected
+LOCKED_TEST J raw records, with create-only consumption receipt before label
+access. The trainer remains TRAIN/VALIDATION-only.
+
+The decision rule is frozen: classify
+`PRIOR_MODEL_LOCKED_TEST_CONFIRMED` only when the upper 95% source-seed-cluster
+bootstrap CI (5,000 replicates) of model-minus-uniform expected regret is below
+zero on both L and J; otherwise classify
+`PRIOR_MODEL_LOCKED_TEST_NOT_CONFIRMED`. No top-action threshold is used. No
+label, outcome, prediction, or shard has been opened for this run. Evaluation
+is gated on independent implementation/scientific-design review of the
+committed evaluator SHA. **Knowledge impact:** none; the evaluator is a
+one-experiment tool and does not alter training or Silver integration.
+
 - **Fresh native production-path smoke and replayable provenance:** Functional
   SHA `06279a8644492e9ef9cea813455ddfe841425380` added trusted v2
   hard-combat capture of the source queue proof; v1 remains conservative.
