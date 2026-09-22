@@ -831,6 +831,27 @@ def card_reward_reveal_action(screen: Mapping[str, Any], game: Mapping[str, Any]
     return None
 
 
+def parent_reward_action(screen: Mapping[str, Any], game: Mapping[str, Any],
+                         candidates: Sequence[LegalAction]) -> LegalAction | None:
+    """Claim a visible non-card reward before opening a hidden card group."""
+    if _text(screen.get("screen_type", screen.get("screenType"))).upper() != "COMBAT_REWARD":
+        return None
+    occurrences = _list(_mapping(game.get("screen_state", {})).get("rewards"))
+    if not occurrences:
+        return None
+    visible_types = {"GOLD", "STOLEN_GOLD", "RELIC", "POTION", "EMERALD_KEY", "SAPPHIRE_KEY"}
+    for index, reward in enumerate(occurrences):
+        kind = _text(_mapping(reward).get("reward_type", _mapping(reward).get("type", ""))).upper()
+        if kind not in visible_types:
+            continue
+        match = next((candidate for candidate in candidates
+                      if candidate.mcp_tool == "choose"
+                      and candidate.mcp_arguments == {"choice_index": index + 1}), None)
+        if match is not None:
+            return match
+    return None
+
+
 def empty_combat_reward_proceed_action(screen: Mapping[str, Any], game: Mapping[str, Any],
                                        candidates: Sequence[LegalAction]) -> LegalAction | None:
     """Advance only an explicitly empty combat reward with one Proceed command."""
@@ -1243,6 +1264,7 @@ class Driver:
         if not candidates:
             raise DriverError("no legal candidates for a non-terminal screen")
         reveal_card = False
+        parent_reward = False
         neow_navigation = False
         shop_entry = False
         event_completion = False
@@ -1274,60 +1296,66 @@ class Driver:
                 and type(_mapping(item).get("index")) is int
                 and (session, _mapping(item).get("identity")) in self.declined_rewards}
         if action is None:
-            reveal = card_reward_reveal_action(screen, game_state, candidates, declined_card_indexes)
-            if reveal is not None:
-                action = reveal
-                reveal_card = True
+            parent = parent_reward_action(screen, game_state, candidates)
+            if parent is not None:
+                action = parent
+                parent_reward = True
             else:
-                action = neow_navigation_action(screen, candidates)
-                neow_navigation = action is not None
-                if action is None:
-                    act, floor = game_state.get("act"), screen.get("floor")
-                    room = (act, floor) if type(act) is int and type(floor) is int else None
-                    action = shop_entry_action(screen, candidates,
-                                               entered=room in self.entered_shop_rooms)
-                    shop_entry = action is not None
-                    if shop_entry and action.mcp_tool == "choose" and room is not None:
-                        shop_entry_key = room
-                    if action is None:
-                        action = event_completion_action(screen, candidates)
-                        event_completion = action is not None
-                    if action is None:
-                        action = nest_intro_action(screen, candidates)
-                        nest_intro = action is not None
-                    if action is None:
-                        action = boss_door_action(screen, candidates)
-                        boss_door = action is not None
-                    if action is None:
-                        act, floor = game_state.get("act"), screen.get("floor")
-                        selector_key = (act, floor, _text(screen.get("room_type")))
-                        if self.pending_selector_confirmation == selector_key:
-                            action = selector_confirmation_action(screen, candidates)
-                            selector_confirmation = action is not None
-                        self.pending_selector_confirmation = None
+                reveal = card_reward_reveal_action(screen, game_state, candidates, declined_card_indexes)
+                if reveal is not None:
+                    action = reveal
+                    reveal_card = True
+                else:
+                    action = neow_navigation_action(screen, candidates)
+                    neow_navigation = action is not None
                     if action is None:
                         act, floor = game_state.get("act"), screen.get("floor")
                         room = (act, floor) if type(act) is int and type(floor) is int else None
-                        if room in self.boss_relic_skipped_rooms:
-                            action = boss_chest_skip_cleanup_action(screen, candidates)
-                            boss_chest_skip_cleanup = action is not None
-                    if action is None:
-                        action = boss_chest_reveal_action(screen, candidates)
-                        boss_chest_reveal = action is not None
-                    if action is None:
-                        action = declined_reward_cleanup_action(
-                            reward_occurrences, declined_card_indexes, candidates)
-                        declined_reward_cleanup = action is not None
-                    if action is None:
-                        action = empty_combat_reward_proceed_action(screen, game_state, candidates)
-                        empty_reward_proceed = action is not None
+                        action = shop_entry_action(screen, candidates,
+                                                   entered=room in self.entered_shop_rooms)
+                        shop_entry = action is not None
+                        if shop_entry and action.mcp_tool == "choose" and room is not None:
+                            shop_entry_key = room
+                        if action is None:
+                            action = event_completion_action(screen, candidates)
+                            event_completion = action is not None
+                        if action is None:
+                            action = nest_intro_action(screen, candidates)
+                            nest_intro = action is not None
+                        if action is None:
+                            action = boss_door_action(screen, candidates)
+                            boss_door = action is not None
+                        if action is None:
+                            act, floor = game_state.get("act"), screen.get("floor")
+                            selector_key = (act, floor, _text(screen.get("room_type")))
+                            if self.pending_selector_confirmation == selector_key:
+                                action = selector_confirmation_action(screen, candidates)
+                                selector_confirmation = action is not None
+                            self.pending_selector_confirmation = None
+                        if action is None:
+                            act, floor = game_state.get("act"), screen.get("floor")
+                            room = (act, floor) if type(act) is int and type(floor) is int else None
+                            if room in self.boss_relic_skipped_rooms:
+                                action = boss_chest_skip_cleanup_action(screen, candidates)
+                                boss_chest_skip_cleanup = action is not None
+                        if action is None:
+                            action = boss_chest_reveal_action(screen, candidates)
+                            boss_chest_reveal = action is not None
+                        if action is None:
+                            action = declined_reward_cleanup_action(
+                                reward_occurrences, declined_card_indexes, candidates)
+                            declined_reward_cleanup = action is not None
+                        if action is None:
+                            action = empty_combat_reward_proceed_action(screen, game_state, candidates)
+                            empty_reward_proceed = action is not None
         row.update({"screen_type": screen.get("screen_type", screen.get("screenType")),
                     "state_identity": transition_identity(screen, game_state),
                     "legal_candidates": [candidate.trace() for candidate in candidates]})
         if action:
             if reward_observation_marker is not None:
                 self.previous_inspector = reward_observation_marker
-            row["decision_source"] = ("card_reward_reveal" if reveal_card else
+            row["decision_source"] = ("parent_reward_cleanup" if parent_reward else
+                                      "card_reward_reveal" if reveal_card else
                                       "neow_navigation" if neow_navigation else
                                       "shop_navigation" if shop_entry else
                                       "event_completion" if event_completion else

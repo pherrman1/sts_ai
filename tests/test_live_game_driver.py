@@ -9,7 +9,7 @@ from tools.live_game_driver import (
     CandidateEnumerationError, Driver, DriverError, InspectorSnapshot, InspectorReader, IntegrationFailure,
     LegalAction, TraceWriter, build_legal_actions, choose_deterministic_action,
     map_silver_action, map_ooc_action, normalize_game_state, state_identity, transition_identity, main,
-    _is_combat, card_reward_reveal_action, empty_combat_reward_proceed_action,
+    _is_combat, card_reward_reveal_action, parent_reward_action, empty_combat_reward_proceed_action,
     neow_navigation_action, shop_entry_action,
     event_completion_action, nest_intro_action, boss_door_action, boss_chest_reveal_action,
     boss_chest_skip_cleanup_action, selector_confirmation_action, declined_reward_cleanup_action,
@@ -301,6 +301,15 @@ class LiveGameDriverTest(unittest.TestCase):
         candidates = build_legal_actions(screen, ["choose", "proceed"])
         self.assertEqual(card_reward_reveal_action(screen, game, candidates).mcp_arguments,
                          {"choice_index": 2})
+
+    def test_parent_reward_is_claimed_before_hidden_card_group(self):
+        screen = {"screen_type": "COMBAT_REWARD", "choice_list": ["16 gold", "card"],
+                  "ready_for_command": True}
+        game = {"screen_state": {"rewards": [
+            {"reward_type": "GOLD", "gold": 16}, {"reward_type": "CARD"}]}}
+        candidates = build_legal_actions(screen, ["choose"])
+        self.assertEqual(parent_reward_action(screen, game, candidates).mcp_arguments,
+                         {"choice_index": 1})
 
     def test_neow_navigation_is_mechanical_only_around_bonus_choices(self):
         screen = {"screen_type": "EVENT", "room_type": "NeowRoom", "floor": 0,
@@ -641,7 +650,7 @@ class OocDriverTest(unittest.TestCase):
             action, _ = driver.fallback_action(screen, {}, actions, snapshot)
             self.assertEqual(action.mcp_arguments, {"choice_index": 2})
 
-    def test_mixed_reward_reveals_card_before_unsupported_fallback(self):
+    def test_mixed_reward_claims_visible_parent_before_card_reveal(self):
         with tempfile.TemporaryDirectory() as directory:
             screen = {"screen_type": "COMBAT_REWARD", "choice_list": ["Gold", "Anchor", "Card"],
                       "ready_for_command": True}
@@ -660,7 +669,7 @@ class OocDriverTest(unittest.TestCase):
                             TraceWriter(Path(directory) / "trace"), max_steps=1)
             asyncio.run(driver.run())
             self.assertEqual([call for call in client.calls if call[0] == "choose"],
-                             [("choose", {"choice_index": 3})])
+                             [("choose", {"choice_index": 1})])
 
     def test_mixed_key_reward_allows_free_card_reveal(self):
         screen = {"screen_type": "COMBAT_REWARD", "choice_list": ["Gold", "Emerald Key", "Card"],
