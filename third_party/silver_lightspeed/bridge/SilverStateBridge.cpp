@@ -299,6 +299,7 @@ sts::BattleContext materialize(const BattleStateWire &in, sts::GameContext *runC
     out.curCardQueueItem.regretCardCount = in.curCardQueueItem.regretCardCount;
     out.curCardQueueItem.purgeOnUse = in.curCardQueueItem.purgeOnUse;
     out.curCardQueueItem.exhaustOnUse = in.curCardQueueItem.exhaustOnUse;
+    out.historicalQueueItemAtSource = in.historicalQueueItemAtSource;
     return out;
 }
 
@@ -2720,6 +2721,14 @@ bool convertedStatesEqualForSearch(const BattleStateWire &a, const BattleStateWi
         const sts::BattleContext lhs = materialize(a);
         const sts::BattleContext rhs = materialize(b);
         return lhs.equalForSearch(rhs);
+    } catch (const std::exception &) {
+        return false;
+    }
+}
+
+bool convertedStateHistoricalQueueItemForTest(const BattleStateWire &state) {
+    try {
+        return sts::search::queueItemIsHistoricalAtDecision(materialize(state));
     } catch (const std::exception &) {
         return false;
     }

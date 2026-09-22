@@ -34,7 +34,8 @@ namespace sts::search {
     thread_local search::BattleSearcher *g_debug_scum_search;
 
     bool queueItemIsHistoricalAtDecision(const BattleContext &state) {
-        return (state.inputState == InputState::PLAYER_NORMAL
+        return state.historicalQueueItemAtSource
+            && (state.inputState == InputState::PLAYER_NORMAL
                 || state.inputState == InputState::CARD_SELECT)
             && state.outcome == Outcome::UNDECIDED
             && !state.isBattleOver && !state.endTurnQueued && !state.turnHasEnded

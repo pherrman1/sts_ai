@@ -32,6 +32,12 @@ queue item to the observed value. Hand-order and equivalent-copy UID repair
 remain subject to their existing safeguards. A privately selected
 deterministic child still must reroot, be cap-blocked, or fail loudly.
 
+Live conversion records whether the source's action and card queues were
+empty before omitting them from `BattleStateWire`. An imported root without
+that proof, including legacy JSON/public observations, keeps exact queue-item
+identity throughout its private search. This conservative gate prevents a
+pending Headbutt `OnAfterCardUsed` from appearing quiescent after conversion.
+
 ## Evidence and limits
 
 Focused tests cover the previously failing expanded Gambler's Brew subtree,
@@ -42,7 +48,10 @@ outcomes, and excluded states. Frozen DEV results and same-root measurements
 are recorded in Silver ledger §335. The prior hard64 HOLDOUT was consumed by
 PR #285 and is not rerun for this candidate.
 
-The new identity is bounded to the currently supported simulator. The
+The new identity changes default Silver action selection when its boundary is
+met; it is justified as state identity, not an efficiency or gameplay-quality
+improvement. It does not change configuration defaults, RNG, or budgets. The
+identity is bounded to the currently supported simulator. The
 read-site audit found no direct `curCardQueueItem` read in supported quiescent
 selection enumeration or execution; a future task or action path that reads
 it at such a boundary requires revisiting this predicate.

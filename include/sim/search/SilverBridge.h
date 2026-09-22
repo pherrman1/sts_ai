@@ -154,6 +154,10 @@ struct BattleStateWire {
     // Runic Dome visibility gate: when true, moveHistory values are redacted
     // and pending input snapshots define the Silver chance distribution.
     bool intentsHidden = false;
+    // Runtime-only proof captured before pending queues are omitted. This is
+    // deliberately absent from legacy JSON: replay/import without source
+    // provenance conservatively keeps exact queue identity.
+    bool historicalQueueItemAtSource = false;
 
     std::uint64_t isolatedSearchSeed = 0;
     std::uint64_t observedGeneration = 0;
@@ -1065,6 +1069,7 @@ ConvertedStateDigest inspectConvertedBattleState(const BattleStateWire &state);
 // executes strictly inside the isolated Silver context, never live combat.
 ConvertedStateDigest materializeDeferredMonsterIntentsForTest(const BattleStateWire &state);
 bool convertedStatesEqualForSearch(const BattleStateWire &a, const BattleStateWire &b);
+bool convertedStateHistoricalQueueItemForTest(const BattleStateWire &state);
 
 // Runs Silver's sequential EXHAUST_MANY/GAMBLE interaction wholly in the
 // isolated model. Only a final confirmation is returned; callers must lower

@@ -210,6 +210,11 @@ dedup and reroot. The active root may therefore carry a different historical
 item than the observed game while their quiescent search identity agrees.
 `queueItemCanonicalHits` counts exact-miss dedup lookups that reused a
 historical representative, not unique variants or allocations saved.
+Live conversion carries a source-side proof that the queues were empty before
+the wire omitted them. Without that proof, including legacy JSON and public
+imports, the private search keeps queue-item identity exact for the imported
+root and its descendants. This prevents a live `CARD_SELECT` with pending
+`OnAfterCardUsed` work from being mistaken for a quiescent selection.
 
 One private session is retained per battle and exact-child reroot is attempted
 after each action. The production cap remains 32,768 nodes. `STS_SILVER_REUSE_CAP=131072`

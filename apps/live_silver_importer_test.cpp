@@ -1170,6 +1170,45 @@ int cardActionCount(const std::vector<silver_bridge::SemanticAction> &actions, C
 }
 int main() {
     try {
+        {
+            GameContext game(CharacterClass::IRONCLAD, 0x71517u, 0);
+            game.act = 1;
+            game.floorNum = 1;
+            BattleContext live;
+            live.init(game, MonsterEncounter::CULTIST);
+            CombatKnowledgeState knowledge;
+            knowledge.initializeFromLiveBattle(live);
+            live.potions[0] = Potion::GAMBLERS_BREW;
+            live.potionCount = 1;
+            sts::search::Action(sts::search::ActionType::POTION, 0, 0).execute(live);
+            if (live.inputState != InputState::CARD_SELECT
+                || live.cardSelectInfo.cardSelectTask != CardSelectTask::GAMBLE
+                || live.actionQueue.size != 0 || live.cardQueue.size != 0)
+                throw std::runtime_error("live Gambler's Brew did not settle at quiescent selection");
+            auto wire = makeSilverBattleStateWire(live, knowledge,
+                makeSilverRunContext(game), 0x71517u);
+            if (!wire.valid || !wire.historicalQueueItemAtSource
+                || !silver_bridge::convertedStateHistoricalQueueItemForTest(wire))
+                throw std::runtime_error("quiescent live GAMBLE lost queue-item provenance");
+            live.cardSelectInfo.cardSelectTask = CardSelectTask::HEADBUTT;
+            live.curCardQueueItem.card = CardInstance(CardId::HEADBUTT);
+            live.actionQueue.pushBack(Actions::OnAfterCardUsed());
+            wire = makeSilverBattleStateWire(live, knowledge,
+                makeSilverRunContext(game), 0x71517u);
+            if (!wire.valid || wire.historicalQueueItemAtSource
+                || silver_bridge::convertedStateHistoricalQueueItemForTest(wire))
+                throw std::runtime_error("pending live Headbutt became historical after wire conversion");
+            live.actionQueue.clear();
+            wire = makeSilverBattleStateWire(live, knowledge,
+                makeSilverRunContext(game), 0x71517u);
+            if (!wire.valid || !wire.historicalQueueItemAtSource
+                || !silver_bridge::convertedStateHistoricalQueueItemForTest(wire))
+                throw std::runtime_error("settled live selection did not preserve provenance");
+            const auto serialized = json(wire).get<BattleStateWire>();
+            if (serialized.historicalQueueItemAtSource
+                || silver_bridge::convertedStateHistoricalQueueItemForTest(serialized))
+                throw std::runtime_error("legacy JSON manufactured queue-item provenance");
+        }
         verifyRuntimeMoveBoundary();
         verifyEncounterManifestAndNativeSweep();
         verifyDynamicTransitionCorpus();
@@ -1318,6 +1357,12 @@ int main() {
                 || imported.wire.drawPileBloodCardCount != canonical.drawPileBloodCardCount
                 || imported.wire.discardPileBloodCardCount != canonical.discardPileBloodCardCount)
                 throw std::runtime_error(std::string("first-root fields failed: ") + f.name);
+            // The public observation cannot prove that its omitted queues
+            // were empty. Compare search under the same conservative policy.
+            if (!canonical.historicalQueueItemAtSource
+                || imported.wire.historicalQueueItemAtSource)
+                throw std::runtime_error("live queue provenance boundary changed");
+            canonical.historicalQueueItemAtSource = imported.wire.historicalQueueItemAtSource;
             auto a = runSilverDecision(canonical, config);
             auto b = runSilverDecision(imported.wire, config);
             if (!a.accepted || !b.accepted
