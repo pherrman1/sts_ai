@@ -843,6 +843,7 @@ void Monster::materializePendingMove(BattleContext &bc) {
     int n = pendingMoveRolls;
     pendingMoveRolls = 0;
     auto inputs = std::move(pendingRollInputHistory);
+    pendingRollInputHistory.clear();
     if (inputs.empty() && n == 1) inputs.push_back(rollInputs);
     if (static_cast<int>(inputs.size()) != n)
         throw std::runtime_error("incomplete deferred monster roll input history");
