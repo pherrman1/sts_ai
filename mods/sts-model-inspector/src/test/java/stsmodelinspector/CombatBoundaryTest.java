@@ -12,6 +12,24 @@ public final class CombatBoundaryTest {
         STSModelInspector.recordHiddenMoveHistory(chained, java.util.Arrays.asList((byte)41));
         STSModelInspector.recordHiddenMoveHistory(chained,
                 java.util.Arrays.asList((byte)0, (byte)42));
+        STSModelInspector.HiddenIntentSnapshot first = new STSModelInspector.HiddenIntentSnapshot();
+        first.curHp = 97;
+        first.monsterTurnNumber = 1;
+        first = STSModelInspector.appendHiddenIntentRoll(null, first,
+                java.util.Arrays.asList((byte)41));
+        STSModelInspector.HiddenIntentSnapshot second = new STSModelInspector.HiddenIntentSnapshot();
+        second.curHp = 62;
+        second.monsterTurnNumber = 4;
+        second = STSModelInspector.appendHiddenIntentRoll(first, second,
+                java.util.Arrays.asList((byte)0, (byte)42));
+        if (second.pendingMoveRolls != 2 || second.publicMoveHistoryCount != 1
+                || second.publicMoveHistory[0] != 41
+                || second.pendingRollInputHistory.size() != 2
+                || second.pendingRollInputHistory.get(0).curHp != 97
+                || second.pendingRollInputHistory.get(1).curHp != 62
+                || second.pendingRollInputHistory.get(0).monsterTurnNumber != 1
+                || second.pendingRollInputHistory.get(1).monsterTurnNumber != 4)
+            throw new AssertionError("cross-turn Runic rolls lost distinct public inputs");
         if (chained.pendingMoveRolls != 2 || chained.publicMoveHistoryCount != 1
                 || chained.publicMoveHistory[0] != 41)
             throw new AssertionError("chained hidden roll replaced its public pre-roll history");

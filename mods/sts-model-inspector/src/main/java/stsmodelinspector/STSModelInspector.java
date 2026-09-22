@@ -328,6 +328,13 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         if (monster == null || AbstractDungeon.getMonsters() == null) return;
         HiddenIntentSnapshot previous = hiddenIntentSnapshots.get(monster);
         HiddenIntentSnapshot snapshot = captureHiddenRollInputs(monster);
+        hiddenIntentSnapshots.put(monster,
+                appendHiddenIntentRoll(previous, snapshot, monster.moveHistory));
+    }
+
+    static HiddenIntentSnapshot appendHiddenIntentRoll(HiddenIntentSnapshot previous,
+                                                        HiddenIntentSnapshot snapshot,
+                                                        List<Byte> moveHistory) {
         if (previous != null && previous.pendingMoveRolls > 0) {
             // Only the first pre-roll move history is public. Later rolls may
             // happen on different turns, so retain each roll's own inputs.
@@ -338,11 +345,11 @@ public final class STSModelInspector implements PostInitializeSubscriber,
             snapshot.pendingMoveRolls = previous.pendingMoveRolls + 1;
             snapshot.pendingRollInputHistory.addAll(previous.pendingRollInputHistory);
         } else {
-            recordHiddenMoveHistory(snapshot, monster.moveHistory);
+            recordHiddenMoveHistory(snapshot, moveHistory);
         }
         snapshot.pendingRollInputHistory.add(copyHiddenRollInputs(snapshot));
         snapshot.generation = previous == null ? 1 : previous.generation + 1;
-        hiddenIntentSnapshots.put(monster, snapshot);
+        return snapshot;
     }
 
     private static HiddenIntentSnapshot captureHiddenRollInputs(AbstractMonster monster) {
