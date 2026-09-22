@@ -1946,8 +1946,22 @@ void oocMctsAdapterSelfTest() {
     visibleCards.push_back(Card(CardId::BASH)); visibleRewards.addCardReward(visibleCards);
     fixture.info.rewardsContainer=visibleRewards; checkCandidates(fixture);
     fixture.relics.add({RelicId::SINGING_BOWL,0}); checkCandidates(fixture);
+    for (auto bottle : {RelicId::BOTTLED_FLAME, RelicId::BOTTLED_LIGHTNING,
+                        RelicId::BOTTLED_TORNADO}) {
+        fixture.info.rewardsContainer.relics[0]=bottle;
+        checkCandidates(fixture);
+        OocGameContextModel bottleChoices(fixture,path);
+        bool canTake=false, canSkip=false;
+        for (const auto &action : bottleChoices.legalActions(0)) {
+            const auto &candidate=bottleChoices.candidate(0,action.id);
+            if (!candidate.semantic) continue;
+            canTake |= candidate.semantic->effect==OocSemanticEffect::TAKE_RELIC;
+            canSkip |= candidate.semantic->effect==OocSemanticEffect::LEAVE_REWARDS;
+        }
+        require(canTake && canSkip && bottleChoices.state(0).info.rewardsContainer.relicCount==1,
+            "Bottled relic remains optional after forced gold collection");
+    }
     fixture.info.rewardsContainer.relics[0]=RelicId::BOTTLED_FLAME;
-    checkCandidates(fixture);
     GameAction(GameAction::RewardsActionType::RELIC).execute(fixture);
     require(fixture.info.selectScreenType==CardSelectScreenType::BOTTLE,"bottle fixture opens selector");
     checkCandidates(fixture);
