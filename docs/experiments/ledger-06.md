@@ -10915,12 +10915,12 @@ default or generalization claim is authorized. Evidence:
   63/64. Case `12100063/26` failed closed after three decisions at a selected
   deterministic `CARD_SELECT` child with 525 edge visits. The diagnostic
   reported that retained and observed states differed in `curCardQueueItem`
-  while the listed gameplay fields, RNG, queues, and hand UIDs matched. Since
-  PR #285 kept all `CARD_SELECT` states exact, so this correctly failed closed
+  while the listed gameplay fields, RNG, queues, and hand UIDs matched. PR #285
+  kept all `CARD_SELECT` states exact, so this correctly failed closed
   under that candidate's identity contract. Its `PLAYER_NORMAL`-only boundary
   and root-rewrite design were insufficient; the candidate is **not adopted**.
-  The 63 completed rows had 49 wins and mean
-  terminal HP fraction 0.3674471462. Across all recorded rows there were
+  The 63 completed rows had 49 wins and mean terminal HP fraction
+  0.3674471462. Across all recorded rows there were
   325,149 canonical hits, 1,091 successful deterministic reroots before the
   failing attempt, 529 stochastic candidate misses, and zero cap fallbacks.
   The failed row has no terminal outcome. HOLDOUT is consumed; no retuning or
@@ -10936,3 +10936,74 @@ default or generalization claim is authorized. Evidence:
   **Knowledge impact:** rejected candidate and consumed HOLDOUT recorded in
   ADR-0016 and this ledger; no maintained search behavior or production
   implementation change.
+
+## §335 — Quiescent Silver queue-item identity on frozen hard64 DEV (2026-09-22)
+
+- **Question and boundary:** Does ignoring only historical `curCardQueueItem`
+  at quiescent unresolved `PLAYER_NORMAL` or `CARD_SELECT` states preserve
+  selected-child reroot and expanded selection descendants without rewriting
+  the retained root? §334 records PR #285's rejected root-rewrite design and
+  consumed HOLDOUT. This §335 records the replacement design without changing
+  that evidence.
+- **Frozen implementation and protocol:** Current-main baseline
+  `8613f9c7811ce19a81cb731e78b6b58d01ec91ca` versus candidate functional
+  SHA `68b57f1bc644733e845a7bff15d717d481617dee`. The 64 frozen hard64
+  **DEV** snapshots (SHA-256
+  `ab7c3298754864986c31273a0f1d23967b165fdd79a386261b680b8ad16d0eae`)
+  were replayed at 1,000 simulations per decision through `seed_guard.sh`,
+  `OMP_NUM_THREADS=4`, default Silver settings, and `--reroot-diagnostics`.
+  The consumed HOLDOUT was not rerun.
+- **Focused verification:** Six focused CTest cases passed, covering Silver
+  optimization, bridge boundary, integration modes, and live importer. The
+  new expanded Gambler's Brew fixture reroots through selection, reopened
+  selection, and confirmation, preserves all retained queue items, and
+  continues searching. Headbutt's pending `OnAfterCardUsed` remains exact.
+- **DEV result:** Both arms completed 64/64. Main versus candidate: 51 versus
+  52 wins; mean terminal HP fraction 0.3440911508 versus 0.3701368277;
+  1,287 versus 1,312 selected deterministic reroots with no fallback; zero
+  deterministic misses and zero positive-visit selected edges without child
+  in either arm. Candidate counted 325,548 queue-item dedup hits. Action
+  traces changed in 64/64 cases and first actions in 12/64, so full-combat
+  node, simulation, time, win, and HP differences are trajectory-confounded.
+- **Same-root diagnostic:** A first-decision-only seam paired 59 ordinary
+  roots; five transactional selection roots were reported as such in both
+  arms. Both performed 59,000 root visits. First actions changed in 12/59;
+  candidate versus main created 54 fewer nodes in aggregate and recorded
+  7,763 queue-item dedup hits. Search time summed to 691,962.262 versus
+  656,110.242 microseconds in one run; this does not qualify a speed effect.
+- **Decision and limits:** Bounded DEV confirmation supported the identity
+  rule and invariants for later independent implementation review. It is
+  not a HOLDOUT result, scientific qualification, or default promotion. No
+  fresh independent cohort was run. **Evidence:** [raw DEV packet and
+  provenance](evidence/silver_quiescent_queue_item_20260922/README.md).
+  **Knowledge impact:** ADR-0017 records the scoped identity choice and the
+  combat-search KB records the branch behavior. Eligible roots can change
+  default Silver action selection; no configuration setting, RNG, budget, or
+  model changed.
+
+- **Live-boundary correction:** Review found that live conversion omits pending
+  action/card queues. Functional SHA `14ad63b10dcbe820a9df3580a99d202ddbbf2fa8`
+  carries a source-side empty-queue proof and keeps identity exact for
+  legacy/imported wires without it. Six focused tests pass, including actual
+  quiescent Gambler's Brew and pending Headbutt after conversion. A permitted
+  DEV rerun at this SHA completed 64/64 with zero deterministic misses and
+  zero positive-visit childless edges. The frozen legacy JSON provides no
+  source proof, so candidate and main had identical 64/64 action traces,
+  51 wins, and zero candidate canonical hits; 59 paired first roots also
+  matched. This verifies conservative legacy behavior, not positive
+  live-policy qualification. [Corrected raw packet](evidence/silver_quiescent_queue_item_20260922/README.md).
+
+- **Fresh native production-path smoke and replayable provenance:** Functional
+  SHA `06279a8644492e9ef9cea813455ddfe841425380` added trusted v2
+  hard-combat capture of the source queue proof; v1 remains conservative.
+  Seven focused CTests passed. Eight fresh A0 seeds `2026100100..2026100107`
+  ran project-fair Silver through native `bestbench` at 300 simulations per
+  decision with the repository seed guard. All eight completed normally;
+  175 combats yielded 178,497 queue-item canonical hits and zero conversion,
+  semantic-resolution, transaction, knowledge-consistency, or fail-closed
+  selected-child failures. All captures were v2; replay of one trusted
+  capture per seed completed 8/8 with 2,303 canonical hits, zero deterministic
+  misses, and zero positive-visit childless edges. This is bounded positive
+  production-path exercise and capture round-trip verification, not a
+  gameplay-quality comparison or population qualification. The consumed
+  HOLDOUT was not rerun. [Native-smoke raw packet](evidence/silver_quiescent_queue_item_20260922/README.md).

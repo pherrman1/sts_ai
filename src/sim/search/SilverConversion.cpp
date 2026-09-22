@@ -187,6 +187,11 @@ SilverBattleStateConversion makeSilverBattleStateConversion(
     out.ascension = live.ascension;
     out.outcome = static_cast<int>(live.outcome);
     out.inputState = static_cast<int>(live.inputState);
+    out.historicalQueueItemAtSource =
+        (live.inputState == InputState::PLAYER_NORMAL || live.inputState == InputState::CARD_SELECT)
+        && live.outcome == Outcome::UNDECIDED && !live.isBattleOver()
+        && !live.endTurnQueued && !live.turnHasEnded
+        && live.actionQueue.size == 0 && live.cardQueue.size == 0;
     out.monsterTurnIdx = live.monsterTurnIdx;
     out.endTurnQueued = live.endTurnQueued;
     out.turnHasEnded = live.turnHasEnded;

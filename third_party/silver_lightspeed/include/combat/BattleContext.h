@@ -98,6 +98,9 @@ namespace sts {
         CardManager cards;
 
         CardQueueItem curCardQueueItem;
+        // False for imported roots whose source may have had pending work that
+        // the wire cannot reconstruct. Not part of gameplay/search equality.
+        bool historicalQueueItemAtSource = true;
 
         std::bitset<32> miscBits; // 0 stolen gold check,
 

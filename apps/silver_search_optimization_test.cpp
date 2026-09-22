@@ -69,6 +69,153 @@ void installPotions(sts::BattleContext &bc, std::initializer_list<sts::Potion> p
     std::copy(potions.begin(), potions.end(), bc.potions.begin());
 }
 
+void historicalQueueIdentityTests(const sts::BattleContext &original) {
+    auto retained = original;
+    auto observed = original;
+    retained.curCardQueueItem.card = sts::CardInstance(sts::CardId::INFLAME);
+    observed.curCardQueueItem.card = sts::CardInstance(sts::CardId::SPOT_WEAKNESS);
+    require(!retained.equalForSearch(observed)
+                && sts::search::hashBattleState(retained) == sts::search::hashBattleState(observed)
+                && sts::search::equalForSearchIgnoringHistoricalQueueItem(retained, observed),
+            "settled normal historical queue items must share Silver identity only");
+    Search dedup(original);
+    auto *representative = dedup.getOrCreateNode(sts::BattleContext(retained));
+    require(dedup.getOrCreateNode(sts::BattleContext(observed)) == representative
+                && dedup.stats.queueItemCanonicalHits == 1
+                && representative->state->curCardQueueItem == retained.curCardQueueItem,
+            "normal dedup must keep a stable representative and count one relaxed hit");
+
+    const auto excluded = [&](const auto &change) {
+        auto a = retained;
+        auto b = observed;
+        change(a); change(b);
+        require(!sts::search::equalForSearchIgnoringHistoricalQueueItem(a, b),
+                "pending or non-decision state must keep exact queue identity");
+        Search boundary(original);
+        require(boundary.getOrCreateNode(std::move(a))
+                    != boundary.getOrCreateNode(std::move(b)),
+                "excluded queue variants must remain distinct nodes");
+    };
+    excluded([](auto &s) { s.inputState = sts::InputState::EXECUTING_ACTIONS; });
+    excluded([](auto &s) { s.actionQueue.pushBack(sts::Actions::GainEnergy(1)); });
+    excluded([](auto &s) { s.cardQueue.pushBack(sts::CardQueueItem{}); });
+    excluded([](auto &s) { s.outcome = sts::Outcome::PLAYER_VICTORY; });
+    excluded([](auto &s) { s.isBattleOver = true; });
+    excluded([](auto &s) { s.endTurnQueued = true; });
+    excluded([](auto &s) { s.turnHasEnded = true; });
+    auto energy = observed;
+    ++energy.player.energy;
+    require(!sts::search::equalForSearchIgnoringHistoricalQueueItem(energy, retained),
+            "ordinary energy difference must remain distinct");
+
+    auto gambleRetained = retained;
+    auto gambleObserved = observed;
+    installPotions(gambleRetained, {sts::Potion::GAMBLERS_BREW});
+    installPotions(gambleObserved, {sts::Potion::GAMBLERS_BREW});
+    const sts::search::Action gamble(sts::search::ActionType::POTION, 0, 0);
+    require(gamble.isValidAction(gambleRetained), "Gambler's Brew fixture must be valid");
+    gamble.execute(gambleRetained);
+    gamble.execute(gambleObserved);
+    require(gambleRetained.inputState == sts::InputState::CARD_SELECT
+                && gambleRetained.cardSelectInfo.cardSelectTask == sts::CardSelectTask::GAMBLE
+                && gambleRetained.actionQueue.size == 0 && gambleRetained.cardQueue.size == 0
+                && sts::search::equalForSearchIgnoringHistoricalQueueItem(
+                    gambleRetained, gambleObserved),
+            "Gambler's Brew must reach equivalent quiescent selection states");
+    Search selectionDedup(gambleRetained);
+    auto *selectionRepresentative = selectionDedup.getOrCreateNode(
+        sts::BattleContext(gambleRetained));
+    require(selectionDedup.getOrCreateNode(sts::BattleContext(gambleObserved))
+                == selectionRepresentative && selectionDedup.stats.queueItemCanonicalHits == 1,
+            "quiescent CARD_SELECT must deduplicate by historical queue identity");
+    const auto pick = rootActions(gambleRetained).front();
+    require(pick.getActionType() == sts::search::ActionType::SINGLE_CARD_SELECT,
+            "GAMBLE fixture must offer a card pick");
+    pick.execute(gambleRetained);
+    pick.execute(gambleObserved);
+    require(sts::search::equalForSearchIgnoringHistoricalQueueItem(
+                gambleRetained, gambleObserved),
+            "reopened GAMBLE selection must remain equivalent");
+    sts::search::Action confirm(sts::search::ActionType::MULTI_CARD_SELECT,
+                                gambleRetained.cardSelectInfo.selectedBits);
+    require(confirm.isValidAction(gambleRetained), "GAMBLE confirmation must be legal");
+    confirm.execute(gambleRetained);
+    confirm.execute(gambleObserved);
+    require(sts::search::equalForSearchIgnoringHistoricalQueueItem(
+                gambleRetained, gambleObserved),
+            "GAMBLE confirmation must retain historical queue equivalence");
+
+    auto attackRetained = retained;
+    auto attackObserved = observed;
+    installPotions(attackRetained, {sts::Potion::ATTACK_POTION});
+    installPotions(attackObserved, {sts::Potion::ATTACK_POTION});
+    sts::search::Action(sts::search::ActionType::POTION, 0, 0).execute(attackRetained);
+    sts::search::Action(sts::search::ActionType::POTION, 0, 0).execute(attackObserved);
+    require(attackRetained.inputState == sts::InputState::CARD_SELECT
+                && attackRetained.cardSelectInfo.cardSelectTask == sts::CardSelectTask::DISCOVERY
+                && sts::search::equalForSearchIgnoringHistoricalQueueItem(
+                    attackRetained, attackObserved)
+                && rootActions(attackRetained) == rootActions(attackObserved),
+            "Attack Potion must reach equivalent quiescent Discovery selection");
+
+    auto cardRetained = retained;
+    auto cardObserved = observed;
+    const auto actions = rootActions(cardRetained);
+    const auto card = std::find_if(actions.begin(), actions.end(), [](const auto &a) {
+        return a.getActionType() == sts::search::ActionType::CARD;
+    });
+    require(card != actions.end(), "fixture must have a playable card");
+    card->execute(cardRetained);
+    card->execute(cardObserved);
+    require(cardRetained.curCardQueueItem == cardObserved.curCardQueueItem
+                && cardRetained.equalForSearch(cardObserved),
+            "playing a card must overwrite the historical queue item");
+
+    auto potionRetained = retained;
+    auto potionObserved = observed;
+    installPotions(potionRetained, {sts::Potion::STRENGTH_POTION});
+    installPotions(potionObserved, {sts::Potion::STRENGTH_POTION});
+    sts::search::Action(sts::search::ActionType::POTION, 0, 0).execute(potionRetained);
+    sts::search::Action(sts::search::ActionType::POTION, 0, 0).execute(potionObserved);
+    require(sts::search::equalForSearchIgnoringHistoricalQueueItem(
+                potionRetained, potionObserved),
+            "ordinary potion use must preserve historical equivalence");
+
+    auto turnRetained = retained;
+    auto turnObserved = observed;
+    sts::search::Action(sts::search::ActionType::END_TURN).execute(turnRetained);
+    sts::search::Action(sts::search::ActionType::END_TURN).execute(turnObserved);
+    require(sts::search::equalForSearchIgnoringHistoricalQueueItem(
+                turnRetained, turnObserved),
+            "ending turn must not consume the old historical card");
+
+    auto headbutt = retained;
+    headbutt.cards.hand[0] = sts::CardInstance(sts::CardId::HEADBUTT);
+    headbutt.cards.hand[0].uniqueId = original.cards.hand[0].uniqueId;
+    for (int i = 0; i < 2; ++i) {
+        auto discarded = headbutt.cards.hand[1];
+        headbutt.cards.removeFromHandAtIdx(1);
+        headbutt.cards.moveToDiscardPile(discarded);
+    }
+    const sts::search::Action headbuttPlay(sts::search::ActionType::CARD, 0, 0);
+    require(headbuttPlay.isValidAction(headbutt), "Headbutt fixture must be playable");
+    headbuttPlay.execute(headbutt);
+    require(headbutt.inputState == sts::InputState::CARD_SELECT
+                && headbutt.cardSelectInfo.cardSelectTask == sts::CardSelectTask::HEADBUTT
+                && headbutt.actionQueue.size > 0
+                && !sts::search::queueItemIsHistoricalAtDecision(headbutt),
+            "Headbutt selection with pending card bookkeeping must stay exact");
+    auto headbuttVariant = headbutt;
+    headbuttVariant.curCardQueueItem.card = sts::CardInstance(sts::CardId::SPOT_WEAKNESS);
+    require(!sts::search::equalForSearchIgnoringHistoricalQueueItem(
+                headbutt, headbuttVariant),
+            "pending Headbutt selection must not canonicalize");
+    Search headbuttDedup(original);
+    require(headbuttDedup.getOrCreateNode(std::move(headbutt))
+                != headbuttDedup.getOrCreateNode(std::move(headbuttVariant)),
+            "pending Headbutt selection must retain separate nodes");
+}
+
 struct SameTurnPath {
     sts::BattleContext state;
     int damageToTarget = 0;
@@ -1125,7 +1272,7 @@ void rootPriorSelection(Search &search) {
 
 void equalStats(const sts::search::SearchStats &a, const sts::search::SearchStats &b) {
 #define SAME(field) require(a.field == b.field, "trace changed stats: " #field)
-    SAME(steps); SAME(nodesCreated); SAME(detTranspositions);
+    SAME(steps); SAME(nodesCreated); SAME(queueItemCanonicalHits); SAME(detTranspositions);
     SAME(chanceOutcomesSampled); SAME(chanceSiblingReuse); SAME(chanceTranspositions);
     SAME(depthSum); SAME(chanceDepthSum); SAME(rolloutCalls);
     SAME(rolloutTerminalWins); SAME(rolloutTerminalLosses); SAME(rolloutNonTerminalStops);
@@ -1678,6 +1825,7 @@ int main(int argc, char **argv) {
         sts::GameContext gc{}; // BattleContext keeps a non-owning pointer to this run state.
         const auto bc = fixture(gc);
         Search search(bc);
+        historicalQueueIdentityTests(bc);
         if (argc > 1 && std::string(argv[1]) == "--reroot-canary") {
             compaction(bc, 10000);
             return 0;

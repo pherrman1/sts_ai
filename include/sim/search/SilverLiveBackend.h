@@ -33,6 +33,7 @@ struct SilverLiveDiagnostics {
     std::uint64_t rerootAllocatedCapBlocked = 0;
     std::uint64_t rerootActiveCapBlocked = 0;
     std::uint64_t nodesCreated = 0;
+    std::uint64_t queueItemCanonicalHits = 0;
     std::uint64_t deterministicTranspositions = 0;
     std::uint64_t chanceOutcomes = 0;
     std::uint64_t chanceSiblingReuse = 0;
