@@ -154,6 +154,10 @@ struct BattleStateWire {
     // Runic Dome visibility gate: when true, moveHistory values are redacted
     // and pending input snapshots define the Silver chance distribution.
     bool intentsHidden = false;
+    // Runtime-only proof captured before pending queues are omitted. This is
+    // deliberately absent from legacy JSON: replay/import without source
+    // provenance conservatively keeps exact queue identity.
+    bool historicalQueueItemAtSource = false;
 
     std::uint64_t isolatedSearchSeed = 0;
     std::uint64_t observedGeneration = 0;
@@ -630,6 +634,7 @@ struct SilverSearchTelemetry {
     std::int64_t chanceSiblingReuse = 0;
     std::int64_t chanceTranspositions = 0;
     std::int64_t uidRelaxedNodeAllocationCandidates = 0;
+    std::int64_t queueItemCanonicalHits = 0;
     std::int64_t uidRelaxedNodeCandidatesWithDrawDifference = 0;
     std::int64_t uidRelaxedNodeCandidatesWithHandDifference = 0;
     std::int64_t uidRelaxedNodeCandidatesWithBothHandAndDrawDifference = 0;
@@ -686,6 +691,7 @@ struct SilverSearchTelemetry {
         chanceSiblingReuse += other.chanceSiblingReuse;
         chanceTranspositions += other.chanceTranspositions;
         uidRelaxedNodeAllocationCandidates += other.uidRelaxedNodeAllocationCandidates;
+        queueItemCanonicalHits += other.queueItemCanonicalHits;
         uidRelaxedNodeCandidatesWithDrawDifference += other.uidRelaxedNodeCandidatesWithDrawDifference;
         uidRelaxedNodeCandidatesWithHandDifference += other.uidRelaxedNodeCandidatesWithHandDifference;
         uidRelaxedNodeCandidatesWithBothHandAndDrawDifference += other.uidRelaxedNodeCandidatesWithBothHandAndDrawDifference;
@@ -1018,6 +1024,12 @@ struct ReuseCapFixtureProbe {
     bool allocatedCapBlocked = false;
     bool activeExactReroot = false;
     bool activeInheritsVisits = false;
+    bool historicalGambleExpandedReroot = false;
+    bool historicalGambleQueueStable = false;
+    bool historicalGambleContinuation = false;
+    bool historicalHandPermutation = false;
+    bool historicalEquivalentCopy = false;
+    bool historicalSampledChance = false;
     bool activeCapBlocked = false;
     bool candidateMissingUnchanged = false;
     bool handOrderMandatory = false;
@@ -1057,6 +1069,7 @@ ConvertedStateDigest inspectConvertedBattleState(const BattleStateWire &state);
 // executes strictly inside the isolated Silver context, never live combat.
 ConvertedStateDigest materializeDeferredMonsterIntentsForTest(const BattleStateWire &state);
 bool convertedStatesEqualForSearch(const BattleStateWire &a, const BattleStateWire &b);
+bool convertedStateHistoricalQueueItemForTest(const BattleStateWire &state);
 
 // Runs Silver's sequential EXHAUST_MANY/GAMBLE interaction wholly in the
 // isolated model. Only a final confirmation is returned; callers must lower
