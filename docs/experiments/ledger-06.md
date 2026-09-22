@@ -10916,19 +10916,22 @@ default or generalization claim is authorized. Evidence:
   deterministic `CARD_SELECT` child with 525 edge visits. The diagnostic
   reported that retained and observed states differed in `curCardQueueItem`
   while the listed gameplay fields, RNG, queues, and hand UIDs matched. Since
-  `CARD_SELECT` must remain exact, this is a correctness failure and the
-  candidate is **not adopted**. The 63 completed rows had 49 wins and mean
+  PR #285 kept all `CARD_SELECT` states exact, so this correctly failed closed
+  under that candidate's identity contract. Its `PLAYER_NORMAL`-only boundary
+  and root-rewrite design were insufficient; the candidate is **not adopted**.
+  The 63 completed rows had 49 wins and mean
   terminal HP fraction 0.3674471462. Across all recorded rows there were
   325,149 canonical hits, 1,091 successful deterministic reroots before the
   failing attempt, 529 stochastic candidate misses, and zero cap fallbacks.
   The failed row has no terminal outcome. HOLDOUT is consumed; no retuning or
   second cohort run occurred.
 - **Decision and limit:** The intended default decision remains blocked by
-  the exact `CARD_SELECT` identity and selected-child reroot requirements.
+  semantic correctness at `CARD_SELECT` and selected-child reroot requirements.
   The evidence proves a representational mismatch at that boundary, not a
   downstream gameplay difference. A new design must account for descendants
-  created under a retained representative's historical queue item without
-  relaxing `CARD_SELECT` or losing deterministic reroot correctness. **Evidence:**
+  created under a retained representative's historical queue item while
+  preserving pending-work semantics and deterministic reroot correctness.
+  **Evidence:**
   [raw packet](evidence/silver_queue_item_canonical_20260922/README.md).
   **Knowledge impact:** rejected candidate and consumed HOLDOUT recorded in
   ADR-0016 and this ledger; no maintained search behavior or production

@@ -28,9 +28,9 @@ deterministic children, sampled chance outcomes, equivalent-copy repair, and
 live explored-edge matching. A deterministic selected child still must reroot,
 be cap-blocked, or fail loudly.
 
-`CARD_SELECT`, `EXECUTING_ACTIONS`, queued, terminal, and end-turn states remain
-exact. Chance widening, RNG, reuse caps, rollout/value behavior, and search
-constants are unchanged.
+This candidate kept all `CARD_SELECT`, `EXECUTING_ACTIONS`, queued, terminal,
+and end-turn states exact. Chance widening, RNG, reuse caps, rollout/value
+behavior, and search constants were unchanged.
 
 ## Evidence
 
@@ -38,7 +38,11 @@ Focused search and bridge boundary tests covered dedup, excluded states, hand
 permutation, equivalent-copy repair, selected deterministic reroot, sampled
 chance outcomes, and Attack Potion selection. Frozen DEV passed, but the
 one planned HOLDOUT run exposed a selected deterministic `CARD_SELECT` child
-whose only reported state difference was `curCardQueueItem`. The exact
-`CARD_SELECT` boundary correctly rejected it. The candidate cannot be adopted
-without a new design that preserves that boundary and deterministic reroot
-correctness. The HOLDOUT is consumed; see Silver ledger §334.
+whose only reported state difference was `curCardQueueItem`. PR #285
+intentionally kept all `CARD_SELECT` states exact, so the mismatch correctly
+failed closed under that candidate's identity contract. The failure showed
+that its `PLAYER_NORMAL`-only boundary and root-rewrite design were
+insufficient. A replacement must preserve semantic correctness at
+`CARD_SELECT`, including cases where pending work still consumes the active
+card, and preserve deterministic reroot correctness. The HOLDOUT is consumed;
+see Silver ledger §334.

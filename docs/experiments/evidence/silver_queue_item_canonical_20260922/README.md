@@ -67,9 +67,10 @@ The mismatch was at `CARD_SELECT` (`inputState=2`), with empty action/card
 queues. The diagnostic reported equality for player, monsters, cards, RNG,
 metadata, potions, and misc fields, identical hand UIDs and turn, and
 `curCardQueueItem=0` (unequal). Its selected deterministic edge had 525 visits.
-`CARD_SELECT` is outside the permitted canonicalization boundary. The
-fail-closed exception is a real correctness failure; this candidate is not
-ready for default adoption. HOLDOUT is consumed. No second HOLDOUT run or
+PR #285 intentionally kept all `CARD_SELECT` states exact, so the mismatch
+correctly failed closed under that candidate's identity contract. The
+`PLAYER_NORMAL`-only boundary and root-rewrite design were insufficient; this
+candidate is not ready for default adoption. HOLDOUT is consumed. No second HOLDOUT run or
 policy tuning was performed. The available diagnostic establishes a state
 identity conflict; it does not establish whether the different historical
 queue items change the selection's legal actions or downstream gameplay.
