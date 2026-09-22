@@ -15,9 +15,6 @@ bool collectFreeOocReward(sts::GameContext &, bool collectKeys);
 // Consume ordinary reward gold without advancing or leaving the reward screen.
 // This is the only reward action treated as forced by semantic OOC search.
 bool collectForcedRewardGold(sts::GameContext &);
-// Consume the unambiguous ordinary reward prefix before OOC search.
-bool collectForcedOrdinaryRewards(sts::GameContext &);
-bool isForcedOrdinaryRelic(sts::RelicId);
 
 // Default V4 Q/margin card-reward gate. Returns false without executing when
 // the gate defers to the native floor-model fallback.

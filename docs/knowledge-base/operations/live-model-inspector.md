@@ -562,11 +562,7 @@ duplicate cards, initial supported events/Neow including the Woman in Blue's
 gold-correct potion purchases and Ascension-dependent leave outcome, all shop
 purchase types, shop-removal entry, chest open/leave and boss relic take/skip. The existing V4
 support gate still excludes non-card reward collection, removal/other
-selectors and the final map-to-boss transition. The advisor passes ordinary
-gold, safe ordinary relics, and a free-slot potion through their
-captured choice mapping before invoking OOC search. Relic exceptions and
-Sapphire-paired relics and boss relic chests remain decisions; Sozu and full
-potion slots block the potion pass-through. The live producer additionally
+selectors and the final map-to-boss transition. The live producer additionally
 qualifies event phases, path history, special maps, shop slot provenance,
 relic-counter representation, and key-disabled campfires. A screen-specific
 unsupported phase takes precedence over path and relic warnings, so a terminal

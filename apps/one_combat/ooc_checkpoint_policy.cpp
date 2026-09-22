@@ -9,21 +9,6 @@
 
 namespace one_combat {
 
-bool isForcedOrdinaryRelic(sts::RelicId relic) {
-    using R = sts::RelicId;
-    switch (relic) {
-        case R::STRANGE_SPOON:
-        case R::BOTTLED_FLAME:
-        case R::BOTTLED_LIGHTNING:
-        case R::BOTTLED_TORNADO:
-        case R::UNCEASING_TOP:
-        case R::INVALID:
-            return false;
-        default:
-            return true;
-    }
-}
-
 bool collectFreeOocReward(sts::GameContext &gc, bool collectKeys) {
     if (gc.screenState != sts::ScreenState::REWARDS) return false;
     using RT = sts::search::GameAction::RewardsActionType;
@@ -61,28 +46,6 @@ bool collectForcedRewardGold(sts::GameContext &gc) {
     bool collected = false;
     while (gc.info.rewardsContainer.goldRewardCount > 0) {
         sts::search::GameAction(RT::GOLD, 0).execute(gc);
-        collected = true;
-    }
-    return collected;
-}
-
-bool collectForcedOrdinaryRewards(sts::GameContext &gc) {
-    bool collected = collectForcedRewardGold(gc);
-    if (gc.screenState != sts::ScreenState::REWARDS) return collected;
-    using RT = sts::search::GameAction::RewardsActionType;
-    auto &r = gc.info.rewardsContainer;
-    while (gc.screenState == sts::ScreenState::REWARDS && !r.sapphireKey) {
-        int safe = -1;
-        for (int i = 0; i < r.relicCount; ++i) {
-            if (isForcedOrdinaryRelic(r.relics[i])) { safe = i; break; }
-        }
-        if (safe < 0) break;
-        sts::search::GameAction(RT::RELIC, safe).execute(gc);
-        collected = true;
-    }
-    if (gc.screenState == sts::ScreenState::REWARDS && r.potionCount == 1
-        && gc.potionCount < gc.potionCapacity && !gc.hasRelic(sts::RelicId::SOZU)) {
-        sts::search::GameAction(RT::POTION, 0).execute(gc);
         collected = true;
     }
     return collected;

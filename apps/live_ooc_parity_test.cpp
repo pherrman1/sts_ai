@@ -162,68 +162,26 @@ int main(int argc,char **argv){try{
         check(advisor::importLiveOocStateV1(afterSecond, noGold).ok, "gold-removed fixture import");
         check(!advisor::forcedRewardGoldLiveAction(noGold).has_value(),
             "live gold pass-through persisted after all gold choices were removed");
-
-        for (const auto &[relic, forced] : std::vector<std::pair<RelicId, bool>>{
-                 {RelicId::ANCHOR, true}, {RelicId::STRANGE_SPOON, false},
-                 {RelicId::BOTTLED_FLAME, false}, {RelicId::UNCEASING_TOP, false}}) {
-            auto offer = base;
-            offer.screenState = ScreenState::REWARDS;
-            offer.info.rewardsContainer.clear();
-            offer.info.rewardsContainer.addRelic(relic);
-            advisor::LiveOocStateV1 imported;
-            check(advisor::importLiveOocStateV1(project(offer, path, "forced_relic"), imported).ok,
-                "relic pass-through fixture import");
-            const auto pick = advisor::forcedOrdinaryRewardLiveAction(imported);
-            check(pick.has_value() == forced,
-                "relic pass-through exception mismatch id=" + std::to_string(static_cast<int>(relic))
-                + " selected=" + (pick ? pick->first : "none"));
-            if (pick) check(pick->first == "relic" && pick->second.value("kind", "") == "choose",
-                "relic pass-through lost live choice");
+        for (auto relic : {RelicId::BOTTLED_FLAME, RelicId::BOTTLED_LIGHTNING,
+                           RelicId::BOTTLED_TORNADO}) {
+            auto bottle = base;
+            bottle.screenState = ScreenState::REWARDS;
+            bottle.info.rewardsContainer.clear();
+            bottle.info.rewardsContainer.addRelic(relic);
+            advisor::LiveOocStateV1 liveBottle;
+            check(advisor::importLiveOocStateV1(project(bottle, path, "bottle_take_or_skip"), liveBottle).ok,
+                "Bottled relic fixture import");
+            check(!advisor::forcedRewardGoldLiveAction(liveBottle),
+                "Bottled relic triggered forced reward pass-through");
+            bool canTakeBottle = false, canSkipBottle = false;
+            for (const auto &choice : liveBottle.ooc.at("liveChoices")) {
+                const auto kind = choice.at("nativeAction").value("kind", std::string());
+                canTakeBottle |= kind == "relic";
+                canSkipBottle |= kind == "skip";
+            }
+            check(canTakeBottle && canSkipBottle,
+                "Bottled relic live choice must retain take and skip");
         }
-        auto potion = base;
-        potion.screenState = ScreenState::REWARDS;
-        potion.info.rewardsContainer.clear();
-        potion.info.rewardsContainer.addPotion(Potion::FIRE_POTION);
-        advisor::LiveOocStateV1 importedPotion;
-        check(advisor::importLiveOocStateV1(project(potion, path, "forced_potion"), importedPotion).ok,
-            "potion pass-through fixture import");
-        const auto potionPick = advisor::forcedOrdinaryRewardLiveAction(importedPotion);
-        check(potionPick && potionPick->first == "potion", "free potion was not forced");
-        auto twoRelics = base;
-        twoRelics.screenState = ScreenState::REWARDS;
-        twoRelics.info.rewardsContainer.clear();
-        twoRelics.info.rewardsContainer.addRelic(RelicId::STRANGE_SPOON);
-        twoRelics.info.rewardsContainer.addRelic(RelicId::ANCHOR);
-        advisor::LiveOocStateV1 importedTwo;
-        check(advisor::importLiveOocStateV1(project(twoRelics, path, "two_relics"), importedTwo).ok,
-            "two-relic fixture import");
-        const auto safePick = advisor::forcedOrdinaryRewardLiveAction(importedTwo);
-        check(safePick && safePick->first == "relic"
-                && safePick->second.value("choiceIndex", -1) == 2,
-            "safe second relic did not retain its captured choice");
-        twoRelics.info.rewardsContainer.relics[0] = RelicId::HORN_CLEAT;
-        check(advisor::importLiveOocStateV1(project(twoRelics, path, "two_safe_relics"), importedTwo).ok,
-            "two-safe-relic fixture import");
-        const auto firstSafe = advisor::forcedOrdinaryRewardLiveAction(importedTwo);
-        check(firstSafe && firstSafe->first == "relic"
-                && firstSafe->second.value("choiceIndex", -1) == 1,
-            "first of two safe relics was not selected");
-        twoRelics.info.rewardsContainer.removeRelicReward(0);
-        check(advisor::importLiveOocStateV1(project(twoRelics, path, "remaining_safe_relic"), importedTwo).ok,
-            "remaining-safe-relic fixture import");
-        const auto secondSafe = advisor::forcedOrdinaryRewardLiveAction(importedTwo);
-        check(secondSafe && secondSafe->first == "relic",
-            "second safe relic was not selected after re-observation");
-        auto boss = base;
-        boss.screenState = ScreenState::BOSS_RELIC_REWARDS;
-        boss.info.bossRelics[0] = RelicId::BLACK_BLOOD;
-        boss.info.bossRelics[1] = RelicId::COFFEE_DRIPPER;
-        boss.info.bossRelics[2] = RelicId::FUSION_HAMMER;
-        advisor::LiveOocStateV1 importedBoss;
-        check(advisor::importLiveOocStateV1(project(boss, path, "boss_relic_not_forced"), importedBoss).ok,
-            "boss-relic fixture import");
-        check(!advisor::forcedOrdinaryRewardLiveAction(importedBoss),
-            "boss relic was forced");
     }
     std::vector<std::pair<std::string,GameContext>> fixtures;
     auto add=[&](std::string n,GameContext g){fixtures.emplace_back(n,g);};

@@ -117,61 +117,6 @@ int main(int argc, char **argv) {
             require(collectForcedRewardGold(idol) && idol.gold == 125
                     && idol.curHp == idol.maxHp && idol.info.rewardsContainer.goldRewardCount == 0,
                 "Bloody Idol gold closure did not preserve native healing and cap behavior");
-
-            auto ordinary = gc;
-            ordinary.screenState = ScreenState::REWARDS;
-            ordinary.info.rewardsContainer.clear();
-            ordinary.info.rewardsContainer.addRelic(RelicId::ANCHOR);
-            ordinary.info.rewardsContainer.addPotion(Potion::FIRE_POTION);
-            require(collectForcedOrdinaryRewards(ordinary) && ordinary.hasRelic(RelicId::ANCHOR)
-                    && ordinary.potionCount == gc.potionCount + 1,
-                "ordinary relic and free-slot potion were not collected");
-            auto doubleRelic = gc;
-            doubleRelic.screenState = ScreenState::REWARDS;
-            doubleRelic.info.rewardsContainer.clear();
-            doubleRelic.info.rewardsContainer.addRelic(RelicId::ANCHOR);
-            doubleRelic.info.rewardsContainer.addRelic(RelicId::HORN_CLEAT);
-            require(collectForcedOrdinaryRewards(doubleRelic)
-                    && doubleRelic.hasRelic(RelicId::ANCHOR)
-                    && doubleRelic.hasRelic(RelicId::HORN_CLEAT)
-                    && doubleRelic.info.rewardsContainer.relicCount == 0,
-                "two ordinary relics were not both collected");
-            auto mixedRelics = gc;
-            mixedRelics.screenState = ScreenState::REWARDS;
-            mixedRelics.info.rewardsContainer.clear();
-            mixedRelics.info.rewardsContainer.addRelic(RelicId::STRANGE_SPOON);
-            mixedRelics.info.rewardsContainer.addRelic(RelicId::ANCHOR);
-            require(collectForcedOrdinaryRewards(mixedRelics)
-                    && mixedRelics.hasRelic(RelicId::ANCHOR)
-                    && !mixedRelics.hasRelic(RelicId::STRANGE_SPOON)
-                    && mixedRelics.info.rewardsContainer.relicCount == 1,
-                "critical relic should remain after safe relic collection");
-            for (auto relic : {RelicId::STRANGE_SPOON, RelicId::BOTTLED_FLAME,
-                               RelicId::BOTTLED_LIGHTNING, RelicId::BOTTLED_TORNADO,
-                               RelicId::UNCEASING_TOP}) {
-                auto exception = gc;
-                exception.screenState = ScreenState::REWARDS;
-                exception.info.rewardsContainer.clear();
-                exception.info.rewardsContainer.addRelic(relic);
-                require(!collectForcedOrdinaryRewards(exception) && !exception.hasRelic(relic),
-                    "exception relic was forced");
-            }
-            auto sapphire = gc;
-            sapphire.screenState = ScreenState::REWARDS;
-            sapphire.info.rewardsContainer.clear();
-            sapphire.info.rewardsContainer.addRelic(RelicId::ANCHOR);
-            sapphire.info.rewardsContainer.sapphireKey = true;
-            require(!collectForcedOrdinaryRewards(sapphire), "sapphire relic was forced");
-            auto boss = gc;
-            boss.screenState = ScreenState::BOSS_RELIC_REWARDS;
-            boss.info.bossRelics[0] = RelicId::ANCHOR;
-            require(!collectForcedOrdinaryRewards(boss), "boss relic choice was forced");
-            auto sozu = gc;
-            sozu.screenState = ScreenState::REWARDS;
-            sozu.info.rewardsContainer.clear();
-            sozu.info.rewardsContainer.addPotion(Potion::FIRE_POTION);
-            sozu.relics.add({RelicId::SOZU, 0});
-            require(!collectForcedOrdinaryRewards(sozu), "Sozu potion was forced");
         }
         gc.screenState = ScreenState::REST_ROOM;
         gc.curHp = 40;

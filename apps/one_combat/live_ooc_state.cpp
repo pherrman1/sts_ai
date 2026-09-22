@@ -1,5 +1,4 @@
 #include "live_ooc_state.h"
-#include "ooc_checkpoint_policy.h"
 
 #include <algorithm>
 #include <cstdint>
@@ -650,39 +649,5 @@ std::optional<J> forcedRewardGoldLiveAction(const LiveOocStateV1 &state) {
             + std::to_string(state.ooc.at("details").at("gold").size())
             + " choices=" + std::to_string(goldChoices));
     return first->at("liveAction");
-}
-std::optional<std::pair<std::string, J>> forcedOrdinaryRewardLiveAction(
-    const LiveOocStateV1 &state) {
-    if (auto gold = forcedRewardGoldLiveAction(state)) return {{"gold", *gold}};
-    if (state.projected.screenState != sts::ScreenState::REWARDS) return std::nullopt;
-    const auto &r = state.projected.info.rewardsContainer;
-    std::string kind;
-    int selectedIndex = 0;
-    if (!r.sapphireKey) {
-        for (int i = 0; i < r.relicCount; ++i) {
-            if (!one_combat::isForcedOrdinaryRelic(r.relics[i])) continue;
-            kind = "relic";
-            selectedIndex = i;
-            break;
-        }
-    }
-    if (kind.empty() && r.potionCount == 1
-             && state.projected.potionCount < state.projected.potionCapacity
-             && !state.projected.hasRelic(sts::RelicId::SOZU))
-        kind = "potion";
-    if (kind.empty()) return std::nullopt;
-    const J *match = nullptr;
-    for (const auto &choice : state.ooc.at("liveChoices")) {
-        const auto &native = choice.at("nativeAction");
-        if (native.value("kind", std::string()) != kind) continue;
-        if (integer(native, "index", 0, 255) != selectedIndex) continue;
-        primitive(choice, state.projected.screenState);
-        const auto &action = choice.at("liveAction");
-        require(string(action, "kind") == "choose", "forced reward must lower to choose");
-        require(!match, "ambiguous forced reward live mapping");
-        match = &action;
-    }
-    require(match, "forced reward missing live mapping");
-    return {{kind, *match}};
 }
 } // namespace one_combat::advisor

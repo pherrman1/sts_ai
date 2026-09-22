@@ -142,15 +142,16 @@ loss/victory retain precedence. MAP alone keeps its existing primitive V4
 candidate contract (including missing-map and row-14 boundaries).
 
 Before semantic OOC enumeration, detached reward states deterministically
-collect ordinary gold, each safe ordinary relic without a Sapphire Key choice,
-and a single potion when a slot is free and Sozu is absent. Relic collection
-excludes Strange Spoon, the three Bottled relics, and Unceasing Top. The
-normal `GameAction` path applies this closure at the root and after each
-hypothetical successor; the simulator's live OOC policy applies it before
-search as well. Boss relic screens are outside this reward closure. The live
-advisor passes through one captured reward choice and re-observes before
-scoring the rest. Multiple gold and safe relic choices are handled
-one observation at a time, including when their native primitive bits
+collect every ordinary gold reward through the normal `GameAction::GOLD`
+execution path. This gold-only normalization is applied at the root and after
+each hypothetical successor; it leaves the REWARDS screen and all non-gold
+choices intact, so `TAKE_GOLD` remains available to semantic execution and
+diagnostics but is not an MCTS candidate. The simulator's live OOC policy also
+applies the closure to its real `GameContext` before search, keeping subsequent
+semantic action resolution on the same state. The live advisor emits one
+captured gold choice as a single-action pass-through and re-observes before
+scoring any remaining reward decision. Multiple captured gold choices are
+handled one observation at a time, including when their native primitive bits
 coincide. If the capture marks an unopened card group as
 `CARD_GROUP_NOT_REVEALED`, the importer still validates the complete schema and
 gold-to-live mappings before allowing that gold pass-through; after the gold is
