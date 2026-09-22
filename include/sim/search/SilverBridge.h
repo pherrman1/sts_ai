@@ -630,6 +630,7 @@ struct SilverSearchTelemetry {
     std::int64_t chanceSiblingReuse = 0;
     std::int64_t chanceTranspositions = 0;
     std::int64_t uidRelaxedNodeAllocationCandidates = 0;
+    std::int64_t queueItemCanonicalHits = 0;
     std::int64_t uidRelaxedNodeCandidatesWithDrawDifference = 0;
     std::int64_t uidRelaxedNodeCandidatesWithHandDifference = 0;
     std::int64_t uidRelaxedNodeCandidatesWithBothHandAndDrawDifference = 0;
@@ -686,6 +687,7 @@ struct SilverSearchTelemetry {
         chanceSiblingReuse += other.chanceSiblingReuse;
         chanceTranspositions += other.chanceTranspositions;
         uidRelaxedNodeAllocationCandidates += other.uidRelaxedNodeAllocationCandidates;
+        queueItemCanonicalHits += other.queueItemCanonicalHits;
         uidRelaxedNodeCandidatesWithDrawDifference += other.uidRelaxedNodeCandidatesWithDrawDifference;
         uidRelaxedNodeCandidatesWithHandDifference += other.uidRelaxedNodeCandidatesWithHandDifference;
         uidRelaxedNodeCandidatesWithBothHandAndDrawDifference += other.uidRelaxedNodeCandidatesWithBothHandAndDrawDifference;
@@ -1018,6 +1020,12 @@ struct ReuseCapFixtureProbe {
     bool allocatedCapBlocked = false;
     bool activeExactReroot = false;
     bool activeInheritsVisits = false;
+    bool historicalGambleExpandedReroot = false;
+    bool historicalGambleQueueStable = false;
+    bool historicalGambleContinuation = false;
+    bool historicalHandPermutation = false;
+    bool historicalEquivalentCopy = false;
+    bool historicalSampledChance = false;
     bool activeCapBlocked = false;
     bool candidateMissingUnchanged = false;
     bool handOrderMandatory = false;

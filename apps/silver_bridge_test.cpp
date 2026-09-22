@@ -676,6 +676,13 @@ int main(int argc, char **argv) {
               && capFixture.activeDiagnostic.fallbackReason
                   == silver_bridge::SilverRerootFallbackReason::NONE,
           "active mode must exact-reroot and inherit visits below the active cap");
+    check(capFixture.historicalGambleExpandedReroot
+              && capFixture.historicalGambleQueueStable
+              && capFixture.historicalGambleContinuation,
+          "expanded Gambler's Brew subtree must reroot through quiescent selection without rewriting historical queue items");
+    check(capFixture.historicalHandPermutation && capFixture.historicalEquivalentCopy
+              && capFixture.historicalSampledChance,
+          "historical queue equivalence must compose with hand, UID, and sampled chance reroot repairs");
     check(capFixture.activeCapBlocked
               && capFixture.activeCapDiagnostic.fallbackReason
                   == silver_bridge::SilverRerootFallbackReason::ACTIVE_CAP,

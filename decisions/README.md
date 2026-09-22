@@ -35,6 +35,9 @@ the replacement.
 
 ## Current routing ADRs
 
+- [ADR-0017](0017-silver-quiescent-queue-item-identity.md) proposes
+  quiescent Silver queue-item identity without retained-root rewriting.
+
 - [ADR-0012](0012-frozen-session-decision-log.md) routes historical session material to Git history and new knowledge to canonical maintained destinations.
 - [ADR-0011](0011-mcp-free-codex-skillopt-pilot.md) defines the MCP-free Codex
   path, authoritative tracked KB, bounded SkillOpt proposal pilot, and

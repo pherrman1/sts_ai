@@ -198,6 +198,19 @@ Silver is an isolated pinned chance-tree backend integrated by
 state into a private representation and uses a stable per-battle seed derived
 from run/battle identity, not decision ordinal.
 
+Silver retained-search identity ignores historical `curCardQueueItem` at a
+quiescent unresolved `PLAYER_NORMAL` or `CARD_SELECT` decision: no action/card
+queue entries, no end-turn work, and no battle outcome. It tries ordinary exact
+`equalForSearch()` first, then this one-field equivalence. Other search-state
+fields stay exact under the existing contract. Pending card-processing states
+remain exact even when a selection screen is open; Headbutt's queued
+`OnAfterCardUsed` is an example that still needs the active card. The retained
+representative and its descendants keep their original queue items during
+dedup and reroot. The active root may therefore carry a different historical
+item than the observed game while their quiescent search identity agrees.
+`queueItemCanonicalHits` counts exact-miss dedup lookups that reused a
+historical representative, not unique variants or allocations saved.
+
 One private session is retained per battle and exact-child reroot is attempted
 after each action. The production cap remains 32,768 nodes. `STS_SILVER_REUSE_CAP=131072`
 is an experimental opt-in; it is not a qualified production promotion. The default
@@ -229,16 +242,15 @@ below its matching successor. It also supports one narrower reroot equivalence
 at that boundary. When a retained action and the observed action are
 ordinary gameplay-equivalent cards with different UIDs, it swaps exactly
 those two UIDs throughout the reachable retained subtree and accepts the
-candidate only if the resulting root passes the normal full search-state
-equality check. Hand-order alignment is limited to `PLAYER_NORMAL` roots
+candidate only if the resulting root passes Silver's retained-decision
+equivalence check. Hand-order alignment is limited to `PLAYER_NORMAL` roots
 without macro continuations. It retargets retained card-edge source indices by
 exact card identity and updates each attached chance node's cached stochastic
 card action, which later widening replays against the reordered parent hand.
 A `CARD_SELECT` root or a root with a continuation cannot be aligned safely
 without remapping selection indices and selected bits, so it is not mutated.
 This preserves visits for a human-selected equivalent copy without changing
-`equalForSearch()`, action equivalence, global transposition identity, or
-chance-node identity. Any other card-state difference or unsafe queued
+global `equalForSearch()`, action equivalence, or chance-node identity. Any other card-state difference or unsafe queued
 intermediate state still takes the ordinary fresh `candidate_missing` fallback.
 [ADR-0015](../../../decisions/0015-live-silver-equivalent-copy-reroot.md)
 records this boundary.
@@ -257,7 +269,11 @@ A selected positive-visit edge without a child fails the replay
 invariant. After those repairs, an unexplained mismatch between the selected
 deterministic child and the privately executed state fails with a state
 diagnostic rather than fresh-rooting. Private sequential card-selection
-subdecisions use this same selected-child contract. Chance-outcome matching
+subdecisions use this same selected-child contract. Quiescent historical
+queue-item equivalence applies to deterministic children, sampled chance
+outcomes, and live explored-edge matching without rewriting a retained root;
+this keeps already-expanded selection descendants internally consistent.
+Chance-outcome matching
 and the configured reuse cap are unchanged.
 
 At a stable live player-decision boundary, the Java `silverRoot.combat`
