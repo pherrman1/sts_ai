@@ -29,6 +29,15 @@ public final class CombatBoundaryTest {
                 || !STSModelInspector.nativeMiscZeroForId("GremlinLeader")
                 || STSModelInspector.nativeMiscZeroForId("GremlinWizard"))
             throw new AssertionError("Gremlin Leader summons lost their native miscInfo contract");
+        java.util.Set<Integer> deadSlots = new java.util.HashSet<>(java.util.Arrays.asList(2));
+        java.util.Set<Integer> liveSlots = new java.util.HashSet<>(java.util.Arrays.asList(1));
+        if (STSModelInspector.gremlinReplacementSlot(deadSlots, liveSlots) != 2
+                || STSModelInspector.gremlinReplacementSlot(
+                        new java.util.HashSet<>(java.util.Arrays.asList(1, 2)),
+                        new java.util.HashSet<Integer>()) != -1
+                || STSModelInspector.gremlinReplacementSlot(
+                        new java.util.HashSet<Integer>(), liveSlots) != -1)
+            throw new AssertionError("summoned Gremlin Leader minion took an ambiguous or leader slot");
         if (STSModelInspector.hiddenMiscMinimum("FuzzyLouseNormal", 0) != 5
                 || STSModelInspector.hiddenMiscMinimum("FuzzyLouseDefensive", 20) != 6
                 || STSModelInspector.hiddenMiscMinimum("Darkling", 20) != 11

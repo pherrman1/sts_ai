@@ -30,6 +30,8 @@ The pinned native boundary has explicit representations for:
 - up to five encounter slots, including dead/escaped slots when the observer
   supplies them, with a battle-lifetime Java-object-to-slot registry so target
   indices are not compacted after a death, escape, summon, or replacement.
+  Gremlin Leader summons reuse a recorded dead minion's native slot only when
+  that replacement is unique; ambiguous replacements fail closed.
 - the ordinary `LARGE_SLIME` split preserves native child slots 0 and 1;
   `SLIME_BOSS` remains the separate 0 and 2 layout.
 - the separate non-native exclusion manifest records `FOUR_BYRDS`: vanilla can

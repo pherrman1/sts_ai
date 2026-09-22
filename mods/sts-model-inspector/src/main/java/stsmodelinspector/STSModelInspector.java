@@ -1347,6 +1347,17 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         return candidate;
     }
 
+    static int gremlinReplacementSlot(Set<Integer> deadKnown, Set<Integer> livingKnown) {
+        int replacement = -1;
+        for (int slot = 1; slot <= 2; ++slot) {
+            if (deadKnown.contains(slot) && !livingKnown.contains(slot)) {
+                if (replacement >= 0) return -1;
+                replacement = slot;
+            }
+        }
+        return replacement;
+    }
+
     private static Integer reflectedEncounterSlot(String encounter, AbstractMonster candidate) {
         if (AbstractDungeon.getMonsters() == null
                 || AbstractDungeon.getMonsters().monsters == null) return null;
@@ -1506,6 +1517,17 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         int nonLeaderOrdinal = 0;
         Set<Integer> usedMonsterSlots = new HashSet<>();
         List<AbstractMonster> monsters = AbstractDungeon.getMonsters().monsters;
+        Set<Integer> deadGremlinSlots = new HashSet<>();
+        Set<Integer> livingGremlinSlots = new HashSet<>();
+        if ("GREMLIN_LEADER".equals(encounter)) {
+            for (AbstractMonster monster : monsters) {
+                if (monster == null || "GremlinLeader".equals(monster.id)) continue;
+                Integer known = monsterSlots.get(monster);
+                if (known == null || known < 1 || known > 2) continue;
+                if (monster.isDeadOrEscaped()) deadGremlinSlots.add(known);
+                else livingGremlinSlots.add(known);
+            }
+        }
         for (int monsterIndex = 0; monsterIndex < monsters.size(); ++monsterIndex) {
             AbstractMonster monster = monsters.get(monsterIndex);
             if (monster == null) continue;
@@ -1518,9 +1540,19 @@ public final class STSModelInspector implements PostInitializeSubscriber,
             int preferred = reflected != null ? reflected : preferredMonsterSlot(
                     encounter, monster.id, sameIdOrdinal,
                     "GremlinLeader".equals(monster.id) ? -1 : nonLeaderOrdinal);
+            boolean gremlinReplacement = "GREMLIN_LEADER".equals(encounter)
+                    && !"GremlinLeader".equals(monster.id) && nonLeaderOrdinal >= 2
+                    && !monster.isDeadOrEscaped() && !monsterSlots.containsKey(monster);
+            if (gremlinReplacement)
+                preferred = gremlinReplacementSlot(deadGremlinSlots, livingGremlinSlots);
             if (!"GremlinLeader".equals(monster.id)) ++nonLeaderOrdinal;
             int slot;
-            if ("SLIME_BOSS".equals(encounter) && preferred >= 0) {
+            if (gremlinReplacement && preferred < 0) {
+                // A summoned gremlin has no unique native slot without a
+                // recorded dead predecessor; fail closed instead of claiming
+                // the leader's reserved slot or guessing another position.
+                slot = -1;
+            } else if (("SLIME_BOSS".equals(encounter) || gremlinReplacement) && preferred >= 0) {
                 // Slime Boss and its large-child splits use a fixed native
                 // layout (0, 1, 2). Java leaves replaced parents in its
                 // monster list, so retain the native slot rather than the
@@ -1528,6 +1560,7 @@ public final class STSModelInspector implements PostInitializeSubscriber,
                 slot = preferred;
                 monsterSlots.put(monster, slot);
                 usedMonsterSlots.add(slot);
+                if (gremlinReplacement) livingGremlinSlots.add(slot);
             } else {
                 slot = monsterSlot(monster, preferred >= 0 ? preferred : monsterIndex,
                         usedMonsterSlots);
