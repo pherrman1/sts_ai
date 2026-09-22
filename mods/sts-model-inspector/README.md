@@ -24,6 +24,16 @@ overrides the future-facing `oocModel` property. `STS_MODEL_INSPECTOR_CONFIG`
 selects a properties file instead of `~/.sts-model-inspector.properties`. F8
 toggles the panel.
 
+The graph button at the lower-left exports the current Silver combat tree or
+OOC MCTS tree to `~/.cache/sts-model-inspector/graphs/` and opens it in the
+default browser. Set `graphToolsDir` in `~/.sts-model-inspector.properties` to
+the repository's absolute `tools` directory (the one containing
+`render_combat_decision.py` and `render_ooc_mcts.py`). `python` optionally
+selects the Python executable; it defaults to `python3`. The same settings can
+be provided through `STS_MODEL_INSPECTOR_GRAPH_TOOLS` and
+`STS_MODEL_INSPECTOR_CONFIG`. A graph is available only when the live advisor
+captured that tree and the current response is ready.
+
 Event/Neow, map, rest, card selector, and shop recommendations attach to the
 actual choices instead of a separate upper-left list. Reward cards keep their
 score badges, with an extra badge beside Skip. Smith and Living Wall Upgrade

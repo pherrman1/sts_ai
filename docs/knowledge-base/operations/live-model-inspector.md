@@ -294,6 +294,10 @@ For an OOC MCTS search graph, launch the advisor with
 `STS_OOC_DEBUG_TREE=1` and select an OOC decision with the `mcts_ctm` policy.
 Then render the matching ready snapshot with
 `python3 tools/render_ooc_mcts.py --snapshot ~/.cache/sts-model-inspector/latest.json --output /tmp/ooc-mcts.html`.
+The mod's lower-left graph button runs the screen-appropriate renderer and
+opens the resulting HTML. Configure `graphToolsDir` in
+`~/.sts-model-inspector.properties` to the repository's absolute `tools`
+directory; `python` optionally overrides the `python3` executable.
 `STS_OOC_DEBUG_TREE_NODE_CAP` bounds the capture (default `4096`). The graph
 shows retained action nodes and sampled outcome particles, with root semantic
 labels, state summaries, visits, priors, and action Q values. State IDs refer to hypothetical
