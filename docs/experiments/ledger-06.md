@@ -10880,3 +10880,59 @@ default or generalization claim is authorized. Evidence:
   reproducible summarizer. **Knowledge impact:** bounded research evidence and
   the maintained hand-alignment contract only; no model, RNG, budget, gameplay
   policy, or default promotion.
+
+## §334 — Settled Silver queue-item default candidate, consumed HOLDOUT (2026-09-22)
+
+- **Question and boundary:** Make `curCardQueueItem` historical only at
+  unresolved, nonterminal, empty-queue `PLAYER_NORMAL` decisions in Silver
+  retained search. Keep `CARD_SELECT` and every pending-action state exact;
+  preserve selected deterministic reroot safety from §333.
+- **Provenance:** Current-main baseline `8613f9c7811ce19a81cb731e78b6b58d01ec91ca`;
+  frozen functional candidate `44331fa511058250fee874f41057e9c59ae2daa1`.
+  Release GCC, `OMP_NUM_THREADS=4`, 1,000 simulations per decision, allocated
+  reuse cap 32,768, adaptive/exact-lock/rho/internal FPU off. All commands
+  used `tools/seed_guard.sh`. DEV input SHA-256
+  `ab7c3298754864986c31273a0f1d23967b165fdd79a386261b680b8ad16d0eae`;
+  HOLDOUT input SHA-256
+  `e8b914ad74ca0508ee6b1db329c5f454e92e7785cd60af1475d53b35a9d8af34`.
+- **Focused verification:** Six affected CTests passed, including search
+  dedup/boundary/Attack Potion, bridge deterministic/hand/UID/chance reroot,
+  live importer, and Silver integration variants. The 59 supported paired
+  first-decision DEV roots created 58,966 baseline versus 58,912 candidate
+  nodes, with 7,763 candidate canonical lookup hits and 12 differing first
+  actions. Five roots were unsupported by the existing first-decision seam
+  (`transactional_selection_required`) in both arms.
+- **DEV:** 64/64 technically completed. Candidate: 52 wins, mean terminal HP
+  fraction 0.3701368277, 0.9203209877 nodes/simulation, 325,595 canonical
+  hits. Deterministic reroot 1,312/1,312 with zero misses and zero selected
+  positive-visit edges without children; stochastic sampled success 354/892,
+  with 538 candidate misses. Cap fallbacks: zero. Baseline: 51 wins,
+  0.3440911508 mean terminal HP fraction, 0.9246209677 nodes/simulation,
+  deterministic 1,287/1,287, stochastic misses 541. All 64 action traces
+  differed, so whole-combat efficiency and outcome differences are
+  trajectory-confounded.
+- **HOLDOUT correctness failure:** The one planned candidate run completed
+  63/64. Case `12100063/26` failed closed after three decisions at a selected
+  deterministic `CARD_SELECT` child with 525 edge visits. The diagnostic
+  reported that retained and observed states differed in `curCardQueueItem`
+  while the listed gameplay fields, RNG, queues, and hand UIDs matched. Since
+  PR #285 kept all `CARD_SELECT` states exact, so this correctly failed closed
+  under that candidate's identity contract. Its `PLAYER_NORMAL`-only boundary
+  and root-rewrite design were insufficient; the candidate is **not adopted**.
+  The 63 completed rows had 49 wins and mean
+  terminal HP fraction 0.3674471462. Across all recorded rows there were
+  325,149 canonical hits, 1,091 successful deterministic reroots before the
+  failing attempt, 529 stochastic candidate misses, and zero cap fallbacks.
+  The failed row has no terminal outcome. HOLDOUT is consumed; no retuning or
+  second cohort run occurred.
+- **Decision and limit:** The intended default decision remains blocked by
+  semantic correctness at `CARD_SELECT` and selected-child reroot requirements.
+  The evidence proves a representational mismatch at that boundary, not a
+  downstream gameplay difference. A new design must account for descendants
+  created under a retained representative's historical queue item while
+  preserving pending-work semantics and deterministic reroot correctness.
+  **Evidence:**
+  [raw packet](evidence/silver_queue_item_canonical_20260922/README.md).
+  **Knowledge impact:** rejected candidate and consumed HOLDOUT recorded in
+  ADR-0016 and this ledger; no maintained search behavior or production
+  implementation change.
