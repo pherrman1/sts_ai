@@ -2497,6 +2497,13 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         return task;
     }
 
+    static String gridSelectionTask(String reason, boolean anyNumber, boolean exhumeAction) {
+        // Exhume's vanilla prompt is generic "return to your hand" text, which
+        // otherwise aliases Hologram. The active native action identifies its
+        // exhaust-pile selector exactly.
+        return exhumeAction ? "EXHUME" : selectionTask(reason, anyNumber);
+    }
+
     static boolean singleForethoughtSelection(boolean action, boolean anyNumber,
                                               boolean canPickZero, int count) {
         return action && !anyNumber && !canPickZero && count == 1;
@@ -2605,7 +2612,8 @@ public final class STSModelInspector implements PostInitializeSubscriber,
             Object current = AbstractDungeon.actionManager == null ? null
                     : AbstractDungeon.actionManager.currentAction;
             String task = liquidMemoriesSelection(current) ? "LIQUID_MEMORIES_POTION"
-                    : selectionTask(readStringField(screen, "tipMsg", "lastTip"), screen.anyNumber);
+                    : gridSelectionTask(readStringField(screen, "tipMsg", "lastTip"), screen.anyNumber,
+                            current instanceof com.megacrit.cardcrawl.actions.unique.ExhumeAction);
             if (task.isEmpty() && screen.forUpgrade) task = "ARMAMENTS";
             return selectionJson(task, false, screen.anyNumber, amount == null ? 1 : amount,
                     screen.targetGroup == null ? null : screen.targetGroup.group);

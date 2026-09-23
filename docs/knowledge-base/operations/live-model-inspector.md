@@ -727,6 +727,8 @@ fail-closed. Combat `GRID`/`HAND_SELECT` boundaries also use Silver.
 Liquid Memories' GRID task is identified from the live
 `BetterDiscardPileToHandAction` cost-zero fields. Its generic return-to-hand
 prompt also appears for Hologram and cannot classify the task by itself.
+Exhume uses that same generic prompt for its exhaust-pile picker, so the active
+`ExhumeAction` takes precedence and preserves the exact `EXHUME` task.
 The selection observation carries the visible GRID card UUIDs in display
 order, so Silver's physical discard-card identity lowers to one MCP choice
 even when two offered cards share a name.
