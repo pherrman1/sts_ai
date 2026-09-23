@@ -100,6 +100,28 @@ public final class LiveOocCaptureTest {
         LiveOocCapture.addPriorEvent(priorEvents, "Sensory Stone");
         if (priorEvents.size() != 1 || !"Sensory Stone".equals(priorEvents.get(0)))
             throw new AssertionError("Sensory Stone metric history retained its raw Java ID");
+        java.util.List<Map<String,Object>> designerOptions = new java.util.ArrayList<>();
+        for (int i = 0; i < 4; ++i) designerOptions.add(obj("index", i));
+        java.util.List<String> designerLabels = java.util.Arrays.asList(
+                "[Adjustments] Lose 40 Gold. Upgrade a card.",
+                "[Clean Up] Lose 60 Gold. Transform 2 cards.",
+                "[Full Service] Lose 90 Gold. Remove a card and upgrade a random card.",
+                "[Punch] Lose 3 HP.");
+        if (!java.util.Arrays.equals(new int[] {0, 3, 4, 5},
+                LiveOocCapture.designerInitialNativeIndices("0", designerLabels,
+                        designerOptions, true, false, 40, 60, 90, 3, 0))
+                || LiveOocCapture.designerInitialNativeIndices("1", designerLabels,
+                        designerOptions, true, false, 40, 60, 90, 3, 0) != null)
+            throw new AssertionError("Designer visible services lost native option identities");
+        designerLabels = java.util.Arrays.asList(
+                "[Adjustments] Lose 50 Gold. Upgrade 2 random cards.",
+                "[Clean Up] Lose 75 Gold. Remove a card.",
+                "[Full Service] Lose 110 Gold. Remove a card and upgrade a random card.",
+                "[Punch] Lose 5 HP.");
+        if (!java.util.Arrays.equals(new int[] {1, 2, 4, 5},
+                LiveOocCapture.designerInitialNativeIndices("0", designerLabels,
+                        designerOptions, false, true, 50, 75, 110, 5, 20)))
+            throw new AssertionError("Designer high-ascension services lost native option identities");
         if (!"INVALID".equals(LiveOocCapture.canonicalPathHistory(
                 act3Path, true, "", 3, java.util.Arrays.asList(16)).get(31)))
             throw new AssertionError("unconfirmed Act 2 boss marker was promoted");

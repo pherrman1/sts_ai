@@ -702,6 +702,28 @@ final class LiveOocCapture {
                 && String.valueOf(labels.get(2)).contains("10 HP");
     }
 
+    static int[] designerInitialNativeIndices(Object phase, List<?> labels, List<?> options,
+            boolean upgradeOne, boolean cleanUpRemoves, int adjustCost, int cleanUpCost,
+            int fullServiceCost, int hpLoss, int ascension) {
+        if (!"0".equals(String.valueOf(phase)) || labels.size() != 4 || options.size() != 4
+                || adjustCost != (ascension >= 15 ? 50 : 40)
+                || cleanUpCost != (ascension >= 15 ? 75 : 60)
+                || fullServiceCost != (ascension >= 15 ? 110 : 90)
+                || hpLoss != (ascension >= 15 ? 5 : 3)) return null;
+        for (int i = 0; i < 4; ++i)
+            if (((Number)map(options.get(i)).get("index")).intValue() != i) return null;
+        String[] required = {upgradeOne ? "Upgrade a card" : "Upgrade 2 random cards",
+            cleanUpRemoves ? "Remove a card" : "Transform 2 cards",
+            "Remove a card", "Lose " + hpLoss + " HP"};
+        int[] costs = {adjustCost, cleanUpCost, fullServiceCost};
+        for (int i = 0; i < 4; ++i) {
+            String label = String.valueOf(labels.get(i));
+            if (!label.contains(required[i]) || (i < 3 && !label.contains("Lose " + costs[i] + " Gold")))
+                return null;
+        }
+        return new int[] {upgradeOne ? 0 : 1, cleanUpRemoves ? 2 : 3, 4, 5};
+    }
+
     static String visibleChestSize(String chestClass) {
         if ("SmallChest".equals(chestClass)) return "SMALL";
         if ("MediumChest".equals(chestClass)) return "MEDIUM";
@@ -1169,6 +1191,26 @@ final class LiveOocCapture {
         if (cleric) map(out.get("details")).put("hpAmount0", field(event, "healAmt"));
         boolean sensoryStone = "SensoryStone".equals(simple)
                 && sensoryStoneInitialVisible(phase, labels, options);
+        int[] designerIndices = null;
+        if ("Designer".equals(simple)) {
+            boolean upgradeOne = (Boolean)field(event, "adjustmentUpgradesOne");
+            boolean cleanUpRemoves = (Boolean)field(event, "cleanUpRemovesCards");
+            designerIndices = designerInitialNativeIndices(phase, labels, options,
+                    upgradeOne, cleanUpRemoves,
+                    ((Number)field(event, "adjustCost")).intValue(),
+                    ((Number)field(event, "cleanUpCost")).intValue(),
+                    ((Number)field(event, "fullServiceCost")).intValue(),
+                    ((Number)field(event, "hpLoss")).intValue(), AbstractDungeon.ascensionLevel);
+            if (designerIndices != null) {
+                Map<String,Object> details = map(out.get("details"));
+                details.put("upgradeOne", upgradeOne);
+                details.put("cleanUpIsRemoveCard", cleanUpRemoves);
+                for (int i = 0; i < designerIndices.length; ++i) {
+                    map(options.get(i)).put("index", designerIndices[i]);
+                    map(cs.get(i).get("nativeAction")).put("index", designerIndices[i]);
+                }
+            }
+        }
         int deadAdventurerEncounter = "DeadAdventurer".equals(simple)
                 ? deadAdventurerPublicEncounter(phase, labels, options,
                         String.valueOf(field(event, "body")), DeadAdventurer.DESCRIPTIONS,
@@ -1224,6 +1266,7 @@ final class LiveOocCapture {
                 && !goldShrine
                 && !nestDecisionVisible(simple, phase, labels, options, AbstractDungeon.ascensionLevel)
                 && !idolTrap && !goldenWing && !cleric && !sensoryStone
+                && designerIndices == null
                 && deadAdventurerEncounter < 0
                 && !forgottenAltar)
             out.put("unsupportedReason", "EVENT_PHASE_UNREPRESENTABLE:" + id + ":" + phase);
