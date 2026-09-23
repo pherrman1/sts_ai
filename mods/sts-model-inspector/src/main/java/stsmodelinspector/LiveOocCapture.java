@@ -751,6 +751,14 @@ final class LiveOocCapture {
                 && String.valueOf(labels.get(2)).contains("[Ingest Mutagens] Obtain a special relic");
     }
 
+    static boolean ancientWritingInitialVisible(Object phase, List<?> labels, List<?> options) {
+        return "INTRO".equals(String.valueOf(phase)) && labels.size() == 2 && options.size() == 2
+                && ((Number)map(options.get(0)).get("index")).intValue() == 0
+                && ((Number)map(options.get(1)).get("index")).intValue() == 1
+                && String.valueOf(labels.get(0)).contains("[Elegance] Remove a card from your deck")
+                && String.valueOf(labels.get(1)).contains("[Simplicity] Upgrade all Strikes and Defends");
+    }
+
     static String visibleChestSize(String chestClass) {
         if ("SmallChest".equals(chestClass)) return "SMALL";
         if ("MediumChest".equals(chestClass)) return "MEDIUM";
@@ -1226,6 +1234,8 @@ final class LiveOocCapture {
         if (library) map(out.get("details")).put("hpAmount0", field(event, "healAmt"));
         boolean augmenter = "DrugDealer".equals(simple)
                 && augmenterInitialVisible(phase, labels, options);
+        boolean ancientWriting = "BackToBasics".equals(simple)
+                && ancientWritingInitialVisible(phase, labels, options);
         int[] designerIndices = null;
         if ("Designer".equals(simple)) {
             boolean upgradeOne = (Boolean)field(event, "adjustmentUpgradesOne");
@@ -1301,7 +1311,7 @@ final class LiveOocCapture {
                 && !goldShrine
                 && !nestDecisionVisible(simple, phase, labels, options, AbstractDungeon.ascensionLevel)
                 && !idolTrap && !goldenWing && !cleric && !sensoryStone
-                && designerIndices == null && !maskedBandits && !library && !augmenter
+                && designerIndices == null && !maskedBandits && !library && !augmenter && !ancientWriting
                 && deadAdventurerEncounter < 0
                 && !forgottenAltar)
             out.put("unsupportedReason", "EVENT_PHASE_UNREPRESENTABLE:" + id + ":" + phase);

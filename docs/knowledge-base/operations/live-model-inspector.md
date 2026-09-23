@@ -564,6 +564,8 @@ observed and decided separately after Read. This uses a broad bounded prior
 for unknown pity, not an exact posterior conditioned on earlier rewards.
 Augmenter's initial three visible options preserve native Test, Transform, and
 Mutagens indices when their displayed labels and slots match.
+Ancient Writing's initial Elegance and Simplicity options are likewise
+qualified by their visible labels, slots, and initial phase.
 Mushrooms and Mysterious Sphere remain unsupported with
 `PUBLIC_REWARD_PITY_HISTORY_UNQUALIFIED` because their pre-MAP continuation
 can generate potion or card rewards. The v_win leaf marginalizes those

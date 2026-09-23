@@ -145,6 +145,13 @@ public final class LiveOocCaptureTest {
                 || LiveOocCapture.augmenterInitialVisible("1", augmenterLabels, augmenterOptions)
                 || LiveOocCapture.augmenterInitialVisible("0", augmenterLabels, banditOptions))
             throw new AssertionError("Augmenter initial options lost their native indices");
+        java.util.List<String> writingLabels = java.util.Arrays.asList(
+                "[Elegance] Remove a card from your deck.",
+                "[Simplicity] Upgrade all Strikes and Defends.");
+        if (!LiveOocCapture.ancientWritingInitialVisible("INTRO", writingLabels, banditOptions)
+                || LiveOocCapture.ancientWritingInitialVisible("LEAVE", writingLabels, banditOptions)
+                || LiveOocCapture.ancientWritingInitialVisible("INTRO", writingLabels, augmenterOptions))
+            throw new AssertionError("Ancient Writing initial options lost their native indices");
         if (!"INVALID".equals(LiveOocCapture.canonicalPathHistory(
                 act3Path, true, "", 3, java.util.Arrays.asList(16)).get(31)))
             throw new AssertionError("unconfirmed Act 2 boss marker was promoted");
