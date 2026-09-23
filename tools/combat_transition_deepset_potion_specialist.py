@@ -14,6 +14,7 @@ import argparse
 import copy
 import hashlib
 import json
+import platform
 from pathlib import Path
 import subprocess
 import time
@@ -464,6 +465,10 @@ def run(args):
     receipt = {"schema": RECIPE["schema"], "decision": decision,
         "decisionScope": "existing teacher-forced validation gate; a pass authorizes conditional export/parity/latency follow-up only",
         "recipe": RECIPE,
+        "executionEnvironment": {"python": platform.python_version(),
+            "torch": torch.__version__, "cudaRuntime": torch.version.cuda,
+            "cudaDevice": torch.cuda.get_device_name(0),
+            "cudaDeviceCount": torch.cuda.device_count(), "torchThreads": torch.get_num_threads()},
         "controlReproduction": {"referenceTrajectoryNll": CONTROL_REPRODUCTION_REFERENCE_NLL,
                                 "absoluteTolerance": CONTROL_REPRODUCTION_ABS_TOLERANCE,
                                 "stopsBeforeCandidateOnFailure": True},

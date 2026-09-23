@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import os
 from pathlib import Path
+import platform
 import subprocess
 import sys
 
@@ -36,7 +37,7 @@ def validate_source_worktree(source_worktree: Path) -> tuple[Path, str]:
 
 def build_command(source_root: Path, experiment_sha: str, args: argparse.Namespace) -> list[str]:
     trainer = source_root / TRAINER_RELATIVE_PATH
-    return [sys.executable, "-s", str(trainer),
+    return [sys.executable, str(trainer),
             "--artifact-root", str(args.artifact_root.resolve()),
             "--output-dir", str(args.output_dir.resolve()),
             "--encoder-checkpoint", str(args.encoder_checkpoint.resolve()),
@@ -51,7 +52,10 @@ def build_command(source_root: Path, experiment_sha: str, args: argparse.Namespa
 def child_environment(source_root: Path, base_env: dict[str, str] | None = None) -> dict[str, str]:
     env = os.environ.copy() if base_env is None else dict(base_env)
     env["PYTHONPATH"] = str(source_root)
-    env["PYTHONNOUSERSITE"] = "1"
+    # This experiment's pinned CUDA PyTorch is installed in the system Python
+    # user site; keep that dependency path available while source code resolves
+    # first from the validated checkout.
+    env.pop("PYTHONNOUSERSITE", None)
     env.pop("PYTHONHOME", None)
     return env
 
@@ -72,6 +76,7 @@ def main() -> None:
     command = build_command(source_root, experiment_sha, args)
     if args.print_command:
         print("sourceSha=" + experiment_sha)
+        print("python=" + sys.executable + " " + platform.python_version())
         print(" ".join(command))
         return
     subprocess.run(command, cwd=source_root,
