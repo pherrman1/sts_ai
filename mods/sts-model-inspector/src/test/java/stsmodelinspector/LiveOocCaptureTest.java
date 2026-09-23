@@ -122,6 +122,13 @@ public final class LiveOocCaptureTest {
                 LiveOocCapture.designerInitialNativeIndices("0", designerLabels,
                         designerOptions, false, true, 50, 75, 110, 5, 20)))
             throw new AssertionError("Designer high-ascension services lost native option identities");
+        java.util.List<Map<String,Object>> banditOptions = java.util.Arrays.asList(
+                obj("index", 0), obj("index", 1));
+        java.util.List<String> banditLabels = java.util.Arrays.asList(
+                "[Pay] Lose ALL of your Gold.", "[Fight!]");
+        if (!LiveOocCapture.maskedBanditsInitialVisible("INTRO", banditLabels, banditOptions)
+                || LiveOocCapture.maskedBanditsInitialVisible("LEAVE", banditLabels, banditOptions))
+            throw new AssertionError("Masked Bandits Pay/Fight event phase was misidentified");
         if (!"INVALID".equals(LiveOocCapture.canonicalPathHistory(
                 act3Path, true, "", 3, java.util.Arrays.asList(16)).get(31)))
             throw new AssertionError("unconfirmed Act 2 boss marker was promoted");

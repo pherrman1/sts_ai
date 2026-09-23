@@ -724,6 +724,14 @@ final class LiveOocCapture {
         return new int[] {upgradeOne ? 0 : 1, cleanUpRemoves ? 2 : 3, 4, 5};
     }
 
+    static boolean maskedBanditsInitialVisible(Object phase, List<?> labels, List<?> options) {
+        return "INTRO".equals(String.valueOf(phase)) && labels.size() == 2 && options.size() == 2
+                && ((Number)map(options.get(0)).get("index")).intValue() == 0
+                && ((Number)map(options.get(1)).get("index")).intValue() == 1
+                && String.valueOf(labels.get(0)).contains("[Pay] Lose ALL of your Gold")
+                && String.valueOf(labels.get(1)).contains("[Fight!]");
+    }
+
     static String visibleChestSize(String chestClass) {
         if ("SmallChest".equals(chestClass)) return "SMALL";
         if ("MediumChest".equals(chestClass)) return "MEDIUM";
@@ -1191,6 +1199,8 @@ final class LiveOocCapture {
         if (cleric) map(out.get("details")).put("hpAmount0", field(event, "healAmt"));
         boolean sensoryStone = "SensoryStone".equals(simple)
                 && sensoryStoneInitialVisible(phase, labels, options);
+        boolean maskedBandits = "MaskedBandits".equals(simple)
+                && maskedBanditsInitialVisible(phase, labels, options);
         int[] designerIndices = null;
         if ("Designer".equals(simple)) {
             boolean upgradeOne = (Boolean)field(event, "adjustmentUpgradesOne");
@@ -1266,7 +1276,7 @@ final class LiveOocCapture {
                 && !goldShrine
                 && !nestDecisionVisible(simple, phase, labels, options, AbstractDungeon.ascensionLevel)
                 && !idolTrap && !goldenWing && !cleric && !sensoryStone
-                && designerIndices == null
+                && designerIndices == null && !maskedBandits
                 && deadAdventurerEncounter < 0
                 && !forgottenAltar)
             out.put("unsupportedReason", "EVENT_PHASE_UNREPRESENTABLE:" + id + ":" + phase);
