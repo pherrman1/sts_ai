@@ -22,7 +22,7 @@ using namespace sts;
 thread_local std::int64_t simulationIdx = 0; // for debugging
 
 static bool potionDiscardEnablesEntropicBrew(const BattleContext &bc, int discardIdx) {
-    if (bc.player.hasRelic<R::SOZU>()) return false;
+    if (bc.player.hasRelic<R::SOZU>() || bc.potions[discardIdx] == Potion::ENTROPIC_BREW) return false;
     for (int i = 0; i < bc.potionCapacity; ++i) {
         if (i != discardIdx && bc.potions[i] == Potion::ENTROPIC_BREW) return true;
     }

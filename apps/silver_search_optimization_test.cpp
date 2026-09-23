@@ -528,6 +528,15 @@ void potionActionCanonicalization(sts::GameContext &gc, const sts::BattleContext
                                  [](const auto &action) { return action.getTargetIdx() > 5; }) == 1,
             "full belt with Entropic Brew exposes discard as well as normal use for a usable potion");
 
+    auto duplicateBrews = original;
+    installPotions(duplicateBrews, {sts::Potion::ENTROPIC_BREW, sts::Potion::ENTROPIC_BREW,
+                                    sts::Potion::STRENGTH_POTION});
+    const auto duplicateBrewActions = potionActions(duplicateBrews, sts::Potion::ENTROPIC_BREW);
+    require(duplicateBrewActions.size() == 1 && duplicateBrewActions.front().getTargetIdx() <= 5,
+            "duplicate Entropic Brew does not create a discard-one-Brew-then-drink-the-other edge");
+    require(potionActions(duplicateBrews, sts::Potion::STRENGTH_POTION).size() == 2,
+            "duplicate Entropic Brew still enables discarding a different potion");
+
     auto sozuGc = gc;
     sozuGc.relics.add({sts::RelicId::SOZU, 0});
     sts::BattleContext sozuBrew{};
