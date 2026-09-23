@@ -11183,3 +11183,28 @@ No gameplay seed or quality comparison was run. The native-contract test's
 relic write-back import guard also fails at unchanged baseline; it is not
 attributed to this optimization. This is bounded parity and performance evidence,
 not production qualification.
+
+## §336 — Forced all-DeepSets OOC CTM timing smoke (2026-09-23)
+
+Compared the current near-full CTM artifact to a separately exported, explicitly
+unqualified DeepSets stack on paired seed `12002032` with the same Release
+binary and OOC/Silver configuration. The candidate used the Phase-1 survival
+DeepSets checkpoint (TEST log loss `0.060430`), shared DeepSets maxHP/HP,
+DeepSets downstream heads, and potion screen B despite its
+`DEEPSET_POTION_REJECTED` offline decision. Runtime metadata bound all checkpoint
+hashes, marked every candidate component unqualified, and left the standard
+artifact/default untouched.
+
+The run completed in both arms. In the captured repetition, CTM preparation
+plus composed inference fell from `2.397 ms` to `0.591 ms` per call (-75.3%);
+combat sampling/resolution fell from `100` to `55` microseconds per call. Whole
+MCTS CPU rose from `54.14` to `83.77` seconds, while MCTS simulations rose from
+73,218 to 120,399 and CTM preparations from 11,102 to 20,231. The candidate
+reached floor 48 versus floor 33, so the whole-run difference includes a changed
+trajectory and larger search workload; one seed does not establish gameplay
+quality or a stable runtime gain. Same-seed repeated runs were used to retain the
+otherwise-truncated CPU profile output, not to add a seed. No separate numerical
+parity or gameplay qualification was run. [Full profile packet](evidence/ooc_deepset_stack_profile_2026-09-23/README.md).
+
+Knowledge impact: this timing smoke is recorded here; model qualification,
+standard CTM artifact and runtime defaults remain unchanged.
