@@ -757,10 +757,15 @@ fraction and potion mask into later factors; relics reuse the HP encoder state.
 Native reconstruction copies supported fields, derives potion count, shares
 trajectory residues and emits exact inherited potion/misc OOC continuation
 RNG. It does not emit the four recreated battle-local RAW RNG streams.
-Nondeterministic active Lizard Tail fails closed. Models remain frozen; the
-potion support predicate now excludes actual
-generation routes (explicit Alchemize and Entropic Brew), allowing harmless
-off-color cards. No production dispatch change is implied by this correction.
+Nondeterministic active Lizard Tail fails closed. The targeted 111-source
+qualification attempted only the existing Lizard head after supported
+non-Lizard composition exposure passed its existing gates. The fixed head-only
+fit was rejected against the TRAIN-only prior (+0.50675 nat TEST NLL gap,
+source-bootstrap 95% CI [+0.37380, +0.61081]); the production guard and frozen
+artifacts remain unchanged. No runtime integration or live support smoke was
+run. The potion support predicate also excludes actual generation routes
+(explicit Alchemize and Entropic Brew), allowing harmless off-color cards.
+See the [active Lizard evidence packet](../../experiments/evidence/active_lizard_ctm_2026-09-23/README.md).
 
 The [frozen composed qualification protocol](../../experiments/evidence/composed_transition_2026-09-14.md)
 uses the original source-grouped **reused engineering TEST**, exact HP marginal
@@ -1182,8 +1187,9 @@ Native reconstruction shares turn/attack/card/shuffle residues across related
 relics; partial labels intersect modular constraints. Certified victories:
 TRAIN 224,715 / 17,718 sources; HOLDOUT 25,398 / 1,979 sources. Full relic-vector
 mode exact is 0.805667113 versus native+copy-through 0.792700213; these are
-secondary metrics. No eligible active Lizard Tail exists, so its stochastic
-head is unqualified and the offline adapter fails closed on that support.
+secondary metrics. This pre-existing relic corpus has no eligible active Lizard
+Tail rows; the later targeted cohort also failed the Lizard-head proper-score
+gate, so that head remains unqualified and the offline adapter fails closed.
 Inserter has no corpus tokens; its source-derived reconstruction shares the
 qualified turn residue but has no relic-specific empirical score.
 

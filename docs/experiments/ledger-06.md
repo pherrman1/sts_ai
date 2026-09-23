@@ -11309,3 +11309,37 @@ No gameplay seed or quality comparison was run. The native-contract test's
 relic write-back import guard also fails at unchanged baseline; it is not
 attributed to this optimization. This is bounded parity and performance evidence,
 not production qualification.
+
+### Active Lizard Tail CTM qualification (2026-09-23)
+
+From baseline `aa09f75e6be837f7f39a2e31dde234bfd2c2ef08`, a detached shadow
+collector used the frozen `silver-ordinary-fair-exact10k-combat-transition-runtime16-f0bbd77`
+teacher and produced 111 unique source seeds (`4200100..4200210`), 2,234 rows,
+2,223 wins, 11 deaths, and zero quarantines. Combined with the 16-seed smoke,
+the local collection used 127 unique source IDs, within the 128-source cap.
+Manifest SHA-256:
+`457e33d53c7af2f474957d2201da0f7a7c95a1f6be10de71f40782cb14f832f6`; corpus
+SHA-256:
+`4d9927ad0f23d7f9e6e1fdb1091c6cf98ff7f5935540a5103746257b550b5504`.
+
+The source-grouped split contains 87 TRAIN, 15 VALIDATION, and 9 TEST source
+seeds. Supported non-Lizard HP, potion, and relic composition exposure met the
+existing 0.1-nat mean-gap gates, although the relic result uses only 32 rows
+from four sources. The old untrained Lizard head scored worse than the
+TRAIN-only prior (TEST gap +0.76590 nat; 95% source-bootstrap CI
+[+0.61415, +0.87443]). A fixed 10-epoch fit of only the two Lizard-head
+parameters on supported TRAIN victories was therefore run under the existing
+relic recipe. Its TEST NLL was 0.69889 versus 0.19213 for the TRAIN-only prior;
+the paired source-bootstrap gap was +0.50675 nat (95% CI [+0.37380, +0.61081],
+126 winning rows / nine sources). The Lizard head is rejected by the existing
+proper-score gate. Ancestral sampling covered all 127 fully supported TEST
+pre-states (including the observed death), with zero hard-validity failures;
+this does not override the score rejection.
+
+Production `active_unqualified_lizard` remains unchanged. No Phase 3B
+specialist, runtime integration, native/Python parity qualification, gameplay
+benchmark, or live seed `13027029` check was run. The live check remains gated
+on offline qualification. See the [complete evidence packet](evidence/active_lizard_ctm_2026-09-23/README.md).
+
+**Knowledge impact:** the maintained current-research page now points to this
+negative result; active Lizard Tail remains outside qualified CTM support.
