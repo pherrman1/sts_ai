@@ -11358,9 +11358,10 @@ current provenance-hardened re-export with tensor payload identical to the
 originally profiled candidate.
 
 The DeepSets-only prepared path now computes the shared transition encoding
-once for the maxHP, HP, and potion heads. Survival remains separate. Prepared
-encoder evaluations fell from four to two; attention-artifact preparation
-retains the original code path. Across 31 fixed fixtures (28 supported), all
+once for the maxHP, HP, and potion heads. Survival remains separate. Code
+inspection shows prepared encoder calls fall from four to two; this is not a
+runtime-instrumented counter. Attention-artifact preparation retains the
+original code path. Across 31 fixed fixtures (28 supported), all
 3,584 prepared/reference draws, deterministic outputs, support results, full
 persistent post-states, and planner RNG checks matched exactly before and
 after.
@@ -11376,8 +11377,11 @@ search speedup. Later profiling candidates were not run because the clear Phase
 2 result met the handoff stop rule.
 
 The Release probe and `one_combat` targets built. Focused loader and near-full
-artifact CTests passed (2/2). A full 31-row `smoke-and-parity` invocation also
-returned `invalid_relic_counter`; the separate `near-full` path completed all
+artifact CTests passed (2/2). The full 31-row `smoke-and-parity` invocation
+returned `invalid_relic_counter` on both the untouched PR 295 preparation path
+and the candidate path, with the same artifact and fixtures; both emitted
+eight rows first. This reproduces the failure on baseline and shows it is not
+specific to encoder reuse. The separate `near-full` path completed all
 fixtures and verifies prepared/reference state and RNG parity. Full CTest,
 GitHub Actions Linux GCC, game seeds, and gameplay comparisons were not run.
 [Evidence packet](evidence/ooc_deepset_encoder_reuse_2026-09-23/README.md).

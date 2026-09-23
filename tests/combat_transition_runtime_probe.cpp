@@ -78,8 +78,7 @@ int main(int argc,char **argv) {
                     {"victory",victories},{"death",deaths},{"fullPersistentStateEqual",true},{"plannerRngPostEqual",true},
                     {"supportEqual",true},{"preparationNs",preparationNs},{"referenceSampleNs",referenceNs/draws},
                     {"preparedSampleNs",preparedNs/draws},{"preparedAmortizedNs",(preparationNs+preparedNs)/draws},
-                    {"referenceEncoderCalls",support.supported?draws+3*victories:0},
-                    {"preparedEncoderCalls",support.supported?(net.metadata().contains("experimentalDeepSets")?2:4):0}};
+                    {"referenceEncoderCalls",support.supported?draws+3*victories:0}};
             }
             if(support.supported) {
                 out["survival"]=net.survival(p);out["max_hp"]=net.maxHp(p);auto z=net.hpEncoding(p);out["hp_encoding"]=z;

@@ -68,11 +68,13 @@ full output files have SHA-256
 baseline and candidate were rebuilt from the current PR 295 head with and
 without only the reuse branch; complete JSONL output is byte-for-byte equal.
 
-The fixed-fixture prepared/reference probe also reports 128 draws, equal
-support, full persistent-state equality, planner RNG equality, and an exact
-prepared encoder call count of 2. The pre-change `NativePrepared` call graph
-made four calls: survival, maxHP, HP encoding, and potion encoding. The
-post-change call graph makes two: survival and shared transition encoding.
+The fixed-fixture prepared/reference probe reports 128 draws, equal support,
+full persistent-state equality, and planner RNG equality. It does not
+instrument encoder calls. Code inspection of `NativePrepared` shows four
+baseline calls (survival, maxHP, HP encoding, and potion encoding) and two
+candidate calls (survival and the shared transition encoding). The earlier
+`preparedEncoderCalls` field was inferred from artifact metadata, not measured;
+it has been removed from the probe and corrected raw outputs.
 
 ## Release preparation timing
 
@@ -80,7 +82,7 @@ Each measurement used the same single fixed fixture and candidate artifact. The
 existing probe timed `prepare()` once per process, then checked 128 sampled
 draws. There were 30 independent Release process repetitions per version.
 
-| Version | Median | p10-p90 | Range | Encoder calls |
+| Version | Median | p10-p90 | Range | Calls from code inspection |
 | --- | ---: | ---: | ---: | ---: |
 | PR 295 current-head baseline | 284,427 ns | 280,665-336,479 ns | 280,254-357,929 ns | 4 |
 | Shared encoder | 142,541 ns | 140,252-149,509 ns | 140,062-265,236 ns | 2 |
@@ -103,17 +105,24 @@ or same-workload MCTS claim is made.
 - Full fixed-fixture `near-full` probe before and after: PASS; 31 rows and 128
   draws per supported row. Output equality as described above.
 - Fixed-fixture `smoke-and-parity` probe: PASS for each of 30 timing
-  repetitions; 128 draws, support/state/RNG parity, 2 prepared encoder calls.
+  repetitions; 128 draws and support/state/RNG parity. The two-call count is
+  derived from the candidate `NativePrepared` call sites, not instrumentation.
 - Focused CTest: `ctest --test-dir build/linux-gcc-release -R
   'combat_transition_runtime_loader|combat_transition_near_full_artifact'
   --output-on-failure`: PASS, 2/2.
-- Standard attention artifact smoke: PASS on the same fixed fixture; preparation
-  remains at 4 encoder calls with equal support, persistent state, and planner
-  RNG. Raw probe output is `attention-unchanged-smoke.jsonl`.
-- A separate `smoke-and-parity` invocation over all 31 rows returned
-  `invalid_relic_counter`; the `near-full` mode completed the same rows and
-  performs the required prepared/reference state and RNG comparisons. The
-  focused CTests and fixed one-row repetitions passed.
+- Standard attention artifact smoke: PASS on the same fixed fixture; equal
+  support, persistent state, and planner RNG. Its unchanged four-call count is
+  derived from the attention branch in `NativePrepared`, not instrumentation.
+  Raw probe output is `attention-unchanged-smoke.jsonl`.
+- The all-31-row `smoke-and-parity` command returned `invalid_relic_counter`
+  both with the untouched PR 295 preparation call path and with the candidate
+  path, using the same artifact and fixture SHA-256 values. Each run emitted
+  eight complete rows before failing. Raw stdout prefixes and the exact
+  commands, exit codes, stderr, and input hashes are in
+  `smoke-and-parity-baseline-reproduction.md`. The error therefore reproduces
+  on baseline and is not specific to encoder reuse; the separate `near-full`
+  mode completed all 31 rows and performs the prepared/reference state and RNG
+  comparisons. Focused CTests and fixed one-row repetitions passed.
 - Full CTest and GitHub Actions Linux GCC were not run. No game seeds were run.
 
 Knowledge impact: benchmark evidence only; no maintained runtime contract,

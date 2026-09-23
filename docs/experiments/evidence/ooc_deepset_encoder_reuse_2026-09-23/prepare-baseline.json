@@ -7,7 +7,7 @@
     "minNs": 280254.0,
     "maxNs": 357929.0,
     "drawsPerRep": 128,
-    "preparedEncoderCalls": 4
+    "encoderCallsFromCodeInspection": 4
   },
   "samplesNs": [
     284001.0,
