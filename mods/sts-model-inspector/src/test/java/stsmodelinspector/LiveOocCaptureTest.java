@@ -52,7 +52,7 @@ public final class LiveOocCaptureTest {
                 || !"other".equals(LiveOocCapture.selectorType(false, false, false, "other", "MonsterRoom", 2)))
             throw new AssertionError("Neow REMOVE_TWO selector was not distinguished from transform/unknown grids");
         List<String> skullLabels = Arrays.asList(
-                "[Pick Me Up?] Get a Potion. Lose 6 HP.",
+                "[A Pick Me Up?] Get a Potion. Lose 6 HP.",
                 "[Riches?] Gain 90 Gold. Lose 6 HP.",
                 "[Success?] Get a Colorless Card. Lose 6 HP.",
                 "[How do I leave?] Lose 6 HP.");

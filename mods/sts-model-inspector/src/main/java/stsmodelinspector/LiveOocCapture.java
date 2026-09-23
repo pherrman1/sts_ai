@@ -859,7 +859,7 @@ final class LiveOocCapture {
         if (label == null) return -1;
         if (label.contains("[Riches?]")) return 0;       // gold
         if (label.contains("[Success?]")) return 1;     // colorless card
-        if (label.contains("[Pick Me Up?]")) return 2;   // potion
+        if (label.contains("[A Pick Me Up?]")) return 2; // potion
         if (label.contains("[How do I leave?]")) return 3;
         return -1;
     }
