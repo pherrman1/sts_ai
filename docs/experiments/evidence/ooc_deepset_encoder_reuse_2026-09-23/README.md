@@ -14,10 +14,14 @@ Phase 2 produced a clear fixed-input gain, which is the handoff's stop rule.
 
 ## Provenance
 
-- PR 295 source head: `7ec55eeb53c5c507d9a1d2091baf8ac9c2f20456`.
+- Current PR 295 source head: `ae167e1e2eef6e988a61a12a2ef00d5d2d44a301`.
 - Local `main` was fast-forwarded to `aa09f75e6be837f7f39a2e31dde234bfd2c2ef08`.
-- Pre-optimization merged tree: `e02d803c9510038ff4b2d7c505d2eb316ceb94e4`.
-- Candidate artifact SHA-256: `f691131ae82671bb1feb0f539bf8f93893a1f089ec3cabef56f7e2a197b06f0e`.
+- Candidate code tree: `e2e7206a90f6dfc66d7bb1722ebf43c78717dee7`.
+- Optimization commit: `bc535b541524f0ee3cc5654e58c9fe5e3e49d47d`.
+- Candidate artifact SHA-256:
+  `3f6d174950f1e4a8b042cebc78bd8525c7e112a13e31865670a39df4b0f2f586`.
+  This is PR 295's provenance-hardened re-export; its tensor payload is
+  byte-identical to the originally profiled artifact.
 - Original fixture: `tests/fixtures/combat_transition_near_full.jsonl`, SHA-256
   `d464bcc043bd3f9964a2300696f05356a602eb3fb98f01070800cb025e9226ee`.
 - Fixed fixture used here sets only each row's `draws` field to 128; its SHA-256
@@ -30,7 +34,7 @@ Phase 2 produced a clear fixed-input gain, which is the handoff's stop rule.
   fields compare byte-for-byte. The stored canonical form removes the
   deterministic 256-word lookahead array per draw; `wordsUsed`, outcomes, and
   complete sampled states remain, and the probe verifies planner RNG equality
-  directly. The candidate adds `maxHpEncoding` to expose the
+  directly. The probe reports `maxHpEncoding` on both runs to expose the
   shared-representation check.
 
 ## Shared tensor and representation evidence
@@ -58,13 +62,11 @@ preparation and the original `maxHp(input)` implementation.
 Before/after `near-full` probe output covers 31 fixtures: 28 supported and 3
 unsupported. Each supported fixture has 128 prepared/reference draws (3,584
 total). The outcomes, full deterministic outputs, support classifications,
-complete persistent post-states, draw tapes, and planner RNG post-state checks
-match. The old output file SHA-256 is
-`a7fbefbc21d2e5690927fb6a23c5863efca3096f925b89c52e7e9a94d33d788b`; the
-candidate adds the shared encoding and its SHA-256 is
-`a0f8cb9e5d08c995f90489c6e878bbf25c31533010ab25cf6dfbe3da344a36da`. Removing
-the one added field from each candidate row yields the original file byte for
-byte.
+complete persistent post-states, and planner RNG post-state checks match. Both
+full output files have SHA-256
+`a0f8cb9e5d08c995f90489c6e878bbf25c31533010ab25cf6dfbe3da344a36da`. The
+baseline and candidate were rebuilt from the current PR 295 head with and
+without only the reuse branch; complete JSONL output is byte-for-byte equal.
 
 The fixed-fixture prepared/reference probe also reports 128 draws, equal
 support, full persistent-state equality, planner RNG equality, and an exact
@@ -80,15 +82,15 @@ draws. There were 30 independent Release process repetitions per version.
 
 | Version | Median | p10-p90 | Range | Encoder calls |
 | --- | ---: | ---: | ---: | ---: |
-| PR 295 baseline | 285,218 ns | 279,603-292,837 ns | 278,009-341,919 ns | 4 |
-| Shared encoder | 142,741 ns | 140,092-188,703 ns | 139,801-210,964 ns | 2 |
+| PR 295 current-head baseline | 284,427 ns | 280,665-336,479 ns | 280,254-357,929 ns | 4 |
+| Shared encoder | 142,541 ns | 140,252-149,509 ns | 140,062-265,236 ns | 2 |
 
-Median preparation time fell by **49.95%**. The observed ranges do not overlap.
+Median preparation time fell by **49.88%**. The observed ranges do not overlap.
 Raw samples are in `prepare-baseline.json` and `prepare-candidate.json`.
 
 For bounded context, PR 295's one-seed DeepSets profile attributed 11.962 s of
 83.772 s MCTS CPU to CTM preparation (14.28%). Applying the fixed-fixture
-reduction to that same-work profile projects about **7.13% less MCTS CPU**, or
+reduction to that same-work profile projects about **7.12% less MCTS CPU**, or
 approximately 1.077x speed, if all other work remains constant. This is an
 inference from unlike scopes, not a measured whole-search speedup; no gameplay
 or same-workload MCTS claim is made.
@@ -105,6 +107,9 @@ or same-workload MCTS claim is made.
 - Focused CTest: `ctest --test-dir build/linux-gcc-release -R
   'combat_transition_runtime_loader|combat_transition_near_full_artifact'
   --output-on-failure`: PASS, 2/2.
+- Standard attention artifact smoke: PASS on the same fixed fixture; preparation
+  remains at 4 encoder calls with equal support, persistent state, and planner
+  RNG. Raw probe output is `attention-unchanged-smoke.jsonl`.
 - A separate `smoke-and-parity` invocation over all 31 rows returned
   `invalid_relic_counter`; the `near-full` mode completed the same rows and
   performs the required prepared/reference state and RNG comparisons. The

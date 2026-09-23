@@ -11348,12 +11348,14 @@ standard CTM artifact and runtime defaults remain unchanged.
 
 ## §337 — PR 295 DeepSets shared transition-encoder reuse (2026-09-23)
 
-On the merged PR 295 tree, the exporter-installed DeepSets artifact's 28
+On the current PR 295 tree, the exporter-installed DeepSets artifact's 28
 maxHP, HP, and potion encoder tensors were byte-identical across all three
 groups. The Release probe also emitted all three 64-value representations;
 they were identical on each of 28 supported frozen fixtures. Candidate artifact
 SHA-256 is
-`f691131ae82671bb1feb0f539bf8f93893a1f089ec3cabef56f7e2a197b06f0e`.
+`3f6d174950f1e4a8b042cebc78bd8525c7e112a13e31865670a39df4b0f2f586`, the
+current provenance-hardened re-export with tensor payload identical to the
+originally profiled candidate.
 
 The DeepSets-only prepared path now computes the shared transition encoding
 once for the maxHP, HP, and potion heads. Survival remains separate. Prepared
@@ -11364,11 +11366,11 @@ persistent post-states, and planner RNG checks matched exactly before and
 after.
 
 Release preparation timing on one identical fixed fixture over 30 independent
-process repetitions changed from median `285,218 ns` (range `278,009-341,919`)
-to `142,741 ns` (range `139,801-210,964`), a `49.95%` median reduction. The
+process repetitions changed from median `284,427 ns` (range `280,254-357,929`)
+to `142,541 ns` (range `140,062-265,236`), a `49.88%` median reduction. The
 ranges did not overlap. This is fixed-fixture runtime evidence, not model
 qualification or a gameplay result. Applying that reduction to PR 295's
-historical `14.28%` CTM-preparation share of MCTS CPU projects about `7.13%`
+historical `14.28%` CTM-preparation share of MCTS CPU projects about `7.12%`
 less same-workload MCTS CPU; this projection is an inference, not a measured
 search speedup. Later profiling candidates were not run because the clear Phase
 2 result met the handoff stop rule.
