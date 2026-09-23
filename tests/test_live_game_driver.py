@@ -673,7 +673,7 @@ class LiveGameDriverTest(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             trace = TraceWriter(Path(directory) / "seed-7.jsonl")
             trace.write({"step": 4, "screen_type": "MAP", "decision_source": "ooc_v4",
-                         "ooc_v4_latency_micros": 1200000, "inspector_wait_micros": 1300000,
+                         "ooc_v4_latency_micros": 1500000, "inspector_wait_micros": 1300000,
                          "post_action_wait_micros": 450000, "driver_step_micros": 1900000,
                          "selected_candidate": "a1", "selected_mcp_tool": "choose",
                          "selected_mcp_arguments": {"choice_index": 2},
@@ -686,7 +686,12 @@ class LiveGameDriverTest(unittest.TestCase):
             self.assertEqual(decision["decision_type"], "OOC decision model")
             self.assertEqual(decision["decision_reason"],
                              "OOC selected the action from the current public noncombat choices")
-            self.assertEqual(decision["model_latency_ms"], 1200.0)
+            self.assertEqual(decision["model_latency_ms"], 1500.0)
+            self.assertEqual(decision["model_compute_ms"], 1500.0)
+            self.assertEqual(decision["driver_elapsed_ms"], 1900.0)
+            self.assertEqual(decision["model_response_wait_ms"], 1300.0)
+            self.assertEqual(decision["dominant_delay"]["phase"], "model compute")
+            self.assertIn("may finish before", decision["dominant_delay"]["reason"])
             self.assertEqual(decision["chosen_action"]["description"], "Choose 2: Rest")
             self.assertEqual({item["phase"] for item in decision["wait_reasons"]},
                              {"model observation and decision", "game transition"})

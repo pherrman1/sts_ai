@@ -435,9 +435,11 @@ Each decision is written as redacted JSONL under
 `<trace-stem>.run.json`, with one readable entry per decision: screen, source,
 chosen action, model latency, total elapsed time, phase timings, and a reason
 for each measured wait (inspector/model response, MCP action, or game-state
-transition). Unsupported decisions that stop a run are included in the report.
-This makes model compute time distinguishable from readiness and transition
-time. `--dry-run` performs the
+transition). It reports model compute latency separately from driver elapsed
+time and the actual wait for a fresh inspector response; model work can finish
+before a driver step receives its ready result. A dominant-delay field gives
+the largest measured phase and its reason. Unsupported decisions that stop a
+run are included in the report. `--dry-run` performs the
 read, candidate, and decision path without a mutating MCP call, while
 `--max-steps N` bounds a smoke test. The driver intentionally stops on
 unavailable MCP, malformed or stale inspector data, unsupported candidate
@@ -698,8 +700,15 @@ event outro cannot be misread as its initial decision. Unopened card reward
 groups expose only their occurrence/type and require the driver to open the
 group before scoring; their concealed card identities are not
 serialized or scored. Wing Boots is imported with a separate public charge
-counter; Matryoshka, Lizard Tail and N’loth’s Hungry Face are unsupported
-where live/native counter initialization differs. Maw Bank has an explicit
+counter. Lizard Tail's live `usedUp` flag maps to the native active bit, and
+native relic acquisition initializes that bit so its revive remains available;
+raw save counters alone do not distinguish the active and spent forms. Despite
+that state conversion, live OOC MCTS currently aborts its transition search
+for an active Lizard Tail outside the qualified Mark of the Bloom case with
+`OOC_MCTS_ABORTED:active_unqualified_lizard`; the ordinary active-relic map
+decision remains unsupported until that transition domain is qualified.
+Matryoshka and N’loth’s Hungry Face remain unsupported where live/native
+counter initialization differs. Maw Bank has an explicit
 source-derived active/spent conversion; other unqualified positive counters
 are unsupported. A deck containing upgraded Searing Blow returns
 `SEARING_BLOW_UPGRADE_HISTORY_UNQUALIFIED`, because public card fields cannot

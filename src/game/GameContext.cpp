@@ -1378,6 +1378,13 @@ bool GameContext::obtainRelic(RelicId r) {
             break;
         }
 
+        case RelicId::LIZARD_TAIL: {
+            // The saved counter is not the simulator's active flag. Keep the
+            // revive available until the first lethal hit consumes it.
+            relicData = 1;
+            break;
+        }
+
         case RelicId::WING_BOOTS: {
             wingBootsCharges = 3;
             break;

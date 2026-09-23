@@ -1036,10 +1036,10 @@ final class LiveOocCapture {
             return usedUp ? 0 : 1;
         }
         if ("Lizard Tail".equals(id)) {
-            // Native fresh-run initialization currently differs from Java.
-            // Do not silently choose between the raw-save and fresh-run forms.
-            if (!usedUp) unsupported(state, "RELIC_NATIVE_STATE_UNREPRESENTABLE:Lizard Tail:active");
-            return usedUp ? 0 : counter;
+            // Native relic data is the active bit used by afterBattle and by
+            // the combat bridge. Java exposes usedUp directly; raw save
+            // counters alone cannot distinguish the active and spent forms.
+            return usedUp ? 0 : 1;
         }
         if ("Matryoshka".equals(id) || "NlothsMask".equals(id)) {
             if (counter > 0)

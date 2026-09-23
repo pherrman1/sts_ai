@@ -576,6 +576,7 @@ add_test(NAME s3_persistent_endturn_chance COMMAND $<TARGET_FILE:unit-test> s3_p
 add_test(NAME thorns_retaliation COMMAND $<TARGET_FILE:unit-test> thorns_retaliation)
 add_test(NAME awakened_one_stage2 COMMAND $<TARGET_FILE:unit-test> awakened_one_stage2)
 add_test(NAME darkling_victory COMMAND $<TARGET_FILE:unit-test> darkling_victory)
+add_test(NAME lizard_tail_initialization COMMAND $<TARGET_FILE:unit-test> lizard_tail_initialization)
 add_test(NAME poison_lose_hp COMMAND $<TARGET_FILE:unit-test> poison_lose_hp)
 add_test(NAME time_eater_exhaust COMMAND $<TARGET_FILE:unit-test> time_eater_exhaust)
 add_test(NAME simhealth_gamble_empty_hand COMMAND $<TARGET_FILE:unit-test> simhealth_gamble_empty_hand)
@@ -820,7 +821,7 @@ set_tests_properties(paired_analysis_selftest py_compile_parity_test py_compile_
 # Labels provide fast, intention-revealing local tiers while the unfiltered
 # linux-gcc-test preset remains the authoritative full CTest suite.
 set_tests_properties(battlecontext_roundtrip designer_in_spire cardqueue_overflow keys_collect
-    issue_fixes relic_reward_sapphire semantic_card_edges thorns_retaliation awakened_one_stage2 darkling_victory
+    issue_fixes relic_reward_sapphire semantic_card_edges thorns_retaliation awakened_one_stage2 darkling_victory lizard_tail_initialization
     poison_lose_hp time_eater_exhaust simhealth_gamble_empty_hand gamblers_brew_legality
     simhealth_nonfair_s2_empty simhealth_selection_failure simhealth_nonfair_s2_selection_failed
     training_integrity PROPERTIES LABELS "core")

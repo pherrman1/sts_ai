@@ -806,6 +806,22 @@ class TraceWriter:
                     })
                 action = row.get("selected_mcp_tool") or row.get("executed_mcp_tool")
                 args = row.get("selected_mcp_arguments") or row.get("executed_mcp_arguments") or {}
+                model_latency_ms = round(row.get("ooc_v4_latency_micros", row.get("silver_latency_micros", 0)) / 1000.0, 3)
+                model_wait_ms = durations.get("inspector_wait", 0.0)
+                elapsed_ms = round(row.get("driver_step_micros", 0) / 1000.0, 3)
+                timed_phases = {
+                    "model compute": model_latency_ms,
+                    "waiting for model response": model_wait_ms,
+                    "MCP action": durations.get("mcp_action", 0.0),
+                    "game transition": durations.get("post_action_wait", 0.0),
+                }
+                dominant_phase = max(timed_phases, key=timed_phases.get)
+                dominant_reasons = {
+                    "model compute": "the model-reported OOC/Silver search latency; this work may finish before the driver receives the ready response",
+                    "waiting for model response": "the driver waited for a fresh inspector observation/advisor result",
+                    "MCP action": "the game-control action call took the most measured time",
+                    "game transition": "the driver waited for MCP readiness and the correlated next game state",
+                }
                 automated_reasons = {
                     "parent_reward_cleanup": "collect an unconditional gold reward mechanically",
                     "card_reward_reveal": "reveal the concealed card group after visible parent rewards were resolved",
@@ -841,10 +857,16 @@ class TraceWriter:
                     "decision_source": source,
                     "decision_reason": decision_reason,
                     "model_status": row.get("ooc_v4_status") or row.get("silver_status"),
-                    "model_latency_ms": round(row.get("ooc_v4_latency_micros", row.get("silver_latency_micros", 0)) / 1000.0, 3),
+                    "model_latency_ms": model_latency_ms,
                     "chosen_action": {"tool": action, "arguments": args,
                                       "description": description},
-                    "elapsed_ms": round(row.get("driver_step_micros", 0) / 1000.0, 3),
+                    "elapsed_ms": elapsed_ms,
+                    "driver_elapsed_ms": elapsed_ms,
+                    "model_compute_ms": model_latency_ms,
+                    "model_response_wait_ms": model_wait_ms,
+                    "dominant_delay": {"phase": dominant_phase,
+                                       "milliseconds": timed_phases[dominant_phase],
+                                       "reason": dominant_reasons[dominant_phase]},
                     "durations_ms": durations,
                     "wait_reasons": wait_reasons,
                 })

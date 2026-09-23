@@ -329,6 +329,17 @@ int testHappyFlowerCounter(std::uint64_t seed) {
     return 0;
 }
 
+int testLizardTailInitialization() {
+    GameContext gc(CharacterClass::IRONCLAD, 0x51A9u, 0);
+    gc.obtainRelic(RelicId::LIZARD_TAIL);
+    if (gc.relics.getRelicValue(RelicId::LIZARD_TAIL) != 1) {
+        std::cout << "lizard_tail_initialization FAIL: new Lizard Tail must be active\n";
+        return 1;
+    }
+    std::cout << "lizard_tail_initialization PASS\n";
+    return 0;
+}
+
 // Regression tests for issues #56 (Liquid Memories zero-cost), #66 (Omamori
 // counter underflow), #68 (stale multi-select validation outside CARD_SELECT
 // input state), and Smoke Bomb combat semantics.
@@ -4372,6 +4383,8 @@ int main(int argc, const char* argv[]) {
         return testPrune(std::stoull(argv[2]));
     } else if (command == "happy_flower") {
         return testHappyFlowerCounter(std::stoull(argv[2]));
+    } else if (command == "lizard_tail_initialization") {
+        return testLizardTailInitialization();
     } else if (command == "issue_fixes") {
         return testIssueFixes();
     } else if (command == "simulator_correctness_pr9_19") {
