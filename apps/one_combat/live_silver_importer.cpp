@@ -600,7 +600,6 @@ SilverRootImportResult importSilverRootGeneric(const json &observation,
         // The isolated Silver port enumerates a smaller selector set than the
         // shared enum. Reject those tasks before its assertion-bearing search.
         switch (*task) {
-        case sts::CardSelectTask::HOLOGRAM:
         case sts::CardSelectTask::MEDITATE:
         case sts::CardSelectTask::NIGHTMARE:
         case sts::CardSelectTask::RECYCLE:

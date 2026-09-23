@@ -742,7 +742,8 @@ reconstructs the native Intangible bookkeeping bit for that exact power ID;
 native Intangible decrements every round regardless of the bit.
 Selectors named in the shared enum but absent from the isolated Silver port
 return `silver_selection_task_not_in_port` before search instead of reaching
-its assertion path.
+its assertion path. Hologram is supported through the live discard UUID path;
+Meditate, Nightmare, Recycle, Seek, and Setup remain outside the current port.
 Combat capture uses the room's `COMBAT` phase, including event rooms, rather
 than requiring a monster-room subclass. Selection boundary detection is
 independent of native serializer support: an unknown selection task remains

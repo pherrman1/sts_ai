@@ -2343,9 +2343,10 @@ int main() {
                 != static_cast<std::int16_t>(CardSelectTask::LIQUID_MEMORIES_POTION))
             throw std::runtime_error("observed Liquid Memories grid did not reach its supported native task");
         general["silverRoot"]["combat"]["cardSelect"]["task"] = "HOLOGRAM";
-        auto unsupportedPortTask = one_combat::advisor::importSilverRoot(general, eyeContext);
-        if (unsupportedPortTask.ok || unsupportedPortTask.reason != "silver_selection_task_not_in_port")
-            throw std::runtime_error("unavailable Silver port selector was allowed to abort the advisor");
+        auto hologram = one_combat::advisor::importSilverRoot(general, eyeContext);
+        if (!hologram.ok || hologram.wire.cardSelect.task
+                != static_cast<std::int16_t>(CardSelectTask::HOLOGRAM))
+            throw std::runtime_error("supported Hologram discard selector was rejected before Silver search");
         one_combat::advisor::SilverImportContext loweringContext;
         loweringContext.cardIds = {{"copy-a", 17}, {"copy-b", 23}};
         silver_bridge::SemanticAction loweringAction;
@@ -2392,6 +2393,14 @@ int main() {
         if (!one_combat::advisor::selectedLiveAction(loweringAction, loweringContext,
                 handSelectObservation).is_null())
             throw std::runtime_error("mismatched hand selection task was lowered");
+        loweringAction.source = silver_bridge::CardSource::DISCARD;
+        loweringAction.cardSelectTask = static_cast<std::int16_t>(CardSelectTask::HOLOGRAM);
+        auto hologramObservation = targetObservation;
+        hologramObservation["combat"]["cardSelect"] = json{
+            {"task", "HOLOGRAM"}, {"liveUuids", json::array({"copy-a", "copy-b"})}};
+        if (one_combat::advisor::selectedLiveAction(loweringAction, loweringContext,
+                hologramObservation) != json{{"kind", "choose"}, {"choiceIndex", 2}})
+            throw std::runtime_error("Hologram discard selection lost its unique live UUID");
         loweringAction.source = silver_bridge::CardSource::CARD_SELECT_OPTION;
         loweringAction.cardSelectTask = static_cast<std::int16_t>(CardSelectTask::DISCOVERY);
         loweringAction.optionCardId = static_cast<std::int16_t>(CardId::MAGNETISM);
