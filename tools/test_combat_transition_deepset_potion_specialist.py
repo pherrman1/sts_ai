@@ -4,6 +4,7 @@ from pathlib import Path
 import subprocess
 import sys
 import tempfile
+from unittest import mock
 
 import numpy as np
 import torch
@@ -51,13 +52,41 @@ class DeepSetPotionSpecialistTests(unittest.TestCase):
             "reference_receipt": Path("/tmp/reference.json"),
             "reference_decoder": Path("/tmp/reference.pt"),
         })()
-        command = potion_blind_reproduce.build_command(
-            Path("/tmp/source"), "reviewed-sha", args)
+        command = potion_blind_reproduce.build_command(Path("/tmp/source"), args)
         self.assertEqual(command[-4:], [
             "--base-sha", potion_blind_reproduce.EXPECTED_BASE_SHA,
-            "--experiment-sha", "reviewed-sha"])
+            "--experiment-sha", potion_blind_reproduce.EXPECTED_EXPERIMENT_SHA])
+        self.assertEqual(command[1], "-c")
+        self.assertEqual(command[2], potion_blind_reproduce.CHILD_BOOTSTRAP)
         self.assertEqual(command[command.index("--reference-decoder") + 1],
                          "/tmp/reference.pt")
+        self.assertEqual(
+            potion_blind_reproduce.EXPECTED_EXPERIMENT_SHA,
+            "cffe964a806891908ea1082bcca632683c4d2d37")
+
+    def test_potion_blind_wrapper_accepts_only_the_frozen_experiment_commit(self):
+        repo_root = Path(__file__).resolve().parents[1]
+        expected_head = potion_blind_reproduce.EXPECTED_EXPERIMENT_SHA
+        with mock.patch.object(
+                potion_blind_reproduce, "git",
+                side_effect=[str(repo_root), expected_head, ""]), \
+                mock.patch.object(potion_blind_reproduce.subprocess, "run") as run:
+            run.return_value.returncode = 0
+            self.assertEqual(
+                potion_blind_reproduce.validate_source_worktree(repo_root),
+                (repo_root, expected_head))
+            run.assert_called_once_with(
+                ["git", "-C", str(repo_root), "merge-base", "--is-ancestor",
+                 potion_blind_reproduce.EXPECTED_BASE_SHA, expected_head],
+                check=False)
+
+        with mock.patch.object(
+                potion_blind_reproduce, "git",
+                side_effect=[str(repo_root), "reviewed-sha", ""]), \
+                mock.patch.object(potion_blind_reproduce.subprocess, "run") as run:
+            with self.assertRaisesRegex(ValueError, "must be checked out at pinned experiment commit"):
+                potion_blind_reproduce.validate_source_worktree(repo_root)
+            run.assert_not_called()
 
     def test_reproduction_child_imports_validated_tree_despite_bogus_pythonpath(self):
         with tempfile.TemporaryDirectory() as temp:
@@ -84,6 +113,41 @@ class DeepSetPotionSpecialistTests(unittest.TestCase):
                 cwd=temp_root, env=env, text=True,
             ).splitlines()
             self.assertEqual(Path(loaded[0]).resolve(), validated_root / "tools/path_probe.py")
+            self.assertEqual(loaded[1], "validated")
+
+    def test_potion_blind_child_ignores_preimported_user_site_tools_package(self):
+        with tempfile.TemporaryDirectory() as temp:
+            temp_root = Path(temp)
+            validated_root = temp_root / "validated"
+            user_site = temp_root / "user-site"
+            validated_tools = validated_root / "tools"
+            user_tools = user_site / "tools"
+            validated_tools.mkdir(parents=True)
+            user_tools.mkdir(parents=True)
+            (validated_tools / "path_probe.py").write_text(
+                "SOURCE = 'validated'\n")
+            (user_tools / "__init__.py").write_text("")
+            (user_tools / "path_probe.py").write_text("SOURCE = 'user-site'\n")
+            (validated_root / "sitecustomize.py").write_text(
+                "import sys\n"
+                f"sys.path.insert(0, {str(user_site)!r})\n"
+                "import tools\n")
+            probe = validated_tools / "probe.py"
+            probe.write_text(
+                "from tools import path_probe\n"
+                "print(path_probe.__file__)\n"
+                "print(path_probe.SOURCE)\n")
+            env = potion_blind_reproduce.child_environment(validated_root, {
+                "PATH": os.environ.get("PATH", ""),
+                "PYTHONPATH": str(user_site),
+            })
+            command = [sys.executable, "-c",
+                       potion_blind_reproduce.CHILD_BOOTSTRAP,
+                       str(validated_root), str(probe)]
+            loaded = subprocess.check_output(
+                command, cwd=temp_root, env=env, text=True).splitlines()
+            self.assertEqual(Path(loaded[0]).resolve(),
+                             validated_tools / "path_probe.py")
             self.assertEqual(loaded[1], "validated")
 
     def arrays(self, rows=4):
