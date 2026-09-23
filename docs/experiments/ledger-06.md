@@ -11408,6 +11408,13 @@ production artifact, or default changed.
   cache artifacts were reproduced byte-for-byte from their provenance source
   revision. Implementation SHA is
   `3d1db667f0859c5a1d4788cb4232eaf6f6670bb7`.
+- **Reproduction guard:** the newer
+  [`reproduction wrapper`](../../tools/reproduce_combat_transition_deepset_potion_specialist.py)
+  pins the recorded baseline/experiment SHAs, validates the actual clean source
+  worktree HEAD at the experiment SHA and verifies baseline ancestry, then
+  invokes the historical trainer with fixed provenance arguments. The trainer
+  alone is not a provenance guard. Its dry-run command was verified against a
+  real detached worktree at the pinned source; training was not repeated.
 - **Result:** W selected epoch 27 at NLL `0.487162724` (`-3.8754%` vs reference);
   S selected epoch 34 at `0.498382425` (`-1.6616%`). W no-change Brier was
   `0.086596849` vs `0.092057790`; normal action-mode/count accuracies were

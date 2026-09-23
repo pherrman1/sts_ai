@@ -1,26 +1,40 @@
 import unittest
+from pathlib import Path
+import subprocess
 
 import numpy as np
 import torch
 
 from tools import combat_transition_deepset_potion_specialist as specialist
+from tools import reproduce_combat_transition_deepset_potion_specialist as reproduce
 from tools import combat_transition_potion_trajectory as trajectory
 from tools.combat_transition_model_experiment import CONTINUOUS_GLOBAL_FIELDS
 
 
 class DeepSetPotionSpecialistTests(unittest.TestCase):
-    def test_frozen_source_accepts_only_pinned_head_and_cli_assertions(self):
-        expected_head = specialist.EXPECTED["experimentCommit"]
-        expected_base = specialist.EXPECTED["baselineCommit"]
-        specialist.validate_frozen_source(expected_head, expected_base, expected_head)
+    def test_reproduction_wrapper_checks_actual_git_checkout(self):
+        repo_root = Path(__file__).resolve().parents[1]
+        actual_head = subprocess.check_output(
+            ["git", "-C", str(repo_root), "rev-parse", "HEAD"], text=True
+        ).strip()
+        self.assertNotEqual(actual_head, reproduce.EXPECTED_EXPERIMENT_SHA)
+        with self.assertRaisesRegex(ValueError, "experiment source worktree must be checked out"):
+            reproduce.validate_source_worktree(repo_root)
 
-        caller_head = "f" * 40
-        with self.assertRaisesRegex(ValueError, "experiment SHA assertion mismatch"):
-            specialist.validate_frozen_source(caller_head, expected_base, caller_head)
-        with self.assertRaisesRegex(ValueError, "baseline SHA mismatch"):
-            specialist.validate_frozen_source(expected_head, caller_head, expected_head)
-        with self.assertRaisesRegex(ValueError, "checkout mismatch"):
-            specialist.validate_frozen_source(caller_head, expected_base, expected_head)
+    def test_reproduction_command_supplies_fixed_provenance(self):
+        args = type("Args", (), {
+            "artifact_root": Path("/tmp/artifacts"),
+            "output_dir": Path("/tmp/output"),
+            "encoder_checkpoint": Path("/tmp/encoder.pt"),
+            "decoder_checkpoint": Path("/tmp/decoder.pt"),
+            "dedicated_component": Path("/tmp/component.pt"),
+            "reference_receipt": Path("/tmp/reference.json"),
+        })()
+        command = reproduce.build_command(Path("/tmp/frozen-source"), args)
+        self.assertEqual(command[-4:], [
+            "--base-sha", reproduce.EXPECTED_BASE_SHA,
+            "--experiment-sha", reproduce.EXPECTED_EXPERIMENT_SHA,
+        ])
 
     def arrays(self, rows=4):
         return {

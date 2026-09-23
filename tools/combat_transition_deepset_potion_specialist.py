@@ -3,7 +3,10 @@
 
 This is a frozen TRAIN/VALIDATION-only experiment. It reuses the established
 potion cache, exact trajectory loss, evaluator and teacher gate. TEST rows are
-identified for the receipt but are never encoded or scored.
+identified for the receipt but are never encoded or scored. For the reviewed
+historical run, use reproduce_combat_transition_deepset_potion_specialist.py;
+that wrapper validates the pinned source worktree and supplies fixed provenance
+arguments. This low-level trainer CLI alone is not a provenance guard.
 """
 from __future__ import annotations
 
@@ -48,8 +51,6 @@ RECIPE = {
     "testEncodedRows": 0, "testInferenceRows": 0,
 }
 EXPECTED = {
-    "experimentCommit": "3d1db667f0859c5a1d4788cb4232eaf6f6670bb7",
-    "baselineCommit": "c62f3694517bf622d2670a9fbf3c20a70380a763",
     "encoder": "bee6800dd7230b180c2b4894c0f01763efca4b7799e3f36a805333c3003dc663",
     "decoder": "06eda953b523ed6b3b9dbc3031bf44408c3bc67f0bc8b7862d28c150448819c1",
     "component": "ae1a1411990d272579de10564edb48c7f2ec1d14f1c72dacf5390a1415a0f1db",
@@ -247,22 +248,11 @@ def _trajectory_count(graph) -> int:
     return sum(paths[owner] for owner, _action in graph.target_edges)
 
 
-def validate_frozen_source(head: str, base_sha: str, experiment_sha: str) -> None:
-    """Check caller assertions against fixed provenance and the actual checkout."""
-    if base_sha != EXPECTED["baselineCommit"]:
-        raise ValueError(f"frozen baseline SHA mismatch: {base_sha}")
-    if experiment_sha != EXPECTED["experimentCommit"]:
-        raise ValueError(f"frozen experiment SHA assertion mismatch: {experiment_sha}")
-    if head != EXPECTED["experimentCommit"]:
-        raise ValueError(
-            f"frozen experiment checkout mismatch: expected {EXPECTED['experimentCommit']}, got {head}"
-        )
-
-
 def run(args):
     root = Path(__file__).resolve().parents[1]
     head = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=root, text=True).strip()
-    validate_frozen_source(head, args.base_sha, args.experiment_sha)
+    if head != args.experiment_sha:
+        raise ValueError(f"experiment SHA assertion mismatch: {head}")
     if subprocess.check_output(["git", "status", "--porcelain"], cwd=root, text=True).strip():
         raise ValueError("experiment requires clean frozen source")
     if not torch.cuda.is_available():
