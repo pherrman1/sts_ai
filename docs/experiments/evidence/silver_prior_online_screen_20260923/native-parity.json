@@ -15,11 +15,11 @@
   "executable_sha256": "3abbe9b9249e4dc3398550e3ff1fb9f4e297219c089167d2134b1c146959ed2d",
   "latency": {
     "artifact_bytes": 4792455,
-    "mean_us_per_root": 7495.139873046873,
-    "median_us_per_action": 1221.6008564476886,
-    "median_us_per_root": 7844.968,
-    "model_load_micros": 446145.058,
-    "p95_us_per_root": 11561.202,
+    "mean_us_per_root": 7520.0726738281355,
+    "median_us_per_action": 1217.9157956204378,
+    "median_us_per_root": 7821.303,
+    "model_load_micros": 438621.02,
+    "p95_us_per_root": 11657.502,
     "warm_repeats_per_root": 32
   },
   "logit_tolerance": 0.0001,
@@ -30,5 +30,5 @@
   "prior_tolerance": 1e-05,
   "roots": 64,
   "schema": "silver_prior_native_parity_v1",
-  "source_commit": "5fae397aef34bc0ec71f6af009a86d6c332423a6"
+  "source_commit": "57a824349fd99c917cf22d67e929a8630f001a9d"
 }

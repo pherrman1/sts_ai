@@ -93,7 +93,7 @@
       "bootstrap_algorithm": "SHA-256 counter resampling of 32 paired seeds with replacement; nearest-rank percentile CI",
       "exact_two_sided_binomial": "conditional on number of discordant pairs"
     },
-    "review_source_commit": "5fae397aef34bc0ec71f6af009a86d6c332423a6",
+    "review_source_commit": "57a824349fd99c917cf22d67e929a8630f001a9d",
     "expected_one_combat_sha256": "fc41e47d4a7d78f0922144d480a3dbeed674cf6fa1db21e97c568ff836a40197",
     "parity_executable_sha256": "3abbe9b9249e4dc3398550e3ff1fb9f4e297219c089167d2134b1c146959ed2d"
   }

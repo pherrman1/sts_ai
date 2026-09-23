@@ -11201,15 +11201,15 @@ requested a separate full-run gameplay diagnostic using the same frozen
 `9fe3cb05b4dfd367f9db1370d245cb8d1a4f978e`; no history was rewritten.
 
 After current main `4e4da3b154e59f193c77f972e9b5e2338c52be3c` was merged, native
-inference was rebuilt from code commit `5fae397a` and matched all 64 frozen
+inference was rebuilt from clean code commit `57a824349fd99c917cf22d67e929a8630f001a9d` and matched all 64 frozen
 VALIDATION roots: 411 actions,
 maximum prior error `8.799900734768329e-07`, maximum logit error
 `2.86102294921875e-06`, under the required `1e-5` prior and `1e-4` logit
 tolerances. Coverage included card occurrence cost/special data, potion
 target/discard, multi-monster targeting, unknown-pile permutation invariance,
 observed-pile order sensitivity, absent monsters, and END_TURN. Warm latency
-over 32 repeats/root was median `7,844.968 us`, p95 `11,561.202 us`, mean
-`7,495.140 us`; the model loaded in `446,145 us`, and the artifact was
+over 32 repeats/root was median `7,821.303 us`, p95 `11,657.502 us`, mean
+`7,520.073 us`; the model loaded in `438,621 us`, and the artifact was
 4,792,455 bytes. The user waived the proposed 5 ms/root stop threshold, so the
 bounded smoke continued at this measured cost.
 
