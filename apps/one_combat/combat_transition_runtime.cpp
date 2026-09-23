@@ -48,11 +48,33 @@ CombatTransitionRuntime::CombatTransitionRuntime(const std::string &path) {
     std::string header(length,'\0');read(header.data(),length);metadata_=nlohmann::json::parse(header);
     require(metadata_.at("schema")==std::string(full?"COMBAT_TRANSITION_RUNTIME_V2":magic) && metadata_.at("version")== (full?2:1),"combat runtime schema");
     const bool deepSurvival=metadata_.contains("experimentalSurvival");
-    if(deepSurvival) require(full && metadata_.at("experimentalSurvival")==nlohmann::json({
+    const bool deepsetStack=metadata_.contains("experimentalDeepSets");
+    const auto phase1Survival=nlohmann::json({
+        {"architecture","deepset64_phase1_v1"},
+        {"checkpointSha256","328c65f150ac7daa9db7dc7e2047b77cf8b88ef3c09b3da8ef57d75b7a2fd4c3"},
+        {"controlSha256","e9a18951710fdfe9e1a81a2703090a41f039067c670a1d8a0393b5e7e8e0ddfd"},
+        {"preparedSha256","a642671d0956f36405b837755cdf3dfb3c4870cde4a1d6f251046ffc8205a1c9"},
+        {"preparedManifestSha256","fdf1ca760c971b212e60d9cb86beec78afae6b124958aa53c56a8aea5bb92f51"},
+        {"scalarMeanSha256","b210c9834974eb30c80362ae10fbdeb97d15a835915bbbb2239e2b2cc81e18d9"},
+        {"scalarInvSha256","48a4f84b2de751a5e49f157b980a3fbb33f31db330e580ecc4c258a3f424be55"},
+        {"qualified",false}});
+    const auto strongWdSurvival=nlohmann::json({
         {"architecture","deepset64_linear_strongWd"},
         {"checkpointSha256","3689593db85974f13b6313c495e7fde4ec4b4fa7d87f3442c8604a47f5e0f05b"},
         {"controlSha256","e9a18951710fdfe9e1a81a2703090a41f039067c670a1d8a0393b5e7e8e0ddfd"},
-        {"qualified",false}}),"combat runtime experimental survival identity");
+        {"qualified",false}});
+    if(deepSurvival) require(full && (metadata_.at("experimentalSurvival")==phase1Survival ||
+        metadata_.at("experimentalSurvival")==strongWdSurvival),"combat runtime experimental survival identity");
+    if(deepsetStack) require(full && metadata_.at("experimentalDeepSets")==nlohmann::json({
+        {"architecture","deepset64_shared_transition"},
+        {"controlSha256","e9a18951710fdfe9e1a81a2703090a41f039067c670a1d8a0393b5e7e8e0ddfd"},
+        {"maxHpHpCheckpointSha256","bee6800dd7230b180c2b4894c0f01763efca4b7799e3f36a805333c3003dc663"},
+        {"downstreamCheckpointSha256","c00ed677b8b2b2854fb62982247853982bc58d9fc20afdd96c593bcc6c07423a"},
+        {"potionCheckpointSha256","06eda953b523ed6b3b9dbc3031bf44408c3bc67f0bc8b7862d28c150448819c1"},
+        {"potionOfflineDecision","DEEPSET_POTION_REJECTED"},
+        {"qualified",false}}),"combat runtime experimental DeepSets identity");
+    if(deepsetStack) require(deepSurvival && metadata_.at("experimentalSurvival")==phase1Survival,
+        "combat runtime DeepSets stack requires Phase-1 survival");
     require(metadata_.at("predictorSchema")==CombatPredictorInputV1::SCHEMA && metadata_.at("predictorHash")==combatPredictorInputFieldSchemaHash()
         && metadata_.at("predictorFieldSchema")==CombatPredictorInputV1::FIELD_SCHEMA,"combat runtime predictor schema");
     require(metadata_.at("width")==64 && metadata_.at("layers")==2 && metadata_.at("heads")==4 && metadata_.at("feedForward")==128,"combat runtime encoder dimensions");
@@ -65,7 +87,13 @@ CombatTransitionRuntime::CombatTransitionRuntime(const std::string &path) {
         {"HP","0c8b5aa8c5218d6cd6102b768cc86a474c9ef30953d4b034caedcc41a426109b"},
         {"potion","ae1a1411990d272579de10564edb48c7f2ec1d14f1c72dacf5390a1415a0f1db"},
         {"downstream","d07ead94b3abb9d12f272337e18aece6acd261cc4a39a36b21b82f904236af91"}};
-        if(deepSurvival) hashes["survival"]="3689593db85974f13b6313c495e7fde4ec4b4fa7d87f3442c8604a47f5e0f05b";
+        if(deepSurvival) hashes["survival"]=metadata_.at("experimentalSurvival").at("checkpointSha256").get<std::string>();
+        if(deepsetStack) {
+            hashes["maxHP"]="bee6800dd7230b180c2b4894c0f01763efca4b7799e3f36a805333c3003dc663";
+            hashes["HP"]=hashes["maxHP"];
+            hashes["potion"]="06eda953b523ed6b3b9dbc3031bf44408c3bc67f0bc8b7862d28c150448819c1";
+            hashes["downstream"]="c00ed677b8b2b2854fb62982247853982bc58d9fc20afdd96c593bcc6c07423a";
+        }
         require(metadata_.at("sources")==nlohmann::json(hashes),"combat runtime near-full source identities");
         require(metadata_.at("supportExclusions")==nlohmann::json({"smoke_bomb","pre_smoke_bomb_used","writhing_ritual_intersection"}),"combat runtime support exclusions");
         require(metadata_.at("qualification").at("classification")=="FINAL_SUPPORT_EXPOSURE_DEVELOPMENT_PASS","combat runtime qualification");
@@ -84,7 +112,7 @@ CombatTransitionRuntime::CombatTransitionRuntime(const std::string &path) {
     auto lin=[&](std::string name,int out,int in) { shape(name+".weight",{out,in});shape(name+".bias",{out}); };
     for(std::string group:{"survival","max_hp","hp","potion_encoder"}) {
         std::string p=group+".encoder.";
-        if(group=="survival" && deepSurvival) {
+        if((group=="survival" && deepSurvival) || (deepsetStack && (group=="max_hp" || group=="hp" || group=="potion_encoder"))) {
             shape(p+"scalar_mean",{10});shape(p+"scalar_inv",{10});
             shape(p+"card_id.weight",{kNumCardIds,48});shape(p+"relic_id.weight",{kNumRelics,48});
             shape(p+"potion_id.weight",{kNumPotions,32});shape(p+"potion_slot.weight",{5,8});
@@ -94,7 +122,9 @@ CombatTransitionRuntime::CombatTransitionRuntime(const std::string &path) {
                 lin(p+entry.first+".0",64,entry.second);lin(p+entry.first+".2",64,64);
             }
             lin(p+"global_mlp.0",64,42);lin(p+"trunk.0",128,256);lin(p+"trunk.2",64,128);
-            lin("survival.survival",1,64);
+            if(group=="survival") lin("survival.survival",1,64);
+            else if(group=="max_hp") lin("max_hp.max_hp_delta",11,64);
+            else if(group=="hp") {shape("hp.delta_embedding.weight",{11,8});lin("hp.hp.0",64,72);lin("hp.hp.2",304,64);}
             continue;
         }
         shape(p+"scalar_mean",{10});shape(p+"scalar_inv",{10});
@@ -154,7 +184,8 @@ Vec CombatTransitionRuntime::encode(const std::string &group,const CombatPredict
     for(int i=0;i<10;++i) global[i]=(global[i]-mean[i])*inv[i];
     int cats[4]={g.characterClass,g.encounter,g.roomClass,g.lastRoom};
     for(int i=0;i<4;++i) append(global,embedding(p+"global_category."+std::to_string(i),cats[i]));
-    if(group=="survival" && metadata_.contains("experimentalSurvival")) {
+    if((group=="survival" && metadata_.contains("experimentalSurvival")) ||
+       (metadata_.contains("experimentalDeepSets") && (group=="max_hp" || group=="hp" || group=="potion_encoder"))) {
         auto transform=[&](const std::string &name,const Vec &fields) {
             return relu(linear(p+name+".2",relu(linear(p+name+".0",fields))));
         };
