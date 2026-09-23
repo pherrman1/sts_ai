@@ -11158,6 +11158,132 @@ contract or Silver behavior changed.
   gameplay-quality comparison or population qualification. The consumed
   HOLDOUT was not rerun. [Native-smoke raw packet](evidence/silver_quiescent_queue_item_20260922/README.md).
 
+### Frozen Silver prior root-PUCT replay screen (2026-09-23)
+
+At baseline `293c0704f0921688a6dc7066800b3bfcb1801bc5`, screened the frozen
+`SilverPriorNetV1` T2 checkpoint (seed `20260922`, tau `1.179975000005129`,
+checkpoint SHA-256 `b756c3e6576bdb53085f24aeb1102e4e2fe55fd7469c55546c99f068ccf40e24`)
+on exactly 64 preselected VALIDATION-J roots / 64 source seeds. This is a
+development mechanism screen because VALIDATION was already used for model
+selection. Preparation validated the frozen corpus binding and selected L
+shards only, then sealed native-order aligned learned, uniform, and L-oracle
+priors. The learned arm used `softmax(logits)` without another temperature;
+the oracle used `softmax(L / tau)`. Replay completed and was sealed before the
+analyzer read the matching 64 VALIDATION J raw files. No LOCKED_TEST root,
+label, count, or raw artifact was used.
+
+All four arms retained native Silver action order and ran fresh trees at 32
+simulations with four common-seed replicates per root. Root PUCT used its
+existing `c=2.5`; internal UCT, chance handling, rollout, and evaluator were
+unchanged. The 1,024-row replay was analyzed by 10,000 paired bootstrap
+replicates over source seeds. Mean J regrets were A_UCT 1.32065, U_UNIFORM
+1.41371, M_LEARNED 1.37981, and O_ORACLE_L 1.14595. M_LEARNED minus
+U_UNIFORM was `-0.03390 [-0.11794,0.03651]`; M_LEARNED minus A_UCT was
+`+0.05916 [-0.28676,0.37000]`; O_ORACLE_L minus U_UNIFORM was
+`-0.26776 [-0.56135,-0.07144]` (95% source-seed bootstrap CIs).
+
+Classification: **`LEARNED_PRIOR_SEARCH_HEADROOM_NOT_CAPTURED`**. The oracle
+confirms usable root-PUCT headroom on these roots, while the learned prior
+fails its predeclared comparison with uniform and does not beat ordinary UCT.
+Stop the deployment line; do not export or port the network based on this
+screen. This is not a gameplay result, fresh generalization claim, or default
+promotion. [Evidence packet](evidence/silver_prior_root_replay_20260923/README.md).
+**Knowledge impact:** update the current research status; no stable
+implementation contract or Silver behavior changed.
+
+### User-authorized frozen Silver prior online integration smoke (2026-09-23)
+
+After the negative 64-root mechanism screen above, the user explicitly
+requested a separate full-run gameplay diagnostic using the same frozen
+`SilverPriorNetV1` T2 artifact. This did not alter or reinterpret
+`LEARNED_PRIOR_SEARCH_HEADROOM_NOT_CAPTURED`. The branch first merged main
+`3d28adfcf3c989e338eff9ef85e4a5c6d8794497` into experiment head
+`9fe3cb05b4dfd367f9db1370d245cb8d1a4f978e`; no history was rewritten.
+
+After current main `4e4da3b154e59f193c77f972e9b5e2338c52be3c` was merged, native
+inference was rebuilt from clean code commit `57a824349fd99c917cf22d67e929a8630f001a9d` and matched all 64 frozen
+VALIDATION roots: 411 actions,
+maximum prior error `8.799900734768329e-07`, maximum logit error
+`2.86102294921875e-06`, under the required `1e-5` prior and `1e-4` logit
+tolerances. Coverage included card occurrence cost/special data, potion
+target/discard, multi-monster targeting, unknown-pile permutation invariance,
+observed-pile order sensitivity, absent monsters, and END_TURN. Warm latency
+over 32 repeats/root was median `7,821.303 us`, p95 `11,657.502 us`, mean
+`7,520.073 us`; the model loaded in `438,621 us`, and the artifact was
+4,792,455 bytes. The user waived the proposed 5 ms/root stop threshold, so the
+bounded smoke continued at this measured cost.
+
+Paired smoke seeds `24109998` and `24109999` completed in both control and
+learned arms (each run Ascension 0, Act 3 stop, 1,000 simulations/decision,
+project-fair, native OOC, one thread, 32,768 allocated reuse cap, adaptive,
+visit-lock, and rho racing off). CONTROL made zero prior calls. Summing every
+combat telemetry line, seed 24109998 had 24 combats / 383 decisions / 383,000
+simulations in CONTROL and 24 / 393 / 393,000 in LEARNED; LEARNED made 380
+prior evaluations and 380 root-PUCT calls. Seed 24109999 had 28 / 540 /
+540,000 in CONTROL and 28 / 565 / 565,000 in LEARNED; LEARNED made 521 prior
+evaluations and 521 root-PUCT calls. All four runs had zero surface,
+conversion, semantic-resolution, transaction, and knowledge failures. Exact
+mean inference time was 6.679 ms/call and 6.930 ms/call for the two LEARNED
+runs. Old per-combat latency percentiles cannot be pooled because raw samples
+were not recorded. Smoke outcomes were seed 24109998: both lost; seed 24109999:
+both won. They are integration checks, not a gameplay-quality comparison.
+
+The raw `.csv.meta.json` files identify executable SHA
+`1dc14cef9f5b6602fe84bd2a266347757245d78c`, not then-current candidate
+`fb9e0cf9510ac612fdc3f521076ca093d1fb55b5`. Keep these as working-tree
+integration evidence only, not candidate-SHA smoke evidence. Do not rerun these
+old smoke seeds to repair provenance; the future frozen screen runner requires
+an exact executable SHA and per-call latency samples.
+
+The user-authorized full-run screen then completed all 32 paired seeds
+`24100000..24100031` at source `57a824349fd99c917cf22d67e929a8630f001a9d`,
+binary SHA-256 `fc41e47d4a7d78f0922144d480a3dbeed674cf6fa1db21e97c568ff836a40197`,
+and model SHA-256
+`b3a4c5e4bbe91b7f17dadf588408a95199ec5b8b25f732d99ef0966c0ff05fdb`. All 64
+A0, project-fair, one-thread, Act-3-stop runs completed at 1,000 simulations
+per effective searched decision with the frozen shared flags; each arm checked
+the exact source, binary, model, and flags before launch and used the seed
+guard. Runtime surface, transaction, conversion, semantic-resolution, and
+knowledge-failure counters were zero. The treatment made 12,985 prior
+evaluations, all matching root-PUCT decisions; pooled inference latency was
+7.247 ms mean, 7.237 ms median, and 11.575 ms p95.
+
+CONTROL won 21/32 and LEARNED won 15/32. The paired table was 1 learned-only,
+7 control-only, 14 both-win, and 10 both-lose; the win-rate delta was
+`-18.75 pp` (paired-bootstrap 95% CI `[-34.375,-3.125] pp`), with exact
+two-sided discordant-pair `p=0.0703125`. The frozen `net_discordant=-6` rule
+classifies this as **`ONLINE_LEARNED_PRIOR_UNFAVORABLE`**. This is the
+preregistered bounded-screen classification, not a claim of conventional
+statistical significance, general model invalidity, or a default change. The
+mean floor changed by `-2.00` (95% paired-bootstrap CI `[-4.25,-0.3125]`), mean
+end HP by `-11.06` (`[-21.3125,-1.46875]`), and fights lost by `+0.1875`
+(`[0.03125,0.34375]`). Mean full-run wall time changed by `+2.167 s`
+(`[0.725,3.385]`); search time changed by `-0.828 s` (`[-2.062,+0.224]`),
+with its interval crossing zero. The offline
+`LEARNED_PRIOR_SEARCH_HEADROOM_NOT_CAPTURED` result remains unchanged.
+Compact aggregate and per-seed results are in the [online evidence packet](evidence/silver_prior_online_screen_20260923/README.md);
+all raw run output remains under `/tmp/silver-prior-online-screen-57a824349fd99c91`
+outside Git.
+
+The first pair exposed a validator accounting defect on its CONTROL GAMBLE
+transaction: `simulations` counted both searched subdecisions, while
+`decisions` counted the outer transaction once. The runner now validates
+`1000 * (decisions + transaction_subdecisions - transaction_decisions)`;
+seed `24100009` raw files were not rerun or modified. The complete cohort was
+revalidated with this counter definition.
+
+Focused checks passed: `silver_search_optimization`,
+`silver_repeated_reroot_canary`, `silver_prior_native_export`, and the two
+exporter identity-failure unit tests. All 64-root parity was rerun against the
+durable native artifact. The 32-seed screen is complete as recorded above. No
+tuning, LOCKED_TEST access, or offline evidence rewrite occurred. See the
+[online evidence packet](evidence/silver_prior_online_screen_20260923/README.md).
+
+**Knowledge impact:** the default-off runtime contract remains documented in
+`environment-variables.md`, `CODE_MAP.md`, and `combat-search.md`; current
+research records this separate unfavorable gameplay screen without changing
+the offline mechanism result or qualifying a default.
+
 ### OOC CTM final-token optimization (2026-09-23)
 
 From source baseline `3d28adfcf3c989e338eff9ef85e4a5c6d8794497`, retain only

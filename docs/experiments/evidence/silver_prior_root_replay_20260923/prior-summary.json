@@ -1,0 +1,32 @@
+{
+  "checkpoint_sha256": "b756c3e6576bdb53085f24aeb1102e4e2fe55fd7469c55546c99f068ccf40e24",
+  "learned_oracle_argmax_agreement_roots": 29,
+  "prior_arms": {
+    "M_LEARNED": {
+      "all_finite_positive_normalized": true,
+      "legal_action_count_max": 17,
+      "legal_action_count_min": 2,
+      "mean_entropy_nats": 1.2920175496014752,
+      "mean_max_probability": 0.41984358342411937
+    },
+    "O_ORACLE_L": {
+      "all_finite_positive_normalized": true,
+      "legal_action_count_max": 17,
+      "legal_action_count_min": 2,
+      "mean_entropy_nats": 0.8707135219738262,
+      "mean_max_probability": 0.6047827331609743
+    },
+    "U_UNIFORM": {
+      "all_finite_positive_normalized": true,
+      "legal_action_count_max": 17,
+      "legal_action_count_min": 2,
+      "mean_entropy_nats": 1.7290826602327962,
+      "mean_max_probability": 0.20093383816959184
+    }
+  },
+  "priors_sha256": "67ad785b6160e2264884ce4c142d0b4f3c701d9ab76651cad7e272566db8899d",
+  "root_count": 64,
+  "roots_sha256": "c9b26024b92b4a44136e0b365940b818a52accedfe030adbedbe50b0bbcec111",
+  "schema": "silver_prior_root_screen_prior_summary_v1",
+  "source_seed_count": 64
+}

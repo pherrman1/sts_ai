@@ -35,6 +35,15 @@ native searcher choice. The complete flag and parameter reference is
 
 ### Offline Silver root mechanism tooling
 
+The user-authorized experimental live root-prior path is separately opt-in via
+`STS_SILVER_ROOT_PRIOR_MODEL=<absolute frozen artifact path>`. It evaluates the
+frozen `SilverPriorNetV1` at eligible ordinary `PLAYER_NORMAL` roots and passes
+native-order aligned priors to the existing root-only PUCT seam (`c=2.5`).
+Internal nodes and chance handling remain ordinary Silver search. The bridge
+checks the materialized edge fingerprints against the prior surface and fails
+closed on mismatch. This path is not the default and its two-seed smoke is not
+gameplay-quality evidence; see the [online smoke packet](../../experiments/evidence/silver_prior_online_screen_20260923/README.md).
+
 For the policy-only structured observation/candidate dataset, its reviewed-SHA
 collection driver, and training-facing integrity boundary, see
 [Silver prior dataset](../operations/silver-prior-dataset.md). That pipeline

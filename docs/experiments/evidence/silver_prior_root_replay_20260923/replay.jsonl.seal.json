@@ -1,0 +1,10 @@
+{
+  "executable_sha256": "ecabfb8e470927616e0576923ea4aaf99e87240e147b9d160e947cd576c09d64",
+  "experiment_id": "silver-prior-root-screen-v1/20260922",
+  "priors_sha256": "67ad785b6160e2264884ce4c142d0b4f3c701d9ab76651cad7e272566db8899d",
+  "replay_sha256": "1f55730f0b04a67a463852cae6ddfe37eadaa0918064cb586dc9b840302934fa",
+  "roots_sha256": "c9b26024b92b4a44136e0b365940b818a52accedfe030adbedbe50b0bbcec111",
+  "rows": 1024,
+  "schema": "silver_prior_root_screen_replay_v1",
+  "status": "SEALED"
+}
