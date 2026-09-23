@@ -1249,6 +1249,18 @@ final class LiveOocCapture {
                 && goldenWingInitialVisible(phase, labels, options,
                         Boolean.TRUE.equals(field(event, "canAttack")),
                         ((Number)field(event, "damage")).intValue());
+        boolean noteForYourself = false;
+        if ("NoteForYourself".equals(simple) && "CHOOSE".equals(String.valueOf(phase))
+                && options.size() == 2 && labels.size() == 2
+                && ((Number)map(options.get(0)).get("index")).intValue() == 0
+                && ((Number)map(options.get(1)).get("index")).intValue() == 1) {
+            AbstractCard offered = (AbstractCard)field(event, "obtainCard");
+            noteForYourself = offered != null
+                    && String.valueOf(labels.get(0)).contains("[Take and Give]")
+                    && String.valueOf(labels.get(0)).contains(offered.name)
+                    && String.valueOf(labels.get(1)).contains("[Ignore]");
+            if (noteForYourself) map(out.get("details")).put("noteForYourselfCard", card(offered));
+        }
         if ("ScrapOoze".equals(simple) && "0".equals(String.valueOf(phase)))
             map(out.get("details")).put("eventData", scrapOozeRetryCount(
                     ((Number)field(event, "relicObtainChance")).intValue(),
@@ -1386,7 +1398,7 @@ final class LiveOocCapture {
                 && ((Number)map(options.get(1)).get("index")).intValue() == 1
                 && ((Number)map(options.get(2)).get("index")).intValue() == 2;
         if (!(simpleInitialEventSupported(simple) && initial)
-                && !goop
+                && !goop && !noteForYourself
                 && !goldShrine
                 && !nestDecisionVisible(simple, phase, labels, options, AbstractDungeon.ascensionLevel)
                 && !idolTrap && !goldenWing && !cleric && !sensoryStone

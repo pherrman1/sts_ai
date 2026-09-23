@@ -118,6 +118,7 @@ LiveOocStateV1::LiveOocMctsRootV1 makeMctsRoot(const LiveOocStateV1 &source) {
     root.screenState = source.projected.screenState;
     root.lastRoom = source.projected.lastRoom;
     root.curEvent = source.projected.curEvent;
+    root.noteForYourselfCard = source.projected.noteForYourselfCard;
     root.boss = source.projected.boss;
     // Keep the constructor's public prior for hidden reward/event counters.
     // Live Java's private blizzard counters are deliberately not imported.
@@ -573,6 +574,8 @@ ImportResult importLiveOocStateV1(const J &observation, LiveOocStateV1 &out) {
             g.curEvent=event=="Neow" ? Event::NEOW : id<Event>(d.at("event"),Event::INVALID);
             g.info.eventData=integer(d,"eventData",0,100);
             g.info.phase=integer(d,"phase",0,100);
+            if (g.curEvent == Event::NOTE_FOR_YOURSELF)
+                g.noteForYourselfCard = card(d.at("noteForYourselfCard"));
             if (g.curEvent == Event::DEAD_ADVENTURER) {
                 require(g.info.phase == 0, "Dead Adventurer later phase unsupported");
                 const int encounter = integer(d,"deadAdventurerEncounter",0,2);

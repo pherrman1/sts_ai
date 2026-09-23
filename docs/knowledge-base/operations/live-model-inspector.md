@@ -483,7 +483,8 @@ read-only screen and choice converters. The observation contains:
   `rewardPityHistoryComplete` marker is reserved for synthetic captures with
   an exact reconstruction; the live Java producer leaves it false.
 - `details`: current reward groups, campfire options, physical upgrade targets,
-  supported event/Neow phase and options, shop slots/prices, chest state, or
+  supported event/Neow phase and options, the visible offered card for A Note
+  For Yourself, shop slots/prices, chest state, or
   ordered boss relic offers.
 - `liveChoices`: occurrence-bound native action identities and single-command
   structured MCP hints. Duplicate labels are never action identity.

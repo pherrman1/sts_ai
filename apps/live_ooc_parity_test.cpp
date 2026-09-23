@@ -77,7 +77,9 @@ static J project(const GameContext &g,const PathHistory &path,const std::string 
                 {"upgradeOne",i.upgradeOne},{"cleanUpIsRemoveCard",i.cleanUpIsRemoveCard},{"skillCardDeckIdx",i.skillCardDeckIdx},
                 {"powerCardDeckIdx",i.powerCardDeckIdx},{"attackCardDeckIdx",i.attackCardDeckIdx},{"potionIdx",i.potionIdx},
                 {"gold",i.gold},{"goldLoss",i.goldLoss},{"cardIdx",i.cardIdx}};
-            if(g.curEvent==Event::NEOW){d["neow"]=J::array();for(const auto &n:i.neowRewards)d["neow"].push_back({{"bonus",J(n.r)},{"drawback",J(n.d)}});}break;}
+            if(g.curEvent==Event::NEOW){d["neow"]=J::array();for(const auto &n:i.neowRewards)d["neow"].push_back({{"bonus",J(n.r)},{"drawback",J(n.d)}});}
+            if(g.curEvent==Event::NOTE_FOR_YOURSELF)d["noteForYourselfCard"]=cardWire(g.noteForYourselfCard);
+            break;}
         default:throw std::runtime_error("fixture screen missing");
     }
     J o={{"schemaVersion",1},{"screen",screen},{"publicState",p},{"details",d},{"liveChoices",J::array()}};
@@ -243,6 +245,8 @@ int main(int argc,char **argv){try{
     add("event_scrap_ooze_public_retry",g);
     g.curEvent=Event::WE_MEET_AGAIN;g.info.cardIdx=g.deck.size()-1;
     g.info.potionIdx=-1;g.info.gold=-1;add("event_we_meet_again_card_or_attack",g);
+    g=base;g.screenState=ScreenState::EVENT_SCREEN;g.curEvent=Event::NOTE_FOR_YOURSELF;
+    g.noteForYourselfCard=Card(CardId::UPPERCUT);add("event_note_for_yourself_visible_card",g);
     g.curEvent=Event::THE_LIBRARY;g.info.hpAmount0=26;add("library_public_heal_hidden_offer",g);
     g=base;g.screenState=ScreenState::EVENT_SCREEN;g.curEvent=Event::FACE_TRADER;
     g.maxHp=g.curHp=88;g.info.hpAmount0=8;
@@ -500,6 +504,21 @@ int main(int argc,char **argv){try{
     bad=wire;bad["ooc"]["publicState"]["map"]["nodes"].erase(0);reject(bad);
     bad=wire;for(int x=0;x<7;++x)bad["ooc"]["publicState"]["map"]["nodes"][x]["edges"]={3};reject(bad);
     advisor::LiveOocStateV1 live;check(advisor::importLiveOocStateV1(wire,live).ok,"baseline import");
+    {
+        auto note=base;
+        note.screenState=ScreenState::EVENT_SCREEN;
+        note.curEvent=Event::NOTE_FOR_YOURSELF;
+        note.noteForYourselfCard=Card(CardId::UPPERCUT);
+        auto noteWire=project(note,path,"note_for_yourself_visible_card");
+        advisor::LiveOocStateV1 noteLive;
+        check(advisor::importLiveOocStateV1(noteWire,noteLive).ok
+                && noteLive.mctsRoot.state.noteForYourselfCard.id==CardId::UPPERCUT,
+            "Note For Yourself must import its publicly offered card into the MCTS root");
+        auto missing=noteWire;
+        missing["ooc"]["details"].erase("noteForYourselfCard");
+        check(!advisor::importLiveOocStateV1(missing,noteLive).ok,
+            "Note For Yourself missing offered card was accepted");
+    }
     {
         auto dead=base;
         dead.screenState=ScreenState::EVENT_SCREEN;
