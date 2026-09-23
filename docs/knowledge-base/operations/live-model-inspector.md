@@ -686,6 +686,8 @@ order, so Silver's physical discard-card identity lowers to one MCP choice
 even when two offered cards share a name.
 The same unique UUID and exact native task check lowers Headbutt, Hologram,
 and Meditate from the discard pile, and Exhume from the exhaust pile.
+The Stasis snapshot includes only living Bronze Orbs: vanilla can retain a
+dead orb's Stasis power after its card returns to the player's hand.
 Selectors named in the shared enum but absent from the isolated Silver port
 return `silver_selection_task_not_in_port` before search instead of reaching
 its assertion path.

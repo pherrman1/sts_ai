@@ -2487,7 +2487,10 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         boolean first = true;
         if (AbstractDungeon.getMonsters() != null) {
             for (AbstractMonster monster : AbstractDungeon.getMonsters().monsters) {
-                if (monster == null) continue;
+                // Vanilla can retain StasisPower on a dead Bronze Orb after
+                // its card has returned to hand. Only a living orb still
+                // owns a card outside the player's piles.
+                if (monster == null || monster.isDeadOrEscaped()) continue;
                 for (AbstractPower power : monster.powers) {
                     if (!"Stasis".equals(power.ID)) continue;
                     Object card = readObjectField(power, "card");
