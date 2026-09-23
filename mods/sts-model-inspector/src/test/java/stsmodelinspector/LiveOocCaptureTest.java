@@ -83,6 +83,18 @@ public final class LiveOocCaptureTest {
                 act3Path, true, "", 3, java.util.Arrays.asList(16, 33));
         if (!"BOSS".equals(act3Qualified.get(31)))
             throw new AssertionError("completed Act 2 boss marker was lost at Act 3 map entry");
+        java.util.List<String> sensoryLabels = java.util.Arrays.asList(
+                "[Recall] Add 1 Colorless card to your deck.",
+                "[Recall] Add 2 Colorless cards to your deck. Lose 5 HP.",
+                "[Recall] Add 3 Colorless cards to your deck. Lose 10 HP.");
+        java.util.List<Map<String,Object>> sensoryOptions = new java.util.ArrayList<>();
+        for (int i = 0; i < 3; ++i) sensoryOptions.add(obj("index", i));
+        if (!"Sensory Stone".equals(LiveOocCapture.canonicalEventId("SensoryStone"))
+                || !LiveOocCapture.sensoryStoneInitialVisible(
+                        "INTRO_2", sensoryLabels, sensoryOptions)
+                || LiveOocCapture.sensoryStoneInitialVisible(
+                        "OTHER", sensoryLabels, sensoryOptions))
+            throw new AssertionError("Sensory Stone public Recall choices lost native indices or costs");
         if (!"INVALID".equals(LiveOocCapture.canonicalPathHistory(
                 act3Path, true, "", 3, java.util.Arrays.asList(16)).get(31)))
             throw new AssertionError("unconfirmed Act 2 boss marker was promoted");

@@ -678,7 +678,22 @@ final class LiveOocCapture {
 
     static String canonicalEventId(String liveId) {
         // The native save mapping spells Neow differently from the Java class.
-        return "NEOW".equals(liveId) ? "Neow" : liveId;
+        if ("NEOW".equals(liveId)) return "Neow";
+        if ("SensoryStone".equals(liveId)) return "Sensory Stone";
+        return liveId;
+    }
+
+    static boolean sensoryStoneInitialVisible(Object phase, List<?> labels, List<?> options) {
+        if (!"INTRO_2".equals(String.valueOf(phase))
+                || labels.size() != 3 || options.size() != 3) return false;
+        for (int i = 0; i < 3; ++i)
+            if (((Number)map(options.get(i)).get("index")).intValue() != i
+                    || !String.valueOf(labels.get(i)).contains("[Recall]")) return false;
+        return String.valueOf(labels.get(0)).contains("1 Colorless")
+                && String.valueOf(labels.get(1)).contains("2 Colorless")
+                && String.valueOf(labels.get(1)).contains("5 HP")
+                && String.valueOf(labels.get(2)).contains("3 Colorless")
+                && String.valueOf(labels.get(2)).contains("10 HP");
     }
 
     static String visibleChestSize(String chestClass) {
@@ -1146,6 +1161,8 @@ final class LiveOocCapture {
                         AbstractDungeon.player.maxHealth, AbstractDungeon.player.gold,
                         AbstractDungeon.ascensionLevel);
         if (cleric) map(out.get("details")).put("hpAmount0", field(event, "healAmt"));
+        boolean sensoryStone = "SensoryStone".equals(simple)
+                && sensoryStoneInitialVisible(phase, labels, options);
         int deadAdventurerEncounter = "DeadAdventurer".equals(simple)
                 ? deadAdventurerPublicEncounter(phase, labels, options,
                         String.valueOf(field(event, "body")), DeadAdventurer.DESCRIPTIONS,
@@ -1200,7 +1217,8 @@ final class LiveOocCapture {
                 && !goop
                 && !goldShrine
                 && !nestDecisionVisible(simple, phase, labels, options, AbstractDungeon.ascensionLevel)
-                && !idolTrap && !goldenWing && !cleric && deadAdventurerEncounter < 0
+                && !idolTrap && !goldenWing && !cleric && !sensoryStone
+                && deadAdventurerEncounter < 0
                 && !forgottenAltar)
             out.put("unsupportedReason", "EVENT_PHASE_UNREPRESENTABLE:" + id + ":" + phase);
         if ("NeowEvent".equals(simple)) {
