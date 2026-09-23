@@ -969,14 +969,26 @@ NLL changes were +2.7248%, +4.9113% and +3.0868%, while recursive Brew
 regressed **+19.1859%**, an obvious slice regression. Legal probability was
 exactly zero and normalization remained within tolerance.
 
-The Stage-A teacher-forced gate therefore stopped the planned 32-draw
-ancestral stage. This rejects only the exact frozen DeepSets representation
-plus current potion-decoder recipe. It does not justify fine-tuning DeepSets,
-reinterpret the Attention result, claim intrinsic information absence, or
-qualify potion sharing for runtime. No TEST, export, C++, gameplay, OOC MCTS
-or default-promotion work occurred. See
-[ledger-06 §289](../../experiments/ledger-06.md) and the
-[DeepSets potion screen evidence](../../experiments/evidence/deepset_potion_screen_2026-09-16.md).
+The follow-up that jointly trained a potion-specific DeepSets encoder and
+trajectory decoder is a **narrow miss**. The warm-start arm reached validation
+trajectory NLL `0.487162724` (`-3.8754%` versus the dedicated Attention
+reference), improving on the frozen substitution result, while scratch reached
+`0.498382425` (`-1.6616%`). The existing teacher-forced gate still rejects both
+arms because recursive Brew regressed `+13.3126%` for warm start and
+`+33.4429%` for scratch (12 validation rows); warm-start Brew also regressed
+`+7.0897%`, while Smoke improved `-16.5479%` and trajectory-special regressed
+`+3.1766%`. The run retained zero TEST encoding/inference rows; no TEST scoring,
+export, native parity, latency, gameplay, OOC MCTS, or default promotion
+occurred. The loader reads the prepared cache as a whole, but TEST examples did
+not enter encoding, evaluation, selection, or debugging. This result supports
+only a bounded next experiment after inspecting the recursive-Brew validation
+cases. A review hypothesis is that the encoder's `z` retains initial potion
+inventory information at recursive DAG nodes while the decoder's separate
+current-inventory input changes; this is unverified and should be tested before
+choosing an architecture change. It does not qualify the model or establish
+the cause of the remaining slice gap. See
+[ledger-06 §338](../../experiments/ledger-06.md) and the
+[potion-specialist evidence](../../experiments/evidence/potion_specialist_deepsets_2026-09-23.md).
 
 ### Qualified DeepSets representation for survival prediction
 
