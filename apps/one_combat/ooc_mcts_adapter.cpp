@@ -158,6 +158,10 @@ void sampleLiveOocHiddenPityCounters(GameContext &gc, std::mt19937_64 &rng) {
     gc.potionChance = 10 * std::uniform_int_distribution<int>(-4, 6)(rng);
     gc.cardRarityFactor = std::uniform_int_distribution<int>(-40, 5)(rng);
 }
+bool liveOocUsesCombatTransitionCheckpoints(const GameContext &gc) {
+    return std::none_of(gc.potions.begin(), gc.potions.end(),
+        [](sts::Potion potion) { return potion == sts::Potion::SMOKE_BOMB; });
+}
 #ifndef STS_LIVE_ADVISOR
 OocMctsDependencies defaultOocMctsDependencies() {
     OocMctsDependencies dependencies;
@@ -2890,6 +2894,48 @@ void oocMctsAdapterSelfTest() {
         && unsupportedMetrics.continuation.supportReasons.at("test unsupported")==1
         && test::oocStateFingerprint(live)==before && !sts::search::g_disallowImaginedCombat,
         "unsupported live search returns untouched decision to existing V4 with reconciled abort metrics");
+    {
+        auto smokeLive=detachedCopy(live);
+        smokeLive.potions[0]=Potion::SMOKE_BOMB;
+        smokeLive.potionCount=1;
+        const auto smokeRootBefore=test::oocStateFingerprint(smokeLive);
+        require(!liveOocUsesCombatTransitionCheckpoints(smokeLive)
+            && liveOocUsesCombatTransitionCheckpoints(live),
+            "only an initial Smoke Bomb changes live combat checkpoint handling");
+        OocAdapterOptions smokeOptions=liveOptions;
+        smokeOptions.sampleNoncombat=true;
+        smokeOptions.stopAtMapCheckpoint=true;
+        smokeOptions.checkpointLeaves=liveOocUsesCombatTransitionCheckpoints(smokeLive);
+        int winModelCalls=0;
+        auto smokeDependencies=defaultOocMctsDependencies();
+        smokeDependencies.policyAvailable=[] { return true; };
+        smokeDependencies.policyLogits=[](const GameContext &,const PathHistory &,
+                const std::vector<GameAction> &actions) {
+            return std::vector<double>(actions.size(),0.0);
+        };
+        smokeDependencies.leafValue=[&](const GameContext &leaf,const PathHistory &) {
+            require(leaf.screenState==ScreenState::BATTLE
+                && leaf.info.encounter!=MonsterEncounter::INVALID
+                && leaf.potions[0]==Potion::SMOKE_BOMB
+                && leaf.outcome==GameOutcome::UNDECIDED,
+                "Smoke Bomb fallback evaluates the unmodified battle-entry state");
+            ++winModelCalls;
+            return 0.63;
+        };
+        smokeDependencies.sampleHiddenCounters=[](GameContext &,std::mt19937_64 &) {};
+        OocGameContextModel smokeSearch(smokeLive,livePath,liveSampler,smokeOptions,
+                                        std::move(smokeDependencies));
+        const auto rootActions=smokeSearch.legalActions(0);
+        require(!rootActions.empty(),"Smoke Bomb map root retains public map candidates");
+        std::mt19937_64 smokeRng(20260923);
+        const auto entry=smokeSearch.sampleSuccessor(0,rootActions.front().id,smokeRng);
+        require(smokeSearch.state(entry).screenState==ScreenState::BATTLE,
+            "Smoke Bomb hypothetical map action reaches a battle-entry leaf");
+        require(smokeSearch.evaluateLeaf(entry,smokeRng)==0.63 && winModelCalls==1
+            && smokeSearch.continuationMetrics().unsupportedCombats==0
+            && test::oocStateFingerprint(smokeLive)==smokeRootBefore,
+            "frozen OOC win value handles initial-Smoke battle entry without unsupported CTM fallback or root mutation");
+    }
     auto sole=detachedCopy(live);
     int firstNode=-1;
     for (auto &node : sole.map->nodes[0]) {

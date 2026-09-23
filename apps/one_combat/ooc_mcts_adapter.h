@@ -61,6 +61,9 @@ void sampleLiveOocHiddenCounters(GameContext &, std::mt19937_64 &, int priorEven
 // Live roots have exact public '?' outcomes; preserve their reconstructed room
 // chances while sampling only the private reward pity counters.
 void sampleLiveOocHiddenPityCounters(GameContext &, std::mt19937_64 &);
+// Initial Smoke Bomb is outside the frozen CTM domain. Live OOC uses the
+// frozen win model at hypothetical battle entry for roots carrying it.
+bool liveOocUsesCombatTransitionCheckpoints(const GameContext &);
 
 class OocGameContextModel final : public sts::search::OocGenerativeModel {
 public:

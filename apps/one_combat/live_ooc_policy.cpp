@@ -231,7 +231,10 @@ LiveOocDecision LiveOocMctsPolicy::score(const sts::GameContext &projected,
 
     OocAdapterOptions options;
     options.sampleNoncombat = true;
-    options.checkpointLeaves = true;
+    // The frozen CTM excludes an initial Smoke Bomb. At roots carrying one,
+    // leave hypothetical combats at battle entry so the existing OOC win
+    // model values that state without claiming a CTM combat prediction.
+    options.checkpointLeaves = liveOocUsesCombatTransitionCheckpoints(projected);
     options.stopAtMapCheckpoint = true;
     if (hasRootPrimitiveBits_) options.rootPrimitiveBits = rootPrimitiveBits_;
     OocMctsDependencies dependencies;
