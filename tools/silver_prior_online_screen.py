@@ -11,9 +11,25 @@ import os
 import re
 import subprocess
 import sys
+import hashlib
 from pathlib import Path
 
 EXPECTED_ARTIFACT_SHA256 = "b3a4c5e4bbe91b7f17dadf588408a95199ec5b8b25f732d99ef0966c0ff05fdb"
+BOOTSTRAP_REPLICATES = 5000
+BOOTSTRAP_SEED = 20260923
+PROMISING_NET_DISCORDANT = 4
+UNFAVORABLE_NET_DISCORDANT = -4
+FROZEN_RUN_FLAGS = {
+    "OMP_NUM_THREADS": "1", "STS_THREADS": "1", "STS_FAIR": "1",
+    "STS_SEARCHER3": "0", "STS_NATIVE_OOC": "1", "STS_SILVER_SEARCH": "1",
+    "STS_STOP_AFTER_ACT": "3", "STS_COLLECT_KEYS": "0",
+    "STS_SILVER_ADAPTIVE": "0", "STS_SILVER_EXACT_ROOT_BUDGETS": "1",
+    "STS_SILVER_REUSE_CAP": "32768", "STS_SILVER_REUSE_CAP_MODE": "allocated",
+    "STS_SILVER_EXACT_VISIT_LOCK": "0", "STS_SILVER_RHO_RACING": "0",
+    "STS_SILVER_VNET_LEAF_DIRECT": "0", "STS_SILVER_TELEMETRY": "1",
+    "STS_SILVER_PRIOR_LATENCY_SAMPLES": "1", "STS_OOC_MCTS": "0",
+    "STS_SIM_ADAPT": "0", "STS_CONVERGE": "0", "STS_CONV_ROOT": "0",
+}
 TELEMETRY_PREFIX = "[silver-combat] "
 REQUIRED_COUNTERS = {
     "decisions", "simulations", "prior_model_loaded", "prior_eligible_decisions",
@@ -48,6 +64,15 @@ def verify_artifact(path: Path, expected_sha256: str = EXPECTED_ARTIFACT_SHA256)
     actual = file_sha256(path)
     if actual != expected_sha256:
         raise ValueError(f"treatment artifact SHA-256 mismatch: expected {expected_sha256}, got {actual}")
+    return actual
+
+
+def verify_binary(path: Path, expected_sha256: str) -> str:
+    if not path.is_file():
+        raise ValueError(f"one_combat executable is not a regular file: {path}")
+    actual = file_sha256(path)
+    if actual != expected_sha256:
+        raise ValueError(f"one_combat SHA-256 mismatch: expected {expected_sha256}, got {actual}")
     return actual
 
 
@@ -194,12 +219,130 @@ def summarize_run(arm: str, seed: int, csv_path: Path, log_path: Path,
     }
 
 
-def summarize_screen(summary_paths: list[Path], expected_git_sha: str) -> dict:
+def _paired_binomial_two_sided(discordant_learned: int, discordant_control: int) -> float:
+    n = discordant_learned + discordant_control
+    if n == 0:
+        return 1.0
+    tail = min(discordant_learned, discordant_control)
+    probability = sum(math.comb(n, k) for k in range(tail + 1)) / (2 ** n)
+    return min(1.0, 2.0 * probability)
+
+
+def _bootstrap_uniform_indices(rep: int, draw: int, sample_size: int) -> int:
+    # SHA-256 counter sampling is stable across Python versions and platforms.
+    payload = f"silver-prior-online-bootstrap-v1:{BOOTSTRAP_SEED}:{rep}:{draw}".encode()
+    return int.from_bytes(hashlib.sha256(payload).digest()[:8], "big") % sample_size
+
+
+def _paired_bootstrap_ci(values: list[float]) -> dict:
+    estimates = []
+    size = len(values)
+    for rep in range(BOOTSTRAP_REPLICATES):
+        total = sum(values[_bootstrap_uniform_indices(rep, draw, size)]
+                    for draw in range(size))
+        estimates.append(total / size)
+    estimates.sort()
+    return {"low": estimates[math.ceil(0.025 * BOOTSTRAP_REPLICATES) - 1],
+            "high": estimates[math.ceil(0.975 * BOOTSTRAP_REPLICATES) - 1]}
+
+
+def _number_outcome(row: dict, key: str) -> float:
+    try:
+        value = float(row["outcome"][key])
+    except (KeyError, TypeError, ValueError) as exc:
+        raise ValueError(f"summary outcome lacks numeric {key}") from exc
+    if not math.isfinite(value):
+        raise ValueError(f"summary outcome {key} is non-finite")
+    return value
+
+
+def analyze_paired_results(pairs: dict[int, dict[str, dict]]) -> dict:
+    """Apply the frozen paired win rule and secondary paired summaries."""
+    if set(pairs) != set(range(24100000, 24100032)):
+        raise ValueError("analysis requires exactly the frozen 32 paired seeds")
+    table = {"learned_only": 0, "control_only": 0, "both_win": 0, "both_lose": 0}
+    win_deltas = []
+    secondary = {
+        "floor": lambda row: _number_outcome(row, "floor"),
+        "end_hp": lambda row: _number_outcome(row, "hpEnd"),
+        "fights_lost": lambda row: _number_outcome(row, "fightsLost"),
+        "wall_time_seconds": lambda row: _number_outcome(row, "sec"),
+        "search_time_micros": lambda row: float(row["telemetry"]["counters"]["search_wall_micros"]),
+        "decisions": lambda row: float(row["telemetry"]["counters"]["decisions"]),
+        "simulations": lambda row: float(row["telemetry"]["counters"]["simulations"]),
+    }
+    differences = {name: [] for name in secondary}
+    wins = {"CONTROL": 0, "LEARNED": 0}
+    for seed in sorted(pairs):
+        control = pairs[seed].get("CONTROL")
+        learned = pairs[seed].get("LEARNED")
+        if control is None or learned is None:
+            raise ValueError(f"seed {seed} lacks one arm")
+        control_win = int(_number_outcome(control, "won"))
+        learned_win = int(_number_outcome(learned, "won"))
+        if control_win not in (0, 1) or learned_win not in (0, 1):
+            raise ValueError(f"seed {seed} has non-binary win outcome")
+        wins["CONTROL"] += control_win
+        wins["LEARNED"] += learned_win
+        if learned_win and control_win:
+            table["both_win"] += 1
+        elif learned_win:
+            table["learned_only"] += 1
+        elif control_win:
+            table["control_only"] += 1
+        else:
+            table["both_lose"] += 1
+        win_deltas.append(float(learned_win - control_win))
+        for name, value in secondary.items():
+            differences[name].append(value(learned) - value(control))
+
+    net = table["learned_only"] - table["control_only"]
+    if net >= PROMISING_NET_DISCORDANT:
+        classification = "ONLINE_LEARNED_PRIOR_PROMISING"
+    elif net <= UNFAVORABLE_NET_DISCORDANT:
+        classification = "ONLINE_LEARNED_PRIOR_UNFAVORABLE"
+    else:
+        classification = "ONLINE_LEARNED_PRIOR_INCONCLUSIVE"
+    discordant = table["learned_only"] + table["control_only"]
+    secondary_summary = {}
+    for name, values in differences.items():
+        secondary_summary[name] = {
+            "learned_minus_control_mean": sum(values) / len(values),
+            "paired_bootstrap_95_ci": _paired_bootstrap_ci(values),
+        }
+    return {
+        "classification": classification,
+        "classification_rule": {
+            "promising_if_net_discordant_at_least": PROMISING_NET_DISCORDANT,
+            "unfavorable_if_net_discordant_at_most": UNFAVORABLE_NET_DISCORDANT,
+            "otherwise": "ONLINE_LEARNED_PRIOR_INCONCLUSIVE",
+        },
+        "paired_win_table": table,
+        "wins": wins,
+        "win_rates": {arm: wins[arm] / 32 for arm in ("CONTROL", "LEARNED")},
+        "paired_win_rate_delta": sum(win_deltas) / 32,
+        "net_discordant": net,
+        "discordant_pairs": discordant,
+        "exact_two_sided_binomial_p": _paired_binomial_two_sided(
+            table["learned_only"], table["control_only"]),
+        "paired_bootstrap": {
+            "replicates": BOOTSTRAP_REPLICATES, "seed": BOOTSTRAP_SEED,
+            "algorithm": "SHA-256 counter resampling of 32 paired seeds with replacement; nearest-rank percentile CI",
+            "paired_win_rate_delta_95_ci": _paired_bootstrap_ci(win_deltas),
+        },
+        "secondary_outcomes": secondary_summary,
+    }
+
+
+def summarize_screen(summary_paths: list[Path], expected_git_sha: str,
+                      expected_binary_sha256: str) -> dict:
     """Require exactly one validated CONTROL/LEARNED pair for every frozen seed."""
     expected = {(arm, seed) for seed in range(24100000, 24100032)
                 for arm in ("CONTROL", "LEARNED")}
     runs = {}
     artifact_hashes = set()
+    binary_hashes = set()
+    run_flags = set()
     for path in summary_paths:
         run = json.loads(path.read_text())
         key = (run.get("arm"), run.get("seed"))
@@ -209,6 +352,12 @@ def summarize_screen(summary_paths: list[Path], expected_git_sha: str) -> dict:
             raise ValueError(f"duplicate arm/seed in screen packet: {key}")
         if run.get("provenance", {}).get("executable_git_sha") != expected_git_sha:
             raise ValueError(f"summary executableGitSha mismatch for {key}")
+        if run.get("provenance", {}).get("binary_sha256") != expected_binary_sha256:
+            raise ValueError(f"one_combat SHA-256 mismatch for {key}")
+        flags = run.get("run_flags")
+        if flags != FROZEN_RUN_FLAGS:
+            raise ValueError(f"run flags differ from frozen protocol for {key}")
+        run_flags.add(json.dumps(flags, sort_keys=True))
         telemetry = run.get("telemetry", {})
         counters = telemetry.get("counters", {})
         if not telemetry.get("latency_samples_available"):
@@ -224,15 +373,20 @@ def summarize_screen(summary_paths: list[Path], expected_git_sha: str) -> dict:
                 raise ValueError(f"prior evaluation/root-PUCT mismatch for {key}")
             if counters.get("prior_model_loaded") != 1:
                 raise ValueError(f"LEARNED model was not loaded for {key}")
-            artifact_hashes.add(run.get("artifact_sha256_prelaunch"))
         elif counters.get("prior_evaluations") != 0 or counters.get("root_puct_decisions") != 0:
             raise ValueError(f"CONTROL run invoked the learned prior for {key}")
+        artifact_hashes.add(run.get("artifact_sha256_prelaunch"))
+        binary_hashes.add(run["provenance"].get("binary_sha256"))
         runs[key] = run
     missing = sorted(expected - runs.keys())
     if missing:
         raise ValueError(f"screen packet missing {len(missing)} arm/seed runs; first: {missing[:4]}")
     if artifact_hashes != {EXPECTED_ARTIFACT_SHA256}:
         raise ValueError(f"screen packet treatment artifact hashes differ from frozen artifact: {artifact_hashes}")
+    if binary_hashes != {expected_binary_sha256}:
+        raise ValueError(f"screen packet one_combat hashes are not singular and frozen: {binary_hashes}")
+    if len(run_flags) != 1:
+        raise ValueError("screen packet does not have one frozen run-flag configuration")
 
     totals = {}
     for arm in ("CONTROL", "LEARNED"):
@@ -251,14 +405,20 @@ def summarize_screen(summary_paths: list[Path], expected_git_sha: str) -> dict:
                            if counters.get("prior_evaluations", 0) else None),
                        "prior_inference_median_micros": _percentile(sorted(all_samples), 0.5) if all_samples else None,
                        "prior_inference_p95_micros": _percentile(sorted(all_samples), 0.95) if all_samples else None}
-    return {"schema": "silver_prior_online_screen_v1", "expected_git_sha": expected_git_sha,
+    pairs = {seed: {arm: runs[(arm, seed)] for arm in ("CONTROL", "LEARNED")}
+             for seed in range(24100000, 24100032)}
+    analysis = analyze_paired_results(pairs)
+    return {"schema": "silver_prior_online_screen_v2", "expected_git_sha": expected_git_sha,
+            "expected_binary_sha256": expected_binary_sha256,
             "seed_block": [24100000, 24100031], "pair_count": 32,
             "artifact_sha256": EXPECTED_ARTIFACT_SHA256,
-            "runs": 64, "arms": totals}
+            "binary_sha256": expected_binary_sha256,
+            "runs": 64, "arms": totals, "analysis": analysis}
 
 
 def _run_pair(repo: Path, binary: Path, artifact: Path, output_dir: Path,
-              seed: int, expected_git_sha: str) -> dict:
+              seed: int, expected_git_sha: str,
+              expected_binary_sha256: str) -> dict:
     if not 24100000 <= seed <= 24100031:
         raise ValueError("run-pair accepts only the frozen scientific block 24100000..24100031")
     head = subprocess.run(["git", "rev-parse", "HEAD"], cwd=repo, check=True,
@@ -284,20 +444,14 @@ def _run_pair(repo: Path, binary: Path, artifact: Path, output_dir: Path,
 
         # Hash immediately before each process launch; in particular, repeat
         # the check after CONTROL and immediately before the treatment batch.
+        binary_sha = verify_binary(binary, expected_binary_sha256)
         artifact_sha = verify_artifact(artifact)
         env = os.environ.copy()
-        common = {
-            "OMP_NUM_THREADS": "1", "STS_THREADS": "1", "STS_FAIR": "1",
-            "STS_SEARCHER3": "0", "STS_NATIVE_OOC": "1", "STS_SILVER_SEARCH": "1",
-            "STS_STOP_AFTER_ACT": "3", "STS_COLLECT_KEYS": "0",
-            "STS_SILVER_ADAPTIVE": "0", "STS_SILVER_EXACT_ROOT_BUDGETS": "1",
-            "STS_SILVER_REUSE_CAP": "32768", "STS_SILVER_REUSE_CAP_MODE": "allocated",
-            "STS_SILVER_EXACT_VISIT_LOCK": "0", "STS_SILVER_RHO_RACING": "0",
-            "STS_SILVER_VNET_LEAF_DIRECT": "0", "STS_SILVER_TELEMETRY": "1",
-            "STS_SILVER_PRIOR_LATENCY_SAMPLES": "1", "STS_OOC_MCTS": "0",
-            "STS_SIM_ADAPT": "0", "STS_CONVERGE": "0", "STS_CONV_ROOT": "0",
-        }
-        env.update(common)
+        for key in tuple(env):
+            if key.startswith("STS_"):
+                env.pop(key)
+        env.update(FROZEN_RUN_FLAGS)
+        env["STS_EXECUTABLE_GIT_SHA"] = expected_git_sha
         env.pop("STS_SILVER_ROOT_PRIOR_MODEL", None)
         if arm == "LEARNED":
             env["STS_SILVER_ROOT_PRIOR_MODEL"] = str(artifact.resolve())
@@ -311,6 +465,8 @@ def _run_pair(repo: Path, binary: Path, artifact: Path, output_dir: Path,
         result = summarize_run(arm, seed, csv_path, log_path,
                                expected_git_sha, require_latency_samples=True)
         result["artifact_sha256_prelaunch"] = artifact_sha
+        result["provenance"]["binary_sha256"] = binary_sha
+        result["run_flags"] = dict(FROZEN_RUN_FLAGS)
         summary_path.write_text(json.dumps(result, sort_keys=True, indent=2) + "\n")
         results[arm] = result
     return {"seed": seed, "arm_order": list(arms), "runs": results}
@@ -335,8 +491,10 @@ def _main(argv=None) -> int:
     pair.add_argument("--output-dir", type=Path, required=True)
     pair.add_argument("--seed", type=int, required=True)
     pair.add_argument("--expected-git-sha", required=True)
+    pair.add_argument("--expected-binary-sha256", required=True)
     screen = sub.add_parser("summarize-screen", help="validate the complete 32-pair evidence packet")
     screen.add_argument("--expected-git-sha", required=True)
+    screen.add_argument("--expected-binary-sha256", required=True)
     screen.add_argument("summaries", nargs="+", type=Path,
                         help="64 per-run JSON summaries from run-pair")
     args = parser.parse_args(argv)
@@ -348,14 +506,16 @@ def _main(argv=None) -> int:
             result = summarize_run(args.arm, args.seed, args.csv, args.log,
                                    args.expected_git_sha, args.require_latency_samples)
         elif args.command == "summarize-screen":
-            result = summarize_screen(args.summaries, args.expected_git_sha)
+            result = summarize_screen(args.summaries, args.expected_git_sha,
+                                      args.expected_binary_sha256)
         else:
             repo = args.repo.resolve()
             binary = args.binary if args.binary.is_absolute() else repo / args.binary
             artifact = args.artifact if args.artifact.is_absolute() else repo / args.artifact
             output_dir = args.output_dir if args.output_dir.is_absolute() else repo / args.output_dir
             result = _run_pair(repo, binary.resolve(), artifact.resolve(), output_dir.resolve(),
-                               args.seed, args.expected_git_sha)
+                               args.seed, args.expected_git_sha,
+                               args.expected_binary_sha256)
         print(json.dumps(result, sort_keys=True, indent=2))
         return 0
     except (OSError, ValueError, KeyError, json.JSONDecodeError) as exc:

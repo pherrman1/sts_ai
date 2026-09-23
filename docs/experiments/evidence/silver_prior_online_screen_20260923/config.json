@@ -79,6 +79,19 @@
     "status": "not run",
     "runner": "tools/silver_prior_online_screen.py",
     "latency_samples_required": true,
-    "artifact_sha256_rechecked_before_each_process": "b3a4c5e4bbe91b7f17dadf588408a95199ec5b8b25f732d99ef0966c0ff05fdb"
+    "artifact_sha256_rechecked_before_each_process": "b3a4c5e4bbe91b7f17dadf588408a95199ec5b8b25f732d99ef0966c0ff05fdb",
+    "binary_sha256_required_before_each_process": true,
+    "current_main_merged_sha": "4e4da3b154e59f193c77f972e9b5e2338c52be3c",
+    "analysis": {
+      "classification": {
+        "ONLINE_LEARNED_PRIOR_PROMISING": "net_discordant >= 4",
+        "ONLINE_LEARNED_PRIOR_UNFAVORABLE": "net_discordant <= -4",
+        "ONLINE_LEARNED_PRIOR_INCONCLUSIVE": "otherwise"
+      },
+      "bootstrap_replicates": 5000,
+      "bootstrap_seed": 20260923,
+      "bootstrap_algorithm": "SHA-256 counter resampling of 32 paired seeds with replacement; nearest-rank percentile CI",
+      "exact_two_sided_binomial": "conditional on number of discordant pairs"
+    }
   }
 }

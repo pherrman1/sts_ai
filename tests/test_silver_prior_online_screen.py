@@ -107,8 +107,13 @@ class OnlineScreenParserTests(unittest.TestCase):
                     learned = arm == "LEARNED"
                     row = {
                         "arm": arm, "seed": seed,
-                        "provenance": {"executable_git_sha": "reviewed-sha"},
-                        "artifact_sha256_prelaunch": screen.EXPECTED_ARTIFACT_SHA256 if learned else None,
+                        "outcome": {"won": int(learned), "floor": 40 + int(learned),
+                                    "hpEnd": 50 + int(learned), "fightsLost": int(not learned),
+                                    "sec": 12.0 + int(learned)},
+                        "provenance": {"executable_git_sha": "reviewed-sha",
+                                       "binary_sha256": "a" * 64},
+                        "artifact_sha256_prelaunch": screen.EXPECTED_ARTIFACT_SHA256,
+                        "run_flags": dict(screen.FROZEN_RUN_FLAGS),
                         "telemetry": {
                             "latency_samples_available": True,
                             "prior_inference_samples_micros": [6000] if learned else [],
@@ -118,6 +123,10 @@ class OnlineScreenParserTests(unittest.TestCase):
                                 "prior_evaluations": int(learned),
                                 "root_puct_decisions": int(learned),
                                 "prior_inference_micros": 6000 if learned else 0,
+                                "search_wall_micros": 100000 + int(learned),
+                                "prior_skipped_forced": 0,
+                                "prior_skipped_non_player_normal": 0,
+                                "prior_eligible_decisions": int(learned),
                                 "prior_surface_failures": 0, "transaction_failures": 0,
                                 "conversion_failures": 0, "semantic_resolution_failures": 0,
                                 "knowledge_failures": 0,
@@ -127,12 +136,69 @@ class OnlineScreenParserTests(unittest.TestCase):
                     path = root / f"{arm}-{seed}.json"
                     path.write_text(json.dumps(row))
                     summaries.append(path)
-            result = screen.summarize_screen(summaries, "reviewed-sha")
+            result = screen.summarize_screen(summaries, "reviewed-sha", "a" * 64)
             self.assertEqual(64, result["runs"])
             self.assertEqual(32, result["arms"]["LEARNED"]["seed_count"])
             self.assertEqual(6000, result["arms"]["LEARNED"]["prior_inference_p95_micros"])
+            self.assertEqual("ONLINE_LEARNED_PRIOR_PROMISING", result["analysis"]["classification"])
+            self.assertEqual(32, result["analysis"]["paired_win_table"]["learned_only"])
+            self.assertEqual(0, result["analysis"]["paired_win_table"]["control_only"])
+            self.assertEqual(20260923, result["analysis"]["paired_bootstrap"]["seed"])
             with self.assertRaisesRegex(ValueError, "missing 1 arm/seed"):
-                screen.summarize_screen(summaries[:-1], "reviewed-sha")
+                screen.summarize_screen(summaries[:-1], "reviewed-sha", "a" * 64)
+
+    @staticmethod
+    def _synthetic_pairs(learned_only, control_only, both_win, both_lose):
+        states = ([ (0, 1) ] * learned_only + [(1, 0)] * control_only
+                  + [(1, 1)] * both_win + [(0, 0)] * both_lose)
+        pairs = {}
+        for offset, (control_win, learned_win) in enumerate(states):
+            seed = 24100000 + offset
+            rows = {}
+            for arm, won in (("CONTROL", control_win), ("LEARNED", learned_win)):
+                rows[arm] = {
+                    "outcome": {"won": won, "floor": 40 + won, "hpEnd": 50 + won,
+                                "fightsLost": 1 - won, "sec": 10 + won},
+                    "telemetry": {"counters": {"search_wall_micros": 100000 + won,
+                                                "decisions": 10 + won,
+                                                "simulations": 10000 + 1000 * won}},
+                }
+            pairs[seed] = rows
+        return pairs
+
+    def test_preregistered_win_table_and_all_classification_outcomes(self):
+        promising = screen.analyze_paired_results(self._synthetic_pairs(4, 0, 8, 20))
+        self.assertEqual("ONLINE_LEARNED_PRIOR_PROMISING", promising["classification"])
+        self.assertEqual({"learned_only": 4, "control_only": 0,
+                          "both_win": 8, "both_lose": 20}, promising["paired_win_table"])
+        self.assertEqual(12, promising["wins"]["LEARNED"])
+        self.assertEqual(8, promising["wins"]["CONTROL"])
+        self.assertEqual(4, promising["net_discordant"])
+        self.assertEqual(0.125, promising["exact_two_sided_binomial_p"])
+
+        unfavorable = screen.analyze_paired_results(self._synthetic_pairs(0, 4, 8, 20))
+        self.assertEqual("ONLINE_LEARNED_PRIOR_UNFAVORABLE", unfavorable["classification"])
+        self.assertEqual(-4, unfavorable["net_discordant"])
+
+        inconclusive = screen.analyze_paired_results(self._synthetic_pairs(3, 2, 7, 20))
+        self.assertEqual("ONLINE_LEARNED_PRIOR_INCONCLUSIVE", inconclusive["classification"])
+        self.assertEqual(1, inconclusive["net_discordant"])
+        self.assertEqual(inconclusive["paired_bootstrap"],
+                         screen.analyze_paired_results(self._synthetic_pairs(3, 2, 7, 20))["paired_bootstrap"])
+        self.assertIn("floor", inconclusive["secondary_outcomes"])
+        self.assertIn("end_hp", inconclusive["secondary_outcomes"])
+        self.assertIn("fights_lost", inconclusive["secondary_outcomes"])
+        self.assertIn("wall_time_seconds", inconclusive["secondary_outcomes"])
+        self.assertIn("search_time_micros", inconclusive["secondary_outcomes"])
+        self.assertIn("decisions", inconclusive["secondary_outcomes"])
+        self.assertIn("simulations", inconclusive["secondary_outcomes"])
+
+    def test_binary_hash_must_match(self):
+        with tempfile.TemporaryDirectory() as directory:
+            binary = Path(directory) / "one_combat"
+            binary.write_bytes(b"stale executable")
+            with self.assertRaisesRegex(ValueError, "one_combat SHA-256 mismatch"):
+                screen.verify_binary(binary, "0" * 64)
 
 
 if __name__ == "__main__":

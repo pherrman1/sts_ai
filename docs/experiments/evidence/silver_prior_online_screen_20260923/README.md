@@ -45,15 +45,28 @@ loading the frozen native prior; the existing policy prior remains unchanged.
 
 For the later screen, build and review one exact commit, then invoke
 `tools/silver_prior_online_screen.py run-pair` once per authorized seed with
-that commit SHA, its `one_combat` binary, the frozen artifact, and a fresh
-output directory. Each pair checks out a clean exact SHA, verifies the artifact
-before both processes, alternates arm order by seed, uses `tools/seed_guard.sh`,
-and writes one validated JSON summary per arm. After all pairs complete,
-`tools/silver_prior_online_screen.py summarize-screen --expected-git-sha SHA
-<64 summary paths>` rejects missing/duplicate seeds, mismatched executable
-metadata, artifact drift, latency-sample omissions, simulation-budget errors,
-or any nonzero runtime failure counter. This packet currently contains no
-screen run results.
+that commit SHA, expected `one_combat` SHA-256, its `one_combat` binary, the
+frozen artifact, and a fresh output directory. Each pair checks out a clean
+exact SHA, verifies the executable and model hashes immediately before both
+processes, pins `STS_EXECUTABLE_GIT_SHA`, clears inherited `STS_*` settings,
+records the frozen flags, alternates arm order by seed, uses
+`tools/seed_guard.sh`, and writes one validated JSON summary per arm. After all
+pairs complete, `tools/silver_prior_online_screen.py summarize-screen
+--expected-git-sha SHA --expected-binary-sha256 SHA <64 summary paths>` rejects
+missing/duplicate seeds, mismatched source or binary SHA, mixed flags, artifact
+drift, latency-sample omissions, simulation-budget errors, or any nonzero
+runtime failure counter.
+
+The summary applies the frozen paired decision rule: `net_discordant` is
+LEARNED-only wins minus CONTROL-only wins; classify promising at `>= +4`,
+unfavorable at `<= -4`, otherwise inconclusive. It reports the complete paired
+win table, an exact two-sided binomial test over discordant pairs, and paired
+secondary deltas for floor, end HP, fights lost, wall time, search time,
+decisions, and simulations. All paired confidence intervals use a frozen
+5,000-replicate paired bootstrap with seed `20260923` and SHA-256 counter-based
+resampling (nearest-rank 2.5th/97.5th percentiles). Synthetic tests cover every
+classification and all four paired table cells. This packet contains no 32-seed
+run results.
 
 ## Interpretation boundary
 
