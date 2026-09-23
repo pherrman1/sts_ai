@@ -3966,7 +3966,12 @@ static WholeCombatTeacher loadWholeCombatTeacher(const std::string &path, int si
     if (search::silverLiveReuseCap() != 32768)
         throw std::runtime_error("wholecombatgen: production reuse cap mismatch with frozen 32k teacher");
     if (!t.contains("environment") || !t["environment"].is_object()) throw std::runtime_error("wholecombatgen: missing environment");
-    for (const auto &[name, expected] : t["environment"].items()) { const char *actual=std::getenv(name.c_str()); if (!expected.is_string() || !actual || expected.get<std::string>()!=actual) throw std::runtime_error("wholecombatgen: environment mismatch for "+name); }
+    for (const auto &[name, expected] : t["environment"].items()) {
+        if (allowStaleProvenance && name == "STS_EXECUTABLE_GIT_SHA") continue;
+        const char *actual=std::getenv(name.c_str());
+        if (!expected.is_string() || !actual || expected.get<std::string>()!=actual)
+            throw std::runtime_error("wholecombatgen: environment mismatch for "+name);
+    }
     const std::map<std::string,std::string> required={{"STS_FAIR","1"},{"STS_SEARCHER3","0"},{"STS_SILVER_SEARCH","1"},{"STS_SILVER_EXACT_ROOT_BUDGETS","1"},{"STS_SILVER_REUSE_CAP_MODE","allocated"},{"STS_SILVER_ADAPTIVE","0"},{"STS_SILVER_VNET_LEAF_DIRECT","0"},{"STS_SILVER_TELEMETRY","1"}};
     for (const auto &[name,value]:required) if (!t["environment"].contains(name) || t["environment"][name]!=value) throw std::runtime_error("wholecombatgen: frozen environment missing "+name+"="+value);
     if (!t.contains("model_artifacts") || !t["model_artifacts"].is_array()) throw std::runtime_error("wholecombatgen: model_artifacts must be an array");
@@ -4906,9 +4911,10 @@ static int combatTransitionFixture(const std::string &outfile,
 
 static void combatTransitionGen(int nSeeds, int sims, int asc,
                                 const std::string &outfile, long long seedOffset,
-                                const std::string &teacherPath) {
+                                const std::string &teacherPath,
+                                bool allowStaleProvenance = false) {
     trainingCampaignStart();
-    const auto teacher = loadWholeCombatTeacher(teacherPath, sims);
+    const auto teacher = loadWholeCombatTeacher(teacherPath, sims, allowStaleProvenance);
     std::ofstream f(outfile);
     if (!f) throw std::runtime_error("combattransitiongen: cannot open output");
     long long rows = 0;
@@ -4942,10 +4948,15 @@ static void combatTransitionGen(int nSeeds, int sims, int asc,
     std::ofstream mf(outfile + ".manifest.json");
     if (!mf) throw std::runtime_error("combattransitiongen: cannot write manifest");
     mf << manifest.dump(2) << '\n';
-    std::cout << "combattransitiongen teacher=" << teacher.id << " completed="
+    std::cout << (allowStaleProvenance
+                     ? "combattransitionlizardtargetcandidategen teacher="
+                     : "combattransitiongen teacher=")
+              << teacher.id << " completed="
               << completed << '/' << nSeeds << " quarantined=" << nSeeds - completed
               << " rows=" << rows << " -> " << outfile << '\n';
-    writeTrainingProvenance(outfile, "combattransitiongen", nSeeds, completed,
+    writeTrainingProvenance(outfile, allowStaleProvenance
+                                ? "combattransitionlizardtargetcandidategen"
+                                : "combattransitiongen", nSeeds, completed,
                             nSeeds - completed, g_trainingHealthFailures.load(),
                             rows, seedOffset, sims, asc);
 }
@@ -10393,6 +10404,10 @@ int main(int argc, char **argv) {
         if (argc < 8) { std::cerr << "usage: one_combat combattransitiongen N_SEEDS SIMS ASC OUT.jsonl SEED_OFFSET TEACHER.json\n"; return 2; }
         combatTransitionGen(std::stoi(argv[2]), std::stoi(argv[3]), std::stoi(argv[4]),
                             argv[5], std::stoll(argv[6]), argv[7]);
+    } else if (mode == "combattransitionlizardtargetcandidategen") {
+        if (argc < 8) { std::cerr << "usage: one_combat combattransitionlizardtargetcandidategen N_SEEDS SIMS ASC OUT.jsonl SEED_OFFSET TEACHER.json\n"; return 2; }
+        combatTransitionGen(std::stoi(argv[2]), std::stoi(argv[3]), std::stoi(argv[4]),
+                            argv[5], std::stoll(argv[6]), argv[7], true);
     } else if (mode == "combattransitionlizardgen") {
         if (argc < 10) { std::cerr << "usage: one_combat combattransitionlizardgen N_SEEDS SIMS ASC OUT.jsonl SEED_OFFSET TEACHER.json BASELINE_SHA COLLECTOR_SHA\n"; return 2; }
         activeLizardCombatTransitionGen(std::stoi(argv[2]), std::stoi(argv[3]),

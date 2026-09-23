@@ -12,7 +12,7 @@ declare -A ONE_COMBAT_SEED_INDEX=(
   ["datagen"]=2
   ["datagen2"]=2            ["datagen3"]=2          ["distgen"]=2
   ["e2cgen"]=2              ["fairgen"]=2           ["fightgen"]=2
-  ["wholecombatgen"]=2     ["combattransitiongen"]=2 ["combattransitionlizardgen"]=2 ["combattransitionlizardtargetpairgen"]=2 ["combatevalgen"]=2 ["ooccfaudit"]=2
+  ["wholecombatgen"]=2     ["combattransitiongen"]=2 ["combattransitionlizardtargetcandidategen"]=2 ["combattransitionlizardgen"]=2 ["combattransitionlizardtargetpairgen"]=2 ["combatevalgen"]=2 ["ooccfaudit"]=2
   ["particle_leaf_probe"]=2
   ["particle_posterior_probe"]=2
   ["fightrep"]=6            ["oocnextgen"]=2

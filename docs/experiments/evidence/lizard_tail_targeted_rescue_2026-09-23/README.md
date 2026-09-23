@@ -26,8 +26,13 @@ exact Tail-mechanics simulator.
 ## Frozen sample and selection
 
 - Fresh source seeds: `4200300..4200427` (128 source seeds maximum).
-- Stage 1 records ordinary Silver precombat input and full persistent state
-  for every generated combat in those sources.
+- Stage 1 uses the dedicated `combattransitionlizardtargetcandidategen` mode
+  to record ordinary Silver precombat input and full persistent state for
+  every generated combat in those sources. This mode permits a different
+  collector executable/repository SHA while continuing to enforce the frozen
+  Silver settings, model artifact hashes, and all teacher environment fields
+  other than `STS_EXECUTABLE_GIT_SHA`; the actual candidate producer Git and
+  executable hashes are recorded in its manifest.
 - The selector scores only the precombat predictor input with the frozen
   survival head. Its source code does not read combat outcome, post-state, or
   final HP when selecting a target.
