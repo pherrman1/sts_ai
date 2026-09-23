@@ -1882,7 +1882,8 @@ public final class STSModelInspector implements PostInitializeSubscriber,
 
     private String combatEntryJson(AbstractRoom room, String encounter) {
         if (AbstractDungeon.player == null || AbstractDungeon.currMapNode == null) return "";
-        String previous = lastRoomClass;
+        String previous = firstRoomAfterBossTreasure(lastRoomClass,
+                AbstractDungeon.actNum, AbstractDungeon.floorNum, AbstractDungeon.currMapNode.y);
         // A freshly started inspector can observe a saved run directly inside
         // the act boss before observeRoomTransition has rebuilt its in-memory
         // latch. The persisted metric path includes the boss sentinel, so use
@@ -1942,6 +1943,16 @@ public final class STSModelInspector implements PostInitializeSubscriber,
                 .append(",\"relics\":").append(relicEntryJson())
                 .append(",\"potions\":").append(potionEntryJson()).append('}');
         return out.toString();
+    }
+
+    static String firstRoomAfterBossTreasure(String previous, int act, int floor, int nodeY) {
+        // Native transitionToAct retains BOSS_TREASURE as curRoom, then uses it
+        // as lastRoom when the first node is entered. Vanilla can clear the
+        // inspector's room latch while moving between acts.
+        if ((previous == null || previous.isEmpty()) && (act == 2 || act == 3)
+                && floor == 17 * (act - 1) + 1 && nodeY == 0)
+            return "BOSS_TREASURE";
+        return previous == null ? "" : previous;
     }
 
     private static String metricRoomClass(String symbol) {

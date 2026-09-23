@@ -16,6 +16,11 @@ public final class CombatBoundaryTest {
         chosenByrd.put("Byrd", 2);
         if ("CHOSEN_AND_BYRDS".equals(STSModelInspector.multiEncounterName(chosenByrd, false)))
             throw new AssertionError("unsupported two-Byrd shape was accepted as canonical");
+        if (!"BOSS_TREASURE".equals(STSModelInspector.firstRoomAfterBossTreasure("", 3, 35, 0))
+                || !"BOSS_TREASURE".equals(STSModelInspector.firstRoomAfterBossTreasure("", 2, 18, 0))
+                || !"".equals(STSModelInspector.firstRoomAfterBossTreasure("", 3, 36, 1))
+                || !"REST".equals(STSModelInspector.firstRoomAfterBossTreasure("REST", 3, 35, 0)))
+            throw new AssertionError("first new-act combat previous room was guessed outside its boundary");
         STSModelInspector.HiddenIntentSnapshot chained = new STSModelInspector.HiddenIntentSnapshot();
         STSModelInspector.recordHiddenMoveHistory(chained, java.util.Arrays.asList((byte)41));
         STSModelInspector.recordHiddenMoveHistory(chained,
