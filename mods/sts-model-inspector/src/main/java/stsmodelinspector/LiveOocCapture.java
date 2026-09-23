@@ -1545,12 +1545,32 @@ final class LiveOocCapture {
         // support allowlist.
         boolean initial = "INTRO".equals(String.valueOf(phase)) || "0".equals(String.valueOf(phase));
         boolean nativeIndexedInitial = nativeIndexedInitialEventVisible(phase, labels, options);
+        // A generic option map is insufficient when this event's native state
+        // consumes additional public fields. Keep the event name out of the
+        // supported-state list while requiring its field/label validator to
+        // pass before admitting the generic initial-phase map.
+        boolean initialEventParametersQualified =
+                (!"GoopPuddle".equals(simple) || goop)
+                && (!"GoldShrine".equals(simple) || goldShrine)
+                && (!"GoldenWing".equals(simple) || goldenWing)
+                && (!"Cleric".equals(simple) || cleric)
+                && (!"SensoryStone".equals(simple) || sensoryStone)
+                && (!"MaskedBandits".equals(simple) || maskedBandits)
+                && (!"TheLibrary".equals(simple) || library)
+                && (!"DrugDealer".equals(simple) || augmenter)
+                && (!"BackToBasics".equals(simple) || ancientWriting)
+                && (!"WindingHalls".equals(simple) || windingHalls)
+                && (!"FaceTrader".equals(simple) || faceTrader)
+                && (!"Addict".equals(simple) || addict)
+                && (!"Vampires".equals(simple) || vampiresNoVial)
+                && (!"ForgottenAltar".equals(simple) || forgottenAltar)
+                && (!"Designer".equals(simple) || designerIndices != null);
         boolean idolTrap = "GoldenIdolEvent".equals(simple) && "1".equals(String.valueOf(phase))
                 && options.size() == 3 && labels.size() == 3
                 && ((Number)map(options.get(0)).get("index")).intValue() == 0
                 && ((Number)map(options.get(1)).get("index")).intValue() == 1
                 && ((Number)map(options.get(2)).get("index")).intValue() == 2;
-        if (!(nativeIndexedInitial && initial)
+        if (!(nativeIndexedInitial && initial && initialEventParametersQualified)
                 && !goop && !noteForYourself && !cursedTomeLastPage && !colosseumPostCombat
                 && !goldShrine
                 && !nestDecisionVisible(simple, phase, labels, options, AbstractDungeon.ascensionLevel)
