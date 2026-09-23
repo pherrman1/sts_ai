@@ -626,9 +626,6 @@ ImportResult importLiveOocStateV1(const J &observation, LiveOocStateV1 &out) {
                     g.info.neowRewards[i].d=id<Neow::Drawback>(ns[i].at("drawback"),Neow::Drawback::INVALID);
                 }
             }
-            if (g.curEvent == Event::HYPNOTIZING_COLORED_MUSHROOMS
-                    || g.curEvent == Event::MYSTERIOUS_SPHERE)
-                return {false,"UNSUPPORTED","PUBLIC_REWARD_PITY_HISTORY_UNQUALIFIED"};
         }
         for(const auto &choice:array(o,"liveChoices",1024)) {
             primitive(choice,g.screenState);validateHint(choice.at("liveAction"));

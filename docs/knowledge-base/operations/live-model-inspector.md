@@ -604,15 +604,18 @@ option is available and the displayed slots and effects match native actions.
 Vampires without Blood Vial maps the visible Accept/Refuse buttons to native
 indices 1/2 and checks the displayed max-HP loss. The Blood Vial branch
 remains unsupported until its separate visible option layout is qualified.
-Mushrooms and Mysterious Sphere remain unsupported with
-`PUBLIC_REWARD_PITY_HISTORY_UNQUALIFIED` because their pre-MAP continuation
-can generate potion or card rewards. The v_win leaf marginalizes those
-features with the exact discrete mixture `E[sigmoid(margin)]` over a bounded
-native lattice (`potionChance` -40 through 60), never applying the link to an
-expected margin. Real live captures do not claim an exact pity history: direct V4 requests fail closed and
-MCTS uses an equal public prior rather than a fabricated midpoint. Synthetic
-parity fixtures may mark an exact pity reconstruction explicitly. Live
-hypothetical pity counters are sampled once per root particle. Complete
+Mushrooms and Mysterious Sphere are supported by live MCTS despite the
+unqualified pity history. Their fight choices sample hidden potion and card
+rarity counters per root particle; combat successors then generate the
+corresponding card and potion rewards before the next MAP checkpoint. The v_win
+leaf marginalizes pity features with the exact discrete mixture
+`E[sigmoid(margin)]` over the bounded native lattice, never applying the link
+to an expected margin. Real live captures do not claim an exact pity history:
+direct V4 requests fail closed and MCTS uses an equal public prior rather than
+a fabricated midpoint. This is the existing broad prior used for Library, not
+an exact posterior conditioned on earlier rewards. Synthetic parity fixtures
+may mark an exact pity reconstruction explicitly. Live hypothetical pity
+counters are sampled once per root particle. Complete
 question-outcome history reconstructs room chances exactly; incomplete
 current-act history remains unsupported. The shared simulator sampler retains
 its previous copied-counter behavior. An already-open boss chest with only

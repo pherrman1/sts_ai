@@ -276,8 +276,8 @@ int main(int argc,char **argv){try{
     add("event_face_trader_public_hp_loss",g);
     g.curEvent=Event::WINDING_HALLS;g.info.hpAmount0=11;g.info.hpAmount1=22;g.info.hpAmount2=4;
     add("event_winding_halls_public_hp_amounts",g);
-    g.curEvent=Event::HYPNOTIZING_COLORED_MUSHROOMS;add("unsupported_mushrooms_reward_pity",g);
-    g.curEvent=Event::MYSTERIOUS_SPHERE;add("unsupported_sphere_reward_pity",g);
+    g.curEvent=Event::HYPNOTIZING_COLORED_MUSHROOMS;add("event_mushrooms_hidden_reward_pity",g);
+    g.curEvent=Event::MYSTERIOUS_SPHERE;add("event_sphere_hidden_reward_pity",g);
     g=base;g.screenState=ScreenState::EVENT_SCREEN;g.curEvent=Event::NEOW;add("neow",g);
     g=base;g.deck=Deck{};g.deck.obtain(g,Card(CardId::BASH));g.screenState=ScreenState::EVENT_SCREEN;
     g.curEvent=Event::AUGMENTER;add("thin_deck_augmenter",g);
@@ -314,12 +314,8 @@ int main(int argc,char **argv){try{
     int passed=0;
     for(const auto &[name,source]:fixtures){
         const auto wire=project(source,path,name);advisor::LiveOocStateV1 live;const auto result=advisor::importLiveOocStateV1(wire,live);
-        if(name=="unsupported_searing_blow_upgrade_history"
-                || name=="unsupported_mushrooms_reward_pity"
-                || name=="unsupported_sphere_reward_pity") {
-            const std::string expected = name=="unsupported_searing_blow_upgrade_history"
-                ? "SEARING_BLOW_UPGRADE_HISTORY_UNQUALIFIED"
-                : "PUBLIC_REWARD_PITY_HISTORY_UNQUALIFIED";
+        if(name=="unsupported_searing_blow_upgrade_history") {
+            const std::string expected = "SEARING_BLOW_UPGRADE_HISTORY_UNQUALIFIED";
             check(!result.ok && result.code=="UNSUPPORTED"
                 && result.message==expected,name+" must fail closed before scoring");
             if(output)output<<wire.dump()<<'\n';

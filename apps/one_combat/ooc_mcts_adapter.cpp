@@ -2099,6 +2099,48 @@ void oocMctsAdapterSelfTest() {
             require(source.curHp==startingHp && source.info.toSelectCards.empty(),
                 "Library belief search does not mutate the public root");
         }
+        for (const auto event : {Event::HYPNOTIZING_COLORED_MUSHROOMS,
+                                 Event::MYSTERIOUS_SPHERE}) {
+            auto eventRoot=detachedCopy(gc);
+            eventRoot.screenState=ScreenState::EVENT_SCREEN;
+            eventRoot.curRoom=Room::EVENT;
+            eventRoot.curEvent=event;
+            eventRoot.setupEvent();
+            int pitySamples=0;
+            std::set<std::pair<int,int>> sampledPity;
+            OocMctsDependencies eventBelief=defaultOocMctsDependencies();
+            eventBelief.sampleHiddenCounters=[&](GameContext &sample,std::mt19937_64 &draws) {
+                sampleLiveOocHiddenPityCounters(sample,draws);
+                sampledPity.emplace(sample.potionChance,sample.cardRarityFactor);
+                ++pitySamples;
+            };
+            OocGameContextModel eventSearch(eventRoot,path,{},sampled,eventBelief);
+            std::optional<OocActionId> fight;
+            for (const auto action : eventSearch.legalActions(0)) {
+                const auto &candidate=eventSearch.candidate(0,action.id);
+                if (candidate.semantic && candidate.semantic->effect==OocSemanticEffect::EVENT_CHOICE
+                        && candidate.primitive.getIdx1()==0) {
+                    fight=action.id;
+                    break;
+                }
+            }
+            require(fight.has_value(),"pity-belief event exposes its public fight choice");
+            std::mt19937_64 draws(event==Event::HYPNOTIZING_COLORED_MUSHROOMS ? 50871 : 50872);
+            for (int n=0;n<16;++n) {
+                const auto successor=eventSearch.sampleSuccessor(0,*fight,draws);
+                auto afterFight=detachedCopy(eventSearch.state(successor));
+                require(afterFight.screenState==ScreenState::BATTLE,
+                    "public fight choice enters its event combat");
+                afterFight.afterBattle();
+                const auto &rewards=afterFight.info.rewardsContainer;
+                require(afterFight.screenState==ScreenState::REWARDS
+                        && rewards.cardRewardCount==1 && rewards.relicCount==1
+                        && rewards.goldRewardCount==1,
+                    "event combat successor generates its hidden card and public reward groups");
+            }
+            require(pitySamples==16 && sampledPity.size()>1,
+                "unqualified event root samples hidden reward pity on every MCTS particle");
+        }
         source=detachedCopy(gc); source.setupTreasureRoom();
         varied(source,OocSemanticEffect::OPEN_CHEST,OocSemanticSource::TREASURE);
         source=detachedCopy(gc); source.screenState=ScreenState::EVENT_SCREEN; source.curEvent=Event::DEAD_ADVENTURER;

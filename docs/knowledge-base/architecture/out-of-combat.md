@@ -349,8 +349,11 @@ callback. This matches the native simulator default and the frozen model's
 constant training feature. A zero value causes unsupported predictions from
 this model.
 Pity-sensitive event branches whose reward generation depends on private
-counter history remain unsupported, including Library, Mushrooms and
-Mysterious Sphere. The live v_win leaf evaluates the exact discrete mixture
+counter history are unsupported by direct V4 scoring, including Library,
+Mushrooms and Mysterious Sphere. Live MCTS supports their hidden reward
+generation by sampling the private pity counters on each root particle; this
+uses an equal public prior and is not an exact posterior conditioned on earlier
+rewards. The live v_win leaf evaluates the exact discrete mixture
 `E[sigmoid(margin)]` over the native reachable ranges
 (`potionChance=-40..100` in steps of 10 and `cardRarityFactor=-40..5`) rather
 than applying the link to an expected margin or conditioning on 0/5. The

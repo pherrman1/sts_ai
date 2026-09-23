@@ -91,9 +91,9 @@ class LiveOocProtocol(unittest.TestCase):
         self.assertEqual(response["evaluators"][0]["status"], "UNSUPPORTED")
         self.assertEqual(response["evaluators"][0]["reason"], "SEARING_BLOW_UPGRADE_HISTORY_UNQUALIFIED")
 
-    def test_event_fights_fail_closed_without_public_reward_pity_history(self):
-        rows = self.run_rows([self.fixtures["unsupported_mushrooms_reward_pity"],
-                              self.fixtures["unsupported_sphere_reward_pity"]], policy="v4")
+    def test_direct_v4_event_scoring_requires_exact_public_reward_pity_history(self):
+        rows = self.run_rows([self.fixtures["event_mushrooms_hidden_reward_pity"],
+                              self.fixtures["event_sphere_hidden_reward_pity"]], policy="v4")
         for response in rows:
             evaluator, = response["evaluators"]
             self.assertEqual(evaluator["status"], "UNSUPPORTED")
