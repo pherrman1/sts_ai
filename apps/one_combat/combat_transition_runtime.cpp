@@ -53,6 +53,10 @@ CombatTransitionRuntime::CombatTransitionRuntime(const std::string &path) {
         {"architecture","deepset64_phase1_v1"},
         {"checkpointSha256","328c65f150ac7daa9db7dc7e2047b77cf8b88ef3c09b3da8ef57d75b7a2fd4c3"},
         {"controlSha256","e9a18951710fdfe9e1a81a2703090a41f039067c670a1d8a0393b5e7e8e0ddfd"},
+        {"preparedSha256","a642671d0956f36405b837755cdf3dfb3c4870cde4a1d6f251046ffc8205a1c9"},
+        {"preparedManifestSha256","fdf1ca760c971b212e60d9cb86beec78afae6b124958aa53c56a8aea5bb92f51"},
+        {"scalarMeanSha256","b210c9834974eb30c80362ae10fbdeb97d15a835915bbbb2239e2b2cc81e18d9"},
+        {"scalarInvSha256","48a4f84b2de751a5e49f157b980a3fbb33f31db330e580ecc4c258a3f424be55"},
         {"qualified",false}});
     const auto strongWdSurvival=nlohmann::json({
         {"architecture","deepset64_linear_strongWd"},

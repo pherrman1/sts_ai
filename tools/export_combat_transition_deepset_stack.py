@@ -23,6 +23,8 @@ DOWNSTREAM_SHA = "c00ed677b8b2b2854fb62982247853982bc58d9fc20afdd96c593bcc6c0742
 POTION_SHA = "06eda953b523ed6b3b9dbc3031bf44408c3bc67f0bc8b7862d28c150448819c1"
 CORPUS_SHA = "74c08aa0a3c30342d86cd45355fe17ffa9046963ad7c8cf71b1938f9cdc1cfde"
 SPLIT_MANIFEST_SHA = "e9043bcceb9d95027711e6ff33afbfe1cae3cf9528f820c0ff68bddbb419db32"
+PREPARED_SHA = "a642671d0956f36405b837755cdf3dfb3c4870cde4a1d6f251046ffc8205a1c9"
+PREPARED_MANIFEST_SHA = "fdf1ca760c971b212e60d9cb86beec78afae6b124958aa53c56a8aea5bb92f51"
 MAGIC = b"COMBAT_TRANSITION_RUNTIME_V2\0"
 
 
@@ -91,6 +93,10 @@ def export(control, survival_checkpoint, prepared, transition_checkpoint,
     prepared_dir = Path(prepared).parent
     prepared_manifest_path = prepared_dir / "prepared_manifest.json"
     split_manifest_path = prepared_dir / "split_manifest.json"
+    if digest(prepared) != PREPARED_SHA:
+        raise ValueError("Phase-1 prepared array identity mismatch")
+    if digest(prepared_manifest_path) != PREPARED_MANIFEST_SHA:
+        raise ValueError("Phase-1 prepared manifest identity mismatch")
     prepared_manifest = json.loads(prepared_manifest_path.read_text())
     if (prepared_manifest.get("corpusSha256") != CORPUS_SHA or
             prepared_manifest.get("rows") != 510030 or
@@ -107,6 +113,8 @@ def export(control, survival_checkpoint, prepared, transition_checkpoint,
     if fit.shape != (458589, 10) or not np.isfinite(mean).all() or not np.isfinite(std).all():
         raise ValueError("Phase-1 TRAIN+VALIDATION normalization population differs")
     inv = (1.0 / np.maximum(std, 1e-6)).astype(np.float32)
+    mean_sha = hashlib.sha256(mean.astype("<f4", copy=False).tobytes()).hexdigest()
+    inv_sha = hashlib.sha256(inv.astype("<f4", copy=False).tobytes()).hexdigest()
 
     survival = torch.load(survival_checkpoint, map_location="cpu", weights_only=False)
     if set(survival) != {"card_id.weight", "relic_id.weight", "potion_id.weight", "potion_slot.weight",
@@ -153,7 +161,9 @@ def export(control, survival_checkpoint, prepared, transition_checkpoint,
     metadata["sources"].update(survival=SURVIVAL_SHA, maxHP=TRANSITION_SHA,
         HP=TRANSITION_SHA, potion=POTION_SHA, downstream=DOWNSTREAM_SHA)
     metadata["experimentalSurvival"] = dict(architecture="deepset64_phase1_v1",
-        checkpointSha256=SURVIVAL_SHA, controlSha256=CONTROL_SHA, qualified=False)
+        checkpointSha256=SURVIVAL_SHA, controlSha256=CONTROL_SHA,
+        preparedSha256=PREPARED_SHA, preparedManifestSha256=PREPARED_MANIFEST_SHA,
+        scalarMeanSha256=mean_sha, scalarInvSha256=inv_sha, qualified=False)
     metadata["experimentalDeepSets"] = dict(architecture="deepset64_shared_transition",
         controlSha256=CONTROL_SHA, maxHpHpCheckpointSha256=TRANSITION_SHA,
         downstreamCheckpointSha256=DOWNSTREAM_SHA, potionCheckpointSha256=POTION_SHA,
@@ -166,6 +176,8 @@ def export(control, survival_checkpoint, prepared, transition_checkpoint,
             stream.write(tensors[name])
     return dict(output=str(Path(output).resolve()), candidateSha256=digest(output),
         controlSha256=CONTROL_SHA, survivalCheckpointSha256=SURVIVAL_SHA,
+        preparedSha256=PREPARED_SHA, preparedManifestSha256=PREPARED_MANIFEST_SHA,
+        scalarMeanSha256=mean_sha, scalarInvSha256=inv_sha,
         maxHpHpCheckpointSha256=TRANSITION_SHA, downstreamCheckpointSha256=DOWNSTREAM_SHA,
         potionCheckpointSha256=POTION_SHA, potionOfflineDecision="DEEPSET_POTION_REJECTED",
         qualified=False, defaultChanged=False)

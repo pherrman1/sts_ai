@@ -11202,9 +11202,20 @@ MCTS CPU rose from `54.14` to `83.77` seconds, while MCTS simulations rose from
 73,218 to 120,399 and CTM preparations from 11,102 to 20,231. The candidate
 reached floor 48 versus floor 33, so the whole-run difference includes a changed
 trajectory and larger search workload; one seed does not establish gameplay
-quality or a stable runtime gain. Same-seed repeated runs were used to retain the
-otherwise-truncated CPU profile output, not to add a seed. No separate numerical
-parity or gameplay qualification was run. [Full profile packet](evidence/ooc_deepset_stack_profile_2026-09-23/README.md).
+quality or a stable runtime gain. No separate numerical parity or gameplay
+qualification was run. [Full profile
+packet](evidence/ooc_deepset_stack_profile_2026-09-23/README.md).
+
+The Phase-1 normalization inputs are bound by the exact prepared-array SHA256
+`a642671d0956f36405b837755cdf3dfb3c4870cde4a1d6f251046ffc8205a1c9` and
+prepared-manifest SHA256
+`fdf1ca760c971b212e60d9cb86beec78afae6b124958aa53c56a8aea5bb92f51`. The
+review-hardened re-export binds these inputs and the computed mean and
+inverse-standard-deviation vector hashes in candidate metadata. Its tensor
+payload matches the measured candidate byte-for-byte; its metadata-only change
+was not rerun for timing. Only the second execution's timing/profile was
+retained. The first execution per arm was a functional repetition and its
+timing was not captured.
 
 Knowledge impact: this timing smoke is recorded here; model qualification,
 standard CTM artifact and runtime defaults remain unchanged.
