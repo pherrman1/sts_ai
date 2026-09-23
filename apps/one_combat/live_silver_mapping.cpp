@@ -269,7 +269,11 @@ std::optional<sts::MonsterStatus> monsterStatusForMonster(const std::string &mon
     return monsterStatus(id);
 }
 bool nativeImplicitMonsterPower(const std::string &monsterId, const std::string &id,
-                                int amount, int playerTurn) {
+                                int amount, int playerTurn, int nativeMiscInfo) {
+    // The phase-one Awakened One marker has no effect beyond the phase
+    // transition. Native miscInfo is the phase bit: zero until rebirth.
+    if (id == "Unawakened")
+        return monsterId == "AwakenedOne" && amount == -1 && nativeMiscInfo == 0;
     // Vanilla Exploder starts with Explosive(3) and decrements it during each
     // monster turn. Native Exploder scripts the same two slams and explosion
     // through its move history, without a separate status slot. Only accept

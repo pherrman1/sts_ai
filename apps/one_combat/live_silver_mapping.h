@@ -38,7 +38,7 @@ std::optional<sts::MonsterStatus> monsterStatus(const std::string &javaId);
 std::optional<sts::MonsterStatus> monsterStatusForMonster(const std::string &monsterId,
                                                         const std::string &javaId);
 bool nativeImplicitMonsterPower(const std::string &monsterId, const std::string &javaId,
-                                int amount, int playerTurn);
+                                int amount, int playerTurn, int nativeMiscInfo);
 std::optional<PlayerStatus> playerStatus(const std::string &javaId);
 std::optional<sts::CardSelectTask> cardSelectTask(const std::string &javaId);
 

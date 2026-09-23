@@ -1078,9 +1078,9 @@ SilverRootImportResult importSilverRootGeneric(const json &observation,
                     || !power.contains("amount") || !power.at("amount").is_number_integer())
                     return unsupported("silver_unmapped_monster_power");
                 const auto powerId = power.at("id").get<std::string>();
-                if (powerId == "Explosive") {
+                if (powerId == "Explosive" || powerId == "Unawakened") {
                     if (!live_silver::nativeImplicitMonsterPower(idText, powerId,
-                            power.at("amount").get<int>(), result.playerTurn))
+                            power.at("amount").get<int>(), result.playerTurn, m.miscInfo))
                         return unsupported("silver_unmapped_monster_power");
                     continue;
                 }

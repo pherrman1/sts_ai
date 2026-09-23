@@ -881,16 +881,22 @@ void verifyRuntimeMoveBoundary() {
     expect("Exploder", 2, MonsterMoveId::EXPLODER_EXPLODE);
     for (int turn = 1; turn <= 3; ++turn) {
         if (!one_combat::advisor::live_silver::nativeImplicitMonsterPower(
-                "Exploder", "Explosive", 4 - turn, turn)
+                "Exploder", "Explosive", 4 - turn, turn, 0)
             || one_combat::advisor::live_silver::nativeImplicitMonsterPower(
-                "Exploder", "Explosive", 3, turn + 1))
+                "Exploder", "Explosive", 3, turn + 1, 0))
             throw std::runtime_error("Exploder countdown/native script boundary changed");
     }
     if (one_combat::advisor::live_silver::nativeImplicitMonsterPower(
-            "Spiker", "Explosive", 3, 1)
+            "Spiker", "Explosive", 3, 1, 0)
         || one_combat::advisor::live_silver::nativeImplicitMonsterPower(
-            "Exploder", "Thorns", 3, 1))
-        throw std::runtime_error("Exploder implicit power accepted on another entity");
+            "Exploder", "Thorns", 3, 1, 0)
+        || !one_combat::advisor::live_silver::nativeImplicitMonsterPower(
+            "AwakenedOne", "Unawakened", -1, 1, 0)
+        || one_combat::advisor::live_silver::nativeImplicitMonsterPower(
+            "AwakenedOne", "Unawakened", -1, 1, 1)
+        || one_combat::advisor::live_silver::nativeImplicitMonsterPower(
+            "Cultist", "Unawakened", -1, 1, 0))
+        throw std::runtime_error("implicit monster power accepted on a mismatched entity or phase");
     expect("GiantHead", 1, MonsterMoveId::GIANT_HEAD_GLARE);
     expect("GiantHead", 2, MonsterMoveId::GIANT_HEAD_IT_IS_TIME);
     expect("GiantHead", 3, MonsterMoveId::GIANT_HEAD_COUNT);
