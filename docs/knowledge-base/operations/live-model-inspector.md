@@ -744,6 +744,9 @@ Selectors named in the shared enum but absent from the isolated Silver port
 return `silver_selection_task_not_in_port` before search instead of reaching
 its assertion path. Hologram is supported through the live discard UUID path;
 Meditate, Nightmare, Recycle, Seek, and Setup remain outside the current port.
+Neow's two-card removal grid has `forPurge=false` in vanilla; the inspector
+qualifies it as `remove` only in `NeowRoom` with exactly two required picks,
+while `forTransform` remains authoritative for the two-card transform.
 Combat capture uses the room's `COMBAT` phase, including event rooms, rather
 than requiring a monster-room subclass. Selection boundary detection is
 independent of native serializer support: an unknown selection task remains

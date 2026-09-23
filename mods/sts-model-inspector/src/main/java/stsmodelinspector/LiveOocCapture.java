@@ -1166,8 +1166,11 @@ final class LiveOocCapture {
         for (int i = 0; i < offered.size(); ++i)
             selectionCards.add(object("deckIndex", indices.get(i), "card", card((AbstractCard)offered.get(i))));
         String bottle = bottleSelectorType((String)field(AbstractDungeon.gridSelectScreen, "tipMsg"), offered);
-        out.put("details", object("type", upgrade ? "upgrade" : AbstractDungeon.gridSelectScreen.forPurge ? "remove"
-                        : AbstractDungeon.gridSelectScreen.forTransform ? "transform" : bottle,
+        String selectorType = selectorType(upgrade, AbstractDungeon.gridSelectScreen.forPurge,
+                AbstractDungeon.gridSelectScreen.forTransform, bottle,
+                AbstractDungeon.getCurrRoom() == null ? "" : AbstractDungeon.getCurrRoom().getClass().getSimpleName(),
+                ((Number)field(AbstractDungeon.gridSelectScreen, "numCards")).intValue());
+        out.put("details", object("type", selectorType,
                 "requiredPicks", ((Number)field(AbstractDungeon.gridSelectScreen, "numCards")).intValue(),
                 "completedPicks", selected.size(), "cards", selectionCards,
                 "selectedDeckIndices", selected, "confirm", confirm));
@@ -1193,6 +1196,18 @@ final class LiveOocCapture {
                     || ((AbstractCard)card).type != type) matching = false;
             if (matching) return "bottle";
         }
+        return "other";
+    }
+
+    static String selectorType(boolean upgrade, boolean purge, boolean transform, String bottle,
+                               String roomSimpleName, int requiredPicks) {
+        if (upgrade) return "upgrade";
+        if (purge) return "remove";
+        if (transform) return "transform";
+        if (!"other".equals(bottle)) return bottle;
+        // Neow's REMOVE_TWO bonus opens a normal grid selector without setting
+        // forPurge. The transform variant sets forTransform and was handled above.
+        if ("NeowRoom".equals(roomSimpleName) && requiredPicks == 2) return "remove";
         return "other";
     }
     static boolean bottlePromptMatches(String prompt, String description, String relicName, String period) {

@@ -47,6 +47,10 @@ public final class LiveOocCaptureTest {
                 || LiveOocCapture.bottlePromptMatches(null,
                     "Choose a card for ", "Bottled Tornado", "."))
             throw new AssertionError("bottle selector prompt identity widened");
+        if (!"remove".equals(LiveOocCapture.selectorType(false, false, false, "other", "NeowRoom", 2))
+                || !"transform".equals(LiveOocCapture.selectorType(false, false, true, "other", "NeowRoom", 2))
+                || !"other".equals(LiveOocCapture.selectorType(false, false, false, "other", "MonsterRoom", 2)))
+            throw new AssertionError("Neow REMOVE_TWO selector was not distinguished from transform/unknown grids");
         if (!"GAMBLE".equals(STSModelInspector.handSelectionTask("", true, true, 99)))
             throw new AssertionError("Gambler's Brew hand selector was not classified as GAMBLE");
         if (!"".equals(STSModelInspector.handSelectionTask("", false, true, 99)))
