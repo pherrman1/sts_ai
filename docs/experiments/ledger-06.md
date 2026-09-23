@@ -11200,14 +11200,16 @@ requested a separate full-run gameplay diagnostic using the same frozen
 `3d28adfcf3c989e338eff9ef85e4a5c6d8794497` into experiment head
 `9fe3cb05b4dfd367f9db1370d245cb8d1a4f978e`; no history was rewritten.
 
-Native inference matched all 64 frozen VALIDATION roots: 411 actions,
+After current main `4e4da3b154e59f193c77f972e9b5e2338c52be3c` was merged, native
+inference was rebuilt from code commit `5fae397a` and matched all 64 frozen
+VALIDATION roots: 411 actions,
 maximum prior error `8.799900734768329e-07`, maximum logit error
 `2.86102294921875e-06`, under the required `1e-5` prior and `1e-4` logit
 tolerances. Coverage included card occurrence cost/special data, potion
 target/discard, multi-monster targeting, unknown-pile permutation invariance,
 observed-pile order sensitivity, absent monsters, and END_TURN. Warm latency
-over 32 repeats/root was median `7,843.991 us`, p95 `11,582.133 us`, mean
-`7,468.351 us`; the model loaded in `415,031 us`, and the artifact was
+over 32 repeats/root was median `7,844.968 us`, p95 `11,561.202 us`, mean
+`7,495.140 us`; the model loaded in `446,145 us`, and the artifact was
 4,792,455 bytes. The user waived the proposed 5 ms/root stop threshold, so the
 bounded smoke continued at this measured cost.
 
@@ -11232,6 +11234,14 @@ The raw `.csv.meta.json` files identify executable SHA
 integration evidence only, not candidate-SHA smoke evidence. Do not rerun these
 old smoke seeds to repair provenance; the future frozen screen runner requires
 an exact executable SHA and per-call latency samples.
+
+Before a later gameplay screen, the paired analysis protocol is frozen in the
+evidence packet: 5,000 paired bootstrap replicates with seed `20260923`, exact
+two-sided binomial test on discordant pairs, and `net_discordant` thresholds
+`>=4` / `<=-4` / otherwise for promising / unfavorable / inconclusive. The
+runner requires a single `one_combat` SHA-256 and model SHA-256 immediately
+before every arm, and writes both hashes plus the fixed shared flags into every
+summary. The 32-seed run remains unrun pending final independent review.
 
 Focused checks passed: `silver_search_optimization`,
 `silver_repeated_reroot_canary`, `silver_prior_native_export`, and the two

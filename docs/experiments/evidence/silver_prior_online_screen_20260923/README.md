@@ -22,8 +22,7 @@ independent implementation review. After review, use exactly seeds
 - Frozen checkpoint: `b756c3e6576bdb53085f24aeb1102e4e2fe55fd7469c55546c99f068ccf40e24`
 - Native artifact: `/home/philippherrmann/Documents/sts/silver-prior-model-v1/native/T2.native`
 - Native artifact SHA-256: `b3a4c5e4bbe91b7f17dadf588408a95199ec5b8b25f732d99ef0966c0ff05fdb`
-- Native parity: [`native-parity.json`](native-parity.json)
-- Native latency: [`native-latency.json`](native-latency.json)
+- Native parity and latency were rerun from code commit `5fae397aef34bc0ec71f6af009a86d6c332423a6` after merging current `main`: [`native-parity.json`](native-parity.json), [`native-latency.json`](native-latency.json). Parity executable SHA-256: `3abbe9b9249e4dc3398550e3ff1fb9f4e297219c089167d2134b1c146959ed2d`.
 - Corrected all-combat smoke aggregation: [`smoke.json`](smoke.json), raw CSV/log files in this directory
 
 The smoke parser sums every `[silver-combat]` record for each run. Across the
@@ -36,6 +35,13 @@ the then-current PR candidate `fb9e0cf9510ac612fdc3f521076ca093d1fb55b5`.
 Treat these as historical working-tree integration evidence, not a smoke of
 that candidate SHA; they were not rerun. The new screen runner validates each
 combat record and metadata SHA, and enables raw per-call samples.
+
+The post-merge native parity rerun from `5fae397aef34bc0ec71f6af009a86d6c332423a6` still passes all 64 roots / 411 actions:
+maximum prior error `8.799900734768329e-07` and maximum logit error
+`2.86102294921875e-06`. Warm latency was median `7,844.968 us`, p95
+`11,561.202 us`, mean `7,495.140 us`; model load was `446,145.058 us`. The
+rebuilt `one_combat` SHA-256 pinned for a future screen is
+`fc41e47d4a7d78f0922144d480a3dbeed674cf6fa1db21e97c568ff836a40197`.
 
 The smoke comparison is paired by seed, Ascension 0, 1,000 simulations per
 combat decision, project-fair play, native OOC, Silver combat, Act 3 stop,

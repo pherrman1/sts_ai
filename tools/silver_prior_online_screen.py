@@ -357,6 +357,13 @@ def summarize_screen(summary_paths: list[Path], expected_git_sha: str,
         flags = run.get("run_flags")
         if flags != FROZEN_RUN_FLAGS:
             raise ValueError(f"run flags differ from frozen protocol for {key}")
+        expected_arm_flag = (
+            {"STS_SILVER_ROOT_PRIOR_MODEL": "unset"}
+            if key[0] == "CONTROL" else
+            {"STS_SILVER_ROOT_PRIOR_MODEL": "frozen artifact"}
+        )
+        if run.get("arm_specific_flags") != expected_arm_flag:
+            raise ValueError(f"arm-specific model flag differs from frozen protocol for {key}")
         run_flags.add(json.dumps(flags, sort_keys=True))
         telemetry = run.get("telemetry", {})
         counters = telemetry.get("counters", {})
@@ -467,6 +474,9 @@ def _run_pair(repo: Path, binary: Path, artifact: Path, output_dir: Path,
         result["artifact_sha256_prelaunch"] = artifact_sha
         result["provenance"]["binary_sha256"] = binary_sha
         result["run_flags"] = dict(FROZEN_RUN_FLAGS)
+        result["arm_specific_flags"] = {
+            "STS_SILVER_ROOT_PRIOR_MODEL": "unset" if arm == "CONTROL" else "frozen artifact"
+        }
         summary_path.write_text(json.dumps(result, sort_keys=True, indent=2) + "\n")
         results[arm] = result
     return {"seed": seed, "arm_order": list(arms), "runs": results}

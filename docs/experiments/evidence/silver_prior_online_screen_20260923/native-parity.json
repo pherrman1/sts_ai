@@ -1,5 +1,6 @@
 {
   "actions": 411,
+  "artifact_file_sha256": "b3a4c5e4bbe91b7f17dadf588408a95199ec5b8b25f732d99ef0966c0ff05fdb",
   "artifact_manifest_sha256": "9ab6f1481b08cbf2d2b2b0123382b4d6ee6153c6a600c926ac5e2ba4a3d83b77",
   "cases": {
     "absent_monster": 63,
@@ -11,13 +12,14 @@
     "potion_target": 9,
     "unknown_pile_permutation_invariant": 64
   },
+  "executable_sha256": "3abbe9b9249e4dc3398550e3ff1fb9f4e297219c089167d2134b1c146959ed2d",
   "latency": {
     "artifact_bytes": 4792455,
-    "mean_us_per_root": 7468.35085742186,
-    "median_us_per_action": 1221.4487201946472,
-    "median_us_per_root": 7843.991,
-    "model_load_micros": 415031.092,
-    "p95_us_per_root": 11582.133,
+    "mean_us_per_root": 7495.139873046873,
+    "median_us_per_action": 1221.6008564476886,
+    "median_us_per_root": 7844.968,
+    "model_load_micros": 446145.058,
+    "p95_us_per_root": 11561.202,
     "warm_repeats_per_root": 32
   },
   "logit_tolerance": 0.0001,
@@ -27,5 +29,6 @@
   "passed": true,
   "prior_tolerance": 1e-05,
   "roots": 64,
-  "schema": "silver_prior_native_parity_v1"
+  "schema": "silver_prior_native_parity_v1",
+  "source_commit": "5fae397aef34bc0ec71f6af009a86d6c332423a6"
 }

@@ -114,6 +114,9 @@ class OnlineScreenParserTests(unittest.TestCase):
                                        "binary_sha256": "a" * 64},
                         "artifact_sha256_prelaunch": screen.EXPECTED_ARTIFACT_SHA256,
                         "run_flags": dict(screen.FROZEN_RUN_FLAGS),
+                        "arm_specific_flags": {
+                            "STS_SILVER_ROOT_PRIOR_MODEL": "frozen artifact" if learned else "unset"
+                        },
                         "telemetry": {
                             "latency_samples_available": True,
                             "prior_inference_samples_micros": [6000] if learned else [],
