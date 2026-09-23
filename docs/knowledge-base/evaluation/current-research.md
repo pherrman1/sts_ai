@@ -1571,11 +1571,17 @@ the [ledger-06 result](../../experiments/ledger-06.md), and the
 [locked-test evidence packet](../../experiments/evidence/silver_prior_locked_test_v1_20260922/README.md).
 
 The separate pre-review gameplay integration smoke used two explicitly
-reserved, non-scientific seeds. All four runs completed; treatment telemetry
-recorded 42 prior evaluations and 42 root-PUCT decisions total with zero
-surface failures, while control made no model calls. Native inference latency
-was above 5 ms/root; the user explicitly waived that proposed stop threshold.
-This confirms bounded runtime execution and retained reroot operation only.
+reserved, non-scientific seeds. The corrected parser sums every combat record:
+all four runs completed; treatment telemetry recorded 901 prior evaluations
+and 901 root-PUCT decisions total with zero surface failures, while control
+made no model calls. Treatment mean inference latency was 6.679 ms/call and
+6.930 ms/call on the respective seeds. The legacy logs lack raw per-call
+samples, so exact pooled median/p95 are unavailable. Their CSV metadata reports
+executable SHA `1dc14cef9f5b6602fe84bd2a266347757245d78c`, not the then-current
+candidate `fb9e0cf9510ac612fdc3f521076ca093d1fb55b5`; this is working-tree
+integration evidence, not candidate-SHA evidence. The user's 5 ms waiver
+allowed the bounded smoke to complete. This confirms runtime execution and
+retained reroot operation only.
 The planned 32-seed screen remains gated on independent implementation review
 and is not qualification or default-promotion evidence. See the [online smoke
 packet](../../experiments/evidence/silver_prior_online_screen_20260923/README.md).

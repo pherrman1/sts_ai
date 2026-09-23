@@ -24,13 +24,36 @@ independent implementation review. After review, use exactly seeds
 - Native artifact SHA-256: `b3a4c5e4bbe91b7f17dadf588408a95199ec5b8b25f732d99ef0966c0ff05fdb`
 - Native parity: [`native-parity.json`](native-parity.json)
 - Native latency: [`native-latency.json`](native-latency.json)
-- Smoke outcomes and per-combat telemetry: [`smoke.json`](smoke.json), raw CSV/log files in this directory
+- Corrected all-combat smoke aggregation: [`smoke.json`](smoke.json), raw CSV/log files in this directory
+
+The smoke parser sums every `[silver-combat]` record for each run. Across the
+two LEARNED runs it found 901 prior evaluations, all matching root-PUCT calls,
+and zero prior surface failures. Mean inference cost was 6.679 ms/call on seed
+24109998 and 6.930 ms/call on seed 24109999. The legacy logs have no per-call
+samples, so pooled median and p95 cannot be recovered. The four CSV metadata
+files identify executable SHA `1dc14cef9f5b6602fe84bd2a266347757245d78c`, not
+the then-current PR candidate `fb9e0cf9510ac612fdc3f521076ca093d1fb55b5`.
+Treat these as historical working-tree integration evidence, not a smoke of
+that candidate SHA; they were not rerun. The new screen runner validates each
+combat record and metadata SHA, and enables raw per-call samples.
 
 The smoke comparison is paired by seed, Ascension 0, 1,000 simulations per
 combat decision, project-fair play, native OOC, Silver combat, Act 3 stop,
 keys off, one thread, fixed root budgets, adaptive off, 32,768 allocated reuse
 cap, exact visit lock off, and rho racing off. The treatment differs only by
 loading the frozen native prior; the existing policy prior remains unchanged.
+
+For the later screen, build and review one exact commit, then invoke
+`tools/silver_prior_online_screen.py run-pair` once per authorized seed with
+that commit SHA, its `one_combat` binary, the frozen artifact, and a fresh
+output directory. Each pair checks out a clean exact SHA, verifies the artifact
+before both processes, alternates arm order by seed, uses `tools/seed_guard.sh`,
+and writes one validated JSON summary per arm. After all pairs complete,
+`tools/silver_prior_online_screen.py summarize-screen --expected-git-sha SHA
+<64 summary paths>` rejects missing/duplicate seeds, mismatched executable
+metadata, artifact drift, latency-sample omissions, simulation-budget errors,
+or any nonzero runtime failure counter. This packet currently contains no
+screen run results.
 
 ## Interpretation boundary
 

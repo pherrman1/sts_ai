@@ -649,6 +649,10 @@ add_test(NAME silver_prior_native_export COMMAND python3 -m unittest
     tests.test_export_silver_prior_native -v)
 set_tests_properties(silver_prior_native_export PROPERTIES
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "tooling;smoke")
+add_test(NAME silver_prior_online_screen_parser COMMAND python3 -m unittest
+    tests.test_silver_prior_online_screen -v)
+set_tests_properties(silver_prior_online_screen_parser PROPERTIES
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} LABELS "tooling;smoke")
 add_test(NAME silver_prior_root_screen COMMAND python3 -m unittest
     tests.test_silver_prior_root_screen -v)
 set_tests_properties(silver_prior_root_screen PROPERTIES

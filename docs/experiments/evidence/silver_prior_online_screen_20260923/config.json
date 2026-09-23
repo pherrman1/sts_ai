@@ -15,6 +15,21 @@
     "bytes": 4792455
   },
   "smoke_seeds": [24109998, 24109999],
+  "smoke_executable_git_sha_reported_by_metadata": "1dc14cef9f5b6602fe84bd2a266347757245d78c",
+  "smoke_candidate_sha_at_the_time": "fb9e0cf9510ac612fdc3f521076ca093d1fb55b5",
+  "smoke_provenance_classification": "working-tree integration evidence; not candidate-SHA-bound",
+  "smoke_aggregate": {
+    "24109998": {
+      "control": {"combats": 24, "decisions": 383, "simulations": 383000, "prior_evaluations": 0},
+      "learned": {"combats": 24, "decisions": 393, "simulations": 393000, "prior_evaluations": 380, "root_puct_decisions": 380, "prior_inference_micros": 2538128, "mean_micros_per_call": 6679.284210526316}
+    },
+    "24109999": {
+      "control": {"combats": 28, "decisions": 540, "simulations": 540000, "prior_evaluations": 0},
+      "learned": {"combats": 28, "decisions": 565, "simulations": 565000, "prior_evaluations": 521, "root_puct_decisions": 521, "prior_inference_micros": 3610768, "mean_micros_per_call": 6930.456813819577}
+    },
+    "pooled_latency_percentiles_available": false,
+    "note": "Legacy smoke telemetry did not retain raw per-call samples; exact mean only."
+  },
   "arm_order": {
     "24109998": ["CONTROL", "LEARNED"],
     "24109999": ["LEARNED", "CONTROL"]
@@ -61,6 +76,9 @@
   "scientific_screen": {
     "seeds": [24100000, 24100031],
     "review_required_before_run": true,
-    "status": "not run"
+    "status": "not run",
+    "runner": "tools/silver_prior_online_screen.py",
+    "latency_samples_required": true,
+    "artifact_sha256_rechecked_before_each_process": "b3a4c5e4bbe91b7f17dadf588408a95199ec5b8b25f732d99ef0966c0ff05fdb"
   }
 }

@@ -11214,15 +11214,24 @@ bounded smoke continued at this measured cost.
 Paired smoke seeds `24109998` and `24109999` completed in both control and
 learned arms (each run Ascension 0, Act 3 stop, 1,000 simulations/decision,
 project-fair, native OOC, one thread, 32,768 allocated reuse cap, adaptive,
-visit-lock, and rho racing off). CONTROL made zero prior calls. LEARNED made
-25 evaluations / 25 PUCT roots on seed 24109998 and 17 / 17 on seed 24109999;
-both had zero surface failures and correct exact simulation budgets. All four
-runs recorded retained-root reuse and zero conversion, semantic-resolution,
-transaction, and knowledge failures. The first treatment attempt exposed a
-retained-root edge-surface duplication; live inference now validates existing
-retained edges without appending a duplicate surface. Smoke outcomes were
-seed 24109998: both lost; seed 24109999: both won. They are integration checks,
-not a gameplay-quality comparison.
+visit-lock, and rho racing off). CONTROL made zero prior calls. Summing every
+combat telemetry line, seed 24109998 had 24 combats / 383 decisions / 383,000
+simulations in CONTROL and 24 / 393 / 393,000 in LEARNED; LEARNED made 380
+prior evaluations and 380 root-PUCT calls. Seed 24109999 had 28 / 540 /
+540,000 in CONTROL and 28 / 565 / 565,000 in LEARNED; LEARNED made 521 prior
+evaluations and 521 root-PUCT calls. All four runs had zero surface,
+conversion, semantic-resolution, transaction, and knowledge failures. Exact
+mean inference time was 6.679 ms/call and 6.930 ms/call for the two LEARNED
+runs. Old per-combat latency percentiles cannot be pooled because raw samples
+were not recorded. Smoke outcomes were seed 24109998: both lost; seed 24109999:
+both won. They are integration checks, not a gameplay-quality comparison.
+
+The raw `.csv.meta.json` files identify executable SHA
+`1dc14cef9f5b6602fe84bd2a266347757245d78c`, not then-current candidate
+`fb9e0cf9510ac612fdc3f521076ca093d1fb55b5`. Keep these as working-tree
+integration evidence only, not candidate-SHA smoke evidence. Do not rerun these
+old smoke seeds to repair provenance; the future frozen screen runner requires
+an exact executable SHA and per-call latency samples.
 
 Focused checks passed: `silver_search_optimization`,
 `silver_repeated_reroot_canary`, `silver_prior_native_export`, and the two

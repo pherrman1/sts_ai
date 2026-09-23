@@ -1388,6 +1388,8 @@ void runSilverCombat(ScumSearchAgent2 &agent, GameContext &gc, BattleContext &bc
         && g_silverLiveOptions.leafVNetBlend > 0.0;
     const bool emitTelemetry = std::getenv("STS_SILVER_TELEMETRY")
         && std::atoi(std::getenv("STS_SILVER_TELEMETRY")) != 0;
+    const bool emitPriorLatencySamples = std::getenv("STS_SILVER_PRIOR_LATENCY_SAMPLES")
+        && std::atoi(std::getenv("STS_SILVER_PRIOR_LATENCY_SAMPLES")) != 0;
     // Aggregate reroot-cause counters are advertised by STS_SILVER_TELEMETRY,
     // so populate their value-only records even when the authoritative CSV is
     // disabled. Both options are opt-in; default gameplay retains the cheap
@@ -1827,8 +1829,15 @@ void runSilverCombat(ScumSearchAgent2 &agent, GameContext &gc, BattleContext &bc
                   << " root_puct_decisions=" << d.rootPuctDecisions
                   << " prior_inference_mean_micros=" << (d.priorInferenceLatencyMicros.empty() ? 0.0 : static_cast<double>(d.priorInferenceMicros)/d.priorInferenceLatencyMicros.size())
                   << " prior_inference_p50_micros=" << rolloutPercentile(d.priorInferenceLatencyMicros,0.50)
-                  << " prior_inference_p95_micros=" << rolloutPercentile(d.priorInferenceLatencyMicros,0.95)
-                  << " transaction_subdecisions=" << d.transactionSubdecisions
+                  << " prior_inference_p95_micros=" << rolloutPercentile(d.priorInferenceLatencyMicros,0.95);
+        if (emitPriorLatencySamples) {
+            line << " prior_inference_samples_micros=";
+            for (std::size_t i = 0; i < d.priorInferenceLatencyMicros.size(); ++i) {
+                if (i != 0) line << ',';
+                line << d.priorInferenceLatencyMicros[i];
+            }
+        }
+        line << " transaction_subdecisions=" << d.transactionSubdecisions
                   << " transaction_decisions=" << d.transactionDecisions
                   << " adaptive_escalations=" << d.adaptiveEscalations
                   << " exact_visit_lock_checks=" << d.exactVisitLockChecks

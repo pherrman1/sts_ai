@@ -1063,6 +1063,11 @@ public:
     // The 32k cap deliberately forces setRoot when the retained graph is full.
     void beginAt(const sts::BattleContext &state, const SilverSearchConfig &config,
                  bool selectedActionExecuted = false) {
+        // Learned priors belong to exactly one materialized root. Clear them
+        // before any reroot/reset path so transactional CARD_SELECT roots and
+        // every later private subdecision cannot inherit the previous root's
+        // edge-indexed prior vector.
+        if (searcher != nullptr) searcher->replayRootPriors.clear();
         inheritedVisits = 0;
         rerootMissDiagnostic.clear();
         collectDecisionDiagnostics = config.collectDecisionDiagnostics
@@ -2759,6 +2764,10 @@ SelectionTransactionTrace runSequentialSelectionTransaction(
             trace.failure = "not a sequential multi-select root";
             return trace;
         }
+        if (session.searcher != nullptr && !session.searcher->replayRootPriors.empty()) {
+            trace.failure = "root_prior_leaked_into_sequential_selection";
+            return trace;
+        }
 
         const int rerootExactBefore = session.rerootExact;
         const int rerootFallbackBefore = session.rerootFallback;
@@ -2766,7 +2775,13 @@ SelectionTransactionTrace runSequentialSelectionTransaction(
         // loop means the upstream UI state stopped making progress.
         const int maxSubdecisions = state.cards.cardsInHand + 1;
         for (int step = 0; step < maxSubdecisions; ++step) {
-            if (step > 0) session.beginAt(state, config, true);
+            if (step > 0) {
+                session.beginAt(state, config, true);
+                if (session.searcher != nullptr && !session.searcher->replayRootPriors.empty()) {
+                    trace.failure = "root_prior_leaked_into_sequential_selection_subdecision";
+                    return trace;
+                }
+            }
 
             SilverDecisionResult decision;
             if (config.exactVisitLockEnabled || config.rhoRacingEnabled) {
@@ -2887,7 +2902,6 @@ SilverDecisionResult runSilverDecision(SilverSearchSession &session,
         result.rerootFallback = session.rerootFallback - rerootFallbackBefore;
         result.inheritedVisits = session.inheritedVisits;
         result.rerootMissDiagnostic = session.rerootMissDiagnostic;
-        if (session.searcher != nullptr) session.searcher->replayRootPriors.clear();
         if (config.rootPuctEnabled) {
             if (state.inputState != sts::InputState::PLAYER_NORMAL || config.rootPuctC != 2.5
                     || config.rootPriors.size() < 2

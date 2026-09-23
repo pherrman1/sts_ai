@@ -1364,6 +1364,28 @@ int main(int argc, char **argv) {
     silver_bridge::SilverSearchConfig transactionConfig;
     transactionConfig.simulationsPerDecision = 16;
     transactionConfig.collectDecisionDiagnostics = true;
+    // Reuse one session across an ordinary learned-prior root and the private
+    // GAMBLE transaction. The transaction boundary must clear the prior from
+    // the preceding PLAYER_NORMAL root before searching CARD_SELECT edges.
+    const auto priorRootActions = silver_bridge::enumerateSilverLegalActions(firstWire);
+    auto priorRootConfig = transactionConfig;
+    priorRootConfig.rootPuctEnabled = true;
+    priorRootConfig.rootPriors.assign(priorRootActions.size(),
+        1.0 / static_cast<double>(priorRootActions.size()));
+    for (const auto &action : priorRootActions)
+        priorRootConfig.rootPuctActionFingerprints.push_back(
+            silver_bridge::semanticActionFingerprint(action));
+    auto priorThenGambleSession = silver_bridge::makeSilverSearchSession();
+    const auto priorRootDecision = silver_bridge::runSilverDecision(
+        *priorThenGambleSession, firstWire, priorRootConfig);
+    check(priorRootDecision.accepted && priorRootDecision.simulations == 16,
+          "learned-prior lifecycle fixture must first search an ordinary PLAYER_NORMAL root");
+    const auto priorThenGamble = silver_bridge::runSequentialSelectionTransaction(
+        *priorThenGambleSession, convert(transactionLive, gc, transactionKnowledge),
+        transactionConfig);
+    check(priorThenGamble.accepted && priorThenGamble.finalConfirmation
+              && priorThenGamble.searchDecisions >= 2,
+          "GAMBLE CARD_SELECT transaction must clear the preceding PLAYER_NORMAL root prior before every private subdecision");
     const auto ordinaryTransactionDecision = silver_bridge::runSilverDecision(
         convert(transactionLive, gc, transactionKnowledge), transactionConfig);
     check(!ordinaryTransactionDecision.accepted
