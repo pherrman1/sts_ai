@@ -21,6 +21,14 @@ using namespace sts;
 
 thread_local std::int64_t simulationIdx = 0; // for debugging
 
+static bool potionDiscardEnablesEntropicBrew(const BattleContext &bc, int discardIdx) {
+    if (bc.player.hasRelic<R::SOZU>() || bc.potions[discardIdx] == Potion::ENTROPIC_BREW) return false;
+    for (int i = 0; i < bc.potionCapacity; ++i) {
+        if (i != discardIdx && bc.potions[i] == Potion::ENTROPIC_BREW) return true;
+    }
+    return false;
+}
+
 namespace sts::search {
     thread_local search::BattleScumSearcher2 *g_debug_scum_search;
     // When true, evaluateEndState uses diminishing returns for HP above half
@@ -981,11 +989,12 @@ void search::BattleScumSearcher2::enumeratePotionActions(search::BattleScumSearc
         }
         ++foundPotions;
 
-        // Fairy in a Bottle is NOT usable or discardable by the player -- it auto-procs
-        // on lethal in Player::wouldDie. Enumerating a "use" action let the search throw
-        // it away for zero benefit (drinkPotion's Fairy case is a no-op assert compiled
-        // out under NDEBUG), forfeiting the revive. Never offer an action for it.
-        // (Matches SimpleAgent canDrink and isValidPotionAction, which already exclude it.)
+        if (potionDiscardEnablesEntropicBrew(bc, pIdx)) {
+            node.edges.push_back({Action(ActionType::POTION, pIdx, -1)});
+        }
+
+        // Fairy in a Bottle is not usable in combat; it auto-procs on lethal.
+        // It can still be discarded when the freed slot enables Entropic Brew.
         if (p == Potion::FAIRY_POTION) {
             continue;
         }
@@ -993,8 +1002,6 @@ void search::BattleScumSearcher2::enumeratePotionActions(search::BattleScumSearc
         if (p == Potion::SMOKE_BOMB) {
             if (!bc.smokeBombEscapeBlocked()) {
                 node.edges.push_back({Action(ActionType::POTION, pIdx)});
-            } else {
-                node.edges.push_back({Action(ActionType::POTION, pIdx, -1)});
             }
             continue;
         }
@@ -1006,7 +1013,6 @@ void search::BattleScumSearcher2::enumeratePotionActions(search::BattleScumSearc
 
         // potion requires target
         if (!hasValidTarget) {
-            node.edges.push_back({Action(ActionType::POTION, pIdx, -1)});
             continue;
         }
 

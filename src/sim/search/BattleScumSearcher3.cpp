@@ -24,6 +24,14 @@
 
 using namespace sts;
 
+static bool potionDiscardEnablesEntropicBrew(const BattleContext &bc, int discardIdx) {
+    if (bc.player.hasRelic<R::SOZU>() || bc.potions[discardIdx] == Potion::ENTROPIC_BREW) return false;
+    for (int i = 0; i < bc.potionCapacity; ++i) {
+        if (i != discardIdx && bc.potions[i] == Potion::ENTROPIC_BREW) return true;
+    }
+    return false;
+}
+
 namespace sts::search {
 
 extern double g_vnetAlpha;   // from BattleScumSearcher2.cpp
@@ -4071,13 +4079,16 @@ void enumerateActionsForNode(BattleScumSearcher3::Node &node,
                 }
             }
             for (int p = 0; p < bc.potionCapacity; ++p) {
-                if (bc.potions[p] == Potion::EMPTY_POTION_SLOT
-                    || bc.potions[p] == Potion::FAIRY_POTION) continue;
+                if (bc.potions[p] == Potion::EMPTY_POTION_SLOT) continue;
+                if (potionDiscardEnablesEntropicBrew(bc, p)) {
+                    node.edges.push_back(BattleScumSearcher3::Edge{Action(ActionType::POTION, p, -1)});
+                }
+                if (bc.potions[p] == Potion::FAIRY_POTION) {
+                    continue;
+                }
                 if (bc.potions[p] == Potion::SMOKE_BOMB) {
                     if (!bc.smokeBombEscapeBlocked()) {
                         node.edges.push_back(BattleScumSearcher3::Edge{Action(ActionType::POTION, p)});
-                    } else {
-                        node.edges.push_back(BattleScumSearcher3::Edge{Action(ActionType::POTION, p, -1)});
                     }
                     continue;
                 }

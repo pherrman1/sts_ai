@@ -20,7 +20,9 @@ public:
     const nlohmann::json &metadata() const { return metadata_; }
     bool nearFull() const { return metadata_.at("version")==2; }
     float survival(const CombatPredictorInputV1 &) const;
+    std::vector<float> maxHpEncoding(const CombatPredictorInputV1 &) const;
     std::vector<float> maxHp(const CombatPredictorInputV1 &) const;
+    std::vector<float> maxHp(const std::vector<float> &encoding) const;
     std::vector<float> hpEncoding(const CombatPredictorInputV1 &) const;
     std::vector<float> signedHp(const std::vector<float> &z, int delta, int preHp, int maximum) const;
     std::vector<float> potionEncoding(const CombatPredictorInputV1 &) const;

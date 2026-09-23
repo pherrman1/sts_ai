@@ -984,7 +984,7 @@ not enter encoding, evaluation, selection, or debugging. This result supports
 only a bounded next architecture experiment aimed at potion-slot/context
 interactions; it does not qualify the model or establish the cause of the
 remaining slice gap. See
-[ledger-06 §337](../../experiments/ledger-06.md) and the
+[ledger-06 §338](../../experiments/ledger-06.md) and the
 [potion-specialist evidence](../../experiments/evidence/potion_specialist_deepsets_2026-09-23.md).
 
 ### Qualified DeepSets representation for survival prediction
