@@ -260,6 +260,14 @@ const std::vector<LiveEncounterExclusionEntry> &encounterExclusionManifest() {
     return exclusions;
 }
 std::optional<sts::MonsterStatus> monsterStatus(const std::string &id) { return find(kMonsterStatuses, id); }
+std::optional<sts::MonsterStatus> monsterStatusForMonster(const std::string &monsterId,
+                                                        const std::string &id) {
+    // Vanilla RegrowPower (Darkling) and ResurrectPower share POWER_ID
+    // "Life Link". Only the Darkling representation is the native REGROW bit.
+    if (id == "Life Link")
+        return monsterId == "Darkling" ? std::optional{sts::MonsterStatus::REGROW} : std::nullopt;
+    return monsterStatus(id);
+}
 std::optional<PlayerStatus> playerStatus(const std::string &id) { return find(kPlayerStatuses, id); }
 std::optional<sts::CardSelectTask> cardSelectTask(const std::string &id) { return find(kSelectionTasks, id); }
 

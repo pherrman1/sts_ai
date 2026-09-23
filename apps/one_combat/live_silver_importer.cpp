@@ -1079,7 +1079,7 @@ SilverRootImportResult importSilverRootGeneric(const json &observation,
                         || powerId == "Ritual")
                     && (!power.contains("justApplied") || !power.at("justApplied").is_boolean()))
                     return unsupported("silver_unmapped_monster_power");
-                const auto mapped = live_silver::monsterStatus(power.at("id").get<std::string>());
+                const auto mapped = live_silver::monsterStatusForMonster(idText, powerId);
                 if (!mapped) return unsupported("silver_unmapped_monster_power");
                 if (!setMonsterPower(m, *mapped, power.value("amount", 1),
                                      power.value("justApplied", false)))

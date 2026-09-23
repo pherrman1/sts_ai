@@ -869,6 +869,10 @@ void verifyRuntimeMoveBoundary() {
     expect("Darkling", 3, MonsterMoveId::DARKLING_NIP);
     expect("Darkling", 4, MonsterMoveId::DARKLING_REGROW);
     expect("Darkling", 5, MonsterMoveId::DARKLING_REINCARNATE);
+    if (one_combat::advisor::live_silver::monsterStatusForMonster("Darkling", "Life Link")
+            != MonsterStatus::REGROW
+        || one_combat::advisor::live_silver::monsterStatusForMonster("AwakenedOne", "Life Link").has_value())
+        throw std::runtime_error("ambiguous Life Link power lost monster-specific lowering");
     expect("Deca", 0, MonsterMoveId::DECA_BEAM);
     expect("Deca", 2, MonsterMoveId::DECA_SQUARE_OF_PROTECTION);
     expect("Donu", 0, MonsterMoveId::DONU_BEAM);
