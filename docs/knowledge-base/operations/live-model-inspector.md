@@ -1,6 +1,6 @@
 # Live model inspector
 
-Last verified: 2026-09-22 for strict live-driver selection and reward flow.
+Last verified: 2026-09-23 for initial-event state import and strict live-driver selection.
 This page describes the private integration boundary currently present in the
 repository; it is not a claim that every game boundary has a qualified live
 evaluator.
@@ -590,6 +590,16 @@ costs, damage, rewards, or later phases still require their event-specific
 field and label checks. For Mind Bloom above floor 40, the visible third
 `I am Healthy` option is lowered to native option index 3; its live click
 position remains the third button.
+That indexed-option check does not prove that setup-generated `StateInfo` has
+the same values as live play. N'loth captures both offered relic object
+identities, maps them into the ordered owned-relic list, and imports their
+indices plus relic IDs; missing, duplicate, or mismatched offers fail closed.
+Big Fish imports its displayed heal amount, Ghosts imports its displayed
+max-HP cost, and Dead Adventurer requires its exact publicly described
+encounter. Knowing Skull's visible costs are copied into the native cost
+fields. These checks cover the setup fields consumed by their initial native
+choices; new generic initial-event support must audit `chooseEventOption()`
+and `setupEvent()` state dependencies in addition to comparing button indices.
 The Cleric's initial three-option phase is qualified when the displayed heal
 and purge costs match the native values; its public heal amount enters
 `StateInfo.hpAmount0`. Other phases and unavailable purge choices still fail

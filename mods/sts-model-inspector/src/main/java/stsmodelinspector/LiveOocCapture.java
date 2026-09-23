@@ -861,6 +861,62 @@ final class LiveOocCapture {
         return true;
     }
 
+    static int[] nlothInitialRelicIndices(List<?> ownedRelics, Object choice0, Object choice1)
+            throws ReflectiveOperationException {
+        if (choice0 == null || choice1 == null || choice0 == choice1)
+            throw new IllegalArgumentException("N'loth offered relic identities are missing or duplicated");
+        int index0 = -1, index1 = -1, matches0 = 0, matches1 = 0;
+        for (int i = 0; i < ownedRelics.size(); ++i) {
+            if (ownedRelics.get(i) == choice0) { index0 = i; ++matches0; }
+            if (ownedRelics.get(i) == choice1) { index1 = i; ++matches1; }
+        }
+        if (matches0 != 1 || matches1 != 1 || index0 == index1)
+            throw new IllegalArgumentException("N'loth offered relic identity is absent or ambiguous in owned relics");
+        return new int[] {index0, index1};
+    }
+
+    static boolean nlothInitialOfferVisible(Object phase, List<?> labels, List<?> options,
+                                             int index0, int index1, String relic0, String relic1) {
+        if (!nativeIndexedInitialEventVisible(phase, labels, options)
+                || options.size() != 3 || index0 < 0 || index1 < 0 || index0 == index1
+                || relic0 == null || relic0.isEmpty() || relic1 == null || relic1.isEmpty()
+                || relic0.equals(relic1)) return false;
+        for (int i = 0; i < 3; ++i)
+            if (((Number)map(options.get(i)).get("index")).intValue() != i) return false;
+        String first = String.valueOf(labels.get(0));
+        String second = String.valueOf(labels.get(1));
+        return first.contains(relic0) && second.contains(relic1)
+                && !first.contains(relic1) && !second.contains(relic0);
+    }
+
+    static boolean bigFishInitialVisible(Object phase, List<?> labels, List<?> options,
+                                         int healAmount, int maxHp) {
+        if (!("INTRO".equals(String.valueOf(phase)) || "0".equals(String.valueOf(phase)))
+                || labels.size() != 3 || options.size() != 3 || maxHp < 1
+                || healAmount != maxHp / 3) return false;
+        for (int i = 0; i < 3; ++i)
+            if (((Number)map(options.get(i)).get("index")).intValue() != i) return false;
+        return String.valueOf(labels.get(0)).contains("[Banana]")
+                && String.valueOf(labels.get(0)).contains(Integer.toString(healAmount))
+                && String.valueOf(labels.get(1)).contains("[Donut]")
+                && String.valueOf(labels.get(2)).contains("[Box]");
+    }
+
+    static boolean ghostsInitialVisible(Object phase, List<?> labels, List<?> options,
+                                        int hpLoss, int maxHp, int ascension) {
+        int expectedLoss = Math.min(maxHp - 1, (maxHp + 1) / 2);
+        int expectedApparitions = ascension >= 15 ? 3 : 5;
+        String accept = labels.size() > 0 ? String.valueOf(labels.get(0)) : "";
+        String leave = labels.size() > 1 ? String.valueOf(labels.get(1)) : "";
+        return ("INTRO".equals(String.valueOf(phase)) || "0".equals(String.valueOf(phase)))
+                && hpLoss == expectedLoss && labels.size() == 2 && options.size() == 2
+                && ((Number)map(options.get(0)).get("index")).intValue() == 0
+                && ((Number)map(options.get(1)).get("index")).intValue() == 1
+                && accept.contains("[Accept]") && accept.contains(expectedApparitions + " Apparition")
+                && accept.contains(Integer.toString(hpLoss))
+                && (leave.contains("[Refuse]") || leave.contains("[Leave]"));
+    }
+
     static int mindBloomNativeOptionIndex(String simple, Object phase, String label,
                                           int liveIndex, int floor) {
         if ("MindBloom".equals(simple)
@@ -900,7 +956,8 @@ final class LiveOocCapture {
 
     static int deadAdventurerPublicEncounter(Object phase, List<?> labels, List<?> options,
             String body, String[] descriptions, int ascension) {
-        if (!"INTRO".equals(String.valueOf(phase)) || labels.size() != 2 || options.size() != 2
+        if (!("INTRO".equals(String.valueOf(phase)) || "0".equals(String.valueOf(phase)))
+                || labels.size() != 2 || options.size() != 2
                 || descriptions.length < 7
                 || ((Number)map(options.get(0)).get("index")).intValue() != 0
                 || ((Number)map(options.get(1)).get("index")).intValue() != 1
@@ -1330,6 +1387,38 @@ final class LiveOocCapture {
                 "skillCardDeckIdx", -1, "powerCardDeckIdx", -1, "attackCardDeckIdx", -1,
                 "potionIdx", -1, "gold", -1, "cardIdx", -1);
         out.put("details", eventDetails);
+        boolean nlothInitial = false;
+        if ("Nloth".equals(simple)
+                && ("INTRO".equals(String.valueOf(phase)) || "0".equals(String.valueOf(phase)))) {
+            Object offered0 = field(event, "choice1");
+            Object offered1 = field(event, "choice2");
+            List<?> owned = list(field(AbstractDungeon.player, "relics"));
+            int[] indices = nlothInitialRelicIndices(owned, offered0, offered1);
+            String relic0 = String.valueOf(field(offered0, "relicId"));
+            String relic1 = String.valueOf(field(offered1, "relicId"));
+            nlothInitial = nlothInitialOfferVisible(phase, labels, options,
+                    indices[0], indices[1], relic0, relic1);
+            if (nlothInitial) {
+                map(out.get("details")).put("relicIdx0", indices[0]);
+                map(out.get("details")).put("relicIdx1", indices[1]);
+                map(out.get("details")).put("relicOffer0", relic0);
+                map(out.get("details")).put("relicOffer1", relic1);
+            }
+        }
+        boolean bigFish = false;
+        if ("BigFish".equals(simple)) {
+            int healAmount = ((Number)field(event, "healAmt")).intValue();
+            bigFish = bigFishInitialVisible(phase, labels, options,
+                    healAmount, AbstractDungeon.player.maxHealth);
+            if (bigFish) map(out.get("details")).put("hpAmount0", healAmount);
+        }
+        boolean ghosts = false;
+        if ("Ghosts".equals(simple)) {
+            int hpLoss = ((Number)field(event, "hpLoss")).intValue();
+            ghosts = ghostsInitialVisible(phase, labels, options,
+                    hpLoss, AbstractDungeon.player.maxHealth, AbstractDungeon.ascensionLevel);
+            if (ghosts) map(out.get("details")).put("hpAmount0", hpLoss);
+        }
         if ("ShiningLight".equals(simple))
             map(out.get("details")).put("hpAmount0", field(event, "damage"));
         if ("GoldenIdolEvent".equals(simple)) {
@@ -1564,7 +1653,12 @@ final class LiveOocCapture {
                 && (!"Addict".equals(simple) || addict)
                 && (!"Vampires".equals(simple) || vampiresNoVial)
                 && (!"ForgottenAltar".equals(simple) || forgottenAltar)
-                && (!"Designer".equals(simple) || designerIndices != null);
+                && (!"Designer".equals(simple) || designerIndices != null)
+                && (!"Nloth".equals(simple) || nlothInitial)
+                && (!"BigFish".equals(simple) || bigFish)
+                && (!"Ghosts".equals(simple) || ghosts)
+                && (!"KnowingSkull".equals(simple) || knowingSkullAsk)
+                && (!"DeadAdventurer".equals(simple) || deadAdventurerEncounter >= 0);
         boolean idolTrap = "GoldenIdolEvent".equals(simple) && "1".equals(String.valueOf(phase))
                 && options.size() == 3 && labels.size() == 3
                 && ((Number)map(options.get(0)).get("index")).intValue() == 0

@@ -269,6 +269,50 @@ public final class LiveOocCaptureTest {
                     Arrays.asList("[Offer]", "[Leave]"),
                     Arrays.asList(obj("index", 1), obj("index", 8))))
             throw new AssertionError("generic native-indexed event surface qualification mismatch");
+        Object relicA = new Object(), relicB = new Object(), relicC = new Object();
+        int[] nlothPair = LiveOocCapture.nlothInitialRelicIndices(
+                Arrays.asList(relicA, relicB, relicC), relicC, relicA);
+        List<String> nlothLabels = Arrays.asList("[Offer: Odd Mushroom]", "[Offer: Anchor]", "[Leave]");
+        List<Map<String,Object>> nlothOptions = Arrays.asList(
+                obj("index", 0), obj("index", 1), obj("index", 2));
+        if (nlothPair[0] != 2 || nlothPair[1] != 0
+                || !LiveOocCapture.nlothInitialOfferVisible("INTRO", nlothLabels,
+                        nlothOptions, nlothPair[0], nlothPair[1], "Odd Mushroom", "Anchor")
+                || !LiveOocCapture.nlothInitialOfferVisible(0, nlothLabels,
+                        nlothOptions, nlothPair[0], nlothPair[1], "Odd Mushroom", "Anchor")
+                || LiveOocCapture.nlothInitialOfferVisible("INTRO", nlothLabels,
+                        nlothOptions, nlothPair[0], nlothPair[1], "Anchor", "Odd Mushroom"))
+            throw new AssertionError("N'loth visible relics were not bound to exact native option indices");
+        boolean nlothAbsentRejected = false, nlothAmbiguousRejected = false;
+        try { LiveOocCapture.nlothInitialRelicIndices(Arrays.asList(relicA, relicB), relicC, relicA); }
+        catch (IllegalArgumentException expected) { nlothAbsentRejected = true; }
+        try { LiveOocCapture.nlothInitialRelicIndices(Arrays.asList(relicA, relicA, relicB), relicA, relicB); }
+        catch (IllegalArgumentException expected) { nlothAmbiguousRejected = true; }
+        if (!nlothAbsentRejected || !nlothAmbiguousRejected)
+            throw new AssertionError("N'loth missing or ambiguous relic identity did not fail closed");
+        String[] adventurerDescriptions = {"", "", "search", "sentries", "nob", "lagavulin", "ending"};
+        if (LiveOocCapture.deadAdventurerPublicEncounter(0,
+                    Arrays.asList("[Search] 25%", "[Leave]"),
+                    Arrays.asList(obj("index", 0), obj("index", 1)),
+                    "searchsentriesending", adventurerDescriptions, 0) != 0)
+            throw new AssertionError("Dead Adventurer numeric intro phase lost its public encounter");
+        if (!LiveOocCapture.bigFishInitialVisible("INTRO",
+                    Arrays.asList("[Banana] Heal 20 HP", "[Donut] Gain 5 Max HP", "[Box] Obtain Relic"),
+                    Arrays.asList(obj("index", 0), obj("index", 1), obj("index", 2)), 20, 60)
+                || LiveOocCapture.bigFishInitialVisible("INTRO",
+                    Arrays.asList("[Banana] Heal 19 HP", "[Donut] Gain 5 Max HP", "[Box] Obtain Relic"),
+                    Arrays.asList(obj("index", 0), obj("index", 1), obj("index", 2)), 19, 60))
+            throw new AssertionError("Big Fish heal and native options were not qualified together");
+        if (!LiveOocCapture.ghostsInitialVisible("INTRO",
+                    Arrays.asList("[Accept] Receive 5 Apparition. Lose 30 Max HP", "[Refuse]"),
+                    Arrays.asList(obj("index", 0), obj("index", 1)), 30, 60, 0)
+                || LiveOocCapture.ghostsInitialVisible("INTRO",
+                    Arrays.asList("[Accept] Receive 5 Apparition. Lose 29 Max HP", "[Refuse]"),
+                    Arrays.asList(obj("index", 0), obj("index", 1)), 29, 60, 0)
+                || !LiveOocCapture.ghostsInitialVisible(0,
+                    Arrays.asList("[Accept] Receive 3 Apparition. Lose 30 Max HP", "[Leave]"),
+                    Arrays.asList(obj("index", 0), obj("index", 1)), 30, 60, 15))
+            throw new AssertionError("Ghosts max-HP loss and native options were not qualified together");
         if (LiveOocCapture.mindBloomNativeOptionIndex("MindBloom", "INTRO",
                     "[I am Healthy] Heal to full HP. Cursed - Doubt.", 2, 48) != 3
                 || LiveOocCapture.mindBloomNativeOptionIndex("MindBloom", "INTRO",
@@ -480,6 +524,6 @@ public final class LiveOocCaptureTest {
                 || !"BLUE_SLAVER".equals(STSModelInspector.singleEncounterName("SlaverBlue", false))
                 || !"BLUE_SLAVER".equals(STSModelInspector.singleEncounterName("BlueSlaver", false)))
             throw new AssertionError("canonical Slaver runtime identity mismatch");
-        System.out.println("LiveOocCaptureTest: 15 relic, 7 map edge, 5 screen, 3 path, 4 integrity, 4 event, 3 reward identity, 4 Slaver identity checks passed");
+        System.out.println("LiveOocCaptureTest: relic, map, screen, path, integrity, event identity/state, reward identity and Slaver checks passed");
     }
 }

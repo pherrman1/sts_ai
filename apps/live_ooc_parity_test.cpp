@@ -79,6 +79,11 @@ static J project(const GameContext &g,const PathHistory &path,const std::string 
                 {"gold",i.gold},{"goldLoss",i.goldLoss},{"cardIdx",i.cardIdx}};
             if(g.curEvent==Event::NEOW){d["neow"]=J::array();for(const auto &n:i.neowRewards)d["neow"].push_back({{"bonus",J(n.r)},{"drawback",J(n.d)}});}
             if(g.curEvent==Event::NOTE_FOR_YOURSELF)d["noteForYourselfCard"]=cardWire(g.noteForYourselfCard);
+            if(g.curEvent==Event::NLOTH) {
+                d["relicIdx0"]=i.relicIdx0;d["relicIdx1"]=i.relicIdx1;
+                d["relicOffer0"]=J(g.relics.relics[i.relicIdx0].id);
+                d["relicOffer1"]=J(g.relics.relics[i.relicIdx1].id);
+            }
             break;}
         default:throw std::runtime_error("fixture screen missing");
     }
@@ -235,7 +240,7 @@ int main(int argc,char **argv){try{
     g.info.toSelectCards.push_back({g.deck.cards[g.deck.size()-1],g.deck.size()-1});
     g.openCardSelectScreen(CardSelectScreenType::BOTTLE,1,false);
     add("bottle_power_selector_duplicate_physical_cards",g);
-    g=base;g.screenState=ScreenState::EVENT_SCREEN;g.curEvent=Event::BIG_FISH;add("event_big_fish",g);
+    g=base;g.screenState=ScreenState::EVENT_SCREEN;g.curEvent=Event::BIG_FISH;g.setupEvent();add("event_big_fish",g);
     g.curEvent=Event::PLEADING_VAGRANT;g.gold=100;add("event_addict_three_public_choices",g);
     g=base;g.screenState=ScreenState::EVENT_SCREEN;g.curEvent=Event::CURSED_TOME;
     add("event_cursed_tome_intro",g);
@@ -519,6 +524,7 @@ int main(int argc,char **argv){try{
         auto source = base;
         source.screenState = ScreenState::EVENT_SCREEN;
         source.curEvent = Event::BIG_FISH;
+        source.setupEvent();
         auto wire = project(source, path, "incomplete_seen_relic_history");
         wire["ooc"]["publicState"]["seenRelicsComplete"] = false;
         advisor::LiveOocStateV1 live;
@@ -556,6 +562,77 @@ int main(int argc,char **argv){try{
         missing["ooc"]["details"].erase("noteForYourselfCard");
         check(!advisor::importLiveOocStateV1(missing,noteLive).ok,
             "Note For Yourself missing offered card was accepted");
+    }
+    {
+        auto nloth = base;
+        nloth.screenState = ScreenState::EVENT_SCREEN;
+        nloth.curEvent = Event::NLOTH;
+        // Compare against an independent event initialization, then deliberately
+        // publish a different visible offer pair to exercise exact live import.
+        auto independent = nloth;
+        independent.setupEvent();
+        const int native0 = independent.info.relicIdx0;
+        const int native1 = independent.info.relicIdx1;
+        int offered0 = -1, offered1 = -1;
+        for (int i = 0; i < nloth.relics.size() && offered0 < 0; ++i)
+            for (int j = 0; j < nloth.relics.size(); ++j)
+                if (i != j && (i != native0 || j != native1)) {
+                    offered0 = i; offered1 = j; break;
+                }
+        check(offered0 >= 0 && (offered0 != native0 || offered1 != native1),
+                "N'loth parity test failed to construct different public offer pair");
+        nloth.info.relicIdx0 = offered0;
+        nloth.info.relicIdx1 = offered1;
+        const auto expected0 = nloth.relics.relics[offered0].id;
+        const auto expected1 = nloth.relics.relics[offered1].id;
+        const auto nlothWire = project(nloth, path, "nloth_exact_public_relic_offers");
+        advisor::LiveOocStateV1 nlothLive;
+        check(advisor::importLiveOocStateV1(nlothWire, nlothLive).ok,
+                "N'loth exact offered relic import");
+        check(nlothLive.projected.info.relicIdx0 == offered0
+                && nlothLive.projected.info.relicIdx1 == offered1
+                && nlothLive.mctsRoot.state.info.relicIdx0 == offered0
+                && nlothLive.mctsRoot.state.info.relicIdx1 == offered1,
+                "N'loth public pair did not replace independent native setup");
+        auto takeFirst = nlothLive.mctsRoot.state;
+        takeFirst.chooseEventOption(0);
+        check(!takeFirst.relics.has(expected0) && takeFirst.relics.has(expected1),
+                "N'loth option 0 removed a relic other than its visible offer");
+        auto takeSecond = nlothLive.mctsRoot.state;
+        takeSecond.chooseEventOption(1);
+        check(takeSecond.relics.has(expected0) && !takeSecond.relics.has(expected1),
+                "N'loth option 1 removed a relic other than its visible offer");
+        auto missing = nlothWire;
+        missing["ooc"]["details"].erase("relicOffer1");
+        check(!advisor::importLiveOocStateV1(missing, nlothLive).ok,
+                "N'loth missing offered relic identity was accepted");
+        missing = nlothWire;
+        missing["ooc"]["details"].erase("relicIdx0");
+        check(!advisor::importLiveOocStateV1(missing, nlothLive).ok,
+                "N'loth missing offered relic index was accepted");
+        auto mismatch = nlothWire;
+        mismatch["ooc"]["details"]["relicOffer0"] = J(RelicId::NLOTHS_GIFT);
+        check(!advisor::importLiveOocStateV1(mismatch, nlothLive).ok,
+                "N'loth offer identity inconsistent with owned relic order was accepted");
+    }
+    for (const auto event : {Event::BIG_FISH, Event::GHOSTS}) {
+        auto source = base;
+        source.screenState = ScreenState::EVENT_SCREEN;
+        source.curEvent = event;
+        source.setupEvent();
+        check(source.info.hpAmount0 > 0, "event setup did not initialize public HP effect");
+        const auto eventWire = project(source, path,
+                event == Event::BIG_FISH ? "big_fish_exact_heal" : "ghosts_exact_max_hp_loss");
+        check(eventWire["ooc"]["details"]["hpAmount0"] == source.info.hpAmount0,
+                "event fixture did not serialize setup HP effect: "
+                    + std::to_string(source.info.hpAmount0) + " / "
+                    + eventWire["ooc"]["details"]["hpAmount0"].dump());
+        advisor::LiveOocStateV1 eventLive;
+        check(advisor::importLiveOocStateV1(eventWire, eventLive).ok,
+                "initial event public HP effect import");
+        check(eventLive.projected.info.hpAmount0 == source.info.hpAmount0
+                && eventLive.mctsRoot.state.info.hpAmount0 == source.info.hpAmount0,
+                "initial event public HP effect did not survive into MCTS root");
     }
     {
         auto dead=base;

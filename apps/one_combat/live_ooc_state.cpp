@@ -575,6 +575,38 @@ ImportResult importLiveOocStateV1(const J &observation, LiveOocStateV1 &out) {
             g.curEvent=event=="Neow" ? Event::NEOW : id<Event>(d.at("event"),Event::INVALID);
             g.info.eventData=integer(d,"eventData",0,100);
             g.info.phase=integer(d,"phase",0,100);
+            if (g.curEvent == Event::NLOTH) {
+                require(g.info.phase == 0, "N'loth phase unsupported");
+                require(g.relics.size() >= 2, "N'loth requires two owned relics");
+                g.info.relicIdx0 = integer(d, "relicIdx0", 0, g.relics.size() - 1);
+                g.info.relicIdx1 = integer(d, "relicIdx1", 0, g.relics.size() - 1);
+                require(g.info.relicIdx0 != g.info.relicIdx1,
+                        "N'loth offered relic indices must be distinct");
+                const auto offered0 = id<RelicId>(d.at("relicOffer0"), RelicId::INVALID);
+                const auto offered1 = id<RelicId>(d.at("relicOffer1"), RelicId::INVALID);
+                require(offered0 != RelicId::INVALID && offered1 != RelicId::INVALID
+                        && offered0 != offered1
+                        && g.relics.relics[g.info.relicIdx0].id == offered0
+                        && g.relics.relics[g.info.relicIdx1].id == offered1,
+                        "N'loth offered relic identities do not match owned relic order");
+            }
+            if (g.curEvent == Event::BIG_FISH) {
+                g.info.hpAmount0 = integer(d, "hpAmount0", 0, g.maxHp);
+                require(g.info.hpAmount0 == g.maxHp / 3,
+                        "Big Fish public heal differs from native setup: captured="
+                        + std::to_string(g.info.hpAmount0) + " maxHp=" + std::to_string(g.maxHp));
+            }
+            if (g.curEvent == Event::GHOSTS) {
+                require(g.maxHp > 1, "Ghosts max HP is not valid");
+                g.info.hpAmount0 = integer(d, "hpAmount0", 1, g.maxHp - 1);
+                require(g.info.hpAmount0 == std::min(g.maxHp - 1, (g.maxHp + 1) / 2),
+                        "Ghosts public max-HP loss differs from native setup");
+            }
+            if (g.curEvent == Event::KNOWING_SKULL) {
+                g.info.hpAmount0 = integer(d, "hpAmount0", 0, 100);
+                g.info.hpAmount1 = integer(d, "hpAmount1", 0, 100);
+                g.info.hpAmount2 = integer(d, "hpAmount2", 0, 100);
+            }
             if (g.curEvent == Event::NOTE_FOR_YOURSELF)
                 g.noteForYourselfCard = card(d.at("noteForYourselfCard"));
             if (g.curEvent == Event::DEAD_ADVENTURER) {
