@@ -428,6 +428,8 @@ public final class LiveOocCaptureTest {
                 "FIXED_EVENT", "COLOSSEUM_EVENT_SLAVERS");
         LiveOocCapture.CombatClassHistory recoveredColosseum = new LiveOocCapture.CombatClassHistory();
         recoveredColosseum.restoreFor(player, 67891, 2);
+        recoveredColosseum.observe(player, 67891, 2, 29, false, true, new Object(),
+                "FIXED_EVENT", "");
         recoveredColosseum.reconcileCompletedColosseum(java.util.Arrays.asList(29, 29),
                 java.util.Arrays.asList(obj("floor", 29, "enemies", "Colosseum Slavers"),
                         obj("floor", 29, "enemies", "unknown")));

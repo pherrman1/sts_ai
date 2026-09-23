@@ -248,8 +248,7 @@ final class LiveOocCapture {
             if (kind == null) {
                 complete = false; return;
             }
-            if (("NORMAL_QUEUE".equals(kind) || "ELITE_QUEUE".equals(kind))
-                    && (encounter == null || encounter.isEmpty())) {
+            if (encounter == null || encounter.isEmpty()) {
                 // Loading a completed combat can expose its room and group
                 // before the encounter identity is restored. The floor ledger
                 // still catches any fight never observed with an identity.
