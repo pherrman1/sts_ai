@@ -581,6 +581,13 @@ gain/damage and intro phase.
 is qualified by its intro options and ascension-dependent public gold amount
 before mapping to native `Golden Shrine`. Unopened treasure imports its public
 chest size; its unrevealed contents remain hidden in the hypothetical futures.
+Initial event screens no longer depend on an event-name allowlist: their active
+options must carry distinct native indices, and the native importer checks the
+entire live/native legal-action set before scoring. Events with variable public
+costs, damage, rewards, or later phases still require their event-specific
+field and label checks. For Mind Bloom above floor 40, the visible third
+`I am Healthy` option is lowered to native option index 3; its live click
+position remains the third button.
 The Cleric's initial three-option phase is qualified when the displayed heal
 and purge costs match the native values; its public heal amount enters
 `StateInfo.hpAmount0`. Other phases and unavailable purge choices still fail

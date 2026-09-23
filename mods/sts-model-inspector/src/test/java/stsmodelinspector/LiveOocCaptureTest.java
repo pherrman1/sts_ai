@@ -269,6 +269,13 @@ public final class LiveOocCaptureTest {
                     Arrays.asList("[Offer]", "[Leave]"),
                     Arrays.asList(obj("index", 1), obj("index", 8))))
             throw new AssertionError("generic native-indexed event surface qualification mismatch");
+        if (LiveOocCapture.mindBloomNativeOptionIndex("MindBloom", "INTRO",
+                    "[I am Healthy] Heal to full HP. Cursed - Doubt.", 2, 48) != 3
+                || LiveOocCapture.mindBloomNativeOptionIndex("MindBloom", "INTRO",
+                    "[I am Healthy] Heal to full HP. Cursed - Doubt.", 2, 40) != 2
+                || LiveOocCapture.mindBloomNativeOptionIndex("MindBloom", "INTRO",
+                    "[I am Rich] Gain Gold. Become Cursed - Normality.", 2, 48) != -1)
+            throw new AssertionError("Mind Bloom post-floor-40 native option identity mismatch");
         if (!"SMALL".equals(LiveOocCapture.visibleChestSize("SmallChest"))
                 || !"MEDIUM".equals(LiveOocCapture.visibleChestSize("MediumChest"))
                 || !"LARGE".equals(LiveOocCapture.visibleChestSize("LargeChest"))

@@ -861,6 +861,16 @@ final class LiveOocCapture {
         return true;
     }
 
+    static int mindBloomNativeOptionIndex(String simple, Object phase, String label,
+                                          int liveIndex, int floor) {
+        if ("MindBloom".equals(simple)
+                && ("INTRO".equals(String.valueOf(phase)) || "0".equals(String.valueOf(phase)))
+                && floor > 40 && liveIndex == 2) {
+            return label != null && label.contains("[I am Healthy]") ? 3 : -1;
+        }
+        return liveIndex;
+    }
+
     static int knowingSkullNativeIndex(String label) {
         if (label == null) return -1;
         if (label.contains("[Riches?]")) return 0;       // gold
@@ -1303,7 +1313,10 @@ final class LiveOocCapture {
             int nativeIndex = "CursedTome".equals(simple) && "LAST_PAGE".equals(String.valueOf(phase))
                     ? index + 5 : "GoldenIdolEvent".equals(simple) && "1".equals(String.valueOf(phase))
                     ? index + 2 : "Vampires".equals(simple)
-                        && !Boolean.TRUE.equals(field(event, "hasVial")) ? index + 1 : index;
+                        && !Boolean.TRUE.equals(field(event, "hasVial")) ? index + 1
+                    : mindBloomNativeOptionIndex(simple, phase, String.valueOf(labels.get(i)),
+                            index, AbstractDungeon.floorNum);
+            if (nativeIndex < 0) throw new IllegalArgumentException("Mind Bloom option label/index mismatch");
             if ("KnowingSkull".equals(simple) && "ASK".equals(String.valueOf(phase)))
                 nativeIndex = knowingSkullNativeIndex(String.valueOf(labels.get(i)));
             options.add(object("index", "KnowingSkull".equals(simple)
