@@ -62,6 +62,7 @@ namespace sts::search {
 
         bool printActions = false;
         bool printLogs = false;
+        bool recordActions = false;
 
         int simulationCountBase = 50000;
         double bossSimulationMultiplier = 3;

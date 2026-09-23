@@ -767,6 +767,15 @@ run. The potion support predicate also excludes actual generation routes
 (explicit Alchemize and Entropic Brew), allowing harmless off-color cards.
 See the [active Lizard evidence packet](../../experiments/evidence/active_lizard_ctm_2026-09-23/README.md).
 
+A separate 32-pair rescue pilot found two no-Tail deaths; both active-Tail
+treatments won, but one retained Tail, consistent with the relic changing the
+policy trajectory. Ordinary CTM mean death probability was `0.05704` versus
+`0.0625` observed deaths; Tail consumption was `0.03125` of pairs. This is too
+small to calibrate a rescue head, and the single Tail-consumed win cannot assess
+conditional post-combat heads. It does not alter the prior qualification
+rejection or runtime guard. See the [paired pilot packet](../../experiments/evidence/lizard_tail_rescue_pilot_2026-09-23/README.md)
+and [ledger §339](../../experiments/ledger-06.md).
+
 The [frozen composed qualification protocol](../../experiments/evidence/composed_transition_2026-09-14.md)
 uses the original source-grouped **reused engineering TEST**, exact HP marginal
 over 11 maxHP classes, and 32 ancestral draws for potion/relic and complete states,

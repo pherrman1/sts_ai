@@ -71,16 +71,20 @@ search::Action s3PickRootAction(const search::BattleScumSearcher3 &s3,
 } // namespace
 
 void search::ScumSearchAgent2::takeAction(GameContext &gc, search::GameAction a) {
-    if (printActions) {
+    if (printActions || recordActions) {
         gameActionHistory.emplace_back(a.bits);
+    }
+    if (printActions) {
         std::cout << std::hex << a.bits << std::endl;
     }
     a.execute(gc);
 }
 
 void search::ScumSearchAgent2::takeAction(BattleContext &bc, search::Action a) {
-    if (printActions) {
+    if (printActions || recordActions) {
         gameActionHistory.emplace_back(a.bits);
+    }
+    if (printActions) {
         std::cout << std::hex << a.bits << std::endl;
     }
     // Simulator health: an action committed to the live battle state must be

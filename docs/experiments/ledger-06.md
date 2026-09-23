@@ -11422,3 +11422,30 @@ on offline qualification. See the [complete evidence packet](evidence/active_liz
 
 **Knowledge impact:** the maintained current-research page now points to this
 negative result; active Lizard Tail remains outside qualified CTM support.
+
+### §339 — Active Lizard Tail paired rescue pilot (2026-09-23)
+
+A 32-source paired pilot (`4200100..4200131`) compared exact Silver combats
+with and without active Lizard Tail under the frozen ordinary fair 10k teacher.
+It is descriptive only: 30 pairs won in both treatments with Tail retained;
+one ordinary death became an active-treatment win with Tail consumed; and one
+ordinary death became an active-treatment win with Tail retained. The ordinary
+CTM mean predicted death rate was `0.05704` versus `0.0625` observed deaths
+(Brier `0.01474`). The observed Tail-consumption rate was `0.03125`, with Brier
+`0.03182` when compared to those same death probabilities. Two ordinary deaths
+are too few to infer a rescue rate or calibration. The retained-Tail win also
+shows active relic presence can change the policy trajectory, so consumption
+cannot be treated as a direct label for the no-Tail counterfactual. The
+existing conditional heads had only one Tail-consumed winning row to score.
+
+During collection, seven rows asserted on a potion reward when all three slots
+were full. The paired source-reward branch lacked the full-inventory guard in
+the normal reward policy; adding that guard fixed the invalid action, and all
+seven rows then completed. This is a collector fix, not CTM evidence.
+
+No rescue head, scalar extra-HP model, training, support qualification, or
+runtime integration followed. The failed Lizard-head proper-score result in
+§338 and production `active_unqualified_lizard` guard remain unchanged. See the
+[paired pilot evidence packet](evidence/lizard_tail_rescue_pilot_2026-09-23/README.md).
+
+**Knowledge impact:** exploratory evidence only; no model or runtime change.
