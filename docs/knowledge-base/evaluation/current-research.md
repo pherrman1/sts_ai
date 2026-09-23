@@ -990,6 +990,27 @@ the cause of the remaining slice gap. See
 [ledger-06 §338](../../experiments/ledger-06.md) and the
 [potion-specialist evidence](../../experiments/evidence/potion_specialist_deepsets_2026-09-23.md).
 
+### Potion-pooled-blind DeepSets follow-up
+
+The paired warm-start follow-up is **`POTION_DEEPSET_POTION_BLIND_REJECTED`**.
+The control reproduced PR #298 W closely (validation NLL `0.486931329` versus
+`0.487162724`). P zeroed only the pooled potion identity/slot block before the
+same trunk; global inputs, including `potionCount` and `potionCapacity`, stayed
+unchanged as specified. P retained strong overall validation trajectory NLL
+`0.489927014` (`-3.3299%` versus Attention), improved no-change Brier and kept
+illegal probability exactly zero. The existing teacher-forced gate still
+rejects P: recursive-Brew NLL was `3.026048` versus Attention `2.412967`
+(`+25.4078%`) and control C `2.985346` (`+0.040702` nat paired mean). P
+improved on 5 of the 12 cases and worsened on 7, so no consistent case-level
+fix appeared. This weakens the hypothesis that the pooled potion block alone
+causes the recursive-Brew regression; it does not isolate the remaining global
+potion-count/capacity signal or establish another cause. The raw receipt records
+zero TEST encoding/scoring/teacher-metric rows. No ancestral stage, TEST use,
+export, native parity, runtime change, or gameplay qualification was run.
+See [ledger-06 §339](../../experiments/ledger-06.md), the
+[experiment report](../../experiments/evidence/deepset_potion_blind_2026-09-23.md),
+and its [raw receipt](../../experiments/evidence/deepset_potion_blind_2026-09-23.json).
+
 ### Qualified DeepSets representation for survival prediction
 
 The matched frozen survival-head screen is **`DEEPSET_SURVIVAL_REJECTED`**.
