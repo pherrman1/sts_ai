@@ -2065,12 +2065,12 @@ void oocMctsAdapterSelfTest() {
             const int startingHp=std::max(1,source.maxHp-30);
             source.curHp=startingHp;
             int pitySamples=0;
-            OocMctsDependencies liveBelief;
+            OocMctsDependencies liveBelief=defaultOocMctsDependencies();
             liveBelief.sampleHiddenCounters=[&](GameContext &sample,std::mt19937_64 &draws) {
                 sampleLiveOocHiddenPityCounters(sample,draws);
                 ++pitySamples;
             };
-            OocGameContextModel library(source,path,liveBelief,sampled);
+            OocGameContextModel library(source,path,{},sampled,liveBelief);
             std::optional<OocActionId> read,sleep;
             for (const auto action:library.legalActions(0)) {
                 const auto &candidate=library.candidate(0,action.id);
