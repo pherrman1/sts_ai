@@ -850,7 +850,7 @@ final class LiveOocCapture {
     static boolean simpleInitialEventSupported(String simple) {
         return Arrays.asList("BigFish", "Beggar", "GoldenIdolEvent", "ShiningLight", "WeMeetAgain",
                 "LivingWall", "Sssserpent", "ScrapOoze", "Mushrooms",
-                "TheMausoleum", "MysteriousSphere", "SecretPortal", "FountainOfCurseRemoval", "UpgradeShrine",
+                "Ghosts", "TheMausoleum", "MysteriousSphere", "SecretPortal", "FountainOfCurseRemoval", "UpgradeShrine",
                 "PurificationShrine", "Transmogrifier", "Duplicator", "Bonfire", "TheJoust",
                 "WomanInBlue", "CursedTome").contains(simple);
     }

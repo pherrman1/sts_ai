@@ -2076,9 +2076,9 @@ void oocMctsAdapterSelfTest() {
             };
             OocGameContextModel library(source,path,{},sampled,liveBelief);
             std::optional<OocActionId> read,sleep;
-            for (const auto action:library.legalActions(0)) {
-                const auto &candidate=library.candidate(0,action.id);
-                if (!candidate.semantic || candidate.semantic->effect!=OocSemanticEffect::EVENT_CHOICE) continue;
+        for (const auto action:library.legalActions(0)) {
+            const auto &candidate=library.candidate(0,action.id);
+            if (!candidate.semantic || candidate.semantic->effect!=OocSemanticEffect::EVENT_CHOICE) continue;
                 const int option=candidate.primitive.getIdx1();
                 if (option==0) read=action.id;
                 if (option==1) sleep=action.id;
@@ -2102,6 +2102,33 @@ void oocMctsAdapterSelfTest() {
                 "Library Sleep uses the displayed heal amount in a sampled root");
             require(source.curHp==startingHp && source.info.toSelectCards.empty(),
                 "Library belief search does not mutate the public root");
+        }
+        {
+            auto ghostsRoot=detachedCopy(gc);
+            ghostsRoot.screenState=ScreenState::EVENT_SCREEN;
+            ghostsRoot.curEvent=Event::GHOSTS;
+            ghostsRoot.setupEvent();
+            OocGameContextModel ghosts(ghostsRoot,path);
+            std::optional<OocActionId> accept,refuse;
+            for (const auto action:ghosts.legalActions(0)) {
+                const auto &candidate=ghosts.candidate(0,action.id);
+                if (!candidate.semantic || candidate.semantic->effect!=OocSemanticEffect::EVENT_CHOICE) continue;
+                if (candidate.primitive.getIdx1()==0) accept=action.id;
+                if (candidate.primitive.getIdx1()==1) refuse=action.id;
+            }
+            require(accept && refuse,"Ghosts initial Accept and Refuse choices are model actions");
+            std::mt19937_64 draws(20260923);
+            const auto accepted=ghosts.sampleSuccessor(0,*accept,draws);
+            const auto refused=ghosts.sampleSuccessor(0,*refuse,draws);
+            const auto apparitions=std::count_if(ghosts.state(accepted).deck.cards.begin(),
+                ghosts.state(accepted).deck.cards.end(),[](const Card &card) {
+                    return card.id==CardId::APPARITION;
+                });
+            require(ghosts.state(accepted).maxHp==ghostsRoot.maxHp-ghostsRoot.info.hpAmount0
+                && apparitions==(ghostsRoot.ascension>=15 ? 3 : 5)
+                && ghosts.state(refused).maxHp==ghostsRoot.maxHp
+                && ghostsRoot.maxHp==gc.maxHp,
+                "Ghosts native setup derives its max-HP cost and models Accept/Refuse outcomes");
         }
         for (const auto event : {Event::HYPNOTIZING_COLORED_MUSHROOMS,
                                  Event::MYSTERIOUS_SPHERE}) {

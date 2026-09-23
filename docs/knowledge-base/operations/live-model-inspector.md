@@ -565,10 +565,12 @@ branches and direct MAP search fail closed with
 resolved `?`-room outcome ledger persists public floor and outcome pairs
 across game restarts. Complete current-act history reconstructs the native
 room-chance counters in floor order; missing or inconsistent history fails
-closed with `PUBLIC_QUESTION_ROOM_HISTORY_UNQUALIFIED`. Events whose native
-`StateInfo` fields are not captured (`Ghosts` and `WindingHalls`) remain
-unsupported. `WorldOfGoop` imports its displayed gold loss from the native
-event field and checks the displayed gain/damage and intro phase.
+closed with `PUBLIC_QUESTION_ROOM_HISTORY_UNQUALIFIED`. `Ghosts`' initial
+Accept/Refuse phase is supported with its exact native option indices; the
+native event setup derives the max-HP cost from the public max HP and
+ascension. Later Ghosts phases remain unsupported. `WorldOfGoop` imports its
+displayed gold loss from the native event field and checks the displayed
+gain/damage and intro phase.
 `ShiningLight` imports its public damage amount. The Java `GoldShrine` event
 is qualified by its intro options and ascension-dependent public gold amount
 before mapping to native `Golden Shrine`. Unopened treasure imports its public

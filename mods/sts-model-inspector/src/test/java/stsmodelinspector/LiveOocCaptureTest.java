@@ -260,13 +260,13 @@ public final class LiveOocCaptureTest {
                 || !LiveOocCapture.simpleInitialEventSupported("WeMeetAgain")
                 || !LiveOocCapture.simpleInitialEventSupported("Sssserpent")
                 || !LiveOocCapture.simpleInitialEventSupported("ScrapOoze")
+                || !LiveOocCapture.simpleInitialEventSupported("Ghosts")
                 || !LiveOocCapture.simpleInitialEventSupported("CursedTome")
                 || LiveOocCapture.simpleInitialEventSupported("LiarsGame")
                 || LiveOocCapture.simpleInitialEventSupported("WomanInBlueDialogue")
-                || LiveOocCapture.simpleInitialEventSupported("Ghosts")
                 || LiveOocCapture.simpleInitialEventSupported("WindingHalls")
                 || LiveOocCapture.simpleInitialEventSupported("WorldOfGoop"))
-            throw new AssertionError("Woman in Blue initial-phase support boundary mismatch");
+            throw new AssertionError("simple native event initial-phase support boundary mismatch");
         if (!"SMALL".equals(LiveOocCapture.visibleChestSize("SmallChest"))
                 || !"MEDIUM".equals(LiveOocCapture.visibleChestSize("MediumChest"))
                 || !"LARGE".equals(LiveOocCapture.visibleChestSize("LargeChest"))
