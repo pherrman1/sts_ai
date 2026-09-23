@@ -401,12 +401,14 @@ Both native searchers use `Action::enumerateCardSelectActions`, including the
 correct pool per task, EXHUME self-exclusion, CODEX skip, and all valid subsets
 for `EXHAUST_MANY` and `GAMBLE`.
 
-Combat potion-discard actions are legal only when a playable Alchemize is in
-hand. Every native and isolated Silver searcher applies the same gate during
-enumeration, and `Action::isValidAction` rejects stale or externally supplied
-discard actions when Alchemize is unavailable. Fairy in a Bottle remains
-excluded from normal potion use; its discard candidate follows the same
-Alchemize gate.
+Potion discard remains a legal combat action in `Action::isValidAction`.
+Searchers prune discard branches unless discarding a slot leaves another
+Entropic Brew available and Sozu is absent; Entropic Brew's modeled effect can
+fill each newly freed slot with a generated potion. This includes discard
+branches for otherwise usable potions, Fairy in a Bottle, and an unblocked
+Smoke Bomb, which also retains its distinct escape action. Alchemize is not
+used for this pruning rule because its combat effect is not implemented in the
+simulator.
 
 `STS_MULTISELECT_MODE=all|single|none` controls subsets. `all` is default and
 the complete validity contract; `single` keeps empty, singleton, and full

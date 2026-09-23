@@ -19,11 +19,10 @@ using namespace sts;
 
 std::int64_t simulationIdx = 0; // for debugging
 
-static bool hasPlayableAlchemizeForPotionDiscard(const BattleContext &bc) {
-    if (bc.inputState != InputState::PLAYER_NORMAL || !bc.isCardPlayAllowed()) return false;
-    for (int i = 0; i < bc.cards.cardsInHand; ++i) {
-        const auto &card = bc.cards.hand[i];
-        if (card.getId() == CardId::ALCHEMIZE && card.canUseOnAnyTarget(bc)) return true;
+static bool potionDiscardEnablesEntropicBrew(const BattleContext &bc, int discardIdx) {
+    if (bc.player.hasRelic<R::SOZU>()) return false;
+    for (int i = 0; i < bc.potionCapacity; ++i) {
+        if (i != discardIdx && bc.potions[i] == Potion::ENTROPIC_BREW) return true;
     }
     return false;
 }
@@ -1370,19 +1369,19 @@ void search::BattleSearcher::enumeratePotionActions(search::BattleSearcher::Node
             continue;
         }
 
+        if (potionDiscardEnablesEntropicBrew(bc, pIdx)) {
+            node.edges.push_back({Action(ActionType::POTION, pIdx, -1)});
+        }
+
         // Fairy auto-procs on lethal and is otherwise inert. Only offer its
-        // discard edge when a playable Alchemize can use the freed slot.
+        // discard edge when the freed slot enables Entropic Brew.
         if (p == Potion::FAIRY_POTION) {
-            if (hasPlayableAlchemizeForPotionDiscard(bc))
-                node.edges.push_back({Action(ActionType::POTION, pIdx, -1)});
             continue;
         }
 
-        // When Smoke Bomb cannot flee, discard is useful only to make room for
-        // a playable Alchemize; otherwise leave it in inventory.
+        // When Smoke Bomb cannot flee, only the Entropic Brew rule above can
+        // make discarding it useful; otherwise leave it in inventory.
         if (p == Potion::SMOKE_BOMB && bc.smokeBombEscapeBlocked()) {
-            if (hasPlayableAlchemizeForPotionDiscard(bc))
-                node.edges.push_back({Action(ActionType::POTION, pIdx, -1)});
             continue;
         }
 
@@ -1400,8 +1399,6 @@ void search::BattleSearcher::enumeratePotionActions(search::BattleSearcher::Node
 
         // potion requires target
         if (!hasValidTarget) {
-            if (hasPlayableAlchemizeForPotionDiscard(bc))
-                node.edges.push_back({Action(ActionType::POTION, pIdx, -1)});
             continue;
         }
 

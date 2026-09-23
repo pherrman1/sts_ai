@@ -21,11 +21,10 @@ using namespace sts;
 
 thread_local std::int64_t simulationIdx = 0; // for debugging
 
-static bool hasPlayableAlchemizeForPotionDiscard(const BattleContext &bc) {
-    if (bc.inputState != InputState::PLAYER_NORMAL || !bc.isCardPlayAllowed()) return false;
-    for (int i = 0; i < bc.cards.cardsInHand; ++i) {
-        const auto &card = bc.cards.hand[i];
-        if (card.getId() == CardId::ALCHEMIZE && card.canUseOnAnyTarget(bc)) return true;
+static bool potionDiscardEnablesEntropicBrew(const BattleContext &bc, int discardIdx) {
+    if (bc.player.hasRelic<R::SOZU>()) return false;
+    for (int i = 0; i < bc.potionCapacity; ++i) {
+        if (i != discardIdx && bc.potions[i] == Potion::ENTROPIC_BREW) return true;
     }
     return false;
 }
@@ -990,20 +989,19 @@ void search::BattleScumSearcher2::enumeratePotionActions(search::BattleScumSearc
         }
         ++foundPotions;
 
+        if (potionDiscardEnablesEntropicBrew(bc, pIdx)) {
+            node.edges.push_back({Action(ActionType::POTION, pIdx, -1)});
+        }
+
         // Fairy in a Bottle is not usable in combat; it auto-procs on lethal.
-        // It can only be explicitly discarded to make room for a playable Alchemize.
+        // It can still be discarded when the freed slot enables Entropic Brew.
         if (p == Potion::FAIRY_POTION) {
-            if (hasPlayableAlchemizeForPotionDiscard(bc)) {
-                node.edges.push_back({Action(ActionType::POTION, pIdx, -1)});
-            }
             continue;
         }
 
         if (p == Potion::SMOKE_BOMB) {
             if (!bc.smokeBombEscapeBlocked()) {
                 node.edges.push_back({Action(ActionType::POTION, pIdx)});
-            } else if (hasPlayableAlchemizeForPotionDiscard(bc)) {
-                node.edges.push_back({Action(ActionType::POTION, pIdx, -1)});
             }
             continue;
         }
@@ -1015,9 +1013,6 @@ void search::BattleScumSearcher2::enumeratePotionActions(search::BattleScumSearc
 
         // potion requires target
         if (!hasValidTarget) {
-            if (hasPlayableAlchemizeForPotionDiscard(bc)) {
-                node.edges.push_back({Action(ActionType::POTION, pIdx, -1)});
-            }
             continue;
         }
 
