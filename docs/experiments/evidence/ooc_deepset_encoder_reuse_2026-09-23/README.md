@@ -74,7 +74,9 @@ instrument encoder calls. Code inspection of `NativePrepared` shows four
 baseline calls (survival, maxHP, HP encoding, and potion encoding) and two
 candidate calls (survival and the shared transition encoding). The earlier
 `preparedEncoderCalls` field was inferred from artifact metadata, not measured;
-it has been removed from the probe and corrected raw outputs.
+it has been removed from the candidate probe and corrected candidate outputs.
+The exact PR 295 baseline raw prefix retains its legacy value of 4, which is
+metadata-derived and happens to agree with the inspected baseline call graph.
 
 ## Release preparation timing
 
