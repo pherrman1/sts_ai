@@ -431,7 +431,13 @@ they therefore use the deterministic fallback boundary.
 
 The default MCP endpoint can be overridden with `STS_MCP_URL` or `--mcp-url`.
 Each decision is written as redacted JSONL under
-`~/.cache/sts-live-driver/` (override with `--trace`). `--dry-run` performs the
+`~/.cache/sts-live-driver/` (override with `--trace`). The driver also writes
+`<trace-stem>.run.json`, with one readable entry per decision: screen, source,
+chosen action, model latency, total elapsed time, phase timings, and a reason
+for each measured wait (inspector/model response, MCP action, or game-state
+transition). Unsupported decisions that stop a run are included in the report.
+This makes model compute time distinguishable from readiness and transition
+time. `--dry-run` performs the
 read, candidate, and decision path without a mutating MCP call, while
 `--max-steps N` bounds a smoke test. The driver intentionally stops on
 unavailable MCP, malformed or stale inspector data, unsupported candidate
@@ -782,7 +788,9 @@ recent trace rows, Git identity, and reproduction command. A
 `LIVE_DRIVER_ERROR` line identifies the packet. Terminal outcomes and step
 bounds exit zero. The final JSONL summary records reached act/floor/HP,
 Silver/OOC/fallback counts, exact unsupported reasons and latency count/mean/
-p50/p95/max. The trace is integration evidence only, never a win-rate benchmark.
+p50/p95/max. The per-run JSON report preserves individual decision timings and
+wait reasons alongside that aggregate summary. The trace is integration
+evidence only, never a win-rate benchmark.
 
 Focused checks are `live_ooc_parity`, `live_ooc_policy`, `live_ooc_protocol`,
 `live_game_driver` and the existing Silver/protocol regressions. Native fixtures

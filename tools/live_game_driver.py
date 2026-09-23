@@ -384,7 +384,7 @@ def build_legal_actions(screen: Mapping[str, Any], commands: Mapping[str, Any] |
 
 
 def forced_ooc_action(screen: Mapping[str, Any], candidates: Sequence[LegalAction]) -> LegalAction | None:
-    """Advance a noncombat state only when MCP exposes one concrete action."""
+    """Take the only enumerated legal noncombat action without a model round trip."""
     if _is_combat(screen) or len(candidates) != 1:
         return None
     if _text(screen.get("screen_type", screen.get("screenType"))).upper() in {"MAIN_MENU", "GAME_OVER"}:
@@ -394,7 +394,7 @@ def forced_ooc_action(screen: Mapping[str, Any], candidates: Sequence[LegalActio
         choices = _list(screen.get("choice_list", screen.get("choices", screen.get("options"))))
         if len(choices) != 1 or candidate.mcp_arguments != {"choice_index": 1}:
             return None
-    elif candidate.mcp_tool not in {"skip", "proceed", "cancel", "confirm", "select_cards"}:
+    elif candidate.mcp_tool not in ACTION_TOOLS:
         return None
     return candidate
 
@@ -756,6 +756,122 @@ class TraceWriter:
         finally:
             temporary.unlink(missing_ok=True)
         return path
+
+    @property
+    def run_report_path(self) -> Path:
+        return self.path.with_suffix(".run.json")
+
+    def write_run_report(self, summary: Mapping[str, Any], *, identity: Mapping[str, Any],
+                         failure: Mapping[str, Any] | None = None) -> Path:
+        """Write one readable, per-run decision and wait-time report."""
+        decisions = []
+        try:
+            rows = (json.loads(line) for line in self.path.read_text(encoding="utf-8").splitlines())
+            for row in rows:
+                if not isinstance(row, Mapping) or row.get("record_type") == "summary":
+                    continue
+                source = _text(row.get("decision_source", "unknown"))
+                if source == "silver":
+                    kind = "Silver combat model"
+                elif source == "ooc_v4":
+                    kind = "OOC decision model"
+                elif source in {"run_control", "game_over_navigation", "menu_inspection"}:
+                    kind = "run control"
+                else:
+                    kind = "driver automation"
+                durations = {
+                    key.removesuffix("_micros"): round(value / 1000.0, 3)
+                    for key, value in row.items()
+                    if key.endswith("_micros") and isinstance(value, (int, float))
+                    and math.isfinite(value) and value >= 0
+                }
+                wait_reasons = []
+                if durations.get("inspector_wait", 0) > 0:
+                    wait_reasons.append({
+                        "phase": "model observation and decision",
+                        "reason": "waiting for the inspector response; the response latency is recorded separately",
+                        "milliseconds": durations["inspector_wait"],
+                    })
+                if durations.get("post_action_wait", 0) > 0:
+                    wait_reasons.append({
+                        "phase": "game transition",
+                        "reason": "waiting for MCP readiness, command availability, and a changed correlated state",
+                        "milliseconds": durations["post_action_wait"],
+                    })
+                if durations.get("mcp_action", 0) > 0:
+                    wait_reasons.append({
+                        "phase": "MCP action",
+                        "reason": "waiting for the game-control action call to return",
+                        "milliseconds": durations["mcp_action"],
+                    })
+                action = row.get("selected_mcp_tool") or row.get("executed_mcp_tool")
+                args = row.get("selected_mcp_arguments") or row.get("executed_mcp_arguments") or {}
+                automated_reasons = {
+                    "parent_reward_cleanup": "collect an unconditional gold reward mechanically",
+                    "card_reward_reveal": "reveal the concealed card group after visible parent rewards were resolved",
+                    "neow_navigation": "advance the Neow screen after the model decision completed",
+                    "shop_navigation": "enter or leave the shop through its mechanical navigation button",
+                    "event_completion": "select the only Leave option after the event decision completed",
+                    "dead_adventurer_fight": "start the encounter because Fight is the only active event option",
+                    "nest_intro": "advance the Nest introduction to expose its actual reward decision",
+                    "boss_door": "advance through the act boss door after combat has ended",
+                    "selector_confirmation": "confirm the model-selected card operation",
+                    "combat_selection_confirmation": "confirm the already selected combat card target",
+                    "boss_chest_skip_cleanup": "close the boss chest after the model declined its relic",
+                    "boss_chest_reveal": "open the boss chest to reveal its relic offer",
+                    "declined_reward_cleanup": "clear rewards already declined by the model",
+                    "empty_reward_proceed": "proceed because no reward choices remain",
+                    "forced_ooc_action": "take the only legal noncombat action enumerated by the driver",
+                    "stale_observation_retry": "discard a decision after the game state changed before action and request a fresh observation",
+                }
+                decision_reason = (row.get("fallback_reason") or row.get("unsupported_reason")
+                                   or row.get("decision_error") or automated_reasons.get(source))
+                if source == "silver":
+                    decision_reason = "Silver selected the action from the current legal combat choices"
+                elif source == "ooc_v4":
+                    decision_reason = "OOC selected the action from the current public noncombat choices"
+                selected_id = row.get("selected_candidate")
+                description = next((candidate.get("human_description")
+                                    for candidate in _list(row.get("legal_candidates"))
+                                    if isinstance(candidate, Mapping) and candidate.get("id") == selected_id), None)
+                decisions.append({
+                    "step": row.get("step"),
+                    "screen": row.get("screen_type"),
+                    "decision_type": kind,
+                    "decision_source": source,
+                    "decision_reason": decision_reason,
+                    "model_status": row.get("ooc_v4_status") or row.get("silver_status"),
+                    "model_latency_ms": round(row.get("ooc_v4_latency_micros", row.get("silver_latency_micros", 0)) / 1000.0, 3),
+                    "chosen_action": {"tool": action, "arguments": args,
+                                      "description": description},
+                    "elapsed_ms": round(row.get("driver_step_micros", 0) / 1000.0, 3),
+                    "durations_ms": durations,
+                    "wait_reasons": wait_reasons,
+                })
+        except (OSError, ValueError):
+            decisions = []
+        report = {
+            "schema": "live_driver_run_report",
+            "schemaVersion": 1,
+            "created_at": datetime.now(timezone.utc).isoformat(),
+            "driver": dict(identity),
+            "summary": dict(summary),
+            "decision_count": len(decisions),
+            "decisions": decisions,
+        }
+        if failure is not None:
+            report["failure"] = dict(failure)
+        temporary = self.run_report_path.with_name(self.run_report_path.name + f".tmp-{os.getpid()}")
+        try:
+            with temporary.open("w", encoding="utf-8") as handle:
+                json.dump(self._sanitize(report), handle, sort_keys=True, indent=2, default=str)
+                handle.write("\n")
+                handle.flush()
+                os.fsync(handle.fileno())
+            os.replace(temporary, self.run_report_path)
+        finally:
+            temporary.unlink(missing_ok=True)
+        return self.run_report_path
 
 
 class McpGameClient:
@@ -1137,6 +1253,7 @@ class Driver:
         self.last_screen: Mapping[str, Any] = {}
         self.last_game: Mapping[str, Any] = {}
         self.context: dict[str, Any] = {}
+        self.context_started_monotonic = self.started
         self.failure_path: Path | None = None
         self.identity = _git_identity()
 
@@ -1302,6 +1419,7 @@ class Driver:
 
     async def step(self, step: int) -> bool:
         started = time.monotonic()
+        self.context_started_monotonic = started
         self.context = {"step": step, "timestamp": datetime.now(timezone.utc).isoformat()}
         row = self.context
         screen, commands, game_state = await self.read_ready_snapshot()
@@ -1495,6 +1613,7 @@ class Driver:
                 reason = _text(evaluator.get("reason", evaluator.get("silverReason", "unknown")))
                 self.counters[f"{prefix}_unsupported"] += 1
                 self.unsupported[f"{prefix}:{reason}"] += 1
+                row.update({"decision_source": prefix, "unsupported_reason": reason})
                 if (self.strict_silver if combat else self.strict_ooc):
                     raise DriverError(f"{prefix} explicitly unsupported: {reason}")
                 action, shop_entry_key = self.fallback_action(screen, game_state, candidates, snapshot)
@@ -1618,6 +1737,13 @@ class Driver:
 
     def write_failure(self, error: BaseException) -> Path:
         self.outcome = "error"
+        if (self.context.get("step") is not None
+                and (not self.trace.recent or self.trace.recent[-1].get("step") != self.context.get("step"))):
+            self.context.setdefault("driver_step_micros",
+                                    (time.monotonic() - self.context_started_monotonic) * 1e6)
+            self.context["decision_error"] = _exception_text(error)
+            self.context["record_type"] = "decision_failure"
+            self.trace.write(self.context)
         packet = {"schema": "live_driver_failure", "schemaVersion": 1,
                   "timestamp": datetime.now(timezone.utc).isoformat(), "driver": self.identity,
                   "step": self.context.get("step", self.steps), "screen": self.last_screen,
@@ -1636,6 +1762,10 @@ class Driver:
         except (OSError, ValueError):
             packet["inspector_snapshot"] = None
         self.failure_path = self.trace.write_failure(packet)
+        self.trace.write_run_report(self.summary(), identity=self.identity,
+                                    failure={"error_class": type(error).__name__,
+                                             "reason": _exception_text(error),
+                                             "step": packet["step"]})
         return self.failure_path
 
     async def run(self) -> None:
@@ -1651,7 +1781,16 @@ class Driver:
             self.write_failure(error)
             raise
         finally:
-            self.trace.write(self.summary())
+            summary = self.summary()
+            self.trace.write(summary)
+            failure = None
+            if self.failure_path is not None:
+                try:
+                    packet = json.loads(self.failure_path.read_text(encoding="utf-8"))
+                    failure = {key: packet.get(key) for key in ("error_class", "reason", "step")}
+                except (OSError, ValueError):
+                    failure = {"reason": "failure packet could not be read"}
+            self.trace.write_run_report(summary, identity=self.identity, failure=failure)
 
 
 def _terminal_outcome(screen: Mapping[str, Any]) -> str:
@@ -1709,9 +1848,10 @@ async def async_main(args: argparse.Namespace) -> int:
                 "error_class": type(error).__name__, "reason": _exception_text(error),
                 "trace_path": str(trace_path), "driver": _git_identity(), "recent_trace": [],
                 "reproduction_command": reproduction})
-        print(f"LIVE_DRIVER_ERROR type={type(error).__name__} step={step} trace={shlex.quote(str(trace_path))} failure={shlex.quote(str(failure))}", file=sys.stderr)
+        print(f"LIVE_DRIVER_ERROR type={type(error).__name__} step={step} trace={shlex.quote(str(trace_path))} report={shlex.quote(str(trace.run_report_path))} failure={shlex.quote(str(failure))}", file=sys.stderr)
         return 2
     print(f"trace: {trace_path}")
+    print(f"run report: {trace.run_report_path}")
     return 0
 
 

@@ -253,20 +253,22 @@ public final class LiveOocCaptureTest {
         if (!"Neow".equals(LiveOocCapture.canonicalEventId("NEOW"))
                 || !"Big Fish".equals(LiveOocCapture.canonicalEventId("Big Fish")))
             throw new AssertionError("event canonical save identity mismatch");
-        if (!LiveOocCapture.simpleInitialEventSupported("GoldenIdolEvent")
-                || !LiveOocCapture.simpleInitialEventSupported("Beggar")
-                || !LiveOocCapture.simpleInitialEventSupported("WomanInBlue")
-                || !LiveOocCapture.simpleInitialEventSupported("ShiningLight")
-                || !LiveOocCapture.simpleInitialEventSupported("WeMeetAgain")
-                || !LiveOocCapture.simpleInitialEventSupported("Sssserpent")
-                || !LiveOocCapture.simpleInitialEventSupported("ScrapOoze")
-                || !LiveOocCapture.simpleInitialEventSupported("Ghosts")
-                || !LiveOocCapture.simpleInitialEventSupported("CursedTome")
-                || LiveOocCapture.simpleInitialEventSupported("LiarsGame")
-                || LiveOocCapture.simpleInitialEventSupported("WomanInBlueDialogue")
-                || LiveOocCapture.simpleInitialEventSupported("WindingHalls")
-                || LiveOocCapture.simpleInitialEventSupported("WorldOfGoop"))
-            throw new AssertionError("simple native event initial-phase support boundary mismatch");
+        if (!LiveOocCapture.nativeIndexedInitialEventVisible("INTRO",
+                    Arrays.asList("[Offer]", "[Leave]"),
+                    Arrays.asList(obj("index", 1), obj("index", 2)))
+                || !LiveOocCapture.nativeIndexedInitialEventVisible(0,
+                    Arrays.asList("[Pay]", "[Leave]"),
+                    Arrays.asList(obj("index", 0), obj("index", 1)))
+                || LiveOocCapture.nativeIndexedInitialEventVisible("RESULT",
+                    Arrays.asList("[Offer]", "[Leave]"),
+                    Arrays.asList(obj("index", 0), obj("index", 1)))
+                || LiveOocCapture.nativeIndexedInitialEventVisible("INTRO",
+                    Arrays.asList("[Offer]", "[Leave]"),
+                    Arrays.asList(obj("index", 1), obj("index", 1)))
+                || LiveOocCapture.nativeIndexedInitialEventVisible("INTRO",
+                    Arrays.asList("[Offer]", "[Leave]"),
+                    Arrays.asList(obj("index", 1), obj("index", 8))))
+            throw new AssertionError("generic native-indexed event surface qualification mismatch");
         if (!"SMALL".equals(LiveOocCapture.visibleChestSize("SmallChest"))
                 || !"MEDIUM".equals(LiveOocCapture.visibleChestSize("MediumChest"))
                 || !"LARGE".equals(LiveOocCapture.visibleChestSize("LargeChest"))
@@ -304,8 +306,7 @@ public final class LiveOocCaptureTest {
                 "[Desecrate] Gain 275 Gold. Become Cursed - Regret.", "[Leave]");
         if (!LiveOocCapture.goldShrineInitialVisible("INTRO", shrineLabels, shrineOptions, 100, 0)
                 || LiveOocCapture.goldShrineInitialVisible("INTRO", shrineLabels, shrineOptions, 100, 20)
-                || LiveOocCapture.goldShrineInitialVisible("RESULT", shrineLabels, shrineOptions, 100, 0)
-                || LiveOocCapture.simpleInitialEventSupported("GoldenShrine"))
+                || LiveOocCapture.goldShrineInitialVisible("RESULT", shrineLabels, shrineOptions, 100, 0))
             throw new AssertionError("GoldShrine runtime class or public amount mismatch");
         List<String> clericLabels = Arrays.asList("[Heal] 35 Gold: Heal 20 HP.",
                 "[Purify] 50 Gold: Remove a card from your deck.", "[Leave]");

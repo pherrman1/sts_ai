@@ -847,12 +847,18 @@ final class LiveOocCapture {
         return retry;
     }
 
-    static boolean simpleInitialEventSupported(String simple) {
-        return Arrays.asList("BigFish", "Beggar", "GoldenIdolEvent", "ShiningLight", "WeMeetAgain",
-                "LivingWall", "Sssserpent", "ScrapOoze", "Mushrooms",
-                "Ghosts", "TheMausoleum", "MysteriousSphere", "SecretPortal", "FountainOfCurseRemoval", "UpgradeShrine",
-                "PurificationShrine", "Transmogrifier", "Duplicator", "Bonfire", "TheJoust",
-                "WomanInBlue", "CursedTome").contains(simple);
+    static boolean nativeIndexedInitialEventVisible(Object phase, List<?> labels, List<?> options) {
+        if (!("INTRO".equals(String.valueOf(phase)) || "0".equals(String.valueOf(phase)))
+                || labels.isEmpty() || labels.size() != options.size()) return false;
+        boolean[] seen = new boolean[8];
+        for (int i = 0; i < options.size(); ++i) {
+            Object raw = map(options.get(i)).get("index");
+            if (!(raw instanceof Number)) return false;
+            int index = ((Number)raw).intValue();
+            if (index < 0 || index >= seen.length || seen[index]) return false;
+            seen[index] = true;
+        }
+        return true;
     }
 
     static int knowingSkullNativeIndex(String label) {
@@ -1520,14 +1526,18 @@ final class LiveOocCapture {
                 if (((Number)map(options.get(i)).get("index")).intValue() != expected.get(i))
                     throw new IllegalArgumentException("We Meet Again option slots differ from native order");
         }
-        // Only initial phases with native one-to-one option indices qualify.
+        // Initial screens are admitted from their actual native-indexed public
+        // options. The native importer then checks the complete live/native
+        // legal-action set before model scoring; event class names are not a
+        // support allowlist.
         boolean initial = "INTRO".equals(String.valueOf(phase)) || "0".equals(String.valueOf(phase));
+        boolean nativeIndexedInitial = nativeIndexedInitialEventVisible(phase, labels, options);
         boolean idolTrap = "GoldenIdolEvent".equals(simple) && "1".equals(String.valueOf(phase))
                 && options.size() == 3 && labels.size() == 3
                 && ((Number)map(options.get(0)).get("index")).intValue() == 0
                 && ((Number)map(options.get(1)).get("index")).intValue() == 1
                 && ((Number)map(options.get(2)).get("index")).intValue() == 2;
-        if (!(simpleInitialEventSupported(simple) && initial)
+        if (!(nativeIndexedInitial && initial)
                 && !goop && !noteForYourself && !cursedTomeLastPage && !colosseumPostCombat
                 && !goldShrine
                 && !nestDecisionVisible(simple, phase, labels, options, AbstractDungeon.ascensionLevel)

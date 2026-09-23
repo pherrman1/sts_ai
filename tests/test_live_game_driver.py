@@ -301,6 +301,10 @@ class LiveGameDriverTest(unittest.TestCase):
             self.assertEqual((row["decision_source"], row["executed_mcp_tool"]),
                              ("empty_reward_proceed", "proceed"))
             self.assertFalse(any(tool == "choose" for tool, _ in client.calls))
+            report = json.loads(trace.with_suffix(".run.json").read_text())
+            self.assertEqual(report["decision_count"], 1)
+            self.assertEqual(report["decisions"][0]["decision_type"], "driver automation")
+            self.assertEqual(report["decisions"][0]["chosen_action"]["tool"], "proceed")
 
     def test_card_reveal_waits_for_model_decisions_on_visible_parent_rewards(self):
         screen = {"screen_type": "COMBAT_REWARD", "choice_list": ["Gold", "Anchor", "Card"],
@@ -405,6 +409,9 @@ class LiveGameDriverTest(unittest.TestCase):
                          {"choice_index": 1})
         event["choice_list"] = ["[Search]", "[Leave]"]
         self.assertIsNone(forced_ooc_action(event, build_legal_actions(event, ["choose"])))
+        forced_button = LegalAction("a0", "Forced action", "discard_potion", {"slot": 1},
+                                    {"kind": "discard_potion", "potion_slot": 1})
+        self.assertIs(forced_ooc_action({"screen_type": "EVENT"}, [forced_button]), forced_button)
         reward = {"screen_type": "CARD_REWARD", "choice_list": ["Take card"]}
         self.assertIsNone(forced_ooc_action(reward, build_legal_actions(reward, ["choose", "skip"])))
         combat = {"screen_type": "NONE", "room_phase": "COMBAT"}
@@ -661,6 +668,28 @@ class LiveGameDriverTest(unittest.TestCase):
             path = Path(directory) / "trace"
             TraceWriter(path).write({"api_key": "secret", "result": "secret"})
             self.assertIn('[REDACTED]', path.read_text())
+
+    def test_run_report_attributes_decision_time_and_wait_reason(self):
+        with tempfile.TemporaryDirectory() as directory:
+            trace = TraceWriter(Path(directory) / "seed-7.jsonl")
+            trace.write({"step": 4, "screen_type": "MAP", "decision_source": "ooc_v4",
+                         "ooc_v4_latency_micros": 1200000, "inspector_wait_micros": 1300000,
+                         "post_action_wait_micros": 450000, "driver_step_micros": 1900000,
+                         "selected_candidate": "a1", "selected_mcp_tool": "choose",
+                         "selected_mcp_arguments": {"choice_index": 2},
+                         "legal_candidates": [{"id": "a1", "human_description": "Choose 2: Rest"}]})
+            report_path = trace.write_run_report({"outcome": "death", "steps": 5},
+                                                 identity={"head": "abc"})
+            report = json.loads(report_path.read_text())
+            self.assertEqual(report["decision_count"], 1)
+            decision = report["decisions"][0]
+            self.assertEqual(decision["decision_type"], "OOC decision model")
+            self.assertEqual(decision["decision_reason"],
+                             "OOC selected the action from the current public noncombat choices")
+            self.assertEqual(decision["model_latency_ms"], 1200.0)
+            self.assertEqual(decision["chosen_action"]["description"], "Choose 2: Rest")
+            self.assertEqual({item["phase"] for item in decision["wait_reasons"]},
+                             {"model observation and decision", "game transition"})
 
 
 class OocDriverTest(unittest.TestCase):
