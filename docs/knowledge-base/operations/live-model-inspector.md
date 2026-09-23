@@ -688,6 +688,9 @@ The same unique UUID and exact native task check lowers Headbutt, Hologram,
 and Meditate from the discard pile, and Exhume from the exhaust pile.
 The Stasis snapshot includes only living Bronze Orbs: vanilla can retain a
 dead orb's Stasis power after its card returns to the player's hand.
+The one-card Forethought hand selector is identified by its active vanilla
+action and selection shape; the upgraded choose-any-number form remains
+outside the native supported selector path.
 Selectors named in the shared enum but absent from the isolated Silver port
 return `silver_selection_task_not_in_port` before search instead of reaching
 its assertion path.

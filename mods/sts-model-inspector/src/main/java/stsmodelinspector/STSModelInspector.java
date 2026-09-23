@@ -2448,6 +2448,11 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         return task;
     }
 
+    static boolean singleForethoughtSelection(boolean action, boolean anyNumber,
+                                              boolean canPickZero, int count) {
+        return action && !anyNumber && !canPickZero && count == 1;
+    }
+
     static String selectionJson(String task, boolean canPickZero, boolean anyNumber, int pickCount,
                                         List<AbstractCard> source) {
         return selectionJson(task, canPickZero, anyNumber, pickCount, 0, source);
@@ -2543,6 +2548,8 @@ public final class STSModelInspector implements PostInitializeSubscriber,
                 && AbstractDungeon.handCardSelectScreen != null) {
             com.megacrit.cardcrawl.screens.select.HandCardSelectScreen screen =
                     AbstractDungeon.handCardSelectScreen;
+            Object current = AbstractDungeon.actionManager == null ? null
+                    : AbstractDungeon.actionManager.currentAction;
             Boolean anyNumber = readBooleanField(screen, "anyNumber");
             boolean canPickAnyNumber = anyNumber != null ? anyNumber : screen.upTo;
             // DiscardAction(-1), used by Gambler's Brew and Gambling Chip,
@@ -2551,6 +2558,8 @@ public final class STSModelInspector implements PostInitializeSubscriber,
             // not an unknown combat screen.
             String task = handSelectionTask(screen.selectionReason, canPickAnyNumber,
                     screen.canPickZero, screen.numCardsToSelect);
+            if (singleForethoughtSelection(current instanceof com.megacrit.cardcrawl.actions.unique.ForethoughtAction,
+                    canPickAnyNumber, screen.canPickZero, screen.numCardsToSelect)) task = "FORETHOUGHT";
             return selectionJson(task, screen.canPickZero, canPickAnyNumber, screen.numCardsToSelect,
                     AbstractDungeon.player.hand.group);
         }

@@ -135,6 +135,10 @@ public final class CombatBoundaryTest {
                 || STSModelInspector.zeroCostDiscardReturn(true, true, 1)
                 || STSModelInspector.zeroCostDiscardReturn(false, true, 0))
             throw new AssertionError("Liquid Memories selector was confused with Hologram");
+        if (!STSModelInspector.singleForethoughtSelection(true, false, false, 1)
+                || STSModelInspector.singleForethoughtSelection(true, true, true, 99)
+                || STSModelInspector.singleForethoughtSelection(false, false, false, 1))
+            throw new AssertionError("single Forethought selector was not guarded");
         for (String child : new String[]{"SpikeSlime_L", "AcidSlime_L", "SpikeSlime_M", "AcidSlime_M"})
             if (!STSModelInspector.slimeBossDescendant(child))
                 throw new AssertionError("Slime Boss split child was not recognized: " + child);
