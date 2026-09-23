@@ -6,6 +6,7 @@
 
 #include <algorithm>
 #include <cassert>
+#include <vector>
 
 #include "constants/RelicPools.h"
 #include "constants/CardPools.h"
@@ -889,49 +890,22 @@ void GameContext::setupEvent() { // todo necronomicon event
             info.hpAmount0 = std::max(1, fractionMaxHp(.10f, FLOOR));
             break;
 
-        case Event::FALLING: { // todo test and CANNOT BE BOTTLED
-            int counts[8] {0};
-            for (const auto &c : deck.cards) {
-                int t = static_cast<int>(c.getType());
-                if (t >= 0 && t < 8) ++counts[t];
-            }
-
-            int attacksIdx = counts[0] > 0 ? miscRng.random(counts[0] - 1) : -1;
-            int skillsIdx = counts[1] > 0 ? miscRng.random(counts[1] - 1) : -1;
-            int powersIdx = counts[2] > 0 ? miscRng.random(counts[2] - 1) : -1;
-
-            int attackCount = 0;
-            int skillCount = 0;
-            int powerCount = 0;
-
+        case Event::FALLING: {
             info.attackCardDeckIdx = -1;
             info.skillCardDeckIdx = -1;
             info.powerCardDeckIdx = -1;
-
-            for (int i = 0; i < deck.cards.size(); ++i) {
-                switch (deck.cards[i].getType()) {
-                    case CardType::ATTACK:
-                        if (attackCount++ == attacksIdx) {
-                            info.attackCardDeckIdx = i;
-                        }
-                        break;
-
-                    case CardType::SKILL:
-                        if (skillCount++ == skillsIdx) {
-                            info.skillCardDeckIdx = i;
-                        }
-                        break;
-
-                    case CardType::POWER:
-                        if (powerCount++ == powersIdx) {
-                            info.powerCardDeckIdx = i;
-                        }
-                        break;
-
-                    default:
-                        break;
-                }
-            }
+            const auto randomUnbottledCard = [&](CardType type) {
+                std::vector<int> eligible;
+                for (int i = 0; i < deck.size(); ++i)
+                    if (deck.cards[i].getType() == type && !deck.isCardBottled(i))
+                        eligible.push_back(i);
+                return eligible.empty() ? -1 : eligible[miscRng.random(static_cast<int>(eligible.size()) - 1)];
+            };
+            // Vanilla Falling calls CardHelper.returnCardOfType in Attack,
+            // Skill, Power order, excluding cards held by bottled relics.
+            info.attackCardDeckIdx = randomUnbottledCard(CardType::ATTACK);
+            info.skillCardDeckIdx = randomUnbottledCard(CardType::SKILL);
+            info.powerCardDeckIdx = randomUnbottledCard(CardType::POWER);
             break;
         }
 

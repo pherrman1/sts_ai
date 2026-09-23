@@ -617,6 +617,18 @@ ImportResult importLiveOocStateV1(const J &observation, LiveOocStateV1 &out) {
             g.info.skillCardDeckIdx=integer(d,"skillCardDeckIdx",-1,g.deck.size()-1);
             g.info.powerCardDeckIdx=integer(d,"powerCardDeckIdx",-1,g.deck.size()-1);
             g.info.attackCardDeckIdx=integer(d,"attackCardDeckIdx",-1,g.deck.size()-1);
+            if(g.curEvent==Event::FALLING) {
+                const auto validFallingIndex=[&](int index,CardType type) {
+                    return index==-1 || (g.deck.cards[index].getType()==type
+                        && !g.deck.isCardBottled(index));
+                };
+                require(validFallingIndex(g.info.skillCardDeckIdx,CardType::SKILL)
+                        && validFallingIndex(g.info.powerCardDeckIdx,CardType::POWER)
+                        && validFallingIndex(g.info.attackCardDeckIdx,CardType::ATTACK)
+                        && (g.info.skillCardDeckIdx>=0 || g.info.powerCardDeckIdx>=0
+                            || g.info.attackCardDeckIdx>=0),
+                    "Falling offered-card identities differ from eligible deck cards");
+            }
             g.info.potionIdx=integer(d,"potionIdx",-1,4);g.info.gold=integer(d,"gold",-1,1000000);
             g.info.cardIdx=integer(d,"cardIdx",-1,g.deck.size()-1);
             if(g.curEvent==Event::NEOW) {

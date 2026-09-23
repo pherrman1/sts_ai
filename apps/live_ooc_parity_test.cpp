@@ -126,6 +126,18 @@ int main(int argc,char **argv){try{
     base.deck.bottleCard(base.deck.size()-1,CardType::ATTACK);
     base.deck.obtain(base,Card(CardId::STRIKE_RED,1));
     PathHistory path;path.roomVisits={1,2,3,4,5,6,1,1,0,0};
+    auto falling=base;
+    falling.deck.obtain(falling,Card(CardId::DEFEND_RED));
+    falling.deck.obtain(falling,Card(CardId::INFLAME));
+    falling.screenState=ScreenState::EVENT_SCREEN;
+    falling.curEvent=Event::FALLING;
+    falling.setupEvent();
+    check(falling.info.attackCardDeckIdx>=0
+            && !falling.deck.isCardBottled(falling.info.attackCardDeckIdx)
+            && falling.deck.cards[falling.info.attackCardDeckIdx].getType()==CardType::ATTACK
+            && falling.info.skillCardDeckIdx>=0
+            && falling.info.powerCardDeckIdx>=0,
+        "Falling setup must expose one eligible unbottled card per available type");
     {
         auto source = base;
         source.screenState = ScreenState::REWARDS;
@@ -193,6 +205,7 @@ int main(int argc,char **argv){try{
     }
     std::vector<std::pair<std::string,GameContext>> fixtures;
     auto add=[&](std::string n,GameContext g){fixtures.emplace_back(n,g);};
+    add("event_falling_visible_cards",falling);
     auto g=base;g.screenState=ScreenState::MAP_SCREEN;add("map_multiple_children",g);
     g=base;g.screenState=ScreenState::REST_ROOM;add("rest_smith_lift_dig_remove_key",g);
     g.blueKey=g.greenKey=g.redKey=true;add("rest_keys_collected",g);

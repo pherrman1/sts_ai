@@ -92,8 +92,11 @@ class LiveOocProtocol(unittest.TestCase):
         self.assertEqual(response["evaluators"][0]["reason"], "SEARING_BLOW_UPGRADE_HISTORY_UNQUALIFIED")
 
     def test_direct_v4_event_scoring_requires_exact_public_reward_pity_history(self):
-        rows = self.run_rows([self.fixtures["event_mushrooms_hidden_reward_pity"],
-                              self.fixtures["event_sphere_hidden_reward_pity"]], policy="v4")
+        observations = [copy.deepcopy(self.fixtures["event_mushrooms_hidden_reward_pity"]),
+                        copy.deepcopy(self.fixtures["event_sphere_hidden_reward_pity"])]
+        for observation in observations:
+            observation["ooc"]["publicState"]["rewardPityHistoryComplete"] = False
+        rows = self.run_rows(observations, policy="v4")
         for response in rows:
             evaluator, = response["evaluators"]
             self.assertEqual(evaluator["status"], "UNSUPPORTED")

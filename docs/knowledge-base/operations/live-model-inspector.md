@@ -527,6 +527,10 @@ requiring root visits.
 An already resolved event with exactly one `[Leave]` command is also a
 mechanical completion in either MCP `EVENT` or `COMPLETE` room phase; other
 event choices remain OOC decisions.
+Falling's CHOICE phase is qualified when each offered skill, power, and attack
+maps by UUID to its exact unbottled master-deck index and vanilla option slot.
+The simulator excludes bottled cards when constructing its hypothetical
+Falling choices, matching CardHelper's public offer.
 For any other noncombat screen where MCP advertises exactly one concrete legal
 action, the strict driver advances it as `forced_ooc_action` without waiting for
 an OOC search. It excludes combat and menu states, and requires a single
@@ -663,7 +667,8 @@ models report `MODEL_UNAVAILABLE` without disabling Silver. The launcher
 validates/displays the OOC path; `--allow-missing-ooc` permits Silver-only work.
 
 Supported native fixtures cover map choices, reward take/skip and repeated
-card groups, mixed combat rewards, rest/smith, upgrade selectors with physical
+card groups, mixed combat rewards, Falling's exact visible card choices,
+rest/smith, upgrade selectors with physical
 duplicate cards, bottle selectors with physical duplicate cards, initial supported events/Neow including the Woman in Blue's
 gold-correct potion purchases and Ascension-dependent leave outcome, all shop
 purchase types, shop-removal entry, chest open/leave and boss relic take/skip. The existing V4

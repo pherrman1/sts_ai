@@ -1261,10 +1261,11 @@ final class LiveOocCapture {
         }
         Map<String,Object> e = object("id", id, "phase", String.valueOf(phase), "options", options, "eventData", 0);
         out.put("event", e);
-        out.put("details", object("event", id, "eventData", 0, "phase", 0,
+        Map<String,Object> eventDetails = object("event", id, "eventData", 0, "phase", 0,
                 "upgradeOne", false, "cleanUpIsRemoveCard", false,
                 "skillCardDeckIdx", -1, "powerCardDeckIdx", -1, "attackCardDeckIdx", -1,
-                "potionIdx", -1, "gold", -1, "cardIdx", -1));
+                "potionIdx", -1, "gold", -1, "cardIdx", -1);
+        out.put("details", eventDetails);
         if ("ShiningLight".equals(simple))
             map(out.get("details")).put("hpAmount0", field(event, "damage"));
         if ("GoldenIdolEvent".equals(simple)) {
@@ -1405,6 +1406,32 @@ final class LiveOocCapture {
                         AbstractDungeon.ascensionLevel, AbstractDungeon.player.hasRelic("Golden Idol"));
         if (forgottenAltar)
             map(out.get("details")).put("hpAmount0", field(event, "hpLoss"));
+        boolean fallingChoice = false;
+        if ("Falling".equals(simple) && "CHOICE".equals(String.valueOf(phase))) {
+            int skillIndex = fallingCardDeckIndex(field(event, "skillCard"));
+            int powerIndex = fallingCardDeckIndex(field(event, "powerCard"));
+            int attackIndex = fallingCardDeckIndex(field(event, "attackCard"));
+            boolean hasSkill = Boolean.TRUE.equals(field(event, "skill"));
+            boolean hasPower = Boolean.TRUE.equals(field(event, "power"));
+            boolean hasAttack = Boolean.TRUE.equals(field(event, "attack"));
+            if (hasSkill != (skillIndex >= 0) || hasPower != (powerIndex >= 0)
+                    || hasAttack != (attackIndex >= 0))
+                throw new IllegalArgumentException("Falling offered cards differ from native availability");
+            List<Integer> expectedSlots = new ArrayList<>();
+            if (hasSkill) expectedSlots.add(0);
+            if (hasPower) expectedSlots.add(1);
+            if (hasAttack) expectedSlots.add(2);
+            if (expectedSlots.isEmpty() || options.size() != expectedSlots.size()
+                    || labels.size() != expectedSlots.size())
+                throw new IllegalArgumentException("Falling CHOICE option count differs from native cards");
+            for (int i = 0; i < expectedSlots.size(); ++i)
+                if (((Number)map(options.get(i)).get("index")).intValue() != expectedSlots.get(i))
+                    throw new IllegalArgumentException("Falling CHOICE slots differ from native order");
+            eventDetails.put("skillCardDeckIdx", skillIndex);
+            eventDetails.put("powerCardDeckIdx", powerIndex);
+            eventDetails.put("attackCardDeckIdx", attackIndex);
+            fallingChoice = true;
+        }
         if ("WeMeetAgain".equals(simple) && "INTRO".equals(String.valueOf(phase))) {
             Map<String,Object> details = map(out.get("details"));
             Object offeredPotion = field(event, "potionOption");
@@ -1451,7 +1478,7 @@ final class LiveOocCapture {
                 && designerIndices == null && !maskedBandits && !library && !augmenter
                 && !ancientWriting && !windingHalls && !faceTrader && !addict && !vampiresNoVial
                 && deadAdventurerEncounter < 0
-                && !forgottenAltar)
+                && !forgottenAltar && !fallingChoice)
             out.put("unsupportedReason", "EVENT_PHASE_UNREPRESENTABLE:" + id + ":" + phase);
         if ("NeowEvent".equals(simple)) {
             List<Object> offers = new ArrayList<>();
@@ -1606,6 +1633,20 @@ final class LiveOocCapture {
     }
     private static Object optionalField(Object o, String name) throws ReflectiveOperationException {
         try { return field(o, name); } catch (NoSuchFieldException absent) { return null; }
+    }
+    private static int fallingCardDeckIndex(Object offered) throws ReflectiveOperationException {
+        if (offered == null) return -1;
+        if (!(offered instanceof AbstractCard))
+            throw new IllegalArgumentException("Falling offered card has unexpected type");
+        AbstractCard card = (AbstractCard)offered;
+        int found = -1;
+        for (int i = 0; i < AbstractDungeon.player.masterDeck.group.size(); ++i) {
+            if (!AbstractDungeon.player.masterDeck.group.get(i).uuid.equals(card.uuid)) continue;
+            if (found >= 0) throw new IllegalArgumentException("Falling deck UUID is ambiguous");
+            found = i;
+        }
+        if (found < 0) throw new IllegalArgumentException("Falling offered card is absent from master deck");
+        return found;
     }
     private static Object field(Object o, String name) throws ReflectiveOperationException {
         for (Class<?> c = o.getClass(); c != null; c = c.getSuperclass()) {
