@@ -2321,6 +2321,23 @@ int main() {
         if (!one_combat::advisor::selectedLiveAction(
                 loweringAction, loweringContext, targetObservation).is_null())
             throw std::runtime_error("unsupported single-card selection was lowered as executable");
+        loweringAction.source = silver_bridge::CardSource::HAND;
+        loweringAction.cardSelectTask = static_cast<std::int16_t>(CardSelectTask::ARMAMENTS);
+        auto handSelectObservation = targetObservation;
+        handSelectObservation["combat"]["cardSelect"] = json{
+            {"task", "ARMAMENTS"}, {"liveUuids", json::array({"copy-a", "copy-b"})}};
+        if (one_combat::advisor::selectedLiveAction(loweringAction, loweringContext,
+                handSelectObservation) != json{{"kind", "choose"}, {"choiceIndex", 2}})
+            throw std::runtime_error("single hand selection lost its unique live UUID");
+        handSelectObservation["combat"]["cardSelect"]["liveUuids"]
+            = json::array({"copy-b", "copy-b"});
+        if (!one_combat::advisor::selectedLiveAction(loweringAction, loweringContext,
+                handSelectObservation).is_null())
+            throw std::runtime_error("ambiguous hand UUID was lowered as executable");
+        handSelectObservation["combat"]["cardSelect"]["task"] = "WARCRY";
+        if (!one_combat::advisor::selectedLiveAction(loweringAction, loweringContext,
+                handSelectObservation).is_null())
+            throw std::runtime_error("mismatched hand selection task was lowered");
         loweringAction.source = silver_bridge::CardSource::CARD_SELECT_OPTION;
         loweringAction.cardSelectTask = static_cast<std::int16_t>(CardSelectTask::DISCOVERY);
         loweringAction.optionCardId = static_cast<std::int16_t>(CardId::MAGNETISM);

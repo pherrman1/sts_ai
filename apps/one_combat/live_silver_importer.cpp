@@ -1322,6 +1322,21 @@ nlohmann::json selectedLiveAction(const silver_bridge::SemanticAction &action,
             : observation.value("silverRoot", nlohmann::json::object())
                   .value("combat", nlohmann::json::object());
         const auto select = combat.value("cardSelect", nlohmann::json::object());
+        if (action.source == silver_bridge::CardSource::HAND && select.is_object()) {
+            const auto task = live_silver::cardSelectTask(select.value("task", std::string()));
+            if (!task || action.cardSelectTask != static_cast<std::int16_t>(*task)) return nullptr;
+            const auto uuid = uuidForId(action.card.uniqueId);
+            const auto live = select.value("liveUuids", nlohmann::json::array());
+            if (uuid.empty() || !live.is_array()) return nullptr;
+            int index = -1;
+            for (int i = 0; i < static_cast<int>(live.size()); ++i) {
+                if (!live[i].is_string() || live[i].get<std::string>() != uuid) continue;
+                if (index >= 0) return nullptr;
+                index = i;
+            }
+            return index < 0 ? nlohmann::json(nullptr)
+                : nlohmann::json{{"kind", "choose"}, {"choiceIndex", index + 1}};
+        }
         if (action.cardSelectTask == static_cast<std::int16_t>(sts::CardSelectTask::LIQUID_MEMORIES_POTION)
                 && action.source == silver_bridge::CardSource::DISCARD
                 && select.is_object()
