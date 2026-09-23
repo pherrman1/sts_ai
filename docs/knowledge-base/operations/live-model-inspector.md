@@ -566,6 +566,9 @@ Augmenter's initial three visible options preserve native Test, Transform, and
 Mutagens indices when their displayed labels and slots match.
 Ancient Writing's initial Elegance and Simplicity options are likewise
 qualified by their visible labels, slots, and initial phase.
+Winding Halls' three choice phase imports the displayed HP loss, heal, and
+max-HP loss from the vanilla event fields after checking their button text
+and native option indices.
 Mushrooms and Mysterious Sphere remain unsupported with
 `PUBLIC_REWARD_PITY_HISTORY_UNQUALIFIED` because their pre-MAP continuation
 can generate potion or card rewards. The v_win leaf marginalizes those

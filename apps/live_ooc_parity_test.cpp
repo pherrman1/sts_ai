@@ -73,7 +73,7 @@ static J project(const GameContext &g,const PathHistory &path,const std::string 
                 d["potions"].push_back({{"id",J(s.potions[i])},{"price",s.potionPrice(i)}});}break;}
         case ScreenState::EVENT_SCREEN:{screen="event";const auto &i=g.info;
             d={{"event",g.curEvent==Event::NEOW?J("Neow"):J(g.curEvent)},{"eventData",i.eventData},{"phase",i.phase},
-                {"hpAmount0",i.hpAmount0},{"hpAmount1",i.hpAmount1},
+                {"hpAmount0",i.hpAmount0},{"hpAmount1",i.hpAmount1},{"hpAmount2",i.hpAmount2},
                 {"upgradeOne",i.upgradeOne},{"cleanUpIsRemoveCard",i.cleanUpIsRemoveCard},{"skillCardDeckIdx",i.skillCardDeckIdx},
                 {"powerCardDeckIdx",i.powerCardDeckIdx},{"attackCardDeckIdx",i.attackCardDeckIdx},{"potionIdx",i.potionIdx},
                 {"gold",i.gold},{"goldLoss",i.goldLoss},{"cardIdx",i.cardIdx}};
@@ -236,6 +236,8 @@ int main(int argc,char **argv){try{
     g.curEvent=Event::WE_MEET_AGAIN;g.info.cardIdx=g.deck.size()-1;
     g.info.potionIdx=-1;g.info.gold=-1;add("event_we_meet_again_card_or_attack",g);
     g.curEvent=Event::THE_LIBRARY;g.info.hpAmount0=26;add("library_public_heal_hidden_offer",g);
+    g.curEvent=Event::WINDING_HALLS;g.info.hpAmount0=11;g.info.hpAmount1=22;g.info.hpAmount2=4;
+    add("event_winding_halls_public_hp_amounts",g);
     g.curEvent=Event::HYPNOTIZING_COLORED_MUSHROOMS;add("unsupported_mushrooms_reward_pity",g);
     g.curEvent=Event::MYSTERIOUS_SPHERE;add("unsupported_sphere_reward_pity",g);
     g=base;g.screenState=ScreenState::EVENT_SCREEN;g.curEvent=Event::NEOW;add("neow",g);

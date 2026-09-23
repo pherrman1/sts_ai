@@ -152,6 +152,14 @@ public final class LiveOocCaptureTest {
                 || LiveOocCapture.ancientWritingInitialVisible("LEAVE", writingLabels, banditOptions)
                 || LiveOocCapture.ancientWritingInitialVisible("INTRO", writingLabels, augmenterOptions))
             throw new AssertionError("Ancient Writing initial options lost their native indices");
+        java.util.List<String> hallsLabels = java.util.Arrays.asList(
+                "[Embrace Madness] Receive 2 Madness. Lose 11 HP.",
+                "[Focus] Become Cursed - Writhe. Heal 22 HP.",
+                "[Retrace Your Steps] Lose 4 Max HP.");
+        if (!LiveOocCapture.windingHallsChoiceVisible("1", hallsLabels, augmenterOptions, 11, 22, 4)
+                || LiveOocCapture.windingHallsChoiceVisible("0", hallsLabels, augmenterOptions, 11, 22, 4)
+                || LiveOocCapture.windingHallsChoiceVisible("1", hallsLabels, augmenterOptions, 12, 22, 4))
+            throw new AssertionError("Winding Halls public HP costs or options were misidentified");
         if (!"INVALID".equals(LiveOocCapture.canonicalPathHistory(
                 act3Path, true, "", 3, java.util.Arrays.asList(16)).get(31)))
             throw new AssertionError("unconfirmed Act 2 boss marker was promoted");

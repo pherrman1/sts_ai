@@ -759,6 +759,18 @@ final class LiveOocCapture {
                 && String.valueOf(labels.get(1)).contains("[Simplicity] Upgrade all Strikes and Defends");
     }
 
+    static boolean windingHallsChoiceVisible(Object phase, List<?> labels, List<?> options,
+                                             int hpLoss, int heal, int maxHpLoss) {
+        return "1".equals(String.valueOf(phase)) && labels.size() == 3 && options.size() == 3
+                && hpLoss > 0 && heal > 0 && maxHpLoss > 0
+                && ((Number)map(options.get(0)).get("index")).intValue() == 0
+                && ((Number)map(options.get(1)).get("index")).intValue() == 1
+                && ((Number)map(options.get(2)).get("index")).intValue() == 2
+                && String.valueOf(labels.get(0)).contains("Receive 2 Madness. Lose " + hpLoss + " HP")
+                && String.valueOf(labels.get(1)).contains("Writhe. Heal " + heal + " HP")
+                && String.valueOf(labels.get(2)).contains("Lose " + maxHpLoss + " Max HP");
+    }
+
     static String visibleChestSize(String chestClass) {
         if ("SmallChest".equals(chestClass)) return "SMALL";
         if ("MediumChest".equals(chestClass)) return "MEDIUM";
@@ -1236,6 +1248,19 @@ final class LiveOocCapture {
                 && augmenterInitialVisible(phase, labels, options);
         boolean ancientWriting = "BackToBasics".equals(simple)
                 && ancientWritingInitialVisible(phase, labels, options);
+        boolean windingHalls = false;
+        if ("WindingHalls".equals(simple)) {
+            int hpLoss = ((Number)field(event, "hpAmt")).intValue();
+            int heal = ((Number)field(event, "healAmt")).intValue();
+            int maxHpLoss = ((Number)field(event, "maxHPAmt")).intValue();
+            windingHalls = windingHallsChoiceVisible(phase, labels, options,
+                    hpLoss, heal, maxHpLoss);
+            if (windingHalls) {
+                map(out.get("details")).put("hpAmount0", hpLoss);
+                map(out.get("details")).put("hpAmount1", heal);
+                map(out.get("details")).put("hpAmount2", maxHpLoss);
+            }
+        }
         int[] designerIndices = null;
         if ("Designer".equals(simple)) {
             boolean upgradeOne = (Boolean)field(event, "adjustmentUpgradesOne");
@@ -1311,7 +1336,8 @@ final class LiveOocCapture {
                 && !goldShrine
                 && !nestDecisionVisible(simple, phase, labels, options, AbstractDungeon.ascensionLevel)
                 && !idolTrap && !goldenWing && !cleric && !sensoryStone
-                && designerIndices == null && !maskedBandits && !library && !augmenter && !ancientWriting
+                && designerIndices == null && !maskedBandits && !library && !augmenter
+                && !ancientWriting && !windingHalls
                 && deadAdventurerEncounter < 0
                 && !forgottenAltar)
             out.put("unsupportedReason", "EVENT_PHASE_UNREPRESENTABLE:" + id + ":" + phase);
