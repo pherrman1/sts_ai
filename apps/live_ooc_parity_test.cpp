@@ -239,6 +239,7 @@ int main(int argc,char **argv){try{
     check(colosseum.screenState==ScreenState::REWARDS
             && colosseum.info.rewardsContainer.relicCount==2
             && colosseum.info.rewardsContainer.goldRewardCount==1
+            && colosseum.info.rewardsContainer.cardRewardCount==1
             && colosseum.info.rewardsContainer.gold[0]==100,
         "Colosseum second encounter must retain its fixed public reward structure");
     g.curEvent=Event::VAMPIRES;g.maxHp=105;g.info.hpAmount0=32;

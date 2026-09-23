@@ -2578,7 +2578,9 @@ void GameContext::chooseEventOption(int idx) {
                 reward.addRelic(returnRandomScreenlessRelic(RelicTier::RARE));
                 reward.addRelic(returnRandomScreenlessRelic(RelicTier::UNCOMMON));
                 reward.addGold(100);
-                regainControlAction = [reward](GameContext &gc) {
+                regainControlAction = [reward](GameContext &gc) mutable {
+                    gc.addPotionRewards(reward);
+                    reward.addCardReward(gc.createCardReward(Room::EVENT));
                     gc.openCombatRewardScreen(reward);
                     gc.regainControlAction = returnToMapAction;
                 };
