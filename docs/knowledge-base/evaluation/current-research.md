@@ -1,7 +1,7 @@
 # Current research status
 
-Last verified: 2026-09-21 for the complete frozen Silver internal-node FPU
-cohort and local 80-source learned-prefix scale validation;
+Last verified: 2026-09-23 for the frozen Silver prior online gameplay screen;
+2026-09-21 for the complete frozen Silver internal-node FPU cohort and local 80-source learned-prefix scale validation;
 2026-09-20 for the tactical-prefix Silver oracle headroom screen
 and contextual first-action Silver selector headroom/policy screen; 2026-09-19 for forced-action historical artifact recovery and
 the PR #247 evaluator preflight; 2026-09-18 for the OOC 20% gap-stop quality
@@ -1553,11 +1553,48 @@ itself improved locked-J regret over uniform by `4.11938` points; the student
 recovered 70.29% of that soft-prior headroom. This is frozen offline
 generalization evidence, not gameplay qualification or default promotion.
 LOCKED_TEST is consumed and must not be used for tuning; the evaluator command
-is now disabled for every output path. The next experiment is the separate
-oracle/native prior integration: export the frozen network,
-measure native inference cost, then compare uniform-PUCT and learned-prior
-PUCT under small paired Silver budgets. See the [ledger-06 result](../../experiments/ledger-06.md)
-and the [locked-test evidence packet](../../experiments/evidence/silver_prior_locked_test_v1_20260922/README.md).
+is now disabled for every output path. A bounded root-replay mechanism screen
+then evaluated the frozen T2 prior on 64 preselected VALIDATION roots. The
+L-target oracle beat uniform PUCT (`-0.26776`, 95% source-seed CI
+`[-0.56135,-0.07144]`), while learned-minus-uniform crossed zero
+(`-0.03390`, `[-0.11794,0.03651]`) and learned-minus-ordinary-UCT also
+crossed zero (`+0.05916`, `[-0.28676,0.37000]`). Its predeclared
+classification is **`LEARNED_PRIOR_SEARCH_HEADROOM_NOT_CAPTURED`**: root PUCT
+has usable headroom on this development population, but the learned prior did
+not capture it. Stop the deployment line based on this mechanism screen. A
+separately requested downstream whole-run gameplay diagnostic was subsequently
+allowed; that authorization does not revise this screen or establish
+deployment. VALIDATION was used for model selection, so this is a mechanism
+screen rather than fresh generalization evidence. No gameplay or default
+search changed by the offline experiment. See the [root-replay packet](../../experiments/evidence/silver_prior_root_replay_20260923/README.md),
+the [ledger-06 result](../../experiments/ledger-06.md), and the
+[locked-test evidence packet](../../experiments/evidence/silver_prior_locked_test_v1_20260922/README.md).
+
+The separate pre-review gameplay integration smoke used two explicitly
+reserved, non-scientific seeds. The corrected parser sums every combat record:
+all four runs completed; treatment telemetry recorded 901 prior evaluations
+and 901 root-PUCT decisions total with zero surface failures, while control
+made no model calls. Treatment mean inference latency was 6.679 ms/call and
+6.930 ms/call on the respective seeds. The legacy logs lack raw per-call
+samples, so exact pooled median/p95 are unavailable. Their CSV metadata reports
+executable SHA `1dc14cef9f5b6602fe84bd2a266347757245d78c`, not the then-current
+candidate `fb9e0cf9510ac612fdc3f521076ca093d1fb55b5`; this is working-tree
+integration evidence, not candidate-SHA evidence. The user's 5 ms waiver
+allowed the bounded smoke to complete. This confirms runtime execution and
+retained reroot operation only.
+The subsequent user-authorized full-run online screen completed the frozen 32
+paired seeds `24100000..24100031` at reviewed source
+`57a824349fd99c917cf22d67e929a8630f001a9d`, exact binary/model hashes, and
+fixed project-fair A0 / 1,000-simulation settings. CONTROL won 21/32 and LEARNED
+15/32; the paired table was 1 learned-only, 7 control-only, 14 both-win, and 10
+both-lose. The `-6` net discordant count yields the preregistered
+**`ONLINE_LEARNED_PRIOR_UNFAVORABLE`** classification; paired win-rate delta is
+`-18.75 pp` (95% bootstrap CI `[-34.375,-3.125] pp`), exact two-sided p is
+`0.0703`. Treat this as the bounded screen's classification, not conventional
+statistical significance or broad model invalidity. It does not qualify or
+promote a default. The offline `LEARNED_PRIOR_SEARCH_HEADROOM_NOT_CAPTURED`
+result remains unchanged. See the [complete online packet](../../experiments/evidence/silver_prior_online_screen_20260923/README.md)
+and [ledger result](../../experiments/ledger-06.md).
 
 ### Combat leaf/model variants
 
