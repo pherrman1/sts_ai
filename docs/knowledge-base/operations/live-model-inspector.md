@@ -572,6 +572,8 @@ and native option indices.
 Face Trader's Touch/Trade/Leave phase checks the displayed gold and floored
 HP loss. The native Touch transition uses that same public loss instead of
 rounding 10% of max HP again.
+Addict's initial Pay/Rob/Leave choices are qualified when the Pay 85 gold
+option is available and the displayed slots and effects match native actions.
 Mushrooms and Mysterious Sphere remain unsupported with
 `PUBLIC_REWARD_PITY_HISTORY_UNQUALIFIED` because their pre-MAP continuation
 can generate potion or card rewards. The v_win leaf marginalizes those

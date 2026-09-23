@@ -168,6 +168,13 @@ public final class LiveOocCaptureTest {
                 || LiveOocCapture.faceTraderChoiceVisible("MAIN", faceLabels, augmenterOptions, 9, 75, 0)
                 || LiveOocCapture.faceTraderChoiceVisible("MAIN", faceLabels, augmenterOptions, 8, 75, 20))
             throw new AssertionError("Face Trader public Touch and Trade options were misidentified");
+        java.util.List<String> addictLabels = java.util.Arrays.asList(
+                "[Offer Gold] 85 Gold: Obtain a Relic.",
+                "[Rob] Obtain a Relic. Become Cursed - Shame.", "[Leave]");
+        if (!LiveOocCapture.addictInitialVisible("0", addictLabels, augmenterOptions, 85)
+                || LiveOocCapture.addictInitialVisible("1", addictLabels, augmenterOptions, 85)
+                || LiveOocCapture.addictInitialVisible("0", addictLabels, augmenterOptions, 84))
+            throw new AssertionError("Addict initial public Pay/Rob/Leave options were misidentified");
         if (!"INVALID".equals(LiveOocCapture.canonicalPathHistory(
                 act3Path, true, "", 3, java.util.Arrays.asList(16)).get(31)))
             throw new AssertionError("unconfirmed Act 2 boss marker was promoted");

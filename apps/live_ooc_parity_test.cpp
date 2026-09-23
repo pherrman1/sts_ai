@@ -221,6 +221,7 @@ int main(int argc,char **argv){try{
     g.openCardSelectScreen(CardSelectScreenType::BOTTLE,1,false);
     add("bottle_power_selector_duplicate_physical_cards",g);
     g=base;g.screenState=ScreenState::EVENT_SCREEN;g.curEvent=Event::BIG_FISH;add("event_big_fish",g);
+    g.curEvent=Event::PLEADING_VAGRANT;g.gold=100;add("event_addict_three_public_choices",g);
     g=base;g.curEvent=Event::FORGOTTEN_ALTAR;g.setupEvent();add("event_forgotten_altar",g);
     g.curEvent=Event::THE_CLERIC;g.info.hpAmount0=g.maxHp/4;add("event_cleric_public_heal",g);
     g.curEvent=Event::LIVING_WALL;add("event_living_wall",g);
