@@ -41,6 +41,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.security.MessageDigest;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.IdentityHashMap;
 import java.util.ArrayList;
@@ -165,6 +167,9 @@ public final class STSModelInspector implements PostInitializeSubscriber,
     private volatile OocOverlay oocOverlay;
     private volatile PotionOverlay potionOverlay;
     private volatile boolean panelVisible = true;
+    private volatile boolean showAdvisorPanel = true;
+    private volatile boolean showActionRecommendations = true;
+    private volatile boolean showSelectedActionSummary = true;
     private volatile String combatEntry = "";
     private volatile String combatEntryHash = "";
     private final LatestPublisher latestPublisher = new LatestPublisher();
@@ -327,9 +332,28 @@ public final class STSModelInspector implements PostInitializeSubscriber,
     @Override
     public void receiveRender(SpriteBatch sb) {
         if (!panelVisible || newest == null) return;
-        renderAdvisorPanel(sb);
-        renderPotionBadges(sb, Settings.scale);
+        float scale = Settings.scale;
+        if (showAdvisorPanel) {
+            renderAdvisorPanel(sb);
+        } else {
+            renderStandaloneControls(sb, scale);
+            if (showActionRecommendations) {
+                if ("combat".equals(newest.boundary)) renderSilverActionBadges(sb, scale);
+                else renderInlineChoices(sb, currentOocOverlay(), scale);
+            }
+        }
+        if (showActionRecommendations) renderPotionBadges(sb, scale);
         sb.setColor(Color.WHITE);
+    }
+
+    private void renderStandaloneControls(SpriteBatch sb, float scale) {
+        graphButtonX = 24.0f * scale;
+        graphButtonBottom = 12.0f * scale;
+        graphButtonLayoutSequence = newest.sequence;
+        renderGraphButton(sb, graphButtonX, graphButtonBottom, scale);
+        if ("combat".equals(newest.boundary))
+            renderSilverBoostButton(sb, 24.0f * scale + (GRAPH_BUTTON_WIDTH + 8.0f) * scale,
+                    graphButtonBottom, scale);
     }
 
     private void renderAdvisorPanel(SpriteBatch sb) {
@@ -338,7 +362,7 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         float top = Settings.HEIGHT - 170.0f * scale;
         boolean combat = "combat".equals(newest.boundary);
         OocOverlay overlay = currentOocOverlay();
-        if (!combat && renderInlineChoices(sb, overlay, scale)) {
+        if (showActionRecommendations && !combat && renderInlineChoices(sb, overlay, scale)) {
             graphButtonX = 24.0f * scale;
             graphButtonBottom = 50.0f * scale;
             graphButtonLayoutSequence = newest.sequence;
@@ -370,7 +394,7 @@ public final class STSModelInspector implements PostInitializeSubscriber,
 
         if ("combat".equals(newest.boundary)) {
             renderCombatPanel(sb, x, top, width, bottom, scale);
-            renderSilverActionBadges(sb, scale);
+            if (showActionRecommendations) renderSilverActionBadges(sb, scale);
         } else {
             renderNonCombatPanel(sb, x, top, width, bottom, scale);
         }
@@ -409,11 +433,14 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         renderHistogram(sb, rightX + 12.0f * scale, cardBottom + 14.0f * scale,
                 rightWidth - 24.0f * scale, cardHeight - 38.0f * scale, scale);
 
-        String silver = silverSummary();
         renderSmallText(sb, silverBudgetSummary(), x + 16.0f * scale, bottom + 68.0f * scale,
                 CYAN_DIM, 0.70f);
-        renderSmallText(sb, silver, x + 16.0f * scale, bottom + 48.0f * scale,
-                "OK".equals(silverStatus) ? CYAN : WARNING, 0.78f);
+        if (showSelectedActionSummary) {
+            String silver = showActionRecommendations ? silverSummary()
+                    : "Silver  ·  " + ("OK".equals(silverStatus) ? "ready" : silverStatus.toLowerCase(Locale.ROOT));
+            renderSmallText(sb, silver, x + 16.0f * scale, bottom + 48.0f * scale,
+                    "OK".equals(silverStatus) ? CYAN : WARNING, 0.78f);
+        }
         renderSilverBoostButton(sb, x, bottom, scale);
         renderSmallText(sb, Keyboard.getKeyName(loadToggleKey()) + " hide",
                 x + width - 78.0f * scale, bottom + 22.0f * scale, MUTED, 0.78f);
@@ -527,7 +554,12 @@ public final class STSModelInspector implements PostInitializeSubscriber,
             Path snapshot = Paths.get(System.getProperty("user.home"), ".cache", "sts-model-inspector", "latest.json");
             Path outputDir = snapshot.getParent().resolve("graphs");
             Files.createDirectories(outputDir);
-            Path output = outputDir.resolve(combat ? "silver-mcts.html" : "ooc-mcts.html");
+            String graphType = combat ? "silver-mcts" : "ooc-mcts";
+            String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd-HHmmss-SSS"));
+            String filename = graphType + "-" + timestamp + ".html";
+            Path output = outputDir.resolve(filename);
+            for (int collision = 2; Files.exists(output); collision++)
+                output = outputDir.resolve(graphType + "-" + timestamp + "-" + collision + ".html");
             String python = properties.getProperty("python", "python3").trim();
             List<String> command = new ArrayList<>();
             command.add(python);
@@ -555,9 +587,16 @@ public final class STSModelInspector implements PostInitializeSubscriber,
 
     private boolean silverBoostButtonHit() {
         float scale = Settings.scale;
-        float x = 24.0f * scale + SILVER_BOOST_BUTTON_X * scale;
-        float panelBottom = Settings.HEIGHT - (170.0f + COMBAT_PANEL_HEIGHT) * scale;
-        float bottom = panelBottom + SILVER_BOOST_BUTTON_BOTTOM * scale;
+        float x;
+        float bottom;
+        if (showAdvisorPanel) {
+            x = 24.0f * scale + SILVER_BOOST_BUTTON_X * scale;
+            bottom = Settings.HEIGHT - (170.0f + COMBAT_PANEL_HEIGHT) * scale
+                    + SILVER_BOOST_BUTTON_BOTTOM * scale;
+        } else {
+            x = 24.0f * scale + (GRAPH_BUTTON_WIDTH + 8.0f + SILVER_BOOST_BUTTON_X) * scale;
+            bottom = 12.0f * scale + SILVER_BOOST_BUTTON_BOTTOM * scale;
+        }
         return InputHelper.mX >= x && InputHelper.mX <= x + SILVER_BOOST_BUTTON_WIDTH * scale
                 && InputHelper.mY >= bottom && InputHelper.mY <= bottom + 30.0f * scale;
     }
@@ -693,7 +732,7 @@ public final class STSModelInspector implements PostInitializeSubscriber,
                 ("v4_q".equals(view.policy) ? "V4" : view.policy.toUpperCase(Locale.ROOT))
                 + "  ·  " + capitalize(view.screen.replace('_', ' '));
         renderSmallText(sb, subtitle, x + 16 * scale, top - 69 * scale, MUTED, .82f);
-        if (view != null && "OK".equals(view.status) && !view.choices.isEmpty()) {
+        if (showActionRecommendations && view != null && "OK".equals(view.status) && !view.choices.isEmpty()) {
             List<OocOverlay.Choice> panelChoices = view.panelChoices();
             for (int row = 0; row < panelChoices.size(); ++row) {
                 OocOverlay.Choice choice = panelChoices.get(row);
@@ -713,6 +752,12 @@ public final class STSModelInspector implements PostInitializeSubscriber,
             else if (view.choices.size() > 6) renderSmallText(sb, "+ " + (view.choices.size() - 6) + " more choices",
                     x + 16 * scale, bottom + 22 * scale, MUTED, .72f);
             renderOocCardBadges(sb, view, scale);
+        } else if (!showActionRecommendations) {
+            renderSmallText(sb, view != null && "OK".equals(view.status)
+                            ? "Recommendations hidden" : view == null ? "Waiting for advisor" : "Advisor unavailable",
+                    x + 18 * scale, top - 105 * scale, MUTED, .86f);
+            renderSmallText(sb, Keyboard.getKeyName(loadToggleKey()) + " hide",
+                    x + width - 78 * scale, bottom + 22 * scale, MUTED, .78f);
         } else {
             renderSmallText(sb, view == null ? (responseReady() ? "Advisor unavailable" : "Waiting for advisor") :
                     "UNSUPPORTED".equals(view.status) ? "No supported recommendation" : "Advisor unavailable",
@@ -2428,6 +2473,12 @@ public final class STSModelInspector implements PostInitializeSubscriber,
                         ? Paths.get(System.getProperty("user.home"), ".sts-model-inspector.properties")
                         : Paths.get(configOverride.trim());
                 if (Files.isRegularFile(config)) try (BufferedReader r = Files.newBufferedReader(config)) { p.load(r); }
+                showAdvisorPanel = Boolean.parseBoolean(
+                        p.getProperty("showAdvisorPanel", "true").trim());
+                showActionRecommendations = Boolean.parseBoolean(
+                        p.getProperty("showActionRecommendations", "true").trim());
+                showSelectedActionSummary = Boolean.parseBoolean(
+                        p.getProperty("showSelectedActionSummary", "true").trim());
                 String executable = environmentFirst(p, "STS_MODEL_INSPECTOR_ADVISOR", "advisor");
                 if (executable == null) {
                     advisorStatus = "disconnected";
@@ -2447,6 +2498,10 @@ public final class STSModelInspector implements PostInitializeSubscriber,
                 String oocFloorModel = environmentFirst(p, "STS_LIVE_OOC_FLOOR_MODEL", "oocFloorModel");
                 if (oocFloorModel != null)
                     builder.environment().put("STS_LIVE_OOC_FLOOR_MODEL", oocFloorModel);
+                if (Boolean.parseBoolean(p.getProperty("captureMctsGraphs", "false").trim())) {
+                    builder.environment().put("STS_SILVER_DEBUG_TREE", "1");
+                    builder.environment().put("STS_OOC_DEBUG_TREE", "1");
+                }
                 Process started = builder.redirectErrorStream(false).start();
                 process = started;
                 stopping = false;

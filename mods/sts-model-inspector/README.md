@@ -31,8 +31,16 @@ the repository's absolute `tools` directory (the one containing
 `render_combat_decision.py` and `render_ooc_mcts.py`). `python` optionally
 selects the Python executable; it defaults to `python3`. The same settings can
 be provided through `STS_MODEL_INSPECTOR_GRAPH_TOOLS` and
-`STS_MODEL_INSPECTOR_CONFIG`. A graph is available only when the live advisor
-captured that tree and the current response is ready.
+`STS_MODEL_INSPECTOR_CONFIG`. Set `captureMctsGraphs=true` in that properties
+file to enable live Silver and OOC tree capture for graph export. Each export
+uses a timestamped HTML filename so earlier graphs are preserved. A graph is
+available only when the current response is ready and contains the captured
+tree. Set `showActionRecommendations=false` to hide score and selected-action
+overlays while keeping the diagnostic panel and graph button available. Set
+`showAdvisorPanel=false` to hide the top-left panel while keeping the action
+overlays and standalone graph and Silver controls available. Set
+`showSelectedActionSummary=false` to hide only the selected Silver card/action
+line inside the panel.
 
 Event/Neow, map, rest, card selector, and shop recommendations attach to the
 actual choices instead of a separate upper-left list. Reward cards keep their

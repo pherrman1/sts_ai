@@ -12,6 +12,8 @@ import copy
 import html
 import json
 import math
+import shutil
+import subprocess
 import sys
 import webbrowser
 from pathlib import Path
@@ -629,7 +631,18 @@ def main(argv: Sequence[str] | None = None) -> int:
             source = load_differential_trace(args.differential_trace, args.decision)
         args.output.write_text(render_html(source), encoding="utf-8")
         if args.open:
-            webbrowser.open(args.output.resolve().as_uri())
+            uri = args.output.resolve().as_uri()
+            if not webbrowser.open(uri, new=2):
+                opener = shutil.which("xdg-open")
+                if opener is None:
+                    raise RenderError("could not open graph: no default browser or xdg-open is available")
+                try:
+                    subprocess.run([opener, uri], check=True, capture_output=True, text=True, timeout=10)
+                except (OSError, subprocess.SubprocessError) as error:
+                    detail = str(error)
+                    if isinstance(error, subprocess.CalledProcessError) and error.stderr and error.stderr.strip():
+                        detail = error.stderr.strip()
+                    raise RenderError(f"could not open graph with xdg-open: {detail}") from error
         return 0
     except RenderError as error:
         print(f"render_combat_decision: {error}", file=sys.stderr)

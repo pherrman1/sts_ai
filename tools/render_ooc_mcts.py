@@ -5,6 +5,8 @@ from __future__ import annotations
 import argparse
 import json
 from pathlib import Path
+import shutil
+import subprocess
 import webbrowser
 
 ASSETS = Path(__file__).parent / "combat_graph_viewer"
@@ -105,7 +107,18 @@ def main() -> int:
         parser.error(str(error))
     args.output.write_text(document, encoding="utf-8")
     if args.open:
-        webbrowser.open(args.output.resolve().as_uri())
+        uri = args.output.resolve().as_uri()
+        if not webbrowser.open(uri, new=2):
+            opener = shutil.which("xdg-open")
+            if opener is None:
+                parser.error("could not open graph: no default browser or xdg-open is available")
+            try:
+                subprocess.run([opener, uri], check=True, capture_output=True, text=True, timeout=10)
+            except (OSError, subprocess.SubprocessError) as error:
+                detail = str(error)
+                if isinstance(error, subprocess.CalledProcessError) and error.stderr and error.stderr.strip():
+                    detail = error.stderr.strip()
+                parser.error(f"could not open graph with xdg-open: {detail}")
     print(args.output)
     return 0
 
