@@ -101,14 +101,18 @@ inference latency was 7.247 ms/call (median 7.237 ms, p95 11.575 ms).
 
 The deterministic aggregate and seed-level compact outcomes are
 [`screen-summary.json`](screen-summary.json) and
-[`screen-seed-outcomes.csv`](screen-seed-outcomes.csv). The 256 raw per-arm
-CSV, metadata, log, and summary files, plus per-pair records, remain outside
-the Git worktree at `/tmp/silver-prior-online-screen-57a824349fd99c91`; they
-were not committed. There are 31 complete per-pair stdout records and one empty
-failure stub for the corrected seed-9 accounting check; the authoritative
-per-arm summaries include all 32 pairs. Freshness checks found no prior local run artifacts for
-this exact block; the seed references found in the repository were the frozen
-protocol itself. The user had separately reported no pushed-history matches.
+[`screen-seed-outcomes.csv`](screen-seed-outcomes.csv). The complete raw packet
+is preserved outside Git at
+`/home/philippherrmann/Documents/sts/silver-prior-online-screen-20260923/`.
+[`raw-manifest.json`](raw-manifest.json) lists every file's relative path,
+size, and SHA-256 (289 files; 3,606,797 bytes). It includes 64 per-arm CSVs,
+metadata files, logs, and summaries, 31 complete per-pair stdout records, and
+one empty failure stub from the original seed-9 accounting rejection; the
+authoritative per-arm summaries include all 32 pairs. A byte-for-byte copy is
+retained at `/tmp/silver-prior-online-screen-57a824349fd99c91`; the durable
+Documents path is authoritative. Freshness checks found no prior local run
+artifacts for this exact block; repository hits were the frozen protocol
+itself. The user had separately reported no pushed-history matches.
 
 ## Interpretation boundary
 

@@ -136,7 +136,7 @@
     "parity_executable_sha256": "3abbe9b9249e4dc3398550e3ff1fb9f4e297219c089167d2134b1c146959ed2d",
     "actual_pair_count": 32,
     "actual_run_count": 64,
-    "raw_output_directory": "/tmp/silver-prior-online-screen-57a824349fd99c91",
+    "raw_output_directory": "/home/philippherrmann/Documents/sts/silver-prior-online-screen-20260923",
     "raw_output_retained_outside_git_worktree": true,
     "raw_output_inventory": {
       "arm_csv": 64,
@@ -192,6 +192,15 @@
       "runtime_failure_counters_all_zero": true,
       "simulation_budgets_validated_for_all_runs": true
     },
-    "review_completed_before_run": true
+    "review_completed_before_run": true,
+    "temporary_run_directory_copy": "/tmp/silver-prior-online-screen-57a824349fd99c91",
+    "raw_manifest": {
+      "file": "raw-manifest.json",
+      "sha256": "a6fe309f799362ca64d846bbdf8298b5f40a312e0771954f37c466134177226d",
+      "file_count": 289,
+      "total_bytes": 3606797,
+      "durable_copy_verified_byte_for_byte": true,
+      "raw_seed_data_committed": false
+    }
   }
 }
