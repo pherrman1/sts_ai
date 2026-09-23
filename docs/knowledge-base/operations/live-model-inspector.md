@@ -484,7 +484,8 @@ read-only screen and choice converters. The observation contains:
   an exact reconstruction; the live Java producer leaves it false.
 - `details`: current reward groups, campfire options, physical upgrade targets,
   supported event/Neow phase and options, the visible offered card for A Note
-  For Yourself, shop slots/prices, chest state, or
+  For Yourself and the visible Cursed Tome last-page damage and options,
+  shop slots/prices, chest state, or
   ordered boss relic offers.
 - `liveChoices`: occurrence-bound native action identities and single-command
   structured MCP hints. Duplicate labels are never action identity.

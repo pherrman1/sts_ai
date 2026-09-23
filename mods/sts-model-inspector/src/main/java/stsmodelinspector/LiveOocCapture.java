@@ -826,7 +826,7 @@ final class LiveOocCapture {
                 "LivingWall", "Sssserpent", "ScrapOoze", "Mushrooms",
                 "TheMausoleum", "MysteriousSphere", "SecretPortal", "FountainOfCurseRemoval", "UpgradeShrine",
                 "PurificationShrine", "Transmogrifier", "Duplicator", "Bonfire", "TheJoust",
-                "WomanInBlue").contains(simple);
+                "WomanInBlue", "CursedTome").contains(simple);
     }
 
     static int deadAdventurerPublicEncounter(Object phase, List<?> labels, List<?> options,
@@ -1227,7 +1227,8 @@ final class LiveOocCapture {
             int index = ((Number)field(active.get(i), "slot")).intValue();
             if (index != all.indexOf(active.get(i))) throw new IllegalArgumentException("event slot/order disagreement");
             options.add(object("index", index, "disabled", false));
-            int nativeIndex = "GoldenIdolEvent".equals(simple) && "1".equals(String.valueOf(phase))
+            int nativeIndex = "CursedTome".equals(simple) && "LAST_PAGE".equals(String.valueOf(phase))
+                    ? index + 5 : "GoldenIdolEvent".equals(simple) && "1".equals(String.valueOf(phase))
                     ? index + 2 : "Vampires".equals(simple)
                         && !Boolean.TRUE.equals(field(event, "hasVial")) ? index + 1 : index;
             add(cs, labels, i, "option", nativeIndex, 0);
@@ -1245,6 +1246,17 @@ final class LiveOocCapture {
             map(out.get("details")).put("hpAmount1", field(event, "maxHpLoss"));
             map(out.get("details")).put("phase", ((Number)phase).intValue());
         }
+        boolean cursedTomeLastPage = "CursedTome".equals(simple)
+                && "LAST_PAGE".equals(String.valueOf(phase))
+                && options.size() == 2 && labels.size() == 2
+                && ((Number)map(options.get(0)).get("index")).intValue() == 0
+                && ((Number)map(options.get(1)).get("index")).intValue() == 1
+                && ((Number)field(event, "finalDmg")).intValue()
+                    == (AbstractDungeon.ascensionLevel >= 15 ? 15 : 10)
+                && String.valueOf(labels.get(0)).contains("[Take]")
+                && String.valueOf(labels.get(0)).contains(String.valueOf(field(event, "finalDmg")))
+                && String.valueOf(labels.get(1)).contains("[Stop]");
+        if (cursedTomeLastPage) map(out.get("details")).put("eventData", 4);
         boolean goldenWing = "GoldenWing".equals(simple)
                 && goldenWingInitialVisible(phase, labels, options,
                         Boolean.TRUE.equals(field(event, "canAttack")),
@@ -1398,7 +1410,7 @@ final class LiveOocCapture {
                 && ((Number)map(options.get(1)).get("index")).intValue() == 1
                 && ((Number)map(options.get(2)).get("index")).intValue() == 2;
         if (!(simpleInitialEventSupported(simple) && initial)
-                && !goop && !noteForYourself
+                && !goop && !noteForYourself && !cursedTomeLastPage
                 && !goldShrine
                 && !nestDecisionVisible(simple, phase, labels, options, AbstractDungeon.ascensionLevel)
                 && !idolTrap && !goldenWing && !cleric && !sensoryStone

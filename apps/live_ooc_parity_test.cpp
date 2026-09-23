@@ -224,6 +224,9 @@ int main(int argc,char **argv){try{
     add("bottle_power_selector_duplicate_physical_cards",g);
     g=base;g.screenState=ScreenState::EVENT_SCREEN;g.curEvent=Event::BIG_FISH;add("event_big_fish",g);
     g.curEvent=Event::PLEADING_VAGRANT;g.gold=100;add("event_addict_three_public_choices",g);
+    g=base;g.screenState=ScreenState::EVENT_SCREEN;g.curEvent=Event::CURSED_TOME;
+    add("event_cursed_tome_intro",g);
+    g.info.eventData=4;add("event_cursed_tome_last_page",g);
     g.curEvent=Event::VAMPIRES;g.maxHp=105;g.info.hpAmount0=32;
     add("event_vampires_no_vial_public_max_hp_loss",g);
     g=base;g.curEvent=Event::FORGOTTEN_ALTAR;g.setupEvent();add("event_forgotten_altar",g);

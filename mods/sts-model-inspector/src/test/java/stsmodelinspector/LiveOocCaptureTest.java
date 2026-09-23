@@ -242,6 +242,7 @@ public final class LiveOocCaptureTest {
                 || !LiveOocCapture.simpleInitialEventSupported("WeMeetAgain")
                 || !LiveOocCapture.simpleInitialEventSupported("Sssserpent")
                 || !LiveOocCapture.simpleInitialEventSupported("ScrapOoze")
+                || !LiveOocCapture.simpleInitialEventSupported("CursedTome")
                 || LiveOocCapture.simpleInitialEventSupported("LiarsGame")
                 || LiveOocCapture.simpleInitialEventSupported("WomanInBlueDialogue")
                 || LiveOocCapture.simpleInitialEventSupported("Ghosts")
