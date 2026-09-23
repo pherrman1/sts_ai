@@ -684,6 +684,8 @@ prompt also appears for Hologram and cannot classify the task by itself.
 The selection observation carries the visible GRID card UUIDs in display
 order, so Silver's physical discard-card identity lowers to one MCP choice
 even when two offered cards share a name.
+The same unique UUID and exact native task check lowers Headbutt, Hologram,
+and Meditate from the discard pile, and Exhume from the exhaust pile.
 Selectors named in the shared enum but absent from the isolated Silver port
 return `silver_selection_task_not_in_port` before search instead of reaching
 its assertion path.

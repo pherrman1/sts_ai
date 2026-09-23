@@ -2381,6 +2381,25 @@ int main() {
         if (!one_combat::advisor::selectedLiveAction(
                 loweringAction, loweringContext, liquidObservation).is_null())
             throw std::runtime_error("missing Liquid Memories UUID was silently lowered");
+        liquidObservation["combat"]["cardSelect"]["liveUuids"][1] = "copy-b";
+        for (auto task : {CardSelectTask::HEADBUTT, CardSelectTask::HOLOGRAM,
+                          CardSelectTask::MEDITATE}) {
+            loweringAction.cardSelectTask = static_cast<std::int16_t>(task);
+            liquidObservation["combat"]["cardSelect"]["task"] = std::string(cardSelectTaskStrings[static_cast<int>(task)]);
+            if (one_combat::advisor::selectedLiveAction(loweringAction, loweringContext,
+                    liquidObservation) != json{{"kind", "choose"}, {"choiceIndex", 2}})
+                throw std::runtime_error("discard selector lost unique physical GRID choice");
+        }
+        loweringAction.source = silver_bridge::CardSource::EXHAUST;
+        loweringAction.cardSelectTask = static_cast<std::int16_t>(CardSelectTask::EXHUME);
+        liquidObservation["combat"]["cardSelect"]["task"] = "EXHUME";
+        if (one_combat::advisor::selectedLiveAction(loweringAction, loweringContext,
+                liquidObservation) != json{{"kind", "choose"}, {"choiceIndex", 2}})
+            throw std::runtime_error("Exhume lost unique physical GRID choice");
+        loweringAction.source = silver_bridge::CardSource::DISCARD;
+        if (!one_combat::advisor::selectedLiveAction(loweringAction, loweringContext,
+                liquidObservation).is_null())
+            throw std::runtime_error("exhaust selector lowered from discard source");
         loweringAction.source = silver_bridge::CardSource::NONE;
         loweringAction.cardSelectTask = 0;
         loweringAction.type = silver_bridge::SemanticActionType::POTION;

@@ -1337,10 +1337,17 @@ nlohmann::json selectedLiveAction(const silver_bridge::SemanticAction &action,
             return index < 0 ? nlohmann::json(nullptr)
                 : nlohmann::json{{"kind", "choose"}, {"choiceIndex", index + 1}};
         }
-        if (action.cardSelectTask == static_cast<std::int16_t>(sts::CardSelectTask::LIQUID_MEMORIES_POTION)
-                && action.source == silver_bridge::CardSource::DISCARD
-                && select.is_object()
-                && select.value("task", std::string()) == "LIQUID_MEMORIES_POTION") {
+        const auto task = live_silver::cardSelectTask(select.value("task", std::string()));
+        const auto nativeTask = static_cast<sts::CardSelectTask>(action.cardSelectTask);
+        const bool discardSelector = action.source == silver_bridge::CardSource::DISCARD
+            && (nativeTask == sts::CardSelectTask::HEADBUTT
+                || nativeTask == sts::CardSelectTask::HOLOGRAM
+                || nativeTask == sts::CardSelectTask::LIQUID_MEMORIES_POTION
+                || nativeTask == sts::CardSelectTask::MEDITATE);
+        const bool exhaustSelector = action.source == silver_bridge::CardSource::EXHAUST
+            && nativeTask == sts::CardSelectTask::EXHUME;
+        if ((discardSelector || exhaustSelector) && select.is_object()
+                && task && *task == nativeTask) {
             const auto uuid = uuidForId(action.card.uniqueId);
             const auto live = select.value("liveUuids", nlohmann::json::array());
             if (uuid.empty() || !live.is_array()) return nullptr;
