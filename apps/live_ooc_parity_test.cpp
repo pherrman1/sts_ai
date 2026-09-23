@@ -274,6 +274,17 @@ int main(int argc,char **argv){try{
     search::GameAction(0).execute(scrapRetry);
     check(scrapRetry.curHp==scrapHp-6,"Scrap Ooze retry must pay rising public HP cost");
     add("event_scrap_ooze_public_retry",g);
+    g=base;g.screenState=ScreenState::EVENT_SCREEN;g.curEvent=Event::KNOWING_SKULL;
+    g.info.hpAmount0=g.info.hpAmount1=g.info.hpAmount2=6;add("event_knowing_skull_ask_public_costs",g);
+    auto knowingSkullGold=g;knowingSkullGold.regainControlAction=[](GameContext &) {};
+    const int skullHp=knowingSkullGold.curHp,skullGold=knowingSkullGold.gold;
+    search::GameAction(0).execute(knowingSkullGold);
+    check(knowingSkullGold.curHp==skullHp-6 && knowingSkullGold.gold==skullGold+90,
+        "Knowing Skull native option 0 must map to its labeled gold choice and public HP cost");
+    auto knowingSkullPotion=g;knowingSkullPotion.regainControlAction=[](GameContext &) {};
+    search::GameAction(2).execute(knowingSkullPotion);
+    check(knowingSkullPotion.curHp==skullHp-6 && knowingSkullPotion.info.hpAmount2==7,
+        "Knowing Skull native potion option must charge then increment only the potion cost");
     g.curEvent=Event::WE_MEET_AGAIN;g.info.cardIdx=g.deck.size()-1;
     g.info.potionIdx=-1;g.info.gold=-1;add("event_we_meet_again_card_or_attack",g);
     g=base;g.screenState=ScreenState::EVENT_SCREEN;g.curEvent=Event::NOTE_FOR_YOURSELF;

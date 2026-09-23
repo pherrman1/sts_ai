@@ -51,6 +51,20 @@ public final class LiveOocCaptureTest {
                 || !"transform".equals(LiveOocCapture.selectorType(false, false, true, "other", "NeowRoom", 2))
                 || !"other".equals(LiveOocCapture.selectorType(false, false, false, "other", "MonsterRoom", 2)))
             throw new AssertionError("Neow REMOVE_TWO selector was not distinguished from transform/unknown grids");
+        List<String> skullLabels = Arrays.asList(
+                "[Pick Me Up?] Get a Potion. Lose 6 HP.",
+                "[Riches?] Gain 90 Gold. Lose 6 HP.",
+                "[Success?] Get a Colorless Card. Lose 6 HP.",
+                "[How do I leave?] Lose 6 HP.");
+        List<Map<String,Object>> skullOptions = Arrays.asList(
+                obj("index", 2), obj("index", 0), obj("index", 1), obj("index", 3));
+        if (LiveOocCapture.knowingSkullNativeIndex(skullLabels.get(0)) != 2
+                || LiveOocCapture.knowingSkullNativeIndex(skullLabels.get(1)) != 0
+                || LiveOocCapture.knowingSkullNativeIndex(skullLabels.get(2)) != 1
+                || LiveOocCapture.knowingSkullNativeIndex(skullLabels.get(3)) != 3
+                || !LiveOocCapture.knowingSkullAskVisible("ASK", skullLabels, skullOptions, 6, 6, 6, 6)
+                || LiveOocCapture.knowingSkullAskVisible("ASK", skullLabels, skullOptions, 7, 6, 6, 6))
+            throw new AssertionError("Knowing Skull costs or public option order did not match native event actions");
         if (!"GAMBLE".equals(STSModelInspector.handSelectionTask("", true, true, 99)))
             throw new AssertionError("Gambler's Brew hand selector was not classified as GAMBLE");
         if (!"".equals(STSModelInspector.handSelectionTask("", false, true, 99)))

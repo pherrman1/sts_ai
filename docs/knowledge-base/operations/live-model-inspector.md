@@ -747,6 +747,9 @@ Meditate, Nightmare, Recycle, Seek, and Setup remain outside the current port.
 Neow's two-card removal grid has `forPurge=false` in vanilla; the inspector
 qualifies it as `remove` only in `NeowRoom` with exactly two required picks,
 while `forTransform` remains authoritative for the two-card transform.
+Knowing Skull ASK choices expose their individual HP costs; the inspector
+maps localized public labels to the native gold, card, potion, and leave
+indices and qualifies only when all four options and costs agree.
 Combat capture uses the room's `COMBAT` phase, including event rooms, rather
 than requiring a monster-room subclass. Selection boundary detection is
 independent of native serializer support: an unknown selection task remains

@@ -855,6 +855,33 @@ final class LiveOocCapture {
                 "WomanInBlue", "CursedTome").contains(simple);
     }
 
+    static int knowingSkullNativeIndex(String label) {
+        if (label == null) return -1;
+        if (label.contains("[Riches?]")) return 0;       // gold
+        if (label.contains("[Success?]")) return 1;     // colorless card
+        if (label.contains("[Pick Me Up?]")) return 2;   // potion
+        if (label.contains("[How do I leave?]")) return 3;
+        return -1;
+    }
+
+    static boolean knowingSkullAskVisible(Object phase, List<?> labels, List<?> options,
+            int goldCost, int cardCost, int potionCost, int leaveCost) {
+        if (!"ASK".equals(String.valueOf(phase)) || labels.size() != 4 || options.size() != 4
+                || goldCost < 0 || cardCost < 0 || potionCost < 0 || leaveCost < 0) return false;
+        int[] costs = {goldCost, cardCost, potionCost, leaveCost};
+        boolean[] seen = new boolean[4];
+        for (int i = 0; i < labels.size(); ++i) {
+            String label = String.valueOf(labels.get(i));
+            int nativeIndex = knowingSkullNativeIndex(label);
+            int optionIndex = ((Number)map(options.get(i)).get("index")).intValue();
+            if (nativeIndex < 0 || nativeIndex != optionIndex || seen[nativeIndex]
+                    || !label.contains("Lose " + costs[nativeIndex] + " HP")) return false;
+            seen[nativeIndex] = true;
+        }
+        for (boolean present : seen) if (!present) return false;
+        return true;
+    }
+
     static int deadAdventurerPublicEncounter(Object phase, List<?> labels, List<?> options,
             String body, String[] descriptions, int ascension) {
         if (!"INTRO".equals(String.valueOf(phase)) || labels.size() != 2 || options.size() != 2
@@ -1267,11 +1294,14 @@ final class LiveOocCapture {
         for (int i = 0; i < active.size(); ++i) {
             int index = ((Number)field(active.get(i), "slot")).intValue();
             if (index != all.indexOf(active.get(i))) throw new IllegalArgumentException("event slot/order disagreement");
-            options.add(object("index", index, "disabled", false));
             int nativeIndex = "CursedTome".equals(simple) && "LAST_PAGE".equals(String.valueOf(phase))
                     ? index + 5 : "GoldenIdolEvent".equals(simple) && "1".equals(String.valueOf(phase))
                     ? index + 2 : "Vampires".equals(simple)
                         && !Boolean.TRUE.equals(field(event, "hasVial")) ? index + 1 : index;
+            if ("KnowingSkull".equals(simple) && "ASK".equals(String.valueOf(phase)))
+                nativeIndex = knowingSkullNativeIndex(String.valueOf(labels.get(i)));
+            options.add(object("index", "KnowingSkull".equals(simple)
+                    && "ASK".equals(String.valueOf(phase)) ? nativeIndex : index, "disabled", false));
             add(cs, labels, i, "option", nativeIndex, 0);
         }
         Map<String,Object> e = object("id", id, "phase", String.valueOf(phase), "options", options, "eventData", 0);
@@ -1287,6 +1317,18 @@ final class LiveOocCapture {
             map(out.get("details")).put("hpAmount0", field(event, "damage"));
             map(out.get("details")).put("hpAmount1", field(event, "maxHpLoss"));
             map(out.get("details")).put("phase", ((Number)phase).intValue());
+        }
+        boolean knowingSkullAsk = false;
+        if ("KnowingSkull".equals(simple) && "ASK".equals(String.valueOf(phase))) {
+            int goldCost = ((Number)field(event, "goldCost")).intValue();
+            int cardCost = ((Number)field(event, "cardCost")).intValue();
+            int potionCost = ((Number)field(event, "potionCost")).intValue();
+            int leaveCost = ((Number)field(event, "leaveCost")).intValue();
+            map(out.get("details")).put("hpAmount0", goldCost);
+            map(out.get("details")).put("hpAmount1", cardCost);
+            map(out.get("details")).put("hpAmount2", potionCost);
+            knowingSkullAsk = knowingSkullAskVisible(phase, labels, options,
+                    goldCost, cardCost, potionCost, leaveCost);
         }
         boolean cursedTomeLastPage = "CursedTome".equals(simple)
                 && "LAST_PAGE".equals(String.valueOf(phase))
@@ -1495,6 +1537,10 @@ final class LiveOocCapture {
                 && deadAdventurerEncounter < 0
                 && !forgottenAltar && !fallingChoice)
             out.put("unsupportedReason", "EVENT_PHASE_UNREPRESENTABLE:" + id + ":" + phase);
+        if (knowingSkullAsk) {
+            map(out.get("details")).put("phase", 0);
+            out.remove("unsupportedReason");
+        }
         if ("NeowEvent".equals(simple)) {
             List<Object> offers = new ArrayList<>();
             Object rs = optionalField(event, "rewards");
