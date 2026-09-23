@@ -28,7 +28,8 @@
     "keys": false,
     "leafCombatSamples": 0,
     "ctmSupport": "same as current standard",
-    "interpretation": "runtime timing and functional smoke only; not a gameplay quality or model qualification result"
+    "interpretation": "runtime timing and functional smoke only; not a gameplay quality or model qualification result; first repetition timings were not retained",
+    "firstExecutionTimingRetained": false
   },
   "environment": {
     "STS_NATIVE_OOC": "1",
@@ -315,7 +316,10 @@
     "preparedCorpusSha256": "74c08aa0a3c30342d86cd45355fe17ffa9046963ad7c8cf71b1938f9cdc1cfde",
     "splitManifestSha256": "e9043bcceb9d95027711e6ff33afbfe1cae3cf9528f820c0ff68bddbb419db32",
     "normalizationRows": 458589,
-    "rule": "all TRAIN+VALIDATION source groups; NumPy float32 mean/std as Phase-1 fit; inv=1/max(std,1e-6)"
+    "rule": "all TRAIN+VALIDATION source groups; NumPy float32 mean/std as Phase-1 fit; inv=1/max(std,1e-6)",
+    "preparedSha256": "a642671d0956f36405b837755cdf3dfb3c4870cde4a1d6f251046ffc8205a1c9",
+    "scalarMeanSha256": "b210c9834974eb30c80362ae10fbdeb97d15a835915bbbb2239e2b2cc81e18d9",
+    "scalarInvSha256": "48a4f84b2de751a5e49f157b980a3fbb33f31db330e580ecc4c258a3f424be55"
   },
   "implementationSources": {
     "runtimeCppSha256": "23588a94164f7022c3fb0fc08f4407077b38ec54b0b6f0cd8c8ddf1a484f9bbc",
@@ -324,5 +328,16 @@
     "compatibilityFollowup": "re-enabled loading of the previously supported strong-WD DeepSets survival artifact; Phase-1 DeepSets branch used for the captured timing runs is unchanged; rebuilt successfully after the run"
   },
   "measuredBinarySha256": "2a0e9e5a3f2f2bf845bf432cc28c15100db70bcd9c735f55058fdfbcf6727ef7",
-  "postProfileCompatibilityRebuildBinarySha256": "c89583ea5bdd97a0998785bc89d486e3cdcacfd1d79de3309fa7d19d8e173dfd"
+  "postProfileCompatibilityRebuildBinarySha256": "c89583ea5bdd97a0998785bc89d486e3cdcacfd1d79de3309fa7d19d8e173dfd",
+  "reviewCorrection": {
+    "provenanceHardenedReexportSha256": "3f6d174950f1e4a8b042cebc78bd8525c7e112a13e31865670a39df4b0f2f586",
+    "measuredCandidateSha256": "f691131ae82671bb1feb0f539bf8f93893a1f089ec3cabef56f7e2a197b06f0e",
+    "tensorPayloadByteIdenticalToMeasuredCandidate": true,
+    "reexportUsedForTiming": false,
+    "tamperedPreparedArrayRejected": true,
+    "repetitionsPerArm": 2,
+    "onlySecondExecutionTimingRetained": true,
+    "reviewedExporterSha256": "f7d10e8ccfbd61f69768162c4e898c95c81fe0765aba5082eb5bf70ddb458514",
+    "reviewedRuntimeCppSha256": "39f443e2bf4c0227dd43614d24db04a9c3b2e0269f252406051e10739f854a81"
+  }
 }

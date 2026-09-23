@@ -34,12 +34,32 @@ comparison or a component promotion.
 - Each arm ran twice on this one unique seed: the first pair checked the
   experiment path; the second pair captured the full profiler JSON to files.
   The tabulated profile below is from the second pair. The two result rows per
-  arm matched exactly; timing variation is retained in `profile.json`.
+  arm matched exactly. The first execution per arm was a functional repetition;
+  only the second execution's timing and full profiler output are retained in
+  `profile.json`.
 
 The exporter reconstructs Phase-1 survival normalization from the frozen
-TRAIN+VALIDATION rows (458,589 rows), validates the prepared corpus and split
-manifest, and binds every checkpoint by SHA256. The rejected potion identity is
-also embedded in candidate metadata as `DEEPSET_POTION_REJECTED`.
+TRAIN+VALIDATION rows (458,589 rows), verifies the exact `prepared.npz`,
+`prepared_manifest.json`, and split manifest SHA256 identities, and embeds the
+prepared-data and resulting mean/inverse-standard-deviation hashes in candidate
+metadata. It also binds every checkpoint by SHA256. The rejected potion identity
+is embedded in candidate metadata as `DEEPSET_POTION_REJECTED`.
+
+After the captured timing run, the provenance-hardened exporter recreated the
+candidate as SHA256
+`3f6d174950f1e4a8b042cebc78bd8525c7e112a13e31865670a39df4b0f2f586`. Its tensor
+payload matches the profiled candidate byte-for-byte; only the metadata header
+differs. The timings above remain tied to the original measured artifact
+`f691131ae82671bb1feb0f539bf8f93893a1f089ec3cabef56f7e2a197b06f0e`.
+
+- Prepared array SHA256:
+  `a642671d0956f36405b837755cdf3dfb3c4870cde4a1d6f251046ffc8205a1c9`.
+- Prepared manifest SHA256:
+  `fdf1ca760c971b212e60d9cb86beec78afae6b124958aa53c56a8aea5bb92f51`.
+- Float32 TRAIN+VALIDATION scalar mean vector SHA256:
+  `b210c9834974eb30c80362ae10fbdeb97d15a835915bbbb2239e2b2cc81e18d9`.
+- Float32 inverse-standard-deviation vector SHA256:
+  `48a4f84b2de751a5e49f157b980a3fbb33f31db330e580ecc4c258a3f424be55`.
 
 ## Run outcomes
 
@@ -87,6 +107,10 @@ numbers as a stable production benchmark.
 - Candidate runtime artifact loaded and completed the guarded seed: PASS.
 - Candidate export identity, component hashes, exact tensor graph, and
   `qualified:false` metadata: PASS at native load.
+- Review follow-up: exact prepared-array, manifest, and normalization hashes
+  matched; a tampered prepared array was rejected; the hardened re-export had
+  byte-identical tensor payload to the profiled candidate; native loader checks
+  passed for both.
 - The initial candidate export attempt failed closed on a stale tensor graph;
   the exporter was corrected to replace all attention tensors for the selected
   groups, and the corrected candidate completed.
