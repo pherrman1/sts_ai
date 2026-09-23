@@ -188,9 +188,15 @@ Vec CombatTransitionRuntime::encode(const std::string &group,const CombatPredict
         auto l=p+"encoder.layers."+std::to_string(layer)+".";
         const auto &w=tensor(l+"self_attn.in_proj_weight").values,&b=tensor(l+"self_attn.in_proj_bias").values;
         std::vector<Vec> qkv(tokens.size(),Vec(192));
-        for(size_t t=0;t<tokens.size();++t)for(int i=0;i<192;++i){float sum=0;for(int j=0;j<64;++j)sum+=w[i*64+j]*tokens[t][j];qkv[t][i]=sum+b[i];}
-        std::vector<Vec> next;
         for(size_t t=0;t<tokens.size();++t) {
+            // The final encoder layer returns only the global token. Its query
+            // uses every token's K/V, but no other token's Q is consumed.
+            const int firstOutput=(layer==1 && t>0)?64:0;
+            for(int i=firstOutput;i<192;++i){float sum=0;for(int j=0;j<64;++j)sum+=w[i*64+j]*tokens[t][j];qkv[t][i]=sum+b[i];}
+        }
+        std::vector<Vec> next;
+        const size_t queryCount=layer==1?1:tokens.size();
+        for(size_t t=0;t<queryCount;++t) {
             Vec attention(64,0);
             for(int head=0;head<4;++head) {
                 Vec score(tokens.size());
