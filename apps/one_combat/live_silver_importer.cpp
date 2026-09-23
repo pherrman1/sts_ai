@@ -1094,7 +1094,13 @@ SilverRootImportResult importSilverRootGeneric(const json &observation,
                     return unsupported("silver_unmapped_monster_power");
                 const auto mapped = live_silver::monsterStatusForMonster(idText, powerId);
                 if (!mapped) return unsupported("silver_unmapped_monster_power");
-                if (!setMonsterPower(m, *mapped, power.value("amount", 1),
+                int amount = power.at("amount").get<int>();
+                // Vanilla ReactivePower exposes its sentinel -1 forever.
+                // Silver's REACTIVE scalar is a queued-hit counter, reset to
+                // zero after resolution. Stable live roots have no queued hit.
+                if (idText == "WrithingMass" && powerId == "Compulsive" && amount == -1)
+                    amount = 0;
+                if (!setMonsterPower(m, *mapped, amount,
                                      power.value("justApplied", false)))
                     return unsupported("silver_unmapped_monster_power");
             }

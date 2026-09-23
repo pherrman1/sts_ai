@@ -132,9 +132,12 @@ native slot 2 remains reserved for Collector. Toolbox's `ChooseOneColorless`
 opening is a mandatory three-card combat offer; its public cards lower to
 Silver's Discovery selector with one copy at normal cost. `PutOnDeckAction`
 hand choices, including Thinking Ahead, lower to Warcry; a shared "top of
-draw pile" prompt alone must not label them as discard-pile Headbutt. Move
-bytes are likewise fail-closed, with all
-simulator-supported vanilla class constants independently qualified against the
+draw pile" prompt alone must not label them as discard-pile Headbutt.
+Writhing Mass's public `Compulsive` power reports vanilla's sentinel amount
+`-1`; at a stable decision boundary Silver's reactive queued-hit counter is
+zero while the status remains active. Other negative amounts remain rejected.
+Move bytes are likewise fail-closed, with all simulator-supported vanilla
+class constants independently qualified against the
 installed `desktop-1.0.jar`. The native construction, public-render, import,
 exact search-state parity, and one-simulation Silver-decision sweep covers all
 63 reachable `MonsterEncounter` values; the focused test additionally covers

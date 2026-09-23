@@ -2280,6 +2280,22 @@ int main() {
             || !(stasisImported.wire.monsters[0].statusBits
                 & (1ULL << static_cast<int>(MonsterStatus::STASIS))))
             throw std::runtime_error("Bronze Orb Stasis card/state was not imported exactly");
+        auto writhing = general;
+        writhing["silverRoot"]["encounter"] = "WRITHING_MASS";
+        writhing["silverRoot"]["combat"]["monsters"][0]["id"] = "WrithingMass";
+        writhing["silverRoot"]["combat"]["monsters"][0]["nextMove"] = 1;
+        writhing["silverRoot"]["combat"]["monsters"][0]["moveHistory"] = json::array({1});
+        writhing["silverRoot"]["combat"]["monsters"][0]["powers"] = json::array({
+            json{{"id", "Malleable"}, {"amount", 3}},
+            json{{"id", "Compulsive"}, {"amount", -1}}});
+        const auto writhingImported = one_combat::advisor::importSilverRoot(writhing);
+        if (!writhingImported.ok || writhingImported.wire.monsters[0].uniquePower1 != 0
+            || !(writhingImported.wire.monsters[0].statusBits
+                & (1ULL << static_cast<int>(MonsterStatus::REACTIVE))))
+            throw std::runtime_error("Writhing Mass Compulsive sentinel lost its active zero counter");
+        writhing["silverRoot"]["combat"]["monsters"][0]["powers"][1]["amount"] = -2;
+        if (one_combat::advisor::importSilverRoot(writhing).ok)
+            throw std::runtime_error("unknown Compulsive sentinel was accepted");
         general["silverRoot"]["combat"]["cardSelect"] = json{
             {"task", "EXHAUST_ONE"}, {"cards", json::array({"Strike_R"})},
             {"pickCount", 1}, {"canPickZero", false}};
