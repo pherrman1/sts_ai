@@ -862,7 +862,6 @@ SilverRootImportResult importSilverRootGeneric(const json &observation,
                 || powerId == "Draw Reduction" || powerId == "DrawReductionPower"
                 || powerId == "Frail" || powerId == "FrailPower"
                 || powerId == "Intangible" || powerId == "IntangiblePlayerPower"
-                || powerId == "IntangiblePlayer"
                 || powerId == "Vulnerable" || powerId == "VulnerablePower"
                 || powerId == "Weak" || powerId == "WeakPower" || powerId == "Weakened";
             if ((needsCombust && !combat.contains("combustHpLoss"))
@@ -889,7 +888,11 @@ SilverRootImportResult importSilverRootGeneric(const json &observation,
                     return unsupported("silver_unmapped_player_power");
                 setPlayerPower(p, *mapped, amount, false, damage);
             } else {
-                setPlayerPower(p, *mapped, amount, power.value("justApplied", false));
+                // Native buff<INTANGIBLE> sets this bit, while vanilla's
+                // IntangiblePlayerPower has no justApplied field to expose.
+                // Native Intangible decrements each round regardless of it.
+                setPlayerPower(p, *mapped, amount,
+                    powerId == "IntangiblePlayer" || power.value("justApplied", false));
             }
         }
     }

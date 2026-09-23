@@ -2061,6 +2061,17 @@ int main() {
             || !(weakenedImported.wire.player.justAppliedBits
                 & (1U << static_cast<int>(PlayerStatus::WEAK))))
             throw std::runtime_error("player Weakened alias/justApplied parity failed");
+        auto intangiblePower = general;
+        intangiblePower["silverRoot"]["combat"]["playerPowers"] = json::array({
+            json{{"id", "IntangiblePlayer"}, {"amount", 1}}});
+        const auto intangibleImported = one_combat::advisor::importSilverRoot(intangiblePower);
+        bool intangibleMapped = false;
+        for (const auto &[status, amount] : intangibleImported.wire.player.statusMap)
+            intangibleMapped |= status == static_cast<std::int16_t>(PlayerStatus::INTANGIBLE) && amount == 1;
+        if (!intangibleImported.ok || !intangibleMapped
+            || !(intangibleImported.wire.player.justAppliedBits
+                & (1U << static_cast<int>(PlayerStatus::INTANGIBLE))))
+            throw std::runtime_error("vanilla IntangiblePlayer lost native status bookkeeping");
         auto flexPower = general;
         flexPower["silverRoot"]["combat"]["playerPowers"] = json::array({
             json{{"id", "Flex"}, {"amount", 5}}});

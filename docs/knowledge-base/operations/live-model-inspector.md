@@ -694,6 +694,9 @@ dead orb's Stasis power after its card returns to the player's hand.
 The one-card Forethought hand selector is identified by its active vanilla
 action and selection shape; the upgraded choose-any-number form remains
 outside the native supported selector path.
+Vanilla `IntangiblePlayerPower` has no `justApplied` field. The importer
+reconstructs the native Intangible bookkeeping bit for that exact power ID;
+native Intangible decrements every round regardless of the bit.
 Selectors named in the shared enum but absent from the isolated Silver port
 return `silver_selection_task_not_in_port` before search instead of reaching
 its assertion path.
