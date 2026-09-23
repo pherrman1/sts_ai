@@ -710,8 +710,22 @@ SilverRootImportResult importSilverRootGeneric(const json &observation,
         }
         return out;
     };
-    wire.hand = indexCards(hand); wire.limbo = indexCards(limbo);
+    wire.hand = indexCards(hand);
+    wire.limbo.assign(10, silver_bridge::CardWire{});
+    for (auto &card : wire.limbo) {
+        card.uniqueId = -1;
+        card.cost = 1;
+        card.costForTurn = 1;
+    }
+    const auto indexedLimbo = indexCards(limbo);
+    if (indexedLimbo.size() > wire.limbo.size()) return unsupported("silver_unmapped_limbo");
+    std::copy(indexedLimbo.begin(), indexedLimbo.end(), wire.limbo.begin());
     wire.stasisCards.fill(silver_bridge::CardWire{});
+    for (auto &card : wire.stasisCards) {
+        card.uniqueId = -1;
+        card.cost = 1;
+        card.costForTurn = 1;
+    }
     const auto indexedStasis = indexCards(stasis);
     for (std::size_t i = 0; i < indexedStasis.size() && i < stasisSlots.size(); ++i)
         wire.stasisCards[stasisSlots[i]] = indexedStasis[i];

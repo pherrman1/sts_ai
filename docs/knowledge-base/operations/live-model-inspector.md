@@ -285,6 +285,16 @@ oocModel=<XDG data>/sts-ai/live-runtime/current/models/ooc_strategic_tok_final.n
 override their corresponding properties when nonempty.
 `STS_MODEL_INSPECTOR_CONFIG` selects a different properties file. These
 environment-first rules provide an isolated development/test escape hatch.
+For a prior-aware Silver graph, set `STS_SILVER_ROOT_PRIOR_MODEL` in the
+advisor process environment to the absolute frozen `SilverPriorNetV1` artifact
+path. The advisor loads it at startup and, on eligible ordinary player roots,
+uses the model prior in the same root-only PUCT search shown in the graph. The
+root-action sidebar, edge inspector, and report table then show the model logit
+and normalized `P(a|state)` next to visits and Q. No prior columns are emitted
+when no model is loaded; if loaded but ineligible at a root, the report gives
+the skip reason. The prior is a root policy distribution, not Q or win
+probability. Forced roots, non-player-normal decisions, and sequential
+selection transactions do not receive the learned prior.
 For an explicit Silver tree-debug capture, launch the advisor/runtime with
 `STS_SILVER_DEBUG_TREE=1`; the normal response remains unchanged when it is
 unset. The optional `STS_SILVER_DEBUG_TREE_NODE_CAP` bounds the attached graph

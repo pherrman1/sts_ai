@@ -359,6 +359,21 @@ def _root_section(source: Mapping[str, Any]) -> str:
     evaluator = _mapping(source.get("evaluator"))
     summaries = _list(evaluator.get("rootActionSummaries"))
     selected = evaluator.get("selectedAction")
+    prior_model = _mapping(evaluator.get("priorModel"))
+    prior_applied = prior_model.get("loaded") is True and prior_model.get("applied") is True
+    prior_note = ""
+    if prior_model.get("loaded") is True:
+        if prior_applied:
+            identity = prior_model.get("artifactSha256")
+            identity_text = f" ({_esc(identity)})" if identity else ""
+            prior_note = ("<p class=\"muted\">Loaded SilverPriorNet root policy; logits and normalized "
+                          f"P(a|state) are shown below{identity_text}. Prior is root-only and is not Q.</p>")
+        else:
+            status = _esc(prior_model.get("status", "loaded"))
+            reason = prior_model.get("reason")
+            reason_text = f" — {_esc(reason)}" if reason else ""
+            prior_note = (f"<p class=\"muted\">Silver prior model loaded; no prior was applied at this root "
+                          f"({status}{reason_text}).</p>")
     if not summaries:
         status = evaluator.get("status", "not captured")
         reason = evaluator.get("reason", "not captured")
@@ -366,7 +381,7 @@ def _root_section(source: Mapping[str, Any]) -> str:
         legal_html = _pretty(legal) if legal else "not captured"
         return (
             f"<section><h2>Root action ranking</h2><div class=\"status\">status: {_esc(status)}</div>"
-            f"<p>reason: {_esc(reason)}</p><h3>legal actions</h3><pre>{legal_html}</pre></section>"
+            f"<p>reason: {_esc(reason)}</p>{prior_note}<h3>legal actions</h3><pre>{legal_html}</pre></section>"
         )
     rows = []
     for rank, item in enumerate(summaries, 1):
@@ -383,14 +398,31 @@ def _root_section(source: Mapping[str, Any]) -> str:
         live = action.get("liveAction")
         klass = "selected-action" if is_selected else ""
         marker = "✓ selected" if is_selected else ""
+        prior_cells = ""
+        if prior_applied:
+            logit = action.get("priorLogit")
+            probability = action.get("prior")
+            valid_logit = (isinstance(logit, (int, float)) and not isinstance(logit, bool)
+                           and math.isfinite(float(logit)))
+            valid_probability = (isinstance(probability, (int, float)) and not isinstance(probability, bool)
+                                 and math.isfinite(float(probability)) and 0.0 <= probability <= 1.0)
+            if valid_logit and valid_probability:
+                prior_bar = f'<div class="share"><span>{float(probability):.6g}</span><i style="width:{float(probability) * 100:.3f}%"></i></div>'
+                prior_cells = f"<td>{float(logit):.6g}</td><td>{prior_bar}</td>"
+            else:
+                prior_cells = '<td>not captured</td><td>not captured</td>'
         rows.append(f"<tr class=\"{klass}\"><td>{rank}</td><td>{_esc(marker)}</td>"
                     f"<td><strong>{_value(action.get('label', fingerprint))}</strong><br><code>{_esc(fingerprint)}</code></td>"
+                    f"{prior_cells}"
                     f"<td class=\"visits\">{_value(action.get('edgeVisits'))}</td>"
                     f"<td><div class=\"share\"><span>{share_text}</span><i style=\"width:{bar_share * 100:.3f}%\"></i></div></td>"
                     f"<td>{q}</td><td><pre>{_pretty(live) if live is not None else 'not captured'}</pre></td></tr>")
-    return ("<section><h2>Root action ranking</h2><table class=\"ranking\"><thead><tr>"
-            "<th>#</th><th></th><th>action</th><th>visits</th><th>share</th><th>Q</th><th>live action</th>"
-            "</tr></thead><tbody>" + "".join(rows) + "</tbody></table></section>")
+    prior_headers = "<th>prior logit</th><th>root P(a|state)</th>" if prior_applied else ""
+    return ("<section><h2>Root action ranking</h2>" + prior_note
+            + "<table class=\"ranking\"><thead><tr>"
+            + "<th>#</th><th></th><th>action</th>" + prior_headers
+            + "<th>visits</th><th>share</th><th>Q</th><th>live action</th>"
+            + "</tr></thead><tbody>" + "".join(rows) + "</tbody></table></section>")
 
 
 def _diagnostics(source: Mapping[str, Any]) -> str:
@@ -402,6 +434,11 @@ def _diagnostics(source: Mapping[str, Any]) -> str:
               ("inherited visits", reroot.get("inheritedVisits")), ("root visits", evaluator.get("rootVisits")),
               ("simulations added", evaluator.get("additionalSimulations")),
               ("total simulations", evaluator.get("totalSimulations", evaluator.get("simulations")))]
+    prior_model = _mapping(evaluator.get("priorModel"))
+    if prior_model.get("loaded") is True:
+        values.extend([("Silver prior model", prior_model.get("status")),
+                       ("Silver prior SHA-256", prior_model.get("artifactSha256")),
+                       ("Silver prior scope", prior_model.get("scope"))])
     rows = "".join(f"<tr><th>{_esc(label)}</th>{_cell(value)}</tr>" for label, value in values)
     return f"<section><h2>Search diagnostics</h2><table class=\"diagnostics\">{rows}</table></section>"
 
