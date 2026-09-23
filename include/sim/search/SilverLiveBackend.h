@@ -54,6 +54,15 @@ struct SilverLiveDiagnostics {
     std::uint64_t blendDepthAvoided = 0;
     std::uint64_t leafVNetInferenceCalls = 0;
     std::uint64_t leafVNetInferenceMicros = 0;
+    bool priorModelLoaded = false;
+    std::uint64_t priorEligibleDecisions = 0;
+    std::uint64_t priorEvaluations = 0;
+    std::uint64_t priorSkippedForced = 0;
+    std::uint64_t priorSkippedNonPlayerNormal = 0;
+    std::uint64_t priorSurfaceFailures = 0;
+    std::uint64_t priorInferenceMicros = 0;
+    std::uint64_t rootPuctDecisions = 0;
+    std::vector<double> priorInferenceLatencyMicros;
     // Default-off test trace.  It is never populated in production runs.
     std::vector<std::string> actionFingerprints;
 };
