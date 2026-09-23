@@ -175,6 +175,12 @@ public final class LiveOocCaptureTest {
                 || LiveOocCapture.addictInitialVisible("1", addictLabels, augmenterOptions, 85)
                 || LiveOocCapture.addictInitialVisible("0", addictLabels, augmenterOptions, 84))
             throw new AssertionError("Addict initial public Pay/Rob/Leave options were misidentified");
+        java.util.List<String> vampireLabels = java.util.Arrays.asList(
+                "[Accept] Remove all Strikes. Receive 5 Bites. Lose 32 Max HP.", "[Refuse]");
+        if (!LiveOocCapture.vampiresNoVialInitialVisible("0", vampireLabels, banditOptions, 32, false)
+                || LiveOocCapture.vampiresNoVialInitialVisible("0", vampireLabels, banditOptions, 32, true)
+                || LiveOocCapture.vampiresNoVialInitialVisible("0", vampireLabels, banditOptions, 31, false))
+            throw new AssertionError("Vampires no-vial choices lost their native indices or HP cost");
         if (!"INVALID".equals(LiveOocCapture.canonicalPathHistory(
                 act3Path, true, "", 3, java.util.Arrays.asList(16)).get(31)))
             throw new AssertionError("unconfirmed Act 2 boss marker was promoted");

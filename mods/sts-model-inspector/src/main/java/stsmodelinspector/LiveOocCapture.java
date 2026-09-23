@@ -794,6 +794,16 @@ final class LiveOocCapture {
                 && String.valueOf(labels.get(2)).contains("[Leave]");
     }
 
+    static boolean vampiresNoVialInitialVisible(Object phase, List<?> labels, List<?> options,
+                                                int maxHpLoss, boolean hasVial) {
+        return "0".equals(String.valueOf(phase)) && !hasVial && maxHpLoss > 0
+                && labels.size() == 2 && options.size() == 2
+                && ((Number)map(options.get(0)).get("index")).intValue() == 0
+                && ((Number)map(options.get(1)).get("index")).intValue() == 1
+                && String.valueOf(labels.get(0)).contains("Receive 5 Bites. Lose " + maxHpLoss + " Max HP")
+                && String.valueOf(labels.get(1)).contains("[Refuse]");
+    }
+
     static String visibleChestSize(String chestClass) {
         if ("SmallChest".equals(chestClass)) return "SMALL";
         if ("MediumChest".equals(chestClass)) return "MEDIUM";
@@ -1216,7 +1226,8 @@ final class LiveOocCapture {
             if (index != all.indexOf(active.get(i))) throw new IllegalArgumentException("event slot/order disagreement");
             options.add(object("index", index, "disabled", false));
             int nativeIndex = "GoldenIdolEvent".equals(simple) && "1".equals(String.valueOf(phase))
-                    ? index + 2 : index;
+                    ? index + 2 : "Vampires".equals(simple)
+                        && !Boolean.TRUE.equals(field(event, "hasVial")) ? index + 1 : index;
             add(cs, labels, i, "option", nativeIndex, 0);
         }
         Map<String,Object> e = object("id", id, "phase", String.valueOf(phase), "options", options, "eventData", 0);
@@ -1294,6 +1305,14 @@ final class LiveOocCapture {
         }
         boolean addict = "Addict".equals(simple)
                 && addictInitialVisible(phase, labels, options, AbstractDungeon.player.gold);
+        boolean vampiresNoVial = false;
+        if ("Vampires".equals(simple)) {
+            int maxHpLoss = ((Number)field(event, "maxHpLoss")).intValue();
+            boolean hasVial = Boolean.TRUE.equals(field(event, "hasVial"));
+            vampiresNoVial = vampiresNoVialInitialVisible(phase, labels, options,
+                    maxHpLoss, hasVial);
+            if (vampiresNoVial) map(out.get("details")).put("hpAmount0", maxHpLoss);
+        }
         int[] designerIndices = null;
         if ("Designer".equals(simple)) {
             boolean upgradeOne = (Boolean)field(event, "adjustmentUpgradesOne");
@@ -1370,7 +1389,7 @@ final class LiveOocCapture {
                 && !nestDecisionVisible(simple, phase, labels, options, AbstractDungeon.ascensionLevel)
                 && !idolTrap && !goldenWing && !cleric && !sensoryStone
                 && designerIndices == null && !maskedBandits && !library && !augmenter
-                && !ancientWriting && !windingHalls && !faceTrader && !addict
+                && !ancientWriting && !windingHalls && !faceTrader && !addict && !vampiresNoVial
                 && deadAdventurerEncounter < 0
                 && !forgottenAltar)
             out.put("unsupportedReason", "EVENT_PHASE_UNREPRESENTABLE:" + id + ":" + phase);

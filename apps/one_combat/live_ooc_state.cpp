@@ -1,6 +1,7 @@
 #include "live_ooc_state.h"
 
 #include <algorithm>
+#include <cmath>
 #include <cstdint>
 #include <limits>
 #include <map>
@@ -589,6 +590,12 @@ ImportResult importLiveOocStateV1(const J &observation, LiveOocStateV1 &out) {
             if(g.curEvent==Event::FACE_TRADER) {
                 g.info.hpAmount0=integer(d,"hpAmount0",1,g.maxHp);
                 require(g.info.hpAmount0==std::max(1,g.maxHp/10),"Face Trader public HP loss differs from native setup");
+            }
+            if(g.curEvent==Event::VAMPIRES) {
+                g.info.hpAmount0=integer(d,"hpAmount0",1,g.maxHp-1);
+                require(g.info.hpAmount0==std::min(g.maxHp-1,
+                    static_cast<int>(std::ceil(0.3f*g.maxHp))),
+                    "Vampires public max-HP loss differs from native setup");
             }
             if(g.curEvent==Event::WINDING_HALLS) {
                 g.info.hpAmount0=integer(d,"hpAmount0",1,g.maxHp);
