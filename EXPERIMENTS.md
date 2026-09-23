@@ -47,7 +47,7 @@ under [`docs/experiments/`](docs/experiments/). Each shard is a frozen slice
 | [`ledger-03.md`](docs/experiments/ledger-03.md) | §67 Checkpoint-oracle distilled OOC action NN through §96 Wave A1/B sweep Q_win | FROZEN |
 | [`ledger-04.md`](docs/experiments/ledger-04.md) | §97 Combat value net under the gate stack through §116 Phase 3 Stage 2 TERM_WIN | FROZEN |
 | [`ledger-05.md`](docs/experiments/ledger-05.md) | §117 Searcher2 rollout-usage diagnostic through §135 Leaf-state diagnostic infrastructure | FROZEN |
-| [`ledger-06.md`](docs/experiments/ledger-06.md) | §135a Leaf-state diagnostics gate-matching through the 2026-09-22 §335 entry, the Silver prior v1 one-time LOCKED_TEST confirmation, the 2026-09-23 frozen learned-prior root-PUCT replay screen, and its separately authorized pre-review online integration smoke, including Silver tactical-prefix oracle, terminal/value audit, deterministic reroot, rejected §334 candidate, and replacement §335 identity evidence | **CURRENT** — append here |
+| [`ledger-06.md`](docs/experiments/ledger-06.md) | §135a Leaf-state diagnostics gate-matching through 2026-09-23 §337, including OOC CTM final-token optimization, §336 forced DeepSets timing smoke, §337 PR 295 DeepSets encoder reuse, Silver prior v1 one-time LOCKED_TEST confirmation, frozen learned-prior root-PUCT replay screen, and pre-review online integration smoke, including tactical-prefix oracle, terminal/value audit, deterministic reroot, rejected §334 candidate, replacement §335 identity evidence, and the unfavorable online screen | **CURRENT** — append here |
 
 ## Appending new experiments
 

@@ -11310,7 +11310,86 @@ relic write-back import guard also fails at unchanged baseline; it is not
 attributed to this optimization. This is bounded parity and performance evidence,
 not production qualification.
 
-### Active Lizard Tail CTM qualification (2026-09-23)
+## §336 — Forced all-DeepSets OOC CTM timing smoke (2026-09-23)
+
+Compared the current near-full CTM artifact to a separately exported, explicitly
+unqualified DeepSets stack on paired seed `12002032` with the same Release
+binary and OOC/Silver configuration. The candidate used the Phase-1 survival
+DeepSets checkpoint (TEST log loss `0.060430`), shared DeepSets maxHP/HP,
+DeepSets downstream heads, and potion screen B despite its
+`DEEPSET_POTION_REJECTED` offline decision. Runtime metadata bound all checkpoint
+hashes, marked every candidate component unqualified, and left the standard
+artifact/default untouched.
+
+The run completed in both arms. In the captured repetition, CTM preparation
+plus composed inference fell from `2.397 ms` to `0.591 ms` per call (-75.3%);
+combat sampling/resolution fell from `100` to `55` microseconds per call. Whole
+MCTS CPU rose from `54.14` to `83.77` seconds, while MCTS simulations rose from
+73,218 to 120,399 and CTM preparations from 11,102 to 20,231. The candidate
+reached floor 48 versus floor 33, so the whole-run difference includes a changed
+trajectory and larger search workload; one seed does not establish gameplay
+quality or a stable runtime gain. No separate numerical parity or gameplay
+qualification was run. [Full profile
+packet](evidence/ooc_deepset_stack_profile_2026-09-23/README.md).
+
+The Phase-1 normalization inputs are bound by the exact prepared-array SHA256
+`a642671d0956f36405b837755cdf3dfb3c4870cde4a1d6f251046ffc8205a1c9` and
+prepared-manifest SHA256
+`fdf1ca760c971b212e60d9cb86beec78afae6b124958aa53c56a8aea5bb92f51`. The
+review-hardened re-export binds these inputs and the computed mean and
+inverse-standard-deviation vector hashes in candidate metadata. Its tensor
+payload matches the measured candidate byte-for-byte; its metadata-only change
+was not rerun for timing. Only the second execution's timing/profile was
+retained. The first execution per arm was a functional repetition and its
+timing was not captured.
+
+Knowledge impact: this timing smoke is recorded here; model qualification,
+standard CTM artifact and runtime defaults remain unchanged.
+
+## §337 — PR 295 DeepSets shared transition-encoder reuse (2026-09-23)
+
+On the current PR 295 tree, the exporter-installed DeepSets artifact's 28
+maxHP, HP, and potion encoder tensors were byte-identical across all three
+groups. The Release probe also emitted all three 64-value representations;
+they were identical on each of 28 supported frozen fixtures. Candidate artifact
+SHA-256 is
+`3f6d174950f1e4a8b042cebc78bd8525c7e112a13e31865670a39df4b0f2f586`, the
+current provenance-hardened re-export with tensor payload identical to the
+originally profiled candidate.
+
+The DeepSets-only prepared path now computes the shared transition encoding
+once for the maxHP, HP, and potion heads. Survival remains separate. Code
+inspection shows prepared encoder calls fall from four to two; this is not a
+runtime-instrumented counter. Attention-artifact preparation retains the
+original code path. Across 31 fixed fixtures (28 supported), all
+3,584 prepared/reference draws, deterministic outputs, support results, full
+persistent post-states, and planner RNG checks matched exactly before and
+after.
+
+Release preparation timing on one identical fixed fixture over 30 independent
+process repetitions changed from median `284,427 ns` (range `280,254-357,929`)
+to `142,541 ns` (range `140,062-265,236`), a `49.88%` median reduction. The
+ranges did not overlap. This is fixed-fixture runtime evidence, not model
+qualification or a gameplay result. Applying that reduction to PR 295's
+historical `14.28%` CTM-preparation share of MCTS CPU projects about `7.12%`
+less same-workload MCTS CPU; this projection is an inference, not a measured
+search speedup. Later profiling candidates were not run because the clear Phase
+2 result met the handoff stop rule.
+
+The Release probe and `one_combat` targets built. Focused loader and near-full
+artifact CTests passed (2/2). The full 31-row `smoke-and-parity` invocation
+returned `invalid_relic_counter` on both the untouched PR 295 preparation path
+and the candidate path, with the same artifact and fixtures; both emitted
+eight rows first. This reproduces the failure on baseline and shows it is not
+specific to encoder reuse. The separate `near-full` path completed all
+fixtures and verifies prepared/reference state and RNG parity. Full CTest,
+GitHub Actions Linux GCC, game seeds, and gameplay comparisons were not run.
+[Evidence packet](evidence/ooc_deepset_encoder_reuse_2026-09-23/README.md).
+
+Knowledge impact: experiment evidence only; no maintained qualification,
+production artifact, or default changed.
+
+### §338 — Active Lizard Tail CTM qualification (2026-09-23)
 
 From baseline `aa09f75e6be837f7f39a2e31dde234bfd2c2ef08`, a detached shadow
 collector used the frozen `silver-ordinary-fair-exact10k-combat-transition-runtime16-f0bbd77`
