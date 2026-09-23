@@ -11449,3 +11449,59 @@ production artifact, or default changed.
 
 Knowledge impact: current potion-representation status and experiment evidence
 updated; qualified encoders and runtime defaults remain unchanged.
+
+## §339 — Potion-pooled-blind DeepSets follow-up (2026-09-23)
+
+- **Question and baseline:** Does removing the initial pooled potion identity/
+  slot contribution from DeepSets `z` preserve the PR #298 specialist's overall
+  result and repair recursive Brew? Baseline `1ed96f2aa564742156cc6593a1fc1915ea4e9033`;
+  Attention reference validation trajectory NLL `0.506803228`.
+- **Intervention:** C reproduced the ordinary PR #298 warm-start encoder and
+  exact trajectory decoder. P used identical checkpoint bytes and fixed batch
+  order, replacing only the pooled potion block with zeros. Potion embedding/
+  MLP parameters stayed in the checkpoint module but were frozen and excluded
+  from AdamW. The current-inventory-conditioned decoder, trajectory DAG, labels,
+  legality, and global fields remained unchanged. Thus `potionCount` and
+  `potionCapacity` remain in P's global representation.
+- **Stage 0:** frozen TRAIN contains 90 recursive-Brew winning rows from 90
+  source seeds; VALIDATION has 12 from 12 seeds. Every audited target has at
+  least one compatible trajectory, with no obvious target/DAG defect. Full
+  per-case inventory, capacity, boss, Sozu, generated-body, target, graph, and
+  existing-model NLL details are in the audit JSON.
+- **Provenance and fit:** implementation `cffe964a806891908ea1082bcca632683c4d2d37`;
+  encoder/decoder warm-start hashes `bee6800dd7230b180c2b4894c0f01763efca4b7799e3f36a805333c3003dc663` /
+  `06eda953b523ed6b3b9dbc3031bf44408c3bc67f0bc8b7862d28c150448819c1`;
+  TRAIN 393,677 rows / 19,986 sources; VALIDATION 48,590 / 2,496. C selected
+  epoch 34 at NLL `0.486931329`, within `0.000231` of the prior W result and
+  inside the fixed `0.005` control-reproduction tolerance. P selected epoch 31
+  at NLL `0.489927014`. Local runtime was Python 3.12.3, PyTorch 2.5.1+cu121,
+  CUDA 12.1, RTX 3060 Ti. Runtime counters recorded zero TEST encoding, scoring,
+  or teacher-metric rows.
+- **Result:** P relative overall trajectory NLL was `-3.3299%` versus
+  Attention; no-change Brier improved from `0.092057790` to `0.087477024`,
+  normal action/count accuracies were `0.815202435`/`0.824292207`, illegal
+  probability was exactly zero, and maximum normalization error was
+  `1.99e-7`. Recursive Brew was `3.026048` versus Attention `2.412967`
+  (`+25.4078%`) and C `2.985346` (`+0.040702` nat mean difference). P improved
+  on 5/12 paired recursive cases and worsened on 7/12; see the report for every
+  row. The other P slice changes were Brew `+6.9947%`, Smoke `-7.9783%`, and
+  trajectory-special `+4.5160%`.
+- **Decision:** **`POTION_DEEPSET_POTION_BLIND_REJECTED`** by the unchanged
+  teacher-forced gate. Removing the pooled potion branch did not repair the
+  recursive-Brew regression. The result weakens that pooled-branch-only
+  hypothesis; it does not test removing global count/capacity signals or
+  establish another cause. Stop here: no ancestral evaluation, TEST scoring,
+  export, native/runtime qualification, gameplay, or alternate architecture.
+- **Checks/artifacts:** focused specialist unit tests: 13 passed; Python
+  compilation and `git diff --check` passed. The experiment command exited 0,
+  checkpoint reload reproduced metrics, and runtime TEST counters were zero.
+  GitHub Actions CI was not run locally. See
+  [report](evidence/deepset_potion_blind_2026-09-23.md),
+  [complete receipt](evidence/deepset_potion_blind_2026-09-23.json) (SHA256
+  `16a7958fe0ea6c74ffac1fe7552a66be2215fe19e778a10bfc6254ff8e7ae4be`), and
+  [Stage 0 recursive audit](evidence/deepset_potion_blind_recursive_audit_2026-09-23.json).
+  Selected checkpoint hashes: C `99a43bfa138021ff9f645accd1e098ec89863b9498490294837762a93b18ff1c`,
+  P `38c2b8eadc0aa1926c6bbbbe46e952d30e652dee7887559b6b57a0f4726dcab0`.
+
+Knowledge impact: current potion-representation hypothesis and evidence updated;
+runtime defaults and qualified artifacts remain unchanged.
