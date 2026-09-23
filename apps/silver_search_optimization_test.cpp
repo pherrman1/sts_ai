@@ -464,8 +464,12 @@ void potionActionCanonicalization(sts::GameContext &gc, const sts::BattleContext
     require(nonPotionActions(rootActions(duplicate)) == nonPotionActions(noPotionActions),
             "duplicate potions must not change ordinary root actions");
     const auto strengthActions = potionActions(duplicate, sts::Potion::STRENGTH_POTION);
-    require(strengthActions.size() == 1 && strengthActions.front().getSourceIdx() == 0,
-            "duplicate non-target potion must retain only the first representative slot");
+    require(strengthActions.size() == 1 && strengthActions.front().getSourceIdx() == 0
+                && strengthActions.front().getTargetIdx() <= 5,
+            "duplicate non-target potion must retain only the first representative use without a generator");
+    const sts::search::Action legalDiscard(sts::search::ActionType::POTION, 0, -1);
+    require(legalDiscard.isValidAction(duplicate),
+            "manually supplied potion discard remains legal without a modeled generator");
 
     auto targetedGc = gc;
     sts::BattleContext targeted{};
@@ -509,15 +513,56 @@ void potionActionCanonicalization(sts::GameContext &gc, const sts::BattleContext
     auto fairy = original;
     installPotions(fairy, {sts::Potion::FAIRY_POTION, sts::Potion::FAIRY_POTION});
     const auto fairyActions = potionActions(fairy, sts::Potion::FAIRY_POTION);
-    require(fairyActions.size() == 1 && fairyActions.front().getTargetIdx() > 5,
-            "duplicate Fairy Potions must retain one discard action and no use action");
+    require(fairyActions.empty(), "Fairy discard absent without a modeled potion generator");
+
+    auto entropicFairy = original;
+    installPotions(entropicFairy, {sts::Potion::ENTROPIC_BREW, sts::Potion::FAIRY_POTION,
+                                   sts::Potion::STRENGTH_POTION});
+    const auto entropicFairyActions = potionActions(entropicFairy, sts::Potion::FAIRY_POTION);
+    require(entropicFairyActions.size() == 1 && entropicFairyActions.front().getTargetIdx() > 5
+                && entropicFairyActions.front().isValidAction(entropicFairy),
+            "Entropic Brew permits discarding Fairy in a Bottle to free a potion slot");
+    const auto entropicStrengthActions = potionActions(entropicFairy, sts::Potion::STRENGTH_POTION);
+    require(entropicStrengthActions.size() == 2
+                && std::count_if(entropicStrengthActions.begin(), entropicStrengthActions.end(),
+                                 [](const auto &action) { return action.getTargetIdx() > 5; }) == 1,
+            "full belt with Entropic Brew exposes discard as well as normal use for a usable potion");
+
+    auto duplicateBrews = original;
+    installPotions(duplicateBrews, {sts::Potion::ENTROPIC_BREW, sts::Potion::ENTROPIC_BREW,
+                                    sts::Potion::STRENGTH_POTION});
+    const auto duplicateBrewActions = potionActions(duplicateBrews, sts::Potion::ENTROPIC_BREW);
+    require(duplicateBrewActions.size() == 1 && duplicateBrewActions.front().getTargetIdx() <= 5,
+            "duplicate Entropic Brew does not create a discard-one-Brew-then-drink-the-other edge");
+    require(potionActions(duplicateBrews, sts::Potion::STRENGTH_POTION).size() == 2,
+            "duplicate Entropic Brew still enables discarding a different potion");
+
+    auto sozuGc = gc;
+    sozuGc.relics.add({sts::RelicId::SOZU, 0});
+    sts::BattleContext sozuBrew{};
+    sozuBrew.init(sozuGc, original.encounter);
+    installPotions(sozuBrew, {sts::Potion::ENTROPIC_BREW, sts::Potion::FAIRY_POTION,
+                              sts::Potion::STRENGTH_POTION});
+    require(potionActions(sozuBrew, sts::Potion::FAIRY_POTION).empty()
+                && potionActions(sozuBrew, sts::Potion::STRENGTH_POTION).size() == 1,
+            "Sozu suppresses Entropic Brew discard alternatives because generated potions cannot be stored");
 
     auto blockedSmoke = original;
     blockedSmoke.encounter = sts::MonsterEncounter::HEXAGHOST;
     installPotions(blockedSmoke, {sts::Potion::SMOKE_BOMB, sts::Potion::SMOKE_BOMB});
     const auto smokeActions = potionActions(blockedSmoke, sts::Potion::SMOKE_BOMB);
-    require(smokeActions.size() == 1 && smokeActions.front().getTargetIdx() > 5,
-            "blocked duplicate Smoke Bombs must retain one discard action and no use action");
+    require(smokeActions.empty(), "blocked Smoke Bomb discard absent without a modeled potion generator");
+
+    auto entropicSmoke = original;
+    installPotions(entropicSmoke, {sts::Potion::ENTROPIC_BREW, sts::Potion::SMOKE_BOMB,
+                                   sts::Potion::STRENGTH_POTION});
+    const auto entropicSmokeActions = potionActions(entropicSmoke, sts::Potion::SMOKE_BOMB);
+    require(entropicSmokeActions.size() == 2
+                && std::count_if(entropicSmokeActions.begin(), entropicSmokeActions.end(),
+                                 [](const auto &action) { return action.getTargetIdx() > 5; }) == 1
+                && std::count_if(entropicSmokeActions.begin(), entropicSmokeActions.end(),
+                                 [](const auto &action) { return action.getTargetIdx() <= 5; }) == 1,
+            "Entropic Brew preserves both unblocked Smoke Bomb escape and discard alternatives");
 
     auto gambler = original;
     gambler.cards.cardsInHand = 1;

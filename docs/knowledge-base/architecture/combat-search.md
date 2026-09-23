@@ -401,6 +401,15 @@ Both native searchers use `Action::enumerateCardSelectActions`, including the
 correct pool per task, EXHUME self-exclusion, CODEX skip, and all valid subsets
 for `EXHAUST_MANY` and `GAMBLE`.
 
+Potion discard remains a legal combat action in `Action::isValidAction`.
+Searchers prune discard branches unless discarding a slot leaves another
+Entropic Brew available and Sozu is absent; Entropic Brew's modeled effect can
+fill each newly freed slot with a generated potion. This includes discard
+branches for otherwise usable potions, Fairy in a Bottle, and an unblocked
+Smoke Bomb, which also retains its distinct escape action. Alchemize is not
+used for this pruning rule because its combat effect is not implemented in the
+simulator.
+
 `STS_MULTISELECT_MODE=all|single|none` controls subsets. `all` is default and
 the complete validity contract; `single` keeps empty, singleton, and full
 selections; `none` keeps only empty. `STS_MULTISELECT_CANONICAL=1` optionally
