@@ -18,7 +18,7 @@ def telemetry(decisions=2, evaluations=1, loaded=1, puct=1, samples=None):
         "prior_evaluations": evaluations, "prior_skipped_forced": 0,
         "prior_skipped_non_player_normal": 0, "prior_surface_failures": 0,
         "prior_inference_micros": 7000 * evaluations, "root_puct_decisions": puct,
-        "transaction_decisions": 0, "transaction_failures": 0,
+        "transaction_subdecisions": 0, "transaction_decisions": 0, "transaction_failures": 0,
         "conversion_failures": 0, "semantic_resolution_failures": 0,
         "knowledge_failures": 0,
     }
@@ -29,6 +29,11 @@ def telemetry(decisions=2, evaluations=1, loaded=1, puct=1, samples=None):
 
 
 class OnlineScreenParserTests(unittest.TestCase):
+    def test_transaction_simulations_count_replacement_subdecisions(self):
+        counters = {"decisions": 43, "transaction_subdecisions": 2,
+                    "transaction_decisions": 1}
+        self.assertEqual(44, screen.effective_search_decisions(counters))
+
     def test_sums_all_combat_counters_and_latency_samples(self):
         result = screen.parse_telemetry("\n".join([
             telemetry(decisions=2, evaluations=1, puct=1, samples=[6000]),
@@ -125,6 +130,8 @@ class OnlineScreenParserTests(unittest.TestCase):
                                 "prior_model_loaded": int(learned),
                                 "prior_evaluations": int(learned),
                                 "root_puct_decisions": int(learned),
+                                "transaction_subdecisions": 0,
+                                "transaction_decisions": 0,
                                 "prior_inference_micros": 6000 if learned else 0,
                                 "search_wall_micros": 100000 + int(learned),
                                 "prior_skipped_forced": 0,

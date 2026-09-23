@@ -1,7 +1,7 @@
 # Current research status
 
-Last verified: 2026-09-21 for the complete frozen Silver internal-node FPU
-cohort and local 80-source learned-prefix scale validation;
+Last verified: 2026-09-23 for the frozen Silver prior online gameplay screen;
+2026-09-21 for the complete frozen Silver internal-node FPU cohort and local 80-source learned-prefix scale validation;
 2026-09-20 for the tactical-prefix Silver oracle headroom screen
 and contextual first-action Silver selector headroom/policy screen; 2026-09-19 for forced-action historical artifact recovery and
 the PR #247 evaluator preflight; 2026-09-18 for the OOC 20% gap-stop quality
@@ -1582,9 +1582,19 @@ candidate `fb9e0cf9510ac612fdc3f521076ca093d1fb55b5`; this is working-tree
 integration evidence, not candidate-SHA evidence. The user's 5 ms waiver
 allowed the bounded smoke to complete. This confirms runtime execution and
 retained reroot operation only.
-The planned 32-seed screen remains gated on independent implementation review
-and is not qualification or default-promotion evidence. See the [online smoke
-packet](../../experiments/evidence/silver_prior_online_screen_20260923/README.md).
+The subsequent user-authorized full-run online screen completed the frozen 32
+paired seeds `24100000..24100031` at reviewed source
+`57a824349fd99c917cf22d67e929a8630f001a9d`, exact binary/model hashes, and
+fixed project-fair A0 / 1,000-simulation settings. CONTROL won 21/32 and LEARNED
+15/32; the paired table was 1 learned-only, 7 control-only, 14 both-win, and 10
+both-lose. The `-6` net discordant count yields the preregistered
+**`ONLINE_LEARNED_PRIOR_UNFAVORABLE`** classification; paired win-rate delta is
+`-18.75 pp` (95% bootstrap CI `[-34.375,-3.125] pp`), exact two-sided p is
+`0.0703`. Treat this as the bounded screen's classification, not conventional
+statistical significance or broad model invalidity. It does not qualify or
+promote a default. The offline `LEARNED_PRIOR_SEARCH_HEADROOM_NOT_CAPTURED`
+result remains unchanged. See the [complete online packet](../../experiments/evidence/silver_prior_online_screen_20260923/README.md)
+and [ledger result](../../experiments/ledger-06.md).
 
 ### Combat leaf/model variants
 

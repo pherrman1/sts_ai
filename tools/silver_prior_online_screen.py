@@ -35,7 +35,7 @@ REQUIRED_COUNTERS = {
     "decisions", "simulations", "prior_model_loaded", "prior_eligible_decisions",
     "prior_evaluations", "prior_skipped_forced", "prior_skipped_non_player_normal",
     "prior_surface_failures", "prior_inference_micros", "root_puct_decisions",
-    "transaction_decisions", "transaction_failures", "conversion_failures",
+    "transaction_subdecisions", "transaction_decisions", "transaction_failures", "conversion_failures",
     "semantic_resolution_failures", "knowledge_failures",
 }
 GAUGES = {"prior_model_loaded"}
@@ -74,6 +74,12 @@ def verify_binary(path: Path, expected_sha256: str) -> str:
     if actual != expected_sha256:
         raise ValueError(f"one_combat SHA-256 mismatch: expected {expected_sha256}, got {actual}")
     return actual
+
+
+def effective_search_decisions(counters: dict) -> int:
+    """Count transaction subsearches in place of their single outer decision."""
+    return (counters["decisions"] + counters["transaction_subdecisions"]
+            - counters["transaction_decisions"])
 
 
 def _number(raw: str, field: str):
@@ -198,8 +204,9 @@ def summarize_run(arm: str, seed: int, csv_path: Path, log_path: Path,
     outcome = outcomes[0]
     telemetry = parse_telemetry(log_text, require_latency_samples)
     counters = telemetry["counters"]
-    if counters["simulations"] != 1000 * counters["decisions"]:
-        raise ValueError("summed simulations do not equal 1000 times searched decisions")
+    effective_decisions = effective_search_decisions(counters)
+    if effective_decisions < 0 or counters["simulations"] != 1000 * effective_decisions:
+        raise ValueError("summed simulations do not equal 1000 times effective searched decisions")
     if any(counters[key] != 0 for key in FAILURE_COUNTERS):
         raise ValueError("one or more fail-closed runtime failure counters are nonzero")
     if arm == "LEARNED":
@@ -369,7 +376,8 @@ def summarize_screen(summary_paths: list[Path], expected_git_sha: str,
         counters = telemetry.get("counters", {})
         if not telemetry.get("latency_samples_available"):
             raise ValueError(f"latency samples missing for {key}")
-        if counters.get("simulations") != 1000 * counters.get("decisions", -1):
+        effective_decisions = effective_search_decisions(counters)
+        if effective_decisions < 0 or counters.get("simulations") != 1000 * effective_decisions:
             raise ValueError(f"simulation budget mismatch for {key}")
         if any(counters.get(name) != 0 for name in FAILURE_COUNTERS):
             raise ValueError(f"runtime failure counter nonzero for {key}")

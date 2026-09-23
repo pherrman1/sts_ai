@@ -1,5 +1,5 @@
 {
-  "schema": "silver_prior_online_smoke_config_v1",
+  "schema": "silver_prior_online_screen_config_v2",
   "baseline_main_sha": "3d28adfcf3c989e338eff9ef85e4a5c6d8794497",
   "experiment_base_sha_before_main_merge": "9fe3cb05b4dfd367f9db1370d245cb8d1a4f978e",
   "checkpoint": {
@@ -14,25 +14,60 @@
     "sha256": "b3a4c5e4bbe91b7f17dadf588408a95199ec5b8b25f732d99ef0966c0ff05fdb",
     "bytes": 4792455
   },
-  "smoke_seeds": [24109998, 24109999],
+  "smoke_seeds": [
+    24109998,
+    24109999
+  ],
   "smoke_executable_git_sha_reported_by_metadata": "1dc14cef9f5b6602fe84bd2a266347757245d78c",
   "smoke_candidate_sha_at_the_time": "fb9e0cf9510ac612fdc3f521076ca093d1fb55b5",
   "smoke_provenance_classification": "working-tree integration evidence; not candidate-SHA-bound",
   "smoke_aggregate": {
     "24109998": {
-      "control": {"combats": 24, "decisions": 383, "simulations": 383000, "prior_evaluations": 0},
-      "learned": {"combats": 24, "decisions": 393, "simulations": 393000, "prior_evaluations": 380, "root_puct_decisions": 380, "prior_inference_micros": 2538128, "mean_micros_per_call": 6679.284210526316}
+      "control": {
+        "combats": 24,
+        "decisions": 383,
+        "simulations": 383000,
+        "prior_evaluations": 0
+      },
+      "learned": {
+        "combats": 24,
+        "decisions": 393,
+        "simulations": 393000,
+        "prior_evaluations": 380,
+        "root_puct_decisions": 380,
+        "prior_inference_micros": 2538128,
+        "mean_micros_per_call": 6679.284210526316
+      }
     },
     "24109999": {
-      "control": {"combats": 28, "decisions": 540, "simulations": 540000, "prior_evaluations": 0},
-      "learned": {"combats": 28, "decisions": 565, "simulations": 565000, "prior_evaluations": 521, "root_puct_decisions": 521, "prior_inference_micros": 3610768, "mean_micros_per_call": 6930.456813819577}
+      "control": {
+        "combats": 28,
+        "decisions": 540,
+        "simulations": 540000,
+        "prior_evaluations": 0
+      },
+      "learned": {
+        "combats": 28,
+        "decisions": 565,
+        "simulations": 565000,
+        "prior_evaluations": 521,
+        "root_puct_decisions": 521,
+        "prior_inference_micros": 3610768,
+        "mean_micros_per_call": 6930.456813819577
+      }
     },
     "pooled_latency_percentiles_available": false,
     "note": "Legacy smoke telemetry did not retain raw per-call samples; exact mean only."
   },
   "arm_order": {
-    "24109998": ["CONTROL", "LEARNED"],
-    "24109999": ["LEARNED", "CONTROL"]
+    "24109998": [
+      "CONTROL",
+      "LEARNED"
+    ],
+    "24109999": [
+      "LEARNED",
+      "CONTROL"
+    ]
   },
   "common": {
     "Ascension": 0,
@@ -74,9 +109,12 @@
     "note": "User instructed to proceed regardless of the proposed 5 ms threshold."
   },
   "scientific_screen": {
-    "seeds": [24100000, 24100031],
+    "seeds": [
+      24100000,
+      24100031
+    ],
     "review_required_before_run": true,
-    "status": "not run",
+    "status": "completed",
     "runner": "tools/silver_prior_online_screen.py",
     "latency_samples_required": true,
     "artifact_sha256_rechecked_before_each_process": "b3a4c5e4bbe91b7f17dadf588408a95199ec5b8b25f732d99ef0966c0ff05fdb",
@@ -95,6 +133,65 @@
     },
     "review_source_commit": "57a824349fd99c917cf22d67e929a8630f001a9d",
     "expected_one_combat_sha256": "fc41e47d4a7d78f0922144d480a3dbeed674cf6fa1db21e97c568ff836a40197",
-    "parity_executable_sha256": "3abbe9b9249e4dc3398550e3ff1fb9f4e297219c089167d2134b1c146959ed2d"
+    "parity_executable_sha256": "3abbe9b9249e4dc3398550e3ff1fb9f4e297219c089167d2134b1c146959ed2d",
+    "actual_pair_count": 32,
+    "actual_run_count": 64,
+    "raw_output_directory": "/tmp/silver-prior-online-screen-57a824349fd99c91",
+    "raw_output_retained_outside_git_worktree": true,
+    "raw_output_inventory": {
+      "arm_csv": 64,
+      "metadata_json": 64,
+      "arm_logs": 64,
+      "arm_summaries": 64,
+      "complete_pair_stdout_records": 31,
+      "empty_pair_failure_stub": 1
+    },
+    "compact_result_files": {
+      "summary_json": "screen-summary.json",
+      "summary_sha256": "e056960f812cd5f16ddb2ac8ad401fa965f75dd668d7ea9f40f7bf28df0171e7",
+      "seed_outcomes_csv": "screen-seed-outcomes.csv",
+      "seed_outcomes_sha256": "d97591b580998e237076ae1880bc0f37cb5fe1317faccb941bcaabcc3e1140f0"
+    },
+    "seed_block_freshness_check": {
+      "performed_before_launch": true,
+      "local_exact_block_run_artifacts_found": false,
+      "repository_hits_were_frozen_protocol_references_only": true,
+      "pushed_history_search": "User reported no matches for 24100000, 24100031, or 241000 prefix.",
+      "local_paths_checked": [
+        "repository tracked evidence/history",
+        "local /home/philippherrmann/Documents/sts artifacts",
+        "/tmp"
+      ]
+    },
+    "transaction_simulation_accounting": {
+      "formula": "effective_decisions = decisions + transaction_subdecisions - transaction_decisions",
+      "reason": "The outer transaction contributes one decisions count, while totalSimulations contains each searched transaction subdecision. Seed 24100009 exercised a two-subdecision GAMBLE transaction.",
+      "raw_runs_repeated_or_modified": false,
+      "validator_correction_committed_with_result": true
+    },
+    "result": {
+      "classification": "ONLINE_LEARNED_PRIOR_UNFAVORABLE",
+      "control_wins": 21,
+      "learned_wins": 15,
+      "paired_win_table": {
+        "learned_only": 1,
+        "control_only": 7,
+        "both_win": 14,
+        "both_lose": 10
+      },
+      "net_discordant": -6,
+      "paired_win_rate_delta": -0.1875,
+      "paired_win_rate_delta_95_ci": [
+        -0.34375,
+        -0.03125
+      ],
+      "exact_two_sided_binomial_p": 0.0703125,
+      "learned_prior_inference_mean_us": 7246.849210627647,
+      "learned_prior_inference_median_us": 7237.26,
+      "learned_prior_inference_p95_us": 11575,
+      "runtime_failure_counters_all_zero": true,
+      "simulation_budgets_validated_for_all_runs": true
+    },
+    "review_completed_before_run": true
   }
 }

@@ -11235,25 +11235,54 @@ integration evidence only, not candidate-SHA smoke evidence. Do not rerun these
 old smoke seeds to repair provenance; the future frozen screen runner requires
 an exact executable SHA and per-call latency samples.
 
-Before a later gameplay screen, the paired analysis protocol is frozen in the
-evidence packet: 5,000 paired bootstrap replicates with seed `20260923`, exact
-two-sided binomial test on discordant pairs, and `net_discordant` thresholds
-`>=4` / `<=-4` / otherwise for promising / unfavorable / inconclusive. The
-runner requires a single `one_combat` SHA-256 and model SHA-256 immediately
-before every arm, and writes both hashes plus the fixed shared flags into every
-summary. The 32-seed run remains unrun pending final independent review.
+The user-authorized full-run screen then completed all 32 paired seeds
+`24100000..24100031` at source `57a824349fd99c917cf22d67e929a8630f001a9d`,
+binary SHA-256 `fc41e47d4a7d78f0922144d480a3dbeed674cf6fa1db21e97c568ff836a40197`,
+and model SHA-256
+`b3a4c5e4bbe91b7f17dadf588408a95199ec5b8b25f732d99ef0966c0ff05fdb`. All 64
+A0, project-fair, one-thread, Act-3-stop runs completed at 1,000 simulations
+per effective searched decision with the frozen shared flags; each arm checked
+the exact source, binary, model, and flags before launch and used the seed
+guard. Runtime surface, transaction, conversion, semantic-resolution, and
+knowledge-failure counters were zero. The treatment made 12,985 prior
+evaluations, all matching root-PUCT decisions; pooled inference latency was
+7.247 ms mean, 7.237 ms median, and 11.575 ms p95.
+
+CONTROL won 21/32 and LEARNED won 15/32. The paired table was 1 learned-only,
+7 control-only, 14 both-win, and 10 both-lose; the win-rate delta was
+`-18.75 pp` (paired-bootstrap 95% CI `[-34.375,-3.125] pp`), with exact
+two-sided discordant-pair `p=0.0703125`. The frozen `net_discordant=-6` rule
+classifies this as **`ONLINE_LEARNED_PRIOR_UNFAVORABLE`**. This is the
+preregistered bounded-screen classification, not a claim of conventional
+statistical significance, general model invalidity, or a default change. The
+mean floor changed by `-2.00` (95% paired-bootstrap CI `[-4.25,-0.3125]`), mean
+end HP by `-11.06` (`[-21.3125,-1.46875]`), and fights lost by `+0.1875`
+(`[0.03125,0.34375]`). Mean full-run wall time changed by `+2.167 s`
+(`[0.725,3.385]`); search time changed by `-0.828 s` (`[-2.062,+0.224]`),
+with its interval crossing zero. The offline
+`LEARNED_PRIOR_SEARCH_HEADROOM_NOT_CAPTURED` result remains unchanged.
+Compact aggregate and per-seed results are in the [online evidence packet](evidence/silver_prior_online_screen_20260923/README.md);
+all raw run output remains under `/tmp/silver-prior-online-screen-57a824349fd99c91`
+outside Git.
+
+The first pair exposed a validator accounting defect on its CONTROL GAMBLE
+transaction: `simulations` counted both searched subdecisions, while
+`decisions` counted the outer transaction once. The runner now validates
+`1000 * (decisions + transaction_subdecisions - transaction_decisions)`;
+seed `24100009` raw files were not rerun or modified. The complete cohort was
+revalidated with this counter definition.
 
 Focused checks passed: `silver_search_optimization`,
 `silver_repeated_reroot_canary`, `silver_prior_native_export`, and the two
 exporter identity-failure unit tests. All 64-root parity was rerun against the
-durable native artifact. The separate 32-seed screen (`24100000..24100031`) is
-not run and remains behind independent implementation review. No tuning,
-LOCKED_TEST access, or offline evidence rewrite occurred. See the [separate
-online evidence packet](evidence/silver_prior_online_screen_20260923/README.md).
+durable native artifact. The 32-seed screen is complete as recorded above. No
+tuning, LOCKED_TEST access, or offline evidence rewrite occurred. See the
+[online evidence packet](evidence/silver_prior_online_screen_20260923/README.md).
 
-**Knowledge impact:** record the default-off runtime contract in
-`environment-variables.md`, route it in `CODE_MAP.md` and `combat-search.md`,
-and keep the negative mechanism result distinct in current research.
+**Knowledge impact:** the default-off runtime contract remains documented in
+`environment-variables.md`, `CODE_MAP.md`, and `combat-search.md`; current
+research records this separate unfavorable gameplay screen without changing
+the offline mechanism result or qualifying a default.
 
 ### OOC CTM final-token optimization (2026-09-23)
 
