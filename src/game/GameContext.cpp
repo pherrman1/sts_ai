@@ -2756,7 +2756,7 @@ void GameContext::chooseEventOption(int idx) {
             switch (idx) {
                 case 0:
                     obtainGold(unfavorable ? 50 : 75);
-                    damagePlayer(std::max(fractionMaxHp(.10f), 1));
+                    damagePlayer(info.hpAmount0);
                     regainControl();
                     break;
 

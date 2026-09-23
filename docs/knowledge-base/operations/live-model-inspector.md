@@ -569,6 +569,9 @@ qualified by their visible labels, slots, and initial phase.
 Winding Halls' three choice phase imports the displayed HP loss, heal, and
 max-HP loss from the vanilla event fields after checking their button text
 and native option indices.
+Face Trader's Touch/Trade/Leave phase checks the displayed gold and floored
+HP loss. The native Touch transition uses that same public loss instead of
+rounding 10% of max HP again.
 Mushrooms and Mysterious Sphere remain unsupported with
 `PUBLIC_REWARD_PITY_HISTORY_UNQUALIFIED` because their pre-MAP continuation
 can generate potion or card rewards. The v_win leaf marginalizes those

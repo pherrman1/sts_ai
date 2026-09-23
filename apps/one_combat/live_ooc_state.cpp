@@ -586,6 +586,10 @@ ImportResult importLiveOocStateV1(const J &observation, LiveOocStateV1 &out) {
                 g.info.hpAmount0=integer(d,"hpAmount0",0,g.maxHp);
             if(g.curEvent==Event::THE_LIBRARY)
                 g.info.hpAmount0=integer(d,"hpAmount0",1,g.maxHp);
+            if(g.curEvent==Event::FACE_TRADER) {
+                g.info.hpAmount0=integer(d,"hpAmount0",1,g.maxHp);
+                require(g.info.hpAmount0==std::max(1,g.maxHp/10),"Face Trader public HP loss differs from native setup");
+            }
             if(g.curEvent==Event::WINDING_HALLS) {
                 g.info.hpAmount0=integer(d,"hpAmount0",1,g.maxHp);
                 g.info.hpAmount1=integer(d,"hpAmount1",1,g.maxHp);

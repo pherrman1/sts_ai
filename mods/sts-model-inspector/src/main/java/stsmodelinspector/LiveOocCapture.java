@@ -771,6 +771,18 @@ final class LiveOocCapture {
                 && String.valueOf(labels.get(2)).contains("Lose " + maxHpLoss + " Max HP");
     }
 
+    static boolean faceTraderChoiceVisible(Object phase, List<?> labels, List<?> options,
+                                           int damage, int gold, int ascension) {
+        return "MAIN".equals(String.valueOf(phase)) && labels.size() == 3 && options.size() == 3
+                && damage > 0 && gold == (ascension >= 15 ? 50 : 75)
+                && ((Number)map(options.get(0)).get("index")).intValue() == 0
+                && ((Number)map(options.get(1)).get("index")).intValue() == 1
+                && ((Number)map(options.get(2)).get("index")).intValue() == 2
+                && String.valueOf(labels.get(0)).contains("[Touch] Lose " + damage + " HP, gain " + gold + " Gold")
+                && String.valueOf(labels.get(1)).contains("[Trade] 50%: Good Face. 50%: Bad Face")
+                && String.valueOf(labels.get(2)).contains("[Leave]");
+    }
+
     static String visibleChestSize(String chestClass) {
         if ("SmallChest".equals(chestClass)) return "SMALL";
         if ("MediumChest".equals(chestClass)) return "MEDIUM";
@@ -1261,6 +1273,14 @@ final class LiveOocCapture {
                 map(out.get("details")).put("hpAmount2", maxHpLoss);
             }
         }
+        boolean faceTrader = false;
+        if ("FaceTrader".equals(simple)) {
+            int damage = ((Number)field(event, "damage")).intValue();
+            int gold = ((Number)field(event, "goldReward")).intValue();
+            faceTrader = faceTraderChoiceVisible(phase, labels, options,
+                    damage, gold, AbstractDungeon.ascensionLevel);
+            if (faceTrader) map(out.get("details")).put("hpAmount0", damage);
+        }
         int[] designerIndices = null;
         if ("Designer".equals(simple)) {
             boolean upgradeOne = (Boolean)field(event, "adjustmentUpgradesOne");
@@ -1337,7 +1357,7 @@ final class LiveOocCapture {
                 && !nestDecisionVisible(simple, phase, labels, options, AbstractDungeon.ascensionLevel)
                 && !idolTrap && !goldenWing && !cleric && !sensoryStone
                 && designerIndices == null && !maskedBandits && !library && !augmenter
-                && !ancientWriting && !windingHalls
+                && !ancientWriting && !windingHalls && !faceTrader
                 && deadAdventurerEncounter < 0
                 && !forgottenAltar)
             out.put("unsupportedReason", "EVENT_PHASE_UNREPRESENTABLE:" + id + ":" + phase);

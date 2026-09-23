@@ -160,6 +160,14 @@ public final class LiveOocCaptureTest {
                 || LiveOocCapture.windingHallsChoiceVisible("0", hallsLabels, augmenterOptions, 11, 22, 4)
                 || LiveOocCapture.windingHallsChoiceVisible("1", hallsLabels, augmenterOptions, 12, 22, 4))
             throw new AssertionError("Winding Halls public HP costs or options were misidentified");
+        java.util.List<String> faceLabels = java.util.Arrays.asList(
+                "[Touch] Lose 8 HP, gain 75 Gold.",
+                "[Trade] 50%: Good Face. 50%: Bad Face.", "[Leave]");
+        if (!LiveOocCapture.faceTraderChoiceVisible("MAIN", faceLabels, augmenterOptions, 8, 75, 0)
+                || LiveOocCapture.faceTraderChoiceVisible("INTRO", faceLabels, augmenterOptions, 8, 75, 0)
+                || LiveOocCapture.faceTraderChoiceVisible("MAIN", faceLabels, augmenterOptions, 9, 75, 0)
+                || LiveOocCapture.faceTraderChoiceVisible("MAIN", faceLabels, augmenterOptions, 8, 75, 20))
+            throw new AssertionError("Face Trader public Touch and Trade options were misidentified");
         if (!"INVALID".equals(LiveOocCapture.canonicalPathHistory(
                 act3Path, true, "", 3, java.util.Arrays.asList(16)).get(31)))
             throw new AssertionError("unconfirmed Act 2 boss marker was promoted");
