@@ -58,6 +58,7 @@ public final class CombatBoundaryTest {
             throw new AssertionError("public Runic miscInfo was rejected");
         if (!STSModelInspector.nativeMiscZeroForId("GremlinWarrior")
                 || !STSModelInspector.nativeMiscZeroForId("GremlinLeader")
+                || !STSModelInspector.nativeMiscZeroForId("GremlinTsundere")
                 || STSModelInspector.nativeMiscZeroForId("GremlinWizard"))
             throw new AssertionError("Gremlin Leader summons lost their native miscInfo contract");
         java.util.Set<Integer> deadSlots = new java.util.HashSet<>(java.util.Arrays.asList(2));

@@ -136,6 +136,8 @@ draw pile" prompt alone must not label them as discard-pile Headbutt.
 Writhing Mass's public `Compulsive` power reports vanilla's sentinel amount
 `-1`; at a stable decision boundary Silver's reactive queued-hit counter is
 zero while the status remains active. Other negative amounts remain rejected.
+Vanilla Shield Gremlin appears as `GremlinTsundere`; its native move script
+does not use `miscInfo`, so the inspector emits the exact zero for that ID.
 Move bytes are likewise fail-closed, with all simulator-supported vanilla
 class constants independently qualified against the
 installed `desktop-1.0.jar`. The native construction, public-render, import,
