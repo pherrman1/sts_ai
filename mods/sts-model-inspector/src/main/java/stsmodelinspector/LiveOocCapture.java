@@ -656,7 +656,7 @@ final class LiveOocCapture {
             for (Object raw : CardCrawlGame.metricData.event_choices) {
                 Map<String,Object> event = map(raw);
                 Object name = event.get("event_name");
-                if (name != null && !priorEvents.contains(String.valueOf(name))) priorEvents.add(String.valueOf(name));
+                addPriorEvent(priorEvents, name);
                 for (String key : Arrays.asList("relics_obtained", "relics_lost")) {
                     Object values = event.get(key);
                     if (values instanceof List) for (Object relic : (List<?>)values)
@@ -681,6 +681,12 @@ final class LiveOocCapture {
         if ("NEOW".equals(liveId)) return "Neow";
         if ("SensoryStone".equals(liveId)) return "Sensory Stone";
         return liveId;
+    }
+
+    static void addPriorEvent(List<String> priorEvents, Object name) {
+        if (name == null) return;
+        String canonical = canonicalEventId(String.valueOf(name));
+        if (!priorEvents.contains(canonical)) priorEvents.add(canonical);
     }
 
     static boolean sensoryStoneInitialVisible(Object phase, List<?> labels, List<?> options) {

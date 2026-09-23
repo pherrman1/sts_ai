@@ -95,6 +95,11 @@ public final class LiveOocCaptureTest {
                 || LiveOocCapture.sensoryStoneInitialVisible(
                         "OTHER", sensoryLabels, sensoryOptions))
             throw new AssertionError("Sensory Stone public Recall choices lost native indices or costs");
+        java.util.List<String> priorEvents = new java.util.ArrayList<>();
+        LiveOocCapture.addPriorEvent(priorEvents, "SensoryStone");
+        LiveOocCapture.addPriorEvent(priorEvents, "Sensory Stone");
+        if (priorEvents.size() != 1 || !"Sensory Stone".equals(priorEvents.get(0)))
+            throw new AssertionError("Sensory Stone metric history retained its raw Java ID");
         if (!"INVALID".equals(LiveOocCapture.canonicalPathHistory(
                 act3Path, true, "", 3, java.util.Arrays.asList(16)).get(31)))
             throw new AssertionError("unconfirmed Act 2 boss marker was promoted");
