@@ -232,7 +232,8 @@ class AdvisorProtocolTest(unittest.TestCase):
         root = dict(entry, schemaVersion=4, playerTurn=1, decisionInTurn=0,
                     combatInstance="ranked-actions-entry")
         root["combat"] = {
-            "damageTrackingExact": True, "turn": 1, "energy": 3,
+            "damageTrackingExact": True, "runicDome": False,
+            "turn": 1, "energy": 3,
             "hand": [{"id": "Strike_R", "uuid": "physical-strike", "upgraded": False,
                       "misc": 0, "cost": 1, "costForTurn": 1}],
             "draw": [], "discard": [], "exhaust": [], "limbo": [], "stasis": [],
