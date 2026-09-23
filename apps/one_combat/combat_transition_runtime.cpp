@@ -240,7 +240,9 @@ Vec CombatTransitionRuntime::encode(const std::string &group,const CombatPredict
     return relu(linear(p+"trunk.0",tokens[0]));
 }
 float CombatTransitionRuntime::survival(const CombatPredictorInputV1 &p) const {float logit=linear("survival.survival",encode("survival",p))[0];require(std::isfinite(logit),"nonfinite survival");return 1/(1+std::exp(-logit));}
+Vec CombatTransitionRuntime::maxHpEncoding(const CombatPredictorInputV1 &p) const {return encode("max_hp",p);}
 Vec CombatTransitionRuntime::maxHp(const CombatPredictorInputV1 &p) const {return softmax(linear("max_hp.max_hp_delta",encode("max_hp",p)));}
+Vec CombatTransitionRuntime::maxHp(const Vec &encoding) const {return softmax(linear("max_hp.max_hp_delta",encoding));}
 Vec CombatTransitionRuntime::hpEncoding(const CombatPredictorInputV1 &p) const {return encode("hp",p);}
 Vec CombatTransitionRuntime::signedHp(const Vec &z,int delta,int preHp,int maximum) const {auto x=z;append(x,embedding("hp.delta_embedding",delta));auto logits=linear("hp.hp.2",relu(linear("hp.hp.0",x)));for(int i=0;i<304;++i)if(preHp+i-160<1 || preHp+i-160>maximum)logits[i]=-std::numeric_limits<float>::infinity();return softmax(logits);}
 Vec CombatTransitionRuntime::potion(const CombatPredictorInputV1 &p,int delta,float fraction) const {
@@ -384,9 +386,16 @@ std::unique_ptr<PreparedCombatTransition> NativeCombatTransitionSampler::prepare
              pre_(captureCombatTransitionState(gc)),input_(p) {
             if(support_.supported) {
                 survival_=runtime_.survival(p);
-                maxHp_=runtime_.maxHp(p);
-                hpEncoding_=runtime_.hpEncoding(p);
-                potionEncoding_=runtime_.potionEncoding(p);
+                if(runtime_.metadata().contains("experimentalDeepSets")) {
+                    auto transition=runtime_.hpEncoding(p);
+                    maxHp_=runtime_.maxHp(transition);
+                    hpEncoding_=transition;
+                    potionEncoding_=std::move(transition);
+                } else {
+                    maxHp_=runtime_.maxHp(p);
+                    hpEncoding_=runtime_.hpEncoding(p);
+                    potionEncoding_=runtime_.potionEncoding(p);
+                }
             }
         }
         const CombatRuntimeSupport &support() const override { return support_; }

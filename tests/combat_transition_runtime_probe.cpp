@@ -44,7 +44,7 @@ int main(int argc,char **argv) {
             if(supportOnly){out["index"]=fixtureIndex++;std::cout<<out.dump()<<'\n';continue;}
             if(full){
                 if(support.supported){int d=j.value("delta",0),ending=j.value("ending",pre.curHp),maximum=j.value("maximum",pre.maxHp),mask=j.value("mask",0);std::vector<int> consumed=j.value("consumed",std::vector<int>{}),dagger=j.value("dagger",std::vector<int>{});
-                    out["survival"]=net.survival(p);out["maxHp"]=net.maxHp(p);out["hp"]=net.signedHp(net.hpEncoding(p),d,pre.curHp,maximum);out["diagnostics"]=nearFullDiagnostics(net,pre,p,d,ending,maximum,mask,consumed,j.value("escaped",false),dagger);
+                    out["survival"]=net.survival(p);out["maxHp"]=net.maxHp(p);out["maxHpEncoding"]=net.maxHpEncoding(p);out["hp"]=net.signedHp(net.hpEncoding(p),d,pre.curHp,maximum);out["diagnostics"]=nearFullDiagnostics(net,pre,p,d,ending,maximum,mask,consumed,j.value("escaped",false),dagger);
                     auto prepared=sampler.prepare(gc,p);json samples=json::array();
                     for(int draw=0;draw<j.value("draws",128);++draw){std::mt19937_64 random(20260921+draw),cached=random,tape=random;json words=json::array();for(int k=0;k<256;++k)words.push_back(tape());auto sample=sampler.sample(gc,p,random),other=prepared->sample(cached);if(sample.outcome!=other.outcome||combatTransitionStateJson(sample.rawPost)!=combatTransitionStateJson(other.rawPost)||random!=cached)throw std::runtime_error("near-full prepared/reference parity");
                         auto count=std::mt19937_64(20260921+draw);int used=0;while(count!=random&&used<256){count();++used;}if(count!=random)throw std::runtime_error("parity draw tape exhausted");samples.push_back({{"outcome",int(sample.outcome)},{"rawPost",combatTransitionStateJson(sample.rawPost)},{"words",words},{"wordsUsed",used}});
@@ -79,7 +79,7 @@ int main(int argc,char **argv) {
                     {"supportEqual",true},{"preparationNs",preparationNs},{"referenceSampleNs",referenceNs/draws},
                     {"preparedSampleNs",preparedNs/draws},{"preparedAmortizedNs",(preparationNs+preparedNs)/draws},
                     {"referenceEncoderCalls",support.supported?draws+3*victories:0},
-                    {"preparedEncoderCalls",support.supported?4:0}};
+                    {"preparedEncoderCalls",support.supported?(net.metadata().contains("experimentalDeepSets")?2:4):0}};
             }
             if(support.supported) {
                 out["survival"]=net.survival(p);out["max_hp"]=net.maxHp(p);auto z=net.hpEncoding(p);out["hp_encoding"]=z;

@@ -1,0 +1,12 @@
+{
+  "artifactSha256": "f691131ae82671bb1feb0f539bf8f93893a1f089ec3cabef56f7e2a197b06f0e",
+  "fixtureSha256": "a78db761198b56cb8b57eff11b0bbbfbf6fa2c0dd741e3565d28c1b6d90ae720",
+  "sharedEncoderTensorCount": 28,
+  "identicalTensorBytesAcrossGroups": true,
+  "transitionEncoderBytesSha256": "4a86d77cdcd49ab5909ce77128bcfbb50de8debef5ac3cb8cece96f2d9df38a2",
+  "hpPotionRuntimeRepresentationsEqualForAllSupportedFixtures": true,
+  "supportedFixtures": 28,
+  "maxHpHpPotionRepresentationsEqualForAllSupportedFixtures": true,
+  "representationWidth": 64,
+  "candidateProbeOutputSha256": "a0f8cb9e5d08c995f90489c6e878bbf25c31533010ab25cf6dfbe3da344a36da"
+}
