@@ -2466,12 +2466,18 @@ public final class STSModelInspector implements PostInitializeSubscriber,
 
     static String selectionJson(String task, boolean canPickZero, boolean anyNumber, int pickCount,
                                         int data0, List<AbstractCard> source) {
+        return selectionJson(task, canPickZero, anyNumber, pickCount, data0, true, source);
+    }
+
+    static String selectionJson(String task, boolean canPickZero, boolean anyNumber, int pickCount,
+                                int data0, boolean setCostToZero, List<AbstractCard> source) {
         StringBuilder out = new StringBuilder("{\"task\":\"")
                 .append(task).append("\",\"canPickZero\":").append(canPickZero)
                 .append(",\"canPickAnyNumber\":")
                 .append(anyNumber).append(",\"pickCount\":").append(Math.max(0, pickCount))
                 .append(",\"data0\":").append(data0)
-                .append(",\"setCostToZero\":true,\"selectedBits\":0,\"cards\":[");
+                .append(",\"setCostToZero\":").append(setCostToZero)
+                .append(",\"selectedBits\":0,\"cards\":[");
         boolean offerCards = "DISCOVERY".equals(task) || "CODEX".equals(task);
         boolean first = true;
         if (offerCards && source != null) {
@@ -2535,6 +2541,12 @@ public final class STSModelInspector implements PostInitializeSubscriber,
             if (qualifiedDiscoverySelection(discovery, skippable, copyCount,
                     screen.rewardGroup == null ? -1 : screen.rewardGroup.size()))
                 return selectionJson("DISCOVERY", skippable, false, 1, copyCount, screen.rewardGroup);
+            // Toolbox uses ChooseOneColorless, which opens the same
+            // Discovery-style combat reward but retains normal card cost.
+            if (qualifiedToolboxSelection(discovery, skippable,
+                    current instanceof com.megacrit.cardcrawl.actions.utility.ChooseOneColorless,
+                    screen.rewardGroup == null ? -1 : screen.rewardGroup.size()))
+                return selectionJson("DISCOVERY", false, false, 1, 1, false, screen.rewardGroup);
             return selectionJson("", false, false, 1, screen.rewardGroup);
         }
         if (AbstractDungeon.screen == AbstractDungeon.CurrentScreen.GRID
@@ -2577,6 +2589,12 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         return Boolean.TRUE.equals(discovery) && skippable != null
                 && copyCount != null && (copyCount == 1 || copyCount == 2)
                 && offerCount == 3;
+    }
+
+    static boolean qualifiedToolboxSelection(Boolean discovery, Boolean skippable,
+                                             boolean chooseOneColorlessAction, int offerCount) {
+        return Boolean.TRUE.equals(discovery) && Boolean.FALSE.equals(skippable)
+                && chooseOneColorlessAction && offerCount == 3;
     }
 
     private static boolean liquidMemoriesSelection(Object current) {

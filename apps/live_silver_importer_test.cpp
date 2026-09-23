@@ -2299,6 +2299,16 @@ int main() {
             || potionDiscovery.wire.cardSelect.data0 != 1)
             throw std::runtime_error("observed Skill Potion selector did not preserve optional Discovery");
         general["silverRoot"]["combat"]["cardSelect"] = json{
+            {"task", "DISCOVERY"}, {"cards", json::array({"The Bomb", "Blind", "Dark Shackles"})},
+            {"pickCount", 1}, {"canPickZero", false}, {"data0", 1},
+            {"setCostToZero", false}};
+        auto toolbox = one_combat::advisor::importSilverRoot(general, eyeContext);
+        if (!toolbox.ok || toolbox.wire.cardSelect.task
+                != static_cast<std::int16_t>(CardSelectTask::DISCOVERY)
+            || toolbox.wire.cardSelect.setCostToZero
+            || toolbox.wire.cardSelect.data0 != 1)
+            throw std::runtime_error("Toolbox offer lost its normal-cost copy contract");
+        general["silverRoot"]["combat"]["cardSelect"] = json{
             {"task", "LIQUID_MEMORIES_POTION"}, {"cards", json::array()},
             {"pickCount", 1}, {"canPickZero", false}};
         auto liquidMemories = one_combat::advisor::importSilverRoot(general, eyeContext);

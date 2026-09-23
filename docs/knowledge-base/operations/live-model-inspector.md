@@ -128,7 +128,9 @@ separate Slime Boss layout uses 0/2 for large children and 0–3 for medium
 descendants. The dead Slime Boss parent is omitted whenever a descendant
 exists, including after both large children have split or died. Collector's
 vanilla `enemySlots` keys 1/2 for TorchHeads map to native physical slots 1/0;
-native slot 2 remains reserved for Collector. Move bytes are likewise fail-closed, with all
+native slot 2 remains reserved for Collector. Toolbox's `ChooseOneColorless`
+opening is a mandatory three-card combat offer; its public cards lower to
+Silver's Discovery selector with one copy at normal cost. Move bytes are likewise fail-closed, with all
 simulator-supported vanilla class constants independently qualified against the
 installed `desktop-1.0.jar`. The native construction, public-render, import,
 exact search-state parity, and one-simulation Silver-decision sweep covers all

@@ -135,6 +135,19 @@ public final class CombatBoundaryTest {
                 || STSModelInspector.qualifiedDiscoverySelection(true, true, 1, 2)
                 || !potionDiscovery.get("canPickZero").getAsBoolean())
             throw new AssertionError("optional potion Discovery was not distinguished from mandatory Discovery");
+        if (!STSModelInspector.qualifiedToolboxSelection(true, false, true, 3)
+                || STSModelInspector.qualifiedToolboxSelection(true, true, true, 3)
+                || STSModelInspector.qualifiedToolboxSelection(true, false, false, 3)
+                || STSModelInspector.qualifiedToolboxSelection(true, false, true, 2)
+                || STSModelInspector.qualifiedToolboxSelection(null, false, true, 3))
+            throw new AssertionError("Toolbox combat offer was not isolated from other reward screens");
+        JsonObject toolbox = new Gson().fromJson(
+                STSModelInspector.selectionJson("DISCOVERY", false, false, 1, 1, false, null),
+                JsonObject.class);
+        if (toolbox.get("setCostToZero").getAsBoolean()
+                || toolbox.get("data0").getAsInt() != 1
+                || toolbox.get("canPickZero").getAsBoolean())
+            throw new AssertionError("Toolbox choice incorrectly made its card free or skippable");
         if (!STSModelInspector.zeroCostDiscardReturn(true, true, 0)
                 || STSModelInspector.zeroCostDiscardReturn(true, false, 0)
                 || STSModelInspector.zeroCostDiscardReturn(true, true, 1)
