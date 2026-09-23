@@ -414,6 +414,30 @@ public final class LiveOocCaptureTest {
         combats.observe(player, 12345, 2, 18, true, true, new Object(), "NORMAL_QUEUE", "CULTIST");
         if (!combats.completeFor(java.util.Arrays.asList(18)))
             throw new AssertionError("new act did not reset complete combat-class history");
+        LiveOocCapture.CombatClassHistory colosseum = new LiveOocCapture.CombatClassHistory();
+        colosseum.observe(player, 67890, 2, 29, true, true, new Object(),
+                "FIXED_EVENT", "COLOSSEUM_EVENT_SLAVERS");
+        colosseum.observe(player, 67890, 2, 29, false, false, null, null, "");
+        colosseum.observe(player, 67890, 2, 29, false, true, new Object(),
+                "FIXED_EVENT", "COLOSSEUM_EVENT_NOBS");
+        if (!colosseum.completeFor(java.util.Arrays.asList(29, 29))
+                || colosseum.snapshot().size() != 2)
+            throw new AssertionError("Colosseum same-floor combats were not recorded separately");
+        LiveOocCapture.CombatClassHistory restartedColosseum = new LiveOocCapture.CombatClassHistory();
+        restartedColosseum.observe(player, 67891, 2, 29, true, true, new Object(),
+                "FIXED_EVENT", "COLOSSEUM_EVENT_SLAVERS");
+        LiveOocCapture.CombatClassHistory recoveredColosseum = new LiveOocCapture.CombatClassHistory();
+        recoveredColosseum.restoreFor(player, 67891, 2);
+        recoveredColosseum.reconcileCompletedColosseum(java.util.Arrays.asList(29, 29),
+                java.util.Arrays.asList(obj("floor", 29, "enemies", "Colosseum Slavers"),
+                        obj("floor", 29, "enemies", "unknown")));
+        if (recoveredColosseum.completeFor(java.util.Arrays.asList(29, 29)))
+            throw new AssertionError("unknown second encounter was accepted as Colosseum Nobs");
+        recoveredColosseum.reconcileCompletedColosseum(java.util.Arrays.asList(29, 29),
+                java.util.Arrays.asList(obj("floor", 29, "enemies", "Colosseum Slavers"),
+                        obj("floor", 29, "enemies", "Colosseum Nobs")));
+        if (!recoveredColosseum.completeFor(java.util.Arrays.asList(29, 29)))
+            throw new AssertionError("completed Colosseum did not reconcile from exact public metrics");
         LiveOocCapture.CombatClassHistory sameSeed = new LiveOocCapture.CombatClassHistory();
         sameSeed.resetForFreshRun(player, 12345, 1);
         if (!sameSeed.snapshot().isEmpty() || !sameSeed.completeFor(java.util.Collections.emptyList()))

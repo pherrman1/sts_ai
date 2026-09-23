@@ -475,7 +475,10 @@ read-only screen and choice converters. The observation contains:
   fight, and clears the sidecar at a positively identified fresh Neow run. Each
   normal/elite queue entry also stores the canonical encounter identity, so
   reconstruction restores the consumed native queue prefix rather than only
-  its length. Legacy two-column sidecars and unknown identities fail closed. It
+  its length. The two Colosseum fights are recorded separately on the same
+  floor; after a restart, an exact public Slavers then Nobs combat metric can
+  repair a sidecar that recorded only the first fight. Legacy two-column
+  sidecars and unknown identities fail closed. It
   then validates it against `damage_taken`. It qualifies
   only when every combat in the act is represented; a missing or contradictory
   sidecar still fails closed with `PUBLIC_COMBAT_CLASS_HISTORY_UNQUALIFIED`.

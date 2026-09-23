@@ -260,7 +260,11 @@ final class LiveOocCapture {
                         && ((Number)entries.get(entries.size() - 1).get("floor")).intValue() == floor) {
                     String previousKind = String.valueOf(entries.get(entries.size() - 1).get("kind"));
                     String previousEncounter = String.valueOf(entries.get(entries.size() - 1).getOrDefault("encounter", ""));
-                    if (!previousKind.equals(kind) || !previousEncounter.equals(encounter)) {
+                    if ("FIXED_EVENT".equals(previousKind) && "FIXED_EVENT".equals(kind)
+                            && "COLOSSEUM_EVENT_SLAVERS".equals(previousEncounter)
+                            && "COLOSSEUM_EVENT_NOBS".equals(encounter)) {
+                        entries.add(object("floor", floor, "kind", kind, "encounter", encounter));
+                    } else if (!previousKind.equals(kind) || !previousEncounter.equals(encounter)) {
                         complete = false;
                     }
                 } else {
@@ -270,6 +274,26 @@ final class LiveOocCapture {
                 lastGroup = group;
                 persist();
             }
+        }
+        void reconcileCompletedColosseum(List<Integer> completedFloors, List<?> damageMetrics) {
+            if (!complete || entries.isEmpty() || entries.size() + 1 != completedFloors.size()
+                    || damageMetrics == null) return;
+            int actStart = act <= 1 ? 0 : act == 2 ? 17 : act == 3 ? 34 : 51;
+            List<?> currentActMetrics = damageMetrics.stream()
+                    .filter(raw -> map(raw).get("floor") instanceof Number
+                            && ((Number)map(raw).get("floor")).intValue() > actStart)
+                    .collect(java.util.stream.Collectors.toList());
+            if (currentActMetrics.size() != completedFloors.size()) return;
+            for (int i = 0; i < entries.size(); ++i)
+                if (((Number)entries.get(i).get("floor")).intValue() != completedFloors.get(i)) return;
+            int last = completedFloors.size() - 1;
+            if (completedFloors.get(last).intValue() != completedFloors.get(last - 1).intValue()
+                    || !"COLOSSEUM_EVENT_SLAVERS".equals(entries.get(last - 1).get("encounter"))
+                    || !"Colosseum Slavers".equals(map(currentActMetrics.get(last - 1)).get("enemies"))
+                    || !"Colosseum Nobs".equals(map(currentActMetrics.get(last)).get("enemies"))) return;
+            entries.add(object("floor", completedFloors.get(last), "kind", "FIXED_EVENT",
+                    "encounter", "COLOSSEUM_EVENT_NOBS"));
+            persist();
         }
         void invalidate() {
             complete = false;
@@ -581,6 +605,9 @@ final class LiveOocCapture {
             if (floor > combatActStart && floor <= AbstractDungeon.floorNum)
                 currentActCombatFloors.add(floor);
         combatClassHistory.restoreFor(AbstractDungeon.player, Settings.seed, AbstractDungeon.actNum);
+        if (CardCrawlGame.metricData != null)
+            combatClassHistory.reconcileCompletedColosseum(currentActCombatFloors,
+                    CardCrawlGame.metricData.damage_taken);
         p.put("combatHistory", combatClassHistory.snapshot());
         p.put("combatHistoryComplete", combatClassHistory.completeFor(currentActCombatFloors));
         // At the act-boss transition vanilla can leave one non-room sentinel
