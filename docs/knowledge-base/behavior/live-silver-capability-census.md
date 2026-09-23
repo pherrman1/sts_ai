@@ -82,7 +82,9 @@ can reroot from the last modeled action after summon animations settle.
   while retaining each roll's own volatile inputs, including rolls across
   turns. An incomplete input sequence fails closed. Louse and Darkling use a public candidate mask for their persistent
   randomized damage. Observed player HP and block changes narrow the mask
-  when they determine the attack amount. Multiple compatible values remain
+  when they determine the attack amount. Darkling Chomp has fixed damage, so a
+  matching public hit leaves every Nip-damage candidate possible under Runic.
+  Multiple compatible values remain
   in the mask; unqualified or contradictory damage observations fail closed.
   Silver samples a candidate inside each search continuation. A live Act-2 TWO_THIEVES root
   was imported by Silver and returned a model-driven action with the temporary

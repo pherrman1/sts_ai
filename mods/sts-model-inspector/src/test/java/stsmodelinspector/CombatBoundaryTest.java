@@ -83,6 +83,11 @@ public final class CombatBoundaryTest {
                 || STSModelInspector.compatiblePrivateMiscMask(7, new int[]{5, 6, 7}, 6) != 2
                 || STSModelInspector.compatiblePrivateMiscMask(2, new int[]{5, 6, 7}, 7) != 0)
             throw new AssertionError("Runic public damage posterior support is incorrect");
+        if (STSModelInspector.compatiblePrivateMiscMask(8,
+                    new int[]{7, 8, 9, 10, 11}, 8, 8) != 8
+                || STSModelInspector.compatiblePrivateMiscMask(31,
+                    new int[]{7, 8, 9, 10, 11}, 10, 8) != 8)
+            throw new AssertionError("Darkling fixed Chomp damage excluded a private Nip value");
         if (STSModelInspector.guardianThresholdFromPublicPower(null, null) != null
                 || STSModelInspector.guardianThresholdFromPublicPower(null, 30) != 30
                 || STSModelInspector.guardianThresholdFromPublicPower(30, 12) != 30

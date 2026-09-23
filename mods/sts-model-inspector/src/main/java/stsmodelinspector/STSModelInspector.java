@@ -241,13 +241,16 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         final int hp, block;
         final AbstractMonster owner;
         final int[] candidateOutputs;
+        final int independentOutput;
         final boolean publicAmountQualified;
         PublicDamageSnapshot(int hp, int block, AbstractMonster owner, int[] candidateOutputs,
+                             int independentOutput,
                              boolean publicAmountQualified) {
             this.hp = hp;
             this.block = block;
             this.owner = owner;
             this.candidateOutputs = candidateOutputs;
+            this.independentOutput = independentOutput;
             this.publicAmountQualified = publicAmountQualified;
         }
     }
@@ -264,6 +267,14 @@ public final class STSModelInspector implements PostInitializeSubscriber,
     }
 
     static int compatiblePrivateMiscMask(int prior, int[] outputs, int publicDamage) {
+        return compatiblePrivateMiscMask(prior, outputs, publicDamage, -1);
+    }
+
+    static int compatiblePrivateMiscMask(int prior, int[] outputs, int publicDamage,
+                                         int independentOutput) {
+        // Darkling Chomp uses a fixed base damage, while Nip uses its private
+        // persistent parameter. The move itself is hidden by Runic Dome.
+        if (publicDamage == independentOutput) return prior;
         int compatible = 0;
         for (int i = 0; i < outputs.length; ++i)
             if (outputs[i] == publicDamage) compatible |= 1 << i;
@@ -274,6 +285,7 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         AbstractMonster owner = info != null && info.owner instanceof AbstractMonster
                 ? (AbstractMonster)info.owner : null;
         int[] predicted = null;
+        int independentOutput = -1;
         if (owner != null && hasRunicDome() && runicPrivateMiscInfo(owner.id)) {
             int minimum = hiddenMiscMinimum(owner.id, AbstractDungeon.ascensionLevel);
             int count = hiddenMiscCount(owner.id);
@@ -283,13 +295,19 @@ public final class STSModelInspector implements PostInitializeSubscriber,
                 candidate.applyPowers(owner, player);
                 predicted[i] = candidate.output;
             }
+            if ("Darkling".equals(owner.id)) {
+                DamageInfo chomp = new DamageInfo(owner,
+                        AbstractDungeon.ascensionLevel >= 2 ? 9 : 8, info.type);
+                chomp.applyPowers(owner, player);
+                independentOutput = chomp.output;
+            }
         }
         // Buffer, Torii and Tungsten Rod can change the visible HP/block delta
         // after DamageInfo's power calculation. Do not condition on those hits.
         boolean qualified = !player.hasPower("Buffer") && !player.hasRelic("Torii")
                 && !player.hasRelic("TungstenRod");
         return new PublicDamageSnapshot(player.currentHealth, player.currentBlock,
-                owner, predicted, qualified);
+                owner, predicted, independentOutput, qualified);
     }
 
     /** Called by the post-AbstractPlayer.damage ModTheSpire patch. */
@@ -317,7 +335,7 @@ public final class STSModelInspector implements PostInitializeSubscriber,
                 return;
             }
             hiddenMiscMasks.put(before.owner, compatiblePrivateMiscMask(
-                    prior, before.candidateOutputs, publicDamage));
+                    prior, before.candidateOutputs, publicDamage, before.independentOutput));
         }
     }
 
