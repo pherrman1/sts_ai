@@ -1033,6 +1033,22 @@ def selector_confirmation_action(screen: Mapping[str, Any],
                  and c.mcp_arguments == {}), None)
 
 
+def combat_selection_confirmation_action(screen: Mapping[str, Any],
+                                         candidates: Sequence[LegalAction]) -> LegalAction | None:
+    """Confirm a completed hand selection when MCP exposes only Confirm."""
+    state = _mapping(screen.get("screen_state"))
+    selected = _list(state.get("selected"))
+    maximum = state.get("max_cards")
+    if (_text(screen.get("screen_type")).upper() != "HAND_SELECT"
+            or not _is_combat(screen) or screen.get("can_proceed") is not True
+            or _text(screen.get("proceed_button")) != "confirm"
+            or type(maximum) is not int or maximum < 1
+            or len(selected) != maximum or len(candidates) != 1):
+        return None
+    candidate = candidates[0]
+    return candidate if candidate.mcp_tool == "proceed" and candidate.mcp_arguments == {} else None
+
+
 def declined_reward_cleanup_action(occurrences: Sequence[Any], declined_indexes: set[int],
                                    candidates: Sequence[LegalAction]) -> LegalAction | None:
     """Claim free gold or leave once every remaining card group was model-declined."""
@@ -1340,6 +1356,7 @@ class Driver:
         boss_chest_reveal = False
         boss_chest_skip_cleanup = False
         selector_confirmation = False
+        combat_selection_confirmation = False
         declined_reward_cleanup = False
         empty_reward_proceed = False
         forced_ooc = False
@@ -1363,6 +1380,9 @@ class Driver:
                 if _text(_mapping(item).get("type")).upper() == "CARD"
                 and type(_mapping(item).get("index")) is int
                 and (session, _mapping(item).get("identity")) in self.declined_rewards}
+        if action is None:
+            action = combat_selection_confirmation_action(screen, candidates)
+            combat_selection_confirmation = action is not None
         if action is None:
             parent = parent_reward_action(screen, game_state, candidates)
             if parent is not None:
@@ -1437,6 +1457,7 @@ class Driver:
                                       "nest_intro" if nest_intro else
                                       "boss_door" if boss_door else
                                       "selector_confirmation" if selector_confirmation else
+                                      "combat_selection_confirmation" if combat_selection_confirmation else
                                       "boss_chest_skip_cleanup" if boss_chest_skip_cleanup else
                                       "boss_chest_reveal" if boss_chest_reveal else
                                       "declined_reward_cleanup" if declined_reward_cleanup else

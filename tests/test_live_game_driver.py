@@ -12,7 +12,8 @@ from tools.live_game_driver import (
     _is_combat, card_reward_reveal_action, parent_reward_action, empty_combat_reward_proceed_action,
     neow_navigation_action, shop_entry_action,
     event_completion_action, dead_adventurer_fight_action, nest_intro_action, boss_door_action, boss_chest_reveal_action,
-    boss_chest_skip_cleanup_action, selector_confirmation_action, declined_reward_cleanup_action,
+    boss_chest_skip_cleanup_action, selector_confirmation_action, combat_selection_confirmation_action,
+    declined_reward_cleanup_action,
 )
 
 
@@ -405,6 +406,18 @@ class LiveGameDriverTest(unittest.TestCase):
         self.assertIsNone(forced_ooc_action(combat, build_legal_actions(combat, ["end_turn"])))
         menu = {"screen_type": "MAIN_MENU", "choice_list": ["Continue"]}
         self.assertIsNone(forced_ooc_action(menu, build_legal_actions(menu, ["choose"])))
+
+    def test_completed_combat_hand_selection_confirms_without_model(self):
+        screen = {"screen_type": "HAND_SELECT", "room_phase": "COMBAT",
+                  "can_proceed": True, "proceed_button": "confirm",
+                  "screen_state": {"max_cards": 1, "selected": [{"uuid": "chosen"}]}}
+        candidates = build_legal_actions(screen, ["proceed"])
+        self.assertEqual(combat_selection_confirmation_action(screen, candidates).mcp_tool,
+                         "proceed")
+        screen["screen_state"]["selected"] = []
+        self.assertIsNone(combat_selection_confirmation_action(screen, candidates))
+        screen["screen_state"]["selected"] = [{"uuid": "chosen"}]
+        self.assertIsNone(combat_selection_confirmation_action(screen, candidates + candidates))
 
     def test_nest_intro_continue_only(self):
         screen = {"screen_type": "EVENT", "room_type": "EventRoom",
