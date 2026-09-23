@@ -638,6 +638,10 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         // Colosseum fight while vanilla already displays an interactive
         // combat-reward screen. Only repair its command-ready latch after a
         // stable reward screen and empty action queues; leave game state alone.
+        if (AbstractDungeon.currMapNode == null) {
+            eventRewardReadySinceNanos = 0;
+            return;
+        }
         AbstractRoom room = AbstractDungeon.getCurrRoom();
         boolean visible = room instanceof EventRoom
                 && room.event != null
