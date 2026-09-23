@@ -268,6 +268,15 @@ std::optional<sts::MonsterStatus> monsterStatusForMonster(const std::string &mon
         return monsterId == "Darkling" ? std::optional{sts::MonsterStatus::REGROW} : std::nullopt;
     return monsterStatus(id);
 }
+bool nativeImplicitMonsterPower(const std::string &monsterId, const std::string &id,
+                                int amount, int playerTurn) {
+    // Vanilla Exploder starts with Explosive(3) and decrements it during each
+    // monster turn. Native Exploder scripts the same two slams and explosion
+    // through its move history, without a separate status slot. Only accept
+    // the public countdown when it agrees with that native turn sequence.
+    return monsterId == "Exploder" && id == "Explosive"
+        && playerTurn >= 1 && playerTurn <= 3 && amount == 4 - playerTurn;
+}
 std::optional<PlayerStatus> playerStatus(const std::string &id) { return find(kPlayerStatuses, id); }
 std::optional<sts::CardSelectTask> cardSelectTask(const std::string &id) { return find(kSelectionTasks, id); }
 

@@ -879,6 +879,18 @@ void verifyRuntimeMoveBoundary() {
     expect("Donu", 2, MonsterMoveId::DONU_CIRCLE_OF_POWER);
     expect("Exploder", 1, MonsterMoveId::EXPLODER_SLAM);
     expect("Exploder", 2, MonsterMoveId::EXPLODER_EXPLODE);
+    for (int turn = 1; turn <= 3; ++turn) {
+        if (!one_combat::advisor::live_silver::nativeImplicitMonsterPower(
+                "Exploder", "Explosive", 4 - turn, turn)
+            || one_combat::advisor::live_silver::nativeImplicitMonsterPower(
+                "Exploder", "Explosive", 3, turn + 1))
+            throw std::runtime_error("Exploder countdown/native script boundary changed");
+    }
+    if (one_combat::advisor::live_silver::nativeImplicitMonsterPower(
+            "Spiker", "Explosive", 3, 1)
+        || one_combat::advisor::live_silver::nativeImplicitMonsterPower(
+            "Exploder", "Thorns", 3, 1))
+        throw std::runtime_error("Exploder implicit power accepted on another entity");
     expect("GiantHead", 1, MonsterMoveId::GIANT_HEAD_GLARE);
     expect("GiantHead", 2, MonsterMoveId::GIANT_HEAD_IT_IS_TIME);
     expect("GiantHead", 3, MonsterMoveId::GIANT_HEAD_COUNT);
