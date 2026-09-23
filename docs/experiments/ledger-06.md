@@ -11345,3 +11345,46 @@ timing was not captured.
 
 Knowledge impact: this timing smoke is recorded here; model qualification,
 standard CTM artifact and runtime defaults remain unchanged.
+
+## §337 — PR 295 DeepSets shared transition-encoder reuse (2026-09-23)
+
+On the current PR 295 tree, the exporter-installed DeepSets artifact's 28
+maxHP, HP, and potion encoder tensors were byte-identical across all three
+groups. The Release probe also emitted all three 64-value representations;
+they were identical on each of 28 supported frozen fixtures. Candidate artifact
+SHA-256 is
+`3f6d174950f1e4a8b042cebc78bd8525c7e112a13e31865670a39df4b0f2f586`, the
+current provenance-hardened re-export with tensor payload identical to the
+originally profiled candidate.
+
+The DeepSets-only prepared path now computes the shared transition encoding
+once for the maxHP, HP, and potion heads. Survival remains separate. Code
+inspection shows prepared encoder calls fall from four to two; this is not a
+runtime-instrumented counter. Attention-artifact preparation retains the
+original code path. Across 31 fixed fixtures (28 supported), all
+3,584 prepared/reference draws, deterministic outputs, support results, full
+persistent post-states, and planner RNG checks matched exactly before and
+after.
+
+Release preparation timing on one identical fixed fixture over 30 independent
+process repetitions changed from median `284,427 ns` (range `280,254-357,929`)
+to `142,541 ns` (range `140,062-265,236`), a `49.88%` median reduction. The
+ranges did not overlap. This is fixed-fixture runtime evidence, not model
+qualification or a gameplay result. Applying that reduction to PR 295's
+historical `14.28%` CTM-preparation share of MCTS CPU projects about `7.12%`
+less same-workload MCTS CPU; this projection is an inference, not a measured
+search speedup. Later profiling candidates were not run because the clear Phase
+2 result met the handoff stop rule.
+
+The Release probe and `one_combat` targets built. Focused loader and near-full
+artifact CTests passed (2/2). The full 31-row `smoke-and-parity` invocation
+returned `invalid_relic_counter` on both the untouched PR 295 preparation path
+and the candidate path, with the same artifact and fixtures; both emitted
+eight rows first. This reproduces the failure on baseline and shows it is not
+specific to encoder reuse. The separate `near-full` path completed all
+fixtures and verifies prepared/reference state and RNG parity. Full CTest,
+GitHub Actions Linux GCC, game seeds, and gameplay comparisons were not run.
+[Evidence packet](evidence/ooc_deepset_encoder_reuse_2026-09-23/README.md).
+
+Knowledge impact: experiment evidence only; no maintained qualification,
+production artifact, or default changed.
