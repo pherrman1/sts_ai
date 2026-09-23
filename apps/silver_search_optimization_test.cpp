@@ -509,15 +509,23 @@ void potionActionCanonicalization(sts::GameContext &gc, const sts::BattleContext
     auto fairy = original;
     installPotions(fairy, {sts::Potion::FAIRY_POTION, sts::Potion::FAIRY_POTION});
     const auto fairyActions = potionActions(fairy, sts::Potion::FAIRY_POTION);
-    require(fairyActions.size() == 1 && fairyActions.front().getTargetIdx() > 5,
-            "duplicate Fairy Potions must retain one discard action and no use action");
+    require(fairyActions.empty(), "Fairy discard absent without playable Alchemize");
+
+    auto fairyWithAlchemize = fairy;
+    fairyWithAlchemize.cards.cardsInHand = 1;
+    fairyWithAlchemize.cards.hand[0] = sts::CardInstance(sts::CardId::ALCHEMIZE);
+    fairyWithAlchemize.player.energy = 3;
+    const auto alchemizeFairyActions = potionActions(fairyWithAlchemize, sts::Potion::FAIRY_POTION);
+    require(alchemizeFairyActions.size() == 1
+                && alchemizeFairyActions.front().getTargetIdx() > 5
+                && alchemizeFairyActions.front().isValidAction(fairyWithAlchemize),
+            "playable Alchemize permits one representative Fairy discard action");
 
     auto blockedSmoke = original;
     blockedSmoke.encounter = sts::MonsterEncounter::HEXAGHOST;
     installPotions(blockedSmoke, {sts::Potion::SMOKE_BOMB, sts::Potion::SMOKE_BOMB});
     const auto smokeActions = potionActions(blockedSmoke, sts::Potion::SMOKE_BOMB);
-    require(smokeActions.size() == 1 && smokeActions.front().getTargetIdx() > 5,
-            "blocked duplicate Smoke Bombs must retain one discard action and no use action");
+    require(smokeActions.empty(), "blocked Smoke Bomb discard absent without playable Alchemize");
 
     auto gambler = original;
     gambler.cards.cardsInHand = 1;

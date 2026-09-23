@@ -24,6 +24,15 @@
 
 using namespace sts;
 
+static bool hasPlayableAlchemizeForPotionDiscard(const BattleContext &bc) {
+    if (bc.inputState != InputState::PLAYER_NORMAL || !bc.isCardPlayAllowed()) return false;
+    for (int i = 0; i < bc.cards.cardsInHand; ++i) {
+        const auto &card = bc.cards.hand[i];
+        if (card.getId() == CardId::ALCHEMIZE && card.canUseOnAnyTarget(bc)) return true;
+    }
+    return false;
+}
+
 namespace sts::search {
 
 extern double g_vnetAlpha;   // from BattleScumSearcher2.cpp
@@ -4071,12 +4080,17 @@ void enumerateActionsForNode(BattleScumSearcher3::Node &node,
                 }
             }
             for (int p = 0; p < bc.potionCapacity; ++p) {
-                if (bc.potions[p] == Potion::EMPTY_POTION_SLOT
-                    || bc.potions[p] == Potion::FAIRY_POTION) continue;
+                if (bc.potions[p] == Potion::EMPTY_POTION_SLOT) continue;
+                if (bc.potions[p] == Potion::FAIRY_POTION) {
+                    if (hasPlayableAlchemizeForPotionDiscard(bc)) {
+                        node.edges.push_back(BattleScumSearcher3::Edge{Action(ActionType::POTION, p, -1)});
+                    }
+                    continue;
+                }
                 if (bc.potions[p] == Potion::SMOKE_BOMB) {
                     if (!bc.smokeBombEscapeBlocked()) {
                         node.edges.push_back(BattleScumSearcher3::Edge{Action(ActionType::POTION, p)});
-                    } else {
+                    } else if (hasPlayableAlchemizeForPotionDiscard(bc)) {
                         node.edges.push_back(BattleScumSearcher3::Edge{Action(ActionType::POTION, p, -1)});
                     }
                     continue;

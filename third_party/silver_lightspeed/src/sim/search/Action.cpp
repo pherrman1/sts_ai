@@ -63,6 +63,15 @@ fixed_list<int, 10> search::Action::getSelectedIdxs() const {
     return ret;
 }
 
+static bool hasPlayableAlchemizeForPotionDiscard(const BattleContext &bc) {
+    if (bc.inputState != InputState::PLAYER_NORMAL || !bc.isCardPlayAllowed()) return false;
+    for (int i = 0; i < bc.cards.cardsInHand; ++i) {
+        const auto &card = bc.cards.hand[i];
+        if (card.getId() == CardId::ALCHEMIZE && card.canUseOnAnyTarget(bc)) return true;
+    }
+    return false;
+}
+
 bool isValidPotionAction(const BattleContext &bc, const search::Action &a) {
     if (bc.inputState != InputState::PLAYER_NORMAL) {
         return false;
@@ -79,7 +88,7 @@ bool isValidPotionAction(const BattleContext &bc, const search::Action &a) {
 
     if (a.getTargetIdx() > 5) {
         // discard action
-        return true;
+        return hasPlayableAlchemizeForPotionDiscard(bc);
 
     } else {
 

@@ -19,6 +19,15 @@ using namespace sts;
 
 std::int64_t simulationIdx = 0; // for debugging
 
+static bool hasPlayableAlchemizeForPotionDiscard(const BattleContext &bc) {
+    if (bc.inputState != InputState::PLAYER_NORMAL || !bc.isCardPlayAllowed()) return false;
+    for (int i = 0; i < bc.cards.cardsInHand; ++i) {
+        const auto &card = bc.cards.hand[i];
+        if (card.getId() == CardId::ALCHEMIZE && card.canUseOnAnyTarget(bc)) return true;
+    }
+    return false;
+}
+
 // Telemetry category for a chance node's stochastic action: 0 = END_TURN (monster rolls +
 // start-of-turn draws), 1 = card play, 2 = other (potions, card selects).
 static int chanceCat(const search::Action &a) {
@@ -1361,16 +1370,19 @@ void search::BattleSearcher::enumeratePotionActions(search::BattleSearcher::Node
             continue;
         }
 
-        // not enumerating the discard of a potion if it can be used
+        // Fairy auto-procs on lethal and is otherwise inert. Only offer its
+        // discard edge when a playable Alchemize can use the freed slot.
         if (p == Potion::FAIRY_POTION) {
-            node.edges.push_back({Action(ActionType::POTION, pIdx, -1)});
+            if (hasPlayableAlchemizeForPotionDiscard(bc))
+                node.edges.push_back({Action(ActionType::POTION, pIdx, -1)});
             continue;
         }
 
-        // Offer only Smoke Bomb's discard when it can't flee -- the search otherwise over-picks
-        // the high-value escape and the live game rejects the "use" command.
+        // When Smoke Bomb cannot flee, discard is useful only to make room for
+        // a playable Alchemize; otherwise leave it in inventory.
         if (p == Potion::SMOKE_BOMB && bc.smokeBombEscapeBlocked()) {
-            node.edges.push_back({Action(ActionType::POTION, pIdx, -1)});
+            if (hasPlayableAlchemizeForPotionDiscard(bc))
+                node.edges.push_back({Action(ActionType::POTION, pIdx, -1)});
             continue;
         }
 
@@ -1388,7 +1400,8 @@ void search::BattleSearcher::enumeratePotionActions(search::BattleSearcher::Node
 
         // potion requires target
         if (!hasValidTarget) {
-            node.edges.push_back({Action(ActionType::POTION, pIdx, -1)});
+            if (hasPlayableAlchemizeForPotionDiscard(bc))
+                node.edges.push_back({Action(ActionType::POTION, pIdx, -1)});
             continue;
         }
 

@@ -401,6 +401,13 @@ Both native searchers use `Action::enumerateCardSelectActions`, including the
 correct pool per task, EXHUME self-exclusion, CODEX skip, and all valid subsets
 for `EXHAUST_MANY` and `GAMBLE`.
 
+Combat potion-discard actions are legal only when a playable Alchemize is in
+hand. Every native and isolated Silver searcher applies the same gate during
+enumeration, and `Action::isValidAction` rejects stale or externally supplied
+discard actions when Alchemize is unavailable. Fairy in a Bottle remains
+excluded from normal potion use; its discard candidate follows the same
+Alchemize gate.
+
 `STS_MULTISELECT_MODE=all|single|none` controls subsets. `all` is default and
 the complete validity contract; `single` keeps empty, singleton, and full
 selections; `none` keeps only empty. `STS_MULTISELECT_CANONICAL=1` optionally
