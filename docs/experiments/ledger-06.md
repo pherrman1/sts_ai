@@ -11345,3 +11345,51 @@ timing was not captured.
 
 Knowledge impact: this timing smoke is recorded here; model qualification,
 standard CTM artifact and runtime defaults remain unchanged.
+
+## §337 — Potion-specific end-to-end DeepSets specialist (2026-09-23)
+
+- **Question and baseline:** Does jointly training a dedicated 64-wide
+  DeepSets potion encoder and the existing exact trajectory decoder recover
+  the gap of the frozen shared-representation substitution? Baseline is
+  `c62f3694517bf622d2670a9fbf3c20a70380a763`; dedicated Attention reference
+  validation trajectory NLL is `0.506803228`.
+- **Intervention/provenance:** W initialized its encoder/decoder from
+  `bee6800d…c3003dc663` / `06eda953…448819c1`; S used deterministic seed
+  `20260912`. The exact existing trajectory loss and legality/DAG semantics
+  were retained. Both arms used FP32, batch 512, AdamW, encoder/decoder LR
+  `1e-4`/`1e-3`, weight decay `1e-4`, clip 1.0, up to 40 epochs, and the same
+  TRAIN batch order. TRAIN was 393,677 rows / 19,986 sources; VALIDATION was
+  48,590 / 2,496. The receipt records zero TEST encoding/inference rows; the
+  cache loader reads the prepared cache as a whole, but TEST examples were not
+  encoded, evaluated, selected on, or used for debugging. The three prepared
+  cache artifacts were reproduced byte-for-byte from their provenance source
+  revision. Implementation SHA is
+  `3d1db667f0859c5a1d4788cb4232eaf6f6670bb7`.
+- **Result:** W selected epoch 27 at NLL `0.487162724` (`-3.8754%` vs reference);
+  S selected epoch 34 at `0.498382425` (`-1.6616%`). W no-change Brier was
+  `0.086596849` vs `0.092057790`; normal action-mode/count accuracies were
+  `0.816036359`/`0.824688321` vs `0.806321144`/`0.814556144`. W illegal
+  probability was zero and max normalization error `2.14e-7`; reload reproduced
+  metrics. W Brew/Smoke/trajectory-special NLL changes were `+7.0897%`,
+  `-16.5479%`, and `+3.1766%`; recursive Brew was `+13.3126%` (12 rows).
+  Scratch recursive Brew was `+33.4429%`. The strongest remaining degradation
+  is concentrated in recursive Brew, though that small slice limits inference.
+- **Decision:** **`POTION_DEEPSET_SPECIALIST_REJECTED`** by the existing
+  teacher-forced gate. Per the stated stop rule, W is a narrow miss: it improves
+  clearly over the previous frozen DeepSets result (`0.537569223`, +6.0706%)
+  and the Attention reference overall, but fails the recursive-Brew slice
+  gate. Do not continue with width or hyperparameter sweeps. A bounded next
+  architecture experiment could add a single potion-slot/context interaction
+  layer after first inspecting the recursive-Brew TRAIN/VALIDATION examples.
+  No ancestral draws, TEST scoring, export/native parity, latency, gameplay,
+  OOC MCTS, or runtime/default promotion ran. Hardware was local RTX 3060 Ti
+  with CUDA available; no GCP instance or spend was used.
+- **Evidence:** [report](evidence/potion_specialist_deepsets_2026-09-23.md),
+  [complete receipt](evidence/potion_specialist_deepsets_2026-09-23.json)
+  (SHA256 `31a26d11553b30ecfd3f495d21e8cce61dd74129bcf5516d160cc94a66621a44`).
+  W checkpoint SHA256 is `71d88a71cf7579e1092c3b3c27e000538a6aafe35bbf5228c10c15fa0edd4ace`;
+  S is `b0bac3affcf389e6317cc90424ad58d69fc10a6f623a320e8db0a22379367c62`.
+  Raw run directory: `/tmp/deepset-potion-specialist-20260923`.
+
+Knowledge impact: current potion-representation status and experiment evidence
+updated; qualified encoders and runtime defaults remain unchanged.
