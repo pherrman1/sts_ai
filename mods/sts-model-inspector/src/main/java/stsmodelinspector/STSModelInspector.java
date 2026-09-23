@@ -2889,7 +2889,6 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         private Process process;
         private BufferedWriter stdin;
         private Thread reader;
-        private Thread errorReader;
         private Thread writer;
         private Snapshot pendingObservation;
         private boolean stopping;
@@ -2928,16 +2927,19 @@ public final class STSModelInspector implements PostInitializeSubscriber,
                 String oocFloorModel = environmentFirst(p, "STS_LIVE_OOC_FLOOR_MODEL", "oocFloorModel");
                 if (oocFloorModel != null)
                     builder.environment().put("STS_LIVE_OOC_FLOOR_MODEL", oocFloorModel);
-                Process started = builder.redirectErrorStream(false).start();
+                Path advisorLog = Paths.get(System.getProperty("user.home"), ".cache",
+                        "sts-model-inspector", "advisor-stderr.log");
+                Files.createDirectories(advisorLog.getParent());
+                // ModTheSpire's Swing console can block inside accessibility
+                // callbacks. Never make the advisor's stderr drain depend on
+                // that UI thread: a full pipe also blocks its JSON responses.
+                Process started = builder.redirectError(ProcessBuilder.Redirect.to(advisorLog.toFile())).start();
                 process = started;
                 stopping = false;
                 stdin = new BufferedWriter(new OutputStreamWriter(process.getOutputStream(), StandardCharsets.UTF_8));
                 reader = new Thread(() -> readResponses(started), "sts-model-inspector-responses");
                 reader.setDaemon(true);
                 reader.start();
-                errorReader = new Thread(() -> drainErrors(started), "sts-model-inspector-stderr");
-                errorReader.setDaemon(true);
-                errorReader.start();
                 write("{\"protocol\":\"" + PROTOCOL + "\",\"kind\":\"hello\"}");
             } catch (Exception e) {
                 advisorStatus = "error";
@@ -2996,7 +2998,6 @@ public final class STSModelInspector implements PostInitializeSubscriber,
             notifyAll();
             if (process != null) process.destroy();
             if (reader != null) reader.interrupt();
-            if (errorReader != null) errorReader.interrupt();
             if (writer != null) writer.interrupt();
             process = null;
             stdin = null;
@@ -3106,14 +3107,6 @@ public final class STSModelInspector implements PostInitializeSubscriber,
                 advisorStatus = "disconnected";
                 advisorReason = "advisor exited";
             }
-        }
-
-        private void drainErrors(Process p) {
-            try (BufferedReader r = new BufferedReader(new InputStreamReader(p.getErrorStream(), StandardCharsets.UTF_8))) {
-                String line;
-                while ((line = r.readLine()) != null)
-                    System.err.println("sts-model-inspector advisor stderr: " + line);
-            } catch (IOException ignored) {}
         }
 
         private String field(String json, String key) {

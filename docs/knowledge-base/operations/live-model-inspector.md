@@ -750,6 +750,11 @@ For a handshake:
 An observation must include `session`, `sequence`, `observationHash`, and an
 object containing a string `boundary`. The response echoes the identity fields
 so a future game UI can discard responses after a reload or newer capture.
+The inspector writes advisor stderr to
+`~/.cache/sts-model-inspector/advisor-stderr.log` for the current advisor
+process. It does not relay those diagnostics through ModTheSpire's Swing
+console, whose repaint or accessibility callbacks can block the pipe reader
+and stall otherwise valid advisor responses.
 
 ## Remaining bounded boundary
 
