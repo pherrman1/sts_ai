@@ -2632,8 +2632,12 @@ public final class STSModelInspector implements PostInitializeSubscriber,
             if (!firstPower) out.append(',');
             firstPower = false;
             String powerId = power.ID;
-            out.append("{\"id\":\"").append(escapeJson(powerId))
-                    .append("\",\"amount\":").append(power.amount);
+            out.append("{\"id\":\"").append(escapeJson(powerId)).append('"');
+            // Vanilla PanachePower.amount is the remaining card countdown;
+            // its private damage field is the native status magnitude.
+            Integer panacheDamage = "Panache".equals(powerId) ? readIntField(power, "damage") : null;
+            if (!"Panache".equals(powerId) || panacheDamage != null)
+                out.append(",\"amount\":").append(panacheDamage == null ? power.amount : panacheDamage);
             // Several native statuses have a turn-local justApplied bit.  It
             // is private in vanilla powers, so emit it only when reflection
             // can read the actual field; the importer remains fail-closed if
@@ -2655,8 +2659,7 @@ public final class STSModelInspector implements PostInitializeSubscriber,
                 Integer value = readIntField(power, "cardsDoubled", "cardsPlayed");
                 if (value != null) out.append(",\"echoFormCardsDoubled\":").append(value);
             } else if ("Panache".equals(power.ID)) {
-                Integer value = readIntField(power, "panacheCounter", "cardsUntilTrigger");
-                if (value != null) out.append(",\"panacheCounter\":").append(value);
+                out.append(",\"panacheCounter\":").append(power.amount);
             } else if ("Deva Form".equals(power.ID) || "DevaFormPower".equals(power.ID)) {
                 Integer value = readIntField(power, "energyPerTurn", "energyAmount");
                 if (value != null) out.append(",\"devaFormEnergyPerTurn\":").append(value);

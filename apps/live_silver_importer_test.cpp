@@ -2159,6 +2159,25 @@ int main() {
             || !(powerImported.wire.monsters[0].statusBits
                 & (1ULL << static_cast<int>(MonsterStatus::VULNERABLE))))
             throw std::runtime_error("monster Vulnerable amount/activation parity failed");
+        auto panachePower = general;
+        panachePower["silverRoot"]["combat"]["panacheCounter"] = 3;
+        panachePower["silverRoot"]["combat"]["playerPowers"] = json::array({
+            json{{"id", "Panache"}, {"amount", 10}}});
+        const auto panacheImported = one_combat::advisor::importSilverRoot(panachePower);
+        const bool panacheDamage = panacheImported.ok && std::find(
+            panacheImported.wire.player.statusMap.begin(),
+            panacheImported.wire.player.statusMap.end(),
+            std::pair<std::int16_t, std::int16_t>{
+                static_cast<std::int16_t>(PlayerStatus::PANACHE), 10})
+            != panacheImported.wire.player.statusMap.end();
+        if (!panacheImported.ok || panacheImported.wire.player.panacheCounter != 3
+            || !panacheDamage)
+            throw std::runtime_error("Panache damage/countdown import lost distinct values: "
+                + panacheImported.reason);
+        panachePower["silverRoot"]["combat"]["panacheCounter"] = 0;
+        if (one_combat::advisor::importSilverRoot(panachePower).reason
+                != "silver_unmapped_player_power")
+            throw std::runtime_error("invalid Panache countdown was accepted");
         auto weakenedAlias = general;
         weakenedAlias["silverRoot"]["combat"]["monsters"][0]["powers"] = json::array({
             json{{"id", "Weakened"}, {"amount", 1}, {"justApplied", true}}});

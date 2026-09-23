@@ -868,6 +868,10 @@ SilverRootImportResult importSilverRootGeneric(const json &observation,
             if ((needsCombust && !combat.contains("combustHpLoss"))
                 || (needsEcho && !combat.contains("echoFormCardsDoubled"))
                 || (needsPanache && !combat.contains("panacheCounter"))
+                || (needsPanache && (!combat.at("panacheCounter").is_number_integer()
+                    || combat.at("panacheCounter").get<int>() < 1
+                    || combat.at("panacheCounter").get<int>() > 5
+                    || power.at("amount").get<int>() <= 0))
                 || (needsDeva && !combat.contains("devaFormEnergyPerTurn"))
                 || (needsPellets && !combat.contains("orangePelletsCardTypesPlayed"))
                 || (needsBomb && (!power.contains("bombDamage")
