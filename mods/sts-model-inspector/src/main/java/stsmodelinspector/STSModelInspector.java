@@ -649,7 +649,8 @@ public final class STSModelInspector implements PostInitializeSubscriber,
                 && room.phase == AbstractRoom.RoomPhase.COMPLETE
                 && AbstractDungeon.isScreenUp
                 && (AbstractDungeon.screen == AbstractDungeon.CurrentScreen.COMBAT_REWARD
-                    || AbstractDungeon.screen == AbstractDungeon.CurrentScreen.CARD_REWARD)
+                    || AbstractDungeon.screen == AbstractDungeon.CurrentScreen.CARD_REWARD
+                    || AbstractDungeon.screen == AbstractDungeon.CurrentScreen.MAP)
                 && !AbstractDungeon.isFadingIn && !AbstractDungeon.isFadingOut
                 && AbstractDungeon.actionManager != null
                 && AbstractDungeon.actionManager.actions.isEmpty()

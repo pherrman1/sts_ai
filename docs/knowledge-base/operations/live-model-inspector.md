@@ -491,7 +491,7 @@ read-only screen and choice converters. The observation contains:
   the Colosseum post-combat Escape/Fight choice, shop slots/prices, chest state, or
   ordered boss relic offers.
   After Colosseum's second fight, MCPTheSpire can leave its command-ready
-  latch closed while vanilla displays an interactive combat or card reward screen. The
+  latch closed while vanilla displays interactive reward and subsequent map screens. The
   inspector reopens that latch only for a stable Colosseum combat-reward
   screen with no queued actions; all gameplay state remains unchanged.
 - `liveChoices`: occurrence-bound native action identities and single-command
