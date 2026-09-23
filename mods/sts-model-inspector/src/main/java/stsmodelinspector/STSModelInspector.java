@@ -77,6 +77,8 @@ public final class STSModelInspector implements PostInitializeSubscriber,
     private static final Color MUTED = new Color(0.60f, 0.76f, 0.82f, 1.0f);
     private static final Color WARNING = new Color(1.0f, 0.67f, 0.20f, 1.0f);
     private static int trackedLastUnblockedDamage;
+    private static long eventRewardReadySinceNanos;
+    private static Field mcpWaitingForCommandField;
     private static int trackedTimesDamaged;
     private static boolean trackedPlayerVulnerableSeen;
     private static AbstractMonster trackedLastTargetedMonster;
@@ -586,6 +588,7 @@ public final class STSModelInspector implements PostInitializeSubscriber,
     @Override
     public void receivePostUpdate() {
         observeRoomTransition();
+        unblockStableEventCombatReward();
         boolean down = Keyboard.isKeyDown(loadToggleKey());
         if (down && !toggleDown) panelVisible = !panelVisible;
         toggleDown = down;
@@ -628,6 +631,39 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         advisorReason = "";
         advisor.send(emitted);
         latestPublisher.publishObservation(emitted);
+    }
+
+    private static void unblockStableEventCombatReward() {
+        // MCPTheSpire's event waitTimer gate can remain closed after a
+        // Colosseum fight while vanilla already displays an interactive
+        // combat-reward screen. Only repair its command-ready latch after a
+        // stable reward screen and empty action queues; leave game state alone.
+        AbstractRoom room = AbstractDungeon.getCurrRoom();
+        boolean visible = room instanceof EventRoom
+                && room.event != null
+                && "Colosseum".equals(room.event.getClass().getSimpleName())
+                && room.phase == AbstractRoom.RoomPhase.COMPLETE
+                && AbstractDungeon.isScreenUp
+                && AbstractDungeon.screen == AbstractDungeon.CurrentScreen.COMBAT_REWARD
+                && !AbstractDungeon.isFadingIn && !AbstractDungeon.isFadingOut
+                && AbstractDungeon.actionManager != null
+                && AbstractDungeon.actionManager.actions.isEmpty()
+                && AbstractDungeon.actionManager.cardQueue.isEmpty()
+                && AbstractDungeon.actionManager.preTurnActions.isEmpty();
+        if (!visible) { eventRewardReadySinceNanos = 0; return; }
+        long now = System.nanoTime();
+        if (eventRewardReadySinceNanos == 0) { eventRewardReadySinceNanos = now; return; }
+        if (now - eventRewardReadySinceNanos < 1_000_000_000L) return;
+        try {
+            if (mcpWaitingForCommandField == null) {
+                mcpWaitingForCommandField = Class.forName("mcpthespire.GameStateListener")
+                        .getDeclaredField("waitingForCommand");
+                mcpWaitingForCommandField.setAccessible(true);
+            }
+            mcpWaitingForCommandField.setBoolean(null, true);
+        } catch (ReflectiveOperationException | SecurityException ignored) {
+            // Missing MCP internals remain a strict unsupported boundary.
+        }
     }
 
     @Override

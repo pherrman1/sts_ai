@@ -490,6 +490,10 @@ read-only screen and choice converters. The observation contains:
   For Yourself and the visible Cursed Tome last-page damage and options,
   the Colosseum post-combat Escape/Fight choice, shop slots/prices, chest state, or
   ordered boss relic offers.
+  After Colosseum's second fight, MCPTheSpire can leave its command-ready
+  latch closed while vanilla displays an interactive reward screen. The
+  inspector reopens that latch only for a stable Colosseum combat-reward
+  screen with no queued actions; all gameplay state remains unchanged.
 - `liveChoices`: occurrence-bound native action identities and single-command
   structured MCP hints. Duplicate labels are never action identity.
 - `mcpState`: the exact current MCP screen conversion used by the driver to
