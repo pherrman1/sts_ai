@@ -490,6 +490,9 @@ read-only screen and choice converters. The observation contains:
   For Yourself and the visible Cursed Tome last-page damage and options,
   the Colosseum post-combat Escape/Fight choice, shop slots/prices, chest state, or
   ordered boss relic offers.
+  For Silver combat roots, the observer records vanilla's base energy master
+  and the visible Berserk stack. The importer represents Berserk through the
+  native energy-per-turn field and rejects inconsistent totals.
   After Colosseum's second fight, MCPTheSpire can leave its command-ready
   latch closed while vanilla displays interactive reward and subsequent map screens. The
   inspector reopens that latch only for a stable Colosseum combat-reward

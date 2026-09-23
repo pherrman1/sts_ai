@@ -2090,6 +2090,17 @@ int main() {
             regenMapped |= status == static_cast<std::int16_t>(PlayerStatus::REGEN) && amount == 5;
         if (!regenImported.ok || !regenMapped)
             throw std::runtime_error("player Regeneration potion power parity failed");
+        auto berserkPower = general;
+        berserkPower["silverRoot"]["combat"]["playerPowers"] = json::array({
+            json{{"id", "Berserk"}, {"amount", 1}}});
+        berserkPower["silverRoot"]["combat"]["energyMaster"] = 4;
+        berserkPower["silverRoot"]["combat"]["energyPerTurn"] = 5;
+        const auto berserkImported = one_combat::advisor::importSilverRoot(berserkPower);
+        if (!berserkImported.ok || berserkImported.wire.player.energyPerTurn != 5)
+            throw std::runtime_error("Berserk public energy-per-turn was not imported");
+        berserkPower["silverRoot"]["combat"]["energyPerTurn"] = 4;
+        if (one_combat::advisor::importSilverRoot(berserkPower).ok)
+            throw std::runtime_error("Berserk inconsistent public energy was accepted");
         auto doubleTapPower = general;
         doubleTapPower["silverRoot"]["combat"]["playerPowers"] = json::array({
             json{{"id", "Double Tap"}, {"amount", 1}}});

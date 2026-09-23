@@ -2705,6 +2705,11 @@ public final class STSModelInspector implements PostInitializeSubscriber,
                 .append(",\"playerVulnerableSeen\":").append(trackedPlayerVulnerableSeen)
                 .append(",\"cardDrawPerTurn\":").append(readIntField(AbstractDungeon.player, "gameHandSize") == null
                         ? 5 : readIntField(AbstractDungeon.player, "gameHandSize"))
+                .append(",\"energyMaster\":").append(AbstractDungeon.player.energy.energyMaster)
+                .append(",\"energyPerTurn\":").append(AbstractDungeon.player.energy.energyMaster
+                        + AbstractDungeon.player.powers.stream()
+                            .filter(power -> "Berserk".equals(power.ID))
+                            .mapToInt(power -> power.amount).sum())
                 .append(",\"playedThisTurn\":[");
         boolean firstPlayed = true;
         for (AbstractCard card : AbstractDungeon.actionManager.cardsPlayedThisTurn) {

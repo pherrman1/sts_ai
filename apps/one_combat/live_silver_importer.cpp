@@ -805,7 +805,10 @@ SilverRootImportResult importSilverRootGeneric(const json &observation,
     p.characterClass = static_cast<std::int16_t>(sts::CharacterClass::IRONCLAD);
     p.curHp = root.value("hp", valueInt("curHp", 0)); p.maxHp = root.value("maxHp", valueInt("maxHp", 0));
     p.gold = root.value("gold", valueInt("gold", 0)); p.energy = valueInt("energy", 0);
-    p.energyPerTurn = static_cast<std::int8_t>(valueInt("energyPerTurn", 3));
+    const int energyPerTurn = valueInt("energyPerTurn", 3);
+    if (energyPerTurn < 0 || energyPerTurn > 127)
+        return unsupported("silver_unmapped_player_power");
+    p.energyPerTurn = static_cast<std::int8_t>(energyPerTurn);
     p.cardDrawPerTurn = static_cast<std::int8_t>(valueInt("cardDrawPerTurn", 5));
     p.block = valueInt("block", 0); p.stance = static_cast<std::int16_t>(valueInt("stance", 0));
     p.lastTargetedMonster = static_cast<std::int8_t>(valueInt("lastTargetedMonster", 1));
@@ -837,11 +840,19 @@ SilverRootImportResult importSilverRootGeneric(const json &observation,
     }
     if (combat.contains("playerPowers")) {
         if (!combat.at("playerPowers").is_array()) return unsupported("silver_unmapped_player_power");
+        int berserkEnergy = 0;
         for (const auto &power : combat.at("playerPowers")) {
             if (!power.is_object() || !power.contains("id") || !power.at("id").is_string()
                 || !power.contains("amount") || !power.at("amount").is_number_integer())
                 return unsupported("silver_unmapped_player_power");
             const auto powerId = power.at("id").get<std::string>();
+            if (powerId == "Berserk") {
+                const int amount = power.at("amount").get<int>();
+                if (amount < 1 || amount > 127 - berserkEnergy)
+                    return unsupported("silver_unmapped_player_power");
+                berserkEnergy += amount;
+                continue; // Native Berserk is represented by energyPerTurn.
+            }
             auto mapped = live_silver::playerStatus(powerId);
             // The vanilla power ID is suffixed with a process-local counter
             // (TheBomb0, TheBomb1, ...), so its mapping cannot be a plain
@@ -894,6 +905,12 @@ SilverRootImportResult importSilverRootGeneric(const json &observation,
                 setPlayerPower(p, *mapped, amount,
                     powerId == "IntangiblePlayer" || power.value("justApplied", false));
             }
+        }
+        if (berserkEnergy > 0) {
+            if (!combat.contains("energyMaster") || !combat.at("energyMaster").is_number_integer()
+                    || combat.at("energyMaster").get<int>() < 0
+                    || combat.at("energyMaster").get<int>() + berserkEnergy != energyPerTurn)
+                return unsupported("silver_unmapped_player_power");
         }
     }
 
