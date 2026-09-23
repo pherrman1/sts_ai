@@ -254,6 +254,23 @@ int main(int argc,char **argv){try{
     const auto nativeSmith=v4CandidateActions(g),recomputedSmith=v4CandidateActions(recomputed);
     check(nativeSmith.size()+1==recomputedSmith.size(),"Searing Blow history must change campfire candidates");
     add("unsupported_searing_blow_upgrade_history",g);
+    g=base;g.act=3;g.floorNum=34;g.screenState=ScreenState::MAP_SCREEN;
+    g.curMapNodeX=-1;g.curMapNodeY=-1;
+    auto nextActMap=project(g,path,"next_act_first_map");
+    nextActMap["ooc"]["publicState"]["map"]["y"]=15;
+    nextActMap["ooc"]["mcpState"]={{"screen_type","MAP"},{"screen_state",{
+        {"first_node_chosen",false},{"current_node",{{"x",-1},{"y",15}}},
+        {"next_nodes",J::array({{{"x",0},{"y",0}}})}}}};
+    advisor::LiveOocStateV1 nextActImported;
+    auto nextActResult=advisor::importLiveOocStateV1(nextActMap,nextActImported);
+    check(nextActResult.ok && nextActImported.projected.curMapNodeX==-1
+            && nextActImported.projected.curMapNodeY==-1,
+          "confirmed next-act first map must lower old boss sentinel to native start");
+    nextActMap["ooc"]["publicState"]["floor"]=35;
+    const auto invalidNextAct=advisor::importLiveOocStateV1(nextActMap,nextActImported);
+    check(!invalidNextAct.ok && invalidNextAct.message=="V4_BOSS_MAP_TRANSITION",
+          "boss sentinel outside next-act first map must fail closed: "
+              +invalidNextAct.message);
     int passed=0;
     for(const auto &[name,source]:fixtures){
         const auto wire=project(source,path,name);advisor::LiveOocStateV1 live;const auto result=advisor::importLiveOocStateV1(wire,live);

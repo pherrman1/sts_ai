@@ -484,6 +484,30 @@ ImportResult importLiveOocStateV1(const J &observation, LiveOocStateV1 &out) {
             next.path.lastNodeKey = static_cast<long>(g.act) * 100000L
                 + static_cast<long>(g.curMapNodeY) * 100L + g.curMapNodeX;
         g.screenState=screen(screenName);
+        if (g.screenState == ScreenState::MAP_SCREEN
+                && g.curMapNodeX == -1 && g.curMapNodeY == 15
+                && g.act >= 2 && g.act <= 3
+                && g.floorNum == 17 * (g.act - 1)
+                && boolean(p, "pathComplete")
+                && o.contains("mcpState") && o.at("mcpState").is_object()) {
+            const auto &mcp = o.at("mcpState");
+            if (mcp.value("screen_type", "") == "MAP"
+                    && mcp.contains("screen_state") && mcp.at("screen_state").is_object()) {
+                const auto &state = mcp.at("screen_state");
+                const auto &current = state.at("current_node");
+                const auto &nextNodes = array(state, "next_nodes", 7);
+                require(!boolean(state, "first_node_chosen")
+                            && integer(current, "x", -1, 6) == -1
+                            && integer(current, "y", -1, 15) == 15
+                            && !nextNodes.empty(), "invalid next-act map sentinel");
+                for (const auto &node : nextNodes)
+                    require(integer(node, "y", 0, 14) == 0,
+                            "next-act map choices must start in row zero");
+                // Vanilla retains the previous boss node while displaying the
+                // new act's first row. Native transitionToAct uses (-1,-1).
+                g.curMapNodeY = -1;
+            }
+        }
         if (g.screenState == ScreenState::REST_ROOM && o.contains("details")
                 && o.at("details").is_object() && o.at("details").contains("options")) {
             const auto &options = o.at("details").at("options");
