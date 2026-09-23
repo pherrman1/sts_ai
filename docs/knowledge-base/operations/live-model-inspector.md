@@ -1,6 +1,6 @@
 # Live model inspector
 
-Last verified: 2026-09-21. This page describes the private integration
+Last verified: 2026-09-23. This page describes the private integration
 boundary currently present in the repository; it is not a claim that every
 game boundary has a qualified live evaluator.
 
@@ -125,7 +125,16 @@ use one bounded latest-observation slot; intermediate captures are replaceable
 rather than queued without limit. It launches the advisor with a direct
 `ProcessBuilder` call. The F8 panel remains diagnostic and read-only. Its top
 edge sits 170 scaled pixels below the screen top, clearing the relic row.
-The panels omit floor/HP text already shown in the game HUD.
+The panels omit floor/HP text already shown in the game HUD. The lower-left
+graph button exports a captured Silver or OOC MCTS tree as a timestamped HTML
+file under `~/.cache/sts-model-inspector/graphs/` and opens it in the default
+browser; `captureMctsGraphs=true` enables tree capture. `showAdvisorPanel=false`
+hides the top-left panel while retaining the standalone graph and Silver
+budget controls, `showActionRecommendations=false` hides recommendation
+overlays, and `showSelectedActionSummary=false` hides the selected Silver
+action line while retaining the budget and visit summary. These properties are
+read from `~/.sts-model-inspector.properties` and default to their existing
+visible/capture-off behavior unless set.
 OOC decisions use the same dark/cyan styling as Silver, with an amber border
 on the selected action. Event and Neow scores appear beside their active
 buttons. Shop scores sit by each affordable card, relic, potion, removal and
