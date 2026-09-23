@@ -1,0 +1,517 @@
+{
+  "attentionReference": {
+    "componentSha256": "ae1a1411990d272579de10564edb48c7f2ec1d14f1c72dacf5390a1415a0f1db",
+    "decoderSha256": "dad2df4a0d0d8a31c4707ee21bf92adf9b76c77deb520b49653b5eb789c3d48e",
+    "meanRecursiveValidationNll": 2.413005828857422
+  },
+  "baselineSha": "1ed96f2aa564742156cc6593a1fc1915ea4e9033",
+  "cacheSha256": "e1c25f2758bf56c7cff392ea02342d809f3ad7427c70b64166244a6b714a251d",
+  "interpretation": "All recursive Brew targets have one or more compatible target trajectories. No obvious target/DAG/data defect was found in this audit; this does not establish model causality.",
+  "population": {
+    "TRAIN": {
+      "rows": 393677,
+      "sources": 19986
+    },
+    "VALIDATION": {
+      "rows": 48590,
+      "sources": 2496
+    }
+  },
+  "priorWarmStartSpecialist": {
+    "checkpointSha256": "71d88a71cf7579e1092c3b3c27e000538a6aafe35bbf5228c10c15fa0edd4ace",
+    "meanRecursiveValidationNll": 2.7341949939727783
+  },
+  "recursiveSummary": {
+    "TRAIN": {
+      "graphEdgesTotal": 32946,
+      "graphNodesTotal": 6264,
+      "maximumBrewRounds": 3,
+      "recursiveRows": 90,
+      "uniqueSourceSeeds": 90
+    },
+    "VALIDATION": {
+      "graphEdgesTotal": 2154,
+      "graphNodesTotal": 531,
+      "maximumBrewRounds": 2,
+      "recursiveRows": 12,
+      "uniqueSourceSeeds": 12
+    }
+  },
+  "schema": "deepset_potion_blind_recursive_brew_audit_v1",
+  "testRowsEncoded": 0,
+  "testRowsEvaluated": 0,
+  "validationRows": [
+    {
+      "attentionReferenceNll": 3.923255205154419,
+      "boss": false,
+      "brewRounds": 2,
+      "capacity": 3,
+      "compatibleTargetTrajectories": 6,
+      "differenceWarmMinusAttention": 1.2174561023712158,
+      "encounter": 50,
+      "fightIdx": 16,
+      "generatedPotionBody": [
+        "SNECKO_OIL",
+        "ENTROPIC_BREW",
+        "BLESSING_OF_THE_FORGE",
+        "POWER_POTION",
+        "LIQUID_BRONZE",
+        "SKILL_POTION"
+      ],
+      "graphEdges": 25,
+      "graphNodes": 14,
+      "initialInventory": [
+        "ENTROPIC_BREW",
+        "EMPTY",
+        "EMPTY",
+        "EMPTY",
+        "EMPTY"
+      ],
+      "pr298WarmStartSpecialistNll": 5.140711307525635,
+      "rowIndex": 65501,
+      "sourceSeed": 4103211,
+      "sozu": false,
+      "targetEdges": 1,
+      "targetInventory": [
+        "EMPTY",
+        "LIQUID_BRONZE",
+        "SKILL_POTION",
+        "EMPTY",
+        "EMPTY"
+      ]
+    },
+    {
+      "attentionReferenceNll": 0.2528819739818573,
+      "boss": false,
+      "brewRounds": 2,
+      "capacity": 3,
+      "compatibleTargetTrajectories": 2,
+      "differenceWarmMinusAttention": -0.02719971537590027,
+      "encounter": 2,
+      "fightIdx": 1,
+      "generatedPotionBody": [
+        "EXPLOSIVE_POTION",
+        "SKILL_POTION",
+        "ENTROPIC_BREW",
+        "BLESSING_OF_THE_FORGE",
+        "DUPLICATION_POTION",
+        "EXPLOSIVE_POTION"
+      ],
+      "graphEdges": 25,
+      "graphNodes": 14,
+      "initialInventory": [
+        "ENTROPIC_BREW",
+        "EMPTY",
+        "EMPTY",
+        "EMPTY",
+        "EMPTY"
+      ],
+      "pr298WarmStartSpecialistNll": 0.22568225860595703,
+      "rowIndex": 123541,
+      "sourceSeed": 4106053,
+      "sozu": false,
+      "targetEdges": 1,
+      "targetInventory": [
+        "BLESSING_OF_THE_FORGE",
+        "SKILL_POTION",
+        "DUPLICATION_POTION",
+        "EMPTY",
+        "EMPTY"
+      ]
+    },
+    {
+      "attentionReferenceNll": 1.2450236082077026,
+      "boss": true,
+      "brewRounds": 2,
+      "capacity": 3,
+      "compatibleTargetTrajectories": 60,
+      "differenceWarmMinusAttention": -0.7411114573478699,
+      "encounter": 20,
+      "fightIdx": 8,
+      "generatedPotionBody": [
+        "LIQUID_MEMORIES",
+        "ENTROPIC_BREW",
+        "BLESSING_OF_THE_FORGE",
+        "SPEED_POTION",
+        "STRENGTH_POTION",
+        "ESSENCE_OF_STEEL"
+      ],
+      "graphEdges": 90,
+      "graphNodes": 38,
+      "initialInventory": [
+        "SPEED_POTION",
+        "BLOCK_POTION",
+        "ENTROPIC_BREW",
+        "EMPTY",
+        "EMPTY"
+      ],
+      "pr298WarmStartSpecialistNll": 0.5039121508598328,
+      "rowIndex": 124188,
+      "sourceSeed": 4106085,
+      "sozu": false,
+      "targetEdges": 1,
+      "targetInventory": [
+        "SPEED_POTION",
+        "STRENGTH_POTION",
+        "ESSENCE_OF_STEEL",
+        "EMPTY",
+        "EMPTY"
+      ]
+    },
+    {
+      "attentionReferenceNll": 1.0998798608779907,
+      "boss": false,
+      "brewRounds": 2,
+      "capacity": 3,
+      "compatibleTargetTrajectories": 2,
+      "differenceWarmMinusAttention": -0.5540463924407959,
+      "encounter": 10,
+      "fightIdx": 6,
+      "generatedPotionBody": [
+        "STRENGTH_POTION",
+        "ENTROPIC_BREW",
+        "FIRE_POTION",
+        "FAIRY_POTION",
+        "FEAR_POTION",
+        "SNECKO_OIL"
+      ],
+      "graphEdges": 53,
+      "graphNodes": 26,
+      "initialInventory": [
+        "GAMBLERS_BREW",
+        "ENTROPIC_BREW",
+        "EMPTY",
+        "EMPTY",
+        "EMPTY"
+      ],
+      "pr298WarmStartSpecialistNll": 0.5458334684371948,
+      "rowIndex": 163889,
+      "sourceSeed": 4108025,
+      "sozu": false,
+      "targetEdges": 1,
+      "targetInventory": [
+        "GAMBLERS_BREW",
+        "FAIRY_POTION",
+        "FEAR_POTION",
+        "EMPTY",
+        "EMPTY"
+      ]
+    },
+    {
+      "attentionReferenceNll": 2.1849822998046875,
+      "boss": false,
+      "brewRounds": 2,
+      "capacity": 3,
+      "compatibleTargetTrajectories": 3,
+      "differenceWarmMinusAttention": 1.3058056831359863,
+      "encounter": 15,
+      "fightIdx": 4,
+      "generatedPotionBody": [
+        "ENTROPIC_BREW",
+        "FIRE_POTION",
+        "ATTACK_POTION",
+        "ENERGY_POTION",
+        "WEAK_POTION",
+        "DISTILLED_CHAOS"
+      ],
+      "graphEdges": 53,
+      "graphNodes": 26,
+      "initialInventory": [
+        "SPEED_POTION",
+        "ENTROPIC_BREW",
+        "EMPTY",
+        "EMPTY",
+        "EMPTY"
+      ],
+      "pr298WarmStartSpecialistNll": 3.490787982940674,
+      "rowIndex": 188717,
+      "sourceSeed": 4109240,
+      "sozu": false,
+      "targetEdges": 2,
+      "targetInventory": [
+        "SPEED_POTION",
+        "EMPTY",
+        "EMPTY",
+        "EMPTY",
+        "EMPTY"
+      ]
+    },
+    {
+      "attentionReferenceNll": 8.434523582458496,
+      "boss": false,
+      "brewRounds": 2,
+      "capacity": 5,
+      "compatibleTargetTrajectories": 4,
+      "differenceWarmMinusAttention": 3.1046953201293945,
+      "encounter": 34,
+      "fightIdx": 11,
+      "generatedPotionBody": [
+        "POWER_POTION",
+        "EXPLOSIVE_POTION",
+        "ENTROPIC_BREW",
+        "WEAK_POTION",
+        "FAIRY_POTION",
+        "ANCIENT_POTION",
+        "ENERGY_POTION",
+        "GAMBLERS_BREW",
+        "LIQUID_BRONZE",
+        "DISTILLED_CHAOS"
+      ],
+      "graphEdges": 1581,
+      "graphNodes": 259,
+      "initialInventory": [
+        "ANCIENT_POTION",
+        "ANCIENT_POTION",
+        "ENTROPIC_BREW",
+        "STRENGTH_POTION",
+        "EMPTY"
+      ],
+      "pr298WarmStartSpecialistNll": 11.53921890258789,
+      "rowIndex": 192911,
+      "sourceSeed": 4109443,
+      "sozu": false,
+      "targetEdges": 1,
+      "targetInventory": [
+        "ANCIENT_POTION",
+        "ANCIENT_POTION",
+        "EMPTY",
+        "ANCIENT_POTION",
+        "ENERGY_POTION"
+      ]
+    },
+    {
+      "attentionReferenceNll": 1.1956642866134644,
+      "boss": false,
+      "brewRounds": 2,
+      "capacity": 3,
+      "compatibleTargetTrajectories": 18,
+      "differenceWarmMinusAttention": 0.13108503818511963,
+      "encounter": 34,
+      "fightIdx": 17,
+      "generatedPotionBody": [
+        "FEAR_POTION",
+        "ENTROPIC_BREW",
+        "FEAR_POTION",
+        "FLEX_POTION",
+        "FLEX_POTION",
+        "STRENGTH_POTION"
+      ],
+      "graphEdges": 53,
+      "graphNodes": 26,
+      "initialInventory": [
+        "SPEED_POTION",
+        "ENTROPIC_BREW",
+        "EMPTY",
+        "EMPTY",
+        "EMPTY"
+      ],
+      "pr298WarmStartSpecialistNll": 1.326749324798584,
+      "rowIndex": 224376,
+      "sourceSeed": 4111001,
+      "sozu": false,
+      "targetEdges": 1,
+      "targetInventory": [
+        "FLEX_POTION",
+        "FLEX_POTION",
+        "STRENGTH_POTION",
+        "EMPTY",
+        "EMPTY"
+      ]
+    },
+    {
+      "attentionReferenceNll": 1.644101858139038,
+      "boss": false,
+      "brewRounds": 2,
+      "capacity": 3,
+      "compatibleTargetTrajectories": 2,
+      "differenceWarmMinusAttention": -0.40828990936279297,
+      "encounter": 2,
+      "fightIdx": 2,
+      "generatedPotionBody": [
+        "ENTROPIC_BREW",
+        "FIRE_POTION",
+        "BLOCK_POTION",
+        "ESSENCE_OF_STEEL",
+        "STRENGTH_POTION",
+        "STRENGTH_POTION"
+      ],
+      "graphEdges": 53,
+      "graphNodes": 26,
+      "initialInventory": [
+        "COLORLESS_POTION",
+        "ENTROPIC_BREW",
+        "EMPTY",
+        "EMPTY",
+        "EMPTY"
+      ],
+      "pr298WarmStartSpecialistNll": 1.2358119487762451,
+      "rowIndex": 333738,
+      "sourceSeed": 4116381,
+      "sozu": false,
+      "targetEdges": 1,
+      "targetInventory": [
+        "COLORLESS_POTION",
+        "ESSENCE_OF_STEEL",
+        "STRENGTH_POTION",
+        "EMPTY",
+        "EMPTY"
+      ]
+    },
+    {
+      "attentionReferenceNll": 1.5168896913528442,
+      "boss": false,
+      "brewRounds": 2,
+      "capacity": 3,
+      "compatibleTargetTrajectories": 12,
+      "differenceWarmMinusAttention": -0.03649270534515381,
+      "encounter": 25,
+      "fightIdx": 10,
+      "generatedPotionBody": [
+        "FEAR_POTION",
+        "ENERGY_POTION",
+        "ENTROPIC_BREW",
+        "FIRE_POTION",
+        "STRENGTH_POTION",
+        "COLORLESS_POTION"
+      ],
+      "graphEdges": 30,
+      "graphNodes": 17,
+      "initialInventory": [
+        "FLEX_POTION",
+        "ENTROPIC_BREW",
+        "EMPTY",
+        "EMPTY",
+        "EMPTY"
+      ],
+      "pr298WarmStartSpecialistNll": 1.4803969860076904,
+      "rowIndex": 346108,
+      "sourceSeed": 4116985,
+      "sozu": false,
+      "targetEdges": 1,
+      "targetInventory": [
+        "FIRE_POTION",
+        "STRENGTH_POTION",
+        "COLORLESS_POTION",
+        "EMPTY",
+        "EMPTY"
+      ]
+    },
+    {
+      "attentionReferenceNll": 0.4587323069572449,
+      "boss": false,
+      "brewRounds": 2,
+      "capacity": 3,
+      "compatibleTargetTrajectories": 2,
+      "differenceWarmMinusAttention": -0.22677038609981537,
+      "encounter": 4,
+      "fightIdx": 1,
+      "generatedPotionBody": [
+        "BLOOD_POTION",
+        "ENTROPIC_BREW",
+        "ATTACK_POTION",
+        "COLORLESS_POTION",
+        "LIQUID_MEMORIES",
+        "GAMBLERS_BREW"
+      ],
+      "graphEdges": 25,
+      "graphNodes": 14,
+      "initialInventory": [
+        "ENTROPIC_BREW",
+        "EMPTY",
+        "EMPTY",
+        "EMPTY",
+        "EMPTY"
+      ],
+      "pr298WarmStartSpecialistNll": 0.2319619208574295,
+      "rowIndex": 377323,
+      "sourceSeed": 4118500,
+      "sozu": false,
+      "targetEdges": 1,
+      "targetInventory": [
+        "COLORLESS_POTION",
+        "LIQUID_MEMORIES",
+        "ATTACK_POTION",
+        "EMPTY",
+        "EMPTY"
+      ]
+    },
+    {
+      "attentionReferenceNll": 1.1780505180358887,
+      "boss": false,
+      "brewRounds": 2,
+      "capacity": 3,
+      "compatibleTargetTrajectories": 8,
+      "differenceWarmMinusAttention": -0.04930591583251953,
+      "encounter": 1,
+      "fightIdx": 2,
+      "generatedPotionBody": [
+        "COLORLESS_POTION",
+        "FLEX_POTION",
+        "WEAK_POTION",
+        "FEAR_POTION",
+        "FEAR_POTION",
+        "HEART_OF_IRON"
+      ],
+      "graphEdges": 115,
+      "graphNodes": 46,
+      "initialInventory": [
+        "ATTACK_POTION",
+        "ENTROPIC_BREW",
+        "ENTROPIC_BREW",
+        "EMPTY",
+        "EMPTY"
+      ],
+      "pr298WarmStartSpecialistNll": 1.1287446022033691,
+      "rowIndex": 476740,
+      "sourceSeed": 4123390,
+      "sozu": false,
+      "targetEdges": 1,
+      "targetInventory": [
+        "COLORLESS_POTION",
+        "FEAR_POTION",
+        "FEAR_POTION",
+        "EMPTY",
+        "EMPTY"
+      ]
+    },
+    {
+      "attentionReferenceNll": 5.822083473205566,
+      "boss": false,
+      "brewRounds": 2,
+      "capacity": 3,
+      "compatibleTargetTrajectories": 2,
+      "differenceWarmMinusAttention": 0.13844633102416992,
+      "encounter": 51,
+      "fightIdx": 21,
+      "generatedPotionBody": [
+        "ENTROPIC_BREW",
+        "BLOOD_POTION",
+        "FEAR_POTION",
+        "HEART_OF_IRON",
+        "ATTACK_POTION",
+        "DEXTERITY_POTION"
+      ],
+      "graphEdges": 51,
+      "graphNodes": 25,
+      "initialInventory": [
+        "ENTROPIC_BREW",
+        "DEXTERITY_POTION",
+        "EMPTY",
+        "EMPTY",
+        "EMPTY"
+      ],
+      "pr298WarmStartSpecialistNll": 5.960529804229736,
+      "rowIndex": 487045,
+      "sourceSeed": 4123895,
+      "sozu": false,
+      "targetEdges": 1,
+      "targetInventory": [
+        "HEART_OF_IRON",
+        "BLOOD_POTION",
+        "FEAR_POTION",
+        "EMPTY",
+        "EMPTY"
+      ]
+    }
+  ]
+}
