@@ -1,5 +1,6 @@
 import unittest
 import numpy as np
+from unittest import mock
 
 from tools import combat_transition_composed as composed
 from tools import combat_transition_lizard_head_fit as fit
@@ -37,6 +38,15 @@ class LizardHeadFitTests(unittest.TestCase):
         np.testing.assert_array_equal(validation, [1])
         np.testing.assert_array_equal(test_wins, [2])
         np.testing.assert_array_equal(test_ancestral, [2, 3])
+
+    def test_potion_targets_are_encoded_only_for_supported_wins(self):
+        pre = np.arange(12).reshape(3, 4)
+        post = pre + 10
+        capacities = np.asarray([3, 3, 3])
+        with mock.patch.object(fit.c.potion, 'encode_masks', return_value=np.asarray([7])) as encode:
+            actual = fit.encode_eligible_masks(pre, post, capacities, [True, False, False])
+        np.testing.assert_array_equal(actual, [7, 0, 0])
+        self.assertEqual(len(encode.call_args.args[0]), 1)
 
 
 if __name__ == '__main__':

@@ -79,6 +79,18 @@ def select_rows(split, full_support, win):
     return train, validation, test_wins, test_ancestral
 
 
+def encode_eligible_masks(pre, post, capacities, eligible):
+    """Encode only scored winning rows; unsupported targets may be unrepresentable."""
+    eligible = np.asarray(eligible, dtype=bool)
+    if len(pre) != len(post) or len(pre) != len(capacities) or len(pre) != len(eligible):
+        raise ValueError('potion mask inputs have different lengths')
+    encoded = np.zeros(len(eligible), dtype=np.int64)
+    ids = np.flatnonzero(eligible)
+    if len(ids):
+        encoded[ids] = c.potion.encode_masks(pre[ids], post[ids], capacities[ids])
+    return encoded
+
+
 def _predict(model, z, signed, fraction, mask, device):
     model.eval()
     outputs = []
@@ -152,11 +164,9 @@ def run(corpus: Path, manifest_path: Path, output_dir: Path, reviewed_sha: str) 
     hp_index = {int(v): i for i, v in enumerate(models.classes)}
     potion_slots = arrays['potions'][:, :, 1].astype(np.int64)
     capacities = np.asarray([r['transition']['pre']['potionCapacity'] for r in rows], dtype=np.int64)
-    true_mask = c.potion.encode_masks(
-        np.asarray([r['transition']['pre']['potions'] for r in rows], dtype=np.int64),
-        np.asarray([r['transition']['post']['potions'] for r in rows], dtype=np.int64),
-        capacities,
-    )
+    pre_potions = np.asarray([r['transition']['pre']['potions'] for r in rows], dtype=np.int64)
+    post_potions = np.asarray([r['transition']['post']['potions'] for r in rows], dtype=np.int64)
+    true_mask = encode_eligible_masks(pre_potions, post_potions, capacities, eligible)
     device = models.device
     with torch.inference_mode():
         for batch in audit.ev.batches(n, 256):
