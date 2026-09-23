@@ -19,6 +19,14 @@ using namespace sts;
 
 std::int64_t simulationIdx = 0; // for debugging
 
+static bool potionDiscardEnablesEntropicBrew(const BattleContext &bc, int discardIdx) {
+    if (bc.player.hasRelic<R::SOZU>() || bc.potions[discardIdx] == Potion::ENTROPIC_BREW) return false;
+    for (int i = 0; i < bc.potionCapacity; ++i) {
+        if (i != discardIdx && bc.potions[i] == Potion::ENTROPIC_BREW) return true;
+    }
+    return false;
+}
+
 // Telemetry category for a chance node's stochastic action: 0 = END_TURN (monster rolls +
 // start-of-turn draws), 1 = card play, 2 = other (potions, card selects).
 static int chanceCat(const search::Action &a) {
@@ -1361,16 +1369,19 @@ void search::BattleSearcher::enumeratePotionActions(search::BattleSearcher::Node
             continue;
         }
 
-        // not enumerating the discard of a potion if it can be used
-        if (p == Potion::FAIRY_POTION) {
+        if (potionDiscardEnablesEntropicBrew(bc, pIdx)) {
             node.edges.push_back({Action(ActionType::POTION, pIdx, -1)});
+        }
+
+        // Fairy auto-procs on lethal and is otherwise inert. Only offer its
+        // discard edge when the freed slot enables Entropic Brew.
+        if (p == Potion::FAIRY_POTION) {
             continue;
         }
 
-        // Offer only Smoke Bomb's discard when it can't flee -- the search otherwise over-picks
-        // the high-value escape and the live game rejects the "use" command.
+        // When Smoke Bomb cannot flee, only the Entropic Brew rule above can
+        // make discarding it useful; otherwise leave it in inventory.
         if (p == Potion::SMOKE_BOMB && bc.smokeBombEscapeBlocked()) {
-            node.edges.push_back({Action(ActionType::POTION, pIdx, -1)});
             continue;
         }
 
@@ -1388,7 +1399,6 @@ void search::BattleSearcher::enumeratePotionActions(search::BattleSearcher::Node
 
         // potion requires target
         if (!hasValidTarget) {
-            node.edges.push_back({Action(ActionType::POTION, pIdx, -1)});
             continue;
         }
 
