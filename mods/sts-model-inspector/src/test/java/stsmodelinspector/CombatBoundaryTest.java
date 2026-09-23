@@ -157,6 +157,12 @@ public final class CombatBoundaryTest {
                 || STSModelInspector.singleForethoughtSelection(true, true, true, 99)
                 || STSModelInspector.singleForethoughtSelection(false, false, false, 1))
             throw new AssertionError("single Forethought selector was not guarded");
+        if (!STSModelInspector.singlePutOnDeckSelection(true, false, false, 1)
+                || STSModelInspector.singlePutOnDeckSelection(false, false, false, 1)
+                || STSModelInspector.singlePutOnDeckSelection(true, true, false, 1)
+                || STSModelInspector.singlePutOnDeckSelection(true, false, true, 1)
+                || STSModelInspector.singlePutOnDeckSelection(true, false, false, 2))
+            throw new AssertionError("Thinking Ahead hand selector was confused with discard Headbutt");
         for (String child : new String[]{"SpikeSlime_L", "AcidSlime_L", "SpikeSlime_M", "AcidSlime_M"})
             if (!STSModelInspector.slimeBossDescendant(child))
                 throw new AssertionError("Slime Boss split child was not recognized: " + child);

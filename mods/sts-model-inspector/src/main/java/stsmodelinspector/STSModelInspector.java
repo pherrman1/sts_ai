@@ -2459,6 +2459,11 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         return action && !anyNumber && !canPickZero && count == 1;
     }
 
+    static boolean singlePutOnDeckSelection(boolean action, boolean anyNumber,
+                                            boolean canPickZero, int count) {
+        return action && !anyNumber && !canPickZero && count == 1;
+    }
+
     static String selectionJson(String task, boolean canPickZero, boolean anyNumber, int pickCount,
                                         List<AbstractCard> source) {
         return selectionJson(task, canPickZero, anyNumber, pickCount, 0, source);
@@ -2576,6 +2581,9 @@ public final class STSModelInspector implements PostInitializeSubscriber,
             // not an unknown combat screen.
             String task = handSelectionTask(screen.selectionReason, canPickAnyNumber,
                     screen.canPickZero, screen.numCardsToSelect);
+            if (singlePutOnDeckSelection(
+                    current instanceof com.megacrit.cardcrawl.actions.common.PutOnDeckAction,
+                    canPickAnyNumber, screen.canPickZero, screen.numCardsToSelect)) task = "WARCRY";
             if (singleForethoughtSelection(current instanceof com.megacrit.cardcrawl.actions.unique.ForethoughtAction,
                     canPickAnyNumber, screen.canPickZero, screen.numCardsToSelect)) task = "FORETHOUGHT";
             return selectionJson(task, screen.canPickZero, canPickAnyNumber, screen.numCardsToSelect,

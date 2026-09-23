@@ -130,7 +130,10 @@ exists, including after both large children have split or died. Collector's
 vanilla `enemySlots` keys 1/2 for TorchHeads map to native physical slots 1/0;
 native slot 2 remains reserved for Collector. Toolbox's `ChooseOneColorless`
 opening is a mandatory three-card combat offer; its public cards lower to
-Silver's Discovery selector with one copy at normal cost. Move bytes are likewise fail-closed, with all
+Silver's Discovery selector with one copy at normal cost. `PutOnDeckAction`
+hand choices, including Thinking Ahead, lower to Warcry; a shared "top of
+draw pile" prompt alone must not label them as discard-pile Headbutt. Move
+bytes are likewise fail-closed, with all
 simulator-supported vanilla class constants independently qualified against the
 installed `desktop-1.0.jar`. The native construction, public-render, import,
 exact search-state parity, and one-simulation Silver-decision sweep covers all
