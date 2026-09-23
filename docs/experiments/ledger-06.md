@@ -11158,30 +11158,28 @@ contract or Silver behavior changed.
   gameplay-quality comparison or population qualification. The consumed
   HOLDOUT was not rerun. [Native-smoke raw packet](evidence/silver_quiescent_queue_item_20260922/README.md).
 
-### OOC CTM encoder optimization screen (2026-09-23)
+### OOC CTM final-token optimization (2026-09-23)
 
-From source baseline `3d28adfcf3c989e338eff9ef85e4a5c6d8794497`, two encoder
-changes were evaluated independently and then combined: (1) in the final
-Transformer layer, retain K/V for all tokens while evaluating Q/attention/output
-only for the global token; (2) flatten token/QKV/next buffers and reuse scratch
-vectors without changing accumulation order. The combined Release probe passed
-the near-full artifact tests and produced byte-identical JSON output for all 31
-fixtures versus baseline (SHA-256
-`dbcee67b1037c86e3f9e96b99c2baac47437e812ebb2629feb257a692fe2dd26`). The
-probe also checks prepared/reference parity over 128 draws per supported
-fixture.
+From source baseline `3d28adfcf3c989e338eff9ef85e4a5c6d8794497`, retain only
+the final Transformer layer's global-token dead-computation elimination. Layer 1
+still computes every token; layer 2 computes K/V for every token and Q plus the
+remaining output only for token 0. The 31-row Release near-full probe is
+byte-identical to baseline (SHA-256
+`dbcee67b1037c86e3f9e96b99c2baac47437e812ebb2629feb257a692fe2dd26`), including
+prepared/reference sample, full persistent-state, and planner-RNG parity over
+128 draws per supported fixture. The focused near-full tests pass.
 
-On one fixed fixture, candidate 1's Debug summed-encoder microbenchmark median
-fell from 26.695 ms to 16.465 ms across three process runs (ten component calls
-per process). This is promising but limited to one fixture and Debug; no
-end-to-end preparation or gameplay timing was measured. Candidate 2's Release
-median preparation changed from 5.812681 ms to 5.788186 ms across three samples,
-a noise-sized difference with no demonstrated overall speedup. Component
-changes were mixed and small. The combined implementation was not separately
-timed. No gameplay seed or quality comparison was run. The focused native
-contract test still fails at import on the unchanged baseline due to the relic
-write-back audit guard; this is not attributed to the optimization.
+On one supported captured fixture, one Release `prepare()` measurement changed
+from 2.132574 ms to 1.609938 ms (-24.5%). This is one observation per arm and
+one fixture; treat it as an initial signal, not a stable aggregate. An earlier
+Debug component microbenchmark measured median summed encoder time of 26.695 ms
+versus 16.465 ms (-38.3%) across three process runs. Neither is gameplay timing.
 
-Raw single-fixture timing JSON and exact inputs/hashes are recorded in the
-[optimization screen packet](evidence/ooc_ctm_encoder_optimization_20260923/README.md).
-This is a bounded performance screen, not runtime or gameplay qualification.
+A separate contiguous-workspace experiment showed only a noise-sized overall
+Release preparation change (5.812681 ms to 5.788186 ms across three samples) and
+was rejected from the implementation. Its raw screen and the retained
+candidate-1 evidence are in the [final-token evidence packet](evidence/ooc_ctm_encoder_optimization_20260923/README.md).
+No gameplay seed or quality comparison was run. The native-contract test's
+relic write-back import guard also fails at unchanged baseline; it is not
+attributed to this optimization. This is bounded parity and performance evidence,
+not production qualification.

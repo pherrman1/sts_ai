@@ -178,41 +178,39 @@ Vec CombatTransitionRuntime::encode(const std::string &group,const CombatPredict
         append(cardPool,relu(linear(p+"global_mlp.0",global)));
         return relu(linear(p+"trunk.2",relu(linear(p+"trunk.0",cardPool))));
     }
-    const size_t tokenCount=1+input.cards.size()+input.relics.size()+input.potions.size();
-    Vec tokens;tokens.reserve(tokenCount*64);
-    auto token=linear(p+"global_proj",global);add(token,embedding(p+"type_embedding",0));append(tokens,token);
-    for(const auto &c:input.cards) {token=embedding(p+"card_id",c.cardId);add(token,linear(p+"card_fields",{float(c.upgraded),float(std::clamp(c.misc,-20,20))/20,float(c.bottleBinding+1)/3}));add(token,embedding(p+"type_embedding",1));append(tokens,token);}
-    for(const auto &r:input.relics) {token=embedding(p+"relic_id",r.relicId);add(token,linear(p+"relic_fields",{float(r.data)/10,float(r.orderIndex)/64}));add(token,embedding(p+"type_embedding",2));append(tokens,token);}
-    for(const auto &pot:input.potions) {token=embedding(p+"potion_id",pot.potionId);add(token,embedding(p+"potion_slot",pot.slot));add(token,embedding(p+"type_embedding",3));append(tokens,token);}
+    std::vector<Vec> tokens;
+    auto token=linear(p+"global_proj",global);add(token,embedding(p+"type_embedding",0));tokens.push_back(token);
+    for(const auto &c:input.cards) {token=embedding(p+"card_id",c.cardId);add(token,linear(p+"card_fields",{float(c.upgraded),float(std::clamp(c.misc,-20,20))/20,float(c.bottleBinding+1)/3}));add(token,embedding(p+"type_embedding",1));tokens.push_back(token);}
+    for(const auto &r:input.relics) {token=embedding(p+"relic_id",r.relicId);add(token,linear(p+"relic_fields",{float(r.data)/10,float(r.orderIndex)/64}));add(token,embedding(p+"type_embedding",2));tokens.push_back(token);}
+    for(const auto &pot:input.potions) {token=embedding(p+"potion_id",pot.potionId);add(token,embedding(p+"potion_slot",pot.slot));add(token,embedding(p+"type_embedding",3));tokens.push_back(token);}
     auto norm=[&](Vec x,const std::string &name) {float mean=0;for(float v:x)mean+=v;mean/=64;float variance=0;for(float v:x)variance+=(v-mean)*(v-mean);variance/=64;float scale=1/std::sqrt(variance+1e-5f);const auto &w=tensor(name+".weight").values,&b=tensor(name+".bias").values;for(int i=0;i<64;++i)x[i]=(x[i]-mean)*scale*w[i]+b[i];return x;};
     for(int layer=0;layer<2;++layer) {
         auto l=p+"encoder.layers."+std::to_string(layer)+".";
         const auto &w=tensor(l+"self_attn.in_proj_weight").values,&b=tensor(l+"self_attn.in_proj_bias").values;
-        Vec qkv(tokenCount*192);
-        for(size_t t=0;t<tokenCount;++t) {
-            // The final layer returns only the global token. Every token's
-            // K/V is needed, but other tokens' Q values are never consumed.
+        std::vector<Vec> qkv(tokens.size(),Vec(192));
+        for(size_t t=0;t<tokens.size();++t) {
+            // The final encoder layer returns only the global token. Its query
+            // uses every token's K/V, but no other token's Q is consumed.
             const int firstOutput=(layer==1 && t>0)?64:0;
-            for(int i=firstOutput;i<192;++i){float sum=0;for(int j=0;j<64;++j)sum+=w[i*64+j]*tokens[t*64+j];qkv[t*192+i]=sum+b[i];}
+            for(int i=firstOutput;i<192;++i){float sum=0;for(int j=0;j<64;++j)sum+=w[i*64+j]*tokens[t][j];qkv[t][i]=sum+b[i];}
         }
-        Vec next(tokenCount*64);
-        Vec attention(64),score(tokenCount),x(64);
-        const size_t queryCount=layer==1?1:tokenCount;
+        std::vector<Vec> next;
+        const size_t queryCount=layer==1?1:tokens.size();
         for(size_t t=0;t<queryCount;++t) {
-            std::fill(attention.begin(),attention.end(),0.f);
+            Vec attention(64,0);
             for(int head=0;head<4;++head) {
-                for(size_t k=0;k<tokenCount;++k) {float sum=0;for(int j=head*16;j<(head+1)*16;++j)sum+=qkv[t*192+j]*qkv[k*192+64+j];score[k]=sum*.25f;}
-                score=softmax(std::move(score));
-                for(size_t k=0;k<tokenCount;++k)for(int j=head*16;j<(head+1)*16;++j)attention[j]+=score[k]*qkv[k*192+128+j];
+                Vec score(tokens.size());
+                for(size_t k=0;k<tokens.size();++k) {float sum=0;for(int j=head*16;j<(head+1)*16;++j)sum+=qkv[t][j]*qkv[k][64+j];score[k]=sum*.25f;}
+                auto prob=softmax(score);
+                for(size_t k=0;k<tokens.size();++k)for(int j=head*16;j<(head+1)*16;++j)attention[j]+=prob[k]*qkv[k][128+j];
             }
-            std::copy_n(tokens.begin()+t*64,64,x.begin());add(x,linear(l+"self_attn.out_proj",attention));x=norm(x,l+"norm1");
+            auto x=tokens[t];add(x,linear(l+"self_attn.out_proj",attention));x=norm(x,l+"norm1");
             auto ff=linear(l+"linear1",x);for(auto &v:ff)v=.5f*v*(1+std::erf(v/std::sqrt(2.f)));
-            add(x,linear(l+"linear2",ff));auto result=norm(x,l+"norm2");std::copy(result.begin(),result.end(),next.begin()+t*64);
+            add(x,linear(l+"linear2",ff));next.push_back(norm(x,l+"norm2"));
         }
-        tokens.swap(next);
+        tokens=std::move(next);
     }
-    std::copy_n(tokens.begin(),64,token.begin());
-    return relu(linear(p+"trunk.0",token));
+    return relu(linear(p+"trunk.0",tokens[0]));
 }
 float CombatTransitionRuntime::survival(const CombatPredictorInputV1 &p) const {float logit=linear("survival.survival",encode("survival",p))[0];require(std::isfinite(logit),"nonfinite survival");return 1/(1+std::exp(-logit));}
 Vec CombatTransitionRuntime::maxHp(const CombatPredictorInputV1 &p) const {return softmax(linear("max_hp.max_hp_delta",encode("max_hp",p)));}
