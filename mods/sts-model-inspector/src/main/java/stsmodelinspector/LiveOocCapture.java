@@ -741,6 +741,16 @@ final class LiveOocCapture {
                 && String.valueOf(labels.get(1)).contains("[Sleep] Heal " + heal + " HP");
     }
 
+    static boolean augmenterInitialVisible(Object phase, List<?> labels, List<?> options) {
+        return "0".equals(String.valueOf(phase)) && labels.size() == 3 && options.size() == 3
+                && ((Number)map(options.get(0)).get("index")).intValue() == 0
+                && ((Number)map(options.get(1)).get("index")).intValue() == 1
+                && ((Number)map(options.get(2)).get("index")).intValue() == 2
+                && String.valueOf(labels.get(0)).contains("[Test J.A.X.] Get JAXXED")
+                && String.valueOf(labels.get(1)).contains("[Become Test Subject] Transform 2 cards")
+                && String.valueOf(labels.get(2)).contains("[Ingest Mutagens] Obtain a special relic");
+    }
+
     static String visibleChestSize(String chestClass) {
         if ("SmallChest".equals(chestClass)) return "SMALL";
         if ("MediumChest".equals(chestClass)) return "MEDIUM";
@@ -1214,6 +1224,8 @@ final class LiveOocCapture {
                 && libraryInitialVisible(phase, labels, options,
                         ((Number)field(event, "healAmt")).intValue());
         if (library) map(out.get("details")).put("hpAmount0", field(event, "healAmt"));
+        boolean augmenter = "DrugDealer".equals(simple)
+                && augmenterInitialVisible(phase, labels, options);
         int[] designerIndices = null;
         if ("Designer".equals(simple)) {
             boolean upgradeOne = (Boolean)field(event, "adjustmentUpgradesOne");
@@ -1289,7 +1301,7 @@ final class LiveOocCapture {
                 && !goldShrine
                 && !nestDecisionVisible(simple, phase, labels, options, AbstractDungeon.ascensionLevel)
                 && !idolTrap && !goldenWing && !cleric && !sensoryStone
-                && designerIndices == null && !maskedBandits && !library
+                && designerIndices == null && !maskedBandits && !library && !augmenter
                 && deadAdventurerEncounter < 0
                 && !forgottenAltar)
             out.put("unsupportedReason", "EVENT_PHASE_UNREPRESENTABLE:" + id + ":" + phase);

@@ -135,6 +135,16 @@ public final class LiveOocCaptureTest {
                 || LiveOocCapture.libraryInitialVisible("1", libraryLabels, banditOptions, 26)
                 || LiveOocCapture.libraryInitialVisible("0", libraryLabels, banditOptions, 25))
             throw new AssertionError("Library public Read/Sleep choice or heal was misidentified");
+        java.util.List<Map<String,Object>> augmenterOptions = java.util.Arrays.asList(
+                obj("index", 0), obj("index", 1), obj("index", 2));
+        java.util.List<String> augmenterLabels = java.util.Arrays.asList(
+                "[Test J.A.X.] Get JAXXED.",
+                "[Become Test Subject] Transform 2 cards.",
+                "[Ingest Mutagens] Obtain a special relic.");
+        if (!LiveOocCapture.augmenterInitialVisible("0", augmenterLabels, augmenterOptions)
+                || LiveOocCapture.augmenterInitialVisible("1", augmenterLabels, augmenterOptions)
+                || LiveOocCapture.augmenterInitialVisible("0", augmenterLabels, banditOptions))
+            throw new AssertionError("Augmenter initial options lost their native indices");
         if (!"INVALID".equals(LiveOocCapture.canonicalPathHistory(
                 act3Path, true, "", 3, java.util.Arrays.asList(16)).get(31)))
             throw new AssertionError("unconfirmed Act 2 boss marker was promoted");
