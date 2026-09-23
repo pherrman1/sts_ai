@@ -235,7 +235,7 @@ int main(int argc,char **argv){try{
     g.curEvent=Event::SCRAP_OOZE;g.info.eventData=3;add("event_scrap_ooze_public_retry",g);
     g.curEvent=Event::WE_MEET_AGAIN;g.info.cardIdx=g.deck.size()-1;
     g.info.potionIdx=-1;g.info.gold=-1;add("event_we_meet_again_card_or_attack",g);
-    g.curEvent=Event::THE_LIBRARY;add("unsupported_library_reward_pity",g);
+    g.curEvent=Event::THE_LIBRARY;g.info.hpAmount0=26;add("library_public_heal_hidden_offer",g);
     g.curEvent=Event::HYPNOTIZING_COLORED_MUSHROOMS;add("unsupported_mushrooms_reward_pity",g);
     g.curEvent=Event::MYSTERIOUS_SPHERE;add("unsupported_sphere_reward_pity",g);
     g=base;g.screenState=ScreenState::EVENT_SCREEN;g.curEvent=Event::NEOW;add("neow",g);
@@ -275,7 +275,6 @@ int main(int argc,char **argv){try{
     for(const auto &[name,source]:fixtures){
         const auto wire=project(source,path,name);advisor::LiveOocStateV1 live;const auto result=advisor::importLiveOocStateV1(wire,live);
         if(name=="unsupported_searing_blow_upgrade_history"
-                || name=="unsupported_library_reward_pity"
                 || name=="unsupported_mushrooms_reward_pity"
                 || name=="unsupported_sphere_reward_pity") {
             const std::string expected = name=="unsupported_searing_blow_upgrade_history"

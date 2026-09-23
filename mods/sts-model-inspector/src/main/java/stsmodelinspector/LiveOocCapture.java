@@ -732,6 +732,15 @@ final class LiveOocCapture {
                 && String.valueOf(labels.get(1)).contains("[Fight!]");
     }
 
+    static boolean libraryInitialVisible(Object phase, List<?> labels, List<?> options, int heal) {
+        return "0".equals(String.valueOf(phase)) && labels.size() == 2 && options.size() == 2
+                && heal > 0
+                && ((Number)map(options.get(0)).get("index")).intValue() == 0
+                && ((Number)map(options.get(1)).get("index")).intValue() == 1
+                && String.valueOf(labels.get(0)).contains("[Read] Choose 1 of 20 cards")
+                && String.valueOf(labels.get(1)).contains("[Sleep] Heal " + heal + " HP");
+    }
+
     static String visibleChestSize(String chestClass) {
         if ("SmallChest".equals(chestClass)) return "SMALL";
         if ("MediumChest".equals(chestClass)) return "MEDIUM";
@@ -749,7 +758,7 @@ final class LiveOocCapture {
 
     static boolean simpleInitialEventSupported(String simple) {
         return Arrays.asList("BigFish", "Beggar", "GoldenIdolEvent", "ShiningLight", "WeMeetAgain",
-                "LivingWall", "Sssserpent", "ScrapOoze", "Mushrooms", "TheLibrary",
+                "LivingWall", "Sssserpent", "ScrapOoze", "Mushrooms",
                 "TheMausoleum", "MysteriousSphere", "SecretPortal", "FountainOfCurseRemoval", "UpgradeShrine",
                 "PurificationShrine", "Transmogrifier", "Duplicator", "Bonfire", "TheJoust",
                 "WomanInBlue").contains(simple);
@@ -1201,6 +1210,10 @@ final class LiveOocCapture {
                 && sensoryStoneInitialVisible(phase, labels, options);
         boolean maskedBandits = "MaskedBandits".equals(simple)
                 && maskedBanditsInitialVisible(phase, labels, options);
+        boolean library = "TheLibrary".equals(simple)
+                && libraryInitialVisible(phase, labels, options,
+                        ((Number)field(event, "healAmt")).intValue());
+        if (library) map(out.get("details")).put("hpAmount0", field(event, "healAmt"));
         int[] designerIndices = null;
         if ("Designer".equals(simple)) {
             boolean upgradeOne = (Boolean)field(event, "adjustmentUpgradesOne");
@@ -1276,7 +1289,7 @@ final class LiveOocCapture {
                 && !goldShrine
                 && !nestDecisionVisible(simple, phase, labels, options, AbstractDungeon.ascensionLevel)
                 && !idolTrap && !goldenWing && !cleric && !sensoryStone
-                && designerIndices == null && !maskedBandits
+                && designerIndices == null && !maskedBandits && !library
                 && deadAdventurerEncounter < 0
                 && !forgottenAltar)
             out.put("unsupportedReason", "EVENT_PHASE_UNREPRESENTABLE:" + id + ":" + phase);

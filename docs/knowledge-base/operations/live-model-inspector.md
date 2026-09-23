@@ -556,10 +556,15 @@ offer is included only when that relic is publicly owned.
 After a modeled Search triggers the elite, the sole `[Fight]` button is a
 mechanical transition into combat and the strict driver advances it.
 The private Java
-`potionChance` and `cardRarityFactor` counters are not captured. Roots such
-as Library, Mushrooms and Mysterious Sphere whose pre-MAP
-continuation can generate potion or card rewards fail closed with
-`PUBLIC_REWARD_PITY_HISTORY_UNQUALIFIED`. The v_win leaf marginalizes those
+`potionChance` and `cardRarityFactor` counters are not captured. Library's
+initial Read/Sleep choice is supported when the two visible options and exact
+Sleep heal match the guarded initial phase. Read samples the unseen 20-card
+offer and hidden pity counters in each MCTS root particle; the live offer is
+observed and decided separately after Read. This uses a broad bounded prior
+for unknown pity, not an exact posterior conditioned on earlier rewards.
+Mushrooms and Mysterious Sphere remain unsupported with
+`PUBLIC_REWARD_PITY_HISTORY_UNQUALIFIED` because their pre-MAP continuation
+can generate potion or card rewards. The v_win leaf marginalizes those
 features with the exact discrete mixture `E[sigmoid(margin)]` over a bounded
 native lattice (`potionChance` -40 through 60), never applying the link to an
 expected margin. Real live captures do not claim an exact pity history: direct V4 requests fail closed and

@@ -129,6 +129,12 @@ public final class LiveOocCaptureTest {
         if (!LiveOocCapture.maskedBanditsInitialVisible("INTRO", banditLabels, banditOptions)
                 || LiveOocCapture.maskedBanditsInitialVisible("LEAVE", banditLabels, banditOptions))
             throw new AssertionError("Masked Bandits Pay/Fight event phase was misidentified");
+        java.util.List<String> libraryLabels = java.util.Arrays.asList(
+                "[Read] Choose 1 of 20 cards to add to your deck.", "[Sleep] Heal 26 HP.");
+        if (!LiveOocCapture.libraryInitialVisible("0", libraryLabels, banditOptions, 26)
+                || LiveOocCapture.libraryInitialVisible("1", libraryLabels, banditOptions, 26)
+                || LiveOocCapture.libraryInitialVisible("0", libraryLabels, banditOptions, 25))
+            throw new AssertionError("Library public Read/Sleep choice or heal was misidentified");
         if (!"INVALID".equals(LiveOocCapture.canonicalPathHistory(
                 act3Path, true, "", 3, java.util.Arrays.asList(16)).get(31)))
             throw new AssertionError("unconfirmed Act 2 boss marker was promoted");

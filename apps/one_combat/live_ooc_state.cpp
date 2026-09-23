@@ -584,6 +584,8 @@ ImportResult importLiveOocStateV1(const J &observation, LiveOocStateV1 &out) {
                 g.info.hpAmount0=integer(d,"hpAmount0",1,g.maxHp);
             if(g.curEvent==Event::FORGOTTEN_ALTAR)
                 g.info.hpAmount0=integer(d,"hpAmount0",0,g.maxHp);
+            if(g.curEvent==Event::THE_LIBRARY)
+                g.info.hpAmount0=integer(d,"hpAmount0",1,g.maxHp);
             if(g.curEvent==Event::WORLD_OF_GOOP)
                 g.info.goldLoss=integer(d,"goldLoss",0,g.gold);
             if(g.curEvent==Event::GOLDEN_IDOL) {
@@ -604,8 +606,7 @@ ImportResult importLiveOocStateV1(const J &observation, LiveOocStateV1 &out) {
                     g.info.neowRewards[i].d=id<Neow::Drawback>(ns[i].at("drawback"),Neow::Drawback::INVALID);
                 }
             }
-            if (g.curEvent == Event::THE_LIBRARY
-                    || g.curEvent == Event::HYPNOTIZING_COLORED_MUSHROOMS
+            if (g.curEvent == Event::HYPNOTIZING_COLORED_MUSHROOMS
                     || g.curEvent == Event::MYSTERIOUS_SPHERE)
                 return {false,"UNSUPPORTED","PUBLIC_REWARD_PITY_HISTORY_UNQUALIFIED"};
         }

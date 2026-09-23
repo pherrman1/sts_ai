@@ -2060,6 +2060,45 @@ void oocMctsAdapterSelfTest() {
         varied(source,OocSemanticEffect::TRANSFORM_UPGRADE_CARD,OocSemanticSource::SELECTOR);
         source=detachedCopy(gc); source.screenState=ScreenState::EVENT_SCREEN; source.curEvent=Event::THE_LIBRARY;
         varied(source,OocSemanticEffect::EVENT_CHOICE,OocSemanticSource::EVENT);
+        {
+            source.info.hpAmount0=26;
+            const int startingHp=std::max(1,source.maxHp-30);
+            source.curHp=startingHp;
+            int pitySamples=0;
+            OocMctsDependencies liveBelief;
+            liveBelief.sampleHiddenCounters=[&](GameContext &sample,std::mt19937_64 &draws) {
+                sampleLiveOocHiddenPityCounters(sample,draws);
+                ++pitySamples;
+            };
+            OocGameContextModel library(source,path,liveBelief,sampled);
+            std::optional<OocActionId> read,sleep;
+            for (const auto action:library.legalActions(0)) {
+                const auto &candidate=library.candidate(0,action.id);
+                if (!candidate.semantic || candidate.semantic->effect!=OocSemanticEffect::EVENT_CHOICE) continue;
+                const int option=candidate.primitive.getIdx1();
+                if (option==0) read=action.id;
+                if (option==1) sleep=action.id;
+            }
+            require(read && sleep,"Library Read and Sleep are distinct native root actions");
+            std::set<std::string> offers;
+            std::mt19937_64 draws(94271);
+            for (int n=0;n<16;++n) {
+                const auto child=library.sampleSuccessor(0,*read,draws);
+                const auto &state=library.state(child);
+                require(state.screenState==ScreenState::CARD_SELECT && state.info.toSelectCards.size()==20,
+                    "Library Read samples the hidden 20-card offer after the public choice");
+                std::string offer;
+                for (const auto &card:state.info.toSelectCards) offer+=":"+std::to_string(int(card.card.getId()));
+                offers.insert(offer);
+            }
+            require(offers.size()>1 && pitySamples==16,
+                "Library root samples hidden pity and offers on each search particle");
+            const auto slept=library.sampleSuccessor(0,*sleep,draws);
+            require(library.state(slept).curHp==startingHp+26 && pitySamples==17,
+                "Library Sleep uses the displayed heal amount in a sampled root");
+            require(source.curHp==startingHp && source.info.toSelectCards.empty(),
+                "Library belief search does not mutate the public root");
+        }
         source=detachedCopy(gc); source.setupTreasureRoom();
         varied(source,OocSemanticEffect::OPEN_CHEST,OocSemanticSource::TREASURE);
         source=detachedCopy(gc); source.screenState=ScreenState::EVENT_SCREEN; source.curEvent=Event::DEAD_ADVENTURER;
