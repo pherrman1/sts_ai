@@ -235,7 +235,12 @@ int main(int argc,char **argv){try{
     g.curEvent=Event::WING_STATUE;add("event_golden_wing_locked_attack",g);
     g.curEvent=Event::THE_WOMAN_IN_BLUE;add("event_woman_in_blue",g);
     g.curEvent=Event::THE_SSSSSERPENT;add("event_liars_game_serpent",g);
-    g.curEvent=Event::SCRAP_OOZE;g.info.eventData=3;add("event_scrap_ooze_public_retry",g);
+    g.curEvent=Event::SCRAP_OOZE;g.info.eventData=3;
+    auto scrapRetry=g;const int scrapHp=scrapRetry.curHp;
+    scrapRetry.regainControlAction=[](GameContext &) {};
+    search::GameAction(0).execute(scrapRetry);
+    check(scrapRetry.curHp==scrapHp-6,"Scrap Ooze retry must pay rising public HP cost");
+    add("event_scrap_ooze_public_retry",g);
     g.curEvent=Event::WE_MEET_AGAIN;g.info.cardIdx=g.deck.size()-1;
     g.info.potionIdx=-1;g.info.gold=-1;add("event_we_meet_again_card_or_attack",g);
     g.curEvent=Event::THE_LIBRARY;g.info.hpAmount0=26;add("library_public_heal_hidden_offer",g);

@@ -268,7 +268,9 @@ public final class LiveOocCaptureTest {
                     Arrays.asList(obj("index", 0), obj("index", 1)), false, 7))
             throw new AssertionError("Golden Wing locked-option slot mismatch");
         if (LiveOocCapture.scrapOozeRetryCount(25, 3, 0) != 0
-                || LiveOocCapture.scrapOozeRetryCount(55, 5, 20) != 3)
+                || LiveOocCapture.scrapOozeRetryCount(35, 4, 0) != 1
+                || LiveOocCapture.scrapOozeRetryCount(55, 8, 20) != 3
+                || LiveOocCapture.scrapOozeRetryCount(105, 13, 20) != 8)
             throw new AssertionError("Scrap Ooze public chance lost native retry count");
         List<Object> goopOptions = Arrays.asList(obj("index", 0), obj("index", 1));
         List<String> goopLabels = Arrays.asList(

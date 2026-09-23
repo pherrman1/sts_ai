@@ -812,11 +812,13 @@ final class LiveOocCapture {
     }
 
     static int scrapOozeRetryCount(int publicChance, int publicDamage, int ascension) {
-        int expectedDamage = ascension >= 15 ? 5 : 3;
-        if (publicDamage != expectedDamage || publicChance < 25 || publicChance > 95
+        if (publicChance < 25 || publicChance > 105
                 || (publicChance - 25) % 10 != 0)
             throw new IllegalArgumentException("Scrap Ooze public retry state differs from native event");
-        return (publicChance - 25) / 10;
+        int retry = (publicChance - 25) / 10;
+        if (publicDamage != (ascension >= 15 ? 5 : 3) + retry)
+            throw new IllegalArgumentException("Scrap Ooze public retry state differs from native event");
+        return retry;
     }
 
     static boolean simpleInitialEventSupported(String simple) {

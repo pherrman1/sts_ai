@@ -138,6 +138,9 @@ Writhing Mass's public `Compulsive` power reports vanilla's sentinel amount
 zero while the status remains active. Other negative amounts remain rejected.
 Vanilla Shield Gremlin appears as `GremlinTsundere`; its native move script
 does not use `miscInfo`, so the inspector emits the exact zero for that ID.
+Scrap Ooze's public chance rises by ten points after each failed dig, and its
+next HP cost rises by one. The capture checks both fields against the retry
+count before passing it to the native event transition.
 Move bytes are likewise fail-closed, with all simulator-supported vanilla
 class constants independently qualified against the
 installed `desktop-1.0.jar`. The native construction, public-render, import,
