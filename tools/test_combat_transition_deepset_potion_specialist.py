@@ -9,6 +9,19 @@ from tools.combat_transition_model_experiment import CONTINUOUS_GLOBAL_FIELDS
 
 
 class DeepSetPotionSpecialistTests(unittest.TestCase):
+    def test_frozen_source_accepts_only_pinned_head_and_cli_assertions(self):
+        expected_head = specialist.EXPECTED["experimentCommit"]
+        expected_base = specialist.EXPECTED["baselineCommit"]
+        specialist.validate_frozen_source(expected_head, expected_base, expected_head)
+
+        caller_head = "f" * 40
+        with self.assertRaisesRegex(ValueError, "experiment SHA assertion mismatch"):
+            specialist.validate_frozen_source(caller_head, expected_base, caller_head)
+        with self.assertRaisesRegex(ValueError, "baseline SHA mismatch"):
+            specialist.validate_frozen_source(expected_head, caller_head, expected_head)
+        with self.assertRaisesRegex(ValueError, "checkout mismatch"):
+            specialist.validate_frozen_source(caller_head, expected_base, expected_head)
+
     def arrays(self, rows=4):
         return {
             "globals_continuous": np.zeros((rows, len(CONTINUOUS_GLOBAL_FIELDS)), np.float32),

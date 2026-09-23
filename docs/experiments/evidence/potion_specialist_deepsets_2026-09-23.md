@@ -30,7 +30,7 @@ The existing gate marks both arms `TEACHER_FORCED_REJECTED` because of the obvio
 
 ## Stop and next experiment
 
-No ancestral draw, TEST evaluation, export, Python/native parity, CPU latency, gameplay, or default/runtime change was run. Do not proceed to width or hyperparameter sweeps from this result. A focused next architecture experiment could add one bounded interaction layer to the potion-specific set encoder so potion slots can interact with one another and card/relic context, while keeping the same target, data, width/output contract, and evaluation gate. First inspect the 12 recursive-Brew examples and their legal trajectories to ensure the slice is not dominated by a data/target corner case; keep that inspection on TRAIN/VALIDATION only. This is a recommendation, not evidence that pairwise interaction will resolve the failure.
+No ancestral draw, TEST evaluation, export, Python/native parity, CPU latency, gameplay, or default/runtime change was run. Do not proceed to width or hyperparameter sweeps from this result. First inspect the 12 recursive-Brew examples and their legal trajectories on TRAIN/VALIDATION to ensure the slice is not dominated by a data/target corner case. A review hypothesis is that encoder representation `z` retains initial potion inventory information at later recursive DAG nodes while the decoder's separate current-inventory input changes. Test that hypothesis directly before choosing a bounded potion-slot/context interaction layer or other architecture change; neither is established as the cause.
 
 ## Artifacts
 

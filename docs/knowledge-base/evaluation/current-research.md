@@ -981,9 +981,12 @@ arms because recursive Brew regressed `+13.3126%` for warm start and
 export, native parity, latency, gameplay, OOC MCTS, or default promotion
 occurred. The loader reads the prepared cache as a whole, but TEST examples did
 not enter encoding, evaluation, selection, or debugging. This result supports
-only a bounded next architecture experiment aimed at potion-slot/context
-interactions; it does not qualify the model or establish the cause of the
-remaining slice gap. See
+only a bounded next experiment after inspecting the recursive-Brew validation
+cases. A review hypothesis is that the encoder's `z` retains initial potion
+inventory information at recursive DAG nodes while the decoder's separate
+current-inventory input changes; this is unverified and should be tested before
+choosing an architecture change. It does not qualify the model or establish
+the cause of the remaining slice gap. See
 [ledger-06 §338](../../experiments/ledger-06.md) and the
 [potion-specialist evidence](../../experiments/evidence/potion_specialist_deepsets_2026-09-23.md).
 

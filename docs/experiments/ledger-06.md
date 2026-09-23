@@ -11422,8 +11422,11 @@ production artifact, or default changed.
   clearly over the previous frozen DeepSets result (`0.537569223`, +6.0706%)
   and the Attention reference overall, but fails the recursive-Brew slice
   gate. Do not continue with width or hyperparameter sweeps. A bounded next
-  architecture experiment could add a single potion-slot/context interaction
-  layer after first inspecting the recursive-Brew TRAIN/VALIDATION examples.
+  architecture experiment should first inspect the recursive-Brew
+  TRAIN/VALIDATION examples. One unverified hypothesis is that the encoder's
+  `z` retains initial inventory information at recursive DAG nodes while the
+  decoder's separate current-inventory input changes; test this before choosing
+  a potion-slot/context interaction layer or another architecture change.
   No ancestral draws, TEST scoring, export/native parity, latency, gameplay,
   OOC MCTS, or runtime/default promotion ran. Hardware was local RTX 3060 Ti
   with CUDA available; no GCP instance or spend was used.

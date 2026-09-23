@@ -48,6 +48,8 @@ RECIPE = {
     "testEncodedRows": 0, "testInferenceRows": 0,
 }
 EXPECTED = {
+    "experimentCommit": "3d1db667f0859c5a1d4788cb4232eaf6f6670bb7",
+    "baselineCommit": "c62f3694517bf622d2670a9fbf3c20a70380a763",
     "encoder": "bee6800dd7230b180c2b4894c0f01763efca4b7799e3f36a805333c3003dc663",
     "decoder": "06eda953b523ed6b3b9dbc3031bf44408c3bc67f0bc8b7862d28c150448819c1",
     "component": "ae1a1411990d272579de10564edb48c7f2ec1d14f1c72dacf5390a1415a0f1db",
@@ -245,11 +247,22 @@ def _trajectory_count(graph) -> int:
     return sum(paths[owner] for owner, _action in graph.target_edges)
 
 
+def validate_frozen_source(head: str, base_sha: str, experiment_sha: str) -> None:
+    """Check caller assertions against fixed provenance and the actual checkout."""
+    if base_sha != EXPECTED["baselineCommit"]:
+        raise ValueError(f"frozen baseline SHA mismatch: {base_sha}")
+    if experiment_sha != EXPECTED["experimentCommit"]:
+        raise ValueError(f"frozen experiment SHA assertion mismatch: {experiment_sha}")
+    if head != EXPECTED["experimentCommit"]:
+        raise ValueError(
+            f"frozen experiment checkout mismatch: expected {EXPECTED['experimentCommit']}, got {head}"
+        )
+
+
 def run(args):
     root = Path(__file__).resolve().parents[1]
     head = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=root, text=True).strip()
-    if head != args.experiment_sha:
-        raise ValueError(f"frozen experiment SHA mismatch: {head}")
+    validate_frozen_source(head, args.base_sha, args.experiment_sha)
     if subprocess.check_output(["git", "status", "--porcelain"], cwd=root, text=True).strip():
         raise ValueError("experiment requires clean frozen source")
     if not torch.cuda.is_available():
@@ -291,11 +304,14 @@ def run(args):
         initial_hash = {"encoder": module_sha(encoder.state_dict()),
                         "decoder": module_sha(decoder.state_dict())}
         occupied = np.any(cache["potions"][train] > 1, axis=1)
-        smoke_ids = train[occupied][:8]
-        if len(smoke_ids) != 8:
+        # This checks generic gradient flow; it does not promise Brew/Smoke DAG coverage.
+        gradient_probe_ids = train[occupied][:8]
+        if len(gradient_probe_ids) != 8:
             raise ValueError("frozen TRAIN population lacks eight occupied-potion gradient-smoke rows")
-        smoke_loss = row_losses(encoder, decoder, arrays, cache, graphs, smoke_ids, "cuda").mean()
-        smoke_loss.backward()
+        gradient_probe_loss = row_losses(
+            encoder, decoder, arrays, cache, graphs, gradient_probe_ids, "cuda"
+        ).mean()
+        gradient_probe_loss.backward()
         for name, module in (("encoder", encoder), ("decoder", decoder)):
             grads = [p.grad for p in module.parameters() if p.grad is not None]
             if (not grads or any(not torch.isfinite(g).all() for g in grads)
