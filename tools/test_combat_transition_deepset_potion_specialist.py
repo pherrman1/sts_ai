@@ -1,6 +1,9 @@
 import unittest
+import os
 from pathlib import Path
 import subprocess
+import sys
+import tempfile
 
 import numpy as np
 import torch
@@ -35,6 +38,34 @@ class DeepSetPotionSpecialistTests(unittest.TestCase):
             "--base-sha", reproduce.EXPECTED_BASE_SHA,
             "--experiment-sha", reproduce.EXPECTED_EXPERIMENT_SHA,
         ])
+        self.assertEqual(command[1], "-s")
+
+    def test_reproduction_child_imports_validated_tree_despite_bogus_pythonpath(self):
+        with tempfile.TemporaryDirectory() as temp:
+            temp_root = Path(temp)
+            validated_root = temp_root / "validated"
+            bogus_root = temp_root / "bogus"
+            for root, marker in ((validated_root, "validated"), (bogus_root, "bogus")):
+                tools = root / "tools"
+                tools.mkdir(parents=True)
+                (tools / "__init__.py").write_text("")
+                (tools / "path_probe.py").write_text(f"SOURCE = {marker!r}\n")
+
+            env = reproduce.child_environment(validated_root, {
+                "PATH": os.environ.get("PATH", ""),
+                "PYTHONPATH": str(bogus_root),
+                "PYTHONHOME": str(bogus_root),
+            })
+            self.assertEqual(env["PYTHONPATH"], str(validated_root))
+            self.assertEqual(env["PYTHONNOUSERSITE"], "1")
+            self.assertNotIn("PYTHONHOME", env)
+            loaded = subprocess.check_output(
+                [sys.executable, "-s", "-c",
+                 "import tools.path_probe as p; print(p.__file__); print(p.SOURCE)"],
+                cwd=temp_root, env=env, text=True,
+            ).splitlines()
+            self.assertEqual(Path(loaded[0]).resolve(), validated_root / "tools/path_probe.py")
+            self.assertEqual(loaded[1], "validated")
 
     def arrays(self, rows=4):
         return {
