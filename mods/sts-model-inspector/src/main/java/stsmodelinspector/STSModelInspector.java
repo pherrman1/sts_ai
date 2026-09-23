@@ -521,10 +521,19 @@ public final class STSModelInspector implements PostInitializeSubscriber,
                 || !InputHelper.justClickedLeft || !graphButtonHit()) return;
         InputHelper.justClickedLeft = false;
         if (graphExportRunning) return;
-        final boolean combat = "combat".equals(newest.boundary);
+        Snapshot snapshot = newest;
+        String pinnedSnapshotJson = graphSnapshotJson(snapshot.session, snapshot.sequence, snapshot.hash,
+                snapshot.observationJson, responseSequence, responseHash, advisorResponseJson,
+                advisorStatus, advisorReason, snapshot.responseLatencyMicros);
+        if (pinnedSnapshotJson == null) {
+            graphStatus = "Waiting for ready response";
+            return;
+        }
+        final boolean combat = "combat".equals(snapshot.boundary);
         graphExportRunning = true;
         graphStatus = "";
-        Thread worker = new Thread(() -> exportAndOpenGraph(combat), "sts-model-inspector-graph");
+        Thread worker = new Thread(() -> exportAndOpenGraph(combat, pinnedSnapshotJson),
+                "sts-model-inspector-graph");
         worker.setDaemon(true);
         worker.start();
     }
@@ -536,7 +545,8 @@ public final class STSModelInspector implements PostInitializeSubscriber,
                 && InputHelper.mY >= graphButtonBottom && InputHelper.mY <= graphButtonBottom + 30.0f * scale;
     }
 
-    private void exportAndOpenGraph(boolean combat) {
+    private void exportAndOpenGraph(boolean combat, String pinnedSnapshotJson) {
+        Path pinnedSnapshot = null;
         try {
             Properties properties = new Properties();
             String configOverride = System.getenv("STS_MODEL_INSPECTOR_CONFIG");
@@ -551,9 +561,11 @@ public final class STSModelInspector implements PostInitializeSubscriber,
             if (toolsDir == null || toolsDir.trim().isEmpty())
                 throw new IOException("set graphToolsDir in ~/.sts-model-inspector.properties");
             Path tools = Paths.get(toolsDir.trim()).toAbsolutePath().normalize();
-            Path snapshot = Paths.get(System.getProperty("user.home"), ".cache", "sts-model-inspector", "latest.json");
-            Path outputDir = snapshot.getParent().resolve("graphs");
+            Path cacheDir = Paths.get(System.getProperty("user.home"), ".cache", "sts-model-inspector");
+            Path outputDir = cacheDir.resolve("graphs");
             Files.createDirectories(outputDir);
+            pinnedSnapshot = Files.createTempFile(outputDir, ".graph-snapshot-", ".json");
+            Files.write(pinnedSnapshot, pinnedSnapshotJson.getBytes(StandardCharsets.UTF_8));
             String graphType = combat ? "silver-mcts" : "ooc-mcts";
             String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd-HHmmss-SSS"));
             String filename = graphType + "-" + timestamp + ".html";
@@ -564,7 +576,7 @@ public final class STSModelInspector implements PostInitializeSubscriber,
             List<String> command = new ArrayList<>();
             command.add(python);
             command.add(tools.resolve(combat ? "render_combat_decision.py" : "render_ooc_mcts.py").toString());
-            command.add("--snapshot"); command.add(snapshot.toString());
+            command.add("--snapshot"); command.add(pinnedSnapshot.toString());
             command.add("--output"); command.add(output.toString());
             command.add("--open");
             Process process = new ProcessBuilder(command).redirectErrorStream(true).start();
@@ -581,8 +593,88 @@ public final class STSModelInspector implements PostInitializeSubscriber,
             graphStatus = "Graph unavailable";
             System.err.println("STS Model Inspector graph export: " + error);
         } finally {
+            if (pinnedSnapshot != null) try { Files.deleteIfExists(pinnedSnapshot); }
+            catch (IOException ignored) {}
             graphExportRunning = false;
         }
+    }
+
+    static String graphSnapshotJson(String session, long sequence, String hash,
+                                    String observationJson, long responseSequence,
+                                    String responseHash, String advisorResponseJson,
+                                    String responseStatus, String responseReason,
+                                    long responseLatencyMicros) {
+        if (session == null || hash == null || observationJson == null
+                || advisorResponseJson == null || advisorResponseJson.trim().isEmpty()
+                || !"ready".equalsIgnoreCase(responseStatus)
+                || sequence < 0 || responseSequence != sequence || !hash.equals(responseHash)
+                || !"READY".equals(jsonStringField(advisorResponseJson, "status"))
+                || !session.equals(jsonStringField(advisorResponseJson, "session"))
+                || sequence != jsonLongField(advisorResponseJson, "sequence")
+                || !hash.equals(jsonStringField(advisorResponseJson, "observationHash")))
+            return null;
+        String status = responseStatus.toUpperCase(Locale.ROOT);
+        String reason = responseReason == null ? "" : responseReason;
+        return "{\"protocol\":\"sts_model_inspector_latest_v1\",\"protocolVersion\":1"
+                + ",\"session\":\"" + Snapshot.escape(session) + "\",\"sequence\":" + sequence
+                + ",\"observationHash\":\"" + Snapshot.escape(hash) + "\",\"observation\":"
+                + observationJson + ",\"response\":{\"status\":\"" + Snapshot.escape(status)
+                + "\",\"ready\":true,\"latencyMicros\":"
+                + (responseLatencyMicros < 0 ? "null" : Long.toString(responseLatencyMicros))
+                + ",\"session\":\"" + Snapshot.escape(session) + "\",\"sequence\":" + sequence
+                + ",\"observationHash\":\"" + Snapshot.escape(hash) + "\",\"reason\":\""
+                + Snapshot.escape(reason) + "\",\"advisor\":" + advisorResponseJson + "}}";
+    }
+
+    private static String jsonStringField(String json, String key) {
+        if (json == null || json.isEmpty() || json.charAt(0) != '{') return null;
+        String needle = "\"" + key + "\":\"";
+        int start = json.indexOf(needle);
+        if (start < 0) return null;
+        start += needle.length();
+        StringBuilder value = new StringBuilder();
+        boolean escaped = false;
+        for (int i = start; i < json.length(); ++i) {
+            char c = json.charAt(i);
+            if (escaped) {
+                switch (c) {
+                    case '"': case '\\': case '/': value.append(c); break;
+                    case 'b': value.append('\b'); break;
+                    case 'f': value.append('\f'); break;
+                    case 'n': value.append('\n'); break;
+                    case 'r': value.append('\r'); break;
+                    case 't': value.append('\t'); break;
+                    case 'u':
+                        if (i + 4 >= json.length()) return null;
+                        try { value.append((char) Integer.parseInt(json.substring(i + 1, i + 5), 16)); }
+                        catch (NumberFormatException invalid) { return null; }
+                        i += 4;
+                        break;
+                    default: return null;
+                }
+                escaped = false;
+            } else if (c == '\\') {
+                escaped = true;
+            } else if (c == '"') {
+                return value.toString();
+            } else {
+                value.append(c);
+            }
+        }
+        return null;
+    }
+
+    private static long jsonLongField(String json, String key) {
+        if (json == null || json.isEmpty() || json.charAt(0) != '{') return -1;
+        String needle = "\"" + key + "\":";
+        int start = json.indexOf(needle);
+        if (start < 0) return -1;
+        start += needle.length();
+        int end = start;
+        while (end < json.length() && Character.isDigit(json.charAt(end))) ++end;
+        if (end == start) return -1;
+        try { return Long.parseLong(json.substring(start, end)); }
+        catch (NumberFormatException invalid) { return -1; }
     }
 
     private boolean silverBoostButtonHit() {

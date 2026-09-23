@@ -34,8 +34,10 @@ be provided through `STS_MODEL_INSPECTOR_GRAPH_TOOLS` and
 `STS_MODEL_INSPECTOR_CONFIG`. Set `captureMctsGraphs=true` in that properties
 file to enable live Silver and OOC tree capture for graph export. Each export
 uses a timestamped HTML filename so earlier graphs are preserved. A graph is
-available only when the current response is ready and contains the captured
-tree. Set `showActionRecommendations=false` to hide score and selected-action
+exported only when the response for the clicked observation is ready and
+contains the captured tree; export uses that pinned response instead of
+rereading the asynchronously updated latest snapshot. Set
+`showActionRecommendations=false` to hide score and selected-action
 overlays while keeping the diagnostic panel and graph button available. Set
 `showAdvisorPanel=false` to hide the top-left panel while keeping the action
 overlays and standalone graph and Silver controls available. Set

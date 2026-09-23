@@ -128,7 +128,10 @@ edge sits 170 scaled pixels below the screen top, clearing the relic row.
 The panels omit floor/HP text already shown in the game HUD. The lower-left
 graph button exports a captured Silver or OOC MCTS tree as a timestamped HTML
 file under `~/.cache/sts-model-inspector/graphs/` and opens it in the default
-browser; `captureMctsGraphs=true` enables tree capture. `showAdvisorPanel=false`
+browser. At click time it pins the current observation and its matching ready
+advisor response into a dedicated temporary snapshot, so asynchronous updates
+to `latest.json` cannot change which tree the export uses;
+`captureMctsGraphs=true` enables tree capture. `showAdvisorPanel=false`
 hides the top-left panel while retaining the standalone graph and Silver
 budget controls, `showActionRecommendations=false` hides recommendation
 overlays, and `showSelectedActionSummary=false` hides the selected Silver
