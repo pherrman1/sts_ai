@@ -76,6 +76,11 @@ public final class CombatBoundaryTest {
                 deadOccupants, new java.util.HashSet<>(java.util.Arrays.asList(2)));
         if (latestDead.size() != 1 || latestDead.get(1) != 4)
             throw new AssertionError("older dead Gremlin Leader slot occupant was retained");
+        if (STSModelInspector.collectorNativeSlotFromEnemySlot(1) != 1
+                || STSModelInspector.collectorNativeSlotFromEnemySlot(2) != 0
+                || STSModelInspector.collectorNativeSlotFromEnemySlot(0) != -1
+                || STSModelInspector.collectorNativeSlotFromEnemySlot(3) != -1)
+            throw new AssertionError("Collector vanilla summon key collided with native boss slot");
         if (STSModelInspector.hiddenMiscMinimum("FuzzyLouseNormal", 0) != 5
                 || STSModelInspector.hiddenMiscMinimum("FuzzyLouseDefensive", 20) != 6
                 || STSModelInspector.hiddenMiscMinimum("Darkling", 20) != 11

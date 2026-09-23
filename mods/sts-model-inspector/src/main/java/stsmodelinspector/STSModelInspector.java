@@ -1539,6 +1539,12 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         return latest;
     }
 
+    static int collectorNativeSlotFromEnemySlot(int vanillaSlot) {
+        // Collector stores its two TorchHeads under keys 1 and 2. Native
+        // replaces them in physical slots 1 and 0; slot 2 is the boss.
+        return vanillaSlot == 1 ? 1 : (vanillaSlot == 2 ? 0 : -1);
+    }
+
     private static Integer reflectedEncounterSlot(String encounter, AbstractMonster candidate) {
         if (AbstractDungeon.getMonsters() == null
                 || AbstractDungeon.getMonsters().monsters == null) return null;
@@ -1561,7 +1567,7 @@ public final class STSModelInspector implements PostInitializeSubscriber,
             if (!(raw instanceof Map<?, ?>)) return null;
             for (Map.Entry<?, ?> entry : ((Map<?, ?>) raw).entrySet()) {
                 if (entry.getValue() == candidate && entry.getKey() instanceof Number)
-                    return ((Number) entry.getKey()).intValue();
+                    return collectorNativeSlotFromEnemySlot(((Number) entry.getKey()).intValue());
             }
         } else {
             Object raw = readObjectField(owner, "daggers");
