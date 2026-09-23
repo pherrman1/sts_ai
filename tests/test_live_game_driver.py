@@ -130,6 +130,11 @@ class LiveGameDriverTest(unittest.TestCase):
         self.assertEqual(map_silver_action(
             {"kind": "potion", "potionSlot": 1, "discard": False}, actions).mcp_arguments,
             {"potion_slot": 1, "target_index": 1})
+        screen["potions"][0]["id"] = "Explosive Potion"
+        self.assertEqual(map_silver_action(
+            {"kind": "potion", "potionSlot": 1, "discard": False},
+            build_legal_actions(screen, ["use_potion"])).mcp_arguments,
+            {"potion_slot": 1, "target_index": 1})
         screen["potions"][0]["id"] = "FirePotion"
         with self.assertRaises(IntegrationFailure):
             map_silver_action({"kind": "potion", "potionSlot": 1, "discard": False},

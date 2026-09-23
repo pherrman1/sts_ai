@@ -428,12 +428,13 @@ def map_silver_action(selected_live_action: Any, candidates: Sequence[LegalActio
             and "targetIndex" not in selected_live_action
             and "target_index" not in selected_live_action
             and all(candidate.mcp_tool == "use_potion"
-                    and candidate.semantic.get("potion_id") == "SmokeBomb"
+                    and candidate.semantic.get("potion_id") in {"SmokeBomb", "Explosive Potion"}
                     and candidate.semantic.get("potion_slot") == selected_live_action.get("potionSlot")
                     and isinstance(candidate.semantic.get("target_index"), int)
                     for candidate in matches)):
-        # Vanilla SmokeBomb.use overwrites its AbstractCreature argument with
-        # the player, so the MCP-required monster target has no game effect.
+        # Vanilla SmokeBomb.use overwrites the argument with the player;
+        # ExplosivePotion.use damages every enemy without reading the argument.
+        # MCP still requires a monster target for these thrown potions.
         return min(matches, key=lambda candidate: candidate.semantic["target_index"])
     if len(matches) != 1:
         raise IntegrationFailure(f"Silver action mapping expected exactly one candidate, got {len(matches)} for {selected_live_action!r}")
