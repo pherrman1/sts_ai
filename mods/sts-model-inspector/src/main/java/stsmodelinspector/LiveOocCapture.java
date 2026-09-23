@@ -1257,6 +1257,14 @@ final class LiveOocCapture {
                 && String.valueOf(labels.get(0)).contains(String.valueOf(field(event, "finalDmg")))
                 && String.valueOf(labels.get(1)).contains("[Stop]");
         if (cursedTomeLastPage) map(out.get("details")).put("eventData", 4);
+        boolean colosseumPostCombat = "Colosseum".equals(simple)
+                && "POST_COMBAT".equals(String.valueOf(phase))
+                && options.size() == 2 && labels.size() == 2
+                && ((Number)map(options.get(0)).get("index")).intValue() == 0
+                && ((Number)map(options.get(1)).get("index")).intValue() == 1
+                && String.valueOf(labels.get(0)).contains("[COWARDICE]")
+                && String.valueOf(labels.get(1)).contains("[VICTORY]");
+        if (colosseumPostCombat) map(out.get("details")).put("eventData", 1);
         boolean goldenWing = "GoldenWing".equals(simple)
                 && goldenWingInitialVisible(phase, labels, options,
                         Boolean.TRUE.equals(field(event, "canAttack")),
@@ -1410,7 +1418,7 @@ final class LiveOocCapture {
                 && ((Number)map(options.get(1)).get("index")).intValue() == 1
                 && ((Number)map(options.get(2)).get("index")).intValue() == 2;
         if (!(simpleInitialEventSupported(simple) && initial)
-                && !goop && !noteForYourself && !cursedTomeLastPage
+                && !goop && !noteForYourself && !cursedTomeLastPage && !colosseumPostCombat
                 && !goldShrine
                 && !nestDecisionVisible(simple, phase, labels, options, AbstractDungeon.ascensionLevel)
                 && !idolTrap && !goldenWing && !cleric && !sensoryStone

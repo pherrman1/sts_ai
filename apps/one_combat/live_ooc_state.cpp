@@ -303,6 +303,7 @@ LiveOocStateV1::LiveOocMctsRootV1 makeMctsRoot(const LiveOocStateV1 &source) {
             case Event::BIG_FISH:
             case Event::PLEADING_VAGRANT:
             case Event::DEAD_ADVENTURER:
+            case Event::COLOSSEUM:
                 return true;
             default:
                 return false;

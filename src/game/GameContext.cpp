@@ -2570,8 +2570,22 @@ void GameContext::chooseEventOption(int idx) {
             break;
         }
 
-        case Event::COLOSSEUM: // todo
-            regainControl();
+        case Event::COLOSSEUM:
+            if (info.eventData == 1 && idx == 0) {
+                regainControl();
+            } else if (info.eventData == 1 && idx == 1) {
+                Rewards reward;
+                reward.addRelic(returnRandomScreenlessRelic(RelicTier::RARE));
+                reward.addRelic(returnRandomScreenlessRelic(RelicTier::UNCOMMON));
+                reward.addGold(100);
+                regainControlAction = [reward](GameContext &gc) {
+                    gc.openCombatRewardScreen(reward);
+                    gc.regainControlAction = returnToMapAction;
+                };
+                enterBattle(MonsterEncounter::COLOSSEUM_EVENT_NOBS);
+            } else {
+                assert(false);
+            }
             break;
 
         case Event::CURSED_TOME: {

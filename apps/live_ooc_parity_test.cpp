@@ -227,6 +227,20 @@ int main(int argc,char **argv){try{
     g=base;g.screenState=ScreenState::EVENT_SCREEN;g.curEvent=Event::CURSED_TOME;
     add("event_cursed_tome_intro",g);
     g.info.eventData=4;add("event_cursed_tome_last_page",g);
+    g=base;g.screenState=ScreenState::EVENT_SCREEN;g.curEvent=Event::COLOSSEUM;
+    g.info.eventData=1;add("event_colosseum_post_combat",g);
+    auto colosseum=g;
+    search::GameAction(1).execute(colosseum);
+    check(colosseum.screenState==ScreenState::BATTLE
+            && colosseum.info.encounter==MonsterEncounter::COLOSSEUM_EVENT_NOBS,
+        "Colosseum victory choice must enter the public second encounter");
+    colosseum.curRoom=Room::EVENT;
+    colosseum.afterBattle();
+    check(colosseum.screenState==ScreenState::REWARDS
+            && colosseum.info.rewardsContainer.relicCount==2
+            && colosseum.info.rewardsContainer.goldRewardCount==1
+            && colosseum.info.rewardsContainer.gold[0]==100,
+        "Colosseum second encounter must retain its fixed public reward structure");
     g.curEvent=Event::VAMPIRES;g.maxHp=105;g.info.hpAmount0=32;
     add("event_vampires_no_vial_public_max_hp_loss",g);
     g=base;g.curEvent=Event::FORGOTTEN_ALTAR;g.setupEvent();add("event_forgotten_altar",g);
