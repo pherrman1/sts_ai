@@ -1,5 +1,6 @@
 // Exact hot-path regression checks against the isolated Silver implementation.
 #include <algorithm>
+#include <array>
 #include <chrono>
 #include <cmath>
 #include <functional>
@@ -12,6 +13,7 @@
 #include <vector>
 #include <string>
 #include "combat/BattleContext.h"
+#include "combat/CardPile.h"
 #include "game/GameContext.h"
 #include "sim/search/BattleSearcher.h"
 #include "sim/search/Action.h"
@@ -40,6 +42,220 @@ sts::BattleContext fixture(sts::GameContext &gc) {
     sts::BattleContext bc{};
     bc.init(gc, sts::MonsterEncounter::LOOTER);
     return bc;
+}
+
+using TestCard = sts::CardInstance;
+using TestPile = sts::CardPile;
+
+std::vector<TestCard> duplicateDrawCards() {
+    TestCard strikeA(sts::CardId::STRIKE_RED);
+    strikeA.setUniqueId(11);
+    TestCard strikeB(sts::CardId::STRIKE_RED);
+    strikeB.setUniqueId(12);
+    TestCard defend(sts::CardId::DEFEND_RED);
+    defend.setUniqueId(13);
+    return {strikeA, strikeB, defend};
+}
+
+TestPile pileWithUnknown(const std::vector<TestCard> &unknown) {
+    TestPile pile;
+    pile.assignInformationState({}, unknown, {}, false);
+    return pile;
+}
+
+void requireFrequency(int observed, int total, double expected, const char *message) {
+    require(std::abs(static_cast<double>(observed) / total - expected) < 0.035, message);
+}
+
+void rolloutPileSamplingTests() {
+    constexpr int samples = 4096;
+    const auto duplicates = duplicateDrawCards();
+    auto ordinary = pileWithUnknown(duplicates);
+    require(ordinary.unknownRegionIsSorted(), "ordinary pile must start with canonical unknown order");
+    require(ordinary == pileWithUnknown(duplicates), "ordinary pile equality must stay canonical");
+
+    int strikeDraws = 0;
+    int defendDraws = 0;
+    for (int seed = 0; seed < samples; ++seed) {
+        auto pile = pileWithUnknown(duplicates);
+        pile.enableRolloutUnsortedUnknownRegion();
+        sts::Random rng(static_cast<std::uint64_t>(seed + 1));
+        const auto drawn = pile.drawTop(rng);
+        if (drawn.id == sts::CardId::STRIKE_RED) ++strikeDraws;
+        else if (drawn.id == sts::CardId::DEFEND_RED) ++defendDraws;
+        else require(false, "uniform unknown draw returned an unexpected card");
+    }
+    requireFrequency(strikeDraws, samples, 2.0 / 3.0,
+                     "duplicate unknown cards must retain their multiplicity in draw probabilities");
+    requireFrequency(defendDraws, samples, 1.0 / 3.0,
+                     "single unknown card must retain its draw probability");
+
+    TestCard bottom(sts::CardId::CLASH);
+    bottom.setUniqueId(20);
+    TestCard unknownA(sts::CardId::STRIKE_RED);
+    unknownA.setUniqueId(21);
+    TestCard unknownB(sts::CardId::DEFEND_RED);
+    unknownB.setUniqueId(22);
+    TestCard top(sts::CardId::BASH);
+    top.setUniqueId(23);
+    TestPile positioned;
+    positioned.assignInformationState({bottom}, {unknownA, unknownB}, {top}, false);
+    positioned.enableRolloutUnsortedUnknownRegion();
+    sts::Random positionedRng(71);
+    require(positioned.drawTop(positionedRng) == top,
+            "rollout pile must preserve known-top order");
+    const auto firstUnknown = positioned.drawTop(positionedRng);
+    const auto secondUnknown = positioned.drawTop(positionedRng);
+    require((firstUnknown == unknownA && secondUnknown == unknownB)
+                || (firstUnknown == unknownB && secondUnknown == unknownA),
+            "unknown draws must stay inside the unknown region");
+    require(positioned.drawTop(positionedRng) == bottom,
+            "rollout pile must preserve known-bottom order");
+
+    TestCard inserted(sts::CardId::RAGE);
+    inserted.setUniqueId(24);
+    int insertedBelowBottom = 0;
+    int insertedInUnknown = 0;
+    for (int seed = 0; seed < samples; ++seed) {
+        TestPile pile;
+        pile.assignInformationState({bottom}, {}, {top}, false);
+        pile.enableRolloutUnsortedUnknownRegion();
+        sts::Random rng(static_cast<std::uint64_t>(seed + 1));
+        pile.shuffleIn(rng, inserted);
+        const auto first = pile.drawTop(rng);
+        const auto second = pile.drawTop(rng);
+        const auto third = pile.drawTop(rng);
+        if (first == top && second == bottom && third == inserted) {
+            ++insertedBelowBottom;
+        } else if (first == top && second == inserted && third == bottom) {
+            ++insertedInUnknown;
+        } else {
+            require(false, "shuffle-in changed the supported order or known-stack semantics");
+        }
+    }
+    requireFrequency(insertedBelowBottom, samples, 0.5,
+                     "shuffle-in bottom-gap probability must remain uniform");
+    requireFrequency(insertedInUnknown, samples, 0.5,
+                     "shuffle-in unknown-gap probability must remain uniform");
+
+    TestPile reshuffleBase = pileWithUnknown(duplicates);
+    reshuffleBase.enableRolloutUnsortedUnknownRegion();
+    TestCard reshuffleExtra = reshuffleBase[0];
+    reshuffleExtra.setUniqueId(-2);
+    reshuffleBase.add(reshuffleExtra);
+    require(!reshuffleBase.unknownRegionIsSorted(), "fast unknown insertion should avoid canonical sorting");
+    const int expectedStrikes = 2 + (reshuffleExtra.id == sts::CardId::STRIKE_RED ? 1 : 0);
+    int reshuffleStrikeDraws = 0;
+    for (int seed = 0; seed < samples; ++seed) {
+        auto pile = reshuffleBase;
+        sts::Random rng(static_cast<std::uint64_t>(seed + 1));
+        pile.reshuffleSelf(rng);
+        require(pile.knownCount() == 0 && pile.knownBottom() == 0,
+                "reshuffle must dissolve known positions in rollout mode");
+        if (seed == 0) require(!pile.unknownRegionIsSorted(),
+                               "rollout reshuffle should not restore canonical unknown order");
+        if (pile.drawTop(rng).id == sts::CardId::STRIKE_RED) ++reshuffleStrikeDraws;
+    }
+    requireFrequency(reshuffleStrikeDraws, samples, expectedStrikes / 4.0,
+                     "reshuffle must draw uniformly from the full unknown multiset");
+
+    const std::vector<TestCard> destinationCards = {unknownA};
+    const std::vector<TestCard> sourceCards = duplicates;
+    TestPile destinationBase = pileWithUnknown(destinationCards);
+    destinationBase.enableRolloutUnsortedUnknownRegion();
+    TestCard destinationExtra = destinationBase[0];
+    destinationExtra.setUniqueId(-2);
+    destinationBase.add(destinationExtra);
+    TestPile sourceBase = pileWithUnknown(sourceCards);
+    sourceBase.enableRolloutUnsortedUnknownRegion();
+    TestCard sourceExtra = sourceBase[0];
+    sourceExtra.setUniqueId(-2);
+    sourceBase.add(sourceExtra);
+    int absorbedStrikes = 0;
+    for (const auto &card : destinationCards) absorbedStrikes += card.id == sts::CardId::STRIKE_RED;
+    absorbedStrikes += destinationExtra.id == sts::CardId::STRIKE_RED;
+    for (const auto &card : sourceCards) absorbedStrikes += card.id == sts::CardId::STRIKE_RED;
+    absorbedStrikes += sourceExtra.id == sts::CardId::STRIKE_RED;
+    const int absorbedCardCount = static_cast<int>(destinationCards.size() + sourceCards.size() + 2);
+    int absorbedStrikeDraws = 0;
+    for (int seed = 0; seed < samples; ++seed) {
+        auto destination = destinationBase;
+        auto source = sourceBase;
+        sts::Random rng(static_cast<std::uint64_t>(seed + 1));
+        destination.absorb(rng, source);
+        require(source.empty() && source.knownCount() == 0 && source.knownBottom() == 0,
+                "absorb must empty its source pile in rollout mode");
+        if (seed == 0) require(!destination.unknownRegionIsSorted(),
+                               "rollout absorb should not restore canonical unknown order");
+        if (destination.drawTop(rng).id == sts::CardId::STRIKE_RED) ++absorbedStrikeDraws;
+    }
+    requireFrequency(absorbedStrikeDraws, samples,
+                     static_cast<double>(absorbedStrikes) / absorbedCardCount,
+                     "reshuffle absorb must draw uniformly from the combined multiset");
+}
+
+void rolloutPileMutationTests(sts::GameContext &gc) {
+    TestCard lowCost(sts::CardId::STRIKE_RED);
+    lowCost.costForTurn = 1;
+    TestCard highCost(sts::CardId::STRIKE_RED);
+    highCost.costForTurn = 2;
+    auto ordinary = pileWithUnknown({lowCost, highCost});
+    ordinary.mutateAt(0, [](TestCard &card) { card.costForTurn = 3; });
+    require(ordinary.unknownRegionIsSorted(),
+            "ordinary pile mutation must continue restoring canonical order");
+
+    auto mutateOne = pileWithUnknown({lowCost, highCost});
+    mutateOne.enableRolloutUnsortedUnknownRegion();
+    mutateOne.mutateAt(0, [](TestCard &card) { card.costForTurn = 3; });
+    require(!mutateOne.unknownRegionIsSorted() && mutateOne[0].costForTurn == 3,
+            "rollout mutateAt must update card cost without sorting the unknown region");
+
+    auto mutateAll = pileWithUnknown({lowCost, highCost});
+    mutateAll.enableRolloutUnsortedUnknownRegion();
+    mutateAll.mutateAll([](TestCard &card) {
+        card.costForTurn = card.costForTurn == 1 ? 4 : 0;
+    });
+    require(!mutateAll.unknownRegionIsSorted()
+                && mutateAll[0].costForTurn == 4 && mutateAll[1].costForTurn == 0,
+            "rollout mutateAll must update card costs without sorting the unknown region");
+
+    auto state = fixture(gc);
+    state.cards.drawPile.assignInformationState({}, {TestCard(sts::CardId::DEFEND_RED)}, {}, false);
+    state.cards.drawPile.enableRolloutUnsortedUnknownRegion();
+    state.cards.onBuffCorruption();
+    require(state.cards.drawPile.size() == 1
+                && state.cards.drawPile[0].cost == 0
+                && state.cards.drawPile[0].costForTurn == 0,
+            "rollout fast path must preserve card-cost mutations from Corruption");
+}
+
+void rolloutPileTreeIsolation(const sts::BattleContext &original) {
+    Search search(original);
+    const auto rootBefore = *search.root->state;
+    search.runDiagnosticRollout();
+    require(*search.root->state == rootBefore,
+            "diagnostic rollout must leave the retained root state unchanged");
+    require(!search.root->state->cards.drawPile.rolloutUnsortedUnknownRegionEnabled()
+                && !search.root->state->cards.discardPile.rolloutUnsortedUnknownRegionEnabled()
+                && !search.root->state->cards.exhaustPile.rolloutUnsortedUnknownRegionEnabled(),
+            "retained root piles must remain in canonical mode");
+    require(search.rolloutScratch.cards.drawPile.rolloutUnsortedUnknownRegionEnabled()
+                && search.rolloutScratch.cards.discardPile.rolloutUnsortedUnknownRegionEnabled()
+                && search.rolloutScratch.cards.exhaustPile.rolloutUnsortedUnknownRegionEnabled(),
+            "rollout scratch piles must enter the unsorted fast path");
+    search.search(32);
+    for (std::size_t i = 0; i < search.poolUsed; ++i) {
+        const auto *state = search.allNodes[i]->state;
+        if (state == nullptr) continue;
+        require(!state->cards.drawPile.rolloutUnsortedUnknownRegionEnabled()
+                    && !state->cards.discardPile.rolloutUnsortedUnknownRegionEnabled()
+                    && !state->cards.exhaustPile.rolloutUnsortedUnknownRegionEnabled(),
+                "noncanonical rollout scratch must never become a retained tree state");
+        require(state->cards.drawPile.unknownRegionIsSorted()
+                    && state->cards.discardPile.unknownRegionIsSorted()
+                    && state->cards.exhaustPile.unknownRegionIsSorted(),
+                "retained tree piles must remain canonically sorted");
+    }
 }
 
 std::vector<sts::search::Action> rootActions(const sts::BattleContext &bc) {
@@ -1869,6 +2085,9 @@ int main(int argc, char **argv) {
     try {
         sts::GameContext gc{}; // BattleContext keeps a non-owning pointer to this run state.
         const auto bc = fixture(gc);
+        rolloutPileSamplingTests();
+        rolloutPileMutationTests(gc);
+        rolloutPileTreeIsolation(bc);
         Search search(bc);
         historicalQueueIdentityTests(bc);
         if (argc > 1 && std::string(argv[1]) == "--reroot-canary") {

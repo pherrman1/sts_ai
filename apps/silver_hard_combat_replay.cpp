@@ -24,6 +24,20 @@ nlohmann::json macroTaskCounts(const Counts &counts) {
     return result;
 }
 
+void addSearchTelemetry(nlohmann::json &row,
+                        const silver_bridge::SilverSearchTelemetry &telemetry) {
+    row["search_wall_micros"] = telemetry.searchWallMicros;
+    row["rollout_wall_micros"] = telemetry.rolloutWallMicros;
+    row["rollout_calls"] = telemetry.rolloutCalls;
+    row["rollout_action_count"] = telemetry.rolloutActionCount;
+    row["rollout_turn_delta"] = telemetry.rolloutTurnDelta;
+    row["chance_outcomes_sampled"] = telemetry.chanceOutcomesSampled;
+    row["chance_sibling_reuse"] = telemetry.chanceSiblingReuse;
+    row["chance_transpositions"] = telemetry.chanceTranspositions;
+    row["chance_sampled_by_category"] = telemetry.wideningSampled;
+    row["chance_sibling_reuse_by_category"] = telemetry.wideningSiblingReuse;
+}
+
 nlohmann::json replayRow(const nlohmann::json &input, std::int64_t budget,
                          bool collectUidFragmentationDiagnostics,
                          bool collectRerootDiagnostics,
@@ -49,6 +63,7 @@ nlohmann::json replayRow(const nlohmann::json &input, std::int64_t budget,
         config.rhoRacingEnabled = false;
         config.collectUidFragmentationDiagnostics = collectUidFragmentationDiagnostics;
         config.collectDecisionDiagnostics = collectRerootDiagnostics;
+        config.collectRolloutDiagnostics = true;
         config.internalFpuEnabled = internalFpuEnabled;
         config.collectSearchTiming = true;
         config.contractMode = contractMode;
@@ -63,7 +78,7 @@ nlohmann::json replayRow(const nlohmann::json &input, std::int64_t budget,
             row["queue_item_canonical_hits"] = decision.telemetry.queueItemCanonicalHits;
             row["depth_sum"] = decision.telemetry.depthSum;
             row["chance_depth_sum"] = decision.telemetry.chanceDepthSum;
-            row["search_wall_micros"] = decision.telemetry.searchWallMicros;
+            addSearchTelemetry(row, decision.telemetry);
             row["fpu_selection_opportunities"] =
                 decision.telemetry.fpuSelectionOpportunities;
             row["fpu_visited_selected_with_unvisited_remaining"] =
@@ -112,12 +127,11 @@ nlohmann::json replayRow(const nlohmann::json &input, std::int64_t budget,
         }
         row["action_trace_hash"] = result.actionTraceHash;
         row["status"] = result.accepted ? "ok" : result.failureReason;
-        row["rollout_calls"] = result.telemetry.rolloutCalls;
+        addSearchTelemetry(row, result.telemetry);
         row["nodes_created"] = result.telemetry.nodesCreated;
         row["queue_item_canonical_hits"] = result.telemetry.queueItemCanonicalHits;
         row["depth_sum"] = result.telemetry.depthSum;
         row["chance_depth_sum"] = result.telemetry.chanceDepthSum;
-        row["search_wall_micros"] = result.telemetry.searchWallMicros;
         row["fpu_selection_opportunities"] = result.telemetry.fpuSelectionOpportunities;
         row["fpu_visited_selected_with_unvisited_remaining"] =
             result.telemetry.fpuVisitedSelectedWithUnvisitedRemaining;

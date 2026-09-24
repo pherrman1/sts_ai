@@ -6,6 +6,7 @@
 #include "sim/search/ExpertKnowledge.h"
 
 #include <algorithm>
+#include <cassert>
 #include <chrono>
 #include <cstdlib>
 #include <cstring>
@@ -320,7 +321,8 @@ double search::BattleSearcher::runDiagnosticRollout() {
     if (root == nullptr || root->state == nullptr || root->isRandomNode)
         throw std::invalid_argument("diagnostic rollout requires a decision-state root");
     std::vector<Action> diagnosticActionStack;
-    return rolloutToEnd(*root->state, diagnosticActionStack, root, nullptr, 0);
+    BattleContext &scratch = (rolloutScratch = *root->state);
+    return rolloutToEnd(scratch, diagnosticActionStack, root, nullptr, 0);
 }
 
 void search::BattleSearcher::setRoot(const BattleContext &bc) {
@@ -423,6 +425,9 @@ void search::BattleSearcher::growDedup() {
 // Moves `state` into the node only when a new node is created; on a match `state` is left
 // intact, so callers may still read it.
 search::BattleSearcher::Node* search::BattleSearcher::getOrCreateNode(BattleContext &&state) {
+    assert(!state.cards.drawPile.rolloutUnsortedUnknownRegionEnabled());
+    assert(!state.cards.discardPile.rolloutUnsortedUnknownRegionEnabled());
+    assert(!state.cards.exhaustPile.rolloutUnsortedUnknownRegionEnabled());
     const std::size_t hash = search::hashBattleState(state);
     bool relaxedEquivalentSeen = false;
     bool relaxedHandDifference = false;
@@ -1022,6 +1027,9 @@ double search::BattleSearcher::rolloutToEnd(BattleContext &bc, std::vector<Actio
                                              const Node *parent,
                                              const Action *incomingAction,
                                              int depth) {
+    bc.cards.drawPile.enableRolloutUnsortedUnknownRegion();
+    bc.cards.discardPile.enableRolloutUnsortedUnknownRegion();
+    bc.cards.exhaustPile.enableRolloutUnsortedUnknownRegion();
     const int rolloutInputState = static_cast<int>(bc.inputState);
     const auto diagnosticStart = collectRolloutDiagnostics
         ? std::chrono::steady_clock::now() : std::chrono::steady_clock::time_point{};

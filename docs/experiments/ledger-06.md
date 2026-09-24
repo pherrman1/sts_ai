@@ -11449,3 +11449,58 @@ production artifact, or default changed.
 
 Knowledge impact: current potion-representation status and experiment evidence
 updated; qualified encoders and runtime defaults remain unchanged.
+
+## §339 — Silver rollout-cost screen: B faster, fixed-work quality inconclusive (2026-09-24)
+
+- **Question and baseline:** Can rollout hot-path work be reduced while
+  preserving useful fixed-time Silver decisions? The handoff baseline
+  `7b4244ef8af4508466e01a1a6b515c70015e6274` had advanced; the tested current
+  main was `1ed96f2aa564742156cc6593a1fc1915ea4e9033`.
+- **Cohort and setup:** frozen `hard64-dev` first-decision snapshots, SHA-256
+  `ab7c3298754864986c31273a0f1d23967b165fdd79a386261b680b8ad16d0eae`; GCC
+  13.3 Release (`-O3 -flto`), CPU 2, `OMP_NUM_THREADS=1`, and the existing
+  telemetry path. Each fixed-work run attempted 64 roots at 1,000 simulations;
+  59 roots / 59,000 simulations were valid and the same five roots returned
+  `transactional_selection_required` in every arm. All replay runs used
+  `tools/seed_guard.sh`; holdout was untouched.
+- **A — early energy rejection:** exact non-timing output parity held across
+  all valid roots. A averaged 1,401,721 µs summed search wall versus control's
+  1,286,513 µs; the two complete outer CPU samples were 1.035 s versus 1.015 s.
+  There was no speed gain, so A and its focused test were reverted.
+- **B — rollout-only unordered unknown piles:** only copied rollout scratch
+  draw/discard/exhaust piles opt out of unknown-region sorting; retained tree
+  piles remain canonical. Focused tests cover duplicate draw frequencies,
+  known top/bottom, shuffle-in, reshuffle, absorb, cost mutation, and tree
+  isolation. Across four matched repetitions, mean summed search wall fell
+  10.3% (1,274,480 to 1,143,222 µs), median summed search wall fell 5.7%, mean
+  summed rollout wall fell 13.0%, and process user CPU fell 10.9% (1.0275 to
+  0.9150 s). This is a useful throughput signal. RNG mapping changed, and B
+  executed about 0.24% more rollout actions at the same simulation count.
+- **Fixed-work DEV quality:** a fresh current-main 10k reference on the same
+  roots yielded 40/59 action-fingerprint agreements for current-main at 1k and
+  35/59 for B at 1k (eight control-only agreements versus three B-only).
+  Classify the small-cohort point estimate as **inconclusive / no-harm gate not
+  passed**, not a proven broad regression. The equal-runtime test requires a
+  directionally non-worse fixed-work result, so it did not run. The result was
+  not promising enough for a complete-combat DEV screen; no gameplay or
+  holdout was run.
+- **C — incoming-damage reuse:** no cache was implemented. A separate
+  instrumented `-pg` diagnostic estimated `SimpleAgent::getIncomingDamage` at
+  2.6% inclusive time (1,543,022 calls) on the same fixed-work cohort. Given
+  this small share and the broad set of monster/player state dependencies, a
+  cache is not justified.
+- **D — chance saturation:** replay telemetry exposed fresh samples and
+  sibling reuses by `END_TURN`, card-play, and other categories. B recorded
+  15,709 sibling re-executions, mostly card-play actions. Exact support
+  exhaustion was not measured, so the certified avoidable count is zero and
+  15,709 is only an upper bound. No heuristic or chance behavior change was
+  introduced.
+- **Review and checks:** an independent read-only implementation review found
+  no blocking semantic defect and flagged stale sorting comments, which were
+  corrected. Release and Debug optimization-test CTests each passed 1/1; the
+  Debug run exercises the tree-isolation assertions. The complete report and
+  raw outputs are in the [evidence packet](evidence/silver_rollout_cost_20260924/README.md).
+
+Knowledge impact: the proposed scratch-pile boundary and inconclusive quality
+status are recorded in the maintained combat-search and current-research pages;
+no default qualification is claimed.

@@ -1,0 +1,18 @@
+Diagnostic-only GNU gprof output for the B branch.
+
+Build: Debug configuration with -O2 -g -pg -fno-inline, linker -pg.
+Profile binary SHA-256:
+78521634224ce1e934354d9f1c25d1231f3245498e43beb9f4b36f6bdb280a13.
+Workload: 64 frozen hard64-dev roots, 1,000 simulations per valid root,
+CPU 2, OMP_NUM_THREADS=1, seed_guard.sh; 59 valid roots and five expected
+transactional_selection_required rows. This is not a Release timing binary.
+
+Call-graph row:
+  [32] 2.6%  self 0.00 s  total 0.07 s  1,543,022 calls
+       sts_silver::search::SimpleAgent::getIncomingDamage(...)
+
+Profile-wide sampled time: 2.51 s. Related child work included
+Monster::getMoveBaseDamage (2,086,334 calls; 0.04 s self) and
+Monster::calculateDamageToPlayer (2,402,959 calls; 0.02 s total in the call
+graph). These are gprof estimates under instrumentation and must not be
+read as Release throughput evidence.
