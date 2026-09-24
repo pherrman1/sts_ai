@@ -1,9 +1,11 @@
 import copy
 import unittest
+from unittest import mock
 
 import numpy as np
 
 from tools import combat_transition_lizard_minimal as minimal
+from tools import combat_transition_lizard_b1_rescue as b1_rescue
 from tools import combat_transition_lizard_pair_pilot as pilot
 
 
@@ -48,6 +50,31 @@ class MinimalLizardTests(unittest.TestCase):
         pair['activeTail']['transition']['pre']['relics'] = [{'id': bloom, 'data': 0}]
         self.assertEqual(set(minimal.native_boundary_reasons(pair)), {
             'mark_of_bloom_exact_boundary', 'fairy_potion_precedence_exact_boundary'})
+
+    def test_duplicate_comparison_ignores_only_selection_risk_band(self):
+        original = {'pair': {'targetRiskBand': 'p20_35', 'sourceSeed': 1},
+                    'activeTail': {'silverActionTrace': [1, 2]}}
+        replay = copy.deepcopy(original)
+        replay['pair']['targetRiskBand'] = 'B1_LOSS_CONSUMED'
+        self.assertTrue(b1_rescue._same_combat_observation(original, replay))
+        replay['activeTail']['silverActionTrace'].append(3)
+        self.assertFalse(b1_rescue._same_combat_observation(original, replay))
+
+    def test_prospective_support_rechecks_tail_stripped_state_and_predictor(self):
+        state = {
+            'relicBits': [1 << 35],
+            'relics': [{'id': 35, 'data': 1}, {'id': 4, 'data': 0}],
+        }
+        predictor = {'relics': [{'relicId': 35, 'data': 1}, {'relicId': 4, 'data': 0}]}
+        pair = {
+            'activeTail': {'transition': {'pre': state}},
+            'noTail': {'predictorInput': predictor},
+        }
+        expected_state = {'relicBits': [0], 'relics': [{'id': 4, 'data': 0}]}
+        expected_predictor = {'relics': [{'relicId': 4, 'data': 0}]}
+        with mock.patch.object(b1_rescue.composed, 'full_support_reasons', return_value=[]) as check:
+            self.assertEqual(b1_rescue._tail_stripped_support_reasons(pair, object()), [])
+        check.assert_called_once_with(expected_state, expected_predictor, mock.ANY)
 
     def test_source_grouped_folds_keep_repeated_source_together(self):
         folds = minimal.source_group_folds([11, 12, 11, 13, 14, 12, 15, 16], folds=3)

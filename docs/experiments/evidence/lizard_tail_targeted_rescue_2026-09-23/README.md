@@ -297,14 +297,19 @@ Silver action changed in 136/347 (39.2%), showing a substantial policy effect
 within this extension.
 
 The combined comparison de-duplicates by `(sourceSeed, fightIdx)`, keeping the
-original cohort's earlier observation when a later batch repeats that key. All
-35 overlapping observations had different replay results and were therefore
-excluded rather than treated as independent examples. The final analysis has
-475 unique paired fights; 24 native exact-boundary rows were excluded from
-modeling, leaving 451 rows from 124 sources. Five-fold CV and the paired
-bootstrap group by source; there are 1–4 modeled rows per source (median 4).
-`T2` remains fixed as selected in Phase A; it was not retuned or used as an
-input to this outcome comparison.
+original cohort's earlier observation when a later batch repeats that key.
+The 35 overlap pairs are exactly reproducible in their combat observations:
+all no-Tail and active-Tail transition states, outcomes, Tail states, and full
+Silver action traces match. Only `pair.targetRiskBand` differs, because the
+later selector labels rows `B1_LOSS_CONSUMED`; the comparator ignores this
+selection-only metadata. The duplicate rows are still excluded rather than
+treated as independent examples.
+
+The broad descriptive analysis has 475 unique paired fights; after excluding
+24 Fairy/Bloom exact-boundary rows, it contains 451 rows from 124 sources.
+Five-fold CV and the paired bootstrap group by source; there are 1–4 modeled
+rows per source (median 4). `T2` remains fixed as selected in Phase A; it was
+not retuned or used as an input to this outcome comparison.
 
 | Three-class metric | Fixed B1 | Source-grouped q/r | q/r minus B1, source-bootstrap 95% CI |
 | --- | ---: | ---: | ---: |
@@ -324,6 +329,30 @@ rows (observed rate `0.8169`, mean prediction `0.8172`). All five fold fits
 converged. These are development diagnostics; 13 loss cases remain too few for
 qualification, and the score improvement does not establish a stable rescue
 head.
+
+### Prospective runtime-support-domain correction
+
+The broad result above is descriptive. A prospective-domain rerun reapplies
+`composed.full_support_reasons()` to each pair's no-Tail predictor input and
+active-Tail pre-state after removing Lizard Tail from both. It also excludes
+the existing Fairy Potion and Mark of the Bloom native boundaries. This drops
+24 additional unsupported rows from the 451-row broad comparison; the reasons
+are recorded in the analysis JSON (some rows have more than one reason).
+The resulting support-domain cohort has 427 fights from 124 source groups:
+362 `WIN_RETAINED`, 53 `WIN_CONSUMED`, and 12 `LOSS_CONSUMED`.
+
+| Three-class metric, support-domain rows | Fixed B1 | Source-grouped q/r | q/r minus B1, source-bootstrap 95% CI |
+| --- | ---: | ---: | ---: |
+| NLL | 1.9890 | 0.3427 | -1.6463 `[-4.9543, -0.0132]` |
+| Multiclass Brier | 0.2096 | 0.1932 | -0.0164 `[-0.0310, -0.0011]` |
+
+The q/r correction still scores better on the prospective runtime domain in
+this development cohort. The intervals are narrow at their upper ends and
+the cohort contains only 12 supported `LOSS_CONSUMED` outcomes, so the result
+remains promising but data-limited and does not qualify a rescue model.
+The 34 newly observed `WIN_CONSUMED` examples are confirmation data for the
+already frozen T2 treatment; a future T0-versus-T2 scoring check can use them
+without retuning T2.
 
 After excluding all 475 paired fight keys, B1 scored 1,611 remaining
 supported/coherent candidate fights with summed `P(LOSS_CONSUMED)` of only
@@ -350,7 +379,8 @@ qualification, or production support change followed. The production
 - Batch 3 top-32 target selection SHA-256: `6036e7adfae0bfba5ae5597b9b911300da4030c277a4f8200a0c48034bb6a3dd`.
 - Batch 3 next-95 pair JSONL / manifest SHA-256: `095737b22022bb010b0be8fdb9e2a90f8c2b039724f4bec2086ebcb22be29b7b` / `3d923737d0a51c19767c1ec01b17ec14353b5d19183224188a9fcb09c911f63d`.
 - Batch 3 next-95 target selection SHA-256: `2aed6e3c597b5bc8a3d4e8254e3526eab14c0106a0d0ab7c504425ae600508ef`.
-- Combined analysis: `b1-qr-combined-analysis.json`, SHA-256 `4c6fac0a827a2e129dc07806ece8d85feaf6bf7d3c6a1998763a93bf4f49c65c`.
+- Broad descriptive analysis: `b1-qr-combined-analysis.json`, SHA-256 `df32919f47d947f474398adbbb72a38cc424b6d654ca1d8a2890d42948c8234e`.
+- Prospective runtime-support analysis: `b1-qr-runtime-support-analysis.json`, SHA-256 `64c4b4db49f7aaaada8345e8dbb2205b3cfc466d0bcaff6d43471fa958502c7f`.
 - Remaining-pool selection/risk summary: `b1-targets-batch-04.json`, SHA-256 `3892c2f2e993f39651736c96d26896d0b64671bfcde168840a4091a09bd6a7c7`.
 - Every pair manifest binds to the same frozen exact-10k teacher, Silver settings,
   source trajectory, model artifact hashes, and candidate pool SHA recorded above.
@@ -368,3 +398,6 @@ The combined analysis command was:
 ```text
 python3 -m tools.combat_transition_lizard_b1_rescue analyze --manifest docs/experiments/evidence/lizard_tail_targeted_rescue_2026-09-23/paired.jsonl.manifest.json --manifest docs/experiments/evidence/lizard_tail_targeted_rescue_2026-09-23/paired-b1-batch-01.jsonl.manifest.json --manifest docs/experiments/evidence/lizard_tail_targeted_rescue_2026-09-23/paired-b1-batch-02.jsonl.manifest.json --manifest docs/experiments/evidence/lizard_tail_targeted_rescue_2026-09-23/paired-b1-batch-03.jsonl.manifest.json --manifest docs/experiments/evidence/lizard_tail_targeted_rescue_2026-09-23/paired-b1-batch-03-next95.jsonl.manifest.json --output docs/experiments/evidence/lizard_tail_targeted_rescue_2026-09-23/b1-qr-combined-analysis.json
 ```
+
+The same command with `--support-domain` and output path
+`b1-qr-runtime-support-analysis.json` produces the prospective-domain result.

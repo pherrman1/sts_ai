@@ -2,6 +2,8 @@
   "schema": "active_lizard_b1_qr_source_grouped_diagnostic_v1",
   "classification": "DEVELOPMENT_ONLY",
   "t2Treatment": "T2_revive fixed from prior cohort; not retuned",
+  "analysisDomain": "descriptive_after_native_boundaries",
+  "tailStrippedSupportDefinition": "composed.full_support_reasons(pre with LIZARD_TAIL removed, noTail predictor input with LIZARD_TAIL removed, frozen models) == []",
   "inputManifests": [
     {
       "path": "docs/experiments/evidence/lizard_tail_targeted_rescue_2026-09-23/paired.jsonl.manifest.json",
@@ -48,247 +50,284 @@
       "fightIdx": 13,
       "keptManifest": "docs/experiments/evidence/lizard_tail_targeted_rescue_2026-09-23/paired.jsonl.manifest.json",
       "skippedManifest": "docs/experiments/evidence/lizard_tail_targeted_rescue_2026-09-23/paired-b1-batch-01.jsonl.manifest.json",
-      "identicalObservation": false
+      "identicalCombatObservation": true,
+      "selectionRiskBandChanged": true
     },
     {
       "sourceSeed": 4200303,
       "fightIdx": 24,
       "keptManifest": "docs/experiments/evidence/lizard_tail_targeted_rescue_2026-09-23/paired.jsonl.manifest.json",
       "skippedManifest": "docs/experiments/evidence/lizard_tail_targeted_rescue_2026-09-23/paired-b1-batch-01.jsonl.manifest.json",
-      "identicalObservation": false
+      "identicalCombatObservation": true,
+      "selectionRiskBandChanged": true
     },
     {
       "sourceSeed": 4200307,
       "fightIdx": 9,
       "keptManifest": "docs/experiments/evidence/lizard_tail_targeted_rescue_2026-09-23/paired.jsonl.manifest.json",
       "skippedManifest": "docs/experiments/evidence/lizard_tail_targeted_rescue_2026-09-23/paired-b1-batch-01.jsonl.manifest.json",
-      "identicalObservation": false
+      "identicalCombatObservation": true,
+      "selectionRiskBandChanged": true
     },
     {
       "sourceSeed": 4200312,
       "fightIdx": 16,
       "keptManifest": "docs/experiments/evidence/lizard_tail_targeted_rescue_2026-09-23/paired.jsonl.manifest.json",
       "skippedManifest": "docs/experiments/evidence/lizard_tail_targeted_rescue_2026-09-23/paired-b1-batch-01.jsonl.manifest.json",
-      "identicalObservation": false
+      "identicalCombatObservation": true,
+      "selectionRiskBandChanged": true
     },
     {
       "sourceSeed": 4200315,
       "fightIdx": 19,
       "keptManifest": "docs/experiments/evidence/lizard_tail_targeted_rescue_2026-09-23/paired.jsonl.manifest.json",
       "skippedManifest": "docs/experiments/evidence/lizard_tail_targeted_rescue_2026-09-23/paired-b1-batch-01.jsonl.manifest.json",
-      "identicalObservation": false
+      "identicalCombatObservation": true,
+      "selectionRiskBandChanged": true
     },
     {
       "sourceSeed": 4200316,
       "fightIdx": 14,
       "keptManifest": "docs/experiments/evidence/lizard_tail_targeted_rescue_2026-09-23/paired.jsonl.manifest.json",
       "skippedManifest": "docs/experiments/evidence/lizard_tail_targeted_rescue_2026-09-23/paired-b1-batch-01.jsonl.manifest.json",
-      "identicalObservation": false
+      "identicalCombatObservation": true,
+      "selectionRiskBandChanged": true
     },
     {
       "sourceSeed": 4200319,
       "fightIdx": 4,
       "keptManifest": "docs/experiments/evidence/lizard_tail_targeted_rescue_2026-09-23/paired.jsonl.manifest.json",
       "skippedManifest": "docs/experiments/evidence/lizard_tail_targeted_rescue_2026-09-23/paired-b1-batch-01.jsonl.manifest.json",
-      "identicalObservation": false
+      "identicalCombatObservation": true,
+      "selectionRiskBandChanged": true
     },
     {
       "sourceSeed": 4200320,
       "fightIdx": 19,
       "keptManifest": "docs/experiments/evidence/lizard_tail_targeted_rescue_2026-09-23/paired.jsonl.manifest.json",
       "skippedManifest": "docs/experiments/evidence/lizard_tail_targeted_rescue_2026-09-23/paired-b1-batch-01.jsonl.manifest.json",
-      "identicalObservation": false
+      "identicalCombatObservation": true,
+      "selectionRiskBandChanged": true
     },
     {
       "sourceSeed": 4200321,
       "fightIdx": 11,
       "keptManifest": "docs/experiments/evidence/lizard_tail_targeted_rescue_2026-09-23/paired.jsonl.manifest.json",
       "skippedManifest": "docs/experiments/evidence/lizard_tail_targeted_rescue_2026-09-23/paired-b1-batch-01.jsonl.manifest.json",
-      "identicalObservation": false
+      "identicalCombatObservation": true,
+      "selectionRiskBandChanged": true
     },
     {
       "sourceSeed": 4200328,
       "fightIdx": 18,
       "keptManifest": "docs/experiments/evidence/lizard_tail_targeted_rescue_2026-09-23/paired.jsonl.manifest.json",
       "skippedManifest": "docs/experiments/evidence/lizard_tail_targeted_rescue_2026-09-23/paired-b1-batch-01.jsonl.manifest.json",
-      "identicalObservation": false
+      "identicalCombatObservation": true,
+      "selectionRiskBandChanged": true
     },
     {
       "sourceSeed": 4200331,
       "fightIdx": 22,
       "keptManifest": "docs/experiments/evidence/lizard_tail_targeted_rescue_2026-09-23/paired.jsonl.manifest.json",
       "skippedManifest": "docs/experiments/evidence/lizard_tail_targeted_rescue_2026-09-23/paired-b1-batch-01.jsonl.manifest.json",
-      "identicalObservation": false
+      "identicalCombatObservation": true,
+      "selectionRiskBandChanged": true
     },
     {
       "sourceSeed": 4200332,
       "fightIdx": 16,
       "keptManifest": "docs/experiments/evidence/lizard_tail_targeted_rescue_2026-09-23/paired.jsonl.manifest.json",
       "skippedManifest": "docs/experiments/evidence/lizard_tail_targeted_rescue_2026-09-23/paired-b1-batch-01.jsonl.manifest.json",
-      "identicalObservation": false
+      "identicalCombatObservation": true,
+      "selectionRiskBandChanged": true
     },
     {
       "sourceSeed": 4200334,
       "fightIdx": 18,
       "keptManifest": "docs/experiments/evidence/lizard_tail_targeted_rescue_2026-09-23/paired.jsonl.manifest.json",
       "skippedManifest": "docs/experiments/evidence/lizard_tail_targeted_rescue_2026-09-23/paired-b1-batch-01.jsonl.manifest.json",
-      "identicalObservation": false
+      "identicalCombatObservation": true,
+      "selectionRiskBandChanged": true
     },
     {
       "sourceSeed": 4200335,
       "fightIdx": 18,
       "keptManifest": "docs/experiments/evidence/lizard_tail_targeted_rescue_2026-09-23/paired.jsonl.manifest.json",
       "skippedManifest": "docs/experiments/evidence/lizard_tail_targeted_rescue_2026-09-23/paired-b1-batch-01.jsonl.manifest.json",
-      "identicalObservation": false
+      "identicalCombatObservation": true,
+      "selectionRiskBandChanged": true
     },
     {
       "sourceSeed": 4200341,
       "fightIdx": 5,
       "keptManifest": "docs/experiments/evidence/lizard_tail_targeted_rescue_2026-09-23/paired.jsonl.manifest.json",
       "skippedManifest": "docs/experiments/evidence/lizard_tail_targeted_rescue_2026-09-23/paired-b1-batch-01.jsonl.manifest.json",
-      "identicalObservation": false
+      "identicalCombatObservation": true,
+      "selectionRiskBandChanged": true
     },
     {
       "sourceSeed": 4200343,
       "fightIdx": 18,
       "keptManifest": "docs/experiments/evidence/lizard_tail_targeted_rescue_2026-09-23/paired.jsonl.manifest.json",
       "skippedManifest": "docs/experiments/evidence/lizard_tail_targeted_rescue_2026-09-23/paired-b1-batch-01.jsonl.manifest.json",
-      "identicalObservation": false
+      "identicalCombatObservation": true,
+      "selectionRiskBandChanged": true
     },
     {
       "sourceSeed": 4200344,
       "fightIdx": 15,
       "keptManifest": "docs/experiments/evidence/lizard_tail_targeted_rescue_2026-09-23/paired.jsonl.manifest.json",
       "skippedManifest": "docs/experiments/evidence/lizard_tail_targeted_rescue_2026-09-23/paired-b1-batch-01.jsonl.manifest.json",
-      "identicalObservation": false
+      "identicalCombatObservation": true,
+      "selectionRiskBandChanged": true
     },
     {
       "sourceSeed": 4200353,
       "fightIdx": 7,
       "keptManifest": "docs/experiments/evidence/lizard_tail_targeted_rescue_2026-09-23/paired.jsonl.manifest.json",
       "skippedManifest": "docs/experiments/evidence/lizard_tail_targeted_rescue_2026-09-23/paired-b1-batch-01.jsonl.manifest.json",
-      "identicalObservation": false
+      "identicalCombatObservation": true,
+      "selectionRiskBandChanged": true
     },
     {
       "sourceSeed": 4200354,
       "fightIdx": 15,
       "keptManifest": "docs/experiments/evidence/lizard_tail_targeted_rescue_2026-09-23/paired.jsonl.manifest.json",
       "skippedManifest": "docs/experiments/evidence/lizard_tail_targeted_rescue_2026-09-23/paired-b1-batch-01.jsonl.manifest.json",
-      "identicalObservation": false
+      "identicalCombatObservation": true,
+      "selectionRiskBandChanged": true
     },
     {
       "sourceSeed": 4200355,
       "fightIdx": 26,
       "keptManifest": "docs/experiments/evidence/lizard_tail_targeted_rescue_2026-09-23/paired.jsonl.manifest.json",
       "skippedManifest": "docs/experiments/evidence/lizard_tail_targeted_rescue_2026-09-23/paired-b1-batch-01.jsonl.manifest.json",
-      "identicalObservation": false
+      "identicalCombatObservation": true,
+      "selectionRiskBandChanged": true
     },
     {
       "sourceSeed": 4200360,
       "fightIdx": 25,
       "keptManifest": "docs/experiments/evidence/lizard_tail_targeted_rescue_2026-09-23/paired.jsonl.manifest.json",
       "skippedManifest": "docs/experiments/evidence/lizard_tail_targeted_rescue_2026-09-23/paired-b1-batch-01.jsonl.manifest.json",
-      "identicalObservation": false
+      "identicalCombatObservation": true,
+      "selectionRiskBandChanged": true
     },
     {
       "sourceSeed": 4200367,
       "fightIdx": 8,
       "keptManifest": "docs/experiments/evidence/lizard_tail_targeted_rescue_2026-09-23/paired.jsonl.manifest.json",
       "skippedManifest": "docs/experiments/evidence/lizard_tail_targeted_rescue_2026-09-23/paired-b1-batch-01.jsonl.manifest.json",
-      "identicalObservation": false
+      "identicalCombatObservation": true,
+      "selectionRiskBandChanged": true
     },
     {
       "sourceSeed": 4200372,
       "fightIdx": 21,
       "keptManifest": "docs/experiments/evidence/lizard_tail_targeted_rescue_2026-09-23/paired.jsonl.manifest.json",
       "skippedManifest": "docs/experiments/evidence/lizard_tail_targeted_rescue_2026-09-23/paired-b1-batch-01.jsonl.manifest.json",
-      "identicalObservation": false
+      "identicalCombatObservation": true,
+      "selectionRiskBandChanged": true
     },
     {
       "sourceSeed": 4200374,
       "fightIdx": 26,
       "keptManifest": "docs/experiments/evidence/lizard_tail_targeted_rescue_2026-09-23/paired.jsonl.manifest.json",
       "skippedManifest": "docs/experiments/evidence/lizard_tail_targeted_rescue_2026-09-23/paired-b1-batch-01.jsonl.manifest.json",
-      "identicalObservation": false
+      "identicalCombatObservation": true,
+      "selectionRiskBandChanged": true
     },
     {
       "sourceSeed": 4200375,
       "fightIdx": 16,
       "keptManifest": "docs/experiments/evidence/lizard_tail_targeted_rescue_2026-09-23/paired.jsonl.manifest.json",
       "skippedManifest": "docs/experiments/evidence/lizard_tail_targeted_rescue_2026-09-23/paired-b1-batch-01.jsonl.manifest.json",
-      "identicalObservation": false
+      "identicalCombatObservation": true,
+      "selectionRiskBandChanged": true
     },
     {
       "sourceSeed": 4200382,
       "fightIdx": 28,
       "keptManifest": "docs/experiments/evidence/lizard_tail_targeted_rescue_2026-09-23/paired.jsonl.manifest.json",
       "skippedManifest": "docs/experiments/evidence/lizard_tail_targeted_rescue_2026-09-23/paired-b1-batch-01.jsonl.manifest.json",
-      "identicalObservation": false
+      "identicalCombatObservation": true,
+      "selectionRiskBandChanged": true
     },
     {
       "sourceSeed": 4200383,
       "fightIdx": 24,
       "keptManifest": "docs/experiments/evidence/lizard_tail_targeted_rescue_2026-09-23/paired.jsonl.manifest.json",
       "skippedManifest": "docs/experiments/evidence/lizard_tail_targeted_rescue_2026-09-23/paired-b1-batch-01.jsonl.manifest.json",
-      "identicalObservation": false
+      "identicalCombatObservation": true,
+      "selectionRiskBandChanged": true
     },
     {
       "sourceSeed": 4200393,
       "fightIdx": 11,
       "keptManifest": "docs/experiments/evidence/lizard_tail_targeted_rescue_2026-09-23/paired.jsonl.manifest.json",
       "skippedManifest": "docs/experiments/evidence/lizard_tail_targeted_rescue_2026-09-23/paired-b1-batch-01.jsonl.manifest.json",
-      "identicalObservation": false
+      "identicalCombatObservation": true,
+      "selectionRiskBandChanged": true
     },
     {
       "sourceSeed": 4200397,
       "fightIdx": 23,
       "keptManifest": "docs/experiments/evidence/lizard_tail_targeted_rescue_2026-09-23/paired.jsonl.manifest.json",
       "skippedManifest": "docs/experiments/evidence/lizard_tail_targeted_rescue_2026-09-23/paired-b1-batch-01.jsonl.manifest.json",
-      "identicalObservation": false
+      "identicalCombatObservation": true,
+      "selectionRiskBandChanged": true
     },
     {
       "sourceSeed": 4200404,
       "fightIdx": 10,
       "keptManifest": "docs/experiments/evidence/lizard_tail_targeted_rescue_2026-09-23/paired.jsonl.manifest.json",
       "skippedManifest": "docs/experiments/evidence/lizard_tail_targeted_rescue_2026-09-23/paired-b1-batch-01.jsonl.manifest.json",
-      "identicalObservation": false
+      "identicalCombatObservation": true,
+      "selectionRiskBandChanged": true
     },
     {
       "sourceSeed": 4200408,
       "fightIdx": 15,
       "keptManifest": "docs/experiments/evidence/lizard_tail_targeted_rescue_2026-09-23/paired.jsonl.manifest.json",
       "skippedManifest": "docs/experiments/evidence/lizard_tail_targeted_rescue_2026-09-23/paired-b1-batch-01.jsonl.manifest.json",
-      "identicalObservation": false
+      "identicalCombatObservation": true,
+      "selectionRiskBandChanged": true
     },
     {
       "sourceSeed": 4200417,
       "fightIdx": 10,
       "keptManifest": "docs/experiments/evidence/lizard_tail_targeted_rescue_2026-09-23/paired.jsonl.manifest.json",
       "skippedManifest": "docs/experiments/evidence/lizard_tail_targeted_rescue_2026-09-23/paired-b1-batch-01.jsonl.manifest.json",
-      "identicalObservation": false
+      "identicalCombatObservation": true,
+      "selectionRiskBandChanged": true
     },
     {
       "sourceSeed": 4200421,
       "fightIdx": 16,
       "keptManifest": "docs/experiments/evidence/lizard_tail_targeted_rescue_2026-09-23/paired.jsonl.manifest.json",
       "skippedManifest": "docs/experiments/evidence/lizard_tail_targeted_rescue_2026-09-23/paired-b1-batch-01.jsonl.manifest.json",
-      "identicalObservation": false
+      "identicalCombatObservation": true,
+      "selectionRiskBandChanged": true
     },
     {
       "sourceSeed": 4200422,
       "fightIdx": 15,
       "keptManifest": "docs/experiments/evidence/lizard_tail_targeted_rescue_2026-09-23/paired.jsonl.manifest.json",
       "skippedManifest": "docs/experiments/evidence/lizard_tail_targeted_rescue_2026-09-23/paired-b1-batch-01.jsonl.manifest.json",
-      "identicalObservation": false
+      "identicalCombatObservation": true,
+      "selectionRiskBandChanged": true
     },
     {
       "sourceSeed": 4200423,
       "fightIdx": 21,
       "keptManifest": "docs/experiments/evidence/lizard_tail_targeted_rescue_2026-09-23/paired.jsonl.manifest.json",
       "skippedManifest": "docs/experiments/evidence/lizard_tail_targeted_rescue_2026-09-23/paired-b1-batch-01.jsonl.manifest.json",
-      "identicalObservation": false
+      "identicalCombatObservation": true,
+      "selectionRiskBandChanged": true
     }
   ],
+  "duplicateObservationsIdenticalCombat": 35,
+  "duplicateObservationsWithChangedSelectionRiskBand": 35,
   "distinctModeledSources": 124,
   "rowsPerSource": {
     "min": 1,
@@ -301,6 +340,21 @@
     "LOSS_CONSUMED": 13
   },
   "excludedNativeExactBoundaryPairs": 24,
+  "nativeExactBoundaryReasons": {
+    "fairy_potion_precedence_exact_boundary": 24
+  },
+  "excludedFullSupportPairs": 24,
+  "fullSupportExclusionReasons": {
+    "entropic_brew": 1,
+    "gold_mutating_card": 3,
+    "gold_mutating_encounter": 1,
+    "gold_mutating_potion": 6,
+    "gold_mutating_relic": 2,
+    "potion_not_certified": 1,
+    "pre_stolen_gold_nonzero": 4,
+    "ritual_dagger": 6,
+    "writhing_mass": 1
+  },
   "folding": "5-fold source-grouped; every fight from one source stays in one fold",
   "b1VsQr": {
     "b1": {

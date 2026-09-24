@@ -808,17 +808,28 @@ and [ledger §341](../../experiments/ledger-06.md).
 
 The fixed-B1 candidate-pool extension reused 475 unique paired fights from the
 same 2,700-row pool after dropping 35 repeated source/fight keys, with repeated
-sources kept together for five-fold CV and source bootstrap. There were 13
-`LOSS_CONSUMED` examples total (eight new), short of the 20-additional target.
-On 451 modeled rows from 124 sources, the fixed q/r correction scored NLL
-`0.3544` / Brier `0.1994` against B1 `1.9122` / `0.2158`; source-bootstrap
-intervals favored q/r on both scores. The remaining 1,611 supported/coherent
-candidate rows held only `1.4045` summed B1-predicted loss mass, so collection
-stopped without generating new trajectories. This is a development result,
-not qualification: the rare loss class remains small, and the production
-`active_unqualified_lizard` guard is unchanged. See the [B1-ranked extension
+sources kept together for five-fold CV and source bootstrap. The 35 overlapping
+replays are exact combat-observation duplicates; only their `targetRiskBand`
+selection metadata differs. There are 13 `LOSS_CONSUMED` examples total (eight
+new), short of the 20-additional target.
+
+The broad, post-boundary descriptive comparison covers 451 rows from 124
+sources and scores q/r NLL `0.3544` / Brier `0.1994` against B1 `1.9122` /
+`0.2158`. On the prospective runtime domain—`full_support_reasons()` after
+removing Lizard Tail from both pre-state and predictor input, plus Fairy/Bloom
+exact-boundary exclusions—24 additional unsupported rows are excluded. The
+remaining 427 rows from 124 sources contain 12 `LOSS_CONSUMED` examples; q/r
+scores NLL `0.3427` / Brier `0.1932` against B1 `1.9890` / `0.2096`, with
+source-bootstrap intervals favoring q/r. The 1,611 remaining supported and
+coherent candidate rows held only `1.4045` summed fixed-B1 loss mass, so no more
+trajectories were generated. The 34 new `WIN_CONSUMED` observations remain
+confirmation data for frozen T2; a future T0-vs-T2 analysis can score them
+without retuning. This remains promising but data-limited evidence, not
+qualification, and the production `active_unqualified_lizard` guard is
+unchanged. See the [B1-ranked extension
 packet](../../experiments/evidence/lizard_tail_targeted_rescue_2026-09-23/README.md#b1-ranked-candidate-pool-extension),
-[analysis JSON](../../experiments/evidence/lizard_tail_targeted_rescue_2026-09-23/b1-qr-combined-analysis.json),
+[prospective-domain analysis](../../experiments/evidence/lizard_tail_targeted_rescue_2026-09-23/b1-qr-runtime-support-analysis.json),
+[broad analysis](../../experiments/evidence/lizard_tail_targeted_rescue_2026-09-23/b1-qr-combined-analysis.json),
 and [ledger §342](../../experiments/ledger-06.md).
 
 The [frozen composed qualification protocol](../../experiments/evidence/composed_transition_2026-09-14.md)

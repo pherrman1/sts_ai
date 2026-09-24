@@ -11532,13 +11532,24 @@ loss count from five to 13, below the prior target of 20 additional examples.
 First Silver action changed in 136/347 new pairs.
 
 The combined analysis contains 475 unique paired fights, 451 modeled rows from
-124 sources after 24 native exact-boundary exclusions, and 1–4 rows/source
-(median 4). Five-fold q/r CV and source-bootstrap resampling kept all fights
-from each source together. With T2 fixed and not retuned, q/r scored three-class
-NLL `0.3544` / Brier `0.1994`, versus B1 `1.9122` / `0.2158`; q/r minus B1
-source-bootstrap intervals were `[-4.6800,-0.0090]` and `[-0.0303,-0.0024]`.
-These development scores favor the small correction on this targeted cohort,
-but 13 losses do not qualify its rare rescue class.
+124 sources after 24 native exact-boundary exclusions. A follow-up prospective
+runtime-domain analysis additionally reapplied `full_support_reasons()` to the
+Tail-stripped state and predictor, excluding 24 unsupported rows and leaving
+427 rows from the same 124 sources (362 `WIN_RETAINED`, 53 `WIN_CONSUMED`, 12
+`LOSS_CONSUMED`). Five-fold q/r CV and source-bootstrap resampling kept all
+fights from each source together. With T2 fixed and not retuned, the
+support-domain q/r scored NLL `0.3427` / Brier `0.1932`, versus B1 `1.9890` /
+`0.2096`; q/r minus B1 source-bootstrap intervals were `[-4.9543,-0.0132]`
+and `[-0.0310,-0.0011]`. The broader descriptive analysis remains in the
+packet: its q/r scores are NLL `0.3544` / Brier `0.1994` versus B1 `1.9122` /
+`0.2158`. The prospective-domain result remains promising but data-limited;
+12 supported losses do not qualify its rare rescue class.
+
+The 35 overlapping source/fight rows are exact combat-observation duplicates:
+both arms' transition states, outcomes, Tail state, and Silver traces match.
+Only the selector's `targetRiskBand` differs. The comparator now ignores that
+metadata and records 35/35 as matching; the original cohort observation is
+still retained.
 
 The 1,611 supported, coherent, unpaired candidates had summed fixed-B1 loss
 mass `1.4045` (mean `0.000872`), below the 12 further cases needed to reach the
@@ -11551,6 +11562,7 @@ training, export, runtime integration, or support expansion followed;
 `active_unqualified_lizard` remains fail-closed. See the [extension evidence
 packet](evidence/lizard_tail_targeted_rescue_2026-09-23/README.md#b1-ranked-candidate-pool-extension)
 and [combined B1/q/r JSON](evidence/lizard_tail_targeted_rescue_2026-09-23/b1-qr-combined-analysis.json).
+The support-domain rerun is [recorded separately](evidence/lizard_tail_targeted_rescue_2026-09-23/b1-qr-runtime-support-analysis.json).
 
 **Knowledge impact:** current research status and the experiment evidence now
 record the targeted-pool stop and source-grouped comparison; runtime support

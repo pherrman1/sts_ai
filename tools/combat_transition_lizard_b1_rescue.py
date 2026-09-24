@@ -145,7 +145,28 @@ def _source_group_bootstrap(baseline: np.ndarray, candidate: np.ndarray,
     return out
 
 
-def analyze(manifest_paths: list[Path], output_path: Path) -> dict:
+def _tail_stripped_support_reasons(pair: dict, models) -> list[str]:
+    """Apply ordinary CTM support to the exact pre-state with Tail removed."""
+    pre = pair['activeTail']['transition']['pre']
+    predictor = pair['noTail']['predictorInput']
+    return composed.full_support_reasons(
+        pilot._strip_lizard(pre), pilot._strip_lizard_input(predictor), models)
+
+
+def _same_combat_observation(left: dict, right: dict) -> bool:
+    """Compare replay content while ignoring target-selection risk metadata."""
+    def observation(pair: dict) -> dict:
+        value = dict(pair)
+        pair_metadata = dict(pair.get('pair', {}))
+        pair_metadata.pop('targetRiskBand', None)
+        value['pair'] = pair_metadata
+        return value
+
+    return observation(left) == observation(right)
+
+
+def analyze(manifest_paths: list[Path], output_path: Path, *,
+            support_domain: bool = False) -> dict:
     pairs = []
     manifests = []
     seen_fights = {}
@@ -160,7 +181,9 @@ def analyze(manifest_paths: list[Path], output_path: Path) -> dict:
                 duplicate_fights.append({
                     'sourceSeed': key[0], 'fightIdx': key[1],
                     'keptManifest': str(prior_path), 'skippedManifest': str(path),
-                    'identicalObservation': prior_pair == pair,
+                    'identicalCombatObservation': _same_combat_observation(prior_pair, pair),
+                    'selectionRiskBandChanged': prior_pair.get('pair', {}).get('targetRiskBand')
+                    != pair.get('pair', {}).get('targetRiskBand'),
                 })
                 continue
             seen_fights[key] = (pair, path)
@@ -171,10 +194,25 @@ def analyze(manifest_paths: list[Path], output_path: Path) -> dict:
                           'duplicatePairsDropped': len(rows) - included})
     if len({m['baselineGitSha'] for m in [json.loads(p.read_text()) for p in manifest_paths]}) != 1:
         raise ValueError('paired cohorts have differing baseline SHAs')
-    eligible = [p for p in pairs if not minimal.native_boundary_reasons(p)]
     import torch
     torch.set_num_threads(4)
     models = composed.FrozenModels('cuda' if torch.cuda.is_available() else 'cpu')
+    native_eligible = []
+    support_eligible = []
+    boundary_reasons = collections.Counter()
+    support_reasons = collections.Counter()
+    for pair in pairs:
+        reasons = minimal.native_boundary_reasons(pair)
+        if reasons:
+            boundary_reasons.update(reasons)
+            continue
+        native_eligible.append(pair)
+        reasons = _tail_stripped_support_reasons(pair, models)
+        if reasons:
+            support_reasons.update(reasons)
+        else:
+            support_eligible.append(pair)
+    eligible = support_eligible if support_domain else native_eligible
     records = minimal._derive_features(eligible, models)
     cv = minimal._factorized_cv(records)
     labels = np.asarray([r['label'] for r in records], dtype=np.int64)
@@ -195,13 +233,22 @@ def analyze(manifest_paths: list[Path], output_path: Path) -> dict:
     result = {
         'schema': 'active_lizard_b1_qr_source_grouped_diagnostic_v1',
         'classification': 'DEVELOPMENT_ONLY', 't2Treatment': 'T2_revive fixed from prior cohort; not retuned',
+        'analysisDomain': ('prospective_runtime_support_domain' if support_domain
+                           else 'descriptive_after_native_boundaries'),
+        'tailStrippedSupportDefinition': 'composed.full_support_reasons(pre with LIZARD_TAIL removed, noTail predictor input with LIZARD_TAIL removed, frozen models) == []',
         'inputManifests': manifests, 'pairs': len(pairs), 'modeledPairs': len(eligible),
         'duplicateFightKeysDropped': len(duplicate_fights),
         'duplicateFightKeyDetails': duplicate_fights,
+        'duplicateObservationsIdenticalCombat': sum(x['identicalCombatObservation'] for x in duplicate_fights),
+        'duplicateObservationsWithChangedSelectionRiskBand': sum(x['selectionRiskBandChanged'] for x in duplicate_fights),
         'distinctModeledSources': len(per_source), 'rowsPerSource': {
             'min': min(per_source.values()), 'median': float(np.median(list(per_source.values()))),
             'max': max(per_source.values())},
-        'classCounts': dict(counts), 'excludedNativeExactBoundaryPairs': len(pairs) - len(eligible),
+        'classCounts': dict(counts),
+        'excludedNativeExactBoundaryPairs': len(pairs) - len(native_eligible),
+        'nativeExactBoundaryReasons': dict(sorted(boundary_reasons.items())),
+        'excludedFullSupportPairs': len(native_eligible) - len(support_eligible),
+        'fullSupportExclusionReasons': dict(sorted(support_reasons.items())),
         'folding': '5-fold source-grouped; every fight from one source stays in one fold',
         'b1VsQr': {'b1': cv['mechanicalReserve']['classMetricsOnCoherentRows'],
                    'qr': minimal._prob_metrics(correction[coherent], labels[coherent]),
@@ -229,13 +276,15 @@ def main() -> None:
     analyze_p = sub.add_parser('analyze')
     analyze_p.add_argument('--manifest', type=Path, action='append', required=True)
     analyze_p.add_argument('--output', type=Path, required=True)
+    analyze_p.add_argument('--support-domain', action='store_true',
+                           help='fit and score only Tail-stripped CTM full-support rows')
     args = parser.parse_args()
     if args.command == 'select':
         result = score_candidates(args.manifest, args.output, batch=args.batch,
                                   prior_selections=args.prior_selection,
                                   target_count=args.target_count)
     else:
-        result = analyze(args.manifest, args.output)
+        result = analyze(args.manifest, args.output, support_domain=args.support_domain)
     print(json.dumps({k: v for k, v in result.items() if k != 'targets'}, indent=2))
 
 
