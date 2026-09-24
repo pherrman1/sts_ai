@@ -11623,11 +11623,16 @@ default changed.
   44.4 us. Encoder calls were 4 for standard/fallback and 3 for fast. Fixture
   fallback share is 18/31 and cannot estimate OOC frequency or whole-search
   speed. This is a fixed-fixture timing smoke only.
-- **Implementation checks:** Release `one_combat` and probe targets built;
-  focused adapter/runtime-loader CTest passed 2/2; Python compilation and
-  `git diff --check` passed. Independent implementation review found no
-  remaining design defect after fallback source/cohort identity validation.
-  Full CI was not run.
+- **Implementation checks:** The initial review confirmed fallback metadata
+  identity but did not bind the standard artifact bytes. Follow-up review found
+  the gap; source commit `9a1335a243e08ad57c59a36c95b48778fdba8b76` pins the
+  actual standard artifact SHA256 to
+  `e9a18951710fdfe9e1a81a2703090a41f039067c670a1d8a0393b5e7e8e0ddfd` and
+  adds a matching-metadata byte-tamper rejection check. After rebasing onto
+  `bb2379e844464f9bff35a6ca61e1eeaa8dbb0090`, the six runtime-linked Release
+  targets built, focused adapter/runtime-loader CTest passed 2/2, Python/native
+  parity and the hybrid mechanism probe passed again, and fixed-input timing was
+  rerun. Full GitHub Actions CI was not yet available.
 - **Paired OOC screen:** After review, the implementation was frozen at
   `9ce11fdbe50f32b4b2646dd8a0803c6dc0c3f351`. Standard and hybrid both ran
   seeds `980000..980063` with 10,000 combat simulations, 2,048 OOC MCTS
@@ -11650,11 +11655,12 @@ default changed.
   was not separately recorded. Arms made different work counts, so total time
   is a runtime signal, not a matched-work causal estimate.
 - **Decision:** The mechanism and runtime questions look promising: ordinary
-  fixed-input preparations are substantially faster, Brew is rare in this
-  OOC cohort, and the screen shows no conspicuous win-rate regression. The
-  paired gameplay estimate remains too imprecise to conclude quality
-  equivalence; a separate larger confirmation is warranted before any default
-  promotion. Do not use this bounded result as offline CTM qualification.
+  fixed-input preparations are substantially faster and Brew is rare in this
+  OOC cohort. The observed paired win-rate difference is small, but the
+  interval still includes a sizable regression; the screen is inconclusive and
+  does not establish quality equivalence. A separate larger confirmation is
+  warranted before any default promotion. Do not use this bounded result as
+  offline CTM qualification.
 - **Checks/evidence:** Release targets built; focused adapter/runtime-loader
   CTest passed 2/2; Python compilation and `git diff --check` passed. Full CI
   was not run. See the

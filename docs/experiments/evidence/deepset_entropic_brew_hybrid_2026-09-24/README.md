@@ -71,9 +71,11 @@ while Brew preparations pay approximately standard cost.
   2/2 passed.
 - Exporter and parity verifier Python compilation passed; `git diff --check`
   passed.
-- Independent implementation review found no remaining design defect after
-  requiring V2, non-experimental current-standard fallback metadata and exact
-  source/cohort identities.
+- The initial implementation review confirmed fallback metadata identity but
+  did not bind the actual standard artifact bytes. Follow-up review identified
+  that gap. The rebased implementation now requires the actual fallback file
+  SHA256 to equal the standard artifact used by the experiment:
+  `e9a18951710fdfe9e1a81a2703090a41f039067c670a1d8a0393b5e7e8e0ddfd`.
 - After review, source was frozen at commit
   `9ce11fdbe50f32b4b2646dd8a0803c6dc0c3f351`. Both arms then ran the canonical
   paired seeds `980000..980063` with 10,000 combat simulations, 2,048 OOC MCTS
@@ -106,6 +108,38 @@ while Brew preparations pay approximately standard cost.
   Python compilation and `git diff --check` passed. Full repository CI was not
   run. No live-game test or default promotion was performed. A follow-up
   confirmation cohort should be considered separately before any promotion.
+
+## Rebased-source verification
+
+The task branch was rebased onto the then-current `origin/main` commit
+`bb2379e844464f9bff35a6ca61e1eeaa8dbb0090` (which had advanced beyond the
+previously reported `def8ffe75ca48cdc6d3b256a7e93b503ff82a40c`). The SHA guard
+and focused checks below are from source commit
+`9a1335a243e08ad57c59a36c95b48778fdba8b76` (`Pin exact CTM Brew fallback
+artifact identity`). These checks do not replace or relabel the 64-seed
+experiment above, whose executable remains frozen at
+`9ce11fdbe50f32b4b2646dd8a0803c6dc0c3f351`.
+
+- Release build passed for `one_combat`, `combat_transition_runtime_probe`,
+  `one_combat_advisor`, `live_ooc_parity_test`, `test_live_ooc_policy`, and
+  `live_ctm_importer_test` with OpenSSL 3.0.13.
+- Focused CTest `ooc_mcts_adapter|combat_transition_runtime_loader`: 2/2
+  passed. The loader check accepted the exact pinned standard fallback and
+  rejected a one-byte-modified copy whose metadata was unchanged.
+- Potion specialist Python/native parity passed again on the same 31 fixtures;
+  maximum encoder/probability errors were `7.75e-7`/`4.77e-7`, with zero legal
+  mask mismatches.
+- Hybrid mechanism probe passed all 31 fixture routes and identities: 18 Brew
+  fallback rows and 13 ordinary fast rows; complete RAW state and RNG identity
+  were preserved.
+- Fixed-fixture Release timing on the same 10 non-Brew rows: standard median
+  preparation `3,977 us`, fast `520 us` (7.65x), hybrid fast `556 us`. On the
+  18 Brew rows, standard preparation was `4,587 us` and hybrid fallback
+  `4,470 us`. These are fixed-input measurements; timing variation from the
+  earlier run does not change the paired seed evidence or its interpretation.
+- Raw rebased parity, mechanism, and timing outputs are under `rebased-source/`.
+  Full GitHub Actions CI was not yet available when these local checks were
+  recorded.
 
 Raw machine-readable outputs are `parity.json`, `mechanism.jsonl`,
 `mechanism-summary.json`, `fixed-fixture-benchmark-release.json`,
