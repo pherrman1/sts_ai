@@ -705,6 +705,10 @@ add_test(NAME combat_predictor_input_contract
     COMMAND python3 ${CMAKE_SOURCE_DIR}/tools/test_combat_predictor_input_contract.py -q)
 add_test(NAME combat_transition_contract
     COMMAND python3 ${CMAKE_SOURCE_DIR}/tools/test_combat_transition_contract.py)
+add_test(NAME strategic_tok_state_cache_order_selftest
+    COMMAND python3 -m unittest tools.test_strategic_tok_state_cache)
+set_tests_properties(strategic_tok_state_cache_order_selftest PROPERTIES
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
 add_test(NAME combat_transition_model_experiment_selftest
     COMMAND python3 ${CMAKE_SOURCE_DIR}/tools/test_combat_transition_model_experiment.py)
 add_test(NAME combat_transition_attention_hpo_selftest
