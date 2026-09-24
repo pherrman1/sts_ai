@@ -337,8 +337,6 @@ add_executable(one_combat apps/one_combat.cpp apps/combat_model_diagnostics.cpp
     apps/one_combat/ooc_v4_encoding.cpp
     apps/one_combat/run_driver.cpp
     apps/one_combat/ooc_checkpoint_policy.cpp
-    apps/one_combat/search_diagnostics.cpp
-    apps/one_combat/vnet_query_log.cpp
     $<TARGET_OBJECTS:sts_core_objects>)
 target_include_directories(one_combat PUBLIC include)
 target_include_directories(one_combat PUBLIC json/include)
@@ -509,12 +507,6 @@ set_tests_properties(ooc_mcts PROPERTIES LABELS "core")
 # CTest entries below cover checks that do not depend on apps/test.cpp
 # subcommands (apps/test.cpp is a manual command dispatcher; its subcommands
 # receive CTest entries separately). bash -n only parses, never executes.
-add_test(NAME selfplay_syntax COMMAND bash -n
-    ${CMAKE_SOURCE_DIR}/selfplay/loop.sh
-    ${CMAKE_SOURCE_DIR}/selfplay/status.sh
-    ${CMAKE_SOURCE_DIR}/selfplay/run_card_reliability_overnight.sh
-    ${CMAKE_SOURCE_DIR}/selfplay/run_future_fight_collection.sh
-    ${CMAKE_SOURCE_DIR}/selfplay/run_card_cf_collection.sh)
 add_test(NAME paired_analysis_selftest COMMAND python3 ${CMAKE_SOURCE_DIR}/paired_analysis.py --self-test)
 add_test(NAME py_compile_parity_test COMMAND python3 -m py_compile ${CMAKE_SOURCE_DIR}/parity_test.py)
 add_test(NAME semantic_confirmation_analysis COMMAND python3 -m unittest
@@ -529,8 +521,6 @@ add_test(NAME winnettest_selftest COMMAND python3 ${CMAKE_SOURCE_DIR}/tools/veri
 add_test(NAME one_combat_feature_regression COMMAND $<TARGET_FILE:one_combat_feature_test>)
 add_test(NAME battlecontext_roundtrip COMMAND $<TARGET_FILE:unit-test> battlecontext_roundtrip)
 add_test(NAME designer_in_spire COMMAND $<TARGET_FILE:unit-test> designer_in_spire)
-add_test(NAME scum_nonfair_empty_edges COMMAND $<TARGET_FILE:unit-test> scum_nonfair_empty_edges)
-add_test(NAME scum_convroot_stale_outcome COMMAND $<TARGET_FILE:unit-test> scum_convroot_stale_outcome)
 add_test(NAME cardqueue_overflow COMMAND $<TARGET_FILE:unit-test> cardqueue_overflow)
 add_test(NAME keys_collect COMMAND $<TARGET_FILE:unit-test> keys_collect)
 add_test(NAME issue_fixes COMMAND $<TARGET_FILE:unit-test> issue_fixes)
@@ -565,7 +555,6 @@ add_test(NAME ooc_semantic_smith COMMAND $<TARGET_FILE:unit-test> ooc_semantic_s
 set_tests_properties(ooc_semantic ooc_semantic_pipeline ooc_semantic_producer ooc_semantic_smith ooc_reward_continuation
     PROPERTIES LABELS "core;integration")
 add_test(NAME relic_reward_sapphire COMMAND $<TARGET_FILE:unit-test> relic_reward_sapphire)
-add_test(NAME s2_drawpile_index_boundary COMMAND $<TARGET_FILE:unit-test> s2_drawpile_index_boundary)
 add_test(NAME thorns_retaliation COMMAND $<TARGET_FILE:unit-test> thorns_retaliation)
 add_test(NAME awakened_one_stage2 COMMAND $<TARGET_FILE:unit-test> awakened_one_stage2)
 add_test(NAME darkling_victory COMMAND $<TARGET_FILE:unit-test> darkling_victory)
@@ -573,9 +562,7 @@ add_test(NAME poison_lose_hp COMMAND $<TARGET_FILE:unit-test> poison_lose_hp)
 add_test(NAME time_eater_exhaust COMMAND $<TARGET_FILE:unit-test> time_eater_exhaust)
 add_test(NAME simhealth_gamble_empty_hand COMMAND $<TARGET_FILE:unit-test> simhealth_gamble_empty_hand)
 add_test(NAME gamblers_brew_legality COMMAND $<TARGET_FILE:unit-test> gamblers_brew_legality)
-add_test(NAME simhealth_nonfair_s2_empty COMMAND $<TARGET_FILE:unit-test> simhealth_nonfair_s2_empty)
 add_test(NAME simhealth_selection_failure COMMAND $<TARGET_FILE:unit-test> simhealth_selection_failure)
-add_test(NAME simhealth_nonfair_s2_selection_failed COMMAND $<TARGET_FILE:unit-test> simhealth_nonfair_s2_selection_failed)
 add_test(NAME training_integrity COMMAND $<TARGET_FILE:unit-test> training_integrity)
 add_test(NAME e2c_observer_scope COMMAND $<TARGET_FILE:unit-test> e2c_observer_scope)
 add_test(NAME combat_knowledge COMMAND $<TARGET_FILE:unit-test> combat_knowledge)
@@ -803,7 +790,7 @@ set_tests_properties(combat_transition_native_fixture
     PROPERTIES WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
 set_tests_properties(combat_transition_fixture_contract
     PROPERTIES DEPENDS combat_transition_native_fixture)
-set_tests_properties(paired_analysis_selftest py_compile_parity_test py_compile_analyze_ooc_factor check_replay_selftest silver_prior_root_screen vnettest_selftest winnettest_selftest battlecontext_roundtrip designer_in_spire scum_nonfair_empty_edges scum_convroot_stale_outcome cardqueue_overflow keys_collect issue_fixes thorns_retaliation awakened_one_stage2 darkling_victory poison_lose_hp time_eater_exhaust simhealth_gamble_empty_hand gamblers_brew_legality simhealth_nonfair_s2_empty simhealth_selection_failure simhealth_nonfair_s2_selection_failed training_integrity e2c_observer_scope analyze_silver_root_diagnostic_selftest analyze_postcombat_raw_terminal_selftest export_win_model_selftest runwin_e2c_native_parity
+set_tests_properties(paired_analysis_selftest py_compile_parity_test py_compile_analyze_ooc_factor check_replay_selftest silver_prior_root_screen vnettest_selftest winnettest_selftest battlecontext_roundtrip designer_in_spire cardqueue_overflow keys_collect issue_fixes thorns_retaliation awakened_one_stage2 darkling_victory poison_lose_hp time_eater_exhaust simhealth_gamble_empty_hand gamblers_brew_legality simhealth_selection_failure training_integrity e2c_observer_scope analyze_silver_root_diagnostic_selftest analyze_postcombat_raw_terminal_selftest export_win_model_selftest runwin_e2c_native_parity
     runwin_e2c_production_native_parity e2c_runwin_projection_parity PROPERTIES ENVIRONMENT "PYTHONPYCACHEPREFIX=${CMAKE_BINARY_DIR}/pycache")
 
 # Labels provide fast, intention-revealing local tiers while the unfiltered
@@ -811,22 +798,21 @@ set_tests_properties(paired_analysis_selftest py_compile_parity_test py_compile_
 set_tests_properties(battlecontext_roundtrip designer_in_spire cardqueue_overflow keys_collect
     issue_fixes relic_reward_sapphire thorns_retaliation awakened_one_stage2 darkling_victory
     poison_lose_hp time_eater_exhaust simhealth_gamble_empty_hand gamblers_brew_legality
-    simhealth_nonfair_s2_empty simhealth_selection_failure simhealth_nonfair_s2_selection_failed
+    simhealth_selection_failure
     training_integrity PROPERTIES LABELS "core")
 set_tests_properties(vnettest_selftest winnettest_selftest
-    scum_nonfair_empty_edges scum_convroot_stale_outcome s2_drawpile_index_boundary
     e2c_observer_scope combat_knowledge silver_random_bridge silver_semantic_action
     silver_searcher_link_closure silver_bridge_boundary runic_dome_lifecycle
     runwin_e2c_native_parity runwin_e2c_production_native_parity
     e2c_runwin_projection_parity PROPERTIES LABELS "integration")
-set_tests_properties(selfplay_syntax py_compile_parity_test py_compile_analyze_ooc_factor
+set_tests_properties(py_compile_parity_test py_compile_analyze_ooc_factor
     check_replay_selftest check_benchmark_canary_selftest export_win_model_selftest
     PROPERTIES LABELS "tooling")
 set_tests_properties(analyze_silver_reuse_scaling_selftest analyze_silver_vnet_leaf_selftest
     analyze_silver_sticky_quality_selftest analyze_silver_root_diagnostic_selftest
     analyze_silver_adaptive_selftest analyze_silver_staged_selftest analyze_postcombat_raw_terminal_selftest
     PROPERTIES LABELS "research-repro")
-set_property(TEST selfplay_syntax paired_analysis_selftest check_replay_selftest
+set_property(TEST paired_analysis_selftest check_replay_selftest
     battlecontext_roundtrip issue_fixes APPEND PROPERTY LABELS "smoke")
 
 add_test(NAME ooc_mcts_adapter COMMAND bash ${CMAKE_SOURCE_DIR}/tools/seed_guard.sh

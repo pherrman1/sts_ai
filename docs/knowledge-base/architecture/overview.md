@@ -51,10 +51,9 @@ delegates the real battle exit and reward-screen boundaries to the module.
 ## Important data flow
 
 1. `GameContext` advances a run until `ScreenState::BATTLE`.
-2. `BattleContext::init` copies combat inputs and initializes transient state.
-3. `ScumSearchAgent2::playoutBattle` hands the combat to the installed Silver
-   backend, or selects the project-fair or tree-reuse Searcher2 path, then
-   commits combat `Action` values. Searcher3 was removed (ADR-0019).
+2. `ScumSearchAgent2::playoutBattle` hands the combat to the installed Silver
+   backend, which runs `BattleContext::init`, searches, and commits combat
+   `Action` values. Silver is the only combat searcher (ADR-0020).
 4. `BattleContext::exitBattle` transfers outcome, HP, rewards, RNG streams, and
    persistent effects back to the run. When E2c capture is enabled,
    `e2c_capture` temporarily arms its RAW observer only around this real exit;
@@ -69,10 +68,8 @@ flowchart LR
     GC["GameContext advances a run"] -->|until| BATTLE["ScreenState::BATTLE"]
     BATTLE --> INIT["BattleContext::init (copies combat inputs)"]
     INIT --> CHOICE["ScumSearchAgent2::playoutBattle (project-fair or tree-reuse)"]
-    CHOICE --> SILVER["Silver backend (default for run/bestbench/reprobench)"]
-    CHOICE --> S2["Searcher2 (known-RNG or fair determinize)"]
+    CHOICE --> SILVER["Silver backend (only combat searcher)"]
     SILVER --> COMMIT["commit combat Action values"]
-    S2 --> COMMIT
     COMMIT --> EXIT["BattleContext::exitBattle (outcome, HP, rewards, RNG streams, persistent effects back)"]
     EXIT --> OOC["Out-of-combat policy applies GameAction values"]
     OOC --> NEXT["next combat or terminal GameOutcome"]

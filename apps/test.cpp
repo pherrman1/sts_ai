@@ -34,7 +34,6 @@
 #include "sim/search/ScumSearchAgent2.h"
 #include "sim/search/SimpleAgent.h"
 
-#include "sim/search/BattleScumSearcher2.h"
 #include "sim/search/CombatObservation.h"
 #include "sim/search/CombatValueNet.h"
 #include "sim/search/SimHealth.h"
@@ -789,12 +788,6 @@ int testIssueFixes() {
         if (!useSmoke.isValidAction(bc)) {
             return fail("eligible smoke bomb use was invalid");
         }
-        search::BattleScumSearcher2 s2(bc);
-        s2.enumerateActionsForNode(s2.root, bc);
-        if (std::none_of(s2.root.edges.begin(), s2.root.edges.end(),
-                         [](const auto &e) { return e.action == search::Action(search::ActionType::POTION, 0); })) {
-            return fail("Searcher2 omitted eligible smoke bomb");
-        }
         useSmoke.execute(bc);
         if (bc.potions[0] != Potion::EMPTY_POTION_SLOT || bc.potionCount != 0
             || bc.outcome != Outcome::PLAYER_VICTORY) {
@@ -846,12 +839,6 @@ int testIssueFixes() {
         boss.drinkPotion(0); // defensive direct call must not consume it
         if (boss.potions[0] != Potion::SMOKE_BOMB || boss.potionCount != 1) {
             return fail("boss Smoke Bomb was consumed by direct execution");
-        }
-        search::BattleScumSearcher2 s2(boss);
-        s2.enumerateActionsForNode(s2.root, boss);
-        if (std::any_of(s2.root.edges.begin(), s2.root.edges.end(),
-                        [](const auto &e) { return e.action == search::Action(search::ActionType::POTION, 0); })) {
-            return fail("Searcher2 exposed blocked Smoke Bomb use");
         }
         discardSmoke.execute(boss);
         if (boss.potions[0] != Potion::EMPTY_POTION_SLOT || boss.potionCount != 0) {
@@ -1107,10 +1094,9 @@ int testObsIdentity(std::uint64_t seed) {
 // ---- CARD_SELECT action-parity contract -------------------------------------
 // Ground truth for a CARD_SELECT state is exactly the action set the simulator
 // validates (search::Action::isValidAction): in this input mode only
-// SINGLE_CARD_SELECT and MULTI_CARD_SELECT actions can validate. Every
-// enumerator -- the canonical search::Action::enumerateCardSelectActions and
-// both searchers' CARD_SELECT branches -- must match it exactly, or the search
-// can be blind to legal selections (see knowledge-base issues tracker).
+// SINGLE_CARD_SELECT and MULTI_CARD_SELECT actions can validate. The canonical
+// search::Action::enumerateCardSelectActions must match it exactly, or a
+// consumer can be blind to legal selections (see knowledge-base issues tracker).
 
 static std::vector<std::uint32_t> cardSelectGroundTruth(const BattleContext &bc) {
     std::set<std::uint32_t> s;
@@ -1130,7 +1116,7 @@ static std::vector<std::uint32_t> cardSelectGroundTruth(const BattleContext &bc)
 
 // Canonical PLAYER_NORMAL action spec: playable hand cards (adjacent duplicates
 // collapsed, one action per targetable monster for targeted cards), usable
-// potions (fairy excluded), and END_TURN. Must equal both searchers' output.
+// potions (fairy excluded), and END_TURN.
 static std::vector<std::uint32_t> playerNormalGroundTruth(const BattleContext &bc) {
     std::set<std::uint32_t> s;
     for (int h = 0; h < bc.cards.cardsInHand; ++h) {
@@ -1788,19 +1774,11 @@ int testCardSelectParity() {
             }
             std::vector<std::uint32_t> canonical;
             for (const auto &a : search::Action::enumerateCardSelectActions(bc)) canonical.push_back(a.bits);
-            search::BattleScumSearcher2 s2(bc);
-            search::BattleScumSearcher2::Node n2;
-            s2.enumerateCardSelectActions(n2, bc);
-            std::vector<std::uint32_t> s2Actions;
-            for (const auto &e : n2.edges) s2Actions.push_back(e.action.bits);
 
             const bool cOk = compareEnumerator("canonical", truth, canonical) == 0;
-            const bool s2Ok = compareEnumerator("s2", truth, s2Actions) == 0;
-            if (!cOk || !s2Ok) {
+            if (!cOk) {
                 ++failures;
-                std::cout << "  " << name << " (pickCount=" << pickCount << "): "
-                          << (cOk ? "canonical OK" : "canonical FAIL")
-                          << " " << (s2Ok ? "s2 OK" : "s2 FAIL") << '\n';
+                std::cout << "  " << name << " (pickCount=" << pickCount << "): canonical FAIL\n";
             }
         }
         {
@@ -1808,47 +1786,11 @@ int testCardSelectParity() {
             const auto truth = cardSelectGroundTruth(bc);
             std::vector<std::uint32_t> canonical;
             for (const auto &a : search::Action::enumerateCardSelectActions(bc)) canonical.push_back(a.bits);
-            search::BattleScumSearcher2 s2(bc);
-            search::BattleScumSearcher2::Node n2;
-            s2.enumerateCardSelectActions(n2, bc);
-            std::vector<std::uint32_t> s2Actions;
-            for (const auto &e : n2.edges) s2Actions.push_back(e.action.bits);
             const bool cOk = compareEnumerator("canonical", truth, canonical) == 0;
-            const bool s2Ok = compareEnumerator("s2", truth, s2Actions) == 0;
-            if (!cOk || !s2Ok) {
+            if (!cOk) {
                 ++failures;
-                std::cout << "  " << name << " (large hand): "
-                          << (cOk ? "canonical OK" : "canonical FAIL")
-                          << " " << (s2Ok ? "s2 OK" : "s2 FAIL") << '\n';
+                std::cout << "  " << name << " (large hand): canonical FAIL\n";
             }
-        }
-    }
-
-    std::cout << "cardselect_parity: PLAYER_NORMAL\n";
-    for (std::uint64_t seed : {0x1111u, 0x2222u}) {
-        const BattleContext bc = playerNormalFixture(seed, 3);
-        const auto truth = playerNormalGroundTruth(bc);
-        search::BattleScumSearcher2 s2(bc);
-        search::BattleScumSearcher2::Node n2;
-        s2.enumerateActionsForNode(n2, bc);
-        std::vector<std::uint32_t> s2Actions;
-        for (const auto &e : n2.edges) s2Actions.push_back(e.action.bits);
-        if (compareEnumerator("s2", truth, s2Actions) != 0) {
-            ++failures;
-            std::cout << "  player_normal energy=3 seed=" << seed << ": FAIL\n";
-        }
-    }
-    {
-        const BattleContext bc = playerNormalFixture(0x3333u, 0);
-        const auto truth = playerNormalGroundTruth(bc);
-        search::BattleScumSearcher2 s2(bc);
-        search::BattleScumSearcher2::Node n2;
-        s2.enumerateActionsForNode(n2, bc);
-        std::vector<std::uint32_t> s2Actions;
-        for (const auto &e : n2.edges) s2Actions.push_back(e.action.bits);
-        if (compareEnumerator("s2", truth, s2Actions) != 0) {
-            ++failures;
-            std::cout << "  player_normal energy=0: FAIL\n";
         }
     }
 
@@ -1857,254 +1799,6 @@ int testCardSelectParity() {
         return 0;
     }
     std::cout << "cardselect_parity FAIL (" << failures << " states)\n";
-    return 1;
-}
-
-int testS2DrawPileIndexBoundary() {
-    int failures = 0;
-    auto check = [&](bool ok, const char *message) {
-        if (!ok) {
-            std::cout << "s2_drawpile_index_boundary FAIL: " << message << '\n';
-            ++failures;
-        }
-    };
-
-    for (CardSelectTask task : {CardSelectTask::SECRET_TECHNIQUE,
-                                CardSelectTask::SECRET_WEAPON,
-                                CardSelectTask::SEEK}) {
-        auto bc = cardSelectFixture(task, 1, false);
-        check(search::isDrawPileIndexSensitiveCardSelect(bc),
-              "draw-pile task not classified as sensitive");
-
-        // Fair Searcher2 determinizes the hidden draw order before root
-        // expansion, so a stored raw draw-pile index can name a different
-        // card on the live root. Two eligible cards deliberately exchange
-        // indices; the committed action must follow the semantic card
-        // preferred in the determinized state, not merely reuse a
-        // still-legal raw index.
-        auto stale = cardSelectFixture(task, 1, false);
-        if (task == CardSelectTask::SECRET_TECHNIQUE) {
-            stale.cards.drawPile = {CardInstance(CardId::DEFEND_RED),
-                                    CardInstance(CardId::SHRUG_IT_OFF),
-                                    CardInstance(CardId::STRIKE_RED)};
-        } else if (task == CardSelectTask::SECRET_WEAPON) {
-            stale.cards.drawPile = {CardInstance(CardId::BASH),
-                                    CardInstance(CardId::ANGER),
-                                    CardInstance(CardId::DEFEND_RED)};
-        } else {
-            stale.cards.drawPile = {CardInstance(CardId::BASH),
-                                    CardInstance(CardId::DEFEND_RED),
-                                    CardInstance(CardId::STRIKE_RED)};
-        }
-        auto live = stale;
-        std::swap(live.cards.drawPile[0], live.cards.drawPile[1]);
-        const CardId preferred = stale.cards.drawPile[0].getId();
-        search::BattleScumSearcher2 s2(stale);
-        s2.enumerateActionsForNode(s2.root, stale);
-        for (auto &edge : s2.root.edges) {
-            edge.node.simulationCount =
-                stale.cards.drawPile[edge.action.getSelectIdx()].getId() == preferred
-                    ? 100 : 1;
-        }
-        const auto preferredEdge = std::find_if(
-            s2.root.edges.begin(), s2.root.edges.end(), [&](const auto &edge) {
-                return stale.cards.drawPile[edge.action.getSelectIdx()].getId()
-                    == preferred;
-            });
-        search::Action resolvedInParticle;
-        check(preferredEdge != s2.root.edges.end()
-                  && s2.resolveSelectedCardAction(*preferredEdge, live,
-                                                  resolvedInParticle)
-                  && live.cards.drawPile[resolvedInParticle.getSelectIdx()].getId()
-                         == preferred,
-              "S2 semantic edge did not rebind inside a new determinization");
-        search::Action selected;
-        check(s2.mostVisitedLiveRootAction(live, selected),
-              "S2 reconciliation found no live draw-pile action");
-        check(selected.isValidAction(live),
-              "S2 reconciliation returned stale draw-pile action");
-        check(live.cards.drawPile[selected.getSelectIdx()].getId() == preferred,
-              "S2 reconciliation did not preserve selected-card identity");
-    }
-
-    // Identical copies form one semantic bucket. Their visits aggregate, and
-    // deterministic live enumeration chooses the first equivalent copy.
-    auto duplicate = cardSelectFixture(CardSelectTask::SEEK, 1, false);
-    duplicate.cards.drawPile = {CardInstance(CardId::ANGER),
-                                CardInstance(CardId::ANGER),
-                                CardInstance(CardId::BASH)};
-    auto duplicateLive = duplicate;
-    std::swap(duplicateLive.cards.drawPile[1], duplicateLive.cards.drawPile[2]);
-    search::BattleScumSearcher2 duplicateS2(duplicate);
-    duplicateS2.enumerateActionsForNode(duplicateS2.root, duplicate);
-    duplicateS2.root.edges[0].node.simulationCount = 40;
-    duplicateS2.root.edges[1].node.simulationCount = 40;
-    duplicateS2.root.edges[2].node.simulationCount = 70;
-    search::Action duplicateSelected;
-    check(duplicateS2.mostVisitedLiveRootAction(duplicateLive, duplicateSelected),
-          "S2 duplicate reconciliation found no action");
-    check(duplicateLive.cards.drawPile[duplicateSelected.getSelectIdx()].getId()
-              == CardId::ANGER,
-          "S2 duplicate visits were not aggregated by semantics");
-    check(duplicateSelected.getSelectIdx() == 0,
-          "S2 duplicate reconciliation was not deterministic");
-
-    // If none of the stored semantic choices exists in a synthetic live root,
-    // canonical live choices remain available with zero visits.
-    auto fallbackLive = duplicate;
-    fallbackLive.cards.drawPile = {CardInstance(CardId::DEFEND_RED)};
-    search::Action fallbackSelected;
-    check(duplicateS2.mostVisitedLiveRootAction(fallbackLive, fallbackSelected),
-          "S2 live-only fallback found no action");
-    check(fallbackSelected.isValidAction(fallbackLive)
-              && fallbackLive.cards.drawPile[fallbackSelected.getSelectIdx()].getId()
-                     == CardId::DEFEND_RED,
-          "S2 live-only fallback did not return the canonical live action");
-
-    auto ordinary = cardSelectFixture(CardSelectTask::HOLOGRAM, 1, false);
-    check(!search::isDrawPileIndexSensitiveCardSelect(ordinary),
-          "unrelated card-select task classified as sensitive");
-    search::BattleScumSearcher2 ordinaryS2(ordinary);
-    ordinaryS2.enumerateActionsForNode(ordinaryS2.root, ordinary);
-    check(!ordinaryS2.root.edges.empty()
-              && !ordinaryS2.root.edges.front().hasSelectedCardKey,
-          "ordinary S2 root unexpectedly entered semantic draw-pile path");
-
-    if (failures == 0) {
-        std::cout << "s2_drawpile_index_boundary PASS\n";
-        return 0;
-    }
-    std::cout << "s2_drawpile_index_boundary FAIL (" << failures << " checks)\n";
-    return 1;
-}
-
-// Regression (BattleScumSearcher2 non-fair empty-edge guard): a deterministic
-// (non-fair) enumeration that yields zero legal actions must resolve as a
-// direct leaf evaluation instead of reaching selectFirstActionForLeafNode's
-// uniform_int_distribution(0,-1) (UB/assert). The zero-option state below is
-// artificial -- PLAYER_NORMAL always adds END_TURN -- but a future enumerator
-// change could produce it, and fair mode already defends the same way.
-int testScumNonFairEmptyEdges() {
-    int failures = 0;
-    const auto check = [&failures](bool ok, const std::string &msg) {
-        if (!ok) {
-            std::cout << "    " << msg << '\n';
-            ++failures;
-        }
-    };
-
-    // CARD_SELECT with no selectable options: SECRET_WEAPON picks attacks from
-    // the draw pile; an all-skill draw pile leaves zero legal actions.
-    BattleContext bc = cardSelectFixture(CardSelectTask::SECRET_WEAPON, 1, false);
-    bc.cards.drawPile.clear();
-    bc.cards.drawPile.push_back(CardInstance(CardId::DEFEND_RED));
-
-    check(search::Action::enumerateCardSelectActions(bc).empty(),
-          "fixture should have zero selectable options");
-
-    search::BattleScumSearcher2 s2(bc);
-
-    // playoutRandom: stop softly with NO_LEGAL_ACTION instead of asserting.
-    {
-        BattleContext rollState = bc;
-        std::vector<search::Action> stack;
-        search::RolloutStop stop = search::RolloutStop::TERMINAL;
-        s2.playoutRandom(rollState, stack, stop);
-        check(stop == search::RolloutStop::NO_LEGAL_ACTION,
-              "rollout should stop with NO_LEGAL_ACTION, got " + std::to_string(static_cast<int>(stop)));
-        check(stack.empty(), "rollout should not execute any action");
-    }
-
-    // step(): every simulation resolves as a direct leaf evaluation (no
-    // rollout; the node is recorded as a defeat).
-    s2.search(8);
-    check(s2.diag.consistent(),
-          "diagnostics invariant simulations == terminalInsideTree + rolloutCalls + leafDirectEval");
-    check(s2.diag.simulations == 8,
-          "expected 8 simulations, got " + std::to_string(s2.diag.simulations));
-    check(s2.diag.leafDirectEval == 8,
-          "expected all 8 simulations as direct leaf evals, got " + std::to_string(s2.diag.leafDirectEval));
-    check(s2.diag.rolloutCalls == 0,
-          "no rollout should run, got " + std::to_string(s2.diag.rolloutCalls));
-    check(s2.root.outcome == 2,
-          "no-legal-action node should be marked a defeat (2), got " + std::to_string(static_cast<int>(s2.root.outcome)));
-
-    if (failures == 0) {
-        std::cout << "scum_nonfair_empty_edges PASS\n";
-        return 0;
-    }
-    std::cout << "scum_nonfair_empty_edges FAIL (" << failures << " cases)\n";
-    return 1;
-}
-
-// Regression (issue #54 + #70, BattleScumSearcher2): (a) searchToTotalRootStable
-// must not hang when STS_CONV_ROOT_START=0 or STS_CONV_ROOT_GROW<=1.0 -- a
-// zero-growth budget makes the chunk loop run 0 steps, so the outer loop must
-// force the full budget instead of spinning forever; (b) step() must clear a
-// stale terminal outcome when re-expanding a node that was terminal in another
-// world (fair-mode determinization), preserving "outcome != 0 implies
-// edges.empty()" so collectFrontierStats does not misclassify the node.
-int testScumConvRootStaleOutcome() {
-    int failures = 0;
-    const auto check = [&failures](bool ok, const std::string &msg) {
-        if (!ok) {
-            std::cout << "    " << msg << '\n';
-            ++failures;
-        }
-    };
-
-    // --- issue #54: zero-growth budget must still reach the target ----------
-    const std::int64_t savedStart = search::g_convRootStart;
-    const double savedGrow = search::g_convRootGrow;
-    {
-        // start == 0: budget never grows; without the guard the outer loop spins.
-        search::g_convRootStart = 0;
-        search::g_convRootGrow = 2.0;
-        {
-            BattleContext bc = playerNormalFixture(0x51u, 3);
-            search::BattleScumSearcher2 s2(bc);
-            s2.searchToTotalRootStable(16, 0, 1000000);   // patience huge -> no early stop
-            check(s2.root.simulationCount >= 16,
-                  "convroot start=0: expected >=16 sims, got " + std::to_string(s2.root.simulationCount));
-        }
-        // grow == 1.0: chunkEnd == budget after the first round; without the
-        // guard the outer loop spins once the budget stops growing.
-        search::g_convRootStart = 8;
-        search::g_convRootGrow = 1.0;
-        {
-            BattleContext bc = playerNormalFixture(0x52u, 3);
-            search::BattleScumSearcher2 s2(bc);
-            s2.searchToTotalRootStable(16, 0, 1000000);
-            check(s2.root.simulationCount >= 16,
-                  "convroot grow=1.0: expected >=16 sims, got " + std::to_string(s2.root.simulationCount));
-        }
-    }
-    search::g_convRootStart = savedStart;
-    search::g_convRootGrow = savedGrow;
-
-    // --- issue #70: re-expansion clears a stale terminal outcome ------------
-    {
-        BattleContext bc = playerNormalFixture(0x53u, 3);
-        search::BattleScumSearcher2 s2(bc);
-        // Simulate a node that was terminal (victory, outcome=1, no edges) in a
-        // previous world and is now reached in a non-terminal world: step() must
-        // clear the stale outcome when re-enumerating edges.
-        s2.root.outcome = 1;
-        s2.step();
-        check(s2.root.outcome == 0,
-              "stale-outcome re-expansion: expected outcome reset to 0 (UNDECIDED), got "
-                  + std::to_string(static_cast<int>(s2.root.outcome)));
-        check(!s2.root.edges.empty(),
-              "stale-outcome re-expansion: expected edges re-enumerated");
-        check(s2.root.outcome == 0 || s2.root.edges.empty(),
-              "stale-outcome re-expansion: invariant 'outcome != 0 implies edges.empty()' violated");
-    }
-
-    if (failures == 0) {
-        std::cout << "scum_convroot_stale_outcome PASS\n";
-        return 0;
-    }
-    std::cout << "scum_convroot_stale_outcome FAIL (" << failures << " cases)\n";
     return 1;
 }
 
@@ -2227,46 +1921,6 @@ int testCardSelectCanonical() {
 }
 
 
-int mcts(int argc, const char *argv[]) {
-    const auto saveFilePath = argv[2];
-    const auto simulationCount = std::stoll(argv[3]);
-
-    SaveFile saveFile = SaveFile::loadFromPath(saveFilePath, sts::CharacterClass::IRONCLAD);
-    GameContext gc;
-    gc.initFromSave(saveFile);
-
-    std::cout << SeedHelper::getString(gc.seed) << std::endl;
-
-    BattleContext bc = BattleContext();
-    bc.init(gc);
-
-    search::BattleScumSearcher2 searcher(bc);
-
-    auto startTime = std::chrono::high_resolution_clock::now();
-    searcher.search(simulationCount);
-    auto endTime = std::chrono::high_resolution_clock::now();
-    double duration = std::chrono::duration<double>(endTime-startTime).count();
-
-    std::cout << "steps: " << simulationCount << " search time: " << duration << "s\n";
-    std::cout << "best search value: " << searcher.bestActionValue << " depth: " << searcher.bestActionSequence.size() << '\n';
-    if (searcher.bestActionSequence.empty()) {
-        std::cout << "bestActionSequenceIsEmpty" << std::endl;
-        return 0;
-    }
-
-    for (auto bestAction : searcher.bestActionSequence) {
-        bestAction.printDesc(std::cout, bc) << '\n';
-        bestAction.execute(bc);
-    }
-
-    std::cout << "ending hp: " << bc.player.curHp << '\n';
-
-    searcher.printSearchTree(std::cout, 3);
-
-    std::cout.flush();
-    return 0;
-}
-
 // BattleContext binary round-trip contract. The serializer captures the visible
 // state + 6 RNG streams (skipping the transient ActionQueue/CardQueue and
 // execution flags), and the round-trip correctness contract is
@@ -2293,11 +1947,10 @@ int testBattleContextRoundtrip() {
             std::mt19937 rng(seed * 2654435761u + (std::uint32_t)enc + 1);
             int guard = 0;
             while (bc.outcome == Outcome::UNDECIDED && bc.turn < 3 && guard++ < 300) {
-                search::BattleScumSearcher2 enumerator(bc);
-                search::BattleScumSearcher2::Node tmp;
-                enumerator.enumerateActionsForNode(tmp, bc);
-                if (tmp.edges.empty()) break;
-                const auto &a = tmp.edges[rng() % tmp.edges.size()].action;
+                const auto legal = bc.inputState == InputState::CARD_SELECT
+                    ? cardSelectGroundTruth(bc) : playerNormalGroundTruth(bc);
+                if (legal.empty()) break;
+                const search::Action a(legal[rng() % legal.size()]);
                 if (!a.isValidAction(bc)) break;
                 a.execute(bc);
             }
@@ -2447,59 +2100,6 @@ int testGamblersBrewLegality() {
     return 0;
 }
 
-// Simulator-health monitor: non-fair Searcher2 coverage (Test B). A
-// deterministic unresolved CARD_SELECT state with zero legal actions must be
-// diagnosed immediately through the AGENT control path as NO_LEGAL_PROGRESSION
-// instead of silently cycling to the 1000-decision stall guard (which
-// converts the battle to PLAYER_LOSS with no health diagnostic). On baseline
-// 9770856 this state degrades to a stall -> PLAYER_LOSS, so this test fails
-// there. The state shape reuses testScumNonFairEmptyEdges (SECRET_WEAPON with
-// an all-skill draw pile).
-int testSimHealthNonFairS2Empty() {
-    int failures = 0;
-    const auto check = [&failures](bool ok, const std::string &msg) {
-        if (!ok) {
-            std::cout << "    " << msg << '\n';
-            ++failures;
-        }
-    };
-
-    const bool savedFair = search::g_fairPlay;
-    search::g_fairPlay = false;    // non-fair (known-RNG) Searcher2
-
-    const auto nlpBefore = search::g_simHealthFailureCounts[(int)search::SimHealthFailure::NO_LEGAL_PROGRESSION];
-    BattleContext bc = cardSelectFixture(CardSelectTask::SECRET_WEAPON, 1, false);
-    bc.cards.drawPile.clear();
-    bc.cards.drawPile.push_back(CardInstance(CardId::DEFEND_RED));   // no attacks -> zero selectable
-    check(search::Action::enumerateCardSelectActions(bc).empty(),
-          "fixture must have zero selectable actions");
-    check(!search::hasLegalProgressionAction(bc),
-          "canonical live action check must report zero legal actions");
-
-    search::ScumSearchAgent2 agent;
-    agent.simulationCountBase = 1;   // keep the (futile) search cheap on baseline
-    agent.playoutBattle(bc);
-
-    const int nlpFired = search::g_simHealthFailureCounts[(int)search::SimHealthFailure::NO_LEGAL_PROGRESSION] - nlpBefore;
-    check(nlpFired >= 1,
-          "non-fair S2 must report NO_LEGAL_PROGRESSION immediately (got "
-          + std::to_string(nlpFired) + ")");
-    // The battle must NOT have been converted by the stall guard: the monitor
-    // breaks out of the loop while UNDECIDED instead of cycling to PLAYER_LOSS.
-    check(bc.outcome == Outcome::UNDECIDED,
-          "battle must exit UNDECIDED (not a stall-converted PLAYER_LOSS), got "
-          + std::to_string((int)bc.outcome));
-
-    search::g_fairPlay = savedFair;
-
-    if (failures == 0) {
-        std::cout << "simhealth_nonfair_s2_empty PASS\n";
-        return 0;
-    }
-    std::cout << "simhealth_nonfair_s2_empty FAIL (" << failures << " cases)\n";
-    return 1;
-}
-
 // Simulator-health monitor: ACTION_SELECTION_FAILED classification (Test C).
 // When canonical live actions exist but root/action selection fails, the
 // monitor must classify the failure as ACTION_SELECTION_FAILED, not
@@ -2565,76 +2165,6 @@ int testSimHealthSelectionFailure() {
         return 0;
     }
     std::cout << "simhealth_selection_failure FAIL (" << failures << " cases)\n";
-    return 1;
-}
-
-// Simulator-health monitor: non-fair S2 ACTION_SELECTION_FAILED through agent
-// control path with positive bestOutcomePlayerHp (Test D). The earlier
-// correction (312c358) closed the zero-edge case but left the
-// empty-cached-solution branch silent: when bestOutcomePlayerHp > 0 (a
-// previously found winning line) and stepThroughSolution with
-// stepsWithSolution=0 commits zero actions, the agent loop would silently
-// retry instead of firing a health diagnostic. The detection-only rule
-// completes: every unresolved non-fair S2 decision with zero committed
-// actions now reports NO_LEGAL_PROGRESSION or ACTION_SELECTION_FAILED
-// immediately, governed by the canonical live action set.
-//
-// The regression forces the branch via stepsWithSolution=0 on a
-// PLAYER_NORMAL fixture where search finds a positive-HP winning line;
-// with the fix, classifySelectionFailure(bc) fires ACTION_SELECTION_FAILED
-// (legal live actions exist) followed by UNDECIDED_BATTLE_EXIT, and the
-// 1000-decision stall guard never fires.
-int testSimHealthNonFairS2SelectionFailed() {
-    int failures = 0;
-    const auto check = [&failures](bool ok, const std::string &msg) {
-        if (!ok) {
-            std::cout << "    " << msg << '\n';
-            ++failures;
-        }
-    };
-
-    const bool savedFair = search::g_fairPlay;
-    search::g_fairPlay = false;    // non-fair (known-RNG) Searcher2
-
-    BattleContext bc = playerNormalFixture(0xBEEFu, 3);
-    check(bc.outcome == Outcome::UNDECIDED,
-          "fixture must start UNDECIDED");
-    check(search::hasLegalProgressionAction(bc),
-          "PLAYER_NORMAL must have a legal progression action (END_TURN)");
-
-    const auto nlpBefore = search::g_simHealthFailureCounts[(int)search::SimHealthFailure::NO_LEGAL_PROGRESSION];
-    const auto asfBefore = search::g_simHealthFailureCounts[(int)search::SimHealthFailure::ACTION_SELECTION_FAILED];
-    const auto ubeBefore = search::g_simHealthFailureCounts[(int)search::SimHealthFailure::UNDECIDED_BATTLE_EXIT];
-
-    search::ScumSearchAgent2 agent;
-    agent.stepsWithSolution = 0;   // forces stepThroughSolution to commit zero actions
-    agent.simulationCountBase = 200;
-    agent.playoutBattle(bc);
-
-    const int nlpFired = search::g_simHealthFailureCounts[(int)search::SimHealthFailure::NO_LEGAL_PROGRESSION] - nlpBefore;
-    const int asfFired = search::g_simHealthFailureCounts[(int)search::SimHealthFailure::ACTION_SELECTION_FAILED] - asfBefore;
-    const int ubeFired = search::g_simHealthFailureCounts[(int)search::SimHealthFailure::UNDECIDED_BATTLE_EXIT] - ubeBefore;
-
-    check(asfFired >= 1,
-          "ACTION_SELECTION_FAILED must fire as the primary failure (got "
-          + std::to_string(asfFired) + ")");
-    check(nlpFired == 0,
-          "NO_LEGAL_PROGRESSION must not fire when legal live actions exist (got "
-          + std::to_string(nlpFired) + ")");
-    check(ubeFired >= 1,
-          "UNDECIDED_BATTLE_EXIT must fire as the secondary safety net (got "
-          + std::to_string(ubeFired) + ")");
-    check(bc.outcome == Outcome::UNDECIDED,
-          "battle must exit UNDECIDED (not a stall-converted PLAYER_LOSS), got "
-          + std::to_string((int)bc.outcome));
-
-    search::g_fairPlay = savedFair;
-
-    if (failures == 0) {
-        std::cout << "simhealth_nonfair_s2_selection_failed PASS\n";
-        return 0;
-    }
-    std::cout << "simhealth_nonfair_s2_selection_failed FAIL (" << failures << " cases)\n";
     return 1;
 }
 
@@ -3367,9 +2897,6 @@ int main(int argc, const char* argv[]) {
 //            playRandom4(startSeedLong);
         }
 
-    } else if (command == "mcts_save") {
-        return mcts(argc, argv);
-
     } else if (command == "obs_identity") {
         return testObsIdentity(std::stoull(argv[2]));
     } else if (command == "happy_flower") {
@@ -3382,12 +2909,6 @@ int main(int argc, const char* argv[]) {
         return testRelicRewardSapphire();
     } else if (command == "cardselect_parity") {
         return testCardSelectParity();
-    } else if (command == "scum_nonfair_empty_edges") {
-        return testScumNonFairEmptyEdges();
-    } else if (command == "scum_convroot_stale_outcome") {
-        return testScumConvRootStaleOutcome();
-    } else if (command == "s2_drawpile_index_boundary") {
-        return testS2DrawPileIndexBoundary();
     } else if (command == "cardselect_canonical") {
         return testCardSelectCanonical();
     } else if (command == "battlecontext_roundtrip") {
@@ -3412,12 +2933,8 @@ int main(int argc, const char* argv[]) {
         return testSimHealthGambleEmptyHand();
     } else if (command == "gamblers_brew_legality") {
         return testGamblersBrewLegality();
-    } else if (command == "simhealth_nonfair_s2_empty") {
-        return testSimHealthNonFairS2Empty();
     } else if (command == "simhealth_selection_failure") {
         return testSimHealthSelectionFailure();
-    } else if (command == "simhealth_nonfair_s2_selection_failed") {
-        return testSimHealthNonFairS2SelectionFailed();
     } else if (command == "training_integrity") {
         return testTrainingIntegrity();
     } else if (command == "e2c_observer_scope") {

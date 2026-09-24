@@ -8,7 +8,6 @@
 #include "game/GameContext.h"
 #include "game/Card.h"
 
-#include "sim/search/BattleScumSearcher2.h"
 #include "sim/search/CombatKnowledge.h"
 
 using namespace sts;
@@ -76,7 +75,6 @@ void CardManager::createDeckCardInstanceInDrawPile(const Card &card, int deckIdx
 #ifdef sts_asserts
     if (card.getId() == CardId::INVALID) {
         std::cerr << *g_debug_bc << '\n';
-        search::g_debug_scum_search->printSearchStack(std::cerr, true);
         std::cerr << "attempted to create invalid deck instance in draw pile" << std::endl;
         assert(false);
     }
@@ -89,7 +87,6 @@ void CardManager::createTempCardInDrawPile(int idx, CardInstance c) {
 #ifdef sts_asserts
     if (c.getId() == CardId::INVALID) {
         std::cerr << *g_debug_bc << '\n';
-        search::g_debug_scum_search->printSearchStack(std::cerr, true);
         std::cerr << "attempted to create invalid card in draw pile" << std::endl;
         assert(false);
     }
@@ -107,7 +104,6 @@ void CardManager::createTempCardInDiscard(CardInstance c) {
 #ifdef sts_asserts
     if (c.getId() == CardId::INVALID) {
         std::cerr << *g_debug_bc << '\n';
-        search::g_debug_scum_search->printSearchStack(std::cerr, true);
         std::cerr << "attempted to create invalid card in discard" << std::endl;
         assert(false);
     }
@@ -122,7 +118,6 @@ void CardManager::createTempCardInHand(CardInstance c) {
 #ifdef sts_asserts
     if (c.getId() == CardId::INVALID) {
         std::cerr << *g_debug_bc << '\n';
-        search::g_debug_scum_search->printSearchStack(std::cerr, true);
         std::cerr << "attempted to create invalid card in hand" << std::endl;
         assert(false);
     }
@@ -194,8 +189,6 @@ void CardManager::insertToDrawPile(int drawPileIdx, const CardInstance &c) {
 #ifdef sts_asserts
     if (c.getId() == CardId::INVALID) {
         std::cerr << *g_debug_bc << '\n';
-        search::g_debug_scum_search->printSearchStack(std::cerr, true);
-        search::g_debug_scum_search->printSearchStack(std::cerr);
         std::cerr << "attempted to insert invalid card to draw pile" << std::endl;
         assert(false);
     }
@@ -209,7 +202,6 @@ void CardManager::moveToDrawPileTop(const CardInstance &c) {
 #ifdef sts_asserts
     if (c.getId() == CardId::INVALID) {
         std::cerr << *g_debug_bc << '\n';
-        search::g_debug_scum_search->printSearchStack(std::cerr, true);
         std::cerr << "attempted to move invalid card to draw pile" << std::endl;
         assert(false);
     }
@@ -223,7 +215,6 @@ void CardManager::moveToDrawPileBottom(const CardInstance &c) {
 #ifdef sts_asserts
     if (c.getId() == CardId::INVALID) {
         std::cerr << *g_debug_bc << '\n';
-        search::g_debug_scum_search->printSearchStack(std::cerr, true);
         std::cerr << "attempted to move invalid card to draw pile bottom" << std::endl;
         assert(false);
     }
@@ -249,7 +240,6 @@ void CardManager::moveToDiscardPile(const CardInstance &c) {
 #ifdef sts_asserts
     if (c.getId() == CardId::INVALID) {
         std::cerr << *g_debug_bc << '\n';
-        search::g_debug_scum_search->printSearchStack(std::cerr, true);
         std::cerr << "attempted to move invalid card to discard pile" << std::endl;
         assert(false);
     }
@@ -299,7 +289,6 @@ void CardManager::notifyAddToHand(const CardInstance &c) {
 #ifdef sts_asserts
     if (c.getId() == CardId::INVALID) {
         std::cerr << *g_debug_bc << '\n';
-        search::g_debug_scum_search->printSearchStack(std::cerr, true);
         std::cerr << "attempted to notify of invalid card in hand" << std::endl;
         assert(false);
     }
@@ -347,7 +336,6 @@ void CardManager::notifyAddToDrawPile(const CardInstance &c) {
 #ifdef sts_asserts
     if (c.getId() == CardId::INVALID) {
         std::cerr << *g_debug_bc << '\n';
-        search::g_debug_scum_search->printSearchStack(std::cerr, true);
         std::cerr << "attempted to notify of invalid card in draw pile" << std::endl;
         assert(false);
     }
@@ -368,7 +356,6 @@ void CardManager::notifyAddToDiscardPile(const CardInstance &c) {
 #ifdef sts_asserts
     if (c.getId() == CardId::INVALID) {
         std::cerr << *g_debug_bc << '\n';
-        search::g_debug_scum_search->printSearchStack(std::cerr, true);
         std::cerr << "attempted to notify of invalid card in discard pile" << std::endl;
         assert(false);
     }

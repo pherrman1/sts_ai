@@ -30,7 +30,6 @@
 #include "game/GameContext.h"
 #include "combat/BattleContext.h"
 #include "sim/search/Action.h"
-#include "sim/search/BattleScumSearcher2.h"
 #include "sim/search/ScumSearchAgent2.h"
 #include "sim/search/CombatValueNet.h"
 #include "sim/search/CombatDistValueNet.h"
@@ -54,8 +53,6 @@
 #include "one_combat/combat_transition.h"
 #include "one_combat/e2c_capture.h"
 #include "one_combat/run_features.h"
-#include "one_combat/search_diagnostics.h"
-#include "one_combat/vnet_query_log.h"
 #include "one_combat/ooc_policy.h"
 #include "one_combat/run_driver.h"
 
@@ -122,8 +119,6 @@ static std::vector<std::string> g_mainArgv;
 static std::string g_mainBinaryPath;
 // Resolved only after successful loading, so E3a provenance does not confuse
 // an unset/failed environment request with the policy actually exercised.
-static std::string g_effectiveVNetPath;
-static std::string g_effectivePolicyPath;
 static std::string g_effectiveOocStrategicPath;
 static std::string g_effectiveOocStrategicTokPath;
 
@@ -312,7 +307,7 @@ using namespace sts;
 
 // ---------------------------------------------------------------------------
 // Enumerate legal actions in the current player-choice state
-// (mirrors BattleScumSearcher2::enumerateActionsForNode; potions omitted).
+// (potions omitted).
 // ---------------------------------------------------------------------------
 static std::vector<search::Action> legalActions(const BattleContext &bc) {
     using search::Action;
@@ -396,8 +391,8 @@ static double rolloutChoice(const GameContext &base, int rIdx, int cardIdx,
     int fights = 0;
     while (gc.outcome == GameOutcome::UNDECIDED && fights < N) {
         if (gc.screenState == ScreenState::BATTLE) {
-            BattleContext bc{}; bc.init(gc);
-            inner.playoutBattle(bc);
+            BattleContext bc{};
+            inner.playoutBattle(gc, bc);
             bc.exitBattle(gc);
             ++fights;
         } else {
@@ -522,8 +517,6 @@ static void evalCardRewardPolicy(GameContext &gc, bool allowSkip = true) {
     }
 }
 
-static std::string featureRow(const GameContext &gc);      // defined below
-static std::string deckCountsCsv(const GameContext &gc);   // defined below
 
 // Current run's path history, so vFeatCsv() can emit pv* features (nullptr = none).
 thread_local const PathHistory *t_curPath = nullptr;
@@ -575,7 +568,6 @@ double g_oocStrategicMarginBossRelic = -1.0; // STS_OOC_STRATEGIC_MARGIN_BOSS_RE
 bool   g_oocStrategicQ = true;       // env STS_OOC_STRATEGIC_Q=0: score via V2 successor predictValue
 bool   g_oocStrategicScorePolicy = false; // env STS_OOC_STRATEGIC_SCORE=policy: one-ply gates score with sigmoid(policy logit) (5.7.2)
 bool   g_oocStrategicRest = false;   // env STS_OOC_STRATEGIC_REST=1: one-ply Q gate on campfires (5.5.2)
-static bool   g_datagenGates = false;       // env STS_DATAGEN_GATES=1: combatgen/distgen OOC decisions route through the one-ply gate chain (§127)
 bool   g_oocStrategicEvent = false;  // env STS_OOC_STRATEGIC_EVENT=1: one-ply Q gate on events (5.5.3)
 bool   g_oocStrategicShop = false;    // env STS_OOC_STRATEGIC_SHOP=1: one-ply Q gate on shop buys (R6)
 bool   g_oocStrategicTreasure = false; // env STS_OOC_STRATEGIC_TREASURE=1: one-ply Q gate on treasure (R6)
@@ -796,14 +788,10 @@ int rowsToHardFight(const GameContext &gc) {
     return 14 - std::max(gc.curMapNodeY, 0);
 }
 
-// --- potion-saving policy: the combat search is per-fight MYOPIC (optimizes THIS
-// fight's end HP), so it spends potions on easy fights with no incentive to bank
-// them for elites/bosses -- where we actually die. evaluateEndState already values
-// a KEPT potion at g_potionKeepValue HP-equiv (drinking costs that much), so we make
-// that value DYNAMIC per fight: high in easy fights when a hard fight is near (hoard),
-// low in the hard fight itself (spend). Modulated by the potion DROP chance -- if we'll
-// likely refill before the hard fight (high potionChance / White Beast Statue = 100%),
-// there's less need to save the current one.
+// --- potion keep-value (HP-equiv): high in easy fights when a hard fight is near
+// (hoard), low in the hard fight itself (spend), modulated by the potion DROP
+// chance. The removed Searcher2 used it in its end-state value; it now only
+// feeds the combat-transition predictor input.
 static int    g_potionSave    = 0;      // STS_POTION_SAVE=1: enable dynamic potion keep-value
 static int    g_potionWindow  = 5;      // STS_POTION_WINDOW: only save when a hard fight is <= this many rows away
 static double g_potionBonus   = 18.0;   // STS_POTION_BONUS: extra HP-equiv keep-value at max urgency
@@ -811,7 +799,7 @@ static double g_potionSpend   = 1.0;    // STS_POTION_SPEND: keep-value DURING a
 static double g_potionDesired = 2.5;    // STS_POTION_DESIRED: potions we'd like entering a hard fight
 static const double kPotionBaseKeep = 4.0;   // the engine's original constant (neutral default)
 
-// Per-fight potion keep-value (HP-equiv), set into search::g_potionKeepValue before combat.
+// Per-fight potion keep-value (HP-equiv).
 double potionKeepValue(const GameContext &gc) {
     if (!g_potionSave) return kPotionBaseKeep;
     const Room r = gc.curRoom;
@@ -1486,21 +1474,21 @@ static void tr_logOocActions(const char *label, GameContext &gc) {
     std::printf("         [NN %s] -> picks #%d (%.3f)\n", label, bestIdx, best);
 }
 
-// Refight the CURRENT battle K times from a copy of the pre-fight state, reseeding the
-// battle RNGs each time so draw order + enemy moves vary -> separates a bad fight model
-// from an unlucky single sample. Prints end-HP distribution, death rate, potions used.
+// Refight the CURRENT battle K times from a copy of the pre-fight state. Each copy
+// gets a different run seed, which reseeds the battle RNG streams that
+// BattleContext::init derives from it, so draw order + enemy moves vary ->
+// separates a bad fight model from an unlucky single sample. Prints end-HP
+// distribution, death rate, potions used.
 static void tr_refight(const GameContext &gc, int sims, int K) {
     std::vector<int> hp; int deaths = 0, potUsed = 0;
     const int potBefore = gc.potionCount;
     for (int k = 0; k < K; ++k) {
         GameContext g2 = gc;
-        BattleContext bc; bc.init(g2);
-        bc.shuffleRng      = sts::Random(gc.seed * 2654435761u + k * 40503u + 1);
-        bc.aiRng           = sts::Random(gc.seed * 2246822519u + k * 668265263u + 7);
-        bc.cardRandomRng   = sts::Random(gc.seed * 3266489917u + k * 374761393u + 13);
+        g2.seed = gc.seed * 2654435761u + k * 40503u + 1;
+        BattleContext bc;
         search::ScumSearchAgent2 ag; ag.simulationCountBase = fightSims(gc, sims);
         ag.rng = std::default_random_engine(gc.seed + 999u + k);
-        ag.playoutBattle(bc);
+        ag.playoutBattle(g2, bc);
         bc.exitBattle(g2);
         const bool died = g2.curHp <= 0 || g2.outcome == GameOutcome::PLAYER_LOSS;
         if (died) ++deaths; hp.push_back(std::max(0, g2.curHp));
@@ -1523,7 +1511,7 @@ static void runTraceRun(std::uint64_t seed, int sims, int asc) {
     t_tokCheckPending = g_oocStrategicTokCheck;
 
     std::printf("=== RUN TRACE seed %llu  asc %d  sims %d%s ===\n",
-                (unsigned long long)seed, asc, sims, search::g_fairPlay ? "  [fair-play]" : "");
+                (unsigned long long)seed, asc, sims, "  [fair-play]");
     std::printf("!!! DIAGNOSTIC TRACE: does NOT exactly reproduce runFullRunOOC policy !!!\n");
 
     const int refightFloor = std::getenv("STS_REFIGHT_FLOOR") ? std::atoi(std::getenv("STS_REFIGHT_FLOOR")) : -1;
@@ -1587,11 +1575,10 @@ static void runTraceRun(std::uint64_t seed, int sims, int asc) {
                                     && gc.info.selectScreenType == CardSelectScreenType::REMOVE;
         if (gc.screenState == ScreenState::BATTLE) {
             agent.simulationCountBase = fightSims(gc, sims);
-            search::g_potionKeepValue = potionKeepValue(gc);
-            BattleContext bc; bc.init(gc);
+            BattleContext bc;
             flush();  // a battle always begins a fresh node (fixes forced rest/event -> boss merge)
             nodeActive = true; label = roomName(gc.curRoom);
-            desc = sts::monsterEncounterStrings[(int)bc.encounter];
+            desc = sts::monsterEncounterStrings[(int)gc.info.encounter];
             if (gc.floorNum == refightFloor) {
                 std::printf("[F%-2d A%d] %-9s %-22s  (pre-fight HP %d/%d)\n",
                             gc.floorNum, gc.act, label.c_str(), desc.c_str(), gc.curHp, gc.maxHp);
@@ -1603,7 +1590,7 @@ static void runTraceRun(std::uint64_t seed, int sims, int asc) {
                             gc.floorNum, gc.act, desc.c_str(), gc.curHp, gc.maxHp);
                 clLastTurn = -1; search::g_onCombatDecision = combatLog;
             }
-            agent.playoutBattle(bc);
+            agent.playoutBattle(gc, bc);
             if (doLog) { search::g_onCombatDecision = nullptr;
                          std::printf("   === end combat: you HP%d, %s ===\n", bc.player.curHp,
                                      bc.player.curHp > 0 ? "WON" : "DIED"); }
@@ -1699,19 +1686,13 @@ static bool bestBench(int sims, int nSeeds, int asc, std::uint64_t seedOffset = 
               << "  shop-beam=" << (g_oocShopBeam ? "ON" : "off")
               << "  native-OOC=" << (g_nativeOoc ? "ON" : "OFF")
               << "  keys=" << (g_collectKeys ? "collect" : "skip")
-              << "  searcher=" << (search::silverLiveBackendInstalled() ? "Silver" : "Searcher2")
-              << (search::g_fairPlay ? "  fair-play" : "")
+              << "  searcher=" << "Silver"
+              << "  fair-play"
               << "  seeds " << seedOffset << ".." << seedOffset + nSeeds - 1
               << "  asc " << asc << "  sims " << sims << "  threads " << numThreads() << "\n";
     std::cout << "BEST models: floor=" << (g_floorNet.ok ? g_floorNet.path : "MISSING")
               << "  win=" << (g_winNet.ok ? g_winNet.path : "not loaded")
-              << "  combatVNet=" << (search::g_useVNet ? "ON" : "off")
-              << (search::g_combatVNet.hasEncounterModels
-                  ? "+per-encounter(" + std::to_string(search::g_combatVNet.encounterModels.size()) + ")"
-                  : "")
-              << "  policyNet=" << (search::g_usePolicyNet ? "ON" : "off")
-              << "  PVNet=" << (search::g_usePVNet ? "ON" : "off")
-              << "  distVNet=" << (search::g_useDistVNet ? "ON" : "off") << "\n";
+              << "\n";
     // Optional per-seed output powers the adaptive self-play gate. Rows are
     // flushed as runs finish, so the dashboard gets live progress and a killed
     // benchmark leaves valid results. The caller owns truncation; batches append.
@@ -1734,7 +1715,7 @@ static bool bestBench(int sims, int nSeeds, int asc, std::uint64_t seedOffset = 
         meta.restV = restV; meta.shopV = true; meta.nativeOoc = g_nativeOoc;
         meta.pathMode = g_pathV ? "model-driven" : "heuristic";
         meta.shopBeam = g_oocShopBeam; meta.collectKeys = g_collectKeys;
-        meta.fairPlay = search::g_fairPlay;
+        meta.fairPlay = true;
         meta.silverSearchEnabled = search::silverLiveBackendInstalled();
         meta.stsSilverSearchEffective = meta.silverSearchEnabled;
         meta.effectiveCombatBackend = meta.silverSearchEnabled ? "silver" : "native_searcher";
@@ -1761,10 +1742,10 @@ static bool bestBench(int sims, int nSeeds, int asc, std::uint64_t seedOffset = 
             && search::silverLiveRhoRacingEnabled();
         meta.floorModel = g_floorNet.ok ? g_floorNet.path : "MISSING";
         meta.winModel = g_winNet.ok ? g_winNet.path : "not loaded";
-        meta.combatVNet = search::g_useVNet ? "ON" : "off";
-        meta.policyNet = search::g_usePolicyNet ? "ON" : "off";
-        meta.pvNet = search::g_usePVNet ? "ON" : "off";
-        meta.distVNet = search::g_useDistVNet ? "ON" : "off";
+        meta.combatVNet = "off";
+        meta.policyNet = "off";
+        meta.pvNet = "off";
+        meta.distVNet = "off";
         std::ofstream sidecar(resultsFile + ".meta.json", std::ios::app);
         if (!sidecar) std::cerr << "[bestbench] warning: cannot open " << resultsFile << ".meta.json\n";
         else sidecar << sts::benchConfigSidecarLine(meta) << '\n';
@@ -1836,62 +1817,6 @@ static bool bestBench(int sims, int nSeeds, int asc, std::uint64_t seedOffset = 
     return true;
 }
 
-// ---------------------------------------------------------------------------
-// DATA GENERATION for an offline value function V(state) ~= P(win). At each
-// card-reward decision we log a feature vector of the current run state; the
-// label is the eventual outcome of that run (Monte-Carlo return). Card picks
-// use eps-greedy exploration so the logged decks are diverse.
-// ---------------------------------------------------------------------------
-// scalar feature names only; datagen appends d0..d(kNumCardIds-1) then won,finalFloor
-static const char *kFeatureHeader =
-    "ascension,act,floor,curHp,maxHp,gold,deckSize,nAttack,nSkill,nPower,nCurse,"
-    "nStatus,nUpgraded,nStarter,nCommon,nUncommon,nRare,obtainSum,obtainAvg,nRelics";
-
-// deck as per-card-id counts d0..d(kNumCardIds-1) — makes value models deck-aware
-// (able to express card synergies), shared by datagen and causalgen.
-static std::string deckCountsCsv(const GameContext &gc) {
-    std::array<int, kNumCardIds> cnt{};
-    for (const auto &c : gc.deck.cards) {
-        int id = (int)c.getId();
-        if (id >= 0 && id < kNumCardIds) ++cnt[id];
-    }
-    std::ostringstream o;
-    for (int i = 0; i < kNumCardIds; ++i) { if (i) o << ','; o << cnt[i]; }
-    return o.str();
-}
-
-static std::string featureRow(const GameContext &gc) {
-    int nAtk=0,nSkill=0,nPow=0,nCurse=0,nStatus=0,nUpg=0,nStarter=0,nCommon=0,nUncommon=0,nRare=0;
-    long obtainSum = 0;
-    for (const auto &c : gc.deck.cards) {
-        switch (c.getType()) {
-            case CardType::ATTACK: ++nAtk; break;
-            case CardType::SKILL:  ++nSkill; break;
-            case CardType::POWER:  ++nPow; break;
-            case CardType::CURSE:  ++nCurse; break;
-            case CardType::STATUS: ++nStatus; break;
-            default: break;
-        }
-        if (c.isUpgraded()) ++nUpg;
-        if (c.isStarterStrikeOrDefend()) ++nStarter;
-        switch (c.getRarity()) {
-            case CardRarity::COMMON:   ++nCommon; break;
-            case CardRarity::UNCOMMON: ++nUncommon; break;
-            case CardRarity::RARE:     ++nRare; break;
-            default: break;
-        }
-        obtainSum += search::Expert::getObtainWeight(c.getId(), c.isUpgraded());
-    }
-    const int deckSize = gc.deck.size();
-    const double obtainAvg = deckSize ? (double)obtainSum / deckSize : 0.0;
-    std::ostringstream o;
-    o << gc.ascension << ',' << gc.act << ',' << gc.floorNum << ','
-      << gc.curHp << ',' << gc.maxHp << ',' << gc.gold << ',' << deckSize << ','
-      << nAtk << ',' << nSkill << ',' << nPow << ',' << nCurse << ',' << nStatus << ','
-      << nUpg << ',' << nStarter << ',' << nCommon << ',' << nUncommon << ',' << nRare << ','
-      << obtainSum << ',' << obtainAvg << ',' << (int)gc.relics.relics.size();
-    return o.str();
-}
 
 // ---------------------------------------------------------------------------
 // RICH datagen v2: a comprehensive per-decision run-state snapshot for training
@@ -2030,6 +1955,18 @@ struct PredictedCheckpointFight {
 static PredictedCheckpointFight predictCheckpointFight(const GameContext &gc,
                                                         MonsterEncounter encounter);
 
+// Remaining non-minion monster HP at combat end (terminal loss labels).
+static void nonMinionMonsterHpTotals(const BattleContext &bc, int &curHpTotal, int &maxHpTotal) {
+    curHpTotal = 0; maxHpTotal = 0;
+    for (int i = 0; i < bc.monsters.monsterCount; ++i) {
+        const auto &m = bc.monsters.arr[i];
+        if (!m.hasStatus<MS::MINION>() && m.id != sts::MonsterId::INVALID) {
+            curHpTotal += m.curHp;
+            maxHpTotal += m.maxHp;
+        }
+    }
+}
+
 // Shared V1 labels: persistent pre-init features and terminal pre-exit outcome.
 // Ambiguous Awakened One deaths retain V1's validity mask; loss-severity
 // consumers must exclude progressAmbiguous, as the existing trainer does.
@@ -2084,9 +2021,9 @@ static CombatEvalLabel combatEvalTerminal(const BattleContext &bc, MonsterEncoun
         && healthOk && (won || trueDeath);
     double terminalHp = std::max(0, bc.player.curHp), terminalMaxHp = std::max(0, bc.player.maxHp);
     double winHpFrac = std::max(eps, std::min(1.0, terminalMaxHp > 0 ? terminalHp / terminalMaxHp : eps));
-    double enemyRatio = search::getNonMinionMonsterCurHpRatio(bc);
     int enemyCurHp = 0, enemyMaxHp = 0;
-    search::getNonMinionMonsterHpTotals(bc, enemyCurHp, enemyMaxHp);
+    nonMinionMonsterHpTotals(bc, enemyCurHp, enemyMaxHp);
+    double enemyRatio = (enemyCurHp == 0 || enemyMaxHp == 0) ? 0 : (double)enemyCurHp / enemyMaxHp;
     double lossRemainingFrac = std::max(eps, std::min(1.0, enemyRatio));
     double signedOutcome = labelValid ? (won ? winHpFrac : -lossRemainingFrac) : 0.0;
     const char *reason = !representableEncounter ? "unknown_encounter" : !hasFirstDecisionBoundary ? "missing_first_decision_hook" : !healthOk ? "simulator_health_failure" : escaped ? "escape" : turnCapLoss ? "turn_cap" : (decided && !trueDeath && !won) ? "non_death_loss" : "";
@@ -2707,8 +2644,9 @@ static double checkpointedActFightUtility(GameContext gc, int sims, std::uint64_
                     fightAgent.rng = std::default_random_engine(
                         agentSeed ^ (0xd6e8feb86659fd93ULL * (std::uint64_t)(i + 1))
                                   ^ (0xa0761d6478bd642fULL * (std::uint64_t)(floor + 1)));
-                    BattleContext bc{}; bc.init(local, options[i].encounter);
-                    fightAgent.playoutBattle(bc); bc.exitBattle(local);
+                    local.info.encounter = options[i].encounter;
+                    BattleContext bc{};
+                    fightAgent.playoutBattle(local, bc); bc.exitBattle(local);
                     passed = bc.outcome == Outcome::PLAYER_VICTORY;
                     hp = local.curHp;
                     maxHp = local.maxHp;
@@ -2749,13 +2687,7 @@ static double checkpointedActFightUtility(GameContext gc, int sims, std::uint64_
                 if (!applyPredictedCheckpointFight(gc, gc.info.encounter)) break;
             } else {
                 trunkAgent.simulationCountBase = fightSims(gc, checkpointSims);
-                // g_potionKeepValue is process-global. With saving disabled (the
-                // deployed/pilot setting) its default is the same fixed value, so
-                // avoid a needless shared write while branches run in parallel.
-                // Dynamic potion saving remains sequential until that setting is
-                // made thread-local in the combat searcher.
-                if (g_potionSave) search::g_potionKeepValue = potionKeepValue(gc);
-                BattleContext actual{}; actual.init(gc); trunkAgent.playoutBattle(actual); actual.exitBattle(gc);
+                BattleContext actual{}; trunkAgent.playoutBattle(gc, actual); actual.exitBattle(gc);
             }
             if (room == Room::BOSS) break;
         } else if (gc.screenState == ScreenState::MAP_SCREEN && gc.curMapNodeY < 14) {
@@ -2901,9 +2833,9 @@ static NextCombatLabel labelNextCombat(GameContext branch, int branchSims,
         fightAgent.simulationCountBase = fightSims(local, branchSims);
         fightAgent.rng = std::default_random_engine(
             agentSeed ^ (0xd6e8feb86659fd93ULL * (std::uint64_t)(i + 1)));
+        local.info.encounter = options[i].encounter;
         BattleContext bc{};
-        bc.init(local, options[i].encounter);
-        fightAgent.playoutBattle(bc);
+        fightAgent.playoutBattle(local, bc);
         bc.exitBattle(local);
         const bool won = bc.outcome == Outcome::PLAYER_VICTORY;
         const double hp = won ? local.curHp : 0.0;
@@ -2928,8 +2860,7 @@ static NextCombatLabel labelNextCombat(GameContext branch, int branchSims,
     actualAgent.simulationCountBase = fightSims(actual, branchSims);
     actualAgent.rng = std::default_random_engine(agentSeed ^ 0xa0761d6478bd642fULL);
     BattleContext actualBattle{};
-    actualBattle.init(actual);
-    actualAgent.playoutBattle(actualBattle);
+    actualAgent.playoutBattle(actual, actualBattle);
     actualBattle.exitBattle(actual);
     label.actualWin = actualBattle.outcome == Outcome::PLAYER_VICTORY ? 1.0 : 0.0;
     label.actualHp = label.actualWin ? actual.curHp : 0.0;
@@ -2957,8 +2888,8 @@ static std::string runOocNextCombatSeed(std::uint64_t seed, int outerSims, int a
         const bool inRemoveSelect = gc.screenState == ScreenState::CARD_SELECT
                                     && gc.info.selectScreenType == CardSelectScreenType::REMOVE;
         if (gc.screenState == ScreenState::BATTLE) {
-            BattleContext bc{}; bc.init(gc);
-            agent.playoutBattle(bc);
+            BattleContext bc{};
+            agent.playoutBattle(gc, bc);
             ++fightsTotal;
             if (bc.outcome == Outcome::PLAYER_LOSS) ++fightsLost;
             bc.exitBattle(gc);
@@ -3270,7 +3201,7 @@ static std::string runPathCounterfactualSeed(std::uint64_t seed, int outerSims, 
         const bool inRemoveSelect = gc.screenState == ScreenState::CARD_SELECT
                                     && gc.info.selectScreenType == CardSelectScreenType::REMOVE;
         if (gc.screenState == ScreenState::BATTLE) {
-            BattleContext bc; bc.init(gc); agent.playoutBattle(bc); bc.exitBattle(gc);
+            BattleContext bc; agent.playoutBattle(gc, bc); bc.exitBattle(gc);
         } else if (gc.screenState == ScreenState::MAP_SCREEN && gc.curMapNodeY < 14) {
             std::vector<int> candidates;
             if (gc.curMapNodeY < 0) {
@@ -3492,7 +3423,7 @@ runDataGen2Seed(std::uint64_t seed, int sims, int asc, double epsilon,
         const bool inRemoveSelect = gc.screenState == ScreenState::CARD_SELECT
                                     && gc.info.selectScreenType == CardSelectScreenType::REMOVE;
         if (gc.screenState == ScreenState::BATTLE) {
-            BattleContext bc; bc.init(gc); agent.playoutBattle(bc); bc.exitBattle(gc);
+            BattleContext bc; agent.playoutBattle(gc, bc); bc.exitBattle(gc);
         } else if (gc.screenState == ScreenState::MAP_SCREEN && gc.curMapNodeY < 14) {
             search::GameAction(one_combat::chooseMapAction(gc)).execute(gc);
         } else if (gc.screenState == ScreenState::REWARDS) {
@@ -3747,57 +3678,14 @@ static void dataGen2(int nSeeds, int sims, int asc, double epsilon, const std::s
 }
 
 // ---------------------------------------------------------------------------
-// COMBAT VALUE datagen: snapshot the live BattleContext at every in-fight
-// decision (via search::g_onCombatDecision) and label each snapshot with that
-// fight's eventual outcome (won, end HP). Trains V_combat(state) -> outcome, a
-// learned leaf value to replace noisy random rollouts. Features are combat-only
-// (player/monsters/available-cards), fixed length.
-// Header/row now delegate to the library (search::combatFeatureNames /
-// combatExtractFeatures) so combatgen training data and the C++ leaf-inference
-// use the SAME feature extraction -- no train/serve drift.
+// Combat feature header/row for whole-combat datasets. They delegate to the
+// library (search::combatFeatureNames / combatExtractFeatures) so training data
+// and C++ inference use the same feature extraction.
 static std::string combatHeaderStr() {
     const auto &names = search::combatFeatureNames();
     std::string h;
     for (size_t i = 0; i < names.size(); ++i) { if (i) h += ','; h += names[i]; }
     return h;
-}
-
-// Rich-label suffix (distributional model): endTurn + per-potion-ID consumption flags.
-// Potion IDs 0..43 map to the Potion enum (0=EMPTY, 1=INVALID, 2..43=real potions).
-static constexpr int kNumGenPotions = 44;
-static std::string distLabelHeaderStr() {
-    std::string h = ",endTurn,potionsConsumed";
-    for (int i = 0; i < kNumGenPotions; ++i) { h += ",pUsed"; h += std::to_string(i); }
-    return h;
-}
-
-// Snapshot of what's held at a decision so we can later determine consumption.
-struct CombatDecisionSnapshot {
-    std::string featureRow;
-    std::bitset<kNumGenPotions> potionsHeld;
-};
-static std::string distLabelSuffix(const CombatDecisionSnapshot &snap,
-                                   int endTurn,
-                                   const std::bitset<kNumGenPotions> &finalPotions) {
-    std::ostringstream o;
-    o << ',' << endTurn;
-    int consumed = 0;
-    for (int i = 0; i < kNumGenPotions; ++i) {
-        if (snap.potionsHeld[i] && !finalPotions[i]) ++consumed;
-    }
-    o << ',' << consumed;
-    for (int i = 0; i < kNumGenPotions; ++i) {
-        o << ',' << (snap.potionsHeld[i] && !finalPotions[i] ? 1 : 0);
-    }
-    return o.str();
-}
-static std::bitset<kNumGenPotions> getPotionBits(const BattleContext &bc) {
-    std::bitset<kNumGenPotions> b;
-    for (int i = 0; i < bc.potionCapacity && i < (int)bc.potions.size(); ++i) {
-        int pid = (int)bc.potions[i];
-        if (pid >= 0 && pid < kNumGenPotions) b.set(pid);
-    }
-    return b;
 }
 
 static std::string combatFeatureRow(const BattleContext &bc) {
@@ -4295,11 +4183,10 @@ static std::string runCombatTransitionGenSeed(std::uint64_t seed, int sims, int 
             const int battleFloor = gc.floorNum;
             const Room battleRoom = gc.curRoom;
             const int battleEncounter = static_cast<int>(gc.info.encounter);
-            search::g_potionKeepValue = potionKeepValue(gc);
             const auto predictorInput = one_combat::combatPredictorInputJson(
                 one_combat::captureCombatPredictorInput(
                     pre, static_cast<MonsterEncounter>(battleEncounter),
-                    search::g_potionKeepValue));
+                    potionKeepValue(gc)));
             std::optional<one_combat::CombatTransitionRecord> record;
             int rawCaptureCount = 0;
             bool decided = false;
@@ -4543,95 +4430,6 @@ static void counterfactualSurrogateAuditGen(int nSeeds,int sims,int asc,const st
     for(int s=0;s<nSeeds;++s){const auto r=runCounterfactualSurrogateAuditSeed(seedOffset+s,sims,asc,teacher);rows+=std::count(r.begin(),r.end(),'\n');if(!r.empty())++completed;f<<r;f.flush();}
     std::cout<<"ooccfaudit teacher="<<teacher.id<<" completed="<<completed<<'/'<<nSeeds<<" quarantined="<<nSeeds-completed<<" rows="<<rows<<" -> "<<outfile<<'\n';writeTrainingProvenance(outfile,"ooccfaudit",nSeeds,completed,nSeeds-completed,g_trainingHealthFailures.load(),rows,seedOffset,sims,asc);
 }
-
-static bool datagenGateStack(GameContext &gc, const search::ScumSearchAgent2 &agent) {
-    switch (gc.screenState) {
-        case ScreenState::EVENT_SCREEN:       return oocOnePlyEventPolicy(gc, agent);
-        case ScreenState::REST_ROOM:          return oocOnePlyRestPolicy(gc, agent);
-        case ScreenState::TREASURE_ROOM:      return oocOnePlyTreasurePolicy(gc, agent);
-        case ScreenState::SHOP_ROOM:          return oocOnePlyShopPolicy(gc, agent);
-        case ScreenState::BOSS_RELIC_REWARDS: return oocOnePlyBossRelicPolicy(gc, agent);
-        default:                              return false;
-    }
-}
-
-static std::string runCombatGenSeed(std::uint64_t seed, int sims, int asc, double epsilon,
-                                      bool richLabels = false) {
-    trainingRunStart();
-    GameContext gc(CharacterClass::IRONCLAD, seed, asc);
-    search::ScumSearchAgent2 agent;
-    agent.simulationCountBase = sims;
-    agent.rng = std::default_random_engine(seed);
-    std::default_random_engine ex(seed * 6364136223846793005ULL + 1);
-    std::uniform_real_distribution<double> ur(0.0, 1.0);
-
-    std::ostringstream out;
-    int fightIdx = 0;
-    std::vector<CombatDecisionSnapshot> fightSnaps;
-    search::g_onCombatDecision = [&](const BattleContext &bc) {
-        CombatDecisionSnapshot s;
-        s.featureRow = combatFeatureRow(bc);
-        s.potionsHeld = getPotionBits(bc);
-        fightSnaps.push_back(std::move(s));
-    };
-    // When richLabels=false: emit just won,endHp (backward-compatible).
-    // When richLabels=true: also emit endTurn + per-potion consumption labels.
-
-    using RT = search::GameAction::RewardsActionType;
-    while (gc.outcome == GameOutcome::UNDECIDED) {
-        if (gc.screenState == ScreenState::BATTLE) {
-            fightSnaps.clear();
-            BattleContext bc; bc.init(gc);
-            agent.playoutBattle(bc);
-            if (!trainingRunValid(bc.outcome != Outcome::UNDECIDED)) {
-                search::g_onCombatDecision = nullptr;
-                return {};
-            }
-            const int won      = bc.outcome == Outcome::PLAYER_VICTORY ? 1 : 0;
-            const int endHp    = bc.player.curHp;
-            const int endTurn  = bc.turn;
-            auto finalPotions  = getPotionBits(bc);
-            for (const auto &snap : fightSnaps) {
-                out << seed << ',' << fightIdx << ',' << snap.featureRow
-                    << ',' << won << ',' << endHp;
-                if (richLabels)
-                    out << distLabelSuffix(snap, endTurn, finalPotions);
-                out << '\n';
-            }
-            ++fightIdx;
-            bc.exitBattle(gc);
-        } else if (gc.screenState == ScreenState::MAP_SCREEN && gc.curMapNodeY < 14) {
-            search::GameAction(one_combat::chooseMapAction(gc)).execute(gc);
-        } else if (gc.screenState == ScreenState::REWARDS) {
-            auto &r = gc.info.rewardsContainer;
-            if      (r.goldRewardCount > 0) search::GameAction(RT::GOLD, 0).execute(gc);
-            else if (r.relicCount > 0)      search::GameAction(RT::RELIC, 0).execute(gc);
-            else if (r.potionCount > 0)     search::GameAction(RT::POTION, 0).execute(gc);
-            else if (g_collectKeys && r.emeraldKey) search::GameAction(RT::KEY, 0).execute(gc);
-            else if (g_collectKeys && r.sapphireKey) search::GameAction(RT::KEY, 0).execute(gc);
-            else if (r.cardRewardCount == 0) search::GameAction(RT::SKIP).execute(gc);
-            else if (g_datagenGates && oocOnePlyCardRewardPolicy(gc, agent)) { /* gate-stack card pick (§127) */ }
-            else if (ur(ex) < epsilon) {                     // explore drafting for state diversity
-                while (r.cardRewardCount > 0) {
-                    const int rIdx = r.cardRewardCount - 1;
-                    const int nc = r.cardRewards[rIdx].size();
-                    const int pick = std::uniform_int_distribution<int>(0, nc)(ex);
-                    search::GameAction(RT::CARD, rIdx, pick < nc ? pick : 5).execute(gc);
-                }
-            } else {
-                evalCardRewardPolicy(gc);
-            }
-        } else {
-            if (!g_datagenGates || !datagenGateStack(gc, agent))
-                agent.stepOutOfCombatPolicy(gc);
-        }
-    }
-    search::g_onCombatDecision = nullptr;
-    return out.str();
-}
-
-// forward decl
-static std::string policyHeaderStr();
 
 // ---------------------------------------------------------------------------
 // STRATEGIC data generation: one CSV row per LEGAL action at each OOC decision,
@@ -5019,8 +4817,8 @@ static std::string runStrategicGenSeed(std::uint64_t seed, int sims, int asc) {
     while (gc.outcome == GameOutcome::UNDECIDED) {
         path.update(gc);
         if (gc.screenState == ScreenState::BATTLE) {
-            BattleContext bc; bc.init(gc);
-            agent.playoutBattle(bc);
+            BattleContext bc;
+            agent.playoutBattle(gc, bc);
             bc.exitBattle(gc);
             continue;
         }
@@ -5050,7 +4848,8 @@ static std::string runStrategicGenSeed(std::uint64_t seed, int sims, int asc) {
 
         // Deployed-default OOC policy (mirrors runFullRunOOC with no opt-ins):
         // heuristic map pathing, forced non-card rewards one at a time, native
-        // floor card pick with skip, win-rate rest/upgrade, else Searcher2.
+        // floor card pick with skip, win-rate rest/upgrade, else the agent's
+        // heuristic OOC policy.
         if (gc.screenState == ScreenState::MAP_SCREEN && gc.curMapNodeY < 14) {
             search::GameAction(one_combat::chooseMapAction(gc)).execute(gc);
         } else if (gc.screenState == ScreenState::REWARDS) {
@@ -5135,8 +4934,8 @@ static void stepFrozenV4Ooc(GameContext &gc, search::ScumSearchAgent2 &agent) {
                           && gc.info.selectScreenType == CardSelectScreenType::REMOVE;
     using RT = search::GameAction::RewardsActionType;
     if (gc.screenState == ScreenState::BATTLE) {
-        BattleContext bc; bc.init(gc);
-        agent.playoutBattle(bc);
+        BattleContext bc;
+        agent.playoutBattle(gc, bc);
         bc.exitBattle(gc);
     } else if (gc.screenState == ScreenState::MAP_SCREEN && gc.curMapNodeY < 14) {
         if (!oocActionNNPolicy(gc))
@@ -5184,43 +4983,6 @@ static void stepFrozenV4Ooc(GameContext &gc, search::ScumSearchAgent2 &agent) {
             if (!oocOnePlyBossRelicPolicy(gc, agent)) agent.stepOutOfCombatPolicy(gc);
     } else {
         agent.stepOutOfCombatPolicy(gc);
-    }
-}
-
-static std::vector<search::GameAction> v4EvaluatorActions(const GameContext &gc) {
-    using RT = search::GameAction::RewardsActionType;
-    auto actions = search::GameAction::getAllActionsInState(gc);
-    if (gc.screenState == ScreenState::REWARDS
-        && gc.info.rewardsContainer.cardRewardCount > 0) {
-        const search::GameAction skip(RT::CARD,
-                                      gc.info.rewardsContainer.cardRewardCount - 1, 5);
-        bool found = false;
-        for (const auto &a : actions) if (a.bits == skip.bits) found = true;
-        if (!found) actions.push_back(skip);
-    }
-    return actions;
-}
-
-static bool v4EvaluatorOwnedScreen(const GameContext &gc,
-                                   const std::vector<search::GameAction> &actions) {
-    if (g_oocStrategicGateRegret || actions.empty()) return false;
-    switch (gc.screenState) {
-        case ScreenState::EVENT_SCREEN: return g_oocStrategicEvent;
-        case ScreenState::BOSS_RELIC_REWARDS: return g_oocStrategicBossRelic;
-        case ScreenState::TREASURE_ROOM: return g_oocStrategicTreasure;
-        case ScreenState::REST_ROOM: return g_oocStrategicRest;
-        case ScreenState::SHOP_ROOM: return g_oocStrategicShop;
-        case ScreenState::CARD_SELECT:
-            return g_oocStrategicRest
-                && gc.info.selectScreenType == CardSelectScreenType::UPGRADE;
-        case ScreenState::REWARDS: {
-            const auto &r = gc.info.rewardsContainer;
-            if (r.goldRewardCount > 0 || r.relicCount > 0 || r.potionCount > 0)
-                return false;
-            if (g_collectKeys && (r.emeraldKey || r.sapphireKey)) return false;
-            return g_oocStrategicTokNet.ok && r.cardRewardCount > 0;
-        }
-        default: return false;
     }
 }
 
@@ -6578,8 +6340,8 @@ static std::string runStrategicGenSeed2(std::uint64_t seed, int sims, int asc) {
     while (gc.outcome == GameOutcome::UNDECIDED) {
         path.update(gc);
         if (gc.screenState == ScreenState::BATTLE) {
-            BattleContext bc; bc.init(gc);
-            agent.playoutBattle(bc);
+            BattleContext bc;
+            agent.playoutBattle(gc, bc);
             bc.exitBattle(gc);
             continue;
         }
@@ -6669,7 +6431,8 @@ static std::string runStrategicGenSeed2(std::uint64_t seed, int sims, int asc) {
 
         // Deployed-default OOC policy (mirrors runFullRunOOC with no opt-ins):
         // heuristic map pathing, forced non-card rewards one at a time, native
-        // floor card pick with skip, win-rate rest/upgrade, else Searcher2.
+        // floor card pick with skip, win-rate rest/upgrade, else the agent's
+        // heuristic OOC policy.
         if (gc.screenState == ScreenState::MAP_SCREEN && gc.curMapNodeY < 14) {
             search::GameAction(one_combat::chooseMapAction(gc)).execute(gc);
         } else if (gc.screenState == ScreenState::REWARDS) {
@@ -6758,8 +6521,6 @@ static void strategicGen2(int nSeeds, int sims, int asc, const std::string &outF
               << "  branchSims";
     for (const int s : g_strategicBranchSims) std::cout << ':' << s;
     std::cout << "  futures " << g_strategicBranchFutures << "  -> " << outFile << "\n";
-    if (!search::g_useVNet)
-        std::cout << "[strategicgen2 WARNING: STS_VNET not loaded; branch battles have no combat value net leaf]\n";
     std::ofstream f(outFile, append ? std::ios::app : std::ios::out);
     if (f.tellp() == 0) {
         f << strategicHeader2();
@@ -6788,283 +6549,6 @@ static void strategicGen2(int nSeeds, int sims, int asc, const std::string &outF
 }
 
 // ---------------------------------------------------------------------------
-// COMBINED value+policy datagen: one full-run play emits BOTH the V_combat value
-// rows (g_onCombatDecision snapshot, labeled with fight endHp) AND the policy-target
-// rows (g_onSearchComplete root visit-π). Halves self-play combat datagen cost vs
-// running combatgen + policygen separately, and the two datasets are perfectly
-// aligned (same play). Returns {valueRows, policyRows}.
-static std::pair<std::string,std::string>
-runFightGenSeed(std::uint64_t seed, int sims, int asc, double epsilon) {
-    trainingRunStart();
-    GameContext gc(CharacterClass::IRONCLAD, seed, asc);
-    search::ScumSearchAgent2 agent;
-    agent.simulationCountBase = sims;
-    agent.rng = std::default_random_engine(seed);
-    std::default_random_engine ex(seed * 6364136223846793005ULL + 1);
-    std::uniform_real_distribution<double> ur(0.0, 1.0);
-    PathHistory path;
-    t_curPath = &path;
-
-    std::ostringstream val, pol;
-    int fightIdx = 0, decIdx = 0;
-    std::vector<std::string> fightRows;
-    const int nf = search::combatPolicyFeatureCount();
-    std::vector<float> feat(nf);
-
-    search::g_onCombatDecision = [&](const BattleContext &bc) {
-        fightRows.push_back(combatFeatureRow(bc));
-    };
-    search::g_onSearchComplete = [&](const BattleContext &bc, const search::BattleScumSearcher2 &searcher) {
-        // Advance for every combat decision, including forced/single-edge roots.
-        // This keeps decIdx exactly aligned with the value snapshot emitted by
-        // g_onCombatDecision, while still omitting useless one-action policy rows.
-        const int thisDecIdx = decIdx++;
-        const auto &edges = searcher.root.edges;
-        if ((int)edges.size() < 2) return;
-        std::int64_t total = 0;
-        for (const auto &e : edges) total += e.node.simulationCount;
-        if (total <= 0) return;
-        for (const auto &e : edges) {
-            search::combatExtractPolicyFeatures(bc, e.action, feat.data());
-            pol << seed << ',' << fightIdx << ',' << thisDecIdx;
-            for (int i = 0; i < nf; ++i) { pol << ','; const float v = feat[i];
-                if (v == (float)(long)v) pol << (long)v; else pol << v; }
-            pol << ',' << e.node.simulationCount << ',' << total << '\n';
-        }
-    };
-
-    using RT = search::GameAction::RewardsActionType;
-    while (gc.outcome == GameOutcome::UNDECIDED) {
-        path.update(gc);
-        const bool inRemoveSelect = gc.screenState == ScreenState::CARD_SELECT
-                                    && gc.info.selectScreenType == CardSelectScreenType::REMOVE;
-        if (gc.screenState == ScreenState::BATTLE) {
-            fightRows.clear(); decIdx = 0;
-            BattleContext bc; bc.init(gc);
-            agent.playoutBattle(bc);
-            if (!trainingRunValid(bc.outcome != Outcome::UNDECIDED)) {
-                search::g_onCombatDecision = nullptr;
-                search::g_onSearchComplete = nullptr;
-                t_curPath = nullptr;
-                return {};
-            }
-            const int won   = bc.outcome == Outcome::PLAYER_VICTORY ? 1 : 0;
-            const int endHp = bc.player.curHp;
-            for (const auto &fr : fightRows)
-                val << seed << ',' << fightIdx << ',' << fr << ',' << won << ',' << endHp << '\n';
-            ++fightIdx;
-            bc.exitBattle(gc);
-        } else if (gc.screenState == ScreenState::MAP_SCREEN && gc.curMapNodeY < 14) {
-            search::GameAction(one_combat::chooseMapAction(gc)).execute(gc);
-        } else if (gc.screenState == ScreenState::REWARDS) {
-            auto &r = gc.info.rewardsContainer;
-            if      (r.goldRewardCount > 0) search::GameAction(RT::GOLD, 0).execute(gc);
-            else if (r.relicCount > 0)      search::GameAction(RT::RELIC, 0).execute(gc);
-            else if (r.potionCount > 0)     search::GameAction(RT::POTION, 0).execute(gc);
-            else if (g_collectKeys && r.emeraldKey) search::GameAction(RT::KEY, 0).execute(gc);
-            else if (g_collectKeys && r.sapphireKey) search::GameAction(RT::KEY, 0).execute(gc);
-            else if (r.cardRewardCount == 0) search::GameAction(RT::SKIP).execute(gc);
-            else if (ur(ex) < epsilon) {
-                while (r.cardRewardCount > 0) {
-                    const int rIdx = r.cardRewardCount - 1;
-                    const int nc = r.cardRewards[rIdx].size();
-                    const int pick = std::uniform_int_distribution<int>(0, nc)(ex);
-                    search::GameAction(RT::CARD, rIdx, pick < nc ? pick : 5).execute(gc);
-                }
-            } else {
-                one_combat::serverCardRewardPolicy(gc);                    // deployed V_floor exploit policy
-            }
-        } else if (gc.screenState == ScreenState::SHOP_ROOM) {
-            one_combat::shopVPolicy(gc);
-        } else if (inRemoveSelect) {
-            one_combat::removeSelectVPolicy(gc);
-        } else if (g_restWin && gc.screenState == ScreenState::REST_ROOM && one_combat::restWinPolicy(gc)) {
-            // deployed survival-shaped rest policy
-        } else if (g_restWin && gc.screenState == ScreenState::CARD_SELECT
-                   && gc.info.selectScreenType == CardSelectScreenType::UPGRADE) {
-            one_combat::upgradeSelectWinPolicy(gc);
-        } else {
-            agent.stepOutOfCombatPolicy(gc);
-        }
-    }
-    search::g_onCombatDecision = nullptr;
-    search::g_onSearchComplete = nullptr;
-    t_curPath = nullptr;
-    return { val.str(), pol.str() };
-}
-
-// ---------------------------------------------------------------------------
-static void searchDiag(int nSeeds, int sims, int asc, const std::string &out, int probeEvery,
-                       std::uint64_t seedOffset = 0) {
-    const int displayProbeEvery = probeEvery;
-    if (!one_combat::startSearchDiagnostics(out, probeEvery)) return;
-    const std::string fightOut = out + ".fights.csv";
-    std::cout << "SEARCHDIAG: seeds " << seedOffset << ".." << seedOffset + nSeeds - 1
-              << "  sims/decision " << sims
-              << "  asc " << asc << "  probeEvery " << displayProbeEvery
-              << "  fair=" << (search::g_fairPlay ? 1 : 0)
-              << "  rolloutDepth=" << search::g_maxRolloutDepth
-              << "  threads " << numThreads() << "  out " << out
-              << "  fights " << fightOut << "\n";
-    const bool restV = std::getenv("STS_REST_V") && std::atoi(std::getenv("STS_REST_V")) != 0;
-    int wins = 0;
-    auto wall0 = std::chrono::steady_clock::now();
-    #pragma omp parallel for reduction(+:wins) schedule(dynamic)
-    for (int s = 0; s < nSeeds; ++s) {
-        const std::uint64_t seed = seedOffset + (std::uint64_t)s;
-        one_combat::installSearchDiagnosticThreadHooks();
-        RunResult r = runFullRunOOC(seed, sims, asc, restV, true);
-        one_combat::clearSearchDiagnosticThreadHooks();
-        wins += r.won ? 1 : 0;
-    }
-    const double wall = std::chrono::duration<double>(std::chrono::steady_clock::now() - wall0).count();
-    one_combat::stopSearchDiagnostics();
-    std::printf("SEARCHDIAG DONE  win%%=%5.1f  wall=%.1fs\n", 100.0 * wins / nSeeds, wall);
-}
-
-// POLICY-TARGET datagen (AlphaZero-lite phase 1): at every in-combat decision,
-// after the searcher has run its full budget, log each root edge as a row
-// (state features ++ that action's features) with the edge's VISIT COUNT and the
-// decision's TOTAL visits. Training normalizes visit/total -> the MCTS policy
-// target π; the learned comparator net(state,action) then steers PUCT selection.
-// Reuses g_onSearchComplete (fires once per agent decision, off the hot path).
-static std::string policyHeaderStr() {
-    const auto &names = search::combatPolicyFeatureNames();
-    std::string h = "seed,fightIdx,decIdx";
-    for (const auto &n : names) { h += ','; h += n; }
-    h += ",visit,total";
-    return h;
-}
-
-static std::string runPolicyGenSeed(std::uint64_t seed, int sims, int asc, double epsilon) {
-    trainingRunStart();
-    GameContext gc(CharacterClass::IRONCLAD, seed, asc);
-    search::ScumSearchAgent2 agent;
-    agent.simulationCountBase = sims;
-    agent.rng = std::default_random_engine(seed);
-    std::default_random_engine ex(seed * 6364136223846793005ULL + 1);
-    std::uniform_real_distribution<double> ur(0.0, 1.0);
-
-    std::ostringstream out, fightOut;
-    int fightIdx = 0, decIdx = 0;
-    const int nf = search::combatPolicyFeatureCount();
-    std::vector<float> feat(nf);
-
-    search::g_onSearchComplete = [&](const BattleContext &bc, const search::BattleScumSearcher2 &searcher) {
-        const int thisDecIdx = decIdx++;
-        const auto &edges = searcher.root.edges;
-        const int n = (int)edges.size();
-        if (n < 2) return;                       // forced single move -> nothing to learn
-        std::int64_t total = 0;
-        for (const auto &e : edges) total += e.node.simulationCount;
-        if (total <= 0) return;
-        for (const auto &e : edges) {
-            search::combatExtractPolicyFeatures(bc, e.action, feat.data());
-            fightOut << seed << ',' << fightIdx << ',' << thisDecIdx;
-            for (int i = 0; i < nf; ++i) {
-                fightOut << ',';
-                const float v = feat[i];
-                if (v == (float)(long)v) fightOut << (long)v; else fightOut << v;
-            }
-            fightOut << ',' << e.node.simulationCount << ',' << total << '\n';
-        }
-    };
-
-    using RT = search::GameAction::RewardsActionType;
-    while (gc.outcome == GameOutcome::UNDECIDED) {
-        if (gc.screenState == ScreenState::BATTLE) {
-            decIdx = 0;
-            fightOut.str(""); fightOut.clear();
-            BattleContext bc; bc.init(gc);
-            agent.playoutBattle(bc);
-            if (!trainingRunValid(bc.outcome != Outcome::UNDECIDED)) {
-                search::g_onSearchComplete = nullptr;
-                return {};
-            }
-            ++fightIdx;
-            bc.exitBattle(gc);
-            out << fightOut.str();
-        } else if (gc.screenState == ScreenState::MAP_SCREEN && gc.curMapNodeY < 14) {
-            search::GameAction(one_combat::chooseMapAction(gc)).execute(gc);
-        } else if (gc.screenState == ScreenState::REWARDS) {
-            auto &r = gc.info.rewardsContainer;
-            if      (r.goldRewardCount > 0) search::GameAction(RT::GOLD, 0).execute(gc);
-            else if (r.relicCount > 0)      search::GameAction(RT::RELIC, 0).execute(gc);
-            else if (r.potionCount > 0)     search::GameAction(RT::POTION, 0).execute(gc);
-            else if (g_collectKeys && r.emeraldKey) search::GameAction(RT::KEY, 0).execute(gc);
-            else if (g_collectKeys && r.sapphireKey) search::GameAction(RT::KEY, 0).execute(gc);
-            else if (r.cardRewardCount == 0) search::GameAction(RT::SKIP).execute(gc);
-            else if (ur(ex) < epsilon) {                     // explore drafting for state diversity
-                while (r.cardRewardCount > 0) {
-                    const int rIdx = r.cardRewardCount - 1;
-                    const int nc = r.cardRewards[rIdx].size();
-                    const int pick = std::uniform_int_distribution<int>(0, nc)(ex);
-                    search::GameAction(RT::CARD, rIdx, pick < nc ? pick : 5).execute(gc);
-                }
-            } else {
-                evalCardRewardPolicy(gc);
-            }
-        } else {
-            agent.stepOutOfCombatPolicy(gc);
-        }
-    }
-    search::g_onSearchComplete = nullptr;
-    if (!trainingRunValid(gc.outcome != GameOutcome::UNDECIDED)) return {};
-    return out.str();
-}
-
-static std::string runDataGenSeed(std::uint64_t seed, int sims, int asc, double epsilon) {
-    trainingRunStart();
-    GameContext gc(CharacterClass::IRONCLAD, seed, asc);
-    search::ScumSearchAgent2 agent;
-    agent.simulationCountBase = sims;
-    agent.rng = std::default_random_engine(seed);
-    std::default_random_engine ex(seed * 6364136223846793005ULL + 1);
-    std::uniform_real_distribution<double> ur(0.0, 1.0);
-
-    std::vector<std::string> rows;
-    using RT = search::GameAction::RewardsActionType;
-    while (gc.outcome == GameOutcome::UNDECIDED) {
-        if (gc.screenState == ScreenState::BATTLE) {
-            BattleContext bc; bc.init(gc); agent.playoutBattle(bc);
-            if (!trainingRunValid(bc.outcome != Outcome::UNDECIDED)) return {};
-            bc.exitBattle(gc);
-        } else if (gc.screenState == ScreenState::MAP_SCREEN && gc.curMapNodeY < 14) {
-            search::GameAction(one_combat::chooseMapAction(gc)).execute(gc);
-        } else if (gc.screenState == ScreenState::REWARDS) {
-            auto &r = gc.info.rewardsContainer;
-            if      (r.goldRewardCount > 0) search::GameAction(RT::GOLD, 0).execute(gc);
-            else if (r.relicCount > 0)      search::GameAction(RT::RELIC, 0).execute(gc);
-            else if (r.potionCount > 0)     search::GameAction(RT::POTION, 0).execute(gc);
-            else if (g_collectKeys && r.emeraldKey) search::GameAction(RT::KEY, 0).execute(gc);
-            else if (g_collectKeys && r.sapphireKey) search::GameAction(RT::KEY, 0).execute(gc);
-            else if (r.cardRewardCount == 0) search::GameAction(RT::SKIP).execute(gc);
-            else {
-                rows.push_back(featureRow(gc) + ',' + deckCountsCsv(gc));  // state + deck ids
-                if (ur(ex) < epsilon) {                          // explore: random pick among cards + skip
-                    while (r.cardRewardCount > 0) {
-                        const int rIdx = r.cardRewardCount - 1;
-                        const int nc = r.cardRewards[rIdx].size();
-                        const int pick = std::uniform_int_distribution<int>(0, nc)(ex);
-                        search::GameAction(RT::CARD, rIdx, pick < nc ? pick : 5).execute(gc);
-                    }
-                } else {
-                    evalCardRewardPolicy(gc);                     // exploit
-                }
-            }
-        } else {
-            agent.stepOutOfCombatPolicy(gc);
-        }
-    }
-
-    const int won = gc.outcome == GameOutcome::PLAYER_VICTORY ? 1 : 0;
-    const int ff = gc.floorNum;
-    std::ostringstream o;
-    for (const auto &fr : rows) o << seed << ',' << fr << ',' << won << ',' << ff << '\n';  // seed = run id
-    return o.str();
-}
-
-// ---------------------------------------------------------------------------
 // CAUSAL LABELS: at each card reward, CRN-fork "take card i" vs "skip", play the
 // next N fights with common random numbers, and label the card's ADVANTAGE =
 // score(take) - score(skip). This measures the true causal effect of the card
@@ -7074,325 +6558,6 @@ static std::string runDataGenSeed(std::uint64_t seed, int sims, int asc, double 
 // counts d0..d(kNumCardIds-1) + the candidate card's id; the model (GBM) learns
 // which (candidate, deck-card) combinations matter. Plus a few cheap scalars.
 // (kNumCardIds / deckCountsCsv defined above featureRow for reuse by datagen.)
-
-static std::string causalContextRow(const GameContext &gc, const Card &c) {
-    long obtainSum = 0;
-    for (const auto &d : gc.deck.cards) obtainSum += search::Expert::getObtainWeight(d.getId(), d.isUpgraded());
-    const int deckSize = gc.deck.size();
-    std::ostringstream o;
-    o << gc.act << ',' << gc.floorNum << ',' << gc.curHp << ',' << gc.maxHp << ',' << gc.gold << ','
-      << deckSize << ',' << (int)gc.relics.relics.size() << ',' << obtainSum << ','
-      << (deckSize ? (double)obtainSum / deckSize : 0.0) << ','
-      << search::Expert::getObtainWeight(c.getId(), c.isUpgraded()) << ',' << c.getBaseDamage() << ','
-      << (c.isUpgraded() ? 1 : 0) << ',' << (int)c.getId();
-    return o.str();
-}
-
-static std::string causalHeader() {
-    std::ostringstream h;
-    h << "act,floor,curHp,maxHp,gold,deckSize,nRelics,obtainSum,obtainAvg,"
-         "c_obtainWeight,c_baseDamage,c_isUpgraded,candidateId";
-    for (int i = 0; i < kNumCardIds; ++i) h << ",d" << i;
-    h << ",advantage";
-    return h.str();
-}
-
-static std::string runCausalGenSeed(std::uint64_t seed, int sims, int asc, int N, int innerSims, int K, double epsilon) {
-    trainingRunStart();
-    GameContext gc(CharacterClass::IRONCLAD, seed, asc);
-    search::ScumSearchAgent2 agent;
-    agent.simulationCountBase = sims;
-    agent.rng = std::default_random_engine(seed);
-    std::default_random_engine ex(seed * 2862933555777941757ULL + 7);
-    std::uniform_real_distribution<double> ur(0.0, 1.0);
-
-    std::ostringstream out;
-    long decision = 0;
-    using RT = search::GameAction::RewardsActionType;
-    while (gc.outcome == GameOutcome::UNDECIDED) {
-        if (gc.screenState == ScreenState::BATTLE) {
-            BattleContext bc; bc.init(gc); agent.playoutBattle(bc);
-            if (!trainingRunValid(bc.outcome != Outcome::UNDECIDED)) return {};
-            bc.exitBattle(gc);
-        } else if (gc.screenState == ScreenState::MAP_SCREEN && gc.curMapNodeY < 14) {
-            search::GameAction(one_combat::chooseMapAction(gc)).execute(gc);
-        } else if (gc.screenState == ScreenState::REWARDS) {
-            auto &r = gc.info.rewardsContainer;
-            if      (r.goldRewardCount > 0) search::GameAction(RT::GOLD, 0).execute(gc);
-            else if (r.relicCount > 0)      search::GameAction(RT::RELIC, 0).execute(gc);
-            else if (r.potionCount > 0)     search::GameAction(RT::POTION, 0).execute(gc);
-            else if (g_collectKeys && r.emeraldKey) search::GameAction(RT::KEY, 0).execute(gc);
-            else if (g_collectKeys && r.sapphireKey) search::GameAction(RT::KEY, 0).execute(gc);
-            else if (r.cardRewardCount == 0) search::GameAction(RT::SKIP).execute(gc);
-            else {
-                const int rIdx = r.cardRewardCount - 1;
-                const int nc = r.cardRewards[rIdx].size();
-                const std::uint64_t base = seed * 1000003ULL + (std::uint64_t)decision * 131ULL;
-                const std::string dc = deckCountsCsv(gc);        // deck id-counts (same for all candidates)
-
-                // K paired CRN worlds: skip baseline per world, then average card - skip.
-                std::vector<double> sSkip(K);
-                for (int k = 0; k < K; ++k)
-                    sSkip[k] = rolloutChoice(gc, rIdx, 5, N, innerSims, base + k, /*useLabelScore=*/true);
-                for (int i = 0; i < nc; ++i) {
-                    double adv = 0.0;
-                    for (int k = 0; k < K; ++k)
-                        adv += rolloutChoice(gc, rIdx, i, N, innerSims, base + k, /*useLabelScore=*/true) - sSkip[k];
-                    adv /= K;
-                    out << causalContextRow(gc, r.cardRewards[rIdx][i]) << ',' << dc << ',' << adv << '\n';
-                }
-                ++decision;
-                if (ur(ex) < epsilon) {                          // explore to diversify visited states
-                    while (r.cardRewardCount > 0) {
-                        const int ri = r.cardRewardCount - 1;
-                        const int n2 = r.cardRewards[ri].size();
-                        const int pick = std::uniform_int_distribution<int>(0, n2)(ex);
-                        search::GameAction(RT::CARD, ri, pick < n2 ? pick : 5).execute(gc);
-                    }
-                } else {
-                    evalCardRewardPolicy(gc);
-                }
-            }
-        } else {
-            agent.stepOutOfCombatPolicy(gc);
-        }
-    }
-    return out.str();
-}
-
-static void causalGen(int nSeeds, int sims, int asc, int N, int innerSims, int K, double eps, const std::string &outfile) {
-    trainingCampaignStart();
-    std::cout << "causalgen  seeds 0.." << nSeeds - 1 << "  outerSims " << sims << "  N " << N
-              << "  innerSims " << innerSims << "  K " << K << "  eps " << eps
-              << (search::g_fairPlay ? "  [fair-play]" : "") << "  threads " << numThreads()
-              << "  -> " << outfile << "\n";
-    std::vector<std::string> per(nSeeds);
-    auto t0 = std::chrono::steady_clock::now();
-    #pragma omp parallel for schedule(dynamic)
-    for (int s = 0; s < nSeeds; ++s) per[s] = runCausalGenSeed((std::uint64_t)s, sims, asc, N, innerSims, K, eps);
-
-    std::ofstream f(outfile);
-    f << causalHeader() << '\n';
-    long long rows = 0;
-    for (int s = 0; s < nSeeds; ++s) { f << per[s]; rows += std::count(per[s].begin(), per[s].end(), '\n'); }
-    double wall = std::chrono::duration<double>(std::chrono::steady_clock::now() - t0).count();
-    std::printf("wrote %lld causal rows from %d runs in %.1fs\n", rows, nSeeds, wall);
-    writeTrainingProvenance(outfile, "causalgen", nSeeds,
-                            nSeeds - g_trainingInvalidRuns.load(), g_trainingInvalidRuns.load(),
-                            g_trainingHealthFailures.load(), rows, 0, sims, asc, eps);
-}
-
-static void dataGen(int nSeeds, int sims, int asc, double epsilon, const std::string &outfile,
-                    long long seedOffset = 0) {
-    trainingCampaignStart();
-    const bool append = seedOffset > 0;   // append onto an existing file; seeds are disjoint
-    std::cout << "datagen  seeds " << seedOffset << ".." << seedOffset + nSeeds - 1
-              << "  sims " << sims << "  asc " << asc
-              << "  eps " << epsilon << (search::g_fairPlay ? "  [fair-play]" : "")
-              << (append ? "  [append]" : "")
-              << "  threads " << numThreads() << "  -> " << outfile << "\n";
-    // Incremental / interrupt-safe: write the header (fresh file only), then flush
-    // each run's rows as it finishes (inside a critical section). Killing the
-    // process at any time leaves a valid CSV of all completed runs. seedOffset lets
-    // a follow-up run append DISJOINT seeds (no duplicate rows) onto prior output.
-    std::ofstream f(outfile, append ? std::ios::app : std::ios::out);
-    if (!append) {
-        f << "seed," << kFeatureHeader;
-        for (int i = 0; i < kNumCardIds; ++i) f << ",d" << i;
-        f << ",won,finalFloor\n";
-        f.flush();
-    }
-
-    auto t0 = std::chrono::steady_clock::now();
-    long long rowCount = 0;
-    int done = 0;
-    #pragma omp parallel for schedule(dynamic)
-    for (int s = 0; s < nSeeds; ++s) {
-        std::string rows = runDataGenSeed((std::uint64_t)(seedOffset + s), sims, asc, epsilon);
-        #pragma omp critical
-        {
-            f << rows;
-            f.flush();
-            rowCount += std::count(rows.begin(), rows.end(), '\n');
-            if (++done % 500 == 0) {
-                double el = std::chrono::duration<double>(std::chrono::steady_clock::now() - t0).count();
-                std::printf("  %d/%d runs, %lld rows, %.0fs (%.3fs/run)\n",
-                            done, nSeeds, rowCount, el, el / done);
-                std::fflush(stdout);
-            }
-        }
-    }
-    double wall = std::chrono::duration<double>(std::chrono::steady_clock::now() - t0).count();
-    std::printf("wrote %lld rows from %d runs in %.1fs\n", rowCount, nSeeds, wall);
-    writeTrainingProvenance(outfile, "datagen", nSeeds,
-                            nSeeds - g_trainingInvalidRuns.load(), g_trainingInvalidRuns.load(),
-                            g_trainingHealthFailures.load(), rowCount, seedOffset, sims, asc, epsilon);
-}
-
-// Combat-value dataset: per-fight combat states labeled with the fight outcome.
-// Interrupt-safe (per-run flush) and append-capable, same as dataGen.
-static void combatGen(int nSeeds, int sims, int asc, double epsilon,
-                      const std::string &outfile, long long seedOffset = 0) {
-    trainingCampaignStart();
-    search::g_richCombatFeatures = true;   // datagen writes full-width rows
-    const bool append = seedOffset > 0;
-    std::cout << "combatgen  seeds " << seedOffset << ".." << seedOffset + nSeeds - 1
-              << "  sims " << sims << "  asc " << asc << "  eps " << epsilon
-              << (append ? "  [append]" : "") << "  threads " << numThreads()
-              << "  -> " << outfile << "\n";
-    std::ofstream f(outfile, append ? std::ios::app : std::ios::out);
-    if (f.tellp() == 0) { f << "seed,fightIdx," << combatHeaderStr() << ",won,endHp\n"; f.flush(); }
-
-    auto t0 = std::chrono::steady_clock::now();
-    long long rowCount = 0; int done = 0;
-    #pragma omp parallel for schedule(dynamic)
-    for (int s = 0; s < nSeeds; ++s) {
-        std::string rows = runCombatGenSeed((std::uint64_t)(seedOffset + s), sims, asc, epsilon, false);
-        #pragma omp critical
-        {
-            f << rows; f.flush();
-            rowCount += std::count(rows.begin(), rows.end(), '\n');
-            if (++done % 200 == 0) {
-                double el = std::chrono::duration<double>(std::chrono::steady_clock::now() - t0).count();
-                std::printf("  %d/%d runs, %lld rows, %.0fs (%.3fs/run)\n", done, nSeeds, rowCount, el, el/done);
-                std::fflush(stdout);
-            }
-        }
-    }
-    double wall = std::chrono::duration<double>(std::chrono::steady_clock::now() - t0).count();
-    std::printf("wrote %lld combat rows from %d runs in %.1fs\n", rowCount, nSeeds, wall);
-                std::printf("training integrity: requested=%d completed=%d invalid/quarantined=%d branches=%d health_failures=%d rows=%lld output=%s\n",
-                nSeeds, nSeeds - g_trainingInvalidRuns.load(), g_trainingInvalidRuns.load(),
-                g_trainingInvalidBranches.load(), g_trainingHealthFailures.load(), rowCount, outfile.c_str());
-    writeTrainingProvenance(outfile, "combatgen", nSeeds,
-                            nSeeds - g_trainingInvalidRuns.load(), g_trainingInvalidRuns.load(),
-                            g_trainingHealthFailures.load(), rowCount, seedOffset, sims, asc, epsilon);
-}
-
-// Policy-target dataset: per-decision root-edge visit distributions. Same
-// interrupt-safe (per-run flush) + append pattern as combatGen.
-static void policyGen(int nSeeds, int sims, int asc, double epsilon,
-                      const std::string &outfile, long long seedOffset = 0) {
-    trainingCampaignStart();
-    search::g_richCombatFeatures = true;   // datagen writes full-width rows
-    const bool append = seedOffset > 0;
-    std::cout << "policygen  seeds " << seedOffset << ".." << seedOffset + nSeeds - 1
-              << "  sims " << sims << "  asc " << asc << "  eps " << epsilon
-              << (append ? "  [append]" : "") << "  threads " << numThreads()
-              << "  -> " << outfile << "\n";
-    std::ofstream f(outfile, append ? std::ios::app : std::ios::out);
-    if (f.tellp() == 0) { f << policyHeaderStr() << "\n"; f.flush(); }
-
-    auto t0 = std::chrono::steady_clock::now();
-    long long rowCount = 0; int done = 0;
-    #pragma omp parallel for schedule(dynamic)
-    for (int s = 0; s < nSeeds; ++s) {
-        std::string rows = runPolicyGenSeed((std::uint64_t)(seedOffset + s), sims, asc, epsilon);
-        #pragma omp critical
-        {
-            f << rows; f.flush();
-            rowCount += std::count(rows.begin(), rows.end(), '\n');
-            if (++done % 100 == 0) {
-                double el = std::chrono::duration<double>(std::chrono::steady_clock::now() - t0).count();
-                std::printf("  %d/%d runs, %lld rows, %.0fs (%.3fs/run)\n", done, nSeeds, rowCount, el, el/done);
-                std::fflush(stdout);
-            }
-        }
-    }
-    double wall = std::chrono::duration<double>(std::chrono::steady_clock::now() - t0).count();
-    std::printf("wrote %lld policy rows from %d runs in %.1fs\n", rowCount, nSeeds, wall);
-    writeTrainingProvenance(outfile, "policygen", nSeeds,
-                            nSeeds - g_trainingInvalidRuns.load(), g_trainingInvalidRuns.load(),
-                            g_trainingHealthFailures.load(), rowCount, seedOffset, sims, asc, epsilon);
-}
-
-// Combined value+policy datagen: ONE play pass writes both CSVs (see runFightGenSeed).
-static void fightGen(int nSeeds, int sims, int asc, double epsilon,
-                     const std::string &valFile, const std::string &polFile, long long seedOffset = 0) {
-    trainingCampaignStart();
-    search::g_richCombatFeatures = true;
-    const bool append = seedOffset > 0;
-    std::cout << "fightgen  seeds " << seedOffset << ".." << seedOffset + nSeeds - 1
-              << "  sims " << sims << "  asc " << asc << "  eps " << epsilon
-              << (append ? "  [append]" : "") << "  threads " << numThreads()
-              << "  -> " << valFile << " + " << polFile << "\n";
-    std::ofstream vf(valFile, append ? std::ios::app : std::ios::out);
-    std::ofstream pf(polFile, append ? std::ios::app : std::ios::out);
-    if (vf.tellp() == 0) { vf << "seed,fightIdx," << combatHeaderStr() << ",won,endHp\n"; vf.flush(); }
-    if (pf.tellp() == 0) { pf << policyHeaderStr() << "\n"; pf.flush(); }
-
-    auto t0 = std::chrono::steady_clock::now();
-    long long vRows = 0, pRows = 0; int done = 0;
-    #pragma omp parallel for schedule(dynamic)
-    for (int s = 0; s < nSeeds; ++s) {
-        auto pr = runFightGenSeed((std::uint64_t)(seedOffset + s), sims, asc, epsilon);
-        #pragma omp critical
-        {
-            vf << pr.first;  pf << pr.second;  vf.flush(); pf.flush();
-            vRows += std::count(pr.first.begin(),  pr.first.end(),  '\n');
-            pRows += std::count(pr.second.begin(), pr.second.end(), '\n');
-            if (++done % 100 == 0) {
-                double el = std::chrono::duration<double>(std::chrono::steady_clock::now() - t0).count();
-                std::printf("  %d/%d runs, %lld val + %lld pol rows, %.0fs (%.3fs/run)\n",
-                            done, nSeeds, vRows, pRows, el, el/done);
-                std::fflush(stdout);
-            }
-        }
-    }
-    double wall = std::chrono::duration<double>(std::chrono::steady_clock::now() - t0).count();
-    std::printf("wrote %lld value + %lld policy rows from %d runs in %.1fs\n", vRows, pRows, nSeeds, wall);
-    std::printf("training integrity: requested=%d completed=%d invalid/quarantined=%d branches=%d health_failures=%d rows=%lld output=%s\n",
-                nSeeds, nSeeds - g_trainingInvalidRuns.load(), g_trainingInvalidRuns.load(),
-                g_trainingInvalidBranches.load(), g_trainingHealthFailures.load(), vRows + pRows, valFile.c_str());
-    writeTrainingProvenance(valFile, "fightgen", nSeeds,
-                            nSeeds - g_trainingInvalidRuns.load(), g_trainingInvalidRuns.load(),
-                            g_trainingHealthFailures.load(), vRows + pRows, seedOffset, sims, asc);
-}
-
-// ---------------------------------------------------------------------------
-// DISTRIBUTIONAL COMBAT VALUE datagen: like combatgen but adds rich labels for
-// the distributional model — endTurn (for turns-remaining prediction) and
-// per-potion-ID consumption flags (for potion-use-probability prediction).
-// The 1766 state features + won/endHp are identical to combatgen output.
-// ---------------------------------------------------------------------------
-static void distCombatGen(int nSeeds, int sims, int asc, double epsilon,
-                          const std::string &outfile, long long seedOffset = 0) {
-    trainingCampaignStart();
-    search::g_richCombatFeatures = true;
-    const bool append = seedOffset > 0;
-    std::cout << "distgen    seeds " << seedOffset << ".." << seedOffset + nSeeds - 1
-              << "  sims " << sims << "  asc " << asc << "  eps " << epsilon
-              << (append ? "  [append]" : "") << "  threads " << numThreads()
-              << "  -> " << outfile << "\n";
-    std::ofstream f(outfile, append ? std::ios::app : std::ios::out);
-    if (f.tellp() == 0) {
-        f << "seed,fightIdx," << combatHeaderStr() << ",won,endHp"
-          << distLabelHeaderStr() << "\n";
-        f.flush();
-    }
-
-    auto t0 = std::chrono::steady_clock::now();
-    long long rowCount = 0; int done = 0;
-    #pragma omp parallel for schedule(dynamic)
-    for (int s = 0; s < nSeeds; ++s) {
-        std::string rows = runCombatGenSeed((std::uint64_t)(seedOffset + s), sims, asc, epsilon, true);
-        #pragma omp critical
-        {
-            f << rows; f.flush();
-            rowCount += std::count(rows.begin(), rows.end(), '\n');
-            if (++done % 200 == 0) {
-                double el = std::chrono::duration<double>(std::chrono::steady_clock::now() - t0).count();
-                std::printf("  %d/%d runs, %lld rows, %.0fs (%.3fs/run)\n", done, nSeeds, rowCount, el, el/done);
-                std::fflush(stdout);
-            }
-        }
-    }
-    double wall = std::chrono::duration<double>(std::chrono::steady_clock::now() - t0).count();
-    std::printf("wrote %lld dist combat rows from %d runs in %.1fs\n", rowCount, nSeeds, wall);
-    writeTrainingProvenance(outfile, "distgen", nSeeds,
-                            nSeeds - g_trainingInvalidRuns.load(), g_trainingInvalidRuns.load(),
-                            g_trainingHealthFailures.load(), rowCount, seedOffset, sims, asc, epsilon);
-}
 
 // Export one deterministic full-map graph per (seed, ascension, act) present
 // in a card-counterfactual CSV.  The source CSV repeats the state once per
@@ -7469,27 +6634,30 @@ int main(int argc, char **argv) {
     for (int i = 1; i < argc; ++i) g_mainArgv.emplace_back(argv[i]);
     std::string mode = argc > 1 ? argv[1] : "";
 
-    // ADR-0018: Silver is the default combat backend for whole-run play
-    // (run, bestbench, reprobench).  An explicit STS_SILVER_SEARCH (including
-    // =0) keeps the native searcher path.  The resolved
-    // default is written back to the environment so provenance checks and
-    // child processes see the effective configuration.
-    if (mode == "run" || mode == "bestbench" || mode == "reprobench") {
-        if (!std::getenv("STS_SILVER_SEARCH")) {
-            setenv("STS_SILVER_SEARCH", "1", 0);
-            setenv("STS_FAIR", "1", 0);
-            std::cout << "[default combat backend: Silver (STS_SILVER_SEARCH=0 restores native)]\n";
-        }
-        // Adaptive Silver ignores the caller's budget, so an explicit sims
-        // argument selects flat Silver unless adaptive stopping was configured.
-        const char *silverEnv = std::getenv("STS_SILVER_SEARCH");
-        const bool silverEffective = silverEnv && std::atoi(silverEnv) != 0;
-        if (silverEffective && argc > 2 && !std::getenv("STS_SILVER_ADAPTIVE")
+    // ADR-0020: Silver is the only combat searcher. The native searchers and
+    // their known-RNG regime were removed, so a request for them fails.
+    if (const char *d = std::getenv("STS_SILVER_SEARCH"); d && std::atoi(d) == 0) {
+        std::cerr << "error: STS_SILVER_SEARCH=0 is no longer supported; "
+                     "Silver is the only combat searcher (ADR-0020)\n";
+        return 2;
+    }
+    if (const char *d = std::getenv("STS_FAIR"); d && std::atoi(d) == 0) {
+        std::cerr << "error: STS_FAIR=0 is no longer supported; "
+                     "the known-RNG regime was removed (ADR-0020)\n";
+        return 2;
+    }
+    setenv("STS_SILVER_SEARCH", "1", 0);
+    setenv("STS_FAIR", "1", 0);
+    // Adaptive Silver ignores the caller's budget. Only whole-run modes called
+    // without a sims argument keep it by default (ADR-0018); every other call
+    // searches the flat caller budget unless adaptive stopping is configured.
+    {
+        const bool wholeRunDefault = argc <= 2
+            && (mode == "run" || mode == "bestbench" || mode == "reprobench");
+        if (!wholeRunDefault && !std::getenv("STS_SILVER_ADAPTIVE")
                 && !std::getenv("STS_SILVER_ADAPTIVE_RETAINED_ONLY")
                 && !std::getenv("STS_SILVER_ADAPTIVE_TOP_GAP")) {
             setenv("STS_SILVER_ADAPTIVE", "0", 0);
-            std::cout << "[explicit sims " << argv[2]
-                      << ": flat Silver budget (STS_SILVER_ADAPTIVE=1 restores adaptive)]\n";
         }
     }
 
@@ -7500,38 +6668,6 @@ int main(int argc, char **argv) {
         std::cout << "[collect keys " << (g_collectKeys ? "ON" : "OFF") << "]\n";
     }
 
-    if (const char *d = std::getenv("STS_ROLLOUT_DEPTH")) {   // cap combat rollout length
-        search::g_maxRolloutDepth = std::atoi(d);
-        std::cout << "[rollout depth cap = " << search::g_maxRolloutDepth << "]\n";
-    }
-    if (const char *d = std::getenv("STS_ROLLOUT_CAPS")) {    // context-adaptive rollout caps (Phase 2)        search::g_rolloutCaps = std::atoi(d) != 0;
-        if (search::g_rolloutCaps) {
-            if (const char *v = std::getenv("STS_ROLLOUT_CAPS_BOSS"))      search::g_rolloutCapBoss = std::atoi(v);
-            if (const char *v = std::getenv("STS_ROLLOUT_CAPS_TURN0"))     search::g_rolloutCapTurn0 = std::atoi(v);
-            if (const char *v = std::getenv("STS_ROLLOUT_CAPS_ACT23"))     search::g_rolloutCapAct23 = std::atoi(v);
-            if (const char *v = std::getenv("STS_ROLLOUT_CAPS_LATE_ALIVE")) search::g_rolloutCapLateAlive = std::atoi(v);
-            std::cout << "[context rollout caps ON: boss=" << search::g_rolloutCapBoss
-                      << " turn0=" << search::g_rolloutCapTurn0
-                      << " act23=" << search::g_rolloutCapAct23
-                      << " lateAlive<=" << search::g_rolloutCapLateAlive << "]\n";
-        }
-    }
-    if (const char *d = std::getenv("STS_FORCED_MOVE")) {    // forced-action contraction (Phase 5; default ON, 0 disables)
-        search::g_forcedMoveSkip = std::atoi(d) != 0;
-        std::cout << "[forced-move contraction " << (search::g_forcedMoveSkip ? "ON" : "OFF") << "]\n";
-    }
-    if (const char *d = std::getenv("STS_LIVE_VALID")) {     // fair-tree structural fix (Phase 4)
-        search::g_liveValid = std::atoi(d) != 0;
-        if (search::g_liveValid) std::cout << "[live-valid edge re-selection ON]\n";
-    }
-    if (const char *d = std::getenv("STS_TURN_PENALTY")) {    // -turn*k on capped leaf: loop-breaker
-        search::g_leafTurnPenalty = std::atof(d);
-        std::cout << "[leaf turn penalty = " << search::g_leafTurnPenalty << "]\n";
-    }
-    if (const char *d = std::getenv("STS_TT")) {              // transposition table (value sharing)
-        search::g_useTT = std::atoi(d) != 0;
-        if (search::g_useTT) std::cout << "[transposition table ON]\n";
-    }
     one_combat::configureRestVPolicyFromEnvironment();
     if (const char *d = std::getenv("STS_REST_WIN")) {        // win-rate rest policy (heal vs upgrade by P(win))
         g_restWin = std::atoi(d) != 0;
@@ -7599,11 +6735,6 @@ int main(int argc, char **argv) {
         g_oocStrategicRest = std::atoi(d) != 0;
         if (g_oocStrategicRest)
             std::cout << "[OOC one-ply: campfire Q gate ON (rest options + upgrade targets)]\n";
-    }
-    if (const char *d = std::getenv("STS_DATAGEN_GATES")) {  // §127: combatgen/distgen OOC through the one-ply gate chain
-        g_datagenGates = std::atoi(d) != 0;
-        if (g_datagenGates)
-            std::cout << "[datagen OOC gate stack ON: combat labels from the deployed one-ply distribution (§127)]\n";
     }
     if (const char *d = std::getenv("STS_OOC_STRATEGIC_EVENT")) {
         g_oocStrategicEvent = std::atoi(d) != 0;
@@ -7806,37 +6937,6 @@ int main(int argc, char **argv) {
                       << ".." << g_simAdaptMaxFrac << (g_simAdaptCtm ? "]\n" : " (needs STS_CPSI_NN)]\n");
         }
     }
-    if (const char *d = std::getenv("STS_CONVERGE")) {       // convergence-based early stopping
-        search::g_convergeStop = std::atoi(d) != 0;
-        if (const char *p = std::getenv("STS_CONV_PATIENCE")) search::g_convPatience = std::atoll(p);
-        if (const char *m = std::getenv("STS_CONV_MIN"))      search::g_convMinSims  = std::atoll(m);
-        if (search::g_convergeStop)
-            std::cout << "[convergence stop ON: patience=" << search::g_convPatience
-                      << " minSims=" << search::g_convMinSims << "]\n";
-    }
-    if (const char *d = std::getenv("STS_CONV_ROOT")) {      // root-stability early stopping
-        search::g_convRootStop = std::atoi(d) != 0;
-        if (const char *v = std::getenv("STS_CONV_ROOT_START"))   search::g_convRootStart = std::atoll(v);
-        if (const char *v = std::getenv("STS_CONV_ROOT_GROW"))    search::g_convRootGrow  = std::atof(v);
-        if (const char *v = std::getenv("STS_CONV_ROOT_CHECK"))   search::g_convRootCheck = std::atoll(v);
-        if (const char *v = std::getenv("STS_CONV_ROOT_SHARE"))   search::g_convRootShare = std::atof(v);
-        if (const char *v = std::getenv("STS_CONV_ROOT_VALUE"))   search::g_convRootValue = std::atof(v);
-        if (const char *v = std::getenv("STS_CONV_ROOT_MIN"))     search::g_convRootMinSims = std::atoll(v);
-        if (const char *v = std::getenv("STS_CONV_ROOT_PATIENCE")) search::g_convRootPatience = std::atoll(v);
-        if (const char *v = std::getenv("STS_CONV_ROOT_MAX_FRAC")) search::g_convRootMaxFrac = std::atof(v);
-        if (search::g_convRootStop)
-            std::cout << "[root-stability stop ON: start=" << search::g_convRootStart
-                      << " grow=" << search::g_convRootGrow
-                      << " check=" << search::g_convRootCheck
-                      << " share=" << search::g_convRootShare
-                      << " value=" << search::g_convRootValue
-                      << " minSims=" << search::g_convRootMinSims
-                      << " patience=" << search::g_convRootPatience
-                      << " maxFrac=" << search::g_convRootMaxFrac << "]\n";
-        if (search::g_convRootStop && (search::g_convRootStart <= 0 || search::g_convRootGrow <= 1.0))
-            std::cout << "[root-stability warning: STS_CONV_ROOT_START must be >0 and STS_CONV_ROOT_GROW >1.0;"
-                      << " searchToTotalRootStable forces the full budget instead of growing by chunks]\n";
-    }
     if (const char *d = std::getenv("STS_BOSS_DRAFT")) {      // boss-gated rollout drafting
         g_bossDraft = std::atoi(d) != 0;
         if (const char *v = std::getenv("STS_BOSS_DRAFT_ROWS"))    g_bossDraftRows    = std::atoi(v);
@@ -7956,32 +7056,18 @@ int main(int argc, char **argv) {
         g_dgTemp = std::atof(d);
         std::cout << "[datagen softmax temp = " << g_dgTemp << "]\n";
     }
-    if (const char *d = std::getenv("STS_FAIR")) {            // determinized/ISMCTS combat (no future peeking)
-        search::g_fairPlay = std::atoi(d) != 0;
-        if (search::g_fairPlay) std::cout << "[fair-play / determinized MCTS ON]\n";
-    }
     // ADR-0019: Searcher3 was removed. Reject a request for it instead of
     // silently running another searcher; STS_SEARCHER3=0 stays accepted.
     if (const char *d = std::getenv("STS_SEARCHER3"); d && std::atoi(d) != 0) {
         std::cerr << "error: STS_SEARCHER3 is no longer supported; Searcher3 was removed (ADR-0019)\n";
         return 2;
     }
-    const char *silverSearchEnv = std::getenv("STS_SILVER_SEARCH");
-    const bool silverSearchRequested = silverSearchEnv && std::atoi(silverSearchEnv) != 0;
-    if (const char *qualityFile = std::getenv("STS_SILVER_STICKY_QUALITY_FILE")) {
-        if (*qualityFile != '\0' && !silverSearchRequested) {
-            throw std::invalid_argument(
-                "STS_SILVER_STICKY_QUALITY_FILE requires STS_SILVER_SEARCH=1");
-        }
-    }
-    if (silverSearchRequested) {
-            // The external callback takes precedence before ScumSearchAgent2
-            // enters Searcher2. It owns local Silver randomness.
-            search::installSilverLiveBackend();
-            std::cout << "[isolated Silver combat backend ON: local Silver RNG/chance search; reuse-cap="
-                      << search::silverLiveReuseCapMode() << " cap=" << search::silverLiveReuseCap()
-                      << "]\n";
-    }
+    // Silver owns local RNG/chance search for every combat (ADR-0020).
+    search::installSilverLiveBackend();
+    std::cout << "[Silver combat backend: local Silver RNG/chance search; reuse-cap="
+              << search::silverLiveReuseCapMode() << " cap=" << search::silverLiveReuseCap()
+              << (search::silverLiveAdaptiveEnabled() ? "; adaptive" : "; flat budget")
+              << "]\n";
     if (const char *d = std::getenv("STS_FORCE_RELIC")) {      // force a relic at run start (paired A/B)
         const std::string name(d);
         int id = -1;
@@ -7994,146 +7080,6 @@ int main(int argc, char **argv) {
             std::cout << "[forced relic at run start: " << relicEnumNames[id] << "]\n";
         }
     }
-    if (const char *d = std::getenv("STS_VNET")) {           // learned V_combat leaf value
-        std::string path = std::string(d) == "1" ? "build/v_combat_trees.txt" : d;
-        if (search::g_combatVNet.load(path)) {
-            g_effectiveVNetPath = path;
-            search::g_useVNet = true;
-            if (const char *a = std::getenv("STS_VNET_ALPHA")) search::g_vnetAlpha = std::atof(a);
-            if (const char *b = std::getenv("STS_COMBAT_WIN_BONUS"))
-                search::g_combatVNet.setWinBonus(std::atof(b));
-            std::cout << "[V_combat leaf value ON: " << path << ", "
-                      << search::g_combatVNet.description() << ", alpha "
-                      << search::g_vnetAlpha << "]\n";
-        } else {
-            std::cout << "[V_combat load FAILED: " << path << "]\n";
-        }
-    }
-    // Per-encounter specialization overlay (per-boss fine-tuned trees from
-    // train_value_combat_per_encounter.py, or combat_mlp_meta_v1 deltas already
-    // inside a loaded base). Must run after the base model is loaded (STS_VNET
-    // or the fair-S3 default): loadEncounterModels replaces the base weights
-    // with <dir>/_pooled.txt when present and dispatches predict(bc) to
-    // <dir>/<ENUM_NAME>.txt per-encounter models. A missing/invalid dir only
-    // warns and keeps the already-loaded base model.
-    if (const char *d = std::getenv("STS_VNET_PER_ENCOUNTER")) {
-        const std::string dir = d;
-        if (search::g_combatVNet.loadEncounterModels(dir)) {
-            std::vector<int> encs;
-            encs.reserve(search::g_combatVNet.encounterModels.size());
-            for (const auto &kv : search::g_combatVNet.encounterModels) encs.push_back(kv.first);
-            std::sort(encs.begin(), encs.end());
-            std::string names;
-            for (int e : encs) {
-                if (!names.empty()) names += ",";
-                names += monsterEncounterEnumNames[e];
-            }
-            std::cout << "[V_combat per-encounter models ON: " << dir << " ("
-                      << encs.size() << "): " << names << "; base "
-                      << search::g_combatVNet.description() << "]\n";
-        } else {
-            std::cout << "[V_combat per-encounter load FAILED: " << dir
-                      << " (no per-encounter dispatch; continuing with the "
-                         "already-loaded base model)]\n";
-        }
-    }
-    // Zero-mean ranking correction (STS_VNET_RANK_CORR, experimental,
-    // standalone diagnostic model — NOT a default; nothing is promoted without
-    // a paired gameplay gate): a small compact-tree model trained on
-    // group-centered leaf-value residuals, ADDED on top of the
-    // primary vnet/PVNet leaf value in evaluateLeaf()/evaluateLeafState() to
-    // improve within-group action ranking without shifting the HP scale (the
-    // fair-path search-complete clamp re-zeroes the per-search mean). Parsed
-    // after the STS_VNET region so it works with the deployed vnet and with
-    // experimental vnets. Non-fatal: a missing/invalid path only warns and
-    // keeps the correction off (behavior byte-identical to the uncorrected
-    // searcher).
-    if (const char *d = std::getenv("STS_VNET_RANK_CORR")) {
-        const std::string path = d;
-        if (search::g_combatVNetRankCorr.load(path)) {
-            search::g_useVNetRankCorr = true;
-            std::cout << "[V_combat rank-correction ON: " << path << ", "
-                      << search::g_combatVNetRankCorr.description() << "]\n";
-        } else {
-            std::cout << "[V_combat rank-correction load FAILED: " << path
-                      << " (continuing without; behavior byte-identical to the "
-                         "uncorrected searcher)]\n";
-        }
-    }
-    // Residual VNet correction (STS_VNET_RESIDUAL=<path>, STS_VNET_RESIDUAL_BETA=<b>):
-    // the loaded model is ADDED with weight beta on top of the primary VNet.
-    // At beta=0, behavior is byte-identical to the uncorrected searcher.
-    if (const char *d = std::getenv("STS_VNET_RESIDUAL")) {
-        const std::string path = d;
-        if (const char *b = std::getenv("STS_VNET_RESIDUAL_BETA"))
-            search::g_vnetResidualBeta = std::atof(b);
-        if (search::g_combatVNetResidual.load(path)) {
-            search::g_useVNetResidual = true;
-            std::cout << "[V_combat residual ON: " << path << ", beta="
-                      << search::g_vnetResidualBeta << " "
-                      << search::g_combatVNetResidual.description() << "]\n";
-        } else {
-            std::cout << "[V_combat residual load FAILED: " << path << "]\n";
-        }
-    }
-    one_combat::configureVNetQueryLogFromEnvironment();
-    if (const char *d = std::getenv("STS_DIST_VNET")) {    // distributional V_combat (transformer, 5-head)
-        std::string path = d;
-        if (search::g_combatDistVNet.load(path)) {
-            search::g_useDistVNet = true;
-            std::cout << "[Dist V_combat ON: " << path << ", "
-                      << search::g_combatDistVNet.description() << "]\n";
-        } else {
-            std::cout << "[Dist V_combat load FAILED: " << path << "]\n";
-        }
-    }
-    if (const char *d = std::getenv("STS_PVNET")) {        // shared policy-value network (AlphaZero-style)
-        std::string path = d;
-        if (search::g_combatPVNet.load(path)) {
-            search::g_usePVNet = true;
-            std::cout << "[PVNet ON: " << path << ", "
-                      << search::g_combatPVNet.description() << "]\n";
-        } else {
-            std::cout << "[PVNet load FAILED: " << path << "]\n";
-        }
-    }
-    if (search::g_usePVNet) {
-        if (const char *a = std::getenv("STS_PVNET_ALPHA")) search::g_pvnetAlpha = std::atof(a);
-        if (const char *v = std::getenv("STS_PVNET_VALUE_ONLY")) search::g_pvnetValueOnly = std::atoi(v) != 0;
-        if (const char *h = std::getenv("STS_PVNET_HP_SCALE")) search::g_pvnetHpScale = std::atoi(h) != 0;
-        std::cout << "[PVNet alpha = " << search::g_pvnetAlpha;
-        if (search::g_pvnetValueOnly) std::cout << ", value-only";
-        if (search::g_pvnetHpScale) std::cout << ", hp-scale";
-        std::cout << "]\n";
-    }
-    // AZ-lite policy-guided PUCT selection. DEFAULT ON (+4.3pp full-run win @512
-    // vs plain UCB, §26): auto-loads the compact net if present. STS_POLICY=0
-    // disables; STS_POLICY=<path> overrides the file; STS_POLICY=1 uses the full
-    // 447-tree net. Skipped for policygen so base datasets stay UCB-generated
-    // (set STS_POLICY explicitly there for AlphaZero-style self-play iteration).
-    {
-        const char *d = std::getenv("STS_POLICY");
-        const bool disabled = d && std::string(d) == "0";
-        if (!disabled && mode != "policygen") {
-            std::string path = "models/policy_trees_c.txt";
-            if (d && std::string(d) == "1")      path = "build/policy_trees.txt";
-            else if (d)                          path = d;
-            search::g_policyNet.isPolicy = true;
-            if (search::g_policyNet.load(path)) {
-                g_effectivePolicyPath = path;
-                search::g_usePolicyNet = true;
-                std::cout << "[policy PUCT ON: " << path << ", "
-                          << search::g_policyNet.description() << "]\n";
-            } else if (d) {                       // warn only if explicitly requested
-                std::cout << "[policy net load FAILED: " << path << "]\n";
-            }
-        }
-    }
-    if (search::g_usePolicyNet || search::g_usePVNet) {
-        if (const char *c = std::getenv("STS_CPUCT")) search::g_cPuct = std::atof(c);
-        std::cout << "[c_puct = " << search::g_cPuct << "]\n";
-    }
-
     if (mode == "strategicmarggen") {
         // Encounter-marginalization diagnostic: uniform sample per run, H hidden worlds.
         // Tier-B branch contract frozen at K=3 fights, 150/100/50 sims, bootstrap=true.
@@ -8280,31 +7226,6 @@ int main(int argc, char **argv) {
         std::printf("=== %s ===  reached floor %d (act %d)  hp %d/%d  %.2fs\n",
                     r.won ? "WIN" : "DEAD", r.floor, r.act, r.hpEnd, r.maxHp, r.sec);
 
-    } else if (mode == "datagen") {       // CSV of (state features, run outcome) for offline V(state)
-        int nSeeds    = argc > 2 ? std::stoi(argv[2]) : 2000;
-        int sims      = argc > 3 ? std::stoi(argv[3]) : 2000;
-        int asc       = argc > 4 ? std::stoi(argv[4]) : 0;
-        double eps    = argc > 5 ? std::stod(argv[5]) : 0.25;
-        std::string out = argc > 6 ? argv[6] : "data.csv";
-        search::g_fairPlay = argc > 7 ? std::stoi(argv[7]) != 0 : false;
-        if (const char *sf = std::getenv("STS_FAIR")) {              // warn when the positional arg overrides the env
-            const bool envFair = std::atoi(sf) != 0;
-            if (envFair != search::g_fairPlay)
-                std::cerr << "[datagen] warning: positional arg overrides STS_FAIR=" << sf
-                          << " -> g_fairPlay=" << (search::g_fairPlay ? 1 : 0) << "\n";
-        }
-        long long seedOff = argc > 8 ? std::stoll(argv[8]) : 0;
-        dataGen(nSeeds, sims, asc, eps, out, seedOff);
-
-    } else if (mode == "datagen2") {      // RICH per-decision state (relics/upgrades/potions/future/path) + outcome
-        int nSeeds    = argc > 2 ? std::stoi(argv[2]) : 2000;
-        int sims      = argc > 3 ? std::stoi(argv[3]) : 2000;
-        int asc       = argc > 4 ? std::stoi(argv[4]) : 0;
-        double eps    = argc > 5 ? std::stod(argv[5]) : 0.25;
-        std::string out = argc > 6 ? argv[6] : "vrich.csv";
-        long long seedOff = argc > 7 ? std::stoll(argv[7]) : 0;
-        dataGen2(nSeeds, sims, asc, eps, out, seedOff);
-
     } else if (mode == "e2cgen") {        // E2c matched RAW/POST combat-terminal dataset
         int nSeeds    = argc > 2 ? std::stoi(argv[2]) : 8;
         int sims      = argc > 3 ? std::stoi(argv[3]) : 1000;
@@ -8398,33 +7319,6 @@ int main(int argc, char **argv) {
     } else if (isCombatModelDiagnosticMode(mode)) {
         return runCombatModelDiagnosticMode(mode, argc, argv);
 
-    } else if (mode == "searchdiag") {    // Searcher2 rollout-usage diagnostics
-        int nSeeds    = argc > 2 ? std::stoi(argv[2]) : 8;
-        int sims      = argc > 3 ? std::stoi(argv[3]) : 2000;
-        int asc       = argc > 4 ? std::stoi(argv[4]) : 0;
-        std::string out = argc > 5 ? argv[5] : "build/searchdiag.csv";
-        int probeEvery = argc > 6 ? std::stoi(argv[6]) : 1;
-        std::uint64_t seedOff = argc > 7 ? std::stoull(argv[7]) : 0;
-        searchDiag(nSeeds, sims, asc, out, probeEvery, seedOff);
-
-    } else if (mode == "combatgen") {     // CSV of (combat state, fight outcome) for V_combat
-        int nSeeds    = argc > 2 ? std::stoi(argv[2]) : 300;
-        int sims      = argc > 3 ? std::stoi(argv[3]) : 2500;
-        int asc       = argc > 4 ? std::stoi(argv[4]) : 0;
-        double eps    = argc > 5 ? std::stod(argv[5]) : 0.3;
-        std::string out = argc > 6 ? argv[6] : "build/vcombat.csv";
-        long long seedOff = argc > 7 ? std::stoll(argv[7]) : 0;
-        combatGen(nSeeds, sims, asc, eps, out, seedOff);
-
-    } else if (mode == "distgen") {       // combatgen + rich distributional labels (endTurn, potion use)
-        int nSeeds    = argc > 2 ? std::stoi(argv[2]) : 300;
-        int sims      = argc > 3 ? std::stoi(argv[3]) : 2500;
-        int asc       = argc > 4 ? std::stoi(argv[4]) : 0;
-        double eps    = argc > 5 ? std::stod(argv[5]) : 0.3;
-        std::string out = argc > 6 ? argv[6] : "build/vdist.csv";
-        long long seedOff = argc > 7 ? std::stoll(argv[7]) : 0;
-        distCombatGen(nSeeds, sims, asc, eps, out, seedOff);
-
     } else if (mode == "runwinparity") {
         const std::string fixture = argc > 2 ? argv[2] : "tools/runwin_e2c_synthetic_parity.csv";
         return one_combat::runwinParity(fixture);
@@ -8447,15 +7341,6 @@ int main(int argc, char **argv) {
         std::string out = argc > 5 ? argv[5] : "build/strategic_tierb.csv";
         long long seedOff = argc > 6 ? std::stoll(argv[6]) : 0;
         strategicGen2(nSeeds, sims, asc, out, seedOff);
-
-    } else if (mode == "policygen") {     // CSV of (state, action, visit/total) MCTS policy targets (AZ-lite)
-        int nSeeds    = argc > 2 ? std::stoi(argv[2]) : 300;
-        int sims      = argc > 3 ? std::stoi(argv[3]) : 10000;
-        int asc       = argc > 4 ? std::stoi(argv[4]) : 0;
-        double eps    = argc > 5 ? std::stod(argv[5]) : 0.3;
-        std::string out = argc > 6 ? argv[6] : "build/vpolicy.csv";
-        long long seedOff = argc > 7 ? std::stoll(argv[7]) : 0;
-        policyGen(nSeeds, sims, asc, eps, out, seedOff);
 
     } else if (mode == "mapbatch") {      // companion full-map graph table for rich/meta/card CSVs
         if (argc < 4) {
@@ -8505,16 +7390,6 @@ int main(int argc, char **argv) {
                         state.data(), 0x1234u, cats, 2, (int)ScreenState::MAP_SCREEN,
                         rooms, edges, special, px, -1, -1));
 
-    } else if (mode == "fightgen") {      // ONE pass -> BOTH value (endHp) + policy (visit-pi) CSVs
-        int nSeeds    = argc > 2 ? std::stoi(argv[2]) : 300;
-        int sims      = argc > 3 ? std::stoi(argv[3]) : 2500;
-        int asc       = argc > 4 ? std::stoi(argv[4]) : 0;
-        double eps    = argc > 5 ? std::stod(argv[5]) : 0.3;
-        std::string vout = argc > 6 ? argv[6] : "build/vcombat.csv";
-        std::string pout = argc > 7 ? argv[7] : "build/vpolicy.csv";
-        long long seedOff = argc > 8 ? std::stoll(argv[8]) : 0;
-        fightGen(nSeeds, sims, asc, eps, vout, pout, seedOff);
-
     } else if (mode == "wholecombatgen") {
         if (argc < 8) { std::cerr << "usage: one_combat wholecombatgen N_SEEDS SIMS ASC OUT.csv SEED_OFFSET TEACHER.json\n"; return 2; }
         wholeCombatGen(std::stoi(argv[2]),std::stoi(argv[3]),std::stoi(argv[4]),argv[5],std::stoll(argv[6]),argv[7]);
@@ -8543,16 +7418,6 @@ int main(int argc, char **argv) {
     } else if (mode == "ooccfaudit") {
         if (argc < 8) { std::cerr << "usage: one_combat ooccfaudit N_SEEDS SIMS ASC OUT.csv SEED_OFFSET TEACHER.json\n"; return 2; }
         counterfactualSurrogateAuditGen(std::stoi(argv[2]),std::stoi(argv[3]),std::stoi(argv[4]),argv[5],std::stoull(argv[6]),argv[7]);
-    } else if (mode == "causalgen") {     // CSV of (state, card features, CRN advantage) for causal card value
-        int nSeeds    = argc > 2 ? std::stoi(argv[2]) : 200;
-        int sims      = argc > 3 ? std::stoi(argv[3]) : 1000;
-        int N         = argc > 4 ? std::stoi(argv[4]) : 6;
-        int innerSims = argc > 5 ? std::stoi(argv[5]) : 800;
-        int K         = argc > 6 ? std::stoi(argv[6]) : 6;
-        double eps    = argc > 7 ? std::stod(argv[7]) : 0.30;
-        std::string out = argc > 8 ? argv[8] : "causal.csv";
-        causalGen(nSeeds, sims, /*asc=*/0, N, innerSims, K, eps, out);
-
     } else if (mode == "carddump") {      // id,name,type,rarity,obtainWeight,baseDamage for all card ids
         std::cout << "id,name,type,rarity,obtainWeight,baseDamage\n";
         for (int i = 0; i < kNumCardIds; ++i) {
@@ -8610,7 +7475,7 @@ int main(int argc, char **argv) {
             if (!bestBench(sims, 1, asc, seed, resultsFile, "reprobench")) return 1;
         }
 
-    } else if (mode == "runtrace") {      // per-node human-readable trace of ONE seed (STS_FAIR for fair-play)
+    } else if (mode == "runtrace") {      // per-node human-readable trace of ONE seed
         std::uint64_t seed = argc > 2 ? std::stoull(argv[2]) : 0;
         int sims = argc > 3 ? std::stoi(argv[3]) : 1000;
         int asc  = argc > 4 ? std::stoi(argv[4]) : 0;

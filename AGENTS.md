@@ -14,8 +14,7 @@ in the same change:
 1. Executed code and executable behavior.
 2. Tests and reproducible benchmark artifacts, within their stated
    configuration.
-3. `CMakeLists.txt` for the target graph; `selfplay/loop.sh` for self-play and
-   gate mechanics.
+3. `CMakeLists.txt` for the target graph.
 4. `EXPERIMENTS.md` plus `docs/experiments/ledger-*.md` for chronological
    experiment evidence.
 5. `docs/knowledge-base/` for maintained current understanding.
@@ -149,7 +148,6 @@ scientific run.
 
 - [Build and debugging](docs/knowledge-base/operations/build-and-debugging.md)
 - [Benchmark protocol](docs/knowledge-base/evaluation/benchmark-protocol.md)
-- [Self-play loop](docs/knowledge-base/operations/selfplay-loop.md)
 - [Invariants](docs/knowledge-base/behavior/invariants.md) and
   [determinism/RNG](docs/knowledge-base/behavior/determinism-and-rng.md)
 - [Decision routing](decisions/README.md) and

@@ -176,8 +176,7 @@ int main(int argc, const char *argv[]) {
         GameContext gc(sts::CharacterClass::IRONCLAD, seed, ascension);
         BattleContext bc;
         bc.init(gc, MonsterEncounter::CULTIST);
-        search::ScumSearchAgent2 agent;
-        agent.simulationCountBase = 1000;
+        search::SimpleAgent agent;
         agent.playoutBattle(bc);
         const bool passes = bc.isBattleOver() == (bc.outcome != Outcome::UNDECIDED);
         std::cout << "isbattleover: outcome="

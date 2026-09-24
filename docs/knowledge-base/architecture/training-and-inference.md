@@ -1,6 +1,6 @@
 # Training and inference
 
-Last verified: 2026-09-24 for the Searcher3 removal; 2026-09-14 for potion-generation support; 2026-09-13 for relic legality, nested potion decoders, frozen composition, attention precision and padding; 2026-09-10 for
+Last verified: 2026-09-24 for the Searcher2/3 removals; 2026-09-14 for potion-generation support; 2026-09-13 for relic legality, nested potion decoders, frozen composition, attention precision and padding; 2026-09-10 for
 the semantic-branch trainer adapter and root trainer audit.
 
 ## Purpose
@@ -116,7 +116,7 @@ The reviewed exact-SHA fit is recorded in the
 Protocol and native counter table:
 [potion decoder evidence](../../experiments/evidence/potion_decoder_v1_2026-09-13.md).
 
-Representative producers are `datagen3`, `fightgen`, `fairgen`, `oocnextgen`,
+Representative current producers are `datagen3`, `oocnextgen`,
 and the August 1 `strategicgen` mode. `strategicgen` records one rich-state row
 per LEGAL action at each OOC decision with screen/action metadata, structured
 candidate fields, a `chosen` flag, and terminal run labels
@@ -435,11 +435,12 @@ flags, card properties, target HP, and `Expert` play/obtain values. The
 historical v1 schema is in Git history, but its composite-RNG provenance
 statement is not current truth.
 
-`ScumSearchAgent2` exposes thread-local `g_onCombatDecision` and
-`g_onSearchComplete` hooks (`include/sim/search/ScumSearchAgent2.h`).
-`fightgen` installs Searcher2 hooks. The Searcher3 `fairgen` producer was
-removed (ADR-0019); existing `fairgen` CSVs remain readable by the PVNet
-training scripts.
+`ScumSearchAgent2` exposes the thread-local `g_onCombatDecision` hook
+(`include/sim/search/ScumSearchAgent2.h`); the Silver backend calls it at each
+live decision. The Searcher3 `fairgen` producer (ADR-0019) and the Searcher2
+`combatgen`/`fightgen`/`policygen`/`distgen`/`datagen`/`datagen2`/`causalgen`
+producers (ADR-0020) were removed; their existing CSVs remain readable by the
+offline training scripts.
 
 ### Run/OOC schema
 
@@ -484,9 +485,8 @@ per-encounter validation CSV (in-file delta first, then the
 `STS_VNET_PER_ENCOUNTER` dir). Optional server models are selected through
 `v_server.py` environment variables. Current tracked artifact hashes are listed
 only in [current baselines](../evaluation/current-baselines.md).
-No searcher consumes the distributional model since Searcher3 was removed
-(ADR-0019), so a successful DistVNet load is not evidence of use. The PV model
-adds policy-head priors to Searcher2 unless `STS_PVNET_VALUE_ONLY=1`.
+`one_combat` no longer loads the V_combat, compact policy, PVNet or DistVNet
+models for play (ADR-0020); only the parity tools use these libraries.
 
 ## Invariants and assumptions
 
@@ -520,8 +520,8 @@ adds policy-head priors to Searcher2 unless `STS_PVNET_VALUE_ONLY=1`.
   `entityDim > 256` and `numHeads` that do not divide `entityDim`.
 - A successful benchmark requires observable load messages and evidence the
   selected branch used the model.
-- File suffix can select serializer behavior; self-play training temporaries
-  must preserve the intended XGBoost format (`EXPERIMENTS.md` entry 49).
+- File suffix can select serializer behavior; training temporaries must
+  preserve the intended XGBoost format (`EXPERIMENTS.md` entry 49).
 - Combat policy inputs currently include hand-authored Expert features.
 - Per-encounter specialization (2026-08-09, experimental): each per-encounter
   tree model holds a full copy of the pooled tree set (~2000 trees), so 10
@@ -664,14 +664,9 @@ ordinary policy CE/Q error reports.
 
 ### Deployment VNet query distribution diagnostics
 
-`STS_VNET_QUERY_LOG=<csv>` (configured by `apps/one_combat/vnet_query_log.cpp`)
-records canonical combat feature rows at deployed VNet queries with a
-`vnetPred` column. `tools/vnet_distribution_shift.py` compares this deployment sample
-against a seed-disjoint sample of `combatgen` rows: use
-`--deploy-vnet-col vnetPred` (the default), `--vnet-col` for a training-side
-prediction column when available, and `--label-col endHp` for combatgen labels.
-The script's `--self-test` exercises the prediction-column and skip paths
-without requiring XGBoost.
+The `STS_VNET_QUERY_LOG` producer was removed with Searcher2 (ADR-0020).
+`tools/vnet_distribution_shift.py` still compares existing deployment and
+`combatgen` CSVs.
 
 ## Open questions
 
@@ -691,7 +686,7 @@ without requiring XGBoost.
 
 ## Relevant code
 
-- `apps/one_combat.cpp::main` (`carddump` dispatch), `fightGen`, `strategicGen`,
+- `apps/one_combat.cpp::main` (`carddump` dispatch), `strategicGen`,
   `strategicGen2`, `vFeatCsv`
 - `include/sim/search/ScumSearchAgent2.h` data-generation hooks
 - `src/sim/search/CombatValueNet.cpp::combatFeatureNames`,

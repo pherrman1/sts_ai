@@ -1,6 +1,6 @@
 # Current code map
 
-Last verified: 2026-09-24 for the Searcher3 removal and the Silver whole-run default; 2026-09-23 for frozen Silver prior offline replay and user-authorized online smoke integration; 2026-09-15 for qualified V2 combat support; 2026-09-14 for opt-in live OOC MCTS routing.
+Last verified: 2026-09-24 for Silver-only combat and self-play removal (ADR-0020), the Searcher3 removal and the Silver whole-run default; 2026-09-23 for frozen Silver prior offline replay and user-authorized online smoke integration; 2026-09-15 for qualified V2 combat support; 2026-09-14 for opt-in live OOC MCTS routing.
 
 Purpose:
 Fast routing for humans and agents. Code remains authoritative. Use this page
@@ -12,7 +12,6 @@ before broad repository search.
 | --- | --- | --- | --- |
 | Combat state | `include/combat/BattleContext.h`, `src/combat/BattleContext.cpp` | `BattleContext`, `Outcome`, `init`, `exitBattle` | [combat-search.md](architecture/combat-search.md) |
 | Combat actions | `include/sim/search/Action.h`, `src/sim/search/Action.cpp` | `Action`, `execute`, `isValidAction`, `enumerateCardSelectActions` | [combat-search.md](architecture/combat-search.md) |
-| Searcher2 (native default; Silver disabled) | `include/sim/search/BattleScumSearcher2.h`, `src/sim/search/BattleScumSearcher2.cpp` | `BattleScumSearcher2` — known-RNG determinize, tree reuse | [combat-search.md](architecture/combat-search.md) |
 | Combat observation | `include/sim/search/CombatObservation.h`, `src/sim/search/CombatObservation.cpp` | `CombatObservation` — agent-facing public combat observation (`visibleHash`); Searcher3 and its particle belief were removed (ADR-0019) | [combat-search.md](architecture/combat-search.md) |
 | Silver (default for `run`/`bestbench`/`reprobench`; opt-in elsewhere) | `include/sim/search/SilverLiveBackend.h`, `third_party/silver_lightspeed/bridge/SilverLiveBackend.cpp`, `src/sim/search/SilverConversion.cpp` | isolated pinned Silver chance-tree backend, `STS_SILVER_SEARCH` (ADR-0018 whole-run default), stable per-battle seed, semantic action lowering, transactional multi-select, exact reroot telemetry | [combat-search.md](architecture/combat-search.md), [environment-variables.md](operations/environment-variables.md) |
 | Experimental Silver learned root prior | `include/sim/search/SilverPriorNet.h`, `src/sim/search/SilverPriorNet.cpp`, `third_party/silver_lightspeed/bridge/SilverLiveBackend.cpp`, `third_party/silver_lightspeed/bridge/SilverStateBridge.cpp` | `SilverPriorNetV1`, `STS_SILVER_ROOT_PRIOR_MODEL`; frozen artifact inference and root-only PUCT behind fail-closed native action-surface validation; default off | [combat-search.md](architecture/combat-search.md), [online smoke evidence](../experiments/evidence/silver_prior_online_screen_20260923/README.md) |
@@ -20,8 +19,8 @@ before broad repository search.
 | Offline Silver root-prior replay screen | `apps/silver_prior_root_replay.cpp`, `tools/silver_prior_root_screen.py`, `include/sim/search/SilverRootMechanism.h`, `third_party/silver_lightspeed/bridge/SilverStateBridge.cpp::replaySilverRoot` | sealed learned/uniform/L-oracle priors; four-arm fixed-budget root replay and VALIDATION J judging; development research harness, not live/default integration | [root replay evidence](../experiments/evidence/silver_prior_root_replay_20260923/README.md), [current research](evaluation/current-research.md) |
 | Combat agent dispatch | `include/sim/search/ScumSearchAgent2.h`, `src/sim/search/ScumSearchAgent2.cpp` | `ScumSearchAgent2`, `playoutBattle`, `playoutBattleFair`, `stepOutOfCombatPolicy` | [combat-search.md](architecture/combat-search.md), [out-of-combat.md](architecture/out-of-combat.md) |
 | Expert heuristics | `include/sim/search/ExpertKnowledge.h`, `src/sim/search/ExpertKnowledge.cpp` | `ExpertKnowledge` — play/obtain weights, encoded as policy features | [combat-search.md](architecture/combat-search.md) |
-| Combat value nets | `include/sim/search/CombatValueNet.h`, `src/sim/search/CombatValueNet.cpp` | `CombatValueNet` — compact tree (`STS_VNET`) | [training-and-inference.md](architecture/training-and-inference.md) |
-| PVNet (policy+value) | `include/sim/search/CombatPVNet.h`, `src/sim/search/CombatPVNet.cpp` | `CombatPVNet` — neural policy priors + value leaf, `STS_PVNET` (Searcher2 policy priors since 2026-08-05) | [training-and-inference.md](architecture/training-and-inference.md) |
+| Combat value nets | `include/sim/search/CombatValueNet.h`, `src/sim/search/CombatValueNet.cpp` | `CombatValueNet` — compact tree; library and `vnettest` parity only since ADR-0020 | [training-and-inference.md](architecture/training-and-inference.md) |
+| PVNet (policy+value) | `include/sim/search/CombatPVNet.h`, `src/sim/search/CombatPVNet.cpp` | `CombatPVNet` — neural policy/value library; not loaded for play since ADR-0020 | [training-and-inference.md](architecture/training-and-inference.md) |
 | DistVNet | `include/sim/search/CombatDistValueNet.h`, `src/sim/search/CombatDistValueNet.cpp` | `CombatDistValueNet` — `STS_DIST_VNET`; loads but no searcher consumes it after ADR-0019 | [training-and-inference.md](architecture/training-and-inference.md) |
 | CPSI net | `include/sim/search/CombatCpsiNet.h`, `src/sim/search/CombatCpsiNet.cpp` | `CombatCpsiNet` — card-pair synergy inference, experimental | [training-and-inference.md](architecture/training-and-inference.md) |
 
@@ -45,7 +44,7 @@ before broad repository search.
 
 | Topic | Primary code | Key symbols / modes | Read next |
 | --- | --- | --- | --- |
-| Mode dispatch | `apps/one_combat.cpp::main`, `apps/combat_model_diagnostics.cpp`, `apps/one_combat/search_diagnostics.cpp` | ~100 modes (`bestbench`, `datagen3`, `strategicgen`, `searchdiag`, …), env-flag parsing, model loading; offline combat-model diagnostics are dispatched through `runCombatModelDiagnosticMode`; `fightrep` and `searchdiag` instrumentation are implemented by standalone application modules | [overview.md](architecture/overview.md), [build-and-debugging.md](operations/build-and-debugging.md), [environment-variables.md](operations/environment-variables.md) |
+| Mode dispatch | `apps/one_combat.cpp::main`, `apps/combat_model_diagnostics.cpp` | ~80 modes (`bestbench`, `datagen3`, `strategicgen`, …), env-flag parsing, model loading; offline combat-model diagnostics are dispatched through `runCombatModelDiagnosticMode`; `fightrep` and `searchdiag` instrumentation are implemented by standalone application modules | [overview.md](architecture/overview.md), [build-and-debugging.md](operations/build-and-debugging.md), [environment-variables.md](operations/environment-variables.md) |
 | Shared run features | `apps/one_combat/run_features.{h,cpp}` | `PathHistory`, `FwdMap`, rich schema/header/CSV row/direct numeric `richFeatureVec(gc,path)`/index map, and feature cardinalities shared by the integration driver | [overview.md](architecture/overview.md), [out-of-combat.md](architecture/out-of-combat.md) |
 | Compact tree reader | `apps/one_combat/compact_tree.{h,cpp}` | `CompactTreeNet` loader/predictor with contiguous nodes/root offsets and resolved raw split indices; callers supply the feature-name index map | [overview.md](architecture/overview.md), [training-and-inference.md](architecture/training-and-inference.md) |
 
@@ -55,7 +54,7 @@ before broad repository search.
 | --- | --- | --- | --- |
 | Strategic gen | `apps/one_combat.cpp` | `runStrategicGenSeed`, `strategicGen` — one rich row per legal OOC action | [training-and-inference.md](architecture/training-and-inference.md) |
 | Next-generation OOC pipeline contracts | `tools/ooc_pipeline_contract.py`, `tools/train_whole_combat_surrogate.py` | fail-closed teacher/corpus manifest, K/H planning, grouped whole-combat trainer | [ooc-label-pipeline.md](operations/ooc-label-pipeline.md) |
-| Combat gen | `apps/one_combat.cpp` | `combatgen`, `fightgen`, `datagen3`, `wholecombatgen` (one post-afterBattle reward-entry row/fight), `combattransitiongen` (RAW persistent-transfer JSONL), `combattransitionselftest` (test-only deterministic native rows) | [training-and-inference.md](architecture/training-and-inference.md), [ooc-label-pipeline.md](operations/ooc-label-pipeline.md) |
+| Combat gen | `apps/one_combat.cpp` | `datagen3`, `wholecombatgen` (one post-afterBattle reward-entry row/fight), `combattransitiongen` (RAW persistent-transfer JSONL), `combattransitionselftest` (test-only deterministic native rows) | [training-and-inference.md](architecture/training-and-inference.md), [ooc-label-pipeline.md](operations/ooc-label-pipeline.md) |
 
 ## Training and export
 
@@ -92,7 +91,7 @@ before broad repository search.
 | Topic | Primary code | Key symbols / modes | Read next |
 | --- | --- | --- | --- |
 | In-process loading | `apps/one_combat.cpp::main` | Compact tree / neural text / binary reading at startup | [overview.md](architecture/overview.md), [out-of-combat.md](architecture/out-of-combat.md) |
-| Optional server bridge | `v_server.py` | Localhost JSON-RPC inference, required by self-play meta arm + some experimental endpoints | [training-and-inference.md](architecture/training-and-inference.md), [selfplay-loop.md](operations/selfplay-loop.md) |
+| Optional server bridge | `v_server.py` | Localhost JSON-RPC inference for some experimental endpoints (the self-play meta arm was removed by ADR-0020) | [training-and-inference.md](architecture/training-and-inference.md), [selfplay-loop.md](operations/selfplay-loop.md) |
 
 ## Evaluation / benchmarks
 
@@ -105,13 +104,11 @@ before broad repository search.
 | Experiment ledger | `EXPERIMENTS.md` | Index; historical evidence in `docs/experiments/ledger-*.md` | [research/README.md](research/README.md) |
 | Research graph | `docs/knowledge-base/research/` | Topic-oriented maintained research synthesis | [research/README.md](research/README.md) |
 
-## Self-play
+## Model artifacts (former self-play)
 
 | Topic | Primary code | Key symbols / modes | Read next |
 | --- | --- | --- | --- |
-| Loop controller | `selfplay/loop.sh` | Resumable gen → retrain → paired gate, bootstrap state machine | [selfplay-loop.md](operations/selfplay-loop.md) |
-| Config snapshots | `selfplay/config.env`, `selfplay/state.env` | Current-loop config and checkpoint, not authoritative for run status | [selfplay-loop.md](operations/selfplay-loop.md) |
-| Deployable exports | `selfplay/models/*.native` | git-tracked native artifacts since 2026-08-05 | [selfplay-loop.md](operations/selfplay-loop.md) |
+| Deployable exports | `selfplay/models/*.native` | git-tracked native artifacts read by live and research code; the self-play loop that produced them was removed (ADR-0020) | [selfplay-loop.md](operations/selfplay-loop.md) |
 
 ## Python bindings
 
