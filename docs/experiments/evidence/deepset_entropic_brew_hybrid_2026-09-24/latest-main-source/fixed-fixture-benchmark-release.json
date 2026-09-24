@@ -1,0 +1,78 @@
+{
+  "brewInputs": 18,
+  "dispatchFraction": 0.5806451612903226,
+  "fixtureCount": 31,
+  "hybridMetrics": {
+    "fallbackPreparations": 1818,
+    "fallbackRate": 0.6428571428571429,
+    "fastPreparations": 1010,
+    "preparations": 2828,
+    "uniqueBrewPredictorStates": 14
+  },
+  "ordinaryInputs": 13,
+  "repetitionsPerInput": 100,
+  "schema": "combat_transition_hybrid_fixed_fixture_benchmark_v1",
+  "timings": {
+    "fast_deepsets": {
+      "encoderCallsPerPreparation": 3.0,
+      "preparationMedianUs": 500.7957500000001,
+      "preparationP25Us": 419.1368099999999,
+      "preparationP75Us": 559.5412000000001,
+      "preparedSampleMedianUs": 38.38015,
+      "preparedSampleP25Us": 37.40249999999999,
+      "preparedSampleP75Us": 40.14874999999999,
+      "supportedInputStates": 10
+    },
+    "hybrid_brew_fallback": {
+      "encoderCallsPerPreparation": 4.0,
+      "preparationMedianUs": 4184.755620000002,
+      "preparationP25Us": 3531.946150000001,
+      "preparationP75Us": 5496.977170000001,
+      "preparedSampleMedianUs": 50.66788,
+      "preparedSampleP25Us": 48.463699999999996,
+      "preparedSampleP75Us": 66.14549,
+      "supportedInputStates": 18
+    },
+    "hybrid_fast": {
+      "encoderCallsPerPreparation": 3.0,
+      "preparationMedianUs": 545.5758099999998,
+      "preparationP25Us": 463.91422,
+      "preparationP75Us": 564.86717,
+      "preparedSampleMedianUs": 37.24074999999999,
+      "preparedSampleP25Us": 36.402750000000005,
+      "preparedSampleP75Us": 38.50661,
+      "supportedInputStates": 10
+    },
+    "standard_all_supported": {
+      "encoderCallsPerPreparation": 4.0,
+      "preparationMedianUs": 4114.56078,
+      "preparationP25Us": 3245.0130999999983,
+      "preparationP75Us": 5310.770009999999,
+      "preparedSampleMedianUs": 50.115739999999995,
+      "preparedSampleP25Us": 45.17079999999998,
+      "preparedSampleP75Us": 57.11284999999999,
+      "supportedInputStates": 28
+    },
+    "standard_brew": {
+      "encoderCallsPerPreparation": 4.0,
+      "preparationMedianUs": 4779.514670000001,
+      "preparationP25Us": 3420.92471,
+      "preparationP75Us": 5699.818910000001,
+      "preparedSampleMedianUs": 49.190690000000004,
+      "preparedSampleP25Us": 46.926939999999966,
+      "preparedSampleP75Us": 73.85835,
+      "supportedInputStates": 18
+    },
+    "standard_ordinary_matched_fast": {
+      "encoderCallsPerPreparation": 4.0,
+      "preparationMedianUs": 3557.7792900000018,
+      "preparationP25Us": 2882.64456,
+      "preparationP75Us": 4129.038520000001,
+      "preparedSampleMedianUs": 46.992020000000004,
+      "preparedSampleP25Us": 42.841310000000014,
+      "preparedSampleP75Us": 48.145379999999996,
+      "supportedInputStates": 10
+    }
+  },
+  "warmupsPerInput": 10
+}

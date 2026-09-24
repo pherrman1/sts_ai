@@ -14,6 +14,16 @@ header=dict(schema='COMBAT_TRANSITION_RUNTIME_V1',version=1,
             predictorSchema='combat_predictor_input_v1',predictorHash='wrong',predictorFieldSchema='wrong')
 with tempfile.TemporaryDirectory() as directory:
     directory=Path(directory);fixture=directory/'empty.jsonl';fixture.write_text('')
+    control=Path(__file__).resolve().parents[1]/'selfplay/models/combat_transition_near_full_except_smoke_v2.native'
+    result=subprocess.run([sys.argv[1],'--require-standard-fallback',str(control)],text=True,capture_output=True)
+    if result.returncode!=0 or 'pinned standard fallback SHA256 PASS' not in result.stdout:
+        raise RuntimeError('rejected exact current standard fallback: '+result.stderr)
+    tampered=directory/'tampered-standard.native'
+    payload=bytearray(control.read_bytes());payload[-1]^=1;tampered.write_bytes(payload)
+    result=subprocess.run([sys.argv[1],'--require-standard-fallback',str(tampered)],text=True,capture_output=True)
+    if result.returncode==0 or 'SHA256 differs' not in result.stderr:
+        raise RuntimeError('accepted tampered standard fallback with matching metadata')
+    print('pinned standard fallback PASS; matching-metadata byte tamper rejected')
     encoded=json.dumps(header).encode()
     cases={'wrong_magic':b'X'*len(MAGIC),'wrong_version':MAGIC+struct.pack('<I',2),
            'truncated_header':MAGIC+struct.pack('<II',1,100)+b'{',
@@ -25,7 +35,6 @@ with tempfile.TemporaryDirectory() as directory:
         result=subprocess.run([sys.argv[1],str(model),str(fixture)],text=True,capture_output=True)
         if result.returncode==0 or not result.stderr.strip():raise RuntimeError('silently accepted '+name)
         print(name,'PASS',result.stderr.strip())
-    control=Path(__file__).resolve().parents[1]/'selfplay/models/combat_transition_near_full_except_smoke_v2.native'
     original=control.read_bytes();magic=b'COMBAT_TRANSITION_RUNTIME_V2\0'
     version,length=struct.unpack_from('<II',original,len(magic));offset=len(magic)+8
     control_header=json.loads(original[offset:offset+length]);body=original[offset+length:]

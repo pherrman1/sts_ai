@@ -30,11 +30,9 @@ every Searcher2/Searcher3 row below is historical and needs a binary built
 before the respective ADR to reproduce. The Searcher2-era combat models
 (compact policy prior, V_combat leaf, PVNet, DistVNet) are no longer loaded for
 play.
-Per-encounter combat value specialization (`STS_VNET_PER_ENCOUNTER=<dir>`
-per-boss tree overlay, `combat_mlp_meta_v1` in-file deltas from the Reptile
-meta-learner) is an experimental research arm implemented 2026-08-09
-(`train_value_combat_per_encounter.py` / `train_value_combat_meta.py`), NOT
-promoted to any default; the deployed vnet stays the §148 tuned pooled model.
+Per-encounter combat value specialization (per-boss tree overlay and
+`combat_mlp_meta_v1` deltas) was an experimental Searcher2 research arm; its
+producers were removed with Searcher2 (ADR-0020).
 Since 2026-08-06 the project-fair Searcher2 path includes the **forced-move
 contraction by default** (exactly-one-legal-action commits without searching;
 `STS_FORCED_MOVE=0` disables). It is decision-neutral — two independent
@@ -103,7 +101,6 @@ Current tracked artifact identities:
 models/v_rich_trees.txt    sha256 3a3420469b1d648e0e306d6cb6a7e85f3d3499105e3ff3a56eee6c579194ffe3
 models/v_win_trees.txt     sha256 fc52c14cb7239a33b3c1f9d0477ccb6c895fd51a07240fe804744e605067ad70
 models/policy_trees_c.txt  sha256 24793bd39dd1a35c8865035e458c3aa40616ef021cb26b05f914f72fb5e5a321
-models/v_combat_pvnet.txt  sha256 a7a55e5290fd6bece028ab0aeb9509a80dcb304f3103ba444b8205ec17e27b72
 models/v_combat_7k_tuned.txt sha256 ea35b78c888e70e09566e1143d296577b0bea2ec8d437276b7aab81a7cdaf15c
 selfplay/models/ooc_strategic_tok_final.native sha256 e62abd833fc8cb9081a1cec4a1a012832ac3b0e3166da3892841911664f1184c
 ```
@@ -173,6 +170,5 @@ artifact set behind §66i.
 - `apps/one_combat.cpp::main`, `runFullRunOOC`, `bestBench`
 - `src/sim/search/ScumSearchAgent2.cpp::playoutBattle`
 - `src/sim/search/BattleScumSearcher2.cpp::determinize`
-- `src/sim/search/CombatPVNet.cpp::g_pvnetAlpha`
 - `EXPERIMENTS.md` §26, §66i, and “Phase 4b PVNet alpha sweep”
 - tracked deployable artifacts under `models/` and `selfplay/models/`

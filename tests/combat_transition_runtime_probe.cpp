@@ -5,6 +5,7 @@
 #include <iostream>
 #include <chrono>
 #include <cmath>
+#include <algorithm>
 using namespace one_combat;
 using json=nlohmann::json;
 CombatPredictorInputV1 predictor(const json &j) {
@@ -27,6 +28,157 @@ CombatTransitionPersistentState persistent(const json &j) {
 }
 int main(int argc,char **argv) {
     try {
+        if(argc==3 && std::string(argv[1])=="--require-standard-fallback") {
+            CombatTransitionRuntime::requireCurrentStandardFallbackArtifact(argv[2]);
+            std::cout << "pinned standard fallback SHA256 PASS\n";
+            return 0;
+        }
+        if(argc==6 && std::string(argv[1])=="--benchmark") {
+            NativeCombatTransitionSampler fast(argv[2]),standard(argv[3]);
+            EntropicBrewFallbackCombatTransitionSampler hybrid(argv[2],argv[3]);
+            const int repetitions=std::stoi(argv[5]);if(repetitions<1)throw std::runtime_error("benchmark repetitions must be positive");
+            std::ifstream file(argv[4]);if(!file)throw std::runtime_error("fixture file");
+            struct Samples {std::vector<double> prepare,sample;std::uint64_t inputs=0,encoderCalls=0;};
+            std::map<std::string,Samples> timings;
+            auto append=[&](const std::string &name,double prepare,double sample,int encoders) {
+                auto &values=timings[name];values.prepare.push_back(prepare);values.sample.push_back(sample);
+                ++values.inputs;values.encoderCalls+=encoders;
+            };
+            std::string line;int index=0;std::uint64_t brewInputs=0,ordinaryInputs=0;
+            while(std::getline(file,line)) {
+                auto j=json::parse(line);auto p=predictor(j.at("predictorInput"));
+                auto pre=persistent(j.contains("pre")?j.at("pre"):j.at("transition").at("pre"));
+                sts::GameContext gc;applyCombatTransitionState(gc,pre);
+                const bool brew=std::any_of(p.potions.begin(),p.potions.end(),[](const auto &x){return x.potionId==int(sts::Potion::ENTROPIC_BREW);});
+                if(brew)++brewInputs;else ++ordinaryInputs;
+                auto run=[&](const CombatTransitionSampler &sampler,const std::string &bucket,int encoders) {
+                    if(bucket.empty())return false;
+                    auto support=sampler.support(gc,p);if(!support.supported)return false;
+                    auto prepared=sampler.prepare(gc,p);if(!prepared->support().supported)throw std::runtime_error("benchmark prepare lost support");
+                    for(int warm=0;warm<10;++warm){std::mt19937_64 rng(776+warm);prepared->sample(rng);}
+                    double prepareTotal=0,sampleTotal=0;
+                    for(int rep=0;rep<repetitions;++rep) {
+                        auto start=std::chrono::steady_clock::now();auto each=sampler.prepare(gc,p);
+                        prepareTotal+=std::chrono::duration<double,std::micro>(std::chrono::steady_clock::now()-start).count();
+                        std::mt19937_64 rng(900000+index*repetitions+rep);start=std::chrono::steady_clock::now();
+                        each->sample(rng);sampleTotal+=std::chrono::duration<double,std::micro>(std::chrono::steady_clock::now()-start).count();
+                    }
+                    append(bucket,prepareTotal/repetitions,sampleTotal/repetitions,encoders);
+                    return true;
+                };
+                run(standard,"standard_all_supported",4);
+                if(brew) {
+                    run(standard,"standard_brew",4);
+                    run(hybrid,"hybrid_brew_fallback",4);
+                } else if(run(fast,"fast_deepsets",3)) {
+                    run(standard,"standard_ordinary_matched_fast",4);
+                    run(hybrid,"hybrid_fast",3);
+                }
+                ++index;
+            }
+            json results=json::object();for(auto &[name,values]:timings) {
+                auto prep=values.prepare,samples=values.sample;
+                std::sort(prep.begin(),prep.end());std::sort(samples.begin(),samples.end());
+                auto q=[](const std::vector<double> &v,double p){return v.empty()?0.0:v[std::size_t(p*double(v.size()-1))];};
+                results[name]={{"supportedInputStates",values.inputs},{"encoderCallsPerPreparation",values.inputs?double(values.encoderCalls)/values.inputs:0},
+                    {"preparationMedianUs",q(prep,.5)},{"preparationP25Us",q(prep,.25)},{"preparationP75Us",q(prep,.75)},
+                    {"preparedSampleMedianUs",q(samples,.5)},{"preparedSampleP25Us",q(samples,.25)},{"preparedSampleP75Us",q(samples,.75)}};
+            }
+            const auto metrics=hybrid.takeMetrics();
+            std::cout<<json{{"schema","combat_transition_hybrid_fixed_fixture_benchmark_v1"},
+                {"fixtureCount",index},{"ordinaryInputs",ordinaryInputs},{"brewInputs",brewInputs},
+                {"warmupsPerInput",10},{"repetitionsPerInput",repetitions},
+                {"dispatchFraction",index?double(brewInputs)/index:0.0},{"timings",results},
+                {"hybridMetrics",{{"preparations",metrics.preparations},
+                    {"fastPreparations",metrics.fastPreparations},{"fallbackPreparations",metrics.fallbackPreparations},
+                    {"fallbackRate",metrics.fallbackRate},{"uniqueBrewPredictorStates",metrics.uniqueBrewPredictorStates}}}}.dump(2)<<'\n';
+            return index?0:1;
+        }
+        if(argc==4 && std::string(argv[1])=="--potion-parity") {
+            NativeCombatTransitionSampler sampler(argv[2]);const auto &net=sampler.runtime();
+            std::ifstream file(argv[3]);if(!file)throw std::runtime_error("fixture file");
+            std::string line;int index=0;
+            while(std::getline(file,line)) {
+                auto j=json::parse(line);auto p=predictor(j.at("predictorInput"));
+                auto z=net.potionEncoding(p);const int delta=j.value("delta",0);
+                const float fraction=j.value("fraction",.5f);auto probabilities=net.potion(z,p,delta,fraction);
+                json legal=json::array();for(float probability:probabilities)legal.push_back(probability>0);
+                std::cout<<json{{"index",index++},{"z",z},{"probabilities",probabilities},
+                    {"legal",legal},{"delta",delta},{"fraction",fraction},
+                    {"capacity",p.globals.potionCapacity},
+                    {"boss",sts::isBossEncounter(static_cast<sts::MonsterEncounter>(p.globals.encounter))}}.dump()<<'\n';
+            }
+            return index?0:1;
+        }
+        if(argc==5 && std::string(argv[1])=="--hybrid") {
+            NativeCombatTransitionSampler fast(argv[2]),standard(argv[3]);
+            EntropicBrewFallbackCombatTransitionSampler hybrid(argv[2],argv[3]);
+            std::ifstream file(argv[4]);if(!file)throw std::runtime_error("fixture file");
+            std::string line;int index=0,brews=0,ordinary=0;
+            while(std::getline(file,line)) {
+                auto j=json::parse(line);auto p=predictor(j.at("predictorInput"));
+                auto pre=persistent(j.contains("pre")?j.at("pre"):j.at("transition").at("pre"));
+                sts::GameContext gc;applyCombatTransitionState(gc,pre);
+                const bool brew=std::any_of(p.potions.begin(),p.potions.end(),[](const auto &x){return x.potionId==int(sts::Potion::ENTROPIC_BREW);});
+                auto &expected=brew?static_cast<const CombatTransitionSampler&>(standard):static_cast<const CombatTransitionSampler&>(fast);
+                auto expectedSupport=expected.support(gc,p),actualSupport=hybrid.support(gc,p);
+                if(expectedSupport.supported!=actualSupport.supported||expectedSupport.reason!=actualSupport.reason)
+                    throw std::runtime_error("hybrid support differs from selected child at fixture "+std::to_string(index));
+                auto forecast=expected.forecastSupport(p),hybridForecast=hybrid.forecastSupport(p);
+                if(forecast.supported!=hybridForecast.supported||forecast.reason!=hybridForecast.reason)
+                    throw std::runtime_error("hybrid forecast support differs from selected child");
+                auto expectedExpectation=expected.expectation(gc,p),actualExpectation=hybrid.expectation(gc,p);
+                if(expectedExpectation.supported!=actualExpectation.supported ||
+                    expectedExpectation.death!=actualExpectation.death ||
+                    expectedExpectation.winningHpFraction!=actualExpectation.winningHpFraction ||
+                    expectedExpectation.winningHpHistogram!=actualExpectation.winningHpHistogram)
+                    throw std::runtime_error("hybrid expectation differs from selected child");
+                auto expectedForecast=expected.forecastExpectation(p),actualForecast=hybrid.forecastExpectation(p);
+                if(expectedForecast.supported!=actualForecast.supported || expectedForecast.death!=actualForecast.death ||
+                    expectedForecast.winningHpFraction!=actualForecast.winningHpFraction ||
+                    expectedForecast.winningHpHistogram!=actualForecast.winningHpHistogram)
+                    throw std::runtime_error("hybrid forecast expectation differs from selected child");
+                std::mt19937_64 left(20260924+index),right=left;
+                auto expectedSample=expected.sample(gc,p,left),actualSample=hybrid.sample(gc,p,right);
+                if(expectedSample.outcome!=actualSample.outcome || left!=right ||
+                    combatTransitionStateJson(expectedSample.rawPost)!=combatTransitionStateJson(actualSample.rawPost))
+                    throw std::runtime_error("hybrid scalar sample/RNG/RAW differs from selected child");
+                auto expectedPrepared=expected.prepare(gc,p),actualPrepared=hybrid.prepare(gc,p);
+                if(expectedPrepared->support().supported!=actualPrepared->support().supported ||
+                    expectedPrepared->support().reason!=actualPrepared->support().reason)
+                    throw std::runtime_error("hybrid prepared support differs from selected child");
+                left.seed(80260924+index);right=left;
+                expectedSample=expectedPrepared->sample(left);actualSample=actualPrepared->sample(right);
+                if(expectedSample.outcome!=actualSample.outcome || left!=right ||
+                    combatTransitionStateJson(expectedSample.rawPost)!=combatTransitionStateJson(actualSample.rawPost))
+                    throw std::runtime_error("hybrid prepared sample/RNG/RAW differs from selected child");
+                if(brew) {
+                    ++brews;std::mt19937_64 directRng(99),before=directRng;
+                    auto blocked=fast.sample(gc,p,directRng);
+                    if(fast.support(gc,p).reason!="entropic_brew_requires_standard_ctm" ||
+                        fast.forecastSupport(p).reason!="entropic_brew_requires_standard_ctm" ||
+                        blocked.outcome!=CombatRuntimeSample::Outcome::UNSUPPORTED || directRng!=before)
+                        throw std::runtime_error("direct specialist Brew misuse did not fail closed without RNG");
+                } else ++ordinary;
+                std::cout<<json{{"index",index},{"brewFallback",brew},{"support",actualSupport.supported},
+                    {"reason",actualSupport.reason},{"scalarAndPreparedIdentity",true},
+                    {"completeRawAndRngIdentity",true}}.dump()<<'\n';
+                ++index;
+            }
+            const auto metrics=hybrid.takeMetrics();
+            if(metrics.preparations!=static_cast<std::uint64_t>(index) ||
+                metrics.fastPreparations!=static_cast<std::uint64_t>(ordinary) ||
+                metrics.fallbackPreparations!=static_cast<std::uint64_t>(brews) ||
+                metrics.fastSamples!=static_cast<std::uint64_t>(2*ordinary) ||
+                metrics.fallbackSamples!=static_cast<std::uint64_t>(2*brews))
+                throw std::runtime_error("hybrid metrics do not match fixture routes");
+            std::cerr<<json{{"fixtures",index},{"ordinary",ordinary},{"brew",brews},
+                {"preparations",metrics.preparations},{"fastPreparations",metrics.fastPreparations},
+                {"fallbackPreparations",metrics.fallbackPreparations},{"fastSamples",metrics.fastSamples},
+                {"fallbackSamples",metrics.fallbackSamples},{"fallbackRate",metrics.fallbackRate},
+                {"uniqueBrewPredictorStates",metrics.uniqueBrewPredictorStates}}.dump()<<'\n';
+            return index?0:1;
+        }
         if(argc!=3 && argc!=4)throw std::runtime_error("usage: combat_transition_runtime_probe MODEL FIXTURES [smoke-and-parity]");
         NativeCombatTransitionSampler sampler(argv[1]);const auto &net=sampler.runtime();
         std::mt19937_64 rng(20260914);

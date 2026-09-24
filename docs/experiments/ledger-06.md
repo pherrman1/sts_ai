@@ -11589,3 +11589,108 @@ for provenance, raw commands/results, checks and remaining uncertainty.
 Knowledge impact: current OOC implementation and profile evidence updated in
 the architecture and current-research pages; no qualified baseline or runtime
 default changed.
+
+## §342 — Experimental DeepSets CTM with Entropic Brew fallback (2026-09-24)
+
+- **Question and baseline:** Can the PR #298 potion-aware DeepSets specialist
+  serve ordinary OOC CTM preparations while the current standard Attention
+  artifact handles every pre-combat Entropic Brew state? Baseline is merged
+  PR #303 at `41c0f5af5711c452b6e133e6dc66c7756f50874c`. This is an
+  engineering screen, not another offline potion qualification.
+- **Intervention/provenance:** Exported the existing, already-verified W
+  checkpoint unchanged (SHA256
+  `71d88a71cf7579e1092c3b3c27e000538a6aafe35bbf5228c10c15fa0edd4ace`,
+  epoch 27) as a dedicated potion encoder/decoder in the experimental
+  DeepSets stack. A new opt-in hybrid routes each full predictor-visible
+  pre-combat input containing Brew to the exact current standard V2 CTM;
+  other inputs use the experimental fast child. The default path is
+  unchanged, and the specialist itself rejects direct Brew use.
+- **Mechanism/parity:** Python/native W parity passed on 31 frozen fixtures
+  at `1e-4` absolute tolerance (maximum encoder/probability errors
+  `7.75e-7`/`4.77e-7`, zero legal-mask mismatches). Hybrid/direct-child support,
+  prepared and scalar draws, full RAW state and RNG identity passed for the
+  same fixture inputs; routing consumed no planner RNG. Direct fast-path Brew
+  use failed closed. The 18 Brew rows among 31 fixtures are mechanism coverage,
+  not a representative dispatch sample. Pre-combat routing is sufficient for
+  the known recursive-Brew case because its trajectory starts with Brew in
+  the visible inventory.
+- **Fixed-input timing:** On 31 frozen fixtures, 10 warmups and 100 repeats
+  per row, the 10 non-Brew rows supported by fast were timed on both children:
+  median preparation was 3,715 us standard versus 491 us fast (7.57x), with
+  hybrid fast at 487 us on those same rows. Median sampling was 39.5 us
+  standard versus 35.0 us fast. Separately, on 18 supported Brew rows standard
+  preparation was 3,315 us and hybrid fallback 3,419 us; sampling was 41.7 and
+  44.4 us. Encoder calls were 4 for standard/fallback and 3 for fast. Fixture
+  fallback share is 18/31 and cannot estimate OOC frequency or whole-search
+  speed. This is a fixed-fixture timing smoke only.
+- **Implementation checks:** The initial review confirmed fallback metadata
+  identity but did not bind the standard artifact bytes. Follow-up review found
+  the gap; source commit `9a1335a243e08ad57c59a36c95b48778fdba8b76` pins the
+  actual standard artifact SHA256 to
+  `e9a18951710fdfe9e1a81a2703090a41f039067c670a1d8a0393b5e7e8e0ddfd` and
+  adds a matching-metadata byte-tamper rejection check. After rebasing onto
+  `bb2379e844464f9bff35a6ca61e1eeaa8dbb0090`, the six runtime-linked Release
+  targets built, focused adapter/runtime-loader CTest passed 2/2, Python/native
+  parity and the hybrid mechanism probe passed again, and fixed-input timing was
+  rerun. Full GitHub Actions CI was not yet available.
+- **Paired OOC screen:** After review, the implementation was frozen at
+  `9ce11fdbe50f32b4b2646dd8a0803c6dc0c3f351`. Standard and hybrid both ran
+  seeds `980000..980063` with 10,000 combat simulations, 2,048 OOC MCTS
+  simulations, A0 fair play, 24 threads, Silver continuation, V4 policy, and
+  identical non-model settings. Each arm has 64 unique results and matching
+  per-seed MCTS traces/configuration metadata. Standard won 40/64, hybrid
+  39/64; discordant outcomes were 7 hybrid-only and 8 standard-only wins. The
+  paired delta is **-1.56 pp** (bootstrap 95% CI `[-14.06,+10.94] pp`, exact
+  discordant p `1.0`), classified
+  **`OOC_HYBRID_WINRATE_INCONCLUSIVE`**. This is not equivalence evidence.
+- **Runtime and dispatch:** Mean bestbench elapsed time was 641.4 s/seed for
+  standard and 439.7 s/seed for hybrid (paired change `-201.7 s`, 95% CI
+  `[-254.8,-141.3]`). Mean MCTS CPU was 139.35 vs 94.85 s/seed (change
+  `-44.50 s`, 95% CI `[-69.61,-5.93]`); MCTS wall was 462.83 vs 276.65 s.
+  The hybrid recorded 4,219 Brew fallbacks out of 1,135,061 preparation calls
+  (**0.372%**) and 401 per-seed unique Brew states summed across runs. It
+  recorded 21 fast-child and 1 fallback-child support-failure queries. MCTS
+  support aborts were 20 control and 22 hybrid; all were the existing
+  `smoke_bomb` exclusion, with no new unsupported reason. Whole-process CPU
+  was not separately recorded. Arms made different work counts, so total time
+  is a runtime signal, not a matched-work causal estimate.
+- **Decision:** The mechanism and runtime questions look promising: ordinary
+  fixed-input preparations are substantially faster and Brew is rare in this
+  OOC cohort. The observed paired win-rate difference is small, but the
+  interval still includes a sizable regression; the screen is inconclusive and
+  does not establish quality equivalence. A separate larger confirmation is
+  warranted before any default promotion. Do not use this bounded result as
+  offline CTM qualification.
+- **Checks/evidence:** Release targets built; focused adapter/runtime-loader
+  CTest passed 2/2; Python compilation and `git diff --check` passed. Full CI
+  was not run. See the
+  [mechanism, timing, and paired OOC packet](evidence/deepset_entropic_brew_hybrid_2026-09-24/README.md),
+  including the raw per-seed CSV, source/config receipts, support counts,
+  compressed action traces, and reproducible summary.
+- **Evidence:** [mechanism and timing packet](evidence/deepset_entropic_brew_hybrid_2026-09-24/README.md).
+
+After PR #309 advanced `main` to `7a181b3fa296fda4122033b70767fc2c0f03618c`,
+the branch was rebased onto that Silver-only architecture. The six Release
+targets and focused 2/2 CTest selection passed again; 31-fixture parity and
+hybrid routing/RNG checks passed. On 10 matched ordinary rows, standard median
+preparation was 4,732 us, fast was 534 us (8.86x), and hybrid fast was 661 us
+(7.16x). On 18 Brew rows, standard was 3,687 us and hybrid fallback 3,726 us.
+An OpenSSL-disabled configuration also built the non-CTM `main` target after
+the Crypto dependency was made optional at configure time. These checks do not
+change or relabel the original 64-pair outcome, which remains attached to frozen
+executable `9ce11fdbe50f32b4b2646dd8a0803c6dc0c3f351`. Exact commands and raw
+outputs are in the [Silver-only main verification packet](evidence/deepset_entropic_brew_hybrid_2026-09-24/silver-only-main-source/COMMANDS.md).
+
+Before publication, `main` advanced again through PR #310 to
+`7b4244ef8af4508466e01a1a6b515c70015e6274`; the branch was rebased onto this
+head and all six Release targets plus focused CTest passed again. Parity and
+mechanism checks again passed all 31 fixtures. Fixed-input preparation medians
+on 10 matched ordinary rows were 3,957 us standard, 520 us fast (7.61x), and
+508 us hybrid (7.79x); on 18 Brew rows, standard was 3,565 us and hybrid
+fallback 3,708 us. OpenSSL-disabled configure and non-CTM `main` build passed.
+No gameplay run was repeated. Results and commands are in the
+[PR #310 verification packet](evidence/deepset_entropic_brew_hybrid_2026-09-24/main-7b4244-source/COMMANDS.md).
+
+Knowledge impact: current research status now records an experimental hybrid
+path and its bounded engineering evidence; qualified models and runtime defaults
+remain unchanged.

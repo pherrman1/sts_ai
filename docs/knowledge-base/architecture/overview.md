@@ -1,6 +1,6 @@
 # Architecture overview
 
-Last verified: 2026-09-24 for the Searcher3 removal; 2026-09-10 against the current working tree.
+Last verified: 2026-09-24 for the one_combat translation-unit split and the Searcher3 removal; 2026-09-10 against the current working tree.
 
 ## Purpose
 
@@ -25,9 +25,12 @@ separate packed `search::Action` (`include/sim/search/GameAction.h::GameAction`;
 
 `apps/one_combat.cpp::main` is the active integration workbench. It parses
 environment flags, loads models, and dispatches benchmarks, data generators,
-tracing, and counterfactual evaluators. The self-contained `vnettest`,
-`policynettest`, `pvnetparity`, and `policystats` offline diagnostics live in
-`apps/combat_model_diagnostics.cpp`. Core simulator behavior remains under
+tracing, and counterfactual evaluators. The larger mode bodies (run tracing,
+semantic pilot, combat datasets, OOC factor/budget evaluators, strategic and
+counterfactual generators) are separate translation units under
+`apps/one_combat/` that share driver state through
+`apps/one_combat/driver_shared.h`. The self-contained `vnettest` offline
+diagnostic lives in `apps/combat_model_diagnostics.cpp`. Core simulator behavior remains under
 `src/game`, `src/combat`, and `src/sim` (`CMakeLists.txt::sts_lightspeed_SOURCES`).
 
 The retained E2c RAW/POST capture contract is isolated in

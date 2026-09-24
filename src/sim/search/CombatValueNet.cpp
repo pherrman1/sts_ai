@@ -89,25 +89,6 @@ namespace {
 namespace sts::search {
 
 CombatValueNet g_combatVNet;
-bool g_useVNet = false;
-
-std::function<void(const BattleContext &, double)> g_onVNetQuery;
-
-// Thread-local context set by the search before calling predict(),
-// read by g_onVNetQuery to build sibling-grouped trace rows.
-thread_local std::uint64_t g_vnetTraceParent = 0;
-thread_local int g_vnetTraceDepth = 0;
-
-CombatValueNet g_combatVNetRankCorr;   // zero-mean ranking correction (experimental, STS_VNET_RANK_CORR)
-bool g_useVNetRankCorr = false;        // add the rank correction on top of the primary leaf value
-
-CombatValueNet g_combatVNetResidual;   // residual VNet (STS_VNET_RESIDUAL)
-double g_vnetResidualBeta = 0.0;       // blend weight (STS_VNET_RESIDUAL_BETA)
-bool g_useVNetResidual = false;        // residual is loaded
-
-CombatValueNet g_policyNet;
-bool   g_usePolicyNet = false;
-double g_cPuct = 2.5;   // swept best at low-mid sims (0.5 under-explores; 2.5-4 best)
 
 // Fill the wide relic+card-location block only when something actually reads it
 // (a rich net is loaded, or datagen needs full rows). Off => narrow extraction, so
@@ -1156,7 +1137,7 @@ std::string CombatValueNet::description() const {
     return base;
 }
 
-double CombatValueNet::predict(const BattleContext &bc, bool emitTrace) const {
+double CombatValueNet::predict(const BattleContext &bc, bool /*emitTrace*/) const {
     thread_local std::vector<float> feat(combatFeatureCount());
     combatExtractFeatures(bc, feat.data());
     // Per-encounter dispatch: a specialized model for this encounter overrides
@@ -1168,12 +1149,10 @@ double CombatValueNet::predict(const BattleContext &bc, bool emitTrace) const {
         auto it = encounterModels.find((int)bc.encounter);
         if (it != encounterModels.end()) {
             v = it->second.predictVec(feat.data());
-            if (emitTrace && g_onVNetQuery) g_onVNetQuery(bc, v);
             return v;
         }
     }
     v = predictVec(feat.data());
-    if (emitTrace && g_onVNetQuery) g_onVNetQuery(bc, v);
     return v;
 }
 

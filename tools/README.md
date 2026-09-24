@@ -91,11 +91,8 @@ import refactors:
   trainers, root exporters, and `tools/` scripts. Moving one would break the
   others.
 
-- **PVNet eval cluster:** `combat_pvnet_parity.py`, `eval_combat_pvnet.py` —
-  the evaluator imports the shared parity module.
-
 - **Former self-play scripts:** `train_value_combat.py`, `train_winrate.py`,
-  `train_rest_cf.py`, `train_policy.py`, `train_card_cf.py`, `v_server.py`
+  `train_rest_cf.py`, `train_card_cf.py`, `v_server.py`
   and `paired_analysis.py` were driven by the self-play loop, which ADR-0020
   removed. They remain usable standalone.
 

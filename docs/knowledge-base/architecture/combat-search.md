@@ -390,8 +390,9 @@ Silver's own leaf evaluation, optional leaf-VNet blend
 (`STS_SILVER_VNET_LEAF_*`) and experimental root prior
 (`STS_SILVER_ROOT_PRIOR_MODEL`) are described in the Silver backend section.
 `one_combat` no longer loads the Searcher2-era compact policy prior, V_combat
-leaf, PVNet or DistVNet for play (ADR-0020); their libraries remain for the
-parity tools (`vnettest`, policy parity).
+leaf, PVNet or DistVNet for play (ADR-0020). The PVNet runtime and the policy
+diagnostics were then removed; `CombatValueNet` remains for Silver's leaf blend
+and `vnettest`, and `CombatDistValueNet` only for `parity_test`.
 
 Feature ordering and counts are model-interface invariants. Native PV/dist
 inference may use probed OpenBLAS or scalar fallback and reports the backend.
@@ -442,7 +443,6 @@ Primary code:
 - `include/sim/search/CombatObservation.h`,
   `src/sim/search/CombatObservation.cpp`
 - `include/sim/search/CombatValueNet.h`, `src/sim/search/CombatValueNet.cpp`
-- `include/sim/search/CombatPVNet.h`, `src/sim/search/CombatPVNet.cpp`
 - `include/sim/search/SilverLiveBackend.h`,
   `third_party/silver_lightspeed/bridge/SilverLiveBackend.cpp`
 - `src/sim/search/SilverConversion.cpp`, `apps/one_combat.cpp`
@@ -450,7 +450,7 @@ Primary code:
 Focused coverage includes `cardselect_parity`, `cardselect_canonical`,
 `silver-native-test`, `silver-bridge-test`, `silver-integration-test`,
 `runic-dome-lifecycle-test`, `combat-knowledge-neutrality-test`, `vnettest`,
-and `pvnetparity`. Use current invocation details from
+Use current invocation details from
 [build-and-debugging.md](../operations/build-and-debugging.md).
 
 ## Known limitations
