@@ -9,6 +9,7 @@
 #include <vector>
 #include <string>
 #include <array>
+#include <compare>
 
 #include "constants/Cards.h"
 
@@ -80,6 +81,7 @@ namespace sts {
         [[nodiscard]] bool canUse(const BattleContext &bc, int target, bool inAutoplay) const;
 
         bool operator==(const CardInstance &rhs) const = default;
+        auto operator<=>(const CardInstance &rhs) const = default;
     };
 
     std::ostream& operator <<(std::ostream &os, const CardInstance &c);

@@ -51,6 +51,20 @@ namespace sts {
         Action popPostVictoryAction();
         Action popFront();
         [[nodiscard]] int getCapacity() const;
+
+        // Compares the queued actions in order (each carries its own victory
+        // flags); ring slots outside the queue are ignored.
+        bool operator==(const ActionQueue &rhs) const {
+            if (size != rhs.size) {
+                return false;
+            }
+            for (int i = 0; i < size; ++i) {
+                if (!(arr[(front + i) % capacity] == rhs.arr[(rhs.front + i) % capacity])) {
+                    return false;
+                }
+            }
+            return true;
+        }
     };
 
     template<int capacity>

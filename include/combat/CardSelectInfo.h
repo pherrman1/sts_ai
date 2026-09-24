@@ -68,6 +68,8 @@ namespace sts {
 
         CardSelectTask cardSelectTask = CardSelectTask::INVALID;
 
+        bool operator==(const CardSelectInfo &rhs) const = default;
+
         std::array<CardId, 3>& discovery_Cards() { return cards; }
         int& discovery_CopyCount() { return data0; }
         int& dualWield_CopyCount() { return data0; }

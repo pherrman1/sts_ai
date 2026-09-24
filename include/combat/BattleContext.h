@@ -110,6 +110,15 @@ namespace sts {
         BattleContext() = default;
         BattleContext(const BattleContext &rhs) = default;
 
+        // Exact equality of every field except the static benchmark `sum`.
+        bool operator==(const BattleContext &rhs) const;
+
+        // Equality for search transposition: operator== without the RNG
+        // streams and loopCount, and with the hand compared as a multiset. Two
+        // states that differ only there have the same distribution of futures
+        // once randomness is resampled at chance nodes.
+        [[nodiscard]] bool equalForSearch(const BattleContext &rhs) const;
+
 // ****************************************
 
         void init(const GameContext &gc);

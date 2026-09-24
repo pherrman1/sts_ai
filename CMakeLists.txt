@@ -588,6 +588,7 @@ add_test(NAME simhealth_selection_failure COMMAND $<TARGET_FILE:unit-test> simhe
 add_test(NAME training_integrity COMMAND $<TARGET_FILE:unit-test> training_integrity)
 add_test(NAME e2c_observer_scope COMMAND $<TARGET_FILE:unit-test> e2c_observer_scope)
 add_test(NAME combat_knowledge COMMAND $<TARGET_FILE:unit-test> combat_knowledge)
+add_test(NAME battle_equality COMMAND $<TARGET_FILE:unit-test> battle_equality)
 add_test(NAME silver_random_bridge COMMAND $<TARGET_FILE:unit-test> silver_random_bridge)
 add_test(NAME silver_semantic_action COMMAND $<TARGET_FILE:unit-test> silver_semantic_action)
 add_test(NAME silver_searcher_link_closure COMMAND $<TARGET_FILE:silver-native-test>)
@@ -820,7 +821,7 @@ set_tests_properties(paired_analysis_selftest py_compile_parity_test py_compile_
 set_tests_properties(battlecontext_roundtrip designer_in_spire cardqueue_overflow keys_collect
     issue_fixes relic_reward_sapphire thorns_retaliation awakened_one_stage2 darkling_victory
     poison_lose_hp time_eater_exhaust simhealth_gamble_empty_hand gamblers_brew_legality
-    simhealth_selection_failure
+    simhealth_selection_failure battle_equality
     training_integrity PROPERTIES LABELS "core")
 set_tests_properties(vnettest_selftest winnettest_selftest
     e2c_observer_scope combat_knowledge silver_random_bridge silver_semantic_action

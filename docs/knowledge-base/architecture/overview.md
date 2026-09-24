@@ -1,6 +1,6 @@
 # Architecture overview
 
-Last verified: 2026-09-24 for value-type combat actions, the one_combat translation-unit split and the Searcher3 removal; 2026-09-10 against the current working tree.
+Last verified: 2026-09-24 for battle-state equality/hashing, value-type combat actions, the one_combat translation-unit split and the Searcher3 removal; 2026-09-10 against the current working tree.
 
 ## Purpose
 
@@ -37,8 +37,19 @@ Combat actions (`include/combat/Actions.h`) are plain values: a
 `CombatActionType` tag plus a trivially copyable parameter struct
 (`ActData_*`) whose `operator()` performs the action. Queued actions compare
 with `operator==` and a `BattleContext` copies its action queue with memcpy.
-This is the first step toward running Silver's search directly on this
-engine; `Actions::` factory signatures are unchanged.
+`Actions::` factory signatures are unchanged.
+
+`BattleContext::operator==` compares every state field except the static
+benchmark counter, ignoring unused slots (hand past `cardsInHand`, monsters
+past `monsterCount`, ring-buffer slots outside the action and card queues).
+`BattleContext::equalForSearch` additionally ignores the six RNG streams and
+`loopCount` and compares the hand as a multiset; `sts::search::hashBattleState`
+(`src/sim/search/SearchStateHash.cpp`) is consistent with it. `Player`,
+`Monster`, `CardInstance`, `CardQueueItem` and `CardSelectInfo` use defaulted
+comparisons, so new members join equality automatically; the hand-written
+comparisons in `BattleContext.cpp`, `CardManager.cpp` and `MonsterGroup.cpp`
+must be extended when those structs gain fields. These are the building blocks
+for running Silver's search directly on this engine (`test battle_equality`).
 
 The retained E2c RAW/POST capture contract is isolated in
 `apps/one_combat/e2c_capture.{h,cpp}`. The module owns capture state, row
