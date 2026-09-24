@@ -11909,7 +11909,94 @@ vendored model) with the vendored Silver backend on the §340 seed block.
 Knowledge impact: combat-search architecture and environment variables record
 the experimental native backend; the vendored Silver backend stays the default.
 
-## §349 — Singleton reroot correction on frozen hard64 holdout (2026-09-25)
+## §349 — Silver rollout-cost screen: B faster; original quality screen invalid (2026-09-24 onward)
+
+- **Question and baseline:** Can rollout hot-path work be reduced while
+  preserving useful fixed-time Silver decisions? The handoff baseline
+  `7b4244ef8af4508466e01a1a6b515c70015e6274` had advanced; the tested current
+  main was `1ed96f2aa564742156cc6593a1fc1915ea4e9033`.
+- **Cohort and setup:** frozen `hard64-dev` first-decision snapshots, SHA-256
+  `ab7c3298754864986c31273a0f1d23967b165fdd79a386261b680b8ad16d0eae`; GCC
+  13.3 Release (`-O3 -flto`), CPU 2, `OMP_NUM_THREADS=1`, and the existing
+  telemetry path. Each fixed-work run attempted 64 roots at 1,000 simulations;
+  59 roots / 59,000 simulations were valid and the same five roots returned
+  `transactional_selection_required` in every arm. All replay runs used
+  `tools/seed_guard.sh`; holdout was untouched.
+- **A — early energy rejection:** exact non-timing output parity held across
+  all valid roots. A averaged 1,401,721 µs summed search wall versus control's
+  1,286,513 µs; the two complete outer CPU samples were 1.035 s versus 1.015 s.
+  There was no speed gain, so A and its focused test were reverted.
+- **B — rollout-only unordered unknown piles:** only copied rollout scratch
+  draw/discard/exhaust piles opt out of unknown-region sorting; retained tree
+  piles remain canonical. Focused tests cover duplicate draw frequencies,
+  known top/bottom, shuffle-in, reshuffle, absorb, cost mutation, and tree
+  isolation. Across four matched repetitions, mean summed search wall fell
+  10.3% (1,274,480 to 1,143,222 µs), median summed search wall fell 5.7%, mean
+  summed rollout wall fell 13.0%, and process user CPU fell 10.9% (1.0275 to
+  0.9150 s). This is a useful throughput signal. RNG mapping changed, and B
+  executed about 0.24% more rollout actions at the same simulation count.
+- **Original fixed-work DEV quality screen — invalid:** it reported 40/59
+  current-main/control agreements and 35/59 B agreements against a 10k control
+  reference, with eight control-only versus three B-only. The 1k control and
+  10k reference shared the same `benchmark_seed`; because B changes
+  RNG-to-card mapping, control's 1k search was the exact prefix of its teacher
+  while B was not. Reclassify the former result as
+  `QUALITY_SCREEN_INVALID_SHARED_REFERENCE_RNG`. Preserve the raw rows, but do
+  not interpret them as no-harm failure or as a B quality regression.
+- **Corrective implementation and protocol:** B now requires the default-off
+  `rolloutUnsortedPilesEnabled` flag, and the replay harness defaults detailed
+  rollout diagnostics and search timing off. The harness accepts an optional
+  `isolated_search_seed` while retaining and reporting the validated
+  state-bound `benchmark_seed`; `seed_guard.sh` checks both uint64 values and
+  caps replay JSONL roots at 128. The implementation was independently reviewed
+  and frozen at `1e63068ff548abb18638e4b02d60e7e0d6dc936c`. The preregistered
+  current-main design specified three independent 10k teachers, four matched
+  1k identities per arm, and an uninstrumented CPU comparison. Its decision
+  rule, frozen eligible mask, and stop conditions are in the
+  [corrected protocol](evidence/silver_rollout_cost_20260924/review_followup/PROTOCOL.md).
+- **Corrected DEV result:** On 52/59 roots with teacher-majority consensus,
+  matched fixed-work first-action agreement was 54.3% control versus 58.7% B,
+  a paired mean of `+4.3 pp` (10,000-replicate root-cluster bootstrap 95%
+  interval `[-1.4,+10.1]`;
+  16 roots favored B, 9 control, 27 tied). The preregistered non-negative mean
+  rule triggered the 1,000-control/1,100-B equal-time-equivalent screen; its
+  agreement was 54.3% versus 61.5%, `+7.2 pp` (95% interval `[+1.0,+13.5]`;
+  20/8/24 roots B-favored/control-favored/tied). Logged aggregate user CPU and
+  elapsed time were approximately 0.760/0.738 s and 0.775/0.758 s (control/B);
+  B was slower in two of four paired user-CPU samples. The uninstrumented 1k CPU
+  confirmation measured mean user CPU 0.740 s control versus 0.675 s B
+  (`-8.8%`), with B lower in all four pairs. This is first-action DEV evidence;
+  the fixed-work interval crosses zero, and no gameplay, holdout, or default
+  qualification is claimed. Evidence review found the input helper's seed
+  domain strings (`teacher/NN`, `arm/NN`) differ from the strings frozen in the
+  protocol (`teacher-NN/NN`, `arm-NN/NN`). The helper and manifest predate raw
+  outputs by mtime, but a durable pre-run amendment was not retained; exact
+  preregistration fidelity is unresolved. Seeds remain deterministic and
+  pairwise distinct per root, and each arm identity is matched. Raw data, input
+  derivation, analysis, binary hashes, and checks are in the
+  [follow-up packet](evidence/silver_rollout_cost_20260924/review_followup/README.md).
+- **C — incoming-damage reuse:** no cache was implemented. A separate
+  instrumented `-pg` diagnostic estimated `SimpleAgent::getIncomingDamage` at
+  2.6% inclusive time (1,543,022 calls) on the same fixed-work cohort. Given
+  this small share and the broad set of monster/player state dependencies, a
+  cache is not justified.
+- **D — chance saturation:** replay telemetry exposed fresh samples and
+  sibling reuses by `END_TURN`, card-play, and other categories. B recorded
+  15,709 sibling re-executions, mostly card-play actions. Exact support
+  exhaustion was not measured, so the certified avoidable count is zero and
+  15,709 is only an upper bound. No heuristic or chance behavior change was
+  introduced.
+- **Review and checks:** an independent read-only implementation review found
+  no blocking semantic defect and flagged stale sorting comments, which were
+  corrected. Release and Debug optimization-test CTests each passed 1/1; the
+  Debug run exercises the tree-isolation assertions. The complete report and
+  raw outputs are in the [evidence packet](evidence/silver_rollout_cost_20260924/README.md).
+
+Knowledge impact: the scratch-pile boundary and completed corrected DEV result
+are recorded in maintained combat-search and current-research pages. B remains
+default-off and is not gameplay-qualified.
+
+## §350 — Singleton reroot correction on frozen hard64 holdout (2026-09-25)
 
 - **Question:** Does zero-search selection at singleton roots, while retaining
   the selected edge for later rerooting, change complete frozen-fight outcomes
@@ -11953,7 +12040,7 @@ the experimental native backend; the vendored Silver backend stays the default.
 Knowledge impact: current research now records the post-correction replay
 result and its one shared technical failure. No default or quality gate changed.
 
-## §350 — Singleton reroot replay against updated current main (2026-09-25)
+## §351 — Singleton reroot replay against updated current main (2026-09-25)
 
 - **Question:** Does the retained-session singleton zero-search path reduce
   work without changing observed outcomes on the frozen hard-fight cohort

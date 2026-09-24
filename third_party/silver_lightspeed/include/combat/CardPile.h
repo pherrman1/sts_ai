@@ -12,11 +12,13 @@ namespace sts {
 
     // A card pile represented as the player's information set rather than a concrete order:
     // [0, B) is the *known bottom* in true order (Forethought placements; index 0 is drawn
-    // dead last), [B, size-K) is the *unknown region*, kept canonically sorted so equal
-    // information sets compare equal in the search's transposition table, and [size-K, size)
-    // is the *known top* in true order (top = back), populated by effects that place cards at
-    // definite positions (Headbutt, Warcry, innates). Discard/exhaust piles are the degenerate
-    // B = K = 0 case. Draw order: known top, then unknown (sampled), then known bottom.
+    // dead last), [B, size-K) is the *unknown region*, normally kept canonically sorted so equal
+    // information sets compare equal in the search's transposition table. Rollout scratch piles
+    // may opt out of that ordering because they never enter the transposition table. The suffix
+    // [size-K, size) is the *known top* in true order (top = back), populated by effects that
+    // place cards at definite positions (Headbutt, Warcry, innates). Discard/exhaust piles are
+    // the degenerate B = K = 0 case. Draw order: known top, then unknown (sampled), then known
+    // bottom.
     //
     // Callers never branch on the known/unknown split: mutating operations take a Random& and
     // consume rng exactly when the operation is genuinely stochastic for the player (a draw from
@@ -30,22 +32,29 @@ namespace sts {
     // size always), reproducing legacy concrete-pile dynamics exactly.
     //
     // All mutation goes through this interface so the invariants cannot be broken at call
-    // sites: insertions keep the unknown region sorted, removals fix the known-top bookkeeping,
-    // and value mutations (upgrades, blood-card triggers — card values participate in the
-    // ordering) go through mutateAt/mutateAll, which restore the invariant afterwards. Read
-    // access is const-only by construction. Indices in this API are absolute positions in the
-    // underlying vector (stable between a const enumeration and the removal that resolves it).
+    // sites. In normal mode, insertions and value mutations (upgrades, blood-card triggers —
+    // card values participate in the ordering) keep the unknown region sorted. Rollout scratch
+    // piles may opt out of that ordering; removals still fix known-top bookkeeping. Read access
+    // is const-only by construction. Indices in this API are absolute positions in the underlying
+    // vector (stable between a const enumeration and the removal that resolves it).
     class CardPile {
         std::vector<CardInstance> cards;
         int knownTopCount = 0;     // K; orderObserved keeps K == size, B == 0
         int knownBottomCount = 0;  // B
         bool orderObserved = false;
+        bool rolloutUnsortedUnknownRegion = false;
 
         [[nodiscard]] auto unknownBegin() { return cards.begin() + knownBottomCount; }
         [[nodiscard]] auto unknownEnd() { return cards.end() - knownTopCount; }
         [[nodiscard]] int unknownCount() const { return size() - knownTopCount - knownBottomCount; }
         [[nodiscard]] bool inKnownTop(int idx) const { return idx >= size() - knownTopCount; }
         [[nodiscard]] bool inKnownBottom(int idx) const { return idx < knownBottomCount; }
+
+        void insertUnknown(const CardInstance &c) {
+            const auto position = rolloutUnsortedUnknownRegion
+                ? unknownEnd() : std::upper_bound(unknownBegin(), unknownEnd(), c);
+            cards.insert(position, c);
+        }
 
         // A single-card pile is fully known either way; canonicalize to K = B = 0 so it hashes
         // and compares identically however it was produced (known remnant vs fresh insert).
@@ -69,6 +78,7 @@ namespace sts {
                                     bool observed) {
             cards.clear();
             orderObserved = observed;
+            rolloutUnsortedUnknownRegion = false;
             if (observed) {
                 assert(bottom.empty() && unknown.empty());
                 cards = top;
@@ -89,12 +99,35 @@ namespace sts {
         void setOrderObserved(bool observed) {
             assert(cards.empty());
             orderObserved = observed;
+            rolloutUnsortedUnknownRegion = false;
         }
 
-        // Position-less insert: joins the unknown region (sorted); never consumes rng.
+        // Rollout scratch states are never hashed or retained as search nodes, so
+        // their unknown multiset may stay unordered. Draws remain uniform by index.
+        void enableRolloutUnsortedUnknownRegion() {
+            rolloutUnsortedUnknownRegion = true;
+        }
+
+        [[nodiscard]] bool rolloutUnsortedUnknownRegionEnabled() const {
+            return rolloutUnsortedUnknownRegion;
+        }
+
+        [[nodiscard]] bool unknownRegionIsSorted() const {
+            return std::is_sorted(cards.cbegin() + knownBottomCount,
+                                  cards.cend() - knownTopCount);
+        }
+
+        void canonicalizeUnknownRegion() {
+            if (!rolloutUnsortedUnknownRegion) return;
+            std::sort(unknownBegin(), unknownEnd());
+            rolloutUnsortedUnknownRegion = false;
+        }
+
+        // Position-less insert: joins the unknown region (canonical outside rollout mode);
+        // never consumes rng.
         void add(const CardInstance &c) {
             assert(!orderObserved);
-            cards.insert(std::upper_bound(unknownBegin(), unknownEnd(), c), c);
+            insertUnknown(c);
         }
 
         // Definite placement on top of the pile (Headbutt, Warcry, innates); never consumes rng.
@@ -162,7 +195,7 @@ namespace sts {
                 ++knownTopCount;
             } else {
                 // boundary gaps or unknown interior: one information-set outcome
-                cards.insert(std::upper_bound(unknownBegin(), unknownEnd(), c), c);
+                insertUnknown(c);
             }
         }
 
@@ -204,7 +237,7 @@ namespace sts {
             } else {
                 knownTopCount = 0;
                 knownBottomCount = 0;
-                std::sort(cards.begin(), cards.end());
+                if (!rolloutUnsortedUnknownRegion) std::sort(cards.begin(), cards.end());
             }
         }
 
@@ -217,7 +250,7 @@ namespace sts {
             } else {
                 knownTopCount = 0;
                 knownBottomCount = 0;
-                std::sort(cards.begin(), cards.end());
+                if (!rolloutUnsortedUnknownRegion) std::sort(cards.begin(), cards.end());
             }
         }
 
@@ -259,13 +292,14 @@ namespace sts {
         [[nodiscard]] int knownBottom() const { return knownBottomCount; }
         [[nodiscard]] bool isOrderObserved() const { return orderObserved; }
 
-        // Apply f to one card / every card, then restore the sort invariant. Only the unknown
-        // region is re-sorted: known top/bottom positions are meaningful and survive value
-        // mutation. Mutations usually leave the order intact (per-turn cost resets are no-ops
-        // most of the time), so check sortedness first — linear vs n log n on the common path.
+        // Apply f to one card / every card, restoring canonical unknown order outside rollout
+        // mode. Only the unknown region is re-sorted: known top/bottom positions are meaningful
+        // and survive value mutation. Mutations usually leave the order intact (per-turn cost
+        // resets are no-ops most of the time), so check sortedness first — linear vs n log n on
+        // the common path.
         template <typename F> void mutateAt(int idx, F &&f) {
             f(cards[idx]);
-            if (!inKnownTop(idx) && !inKnownBottom(idx)
+            if (!rolloutUnsortedUnknownRegion && !inKnownTop(idx) && !inKnownBottom(idx)
                 && !std::is_sorted(unknownBegin(), unknownEnd())) {
                 std::sort(unknownBegin(), unknownEnd());
             }
@@ -274,7 +308,7 @@ namespace sts {
             for (auto &c : cards) {
                 f(c);
             }
-            if (!std::is_sorted(unknownBegin(), unknownEnd())) {
+            if (!rolloutUnsortedUnknownRegion && !std::is_sorted(unknownBegin(), unknownEnd())) {
                 std::sort(unknownBegin(), unknownEnd());
             }
         }

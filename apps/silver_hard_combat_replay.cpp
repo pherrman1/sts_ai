@@ -24,21 +24,44 @@ nlohmann::json macroTaskCounts(const Counts &counts) {
     return result;
 }
 
+void addSearchTelemetry(nlohmann::json &row,
+                        const silver_bridge::SilverSearchTelemetry &telemetry) {
+    row["search_wall_micros"] = telemetry.searchWallMicros;
+    row["rollout_wall_micros"] = telemetry.rolloutWallMicros;
+    row["rollout_calls"] = telemetry.rolloutCalls;
+    row["rollout_action_count"] = telemetry.rolloutActionCount;
+    row["rollout_turn_delta"] = telemetry.rolloutTurnDelta;
+    row["chance_outcomes_sampled"] = telemetry.chanceOutcomesSampled;
+    row["chance_sibling_reuse"] = telemetry.chanceSiblingReuse;
+    row["chance_transpositions"] = telemetry.chanceTranspositions;
+    row["chance_sampled_by_category"] = telemetry.wideningSampled;
+    row["chance_sibling_reuse_by_category"] = telemetry.wideningSiblingReuse;
+}
+
 nlohmann::json replayRow(const nlohmann::json &input, std::int64_t budget,
                          bool collectUidFragmentationDiagnostics,
                          bool collectRerootDiagnostics,
                          silver_bridge::SilverSearchContractMode contractMode,
                          bool internalFpuEnabled, bool firstDecisionOnly,
-                         bool skipSingletonSearch) {
-    const auto started = std::chrono::steady_clock::now();
+                         bool skipSingletonSearch,
+                         bool collectRolloutDiagnostics,
+                         bool rolloutUnsortedPilesEnabled) {
+    const auto started = collectRolloutDiagnostics
+        ? std::chrono::steady_clock::now() : std::chrono::steady_clock::time_point{};
     nlohmann::json row = {
         {"case_id", input.value("case_id", "")},
         {"state_hash", input.value("state_hash", "")},
         {"budget", budget},
+        {"collect_rollout_diagnostics", collectRolloutDiagnostics},
+        {"rollout_unsorted_piles", rolloutUnsortedPilesEnabled},
     };
     try {
         auto wire = silver_bridge::validateHardCombatSnapshot(input);
-        wire.isolatedSearchSeed = input.at("benchmark_seed").get<std::uint64_t>();
+        row["benchmark_seed"] = input.at("benchmark_seed").get<std::uint64_t>();
+        wire.isolatedSearchSeed = input.contains("isolated_search_seed")
+            ? input.at("isolated_search_seed").get<std::uint64_t>()
+            : input.at("benchmark_seed").get<std::uint64_t>();
+        row["isolated_search_seed"] = wire.isolatedSearchSeed;
 
         silver_bridge::SilverSearchConfig config;
         config.simulationsPerDecision = budget;
@@ -50,29 +73,32 @@ nlohmann::json replayRow(const nlohmann::json &input, std::int64_t budget,
         config.rhoRacingEnabled = false;
         config.collectUidFragmentationDiagnostics = collectUidFragmentationDiagnostics;
         config.collectDecisionDiagnostics = collectRerootDiagnostics;
+        config.collectRolloutDiagnostics = collectRolloutDiagnostics;
+        config.rolloutUnsortedPilesEnabled = rolloutUnsortedPilesEnabled;
         config.internalFpuEnabled = internalFpuEnabled;
-        config.collectSearchTiming = true;
+        config.collectSearchTiming = collectRolloutDiagnostics;
         config.contractMode = contractMode;
 
         if (firstDecisionOnly) {
-            config.collectDecisionDiagnostics = true;
             const auto decision = silver_bridge::runSilverDecision(wire, config);
             row["status"] = decision.accepted ? "ok" : decision.failureReason;
             row["simulations"] = decision.simulations;
             row["first_action_fingerprint"] = decision.initialActionFingerprint;
-            row["nodes_created"] = decision.telemetry.nodesCreated;
-            row["queue_item_canonical_hits"] = decision.telemetry.queueItemCanonicalHits;
-            row["depth_sum"] = decision.telemetry.depthSum;
-            row["chance_depth_sum"] = decision.telemetry.chanceDepthSum;
-            row["search_wall_micros"] = decision.telemetry.searchWallMicros;
-            row["fpu_selection_opportunities"] =
-                decision.telemetry.fpuSelectionOpportunities;
-            row["fpu_visited_selected_with_unvisited_remaining"] =
-                decision.telemetry.fpuVisitedSelectedWithUnvisitedRemaining;
-            row["fpu_unvisited_selected"] = decision.telemetry.fpuUnvisitedSelected;
-            row["diagnostic_nodes_created"] = decision.diagnostic.nodesCreated;
-            row["diagnostic_root_visits"] = decision.diagnostic.rootVisitsAfterSearch;
-            row["diagnostic_chosen_edge_visits"] = decision.diagnostic.chosenEdgeVisits;
+            if (collectRolloutDiagnostics) addSearchTelemetry(row, decision.telemetry);
+            if (collectRerootDiagnostics) {
+                row["nodes_created"] = decision.telemetry.nodesCreated;
+                row["queue_item_canonical_hits"] = decision.telemetry.queueItemCanonicalHits;
+                row["depth_sum"] = decision.telemetry.depthSum;
+                row["chance_depth_sum"] = decision.telemetry.chanceDepthSum;
+                row["fpu_selection_opportunities"] =
+                    decision.telemetry.fpuSelectionOpportunities;
+                row["fpu_visited_selected_with_unvisited_remaining"] =
+                    decision.telemetry.fpuVisitedSelectedWithUnvisitedRemaining;
+                row["fpu_unvisited_selected"] = decision.telemetry.fpuUnvisitedSelected;
+                row["diagnostic_nodes_created"] = decision.diagnostic.nodesCreated;
+                row["diagnostic_root_visits"] = decision.diagnostic.rootVisitsAfterSearch;
+                row["diagnostic_chosen_edge_visits"] = decision.diagnostic.chosenEdgeVisits;
+            }
             return row;
         }
 
@@ -115,22 +141,23 @@ nlohmann::json replayRow(const nlohmann::json &input, std::int64_t budget,
         }
         row["action_trace_hash"] = result.actionTraceHash;
         row["status"] = result.accepted ? "ok" : result.failureReason;
-        row["rollout_calls"] = result.telemetry.rolloutCalls;
-        row["nodes_created"] = result.telemetry.nodesCreated;
-        row["queue_item_canonical_hits"] = result.telemetry.queueItemCanonicalHits;
-        row["depth_sum"] = result.telemetry.depthSum;
-        row["chance_depth_sum"] = result.telemetry.chanceDepthSum;
-        row["search_wall_micros"] = result.telemetry.searchWallMicros;
-        row["fpu_selection_opportunities"] = result.telemetry.fpuSelectionOpportunities;
-        row["fpu_visited_selected_with_unvisited_remaining"] =
-            result.telemetry.fpuVisitedSelectedWithUnvisitedRemaining;
-        row["fpu_unvisited_selected"] = result.telemetry.fpuUnvisitedSelected;
-        row["macro_eligible_decision_nodes"] = result.telemetry.macroEligibleDecisionNodes;
-        row["macro_edges_generated"] = result.telemetry.macroEdgesGenerated;
-        row["macro_option_count_sum"] = result.telemetry.macroOptionCountSum;
-        row["macro_option_counts_by_task"] = macroTaskCounts(
-            result.telemetry.macroOptionCountByTask);
-        row["macro_selections_by_task"] = macroTaskCounts(result.macroSelectionsByTask);
+        if (collectRolloutDiagnostics) {
+            addSearchTelemetry(row, result.telemetry);
+            row["nodes_created"] = result.telemetry.nodesCreated;
+            row["queue_item_canonical_hits"] = result.telemetry.queueItemCanonicalHits;
+            row["depth_sum"] = result.telemetry.depthSum;
+            row["chance_depth_sum"] = result.telemetry.chanceDepthSum;
+            row["fpu_selection_opportunities"] = result.telemetry.fpuSelectionOpportunities;
+            row["fpu_visited_selected_with_unvisited_remaining"] =
+                result.telemetry.fpuVisitedSelectedWithUnvisitedRemaining;
+            row["fpu_unvisited_selected"] = result.telemetry.fpuUnvisitedSelected;
+            row["macro_eligible_decision_nodes"] = result.telemetry.macroEligibleDecisionNodes;
+            row["macro_edges_generated"] = result.telemetry.macroEdgesGenerated;
+            row["macro_option_count_sum"] = result.telemetry.macroOptionCountSum;
+            row["macro_option_counts_by_task"] = macroTaskCounts(
+                result.telemetry.macroOptionCountByTask);
+            row["macro_selections_by_task"] = macroTaskCounts(result.macroSelectionsByTask);
+        }
         if (collectUidFragmentationDiagnostics) {
             row["chance_outcomes_sampled"] = result.telemetry.chanceOutcomesSampled;
             row["uid_relaxed_node_allocation_candidates"] =
@@ -156,8 +183,10 @@ nlohmann::json replayRow(const nlohmann::json &input, std::int64_t budget,
         row["won"] = false;
         row["status"] = std::string("invalid_snapshot: ") + error.what();
     }
-    row["wall_seconds"] = std::chrono::duration<double>(
-        std::chrono::steady_clock::now() - started).count();
+    if (collectRolloutDiagnostics) {
+        row["wall_seconds"] = std::chrono::duration<double>(
+            std::chrono::steady_clock::now() - started).count();
+    }
     return row;
 }
 
@@ -167,7 +196,8 @@ int main(int argc, char **argv) {
     if (argc < 3) {
         std::cerr << "usage: silver_hard_combat_replay SNAPSHOTS.jsonl BUDGET "
                      "[--arm control|A|B] [--uid-fragmentation] [--reroot-diagnostics] "
-                     "[--internal-fpu] [--first-decision-only] [--skip-singleton-search]\n";
+                     "[--internal-fpu] [--first-decision-only] [--rollout-diagnostics] "
+                     "[--unsorted-rollout-piles] [--skip-singleton-search]\n";
         return 2;
     }
     bool collectUidFragmentationDiagnostics = false;
@@ -175,6 +205,8 @@ int main(int argc, char **argv) {
     bool internalFpuEnabled = false;
     bool firstDecisionOnly = false;
     bool skipSingletonSearch = false;
+    bool collectRolloutDiagnostics = false;
+    bool rolloutUnsortedPilesEnabled = false;
     auto contractMode = silver_bridge::SilverSearchContractMode::CONTROL;
     for (int i = 3; i < argc; ++i) {
         const std::string option(argv[i]);
@@ -188,6 +220,10 @@ int main(int argc, char **argv) {
             firstDecisionOnly = true;
         } else if (option == "--skip-singleton-search") {
             skipSingletonSearch = true;
+        } else if (option == "--rollout-diagnostics") {
+            collectRolloutDiagnostics = true;
+        } else if (option == "--unsorted-rollout-piles") {
+            rolloutUnsortedPilesEnabled = true;
         } else if (option == "--arm" && i + 1 < argc) {
             const std::string arm(argv[++i]);
             if (arm == "control") contractMode = silver_bridge::SilverSearchContractMode::CONTROL;
@@ -235,7 +271,8 @@ int main(int argc, char **argv) {
                                        collectUidFragmentationDiagnostics,
                                        collectRerootDiagnostics, contractMode,
                                        internalFpuEnabled, firstDecisionOnly,
-                                       skipSingletonSearch);
+                                       skipSingletonSearch,
+                                       collectRolloutDiagnostics, rolloutUnsortedPilesEnabled);
             hadFailure = hadFailure || row.value("status", "") != "ok";
             std::cout << row.dump() << '\n';
         } catch (const std::exception &error) {
