@@ -599,6 +599,14 @@ def run_analysis(standard_dir: Path, hybrid_dir: Path, manifest_path: Path,
     h_wins = sum(int(h["results"][seed]["won"]) for seed in seeds)
     h_only = sum(int(h["results"][seed]["won"]) == 1 and int(c["results"][seed]["won"]) == 0 for seed in seeds)
     c_only = sum(int(c["results"][seed]["won"]) == 1 and int(h["results"][seed]["won"]) == 0 for seed in seeds)
+    both_win = sum(
+        int(c["results"][seed]["won"]) == 1 and int(h["results"][seed]["won"]) == 1
+        for seed in seeds
+    )
+    both_lose = len(seeds) - both_win - h_only - c_only
+    require(both_win + c_only == c_wins and both_win + h_only == h_wins
+            and both_win + h_only + c_only + both_lose == len(seeds),
+            "paired outcome contingency cells do not reconcile with marginal win counts")
     win_ci = cis["win"]
     delta = float(deltas["win"].mean())
     lower, upper = win_ci
@@ -642,8 +650,8 @@ def run_analysis(standard_dir: Path, hybrid_dir: Path, manifest_path: Path,
             "hybrid": h_wins,
             "hybridOnly": h_only,
             "standardOnly": c_only,
-            "bothWin": len(seeds) - h_only - c_only - (SEED_COUNT - c_wins - h_wins + h_only + c_only),
-            "bothLose": SEED_COUNT - c_wins - h_wins + h_only + c_only,
+            "bothWin": both_win,
+            "bothLose": both_lose,
             "exactTwoSidedDiscordantBinomialP": exact_discordant_binomial_p(h_only, c_only),
         },
         "pairedMetrics": paired,
@@ -782,6 +790,15 @@ def synthetic_fixture(root: Path, outcomes: str,
                 c_win, h_win = 1, 1
             elif outcomes == "fail":
                 c_win, h_win = 1, 0
+            elif outcomes == "mixed":
+                if i < 100:
+                    c_win, h_win = 1, 1
+                elif i < 120:
+                    c_win, h_win = 0, 1
+                elif i < 150:
+                    c_win, h_win = 1, 0
+                else:
+                    c_win, h_win = 0, 0
             else:
                 c_win, h_win = (1, 0) if i < SEED_COUNT // 2 else (0, 1)
             won = c_win if arm_name == "C" else h_win
@@ -887,6 +904,22 @@ def self_test() -> None:
         assert load_and_classify("pass") == "OOC_HYBRID_QUALITY_CONFIRMED"
         assert load_and_classify("fail") == "OOC_HYBRID_QUALITY_REJECTED"
         assert load_and_classify("inconclusive") == "OOC_HYBRID_QUALITY_INCONCLUSIVE"
+
+        standard, hybrid, mixed_manifest, mixed_files = synthetic_fixture(
+            root, "mixed", synthetic_hashes
+        )
+        mixed_summary = run_analysis(
+            standard, hybrid, mixed_manifest, mixed_files,
+            root / "mixed-summary.json", root / "mixed-per-seed.csv",
+            expected_hashes=expected_artifact_hashes,
+            expected_binary_sha256=local_hashes["binary"], replicates=4096,
+        )
+        assert mixed_summary["wins"]["standard"] == 130
+        assert mixed_summary["wins"]["hybrid"] == 120
+        assert mixed_summary["wins"]["bothWin"] == 100
+        assert mixed_summary["wins"]["hybridOnly"] == 20
+        assert mixed_summary["wins"]["standardOnly"] == 30
+        assert mixed_summary["wins"]["bothLose"] == 362
 
         # Missing and duplicate rows are detected before any partial-pair analysis.
         standard, hybrid, _, _ = synthetic_fixture(root, "pass", synthetic_hashes)

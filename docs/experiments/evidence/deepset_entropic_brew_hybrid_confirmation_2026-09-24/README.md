@@ -48,7 +48,7 @@ cohort.
 
 ## GCP blocker and preserved-data boundary
 
-On 2026-09-24, `python3 tools/agent/gcp_benchmark.py status` returned exit 1:
+At 2026-09-24 22:23 UTC, `python3 tools/agent/gcp_benchmark.py status` returned exit 1:
 GCP reported that
 `projects/sts-ai-502709/zones/europe-west3-c/instances/sts-test` was not found.
 The project instance list was also empty when checked. Since no VM exists,
@@ -70,7 +70,11 @@ creating anything.
    cache points to that checkout. Transfer the frozen executable and fast
    artifact with `copy-to --expect-sha256`; do not alter the standard, V4,
    floor, or win models. Re-run both manifest checks and the confirmation
-   `exact-sha-preflight` before seeds. Run the canary manifest through
+   `exact-sha-preflight` before seeds. Preflight verifies that the seed guard
+   is tracked and present in the frozen checkout. Manifest launch invokes that
+   checkout's `tools/seed_guard.sh` by absolute path while keeping the process
+   working directory at `/home/philippherrmann/sts_sweep`, as required by its
+   designated-host safety check. Run the canary manifest through
    `--foreground --guard-only` for both arms before launching either canary.
 3. Run both canary arms sequentially with
    `run-manifest run-manifest-canary.json C --foreground`, then H. Validate
@@ -134,14 +138,17 @@ the primary analysis.
 
 - `tools/analyze_deepset_entropic_brew_hybrid_confirmation.py --self-test`:
   synthetic quality classifications and provenance/integrity checks, including
-  binary pinning, action-receipt reconciliation, and the MCTS simulation bound.
+  binary pinning, action-receipt reconciliation, the MCTS simulation bound, and
+  a mixed paired-win contingency table with both concordant and discordant rows.
 - `tools/agent/check_deepset_entropic_brew_hybrid_canary.py --self-test`:
   synthetic single-seed provenance/mechanism case and wrong-fallback rejection.
 - `tools/agent/test_gcp_benchmark_manifest.py`: schema-v2 clean environment,
   fresh output paths, dangling-symlink rejection, and schema-v1 compatibility
-  (6 tests).
+  (8 tests), including exact-checkout guard binding and preserved generic-run
+  behavior.
 - No remote manifest preflight, canary, or decision-bearing cohort has run.
 
-Knowledge impact: the GCP manifest workflow now documents clean environments
-and fresh trace outputs in the maintained
+Knowledge impact: manifest runs now use the seed guard from their pinned
+checkout, with exact-SHA preflight binding that guard and preserving the
+designated remote-root working directory. This is documented in the maintained
 [`build-and-debugging.md`](../../../knowledge-base/operations/build-and-debugging.md).

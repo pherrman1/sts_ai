@@ -1,7 +1,8 @@
 # Current research status
 
-Last verified: 2026-09-24 for preparation of the merged DeepSets Brew-fallback
-independent quality confirmation and the experimental mechanism/timing smoke;
+Last verified: 2026-09-25 for correction review of the merged DeepSets
+Brew-fallback quality-confirmation preparation; 2026-09-24 for the experimental
+mechanism/timing smoke;
 2026-09-23 for the frozen Silver prior online gameplay screen;
 2026-09-21 for the complete frozen Silver internal-node FPU cohort and local 80-source learned-prefix scale validation;
 2026-09-20 for the tactical-prefix Silver oracle headroom screen

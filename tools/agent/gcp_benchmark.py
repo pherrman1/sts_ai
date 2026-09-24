@@ -404,10 +404,12 @@ def remote_run(args: argparse.Namespace) -> int:
         raise SystemExit("run requires a command after --")
     command_text = shlex.join(command)
     guard_mode = "guard-only " if args.guard_only else ""
+    guard_path = getattr(args, "guard_path", "tools/seed_guard.sh")
     guard = (
         "env STS_GCP_RESEARCH_CONTEXT=sts-test "
-        f"bash tools/seed_guard.sh --gcp-research {guard_mode}{command_text}"
+        f"bash {shlex.quote(guard_path)} --gcp-research {guard_mode}{command_text}"
     )
+    guard_preflight = f"test -f {shlex.quote(guard_path)}; command -v bash >/dev/null; "
     check = "ps -eo pid=,comm= | awk '$2 == \"one_combat\" {print; found=1} END {exit !found}' || true"
     if args.guard_only:
         check = ":"
@@ -435,7 +437,7 @@ def remote_run(args: argparse.Namespace) -> int:
         remote = (
             "set -euo pipefail; "
             f"cd {shlex.quote(args.remote_root)}; "
-            "test -f tools/seed_guard.sh; command -v bash >/dev/null; mkdir -p logs results; "
+            f"{guard_preflight}mkdir -p logs results; "
             f"{log_preflight}{check}; {capture}"
         )
         return ssh_command(args, remote)
@@ -444,12 +446,12 @@ def remote_run(args: argparse.Namespace) -> int:
     log = args.log or f"{args.remote_root}/logs/gcp_benchmark_{stamp}.log"
     remote = (
         "set -euo pipefail; "
-        f"cd {shlex.quote(args.remote_root)}; "
-        "test -f tools/seed_guard.sh; command -v bash >/dev/null; "
-        "command -v nohup >/dev/null; mkdir -p logs; "
-        f"{check}; "
-        f"nohup {guard} >{shlex.quote(log)} 2>&1 < /dev/null & pid=$!; "
-        f"echo remote_pid=$pid; echo remote_log={shlex.quote(log)}"
+        + f"cd {shlex.quote(args.remote_root)}; "
+        + guard_preflight
+        + "command -v nohup >/dev/null; mkdir -p logs; "
+        + f"{check}; "
+        + f"nohup {guard} >{shlex.quote(log)} 2>&1 < /dev/null & pid=$!; "
+        + f"echo remote_pid=$pid; echo remote_log={shlex.quote(log)}"
     )
     return ssh_command(args, remote)
 
@@ -489,6 +491,9 @@ def manifest_run(args: argparse.Namespace) -> int:
     args.command = command
     args.log = log
     args.fresh_paths = fresh
+    args.guard_path = designated_remote_path(
+        args, manifest["checkout"] + "/tools/seed_guard.sh", "run-manifest"
+    )
     return remote_run(args)
 
 
@@ -498,10 +503,14 @@ def exact_sha_preflight(args: argparse.Namespace) -> int:
     checkout = designated_remote_path(args, manifest["checkout"], "exact-sha-preflight")
     build_dir = designated_remote_path(args, manifest["build_dir"], "exact-sha-preflight")
     binary = designated_remote_path(args, manifest["binary"]["remote_path"], "exact-sha-preflight")
+    guard = designated_remote_path(args, manifest["checkout"] + "/tools/seed_guard.sh",
+                                   "exact-sha-preflight")
     commands = [
         "set -euo pipefail",
         f"test \"$(git -C {shlex.quote(checkout)} rev-parse HEAD)\" = {manifest['frozen_sha']}",
         f"test -z \"$(git -C {shlex.quote(checkout)} status --porcelain --untracked-files=no)\"",
+        f"git -C {shlex.quote(checkout)} ls-files --error-unmatch tools/seed_guard.sh >/dev/null",
+        f"test -f {shlex.quote(guard)}",
         f"test -f {shlex.quote(build_dir + '/CMakeCache.txt')}",
         f"grep -Fx {shlex.quote('CMAKE_HOME_DIRECTORY:INTERNAL=' + checkout)} "
         f"{shlex.quote(build_dir + '/CMakeCache.txt')} >/dev/null",
