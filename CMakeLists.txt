@@ -20,7 +20,7 @@ enable_testing()
 file (GLOB_RECURSE sts_lightspeed_SOURCES CONFIGURE_DEPENDS "src/*.cpp")
 list(REMOVE_ITEM sts_lightspeed_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/src/sim/search/SilverPriorNet.cpp")
 
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 20)
 add_compile_options(
     -Wno-shift-count-overflow
     -fopenmp

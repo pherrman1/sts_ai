@@ -96,7 +96,7 @@ void printSizes() {
     std::cout << "sizeof MonsterGroup : " << sizeof(MonsterGroup) << '\n';
     std::cout << "sizeof CardInstance: " << sizeof(CardInstance) << '\n';
     std::cout << "sizeof CardManager : " << sizeof(CardManager) << '\n';
-    std::cout << "sizeof ActionFunction : " << sizeof(ActionFunction) << '\n';
+    std::cout << "sizeof Action : " << sizeof(Action) << '\n';
     std::cout << "sizeof ActionQueue<40> : " << sizeof(ActionQueue<40>) << '\n';
     std::cout << "sizeof BattleContext: " << sizeof(BattleContext) << '\n';
 
@@ -2511,7 +2511,7 @@ int testPoisonLoseHp() {
     m.block = 10;
     m.addDebuff<MS::POISON>(5);
 
-    Actions::PoisonLoseHpAction(0).actFunc(bc);
+    Actions::PoisonLoseHpAction(0)(bc);
 
     if (m.curHp != 15) {
         std::cout << "poison_lose_hp FAIL: curHp=" << m.curHp
@@ -2552,7 +2552,7 @@ int testTimeEaterExhaust() {
     CardQueueItem replayed(CardInstance(CardId::FIEND_FIRE), 0, 1);
     replayed.exhaustOnUse = false;
 
-    Actions::TimeEaterPlayCardQueueItem(replayed).actFunc(bc);
+    Actions::TimeEaterPlayCardQueueItem(replayed)(bc);
 
     if (!bc.curCardQueueItem.exhaustOnUse) {
         std::cout << "time_eater_exhaust FAIL: replayed Fiend Fire did not exhaust\n";

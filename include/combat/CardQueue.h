@@ -38,6 +38,8 @@ namespace sts {
             ret.isEndTurn = true;
             return ret;
         }
+
+        bool operator==(const CardQueueItem &rhs) const = default;
     };
 
     struct CardQueue {
