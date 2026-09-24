@@ -44,6 +44,7 @@
 #include "sim/search/SilverSemanticAction.h"
 #include "sim/search/OocSemanticAction.h"
 #include "combat/BattleContextBinary.h"
+#include "sim/search/SearchStateHash.h"
 #include "one_combat/combat_transition.h"
 #include "ooc_test_state.h"
 #include "constants/MonsterMoves.h"
@@ -54,6 +55,92 @@ int runOocSemanticPipelineTests();
 int runOocSemanticTransactionsTests();
 
 using namespace sts;
+
+int testBattleEquality() {
+    int failures = 0;
+    auto check = [&](bool ok, const char *what) {
+        if (!ok) {
+            std::cerr << "battle_equality FAIL: " << what << '\n';
+            ++failures;
+        }
+    };
+    const GameContext game(CharacterClass::IRONCLAD, 0xE0A1u, 0);
+    BattleContext base;
+    base.init(game, MonsterEncounter::JAW_WORM);
+    base.cards.cardsInHand = 3;
+    base.cards.hand[0] = CardInstance(CardId::STRIKE_RED);
+    base.cards.hand[0].uniqueId = 90;
+    base.cards.hand[1] = CardInstance(CardId::DEFEND_RED);
+    base.cards.hand[1].uniqueId = 91;
+    base.cards.hand[2] = CardInstance(CardId::BASH);
+    base.cards.hand[2].uniqueId = 92;
+
+    auto same = [&](const BattleContext &x, bool exact, bool search, const char *what) {
+        check((x == base) == exact, what);
+        check(x.equalForSearch(base) == search, what);
+        check(base.equalForSearch(x) == search, what);
+        if (search) {
+            check(search::hashBattleState(x) == search::hashBattleState(base), what);
+        }
+    };
+
+    same(base, true, true, "copy");
+
+    BattleContext rng = base;
+    rng.aiRng.random(5);
+    rng.shuffleRng.randomLong();
+    same(rng, false, true, "rng-only difference");
+
+    BattleContext permuted = base;
+    std::swap(permuted.cards.hand[0], permuted.cards.hand[2]);
+    same(permuted, false, true, "hand permutation");
+
+    BattleContext stale = base;
+    stale.cards.hand[5] = CardInstance(CardId::ANGER);
+    stale.monsters.arr[4].curHp = 77;
+    same(stale, true, true, "unused slots");
+
+    BattleContext hp = base;
+    hp.player.curHp -= 1;
+    same(hp, false, false, "player hp");
+
+    BattleContext status = base;
+    status.player.buff<PS::STRENGTH>(1);
+    same(status, false, false, "player status");
+
+    BattleContext move = base;
+    move.monsters.arr[0].setMove(MMID::JAW_WORM_THRASH);
+    same(move, false, false, "monster move");
+
+    BattleContext handCard = base;
+    handCard.cards.hand[1].upgrade();
+    same(handCard, false, false, "hand card upgrade");
+
+    if (base.cards.drawPile.size() >= 2) {
+        BattleContext draw = base;
+        std::swap(draw.cards.drawPile.front(), draw.cards.drawPile.back());
+        same(draw, false, false, "draw pile order");
+    } else {
+        check(false, "draw pile has fewer than two cards");
+    }
+
+    BattleContext q1 = base;
+    BattleContext q2 = base;
+    q1.addToBot(Actions::GainEnergy(1));
+    q2.addToBot(Actions::GainEnergy(2));
+    check(!(q1 == q2) && !q1.equalForSearch(q2), "queued action parameter");
+    q2 = base;
+    q2.addToBot(Actions::GainEnergy(1));
+    check(q1 == q2 && q1.equalForSearch(q2), "equal queued actions");
+
+    check(Actions::DebuffEnemy<MS::WEAK>(0, 1) == Actions::DebuffEnemy<MS::WEAK>(0, 1), "action equal");
+    check(!(Actions::DebuffEnemy<MS::WEAK>(0, 1) == Actions::DebuffEnemy<MS::WEAK>(0, 2)), "action amount");
+    check(!(Actions::DebuffEnemy<MS::WEAK>(0, 1) == Actions::DebuffEnemy<MS::VULNERABLE>(0, 1)), "action status");
+    check(!(Actions::HealPlayer(1, true) == Actions::HealPlayer(1, false)), "action victory flag");
+
+    std::cout << "battle_equality " << (failures == 0 ? "PASS" : "FAIL") << '\n';
+    return failures == 0 ? 0 : 1;
+}
 
 int testIroncladCombatCardCoverage() {
     const GameContext game(CharacterClass::IRONCLAD, 0xC0DEu, 0);
@@ -96,7 +183,7 @@ void printSizes() {
     std::cout << "sizeof MonsterGroup : " << sizeof(MonsterGroup) << '\n';
     std::cout << "sizeof CardInstance: " << sizeof(CardInstance) << '\n';
     std::cout << "sizeof CardManager : " << sizeof(CardManager) << '\n';
-    std::cout << "sizeof ActionFunction : " << sizeof(ActionFunction) << '\n';
+    std::cout << "sizeof Action : " << sizeof(Action) << '\n';
     std::cout << "sizeof ActionQueue<40> : " << sizeof(ActionQueue<40>) << '\n';
     std::cout << "sizeof BattleContext: " << sizeof(BattleContext) << '\n';
 
@@ -2511,7 +2598,7 @@ int testPoisonLoseHp() {
     m.block = 10;
     m.addDebuff<MS::POISON>(5);
 
-    Actions::PoisonLoseHpAction(0).actFunc(bc);
+    Actions::PoisonLoseHpAction(0)(bc);
 
     if (m.curHp != 15) {
         std::cout << "poison_lose_hp FAIL: curHp=" << m.curHp
@@ -2552,7 +2639,7 @@ int testTimeEaterExhaust() {
     CardQueueItem replayed(CardInstance(CardId::FIEND_FIRE), 0, 1);
     replayed.exhaustOnUse = false;
 
-    Actions::TimeEaterPlayCardQueueItem(replayed).actFunc(bc);
+    Actions::TimeEaterPlayCardQueueItem(replayed)(bc);
 
     if (!bc.curCardQueueItem.exhaustOnUse) {
         std::cout << "time_eater_exhaust FAIL: replayed Fiend Fire did not exhaust\n";
@@ -2943,6 +3030,8 @@ int main(int argc, const char* argv[]) {
         return testCombatTransitionOracle();
     } else if (command == "combat_knowledge") {
         return testCombatKnowledgeBoundary();
+    } else if (command == "battle_equality") {
+        return testBattleEquality();
     } else if (command == "silver_random_bridge") {
         return testSilverRandomBridge();
     } else if (command == "silver_semantic_action") {

@@ -886,8 +886,8 @@ void Monster::takeTurn(BattleContext &bc) {     // todo, maybe for monsters that
             break;
 
         case MMID::LAGAVULIN_SIPHON_SOUL:
-            Actions::DebuffPlayer<PS::DEXTERITY>(asc18 ? -2 : -1).actFunc(bc);
-            Actions::DebuffPlayer<PS::STRENGTH>(asc18 ? -2 : -1).actFunc(bc);
+            Actions::DebuffPlayer<PS::DEXTERITY>(asc18 ? -2 : -1)(bc);
+            Actions::DebuffPlayer<PS::STRENGTH>(asc18 ? -2 : -1)(bc);
             setMove(MMID::LAGAVULIN_ATTACK);
             bc.noOpRollMove();
             break;
@@ -1104,7 +1104,7 @@ void Monster::takeTurn(BattleContext &bc) {     // todo, maybe for monsters that
         // ************ SLIME BOSS ************
 
         case MMID::SLIME_BOSS_GOOP_SPRAY:
-            Actions::MakeTempCardInDiscard( {CardId::SLIMED}, asc19 ? 5 : 3).actFunc(bc);
+            Actions::MakeTempCardInDiscard( {CardId::SLIMED}, asc19 ? 5 : 3)(bc);
             setMove(MMID::SLIME_BOSS_PREPARING);
             break;
 
@@ -1408,7 +1408,7 @@ void Monster::takeTurn(BattleContext &bc) {     // todo, maybe for monsters that
             break;
 
         case MMID::REPULSOR_REPULSE: // 1
-            Actions::ShuffleTempCardIntoDrawPile(CardId::DAZED, 2).actFunc(bc);
+            Actions::ShuffleTempCardIntoDrawPile(CardId::DAZED, 2)(bc);
             rollMove(bc);
             break;
 
@@ -1586,7 +1586,7 @@ void Monster::takeTurn(BattleContext &bc) {     // todo, maybe for monsters that
             break;
 
         case MMID::NEMESIS_DEBUFF:
-            Actions::MakeTempCardInDiscard({CardId::BURN}, asc3 ? 5 : 3).actFunc(bc);
+            Actions::MakeTempCardInDiscard({CardId::BURN}, asc3 ? 5 : 3)(bc);
             rollMove(bc);
             if (!hasStatus<MS::INTANGIBLE>()) {
                 buff<MS::INTANGIBLE>(2);
@@ -1860,11 +1860,11 @@ void Monster::takeTurn(BattleContext &bc) {     // todo, maybe for monsters that
             bc.player.debuff<PS::VULNERABLE>(2, true);
             bc.player.debuff<PS::WEAK>(2, true);
             bc.player.debuff<PS::FRAIL>(2, true);
-            Actions::ShuffleTempCardIntoDrawPile(CardId::DAZED).actFunc(bc);
-            Actions::ShuffleTempCardIntoDrawPile(CardId::SLIMED).actFunc(bc);
-            Actions::ShuffleTempCardIntoDrawPile(CardId::WOUND).actFunc(bc);
-            Actions::ShuffleTempCardIntoDrawPile(CardId::BURN).actFunc(bc);
-            Actions::ShuffleTempCardIntoDrawPile(CardId::VOID).actFunc(bc);
+            Actions::ShuffleTempCardIntoDrawPile(CardId::DAZED)(bc);
+            Actions::ShuffleTempCardIntoDrawPile(CardId::SLIMED)(bc);
+            Actions::ShuffleTempCardIntoDrawPile(CardId::WOUND)(bc);
+            Actions::ShuffleTempCardIntoDrawPile(CardId::BURN)(bc);
+            Actions::ShuffleTempCardIntoDrawPile(CardId::VOID)(bc);
             rollMove(bc);
             break;
 

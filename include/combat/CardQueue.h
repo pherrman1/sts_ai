@@ -38,6 +38,8 @@ namespace sts {
             ret.isEndTurn = true;
             return ret;
         }
+
+        bool operator==(const CardQueueItem &rhs) const = default;
     };
 
     struct CardQueue {
@@ -52,6 +54,9 @@ namespace sts {
         void pushBack(CardQueueItem item);
         [[nodiscard]] bool isEmpty() const;
         [[nodiscard]] bool containsCardWithId(int uniqueId) const;
+
+        // Compares the queued items in order; ring slots outside the queue are ignored.
+        bool operator==(const CardQueue &rhs) const;
 
         CardQueueItem popFront();
         CardQueueItem popBack();
