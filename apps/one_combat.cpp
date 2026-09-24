@@ -1251,7 +1251,8 @@ static bool bestBench(int sims, int nSeeds, int asc, std::uint64_t seedOffset = 
         meta.fairPlay = true;
         meta.silverSearchEnabled = search::silverLiveBackendInstalled();
         meta.stsSilverSearchEffective = meta.silverSearchEnabled;
-        meta.effectiveCombatBackend = meta.silverSearchEnabled ? "silver" : "native_searcher";
+        meta.effectiveCombatBackend = search::nativeSilverBackendInstalled()
+            ? "native_silver" : (meta.silverSearchEnabled ? "silver" : "native_searcher");
         meta.silverReuseCapMode = meta.silverSearchEnabled ? search::silverLiveReuseCapMode() : "";
         meta.silverReuseCap = meta.silverSearchEnabled ? search::silverLiveReuseCap() : 0;
         meta.silverUpstreamSha = meta.silverSearchEnabled
@@ -1261,8 +1262,9 @@ static bool bestBench(int sims, int nSeeds, int asc, std::uint64_t seedOffset = 
             ? search::silverLiveScalingDiagnosticFile() : "";
         meta.silverStickyQualityFile = meta.silverSearchEnabled
             ? search::silverLiveStickyQualityFile() : "";
-        meta.silverAdaptiveEnabled = meta.silverSearchEnabled
-            && search::silverLiveAdaptiveEnabled();
+        meta.silverAdaptiveEnabled = search::nativeSilverBackendInstalled()
+            ? search::nativeSilverAdaptiveEnabled()
+            : meta.silverSearchEnabled && search::silverLiveAdaptiveEnabled();
         meta.silverAdaptiveRetainedOnly = meta.silverSearchEnabled
             && search::silverLiveAdaptiveRetainedOnly();
         meta.silverAdaptiveTopShare = meta.silverSearchEnabled
@@ -3220,10 +3222,19 @@ int main(int argc, char **argv) {
     }
     // Silver owns local RNG/chance search for every combat (ADR-0020).
     search::installSilverLiveBackend();
-    std::cout << "[Silver combat backend: local Silver RNG/chance search; reuse-cap="
-              << search::silverLiveReuseCapMode() << " cap=" << search::silverLiveReuseCap()
-              << (search::silverLiveAdaptiveEnabled() ? "; adaptive" : "; flat budget")
-              << "]\n";
+    // Experimental: STS_NATIVE_SILVER=1 runs the Silver search ported onto the
+    // main engine instead of the vendored model.
+    if (const char *d = std::getenv("STS_NATIVE_SILVER"); d && std::atoi(d) != 0) {
+        search::installNativeSilverBackend();
+        std::cout << "[Native Silver combat backend: Silver search on the main engine"
+                  << (search::nativeSilverAdaptiveEnabled() ? "; adaptive" : "; flat budget")
+                  << "]\n";
+    } else {
+        std::cout << "[Silver combat backend: local Silver RNG/chance search; reuse-cap="
+                  << search::silverLiveReuseCapMode() << " cap=" << search::silverLiveReuseCap()
+                  << (search::silverLiveAdaptiveEnabled() ? "; adaptive" : "; flat budget")
+                  << "]\n";
+    }
     if (const char *d = std::getenv("STS_FORCE_RELIC")) {      // force a relic at run start (paired A/B)
         const std::string name(d);
         int id = -1;

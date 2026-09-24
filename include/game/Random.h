@@ -5,6 +5,9 @@
 #ifndef STS_LIGHTSPEED_RANDOM_H
 #define STS_LIGHTSPEED_RANDOM_H
 
+#include <cstdint>
+#include <utility>
+
 namespace java {
 
     class Random {
