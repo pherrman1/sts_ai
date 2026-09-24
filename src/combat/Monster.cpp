@@ -288,6 +288,7 @@ void Monster::die(BattleContext &bc) {
         halfDead = true;
         removeDebuffs();
         removeStatus<MS::CURIOSITY>();
+        cancelPendingMove();
         setMove(MonsterMoveId::AWAKENED_ONE_REBIRTH);
         search::emitHiddenMonsterIntentMaterialized(
             idx, static_cast<std::int16_t>(moveHistory[0]), static_cast<std::int16_t>(moveHistory[1]), miscInfo);
@@ -307,6 +308,7 @@ void Monster::die(BattleContext &bc) {
 
     } else if (hasStatus<MS::REGROW>()) {
         resetAllStatusEffects();
+        cancelPendingMove();
         setMove(MMID::DARKLING_REGROW);
         search::emitHiddenMonsterIntentMaterialized(
             idx, static_cast<std::int16_t>(moveHistory[0]), static_cast<std::int16_t>(moveHistory[1]), miscInfo);
@@ -359,6 +361,7 @@ void Monster::attackedUnblockedHelper(BattleContext &bc, int damage) { // todo, 
     } else if (hasStatus<MS::PLATED_ARMOR>()) {
         decrementStatus<MS::PLATED_ARMOR>();
         if(!hasStatus<MS::PLATED_ARMOR>() && id == MonsterId::SHELLED_PARASITE) {
+            cancelPendingMove();
             setMove(MMID::SHELLED_PARASITE_STUNNED);
             search::emitHiddenMonsterIntentMaterialized(
                 idx, static_cast<std::int16_t>(moveHistory[0]), static_cast<std::int16_t>(moveHistory[1]), miscInfo);
@@ -371,6 +374,7 @@ void Monster::attackedUnblockedHelper(BattleContext &bc, int damage) { // todo, 
     } else if (hasStatus<MS::FLIGHT>() && damage > 0) {
         auto flight = getStatus<MS::FLIGHT>();
         if (flight == 1) {
+            cancelPendingMove();
             setMove(MMID::BYRD_STUNNED);
             search::emitHiddenMonsterIntentMaterialized(
                 idx, static_cast<std::int16_t>(moveHistory[0]), static_cast<std::int16_t>(moveHistory[1]), miscInfo);
@@ -512,6 +516,7 @@ void Monster::onHpLost(BattleContext &bc, int amount) {
     switch (id) {
         case MonsterId::ACID_SLIME_L:
             if (atOrBelowHalf) {
+                cancelPendingMove();
                 moveHistory[0] = MMID::ACID_SLIME_L_SPLIT;
                 search::emitHiddenMonsterIntentMaterialized(
                     idx, static_cast<std::int16_t>(moveHistory[0]), static_cast<std::int16_t>(moveHistory[1]), miscInfo);
@@ -520,6 +525,7 @@ void Monster::onHpLost(BattleContext &bc, int amount) {
 
         case MonsterId::SLIME_BOSS:
             if (atOrBelowHalf) {
+                cancelPendingMove();
                 moveHistory[0] = MMID::SLIME_BOSS_SPLIT;
                 search::emitHiddenMonsterIntentMaterialized(
                     idx, static_cast<std::int16_t>(moveHistory[0]), static_cast<std::int16_t>(moveHistory[1]), miscInfo);
@@ -528,6 +534,7 @@ void Monster::onHpLost(BattleContext &bc, int amount) {
 
         case MonsterId::SPIKE_SLIME_L:
             if (atOrBelowHalf) {
+                cancelPendingMove();
                 moveHistory[0] = MMID::SPIKE_SLIME_L_SPLIT;
                 search::emitHiddenMonsterIntentMaterialized(
                     idx, static_cast<std::int16_t>(moveHistory[0]), static_cast<std::int16_t>(moveHistory[1]), miscInfo);
@@ -539,6 +546,7 @@ void Monster::onHpLost(BattleContext &bc, int amount) {
                 const int newModeShiftAmount = getStatus<MS::MODE_SHIFT>() - amount;
                 if (newModeShiftAmount <= 0) {
                     removeStatus<MS::MODE_SHIFT>();
+                    cancelPendingMove();
                     setMove(MMID::THE_GUARDIAN_DEFENSIVE_MODE);
                     search::emitHiddenMonsterIntentMaterialized(
                         idx, static_cast<std::int16_t>(moveHistory[0]), static_cast<std::int16_t>(moveHistory[1]), miscInfo);
@@ -645,15 +653,8 @@ bool Monster::eitherLastTwo(MonsterMoveId moveId) const {
     return moveHistory[0] == moveId || moveHistory[1] == moveId;
 }
 
-void Monster::rollMove(BattleContext &bc) {
-    // Runic Dome hides the result, not the public state in which the roll is
-    // made.  Record Silver's roll-time inputs before the live aiRng resolves
-    // the move so the isolated model can represent a pending chance event.
-    // Always offer the public pre-roll snapshot to the default-null observer.
-    // The observer is configured from GameContext before BattleContext::init,
-    // so this remains correct when Player relic initialization has not yet run.
-    // It records neither the rolled move nor an RNG value.
-    search::HiddenIntentRollInputs inputs;
+MonsterRollInputs Monster::captureRollInputs(const BattleContext &bc) const {
+    MonsterRollInputs inputs;
     inputs.curHp = static_cast<std::int16_t>(curHp);
     inputs.maxHp = static_cast<std::int16_t>(maxHp);
     inputs.miscInfo = miscInfo;
@@ -667,12 +668,37 @@ void Monster::rollMove(BattleContext &bc) {
     inputs.playerConstricted = bc.player.hasStatus<PS::CONSTRICTED>();
     inputs.asleep = hasStatus<MS::ASLEEP>();
     inputs.halfDead = halfDead;
+    return inputs;
+}
+
+void Monster::rollMove(BattleContext &bc) {
+    // Runic Dome hides the result, not the public state in which the roll is
+    // made.  Record the roll-time inputs before the aiRng resolves the move so
+    // an observer (or a search under intentsHidden) can represent a pending
+    // chance event. The observer is configured from GameContext before
+    // BattleContext::init, so this remains correct when Player relic
+    // initialization has not yet run. It records neither the rolled move nor
+    // an RNG value.
+    const MonsterRollInputs inputs = captureRollInputs(bc);
     search::emitHiddenMonsterIntentRollStarted(
         idx, inputs, static_cast<std::int16_t>(moveHistory[0]),
         static_cast<std::int16_t>(moveHistory[1]), miscInfo);
-    auto miscInfoCopy = miscInfo;
+    if (bc.intentsHidden) {
+        // Search under Runic Dome: defer the roll until the move is used or
+        // queried (materializePendingMove), so the search cannot see it early.
+        pendingRollInputs = inputs;
+        if (pendingMoveRolls < 255) {
+            ++pendingMoveRolls;
+        }
+        return;
+    }
+    rollMoveFromInputs(bc, inputs);
+}
 
-    const auto move = getMoveForRoll(bc, miscInfoCopy, bc.aiRng.random(99));
+void Monster::rollMoveFromInputs(BattleContext &bc, const MonsterRollInputs &in) {
+    auto miscInfoCopy = in.miscInfo;
+
+    const auto move = getMoveForRoll(bc, in, miscInfoCopy, bc.aiRng.random(99));
 
     miscInfo = miscInfoCopy;
     // Suppress the generic deterministic setMove publication below: this
@@ -680,6 +706,38 @@ void Monster::rollMove(BattleContext &bc) {
     // the preceding deferred-roll observer event instead.
     search::CombatKnowledgeMoveRollScope rollScope;
     setMove(move);
+}
+
+void Monster::materializePendingMove(BattleContext &bc) {
+    // Replays deferred rolls in order; moveHistory and miscInfo evolve through
+    // the chain as immediate rolls would have. Consumes aiRng, so inside the
+    // search this point is the chance event for the hidden intent.
+    const int n = pendingMoveRolls;
+    pendingMoveRolls = 0;
+    MonsterRollInputs in = pendingRollInputs;
+    pendingRollInputs = MonsterRollInputs{};
+    for (int i = 0; i < n; ++i) {
+        rollMoveFromInputs(bc, in);
+        in.miscInfo = miscInfo;
+    }
+    if (pendingDirectMoveChoice != 0) {
+        const auto choice = pendingDirectMoveChoice;
+        pendingDirectMoveChoice = 0;
+        if (choice == 1) {
+            setMove(bc.aiRng.randomBoolean(0.5f) ? MMID::LOOTER_SMOKE_BOMB : MMID::LOOTER_LUNGE);
+        } else {
+            setMove(bc.aiRng.randomBoolean(0.5f) ? MMID::MUGGER_SMOKE_BOMB : MMID::MUGGER_LUNGE);
+        }
+    }
+}
+
+void Monster::cancelPendingMove() {
+    // A forced move override (stun, split, mode shift, rebirth, regrow)
+    // discards a deferred roll: the overridden roll is unobservable in the
+    // real game as well (Silver's analysis).
+    pendingMoveRolls = 0;
+    pendingRollInputs = MonsterRollInputs{};
+    pendingDirectMoveChoice = 0;
 }
 
 void Monster::setMove(MMID moveId) {

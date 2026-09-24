@@ -84,6 +84,11 @@ namespace sts {
 
         int monsterTurnIdx = 6;
 
+        // Search only (Runic Dome): monster move rolls are deferred until the
+        // move is used or queried (Monster::pendingMoveRolls), so a search
+        // cannot see intents the player cannot. Always false in real play.
+        bool intentsHidden = false;
+
         bool isBattleOver() const { return outcome != Outcome::UNDECIDED; }
         bool endTurnQueued = false;
         bool turnHasEnded = false;
