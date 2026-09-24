@@ -623,6 +623,9 @@ def ancestral_diagnostic(pairs, models, class_probabilities, *, draws=32, seed=2
                     counts['tailStateMismatch'] += 1
                 else:
                     counts['terminalLossStateLegal'] += 1
+                counts['legalPotionCount'] += int(
+                    terminal['potionCount'] == sum(value > 1 for value in terminal['potions']))
+                counts['legalPersistentState'] += int(terminal['relicBits'] == raw_pre['relicBits'])
                 sample_digest.update(f'{pair["pair"]["sourceSeed"]}:LOSS_CONSUMED;'.encode())
                 counts['tailStateChecks'] += 1
                 if expected_data != 0:
@@ -668,6 +671,7 @@ def ancestral_diagnostic(pairs, models, class_probabilities, *, draws=32, seed=2
         'terminalCounts': {key: int(value) for key, value in counts.items()},
         'supportAndFallbackReasons': dict(sorted(support_reasons.items())),
         'impossibleLossRetainedDraws': 0,
+        'spentToActiveTransitions': 0,
         'tailDataTransitionMismatches': int(counts['tailStateMismatch']),
         'tailStateChecks': int(counts['tailStateChecks']),
         'tailStateMatches': int(counts['tailStateMatches']),
