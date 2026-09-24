@@ -26,6 +26,9 @@ the replacement.
 
 ## Current architecture ADRs
 
+- [ADR-0018](0018-silver-default-combat-backend.md) makes Silver fair play
+  the default combat backend for `run`, `bestbench` and `reprobench`; it
+  supersedes ADR-0003.
 - [ADR-0015](0015-live-silver-equivalent-copy-reroot.md) preserves retained
   live Silver visits when the human plays a different equivalent physical card
   copy, without relaxing global search-state or transposition identity.

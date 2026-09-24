@@ -15,7 +15,7 @@ remain defined by the owning technical pages routed from the
 **Counterfactual** — A copied state on which an alternate legal action is
 applied before continuation or future-state scoring.
 
-**Known-RNG** — The default Searcher2 non-fair regime, where search starts from
+**Known-RNG** — The Searcher2 non-fair regime (the native default when Silver is disabled), where search starts from
 the concrete battle RNG and may reuse its tree across committed actions.
 Searcher3 samples particles even when `STS_FAIR` is off, so its non-fair reuse
 path is a distinct hybrid and must not be labelled known-RNG without

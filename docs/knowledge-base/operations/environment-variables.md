@@ -1,6 +1,6 @@
 # Environment variables
 
-Last verified: 2026-09-15 for live visit-lock stopping and full-budget root-lock observation; 2026-09-14 for live OOC MCTS; 2026-09-09 against `apps/one_combat.cpp::main` and the isolated Silver live backend.
+Last verified: 2026-09-24 for the Silver whole-run default; 2026-09-15 for live visit-lock stopping and full-budget root-lock observation; 2026-09-14 for live OOC MCTS; 2026-09-09 against `apps/one_combat.cpp::main` and the isolated Silver live backend.
 
 Purpose: single concise reference for all `STS_*` and related env vars consumed
 by `one_combat`. Code is authoritative; this page routes readers to the right
@@ -17,7 +17,7 @@ These control the default executing configuration; they are always parsed.
 | `STS_WIN_NET` | Path to V_win compact tree; `1` = default `models/v_win_trees.txt` | auto-loads `models/v_win_trees.txt` | `main` ~L9465 |
 | `STS_POLICY` | Compact policy net for PUCT; `0` disables, `1` = full 447-tree, or path | `models/policy_trees_c.txt` auto-loads | `main` ~L9950 |
 | `STS_CPUCT` | PUCT exploration constant | varies (model-dependent) | `main` ~L9965 |
-| `STS_FAIR` | Determinized/ISMCTS combat (no future peeking) | `0` (known-RNG) | `main` ~L9685 |
+| `STS_FAIR` | Determinized/ISMCTS combat (no future peeking) | `0` (known-RNG); resolved to `1` with the Silver whole-run default | `main` ~L9685 |
 | `STS_SEARCHER3` | Use `BattleScumSearcher3` ISMCTS engine | `0` (Searcher2) | `main` ~L9690 |
 | `STS_LIVE_VALID` | Fair-tree live-valid edge re-selection (Phase 4) | Auto-ON for fair+S3 since 2026-08-07 (§123) | `main` ~L9700 |
 | `STS_FORCED_MOVE` | Forced-action contraction (fair path only); `0` disables | `1` (ON) | `main` ~L9228 |
@@ -35,13 +35,15 @@ These control the default executing configuration; they are always parsed.
 ## Isolated Silver combat backend
 
 `STS_SILVER_SEARCH=1` installs the isolated Silver combat callback before the
-native Searcher2/3 dispatch.  It does not make Silver the executable default.
+native Searcher2/3 dispatch. For `run`, `bestbench` and `reprobench`, an unset
+value resolves to `1` unless `STS_SEARCHER3=1` is set
+([ADR-0018](../../../decisions/0018-silver-default-combat-backend.md)).
 The production reuse cap defaults to `32 * 1024`. The explicit experimental
 `STS_SILVER_REUSE_CAP=131072` override requires separate quality qualification.
 
 | Variable | Effect | Default | Parse site |
 |----------|--------|---------|------------|
-| `STS_SILVER_SEARCH` | Enable isolated Silver combat search | unset/off | `main`; `SilverLiveBackend` |
+| `STS_SILVER_SEARCH` | Enable isolated Silver combat search; `0` explicitly selects the native searcher | `1` for `run`/`bestbench`/`reprobench` without `STS_SEARCHER3=1`; otherwise off | `main`; `SilverLiveBackend` |
 | `STS_SILVER_ROOT_PRIOR_MODEL` | Default-off frozen `SilverPriorNetV1` artifact path. In `one_combat` and `one_combat_advisor`, loads fail-fast at startup and applies root-only `c=2.5` PUCT to eligible `PLAYER_NORMAL` roots with at least two legal actions; forced and non-player-normal decisions retain ordinary Silver behavior. The advisor reports the exact applied root logits/probabilities for the graph export. Artifact identity, action surface, and inference errors fail closed. | unset/off | `SilverLiveBackend`; `one_combat_advisor`; `SilverPriorNetV1` |
 | `STS_SILVER_DEBUG_TREE` | Default-off debug capture: attach the reachable native Silver search graph (node states, visits/Qs, semantic edge labels, chance metadata) to each advisor combat response. Does not alter search or ordinary responses when unset. | unset/off | `apps/one_combat/advisor_stdio.cpp`; `SilverStateBridge` |
 | `STS_SILVER_DEBUG_TREE_NODE_CAP` | Maximum native graph nodes included by `STS_SILVER_DEBUG_TREE`; oversized captures are marked truncated. | `8192` (maximum `100000`) | `apps/one_combat/advisor_stdio.cpp` |
