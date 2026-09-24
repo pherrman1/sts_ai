@@ -5,6 +5,8 @@
 #include "combat/CardQueue.h"
 #include "sts_common.h"
 
+#include <algorithm>
+
 using namespace sts;
 
 
@@ -86,4 +88,16 @@ CardQueueItem &CardQueue::front() {
     assert(size > 0);
 #endif
     return arr.at(frontIdx);
+}
+
+bool CardQueue::operator==(const CardQueue &rhs) const {
+    if (size != rhs.size) {
+        return false;
+    }
+    for (int i = 0; i < size; ++i) {
+        if (!(arr[(frontIdx + i) % capacity] == rhs.arr[(rhs.frontIdx + i) % capacity])) {
+            return false;
+        }
+    }
+    return true;
 }

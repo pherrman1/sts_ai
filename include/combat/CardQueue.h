@@ -55,6 +55,9 @@ namespace sts {
         [[nodiscard]] bool isEmpty() const;
         [[nodiscard]] bool containsCardWithId(int uniqueId) const;
 
+        // Compares the queued items in order; ring slots outside the queue are ignored.
+        bool operator==(const CardQueue &rhs) const;
+
         CardQueueItem popFront();
         CardQueueItem popBack();
         CardQueueItem &front();

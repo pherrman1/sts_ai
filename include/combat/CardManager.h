@@ -47,6 +47,13 @@ namespace sts {
         int drawPileBloodCardCount = 0;
         int discardPileBloodCardCount = 0;
 
+        // Compares the first cardsInHand hand slots (later slots are unused) and
+        // every other field.
+        bool operator==(const CardManager &rhs) const;
+        // As operator==, but the hand is compared as a multiset: search treats
+        // hands that differ only in card order as the same state.
+        [[nodiscard]] bool equalForSearch(const CardManager &rhs) const;
+
         void init(const GameContext &gc, BattleContext &bc); // returns count of innate cards
 
         void createDeckCardInstanceInDrawPile(const Card &card, int deckIdx, int drawIdx);

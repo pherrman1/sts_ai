@@ -90,6 +90,9 @@ namespace sts {
         int8_t bomb2 = 0;
         int8_t bomb3 = 0;
 
+        // Every field is compared; add new state fields as members so this stays complete.
+        bool operator==(const Player &rhs) const = default;
+
         template <RelicId r> void setHasRelic(bool value);
         template <PlayerStatus> void setHasStatus(bool value);
         template <PlayerStatus> void setStatusValueNoChecks(int value);

@@ -10,6 +10,8 @@
 
 #include "sim/search/CombatKnowledge.h"
 
+#include <algorithm>
+
 using namespace sts;
 
 void CardManager::init(const sts::GameContext &gc, BattleContext &bc) {
@@ -644,4 +646,42 @@ namespace sts {
     }
 
 
+}
+
+namespace {
+
+    bool sameNonHandState(const CardManager &a, const CardManager &b) {
+        return a.nextUniqueCardId == b.nextUniqueCardId &&
+               a.cardsInHand == b.cardsInHand &&
+               a.limbo == b.limbo &&
+               a.stasisCards == b.stasisCards &&
+               a.drawPile == b.drawPile &&
+               a.discardPile == b.discardPile &&
+               a.exhaustPile == b.exhaustPile &&
+               a.handNormalityCount == b.handNormalityCount &&
+               a.handPainCount == b.handPainCount &&
+               a.strikeCount == b.strikeCount &&
+               a.handBloodCardCount == b.handBloodCardCount &&
+               a.drawPileBloodCardCount == b.drawPileBloodCardCount &&
+               a.discardPileBloodCardCount == b.discardPileBloodCardCount;
+    }
+
+}
+
+bool CardManager::operator==(const CardManager &rhs) const {
+    return sameNonHandState(*this, rhs)
+        && std::equal(hand.begin(), hand.begin() + cardsInHand, rhs.hand.begin());
+}
+
+bool CardManager::equalForSearch(const CardManager &rhs) const {
+    if (!sameNonHandState(*this, rhs)) {
+        return false;
+    }
+    std::array<CardInstance, MAX_HAND_SIZE> lhsHand;
+    std::array<CardInstance, MAX_HAND_SIZE> rhsHand;
+    std::copy(hand.begin(), hand.begin() + cardsInHand, lhsHand.begin());
+    std::copy(rhs.hand.begin(), rhs.hand.begin() + cardsInHand, rhsHand.begin());
+    std::sort(lhsHand.begin(), lhsHand.begin() + cardsInHand);
+    std::sort(rhsHand.begin(), rhsHand.begin() + cardsInHand);
+    return std::equal(lhsHand.begin(), lhsHand.begin() + cardsInHand, rhsHand.begin());
 }
