@@ -11917,3 +11917,46 @@ and qualification are unchanged.
 
 Knowledge impact: current research now records the post-correction replay
 result and its one shared technical failure. No default or quality gate changed.
+
+## §349 — Singleton reroot replay against updated current main (2026-09-25)
+
+- **Question:** Does the retained-session singleton zero-search path reduce
+  work without changing observed outcomes on the frozen hard-fight cohort
+  after merging the latest main updates?
+- **Frozen comparison:** main control
+  `46684659a0d56729d7af1f8ae2ce9eeab39a6934` versus merged treatment
+  `be47b2a1502013b04dcdd923b6d14c1c22c7dde1`. The treatment enabled only
+  `--skip-singleton-search` in the frozen replay utility. The production live
+  path is independently covered by the retained-edge bridge regression and
+  flat/adaptive integration checks.
+- **Cohort/configuration:** the same 64 stored-seed rows from the tracked
+  `hard64-holdout` set in `silver_hard_combat_v1_20260918` (snapshot SHA-256
+  `e8b914ad74ca0508ee6b1db329c5f454e92e7785cd60af1475d53b35a9d8af34`). Both
+  Release arms used exact 10,000 simulations per searched root, allocated
+  reuse cap 32,768, adaptive/exact-lock/rho off, and OMP 4. Alternating
+  eight-case blocks went through `tools/seed_guard.sh`; all 64 stored states
+  ran in both arms. No new states were collected.
+- **Results:** 64 cases were attempted and 63 were valid in both arms. Each
+  arm won 57/63 with zero paired outcome flips. Treatment skipped 62 singleton
+  searches, used 20.060M versus 20.720M simulations (**−3.185%**), and had
+  183.421 versus 189.820 summed per-case replay wall seconds (**−3.371%**).
+  Mean ending HP changed by +0.159; action traces matched on 60/63 valid
+  pairs. These bounded descriptive metrics are not equivalence evidence.
+- **Technical exclusion:** case `12100109/21` failed in both arms after 28
+  decisions / 280,000 simulations with the same
+  `selected_deterministic_state_mismatch` and action-trace hash
+  `5626104837987834096`. Both raw rows remain in the packet. No case was
+  removed, replaced, or rerun, so the result remains **N64 attempted / N63
+  valid**, not complete valid N64 confirmation.
+- **Interpretation:** this updates the earlier post-correction replay whose
+  control was main at `01f6f164`. It confirms descriptive compute savings on
+  the same frozen cohort against main at `46684659`; it does not establish
+  action equivalence or gameplay safety, validate live wire conversion, or
+  change a default.
+- **Evidence:** [current-main frozen hard64 packet](evidence/silver_singleton_reroot_hard64_holdout_2026-09-25_main46684659/README.md),
+  including raw per-arm rows, paired records, run order, per-invocation
+  outputs, analysis scripts, and hashes.
+
+Knowledge impact: current research now records the updated-baseline replay
+and its shared technical failure. The prior comparison remains preserved as
+historical evidence; no default or quality gate changed.
