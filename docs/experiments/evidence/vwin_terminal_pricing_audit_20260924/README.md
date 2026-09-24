@@ -256,9 +256,11 @@ updated at BattleContext.cpp:550-596 and encoded in run_features.cpp:90-94.
   `export_win_model_selftest`. Python compilation and the analyzer self-test
   passed earlier in the same unchanged audit tooling. Native/Python parity was
   repeated after this build on 600 rows with max/mean difference 0.000000.
-- Full CTest and GitHub Actions CI have not been run at this point; the draft
-  PR will provide the authoritative CI status. No additional gameplay seeds
-  were run for these checks.
+- Full CTest has not been run. Draft PR #317 triggered CI run 1184, but its
+  `Linux GCC` job was skipped by the workflow condition that excludes draft
+  PRs. A `ready_for_review` event is needed to run authoritative CI; the PR
+  remains draft for this handoff. No additional gameplay seeds were run for
+  these checks.
 
 ## Evidence files
 

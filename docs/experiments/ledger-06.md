@@ -11780,8 +11780,10 @@ remain unchanged.
   again on 600 rows after the latest-main build, max and mean difference
   0.000000. The build emitted a narrowing-conversion warning in
   unrelated run-timing code and an ODR warning for `Path` across root and
-  bundled `SimpleAgent.cpp`. Full CTest and GitHub Actions CI were not run at
-  this point; no gameplay seed was rerun for verification.
+  bundled `SimpleAgent.cpp`. Full CTest was not run. Draft PR #317 triggered CI
+  run 1184, but the `Linux GCC` job was skipped by the workflow's draft-PR
+  condition; a `ready_for_review` event is needed to run authoritative CI. No
+  gameplay seed was rerun for verification.
 
 Knowledge impact: current research now records that the tracked model fails
 the monotonicity gate for W1 use, includes the pre-collection artifact

@@ -226,7 +226,14 @@
     "parity_tolerance": 0.0001,
     "result": "PASS",
     "full_ctest_run": false,
-    "github_actions_ci": "pending draft PR",
+    "github_actions_ci": {
+      "run_id": 36063147423,
+      "run_number": 1184,
+      "status": "completed",
+      "conclusion": "skipped",
+      "job": "Linux GCC",
+      "reason": "The workflow job condition excludes draft pull requests; a ready_for_review event is needed to run the authoritative CI build."
+    },
     "gameplay_seeds_run": 0
   }
 }
