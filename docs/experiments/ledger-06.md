@@ -11695,12 +11695,192 @@ Knowledge impact: current research status now records an experimental hybrid
 path and its bounded engineering evidence; qualified models and runtime defaults
 remain unchanged.
 
-## §343 — Singleton reroot correction on frozen hard64 holdout (2026-09-25)
+### §343 — Active Lizard Tail CTM qualification (2026-09-23)
+
+From baseline `aa09f75e6be837f7f39a2e31dde234bfd2c2ef08`, a detached shadow
+collector used the frozen `silver-ordinary-fair-exact10k-combat-transition-runtime16-f0bbd77`
+teacher and produced 111 unique source seeds (`4200100..4200210`), 2,234 rows,
+2,223 wins, 11 deaths, and zero quarantines. Combined with the 16-seed smoke,
+the local collection used 127 unique source IDs, within the 128-source cap.
+Manifest SHA-256:
+`457e33d53c7af2f474957d2201da0f7a7c95a1f6be10de71f40782cb14f832f6`; corpus
+SHA-256:
+`4d9927ad0f23d7f9e6e1fdb1091c6cf98ff7f5935540a5103746257b550b5504`.
+
+The source-grouped split contains 87 TRAIN, 15 VALIDATION, and 9 TEST source
+seeds. Supported non-Lizard HP, potion, and relic composition exposure met the
+existing 0.1-nat mean-gap gates, although the relic result uses only 32 rows
+from four sources. The old untrained Lizard head scored worse than the
+TRAIN-only prior (TEST gap +0.76590 nat; 95% source-bootstrap CI
+[+0.61415, +0.87443]). A fixed 10-epoch fit of only the two Lizard-head
+parameters on supported TRAIN victories was therefore run under the existing
+relic recipe. Its TEST NLL was 0.69889 versus 0.19213 for the TRAIN-only prior;
+the paired source-bootstrap gap was +0.50675 nat (95% CI [+0.37380, +0.61081],
+126 winning rows / nine sources). The Lizard head is rejected by the existing
+proper-score gate. Ancestral sampling covered all 127 fully supported TEST
+pre-states (including the observed death), with zero hard-validity failures;
+this does not override the score rejection.
+
+Production `active_unqualified_lizard` remains unchanged. No Phase 3B
+specialist, runtime integration, native/Python parity qualification, gameplay
+benchmark, or live seed `13027029` check was run. The live check remains gated
+on offline qualification. See the [complete evidence packet](evidence/active_lizard_ctm_2026-09-23/README.md).
+
+**Knowledge impact:** the maintained current-research page now points to this
+negative result; active Lizard Tail remains outside qualified CTM support.
+
+### §344 — Active Lizard Tail paired rescue pilot (2026-09-23)
+
+A 32-source paired pilot (`4200100..4200131`) compared exact Silver combats
+with and without active Lizard Tail under the frozen ordinary fair 10k teacher.
+It is descriptive only: 30 pairs won in both treatments with Tail retained;
+one ordinary death became an active-treatment win with Tail consumed; and one
+ordinary death became an active-treatment win with Tail retained. The ordinary
+CTM mean predicted death rate was `0.05704` versus `0.0625` observed deaths
+(Brier `0.01474`). The observed Tail-consumption rate was `0.03125`, with Brier
+`0.03182` when compared to those same death probabilities. Two ordinary deaths
+are too few to infer a rescue rate or calibration. The retained-Tail win also
+shows active relic presence can change the policy trajectory, so consumption
+cannot be treated as a direct label for the no-Tail counterfactual. The
+existing conditional heads had only one Tail-consumed winning row to score.
+
+During collection, seven rows asserted on a potion reward when all three slots
+were full. The paired source-reward branch lacked the full-inventory guard in
+the normal reward policy; adding that guard fixed the invalid action, and all
+seven rows then completed. This is a collector fix, not CTM evidence.
+
+No rescue head, scalar extra-HP model, training, support qualification, or
+runtime integration followed. The failed Lizard-head proper-score result in
+§343 and production `active_unqualified_lizard` guard remain unchanged. See the
+[paired pilot evidence packet](evidence/lizard_tail_rescue_pilot_2026-09-23/README.md).
+
+**Knowledge impact:** exploratory evidence only; no model or runtime change.
+
+### §345 — Risk-targeted active Lizard Tail rescue experiment (2026-09-24)
+
+The preregistered 128-source cohort (`4200300..4200427`) completed candidate
+generation with 2,700 ordinary combat rows and zero quarantines. Precombat CTM
+risk-only selection yielded 128 unique targets across the four declared risk
+bands plus 19 low-risk fallbacks, because band availability overlapped by
+source. Exact-state paired collection completed 128/128 targets with zero
+quarantines.
+
+The no-Tail arm died in 27/128 fights (21.1%); active Tail won 123/128 (96.1%)
+and was consumed in 32/128 (25.0%). Among control deaths, active Tail won 22/27:
+14 wins consumed Tail, while 8 wins retained it. Silver's first action changed
+in 59/128 pairs and full action traces in 122/128, confirming that policy
+adaptation is frequent even when Tail remains. The HP-shift survival proxy
+predicted 90.3% mean win probability versus 96.1% observed active-Tail wins;
+this is not a lethal-crossing replay or a policy-aware Tail model.
+
+On 71 both-arm wins with active Tail retained, paired post-head NLL deltas did
+not meet the preregistered material-shift criterion. The CIs remain too wide to
+establish equivalence, and supported relic-group comparisons had only 5–12
+pairs. The head scores are teacher-forced descriptive screens, not
+qualification. The data support continuing with small survival/consumption
+corrections as the next research candidate while modeling policy adaptation;
+they do not justify a full specialist or establish that existing heads can be
+reused in runtime.
+
+The complete candidate, selection, paired, and analysis artifacts, hashes,
+unsupported-row counts, and interpretation are in the [targeted rescue evidence
+packet](evidence/lizard_tail_targeted_rescue_2026-09-23/README.md). No training,
+support expansion, runtime integration, model/default change, native/Python
+parity test, or gameplay qualification followed. Production
+`active_unqualified_lizard` remains fail-closed.
+
+**Knowledge impact:** targeted descriptive evidence only; qualification and
+runtime boundary unchanged.
+
+### §346 — Minimal active Lizard correction diagnostic (2026-09-24)
+
+On the same 128-pair cohort, the fixed `T2` revive-HP transform lowered
+consumed-win HP NLL by `1.084` nat on 22 supported rows (paired source-bootstrap
+95% CI `[-2.165,-0.331]`). Its HP CRPS point estimate also improved; the CI
+crossed zero. `T1` improved HP scores more, but showed positive paired
+relic-constraint deltas for attacks, shuffles, and turns, so it was not
+retained. T2 is an offline development candidate only; neither transform
+qualifies the reused heads.
+
+The 3-class labels were 96 `WIN_RETAINED`, 27 `WIN_CONSUMED`, and five
+`LOSS_CONSUMED`. Six Fairy Potion rows were left at the exact boundary, leaving
+122 modeled rows; Mark of the Bloom remains excluded. B1 mechanical reserve was
+coherent on all modeled rows. The 5-fold source-grouped L2 q/r correction had
+NLL `0.5641` / Brier `0.3181`, versus B1 `0.5774` / `0.3279`, but paired
+source-bootstrap intervals for correction-minus-B1 included zero for both
+scores. The small correction therefore has no clear signal over B1, and five
+losses do not establish rescue prediction. Recommend collecting 20 additional
+`LOSS_CONSUMED` examples (25 total) before reassessing; this is not a
+qualification threshold.
+
+The 32-draw-per-supported-source offline prototype produced 3,136 class draws
+from 98 supported sources; 30 sources fell back under existing support or
+Fairy boundaries. There were zero impossible `LOSS_RETAINED` or
+spent-to-active transitions; all sampled Tail states matched class, all 3,019
+victory states had legal HP, and all terminal snapshots had legal potion and
+persistent relic state. No runtime sampler, model artifact, or production
+support changed. Classification: `LIZARD_MINIMAL_CORRECTION_DATA_LIMITED`.
+See the [Phase A-C evidence packet](evidence/lizard_tail_targeted_rescue_2026-09-23/README.md#minimal-three-state-correction-diagnostic)
+and raw [analysis JSON](evidence/lizard_tail_targeted_rescue_2026-09-23/minimal-correction-analysis.json).
+
+**Knowledge impact:** current research status and development evidence updated;
+production active-Tail qualification remains unchanged.
+
+### §347 — B1-ranked active Lizard candidate-pool extension (2026-09-24)
+
+The frozen 2,700-row precombat pool was rescored with fixed B1
+`P(LOSS_CONSUMED) = 1 - pReserveWin`. Four targeted batches added 347 unique
+paired fights after dropping 35 repeated `(sourceSeed,fightIdx)` rows that
+overlapped the original 128-pair cohort; those repeated replays differed, so
+the original observation was retained. The new rows had 305 `WIN_RETAINED`,
+34 `WIN_CONSUMED`, and eight `LOSS_CONSUMED` outcomes. This raises the distinct
+loss count from five to 13, below the prior target of 20 additional examples.
+First Silver action changed in 136/347 new pairs.
+
+The combined analysis contains 475 unique paired fights, 451 modeled rows from
+124 sources after 24 native exact-boundary exclusions. A follow-up prospective
+runtime-domain analysis additionally reapplied `full_support_reasons()` to the
+Tail-stripped state and predictor, excluding 24 unsupported rows and leaving
+427 rows from the same 124 sources (362 `WIN_RETAINED`, 53 `WIN_CONSUMED`, 12
+`LOSS_CONSUMED`). Five-fold q/r CV and source-bootstrap resampling kept all
+fights from each source together. With T2 fixed and not retuned, the
+support-domain q/r scored NLL `0.3427` / Brier `0.1932`, versus B1 `1.9890` /
+`0.2096`; q/r minus B1 source-bootstrap intervals were `[-4.9543,-0.0132]`
+and `[-0.0310,-0.0011]`. The broader descriptive analysis remains in the
+packet: its q/r scores are NLL `0.3544` / Brier `0.1994` versus B1 `1.9122` /
+`0.2158`. The prospective-domain result remains promising but data-limited;
+12 supported losses do not qualify its rare rescue class.
+
+The 35 overlapping source/fight rows are exact combat-observation duplicates:
+both arms' transition states, outcomes, Tail state, and Silver traces match.
+Only the selector's `targetRiskBand` differs. The comparator now ignores that
+metadata and records 35/35 as matching; the original cohort observation is
+still retained.
+
+The 1,611 supported, coherent, unpaired candidates had summed fixed-B1 loss
+mass `1.4045` (mean `0.000872`), below the 12 further cases needed to reach the
+sample target. Batches 2 and 3 added zero losses despite score mass about 6.05
+and 2.35 respectively. Collection stopped because the remaining pool could
+not plausibly provide the target under the fixed selection model, rather than
+because every candidate row was replayed. All four pair manifests had zero
+quarantines and clean conversion/semantic/transaction/knowledge counters. No
+training, export, runtime integration, or support expansion followed;
+`active_unqualified_lizard` remains fail-closed. See the [extension evidence
+packet](evidence/lizard_tail_targeted_rescue_2026-09-23/README.md#b1-ranked-candidate-pool-extension)
+and [combined B1/q/r JSON](evidence/lizard_tail_targeted_rescue_2026-09-23/b1-qr-combined-analysis.json).
+The support-domain rerun is [recorded separately](evidence/lizard_tail_targeted_rescue_2026-09-23/b1-qr-runtime-support-analysis.json).
+
+**Knowledge impact:** current research status and the experiment evidence now
+record the targeted-pool stop and source-grouped comparison; runtime support
+and qualification are unchanged.
+
+## §348 — Singleton reroot correction on frozen hard64 holdout (2026-09-25)
 
 - **Question:** Does zero-search selection at singleton roots, while retaining
   the selected edge for later rerooting, change complete frozen-fight outcomes
   or reduce search work?
-- **Frozen comparison:** current main control `01f6f164a0fe757ec174738ac3a2f0fb98c2462d`
+- **Frozen comparison:** main control at the time of this recorded run
+  `01f6f164a0fe757ec174738ac3a2f0fb98c2462d`
   versus corrected treatment `2da8eed6a9c7faecd82effdd1751265eac1b42fd`.
   Treatment enables the benchmark-only singleton skip in the frozen replay
   utility; the production live backend change remains independently covered by

@@ -265,7 +265,23 @@ int combatTransitionFixture(const std::string &outfile,
 
 void combatTransitionGen(int nSeeds, int sims, int asc,
                                 const std::string &outfile, long long seedOffset,
-                                const std::string &teacherPath);
+                                const std::string &teacherPath,
+                                bool allowStaleProvenance = false);
+
+void activeLizardCombatTransitionGen(int nSeeds, int sims, int asc,
+                                     const std::string &outfile, long long seedOffset,
+                                     const std::string &teacherPath,
+                                     const std::string &baselineSha,
+                                     const std::string &collectorSha);
+
+void activeLizardPairTransitionGen(int nPairs, int sims, int asc,
+                                   const std::string &outfile,
+                                   const std::string &targetPath,
+                                   const std::string &teacherPath,
+                                   const std::string &baselineSha,
+                                   const std::string &collectorSha);
+
+int activeLizardTransitionSelfTest();
 
 void counterfactualSurrogateAuditGen(int nSeeds,int sims,int asc,const std::string&outfile,
                                             std::uint64_t seedOffset,const std::string&teacherPath);
