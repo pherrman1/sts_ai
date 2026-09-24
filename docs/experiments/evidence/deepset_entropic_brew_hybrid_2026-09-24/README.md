@@ -141,6 +141,25 @@ experiment above, whose executable remains frozen at
   Full GitHub Actions CI was not yet available when these local checks were
   recorded.
 
+The branch was subsequently rebased again onto current `origin/main`
+`c0937d8a3756b4849ab22c1dc8caf6badeda445f` after PR #308 merged. Focused
+Release checks were rerun on source commit
+`74a8c8edf83e2f55633af43232ef19540850eb2b`; outputs and exact commands are in
+`latest-main-source/`. All six runtime-linked Release targets built and the
+focused CTest selection passed 2/2. Parity and the mechanism probe again passed
+all 31 fixtures with zero legal-mask mismatches and complete state/RNG identity.
+On the same 10 matched ordinary rows, standard preparation was `3,558 us` and
+fast preparation `501 us` (7.10x); hybrid fast was `546 us`. On 18 Brew rows,
+standard preparation was `4,780 us` and hybrid fallback `4,185 us`. These
+fixed-input timings are noisy across runs but preserve the substantial
+preparation advantage.
+
+GitHub Actions could not start the `Linux GCC` job for head
+`89e2089ef67d511340d0988fab8389dbdae7ee80`: GitHub reported failed account
+payments or an insufficient spending limit, and recorded zero runner steps.
+This is an external billing block, not a code failure. The PR is ready for
+review; rerun CI after repository Actions billing is restored.
+
 Raw machine-readable outputs are `parity.json`, `mechanism.jsonl`,
 `mechanism-summary.json`, `fixed-fixture-benchmark-release.json`,
 `summary.json`, and `per-seed.csv`. Compressed arm logs, action traces, support
