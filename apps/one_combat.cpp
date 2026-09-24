@@ -1251,7 +1251,8 @@ static bool bestBench(int sims, int nSeeds, int asc, std::uint64_t seedOffset = 
         meta.fairPlay = true;
         meta.silverSearchEnabled = search::silverLiveBackendInstalled();
         meta.stsSilverSearchEffective = meta.silverSearchEnabled;
-        meta.effectiveCombatBackend = meta.silverSearchEnabled ? "silver" : "native_searcher";
+        meta.effectiveCombatBackend = search::nativeSilverBackendInstalled()
+            ? "native_silver" : (meta.silverSearchEnabled ? "silver" : "native_searcher");
         meta.silverReuseCapMode = meta.silverSearchEnabled ? search::silverLiveReuseCapMode() : "";
         meta.silverReuseCap = meta.silverSearchEnabled ? search::silverLiveReuseCap() : 0;
         meta.silverUpstreamSha = meta.silverSearchEnabled
@@ -1261,8 +1262,9 @@ static bool bestBench(int sims, int nSeeds, int asc, std::uint64_t seedOffset = 
             ? search::silverLiveScalingDiagnosticFile() : "";
         meta.silverStickyQualityFile = meta.silverSearchEnabled
             ? search::silverLiveStickyQualityFile() : "";
-        meta.silverAdaptiveEnabled = meta.silverSearchEnabled
-            && search::silverLiveAdaptiveEnabled();
+        meta.silverAdaptiveEnabled = search::nativeSilverBackendInstalled()
+            ? search::nativeSilverAdaptiveEnabled()
+            : meta.silverSearchEnabled && search::silverLiveAdaptiveEnabled();
         meta.silverAdaptiveRetainedOnly = meta.silverSearchEnabled
             && search::silverLiveAdaptiveRetainedOnly();
         meta.silverAdaptiveTopShare = meta.silverSearchEnabled
@@ -3220,10 +3222,19 @@ int main(int argc, char **argv) {
     }
     // Silver owns local RNG/chance search for every combat (ADR-0020).
     search::installSilverLiveBackend();
-    std::cout << "[Silver combat backend: local Silver RNG/chance search; reuse-cap="
-              << search::silverLiveReuseCapMode() << " cap=" << search::silverLiveReuseCap()
-              << (search::silverLiveAdaptiveEnabled() ? "; adaptive" : "; flat budget")
-              << "]\n";
+    // Experimental: STS_NATIVE_SILVER=1 runs the Silver search ported onto the
+    // main engine instead of the vendored model.
+    if (const char *d = std::getenv("STS_NATIVE_SILVER"); d && std::atoi(d) != 0) {
+        search::installNativeSilverBackend();
+        std::cout << "[Native Silver combat backend: Silver search on the main engine"
+                  << (search::nativeSilverAdaptiveEnabled() ? "; adaptive" : "; flat budget")
+                  << "]\n";
+    } else {
+        std::cout << "[Silver combat backend: local Silver RNG/chance search; reuse-cap="
+                  << search::silverLiveReuseCapMode() << " cap=" << search::silverLiveReuseCap()
+                  << (search::silverLiveAdaptiveEnabled() ? "; adaptive" : "; flat budget")
+                  << "]\n";
+    }
     if (const char *d = std::getenv("STS_FORCE_RELIC")) {      // force a relic at run start (paired A/B)
         const std::string name(d);
         int id = -1;
@@ -3553,12 +3564,26 @@ int main(int argc, char **argv) {
         if (argc < 8) { std::cerr << "usage: one_combat combattransitiongen N_SEEDS SIMS ASC OUT.jsonl SEED_OFFSET TEACHER.json\n"; return 2; }
         combatTransitionGen(std::stoi(argv[2]), std::stoi(argv[3]), std::stoi(argv[4]),
                             argv[5], std::stoll(argv[6]), argv[7]);
+    } else if (mode == "combattransitionlizardtargetcandidategen") {
+        if (argc < 8) { std::cerr << "usage: one_combat combattransitionlizardtargetcandidategen N_SEEDS SIMS ASC OUT.jsonl SEED_OFFSET TEACHER.json\n"; return 2; }
+        combatTransitionGen(std::stoi(argv[2]), std::stoi(argv[3]), std::stoi(argv[4]),
+                            argv[5], std::stoll(argv[6]), argv[7], true);
+    } else if (mode == "combattransitionlizardgen") {
+        if (argc < 10) { std::cerr << "usage: one_combat combattransitionlizardgen N_SEEDS SIMS ASC OUT.jsonl SEED_OFFSET TEACHER.json BASELINE_SHA COLLECTOR_SHA\n"; return 2; }
+        activeLizardCombatTransitionGen(std::stoi(argv[2]), std::stoi(argv[3]),
+            std::stoi(argv[4]), argv[5], std::stoll(argv[6]), argv[7], argv[8], argv[9]);
+    } else if (mode == "combattransitionlizardtargetpairgen") {
+        if (argc < 10) { std::cerr << "usage: one_combat combattransitionlizardtargetpairgen N_PAIRS SIMS ASC OUT.jsonl TARGETS.json TEACHER.json BASELINE_SHA COLLECTOR_SHA\n"; return 2; }
+        activeLizardPairTransitionGen(std::stoi(argv[2]), std::stoi(argv[3]),
+            std::stoi(argv[4]), argv[5], argv[6], argv[7], argv[8], argv[9]);
     } else if (mode == "combattransitionselftest") {
         if (argc < 4) {
             std::cerr << "usage: one_combat combattransitionselftest OUT.jsonl MANIFEST.json\n";
             return 2;
         }
         return combatTransitionFixture(argv[2], argv[3]);
+    } else if (mode == "combattransitionlizardselftest") {
+        return activeLizardTransitionSelfTest();
     } else if (mode == "combatevalgen") {
         if (argc < 8) { std::cerr << "usage: one_combat combatevalgen N_SEEDS SIMS ASC OUT.csv SEED_OFFSET TEACHER.json [RUNOUT.csv]\n"; return 2; }
         combatEvalGen(std::stoi(argv[2]), std::stoi(argv[3]), std::stoi(argv[4]), argv[5], std::stoll(argv[6]), argv[7], argc > 8 ? argv[8] : "");

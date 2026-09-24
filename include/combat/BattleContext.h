@@ -84,6 +84,11 @@ namespace sts {
 
         int monsterTurnIdx = 6;
 
+        // Search only (Runic Dome): monster move rolls are deferred until the
+        // move is used or queried (Monster::pendingMoveRolls), so a search
+        // cannot see intents the player cannot. Always false in real play.
+        bool intentsHidden = false;
+
         bool isBattleOver() const { return outcome != Outcome::UNDECIDED; }
         bool endTurnQueued = false;
         bool turnHasEnded = false;
@@ -113,10 +118,13 @@ namespace sts {
         // Exact equality of every field except the static benchmark `sum`.
         bool operator==(const BattleContext &rhs) const;
 
-        // Equality for search transposition: operator== without the RNG
-        // streams and loopCount, and with the hand compared as a multiset. Two
-        // states that differ only there have the same distribution of futures
-        // once randomness is resampled at chance nodes.
+        // Equality for search transposition (the Silver fork's rule set):
+        // operator== without the RNG streams and the debug/statistics fields
+        // (loopCount, energyWasted, cardsDrawn, haveUsedDiscoveryAction,
+        // undefinedBehaviorEvoked); curCardQueueItem is ignored when both
+        // states are quiet player decisions; the hand is compared as a
+        // multiset, and so are the discard and exhaust piles once the draw
+        // pile is in information-set mode.
         [[nodiscard]] bool equalForSearch(const BattleContext &rhs) const;
 
 // ****************************************

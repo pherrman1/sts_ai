@@ -592,12 +592,15 @@ models for play (ADR-0020); only the parity tools use these libraries.
 - `train_strategic_tok.py` (V4 token-state, Phase A round 5) trains the
   `strategic_tok_net.py::Net` architecture from `strategicgen2` Tier-B CSVs.
   Architecture and training contract: `docs/knowledge-base/architecture/ooc-strategic-v4.md`.
-  The state block is 482 raw float16 columns per row (50 globals, 96 deck slots
-  ×3, 64 relic slots ×2, 8 potion slots ×2), written once to a group-ordered
-  `OUT_tok_state.bin` (fingerprinted; reused on match). Global mean/inv are
-  computed from train rows only and applied per batch. On CUDA, the entire
-  state is uploaded to GPU VRAM once (~2.9 GB for 3.06M rows) and rows are
-  gathered on-device; falls back to CPU mmap on OOM. `torch.compile`
+  It preserves raw CSV row IDs while sorting labels by `(seed, decIdx)`, then
+  scatters each streamed raw-order state chunk through `raw_to_grouped` into a
+  group-ordered `OUT_tok_state.bin`. The `raw-to-grouped-v2` layout version is
+  part of the cache fingerprint, so earlier caches without that mapping cannot
+  be reused. TRAIN-only normalization selects rows through the same mapping.
+  The state block is 474 float16 columns per row (42 globals, 96 deck slots
+  ×3, 64 relic slots ×2, 8 potion slots ×2). On CUDA, the entire state is
+  uploaded to GPU VRAM once (~2.9 GB for 3.06M rows) and rows are gathered
+  on-device; falls back to CPU mmap on OOM. `torch.compile`
   (mode="default", Triton fusion) is enabled by default on CUDA
   (`STRAT_TOK_COMPILE=1`), giving ~2.15× speedup over eager
   (2026-08-03 decision log).

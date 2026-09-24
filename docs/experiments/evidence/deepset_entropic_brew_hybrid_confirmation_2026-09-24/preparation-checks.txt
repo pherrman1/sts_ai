@@ -1,0 +1,39 @@
+Preparation checks (updated 2026-09-25)
+================================
+
+Repository state
+----------------
+Frozen source: c9ecfb2041f8061d89bd728b8dccded2e8e12adf
+Task branch: codex/deepsets-ctm-quality-confirmation
+`python3 tools/agent/worktree.py preflight .`: PASS; app-managed worktree, external Git metadata read-only
+`python3 tools/agent/worktree.py check .`: PASS
+`git diff --check`: PASS
+No C++ source path is modified.
+
+Build and artifact provenance
+-----------------------------
+`cmake --preset linux-gcc-release`: PASS
+`cmake --build build/linux-gcc-release --target one_combat -j2`: PASS
+`one_combat` SHA256: c08bdd7e37a26c0ad47d3b6e75c0e08dcc729fc49191553e0fcbbc169d10d244
+All pinned model/checkpoint hashes are listed in artifact-sha256.txt.
+
+Local verification
+------------------
+`python3 -m py_compile tools/analyze_deepset_entropic_brew_hybrid_confirmation.py tools/agent/check_deepset_entropic_brew_hybrid_canary.py tools/agent/gcp_benchmark.py tools/agent/test_gcp_benchmark_manifest.py`: exit 0
+`python3 tools/analyze_deepset_entropic_brew_hybrid_confirmation.py --self-test`: PASS (quality classifications, missing/duplicate seed, common-config and artifact mismatch, binary pin, action receipt reconciliation, simulation budget, state-count aggregation, mixed paired-win contingency: 100 both-win, 20 hybrid-only, 30 standard-only, 362 both-lose)
+`python3 tools/agent/check_deepset_entropic_brew_hybrid_canary.py --self-test`: PASS
+`python3 tools/agent/check_benchmark_canary.py --self-test`: PASS
+`python3 -m unittest test_gcp_benchmark_manifest -v` from `tools/agent`: PASS, 8 tests including dangling-symlink rejection, pinned-checkout seed-guard launch and exact-SHA preflight assertions, and generic-run guard preservation
+`python3 -m py_compile tools/analyze_deepset_entropic_brew_hybrid_confirmation.py tools/agent/check_deepset_entropic_brew_hybrid_canary.py tools/agent/gcp_benchmark.py tools/agent/test_gcp_benchmark_manifest.py`: PASS
+Both `gcp_benchmark.py manifest-check` commands: PASS
+Analyzer protocol validation of both manifests against local artifacts: PASS
+Focused CTest regex `ooc_mcts_adapter|combat_transition_runtime_loader|combat_transition_near_full_artifact`: PASS, 3/3
+Standard fallback artifact pin: `pinned standard fallback SHA256 PASS`
+Hybrid runtime fixture probe: PASS, 31 fixtures; 13 ordinary fast-path rows and 18 Brew fallback rows; exact selected-child/RAW/RNG identity held.
+
+Remote execution
+----------------
+`python3 tools/agent/gcp_benchmark.py status` at 22:23 UTC: exit 1; the designated
+`projects/sts-ai-502709/zones/europe-west3-c/instances/sts-test` resource was
+not found. The exact-SHA remote preflight, canary, and 512-pair runs were not
+executed. No game seeds were run locally or remotely.

@@ -1,6 +1,7 @@
 # OOC strategic net V4 — token-based run state (Phase A, round 5)
 
-Last verified: 2026-08-09 against the current working tree (feature-leak audit:
+Last verified: 2026-09-24 for raw-to-grouped-v2 state-cache mapping.
+Historical V4 implementation status from 2026-08-09 (feature-leak audit:
 8 genuine leaks removed; bossId confirmed legit; code corrected NGLOB=42;
 corrected model trained and gated; trainer glob-block feature-order skew fixed
 — see decision-log/2026-08-09-v4-glob-skew-fix.md; skewfix retrain gated at
@@ -228,10 +229,15 @@ zero (no gradient through them). All rungs share the same topology and losses.
   `RANK_MAX_PAIRS` default 16 per group per batch). §139: flat at λ=0.1 on
   the partial data (q_top1 +0.1pp).
 - Memory: write a group-ordered float16 mmap `OUT_tok_state.bin` of the 474 raw
-  columns per row `[glob 42, deck 96×3, rel 64×2, pot 8×2]` (chunked CSV
-  read, like train_strategic.py:140-179). Global mean/inv from train rows over
-  the 42-global block only. Count/data features already scaled 0..1; ids
-  embedded.
+  columns per row `[glob 42, deck 96×3, rel 64×2, pot 8×2]`. The label
+  dataframe is sorted by `(seed, decIdx)` while state chunks are streamed in
+  raw CSV order, so `train_strategic_tok.py` retains each raw row ID and
+  scatters through the explicit `raw_to_grouped` mapping. The same mapping
+  selects TRAIN rows for global mean/inv. Cache fingerprints include
+  `STATE_CACHE_LAYOUT_VERSION` (`raw-to-grouped-v2`) so caches from an older
+  row layout cannot be reused. The shuffled-row regression is
+  `python3 -m unittest tools.test_strategic_tok_state_cache`. Count/data
+  features are already scaled 0..1; ids are embedded.
 - Trainer also loads raw `gold,curHp,maxHp,potionCount,potionCapacity,blueKey,
   greenKey,redKey,remElites,fmDBoss` from the CSV (small extra usecols) to
   compute thresholds and `goldGePrice`.

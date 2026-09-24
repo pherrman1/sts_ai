@@ -3236,22 +3236,20 @@ namespace sts {
 
 namespace {
 
-    // Fields shared by operator== and equalForSearch: everything except the RNG
-    // streams, loopCount, and the card manager (compared by each caller).
-    bool sameSearchScalars(const BattleContext &a, const BattleContext &b) {
-        return a.haveUsedDiscoveryAction == b.haveUsedDiscoveryAction &&
-               a.undefinedBehaviorEvoked == b.undefinedBehaviorEvoked &&
-               a.seed == b.seed &&
+    // Gameplay state compared by both operator== and equalForSearch. Excludes
+    // the RNG streams, the debug/statistics fields, curCardQueueItem and the
+    // card manager, which each caller compares itself.
+    bool sameGameplayScalars(const BattleContext &a, const BattleContext &b) {
+        return a.seed == b.seed &&
                a.floorNum == b.floorNum &&
                a.encounter == b.encounter &&
-               a.energyWasted == b.energyWasted &&
-               a.cardsDrawn == b.cardsDrawn &&
                a.ascension == b.ascension &&
                a.outcome == b.outcome &&
                a.smokeBombUsed == b.smokeBombUsed &&
                a.inputState == b.inputState &&
                a.cardSelectInfo == b.cardSelectInfo &&
                a.monsterTurnIdx == b.monsterTurnIdx &&
+               a.intentsHidden == b.intentsHidden &&
                a.endTurnQueued == b.endTurnQueued &&
                a.turnHasEnded == b.turnHasEnded &&
                a.skipMonsterTurn == b.skipMonsterTurn &&
@@ -3263,24 +3261,44 @@ namespace {
                a.turn == b.turn &&
                a.player == b.player &&
                a.monsters == b.monsters &&
-               a.curCardQueueItem == b.curCardQueueItem &&
                a.miscBits == b.miscBits;
+    }
+
+    // At a quiet player decision (no queued work, turn not ending) the last
+    // played card left in curCardQueueItem is history: the next card play
+    // overwrites it before anything reads it (the Silver fork's rule).
+    bool quietDecision(const BattleContext &bc) {
+        return (bc.inputState == InputState::PLAYER_NORMAL || bc.inputState == InputState::CARD_SELECT)
+            && bc.outcome == Outcome::UNDECIDED
+            && !bc.endTurnQueued && !bc.turnHasEnded
+            && bc.actionQueue.size == 0 && bc.cardQueue.size == 0;
     }
 
 }
 
 bool BattleContext::operator==(const BattleContext &rhs) const {
     return loopCount == rhs.loopCount &&
+           haveUsedDiscoveryAction == rhs.haveUsedDiscoveryAction &&
+           undefinedBehaviorEvoked == rhs.undefinedBehaviorEvoked &&
+           energyWasted == rhs.energyWasted &&
+           cardsDrawn == rhs.cardsDrawn &&
            aiRng == rhs.aiRng &&
            cardRandomRng == rhs.cardRandomRng &&
            miscRng == rhs.miscRng &&
            monsterHpRng == rhs.monsterHpRng &&
            potionRng == rhs.potionRng &&
            shuffleRng == rhs.shuffleRng &&
-           sameSearchScalars(*this, rhs) &&
+           curCardQueueItem == rhs.curCardQueueItem &&
+           sameGameplayScalars(*this, rhs) &&
            cards == rhs.cards;
 }
 
 bool BattleContext::equalForSearch(const BattleContext &rhs) const {
-    return sameSearchScalars(*this, rhs) && cards.equalForSearch(rhs.cards);
+    if (!sameGameplayScalars(*this, rhs)) {
+        return false;
+    }
+    if (!(curCardQueueItem == rhs.curCardQueueItem) && !(quietDecision(*this) && quietDecision(rhs))) {
+        return false;
+    }
+    return cards.equalForSearch(rhs.cards);
 }

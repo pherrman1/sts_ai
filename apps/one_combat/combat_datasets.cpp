@@ -148,7 +148,12 @@ WholeCombatTeacher loadWholeCombatTeacher(const std::string &path, int sims,
     if (search::silverLiveReuseCap() != 32768)
         throw std::runtime_error("wholecombatgen: production reuse cap mismatch with frozen 32k teacher");
     if (!t.contains("environment") || !t["environment"].is_object()) throw std::runtime_error("wholecombatgen: missing environment");
-    for (const auto &[name, expected] : t["environment"].items()) { const char *actual=std::getenv(name.c_str()); if (!expected.is_string() || !actual || expected.get<std::string>()!=actual) throw std::runtime_error("wholecombatgen: environment mismatch for "+name); }
+    for (const auto &[name, expected] : t["environment"].items()) {
+        if (allowStaleProvenance && name == "STS_EXECUTABLE_GIT_SHA") continue;
+        const char *actual=std::getenv(name.c_str());
+        if (!expected.is_string() || !actual || expected.get<std::string>()!=actual)
+            throw std::runtime_error("wholecombatgen: environment mismatch for "+name);
+    }
     const std::map<std::string,std::string> required={{"STS_FAIR","1"},{"STS_SEARCHER3","0"},{"STS_SILVER_SEARCH","1"},{"STS_SILVER_EXACT_ROOT_BUDGETS","1"},{"STS_SILVER_REUSE_CAP_MODE","allocated"},{"STS_SILVER_ADAPTIVE","0"},{"STS_SILVER_VNET_LEAF_DIRECT","0"},{"STS_SILVER_TELEMETRY","1"}};
     for (const auto &[name,value]:required) if (!t["environment"].contains(name) || t["environment"][name]!=value) throw std::runtime_error("wholecombatgen: frozen environment missing "+name+"="+value);
     if (!t.contains("model_artifacts") || !t["model_artifacts"].is_array()) throw std::runtime_error("wholecombatgen: model_artifacts must be an array");
@@ -174,7 +179,7 @@ static std::string runWholeCombatGenSeed(std::uint64_t seed,int sims,int asc,con
             const std::string relics=wholeRelicChanges(startRelics,gc),ritual=wholeRitualChanges(startDeck,gc);const bool deckChanged=startDeck!=wholeDeck(gc),parasite=wholeCardCount(gc,CardId::PARASITE)>startParasites;std::ostringstream summary;summary<<"potions="<<startPotionCount<<'>'<<gc.potionCount<<";hp="<<startHp<<'>'<<gc.curHp<<";maxhp="<<startMaxHp<<'>'<<gc.maxHp<<";gold_delta="<<gc.gold-startGold<<";relics="<<(relics.empty()?"none":"changed")<<";deck="<<(deckChanged?"changed":"same")<<";parasite="<<(parasite?1:0)<<";stolen_gold="<<gc.info.stolenGold;const char*roomClass=room==(int)Room::MONSTER?"NORMAL":room==(int)Room::ELITE?"ELITE":room==(int)Room::BOSS?"BOSS":"OTHER";
             out<<seed<<','<<fightIdx<<','<<act<<','<<floor<<','<<encounter<<','<<roomClass<<",0,"<<teacher.id<<','<<features<<','<<won<<','<<gc.curHp<<','<<startHp<<','<<startMaxHp<<','<<gc.maxHp<<','<<(startMaxHp>0?(double)gc.curHp/startMaxHp:0.0)<<','<<startPotions<<','<<wholePotionIds(gc)<<','<<startPotionCount<<','<<gc.potionCount<<','<<gc.gold-startGold<<','<<(gc.smokeBombUsed?1:0)<<','<<relics<<','<<ritual<<','<<(deckChanged?1:0)<<','<<(parasite?1:0)<<','<<summary.str()<<'\n';++fightIdx;
         }else if(gc.screenState==ScreenState::MAP_SCREEN&&gc.curMapNodeY<14)search::GameAction(one_combat::chooseMapAction(gc)).execute(gc);
-        else if(gc.screenState==ScreenState::REWARDS){auto&r=gc.info.rewardsContainer;if(r.goldRewardCount>0)search::GameAction(RT::GOLD,0).execute(gc);else if(r.relicCount>0)search::GameAction(RT::RELIC,0).execute(gc);else if(r.potionCount>0)search::GameAction(RT::POTION,0).execute(gc);else if(g_collectKeys&&r.emeraldKey)search::GameAction(RT::KEY,0).execute(gc);else if(g_collectKeys&&r.sapphireKey)search::GameAction(RT::KEY,0).execute(gc);else if(r.cardRewardCount==0)search::GameAction(RT::SKIP).execute(gc);else evalCardRewardPolicy(gc);}else agent.stepOutOfCombatPolicy(gc);
+        else if(gc.screenState==ScreenState::REWARDS){auto&r=gc.info.rewardsContainer;if(r.goldRewardCount>0)search::GameAction(RT::GOLD,0).execute(gc);else if(r.relicCount>0)search::GameAction(RT::RELIC,0).execute(gc);else if(r.potionCount>0&&gc.potionCount<gc.potionCapacity)search::GameAction(RT::POTION,0).execute(gc);else if(g_collectKeys&&r.emeraldKey)search::GameAction(RT::KEY,0).execute(gc);else if(g_collectKeys&&r.sapphireKey)search::GameAction(RT::KEY,0).execute(gc);else if(r.cardRewardCount==0)search::GameAction(RT::SKIP).execute(gc);else evalCardRewardPolicy(gc);}else agent.stepOutOfCombatPolicy(gc);
     }search::g_onCombatDecision=nullptr;return out.str();
 }
 
@@ -671,9 +676,10 @@ int combatTransitionFixture(const std::string &outfile,
 
 void combatTransitionGen(int nSeeds, int sims, int asc,
                                 const std::string &outfile, long long seedOffset,
-                                const std::string &teacherPath) {
+                                const std::string &teacherPath,
+                                bool allowStaleProvenance) {
     trainingCampaignStart();
-    const auto teacher = loadWholeCombatTeacher(teacherPath, sims);
+    const auto teacher = loadWholeCombatTeacher(teacherPath, sims, allowStaleProvenance);
     std::ofstream f(outfile);
     if (!f) throw std::runtime_error("combattransitiongen: cannot open output");
     long long rows = 0;
@@ -707,10 +713,500 @@ void combatTransitionGen(int nSeeds, int sims, int asc,
     std::ofstream mf(outfile + ".manifest.json");
     if (!mf) throw std::runtime_error("combattransitiongen: cannot write manifest");
     mf << manifest.dump(2) << '\n';
-    std::cout << "combattransitiongen teacher=" << teacher.id << " completed="
+    std::cout << (allowStaleProvenance
+                     ? "combattransitionlizardtargetcandidategen teacher="
+                     : "combattransitiongen teacher=") << teacher.id << " completed="
               << completed << '/' << nSeeds << " quarantined=" << nSeeds - completed
               << " rows=" << rows << " -> " << outfile << '\n';
-    writeTrainingProvenance(outfile, "combattransitiongen", nSeeds, completed,
+    writeTrainingProvenance(outfile, allowStaleProvenance
+                                ? "combattransitionlizardtargetcandidategen"
+                                : "combattransitiongen", nSeeds, completed,
+                            nSeeds - completed, g_trainingHealthFailures.load(),
+                            rows, seedOffset, sims, asc);
+}
+
+
+
+// Active Lizard Tail shadow and paired counterfactual collection modes.
+static std::string runActiveLizardTransitionGenSeed(
+    std::uint64_t seed, int sims, int asc, const WholeCombatTeacher &teacher,
+    nlohmann::json &interventionRows) {
+    trainingRunStart();
+    GameContext gc(CharacterClass::IRONCLAD, seed, asc);
+    search::ScumSearchAgent2 sourceAgent;
+    sourceAgent.simulationCountBase = sims;
+    sourceAgent.rng = std::default_random_engine(seed);
+    PathHistory path;
+    t_curPath = &path;
+    std::ostringstream out;
+    int fightIdx = 0;
+    using RT = search::GameAction::RewardsActionType;
+    while (gc.outcome == GameOutcome::UNDECIDED) {
+        path.update(gc);
+        if (gc.screenState == ScreenState::BATTLE) {
+            const int battleAct = gc.act;
+            const int battleFloor = gc.floorNum;
+            const Room battleRoom = gc.curRoom;
+            const int battleEncounter = static_cast<int>(gc.info.encounter);
+
+            // Mark of the Bloom already disables both Fairy and Lizard revival;
+            // it is covered by the ordinary exact/copy-through path.
+            if (!gc.hasRelic(RelicId::MARK_OF_THE_BLOOM)) {
+                const std::string sourceBefore = one_combat::combatTransitionFingerprint(gc);
+                GameContext shadow = detachedCounterfactualCopy(gc);
+                if (!shadow.hasRelic(RelicId::LIZARD_TAIL))
+                    shadow.obtainRelic(RelicId::LIZARD_TAIL);
+                shadow.relics.getRelicValueRef(RelicId::LIZARD_TAIL) = 1;
+                if (!shadow.hasRelic(RelicId::LIZARD_TAIL) ||
+                    shadow.relics.getRelicValue(RelicId::LIZARD_TAIL) != 1)
+                    throw std::runtime_error("active Lizard shadow intervention failed");
+                const GameContext shadowPre = detachedCounterfactualCopy(shadow);
+
+                const double shadowPotionKeepValue = potionKeepValue(shadow);
+                const auto predictorInput = one_combat::combatPredictorInputJson(
+                    one_combat::captureCombatPredictorInput(
+                        shadow, static_cast<MonsterEncounter>(battleEncounter),
+                        shadowPotionKeepValue));
+                std::optional<one_combat::CombatTransitionRecord> record;
+                int rawCaptureCount = 0;
+                search::ScumSearchAgent2 shadowAgent;
+                shadowAgent.simulationCountBase = sims;
+                shadowAgent.rng = std::default_random_engine(seed);
+                BattleContext shadowBattle;
+                {
+                    one_combat::CombatTransitionRawObserverScope scope(
+                        [&](const BattleContext &ended, GameContext &raw) {
+                            ++rawCaptureCount;
+                            if (rawCaptureCount == 1)
+                                record = one_combat::captureCombatTransition(shadowPre, ended, raw);
+                        });
+                    shadowAgent.playoutBattle(shadow, shadowBattle);
+                    const bool decided = shadowBattle.outcome != Outcome::UNDECIDED;
+                    const bool valid = trainingRunValid(decided);
+                    shadowBattle.exitBattle(shadow);
+                    auto row = combatTransitionRowJson(
+                        seed, fightIdx, battleAct, battleFloor, battleRoom,
+                        battleEncounter, teacher.id, valid, decided, rawCaptureCount,
+                        record, predictorInput);
+                    out << row.dump() << '\n';
+                    interventionRows.push_back({{"sourceSeed", seed},
+                                                {"fightIdx", fightIdx},
+                                                {"activeLizard", true}});
+                }
+                if (one_combat::combatTransitionFingerprint(gc) != sourceBefore)
+                    throw std::runtime_error("active Lizard shadow mutated source GameContext");
+            }
+
+            // Continue the untouched source trajectory with its own teacher
+            // search object and original relic state.
+            BattleContext sourceBattle;
+            sourceAgent.playoutBattle(gc, sourceBattle);
+            const bool sourceRunValid = trainingRunValid(
+                sourceBattle.outcome != Outcome::UNDECIDED);
+            sourceBattle.exitBattle(gc);
+            if (!sourceRunValid) {
+                t_curPath = nullptr;
+                return {};
+            }
+            ++fightIdx;
+        } else if (gc.screenState == ScreenState::MAP_SCREEN && gc.curMapNodeY < 14) {
+            search::GameAction(one_combat::chooseMapAction(gc)).execute(gc);
+        } else if (gc.screenState == ScreenState::REWARDS) {
+            auto &r = gc.info.rewardsContainer;
+            if (r.goldRewardCount > 0) search::GameAction(RT::GOLD, 0).execute(gc);
+            else if (r.relicCount > 0) search::GameAction(RT::RELIC, 0).execute(gc);
+            else if (r.potionCount > 0 && gc.potionCount < gc.potionCapacity)
+                search::GameAction(RT::POTION, 0).execute(gc);
+            else if (g_collectKeys && r.emeraldKey) search::GameAction(RT::KEY, 0).execute(gc);
+            else if (g_collectKeys && r.sapphireKey) search::GameAction(RT::KEY, 0).execute(gc);
+            else if (r.cardRewardCount == 0) search::GameAction(RT::SKIP).execute(gc);
+            else evalCardRewardPolicy(gc);
+        } else {
+            sourceAgent.stepOutOfCombatPolicy(gc);
+        }
+    }
+    t_curPath = nullptr;
+    return out.str();
+}
+
+static nlohmann::json runActiveLizardPairSeed(
+    std::uint64_t seed, int sims, int asc, const WholeCombatTeacher &teacher,
+    const nlohmann::json &target, nlohmann::json &pairMeta) {
+    trainingRunStart();
+    GameContext gc(CharacterClass::IRONCLAD, seed, asc);
+    search::ScumSearchAgent2 sourceAgent;
+    sourceAgent.simulationCountBase = sims;
+    sourceAgent.rng = std::default_random_engine(seed);
+    PathHistory path;
+    PathHistory selectedPath;
+    t_curPath = &path;
+    int fightIdx = 0;
+    int selectedFightIdx = -1;
+    int selectedAct = 0;
+    int selectedFloor = 0;
+    Room selectedRoom = Room::NONE;
+    int selectedEncounter = 0;
+    std::uint64_t selectedEligibleOrdinal = 0;
+    std::uint64_t eligibleBattles = 0;
+    std::optional<GameContext> selectedPre;
+    const int targetFightIdx = target.at("fightIdx").get<int>();
+    using RT = search::GameAction::RewardsActionType;
+    while (gc.outcome == GameOutcome::UNDECIDED) {
+        path.update(gc);
+        if (gc.screenState == ScreenState::BATTLE) {
+            if (!gc.hasRelic(RelicId::MARK_OF_THE_BLOOM) &&
+                !gc.hasRelic(RelicId::LIZARD_TAIL)) {
+                ++eligibleBattles;
+                if (fightIdx == targetFightIdx) {
+                    selectedPre = detachedCounterfactualCopy(gc);
+                    selectedPath = path;
+                    selectedEligibleOrdinal = eligibleBattles;
+                    selectedFightIdx = fightIdx;
+                    selectedAct = gc.act;
+                    selectedFloor = gc.floorNum;
+                    selectedRoom = gc.curRoom;
+                    selectedEncounter = static_cast<int>(gc.info.encounter);
+                }
+            }
+
+            // Continue the untouched source trajectory. The selected fight
+            // index was fixed from a separate pre-outcome risk-scoring pass.
+            BattleContext sourceBattle;
+            sourceAgent.playoutBattle(gc, sourceBattle);
+            const bool sourceValid = trainingRunValid(
+                sourceBattle.outcome != Outcome::UNDECIDED);
+            sourceBattle.exitBattle(gc);
+            if (!sourceValid) {
+                t_curPath = nullptr;
+                return nlohmann::json::object();
+            }
+            ++fightIdx;
+        } else if (gc.screenState == ScreenState::MAP_SCREEN && gc.curMapNodeY < 14) {
+            search::GameAction(one_combat::chooseMapAction(gc)).execute(gc);
+        } else if (gc.screenState == ScreenState::REWARDS) {
+            auto &r = gc.info.rewardsContainer;
+            if (r.goldRewardCount > 0) search::GameAction(RT::GOLD, 0).execute(gc);
+            else if (r.relicCount > 0) search::GameAction(RT::RELIC, 0).execute(gc);
+            else if (r.potionCount > 0 && gc.potionCount < gc.potionCapacity)
+                search::GameAction(RT::POTION, 0).execute(gc);
+            else if (g_collectKeys && r.emeraldKey) search::GameAction(RT::KEY, 0).execute(gc);
+            else if (g_collectKeys && r.sapphireKey) search::GameAction(RT::KEY, 0).execute(gc);
+            else if (r.cardRewardCount == 0) search::GameAction(RT::SKIP).execute(gc);
+            else evalCardRewardPolicy(gc);
+        } else {
+            sourceAgent.stepOutOfCombatPolicy(gc);
+        }
+    }
+    if (selectedPre) {
+        t_curPath = &selectedPath;
+        const std::string sourceBefore = one_combat::combatTransitionFingerprint(*selectedPre);
+        GameContext noTail = detachedCounterfactualCopy(*selectedPre);
+        GameContext activeTail = detachedCounterfactualCopy(noTail);
+        activeTail.obtainRelic(RelicId::LIZARD_TAIL);
+        activeTail.relics.getRelicValueRef(RelicId::LIZARD_TAIL) = 1;
+        GameContext normalizedActive = detachedCounterfactualCopy(activeTail);
+        normalizedActive.relics.remove(RelicId::LIZARD_TAIL);
+        const std::string sourceState = one_combat::combatTransitionFingerprint(noTail);
+        if (one_combat::combatTransitionFingerprint(normalizedActive) != sourceState)
+            throw std::runtime_error("Lizard pair branches differ beyond the injected relic");
+
+        auto runBranch = [&](GameContext &branch) {
+            const GameContext pre = detachedCounterfactualCopy(branch);
+            const double branchPotionKeepValue = potionKeepValue(branch);
+            const auto predictorInput = one_combat::combatPredictorInputJson(
+                one_combat::captureCombatPredictorInput(
+                    branch, static_cast<MonsterEncounter>(selectedEncounter),
+                    branchPotionKeepValue));
+            std::optional<one_combat::CombatTransitionRecord> record;
+            int rawCaptureCount = 0;
+            search::ScumSearchAgent2 branchAgent;
+            branchAgent.simulationCountBase = sims;
+            branchAgent.rng = std::default_random_engine(seed);
+            branchAgent.recordActions = true;
+            BattleContext battle;
+            {
+                one_combat::CombatTransitionRawObserverScope scope(
+                    [&](const BattleContext &ended, GameContext &raw) {
+                        ++rawCaptureCount;
+                        if (rawCaptureCount == 1)
+                            record = one_combat::captureCombatTransition(pre, ended, raw);
+                    });
+                branchAgent.playoutBattle(branch, battle);
+                const bool decided = battle.outcome != Outcome::UNDECIDED;
+                const bool valid = trainingRunValid(decided);
+                battle.exitBattle(branch);
+                auto row = combatTransitionRowJson(
+                    seed, selectedFightIdx, selectedAct, selectedFloor, selectedRoom,
+                    selectedEncounter, teacher.id, valid, decided,
+                    rawCaptureCount, record, predictorInput);
+                nlohmann::json actionTrace = nlohmann::json::array();
+                for (const int bits : branchAgent.gameActionHistory)
+                    actionTrace.push_back(static_cast<std::uint32_t>(bits));
+                row["silverActionTraceBits"] = std::move(actionTrace);
+                row["silverFirstActionBits"] = branchAgent.gameActionHistory.empty()
+                    ? nlohmann::json(nullptr)
+                    : nlohmann::json(static_cast<std::uint32_t>(branchAgent.gameActionHistory.front()));
+                return row;
+            }
+        };
+
+        const nlohmann::json noTailRow = runBranch(noTail);
+        const nlohmann::json activeTailRow = runBranch(activeTail);
+        if (noTailRow["predictorInput"] != target.at("predictorInput"))
+            throw std::runtime_error("targeted pair pre-state differs from risk-scored candidate");
+        if (noTailRow["transition"]["pre"] != target.at("preState"))
+            throw std::runtime_error("targeted pair hidden pre-state differs from risk-scored candidate");
+        if (one_combat::combatTransitionFingerprint(*selectedPre) != sourceBefore)
+            throw std::runtime_error("paired Lizard shadows mutated selected source GameContext");
+        pairMeta = {
+            {"sourceSeed", seed}, {"fightIdx", selectedFightIdx},
+            {"act", selectedAct}, {"floor", selectedFloor},
+            {"roomClass", noTailRow["roomClass"]},
+            {"encounter", selectedEncounter},
+            {"eligibleBattlesInSource", eligibleBattles},
+            {"selectedEligibleOrdinal", selectedEligibleOrdinal},
+            {"targetRiskBand", target.at("riskBand")},
+            {"targetPDeath", target.at("pDeath")},
+            {"sourceStateFingerprint", sourceState},
+            {"noTailOutcome", noTailRow["transition"]["combatOutcome"]},
+            {"activeTailOutcome", activeTailRow["transition"]["combatOutcome"]},
+            {"activeTailPostData", [&]() {
+                const auto &relics = activeTailRow["transition"]["post"]["relics"];
+                for (const auto &relic : relics)
+                    if (relic["id"] == static_cast<int>(RelicId::LIZARD_TAIL))
+                        return relic["data"];
+                throw std::runtime_error("paired active row omitted RAW Lizard post-state");
+            }()}
+        };
+        t_curPath = nullptr;
+        return {{"noTail", noTailRow}, {"activeTail", activeTailRow}};
+    }
+    t_curPath = nullptr;
+    return nlohmann::json::object();
+}
+
+void activeLizardPairTransitionGen(
+    int nSeeds, int sims, int asc, const std::string &outfile,
+    const std::string &targetPath, const std::string &teacherPath,
+    const std::string &baselineSha, const std::string &collectorSha) {
+    if (nSeeds < 1 || nSeeds > 128)
+        throw std::runtime_error("targeted Lizard pilot requires 1..128 pairs");
+    if (sims != 10000)
+        throw std::runtime_error("paired Lizard pilot requires exact-10k Silver");
+    auto validSha = [](const std::string &s) {
+        return s.size() == 40 && std::all_of(s.begin(), s.end(), [](unsigned char c) {
+            return (c >= '0' && c <= '9') || (c >= 'a' && c <= 'f');
+        });
+    };
+    if (!validSha(baselineSha) || !validSha(collectorSha))
+        throw std::runtime_error("paired Lizard pilot requires full baseline and collector SHAs");
+    trainingCampaignStart();
+    const auto teacher = loadWholeCombatTeacher(teacherPath, sims, true);
+    const auto selection = nlohmann::json::parse(std::ifstream(targetPath));
+    if (selection.value("schema", std::string{}) != "lizard_tail_risk_target_selection_v1" ||
+        !selection.contains("targets") || !selection["targets"].is_array() ||
+        selection["targets"].size() != static_cast<std::size_t>(nSeeds))
+        throw std::runtime_error("targeted Lizard pilot selection schema/count mismatch");
+    const long long seedOffset = selection["targets"].front().at("sourceSeed").get<long long>();
+    std::vector<long long> targetSeeds;
+    targetSeeds.reserve(nSeeds);
+    for (const auto &target : selection["targets"])
+        targetSeeds.push_back(target.at("sourceSeed").get<long long>());
+    if (!std::is_sorted(targetSeeds.begin(), targetSeeds.end()) ||
+        std::adjacent_find(targetSeeds.begin(), targetSeeds.end()) != targetSeeds.end())
+        throw std::runtime_error("target selection source seeds must be unique and ascending");
+    std::vector<nlohmann::json> pairRows(nSeeds);
+    std::vector<int> completedByTarget(nSeeds, 0);
+    std::vector<std::string> errors(nSeeds);
+    #pragma omp parallel for schedule(dynamic)
+    for (int s = 0; s < nSeeds; ++s) {
+        try {
+            const auto &target = selection["targets"][s];
+            const long long sourceSeed = targetSeeds.at(s);
+            nlohmann::json pairMeta;
+            const nlohmann::json pair = runActiveLizardPairSeed(
+                sourceSeed, sims, asc, teacher, target, pairMeta);
+            if (pair.contains("noTail") && pair.contains("activeTail")) {
+                pairRows[s] = nlohmann::json({{"pair", pairMeta}, {"noTail", pair["noTail"]},
+                                              {"activeTail", pair["activeTail"]}});
+                completedByTarget[s] = 1;
+            } else {
+                errors[s] = "selected fight not found or source trajectory incomplete";
+            }
+        } catch (const std::exception &error) {
+            errors[s] = error.what();
+        }
+    }
+    for (int s = 0; s < nSeeds; ++s) {
+        if (!errors[s].empty())
+            throw std::runtime_error("targeted Lizard pair failed for source "
+                                     + std::to_string(targetSeeds[s]) + ": " + errors[s]);
+    }
+    std::ofstream f(outfile);
+    if (!f) throw std::runtime_error("paired Lizard pilot: cannot open output");
+    long long pairs = 0;
+    for (int s = 0; s < nSeeds; ++s) {
+        if (!completedByTarget[s]) continue;
+        f << pairRows[s].dump() << '\n';
+        ++pairs;
+    }
+    f.close();
+    const int completed = static_cast<int>(pairs);
+    const auto producerExecutableSha = fileSha256(g_mainBinaryPath);
+    nlohmann::json manifest = {
+        {"schema", "lizard_tail_targeted_paired_transition_pilot_v1"},
+        {"rowSchemaVersion", one_combat::COMBAT_TRANSITION_ROW_SCHEMA},
+        {"predictorInputSchemaVersion", one_combat::CombatPredictorInputV1::SCHEMA},
+        {"predictorInputFieldSchemaHash", one_combat::combatPredictorInputFieldSchemaHash()},
+        {"format", "jsonl"}, {"producerGitSha", collectorSha},
+        {"producerExecutableSha256", producerExecutableSha},
+        {"baselineGitSha", baselineSha}, {"combatTeacher", teacher.specification},
+        {"combatTeacherManifestSha256", fileSha256(teacherPath)},
+        {"seedSpec", {{"start", seedOffset}, {"count", nSeeds}}},
+        {"sourceSeeds", targetSeeds},
+        {"targetSelection", {{"path", std::filesystem::absolute(targetPath).string()},
+                               {"sha256", fileSha256(targetPath)}}},
+        {"jsonl", {{"path", std::filesystem::absolute(outfile).string()},
+                     {"sha256", fileSha256(outfile)}}},
+        {"integrity", {{"requestedSeeds", nSeeds}, {"completedSeeds", completed},
+                        {"quarantinedSeeds", nSeeds - completed}, {"pairs", pairs}}},
+        {"protocol", {{"samePrecombatContext", true}, {"sameSilverSearchRngSeed", true},
+                       {"ordinaryBranchLizard", "absent"},
+                       {"interventionBranchLizard", "active_data_1"},
+                       {"stateSelection", "preoutcome_ctm_death_risk_bands"},
+                       {"markOfBloom", "eligible_states_excluded"},
+                       {"sourceTrajectory", "untouched_normal_policy"}}}
+    };
+    const std::string manifestPath = outfile + ".manifest.json";
+    std::ofstream mf(manifestPath);
+    if (!mf) throw std::runtime_error("paired Lizard pilot: cannot write manifest");
+    mf << manifest.dump(2) << '\n';
+    std::cout << "combattransitionlizardpairgen teacher=" << teacher.id
+              << " completed=" << completed << '/' << nSeeds << " pairs=" << pairs
+              << " -> " << outfile << '\n';
+    writeTrainingProvenance(outfile, "combattransitionlizardtargetpairgen", nSeeds,
+                            completed, nSeeds - completed,
+                            g_trainingHealthFailures.load(), pairs, seedOffset, sims, asc);
+}
+
+int activeLizardTransitionSelfTest() {
+    GameContext source(CharacterClass::IRONCLAD, 920260923u, 0);
+    source.screenState = ScreenState::BATTLE;
+    source.curRoom = Room::MONSTER;
+    source.info.encounter = MonsterEncounter::CULTIST;
+    const std::string sourceFingerprint = one_combat::combatTransitionFingerprint(source);
+    GameContext shadow = detachedCounterfactualCopy(source);
+    shadow.obtainRelic(RelicId::LIZARD_TAIL);
+    if (shadow.relics.getRelicValue(RelicId::LIZARD_TAIL) != 1 ||
+        source.hasRelic(RelicId::LIZARD_TAIL) ||
+        one_combat::combatTransitionFingerprint(source) != sourceFingerprint)
+        throw std::runtime_error("active Lizard selftest: acquire/shadow isolation failed");
+
+    GameContext fairy = detachedCounterfactualCopy(shadow);
+    fairy.potions[0] = Potion::FAIRY_POTION;
+    fairy.potionCount = 1;
+    BattleContext fairyBattle;
+    fairyBattle.init(fairy, MonsterEncounter::CULTIST);
+    fairyBattle.player.curHp = 1;
+    fairyBattle.player.wouldDie(fairyBattle);
+    if (fairyBattle.player.curHp <= 0 ||
+        fairyBattle.potions[0] != Potion::EMPTY_POTION_SLOT ||
+        !fairyBattle.player.hasRelic<RelicId::LIZARD_TAIL>())
+        throw std::runtime_error("active Lizard selftest: Fairy Potion precedence failed");
+
+    GameContext lizardOnly = detachedCounterfactualCopy(shadow);
+    BattleContext lizardBattle;
+    lizardBattle.init(lizardOnly, MonsterEncounter::CULTIST);
+    lizardBattle.player.curHp = 1;
+    lizardBattle.player.wouldDie(lizardBattle);
+    if (lizardBattle.player.curHp != std::max(1, lizardBattle.player.maxHp / 2) ||
+        lizardBattle.player.hasRelic<RelicId::LIZARD_TAIL>())
+        throw std::runtime_error("active Lizard selftest: native revival/consumption failed");
+
+    GameContext bloom = detachedCounterfactualCopy(shadow);
+    bloom.obtainRelic(RelicId::MARK_OF_THE_BLOOM);
+    BattleContext bloomBattle;
+    bloomBattle.init(bloom, MonsterEncounter::CULTIST);
+    bloomBattle.player.curHp = 1;
+    bloomBattle.player.wouldDie(bloomBattle);
+    if (bloomBattle.player.curHp != 0 || bloomBattle.outcome != Outcome::PLAYER_LOSS ||
+        !bloomBattle.player.hasRelic<RelicId::LIZARD_TAIL>())
+        throw std::runtime_error("active Lizard selftest: Mark of the Bloom semantics failed");
+    return 0;
+}
+
+void activeLizardCombatTransitionGen(
+    int nSeeds, int sims, int asc, const std::string &outfile,
+    long long seedOffset, const std::string &teacherPath,
+    const std::string &baselineSha, const std::string &collectorSha) {
+    if (sims != 10000)
+        throw std::runtime_error("active Lizard collector requires exact-10k Silver");
+    auto validSha = [](const std::string &s) {
+        return s.size() == 40 && std::all_of(s.begin(), s.end(), [](unsigned char c) {
+            return (c >= '0' && c <= '9') || (c >= 'a' && c <= 'f');
+        });
+    };
+    if (!validSha(baselineSha) || !validSha(collectorSha))
+        throw std::runtime_error("active Lizard collector requires full baseline and collector SHAs");
+    trainingCampaignStart();
+    const auto teacher = loadWholeCombatTeacher(teacherPath, sims, true);
+    std::ofstream f(outfile);
+    if (!f) throw std::runtime_error("active Lizard collector: cannot open output");
+    std::vector<nlohmann::json> activeRows;
+    long long rows = 0;
+    int completed = 0;
+    for (int s = 0; s < nSeeds; ++s) {
+        nlohmann::json seedRows = nlohmann::json::array();
+        const std::string generated = runActiveLizardTransitionGenSeed(
+            seedOffset + s, sims, asc, teacher, seedRows);
+        f << generated;
+        f.flush();
+        rows += std::count(generated.begin(), generated.end(), '\n');
+        if (!generated.empty()) {
+            activeRows.insert(activeRows.end(), seedRows.begin(), seedRows.end());
+            ++completed;
+        }
+    }
+    f.close();
+    const auto producerExecutableSha = fileSha256(g_mainBinaryPath);
+    nlohmann::json manifest = {
+        {"schemaVersion", one_combat::CombatTransitionRecord::SCHEMA},
+        {"rowSchemaVersion", one_combat::COMBAT_TRANSITION_ROW_SCHEMA},
+        {"predictorInputSchemaVersion", one_combat::CombatPredictorInputV1::SCHEMA},
+        {"predictorInputFieldSchemaHash", one_combat::combatPredictorInputFieldSchemaHash()},
+        {"format", "jsonl"}, {"producerGitSha", collectorSha},
+        {"producerExecutableSha256", producerExecutableSha},
+        {"combatTeacher", teacher.specification},
+        {"seedSpec", {{"start", seedOffset}, {"count", nSeeds}}},
+        {"csv", {{"path", std::filesystem::absolute(outfile).string()},
+                  {"sha256", fileSha256(outfile)}}},
+        {"integrity", {{"requestedSeeds", nSeeds}, {"completedSeeds", completed},
+                        {"quarantinedSeeds", nSeeds - completed}, {"rows", rows}}},
+        {"lizardIntervention", {{"schema", "active_lizard_shadow_intervention_v1"},
+                                 {"activeLizard", true},
+                                 {"baselineGitSha", baselineSha},
+                                 {"collectorGitSha", collectorSha},
+                                 {"collectorExecutableSha256", producerExecutableSha},
+                                 {"teacherId", teacher.id},
+                                 {"teacherManifestSha256", fileSha256(teacherPath)},
+                                 {"teacherGitSha", teacher.specification.at("git_sha")},
+                                 {"teacherExecutableSha256", teacher.specification.at("executable_sha256")},
+                                 {"teacherModelArtifacts", teacher.specification.at("model_artifacts")},
+                                 {"predictorInputFieldSchemaHash", one_combat::combatPredictorInputFieldSchemaHash()},
+                                 {"sourceSeedStart", seedOffset},
+                                 {"sourceSeedCount", nSeeds},
+                                 {"activeLizardRows", activeRows},
+                                 {"sourceTrajectory", "untouched_normal_policy"},
+                                 {"markOfBloomRows", "excluded"}}}
+    };
+    const std::string manifestPath = outfile + ".manifest.json";
+    std::ofstream mf(manifestPath);
+    if (!mf) throw std::runtime_error("active Lizard collector: cannot write manifest");
+    mf << manifest.dump(2) << '\n';
+    std::cout << "combattransitionlizardgen teacher=" << teacher.id << " completed="
+              << completed << '/' << nSeeds << " quarantined=" << nSeeds - completed
+              << " rows=" << rows << " -> " << outfile << '\n';
+    writeTrainingProvenance(outfile, "combattransitionlizardgen", nSeeds, completed,
                             nSeeds - completed, g_trainingHealthFailures.load(),
                             rows, seedOffset, sims, asc);
 }

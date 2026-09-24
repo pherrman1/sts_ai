@@ -45,6 +45,8 @@
 #include "sim/search/OocSemanticAction.h"
 #include "combat/BattleContextBinary.h"
 #include "sim/search/SearchStateHash.h"
+#include "sim/search/SilverSearcher.h"
+#include "sim/search/SearchRng.h"
 #include "one_combat/combat_transition.h"
 #include "ooc_test_state.h"
 #include "constants/MonsterMoves.h"
@@ -227,6 +229,158 @@ int testCardPileEngine() {
     }
     std::cout << "card_pile_engine battles=" << finished << " wins=" << wins << " turns=" << turns << ' '
               << (failures == 0 ? "PASS" : "FAIL") << '\n';
+    return failures == 0 ? 0 : 1;
+}
+
+namespace {
+
+    BattleContext silverSearchRoot(const BattleContext &real) {
+        BattleContext root = real;
+        std::vector<CardInstance> unknown(real.cards.drawPile.begin(), real.cards.drawPile.end());
+        root.cards.drawPile.assignInformationState({}, unknown, {});
+        search::seedSearchRng(root, real.seed ^ 0x5EA5C4u);   // never the live streams
+        return root;
+    }
+
+    struct SilverBattleResult {
+        Outcome outcome = Outcome::UNDECIDED;
+        int hp = 0;
+        int turn = 0;
+        int decisions = 0;
+        int reroots = 0;
+    };
+
+    SilverBattleResult playBattleWithSilverSearcher(std::uint64_t seed, MonsterEncounter encounter, int sims) {
+        GameContext gc(CharacterClass::IRONCLAD, seed, 0);
+        BattleContext bc;
+        bc.init(gc, encounter);
+        search::SilverSearchContext context;
+        context.act = gc.act;
+        std::unique_ptr<search::SilverSearcher> searcher;
+        SilverBattleResult result;
+        while (bc.outcome == Outcome::UNDECIDED && result.decisions < 2000) {
+            const auto root = silverSearchRoot(bc);
+            search::SilverSearcher::Node *node = searcher ? searcher->findNode(root) : nullptr;
+            if (node != nullptr && !node->isRandomNode) {
+                searcher->rerootAt(node, searcher->nodeCount() >= 32768);
+                ++result.reroots;
+            } else if (searcher) {
+                searcher->setRoot(root);
+            } else {
+                searcher = std::make_unique<search::SilverSearcher>(root, context);
+            }
+            searcher->search(sims);
+            const auto action = search::SilverSearcher::translateAction(
+                searcher->bestAction(), searcher->rootSearchState(), bc);
+            if (!action.isValidAction(bc)) {
+                std::cerr << "silver_searcher: invalid action chosen\n";
+                break;
+            }
+            action.execute(bc);
+            ++result.decisions;
+        }
+        result.outcome = bc.outcome;
+        result.hp = bc.player.curHp;
+        result.turn = bc.turn;
+        return result;
+    }
+
+}
+
+int testSilverSearcher() {
+    int failures = 0;
+    auto check = [&](bool ok, const char *what) {
+        if (!ok) {
+            std::cerr << "silver_searcher FAIL: " << what << '\n';
+            ++failures;
+        }
+    };
+
+    // Lethal is found: a nearly dead Cultist and a Strike in hand.
+    {
+        const GameContext gc(CharacterClass::IRONCLAD, 0x5EEDu, 0);
+        BattleContext bc;
+        bc.init(gc, MonsterEncounter::CULTIST);
+        search::SimpleAgent agent;
+        while (bc.inputState != InputState::PLAYER_NORMAL && bc.outcome == Outcome::UNDECIDED) {
+            bc.executeActions();
+        }
+        bc.monsters.arr[0].curHp = 3;
+        bc.monsters.arr[0].block = 0;
+        bc.cards.cardsInHand = 2;
+        bc.cards.hand[0] = CardInstance(CardId::DEFEND_RED);
+        bc.cards.hand[0].uniqueId = 80;
+        bc.cards.hand[1] = CardInstance(CardId::STRIKE_RED);
+        bc.cards.hand[1].uniqueId = 81;
+        search::SilverSearcher searcher(silverSearchRoot(bc), {});
+        searcher.search(300);
+        const auto action = search::SilverSearcher::translateAction(
+            searcher.bestAction(), searcher.rootSearchState(), bc);
+        check(action.getActionType() == search::ActionType::CARD && action.getSourceIdx() == 1,
+              "plays the lethal Strike");
+    }
+
+    // Whole battles: the search wins clearly more than the greedy rollout policy alone.
+    const MonsterEncounter encounters[] = {
+        MonsterEncounter::JAW_WORM, MonsterEncounter::GREMLIN_NOB, MonsterEncounter::LAGAVULIN,
+        MonsterEncounter::THE_GUARDIAN, MonsterEncounter::HEXAGHOST, MonsterEncounter::SLIME_BOSS,
+    };
+    int searchWins = 0;
+    int greedyWins = 0;
+    int battles = 0;
+    int decisions = 0;
+    int reroots = 0;
+    for (std::uint64_t seed = 1; seed <= 4; ++seed) {
+        for (const auto encounter : encounters) {
+            const auto r = playBattleWithSilverSearcher(seed, encounter, 200);
+            check(r.outcome != Outcome::UNDECIDED, "battle finished");
+            searchWins += r.outcome == Outcome::PLAYER_VICTORY;
+            decisions += r.decisions;
+            reroots += r.reroots;
+            ++battles;
+
+            GameContext gc(CharacterClass::IRONCLAD, seed, 0);
+            BattleContext bc;
+            bc.init(gc, encounter);
+            search::SimpleAgent greedy;
+            greedy.curGameContext = &gc;
+            greedy.playoutBattle(bc);
+            greedyWins += bc.outcome == Outcome::PLAYER_VICTORY;
+        }
+    }
+    std::cout << "silver_searcher battles=" << battles << " searchWins=" << searchWins
+              << " greedyWins=" << greedyWins << " decisions=" << decisions
+              << " reroots=" << reroots << '\n';
+    check(searchWins > greedyWins, "search beats the greedy policy");
+
+    // Hidden intents (Runic Dome search mode): a pending roll is part of the
+    // search state, search does not resolve it at the root, and materializing
+    // it rolls a move.
+    {
+        const GameContext gc(CharacterClass::IRONCLAD, 0xD0E5u, 0);
+        BattleContext bc;
+        bc.init(gc, MonsterEncounter::JAW_WORM);
+        while (bc.inputState != InputState::PLAYER_NORMAL && bc.outcome == Outcome::UNDECIDED) {
+            bc.executeActions();
+        }
+        BattleContext root = silverSearchRoot(bc);
+        root.intentsHidden = true;
+        auto &worm = root.monsters.arr[0];
+        worm.pendingRollInputs = worm.captureRollInputs(root);
+        worm.pendingMoveRolls = 1;
+        BattleContext rolled = root;
+        rolled.monsters.arr[0].materializePendingMove(rolled);
+        check(rolled.monsters.arr[0].pendingMoveRolls == 0 && !root.equalForSearch(rolled),
+              "pending and rolled intents are different search states");
+        search::SilverSearcher searcher(root, {});
+        searcher.search(300);
+        check(searcher.rootSearchState().monsters.arr[0].pendingMoveRolls == 1,
+              "search keeps the root intent hidden");
+        check(search::SilverSearcher::translateAction(searcher.bestAction(), searcher.rootSearchState(), bc)
+                  .isValidAction(bc), "hidden-intent search returns a valid action");
+    }
+
+    std::cout << "silver_searcher " << (failures == 0 ? "PASS" : "FAIL") << '\n';
     return failures == 0 ? 0 : 1;
 }
 
@@ -3206,6 +3360,8 @@ int main(int argc, const char* argv[]) {
         return testCombatKnowledgeBoundary();
     } else if (command == "card_pile_engine") {
         return testCardPileEngine();
+    } else if (command == "silver_searcher") {
+        return testSilverSearcher();
     } else if (command == "card_pile") {
         return testCardPile();
     } else if (command == "battle_equality") {

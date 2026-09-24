@@ -1,0 +1,85 @@
+{
+  "schema": "lizard_tail_paired_pilot_analysis_v1",
+  "claimBoundary": "descriptive pilot only; no training or runtime qualification",
+  "sourceSeeds": [
+    4200100,
+    4200131
+  ],
+  "pairs": 32,
+  "states": {
+    "other_active_win_lizard_retained": 1,
+    "tail_rescued": 1,
+    "tail_unused": 30
+  },
+  "noTailCTMDeathProbabilityVsObservedNoTailDeath": {
+    "brier": 0.01473583589492889,
+    "meanPredictedDeath": 0.05703892232850194,
+    "observedDeathRate": 0.0625
+  },
+  "noTailCTMDeathProbabilityVsObservedTailConsumption": {
+    "brier": 0.03182083024828287,
+    "meanPredictedDeath": 0.05703892232850194,
+    "observedTailConsumptionRate": 0.03125
+  },
+  "observedNoTailDeathCount": 2,
+  "tailConsumedCount": 1,
+  "ordinaryDeathRescue": {
+    "ordinaryDeathPairs": 2,
+    "activeTailWinsAmongOrdinaryDeaths": 2,
+    "lizardConsumedWinsAmongOrdinaryDeaths": 1,
+    "fairyFirstLizardRetainedAmongOrdinaryDeaths": 0,
+    "rescueRateAnyActiveTailTreatment": 1.0,
+    "rescueRateByTailAmongOrdinaryDeaths": 0.5
+  },
+  "existingConditionalHeadsAfterTailConsumedWin": {
+    "rows": 1,
+    "method": "teacher_forced_observed_transition; descriptive only; no qualification gate applied",
+    "scoredRows": {
+      "maxHpNll": 1,
+      "maxHpModeCorrect": 1,
+      "hpNll": 1,
+      "expectedHpAbsError": 1,
+      "potionMaskNll": 1,
+      "potionMaskModeCorrect": 1
+    },
+    "metrics": {
+      "maxHpNll": 3.6478707942515366e-05,
+      "maxHpModeCorrect": 1.0,
+      "hpNll": 3.761917135307929,
+      "expectedHpAbsError": 9.72964514058458,
+      "potionMaskNll": 0.8168137421468742,
+      "potionMaskModeCorrect": 0.0
+    },
+    "nonLizardRelicTrajectoryNllByGroup": {
+      "turns": {
+        "rows": 0,
+        "meanNll": null
+      },
+      "attacks": {
+        "rows": 0,
+        "meanNll": null
+      },
+      "cards": {
+        "rows": 0,
+        "meanNll": null
+      },
+      "shuffles": {
+        "rows": 0,
+        "meanNll": null
+      }
+    },
+    "unscoredReasons": {}
+  },
+  "sourceGroupedInterpretation": "one pair per unique source seed; uncertainty not inferred from this pilot",
+  "frozenModelHashes": {
+    "survival": "2447b2daf1a48a619a5f071488908afd6f0fb83bfd855ee9f379c04120efeaef",
+    "max_hp": "66ac8f70da69e29bf9b1364243f6f903e4f74dda1ec8a909ef54a7ea97dc6479",
+    "hp": "a667a3cfa7d7eca3cb07b46f50321e443c75e8a58f7627becb1fd69bf90f08c9",
+    "potion": "8e04bcd5265fb11b8fa91b4553a84690915f437e7b3afee0b93358e312de3ad6",
+    "potion_encoder": "2085010f1aeef7a7957cdc45c851b2424d640037fd0fa981eb7ae7274190f6ef",
+    "relic": "e07e79d487152ae294f4915ef4aecd0e8bd38b8dec8d0133a57b6b58af92bd71"
+  },
+  "producerGitSha": "d6674ee4ef66ee5fc214e528be4e42077151c0dd",
+  "producerExecutableSha256": "ddd63f3b7cd74949b23740638c7c718634466a1904586a6e873e443dc74f9838",
+  "teacherId": "silver-ordinary-fair-exact10k-combat-transition-runtime16-f0bbd77"
+}

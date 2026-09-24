@@ -1,0 +1,4883 @@
+{
+  "schema": "active_lizard_minimal_correction_diagnostic_v1",
+  "baselineHeadSha": "79b3be84b21f9314392478a78b2a5b3eed94fb77",
+  "analysisImplementationSha": "364e0cc9d8e22ac880bee5feace2829dfe2ecf3a",
+  "cohort": {
+    "pairs": 128,
+    "sourceSeeds": [
+      4200300,
+      4200301,
+      4200302,
+      4200303,
+      4200304,
+      4200305,
+      4200306,
+      4200307,
+      4200308,
+      4200309,
+      4200310,
+      4200311,
+      4200312,
+      4200313,
+      4200314,
+      4200315,
+      4200316,
+      4200317,
+      4200318,
+      4200319,
+      4200320,
+      4200321,
+      4200322,
+      4200323,
+      4200324,
+      4200325,
+      4200326,
+      4200327,
+      4200328,
+      4200329,
+      4200330,
+      4200331,
+      4200332,
+      4200333,
+      4200334,
+      4200335,
+      4200336,
+      4200337,
+      4200338,
+      4200339,
+      4200340,
+      4200341,
+      4200342,
+      4200343,
+      4200344,
+      4200345,
+      4200346,
+      4200347,
+      4200348,
+      4200349,
+      4200350,
+      4200351,
+      4200352,
+      4200353,
+      4200354,
+      4200355,
+      4200356,
+      4200357,
+      4200358,
+      4200359,
+      4200360,
+      4200361,
+      4200362,
+      4200363,
+      4200364,
+      4200365,
+      4200366,
+      4200367,
+      4200368,
+      4200369,
+      4200370,
+      4200371,
+      4200372,
+      4200373,
+      4200374,
+      4200375,
+      4200376,
+      4200377,
+      4200378,
+      4200379,
+      4200380,
+      4200381,
+      4200382,
+      4200383,
+      4200384,
+      4200385,
+      4200386,
+      4200387,
+      4200388,
+      4200389,
+      4200390,
+      4200391,
+      4200392,
+      4200393,
+      4200394,
+      4200395,
+      4200396,
+      4200397,
+      4200398,
+      4200399,
+      4200400,
+      4200401,
+      4200402,
+      4200403,
+      4200404,
+      4200405,
+      4200406,
+      4200407,
+      4200408,
+      4200409,
+      4200410,
+      4200411,
+      4200412,
+      4200413,
+      4200414,
+      4200415,
+      4200416,
+      4200417,
+      4200418,
+      4200419,
+      4200420,
+      4200421,
+      4200422,
+      4200423,
+      4200424,
+      4200425,
+      4200426,
+      4200427
+    ],
+    "pairedJsonlSha256": "1bfe609be0c32b0a504e5a97622ea385269ca3c5d1693a49c079421fcbae7d0e",
+    "pairedManifestSha256": "122bd32fdf834dccd1003d3f490ff63fba47c17152655c0a200e81c6d0c40ab4",
+    "targetSelectionSha256": "36f444009306c2df140512fa17cadfdf28ee5845117af9a1a7d66299ac35d89c",
+    "frozenModelHashes": {
+      "survival": "2447b2daf1a48a619a5f071488908afd6f0fb83bfd855ee9f379c04120efeaef",
+      "max_hp": "66ac8f70da69e29bf9b1364243f6f903e4f74dda1ec8a909ef54a7ea97dc6479",
+      "hp": "a667a3cfa7d7eca3cb07b46f50321e443c75e8a58f7627becb1fd69bf90f08c9",
+      "potion": "8e04bcd5265fb11b8fa91b4553a84690915f437e7b3afee0b93358e312de3ad6",
+      "potion_encoder": "2085010f1aeef7a7957cdc45c851b2424d640037fd0fa981eb7ae7274190f6ef",
+      "relic": "e07e79d487152ae294f4915ef4aecd0e8bd38b8dec8d0133a57b6b58af92bd71"
+    },
+    "teacherId": "silver-ordinary-fair-exact10k-combat-transition-runtime16-f0bbd77"
+  },
+  "phaseA": {
+    "question": "fixed conditional HP-input transforms on Tail-consumed wins; teacher-forced descriptive only",
+    "candidateRows": 27,
+    "treatments": {
+      "T0_ordinary": {
+        "candidateRows": 27,
+        "scoredRowsByMetric": {
+          "hpNll": 22,
+          "hpCrps": 22,
+          "expectedHpAbsError": 22,
+          "maxHpNll": 22,
+          "potionMaskNll": 22
+        },
+        "metrics": {
+          "hpNll": 5.121244570665613,
+          "hpCrps": 11.891934967485122,
+          "expectedHpAbsError": 15.917051790121853,
+          "maxHpNll": 0.010373783650006725,
+          "potionMaskNll": 0.8735875996140084
+        },
+        "supportedRelicGroupConstraintNll": {
+          "turns": {
+            "rows": 4,
+            "meanNll": 1.2813622013947612
+          },
+          "attacks": {
+            "rows": 5,
+            "meanNll": 2.085988495609254
+          },
+          "cards": {
+            "rows": 4,
+            "meanNll": 2.428204418764767
+          },
+          "shuffles": {
+            "rows": 2,
+            "meanNll": 0.797820301254445
+          }
+        },
+        "unscoreableBecauseTransformedTargetOutsideModelDomain": 0,
+        "unscoredReasons": {
+          "unsupported:gold_mutating_card": 1,
+          "unsupported:gold_mutating_potion": 1,
+          "unsupported:pre_stolen_gold_nonzero": 1,
+          "unsupported:ritual_dagger": 2
+        },
+        "perSourceScores": {
+          "4200303": {
+            "hpNll": 4.284431068206061,
+            "hpCrps": 7.6398265714993485,
+            "expectedHpAbsError": 10.9061207349107,
+            "maxHpNll": 0.0011649358007000089,
+            "potionMaskNll": -0.0,
+            "relicConstraintNllByGroup": {}
+          },
+          "4200307": {
+            "hpNll": 4.525860548226146,
+            "hpCrps": 10.46524202233188,
+            "expectedHpAbsError": 15.190769140728044,
+            "maxHpNll": 0.0015102101899841529,
+            "potionMaskNll": -0.0,
+            "relicConstraintNllByGroup": {
+              "attacks": 1.9414577293684685
+            }
+          },
+          "4200310": {
+            "hpNll": 5.535181918983178,
+            "hpCrps": 9.292773908314855,
+            "expectedHpAbsError": 12.715318256039609,
+            "maxHpNll": 0.0002934767263112109,
+            "potionMaskNll": -0.0,
+            "relicConstraintNllByGroup": {
+              "shuffles": 0.715412307354465
+            }
+          },
+          "4200311": {
+            "hpNll": 12.76310056878508,
+            "hpCrps": 39.137347577398984,
+            "expectedHpAbsError": 42.17722541178889,
+            "maxHpNll": 0.0023542318714801307,
+            "potionMaskNll": 0.7497624490990397,
+            "relicConstraintNllByGroup": {
+              "cards": 2.553300669684897
+            }
+          },
+          "4200312": {
+            "hpNll": 3.9765271154095374,
+            "hpCrps": 7.683736260289094,
+            "expectedHpAbsError": 13.257812249409199,
+            "maxHpNll": 0.00021680559368243468,
+            "potionMaskNll": 0.5170865437860752,
+            "relicConstraintNllByGroup": {}
+          },
+          "4200319": {
+            "hpNll": 4.139974593440773,
+            "hpCrps": 8.448000006412279,
+            "expectedHpAbsError": 13.69864105877059,
+            "maxHpNll": 5.13805237528905e-05,
+            "potionMaskNll": -0.0,
+            "relicConstraintNllByGroup": {}
+          },
+          "4200320": {
+            "hpNll": 3.2897709370997803,
+            "hpCrps": 2.7412514723927,
+            "expectedHpAbsError": 0.29529381541487965,
+            "maxHpNll": 6.29444858453979e-05,
+            "potionMaskNll": -0.0,
+            "relicConstraintNllByGroup": {}
+          },
+          "4200328": {
+            "hpNll": 6.488444098389331,
+            "hpCrps": 18.223410123989336,
+            "expectedHpAbsError": 27.392594280543562,
+            "maxHpNll": 0.000340996700882359,
+            "potionMaskNll": 2.613757582373959,
+            "relicConstraintNllByGroup": {
+              "attacks": 1.9261624571292435
+            }
+          },
+          "4200333": {
+            "hpNll": 4.491808774275238,
+            "hpCrps": 13.794651770246748,
+            "expectedHpAbsError": 18.21054712946932,
+            "maxHpNll": 1.716628503514036e-05,
+            "potionMaskNll": 2.637742511241443,
+            "relicConstraintNllByGroup": {}
+          },
+          "4200334": {
+            "hpNll": 6.7660896618149025,
+            "hpCrps": 18.34165664528174,
+            "expectedHpAbsError": 23.425721035836432,
+            "maxHpNll": 0.0008042111351900988,
+            "potionMaskNll": 0.7778444371619712,
+            "relicConstraintNllByGroup": {}
+          },
+          "4200336": {
+            "hpNll": 3.9805904219351755,
+            "hpCrps": 4.814508728488631,
+            "expectedHpAbsError": 5.837834193953313,
+            "maxHpNll": 0.00010693645022543938,
+            "potionMaskNll": 2.54372691694802,
+            "relicConstraintNllByGroup": {}
+          },
+          "4200358": {
+            "hpNll": 6.785453695683622,
+            "hpCrps": 17.612526921471474,
+            "expectedHpAbsError": 21.912200013996852,
+            "maxHpNll": 0.0008487726193227721,
+            "potionMaskNll": 2.416270468418026,
+            "relicConstraintNllByGroup": {}
+          },
+          "4200368": {
+            "hpNll": 3.9351820740812267,
+            "hpCrps": 5.331243288603841,
+            "expectedHpAbsError": 5.197151276748627,
+            "maxHpNll": 0.0003700941111433479,
+            "potionMaskNll": -0.0,
+            "relicConstraintNllByGroup": {
+              "turns": 1.65889723591843,
+              "attacks": 2.0825108199100786
+            }
+          },
+          "4200372": {
+            "hpNll": 4.854142796193725,
+            "hpCrps": 10.564338956775297,
+            "expectedHpAbsError": 13.280419137561694,
+            "maxHpNll": 0.0001911703676850516,
+            "potionMaskNll": 0.35410250039131275,
+            "relicConstraintNllByGroup": {
+              "turns": 0.969961991382875
+            }
+          },
+          "4200374": {
+            "hpNll": 4.124498505030529,
+            "hpCrps": 9.259579115252926,
+            "expectedHpAbsError": 15.928686092840508,
+            "maxHpNll": 0.0011021009256289903,
+            "potionMaskNll": -0.0,
+            "relicConstraintNllByGroup": {
+              "turns": 0.8694189400295659,
+              "attacks": 2.317040815784727,
+              "cards": 2.409448403457543
+            }
+          },
+          "4200380": {
+            "hpNll": 3.7730833925323957,
+            "hpCrps": 5.473081797350235,
+            "expectedHpAbsError": 8.210361848352477,
+            "maxHpNll": 2.9087489687317074e-05,
+            "potionMaskNll": 0.331293188601486,
+            "relicConstraintNllByGroup": {
+              "cards": 2.255303456193196,
+              "shuffles": 0.880228295154425
+            }
+          },
+          "4200382": {
+            "hpNll": 4.196018959958495,
+            "hpCrps": 10.109736509896837,
+            "expectedHpAbsError": 15.425521205962923,
+            "maxHpNll": 0.0025927628896202444,
+            "potionMaskNll": 1.8653655999318293,
+            "relicConstraintNllByGroup": {}
+          },
+          "4200398": {
+            "hpNll": 4.465965327711459,
+            "hpCrps": 9.870330125790781,
+            "expectedHpAbsError": 15.917066216701642,
+            "maxHpNll": 0.0006574765082569899,
+            "potionMaskNll": 3.7490530114924754,
+            "relicConstraintNllByGroup": {
+              "cards": 2.4947651457234303
+            }
+          },
+          "4200400": {
+            "hpNll": 3.6001528334021065,
+            "hpCrps": 2.893532555881879,
+            "expectedHpAbsError": 3.169072835240513,
+            "maxHpNll": 4.8638572972931936e-05,
+            "potionMaskNll": -0.0,
+            "relicConstraintNllByGroup": {}
+          },
+          "4200417": {
+            "hpNll": 5.485508973491694,
+            "hpCrps": 16.477330882160587,
+            "expectedHpAbsError": 22.48767452014033,
+            "maxHpNll": 4.1723338384500676e-06,
+            "potionMaskNll": 0.6629219820625487,
+            "relicConstraintNllByGroup": {}
+          },
+          "4200422": {
+            "hpNll": 6.239693249357663,
+            "hpCrps": 18.611674519642136,
+            "expectedHpAbsError": 24.0069512881129,
+            "maxHpNll": 1.8596822089745873e-05,
+            "potionMaskNll": -0.0,
+            "relicConstraintNllByGroup": {
+              "turns": 1.6271706382481739
+            }
+          },
+          "4200423": {
+            "hpNll": 4.965901040635406,
+            "hpCrps": 14.836789525201118,
+            "expectedHpAbsError": 21.53215764015772,
+            "maxHpNll": 0.21543707189681285,
+            "potionMaskNll": -0.0,
+            "relicConstraintNllByGroup": {
+              "attacks": 2.162770655853752
+            }
+          }
+        }
+      },
+      "T1_reserve": {
+        "candidateRows": 27,
+        "scoredRowsByMetric": {
+          "hpNll": 22,
+          "hpCrps": 22,
+          "expectedHpAbsError": 22,
+          "maxHpNll": 22,
+          "potionMaskNll": 22
+        },
+        "metrics": {
+          "hpNll": 4.036037512120398,
+          "hpCrps": 7.817506240103111,
+          "expectedHpAbsError": 10.424443831388343,
+          "maxHpNll": 0.00993846217489727,
+          "potionMaskNll": 0.8090459348744279
+        },
+        "supportedRelicGroupConstraintNll": {
+          "turns": {
+            "rows": 4,
+            "meanNll": 1.5718863779508891
+          },
+          "attacks": {
+            "rows": 5,
+            "meanNll": 2.3573173604861597
+          },
+          "cards": {
+            "rows": 4,
+            "meanNll": 2.326857782347262
+          },
+          "shuffles": {
+            "rows": 2,
+            "meanNll": 0.874800145279762
+          }
+        },
+        "unscoreableBecauseTransformedTargetOutsideModelDomain": 0,
+        "unscoredReasons": {
+          "unsupported:gold_mutating_card": 1,
+          "unsupported:gold_mutating_potion": 1,
+          "unsupported:pre_stolen_gold_nonzero": 1,
+          "unsupported:ritual_dagger": 2
+        },
+        "perSourceScores": {
+          "4200303": {
+            "hpNll": 3.7967017320683865,
+            "hpCrps": 5.416038345581617,
+            "expectedHpAbsError": 8.449882415356115,
+            "maxHpNll": 0.0005095110729750621,
+            "potionMaskNll": -0.0,
+            "relicConstraintNllByGroup": {}
+          },
+          "4200307": {
+            "hpNll": 3.9571530485650115,
+            "hpCrps": 6.328695768110788,
+            "expectedHpAbsError": 10.212197374843527,
+            "maxHpNll": 0.0015904431234256204,
+            "potionMaskNll": -0.0,
+            "relicConstraintNllByGroup": {
+              "attacks": 2.3522540815700856
+            }
+          },
+          "4200310": {
+            "hpNll": 4.380332973235699,
+            "hpCrps": 9.002819478862648,
+            "expectedHpAbsError": 12.939417523040902,
+            "maxHpNll": 0.00026211597246766374,
+            "potionMaskNll": -0.0,
+            "relicConstraintNllByGroup": {
+              "shuffles": 0.7342988778811801
+            }
+          },
+          "4200311": {
+            "hpNll": 3.0531534013228248,
+            "hpCrps": 2.377252845290898,
+            "expectedHpAbsError": 2.0640592669732314,
+            "maxHpNll": 0.0015964727929218422,
+            "potionMaskNll": 0.2449988655058068,
+            "relicConstraintNllByGroup": {
+              "cards": 2.2934366131621724
+            }
+          },
+          "4200312": {
+            "hpNll": 5.1145567794317115,
+            "hpCrps": 21.601701156619335,
+            "expectedHpAbsError": 30.4478849460138,
+            "maxHpNll": 0.00011957406611314137,
+            "potionMaskNll": 0.5736688900876475,
+            "relicConstraintNllByGroup": {}
+          },
+          "4200319": {
+            "hpNll": 3.8112443524462667,
+            "hpCrps": 4.446027051546403,
+            "expectedHpAbsError": 5.582389200339094,
+            "maxHpNll": 3.09948956200177e-05,
+            "potionMaskNll": -0.0,
+            "relicConstraintNllByGroup": {}
+          },
+          "4200320": {
+            "hpNll": 3.7939834146231988,
+            "hpCrps": 4.164217860108574,
+            "expectedHpAbsError": 4.09083036496304,
+            "maxHpNll": 5.5314640178064117e-05,
+            "potionMaskNll": -0.0,
+            "relicConstraintNllByGroup": {}
+          },
+          "4200328": {
+            "hpNll": 3.634047590616872,
+            "hpCrps": 8.542629729540288,
+            "expectedHpAbsError": 16.11968111025635,
+            "maxHpNll": 0.00031726624310700135,
+            "potionMaskNll": 2.6319852262372967,
+            "relicConstraintNllByGroup": {
+              "attacks": 2.512778557086612
+            }
+          },
+          "4200333": {
+            "hpNll": 3.2847711326157234,
+            "hpCrps": 3.2576575549895788,
+            "expectedHpAbsError": 3.140688995491473,
+            "maxHpNll": 1.2159421459645173e-05,
+            "potionMaskNll": 2.0241103341114766,
+            "relicConstraintNllByGroup": {}
+          },
+          "4200334": {
+            "hpNll": 3.8674064265978356,
+            "hpCrps": 4.79666535551324,
+            "expectedHpAbsError": 6.283601386800001,
+            "maxHpNll": 0.001121374641302719,
+            "potionMaskNll": 0.6433943142904128,
+            "relicConstraintNllByGroup": {}
+          },
+          "4200336": {
+            "hpNll": 3.842221263540554,
+            "hpCrps": 4.705070767611937,
+            "expectedHpAbsError": 1.0750256483443081,
+            "maxHpNll": 0.00013543092328319035,
+            "potionMaskNll": 2.6968033163104392,
+            "relicConstraintNllByGroup": {}
+          },
+          "4200358": {
+            "hpNll": 4.201892746724194,
+            "hpCrps": 8.708084992430013,
+            "expectedHpAbsError": 12.915785462902932,
+            "maxHpNll": 0.0005127313693341681,
+            "potionMaskNll": 0.8513281521472714,
+            "relicConstraintNllByGroup": {}
+          },
+          "4200368": {
+            "hpNll": 3.821181209914533,
+            "hpCrps": 5.166601135165572,
+            "expectedHpAbsError": 4.489963619736955,
+            "maxHpNll": 0.0003665165150517963,
+            "potionMaskNll": -0.0,
+            "relicConstraintNllByGroup": {
+              "turns": 1.903630848619943,
+              "attacks": 2.564176985905871
+            }
+          },
+          "4200372": {
+            "hpNll": 4.937720699459724,
+            "hpCrps": 14.366858982089528,
+            "expectedHpAbsError": 16.58325253246585,
+            "maxHpNll": 0.000281790855167244,
+            "potionMaskNll": 0.4188050248956495,
+            "relicConstraintNllByGroup": {
+              "turns": 1.3428443778579642
+            }
+          },
+          "4200374": {
+            "hpNll": 4.263166686064645,
+            "hpCrps": 10.78004688770012,
+            "expectedHpAbsError": 18.60915990988724,
+            "maxHpNll": 0.0008916656690296563,
+            "potionMaskNll": -0.0,
+            "relicConstraintNllByGroup": {
+              "turns": 1.1975053113640213,
+              "attacks": 2.319072942015763,
+              "cards": 2.1772677682167894
+            }
+          },
+          "4200380": {
+            "hpNll": 3.763811859838305,
+            "hpCrps": 4.694931317354295,
+            "expectedHpAbsError": 2.3354638192104176,
+            "maxHpNll": 4.4942912078187964e-05,
+            "potionMaskNll": 0.38120025177249145,
+            "relicConstraintNllByGroup": {
+              "cards": 2.3449455648012965,
+              "shuffles": 1.015301412678344
+            }
+          },
+          "4200382": {
+            "hpNll": 3.9126554094688255,
+            "hpCrps": 4.978699595573193,
+            "expectedHpAbsError": 4.728428185451776,
+            "maxHpNll": 0.0032352033316741216,
+            "potionMaskNll": 2.4597487872672814,
+            "relicConstraintNllByGroup": {}
+          },
+          "4200398": {
+            "hpNll": 4.1321066785190235,
+            "hpCrps": 9.551282200138504,
+            "expectedHpAbsError": 15.403779274085537,
+            "maxHpNll": 0.0005987290453029586,
+            "potionMaskNll": 3.717788730521412,
+            "relicConstraintNllByGroup": {
+              "cards": 2.4917811832087895
+            }
+          },
+          "4200400": {
+            "hpNll": 4.527948727437858,
+            "hpCrps": 11.65554135142116,
+            "expectedHpAbsError": 14.661636995791923,
+            "maxHpNll": 6.997830139052883e-05,
+            "potionMaskNll": -0.0,
+            "relicConstraintNllByGroup": {}
+          },
+          "4200417": {
+            "hpNll": 4.054831650762691,
+            "hpCrps": 6.8952242271835225,
+            "expectedHpAbsError": 11.2764799153083,
+            "maxHpNll": 6.675742497563112e-06,
+            "potionMaskNll": 1.1551786740902277,
+            "relicConstraintNllByGroup": {}
+          },
+          "4200422": {
+            "hpNll": 3.625595768151275,
+            "hpCrps": 3.6989831515405127,
+            "expectedHpAbsError": 1.2345133458729833,
+            "maxHpNll": 1.7523919106938383e-05,
+            "potionMaskNll": -0.0,
+            "relicConstraintNllByGroup": {
+              "turns": 1.8435649739616287
+            }
+          },
+          "4200423": {
+            "hpNll": 5.0163417152436125,
+            "hpCrps": 16.850107527896682,
+            "expectedHpAbsError": 26.69364299740778,
+            "maxHpNll": 0.20686975239425284,
+            "potionMaskNll": -0.0,
+            "relicConstraintNllByGroup": {
+              "attacks": 2.038304235852467
+            }
+          }
+        }
+      },
+      "T2_revive": {
+        "candidateRows": 27,
+        "scoredRowsByMetric": {
+          "hpNll": 22,
+          "hpCrps": 22,
+          "expectedHpAbsError": 22,
+          "maxHpNll": 22,
+          "potionMaskNll": 22
+        },
+        "metrics": {
+          "hpNll": 4.037009162931041,
+          "hpCrps": 9.938121819147774,
+          "expectedHpAbsError": 14.127349123644183,
+          "maxHpNll": 0.010416723949305656,
+          "potionMaskNll": 0.7686793777245554
+        },
+        "supportedRelicGroupConstraintNll": {
+          "turns": {
+            "rows": 4,
+            "meanNll": 1.366961124241728
+          },
+          "attacks": {
+            "rows": 5,
+            "meanNll": 2.145413646422774
+          },
+          "cards": {
+            "rows": 4,
+            "meanNll": 2.2127254087718358
+          },
+          "shuffles": {
+            "rows": 2,
+            "meanNll": 1.043044115641782
+          }
+        },
+        "unscoreableBecauseTransformedTargetOutsideModelDomain": 0,
+        "unscoredReasons": {
+          "unsupported:gold_mutating_card": 1,
+          "unsupported:gold_mutating_potion": 1,
+          "unsupported:pre_stolen_gold_nonzero": 1,
+          "unsupported:ritual_dagger": 2
+        },
+        "perSourceScores": {
+          "4200303": {
+            "hpNll": 3.92299333321428,
+            "hpCrps": 6.91918550688052,
+            "expectedHpAbsError": 9.76283023303904,
+            "maxHpNll": 0.0010039479819628036,
+            "potionMaskNll": -0.0,
+            "relicConstraintNllByGroup": {}
+          },
+          "4200307": {
+            "hpNll": 4.282868198873687,
+            "hpCrps": 9.494839116546233,
+            "expectedHpAbsError": 14.17640716597149,
+            "maxHpNll": 0.0014624555475970587,
+            "potionMaskNll": -0.0,
+            "relicConstraintNllByGroup": {
+              "attacks": 2.0231235487581
+            }
+          },
+          "4200310": {
+            "hpNll": 3.0961890648990904,
+            "hpCrps": 2.1988567133793477,
+            "expectedHpAbsError": 0.6695586376881693,
+            "maxHpNll": 0.00021179773044287684,
+            "potionMaskNll": -0.0,
+            "relicConstraintNllByGroup": {
+              "shuffles": 0.6959317297090594
+            }
+          },
+          "4200311": {
+            "hpNll": 3.252056725033759,
+            "hpCrps": 10.654563701777896,
+            "expectedHpAbsError": 16.15594074774208,
+            "maxHpNll": 0.0013617604198579208,
+            "potionMaskNll": 0.3381911852436555,
+            "relicConstraintNllByGroup": {
+              "cards": 2.247510210937306
+            }
+          },
+          "4200312": {
+            "hpNll": 3.2883989281505768,
+            "hpCrps": 3.76632187638209,
+            "expectedHpAbsError": 7.167335347596669,
+            "maxHpNll": 0.0002805984270144683,
+            "potionMaskNll": 0.43785426533965155,
+            "relicConstraintNllByGroup": {}
+          },
+          "4200319": {
+            "hpNll": 4.985838873593339,
+            "hpCrps": 25.359043034476677,
+            "expectedHpAbsError": 31.044118077762164,
+            "maxHpNll": 0.00017000689725307267,
+            "potionMaskNll": -0.0,
+            "relicConstraintNllByGroup": {}
+          },
+          "4200320": {
+            "hpNll": 3.235748700129878,
+            "hpCrps": 3.384774821233523,
+            "expectedHpAbsError": 5.622967676143844,
+            "maxHpNll": 7.808513322042704e-05,
+            "potionMaskNll": -0.0,
+            "relicConstraintNllByGroup": {}
+          },
+          "4200328": {
+            "hpNll": 4.303822438610684,
+            "hpCrps": 12.135631027837217,
+            "expectedHpAbsError": 21.19940948684234,
+            "maxHpNll": 0.0002879915044825661,
+            "potionMaskNll": 2.733600645562989,
+            "relicConstraintNllByGroup": {
+              "attacks": 2.2455223011657477
+            }
+          },
+          "4200333": {
+            "hpNll": 4.131163558445739,
+            "hpCrps": 8.091580178418269,
+            "expectedHpAbsError": 12.652426778400372,
+            "maxHpNll": 9.417578219762272e-06,
+            "potionMaskNll": 2.7230129255910036,
+            "relicConstraintNllByGroup": {}
+          },
+          "4200334": {
+            "hpNll": 4.1173939301526525,
+            "hpCrps": 10.180790102158428,
+            "expectedHpAbsError": 16.184172929563374,
+            "maxHpNll": 0.0006787695880873699,
+            "potionMaskNll": 0.7367088622332022,
+            "relicConstraintNllByGroup": {}
+          },
+          "4200336": {
+            "hpNll": 4.146488067235678,
+            "hpCrps": 9.576360269198128,
+            "expectedHpAbsError": 15.169978764059124,
+            "maxHpNll": 8.953018415997009e-05,
+            "potionMaskNll": 2.2188687288811284,
+            "relicConstraintNllByGroup": {}
+          },
+          "4200358": {
+            "hpNll": 3.0962783680168333,
+            "hpCrps": 2.244852350501896,
+            "expectedHpAbsError": 2.766090678087494,
+            "maxHpNll": 0.00044242392391073026,
+            "potionMaskNll": 1.3746840420544184,
+            "relicConstraintNllByGroup": {}
+          },
+          "4200368": {
+            "hpNll": 3.203395425453385,
+            "hpCrps": 16.353256810443657,
+            "expectedHpAbsError": 23.37003942676165,
+            "maxHpNll": 0.0007625148379494678,
+            "potionMaskNll": -0.0,
+            "relicConstraintNllByGroup": {
+              "turns": 1.7823408327411052,
+              "attacks": 2.202368777413953
+            }
+          },
+          "4200372": {
+            "hpNll": 4.538864656071482,
+            "hpCrps": 9.600361812894436,
+            "expectedHpAbsError": 12.280205669929273,
+            "maxHpNll": 0.0001638069794735009,
+            "potionMaskNll": 0.3246048856050754,
+            "relicConstraintNllByGroup": {
+              "turns": 0.96951980745396
+            }
+          },
+          "4200374": {
+            "hpNll": 3.5424019825965627,
+            "hpCrps": 3.5605423972895833,
+            "expectedHpAbsError": 3.5464396646475507,
+            "maxHpNll": 0.0012812474261124362,
+            "potionMaskNll": -0.0,
+            "relicConstraintNllByGroup": {
+              "turns": 1.091881871975043,
+              "attacks": 2.2506858812052557,
+              "cards": 2.2324451326253816
+            }
+          },
+          "4200380": {
+            "hpNll": 3.9735867763024975,
+            "hpCrps": 13.047446977642032,
+            "expectedHpAbsError": 19.58161339250364,
+            "maxHpNll": 2.1219478671584217e-05,
+            "potionMaskNll": 0.24076442118285066,
+            "relicConstraintNllByGroup": {
+              "cards": 2.096925759522442,
+              "shuffles": 1.3901565015745045
+            }
+          },
+          "4200382": {
+            "hpNll": 3.9936776709812825,
+            "hpCrps": 9.315025275175689,
+            "expectedHpAbsError": 14.38453662885604,
+            "maxHpNll": 0.0026065674030688836,
+            "potionMaskNll": 1.8931630817382172,
+            "relicConstraintNllByGroup": {}
+          },
+          "4200398": {
+            "hpNll": 4.7188986152264345,
+            "hpCrps": 10.024602930500295,
+            "expectedHpAbsError": 15.17746933807939,
+            "maxHpNll": 0.0011848074803734831,
+            "potionMaskNll": 3.243542185216771,
+            "relicConstraintNllByGroup": {
+              "cards": 2.2740205320022127
+            }
+          },
+          "4200400": {
+            "hpNll": 2.7669486534202283,
+            "hpCrps": 1.7593343127754928,
+            "expectedHpAbsError": 0.4879746829683427,
+            "maxHpNll": 4.8519357892176535e-05,
+            "potionMaskNll": -0.0,
+            "relicConstraintNllByGroup": {}
+          },
+          "4200417": {
+            "hpNll": 6.071559215238759,
+            "hpCrps": 17.158812906498028,
+            "expectedHpAbsError": 23.01387341131212,
+            "maxHpNll": 4.2915436324883266e-06,
+            "potionMaskNll": 0.6459510812912561,
+            "relicConstraintNllByGroup": {}
+          },
+          "4200422": {
+            "hpNll": 4.7368538355064445,
+            "hpCrps": 16.103314504646043,
+            "expectedHpAbsError": 21.892178779412014,
+            "maxHpNll": 1.668943980503511e-05,
+            "potionMaskNll": -0.0,
+            "relicConstraintNllByGroup": {
+              "turns": 1.6241019847968046
+            }
+          },
+          "4200423": {
+            "hpNll": 5.408774567329638,
+            "hpCrps": 17.70918339459557,
+            "expectedHpAbsError": 24.496113202805873,
+            "maxHpNll": 0.21700147802153635,
+            "potionMaskNll": -0.0,
+            "relicConstraintNllByGroup": {
+              "attacks": 2.005367723570813
+            }
+          }
+        }
+      }
+    },
+    "pairedSourceBootstrapVersusT0": {
+      "T1_reserve": {
+        "hpNll": {
+          "pairs": 22,
+          "meanTreatmentMinusT0": -1.0852070585452163,
+          "sourceBootstrap95CI": [
+            -2.1612248736447626,
+            -0.32026982827339556
+          ]
+        },
+        "hpCrps": {
+          "pairs": 22,
+          "meanTreatmentMinusT0": -4.0744287273820134,
+          "sourceBootstrap95CI": [
+            -8.514994153609031,
+            -0.1342872758049324
+          ]
+        },
+        "expectedHpAbsError": {
+          "pairs": 22,
+          "meanTreatmentMinusT0": -5.492607958733509,
+          "sourceBootstrap95CI": [
+            -10.718402165777887,
+            -0.6830873222426994
+          ]
+        },
+        "maxHpNll": {
+          "pairs": 22,
+          "meanTreatmentMinusT0": -0.00043532147510945386,
+          "sourceBootstrap95CI": [
+            -0.0012591732752444782,
+            3.9571600155672864e-05
+          ]
+        },
+        "potionMaskNll": {
+          "pairs": 22,
+          "meanTreatmentMinusT0": -0.06454166473958063,
+          "sourceBootstrap95CI": [
+            -0.254053918043561,
+            0.08365587963698783
+          ]
+        },
+        "supportedRelicGroupConstraintNllByGroup": {
+          "attacks": {
+            "pairs": 5,
+            "meanTreatmentMinusT0": 0.27132886487690583,
+            "sourceBootstrap95CI": [
+              0.0220598064445948,
+              0.5094721768215877
+            ]
+          },
+          "cards": {
+            "pairs": 4,
+            "meanTreatmentMinusT0": -0.10134663641750474,
+            "sourceBootstrap95CI": [
+              -0.2460223458817392,
+              0.04332907304672973
+            ]
+          },
+          "shuffles": {
+            "pairs": 2,
+            "meanTreatmentMinusT0": 0.07697984402531699,
+            "sourceBootstrap95CI": [
+              0.018886570526715052,
+              0.13507311752391893
+            ]
+          },
+          "turns": {
+            "pairs": 4,
+            "meanTreatmentMinusT0": 0.29052417655612806,
+            "sourceBootstrap95CI": [
+              0.23056397420748387,
+              0.35048437890477235
+            ]
+          }
+        }
+      },
+      "T2_revive": {
+        "hpNll": {
+          "pairs": 22,
+          "meanTreatmentMinusT0": -1.084235407734573,
+          "sourceBootstrap95CI": [
+            -2.1651671892275104,
+            -0.3309932311359703
+          ]
+        },
+        "hpCrps": {
+          "pairs": 22,
+          "meanTreatmentMinusT0": -1.9538131483373482,
+          "sourceBootstrap95CI": [
+            -5.768960678447072,
+            1.6894066856719747
+          ]
+        },
+        "expectedHpAbsError": {
+          "pairs": 22,
+          "meanTreatmentMinusT0": -1.7897026664776667,
+          "sourceBootstrap95CI": [
+            -6.169294218369549,
+            2.467407765655074
+          ]
+        },
+        "maxHpNll": {
+          "pairs": 22,
+          "meanTreatmentMinusT0": 4.2940299298930765e-05,
+          "sourceBootstrap95CI": [
+            -0.00012807464687870546,
+            0.00023725326737970476
+          ]
+        },
+        "potionMaskNll": {
+          "pairs": 22,
+          "meanTreatmentMinusT0": -0.10490822188945308,
+          "sourceBootstrap95CI": [
+            -0.22178480189787436,
+            -0.01547530716795274
+          ]
+        },
+        "supportedRelicGroupConstraintNllByGroup": {
+          "attacks": {
+            "pairs": 5,
+            "meanTreatmentMinusT0": 0.059425150813520046,
+            "sourceBootstrap95CI": [
+              -0.08374115478488253,
+              0.2023165110067832
+            ]
+          },
+          "cards": {
+            "pairs": 4,
+            "meanTreatmentMinusT0": -0.21547900999293113,
+            "sourceBootstrap95CI": [
+              -0.2735936617687337,
+              -0.1676904837514579
+            ]
+          },
+          "shuffles": {
+            "pairs": 2,
+            "meanTreatmentMinusT0": 0.24522381438733692,
+            "sourceBootstrap95CI": [
+              -0.019480577645405672,
+              0.5099282064200795
+            ]
+          },
+          "turns": {
+            "pairs": 4,
+            "meanTreatmentMinusT0": 0.08559892284696702,
+            "sourceBootstrap95CI": [
+              -0.0017554186901421187,
+              0.17295326438407616
+            ]
+          }
+        }
+      }
+    },
+    "treatmentAssessment": {
+      "T1_reserve": {
+        "hpNllImprovedWithBootstrapUpperBelowZero": true,
+        "hpCrpsPointImproved": true,
+        "expectedHpMaeMateriallyWorse": false,
+        "clearMaxHpOrPotionDegradation": false,
+        "clearSupportedRelicGroupDegradation": true,
+        "transformedTargetDomainIssues": 0
+      },
+      "T2_revive": {
+        "hpNllImprovedWithBootstrapUpperBelowZero": true,
+        "hpCrpsPointImproved": true,
+        "expectedHpMaeMateriallyWorse": false,
+        "clearMaxHpOrPotionDegradation": false,
+        "clearSupportedRelicGroupDegradation": false,
+        "transformedTargetDomainIssues": 0
+      }
+    },
+    "selectedTreatment": "T2_revive",
+    "classification": "development_candidate_only"
+  },
+  "phaseB": {
+    "classNames": [
+      "WIN_RETAINED",
+      "WIN_CONSUMED",
+      "LOSS_CONSUMED"
+    ],
+    "observedClassCountsAllPairs": {
+      "WIN_RETAINED": 96,
+      "WIN_CONSUMED": 27,
+      "LOSS_CONSUMED": 5
+    },
+    "modeledRows": 122,
+    "modeledClassCounts": {
+      "WIN_RETAINED": 92,
+      "WIN_CONSUMED": 25,
+      "LOSS_CONSUMED": 5
+    },
+    "nativeExactBoundaryRows": 6,
+    "nativeExactBoundaryReasons": {
+      "fairy_potion_precedence_exact_boundary": 6
+    },
+    "nativeExactBoundarySources": [
+      4200344,
+      4200378,
+      4200379,
+      4200382,
+      4200389,
+      4200417
+    ],
+    "featureConstruction": "only frozen ordinary pDeath, reserve-proxy pWin, and their fixed difference; outcomes are labels only",
+    "crossValidation": {
+      "sourceGroupedFolds": [
+        0,
+        2,
+        4,
+        0,
+        4,
+        4,
+        1,
+        0,
+        0,
+        2,
+        1,
+        2,
+        1,
+        2,
+        2,
+        1,
+        1,
+        3,
+        4,
+        3,
+        3,
+        0,
+        2,
+        1,
+        0,
+        0,
+        0,
+        1,
+        3,
+        1,
+        2,
+        1,
+        2,
+        2,
+        3,
+        3,
+        0,
+        0,
+        0,
+        3,
+        4,
+        2,
+        2,
+        4,
+        2,
+        0,
+        4,
+        4,
+        2,
+        0,
+        4,
+        3,
+        3,
+        1,
+        4,
+        1,
+        0,
+        4,
+        0,
+        1,
+        3,
+        4,
+        1,
+        0,
+        4,
+        4,
+        3,
+        0,
+        4,
+        4,
+        2,
+        3,
+        1,
+        1,
+        3,
+        4,
+        3,
+        3,
+        3,
+        4,
+        3,
+        2,
+        0,
+        2,
+        1,
+        3,
+        2,
+        3,
+        1,
+        4,
+        1,
+        4,
+        1,
+        3,
+        4,
+        0,
+        1,
+        3,
+        2,
+        1,
+        2,
+        0,
+        3,
+        2,
+        1,
+        0,
+        0,
+        0,
+        3,
+        0,
+        4,
+        4,
+        2,
+        1,
+        0,
+        2,
+        1,
+        2,
+        3,
+        2,
+        4,
+        1
+      ],
+      "mechanicalReserve": {
+        "coherentRows": 122,
+        "incoherentRows": 0,
+        "incoherentSources": [],
+        "classMetricsOnCoherentRows": {
+          "rows": 122,
+          "threeClassNll": 0.5774357532487213,
+          "multiclassBrier": 0.32789179763461607,
+          "modeAccuracy": 0.7868852459016393,
+          "confusionActualRowsPredictedColumns": [
+            [
+              90,
+              2,
+              0
+            ],
+            [
+              16,
+              5,
+              4
+            ],
+            [
+              3,
+              1,
+              1
+            ]
+          ],
+          "perClass": {
+            "WIN_RETAINED": {
+              "count": 92,
+              "observedRate": 0.7540983606557377,
+              "meanPredictedProbability": 0.722667397717472
+            },
+            "WIN_CONSUMED": {
+              "count": 25,
+              "observedRate": 0.20491803278688525,
+              "meanPredictedProbability": 0.17839464673497638
+            },
+            "LOSS_CONSUMED": {
+              "count": 5,
+              "observedRate": 0.040983606557377046,
+              "meanPredictedProbability": 0.09893795554755164
+            }
+          }
+        },
+        "probabilitiesBySource": [
+          {
+            "sourceSeed": 4200300,
+            "rawClassProbabilities": [
+              0.6512615084648132,
+              0.34287333488464355,
+              0.005865156650543213
+            ],
+            "coherent": true
+          },
+          {
+            "sourceSeed": 4200301,
+            "rawClassProbabilities": [
+              0.8913824558258057,
+              0.10556060075759888,
+              0.003056943416595459
+            ],
+            "coherent": true
+          },
+          {
+            "sourceSeed": 4200302,
+            "rawClassProbabilities": [
+              0.8008877635002136,
+              0.005443751811981201,
+              0.19366848468780518
+            ],
+            "coherent": true
+          },
+          {
+            "sourceSeed": 4200303,
+            "rawClassProbabilities": [
+              0.03176148980855942,
+              0.35517535358667374,
+              0.6130631566047668
+            ],
+            "coherent": true
+          },
+          {
+            "sourceSeed": 4200304,
+            "rawClassProbabilities": [
+              0.7500960826873779,
+              0.15998345613479614,
+              0.08992046117782593
+            ],
+            "coherent": true
+          },
+          {
+            "sourceSeed": 4200305,
+            "rawClassProbabilities": [
+              0.7899386286735535,
+              0.20695561170578003,
+              0.003105759620666504
+            ],
+            "coherent": true
+          },
+          {
+            "sourceSeed": 4200306,
+            "rawClassProbabilities": [
+              0.7249156832695007,
+              0.27487730979919434,
+              0.00020700693130493164
+            ],
+            "coherent": true
+          },
+          {
+            "sourceSeed": 4200307,
+            "rawClassProbabilities": [
+              0.3058931529521942,
+              0.6123016774654388,
+              0.08180516958236694
+            ],
+            "coherent": true
+          },
+          {
+            "sourceSeed": 4200308,
+            "rawClassProbabilities": [
+              0.8805651664733887,
+              0.11901265382766724,
+              0.0004221796989440918
+            ],
+            "coherent": true
+          },
+          {
+            "sourceSeed": 4200309,
+            "rawClassProbabilities": [
+              0.5858153700828552,
+              0.40999722480773926,
+              0.004187405109405518
+            ],
+            "coherent": true
+          },
+          {
+            "sourceSeed": 4200310,
+            "rawClassProbabilities": [
+              0.7108345031738281,
+              0.2760973572731018,
+              0.013068139553070068
+            ],
+            "coherent": true
+          },
+          {
+            "sourceSeed": 4200311,
+            "rawClassProbabilities": [
+              0.7548356056213379,
+              0.24451273679733276,
+              0.0006516575813293457
+            ],
+            "coherent": true
+          },
+          {
+            "sourceSeed": 4200312,
+            "rawClassProbabilities": [
+              0.24712949991226196,
+              0.42570173740386963,
+              0.3271687626838684
+            ],
+            "coherent": true
+          },
+          {
+            "sourceSeed": 4200313,
+            "rawClassProbabilities": [
+              0.6631849408149719,
+              0.14278572797775269,
+              0.1940293312072754
+            ],
+            "coherent": true
+          },
+          {
+            "sourceSeed": 4200314,
+            "rawClassProbabilities": [
+              0.9998950958251953,
+              0.00010061264038085938,
+              4.291534423828125e-06
+            ],
+            "coherent": true
+          },
+          {
+            "sourceSeed": 4200315,
+            "rawClassProbabilities": [
+              0.8363388180732727,
+              0.0,
+              0.1636611819267273
+            ],
+            "coherent": true
+          },
+          {
+            "sourceSeed": 4200316,
+            "rawClassProbabilities": [
+              0.6514707207679749,
+              0.3357560634613037,
+              0.012773215770721436
+            ],
+            "coherent": true
+          },
+          {
+            "sourceSeed": 4200317,
+            "rawClassProbabilities": [
+              0.7562540173530579,
+              0.0,
+              0.24374598264694214
+            ],
+            "coherent": true
+          },
+          {
+            "sourceSeed": 4200318,
+            "rawClassProbabilities": [
+              0.6744612455368042,
+              0.3239756226539612,
+              0.0015631318092346191
+            ],
+            "coherent": true
+          },
+          {
+            "sourceSeed": 4200319,
+            "rawClassProbabilities": [
+              0.792430579662323,
+              0.04536992311477661,
+              0.1621994972229004
+            ],
+            "coherent": true
+          },
+          {
+            "sourceSeed": 4200320,
+            "rawClassProbabilities": [
+              0.3911356031894684,
+              0.3361417353153229,
+              0.27272266149520874
+            ],
+            "coherent": true
+          },
+          {
+            "sourceSeed": 4200321,
+            "rawClassProbabilities": [
+              0.8554523587226868,
+              0.1177707314491272,
+              0.026776909828186035
+            ],
+            "coherent": true
+          },
+          {
+            "sourceSeed": 4200322,
+            "rawClassProbabilities": [
+              0.9974812865257263,
+              0.002162635326385498,
+              0.0003560781478881836
+            ],
+            "coherent": true
+          },
+          {
+            "sourceSeed": 4200323,
+            "rawClassProbabilities": [
+              0.6186885237693787,
+              0.3795052766799927,
+              0.0018061995506286621
+            ],
+            "coherent": true
+          },
+          {
+            "sourceSeed": 4200324,
+            "rawClassProbabilities": [
+              0.8816141486167908,
+              0.11666256189346313,
+              0.0017232894897460938
+            ],
+            "coherent": true
+          },
+          {
+            "sourceSeed": 4200325,
+            "rawClassProbabilities": [
+              0.8622357249259949,
+              0.13619250059127808,
+              0.0015717744827270508
+            ],
+            "coherent": true
+          },
+          {
+            "sourceSeed": 4200326,
+            "rawClassProbabilities": [
+              0.8869017958641052,
+              0.006917357444763184,
+              0.10618084669113159
+            ],
+            "coherent": true
+          },
+          {
+            "sourceSeed": 4200327,
+            "rawClassProbabilities": [
+              0.4280090630054474,
+              0.32364943623542786,
+              0.24834150075912476
+            ],
+            "coherent": true
+          },
+          {
+            "sourceSeed": 4200328,
+            "rawClassProbabilities": [
+              0.44578883051872253,
+              0.5226013362407684,
+              0.03160983324050903
+            ],
+            "coherent": true
+          },
+          {
+            "sourceSeed": 4200329,
+            "rawClassProbabilities": [
+              0.5837799310684204,
+              0.3801622986793518,
+              0.03605777025222778
+            ],
+            "coherent": true
+          },
+          {
+            "sourceSeed": 4200330,
+            "rawClassProbabilities": [
+              0.9999836683273315,
+              1.2636184692382812e-05,
+              3.6954879760742188e-06
+            ],
+            "coherent": true
+          },
+          {
+            "sourceSeed": 4200331,
+            "rawClassProbabilities": [
+              0.47841504216194153,
+              0.38477370142936707,
+              0.1368112564086914
+            ],
+            "coherent": true
+          },
+          {
+            "sourceSeed": 4200332,
+            "rawClassProbabilities": [
+              0.5401714444160461,
+              0.015095531940460205,
+              0.44473302364349365
+            ],
+            "coherent": true
+          },
+          {
+            "sourceSeed": 4200333,
+            "rawClassProbabilities": [
+              0.5692365765571594,
+              0.42030006647109985,
+              0.010463356971740723
+            ],
+            "coherent": true
+          },
+          {
+            "sourceSeed": 4200334,
+            "rawClassProbabilities": [
+              0.14508241415023804,
+              0.4547443389892578,
+              0.40017324686050415
+            ],
+            "coherent": true
+          },
+          {
+            "sourceSeed": 4200335,
+            "rawClassProbabilities": [
+              0.27647432684898376,
+              0.5500457584857941,
+              0.17347991466522217
+            ],
+            "coherent": true
+          },
+          {
+            "sourceSeed": 4200336,
+            "rawClassProbabilities": [
+              0.6888228058815002,
+              0.16510045528411865,
+              0.1460767388343811
+            ],
+            "coherent": true
+          },
+          {
+            "sourceSeed": 4200337,
+            "rawClassProbabilities": [
+              0.17546042799949646,
+              0.3890592157840729,
+              0.43548035621643066
+            ],
+            "coherent": true
+          },
+          {
+            "sourceSeed": 4200338,
+            "rawClassProbabilities": [
+              0.8698111772537231,
+              0.06197631359100342,
+              0.06821250915527344
+            ],
+            "coherent": true
+          },
+          {
+            "sourceSeed": 4200339,
+            "rawClassProbabilities": [
+              0.9999973773956299,
+              0.0,
+              2.6226043701171875e-06
+            ],
+            "coherent": true
+          },
+          {
+            "sourceSeed": 4200340,
+            "rawClassProbabilities": [
+              0.8118829131126404,
+              0.18523907661437988,
+              0.0028780102729797363
+            ],
+            "coherent": true
+          },
+          {
+            "sourceSeed": 4200341,
+            "rawClassProbabilities": [
+              0.7975795269012451,
+              0.18844830989837646,
+              0.013972163200378418
+            ],
+            "coherent": true
+          },
+          {
+            "sourceSeed": 4200342,
+            "rawClassProbabilities": [
+              0.7315003275871277,
+              0.16336870193481445,
+              0.10513097047805786
+            ],
+            "coherent": true
+          },
+          {
+            "sourceSeed": 4200343,
+            "rawClassProbabilities": [
+              0.32369542121887207,
+              0.32642877101898193,
+              0.349875807762146
+            ],
+            "coherent": true
+          },
+          {
+            "sourceSeed": 4200345,
+            "rawClassProbabilities": [
+              0.9156931042671204,
+              0.04778933525085449,
+              0.036517560482025146
+            ],
+            "coherent": true
+          },
+          {
+            "sourceSeed": 4200346,
+            "rawClassProbabilities": [
+              0.8640267252922058,
+              0.044773638248443604,
+              0.09119963645935059
+            ],
+            "coherent": true
+          },
+          {
+            "sourceSeed": 4200347,
+            "rawClassProbabilities": [
+              0.726909875869751,
+              0.27206987142562866,
+              0.0010202527046203613
+            ],
+            "coherent": true
+          },
+          {
+            "sourceSeed": 4200348,
+            "rawClassProbabilities": [
+              0.8442333936691284,
+              0.15486669540405273,
+              0.0008999109268188477
+            ],
+            "coherent": true
+          },
+          {
+            "sourceSeed": 4200349,
+            "rawClassProbabilities": [
+              0.8834588527679443,
+              0.11538505554199219,
+              0.0011560916900634766
+            ],
+            "coherent": true
+          },
+          {
+            "sourceSeed": 4200350,
+            "rawClassProbabilities": [
+              0.5967002511024475,
+              0.37140756845474243,
+              0.03189218044281006
+            ],
+            "coherent": true
+          },
+          {
+            "sourceSeed": 4200351,
+            "rawClassProbabilities": [
+              0.9999673366546631,
+              3.0159950256347656e-05,
+              2.5033950805664062e-06
+            ],
+            "coherent": true
+          },
+          {
+            "sourceSeed": 4200352,
+            "rawClassProbabilities": [
+              0.9999934434890747,
+              3.2186508178710938e-06,
+              3.337860107421875e-06
+            ],
+            "coherent": true
+          },
+          {
+            "sourceSeed": 4200353,
+            "rawClassProbabilities": [
+              0.4274216890335083,
+              0.31799155473709106,
+              0.25458675622940063
+            ],
+            "coherent": true
+          },
+          {
+            "sourceSeed": 4200354,
+            "rawClassProbabilities": [
+              0.8077648282051086,
+              0.0,
+              0.19223517179489136
+            ],
+            "coherent": true
+          },
+          {
+            "sourceSeed": 4200355,
+            "rawClassProbabilities": [
+              0.8242101073265076,
+              0.0,
+              0.17578989267349243
+            ],
+            "coherent": true
+          },
+          {
+            "sourceSeed": 4200356,
+            "rawClassProbabilities": [
+              0.8099445700645447,
+              0.0,
+              0.19005542993545532
+            ],
+            "coherent": true
+          },
+          {
+            "sourceSeed": 4200357,
+            "rawClassProbabilities": [
+              0.9988686442375183,
+              0.0,
+              0.0011313557624816895
+            ],
+            "coherent": true
+          },
+          {
+            "sourceSeed": 4200358,
+            "rawClassProbabilities": [
+              0.8826979398727417,
+              0.11673051118850708,
+              0.0005715489387512207
+            ],
+            "coherent": true
+          },
+          {
+            "sourceSeed": 4200359,
+            "rawClassProbabilities": [
+              0.755058228969574,
+              0.1443043351173401,
+              0.10063743591308594
+            ],
+            "coherent": true
+          },
+          {
+            "sourceSeed": 4200360,
+            "rawClassProbabilities": [
+              0.8472760915756226,
+              0.04419606924057007,
+              0.10852783918380737
+            ],
+            "coherent": true
+          },
+          {
+            "sourceSeed": 4200361,
+            "rawClassProbabilities": [
+              0.898767352104187,
+              0.10091030597686768,
+              0.0003223419189453125
+            ],
+            "coherent": true
+          },
+          {
+            "sourceSeed": 4200362,
+            "rawClassProbabilities": [
+              0.892741858959198,
+              0.05891662836074829,
+              0.04834151268005371
+            ],
+            "coherent": true
+          },
+          {
+            "sourceSeed": 4200363,
+            "rawClassProbabilities": [
+              0.8816564083099365,
+              0.0,
+              0.11834359169006348
+            ],
+            "coherent": true
+          },
+          {
+            "sourceSeed": 4200364,
+            "rawClassProbabilities": [
+              0.6523240208625793,
+              0.2991986870765686,
+              0.04847729206085205
+            ],
+            "coherent": true
+          },
+          {
+            "sourceSeed": 4200365,
+            "rawClassProbabilities": [
+              0.9999939203262329,
+              1.0728836059570312e-06,
+              5.0067901611328125e-06
+            ],
+            "coherent": true
+          },
+          {
+            "sourceSeed": 4200366,
+            "rawClassProbabilities": [
+              0.998305082321167,
+              0.001387953758239746,
+              0.0003069639205932617
+            ],
+            "coherent": true
+          },
+          {
+            "sourceSeed": 4200367,
+            "rawClassProbabilities": [
+              0.7238779664039612,
+              0.2719390392303467,
+              0.004182994365692139
+            ],
+            "coherent": true
+          },
+          {
+            "sourceSeed": 4200368,
+            "rawClassProbabilities": [
+              0.8500214219093323,
+              0.008208930492401123,
+              0.1417696475982666
+            ],
+            "coherent": true
+          },
+          {
+            "sourceSeed": 4200369,
+            "rawClassProbabilities": [
+              0.7059059739112854,
+              0.293296217918396,
+              0.0007978081703186035
+            ],
+            "coherent": true
+          },
+          {
+            "sourceSeed": 4200370,
+            "rawClassProbabilities": [
+              0.8897362947463989,
+              0.10963815450668335,
+              0.0006255507469177246
+            ],
+            "coherent": true
+          },
+          {
+            "sourceSeed": 4200371,
+            "rawClassProbabilities": [
+              0.9998873472213745,
+              0.0001062154769897461,
+              6.4373016357421875e-06
+            ],
+            "coherent": true
+          },
+          {
+            "sourceSeed": 4200372,
+            "rawClassProbabilities": [
+              0.5969175100326538,
+              0.07765579223632812,
+              0.32542669773101807
+            ],
+            "coherent": true
+          },
+          {
+            "sourceSeed": 4200373,
+            "rawClassProbabilities": [
+              0.8958919644355774,
+              0.10277491807937622,
+              0.0013331174850463867
+            ],
+            "coherent": true
+          },
+          {
+            "sourceSeed": 4200374,
+            "rawClassProbabilities": [
+              0.3181055188179016,
+              0.19465672969818115,
+              0.48723775148391724
+            ],
+            "coherent": true
+          },
+          {
+            "sourceSeed": 4200375,
+            "rawClassProbabilities": [
+              0.5056823492050171,
+              0.0,
+              0.4943176507949829
+            ],
+            "coherent": true
+          },
+          {
+            "sourceSeed": 4200376,
+            "rawClassProbabilities": [
+              0.7944363951683044,
+              0.2042188048362732,
+              0.0013447999954223633
+            ],
+            "coherent": true
+          },
+          {
+            "sourceSeed": 4200377,
+            "rawClassProbabilities": [
+              0.7907184362411499,
+              0.15819036960601807,
+              0.05109119415283203
+            ],
+            "coherent": true
+          },
+          {
+            "sourceSeed": 4200380,
+            "rawClassProbabilities": [
+              0.7947567105293274,
+              0.16129589080810547,
+              0.04394739866256714
+            ],
+            "coherent": true
+          },
+          {
+            "sourceSeed": 4200381,
+            "rawClassProbabilities": [
+              0.8790135383605957,
+              0.04253232479095459,
+              0.07845413684844971
+            ],
+            "coherent": true
+          },
+          {
+            "sourceSeed": 4200383,
+            "rawClassProbabilities": [
+              0.5327739119529724,
+              0.059243202209472656,
+              0.40798288583755493
+            ],
+            "coherent": true
+          },
+          {
+            "sourceSeed": 4200384,
+            "rawClassProbabilities": [
+              0.7328556776046753,
+              0.264041543006897,
+              0.0031027793884277344
+            ],
+            "coherent": true
+          },
+          {
+            "sourceSeed": 4200385,
+            "rawClassProbabilities": [
+              0.8335592150688171,
+              0.1625843644142151,
+              0.0038564205169677734
+            ],
+            "coherent": true
+          },
+          {
+            "sourceSeed": 4200386,
+            "rawClassProbabilities": [
+              0.7081369161605835,
+              0.2911434769630432,
+              0.000719606876373291
+            ],
+            "coherent": true
+          },
+          {
+            "sourceSeed": 4200387,
+            "rawClassProbabilities": [
+              0.4953042268753052,
+              0.438801646232605,
+              0.06589412689208984
+            ],
+            "coherent": true
+          },
+          {
+            "sourceSeed": 4200388,
+            "rawClassProbabilities": [
+              0.822467565536499,
+              0.16430151462554932,
+              0.01323091983795166
+            ],
+            "coherent": true
+          },
+          {
+            "sourceSeed": 4200390,
+            "rawClassProbabilities": [
+              0.7996145486831665,
+              0.17466962337493896,
+              0.02571582794189453
+            ],
+            "coherent": true
+          },
+          {
+            "sourceSeed": 4200391,
+            "rawClassProbabilities": [
+              0.9999485015869141,
+              4.4226646423339844e-05,
+              7.271766662597656e-06
+            ],
+            "coherent": true
+          },
+          {
+            "sourceSeed": 4200392,
+            "rawClassProbabilities": [
+              0.5466523766517639,
+              0.45016759634017944,
+              0.0031800270080566406
+            ],
+            "coherent": true
+          },
+          {
+            "sourceSeed": 4200393,
+            "rawClassProbabilities": [
+              0.8996245265007019,
+              0.0,
+              0.1003754734992981
+            ],
+            "coherent": true
+          },
+          {
+            "sourceSeed": 4200394,
+            "rawClassProbabilities": [
+              0.8974335193634033,
+              0.062287211418151855,
+              0.040279269218444824
+            ],
+            "coherent": true
+          },
+          {
+            "sourceSeed": 4200395,
+            "rawClassProbabilities": [
+              0.8679153919219971,
+              0.12361347675323486,
+              0.008471131324768066
+            ],
+            "coherent": true
+          },
+          {
+            "sourceSeed": 4200396,
+            "rawClassProbabilities": [
+              0.7855851054191589,
+              0.2117370367050171,
+              0.0026778578758239746
+            ],
+            "coherent": true
+          },
+          {
+            "sourceSeed": 4200397,
+            "rawClassProbabilities": [
+              0.6209866404533386,
+              0.16220635175704956,
+              0.21680700778961182
+            ],
+            "coherent": true
+          },
+          {
+            "sourceSeed": 4200398,
+            "rawClassProbabilities": [
+              0.8323488235473633,
+              0.04076027870178223,
+              0.1268908977508545
+            ],
+            "coherent": true
+          },
+          {
+            "sourceSeed": 4200399,
+            "rawClassProbabilities": [
+              0.7873333692550659,
+              0.21155470609664917,
+              0.0011119246482849121
+            ],
+            "coherent": true
+          },
+          {
+            "sourceSeed": 4200400,
+            "rawClassProbabilities": [
+              0.7336910367012024,
+              0.20161759853363037,
+              0.06469136476516724
+            ],
+            "coherent": true
+          },
+          {
+            "sourceSeed": 4200401,
+            "rawClassProbabilities": [
+              0.9999433755874634,
+              0.0,
+              5.6624412536621094e-05
+            ],
+            "coherent": true
+          },
+          {
+            "sourceSeed": 4200402,
+            "rawClassProbabilities": [
+              0.8307889103889465,
+              0.07013934850692749,
+              0.09907174110412598
+            ],
+            "coherent": true
+          },
+          {
+            "sourceSeed": 4200403,
+            "rawClassProbabilities": [
+              0.6458242535591125,
+              0.20665103197097778,
+              0.14752471446990967
+            ],
+            "coherent": true
+          },
+          {
+            "sourceSeed": 4200404,
+            "rawClassProbabilities": [
+              0.0812540054321289,
+              0.46484947204589844,
+              0.45389652252197266
+            ],
+            "coherent": true
+          },
+          {
+            "sourceSeed": 4200405,
+            "rawClassProbabilities": [
+              0.8380386233329773,
+              0.04437810182571411,
+              0.1175832748413086
+            ],
+            "coherent": true
+          },
+          {
+            "sourceSeed": 4200406,
+            "rawClassProbabilities": [
+              0.5304752588272095,
+              0.4550606608390808,
+              0.014464080333709717
+            ],
+            "coherent": true
+          },
+          {
+            "sourceSeed": 4200407,
+            "rawClassProbabilities": [
+              0.8520709872245789,
+              0.12240999937057495,
+              0.02551901340484619
+            ],
+            "coherent": true
+          },
+          {
+            "sourceSeed": 4200408,
+            "rawClassProbabilities": [
+              0.42811015248298645,
+              0.303326815366745,
+              0.26856303215026855
+            ],
+            "coherent": true
+          },
+          {
+            "sourceSeed": 4200409,
+            "rawClassProbabilities": [
+              0.6255499720573425,
+              0.3726208806037903,
+              0.0018291473388671875
+            ],
+            "coherent": true
+          },
+          {
+            "sourceSeed": 4200410,
+            "rawClassProbabilities": [
+              0.32789385318756104,
+              0.5311663746833801,
+              0.14093977212905884
+            ],
+            "coherent": true
+          },
+          {
+            "sourceSeed": 4200411,
+            "rawClassProbabilities": [
+              0.8486902713775635,
+              0.0,
+              0.15130972862243652
+            ],
+            "coherent": true
+          },
+          {
+            "sourceSeed": 4200412,
+            "rawClassProbabilities": [
+              0.5780645608901978,
+              0.41975677013397217,
+              0.002178668975830078
+            ],
+            "coherent": true
+          },
+          {
+            "sourceSeed": 4200413,
+            "rawClassProbabilities": [
+              0.8842914700508118,
+              0.1143108606338501,
+              0.0013976693153381348
+            ],
+            "coherent": true
+          },
+          {
+            "sourceSeed": 4200414,
+            "rawClassProbabilities": [
+              0.5670978426933289,
+              0.0,
+              0.43290215730667114
+            ],
+            "coherent": true
+          },
+          {
+            "sourceSeed": 4200415,
+            "rawClassProbabilities": [
+              0.8246455788612366,
+              0.17465323209762573,
+              0.0007011890411376953
+            ],
+            "coherent": true
+          },
+          {
+            "sourceSeed": 4200416,
+            "rawClassProbabilities": [
+              0.999996542930603,
+              0.0,
+              3.4570693969726562e-06
+            ],
+            "coherent": true
+          },
+          {
+            "sourceSeed": 4200418,
+            "rawClassProbabilities": [
+              0.6628584861755371,
+              0.10799705982208252,
+              0.22914445400238037
+            ],
+            "coherent": true
+          },
+          {
+            "sourceSeed": 4200419,
+            "rawClassProbabilities": [
+              0.999982476234436,
+              0.0,
+              1.7523765563964844e-05
+            ],
+            "coherent": true
+          },
+          {
+            "sourceSeed": 4200420,
+            "rawClassProbabilities": [
+              0.9993131160736084,
+              0.0,
+              0.0006868839263916016
+            ],
+            "coherent": true
+          },
+          {
+            "sourceSeed": 4200421,
+            "rawClassProbabilities": [
+              0.6635956168174744,
+              0.18401110172271729,
+              0.15239328145980835
+            ],
+            "coherent": true
+          },
+          {
+            "sourceSeed": 4200422,
+            "rawClassProbabilities": [
+              0.12632189691066742,
+              0.39387018978595734,
+              0.47980791330337524
+            ],
+            "coherent": true
+          },
+          {
+            "sourceSeed": 4200423,
+            "rawClassProbabilities": [
+              0.16535986959934235,
+              0.7361162155866623,
+              0.09852391481399536
+            ],
+            "coherent": true
+          },
+          {
+            "sourceSeed": 4200424,
+            "rawClassProbabilities": [
+              0.9999961853027344,
+              0.0,
+              3.814697265625e-06
+            ],
+            "coherent": true
+          },
+          {
+            "sourceSeed": 4200425,
+            "rawClassProbabilities": [
+              0.8861591219902039,
+              0.11312198638916016,
+              0.0007188916206359863
+            ],
+            "coherent": true
+          },
+          {
+            "sourceSeed": 4200426,
+            "rawClassProbabilities": [
+              0.7914015650749207,
+              0.2035694718360901,
+              0.005028963088989258
+            ],
+            "coherent": true
+          },
+          {
+            "sourceSeed": 4200427,
+            "rawClassProbabilities": [
+              0.9999489784240723,
+              4.792213439941406e-05,
+              3.0994415283203125e-06
+            ],
+            "coherent": true
+          }
+        ]
+      },
+      "b0TrainOnlyClassFrequency": {
+        "rows": 122,
+        "threeClassNll": 0.6867526775818181,
+        "multiclassBrier": 0.39273070582354536,
+        "modeAccuracy": 0.7540983606557377,
+        "confusionActualRowsPredictedColumns": [
+          [
+            92,
+            0,
+            0
+          ],
+          [
+            25,
+            0,
+            0
+          ],
+          [
+            5,
+            0,
+            0
+          ]
+        ],
+        "perClass": {
+          "WIN_RETAINED": {
+            "count": 92,
+            "observedRate": 0.7540983606557377,
+            "meanPredictedProbability": 0.754172515719149
+          },
+          "WIN_CONSUMED": {
+            "count": 25,
+            "observedRate": 0.20491803278688525,
+            "meanPredictedProbability": 0.20473350739653645
+          },
+          "LOSS_CONSUMED": {
+            "count": 5,
+            "observedRate": 0.040983606557377046,
+            "meanPredictedProbability": 0.041093976884314654
+          }
+        }
+      },
+      "correction": {
+        "features": {
+          "q": [
+            "logit(pDeath)",
+            "pReserveWin - pOrdinaryWin"
+          ],
+          "r": [
+            "pReserveWin"
+          ]
+        },
+        "l2": 1.0,
+        "folds": 5,
+        "foldSeed": 20260926,
+        "classMetrics": {
+          "rows": 122,
+          "threeClassNll": 0.5640699242150906,
+          "multiclassBrier": 0.3180842612951011,
+          "modeAccuracy": 0.8032786885245902,
+          "confusionActualRowsPredictedColumns": [
+            [
+              90,
+              2,
+              0
+            ],
+            [
+              17,
+              8,
+              0
+            ],
+            [
+              4,
+              1,
+              0
+            ]
+          ],
+          "perClass": {
+            "WIN_RETAINED": {
+              "count": 92,
+              "observedRate": 0.7540983606557377,
+              "meanPredictedProbability": 0.7543730201824053
+            },
+            "WIN_CONSUMED": {
+              "count": 25,
+              "observedRate": 0.20491803278688525,
+              "meanPredictedProbability": 0.2052302895756696
+            },
+            "LOSS_CONSUMED": {
+              "count": 5,
+              "observedRate": 0.040983606557377046,
+              "meanPredictedProbability": 0.04039669024192518
+            }
+          }
+        },
+        "foldByFold": [
+          {
+            "fold": 0,
+            "trainRows": 97,
+            "testRows": 25,
+            "trainClassCounts": {
+              "WIN_RETAINED": 74,
+              "WIN_CONSUMED": 18,
+              "LOSS_CONSUMED": 5
+            },
+            "b0ClassFrequency": {
+              "rows": 25,
+              "threeClassNll": 0.6664800191854546,
+              "multiclassBrier": 0.4166138803273462,
+              "modeAccuracy": 0.72,
+              "confusionActualRowsPredictedColumns": [
+                [
+                  18,
+                  0,
+                  0
+                ],
+                [
+                  7,
+                  0,
+                  0
+                ],
+                [
+                  0,
+                  0,
+                  0
+                ]
+              ],
+              "perClass": {
+                "WIN_RETAINED": {
+                  "count": 18,
+                  "observedRate": 0.72,
+                  "meanPredictedProbability": 0.7628865979381443
+                },
+                "WIN_CONSUMED": {
+                  "count": 7,
+                  "observedRate": 0.28,
+                  "meanPredictedProbability": 0.18556701030927836
+                },
+                "LOSS_CONSUMED": {
+                  "count": 0,
+                  "observedRate": 0.0,
+                  "meanPredictedProbability": 0.051546391752577324
+                }
+              }
+            },
+            "correction": {
+              "rows": 25,
+              "threeClassNll": 0.5503043859795588,
+              "multiclassBrier": 0.333788848532323,
+              "modeAccuracy": 0.8,
+              "confusionActualRowsPredictedColumns": [
+                [
+                  17,
+                  1,
+                  0
+                ],
+                [
+                  4,
+                  3,
+                  0
+                ],
+                [
+                  0,
+                  0,
+                  0
+                ]
+              ],
+              "perClass": {
+                "WIN_RETAINED": {
+                  "count": 18,
+                  "observedRate": 0.72,
+                  "meanPredictedProbability": 0.7126666337479769
+                },
+                "WIN_CONSUMED": {
+                  "count": 7,
+                  "observedRate": 0.28,
+                  "meanPredictedProbability": 0.22723994293966818
+                },
+                "LOSS_CONSUMED": {
+                  "count": 0,
+                  "observedRate": 0.0,
+                  "meanPredictedProbability": 0.06009342331235496
+                }
+              }
+            },
+            "q": {
+              "rows": 25,
+              "brier": 0.15582974541487923,
+              "nll": 0.476026186898645,
+              "observedRate": 0.28,
+              "meanPredicted": 0.2873333662520231
+            },
+            "r": {
+              "rows": 7,
+              "brier": 0.059322770979785354,
+              "nll": 0.26527928243183496,
+              "observedRate": 1.0,
+              "meanPredicted": 0.7723274718258261
+            }
+          },
+          {
+            "fold": 1,
+            "trainRows": 97,
+            "testRows": 25,
+            "trainClassCounts": {
+              "WIN_RETAINED": 73,
+              "WIN_CONSUMED": 20,
+              "LOSS_CONSUMED": 4
+            },
+            "b0ClassFrequency": {
+              "rows": 25,
+              "threeClassNll": 0.6593635740750117,
+              "multiclassBrier": 0.38089488787331277,
+              "modeAccuracy": 0.76,
+              "confusionActualRowsPredictedColumns": [
+                [
+                  19,
+                  0,
+                  0
+                ],
+                [
+                  5,
+                  0,
+                  0
+                ],
+                [
+                  1,
+                  0,
+                  0
+                ]
+              ],
+              "perClass": {
+                "WIN_RETAINED": {
+                  "count": 19,
+                  "observedRate": 0.76,
+                  "meanPredictedProbability": 0.7525773195876289
+                },
+                "WIN_CONSUMED": {
+                  "count": 5,
+                  "observedRate": 0.2,
+                  "meanPredictedProbability": 0.2061855670103093
+                },
+                "LOSS_CONSUMED": {
+                  "count": 1,
+                  "observedRate": 0.04,
+                  "meanPredictedProbability": 0.04123711340206186
+                }
+              }
+            },
+            "correction": {
+              "rows": 25,
+              "threeClassNll": 0.4626843011271433,
+              "multiclassBrier": 0.26271437437678097,
+              "modeAccuracy": 0.84,
+              "confusionActualRowsPredictedColumns": [
+                [
+                  19,
+                  0,
+                  0
+                ],
+                [
+                  3,
+                  2,
+                  0
+                ],
+                [
+                  0,
+                  1,
+                  0
+                ]
+              ],
+              "perClass": {
+                "WIN_RETAINED": {
+                  "count": 19,
+                  "observedRate": 0.76,
+                  "meanPredictedProbability": 0.7152638762243109
+                },
+                "WIN_CONSUMED": {
+                  "count": 5,
+                  "observedRate": 0.2,
+                  "meanPredictedProbability": 0.23527739135310569
+                },
+                "LOSS_CONSUMED": {
+                  "count": 1,
+                  "observedRate": 0.04,
+                  "meanPredictedProbability": 0.04945873242258342
+                }
+              }
+            },
+            "q": {
+              "rows": 25,
+              "brier": 0.1071925262449921,
+              "nll": 0.35921854541852183,
+              "observedRate": 0.24,
+              "meanPredicted": 0.2847361237756891
+            },
+            "r": {
+              "rows": 6,
+              "brier": 0.13313242428715683,
+              "nll": 0.43110731545258946,
+              "observedRate": 0.8333333333333334,
+              "meanPredicted": 0.8003800460582706
+            }
+          },
+          {
+            "fold": 2,
+            "trainRows": 98,
+            "testRows": 24,
+            "trainClassCounts": {
+              "WIN_RETAINED": 74,
+              "WIN_CONSUMED": 21,
+              "LOSS_CONSUMED": 3
+            },
+            "b0ClassFrequency": {
+              "rows": 24,
+              "threeClassNll": 0.7579472284245318,
+              "multiclassBrier": 0.4078508954602249,
+              "modeAccuracy": 0.75,
+              "confusionActualRowsPredictedColumns": [
+                [
+                  18,
+                  0,
+                  0
+                ],
+                [
+                  4,
+                  0,
+                  0
+                ],
+                [
+                  2,
+                  0,
+                  0
+                ]
+              ],
+              "perClass": {
+                "WIN_RETAINED": {
+                  "count": 18,
+                  "observedRate": 0.75,
+                  "meanPredictedProbability": 0.7551020408163266
+                },
+                "WIN_CONSUMED": {
+                  "count": 4,
+                  "observedRate": 0.16666666666666666,
+                  "meanPredictedProbability": 0.21428571428571427
+                },
+                "LOSS_CONSUMED": {
+                  "count": 2,
+                  "observedRate": 0.08333333333333333,
+                  "meanPredictedProbability": 0.03061224489795918
+                }
+              }
+            },
+            "correction": {
+              "rows": 24,
+              "threeClassNll": 0.6297989027101618,
+              "multiclassBrier": 0.3294950205176727,
+              "modeAccuracy": 0.7916666666666666,
+              "confusionActualRowsPredictedColumns": [
+                [
+                  18,
+                  0,
+                  0
+                ],
+                [
+                  3,
+                  1,
+                  0
+                ],
+                [
+                  2,
+                  0,
+                  0
+                ]
+              ],
+              "perClass": {
+                "WIN_RETAINED": {
+                  "count": 18,
+                  "observedRate": 0.75,
+                  "meanPredictedProbability": 0.7822558205496367
+                },
+                "WIN_CONSUMED": {
+                  "count": 4,
+                  "observedRate": 0.16666666666666666,
+                  "meanPredictedProbability": 0.1954276632876728
+                },
+                "LOSS_CONSUMED": {
+                  "count": 2,
+                  "observedRate": 0.08333333333333333,
+                  "meanPredictedProbability": 0.022316516162690595
+                }
+              }
+            },
+            "q": {
+              "rows": 24,
+              "brier": 0.14401068219385998,
+              "nll": 0.4323199422139446,
+              "observedRate": 0.25,
+              "meanPredicted": 0.2177441794503634
+            },
+            "r": {
+              "rows": 6,
+              "brier": 0.2672310481035017,
+              "nll": 0.7899158419848687,
+              "observedRate": 0.6666666666666666,
+              "meanPredicted": 0.8967947468391633
+            }
+          },
+          {
+            "fold": 3,
+            "trainRows": 98,
+            "testRows": 24,
+            "trainClassCounts": {
+              "WIN_RETAINED": 75,
+              "WIN_CONSUMED": 18,
+              "LOSS_CONSUMED": 5
+            },
+            "b0ClassFrequency": {
+              "rows": 24,
+              "threeClassNll": 0.6837216355293041,
+              "multiclassBrier": 0.4307059558517285,
+              "modeAccuracy": 0.7083333333333334,
+              "confusionActualRowsPredictedColumns": [
+                [
+                  17,
+                  0,
+                  0
+                ],
+                [
+                  7,
+                  0,
+                  0
+                ],
+                [
+                  0,
+                  0,
+                  0
+                ]
+              ],
+              "perClass": {
+                "WIN_RETAINED": {
+                  "count": 17,
+                  "observedRate": 0.7083333333333334,
+                  "meanPredictedProbability": 0.7653061224489796
+                },
+                "WIN_CONSUMED": {
+                  "count": 7,
+                  "observedRate": 0.2916666666666667,
+                  "meanPredictedProbability": 0.1836734693877551
+                },
+                "LOSS_CONSUMED": {
+                  "count": 0,
+                  "observedRate": 0.0,
+                  "meanPredictedProbability": 0.05102040816326531
+                }
+              }
+            },
+            "correction": {
+              "rows": 24,
+              "threeClassNll": 0.6196559533644564,
+              "multiclassBrier": 0.3873200983890919,
+              "modeAccuracy": 0.75,
+              "confusionActualRowsPredictedColumns": [
+                [
+                  16,
+                  1,
+                  0
+                ],
+                [
+                  5,
+                  2,
+                  0
+                ],
+                [
+                  0,
+                  0,
+                  0
+                ]
+              ],
+              "perClass": {
+                "WIN_RETAINED": {
+                  "count": 17,
+                  "observedRate": 0.7083333333333334,
+                  "meanPredictedProbability": 0.7541728542331662
+                },
+                "WIN_CONSUMED": {
+                  "count": 7,
+                  "observedRate": 0.2916666666666667,
+                  "meanPredictedProbability": 0.1948779563549726
+                },
+                "LOSS_CONSUMED": {
+                  "count": 0,
+                  "observedRate": 0.0,
+                  "meanPredictedProbability": 0.05094918941186114
+                }
+              }
+            },
+            "q": {
+              "rows": 24,
+              "brier": 0.18765659798356893,
+              "nll": 0.5494344146777572,
+              "observedRate": 0.2916666666666667,
+              "meanPredicted": 0.2458271457668337
+            },
+            "r": {
+              "rows": 7,
+              "brier": 0.04659409318422598,
+              "nll": 0.24075956121154066,
+              "observedRate": 1.0,
+              "meanPredicted": 0.7867477599057581
+            }
+          },
+          {
+            "fold": 4,
+            "trainRows": 98,
+            "testRows": 24,
+            "trainClassCounts": {
+              "WIN_RETAINED": 72,
+              "WIN_CONSUMED": 23,
+              "LOSS_CONSUMED": 3
+            },
+            "b0ClassFrequency": {
+              "rows": 24,
+              "threeClassNll": 0.6682368374407542,
+              "multiclassBrier": 0.3270859364153824,
+              "modeAccuracy": 0.8333333333333334,
+              "confusionActualRowsPredictedColumns": [
+                [
+                  20,
+                  0,
+                  0
+                ],
+                [
+                  2,
+                  0,
+                  0
+                ],
+                [
+                  2,
+                  0,
+                  0
+                ]
+              ],
+              "perClass": {
+                "WIN_RETAINED": {
+                  "count": 20,
+                  "observedRate": 0.8333333333333334,
+                  "meanPredictedProbability": 0.7346938775510204
+                },
+                "WIN_CONSUMED": {
+                  "count": 2,
+                  "observedRate": 0.08333333333333333,
+                  "meanPredictedProbability": 0.23469387755102042
+                },
+                "LOSS_CONSUMED": {
+                  "count": 2,
+                  "observedRate": 0.08333333333333333,
+                  "meanPredictedProbability": 0.03061224489795918
+                }
+              }
+            },
+            "correction": {
+              "rows": 24,
+              "threeClassNll": 0.5627040429492779,
+              "multiclassBrier": 0.2787556854796828,
+              "modeAccuracy": 0.8333333333333334,
+              "confusionActualRowsPredictedColumns": [
+                [
+                  20,
+                  0,
+                  0
+                ],
+                [
+                  2,
+                  0,
+                  0
+                ],
+                [
+                  2,
+                  0,
+                  0
+                ]
+              ],
+              "perClass": {
+                "WIN_RETAINED": {
+                  "count": 20,
+                  "observedRate": 0.8333333333333334,
+                  "meanPredictedProbability": 0.8108732299232905
+                },
+                "WIN_CONSUMED": {
+                  "count": 2,
+                  "observedRate": 0.08333333333333333,
+                  "meanPredictedProbability": 0.17115946247870237
+                },
+                "LOSS_CONSUMED": {
+                  "count": 2,
+                  "observedRate": 0.08333333333333333,
+                  "meanPredictedProbability": 0.017967307598007163
+                }
+              }
+            },
+            "q": {
+              "rows": 24,
+              "brier": 0.1148165569794591,
+              "nll": 0.37355340133576614,
+              "observedRate": 0.16666666666666666,
+              "meanPredicted": 0.18912677007670955
+            },
+            "r": {
+              "rows": 4,
+              "brier": 0.39552590509863794,
+              "nll": 1.1349038496810702,
+              "observedRate": 0.5,
+              "meanPredicted": 0.902365251299555
+            }
+          }
+        ],
+        "foldCoefficients": [
+          {
+            "fold": 0,
+            "q": [
+              -1.0665570017495836,
+              0.4789216007017637,
+              2.1821852161050828
+            ],
+            "r": [
+              -0.4663637922133186,
+              2.222723023896135
+            ],
+            "qConverged": true,
+            "rConverged": true
+          },
+          {
+            "fold": 1,
+            "q": [
+              -0.8517869071434286,
+              0.4575935208449034,
+              1.4213111307426498
+            ],
+            "r": [
+              0.5206749935353403,
+              1.3273400985454769
+            ],
+            "qConverged": true,
+            "rConverged": true
+          },
+          {
+            "fold": 2,
+            "q": [
+              -0.8095080346138495,
+              0.5825205745426417,
+              1.1775137270338967
+            ],
+            "r": [
+              0.5516331209374405,
+              1.847457062015897
+            ],
+            "qConverged": true,
+            "rConverged": true
+          },
+          {
+            "fold": 3,
+            "q": [
+              -1.1173538823774223,
+              0.5672812600073395,
+              2.3286607044055874
+            ],
+            "r": [
+              0.10043229745134852,
+              1.5102924662129515
+            ],
+            "qConverged": true,
+            "rConverged": true
+          },
+          {
+            "fold": 4,
+            "q": [
+              -0.6918621747627031,
+              0.5860953037593848,
+              0.9881033423756524
+            ],
+            "r": [
+              0.7492724606390404,
+              1.6849144044653583
+            ],
+            "qConverged": true,
+            "rConverged": true
+          }
+        ],
+        "coefficientRanges": {
+          "q": [
+            [
+              -1.1173538823774223,
+              -0.6918621747627031
+            ],
+            [
+              0.4575935208449034,
+              0.5860953037593848
+            ],
+            [
+              0.9881033423756524,
+              2.3286607044055874
+            ]
+          ],
+          "r": [
+            [
+              -0.4663637922133186,
+              0.7492724606390404
+            ],
+            [
+              1.3273400985454769,
+              2.222723023896135
+            ]
+          ]
+        },
+        "outOfFoldProbabilitiesBySource": [
+          {
+            "sourceSeed": 4200300,
+            "qConsumed": 0.3503563938123691,
+            "rWinGivenConsumed": 0.8511086074883808,
+            "classProbabilities": [
+              0.649643606187631,
+              0.2981913424622962,
+              0.052165051350072884
+            ]
+          },
+          {
+            "sourceSeed": 4200301,
+            "qConsumed": 0.12882587250132274,
+            "rWinGivenConsumed": 0.9163259011474393,
+            "classProbabilities": [
+              0.8711741274986773,
+              0.11804648371087968,
+              0.010779388790443063
+            ]
+          },
+          {
+            "sourceSeed": 4200302,
+            "qConsumed": 0.18209149567760924,
+            "rWinGivenConsumed": 0.8916659488083643,
+            "classProbabilities": [
+              0.8179085043223908,
+              0.1623647862633096,
+              0.019726709414299638
+            ]
+          },
+          {
+            "sourceSeed": 4200303,
+            "qConsumed": 0.793324718875699,
+            "rWinGivenConsumed": 0.597170588197708,
+            "classProbabilities": [
+              0.206675281124301,
+              0.4737501890027825,
+              0.3195745298729165
+            ]
+          },
+          {
+            "sourceSeed": 4200304,
+            "qConsumed": 0.2354166957394199,
+            "rWinGivenConsumed": 0.9074322908199626,
+            "classProbabilities": [
+              0.7645833042605801,
+              0.21362471151208792,
+              0.021791984227331977
+            ]
+          },
+          {
+            "sourceSeed": 4200305,
+            "qConsumed": 0.2203402926528696,
+            "rWinGivenConsumed": 0.9190087058322113,
+            "classProbabilities": [
+              0.7796597073471304,
+              0.20249464719360438,
+              0.01784564545926522
+            ]
+          },
+          {
+            "sourceSeed": 4200306,
+            "qConsumed": 0.28812690331768925,
+            "rWinGivenConsumed": 0.8638615727198738,
+            "classProbabilities": [
+              0.7118730966823108,
+              0.2489017598429261,
+              0.03922514347476318
+            ]
+          },
+          {
+            "sourceSeed": 4200307,
+            "qConsumed": 0.6597145137622085,
+            "rWinGivenConsumed": 0.8284282945474783,
+            "classProbabilities": [
+              0.34028548623779153,
+              0.5465261695242453,
+              0.11318834423796317
+            ]
+          },
+          {
+            "sourceSeed": 4200308,
+            "qConsumed": 0.14633559249333364,
+            "rWinGivenConsumed": 0.8526352250610215,
+            "classProbabilities": [
+              0.8536644075066664,
+              0.12477088083999145,
+              0.02156471165334218
+            ]
+          },
+          {
+            "sourceSeed": 4200309,
+            "qConsumed": 0.37082332072202395,
+            "rWinGivenConsumed": 0.9161656324045834,
+            "classProbabilities": [
+              0.629176679277976,
+              0.3397355821396607,
+              0.03108773858236323
+            ]
+          },
+          {
+            "sourceSeed": 4200310,
+            "qConsumed": 0.29505774963329984,
+            "rWinGivenConsumed": 0.8618414314383477,
+            "classProbabilities": [
+              0.7049422503667002,
+              0.25429299330094074,
+              0.0407647563323591
+            ]
+          },
+          {
+            "sourceSeed": 4200311,
+            "qConsumed": 0.23565026468174005,
+            "rWinGivenConsumed": 0.9166659792217109,
+            "classProbabilities": [
+              0.76434973531826,
+              0.2160125806283426,
+              0.019637684053397452
+            ]
+          },
+          {
+            "sourceSeed": 4200312,
+            "qConsumed": 0.5653780577970022,
+            "rWinGivenConsumed": 0.8043568809901268,
+            "classProbabilities": [
+              0.43462194220299777,
+              0.45476573114985236,
+              0.11061232664714987
+            ]
+          },
+          {
+            "sourceSeed": 4200313,
+            "qConsumed": 0.26191380290324157,
+            "rWinGivenConsumed": 0.8849973342957087,
+            "classProbabilities": [
+              0.7380861970967585,
+              0.23179301738462044,
+              0.03012078551862113
+            ]
+          },
+          {
+            "sourceSeed": 4200314,
+            "qConsumed": 0.002136064518817069,
+            "rWinGivenConsumed": 0.9167572940493623,
+            "classProbabilities": [
+              0.9978639354811829,
+              0.0019582527281855897,
+              0.0001778117906314796
+            ]
+          },
+          {
+            "sourceSeed": 4200315,
+            "qConsumed": 0.1682291844632052,
+            "rWinGivenConsumed": 0.8362766057094735,
+            "classProbabilities": [
+              0.8317708155367948,
+              0.14068613136416214,
+              0.027543053099043063
+            ]
+          },
+          {
+            "sourceSeed": 4200316,
+            "qConsumed": 0.340559364675924,
+            "rWinGivenConsumed": 0.8618880367787624,
+            "classProbabilities": [
+              0.659440635324076,
+              0.2935240422271547,
+              0.047035322448769276
+            ]
+          },
+          {
+            "sourceSeed": 4200317,
+            "qConsumed": 0.14683311764274956,
+            "rWinGivenConsumed": 0.7760157435543981,
+            "classProbabilities": [
+              0.8531668823572505,
+              0.1139448109659487,
+              0.03288830667680086
+            ]
+          },
+          {
+            "sourceSeed": 4200318,
+            "qConsumed": 0.31030971296460197,
+            "rWinGivenConsumed": 0.9192019578304934,
+            "classProbabilities": [
+              0.689690287035398,
+              0.2852372956908806,
+              0.025072417273721396
+            ]
+          },
+          {
+            "sourceSeed": 4200319,
+            "qConsumed": 0.14533665133888632,
+            "rWinGivenConsumed": 0.796693619837962,
+            "classProbabilities": [
+              0.8546633486611137,
+              0.11578878285030514,
+              0.029547868488581184
+            ]
+          },
+          {
+            "sourceSeed": 4200320,
+            "qConsumed": 0.4791250252224465,
+            "rWinGivenConsumed": 0.7683172549487806,
+            "classProbabilities": [
+              0.5208749747775535,
+              0.36812002415617534,
+              0.11100500106627115
+            ]
+          },
+          {
+            "sourceSeed": 4200321,
+            "qConsumed": 0.1596154315741436,
+            "rWinGivenConsumed": 0.8451217764759217,
+            "classProbabilities": [
+              0.8403845684258564,
+              0.13489447708491115,
+              0.02472095448923244
+            ]
+          },
+          {
+            "sourceSeed": 4200322,
+            "qConsumed": 0.013502317164871913,
+            "rWinGivenConsumed": 0.9167076837488818,
+            "classProbabilities": [
+              0.9864976828351281,
+              0.0123776778934525,
+              0.0011246392714194132
+            ]
+          },
+          {
+            "sourceSeed": 4200323,
+            "qConsumed": 0.36961695927435023,
+            "rWinGivenConsumed": 0.8636117434759155,
+            "classProbabilities": [
+              0.6303830407256498,
+              0.3192055466171881,
+              0.05041141265716217
+            ]
+          },
+          {
+            "sourceSeed": 4200324,
+            "qConsumed": 0.14510029092831694,
+            "rWinGivenConsumed": 0.8522714783495597,
+            "classProbabilities": [
+              0.854899709071683,
+              0.12366483945842789,
+              0.02143545146988905
+            ]
+          },
+          {
+            "sourceSeed": 4200325,
+            "qConsumed": 0.16142077556828652,
+            "rWinGivenConsumed": 0.8523138750228808,
+            "classProbabilities": [
+              0.8385792244317135,
+              0.13758116673380505,
+              0.023839608834481472
+            ]
+          },
+          {
+            "sourceSeed": 4200326,
+            "qConsumed": 0.1152919159427806,
+            "rWinGivenConsumed": 0.8205898107825337,
+            "classProbabilities": [
+              0.8847080840572195,
+              0.09460737148824211,
+              0.02068454445453849
+            ]
+          },
+          {
+            "sourceSeed": 4200327,
+            "qConsumed": 0.43558792305441885,
+            "rWinGivenConsumed": 0.8203000186870589,
+            "classProbabilities": [
+              0.5644120769455812,
+              0.35731278142139694,
+              0.07827514163302188
+            ]
+          },
+          {
+            "sourceSeed": 4200328,
+            "qConsumed": 0.555545958267419,
+            "rWinGivenConsumed": 0.8267812167065236,
+            "classProbabilities": [
+              0.44445404173258096,
+              0.4593149633127283,
+              0.09623099495469074
+            ]
+          },
+          {
+            "sourceSeed": 4200329,
+            "qConsumed": 0.38550030669304797,
+            "rWinGivenConsumed": 0.8581677008031537,
+            "classProbabilities": [
+              0.614499693306952,
+              0.3308239118536836,
+              0.05467639483936437
+            ]
+          },
+          {
+            "sourceSeed": 4200330,
+            "qConsumed": 0.0007238075943394051,
+            "rWinGivenConsumed": 0.9167573780833209,
+            "classProbabilities": [
+              0.9992761924056606,
+              0.000663555952423389,
+              6.025164191601613e-05
+            ]
+          },
+          {
+            "sourceSeed": 4200331,
+            "qConsumed": 0.4340439461748158,
+            "rWinGivenConsumed": 0.8410979337601133,
+            "classProbabilities": [
+              0.5659560538251842,
+              0.3650734662887234,
+              0.06897047988609238
+            ]
+          },
+          {
+            "sourceSeed": 4200332,
+            "qConsumed": 0.2920315274937237,
+            "rWinGivenConsumed": 0.8288452030033046,
+            "classProbabilities": [
+              0.7079684725062763,
+              0.24204893068890052,
+              0.049982596804823164
+            ]
+          },
+          {
+            "sourceSeed": 4200333,
+            "qConsumed": 0.3829681009887065,
+            "rWinGivenConsumed": 0.9152707915361656,
+            "classProbabilities": [
+              0.6170318990112935,
+              0.3505195169250356,
+              0.032448584063670884
+            ]
+          },
+          {
+            "sourceSeed": 4200334,
+            "qConsumed": 0.7206684850465428,
+            "rWinGivenConsumed": 0.732304471222796,
+            "classProbabilities": [
+              0.2793315149534572,
+              0.5277487538689419,
+              0.19291973117760083
+            ]
+          },
+          {
+            "sourceSeed": 4200335,
+            "qConsumed": 0.6702356106534835,
+            "rWinGivenConsumed": 0.7939201796315557,
+            "classProbabilities": [
+              0.32976438934651653,
+              0.5321135764054791,
+              0.13812203424800445
+            ]
+          },
+          {
+            "sourceSeed": 4200336,
+            "qConsumed": 0.25221404726108887,
+            "rWinGivenConsumed": 0.8071615591312422,
+            "classProbabilities": [
+              0.7477859527389111,
+              0.2035774836220613,
+              0.04863656363902757
+            ]
+          },
+          {
+            "sourceSeed": 4200337,
+            "qConsumed": 0.6279730859525684,
+            "rWinGivenConsumed": 0.6874891840408711,
+            "classProbabilities": [
+              0.3720269140474316,
+              0.43172470446115907,
+              0.19624838149140933
+            ]
+          },
+          {
+            "sourceSeed": 4200338,
+            "qConsumed": 0.1369420087898741,
+            "rWinGivenConsumed": 0.8326800625481435,
+            "classProbabilities": [
+              0.8630579912101259,
+              0.11402888044462077,
+              0.02291312834525331
+            ]
+          },
+          {
+            "sourceSeed": 4200339,
+            "qConsumed": 0.00022309755931837556,
+            "rWinGivenConsumed": 0.83351143635927,
+            "classProbabilities": [
+              0.9997769024406816,
+              0.00018595436711570668,
+              3.7143192202668894e-05
+            ]
+          },
+          {
+            "sourceSeed": 4200340,
+            "qConsumed": 0.2032880848737752,
+            "rWinGivenConsumed": 0.9190372635251277,
+            "classProbabilities": [
+              0.7967119151262247,
+              0.18682932522965826,
+              0.016458759644116933
+            ]
+          },
+          {
+            "sourceSeed": 4200341,
+            "qConsumed": 0.19998632183870452,
+            "rWinGivenConsumed": 0.914766727588084,
+            "classProbabilities": [
+              0.8000136781612954,
+              0.1829408331907691,
+              0.017045488647935415
+            ]
+          },
+          {
+            "sourceSeed": 4200342,
+            "qConsumed": 0.2313028440553459,
+            "rWinGivenConsumed": 0.9006855600738379,
+            "classProbabilities": [
+              0.768697155944654,
+              0.20833113164466083,
+              0.022971712410685085
+            ]
+          },
+          {
+            "sourceSeed": 4200343,
+            "qConsumed": 0.5156303936938663,
+            "rWinGivenConsumed": 0.863500800776227,
+            "classProbabilities": [
+              0.4843696063061337,
+              0.44524725785921476,
+              0.07038313583465154
+            ]
+          },
+          {
+            "sourceSeed": 4200345,
+            "qConsumed": 0.10501781902977288,
+            "rWinGivenConsumed": 0.9114626046448171,
+            "classProbabilities": [
+              0.8949821809702271,
+              0.09571981486699482,
+              0.009298004162778052
+            ]
+          },
+          {
+            "sourceSeed": 4200346,
+            "qConsumed": 0.1353514636590743,
+            "rWinGivenConsumed": 0.8254399487824868,
+            "classProbabilities": [
+              0.8646485363409258,
+              0.11172450523038092,
+              0.023626958428693383
+            ]
+          },
+          {
+            "sourceSeed": 4200347,
+            "qConsumed": 0.26956775606999883,
+            "rWinGivenConsumed": 0.9192698666561673,
+            "classProbabilities": [
+              0.7304322439300012,
+              0.24780551517727006,
+              0.02176224089272878
+            ]
+          },
+          {
+            "sourceSeed": 4200348,
+            "qConsumed": 0.17808440387164637,
+            "rWinGivenConsumed": 0.9192849131752223,
+            "classProbabilities": [
+              0.8219155961283536,
+              0.16371030575100765,
+              0.014374098120638711
+            ]
+          },
+          {
+            "sourceSeed": 4200349,
+            "qConsumed": 0.13545142474459876,
+            "rWinGivenConsumed": 0.9165947626790809,
+            "classProbabilities": [
+              0.8645485752554012,
+              0.12415406651831888,
+              0.011297358226279872
+            ]
+          },
+          {
+            "sourceSeed": 4200350,
+            "qConsumed": 0.3908627439388764,
+            "rWinGivenConsumed": 0.84362772201068,
+            "classProbabilities": [
+              0.6091372560611237,
+              0.329742646287998,
+              0.06112009765087836
+            ]
+          },
+          {
+            "sourceSeed": 4200351,
+            "qConsumed": 0.001174494472103377,
+            "rWinGivenConsumed": 0.9193970367857212,
+            "classProbabilities": [
+              0.9988255055278966,
+              0.0010798267373730546,
+              9.466773473032234e-05
+            ]
+          },
+          {
+            "sourceSeed": 4200352,
+            "qConsumed": 0.0003751257771683036,
+            "rWinGivenConsumed": 0.8335112864534371,
+            "classProbabilities": [
+              0.9996248742228317,
+              0.0003126715691093981,
+              6.245420805890548e-05
+            ]
+          },
+          {
+            "sourceSeed": 4200353,
+            "qConsumed": 0.4474451750541236,
+            "rWinGivenConsumed": 0.7731570559867528,
+            "classProbabilities": [
+              0.5525548249458764,
+              0.34594539426032345,
+              0.10149978079380018
+            ]
+          },
+          {
+            "sourceSeed": 4200354,
+            "qConsumed": 0.18113361455242274,
+            "rWinGivenConsumed": 0.831017211544113,
+            "classProbabilities": [
+              0.8188663854475773,
+              0.15052515128226052,
+              0.030608463270162225
+            ]
+          },
+          {
+            "sourceSeed": 4200355,
+            "qConsumed": 0.1683370370919947,
+            "rWinGivenConsumed": 0.894541703472661,
+            "classProbabilities": [
+              0.8316629629080052,
+              0.15058449991781347,
+              0.017752537174181234
+            ]
+          },
+          {
+            "sourceSeed": 4200356,
+            "qConsumed": 0.18017868186947006,
+            "rWinGivenConsumed": 0.8314231159211146,
+            "classProbabilities": [
+              0.8198213181305299,
+              0.14980472110247403,
+              0.03037396076699602
+            ]
+          },
+          {
+            "sourceSeed": 4200357,
+            "qConsumed": 0.013187883722937143,
+            "rWinGivenConsumed": 0.8524370551307304,
+            "classProbabilities": [
+              0.9868121162770629,
+              0.011241840764187033,
+              0.0019460429587501112
+            ]
+          },
+          {
+            "sourceSeed": 4200358,
+            "qConsumed": 0.1468660120763781,
+            "rWinGivenConsumed": 0.9193259557715374,
+            "classProbabilities": [
+              0.8531339879236219,
+              0.13501773692247043,
+              0.011848275153907645
+            ]
+          },
+          {
+            "sourceSeed": 4200359,
+            "qConsumed": 0.21571474795896042,
+            "rWinGivenConsumed": 0.8223966438007131,
+            "classProbabilities": [
+              0.7842852520410396,
+              0.17740308473976577,
+              0.038311663219194644
+            ]
+          },
+          {
+            "sourceSeed": 4200360,
+            "qConsumed": 0.171787869806419,
+            "rWinGivenConsumed": 0.8460514528195554,
+            "classProbabilities": [
+              0.828212130193581,
+              0.14534137682649742,
+              0.02644649297992157
+            ]
+          },
+          {
+            "sourceSeed": 4200361,
+            "qConsumed": 0.10706429624672488,
+            "rWinGivenConsumed": 0.8334444176844933,
+            "classProbabilities": [
+              0.8929357037532751,
+              0.0892321400401517,
+              0.01783215620657318
+            ]
+          },
+          {
+            "sourceSeed": 4200362,
+            "qConsumed": 0.13289312690901198,
+            "rWinGivenConsumed": 0.9131514184842486,
+            "classProbabilities": [
+              0.867106873090988,
+              0.12135154734377156,
+              0.011541579565240418
+            ]
+          },
+          {
+            "sourceSeed": 4200363,
+            "qConsumed": 0.14545145815260674,
+            "rWinGivenConsumed": 0.8443468055690059,
+            "classProbabilities": [
+              0.8545485418473933,
+              0.12281147405650744,
+              0.0226399840960993
+            ]
+          },
+          {
+            "sourceSeed": 4200364,
+            "qConsumed": 0.32849027569455097,
+            "rWinGivenConsumed": 0.8387027799812309,
+            "classProbabilities": [
+              0.6715097243054491,
+              0.27550570742182084,
+              0.05298456827273011
+            ]
+          },
+          {
+            "sourceSeed": 4200365,
+            "qConsumed": 0.00043872888626951247,
+            "rWinGivenConsumed": 0.919396724205054,
+            "classProbabilities": [
+              0.9995612711137305,
+              0.00040336590085032146,
+              3.5362985419191e-05
+            ]
+          },
+          {
+            "sourceSeed": 4200366,
+            "qConsumed": 0.01178753008642694,
+            "rWinGivenConsumed": 0.9193590129100706,
+            "classProbabilities": [
+              0.988212469913573,
+              0.010836972024905231,
+              0.0009505580615217092
+            ]
+          },
+          {
+            "sourceSeed": 4200367,
+            "qConsumed": 0.2629223690476857,
+            "rWinGivenConsumed": 0.832633453731845,
+            "classProbabilities": [
+              0.7370776309523144,
+              0.2189179602035333,
+              0.044004408844152396
+            ]
+          },
+          {
+            "sourceSeed": 4200368,
+            "qConsumed": 0.13245068387991357,
+            "rWinGivenConsumed": 0.808647306538523,
+            "classProbabilities": [
+              0.8675493161200865,
+              0.10710588876867748,
+              0.025344795111236093
+            ]
+          },
+          {
+            "sourceSeed": 4200369,
+            "qConsumed": 0.28593081054738145,
+            "rWinGivenConsumed": 0.9192976772351621,
+            "classProbabilities": [
+              0.7140691894526185,
+              0.26285552998617495,
+              0.023075280561206498
+            ]
+          },
+          {
+            "sourceSeed": 4200370,
+            "qConsumed": 0.1409617557883279,
+            "rWinGivenConsumed": 0.919319207289975,
+            "classProbabilities": [
+              0.8590382442116721,
+              0.12958884958952865,
+              0.011372906198799255
+            ]
+          },
+          {
+            "sourceSeed": 4200371,
+            "qConsumed": 0.002226426543942224,
+            "rWinGivenConsumed": 0.9167569915264734,
+            "classProbabilities": [
+              0.9977735734560578,
+              0.0020410921002791565,
+              0.0001853344436630671
+            ]
+          },
+          {
+            "sourceSeed": 4200372,
+            "qConsumed": 0.23880251845738398,
+            "rWinGivenConsumed": 0.7538468400367758,
+            "classProbabilities": [
+              0.761197481542616,
+              0.18002052393192275,
+              0.058781994525461234
+            ]
+          },
+          {
+            "sourceSeed": 4200373,
+            "qConsumed": 0.15569277092666753,
+            "rWinGivenConsumed": 0.8636856895381482,
+            "classProbabilities": [
+              0.8443072290733324,
+              0.1344696182139038,
+              0.021223152712763736
+            ]
+          },
+          {
+            "sourceSeed": 4200374,
+            "qConsumed": 0.4436879610288057,
+            "rWinGivenConsumed": 0.7687532788873175,
+            "classProbabilities": [
+              0.5563120389711943,
+              0.34108657484372273,
+              0.10260138618508298
+            ]
+          },
+          {
+            "sourceSeed": 4200375,
+            "qConsumed": 0.2441152627736054,
+            "rWinGivenConsumed": 0.7035291767651056,
+            "classProbabilities": [
+              0.7558847372263946,
+              0.17174220985491204,
+              0.07237305291869336
+            ]
+          },
+          {
+            "sourceSeed": 4200376,
+            "qConsumed": 0.2171416439680134,
+            "rWinGivenConsumed": 0.9192292752499229,
+            "classProbabilities": [
+              0.7828583560319866,
+              0.19960295601129374,
+              0.01753868795671964
+            ]
+          },
+          {
+            "sourceSeed": 4200377,
+            "qConsumed": 0.18197147412738385,
+            "rWinGivenConsumed": 0.8225268969211385,
+            "classProbabilities": [
+              0.8180285258726161,
+              0.14967643194216226,
+              0.032295042185221584
+            ]
+          },
+          {
+            "sourceSeed": 4200380,
+            "qConsumed": 0.18097458100672442,
+            "rWinGivenConsumed": 0.8240963917233797,
+            "classProbabilities": [
+              0.8190254189932755,
+              0.14914049920129208,
+              0.031834081805432346
+            ]
+          },
+          {
+            "sourceSeed": 4200381,
+            "qConsumed": 0.10495913656002646,
+            "rWinGivenConsumed": 0.8164136575413387,
+            "classProbabilities": [
+              0.8950408634399736,
+              0.08569007257135204,
+              0.01926906398867442
+            ]
+          },
+          {
+            "sourceSeed": 4200383,
+            "qConsumed": 0.3295394839443942,
+            "rWinGivenConsumed": 0.8515450201477357,
+            "classProbabilities": [
+              0.6704605160556059,
+              0.2806177064949036,
+              0.04892177744949062
+            ]
+          },
+          {
+            "sourceSeed": 4200384,
+            "qConsumed": 0.2544594322572008,
+            "rWinGivenConsumed": 0.832860679745333,
+            "classProbabilities": [
+              0.7455405677427992,
+              0.21192925571734375,
+              0.04253017653985704
+            ]
+          },
+          {
+            "sourceSeed": 4200385,
+            "qConsumed": 0.17414350732748038,
+            "rWinGivenConsumed": 0.9162125858755642,
+            "classProbabilities": [
+              0.8258564926725196,
+              0.15955247316195106,
+              0.014591034165529319
+            ]
+          },
+          {
+            "sourceSeed": 4200386,
+            "qConsumed": 0.2982340329664063,
+            "rWinGivenConsumed": 0.8525521397604555,
+            "classProbabilities": [
+              0.7017659670335936,
+              0.25426006295489995,
+              0.04397397001150638
+            ]
+          },
+          {
+            "sourceSeed": 4200387,
+            "qConsumed": 0.4299950830429561,
+            "rWinGivenConsumed": 0.9069840274065996,
+            "classProbabilities": [
+              0.5700049169570439,
+              0.38999867218333556,
+              0.03999641085962055
+            ]
+          },
+          {
+            "sourceSeed": 4200388,
+            "qConsumed": 0.21084733345246698,
+            "rWinGivenConsumed": 0.8618157024230556,
+            "classProbabilities": [
+              0.789152666547533,
+              0.18171154278336607,
+              0.02913579066910092
+            ]
+          },
+          {
+            "sourceSeed": 4200390,
+            "qConsumed": 0.1830735963541261,
+            "rWinGivenConsumed": 0.828052355048593,
+            "classProbabilities": [
+              0.8169264036458739,
+              0.15159452260824963,
+              0.031479073745876475
+            ]
+          },
+          {
+            "sourceSeed": 4200391,
+            "qConsumed": 0.0014121756779870288,
+            "rWinGivenConsumed": 0.9167568738784133,
+            "classProbabilities": [
+              0.998587824322013,
+              0.0012946217599185174,
+              0.00011755391806851142
+            ]
+          },
+          {
+            "sourceSeed": 4200392,
+            "qConsumed": 0.45630296642764606,
+            "rWinGivenConsumed": 0.8328444386985505,
+            "classProbabilities": [
+              0.5436970335723539,
+              0.3800293879509164,
+              0.07627357847672964
+            ]
+          },
+          {
+            "sourceSeed": 4200393,
+            "qConsumed": 0.13524985519902452,
+            "rWinGivenConsumed": 0.8474555940412467,
+            "classProbabilities": [
+              0.8647501448009755,
+              0.11461824638168193,
+              0.020631608817342596
+            ]
+          },
+          {
+            "sourceSeed": 4200394,
+            "qConsumed": 0.12993054332903067,
+            "rWinGivenConsumed": 0.9142226961479947,
+            "classProbabilities": [
+              0.8700694566709694,
+              0.11878545163424027,
+              0.011145091694790409
+            ]
+          },
+          {
+            "sourceSeed": 4200395,
+            "qConsumed": 0.17688693248018691,
+            "rWinGivenConsumed": 0.8625663738869437,
+            "classProbabilities": [
+              0.8231130675198131,
+              0.15257671993741947,
+              0.024310212542767447
+            ]
+          },
+          {
+            "sourceSeed": 4200396,
+            "qConsumed": 0.2237929214887483,
+            "rWinGivenConsumed": 0.9190623532307499,
+            "classProbabilities": [
+              0.7762070785112517,
+              0.20567964905983346,
+              0.018113272428914827
+            ]
+          },
+          {
+            "sourceSeed": 4200397,
+            "qConsumed": 0.30002631032809407,
+            "rWinGivenConsumed": 0.8263875673445612,
+            "classProbabilities": [
+              0.699973689671906,
+              0.24793801273139807,
+              0.05208829759669601
+            ]
+          },
+          {
+            "sourceSeed": 4200398,
+            "qConsumed": 0.12659246309825317,
+            "rWinGivenConsumed": 0.8051945248640895,
+            "classProbabilities": [
+              0.8734075369017469,
+              0.10193155817577275,
+              0.024660904922480426
+            ]
+          },
+          {
+            "sourceSeed": 4200399,
+            "qConsumed": 0.22270366985186388,
+            "rWinGivenConsumed": 0.9192584030541074,
+            "classProbabilities": [
+              0.7772963301481361,
+              0.20472221990231357,
+              0.017981449949550317
+            ]
+          },
+          {
+            "sourceSeed": 4200400,
+            "qConsumed": 0.2475086468206894,
+            "rWinGivenConsumed": 0.8337676483142799,
+            "classProbabilities": [
+              0.7524913531793106,
+              0.20636470239713586,
+              0.04114394442355354
+            ]
+          },
+          {
+            "sourceSeed": 4200401,
+            "qConsumed": 0.004837055944181149,
+            "rWinGivenConsumed": 0.8638850459529351,
+            "classProbabilities": [
+              0.9951629440558188,
+              0.00417866029661585,
+              0.000658395647565299
+            ]
+          },
+          {
+            "sourceSeed": 4200402,
+            "qConsumed": 0.13508846240649572,
+            "rWinGivenConsumed": 0.8117004709635993,
+            "classProbabilities": [
+              0.8649115375935043,
+              0.10965136855710106,
+              0.025437093849394663
+            ]
+          },
+          {
+            "sourceSeed": 4200403,
+            "qConsumed": 0.28575043267302813,
+            "rWinGivenConsumed": 0.8934565296405859,
+            "classProbabilities": [
+              0.7142495673269719,
+              0.2553055899193396,
+              0.03044484275368854
+            ]
+          },
+          {
+            "sourceSeed": 4200404,
+            "qConsumed": 0.7147913531242599,
+            "rWinGivenConsumed": 0.7765268655362602,
+            "classProbabilities": [
+              0.2852086468757401,
+              0.5550546889540037,
+              0.15973666417025628
+            ]
+          },
+          {
+            "sourceSeed": 4200405,
+            "qConsumed": 0.15254928658990863,
+            "rWinGivenConsumed": 0.8986086764765745,
+            "classProbabilities": [
+              0.8474507134100914,
+              0.13708211252000344,
+              0.01546717406990518
+            ]
+          },
+          {
+            "sourceSeed": 4200406,
+            "qConsumed": 0.4670518525536843,
+            "rWinGivenConsumed": 0.8486702635151757,
+            "classProbabilities": [
+              0.5329481474463157,
+              0.3963730187819863,
+              0.07067883377169805
+            ]
+          },
+          {
+            "sourceSeed": 4200407,
+            "qConsumed": 0.13876608646280855,
+            "rWinGivenConsumed": 0.8280946735136838,
+            "classProbabilities": [
+              0.8612339135371915,
+              0.11491145706419106,
+              0.023854629398617485
+            ]
+          },
+          {
+            "sourceSeed": 4200408,
+            "qConsumed": 0.4295570829149389,
+            "rWinGivenConsumed": 0.8702229553739084,
+            "classProbabilities": [
+              0.5704429170850611,
+              0.3738104341960331,
+              0.055746648718905764
+            ]
+          },
+          {
+            "sourceSeed": 4200409,
+            "qConsumed": 0.36424158959608266,
+            "rWinGivenConsumed": 0.8636081557159857,
+            "classProbabilities": [
+              0.6357584104039173,
+              0.3145620074261319,
+              0.04967958216995075
+            ]
+          },
+          {
+            "sourceSeed": 4200410,
+            "qConsumed": 0.6073725257336469,
+            "rWinGivenConsumed": 0.808932569043553,
+            "classProbabilities": [
+              0.39262747426635314,
+              0.4913234176081905,
+              0.11604910812545638
+            ]
+          },
+          {
+            "sourceSeed": 4200411,
+            "qConsumed": 0.13097188090790243,
+            "rWinGivenConsumed": 0.8053446265797873,
+            "classProbabilities": [
+              0.8690281190920975,
+              0.10547750052222707,
+              0.02549438038567537
+            ]
+          },
+          {
+            "sourceSeed": 4200412,
+            "qConsumed": 0.42522739374053464,
+            "rWinGivenConsumed": 0.8521439942674879,
+            "classProbabilities": [
+              0.5747726062594654,
+              0.362354969774013,
+              0.06287242396652168
+            ]
+          },
+          {
+            "sourceSeed": 4200413,
+            "qConsumed": 0.11869468589705467,
+            "rWinGivenConsumed": 0.8332188521432127,
+            "classProbabilities": [
+              0.8813053141029453,
+              0.09889864993864307,
+              0.019796035958411604
+            ]
+          },
+          {
+            "sourceSeed": 4200414,
+            "qConsumed": 0.232209760570267,
+            "rWinGivenConsumed": 0.6887190708277212,
+            "classProbabilities": [
+              0.767790239429733,
+              0.1599272905370819,
+              0.0722824700331851
+            ]
+          },
+          {
+            "sourceSeed": 4200415,
+            "qConsumed": 0.19362166513299847,
+            "rWinGivenConsumed": 0.9193097540807866,
+            "classProbabilities": [
+              0.8063783348670015,
+              0.17799828535812925,
+              0.015623379774869228
+            ]
+          },
+          {
+            "sourceSeed": 4200416,
+            "qConsumed": 0.00031517700013182574,
+            "rWinGivenConsumed": 0.9193969177075023,
+            "classProbabilities": [
+              0.9996848229998682,
+              0.0002897727624534976,
+              2.5404237678328105e-05
+            ]
+          },
+          {
+            "sourceSeed": 4200418,
+            "qConsumed": 0.2542337392783401,
+            "rWinGivenConsumed": 0.8782279835262343,
+            "classProbabilities": [
+              0.74576626072166,
+              0.223275184190751,
+              0.030958555087589077
+            ]
+          },
+          {
+            "sourceSeed": 4200419,
+            "qConsumed": 0.002833736324430542,
+            "rWinGivenConsumed": 0.8638911486210659,
+            "classProbabilities": [
+              0.9971662636755695,
+              0.002448039728201538,
+              0.0003856965962290037
+            ]
+          },
+          {
+            "sourceSeed": 4200420,
+            "qConsumed": 0.010411489192465281,
+            "rWinGivenConsumed": 0.8525612827049531,
+            "classProbabilities": [
+              0.9895885108075347,
+              0.008876432580796956,
+              0.0015350566116683244
+            ]
+          },
+          {
+            "sourceSeed": 4200421,
+            "qConsumed": 0.2711940233100672,
+            "rWinGivenConsumed": 0.8925972935788786,
+            "classProbabilities": [
+              0.7288059766899329,
+              0.24206705124133332,
+              0.029126972068733895
+            ]
+          },
+          {
+            "sourceSeed": 4200422,
+            "qConsumed": 0.6440429877168221,
+            "rWinGivenConsumed": 0.7705018008105126,
+            "classProbabilities": [
+              0.3559570122831779,
+              0.49623628183519425,
+              0.14780670588162786
+            ]
+          },
+          {
+            "sourceSeed": 4200423,
+            "qConsumed": 0.7311190908061787,
+            "rWinGivenConsumed": 0.9017720949003858,
+            "classProbabilities": [
+              0.26888090919382135,
+              0.6593027941379531,
+              0.07181629666822555
+            ]
+          },
+          {
+            "sourceSeed": 4200424,
+            "qConsumed": 0.00027592071875110743,
+            "rWinGivenConsumed": 0.833511186516155,
+            "classProbabilities": [
+              0.9997240792812488,
+              0.00022998300567062584,
+              4.593771308048159e-05
+            ]
+          },
+          {
+            "sourceSeed": 4200425,
+            "qConsumed": 0.13334597040668492,
+            "rWinGivenConsumed": 0.9166564902427424,
+            "classProbabilities": [
+              0.8666540295933151,
+              0.12223244922100439,
+              0.011113521185680524
+            ]
+          },
+          {
+            "sourceSeed": 4200426,
+            "qConsumed": 0.21887904572416703,
+            "rWinGivenConsumed": 0.9187671871486282,
+            "classProbabilities": [
+              0.781120954275833,
+              0.2010988851657689,
+              0.017780160558398123
+            ]
+          },
+          {
+            "sourceSeed": 4200427,
+            "qConsumed": 0.004613188806533171,
+            "rWinGivenConsumed": 0.8638933998520223,
+            "classProbabilities": [
+              0.9953868111934668,
+              0.003985303362235234,
+              0.0006278854442979368
+            ]
+          }
+        ]
+      },
+      "correctionVersusMechanicalReservePairedSourceBootstrap": {
+        "threeClassNll": {
+          "pairs": 122,
+          "meanCorrectionMinusB1": -0.013365829033630622,
+          "sourceBootstrap95CI": [
+            -0.09173392523829343,
+            0.06281823194512844
+          ]
+        },
+        "multiclassBrier": {
+          "pairs": 122,
+          "meanCorrectionMinusB1": -0.009807536339514932,
+          "sourceBootstrap95CI": [
+            -0.031139483746374468,
+            0.01441305521791636
+          ]
+        }
+      },
+      "qConsumption": {
+        "rows": 122,
+        "brier": 0.1417308924857549,
+        "nll": 0.4377746270933476,
+        "observedRate": 0.2459016393442623,
+        "meanPredicted": 0.2456269798175948
+      },
+      "rConditionalRescue": {
+        "rows": 30,
+        "brier": 0.15752341679621942,
+        "nll": 0.5136008749617553,
+        "observedRate": 0.8333333333333334,
+        "meanPredicted": 0.8235345461567972
+      },
+      "labelsBySource": [
+        {
+          "sourceSeed": 4200300,
+          "class": "WIN_RETAINED"
+        },
+        {
+          "sourceSeed": 4200301,
+          "class": "WIN_RETAINED"
+        },
+        {
+          "sourceSeed": 4200302,
+          "class": "WIN_RETAINED"
+        },
+        {
+          "sourceSeed": 4200303,
+          "class": "WIN_CONSUMED"
+        },
+        {
+          "sourceSeed": 4200304,
+          "class": "LOSS_CONSUMED"
+        },
+        {
+          "sourceSeed": 4200305,
+          "class": "WIN_RETAINED"
+        },
+        {
+          "sourceSeed": 4200306,
+          "class": "WIN_RETAINED"
+        },
+        {
+          "sourceSeed": 4200307,
+          "class": "WIN_CONSUMED"
+        },
+        {
+          "sourceSeed": 4200308,
+          "class": "WIN_RETAINED"
+        },
+        {
+          "sourceSeed": 4200309,
+          "class": "WIN_RETAINED"
+        },
+        {
+          "sourceSeed": 4200310,
+          "class": "WIN_CONSUMED"
+        },
+        {
+          "sourceSeed": 4200311,
+          "class": "WIN_CONSUMED"
+        },
+        {
+          "sourceSeed": 4200312,
+          "class": "WIN_CONSUMED"
+        },
+        {
+          "sourceSeed": 4200313,
+          "class": "WIN_RETAINED"
+        },
+        {
+          "sourceSeed": 4200314,
+          "class": "WIN_RETAINED"
+        },
+        {
+          "sourceSeed": 4200315,
+          "class": "WIN_RETAINED"
+        },
+        {
+          "sourceSeed": 4200316,
+          "class": "WIN_RETAINED"
+        },
+        {
+          "sourceSeed": 4200317,
+          "class": "WIN_RETAINED"
+        },
+        {
+          "sourceSeed": 4200318,
+          "class": "WIN_CONSUMED"
+        },
+        {
+          "sourceSeed": 4200319,
+          "class": "WIN_CONSUMED"
+        },
+        {
+          "sourceSeed": 4200320,
+          "class": "WIN_CONSUMED"
+        },
+        {
+          "sourceSeed": 4200321,
+          "class": "WIN_RETAINED"
+        },
+        {
+          "sourceSeed": 4200322,
+          "class": "WIN_RETAINED"
+        },
+        {
+          "sourceSeed": 4200323,
+          "class": "WIN_RETAINED"
+        },
+        {
+          "sourceSeed": 4200324,
+          "class": "WIN_RETAINED"
+        },
+        {
+          "sourceSeed": 4200325,
+          "class": "WIN_RETAINED"
+        },
+        {
+          "sourceSeed": 4200326,
+          "class": "WIN_RETAINED"
+        },
+        {
+          "sourceSeed": 4200327,
+          "class": "WIN_CONSUMED"
+        },
+        {
+          "sourceSeed": 4200328,
+          "class": "WIN_CONSUMED"
+        },
+        {
+          "sourceSeed": 4200329,
+          "class": "WIN_RETAINED"
+        },
+        {
+          "sourceSeed": 4200330,
+          "class": "WIN_RETAINED"
+        },
+        {
+          "sourceSeed": 4200331,
+          "class": "WIN_RETAINED"
+        },
+        {
+          "sourceSeed": 4200332,
+          "class": "WIN_RETAINED"
+        },
+        {
+          "sourceSeed": 4200333,
+          "class": "WIN_CONSUMED"
+        },
+        {
+          "sourceSeed": 4200334,
+          "class": "WIN_CONSUMED"
+        },
+        {
+          "sourceSeed": 4200335,
+          "class": "WIN_RETAINED"
+        },
+        {
+          "sourceSeed": 4200336,
+          "class": "WIN_CONSUMED"
+        },
+        {
+          "sourceSeed": 4200337,
+          "class": "WIN_CONSUMED"
+        },
+        {
+          "sourceSeed": 4200338,
+          "class": "WIN_RETAINED"
+        },
+        {
+          "sourceSeed": 4200339,
+          "class": "WIN_RETAINED"
+        },
+        {
+          "sourceSeed": 4200340,
+          "class": "WIN_RETAINED"
+        },
+        {
+          "sourceSeed": 4200341,
+          "class": "WIN_RETAINED"
+        },
+        {
+          "sourceSeed": 4200342,
+          "class": "WIN_RETAINED"
+        },
+        {
+          "sourceSeed": 4200343,
+          "class": "LOSS_CONSUMED"
+        },
+        {
+          "sourceSeed": 4200345,
+          "class": "WIN_RETAINED"
+        },
+        {
+          "sourceSeed": 4200346,
+          "class": "WIN_RETAINED"
+        },
+        {
+          "sourceSeed": 4200347,
+          "class": "WIN_RETAINED"
+        },
+        {
+          "sourceSeed": 4200348,
+          "class": "WIN_RETAINED"
+        },
+        {
+          "sourceSeed": 4200349,
+          "class": "WIN_RETAINED"
+        },
+        {
+          "sourceSeed": 4200350,
+          "class": "WIN_CONSUMED"
+        },
+        {
+          "sourceSeed": 4200351,
+          "class": "WIN_RETAINED"
+        },
+        {
+          "sourceSeed": 4200352,
+          "class": "WIN_RETAINED"
+        },
+        {
+          "sourceSeed": 4200353,
+          "class": "WIN_RETAINED"
+        },
+        {
+          "sourceSeed": 4200354,
+          "class": "WIN_RETAINED"
+        },
+        {
+          "sourceSeed": 4200355,
+          "class": "WIN_RETAINED"
+        },
+        {
+          "sourceSeed": 4200356,
+          "class": "WIN_RETAINED"
+        },
+        {
+          "sourceSeed": 4200357,
+          "class": "WIN_RETAINED"
+        },
+        {
+          "sourceSeed": 4200358,
+          "class": "WIN_CONSUMED"
+        },
+        {
+          "sourceSeed": 4200359,
+          "class": "WIN_RETAINED"
+        },
+        {
+          "sourceSeed": 4200360,
+          "class": "WIN_RETAINED"
+        },
+        {
+          "sourceSeed": 4200361,
+          "class": "WIN_RETAINED"
+        },
+        {
+          "sourceSeed": 4200362,
+          "class": "WIN_RETAINED"
+        },
+        {
+          "sourceSeed": 4200363,
+          "class": "WIN_RETAINED"
+        },
+        {
+          "sourceSeed": 4200364,
+          "class": "WIN_RETAINED"
+        },
+        {
+          "sourceSeed": 4200365,
+          "class": "WIN_RETAINED"
+        },
+        {
+          "sourceSeed": 4200366,
+          "class": "WIN_RETAINED"
+        },
+        {
+          "sourceSeed": 4200367,
+          "class": "WIN_RETAINED"
+        },
+        {
+          "sourceSeed": 4200368,
+          "class": "WIN_CONSUMED"
+        },
+        {
+          "sourceSeed": 4200369,
+          "class": "WIN_RETAINED"
+        },
+        {
+          "sourceSeed": 4200370,
+          "class": "WIN_RETAINED"
+        },
+        {
+          "sourceSeed": 4200371,
+          "class": "WIN_RETAINED"
+        },
+        {
+          "sourceSeed": 4200372,
+          "class": "WIN_CONSUMED"
+        },
+        {
+          "sourceSeed": 4200373,
+          "class": "WIN_RETAINED"
+        },
+        {
+          "sourceSeed": 4200374,
+          "class": "WIN_CONSUMED"
+        },
+        {
+          "sourceSeed": 4200375,
+          "class": "WIN_RETAINED"
+        },
+        {
+          "sourceSeed": 4200376,
+          "class": "WIN_RETAINED"
+        },
+        {
+          "sourceSeed": 4200377,
+          "class": "WIN_RETAINED"
+        },
+        {
+          "sourceSeed": 4200380,
+          "class": "WIN_CONSUMED"
+        },
+        {
+          "sourceSeed": 4200381,
+          "class": "WIN_RETAINED"
+        },
+        {
+          "sourceSeed": 4200383,
+          "class": "WIN_RETAINED"
+        },
+        {
+          "sourceSeed": 4200384,
+          "class": "WIN_RETAINED"
+        },
+        {
+          "sourceSeed": 4200385,
+          "class": "WIN_RETAINED"
+        },
+        {
+          "sourceSeed": 4200386,
+          "class": "WIN_RETAINED"
+        },
+        {
+          "sourceSeed": 4200387,
+          "class": "WIN_RETAINED"
+        },
+        {
+          "sourceSeed": 4200388,
+          "class": "WIN_RETAINED"
+        },
+        {
+          "sourceSeed": 4200390,
+          "class": "WIN_RETAINED"
+        },
+        {
+          "sourceSeed": 4200391,
+          "class": "WIN_RETAINED"
+        },
+        {
+          "sourceSeed": 4200392,
+          "class": "WIN_RETAINED"
+        },
+        {
+          "sourceSeed": 4200393,
+          "class": "WIN_RETAINED"
+        },
+        {
+          "sourceSeed": 4200394,
+          "class": "WIN_RETAINED"
+        },
+        {
+          "sourceSeed": 4200395,
+          "class": "WIN_RETAINED"
+        },
+        {
+          "sourceSeed": 4200396,
+          "class": "WIN_RETAINED"
+        },
+        {
+          "sourceSeed": 4200397,
+          "class": "WIN_RETAINED"
+        },
+        {
+          "sourceSeed": 4200398,
+          "class": "WIN_CONSUMED"
+        },
+        {
+          "sourceSeed": 4200399,
+          "class": "WIN_RETAINED"
+        },
+        {
+          "sourceSeed": 4200400,
+          "class": "WIN_CONSUMED"
+        },
+        {
+          "sourceSeed": 4200401,
+          "class": "WIN_RETAINED"
+        },
+        {
+          "sourceSeed": 4200402,
+          "class": "WIN_RETAINED"
+        },
+        {
+          "sourceSeed": 4200403,
+          "class": "WIN_RETAINED"
+        },
+        {
+          "sourceSeed": 4200404,
+          "class": "LOSS_CONSUMED"
+        },
+        {
+          "sourceSeed": 4200405,
+          "class": "LOSS_CONSUMED"
+        },
+        {
+          "sourceSeed": 4200406,
+          "class": "WIN_RETAINED"
+        },
+        {
+          "sourceSeed": 4200407,
+          "class": "WIN_RETAINED"
+        },
+        {
+          "sourceSeed": 4200408,
+          "class": "LOSS_CONSUMED"
+        },
+        {
+          "sourceSeed": 4200409,
+          "class": "WIN_RETAINED"
+        },
+        {
+          "sourceSeed": 4200410,
+          "class": "WIN_RETAINED"
+        },
+        {
+          "sourceSeed": 4200411,
+          "class": "WIN_RETAINED"
+        },
+        {
+          "sourceSeed": 4200412,
+          "class": "WIN_RETAINED"
+        },
+        {
+          "sourceSeed": 4200413,
+          "class": "WIN_RETAINED"
+        },
+        {
+          "sourceSeed": 4200414,
+          "class": "WIN_RETAINED"
+        },
+        {
+          "sourceSeed": 4200415,
+          "class": "WIN_RETAINED"
+        },
+        {
+          "sourceSeed": 4200416,
+          "class": "WIN_RETAINED"
+        },
+        {
+          "sourceSeed": 4200418,
+          "class": "WIN_CONSUMED"
+        },
+        {
+          "sourceSeed": 4200419,
+          "class": "WIN_RETAINED"
+        },
+        {
+          "sourceSeed": 4200420,
+          "class": "WIN_RETAINED"
+        },
+        {
+          "sourceSeed": 4200421,
+          "class": "WIN_RETAINED"
+        },
+        {
+          "sourceSeed": 4200422,
+          "class": "WIN_CONSUMED"
+        },
+        {
+          "sourceSeed": 4200423,
+          "class": "WIN_CONSUMED"
+        },
+        {
+          "sourceSeed": 4200424,
+          "class": "WIN_RETAINED"
+        },
+        {
+          "sourceSeed": 4200425,
+          "class": "WIN_RETAINED"
+        },
+        {
+          "sourceSeed": 4200426,
+          "class": "WIN_RETAINED"
+        },
+        {
+          "sourceSeed": 4200427,
+          "class": "WIN_RETAINED"
+        }
+      ]
+    },
+    "interpretation": "five LOSS_CONSUMED rows are too few to qualify rescue prediction",
+    "additionalLossConsumedExamplesRecommendedBeforeReassessment": 20,
+    "totalLossConsumedTargetForNextModelReview": 25,
+    "sampleSizeRationale": "reach about five observed losses per 5-fold holdout set; this is a minimum reassessment target, not a qualification guarantee"
+  },
+  "phaseC": {
+    "offlineAncestralDiagnostic": {
+      "drawsPerSupportedSource": 32,
+      "requestedRows": 128,
+      "supportedSources": 98,
+      "fallbackRows": 30,
+      "conditionalHeadFallbackDraws": 0,
+      "classDraws": 3136,
+      "classDrawCounts": {
+        "WIN_RETAINED": 2363,
+        "WIN_CONSUMED": 656,
+        "LOSS_CONSUMED": 117
+      },
+      "terminalCounts": {
+        "terminalWinRetained": 2363,
+        "legalHp": 3019,
+        "legalPotionCount": 3136,
+        "legalPersistentState": 3136,
+        "tailStateChecks": 3136,
+        "tailStateMatches": 3136,
+        "terminalWinConsumed": 656,
+        "terminalLossConsumed": 117,
+        "terminalLossStateLegal": 117,
+        "fallbackRows": 30
+      },
+      "supportAndFallbackReasons": {
+        "entropic_brew": 1,
+        "fairy_potion_precedence_exact_boundary": 6,
+        "gold_mutating_card": 3,
+        "gold_mutating_encounter": 1,
+        "gold_mutating_potion": 6,
+        "gold_mutating_relic": 2,
+        "potion_not_certified": 1,
+        "pre_stolen_gold_nonzero": 4,
+        "ritual_dagger": 6,
+        "writhing_mass": 1
+      },
+      "impossibleLossRetainedDraws": 0,
+      "spentToActiveTransitions": 0,
+      "tailDataTransitionMismatches": 0,
+      "tailStateChecks": 3136,
+      "tailStateMatches": 3136,
+      "sampleDigestSha256": "b37f2957a36a7ff411b568218158796eac36b6cfe56a76beacc8c97d2a23d346",
+      "seed": 20260927,
+      "conditionalHeadsUse": "T2_revive",
+      "productionIntegration": false
+    },
+    "samplerBoundary": "ordinary conditional heads only after WIN; Tail class controls active/spent state; losses terminate; Mark/Fairy exact boundaries fall back"
+  },
+  "finalClassification": "LIZARD_MINIMAL_CORRECTION_DATA_LIMITED",
+  "claimBoundary": "descriptive development diagnostic only; no training artifact, runtime integration, or production qualification"
+}
