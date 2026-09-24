@@ -834,5 +834,4 @@ recording.
 - `apps/test.cpp::main`
 - `apps/parity_test.cpp::main`; `parity_test.py`
 - `tools/verify/check_replay.py`
-- `src/sim/search/CombatPVNet.cpp` BLAS initialization
 - `src/sim/search/CombatDistValueNet.cpp` BLAS initialization

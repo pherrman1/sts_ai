@@ -25,9 +25,8 @@ separate packed `search::Action` (`include/sim/search/GameAction.h::GameAction`;
 
 `apps/one_combat.cpp::main` is the active integration workbench. It parses
 environment flags, loads models, and dispatches benchmarks, data generators,
-tracing, and counterfactual evaluators. The self-contained `vnettest`,
-`policynettest`, `pvnetparity`, and `policystats` offline diagnostics live in
-`apps/combat_model_diagnostics.cpp`. Core simulator behavior remains under
+tracing, and counterfactual evaluators. The self-contained `vnettest` offline
+diagnostic lives in `apps/combat_model_diagnostics.cpp`. Core simulator behavior remains under
 `src/game`, `src/combat`, and `src/sim` (`CMakeLists.txt::sts_lightspeed_SOURCES`).
 
 The retained E2c RAW/POST capture contract is isolated in
