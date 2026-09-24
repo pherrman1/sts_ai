@@ -2,11 +2,12 @@
 
 ## Preregistration and status
 
-This first commit freezes the analysis plan and the handoff's proposed
-decision thresholds before any Q1–Q5 metric is computed on a main population.
-The Silver E2c smoke was run as the required collection gate; its outcome and
-the resulting stop condition are recorded in the follow-up results commit.
-No main cohort or fallback dataset is currently available to analyze.
+The preregistration commit froze the analysis plan and the handoff's proposed
+decision thresholds before any Q1–Q5 metric was computed on a main population.
+This pre-analysis amendment records one correction to the Q4 model after a
+metadata-only schema check and before any Q1–Q5 calculation. The current
+128-seed cohort has now been collected but remains unanalyzed; its provenance
+and outcomes will be recorded with the results.
 
 **Question.** Is the tracked `models/v_win_trees.txt` a usable source of
 relative prices among combat-terminal victories, measured in HP-equivalent
@@ -46,10 +47,12 @@ the compact-tree model exactly as serialized. Preserve canonical derived
 features when perturbing `curHp`, `maxHp`, potion counts, or gold.
 
 For Q4, pair RAW and POST by `(seed, fight_index)`, then fit `DeltaV` against
-RAW `curHp`, `potionCount`, potion-slot slack, and `gold`. Report any
-rank-deficient terms explicitly; at ascension 0, fixed `potionCapacity` makes
-`potionCount` and slack exact complements, so only their joint observed-range
-effect is identifiable. Compare potion value between slack 0 and slack ≥1.
+RAW `curHp`, `potionCount`, potion-slot slack, and `gold`. A metadata-only
+check of the first 93 row-bearing seeds observed both potion capacities 3 and
+5. This contradicts the proposed fixed-capacity assumption, so the model will
+include `potionCount` and slack together and report the actual design-matrix
+rank and any rank-deficient terms. Coefficients are descriptive over the
+observed capacity mix. Compare potion value between slack 0 and slack ≥1.
 
 For Q5, use the existing E2c T-fair classification in
 `tools/analyze_postcombat_raw_terminal.py`: zero the eight
@@ -83,6 +86,8 @@ These thresholds are copied unchanged from the accepted handoff:
   potion value, or Q4/Q5 fail materially.
 
 Q2, Q3, and Q6 constrain interpretation and cost but do not gate the verdict.
-No threshold has been changed. The three scientific verdicts apply only after
-the collection and parity gates pass; a failed collection gate is reported as
-blocked, not converted into a scientific verdict.
+No threshold has been changed. The Q4 predictor specification above is the
+only preregistration amendment; it corrects a false fixed-capacity assumption
+without changing a decision threshold. The three scientific verdicts apply
+only after the collection and parity gates pass; a failed collection gate is
+reported as blocked, not converted into a scientific verdict.
