@@ -380,6 +380,17 @@ available in this checkout, so the breakdown and comparison results were not
 independently verified here. The tracked 32-run packet's measurements remain
 historical results from before the bypass.
 
+A post-correction exact-10k replay compared current main `01f6f164` with the
+corrected implementation at `2da8eed6` on the frozen `hard64-holdout` cohort.
+All 64 cases were attempted, but case `12100109/21` failed with the same
+deterministic-state mismatch in both arms, leaving 63 valid pairs. Both arms
+won 57/63 with no outcome flips; treatment skipped 62 searches, used 3.19%
+fewer simulations, and had 2.99% lower summed per-case replay wall time. Mean
+ending HP changed by +0.16 and action traces matched on 60/63 valid pairs.
+This is a bounded replay result, not a complete valid N64 confirmation or a
+live-game quality claim. See the
+[post-correction hard64 packet](../../experiments/evidence/silver_singleton_reroot_hard64_holdout_2026-09-25/README.md).
+
 The follow-up exact-10k sequential-checkpoint diagnostic on fresh seeds
 112--127 is **`LOGISTIC_DYNAMIC_RULE_REJECTED`** for the bounded offline
 question. It records cumulative 250/500/1,000/2,000/4,000/8,000/10,000

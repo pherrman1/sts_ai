@@ -1,0 +1,74 @@
+[
+  {
+    "block": 1,
+    "case_count": 8,
+    "run_order": [
+      "control",
+      "treatment"
+    ],
+    "note": ""
+  },
+  {
+    "block": 2,
+    "case_count": 8,
+    "run_order": [
+      "treatment",
+      "control"
+    ],
+    "note": ""
+  },
+  {
+    "block": 3,
+    "case_count": 8,
+    "run_order": [
+      "control",
+      "treatment"
+    ],
+    "note": ""
+  },
+  {
+    "block": 4,
+    "case_count": 8,
+    "run_order": [
+      "treatment",
+      "control"
+    ],
+    "note": ""
+  },
+  {
+    "block": 5,
+    "case_count": 8,
+    "run_order": [
+      "control",
+      "treatment"
+    ],
+    "note": ""
+  },
+  {
+    "block": 6,
+    "case_count": 8,
+    "run_order": [
+      "treatment",
+      "control"
+    ],
+    "note": "block 6 control rerun after identical treatment technical failure"
+  },
+  {
+    "block": 7,
+    "case_count": 8,
+    "run_order": [
+      "control",
+      "treatment"
+    ],
+    "note": ""
+  },
+  {
+    "block": 8,
+    "case_count": 8,
+    "run_order": [
+      "treatment",
+      "control"
+    ],
+    "note": ""
+  }
+]
