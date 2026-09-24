@@ -1,7 +1,8 @@
 # Current research status
 
-Last verified: 2026-09-24 for the experimental DeepSets Brew-fallback
-mechanism/timing smoke; 2026-09-23 for the frozen Silver prior online gameplay screen;
+Last verified: 2026-09-24 for the `v_win` terminal-pricing audit and
+experimental DeepSets Brew-fallback mechanism/timing smoke; 2026-09-23 for the
+frozen Silver prior online gameplay screen;
 2026-09-21 for the complete frozen Silver internal-node FPU cohort and local 80-source learned-prefix scale validation;
 2026-09-20 for the tactical-prefix Silver oracle headroom screen
 and contextual first-action Silver selector headroom/policy screen; 2026-09-19 for forced-action historical artifact recovery and
@@ -1707,6 +1708,42 @@ data. No fresh holdout, hard64 replay, live gameplay, production override, or
 default promotion is authorized by this result. The current next target is
 continuation trajectory/policy quality. See [ledger-06 §330](../../experiments/ledger-06.md)
 and the [terminal/value audit packet](../../experiments/evidence/silver_terminal_value_audit_20260921/README.md).
+
+### `v_win` terminal-pricing audit
+
+The tracked compact win model is **`VWIN_W1_NEEDS_SMOOTHING`** under the
+pre-registered W1 input-readiness thresholds. In 128 project-fair Silver
+E2c-v2 seeds, 63.77% of RAW HP sweeps were monotone (95% seed-bootstrap CI
+60.18–67.35%), below the 95% requirement; median longest flat run was 5 HP,
+within the 10-HP limit. HP slope and held-potion value were positive with
+intervals above zero in all three acts. This does not establish gameplay
+quality or runtime suitability, and no lookup table or runtime change was
+made.
+
+Collection has two material caveats: the interrupted first process left 93
+row-bearing seeds without final aggregate health/quarantine counters, and the
+tracked policy prior was not loaded (`prior_model_loaded=0`). The remaining 35
+seeds have complete sidecar accounting. A separate 600-row Python/native
+parity gate passed exactly. Calibration was weakly powered and underpredicted
+the cohort's observed run win rate; zeroing the hidden-future fields passed
+the rank-correlation threshold but can be out-of-distribution.
+
+The pre-collection inventory found vrich and the named rest/path/card
+counterfactual files absent from the checked local checkout/worktrees. The
+ledger-referenced E2c GCP path is not mounted on this host; current remote
+existence and historical dataset byte sizes are unverified. Under the
+specified zero-hidden-future sensitivity, per-act HP slopes were
+0.000675/0.002274/0.002355 probability per HP and held-potion equivalents
+were 15.59/13.55/4.45 HP; those fair-regime values are OOD-prone. The packet
+contains the artifact inventory and interval table.
+
+The current tracked 1,060-tree artifact contains counter-value splits on
+multiple relic fields, contrary to the zero-split statement in historical
+ledger §§109–110. The current enum maps r116 to Neow's Lament and r131 to
+Thread and Needle. The historical run's exact model artifact is not
+provenance-bound, so its result is not rewritten. See [ledger
+§343](../../experiments/ledger-06.md) and the [complete evidence
+packet](../../experiments/evidence/vwin_terminal_pricing_audit_20260924/README.md).
 
 ## Routing / evidence
 

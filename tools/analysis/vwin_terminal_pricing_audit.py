@@ -761,7 +761,7 @@ def run_audit(csv_path, model_path, output_dir, latency_json=None):
                        "replicates": BOOTSTRAP_REPS, "rng_seed": BOOTSTRAP_SEED},
         "q1": q1,
         "q2": {
-            "conclusion": "No reviewed intervention directly identifies v_win's causal HP slope.",
+            "conclusion": "Inference: No reviewed intervention directly identifies v_win's causal HP slope.",
             "existing_interventional_evidence_review": [
                 {"item": "train_winrate.py synthetic +30%-maxHP probe", "finding": "The trainer reports model-space P(win) changes after increasing curHp by 30% of maxHp, clamped to maxHp, stratified by HP band.", "bounds_v_win_hp_slope": False, "reason": "It is a synthetic feature perturbation of the fitted model, not a held-out outcome intervention or a matched native continuation."},
                 {"item": "datagen3 / rest_cf paired outcomes", "finding": "Verified repository path trains on paired downstream gate-score differences for out-of-combat actions.", "bounds_v_win_hp_slope": False, "reason": "Rest-versus-upgrade jointly changes HP and progression; it identifies an action contrast, not a controlled HP derivative of this classifier."},
@@ -777,7 +777,8 @@ def run_audit(csv_path, model_path, output_dir, latency_json=None):
                 "artifact_caveat": "The tracked model file matches the original exported build/v_win_trees.txt blob, but the exact model artifact used for the historical §109-110 run is not provenance-bound there. Do not rewrite that historical run's result from this audit.",
                 "feature_encoding_source": "apps/one_combat/run_features.cpp:90-94 encodes relic fields as 1 + counter when present; thresholds above 1.0 therefore distinguish counter values for counter relics.",
             },
-            "proposed_test": {"captured_states": 8, "hp_offsets": [-10, 0, 10],
+            "proposed_test": {"status": "Open question: proposed but not run",
+                              "captured_states": 8, "hp_offsets": [-10, 0, 10],
                               "matched_continuation_seeds_per_state": 4,
                               "trajectories": 96,
                               "cpu_cost_upper_bound_minutes": 60.8,

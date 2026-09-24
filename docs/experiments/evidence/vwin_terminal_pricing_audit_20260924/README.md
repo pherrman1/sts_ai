@@ -62,11 +62,13 @@ canonical rich-state block and the 448 model features aligned by feature name.
 Native `winnettest` and Python predictions agreed on all 600 rows: maximum and
 mean absolute probability difference were both 0.000000, below the frozen
 `1e-4` tolerance. See [`parity_summary.txt`](parity_summary.txt).
+After synchronization with current `origin/main`, `one_combat` was rebuilt in
+Release and the same parity gate passed again on all 600 rows.
 
 Every confidence interval below uses a 2,000-replicate percentile bootstrap
 over source seeds with RNG seed `20260924`. Two complete runs of the audit
 script produced byte-identical JSON results (SHA-256
-`c8dc74656f9671c8ac1b1ee4b9880e67e6e53684e1bf5049d519acb7853195f4`).
+`8803126fba6a73de07b99ab8a4b5a006f17fc79d5f18f7468bdf16c38194ba98`).
 Machine-readable results and tables are retained in this directory.
 
 ## Q1 — local terminal prices
@@ -76,30 +78,39 @@ The model's HP curve is monotone for 63.77% of RAW rows (95% CI
 flat run is 5 HP (bootstrap CI 5–5), within the 10-HP limit. Per-act summaries
 follow; intervals are seed-clustered 95% CIs.
 
-| Act | RAW rows | Monotone share | Median flat run | Mean HP slope, probability/HP | Held-potion value, HP-equivalent | Gold, HP-equivalent/gold | +1 max HP, HP-equivalent |
-| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
-| 1 | 1,232 | 65.9% [61.4, 70.4] | 5 [5, 5] | 0.000933 [0.000837, 0.001025] | 6.76 [4.99, 8.85] | 0.357 [0.303, 0.418] | 1.55 [0.03, 3.52] |
-| 2 | 1,005 | 62.1% [55.9, 67.7] | 4 [4, 5] | 0.002670 [0.002412, 0.002936] | 6.74 [4.65, 9.22] | 0.090 [0.069, 0.114] | 1.00 [-1.08, 2.20] |
-| 3 | 832 | 62.6% [56.6, 68.6] | 4 [4, 4] | 0.002586 [0.002198, 0.002987] | 6.70 [3.52, 12.58] | 0.058 [0.014, 0.117] | 0.30 [-3.13, 2.39] |
+| Act | RAW rows | Monotone share | Median flat run | Zero HP-slope share | Mean HP slope, probability/HP | Held-potion value, HP-equivalent | Gold, HP-equivalent/gold | +1 max HP, HP-equivalent |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| 1 | 1,232 | 65.9% [61.4, 70.4] | 5 [5, 5] | 0.81% [0.08, 1.85] | 0.000933 [0.000837, 0.001025] | 6.76 [4.99, 8.85] | 0.357 [0.303, 0.418] | 1.55 [0.03, 3.52] |
+| 2 | 1,005 | 62.1% [55.9, 67.7] | 4 [4, 5] | 0.80% [0.20, 1.68] | 0.002670 [0.002412, 0.002936] | 6.74 [4.65, 9.22] | 0.090 [0.069, 0.114] | 1.00 [-1.08, 2.20] |
+| 3 | 832 | 62.6% [56.6, 68.6] | 4 [4, 4] | 0.84% [0.00, 1.97] | 0.002586 [0.002198, 0.002987] | 6.70 [3.52, 12.58] | 0.058 [0.014, 0.117] | 0.30 [-3.13, 2.39] |
 
 Silver reference prices were 11 probability points per potion, 0.25
 probability points per gold, and 2 probability points per max-HP unit. The
 positive HP-slope and held-potion criteria pass in every act. The max-HP probe
 is descriptive and is not one of those sign gates.
 
+The tracked compact model has 2,127 splits on curHp, 3,257 on maxHp, 2,210 on
+gold, 271 on potionCount, and 153 on potionCapacity. The most-split potion
+features are pot7 (18), pot26 (16), and pot29 (11). The compact export stores
+split indices and thresholds but no gain values, so total gain is unavailable;
+the complete split counts are in q1_split_counts.csv. Per-potion deltas,
+HP-equivalents, and zero-value shares for ids with n >= 30 are in q1_potions.csv.
+
 ## Q2 — intervention review and relic counters
 
-The reviewed repository interventions do not identify a causal derivative of
-the tracked terminal classifier with respect to HP. `train_winrate.py` includes
-a synthetic +30%-of-maxHP feature-space probe; it measures the model response,
-not an outcome effect. Paired `rest_cf` changes HP and progression together,
-`pathcfgen` changes route and downstream rewards, and TERM_WIN's terminal
-bonus changes the search policy (historical run: null win-rate result and about
-3.1x cost at its recorded setup). None holds the rest of a captured state fixed
-while applying an HP offset and matched continuation. The bounded proposed
-follow-up is 8 states × 3 offsets (`-10, 0, +10`) × 4 common continuation seeds
-= 96 trajectories. Its rough 60.8 CPU-minute estimate uses an existing
-38-CPU-second/run reference; replay cost is unmeasured. It was not run.
+**Inference:** The reviewed repository interventions do not identify a causal
+derivative of the tracked terminal classifier with respect to HP. The synthetic
+trainer probe measures the model response, not an outcome effect. Paired
+rest counterfactuals change HP and progression together, path branches change
+route and downstream rewards, and TERM_WIN changes the search policy (its
+historical win-rate screen was null at about 3.1x cost for the recorded setup).
+
+**Open question:** No reviewed experiment holds the rest of a captured state
+fixed while applying an HP offset and matched continuation. The bounded
+proposed follow-up is 8 captured states × 3 offsets (-10, 0, +10) × 4 common
+continuation seeds = 96 trajectories. Its rough 60.8 CPU-minute estimate uses
+an existing 38-CPU-second/run reference; replay cost is unmeasured. It was not
+run.
 
 This audit also corrects an interpretation attached to historical ledger
 §§109–110. The **current tracked 1,060-tree artifact** has splits above the
@@ -135,6 +146,28 @@ that data file is absent locally and no saved training manifest ties the
 historical rows/configuration to this exact model hash. Treat that lineage as
 incomplete rather than asserting exact training provenance.
 
+### Pre-collection artifact inventory (2026-09-24)
+
+I checked the task worktree, the canonical checkout, and the existing Codex
+worktrees for the named data paths before collecting the new cohort. The historical training/counterfactual CSVs and associated retained
+data/model artifacts listed below were not present in those local locations.
+The current tracked v_win model was present, as noted in the table. The ledger-referenced E2c GCP path is also
+not mounted on this host; that does not establish whether the remote files
+still exist. No remote job or data transfer was started.
+
+| Candidate | Availability and recorded size | Verified generation/provenance | Use for this audit |
+| --- | --- | --- | --- |
+| Current models/v_win_trees.txt | Present locally; 3,224,915 bytes; SHA-256 fc52c14c…067ad70; 448 features, 1,060 trees. | The tracked bytes match the original exported build/v_win_trees.txt blob introduced by 746e50fc. train_winrate.py is the binary-logistic XGBoost trainer and defaults to build/vrich.csv, but the exact training manifest for this model hash is not recorded, and the agent generation tied to this model hash is unverified. | Used for this audit; exact training-data lineage remains unverified. |
+| Ignored build/vrich.csv (E2) | Absent from checked local trees. Historical ledger records 1,444,372 rows, 67,655 seeds, and 1,009 columns; CSV byte size and source hash are not reproduced in the maintained ledger. Its referenced build/e2_postcombat_runwin/ hash bundle is also absent locally. No remote copy is identified in the ledger. | Verified from the ledger: generated by tools/run/datagen2_loop.sh on 2026-07-15, Ironclad A0, 10,000 simulations, epsilon 0.05; v_server.py V-marginal card continuation (softmax temperature 3 plus 5% uniform floor), heuristic map/shop/rest. Native datagen2 collection; XGBoost training recipe recorded separately. | Not available for reanalysis. The historical corpus configuration is not proof that it trained the currently tracked model. |
+| E2c-v2 production output (da692d59…a89e2) | Absent from the task/canonical/managed worktrees. Historical ledger points to /home/philippherrmann/sts_sweep/build/e2c_raw_terminal_2000/; that path is absent on this host. Historical dataset accounting: 83,045 rows, 1,980 represented seeds; artifact byte sizes were not recorded. | Historical record says GCP-hosted one_combat e2cgen, source SHA e029dffb4c72449e8fc5b874391c49a27b2f6a81; 1,000 sims, A0, fair Searcher3/live-valid, 64 particles, accepted VNet/OOC models. Ledger retains the dataset SHA and artifact hashes. Current remote existence and full backend manifest were not verified. | Not available locally for reanalysis. No GCP job was launched. |
+| Paired rest counterfactual (build/rest_cf.csv) | CSV, model, and build/rest_cf output directory absent from checked local trees; no remote location or byte size/hash is recorded. | Historical §54 describes same-pre-action rest-vs-smith branches with detached map and common future agent seed; a 50-run smoke emitted 104 decisions from 37 runs. train_rest_cf.py defaults to this CSV and learns paired gate-score differences. The historical record does not bind an exact data file, generator build, simulator backend/configuration, byte size, or source hash. | Not a controlled HP intervention: action changes HP and progression together. |
+| Paired route/card counterfactual outputs (pathcfgen, datagen3) | selfplay/path_buffer/path_cf.csv, path_maps_5k.csv, selfplay/models/path_cf_5k*, build/card_cf.csv, selfplay/card_buffer/card_cf_maps.csv, and the historical card model paths are absent from checked local trees. No remote location or current byte size/hash is recorded. | Historical §§60–63 record datagen3 card branches from identical pre-choice states, common RNG futures, 100 simulations and two futures (21,863 decisions / 87,452 action rows; the map export was 9.7 MB, while the source CSV size was not recorded); §63 records pathcfgen with common future seeds (5,000 decisions / 11,784 branches), and model initialization from meta_graph_full21k.pt. Historical CSV/model paths are ledger references, not verified current files. | These action/route contrasts change more than HP and cannot identify the tracked model's HP derivative. |
+
+**Verified:** the local absence checks and the historical ledger facts stated
+above. **Unverified:** current remote E2c file existence, omitted byte sizes
+for historical datasets, and the exact v_win training corpus/configuration.
+The table separates those unknowns from the fresh 128-seed Silver collection.
+
 ## Q4 — RAW-to-POST effects
 
 There are 2,706 matched pairs. Mean `Pwin(POST)-Pwin(RAW)` was 0.00229
@@ -165,6 +198,19 @@ pass the frozen 0.8 correlation threshold. Zeroing is not the historical
 resampling substitute and may place the inputs out of distribution; this is a
 sensitivity check, not an alternate production price table.
 
+Act-level exchange rates are shown below for both regimes. “Fair” means the
+specified zero-hidden-future sensitivity; its prices are OOD-prone and should
+not be read as ordinary observed terminal prices.
+
+| Act | Regime | Mean HP slope, probability/HP (n rows) | Held-potion value, HP-equivalent (n rows) |
+| --- | --- | ---: | ---: |
+| 1 | Recorded | 0.000933 [0.000837, 0.001025] (1,232) | 6.76 [4.99, 8.85] (727) |
+| 1 | Fair, hidden fields zeroed | 0.000675 [0.000576, 0.000767] (1,232) | 15.59 [8.35, 26.47] (629) |
+| 2 | Recorded | 0.002670 [0.002412, 0.002936] (1,005) | 6.74 [4.65, 9.22] (833) |
+| 2 | Fair, hidden fields zeroed | 0.002274 [0.002038, 0.002524] (1,005) | 13.55 [4.86, 29.76] (824) |
+| 3 | Recorded | 0.002586 [0.002198, 0.002987] (832) | 6.70 [3.52, 12.58] (696) |
+| 3 | Fair, hidden fields zeroed | 0.002355 [0.001977, 0.002740] (832) | 4.45 [3.19, 5.97] (695) |
+
 ## Q6 — within-combat inputs and prediction cost
 
 Code inspection identified model inputs that can change between the combat
@@ -177,6 +223,15 @@ input. The Release direct native prediction benchmark made 20,000 calls:
 median 21.761 μs, p95 31.249 μs. This is a predictor microbenchmark, not
 end-to-end combat latency.
 
+Code references for the changing features: curHp transfer and exit healing
+are in third_party/silver_lightspeed/src/combat/BattleContext.cpp:494 and
+:598-613; Feed max HP is in third_party/silver_lightspeed/src/combat/Actions.cpp:979-995
+and copied at BattleContext.cpp:495; Hand of Greed gold is in Actions.cpp:1008-1026
+and copied at :496; potion inventory is transferred at :488-489 and encoded in
+apps/one_combat/run_features.cpp:95-100; Writhing Mass/Parasite deck changes are
+in BattleContext.cpp:479-484 and run_features.cpp:77-80; exit-mutated relics are
+updated at BattleContext.cpp:550-596 and encoded in run_features.cpp:90-94.
+
 ## Scope, deviations, and checks
 
 - No W1 table, runtime integration, default change, gameplay claim, or Q2
@@ -188,10 +243,20 @@ end-to-end combat latency.
 - The local raw E2c CSVs are not committed. This packet preserves result JSON,
   aggregate tables, segment provenance/schema for the completed remainder,
   integrity accounting, parity outcome, smoke summaries, and native latency.
-- The deterministic analysis self-test passed. Native/Python parity passed
-  on 600 rows with max difference 0.000000. Broader repository verification
-  and authoritative GitHub Actions CI are recorded in the pull request once
-  the final review SHA is frozen.
+- **Checks on the merged current-main source:** `cmake --preset
+  linux-gcc-release` configured successfully; `cmake --build
+  build/linux-gcc-release --target one_combat -j2` passed. The Release build
+  emitted a narrowing-conversion warning in the run-time aggregate and an ODR
+  warning for `Path` in the root and bundled `SimpleAgent.cpp`, plus the LTO
+  serial-compilation note; these are outside the audit changes.
+- Focused CTest passed **3/3**:
+  `winnettest_selftest`, `vwin_terminal_pricing_audit_selftest`, and
+  `export_win_model_selftest`. Python compilation and the analyzer
+  self-test passed. Native/Python parity passed again after the merged build
+  on 600 rows with max/mean difference 0.000000.
+- Full CTest and GitHub Actions CI have not been run at this point; the draft
+  PR will provide the authoritative CI status. No additional gameplay seeds
+  were run for these checks.
 
 ## Evidence files
 
@@ -206,7 +271,7 @@ end-to-end combat latency.
 - [`q4_regression.csv`](q4_regression.csv) — regression estimates and
   seed-bootstrap confidence limits.
 - [`collection_provenance.json`](collection_provenance.json) — commands,
-  hashes, row/key integrity, exact interrupted-segment limitation, and
+  hashes, row/key integrity, exact interrupted-segment limitation, pre-collection source inventory, and
   reproducibility hash.
 - [`remainder_35_provenance.json`](remainder_35_provenance.json) and
   [`remainder_35_schema.json`](remainder_35_schema.json) — wrapper-generated

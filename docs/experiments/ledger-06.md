@@ -11694,3 +11694,94 @@ No gameplay run was repeated. Results and commands are in the
 Knowledge impact: current research status now records an experimental hybrid
 path and its bounded engineering evidence; qualified models and runtime defaults
 remain unchanged.
+
+## §343 — `v_win` terminal-pricing audit (2026-09-24)
+
+- **Question / decision:** Is the tracked compact `v_win` suitable for a
+  relative-price lookup over combat-terminal victories? The preregistered
+  result is **`VWIN_W1_NEEDS_SMOOTHING`**. This is W1 input-readiness only; it
+  makes no gameplay-quality or runtime-promotion claim. The monotonicity
+  threshold failed, while the low-HP flat-run threshold, per-act positive HP
+  and held-potion intervals, Q4, and Q5 passed. The handoff's thresholds were
+  unchanged. The Q4 capacity model was amended before outcome analysis because
+  metadata-only inspection found both capacity 3 and 5; see commit `ca6960ad`.
+- **Collection / artifact:** 128 project-fair E2c-v2 seeds
+  `3100000..3100127`, ascension 0, collected at executable/source SHA
+  `5334920f5dc184ba9507ce9a15ed2fd96fd69bec`, `e2cgen` simulations argument
+  1,000, adaptive Silver enabled, allocated reuse cap 32,768. Model SHA-256 is
+  `fc52c14cb7239a33b3c1f9d0477ccb6c895fd51a07240fe804744e605067ad70`
+  (448 features, 1,060 trees, logistic). The current 2-seed smoke passed
+  2/2, with 92 rows and zero invalid/quarantined seeds/branches or simulator
+  health failures. The first population process stopped after representing 93
+  seeds and did not leave its final sidecar counters; the remaining 35 seeds
+  have complete sidecar accounting (35/35, zero invalid/quarantined seeds or
+  branches, zero health failures). Silver telemetry reported
+  `prior_model_loaded=0`, a preregistration deviation. The complete row/hash
+  inventory and interrupted-segment boundary are in the
+  [evidence packet](evidence/vwin_terminal_pricing_audit_20260924/README.md).
+- **Parity / data checks:** Before Q1–Q5, 600 RAW rows passed native/Python
+  name-aligned parity at `1e-4` (600/600 compared; max and mean difference
+  0.000000). The combined files contain 3,069 RAW and 2,706 POST rows with
+  2,706 matched pairs; there are no duplicate keys or paired outcome, room,
+  encounter, or within-seed label mismatches. There are 363 unmatched RAW and
+  no unmatched POST rows. Two complete analyses were byte-identical; result
+  JSON SHA-256 is
+  `8803126fba6a73de07b99ab8a4b5a006f17fc79d5f18f7468bdf16c38194ba98`.
+- **Q1:** Monotone HP sweeps were 63.77% of rows (95% seed-bootstrap CI
+  60.18–67.35%), below the 95% gate; overall median longest flat run was 5 HP
+  (CI 5–5), passing the 10-HP limit. Per-act mean HP slopes were
+  `0.000933`, `0.002670`, and `0.002586` probability/HP; held-potion
+  equivalents were `6.76`, `6.74`, and `6.70` HP, each with intervals above
+  zero. Full act/room/potion summaries are retained in the packet.
+- **Q2:** **Inference:** No reviewed repository intervention isolates an HP
+  offset on captured states with matched continuations. The synthetic trainer
+  probe is model-space only; paired rest branches change HP and progression,
+  path branches change route and downstream rewards, and TERM_WIN changes
+  policy (its recorded win-rate screen was null at approximately 3.1x cost).
+  **Open question:** An 8-state × 3-offset × 4-continuation (96-trajectory)
+  matched continuation test is proposed only; its 60.8 CPU-minute estimate is
+  rough and replay cost is unmeasured. The current tracked model has
+  counter-value splits on r26/r30/r31/r44/r46/r52/r68, with r32 absent and
+  r35/r116/r131 presence-only. This corrects the current-artifact
+  interpretation in ledger §§109–110; the exact model used in that historical
+  run remains unbound.
+- **Q3–Q6:** The pre-collection inventory found the named vrich, rest/path
+  counterfactual, and datagen3 files absent from checked local trees. The
+  historical E2c GCP output path is not mounted on this host, so current
+  remote existence and historical dataset byte sizes remain unverified; see
+  the packet inventory. Predicted mean P(win) was 0.545 versus equal-seed
+  observed run win rate 0.719; Brier 0.232 versus 0.187 row-prevalence
+  baseline. Treat calibration as weakly powered at 128 seeds, with
+  underprediction in this cohort. Q4 had 2,706 pairs, rank 5/5,
+  `R²=0.04776` (narrowly below 0.05); coefficient endpoint bounds exceed
+  3 HP-equivalent across the observed ranges, so the formal gate passes only
+  through the frozen low-R² clause. Q5 recorded-vs-zeroed hidden-future
+  HP-slope and potion-value rank correlations were 0.934 and 0.873;
+  zeroing is out-of-distribution-prone. Fair/zeroed per-act HP slopes were
+  0.000675/0.002274/0.002355 and potion equivalents were
+  15.59/13.55/4.45 HP; the full interval table is in the packet.
+  Q6 measured native prediction median/p95 21.761/31.249 μs over 20,000
+  direct calls and identified HP, max HP, gold, potion, deck/Parasite, and
+  exit-mutated relic inputs.
+- **Scope / evidence:** No W1 table, causal continuation replay, live gameplay,
+  runtime change, or default change. The raw E2c CSVs remain ignored local
+  data; aggregate, parity, provenance, model-counter, latency, and smoke
+  evidence are committed in
+  [the audit packet](evidence/vwin_terminal_pricing_audit_20260924/README.md).
+  See the machine-readable [results](evidence/vwin_terminal_pricing_audit_20260924/results.json).
+- **Checks:** `cmake --preset linux-gcc-release` configured and
+  `cmake --build build/linux-gcc-release --target one_combat -j2` passed on
+  merged current-main source. Focused CTest passed 3/3
+  (`winnettest_selftest`, `vwin_terminal_pricing_audit_selftest`,
+  `export_win_model_selftest`); Python compilation and the analyzer self-test
+  passed. Native/Python parity passed again on 600 rows after the build, max
+  difference 0.000000. The build emitted a narrowing-conversion warning in
+  unrelated run-timing code and an ODR warning for `Path` across root and
+  bundled `SimpleAgent.cpp`. Full CTest and GitHub Actions CI were not run at
+  this point; no gameplay seed was rerun for verification.
+
+Knowledge impact: current research now records that the tracked model fails
+the monotonicity gate for W1 use, includes the pre-collection artifact
+availability limits and fair-regime exchange rates, and corrects the
+tracked-artifact counter split/enum interpretation. No runtime default or
+gameplay claim changed.

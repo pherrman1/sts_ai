@@ -1,11 +1,107 @@
 {
+  "pre_collection_artifact_inventory": {
+    "checked_date": "2026-09-24",
+    "checked_local_roots": [
+      "/home/philippherrmann/.codex/worktrees/d9e0/sts_lightspeed",
+      "/home/philippherrmann/Documents/sts/sts_lightspeed",
+      "/home/philippherrmann/.codex/worktrees"
+    ],
+    "remote_actions": "No remote access, job, or transfer was started; current remote existence is not inferred from an unmounted path.",
+    "candidates": [
+      {
+        "artifact": "models/v_win_trees.txt",
+        "local_present": true,
+        "size_bytes": 3224915,
+        "sha256": "fc52c14cb7239a33b3c1f9d0477ccb6c895fd51a07240fe804744e605067ad70",
+        "model_shape": {
+          "features": 448,
+          "trees": 1060,
+          "objective": "logistic",
+          "base_score": 0.33217296
+        },
+        "generation_provenance": "Current tracked bytes match the original exported build/v_win_trees.txt blob introduced by 746e50fc. train_winrate.py is the binary-logistic XGBoost trainer and defaults to build/vrich.csv, but the exact training manifest for this model hash is not recorded.",
+        "usable_for_audit": true,
+        "limitation": "Exact training corpus/configuration for this hash remains unverified."
+      },
+      {
+        "artifact": "build/vrich.csv and build/e2_postcombat_runwin/",
+        "local_present": false,
+        "remote_copy_identified_in_ledger": false,
+        "historical_inventory": {
+          "rows": 1444372,
+          "seeds": 67655,
+          "columns": 1009,
+          "size_bytes": null,
+          "source_sha256_in_retained_hash_bundle": true
+        },
+        "generation_provenance": "Ledger records tools/run/datagen2_loop.sh on 2026-07-15, Ironclad A0, 10000 simulations, epsilon 0.05, v_server.py V-marginal card continuation with softmax temperature 3 and 5% uniform floor, heuristic map/shop/rest; native datagen2 collection.",
+        "usable_for_audit": false,
+        "limitation": "CSV and referenced hash bundle are absent from checked local roots; exact bytes and source hash were not available to reverify."
+      },
+      {
+        "artifact": "E2c-v2 production output",
+        "local_present": false,
+        "historical_remote_path": "/home/philippherrmann/sts_sweep/build/e2c_raw_terminal_2000/",
+        "historical_remote_path_present_on_current_host": false,
+        "live_remote_existence_verified": false,
+        "dataset_sha256": "da692d5979f9df3cad70ee6d76bd34fcf174ac74f557b942fb662e3d8c6a89e2",
+        "historical_inventory": {
+          "rows": 83045,
+          "represented_seeds": 1980,
+          "artifact_sizes_bytes": null
+        },
+        "generation_provenance": "Historical ledger records GCP-hosted one_combat e2cgen from source e029dffb4c72449e8fc5b874391c49a27b2f6a81; 1000 simulations, ascension 0, fair/Searcher3/live-valid, 64 particles, accepted VNet/OOC models.",
+        "usable_for_audit": false,
+        "limitation": "Remote files were not mounted/accessed; ledger records artifact hashes but not byte sizes."
+      },
+      {
+        "artifact": "build/rest_cf.csv and paired rest model/output",
+        "local_present": false,
+        "remote_location_identified_in_ledger": false,
+        "historical_inventory": {
+          "smoke_source_runs": 50,
+          "decisions": 104,
+          "represented_runs": 37,
+          "size_bytes": null
+        },
+        "generation_provenance": "Ledger describes same-pre-action rest-vs-smith branches with a detached map and common future agent seed; train_rest_cf.py defaults to build/rest_cf.csv and fits paired gate-score differences.",
+        "usable_for_audit": false,
+        "limitation": "Historical smoke does not bind an exact dataset, generator build, byte size, or source hash."
+      },
+      {
+        "artifact": "pathcfgen and datagen3 card counterfactual outputs",
+        "local_present": false,
+        "checked_paths": [
+          "build/card_cf.csv",
+          "selfplay/path_buffer/path_cf.csv",
+          "selfplay/path_buffer/path_maps_5k.csv",
+          "selfplay/models/path_cf_5k*",
+          "selfplay/card_buffer/card_cf_maps.csv",
+          "selfplay/card_models/card_cf_full21k*",
+          "selfplay/card_models/card_cf_graph_full21k*"
+        ],
+        "remote_location_identified_in_ledger": false,
+        "historical_inventory": {
+          "pathcfgen_decisions": 5000,
+          "pathcfgen_action_branches": 11784,
+          "datagen3_card_decisions": 21863,
+          "datagen3_card_action_rows": 87452,
+          "source_csv_size_bytes": null,
+          "datagen3_card_map_export_size_reported": "9.7 MB"
+        },
+        "generation_provenance": "Ledger records pathcfgen branching route continuations with common future seeds and datagen3 card branches from identical pre-choice states with common RNG futures, 100 simulations and two futures; historical model initialization used meta_graph_full21k.pt.",
+        "usable_for_audit": false,
+        "limitation": "Historical row counts and paths are ledger records; current files, exact source CSV bytes, and file hashes were not verified."
+      }
+    ]
+  },
   "analysis_reproducibility": {
     "bootstrap_seed": 20260924,
     "byte_identical": true,
-    "first_output": "build/vwin_pricing/audit_final5/results.json",
+    "first_output": "build/vwin_pricing/audit_final7/results.json",
     "replicates": 2000,
-    "results_sha256": "c8dc74656f9671c8ac1b1ee4b9880e67e6e53684e1bf5049d519acb7853195f4",
-    "second_output": "build/vwin_pricing/audit_final6/results.json"
+    "results_sha256": "8803126fba6a73de07b99ab8a4b5a006f17fc79d5f18f7468bdf16c38194ba98",
+    "second_output": "build/vwin_pricing/audit_final8/results.json"
   },
   "collection_baseline_sha": "5334920f5dc184ba9507ce9a15ed2fd96fd69bec",
   "environment_and_command": {
@@ -21,6 +117,27 @@
     "records": 600,
     "result": "PASS",
     "tolerance": 0.0001
+  },
+  "post_merge_validation": {
+    "build": "cmake --build build/linux-gcc-release --target one_combat -j2",
+    "build_warnings": "Release build succeeded; emitted existing narrowing-conversion warning in apps/one_combat.cpp timing aggregate and an ODR warning involving duplicate Path definitions in root and bundled SimpleAgent.cpp, followed by the LTO serial-compilation note.",
+    "configure": "cmake --preset linux-gcc-release",
+    "focused_ctest": {
+      "failed": 0,
+      "passed": 3,
+      "selection": [
+        "winnettest_selftest",
+        "vwin_terminal_pricing_audit_selftest",
+        "export_win_model_selftest"
+      ]
+    },
+    "max_absolute_probability_difference": 0.0,
+    "mean_absolute_probability_difference": 0.0,
+    "merged_source_commit_at_release_build": "953fa353a17cc7fdc8533fd33ceeccc4cd7a325f",
+    "native_parity_command": "build/linux-gcc-release/one_combat winnettest models/v_win_trees.txt build/vwin_pricing/parity_raw_600.csv 600",
+    "origin_main_base_sha": "4f25469c2291a97165984ce2e6ea530f48e744fb",
+    "parity_rows": 600,
+    "result": "PASS"
   },
   "primary_population": {
     "ascension": 0,

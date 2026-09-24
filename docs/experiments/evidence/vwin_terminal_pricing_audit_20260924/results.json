@@ -2494,7 +2494,7 @@
     ]
   },
   "q2": {
-    "conclusion": "No reviewed intervention directly identifies v_win's causal HP slope.",
+    "conclusion": "Inference: No reviewed intervention directly identifies v_win's causal HP slope.",
     "existing_interventional_evidence_review": [
       {
         "bounds_v_win_hp_slope": false,
@@ -2545,6 +2545,7 @@
         10
       ],
       "matched_continuation_seeds_per_state": 4,
+      "status": "Open question: proposed but not run",
       "trajectories": 96
     },
     "tracked_model_counter_relic_splits": [
