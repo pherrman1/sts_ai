@@ -524,7 +524,7 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         Snapshot snapshot = newest;
         String pinnedSnapshotJson = graphSnapshotJson(snapshot.session, snapshot.sequence, snapshot.hash,
                 snapshot.observationJson, responseSequence, responseHash, advisorResponseJson,
-                advisorStatus, advisorReason, snapshot.responseLatencyMicros);
+                advisorReason, snapshot.responseLatencyMicros);
         if (pinnedSnapshotJson == null) {
             graphStatus = "Waiting for ready response";
             return;
@@ -602,23 +602,23 @@ public final class STSModelInspector implements PostInitializeSubscriber,
     static String graphSnapshotJson(String session, long sequence, String hash,
                                     String observationJson, long responseSequence,
                                     String responseHash, String advisorResponseJson,
-                                    String responseStatus, String responseReason,
+                                    String responseReason,
                                     long responseLatencyMicros) {
         if (session == null || hash == null || observationJson == null
                 || advisorResponseJson == null || advisorResponseJson.trim().isEmpty()
-                || !"ready".equalsIgnoreCase(responseStatus)
                 || sequence < 0 || responseSequence != sequence || !hash.equals(responseHash)
-                || !"READY".equals(jsonStringField(advisorResponseJson, "status"))
+                || !"analysis".equals(jsonStringField(advisorResponseJson, "kind"))
                 || !session.equals(jsonStringField(advisorResponseJson, "session"))
                 || sequence != jsonLongField(advisorResponseJson, "sequence")
                 || !hash.equals(jsonStringField(advisorResponseJson, "observationHash")))
             return null;
-        String status = responseStatus.toUpperCase(Locale.ROOT);
+        String status = jsonStringField(advisorResponseJson, "status");
         String reason = responseReason == null ? "" : responseReason;
         return "{\"protocol\":\"sts_model_inspector_latest_v1\",\"protocolVersion\":1"
                 + ",\"session\":\"" + Snapshot.escape(session) + "\",\"sequence\":" + sequence
                 + ",\"observationHash\":\"" + Snapshot.escape(hash) + "\",\"observation\":"
-                + observationJson + ",\"response\":{\"status\":\"" + Snapshot.escape(status)
+                + observationJson + ",\"response\":{\"status\":\""
+                + Snapshot.escape(status == null ? "ERROR" : status)
                 + "\",\"ready\":true,\"latencyMicros\":"
                 + (responseLatencyMicros < 0 ? "null" : Long.toString(responseLatencyMicros))
                 + ",\"session\":\"" + Snapshot.escape(session) + "\",\"sequence\":" + sequence
