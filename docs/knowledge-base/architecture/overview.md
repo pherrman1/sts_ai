@@ -1,6 +1,6 @@
 # Architecture overview
 
-Last verified: 2026-09-24 for the one_combat translation-unit split and the Searcher3 removal; 2026-09-10 against the current working tree.
+Last verified: 2026-09-24 for value-type combat actions, the one_combat translation-unit split and the Searcher3 removal; 2026-09-10 against the current working tree.
 
 ## Purpose
 
@@ -32,6 +32,13 @@ counterfactual generators) are separate translation units under
 `apps/one_combat/driver_shared.h`. The self-contained `vnettest` offline
 diagnostic lives in `apps/combat_model_diagnostics.cpp`. Core simulator behavior remains under
 `src/game`, `src/combat`, and `src/sim` (`CMakeLists.txt::sts_lightspeed_SOURCES`).
+
+Combat actions (`include/combat/Actions.h`) are plain values: a
+`CombatActionType` tag plus a trivially copyable parameter struct
+(`ActData_*`) whose `operator()` performs the action. Queued actions compare
+with `operator==` and a `BattleContext` copies its action queue with memcpy.
+This is the first step toward running Silver's search directly on this
+engine; `Actions::` factory signatures are unchanged.
 
 The retained E2c RAW/POST capture contract is isolated in
 `apps/one_combat/e2c_capture.{h,cpp}`. The module owns capture state, row

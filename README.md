@@ -40,7 +40,7 @@ Chronological evidence, including rejected ideas, remains in
 
 ## Quick start
 
-The configured build requires CMake, C++17, OpenMP, and populated `json/` and
+The configured build requires CMake, C++20, OpenMP, and populated `json/` and
 `pybind11/` source directories:
 
 ```bash
