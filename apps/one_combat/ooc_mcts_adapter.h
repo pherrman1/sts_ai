@@ -19,6 +19,7 @@ struct OocContinuationMetrics {
     std::map<std::string, std::uint64_t> supportReasons;
     std::uint64_t continuationLimitAborts = 0;
     std::uint64_t metadataBuilds = 0, priorBuilds = 0, preparedCombats = 0, combatEdgeSamples = 0;
+    std::uint64_t singletonPolicyLogitCalls = 0, singletonPolicyInferenceCalls = 0;
     std::map<std::string, std::uint64_t> continuationReasons;
 };
 struct OocAdapterOptions {
