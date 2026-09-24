@@ -12077,8 +12077,20 @@ result and its one shared technical failure. No default or quality gate changed.
   `b0393b034117cbdf5e16b994a0fe50528e89787b` again produced the recorded
   control (`58a8b80a857bedcb8773f2f26d4390d7f0ec720a9f3984e201821d0714fbdc05`)
   and treatment (`03a6aa7f0dcb613ddbd70beba1e8ed18b59c2ea7ee0102ed71effc31ba8fa63d`)
-  hashes. The N63 result carries forward byte-for-byte; the frozen cohort was
-  not rerun.
+  hashes. Main then advanced to `18232bf049a3facade2d5df440a67bb30135f400`
+  (PR #314); its control binary was
+  `f0367213d95300dac94fcef486aee0ca9ad3b57b30243b1a7c5e060b78323773`, while
+  final treatment `b6242a65f98d90520440145600241ad5a39d3860` built to
+  `ba4ef57db9b2574b144b4aabbe6e851218606564a41c6b8c2f6bb1817c2d2f57`.
+  Both differ from the replay binaries. Inspection found PR #314 adds a
+  default-off unsorted-rollout option (disabled in these invocations), changes
+  diagnostic timing collection defaults, and adjusts the isolated simple-
+  rollout terminal feature probe. All 64 snapshots omit `isolated_search_seed`,
+  so the new harness fallback remains the stored `benchmark_seed`. These
+  changes do not alter the default combat replay search path. No new hard64
+  screen was necessary for this merge; the N63 outcome/simulation rows remain
+  historical observations of their original binaries, and the wall-time result
+  is not reverified on the newer harness.
 - **Technical exclusion:** case `12100109/21` failed in both arms after 28
   decisions / 280,000 simulations with the same
   `selected_deterministic_state_mismatch` and action-trace hash

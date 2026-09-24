@@ -421,8 +421,14 @@ treatment binary hashes used for these rows. No more seeded replays were collect
 the local 128 arm-case allowance was used. The packet preserves the original
 run SHAs and the later byte-identity check. After main advanced to `03ae0297`,
 Release rebuilds at that main head and merged treatment `b0393b03` again
-matched the recorded control and treatment hashes, so the N63 result carries
-forward without another cohort run.
+matched the recorded control and treatment hashes. Main later advanced to
+`18232bf0`; its rebuilt replay binary and the treatment at `b6242a65` differ
+from the binaries used in the N63 run. Source review found the unsorted-rollout
+option default-off and disabled for the recorded replay, with the remaining
+changes limited to diagnostic timing defaults and an isolated simple-rollout
+probe. No new hard64 screen was run; the N63 outcomes and simulation counts
+remain historical results for their recorded binaries, and the 3.371% wall-time
+result is not reverified on the newer harness.
 
 The follow-up exact-10k sequential-checkpoint diagnostic on fresh seeds
 112--127 is **`LOGISTIC_DYNAMIC_RULE_REJECTED`** for the bounded offline

@@ -96,6 +96,32 @@ Both rebuilt binaries are byte-identical to those used for the recorded rows,
 so the N64-attempted / N63-valid results carry forward exactly. No new replay
 rows were generated and the frozen cohort was not rerun.
 
+Main then advanced to `18232bf049a3facade2d5df440a67bb30135f400` (PR #314).
+The Release replay binary rebuilt from that main head has SHA-256
+`f0367213d95300dac94fcef486aee0ca9ad3b57b30243b1a7c5e060b78323773`; the
+final merged treatment at `b6242a65f98d90520440145600241ad5a39d3860` has SHA-256
+`ba4ef57db9b2574b144b4aabbe6e851218606564a41c6b8c2f6bb1817c2d2f57`. Both
+differ from the binaries used for the N63 rows, so the 03ae byte-identity
+check does not extend to this newer source.
+
+The inspected PR #314 changes are default-preserving for the compared replay:
+`rolloutUnsortedPilesEnabled` defaults to false, and the recorded invocations
+did not pass `--unsorted-rollout-piles`; canonical pile maintenance therefore
+remains active. Optional rollout diagnostics are off in those commands. The
+harness now defaults search-timing collection off and omits `wall_seconds`
+unless `--rollout-diagnostics` is requested, so the recorded 3.371% wall-time
+difference remains a result from the original binaries. None of the 64 stored
+inputs has `isolated_search_seed`, so the new harness uses the same stored
+`benchmark_seed` as before. The `rolloutScratch` terminal-feature change is
+confined to the standalone simple-rollout diagnostic; complete-fight replay
+does not call that probe.
+
+Decision: no second hard64 gameplay screen was needed for this merge. The
+upstream default search path and its seed mapping remain unchanged; the N63
+outcomes and simulation counts remain historical observations of the original
+binaries, and are not presented as a new-source replay. No new replay rows
+were generated.
+
 ## Shared technical failure
 
 Case `12100109/21` failed in both arms after 28 decisions / 280,000
