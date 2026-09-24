@@ -110,6 +110,15 @@ namespace sts {
         BattleContext() = default;
         BattleContext(const BattleContext &rhs) = default;
 
+        // Exact equality of every field except the static benchmark `sum`.
+        bool operator==(const BattleContext &rhs) const;
+
+        // Equality for search transposition: operator== without the RNG
+        // streams and loopCount, and with the hand compared as a multiset. Two
+        // states that differ only there have the same distribution of futures
+        // once randomness is resampled at chance nodes.
+        [[nodiscard]] bool equalForSearch(const BattleContext &rhs) const;
+
 // ****************************************
 
         void init(const GameContext &gc);
@@ -236,62 +245,37 @@ namespace sts {
 
     template <PlayerStatus s>
     Action Actions::BuffPlayer(int amount) {
-        return {[=] (BattleContext &bc) {
-            if (s == PlayerStatus::CORRUPTION && !bc.player.hasStatus<PS::CORRUPTION>()) {
-                bc.cards.onBuffCorruption();
-            }
-            bc.player.buff<s>(amount);
-        }};
+        return makeAction(ActData_BuffPlayer{s, amount});
     }
 
     template <PlayerStatus s>
     Action Actions::DebuffPlayer(int amount, bool isSourceMonster) {
-        return {[=] (BattleContext &bc) {
-            bc.player.debuff<s>(amount, isSourceMonster);
-        }};
+        return makeAction(ActData_DebuffPlayer{s, amount, isSourceMonster});
     }
 
     template<PlayerStatus s>
     Action Actions::DecrementStatus(int amount) {
-        return {[=] (BattleContext &bc) {
-            bc.player.decrementStatus<s>(amount);
-        }};
+        return makeAction(ActData_DecrementStatus{s, amount});
     }
 
     template <PlayerStatus s>
     Action Actions::RemoveStatus() {
-        return {[=] (BattleContext &bc) {
-            bc.player.setHasStatus<s>(false);
-        }};
+        return makeAction(ActData_RemoveStatus{s});
     }
 
     template<MonsterStatus s>
     Action Actions::BuffEnemy(int idx, int amount) {
-        return {[=] (BattleContext &bc) {
-            // todo check if alive?
-            bc.monsters.arr[idx].buff<s>(amount);
-        }};
+        return makeAction(ActData_BuffEnemy{s, idx, amount});
     }
 
     template <MonsterStatus s>
     Action Actions::DebuffEnemy(int idx, int amount, bool isSourceMonster) {
-        return {[=] (BattleContext &bc) {
-            bc.debuffEnemy<s>(idx, amount, isSourceMonster);
-        }};
+        return makeAction(ActData_DebuffEnemy{s, idx, amount, isSourceMonster});
     }
 
     template <MonsterStatus s>
     Action Actions::DebuffAllEnemy(int amount, bool isSourceMonster) {
-        // todo this should just add all to bot immediately, not be called first
-        // ^^ never mind i think adding to top is a workaround here
-
-        return {[=] (BattleContext &bc) {
-            for (int i = bc.monsters.monsterCount-1; i >= 0; --i) {
-                if (bc.monsters.arr[i].isTargetable()) {
-                    bc.addToTop(Actions::DebuffEnemy<s>(i, amount, isSourceMonster));
-                }
-            }
-        }};
+        return makeAction(ActData_DebuffAllEnemy{s, amount, isSourceMonster});
     }
 
     template <MonsterStatus s>

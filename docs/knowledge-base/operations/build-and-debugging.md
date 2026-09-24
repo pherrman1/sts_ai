@@ -9,7 +9,7 @@ manual checks, model-load diagnostics, and tracing boundaries.
 
 ## Current implementation
 
-`CMakeLists.txt` requires CMake 3.19 and C++17. All configurations retain
+`CMakeLists.txt` requires CMake 3.19 and C++20. All configurations retain
 `-Wno-shift-count-overflow` and `-fopenmp`; Release adds `-O3 -flto`, while
 Debug uses its normal assertion-enabled flags without forced optimization or
 LTO. It recursively gathers `src/*.cpp` into the `sts_core_objects` OBJECT
