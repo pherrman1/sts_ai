@@ -254,6 +254,16 @@ reuse, and adaptive-off, preserving the frozen teacher cap contract. The default
 is OFF and does not load a combat artifact or run MCTS. Both arms retain the
 same normal real combat branch and the same fallback OOC policy chain.
 
+An experimental fast combat-transition artifact may declare the Entropic Brew
+fallback contract. When that contract is present,
+`STS_OOC_MCTS_BREW_FALLBACK_MODEL` optionally supplies a separate current-standard
+V2 artifact. The adapter routes the whole transition to that artifact when
+Entropic Brew is present in the pre-combat inventory; it does not switch models
+based on generated outcomes. Both artifact identities and source/cohort
+metadata are checked at startup, and missing or invalid required artifacts are
+fatal. The variable is unset by default, so this experimental hybrid is opt-in
+and does not alter the default OOC path.
+
 `selectOocMctsAction` constructs detached snapshots and uses the existing PUCT,
 progressive widening and depth defaults with `STS_OOC_MCTS_SIMS` (default 512).
 For a native simulator graph, set `STS_OOC_MCTS_GRAPH_FILE` to a fresh JSON path

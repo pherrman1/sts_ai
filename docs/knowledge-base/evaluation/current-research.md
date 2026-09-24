@@ -1027,12 +1027,21 @@ the whole transition to the current standard Attention CTM whenever Brew is
 present. Specialist parity and hybrid/direct-child state/RNG identity passed on
 the frozen 31-row fixture set. On the same 10 non-Brew fixture rows supported
 by fast DeepSets, median preparation was 3.715 ms standard and 0.491 ms fast
-(7.57x); the 18/31 Brew share is intentionally unrepresentative and cannot
-estimate OOC fallback frequency. The specialist remains offline-rejected; the hybrid is unqualified,
-does not change the default, and has no paired gameplay/search-quality result
-yet. The planned 64-pair OOC screen is pending a frozen reviewed commit SHA.
-See [ledger-06 §340](../../experiments/ledger-06.md) and the
-[mechanism/timing packet](../../experiments/evidence/deepset_entropic_brew_hybrid_2026-09-24/README.md).
+(7.57x). In the subsequent canonical 64-pair OOC engineering screen at frozen
+source `9ce11fdbe50f32b4b2646dd8a0803c6dc0c3f351`, standard won 40 and hybrid
+39; paired win delta was `-1.56 pp` (95% CI `[-14.06,+10.94] pp`), an
+**inconclusive** quality estimate. Across 1,135,061 OOC hybrid preparations,
+4,219 used Brew fallback (`0.372%`) in this 64-seed cohort. Observed mean
+bestbench elapsed time was lower (641.4 vs 439.7 s/seed), as was mean MCTS CPU
+(139.35 vs 94.85 s/seed); this is
+runtime evidence under changed search trajectories, not a matched-work causal
+estimate. The observed 64-pair difference was small, but its uncertainty still
+includes a sizable win-rate regression. The screen is not equivalence evidence
+or a default-promotion gate. The specialist
+remains offline-rejected; the hybrid remains unqualified and opt-in only. A
+separate larger confirmation is warranted before any promotion. See
+[ledger-06 §340](../../experiments/ledger-06.md) and the
+[mechanism/timing/paired OOC packet](../../experiments/evidence/deepset_entropic_brew_hybrid_2026-09-24/README.md).
 
 ### Qualified DeepSets representation for survival prediction
 

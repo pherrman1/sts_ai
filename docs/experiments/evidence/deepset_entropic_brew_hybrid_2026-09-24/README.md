@@ -1,8 +1,8 @@
 # Experimental DeepSets CTM with Entropic Brew fallback
 
-Status: implementation/mechanism and fixed-fixture timing evidence only. The
-paired OOC MCTS engineering screen has not run. No default changed and no
-gameplay-quality conclusion is available.
+Status: implementation, mechanism, fixed-fixture timing, and paired OOC MCTS
+engineering screen completed. The hybrid remains experimental and no default
+changed.
 
 ## Provenance
 
@@ -74,13 +74,48 @@ while Brew preparations pay approximately standard cost.
 - Independent implementation review found no remaining design defect after
   requiring V2, non-experimental current-standard fallback metadata and exact
   source/cohort identities.
-- The user-requested 64-pair OOC screen is pending. Its canonical seeds are
-  `980000..980063`, but the run must wait for a reviewed commit SHA to be
-  frozen under the repository's worktree Git-metadata workflow. Consequently
-  win/loss, search-cost, fallback-frequency, and paired-discordance claims are
-  all open.
-- Full repository CI was not run. No live-game test or default promotion was
-  performed.
+- After review, source was frozen at commit
+  `9ce11fdbe50f32b4b2646dd8a0803c6dc0c3f351`. Both arms then ran the canonical
+  paired seeds `980000..980063` with 10,000 combat simulations, 2,048 OOC MCTS
+  simulations, Ascension 0, fair play, Silver continuation, 24 threads, V4
+  policy, no keys, and the same executable. Arm configurations are preserved
+  under `raw/{control,hybrid}/config.json`; full per-seed game and search
+  metrics are in `per-seed.csv`.
+- Standard won 40/64; hybrid won 39/64. There were 7 hybrid-only and 8
+  standard-only wins. The paired win-rate change was `-1.56 pp` (bootstrap
+  95% CI `[-14.06, +10.94] pp`; exact discordant-binomial p `1.0`), classified
+  **`OOC_HYBRID_WINRATE_INCONCLUSIVE`**. This 64-pair screen does not establish
+  equivalence or justify default promotion.
+- Mean whole-run elapsed time (`bestbench` `sec`) was 641.4 s standard and
+  439.7 s hybrid per seed (paired change `-201.7 s`, 95% CI `[-254.8,
+  -141.3]`). Mean MCTS CPU time was 139.35 s and 94.85 s respectively (change
+  `-44.50 s`, 95% CI `[-69.61, -5.93]`); MCTS wall time was 462.83 s and
+  276.65 s. Whole-process CPU was not separately recorded. The arms made
+  slightly different numbers of decisions, simulations, imagined combats, and
+  preparations, so aggregate time is runtime evidence only and is not a
+  matched-work causal estimate.
+- Across the hybrid's 1,135,061 preparation calls, 4,219 used standard Brew
+  fallback: **0.372%**. This is the observed OOC search preparation frequency
+  in this screen, in the same low-frequency range as the offline estimate;
+  the seed cohort does not prove broader workload representativeness. The
+  profiler summed 401 per-seed unique Brew predictor states. The children
+  recorded 21 fast-path and 1 fallback support-failure queries. MCTS support
+  aborts were 20 standard and 22 hybrid; every recorded reason in both arms
+  was the existing `smoke_bomb` exclusion, with no new unsupported reason.
+- Release targets built; focused adapter/runtime-loader CTest passed 2/2;
+  Python compilation and `git diff --check` passed. Full repository CI was not
+  run. No live-game test or default promotion was performed. A follow-up
+  confirmation cohort should be considered separately before any promotion.
 
 Raw machine-readable outputs are `parity.json`, `mechanism.jsonl`,
-`mechanism-summary.json`, and `fixed-fixture-benchmark-release.json`.
+`mechanism-summary.json`, `fixed-fixture-benchmark-release.json`,
+`summary.json`, and `per-seed.csv`. Compressed arm logs, action traces, support
+receipts, and source/config metadata are preserved under `raw/`. Reproduce the
+paired analysis with:
+
+```sh
+python3 tools/analyze_deepset_entropic_brew_hybrid.py \
+  docs/experiments/evidence/deepset_entropic_brew_hybrid_2026-09-24/raw/control \
+  docs/experiments/evidence/deepset_entropic_brew_hybrid_2026-09-24/raw/hybrid \
+  /tmp/hybrid-summary.json /tmp/hybrid-per-seed.csv
+```

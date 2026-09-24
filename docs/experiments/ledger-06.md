@@ -11628,12 +11628,39 @@ default changed.
   `git diff --check` passed. Independent implementation review found no
   remaining design defect after fallback source/cohort identity validation.
   Full CI was not run.
-- **Status/decision:** The canonical paired OOC engineering screen on seeds
-  `980000..980063` remains pending. Repository workflow requires a reviewed
-  commit SHA to be frozen before this expensive seed run; current worktree Git
-  metadata is external/read-only pending permission. No gameplay, search
-  quality, representative fallback frequency, or weighted runtime conclusion
-  is claimed. No default promotion is authorized by these results.
+- **Paired OOC screen:** After review, the implementation was frozen at
+  `9ce11fdbe50f32b4b2646dd8a0803c6dc0c3f351`. Standard and hybrid both ran
+  seeds `980000..980063` with 10,000 combat simulations, 2,048 OOC MCTS
+  simulations, A0 fair play, 24 threads, Silver continuation, V4 policy, and
+  identical non-model settings. Each arm has 64 unique results and matching
+  per-seed MCTS traces/configuration metadata. Standard won 40/64, hybrid
+  39/64; discordant outcomes were 7 hybrid-only and 8 standard-only wins. The
+  paired delta is **-1.56 pp** (bootstrap 95% CI `[-14.06,+10.94] pp`, exact
+  discordant p `1.0`), classified
+  **`OOC_HYBRID_WINRATE_INCONCLUSIVE`**. This is not equivalence evidence.
+- **Runtime and dispatch:** Mean bestbench elapsed time was 641.4 s/seed for
+  standard and 439.7 s/seed for hybrid (paired change `-201.7 s`, 95% CI
+  `[-254.8,-141.3]`). Mean MCTS CPU was 139.35 vs 94.85 s/seed (change
+  `-44.50 s`, 95% CI `[-69.61,-5.93]`); MCTS wall was 462.83 vs 276.65 s.
+  The hybrid recorded 4,219 Brew fallbacks out of 1,135,061 preparation calls
+  (**0.372%**) and 401 per-seed unique Brew states summed across runs. It
+  recorded 21 fast-child and 1 fallback-child support-failure queries. MCTS
+  support aborts were 20 control and 22 hybrid; all were the existing
+  `smoke_bomb` exclusion, with no new unsupported reason. Whole-process CPU
+  was not separately recorded. Arms made different work counts, so total time
+  is a runtime signal, not a matched-work causal estimate.
+- **Decision:** The mechanism and runtime questions look promising: ordinary
+  fixed-input preparations are substantially faster, Brew is rare in this
+  OOC cohort, and the screen shows no conspicuous win-rate regression. The
+  paired gameplay estimate remains too imprecise to conclude quality
+  equivalence; a separate larger confirmation is warranted before any default
+  promotion. Do not use this bounded result as offline CTM qualification.
+- **Checks/evidence:** Release targets built; focused adapter/runtime-loader
+  CTest passed 2/2; Python compilation and `git diff --check` passed. Full CI
+  was not run. See the
+  [mechanism, timing, and paired OOC packet](evidence/deepset_entropic_brew_hybrid_2026-09-24/README.md),
+  including the raw per-seed CSV, source/config receipts, support counts,
+  compressed action traces, and reproducible summary.
 - **Evidence:** [mechanism and timing packet](evidence/deepset_entropic_brew_hybrid_2026-09-24/README.md).
 
 Knowledge impact: current research status now records an experimental hybrid
