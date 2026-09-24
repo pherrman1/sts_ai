@@ -55,7 +55,7 @@ enum class SimHealthFailure {
 };
 
 // Optional per-failure context. decisionIdx is the searcher decision index at
-// the failing decision (-1 when the path does not track one, e.g. Searcher2).
+// the failing decision (-1 when the path does not track one).
 struct SimHealthMeta {
     int decisionIdx = -1;
     std::uint32_t chosenActionBits = 0;

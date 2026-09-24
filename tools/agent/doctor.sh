@@ -24,7 +24,7 @@ else
     pass "repository root: $repo_root"
 fi
 
-for path in CMakeLists.txt CMakePresets.json pyproject.toml uv.lock json pybind11 selfplay/loop.sh tools/seed_guard.sh; do
+for path in CMakeLists.txt CMakePresets.json pyproject.toml uv.lock json pybind11 tools/seed_guard.sh; do
     if [ -e "$repo_root/$path" ]; then
         pass "expected path exists: $path"
     else

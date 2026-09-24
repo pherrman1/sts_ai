@@ -1,6 +1,6 @@
 // Observational combat information state for the isolated Silver backend.
 // This metadata never participates in live simulator state, equality, RNG,
-// action execution, or existing Searcher2/Searcher3 behavior.
+// or action execution.
 #ifndef STS_COMBAT_KNOWLEDGE_H
 #define STS_COMBAT_KNOWLEDGE_H
 

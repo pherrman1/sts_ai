@@ -1,6 +1,10 @@
 # Simulator health monitor
 
-Last verified: 2026-09-24 for the Searcher3 removal; 2026-08-22 against the current working tree.
+> **Status (2026-09-24):** combat runs only through Silver (ADR-0020). The
+> Searcher2 invariant sites and regressions below are historical; the
+> `takeAction` backstop and the canonical classification helpers remain.
+
+Last verified: 2026-09-24 for the Searcher2/3 removals; 2026-08-22 against the current working tree.
 
 ## Purpose
 
@@ -104,19 +108,6 @@ avoided.
   `UNDECIDED_BATTLE_EXIT` deliberately does not fire after a stall conversion.
 - `hasLegalProgressionAction` is only meaningful at genuine agent decision
   states (`PLAYER_NORMAL` / `CARD_SELECT`); other input states return false.
-- Fair Searcher2 root emptiness is equivalent to zero canonical live legal
-  actions: `BattleScumSearcher2::step()` enumerates the root on a determinized
-  copy whose visible state (the only thing `Action::isValidAction` reads) is
-  identical to the live state, and the fair-mode validity filter keeps only
-  live-valid edges. The canonical check is applied uniformly anyway.
-- In the deterministic non-fair Searcher2 path, an empty persistent tree root
-  at an unresolved decision likewise mirrors zero live legal actions, so
-  `ACTION_SELECTION_FAILED` is expected-unreachable there (the site is
-  defensive). A zero-progress `stepThroughSolution` (consumed empty cached
-  solution line) with legal actions present is now also classified immediately
-  as `ACTION_SELECTION_FAILED` — a stale `bestOutcomePlayerHp > 0` from a
-  previous search can outlive the cached action list, and silent retry is
-  neither safe nor guaranteed to resolve on the next iteration.
 - A HARD failure implies the run's combat is broken (the row `won=0,
   deathCombat=-1` is the run-level symptom); the health monitor only flags the
   combat-level cause.

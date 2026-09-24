@@ -1,6 +1,6 @@
 # Environment variables
 
-Last verified: 2026-09-24 for the Searcher3 removal and the Silver whole-run default; 2026-09-15 for live visit-lock stopping and full-budget root-lock observation; 2026-09-14 for live OOC MCTS; 2026-09-09 against `apps/one_combat.cpp::main` and the isolated Silver live backend.
+Last verified: 2026-09-24 for Silver-only combat (ADR-0020), the Searcher3 removal and the Silver whole-run default; 2026-09-15 for live visit-lock stopping and full-budget root-lock observation; 2026-09-14 for live OOC MCTS; 2026-09-09 against `apps/one_combat.cpp::main` and the isolated Silver live backend.
 
 Purpose: single concise reference for all `STS_*` and related env vars consumed
 by `one_combat`. Code is authoritative; this page routes readers to the right
@@ -15,34 +15,24 @@ These control the default executing configuration; they are always parsed.
 | `VPORT` | v_server TCP port | 5555 | `main` L9210 |
 | `STS_NATIVE_OOC` | Use in-process GBMs for floor/win; `0` disables (legacy server mode) | `1` (ON) | `main` ~L9470 |
 | `STS_WIN_NET` | Path to V_win compact tree; `1` = default `models/v_win_trees.txt` | auto-loads `models/v_win_trees.txt` | `main` ~L9465 |
-| `STS_POLICY` | Compact policy net for PUCT; `0` disables, `1` = full 447-tree, or path | `models/policy_trees_c.txt` auto-loads | `main` ~L9950 |
-| `STS_CPUCT` | PUCT exploration constant | varies (model-dependent) | `main` ~L9965 |
-| `STS_FAIR` | Determinized/ISMCTS combat (no future peeking) | `0` (known-RNG); resolved to `1` with the Silver whole-run default | `main` ~L9685 |
+| `STS_FAIR` | Accepted for compatibility; combat is always project-fair Silver. `0` makes `one_combat` exit with an error (ADR-0020) | `1` | `main` |
 | `STS_SEARCHER3` | Removed (ADR-0019). A non-zero value makes `one_combat` exit with an error; `0` is accepted | `0` | `main` |
-| `STS_LIVE_VALID` | Fair-tree live-valid stored-edge re-selection in Searcher2 (Phase 4) | `0` (off) | `main` |
-| `STS_FORCED_MOVE` | Forced-action contraction (fair path only); `0` disables | `1` (ON) | `main` ~L9228 |
-| `STS_VNET` | Learned V_combat leaf value; path or `1` = `build/v_combat_trees.txt` | unset (off) | `main` |
-| `STS_VNET_ALPHA` | V_combat blend weight | 0.5 | `main` |
-| `STS_PVNET` | Shared policy-value network (AlphaZero-style) | off | `main` ~L9900 |
-| `STS_PVNET_ALPHA` | PVNet leaf blend weight | model-dependent | `main` ~L9910 |
-| `STS_PVNET_VALUE_ONLY` | Skip PVNet policy head (GBM provides priors) | `0` | `main` ~L9910 |
 | `STS_SIMS_NORMAL` | Per-fight sim budget, normal encounters | unset (uses caller argument) | `main` ~L9530 |
 | `STS_SIMS_ELITE` | Per-fight sim budget, elites | unset | `main` ~L9530 |
 | `STS_SIMS_BOSS` | Per-fight sim budget, bosses | unset | `main` ~L9530 |
 | `STS_SKIP_THR` | Card-reward skip threshold (marginal V) | `-0.5` | `main` ~L9665 |
 
-## Isolated Silver combat backend
+## Silver combat backend
 
-`STS_SILVER_SEARCH=1` installs the isolated Silver combat callback before the
-native Searcher2 dispatch. For `run`, `bestbench` and `reprobench`, an unset
-value resolves to `1`
-([ADR-0018](../../../decisions/0018-silver-default-combat-backend.md)).
+`one_combat` always installs the isolated Silver combat backend; it is the only
+combat searcher
+([ADR-0020](../../../decisions/0020-silver-only-combat-remove-searcher2-and-selfplay.md)).
 The production reuse cap defaults to `32 * 1024`. The explicit experimental
 `STS_SILVER_REUSE_CAP=131072` override requires separate quality qualification.
 
 | Variable | Effect | Default | Parse site |
 |----------|--------|---------|------------|
-| `STS_SILVER_SEARCH` | Enable isolated Silver combat search; `0` explicitly selects the native searcher | `1` for `run`/`bestbench`/`reprobench` without `STS_SEARCHER3=1`; otherwise off | `main`; `SilverLiveBackend` |
+| `STS_SILVER_SEARCH` | Accepted for compatibility; Silver is always installed. `0` makes `one_combat` exit with an error (ADR-0020) | `1` | `main` |
 | `STS_SILVER_ROOT_PRIOR_MODEL` | Default-off frozen `SilverPriorNetV1` artifact path. In `one_combat` and `one_combat_advisor`, loads fail-fast at startup and applies root-only `c=2.5` PUCT to eligible `PLAYER_NORMAL` roots with at least two legal actions; forced and non-player-normal decisions retain ordinary Silver behavior. The advisor reports the exact applied root logits/probabilities for the graph export. Artifact identity, action surface, and inference errors fail closed. | unset/off | `SilverLiveBackend`; `one_combat_advisor`; `SilverPriorNetV1` |
 | `STS_SILVER_DEBUG_TREE` | Default-off debug capture: attach the reachable native Silver search graph (node states, visits/Qs, semantic edge labels, chance metadata) to each advisor combat response. Does not alter search or ordinary responses when unset. | unset/off | `apps/one_combat/advisor_stdio.cpp`; `SilverStateBridge` |
 | `STS_SILVER_DEBUG_TREE_NODE_CAP` | Maximum native graph nodes included by `STS_SILVER_DEBUG_TREE`; oversized captures are marked truncated. | `8192` (maximum `100000`) | `apps/one_combat/advisor_stdio.cpp` |
@@ -60,7 +50,7 @@ The production reuse cap defaults to `32 * 1024`. The explicit experimental
 | `STS_SILVER_ROOT_DIAG_MAX_PER_SEED` | Maximum captured root decisions per run seed for the root-action diagnostic | `8` when the file option is set | `SilverLiveBackend` |
 | `STS_SILVER_ROOT_DIAG_REF_BUDGET` | Silver simulations per forced-action continuation replicate | `25000` when the file option is set | `SilverLiveBackend` |
 | `STS_SILVER_ROOT_DIAG_REPLICATES` | Independent continuation replicates; sibling actions use the same replicate seeds for common-random-number pairing | `2` when the file option is set | `SilverLiveBackend` |
-| `STS_SILVER_ADAPTIVE` | Enable the two-tier Silver policy: the promoted retained-only mode searches fresh/forced roots to 10,000 and may stop eligible retained roots at 500; `0` restores flat Silver | unset/on; `run`/`bestbench`/`reprobench` with an explicit sims argument resolve an unset value to `0` unless `STS_SILVER_ADAPTIVE_RETAINED_ONLY` or `STS_SILVER_ADAPTIVE_TOP_GAP` is set (ADR-0018) | `SilverLiveBackend` |
+| `STS_SILVER_ADAPTIVE` | Enable the two-tier Silver policy: the promoted retained-only mode searches fresh/forced roots to 10,000 and may stop eligible retained roots at 500; `0` restores flat Silver | on only for `run`/`bestbench`/`reprobench` without a sims argument; every other invocation resolves an unset value to `0` (flat caller budget) unless `STS_SILVER_ADAPTIVE_RETAINED_ONLY` or `STS_SILVER_ADAPTIVE_TOP_GAP` is set (ADR-0018, ADR-0020) | `SilverLiveBackend` |
 | `STS_SILVER_ADAPTIVE_TOP_GAP` | Strict uncertainty threshold for `STS_SILVER_ADAPTIVE`; retained-only stopping requires the top-vs-second visit-share gap to be `>=` this value | `0.2932885906040268` | `SilverLiveBackend` |
 | `STS_SILVER_ADAPTIVE_RETAINED_ONLY` | With `STS_SILVER_ADAPTIVE=1`, use retained-root stopping: fresh and forced roots continue to 10,000; retained non-forced roots stop at 500 only when the top-two visit-share gap is at least the configured threshold | on | `SilverLiveBackend` |
 | `STS_SILVER_EXACT_VISIT_LOCK` | Default-off exact retained-root stopping: at geometric 2.5/5/10/20/40/80/100% checkpoints of the caller's maximum new-simulation budget, stop only when integer top-root-edge visits minus second visits is strictly greater than the remaining budget. Fresh and one-action/forced roots always run to the maximum. Incompatible with `STS_SILVER_ADAPTIVE` and paired/sequential diagnostic modes. | unset/off | `SilverLiveBackend`; `SilverStateBridge` |
@@ -128,28 +118,13 @@ The paired combat-budget diagnostic uses the existing Silver root summary
 helper: final action selection remains maximum edge visits, while the
 checkpoint fields are the top visit share, second visit share and ratio, the
 top-two child-Q gap when available, visit entropy, and legal-action count. It
-does not enable `STS_SILVER_ADAPTIVE`, `STS_SIM_ADAPT`, `STS_CONVERGE`, or
-`STS_CONV_ROOT`, and the final 10k action is selected only after the same
+does not enable `STS_SILVER_ADAPTIVE` or `STS_SIM_ADAPT`, and the final 10k action is selected only after the same
 private search receives its remaining 9,500 simulations.
 
-When Silver is enabled, `bestbench` metadata records the effective combat
-backend, reuse-cap mode and production cap, Silver upstream SHA, executable
-Git SHA, and diagnostic path.  The existing Searcher2/3 metadata remains the
-configured native setting and must not be interpreted as the active combat
-backend when this override is on.
-
-## Searcher2 convergence / rollout
-
-| Variable | Effect | Default | Parse site |
-|----------|--------|---------|------------|
-| `STS_CONVERGE` | Convergence-based early stopping | `0` (off, falsified §22) | `main` ~L9550 |
-| `STS_CONV_PATIENCE` | Sims of no improvement before stop | 2000 | `main` ~L9552 |
-| `STS_CONV_MIN` | Min sims before early stop allowed | 1000 | `main` ~L9553 |
-| `STS_CONV_ROOT` | Root-stability early stopping | `0` (off, falsified §118) | `main` ~L9556 |
-| `STS_CONV_ROOT_*` | Various root-stability thresholds | see Searcher2 header | `main` ~L9557+ |
-| `STS_ROLLOUT_DEPTH` | Cap combat rollout length | 0 (unlimited) | `main` ~L9217 |
-| `STS_TURN_PENALTY` | `-turn*k` on capped leaf (loop-breaker) | 0 | `main` ~L9235 |
-| `STS_TT` | Transposition table (value sharing) | `0` (off) | `main` ~L9239 |
+`bestbench` metadata records the effective combat backend (always Silver),
+reuse-cap mode and production cap, Silver upstream SHA, executable Git SHA,
+and diagnostic path. The legacy `searcher3`/`s3*` and combat-model keys are
+kept with fixed false/zero/`off` values for schema compatibility.
 
 ## OOC one-ply Q gate stack (opt-in)
 
@@ -225,7 +200,6 @@ enable flag:
 | `STS_SIM_ADAPT` | Adaptive per-fight sim budget; uses C_psi unless `STS_SIM_ADAPT_CTM` is set | `0` (off) | `main` ~L8820 |
 | `STS_SIM_ADAPT_CTM` | Qualified native CTM artifact for deterministic death/winning-HP adaptive budgeting; unsupported fights keep the caller's base budget | unset (C_psi path) | `main` ~L8825 |
 | `STS_SIM_ADAPT_MIN_FRAC` / `STS_SIM_ADAPT_MAX_FRAC` | Clamp adaptive fight budgets as fractions of the caller's base budget | `0.4` / `2.0` | `main` ~L8822 |
-| `STS_DATAGEN_GATES` | Datagen OOC through one-ply gate chain (§127) | `0` (off) | `main` ~L9318 |
 | `STS_DG_TEMP` | Datagen softmax temperature | unset | `main` ~L9675 |
 | `STS_BOSS_DRAFT` | Boss-gated rollout drafting | `0` (off) | `main` ~L9570 |
 | `STS_ACT_FIGHT_PROBE_DRAFT` | All-act encounter rollout draft | `0` (off) | `main` ~L9580 |
@@ -235,15 +209,7 @@ enable flag:
 
 | Variable | Effect | Default | Parse site |
 |----------|--------|---------|------------|
-| `STS_SIM_HEALTH_CAPTURE_DIR` | While set, every `[sim-health][HARD]` failure serializes the offending `BattleContext` to `<dir>/sim_bug_<seed>_f<floor>_t<turn>_d<decision>_<reason>_<seq>.bin` (raw `serializeBattleContext` blob) plus a `<stem>.txt` metadata sidecar (reason, seed, floor, encounter, turn, decision index, player HP, outcome, input state, card-select task/pickCount, pile sizes, action bits, RNG counters, searcher/fair/particles). Diagnostics print regardless. See `behavior/simulator-health-monitor.md`. | unset (off) | `SimHealth.cpp::reportSimHealthFailure` |
-
-## Combat model inference
-
-| Variable | Effect | Default | Parse site |
-|----------|--------|---------|------------|
-| `STS_DIST_VNET` | Distributional V_combat; loads but no searcher consumes it after ADR-0019 | unset (off) | `main` ~L9890 |
-| `STS_PVNET_HP_SCALE` | HP-scaled PVNet leaf | `0` (off) | `main` ~L9911 |
-| `STS_COMBAT_WIN_BONUS` | V_combat terminal-win bonus offset | unset | `main` ~L9854 |
+| `STS_SIM_HEALTH_CAPTURE_DIR` | While set, every `[sim-health][HARD]` failure serializes the offending `BattleContext` to `<dir>/sim_bug_<seed>_f<floor>_t<turn>_d<decision>_<reason>_<seq>.bin` (raw `serializeBattleContext` blob) plus a `<stem>.txt` metadata sidecar (reason, seed, floor, encounter, turn, decision index, player HP, outcome, input state, card-select task/pickCount, pile sizes, action bits, RNG counters, searcher/fair mode). Diagnostics print regardless. See `behavior/simulator-health-monitor.md`. | unset (off) | `SimHealth.cpp::reportSimHealthFailure` |
 
 ## Datagen / generation modes
 
@@ -267,13 +233,8 @@ enable flag:
 
 ## Known limitations
 
-- `g_devalueHighHp` extern remains in `BattleScumSearcher2.h` and
-  `BattleScumSearcher2.cpp` (dead code — never set to true by any active mode
-  after evalcombat/evalrun removal). Harmless; intentionally left to avoid
-  touching the search layer for a cleanup task.
-- `STS_SILVER_SEARCH`, `STS_FAIR` and `STS_SILVER_ADAPTIVE` have
-  mode-dependent defaults (ADR-0018); the exact precedence is in
-  `apps/one_combat.cpp::main`.
+- `STS_SILVER_ADAPTIVE` has a mode-dependent default (ADR-0018, ADR-0020);
+  the exact precedence is in `apps/one_combat.cpp::main`.
 - This table intentionally omits legacy server-mode env vars consumed only by
   `v_server.py` (not `one_combat`).
 

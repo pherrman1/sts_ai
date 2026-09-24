@@ -1,6 +1,6 @@
 # Current baselines
 
-Last verified: 2026-09-24 for the Searcher3 removal; 2026-08-15 against the current working tree (tracked model
+Last verified: 2026-09-24 for Silver-only combat (ADR-0020); 2026-09-24 for the Searcher3 removal; 2026-08-15 against the current working tree (tracked model
 artifacts relocated from `build/` to `models/`; V4 token-net artifact =
 skewfix §149 model; §148 V_combat leaf = 7k-tuned; Act-4 key collection is
 explicitly opt-in — pre-32281a2 baselines are Act-3-only).
@@ -20,16 +20,16 @@ elsewhere should link here rather than be copied as changing baselines.
 ## Current implementation
 
 The present executable defaults to native floor/win OOC inference, card skip
-`-0.5`, heuristic pathing, shop value, win-shaped rest, Silver fair-play combat
-for `run`/`bestbench`/`reprobench` (ADR-0018; Searcher2 otherwise), and the
-tracked compact policy prior when it loads (`apps/one_combat.cpp::main`,
-`runFullRunOOC`). The one-ply Q gate stack (cards/rest/events/shop/treasure/
-boss relic) is **opt-in** via `STS_OOC_STRATEGIC_*` env flags + a model
-artifact; the binary default plays without it. `STS_FAIR=1` must be set explicitly for a project-fair run.
-`STS_PVNET=<path>` is an experimental opt-in that adds policy-head priors to
-Searcher2. Searcher3 was removed (ADR-0019), so every Searcher3 row below is
-historical and needs a binary built before that change to reproduce;
-`STS_DIST_VNET` has no consumer.
+`-0.5`, heuristic pathing, shop value, win-shaped rest, and project-fair
+Silver combat, the only combat searcher (ADR-0020;
+`apps/one_combat.cpp::main`, `runFullRunOOC`). The one-ply Q gate stack
+(cards/rest/events/shop/treasure/boss relic) is **opt-in** via
+`STS_OOC_STRATEGIC_*` env flags + a model artifact; the binary default plays
+without it. Searcher3 (ADR-0019) and Searcher2 (ADR-0020) were removed, so
+every Searcher2/Searcher3 row below is historical and needs a binary built
+before the respective ADR to reproduce. The Searcher2-era combat models
+(compact policy prior, V_combat leaf, PVNet, DistVNet) are no longer loaded for
+play.
 Per-encounter combat value specialization (`STS_VNET_PER_ENCOUNTER=<dir>`
 per-boss tree overlay, `combat_mlp_meta_v1` in-file deltas from the Reptile
 meta-learner) is an experimental research arm implemented 2026-08-09
@@ -72,7 +72,7 @@ the Act-3 horizon explicit for comparisons.
 
 | Status / date | Seeds | Ascension | Combat budget | RNG / searcher | OOC and combat models | Metric and result |
 | --- | --- | ---: | ---: | --- | --- | --- |
-| **Current executable configuration**, verified 2026-07-31 | Caller-selected | Caller-selected | Caller-selected | `run`/`bestbench`/`reprobench` default to Silver fair play (ADR-0018); with `STS_SILVER_SEARCH=0` or other modes, Searcher2 is known-RNG unless `STS_FAIR=1`; opt-in Searcher3 samples particles in either path and `STS_FAIR` controls rebuild/reuse | Native tracked floor/win trees; heuristic path; shop-V; win-rest; tracked policy prior auto-load; no combat value/PVNet by default | Configuration only; **no current-checkout full-run measurement is claimed**. |
+| **Current executable configuration**, verified 2026-09-24 | Caller-selected | Caller-selected | Caller-selected | Project-fair Silver only (ADR-0020); adaptive for `run`/`bestbench`/`reprobench` without a sims argument, flat caller budget otherwise | Native tracked floor/win trees; heuristic path; shop-V; win-rest; no Searcher2-era combat models | Configuration only; see the Silver reference row below for a measurement. |
 | **Silver default whole-run reference (ADR-0018)**, 2026-09-24 (`EXPERIMENTS.md` §340, commit `2a602f6`, 4-core local) | 126700–126827 (128) | 0 | Adaptive Silver: 500 to 10,000 sims/decision (`STS_SILVER_ADAPTIVE=1`) | Project-fair Silver, reuse cap 32,768 `allocated` | Native tracked floor/win trees; heuristic path; shop-V; win-rest; tracked policy prior auto-load; keys skipped | Act-3 win **64.8%** (83/128; Wilson 95% [56.2%, 72.6%]); mean floor 48.26; 38.05 CPU s/run. Reference for the planned simulator merge. |
 | **Historical recommended configuration (Searcher3; removed by ADR-0019) — V4 skewfix one-ply gate stack + hyperparameter-tuned V_combat leaf @α=0.3 (7k data)**, 2026-08-09 (§153, GCP sts-test) | 126700–126731 (32) | 0–20 | 1,000 sims/decision (efficient point, 64p); 3,000 sims/decision (win point — not yet measured at this stack) | `STS_FAIR=1`, **Searcher3 with `STS_S3_BELIEF=0 STS_S3_CHAIN=0`** (`STS_S3_PARTICLES=64`), 24 threads | V4 skewfix token-net gate stack (§149, `STS_OOC_STRATEGIC_TOK_NN=selfplay/models/ooc_strategic_tok_final.native` sha256 `e62abd83…`, all gates ON, margin 1.0); **`STS_VNET` default ON in the fair-S3 path**: `models/v_combat_7k_tuned.txt` (1000 trees, sha256 `ea35b78c…`, α=0.3) | **Full Act-3+4 run win under the historical post-32281a2/pre-ee6cfa8 implementation, where key collection was automatic:** A0 **21.9%** (7/32), A5 12.5% (4/32), A10 12.5% (4/32), A15 9.4% (3/32), A20 0.0% (0/32). Under the current implementation, Act-4 key collection requires `STS_COLLECT_KEYS=1`. No-gates baseline: A0 0/32 (but 6.3% across 64 seeds). Act-3 only (`STS_STOP_AFTER_ACT=3`): gates ON 31.2% (10/32), gates OFF 37.5% (12/32 — reproduces §148). V4 gates hurt Act-3 (−6.3pp) but are essential for Act 4 (+15.7pp). See §153. **A0 headline: 21.9% with Act 4; 31.2% Act-3-only.** 32 seeds only — CIs are wide (A0 Wilson 95%: [9.9%, 40.4%]). Full 128/256-seed gate and 3k win point are open follow-ups. |
 | **Previous recommended configuration — canonical CARD_SELECT enumerator + `exitBattle` UNDECIDED guard + expanded observation identity + V4 one-ply gate stack**, 2026-08-05 (`EXPERIMENTS.md` §113, §114, §115; re-measured 2026-08-07 §124) | 126700–126955 (256) | 0 | 3,000 sims/decision (win point, 256 particles); 1,000 sims/decision (efficient point, 64 particles) | `STS_FAIR=1`, **Searcher3 with `STS_S3_BELIEF=0 STS_S3_CHAIN=0`** (`STS_S3_PARTICLES=256` or 64), 24 threads | V4 token-net gate stack (`STS_OOC_STRATEGIC_TOK_NN=selfplay/models/ooc_strategic_tok_final.native`, `REST/EVENT/SHOP/TREASURE/BOSS_RELIC=1`, `STS_OOC_STRATEGIC_MARGIN=1.0`); canonical CARD_SELECT enumeration (issue 47) + `BattleContext::exitBattle` UNDECIDED→LOSS guard (issue 48) + `CombatObservation` decision-context identity (§114); no combat value/PVNet | Full Act-3 run win on the current binary: **114/256 (44.5%)** at 3k/256p; **96/256 (37.5%)** at 1k/256p and **96/256 (37.5%)** at 1k/64p — **honest re-baseline after the §113 battle-skip-exploit invalidation** (the "60.2% @3k" §107 headline was inflated by control S3 skip-winning battles at WARCRY/GAMBLE CARD_SELECT states; honest control S3 = 9.0% @1k). Particles flat (64p = 256p at 1k, §115). §124 re-measured on the live-valid binary: 37.9% @1k/64p (flat) and 46.9% @3k/256p (+2.3pp n.s.). Future gate rounds pair against `build/b2c_1k_64p.csv` (1k/64p) / `build/b1c_3k_256p.csv` (3k/256p) / `build/b4_3k_64p.csv` (3k/64p). |

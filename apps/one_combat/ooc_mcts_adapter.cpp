@@ -14,7 +14,6 @@
 #include "ooc_policy.h"
 #include "combat/BattleContext.h"
 #include "sim/search/SilverLiveBackend.h"
-#include "sim/search/BattleScumSearcher2.h"
 #include "../ooc_test_state.h"
 #include <algorithm>
 #include <cmath>
@@ -731,15 +730,13 @@ struct ImaginedScope {
         probeFuture = t_actFightProbeFutureIdx;
     decltype(sts::search::g_onGameActionExecute) observer = std::move(sts::search::g_onGameActionExecute);
     decltype(sts::search::g_onCombatDecision) combatObserver=std::move(sts::search::g_onCombatDecision);
-    decltype(sts::search::g_onSearchComplete) searchObserver=std::move(sts::search::g_onSearchComplete);
     decltype(sts::g_onBattleExitPersistent) exitObserver=std::move(sts::g_onBattleExitPersistent);
     sts::search::SilverLiveDiagnostics silver = std::move(sts::search::g_silverLiveDiagnostics);
     bool disallowed = sts::search::g_disallowImaginedCombat;
-    double potion = sts::search::g_potionKeepValue;
     ImaginedScope() {
         sts::search::g_disallowImaginedCombat=true;
         t_tokCheckPending=false; sts::search::g_onGameActionExecute={};
-        sts::search::g_onCombatDecision={}; sts::search::g_onSearchComplete={};
+        sts::search::g_onCombatDecision={};
         sts::g_onBattleExitPersistent={};
     }
     ~ImaginedScope() {
@@ -748,10 +745,9 @@ struct ImaginedScope {
         t_actFightProbeDecisionIdx=probeDecision; t_actFightProbeActionIdx=probeAction; t_actFightProbeFutureIdx=probeFuture;
         sts::search::g_onGameActionExecute=std::move(observer);
         sts::search::g_onCombatDecision=std::move(combatObserver);
-        sts::search::g_onSearchComplete=std::move(searchObserver);
         sts::g_onBattleExitPersistent=std::move(exitObserver);
         sts::search::g_silverLiveDiagnostics=std::move(silver);
-        sts::search::g_disallowImaginedCombat=disallowed; sts::search::g_potionKeepValue=potion;
+        sts::search::g_disallowImaginedCombat=disallowed;
     }
 };
 #endif
@@ -2812,7 +2808,6 @@ void oocMctsAdapterSelfTest() {
         ScumSearchAgent2 forbiddenAgent; BattleContext forbiddenBattle;
         auto detachedBattle=detachedCopy(battle);
         rejects([&] { forbiddenAgent.playoutBattle(detachedBattle,forbiddenBattle); });
-        rejects([&] { forbiddenAgent.playoutBattle(forbiddenBattle); });
     }
     require(sts::search::g_disallowImaginedCombat==beforeDisallow,"surrogate-only guard restores real combat permission");
     OocGameContextModel deterministicOoc(ordinary,path,{}, {true});

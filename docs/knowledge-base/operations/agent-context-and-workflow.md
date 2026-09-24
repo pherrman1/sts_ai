@@ -75,7 +75,7 @@ are authoritative, and a short SHA-tied comment may record a later transition.
 | --- | --- | --- |
 | Purpose and required reading | `AGENTS.md`, KB index, this page | Universal constraints retained; documentation reads are task-dependent, with discovery links preserved. |
 | Authoritative sources | `AGENTS.md` | Kept as the universal source hierarchy. |
-| Repository map | `CODE_MAP.md`; [architecture overview](../architecture/overview.md); [self-play loop](selfplay-loop.md); [tools README](../../../tools/README.md) | Existing subsystem maps remain authoritative; artifact handling is below. Legacy `.opencode/`/`opencode.json` rollback configuration remains documented in `CODE_MAP.md`. |
+| Repository map | `CODE_MAP.md`; [architecture overview](../architecture/overview.md); [self-play loop (removed)](selfplay-loop.md); [tools README](../../../tools/README.md) | Existing subsystem maps remain authoritative; artifact handling is below. Legacy `.opencode/`/`opencode.json` rollback configuration remains documented in `CODE_MAP.md`. |
 | Agent workflow and tool routing | `AGENTS.md`; [ADR-0011](../../../decisions/0011-mcp-free-codex-skillopt-pilot.md); this page | Concise routing stays universal; operating limits are retained below. ADR-0010 and ADR-0008 remain historical records. |
 | Agent context and large-file navigation | This page | Retained below as focused-reading guidance. |
 | Build and focused checks | [build and debugging](build-and-debugging.md); this page | Commands, target graph, GCP details, and caveats remain on the build page. |
@@ -263,8 +263,9 @@ the PR or commit only. Existing dated entries are retained unchanged.
 - `bestbench` provenance, producer/consumer headers, paired comparisons, and
   `runtrace` limits: [benchmark protocol](../evaluation/benchmark-protocol.md)
   and [build and debugging](build-and-debugging.md).
-- Native OOC/server distinction, exact server PID handling, self-play bootstrap,
-  and expensive append/resume-safe buffers: [self-play loop](selfplay-loop.md).
+- Native OOC/server distinction, exact server PID handling, and expensive
+  append/resume-safe buffers: [self-play loop](selfplay-loop.md) (the loop was
+  removed by ADR-0020; the buffer rules still apply to retained data).
 - Expert policy features and restrictions on new hand-authored objectives:
   [combat search](../architecture/combat-search.md).
 
