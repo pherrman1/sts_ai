@@ -99,9 +99,12 @@
       const line=document.createElement("span");line.className="action-title";
       line.textContent=(s.label||g.label(e))+(row.chosen?" · Silver choice":"");
       const stats=document.createElement("span");stats.className="action-stats";
+      const priorText=g.validNumber(s.prior)&&g.validNumber(s.priorLogit)
+        ?" · root prior "+(s.prior*100).toFixed(2)+"% · logit "+s.priorLogit.toFixed(3):"";
       stats.textContent="n "+(e.visitCount??"—")+" · share "+
         (g.validNumber(s.visitShare)?s.visitShare.toFixed(3):"—")+
-        " · selection Q "+(s.selectionQValid&&g.validNumber(s.selectionQ)?s.selectionQ.toFixed(2):"—");
+        " · selection Q "+(s.selectionQValid&&g.validNumber(s.selectionQ)?s.selectionQ.toFixed(2):"—")+
+        priorText;
       const bar=document.createElement("i");bar.className="visit-bar";
       const max=Math.max(1,...g.rootRows.map(r=>g.validNumber(r.edge.visitCount)?
         r.edge.visitCount:0));bar.style.width=(g.validNumber(e.visitCount)?

@@ -2605,7 +2605,7 @@ void BattleContext::playTopCardInDrawPile(int monsterTargetIdx, bool exhausts) {
         return;
     }
 
-    CardQueueItem item(cards.popFromDrawPile(), monsterTargetIdx, player.energy);
+    CardQueueItem item(cards.popFromDrawPile(shuffleRng), monsterTargetIdx, player.energy);
     item.exhaustOnUse = exhausts;
     item.autoplay = true;
     item.freeToPlay = true; // todo remove the autoplay boolean? added this instead
@@ -3232,4 +3232,55 @@ namespace sts {
     }
 
 
+}
+
+namespace {
+
+    // Fields shared by operator== and equalForSearch: everything except the RNG
+    // streams, loopCount, and the card manager (compared by each caller).
+    bool sameSearchScalars(const BattleContext &a, const BattleContext &b) {
+        return a.haveUsedDiscoveryAction == b.haveUsedDiscoveryAction &&
+               a.undefinedBehaviorEvoked == b.undefinedBehaviorEvoked &&
+               a.seed == b.seed &&
+               a.floorNum == b.floorNum &&
+               a.encounter == b.encounter &&
+               a.energyWasted == b.energyWasted &&
+               a.cardsDrawn == b.cardsDrawn &&
+               a.ascension == b.ascension &&
+               a.outcome == b.outcome &&
+               a.smokeBombUsed == b.smokeBombUsed &&
+               a.inputState == b.inputState &&
+               a.cardSelectInfo == b.cardSelectInfo &&
+               a.monsterTurnIdx == b.monsterTurnIdx &&
+               a.endTurnQueued == b.endTurnQueued &&
+               a.turnHasEnded == b.turnHasEnded &&
+               a.skipMonsterTurn == b.skipMonsterTurn &&
+               a.actionQueue == b.actionQueue &&
+               a.cardQueue == b.cardQueue &&
+               a.potionCount == b.potionCount &&
+               a.potionCapacity == b.potionCapacity &&
+               a.potions == b.potions &&
+               a.turn == b.turn &&
+               a.player == b.player &&
+               a.monsters == b.monsters &&
+               a.curCardQueueItem == b.curCardQueueItem &&
+               a.miscBits == b.miscBits;
+    }
+
+}
+
+bool BattleContext::operator==(const BattleContext &rhs) const {
+    return loopCount == rhs.loopCount &&
+           aiRng == rhs.aiRng &&
+           cardRandomRng == rhs.cardRandomRng &&
+           miscRng == rhs.miscRng &&
+           monsterHpRng == rhs.monsterHpRng &&
+           potionRng == rhs.potionRng &&
+           shuffleRng == rhs.shuffleRng &&
+           sameSearchScalars(*this, rhs) &&
+           cards == rhs.cards;
+}
+
+bool BattleContext::equalForSearch(const BattleContext &rhs) const {
+    return sameSearchScalars(*this, rhs) && cards.equalForSearch(rhs.cards);
 }

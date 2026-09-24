@@ -1,6 +1,7 @@
 # Current research status
 
-Last verified: 2026-09-23 for the frozen Silver prior online gameplay screen;
+Last verified: 2026-09-24 for the experimental DeepSets Brew-fallback
+mechanism/timing smoke; 2026-09-23 for the frozen Silver prior online gameplay screen;
 2026-09-21 for the complete frozen Silver internal-node FPU cohort and local 80-source learned-prefix scale validation;
 2026-09-20 for the tactical-prefix Silver oracle headroom screen
 and contextual first-action Silver selector headroom/policy screen; 2026-09-19 for forced-action historical artifact recovery and
@@ -74,7 +75,14 @@ other sections retain their prior verification and linked evidence.
 
 ## Purpose
 
-The [current OOC CPU profile](../../experiments/evidence/ooc_cpu_profile_2026-09-18/README.md)
+The [latest OOC CPU profile and exact V4-prior optimizations](../../experiments/evidence/ooc_v4_prior_uniform_leaf_optimization_2026-09-24/README.md)
+profile fixed seed12002032 with V4 prior and uniform leaf policy. A singleton
+prior fast path and state-prefix policy-head reuse preserve the fixed-work
+trace; the singleton change reduced mean MCTS thread CPU by 7.9% against the
+prefix-only build, with modest/noisy whole-process CPU movement. The separate
+prefix-only comparison reduced mean MCTS thread CPU by 10.6% and whole-run
+wall by 6.0%. This is one-seed runtime evidence, not gameplay-quality evidence
+or a production benchmark. The [previous OOC CPU profile](../../experiments/evidence/ooc_cpu_profile_2026-09-18/README.md)
 reuses only historical seeds12002032/12002033, with exact workload reproduction
 and frozen opt-in instrumentation on main589a7a7. Real Silver combat accounts
 for54–57% of full CPU; V4 prior/continuation inference for17–19%; all CTM
@@ -774,7 +782,7 @@ policy trajectory. Ordinary CTM mean death probability was `0.05704` versus
 small to calibrate a rescue head, and the single Tail-consumed win cannot assess
 conditional post-combat heads. It does not alter the prior qualification
 rejection or runtime guard. See the [paired pilot packet](../../experiments/evidence/lizard_tail_rescue_pilot_2026-09-23/README.md)
-and [ledger §339](../../experiments/ledger-06.md).
+and [ledger §344](../../experiments/ledger-06.md).
 
 A follow-up risk-targeted cohort paired 128 unique fights. The ordinary arm died
 27 times; active Tail won 22 of those, consuming Tail in 14 and retaining it in
@@ -787,7 +795,7 @@ subgroups remain small. This supports testing small survival/consumption
 corrections that account for policy adaptation; it does not qualify reuse of
 existing heads, a Tail model, or runtime support. See the [targeted cohort
 evidence packet](../../experiments/evidence/lizard_tail_targeted_rescue_2026-09-23/README.md)
-and [ledger §340](../../experiments/ledger-06.md). The prior Lizard-head
+and [ledger §345](../../experiments/ledger-06.md). The prior Lizard-head
 qualification rejection and production fail-closed guard remain unchanged.
 
 A same-cohort minimal three-state diagnostic found a promising fixed
@@ -804,7 +812,7 @@ support/native fallbacks. Classification is
 `LIZARD_MINIMAL_CORRECTION_DATA_LIMITED`; no production support or model
 qualification changed. See the [Phase A-C packet](../../experiments/evidence/lizard_tail_targeted_rescue_2026-09-23/README.md#minimal-three-state-correction-diagnostic),
 [analysis JSON](../../experiments/evidence/lizard_tail_targeted_rescue_2026-09-23/minimal-correction-analysis.json),
-and [ledger §341](../../experiments/ledger-06.md).
+and [ledger §346](../../experiments/ledger-06.md).
 
 The fixed-B1 candidate-pool extension reused 475 unique paired fights from the
 same 2,700-row pool after dropping 35 repeated source/fight keys, with repeated
@@ -830,7 +838,7 @@ unchanged. See the [B1-ranked extension
 packet](../../experiments/evidence/lizard_tail_targeted_rescue_2026-09-23/README.md#b1-ranked-candidate-pool-extension),
 [prospective-domain analysis](../../experiments/evidence/lizard_tail_targeted_rescue_2026-09-23/b1-qr-runtime-support-analysis.json),
 [broad analysis](../../experiments/evidence/lizard_tail_targeted_rescue_2026-09-23/b1-qr-combined-analysis.json),
-and [ledger §342](../../experiments/ledger-06.md).
+and [ledger §347](../../experiments/ledger-06.md).
 
 The [frozen composed qualification protocol](../../experiments/evidence/composed_transition_2026-09-14.md)
 uses the original source-grouped **reused engineering TEST**, exact HP marginal
@@ -1039,14 +1047,71 @@ NLL changes were +2.7248%, +4.9113% and +3.0868%, while recursive Brew
 regressed **+19.1859%**, an obvious slice regression. Legal probability was
 exactly zero and normalization remained within tolerance.
 
-The Stage-A teacher-forced gate therefore stopped the planned 32-draw
-ancestral stage. This rejects only the exact frozen DeepSets representation
-plus current potion-decoder recipe. It does not justify fine-tuning DeepSets,
-reinterpret the Attention result, claim intrinsic information absence, or
-qualify potion sharing for runtime. No TEST, export, C++, gameplay, OOC MCTS
-or default-promotion work occurred. See
-[ledger-06 §289](../../experiments/ledger-06.md) and the
-[DeepSets potion screen evidence](../../experiments/evidence/deepset_potion_screen_2026-09-16.md).
+The follow-up that jointly trained a potion-specific DeepSets encoder and
+trajectory decoder is a **narrow miss**. The warm-start arm reached validation
+trajectory NLL `0.487162724` (`-3.8754%` versus the dedicated Attention
+reference), improving on the frozen substitution result, while scratch reached
+`0.498382425` (`-1.6616%`). The existing teacher-forced gate still rejects both
+arms because recursive Brew regressed `+13.3126%` for warm start and
+`+33.4429%` for scratch (12 validation rows); warm-start Brew also regressed
+`+7.0897%`, while Smoke improved `-16.5479%` and trajectory-special regressed
+`+3.1766%`. The run retained zero TEST encoding/inference rows; no TEST scoring,
+export, native parity, latency, gameplay, OOC MCTS, or default promotion
+occurred. The loader reads the prepared cache as a whole, but TEST examples did
+not enter encoding, evaluation, selection, or debugging. This result supports
+only a bounded next experiment after inspecting the recursive-Brew validation
+cases. A review hypothesis is that the encoder's `z` retains initial potion
+inventory information at recursive DAG nodes while the decoder's separate
+current-inventory input changes; this is unverified and should be tested before
+choosing an architecture change. It does not qualify the model or establish
+the cause of the remaining slice gap. See
+[ledger-06 §338](../../experiments/ledger-06.md) and the
+[potion-specialist evidence](../../experiments/evidence/potion_specialist_deepsets_2026-09-23.md).
+
+### Potion-pooled-blind DeepSets follow-up
+
+The paired warm-start follow-up is **`POTION_DEEPSET_POTION_BLIND_REJECTED`**.
+The control reproduced PR #298 W closely (validation NLL `0.486931329` versus
+`0.487162724`). P zeroed only the pooled potion identity/slot block before the
+same trunk; global inputs, including `potionCount` and `potionCapacity`, stayed
+unchanged as specified. P retained strong overall validation trajectory NLL
+`0.489927014` (`-3.3299%` versus Attention), improved no-change Brier and kept
+illegal probability exactly zero. The existing teacher-forced gate still
+rejects P: recursive-Brew NLL was `3.026048` versus Attention `2.412967`
+(`+25.4078%`) and control C `2.985346` (`+0.040702` nat paired mean). P
+improved on 5 of the 12 cases and worsened on 7, so no consistent case-level
+fix appeared. This weakens the hypothesis that the pooled potion block alone
+causes the recursive-Brew regression; it does not isolate the remaining global
+potion-count/capacity signal or establish another cause. The raw receipt records
+zero TEST encoding/scoring/teacher-metric rows. No ancestral stage, TEST use,
+export, native parity, runtime change, or gameplay qualification was run.
+See [ledger-06 §339](../../experiments/ledger-06.md), the
+[experiment report](../../experiments/evidence/deepset_potion_blind_2026-09-23.md),
+and its [raw receipt](../../experiments/evidence/deepset_potion_blind_2026-09-23.json).
+
+### Experimental DeepSets CTM with Entropic Brew fallback
+
+An opt-in hybrid implementation now uses the PR #298 W potion-aware specialist
+for predictor-visible pre-combat inputs without Entropic Brew and dispatches
+the whole transition to the current standard Attention CTM whenever Brew is
+present. Specialist parity and hybrid/direct-child state/RNG identity passed on
+the frozen 31-row fixture set. On the same 10 non-Brew fixture rows supported
+by fast DeepSets, median preparation was 3.715 ms standard and 0.491 ms fast
+(7.57x). In the subsequent canonical 64-pair OOC engineering screen at frozen
+source `9ce11fdbe50f32b4b2646dd8a0803c6dc0c3f351`, standard won 40 and hybrid
+39; paired win delta was `-1.56 pp` (95% CI `[-14.06,+10.94] pp`), an
+**inconclusive** quality estimate. Across 1,135,061 OOC hybrid preparations,
+4,219 used Brew fallback (`0.372%`) in this 64-seed cohort. Observed mean
+bestbench elapsed time was lower (641.4 vs 439.7 s/seed), as was mean MCTS CPU
+(139.35 vs 94.85 s/seed); this is
+runtime evidence under changed search trajectories, not a matched-work causal
+estimate. The observed 64-pair difference was small, but its uncertainty still
+includes a sizable win-rate regression. The screen is not equivalence evidence
+or a default-promotion gate. The specialist
+remains offline-rejected; the hybrid remains unqualified and opt-in only. A
+separate larger confirmation is warranted before any promotion. See
+[ledger-06 §342](../../experiments/ledger-06.md) and the
+[mechanism/timing/paired OOC packet](../../experiments/evidence/deepset_entropic_brew_hybrid_2026-09-24/README.md).
 
 ### Qualified DeepSets representation for survival prediction
 
@@ -1519,6 +1584,8 @@ scaling experiment").
 
 ### Searcher3 belief filtering and rejuvenation
 
+Closed: Searcher3 was removed (ADR-0019).
+
 Exact real-observation filtering is semantically promising but remains opt-in;
 persistent transfer is not in the executable, and single-child AI_RNG
 rejuvenation stayed mixed/inconclusive with possible downside tail risk. A new
@@ -1529,6 +1596,8 @@ promotion or broader rejuvenation work. See the
 confirmation").
 
 ### Searcher3 particle count
+
+Closed: Searcher3 was removed (ADR-0019).
 
 128 particles remains directionally promising but unconfirmed; 64 remains the
 default. The next justified action is a full-block confirmation on the current

@@ -1,6 +1,6 @@
 # Benchmark protocol
 
-Last verified: 2026-08-26 against the current working tree
+Last verified: 2026-09-24 for Silver-only combat (ADR-0020) and the Searcher3 removal; 2026-08-26 against the current working tree
 tree (strict deterministic paired analysis + asserting vnettest, §134 audit).
 
 ## Purpose
@@ -52,12 +52,10 @@ exact. Therefore v1 hard64 remains a legacy-boundary safety screen for the
 quiescent identity rule, while fresh trusted v2 captures can reproduce the
 production identity policy.
 
-`STS_FAIR=1` selects the project-fair combat path. Searcher2 remains default;
-`STS_SEARCHER3=1` is an independent opt-in. Without `STS_FAIR=1`, default
-Searcher2 uses the concrete battle RNG and produces the known-RNG diagnostic
-regime. Searcher3 still samples particles without `STS_FAIR`; that flag changes
-its per-decision reconstruction/tree-reuse behavior, so the resulting hybrid
-must not be grouped with known-RNG Searcher2.
+All combat is project-fair Silver (ADR-0020); the known-RNG regime no longer
+exists in the executable. Historical known-RNG Searcher2 rows and non-fair
+Searcher3 rows remain separate series and must not be grouped with current
+Silver results (ADR-0002).
 
 ## Important data flow
 
@@ -72,20 +70,18 @@ must not be grouped with known-RNG Searcher2.
 4. Aggregate output reports full-run wins, mean final floor, end HP, per-run
    elapsed time, and wall time.
 5. Paired comparisons join candidate and baseline rows on identical seeds.
-6. Self-play uses per-seed `floor + 100*WIN_WEIGHT*won`; the checked-in
-   `WIN_WEIGHT=0.1` makes a win worth 10 floor units
-   (`selfplay/loop.sh::gate_stats`; `selfplay/config.env`).
+6. The removed self-play gate (ADR-0020) used per-seed
+   `floor + 100*WIN_WEIGHT*won` with `WIN_WEIGHT=0.1`.
 
 The `bestBench` banner and adjacent source comment are now emitted from the
 parsed configuration (skip threshold, rest/win layer, shop-V, path mode, native
 OOC, searcher, threads, model paths). The `.meta.json` JSON-lines sidecar is
 machine-readable provenance; use it plus observed load messages rather than the
-banner alone.  When `STS_SILVER_SEARCH=1` overrides combat selection, the
-sidecar explicitly records `config.effectiveCombatBackend="silver"`, the
-effective Silver reuse-cap mode and fixed production cap, pinned Silver SHA,
-current executable Git SHA, and any scaling-diagnostic output path.  Native
-Searcher2/3 fields still describe configuration, not the effective combat
-backend in that override regime.
+banner alone. The sidecar records `config.effectiveCombatBackend="silver"`,
+the effective Silver reuse-cap mode and fixed production cap, pinned Silver
+SHA, current executable Git SHA, and any scaling-diagnostic output path. The
+legacy native-searcher and combat-model keys carry fixed values for schema
+compatibility.
 
 ### Treatment canary before a larger cohort
 
@@ -116,7 +112,7 @@ python3 tools/agent/check_benchmark_canary.py \
   --expect-asc 0 \
   --expect-threads 24 \
   --expect-fair \
-  --expect-searcher3 \
+  --no-expect-searcher3 \
   --binary <one_combat> \
   --expect-binary-sha256 <frozen-binary-sha256> \
   --expect-silver-reuse-cap-mode allocated
@@ -143,7 +139,7 @@ Every recorded benchmark states, where applicable:
 - ascension;
 - combat simulations per decision;
 - project-fair or known-RNG mode;
-- Searcher2 or Searcher3;
+- combat backend (Silver or Searcher2; historical rows may be Searcher3);
 - OOC configuration and behavior flags;
 - model paths and preferably hashes plus observed load messages;
 - thread count;
@@ -202,7 +198,7 @@ env plus server port liveness, not a per-decision query log. See
   handler fails loudly when the file already contains any requested seed
   (disjoint batch appends, e.g. self-play gates, are unaffected).
 - CTest registers parse/syntax checks (`ctest --test-dir build`); the `test`
-  dispatcher holds targeted Searcher3 and terminal-flag checks, and
+  dispatcher holds targeted Searcher2 and terminal-flag checks, and
   `small-test isbattleover` covers the terminal-field derivation. Deeper
   integration invariants remain review-enforced. `tools/verify/vnettest_selftest.py
   --self-test` (CTest `vnettest_selftest`) regression-checks the asserting

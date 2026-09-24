@@ -1,6 +1,6 @@
 # Live model inspector
 
-Last verified: 2026-09-21. This page describes the private integration
+Last verified: 2026-09-23. This page describes the private integration
 boundary currently present in the repository; it is not a claim that every
 game boundary has a qualified live evaluator.
 
@@ -125,7 +125,19 @@ use one bounded latest-observation slot; intermediate captures are replaceable
 rather than queued without limit. It launches the advisor with a direct
 `ProcessBuilder` call. The F8 panel remains diagnostic and read-only. Its top
 edge sits 170 scaled pixels below the screen top, clearing the relic row.
-The panels omit floor/HP text already shown in the game HUD.
+The panels omit floor/HP text already shown in the game HUD. The lower-left
+graph button exports a captured Silver or OOC MCTS tree as a timestamped HTML
+file under `~/.cache/sts-model-inspector/graphs/` and opens it in the default
+browser. At click time it pins the current observation and its matching ready
+advisor response into a dedicated temporary snapshot, so asynchronous updates
+to `latest.json` cannot change which tree the export uses;
+`captureMctsGraphs=true` enables tree capture. `showAdvisorPanel=false`
+hides the top-left panel while retaining the standalone graph and Silver
+budget controls, `showActionRecommendations=false` hides recommendation
+overlays, and `showSelectedActionSummary=false` hides the selected Silver
+action line while retaining the budget and visit summary. These properties are
+read from `~/.sts-model-inspector.properties` and default to their existing
+visible/capture-off behavior unless set.
 OOC decisions use the same dark/cyan styling as Silver, with an amber border
 on the selected action. Event and Neow scores appear beside their active
 buttons. Shop scores sit by each affordable card, relic, potion, removal and
@@ -285,6 +297,16 @@ oocModel=<XDG data>/sts-ai/live-runtime/current/models/ooc_strategic_tok_final.n
 override their corresponding properties when nonempty.
 `STS_MODEL_INSPECTOR_CONFIG` selects a different properties file. These
 environment-first rules provide an isolated development/test escape hatch.
+For a prior-aware Silver graph, set `STS_SILVER_ROOT_PRIOR_MODEL` in the
+advisor process environment to the absolute frozen `SilverPriorNetV1` artifact
+path. The advisor loads it at startup and, on eligible ordinary player roots,
+uses the model prior in the same root-only PUCT search shown in the graph. The
+root-action sidebar, edge inspector, and report table then show the model logit
+and normalized `P(a|state)` next to visits and Q. No prior columns are emitted
+when no model is loaded; if loaded but ineligible at a root, the report gives
+the skip reason. The prior is a root policy distribution, not Q or win
+probability. Forced roots, non-player-normal decisions, and sequential
+selection transactions do not receive the learned prior.
 For an explicit Silver tree-debug capture, launch the advisor/runtime with
 `STS_SILVER_DEBUG_TREE=1`; the normal response remains unchanged when it is
 unset. The optional `STS_SILVER_DEBUG_TREE_NODE_CAP` bounds the attached graph

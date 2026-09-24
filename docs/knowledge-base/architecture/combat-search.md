@@ -1,6 +1,6 @@
 # Combat search
 
-Last verified: 2026-09-19 against the current working tree.
+Last verified: 2026-09-24 for the Silver-only dispatch (ADR-0020), the Searcher3 removal and the Silver whole-run default; 2026-09-19 against the current working tree.
 
 ## Purpose
 
@@ -10,28 +10,32 @@ not an experiment chronology or benchmark record.
 
 ## Current combat dispatch
 
-`ScumSearchAgent2` owns combat policy dispatch for `one_combat`:
+Silver is the only combat searcher
+([ADR-0020](../../../decisions/0020-silver-only-combat-remove-searcher2-and-selfplay.md)).
+`one_combat` installs the Silver backend at startup, and every combat goes
+through `ScumSearchAgent2::playoutBattle(GameContext&, BattleContext&)`, which
+throws when no backend is installed:
 
-1. `BattleContext::init` copies persistent run state from `GameContext` and
-   initializes combat-only state.
-2. `playoutBattle` uses known simulator RNG. `playoutBattleFair` constructs a
-   project-fair search from information available at the current decision.
-3. Search operates on copied or determinized battles and must not mutate the
-   live committed `BattleContext`.
-4. The selected root action is validated and executed on the live battle.
-   Fair play commits one action before observing and searching again.
-5. The loop continues while `bc.outcome == Outcome::UNDECIDED`.
-6. `BattleContext::exitBattle` transfers the result and persistent state back
+1. The backend initializes the `BattleContext` from `GameContext` itself, so
+   its observational hooks (for example the Runic-Dome intent observer) see
+   initialization. Callers must not pre-initialize the battle.
+2. At each decision it converts the visible state into Silver's private
+   representation, searches, and resolves the chosen semantic action to a
+   live action.
+3. The agent validates and commits one live action, then searches again.
+4. The loop continues while `bc.outcome == Outcome::UNDECIDED`.
+5. `BattleContext::exitBattle` transfers the result and persistent state back
    to `GameContext`. An unresolved combat is a player loss; an enumeration gap
    must never become free progress.
 
-Default combat is known-RNG `BattleScumSearcher2`. `STS_FAIR=1` independently
-selects project-fair dispatch, and `STS_SEARCHER3=1` selects
-`BattleScumSearcher3`. `STS_SILVER_SEARCH=1` installs Silver and overrides the
-native searcher choice. The complete flag and parameter reference is
+`STS_SILVER_SEARCH=0` and `STS_FAIR=0` make `one_combat` exit with an error.
+An explicit sims argument selects flat Silver at that budget in every mode;
+only `run`, `bestbench` and `reprobench` called without a sims argument use
+adaptive Silver by default (ADR-0018). `BattleScumSearcher3` (ADR-0019) and
+`BattleScumSearcher2` (ADR-0020) were removed. The complete flag reference is
 [environment-variables.md](../operations/environment-variables.md).
 
-## Searcher2 / Searcher3
+## Silver root-prior tooling
 
 ### Offline Silver root mechanism tooling
 
@@ -114,91 +118,27 @@ It emits no scientific classification automatically; its predeclared names are
 are not evidence of guidance quality; scientific capture/label/replay waits
 for independent review and a frozen implementation SHA.
 
-### Searcher2
+### Removed native searchers
 
-`BattleScumSearcher2` is the default MCTS implementation. Normal dispatch
-searches copied battles with their existing simulator RNG, so it is a known-RNG
-policy. Its tree is retained across decisions when the committed action can be
-advanced into the existing root.
-
-Searcher2 can also run through fair dispatch. Its determinization resamples
-draw order and the shuffle/card-random streams, but not all six combat RNG
-streams. This is a supported compatibility path, not the complete project-fair
-hidden-state model.
-
-Searcher2 uses UCB-style selection without learned priors and PUCT when a
-compact policy model or enabled PVNet policy head provides priors. A loaded
-PVNet contributes policy only; PVNet value blending is Searcher3-only.
-
-### Searcher3
-
-`BattleScumSearcher3` is particle ISMCTS. Its tree is action-keyed and each
-simulation samples a `HiddenBattleState` particle with replacement. Particles
-carry draw order and all six combat RNG seed pairs and counters. The tree may
-be rerooted after a committed action and is reseeded per real decision.
-Fair dispatch constructs a fresh native searcher at every live decision;
-non-fair dispatch can carry and reroot the tree.
-
-The composite search seed uses visible-state hash, agent seed, and decision
-index. Increasing `STS_S3_PARTICLES` (default 64) increases belief construction
-and filtering work; it does not make each simulation replay every particle.
-
-At a node Searcher3 enumerates actions for the current determinization,
-computes optional priors, selects and executes an edge on a copy, then descends,
-expands, directly evaluates, or rolls out. Conservative dead-state pruning
-applies only where the player cannot act. Chain compression and forced-action
-contraction reduce work without changing the committed legal action.
-
-Fair+Searcher3 enables live-valid stored-edge selection by default. It
-re-scores only stored edges legal in the current particle with the same
-UCB/PUCT rule; if none is legal, search uses its configured fallback.
-`STS_LIVE_VALID=0` disables it. Forced-action contraction is enabled for fair
-dispatch by default and `STS_FORCED_MOVE=0` disables it.
-
-### Supported non-default search controls
-
-| Area | Current contract |
-| --- | --- |
-| Reuse and allocation | Native trees reroot when possible. Searcher3 exposes reuse limits/diagnostics, carried-tree Q selection (`STS_REUSE_ALWAYS_Q`), and fresh-tree Q selection (`STS_S3_ALWAYS_Q`). |
-| Stable-root budgeting | `STS_CONV_ROOT` grows root search until its visit-share/value stability rule or budget limit. It owns its forced-move pool behavior. |
-| S3 toggles | `STS_S3_BELIEF`, `STS_S3_PRUNE`, `STS_S3_CHAIN`, and `STS_S3_LIVE` default on. Pool redirect, root CRN, semantic card edges, and union expansion are opt-in. |
-| Invalid-edge fallback | `STS_S3_EXPAND` adds missing live legal edges when no stored edge is valid; its max and simple-selection controls remain supported. |
-| Rollouts | `STS_ROLLOUT_DEPTH` caps actions. S3 also supports prior-guided sampling, K-rollout averaging, turn-stop bootstrap, tactical turn-beam rollout, and rollout-length VNet alpha. Defaults are heuristic rollout, one sample, no turn stop, and no cap. |
-| Chance continuations | `STS_S3_PERSISTENT_ENDTURN_CHANCE` stores exact-`CombatObservation` successor nodes below eligible END_TURN edges while retaining one aggregate action value/visit stream. It samples one normal transition per simulation and is incompatible with strategy-fusion diagnostics and eager END_TURN marginalization. |
-
-Research treatment parameters are summarized here, not recommended. Exact
-defaults, compatibility rules, and output paths live in the environment
-variable reference.
+`BattleScumSearcher3`, a particle ISMCTS searcher, was removed with its
+particle belief, rejuvenation probes, `STS_S3_*` and `STS_REUSE_*` controls,
+and the `fairgen`, `speedtest`, `particle_leaf_probe`,
+`particle_posterior_probe`, `fightrep` and `oocv4h1rollout[all]` modes
+([ADR-0019](../../../decisions/0019-remove-searcher3.md)).
+`BattleScumSearcher2`, the known-RNG/fair-determinization MCTS, was removed
+with its rollout, forced-move, live-valid, TT and convergence controls, its
+policy-prior/V_combat/PVNet leaf loading, and the `combatgen`, `fightgen`,
+`policygen`, `distgen`, `datagen`, `datagen2`, `causalgen` and `searchdiag`
+modes (ADR-0020). Their research records remain in the experiment ledger and
+[research/](../research/README.md). Reproducing those results needs a binary
+built before the respective ADR.
 
 ## Hidden information and fair play
 
-`CombatObservation` is Searcher3's public information-state identity. Equality
-and `visibleHash` use the same fields, including input state and card-selection
+`CombatObservation` is the agent-facing public observation. Equality and
+`visibleHash` use the same fields, including input state and card-selection
 context. Piles compare as multisets of `CardKey`; order-insensitivity is
-deliberate. The action-keyed tree shares action statistics across compatible
-hidden worlds rather than branching the whole tree by observation.
-
-`Belief::initial` creates particles and `Belief::sampleIndex` samples normalized
-weights. `applyParticle` installs hidden draw order only when pile size and card
-multiset still match; stale incompatible order falls back to searcher-RNG
-shuffle.
-
-Conditioning has two distinct paths:
-
-- Historical in-search `Belief::update` compares particle draw order with a
-  visible pile prefix. Hypothetical internal updates are off by default, so a
-  simulation does not condition the root belief on its own observations.
-- `STS_S3_REAL_BELIEF_FILTER=1` is the exact real-boundary filter. For each
-  particle it restores the pre-action state, applies the particle, executes the
-  committed action canonically, and compares predicted and real post-action
-  observations. Compatible particles retain equal normalized weight;
-  propagation failures are reported. Zero survivors restore a uniform prior.
-  `STS_S3_REAL_BELIEF_COLLAPSE_FRESH=1` instead rebuilds from current reality.
-  Neither path is rejuvenation.
-
-`STS_S3_PERSIST_FILTERED_BELIEF` transfers the filtered posterior to a fresh
-next-decision tree. Shadow sensitivity, rejuvenation, RNG-exposure, and belief
-audit modes observe this machinery without defining the default policy.
+deliberate. `CombatDistValueNet` takes it as input.
 
 Runic Dome prevents future intent materialization. Looter and Mugger use
 `DeferredDirectMoveChoice` for hidden escape-versus-attack continuations.
@@ -231,6 +171,14 @@ root and its descendants. Trusted native hard-combat v2 captures persist this
 proof separately from the public Silver wire; v1 snapshots remain exact. This
 prevents a live `CARD_SELECT` with pending `OnAfterCardUsed` work from being
 mistaken for a quiescent selection.
+
+Moving state across the boundary (live-state conversion, private-state
+materialization and semantic-action resolution) costs about 10 µs per
+decision, under 0.05% of decision time. Root setup (exact reroot or fresh root,
+including collection) costs about 2 ms per adaptive decision (2.6%), and search
+takes the remainder
+([§340](../../experiments/ledger-06.md#340--silver-handoff-timing-and-adaptive-128-seed-baseline-2026-09-24)).
+`STS_SILVER_HANDOFF_TIMING=1` reports these buckets per combat.
 
 One private session is retained per battle and exact-child reroot is attempted
 after each action. The production cap remains 32,768 nodes. `STS_SILVER_REUSE_CAP=131072`
@@ -309,7 +257,10 @@ The live Silver default uses the retained-root adaptive policy: fresh and
 one-action/forced roots search 10,000 simulations, while a retained non-forced
 root first searches 500, measures the top-two visit-share gap, and stops at 500
 when it is at least `0.2932885906040268`; otherwise the same root continues to
-10,000 total. `STS_SILVER_ADAPTIVE=0` restores flat Silver. The policy applies
+10,000 total. `STS_SILVER_ADAPTIVE=0` restores flat Silver. For `run`, `bestbench` and
+`reprobench`, an explicit sims argument selects flat Silver at that budget
+unless adaptive stopping is configured through its environment variables
+([ADR-0018](../../../decisions/0018-silver-default-combat-backend.md)). The policy applies
 at ordinary roots and private sequential-selection subdecisions; the first
 search is not discarded.
 
@@ -435,37 +386,13 @@ is revalidated against the live battle.
 
 ## Leaf/value guidance
 
-Without a learned leaf, search uses exact terminal values and rollout-based
-non-terminal estimates. A compact policy supplies priors; `STS_CPUCT` controls
-PUCT exploration when learned priors are active.
-
-Except in `policygen`, an unset `STS_POLICY` attempts to load
-`models/policy_trees_c.txt`; `STS_POLICY=0` disables it and an explicit path
-overrides it. An explicit load failure is reported.
-
-Fair+Searcher3 auto-loads `models/v_combat_7k_tuned.txt` with blend weight 0.3
-when `STS_VNET` is unset. Explicit `STS_VNET` overrides it; load failure reports
-and disables the model. Searcher2 and non-fair paths do not auto-enable it.
-
-Supported value mechanisms:
-
-- `STS_VNET`/`STS_VNET_ALPHA`; boss/Act-3 conditions and rollout-length alpha
-  are opt-in.
-- `STS_VNET_PER_ENCOUNTER` loads an all-or-nothing encounter-model directory,
-  with optional `_pooled.txt` fallback. In-file `combat_mlp_meta_v1` deltas use
-  the same encounter dispatch.
-- `STS_VNET_RANK_CORR` and `STS_VNET_RESIDUAL` load default-off additive
-  corrections; missing/invalid artifacts leave them off.
-- `STS_DIST_VNET` is Searcher3-only.
-- `STS_PVNET` provides joint policy/value. Its enabled policy head takes
-  precedence over compact policy. Searcher3 can blend value; Searcher2 uses
-  policy only. `STS_PVNET_VALUE_ONLY=1` makes it inert in Searcher2 and does not
-  activate zero-prior PUCT in Searcher3.
-
-The Searcher3 PVNet visible-state cache defaults on when PVNet is loaded and
-`STS_PVNET_CACHE=0` disables it. Keys are the fresh `visibleHash` of the state
-actually evaluated. Turn/depth/boss gates affect per-expansion blend only, not
-direct or post-rollout evaluation.
+Silver's own leaf evaluation, optional leaf-VNet blend
+(`STS_SILVER_VNET_LEAF_*`) and experimental root prior
+(`STS_SILVER_ROOT_PRIOR_MODEL`) are described in the Silver backend section.
+`one_combat` no longer loads the Searcher2-era compact policy prior, V_combat
+leaf, PVNet or DistVNet for play (ADR-0020). The PVNet runtime and the policy
+diagnostics were then removed; `CombatValueNet` remains for Silver's leaf blend
+and `vnettest`, and `CombatDistValueNet` only for `parity_test`.
 
 Feature ordering and counts are model-interface invariants. Native PV/dist
 inference may use probed OpenBLAS or scalar fallback and reports the backend.
@@ -473,29 +400,13 @@ inference may use probed OpenBLAS or scalar fallback and reports the backend.
 ## Diagnostics and observability
 
 Closed leaf-evaluation, rollout-trace, frontier/relabel, and sibling-CRN
-producers were retired after their research lines closed. The retained
-particle/posterior probe implementation lives in
-`apps/one_combat/particle_diagnostics.{h,cpp}`. `S3LeafDiagnostic` and
-`g_onS3LeafQuery` remain Searcher3 interfaces for those probes; the production
-search path does not depend on a diagnostic callback.
+producers were retired after their research lines closed. The particle and
+posterior probes (ADR-0019) and `searchdiag` (ADR-0020) were removed. The
+production search path does not depend on a diagnostic callback.
 
-`SearchDiagnostics` records simulation partitioning, rollout entry/stop causes,
-tree actions, maximum depth, and search time. Per search:
-
-```text
-simulations = terminalInsideTree + rolloutCalls + leafDirectEval
-rolloutCalls = rolloutLeafCalls + fairIllegalStoredEdge
-```
-
-`searchdiag` emits decision rows for both searchers. Searcher2 can also emit
-independent staged-budget probes; Searcher3 emits agent rows only. Fight
-summaries have a separate schema. `collectFrontierStats` classifies terminal
-and unexpanded leaves with a bounded walk.
-
-Belief/root/reuse telemetry, END_TURN diagnostics, retained particle probes,
-and Silver observers are observational unless their flag explicitly names a
-treatment. Producers must record fair regime, models, particles, and relevant
-flags so incompatible rows are not combined.
+Silver observers are observational unless their flag explicitly names a
+treatment. Producers must record fair regime, models and relevant flags so
+incompatible rows are not combined.
 
 ## Invariants / failure behavior
 
@@ -527,38 +438,27 @@ Primary code:
 
 - `include/combat/BattleContext.h`, `src/combat/BattleContext.cpp`
 - `include/sim/search/Action.h`, `src/sim/search/Action.cpp`
-- `include/sim/search/BattleScumSearcher2.h`,
-  `src/sim/search/BattleScumSearcher2.cpp`
-- `include/sim/search/BattleScumSearcher3.h`,
-  `src/sim/search/BattleScumSearcher3.cpp`
 - `include/sim/search/ScumSearchAgent2.h`,
   `src/sim/search/ScumSearchAgent2.cpp`
 - `include/sim/search/CombatObservation.h`,
   `src/sim/search/CombatObservation.cpp`
 - `include/sim/search/CombatValueNet.h`, `src/sim/search/CombatValueNet.cpp`
-- `include/sim/search/CombatPVNet.h`, `src/sim/search/CombatPVNet.cpp`
 - `include/sim/search/SilverLiveBackend.h`,
   `third_party/silver_lightspeed/bridge/SilverLiveBackend.cpp`
 - `src/sim/search/SilverConversion.cpp`, `apps/one_combat.cpp`
 
 Focused coverage includes `cardselect_parity`, `cardselect_canonical`,
-`scum_nonfair_empty_edges`, `scum_convroot_stale_outcome`,
 `silver-native-test`, `silver-bridge-test`, `silver-integration-test`,
 `runic-dome-lifecycle-test`, `combat-knowledge-neutrality-test`, `vnettest`,
-and `pvnetparity`. Use current invocation details from
+Use current invocation details from
 [build-and-debugging.md](../operations/build-and-debugging.md).
 
 ## Known limitations
 
-- Searcher2 fair determinization does not cover the full hidden RNG state.
-- Searcher3 shares an action-keyed tree across particles. A stored edge can be
-  illegal in one world; live-valid selection and explicit fallback handle it.
 - `CombatObservation` uses `CardKey` multisets and omits some transient card
   fields such as `uniqueId` and retain state.
 - Exhaustive ten-card multi-select can create 1,023 subset edges. Pruning and
   canonicalization exist but are policy-affecting opt-ins.
-- Exact real-boundary filtering and posterior transfer are opt-in; the default
-  belief path is not an exact posterior across every committed action.
 - Terminal run-value guidance depends on its evaluator's feature coverage and
   never substitutes for exact terminal combat utility.
 - Retained research controls are supported and testable, not thereby promoted.

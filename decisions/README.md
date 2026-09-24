@@ -26,6 +26,15 @@ the replacement.
 
 ## Current architecture ADRs
 
+- [ADR-0020](0020-silver-only-combat-remove-searcher2-and-selfplay.md) makes
+  Silver the only combat searcher, removes Searcher2 with its
+  search-statistics generators and controls, and removes the self-play loop.
+- [ADR-0019](0019-remove-searcher3.md) removes Searcher3 and its
+  Searcher3-only modes, flags, tests and scripts; `STS_SEARCHER3=1` now
+  fails.
+- [ADR-0018](0018-silver-default-combat-backend.md) makes Silver fair play
+  the default combat backend for `run`, `bestbench` and `reprobench`; it
+  supersedes ADR-0003.
 - [ADR-0015](0015-live-silver-equivalent-copy-reroot.md) preserves retained
   live Silver visits when the human plays a different equivalent physical card
   copy, without relaxing global search-state or transposition identity.

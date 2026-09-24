@@ -49,9 +49,9 @@ struct BenchConfigSidecar {
     bool s3RolloutTurnStop = false, s3TurnRollout = false;
     bool s3SemanticCardEdges = false;
     bool fairPlay = false;
-    // Combat-backend override provenance.  The existing Searcher2/3 fields
-    // remain intact because they describe configured native settings; these
-    // fields state which combat backend actually handled decisions.
+    // Combat-backend provenance. Silver is the only backend (ADR-0020); the
+    // native-searcher fields above are kept with fixed values for schema
+    // compatibility.
     std::string effectiveCombatBackend = "native_searcher";
     bool stsSilverSearchEffective = false;
     bool silverSearchEnabled = false;

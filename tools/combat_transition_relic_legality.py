@@ -13,8 +13,8 @@ except ModuleNotFoundError:
 
 CYCLIC = {'HAPPY_FLOWER': 3, 'INCENSE_BURNER': 6, 'INK_BOTTLE': 10,
           'INSERTER': 2, 'NUNCHAKU': 10, 'PEN_NIB': 10, 'SUNDIAL': 3}
-# Meat on the Bone has no persisted combat counter in the current native
-# write-back audit. Keep only relics present in that audited native set.
+# Meat on the Bone changes combat-exit HP in GameContext; its relic data field
+# is not a mutable counter written by BattleContext::updateRelicsOnExit.
 COPY_COUNTERS = {'BURNING_BLOOD', 'BLACK_BLOOD'}
 NAMES = {v: k for k, v in base.MUTABLE_RELIC_NAMES.items()}
 TRAJECTORY = {'HAPPY_FLOWER': ('turns', 6), 'INCENSE_BURNER': ('turns', 6),

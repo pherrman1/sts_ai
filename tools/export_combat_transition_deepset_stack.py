@@ -20,7 +20,7 @@ CONTROL_SHA = "e9a18951710fdfe9e1a81a2703090a41f039067c670a1d8a0393b5e7e8e0ddfd"
 SURVIVAL_SHA = "328c65f150ac7daa9db7dc7e2047b77cf8b88ef3c09b3da8ef57d75b7a2fd4c3"
 TRANSITION_SHA = "bee6800dd7230b180c2b4894c0f01763efca4b7799e3f36a805333c3003dc663"
 DOWNSTREAM_SHA = "c00ed677b8b2b2854fb62982247853982bc58d9fc20afdd96c593bcc6c07423a"
-POTION_SHA = "06eda953b523ed6b3b9dbc3031bf44408c3bc67f0bc8b7862d28c150448819c1"
+POTION_SPECIALIST_SHA = "71d88a71cf7579e1092c3b3c27e000538a6aafe35bbf5228c10c15fa0edd4ace"
 CORPUS_SHA = "74c08aa0a3c30342d86cd45355fe17ffa9046963ad7c8cf71b1938f9cdc1cfde"
 SPLIT_MANIFEST_SHA = "e9043bcceb9d95027711e6ff33afbfe1cae3cf9528f820c0ff68bddbb419db32"
 PREPARED_SHA = "a642671d0956f36405b837755cdf3dfb3c4870cde4a1d6f251046ffc8205a1c9"
@@ -75,7 +75,7 @@ def export(control, survival_checkpoint, prepared, transition_checkpoint,
     for path, expected in ((survival_checkpoint, SURVIVAL_SHA),
                            (transition_checkpoint, TRANSITION_SHA),
                            (downstream_checkpoint, DOWNSTREAM_SHA),
-                           (potion_checkpoint, POTION_SHA)):
+                           (potion_checkpoint, POTION_SPECIALIST_SHA)):
         if digest(path) != expected:
             raise ValueError(f"checkpoint identity mismatch: {path}")
 
@@ -139,7 +139,7 @@ def export(control, survival_checkpoint, prepared, transition_checkpoint,
     encoder = {key.removeprefix("encoder."): value for key, value in state.items() if key.startswith("encoder.")}
     if len(encoder) != 28:
         raise ValueError("shared DeepSets encoder tensor count differs")
-    for group in ("max_hp", "hp", "potion_encoder"):
+    for group in ("max_hp", "hp"):
         for name, value in encoder.items():
             put(tensors, shapes, f"{group}.encoder.{name}", value)
     for name, value in transition["maxHpHeadStateDict"].items():
@@ -150,7 +150,16 @@ def export(control, survival_checkpoint, prepared, transition_checkpoint,
         elif name.startswith("hp."):
             put(tensors, shapes, "hp." + name, value)
 
-    potion = torch.load(potion_checkpoint, map_location="cpu", weights_only=False)["stateDict"]
+    # PR #298 W is a dedicated, jointly trained potion encoder. Keep it separate
+    # from the shared maxHP/HP representation and bind the exact checkpoint.
+    potion_bundle = torch.load(potion_checkpoint, map_location="cpu", weights_only=False)
+    if not {"encoderStateDict", "decoderStateDict", "selectedEpoch"}.issubset(potion_bundle):
+        raise ValueError("potion specialist checkpoint schema differs")
+    if potion_bundle["selectedEpoch"] != 27:
+        raise ValueError("potion specialist selected epoch differs")
+    for name, value in potion_bundle["encoderStateDict"].items():
+        put(tensors, shapes, "potion_encoder.encoder." + name, value)
+    potion = potion_bundle["decoderStateDict"]
     for name, value in potion.items():
         put(tensors, shapes, "potion." + name, value)
 
@@ -159,15 +168,17 @@ def export(control, survival_checkpoint, prepared, transition_checkpoint,
         put(tensors, shapes, name, value)
 
     metadata["sources"].update(survival=SURVIVAL_SHA, maxHP=TRANSITION_SHA,
-        HP=TRANSITION_SHA, potion=POTION_SHA, downstream=DOWNSTREAM_SHA)
+        HP=TRANSITION_SHA, potion=POTION_SPECIALIST_SHA, downstream=DOWNSTREAM_SHA)
     metadata["experimentalSurvival"] = dict(architecture="deepset64_phase1_v1",
         checkpointSha256=SURVIVAL_SHA, controlSha256=CONTROL_SHA,
         preparedSha256=PREPARED_SHA, preparedManifestSha256=PREPARED_MANIFEST_SHA,
         scalarMeanSha256=mean_sha, scalarInvSha256=inv_sha, qualified=False)
-    metadata["experimentalDeepSets"] = dict(architecture="deepset64_shared_transition",
+    metadata["experimentalDeepSets"] = dict(architecture="deepset64_shared_hp_with_dedicated_potion_specialist",
         controlSha256=CONTROL_SHA, maxHpHpCheckpointSha256=TRANSITION_SHA,
-        downstreamCheckpointSha256=DOWNSTREAM_SHA, potionCheckpointSha256=POTION_SHA,
-        potionOfflineDecision="DEEPSET_POTION_REJECTED", qualified=False)
+        downstreamCheckpointSha256=DOWNSTREAM_SHA,
+        potionSpecialistCheckpointSha256=POTION_SPECIALIST_SHA,
+        potionOfflineDecision="POTION_DEEPSET_SPECIALIST_REJECTED",
+        requiresEntropicBrewFallback=True, qualified=False, defaultChanged=False)
     metadata["tensors"] = shapes
     header = json.dumps(metadata, sort_keys=True, separators=(",", ":")).encode()
     with Path(output).open("xb") as stream:
@@ -179,7 +190,9 @@ def export(control, survival_checkpoint, prepared, transition_checkpoint,
         preparedSha256=PREPARED_SHA, preparedManifestSha256=PREPARED_MANIFEST_SHA,
         scalarMeanSha256=mean_sha, scalarInvSha256=inv_sha,
         maxHpHpCheckpointSha256=TRANSITION_SHA, downstreamCheckpointSha256=DOWNSTREAM_SHA,
-        potionCheckpointSha256=POTION_SHA, potionOfflineDecision="DEEPSET_POTION_REJECTED",
+        potionSpecialistCheckpointSha256=POTION_SPECIALIST_SHA,
+        potionOfflineDecision="POTION_DEEPSET_SPECIALIST_REJECTED",
+        requiresEntropicBrewFallback=True,
         qualified=False, defaultChanged=False)
 
 

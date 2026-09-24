@@ -8,17 +8,13 @@ MAX_AUTOMATED_SEEDS=128
 
 declare -A ONE_COMBAT_SEED_INDEX=(
   ["bestbench"]=3
-  ["causalgen"]=2           ["combatgen"]=2
-  ["datagen"]=2
-  ["datagen2"]=2            ["datagen3"]=2          ["distgen"]=2
-  ["e2cgen"]=2              ["fairgen"]=2           ["fightgen"]=2
-  ["wholecombatgen"]=2     ["combattransitiongen"]=2 ["combattransitionlizardtargetcandidategen"]=2 ["combattransitionlizardgen"]=2 ["combattransitionlizardtargetpairgen"]=2 ["combatevalgen"]=2 ["ooccfaudit"]=2
-  ["particle_leaf_probe"]=2
-  ["particle_posterior_probe"]=2
-  ["fightrep"]=6            ["oocnextgen"]=2
+  ["datagen3"]=2
+  ["e2cgen"]=2
+  ["wholecombatgen"]=2     ["combattransitiongen"]=2 ["combattransitionlizardtargetcandidategen"]=2
+  ["combattransitionlizardgen"]=2 ["combattransitionlizardtargetpairgen"]=2
+  ["combatevalgen"]=2 ["ooccfaudit"]=2
+  ["oocnextgen"]=2
   ["pathcfgen"]=2
-  ["policygen"]=2
-  ["searchdiag"]=2
   ["strategicgen"]=2        ["strategicgen2"]=2
   ["strategicmarggen"]=2
   ["oocfactoreval"]=2      ["oocmargtradeoffeval"]=2 ["oock3tradeoffeval"]=2
@@ -45,26 +41,7 @@ check_oversized() {
     if [ "$exe" = "one_combat" ]; then
       local mode="${argv[$((i + 1))]:-}"
       local idx="${ONE_COMBAT_SEED_INDEX[$mode]:-}"
-      if [ "$mode" = "fightrep" ]; then
-        # Grid replay: seed-equivalent count = NFIGHTS x |PARTICLES| x |SIMS|.
-        # argv: one_combat fightrep CAPTURE_DIR OUTFILE PARTICLES SIMS [NFIGHTS]
-        local nf="${argv[$((i + 6))]:-}"
-        [[ "$nf" =~ ^[0-9]+$ ]] || nf=0
-        local cells=0
-        if [ "$nf" -gt 0 ]; then
-          local pc="${argv[$((i + 4))]:-}" sc="${argv[$((i + 5))]:-}"
-          local np=0 ns=0 tok
-          IFS=',' read -ra parts <<< "$pc"
-          for tok in "${parts[@]}"; do [ -n "$tok" ] && np=$((np + 1)); done
-          IFS=',' read -ra parts <<< "$sc"
-          for tok in "${parts[@]}"; do [ -n "$tok" ] && ns=$((ns + 1)); done
-          cells=$((nf * np * ns))
-        fi
-        if [ "$MAX_AUTOMATED_SEEDS" -gt 0 ] && [ "$cells" -gt "$MAX_AUTOMATED_SEEDS" ]; then
-          echo "SEED_GUARD: one_combat fightrep requests $cells replay cells (${nf}x${np}x${ns}); automated maximum is $MAX_AUTOMATED_SEEDS" >&2
-          exit 1
-        fi
-      elif [ -n "$idx" ]; then
+      if [ -n "$idx" ]; then
         local seeds="${argv[$((i + idx))]:-}"
         # Semantic label pilot is deliberately bounded independently of the
         # general sweep ceiling, including when a research host is selected.

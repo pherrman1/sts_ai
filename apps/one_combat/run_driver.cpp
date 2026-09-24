@@ -7,20 +7,15 @@
 #include <sstream>
 
 #include "combat/BattleContext.h"
-#include "sim/search/BattleScumSearcher2.h"
 #include "sim/search/GameAction.h"
 #include "sim/search/ScumSearchAgent2.h"
 #include "sim/search/SilverLiveBackend.h"
 #include "e2c_capture.h"
-#include "fight_replay.h"
 #include "ooc_policy.h"
 #include "ooc_checkpoint_policy.h"
 #include "ooc_mcts_adapter.h"
 #include "ooc_profile.h"
-#include "particle_diagnostics.h"
 #include "run_features.h"
-#include "search_diagnostics.h"
-#include "vnet_query_log.h"
 
 using namespace sts;
 
@@ -132,57 +127,23 @@ RunResult runFullRunOOC(std::uint64_t seed, int sims, int asc, bool restV, bool 
             agent.simulationCountBase = fightSims(gc, sims);            // difficulty-tiered budget
             if (one_combat::liveOocMctsEnabled() && agent.simulationCountBase != 10000)
                 throw std::runtime_error("live OOC MCTS real combat budget must remain 10000");
-            search::g_potionKeepValue = potionKeepValue(gc);           // dynamic potion-saving
             BattleContext bc{};
-            // The isolated Silver backend must enter before BattleContext::init
-            // so its observational Runic-Dome hooks see the initial hidden
-            // intent lifecycle.  The normal bestbench path deliberately
-            // remains byte-for-byte below this opt-in branch.
-            if (search::g_externalCombatBackend) {
-                one_combat::OocProfileScope combatProfile(one_combat::OocProfileBucket::RealCombat);
-                agent.playoutBattle(gc, bc);
-                ++fightsTotal;
-                if (bc.outcome == Outcome::PLAYER_LOSS) {
-                    ++fightsLost;
-                    if (deathCombat < 0) {
-                        deathCombat = fightsTotal;
-                        deathEncounter = (int)bc.encounter;
-                    }
-                }
-                bc.exitBattle(gc);
-                if (g_stopAfterAct > 0 && battleAct == g_stopAfterAct && battleRoom == Room::BOSS) {
-                    clearedStopActBoss = bc.outcome == Outcome::PLAYER_VICTORY;
-                    break;
-                }
-                continue;
-            }
-            bc.init(gc);
-            if (one_combat::e2cCaptureActive())
-                one_combat::beginE2cFight(fightsTotal, gc, bc);
-            if (one_combat::fightReplayCaptureEnabled() && battleAct == 3 && battleRoom == Room::BOSS)
-                one_combat::fightReplayCaptureStart(bc, seed);   // fightrep: fight-start snapshot (floor-50 boss)
-            if (one_combat::searchDiagnosticsActive())
-                one_combat::beginSearchDiagnosticFight(seed, gc.floorNum, gc.act,
-                                                       (int)gc.curRoom, (int)bc.encounter,
-                                                       fightsTotal);
-            if (one_combat::particleDiagnosticsActive())
-                one_combat::beginParticleDiagnosticFight(
-                    seed, fightsTotal, gc.floorNum, gc.act, bc.encounter);
-            // VNet query log: set per-fight context before combat
-            // (the agent's internal Searcher3 loop handles per-decision iteration)
-            if (one_combat::vnetQueryLogConfigured())
-                one_combat::beginVNetQueryLogFight(seed, fightsTotal);
+            // Silver initializes the battle itself so its observational
+            // Runic-Dome hooks see the initial hidden intent lifecycle.
             {
                 one_combat::OocProfileScope combatProfile(one_combat::OocProfileBucket::RealCombat);
-                agent.playoutBattle(bc);
+                agent.playoutBattle(gc, bc);
             }
-            if (one_combat::fightReplayCaptureEnabled() && battleAct == 3 && battleRoom == Room::BOSS)
-                one_combat::fightReplayCaptureEnd(bc, seed);   // fightrep: index row + capture-time outcome
-            if (one_combat::searchDiagnosticsActive())
-                one_combat::endSearchDiagnosticFight(bc);
-            one_combat::flushVNetQueryLog();              // VNet query log: flush this fight's rows
             ++fightsTotal;
-            if (bc.outcome == Outcome::PLAYER_LOSS) { ++fightsLost; if (deathCombat < 0) { deathCombat = fightsTotal; deathEncounter = (int)bc.encounter; } }
+            if (bc.outcome == Outcome::PLAYER_LOSS) {
+                ++fightsLost;
+                if (deathCombat < 0) {
+                    deathCombat = fightsTotal;
+                    deathEncounter = (int)bc.encounter;
+                }
+            }
+            if (one_combat::e2cCaptureActive())
+                one_combat::beginE2cFight(fightsTotal - 1, gc, bc);
             one_combat::exitBattleWithE2cRawCapture(bc, gc);
             if (g_stopAfterAct > 0 && battleAct == g_stopAfterAct && battleRoom == Room::BOSS) {
                 clearedStopActBoss = bc.outcome == Outcome::PLAYER_VICTORY;
@@ -214,7 +175,6 @@ RunResult runFullRunOOC(std::uint64_t seed, int sims, int asc, bool restV, bool 
         }
     }
     one_combat::writeLiveOocMctsTrace(seed, mctsMetrics, fightsTotal);
-    one_combat::flushVNetQueryLog();
     if (e2cCapture) {
         // Same effective label semantics as this function's RunResult (honors an
         // explicit STS_STOP_AFTER_ACT horizon without labelling solely from

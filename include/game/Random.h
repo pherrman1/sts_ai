@@ -133,6 +133,8 @@ namespace sts {
 
         Random() : Random(0) {}
 
+        bool operator==(const Random &rhs) const = default;
+
         Random(std::uint64_t seed) {
             counter = 0;
             seed0 = murmurHash3(seed == 0 ? ONE_IN_MOST_SIGNIFICANT : seed);

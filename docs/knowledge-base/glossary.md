@@ -1,6 +1,6 @@
 # Glossary
 
-Last verified: 2026-09-07 against commit `82dc3772` and the current working tree.
+Last verified: 2026-09-24 for the Searcher2/3 and self-play removals; 2026-09-07 against commit `82dc3772` and the current working tree.
 
 ## Purpose
 
@@ -15,11 +15,10 @@ remain defined by the owning technical pages routed from the
 **Counterfactual** — A copied state on which an alternate legal action is
 applied before continuation or future-state scoring.
 
-**Known-RNG** — The default Searcher2 non-fair regime, where search starts from
-the concrete battle RNG and may reuse its tree across committed actions.
-Searcher3 samples particles even when `STS_FAIR` is off, so its non-fair reuse
-path is a distinct hybrid and must not be labelled known-RNG without
-qualification.
+**Known-RNG** — The historical Searcher2 non-fair regime, where search started
+from the concrete battle RNG. It no longer exists in the executable
+(ADR-0020). Historical non-fair Searcher3 results sampled particles and must
+not be labelled known-RNG without qualification.
 
 **Native OOC** — In-process out-of-combat inference, contrasted with inference
 served by `v_server.py`. “Native” does not by itself mean default, loaded, used,
@@ -27,10 +26,10 @@ or benchmarked.
 
 **OOC** — Out of combat: run-level decisions made between combats.
 
-**Project-fair / fair play** — The evaluation regime selected by `STS_FAIR=1`.
-It commits one root combat action before rebuilding search from the next live
-decision. Fair Searcher2 only partially determinizes hidden combat state;
-Searcher3 must be enabled separately for its particle model.
+**Project-fair / fair play** — The regime in which search sees only visible
+information and commits one root combat action before searching again from the
+next live decision. All current combat (Silver) is project-fair; `STS_FAIR=1`
+is accepted for compatibility.
 
 **Teacher** — A search or counterfactual process whose outputs become training
 targets. The name describes provenance, not guaranteed expert quality.

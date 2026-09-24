@@ -1041,6 +1041,7 @@ public:
     bool collectDecisionDiagnostics = false;
     std::vector<SilverRootActionSummary> rootActionSummaries;
     double lastSearchWallMicros = 0.0;
+    SilverHandoffTiming handoffTiming;
 
     void configure(const SilverSearchConfig &config) {
         searcher->explorationParameter = config.explorationParameter;
@@ -1262,12 +1263,23 @@ public:
     }
 
     sts::BattleContext materializeAndBegin(const BattleStateWire &wire, const SilverSearchConfig &config) {
+        using Clock = std::chrono::steady_clock;
+        const auto start = config.collectSearchTiming ? Clock::now() : Clock::time_point{};
         if (!runContextInitialized) {
             initializeRunContext(runContext, wire);
             runContextInitialized = true;
         }
         auto state = materialize(wire, &runContext);
+        const auto materialized = config.collectSearchTiming ? Clock::now() : Clock::time_point{};
         beginAt(state, config);
+        if (config.collectSearchTiming) {
+            const auto begun = Clock::now();
+            ++handoffTiming.calls;
+            handoffTiming.materializeMicros +=
+                std::chrono::duration<double, std::micro>(materialized - start).count();
+            handoffTiming.rootSetupMicros +=
+                std::chrono::duration<double, std::micro>(begun - materialized).count();
+        }
         return state;
     }
 
@@ -1358,6 +1370,10 @@ public:
 
 std::shared_ptr<SilverSearchSession> makeSilverSearchSession() {
     return std::make_shared<SilverSearchSession>();
+}
+
+SilverHandoffTiming silverHandoffTiming(const SilverSearchSession &session) {
+    return session.handoffTiming;
 }
 
 SilverTreeSnapshot snapshotSilverSearchTree(

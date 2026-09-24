@@ -63,6 +63,10 @@ struct SilverLiveDiagnostics {
     std::uint64_t priorInferenceMicros = 0;
     std::uint64_t rootPuctDecisions = 0;
     std::vector<double> priorInferenceLatencyMicros;
+    // STS_SILVER_HANDOFF_TIMING wall-time buckets (microseconds).
+    double handoffConversionMicros = 0.0;
+    double handoffResolutionMicros = 0.0;
+    double handoffDecisionMicros = 0.0;
     // Default-off test trace.  It is never populated in production runs.
     std::vector<std::string> actionFingerprints;
 };

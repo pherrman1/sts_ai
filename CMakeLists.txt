@@ -5,12 +5,22 @@ project(
         DESCRIPTION "High Performance, rng accurate implementation of Slay the Spire with tools for tree search and ml."
         LANGUAGES CXX)
 
+find_package(OpenSSL QUIET COMPONENTS Crypto)
+if(NOT OpenSSL_FOUND)
+    message(STATUS "OpenSSL Crypto not found; non-CTM targets remain available, CTM runtime targets require OpenSSL")
+endif()
+function(link_ctm_crypto target)
+    if(OpenSSL_FOUND)
+        target_link_libraries(${target} PRIVATE OpenSSL::Crypto)
+    endif()
+endfunction()
+
 enable_testing()
 
 file (GLOB_RECURSE sts_lightspeed_SOURCES CONFIGURE_DEPENDS "src/*.cpp")
 list(REMOVE_ITEM sts_lightspeed_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/src/sim/search/SilverPriorNet.cpp")
 
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 20)
 add_compile_options(
     -Wno-shift-count-overflow
     -fopenmp
@@ -336,15 +346,19 @@ add_executable(one_combat apps/one_combat.cpp apps/combat_model_diagnostics.cpp
     apps/one_combat/ooc_policy.cpp
     apps/one_combat/ooc_v4_encoding.cpp
     apps/one_combat/run_driver.cpp
+    apps/one_combat/run_trace.cpp
+    apps/one_combat/semantic_pilot.cpp
+    apps/one_combat/combat_datasets.cpp
+    apps/one_combat/ooc_factor_eval.cpp
+    apps/one_combat/strategic_gen.cpp
+    apps/one_combat/counterfactual_gen.cpp
     apps/one_combat/ooc_checkpoint_policy.cpp
-    apps/one_combat/fight_replay.cpp
-    apps/one_combat/search_diagnostics.cpp
-    apps/one_combat/vnet_query_log.cpp
-    apps/one_combat/particle_diagnostics.cpp
     $<TARGET_OBJECTS:sts_core_objects>)
 target_include_directories(one_combat PUBLIC include)
 target_include_directories(one_combat PUBLIC json/include)
+target_include_directories(one_combat PRIVATE apps)
 target_link_libraries(one_combat PRIVATE silver_live_backend)
+link_ctm_crypto(one_combat)
 # The isolated model objects contain upstream full-game methods adjacent to
 # the combat methods used by Silver rollout. Their sections are compiled with
 # -ffunction-sections; discard the unreachable OOC closure instead of vendoring
@@ -376,6 +390,7 @@ target_sources(one_combat_advisor PRIVATE
     apps/one_combat/combat_transition_runtime.cpp
     apps/one_combat/combat_transition_native_contract.cpp)
 target_link_libraries(one_combat_advisor PRIVATE sts_core_objects silver_live_backend)
+link_ctm_crypto(one_combat_advisor)
 target_link_options(one_combat_advisor PRIVATE -Wl,--gc-sections)
 target_compile_definitions(one_combat_advisor PRIVATE STS_LIVE_ADVISOR=1)
 add_test(NAME live_advisor_protocol COMMAND python3
@@ -406,6 +421,7 @@ add_executable(test_live_ooc_policy apps/test_live_ooc_policy.cpp
     apps/one_combat/combat_transition_runtime.cpp apps/one_combat/combat_transition_native_contract.cpp
     $<TARGET_OBJECTS:sts_core_objects>)
 target_include_directories(test_live_ooc_policy PRIVATE include json/include apps)
+link_ctm_crypto(test_live_ooc_policy)
 target_compile_definitions(test_live_ooc_policy PRIVATE STS_LIVE_ADVISOR=1)
 add_test(NAME live_ooc_policy COMMAND bash ${CMAKE_SOURCE_DIR}/tools/seed_guard.sh
     $<TARGET_FILE:test_live_ooc_policy> ${CMAKE_SOURCE_DIR}/selfplay/models/ooc_strategic_tok_final.native)
@@ -422,6 +438,7 @@ add_executable(live_ooc_parity_test apps/live_ooc_parity_test.cpp
     apps/one_combat/combat_transition_native_contract.cpp
     $<TARGET_OBJECTS:sts_core_objects>)
 target_include_directories(live_ooc_parity_test PRIVATE include json/include apps)
+link_ctm_crypto(live_ooc_parity_test)
 target_compile_definitions(live_ooc_parity_test PRIVATE STS_LIVE_ADVISOR=1)
 add_test(NAME live_ooc_parity COMMAND bash ${CMAKE_SOURCE_DIR}/tools/seed_guard.sh
     $<TARGET_FILE:live_ooc_parity_test>
@@ -446,6 +463,7 @@ add_executable(live_ctm_importer_test apps/live_ctm_importer_test.cpp
     apps/one_combat/combat_transition_native_contract.cpp
     $<TARGET_OBJECTS:sts_core_objects>)
 target_include_directories(live_ctm_importer_test PRIVATE include json/include)
+link_ctm_crypto(live_ctm_importer_test)
 add_test(NAME live_ctm_importer
     COMMAND $<TARGET_FILE:live_ctm_importer_test>
     ${CMAKE_SOURCE_DIR}/selfplay/models/combat_transition_near_full_except_smoke_v2.native)
@@ -478,7 +496,7 @@ target_include_directories(parity_test PUBLIC json/include)
 
 # "test" is reserved by CTest, so the manual dispatcher target is unit-test
 # with OUTPUT_NAME "test" to keep the build/test binary path stable.
-add_executable(unit-test apps/test.cpp apps/test_belief.cpp
+add_executable(unit-test apps/test.cpp
     apps/test_ooc_reward_continuation.cpp apps/test_ooc_semantic.cpp
     apps/test_ooc_semantic_pipeline.cpp
     apps/one_combat/combat_predictor_input.cpp
@@ -511,30 +529,20 @@ set_tests_properties(ooc_mcts PROPERTIES LABELS "core")
 # CTest entries below cover checks that do not depend on apps/test.cpp
 # subcommands (apps/test.cpp is a manual command dispatcher; its subcommands
 # receive CTest entries separately). bash -n only parses, never executes.
-add_test(NAME selfplay_syntax COMMAND bash -n
-    ${CMAKE_SOURCE_DIR}/selfplay/loop.sh
-    ${CMAKE_SOURCE_DIR}/selfplay/status.sh
-    ${CMAKE_SOURCE_DIR}/selfplay/run_card_reliability_overnight.sh
-    ${CMAKE_SOURCE_DIR}/selfplay/run_future_fight_collection.sh
-    ${CMAKE_SOURCE_DIR}/selfplay/run_card_cf_collection.sh)
 add_test(NAME paired_analysis_selftest COMMAND python3 ${CMAKE_SOURCE_DIR}/paired_analysis.py --self-test)
 add_test(NAME py_compile_parity_test COMMAND python3 -m py_compile ${CMAKE_SOURCE_DIR}/parity_test.py)
-add_test(NAME particle_leaf_probe_selftest COMMAND python3 ${CMAKE_SOURCE_DIR}/tools/train_particle_leaf_probe.py --self-test)
 add_test(NAME semantic_confirmation_analysis COMMAND python3 -m unittest
     tests.test_ooc_semantic_confirmation tests.test_semantic_confirmation_runner
     tools.test_semantic_combat_coverage -q)
 set_tests_properties(semantic_confirmation_analysis PROPERTIES
     WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}" LABELS "research-repro;tooling")
 add_test(NAME py_compile_analyze_ooc_factor COMMAND python3 -m py_compile ${CMAKE_SOURCE_DIR}/tools/analyze_ooc_factor.py)
-add_test(NAME particle_posterior_probe_selftest COMMAND python3 ${CMAKE_SOURCE_DIR}/tools/analyze_particle_posterior_probe.py --self-test)
 add_test(NAME check_replay_selftest COMMAND python3 ${CMAKE_SOURCE_DIR}/tools/verify/check_replay.py --self-test)
 add_test(NAME vnettest_selftest COMMAND python3 ${CMAKE_SOURCE_DIR}/tools/verify/vnettest_selftest.py --self-test $<TARGET_FILE:one_combat>)
 add_test(NAME winnettest_selftest COMMAND python3 ${CMAKE_SOURCE_DIR}/tools/verify/winnettest_selftest.py --self-test $<TARGET_FILE:one_combat>)
 add_test(NAME one_combat_feature_regression COMMAND $<TARGET_FILE:one_combat_feature_test>)
 add_test(NAME battlecontext_roundtrip COMMAND $<TARGET_FILE:unit-test> battlecontext_roundtrip)
 add_test(NAME designer_in_spire COMMAND $<TARGET_FILE:unit-test> designer_in_spire)
-add_test(NAME scum_nonfair_empty_edges COMMAND $<TARGET_FILE:unit-test> scum_nonfair_empty_edges)
-add_test(NAME scum_convroot_stale_outcome COMMAND $<TARGET_FILE:unit-test> scum_convroot_stale_outcome)
 add_test(NAME cardqueue_overflow COMMAND $<TARGET_FILE:unit-test> cardqueue_overflow)
 add_test(NAME keys_collect COMMAND $<TARGET_FILE:unit-test> keys_collect)
 add_test(NAME issue_fixes COMMAND $<TARGET_FILE:unit-test> issue_fixes)
@@ -569,10 +577,6 @@ add_test(NAME ooc_semantic_smith COMMAND $<TARGET_FILE:unit-test> ooc_semantic_s
 set_tests_properties(ooc_semantic ooc_semantic_pipeline ooc_semantic_producer ooc_semantic_smith ooc_reward_continuation
     PROPERTIES LABELS "core;integration")
 add_test(NAME relic_reward_sapphire COMMAND $<TARGET_FILE:unit-test> relic_reward_sapphire)
-add_test(NAME semantic_card_edges COMMAND $<TARGET_FILE:unit-test> semantic_card_edges)
-add_test(NAME s3_drawpile_reuse_boundary COMMAND $<TARGET_FILE:unit-test> s3_drawpile_reuse_boundary)
-add_test(NAME s3_strategy_fusion_diag COMMAND $<TARGET_FILE:unit-test> s3_strategy_fusion_diag 12345)
-add_test(NAME s3_persistent_endturn_chance COMMAND $<TARGET_FILE:unit-test> s3_persistent_endturn_chance 12345)
 add_test(NAME thorns_retaliation COMMAND $<TARGET_FILE:unit-test> thorns_retaliation)
 add_test(NAME awakened_one_stage2 COMMAND $<TARGET_FILE:unit-test> awakened_one_stage2)
 add_test(NAME darkling_victory COMMAND $<TARGET_FILE:unit-test> darkling_victory)
@@ -580,16 +584,13 @@ add_test(NAME poison_lose_hp COMMAND $<TARGET_FILE:unit-test> poison_lose_hp)
 add_test(NAME time_eater_exhaust COMMAND $<TARGET_FILE:unit-test> time_eater_exhaust)
 add_test(NAME simhealth_gamble_empty_hand COMMAND $<TARGET_FILE:unit-test> simhealth_gamble_empty_hand)
 add_test(NAME gamblers_brew_legality COMMAND $<TARGET_FILE:unit-test> gamblers_brew_legality)
-add_test(NAME simhealth_nonfair_s2_empty COMMAND $<TARGET_FILE:unit-test> simhealth_nonfair_s2_empty)
 add_test(NAME simhealth_selection_failure COMMAND $<TARGET_FILE:unit-test> simhealth_selection_failure)
-add_test(NAME simhealth_nonfair_s2_selection_failed COMMAND $<TARGET_FILE:unit-test> simhealth_nonfair_s2_selection_failed)
 add_test(NAME training_integrity COMMAND $<TARGET_FILE:unit-test> training_integrity)
-add_test(NAME rng_state_propagation COMMAND $<TARGET_FILE:unit-test> rng_state_propagation 12345)
-add_test(NAME s3_rand64_prior_sampler COMMAND $<TARGET_FILE:unit-test> s3_rand64_prior_sampler)
-add_test(NAME rejuv_conditional_blocks COMMAND $<TARGET_FILE:unit-test> rejuv_conditional_blocks)
-add_test(NAME live_rejuv_attempt_gate COMMAND $<TARGET_FILE:unit-test> live_rejuv_attempt_gate)
 add_test(NAME e2c_observer_scope COMMAND $<TARGET_FILE:unit-test> e2c_observer_scope)
 add_test(NAME combat_knowledge COMMAND $<TARGET_FILE:unit-test> combat_knowledge)
+add_test(NAME battle_equality COMMAND $<TARGET_FILE:unit-test> battle_equality)
+add_test(NAME card_pile COMMAND $<TARGET_FILE:unit-test> card_pile)
+add_test(NAME card_pile_engine COMMAND $<TARGET_FILE:unit-test> card_pile_engine)
 add_test(NAME silver_random_bridge COMMAND $<TARGET_FILE:unit-test> silver_random_bridge)
 add_test(NAME silver_semantic_action COMMAND $<TARGET_FILE:unit-test> silver_semantic_action)
 add_test(NAME silver_searcher_link_closure COMMAND $<TARGET_FILE:silver-native-test>)
@@ -818,33 +819,29 @@ set_tests_properties(combat_transition_native_fixture
     PROPERTIES WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
 set_tests_properties(combat_transition_fixture_contract
     PROPERTIES DEPENDS combat_transition_native_fixture)
-set_tests_properties(paired_analysis_selftest py_compile_parity_test py_compile_analyze_ooc_factor check_replay_selftest silver_prior_root_screen vnettest_selftest winnettest_selftest battlecontext_roundtrip designer_in_spire scum_nonfair_empty_edges scum_convroot_stale_outcome cardqueue_overflow keys_collect issue_fixes semantic_card_edges thorns_retaliation awakened_one_stage2 darkling_victory poison_lose_hp time_eater_exhaust simhealth_gamble_empty_hand gamblers_brew_legality simhealth_nonfair_s2_empty simhealth_selection_failure simhealth_nonfair_s2_selection_failed training_integrity e2c_observer_scope analyze_silver_root_diagnostic_selftest analyze_postcombat_raw_terminal_selftest export_win_model_selftest runwin_e2c_native_parity
+set_tests_properties(paired_analysis_selftest py_compile_parity_test py_compile_analyze_ooc_factor check_replay_selftest silver_prior_root_screen vnettest_selftest winnettest_selftest battlecontext_roundtrip designer_in_spire cardqueue_overflow keys_collect issue_fixes thorns_retaliation awakened_one_stage2 darkling_victory poison_lose_hp time_eater_exhaust simhealth_gamble_empty_hand gamblers_brew_legality simhealth_selection_failure training_integrity e2c_observer_scope analyze_silver_root_diagnostic_selftest analyze_postcombat_raw_terminal_selftest export_win_model_selftest runwin_e2c_native_parity
     runwin_e2c_production_native_parity e2c_runwin_projection_parity PROPERTIES ENVIRONMENT "PYTHONPYCACHEPREFIX=${CMAKE_BINARY_DIR}/pycache")
 
 # Labels provide fast, intention-revealing local tiers while the unfiltered
 # linux-gcc-test preset remains the authoritative full CTest suite.
 set_tests_properties(battlecontext_roundtrip designer_in_spire cardqueue_overflow keys_collect
-    issue_fixes relic_reward_sapphire semantic_card_edges thorns_retaliation awakened_one_stage2 darkling_victory
+    issue_fixes relic_reward_sapphire thorns_retaliation awakened_one_stage2 darkling_victory
     poison_lose_hp time_eater_exhaust simhealth_gamble_empty_hand gamblers_brew_legality
-    simhealth_nonfair_s2_empty simhealth_selection_failure simhealth_nonfair_s2_selection_failed
+    simhealth_selection_failure battle_equality card_pile card_pile_engine
     training_integrity PROPERTIES LABELS "core")
 set_tests_properties(vnettest_selftest winnettest_selftest
-    scum_nonfair_empty_edges scum_convroot_stale_outcome s3_drawpile_reuse_boundary
-    s3_strategy_fusion_diag s3_persistent_endturn_chance rng_state_propagation
-    s3_rand64_prior_sampler rejuv_conditional_blocks live_rejuv_attempt_gate
     e2c_observer_scope combat_knowledge silver_random_bridge silver_semantic_action
     silver_searcher_link_closure silver_bridge_boundary runic_dome_lifecycle
     runwin_e2c_native_parity runwin_e2c_production_native_parity
     e2c_runwin_projection_parity PROPERTIES LABELS "integration")
-set_tests_properties(selfplay_syntax py_compile_parity_test py_compile_analyze_ooc_factor
+set_tests_properties(py_compile_parity_test py_compile_analyze_ooc_factor
     check_replay_selftest check_benchmark_canary_selftest export_win_model_selftest
     PROPERTIES LABELS "tooling")
-set_tests_properties(particle_leaf_probe_selftest particle_posterior_probe_selftest
-    analyze_silver_reuse_scaling_selftest analyze_silver_vnet_leaf_selftest
+set_tests_properties(analyze_silver_reuse_scaling_selftest analyze_silver_vnet_leaf_selftest
     analyze_silver_sticky_quality_selftest analyze_silver_root_diagnostic_selftest
     analyze_silver_adaptive_selftest analyze_silver_staged_selftest analyze_postcombat_raw_terminal_selftest
     PROPERTIES LABELS "research-repro")
-set_property(TEST selfplay_syntax paired_analysis_selftest check_replay_selftest
+set_property(TEST paired_analysis_selftest check_replay_selftest
     battlecontext_roundtrip issue_fixes APPEND PROPERTY LABELS "smoke")
 
 add_test(NAME ooc_mcts_adapter COMMAND bash ${CMAKE_SOURCE_DIR}/tools/seed_guard.sh
@@ -860,6 +857,7 @@ add_executable(combat_transition_runtime_probe tests/combat_transition_runtime_p
     apps/one_combat/combat_predictor_input.cpp apps/one_combat/combat_transition.cpp
     $<TARGET_OBJECTS:sts_core_objects>)
 target_include_directories(combat_transition_runtime_probe PRIVATE include json/include)
+link_ctm_crypto(combat_transition_runtime_probe)
 add_test(NAME combat_transition_native_contract COMMAND python3 -m unittest
     tests.test_combat_transition_native_contract -v)
 set_tests_properties(combat_transition_native_contract PROPERTIES

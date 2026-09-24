@@ -31,6 +31,7 @@
 #define STS_LIGHTSPEED_BATTLECONTEXTBINARY_H
 
 #include <cstdint>
+#include <stdexcept>
 #include <vector>
 #include <map>
 
@@ -250,7 +251,11 @@ inline std::vector<std::uint8_t> serializeBattleContext(const BattleContext &bc)
         for (int i = 0; i < c.cardsInHand; ++i) serializeCardInstance(g, c.hand[i]);
         // limbo is transient (end-of-turn discard scratch); not serialized.
         for (const auto &sc : c.stasisCards) serializeCardInstance(g, sc);
-        auto putPile = [&](const std::vector<CardInstance> &pile) {
+        // Format v1 stores concrete pile orders only.
+        if (!c.drawPile.isConcrete()) {
+            throw std::logic_error("serializeBattleContext: information-set draw pile is not supported by format v1");
+        }
+        auto putPile = [&](const auto &pile) {
             putI32(g, (std::int32_t)pile.size());
             for (const auto &ci : pile) serializeCardInstance(g, ci);
         };
@@ -476,7 +481,10 @@ inline BattleContext deserializeBattleContext(const std::uint8_t *data, std::siz
                     }
                     return true;
                 };
-                if (!readPile(bc.cards.drawPile) || !readPile(bc.cards.discardPile)
+                std::vector<CardInstance> drawOrder;
+                if (!readPile(drawOrder)) { ok = false; break; }
+                bc.cards.drawPile.assignConcrete(std::move(drawOrder));
+                if (!readPile(bc.cards.discardPile)
                     || !readPile(bc.cards.exhaustPile)) { ok = false; break; }
                 std::int32_t hnc, hpc, sc, hbc, dpbc, dsbc;
                 if (!r.i32(hnc) || !r.i32(hpc) || !r.i32(sc) || !r.i32(hbc)

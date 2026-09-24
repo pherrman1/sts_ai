@@ -85,6 +85,9 @@ namespace sts {
         Monster() = default;
         Monster(const Monster& rhs) = default;
 
+        // Every field is compared; add new state fields as members so this stays complete.
+        bool operator==(const Monster &rhs) const = default;
+
         void setRandomHp(Random &hpRng, bool higherHp);
         void initHp(Random &hpRng, int ascension);
         void construct(BattleContext &bc, MonsterId monsterId, int monsterIdx);

@@ -1,0 +1,12 @@
+Test project /home/philippherrmann/.codex/worktrees/ea89/sts_lightspeed/build/linux-gcc-release
+    Start 133: ooc_mcts_adapter
+1/2 Test #133: ooc_mcts_adapter ...................   Passed    0.59 sec
+    Start 135: combat_transition_runtime_loader
+2/2 Test #135: combat_transition_runtime_loader ...   Passed    0.09 sec
+
+100% tests passed out of 2
+
+Label Time Summary:
+integration    =   0.68 sec*proc (2 tests)
+
+Total Test time (real) =   0.68 sec

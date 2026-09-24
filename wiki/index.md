@@ -5,6 +5,11 @@ you know the game, but not the math or machine learning. The short version is:
 the AI tries many plausible lines in combat, and uses learned estimates to
 choose some of the decisions between combats.
 
+> **Status (2026-09-24):** whole-run combat now defaults to the Silver search
+> backend ([ADR-0018](../decisions/0018-silver-default-combat-backend.md)), and
+> Searcher3 was removed ([ADR-0019](../decisions/0019-remove-searcher3.md)).
+> Passages about Searcher3 and its particles describe historical behavior.
+
 ## Pages
 
 | Page | Topic |
