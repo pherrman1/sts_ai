@@ -1,7 +1,9 @@
 # Current research status
 
 Last verified: 2026-09-25 for the corrected Silver rollout-cost protocol and
-default-off status; 2026-09-24 for the experimental DeepSets Brew-fallback mechanism/timing smoke;
+default-off status, and for correction review of the merged DeepSets Brew-fallback
+quality-confirmation preparation; 2026-09-24 for the experimental DeepSets
+Brew-fallback mechanism/timing smoke;
 2026-09-23 for the frozen Silver prior online gameplay screen;
 2026-09-21 for the complete frozen Silver internal-node FPU cohort and local 80-source learned-prefix scale validation;
 2026-09-20 for the tactical-prefix Silver oracle headroom screen
@@ -73,6 +75,18 @@ not considered cleared.
 
 Semantic confirmation section verified 2026-09-10 at producer `a6c2abb`;
 other sections retain their prior verification and linked evidence.
+
+## Merged DeepSets CTM Brew-fallback quality confirmation
+
+The independent 512-pair gameplay confirmation is **`PREPARATION_COMPLETE_RUN_BLOCKED`**.
+The frozen source, artifacts, clean C/H manifests, analyzer, and local
+mechanism/provenance checks are prepared and reviewed. No canary or quality
+seed has run. The designated GCP research instance `sts-test` was not found in
+`sts-ai-502709/europe-west3-c`; no replacement host or local seed run was
+used. The gameplay-quality result is therefore **unknown**, and the opt-in
+DeepSets treatment remains unqualified. Resume only on the designated instance
+after verifying and inventorying its existing checkout and output paths. See
+[the evidence and resume packet](../../experiments/evidence/deepset_entropic_brew_hybrid_confirmation_2026-09-24/README.md).
 
 ## Purpose
 

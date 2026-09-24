@@ -454,8 +454,13 @@ int search::SilverRolloutAgent::getIncomingDamage(const BattleContext &bc) const
         if (m.isDeadOrEscaped() || m.isHalfDead()) {
             continue;
         }
-        DamageInfo dInfo = m.getMoveBaseDamage(bc);
-        dInfo.damage = m.calculateDamageToPlayer(bc, dInfo.damage);
+        DamageInfo dInfo;
+        if (m.pendingMoveRolls > 0) {
+            dInfo = {5 * act, 1};   // hidden intent: Silver's flat estimate
+        } else {
+            dInfo = m.getMoveBaseDamage(bc);
+            dInfo.damage = m.calculateDamageToPlayer(bc, dInfo.damage);
+        }
         incomingDamage += dInfo.damage * dInfo.attackCount;
     }
     return incomingDamage;

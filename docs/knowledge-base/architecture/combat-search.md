@@ -163,10 +163,16 @@ the dedup node equal to the new live view when one exists (compacting at the
 32,768-node cap), applies the same flat or retained-root adaptive budgets as
 the vendored backend, and maps the chosen root action to the live state by
 card identity (`SilverSearcher::translateAction`). The knowledge observer is
-detached while searching. Known gaps against the vendored model: Runic Dome
-intents are visible; Gambling Chip and Purity selections are atomic subsets;
-the vendored reroot repairs are replaced by multiset equality plus action
-translation. On the standard 128-seed block it won 86/128 against the
+detached while searching. Under Runic Dome the root uses the tracker's public
+pre-roll monster state and sets `BattleContext::intentsHidden`: monster rolls
+(and Looter/Mugger's post-Mug choice) are then deferred in
+`Monster::pendingMoveRolls` until the move is used (`takeTurn`) or queried
+(Spot Weakness), overrides discard them (`cancelPendingMove`), and rollouts
+materialize them before deciding. `getMoveForRoll` reads the roll-time
+`MonsterRollInputs`, so real play (where `intentsHidden` is always false) is
+unchanged. Remaining gaps against the vendored model: Gambling Chip and Purity
+selections are atomic subsets; the vendored reroot repairs are replaced by
+multiset equality plus action translation. On the standard 128-seed block it won 86/128 against the
 vendored 83/128 (no detectable difference;
 [§348](../../experiments/ledger-06.md)). The vendored backend remains the
 default.

@@ -89,14 +89,47 @@ namespace sts::search {
         // concrete when its whole order is observed (Frozen Eye). The RNG streams
         // are replaced by public ones: the live streams determine the real future
         // (monster rolls, generated cards) and must never reach the search.
-        BattleContext searchRoot(const BattleContext &live, const CombatKnowledgeState &knowledge) {
-            BattleContext root = live;
+        //
+        // Under Runic Dome the concrete rolled intents are hidden too: each
+        // monster gets the public pre-roll move history and misc info from the
+        // knowledge tracker, and the rolls still to happen are left pending so
+        // the search samples them when the move is used or queried. Returns an
+        // empty string, or why the live view cannot be represented.
+        std::string searchRoot(const BattleContext &live, const CombatKnowledgeState &knowledge,
+                               BattleContext &root) {
+            root = live;
             const auto view = makeSilverDrawPileObservation(live, knowledge);
             if (!view.fullOrderObserved) {
                 root.cards.drawPile.assignInformationState(view.knownBottom, view.unknown, view.knownTop);
             }
+            if (knowledge.hiddenMonsterIntents) {
+                root.intentsHidden = true;
+                for (int i = 0; i < root.monsters.monsterCount; ++i) {
+                    Monster &m = root.monsters.arr[i];
+                    if (m.idx < 0) continue;
+                    if (!knowledge.hasPublicMonsterState[i]) {
+                        return "missing public hidden-intent state for monster " + std::to_string(i);
+                    }
+                    m.moveHistory[0] = static_cast<MMID>(knowledge.publicMonsterMoveHistory[i][0]);
+                    m.moveHistory[1] = static_cast<MMID>(knowledge.publicMonsterMoveHistory[i][1]);
+                    m.miscInfo = knowledge.publicMonsterMiscInfo[i];
+                    m.pendingMoveRolls = knowledge.pendingHiddenIntentRolls[i];
+                    m.pendingRollInputs = knowledge.pendingHiddenIntentInputs[i];
+                    m.pendingDirectMoveChoice = 0;
+                    if (knowledge.hasUnrepresentableHiddenIntent[i]) {
+                        // Looter/Mugger choose their next move directly after a Mug.
+                        if (m.id == MonsterId::LOOTER && m.moveHistory[0] == MMID::LOOTER_MUG) {
+                            m.pendingDirectMoveChoice = 1;
+                        } else if (m.id == MonsterId::MUGGER && m.moveHistory[0] == MMID::MUGGER_MUG) {
+                            m.pendingDirectMoveChoice = 2;
+                        } else {
+                            return "unsupported hidden direct intent for monster " + std::to_string(i);
+                        }
+                    }
+                }
+            }
             seedSearchRng(root, searchBattleSeed(live));
-            return root;
+            return {};
         }
 
         void runNativeSilverCombat(ScumSearchAgent2 &agent, GameContext &gc, BattleContext &bc) {
@@ -129,7 +162,10 @@ namespace sts::search {
                     fail(gc, bc, "knowledge tracker lost consistency");
                 }
 
-                const BattleContext root = searchRoot(bc, knowledge);
+                BattleContext root;
+                if (const auto error = searchRoot(bc, knowledge, root); !error.empty()) {
+                    fail(gc, bc, "conversion: " + error);
+                }
                 std::int64_t inheritedVisits = 0;
                 SilverSearcher::Node *node = searcher ? searcher->findNode(root) : nullptr;
                 if (node != nullptr && !node->isRandomNode) {

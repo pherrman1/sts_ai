@@ -36,6 +36,7 @@ MANIFEST_KEYS = {
     "binary", "artifacts", "common_env", "required_env",
     "expect_silver_telemetry", "command", "arms",
 }
+MANIFEST_V2_KEYS = MANIFEST_KEYS | {"environment_policy"}
 
 
 def gcloud_path() -> str:
@@ -152,9 +153,14 @@ def load_run_manifest(path: Path) -> dict:
         payload = json.loads(path.read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError) as exc:
         raise ValueError(f"cannot read run manifest {path}: {exc}") from exc
-    _require(isinstance(payload, dict) and set(payload) == MANIFEST_KEYS,
-             "run manifest has unknown or missing top-level fields")
-    _require(payload["schema_version"] == 1, "unsupported run manifest schema_version")
+    _require(isinstance(payload, dict), "run manifest must be a JSON object")
+    version = payload.get("schema_version")
+    expected_keys = MANIFEST_KEYS if version == 1 else MANIFEST_V2_KEYS if version == 2 else set()
+    _require(bool(expected_keys) and set(payload) == expected_keys,
+             "run manifest has unknown or missing top-level fields, or unsupported schema_version")
+    environment_policy = "inherit" if version == 1 else payload["environment_policy"]
+    _require(environment_policy in {"inherit", "clean"},
+             "manifest environment_policy must be 'inherit' or 'clean'")
     _require(isinstance(payload["experiment_id"], str)
              and re.fullmatch(r"[A-Za-z0-9._-]+", payload["experiment_id"]) is not None,
              "manifest experiment_id must be a safe non-empty identifier")
@@ -194,6 +200,9 @@ def load_run_manifest(path: Path) -> dict:
     except (KeyError, ValueError) as exc:
         raise ValueError("manifest OMP_NUM_THREADS must be a positive integer") from exc
     _require(omp_threads > 0, "manifest OMP_NUM_THREADS must be a positive integer")
+    if environment_policy == "clean":
+        _require("HOME" in common_env and "PATH" in common_env,
+                 "clean environment manifests must explicitly set HOME and PATH")
     _require(isinstance(payload["expect_silver_telemetry"], bool),
              "manifest expect_silver_telemetry must be boolean")
     if payload["expect_silver_telemetry"]:
@@ -227,7 +236,10 @@ def load_run_manifest(path: Path) -> dict:
     _require(isinstance(arms, list) and arms, "manifest arms must be a non-empty list")
     names: list[str] = []
     for index, arm in enumerate(arms):
-        _require(isinstance(arm, dict) and set(arm) == {"name", "results", "log", "env"},
+        arm_keys = {"name", "results", "log", "env"}
+        if version == 2:
+            arm_keys.add("fresh_outputs")
+        _require(isinstance(arm, dict) and set(arm) == arm_keys,
                  f"manifest arms[{index}] has unknown or missing fields")
         _require(isinstance(arm["name"], str)
                  and re.fullmatch(r"[A-Za-z0-9._-]+", arm["name"]) is not None,
@@ -235,6 +247,11 @@ def load_run_manifest(path: Path) -> dict:
         for key in ("results", "log"):
             _require(isinstance(arm[key], str) and arm[key],
                      f"manifest arms[{index}].{key} must be a non-empty remote path")
+        fresh_outputs = arm.get("fresh_outputs", [])
+        _require(isinstance(fresh_outputs, list)
+                 and all(isinstance(value, str) and value for value in fresh_outputs)
+                 and len(fresh_outputs) == len(set(fresh_outputs)),
+                 f"manifest arms[{index}].fresh_outputs must contain unique non-empty paths")
         env = arm["env"]
         _require(isinstance(env, dict)
                  and all(isinstance(k, str) and re.fullmatch(r"[A-Z_][A-Z0-9_]*", k)
@@ -255,8 +272,9 @@ def load_run_manifest(path: Path) -> dict:
         names.append(arm["name"])
     _require(len(names) == len(set(names)), "manifest arm names must be unique")
     sidecars = [".meta.json"] if mode == "bestbench" else [".provenance.json"]
-    expanded_outputs = [path for arm in arms
-                        for path in (arm["results"], *(arm["results"] + suffix for suffix in sidecars), arm["log"])]
+    expanded_outputs = [path for arm in arms for path in (
+        arm["results"], *(arm["results"] + suffix for suffix in sidecars),
+        arm["log"], *arm.get("fresh_outputs", []))]
     _require(len(expanded_outputs) == len(set(expanded_outputs)),
              "manifest result/log/sidecar paths must be unique across arms")
     _require(not (set(expanded_outputs) & set(file_paths)),
@@ -271,10 +289,15 @@ def manifest_arm(manifest: dict, name: str) -> tuple[list[str], str, list[str]]:
     env = {**manifest["common_env"], **arm["env"]}
     command = [arm["results"] if token == "{results}" else token
                for token in manifest["command"]]
-    rendered = ["env", *(f"{key}={env[key]}" for key in sorted(env)), *command]
+    rendered = ["env"]
+    if manifest.get("environment_policy") == "clean":
+        rendered.append("-i")
+    rendered.extend(f"{key}={env[key]}" for key in sorted(env))
+    rendered.extend(command)
     mode = manifest["command"][1]
     suffixes = [".meta.json"] if mode == "bestbench" else [".provenance.json"]
-    fresh = [arm["results"], *(arm["results"] + suffix for suffix in suffixes), arm["log"]]
+    fresh = [arm["results"], *(arm["results"] + suffix for suffix in suffixes),
+             arm["log"], *arm.get("fresh_outputs", [])]
     return rendered, arm["log"], fresh
 
 
@@ -381,10 +404,12 @@ def remote_run(args: argparse.Namespace) -> int:
         raise SystemExit("run requires a command after --")
     command_text = shlex.join(command)
     guard_mode = "guard-only " if args.guard_only else ""
+    guard_path = getattr(args, "guard_path", "tools/seed_guard.sh")
     guard = (
         "env STS_GCP_RESEARCH_CONTEXT=sts-test "
-        f"bash tools/seed_guard.sh --gcp-research {guard_mode}{command_text}"
+        f"bash {shlex.quote(guard_path)} --gcp-research {guard_mode}{command_text}"
     )
+    guard_preflight = f"test -f {shlex.quote(guard_path)}; command -v bash >/dev/null; "
     check = "ps -eo pid=,comm= | awk '$2 == \"one_combat\" {print; found=1} END {exit !found}' || true"
     if args.guard_only:
         check = ":"
@@ -400,11 +425,7 @@ def remote_run(args: argparse.Namespace) -> int:
     fresh_paths = getattr(args, "fresh_paths", [])
     if fresh_paths:
         absolute = [designated_remote_path(args, path, "run-manifest") for path in fresh_paths]
-        clauses = " ".join(
-            f"test ! -e {shlex.quote(path)} || {{ echo 'refusing existing output: {path}' >&2; exit 2; }};"
-            for path in absolute
-        )
-        check = clauses + " " + check
+        check = fresh_output_guard(absolute) + " " + check
 
     if args.foreground:
         log = args.log
@@ -416,7 +437,7 @@ def remote_run(args: argparse.Namespace) -> int:
         remote = (
             "set -euo pipefail; "
             f"cd {shlex.quote(args.remote_root)}; "
-            "test -f tools/seed_guard.sh; command -v bash >/dev/null; mkdir -p logs results; "
+            f"{guard_preflight}mkdir -p logs results; "
             f"{log_preflight}{check}; {capture}"
         )
         return ssh_command(args, remote)
@@ -425,14 +446,23 @@ def remote_run(args: argparse.Namespace) -> int:
     log = args.log or f"{args.remote_root}/logs/gcp_benchmark_{stamp}.log"
     remote = (
         "set -euo pipefail; "
-        f"cd {shlex.quote(args.remote_root)}; "
-        "test -f tools/seed_guard.sh; command -v bash >/dev/null; "
-        "command -v nohup >/dev/null; mkdir -p logs; "
-        f"{check}; "
-        f"nohup {guard} >{shlex.quote(log)} 2>&1 < /dev/null & pid=$!; "
-        f"echo remote_pid=$pid; echo remote_log={shlex.quote(log)}"
+        + f"cd {shlex.quote(args.remote_root)}; "
+        + guard_preflight
+        + "command -v nohup >/dev/null; mkdir -p logs; "
+        + f"{check}; "
+        + f"nohup {guard} >{shlex.quote(log)} 2>&1 < /dev/null & pid=$!; "
+        + f"echo remote_pid=$pid; echo remote_log={shlex.quote(log)}"
     )
     return ssh_command(args, remote)
+
+
+def fresh_output_guard(paths: list[str]) -> str:
+    """Return remote shell checks that reject files, directories, and symlinks."""
+    return " ".join(
+        f"if test -e {shlex.quote(path)} || test -L {shlex.quote(path)}; then "
+        f"echo 'refusing existing output' {shlex.quote(path)} >&2; exit 2; fi;"
+        for path in paths
+    )
 
 
 def manifest_check(args: argparse.Namespace) -> int:
@@ -444,6 +474,8 @@ def manifest_check(args: argparse.Namespace) -> int:
     for arm in manifest["arms"]:
         designated_remote_path(args, arm["results"], "manifest-check")
         designated_remote_path(args, arm["log"], "manifest-check")
+        for path in arm.get("fresh_outputs", []):
+            designated_remote_path(args, path, "manifest-check")
     print(
         f"research_manifest PASS experiment={manifest['experiment_id']} "
         f"sha={manifest['frozen_sha']} arms={len(manifest['arms'])} "
@@ -459,6 +491,9 @@ def manifest_run(args: argparse.Namespace) -> int:
     args.command = command
     args.log = log
     args.fresh_paths = fresh
+    args.guard_path = designated_remote_path(
+        args, manifest["checkout"] + "/tools/seed_guard.sh", "run-manifest"
+    )
     return remote_run(args)
 
 
@@ -468,10 +503,14 @@ def exact_sha_preflight(args: argparse.Namespace) -> int:
     checkout = designated_remote_path(args, manifest["checkout"], "exact-sha-preflight")
     build_dir = designated_remote_path(args, manifest["build_dir"], "exact-sha-preflight")
     binary = designated_remote_path(args, manifest["binary"]["remote_path"], "exact-sha-preflight")
+    guard = designated_remote_path(args, manifest["checkout"] + "/tools/seed_guard.sh",
+                                   "exact-sha-preflight")
     commands = [
         "set -euo pipefail",
         f"test \"$(git -C {shlex.quote(checkout)} rev-parse HEAD)\" = {manifest['frozen_sha']}",
         f"test -z \"$(git -C {shlex.quote(checkout)} status --porcelain --untracked-files=no)\"",
+        f"git -C {shlex.quote(checkout)} ls-files --error-unmatch tools/seed_guard.sh >/dev/null",
+        f"test -f {shlex.quote(guard)}",
         f"test -f {shlex.quote(build_dir + '/CMakeCache.txt')}",
         f"grep -Fx {shlex.quote('CMAKE_HOME_DIRECTORY:INTERNAL=' + checkout)} "
         f"{shlex.quote(build_dir + '/CMakeCache.txt')} >/dev/null",
