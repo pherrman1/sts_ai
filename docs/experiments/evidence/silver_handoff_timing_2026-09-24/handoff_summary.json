@@ -1,0 +1,23 @@
+{
+  "combats": 3245,
+  "decisions": 59961,
+  "simulations": 377256000,
+  "decision_seconds": 4818.55145527,
+  "fraction": {
+    "conversion": 6.258968422349269e-05,
+    "materialize": 4.229422511968994e-05,
+    "root_setup": 0.025602564520520874,
+    "search": 0.9735947849657508,
+    "resolution": 1.6414370113967834e-05,
+    "handoff": 0.025723862799978025,
+    "other": 0.0006813522342712583
+  },
+  "mean_micros_per_decision": {
+    "conversion": 5.02979626757393,
+    "materialize": 3.3988242357532217,
+    "root_setup": 2057.4585902336503,
+    "search": 78239.46511799337,
+    "resolution": 1.3190821867547255,
+    "handoff": 2067.2062929237322
+  }
+}
