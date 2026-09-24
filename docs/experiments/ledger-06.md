@@ -11769,13 +11769,16 @@ remain unchanged.
   evidence are committed in
   [the audit packet](evidence/vwin_terminal_pricing_audit_20260924/README.md).
   See the machine-readable [results](evidence/vwin_terminal_pricing_audit_20260924/results.json).
-- **Checks:** `cmake --preset linux-gcc-release` configured and
-  `cmake --build build/linux-gcc-release --target one_combat -j2` passed on
-  merged current-main source. Focused CTest passed 3/3
+- **Checks:** On audit source `812fb8afb9413a5e277d3aaebdda98e95ff7f4c0`,
+  which includes `origin/main` base `01f6f164a0fe757ec174738ac3a2f0fb98c2462d`,
+  `cmake --preset linux-gcc-release` configured and `cmake --build
+  build/linux-gcc-release --target one_combat -j2` passed. Focused CTest
+  passed 3/3
   (`winnettest_selftest`, `vwin_terminal_pricing_audit_selftest`,
   `export_win_model_selftest`); Python compilation and the analyzer self-test
-  passed. Native/Python parity passed again on 600 rows after the build, max
-  difference 0.000000. The build emitted a narrowing-conversion warning in
+  passed earlier with unchanged audit tooling. Native/Python parity passed
+  again on 600 rows after the latest-main build, max and mean difference
+  0.000000. The build emitted a narrowing-conversion warning in
   unrelated run-timing code and an ODR warning for `Path` across root and
   bundled `SimpleAgent.cpp`. Full CTest and GitHub Actions CI were not run at
   this point; no gameplay seed was rerun for verification.

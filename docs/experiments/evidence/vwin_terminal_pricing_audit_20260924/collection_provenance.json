@@ -200,5 +200,33 @@
         "unique_seeds": 35
       }
     ]
+  },
+  "latest_main_revalidation": {
+    "source_commit": "812fb8afb9413a5e277d3aaebdda98e95ff7f4c0",
+    "origin_main_base_sha": "01f6f164a0fe757ec174738ac3a2f0fb98c2462d",
+    "configure": "cmake --preset linux-gcc-release",
+    "configure_result": "PASS",
+    "build": "cmake --build build/linux-gcc-release --target one_combat -j2",
+    "build_result": "PASS",
+    "build_warnings": "Release build succeeded; emitted existing narrowing-conversion warning in apps/one_combat.cpp timing aggregate and an ODR warning involving duplicate Path definitions in root and bundled SimpleAgent.cpp, followed by the LTO serial-compilation note.",
+    "focused_ctest": {
+      "failed": 0,
+      "passed": 3,
+      "selection": [
+        "winnettest_selftest",
+        "vwin_terminal_pricing_audit_selftest",
+        "export_win_model_selftest"
+      ]
+    },
+    "native_parity_command": "build/linux-gcc-release/one_combat winnettest models/v_win_trees.txt build/vwin_pricing/parity_raw_600.csv 600 > build/vwin_pricing/native_prediction_600_after_01f6f164.txt",
+    "python_parity_command": "python3 tools/analysis/parity_vwin.py build/vwin_pricing/parity_raw_600.csv models/v_win_trees.txt build/vwin_pricing/native_prediction_600_after_01f6f164.txt",
+    "parity_rows": 600,
+    "max_absolute_probability_difference": 0.0,
+    "mean_absolute_probability_difference": 0.0,
+    "parity_tolerance": 0.0001,
+    "result": "PASS",
+    "full_ctest_run": false,
+    "github_actions_ci": "pending draft PR",
+    "gameplay_seeds_run": 0
   }
 }

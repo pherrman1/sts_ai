@@ -22,6 +22,26 @@ Raw outcome:
   tolerance: 1e-4
   PASS
 
-This gate completed before Q1-Q5 were computed. After merging the branch with
-current origin/main and rebuilding one_combat in Release, the same 600-row
-parity check was repeated and again reported max/mean difference 0.000000.
+This gate completed before Q1-Q5 were computed. After each synchronization
+with current origin/main, one_combat was rebuilt in Release and the same
+600-row parity check was repeated. The latest run used audit source
+812fb8afb9413a5e277d3aaebdda98e95ff7f4c0, based on origin/main
+01f6f164a0fe757ec174738ac3a2f0fb98c2462d.
+
+Latest native command:
+  build/linux-gcc-release/one_combat winnettest \
+    models/v_win_trees.txt build/vwin_pricing/parity_raw_600.csv 600 \
+    > build/vwin_pricing/native_prediction_600_after_01f6f164.txt
+Latest Python command:
+  python3 tools/analysis/parity_vwin.py \
+    build/vwin_pricing/parity_raw_600.csv \
+    models/v_win_trees.txt \
+    build/vwin_pricing/native_prediction_600_after_01f6f164.txt
+
+Latest raw outcome:
+  parsed 600 C++ predictions
+  compared 600 rows
+  max |diff|: 0.000000
+  mean |diff|: 0.000000
+  tolerance: 1e-4
+  PASS

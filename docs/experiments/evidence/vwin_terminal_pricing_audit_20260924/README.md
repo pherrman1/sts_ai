@@ -62,8 +62,9 @@ canonical rich-state block and the 448 model features aligned by feature name.
 Native `winnettest` and Python predictions agreed on all 600 rows: maximum and
 mean absolute probability difference were both 0.000000, below the frozen
 `1e-4` tolerance. See [`parity_summary.txt`](parity_summary.txt).
-After synchronization with current `origin/main`, `one_combat` was rebuilt in
-Release and the same parity gate passed again on all 600 rows.
+The parity gate was repeated after synchronization with `origin/main`; the
+latest-main build and result are recorded below and in
+[`parity_summary.txt`](parity_summary.txt).
 
 Every confidence interval below uses a 2,000-replicate percentile bootstrap
 over source seeds with RNG seed `20260924`. Two complete runs of the audit
@@ -243,17 +244,18 @@ updated at BattleContext.cpp:550-596 and encoded in run_features.cpp:90-94.
 - The local raw E2c CSVs are not committed. This packet preserves result JSON,
   aggregate tables, segment provenance/schema for the completed remainder,
   integrity accounting, parity outcome, smoke summaries, and native latency.
-- **Checks on the merged current-main source:** `cmake --preset
-  linux-gcc-release` configured successfully; `cmake --build
-  build/linux-gcc-release --target one_combat -j2` passed. The Release build
-  emitted a narrowing-conversion warning in the run-time aggregate and an ODR
-  warning for `Path` in the root and bundled `SimpleAgent.cpp`, plus the LTO
-  serial-compilation note; these are outside the audit changes.
-- Focused CTest passed **3/3**:
+- **Latest-main checks:** audit source `812fb8afb9413a5e277d3aaebdda98e95ff7f4c0`
+  includes `origin/main` base `01f6f164a0fe757ec174738ac3a2f0fb98c2462d`.
+  `cmake --preset linux-gcc-release` configured successfully and `cmake
+  --build build/linux-gcc-release --target one_combat -j2` passed. The Release
+  build emitted a narrowing-conversion warning in the run-time aggregate and
+  an ODR warning for `Path` in the root and bundled `SimpleAgent.cpp`, plus
+  the LTO serial-compilation note; these are outside the audit changes.
+- Focused CTest on that source passed **3/3**:
   `winnettest_selftest`, `vwin_terminal_pricing_audit_selftest`, and
-  `export_win_model_selftest`. Python compilation and the analyzer
-  self-test passed. Native/Python parity passed again after the merged build
-  on 600 rows with max/mean difference 0.000000.
+  `export_win_model_selftest`. Python compilation and the analyzer self-test
+  passed earlier in the same unchanged audit tooling. Native/Python parity was
+  repeated after this build on 600 rows with max/mean difference 0.000000.
 - Full CTest and GitHub Actions CI have not been run at this point; the draft
   PR will provide the authoritative CI status. No additional gameplay seeds
   were run for these checks.
