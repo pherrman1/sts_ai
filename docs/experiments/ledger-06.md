@@ -11485,3 +11485,37 @@ parity test, or gameplay qualification followed. Production
 
 **Knowledge impact:** targeted descriptive evidence only; qualification and
 runtime boundary unchanged.
+
+### §341 — Minimal active Lizard correction diagnostic (2026-09-24)
+
+On the same 128-pair cohort, the fixed `T2` revive-HP transform lowered
+consumed-win HP NLL by `1.084` nat on 22 supported rows (paired source-bootstrap
+95% CI `[-2.165,-0.331]`). Its HP CRPS point estimate also improved; the CI
+crossed zero. `T1` improved HP scores more, but showed positive paired
+relic-constraint deltas for attacks, shuffles, and turns, so it was not
+retained. T2 is an offline development candidate only; neither transform
+qualifies the reused heads.
+
+The 3-class labels were 96 `WIN_RETAINED`, 27 `WIN_CONSUMED`, and five
+`LOSS_CONSUMED`. Six Fairy Potion rows were left at the exact boundary, leaving
+122 modeled rows; Mark of the Bloom remains excluded. B1 mechanical reserve was
+coherent on all modeled rows. The 5-fold source-grouped L2 q/r correction had
+NLL `0.5641` / Brier `0.3181`, versus B1 `0.5774` / `0.3279`, but paired
+source-bootstrap intervals for correction-minus-B1 included zero for both
+scores. The small correction therefore has no clear signal over B1, and five
+losses do not establish rescue prediction. Recommend collecting 20 additional
+`LOSS_CONSUMED` examples (25 total) before reassessing; this is not a
+qualification threshold.
+
+The 32-draw-per-supported-source offline prototype produced 3,136 class draws
+from 98 supported sources; 30 sources fell back under existing support or
+Fairy boundaries. There were zero impossible `LOSS_RETAINED` or
+spent-to-active transitions; all sampled Tail states matched class, all 3,019
+victory states had legal HP, and all terminal snapshots had legal potion and
+persistent relic state. No runtime sampler, model artifact, or production
+support changed. Classification: `LIZARD_MINIMAL_CORRECTION_DATA_LIMITED`.
+See the [Phase A-C evidence packet](evidence/lizard_tail_targeted_rescue_2026-09-23/README.md#minimal-three-state-correction-diagnostic)
+and raw [analysis JSON](evidence/lizard_tail_targeted_rescue_2026-09-23/minimal-correction-analysis.json).
+
+**Knowledge impact:** current research status and development evidence updated;
+production active-Tail qualification remains unchanged.

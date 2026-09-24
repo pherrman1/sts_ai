@@ -790,6 +790,22 @@ evidence packet](../../experiments/evidence/lizard_tail_targeted_rescue_2026-09-
 and [ledger §340](../../experiments/ledger-06.md). The prior Lizard-head
 qualification rejection and production fail-closed guard remain unchanged.
 
+A same-cohort minimal three-state diagnostic found a promising fixed
+`T2` revive-HP conditioning input for consumed-Tail wins: HP NLL improved by
+`1.084` nat on 22 supported rows, while its CRPS interval crossed zero. `T1`
+was not retained because it showed clear paired degradation in three sparse
+relic constraint groups. Source-grouped q/r calibration slightly improved
+three-class NLL/Brier over the coherent mechanical reserve baseline, but both
+paired intervals included zero. Six Fairy Potion rows remained exact-boundary
+fallbacks, and the five `LOSS_CONSUMED` examples leave rescue prediction
+data-limited. The offline 32-draw diagnostic had zero impossible or invalid
+Tail-state transitions on 98 supported sources; 30 sources used existing
+support/native fallbacks. Classification is
+`LIZARD_MINIMAL_CORRECTION_DATA_LIMITED`; no production support or model
+qualification changed. See the [Phase A-C packet](../../experiments/evidence/lizard_tail_targeted_rescue_2026-09-23/README.md#minimal-three-state-correction-diagnostic),
+[analysis JSON](../../experiments/evidence/lizard_tail_targeted_rescue_2026-09-23/minimal-correction-analysis.json),
+and [ledger §341](../../experiments/ledger-06.md).
+
 The [frozen composed qualification protocol](../../experiments/evidence/composed_transition_2026-09-14.md)
 uses the original source-grouped **reused engineering TEST**, exact HP marginal
 over 11 maxHP classes, and 32 ancestral draws for potion/relic and complete states,

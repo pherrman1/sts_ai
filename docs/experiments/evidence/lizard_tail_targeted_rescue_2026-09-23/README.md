@@ -142,3 +142,127 @@ native/Python parity, or gameplay qualification changed.
   and model artifact hashes; the actual producer identities are recorded.
 - Frozen ordinary CTM model hashes are recorded in `targets.json` and
   `analysis.json`.
+
+## Minimal three-state correction diagnostic
+
+The follow-up used the same 128 pairs and frozen ordinary CTM heads. It did not
+collect more fights or change production behavior. Source JSONL, pair manifest,
+and target-selection hashes are repeated in
+`minimal-correction-analysis.json`; the SHA-256 of that analysis artifact is
+`0255a9c6b90c8ce305d99f4bc68b0d56dea5e892ae4979ff2b938c31312b5459`. The
+analysis implementation is `364e0cc9d8e22ac880bee5feace2829dfe2ecf3a` on top
+of the previously pushed cohort branch head `3186d3e505f55c82b008798edfacfd56a4a047bd`.
+
+### Phase A: fixed conditional HP input treatments
+
+The 27 `WIN_CONSUMED` rows were rescored, with 22 rows supported by existing
+conditional heads and five still excluded by current hard support rules. No
+transformed target left the frozen HP domain. `T0` uses ordinary starting HP;
+`T1` adds `floor(maxHP/2)` capped at maxHP; `T2` starts the conditional heads
+at `floor(maxHP/2)`. Metrics below are means over the 22 scoreable rows.
+
+| Treatment | HP NLL | HP CRPS | Expected HP MAE | maxHP NLL | Potion-mask NLL |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| T0 ordinary | 5.121 | 11.892 | 15.917 | 0.01037 | 0.874 |
+| T1 reserve | 4.036 | 7.818 | 10.424 | 0.00994 | 0.809 |
+| T2 revive | 4.037 | 9.938 | 14.127 | 0.01042 | 0.769 |
+
+Supported relic-constraint mean NLLs (counts are sparse):
+
+| Treatment | Attacks (n=5) | Cards (n=4) | Shuffles (n=2) | Turns (n=4) |
+| --- | ---: | ---: | ---: | ---: |
+| T0 ordinary | 2.086 | 2.428 | 0.798 | 1.281 |
+| T1 reserve | 2.357 | 2.327 | 0.875 | 1.572 |
+| T2 revive | 2.145 | 2.213 | 1.043 | 1.367 |
+
+Paired source-bootstrap T1-minus-T0 HP NLL was `-1.085` (95% CI
+`[-2.161,-0.320]`), CRPS `-4.074` (`[-8.515,-0.134]`), and expected HP MAE
+`-5.493` (`[-10.718,-0.683]`). T1 had clear score degradation in supported
+relic constraints for attacks (+0.271, 5 pairs, CI `[+0.022,+0.509]`),
+shuffles (+0.077, 2 pairs, `[+0.019,+0.135]`), and turns (+0.291, 4 pairs,
+`[+0.231,+0.350]`), so it was not retained.
+
+T2-minus-T0 HP NLL was `-1.084` (95% CI `[-2.165,-0.331]`), HP CRPS `-1.954`
+(`[-5.769,+1.689]`), and expected HP MAE `-1.790` (`[-6.170,+2.468]`).
+maxHP NLL delta was `+0.000043` (`[-0.000128,+0.000237]`), potion-mask NLL
+delta `-0.105` (`[-0.222,-0.015]`). No supported relic-group interval showed a
+clear degradation; group counts were only 2–5. **T2 is retained as a
+development candidate**, because HP NLL improved with its interval below zero,
+CRPS improved in point estimate, MAE did not worsen in point estimate, and no
+domain or clear downstream issue was found. Its CRPS interval crosses zero, so
+this is not a qualification result.
+
+### Phase B: coherent three-class outcome model
+
+The observed legal class counts across all pairs were 96 `WIN_RETAINED`, 27
+`WIN_CONSUMED`, and five `LOSS_CONSUMED`; no `LOSS_RETAINED` is representable.
+Six Fairy Potion rows were excluded from q/r fitting and remain an exact
+precedence boundary. The modeled set therefore had 122 rows: 92 retained wins,
+25 consumed wins, and five consumed losses. Mark of the Bloom remains an exact
+boundary and was absent from this cohort.
+
+The fixed B0 source-grouped train-frequency baseline scored three-class NLL
+`0.6868`, multiclass Brier `0.3927`, and mode accuracy `75.4%`. B1's mechanical
+reserve probabilities were coherent on all 122 rows; its NLL was `0.5774`,
+Brier `0.3279`, and mode accuracy `78.7%`. The five-fold, source-grouped L2
+factorized correction used only `logit(pDeath)` and reserve uplift for q, and
+`pReserveWin` for r. Out-of-fold NLL was `0.5641`, Brier `0.3181`, and mode
+accuracy `80.3%`. The correction-minus-B1 paired bootstrap intervals included
+zero for both NLL (`-0.0134`, CI `[-0.0917,+0.0628]`) and Brier (`-0.0098`,
+`[-0.0311,+0.0144]`), so it has no clear signal over the mechanical baseline.
+
+Consumption q scored Brier `0.1417` / NLL `0.4378` on 122 rows. Conditional
+rescue r scored Brier `0.1575` / NLL `0.5136` on 30 consumed rows, including
+the five losses. Held-out fold r Brier ranged from `0.047` to `0.396`; raw
+calibration coefficient ranges were q intercept `[-1.117,-0.692]`, q logit-risk
+`[+0.458,+0.586]`, q reserve-uplift `[+0.988,+2.329]`, r intercept
+`[-0.466,+0.749]`, and r reserve-proxy coefficient `[+1.327,+2.223]`. Observed
+versus mean predicted class probabilities were B1: retained `0.754/0.723`,
+consumed-win `0.205/0.178`, consumed-loss `0.041/0.099`; correction:
+`0.754/0.754`, `0.205/0.205`, and `0.041/0.040` respectively.
+
+| Fold | Train consumed losses | q Brier / NLL | r rows, Brier / NLL | B0 / correction 3-class NLL |
+| ---: | ---: | ---: | ---: | ---: |
+| 0 | 5 | 0.156 / 0.476 | 7, 0.059 / 0.265 | 0.666 / 0.550 |
+| 1 | 4 | 0.107 / 0.359 | 6, 0.133 / 0.431 | 0.659 / 0.463 |
+| 2 | 3 | 0.144 / 0.432 | 6, 0.267 / 0.790 | 0.758 / 0.630 |
+| 3 | 5 | 0.188 / 0.549 | 7, 0.047 / 0.241 | 0.684 / 0.620 |
+| 4 | 3 | 0.115 / 0.374 | 4, 0.396 / 1.135 | 0.668 / 0.563 |
+
+Per-fold raw coefficients are in the JSON artifact. The 5 losses remain
+too few to establish rescue prediction. A useful next reassessment target is
+**20 additional `LOSS_CONSUMED` examples (25 total)**; this is a sample-size
+target for evidence, not a qualification guarantee.
+
+### Phase C: offline ancestral validity
+
+The prototype sampled 32 draws on each of 98 supported source states (3,136
+class draws); 30 states used fallback, including all six Fairy Potion rows and
+the existing unsupported mutation cases. It used out-of-fold factorized class
+probabilities and T2 for consumed wins. There were 2,363 retained wins, 656
+consumed wins, and 117 consumed losses. `LOSS_RETAINED` draws and
+spent-to-active transitions were both zero. All 3,136 class transitions agreed
+with Tail state; all 3,019 sampled victory states had legal HP, potion count,
+and persistent relic bits, and all 117 terminal loss snapshots passed the
+state-shape validation. No conditional-head fallback occurred after support
+admission. The fixed-seed sample digest was
+`b37f2957a36a7ff411b568218158796eac36b6cfe56a76beacc8c97d2a23d346` and
+matched a repeat run.
+
+**Classification: `LIZARD_MINIMAL_CORRECTION_DATA_LIMITED`.** T2 looks useful
+for consumed-win HP conditioning. The offline prototype reuses ordinary
+conditional postcombat heads with T0 on retained wins and T2 on consumed wins;
+this is promising development reuse, not runtime qualification. The factorized
+correction is coherent, but the five consumed losses do not establish r and
+the correction did not clearly beat B1. Fairy Potion and Mark of the Bloom
+boundaries, all current support exclusions, and production
+`active_unqualified_lizard` remain unchanged. Only fold-local logistic
+calibrators were fitted in memory for this diagnostic; no CTM head was
+retrained, and no calibration weights were persisted or exported. No
+native/Python parity, live gameplay, or runtime qualification was run.
+
+Raw command after freezing implementation SHA `364e0cc9d8e22ac880bee5feace2829dfe2ecf3a`:
+
+```text
+python3 -m tools.combat_transition_lizard_minimal --manifest docs/experiments/evidence/lizard_tail_targeted_rescue_2026-09-23/paired.jsonl.manifest.json --output docs/experiments/evidence/lizard_tail_targeted_rescue_2026-09-23/minimal-correction-analysis.json --draws 32
+```
