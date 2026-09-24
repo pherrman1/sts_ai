@@ -1,0 +1,74 @@
+{
+  "artifacts": {
+    "fast_ctm": "a23c0f86593fef2380c3efee3cf75783bf2b5e714395ec93237fac19376bfd1a",
+    "floor_model": "3a3420469b1d648e0e306d6cb6a7e85f3d3499105e3ff3a56eee6c579194ffe3",
+    "frozen_binary": "c08bdd7e37a26c0ad47d3b6e75c0e08dcc729fc49191553e0fcbbc169d10d244",
+    "specialist_source_checkpoint": "71d88a71cf7579e1092c3b3c27e000538a6aafe35bbf5228c10c15fa0edd4ace",
+    "standard_ctm": "e9a18951710fdfe9e1a81a2703090a41f039067c670a1d8a0393b5e7e8e0ddfd",
+    "v4_policy": "e62abd833fc8cb9081a1cec4a1a012832ac3b0e3166da3892841911664f1184c",
+    "win_model": "fc52c14cb7239a33b3c1f9d0477ccb6c895fd51a07240fe804744e605067ad70"
+  },
+  "decisionGate": {
+    "confirmed": "lower 95% paired-bootstrap CI for H-C is strictly greater than -0.05 and all integrity/mechanism checks pass",
+    "doNotPromoteDefaultInThisExperiment": true,
+    "noEarlyStopping": true,
+    "otherwise": "inconclusive",
+    "rejected": "upper 95% paired-bootstrap CI for H-C is strictly less than -0.05"
+  },
+  "excludedExploratoryCohort": {
+    "includedInPrimary": false,
+    "range": [
+      980000,
+      980063
+    ]
+  },
+  "experimentId": "deepset-entropic-brew-confirmation-2026-09-24",
+  "frozen": {
+    "ascension": 0,
+    "bootstrap": {
+      "interval": "two-sided percentile 95%",
+      "replicates": 500000,
+      "resamplingUnit": "paired seeds",
+      "rng": "NumPy PCG64",
+      "seed": 20260924
+    },
+    "branchBase": "c9ecfb2041f8061d89bd728b8dccded2e8e12adf",
+    "canarySeed": 989999,
+    "collectKeys": false,
+    "combatBudget": 10000,
+    "gitSha": "c9ecfb2041f8061d89bd728b8dccded2e8e12adf",
+    "nonInferiorityMargin": -0.05,
+    "oocMctsSimulations": 2048,
+    "pairedSeedCount": 512,
+    "primarySeedEnd": 990511,
+    "primarySeedStart": 990000,
+    "stopAfterAct": 3,
+    "threads": 24
+  },
+  "requiredReceipts": [
+    "results CSV",
+    ".meta.json",
+    "MCTS CSV trace",
+    "support JSONL",
+    "action JSONL",
+    "log per arm"
+  ],
+  "runBlocker": "The designated GCP instance sts-test was not found in project sts-ai-502709, zone europe-west3-c. No canary or confirmation seeds have run.",
+  "runManifests": {
+    "canary": "run-manifest-canary.json",
+    "confirmation": "run-manifest-confirmation.json"
+  },
+  "status": "PREPARATION_COMPLETE_RUN_BLOCKED",
+  "treatments": {
+    "C": {
+      "brewFallback": "unset",
+      "combatModel": "standard Attention CTM",
+      "sha256": "e9a18951710fdfe9e1a81a2703090a41f039067c670a1d8a0393b5e7e8e0ddfd"
+    },
+    "H": {
+      "brewFallbackModelSha256": "e9a18951710fdfe9e1a81a2703090a41f039067c670a1d8a0393b5e7e8e0ddfd",
+      "combatModel": "DeepSets CTM",
+      "sha256": "a23c0f86593fef2380c3efee3cf75783bf2b5e714395ec93237fac19376bfd1a"
+    }
+  }
+}

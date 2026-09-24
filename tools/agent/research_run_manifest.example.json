@@ -1,5 +1,6 @@
 {
-  "schema_version": 1,
+  "schema_version": 2,
+  "environment_policy": "clean",
   "experiment_id": "replace-with-experiment-id",
   "frozen_sha": "1111111111111111111111111111111111111111",
   "checkout": "checkouts/replace-with-experiment-id",
@@ -15,6 +16,8 @@
     }
   ],
   "common_env": {
+    "HOME": "/home/philippherrmann",
+    "PATH": "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
     "OMP_NUM_THREADS": "1",
     "STS_EXECUTABLE_GIT_SHA": "1111111111111111111111111111111111111111",
     "STS_SILVER_TELEMETRY": "1"
@@ -30,13 +33,15 @@
       "name": "A",
       "results": "results/replace-with-experiment-id-A.csv",
       "log": "logs/replace-with-experiment-id-A.log",
-      "env": {"STS_EXPERIMENT_ARM": "A"}
+      "env": {"STS_EXPERIMENT_ARM": "A"},
+      "fresh_outputs": []
     },
     {
       "name": "B",
       "results": "results/replace-with-experiment-id-B.csv",
       "log": "logs/replace-with-experiment-id-B.log",
-      "env": {"STS_EXPERIMENT_ARM": "B"}
+      "env": {"STS_EXPERIMENT_ARM": "B"},
+      "fresh_outputs": []
     }
   ]
 }
