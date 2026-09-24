@@ -372,10 +372,13 @@ one-option selections, with 471 of 502 continuing forced roots followed by a
 next decision that started from scratch. The user reports this as 6.3% of
 Silver compute. The supplied 64-fight, exact-10k comparison reports 59/64 wins
 in each arm, no paired flips, treatment ending HP +0.3, 4.6% fewer simulations
-and 6.7% lower wall time. That 64-fight raw packet and candidate/baseline SHAs
-were not available in this checkout, so the breakdown and comparison results
-were not independently verified here. The tracked 32-run packet's measurements
-remain historical results from before the bypass.
+and 6.7% lower wall time. This report predates the retained-session correction
+that preserves `previousBest` across zero-search singleton roots; it is
+pre-correction descriptive evidence and does not confirm the corrected
+implementation. That 64-fight raw packet and candidate/baseline SHAs were not
+available in this checkout, so the breakdown and comparison results were not
+independently verified here. The tracked 32-run packet's measurements remain
+historical results from before the bypass.
 
 The follow-up exact-10k sequential-checkpoint diagnostic on fresh seeds
 112--127 is **`LOGISTIC_DYNAMIC_RULE_REJECTED`** for the bounded offline

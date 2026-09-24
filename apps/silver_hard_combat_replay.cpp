@@ -28,7 +28,8 @@ nlohmann::json replayRow(const nlohmann::json &input, std::int64_t budget,
                          bool collectUidFragmentationDiagnostics,
                          bool collectRerootDiagnostics,
                          silver_bridge::SilverSearchContractMode contractMode,
-                         bool internalFpuEnabled, bool firstDecisionOnly) {
+                         bool internalFpuEnabled, bool firstDecisionOnly,
+                         bool skipSingletonSearch) {
     const auto started = std::chrono::steady_clock::now();
     nlohmann::json row = {
         {"case_id", input.value("case_id", "")},
@@ -75,7 +76,8 @@ nlohmann::json replayRow(const nlohmann::json &input, std::int64_t budget,
             return row;
         }
 
-        const auto result = silver_bridge::runSilverCombatReplay(wire, config);
+        const auto result = silver_bridge::runSilverCombatReplay(
+            wire, config, skipSingletonSearch);
         row["won"] = result.won;
         row["hp_end"] = result.terminalHp;
         row["max_hp"] = result.terminalMaxHp;
@@ -88,6 +90,7 @@ nlohmann::json replayRow(const nlohmann::json &input, std::int64_t budget,
         row["primitive_actions_executed"] = result.primitiveActionsExecuted;
         row["forced_selections_contracted"] = result.forcedSelectionsContracted;
         row["macro_selections_taken"] = result.macroSelectionsTaken;
+        row["singleton_search_skips"] = result.singletonSearchSkips;
         row["reroot_exact"] = result.rerootExact;
         row["reroot_fallback"] = result.rerootFallback;
         if (collectRerootDiagnostics) {
@@ -164,13 +167,14 @@ int main(int argc, char **argv) {
     if (argc < 3) {
         std::cerr << "usage: silver_hard_combat_replay SNAPSHOTS.jsonl BUDGET "
                      "[--arm control|A|B] [--uid-fragmentation] [--reroot-diagnostics] "
-                     "[--internal-fpu] [--first-decision-only]\n";
+                     "[--internal-fpu] [--first-decision-only] [--skip-singleton-search]\n";
         return 2;
     }
     bool collectUidFragmentationDiagnostics = false;
     bool collectRerootDiagnostics = false;
     bool internalFpuEnabled = false;
     bool firstDecisionOnly = false;
+    bool skipSingletonSearch = false;
     auto contractMode = silver_bridge::SilverSearchContractMode::CONTROL;
     for (int i = 3; i < argc; ++i) {
         const std::string option(argv[i]);
@@ -182,6 +186,8 @@ int main(int argc, char **argv) {
             internalFpuEnabled = true;
         } else if (option == "--first-decision-only") {
             firstDecisionOnly = true;
+        } else if (option == "--skip-singleton-search") {
+            skipSingletonSearch = true;
         } else if (option == "--arm" && i + 1 < argc) {
             const std::string arm(argv[++i]);
             if (arm == "control") contractMode = silver_bridge::SilverSearchContractMode::CONTROL;
@@ -210,6 +216,10 @@ int main(int argc, char **argv) {
         std::cerr << "simulation budget must be positive\n";
         return 2;
     }
+    if (firstDecisionOnly && skipSingletonSearch) {
+        std::cerr << "--skip-singleton-search requires complete-fight replay\n";
+        return 2;
+    }
 
     std::ifstream input(argv[1]);
     if (!input) {
@@ -224,7 +234,8 @@ int main(int argc, char **argv) {
             const auto row = replayRow(nlohmann::json::parse(line), budget,
                                        collectUidFragmentationDiagnostics,
                                        collectRerootDiagnostics, contractMode,
-                                       internalFpuEnabled, firstDecisionOnly);
+                                       internalFpuEnabled, firstDecisionOnly,
+                                       skipSingletonSearch);
             hadFailure = hadFailure || row.value("status", "") != "ok";
             std::cout << row.dump() << '\n';
         } catch (const std::exception &error) {

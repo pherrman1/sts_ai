@@ -908,6 +908,7 @@ struct SilverCombatReplayResult {
     int primitiveActionsExecuted = 0;
     int forcedSelectionsContracted = 0;
     int macroSelectionsTaken = 0;
+    int singletonSearchSkips = 0;
     std::array<int, 22> macroSelectionsByTask {};
     int rerootExact = 0;
     int rerootFallback = 0;
@@ -1119,9 +1120,12 @@ SilverDecisionResult runSilverSingletonDecisionWithoutSearch(
 
 // Replays one frozen fight entirely inside the isolated Silver model. The
 // caller must put the snapshot's stored deterministic benchmark seed in
-// `state.isolatedSearchSeed` before calling this function.
+// `state.isolatedSearchSeed` before calling this function. The optional
+// singleton bypass is benchmark-only and defaults off; when enabled, a
+// one-edge private root selects its retained edge without adding simulations.
 SilverCombatReplayResult runSilverCombatReplay(
-    const BattleStateWire &state, const SilverSearchConfig &config);
+    const BattleStateWire &state, const SilverSearchConfig &config,
+    bool skipSingletonSearch = false);
 // Run one root in two contiguous pieces on the same private search session.
 // The returned budgetDiagnostic is the only additional observation; the final
 // action and root state are those of the full-budget search.

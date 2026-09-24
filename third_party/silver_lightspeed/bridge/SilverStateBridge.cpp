@@ -3115,7 +3115,8 @@ std::uint64_t extendSilverReplayTraceHash(std::uint64_t hash, const std::string 
 } // namespace
 
 SilverCombatReplayResult runSilverCombatReplay(
-        const BattleStateWire &wire, const SilverSearchConfig &config) {
+        const BattleStateWire &wire, const SilverSearchConfig &config,
+        bool skipSingletonSearch) {
     SilverCombatReplayResult result;
     if (config.simulationsPerDecision <= 0) {
         result.failureReason = "invalid_simulation_budget";
@@ -3172,10 +3173,28 @@ SilverCombatReplayResult runSilverCombatReplay(
             const auto beforeHash = sts::search::hashBattleState(state);
             const auto beforeInputState = state.inputState;
             const auto beforeSelectedBits = state.cardSelectInfo.selectedBits;
-            ++result.mctsSearchInvocations;
-            if (state.inputState == sts::InputState::CARD_SELECT)
-                ++result.cardSelectSearchInvocations;
-            const auto decision = runCurrentRootDecision(*session, config);
+            bool singletonSearchSkipped = false;
+            SilverDecisionResult decision;
+            if (skipSingletonSearch && session->searcher != nullptr
+                    && session->searcher->root != nullptr
+                    && session->searcher->root->state != nullptr
+                    && !session->searcher->root->isRandomNode) {
+                if (session->searcher->root->edges.empty())
+                    session->searcher->enumerateActionsForNode(
+                        *session->searcher->root, *session->searcher->root->state);
+                if (session->searcher->root->edges.size() == 1) {
+                    decision = selectCurrentRootWithoutSearch(*session, config, false);
+                    singletonSearchSkipped = decision.accepted;
+                }
+            }
+            if (!singletonSearchSkipped) {
+                ++result.mctsSearchInvocations;
+                if (state.inputState == sts::InputState::CARD_SELECT)
+                    ++result.cardSelectSearchInvocations;
+                decision = runCurrentRootDecision(*session, config);
+            } else {
+                ++result.singletonSearchSkips;
+            }
             result.simulations += decision.simulations;
             result.telemetry.add(decision.telemetry);
             ++result.decisions;
