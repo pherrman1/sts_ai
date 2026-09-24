@@ -1,7 +1,7 @@
 # Combat search
 
 Last verified: 2026-09-25 against current main for the Silver-only dispatch
-(ADR-0020), and against the PR #314 review branch for its default-off §343
+(ADR-0020), and against the PR #314 review branch for its default-off §348
 scratch-pile boundary.
 
 ## Purpose
@@ -416,7 +416,7 @@ incompatible rows are not combined.
   derived.
 - Search mutates copies/determinizations. Only a canonical live-valid action
   may mutate the committed battle.
-- The §343 Silver rollout-cost candidate leaves retained tree `CardPile` states
+- The §348 Silver rollout-cost candidate leaves retained tree `CardPile` states
   canonical. `SilverSearchConfig::rolloutUnsortedPilesEnabled` defaults off;
   when explicitly enabled, only rollout scratch draw/discard/exhaust piles may
   keep the unknown region unordered. Unknown draws remain uniform over the
@@ -425,7 +425,7 @@ incompatible rows are not combined.
   canonicalized before bridge serialization. The representation can map a
   fixed RNG value to a different card while preserving the draw distribution.
   B remains experimental and is not qualified for default promotion. See
-  [ledger-06 §343](../../experiments/ledger-06.md) and the
+  [ledger-06 §348](../../experiments/ledger-06.md) and the
   [evidence packet](../../experiments/evidence/silver_rollout_cost_20260924/README.md).
 - Unresolved exit, empty action set, invalid edge, bridge failure, or model-load
   failure takes an explicit defensive path; it must not award progress, reuse

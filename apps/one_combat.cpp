@@ -3553,12 +3553,26 @@ int main(int argc, char **argv) {
         if (argc < 8) { std::cerr << "usage: one_combat combattransitiongen N_SEEDS SIMS ASC OUT.jsonl SEED_OFFSET TEACHER.json\n"; return 2; }
         combatTransitionGen(std::stoi(argv[2]), std::stoi(argv[3]), std::stoi(argv[4]),
                             argv[5], std::stoll(argv[6]), argv[7]);
+    } else if (mode == "combattransitionlizardtargetcandidategen") {
+        if (argc < 8) { std::cerr << "usage: one_combat combattransitionlizardtargetcandidategen N_SEEDS SIMS ASC OUT.jsonl SEED_OFFSET TEACHER.json\n"; return 2; }
+        combatTransitionGen(std::stoi(argv[2]), std::stoi(argv[3]), std::stoi(argv[4]),
+                            argv[5], std::stoll(argv[6]), argv[7], true);
+    } else if (mode == "combattransitionlizardgen") {
+        if (argc < 10) { std::cerr << "usage: one_combat combattransitionlizardgen N_SEEDS SIMS ASC OUT.jsonl SEED_OFFSET TEACHER.json BASELINE_SHA COLLECTOR_SHA\n"; return 2; }
+        activeLizardCombatTransitionGen(std::stoi(argv[2]), std::stoi(argv[3]),
+            std::stoi(argv[4]), argv[5], std::stoll(argv[6]), argv[7], argv[8], argv[9]);
+    } else if (mode == "combattransitionlizardtargetpairgen") {
+        if (argc < 10) { std::cerr << "usage: one_combat combattransitionlizardtargetpairgen N_PAIRS SIMS ASC OUT.jsonl TARGETS.json TEACHER.json BASELINE_SHA COLLECTOR_SHA\n"; return 2; }
+        activeLizardPairTransitionGen(std::stoi(argv[2]), std::stoi(argv[3]),
+            std::stoi(argv[4]), argv[5], argv[6], argv[7], argv[8], argv[9]);
     } else if (mode == "combattransitionselftest") {
         if (argc < 4) {
             std::cerr << "usage: one_combat combattransitionselftest OUT.jsonl MANIFEST.json\n";
             return 2;
         }
         return combatTransitionFixture(argv[2], argv[3]);
+    } else if (mode == "combattransitionlizardselftest") {
+        return activeLizardTransitionSelfTest();
     } else if (mode == "combatevalgen") {
         if (argc < 8) { std::cerr << "usage: one_combat combatevalgen N_SEEDS SIMS ASC OUT.csv SEED_OFFSET TEACHER.json [RUNOUT.csv]\n"; return 2; }
         combatEvalGen(std::stoi(argv[2]), std::stoi(argv[3]), std::stoi(argv[4]), argv[5], std::stoll(argv[6]), argv[7], argc > 8 ? argv[8] : "");

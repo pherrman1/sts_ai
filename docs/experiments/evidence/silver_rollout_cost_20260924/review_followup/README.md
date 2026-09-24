@@ -21,6 +21,11 @@ The status-only smoke fixed the eligible mask at 59 roots; five rows returned
 `transactional_selection_required` and were excluded from every teacher and
 arm. The mask was not selected using actions or outcomes.
 
+The protocol and implementation commit called this experiment §343 on the
+then-current main. After current main advanced with §§343–347 on active Lizard
+work, this report is appended as §348 in the merged branch. This ledger
+renumbering does not change the protocol baseline or experiment data.
+
 The tested baseline was current `main` `01f6f164a0fe757ec174738ac3a2f0fb98c2462d`.
 The reviewed candidate implementation was frozen at
 `1e63068ff548abb18638e4b02d60e7e0d6dc936c`. B is enabled only by the explicit
@@ -163,6 +168,6 @@ and CI process.
 [`raw/SHA256SUMS`](raw/SHA256SUMS) records hashes for every raw row, manifest,
 summary, and timing file in this packet.
 
-**Knowledge impact:** current research and §343 record the corrected result,
+**Knowledge impact:** current research and §348 record the corrected result,
 the shared-reference-RNG invalidation, and the limits of this first-action DEV
 screen. No runtime default or gameplay qualification changes.
