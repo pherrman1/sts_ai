@@ -30,7 +30,8 @@ the requested profile; it is not a qualified model or a gameplay claim.
 ## Refreshed bottleneck profile before changes
 
 The refreshed profile had 119,445 MCTS simulations, 115,398 transitions,
-145 expanded decision nodes (139 owned, 6 fallback), 115,510 metadata builds,
+145 live OOC decisions (139 owned, 6 fallback), 111,886 expanded nodes,
+115,510 metadata builds,
 88,566 prior builds, and 88,566 V4 policy/state evaluations. MCTS thread CPU
 was 29.823s. Policy prediction exclusive CPU was 5.428s, V4 state-network CPU
 7.023s, CTM preparation 5.226s, successor exclusive CPU 2.749s, native leaf
