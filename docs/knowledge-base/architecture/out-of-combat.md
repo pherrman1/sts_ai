@@ -756,7 +756,7 @@ reproducible. Round 6 (`§76`) added the remaining screens:
 (`oocOnePlyTreasurePolicy`), `STS_OOC_STRATEGIC_BOSS_RELIC=1`
 (`oocOnePlyBossRelicPolicy`) — all default **off**. The Q
 head is trained on Tier-B one-ply counterfactual labels (`strategicgen2`;
-`apps/one_combat.cpp::runStrategicGenSeed2`). No model is deployed by default:
+`apps/one_combat/strategic_gen.cpp::runStrategicGenSeed2`). No model is deployed by default:
 the one-ply branches are opt-in only
 (`apps/ooc_strategic_net.h::OocStrategicNet`;
 `apps/one_combat/ooc_policy.cpp::oocOnePlyCardRewardPolicy`,
@@ -1029,7 +1029,7 @@ flowchart LR
 - `runtrace` is not a wrapper around `runFullRunOOC`: it prints a diagnostic
   header, skips server-only draft logging when no server is reachable, but still
   omits some fallthrough policy layers and its event/treasure scores are
-  diagnostic (`apps/one_combat.cpp::runTraceRun`, `tr_logDraft`).
+  diagnostic (`apps/one_combat/run_trace.cpp::runTraceRun`, `tr_logDraft`).
 - Model-driven pathing with the old forward-map-blind win model was a recorded
   regression; heuristic pathing remains the operating baseline.
 - Python cannot issue card-by-card combat actions.

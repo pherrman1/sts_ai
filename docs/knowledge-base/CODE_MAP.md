@@ -1,6 +1,6 @@
 # Current code map
 
-Last verified: 2026-09-24 for Silver-only combat and self-play removal (ADR-0020), the Searcher3 removal and the Silver whole-run default; 2026-09-23 for frozen Silver prior offline replay and user-authorized online smoke integration; 2026-09-15 for qualified V2 combat support; 2026-09-14 for opt-in live OOC MCTS routing.
+Last verified: 2026-09-24 for the one_combat translation-unit split, Silver-only combat and self-play removal (ADR-0020), the Searcher3 removal and the Silver whole-run default; 2026-09-23 for frozen Silver prior offline replay and user-authorized online smoke integration; 2026-09-15 for qualified V2 combat support; 2026-09-14 for opt-in live OOC MCTS routing.
 
 Purpose:
 Fast routing for humans and agents. Code remains authoritative. Use this page
@@ -43,7 +43,7 @@ before broad repository search.
 
 | Topic | Primary code | Key symbols / modes | Read next |
 | --- | --- | --- | --- |
-| Mode dispatch | `apps/one_combat.cpp::main`, `apps/combat_model_diagnostics.cpp` | ~80 modes (`bestbench`, `datagen3`, `strategicgen`, …), env-flag parsing, model loading; offline combat-model diagnostics are dispatched through `runCombatModelDiagnosticMode`; `fightrep` and `searchdiag` instrumentation are implemented by standalone application modules | [overview.md](architecture/overview.md), [build-and-debugging.md](operations/build-and-debugging.md), [environment-variables.md](operations/environment-variables.md) |
+| Mode dispatch | `apps/one_combat.cpp::main`, `apps/combat_model_diagnostics.cpp` | ~80 modes (`bestbench`, `datagen3`, `strategicgen`, …), env-flag parsing, model loading. Large mode bodies live in split-out translation units under `apps/one_combat/` (`run_trace`, `semantic_pilot`, `combat_datasets`, `ooc_factor_eval`, `strategic_gen`, `counterfactual_gen`), which share driver globals and helpers through `apps/one_combat/driver_shared.h`; offline combat-model diagnostics are dispatched through `runCombatModelDiagnosticMode`; `fightrep` and `searchdiag` instrumentation are implemented by standalone application modules | [overview.md](architecture/overview.md), [build-and-debugging.md](operations/build-and-debugging.md), [environment-variables.md](operations/environment-variables.md) |
 | Shared run features | `apps/one_combat/run_features.{h,cpp}` | `PathHistory`, `FwdMap`, rich schema/header/CSV row/direct numeric `richFeatureVec(gc,path)`/index map, and feature cardinalities shared by the integration driver | [overview.md](architecture/overview.md), [out-of-combat.md](architecture/out-of-combat.md) |
 | Compact tree reader | `apps/one_combat/compact_tree.{h,cpp}` | `CompactTreeNet` loader/predictor with contiguous nodes/root offsets and resolved raw split indices; callers supply the feature-name index map | [overview.md](architecture/overview.md), [training-and-inference.md](architecture/training-and-inference.md) |
 
@@ -51,9 +51,9 @@ before broad repository search.
 
 | Topic | Primary code | Key symbols / modes | Read next |
 | --- | --- | --- | --- |
-| Strategic gen | `apps/one_combat.cpp` | `runStrategicGenSeed`, `strategicGen` — one rich row per legal OOC action | [training-and-inference.md](architecture/training-and-inference.md) |
+| Strategic gen | `apps/one_combat/strategic_gen.cpp` | `runStrategicGenSeed`, `strategicGen`, `strategicMargGen`, `strategicGen2` — one rich row per legal OOC action | [training-and-inference.md](architecture/training-and-inference.md) |
 | Next-generation OOC pipeline contracts | `tools/ooc_pipeline_contract.py`, `tools/train_whole_combat_surrogate.py` | fail-closed teacher/corpus manifest, K/H planning, grouped whole-combat trainer | [ooc-label-pipeline.md](operations/ooc-label-pipeline.md) |
-| Combat gen | `apps/one_combat.cpp` | `datagen3`, `wholecombatgen` (one post-afterBattle reward-entry row/fight), `combattransitiongen` (RAW persistent-transfer JSONL), `combattransitionselftest` (test-only deterministic native rows) | [training-and-inference.md](architecture/training-and-inference.md), [ooc-label-pipeline.md](operations/ooc-label-pipeline.md) |
+| Combat gen | `apps/one_combat/combat_datasets.cpp`, `apps/one_combat/counterfactual_gen.cpp` | `datagen3` (`counterfactual_gen.cpp`, with `oocnextgen`, `pathcfgen`, `e2cgen`), `wholecombatgen` (one post-afterBattle reward-entry row/fight), `combattransitiongen` (RAW persistent-transfer JSONL), `combattransitionselftest` (test-only deterministic native rows) | [training-and-inference.md](architecture/training-and-inference.md), [ooc-label-pipeline.md](operations/ooc-label-pipeline.md) |
 
 ## Training and export
 
@@ -80,10 +80,9 @@ before broad repository search.
 | Win model export | `export_win_model.py` | Win-rest JSON export | [training-and-inference.md](architecture/training-and-inference.md) |
 | OOC checkpoint export | `export_ooc_checkpoint.py` | Checkpoint NN export | [training-and-inference.md](architecture/training-and-inference.md) |
 | Counterfactual OOC | `train_rest_cf.py`, `train_card_cf.py`, `train_path_cf.py` | Paired CF trainers | [training-and-inference.md](architecture/training-and-inference.md) |
-| K/search-budget evaluator | `apps/one_combat.cpp`, `tools/make_ooc_k_budget_manifest.py`, `tools/freeze_ooc_k_budget_experiment.py`, `tools/analyze_ooc_k_budget.py` | `oockbudgeteval` — hash-bound complete-sibling replay, observational K-prefix checkpoints, independent terminal reference and clustered analysis | [ooc-label-pipeline.md](operations/ooc-label-pipeline.md) |
-| Semantic OOC label pilot | `apps/one_combat.cpp`, `tools/ooc_semantic_pipeline_contract.py`, `tools/combat_evaluator_semantic_branch_contract.py` | `oocsemanticcapture` / `oocsemanticeval` — frozen complete semantic siblings, detached execution, existing H=1 continuation, typed payload validation and optional observational combat-label sidecar | [ooc-label-pipeline.md](operations/ooc-label-pipeline.md#semantic-action-pilot) |
+| K/search-budget evaluator | `apps/one_combat/ooc_factor_eval.cpp`, `tools/make_ooc_k_budget_manifest.py`, `tools/freeze_ooc_k_budget_experiment.py`, `tools/analyze_ooc_k_budget.py` | `oockbudgeteval` — hash-bound complete-sibling replay, observational K-prefix checkpoints, independent terminal reference and clustered analysis | [ooc-label-pipeline.md](operations/ooc-label-pipeline.md) |
+| Semantic OOC label pilot | `apps/one_combat/semantic_pilot.cpp`, `tools/ooc_semantic_pipeline_contract.py`, `tools/combat_evaluator_semantic_branch_contract.py` | `oocsemanticcapture` / `oocsemanticeval` — frozen complete semantic siblings, detached execution, existing H=1 continuation, typed payload validation and optional observational combat-label sidecar | [ooc-label-pipeline.md](operations/ooc-label-pipeline.md#semantic-action-pilot) |
 | Semantic confirmation and combat coverage | `tools/run_ooc_semantic_confirmation.py`, `tools/analyze_ooc_semantic_confirmation.py`, `tools/analyze_semantic_combat_labels.py`, `tools/train_combat_evaluator_semantic_branch.py`, `tools/analyze_combat_evaluator_silver_gate.py` | guarded fixed-cohort shards, unchanged grouped representation probe, combat-label coverage audit, offline three-head feasibility trainer, and decision-level predictor-vs-Silver gate analysis; no production model export | [ooc-label-pipeline.md](operations/ooc-label-pipeline.md), [training-and-inference.md](architecture/training-and-inference.md) |
-| Whole-Act OOC evaluator (parked) | `apps/one_combat.cpp` | `oocv4h1rollout`, `oocv4h1rolloutall` — occurrence-level evaluation; parked pending a cheaper design or explicit compute authorization | [out-of-combat.md](architecture/out-of-combat.md) |
 
 ## Native inference / model loading
 
