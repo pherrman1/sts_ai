@@ -238,6 +238,14 @@ proof separately from the public Silver wire; v1 snapshots remain exact. This
 prevents a live `CARD_SELECT` with pending `OnAfterCardUsed` work from being
 mistaken for a quiescent selection.
 
+Moving state across the boundary (live-state conversion, private-state
+materialization and semantic-action resolution) costs about 10 µs per
+decision, under 0.05% of decision time. Root setup (exact reroot or fresh root,
+including collection) costs about 2 ms per adaptive decision (2.6%), and search
+takes the remainder
+([§340](../../experiments/ledger-06.md#340--silver-handoff-timing-and-adaptive-128-seed-baseline-2026-09-24)).
+`STS_SILVER_HANDOFF_TIMING=1` reports these buckets per combat.
+
 One private session is retained per battle and exact-child reroot is attempted
 after each action. The production cap remains 32,768 nodes. `STS_SILVER_REUSE_CAP=131072`
 is an experimental opt-in; it is not a qualified production promotion. The default
