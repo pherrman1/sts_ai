@@ -978,6 +978,16 @@ std::vector<SilverForcedActionReference> runSilverForcedActionReferences(
 class SilverSearchSession;
 std::shared_ptr<SilverSearchSession> makeSilverSearchSession();
 
+// Cumulative wall time spent rebuilding the private Silver state from the wire
+// (materialize) and preparing the search root (exact reroot or fresh root).
+// Recorded only for searches whose config sets collectSearchTiming.
+struct SilverHandoffTiming {
+    std::int64_t calls = 0;
+    double materializeMicros = 0.0;
+    double rootSetupMicros = 0.0;
+};
+SilverHandoffTiming silverHandoffTiming(const SilverSearchSession &session);
+
 SilverTreeSnapshot snapshotSilverSearchTree(
     const SilverSearchSession &session, const SilverTreeSnapshotConfig &config);
 
