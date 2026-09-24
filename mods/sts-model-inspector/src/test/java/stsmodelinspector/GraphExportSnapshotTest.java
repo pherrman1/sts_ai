@@ -2,10 +2,17 @@ package stsmodelinspector;
 
 public final class GraphExportSnapshotTest {
     public static void main(String[] args) {
-        String responseA = "{\"kind\":\"analysis\",\"status\":\"OK\",\"session\":\"run\",\"sequence\":4,"
-                + "\"observationHash\":\"hash-a\",\"tree\":{\"id\":\"tree-a\"}}";
-        String responseB = "{\"kind\":\"analysis\",\"status\":\"OK\",\"session\":\"run\",\"sequence\":5,"
-                + "\"observationHash\":\"hash-b\",\"tree\":{\"id\":\"tree-b\"}}";
+        String responseA = "{\"evaluators\":[{\"candidateSummaries\":[{\"liveAction\":{\"kind\":\"map_node\"}}],"
+                + "\"model\":{\"kind\":\"ooc_mcts_ctm\"},\"tree\":{\"nodes\":[{\"kind\":\"state\"}]}}],"
+                + "\"kind\":\"analysis\",\"observationHash\":\"hash-a\",\"sequence\":4,"
+                + "\"session\":\"run\",\"status\":\"OK\"}";
+        String responseB = "{\"evaluators\":[{\"candidateSummaries\":[{\"liveAction\":{\"kind\":\"map_node\"}}],"
+                + "\"model\":{\"kind\":\"ooc_mcts_ctm\"},\"tree\":{\"nodes\":[{\"kind\":\"state\"}]}}],"
+                + "\"kind\":\"analysis\",\"observationHash\":\"hash-b\",\"sequence\":5,"
+                + "\"session\":\"run\",\"status\":\"OK\"}";
+        if (responseB.indexOf("\"kind\":\"map_node\"")
+                > responseB.indexOf("\"kind\":\"analysis\""))
+            throw new AssertionError("fixture must place a nested kind before the top-level analysis kind");
 
         if (STSModelInspector.graphSnapshotJson("run", 5, "hash-b", "{\"decision\":\"B\"}",
                 4, "hash-a", responseA, "", 10) != null)

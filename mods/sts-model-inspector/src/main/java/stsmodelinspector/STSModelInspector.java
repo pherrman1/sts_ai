@@ -604,15 +604,25 @@ public final class STSModelInspector implements PostInitializeSubscriber,
                                     String responseHash, String advisorResponseJson,
                                     String responseReason,
                                     long responseLatencyMicros) {
-        if (session == null || hash == null || observationJson == null
-                || advisorResponseJson == null || advisorResponseJson.trim().isEmpty()
-                || sequence < 0 || responseSequence != sequence || !hash.equals(responseHash)
-                || !"analysis".equals(jsonStringField(advisorResponseJson, "kind"))
-                || !session.equals(jsonStringField(advisorResponseJson, "session"))
-                || sequence != jsonLongField(advisorResponseJson, "sequence")
-                || !hash.equals(jsonStringField(advisorResponseJson, "observationHash")))
+        if (advisorResponseJson == null || advisorResponseJson.trim().isEmpty()) return null;
+        final com.google.gson.JsonObject advisorResponse;
+        try {
+            advisorResponse = new com.google.gson.JsonParser().parse(advisorResponseJson).getAsJsonObject();
+        } catch (RuntimeException invalidJson) {
             return null;
-        String status = jsonStringField(advisorResponseJson, "status");
+        }
+        String advisorKind = jsonStringProperty(advisorResponse, "kind");
+        String advisorSession = jsonStringProperty(advisorResponse, "session");
+        String advisorHash = jsonStringProperty(advisorResponse, "observationHash");
+        Long advisorSequence = jsonLongProperty(advisorResponse, "sequence");
+        String status = jsonStringProperty(advisorResponse, "status");
+        if (session == null || hash == null || observationJson == null
+                || sequence < 0 || responseSequence != sequence || !hash.equals(responseHash)
+                || !"analysis".equals(advisorKind)
+                || !session.equals(advisorSession)
+                || advisorSequence == null || sequence != advisorSequence
+                || !hash.equals(advisorHash))
+            return null;
         String reason = responseReason == null ? "" : responseReason;
         return "{\"protocol\":\"sts_model_inspector_latest_v1\",\"protocolVersion\":1"
                 + ",\"session\":\"" + Snapshot.escape(session) + "\",\"sequence\":" + sequence
@@ -626,55 +636,17 @@ public final class STSModelInspector implements PostInitializeSubscriber,
                 + Snapshot.escape(reason) + "\",\"advisor\":" + advisorResponseJson + "}}";
     }
 
-    private static String jsonStringField(String json, String key) {
-        if (json == null || json.isEmpty() || json.charAt(0) != '{') return null;
-        String needle = "\"" + key + "\":\"";
-        int start = json.indexOf(needle);
-        if (start < 0) return null;
-        start += needle.length();
-        StringBuilder value = new StringBuilder();
-        boolean escaped = false;
-        for (int i = start; i < json.length(); ++i) {
-            char c = json.charAt(i);
-            if (escaped) {
-                switch (c) {
-                    case '"': case '\\': case '/': value.append(c); break;
-                    case 'b': value.append('\b'); break;
-                    case 'f': value.append('\f'); break;
-                    case 'n': value.append('\n'); break;
-                    case 'r': value.append('\r'); break;
-                    case 't': value.append('\t'); break;
-                    case 'u':
-                        if (i + 4 >= json.length()) return null;
-                        try { value.append((char) Integer.parseInt(json.substring(i + 1, i + 5), 16)); }
-                        catch (NumberFormatException invalid) { return null; }
-                        i += 4;
-                        break;
-                    default: return null;
-                }
-                escaped = false;
-            } else if (c == '\\') {
-                escaped = true;
-            } else if (c == '"') {
-                return value.toString();
-            } else {
-                value.append(c);
-            }
-        }
-        return null;
+    private static String jsonStringProperty(com.google.gson.JsonObject object, String key) {
+        com.google.gson.JsonElement value = object.get(key);
+        return value != null && value.isJsonPrimitive() && value.getAsJsonPrimitive().isString()
+                ? value.getAsString() : null;
     }
 
-    private static long jsonLongField(String json, String key) {
-        if (json == null || json.isEmpty() || json.charAt(0) != '{') return -1;
-        String needle = "\"" + key + "\":";
-        int start = json.indexOf(needle);
-        if (start < 0) return -1;
-        start += needle.length();
-        int end = start;
-        while (end < json.length() && Character.isDigit(json.charAt(end))) ++end;
-        if (end == start) return -1;
-        try { return Long.parseLong(json.substring(start, end)); }
-        catch (NumberFormatException invalid) { return -1; }
+    private static Long jsonLongProperty(com.google.gson.JsonObject object, String key) {
+        com.google.gson.JsonElement value = object.get(key);
+        if (value == null || !value.isJsonPrimitive() || !value.getAsJsonPrimitive().isNumber()) return null;
+        try { return value.getAsLong(); }
+        catch (NumberFormatException invalid) { return null; }
     }
 
     private boolean silverBoostButtonHit() {
