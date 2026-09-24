@@ -1551,9 +1551,8 @@ void runSilverCombat(ScumSearchAgent2 &agent, GameContext &gc, BattleContext &bc
             fail("root legal-action enumeration", e.what());
         }
         // Explicit per-root/checkpoint diagnostics preserve their full-budget
-        // observations. Ordinary live decisions can commit the only legal
-        // semantic action directly; the normal live resolver still validates
-        // it against BattleContext before execution.
+        // observations. Ordinary live decisions advance the retained Silver
+        // session through the sole edge without adding simulations.
         const bool singletonSearchSkipped = legalActions.size() == 1
             && !collectScalingDiagnostics && !collectStickyQuality
             && !collectRootDiagnostics && !collectBudgetDiagnostics
@@ -1646,10 +1645,7 @@ void runSilverCombat(ScumSearchAgent2 &agent, GameContext &gc, BattleContext &bc
         currentCorpusConfig = config;
         currentCorpusConfig.leafObserver = {};
         silver_bridge::SemanticAction semantic;
-        if (singletonSearchSkipped) {
-            semantic = legalActions.front();
-            ++g_silverLiveDiagnostics.singletonRootSearchSkips;
-        } else if (bc.inputState == InputState::CARD_SELECT
+        if (!singletonSearchSkipped && bc.inputState == InputState::CARD_SELECT
                 && (bc.cardSelectInfo.cardSelectTask == CardSelectTask::EXHAUST_MANY
                     || bc.cardSelectInfo.cardSelectTask == CardSelectTask::GAMBLE)) {
             const auto transaction = silver_bridge::runSequentialSelectionTransaction(*silverSession, wire, config);
@@ -1714,13 +1710,21 @@ void runSilverCombat(ScumSearchAgent2 &agent, GameContext &gc, BattleContext &bc
                 }
             }
         } else {
-            const auto result = collectBudgetDiagnostics
-                ? silver_bridge::runSilverDecisionWithCheckpoint(*silverSession, wire, config)
-                : silver_bridge::runSilverDecision(*silverSession, wire, config);
+            const auto result = singletonSearchSkipped
+                ? silver_bridge::runSilverSingletonDecisionWithoutSearch(
+                    *silverSession, wire, config, legalActions.front())
+                : (collectBudgetDiagnostics
+                    ? silver_bridge::runSilverDecisionWithCheckpoint(*silverSession, wire, config)
+                    : silver_bridge::runSilverDecision(*silverSession, wire, config));
             if (!result.accepted) {
                 ++g_silverLiveDiagnostics.conversionFailures;
                 fail("search", "Silver returned no semantic decision: "
                     + (result.failureReason.empty() ? std::string("unspecified") : result.failureReason));
+            }
+            if (singletonSearchSkipped) {
+                if (!result.singletonSearchSkipped || result.simulations != 0)
+                    fail("singleton search skip", "bridge did not preserve the zero-simulation singleton contract");
+                ++g_silverLiveDiagnostics.singletonRootSearchSkips;
             }
             if (config.rootPuctEnabled) ++g_silverLiveDiagnostics.rootPuctDecisions;
             semantic = result.action;

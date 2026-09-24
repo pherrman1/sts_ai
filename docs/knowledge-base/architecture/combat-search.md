@@ -254,12 +254,15 @@ chance branches in the retained search graph.
 
 
 Before an ordinary live search, Silver enumerates the legal root actions. When
-exactly one action is legal, the live backend commits that semantic action
-without running search; the existing semantic-action resolver still checks it
-against the live `BattleContext`. This covers forced `END_TURN` and
-one-option selections. Full-budget per-root and checkpoint diagnostic modes
-retain their complete search observations. Aggregate `[silver-combat]`
-telemetry reports `singleton_root_search_skips`.
+exactly one action is legal, the live backend materializes and reroots the
+retained session, validates the complete singleton edge surface against the
+live semantic action, and selects that edge without adding simulations. This
+keeps the forced edge as `previousBest`, so the following live observation can
+exact-reroot through a retained continuation. The existing semantic-action
+resolver still checks the action against the live `BattleContext`. This covers
+forced `END_TURN` and one-option selections. Full-budget per-root and
+checkpoint diagnostic modes retain their complete search observations.
+Aggregate `[silver-combat]` telemetry reports `singleton_root_search_skips`.
 
 The live Silver default otherwise uses the retained-root adaptive policy:
 fresh roots with multiple legal actions search 10,000 simulations, while an

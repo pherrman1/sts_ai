@@ -1639,7 +1639,7 @@ SilverDecisionResult selectCurrentRootWithoutSearch(
         result.initialActionFingerprint = semanticActionFingerprint(result.action);
     }
     result.initialSimulations = 0;
-    if (config.collectDecisionDiagnostics) {
+    if (config.collectDecisionDiagnostics || config.exactVisitLockEnabled || config.rhoRacingEnabled) {
         result.diagnostic = session.decisionDiagnostic;
         result.diagnostic.inheritedVisits = result.inheritedVisits;
         result.diagnostic.simulationsAdded = 0;
@@ -3000,6 +3000,94 @@ SilverDecisionResult runSilverDecision(SilverSearchSession &session,
         return result;
     }
     return result;
+}
+
+SilverDecisionResult runSilverSingletonDecisionWithoutSearch(
+        SilverSearchSession &session, const BattleStateWire &wire,
+        const SilverSearchConfig &config, const SemanticAction &expectedAction) {
+    SilverDecisionResult result;
+    if (config.simulationsPerDecision <= 0) {
+        result.failureReason = "invalid_simulation_budget";
+        return result;
+    }
+    if (config.exactVisitLockEnabled && config.adaptiveEnabled) {
+        result.failureReason = "exact_visit_lock_and_adaptive_are_incompatible";
+        return result;
+    }
+    if (config.rhoRacingEnabled && config.adaptiveEnabled) {
+        result.failureReason = "rho_racing_and_adaptive_are_incompatible";
+        return result;
+    }
+    if (config.exactVisitLockEnabled && config.rhoRacingEnabled) {
+        result.failureReason = "exact_visit_lock_and_rho_racing_are_incompatible";
+        return result;
+    }
+    if (config.rootPuctEnabled || !config.rootPriors.empty()
+            || !config.rootPuctActionFingerprints.empty()) {
+        result.failureReason = "singleton_skip_carries_root_puct_data";
+        return result;
+    }
+    if (config.collectBudgetDiagnostics || !config.budgetDiagnosticCheckpoints.empty()) {
+        result.failureReason = "singleton_skip_incompatible_with_full_budget_diagnostics";
+        return result;
+    }
+
+    const int rerootExactBefore = session.rerootExact;
+    const int rerootFallbackBefore = session.rerootFallback;
+    const auto finish = [&]() {
+        result.rerootExact = session.rerootExact - rerootExactBefore;
+        result.rerootFallback = session.rerootFallback - rerootFallbackBefore;
+        result.inheritedVisits = session.inheritedVisits;
+        result.rerootMissDiagnostic = session.rerootMissDiagnostic;
+    };
+    const auto reject = [&](std::string reason) {
+        session.previousBest = nullptr;
+        result.accepted = false;
+        result.failureReason = std::move(reason);
+        finish();
+        return result;
+    };
+
+    try {
+        const auto state = session.materializeAndBegin(wire, config);
+        finish();
+        if (session.searcher == nullptr || session.searcher->root == nullptr
+                || session.searcher->root->state == nullptr
+                || session.searcher->root->isRandomNode) {
+            return reject("singleton_root_unavailable");
+        }
+        if (session.searcher->root->edges.empty())
+            session.searcher->enumerateActionsForNode(*session.searcher->root, state);
+        if (!completeRootActionSummary(session, &wire))
+            return reject("singleton_root_action_surface_mismatch");
+        if (session.rootActionSummaries.size() != 1
+                || semanticActionFingerprint(session.rootActionSummaries.front().action)
+                    != semanticActionFingerprint(expectedAction)) {
+            return reject("singleton_root_expected_action_mismatch");
+        }
+
+        auto selected = selectCurrentRootWithoutSearch(session, config, false);
+        if (!selected.accepted) {
+            const auto reason = selected.failureReason.empty()
+                ? std::string("singleton_root_selection_failed") : selected.failureReason;
+            result = std::move(selected);
+            return reject(reason);
+        }
+        result = std::move(selected);
+        result.action = expectedAction;
+        result.initialActionFingerprint = semanticActionFingerprint(expectedAction);
+        result.simulations = 0;
+        result.initialSimulations = 0;
+        result.singletonSearchSkipped = true;
+        finish();
+        return result;
+    } catch (const std::exception &e) {
+        session.previousBest = nullptr;
+        result.accepted = false;
+        result.failureReason = std::string("singleton_skip_exception: ") + e.what();
+        finish();
+        return result;
+    }
 }
 
 SilverDecisionResult runSilverDecision(const BattleStateWire &wire, const SilverSearchConfig &config) {
