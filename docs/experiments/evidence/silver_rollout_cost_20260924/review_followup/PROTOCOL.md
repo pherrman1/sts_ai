@@ -1,8 +1,9 @@
 # §343 corrected DEV follow-up protocol
 
-**Prepared:** 2026-09-25, before any new 10k teacher or 1k arm run.  
-**Implementation SHA:** to be frozen after independent review and before data
-collection.  
+**Original protocol prepared:** 2026-09-25, before any new 10k teacher or
+1k arm run.
+**Implementation SHA:** `1e63068ff548abb18638e4b02d60e7e0d6dc936c`, frozen after
+independent review and before data collection.
 **Decision scope:** DEV first decisions only; no gameplay, holdout, tuning, or
 default promotion.
 
@@ -67,9 +68,9 @@ the only arm difference is `--unsorted-rollout-piles`.
    control-path parity canary, not the quality reference. Stop if parity fails.
 2. Run three independent current-main-behavior 10,000-simulation teachers on
    all 59 eligible roots, using the three teacher identities and diagnostics
-   off. These use the reviewed candidate's replay adapter to supply independent
-   RNG identities; the parity canary and default-off gate bind its search path
-   to current main.
+   off. These use the reviewed candidate executable's replay adapter to supply
+   independent RNG identities; the parity canary and default-off gate bind its
+   search path to current main.
 3. Run four matched 1,000-simulation control/B pairs on all 59 roots, using
    `arm-01` through `arm-04` and diagnostics off.
 4. A root has teacher consensus when at least two of its three teachers return
@@ -102,3 +103,23 @@ for this CPU comparison.
 No source edits, repeated seed draws, complete-combat run, or holdout run are
 part of this follow-up. Commands, binary hashes, raw rows, analysis, and final
 reviewed SHA will be recorded in the accompanying follow-up report.
+
+## Execution deviation found during evidence review
+
+The frozen protocol above specifies strings such as
+`silver-rollout-cost-followup-20260925/teacher-01/01/{case_id}/{benchmark_seed}`
+and `.../arm-01/01/...`. The retained input-generation helper instead hashed
+`.../teacher/01/{case_id}/{benchmark_seed}` and `.../arm/01/...`. Its output
+manifest matches the helper's recipe for all 413 identity/root entries and
+matches the frozen protocol's recipe for 0/413 entries. The helper and manifest
+predate the raw result files by filesystem mtime, but no durable protocol
+amendment recorded before collection was retained. The reason for the spelling
+change is unknown.
+
+All seven identities were still derived deterministically from the case ID and
+state-bound `benchmark_seed`; the three teacher seeds and four arm seeds were
+pairwise distinct per root, and the same arm identity was paired across
+control/B. Thus the rows preserve independent search identities under the
+executed transform, but exact fidelity to the preregistered transform is
+unresolved. Treat the measurements as a disclosed DEV screen under the
+executed transform, not as an exact reproduction of the frozen seed recipe.

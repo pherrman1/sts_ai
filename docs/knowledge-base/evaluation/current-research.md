@@ -1482,20 +1482,34 @@ path remains.
 
 The separate §343 rollout-cost candidate tested an early energy rejection (A)
 and rollout-only unsorted unknown piles (B). A preserved deterministic outputs
-but had no speed gain and was reverted. B reduced matched fixed-work Release
-CPU about 11% in the original instrumented screen. Review found that the
-reported 35/59-versus-40/59 action comparison was invalid: the control 1k
-search was a prefix of its same-seed 10k teacher, while B mapped the same RNG
-values to different cards. Those counts are withdrawn as a quality result, not
-evidence of a B regression. B is now explicitly default-off pending the
-corrected independent-teacher and uninstrumented CPU follow-up; the preregistered
-protocol uses the current-main baseline and frozen DEV roots. No equal-runtime
-or gameplay result is available yet. A separate instrumented profile estimated
-`getIncomingDamage` at 2.6% inclusive, so no fragile cache was implemented.
-Chance duplicate counters were exposed by category, but exact support
-exhaustion was not established. B remains experimental and is not qualified
-for promotion. See [ledger-06 §343](../../experiments/ledger-06.md), the
-[corrected follow-up protocol](../../experiments/evidence/silver_rollout_cost_20260924/review_followup/PROTOCOL.md),
+but had no speed gain and was reverted. The original instrumented fixed-work
+screen measured about 11% lower B CPU, but its reported 35/59-versus-40/59
+action comparison was invalid: control's 1k search was a prefix of its same-seed
+10k teacher, while B mapped the same RNG values to different cards. Those
+counts are withdrawn as a quality result, not evidence of a B regression.
+
+The planned independent-teacher DEV follow-up is complete under the disclosed
+execution seed transform. An evidence audit found that its helper used
+`teacher/NN` and `arm/NN` hash path components, while the committed protocol
+specified `teacher-NN/NN` and `arm-NN/NN`; no durable pre-run amendment was
+retained. All identities remain deterministic and pairwise distinct per root,
+but exact preregistration fidelity is unresolved (details are in the follow-up
+packet). B remains explicitly default-off. On 52 roots with teacher-majority
+consensus, matched fixed-work first-action agreement was 54.3% control versus
+58.7% B, a paired
+mean of `+4.3 pp` with a root-cluster 95% interval of `[-1.4,+10.1] pp`. The
+non-negative mean triggered a conditional 1,000-control/1,100-B
+equal-time-equivalent screen, which measured 54.3% versus 61.5% (`+7.2 pp`,
+95% interval `[+1.0,+13.5] pp`). Four uninstrumented 1k CPU pairs measured
+mean user CPU of `0.740 s` control versus `0.675 s` B (`-8.8%`), with B lower
+in all four pairs. These are DEV first-action and local CPU signals; no
+complete-combat gameplay, holdout, or default qualification was run. A separate
+instrumented profile estimated `getIncomingDamage` at 2.6% inclusive, so no
+fragile cache was implemented. Chance duplicate counters were exposed by
+category, but exact support exhaustion was not established. B remains
+experimental and is not qualified for promotion. See [ledger-06 §343](../../experiments/ledger-06.md),
+the [corrected follow-up protocol](../../experiments/evidence/silver_rollout_cost_20260924/review_followup/PROTOCOL.md),
+the [follow-up results and raw evidence](../../experiments/evidence/silver_rollout_cost_20260924/review_followup/README.md),
 and the [complete rollout-cost packet](../../experiments/evidence/silver_rollout_cost_20260924/README.md).
 
 ### Whole-Act OOC evaluator

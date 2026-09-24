@@ -11734,13 +11734,33 @@ remain unchanged.
   rollout diagnostics and search timing off. The harness accepts an optional
   `isolated_search_seed` while retaining and reporting the validated
   state-bound `benchmark_seed`; `seed_guard.sh` checks both uint64 values and
-  caps replay JSONL roots at 128. A preregistered current-main follow-up uses
-  three independent 10k teachers, four matched 1k identities per arm, and an
-  uninstrumented CPU comparison. Its decision rule, seed transform, frozen
-  eligible mask, and stop conditions are in the
+  caps replay JSONL roots at 128. The implementation was independently reviewed
+  and frozen at `1e63068ff548abb18638e4b02d60e7e0d6dc936c`. The preregistered
+  current-main design specified three independent 10k teachers, four matched
+  1k identities per arm, and an uninstrumented CPU comparison. Its decision
+  rule, frozen eligible mask, and stop conditions are in the
   [corrected protocol](evidence/silver_rollout_cost_20260924/review_followup/PROTOCOL.md).
-  Data collection has not started; no equal-runtime, gameplay, holdout, or
-  default-promotion conclusion is available.
+- **Corrected DEV result:** On 52/59 roots with teacher-majority consensus,
+  matched fixed-work first-action agreement was 54.3% control versus 58.7% B,
+  a paired mean of `+4.3 pp` (10,000-replicate root-cluster bootstrap 95%
+  interval `[-1.4,+10.1]`;
+  16 roots favored B, 9 control, 27 tied). The preregistered non-negative mean
+  rule triggered the 1,000-control/1,100-B equal-time-equivalent screen; its
+  agreement was 54.3% versus 61.5%, `+7.2 pp` (95% interval `[+1.0,+13.5]`;
+  20/8/24 roots B-favored/control-favored/tied). Logged aggregate user CPU and
+  elapsed time were approximately 0.760/0.738 s and 0.775/0.758 s (control/B);
+  B was slower in two of four paired user-CPU samples. The uninstrumented 1k CPU
+  confirmation measured mean user CPU 0.740 s control versus 0.675 s B
+  (`-8.8%`), with B lower in all four pairs. This is first-action DEV evidence;
+  the fixed-work interval crosses zero, and no gameplay, holdout, or default
+  qualification is claimed. Evidence review found the input helper's seed
+  domain strings (`teacher/NN`, `arm/NN`) differ from the strings frozen in the
+  protocol (`teacher-NN/NN`, `arm-NN/NN`). The helper and manifest predate raw
+  outputs by mtime, but a durable pre-run amendment was not retained; exact
+  preregistration fidelity is unresolved. Seeds remain deterministic and
+  pairwise distinct per root, and each arm identity is matched. Raw data, input
+  derivation, analysis, binary hashes, and checks are in the
+  [follow-up packet](evidence/silver_rollout_cost_20260924/review_followup/README.md).
 - **C — incoming-damage reuse:** no cache was implemented. A separate
   instrumented `-pg` diagnostic estimated `SimpleAgent::getIncomingDamage` at
   2.6% inclusive time (1,543,022 calls) on the same fixed-work cohort. Given
@@ -11758,6 +11778,6 @@ remain unchanged.
   Debug run exercises the tree-isolation assertions. The complete report and
   raw outputs are in the [evidence packet](evidence/silver_rollout_cost_20260924/README.md).
 
-Knowledge impact: the proposed scratch-pile boundary and inconclusive quality
-status are recorded in the maintained combat-search and current-research pages;
-no default qualification is claimed.
+Knowledge impact: the scratch-pile boundary and completed corrected DEV result
+are recorded in maintained combat-search and current-research pages. B remains
+default-off and is not gameplay-qualified.

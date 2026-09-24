@@ -3,9 +3,11 @@
 **Status:** the original fixed-work quality screen is invalid because it
 shared RNG between the control and its teacher. Its raw data are preserved but
 withdrawn from quality interpretation. The corrected independent-teacher and
-uninstrumented CPU follow-up is preregistered in
-[`review_followup/PROTOCOL.md`](review_followup/PROTOCOL.md); results will be
-recorded there before any readiness or promotion claim.
+uninstrumented CPU follow-up is complete and recorded in
+[`review_followup/README.md`](review_followup/README.md), under the frozen
+[`review_followup/PROTOCOL.md`](review_followup/PROTOCOL.md). Its first-action
+DEV results are directionally positive; B remains default-off and is not
+qualified by this screen.
 
 ## Baseline and provenance
 
@@ -126,10 +128,18 @@ were:
 The previously reported paired difference was −8.5 percentage points, with
 eight control-only versus three B-only agreements. Because of the shared-RNG
 coupling, this statistic is now withdrawn; neither a no-harm failure nor a
-quality regression is established. The corrected follow-up will use three
-independent teachers and four matched search identities per root and arm. No
-equal-runtime or complete-combat conclusion is carried forward from this
-invalid comparison, and B is not tuned on these DEV roots.
+quality regression is established. The corrected follow-up used three
+independent teachers and four matched search identities per root and arm. Its
+fixed-work B-minus-control mean was `+4.3 pp` (root-cluster 95% interval
+`[-1.4,+10.1] pp`); the conditional 1,100-versus-1,000 equal-time-equivalent
+first-action screen was `+7.2 pp` (95% interval `[+1.0,+13.5] pp`). A separate
+uninstrumented 1k CPU check measured mean user CPU `0.740/0.675 s` (control/B,
+`-8.8%`). These are DEV first-action and local CPU results, not a complete-
+combat or gameplay conclusion; B was not tuned on these roots. Details and raw
+files are in the [corrected follow-up packet](review_followup/README.md). A
+final evidence audit found the helper's seed-domain spelling differed from the
+literal in the protocol frozen with the implementation; all seeds remained
+deterministic and pairwise distinct, but exact protocol fidelity is unresolved.
 
 ## C and D — stop decisions
 
@@ -157,7 +167,10 @@ not changed.
 - Debug build: `cmake --preset linux-gcc-debug`, then `cmake --build build/linux-gcc-debug --target silver-search-optimization-test silver-hard-combat-replay -j2` completed.
 - Debug focused test: `ctest --test-dir build/linux-gcc-debug -R '^silver_search_optimization$' --output-on-failure` passed, 1/1; this exercises the tree-isolation assertions.
 - An independent read-only implementation review found no blocking semantic defect. It flagged stale sorting comments; those comments were corrected.
-- Full CTest, GitHub Actions, equal-runtime search, complete-combat gameplay, and holdout were not run.
+- The corrected follow-up separately ran its conditional 1,100-versus-1,000
+  first-action screen and uninstrumented CPU confirmation. Full CTest,
+  complete-combat gameplay, and holdout were not run. Linux GCC GitHub Actions
+  remains the PR verification gate.
 
 Raw JSONL outputs for every A and B repetition and the 10k reference are in
 [`raw/`](raw/); [`SHA256SUMS`](raw/SHA256SUMS) covers those files. The frozen
@@ -167,5 +180,5 @@ The supporting gprof excerpt is [`gprof-summary.txt`](gprof-summary.txt).
 **Knowledge impact:** the rollout scratch-state invariant and default-off B
 configuration are updated in maintained combat-search documentation. The
 shared-RNG quality screen is withdrawn and the corrected independent-seed
-follow-up is preregistered in maintained current-research status. No
-qualification or default promotion is claimed.
+follow-up is complete and recorded in maintained current-research status. No
+gameplay qualification or default promotion is claimed.
