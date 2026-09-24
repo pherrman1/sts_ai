@@ -1,6 +1,6 @@
 # Combat search
 
-Last verified: 2026-09-19 against the current working tree.
+Last verified: 2026-09-24 for the Silver whole-run default; 2026-09-19 against the current working tree.
 
 ## Purpose
 
@@ -25,10 +25,16 @@ not an experiment chronology or benchmark record.
    to `GameContext`. An unresolved combat is a player loss; an enumeration gap
    must never become free progress.
 
-Default combat is known-RNG `BattleScumSearcher2`. `STS_FAIR=1` independently
-selects project-fair dispatch, and `STS_SEARCHER3=1` selects
-`BattleScumSearcher3`. `STS_SILVER_SEARCH=1` installs Silver and overrides the
-native searcher choice. The complete flag and parameter reference is
+For the whole-run modes `run`, `bestbench` and `reprobench`, Silver fair play
+is the default ([ADR-0018](../../../decisions/0018-silver-default-combat-backend.md)):
+an unset `STS_SILVER_SEARCH` resolves to `1` and an unset `STS_FAIR` to `1`
+unless `STS_SEARCHER3=1` is set. In every other mode, and with
+`STS_SILVER_SEARCH=0`, the native default is known-RNG `BattleScumSearcher2`.
+`STS_FAIR=1` independently selects project-fair dispatch, and
+`STS_SEARCHER3=1` selects `BattleScumSearcher3`. An installed Silver backend
+overrides the native searcher choice for combats routed through
+`ScumSearchAgent2::playoutBattle(GameContext&, BattleContext&)`. `runtrace`
+calls the `BattleContext`-only overload and always uses the native searcher. The complete flag and parameter reference is
 [environment-variables.md](../operations/environment-variables.md).
 
 ## Searcher2 / Searcher3
@@ -309,7 +315,10 @@ The live Silver default uses the retained-root adaptive policy: fresh and
 one-action/forced roots search 10,000 simulations, while a retained non-forced
 root first searches 500, measures the top-two visit-share gap, and stops at 500
 when it is at least `0.2932885906040268`; otherwise the same root continues to
-10,000 total. `STS_SILVER_ADAPTIVE=0` restores flat Silver. The policy applies
+10,000 total. `STS_SILVER_ADAPTIVE=0` restores flat Silver. For `run`, `bestbench` and
+`reprobench`, an explicit sims argument selects flat Silver at that budget
+unless adaptive stopping is configured through its environment variables
+([ADR-0018](../../../decisions/0018-silver-default-combat-backend.md)). The policy applies
 at ordinary roots and private sequential-selection subdecisions; the first
 search is not discarded.
 

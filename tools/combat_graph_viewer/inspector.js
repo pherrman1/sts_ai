@@ -22,7 +22,9 @@ function inspect(g, selection, onNavigate, onExpand, expanded) {
     field("Continuation fingerprint",e.continuationFingerprint||null);
     field("Chance outcome",e.chanceOutcome?"yes":"no");field("RNG advance steps",e.rngAdvanceSteps);
     if(e.parentId===g.root){const summary=g.rootRows.find(r=>r.edge.id===e.id)?.summary;
-      field("Root selection Q",summary?.selectionQValid?summary.selectionQ:null);}
+      field("Root selection Q",summary?.selectionQValid?summary.selectionQ:null);
+      field("Silver root prior P(a|state)",summary?.prior);
+      field("Silver prior logit",summary?.priorLogit);}
     const child=g.nodes.get(e.childId);field("Child visits",child?.simulationCount);
     field("Child mean Q",g.mean(child));
     const before=g.nodes.get(e.parentId);
