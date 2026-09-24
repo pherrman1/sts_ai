@@ -11984,7 +11984,14 @@ result and its one shared technical failure. No default or quality gate changed.
   retained the exact treatment binary hash used by the run. No more seeded
   replays were launched after this byte-for-byte check because the local
   128 arm-case allowance had been used; the raw command records retain the
-  original invocation SHAs.
+  original invocation SHAs. Main later advanced to
+  `03ae0297ac33fba41c64921d5b0bcc6eabe4be2a` via PRs #318 and #321. Release
+  rebuilds from that main head and final treatment merge
+  `b0393b034117cbdf5e16b994a0fe50528e89787b` again produced the recorded
+  control (`58a8b80a857bedcb8773f2f26d4390d7f0ec720a9f3984e201821d0714fbdc05`)
+  and treatment (`03a6aa7f0dcb613ddbd70beba1e8ed18b59c2ea7ee0102ed71effc31ba8fa63d`)
+  hashes. The N63 result carries forward byte-for-byte; the frozen cohort was
+  not rerun.
 - **Technical exclusion:** case `12100109/21` failed in both arms after 28
   decisions / 280,000 simulations with the same
   `selected_deterministic_state_mismatch` and action-trace hash

@@ -84,6 +84,18 @@ retains the exact source commits used at invocation time. No additional seeded
 replays were run after this byte-for-byte identity check; the 128 arm-case
 replays had already used the local run allowance.
 
+Main subsequently advanced to `03ae0297ac33fba41c64921d5b0bcc6eabe4be2a`
+(PRs #318 and #321). Rebuilding `silver-hard-combat-replay` in Release from
+that current main and from the merged treatment at
+`b0393b034117cbdf5e16b994a0fe50528e89787b` produced the same control and
+treatment hashes listed above: control
+`58a8b80a857bedcb8773f2f26d4390d7f0ec720a9f3984e201821d0714fbdc05`,
+treatment
+`03a6aa7f0dcb613ddbd70beba1e8ed18b59c2ea7ee0102ed71effc31ba8fa63d`.
+Both rebuilt binaries are byte-identical to those used for the recorded rows,
+so the N64-attempted / N63-valid results carry forward exactly. No new replay
+rows were generated and the frozen cohort was not rerun.
+
 ## Shared technical failure
 
 Case `12100109/21` failed in both arms after 28 decisions / 280,000

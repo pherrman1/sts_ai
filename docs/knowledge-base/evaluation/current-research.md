@@ -418,7 +418,10 @@ Main then advanced to `8ed346ea`; rebuilding the replay target from that head
 and from merged treatment commit `4b1b27f6` produced the same control and
 treatment binary hashes used for these rows. No more seeded replays were collected after
 the local 128 arm-case allowance was used. The packet preserves the original
-run SHAs and the later byte-identity check.
+run SHAs and the later byte-identity check. After main advanced to `03ae0297`,
+Release rebuilds at that main head and merged treatment `b0393b03` again
+matched the recorded control and treatment hashes, so the N63 result carries
+forward without another cohort run.
 
 The follow-up exact-10k sequential-checkpoint diagnostic on fresh seeds
 112--127 is **`LOGISTIC_DYNAMIC_RULE_REJECTED`** for the bounded offline
