@@ -13,12 +13,19 @@ relative prices among combat-terminal victories, measured in HP-equivalent
 units, for a future W1 lookup table? This audit makes no gameplay or runtime
 promotion claim.
 
-**Baseline.** `origin/main` at `c0937d8a3756b4849ab22c1dc8caf6badeda445f`
+**Current baseline.** `origin/main` at `7a181b3fa296fda4122033b70767fc2c0f03618c`
 (2026-09-24). The model SHA-256 is
 `fc52c14cb7239a33b3c1f9d0477ccb6c895fd51a07240fe804744e605067ad70`.
-The current checkout has refactored `one_combat.cpp` into modules since the
-handoff's older baseline; the model and E2c capture implementation are present
-at this baseline.
+The accepted handoff named older baseline `bb2379e8`; the first local
+preflight used `c0937d8a`. Before main-population analysis, the shared
+`origin/main` advanced to `7a181b3f`, and its removal of Searcher2 materially
+changed `apps/one_combat/run_driver.cpp`: current Silver now enters the common
+E2c start/exit capture path. The model, feature producer, and E2c capture
+implementation are unchanged. This baseline refresh is frozen in a second
+pre-analysis commit. The earlier 2-seed smoke on `c0937d8a` wrote zero rows
+because of the old branch; it is retained as a baseline-refresh diagnostic,
+not part of the current Silver population. The current-baseline smoke must
+pass before the main cohort is launched.
 
 **Primary population.** Fresh project-fair Silver E2c-v2 RAW/POST states,
 ascending from seed offset `3100000`, with up to 128 seeds, ascension 0, an
