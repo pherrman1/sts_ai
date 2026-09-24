@@ -1,0 +1,8 @@
+-- OpenSSL Crypto not found; non-CTM targets remain available, CTM runtime targets require OpenSSL
+-- Using the multi-header code from /home/philippherrmann/.codex/worktrees/ea89/sts_lightspeed/json/include/
+-- pybind11 v3.1.0
+-- Configuring done (0.1s)
+-- Generating done (0.2s)
+-- Build files have been written to: /tmp/sts-no-openssl-config
+[ 93%] Built target sts_core_objects
+[100%] Built target main

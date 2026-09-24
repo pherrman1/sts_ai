@@ -11669,6 +11669,18 @@ default changed.
   compressed action traces, and reproducible summary.
 - **Evidence:** [mechanism and timing packet](evidence/deepset_entropic_brew_hybrid_2026-09-24/README.md).
 
+After PR #309 advanced `main` to `7a181b3fa296fda4122033b70767fc2c0f03618c`,
+the branch was rebased onto that Silver-only architecture. The six Release
+targets and focused 2/2 CTest selection passed again; 31-fixture parity and
+hybrid routing/RNG checks passed. On 10 matched ordinary rows, standard median
+preparation was 4,732 us, fast was 534 us (8.86x), and hybrid fast was 661 us
+(7.16x). On 18 Brew rows, standard was 3,687 us and hybrid fallback 3,726 us.
+An OpenSSL-disabled configuration also built the non-CTM `main` target after
+the Crypto dependency was made optional at configure time. These checks do not
+change or relabel the original 64-pair outcome, which remains attached to frozen
+executable `9ce11fdbe50f32b4b2646dd8a0803c6dc0c3f351`. Exact commands and raw
+outputs are in the [Silver-only main verification packet](evidence/deepset_entropic_brew_hybrid_2026-09-24/silver-only-main-source/COMMANDS.md).
+
 Knowledge impact: current research status now records an experimental hybrid
 path and its bounded engineering evidence; qualified models and runtime defaults
 remain unchanged.

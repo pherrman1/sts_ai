@@ -160,6 +160,33 @@ payments or an insufficient spending limit, and recorded zero runner steps.
 This is an external billing block, not a code failure. The PR is ready for
 review; rerun CI after repository Actions billing is restored.
 
+## Silver-only latest-main rebase
+
+After PR #309, the branch was rebased onto exact `main` baseline
+`7a181b3fa296fda4122033b70767fc2c0f03618c`. The adapter preserves the new
+Silver-only path while retaining opt-in hybrid routing and profiler output;
+the CMake changes link Crypto only to CTM-runtime targets. Release configure
+and all six runtime-linked Release targets passed on this source. The focused
+`ooc_mcts_adapter|combat_transition_runtime_loader` CTest selection passed
+2/2. Specialist Python/native parity passed on all 31 fixtures (maximum
+encoder/probability errors `7.75e-7`/`4.77e-7`, zero legal-mask mismatches),
+and the hybrid mechanism probe preserved selected-child support, RAW state,
+and RNG identity with 18 Brew fallback and 13 fast fixture routes.
+
+On the 10 ordinary fixture rows supported by the fast model, standard median
+preparation was `4,732 us`, fast was `534 us` (8.86x), and hybrid fast was
+`661 us` (7.16x). Median prepared-sample time was `45.6 us` standard and
+`37.6 us` fast. On 18 Brew fixture rows, standard preparation was `3,687 us`
+and hybrid fallback `3,726 us`; sample medians were `45.4 us` and `47.5 us`.
+These remain fixture timings, not an OOC workload estimate. The 64-pair
+gameplay result was not rerun or relabeled.
+
+The project-wide OpenSSL configure requirement was narrowed: CMake now allows
+configuration without Crypto, and an OpenSSL-disabled Release configuration
+successfully built the non-CTM `main` target. CTM runtime targets link
+`OpenSSL::Crypto` when found and require its headers/library when built.
+Commands and raw outputs are under `silver-only-main-source/`.
+
 Raw machine-readable outputs are `parity.json`, `mechanism.jsonl`,
 `mechanism-summary.json`, `fixed-fixture-benchmark-release.json`,
 `summary.json`, and `per-seed.csv`. Compressed arm logs, action traces, support
