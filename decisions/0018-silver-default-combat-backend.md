@@ -19,7 +19,11 @@ differed from the backend that current work measures.
 
 For the whole-run modes `run`, `bestbench` and `reprobench`, `one_combat`
 resolves an unset `STS_SILVER_SEARCH` to `1` and an unset `STS_FAIR` to `1`,
-then writes both values to the process environment. An explicit
+then writes both values to the process environment. When Silver is effective
+and the caller passes an explicit sims argument, an unset
+`STS_SILVER_ADAPTIVE` resolves to `0`, so Silver searches that flat budget.
+This does not apply when `STS_SILVER_ADAPTIVE_RETAINED_ONLY` or
+`STS_SILVER_ADAPTIVE_TOP_GAP` is set. An explicit
 `STS_SILVER_SEARCH` value, including `0`, is respected. An explicit
 `STS_SEARCHER3=1` keeps the native Searcher3 path. Other modes keep their
 previous explicit-opt-in behavior.
@@ -39,6 +43,9 @@ checks and child processes see the effective configuration.
   `runtrace`, particle probes) instrument native searchers directly or bypass
   the external backend hook. Under Silver they would silently produce
   different data or none.
+- Keep adaptive Silver under an explicit sims argument. Rejected: adaptive
+  Silver searches 500 to 10,000 simulations regardless of the argument, so a
+  requested budget would be silently ignored.
 - Keep ADR-0003 and rely on explicit flags. Rejected because the default then
   measures a searcher that current work no longer uses.
 
@@ -49,6 +56,9 @@ checks and child processes see the effective configuration.
   Result metadata already records `effective_combat_backend`, and the
   `bestbench` configuration banner reports `searcher=Silver` when Silver is
   installed.
+- Flag-free runs that pass sims use flat Silver at that budget. Adaptive
+  results need `STS_SILVER_ADAPTIVE=1` or no sims argument. Current Silver
+  research producers already pin `STS_SILVER_ADAPTIVE=0` and are unaffected.
 - Callers that relied on the native default must now set
   `STS_SILVER_SEARCH=0`. `selfplay/loop.sh` pins it so self-play keeps its
   fair Searcher2 behavior. Legacy `tools/run/*.sh` Searcher2 reference arms

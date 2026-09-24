@@ -315,7 +315,10 @@ The live Silver default uses the retained-root adaptive policy: fresh and
 one-action/forced roots search 10,000 simulations, while a retained non-forced
 root first searches 500, measures the top-two visit-share gap, and stops at 500
 when it is at least `0.2932885906040268`; otherwise the same root continues to
-10,000 total. `STS_SILVER_ADAPTIVE=0` restores flat Silver. The policy applies
+10,000 total. `STS_SILVER_ADAPTIVE=0` restores flat Silver. For `run`, `bestbench` and
+`reprobench`, an explicit sims argument selects flat Silver at that budget
+unless adaptive stopping is configured through its environment variables
+([ADR-0018](../../../decisions/0018-silver-default-combat-backend.md)). The policy applies
 at ordinary roots and private sequential-selection subdecisions; the first
 search is not discarded.
 

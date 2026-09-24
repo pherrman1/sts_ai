@@ -8384,6 +8384,17 @@ int main(int argc, char **argv) {
             setenv("STS_FAIR", "1", 0);
             std::cout << "[default combat backend: Silver (STS_SILVER_SEARCH=0 restores native)]\n";
         }
+        // Adaptive Silver ignores the caller's budget, so an explicit sims
+        // argument selects flat Silver unless adaptive stopping was configured.
+        const char *silverEnv = std::getenv("STS_SILVER_SEARCH");
+        const bool silverEffective = silverEnv && std::atoi(silverEnv) != 0;
+        if (silverEffective && argc > 2 && !std::getenv("STS_SILVER_ADAPTIVE")
+                && !std::getenv("STS_SILVER_ADAPTIVE_RETAINED_ONLY")
+                && !std::getenv("STS_SILVER_ADAPTIVE_TOP_GAP")) {
+            setenv("STS_SILVER_ADAPTIVE", "0", 0);
+            std::cout << "[explicit sims " << argv[2]
+                      << ": flat Silver budget (STS_SILVER_ADAPTIVE=1 restores adaptive)]\n";
+        }
     }
 
     if (const char *d = std::getenv("VPORT")) g_vPort = std::atoi(d);
