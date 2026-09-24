@@ -28,7 +28,7 @@ void CardManager::init(const sts::GameContext &gc, BattleContext &bc) {
     }
     java::Collections::shuffle(idxs.begin(), idxs.end(), java::Random(bc.shuffleRng.randomLong()));
 
-    drawPile.resize(gc.deck.size());
+    drawPile.concreteCards().resize(gc.deck.size());
     discardPile.clear();
     exhaustPile.clear();
 
@@ -71,7 +71,7 @@ void CardManager::init(const sts::GameContext &gc, BattleContext &bc) {
 }
 
 void CardManager::createDeckCardInstanceInDrawPile(const Card &card, int deckIdx, int drawIdx) {
-    auto &c = drawPile[drawIdx];
+    auto &c = drawPile.concreteCards()[drawIdx];
     c = CardInstance(card);
     c.setUniqueId(deckIdx);
 #ifdef sts_asserts
@@ -85,7 +85,7 @@ void CardManager::createDeckCardInstanceInDrawPile(const Card &card, int deckIdx
     notifyAddToDrawPile(c);
 }
 
-void CardManager::createTempCardInDrawPile(int idx, CardInstance c) {
+void CardManager::createTempCardShuffledIntoDrawPile(Random &cardRandomRng, CardInstance c) {
 #ifdef sts_asserts
     if (c.getId() == CardId::INVALID) {
         std::cerr << *g_debug_bc << '\n';
@@ -97,7 +97,7 @@ void CardManager::createTempCardInDrawPile(int idx, CardInstance c) {
     c.uniqueId = static_cast<std::int16_t>(nextUniqueCardId++);
     notifyAddCardToCombat(c);
     notifyAddToDrawPile(c);
-    drawPile.insert(drawPile.begin()+idx, c);
+    drawPile.shuffleIn(cardRandomRng, c);
     search::emitCombatKnowledgeEvent(search::CombatKnowledgeEventType::RANDOM_UNKNOWN_INSERT, c);
 }
 
@@ -134,14 +134,13 @@ void CardManager::createTempCardInHand(CardInstance c) {
 void CardManager::removeFromDrawPileAtIdx(int idx) {
     const CardInstance c = drawPile[idx];
     notifyRemoveFromDrawPile(c);
-    drawPile.erase(drawPile.begin()+idx);
+    drawPile.removeAt(idx);
     search::emitCombatKnowledgeEvent(search::CombatKnowledgeEventType::DRAW_PILE_CARD_REMOVED, c);
 }
 
-CardInstance CardManager::popFromDrawPile() {
-    auto c = drawPile.back();
+CardInstance CardManager::popFromDrawPile(Random &shuffleRng) {
+    const auto c = drawPile.drawTop(shuffleRng);
     notifyRemoveFromDrawPile(c);
-    drawPile.pop_back();
     search::emitCombatKnowledgeEvent(search::CombatKnowledgeEventType::DRAW_OCCURRED, c);
     return c;
 }
@@ -187,19 +186,6 @@ void CardManager::moveToExhaustPile(const CardInstance &c) {
 }
 
 
-void CardManager::insertToDrawPile(int drawPileIdx, const CardInstance &c) {
-#ifdef sts_asserts
-    if (c.getId() == CardId::INVALID) {
-        std::cerr << *g_debug_bc << '\n';
-        std::cerr << "attempted to insert invalid card to draw pile" << std::endl;
-        assert(false);
-    }
-#endif
-    notifyAddToDrawPile(c);
-    drawPile.insert(drawPile.begin()+drawPileIdx, c);
-    search::emitCombatKnowledgeEvent(search::CombatKnowledgeEventType::RANDOM_UNKNOWN_INSERT, c);
-}
-
 void CardManager::moveToDrawPileTop(const CardInstance &c) {
 #ifdef sts_asserts
     if (c.getId() == CardId::INVALID) {
@@ -209,7 +195,7 @@ void CardManager::moveToDrawPileTop(const CardInstance &c) {
     }
 #endif
     notifyAddToDrawPile(c);
-    drawPile.push_back(c);
+    drawPile.addToTop(c);
     search::emitCombatKnowledgeEvent(search::CombatKnowledgeEventType::KNOWN_TOP_PLACED, c);
 }
 
@@ -222,19 +208,21 @@ void CardManager::moveToDrawPileBottom(const CardInstance &c) {
     }
 #endif
     notifyAddToDrawPile(c);
-    drawPile.insert(drawPile.begin(), c);
+    drawPile.addToBottom(c);
     search::emitCombatKnowledgeEvent(search::CombatKnowledgeEventType::KNOWN_BOTTOM_PLACED, c);
 }
 
 void CardManager::shuffleIntoDrawPile(Random &cardRandomRng, const CardInstance &c) {
-    if (drawPile.empty()) {
-        notifyAddToDrawPile(c);
-        drawPile.push_back(c);
-        search::emitCombatKnowledgeEvent(search::CombatKnowledgeEventType::RANDOM_UNKNOWN_INSERT, c);
-    } else {
-        int idx = cardRandomRng.random(static_cast<int>(drawPile.size()-1));
-        insertToDrawPile(idx, c);
+#ifdef sts_asserts
+    if (!drawPile.empty() && c.getId() == CardId::INVALID) {
+        std::cerr << *g_debug_bc << '\n';
+        std::cerr << "attempted to insert invalid card to draw pile" << std::endl;
+        assert(false);
     }
+#endif
+    notifyAddToDrawPile(c);
+    drawPile.shuffleIn(cardRandomRng, c);
+    search::emitCombatKnowledgeEvent(search::CombatKnowledgeEventType::RANDOM_UNKNOWN_INSERT, c);
 }
 
 void CardManager::moveToDiscardPile(const CardInstance &c) {
@@ -250,14 +238,26 @@ void CardManager::moveToDiscardPile(const CardInstance &c) {
     discardPile.push_back(c);
 }
 
-void CardManager::moveDiscardPileIntoToDrawPile() {
-    if (drawPile.empty()) {
-        drawPileBloodCardCount = discardPileBloodCardCount;
-        drawPile = discardPile;
+void CardManager::moveDiscardPileIntoToDrawPile(Random &shuffleRng) {
+    if (!drawPile.isConcrete()) {
+        // The shuffle's randomness is deferred to draw time.
+        drawPileBloodCardCount += discardPileBloodCardCount;
+        drawPile.absorbUnordered(discardPile);
 
     } else {
-        for (const auto &c : discardPile) {
-            moveToDrawPileTop(c);
+        java::Collections::shuffle(
+                discardPile.begin(),
+                discardPile.end(),
+                java::Random(shuffleRng.randomLong())
+        );
+        if (drawPile.empty()) {
+            drawPileBloodCardCount = discardPileBloodCardCount;
+            drawPile.assignConcrete({discardPile.begin(), discardPile.end()});
+
+        } else {
+            for (const auto &c : discardPile) {
+                moveToDrawPileTop(c);
+            }
         }
     }
 
@@ -403,9 +403,9 @@ void CardManager::resetAttributesAtEndOfTurn() {
         c.setCostForTurn(c.cost);
     }
 
-    for (auto &c : drawPile) {
+    drawPile.mutateAll([](CardInstance &c) {
         c.setCostForTurn(c.cost);
-    }
+    });
 }
 
 // **************** BEGIN SPECIAL HELPERS ****************
@@ -415,7 +415,7 @@ void CardManager::draw(BattleContext &bc, int amount) {
     int fireBreathing = bc.player.getStatus<PS::FIRE_BREATHING>();
 
     for (int i = 0; i < amount; i++) {
-        auto c = popFromDrawPile();
+        auto c = popFromDrawPile(bc.shuffleRng);
 
         if (bc.player.hasStatus<PS::CONFUSED>()) {
             if (c.cost >= 0) {  // todo status and curses affected by this?
@@ -483,7 +483,7 @@ void CardManager::onTookDamage() {
     foundBloodCards = 0;
     while (foundBloodCards < drawPileBloodCardCount) {
         if (drawPile[i].isBloodCard()) {
-            drawPile[i].tookDamage();
+            drawPile.mutateAt(i, [](CardInstance &c) { c.tookDamage(); });
             ++foundBloodCards;
         }
         ++i;
@@ -533,9 +533,9 @@ void CardManager::findAndUpgradeSpecialData(const std::int16_t uniqueId, const i
         }
     }
 
-    for (auto & c : drawPile) {
-        if (c.uniqueId == uniqueId) {
-            upgrade(c, upgradeAmount);
+    for (int i = 0; i < drawPile.size(); ++i) {
+        if (drawPile[i].uniqueId == uniqueId) {
+            drawPile.mutateAt(i, [&](CardInstance &c) { upgrade(c, upgradeAmount); });
             return;
         }
     }
@@ -562,12 +562,12 @@ void CardManager::onBuffCorruption() {
 
     // probably only need to do hand?
 
-    for (auto &c : drawPile) {
+    drawPile.mutateAll([](CardInstance &c) {
         if (c.getType() == CardType::SKILL && c.cost > 0) {
             c.cost = 0;
             c.costForTurn = 0;
         }
-    }
+    });
 
     for (auto &c : discardPile) {
         if (c.getType() == CardType::SKILL && c.cost > 0) {
