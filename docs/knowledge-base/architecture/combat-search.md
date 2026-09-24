@@ -253,16 +253,26 @@ schedule monster actions immediately after a card play and create spurious
 chance branches in the retained search graph.
 
 
-The live Silver default uses the retained-root adaptive policy: fresh and
-one-action/forced roots search 10,000 simulations, while a retained non-forced
-root first searches 500, measures the top-two visit-share gap, and stops at 500
-when it is at least `0.2932885906040268`; otherwise the same root continues to
-10,000 total. `STS_SILVER_ADAPTIVE=0` restores flat Silver. For `run`, `bestbench` and
-`reprobench`, an explicit sims argument selects flat Silver at that budget
-unless adaptive stopping is configured through its environment variables
-([ADR-0018](../../../decisions/0018-silver-default-combat-backend.md)). The policy applies
-at ordinary roots and private sequential-selection subdecisions; the first
-search is not discarded.
+Before an ordinary live search, Silver enumerates the legal root actions. When
+exactly one action is legal, the live backend commits that semantic action
+without running search; the existing semantic-action resolver still checks it
+against the live `BattleContext`. This covers forced `END_TURN` and
+one-option selections. Full-budget per-root and checkpoint diagnostic modes
+retain their complete search observations. Aggregate `[silver-combat]`
+telemetry reports `singleton_root_search_skips`.
+
+The live Silver default otherwise uses the retained-root adaptive policy:
+fresh roots with multiple legal actions search 10,000 simulations, while an
+eligible retained root with multiple legal actions first searches 500,
+measures the top-two visit-share gap, and stops at 500 when it is at least
+`0.2932885906040268`; otherwise the same root continues to 10,000 total.
+`STS_SILVER_ADAPTIVE=0` restores flat Silver for multi-action roots. For
+`run`, `bestbench` and `reprobench`, an explicit sims argument selects flat
+Silver at that budget unless adaptive stopping is configured through its
+environment variables
+([ADR-0018](../../../decisions/0018-silver-default-combat-backend.md)). The
+policy applies at ordinary roots and private sequential-selection
+subdecisions; the first search is not discarded when a search is run.
 
 Silver's search-local action enumeration canonically retains the first legal
 representative when ordinary playable cards match on all gameplay-relevant

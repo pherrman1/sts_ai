@@ -1544,18 +1544,31 @@ void runSilverCombat(ScumSearchAgent2 &agent, GameContext &gc, BattleContext &bc
 
         auto config = configFor(agent, bc, collectDecisionDiagnostics);
         if (handoffTiming) config.collectSearchTiming = true;
+        std::vector<silver_bridge::SemanticAction> legalActions;
+        try {
+            legalActions = silver_bridge::enumerateSilverLegalActions(wire);
+        } catch (const std::exception &e) {
+            fail("root legal-action enumeration", e.what());
+        }
+        // Explicit per-root/checkpoint diagnostics preserve their full-budget
+        // observations. Ordinary live decisions can commit the only legal
+        // semantic action directly; the normal live resolver still validates
+        // it against BattleContext before execution.
+        const bool singletonSearchSkipped = legalActions.size() == 1
+            && !collectScalingDiagnostics && !collectStickyQuality
+            && !collectRootDiagnostics && !collectBudgetDiagnostics
+            && !collectSequentialDiagnostics;
         if (g_silverPriorModel) {
             if (wire.inputState != static_cast<int>(InputState::PLAYER_NORMAL)) {
                 ++g_silverLiveDiagnostics.priorSkippedNonPlayerNormal;
             } else {
                 try {
-                    const auto legal = silver_bridge::enumerateSilverLegalActions(wire);
-                    if (legal.size() < 2) {
+                    if (legalActions.size() < 2) {
                         ++g_silverLiveDiagnostics.priorSkippedForced;
                     } else {
                         ++g_silverLiveDiagnostics.priorEligibleDecisions;
                         const auto inferenceStart = std::chrono::steady_clock::now();
-                        auto p = g_silverPriorModel->prior(wire, legal);
+                        auto p = g_silverPriorModel->prior(wire, legalActions);
                         const auto inferenceEnd = std::chrono::steady_clock::now();
                         const auto elapsed = std::chrono::duration<double, std::micro>(
                             inferenceEnd - inferenceStart).count();
@@ -1566,8 +1579,8 @@ void runSilverCombat(ScumSearchAgent2 &agent, GameContext &gc, BattleContext &bc
                         config.rootPuctEnabled = true;
                         config.rootPuctC = SilverPriorNetV1::kPuctC;
                         config.rootPriors = std::move(p);
-                        config.rootPuctActionFingerprints.reserve(legal.size());
-                        for (const auto &action : legal)
+                        config.rootPuctActionFingerprints.reserve(legalActions.size());
+                        for (const auto &action : legalActions)
                             config.rootPuctActionFingerprints.push_back(
                                 silver_bridge::semanticActionFingerprint(action));
                     }
@@ -1590,7 +1603,8 @@ void runSilverCombat(ScumSearchAgent2 &agent, GameContext &gc, BattleContext &bc
                  {"reuse_mode", silver_bridge::silverReuseCapModeName(config.reuseCapMode)},
                  {"adaptive", config.adaptiveEnabled},
                  {"exact_lock", config.exactVisitLockEnabled},
-                 {"rho", config.rhoRacingEnabled}});
+                 {"rho", config.rhoRacingEnabled},
+                 {"singleton_search_skipped", singletonSearchSkipped}});
             std::lock_guard<std::mutex> lock(g_leafCorpusMutex);
             std::ofstream output(g_silverLiveOptions.hardCombatCapture, std::ios::app);
             if (!output) throw std::runtime_error("cannot open STS_SILVER_HARD_COMBAT_CAPTURE: "
@@ -1609,7 +1623,8 @@ void runSilverCombat(ScumSearchAgent2 &agent, GameContext &gc, BattleContext &bc
                 row["capture_config"] = {{"simulations", config.simulationsPerDecision},
                     {"reuse_cap", config.reuseCap}, {"reuse_mode", silver_bridge::silverReuseCapModeName(config.reuseCapMode)},
                     {"adaptive", config.adaptiveEnabled}, {"exact_lock", config.exactVisitLockEnabled},
-                    {"rho", config.rhoRacingEnabled}};
+                    {"rho", config.rhoRacingEnabled},
+                    {"singleton_search_skipped", singletonSearchSkipped}};
                 std::lock_guard<std::mutex> lock(g_leafCorpusMutex);
                 std::ofstream output(g_silverLiveOptions.rootMechanismCapture, std::ios::app);
                 output << row.dump() << '\n';
@@ -1631,7 +1646,10 @@ void runSilverCombat(ScumSearchAgent2 &agent, GameContext &gc, BattleContext &bc
         currentCorpusConfig = config;
         currentCorpusConfig.leafObserver = {};
         silver_bridge::SemanticAction semantic;
-        if (bc.inputState == InputState::CARD_SELECT
+        if (singletonSearchSkipped) {
+            semantic = legalActions.front();
+            ++g_silverLiveDiagnostics.singletonRootSearchSkips;
+        } else if (bc.inputState == InputState::CARD_SELECT
                 && (bc.cardSelectInfo.cardSelectTask == CardSelectTask::EXHAUST_MANY
                     || bc.cardSelectInfo.cardSelectTask == CardSelectTask::GAMBLE)) {
             const auto transaction = silver_bridge::runSequentialSelectionTransaction(*silverSession, wire, config);
@@ -1854,6 +1872,7 @@ void runSilverCombat(ScumSearchAgent2 &agent, GameContext &gc, BattleContext &bc
         std::ostringstream line;
         line << "[silver-combat] decisions=" << d.decisions
                   << " simulations=" << d.simulations
+                  << " singleton_root_search_skips=" << d.singletonRootSearchSkips
                   << " prior_model_loaded=" << (d.priorModelLoaded ? 1 : 0)
                   << " prior_eligible_decisions=" << d.priorEligibleDecisions
                   << " prior_evaluations=" << d.priorEvaluations

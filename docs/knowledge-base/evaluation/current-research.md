@@ -359,6 +359,23 @@ establish universal safety, or claim action equivalence. No expensive shadow
 [N16 packet](../../experiments/evidence/silver_retained_adaptive_pair16_2026-09-16/README.md),
 and [N32 packet](../../experiments/evidence/silver_retained_adaptive_pair32_2026-09-16/README.md).
 
+### Singleton-root search bypass (2026-09-24)
+
+The live backend now commits the sole legal root action without running Silver
+search. This applies to forced `END_TURN` and one-option selections; full-budget
+per-root and checkpoint diagnostic modes continue to search for complete
+observations. The tracked [32-run deployment packet](../../experiments/evidence/silver_retained_adaptive_deployment_pair32_2026-09-16/README.md)
+records 510 one-action roots among 13,945 decisions; all 510 still ran 10,000
+simulations. The user-provided breakdown is 489 forced `END_TURN` and 21
+one-option selections, with 471 of 502 continuing forced roots followed by a
+next decision that started from scratch. The user reports this as 6.3% of
+Silver compute. The supplied 64-fight, exact-10k comparison reports 59/64 wins
+in each arm, no paired flips, treatment ending HP +0.3, 4.6% fewer simulations
+and 6.7% lower wall time. That 64-fight raw packet and candidate/baseline SHAs
+were not available in this checkout, so the breakdown and comparison results
+were not independently verified here. The tracked 32-run packet's measurements
+remain historical results from before the bypass.
+
 The follow-up exact-10k sequential-checkpoint diagnostic on fresh seeds
 112--127 is **`LOGISTIC_DYNAMIC_RULE_REJECTED`** for the bounded offline
 question. It records cumulative 250/500/1,000/2,000/4,000/8,000/10,000

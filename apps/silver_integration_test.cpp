@@ -157,7 +157,8 @@ int main() {
                   << " reroot_fallback=" << g_silverLiveDiagnostics.rerootFallback << '\n';
         return 1;
     }
-    const std::uint64_t expectedFlatSimulations = g_silverLiveDiagnostics.decisions
+    const std::uint64_t expectedFlatSimulations =
+        (g_silverLiveDiagnostics.decisions - g_silverLiveDiagnostics.singletonRootSearchSkips)
         * static_cast<std::uint64_t>(agent.simulationCountBase);
     if (!expectedAdaptive && g_silverLiveDiagnostics.simulations != expectedFlatSimulations) {
         std::cerr << "silver_integration FAIL: adaptive opt-out did not restore flat Silver"
@@ -172,6 +173,7 @@ int main() {
     std::cout << "silver_integration PASS outcome=" << static_cast<int>(live.outcome)
               << " decisions=" << g_silverLiveDiagnostics.decisions
               << " simulations=" << g_silverLiveDiagnostics.simulations
+              << " singleton_root_search_skips=" << g_silverLiveDiagnostics.singletonRootSearchSkips
               << " exact_root_budgets=" << (silverLiveExactRootBudgets() ? 1 : 0)
               << " reroot_exact=" << g_silverLiveDiagnostics.rerootExact
               << " reroot_fallback=" << g_silverLiveDiagnostics.rerootFallback << '\n';
