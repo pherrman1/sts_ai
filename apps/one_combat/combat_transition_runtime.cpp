@@ -13,6 +13,11 @@ namespace one_combat {
 namespace {
 using Vec=std::vector<float>;
 void require(bool value,const char *why) { if(!value) throw std::runtime_error(why); }
+bool hasEntropicBrew(const CombatPredictorInputV1 &input) {
+    return std::any_of(input.potions.begin(),input.potions.end(),[](const auto &p) {
+        return p.potionId==int(sts::Potion::ENTROPIC_BREW);
+    });
+}
 void append(Vec &a,const Vec &b) { a.insert(a.end(),b.begin(),b.end()); }
 Vec relu(Vec x) { for(auto &v:x) v=std::max(0.f,v); return x; }
 void add(Vec &a,const Vec &b) { require(a.size()==b.size(),"runtime add dimensions"); for(size_t i=0;i<a.size();++i) a[i]+=b[i]; }
@@ -65,14 +70,25 @@ CombatTransitionRuntime::CombatTransitionRuntime(const std::string &path) {
         {"qualified",false}});
     if(deepSurvival) require(full && (metadata_.at("experimentalSurvival")==phase1Survival ||
         metadata_.at("experimentalSurvival")==strongWdSurvival),"combat runtime experimental survival identity");
-    if(deepsetStack) require(full && metadata_.at("experimentalDeepSets")==nlohmann::json({
+    const auto legacyDeepSets=nlohmann::json({
         {"architecture","deepset64_shared_transition"},
         {"controlSha256","e9a18951710fdfe9e1a81a2703090a41f039067c670a1d8a0393b5e7e8e0ddfd"},
         {"maxHpHpCheckpointSha256","bee6800dd7230b180c2b4894c0f01763efca4b7799e3f36a805333c3003dc663"},
         {"downstreamCheckpointSha256","c00ed677b8b2b2854fb62982247853982bc58d9fc20afdd96c593bcc6c07423a"},
         {"potionCheckpointSha256","06eda953b523ed6b3b9dbc3031bf44408c3bc67f0bc8b7862d28c150448819c1"},
         {"potionOfflineDecision","DEEPSET_POTION_REJECTED"},
-        {"qualified",false}}),"combat runtime experimental DeepSets identity");
+        {"qualified",false}});
+    const auto specialistDeepSets=nlohmann::json({
+        {"architecture","deepset64_shared_hp_with_dedicated_potion_specialist"},
+        {"controlSha256","e9a18951710fdfe9e1a81a2703090a41f039067c670a1d8a0393b5e7e8e0ddfd"},
+        {"maxHpHpCheckpointSha256","bee6800dd7230b180c2b4894c0f01763efca4b7799e3f36a805333c3003dc663"},
+        {"downstreamCheckpointSha256","c00ed677b8b2b2854fb62982247853982bc58d9fc20afdd96c593bcc6c07423a"},
+        {"potionSpecialistCheckpointSha256","71d88a71cf7579e1092c3b3c27e000538a6aafe35bbf5228c10c15fa0edd4ace"},
+        {"potionOfflineDecision","POTION_DEEPSET_SPECIALIST_REJECTED"},
+        {"requiresEntropicBrewFallback",true},{"qualified",false},{"defaultChanged",false}});
+    if(deepsetStack) require(full && (metadata_.at("experimentalDeepSets")==legacyDeepSets ||
+        metadata_.at("experimentalDeepSets")==specialistDeepSets),"combat runtime experimental DeepSets identity");
+    const bool dedicatedPotion=deepsetStack && metadata_.at("experimentalDeepSets")==specialistDeepSets;
     if(deepsetStack) require(deepSurvival && metadata_.at("experimentalSurvival")==phase1Survival,
         "combat runtime DeepSets stack requires Phase-1 survival");
     require(metadata_.at("predictorSchema")==CombatPredictorInputV1::SCHEMA && metadata_.at("predictorHash")==combatPredictorInputFieldSchemaHash()
@@ -91,7 +107,8 @@ CombatTransitionRuntime::CombatTransitionRuntime(const std::string &path) {
         if(deepsetStack) {
             hashes["maxHP"]="bee6800dd7230b180c2b4894c0f01763efca4b7799e3f36a805333c3003dc663";
             hashes["HP"]=hashes["maxHP"];
-            hashes["potion"]="06eda953b523ed6b3b9dbc3031bf44408c3bc67f0bc8b7862d28c150448819c1";
+            hashes["potion"]=dedicatedPotion ? "71d88a71cf7579e1092c3b3c27e000538a6aafe35bbf5228c10c15fa0edd4ace"
+                                             : "06eda953b523ed6b3b9dbc3031bf44408c3bc67f0bc8b7862d28c150448819c1";
             hashes["downstream"]="c00ed677b8b2b2854fb62982247853982bc58d9fc20afdd96c593bcc6c07423a";
         }
         require(metadata_.at("sources")==nlohmann::json(hashes),"combat runtime near-full source identities");
@@ -243,6 +260,10 @@ Vec CombatTransitionRuntime::encode(const std::string &group,const CombatPredict
     }
     return relu(linear(p+"trunk.0",tokens[0]));
 }
+bool CombatTransitionRuntime::requiresEntropicBrewFallback() const {
+    return metadata_.contains("experimentalDeepSets") &&
+        metadata_.at("experimentalDeepSets").value("requiresEntropicBrewFallback",false);
+}
 float CombatTransitionRuntime::survival(const CombatPredictorInputV1 &p) const {float logit=linear("survival.survival",encode("survival",p))[0];require(std::isfinite(logit),"nonfinite survival");return 1/(1+std::exp(-logit));}
 Vec CombatTransitionRuntime::maxHpEncoding(const CombatPredictorInputV1 &p) const {return encode("max_hp",p);}
 Vec CombatTransitionRuntime::maxHp(const CombatPredictorInputV1 &p) const {return softmax(linear("max_hp.max_hp_delta",encode("max_hp",p)));}
@@ -335,10 +356,14 @@ NativeCombatTransitionSampler::NativeCombatTransitionSampler(const std::string &
     domain_.trainedGroups={"turns","attacks","cards","shuffles"};domain_.nearFull=runtime_.nearFull();domain_.ready=true;
 }
 CombatRuntimeSupport NativeCombatTransitionSampler::support(const sts::GameContext &gc,const CombatPredictorInputV1 &p) const {
+    if(runtime_.requiresEntropicBrewFallback() && hasEntropicBrew(p))
+        return {false,"entropic_brew_requires_standard_ctm"};
     auto reasons=nativeComposedSupportReasons(p,captureCombatTransitionState(gc),domain_);
     return {reasons.empty(),reasons.empty()?"supported":reasons.front()};
 }
 CombatRuntimeSupport NativeCombatTransitionSampler::forecastSupport(const CombatPredictorInputV1 &p) const {
+    if(runtime_.requiresEntropicBrewFallback() && hasEntropicBrew(p))
+        return {false,"entropic_brew_requires_standard_ctm"};
     auto reasons = nativeComposedForecastSupportReasons(p, domain_);
     return {reasons.empty(), reasons.empty() ? "supported" : reasons.front()};
 }
@@ -394,7 +419,8 @@ std::unique_ptr<PreparedCombatTransition> NativeCombatTransitionSampler::prepare
                     auto transition=runtime_.hpEncoding(p);
                     maxHp_=runtime_.maxHp(transition);
                     hpEncoding_=transition;
-                    potionEncoding_=std::move(transition);
+                    if(runtime_.requiresEntropicBrewFallback()) potionEncoding_=runtime_.potionEncoding(p);
+                    else potionEncoding_=std::move(transition);
                 } else {
                     maxHp_=runtime_.maxHp(p);
                     hpEncoding_=runtime_.hpEncoding(p);
@@ -423,6 +449,124 @@ std::unique_ptr<PreparedCombatTransition> NativeCombatTransitionSampler::prepare
         }
     };
     return std::make_unique<NativePrepared>(runtime_,domain_,support(gc,p),gc,p);
+}
+
+EntropicBrewFallbackCombatTransitionSampler::EntropicBrewFallbackCombatTransitionSampler(
+    std::string fastPath,std::string standardPath)
+    :fast_(std::make_shared<NativeCombatTransitionSampler>(fastPath)),
+     standard_(std::make_shared<NativeCombatTransitionSampler>(standardPath)) {
+    require(fast_->runtime().requiresEntropicBrewFallback(),
+        "fast combat artifact must require Entropic Brew fallback");
+    const auto &standardMetadata=standard_->runtime().metadata();
+    const nlohmann::json currentStandardSources={
+        {"survival","ccc3c210060be34b38fe0671d93c6acde4242563c80a25c5978b4190b80010c9"},
+        {"maxHP","2c5b54d0a9420a9d0e3ab9a26f32b9900c4869490e4af49627009cde21efb4b0"},
+        {"HP","0c8b5aa8c5218d6cd6102b768cc86a474c9ef30953d4b034caedcc41a426109b"},
+        {"potion","ae1a1411990d272579de10564edb48c7f2ec1d14f1c72dacf5390a1415a0f1db"},
+        {"downstream","d07ead94b3abb9d12f272337e18aece6acd261cc4a39a36b21b82f904236af91"}};
+    require(!standard_->runtime().requiresEntropicBrewFallback() &&
+        standardMetadata.at("version")==2 &&
+        !standardMetadata.contains("experimentalSurvival") &&
+        !standardMetadata.contains("experimentalDeepSets") &&
+        standardMetadata.at("sources")==currentStandardSources &&
+        standardMetadata.at("supportExclusions")==nlohmann::json({"smoke_bomb","pre_smoke_bomb_used","writhing_ritual_intersection"}) &&
+        standardMetadata.at("qualification").at("classification")=="FINAL_SUPPORT_EXPOSURE_DEVELOPMENT_PASS",
+        "Brew fallback must be the current standard Attention CTM artifact");
+}
+bool EntropicBrewFallbackCombatTransitionSampler::useFallback(const CombatPredictorInputV1 &p) const {
+    // Recursive Entropic Brew trajectories require Brew in the starting potion
+    // inventory. Route the entire transition from predictor-visible pre-state;
+    // never inspect sampled or generated potion outcomes to switch models.
+    return hasEntropicBrew(p);
+}
+void EntropicBrewFallbackCombatTransitionSampler::recordBrewState(const CombatPredictorInputV1 &p) const {
+    if(!hasEntropicBrew(p))return;
+    std::lock_guard<std::mutex> lock(brewStatesMutex_);
+    brewStates_.insert(combatPredictorInputJson(p).dump());
+}
+CombatRuntimeSupport EntropicBrewFallbackCombatTransitionSampler::support(
+    const sts::GameContext &gc,const CombatPredictorInputV1 &p) const {
+    recordBrewState(p);
+    const bool fallback=useFallback(p);
+    auto result=(fallback?standard_:fast_)->support(gc,p);
+    if(!result.supported)(fallback?fallbackSupportFailures_:fastSupportFailures_).fetch_add(1);
+    return result;
+}
+CombatRuntimeSupport EntropicBrewFallbackCombatTransitionSampler::forecastSupport(
+    const CombatPredictorInputV1 &p) const {
+    recordBrewState(p);
+    const bool fallback=useFallback(p);
+    auto result=(fallback?standard_:fast_)->forecastSupport(p);
+    if(!result.supported)(fallback?fallbackSupportFailures_:fastSupportFailures_).fetch_add(1);
+    return result;
+}
+CombatTransitionExpectation EntropicBrewFallbackCombatTransitionSampler::forecastExpectation(
+    const CombatPredictorInputV1 &p) const {
+    recordBrewState(p);
+    const bool fallback=useFallback(p);
+    auto result=(fallback?standard_:fast_)->forecastExpectation(p);
+    if(!result.supported)(fallback?fallbackSupportFailures_:fastSupportFailures_).fetch_add(1);
+    return result;
+}
+CombatTransitionExpectation EntropicBrewFallbackCombatTransitionSampler::expectation(
+    const sts::GameContext &gc,const CombatPredictorInputV1 &p) const {
+    recordBrewState(p);
+    const bool fallback=useFallback(p);
+    auto result=(fallback?standard_:fast_)->expectation(gc,p);
+    if(!result.supported)(fallback?fallbackSupportFailures_:fastSupportFailures_).fetch_add(1);
+    return result;
+}
+CombatRuntimeSample EntropicBrewFallbackCombatTransitionSampler::sample(
+    const sts::GameContext &gc,const CombatPredictorInputV1 &p,std::mt19937_64 &rng) const {
+    recordBrewState(p);
+    const bool fallback=useFallback(p);
+    (fallback?fallbackSamples_:fastSamples_).fetch_add(1);
+    auto result=(fallback?standard_:fast_)->sample(gc,p,rng);
+    if(result.outcome==CombatRuntimeSample::Outcome::UNSUPPORTED)
+        (fallback?fallbackSupportFailures_:fastSupportFailures_).fetch_add(1);
+    return result;
+}
+std::unique_ptr<PreparedCombatTransition> EntropicBrewFallbackCombatTransitionSampler::prepare(
+    const sts::GameContext &gc,const CombatPredictorInputV1 &p) const {
+    recordBrewState(p);
+    const bool fallback=useFallback(p);
+    preparations_.fetch_add(1);
+    (fallback?fallbackPreparations_:fastPreparations_).fetch_add(1);
+    auto child=(fallback?standard_:fast_)->prepare(gc,p);
+    if(!child->support().supported)
+        (fallback?fallbackSupportFailures_:fastSupportFailures_).fetch_add(1);
+    class HybridPrepared final : public PreparedCombatTransition {
+        std::unique_ptr<PreparedCombatTransition> child_;
+        std::atomic<std::uint64_t> &samples_;
+    public:
+        HybridPrepared(std::unique_ptr<PreparedCombatTransition> child,
+            std::atomic<std::uint64_t> &samples):child_(std::move(child)),samples_(samples) {}
+        const CombatRuntimeSupport &support() const override { return child_->support(); }
+        CombatRuntimeSample sample(std::mt19937_64 &rng) const override {
+            samples_.fetch_add(1);
+            return child_->sample(rng);
+        }
+    };
+    return std::make_unique<HybridPrepared>(std::move(child),fallback?fallbackSamples_:fastSamples_);
+}
+EntropicBrewFallbackCombatTransitionSampler::Metrics
+EntropicBrewFallbackCombatTransitionSampler::takeMetrics() const {
+    Metrics result;
+    result.preparations=preparations_.exchange(0);
+    result.fastPreparations=fastPreparations_.exchange(0);
+    result.fallbackPreparations=fallbackPreparations_.exchange(0);
+    result.fastSamples=fastSamples_.exchange(0);
+    result.fallbackSamples=fallbackSamples_.exchange(0);
+    result.fastSupportFailures=fastSupportFailures_.exchange(0);
+    result.fallbackSupportFailures=fallbackSupportFailures_.exchange(0);
+    {
+        std::lock_guard<std::mutex> lock(brewStatesMutex_);
+        result.uniqueBrewPredictorStates=brewStates_.size();
+        brewStates_.clear();
+    }
+    result.fallbackRate=result.preparations?
+        double(result.fallbackPreparations)/double(result.preparations):0.0;
+    return result;
 }
 
 }

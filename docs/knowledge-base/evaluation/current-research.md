@@ -1,6 +1,7 @@
 # Current research status
 
-Last verified: 2026-09-23 for the frozen Silver prior online gameplay screen;
+Last verified: 2026-09-24 for the experimental DeepSets Brew-fallback
+mechanism/timing smoke; 2026-09-23 for the frozen Silver prior online gameplay screen;
 2026-09-21 for the complete frozen Silver internal-node FPU cohort and local 80-source learned-prefix scale validation;
 2026-09-20 for the tactical-prefix Silver oracle headroom screen
 and contextual first-action Silver selector headroom/policy screen; 2026-09-19 for forced-action historical artifact recovery and
@@ -1017,6 +1018,21 @@ export, native parity, runtime change, or gameplay qualification was run.
 See [ledger-06 §339](../../experiments/ledger-06.md), the
 [experiment report](../../experiments/evidence/deepset_potion_blind_2026-09-23.md),
 and its [raw receipt](../../experiments/evidence/deepset_potion_blind_2026-09-23.json).
+
+### Experimental DeepSets CTM with Entropic Brew fallback
+
+An opt-in hybrid implementation now uses the PR #298 W potion-aware specialist
+for predictor-visible pre-combat inputs without Entropic Brew and dispatches
+the whole transition to the current standard Attention CTM whenever Brew is
+present. Specialist parity and hybrid/direct-child state/RNG identity passed on
+the frozen 31-row fixture set. On the same 10 non-Brew fixture rows supported
+by fast DeepSets, median preparation was 3.715 ms standard and 0.491 ms fast
+(7.57x); the 18/31 Brew share is intentionally unrepresentative and cannot
+estimate OOC fallback frequency. The specialist remains offline-rejected; the hybrid is unqualified,
+does not change the default, and has no paired gameplay/search-quality result
+yet. The planned 64-pair OOC screen is pending a frozen reviewed commit SHA.
+See [ledger-06 §340](../../experiments/ledger-06.md) and the
+[mechanism/timing packet](../../experiments/evidence/deepset_entropic_brew_hybrid_2026-09-24/README.md).
 
 ### Qualified DeepSets representation for survival prediction
 

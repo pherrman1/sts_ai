@@ -1,5 +1,10 @@
 #pragma once
+#include <atomic>
+#include <cstdint>
 #include <map>
+#include <memory>
+#include <mutex>
+#include <set>
 #include <string>
 #include <vector>
 #include "combat_predictor_input.h"
@@ -19,6 +24,7 @@ public:
     explicit CombatTransitionRuntime(const std::string &path);
     const nlohmann::json &metadata() const { return metadata_; }
     bool nearFull() const { return metadata_.at("version")==2; }
+    bool requiresEntropicBrewFallback() const;
     float survival(const CombatPredictorInputV1 &) const;
     std::vector<float> maxHpEncoding(const CombatPredictorInputV1 &) const;
     std::vector<float> maxHp(const CombatPredictorInputV1 &) const;
@@ -53,5 +59,37 @@ public:
     CombatTransitionExpectation expectation(const sts::GameContext &,
         const CombatPredictorInputV1 &) const override;
     const CombatTransitionRuntime &runtime() const { return runtime_; }
+};
+
+class EntropicBrewFallbackCombatTransitionSampler final : public CombatTransitionSampler {
+public:
+    struct Metrics {
+        std::uint64_t preparations=0, fastPreparations=0, fallbackPreparations=0;
+        std::uint64_t fastSamples=0, fallbackSamples=0;
+        std::uint64_t fastSupportFailures=0, fallbackSupportFailures=0;
+        std::uint64_t uniqueBrewPredictorStates=0;
+        double fallbackRate=0;
+    };
+private:
+    std::shared_ptr<const NativeCombatTransitionSampler> fast_;
+    std::shared_ptr<const NativeCombatTransitionSampler> standard_;
+    mutable std::atomic<std::uint64_t> preparations_{0}, fastPreparations_{0}, fallbackPreparations_{0};
+    mutable std::atomic<std::uint64_t> fastSamples_{0}, fallbackSamples_{0};
+    mutable std::atomic<std::uint64_t> fastSupportFailures_{0}, fallbackSupportFailures_{0};
+    mutable std::mutex brewStatesMutex_;
+    mutable std::set<std::string> brewStates_;
+    bool useFallback(const CombatPredictorInputV1 &) const;
+    void recordBrewState(const CombatPredictorInputV1 &) const;
+public:
+    EntropicBrewFallbackCombatTransitionSampler(std::string fastPath, std::string standardPath);
+    CombatRuntimeSupport support(const sts::GameContext &,const CombatPredictorInputV1 &) const override;
+    CombatRuntimeSupport forecastSupport(const CombatPredictorInputV1 &) const override;
+    CombatTransitionExpectation forecastExpectation(const CombatPredictorInputV1 &) const override;
+    CombatRuntimeSample sample(const sts::GameContext &,const CombatPredictorInputV1 &,std::mt19937_64 &) const override;
+    std::unique_ptr<PreparedCombatTransition> prepare(const sts::GameContext &,
+        const CombatPredictorInputV1 &) const override;
+    CombatTransitionExpectation expectation(const sts::GameContext &,
+        const CombatPredictorInputV1 &) const override;
+    Metrics takeMetrics() const;
 };
 }

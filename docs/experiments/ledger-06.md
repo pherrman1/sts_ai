@@ -11589,3 +11589,53 @@ for provenance, raw commands/results, checks and remaining uncertainty.
 Knowledge impact: current OOC implementation and profile evidence updated in
 the architecture and current-research pages; no qualified baseline or runtime
 default changed.
+
+## §342 — Experimental DeepSets CTM with Entropic Brew fallback (2026-09-24)
+
+- **Question and baseline:** Can the PR #298 potion-aware DeepSets specialist
+  serve ordinary OOC CTM preparations while the current standard Attention
+  artifact handles every pre-combat Entropic Brew state? Baseline is merged
+  PR #303 at `41c0f5af5711c452b6e133e6dc66c7756f50874c`. This is an
+  engineering screen, not another offline potion qualification.
+- **Intervention/provenance:** Exported the existing, already-verified W
+  checkpoint unchanged (SHA256
+  `71d88a71cf7579e1092c3b3c27e000538a6aafe35bbf5228c10c15fa0edd4ace`,
+  epoch 27) as a dedicated potion encoder/decoder in the experimental
+  DeepSets stack. A new opt-in hybrid routes each full predictor-visible
+  pre-combat input containing Brew to the exact current standard V2 CTM;
+  other inputs use the experimental fast child. The default path is
+  unchanged, and the specialist itself rejects direct Brew use.
+- **Mechanism/parity:** Python/native W parity passed on 31 frozen fixtures
+  at `1e-4` absolute tolerance (maximum encoder/probability errors
+  `7.75e-7`/`4.77e-7`, zero legal-mask mismatches). Hybrid/direct-child support,
+  prepared and scalar draws, full RAW state and RNG identity passed for the
+  same fixture inputs; routing consumed no planner RNG. Direct fast-path Brew
+  use failed closed. The 18 Brew rows among 31 fixtures are mechanism coverage,
+  not a representative dispatch sample. Pre-combat routing is sufficient for
+  the known recursive-Brew case because its trajectory starts with Brew in
+  the visible inventory.
+- **Fixed-input timing:** On 31 frozen fixtures, 10 warmups and 100 repeats
+  per row, the 10 non-Brew rows supported by fast were timed on both children:
+  median preparation was 3,715 us standard versus 491 us fast (7.57x), with
+  hybrid fast at 487 us on those same rows. Median sampling was 39.5 us
+  standard versus 35.0 us fast. Separately, on 18 supported Brew rows standard
+  preparation was 3,315 us and hybrid fallback 3,419 us; sampling was 41.7 and
+  44.4 us. Encoder calls were 4 for standard/fallback and 3 for fast. Fixture
+  fallback share is 18/31 and cannot estimate OOC frequency or whole-search
+  speed. This is a fixed-fixture timing smoke only.
+- **Implementation checks:** Release `one_combat` and probe targets built;
+  focused adapter/runtime-loader CTest passed 2/2; Python compilation and
+  `git diff --check` passed. Independent implementation review found no
+  remaining design defect after fallback source/cohort identity validation.
+  Full CI was not run.
+- **Status/decision:** The canonical paired OOC engineering screen on seeds
+  `980000..980063` remains pending. Repository workflow requires a reviewed
+  commit SHA to be frozen before this expensive seed run; current worktree Git
+  metadata is external/read-only pending permission. No gameplay, search
+  quality, representative fallback frequency, or weighted runtime conclusion
+  is claimed. No default promotion is authorized by these results.
+- **Evidence:** [mechanism and timing packet](evidence/deepset_entropic_brew_hybrid_2026-09-24/README.md).
+
+Knowledge impact: current research status now records an experimental hybrid
+path and its bounded engineering evidence; qualified models and runtime defaults
+remain unchanged.

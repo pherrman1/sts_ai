@@ -990,10 +990,20 @@ void configureLiveOocMcts() {
     }
     const char *artifact = std::getenv("STS_OOC_MCTS_COMBAT_MODEL");
     if (!artifact || !*artifact) throw std::runtime_error("STS_OOC_MCTS requires STS_OOC_MCTS_COMBAT_MODEL");
-    liveSampler = std::make_shared<NativeCombatTransitionSampler>(artifact);
+    const char *brewFallbackArtifact = std::getenv("STS_OOC_MCTS_BREW_FALLBACK_MODEL");
+    if (brewFallbackArtifact) {
+        if (!*brewFallbackArtifact)
+            throw std::runtime_error("STS_OOC_MCTS_BREW_FALLBACK_MODEL cannot be empty when set");
+        liveSampler = std::make_shared<EntropicBrewFallbackCombatTransitionSampler>(artifact,brewFallbackArtifact);
+    } else {
+        liveSampler = std::make_shared<NativeCombatTransitionSampler>(artifact);
+    }
     const auto precision = std::cout.precision();
     std::cout << std::setprecision(17) << "[live OOC MCTS ON sims=" << liveSimulations
-        << " combat_model=" << artifact << " prior=" << (liveOptions.uniformPrior ? "uniform" : "policy")
+        << " combat_model=" << artifact
+        << (brewFallbackArtifact ? std::string(" brew_fallback_model=")+brewFallbackArtifact+
+            " dispatch=precombat_entropic_brew" : std::string{})
+        << " prior=" << (liveOptions.uniformPrior ? "uniform" : "policy")
         << " temperature=" << liveOptions.priorTemperature << " cpuct=" << liveConfig.cPuct
         << " widen_k=" << liveConfig.wideningK << " widen_alpha=" << liveConfig.wideningAlpha
         << " max_depth=" << liveConfig.maxDepth << " root_selection=" << (liveConfig.selectByMeanQ ? "q" : "visits")
@@ -1012,7 +1022,11 @@ void configureLiveOocMcts() {
         << ",\"gapStop20\":" << (liveConfig.stopAt512VisitGap20 ? "true" : "false")
         << ",\"leafValue\":\"" << (liveOptions.bossLeaf ? "boss" : liveOptions.constantLeaf ? "constant" : "native")
         << "\",\"leafCombats\":" << liveOptions.leafCombats << ",\"leafPolicy\":\"" << (liveOptions.uniformLeafPolicy ? "uniform" : "v4")
-        << "\",\"simulations\":" << liveSimulations << "}\n";
+        << "\",\"simulations\":" << liveSimulations
+        << ",\"combatModel\":\"" << artifact << "\",\"brewFallbackModel\":"
+        << (brewFallbackArtifact ? "\"" + std::string(brewFallbackArtifact) + "\"" : "null")
+        << ",\"dispatchRule\":\""
+        << (brewFallbackArtifact ? "precombat_entropic_brew_to_standard" : "single_artifact") << "\"}\n";
     std::cout.precision(precision);
 }
 sts::search::OocMctsResult selectOocMctsAction(const GameContext &gc, const PathHistory &path,
@@ -1252,6 +1266,9 @@ bool executeOocMctsRoot(GameContext &gc, const OocGameContextModel::Candidate &s
 }
 
 void writeLiveOocMctsTrace(std::uint64_t seed, const LiveOocMctsMetrics &m, int realCombats) {
+    EntropicBrewFallbackCombatTransitionSampler::Metrics brewMetrics;
+    if (auto hybrid=std::dynamic_pointer_cast<const EntropicBrewFallbackCombatTransitionSampler>(liveSampler))
+        brewMetrics=hybrid->takeMetrics();
     if (oocProfileEnabled()) {
         static const char *names[] = {"mcts", "real_combat", "metadata", "policy_logits",
             "policy_prepare", "policy_predict", "successor", "combat_prepare", "combat_resolve",
@@ -1264,6 +1281,14 @@ void writeLiveOocMctsTrace(std::uint64_t seed, const LiveOocMctsMetrics &m, int 
             counters[names[index]] = {{"calls", counter.calls}, {"inclusiveCpuSec", counter.inclusive},
                 {"exclusiveCpuSec", counter.exclusive}};
         }
+        nlohmann::json hybrid={{"preparations",brewMetrics.preparations},
+            {"fastPreparations",brewMetrics.fastPreparations},
+            {"standardBrewFallbackPreparations",brewMetrics.fallbackPreparations},
+            {"fastSamples",brewMetrics.fastSamples},{"fallbackSamples",brewMetrics.fallbackSamples},
+            {"fallbackRate",brewMetrics.fallbackRate},
+            {"uniqueBrewPredictorStates",brewMetrics.uniqueBrewPredictorStates},
+            {"fastSupportFailures",brewMetrics.fastSupportFailures},
+            {"fallbackSupportFailures",brewMetrics.fallbackSupportFailures}};
         std::cerr << "[ooc-cpu-profile] " << nlohmann::json{{"seed",seed},
             {"processCpuAtReportSec",oocProfileCpu(CLOCK_PROCESS_CPUTIME_ID)},
             {"mctsCpuSec",m.cpuSeconds},{"realCombats",realCombats},{"counters",counters},
@@ -1271,12 +1296,13 @@ void writeLiveOocMctsTrace(std::uint64_t seed, const LiveOocMctsMetrics &m, int 
                 {"0",m.search.expandedNodes0Actions},{"1",m.search.expandedNodes1Action},
                 {"2",m.search.expandedNodes2Actions},{"3+",m.search.expandedNodes3PlusActions}}},
             {"singletonPolicyLogitCalls",m.continuation.singletonPolicyLogitCalls},
-            {"singletonPolicyInferenceCalls",m.continuation.singletonPolicyInferenceCalls}}.dump() << '\n';
+            {"singletonPolicyInferenceCalls",m.continuation.singletonPolicyInferenceCalls},
+            {"combatTransitionHybrid",hybrid}}.dump() << '\n';
         oocProfileCounters = {};
     }
     if (liveTrace.empty()) return;
     std::lock_guard<std::mutex> lock(liveTraceMutex);
-    const std::string header = "seed,oocDecisions,mctsOwned,mctsFallback,simulations,transitionSamples,combatSurrogateSamples,leafEvaluations,maxDepth,mctsWallSec,mctsCpuSec,realCombats,imaginedCombats,unsupportedCombats,mctsSupportAborts,discardedSimulations,simulationAttempts,pendingLeaves,battleLeaves,mapLeaves,projectionSteps,outcomeParticles,particleRevisits,deterministicRevisits,depthSum,continuationLimitAborts,trivialRootBypasses,earlyStopLockedRoot,earlyStopVisitGap20,savedSimulations,metadataBuilds,priorBuilds,preparedCombats,combatEdgeSamples\n";
+    const std::string header = "seed,oocDecisions,mctsOwned,mctsFallback,simulations,transitionSamples,combatSurrogateSamples,leafEvaluations,maxDepth,mctsWallSec,mctsCpuSec,realCombats,imaginedCombats,unsupportedCombats,mctsSupportAborts,discardedSimulations,simulationAttempts,pendingLeaves,battleLeaves,mapLeaves,projectionSteps,outcomeParticles,particleRevisits,deterministicRevisits,depthSum,continuationLimitAborts,trivialRootBypasses,earlyStopLockedRoot,earlyStopVisitGap20,savedSimulations,metadataBuilds,priorBuilds,preparedCombats,combatEdgeSamples,hybridPreparations,hybridFastPreparations,hybridFallbackPreparations,hybridFastSamples,hybridFallbackSamples,hybridFallbackRate,hybridUniqueBrewStates,hybridFastSupportFailures,hybridFallbackSupportFailures\n";
     std::ifstream existing(liveTrace);
     std::string firstLine;
     if (std::getline(existing,firstLine) && firstLine+'\n' != header)
@@ -1299,7 +1325,11 @@ void writeLiveOocMctsTrace(std::uint64_t seed, const LiveOocMctsMetrics &m, int 
         << ',' << m.search.earlyStopVisitGap20
         << ',' << m.search.savedSimulations << ',' << m.continuation.metadataBuilds
         << ',' << m.continuation.priorBuilds << ',' << m.continuation.preparedCombats
-        << ',' << m.continuation.combatEdgeSamples << '\n';
+        << ',' << m.continuation.combatEdgeSamples << ',' << brewMetrics.preparations
+        << ',' << brewMetrics.fastPreparations << ',' << brewMetrics.fallbackPreparations
+        << ',' << brewMetrics.fastSamples << ',' << brewMetrics.fallbackSamples
+        << ',' << brewMetrics.fallbackRate << ',' << brewMetrics.uniqueBrewPredictorStates
+        << ',' << brewMetrics.fastSupportFailures << ',' << brewMetrics.fallbackSupportFailures << '\n';
     std::ofstream reasons(liveTrace+".support.jsonl",std::ios::app);
     reasons << nlohmann::json{{"seed",seed},{"reasons",m.continuation.supportReasons},
         {"continuation_reasons",m.continuation.continuationReasons},
