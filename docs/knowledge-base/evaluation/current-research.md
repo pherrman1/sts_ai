@@ -74,7 +74,14 @@ other sections retain their prior verification and linked evidence.
 
 ## Purpose
 
-The [current OOC CPU profile](../../experiments/evidence/ooc_cpu_profile_2026-09-18/README.md)
+The [latest OOC CPU profile and exact V4-prior optimizations](../../experiments/evidence/ooc_v4_prior_uniform_leaf_optimization_2026-09-24/README.md)
+profile fixed seed12002032 with V4 prior and uniform leaf policy. A singleton
+prior fast path and state-prefix policy-head reuse preserve the fixed-work
+trace; the singleton change reduced mean MCTS thread CPU by 7.9% against the
+prefix-only build, with modest/noisy whole-process CPU movement. The separate
+prefix-only comparison reduced mean MCTS thread CPU by 10.6% and whole-run
+wall by 6.0%. This is one-seed runtime evidence, not gameplay-quality evidence
+or a production benchmark. The [previous OOC CPU profile](../../experiments/evidence/ooc_cpu_profile_2026-09-18/README.md)
 reuses only historical seeds12002032/12002033, with exact workload reproduction
 and frozen opt-in instrumentation on main589a7a7. Real Silver combat accounts
 for54–57% of full CPU; V4 prior/continuation inference for17–19%; all CTM

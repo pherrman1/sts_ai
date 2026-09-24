@@ -11550,3 +11550,42 @@ whole-run reference on the standard seed block under the ADR-0018 defaults.
 
 Knowledge impact: combat-search architecture records the handoff cost;
 current-baselines records the Silver adaptive whole-run reference.
+## §341 — V4 policy-prior cost under uniform-leaf OOC MCTS (2026-09-24)
+
+On baseline `41c0f5af5711c452b6e133e6dc66c7756f50874c`, refreshed the fixed
+seed `12002032` profile with the requested V4 policy prior, uniform leaf policy,
+2,048 simulations, same DeepSets CTM and Act-3 stop. The refreshed run reported
+119,445 simulations, 115,398 transitions, 88,566 policy/state evaluations,
+29.823s MCTS thread CPU, 35.516s real-combat CPU, 5.226s CTM preparation,
+5.428s policy prediction exclusive CPU and 7.023s V4 state-network CPU.
+Expanded-node action counts were 0:0, 1:40,599, 2:21,831, 3+:49,456; 23,700
+singleton nodes called `policyLogits()` and V4 inference.
+
+Two exact changes were retained: singleton legal sets now receive prior 1.0
+without model inference, and the V4 policy head reuses the immutable state
+prefix (ordered dimensions 0–127) across candidate actions before consuming
+the unchanged action suffix (128–183). The Q path and candidate encoding were
+not changed. Exact source logits, aggregate/normalized priors and action order
+are covered by the focused adapter self-test; fixed-work MAP search preserves
+selected action, priors, visits, Q, work counts, state fingerprints and RNG.
+
+An alternating prefix-only/prefix+singleton/singleton/prefix-only fixed-seed
+comparison preserved run outcome and byte-identical action/support traces.
+Singleton V4 policy inferences dropped from 23,700 to zero; the policy/state
+inference count fell 26.8%. Mean MCTS thread CPU decreased 37.867s to 34.888s
+(7.9%). Mean measured whole-process CPU decreased 3.3%, a modest result under
+substantial CPU throttling. Separately, the prefix-only change measured 10.6%
+lower MCTS CPU and 6.0% lower whole-run wall in its alternating repetitions.
+A final observational profile split the remaining 6.166s V4 state-preparation
+inclusive CPU into deck 3.154s, state fusion 2.488s, relic 0.199s, and potion
+0.070s; these components were not optimized.
+
+The one-seed performance evidence does not establish gameplay improvement,
+production speedup or default promotion. Live OOC MCTS stays opt-in, and the
+uniform-leaf/V4-prior research configuration remains unchanged. See the
+[complete evidence packet](evidence/ooc_v4_prior_uniform_leaf_optimization_2026-09-24/README.md)
+for provenance, raw commands/results, checks and remaining uncertainty.
+
+Knowledge impact: current OOC implementation and profile evidence updated in
+the architecture and current-research pages; no qualified baseline or runtime
+default changed.

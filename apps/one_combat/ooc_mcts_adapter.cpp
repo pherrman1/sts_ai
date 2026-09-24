@@ -165,6 +165,7 @@ OocMctsDependencies defaultOocMctsDependencies() {
         const TokState ts = buildTokState(gc, path);
         const auto prepared = g_oocStrategicTokNet.prepareState(ts.glob, ts.nDk, ts.dk,
             ts.nRl, ts.rl, ts.nPt, ts.pt);
+        const auto policyPrefix = g_oocStrategicTokNet.preparePolicyPrefix(prepared);
         std::vector<double> result;
         result.reserve(actions.size());
         for (const auto action : actions) {
@@ -175,7 +176,7 @@ OocMctsDependencies defaultOocMctsDependencies() {
             const int cats[6] = {c1, c2, c3, d1, d2, d3};
             const float entity[4] = {float(entityType == 0), float(entityType == 1),
                                      float(entityType == 2), float(entityType == 3)};
-            const double logit = g_oocStrategicTokNet.predictPolicyLogit(prepared, action.bits,
+            const double logit = g_oocStrategicTokNet.predictPolicyLogit(prepared, policyPrefix, action.bits,
                 cats, type, int(gc.screenState), entity, entityId, price);
             if (!std::isfinite(logit)) throw std::runtime_error("OOC MCTS nonfinite policy logit");
             result.push_back(logit);
@@ -477,9 +478,11 @@ std::vector<double> OocGameContextModel::policyLogits(sts::search::OocStateId id
     const auto &snapshot = states.at(id);
     const auto &gc = snapshot.gc;
     auto &cached = mutableMetadata(id);
+    if (cached.candidates.size() == 1) ++continuation_.singletonPolicyLogitCalls;
     if (cached.logits) return *cached.logits;
     const auto &actions = cached.candidates;
     if (!cached.sourcePriorCovered) return std::vector<double>(actions.size(), 0.0);
+    if (actions.size() == 1) ++continuation_.singletonPolicyInferenceCalls;
     ++continuation_.priorBuilds;
     std::vector<GameAction> sources;
     std::map<std::uint32_t, std::size_t> sourceIndexes;
@@ -515,10 +518,17 @@ std::vector<double> OocGameContextModel::policyLogits(sts::search::OocStateId id
     return logits;
 }
 std::vector<sts::search::OocPlannerAction> OocGameContextModel::legalActions(sts::search::OocStateId id) const {
+    OocProfileScope priorBuild(OocProfileBucket::PriorBuild);
     if (terminalValue(id) || isLeafBoundary(id)) throw std::runtime_error("OOC MCTS actions requested at leaf");
     auto &cached = mutableMetadata(id);
     if (cached.priors) return *cached.priors;
     const auto &actions = cached.candidates;
+    OocProfileScope singletonPrior(OocProfileBucket::SingletonPrior, actions.size() == 1);
+    if (actions.size() == 1) {
+        std::vector<sts::search::OocPlannerAction> result{{actions.front().id, 1.0}};
+        cached.priors = result;
+        return result;
+    }
     const bool uniform = options.uniformPrior || !cached.sourcePriorCovered;
     auto weights = uniform ? std::vector<double>(actions.size(), 1.0)
                                       : oocPolicyWeights(policyLogits(id), options.priorTemperature);
@@ -1168,11 +1178,17 @@ bool oocMctsPolicyStep(GameContext &gc, const PathHistory &path, std::uint64_t s
     c.continuationLimitAborts+=continuation.continuationLimitAborts;
     c.metadataBuilds+=continuation.metadataBuilds; c.priorBuilds+=continuation.priorBuilds;
     c.preparedCombats+=continuation.preparedCombats; c.combatEdgeSamples+=continuation.combatEdgeSamples;
+    c.singletonPolicyLogitCalls+=continuation.singletonPolicyLogitCalls;
+    c.singletonPolicyInferenceCalls+=continuation.singletonPolicyInferenceCalls;
     for (auto &[reason,count] : continuation.continuationReasons) c.continuationReasons[reason]+=count;
     for (auto &[reason,count] : continuation.supportReasons) c.supportReasons[reason]+=count;
     auto &m = metrics.search;
     m.outcomeParticles+=result.metrics.outcomeParticles; m.decisionNodes+=result.metrics.decisionNodes;
     m.chanceNodes+=result.metrics.chanceNodes; m.particleRevisits+=result.metrics.particleRevisits;
+    m.expandedNodes0Actions+=result.metrics.expandedNodes0Actions;
+    m.expandedNodes1Action+=result.metrics.expandedNodes1Action;
+    m.expandedNodes2Actions+=result.metrics.expandedNodes2Actions;
+    m.expandedNodes3PlusActions+=result.metrics.expandedNodes3PlusActions;
     m.deterministicRevisits+=result.metrics.deterministicRevisits; m.depthSum+=result.metrics.depthSum;
     m.trivialRootBypasses += result.metrics.trivialRootBypasses;
     m.earlyStopLockedRoot += result.metrics.earlyStopLockedRoot;
@@ -1245,7 +1261,9 @@ void writeLiveOocMctsTrace(std::uint64_t seed, const LiveOocMctsMetrics &m, int 
     if (oocProfileEnabled()) {
         static const char *names[] = {"mcts", "real_combat", "metadata", "policy_logits",
             "policy_prepare", "policy_predict", "successor", "combat_prepare", "combat_resolve",
-            "evaluate_leaf", "leaf_value", "v4_state_network", "v4_action_value"};
+            "evaluate_leaf", "leaf_value", "v4_state_network", "v4_encode_deck",
+            "v4_encode_rel", "v4_encode_pot", "v4_state_fusion", "v4_action_value",
+            "prior_build", "singleton_prior"};
         nlohmann::json counters = nlohmann::json::object();
         for (std::size_t index = 0; index < oocProfileCounters.size(); ++index) {
             const auto &counter = oocProfileCounters[index];
@@ -1254,7 +1272,12 @@ void writeLiveOocMctsTrace(std::uint64_t seed, const LiveOocMctsMetrics &m, int 
         }
         std::cerr << "[ooc-cpu-profile] " << nlohmann::json{{"seed",seed},
             {"processCpuAtReportSec",oocProfileCpu(CLOCK_PROCESS_CPUTIME_ID)},
-            {"mctsCpuSec",m.cpuSeconds},{"realCombats",realCombats},{"counters",counters}}.dump() << '\n';
+            {"mctsCpuSec",m.cpuSeconds},{"realCombats",realCombats},{"counters",counters},
+            {"expandedNodesByActionCount",{
+                {"0",m.search.expandedNodes0Actions},{"1",m.search.expandedNodes1Action},
+                {"2",m.search.expandedNodes2Actions},{"3+",m.search.expandedNodes3PlusActions}}},
+            {"singletonPolicyLogitCalls",m.continuation.singletonPolicyLogitCalls},
+            {"singletonPolicyInferenceCalls",m.continuation.singletonPolicyInferenceCalls}}.dump() << '\n';
         oocProfileCounters = {};
     }
     if (liveTrace.empty()) return;
@@ -1440,6 +1463,7 @@ void oocMctsAdapterSelfTest() {
     const int rl[64][2] = {{1,1},{23,4}};
     const int pt[8][2] = {{2,1},{7,2}};
     const auto fixturePrepared = g_oocStrategicTokNet.prepareState(glob,3,dk,2,rl,2,pt);
+    const auto fixturePolicyPrefix = g_oocStrategicTokNet.preparePolicyPrefix(fixturePrepared);
     for (auto f : v4PolicyFixtures) {
         const float et[4] = {float(f.entityType==0),float(f.entityType==1),float(f.entityType==2),float(f.entityType==3)};
         double logit = g_oocStrategicTokNet.predictPolicyLogit(glob,3,dk,2,rl,2,pt,f.bits,f.cats,
@@ -1448,9 +1472,11 @@ void oocMctsAdapterSelfTest() {
             f.type,f.screen,et,f.entityId,f.price);
         require(logit == g_oocStrategicTokNet.predictPolicyLogit(fixturePrepared,f.bits,f.cats,
                     f.type,f.screen,et,f.entityId,f.price)
+            && logit == g_oocStrategicTokNet.predictPolicyLogit(fixturePrepared,fixturePolicyPrefix,
+                    f.bits,f.cats,f.type,f.screen,et,f.entityId,f.price)
             && q == g_oocStrategicTokNet.predictActionValue(fixturePrepared,f.bits,f.cats,
                     f.type,f.screen,et,f.entityId,f.price),
-            "prepared V4 policy/Q exactly match legacy entry points");
+            "prepared V4 policy/Q and shared-prefix policy exactly match legacy entry points");
         require(std::abs(logit-f.logit)<1e-4, "V4 policy parity");
         require(std::abs(q-f.q)<2e-4, "V4 Q regression parity");
         std::cout << "parity bits="<<f.bits<<" logit="<<logit<<" expected="<<f.logit
@@ -1600,6 +1626,24 @@ void oocMctsAdapterSelfTest() {
                 representatives.push_back(binding);
         const bool map=canonical.screenState==ScreenState::MAP_SCREEN;
         const auto primitive=v4CandidateActions(canonical);
+        const TokState tokens=buildTokState(canonical,path);
+        const auto prepared=g_oocStrategicTokNet.prepareState(tokens.glob,tokens.nDk,tokens.dk,
+            tokens.nRl,tokens.rl,tokens.nPt,tokens.pt);
+        const auto policyPrefix=g_oocStrategicTokNet.preparePolicyPrefix(prepared);
+        std::map<std::uint32_t,double> sourceLogits;
+        for(const auto action:primitive) {
+            int type,c1,c2,c3,d1,d2,d3,et,ei; float price;
+            strategicCands(canonical,action,type,c1,c2,c3,d1,d2,d3);
+            tokEntity(canonical,action,et,ei,price);
+            const int cats[6]={c1,c2,c3,d1,d2,d3};
+            const float entity[4]={float(et==0),float(et==1),float(et==2),float(et==3)};
+            const auto reference=g_oocStrategicTokNet.predictPolicyLogit(prepared,action.bits,cats,
+                type,int(canonical.screenState),entity,ei,price);
+            const auto optimized=g_oocStrategicTokNet.predictPolicyLogit(prepared,policyPrefix,
+                action.bits,cats,type,int(canonical.screenState),entity,ei,price);
+            require(reference==optimized,"shared-prefix V4 logits are bit-identical for every source primitive");
+            sourceLogits.emplace(action.bits,reference);
+        }
         require(map || (bindings.supported && bindings.complete && !bindings.bindings.empty()),
             "semantic coverage fixture must be complete");
         OocGameContextModel provider(canonical,path);
@@ -1643,18 +1687,6 @@ void oocMctsAdapterSelfTest() {
         if(map) for(const auto &[bits,count]:counts) completeSources.insert(bits);
         qualified=qualified && established==completeSources;
         if(qualified) {
-            const auto tokens=buildTokState(canonical,path);
-            std::map<std::uint32_t,double> sourceLogits;
-            for(auto action:primitive) {
-                int type,c1,c2,c3,d1,d2,d3,et,ei; float price;
-                strategicCands(canonical,action,type,c1,c2,c3,d1,d2,d3);
-                tokEntity(canonical,action,et,ei,price);
-                const int cats[6]={c1,c2,c3,d1,d2,d3};
-                const float entity[4]={float(et==0),float(et==1),float(et==2),float(et==3)};
-                sourceLogits.emplace(action.bits,g_oocStrategicTokNet.predictPolicyLogit(tokens.glob,
-                    tokens.nDk,tokens.dk,tokens.nRl,tokens.rl,tokens.nPt,tokens.pt,
-                    action.bits,cats,type,int(canonical.screenState),entity,ei,price));
-            }
             std::map<std::string,std::vector<double>> grouped;
             for(const auto &binding:bindings.bindings)
                 if(GameAction(binding.primitiveBits).isValidAction(canonical))
@@ -1667,9 +1699,9 @@ void oocMctsAdapterSelfTest() {
             }
             const auto weights=oocPolicyWeights(classLogits);
             for(std::size_t i=0;i<actual.size();++i)
-                require(std::abs(actual[i].prior-weights[i]/counts.at(
-                    provider.candidate(0,actual[i].id).primitive.bits))<1e-12,
-                    "semantic prior preserves averaged V4 class logits and source split");
+                require(actual[i].prior==weights[i]/counts.at(
+                    provider.candidate(0,actual[i].id).primitive.bits),
+                    "semantic prior preserves exact averaged V4 class logits and source split");
             for(auto action:actual) {
                 const auto bits=provider.candidate(0,action.id).primitive.bits;
                 require(std::abs(action.prior-mass.at(bits)/counts.at(bits))<1e-12,
@@ -1753,10 +1785,10 @@ void oocMctsAdapterSelfTest() {
         restricted.rootPrimitiveBits=std::set<std::uint32_t>{v4CandidateActions(duplicates)[1].bits};
         OocGameContextModel secondCopy(duplicates,path,{},restricted,deps);
         const auto restrictedActions=secondCopy.legalActions(0);
-        require(restrictedActions.size()==1 && scored==1
+        require(restrictedActions.size()==1 && scored==6 && restrictedActions.front().prior==1.0
             && secondCopy.candidate(0,restrictedActions.front().id).primitive.bits
                 ==*restricted.rootPrimitiveBits->begin(),
-            "root restriction can retain a non-first equivalent physical copy");
+            "singleton root keeps its action identity and exact prior without another V4 score");
     }
     fixture=detachedCopy(gc); fixture.screenState=ScreenState::SHOP_ROOM;
     fixture.gold=500; fixture.info.shop.setup(fixture);
@@ -1858,12 +1890,34 @@ void oocMctsAdapterSelfTest() {
     fixture.info.bossRelics[2]=RelicId::FUSION_HAMMER; checkCandidates(fixture);
     checkCandidates(gc,false);
     {
-        // Compare actual search choices/statistics with the former primitive
-        // root interface. Native transition parity is checked above separately.
+        // Compare a fixed-work search using the original full policy head with
+        // the shared-prefix path, including all root statistics, successor
+        // fingerprints and the caller-owned search RNG state after each draw.
+        auto legacyDependencies=defaultOocMctsDependencies();
+        legacyDependencies.policyLogits=[](const GameContext &source,const PathHistory &history,
+                                            const std::vector<GameAction> &actions) {
+            const TokState tokens=buildTokState(source,history);
+            const auto state=g_oocStrategicTokNet.prepareState(tokens.glob,tokens.nDk,tokens.dk,
+                tokens.nRl,tokens.rl,tokens.nPt,tokens.pt);
+            std::vector<double> logits; logits.reserve(actions.size());
+            for(const auto action:actions) {
+                int type,c1,c2,c3,d1,d2,d3,et,ei; float price;
+                strategicCands(source,action,type,c1,c2,c3,d1,d2,d3);
+                tokEntity(source,action,et,ei,price);
+                const int cats[6]={c1,c2,c3,d1,d2,d3};
+                const float entity[4]={float(et==0),float(et==1),float(et==2),float(et==3)};
+                logits.push_back(g_oocStrategicTokNet.predictPolicyLogit(state,action.bits,cats,
+                    type,int(source.screenState),entity,ei,price));
+            }
+            return logits;
+        };
         struct PrimitiveMapRoot final : OocGenerativeModel {
             OocGameContextModel adapter;
             std::vector<OocPlannerAction> primitiveActions;
-            PrimitiveMapRoot(const GameContext &g,const PathHistory &p):adapter(g,p) {
+            std::vector<std::string> successorFingerprints;
+            std::vector<std::uint64_t> rngAfterDraw;
+            PrimitiveMapRoot(const GameContext &g,const PathHistory &p,const OocMctsDependencies &deps)
+                :adapter(g,p,{}, {},deps) {
                 const auto actions=v4CandidateActions(g);
                 const auto weights=oocPolicyWeights(adapter.policyLogits(0));
                 for(std::size_t i=0;i<actions.size();++i) primitiveActions.push_back({actions[i].bits,weights[i]});
@@ -1874,21 +1928,59 @@ void oocMctsAdapterSelfTest() {
                 require(id==0,"bounded MAP comparison never expands a child"); return primitiveActions;
             }
             OocStateId sampleSuccessor(OocStateId id,OocActionId a,std::mt19937_64 &r) override {
-                return adapter.sampleSuccessor(id,a,r);
+                const auto child=adapter.sampleSuccessor(id,a,r);
+                auto copy=r; rngAfterDraw.push_back(copy());
+                successorFingerprints.push_back(test::oocStateFingerprint(adapter.state(child)));
+                return child;
             }
             double leafValue(OocStateId id) const override { return adapter.leafValue(id); }
-        } baseline(gc,path);
-        OocGameContextModel current(gc,path);
+            double evaluateLeaf(OocStateId id,std::mt19937_64 &r) override { return adapter.evaluateLeaf(id,r); }
+            bool isDeterministicTransition(OocStateId id,OocActionId a) const override {
+                return adapter.isDeterministicTransition(id,a);
+            }
+        } baseline(gc,path,legacyDependencies);
+        struct CurrentPrefixRoot final : OocGenerativeModel {
+            OocGameContextModel adapter;
+            std::vector<std::string> successorFingerprints;
+            std::vector<std::uint64_t> rngAfterDraw;
+            CurrentPrefixRoot(const GameContext &g,const PathHistory &p):adapter(g,p) {}
+            std::optional<double> terminalValue(OocStateId id) const override { return adapter.terminalValue(id); }
+            bool isLeafBoundary(OocStateId id) const override { return adapter.isLeafBoundary(id); }
+            std::vector<OocPlannerAction> legalActions(OocStateId id) const override { return adapter.legalActions(id); }
+            OocStateId sampleSuccessor(OocStateId id,OocActionId a,std::mt19937_64 &r) override {
+                const auto child=adapter.sampleSuccessor(id,a,r);
+                auto copy=r; rngAfterDraw.push_back(copy());
+                successorFingerprints.push_back(test::oocStateFingerprint(adapter.state(child)));
+                return child;
+            }
+            double leafValue(OocStateId id) const override { return adapter.leafValue(id); }
+            double evaluateLeaf(OocStateId id,std::mt19937_64 &r) override { return adapter.evaluateLeaf(id,r); }
+            bool isDeterministicTransition(OocStateId id,OocActionId a) const override {
+                return adapter.isDeterministicTransition(id,a);
+            }
+        } current(gc,path);
         OocMctsConfig config; config.maxDepth=1;
         const auto expected=OocMctsPlanner(config).search(baseline,0,32);
         const auto actual=OocMctsPlanner(config).search(current,0,32);
-        require(actual.selectedAction==expected.selectedAction && actual.rootActions.size()==expected.rootActions.size(),
-            "MAP selected primitive ID matches former candidate interface");
+        require(actual.selectedAction==expected.selectedAction && actual.rootActions.size()==expected.rootActions.size()
+            && actual.metrics.simulations==expected.metrics.simulations
+            && actual.metrics.transitionSamples==expected.metrics.transitionSamples
+            && actual.metrics.decisionNodes==expected.metrics.decisionNodes
+            && actual.metrics.chanceNodes==expected.metrics.chanceNodes
+            && actual.metrics.leafEvaluations==expected.metrics.leafEvaluations
+            && actual.metrics.expandedNodes0Actions==expected.metrics.expandedNodes0Actions
+            && actual.metrics.expandedNodes1Action==expected.metrics.expandedNodes1Action
+            && actual.metrics.expandedNodes2Actions==expected.metrics.expandedNodes2Actions
+            && actual.metrics.expandedNodes3PlusActions==expected.metrics.expandedNodes3PlusActions,
+            "fixed-work MAP search action and expansion metrics remain exactly equivalent");
         for(std::size_t i=0;i<actual.rootActions.size();++i) {
             const auto &a=actual.rootActions[i], &b=expected.rootActions[i];
             require(a.id==b.id && a.prior==b.prior && a.visits==b.visits && a.q==b.q,
                 "MAP planner statistics remain exactly equivalent");
         }
+        require(current.successorFingerprints==baseline.successorFingerprints
+            && current.rngAfterDraw==baseline.rngAfterDraw,
+            "fixed-work successors and search RNG draw sequence remain exactly equivalent");
     }
     auto checkSequential=[&](GameContext source, std::uint32_t sourceBits,int picks) {
         checkCandidates(source);

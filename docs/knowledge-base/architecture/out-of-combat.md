@@ -455,6 +455,16 @@ one-seed invocations. These are attribution diagnostics, not production timings.
 See the [two historical-seed profile](../../experiments/evidence/ooc_cpu_profile_2026-09-18/README.md)
 for scope details, workload reconciliation and measured overhead limitations.
 
+With the V4 prior and uniform leaf policy, `legalActions()` assigns a sole
+candidate its exact normalized prior of 1.0 without running V4. For multiple
+candidates, the policy head prepares its bias plus state dimensions 0–127 once
+per immutable candidate set, then accumulates candidate dimensions 128–183 in
+the original order. The Q head and candidate encoding are unchanged. Exact
+parity and bounded performance evidence are recorded in the
+[2026-09-24 V4-prior profile](../../experiments/evidence/ooc_v4_prior_uniform_leaf_optimization_2026-09-24/README.md).
+The evidence supports this behavior-preserving optimization only; it does not
+change the live OOC MCTS default or establish gameplay-quality improvement.
+
 The CSV trace records
 decision/ownership/fallback
 counts, simulations, all sampled action transitions, combat-surrogate calls,

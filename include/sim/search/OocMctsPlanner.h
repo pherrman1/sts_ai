@@ -89,6 +89,10 @@ struct OocTreeSnapshot {
 };
 struct OocMctsMetrics {
     std::uint64_t simulations = 0, simulationAttempts = 0, decisionNodes = 0, chanceNodes = 0;
+    // Number of expanded decision nodes grouped by legal-action cardinality.
+    // Kept as search diagnostics; these counters do not affect selection.
+    std::uint64_t expandedNodes0Actions = 0, expandedNodes1Action = 0;
+    std::uint64_t expandedNodes2Actions = 0, expandedNodes3PlusActions = 0;
     std::uint64_t outcomeParticles = 0, transitionSamples = 0, leafEvaluations = 0;
     std::uint64_t particleRevisits = 0, deterministicRevisits = 0, depthSum = 0;
     std::uint32_t maxDepthReached = 0;
