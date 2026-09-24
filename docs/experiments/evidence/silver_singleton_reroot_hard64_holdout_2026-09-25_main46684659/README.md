@@ -76,7 +76,8 @@ work continued, main advanced to `8ed346ea1e503a85640c44131c05b9e8b5f48f53`
 (PR #320). The Release replay target rebuilt from that latest main produced
 control binary SHA-256 `58a8b80a857bedcb8773f2f26d4390d7f0ec720a9f3984e201821d0714fbdc05`,
 identical to the control binary used for all recorded rows. After merging that
-main head into the treatment tree, its replay target rebuilt to SHA-256
+main head into treatment commit `4b1b27f624d5a4ce8b9545f2dffc36d4e10213ee`,
+its replay target rebuilt to SHA-256
 `03a6aa7f0dcb613ddbd70beba1e8ed18b59c2ea7ee0102ed71effc31ba8fa63d`,
 identical to the treatment binary used for all recorded rows. The raw `run-order.json`
 retains the exact source commits used at invocation time. No additional seeded

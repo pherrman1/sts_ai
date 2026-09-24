@@ -11994,8 +11994,8 @@ result and its one shared technical failure. No default or quality gate changed.
 - **Interpretation:** this updates the earlier post-correction replay whose
   control was main at `01f6f164`. It confirms descriptive compute savings on
   the same frozen cohort against main at `46684659`; byte-for-byte rebuilds
-  show the replay target stayed identical at main `8ed346ea` and the merged
-  treatment head. It does not establish action equivalence or gameplay safety,
+  show the replay target stayed identical at main `8ed346ea` and treatment
+  commit `4b1b27f6`. It does not establish action equivalence or gameplay safety,
   validate live wire conversion, or change a default.
 - **Evidence:** [current-main frozen hard64 packet](evidence/silver_singleton_reroot_hard64_holdout_2026-09-25_main46684659/README.md),
   including raw per-arm rows, paired records, run order, per-invocation
