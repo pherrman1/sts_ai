@@ -346,10 +346,17 @@ add_executable(one_combat apps/one_combat.cpp apps/combat_model_diagnostics.cpp
     apps/one_combat/ooc_policy.cpp
     apps/one_combat/ooc_v4_encoding.cpp
     apps/one_combat/run_driver.cpp
+    apps/one_combat/run_trace.cpp
+    apps/one_combat/semantic_pilot.cpp
+    apps/one_combat/combat_datasets.cpp
+    apps/one_combat/ooc_factor_eval.cpp
+    apps/one_combat/strategic_gen.cpp
+    apps/one_combat/counterfactual_gen.cpp
     apps/one_combat/ooc_checkpoint_policy.cpp
     $<TARGET_OBJECTS:sts_core_objects>)
 target_include_directories(one_combat PUBLIC include)
 target_include_directories(one_combat PUBLIC json/include)
+target_include_directories(one_combat PRIVATE apps)
 target_link_libraries(one_combat PRIVATE silver_live_backend)
 link_ctm_crypto(one_combat)
 # The isolated model objects contain upstream full-game methods adjacent to
