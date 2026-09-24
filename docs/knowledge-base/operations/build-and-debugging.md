@@ -1,6 +1,6 @@
 # Build and debugging
 
-Last verified: 2026-09-10 against the current working tree.
+Last verified: 2026-09-24 for the Searcher3 removal; 2026-09-10 against the current working tree.
 
 ## Purpose
 
@@ -93,7 +93,7 @@ native/Python regressions including
 is named `unit-test` in CMake with `OUTPUT_NAME test` (CTest reserves the name
 `test`); `apps/test.cpp::main` is a manual command dispatcher that with no
 arguments prints `incorrect arguments` and exits successfully, and with a
-known subcommand runs the targeted Searcher3/terminal checks; unknown
+known subcommand runs the targeted search/terminal checks; unknown
 subcommands fail nonzero (see
 [`architecture/combat-search.md`](../architecture/combat-search.md)).
 `apps/parity_test.cpp` has a CMake target `parity_test`; `parity_test.py`

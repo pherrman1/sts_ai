@@ -35,7 +35,7 @@
 #include "sim/search/SimpleAgent.h"
 
 #include "sim/search/BattleScumSearcher2.h"
-#include "sim/search/BattleScumSearcher3.h"
+#include "sim/search/CombatObservation.h"
 #include "sim/search/CombatValueNet.h"
 #include "sim/search/SimHealth.h"
 #include "sim/search/TrainingIntegrity.h"
@@ -48,7 +48,6 @@
 #include "one_combat/combat_transition.h"
 #include "ooc_test_state.h"
 #include "constants/MonsterMoves.h"
-#include "test_belief.h"
 
 int runOocRewardContinuationTests();
 int runOocSemanticTests();
@@ -796,12 +795,6 @@ int testIssueFixes() {
                          [](const auto &e) { return e.action == search::Action(search::ActionType::POTION, 0); })) {
             return fail("Searcher2 omitted eligible smoke bomb");
         }
-        search::BattleScumSearcher3 s3(bc, 1);
-        search::enumerateActionsForNode(s3.root, bc);
-        if (std::none_of(s3.root.edges.begin(), s3.root.edges.end(),
-                         [](const auto &e) { return e.action == search::Action(search::ActionType::POTION, 0); })) {
-            return fail("Searcher3 omitted eligible smoke bomb");
-        }
         useSmoke.execute(bc);
         if (bc.potions[0] != Potion::EMPTY_POTION_SLOT || bc.potionCount != 0
             || bc.outcome != Outcome::PLAYER_VICTORY) {
@@ -859,12 +852,6 @@ int testIssueFixes() {
         if (std::any_of(s2.root.edges.begin(), s2.root.edges.end(),
                         [](const auto &e) { return e.action == search::Action(search::ActionType::POTION, 0); })) {
             return fail("Searcher2 exposed blocked Smoke Bomb use");
-        }
-        search::BattleScumSearcher3 s3(boss, 1);
-        search::enumerateActionsForNode(s3.root, boss);
-        if (std::any_of(s3.root.edges.begin(), s3.root.edges.end(),
-                        [](const auto &e) { return e.action == search::Action(search::ActionType::POTION, 0); })) {
-            return fail("Searcher3 exposed blocked Smoke Bomb use");
         }
         discardSmoke.execute(boss);
         if (boss.potions[0] != Potion::EMPTY_POTION_SLOT || boss.potionCount != 0) {
@@ -1049,191 +1036,7 @@ int testIssueFixes() {
         }
     }
 
-    // #72: reuseSearchCount must track tree promotion so STS_REUSE_ALWAYS_Q
-    // (always use Q on carried trees) is not dead: -1 on a fresh searcher,
-    // 0 right after advanceRoot promotes the tree, then per-search counts.
-    {
-        if (search::g_s3AlwaysQ) {
-            return fail("STS_S3_ALWAYS_Q default is not off");
-        }
-        search::g_reuseAlwaysQ = false;
-        if (search::s3ShouldExploitQ(false, -1)
-            || !search::s3ShouldExploitQ(true, -1)) {
-            return fail("legacy Q exploit gating changed");
-        }
-        search::g_s3AlwaysQ = true;
-        if (!search::s3ShouldExploitQ(false, -1)
-            || !search::s3ShouldExploitQ(true, -1)) {
-            return fail("S3 always-Q did not enable fresh-tree exploitation");
-        }
-        search::g_s3AlwaysQ = false;
-        search::g_reuseAlwaysQ = true;
-        if (search::s3ShouldExploitQ(false, -1)
-            || !search::s3ShouldExploitQ(false, 0)) {
-            return fail("reuse always-Q semantics changed");
-        }
-        search::g_reuseAlwaysQ = false;
-
-        GameContext gc(CharacterClass::IRONCLAD, 0xABCDEFu, 0);
-        BattleContext bc;
-        bc.init(gc, MonsterEncounter::CULTIST);
-        search::BattleScumSearcher3 s3(bc, bc.seed, 0, 8);
-        if (s3.reuseSearchCount != -1) {
-            return fail("fresh searcher reuseSearchCount != -1");
-        }
-        s3.search(64);
-        if (s3.root.edges.empty()) {
-            return fail("no root edges after search");
-        }
-        std::int64_t maxVisits = -1;
-        search::Action best;
-        for (const auto &e : s3.root.edges) {
-            if (e.child.simulationCount > maxVisits) {
-                maxVisits = e.child.simulationCount;
-                best = e.action;
-            }
-        }
-        if (!s3.advanceRoot(best, bc)) {
-            return fail("advanceRoot did not reuse a searched child");
-        }
-        if (s3.reuseSearchCount != 0) {
-            return fail("reuseSearchCount not reset on promotion");
-        }
-        s3.search(16);
-        if (s3.reuseSearchCount != 1) {
-            return fail("reuseSearchCount not incremented after promoted search");
-        }
-    }
-
-    // Searcher3 Q-gate timing: the default gate is initially closed, opens
-    // from a positive nonterminal backpropagation, and is recorded once.  The
-    // ordinary and LIVE_VALID selectors must use the same baseline predicate.
-    {
-        GameContext gc(CharacterClass::IRONCLAD, 0x13579Bu, 0);
-        BattleContext bc;
-        bc.init(gc, MonsterEncounter::CULTIST);
-        search::g_s3AlwaysQ = false;
-        search::g_reuseAlwaysQ = false;
-        search::BattleScumSearcher3 legacy(bc, bc.seed, 0, 8);
-        if (legacy.firstQExploitSimulation != -1) {
-            return fail("firstQExploitSimulation was not initially unset");
-        }
-        search::g_s3AlwaysQ = true;
-        if (!search::s3ShouldExploitQ(false, -1)) {
-            return fail("ALWAYS_Q global predicate did not remain immediate");
-        }
-        search::g_s3AlwaysQ = false;
-
-        search::BattleScumSearcher3::Node legal;
-        search::enumerateActionsForNode(legal, bc);
-        if (legal.edges.size() < 2) return fail("Q-gate selector fixture has <2 actions");
-        search::BattleScumSearcher3::Node node;
-        node.simulationCount = 100;
-        node.edges.resize(2);
-        node.edges[0].action = legal.edges[0].action;
-        node.edges[1].action = legal.edges[1].action;
-        node.edges[0].child.simulationCount = 10;
-        node.edges[1].child.simulationCount = 10;
-        node.edges[0].child.evaluationSum = 0.0;
-        node.edges[1].child.evaluationSum = 100.0;
-        if (legacy.selectBestEdgePUCT(node) != 0
-            || legacy.selectBestValidEdgePUCT(node, bc) != 0) {
-            return fail("ordinary/LIVE_VALID selectors opened Q gate too early");
-        }
-        std::vector<search::Action> winningLine{legal.edges[0].action};
-        // A positive nonterminal rollout/VNet-style evaluation opens the
-        // existing gate because it populates bestActionSequence; no terminal
-        // win is required by this mechanism.
-        legacy.backpropagate({}, -1.0, {});
-        if (search::s3ShouldExploitQ(false, legacy.reuseSearchCount)
-            || legacy.firstQExploitSimulation != -1) {
-            return fail("negative/nonterminal pre-gate backprop opened Q gate");
-        }
-        legacy.searchSimulationOrdinal = 1;
-        legacy.backpropagate({}, 1.0, winningLine);
-        if (!search::s3ShouldExploitQ(!legacy.bestActionSequence.empty(), legacy.reuseSearchCount)
-            || legacy.firstQExploitSimulation != 1) {
-            return fail("firstQExploitSimulation did not record first gate opening");
-        }
-        if (legacy.selectBestEdgePUCT(node) != 1
-            || legacy.selectBestValidEdgePUCT(node, bc) != 1) {
-            return fail("ordinary/LIVE_VALID selectors did not open together");
-        }
-        legacy.backpropagate({}, 2.0, winningLine);
-        if (legacy.firstQExploitSimulation != 1) {
-            return fail("firstQExploitSimulation was not first-only telemetry");
-        }
-        search::g_s3AlwaysQ = false;
-        search::g_reuseAlwaysQ = false;
-    }
-
     std::cout << "issue_fixes PASS\n";
-    return 0;
-}
-
-int testSeedContract(std::uint64_t seed) {
-    GameContext gc(CharacterClass::IRONCLAD, seed, 0);
-    BattleContext bc;
-    bc.init(gc, MonsterEncounter::CULTIST);
-    search::BattleScumSearcher3 a(bc, seed, 0, 8);
-    search::BattleScumSearcher3 b(bc, seed, 1, 8);       // different decision index
-    search::BattleScumSearcher3 c(bc, seed, 0, 8);       // same inputs as a
-    search::BattleScumSearcher3 d(bc, seed + 1, 0, 8);   // different agent seed
-    const std::uint64_t da = a.rng();
-    if (da != c.rng()) {
-        std::cout << "seed_contract FAIL: same inputs diverge\n";
-        return 1;
-    }
-    if (da == b.rng()) {
-        std::cout << "seed_contract FAIL: decision index ignored\n";
-        return 1;
-    }
-    if (da == d.rng()) {
-        std::cout << "seed_contract FAIL: agent seed ignored\n";
-        return 1;
-    }
-
-    // Full-search determinism: two identical searchers must produce identical
-    // root edges (action + obsHash key) and visit counts after a fixed budget.
-    search::BattleScumSearcher3 s1(bc, seed, 0, 8);
-    search::BattleScumSearcher3 s2(bc, seed, 0, 8);
-    s1.search(200);
-    s2.search(200);
-    if (s1.root.edges.size() != s2.root.edges.size()) {
-        std::cout << "seed_contract FAIL: search edge count diverged\n";
-        return 1;
-    }
-    for (size_t i = 0; i < s1.root.edges.size(); ++i) {
-        const auto &e1 = s1.root.edges[i], &e2 = s2.root.edges[i];
-        if (e1.action != e2.action || e1.child.obsHash != e2.child.obsHash
-            || e1.child.simulationCount != e2.child.simulationCount) {
-            std::cout << "seed_contract FAIL: search tree diverged at edge " << i << "\n";
-            return 1;
-        }
-    }
-    std::cout << "seed_contract PASS\n";
-    return 0;
-}
-
-int testDrawpile(std::uint64_t seed) {
-    GameContext gc(CharacterClass::IRONCLAD, seed, 0);
-    BattleContext bc;
-    bc.init(gc, MonsterEncounter::CULTIST);
-    search::BattleScumSearcher3 s3(bc, seed, 0, 8);
-    const auto &particle = s3.belief.particles[0];
-    BattleContext copy = bc;
-    s3.applyParticle(copy, particle);
-    if (copy.cards.drawPile.size() != (int)particle.drawPileOrder.size()) {
-        std::cout << "drawpile FAIL: pile size changed\n";
-        return 1;
-    }
-    for (int i = 0; i < copy.cards.drawPile.size(); ++i) {
-        if (copy.cards.drawPile[i].getId() != particle.drawPileOrder[i].getId()) {
-            std::cout << "drawpile FAIL: sampled order not installed\n";
-            return 1;
-        }
-    }
-    std::cout << "drawpile PASS\n";
     return 0;
 }
 
@@ -1298,294 +1101,6 @@ int testObsIdentity(std::uint64_t seed) {
         return 1;
     }
     std::cout << "obs_identity PASS\n";
-    return 0;
-}
-
-int testS3StrategyFusionDiag(std::uint64_t seed) {
-    int failures = 0;
-    auto check = [&](bool ok, const char *message) {
-        if (!ok) {
-            std::cout << "s3_strategy_fusion_diag FAIL: " << message << '\n';
-            ++failures;
-        }
-    };
-
-    check(!search::g_s3StrategyFusionDiag, "diagnostic is not off by default");
-
-    search::BattleScumSearcher3::Node stableParent;
-    stableParent.nodeObsVisits = 1;
-    check(stableParent.isObsStable(), "stable END_TURN parent was rejected");
-    stableParent.nodeObsMismatches = 1;
-    check(!stableParent.isObsStable(), "unstable END_TURN parent was accepted");
-
-    GameContext gc(CharacterClass::IRONCLAD, seed, 0);
-    BattleContext bc;
-    bc.init(gc, MonsterEncounter::CULTIST);
-    CombatObservation visible = CombatObservation::fromBattleContext(bc);
-
-    // Hidden draw order/RNG may differ while the full visible observation
-    // remains equal; a visible change must not compare equal.
-    BattleContext hiddenVariant = bc;
-    std::reverse(hiddenVariant.cards.drawPile.begin(), hiddenVariant.cards.drawPile.end());
-    hiddenVariant.shuffleRng.counter += 11;
-    hiddenVariant.cardRandomRng.counter += 7;
-    CombatObservation sameVisible = CombatObservation::fromBattleContext(hiddenVariant);
-    check(visible == sameVisible && visible.visibleHash() == sameVisible.visibleHash(),
-          "bucket identity includes hidden order or RNG");
-    hiddenVariant.player.curHp -= 1;
-    check(visible != CombatObservation::fromBattleContext(hiddenVariant),
-          "bucket identity ignored a visible change");
-
-    // Recreate the equal-visible fixture and prove fresh beliefs are sampled
-    // from that observation rather than inheriting the hidden representative.
-    hiddenVariant.player.curHp = bc.player.curHp;
-    std::sort(hiddenVariant.cards.drawPile.begin(), hiddenVariant.cards.drawPile.end(),
-              [](const CardInstance &a, const CardInstance &b) {
-                  return FullHiddenCardId(a) < FullHiddenCardId(b);
-              });
-    BattleContext canonical = bc;
-    std::sort(canonical.cards.drawPile.begin(), canonical.cards.drawPile.end(),
-              [](const CardInstance &a, const CardInstance &b) {
-                  return FullHiddenCardId(a) < FullHiddenCardId(b);
-              });
-    search::BattleScumSearcher3 a(canonical, seed, 0, 8);
-    search::BattleScumSearcher3 b(hiddenVariant, seed, 0, 8);
-    check(a.rootObs == b.rootObs, "equal visible inputs got different observations");
-    check(a.belief.particles.size() == b.belief.particles.size(),
-          "equal visible inputs got different particle counts");
-    if (a.belief.particles.size() == b.belief.particles.size()) {
-        for (size_t i = 0; i < a.belief.particles.size(); ++i)
-            check(fullHiddenStateKey(a.belief.particles[i])
-                      == fullHiddenStateKey(b.belief.particles[i]),
-                  "fresh belief inherited hidden future state");
-    }
-
-    // Semantic CARD identity includes target, but never uses raw hand index
-    // as the comparison key.
-    if (bc.cards.cardsInHand > 0) {
-        const auto first = search::semanticActionIdentity(
-            search::Action(search::ActionType::CARD, 0, 0), bc);
-        const auto otherTarget = search::semanticActionIdentity(
-            search::Action(search::ActionType::CARD, 0, 1), bc);
-        check(first != otherTarget, "CARD target was omitted from identity");
-        if (bc.cards.cardsInHand > 1) {
-            BattleContext duplicateHand = bc;
-            duplicateHand.cards.hand[1] = duplicateHand.cards.hand[0];
-            const auto firstPosition = search::semanticActionIdentity(
-                search::Action(search::ActionType::CARD, 0, 0), duplicateHand);
-            const auto secondPosition = search::semanticActionIdentity(
-                search::Action(search::ActionType::CARD, 1, 0), duplicateHand);
-            check(firstPosition == secondPosition,
-                  "equivalent CARD instances were compared by hand position");
-        }
-    }
-
-    // Policy extraction is read-only: it cannot mutate the live shared node.
-    a.search(64);
-    const size_t edgeCount = a.root.edges.size();
-    std::vector<std::int64_t> visits;
-    for (const auto &edge : a.root.edges) visits.push_back(edge.child.simulationCount);
-    (void)search::pickSearchAction(a.root, bc);
-    check(a.root.edges.size() == edgeCount, "read-only extraction changed topology");
-    for (size_t i = 0; i < a.root.edges.size(); ++i)
-        check(a.root.edges[i].child.simulationCount == visits[i],
-              "read-only extraction changed visits");
-
-    // Regression: strategy-fusion candidates are only recorded during step(),
-    // but side searches must wait for the normal search to finish and use the
-    // final child statistics. Use one particle so no multi-bucket side probe
-    // is eligible; this test inspects only the lifecycle provenance.
-    const bool oldStrategyDiag = search::g_s3StrategyFusionDiag;
-    const std::string oldStrategyDiagFile = search::g_s3StrategyFusionDiagFile;
-    const int oldStrategyParticles = search::g_s3StrategyFusionDiagParticles;
-    const int oldStrategyMaxTransitions = search::g_s3StrategyFusionDiagMaxTransitions;
-    const int oldStrategyMinVisits = search::g_s3StrategyFusionDiagMinChildVisits;
-    const int oldStrategyFreshSims = search::g_s3StrategyFusionDiagFreshSims;
-    const int oldStrategyReferenceSims = search::g_s3StrategyFusionDiagReferenceSims;
-    search::g_s3StrategyFusionDiag = true;
-    search::g_s3StrategyFusionDiagFile.clear();
-    search::g_s3StrategyFusionDiagParticles = 1;
-    search::g_s3StrategyFusionDiagMaxTransitions = 1;
-    search::g_s3StrategyFusionDiagMinChildVisits = 8;
-    search::g_s3StrategyFusionDiagFreshSims = 0;
-    search::g_s3StrategyFusionDiagReferenceSims = 0;
-    search::BattleScumSearcher3 lifecycleProbe(canonical, seed, 0, 8);
-    lifecycleProbe.search(128);
-    const auto &visitRecords = lifecycleProbe.strategyFusionFinalVisitRecordsForTest();
-    check(!visitRecords.empty(),
-          "no stable-parent strategy-fusion candidate was finalized");
-    bool observedPostSearchGrowth = false;
-    for (const auto &record : visitRecords)
-        observedPostSearchGrowth = observedPostSearchGrowth || record.second > record.first;
-    check(observedPostSearchGrowth,
-          "strategy-fusion used threshold-time rather than final child visits");
-    search::g_s3StrategyFusionDiag = oldStrategyDiag;
-    search::g_s3StrategyFusionDiagFile = oldStrategyDiagFile;
-    search::g_s3StrategyFusionDiagParticles = oldStrategyParticles;
-    search::g_s3StrategyFusionDiagMaxTransitions = oldStrategyMaxTransitions;
-    search::g_s3StrategyFusionDiagMinChildVisits = oldStrategyMinVisits;
-    search::g_s3StrategyFusionDiagFreshSims = oldStrategyFreshSims;
-    search::g_s3StrategyFusionDiagReferenceSims = oldStrategyReferenceSims;
-
-    if (failures == 0) {
-        std::cout << "s3_strategy_fusion_diag PASS\n";
-        return 0;
-    }
-    return 1;
-}
-
-int testS3PersistentEndTurnChance(std::uint64_t seed) {
-    int failures = 0;
-    auto check = [&](bool ok, const char *message) {
-        if (!ok) {
-            std::cout << "s3_persistent_endturn_chance FAIL: " << message << '\n';
-            ++failures;
-        }
-    };
-
-    check(!search::g_s3PersistentEndTurnChance,
-          "treatment is not off by default");
-    check(search::g_s3PersistentEndTurnMaxPile == 8,
-          "persistent chance max-pile default is not 8");
-    check(search::s3PersistentChanceFlagsCompatible(false, false, false)
-              && search::s3PersistentChanceFlagsCompatible(true, false, false)
-              && search::s3PersistentChanceFlagsCompatible(false, true, true)
-              && !search::s3PersistentChanceFlagsCompatible(true, true, false)
-              && !search::s3PersistentChanceFlagsCompatible(true, false, true)
-              && !search::s3PersistentChanceFlagsCompatible(true, true, true),
-          "flag-conflict contract is wrong");
-
-    GameContext gc(CharacterClass::IRONCLAD, seed, 0);
-    BattleContext pre;
-    pre.init(gc, MonsterEncounter::CULTIST);
-    const search::Action endTurn(search::ActionType::END_TURN);
-
-    // Make the hidden order decision-bearing: seven cards remain, so drawing
-    // five from opposite orders leaves different visible hands/remainders.
-    pre.cards.drawPile.push_back(CardInstance(CardId::BASH, false));
-    pre.cards.drawPile.push_back(CardInstance(CardId::ANGER, false));
-    const int savedMarginalMaxPile = search::g_s3EndTurnMarginalizeMaxPile;
-    const int savedPersistentMaxPile = search::g_s3PersistentEndTurnMaxPile;
-    search::g_s3EndTurnMarginalizeMaxPile = 0;
-    check(search::BattleScumSearcher3::persistentEndTurnEligible(pre, endTurn),
-          "chance eligibility still depends on marginalization max-pile");
-    search::g_s3PersistentEndTurnMaxPile = 6;
-    check(!search::BattleScumSearcher3::persistentEndTurnEligible(pre, endTurn),
-          "independent persistent chance max-pile was ignored");
-    search::g_s3PersistentEndTurnMaxPile = savedPersistentMaxPile;
-    search::g_s3EndTurnMarginalizeMaxPile = savedMarginalMaxPile;
-    BattleContext reshuffle = pre;
-    reshuffle.cards.drawPile.clear();
-    reshuffle.cards.discardPile.push_back(CardInstance(CardId::STRIKE_RED, false));
-    check(!search::BattleScumSearcher3::persistentEndTurnEligible(
-              reshuffle, endTurn),
-          "immediate reshuffle boundary was accepted");
-
-    BattleContext postA = pre;
-    BattleContext postB = pre;
-    std::reverse(postB.cards.drawPile.begin(), postB.cards.drawPile.end());
-    endTurn.execute(postA);
-    endTurn.execute(postB);
-    const auto obsA = CombatObservation::fromBattleContext(postA);
-    const auto obsB = CombatObservation::fromBattleContext(postB);
-    const auto preObservationHash =
-        CombatObservation::fromBattleContext(pre).visibleHash();
-    check(obsA != obsB, "opposite hidden orders did not produce split observations");
-
-    search::BattleScumSearcher3 searcher(pre, seed, 0, 8);
-    search::BattleScumSearcher3::Edge edge{endTurn};
-    searcher.dispatchPersistentEndTurnOutcome(edge, preObservationHash, obsA);
-    searcher.dispatchPersistentEndTurnOutcome(edge, preObservationHash, obsB);
-    check(edge.persistentChanceContainer && edge.outcomeChildren.size() == 2,
-          "different observations did not create two persistent children");
-
-    auto &childA = searcher.dispatchPersistentEndTurnOutcome(
-        edge, preObservationHash, obsA);
-    auto &childB = searcher.dispatchPersistentEndTurnOutcome(
-        edge, preObservationHash, obsB);
-    check(&childA != &childB,
-          "sampled observations dispatched to the same decision child");
-    check(searcher.outcomeExistingHits == 2
-              && searcher.outcomeNewMisses == 2,
-          "hit/miss diagnostics are inconsistent");
-
-    // Hidden RNG/counters are deliberately absent from CombatObservation.
-    BattleContext hiddenVariant = postA;
-    hiddenVariant.shuffleRng.counter += 17;
-    hiddenVariant.cardRandomRng.counter += 9;
-    const auto sameVisible = CombatObservation::fromBattleContext(hiddenVariant);
-    check(sameVisible == obsA,
-          "fixture unexpectedly exposed hidden RNG through observation identity");
-    auto &sameChild = searcher.dispatchPersistentEndTurnOutcome(
-        edge, preObservationHash, sameVisible);
-    check(&sameChild == &childA && edge.outcomeChildren.size() == 2,
-          "same visible outcome did not reuse its persistent child");
-
-    // One aggregate stream backs the parent action; conditioned nodes also
-    // receive their own statistics. Outcome Q is never consulted by dispatch.
-    searcher.backpropagate({&edge.child, &childA}, 10.0, {endTurn});
-    searcher.backpropagate({&edge.child, &childB}, 30.0, {endTurn});
-    childA.evaluationSum = -1000.0; // must not redirect obsA to childB
-    auto &stillA = searcher.dispatchPersistentEndTurnOutcome(
-        edge, preObservationHash, obsA);
-    check(&stillA == &childA,
-          "outcome dispatch selected by Q rather than sampled observation");
-    check(edge.child.simulationCount == 2 && edge.child.evaluationSum == 40.0,
-          "aggregate END_TURN action backup is incorrect");
-    check(childA.simulationCount == 1 && childB.simulationCount == 1,
-          "conditioned child visits did not accumulate independently");
-    check(edge.child.edges.empty(),
-          "aggregate chance container became a policy decision node");
-
-    BattleContext differentVisiblePre = pre;
-    ++differentVisiblePre.player.block;
-    const auto differentPreHash =
-        CombatObservation::fromBattleContext(differentVisiblePre).visibleHash();
-    check(differentPreHash != preObservationHash,
-          "pre-observation mismatch fixture did not change the visible hash");
-    searcher.dispatchPersistentEndTurnOutcome(edge, differentPreHash, obsA);
-    check(edge.persistentPreObservationMismatches == 1,
-          "legacy-container pre-observation mixing was not diagnosed");
-
-    if (failures == 0) {
-        std::cout << "s3_persistent_endturn_chance PASS\n";
-        return 0;
-    }
-    return 1;
-}
-
-int testPrune(std::uint64_t seed) {
-    GameContext gc(CharacterClass::IRONCLAD, seed, 0);
-    BattleContext bc;
-    bc.init(gc, MonsterEncounter::CULTIST);
-    if (search::BattleScumSearcher3::canPruneAsDead(bc)) {
-        std::cout << "prune FAIL: pruned while player can act\n";
-        return 1;
-    }
-    BattleContext lethal = bc;
-    lethal.inputState = InputState::EXECUTING_ACTIONS;   // player cannot act
-    lethal.player.curHp = 1;
-    lethal.player.block = 0;
-    lethal.cards.handNormalityCount = 1;                 // card play disallowed
-    lethal.player.cardsPlayedThisTurn = 3;
-    lethal.monsters.arr[0].curHp = 1;
-    lethal.monsters.arr[0].moveHistory[0] = MMID::LOOTER_MUG;
-    if (!search::BattleScumSearcher3::canPruneAsDead(lethal)) {
-        std::cout << "prune FAIL: lethal enemy-turn state not pruned\n";
-        return 1;
-    }
-    lethal.inputState = InputState::PLAYER_NORMAL;
-    if (search::BattleScumSearcher3::canPruneAsDead(lethal)) {
-        std::cout << "prune FAIL: pruned in PLAYER_NORMAL\n";
-        return 1;
-    }
-    lethal.inputState = InputState::EXECUTING_ACTIONS;
-    lethal.monsters.arr[0].moveHistory[0] = MMID::CULTIST_INCANTATION;   // not an attack
-    if (search::BattleScumSearcher3::canPruneAsDead(lethal)) {
-        std::cout << "prune FAIL: pruned without incoming attack\n";
-        return 1;
-    }
-    std::cout << "prune PASS\n";
     return 0;
 }
 
@@ -2278,20 +1793,14 @@ int testCardSelectParity() {
             s2.enumerateCardSelectActions(n2, bc);
             std::vector<std::uint32_t> s2Actions;
             for (const auto &e : n2.edges) s2Actions.push_back(e.action.bits);
-            search::BattleScumSearcher3::Node n3;
-            search::enumerateActionsForNode(n3, bc);
-            std::vector<std::uint32_t> s3Actions;
-            for (const auto &e : n3.edges) s3Actions.push_back(e.action.bits);
 
             const bool cOk = compareEnumerator("canonical", truth, canonical) == 0;
             const bool s2Ok = compareEnumerator("s2", truth, s2Actions) == 0;
-            const bool s3Ok = compareEnumerator("s3", truth, s3Actions) == 0;
-            if (!cOk || !s2Ok || !s3Ok) {
+            if (!cOk || !s2Ok) {
                 ++failures;
                 std::cout << "  " << name << " (pickCount=" << pickCount << "): "
                           << (cOk ? "canonical OK" : "canonical FAIL")
-                          << " " << (s2Ok ? "s2 OK" : "s2 FAIL")
-                          << " " << (s3Ok ? "s3 OK" : "s3 FAIL") << '\n';
+                          << " " << (s2Ok ? "s2 OK" : "s2 FAIL") << '\n';
             }
         }
         {
@@ -2304,19 +1813,13 @@ int testCardSelectParity() {
             s2.enumerateCardSelectActions(n2, bc);
             std::vector<std::uint32_t> s2Actions;
             for (const auto &e : n2.edges) s2Actions.push_back(e.action.bits);
-            search::BattleScumSearcher3::Node n3;
-            search::enumerateActionsForNode(n3, bc);
-            std::vector<std::uint32_t> s3Actions;
-            for (const auto &e : n3.edges) s3Actions.push_back(e.action.bits);
             const bool cOk = compareEnumerator("canonical", truth, canonical) == 0;
             const bool s2Ok = compareEnumerator("s2", truth, s2Actions) == 0;
-            const bool s3Ok = compareEnumerator("s3", truth, s3Actions) == 0;
-            if (!cOk || !s2Ok || !s3Ok) {
+            if (!cOk || !s2Ok) {
                 ++failures;
                 std::cout << "  " << name << " (large hand): "
                           << (cOk ? "canonical OK" : "canonical FAIL")
-                          << " " << (s2Ok ? "s2 OK" : "s2 FAIL")
-                          << " " << (s3Ok ? "s3 OK" : "s3 FAIL") << '\n';
+                          << " " << (s2Ok ? "s2 OK" : "s2 FAIL") << '\n';
             }
         }
     }
@@ -2330,11 +1833,7 @@ int testCardSelectParity() {
         s2.enumerateActionsForNode(n2, bc);
         std::vector<std::uint32_t> s2Actions;
         for (const auto &e : n2.edges) s2Actions.push_back(e.action.bits);
-        search::BattleScumSearcher3::Node n3;
-        search::enumerateActionsForNode(n3, bc);
-        std::vector<std::uint32_t> s3Actions;
-        for (const auto &e : n3.edges) s3Actions.push_back(e.action.bits);
-        if (compareEnumerator("s2", truth, s2Actions) != 0 || compareEnumerator("s3", truth, s3Actions) != 0) {
+        if (compareEnumerator("s2", truth, s2Actions) != 0) {
             ++failures;
             std::cout << "  player_normal energy=3 seed=" << seed << ": FAIL\n";
         }
@@ -2347,11 +1846,7 @@ int testCardSelectParity() {
         s2.enumerateActionsForNode(n2, bc);
         std::vector<std::uint32_t> s2Actions;
         for (const auto &e : n2.edges) s2Actions.push_back(e.action.bits);
-        search::BattleScumSearcher3::Node n3;
-        search::enumerateActionsForNode(n3, bc);
-        std::vector<std::uint32_t> s3Actions;
-        for (const auto &e : n3.edges) s3Actions.push_back(e.action.bits);
-        if (compareEnumerator("s2", truth, s2Actions) != 0 || compareEnumerator("s3", truth, s3Actions) != 0) {
+        if (compareEnumerator("s2", truth, s2Actions) != 0) {
             ++failures;
             std::cout << "  player_normal energy=0: FAIL\n";
         }
@@ -2362,6 +1857,124 @@ int testCardSelectParity() {
         return 0;
     }
     std::cout << "cardselect_parity FAIL (" << failures << " states)\n";
+    return 1;
+}
+
+int testS2DrawPileIndexBoundary() {
+    int failures = 0;
+    auto check = [&](bool ok, const char *message) {
+        if (!ok) {
+            std::cout << "s2_drawpile_index_boundary FAIL: " << message << '\n';
+            ++failures;
+        }
+    };
+
+    for (CardSelectTask task : {CardSelectTask::SECRET_TECHNIQUE,
+                                CardSelectTask::SECRET_WEAPON,
+                                CardSelectTask::SEEK}) {
+        auto bc = cardSelectFixture(task, 1, false);
+        check(search::isDrawPileIndexSensitiveCardSelect(bc),
+              "draw-pile task not classified as sensitive");
+
+        // Fair Searcher2 determinizes the hidden draw order before root
+        // expansion, so a stored raw draw-pile index can name a different
+        // card on the live root. Two eligible cards deliberately exchange
+        // indices; the committed action must follow the semantic card
+        // preferred in the determinized state, not merely reuse a
+        // still-legal raw index.
+        auto stale = cardSelectFixture(task, 1, false);
+        if (task == CardSelectTask::SECRET_TECHNIQUE) {
+            stale.cards.drawPile = {CardInstance(CardId::DEFEND_RED),
+                                    CardInstance(CardId::SHRUG_IT_OFF),
+                                    CardInstance(CardId::STRIKE_RED)};
+        } else if (task == CardSelectTask::SECRET_WEAPON) {
+            stale.cards.drawPile = {CardInstance(CardId::BASH),
+                                    CardInstance(CardId::ANGER),
+                                    CardInstance(CardId::DEFEND_RED)};
+        } else {
+            stale.cards.drawPile = {CardInstance(CardId::BASH),
+                                    CardInstance(CardId::DEFEND_RED),
+                                    CardInstance(CardId::STRIKE_RED)};
+        }
+        auto live = stale;
+        std::swap(live.cards.drawPile[0], live.cards.drawPile[1]);
+        const CardId preferred = stale.cards.drawPile[0].getId();
+        search::BattleScumSearcher2 s2(stale);
+        s2.enumerateActionsForNode(s2.root, stale);
+        for (auto &edge : s2.root.edges) {
+            edge.node.simulationCount =
+                stale.cards.drawPile[edge.action.getSelectIdx()].getId() == preferred
+                    ? 100 : 1;
+        }
+        const auto preferredEdge = std::find_if(
+            s2.root.edges.begin(), s2.root.edges.end(), [&](const auto &edge) {
+                return stale.cards.drawPile[edge.action.getSelectIdx()].getId()
+                    == preferred;
+            });
+        search::Action resolvedInParticle;
+        check(preferredEdge != s2.root.edges.end()
+                  && s2.resolveSelectedCardAction(*preferredEdge, live,
+                                                  resolvedInParticle)
+                  && live.cards.drawPile[resolvedInParticle.getSelectIdx()].getId()
+                         == preferred,
+              "S2 semantic edge did not rebind inside a new determinization");
+        search::Action selected;
+        check(s2.mostVisitedLiveRootAction(live, selected),
+              "S2 reconciliation found no live draw-pile action");
+        check(selected.isValidAction(live),
+              "S2 reconciliation returned stale draw-pile action");
+        check(live.cards.drawPile[selected.getSelectIdx()].getId() == preferred,
+              "S2 reconciliation did not preserve selected-card identity");
+    }
+
+    // Identical copies form one semantic bucket. Their visits aggregate, and
+    // deterministic live enumeration chooses the first equivalent copy.
+    auto duplicate = cardSelectFixture(CardSelectTask::SEEK, 1, false);
+    duplicate.cards.drawPile = {CardInstance(CardId::ANGER),
+                                CardInstance(CardId::ANGER),
+                                CardInstance(CardId::BASH)};
+    auto duplicateLive = duplicate;
+    std::swap(duplicateLive.cards.drawPile[1], duplicateLive.cards.drawPile[2]);
+    search::BattleScumSearcher2 duplicateS2(duplicate);
+    duplicateS2.enumerateActionsForNode(duplicateS2.root, duplicate);
+    duplicateS2.root.edges[0].node.simulationCount = 40;
+    duplicateS2.root.edges[1].node.simulationCount = 40;
+    duplicateS2.root.edges[2].node.simulationCount = 70;
+    search::Action duplicateSelected;
+    check(duplicateS2.mostVisitedLiveRootAction(duplicateLive, duplicateSelected),
+          "S2 duplicate reconciliation found no action");
+    check(duplicateLive.cards.drawPile[duplicateSelected.getSelectIdx()].getId()
+              == CardId::ANGER,
+          "S2 duplicate visits were not aggregated by semantics");
+    check(duplicateSelected.getSelectIdx() == 0,
+          "S2 duplicate reconciliation was not deterministic");
+
+    // If none of the stored semantic choices exists in a synthetic live root,
+    // canonical live choices remain available with zero visits.
+    auto fallbackLive = duplicate;
+    fallbackLive.cards.drawPile = {CardInstance(CardId::DEFEND_RED)};
+    search::Action fallbackSelected;
+    check(duplicateS2.mostVisitedLiveRootAction(fallbackLive, fallbackSelected),
+          "S2 live-only fallback found no action");
+    check(fallbackSelected.isValidAction(fallbackLive)
+              && fallbackLive.cards.drawPile[fallbackSelected.getSelectIdx()].getId()
+                     == CardId::DEFEND_RED,
+          "S2 live-only fallback did not return the canonical live action");
+
+    auto ordinary = cardSelectFixture(CardSelectTask::HOLOGRAM, 1, false);
+    check(!search::isDrawPileIndexSensitiveCardSelect(ordinary),
+          "unrelated card-select task classified as sensitive");
+    search::BattleScumSearcher2 ordinaryS2(ordinary);
+    ordinaryS2.enumerateActionsForNode(ordinaryS2.root, ordinary);
+    check(!ordinaryS2.root.edges.empty()
+              && !ordinaryS2.root.edges.front().hasSelectedCardKey,
+          "ordinary S2 root unexpectedly entered semantic draw-pile path");
+
+    if (failures == 0) {
+        std::cout << "s2_drawpile_index_boundary PASS\n";
+        return 0;
+    }
+    std::cout << "s2_drawpile_index_boundary FAIL (" << failures << " checks)\n";
     return 1;
 }
 
@@ -2680,8 +2293,9 @@ int testBattleContextRoundtrip() {
             std::mt19937 rng(seed * 2654435761u + (std::uint32_t)enc + 1);
             int guard = 0;
             while (bc.outcome == Outcome::UNDECIDED && bc.turn < 3 && guard++ < 300) {
-                search::BattleScumSearcher3::Node tmp;
-                search::enumerateActionsForNode(tmp, bc);
+                search::BattleScumSearcher2 enumerator(bc);
+                search::BattleScumSearcher2::Node tmp;
+                enumerator.enumerateActionsForNode(tmp, bc);
                 if (tmp.edges.empty()) break;
                 const auto &a = tmp.edges[rng() % tmp.edges.size()].action;
                 if (!a.isValidAction(bc)) break;
@@ -2851,9 +2465,7 @@ int testSimHealthNonFairS2Empty() {
     };
 
     const bool savedFair = search::g_fairPlay;
-    const bool savedS3 = search::g_useSearcher3;
     search::g_fairPlay = false;    // non-fair (known-RNG) Searcher2
-    search::g_useSearcher3 = false;
 
     const auto nlpBefore = search::g_simHealthFailureCounts[(int)search::SimHealthFailure::NO_LEGAL_PROGRESSION];
     BattleContext bc = cardSelectFixture(CardSelectTask::SECRET_WEAPON, 1, false);
@@ -2879,7 +2491,6 @@ int testSimHealthNonFairS2Empty() {
           + std::to_string((int)bc.outcome));
 
     search::g_fairPlay = savedFair;
-    search::g_useSearcher3 = savedS3;
 
     if (failures == 0) {
         std::cout << "simhealth_nonfair_s2_empty PASS\n";
@@ -2892,10 +2503,8 @@ int testSimHealthNonFairS2Empty() {
 // Simulator-health monitor: ACTION_SELECTION_FAILED classification (Test C).
 // When canonical live actions exist but root/action selection fails, the
 // monitor must classify the failure as ACTION_SELECTION_FAILED, not
-// NO_LEGAL_PROGRESSION. This is the classification contract used at every S3
-// root-selection failure site (e.g. g_s3Live=0 picking a stale invalid
-// most-visited edge while other live actions remain legal) and at the fair-S2
-// invalid-pick guard. The contract is unit-tested here on controlled states,
+// NO_LEGAL_PROGRESSION. This is the classification contract used at the
+// fair-S2 invalid-pick guard. The contract is unit-tested here on controlled states,
 // plus the reporter/counter wiring for the new reason.
 int testSimHealthSelectionFailure() {
     int failures = 0;
@@ -2985,9 +2594,7 @@ int testSimHealthNonFairS2SelectionFailed() {
     };
 
     const bool savedFair = search::g_fairPlay;
-    const bool savedS3 = search::g_useSearcher3;
     search::g_fairPlay = false;    // non-fair (known-RNG) Searcher2
-    search::g_useSearcher3 = false;
 
     BattleContext bc = playerNormalFixture(0xBEEFu, 3);
     check(bc.outcome == Outcome::UNDECIDED,
@@ -3022,7 +2629,6 @@ int testSimHealthNonFairS2SelectionFailed() {
           + std::to_string((int)bc.outcome));
 
     search::g_fairPlay = savedFair;
-    search::g_useSearcher3 = savedS3;
 
     if (failures == 0) {
         std::cout << "simhealth_nonfair_s2_selection_failed PASS\n";
@@ -3268,579 +2874,6 @@ int testKeyCollection() {
     }
     std::cout << "keys_collect FAIL (" << failures << " cases)\n";
     return 1;
-}
-
-// ---- S3 semantic CARD edge regression tests ---------------------------------
-// Verifies that edges carrying a semantic CardActionKey resolve to the
-// correct live-hand index, independent of hand permutation — the core
-// invariant that CombatObservation canonicalizes the hand as a multiset
-// but Edge::action stores a position-dependent index.
-int testSemanticCardEdges() {
-    search::g_s3SemanticCardEdges = true;
-    int failures = 0;
-
-    // Helper: build a BattleContext with a specific hand + monster setup.
-    auto makeContext = [](const std::vector<CardId> &handCards,
-                          MonsterEncounter enc = MonsterEncounter::CULTIST) {
-        GameContext gc(CharacterClass::IRONCLAD, 0x42, 0);
-        BattleContext bc;
-        bc.init(gc, enc);
-        // Replace the hand with the desired cards.
-        bc.cards.cardsInHand = (int)handCards.size();
-        for (int i = 0; i < (int)handCards.size(); ++i)
-            bc.cards.hand[i] = CardInstance(handCards[i]);
-        // Ensure we have energy to play them.
-        bc.player.energy = 3;
-        return bc;
-    };
-
-    // ── Test 1: Hand [Strike, Bash, Strike] — resolve Bash to index 1 ──
-    {
-        auto bc = makeContext({CardId::STRIKE_RED, CardId::BASH, CardId::STRIKE_RED});
-        search::BattleScumSearcher3::Node node;
-        search::enumerateActionsForNode(node, bc);
-
-        // Find the Bash edge (should have hasCardKey set).
-        const search::BattleScumSearcher3::Edge *bashEdge = nullptr;
-        for (const auto &e : node.edges) {
-            if (e.hasCardKey && e.cardKey.id == CardId::BASH) {
-                bashEdge = &e;
-                break;
-            }
-        }
-        if (!bashEdge) {
-            std::cout << "semantic_card_edges FAIL: no Bash edge with cardKey\n";
-            ++failures;
-        } else {
-            auto resolved = search::resolveSemanticCardEdge(*bashEdge, bc);
-            if (!resolved) {
-                std::cout << "semantic_card_edges FAIL: Bash not resolved in [Strike,Bash,Strike]\n";
-                ++failures;
-            } else if (resolved->getSourceIdx() != 1) {
-                std::cout << "semantic_card_edges FAIL: Bash resolved to idx "
-                          << resolved->getSourceIdx() << ", expected 1\n";
-                ++failures;
-            }
-        }
-    }
-
-    // ── Test 2: Hand [Bash, Strike, Strike] — resolve Bash to index 0 ──
-    {
-        auto bc = makeContext({CardId::BASH, CardId::STRIKE_RED, CardId::STRIKE_RED});
-        search::BattleScumSearcher3::Node node;
-        search::enumerateActionsForNode(node, bc);
-
-        const search::BattleScumSearcher3::Edge *bashEdge = nullptr;
-        for (const auto &e : node.edges) {
-            if (e.hasCardKey && e.cardKey.id == CardId::BASH) {
-                bashEdge = &e;
-                break;
-            }
-        }
-        if (!bashEdge) {
-            std::cout << "semantic_card_edges FAIL: no Bash edge from [Bash,Strike,Strike]\n";
-            ++failures;
-        } else {
-            auto resolved = search::resolveSemanticCardEdge(*bashEdge, bc);
-            if (!resolved) {
-                std::cout << "semantic_card_edges FAIL: Bash not resolved in [Bash,Strike,Strike]\n";
-                ++failures;
-            } else if (resolved->getSourceIdx() != 0) {
-                std::cout << "semantic_card_edges FAIL: Bash resolved to idx "
-                          << resolved->getSourceIdx() << ", expected 0\n";
-                ++failures;
-            }
-        }
-    }
-
-    // ── Test 3: same edge resolves Bash across different hand permutations ──
-    {
-        auto bcA = makeContext({CardId::STRIKE_RED, CardId::BASH, CardId::STRIKE_RED});
-        search::BattleScumSearcher3::Node nodeA;
-        search::enumerateActionsForNode(nodeA, bcA);
-
-        const search::BattleScumSearcher3::Edge *bashA = nullptr;
-        for (const auto &e : nodeA.edges) {
-            if (e.hasCardKey && e.cardKey.id == CardId::BASH) {
-                bashA = &e;
-                break;
-            }
-        }
-        if (!bashA) {
-            std::cout << "semantic_card_edges FAIL cross-perm: no Bash edge A\n";
-            ++failures;
-        } else {
-            // Resolve in a DIFFERENT BattleContext with Bash at index 0.
-            auto bcB = makeContext({CardId::BASH, CardId::STRIKE_RED, CardId::STRIKE_RED});
-            auto resolvedB = search::resolveSemanticCardEdge(*bashA, bcB);
-            if (!resolvedB) {
-                std::cout << "semantic_card_edges FAIL cross-perm: Bash not resolved\n";
-                ++failures;
-            } else if (resolvedB->getSourceIdx() != 0) {
-                std::cout << "semantic_card_edges FAIL cross-perm: Bash resolved to idx "
-                          << resolvedB->getSourceIdx() << ", expected 0\n";
-                ++failures;
-            }
-            // Resolve in original context.
-            auto resolvedA = search::resolveSemanticCardEdge(*bashA, bcA);
-            if (!resolvedA || resolvedA->getSourceIdx() != 1) {
-                std::cout << "semantic_card_edges FAIL cross-perm: Bash back-resolve wrong\n";
-                ++failures;
-            }
-        }
-    }
-
-    // ── Test 4: two identical Strikes — each has a cardKey (different idx, same key) ──
-    // enumerateActionsForNode deduplicates consecutive identical cards, so only
-    // one Strike edge is created for [Strike, Strike, Bash]. After resolution,
-    // the edge maps to the first matching Strike.
-    {
-        auto bc = makeContext({CardId::STRIKE_RED, CardId::STRIKE_RED, CardId::BASH});
-        search::BattleScumSearcher3::Node node;
-        search::enumerateActionsForNode(node, bc);
-
-        // Should have one STRIKE_RED CARD edge (deduped).
-        int strikeEdges = 0;
-        for (const auto &e : node.edges) {
-            if (e.hasCardKey && e.cardKey.id == CardId::STRIKE_RED)
-                ++strikeEdges;
-        }
-        if (strikeEdges != 1) {
-            std::cout << "semantic_card_edges FAIL two-strikes: expected 1 Strike edge, got "
-                      << strikeEdges << "\n";
-            ++failures;
-        } else {
-            const auto &strikeEdge = node.edges[0]; // first CARD edge should be Strike
-            // Resolve in hand [Bash, Strike, Strike] — should find Strike at idx 1
-            auto bc2 = makeContext({CardId::BASH, CardId::STRIKE_RED, CardId::STRIKE_RED});
-            auto resolved = search::resolveSemanticCardEdge(strikeEdge, bc2);
-            if (!resolved) {
-                std::cout << "semantic_card_edges FAIL two-strikes: Strike not resolved\n";
-                ++failures;
-            } else if (resolved->getSourceIdx() != 1) {
-                std::cout << "semantic_card_edges FAIL two-strikes: resolved to idx "
-                          << resolved->getSourceIdx() << ", expected 1\n";
-                ++failures;
-            }
-        }
-    }
-
-    // ── Test 5: upgraded vs non-upgraded — distinct cardKeys ──
-    {
-        auto bc = makeContext({CardId::STRIKE_RED, CardId::BASH});
-        // Manually upgrade the Bash.
-        bc.cards.hand[1].upgrade();
-        search::BattleScumSearcher3::Node node;
-        search::enumerateActionsForNode(node, bc);
-
-        int bashEdges = 0;
-        for (const auto &e : node.edges) {
-            if (e.hasCardKey && e.cardKey.id == CardId::BASH) {
-                ++bashEdges;
-                if (e.cardKey.upgradeCount != 1) {
-                    std::cout << "semantic_card_edges FAIL upgraded: Bash+ key upgradeCount="
-                              << (int)e.cardKey.upgradeCount << ", expected 1\n";
-                    ++failures;
-                }
-            }
-        }
-        if (bashEdges == 0) {
-            std::cout << "semantic_card_edges FAIL upgraded: no Bash+ edge\n";
-            ++failures;
-        }
-
-        // Unupgraded Bash in a fresh hand should NOT match the Bash+ key.
-        auto bc2 = makeContext({CardId::BASH, CardId::STRIKE_RED});
-        // bc2 has unupgraded Bash. Get its Bash edge.
-        search::BattleScumSearcher3::Node node2;
-        search::enumerateActionsForNode(node2, bc2);
-        const search::BattleScumSearcher3::Edge *unupEdge = nullptr;
-        for (const auto &e : node2.edges) {
-            if (e.hasCardKey && e.cardKey.id == CardId::BASH && e.cardKey.upgradeCount == 0)
-                { unupEdge = &e; break; }
-        }
-        // Try to resolve the Bash+ edge against an unupgraded Bash hand — should fail.
-        if (bashEdges > 0 && unupEdge) {
-            auto resolved = search::resolveSemanticCardEdge(node.edges[1], bc2);
-            // node.edges[1] should be Bash+ (idx 1 in [Strike, Bash+]).
-            // bc2 has unupgraded Bash at idx 0. cardKey.upgradeCount=1 vs 0 → no match.
-            if (resolved) {
-                std::cout << "semantic_card_edges FAIL upgrade: Bash+ incorrectly matched unupgraded Bash\n";
-                ++failures;
-            }
-        }
-    }
-
-    // ── Test 6: temporary cost difference (Madness / Mummified Hand) ──
-    {
-        auto bc = makeContext({CardId::STRIKE_RED, CardId::DEFEND_RED});
-        bc.cards.hand[1].costForTurn = 0;  // Defend is free this turn
-        search::BattleScumSearcher3::Node node;
-        search::enumerateActionsForNode(node, bc);
-
-        for (const auto &e : node.edges) {
-            if (e.hasCardKey && e.cardKey.id == CardId::DEFEND_RED) {
-                if (e.cardKey.costForTurn != 0) {
-                    std::cout << "semantic_card_edges FAIL temp-cost: Defend costForTurn="
-                              << (int)e.cardKey.costForTurn << ", expected 0\n";
-                    ++failures;
-                }
-                break;
-            }
-        }
-
-        // A standard Defend (cost=1) should NOT match.
-        auto bc2 = makeContext({CardId::DEFEND_RED, CardId::STRIKE_RED});
-        // Find the Defend-1 edge
-        search::BattleScumSearcher3::Node node2;
-        search::enumerateActionsForNode(node2, bc2);
-        // Try to resolve a cost=0 Defend against cost=1 Defend hand — should fail.
-        bool foundCostZeroEdge = false;
-        for (const auto &e : node.edges) {
-            if (e.hasCardKey && e.cardKey.id == CardId::DEFEND_RED && e.cardKey.costForTurn == 0) {
-                auto resolved = search::resolveSemanticCardEdge(e, bc2);
-                if (resolved) {
-                    std::cout << "semantic_card_edges FAIL temp-cost: cost=0 Defend matched cost=1 Defend\n";
-                    ++failures;
-                }
-                foundCostZeroEdge = true;
-                break;
-            }
-        }
-        if (!foundCostZeroEdge) {
-            std::cout << "semantic_card_edges FAIL temp-cost: no cost=0 Defend edge\n";
-            ++failures;
-        }
-    }
-
-    // ── Test 7: targeted CARD edge stores and resolves target ──
-    {
-        // Use a fight with two targetable monsters (CULTIST has 1, use JAW_WORM with double)
-        auto bc = makeContext({CardId::BASH}, MonsterEncounter::CULTIST);
-        search::BattleScumSearcher3::Node node;
-        search::enumerateActionsForNode(node, bc);
-
-        for (const auto &e : node.edges) {
-            if (e.hasCardKey && e.cardKey.id == CardId::BASH) {
-                if (e.cardKey.target != 0) {
-                    std::cout << "semantic_card_edges FAIL target: Bash target="
-                              << e.cardKey.target << ", expected 0\n";
-                    ++failures;
-                }
-                // Resolve in same context — target should be preserved.
-                auto resolved = search::resolveSemanticCardEdge(e, bc);
-                if (!resolved) {
-                    std::cout << "semantic_card_edges FAIL target: Bash not resolved\n";
-                    ++failures;
-                } else if (resolved->getTargetIdx() != 0) {
-                    std::cout << "semantic_card_edges FAIL target: resolved target="
-                              << resolved->getTargetIdx() << ", expected 0\n";
-                    ++failures;
-                }
-                break;
-            }
-        }
-    }
-
-    // ── Test 8: missing semantic card — edge unavailable ──
-    {
-        auto bc = makeContext({CardId::STRIKE_RED, CardId::BASH, CardId::STRIKE_RED});
-        search::BattleScumSearcher3::Node node;
-        search::enumerateActionsForNode(node, bc);
-
-        const search::BattleScumSearcher3::Edge *bashEdge = nullptr;
-        for (const auto &e : node.edges) {
-            if (e.hasCardKey && e.cardKey.id == CardId::BASH) {
-                bashEdge = &e;
-                break;
-            }
-        }
-        if (!bashEdge) {
-            std::cout << "semantic_card_edges FAIL missing-card: no Bash edge to test\n";
-            ++failures;
-        } else {
-            // Resolve in a hand without Bash.
-            auto bcNoBash = makeContext({CardId::STRIKE_RED, CardId::DEFEND_RED, CardId::STRIKE_RED});
-            auto resolved = search::resolveSemanticCardEdge(*bashEdge, bcNoBash);
-            if (resolved) {
-                std::cout << "semantic_card_edges FAIL missing-card: Bash incorrectly resolved in Bash-free hand\n";
-                ++failures;
-            }
-        }
-    }
-
-    // ── Test 9: observation identity — permuted hands have same visibleHash ──
-    {
-        auto bcA = makeContext({CardId::STRIKE_RED, CardId::BASH, CardId::STRIKE_RED});
-        auto bcB = makeContext({CardId::BASH, CardId::STRIKE_RED, CardId::STRIKE_RED});
-        auto obsA = CombatObservation::fromBattleContext(bcA);
-        auto obsB = CombatObservation::fromBattleContext(bcB);
-        if (obsA.visibleHash() != obsB.visibleHash()) {
-            std::cout << "semantic_card_edges FAIL obs-identity: permuted hands have different hash\n";
-            ++failures;
-        }
-        if (obsA != obsB) {
-            std::cout << "semantic_card_edges FAIL obs-identity: permuted hands != under operator==\n";
-            ++failures;
-        }
-    }
-
-    search::g_s3SemanticCardEdges = false;
-    if (failures == 0) {
-        std::cout << "semantic_card_edges PASS\n";
-        return 0;
-    }
-    std::cout << "semantic_card_edges FAIL (" << failures << " checks)\n";
-    return 1;
-}
-
-// ---- S3 draw-pile-index reuse boundary regression --------------------------
-int testS3DrawPileIndexReuseBoundary() {
-    int failures = 0;
-    auto check = [&](bool ok, const char *message) {
-        if (!ok) {
-            std::cout << "s3_drawpile_reuse_boundary FAIL: " << message << '\n';
-            ++failures;
-        }
-    };
-
-    for (CardSelectTask task : {CardSelectTask::SECRET_TECHNIQUE,
-                                CardSelectTask::SECRET_WEAPON,
-                                CardSelectTask::SEEK}) {
-        auto bc = cardSelectFixture(task, 1, false);
-        check(search::isDrawPileIndexSensitiveCardSelect(bc),
-              "draw-pile task not classified as sensitive");
-        search::BattleScumSearcher3 s3(bc, 0x1234, 0, 1);
-        s3.search(1);
-        check(!s3.root.edges.empty(), "sensitive fixture produced no root edges");
-        if (!s3.root.edges.empty()) {
-            const auto action = s3.root.edges.front().action;
-            check(!s3.advanceRoot(action, bc),
-                  "sensitive card-select root retained a subtree");
-            check(!s3.rootCarried && s3.reuseGeneration == 0,
-                  "fresh sensitive boundary reported as carried");
-        }
-
-        // Root expansion can observe a different particle draw order than
-        // the live state. Reconciliation must add the live raw-index action.
-        auto stale = cardSelectFixture(task, 1, false);
-        auto live = stale;
-        std::swap(live.cards.drawPile[0], live.cards.drawPile[1]);
-        search::BattleScumSearcher3 reconciler(stale, 0x4321, 0, 1);
-        for (const auto &action : search::Action::enumerateCardSelectActions(stale)) {
-            search::BattleScumSearcher3::Edge edge;
-            edge.action = action;
-            reconciler.root.edges.push_back(std::move(edge));
-        }
-        const auto liveActions = search::Action::enumerateCardSelectActions(live);
-        reconciler.reconcileRoot(live);
-        for (const auto &action : liveActions) {
-            bool found = false;
-            for (const auto &edge : reconciler.root.edges)
-                found = found || edge.action.bits == action.bits;
-            check(found, "reconciliation failed to add live draw-pile action");
-            check(action.isValidAction(live), "canonical live draw-pile action invalid");
-        }
-
-        // Fair Searcher2 has the same raw-index boundary at root selection.
-        // Two eligible cards deliberately exchange indices; the committed
-        // action must follow the semantic card preferred in the determinized
-        // state, not merely reuse a still-legal raw index.
-        if (task == CardSelectTask::SECRET_TECHNIQUE) {
-            stale.cards.drawPile = {CardInstance(CardId::DEFEND_RED),
-                                    CardInstance(CardId::SHRUG_IT_OFF),
-                                    CardInstance(CardId::STRIKE_RED)};
-        } else if (task == CardSelectTask::SECRET_WEAPON) {
-            stale.cards.drawPile = {CardInstance(CardId::BASH),
-                                    CardInstance(CardId::ANGER),
-                                    CardInstance(CardId::DEFEND_RED)};
-        } else {
-            stale.cards.drawPile = {CardInstance(CardId::BASH),
-                                    CardInstance(CardId::DEFEND_RED),
-                                    CardInstance(CardId::STRIKE_RED)};
-        }
-        live = stale;
-        std::swap(live.cards.drawPile[0], live.cards.drawPile[1]);
-        const CardId preferred = stale.cards.drawPile[0].getId();
-        search::BattleScumSearcher2 s2(stale);
-        s2.enumerateActionsForNode(s2.root, stale);
-        for (auto &edge : s2.root.edges) {
-            edge.node.simulationCount =
-                stale.cards.drawPile[edge.action.getSelectIdx()].getId() == preferred
-                    ? 100 : 1;
-        }
-        const auto preferredEdge = std::find_if(
-            s2.root.edges.begin(), s2.root.edges.end(), [&](const auto &edge) {
-                return stale.cards.drawPile[edge.action.getSelectIdx()].getId()
-                    == preferred;
-            });
-        search::Action resolvedInParticle;
-        check(preferredEdge != s2.root.edges.end()
-                  && s2.resolveSelectedCardAction(*preferredEdge, live,
-                                                  resolvedInParticle)
-                  && live.cards.drawPile[resolvedInParticle.getSelectIdx()].getId()
-                         == preferred,
-              "S2 semantic edge did not rebind inside a new determinization");
-        search::Action selected;
-        check(s2.mostVisitedLiveRootAction(live, selected),
-              "S2 reconciliation found no live draw-pile action");
-        check(selected.isValidAction(live),
-              "S2 reconciliation returned stale draw-pile action");
-        check(live.cards.drawPile[selected.getSelectIdx()].getId() == preferred,
-              "S2 reconciliation did not preserve selected-card identity");
-    }
-
-    // Identical copies form one semantic bucket. Their visits aggregate, and
-    // deterministic live enumeration chooses the first equivalent copy.
-    auto duplicate = cardSelectFixture(CardSelectTask::SEEK, 1, false);
-    duplicate.cards.drawPile = {CardInstance(CardId::ANGER),
-                                CardInstance(CardId::ANGER),
-                                CardInstance(CardId::BASH)};
-    auto duplicateLive = duplicate;
-    std::swap(duplicateLive.cards.drawPile[1], duplicateLive.cards.drawPile[2]);
-    search::BattleScumSearcher2 duplicateS2(duplicate);
-    duplicateS2.enumerateActionsForNode(duplicateS2.root, duplicate);
-    duplicateS2.root.edges[0].node.simulationCount = 40;
-    duplicateS2.root.edges[1].node.simulationCount = 40;
-    duplicateS2.root.edges[2].node.simulationCount = 70;
-    search::Action duplicateSelected;
-    check(duplicateS2.mostVisitedLiveRootAction(duplicateLive, duplicateSelected),
-          "S2 duplicate reconciliation found no action");
-    check(duplicateLive.cards.drawPile[duplicateSelected.getSelectIdx()].getId()
-              == CardId::ANGER,
-          "S2 duplicate visits were not aggregated by semantics");
-    check(duplicateSelected.getSelectIdx() == 0,
-          "S2 duplicate reconciliation was not deterministic");
-
-    // If none of the stored semantic choices exists in a synthetic live root,
-    // canonical live choices remain available with zero visits.
-    auto fallbackLive = duplicate;
-    fallbackLive.cards.drawPile = {CardInstance(CardId::DEFEND_RED)};
-    search::Action fallbackSelected;
-    check(duplicateS2.mostVisitedLiveRootAction(fallbackLive, fallbackSelected),
-          "S2 live-only fallback found no action");
-    check(fallbackSelected.isValidAction(fallbackLive)
-              && fallbackLive.cards.drawPile[fallbackSelected.getSelectIdx()].getId()
-                     == CardId::DEFEND_RED,
-          "S2 live-only fallback did not return the canonical live action");
-
-    auto ordinary = cardSelectFixture(CardSelectTask::HOLOGRAM, 1, false);
-    check(!search::isDrawPileIndexSensitiveCardSelect(ordinary),
-          "unrelated card-select task classified as sensitive");
-    search::BattleScumSearcher2 ordinaryS2(ordinary);
-    ordinaryS2.enumerateActionsForNode(ordinaryS2.root, ordinary);
-    check(!ordinaryS2.root.edges.empty()
-              && !ordinaryS2.root.edges.front().hasSelectedCardKey,
-          "ordinary S2 root unexpectedly entered semantic draw-pile path");
-    search::BattleScumSearcher3 ordinaryS3(ordinary, 0x5678, 0, 1);
-    ordinaryS3.search(1);
-    check(!ordinaryS3.root.edges.empty(), "ordinary fixture produced no root edges");
-    if (!ordinaryS3.root.edges.empty()) {
-        check(ordinaryS3.advanceRoot(ordinaryS3.root.edges.front().action, ordinary),
-              "ordinary card-select root did not reuse");
-    }
-
-    if (failures == 0) {
-        std::cout << "s3_drawpile_reuse_boundary PASS\n";
-        return 0;
-    }
-    std::cout << "s3_drawpile_reuse_boundary FAIL (" << failures << " checks)\n";
-    return 1;
-}
-
-// ---- Draw-probability unit tests -------------------------------------------
-// Validates the exact hypergeometric draw-probability helper.
-
-// Forward-declare the helper (defined in BattleScumSearcher3.cpp).
-namespace sts::search {
-    double hypergeometricAtLeastOne(int N, int K, int D);
-    double expectedCount(int N, int K, int D);
-}
-
-int testDrawProbHelper() {
-    using sts::search::hypergeometricAtLeastOne;
-    using sts::search::expectedCount;
-    int failures = 0;
-    auto check = [&](bool ok, const std::string &msg) {
-        if (!ok) { std::cout << "    FAIL: " << msg << '\n'; ++failures; }
-    };
-
-    // One lethal out: N=6, K=1, D=5 → P = 5/6
-    double p = hypergeometricAtLeastOne(6, 1, 5);
-    check(std::abs(p - 5.0/6.0) < 1e-9, "one lethal out: expected 0.8333, got " + std::to_string(p));
-
-    // Two outs in 5: N=6, K=2, D=5 → P = 1.0 (drawing 5 of 6, can't miss both)
-    p = hypergeometricAtLeastOne(6, 2, 5);
-    check(std::abs(p - 1.0) < 1e-9, "two outs: expected 1.0, got " + std::to_string(p));
-
-    // No outs: K=0 → P=0
-    p = hypergeometricAtLeastOne(6, 0, 5);
-    check(std::abs(p) < 1e-9, "no outs: expected 0, got " + std::to_string(p));
-
-    // Draw whole pile: D >= N, K > 0 → P = 1
-    p = hypergeometricAtLeastOne(3, 1, 3);
-    check(std::abs(p - 1.0) < 1e-9, "draw all: expected 1.0, got " + std::to_string(p));
-    p = hypergeometricAtLeastOne(3, 1, 5);  // D > N
-    check(std::abs(p - 1.0) < 1e-9, "draw more than pile: expected 1.0, got " + std::to_string(p));
-
-    // Half outs: N=10, K=5, D=5
-    // P = 1 - C(5,5)/C(10,5) = 1 - 1/252 ≈ 0.99603
-    p = hypergeometricAtLeastOne(10, 5, 5);
-    check(std::abs(p - (1.0 - 1.0/252.0)) < 1e-6, "half outs: expected ~0.996, got " + std::to_string(p));
-
-    // Expected count
-    double e = expectedCount(10, 3, 5);
-    check(std::abs(e - 1.5) < 1e-9, "expected attacks: expected 1.5, got " + std::to_string(e));
-
-    e = expectedCount(6, 2, 5);
-    check(std::abs(e - 10.0/6.0) < 1e-9, "expected: expected 1.667, got " + std::to_string(e));
-
-    if (failures == 0) {
-        std::cout << "draw_prob_helper PASS\n";
-        return 0;
-    }
-    std::cout << "draw_prob_helper FAIL (" << failures << " checks)\n";
-    return 1;
-}
-
-// Engine-level test: construct a state with known lethal outs and verify.
-int testDrawProbEngine() {
-    // This test verifies the integration: a simple constructed combat state
-    // where the draw pile has one lethal card and several non-lethal cards.
-    GameContext gc(CharacterClass::IRONCLAD, 0x12345, 0);
-    BattleContext bc;
-    bc.init(gc, MonsterEncounter::CULTIST);  // single cultist
-
-    // Weaken the cultist so a single Strike is lethal.
-    // Cultist has ~48-54 HP at A0. Set it to 6 HP so Strike (6 base dmg) kills.
-    bc.monsters.arr[0].curHp = 6;
-    bc.monsters.arr[0].maxHp = 6;
-
-    // Set up draw pile: one Strike, three Defends.
-    bc.cards.drawPile.clear();
-    bc.cards.drawPile.push_back(CardInstance(CardId::STRIKE_RED));
-    bc.cards.drawPile.push_back(CardInstance(CardId::DEFEND_RED));
-    bc.cards.drawPile.push_back(CardInstance(CardId::DEFEND_RED));
-    bc.cards.drawPile.push_back(CardInstance(CardId::DEFEND_RED));
-    bc.cards.cardsInHand = 0;
-    bc.player.energy = 3;
-
-    // Enumerate END_TURN edges and verify there is at least one.
-    search::BattleScumSearcher3::Node node;
-    search::enumerateActionsForNode(node, bc);
-    bool hasEndTurn = false;
-    for (const auto &e : node.edges)
-        if (e.action.getActionType() == search::ActionType::END_TURN)
-            hasEndTurn = true;
-    if (!hasEndTurn) {
-        std::cout << "draw_prob_engine FAIL: no END_TURN edge\n";
-        return 1;
-    }
-
-    // The draw-prob diagnostic is tested via the CSV output.
-    // This smoke test just confirms the state is constructable.
-    std::cout << "draw_prob_engine PASS (state constructable)\n";
-    return 0;
 }
 
 int testThornsRetaliationVictory() {
@@ -4337,24 +3370,8 @@ int main(int argc, const char* argv[]) {
     } else if (command == "mcts_save") {
         return mcts(argc, argv);
 
-    } else if (command == "seed_contract") {
-        return testSeedContract(std::stoull(argv[2]));
-
-    } else if (command == "belief") {
-        return testBelief();
-
-    } else if (command == "drawpile") {
-        return testDrawpile(std::stoull(argv[2]));
-
     } else if (command == "obs_identity") {
         return testObsIdentity(std::stoull(argv[2]));
-    } else if (command == "s3_strategy_fusion_diag") {
-        return testS3StrategyFusionDiag(std::stoull(argv[2]));
-    } else if (command == "s3_persistent_endturn_chance") {
-        return testS3PersistentEndTurnChance(std::stoull(argv[2]));
-
-    } else if (command == "prune") {
-        return testPrune(std::stoull(argv[2]));
     } else if (command == "happy_flower") {
         return testHappyFlowerCounter(std::stoull(argv[2]));
     } else if (command == "issue_fixes") {
@@ -4369,6 +3386,8 @@ int main(int argc, const char* argv[]) {
         return testScumNonFairEmptyEdges();
     } else if (command == "scum_convroot_stale_outcome") {
         return testScumConvRootStaleOutcome();
+    } else if (command == "s2_drawpile_index_boundary") {
+        return testS2DrawPileIndexBoundary();
     } else if (command == "cardselect_canonical") {
         return testCardSelectCanonical();
     } else if (command == "battlecontext_roundtrip") {
@@ -4379,36 +3398,6 @@ int main(int argc, const char* argv[]) {
         return testCardQueueOverflow();
     } else if (command == "keys_collect") {
         return testKeyCollection();
-    } else if (command == "semantic_card_edges") {
-        return testSemanticCardEdges();
-    } else if (command == "s3_drawpile_reuse_boundary") {
-        return testS3DrawPileIndexReuseBoundary();
-    } else if (command == "draw_prob_helper") {
-        return testDrawProbHelper();
-    } else if (command == "draw_prob_engine") {
-        return testDrawProbEngine();
-    } else if (command == "belief_order_invariance") {
-        return testBeliefOrderInvariance();
-    } else if (command == "real_belief_filter") {
-        return testRealBeliefFilter(std::stoull(argv[2]));
-    } else if (command == "persistent_belief_transfer") {
-        return testPersistentBeliefTransfer(std::stoull(argv[2]));
-    } else if (command == "rng_state_propagation") {
-        return testRngStatePropagation(std::stoull(argv[2]));
-    } else if (command == "s3_rand64_prior_sampler") {
-        return testS3Rand64PriorSampler();
-    } else if (command == "rejuv_history_replay") {
-        return testRejuvHistoryReplay(std::stoull(argv[2]));
-    } else if (command == "rejuv_semantic_select") {
-        return testRejuvSemanticSelect();
-    } else if (command == "rejuv_noninterference") {
-        return testRejuvNoninterference(std::stoull(argv[2]));
-    } else if (command == "rejuv_conditional_blocks") {
-        return testRejuvConditionalBlocks();
-    } else if (command == "live_rejuv_attempt_gate") {
-        return testLiveRejuvenationAttemptGate();
-    } else if (command == "belief_immutability") {
-        return testBeliefImmutability();
     } else if (command == "thorns_retaliation") {
         return testThornsRetaliationVictory();
     } else if (command == "awakened_one_stage2") {

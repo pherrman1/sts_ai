@@ -1,5 +1,10 @@
 # S3 obs-stable reuse — promotion to default
 
+> **Status (2026-09-24):** Searcher3 was removed by
+> [ADR-0019](../../../decisions/0019-remove-searcher3.md). This page is a
+> historical research record; reproducing it needs a binary built before that
+> change.
+
 Date: 2026-08-09 | Status: **PROMOTED TO DEFAULT**
 
 ## Default configuration

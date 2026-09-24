@@ -1,6 +1,6 @@
 # Training and inference
 
-Last verified: 2026-09-14 for potion-generation support; 2026-09-13 for relic legality, nested potion decoders, frozen composition, attention precision and padding; 2026-09-10 for
+Last verified: 2026-09-24 for the Searcher3 removal; 2026-09-14 for potion-generation support; 2026-09-13 for relic legality, nested potion decoders, frozen composition, attention precision and padding; 2026-09-10 for
 the semantic-branch trainer adapter and root trainer audit.
 
 ## Purpose
@@ -435,15 +435,11 @@ flags, card properties, target HP, and `Expert` play/obtain values. The
 historical v1 schema is in Git history, but its composite-RNG provenance
 statement is not current truth.
 
-`ScumSearchAgent2` exposes thread-local `g_onCombatDecision`,
-`g_onSearchComplete`, and `g_onSearchComplete3` hooks
-(`include/sim/search/ScumSearchAgent2.h`). `fairgen` forces the project-fair
-Searcher3 regime itself (`search::g_fairPlay` and `search::g_useSearcher3` are
-set in its dispatch branch and a message is printed), so its Searcher3 policy
-rows are produced even without `STS_FAIR=1 STS_SEARCHER3=1`; the env vars still
-gate other modes. `fightgen` installs Searcher2 hooks and omits Searcher3 policy
-rows if Searcher3 is forced (`apps/one_combat.cpp::fairGen`,
-`runFairGenSeed`, fight-generation callbacks).
+`ScumSearchAgent2` exposes thread-local `g_onCombatDecision` and
+`g_onSearchComplete` hooks (`include/sim/search/ScumSearchAgent2.h`).
+`fightgen` installs Searcher2 hooks. The Searcher3 `fairgen` producer was
+removed (ADR-0019); existing `fairgen` CSVs remain readable by the PVNet
+training scripts.
 
 ### Run/OOC schema
 
@@ -454,12 +450,6 @@ Action-conditioned datasets append screen/action/candidate fields defined by
 their specific producer; consumers must use headers, not old comments.
 
 ### Grouping and leakage
-
-`tools/train_particle_leaf_probe.py` is an offline-only paired analysis. It
-keeps all variants of a source leaf together and uses a fixed seed-level split;
-its visible control and positional first-10-card treatment consume identical
-rows and targets. The treatment uses sparse positional one-hot features and
-does not alter the 1,766-feature native combat schema.
 
 Correlated samples remain together:
 
@@ -481,7 +471,7 @@ PVNet, and policy models are selected with `STS_VNET`, `STS_DIST_VNET`,
 parsed after the STS_VNET region) additionally loads the zero-mean ranking-
 correction model into `search::g_combatVNetRankCorr` /
 `search::g_useVNetRankCorr`; a missing/invalid path only warns. `STS_VNET_PER_ENCOUNTER=<dir>` (parsed after the
-STS_VNET / fair-S3 default block) calls
+STS_VNET block) calls
 `CombatValueNet::loadEncounterModels(dir)`: per-encounter compact-tree files
 named `<ENUM_NAME>.txt` load into `encounterModels`, `<dir>/_pooled.txt` (when
 present) replaces the base fallback, and `predict(bc)` dispatches to
@@ -494,11 +484,9 @@ per-encounter validation CSV (in-file delta first, then the
 `STS_VNET_PER_ENCOUNTER` dir). Optional server models are selected through
 `v_server.py` environment variables. Current tracked artifact hashes are listed
 only in [current baselines](../evaluation/current-baselines.md).
-The distributional model is consumed only by Searcher3; the PV model adds
-policy-head priors to default Searcher2 since 2026-08-05 (value leaf is
-Searcher3-only). A successful startup load is not evidence of use under
-default Searcher2 for DistVNet; PVNet policy priors ARE used under Searcher2
-unless STS_PVNET_VALUE_ONLY=1.
+No searcher consumes the distributional model since Searcher3 was removed
+(ADR-0019), so a successful DistVNet load is not evidence of use. The PV model
+adds policy-head priors to Searcher2 unless `STS_PVNET_VALUE_ONLY=1`.
 
 ## Invariants and assumptions
 
@@ -573,13 +561,10 @@ unless STS_PVNET_VALUE_ONLY=1.
   resolves the binary via `STS_PARITY_BIN` or `build/parity_test`, but it does
   not yet load weights into the trained model; real trained-model parity is
   unexercised.
-- Searcher3 composite seeding is implemented with explicit per-decision
-  `agentSeed`/`decisionIndex` constructor parameters
-  (`BattleScumSearcher3::BattleScumSearcher3`); datasets produced before the
-  2026-08-02 fix used default-zero values.
-- The `fairgen` mode forces the fair Searcher3 regime itself now; datasets
-  recorded before that fix may have been produced without it, so historical
-  provenance must be read from the recorded invocation artifacts.
+- Historical `fairgen` (Searcher3) datasets produced before the 2026-08-02
+  seeding fix used default-zero per-decision seeds, and some predate the mode
+  forcing the fair regime; read their provenance from the recorded invocation
+  artifacts.
 - `v_server.py` documents the implemented 1,017-value `RAW` layout with
   `apps/one_combat.cpp::vFeatCsv` as the schema owner.
 - `OocCheckpointNet::load` and `OocStrategicNet::load` check every payload read
@@ -706,10 +691,9 @@ without requiring XGBoost.
 
 ## Relevant code
 
-- `apps/one_combat.cpp::main` (`carddump` dispatch), `fairGen`, `fightGen`, `strategicGen`,
+- `apps/one_combat.cpp::main` (`carddump` dispatch), `fightGen`, `strategicGen`,
   `strategicGen2`, `vFeatCsv`
 - `include/sim/search/ScumSearchAgent2.h` data-generation hooks
-- `include/sim/search/BattleScumSearcher3.h::S3LeafDiagnostic`, `g_onS3LeafQuery`
 - `src/sim/search/CombatValueNet.cpp::combatFeatureNames`,
   `combatExtractFeatures`, `combatFillActionFeatures`
 - `train_winrate.py`, `train_value_combat.py`, `train_policy.py`

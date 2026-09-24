@@ -35,13 +35,10 @@ namespace sts::search {
     // Used only by the policy-net datagen; null in normal play.
     extern thread_local std::function<void(const BattleContext&, const BattleScumSearcher2&)> g_onSearchComplete;
 
-    struct BattleScumSearcher3;
-    extern thread_local std::function<void(const BattleContext&, const BattleScumSearcher3&)> g_onSearchComplete3;
-
     struct ScumSearchAgent2;
     // Optional executable-installed combat backend. The core agent only calls
     // this value; it has no dependency on the isolated Silver model. Keeping
-    // the hook default-null preserves ordinary Searcher2/Searcher3 linkage and
+    // the hook default-null preserves ordinary Searcher2 linkage and
     // behavior, including unit-test targets that intentionally do not link
     // the vendored model.
     // Process-wide, immutable after executable startup.  The callback must not

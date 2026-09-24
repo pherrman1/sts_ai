@@ -1,6 +1,6 @@
 # Important invariants
 
-Last verified: 2026-09-20 against the current working tree.
+Last verified: 2026-09-24 for the Searcher3 removal; 2026-09-20 against the current working tree.
 
 ## Purpose
 
@@ -151,10 +151,10 @@ Operational assumptions that are not enforced by types or tests:
 
 - No test automatically asserts schema order, native/server parity, or
   self-play arm ownership end to end. CTest runs parse/syntax checks, and the
-  `test` dispatcher gains targeted checks (observation identity, Searcher3 seed
-  contract, belief conditioning, draw-order application, conservative pruning,
-  card-select parity, battle-context round-trip, simulator-health empty-hand
-  detection; `small-test isbattleover`); the remaining invariants are
+  `test` dispatcher gains targeted checks (observation identity, card-select
+  parity, Searcher2 draw-pile-index boundary, battle-context round-trip,
+  simulator-health empty-hand detection; `small-test isbattleover`); the
+  remaining invariants are
   review-enforced.
 - The simulator health monitor covers only its four hard invariants
   (UNDECIDED_BATTLE_EXIT, NO_LEGAL_PROGRESSION, ACTION_SELECTION_FAILED,
@@ -190,7 +190,7 @@ Operational assumptions that are not enforced by types or tests:
 - `src/sim/search/GameAction.cpp::isValidAction`, `execute`
 - `src/sim/search/ScumSearchAgent2.cpp::playoutBattleFair`
 - `src/sim/search/SimHealth.cpp::reportSimHealthFailure`
-- `include/sim/search/BattleScumSearcher3.h::Node`, `Edge`
+- `include/sim/search/BattleScumSearcher2.h::Node`, `Edge`
 - `src/sim/search/CombatValueNet.cpp::combatFeatureNames`
 - `apps/one_combat.cpp::vFeatCsv`, `main`
 - `selfplay/loop.sh::gate_stats`, promotion block

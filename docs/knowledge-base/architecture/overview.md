@@ -1,6 +1,6 @@
 # Architecture overview
 
-Last verified: 2026-09-10 against the current working tree.
+Last verified: 2026-09-24 for the Searcher3 removal; 2026-09-10 against the current working tree.
 
 ## Purpose
 
@@ -52,9 +52,9 @@ delegates the real battle exit and reward-screen boundaries to the module.
 
 1. `GameContext` advances a run until `ScreenState::BATTLE`.
 2. `BattleContext::init` copies combat inputs and initializes transient state.
-3. `ScumSearchAgent2::playoutBattle` selects the project-fair or tree-reuse
-   path and Searcher2/Searcher3, then commits combat `Action` values. Searcher3's
-   non-fair path is a particle/reuse hybrid, not known-RNG Searcher2.
+3. `ScumSearchAgent2::playoutBattle` hands the combat to the installed Silver
+   backend, or selects the project-fair or tree-reuse Searcher2 path, then
+   commits combat `Action` values. Searcher3 was removed (ADR-0019).
 4. `BattleContext::exitBattle` transfers outcome, HP, rewards, RNG streams, and
    persistent effects back to the run. When E2c capture is enabled,
    `e2c_capture` temporarily arms its RAW observer only around this real exit;
@@ -69,10 +69,10 @@ flowchart LR
     GC["GameContext advances a run"] -->|until| BATTLE["ScreenState::BATTLE"]
     BATTLE --> INIT["BattleContext::init (copies combat inputs)"]
     INIT --> CHOICE["ScumSearchAgent2::playoutBattle (project-fair or tree-reuse)"]
-    CHOICE --> S2["Searcher2 (known-RNG determinize)"]
-    CHOICE --> S3["Searcher3 (particle sampling; non-fair: particle/reuse hybrid, not known-RNG Searcher2)"]
-    S2 --> COMMIT["commit combat Action values"]
-    S3 --> COMMIT
+    CHOICE --> SILVER["Silver backend (default for run/bestbench/reprobench)"]
+    CHOICE --> S2["Searcher2 (known-RNG or fair determinize)"]
+    SILVER --> COMMIT["commit combat Action values"]
+    S2 --> COMMIT
     COMMIT --> EXIT["BattleContext::exitBattle (outcome, HP, rewards, RNG streams, persistent effects back)"]
     EXIT --> OOC["Out-of-combat policy applies GameAction values"]
     OOC --> NEXT["next combat or terminal GameOutcome"]
@@ -126,7 +126,6 @@ Detailed flows are in [combat search](combat-search.md),
 - `apps/one_combat.cpp::main`, `apps/one_combat/run_driver.cpp::runFullRunOOC`
 - `apps/one_combat/e2c_capture.{h,cpp}` — retained E2c RAW/POST lifecycle, canonical projection, and run-win parity
 - `apps/one_combat/ooc_policy.{h,cpp}` — live OOC action/checkpoint/one-ply/map policies
-- `apps/one_combat/fight_replay.{h,cpp}` — Act-3 boss fight-start capture and isolated `fightrep` replay
 - `apps/one_combat/run_features.{h,cpp}` — path history, forward-map features, rich schema, and feature index map
 - `apps/one_combat/compact_tree.{h,cpp}` — compact tree declaration and loader/predictor
 - `apps/combat_model_diagnostics.cpp::runCombatModelDiagnosticMode`

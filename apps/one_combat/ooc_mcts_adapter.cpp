@@ -722,7 +722,6 @@ struct ImaginedScope {
     decltype(sts::search::g_onGameActionExecute) observer = std::move(sts::search::g_onGameActionExecute);
     decltype(sts::search::g_onCombatDecision) combatObserver=std::move(sts::search::g_onCombatDecision);
     decltype(sts::search::g_onSearchComplete) searchObserver=std::move(sts::search::g_onSearchComplete);
-    decltype(sts::search::g_onSearchComplete3) searchObserver3=std::move(sts::search::g_onSearchComplete3);
     decltype(sts::g_onBattleExitPersistent) exitObserver=std::move(sts::g_onBattleExitPersistent);
     sts::search::SilverLiveDiagnostics silver = std::move(sts::search::g_silverLiveDiagnostics);
     bool disallowed = sts::search::g_disallowImaginedCombat;
@@ -731,7 +730,7 @@ struct ImaginedScope {
         sts::search::g_disallowImaginedCombat=true;
         t_tokCheckPending=false; sts::search::g_onGameActionExecute={};
         sts::search::g_onCombatDecision={}; sts::search::g_onSearchComplete={};
-        sts::search::g_onSearchComplete3={}; sts::g_onBattleExitPersistent={};
+        sts::g_onBattleExitPersistent={};
     }
     ~ImaginedScope() {
         t_curPath=path; t_oocStrategicTraceRows=std::move(rows); t_oocStrategicTraceDecision=decision;
@@ -740,7 +739,6 @@ struct ImaginedScope {
         sts::search::g_onGameActionExecute=std::move(observer);
         sts::search::g_onCombatDecision=std::move(combatObserver);
         sts::search::g_onSearchComplete=std::move(searchObserver);
-        sts::search::g_onSearchComplete3=std::move(searchObserver3);
         sts::g_onBattleExitPersistent=std::move(exitObserver);
         sts::search::g_silverLiveDiagnostics=std::move(silver);
         sts::search::g_disallowImaginedCombat=disallowed; sts::search::g_potionKeepValue=potion;

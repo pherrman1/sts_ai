@@ -225,8 +225,8 @@ def main():
         print(f"  -> RMSE change: {delta_rmse:+.2f}")
 
     print(f"\nTo test the new model:")
-    print(f"  STS_VNET={args.out} STS_FAIR=1 STS_SEARCHER3=1 STS_S3_BELIEF=0 \\")
-    print(f"    STS_S3_CHAIN=0 ./build/one_combat bestbench 1000 32 0")
+    print(f"  STS_VNET={args.out} STS_SILVER_SEARCH=0 STS_FAIR=1 \\")
+    print(f"    ./build/one_combat bestbench 1000 32 0")
     print(f"\n  vnettest parity check:")
     print(f"  ./build/one_combat vnettest {args.out} {args.val}")
 

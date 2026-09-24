@@ -36,9 +36,7 @@
 #include "sim/search/CombatDistValueNet.h"
 #include "sim/search/CombatPVNet.h"
 #include "sim/search/CombatCpsiNet.h"
-#include "sim/search/BattleScumSearcher3.h"
 #include "sim/search/SilverLiveBackend.h"
-#include "sim/search/S3RejuvenationProbe.h"
 #include "sim/search/GameAction.h"
 #include "sim/search/OocSemanticAction.h"
 #include "sim/search/ExpertKnowledge.h"
@@ -56,10 +54,8 @@
 #include "one_combat/combat_transition.h"
 #include "one_combat/e2c_capture.h"
 #include "one_combat/run_features.h"
-#include "one_combat/fight_replay.h"
 #include "one_combat/search_diagnostics.h"
 #include "one_combat/vnet_query_log.h"
-#include "one_combat/particle_diagnostics.h"
 #include "one_combat/ooc_policy.h"
 #include "one_combat/run_driver.h"
 
@@ -222,24 +218,11 @@ static void writeTrainingProvenance(const std::string &output, const char *mode,
                                     double epsilon = -1.0) {
     std::ofstream p(output + ".provenance.json");
     if (!p) return;
-    const char *envs[] = {"STS_FAIR", "STS_SEARCHER3", "STS_S3_PARTICLES",
-                          "STS_S3_BELIEF", "STS_S3_CHAIN", "STS_REUSE_MAX_SEARCHES",
-                          "STS_S3_PERSIST_FILTERED_BELIEF",
-                          "STS_S3_REJUV_SHADOW", "STS_S3_REJUV_TRIGGER",
-                          "STS_S3_REJUV_PROPOSALS", "STS_S3_REJUV_SHADOW_FILE",
-                           "STS_S3_AI_REJUV_LIVE", "STS_S3_AI_REJUV_LIVE_FILE",
-                          "STS_S3_RNG_EXPOSURE_DIAG", "STS_S3_RNG_EXPOSURE_DIAG_FILE",
-                          "STS_REUSE_STATS_MODE", "STS_REUSE_ALWAYS_Q", "STS_S3_ALWAYS_Q", "STS_REUSE_DIAG",
-                          "STS_S3_GATE_TIMING_DIAG", "STS_S3_GATE_TIMING_DIAG_FILE",
+    const char *envs[] = {"STS_FAIR", "STS_REUSE_MAX_SEARCHES",
+                          "STS_REUSE_STATS_MODE", "STS_REUSE_ALWAYS_Q", "STS_REUSE_DIAG",
                           "STS_REUSE_OBS_STABLE", "STS_REUSE_RECONCILE_ROOT",
                           "STS_REUSE_CARRY_DIAG", "STS_REUSE_CPU_DIAG",
                           "STS_REUSE_CPU_DIAG_FILE", "STS_LIVE_VALID", "STS_STOP_AFTER_ACT",
-                          "STS_S3_STRATEGY_FUSION_DIAG", "STS_S3_STRATEGY_FUSION_DIAG_FILE",
-                          "STS_S3_STRATEGY_FUSION_DIAG_PARTICLES",
-                          "STS_S3_STRATEGY_FUSION_DIAG_MAX_TRANSITIONS",
-                          "STS_S3_STRATEGY_FUSION_DIAG_MIN_CHILD_VISITS",
-                          "STS_S3_STRATEGY_FUSION_DIAG_FRESH_SIMS",
-                          "STS_S3_STRATEGY_FUSION_DIAG_REF_SIMS",
                           "STS_FORCED_MOVE",
                           "STS_VNET", "STS_VNET_ALPHA", "STS_OOC_STRATEGIC_TOK_NN",
                           "STS_OOC_STRATEGIC_MARGIN", "STS_OOC_STRATEGIC_CARD",
@@ -1716,17 +1699,7 @@ static bool bestBench(int sims, int nSeeds, int asc, std::uint64_t seedOffset = 
               << "  shop-beam=" << (g_oocShopBeam ? "ON" : "off")
               << "  native-OOC=" << (g_nativeOoc ? "ON" : "OFF")
               << "  keys=" << (g_collectKeys ? "collect" : "skip")
-              << "  searcher=" << (search::silverLiveBackendInstalled() ? "Silver" : search::g_useSearcher3 ? "Searcher3" : "Searcher2")
-              << (search::g_useSearcher3
-                  ? "  S3-abl[b,p,c,l,crn]=" + std::to_string(search::g_s3Belief)
-                    + std::to_string(search::g_s3Prune) + std::to_string(search::g_s3Chain)
-                    + std::to_string(search::g_s3Live) + std::to_string(search::g_s3Crn)
-                    + "  S3-particles=" + std::to_string(search::g_s3Particles)
-                    + "  S3-rollK=" + std::to_string(search::g_s3RolloutK)
-                    + "  S3-turnStop=" + std::to_string(search::g_s3RolloutTurnStop)
-                    + "  S3-turnBeam=" + (search::g_s3TurnRollout ? "ON" : "off")
-                    + "  S3-semCard=" + (search::g_s3SemanticCardEdges ? "ON" : "off")
-                  : std::string())
+              << "  searcher=" << (search::silverLiveBackendInstalled() ? "Silver" : "Searcher2")
               << (search::g_fairPlay ? "  fair-play" : "")
               << "  seeds " << seedOffset << ".." << seedOffset + nSeeds - 1
               << "  asc " << asc << "  sims " << sims << "  threads " << numThreads() << "\n";
@@ -1761,13 +1734,7 @@ static bool bestBench(int sims, int nSeeds, int asc, std::uint64_t seedOffset = 
         meta.restV = restV; meta.shopV = true; meta.nativeOoc = g_nativeOoc;
         meta.pathMode = g_pathV ? "model-driven" : "heuristic";
         meta.shopBeam = g_oocShopBeam; meta.collectKeys = g_collectKeys;
-        meta.searcher3 = search::g_useSearcher3; meta.fairPlay = search::g_fairPlay;
-        meta.s3Belief = search::g_s3Belief; meta.s3Prune = search::g_s3Prune;
-        meta.s3Chain = search::g_s3Chain; meta.s3Live = search::g_s3Live; meta.s3Crn = search::g_s3Crn;
-        meta.s3Particles = search::g_s3Particles; meta.s3RolloutK = search::g_s3RolloutK;
-        meta.s3RolloutTurnStop = search::g_s3RolloutTurnStop != 0;
-        meta.s3TurnRollout = search::g_s3TurnRollout;
-        meta.s3SemanticCardEdges = search::g_s3SemanticCardEdges;
+        meta.fairPlay = search::g_fairPlay;
         meta.silverSearchEnabled = search::silverLiveBackendInstalled();
         meta.stsSilverSearchEffective = meta.silverSearchEnabled;
         meta.effectiveCombatBackend = meta.silverSearchEnabled ? "silver" : "native_searcher";
@@ -4665,236 +4632,6 @@ static std::string runCombatGenSeed(std::uint64_t seed, int sims, int asc, doubl
 
 // forward decl
 static std::string policyHeaderStr();
-// ---------------------------------------------------------------------------
-// FAIR-PLAY datagen: Searcher3 ISMCTS → value + policy CSVs with visit
-// distributions. Policy rows: state+action features + visit count + total.
-// ---------------------------------------------------------------------------
-static std::tuple<std::string,std::string,std::string>
-runFairGenSeed(std::uint64_t seed, int sims, int asc, double epsilon) {
-    trainingRunStart();
-    search::g_richCombatFeatures = true;
-    GameContext gc(CharacterClass::IRONCLAD, seed, asc);
-    search::ScumSearchAgent2 agent;
-    agent.simulationCountBase = sims;
-    agent.rng = std::default_random_engine(seed);
-    std::default_random_engine ex(seed * 6364136223846793005ULL + 1);
-    std::uniform_real_distribution<double> ur(0.0, 1.0);
-    PathHistory path; t_curPath = &path;
-
-    std::ostringstream val, pol, ooc;
-    int fightIdx = 0, decIdx = 0, oocDecIdx = 0;
-    std::vector<CombatDecisionSnapshot> fightSnaps;
-    const int nf = search::combatPolicyFeatureCount();
-    std::vector<float> feat(nf);
-
-    auto logOoc = [&](const char *screen, int actionId) {
-        ooc << seed << ',' << oocDecIdx++ << ',' << screen << ','
-            << gc.act << ',' << gc.floorNum << ',' << gc.curHp << ',' << gc.maxHp << ','
-            << (int)gc.deck.cards.size() << ',' << (int)gc.gold << ',' << actionId << '\n';
-    };
-
-    search::g_onCombatDecision = [&](const BattleContext &bc) {
-        CombatDecisionSnapshot s;
-        s.featureRow = combatFeatureRow(bc);
-        s.potionsHeld = getPotionBits(bc);
-        fightSnaps.push_back(std::move(s));
-    };
-    search::g_onSearchComplete3 = [&](const BattleContext &bc, const search::BattleScumSearcher3 &s3) {
-        const int thisDecIdx = decIdx++;
-        const auto &edges = s3.root.edges;
-        if ((int)edges.size() < 2) return;
-        std::int64_t total = 0;
-        for (const auto &e : edges) total += e.child.simulationCount;
-        if (total <= 0) return;
-        for (const auto &e : edges) {
-            search::combatExtractPolicyFeatures(bc, e.action, feat.data());
-            pol << seed << ',' << fightIdx << ',' << thisDecIdx;
-            for (int i = 0; i < nf; ++i) {
-                pol << ','; const float v = feat[i];
-                if (v == (float)(long)v) pol << (long)v; else pol << v;
-            }
-            pol << ',' << e.child.simulationCount << ',' << total << '\n';
-        }
-    };
-
-    using RT = search::GameAction::RewardsActionType;
-    while (gc.outcome == GameOutcome::UNDECIDED) {
-        path.update(gc);
-        if (gc.screenState == ScreenState::BATTLE) {
-            fightSnaps.clear(); decIdx = 0;
-            BattleContext bc; bc.init(gc);
-            agent.playoutBattle(bc);
-            if (!trainingRunValid(bc.outcome != Outcome::UNDECIDED)) {
-                search::g_onCombatDecision = nullptr;
-                search::g_onSearchComplete3 = nullptr;
-                t_curPath = nullptr;
-                return {"", "", ""};
-            }
-            const int won   = bc.outcome == Outcome::PLAYER_VICTORY ? 1 : 0;
-            const int endHp = bc.player.curHp;
-            const int endTurn = bc.turn;
-            auto finalPotions = getPotionBits(bc);
-            for (const auto &snap : fightSnaps)
-                val << seed << ',' << fightIdx << ',' << snap.featureRow << ','
-                    << won << ',' << endHp
-                    << distLabelSuffix(snap, endTurn, finalPotions) << '\n';
-            ++fightIdx;
-            bc.exitBattle(gc);
-        } else if (gc.screenState == ScreenState::MAP_SCREEN && gc.curMapNodeY < 14) {
-            int action = one_combat::chooseMapAction(gc); logOoc("MAP", action); search::GameAction(action).execute(gc);
-        } else if (gc.screenState == ScreenState::REWARDS) {
-            auto &r = gc.info.rewardsContainer;
-            if      (r.goldRewardCount > 0) search::GameAction(RT::GOLD, 0).execute(gc);
-            else if (r.relicCount > 0)      search::GameAction(RT::RELIC, 0).execute(gc);
-            else if (r.potionCount > 0)     search::GameAction(RT::POTION, 0).execute(gc);
-            else if (g_collectKeys && r.emeraldKey) search::GameAction(RT::KEY, 0).execute(gc);
-            else if (g_collectKeys && r.sapphireKey) search::GameAction(RT::KEY, 0).execute(gc);
-            else if (r.cardRewardCount == 0) search::GameAction(RT::SKIP).execute(gc);
-            else if (ur(ex) < epsilon) {
-                while (r.cardRewardCount > 0) {
-                    const int ridx = r.cardRewardCount - 1;
-                    const int nc = r.cardRewards[ridx].size();
-                    const int pick = std::uniform_int_distribution<int>(0, nc)(ex);
-                    search::GameAction(RT::CARD, ridx, pick < nc ? pick : 5).execute(gc);
-                }
-            } else {
-                evalCardRewardPolicy(gc);
-            }
-        } else {
-            agent.stepOutOfCombatPolicy(gc);
-        }
-    }
-    search::g_onCombatDecision = nullptr;
-    search::g_onSearchComplete3 = nullptr;
-    t_curPath = nullptr;
-    return { val.str(), pol.str(), ooc.str() };
-}
-
-static void fairGen(int nSeeds, int sims, int asc, double epsilon,
-                    const std::string &valFile, const std::string &polFile,
-                    const std::string &oocFile, long long seedOffset = 0) {
-    trainingCampaignStart();
-    search::g_richCombatFeatures = true;
-    const bool append = seedOffset > 0;
-    std::cout << "fairgen    seeds " << seedOffset << ".." << seedOffset + nSeeds - 1
-              << "  sims " << sims << "  asc " << asc << "  eps " << epsilon
-              << (append ? "  [append]" : "") << "  threads " << numThreads()
-              << "  -> " << valFile << " + " << polFile << " + " << oocFile << "\n";
-    std::ofstream vf(valFile, append ? std::ios::app : std::ios::out);
-    std::ofstream pf(polFile, append ? std::ios::app : std::ios::out);
-    std::ofstream of(oocFile, append ? std::ios::app : std::ios::out);
-    if (vf.tellp() == 0) { vf << "seed,fightIdx," << combatHeaderStr() << ",won,endHp"
-                             << distLabelHeaderStr() << "\n"; vf.flush(); }
-    if (pf.tellp() == 0) { pf << policyHeaderStr() << "\n"; pf.flush(); }
-    if (of.tellp() == 0) { of << "seed,decIdx,screen,act,floor,curHp,maxHp,deckSize,gold,action\n"; of.flush(); }
-
-    auto t0 = std::chrono::steady_clock::now();
-    long long vRows = 0, pRows = 0, oRows = 0; int done = 0;
-    #pragma omp parallel for schedule(dynamic)
-    for (int s = 0; s < nSeeds; ++s) {
-        auto [vr, pr, or_] = runFairGenSeed((std::uint64_t)(seedOffset + s), sims, asc, epsilon);
-        #pragma omp critical
-        {
-            vf << vr;  pf << pr;  of << or_;
-            vf.flush(); pf.flush(); of.flush();
-            vRows += std::count(vr.begin(), vr.end(), '\n');
-            pRows += std::count(pr.begin(), pr.end(), '\n');
-            oRows += std::count(or_.begin(), or_.end(), '\n');
-            if (++done % 100 == 0) {
-                double el = std::chrono::duration<double>(std::chrono::steady_clock::now() - t0).count();
-                std::printf("  %d/%d runs, %lld val + %lld pol + %lld ooc rows, %.0fs (%.3fs/run)\n",
-                            done, nSeeds, vRows, pRows, oRows, el, el/done);
-                std::fflush(stdout);
-            }
-        }
-    }
-    double wall = std::chrono::duration<double>(std::chrono::steady_clock::now() - t0).count();
-    std::printf("wrote %lld value + %lld policy + %lld ooc rows from %d runs in %.1fs\n",
-                vRows, pRows, oRows, nSeeds, wall);
-    writeTrainingProvenance(valFile, "fairgen", nSeeds,
-                            nSeeds - g_trainingInvalidRuns.load(), g_trainingInvalidRuns.load(),
-                            g_trainingHealthFailures.load(), vRows + pRows + oRows,
-                            seedOffset, sims, asc, epsilon);
-}
-
-// ---------------------------------------------------------------------------
-// Retained Searcher3 diagnostic mode drivers run full runs via runFullRunOOC (fair Searcher3, the
-// §126 deployed regime) with the leaf-query hook registered, collecting a
-// per-stratum reservoir of actual Searcher3 leaf-expansion states. Sampling
-// is deterministic per seed (the particle diagnostic RNG is seeded from the run seed only), so the
-// collected leaf SET is reproducible; CSV row order follows seed completion
-// order (nondeterministic under dynamic scheduling, like fairGen). Do NOT set
-// probing OOC env arms (STS_OOC_ACTION_NN, STS_BOSS_DRAFT, M1/M2 path gates,
-// STS_DATAGEN_GATES, …): their inner probe battles would fire the leaf hook
-// and pollute the dataset with non-live decision states.
-// ---------------------------------------------------------------------------
-static void particleLeafProbe(int nSeeds, int sims, int asc,
-                              const std::string &outFile, long long seedOffset = 0) {
-    search::g_richCombatFeatures = true;
-    std::ofstream f(outFile);
-    if (!f) { std::cerr << "particle_leaf_probe: cannot open " << outFile << '\n'; return; }
-    f << one_combat::particleLeafProbeHeader() << '\n';
-    one_combat::startParticleLeafProbe(outFile);
-    #pragma omp parallel for schedule(dynamic)
-    for (int s = 0; s < nSeeds; ++s) {
-        const std::uint64_t seed = static_cast<std::uint64_t>(seedOffset + s);
-        one_combat::installParticleLeafProbeHooks(seed);
-        runFullRunOOC(seed, sims, asc, false, false);
-        const std::string out = one_combat::finishParticleLeafProbeSeed();
-        #pragma omp critical
-        f << out;
-    }
-    one_combat::stopParticleDiagnostics();
-    std::cout << "particle leaf probe wrote " << outFile << " (K="
-              << one_combat::particleLeafProbeK() << ", rate="
-              << one_combat::particleLeafProbeRate()
-              << ", max_groups=" << one_combat::particleLeafProbeMaxGroups() << ")\n";
-}
-
-static void particlePosteriorProbe(int nSeeds, int sims, int asc,
-                                   const std::string &outFile, long long seedOffset = 0) {
-    if (!one_combat::startParticlePosteriorProbe(outFile)) return;
-    search::g_richCombatFeatures = true;
-    std::ofstream f(outFile);
-    if (!f) {
-        one_combat::stopParticleDiagnostics();
-        std::cerr << "particle_posterior_probe: cannot open " << outFile << '\n';
-        return;
-    }
-    std::ofstream runs(outFile + ".runs.csv");
-    if (!runs) {
-        one_combat::stopParticleDiagnostics();
-        std::cerr << "particle_posterior_probe: cannot open " << outFile << ".runs.csv\n";
-        return;
-    }
-    runs << "seed,won,floor,act,hpEnd,maxHp,fightsLost,deathCombat,deathEncounter,actionFingerprint\n";
-    f << one_combat::particlePosteriorProbeHeader() << '\n';
-    const auto t0 = std::chrono::steady_clock::now();
-    long long rows = 0;
-    #pragma omp parallel for schedule(dynamic)
-    for (int s = 0; s < nSeeds; ++s) {
-        const std::uint64_t seed = static_cast<std::uint64_t>(seedOffset + s);
-        one_combat::installParticlePosteriorProbeHooks(seed);
-        const RunResult r = runFullRunOOC(seed, sims, asc, false, false);
-        const std::string out = one_combat::finishParticlePosteriorProbeSeed();
-        const std::string fingerprint = one_combat::particlePosteriorActionFingerprint();
-        #pragma omp critical
-        {
-            f << out;
-            runs << (seedOffset + s) << ',' << (r.won ? 1 : 0) << ',' << r.floor << ','
-                 << r.act << ',' << r.hpEnd << ',' << r.maxHp << ',' << r.fightsLost << ','
-                 << r.deathCombat << ',' << r.deathEncounter << ",\"" << fingerprint << "\"\n";
-            rows += std::count(out.begin(), out.end(), '\n');
-        }
-    }
-    one_combat::stopParticleDiagnostics();
-    const double wall = std::chrono::duration<double>(std::chrono::steady_clock::now() - t0).count();
-    std::printf("particle posterior probe wrote %s (%lld rows, K=%s, max_groups=%d) in %.1fs (%.2fs/seed)\n",
-                outFile.c_str(), rows,
-                one_combat::particlePosteriorProbeK() > 0
-                    ? std::to_string(one_combat::particlePosteriorProbeK()).c_str() : "all",
-                one_combat::particlePosteriorProbeMaxGroups(), wall, wall / std::max(1, nSeeds));
-}
 
 // ---------------------------------------------------------------------------
 // STRATEGIC data generation: one CSV row per LEGAL action at each OOC decision,
@@ -5485,645 +5222,6 @@ static bool v4EvaluatorOwnedScreen(const GameContext &gc,
         }
         default: return false;
     }
-}
-
-struct V4H1Sample {
-    GameContext pre;
-    PathHistory path;
-    std::vector<search::GameAction> actions;
-    std::uint64_t seed = 0;
-    int decisionIdx = -1;
-    std::uint32_t chosenBits = UINT32_MAX;
-};
-
-static void requireV4H1Comparator(bool allowThreadOverride = false) {
-    const std::map<std::string,std::string> required = {
-        {"STS_FAIR","1"},{"STS_SEARCHER3","1"},{"STS_S3_BELIEF","0"},
-        {"STS_S3_CHAIN","0"},{"STS_S3_PARTICLES","64"},
-        {"STS_COLLECT_KEYS","1"},
-        {"STS_OOC_STRATEGIC_TOK_NN","selfplay/models/ooc_strategic_tok_final.native"},
-        {"STS_VNET","models/v_combat_7k_tuned.txt"},{"STS_VNET_ALPHA","0.3"},
-        {"STS_OOC_STRATEGIC_REST","1"},{"STS_OOC_STRATEGIC_EVENT","1"},
-        {"STS_OOC_STRATEGIC_SHOP","1"},{"STS_OOC_STRATEGIC_TREASURE","1"},
-        {"STS_OOC_STRATEGIC_BOSS_RELIC","1"},{"STS_OOC_STRATEGIC_MARGIN","1.0"},
-    };
-    for (const auto &[name, expected] : required) {
-        const char *actual = std::getenv(name.c_str());
-        if (!actual || actual != expected)
-            throw std::runtime_error("oocv4h1: comparator environment mismatch for " + name);
-    }
-    if (!search::g_fairPlay || !search::g_useSearcher3 || !g_oocStrategicTokNet.ok
-        || !g_oocStrategicRest || !g_oocStrategicEvent || !g_oocStrategicShop
-        || !g_oocStrategicTreasure || !g_oocStrategicBossRelic
-        || g_oocStrategicMargin != 1.0 || g_oocStrategicGateRegret
-        || g_oocStrategicMarginCard >= 0.0 || g_oocStrategicMarginRest >= 0.0
-        || g_oocStrategicMarginEvent >= 0.0 || g_oocStrategicMarginShop >= 0.0
-        || g_oocStrategicMarginTreasure >= 0.0 || g_oocStrategicMarginBossRelic >= 0.0
-        || !g_collectKeys || !search::g_useVNet
-        || g_effectiveVNetPath != "models/v_combat_7k_tuned.txt"
-        || search::g_vnetAlpha != 0.3 || (!allowThreadOverride && numThreads() != 24))
-        throw std::runtime_error("oocv4h1: recommended V4/Searcher3/VNet stack is not loaded");
-    if (search::g_externalCombatBackend)
-        throw std::runtime_error("oocv4h1: Silver must be disabled during source replay");
-}
-
-static std::vector<search::GameAction> canonicalV4Actions(const GameContext &gc) {
-    std::vector<search::GameAction> out;
-    std::unordered_set<std::uint32_t> seen;
-    for (const auto &a : v4EvaluatorActions(gc)) if (seen.insert(a.bits).second) out.push_back(a);
-    return out;
-}
-
-static WholeCombatTeacher switchToV4H1Teacher(const std::string &teacherPath, int sims) {
-    setenv("STS_SEARCHER3", "0", 1);
-    setenv("STS_SILVER_SEARCH", "1", 1);
-    const bool allowStale = std::getenv("STS_V4H1_ROLLOUT_ALLOW_STALE_TEACHER")
-        && std::atoi(std::getenv("STS_V4H1_ROLLOUT_ALLOW_STALE_TEACHER")) != 0;
-    const auto teacher = loadWholeCombatTeacher(teacherPath, sims, allowStale);
-    search::installSilverLiveBackend();
-    if (!search::silverLiveBackendInstalled() || !search::silverLiveExactRootBudgets()
-        || search::silverLiveReuseCapMode() != "allocated"
-        || search::silverLiveReuseCap() != 32768 || search::silverLiveAdaptiveEnabled())
-        throw std::runtime_error("oocv4h1: Silver teacher failed runtime validation");
-    return teacher;
-}
-
-struct V4ActRolloutObservation {
-    int act = 0;
-    int floor = 0;
-    Room room = Room::INVALID;
-    MonsterEncounter encounter = MonsterEncounter::INVALID;
-    GameContext battleEntry;
-};
-
-static std::uint64_t v4ActRolloutSeed(std::uint64_t sourceSeed, int rollout) {
-    std::uint64_t x = sourceSeed ^ (0x9e3779b97f4a7c15ULL * (std::uint64_t)(rollout + 1));
-    x ^= x >> 30; x *= 0xbf58476d1ce4e5b9ULL;
-    x ^= x >> 27; x *= 0x94d049bb133111ebULL;
-    x ^= x >> 31;
-    return x ? x : 1;
-}
-
-static std::uint64_t v4ActCombatSeed(std::uint64_t rolloutSeed,
-                                     int encounter, int occurrence) {
-    std::uint64_t x = rolloutSeed ^ (0xd6e8feb86659fd93ULL * (std::uint64_t)(encounter + 1))
-        ^ (0xa0761d6478bd642fULL * (std::uint64_t)(occurrence + 1));
-    x ^= x >> 32; x *= 0xe7037ed1a0b428dULL; x ^= x >> 29;
-    return x ? x : 1;
-}
-
-static bool advanceRandomActNoFight(GameContext &gc, search::ScumSearchAgent2 &agent,
-                                    PathHistory &path, int stopAct,
-                                    std::vector<V4ActRolloutObservation> &out) {
-    for (int steps = 0; steps < 512 && gc.outcome == GameOutcome::UNDECIDED; ++steps) {
-        if (gc.act != stopAct)
-            return true;  // Boss rewards may advance the act off-screen; zero cells is valid.
-        path.update(gc);
-        if (gc.screenState == ScreenState::BATTLE) {
-            BattleContext observed{};
-            observed.init(gc);
-            V4ActRolloutObservation row;
-            row.act = gc.act; row.floor = gc.floorNum; row.room = gc.curRoom;
-            row.encounter = observed.encounter;
-            row.battleEntry = detachedCounterfactualCopy(gc);
-            out.push_back(std::move(row));
-
-            // Pass through the canonical post-combat transition without
-            // consuming combat RNG, cards, or Silver/search budget.
-            BattleContext virtualBattle{};
-            virtualBattle.init(gc, observed.encounter);
-            virtualBattle.player.curHp = gc.curHp;
-            virtualBattle.outcome = Outcome::PLAYER_VICTORY;
-            virtualBattle.exitBattle(gc);
-            continue;
-        }
-        using RT = search::GameAction::RewardsActionType;
-        if (gc.screenState == ScreenState::REWARDS) {
-            // The exploratory route deliberately discards rewards so that the
-            // rollout measures encounter exposure, not card/shop policy.
-            search::GameAction(RT::SKIP).execute(gc);
-            continue;
-        }
-        auto actions = search::GameAction::getAllActionsInState(gc);
-        if (!actions.empty()) {
-            std::uniform_int_distribution<int> pick(0, (int)actions.size() - 1);
-            actions[pick(agent.rng)].execute(gc);
-        } else {
-            // Screens with an implicit single transition retain the existing
-            // cheap base transition; this path never enters combat search.
-            agent.stepOutOfCombatPolicy(gc);
-        }
-    }
-    return gc.outcome != GameOutcome::UNDECIDED || gc.act != stopAct;
-}
-
-static V4H1Sample replayV4ActRolloutTarget(std::uint64_t seed, int decision,
-                                           int sourceSims, int asc) {
-    GameContext gc(CharacterClass::IRONCLAD, seed, asc);
-    search::ScumSearchAgent2 source; source.simulationCountBase = sourceSims;
-    source.rng = std::default_random_engine(seed);
-    PathHistory path; t_curPath = &path;
-    int decisionIdx = 0;
-    while (gc.outcome == GameOutcome::UNDECIDED) {
-        path.update(gc);
-        const auto actions = canonicalV4Actions(gc);
-        if (v4EvaluatorOwnedScreen(gc, actions) && actions.size() >= 2) {
-            if (decisionIdx == decision) {
-                t_curPath = nullptr;
-                return {detachedCounterfactualCopy(gc), path, actions, seed, decision,
-                        UINT32_MAX};
-            }
-            ++decisionIdx;
-        }
-        if (gc.screenState == ScreenState::BATTLE) {
-            source.simulationCountBase = fightSims(gc, sourceSims);
-            search::g_potionKeepValue = potionKeepValue(gc);
-        }
-        stepFrozenV4Ooc(gc, source);
-    }
-    t_curPath = nullptr;
-    throw std::runtime_error("oocv4h1rollout: target decision did not replay");
-}
-
-static std::vector<V4H1Sample> replayV4ActRolloutTargets(std::uint64_t seed,
-                                                         int sourceSims, int asc) {
-    GameContext gc(CharacterClass::IRONCLAD, seed, asc);
-    search::ScumSearchAgent2 source; source.simulationCountBase = sourceSims;
-    source.rng = std::default_random_engine(seed);
-    PathHistory path; t_curPath = &path;
-    std::vector<V4H1Sample> targets;
-    int decisionIdx = 0;
-    while (gc.outcome == GameOutcome::UNDECIDED) {
-        path.update(gc);
-        const auto actions = canonicalV4Actions(gc);
-        if (v4EvaluatorOwnedScreen(gc, actions) && actions.size() >= 2) {
-            targets.push_back({detachedCounterfactualCopy(gc), path, actions,
-                               seed, decisionIdx, UINT32_MAX});
-            ++decisionIdx;
-        }
-        if (gc.screenState == ScreenState::BATTLE) {
-            source.simulationCountBase = fightSims(gc, sourceSims);
-            search::g_potionKeepValue = potionKeepValue(gc);
-        }
-        stepFrozenV4Ooc(gc, source);
-    }
-    t_curPath = nullptr;
-    if (targets.empty())
-        throw std::runtime_error("oocv4h1rolloutall: source produced no eligible OOC decisions");
-    return targets;
-}
-
-static std::string v4ActActionDescription(const search::GameAction &action,
-                                          const GameContext &gc) {
-    using RT = search::GameAction::RewardsActionType;
-    if (gc.screenState == ScreenState::REWARDS) {
-        if (action.getRewardsActionType() == RT::CARD) {
-            const int group = action.getIdx1(), card = action.getIdx2();
-            if (card == 5) return "special card-reward skip (bits=1280)";
-            const auto &r = gc.info.rewardsContainer;
-            if (group >= 0 && group < r.cardRewardCount
-                && card >= 0 && card < (int)r.cardRewards[group].size())
-                return r.cardRewards[group][card].getName();
-        }
-        if (action.getRewardsActionType() == RT::SKIP)
-            return "generic reward-screen SKIP";
-    }
-    return actionDescription(action, gc);
-}
-
-static void requireV4ActRolloutTarget(const V4H1Sample &target) {
-    if (target.pre.act != 1 || target.pre.floorNum != 8
-        || target.pre.screenState != ScreenState::REWARDS || target.decisionIdx != 11
-        || target.actions.size() != 5)
-        throw std::runtime_error("oocv4h1rollout: source target is not Act 1 floor 8 decision 11");
-    const std::vector<std::string> expected = {
-        "Pommel Strike", "Warcry", "Whirlwind", "generic reward-screen SKIP",
-        "special card-reward skip"};
-    bool sawSpecialSkip = false;
-    for (int i = 0; i < 5; ++i) {
-        const std::string desc = v4ActActionDescription(target.actions[i], target.pre);
-        if (desc.find(expected[i]) == std::string::npos)
-            throw std::runtime_error("oocv4h1rollout: unexpected action mapping at index "
-                                     + std::to_string(i) + ": " + desc);
-        if (target.actions[i].bits == 1280) sawSpecialSkip = true;
-    }
-    if (!sawSpecialSkip)
-        throw std::runtime_error("oocv4h1rollout: special card skip bits=1280 missing");
-}
-
-static void v4ActRolloutCanary() {
-    if (v4ActRolloutSeed(984123, 0) != v4ActRolloutSeed(984123, 0)
-        || v4ActRolloutSeed(984123, 0) == v4ActRolloutSeed(984123, 1)
-        || v4ActCombatSeed(7, 1, 0) != v4ActCombatSeed(7, 1, 0)
-        || v4ActCombatSeed(7, 1, 0) == v4ActCombatSeed(7, 2, 0))
-        throw std::runtime_error("oocv4h1rollout canary failed: seed pairing is not deterministic");
-    std::cout << "oocv4h1rollout canary PASS\n";
-}
-
-static void evaluateV4ActRollout(std::uint64_t seed, int decision, int rollouts,
-                                 int silverSims, int asc, const std::string &outFile,
-                                 const std::string &teacherPath) {
-    if (seed != 984123 || decision != 11 || rollouts < 1 || silverSims < 1 || asc != 0)
-        throw std::runtime_error("oocv4h1rollout: frozen seed/decision/rollout configuration mismatch");
-    requireV4H1Comparator(true);
-    const V4H1Sample target = replayV4ActRolloutTarget(seed, decision, 1000, asc);
-    requireV4ActRolloutTarget(target);
-    const bool staleTeacher = std::getenv("STS_V4H1_ROLLOUT_ALLOW_STALE_TEACHER")
-        && std::atoi(std::getenv("STS_V4H1_ROLLOUT_ALLOW_STALE_TEACHER")) != 0;
-    const auto teacher = switchToV4H1Teacher(teacherPath, 10000);
-    std::ofstream out(outFile + ".partial");
-    if (!out) throw std::runtime_error("oocv4h1rollout: cannot open output");
-    out << "sourceSeed,decisionIdx,actionIdx,actionBits,actionSemantic,rolloutIndex,rolloutSeed,"
-           "floor,roomClass,encounter,encounterCount,encounterProbability,combatSeed,silverSimulations,"
-           "silverBackendSimulations,silverWin,terminalOutcome,postCombatVStateWin,weightedContribution,valid\n";
-    std::map<std::pair<int, int>, int> counts;
-    struct Cell { int action = 0; int rollout = 0; std::uint64_t rolloutSeed = 0, combatSeed = 0;
-        V4ActRolloutObservation obs; };
-    std::vector<Cell> cells;
-    for (int ri = 0; ri < rollouts; ++ri) {
-        const std::uint64_t rolloutSeed = v4ActRolloutSeed(seed, ri);
-        GameContext hiddenBase = detachedCounterfactualCopy(target.pre);
-        resampleRemainingActEncounters(hiddenBase, rolloutSeed);
-        for (int ai = 0; ai < 5; ++ai) {
-            GameContext branch = detachedCounterfactualCopy(hiddenBase);
-            target.actions[ai].execute(branch);
-            PathHistory branchPath = target.path;
-            search::ScumSearchAgent2 agent; agent.simulationCountBase = 0;
-            agent.rng = std::default_random_engine(rolloutSeed);
-            std::vector<V4ActRolloutObservation> observations;
-            if (!advanceRandomActNoFight(branch, agent, branchPath, 1, observations))
-                throw std::runtime_error("oocv4h1rollout: lightweight Act 1 transition did not complete"
-                    " action=" + std::to_string(ai) + " rollout=" + std::to_string(ri)
-                    + " observations=" + std::to_string(observations.size())
-                    + " screen=" + std::to_string((int)branch.screenState)
-                    + " act=" + std::to_string(branch.act)
-                    + " floor=" + std::to_string(branch.floorNum)
-                    + " outcome=" + std::to_string((int)branch.outcome));
-            for (int oi = 0; oi < (int)observations.size(); ++oi) {
-                const int enc = (int)observations[oi].encounter;
-                ++counts[{ai, enc}];
-                cells.push_back({ai, ri, rolloutSeed,
-                                 v4ActCombatSeed(rolloutSeed, enc, oi),
-                                 std::move(observations[oi])});
-            }
-        }
-    }
-    std::vector<double> scoreSum(5, 0.0), scoreWeight(5, 0.0);
-    std::vector<int> cellCount(5, 0);
-    struct CellResult {
-        std::uint64_t actualSims = 0;
-        std::uint64_t silverDecisions = 0;
-        bool workerSilverInstalled = false;
-        bool won = false;
-        double value = 0.0;
-        bool valid = false;
-    };
-    std::vector<CellResult> results(cells.size());
-    auto runSilverCell = [&](const Cell &cell) {
-        CellResult result;
-        result.workerSilverInstalled = search::silverLiveBackendInstalled();
-        if (!result.workerSilverInstalled) return result;
-        GameContext local = detachedCounterfactualCopy(cell.obs.battleEntry);
-        search::ScumSearchAgent2 fight; fight.simulationCountBase = silverSims;
-        fight.rng = std::default_random_engine(cell.combatSeed);
-        BattleContext bc{}; bc.init(local, cell.obs.encounter);
-        const int healthBefore = search::g_simHealthFailureCount;
-        const std::int64_t before = fight.simulationCountTotal;
-        fight.playoutBattle(bc);
-        result.actualSims = (std::uint64_t)std::max<std::int64_t>(
-            0, fight.simulationCountTotal - before);
-        result.silverDecisions = search::g_silverLiveDiagnostics.decisions;
-        result.won = bc.outcome == Outcome::PLAYER_VICTORY;
-        bc.exitBattle(local);
-        result.valid = search::isValidTrainingTerminal(true, healthBefore,
-            search::g_simHealthFailureCount, false);
-        if (result.won)
-            result.value = local.outcome == GameOutcome::PLAYER_VICTORY ? 1.0 : vStateWin(local);
-        return result;
-    };
-    if (cells.empty())
-        throw std::runtime_error("oocv4h1rollout: no observed combat cells");
-    // Fixed probes prove both the per-thread install contract and CRN
-    // determinism before the full queue is released.
-    const int workerCount = std::max(1, numThreads());
-    const int probeCount = std::min((int)cells.size(), workerCount);
-    std::vector<CellResult> serialProbe(probeCount), parallelProbe(probeCount);
-#ifdef _OPENMP
-    omp_set_dynamic(0);
-    omp_set_num_threads(1);
-#endif
-    for (int i = 0; i < probeCount; ++i)
-        serialProbe[i] = runSilverCell(cells[i]);
-#ifdef _OPENMP
-    omp_set_num_threads(workerCount);
-#endif
-    #pragma omp parallel
-    {
-        #pragma omp for schedule(static)
-        for (int i = 0; i < probeCount; ++i)
-            parallelProbe[i] = runSilverCell(cells[i]);
-    }
-    for (int i = 0; i < probeCount; ++i) {
-        const auto &a = serialProbe[i], &b = parallelProbe[i];
-        if (!b.workerSilverInstalled || b.actualSims == 0
-            || a.won != b.won || std::abs(a.value - b.value) > 1e-12)
-            throw std::runtime_error("oocv4h1rollout: Silver worker canary failed at probe "
-                + std::to_string(i));
-    }
-    if (serialProbe[0].actualSims == 0)
-        throw std::runtime_error("oocv4h1rollout: serial Silver canary reported no simulations");
-    #ifdef _OPENMP
-    omp_set_num_threads(workerCount);
-    #endif
-    // Rollout generation and seed assignment stay serial and deterministic;
-    // only independent Silver cells are parallelized. OMP_NUM_THREADS controls
-    // the worker count, matching the other combat benchmarks in this binary.
-    #pragma omp parallel
-    {
-        #pragma omp for schedule(dynamic)
-        for (int ci = 0; ci < (int)cells.size(); ++ci)
-            results[ci] = runSilverCell(cells[ci]);
-    }
-    for (const auto &result : results)
-        if (!result.workerSilverInstalled || result.actualSims == 0)
-            throw std::runtime_error("oocv4h1rollout: a Silver worker reported no Silver activity");
-    for (int ci = 0; ci < (int)cells.size(); ++ci) {
-        const auto &cell = cells[ci];
-        const auto &result = results[ci];
-        const int encounterCount = counts[{cell.action, (int)cell.obs.encounter}];
-        const double contribution = result.value / std::max(1, rollouts);
-        scoreSum[cell.action] += result.value;
-        scoreWeight[cell.action] += 1.0;
-        ++cellCount[cell.action];
-        out << seed << ',' << decision << ',' << cell.action << ',' << target.actions[cell.action].bits
-            << ',' << csvQuote(v4ActActionDescription(target.actions[cell.action], target.pre)) << ','
-            << cell.rollout << ',' << cell.rolloutSeed << ',' << cell.obs.floor << ','
-            << (int)cell.obs.room << ',' << monsterEncounterEnumNames[(int)cell.obs.encounter] << ','
-            << encounterCount << ',' << ((double)encounterCount / std::max(1, rollouts)) << ','
-            << cell.combatSeed << ',' << silverSims << ',' << result.actualSims << ',' << result.won << ','
-            << (result.won ? 1 : 0) << ',' << result.value << ',' << contribution << ','
-            << (result.valid ? 1 : 0) << '\n';
-    }
-    out.close();
-    if (!out) throw std::runtime_error("oocv4h1rollout: failed to finish CSV");
-    std::filesystem::rename(outFile + ".partial", outFile);
-    std::ofstream json(outFile + ".json");
-    std::ofstream report(outFile + ".report.txt");
-    if (!json || !report) throw std::runtime_error("oocv4h1rollout: cannot open summary output");
-    GameContext genericSkip = detachedCounterfactualCopy(target.pre);
-    GameContext specialSkip = detachedCounterfactualCopy(target.pre);
-    target.actions[3].execute(genericSkip);
-    target.actions[4].execute(specialSkip);
-    const bool skipsRedundant = stratFingerprint(genericSkip) == stratFingerprint(specialSkip);
-    json << "{\"sourceSeed\":" << seed << ",\"decisionIdx\":" << decision
-         << ",\"rollouts\":" << rollouts << ",\"silverSimulations\":" << silverSims
-         << ",\"silverWorkerThreads\":" << numThreads()
-         << ",\"teacherId\":" << nlohmann::json(teacher.id).dump()
-         << ",\"teacherProvenance\":"
-         << nlohmann::json(staleTeacher ? "stale_manifest_allowed" : "exact").dump()
-         << ",\"genericAndSpecialSkipRedundant\":" << (skipsRedundant ? "true" : "false")
-         << ",\"encounterDistribution\":[";
-    bool firstEncounter = true;
-    for (const auto &[key, count] : counts) {
-        if (!firstEncounter) json << ',';
-        firstEncounter = false;
-        json << "{\"actionIdx\":" << key.first << ",\"encounter\":"
-             << nlohmann::json(monsterEncounterEnumNames[key.second]).dump()
-             << ",\"count\":" << count << ",\"probability\":"
-             << ((double)count / std::max(1, rollouts)) << "}";
-    }
-    json << "],\"actions\":[";
-    report << "source seed=" << seed << " decisionIdx=" << decision << " rollouts=" << rollouts
-           << " silverSimulations=" << silverSims << " silverWorkerThreads=" << numThreads()
-           << " teacher_provenance=" << (staleTeacher ? "stale_manifest_allowed" : "exact") << "\n";
-    report << "encounter distribution (action, identity, count, probability):\n";
-    for (const auto &[key, count] : counts)
-        report << key.first << " " << monsterEncounterEnumNames[key.second] << " "
-               << count << " " << ((double)count / std::max(1, rollouts)) << "\n";
-    int selected = -1; double best = -1.0;
-    for (int ai = 0; ai < 5; ++ai) {
-        const double score = scoreSum[ai] / std::max(1.0, scoreWeight[ai]);
-        if (score > best) { best = score; selected = ai; }
-        if (ai) json << ',';
-        json << "{\"actionIdx\":" << ai << ",\"bits\":" << target.actions[ai].bits
-             << ",\"description\":" << nlohmann::json(v4ActActionDescription(target.actions[ai], target.pre)).dump()
-             << ",\"cells\":" << cellCount[ai] << ",\"score\":" << score << "}";
-        report << ai << " " << v4ActActionDescription(target.actions[ai], target.pre)
-               << " weighted_score=" << score << " cells=" << cellCount[ai] << "\n";
-    }
-    json << "],\"selectedAction\":" << selected << "}\n";
-    report << "selected_action=" << selected << "\n";
-    report << "generic_skip_vs_special_skip=" << (skipsRedundant ? "redundant" : "distinct") << "\n";
-}
-
-static void evaluateV4ActRolloutAll(std::uint64_t seed, int rollouts, int silverSims,
-                                    int asc, const std::string &outFile,
-                                    const std::string &teacherPath) {
-    if (seed != 984123 || rollouts < 1 || silverSims < 1 || asc != 0)
-        throw std::runtime_error("oocv4h1rolloutall: frozen seed/rollout configuration mismatch");
-    requireV4H1Comparator(true);
-    const auto targets = replayV4ActRolloutTargets(seed, 1000, asc);
-    const bool staleTeacher = std::getenv("STS_V4H1_ROLLOUT_ALLOW_STALE_TEACHER")
-        && std::atoi(std::getenv("STS_V4H1_ROLLOUT_ALLOW_STALE_TEACHER")) != 0;
-    const auto teacher = switchToV4H1Teacher(teacherPath, 10000);
-    std::ofstream out(outFile + ".partial");
-    if (!out) throw std::runtime_error("oocv4h1rolloutall: cannot open output");
-    out << "sourceSeed,decisionIdx,actionIdx,actionBits,actionSemantic,rolloutIndex,rolloutSeed,"
-           "floor,roomClass,encounter,encounterCount,encounterProbability,combatSeed,silverSimulations,"
-           "silverBackendSimulations,silverWin,terminalOutcome,postCombatVStateWin,weightedContribution,valid\n";
-    using CountKey = std::tuple<int, int, int>;
-    std::map<CountKey, int> counts;
-    struct Cell { int target = 0, action = 0, rollout = 0; std::uint64_t rolloutSeed = 0, combatSeed = 0;
-        V4ActRolloutObservation obs; };
-    std::vector<Cell> cells;
-    for (int ti = 0; ti < (int)targets.size(); ++ti) {
-        const auto &target = targets[ti];
-        for (int ri = 0; ri < rollouts; ++ri) {
-            const std::uint64_t rolloutSeed = v4ActRolloutSeed(seed,
-                ri + ti * rollouts);
-            GameContext hiddenBase = detachedCounterfactualCopy(target.pre);
-            resampleRemainingActEncounters(hiddenBase, rolloutSeed);
-            for (int ai = 0; ai < (int)target.actions.size(); ++ai) {
-                GameContext branch = detachedCounterfactualCopy(hiddenBase);
-                target.actions[ai].execute(branch);
-                PathHistory branchPath = target.path;
-                search::ScumSearchAgent2 agent; agent.simulationCountBase = 0;
-                agent.rng = std::default_random_engine(rolloutSeed);
-                std::vector<V4ActRolloutObservation> observations;
-                if (!advanceRandomActNoFight(branch, agent, branchPath, target.pre.act, observations))
-                    throw std::runtime_error("oocv4h1rolloutall: lightweight target-act transition did not complete"
-                        " decision=" + std::to_string(target.decisionIdx)
-                        + " action=" + std::to_string(ai) + " rollout=" + std::to_string(ri)
-                        + " act=" + std::to_string(target.pre.act)
-                        + " floor=" + std::to_string(target.pre.floorNum)
-                        + " screen=" + std::to_string((int)target.pre.screenState)
-                        + " endAct=" + std::to_string(branch.act)
-                        + " endFloor=" + std::to_string(branch.floorNum)
-                        + " endScreen=" + std::to_string((int)branch.screenState)
-                        + " outcome=" + std::to_string((int)branch.outcome)
-                        + " observations=" + std::to_string(observations.size()));
-                for (int oi = 0; oi < (int)observations.size(); ++oi) {
-                    const int enc = (int)observations[oi].encounter;
-                    const CountKey key{ti, ai, enc};
-                    ++counts[key];
-                    cells.push_back({ti, ai, ri, rolloutSeed,
-                                     v4ActCombatSeed(rolloutSeed, enc, oi),
-                                     std::move(observations[oi])});
-                }
-            }
-        }
-    }
-    struct CellResult { std::uint64_t actualSims = 0, silverDecisions = 0;
-        bool workerSilverInstalled = false, won = false;
-        double value = 0.0; bool valid = false; };
-    std::vector<CellResult> results(cells.size());
-    auto runSilverCell = [&](const Cell &cell) {
-        CellResult result;
-        result.workerSilverInstalled = search::silverLiveBackendInstalled();
-        if (!result.workerSilverInstalled) return result;
-        GameContext local = detachedCounterfactualCopy(cell.obs.battleEntry);
-        search::ScumSearchAgent2 fight; fight.simulationCountBase = silverSims;
-        fight.rng = std::default_random_engine(cell.combatSeed);
-        BattleContext bc{}; bc.init(local, cell.obs.encounter);
-        const int healthBefore = search::g_simHealthFailureCount;
-        const std::int64_t before = fight.simulationCountTotal;
-        fight.playoutBattle(bc);
-        result.actualSims = (std::uint64_t)std::max<std::int64_t>(
-            0, fight.simulationCountTotal - before);
-        result.silverDecisions = search::g_silverLiveDiagnostics.decisions;
-        result.won = bc.outcome == Outcome::PLAYER_VICTORY;
-        bc.exitBattle(local);
-        result.valid = search::isValidTrainingTerminal(true, healthBefore,
-            search::g_simHealthFailureCount, false);
-        if (result.won)
-            result.value = local.outcome == GameOutcome::PLAYER_VICTORY ? 1.0 : vStateWin(local);
-        return result;
-    };
-    if (cells.empty())
-        throw std::runtime_error("oocv4h1rolloutall: no observed combat cells");
-    const int workerCount = std::max(1, numThreads());
-    const int probeCount = std::min((int)cells.size(), workerCount);
-    std::vector<CellResult> serialProbe(probeCount), parallelProbe(probeCount);
-    std::atomic<std::uint64_t> workerMask{0};
-#ifdef _OPENMP
-    omp_set_dynamic(0);
-    omp_set_num_threads(1);
-#endif
-    for (int i = 0; i < probeCount; ++i)
-        serialProbe[i] = runSilverCell(cells[i]);
-#ifdef _OPENMP
-    omp_set_num_threads(workerCount);
-#endif
-    #pragma omp parallel
-    {
-#ifdef _OPENMP
-        const int tid = omp_get_thread_num();
-        if (tid < 64) workerMask.fetch_or(1ULL << tid);
-#else
-        workerMask.fetch_or(1ULL);
-#endif
-        #pragma omp for schedule(static)
-        for (int i = 0; i < probeCount; ++i)
-            parallelProbe[i] = runSilverCell(cells[i]);
-    }
-    for (int i = 0; i < probeCount; ++i) {
-        const auto &a = serialProbe[i], &b = parallelProbe[i];
-        if (!b.workerSilverInstalled || b.actualSims == 0
-            || a.won != b.won || std::abs(a.value - b.value) > 1e-12
-            || a.actualSims != b.actualSims)
-            throw std::runtime_error("oocv4h1rolloutall: Silver worker canary failed at probe "
-                + std::to_string(i) + " serial(inst=" + std::to_string(a.workerSilverInstalled)
-                + ",decisions=" + std::to_string(a.silverDecisions)
-                + ",sims=" + std::to_string(a.actualSims) + ",won=" + std::to_string(a.won)
-                + ",value=" + std::to_string(a.value) + ") parallel(inst="
-                + std::to_string(b.workerSilverInstalled) + ",decisions="
-                + std::to_string(b.silverDecisions) + ",sims=" + std::to_string(b.actualSims)
-                + ",won=" + std::to_string(b.won) + ",value=" + std::to_string(b.value) + ")");
-    }
-    if (serialProbe[0].actualSims == 0)
-        throw std::runtime_error("oocv4h1rolloutall: serial Silver canary reported no simulations");
-    if (workerCount >= 64 || workerMask.load() != ((1ULL << workerCount) - 1))
-        throw std::runtime_error("oocv4h1rolloutall: not every configured worker ran the Silver canary");
-#ifdef _OPENMP
-    omp_set_num_threads(workerCount);
-#endif
-    #pragma omp parallel
-    {
-        #pragma omp for schedule(dynamic)
-        for (int ci = 0; ci < (int)cells.size(); ++ci)
-            results[ci] = runSilverCell(cells[ci]);
-    }
-    for (const auto &result : results)
-        if (!result.workerSilverInstalled || result.actualSims == 0)
-            throw std::runtime_error("oocv4h1rolloutall: a Silver worker reported no Silver activity");
-    std::vector<std::vector<double>> scoreSum(targets.size()), scoreWeight(targets.size());
-    std::vector<std::vector<int>> cellCount(targets.size());
-    for (int ti = 0; ti < (int)targets.size(); ++ti) {
-        scoreSum[ti].assign(targets[ti].actions.size(), 0.0);
-        scoreWeight[ti].assign(targets[ti].actions.size(), 0.0);
-        cellCount[ti].assign(targets[ti].actions.size(), 0);
-    }
-    for (int ci = 0; ci < (int)cells.size(); ++ci) {
-        const auto &cell = cells[ci]; const auto &target = targets[cell.target];
-        const auto &result = results[ci];
-        const CountKey key{cell.target, cell.action, (int)cell.obs.encounter};
-        const int encounterCount = counts[key];
-        const double contribution = result.value / std::max(1, rollouts);
-        scoreSum[cell.target][cell.action] += result.value;
-        scoreWeight[cell.target][cell.action] += 1.0;
-        ++cellCount[cell.target][cell.action];
-        out << seed << ',' << target.decisionIdx << ',' << cell.action << ','
-            << target.actions[cell.action].bits << ','
-            << csvQuote(v4ActActionDescription(target.actions[cell.action], target.pre)) << ','
-            << cell.rollout << ',' << cell.rolloutSeed << ',' << cell.obs.floor << ','
-            << (int)cell.obs.room << ',' << monsterEncounterEnumNames[(int)cell.obs.encounter] << ','
-            << encounterCount << ',' << ((double)encounterCount / std::max(1, rollouts)) << ','
-            << cell.combatSeed << ',' << silverSims << ',' << result.actualSims << ',' << result.won << ','
-            << (result.won ? 1 : 0) << ',' << result.value << ',' << contribution << ','
-            << (result.valid ? 1 : 0) << '\n';
-    }
-    out.close();
-    if (!out) throw std::runtime_error("oocv4h1rolloutall: failed to finish CSV");
-    std::filesystem::rename(outFile + ".partial", outFile);
-    std::ofstream json(outFile + ".json");
-    std::ofstream report(outFile + ".report.txt");
-    if (!json || !report) throw std::runtime_error("oocv4h1rolloutall: cannot open summary output");
-    json << "{\"sourceSeed\":" << seed << ",\"decisionCount\":" << targets.size()
-         << ",\"rollouts\":" << rollouts << ",\"silverSimulations\":" << silverSims
-         << ",\"silverWorkerThreads\":" << numThreads()
-         << ",\"silverWorkerCanary\":\"pass\",\"silverWorkerMask\":" << workerMask.load()
-         << ",\"teacherId\":" << nlohmann::json(teacher.id).dump()
-         << ",\"teacherProvenance\":"
-         << nlohmann::json(staleTeacher ? "stale_manifest_allowed" : "exact").dump()
-         << ",\"decisions\":[";
-    report << "source seed=" << seed << " decisionCount=" << targets.size()
-           << " rollouts=" << rollouts << " silverSimulations=" << silverSims
-           << " silverWorkerThreads=" << numThreads() << " silverWorkerCanary=pass"
-           << " silverWorkerMask=" << workerMask.load() << " teacher_provenance="
-           << (staleTeacher ? "stale_manifest_allowed" : "exact") << "\n";
-    for (int ti = 0; ti < (int)targets.size(); ++ti) {
-        const auto &target = targets[ti];
-        if (ti) json << ',';
-        json << "{\"decisionIdx\":" << target.decisionIdx << ",\"floor\":"
-             << target.pre.floorNum << ",\"actions\":[";
-        report << "decision=" << target.decisionIdx << " act=" << target.pre.act
-               << " floor=" << target.pre.floorNum << " actions=" << target.actions.size() << "\n";
-        int selected = -1; double best = -1.0;
-        for (int ai = 0; ai < (int)target.actions.size(); ++ai) {
-            const double score = scoreSum[ti][ai] / std::max(1.0, scoreWeight[ti][ai]);
-            if (score > best) { best = score; selected = ai; }
-            if (ai) json << ',';
-            json << "{\"actionIdx\":" << ai << ",\"bits\":" << target.actions[ai].bits
-                 << ",\"description\":"
-                 << nlohmann::json(v4ActActionDescription(target.actions[ai], target.pre)).dump()
-                 << ",\"cells\":" << cellCount[ti][ai] << ",\"score\":" << score << "}";
-            report << "  " << ai << " " << v4ActActionDescription(target.actions[ai], target.pre)
-                   << " weighted_score=" << score << " cells=" << cellCount[ti][ai] << "\n";
-        }
-        json << "],\"selectedAction\":" << selected << "}";
-        report << "  selected_action=" << selected << "\n";
-    }
-    json << "]}\n";
 }
 
 struct MargResult { double won, hp, floor, boot; int survivedH; };
@@ -7798,7 +6896,7 @@ runFightGenSeed(std::uint64_t seed, int sims, int asc, double epsilon) {
 // ---------------------------------------------------------------------------
 static void searchDiag(int nSeeds, int sims, int asc, const std::string &out, int probeEvery,
                        std::uint64_t seedOffset = 0) {
-    const int displayProbeEvery = search::g_useSearcher3 && probeEvery > 0 ? 0 : probeEvery;
+    const int displayProbeEvery = probeEvery;
     if (!one_combat::startSearchDiagnostics(out, probeEvery)) return;
     const std::string fightOut = out + ".fights.csv";
     std::cout << "SEARCHDIAG: seeds " << seedOffset << ".." << seedOffset + nSeeds - 1
@@ -8373,13 +7471,11 @@ int main(int argc, char **argv) {
 
     // ADR-0018: Silver is the default combat backend for whole-run play
     // (run, bestbench, reprobench).  An explicit STS_SILVER_SEARCH (including
-    // =0) or STS_SEARCHER3=1 keeps the native searcher path.  The resolved
+    // =0) keeps the native searcher path.  The resolved
     // default is written back to the environment so provenance checks and
     // child processes see the effective configuration.
     if (mode == "run" || mode == "bestbench" || mode == "reprobench") {
-        const char *searcher3Env = std::getenv("STS_SEARCHER3");
-        const bool searcher3Requested = searcher3Env && std::atoi(searcher3Env) != 0;
-        if (!std::getenv("STS_SILVER_SEARCH") && !searcher3Requested) {
+        if (!std::getenv("STS_SILVER_SEARCH")) {
             setenv("STS_SILVER_SEARCH", "1", 0);
             setenv("STS_FAIR", "1", 0);
             std::cout << "[default combat backend: Silver (STS_SILVER_SEARCH=0 restores native)]\n";
@@ -8843,7 +7939,6 @@ int main(int argc, char **argv) {
         if (g_stopAfterAct > 0)
             std::cout << "[benchmark stops after Act " << g_stopAfterAct << " boss]\n";
     }
-    one_combat::configureFightReplayFromEnvironment();
     if (const char *d = std::getenv("STS_BOSS_V")) {          // boss-survival V blended into near-boss picks
         g_bossV = std::atoi(d) != 0;
         if (const char *w = std::getenv("STS_BOSS_V_W"))       g_bossVW        = std::atof(w);
@@ -8865,9 +7960,11 @@ int main(int argc, char **argv) {
         search::g_fairPlay = std::atoi(d) != 0;
         if (search::g_fairPlay) std::cout << "[fair-play / determinized MCTS ON]\n";
     }
-    if (const char *d = std::getenv("STS_SEARCHER3")) {      // use enhanced BattleScumSearcher3 engine
-        search::g_useSearcher3 = std::atoi(d) != 0;
-        if (search::g_useSearcher3) std::cout << "[Searcher3 engine ON: belief/prune/chain/live (CRN opt-in)]\n";
+    // ADR-0019: Searcher3 was removed. Reject a request for it instead of
+    // silently running another searcher; STS_SEARCHER3=0 stays accepted.
+    if (const char *d = std::getenv("STS_SEARCHER3"); d && std::atoi(d) != 0) {
+        std::cerr << "error: STS_SEARCHER3 is no longer supported; Searcher3 was removed (ADR-0019)\n";
+        return 2;
     }
     const char *silverSearchEnv = std::getenv("STS_SILVER_SEARCH");
     const bool silverSearchRequested = silverSearchEnv && std::atoi(silverSearchEnv) != 0;
@@ -8879,297 +7976,11 @@ int main(int argc, char **argv) {
     }
     if (silverSearchRequested) {
             // The external callback takes precedence before ScumSearchAgent2
-            // enters either Searcher2 or Searcher3. It owns local Silver
-            // randomness and therefore never constructs an S3 Belief.
+            // enters Searcher2. It owns local Silver randomness.
             search::installSilverLiveBackend();
-            std::cout << "[isolated Silver combat backend ON: local Silver RNG/chance search; Searcher3 particles bypassed; reuse-cap="
+            std::cout << "[isolated Silver combat backend ON: local Silver RNG/chance search; reuse-cap="
                       << search::silverLiveReuseCapMode() << " cap=" << search::silverLiveReuseCap()
                       << "]\n";
-    }
-    // STS_LIVE_VALID (Phase 4, fair-tree structural fix): env opt-in as
-    // recorded in §122, or default ON for the Searcher3 fair-play regime
-    // since 2026-08-07 (§123: two independent 256-seed paired gates give
-    // +5.5pp and +5.9pp win at +7.9% and +14.6% cpu — the recorded cpu-trade
-    // call accepts that cost for the win; hp +4.1/+3.1, floor +0.6/+1.1).
-    // STS_LIVE_VALID=0 explicitly disables. The fairgen datagen mode is NOT
-    // covered (it forces the regime after this parse); datagen keeps the
-    // recorded §117 behavior unless the flag is set explicitly.
-    if (!std::getenv("STS_LIVE_VALID") && search::g_fairPlay && search::g_useSearcher3) {
-        search::g_liveValid = true;
-        std::cout << "[live-valid edge re-selection ON (fair S3 default, §123)]\n";
-    }
-    // ── Tree reuse control (STS_REUSE_*) ──────────────────────────────────
-    if (const char *d = std::getenv("STS_REUSE_MAX_SEARCHES")) {
-        search::g_reuseMaxSearches = std::atoi(d);
-        std::cout << "[reuse max-searches = " << search::g_reuseMaxSearches << "]\n";
-    }
-    if (const char *d = std::getenv("STS_REUSE_STATS_MODE")) {
-        if (std::string(d) == "recursive_reset")
-            search::g_reuseStatsMode = 1;
-        else
-            search::g_reuseStatsMode = 0;  // "keep" or unknown
-        std::cout << "[reuse stats-mode = " << (search::g_reuseStatsMode ? "recursive_reset" : "keep") << "]\n";
-    }
-    if (const char *d = std::getenv("STS_REUSE_ALWAYS_Q")) {
-        search::g_reuseAlwaysQ = std::atoi(d) != 0;
-        std::cout << "[reuse always-Q = " << (search::g_reuseAlwaysQ ? "ON" : "off") << "]\n";
-    }
-    if (const char *d = std::getenv("STS_S3_ALWAYS_Q")) {
-        search::g_s3AlwaysQ = std::atoi(d) != 0;
-        std::cout << "[S3 always-Q = " << (search::g_s3AlwaysQ ? "ON" : "off") << "]\n";
-    }
-    if (const char *d = std::getenv("STS_REUSE_DIAG")) {
-        search::g_reuseDiag = std::atoi(d) != 0;
-        std::cout << "[reuse diagnostics = " << (search::g_reuseDiag ? "ON" : "off") << "]\n";
-    }
-    if (const char *d = std::getenv("STS_REUSE_OBS_STABLE")) {
-        search::g_reuseObsStable = std::atoi(d) != 0;
-        std::cout << "[reuse obs-stable = " << (search::g_reuseObsStable ? "ON" : "off") << "]\n";
-    }
-    if (const char *d = std::getenv("STS_REUSE_RECONCILE_ROOT")) {
-        search::g_reuseReconcileRoot = std::atoi(d) != 0;
-        std::cout << "[reuse reconcile-root = " << (search::g_reuseReconcileRoot ? "ON" : "off") << "]\n";
-    }
-    if (const char *d = std::getenv("STS_REUSE_CARRY_DIAG")) {
-        search::g_reuseCarryDiag = std::atoi(d) != 0;
-        std::cout << "[reuse carry-diag = " << (search::g_reuseCarryDiag ? "ON" : "off") << "]\n";
-    }
-    if (const char *d = std::getenv("STS_S3_SEMANTIC_CARD_EDGES")) {
-        search::g_s3SemanticCardEdges = std::atoi(d) != 0;
-        std::cout << "[S3 semantic-card-edges = " << (search::g_s3SemanticCardEdges ? "ON" : "off") << "]\n";
-    }
-    if (const char *d = std::getenv("STS_S3_OUTCOME_BUCKET_DIAG")) {
-        search::g_s3OutcomeBucketDiag = std::atoi(d) != 0;
-        std::cout << "[S3 outcome-bucket-diag = " << (search::g_s3OutcomeBucketDiag ? "ON" : "off") << "]\n";
-    }
-    if (const char *d = std::getenv("STS_S3_OUTCOME_BUCKET_DIAG_FILE")) {
-        search::g_s3OutcomeBucketDiagFile = d;
-        std::cout << "[S3 outcome-bucket-diag file = " << search::g_s3OutcomeBucketDiagFile << "]\n";
-    }
-    if (const char *d = std::getenv("STS_S3_OUTCOME_BUCKET_DIAG_PARTICLES")) {
-        search::g_s3OutcomeBucketDiagParticles = std::atoi(d);
-        std::cout << "[S3 outcome-bucket-diag particles = " << search::g_s3OutcomeBucketDiagParticles << "]\n";
-    }
-    if (const char *d = std::getenv("STS_S3_STRATEGY_FUSION_DIAG")) {
-        search::g_s3StrategyFusionDiag = std::atoi(d) != 0;
-        std::cout << "[S3 strategy-fusion diag = "
-                  << (search::g_s3StrategyFusionDiag ? "ON" : "off") << "]\n";
-    }
-    if (const char *d = std::getenv("STS_S3_STRATEGY_FUSION_DIAG_FILE")) {
-        search::g_s3StrategyFusionDiagFile = d;
-        std::cout << "[S3 strategy-fusion diag file = "
-                  << search::g_s3StrategyFusionDiagFile << "]\n";
-    }
-    if (const char *d = std::getenv("STS_S3_STRATEGY_FUSION_DIAG_PARTICLES")) {
-        search::g_s3StrategyFusionDiagParticles = std::max(1, std::atoi(d));
-        std::cout << "[S3 strategy-fusion diag particles = "
-                  << search::g_s3StrategyFusionDiagParticles << "]\n";
-    }
-    if (const char *d = std::getenv("STS_S3_STRATEGY_FUSION_DIAG_MAX_TRANSITIONS")) {
-        search::g_s3StrategyFusionDiagMaxTransitions = std::max(1, std::atoi(d));
-        std::cout << "[S3 strategy-fusion diag max transitions = "
-                  << search::g_s3StrategyFusionDiagMaxTransitions << "]\n";
-    }
-    if (const char *d = std::getenv("STS_S3_STRATEGY_FUSION_DIAG_MIN_CHILD_VISITS")) {
-        search::g_s3StrategyFusionDiagMinChildVisits = std::max(1, std::atoi(d));
-        std::cout << "[S3 strategy-fusion diag min child visits = "
-                  << search::g_s3StrategyFusionDiagMinChildVisits << "]\n";
-    }
-    if (const char *d = std::getenv("STS_S3_STRATEGY_FUSION_DIAG_FRESH_SIMS")) {
-        search::g_s3StrategyFusionDiagFreshSims = std::max(0, std::atoi(d));
-        std::cout << "[S3 strategy-fusion diag fresh sims = "
-                  << search::g_s3StrategyFusionDiagFreshSims << "]\n";
-    }
-    if (const char *d = std::getenv("STS_S3_STRATEGY_FUSION_DIAG_REF_SIMS")) {
-        search::g_s3StrategyFusionDiagReferenceSims = std::max(0, std::atoi(d));
-        std::cout << "[S3 strategy-fusion diag reference sims = "
-                  << search::g_s3StrategyFusionDiagReferenceSims << "]\n";
-    }
-    if (const char *d = std::getenv("STS_S3_PERSISTENT_ENDTURN_CHANCE")) {
-        search::g_s3PersistentEndTurnChance = std::atoi(d) != 0;
-        std::cout << "[S3 persistent END_TURN chance = "
-                  << (search::g_s3PersistentEndTurnChance ? "ON" : "off")
-                  << "]\n";
-    }
-    if (const char *d = std::getenv("STS_S3_PERSISTENT_ENDTURN_MAX_PILE")) {
-        search::g_s3PersistentEndTurnMaxPile = std::max(0, std::atoi(d));
-        std::cout << "[S3 persistent END_TURN max-pile = "
-                  << search::g_s3PersistentEndTurnMaxPile << "]\n";
-    }
-    if (const char *d = std::getenv("STS_S3_BUCKET_VALUE_DIAG")) {
-        search::g_s3BucketValueDiag = std::atoi(d) != 0;
-        std::cout << "[S3 bucket-value-diag = " << (search::g_s3BucketValueDiag ? "ON" : "off") << "]\n";
-    }
-    if (const char *d = std::getenv("STS_S3_BUCKET_VALUE_DIAG_FILE")) {
-        search::g_s3BucketValueDiagFile = d;
-        std::cout << "[S3 bucket-value-diag file = " << search::g_s3BucketValueDiagFile << "]\n";
-    }
-    if (const char *d = std::getenv("STS_S3_BUCKET_VALUE_DIAG_ROLLOUTS")) {
-        search::g_s3BucketValueDiagRollouts = std::atoi(d);
-        std::cout << "[S3 bucket-value-diag rollouts = " << search::g_s3BucketValueDiagRollouts << "]\n";
-    }
-    if (const char *d = std::getenv("STS_S3_ENDTURN_MARGINALIZE")) {
-        search::g_s3EndTurnMarginalize = std::atoi(d) != 0;
-        std::cout << "[S3 END_TURN marginalization = " << (search::g_s3EndTurnMarginalize ? "ON" : "off") << "]\n";
-    }
-    if (const char *d = std::getenv("STS_S3_ENDTURN_MARGINALIZE_PARTICLES")) {
-        search::g_s3EndTurnMarginalizeParticles = std::atoi(d);
-        std::cout << "[S3 END_TURN marg particles = " << search::g_s3EndTurnMarginalizeParticles << "]\n";
-    }
-    if (const char *d = std::getenv("STS_S3_ENDTURN_MARGINALIZE_MAX_PILE")) {
-        search::g_s3EndTurnMarginalizeMaxPile = std::atoi(d);
-        std::cout << "[S3 END_TURN marg max-pile = " << search::g_s3EndTurnMarginalizeMaxPile << "]\n";
-    }
-    if (!search::s3PersistentChanceFlagsCompatible(
-            search::g_s3PersistentEndTurnChance,
-            search::g_s3StrategyFusionDiag,
-            search::g_s3EndTurnMarginalize)) {
-        if (search::g_s3StrategyFusionDiag) {
-            std::cerr << "error: STS_S3_PERSISTENT_ENDTURN_CHANCE and "
-                         "STS_S3_STRATEGY_FUSION_DIAG are mutually exclusive; "
-                         "the diagnostic assumes the legacy shared-child topology\n";
-        } else {
-            std::cerr << "error: STS_S3_PERSISTENT_ENDTURN_CHANCE and "
-                         "STS_S3_ENDTURN_MARGINALIZE are mutually exclusive; "
-                         "persistent chance nodes must not run with eager marginalization\n";
-        }
-        return 2;
-    }
-    if (search::g_s3PersistentEndTurnChance)
-        std::atexit(search::printPersistentEndTurnChanceDiagnostics);
-    if (const char *d = std::getenv("STS_S3_DRAW_PROB_DIAG")) {
-        search::g_s3DrawProbDiag = std::atoi(d) != 0;
-        std::cout << "[S3 draw-prob diag = " << (search::g_s3DrawProbDiag ? "ON" : "off") << "]\n";
-    }
-    if (const char *d = std::getenv("STS_S3_DRAW_PROB_DIAG_FILE")) {
-        search::g_s3DrawProbDiagFile = d;
-        std::cout << "[S3 draw-prob diag file = " << search::g_s3DrawProbDiagFile << "]\n";
-    }
-    if (const char *d = std::getenv("STS_S3_LEAFVALUE_DIAG")) {
-        search::g_s3LeafValueDiag = std::atoi(d) != 0;
-        std::cout << "[S3 leafvalue diag = " << (search::g_s3LeafValueDiag ? "ON" : "off") << "]\n";
-    }
-    if (const char *d = std::getenv("STS_S3_LEAFVALUE_DIAG_FILE")) {
-        search::g_s3LeafValueDiagFile = d;
-        std::cout << "[S3 leafvalue diag file = " << search::g_s3LeafValueDiagFile << "]\n";
-    }
-    if (const char *d = std::getenv("STS_S3_BELIEF_AUDIT")) {
-        search::g_s3BeliefAudit = std::atoi(d) != 0;
-        std::cout << "[S3 belief audit = " << (search::g_s3BeliefAudit ? "ON" : "off") << "]\n";
-    }
-    if (const char *d = std::getenv("STS_S3_REAL_BELIEF_FILTER")) {
-        search::g_s3RealBeliefFilter = std::atoi(d) != 0;
-        std::cout << "[S3 real-belief-filter = " << (search::g_s3RealBeliefFilter ? "ON" : "off") << "]\n";
-    }
-    if (const char *d = std::getenv("STS_S3_REAL_BELIEF_COLLAPSE_FRESH")) {
-        search::g_s3RealBeliefCollapseFresh = std::atoi(d) != 0;
-        std::cout << "[S3 real-belief-collapse-fresh = " << (search::g_s3RealBeliefCollapseFresh ? "ON" : "off") << "]\n";
-    }
-    if (const char *d = std::getenv("STS_S3_PERSIST_FILTERED_BELIEF")) {
-        search::g_s3PersistFilteredBelief = std::atoi(d) != 0;
-        std::cout << "[S3 persist-filtered-belief = " << (search::g_s3PersistFilteredBelief ? "ON" : "off") << "]\n";
-    }
-    if (const char *d = std::getenv("STS_S3_INTERNAL_BELIEF_UPDATE")) {
-        search::g_s3InternalBeliefUpdate = std::atoi(d) != 0;
-        std::cout << "[S3 internal-belief-update = " << (search::g_s3InternalBeliefUpdate ? "ON" : "off") << "]\n";
-    }
-    if (const char *d = std::getenv("STS_S3_REJUV_SHADOW")) {
-        search::g_s3RejuvShadow = std::atoi(d) != 0;
-        std::cout << "[S3 rejuv-shadow = " << (search::g_s3RejuvShadow ? "ON" : "off") << "]\n";
-    }
-    if (const char *d = std::getenv("STS_S3_REJUV_TRIGGER")) {
-        search::g_s3RejuvTrigger = std::max(0, std::atoi(d));
-        std::cout << "[S3 rejuv trigger = " << search::g_s3RejuvTrigger << "]\n";
-    }
-    if (const char *d = std::getenv("STS_S3_REJUV_PROPOSALS")) {
-        search::g_s3RejuvProposals = std::max(1, std::atoi(d));
-        std::cout << "[S3 rejuv proposals = " << search::g_s3RejuvProposals << "]\n";
-    }
-    if (const char *d = std::getenv("STS_S3_REJUV_SHADOW_FILE")) {
-        search::g_s3RejuvShadowFile = d;
-        std::cout << "[S3 rejuv shadow file = " << search::g_s3RejuvShadowFile << "]\n";
-    }
-    if (const char *d = std::getenv("STS_S3_AI_REJUV_LIVE")) {
-        const std::string mode = d;
-        if (mode == "off") search::g_s3LiveRejuvenationMode = search::S3LiveRejuvenationMode::OFF;
-        else if (mode == "placebo") search::g_s3LiveRejuvenationMode = search::S3LiveRejuvenationMode::PLACEBO;
-        else if (mode == "ai") search::g_s3LiveRejuvenationMode = search::S3LiveRejuvenationMode::AI_RNG;
-        else if (mode == "placebo1") search::g_s3LiveRejuvenationMode = search::S3LiveRejuvenationMode::PLACEBO1;
-        else if (mode == "ai1") search::g_s3LiveRejuvenationMode = search::S3LiveRejuvenationMode::AI_RNG1;
-        else {
-            std::cerr << "Invalid STS_S3_AI_REJUV_LIVE='" << mode
-                      << "'; expected off, placebo, ai, placebo1, or ai1\n";
-            return 2;
-        }
-        std::cout << "[S3 AI rejuvenation live = " << mode << "]\n";
-    }
-    if (const char *d = std::getenv("STS_S3_AI_REJUV_LIVE_FILE")) {
-        search::g_s3LiveRejuvenationFile = d;
-        std::cout << "[S3 AI rejuvenation live file = " << search::g_s3LiveRejuvenationFile << "]\n";
-    }
-    if (const char *d = std::getenv("STS_S3_AI_SENSITIVITY_SHADOW")) {
-        search::g_s3AiSensitivityShadow = std::atoi(d) != 0;
-        std::cout << "[S3 AI sensitivity shadow = "
-                  << (search::g_s3AiSensitivityShadow ? "ON" : "off") << "]\n";
-    }
-    if (const char *d = std::getenv("STS_S3_AI_SENSITIVITY_FILE")) {
-        search::g_s3AiSensitivityFile = d;
-        std::cout << "[S3 AI sensitivity file = " << search::g_s3AiSensitivityFile << "]\n";
-    }
-    if (const char *d = std::getenv("STS_S3_AI_SENSITIVITY_ROOTS_PER_SEED")) {
-        search::g_s3AiSensitivityRootsPerSeed = std::max(1, std::atoi(d));
-    }
-    if (const char *d = std::getenv("STS_S3_AI_SENSITIVITY_ALTS")) {
-        search::g_s3AiSensitivityAlternatives = std::max(1, std::atoi(d));
-    }
-    if (const char *d = std::getenv("STS_S3_AI_SENSITIVITY_SIMS")) {
-        search::g_s3AiSensitivitySims = std::max(1, std::atoi(d));
-    }
-    if (const char *d = std::getenv("STS_S3_RNG_EXPOSURE_DIAG")) {
-        search::g_s3RngExposureDiag = std::atoi(d) != 0;
-        std::cout << "[S3 RNG exposure diag = " << (search::g_s3RngExposureDiag ? "ON" : "off") << "]\n";
-    }
-    if (const char *d = std::getenv("STS_S3_RNG_EXPOSURE_DIAG_FILE")) {
-        search::g_s3RngExposureDiagFile = d;
-        std::cout << "[S3 RNG exposure diag file = " << search::g_s3RngExposureDiagFile << "]\n";
-    }
-    if (const char *d = std::getenv("STS_S3_BELIEF_AUDIT_FILE")) {
-        search::g_s3BeliefAuditFile = d;
-        std::cout << "[S3 belief audit file = " << search::g_s3BeliefAuditFile << "]\n";
-    }
-    if (const char *d = std::getenv("STS_S3_ROOT_RACE_DIAG")) {
-        search::g_s3RootRaceDiag = std::atoi(d) != 0;
-        std::cout << "[S3 root-race diag = " << (search::g_s3RootRaceDiag ? "ON" : "off") << "]\n";
-    }
-    if (const char *d = std::getenv("STS_S3_ROOT_RACE_DIAG_FILE")) {
-        search::g_s3RootRaceDiagFile = d;
-        std::cout << "[S3 root-race diag file = " << search::g_s3RootRaceDiagFile << "]\n";
-    }
-    if (const char *d = std::getenv("STS_S3_ROOT_RACE_MAX_STATES")) {
-        search::g_s3RootRaceDiagMaxStates = std::max(1, std::atoi(d));
-        std::cout << "[S3 root-race max states = " << search::g_s3RootRaceDiagMaxStates << "]\n";
-    }
-    if (const char *d = std::getenv("STS_S3_GATE_TIMING_DIAG")) {
-        search::g_s3GateTimingDiag = std::atoi(d) != 0;
-        std::cout << "[S3 Q-gate timing diag = "
-                  << (search::g_s3GateTimingDiag ? "ON" : "off") << "]\n";
-    }
-    if (const char *d = std::getenv("STS_S3_GATE_TIMING_DIAG_FILE")) {
-        search::g_s3GateTimingDiagFile = d;
-        std::cout << "[S3 Q-gate timing diag file = "
-                  << search::g_s3GateTimingDiagFile << "]\n";
-    }
-    if (const char *d = std::getenv("STS_S3_UNION_EXPAND")) {
-        search::g_s3UnionExpand = std::atoi(d) != 0;
-        std::cout << "[S3 union-expand = " << (search::g_s3UnionExpand ? "ON" : "off") << "]\n";
-    }
-    if (const char *d = std::getenv("STS_REUSE_CPU_DIAG")) {
-        search::g_reuseCpuDiag = std::atoi(d) != 0;
-        std::cout << "[reuse cpu-diag = " << (search::g_reuseCpuDiag ? "ON" : "off") << "]\n";
-    }
-    if (const char *d = std::getenv("STS_REUSE_CPU_DIAG_FILE")) {
-        search::g_reuseCpuDiagFile = d;
-        std::cout << "[reuse cpu-diag file = " << search::g_reuseCpuDiagFile << "]\n";
     }
     if (const char *d = std::getenv("STS_FORCE_RELIC")) {      // force a relic at run start (paired A/B)
         const std::string name(d);
@@ -9183,119 +7994,6 @@ int main(int argc, char **argv) {
             std::cout << "[forced relic at run start: " << relicEnumNames[id] << "]\n";
         }
     }
-    if (const char *d = std::getenv("STS_S3_BELIEF")) {      // S3 ablation: particle belief reweighting
-        search::g_s3Belief = std::atoi(d) != 0;
-        std::cout << "[S3 ablation: belief=" << (search::g_s3Belief ? "ON" : "off") << "]\n";
-    }
-    if (const char *d = std::getenv("STS_S3_POOL_REDIRECT")) {  // S3 fair: forced-move budget pool redirect (opt-in)
-        search::g_s3PoolRedirect = std::atoi(d) != 0;
-        std::cout << "[S3 pool-redirect = " << (search::g_s3PoolRedirect ? "ON" : "off") << "]\n";
-    }
-    // A2: dynamic alpha by rollout length (opt-in)
-    if (const char *d = std::getenv("STS_VNET_ALPHA_LEN")) {
-        search::g_vnetAlphaLen = std::atoi(d) != 0;
-        if (const char *t = std::getenv("STS_VNET_ALPHA_LEN_TABLE")) {
-            search::g_vnetAlphaLenTable.clear();
-            std::string ts(t);
-            size_t pos = 0;
-            while (pos < ts.size()) {
-                auto comma = ts.find(',', pos);
-                if (comma == std::string::npos) comma = ts.size();
-                auto colon = ts.find(':', pos);
-                if (colon != std::string::npos && colon < comma) {
-                    int ceil = std::stoi(ts.substr(pos, colon-pos));
-                    double a = std::stod(ts.substr(colon+1, comma-colon-1));
-                    search::g_vnetAlphaLenTable.push_back({ceil, a});
-                }
-                pos = comma + 1;
-            }
-        }
-        std::cout << "[VNet alpha-len = " << (search::g_vnetAlphaLen ? "ON" : "off");
-        if (search::g_vnetAlphaLen) {
-            std::cout << " table=";
-            for (size_t i = 0; i < search::g_vnetAlphaLenTable.size(); ++i) {
-                if (i) std::cout << ",";
-                std::cout << search::g_vnetAlphaLenTable[i].first << ":"
-                          << search::g_vnetAlphaLenTable[i].second;
-            }
-        }
-        std::cout << "]\n";
-    }
-    if (const char *d = std::getenv("STS_S3_PRUNE")) {       // S3 ablation: canPruneAsDead pruning
-        search::g_s3Prune = std::atoi(d) != 0;
-        std::cout << "[S3 ablation: prune=" << (search::g_s3Prune ? "ON" : "off") << "]\n";
-    }
-    if (const char *d = std::getenv("STS_S3_CHAIN")) {       // S3 ablation: deterministic chain compression
-        search::g_s3Chain = std::atoi(d) != 0;
-        std::cout << "[S3 ablation: chain=" << (search::g_s3Chain ? "ON" : "off") << "]\n";
-    }
-    if (const char *d = std::getenv("STS_S3_LIVE")) {        // S3 ablation: live-valid root-edge filter
-        search::g_s3Live = std::atoi(d) != 0;
-        std::cout << "[S3 ablation: live=" << (search::g_s3Live ? "ON" : "off") << "]\n";
-    }
-    if (const char *d = std::getenv("STS_S3_CRN")) {         // S3 opt-in: root CRN warm start (once per fresh searcher)
-        search::g_s3Crn = std::atoi(d) != 0;
-        std::cout << "[S3 ablation: crn=" << (search::g_s3Crn ? "ON" : "off") << "]\n";
-    }
-    if (const char *d = std::getenv("STS_S3_PARTICLES")) {   // S3 belief particle count (default 64)
-        const int n = std::atoi(d);
-        if (n >= 1) {
-            search::g_s3Particles = n;
-            std::cout << "[S3 particles = " << search::g_s3Particles << "]\n";
-        }
-    }
-    if (const char *d = std::getenv("STS_S3_EXPAND")) {      // Phase 6: on-no-valid-edge expansion (requires live-valid semantics)
-        search::g_s3Expand = std::atoi(d) != 0;
-        std::cout << "[S3 expand = " << (search::g_s3Expand ? "ON" : "off") << "]\n";
-    }
-    if (const char *d = std::getenv("STS_S3_EXPAND_MAX")) {  // cap on new edges added per expansion (default 32)
-        const int n = std::atoi(d);
-        if (n >= 1) search::g_s3ExpandMaxNew = n;
-    }
-    if (const char *d = std::getenv("STS_S3_EXPAND_SIMPLE")) {  // no-PUCT edge expansion: pick by rolloutWeight
-        search::g_s3ExpandSimple = std::atoi(d) != 0;
-        std::cout << "[S3 expand-simple = " << (search::g_s3ExpandSimple ? "ON" : "off") << "]\n";
-    }
-    if (const char *d = std::getenv("STS_S3_ROLLOUT_POLICY")) {  // sample rollout actions from the GBM policy prior (opt-in)
-        search::g_s3RolloutPolicy = std::atoi(d) != 0;
-        std::cout << "[S3 rollout-policy = " << (search::g_s3RolloutPolicy ? "ON" : "off") << "]\n";
-    }
-    if (const char *d = std::getenv("STS_S3_ROLLOUT_K")) {      // A1: K rollouts per leaf, averaged (opt-in)
-        const int k = std::atoi(d);
-        if (k >= 1) {
-            search::g_s3RolloutK = k;
-            std::cout << "[S3 rollout-K = " << search::g_s3RolloutK << "]\n";
-        }
-    }
-    if (const char *d = std::getenv("STS_S3_ROLLOUT_TURN_STOP")) {  // A4: stop rollout after N full player turns (opt-in)
-        const int n = std::atoi(d);
-        if (n >= 0) {
-            search::g_s3RolloutTurnStop = n;
-            std::cout << "[S3 rollout turn-stop = " << search::g_s3RolloutTurnStop << "]\n";
-        }
-    }
-    if (const char *d = std::getenv("STS_S3_TURN_ROLLOUT")) {  // B1: tactical turn-beam rollout (opt-in)
-        search::g_s3TurnRollout = std::atoi(d) != 0;
-        if (search::g_s3TurnRollout) {
-            if (const char *w = std::getenv("STS_S3_TURN_BEAM_WIDTH")) {
-                const int n = std::atoi(w);
-                if (n >= 1) search::g_s3TurnBeamWidth = n;
-            }
-            if (const char *w = std::getenv("STS_S3_TURN_SCORE_W1")) search::g_s3TurnScoreW1 = std::atof(w);
-            if (const char *w = std::getenv("STS_S3_TURN_SCORE_W2")) search::g_s3TurnScoreW2 = std::atof(w);
-            if (const char *w = std::getenv("STS_S3_TURN_SCORE_W3")) search::g_s3TurnScoreW3 = std::atof(w);
-            if (const char *w = std::getenv("STS_S3_TURN_SCORE_W4")) search::g_s3TurnScoreW4 = std::atof(w);
-            if (const char *w = std::getenv("STS_S3_TURN_SCORE_W5")) search::g_s3TurnScoreW5 = std::atof(w);
-            std::cout << "[S3 turn-beam rollout ON: width=" << search::g_s3TurnBeamWidth
-                      << " scorer w1..w5=" << search::g_s3TurnScoreW1 << "/" << search::g_s3TurnScoreW2
-                      << "/" << search::g_s3TurnScoreW3 << "/" << search::g_s3TurnScoreW4
-                      << "/" << search::g_s3TurnScoreW5 << "]\n";
-        }
-    }
-    if (const char *d = std::getenv("STS_RISK_LAMBDA")) {    // risk sensitivity for Searcher3 PUCT
-        search::g_riskLambda = std::atof(d);
-        std::cout << "[risk lambda = " << search::g_riskLambda << "]\n";
-    }
     if (const char *d = std::getenv("STS_VNET")) {           // learned V_combat leaf value
         std::string path = std::string(d) == "1" ? "build/v_combat_trees.txt" : d;
         if (search::g_combatVNet.load(path)) {
@@ -9304,40 +8002,11 @@ int main(int argc, char **argv) {
             if (const char *a = std::getenv("STS_VNET_ALPHA")) search::g_vnetAlpha = std::atof(a);
             if (const char *b = std::getenv("STS_COMBAT_WIN_BONUS"))
                 search::g_combatVNet.setWinBonus(std::atof(b));
-            if (const char *c = std::getenv("STS_VNET_COND_BOSS"))
-                search::g_vnetCondBossOnly = std::atoi(c) != 0;
-            if (const char *c = std::getenv("STS_VNET_COND_ACT3"))
-                search::g_vnetCondAct3 = std::atoi(c) != 0;
             std::cout << "[V_combat leaf value ON: " << path << ", "
                       << search::g_combatVNet.description() << ", alpha "
-                      << search::g_vnetAlpha
-                      << (search::g_vnetCondBossOnly ? ", cond-boss-only" : "")
-                      << (search::g_vnetCondAct3 ? ", cond-act3" : "") << "]\n";
+                      << search::g_vnetAlpha << "]\n";
         } else {
             std::cout << "[V_combat load FAILED: " << path << "]\n";
-        }
-    }
-    // V_combat leaf default (§148 hyperparameter-tuned model trained on the
-    // 7k combat dataset, 1.58M rows / 87K fights). 50-trial Optuna TPE search
-    // found better-regularized XGBoost params (min_child_weight 82, L1 α=1.8,
-    // γ=4.4, subsample 0.54, eta 0.03). Trained on the full 7k corpus with
-    // these params, exported at 1000 trees. 64-seed S3-fair gate: 37.5% win
-    // vs 31.2% for the honest-data tuned model and 20.3% for the original
-    // (§126 model). The improvement is +6.3pp from 5.5× data and +10.9pp
-    // from hyperparameters for a total of +17.2pp over the §126 baseline.
-    // Scoped: fair + Searcher3 only, when STS_VNET is unset.
-    if (!std::getenv("STS_VNET") && search::g_fairPlay && search::g_useSearcher3) {
-        const char *vnetDefault = "models/v_combat_7k_tuned.txt";
-        if (search::g_combatVNet.load(vnetDefault)) {
-            g_effectiveVNetPath = vnetDefault;
-            search::g_useVNet = true;
-            search::g_vnetAlpha = 0.3;
-            std::cout << "[V_combat leaf default ON: " << vnetDefault << ", "
-                      << search::g_combatVNet.description() << ", alpha "
-                      << search::g_vnetAlpha << " (fair S3, §148)]\n";
-        } else {
-            std::cout << "[V_combat leaf default load FAILED: "
-                      << vnetDefault << " (continuing without)]\n";
         }
     }
     // Per-encounter specialization overlay (per-boss fine-tuned trees from
@@ -9408,7 +8077,6 @@ int main(int argc, char **argv) {
         }
     }
     one_combat::configureVNetQueryLogFromEnvironment();
-    one_combat::configureParticleDiagnosticsFromEnvironment();
     if (const char *d = std::getenv("STS_DIST_VNET")) {    // distributional V_combat (transformer, 5-head)
         std::string path = d;
         if (search::g_combatDistVNet.load(path)) {
@@ -9433,22 +8101,9 @@ int main(int argc, char **argv) {
         if (const char *a = std::getenv("STS_PVNET_ALPHA")) search::g_pvnetAlpha = std::atof(a);
         if (const char *v = std::getenv("STS_PVNET_VALUE_ONLY")) search::g_pvnetValueOnly = std::atoi(v) != 0;
         if (const char *h = std::getenv("STS_PVNET_HP_SCALE")) search::g_pvnetHpScale = std::atoi(h) != 0;
-        // Phase 6 deployment-speed knobs (S3 leaf). STS_PVNET_CACHE defaults
-        // ON (behavior-preserving; visibleHash leaf-value cache at the
-        // direct-eval sites). STS_PVNET_COND_{TURN,DEPTH,BOSS} gate the
-        // per-expansion NN leaf: rollout-only for easy continuations, NN for
-        // long/unresolved ones. Defaults preserve pre-phase-6 behavior.
-        if (const char *c = std::getenv("STS_PVNET_CACHE")) search::g_pvnetCache = std::atoi(c) != 0;
-        if (const char *c = std::getenv("STS_PVNET_COND_TURN")) search::g_pvnetCondMinTurn = std::atoi(c);
-        if (const char *c = std::getenv("STS_PVNET_COND_DEPTH")) search::g_pvnetCondMinDepth = std::atoi(c);
-        if (const char *c = std::getenv("STS_PVNET_COND_BOSS")) search::g_pvnetCondBossOnly = std::atoi(c) != 0;
         std::cout << "[PVNet alpha = " << search::g_pvnetAlpha;
         if (search::g_pvnetValueOnly) std::cout << ", value-only";
         if (search::g_pvnetHpScale) std::cout << ", hp-scale";
-        if (search::g_pvnetCondMinTurn > 0) std::cout << ", cond-turn>=" << search::g_pvnetCondMinTurn;
-        if (search::g_pvnetCondMinDepth > 0) std::cout << ", cond-depth>=" << search::g_pvnetCondMinDepth;
-        if (search::g_pvnetCondBossOnly) std::cout << ", cond-boss-only";
-        if (!search::g_pvnetCache) std::cout << ", leaf-cache-off";
         std::cout << "]\n";
     }
     // AZ-lite policy-guided PUCT selection. DEFAULT ON (+4.3pp full-run win @512
@@ -9743,27 +8398,6 @@ int main(int argc, char **argv) {
     } else if (isCombatModelDiagnosticMode(mode)) {
         return runCombatModelDiagnosticMode(mode, argc, argv);
 
-    } else if (mode == "speedtest") {     // single-fight Searcher3 speed measurement
-        int sims = argc > 2 ? std::stoi(argv[2]) : 1000;
-        std::uint64_t seed = argc > 3 ? std::stoull(argv[3]) : 42;
-        int asc = argc > 4 ? std::stoi(argv[4]) : 0;
-        // Init a fight directly with a known encounter
-        GameContext gc(CharacterClass::IRONCLAD, seed, asc);
-        BattleContext bc; bc.init(gc, MonsterEncounter::CULTIST);
-        std::printf("speedtest: %s  hp=%d/%d  hand=%d  draw=%zu\n",
-                    monsterEncounterStrings[(int)bc.encounter], bc.player.curHp,
-                    bc.player.maxHp, bc.cards.cardsInHand, bc.cards.drawPile.size());
-        for (int s : {100, 500, 1000, 2500}) {
-            search::BattleScumSearcher3 s3(bc, 64);
-            auto t0 = std::chrono::steady_clock::now();
-            s3.search(s);
-            auto t1 = std::chrono::steady_clock::now();
-            double sec = std::chrono::duration<double>(t1 - t0).count();
-        std::printf("  S3 %5d sims: %6.3fs  %6d sim/s  rootVisits=%lld\n",
-                    s, sec, int(s/sec),
-                    (long long)s3.root.simulationCount);
-        }
-
     } else if (mode == "searchdiag") {    // Searcher2 rollout-usage diagnostics
         int nSeeds    = argc > 2 ? std::stoi(argv[2]) : 8;
         int sims      = argc > 3 ? std::stoi(argv[3]) : 2000;
@@ -9791,56 +8425,12 @@ int main(int argc, char **argv) {
         long long seedOff = argc > 7 ? std::stoll(argv[7]) : 0;
         distCombatGen(nSeeds, sims, asc, eps, out, seedOff);
 
-    } else if (mode == "fairgen") {       // Searcher3 ISMCTS: value + policy rows with visit distributions
-        int nSeeds    = argc > 2 ? std::stoi(argv[2]) : 500;
-        int sims      = argc > 3 ? std::stoi(argv[3]) : 1000;
-        int asc       = argc > 4 ? std::stoi(argv[4]) : 0;
-        double eps    = argc > 5 ? std::stod(argv[5]) : 0.3;
-        std::string vout = argc > 6 ? argv[6] : "build/fair_val.csv";
-        std::string pout = argc > 7 ? argv[7] : "build/fair_pol.csv";
-        std::string oout = argc > 8 ? argv[8] : "build/fair_ooc.csv";
-        long long seedOff = argc > 9 ? std::stoll(argv[9]) : 0;
-        // fairgen emits Searcher3 policy rows via g_onSearchComplete3; force the
-        // project-fair Searcher3 regime here so callers cannot silently produce
-        // data under the wrong producer (STS_FAIR=1 STS_SEARCHER3=1 no longer
-        // required; the env vars still mean the same thing for other modes).
-        search::g_fairPlay = true;
-        search::g_useSearcher3 = true;
-        std::cout << "[fairgen forced: fair-play / determinized MCTS + Searcher3 engine ON]\n";
-        fairGen(nSeeds, sims, asc, eps, vout, pout, oout, seedOff);
-
     } else if (mode == "runwinparity") {
         const std::string fixture = argc > 2 ? argv[2] : "tools/runwin_e2c_synthetic_parity.csv";
         return one_combat::runwinParity(fixture);
 
     } else if (mode == "e2cprojectiontest") {
         return one_combat::e2cRawProjectionParityTest();
-
-    } else if (mode == "particle_leaf_probe") {
-        int nSeeds = argc > 2 ? std::stoi(argv[2]) : 4;
-        int sims = argc > 3 ? std::stoi(argv[3]) : 300;
-        int asc = argc > 4 ? std::stoi(argv[4]) : 0;
-        std::string out = argc > 5 ? argv[5] : "build/particle_leaf_probe.csv";
-        long long seedOff = argc > 6 ? std::stoll(argv[6]) : 0;
-        search::g_fairPlay = true;
-        search::g_useSearcher3 = true;
-        std::cout << "[particle_leaf_probe forced: fair-play / determinized MCTS + Searcher3 engine ON]\n";
-        particleLeafProbe(nSeeds, sims, asc, out, seedOff);
-
-    } else if (mode == "particle_posterior_probe") {   // Phase-1b posterior-valid probe
-        int nSeeds = argc > 2 ? std::stoi(argv[2]) : 4;
-        int sims = argc > 3 ? std::stoi(argv[3]) : 300;
-        int asc = argc > 4 ? std::stoi(argv[4]) : 0;
-        std::string out = argc > 5 ? argv[5] : "build/particle_posterior_probe.csv";
-        long long seedOff = argc > 6 ? std::stoll(argv[6]) : 0;
-        search::g_fairPlay = true;
-        search::g_useSearcher3 = true;
-        std::cout << "[particle_posterior_probe forced: fair-play / determinized MCTS + Searcher3 engine ON]\n";
-        particlePosteriorProbe(nSeeds, sims, asc, out, seedOff);
-
-
-    } else if (one_combat::isFightReplayMode(mode)) {
-        return one_combat::runFightReplayMode(mode, argc, argv);
 
     } else if (mode == "strategicgen") {  // Phase 5: one row per OOC decision, full rich state
         int nSeeds    = argc > 2 ? std::stoi(argv[2]) : 500;
@@ -9953,30 +8543,6 @@ int main(int argc, char **argv) {
     } else if (mode == "ooccfaudit") {
         if (argc < 8) { std::cerr << "usage: one_combat ooccfaudit N_SEEDS SIMS ASC OUT.csv SEED_OFFSET TEACHER.json\n"; return 2; }
         counterfactualSurrogateAuditGen(std::stoi(argv[2]),std::stoi(argv[3]),std::stoi(argv[4]),argv[5],std::stoull(argv[6]),argv[7]);
-    } else if (mode == "oocv4h1rollout") {
-        if (argc == 3 && std::string(argv[2]) == "--self-test") {
-            v4ActRolloutCanary();
-            return 0;
-        }
-        if (argc < 9) {
-            std::cerr << "usage: one_combat oocv4h1rollout SEED DECISION ROLLOUTS SILVER_SIMS ASC OUT.csv TEACHER.json\n";
-            return 2;
-        }
-        evaluateV4ActRollout(std::stoull(argv[2]), std::stoi(argv[3]), std::stoi(argv[4]),
-            std::stoi(argv[5]), std::stoi(argv[6]), argv[7], argv[8]);
-
-    } else if (mode == "oocv4h1rolloutall") {
-        if (argc == 3 && std::string(argv[2]) == "--self-test") {
-            v4ActRolloutCanary();
-            return 0;
-        }
-        if (argc < 8) {
-            std::cerr << "usage: one_combat oocv4h1rolloutall SEED ROLLOUTS SILVER_SIMS ASC OUT.csv TEACHER.json\n";
-            return 2;
-        }
-        evaluateV4ActRolloutAll(std::stoull(argv[2]), std::stoi(argv[3]), std::stoi(argv[4]),
-            std::stoi(argv[5]), argv[6], argv[7]);
-
     } else if (mode == "causalgen") {     // CSV of (state, card features, CRN advantage) for causal card value
         int nSeeds    = argc > 2 ? std::stoi(argv[2]) : 200;
         int sims      = argc > 3 ? std::stoi(argv[3]) : 1000;
