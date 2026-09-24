@@ -20,7 +20,6 @@ before broad repository search.
 | Combat agent dispatch | `include/sim/search/ScumSearchAgent2.h`, `src/sim/search/ScumSearchAgent2.cpp` | `ScumSearchAgent2`, `playoutBattle`, `playoutBattleFair`, `stepOutOfCombatPolicy` | [combat-search.md](architecture/combat-search.md), [out-of-combat.md](architecture/out-of-combat.md) |
 | Expert heuristics | `include/sim/search/ExpertKnowledge.h`, `src/sim/search/ExpertKnowledge.cpp` | `ExpertKnowledge` — play/obtain weights, encoded as policy features | [combat-search.md](architecture/combat-search.md) |
 | Combat value nets | `include/sim/search/CombatValueNet.h`, `src/sim/search/CombatValueNet.cpp` | `CombatValueNet` — compact tree; library and `vnettest` parity only since ADR-0020 | [training-and-inference.md](architecture/training-and-inference.md) |
-| PVNet (policy+value) | `include/sim/search/CombatPVNet.h`, `src/sim/search/CombatPVNet.cpp` | `CombatPVNet` — neural policy/value library; not loaded for play since ADR-0020 | [training-and-inference.md](architecture/training-and-inference.md) |
 | DistVNet | `include/sim/search/CombatDistValueNet.h`, `src/sim/search/CombatDistValueNet.cpp` | `CombatDistValueNet` — `STS_DIST_VNET`; loads but no searcher consumes it after ADR-0019 | [training-and-inference.md](architecture/training-and-inference.md) |
 | CPSI net | `include/sim/search/CombatCpsiNet.h`, `src/sim/search/CombatCpsiNet.cpp` | `CombatCpsiNet` — card-pair synergy inference, experimental | [training-and-inference.md](architecture/training-and-inference.md) |
 
