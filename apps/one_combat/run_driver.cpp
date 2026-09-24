@@ -12,12 +12,10 @@
 #include "sim/search/ScumSearchAgent2.h"
 #include "sim/search/SilverLiveBackend.h"
 #include "e2c_capture.h"
-#include "fight_replay.h"
 #include "ooc_policy.h"
 #include "ooc_checkpoint_policy.h"
 #include "ooc_mcts_adapter.h"
 #include "ooc_profile.h"
-#include "particle_diagnostics.h"
 #include "run_features.h"
 #include "search_diagnostics.h"
 #include "vnet_query_log.h"
@@ -159,25 +157,17 @@ RunResult runFullRunOOC(std::uint64_t seed, int sims, int asc, bool restV, bool 
             bc.init(gc);
             if (one_combat::e2cCaptureActive())
                 one_combat::beginE2cFight(fightsTotal, gc, bc);
-            if (one_combat::fightReplayCaptureEnabled() && battleAct == 3 && battleRoom == Room::BOSS)
-                one_combat::fightReplayCaptureStart(bc, seed);   // fightrep: fight-start snapshot (floor-50 boss)
             if (one_combat::searchDiagnosticsActive())
                 one_combat::beginSearchDiagnosticFight(seed, gc.floorNum, gc.act,
                                                        (int)gc.curRoom, (int)bc.encounter,
                                                        fightsTotal);
-            if (one_combat::particleDiagnosticsActive())
-                one_combat::beginParticleDiagnosticFight(
-                    seed, fightsTotal, gc.floorNum, gc.act, bc.encounter);
             // VNet query log: set per-fight context before combat
-            // (the agent's internal Searcher3 loop handles per-decision iteration)
             if (one_combat::vnetQueryLogConfigured())
                 one_combat::beginVNetQueryLogFight(seed, fightsTotal);
             {
                 one_combat::OocProfileScope combatProfile(one_combat::OocProfileBucket::RealCombat);
                 agent.playoutBattle(bc);
             }
-            if (one_combat::fightReplayCaptureEnabled() && battleAct == 3 && battleRoom == Room::BOSS)
-                one_combat::fightReplayCaptureEnd(bc, seed);   // fightrep: index row + capture-time outcome
             if (one_combat::searchDiagnosticsActive())
                 one_combat::endSearchDiagnosticFight(bc);
             one_combat::flushVNetQueryLog();              // VNet query log: flush this fight's rows

@@ -257,6 +257,11 @@ namespace sts::search {
     // immediately (see src/sim/search/BattleScumSearcher2.cpp).
     extern bool g_liveValid;
 
+    // These card-selection tasks store a physical draw-pile index in the
+    // action.  A carried subtree cannot safely preserve that identity after
+    // hidden draw-pile order changes.
+    bool isDrawPileIndexSensitiveCardSelect(const BattleContext &bc);
+
 }
 
 

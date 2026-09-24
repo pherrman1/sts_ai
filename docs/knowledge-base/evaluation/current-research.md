@@ -1488,6 +1488,8 @@ scaling experiment").
 
 ### Searcher3 belief filtering and rejuvenation
 
+Closed: Searcher3 was removed (ADR-0019).
+
 Exact real-observation filtering is semantically promising but remains opt-in;
 persistent transfer is not in the executable, and single-child AI_RNG
 rejuvenation stayed mixed/inconclusive with possible downside tail risk. A new
@@ -1498,6 +1500,8 @@ promotion or broader rejuvenation work. See the
 confirmation").
 
 ### Searcher3 particle count
+
+Closed: Searcher3 was removed (ADR-0019).
 
 128 particles remains directionally promising but unconfirmed; 64 remains the
 default. The next justified action is a full-block confirmation on the current

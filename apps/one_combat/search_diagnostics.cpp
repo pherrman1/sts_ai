@@ -2,7 +2,6 @@
 
 #include "sim/search/Action.h"
 #include "sim/search/BattleScumSearcher2.h"
-#include "sim/search/BattleScumSearcher3.h"
 #include "sim/search/ScumSearchAgent2.h"
 
 #include <cassert>
@@ -218,64 +217,6 @@ static void sdiagOnSearchComplete(const BattleContext &bc, const search::BattleS
         sdiagProbe(bc, cur.bestAction);
 }
 
-static SdiagMetrics sdiagMetricsOf3(const search::BattleScumSearcher3 &s) {
-    SdiagMetrics m;
-    const auto &d = s.diag;
-    m.sims = d.simulations;
-    m.terminalInTree = d.terminalInsideTree;
-    m.rolloutCalls = d.rolloutCalls;
-    m.rolloutLeafCalls = d.rolloutLeafCalls;
-    m.fairIllegalStoredEdge = d.fairIllegalStoredEdge;
-    m.leafDirectEval = d.leafDirectEval;
-    m.rolloutTerminated = d.rolloutTerminated;
-    m.rolloutDepthCapped = d.rolloutDepthCapped;
-    m.rolloutSkippedVNet = d.rolloutSkippedVNet;
-    m.rolloutNoLegal = d.rolloutNoLegalAction;
-    m.rolloutActions = d.rolloutActions;
-    m.treeActions = d.treeActions;
-    m.maxTreeDepth = d.maxTreeDepth;
-    m.simSeconds = d.simSeconds;
-
-    std::int64_t bestN = -1, secondN = -1, total = 0;
-    std::uint32_t bestBits = 0xFFFFFFFFu, secondBits = 0xFFFFFFFFu;
-    for (const auto &e : s.root.edges) {
-        const std::int64_t n = e.child.simulationCount;
-        total += n;
-        if (n > bestN) { secondN = bestN; secondBits = bestBits; bestN = n; bestBits = e.action.bits; }
-        else if (n > secondN) { secondN = n; secondBits = e.action.bits; }
-    }
-    if (bestN > 0) {
-        m.bestAction = bestBits;
-        m.visitShare = double(bestN) / total;
-        const auto meanOf = [&](std::uint32_t bits, std::int64_t visits) {
-            for (const auto &e : s.root.edges)
-                if (e.action.bits == bits) return e.child.evaluationSum / double(visits);
-            return 0.0;
-        };
-        m.bestValue = meanOf(bestBits, bestN);
-        if (secondN > 0) {
-            m.runnerUpValue = meanOf(secondBits, secondN);
-            m.valueGap = m.bestValue - m.runnerUpValue;
-        }
-    }
-    return m;
-}
-
-static void sdiagOnSearchComplete3(const BattleContext &bc, const search::BattleScumSearcher3 &s3) {
-    ++g_sdiagCtx.decisionIdx;
-    SdiagMetrics cur = sdiagMetricsOf3(s3);
-    SdiagMetrics win;
-    if (search::g_fairPlay) win = cur;
-    else {
-        win = sdiagWindow(cur, g_sdiagCtx.cum);
-        g_sdiagCtx.cum = cur;
-    }
-    g_sdiagCtx.cum = cur;
-    sdiagAccumulate(win);
-    win.budget = win.sims;
-    sdiagWriteRow("A", bc, win, -1, -1);
-}
-
 static void sdiagFightRow(const BattleContext &bc) {
     std::lock_guard<std::mutex> lk(g_sdiagMutex);
     if (!g_sdiagFightFile) return;
@@ -298,10 +239,6 @@ static void sdiagFightRow(const BattleContext &bc) {
 } // namespace
 
 bool startSearchDiagnostics(const std::string &out, int probeEvery) {
-    if (search::g_useSearcher3 && probeEvery > 0) {
-        std::cerr << "searchdiag: Searcher3 supports rowtype A only (no S2 probe stages); forcing probeEvery=0\n";
-        probeEvery = 0;
-    }
     g_sdiagProbeEvery = probeEvery;
     g_sdiagActive = true;
     g_sdiagFile.open(out, std::ios::trunc);
@@ -361,15 +298,11 @@ void endSearchDiagnosticFight(const BattleContext &bc) {
 
 void installSearchDiagnosticThreadHooks() {
     if (!g_sdiagActive) return;
-    if (search::g_useSearcher3)
-        search::g_onSearchComplete3 = sdiagOnSearchComplete3;
-    else
-        search::g_onSearchComplete = sdiagOnSearchComplete;
+    search::g_onSearchComplete = sdiagOnSearchComplete;
 }
 
 void clearSearchDiagnosticThreadHooks() {
     search::g_onSearchComplete = nullptr;
-    search::g_onSearchComplete3 = nullptr;
 }
 
 } // namespace one_combat

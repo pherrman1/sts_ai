@@ -26,6 +26,9 @@ the replacement.
 
 ## Current architecture ADRs
 
+- [ADR-0019](0019-remove-searcher3.md) removes Searcher3 and its
+  Searcher3-only modes, flags, tests and scripts; `STS_SEARCHER3=1` now
+  fails.
 - [ADR-0018](0018-silver-default-combat-backend.md) makes Silver fair play
   the default combat backend for `run`, `bestbench` and `reprobench`; it
   supersedes ADR-0003.

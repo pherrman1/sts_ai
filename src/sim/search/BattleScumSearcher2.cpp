@@ -3,7 +3,6 @@
 //
 
 #include "sim/search/BattleScumSearcher2.h"
-#include "sim/search/BattleScumSearcher3.h"
 #include "sim/search/ExpertKnowledge.h"
 #include "sim/search/CombatValueNet.h"
 #include "sim/search/CombatPVNet.h"
@@ -67,6 +66,18 @@ namespace sts::search {
     // behavior, EXPERIMENTS.md §117/§122).
     bool g_liveValid = false;
     double g_vnetAlpha = 0.5;    // V_combat blend weight (see header)
+
+    bool isDrawPileIndexSensitiveCardSelect(const BattleContext &bc) {
+        if (bc.inputState != InputState::CARD_SELECT) return false;
+        switch (bc.cardSelectInfo.cardSelectTask) {
+            case CardSelectTask::SECRET_TECHNIQUE:
+            case CardSelectTask::SECRET_WEAPON:
+            case CardSelectTask::SEEK:
+                return true;
+            default:
+                return false;
+        }
+    }
 }
 
 // ---- Transposition-table state hash --------------------------------------
@@ -666,7 +677,7 @@ void search::BattleScumSearcher2::computeEdgePriors(search::BattleScumSearcher2:
     if ((int)feat.size() < combatPolicyFeatureCount()) feat.assign(combatPolicyFeatureCount(), 0.f);
     combatExtractFeatures(bc, feat.data());
 
-    // ── PVNet policy head (preferred when loaded; mirrors Searcher3) ──
+    // ── PVNet policy head (preferred when loaded) ──
     if (g_usePVNet && g_combatPVNet.loaded() && !g_pvnetValueOnly) {
         const int D = g_combatPVNet.entityDim;
         std::array<float, 1766> stateArr{};

@@ -1,6 +1,6 @@
 # Benchmark protocol
 
-Last verified: 2026-08-26 against the current working tree
+Last verified: 2026-09-24 for the Searcher3 removal; 2026-08-26 against the current working tree
 tree (strict deterministic paired analysis + asserting vnettest, §134 audit).
 
 ## Purpose
@@ -52,12 +52,12 @@ exact. Therefore v1 hard64 remains a legacy-boundary safety screen for the
 quiescent identity rule, while fresh trusted v2 captures can reproduce the
 production identity policy.
 
-`STS_FAIR=1` selects the project-fair combat path. Searcher2 remains default;
-`STS_SEARCHER3=1` is an independent opt-in. Without `STS_FAIR=1`, default
-Searcher2 uses the concrete battle RNG and produces the known-RNG diagnostic
-regime. Searcher3 still samples particles without `STS_FAIR`; that flag changes
-its per-decision reconstruction/tree-reuse behavior, so the resulting hybrid
-must not be grouped with known-RNG Searcher2.
+`run`, `bestbench` and `reprobench` default to Silver fair play (ADR-0018).
+With `STS_SILVER_SEARCH=0`, `STS_FAIR=1` selects the project-fair Searcher2
+path; without it Searcher2 uses the concrete battle RNG and produces the
+known-RNG diagnostic regime. Historical non-fair Searcher3 results (Searcher3
+was removed by ADR-0019) sampled particles and must not be grouped with
+known-RNG Searcher2.
 
 ## Important data flow
 
@@ -116,7 +116,7 @@ python3 tools/agent/check_benchmark_canary.py \
   --expect-asc 0 \
   --expect-threads 24 \
   --expect-fair \
-  --expect-searcher3 \
+  --no-expect-searcher3 \
   --binary <one_combat> \
   --expect-binary-sha256 <frozen-binary-sha256> \
   --expect-silver-reuse-cap-mode allocated
@@ -143,7 +143,7 @@ Every recorded benchmark states, where applicable:
 - ascension;
 - combat simulations per decision;
 - project-fair or known-RNG mode;
-- Searcher2 or Searcher3;
+- combat backend (Silver or Searcher2; historical rows may be Searcher3);
 - OOC configuration and behavior flags;
 - model paths and preferably hashes plus observed load messages;
 - thread count;
@@ -202,7 +202,7 @@ env plus server port liveness, not a per-decision query log. See
   handler fails loudly when the file already contains any requested seed
   (disjoint batch appends, e.g. self-play gates, are unaffected).
 - CTest registers parse/syntax checks (`ctest --test-dir build`); the `test`
-  dispatcher holds targeted Searcher3 and terminal-flag checks, and
+  dispatcher holds targeted Searcher2 and terminal-flag checks, and
   `small-test isbattleover` covers the terminal-field derivation. Deeper
   integration invariants remain review-enforced. `tools/verify/vnettest_selftest.py
   --self-test` (CTest `vnettest_selftest`) regression-checks the asserting

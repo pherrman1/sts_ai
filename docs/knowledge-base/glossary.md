@@ -1,6 +1,6 @@
 # Glossary
 
-Last verified: 2026-09-07 against commit `82dc3772` and the current working tree.
+Last verified: 2026-09-24 for the Searcher3 removal; 2026-09-07 against commit `82dc3772` and the current working tree.
 
 ## Purpose
 
@@ -17,9 +17,8 @@ applied before continuation or future-state scoring.
 
 **Known-RNG** — The Searcher2 non-fair regime (the native default when Silver is disabled), where search starts from
 the concrete battle RNG and may reuse its tree across committed actions.
-Searcher3 samples particles even when `STS_FAIR` is off, so its non-fair reuse
-path is a distinct hybrid and must not be labelled known-RNG without
-qualification.
+Historical non-fair Searcher3 results (Searcher3 was removed by ADR-0019)
+sampled particles and must not be labelled known-RNG without qualification.
 
 **Native OOC** — In-process out-of-combat inference, contrasted with inference
 served by `v_server.py`. “Native” does not by itself mean default, loaded, used,
@@ -29,8 +28,8 @@ or benchmarked.
 
 **Project-fair / fair play** — The evaluation regime selected by `STS_FAIR=1`.
 It commits one root combat action before rebuilding search from the next live
-decision. Fair Searcher2 only partially determinizes hidden combat state;
-Searcher3 must be enabled separately for its particle model.
+decision. Fair Searcher2 only partially determinizes hidden combat state.
+Silver search is always fair.
 
 **Teacher** — A search or counterfactual process whose outputs become training
 targets. The name describes provenance, not guaranteed expert quality.

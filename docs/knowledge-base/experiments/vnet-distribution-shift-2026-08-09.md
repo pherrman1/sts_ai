@@ -1,5 +1,10 @@
 # V_combat Training ↔ Deployment Distribution Shift — Complete Diagnostic Report
 
+> **Status (2026-09-24):** Searcher3 was removed by
+> [ADR-0019](../../../decisions/0019-remove-searcher3.md). This page is a
+> historical research record; reproducing it needs a binary built before that
+> change.
+
 **Date:** 2026-08-09
 **Status:** Complete
 **Recommendation:** A — do NOT build an expensive deployment-leaf relabeling pipeline

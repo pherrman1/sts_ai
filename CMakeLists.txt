@@ -337,10 +337,8 @@ add_executable(one_combat apps/one_combat.cpp apps/combat_model_diagnostics.cpp
     apps/one_combat/ooc_v4_encoding.cpp
     apps/one_combat/run_driver.cpp
     apps/one_combat/ooc_checkpoint_policy.cpp
-    apps/one_combat/fight_replay.cpp
     apps/one_combat/search_diagnostics.cpp
     apps/one_combat/vnet_query_log.cpp
-    apps/one_combat/particle_diagnostics.cpp
     $<TARGET_OBJECTS:sts_core_objects>)
 target_include_directories(one_combat PUBLIC include)
 target_include_directories(one_combat PUBLIC json/include)
@@ -478,7 +476,7 @@ target_include_directories(parity_test PUBLIC json/include)
 
 # "test" is reserved by CTest, so the manual dispatcher target is unit-test
 # with OUTPUT_NAME "test" to keep the build/test binary path stable.
-add_executable(unit-test apps/test.cpp apps/test_belief.cpp
+add_executable(unit-test apps/test.cpp
     apps/test_ooc_reward_continuation.cpp apps/test_ooc_semantic.cpp
     apps/test_ooc_semantic_pipeline.cpp
     apps/one_combat/combat_predictor_input.cpp
@@ -519,14 +517,12 @@ add_test(NAME selfplay_syntax COMMAND bash -n
     ${CMAKE_SOURCE_DIR}/selfplay/run_card_cf_collection.sh)
 add_test(NAME paired_analysis_selftest COMMAND python3 ${CMAKE_SOURCE_DIR}/paired_analysis.py --self-test)
 add_test(NAME py_compile_parity_test COMMAND python3 -m py_compile ${CMAKE_SOURCE_DIR}/parity_test.py)
-add_test(NAME particle_leaf_probe_selftest COMMAND python3 ${CMAKE_SOURCE_DIR}/tools/train_particle_leaf_probe.py --self-test)
 add_test(NAME semantic_confirmation_analysis COMMAND python3 -m unittest
     tests.test_ooc_semantic_confirmation tests.test_semantic_confirmation_runner
     tools.test_semantic_combat_coverage -q)
 set_tests_properties(semantic_confirmation_analysis PROPERTIES
     WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}" LABELS "research-repro;tooling")
 add_test(NAME py_compile_analyze_ooc_factor COMMAND python3 -m py_compile ${CMAKE_SOURCE_DIR}/tools/analyze_ooc_factor.py)
-add_test(NAME particle_posterior_probe_selftest COMMAND python3 ${CMAKE_SOURCE_DIR}/tools/analyze_particle_posterior_probe.py --self-test)
 add_test(NAME check_replay_selftest COMMAND python3 ${CMAKE_SOURCE_DIR}/tools/verify/check_replay.py --self-test)
 add_test(NAME vnettest_selftest COMMAND python3 ${CMAKE_SOURCE_DIR}/tools/verify/vnettest_selftest.py --self-test $<TARGET_FILE:one_combat>)
 add_test(NAME winnettest_selftest COMMAND python3 ${CMAKE_SOURCE_DIR}/tools/verify/winnettest_selftest.py --self-test $<TARGET_FILE:one_combat>)
@@ -569,10 +565,7 @@ add_test(NAME ooc_semantic_smith COMMAND $<TARGET_FILE:unit-test> ooc_semantic_s
 set_tests_properties(ooc_semantic ooc_semantic_pipeline ooc_semantic_producer ooc_semantic_smith ooc_reward_continuation
     PROPERTIES LABELS "core;integration")
 add_test(NAME relic_reward_sapphire COMMAND $<TARGET_FILE:unit-test> relic_reward_sapphire)
-add_test(NAME semantic_card_edges COMMAND $<TARGET_FILE:unit-test> semantic_card_edges)
-add_test(NAME s3_drawpile_reuse_boundary COMMAND $<TARGET_FILE:unit-test> s3_drawpile_reuse_boundary)
-add_test(NAME s3_strategy_fusion_diag COMMAND $<TARGET_FILE:unit-test> s3_strategy_fusion_diag 12345)
-add_test(NAME s3_persistent_endturn_chance COMMAND $<TARGET_FILE:unit-test> s3_persistent_endturn_chance 12345)
+add_test(NAME s2_drawpile_index_boundary COMMAND $<TARGET_FILE:unit-test> s2_drawpile_index_boundary)
 add_test(NAME thorns_retaliation COMMAND $<TARGET_FILE:unit-test> thorns_retaliation)
 add_test(NAME awakened_one_stage2 COMMAND $<TARGET_FILE:unit-test> awakened_one_stage2)
 add_test(NAME darkling_victory COMMAND $<TARGET_FILE:unit-test> darkling_victory)
@@ -584,10 +577,6 @@ add_test(NAME simhealth_nonfair_s2_empty COMMAND $<TARGET_FILE:unit-test> simhea
 add_test(NAME simhealth_selection_failure COMMAND $<TARGET_FILE:unit-test> simhealth_selection_failure)
 add_test(NAME simhealth_nonfair_s2_selection_failed COMMAND $<TARGET_FILE:unit-test> simhealth_nonfair_s2_selection_failed)
 add_test(NAME training_integrity COMMAND $<TARGET_FILE:unit-test> training_integrity)
-add_test(NAME rng_state_propagation COMMAND $<TARGET_FILE:unit-test> rng_state_propagation 12345)
-add_test(NAME s3_rand64_prior_sampler COMMAND $<TARGET_FILE:unit-test> s3_rand64_prior_sampler)
-add_test(NAME rejuv_conditional_blocks COMMAND $<TARGET_FILE:unit-test> rejuv_conditional_blocks)
-add_test(NAME live_rejuv_attempt_gate COMMAND $<TARGET_FILE:unit-test> live_rejuv_attempt_gate)
 add_test(NAME e2c_observer_scope COMMAND $<TARGET_FILE:unit-test> e2c_observer_scope)
 add_test(NAME combat_knowledge COMMAND $<TARGET_FILE:unit-test> combat_knowledge)
 add_test(NAME silver_random_bridge COMMAND $<TARGET_FILE:unit-test> silver_random_bridge)
@@ -814,20 +803,18 @@ set_tests_properties(combat_transition_native_fixture
     PROPERTIES WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
 set_tests_properties(combat_transition_fixture_contract
     PROPERTIES DEPENDS combat_transition_native_fixture)
-set_tests_properties(paired_analysis_selftest py_compile_parity_test py_compile_analyze_ooc_factor check_replay_selftest silver_prior_root_screen vnettest_selftest winnettest_selftest battlecontext_roundtrip designer_in_spire scum_nonfair_empty_edges scum_convroot_stale_outcome cardqueue_overflow keys_collect issue_fixes semantic_card_edges thorns_retaliation awakened_one_stage2 darkling_victory poison_lose_hp time_eater_exhaust simhealth_gamble_empty_hand gamblers_brew_legality simhealth_nonfair_s2_empty simhealth_selection_failure simhealth_nonfair_s2_selection_failed training_integrity e2c_observer_scope analyze_silver_root_diagnostic_selftest analyze_postcombat_raw_terminal_selftest export_win_model_selftest runwin_e2c_native_parity
+set_tests_properties(paired_analysis_selftest py_compile_parity_test py_compile_analyze_ooc_factor check_replay_selftest silver_prior_root_screen vnettest_selftest winnettest_selftest battlecontext_roundtrip designer_in_spire scum_nonfair_empty_edges scum_convroot_stale_outcome cardqueue_overflow keys_collect issue_fixes thorns_retaliation awakened_one_stage2 darkling_victory poison_lose_hp time_eater_exhaust simhealth_gamble_empty_hand gamblers_brew_legality simhealth_nonfair_s2_empty simhealth_selection_failure simhealth_nonfair_s2_selection_failed training_integrity e2c_observer_scope analyze_silver_root_diagnostic_selftest analyze_postcombat_raw_terminal_selftest export_win_model_selftest runwin_e2c_native_parity
     runwin_e2c_production_native_parity e2c_runwin_projection_parity PROPERTIES ENVIRONMENT "PYTHONPYCACHEPREFIX=${CMAKE_BINARY_DIR}/pycache")
 
 # Labels provide fast, intention-revealing local tiers while the unfiltered
 # linux-gcc-test preset remains the authoritative full CTest suite.
 set_tests_properties(battlecontext_roundtrip designer_in_spire cardqueue_overflow keys_collect
-    issue_fixes relic_reward_sapphire semantic_card_edges thorns_retaliation awakened_one_stage2 darkling_victory
+    issue_fixes relic_reward_sapphire thorns_retaliation awakened_one_stage2 darkling_victory
     poison_lose_hp time_eater_exhaust simhealth_gamble_empty_hand gamblers_brew_legality
     simhealth_nonfair_s2_empty simhealth_selection_failure simhealth_nonfair_s2_selection_failed
     training_integrity PROPERTIES LABELS "core")
 set_tests_properties(vnettest_selftest winnettest_selftest
-    scum_nonfair_empty_edges scum_convroot_stale_outcome s3_drawpile_reuse_boundary
-    s3_strategy_fusion_diag s3_persistent_endturn_chance rng_state_propagation
-    s3_rand64_prior_sampler rejuv_conditional_blocks live_rejuv_attempt_gate
+    scum_nonfair_empty_edges scum_convroot_stale_outcome s2_drawpile_index_boundary
     e2c_observer_scope combat_knowledge silver_random_bridge silver_semantic_action
     silver_searcher_link_closure silver_bridge_boundary runic_dome_lifecycle
     runwin_e2c_native_parity runwin_e2c_production_native_parity
@@ -835,8 +822,7 @@ set_tests_properties(vnettest_selftest winnettest_selftest
 set_tests_properties(selfplay_syntax py_compile_parity_test py_compile_analyze_ooc_factor
     check_replay_selftest check_benchmark_canary_selftest export_win_model_selftest
     PROPERTIES LABELS "tooling")
-set_tests_properties(particle_leaf_probe_selftest particle_posterior_probe_selftest
-    analyze_silver_reuse_scaling_selftest analyze_silver_vnet_leaf_selftest
+set_tests_properties(analyze_silver_reuse_scaling_selftest analyze_silver_vnet_leaf_selftest
     analyze_silver_sticky_quality_selftest analyze_silver_root_diagnostic_selftest
     analyze_silver_adaptive_selftest analyze_silver_staged_selftest analyze_postcombat_raw_terminal_selftest
     PROPERTIES LABELS "research-repro")

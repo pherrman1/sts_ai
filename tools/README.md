@@ -74,7 +74,7 @@ retain their existing locations and invocation conventions.
 ## Active vs reproducibility-only
 
 Scripts under `tools/run/` include both current experiment harnesses (used
-in ongoing Searcher3 and strategic-policy research) and historical data
+in ongoing strategic-policy research) and historical data
 generation loops (`datagen_loop.sh`, `datagen2_loop.sh`) retained for
 reproducibility. See `docs/knowledge-base/evaluation/current-research.md`
 for the active set.

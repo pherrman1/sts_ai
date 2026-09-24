@@ -1,6 +1,6 @@
 # Determinism and RNG
 
-Last verified: 2026-09-20 for live OOC MCTS hypothetical noncombat futures; 2026-09-14 for supported-v1 RNG continuation;
+Last verified: 2026-09-24 for the Searcher3 removal; 2026-09-20 for live OOC MCTS hypothetical noncombat futures; 2026-09-14 for supported-v1 RNG continuation;
 2026-08-02 against commit `6f7159f` and the current working tree (hidden-information boundary audit, plan 5.6.4 / spec §A.14).
 
 ## Purpose
@@ -52,15 +52,13 @@ for normal supported continuation; exact six-stream RAW snapshot synthesis is
 a different contract. Re-audit any new chain/controller or combat RNG consumer.
 Runtime surrogate integration and multi-fight qualification remain pending.
 
-`STS_FAIR=1` calls `ScumSearchAgent2::playoutBattleFair`. With default
-Searcher2, each simulation shuffles the draw pile and replaces only shuffle and
-card-random RNG. With `STS_SEARCHER3=1`, each sampled `HiddenBattleState`
-contains all six seed pairs and a draw order
-(`src/sim/search/BattleScumSearcher2.cpp::determinize`;
-`src/sim/search/BattleScumSearcher3.cpp::applyParticle`). Searcher3 samples and
-applies particle RNG seeds even when `STS_FAIR` is off; its non-fair agent path
-reuses the tree. Both fair paths commit one root action and create a new
-searcher for the next observed decision.
+`STS_FAIR=1` calls `ScumSearchAgent2::playoutBattleFair`. With Searcher2, each
+simulation shuffles the draw pile and replaces only shuffle and card-random RNG
+(`src/sim/search/BattleScumSearcher2.cpp::determinize`). The fair path commits
+one root action and creates a new searcher for the next observed decision.
+Silver owns its own chance randomness from a stable per-battle seed (see
+[combat-search.md](../architecture/combat-search.md)). Searcher3, whose
+particles carried all six RNG streams, was removed (ADR-0019).
 
 Live opt-in OOC MCTS separately samples unknown native futures in
 `apps/one_combat/ooc_mcts_adapter.cpp::sampleNoncombatFuture`. Before search
@@ -83,36 +81,22 @@ sampled encounter queues.
 
 1. Run RNG state enters `BattleContext::init`.
 2. A fair search copies the root battle for each simulation.
-3. Searcher2 partially determinizes the copy; Searcher3 applies a sampled
-   particle.
+3. Searcher2 partially determinizes the copy.
 4. Search explores copied worlds and chooses a root move.
 5. The agent validates that move against the live battle and applies it if
-   valid; Searcher3 filters for live-valid root edges during selection.
+   valid.
 6. At combat end, six stream states return to `GameContext`.
 
 ```mermaid
 flowchart TD
     A["Run RNG state enters BattleContext::init"] --> B["Fair search copies the root battle per simulation"]
-    B --> C{"Searcher branch"}
-    C -->|"Searcher2"| D["Partially determinize the copy"]
-    C -->|"Searcher3"| E["Apply a sampled particle"]
+    B --> D["Searcher2 partially determinizes the copy"]
     D --> F["Search explores copied worlds"]
-    E --> F
     F --> G["Search chooses a root move"]
-    G -.->|"Searcher3"| S3F["Filters for live-valid root edges during selection"]
-    S3F -.-> H
     G --> H{"Move valid against the live battle?"}
     H -->|"valid"| I["Apply the move to the live battle"]
     I --> J["At combat end, six stream states return to GameContext"]
 ```
-
-Searcher3 intends to seed its `std::mt19937_64` from visible observation,
-`agentSeed`, and `decisionIndex`. The constructor now takes both values as
-explicit parameters and computes the composite seed at construction;
-`ScumSearchAgent2::playoutBattleFair` passes `bc.seed` plus an incrementing
-decision index per decision, and the tree-reuse path re-keys via `reseed()`
-after `advanceRoot` (`BattleScumSearcher3::BattleScumSearcher3`;
-`ScumSearchAgent2::playoutBattleFair`, `playoutBattle`).
 
 ## Invariants and assumptions
 
@@ -165,17 +149,6 @@ after `advanceRoot` (`BattleScumSearcher3::BattleScumSearcher3`;
   size is treated as visible by the sampled OOC contract; contents (gold/tier
   and relic identity) are sampled before opening.
 - Searcher2 leaves four combat RNG streams concrete under `STS_FAIR=1`.
-- Searcher3's stored `HiddenBattleState::drawPileOrder` is installed by
-  `applyParticle` only when the copied pile's size and card multiset match the
-  particle; after tree reuse, stale particles fall back to a searcher-RNG
-  shuffle (`src/sim/search/BattleScumSearcher3.cpp::applyParticle`).
-- `Belief::update` zero-weights particles that contradict the observed pile,
-  and `Belief::sample` falls back to uniform when all weights are equal or
-  total zero, so an observation that contradicts every particle resets the
-  belief (`src/sim/search/CombatObservation.cpp`). Searcher3's in-search
-  `belief.update` calls are off by default since issue #58 (2026-08-10): the
-  default-on internal update destroyed the root belief within ~60 sims;
-  `STS_S3_INTERNAL_BELIEF_UPDATE=1` restores the historical behavior.
 - `CombatObservation::operator==` and `visibleHash` share one canonical field
   set; card piles compare as `CardKey` multisets, so order-insensitive equality
   is deliberate and equal observations hash equally.
@@ -188,7 +161,7 @@ after `advanceRoot` (`BattleScumSearcher3::BattleScumSearcher3`;
   12-thread check matched outcomes, floors, HP, and death fields after the fix.
 - Historical repeated fair multi-thread runs were not bit-identical
   (`EXPERIMENTS.md` entries 66e, 66j). Since commit `63d8b89` the recorded
-  divergence does not reproduce: fair Searcher2/Searcher3 and known-RNG runs
+  divergence did not reproduce: fair Searcher2/Searcher3 and known-RNG runs
   replay bit-identically across separate invocations and thread counts
   (1/8/12) on this machine (`EXPERIMENTS.md` §69). **Inference:** the
   historical cause was stale `BattleContext` state under `schedule(dynamic)`
@@ -219,11 +192,8 @@ after `advanceRoot` (`BattleScumSearcher3::BattleScumSearcher3`;
 - `include/combat/BattleContext.h::BattleContext`
 - `src/combat/BattleContext.cpp::init`, `exitBattle`
 - `src/sim/search/BattleScumSearcher2.cpp::determinize`
-- `include/sim/search/CombatObservation.h::CombatObservation`,
-  `HiddenBattleState`, `Belief`
-- `src/sim/search/CombatObservation.cpp::visibleHash`, `operator==`,
-  `Belief::update`, `sample`
-- `src/sim/search/BattleScumSearcher3.cpp::BattleScumSearcher3`, `applyParticle`
+- `include/sim/search/CombatObservation.h::CombatObservation`
+- `src/sim/search/CombatObservation.cpp::visibleHash`, `operator==`
 - `src/sim/search/ScumSearchAgent2.cpp::playoutBattleFair`
 - `src/sim/search/ScumSearchAgent2.cpp::stepOutOfCombatPolicy` (TREASURE_ROOM chest-size read)
 - `src/sim/search/GameAction.cpp::getAllActionsInState`, `getValidEventSelectBits`
