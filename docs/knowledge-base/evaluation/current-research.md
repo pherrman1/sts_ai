@@ -400,6 +400,11 @@ lower summed per-case replay wall time. Mean ending HP changed by +0.159 and
 action traces matched on 60/63 valid pairs. These are bounded descriptive
 results, not equivalence or default-promotion evidence. See the
 [current-main hard64 packet](../../experiments/evidence/silver_singleton_reroot_hard64_holdout_2026-09-25_main46684659/README.md).
+Main then advanced to `8ed346ea`; rebuilding the replay target from that head
+and from the merged treatment tree produced the same control and treatment
+binary hashes used for these rows. No more seeded replays were collected after
+the local 128 arm-case allowance was used. The packet preserves the original
+run SHAs and the later byte-identity check.
 
 The follow-up exact-10k sequential-checkpoint diagnostic on fresh seeds
 112--127 is **`LOGISTIC_DYNAMIC_RULE_REJECTED`** for the bounded offline

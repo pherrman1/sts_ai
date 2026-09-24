@@ -37,6 +37,12 @@ from torch import nn
 from strategic_tok_net import Net, NCARD, NREL, NPOT, MAXD, MAXR, MAXP, NGLOB, NRAW
 from strategic_split import SPLIT_VERSION, seed_disjoint_split
 from strategic_tok_contract import build_globals, make_layout
+from strategic_tok_state_cache import (
+    add_layout_version,
+    build_raw_to_grouped,
+    train_mask_for_raw_chunk,
+    write_raw_state_chunk,
+)
 
 CSV = sys.argv[1] if len(sys.argv) > 1 else "build/strategic_tierb.csv"
 OUT = sys.argv[2] if len(sys.argv) > 2 else "selfplay/models/ooc_strategic_tok"
@@ -141,7 +147,9 @@ df = pd.concat(small, ignore_index=True)
 del small
 # Group offsets below require all rows for a (seed, decIdx) decision to be
 # contiguous. CSV production order is not a contract, so canonicalize it here.
+df["_raw_row"] = np.arange(len(df), dtype=np.int64)
 df = df.sort_values(["seed", "decIdx"], kind="stable").reset_index(drop=True)
+sorted_raw_rows = df.pop("_raw_row").to_numpy(np.int64, copy=True)
 nrows = len(df)
 print(f"{nrows:,} rows, {df.seed.nunique()} seeds", flush=True)
 
@@ -200,6 +208,8 @@ if SPLIT_MANIFEST and not SPLIT_LOAD:
 order = np.argsort(grp_ids, kind="stable")
 inv_perm = np.empty(nrows, np.int64)
 inv_perm[order] = np.arange(nrows)
+raw_to_grouped = build_raw_to_grouped(sorted_raw_rows, order)
+grouped_tr_rows = tr_rows[order]
 pos_of_row = inv_perm.copy()
 rank_in_group = pos_of_row - block_start[grp_ids]
 cr = np.maximum(chosen_row_idx, 0)
@@ -384,6 +394,7 @@ for f in (CSV, os.path.abspath(__file__)):
         pass
 fp.update(str(nrows).encode()); fp.update(str(NFILE).encode())
 fp.update(SPLIT_VERSION.encode())
+add_layout_version(fp)
 fp_hex = fp.hexdigest()
 old_fp = None
 if os.path.exists(fp_file):
@@ -411,7 +422,7 @@ lo = 0
 for chunk in pd.read_csv(CSV, usecols=state_cols, chunksize=CHUNK, dtype=np.float32):
     hi = lo + len(chunk)
     c = chunk.to_numpy(np.float64)
-    m = tr_rows[lo:hi]
+    m = train_mask_for_raw_chunk(grouped_tr_rows, raw_to_grouped, lo, hi)
     # Build the NRAW=36 glob block: columns 0-14 (ascension..bossId) +
     # pv*/bottled* (cols 23-31) + fm*/mapPos (cols 1005-1016).
     # Skip columns 15-22 (nextEliteId/nextFight0-2/remElites/remFights/
@@ -483,7 +494,7 @@ if not reused:
         ids, cfs = pot_tokens(p)
         out[:, pt_id_cols] = ids
         out[:, pt_cf_cols] = cfs
-        state_mem[inv_perm[lo:hi]] = out
+        write_raw_state_chunk(state_mem, raw_to_grouped, lo, out)
         lo = hi
     state_mem.flush()
     with open(fp_file, "w") as f:

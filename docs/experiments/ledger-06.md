@@ -11874,7 +11874,42 @@ The support-domain rerun is [recorded separately](evidence/lizard_tail_targeted_
 record the targeted-pool stop and source-grouped comparison; runtime support
 and qualification are unchanged.
 
-## §348 — Singleton reroot correction on frozen hard64 holdout (2026-09-25)
+### §348 — Silver search ported onto the main engine: 128-seed gate (2026-09-24)
+
+Compared the Silver combat search ported onto the main simulator
+(`SilverSearcher` behind `STS_NATIVE_SILVER=1`, no conversion into the
+vendored model) with the vendored Silver backend on the §340 seed block.
+
+- **Configuration:** Release `one_combat` from commit `f81eabb` on branch
+  `claude/native-silver-searcher`, 4-core container, `bestbench 1000 128 0
+  126700` with `STS_NATIVE_SILVER=1 STS_SILVER_ADAPTIVE=1` (adaptive
+  retained-root policy, 500 → 10,000 simulations). Project-fair, native OOC
+  trees, keys skipped, ascension 0. Baseline: the vendored §340 run on the
+  same seeds (commit `2a602f6`; later commits kept vendored bestbench rows
+  identical at 200 flat simulations).
+- **Port scope:** production search path only (UCB with exploration 25, DPW
+  chance widening 3.7028/0.52389, transposition dedup, reroot with the 32,768
+  node cap, Silver's rollout policy and terminal evaluation). The draw pile
+  uses the information-set `CardPile` built from the combat knowledge
+  tracker; the six RNG streams are reseeded from a public per-battle seed and
+  treated as one chance source. Known gaps: Runic Dome intents are visible to
+  the native search (the vendored model defers them); multi-card selections
+  (Gambling Chip, Purity) are atomic subsets rather than Silver's sequential
+  picks; the vendored reroot repairs (UID swap, hand-order alignment) are
+  replaced by multiset equality plus identity-based action translation.
+- **Gameplay:** native 86/128 wins (67.2%) against vendored 83/128 (64.8%).
+  Paired difference +2.3 pp, normal 95% CI [−6.2, +10.9] pp; discordant seeds
+  17 native-only vs 14 vendored-only (McNemar z = +0.54). Mean floor 47.81 vs
+  48.26. CPU 37.37 vs 38.05 s/run. No seed failures.
+- **Interpretation:** no detectable difference in either direction at 128
+  seeds. **Inference:** the port preserves Silver's playing strength within
+  about ±8 pp; a tighter non-inferiority claim needs more seeds (GCP path).
+- **Artifacts:** [evidence packet](evidence/native_silver_gate_2026-09-24/README.md).
+
+Knowledge impact: combat-search architecture and environment variables record
+the experimental native backend; the vendored Silver backend stays the default.
+
+## §349 — Singleton reroot correction on frozen hard64 holdout (2026-09-25)
 
 - **Question:** Does zero-search selection at singleton roots, while retaining
   the selected edge for later rerooting, change complete frozen-fight outcomes
@@ -11918,7 +11953,7 @@ and qualification are unchanged.
 Knowledge impact: current research now records the post-correction replay
 result and its one shared technical failure. No default or quality gate changed.
 
-## §349 — Singleton reroot replay against updated current main (2026-09-25)
+## §350 — Singleton reroot replay against updated current main (2026-09-25)
 
 - **Question:** Does the retained-session singleton zero-search path reduce
   work without changing observed outcomes on the frozen hard-fight cohort
@@ -11942,6 +11977,14 @@ result and its one shared technical failure. No default or quality gate changed.
   183.421 versus 189.820 summed per-case replay wall seconds (**−3.371%**).
   Mean ending HP changed by +0.159; action traces matched on 60/63 valid
   pairs. These bounded descriptive metrics are not equivalence evidence.
+- **Post-run source advance:** while the packet was being prepared, main moved
+  to `8ed346ea1e503a85640c44131c05b9e8b5f48f53` via PR #320. Rebuilding the
+  replay target from that main head produced the same control binary hash as
+  the run. After merging it into the treatment tree, the replay target also
+  retained the exact treatment binary hash used by the run. No more seeded
+  replays were launched after this byte-for-byte check because the local
+  128 arm-case allowance had been used; the raw command records retain the
+  original invocation SHAs.
 - **Technical exclusion:** case `12100109/21` failed in both arms after 28
   decisions / 280,000 simulations with the same
   `selected_deterministic_state_mismatch` and action-trace hash
@@ -11950,9 +11993,10 @@ result and its one shared technical failure. No default or quality gate changed.
   valid**, not complete valid N64 confirmation.
 - **Interpretation:** this updates the earlier post-correction replay whose
   control was main at `01f6f164`. It confirms descriptive compute savings on
-  the same frozen cohort against main at `46684659`; it does not establish
-  action equivalence or gameplay safety, validate live wire conversion, or
-  change a default.
+  the same frozen cohort against main at `46684659`; byte-for-byte rebuilds
+  show the replay target stayed identical at main `8ed346ea` and the merged
+  treatment head. It does not establish action equivalence or gameplay safety,
+  validate live wire conversion, or change a default.
 - **Evidence:** [current-main frozen hard64 packet](evidence/silver_singleton_reroot_hard64_holdout_2026-09-25_main46684659/README.md),
   including raw per-arm rows, paired records, run order, per-invocation
   outputs, analysis scripts, and hashes.

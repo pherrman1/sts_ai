@@ -68,6 +68,21 @@ There were no outcome flips; mean ending HP changed by **+0.159** for
 win/loss outcome. These are descriptive observations from this frozen cohort,
 not an equivalence test or a universal safety claim.
 
+## Post-run source advance and binary identity
+
+The paired invocations used current main `46684659a0d56729d7af1f8ae2ce9eeab39a6934`
+and treatment source `be47b2a1502013b04dcdd923b6d14c1c22c7dde1`. While the
+work continued, main advanced to `8ed346ea1e503a85640c44131c05b9e8b5f48f53`
+(PR #320). The Release replay target rebuilt from that latest main produced
+control binary SHA-256 `58a8b80a857bedcb8773f2f26d4390d7f0ec720a9f3984e201821d0714fbdc05`,
+identical to the control binary used for all recorded rows. After merging that
+main head into the treatment tree, its replay target rebuilt to SHA-256
+`03a6aa7f0dcb613ddbd70beba1e8ed18b59c2ea7ee0102ed71effc31ba8fa63d`,
+identical to the treatment binary used for all recorded rows. The raw `run-order.json`
+retains the exact source commits used at invocation time. No additional seeded
+replays were run after this byte-for-byte identity check; the 128 arm-case
+replays had already used the local run allowance.
+
 ## Shared technical failure
 
 Case `12100109/21` failed in both arms after 28 decisions / 280,000
