@@ -56,6 +56,180 @@ int runOocSemanticTransactionsTests();
 
 using namespace sts;
 
+int testCardPile() {
+    int failures = 0;
+    auto check = [&](bool ok, const char *what) {
+        if (!ok) {
+            std::cerr << "card_pile FAIL: " << what << '\n';
+            ++failures;
+        }
+    };
+    auto card = [](CardId id, int uid) {
+        CardInstance c(id);
+        c.uniqueId = static_cast<std::int16_t>(uid);
+        return c;
+    };
+    const auto strike = card(CardId::STRIKE_RED, 1);
+    const auto defend = card(CardId::DEFEND_RED, 2);
+    const auto bash = card(CardId::BASH, 3);
+    const auto anger = card(CardId::ANGER, 4);
+    const auto wound = card(CardId::WOUND, 5);
+
+    // Concrete mode reproduces the original vector operations.
+    {
+        CardPile pile {strike, defend, bash};
+        std::vector<CardInstance> legacy {strike, defend, bash};
+        Random a(7);
+        Random b(7);
+        pile.shuffleIn(a, wound);
+        const int idx = b.random(static_cast<int>(legacy.size()) - 1);
+        legacy.insert(legacy.begin() + idx, wound);
+        check(std::equal(pile.begin(), pile.end(), legacy.begin(), legacy.end()) && a == b,
+              "concrete shuffleIn matches legacy insert");
+        Random c(9);
+        const auto top = pile.drawTop(c);
+        check(top == legacy.back() && c == Random(9), "concrete draw pops the top without RNG");
+        pile.addToBottom(anger);
+        check(pile.front() == anger && pile.isConcrete() && pile.knownTop() == 0, "concrete addToBottom");
+    }
+
+    // Information-set piles compare equal regardless of the unknown order.
+    {
+        CardPile x;
+        CardPile y;
+        x.assignInformationState({}, {strike, defend, bash}, {});
+        y.assignInformationState({}, {bash, strike, defend}, {});
+        check(x == y && !x.isConcrete(), "unknown region is canonical");
+        CardPile z;
+        z.assignInformationState({}, {strike, defend}, {bash});
+        check(!(x == z), "known top differs from unknown");
+    }
+
+    // A known top draws without RNG; the unknown region samples with RNG.
+    {
+        CardPile pile;
+        pile.assignInformationState({anger}, {strike, defend}, {bash});
+        Random rng(11);
+        const auto first = pile.drawTop(rng);
+        check(first == bash && rng.counter == 0 && pile.knownTop() == 0, "known top pops first");
+        const auto second = pile.drawTop(rng);
+        check((second == strike || second == defend) && rng.counter == 1, "unknown draw uses RNG");
+        const auto third = pile.drawTop(rng);
+        check((third == strike || third == defend) && !(third == second) && rng.counter == 1,
+              "last unknown card draws without RNG");
+        const auto fourth = pile.drawTop(rng);
+        check(fourth == anger && pile.empty() && rng.counter == 1, "known bottom drawn last");
+    }
+
+    // Unknown draws are uniform.
+    {
+        int counts[3] = {};
+        for (int seed = 1; seed <= 3000; ++seed) {
+            CardPile pile;
+            pile.assignInformationState({}, {strike, defend, bash}, {});
+            Random rng(static_cast<std::uint64_t>(seed));
+            const auto c = pile.drawTop(rng);
+            counts[c == strike ? 0 : c == defend ? 1 : 2]++;
+        }
+        check(counts[0] > 900 && counts[1] > 900 && counts[2] > 900, "unknown draw distribution");
+    }
+
+    // Placement, removal, reshuffle and mutation keep the invariants.
+    {
+        CardPile pile;
+        pile.assignInformationState({}, {strike, defend, bash}, {});
+        pile.addToTop(anger);
+        pile.addToBottom(wound);
+        check(pile.knownTop() == 1 && pile.knownBottom() == 1 && pile.back() == anger
+              && pile.front() == wound, "known placements");
+        pile.removeAt(pile.size() - 1);
+        pile.removeAt(0);
+        check(pile.knownTop() == 0 && pile.knownBottom() == 0 && pile.size() == 3, "removal bookkeeping");
+        std::vector<CardInstance> discard {wound, anger};
+        pile.absorbUnordered(discard);
+        check(discard.empty() && pile.size() == 5 && std::is_sorted(pile.begin(), pile.end()),
+              "absorb forgets order");
+        Random rng(3);
+        pile.addToTop(strike);
+        pile.reshuffleSelf(rng);
+        check(rng.counter == 0 && pile.knownTop() == 0 && std::is_sorted(pile.begin(), pile.end()),
+              "information-set reshuffle uses no RNG");
+        pile.mutateAll([](CardInstance &c) { c.upgrade(); });
+        check(std::is_sorted(pile.begin(), pile.end()), "mutation keeps unknown region sorted");
+    }
+
+    // Shuffling into a pile with no known top promotes a sampled top card.
+    {
+        CardPile pile;
+        pile.assignInformationState({}, {strike, defend, bash}, {});
+        Random rng(5);
+        pile.shuffleIn(rng, wound);
+        check(pile.size() == 4 && pile.knownTop() == 1 && rng.counter >= 1, "shuffleIn promotes the next draw");
+    }
+
+    std::cout << "card_pile " << (failures == 0 ? "PASS" : "FAIL") << '\n';
+    return failures == 0 ? 0 : 1;
+}
+
+// Whole battles run with the draw pile in information-set mode: every engine
+// path that touches the draw pile must work there (no crash, battles finish,
+// card counts are conserved apart from cards created or removed in combat).
+int testCardPileEngine() {
+    int failures = 0;
+    const MonsterEncounter encounters[] = {
+        MonsterEncounter::JAW_WORM, MonsterEncounter::CULTIST,
+        MonsterEncounter::GREMLIN_NOB, MonsterEncounter::LAGAVULIN,
+        MonsterEncounter::THE_GUARDIAN, MonsterEncounter::HEXAGHOST,
+        MonsterEncounter::SLIME_BOSS, MonsterEncounter::BOOK_OF_STABBING,
+        MonsterEncounter::AUTOMATON, MonsterEncounter::CHAMP,
+        MonsterEncounter::THREE_SENTRIES, MonsterEncounter::CHOSEN,
+        MonsterEncounter::NEMESIS, MonsterEncounter::TIME_EATER,
+        MonsterEncounter::WRITHING_MASS, MonsterEncounter::AWAKENED_ONE,
+    };
+    // Cards that place, shuffle in, draw from, reshuffle or search the draw pile.
+    const CardId extras[] = {
+        CardId::HEADBUTT, CardId::WARCRY, CardId::HAVOC, CardId::WILD_STRIKE,
+        CardId::RECKLESS_CHARGE, CardId::POWER_THROUGH, CardId::BATTLE_TRANCE,
+        CardId::POMMEL_STRIKE, CardId::SHRUG_IT_OFF, CardId::TRUE_GRIT,
+        CardId::SECOND_WIND, CardId::EXHUME, CardId::DEEP_BREATH,
+        CardId::FORETHOUGHT, CardId::MASTER_OF_STRATEGY, CardId::SECRET_TECHNIQUE,
+        CardId::SECRET_WEAPON, CardId::VIOLENCE, CardId::APOTHEOSIS, CardId::EVOLVE,
+    };
+    int finished = 0;
+    int wins = 0;
+    long long turns = 0;
+    for (std::uint64_t seed = 1; seed <= 60; ++seed) {
+        for (const auto encounter : encounters) {
+            GameContext gc(CharacterClass::IRONCLAD, seed, 0);
+            for (int i = 0; i < 6; ++i) {
+                gc.deck.obtainRaw(Card(extras[(seed * 7 + i * 3) % std::size(extras)]));
+            }
+            BattleContext bc;
+            bc.init(gc, encounter);
+            std::vector<CardInstance> unknown(bc.cards.drawPile.begin(), bc.cards.drawPile.end());
+            bc.cards.drawPile.assignInformationState({}, unknown, {});
+            search::SimpleAgent agent;
+            agent.curGameContext = &gc;
+            agent.playoutBattle(bc);
+            if (bc.outcome == Outcome::UNDECIDED) {
+                std::cerr << "card_pile_engine FAIL: unfinished battle seed " << seed << '\n';
+                ++failures;
+                continue;
+            }
+            ++finished;
+            wins += bc.outcome == Outcome::PLAYER_VICTORY;
+            turns += bc.turn;
+            if (bc.cards.drawPile.isConcrete()) {
+                std::cerr << "card_pile_engine FAIL: pile became concrete, seed " << seed << '\n';
+                ++failures;
+            }
+        }
+    }
+    std::cout << "card_pile_engine battles=" << finished << " wins=" << wins << " turns=" << turns << ' '
+              << (failures == 0 ? "PASS" : "FAIL") << '\n';
+    return failures == 0 ? 0 : 1;
+}
+
 int testBattleEquality() {
     int failures = 0;
     auto check = [&](bool ok, const char *what) {
@@ -118,7 +292,7 @@ int testBattleEquality() {
 
     if (base.cards.drawPile.size() >= 2) {
         BattleContext draw = base;
-        std::swap(draw.cards.drawPile.front(), draw.cards.drawPile.back());
+        std::swap(draw.cards.drawPile.concreteCards().front(), draw.cards.drawPile.concreteCards().back());
         same(draw, false, false, "draw pile order");
     } else {
         check(false, "draw pile has fewer than two cards");
@@ -1263,9 +1437,9 @@ static BattleContext cardSelectFixture(CardSelectTask task, int pickCount, bool 
     bc.cards.cardsInHand = largeHand ? 10 : 5;
     for (int i = 0; i < bc.cards.cardsInHand; ++i) bc.cards.hand[i] = handCards[i];
     bc.cards.drawPile.clear();
-    bc.cards.drawPile.push_back(CardInstance(CardId::DEFEND_RED));
-    bc.cards.drawPile.push_back(CardInstance(CardId::BASH));
-    bc.cards.drawPile.push_back(CardInstance(CardId::STRIKE_RED));
+    bc.cards.drawPile.concreteCards().push_back(CardInstance(CardId::DEFEND_RED));
+    bc.cards.drawPile.concreteCards().push_back(CardInstance(CardId::BASH));
+    bc.cards.drawPile.concreteCards().push_back(CardInstance(CardId::STRIKE_RED));
     bc.cards.discardPile.clear();
     bc.cards.discardPile.push_back(CardInstance(CardId::BASH));
     bc.cards.discardPile.push_back(CardInstance(CardId::STRIKE_RED));
@@ -1459,7 +1633,7 @@ int testCombatKnowledgeBoundary() {
     first.init(gc, MonsterEncounter::CULTIST);
     makeCards(first);
     BattleContext permuted = first;
-    std::swap(permuted.cards.drawPile[0], permuted.cards.drawPile[2]);
+    std::swap(permuted.cards.drawPile.concreteCards()[0], permuted.cards.drawPile.concreteCards()[2]);
 
     search::CombatKnowledgeState firstKnowledge, permutedKnowledge;
     firstKnowledge.initializeFromLiveBattle(first);
@@ -1570,7 +1744,7 @@ int testCombatKnowledgeBoundary() {
     eyeA.init(eyeGc, MonsterEncounter::CULTIST);
     makeCards(eyeA);
     eyeB = eyeA;
-    std::swap(eyeB.cards.drawPile[0], eyeB.cards.drawPile[2]);
+    std::swap(eyeB.cards.drawPile.concreteCards()[0], eyeB.cards.drawPile.concreteCards()[2]);
     search::CombatKnowledgeState eyeAKnowledge, eyeBKnowledge;
     eyeAKnowledge.initializeFromLiveBattle(eyeA);
     eyeBKnowledge.initializeFromLiveBattle(eyeB);
@@ -1731,7 +1905,7 @@ int testSilverSemanticActionResolution() {
                                 const char *message) {
         BattleContext select = cardSelectFixture(task, 1, false);
         for (int i = 0; i < select.cards.cardsInHand; ++i) select.cards.hand[i].uniqueId = static_cast<std::int16_t>(200 + i);
-        for (int i = 0; i < static_cast<int>(select.cards.drawPile.size()); ++i) select.cards.drawPile[i].uniqueId = static_cast<std::int16_t>(300 + i);
+        for (int i = 0; i < static_cast<int>(select.cards.drawPile.size()); ++i) select.cards.drawPile.concreteCards()[i].uniqueId = static_cast<std::int16_t>(300 + i);
         for (int i = 0; i < static_cast<int>(select.cards.discardPile.size()); ++i) select.cards.discardPile[i].uniqueId = static_cast<std::int16_t>(400 + i);
         for (int i = 0; i < static_cast<int>(select.cards.exhaustPile.size()); ++i) select.cards.exhaustPile[i].uniqueId = static_cast<std::int16_t>(500 + i);
         CardInstance actual = chosen;
@@ -2206,7 +2380,7 @@ int testSimHealthSelectionFailure() {
     {
         BattleContext bc = cardSelectFixture(CardSelectTask::SECRET_WEAPON, 1, false);
         bc.cards.drawPile.clear();
-        bc.cards.drawPile.push_back(CardInstance(CardId::DEFEND_RED));
+        bc.cards.drawPile.concreteCards().push_back(CardInstance(CardId::DEFEND_RED));
         check(!search::hasLegalProgressionAction(bc),
               "empty SECRET_WEAPON options must have no legal progression action");
         check(search::classifySelectionFailure(bc) == search::SimHealthFailure::NO_LEGAL_PROGRESSION,
@@ -3030,6 +3204,10 @@ int main(int argc, const char* argv[]) {
         return testCombatTransitionOracle();
     } else if (command == "combat_knowledge") {
         return testCombatKnowledgeBoundary();
+    } else if (command == "card_pile_engine") {
+        return testCardPileEngine();
+    } else if (command == "card_pile") {
+        return testCardPile();
     } else if (command == "battle_equality") {
         return testBattleEquality();
     } else if (command == "silver_random_bridge") {
