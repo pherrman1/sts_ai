@@ -1,0 +1,22 @@
+v_win native/Python parity gate
+===============================
+
+Population: 600 RAW rows selected from the 128-seed primary E2c population.
+Feature projection: all 1,017 canonical rich-state columns were retained in
+the parity input; the 448 model features were aligned by feature name.
+Native: Release one_combat winnettest mode, current tracked v_win model.
+Python command:
+  python3 tools/analysis/parity_vwin.py \
+    build/vwin_pricing/parity_raw_600.csv \
+    models/v_win_trees.txt \
+    build/vwin_pricing/native_prediction_600.txt
+
+Raw outcome:
+  parsed 600 C++ predictions
+  compared 600 rows
+  max |diff|: 0.000000
+  mean |diff|: 0.000000
+  tolerance: 1e-4
+  PASS
+
+The parity gate completed before Q1-Q5 were computed.

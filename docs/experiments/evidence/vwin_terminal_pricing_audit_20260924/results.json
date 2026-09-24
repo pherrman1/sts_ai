@@ -1,0 +1,3281 @@
+{
+  "input": {
+    "csv": "build/vwin_pricing/e2c_silver_128_combined.csv",
+    "e2c_sha256": "52cd5ca21f65aaf2d7829c23d10dc9b03e56f53d80586602c6464384bf6e1f75",
+    "model": "models/v_win_trees.txt",
+    "model_sha256": "fc52c14cb7239a33b3c1f9d0477ccb6c895fd51a07240fe804744e605067ad70"
+  },
+  "model": {
+    "base_score": 0.33217296,
+    "feature_order_source": "models/v_win_trees.txt; aligned to E2c columns by name",
+    "logistic": 1,
+    "n_features": 448,
+    "n_trees": 1060
+  },
+  "q1": {
+    "by_act": [
+      {
+        "act": 1,
+        "mean_gold_hp_equivalent_per_gold": {
+          "ci95": [
+            0.30327074695093226,
+            0.41781827524169113
+          ],
+          "mean": 0.3568714172170122,
+          "n": 1126,
+          "seeds": 128
+        },
+        "mean_held_potion_delta": {
+          "ci95": [
+            0.0025190922503271654,
+            0.003593946699808411
+          ],
+          "mean": 0.0030273100289109852,
+          "n": 818,
+          "seeds": 126
+        },
+        "mean_max_hp_hp_equivalent": {
+          "ci95": [
+            0.03196849184785341,
+            3.515123155844814
+          ],
+          "mean": 1.547912108305828,
+          "n": 1126,
+          "seeds": 128
+        },
+        "mean_potion_hp_equivalent": {
+          "ci95": [
+            4.990215992431016,
+            8.845509703248894
+          ],
+          "mean": 6.76318115145937,
+          "n": 727,
+          "seeds": 125
+        },
+        "mean_s_hp": {
+          "ci95": [
+            0.0008367044453040401,
+            0.001024728141946046
+          ],
+          "mean": 0.0009330580263435638,
+          "n": 1232,
+          "seeds": 128
+        },
+        "median_longest_flat_run_hp": 5.0,
+        "median_longest_flat_run_hp_ci95": [
+          5.0,
+          5.0
+        ],
+        "n": 1232,
+        "share_monotone": 0.6590909090909091,
+        "share_monotone_ci95": [
+          0.6143624546450389,
+          0.7041639032695525
+        ],
+        "share_s_hp_zero": 0.008116883116883116,
+        "share_s_hp_zero_ci95": [
+          0.0008077544426494346,
+          0.018490237008609058
+        ]
+      },
+      {
+        "act": 2,
+        "mean_gold_hp_equivalent_per_gold": {
+          "ci95": [
+            0.06874618196705655,
+            0.11376590597726405
+          ],
+          "mean": 0.0899945872642361,
+          "n": 967,
+          "seeds": 128
+        },
+        "mean_held_potion_delta": {
+          "ci95": [
+            0.006346131230651194,
+            0.00850592497618543
+          ],
+          "mean": 0.0073969197330337405,
+          "n": 868,
+          "seeds": 125
+        },
+        "mean_max_hp_hp_equivalent": {
+          "ci95": [
+            -1.0762704509793712,
+            2.198090976951197
+          ],
+          "mean": 1.0012272596414313,
+          "n": 967,
+          "seeds": 128
+        },
+        "mean_potion_hp_equivalent": {
+          "ci95": [
+            4.645624433411372,
+            9.219722301406799
+          ],
+          "mean": 6.74388249803821,
+          "n": 833,
+          "seeds": 125
+        },
+        "mean_s_hp": {
+          "ci95": [
+            0.002411618339783588,
+            0.002935651731931133
+          ],
+          "mean": 0.0026697141326309376,
+          "n": 1005,
+          "seeds": 128
+        },
+        "median_longest_flat_run_hp": 4.0,
+        "median_longest_flat_run_hp_ci95": [
+          4.0,
+          5.0
+        ],
+        "n": 1005,
+        "share_monotone": 0.6208955223880597,
+        "share_monotone_ci95": [
+          0.5594346449570331,
+          0.6767379230370167
+        ],
+        "share_s_hp_zero": 0.007960199004975124,
+        "share_s_hp_zero_ci95": [
+          0.001970394864435049,
+          0.016765285996055226
+        ]
+      },
+      {
+        "act": 3,
+        "mean_gold_hp_equivalent_per_gold": {
+          "ci95": [
+            0.013940375956661819,
+            0.11671025505389677
+          ],
+          "mean": 0.05843874605402429,
+          "n": 795,
+          "seeds": 119
+        },
+        "mean_held_potion_delta": {
+          "ci95": [
+            0.0057149018602795434,
+            0.009175050378157745
+          ],
+          "mean": 0.007381134984024552,
+          "n": 731,
+          "seeds": 110
+        },
+        "mean_max_hp_hp_equivalent": {
+          "ci95": [
+            -3.1331208304576603,
+            2.3875980684443374
+          ],
+          "mean": 0.3004887448868908,
+          "n": 795,
+          "seeds": 119
+        },
+        "mean_potion_hp_equivalent": {
+          "ci95": [
+            3.520146912141198,
+            12.577996656276953
+          ],
+          "mean": 6.703154102119219,
+          "n": 696,
+          "seeds": 110
+        },
+        "mean_s_hp": {
+          "ci95": [
+            0.0021977232081032217,
+            0.0029865471839576985
+          ],
+          "mean": 0.002585904446486516,
+          "n": 832,
+          "seeds": 119
+        },
+        "median_longest_flat_run_hp": 4.0,
+        "median_longest_flat_run_hp_ci95": [
+          4.0,
+          4.0
+        ],
+        "n": 832,
+        "share_monotone": 0.6262019230769231,
+        "share_monotone_ci95": [
+          0.5661659794190629,
+          0.6860282467259317
+        ],
+        "share_s_hp_zero": 0.008413461538461538,
+        "share_s_hp_zero_ci95": [
+          0.0,
+          0.019686944999125766
+        ]
+      }
+    ],
+    "n_raw_rows": 3069,
+    "n_seeds": 128,
+    "overall_median_longest_flat_run_hp": 5.0,
+    "overall_median_longest_flat_run_hp_ci95": [
+      5.0,
+      5.0
+    ],
+    "overall_share_monotone": 0.6376669925057021,
+    "overall_share_monotone_ci95": [
+      0.6018492426427459,
+      0.6734789881372876
+    ],
+    "potion_ids_below_reporting_threshold": [
+      {
+        "n": 5,
+        "potion_id": 37
+      }
+    ],
+    "potion_ids_n_at_least_30": [
+      {
+        "mean_hp_equivalent": {
+          "ci95": [
+            2.2014796314882985,
+            8.499698864258976
+          ],
+          "mean": 4.50417346729252,
+          "n": 329,
+          "seeds": 39
+        },
+        "mean_value_delta": {
+          "ci95": [
+            0.0026157660219550943,
+            0.005929433549415397
+          ],
+          "mean": 0.0041239717868161154,
+          "n": 350,
+          "seeds": 39
+        },
+        "n": 350,
+        "potion_id": 3,
+        "share_zero_value_delta": 0.4228571428571429,
+        "share_zero_value_delta_ci95": [
+          0.3260122779519331,
+          0.5126966258584652
+        ]
+      },
+      {
+        "mean_hp_equivalent": {
+          "ci95": [
+            1.8004043120079274,
+            5.331556594034538
+          ],
+          "mean": 3.4040193557496337,
+          "n": 88,
+          "seeds": 24
+        },
+        "mean_value_delta": {
+          "ci95": [
+            0.0024700787939935347,
+            0.006570413992719332
+          ],
+          "mean": 0.004450565170750079,
+          "n": 95,
+          "seeds": 24
+        },
+        "n": 95,
+        "potion_id": 4,
+        "share_zero_value_delta": 0.3684210526315789,
+        "share_zero_value_delta_ci95": [
+          0.18821691176470587,
+          0.5731747967479675
+        ]
+      },
+      {
+        "mean_hp_equivalent": {
+          "ci95": [
+            2.77137909767571,
+            6.0564136090179295
+          ],
+          "mean": 4.229145418258185,
+          "n": 170,
+          "seeds": 32
+        },
+        "mean_value_delta": {
+          "ci95": [
+            0.0025225694263044285,
+            0.00671540933312225
+          ],
+          "mean": 0.004438213462540202,
+          "n": 182,
+          "seeds": 33
+        },
+        "n": 182,
+        "potion_id": 5,
+        "share_zero_value_delta": 0.4725274725274725,
+        "share_zero_value_delta_ci95": [
+          0.32817901234567903,
+          0.603778255184009
+        ]
+      },
+      {
+        "mean_hp_equivalent": {
+          "ci95": [
+            0.7711989256523825,
+            4.839167837302343
+          ],
+          "mean": 2.309325816077162,
+          "n": 100,
+          "seeds": 25
+        },
+        "mean_value_delta": {
+          "ci95": [
+            0.0006758087729160532,
+            0.00261269878718302
+          ],
+          "mean": 0.0016040965972200533,
+          "n": 115,
+          "seeds": 28
+        },
+        "n": 115,
+        "potion_id": 6,
+        "share_zero_value_delta": 0.6347826086956522,
+        "share_zero_value_delta_ci95": [
+          0.49038461538461536,
+          0.75
+        ]
+      },
+      {
+        "mean_hp_equivalent": {
+          "ci95": [
+            8.554729696443475,
+            29.90113745079637
+          ],
+          "mean": 19.66533302788122,
+          "n": 53,
+          "seeds": 15
+        },
+        "mean_value_delta": {
+          "ci95": [
+            0.004806100445735572,
+            0.009849871915053455
+          ],
+          "mean": 0.007780141942564773,
+          "n": 58,
+          "seeds": 15
+        },
+        "n": 58,
+        "potion_id": 7,
+        "share_zero_value_delta": 0.1206896551724138,
+        "share_zero_value_delta_ci95": [
+          0.0,
+          0.2876712328767123
+        ]
+      },
+      {
+        "mean_hp_equivalent": {
+          "ci95": [
+            5.207819567942698,
+            32.33416015645888
+          ],
+          "mean": 14.34728400560585,
+          "n": 86,
+          "seeds": 26
+        },
+        "mean_value_delta": {
+          "ci95": [
+            0.0029712863058062246,
+            0.007104512038117979
+          ],
+          "mean": 0.004796977931079187,
+          "n": 99,
+          "seeds": 27
+        },
+        "n": 99,
+        "potion_id": 9,
+        "share_zero_value_delta": 0.0,
+        "share_zero_value_delta_ci95": [
+          0.0,
+          0.0
+        ]
+      },
+      {
+        "mean_hp_equivalent": {
+          "ci95": [
+            0.747656164732555,
+            2.682863914857403
+          ],
+          "mean": 1.5513731473787835,
+          "n": 59,
+          "seeds": 17
+        },
+        "mean_value_delta": {
+          "ci95": [
+            0.001313179037676256,
+            0.004130696211011065
+          ],
+          "mean": 0.0025166215091330345,
+          "n": 64,
+          "seeds": 18
+        },
+        "n": 64,
+        "potion_id": 10,
+        "share_zero_value_delta": 0.546875,
+        "share_zero_value_delta_ci95": [
+          0.35848352576738945,
+          0.6883336258336257
+        ]
+      },
+      {
+        "mean_hp_equivalent": {
+          "ci95": [
+            2.092392823741121,
+            4.296155042592185
+          ],
+          "mean": 3.0715588521650714,
+          "n": 333,
+          "seeds": 34
+        },
+        "mean_value_delta": {
+          "ci95": [
+            0.0037482168517733883,
+            0.007441538177263742
+          ],
+          "mean": 0.005475433798748522,
+          "n": 351,
+          "seeds": 34
+        },
+        "n": 351,
+        "potion_id": 12,
+        "share_zero_value_delta": 0.4586894586894587,
+        "share_zero_value_delta_ci95": [
+          0.3558033929919616,
+          0.5586609913984215
+        ]
+      },
+      {
+        "mean_hp_equivalent": {
+          "ci95": [
+            2.535138583097006,
+            111.68485667141466
+          ],
+          "mean": 36.757007912767925,
+          "n": 28,
+          "seeds": 19
+        },
+        "mean_value_delta": {
+          "ci95": [
+            0.003804738313897072,
+            0.010492167526667595
+          ],
+          "mean": 0.0066504331729525775,
+          "n": 31,
+          "seeds": 20
+        },
+        "n": 31,
+        "potion_id": 13,
+        "share_zero_value_delta": 0.0,
+        "share_zero_value_delta_ci95": [
+          0.0,
+          0.0
+        ]
+      },
+      {
+        "mean_hp_equivalent": {
+          "ci95": [
+            0.9986674394607793,
+            10.470674843826645
+          ],
+          "mean": 3.8047021275393478,
+          "n": 59,
+          "seeds": 16
+        },
+        "mean_value_delta": {
+          "ci95": [
+            0.002059987439377146,
+            0.007069173301926255
+          ],
+          "mean": 0.004281848340270785,
+          "n": 59,
+          "seeds": 16
+        },
+        "n": 59,
+        "potion_id": 14,
+        "share_zero_value_delta": 0.4576271186440678,
+        "share_zero_value_delta_ci95": [
+          0.2608478260869565,
+          0.6444623655913978
+        ]
+      },
+      {
+        "mean_hp_equivalent": {
+          "ci95": [
+            0.6297045168901713,
+            3.4723103602794048
+          ],
+          "mean": 1.9937636892415418,
+          "n": 127,
+          "seeds": 15
+        },
+        "mean_value_delta": {
+          "ci95": [
+            0.000509475142594773,
+            0.007444880458388177
+          ],
+          "mean": 0.0040441431003289076,
+          "n": 140,
+          "seeds": 15
+        },
+        "n": 140,
+        "potion_id": 15,
+        "share_zero_value_delta": 0.0,
+        "share_zero_value_delta_ci95": [
+          0.0,
+          0.0
+        ]
+      },
+      {
+        "mean_hp_equivalent": {
+          "ci95": [
+            1.6242490446059428,
+            4.8802355113704765
+          ],
+          "mean": 2.9238272991660303,
+          "n": 130,
+          "seeds": 31
+        },
+        "mean_value_delta": {
+          "ci95": [
+            0.0016889129411750518,
+            0.007165184242638133
+          ],
+          "mean": 0.004044799622973898,
+          "n": 140,
+          "seeds": 33
+        },
+        "n": 140,
+        "potion_id": 16,
+        "share_zero_value_delta": 0.45,
+        "share_zero_value_delta_ci95": [
+          0.2857142857142857,
+          0.5964983022071306
+        ]
+      },
+      {
+        "mean_hp_equivalent": {
+          "ci95": [
+            2.899820693407509,
+            57.565881293288925
+          ],
+          "mean": 20.241980815298124,
+          "n": 104,
+          "seeds": 18
+        },
+        "mean_value_delta": {
+          "ci95": [
+            0.002752811376036461,
+            0.00939336315240339
+          ],
+          "mean": 0.005346410204278494,
+          "n": 117,
+          "seeds": 19
+        },
+        "n": 117,
+        "potion_id": 19,
+        "share_zero_value_delta": 0.36752136752136755,
+        "share_zero_value_delta_ci95": [
+          0.18102250957854407,
+          0.5025957391379859
+        ]
+      },
+      {
+        "mean_hp_equivalent": {
+          "ci95": [
+            2.5006216302534194,
+            7.130843236095643
+          ],
+          "mean": 4.67190339340268,
+          "n": 128,
+          "seeds": 25
+        },
+        "mean_value_delta": {
+          "ci95": [
+            0.0037706557305101007,
+            0.012121610481289716
+          ],
+          "mean": 0.00757101472968643,
+          "n": 134,
+          "seeds": 26
+        },
+        "n": 134,
+        "potion_id": 20,
+        "share_zero_value_delta": 0.3880597014925373,
+        "share_zero_value_delta_ci95": [
+          0.2417487684729064,
+          0.5213906581740976
+        ]
+      },
+      {
+        "mean_hp_equivalent": {
+          "ci95": [
+            1.0673359937642921,
+            4.268147922557533
+          ],
+          "mean": 2.476357349514292,
+          "n": 200,
+          "seeds": 14
+        },
+        "mean_value_delta": {
+          "ci95": [
+            0.0021333530167831345,
+            0.004493587871216691
+          ],
+          "mean": 0.00319116230360705,
+          "n": 211,
+          "seeds": 14
+        },
+        "n": 211,
+        "potion_id": 21,
+        "share_zero_value_delta": 0.32701421800947866,
+        "share_zero_value_delta_ci95": [
+          0.1545872986253654,
+          0.48790660209908937
+        ]
+      },
+      {
+        "mean_hp_equivalent": {
+          "ci95": [
+            2.008509790765567,
+            4.458326854966233
+          ],
+          "mean": 3.08727626634955,
+          "n": 247,
+          "seeds": 35
+        },
+        "mean_value_delta": {
+          "ci95": [
+            0.00278051124765238,
+            0.006408426821049367
+          ],
+          "mean": 0.004506742719061575,
+          "n": 255,
+          "seeds": 35
+        },
+        "n": 255,
+        "potion_id": 22,
+        "share_zero_value_delta": 0.4235294117647059,
+        "share_zero_value_delta_ci95": [
+          0.31999319727891157,
+          0.5260803724165006
+        ]
+      },
+      {
+        "mean_hp_equivalent": {
+          "ci95": [
+            -1.8627291009761662,
+            5.19651415183977
+          ],
+          "mean": 1.8520025649046001,
+          "n": 99,
+          "seeds": 26
+        },
+        "mean_value_delta": {
+          "ci95": [
+            0.001478958795788763,
+            0.004287691831356165
+          ],
+          "mean": 0.0027120744610094707,
+          "n": 103,
+          "seeds": 27
+        },
+        "n": 103,
+        "potion_id": 23,
+        "share_zero_value_delta": 0.3786407766990291,
+        "share_zero_value_delta_ci95": [
+          0.20558092608326253,
+          0.5576973684210527
+        ]
+      },
+      {
+        "mean_hp_equivalent": {
+          "ci95": [
+            0.8195445365514119,
+            7.0049883695628035
+          ],
+          "mean": 3.041072510616588,
+          "n": 91,
+          "seeds": 22
+        },
+        "mean_value_delta": {
+          "ci95": [
+            0.0008111924419004064,
+            0.004052550837141132
+          ],
+          "mean": 0.0020450822237844425,
+          "n": 105,
+          "seeds": 24
+        },
+        "n": 105,
+        "potion_id": 24,
+        "share_zero_value_delta": 0.6095238095238096,
+        "share_zero_value_delta_ci95": [
+          0.37491071428571426,
+          0.7641528608682314
+        ]
+      },
+      {
+        "mean_hp_equivalent": {
+          "ci95": [
+            0.4542471058519747,
+            5.069717764424929
+          ],
+          "mean": 2.625034265329608,
+          "n": 177,
+          "seeds": 23
+        },
+        "mean_value_delta": {
+          "ci95": [
+            0.0005000395025611144,
+            0.004115746640322316
+          ],
+          "mean": 0.002264707266963556,
+          "n": 194,
+          "seeds": 23
+        },
+        "n": 194,
+        "potion_id": 27,
+        "share_zero_value_delta": 0.11855670103092783,
+        "share_zero_value_delta_ci95": [
+          0.0,
+          0.27897368421052615
+        ]
+      },
+      {
+        "mean_hp_equivalent": {
+          "ci95": [
+            6.959642088174092,
+            55.332144647290285
+          ],
+          "mean": 24.989590671419126,
+          "n": 31,
+          "seeds": 8
+        },
+        "mean_value_delta": {
+          "ci95": [
+            0.0028132802256220545,
+            0.01100976360674506
+          ],
+          "mean": 0.0059145774240177374,
+          "n": 32,
+          "seeds": 8
+        },
+        "n": 32,
+        "potion_id": 29,
+        "share_zero_value_delta": 0.0,
+        "share_zero_value_delta_ci95": [
+          0.0,
+          0.0
+        ]
+      },
+      {
+        "mean_hp_equivalent": {
+          "ci95": [
+            2.4740309467542843,
+            11.579929186127568
+          ],
+          "mean": 6.4288433426038685,
+          "n": 205,
+          "seeds": 24
+        },
+        "mean_value_delta": {
+          "ci95": [
+            0.003365493394741056,
+            0.009392706286457459
+          ],
+          "mean": 0.006029913561766176,
+          "n": 216,
+          "seeds": 24
+        },
+        "n": 216,
+        "potion_id": 30,
+        "share_zero_value_delta": 0.4351851851851852,
+        "share_zero_value_delta_ci95": [
+          0.2817924317062248,
+          0.617378381585192
+        ]
+      },
+      {
+        "mean_hp_equivalent": {
+          "ci95": [
+            0.91352503371024,
+            4.127389995141887
+          ],
+          "mean": 2.541661488311482,
+          "n": 89,
+          "seeds": 15
+        },
+        "mean_value_delta": {
+          "ci95": [
+            0.0008650513160627089,
+            0.00850815172390785
+          ],
+          "mean": 0.0037781665858967737,
+          "n": 93,
+          "seeds": 15
+        },
+        "n": 93,
+        "potion_id": 31,
+        "share_zero_value_delta": 0.5806451612903226,
+        "share_zero_value_delta_ci95": [
+          0.40399686520376177,
+          0.7580943847072877
+        ]
+      },
+      {
+        "mean_hp_equivalent": {
+          "ci95": [
+            1.21641294698352,
+            6.855466732168369
+          ],
+          "mean": 3.701722860199987,
+          "n": 98,
+          "seeds": 23
+        },
+        "mean_value_delta": {
+          "ci95": [
+            0.0014047207115610984,
+            0.0042927288519163725
+          ],
+          "mean": 0.0024766508670753815,
+          "n": 107,
+          "seeds": 24
+        },
+        "n": 107,
+        "potion_id": 34,
+        "share_zero_value_delta": 0.29906542056074764,
+        "share_zero_value_delta_ci95": [
+          0.1399965034965035,
+          0.4835317460317459
+        ]
+      },
+      {
+        "mean_hp_equivalent": {
+          "ci95": [
+            1.3131897621907644,
+            3.5387449049077344
+          ],
+          "mean": 2.5078559359391965,
+          "n": 32,
+          "seeds": 14
+        },
+        "mean_value_delta": {
+          "ci95": [
+            0.001440649462326955,
+            0.014284737715406524
+          ],
+          "mean": 0.007775300512803784,
+          "n": 32,
+          "seeds": 14
+        },
+        "n": 32,
+        "potion_id": 35,
+        "share_zero_value_delta": 0.1875,
+        "share_zero_value_delta_ci95": [
+          0.05,
+          0.43491304347826015
+        ]
+      },
+      {
+        "mean_hp_equivalent": {
+          "ci95": [
+            3.208132088656671,
+            13.568953307129707
+          ],
+          "mean": 7.838440640670502,
+          "n": 116,
+          "seeds": 26
+        },
+        "mean_value_delta": {
+          "ci95": [
+            0.001873897673541761,
+            0.006054707764402253
+          ],
+          "mean": 0.0035379695830208124,
+          "n": 126,
+          "seeds": 26
+        },
+        "n": 126,
+        "potion_id": 36,
+        "share_zero_value_delta": 0.4126984126984127,
+        "share_zero_value_delta_ci95": [
+          0.2727272727272727,
+          0.5310497599301613
+        ]
+      },
+      {
+        "mean_hp_equivalent": {
+          "ci95": [
+            2.847148080093341,
+            18.202186276052483
+          ],
+          "mean": 7.337542895949414,
+          "n": 46,
+          "seeds": 10
+        },
+        "mean_value_delta": {
+          "ci95": [
+            0.005256042871534778,
+            0.01446476277655953
+          ],
+          "mean": 0.008596878110574595,
+          "n": 51,
+          "seeds": 10
+        },
+        "n": 51,
+        "potion_id": 38,
+        "share_zero_value_delta": 0.0,
+        "share_zero_value_delta_ci95": [
+          0.0,
+          0.0
+        ]
+      },
+      {
+        "mean_hp_equivalent": {
+          "ci95": [
+            1.9217868166462937,
+            5.519425518171061
+          ],
+          "mean": 3.447487762816239,
+          "n": 421,
+          "seeds": 36
+        },
+        "mean_value_delta": {
+          "ci95": [
+            0.0025827547524679196,
+            0.0065907899012660025
+          ],
+          "mean": 0.004478765483238434,
+          "n": 440,
+          "seeds": 36
+        },
+        "n": 440,
+        "potion_id": 39,
+        "share_zero_value_delta": 0.18636363636363637,
+        "share_zero_value_delta_ci95": [
+          0.10857391482391483,
+          0.2808140225787284
+        ]
+      },
+      {
+        "mean_hp_equivalent": {
+          "ci95": [
+            1.5446500257526077,
+            4.4297804077421326
+          ],
+          "mean": 2.847972385126896,
+          "n": 235,
+          "seeds": 42
+        },
+        "mean_value_delta": {
+          "ci95": [
+            0.002348925206411201,
+            0.005953565058269849
+          ],
+          "mean": 0.004078958031475216,
+          "n": 253,
+          "seeds": 42
+        },
+        "n": 253,
+        "potion_id": 41,
+        "share_zero_value_delta": 0.5533596837944664,
+        "share_zero_value_delta_ci95": [
+          0.45668637893292385,
+          0.6523441691255365
+        ]
+      },
+      {
+        "mean_hp_equivalent": {
+          "ci95": [
+            2.052087853309527,
+            4.765795053880938
+          ],
+          "mean": 3.3709437505671573,
+          "n": 241,
+          "seeds": 35
+        },
+        "mean_value_delta": {
+          "ci95": [
+            0.001944488405460033,
+            0.004495204245106252
+          ],
+          "mean": 0.0031444564353285734,
+          "n": 251,
+          "seeds": 35
+        },
+        "n": 251,
+        "potion_id": 42,
+        "share_zero_value_delta": 0.5697211155378487,
+        "share_zero_value_delta_ci95": [
+          0.45587027064346863,
+          0.6582848007308438
+        ]
+      },
+      {
+        "mean_hp_equivalent": {
+          "ci95": [
+            2.238431070724211,
+            5.905956543109085
+          ],
+          "mean": 3.8192065163205036,
+          "n": 229,
+          "seeds": 39
+        },
+        "mean_value_delta": {
+          "ci95": [
+            0.0036373622678498047,
+            0.008324197151641516
+          ],
+          "mean": 0.005767667592684139,
+          "n": 248,
+          "seeds": 39
+        },
+        "n": 248,
+        "potion_id": 43,
+        "share_zero_value_delta": 0.4112903225806452,
+        "share_zero_value_delta_ci95": [
+          0.2639972222222222,
+          0.5555652680652681
+        ]
+      }
+    ],
+    "silver_reference_note": "Silver scores are search points; comparison treats +1 post-battle HP as one point.",
+    "silver_reference_prices_score_points_per_unit": {
+      "gold_per_gold": 0.25,
+      "max_hp": 2.0,
+      "potion": 11.0
+    },
+    "split_counts": [
+      {
+        "feature": "curHp",
+        "split_count": 2127,
+        "total_gain": null
+      },
+      {
+        "feature": "maxHp",
+        "split_count": 3257,
+        "total_gain": null
+      },
+      {
+        "feature": "gold",
+        "split_count": 2210,
+        "total_gain": null
+      },
+      {
+        "feature": "potionCount",
+        "split_count": 271,
+        "total_gain": null
+      },
+      {
+        "feature": "potionCapacity",
+        "split_count": 153,
+        "total_gain": null
+      },
+      {
+        "feature": "pot10",
+        "split_count": 0,
+        "total_gain": null
+      },
+      {
+        "feature": "pot12",
+        "split_count": 2,
+        "total_gain": null
+      },
+      {
+        "feature": "pot13",
+        "split_count": 8,
+        "total_gain": null
+      },
+      {
+        "feature": "pot14",
+        "split_count": 0,
+        "total_gain": null
+      },
+      {
+        "feature": "pot15",
+        "split_count": 7,
+        "total_gain": null
+      },
+      {
+        "feature": "pot16",
+        "split_count": 0,
+        "total_gain": null
+      },
+      {
+        "feature": "pot17",
+        "split_count": 6,
+        "total_gain": null
+      },
+      {
+        "feature": "pot19",
+        "split_count": 0,
+        "total_gain": null
+      },
+      {
+        "feature": "pot20",
+        "split_count": 1,
+        "total_gain": null
+      },
+      {
+        "feature": "pot21",
+        "split_count": 3,
+        "total_gain": null
+      },
+      {
+        "feature": "pot22",
+        "split_count": 1,
+        "total_gain": null
+      },
+      {
+        "feature": "pot23",
+        "split_count": 3,
+        "total_gain": null
+      },
+      {
+        "feature": "pot24",
+        "split_count": 3,
+        "total_gain": null
+      },
+      {
+        "feature": "pot26",
+        "split_count": 16,
+        "total_gain": null
+      },
+      {
+        "feature": "pot27",
+        "split_count": 5,
+        "total_gain": null
+      },
+      {
+        "feature": "pot29",
+        "split_count": 11,
+        "total_gain": null
+      },
+      {
+        "feature": "pot3",
+        "split_count": 2,
+        "total_gain": null
+      },
+      {
+        "feature": "pot30",
+        "split_count": 2,
+        "total_gain": null
+      },
+      {
+        "feature": "pot31",
+        "split_count": 1,
+        "total_gain": null
+      },
+      {
+        "feature": "pot34",
+        "split_count": 5,
+        "total_gain": null
+      },
+      {
+        "feature": "pot35",
+        "split_count": 4,
+        "total_gain": null
+      },
+      {
+        "feature": "pot36",
+        "split_count": 2,
+        "total_gain": null
+      },
+      {
+        "feature": "pot37",
+        "split_count": 4,
+        "total_gain": null
+      },
+      {
+        "feature": "pot38",
+        "split_count": 3,
+        "total_gain": null
+      },
+      {
+        "feature": "pot39",
+        "split_count": 4,
+        "total_gain": null
+      },
+      {
+        "feature": "pot4",
+        "split_count": 3,
+        "total_gain": null
+      },
+      {
+        "feature": "pot41",
+        "split_count": 1,
+        "total_gain": null
+      },
+      {
+        "feature": "pot42",
+        "split_count": 1,
+        "total_gain": null
+      },
+      {
+        "feature": "pot43",
+        "split_count": 2,
+        "total_gain": null
+      },
+      {
+        "feature": "pot5",
+        "split_count": 0,
+        "total_gain": null
+      },
+      {
+        "feature": "pot6",
+        "split_count": 0,
+        "total_gain": null
+      },
+      {
+        "feature": "pot7",
+        "split_count": 18,
+        "total_gain": null
+      },
+      {
+        "feature": "pot9",
+        "split_count": 6,
+        "total_gain": null
+      }
+    ],
+    "split_gain_note": "The tracked compact model stores split indices and thresholds but no gain values; total gain is unavailable.",
+    "strata": [
+      {
+        "act": 1,
+        "hp_fraction_band": "0.3-0.6",
+        "mean_gold_hp_equivalent_per_gold": {
+          "ci95": [
+            0.034420735098339345,
+            0.23387329876265936
+          ],
+          "mean": 0.10591441890829913,
+          "n": 25,
+          "seeds": 25
+        },
+        "mean_max_hp_hp_equivalent": {
+          "ci95": [
+            -0.1451108031774752,
+            1.9993795284353628
+          ],
+          "mean": 0.9557150529731387,
+          "n": 25,
+          "seeds": 25
+        },
+        "mean_potion_hp_equivalent": {
+          "ci95": [
+            0.7514768003191882,
+            2.923323084472381
+          ],
+          "mean": 1.8075425830601366,
+          "n": 14,
+          "seeds": 14
+        },
+        "mean_s_hp": {
+          "ci95": [
+            0.0028307788894981283,
+            0.00429629925075203
+          ],
+          "mean": 0.0035439010796834013,
+          "n": 26,
+          "seeds": 26
+        },
+        "median_longest_flat_run_hp": 5.0,
+        "median_longest_flat_run_hp_ci95": [
+          5.0,
+          5.0
+        ],
+        "n": 26,
+        "room_type": "boss",
+        "share_monotone": 0.3076923076923077,
+        "share_monotone_ci95": [
+          0.15384615384615385,
+          0.5
+        ],
+        "share_s_hp_zero": 0.0,
+        "share_s_hp_zero_ci95": [
+          0.0,
+          0.0
+        ]
+      },
+      {
+        "act": 1,
+        "hp_fraction_band": "0.3-0.6",
+        "mean_gold_hp_equivalent_per_gold": {
+          "ci95": [
+            0.03390233788392536,
+            0.10958083582144452
+          ],
+          "mean": 0.06379561148497762,
+          "n": 26,
+          "seeds": 19
+        },
+        "mean_max_hp_hp_equivalent": {
+          "ci95": [
+            0.5003898335111295,
+            1.8146235451414787
+          ],
+          "mean": 1.0790308620880942,
+          "n": 26,
+          "seeds": 19
+        },
+        "mean_potion_hp_equivalent": {
+          "ci95": [
+            0.06368381478061545,
+            1.282116855670377
+          ],
+          "mean": 0.6865243506439866,
+          "n": 16,
+          "seeds": 12
+        },
+        "mean_s_hp": {
+          "ci95": [
+            0.0031818430033137396,
+            0.004341761220722515
+          ],
+          "mean": 0.003738132786797507,
+          "n": 27,
+          "seeds": 20
+        },
+        "median_longest_flat_run_hp": 5.0,
+        "median_longest_flat_run_hp_ci95": [
+          5.0,
+          5.0
+        ],
+        "n": 27,
+        "room_type": "elite",
+        "share_monotone": 0.7407407407407407,
+        "share_monotone_ci95": [
+          0.5416666666666666,
+          0.896551724137931
+        ],
+        "share_s_hp_zero": 0.0,
+        "share_s_hp_zero_ci95": [
+          0.0,
+          0.0
+        ]
+      },
+      {
+        "act": 1,
+        "hp_fraction_band": "0.3-0.6",
+        "mean_gold_hp_equivalent_per_gold": {
+          "ci95": [
+            0.016854028376297184,
+            0.05386160065435739
+          ],
+          "mean": 0.03641765714158209,
+          "n": 13,
+          "seeds": 9
+        },
+        "mean_max_hp_hp_equivalent": {
+          "ci95": [
+            0.1428492921534913,
+            3.235207859872735
+          ],
+          "mean": 1.5192777178888737,
+          "n": 13,
+          "seeds": 9
+        },
+        "mean_potion_hp_equivalent": {
+          "ci95": [
+            -2.717581643399886,
+            2.9558804722039147
+          ],
+          "mean": 0.4896251708647528,
+          "n": 13,
+          "seeds": 9
+        },
+        "mean_s_hp": {
+          "ci95": [
+            0.0021284784299224627,
+            0.004106571673080932
+          ],
+          "mean": 0.003048053797027296,
+          "n": 13,
+          "seeds": 9
+        },
+        "median_longest_flat_run_hp": 5.0,
+        "median_longest_flat_run_hp_ci95": [
+          5.0,
+          5.0
+        ],
+        "n": 13,
+        "room_type": "monster",
+        "share_monotone": 0.6153846153846154,
+        "share_monotone_ci95": [
+          0.2727272727272727,
+          0.9285714285714286
+        ],
+        "share_s_hp_zero": 0.0,
+        "share_s_hp_zero_ci95": [
+          0.0,
+          0.0
+        ]
+      },
+      {
+        "act": 1,
+        "hp_fraction_band": "<0.3",
+        "mean_gold_hp_equivalent_per_gold": {
+          "ci95": [
+            0.010093169641666965,
+            0.05531070573332025
+          ],
+          "mean": 0.03406742745552944,
+          "n": 3,
+          "seeds": 3
+        },
+        "mean_max_hp_hp_equivalent": {
+          "ci95": [
+            -0.3237015271962441,
+            6.692344251202545
+          ],
+          "mean": 2.351741231856834,
+          "n": 3,
+          "seeds": 3
+        },
+        "mean_potion_hp_equivalent": {
+          "ci95": [
+            -6.087455112471845,
+            -6.087455112471845
+          ],
+          "mean": -6.087455112471845,
+          "n": 1,
+          "seeds": 1
+        },
+        "mean_s_hp": {
+          "ci95": [
+            0.00047167468416690054,
+            0.002603201713432912
+          ],
+          "mean": 0.0016574715668954347,
+          "n": 3,
+          "seeds": 3
+        },
+        "median_longest_flat_run_hp": 5.0,
+        "median_longest_flat_run_hp_ci95": [
+          5.0,
+          5.0
+        ],
+        "n": 3,
+        "room_type": "boss",
+        "share_monotone": 0.3333333333333333,
+        "share_monotone_ci95": [
+          0.0,
+          1.0
+        ],
+        "share_s_hp_zero": 0.0,
+        "share_s_hp_zero_ci95": [
+          0.0,
+          0.0
+        ]
+      },
+      {
+        "act": 1,
+        "hp_fraction_band": ">0.6",
+        "mean_gold_hp_equivalent_per_gold": {
+          "ci95": [
+            0.14694750374202398,
+            0.250431350946694
+          ],
+          "mean": 0.19545064673829554,
+          "n": 92,
+          "seeds": 92
+        },
+        "mean_max_hp_hp_equivalent": {
+          "ci95": [
+            0.212836414055366,
+            4.31991820437282
+          ],
+          "mean": 1.970379358216328,
+          "n": 92,
+          "seeds": 92
+        },
+        "mean_potion_hp_equivalent": {
+          "ci95": [
+            4.494896392315451,
+            11.746734250052056
+          ],
+          "mean": 7.7608631043660745,
+          "n": 73,
+          "seeds": 73
+        },
+        "mean_s_hp": {
+          "ci95": [
+            0.001110101899542065,
+            0.001540569442273951
+          ],
+          "mean": 0.001322956481520044,
+          "n": 99,
+          "seeds": 99
+        },
+        "median_longest_flat_run_hp": 5.0,
+        "median_longest_flat_run_hp_ci95": [
+          5.0,
+          5.0
+        ],
+        "n": 99,
+        "room_type": "boss",
+        "share_monotone": 0.41414141414141414,
+        "share_monotone_ci95": [
+          0.32323232323232326,
+          0.5050505050505051
+        ],
+        "share_s_hp_zero": 0.010101010101010102,
+        "share_s_hp_zero_ci95": [
+          0.0,
+          0.030303030303030304
+        ]
+      },
+      {
+        "act": 1,
+        "hp_fraction_band": ">0.6",
+        "mean_gold_hp_equivalent_per_gold": {
+          "ci95": [
+            0.23037120858765212,
+            0.5472295976068048
+          ],
+          "mean": 0.3524655831863871,
+          "n": 243,
+          "seeds": 120
+        },
+        "mean_max_hp_hp_equivalent": {
+          "ci95": [
+            -3.4276762435264425,
+            1.3952479749651359
+          ],
+          "mean": -0.6530333781682068,
+          "n": 243,
+          "seeds": 120
+        },
+        "mean_potion_hp_equivalent": {
+          "ci95": [
+            4.330468043931827,
+            17.8410461096464
+          ],
+          "mean": 9.422476525991135,
+          "n": 158,
+          "seeds": 90
+        },
+        "mean_s_hp": {
+          "ci95": [
+            0.0010260349444614245,
+            0.001306459505849616
+          ],
+          "mean": 0.0011689506102337715,
+          "n": 260,
+          "seeds": 121
+        },
+        "median_longest_flat_run_hp": 5.0,
+        "median_longest_flat_run_hp_ci95": [
+          5.0,
+          5.0
+        ],
+        "n": 260,
+        "room_type": "elite",
+        "share_monotone": 0.573076923076923,
+        "share_monotone_ci95": [
+          0.5078709638039431,
+          0.6445351848672161
+        ],
+        "share_s_hp_zero": 0.0038461538461538464,
+        "share_s_hp_zero_ci95": [
+          0.0,
+          0.011719898897058817
+        ]
+      },
+      {
+        "act": 1,
+        "hp_fraction_band": ">0.6",
+        "mean_gold_hp_equivalent_per_gold": {
+          "ci95": [
+            0.3405848310046834,
+            0.4712760325339604
+          ],
+          "mean": 0.40514425604366905,
+          "n": 724,
+          "seeds": 128
+        },
+        "mean_max_hp_hp_equivalent": {
+          "ci95": [
+            0.4713860961113398,
+            5.092079165813297
+          ],
+          "mean": 2.2674139932660076,
+          "n": 724,
+          "seeds": 128
+        },
+        "mean_potion_hp_equivalent": {
+          "ci95": [
+            4.429231869907452,
+            7.948544324034408
+          ],
+          "mean": 6.249935268813547,
+          "n": 452,
+          "seeds": 121
+        },
+        "mean_s_hp": {
+          "ci95": [
+            0.0005284511749258447,
+            0.0006627332581660795
+          ],
+          "mean": 0.0005932332223217207,
+          "n": 804,
+          "seeds": 128
+        },
+        "median_longest_flat_run_hp": 5.0,
+        "median_longest_flat_run_hp_ci95": [
+          5.0,
+          5.0
+        ],
+        "n": 804,
+        "room_type": "monster",
+        "share_monotone": 0.7276119402985075,
+        "share_monotone_ci95": [
+          0.6804865453575557,
+          0.7706605753403024
+        ],
+        "share_s_hp_zero": 0.009950248756218905,
+        "share_s_hp_zero_ci95": [
+          0.0,
+          0.02457305790639122
+        ]
+      },
+      {
+        "act": 2,
+        "hp_fraction_band": "0.3-0.6",
+        "mean_gold_hp_equivalent_per_gold": {
+          "ci95": [
+            0.01827926972496033,
+            0.08217755091579333
+          ],
+          "mean": 0.04434240802068953,
+          "n": 36,
+          "seeds": 36
+        },
+        "mean_max_hp_hp_equivalent": {
+          "ci95": [
+            0.6773267072922078,
+            6.212876154948579
+          ],
+          "mean": 2.746817378171625,
+          "n": 36,
+          "seeds": 36
+        },
+        "mean_potion_hp_equivalent": {
+          "ci95": [
+            2.492025164978702,
+            10.604277080534787
+          ],
+          "mean": 5.575996168685136,
+          "n": 23,
+          "seeds": 23
+        },
+        "mean_s_hp": {
+          "ci95": [
+            0.003673452783445036,
+            0.005843099028141683
+          ],
+          "mean": 0.00468417074067313,
+          "n": 37,
+          "seeds": 37
+        },
+        "median_longest_flat_run_hp": 4.0,
+        "median_longest_flat_run_hp_ci95": [
+          4.0,
+          4.0
+        ],
+        "n": 37,
+        "room_type": "boss",
+        "share_monotone": 0.40540540540540543,
+        "share_monotone_ci95": [
+          0.24324324324324326,
+          0.5675675675675675
+        ],
+        "share_s_hp_zero": 0.0,
+        "share_s_hp_zero_ci95": [
+          0.0,
+          0.0
+        ]
+      },
+      {
+        "act": 2,
+        "hp_fraction_band": "0.3-0.6",
+        "mean_gold_hp_equivalent_per_gold": {
+          "ci95": [
+            0.03178333537284827,
+            0.07588845056465604
+          ],
+          "mean": 0.05143359043194381,
+          "n": 41,
+          "seeds": 31
+        },
+        "mean_max_hp_hp_equivalent": {
+          "ci95": [
+            -0.3834809226678347,
+            0.9755364614661844
+          ],
+          "mean": 0.3665475315077681,
+          "n": 41,
+          "seeds": 31
+        },
+        "mean_potion_hp_equivalent": {
+          "ci95": [
+            0.8404786795646839,
+            3.0257454958053382
+          ],
+          "mean": 1.8492719191780476,
+          "n": 32,
+          "seeds": 23
+        },
+        "mean_s_hp": {
+          "ci95": [
+            0.00409150730263813,
+            0.005703858887914377
+          ],
+          "mean": 0.004872814260084705,
+          "n": 41,
+          "seeds": 31
+        },
+        "median_longest_flat_run_hp": 4.0,
+        "median_longest_flat_run_hp_ci95": [
+          4.0,
+          4.0
+        ],
+        "n": 41,
+        "room_type": "elite",
+        "share_monotone": 0.7073170731707317,
+        "share_monotone_ci95": [
+          0.5525657894736843,
+          0.8536585365853658
+        ],
+        "share_s_hp_zero": 0.0,
+        "share_s_hp_zero_ci95": [
+          0.0,
+          0.0
+        ]
+      },
+      {
+        "act": 2,
+        "hp_fraction_band": "0.3-0.6",
+        "mean_gold_hp_equivalent_per_gold": {
+          "ci95": [
+            0.010189148518796739,
+            0.04513671122807263
+          ],
+          "mean": 0.027118348261852335,
+          "n": 39,
+          "seeds": 19
+        },
+        "mean_max_hp_hp_equivalent": {
+          "ci95": [
+            0.26310788857787365,
+            2.587647292146902
+          ],
+          "mean": 1.3287643487510645,
+          "n": 39,
+          "seeds": 19
+        },
+        "mean_potion_hp_equivalent": {
+          "ci95": [
+            1.6072821511518383,
+            3.0190394552692896
+          ],
+          "mean": 2.266887502348153,
+          "n": 33,
+          "seeds": 15
+        },
+        "mean_s_hp": {
+          "ci95": [
+            0.003995585107599983,
+            0.006520322271680784
+          ],
+          "mean": 0.0051510828067752755,
+          "n": 39,
+          "seeds": 19
+        },
+        "median_longest_flat_run_hp": 4.0,
+        "median_longest_flat_run_hp_ci95": [
+          4.0,
+          5.0
+        ],
+        "n": 39,
+        "room_type": "monster",
+        "share_monotone": 0.5641025641025641,
+        "share_monotone_ci95": [
+          0.35,
+          0.7555691056910568
+        ],
+        "share_s_hp_zero": 0.0,
+        "share_s_hp_zero_ci95": [
+          0.0,
+          0.0
+        ]
+      },
+      {
+        "act": 2,
+        "hp_fraction_band": "<0.3",
+        "mean_gold_hp_equivalent_per_gold": {
+          "ci95": [
+            0.01219511148578465,
+            0.06667105770407276
+          ],
+          "mean": 0.03955767336236966,
+          "n": 8,
+          "seeds": 8
+        },
+        "mean_max_hp_hp_equivalent": {
+          "ci95": [
+            -2.619598529244146,
+            0.5231582491138825
+          ],
+          "mean": -0.6651680100468205,
+          "n": 8,
+          "seeds": 8
+        },
+        "mean_potion_hp_equivalent": {
+          "ci95": [
+            4.533543722774633,
+            12.738352626125572
+          ],
+          "mean": 8.626875251853964,
+          "n": 5,
+          "seeds": 5
+        },
+        "mean_s_hp": {
+          "ci95": [
+            0.0018845270170175664,
+            0.005191724697138858
+          ],
+          "mean": 0.0035482384772906324,
+          "n": 8,
+          "seeds": 8
+        },
+        "median_longest_flat_run_hp": 4.0,
+        "median_longest_flat_run_hp_ci95": [
+          4.0,
+          4.0
+        ],
+        "n": 8,
+        "room_type": "boss",
+        "share_monotone": 0.5,
+        "share_monotone_ci95": [
+          0.125,
+          0.875
+        ],
+        "share_s_hp_zero": 0.0,
+        "share_s_hp_zero_ci95": [
+          0.0,
+          0.0
+        ]
+      },
+      {
+        "act": 2,
+        "hp_fraction_band": "<0.3",
+        "mean_gold_hp_equivalent_per_gold": {
+          "ci95": [
+            -0.053368758007598084,
+            0.05147162129173972
+          ],
+          "mean": 0.005676429850384653,
+          "n": 10,
+          "seeds": 10
+        },
+        "mean_max_hp_hp_equivalent": {
+          "ci95": [
+            0.02334186037815827,
+            6.647867472418196
+          ],
+          "mean": 2.4687459542971606,
+          "n": 10,
+          "seeds": 10
+        },
+        "mean_potion_hp_equivalent": {
+          "ci95": [
+            1.1717069073600703,
+            5.448992101196572
+          ],
+          "mean": 3.15896080317619,
+          "n": 7,
+          "seeds": 7
+        },
+        "mean_s_hp": {
+          "ci95": [
+            0.0020244040863352354,
+            0.004614220531496622
+          ],
+          "mean": 0.003230899403298863,
+          "n": 10,
+          "seeds": 10
+        },
+        "median_longest_flat_run_hp": 4.0,
+        "median_longest_flat_run_hp_ci95": [
+          4.0,
+          6.0
+        ],
+        "n": 10,
+        "room_type": "elite",
+        "share_monotone": 0.8,
+        "share_monotone_ci95": [
+          0.5,
+          1.0
+        ],
+        "share_s_hp_zero": 0.0,
+        "share_s_hp_zero_ci95": [
+          0.0,
+          0.0
+        ]
+      },
+      {
+        "act": 2,
+        "hp_fraction_band": "<0.3",
+        "mean_gold_hp_equivalent_per_gold": {
+          "ci95": [
+            0.006721641210056554,
+            0.032081624528519044
+          ],
+          "mean": 0.018024119686361924,
+          "n": 15,
+          "seeds": 9
+        },
+        "mean_max_hp_hp_equivalent": {
+          "ci95": [
+            0.7528422336854372,
+            2.715392912315655
+          ],
+          "mean": 1.75223969882362,
+          "n": 15,
+          "seeds": 9
+        },
+        "mean_potion_hp_equivalent": {
+          "ci95": [
+            1.1482876582004935,
+            6.755179911087293
+          ],
+          "mean": 4.1991586130735765,
+          "n": 10,
+          "seeds": 7
+        },
+        "mean_s_hp": {
+          "ci95": [
+            0.0018731615153767252,
+            0.0038258717772345473
+          ],
+          "mean": 0.002739218161808136,
+          "n": 15,
+          "seeds": 9
+        },
+        "median_longest_flat_run_hp": 4.0,
+        "median_longest_flat_run_hp_ci95": [
+          4.0,
+          5.0
+        ],
+        "n": 15,
+        "room_type": "monster",
+        "share_monotone": 0.6,
+        "share_monotone_ci95": [
+          0.3333333333333333,
+          0.8666666666666667
+        ],
+        "share_s_hp_zero": 0.0,
+        "share_s_hp_zero_ci95": [
+          0.0,
+          0.0
+        ]
+      },
+      {
+        "act": 2,
+        "hp_fraction_band": ">0.6",
+        "mean_gold_hp_equivalent_per_gold": {
+          "ci95": [
+            0.02730010547902153,
+            0.26674930221163295
+          ],
+          "mean": 0.12327310123955952,
+          "n": 73,
+          "seeds": 73
+        },
+        "mean_max_hp_hp_equivalent": {
+          "ci95": [
+            0.9057413720135328,
+            4.05957645425243
+          ],
+          "mean": 2.298241086905113,
+          "n": 73,
+          "seeds": 73
+        },
+        "mean_potion_hp_equivalent": {
+          "ci95": [
+            3.760204102263076,
+            24.10589115440291
+          ],
+          "mean": 10.874161360640889,
+          "n": 59,
+          "seeds": 59
+        },
+        "mean_s_hp": {
+          "ci95": [
+            0.0018611100732866823,
+            0.003092938159317829
+          ],
+          "mean": 0.002467748099196089,
+          "n": 74,
+          "seeds": 74
+        },
+        "median_longest_flat_run_hp": 4.0,
+        "median_longest_flat_run_hp_ci95": [
+          4.0,
+          4.0
+        ],
+        "n": 74,
+        "room_type": "boss",
+        "share_monotone": 0.5405405405405406,
+        "share_monotone_ci95": [
+          0.43243243243243246,
+          0.6489864864864847
+        ],
+        "share_s_hp_zero": 0.0,
+        "share_s_hp_zero_ci95": [
+          0.0,
+          0.0
+        ]
+      },
+      {
+        "act": 2,
+        "hp_fraction_band": ">0.6",
+        "mean_gold_hp_equivalent_per_gold": {
+          "ci95": [
+            0.04443131336598672,
+            0.11437626280918627
+          ],
+          "mean": 0.07915530624775044,
+          "n": 216,
+          "seeds": 108
+        },
+        "mean_max_hp_hp_equivalent": {
+          "ci95": [
+            1.3348528993742967,
+            3.577598492783667
+          ],
+          "mean": 2.360832793707661,
+          "n": 216,
+          "seeds": 108
+        },
+        "mean_potion_hp_equivalent": {
+          "ci95": [
+            3.086873355075468,
+            9.04428696426063
+          ],
+          "mean": 5.453659924743509,
+          "n": 189,
+          "seeds": 97
+        },
+        "mean_s_hp": {
+          "ci95": [
+            0.002272364742896037,
+            0.0029497175944719393
+          ],
+          "mean": 0.0025940131704646867,
+          "n": 220,
+          "seeds": 108
+        },
+        "median_longest_flat_run_hp": 4.0,
+        "median_longest_flat_run_hp_ci95": [
+          4.0,
+          4.0
+        ],
+        "n": 220,
+        "room_type": "elite",
+        "share_monotone": 0.6818181818181818,
+        "share_monotone_ci95": [
+          0.5990107442348008,
+          0.7555555555555555
+        ],
+        "share_s_hp_zero": 0.00909090909090909,
+        "share_s_hp_zero_ci95": [
+          0.0,
+          0.022935779816513763
+        ]
+      },
+      {
+        "act": 2,
+        "hp_fraction_band": ">0.6",
+        "mean_gold_hp_equivalent_per_gold": {
+          "ci95": [
+            0.07682099402109945,
+            0.14060666715000741
+          ],
+          "mean": 0.10495647709858104,
+          "n": 529,
+          "seeds": 128
+        },
+        "mean_max_hp_hp_equivalent": {
+          "ci95": [
+            -3.1876439823416405,
+            2.1080772489310546
+          ],
+          "mean": 0.14950828418921777,
+          "n": 529,
+          "seeds": 128
+        },
+        "mean_potion_hp_equivalent": {
+          "ci95": [
+            4.620556063649707,
+            11.620680000427424
+          ],
+          "mean": 7.528139549322758,
+          "n": 475,
+          "seeds": 123
+        },
+        "mean_s_hp": {
+          "ci95": [
+            0.0020086434216566493,
+            0.002471502962241361
+          ],
+          "mean": 0.0022352786820682724,
+          "n": 561,
+          "seeds": 128
+        },
+        "median_longest_flat_run_hp": 5.0,
+        "median_longest_flat_run_hp_ci95": [
+          5.0,
+          5.0
+        ],
+        "n": 561,
+        "room_type": "monster",
+        "share_monotone": 0.6185383244206774,
+        "share_monotone_ci95": [
+          0.5553493647912886,
+          0.68007185828877
+        ],
+        "share_s_hp_zero": 0.0106951871657754,
+        "share_s_hp_zero_ci95": [
+          0.0017729711918659386,
+          0.023809523809523808
+        ]
+      },
+      {
+        "act": 3,
+        "hp_fraction_band": "0.3-0.6",
+        "mean_gold_hp_equivalent_per_gold": {
+          "ci95": [
+            -0.006989372893826559,
+            0.043997579727511636
+          ],
+          "mean": 0.01605906752296222,
+          "n": 35,
+          "seeds": 31
+        },
+        "mean_max_hp_hp_equivalent": {
+          "ci95": [
+            -0.055336813064546575,
+            1.7143135122431217
+          ],
+          "mean": 0.9535438409684919,
+          "n": 35,
+          "seeds": 31
+        },
+        "mean_potion_hp_equivalent": {
+          "ci95": [
+            1.1990067332115049,
+            3.0631725813689297
+          ],
+          "mean": 2.126452563294689,
+          "n": 26,
+          "seeds": 24
+        },
+        "mean_s_hp": {
+          "ci95": [
+            0.005115418030315428,
+            0.007516142526474432
+          ],
+          "mean": 0.006280114981223148,
+          "n": 35,
+          "seeds": 31
+        },
+        "median_longest_flat_run_hp": 4.0,
+        "median_longest_flat_run_hp_ci95": [
+          3.0,
+          4.0
+        ],
+        "n": 35,
+        "room_type": "elite",
+        "share_monotone": 0.5714285714285714,
+        "share_monotone_ci95": [
+          0.3939393939393939,
+          0.7298688394276622
+        ],
+        "share_s_hp_zero": 0.0,
+        "share_s_hp_zero_ci95": [
+          0.0,
+          0.0
+        ]
+      },
+      {
+        "act": 3,
+        "hp_fraction_band": "0.3-0.6",
+        "mean_gold_hp_equivalent_per_gold": {
+          "ci95": [
+            -0.012852912188274498,
+            0.052258345158120646
+          ],
+          "mean": 0.01727296824202882,
+          "n": 32,
+          "seeds": 26
+        },
+        "mean_max_hp_hp_equivalent": {
+          "ci95": [
+            -0.8767155022952805,
+            1.7000205263201067
+          ],
+          "mean": 0.4471427265477338,
+          "n": 32,
+          "seeds": 26
+        },
+        "mean_potion_hp_equivalent": {
+          "ci95": [
+            0.7008480522427749,
+            2.6700321339609534
+          ],
+          "mean": 1.612635020740518,
+          "n": 28,
+          "seeds": 22
+        },
+        "mean_s_hp": {
+          "ci95": [
+            0.0046486613280014065,
+            0.009306808772351422
+          ],
+          "mean": 0.006973805083456282,
+          "n": 32,
+          "seeds": 26
+        },
+        "median_longest_flat_run_hp": 4.0,
+        "median_longest_flat_run_hp_ci95": [
+          3.0,
+          4.0
+        ],
+        "n": 32,
+        "room_type": "monster",
+        "share_monotone": 0.53125,
+        "share_monotone_ci95": [
+          0.34480064655172415,
+          0.7188846982758613
+        ],
+        "share_s_hp_zero": 0.0,
+        "share_s_hp_zero_ci95": [
+          0.0,
+          0.0
+        ]
+      },
+      {
+        "act": 3,
+        "hp_fraction_band": "<0.3",
+        "mean_gold_hp_equivalent_per_gold": {
+          "ci95": [
+            -0.008571591755229792,
+            0.07724960212159257
+          ],
+          "mean": 0.0375112493696147,
+          "n": 11,
+          "seeds": 10
+        },
+        "mean_max_hp_hp_equivalent": {
+          "ci95": [
+            0.2526967974512903,
+            2.0983722391172344
+          ],
+          "mean": 1.1574763342396337,
+          "n": 11,
+          "seeds": 10
+        },
+        "mean_potion_hp_equivalent": {
+          "ci95": [
+            1.1892632046233214,
+            5.854181204912933
+          ],
+          "mean": 3.1419548453131707,
+          "n": 8,
+          "seeds": 7
+        },
+        "mean_s_hp": {
+          "ci95": [
+            0.002528435342231892,
+            0.005997647319507345
+          ],
+          "mean": 0.00430377382702238,
+          "n": 11,
+          "seeds": 10
+        },
+        "median_longest_flat_run_hp": 4.0,
+        "median_longest_flat_run_hp_ci95": [
+          3.0,
+          5.0
+        ],
+        "n": 11,
+        "room_type": "elite",
+        "share_monotone": 0.45454545454545453,
+        "share_monotone_ci95": [
+          0.2,
+          0.7272727272727273
+        ],
+        "share_s_hp_zero": 0.0,
+        "share_s_hp_zero_ci95": [
+          0.0,
+          0.0
+        ]
+      },
+      {
+        "act": 3,
+        "hp_fraction_band": "<0.3",
+        "mean_gold_hp_equivalent_per_gold": {
+          "ci95": [
+            -0.010139541780228264,
+            0.09162544751381038
+          ],
+          "mean": 0.027466429779633133,
+          "n": 13,
+          "seeds": 11
+        },
+        "mean_max_hp_hp_equivalent": {
+          "ci95": [
+            0.4555301330172731,
+            3.20911426834643
+          ],
+          "mean": 1.6463554518523955,
+          "n": 13,
+          "seeds": 11
+        },
+        "mean_potion_hp_equivalent": {
+          "ci95": [
+            1.7840587989197592,
+            4.974923847688983
+          ],
+          "mean": 3.3670092000686194,
+          "n": 12,
+          "seeds": 10
+        },
+        "mean_s_hp": {
+          "ci95": [
+            0.0036715332110959,
+            0.008170766883373105
+          ],
+          "mean": 0.005661522680106009,
+          "n": 13,
+          "seeds": 11
+        },
+        "median_longest_flat_run_hp": 4.0,
+        "median_longest_flat_run_hp_ci95": [
+          4.0,
+          6.0
+        ],
+        "n": 13,
+        "room_type": "monster",
+        "share_monotone": 0.5384615384615384,
+        "share_monotone_ci95": [
+          0.2727272727272727,
+          0.7857142857142857
+        ],
+        "share_s_hp_zero": 0.0,
+        "share_s_hp_zero_ci95": [
+          0.0,
+          0.0
+        ]
+      },
+      {
+        "act": 3,
+        "hp_fraction_band": ">0.6",
+        "mean_gold_hp_equivalent_per_gold": {
+          "ci95": [
+            1.290339222760058e-05,
+            0.0719581114448555
+          ],
+          "mean": 0.032700729400915854,
+          "n": 199,
+          "seeds": 102
+        },
+        "mean_max_hp_hp_equivalent": {
+          "ci95": [
+            1.1694897487645153,
+            3.6341826868991296
+          ],
+          "mean": 2.2070770738419396,
+          "n": 199,
+          "seeds": 102
+        },
+        "mean_potion_hp_equivalent": {
+          "ci95": [
+            2.7376902113849906,
+            5.183778232781016
+          ],
+          "mean": 3.836860180769782,
+          "n": 181,
+          "seeds": 92
+        },
+        "mean_s_hp": {
+          "ci95": [
+            0.0020520722165065955,
+            0.0029042084490714212
+          ],
+          "mean": 0.0024748144632118886,
+          "n": 205,
+          "seeds": 103
+        },
+        "median_longest_flat_run_hp": 4.0,
+        "median_longest_flat_run_hp_ci95": [
+          4.0,
+          4.0
+        ],
+        "n": 205,
+        "room_type": "elite",
+        "share_monotone": 0.7024390243902439,
+        "share_monotone_ci95": [
+          0.6199878048780488,
+          0.7815690185523406
+        ],
+        "share_s_hp_zero": 0.00975609756097561,
+        "share_s_hp_zero_ci95": [
+          0.0,
+          0.025252525252525252
+        ]
+      },
+      {
+        "act": 3,
+        "hp_fraction_band": ">0.6",
+        "mean_gold_hp_equivalent_per_gold": {
+          "ci95": [
+            0.012450998755498993,
+            0.15260667313216042
+          ],
+          "mean": 0.07537993719785636,
+          "n": 505,
+          "seeds": 117
+        },
+        "mean_max_hp_hp_equivalent": {
+          "ci95": [
+            -5.81840085866145,
+            2.4545325499319994
+          ],
+          "mean": -0.5586876192942769,
+          "n": 505,
+          "seeds": 117
+        },
+        "mean_potion_hp_equivalent": {
+          "ci95": [
+            3.7534823782366655,
+            17.092332210000702
+          ],
+          "mean": 8.62798699765515,
+          "n": 441,
+          "seeds": 108
+        },
+        "mean_s_hp": {
+          "ci95": [
+            0.0016907440678877793,
+            0.0023526478584240925
+          ],
+          "mean": 0.0020153515682207247,
+          "n": 536,
+          "seeds": 119
+        },
+        "median_longest_flat_run_hp": 4.0,
+        "median_longest_flat_run_hp_ci95": [
+          4.0,
+          4.0
+        ],
+        "n": 536,
+        "room_type": "monster",
+        "share_monotone": 0.6119402985074627,
+        "share_monotone_ci95": [
+          0.5447939068100359,
+          0.6744647296868388
+        ],
+        "share_s_hp_zero": 0.009328358208955223,
+        "share_s_hp_zero_ci95": [
+          0.0,
+          0.023680497387419723
+        ]
+      }
+    ]
+  },
+  "q2": {
+    "conclusion": "No reviewed intervention directly identifies v_win's causal HP slope.",
+    "existing_interventional_evidence_review": [
+      {
+        "bounds_v_win_hp_slope": false,
+        "finding": "The trainer reports model-space P(win) changes after increasing curHp by 30% of maxHp, clamped to maxHp, stratified by HP band.",
+        "item": "train_winrate.py synthetic +30%-maxHP probe",
+        "reason": "It is a synthetic feature perturbation of the fitted model, not a held-out outcome intervention or a matched native continuation."
+      },
+      {
+        "bounds_v_win_hp_slope": false,
+        "finding": "Verified repository path trains on paired downstream gate-score differences for out-of-combat actions.",
+        "item": "datagen3 / rest_cf paired outcomes",
+        "reason": "Rest-versus-upgrade jointly changes HP and progression; it identifies an action contrast, not a controlled HP derivative of this classifier."
+      },
+      {
+        "bounds_v_win_hp_slope": false,
+        "finding": "Verified terminal bonus experiment was null on win rate and cost 3.1x at the recorded setup.",
+        "item": "TERM_WIN \u00a7109/\u00a7116",
+        "reason": "It intervenes on the search policy by adding a tree bonus; it does not perturb terminal HP while holding the other state fixed."
+      },
+      {
+        "bounds_v_win_hp_slope": false,
+        "finding": "Verified paired route-action continuations exist.",
+        "item": "pathcfgen \u00a763",
+        "reason": "Route branches alter path, rewards, and later states together; they do not isolate terminal HP."
+      },
+      {
+        "bounds_v_win_hp_slope": false,
+        "finding": "No repository artifact found that resumes matched captured states under only an HP offset.",
+        "item": "Open question",
+        "reason": "A controlled continuation intervention remains to be run in a separate authorized study."
+      }
+    ],
+    "historical_split_claim_review": {
+      "artifact_caveat": "The tracked model file matches the original exported build/v_win_trees.txt blob, but the exact model artifact used for the historical \u00a7109-110 run is not provenance-bound there. Do not rewrite that historical run's result from this audit.",
+      "claim_location": "docs/experiments/ledger-04.md \u00a7\u00a7109-110",
+      "current_enum_correction": "r116 is Neow's Lament; r131 is Thread and Needle.",
+      "feature_encoding_source": "apps/one_combat/run_features.cpp:90-94 encodes relic fields as 1 + counter when present; thresholds above 1.0 therefore distinguish counter values for counter relics.",
+      "finding": "The current tracked 1060-tree artifact has counter-value thresholds above 1.0 on multiple relic features; the historical zero-split statement does not describe this tracked artifact."
+    },
+    "proposed_test": {
+      "captured_states": 8,
+      "cost_basis": "Inference: 96 x 38 CPU-s per continuation using the \u00a7340 approx 38 CPU-s/run reference; exact replay cost is unmeasured.",
+      "cpu_cost_upper_bound_minutes": 60.8,
+      "execution": "seed_guard.sh only; do not execute as part of this audit",
+      "hp_offsets": [
+        -10,
+        0,
+        10
+      ],
+      "matched_continuation_seeds_per_state": 4,
+      "trajectories": 96
+    },
+    "tracked_model_counter_relic_splits": [
+      {
+        "counter_value_split_count_threshold_gt_1": 8,
+        "feature_present_in_model": true,
+        "relic_id": 26,
+        "relic_name_current_enum": "Happy Flower",
+        "split_count": 210,
+        "split_threshold_counts": [
+          {
+            "count": 202,
+            "threshold": 1.0
+          },
+          {
+            "count": 6,
+            "threshold": 2.0
+          },
+          {
+            "count": 2,
+            "threshold": 3.0
+          }
+        ]
+      },
+      {
+        "counter_value_split_count_threshold_gt_1": 26,
+        "feature_present_in_model": true,
+        "relic_id": 30,
+        "relic_name_current_enum": "Incense Burner",
+        "split_count": 213,
+        "split_threshold_counts": [
+          {
+            "count": 187,
+            "threshold": 1.0
+          },
+          {
+            "count": 13,
+            "threshold": 2.0
+          },
+          {
+            "count": 10,
+            "threshold": 3.0
+          },
+          {
+            "count": 3,
+            "threshold": 4.0
+          }
+        ]
+      },
+      {
+        "counter_value_split_count_threshold_gt_1": 39,
+        "feature_present_in_model": true,
+        "relic_id": 31,
+        "relic_name_current_enum": "Ink Bottle",
+        "split_count": 211,
+        "split_threshold_counts": [
+          {
+            "count": 172,
+            "threshold": 1.0
+          },
+          {
+            "count": 23,
+            "threshold": 2.0
+          },
+          {
+            "count": 9,
+            "threshold": 3.0
+          },
+          {
+            "count": 4,
+            "threshold": 4.0
+          },
+          {
+            "count": 1,
+            "threshold": 5.0
+          },
+          {
+            "count": 1,
+            "threshold": 6.0
+          },
+          {
+            "count": 1,
+            "threshold": 8.0
+          }
+        ]
+      },
+      {
+        "counter_value_split_count_threshold_gt_1": 0,
+        "feature_present_in_model": false,
+        "relic_id": 32,
+        "relic_name_current_enum": "Inserter",
+        "split_count": 0,
+        "split_threshold_counts": []
+      },
+      {
+        "counter_value_split_count_threshold_gt_1": 0,
+        "feature_present_in_model": true,
+        "relic_id": 35,
+        "relic_name_current_enum": "Lizard Tail",
+        "split_count": 106,
+        "split_threshold_counts": [
+          {
+            "count": 106,
+            "threshold": 1.0
+          }
+        ]
+      },
+      {
+        "counter_value_split_count_threshold_gt_1": 60,
+        "feature_present_in_model": true,
+        "relic_id": 44,
+        "relic_name_current_enum": "Nunchaku",
+        "split_count": 205,
+        "split_threshold_counts": [
+          {
+            "count": 145,
+            "threshold": 1.0
+          },
+          {
+            "count": 39,
+            "threshold": 2.0
+          },
+          {
+            "count": 7,
+            "threshold": 3.0
+          },
+          {
+            "count": 7,
+            "threshold": 4.0
+          },
+          {
+            "count": 2,
+            "threshold": 5.0
+          },
+          {
+            "count": 2,
+            "threshold": 6.0
+          },
+          {
+            "count": 3,
+            "threshold": 7.0
+          }
+        ]
+      },
+      {
+        "counter_value_split_count_threshold_gt_1": 100,
+        "feature_present_in_model": true,
+        "relic_id": 46,
+        "relic_name_current_enum": "Omamori",
+        "split_count": 208,
+        "split_threshold_counts": [
+          {
+            "count": 108,
+            "threshold": 1.0
+          },
+          {
+            "count": 63,
+            "threshold": 2.0
+          },
+          {
+            "count": 37,
+            "threshold": 3.0
+          }
+        ]
+      },
+      {
+        "counter_value_split_count_threshold_gt_1": 27,
+        "feature_present_in_model": true,
+        "relic_id": 52,
+        "relic_name_current_enum": "Pen Nib",
+        "split_count": 298,
+        "split_threshold_counts": [
+          {
+            "count": 271,
+            "threshold": 1.0
+          },
+          {
+            "count": 5,
+            "threshold": 2.0
+          },
+          {
+            "count": 6,
+            "threshold": 3.0
+          },
+          {
+            "count": 2,
+            "threshold": 4.0
+          },
+          {
+            "count": 8,
+            "threshold": 5.0
+          },
+          {
+            "count": 2,
+            "threshold": 6.0
+          },
+          {
+            "count": 1,
+            "threshold": 7.0
+          },
+          {
+            "count": 3,
+            "threshold": 8.0
+          }
+        ]
+      },
+      {
+        "counter_value_split_count_threshold_gt_1": 11,
+        "feature_present_in_model": true,
+        "relic_id": 68,
+        "relic_name_current_enum": "Sundial",
+        "split_count": 169,
+        "split_threshold_counts": [
+          {
+            "count": 158,
+            "threshold": 1.0
+          },
+          {
+            "count": 10,
+            "threshold": 2.0
+          },
+          {
+            "count": 1,
+            "threshold": 3.0
+          }
+        ]
+      },
+      {
+        "counter_value_split_count_threshold_gt_1": 0,
+        "feature_present_in_model": true,
+        "relic_id": 116,
+        "relic_name_current_enum": "Neow's Lament",
+        "split_count": 234,
+        "split_threshold_counts": [
+          {
+            "count": 234,
+            "threshold": 1.0
+          }
+        ]
+      },
+      {
+        "counter_value_split_count_threshold_gt_1": 0,
+        "feature_present_in_model": true,
+        "relic_id": 131,
+        "relic_name_current_enum": "Thread and Needle",
+        "split_count": 169,
+        "split_threshold_counts": [
+          {
+            "count": 169,
+            "threshold": 1.0
+          }
+        ]
+      }
+    ]
+  },
+  "q3_calibration": {
+    "baseline_brier_at_row_prevalence": 0.18664174619145768,
+    "brier_score_raw_rows": {
+      "ci95": [
+        0.21269067834208824,
+        0.253752927888459
+      ],
+      "mean": 0.23232593639470217,
+      "n": 3069,
+      "seeds": 128
+    },
+    "mean_predicted_probability_across_raw_rows": {
+      "ci95": [
+        0.5171615126850205,
+        0.5710060160979085
+      ],
+      "mean": 0.5447384351221629,
+      "n": 3069,
+      "seeds": 128
+    },
+    "observed_row_win_rate": {
+      "ci95": [
+        0.6764607612287067,
+        0.8221732748816242
+      ],
+      "mean": 0.7517106549364614,
+      "n": 3069,
+      "seeds": 128
+    },
+    "observed_run_win_rate_equal_seed_weight": {
+      "ci95": [
+        0.640625,
+        0.796875
+      ],
+      "mean": 0.71875,
+      "seeds": 128
+    },
+    "warning": "128 run seeds provide weak calibration power; rows within a seed are correlated."
+  },
+  "q4": {
+    "delta_probability_regression": {
+      "capacity_values": [
+        3,
+        5
+      ],
+      "coefficient_interpretation": "descriptive conditional on this cohort's observed potion-capacity mix; potionCount and slot slack are fit simultaneously as preregistered after capacities 3 and 5 were observed.",
+      "design_columns": 5,
+      "design_rank_deficient": false,
+      "hp_equivalent_reference_mean_s_hp": 0.0019498412157791282,
+      "r_squared": 0.0477599322193879,
+      "rank": 5,
+      "rank_deficient_linear_combinations": [],
+      "singular_values": [
+        12136.753640573763,
+        2556.4972285048034,
+        79.10540522021638,
+        37.049000989387736,
+        6.906160833373928
+      ],
+      "terms": [
+        {
+          "ci95": [
+            0.02402875685246203,
+            0.04327723452294865
+          ],
+          "coefficient_delta_probability_per_unit": 0.033663790579698157,
+          "max_absolute_hp_equivalent_range_from_ci": null,
+          "observed_range": null,
+          "term": "intercept"
+        },
+        {
+          "ci95": [
+            -0.00041908491518753184,
+            -0.00026313001449253476
+          ],
+          "coefficient_delta_probability_per_unit": -0.00033574810125395593,
+          "max_absolute_hp_equivalent_range_from_ci": 26.651672486310062,
+          "observed_range": 124.0,
+          "term": "curHp"
+        },
+        {
+          "ci95": [
+            -0.0034346622481110623,
+            0.0014419941094722805
+          ],
+          "coefficient_delta_probability_per_unit": -0.000966495295588208,
+          "max_absolute_hp_equivalent_range_from_ci": 8.807543456143994,
+          "observed_range": 5.0,
+          "term": "potionCount"
+        },
+        {
+          "ci95": [
+            -0.00034638877438291645,
+            0.004547538627509129
+          ],
+          "coefficient_delta_probability_per_unit": 0.0021348125193969255,
+          "max_absolute_hp_equivalent_range_from_ci": 11.661305009628691,
+          "observed_range": 5.0,
+          "term": "potion_slot_slack"
+        },
+        {
+          "ci95": [
+            -1.9365816963550095e-05,
+            -1.5436792842627468e-06
+          ],
+          "coefficient_delta_probability_per_unit": -1.022381857756919e-05,
+          "max_absolute_hp_equivalent_range_from_ci": 15.543575190990852,
+          "observed_range": 1565.0,
+          "term": "gold"
+        }
+      ]
+    },
+    "n_matched_pairs": 2706,
+    "pairs_by_room": [
+      {
+        "mean_delta_probability_post_minus_raw": {
+          "ci95": [
+            0.0017717610958738177,
+            0.002838827692540655
+          ],
+          "mean": 0.002290811333062161,
+          "n": 1764,
+          "seeds": 128
+        },
+        "n_pairs": 1764,
+        "room_type": "monster",
+        "sd_delta_probability": 0.010601304075211194
+      },
+      {
+        "mean_delta_probability_post_minus_raw": {
+          "ci95": [
+            0.01818467068097208,
+            0.02491742330303194
+          ],
+          "mean": 0.02149136990059038,
+          "n": 708,
+          "seeds": 128
+        },
+        "n_pairs": 708,
+        "room_type": "elite",
+        "sd_delta_probability": 0.05445238675853249
+      },
+      {
+        "mean_delta_probability_post_minus_raw": {
+          "ci95": [
+            0.035895973544712204,
+            0.04589839996153607
+          ],
+          "mean": 0.04076973645287138,
+          "n": 234,
+          "seeds": 128
+        },
+        "n_pairs": 234,
+        "room_type": "boss",
+        "sd_delta_probability": 0.039340138673989104
+      }
+    ],
+    "potion_hp_equivalent_by_slot_slack": {
+      "difference_available_minus_full_ci95": [
+        6.712997734006125,
+        12.986537189140034
+      ],
+      "difference_available_minus_full_mean": 9.337412348847622,
+      "seeds_in_paired_bootstrap": 102,
+      "slack_at_least_one_mean": {
+        "ci95": [
+          7.386347316649475,
+          12.444110429704224
+        ],
+        "mean": 9.556738033367944,
+        "n": 1545,
+        "seeds": 128
+      },
+      "slack_at_least_one_n": 1545,
+      "slack_zero_mean": {
+        "ci95": [
+          0.20769358366230795,
+          1.1136700728959383
+        ],
+        "mean": 0.6114230822760801,
+        "n": 711,
+        "seeds": 102
+      },
+      "slack_zero_n": 711
+    }
+  },
+  "q5": {
+    "act_exchange_rates": [
+      {
+        "act": 1,
+        "mean_potion_hp_equivalent": {
+          "ci95": [
+            8.351638917665792,
+            26.474019603834005
+          ],
+          "mean": 15.592404877950914,
+          "n": 629,
+          "seeds": 124
+        },
+        "mean_s_hp": {
+          "ci95": [
+            0.000576202640057348,
+            0.0007670410029014214
+          ],
+          "mean": 0.0006746989695308083,
+          "n": 1232,
+          "seeds": 128
+        },
+        "n": 1232
+      },
+      {
+        "act": 2,
+        "mean_potion_hp_equivalent": {
+          "ci95": [
+            4.8561178067994115,
+            29.76333492719918
+          ],
+          "mean": 13.550810506293736,
+          "n": 824,
+          "seeds": 125
+        },
+        "mean_s_hp": {
+          "ci95": [
+            0.0020383481501279614,
+            0.0025244058665749745
+          ],
+          "mean": 0.002273768374674235,
+          "n": 1005,
+          "seeds": 128
+        },
+        "n": 1005
+      },
+      {
+        "act": 3,
+        "mean_potion_hp_equivalent": {
+          "ci95": [
+            3.1855805215365134,
+            5.969964302762741
+          ],
+          "mean": 4.454001096814261,
+          "n": 695,
+          "seeds": 110
+        },
+        "mean_s_hp": {
+          "ci95": [
+            0.0019771602115161626,
+            0.0027395390049184958
+          ],
+          "mean": 0.0023553679888688446,
+          "n": 832,
+          "seeds": 119
+        },
+        "n": 832
+      }
+    ],
+    "classification": "E2c T-fair HIDDEN_FUTURE set; bossId retained as observable/trackable",
+    "hidden_fields_absent_from_model": [],
+    "hidden_fields_zeroed": [
+      "nextEliteId",
+      "nextFight0",
+      "nextFight1",
+      "nextFight2",
+      "remElites",
+      "remFights",
+      "monOffset",
+      "eliteOffset"
+    ],
+    "out_of_distribution_caveat": "Zeroing hidden future fields is the specified offline fallback, not the historical resampling substitute; these feature combinations may be out of distribution.",
+    "spearman_recorded_vs_fair_potion_hp_equivalent": {
+      "n": 2122,
+      "rho": 0.8728721594020749
+    },
+    "spearman_recorded_vs_fair_s_hp": {
+      "n": 3069,
+      "rho": 0.9343848700424641
+    },
+    "substitute": "zero"
+  },
+  "q6": {
+    "latency": {
+      "calls": 20000,
+      "median_us": 21.761,
+      "p95_us": 31.249,
+      "sink": 3014.372814
+    },
+    "latency_method": "Release -O3/-DNDEBUG direct CompactTreeNet::predict call on the same native class used by g_winNet; 20,000-call per-call timings.",
+    "scope_note": "potionCapacity varies across runs (3 and 5 observed) but is not changed during BattleContext::exitBattle (copied into BattleContext at third_party/silver_lightspeed/src/combat/BattleContext.cpp:47 and omitted from its exit transfer at :488-502); static progression, hidden-future, path, and bottled-card features are unchanged between victorious endings of one combat.",
+    "within_combat_vwin_inputs": [
+      {
+        "candidates": [
+          "curHp"
+        ],
+        "features": [
+          "curHp"
+        ],
+        "reason": "combat HP is copied to GameContext and victory relics can heal at exit",
+        "sources": [
+          "third_party/silver_lightspeed/src/combat/BattleContext.cpp:494",
+          "third_party/silver_lightspeed/src/combat/BattleContext.cpp:598-613"
+        ]
+      },
+      {
+        "candidates": [
+          "maxHp"
+        ],
+        "features": [
+          "maxHp"
+        ],
+        "reason": "Feed raises max HP when it kills a qualifying non-minion",
+        "sources": [
+          "third_party/silver_lightspeed/src/combat/Actions.cpp:979-995",
+          "third_party/silver_lightspeed/src/combat/BattleContext.cpp:495"
+        ]
+      },
+      {
+        "candidates": [
+          "gold"
+        ],
+        "features": [
+          "gold"
+        ],
+        "reason": "Hand of Greed can add gold during combat; combat gold is copied on exit",
+        "sources": [
+          "third_party/silver_lightspeed/src/combat/Actions.cpp:1008-1026",
+          "third_party/silver_lightspeed/src/combat/BattleContext.cpp:496"
+        ]
+      },
+      {
+        "candidates": [
+          "potionCount",
+          "pot10",
+          "pot12",
+          "pot13",
+          "pot14",
+          "pot15",
+          "pot16",
+          "pot17",
+          "pot19",
+          "pot20",
+          "pot21",
+          "pot22",
+          "pot23",
+          "pot24",
+          "pot26",
+          "pot27",
+          "pot29",
+          "pot3",
+          "pot30",
+          "pot31",
+          "pot34",
+          "pot35",
+          "pot36",
+          "pot37",
+          "pot38",
+          "pot39",
+          "pot4",
+          "pot41",
+          "pot42",
+          "pot43",
+          "pot5",
+          "pot6",
+          "pot7",
+          "pot9"
+        ],
+        "features": [
+          "potionCount",
+          "pot10",
+          "pot12",
+          "pot13",
+          "pot14",
+          "pot15",
+          "pot16",
+          "pot17",
+          "pot19",
+          "pot20",
+          "pot21",
+          "pot22",
+          "pot23",
+          "pot24",
+          "pot26",
+          "pot27",
+          "pot29",
+          "pot3",
+          "pot30",
+          "pot31",
+          "pot34",
+          "pot35",
+          "pot36",
+          "pot37",
+          "pot38",
+          "pot39",
+          "pot4",
+          "pot41",
+          "pot42",
+          "pot43",
+          "pot5",
+          "pot6",
+          "pot7",
+          "pot9"
+        ],
+        "reason": "consumed potion slots and their potion IDs are copied from BattleContext",
+        "sources": [
+          "third_party/silver_lightspeed/src/combat/BattleContext.cpp:488-489",
+          "apps/one_combat/run_features.cpp:95-100"
+        ]
+      },
+      {
+        "candidates": [
+          "deckSize",
+          "d243"
+        ],
+        "features": [
+          "deckSize",
+          "d243"
+        ],
+        "reason": "Writhing Mass can add Parasite at exit; richRow derives deckSize and per-card counts",
+        "sources": [
+          "third_party/silver_lightspeed/src/combat/BattleContext.cpp:479-484",
+          "apps/one_combat/run_features.cpp:77-80"
+        ]
+      },
+      {
+        "candidates": [
+          "r26",
+          "r30",
+          "r31",
+          "r35",
+          "r44",
+          "r46",
+          "r52",
+          "r68",
+          "r116"
+        ],
+        "features": [
+          "r26",
+          "r30",
+          "r31",
+          "r35",
+          "r44",
+          "r46",
+          "r52",
+          "r68",
+          "r116"
+        ],
+        "reason": "exitBattle updates these relic counters/removals and their richRow r{id} values",
+        "sources": [
+          "third_party/silver_lightspeed/src/combat/BattleContext.cpp:550-596",
+          "third_party/silver_lightspeed/src/combat/BattleContext.cpp:479-482",
+          "apps/one_combat/run_features.cpp:90-94"
+        ]
+      }
+    ]
+  },
+  "resampling": {
+    "method": "percentile bootstrap over source seeds",
+    "replicates": 2000,
+    "rng_seed": 20260924
+  },
+  "schema_version": "vwin-terminal-pricing-audit-1",
+  "verdict": {
+    "scope": "W1 input readiness only; no gameplay or runtime promotion claim.",
+    "threshold_checks": {
+      "at_least_95_percent_monotone": {
+        "observed": 0.6376669925057021,
+        "pass": false
+      },
+      "median_flat_run_at_most_10_hp": {
+        "observed": 5.0,
+        "pass": true
+      },
+      "positive_hp_and_potion_each_act_with_ci_above_zero": true,
+      "q4_low_effect": true,
+      "q4_r_squared": 0.0477599322193879,
+      "q5_hp_slope_spearman_at_least_0_8": true,
+      "q5_rho": 0.9343848700424641
+    },
+    "verdict": "VWIN_W1_NEEDS_SMOOTHING"
+  }
+}

@@ -1,0 +1,87 @@
+{
+  "analysis_reproducibility": {
+    "bootstrap_seed": 20260924,
+    "byte_identical": true,
+    "first_output": "build/vwin_pricing/audit_final5/results.json",
+    "replicates": 2000,
+    "results_sha256": "c8dc74656f9671c8ac1b1ee4b9880e67e6e53684e1bf5049d519acb7853195f4",
+    "second_output": "build/vwin_pricing/audit_final6/results.json"
+  },
+  "collection_baseline_sha": "5334920f5dc184ba9507ce9a15ed2fd96fd69bec",
+  "environment_and_command": {
+    "common": "STS_SILVER_SEARCH=1 STS_SILVER_ADAPTIVE=1 STS_SILVER_REUSE_CAP_MODE=allocated STS_REUSE_MAX_SEARCHES=32768 STS_SILVER_TELEMETRY=1 STS_FAIR=1 STS_EXECUTABLE_GIT_SHA=5334920f5dc184ba9507ce9a15ed2fd96fd69bec OMP_NUM_THREADS=4",
+    "segment_1": "tools/seed_guard.sh build/linux-gcc-release/one_combat e2cgen 128 1000 0 build/vwin_pricing/e2c_silver_128.csv 3100000",
+    "segment_2": "tools/seed_guard.sh build/linux-gcc-release/one_combat e2cgen 35 1000 0 build/vwin_pricing/e2c_silver_remainder_35.csv 3100093"
+  },
+  "model_path": "models/v_win_trees.txt",
+  "model_sha256": "fc52c14cb7239a33b3c1f9d0477ccb6c895fd51a07240fe804744e605067ad70",
+  "parity_gate": {
+    "max_absolute_probability_difference": 0.0,
+    "mean_absolute_probability_difference": 0.0,
+    "records": 600,
+    "result": "PASS",
+    "tolerance": 0.0001
+  },
+  "primary_population": {
+    "ascension": 0,
+    "combined_data_rows": 5775,
+    "combined_file_sha256": "52cd5ca21f65aaf2d7829c23d10dc9b03e56f53d80586602c6464384bf6e1f75",
+    "duplicate_post_keys": 0,
+    "duplicate_raw_keys": 0,
+    "e2cgen_simulation_argument": 1000,
+    "matched_raw_post_pairs": 2706,
+    "paired_encounter_mismatches": 0,
+    "paired_outcome_mismatches": 0,
+    "paired_room_mismatches": 0,
+    "post_only_rows": 0,
+    "post_rows": 2706,
+    "prior_model_loaded": 0,
+    "prior_note": "Silver telemetry reported no prior model loaded; this is a preregistration deviation.",
+    "raw_only_rows": 363,
+    "raw_rows": 3069,
+    "remainder_35_sidecar_counts": {
+      "completed_seeds": 35,
+      "invalid_or_quarantined_branches": 0,
+      "invalid_or_quarantined_seeds": 0,
+      "rows_written": 1548,
+      "simulator_health_hard_failures": 0
+    },
+    "requested_seeds": 128,
+    "run_outcomes": {
+      "0": 36,
+      "1": 92
+    },
+    "seed_first": 3100000,
+    "seed_label_consistency_max_distinct_labels": 1,
+    "seed_last": 3100127,
+    "segment_1_interruption": "The app/collection process stopped after the CSV represented 93 row-bearing seeds (3100000-3100092). The process did not leave the seed_guard provenance sidecar or final aggregate counters for this segment; do not infer its exact invalid/quarantined or simulator-health totals from the rows.",
+    "segment_2_provenance_sidecar": "remainder_35_provenance.json",
+    "segment_2_schema_sidecar": "remainder_35_schema.json",
+    "segments": [
+      {
+        "data_rows": 4227,
+        "duplicate_seed_fight_boundary": 0,
+        "file": "e2c_silver_128.csv",
+        "line_count": 4228,
+        "post_rows": 1993,
+        "raw_rows": 2234,
+        "seed_max": 3100092,
+        "seed_min": 3100000,
+        "sha256": "9bc84fc5cb6a81e95f8efc1df1f539591e8f30aa7f3a517bc30abd19225cf34b",
+        "unique_seeds": 93
+      },
+      {
+        "data_rows": 1548,
+        "duplicate_seed_fight_boundary": 0,
+        "file": "e2c_silver_remainder_35.csv",
+        "line_count": 1549,
+        "post_rows": 713,
+        "raw_rows": 835,
+        "seed_max": 3100127,
+        "seed_min": 3100093,
+        "sha256": "7b7888427aeaabc5d68572abb16df4ba2d494d69c96ca2d38c5f802243916248",
+        "unique_seeds": 35
+      }
+    ]
+  }
+}

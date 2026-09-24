@@ -663,6 +663,7 @@ add_test(NAME analyze_silver_learned_prefix_scorer
 add_test(NAME analyze_silver_prefix_learning_curve
     COMMAND python3 ${CMAKE_SOURCE_DIR}/tools/test_silver_prefix_learning_curve.py -q)
 add_test(NAME analyze_postcombat_raw_terminal_selftest COMMAND python3 ${CMAKE_SOURCE_DIR}/tools/test_postcombat_raw_terminal_selftest.py)
+add_test(NAME vwin_terminal_pricing_audit_selftest COMMAND python3 ${CMAKE_SOURCE_DIR}/tools/analysis/vwin_terminal_pricing_audit.py --self-test)
 add_test(NAME export_win_model_selftest COMMAND python3 ${CMAKE_SOURCE_DIR}/tools/test_export_win_model_selftest.py)
 add_test(NAME runwin_e2c_native_parity COMMAND ${CMAKE_COMMAND} -E env
     STS_NATIVE_OOC=0
@@ -811,6 +812,7 @@ set_tests_properties(py_compile_parity_test py_compile_analyze_ooc_factor
 set_tests_properties(analyze_silver_reuse_scaling_selftest analyze_silver_vnet_leaf_selftest
     analyze_silver_sticky_quality_selftest analyze_silver_root_diagnostic_selftest
     analyze_silver_adaptive_selftest analyze_silver_staged_selftest analyze_postcombat_raw_terminal_selftest
+    vwin_terminal_pricing_audit_selftest
     PROPERTIES LABELS "research-repro")
 set_property(TEST paired_analysis_selftest check_replay_selftest
     battlecontext_roundtrip issue_fixes APPEND PROPERTY LABELS "smoke")

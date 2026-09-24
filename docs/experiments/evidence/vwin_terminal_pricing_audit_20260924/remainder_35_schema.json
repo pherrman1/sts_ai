@@ -1,0 +1,5 @@
+{
+  "schema_version": "e2c-v2",
+  "raw_primary_retains_incomplete_pairs": true,
+  "matched_arms_require_complete_raw_post_pairs": true
+}
