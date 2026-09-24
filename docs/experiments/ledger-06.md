@@ -11874,7 +11874,42 @@ The support-domain rerun is [recorded separately](evidence/lizard_tail_targeted_
 record the targeted-pool stop and source-grouped comparison; runtime support
 and qualification are unchanged.
 
-## §348 — Silver rollout-cost screen: B faster; original quality screen invalid (2026-09-24 onward)
+### §348 — Silver search ported onto the main engine: 128-seed gate (2026-09-24)
+
+Compared the Silver combat search ported onto the main simulator
+(`SilverSearcher` behind `STS_NATIVE_SILVER=1`, no conversion into the
+vendored model) with the vendored Silver backend on the §340 seed block.
+
+- **Configuration:** Release `one_combat` from commit `f81eabb` on branch
+  `claude/native-silver-searcher`, 4-core container, `bestbench 1000 128 0
+  126700` with `STS_NATIVE_SILVER=1 STS_SILVER_ADAPTIVE=1` (adaptive
+  retained-root policy, 500 → 10,000 simulations). Project-fair, native OOC
+  trees, keys skipped, ascension 0. Baseline: the vendored §340 run on the
+  same seeds (commit `2a602f6`; later commits kept vendored bestbench rows
+  identical at 200 flat simulations).
+- **Port scope:** production search path only (UCB with exploration 25, DPW
+  chance widening 3.7028/0.52389, transposition dedup, reroot with the 32,768
+  node cap, Silver's rollout policy and terminal evaluation). The draw pile
+  uses the information-set `CardPile` built from the combat knowledge
+  tracker; the six RNG streams are reseeded from a public per-battle seed and
+  treated as one chance source. Known gaps: Runic Dome intents are visible to
+  the native search (the vendored model defers them); multi-card selections
+  (Gambling Chip, Purity) are atomic subsets rather than Silver's sequential
+  picks; the vendored reroot repairs (UID swap, hand-order alignment) are
+  replaced by multiset equality plus identity-based action translation.
+- **Gameplay:** native 86/128 wins (67.2%) against vendored 83/128 (64.8%).
+  Paired difference +2.3 pp, normal 95% CI [−6.2, +10.9] pp; discordant seeds
+  17 native-only vs 14 vendored-only (McNemar z = +0.54). Mean floor 47.81 vs
+  48.26. CPU 37.37 vs 38.05 s/run. No seed failures.
+- **Interpretation:** no detectable difference in either direction at 128
+  seeds. **Inference:** the port preserves Silver's playing strength within
+  about ±8 pp; a tighter non-inferiority claim needs more seeds (GCP path).
+- **Artifacts:** [evidence packet](evidence/native_silver_gate_2026-09-24/README.md).
+
+Knowledge impact: combat-search architecture and environment variables record
+the experimental native backend; the vendored Silver backend stays the default.
+
+## §349 — Silver rollout-cost screen: B faster; original quality screen invalid (2026-09-24 onward)
 
 - **Question and baseline:** Can rollout hot-path work be reduced while
   preserving useful fixed-time Silver decisions? The handoff baseline

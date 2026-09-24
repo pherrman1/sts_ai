@@ -51,7 +51,9 @@ namespace sts {
         // every other field.
         bool operator==(const CardManager &rhs) const;
         // As operator==, but the hand is compared as a multiset: search treats
-        // hands that differ only in card order as the same state.
+        // hands that differ only in card order as the same state. Once the draw
+        // pile is in information-set mode the discard and exhaust piles are
+        // compared as multisets too.
         [[nodiscard]] bool equalForSearch(const CardManager &rhs) const;
 
         void init(const GameContext &gc, BattleContext &bc); // returns count of innate cards

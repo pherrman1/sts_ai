@@ -37,6 +37,15 @@ namespace sts::search {
         }
 
         template <typename Pile>
+        std::uint64_t multisetHash(const Pile &pile) {
+            std::uint64_t sum = 0;
+            for (const auto &c : pile) {
+                sum += cardHash(c);
+            }
+            return sum;
+        }
+
+        template <typename Pile>
         void hashPile(std::uint64_t &hash, const Pile &pile) {
             hashCombine(hash, static_cast<int>(pile.size()));
             for (const auto &c : pile) {
@@ -91,8 +100,12 @@ namespace sts::search {
         hashCombine(hash, bc.cards.drawPile.knownTop());
         hashCombine(hash, bc.cards.drawPile.knownBottom());
         hashPile(hash, bc.cards.drawPile);
-        hashPile(hash, bc.cards.discardPile);
-        hashPile(hash, bc.cards.exhaustPile);
+        // Discard and exhaust piles fold in commutatively: search may compare
+        // them as multisets.
+        hashCombine(hash, static_cast<int>(bc.cards.discardPile.size()));
+        hashCombine(hash, multisetHash(bc.cards.discardPile));
+        hashCombine(hash, static_cast<int>(bc.cards.exhaustPile.size()));
+        hashCombine(hash, multisetHash(bc.cards.exhaustPile));
 
         hashCombine(hash, bc.potionCount);
         for (int i = 0; i < bc.potionCapacity; ++i) {

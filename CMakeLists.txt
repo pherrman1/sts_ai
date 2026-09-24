@@ -591,6 +591,7 @@ add_test(NAME combat_knowledge COMMAND $<TARGET_FILE:unit-test> combat_knowledge
 add_test(NAME battle_equality COMMAND $<TARGET_FILE:unit-test> battle_equality)
 add_test(NAME card_pile COMMAND $<TARGET_FILE:unit-test> card_pile)
 add_test(NAME card_pile_engine COMMAND $<TARGET_FILE:unit-test> card_pile_engine)
+add_test(NAME silver_searcher COMMAND $<TARGET_FILE:unit-test> silver_searcher)
 add_test(NAME silver_random_bridge COMMAND $<TARGET_FILE:unit-test> silver_random_bridge)
 add_test(NAME silver_semantic_action COMMAND $<TARGET_FILE:unit-test> silver_semantic_action)
 add_test(NAME silver_searcher_link_closure COMMAND $<TARGET_FILE:silver-native-test>)
@@ -706,6 +707,10 @@ add_test(NAME combat_predictor_input_contract
     COMMAND python3 ${CMAKE_SOURCE_DIR}/tools/test_combat_predictor_input_contract.py -q)
 add_test(NAME combat_transition_contract
     COMMAND python3 ${CMAKE_SOURCE_DIR}/tools/test_combat_transition_contract.py)
+add_test(NAME strategic_tok_state_cache_order_selftest
+    COMMAND python3 -m unittest tools.test_strategic_tok_state_cache)
+set_tests_properties(strategic_tok_state_cache_order_selftest PROPERTIES
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
 add_test(NAME combat_transition_model_experiment_selftest
     COMMAND python3 ${CMAKE_SOURCE_DIR}/tools/test_combat_transition_model_experiment.py)
 add_test(NAME combat_transition_attention_hpo_selftest
@@ -827,7 +832,7 @@ set_tests_properties(paired_analysis_selftest py_compile_parity_test py_compile_
 set_tests_properties(battlecontext_roundtrip designer_in_spire cardqueue_overflow keys_collect
     issue_fixes relic_reward_sapphire thorns_retaliation awakened_one_stage2 darkling_victory
     poison_lose_hp time_eater_exhaust simhealth_gamble_empty_hand gamblers_brew_legality
-    simhealth_selection_failure battle_equality card_pile card_pile_engine
+    simhealth_selection_failure battle_equality card_pile card_pile_engine silver_searcher
     training_integrity PROPERTIES LABELS "core")
 set_tests_properties(vnettest_selftest winnettest_selftest
     e2c_observer_scope combat_knowledge silver_random_bridge silver_semantic_action

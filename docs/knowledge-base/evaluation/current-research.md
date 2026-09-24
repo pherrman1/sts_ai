@@ -1551,7 +1551,7 @@ The experiment-only runtime flag, fixture executable, and searcher hook were
 removed before merging the evidence; no B implementation or opt-in runtime
 path remains.
 
-The separate §348 rollout-cost candidate tested an early energy rejection (A)
+The separate §349 rollout-cost candidate tested an early energy rejection (A)
 and rollout-only unsorted unknown piles (B). A preserved deterministic outputs
 but had no speed gain and was reverted. The original instrumented fixed-work
 screen measured about 11% lower B CPU, but its reported 35/59-versus-40/59
@@ -1578,7 +1578,7 @@ complete-combat gameplay, holdout, or default qualification was run. A separate
 instrumented profile estimated `getIncomingDamage` at 2.6% inclusive, so no
 fragile cache was implemented. Chance duplicate counters were exposed by
 category, but exact support exhaustion was not established. B remains
-experimental and is not qualified for promotion. See [ledger-06 §348](../../experiments/ledger-06.md),
+experimental and is not qualified for promotion. See [ledger-06 §349](../../experiments/ledger-06.md),
 the [corrected follow-up protocol](../../experiments/evidence/silver_rollout_cost_20260924/review_followup/PROTOCOL.md),
 the [follow-up results and raw evidence](../../experiments/evidence/silver_rollout_cost_20260924/review_followup/README.md),
 and the [complete rollout-cost packet](../../experiments/evidence/silver_rollout_cost_20260924/README.md).

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Analyze the independent-teacher and matched first-action §348 screens."""
+"""Analyze the independent-teacher and matched first-action §349 screens."""
 
 from __future__ import annotations
 

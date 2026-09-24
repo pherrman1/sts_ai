@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Prepare the independent search-seed inputs for current ledger §348."""
+"""Prepare the independent search-seed inputs for current ledger §349."""
 
 from __future__ import annotations
 
