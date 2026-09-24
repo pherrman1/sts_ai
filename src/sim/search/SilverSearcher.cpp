@@ -501,6 +501,15 @@ double search::SilverSearcher::rolloutToEnd(BattleContext &bc) {
     while (bc.outcome == Outcome::UNDECIDED) {
         Action action;
         if (bc.inputState == InputState::PLAYER_NORMAL) {
+            // Resolve hidden (Runic Dome) intents with a sampled roll so the
+            // rollout policy blocks against a real move; the tree still models
+            // the hidden intent through its END_TURN chance node.
+            for (int i = 0; i < bc.monsters.monsterCount; ++i) {
+                auto &m = bc.monsters.arr[i];
+                if (m.pendingMoveRolls > 0 && !m.isDeadOrEscaped()) {
+                    m.materializePendingMove(bc);
+                }
+            }
             action = rolloutAgent.chooseBattleCardPlay(bc);
         } else if (bc.inputState == InputState::CARD_SELECT) {
             action = rolloutAgent.chooseBattleCardSelect(bc);
