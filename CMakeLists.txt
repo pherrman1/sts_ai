@@ -5,6 +5,16 @@ project(
         DESCRIPTION "High Performance, rng accurate implementation of Slay the Spire with tools for tree search and ml."
         LANGUAGES CXX)
 
+find_package(OpenSSL QUIET COMPONENTS Crypto)
+if(NOT OpenSSL_FOUND)
+    message(STATUS "OpenSSL Crypto not found; non-CTM targets remain available, CTM runtime targets require OpenSSL")
+endif()
+function(link_ctm_crypto target)
+    if(OpenSSL_FOUND)
+        target_link_libraries(${target} PRIVATE OpenSSL::Crypto)
+    endif()
+endfunction()
+
 enable_testing()
 
 file (GLOB_RECURSE sts_lightspeed_SOURCES CONFIGURE_DEPENDS "src/*.cpp")
@@ -336,11 +346,19 @@ add_executable(one_combat apps/one_combat.cpp apps/combat_model_diagnostics.cpp
     apps/one_combat/ooc_policy.cpp
     apps/one_combat/ooc_v4_encoding.cpp
     apps/one_combat/run_driver.cpp
+    apps/one_combat/run_trace.cpp
+    apps/one_combat/semantic_pilot.cpp
+    apps/one_combat/combat_datasets.cpp
+    apps/one_combat/ooc_factor_eval.cpp
+    apps/one_combat/strategic_gen.cpp
+    apps/one_combat/counterfactual_gen.cpp
     apps/one_combat/ooc_checkpoint_policy.cpp
     $<TARGET_OBJECTS:sts_core_objects>)
 target_include_directories(one_combat PUBLIC include)
 target_include_directories(one_combat PUBLIC json/include)
+target_include_directories(one_combat PRIVATE apps)
 target_link_libraries(one_combat PRIVATE silver_live_backend)
+link_ctm_crypto(one_combat)
 # The isolated model objects contain upstream full-game methods adjacent to
 # the combat methods used by Silver rollout. Their sections are compiled with
 # -ffunction-sections; discard the unreachable OOC closure instead of vendoring
@@ -372,6 +390,7 @@ target_sources(one_combat_advisor PRIVATE
     apps/one_combat/combat_transition_runtime.cpp
     apps/one_combat/combat_transition_native_contract.cpp)
 target_link_libraries(one_combat_advisor PRIVATE sts_core_objects silver_live_backend)
+link_ctm_crypto(one_combat_advisor)
 target_link_options(one_combat_advisor PRIVATE -Wl,--gc-sections)
 target_compile_definitions(one_combat_advisor PRIVATE STS_LIVE_ADVISOR=1)
 add_test(NAME live_advisor_protocol COMMAND python3
@@ -402,6 +421,7 @@ add_executable(test_live_ooc_policy apps/test_live_ooc_policy.cpp
     apps/one_combat/combat_transition_runtime.cpp apps/one_combat/combat_transition_native_contract.cpp
     $<TARGET_OBJECTS:sts_core_objects>)
 target_include_directories(test_live_ooc_policy PRIVATE include json/include apps)
+link_ctm_crypto(test_live_ooc_policy)
 target_compile_definitions(test_live_ooc_policy PRIVATE STS_LIVE_ADVISOR=1)
 add_test(NAME live_ooc_policy COMMAND bash ${CMAKE_SOURCE_DIR}/tools/seed_guard.sh
     $<TARGET_FILE:test_live_ooc_policy> ${CMAKE_SOURCE_DIR}/selfplay/models/ooc_strategic_tok_final.native)
@@ -418,6 +438,7 @@ add_executable(live_ooc_parity_test apps/live_ooc_parity_test.cpp
     apps/one_combat/combat_transition_native_contract.cpp
     $<TARGET_OBJECTS:sts_core_objects>)
 target_include_directories(live_ooc_parity_test PRIVATE include json/include apps)
+link_ctm_crypto(live_ooc_parity_test)
 target_compile_definitions(live_ooc_parity_test PRIVATE STS_LIVE_ADVISOR=1)
 add_test(NAME live_ooc_parity COMMAND bash ${CMAKE_SOURCE_DIR}/tools/seed_guard.sh
     $<TARGET_FILE:live_ooc_parity_test>
@@ -442,6 +463,7 @@ add_executable(live_ctm_importer_test apps/live_ctm_importer_test.cpp
     apps/one_combat/combat_transition_native_contract.cpp
     $<TARGET_OBJECTS:sts_core_objects>)
 target_include_directories(live_ctm_importer_test PRIVATE include json/include)
+link_ctm_crypto(live_ctm_importer_test)
 add_test(NAME live_ctm_importer
     COMMAND $<TARGET_FILE:live_ctm_importer_test>
     ${CMAKE_SOURCE_DIR}/selfplay/models/combat_transition_near_full_except_smoke_v2.native)
@@ -828,6 +850,7 @@ add_executable(combat_transition_runtime_probe tests/combat_transition_runtime_p
     apps/one_combat/combat_predictor_input.cpp apps/one_combat/combat_transition.cpp
     $<TARGET_OBJECTS:sts_core_objects>)
 target_include_directories(combat_transition_runtime_probe PRIVATE include json/include)
+link_ctm_crypto(combat_transition_runtime_probe)
 add_test(NAME combat_transition_native_contract COMMAND python3 -m unittest
     tests.test_combat_transition_native_contract -v)
 set_tests_properties(combat_transition_native_contract PROPERTIES

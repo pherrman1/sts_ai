@@ -30,6 +30,11 @@ tools. `pybind11` builds the optional `slaythespire` Python extension; native
 executables still use the repository without that extension when Python
 development headers are unavailable.
 
+OpenSSL Crypto is optional at configure time. CMake links it to targets that
+compile the CTM runtime when it is available; without it, unrelated targets
+such as `main` still configure and build, while CTM runtime targets require the
+OpenSSL headers and Crypto library.
+
 Submodule checkouts are per worktree. Raw `git worktree add` therefore creates
 a checkout whose dependency directories are initially empty, and raw removal
 of a worktree containing initialized submodules is fragile on Windows Git. Use
@@ -834,5 +839,4 @@ recording.
 - `apps/test.cpp::main`
 - `apps/parity_test.cpp::main`; `parity_test.py`
 - `tools/verify/check_replay.py`
-- `src/sim/search/CombatPVNet.cpp` BLAS initialization
 - `src/sim/search/CombatDistValueNet.cpp` BLAS initialization

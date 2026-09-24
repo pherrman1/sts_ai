@@ -1,6 +1,7 @@
 # Current research status
 
-Last verified: 2026-09-23 for the frozen Silver prior online gameplay screen;
+Last verified: 2026-09-24 for the experimental DeepSets Brew-fallback
+mechanism/timing smoke; 2026-09-23 for the frozen Silver prior online gameplay screen;
 2026-09-21 for the complete frozen Silver internal-node FPU cohort and local 80-source learned-prefix scale validation;
 2026-09-20 for the tactical-prefix Silver oracle headroom screen
 and contextual first-action Silver selector headroom/policy screen; 2026-09-19 for forced-action historical artifact recovery and
@@ -1034,6 +1035,30 @@ export, native parity, runtime change, or gameplay qualification was run.
 See [ledger-06 §339](../../experiments/ledger-06.md), the
 [experiment report](../../experiments/evidence/deepset_potion_blind_2026-09-23.md),
 and its [raw receipt](../../experiments/evidence/deepset_potion_blind_2026-09-23.json).
+
+### Experimental DeepSets CTM with Entropic Brew fallback
+
+An opt-in hybrid implementation now uses the PR #298 W potion-aware specialist
+for predictor-visible pre-combat inputs without Entropic Brew and dispatches
+the whole transition to the current standard Attention CTM whenever Brew is
+present. Specialist parity and hybrid/direct-child state/RNG identity passed on
+the frozen 31-row fixture set. On the same 10 non-Brew fixture rows supported
+by fast DeepSets, median preparation was 3.715 ms standard and 0.491 ms fast
+(7.57x). In the subsequent canonical 64-pair OOC engineering screen at frozen
+source `9ce11fdbe50f32b4b2646dd8a0803c6dc0c3f351`, standard won 40 and hybrid
+39; paired win delta was `-1.56 pp` (95% CI `[-14.06,+10.94] pp`), an
+**inconclusive** quality estimate. Across 1,135,061 OOC hybrid preparations,
+4,219 used Brew fallback (`0.372%`) in this 64-seed cohort. Observed mean
+bestbench elapsed time was lower (641.4 vs 439.7 s/seed), as was mean MCTS CPU
+(139.35 vs 94.85 s/seed); this is
+runtime evidence under changed search trajectories, not a matched-work causal
+estimate. The observed 64-pair difference was small, but its uncertainty still
+includes a sizable win-rate regression. The screen is not equivalence evidence
+or a default-promotion gate. The specialist
+remains offline-rejected; the hybrid remains unqualified and opt-in only. A
+separate larger confirmation is warranted before any promotion. See
+[ledger-06 §342](../../experiments/ledger-06.md) and the
+[mechanism/timing/paired OOC packet](../../experiments/evidence/deepset_entropic_brew_hybrid_2026-09-24/README.md).
 
 ### Qualified DeepSets representation for survival prediction
 

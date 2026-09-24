@@ -36,7 +36,7 @@ LABEL_NAME = "utility R" if TARGET == "utility_r" else "endHp"
 print(f"loading {CSV} ...", flush=True)
 # combat value data is ALL integers (state snapshot + endHp label). Loading as int16
 # features + int32 keys ~halves RAM vs float32 and avoids OOM as the replay window
-# grows (mirrors train_policy.py). Build X and free the frame to cap peak RAM.
+# grows. Build X and free the frame to cap peak RAM.
 _hdr = pd.read_csv(CSV, nrows=0).columns
 dtypes = {c: (np.int32 if c in ("seed", "fightIdx") else np.int16) for c in _hdr}
 df = pd.read_csv(CSV, dtype=dtypes)

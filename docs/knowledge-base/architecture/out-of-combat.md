@@ -254,6 +254,17 @@ reuse, and adaptive-off, preserving the frozen teacher cap contract. The default
 is OFF and does not load a combat artifact or run MCTS. Both arms retain the
 same normal real combat branch and the same fallback OOC policy chain.
 
+An experimental fast combat-transition artifact may declare the Entropic Brew
+fallback contract. When that contract is present,
+`STS_OOC_MCTS_BREW_FALLBACK_MODEL` optionally supplies a separate current-standard
+V2 artifact. The adapter routes the whole transition to that artifact when
+Entropic Brew is present in the pre-combat inventory; it does not switch models
+based on generated outcomes. The fallback's actual SHA256 must equal the pinned
+current-standard artifact `e9a18951710fdfe9e1a81a2703090a41f039067c670a1d8a0393b5e7e8e0ddfd`;
+the runtime also checks source/cohort metadata. Missing or invalid required
+artifacts are fatal. The variable is unset by default, so this experimental
+hybrid is opt-in and does not alter the default OOC path.
+
 `selectOocMctsAction` constructs detached snapshots and uses the existing PUCT,
 progressive widening and depth defaults with `STS_OOC_MCTS_SIMS` (default 512).
 For a native simulator graph, set `STS_OOC_MCTS_GRAPH_FILE` to a fresh JSON path
@@ -756,7 +767,7 @@ reproducible. Round 6 (`§76`) added the remaining screens:
 (`oocOnePlyTreasurePolicy`), `STS_OOC_STRATEGIC_BOSS_RELIC=1`
 (`oocOnePlyBossRelicPolicy`) — all default **off**. The Q
 head is trained on Tier-B one-ply counterfactual labels (`strategicgen2`;
-`apps/one_combat.cpp::runStrategicGenSeed2`). No model is deployed by default:
+`apps/one_combat/strategic_gen.cpp::runStrategicGenSeed2`). No model is deployed by default:
 the one-ply branches are opt-in only
 (`apps/ooc_strategic_net.h::OocStrategicNet`;
 `apps/one_combat/ooc_policy.cpp::oocOnePlyCardRewardPolicy`,
@@ -1029,7 +1040,7 @@ flowchart LR
 - `runtrace` is not a wrapper around `runFullRunOOC`: it prints a diagnostic
   header, skips server-only draft logging when no server is reachable, but still
   omits some fallthrough policy layers and its event/treasure scores are
-  diagnostic (`apps/one_combat.cpp::runTraceRun`, `tr_logDraft`).
+  diagnostic (`apps/one_combat/run_trace.cpp::runTraceRun`, `tr_logDraft`).
 - Model-driven pathing with the old forward-map-blind win model was a recorded
   regression; heuristic pathing remains the operating baseline.
 - Python cannot issue card-by-card combat actions.
