@@ -11519,3 +11519,39 @@ and raw [analysis JSON](evidence/lizard_tail_targeted_rescue_2026-09-23/minimal-
 
 **Knowledge impact:** current research status and development evidence updated;
 production active-Tail qualification remains unchanged.
+
+### §342 — B1-ranked active Lizard candidate-pool extension (2026-09-24)
+
+The frozen 2,700-row precombat pool was rescored with fixed B1
+`P(LOSS_CONSUMED) = 1 - pReserveWin`. Four targeted batches added 347 unique
+paired fights after dropping 35 repeated `(sourceSeed,fightIdx)` rows that
+overlapped the original 128-pair cohort; those repeated replays differed, so
+the original observation was retained. The new rows had 305 `WIN_RETAINED`,
+34 `WIN_CONSUMED`, and eight `LOSS_CONSUMED` outcomes. This raises the distinct
+loss count from five to 13, below the prior target of 20 additional examples.
+First Silver action changed in 136/347 new pairs.
+
+The combined analysis contains 475 unique paired fights, 451 modeled rows from
+124 sources after 24 native exact-boundary exclusions, and 1–4 rows/source
+(median 4). Five-fold q/r CV and source-bootstrap resampling kept all fights
+from each source together. With T2 fixed and not retuned, q/r scored three-class
+NLL `0.3544` / Brier `0.1994`, versus B1 `1.9122` / `0.2158`; q/r minus B1
+source-bootstrap intervals were `[-4.6800,-0.0090]` and `[-0.0303,-0.0024]`.
+These development scores favor the small correction on this targeted cohort,
+but 13 losses do not qualify its rare rescue class.
+
+The 1,611 supported, coherent, unpaired candidates had summed fixed-B1 loss
+mass `1.4045` (mean `0.000872`), below the 12 further cases needed to reach the
+sample target. Batches 2 and 3 added zero losses despite score mass about 6.05
+and 2.35 respectively. Collection stopped because the remaining pool could
+not plausibly provide the target under the fixed selection model, rather than
+because every candidate row was replayed. All four pair manifests had zero
+quarantines and clean conversion/semantic/transaction/knowledge counters. No
+training, export, runtime integration, or support expansion followed;
+`active_unqualified_lizard` remains fail-closed. See the [extension evidence
+packet](evidence/lizard_tail_targeted_rescue_2026-09-23/README.md#b1-ranked-candidate-pool-extension)
+and [combined B1/q/r JSON](evidence/lizard_tail_targeted_rescue_2026-09-23/b1-qr-combined-analysis.json).
+
+**Knowledge impact:** current research status and the experiment evidence now
+record the targeted-pool stop and source-grouped comparison; runtime support
+and qualification are unchanged.

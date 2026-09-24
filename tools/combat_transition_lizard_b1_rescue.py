@@ -41,6 +41,7 @@ def score_candidates(manifest_path: Path, output_path: Path, *, batch: int,
     models = composed.FrozenModels('cuda' if torch.cuda.is_available() else 'cpu')
     excluded = collections.Counter()
     best_by_source: dict[int, dict] = {}
+    remaining_risk_scores: list[float] = []
     for line_no, line in enumerate(candidate_path.read_text().splitlines(), 1):
         if not line:
             continue
@@ -74,6 +75,7 @@ def score_candidates(manifest_path: Path, output_path: Path, *, batch: int,
             continue
         if p_reserve < p_ordinary:
             p_reserve = p_ordinary
+        remaining_risk_scores.append(1.0 - p_reserve)
         input_sha = hashlib.sha256(json.dumps(predictor, sort_keys=True, separators=(',', ':')).encode()).hexdigest()
         state_sha = hashlib.sha256(json.dumps(pre, sort_keys=True, separators=(',', ':')).encode()).hexdigest()
         scored = {
@@ -104,6 +106,10 @@ def score_candidates(manifest_path: Path, output_path: Path, *, batch: int,
         'riskModel': 'fixed B1 mechanical reserve: [pOrdinaryWin, pReserveWin-pOrdinaryWin, 1-pReserveWin]',
         'riskModelHashes': models.hashes, 'riskModelDevice': str(models.device),
         'torchVersion': str(torch.__version__), 'excluded': dict(sorted(excluded.items())),
+        'remainingEligibleCandidates': len(remaining_risk_scores),
+        'remainingPredictedLossConsumedMass': float(sum(remaining_risk_scores)),
+        'remainingMeanPredictedLossConsumed': (float(sum(remaining_risk_scores) / len(remaining_risk_scores))
+                                               if remaining_risk_scores else None),
         'scoreRange': {'maxPLossConsumed': max(x['pLossConsumed'] for x in selected),
                        'minPLossConsumed': min(x['pLossConsumed'] for x in selected)},
         'targets': selected,
@@ -142,16 +148,27 @@ def _source_group_bootstrap(baseline: np.ndarray, candidate: np.ndarray,
 def analyze(manifest_paths: list[Path], output_path: Path) -> dict:
     pairs = []
     manifests = []
-    seen_fights = set()
+    seen_fights = {}
+    duplicate_fights = []
     for path in manifest_paths:
         manifest, rows = pilot.validate_pair_corpus(path)
+        included = 0
         for pair in rows:
             key = (int(pair['pair']['sourceSeed']), int(pair['pair']['fightIdx']))
             if key in seen_fights:
-                raise ValueError(f'duplicate paired source/fight {key}')
-            seen_fights.add(key)
-        pairs.extend(rows)
-        manifests.append({'path': str(path), 'sha256': sha256(path), 'pairs': len(rows)})
+                prior_pair, prior_path = seen_fights[key]
+                duplicate_fights.append({
+                    'sourceSeed': key[0], 'fightIdx': key[1],
+                    'keptManifest': str(prior_path), 'skippedManifest': str(path),
+                    'identicalObservation': prior_pair == pair,
+                })
+                continue
+            seen_fights[key] = (pair, path)
+            pairs.append(pair)
+            included += 1
+        manifests.append({'path': str(path), 'sha256': sha256(path),
+                          'rawPairs': len(rows), 'includedPairs': included,
+                          'duplicatePairsDropped': len(rows) - included})
     if len({m['baselineGitSha'] for m in [json.loads(p.read_text()) for p in manifest_paths]}) != 1:
         raise ValueError('paired cohorts have differing baseline SHAs')
     eligible = [p for p in pairs if not minimal.native_boundary_reasons(p)]
@@ -179,6 +196,8 @@ def analyze(manifest_paths: list[Path], output_path: Path) -> dict:
         'schema': 'active_lizard_b1_qr_source_grouped_diagnostic_v1',
         'classification': 'DEVELOPMENT_ONLY', 't2Treatment': 'T2_revive fixed from prior cohort; not retuned',
         'inputManifests': manifests, 'pairs': len(pairs), 'modeledPairs': len(eligible),
+        'duplicateFightKeysDropped': len(duplicate_fights),
+        'duplicateFightKeyDetails': duplicate_fights,
         'distinctModeledSources': len(per_source), 'rowsPerSource': {
             'min': min(per_source.values()), 'median': float(np.median(list(per_source.values()))),
             'max': max(per_source.values())},

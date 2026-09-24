@@ -266,3 +266,105 @@ Raw command after freezing implementation SHA `364e0cc9d8e22ac880bee5feace2829df
 ```text
 python3 -m tools.combat_transition_lizard_minimal --manifest docs/experiments/evidence/lizard_tail_targeted_rescue_2026-09-23/paired.jsonl.manifest.json --output docs/experiments/evidence/lizard_tail_targeted_rescue_2026-09-23/minimal-correction-analysis.json --draws 32
 ```
+
+## B1-ranked candidate-pool extension
+
+This extension reused the frozen 2,700-row ordinary precombat pool and ranked
+each supported, coherent, unused fight by the fixed B1 mechanical
+`P(LOSS_CONSUMED) = 1 - pReserveWin`. No new source trajectories were
+generated. Each selected arm was replayed under the same frozen exact-10k
+Silver teacher and exact-state pairing contract. The selector was outcome
+blind. Collection was split into bounded calls; after the first selection
+overlapped 35 source/fight keys in the original cohort, all later target files
+excluded previously paired keys. Multiple fights per source were retained,
+and the combined q/r folds and bootstrap resampled whole source seeds.
+
+| New collection slice | Pairs | Unique fights added | `WIN_RETAINED` | `WIN_CONSUMED` | `LOSS_CONSUMED` | First action changed |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| B1 batch 1, less 35 original-cohort overlaps | 128 | 93 | 65 | 20 | 8 | 46/93 |
+| B1 batch 2 | 127 | 127 | 121 | 6 | 0 | 46/127 |
+| B1 batch 3 top 32 | 32 | 32 | 31 | 1 | 0 | 12/32 |
+| B1 batch 3 next 95 | 95 | 95 | 88 | 7 | 0 | 32/95 |
+| **New unique total** | **382 raw** | **347** | **305** | **34** | **8** | **136/347** |
+
+The original 128-pair cohort's five losses plus these eight new losses give 13
+distinct `LOSS_CONSUMED` fights, below the target of about 25 total (20 new).
+Across the 347 new fights, the no-Tail arm died 40 times; active Tail won 33
+of those. Active Tail also lost once when the no-Tail arm won, so the
+three-state label is defined from active-Tail outcome and postcombat Tail
+state, not from control death. Tail was consumed in 42/347 fights. The first
+Silver action changed in 136/347 (39.2%), showing a substantial policy effect
+within this extension.
+
+The combined comparison de-duplicates by `(sourceSeed, fightIdx)`, keeping the
+original cohort's earlier observation when a later batch repeats that key. All
+35 overlapping observations had different replay results and were therefore
+excluded rather than treated as independent examples. The final analysis has
+475 unique paired fights; 24 native exact-boundary rows were excluded from
+modeling, leaving 451 rows from 124 sources. Five-fold CV and the paired
+bootstrap group by source; there are 1–4 modeled rows per source (median 4).
+`T2` remains fixed as selected in Phase A; it was not retuned or used as an
+input to this outcome comparison.
+
+| Three-class metric | Fixed B1 | Source-grouped q/r | q/r minus B1, source-bootstrap 95% CI |
+| --- | ---: | ---: | ---: |
+| NLL | 1.9122 | 0.3544 | -1.5578 `[-4.6800, -0.0090]` |
+| Multiclass Brier | 0.2158 | 0.1994 | -0.0164 `[-0.0303, -0.0024]` |
+
+Observed / mean predicted class rates were `WIN_RETAINED` `0.843/0.786` and
+`WIN_CONSUMED` `0.129/0.122` for B1, and `0.843/0.842` and `0.129/0.131`
+for q/r. For `LOSS_CONSUMED`, B1 predicted `0.092` against `0.029` observed;
+q/r predicted `0.027`. This explains why the fixed B1 tail risk was not a
+reliable empirical event-rate estimate in the lower-ranked candidate slices.
+
+The grouped q consumption head scored Brier `0.0897` / NLL `0.2918` on 451
+rows (observed rate `0.1574`, mean prediction `0.1581`). The grouped r
+conditional rescue head scored Brier `0.1249` / NLL `0.3980` on 71 consumed
+rows (observed rate `0.8169`, mean prediction `0.8172`). All five fold fits
+converged. These are development diagnostics; 13 loss cases remain too few for
+qualification, and the score improvement does not establish a stable rescue
+head.
+
+After excluding all 475 paired fight keys, B1 scored 1,611 remaining
+supported/coherent candidate fights with summed `P(LOSS_CONSUMED)` of only
+`1.4045` (mean `0.000872`). This is a model-based screening estimate, not an
+empirical guarantee. Combined with zero losses in the 254 unique pairs from
+batches 2 and 3, it indicates that the frozen candidate pool cannot plausibly
+provide the 12 additional losses needed for the target. Collection therefore
+stopped without generating new trajectories. The targeted cohort also shows
+that B1 risk is overconfident in these lower-ranked slices: batch 2 had mean
+predicted loss mass `6.05` but no observed losses, while batch 3's 127 targets
+had predicted mass about `2.35` and no observed losses.
+
+No specialist CTM, head retraining, runtime integration, model export,
+qualification, or production support change followed. The production
+`active_unqualified_lizard` guard remains fail-closed.
+
+### Extension artifacts and provenance
+
+- Batch 1 pair JSONL / manifest SHA-256: `0d4f5276c7e3e0636afc9c6355620de4fcea9d482ec0bb93f22853ebfdf8e1ea` / `e84f3a00af1c05ecda760b862b6278650f078165f39437ef6178f7aa897da7b9`.
+- Batch 1 target selection SHA-256: `c9398b22125d379033202c8055a705ac3e5141e2e2a84ac6e3b8d42a668fe4f4`.
+- Batch 2 pair JSONL / manifest SHA-256: `033435e10413e64add99ef4f260d2ce95cccba6b82e3241b58b62743591f942b` / `9aa206070d582b5d4c351d7fe6c70c5c13f0ebcf1656db2640b5ed7a77cc84be`.
+- Batch 2 target selection SHA-256: `1325eca2c7134c15d7b175074ca1987268f241524a2c55296cd6583f40f38902`.
+- Batch 3 top-32 pair JSONL / manifest SHA-256: `ced4ed9457de646c5241060c9365ab2fcc83b3401b61690623d8f64eb5ff8248` / `2349b4daa1c9b3b52e7c9628076494af903a85676b7004693fe933f5390cfcb7`.
+- Batch 3 top-32 target selection SHA-256: `6036e7adfae0bfba5ae5597b9b911300da4030c277a4f8200a0c48034bb6a3dd`.
+- Batch 3 next-95 pair JSONL / manifest SHA-256: `095737b22022bb010b0be8fdb9e2a90f8c2b039724f4bec2086ebcb22be29b7b` / `3d923737d0a51c19767c1ec01b17ec14353b5d19183224188a9fcb09c911f63d`.
+- Batch 3 next-95 target selection SHA-256: `2aed6e3c597b5bc8a3d4e8254e3526eab14c0106a0d0ab7c504425ae600508ef`.
+- Combined analysis: `b1-qr-combined-analysis.json`, SHA-256 `4c6fac0a827a2e129dc07806ece8d85feaf6bf7d3c6a1998763a93bf4f49c65c`.
+- Remaining-pool selection/risk summary: `b1-targets-batch-04.json`, SHA-256 `3892c2f2e993f39651736c96d26896d0b64671bfcde168840a4091a09bd6a7c7`.
+- Every pair manifest binds to the same frozen exact-10k teacher, Silver settings,
+  source trajectory, model artifact hashes, and candidate pool SHA recorded above.
+
+All pair generations used the following seed-guarded command with `N` and the
+paired JSONL/target-selection paths from each manifest (128, 127, 32, and 95
+respectively); the teacher, baseline SHA, and producer SHA were identical:
+
+```text
+env STS_EXECUTABLE_GIT_SHA=f0bbd7721e7cc1453976ebb91ee11ebe6127a2bf STS_FAIR=1 STS_NATIVE_OOC=1 STS_SEARCHER3=0 STS_SILVER_ADAPTIVE=0 STS_SILVER_EXACT_ROOT_BUDGETS=1 STS_SILVER_REUSE_CAP_MODE=allocated STS_SILVER_SEARCH=1 STS_SILVER_TELEMETRY=1 STS_SILVER_VNET_LEAF_DIRECT=0 ./tools/seed_guard.sh build/linux-gcc-debug/one_combat combattransitionlizardtargetpairgen N 10000 0 PAIRED_JSONL TARGET_SELECTION /home/philippherrmann/sts_sweep/runs/combat-transition-runtime-25k/teacher.json 79b3be84b21f9314392478a78b2a5b3eed94fb77 8fa9f5ca0b22cf69417146dfbb5ac4fc1edf31c3
+```
+
+The combined analysis command was:
+
+```text
+python3 -m tools.combat_transition_lizard_b1_rescue analyze --manifest docs/experiments/evidence/lizard_tail_targeted_rescue_2026-09-23/paired.jsonl.manifest.json --manifest docs/experiments/evidence/lizard_tail_targeted_rescue_2026-09-23/paired-b1-batch-01.jsonl.manifest.json --manifest docs/experiments/evidence/lizard_tail_targeted_rescue_2026-09-23/paired-b1-batch-02.jsonl.manifest.json --manifest docs/experiments/evidence/lizard_tail_targeted_rescue_2026-09-23/paired-b1-batch-03.jsonl.manifest.json --manifest docs/experiments/evidence/lizard_tail_targeted_rescue_2026-09-23/paired-b1-batch-03-next95.jsonl.manifest.json --output docs/experiments/evidence/lizard_tail_targeted_rescue_2026-09-23/b1-qr-combined-analysis.json
+```
