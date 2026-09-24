@@ -1,6 +1,6 @@
 # Combat search
 
-Last verified: 2026-09-24 for the Silver-only dispatch (ADR-0020), the Searcher3 removal and the Silver whole-run default; 2026-09-19 against the current working tree.
+Last verified: 2026-09-24 for the experimental native Silver backend, the Silver-only dispatch (ADR-0020), the Searcher3 removal and the Silver whole-run default; 2026-09-19 against the current working tree.
 
 ## Purpose
 
@@ -144,6 +144,32 @@ Runic Dome prevents future intent materialization. Looter and Mugger use
 `DeferredDirectMoveChoice` for hidden escape-versus-attack continuations.
 `assignInformationState` and this deferred choice are project-fair adaptations
 of the vendored simulator.
+
+## Native Silver backend (experimental)
+
+`STS_NATIVE_SILVER=1` replaces the vendored model with `SilverSearcher`
+(`src/sim/search/SilverSearcher.cpp`), a port of the Silver fork's
+`BattleSearcher` production path that runs directly on the main
+`BattleContext`, installed by `NativeSilverBackend`. At each decision the
+backend copies the live state, turns the draw pile into the player's
+information set from the combat knowledge tracker (known bottom, unknown
+multiset, known top; concrete under Frozen Eye), and reseeds all six RNG
+streams from a public per-battle seed so no live randomness reaches the
+search. The search treats the six streams as one chance source
+(`SearchRng.h`): an action that advances any stream becomes a chance node
+whose outcomes reseed every stream from `base + N`. Transpositions use
+`BattleContext::equalForSearch`/`hashBattleState`. The backend reroots onto
+the dedup node equal to the new live view when one exists (compacting at the
+32,768-node cap), applies the same flat or retained-root adaptive budgets as
+the vendored backend, and maps the chosen root action to the live state by
+card identity (`SilverSearcher::translateAction`). The knowledge observer is
+detached while searching. Known gaps against the vendored model: Runic Dome
+intents are visible; Gambling Chip and Purity selections are atomic subsets;
+the vendored reroot repairs are replaced by multiset equality plus action
+translation. On the standard 128-seed block it won 86/128 against the
+vendored 83/128 (no detectable difference;
+[§343](../../experiments/ledger-06.md)). The vendored backend remains the
+default.
 
 ## Silver backend
 
