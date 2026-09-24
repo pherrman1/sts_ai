@@ -187,6 +187,18 @@ successfully built the non-CTM `main` target. CTM runtime targets link
 `OpenSSL::Crypto` when found and require its headers/library when built.
 Commands and raw outputs are under `silver-only-main-source/`.
 
+Before publication, `main` advanced again in PR #310 to
+`7b4244ef8af4508466e01a1a6b515c70015e6274`, so the branch was rebased onto
+that newer head as well. The six Release targets built, the focused CTest
+selection passed 2/2, and 31-fixture specialist parity and hybrid routing/RNG
+checks passed. On the same 10 matched ordinary rows, standard preparation was
+`3,957 us`, fast was `520 us` (7.61x), and hybrid fast was `508 us` (7.79x).
+On 18 Brew fixture rows, standard preparation was `3,565 us` and hybrid
+fallback was `3,708 us`. The OpenSSL-disabled configuration again built
+non-CTM `main`. Exact commands and raw outputs are under
+`main-7b4244-source/`. The original 64-pair gameplay result remains attached
+only to frozen executable `9ce11fdbe50f32b4b2646dd8a0803c6dc0c3f351`.
+
 Raw machine-readable outputs are `parity.json`, `mechanism.jsonl`,
 `mechanism-summary.json`, `fixed-fixture-benchmark-release.json`,
 `summary.json`, and `per-seed.csv`. Compressed arm logs, action traces, support

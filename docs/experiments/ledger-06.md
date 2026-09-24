@@ -11681,6 +11681,16 @@ change or relabel the original 64-pair outcome, which remains attached to frozen
 executable `9ce11fdbe50f32b4b2646dd8a0803c6dc0c3f351`. Exact commands and raw
 outputs are in the [Silver-only main verification packet](evidence/deepset_entropic_brew_hybrid_2026-09-24/silver-only-main-source/COMMANDS.md).
 
+Before publication, `main` advanced again through PR #310 to
+`7b4244ef8af4508466e01a1a6b515c70015e6274`; the branch was rebased onto this
+head and all six Release targets plus focused CTest passed again. Parity and
+mechanism checks again passed all 31 fixtures. Fixed-input preparation medians
+on 10 matched ordinary rows were 3,957 us standard, 520 us fast (7.61x), and
+508 us hybrid (7.79x); on 18 Brew rows, standard was 3,565 us and hybrid
+fallback 3,708 us. OpenSSL-disabled configure and non-CTM `main` build passed.
+No gameplay run was repeated. Results and commands are in the
+[PR #310 verification packet](evidence/deepset_entropic_brew_hybrid_2026-09-24/main-7b4244-source/COMMANDS.md).
+
 Knowledge impact: current research status now records an experimental hybrid
 path and its bounded engineering evidence; qualified models and runtime defaults
 remain unchanged.
