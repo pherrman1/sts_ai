@@ -646,29 +646,18 @@ void ActData_DrawCards::operator()(BattleContext &bc) const {
     }
 
 void ActData_EmptyDeckShuffle::operator()(BattleContext &bc) const {
-        java::Collections::shuffle(
-                bc.cards.discardPile.begin(),
-                bc.cards.discardPile.end(),
-                java::Random(bc.shuffleRng.randomLong())
-        );
-
-        bc.cards.moveDiscardPileIntoToDrawPile();
+        bc.cards.moveDiscardPileIntoToDrawPile(bc.shuffleRng);
     }
 
 void ActData_ShuffleDrawPile::operator()(BattleContext &bc) const {
-        java::Collections::shuffle(
-                bc.cards.drawPile.begin(),
-                bc.cards.drawPile.end(),
-                java::Random(bc.shuffleRng.randomLong())
-        );
+        bc.cards.drawPile.reshuffleSelf(bc.shuffleRng);
         search::emitCombatKnowledgeEvent(search::CombatKnowledgeEventType::SHUFFLE_OCCURRED);
     }
 
 void ActData_ShuffleTempCardIntoDrawPile::operator()(BattleContext &bc) const {
         CardInstance c(id);
         for (int i = 0; i < count; ++i) {
-            const int idx = bc.cards.drawPile.empty() ? 0 : bc.cardRandomRng.random(static_cast<int>(bc.cards.drawPile.size()-1));
-            bc.cards.createTempCardInDrawPile(idx, c);
+            bc.cards.createTempCardShuffledIntoDrawPile(bc.cardRandomRng, c);
         }
     }
 
@@ -688,8 +677,7 @@ void ActData_MakeTempCardInHand::operator()(BattleContext &bc) const {
 void ActData_MakeTempCardInDrawPile::operator()(BattleContext &bc) const {
         for (int i = 0; i < amount; ++i) {
             if (shuffleInto) {
-                const int idx = bc.cards.drawPile.empty() ? 0 : bc.cardRandomRng.random(static_cast<int>(bc.cards.drawPile.size()-1));
-                bc.cards.createTempCardInDrawPile(idx, c);
+                bc.cards.createTempCardShuffledIntoDrawPile(bc.cardRandomRng, c);
             }
             // todo else
         }
@@ -940,8 +928,7 @@ void ActData_PutRandomCardsInDrawPile::operator()(BattleContext &bc) const {
             card.cost = 0;
             card.costForTurn = 0;
 
-            const int idx = bc.cards.drawPile.empty() ? 0 : bc.cardRandomRng.random(static_cast<int>(bc.cards.drawPile.size()-1));
-            bc.cards.createTempCardInDrawPile(idx, card);
+            bc.cards.createTempCardShuffledIntoDrawPile(bc.cardRandomRng, card);
         }
     }
 
@@ -1350,11 +1337,11 @@ void ActData_ApotheosisAction::operator()(BattleContext &bc) const {
             }
         }
 
-        for (auto &c : bc.cards.drawPile) {
+        bc.cards.drawPile.mutateAll([](CardInstance &c) {
             if (c.canUpgrade()) {
                 c.upgrade();
             }
-        }
+        });
 
         for (auto &c : bc.cards.discardPile) {
             if (c.canUpgrade()) {

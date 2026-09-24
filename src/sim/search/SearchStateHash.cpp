@@ -87,6 +87,9 @@ namespace sts::search {
         }
         hashCombine(hash, handSum);
 
+        // A known top [A,B] and an unknown {A,B} are different information sets.
+        hashCombine(hash, bc.cards.drawPile.knownTop());
+        hashCombine(hash, bc.cards.drawPile.knownBottom());
         hashPile(hash, bc.cards.drawPile);
         hashPile(hash, bc.cards.discardPile);
         hashPile(hash, bc.cards.exhaustPile);
