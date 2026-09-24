@@ -11506,7 +11506,51 @@ updated; qualified encoders and runtime defaults remain unchanged.
 Knowledge impact: current potion-representation hypothesis and evidence updated;
 runtime defaults and qualified artifacts remain unchanged.
 
-## §280 — V4 policy-prior cost under uniform-leaf OOC MCTS (2026-09-24)
+## §340 — Silver handoff timing and adaptive 128-seed baseline (2026-09-24)
+
+Measured how much Silver decision time goes to moving state between the main
+simulator and the isolated Silver simulator. The run used the new opt-in
+`STS_SILVER_HANDOFF_TIMING=1` instrumentation. It also recorded a Silver
+whole-run reference on the standard seed block under the ADR-0018 defaults.
+
+- **Configuration:** Release `one_combat` from clean commit `2a602f6`, 4-core
+  container, `bestbench 1000 128 0 126700` with `STS_SILVER_ADAPTIVE=1`. The
+  sims argument has no effect under adaptive Silver, which searches 500 to
+  10,000 simulations per decision. Silver fair play, reuse cap 32,768
+  (`allocated`), native OOC trees, policy prior auto-load, keys skipped,
+  ascension 0. Regime: project-fair.
+- **Gameplay:** 83/128 wins (64.8%; Wilson 95% [56.2%, 72.6%]). Mean floor
+  48.26, mean end HP 30.9, 38.05 CPU s/run, 1,240 s wall. Win means beating
+  the Act 3 boss; keys were not collected.
+- **Timing:** 3,245 combats, 59,961 decisions, 377.3M simulations, 4,818.6
+  decision-seconds.
+
+  | Part | Share of decision time | Mean per decision |
+  | --- | ---: | ---: |
+  | Live-state conversion | 0.006% | 5.0 µs |
+  | Private-state materialization | 0.004% | 3.4 µs |
+  | Semantic-action resolution | 0.002% | 1.3 µs |
+  | Root setup (exact reroot or fresh root, including collection) | 2.56% | 2.06 ms |
+  | Search | 97.36% | 78.2 ms |
+  | Other (diagnostics, captures) | 0.07% | — |
+
+  In a pre-commit smoke of the same code, 16 seeds with flat 1,000-simulation
+  Silver gave 0.045% copy time (8 µs/decision), 0.99% root setup and 98.9%
+  search.
+- **Interpretation:** Copying state across the simulator boundary
+  (conversion, materialization and resolution) costs about 10 µs per decision
+  and is negligible. Root setup is the only material non-search cost. A
+  retained-tree design needs it regardless of simulator count.
+  **Inference:** merging the simulators would not produce a meaningful speed
+  gain. Its case rests on having one rule set and removing the
+  boundary-matching code.
+- **Artifacts:** [evidence packet](evidence/silver_handoff_timing_2026-09-24/README.md)
+  with the results CSV, metadata, all per-combat timing lines and the
+  reproducible summary.
+
+Knowledge impact: combat-search architecture records the handoff cost;
+current-baselines records the Silver adaptive whole-run reference.
+## §341 — V4 policy-prior cost under uniform-leaf OOC MCTS (2026-09-24)
 
 On baseline `41c0f5af5711c452b6e133e6dc66c7756f50874c`, refreshed the fixed
 seed `12002032` profile with the requested V4 policy prior, uniform leaf policy,

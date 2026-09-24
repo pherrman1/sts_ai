@@ -63,6 +63,7 @@ struct SilverLiveOptions {
     int leafVNetSample = 16;
     int leafVNetMaxPerCombat = 5000;
     bool leafVNetDirect = false;
+    bool handoffTiming = false;
     double leafVNetAffineA = 1.0;
     double leafVNetAffineB = 0.0;
     bool leafVNetBlendEnabled = false;
@@ -228,6 +229,7 @@ void parseSilverLiveOptions() {
     if (const char *raw = std::getenv("STS_SILVER_VNET_LEAF_SAMPLE")) options.leafVNetSample = std::atoi(raw);
     if (const char *raw = std::getenv("STS_SILVER_VNET_LEAF_MAX_PER_COMBAT")) options.leafVNetMaxPerCombat = std::atoi(raw);
     if (const char *raw = std::getenv("STS_SILVER_VNET_LEAF_DIRECT")) options.leafVNetDirect = std::atoi(raw) != 0;
+    if (const char *raw = std::getenv("STS_SILVER_HANDOFF_TIMING")) options.handoffTiming = std::atoi(raw) != 0;
     if (const char *raw = std::getenv("STS_SILVER_VNET_LEAF_A")) options.leafVNetAffineA = std::atof(raw);
     if (const char *raw = std::getenv("STS_SILVER_VNET_LEAF_B")) options.leafVNetAffineB = std::atof(raw);
     if (const char *raw = std::getenv("STS_SILVER_VNET_LEAF_BLEND")) {
@@ -1386,6 +1388,7 @@ void runSilverCombat(ScumSearchAgent2 &agent, GameContext &gc, BattleContext &bc
     const bool directLeafVNet = g_silverLiveOptions.leafVNetDirect;
     const bool blendLeafVNet = g_silverLiveOptions.leafVNetBlendEnabled
         && g_silverLiveOptions.leafVNetBlend > 0.0;
+    const bool handoffTiming = g_silverLiveOptions.handoffTiming;
     const bool emitTelemetry = std::getenv("STS_SILVER_TELEMETRY")
         && std::atoi(std::getenv("STS_SILVER_TELEMETRY")) != 0;
     const bool emitPriorLatencySamples = std::getenv("STS_SILVER_PRIOR_LATENCY_SAMPLES")
@@ -1517,9 +1520,15 @@ void runSilverCombat(ScumSearchAgent2 &agent, GameContext &gc, BattleContext &bc
             fail("knowledge", detail);
         }
 
+        using HandoffClock = std::chrono::steady_clock;
+        const auto decisionStart = handoffTiming ? HandoffClock::now() : HandoffClock::time_point{};
         const auto conversion = makeSilverBattleStateConversion(
             bc, knowledge, makeSilverRunContext(gc), silverBattleSeed);
         const auto &wire = conversion.wire;
+        if (handoffTiming) {
+            g_silverLiveDiagnostics.handoffConversionMicros += std::chrono::duration<double, std::micro>(
+                HandoffClock::now() - decisionStart).count();
+        }
         if (!wire.valid) {
             ++g_silverLiveDiagnostics.conversionFailures;
             fail("conversion", "live observation cannot be represented without hidden information"
@@ -1534,6 +1543,7 @@ void runSilverCombat(ScumSearchAgent2 &agent, GameContext &gc, BattleContext &bc
         }
 
         auto config = configFor(agent, bc, collectDecisionDiagnostics);
+        if (handoffTiming) config.collectSearchTiming = true;
         if (g_silverPriorModel) {
             if (wire.inputState != static_cast<int>(InputState::PLAYER_NORMAL)) {
                 ++g_silverLiveDiagnostics.priorSkippedNonPlayerNormal;
@@ -1774,7 +1784,15 @@ void runSilverCombat(ScumSearchAgent2 &agent, GameContext &gc, BattleContext &bc
             }
         }
 
+        const auto resolutionStart = handoffTiming ? HandoffClock::now() : HandoffClock::time_point{};
         const auto resolved = resolveSilverSemanticAction(bc, semantic);
+        if (handoffTiming) {
+            const auto resolutionEnd = HandoffClock::now();
+            g_silverLiveDiagnostics.handoffResolutionMicros += std::chrono::duration<double, std::micro>(
+                resolutionEnd - resolutionStart).count();
+            g_silverLiveDiagnostics.handoffDecisionMicros += std::chrono::duration<double, std::micro>(
+                resolutionEnd - decisionStart).count();
+        }
         if (!resolved.ok) {
             ++g_silverLiveDiagnostics.semanticResolutionFailures;
             fail("semantic action resolution", resolved.error
@@ -1814,6 +1832,23 @@ void runSilverCombat(ScumSearchAgent2 &agent, GameContext &gc, BattleContext &bc
     if (collectSequentialDiagnostics) writeSequentialDiagnostics(sequentialDiagnostics);
     if (collectStickyQuality) writeStickyQuality(stickyQualityRows, gc.seed, bc.floorNum,
                                                  static_cast<int>(bc.encounter), stickyQualityCounters);
+    if (handoffTiming) {
+        const auto &d = g_silverLiveDiagnostics;
+        const auto session = silver_bridge::silverHandoffTiming(*silverSession);
+        std::ostringstream line;
+        line << "[silver-handoff] seed=" << gc.seed << " floor=" << bc.floorNum
+             << " encounter=" << static_cast<int>(bc.encounter)
+             << " decisions=" << d.decisions << " simulations=" << d.simulations
+             << " materialize_calls=" << session.calls
+             << " conversion_micros=" << d.handoffConversionMicros
+             << " materialize_micros=" << session.materializeMicros
+             << " root_setup_micros=" << session.rootSetupMicros
+             << " search_micros=" << d.searchWallMicros
+             << " resolution_micros=" << d.handoffResolutionMicros
+             << " decision_micros=" << d.handoffDecisionMicros << '\n';
+        const std::lock_guard<std::mutex> lock(g_combatTelemetryMutex);
+        std::cout << line.str();
+    }
     if (emitTelemetry) {
         const auto &d = g_silverLiveDiagnostics;
         std::ostringstream line;
