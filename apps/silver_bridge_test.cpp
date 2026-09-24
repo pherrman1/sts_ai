@@ -219,7 +219,7 @@ int main(int argc, char **argv) {
     }
 
     BattleContext permuted = first;
-    std::swap(permuted.cards.drawPile[0], permuted.cards.drawPile[2]);
+    std::swap(permuted.cards.drawPile.concreteCards()[0], permuted.cards.drawPile.concreteCards()[2]);
     search::CombatKnowledgeState firstKnowledge, permutedKnowledge;
     firstKnowledge.initializeFromLiveBattle(first);
     permutedKnowledge.initializeFromLiveBattle(permuted);
@@ -1397,7 +1397,7 @@ int main(int argc, char **argv) {
     BattleContext eyeA, eyeB;
     eyeA.init(eyeGc, MonsterEncounter::CULTIST);
     installPile(eyeA); eyeB = eyeA;
-    std::swap(eyeB.cards.drawPile[0], eyeB.cards.drawPile[2]);
+    std::swap(eyeB.cards.drawPile.concreteCards()[0], eyeB.cards.drawPile.concreteCards()[2]);
     search::CombatKnowledgeState eyeAKnowledge, eyeBKnowledge;
     eyeAKnowledge.initializeFromLiveBattle(eyeA); eyeBKnowledge.initializeFromLiveBattle(eyeB);
     check(!silver_bridge::convertedStatesEqualForSearch(convert(eyeA, eyeGc, eyeAKnowledge), convert(eyeB, eyeGc, eyeBKnowledge)),

@@ -645,12 +645,20 @@ CardInstance liveLeafCard(const silver_bridge::CardWire &in) {
     return out;
 }
 
-template <typename Pile>
-void loadLiveLeafPile(Pile &out, const silver_bridge::PileWire &in) {
-    out.clear();
+std::vector<CardInstance> liveLeafPileCards(const silver_bridge::PileWire &in) {
+    std::vector<CardInstance> out;
     for (const auto &card : in.knownBottom) out.push_back(liveLeafCard(card));
     for (const auto &card : in.unknown) out.push_back(liveLeafCard(card));
     for (const auto &card : in.knownTop) out.push_back(liveLeafCard(card));
+    return out;
+}
+
+void loadLiveLeafPile(std::vector<CardInstance> &out, const silver_bridge::PileWire &in) {
+    out = liveLeafPileCards(in);
+}
+
+void loadLiveLeafPile(CardPile &out, const silver_bridge::PileWire &in) {
+    out.assignConcrete(liveLeafPileCards(in));
 }
 
 // Rebuild only the existing live BattleContext input expected by
