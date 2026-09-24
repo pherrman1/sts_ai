@@ -1,0 +1,2976 @@
+{
+  "schema": "lizard_tail_targeted_paired_pilot_analysis_v1",
+  "claimBoundary": "descriptive pilot only; no training or runtime qualification",
+  "sourceSeeds": [
+    4200300,
+    4200301,
+    4200302,
+    4200303,
+    4200304,
+    4200305,
+    4200306,
+    4200307,
+    4200308,
+    4200309,
+    4200310,
+    4200311,
+    4200312,
+    4200313,
+    4200314,
+    4200315,
+    4200316,
+    4200317,
+    4200318,
+    4200319,
+    4200320,
+    4200321,
+    4200322,
+    4200323,
+    4200324,
+    4200325,
+    4200326,
+    4200327,
+    4200328,
+    4200329,
+    4200330,
+    4200331,
+    4200332,
+    4200333,
+    4200334,
+    4200335,
+    4200336,
+    4200337,
+    4200338,
+    4200339,
+    4200340,
+    4200341,
+    4200342,
+    4200343,
+    4200344,
+    4200345,
+    4200346,
+    4200347,
+    4200348,
+    4200349,
+    4200350,
+    4200351,
+    4200352,
+    4200353,
+    4200354,
+    4200355,
+    4200356,
+    4200357,
+    4200358,
+    4200359,
+    4200360,
+    4200361,
+    4200362,
+    4200363,
+    4200364,
+    4200365,
+    4200366,
+    4200367,
+    4200368,
+    4200369,
+    4200370,
+    4200371,
+    4200372,
+    4200373,
+    4200374,
+    4200375,
+    4200376,
+    4200377,
+    4200378,
+    4200379,
+    4200380,
+    4200381,
+    4200382,
+    4200383,
+    4200384,
+    4200385,
+    4200386,
+    4200387,
+    4200388,
+    4200389,
+    4200390,
+    4200391,
+    4200392,
+    4200393,
+    4200394,
+    4200395,
+    4200396,
+    4200397,
+    4200398,
+    4200399,
+    4200400,
+    4200401,
+    4200402,
+    4200403,
+    4200404,
+    4200405,
+    4200406,
+    4200407,
+    4200408,
+    4200409,
+    4200410,
+    4200411,
+    4200412,
+    4200413,
+    4200414,
+    4200415,
+    4200416,
+    4200417,
+    4200418,
+    4200419,
+    4200420,
+    4200421,
+    4200422,
+    4200423,
+    4200424,
+    4200425,
+    4200426,
+    4200427
+  ],
+  "pairs": 128,
+  "states": {
+    "fairy_first_lizard_retained": 1,
+    "other_active_win_lizard_retained": 8,
+    "tail_consumed_death": 5,
+    "tail_consumed_win": 13,
+    "tail_rescued": 14,
+    "tail_unused": 87
+  },
+  "riskBands": {
+    "p00_10_fallback": {
+      "pairs": 19,
+      "meanPredictedNoTailDeath": 0.004781393628371389,
+      "observedNoTailDeathRate": 0.0,
+      "noTailDeathBrier": 0.00037466614626144166,
+      "activeTailWinRate": 1.0,
+      "tailConsumptionRate": 0.0
+    },
+    "p10_20": {
+      "pairs": 40,
+      "meanPredictedNoTailDeath": 0.14105980098247528,
+      "observedNoTailDeathRate": 0.1,
+      "noTailDeathBrier": 0.09123879406886157,
+      "activeTailWinRate": 0.975,
+      "tailConsumptionRate": 0.1
+    },
+    "p20_35": {
+      "pairs": 32,
+      "meanPredictedNoTailDeath": 0.2650165408849716,
+      "observedNoTailDeathRate": 0.1875,
+      "noTailDeathBrier": 0.1532020829343339,
+      "activeTailWinRate": 0.96875,
+      "tailConsumptionRate": 0.3125
+    },
+    "p35_55": {
+      "pairs": 20,
+      "meanPredictedNoTailDeath": 0.4276303663849831,
+      "observedNoTailDeathRate": 0.2,
+      "noTailDeathBrier": 0.22056698100558897,
+      "activeTailWinRate": 1.0,
+      "tailConsumptionRate": 0.2
+    },
+    "p55_plus": {
+      "pairs": 17,
+      "meanPredictedNoTailDeath": 0.7267707520548035,
+      "observedNoTailDeathRate": 0.7647058823529411,
+      "noTailDeathBrier": 0.18084977302647662,
+      "activeTailWinRate": 0.8235294117647058,
+      "tailConsumptionRate": 0.8235294117647058
+    }
+  },
+  "noTailCTMDeathProbabilityVsObservedNoTailDeath": {
+    "brier": 0.1253509596483906,
+    "meanPredictedDeath": 0.27438654639991,
+    "observedDeathRate": 0.2109375
+  },
+  "noTailCTMDeathProbabilityVsObservedTailConsumption": {
+    "brier": 0.13683542241623003,
+    "meanPredictedDeath": 0.27438654639991,
+    "observedTailConsumptionRate": 0.25
+  },
+  "observedNoTailDeathCount": 27,
+  "tailConsumedCount": 32,
+  "ordinaryDeathRescue": {
+    "ordinaryDeathPairs": 27,
+    "activeTailWinsAmongOrdinaryDeaths": 22,
+    "lizardConsumedWinsAmongOrdinaryDeaths": 14,
+    "fairyFirstLizardRetainedAmongOrdinaryDeaths": 0,
+    "rescueRateAnyActiveTailTreatment": 0.8148148148148148,
+    "rescueRateByTailAmongOrdinaryDeaths": 0.5185185185185185
+  },
+  "mechanicalReserveProxy": {
+    "definition": "existing CTM P(win) re-scored after raising visible start HP by floor(maxHP/2), capped at maxHP; proxy only, not event-level lethal-crossing replay",
+    "meanPredictedWin": 0.9032676168717444,
+    "observedActiveTailWinRate": 0.9609375,
+    "brierVsActiveTailOutcome": 0.04700434201230755,
+    "noTailMeanPredictedWin": 0.72561345360009,
+    "meanPredictedWinDelta": 0.1776541632716544
+  },
+  "existingConditionalHeads": {
+    "inputTreatment": "paired ordinary precombat input with Tail removed; active Tail post-state with Tail removed before relic scoring",
+    "tailConsumedWins": {
+      "rows": 27,
+      "method": "activeTail_teacher_forced_on_ordinary_precombat_input; descriptive only; no qualification gate applied",
+      "scoredRows": {
+        "maxHpNll": 22,
+        "maxHpModeCorrect": 22,
+        "hpNll": 22,
+        "expectedHpAbsError": 22,
+        "potionMaskNll": 22,
+        "potionMaskModeCorrect": 22
+      },
+      "metrics": {
+        "maxHpNll": 0.010373783650006725,
+        "maxHpModeCorrect": 1.0,
+        "hpNll": 5.121244570665613,
+        "expectedHpAbsError": 15.917051790121853,
+        "potionMaskNll": 0.8735875996140084,
+        "potionMaskModeCorrect": 0.7272727272727273
+      },
+      "perPairScores": [
+        {
+          "sourceSeed": 4200303,
+          "maxHpNll": 0.0011649358007000089,
+          "hpNll": 4.284431068206061,
+          "expectedHpAbsError": 10.9061207349107,
+          "potionMaskNll": -0.0,
+          "nonLizardRelicTrajectoryNllByGroup": {}
+        },
+        {
+          "sourceSeed": 4200307,
+          "maxHpNll": 0.0015102101899841529,
+          "hpNll": 4.525860548226146,
+          "expectedHpAbsError": 15.190769140728044,
+          "potionMaskNll": -0.0,
+          "nonLizardRelicTrajectoryNllByGroup": {
+            "attacks": 1.9414577293684685
+          }
+        },
+        {
+          "sourceSeed": 4200310,
+          "maxHpNll": 0.0002934767263112109,
+          "hpNll": 5.535181918983178,
+          "expectedHpAbsError": 12.715318256039609,
+          "potionMaskNll": -0.0,
+          "nonLizardRelicTrajectoryNllByGroup": {
+            "shuffles": 0.715412307354465
+          }
+        },
+        {
+          "sourceSeed": 4200311,
+          "maxHpNll": 0.0023542318714801307,
+          "hpNll": 12.76310056878508,
+          "expectedHpAbsError": 42.17722541178889,
+          "potionMaskNll": 0.7497624490990397,
+          "nonLizardRelicTrajectoryNllByGroup": {
+            "cards": 2.553300669684897
+          }
+        },
+        {
+          "sourceSeed": 4200312,
+          "maxHpNll": 0.00021680559368243468,
+          "hpNll": 3.9765271154095374,
+          "expectedHpAbsError": 13.257812249409199,
+          "potionMaskNll": 0.5170865437860752,
+          "nonLizardRelicTrajectoryNllByGroup": {}
+        },
+        {
+          "sourceSeed": 4200319,
+          "maxHpNll": 5.13805237528905e-05,
+          "hpNll": 4.139974593440773,
+          "expectedHpAbsError": 13.69864105877059,
+          "potionMaskNll": -0.0,
+          "nonLizardRelicTrajectoryNllByGroup": {}
+        },
+        {
+          "sourceSeed": 4200320,
+          "maxHpNll": 6.29444858453979e-05,
+          "hpNll": 3.2897709370997803,
+          "expectedHpAbsError": 0.29529381541487965,
+          "potionMaskNll": -0.0,
+          "nonLizardRelicTrajectoryNllByGroup": {}
+        },
+        {
+          "sourceSeed": 4200328,
+          "maxHpNll": 0.000340996700882359,
+          "hpNll": 6.488444098389331,
+          "expectedHpAbsError": 27.392594280543562,
+          "potionMaskNll": 2.613757582373959,
+          "nonLizardRelicTrajectoryNllByGroup": {
+            "attacks": 1.9261624571292435
+          }
+        },
+        {
+          "sourceSeed": 4200333,
+          "maxHpNll": 1.716628503514036e-05,
+          "hpNll": 4.491808774275238,
+          "expectedHpAbsError": 18.21054712946932,
+          "potionMaskNll": 2.637742511241443,
+          "nonLizardRelicTrajectoryNllByGroup": {}
+        },
+        {
+          "sourceSeed": 4200334,
+          "maxHpNll": 0.0008042111351900988,
+          "hpNll": 6.7660896618149025,
+          "expectedHpAbsError": 23.425721035836432,
+          "potionMaskNll": 0.7778444371619712,
+          "nonLizardRelicTrajectoryNllByGroup": {}
+        },
+        {
+          "sourceSeed": 4200336,
+          "maxHpNll": 0.00010693645022543938,
+          "hpNll": 3.9805904219351755,
+          "expectedHpAbsError": 5.837834193953313,
+          "potionMaskNll": 2.54372691694802,
+          "nonLizardRelicTrajectoryNllByGroup": {}
+        },
+        {
+          "sourceSeed": 4200358,
+          "maxHpNll": 0.0008487726193227721,
+          "hpNll": 6.785453695683622,
+          "expectedHpAbsError": 21.912200013996852,
+          "potionMaskNll": 2.416270468418026,
+          "nonLizardRelicTrajectoryNllByGroup": {}
+        },
+        {
+          "sourceSeed": 4200368,
+          "maxHpNll": 0.0003700941111433479,
+          "hpNll": 3.9351820740812267,
+          "expectedHpAbsError": 5.197151276748627,
+          "potionMaskNll": -0.0,
+          "nonLizardRelicTrajectoryNllByGroup": {
+            "turns": 1.65889723591843,
+            "attacks": 2.0825108199100786
+          }
+        },
+        {
+          "sourceSeed": 4200372,
+          "maxHpNll": 0.0001911703676850516,
+          "hpNll": 4.854142796193725,
+          "expectedHpAbsError": 13.280419137561694,
+          "potionMaskNll": 0.35410250039131275,
+          "nonLizardRelicTrajectoryNllByGroup": {
+            "turns": 0.969961991382875
+          }
+        },
+        {
+          "sourceSeed": 4200374,
+          "maxHpNll": 0.0011021009256289903,
+          "hpNll": 4.124498505030529,
+          "expectedHpAbsError": 15.928686092840508,
+          "potionMaskNll": -0.0,
+          "nonLizardRelicTrajectoryNllByGroup": {
+            "turns": 0.8694189400295659,
+            "attacks": 2.317040815784727,
+            "cards": 2.409448403457543
+          }
+        },
+        {
+          "sourceSeed": 4200380,
+          "maxHpNll": 2.9087489687317074e-05,
+          "hpNll": 3.7730833925323957,
+          "expectedHpAbsError": 8.210361848352477,
+          "potionMaskNll": 0.331293188601486,
+          "nonLizardRelicTrajectoryNllByGroup": {
+            "cards": 2.255303456193196,
+            "shuffles": 0.880228295154425
+          }
+        },
+        {
+          "sourceSeed": 4200382,
+          "maxHpNll": 0.0025927628896202444,
+          "hpNll": 4.196018959958495,
+          "expectedHpAbsError": 15.425521205962923,
+          "potionMaskNll": 1.8653655999318293,
+          "nonLizardRelicTrajectoryNllByGroup": {}
+        },
+        {
+          "sourceSeed": 4200398,
+          "maxHpNll": 0.0006574765082569899,
+          "hpNll": 4.465965327711459,
+          "expectedHpAbsError": 15.917066216701642,
+          "potionMaskNll": 3.7490530114924754,
+          "nonLizardRelicTrajectoryNllByGroup": {
+            "cards": 2.4947651457234303
+          }
+        },
+        {
+          "sourceSeed": 4200400,
+          "maxHpNll": 4.8638572972931936e-05,
+          "hpNll": 3.6001528334021065,
+          "expectedHpAbsError": 3.169072835240513,
+          "potionMaskNll": -0.0,
+          "nonLizardRelicTrajectoryNllByGroup": {}
+        },
+        {
+          "sourceSeed": 4200417,
+          "maxHpNll": 4.1723338384500676e-06,
+          "hpNll": 5.485508973491694,
+          "expectedHpAbsError": 22.48767452014033,
+          "potionMaskNll": 0.6629219820625487,
+          "nonLizardRelicTrajectoryNllByGroup": {}
+        },
+        {
+          "sourceSeed": 4200422,
+          "maxHpNll": 1.8596822089745873e-05,
+          "hpNll": 6.239693249357663,
+          "expectedHpAbsError": 24.0069512881129,
+          "potionMaskNll": -0.0,
+          "nonLizardRelicTrajectoryNllByGroup": {
+            "turns": 1.6271706382481739
+          }
+        },
+        {
+          "sourceSeed": 4200423,
+          "maxHpNll": 0.21543707189681285,
+          "hpNll": 4.965901040635406,
+          "expectedHpAbsError": 21.53215764015772,
+          "potionMaskNll": -0.0,
+          "nonLizardRelicTrajectoryNllByGroup": {
+            "attacks": 2.162770655853752
+          }
+        }
+      ],
+      "nonLizardRelicTrajectoryNllByGroup": {
+        "turns": {
+          "rows": 4,
+          "meanNll": 1.2813622013947612
+        },
+        "attacks": {
+          "rows": 5,
+          "meanNll": 2.085988495609254
+        },
+        "cards": {
+          "rows": 4,
+          "meanNll": 2.428204418764767
+        },
+        "shuffles": {
+          "rows": 2,
+          "meanNll": 0.797820301254445
+        }
+      },
+      "unscoredReasons": {
+        "unsupported:gold_mutating_card": 1,
+        "unsupported:gold_mutating_potion": 1,
+        "unsupported:pre_stolen_gold_nonzero": 1,
+        "unsupported:ritual_dagger": 2
+      }
+    },
+    "tailRetainedWins": {
+      "rows": 96,
+      "method": "activeTail_teacher_forced_on_ordinary_precombat_input; descriptive only; no qualification gate applied",
+      "scoredRows": {
+        "maxHpNll": 78,
+        "maxHpModeCorrect": 78,
+        "hpNll": 78,
+        "expectedHpAbsError": 78,
+        "potionMaskNll": 78,
+        "potionMaskModeCorrect": 78
+      },
+      "metrics": {
+        "maxHpNll": 0.049182581299447005,
+        "maxHpModeCorrect": 0.9743589743589743,
+        "hpNll": 3.691782978019007,
+        "expectedHpAbsError": 9.325625059096016,
+        "potionMaskNll": 0.8203390033495829,
+        "potionMaskModeCorrect": 0.6923076923076923
+      },
+      "perPairScores": [
+        {
+          "sourceSeed": 4200300,
+          "maxHpNll": 1.1444157280993133e-05,
+          "hpNll": 3.7432469639632098,
+          "expectedHpAbsError": 11.545688660722366,
+          "potionMaskNll": -0.0,
+          "nonLizardRelicTrajectoryNllByGroup": {}
+        },
+        {
+          "sourceSeed": 4200301,
+          "maxHpNll": 0.006558900074662454,
+          "hpNll": 4.6475911139031725,
+          "expectedHpAbsError": 20.739855509484187,
+          "potionMaskNll": 0.4868458886535216,
+          "nonLizardRelicTrajectoryNllByGroup": {}
+        },
+        {
+          "sourceSeed": 4200302,
+          "maxHpNll": 0.003814093869880785,
+          "hpNll": 3.661471985494551,
+          "expectedHpAbsError": 4.617577911936678,
+          "potionMaskNll": 2.171517878665221,
+          "nonLizardRelicTrajectoryNllByGroup": {}
+        },
+        {
+          "sourceSeed": 4200305,
+          "maxHpNll": 0.0007488550557034827,
+          "hpNll": 3.0471033832642864,
+          "expectedHpAbsError": 0.5576677551080138,
+          "potionMaskNll": 2.8665337554273065,
+          "nonLizardRelicTrajectoryNllByGroup": {}
+        },
+        {
+          "sourceSeed": 4200306,
+          "maxHpNll": 0.000902225158193884,
+          "hpNll": 1.6500098694127188,
+          "expectedHpAbsError": 1.4167144010981474,
+          "potionMaskNll": 0.42590189322989,
+          "nonLizardRelicTrajectoryNllByGroup": {
+            "cards": 2.2047206700776973
+          }
+        },
+        {
+          "sourceSeed": 4200308,
+          "maxHpNll": 0.0010668363579801232,
+          "hpNll": 3.7540633441322604,
+          "expectedHpAbsError": 7.732780530746272,
+          "potionMaskNll": 0.5933443346255421,
+          "nonLizardRelicTrajectoryNllByGroup": {
+            "turns": 1.0998400334534153
+          }
+        },
+        {
+          "sourceSeed": 4200314,
+          "maxHpNll": 1.479577588906863,
+          "hpNll": 2.8010673632030656,
+          "expectedHpAbsError": 1.234045544656965,
+          "potionMaskNll": 0.16867025860988377,
+          "nonLizardRelicTrajectoryNllByGroup": {
+            "turns": 1.1742136028014314
+          }
+        },
+        {
+          "sourceSeed": 4200315,
+          "maxHpNll": 0.00010240602304191475,
+          "hpNll": 1.7297021090845428,
+          "expectedHpAbsError": 11.676515290979296,
+          "potionMaskNll": 0.7013295331101573,
+          "nonLizardRelicTrajectoryNllByGroup": {
+            "turns": 1.061143538108139
+          }
+        },
+        {
+          "sourceSeed": 4200316,
+          "maxHpNll": 0.6640139464894171,
+          "hpNll": 3.1598968451706217,
+          "expectedHpAbsError": 0.8864874745817701,
+          "potionMaskNll": -0.0,
+          "nonLizardRelicTrajectoryNllByGroup": {
+            "attacks": 1.8736090989822771
+          }
+        },
+        {
+          "sourceSeed": 4200321,
+          "maxHpNll": 9.17915742374676e-06,
+          "hpNll": 4.124063679907783,
+          "expectedHpAbsError": 17.943663998580632,
+          "potionMaskNll": -0.0,
+          "nonLizardRelicTrajectoryNllByGroup": {}
+        },
+        {
+          "sourceSeed": 4200322,
+          "maxHpNll": 0.0001309003670059836,
+          "hpNll": 2.9206780263350645,
+          "expectedHpAbsError": 3.232997823972255,
+          "potionMaskNll": 0.49876754047324695,
+          "nonLizardRelicTrajectoryNllByGroup": {}
+        },
+        {
+          "sourceSeed": 4200323,
+          "maxHpNll": 0.007047934130546082,
+          "hpNll": 2.422380863380127,
+          "expectedHpAbsError": 1.9800714478154138,
+          "potionMaskNll": 1.5880168433903405,
+          "nonLizardRelicTrajectoryNllByGroup": {
+            "attacks": 2.021209913019882
+          }
+        },
+        {
+          "sourceSeed": 4200324,
+          "maxHpNll": 0.0006056473489635561,
+          "hpNll": 4.5044039110649665,
+          "expectedHpAbsError": 18.360844891753004,
+          "potionMaskNll": 0.5431233790084914,
+          "nonLizardRelicTrajectoryNllByGroup": {
+            "cards": 2.535916717919229,
+            "shuffles": 1.2642477545478628
+          }
+        },
+        {
+          "sourceSeed": 4200325,
+          "maxHpNll": 6.413665448957444e-05,
+          "hpNll": 3.2378003845239283,
+          "expectedHpAbsError": 3.9872915530324917,
+          "potionMaskNll": -0.0,
+          "nonLizardRelicTrajectoryNllByGroup": {}
+        },
+        {
+          "sourceSeed": 4200326,
+          "maxHpNll": 0.0006972597450913985,
+          "hpNll": 4.056486134609667,
+          "expectedHpAbsError": 9.930787900579162,
+          "potionMaskNll": 2.4596123508970047,
+          "nonLizardRelicTrajectoryNllByGroup": {}
+        },
+        {
+          "sourceSeed": 4200329,
+          "maxHpNll": 8.750344684521394e-05,
+          "hpNll": 4.761766440342604,
+          "expectedHpAbsError": 16.773244185367957,
+          "potionMaskNll": 1.4571561743806163,
+          "nonLizardRelicTrajectoryNllByGroup": {}
+        },
+        {
+          "sourceSeed": 4200330,
+          "maxHpNll": 1.192093606051113e-06,
+          "hpNll": 5.55555408410303,
+          "expectedHpAbsError": 9.152790363160548,
+          "potionMaskNll": 0.07463346554023974,
+          "nonLizardRelicTrajectoryNllByGroup": {}
+        },
+        {
+          "sourceSeed": 4200331,
+          "maxHpNll": 0.0005024741651688422,
+          "hpNll": 3.618615794862367,
+          "expectedHpAbsError": 8.085223554109689,
+          "potionMaskNll": 1.631535800413206,
+          "nonLizardRelicTrajectoryNllByGroup": {
+            "cards": 2.5241118014817037
+          }
+        },
+        {
+          "sourceSeed": 4200332,
+          "maxHpNll": 0.002492670927432155,
+          "hpNll": 5.080295159124545,
+          "expectedHpAbsError": 20.737902373075485,
+          "potionMaskNll": 0.5071656109907694,
+          "nonLizardRelicTrajectoryNllByGroup": {}
+        },
+        {
+          "sourceSeed": 4200335,
+          "maxHpNll": 0.11059399034361347,
+          "hpNll": 4.245306541270619,
+          "expectedHpAbsError": 21.14193669079404,
+          "potionMaskNll": -0.0,
+          "nonLizardRelicTrajectoryNllByGroup": {
+            "attacks": 2.1419050509050317
+          }
+        },
+        {
+          "sourceSeed": 4200339,
+          "maxHpNll": 1.0132840948875857e-05,
+          "hpNll": 0.21190771746485218,
+          "expectedHpAbsError": 0.5819739449487997,
+          "potionMaskNll": -0.0,
+          "nonLizardRelicTrajectoryNllByGroup": {}
+        },
+        {
+          "sourceSeed": 4200340,
+          "maxHpNll": 2.5033982140651005e-06,
+          "hpNll": 3.4885811050288513,
+          "expectedHpAbsError": 4.338031143435003,
+          "potionMaskNll": 0.050109318740551495,
+          "nonLizardRelicTrajectoryNllByGroup": {}
+        },
+        {
+          "sourceSeed": 4200341,
+          "maxHpNll": 2.6226078091500412e-06,
+          "hpNll": 4.019179213143717,
+          "expectedHpAbsError": 14.337754885575578,
+          "potionMaskNll": -0.0,
+          "nonLizardRelicTrajectoryNllByGroup": {
+            "attacks": 2.192737793049324
+          }
+        },
+        {
+          "sourceSeed": 4200342,
+          "maxHpNll": 2.3007657557424074e-05,
+          "hpNll": 4.236360288473931,
+          "expectedHpAbsError": 18.09056119050365,
+          "potionMaskNll": -0.0,
+          "nonLizardRelicTrajectoryNllByGroup": {}
+        },
+        {
+          "sourceSeed": 4200344,
+          "maxHpNll": 0.0022863039621433263,
+          "hpNll": 3.586093474899102,
+          "expectedHpAbsError": 5.234563016798347,
+          "potionMaskNll": 0.2623584351502225,
+          "nonLizardRelicTrajectoryNllByGroup": {}
+        },
+        {
+          "sourceSeed": 4200345,
+          "maxHpNll": 6.127545213127414e-05,
+          "hpNll": 3.8711941861993524,
+          "expectedHpAbsError": 7.315676957834512,
+          "potionMaskNll": -0.0,
+          "nonLizardRelicTrajectoryNllByGroup": {
+            "turns": 1.0245130103153668
+          }
+        },
+        {
+          "sourceSeed": 4200346,
+          "maxHpNll": 0.0005198279849552264,
+          "hpNll": 3.5887045236408053,
+          "expectedHpAbsError": 2.5073213884606957,
+          "potionMaskNll": 0.2681575016890479,
+          "nonLizardRelicTrajectoryNllByGroup": {
+            "cards": 2.1546093598489855
+          }
+        },
+        {
+          "sourceSeed": 4200347,
+          "maxHpNll": 1.955051459639318e-05,
+          "hpNll": 3.5583769874589506,
+          "expectedHpAbsError": 1.1681927567919104,
+          "potionMaskNll": 0.7487780568120705,
+          "nonLizardRelicTrajectoryNllByGroup": {}
+        },
+        {
+          "sourceSeed": 4200348,
+          "maxHpNll": 0.002104946504664882,
+          "hpNll": 3.120904595665421,
+          "expectedHpAbsError": 8.53908301071045,
+          "potionMaskNll": 1.2877604153973163,
+          "nonLizardRelicTrajectoryNllByGroup": {}
+        },
+        {
+          "sourceSeed": 4200349,
+          "maxHpNll": 0.0010139716706839168,
+          "hpNll": 3.0380098889252043,
+          "expectedHpAbsError": 3.3993986174173827,
+          "potionMaskNll": 0.6341852408928893,
+          "nonLizardRelicTrajectoryNllByGroup": {
+            "shuffles": 0.8482988748681588
+          }
+        },
+        {
+          "sourceSeed": 4200351,
+          "maxHpNll": 0.0015911595178982074,
+          "hpNll": 4.782489608914965,
+          "expectedHpAbsError": 10.27236374895503,
+          "potionMaskNll": 0.163522515983037,
+          "nonLizardRelicTrajectoryNllByGroup": {}
+        },
+        {
+          "sourceSeed": 4200352,
+          "maxHpNll": 3.278309198615281e-05,
+          "hpNll": 2.103895828168021,
+          "expectedHpAbsError": 0.7571468230858898,
+          "potionMaskNll": 0.2223244571082672,
+          "nonLizardRelicTrajectoryNllByGroup": {}
+        },
+        {
+          "sourceSeed": 4200353,
+          "maxHpNll": 0.0006324264065612136,
+          "hpNll": 5.177584903709431,
+          "expectedHpAbsError": 26.104960968121304,
+          "potionMaskNll": -0.0,
+          "nonLizardRelicTrajectoryNllByGroup": {}
+        },
+        {
+          "sourceSeed": 4200354,
+          "maxHpNll": 0.0014274767190368483,
+          "hpNll": 6.502890657447163,
+          "expectedHpAbsError": 43.66750297559338,
+          "potionMaskNll": -0.0,
+          "nonLizardRelicTrajectoryNllByGroup": {
+            "attacks": 2.301009181593052
+          }
+        },
+        {
+          "sourceSeed": 4200355,
+          "maxHpNll": 0.003588790371775931,
+          "hpNll": 3.621946135178427,
+          "expectedHpAbsError": 3.750702584395185,
+          "potionMaskNll": 0.6433934069035351,
+          "nonLizardRelicTrajectoryNllByGroup": {
+            "attacks": 2.5514045057033496
+          }
+        },
+        {
+          "sourceSeed": 4200356,
+          "maxHpNll": 7.86784406175548e-06,
+          "hpNll": 3.96142655350067,
+          "expectedHpAbsError": 5.558607076527551,
+          "potionMaskNll": -0.0,
+          "nonLizardRelicTrajectoryNllByGroup": {}
+        },
+        {
+          "sourceSeed": 4200357,
+          "maxHpNll": 0.0014009151153495149,
+          "hpNll": 0.694318441837458,
+          "expectedHpAbsError": 4.512678741745731,
+          "potionMaskNll": 3.6584877623444414,
+          "nonLizardRelicTrajectoryNllByGroup": {}
+        },
+        {
+          "sourceSeed": 4200359,
+          "maxHpNll": 1.168257861703239e-05,
+          "hpNll": 3.685486099279225,
+          "expectedHpAbsError": 5.145085503285372,
+          "potionMaskNll": 1.855473020993036,
+          "nonLizardRelicTrajectoryNllByGroup": {}
+        },
+        {
+          "sourceSeed": 4200360,
+          "maxHpNll": 0.0011460192833186115,
+          "hpNll": 3.479651917857852,
+          "expectedHpAbsError": 28.860805126605555,
+          "potionMaskNll": 1.2685802043140078,
+          "nonLizardRelicTrajectoryNllByGroup": {
+            "attacks": 2.4587253147149495
+          }
+        },
+        {
+          "sourceSeed": 4200362,
+          "maxHpNll": 0.001312103011204069,
+          "hpNll": 3.6689867121614594,
+          "expectedHpAbsError": 2.251238437340362,
+          "potionMaskNll": 1.5775933101883926,
+          "nonLizardRelicTrajectoryNllByGroup": {}
+        },
+        {
+          "sourceSeed": 4200363,
+          "maxHpNll": 0.0020819506260927392,
+          "hpNll": 4.031757130590533,
+          "expectedHpAbsError": 1.1735371676040813,
+          "potionMaskNll": -0.0,
+          "nonLizardRelicTrajectoryNllByGroup": {}
+        },
+        {
+          "sourceSeed": 4200364,
+          "maxHpNll": 0.00035089449542127804,
+          "hpNll": 3.5966400390847943,
+          "expectedHpAbsError": 4.309263353578899,
+          "potionMaskNll": 1.4526563796545107,
+          "nonLizardRelicTrajectoryNllByGroup": {
+            "attacks": 2.016386883318632
+          }
+        },
+        {
+          "sourceSeed": 4200365,
+          "maxHpNll": 4.768372718899988e-07,
+          "hpNll": 4.7608422427127985,
+          "expectedHpAbsError": 7.142590553362467,
+          "potionMaskNll": -0.0,
+          "nonLizardRelicTrajectoryNllByGroup": {}
+        },
+        {
+          "sourceSeed": 4200366,
+          "maxHpNll": 0.0008142328220011358,
+          "hpNll": 3.6196595544396697,
+          "expectedHpAbsError": 11.595786857782514,
+          "potionMaskNll": -0.0,
+          "nonLizardRelicTrajectoryNllByGroup": {}
+        },
+        {
+          "sourceSeed": 4200367,
+          "maxHpNll": 0.0006314721293805515,
+          "hpNll": 3.224117727554606,
+          "expectedHpAbsError": 5.531483738984775,
+          "potionMaskNll": 0.38285640263042603,
+          "nonLizardRelicTrajectoryNllByGroup": {}
+        },
+        {
+          "sourceSeed": 4200370,
+          "maxHpNll": 1.3351529560961629e-05,
+          "hpNll": 3.4090106502413047,
+          "expectedHpAbsError": 0.5551154240868073,
+          "potionMaskNll": 3.4776108314003116,
+          "nonLizardRelicTrajectoryNllByGroup": {}
+        },
+        {
+          "sourceSeed": 4200371,
+          "maxHpNll": 1.4296384107361324,
+          "hpNll": 3.4464671904606416,
+          "expectedHpAbsError": 3.88430691607374,
+          "potionMaskNll": 0.3102940660611623,
+          "nonLizardRelicTrajectoryNllByGroup": {
+            "turns": 0.9442025239854941,
+            "cards": 2.0068744632771915
+          }
+        },
+        {
+          "sourceSeed": 4200373,
+          "maxHpNll": 0.00044361654504451357,
+          "hpNll": 3.0837584249815997,
+          "expectedHpAbsError": 0.6933250965950677,
+          "potionMaskNll": 0.7787012568287446,
+          "nonLizardRelicTrajectoryNllByGroup": {}
+        },
+        {
+          "sourceSeed": 4200375,
+          "maxHpNll": 0.005510164920385513,
+          "hpNll": 4.17728156154165,
+          "expectedHpAbsError": 15.195040076971054,
+          "potionMaskNll": 1.683229699844145,
+          "nonLizardRelicTrajectoryNllByGroup": {}
+        },
+        {
+          "sourceSeed": 4200376,
+          "maxHpNll": 0.0005700424520280692,
+          "hpNll": 3.1317280485369663,
+          "expectedHpAbsError": 1.7418142355313346,
+          "potionMaskNll": 0.6086338622776007,
+          "nonLizardRelicTrajectoryNllByGroup": {}
+        },
+        {
+          "sourceSeed": 4200377,
+          "maxHpNll": 0.07347086394843329,
+          "hpNll": 3.793865898078679,
+          "expectedHpAbsError": 8.386518016457558,
+          "potionMaskNll": 1.3092117603880409,
+          "nonLizardRelicTrajectoryNllByGroup": {}
+        },
+        {
+          "sourceSeed": 4200378,
+          "maxHpNll": 0.0015088969068234096,
+          "hpNll": 3.5388478548451205,
+          "expectedHpAbsError": 2.3529898584365583,
+          "potionMaskNll": 0.32776768436349407,
+          "nonLizardRelicTrajectoryNllByGroup": {}
+        },
+        {
+          "sourceSeed": 4200379,
+          "maxHpNll": 1.4066795103890526e-05,
+          "hpNll": 5.128577705365367,
+          "expectedHpAbsError": 21.553344620671822,
+          "potionMaskNll": 0.6054663595797957,
+          "nonLizardRelicTrajectoryNllByGroup": {
+            "attacks": 2.476474713837497
+          }
+        },
+        {
+          "sourceSeed": 4200383,
+          "maxHpNll": 0.0014866310502867758,
+          "hpNll": 3.602362325475381,
+          "expectedHpAbsError": 1.6304687263909727,
+          "potionMaskNll": 2.198175462598195,
+          "nonLizardRelicTrajectoryNllByGroup": {
+            "attacks": 2.025048869272322,
+            "cards": 2.2329765659379555
+          }
+        },
+        {
+          "sourceSeed": 4200384,
+          "maxHpNll": 4.2916265128013755e-05,
+          "hpNll": 4.811280064579114,
+          "expectedHpAbsError": 16.27933740704657,
+          "potionMaskNll": -0.0,
+          "nonLizardRelicTrajectoryNllByGroup": {}
+        },
+        {
+          "sourceSeed": 4200386,
+          "maxHpNll": 0.0016882357154460557,
+          "hpNll": 3.391571205662969,
+          "expectedHpAbsError": 10.357879887196088,
+          "potionMaskNll": 3.198766693770516,
+          "nonLizardRelicTrajectoryNllByGroup": {
+            "attacks": 1.7573758411343483
+          }
+        },
+        {
+          "sourceSeed": 4200387,
+          "maxHpNll": 0.0016211291464877985,
+          "hpNll": 4.3384791801213245,
+          "expectedHpAbsError": 17.116999275269336,
+          "potionMaskNll": 2.7194992942543657,
+          "nonLizardRelicTrajectoryNllByGroup": {
+            "turns": 1.0576310003096077,
+            "shuffles": 1.497531671796339
+          }
+        },
+        {
+          "sourceSeed": 4200389,
+          "maxHpNll": 0.00019939741511700726,
+          "hpNll": 3.213034271444201,
+          "expectedHpAbsError": 3.15825323224999,
+          "potionMaskNll": 0.7276670934291368,
+          "nonLizardRelicTrajectoryNllByGroup": {
+            "attacks": 2.530814491748915
+          }
+        },
+        {
+          "sourceSeed": 4200391,
+          "maxHpNll": 0.0010473250249828359,
+          "hpNll": 3.189050752917671,
+          "expectedHpAbsError": 6.020456503461801,
+          "potionMaskNll": 1.0022136216674487,
+          "nonLizardRelicTrajectoryNllByGroup": {}
+        },
+        {
+          "sourceSeed": 4200392,
+          "maxHpNll": 0.00139082785969268,
+          "hpNll": 3.720612570742129,
+          "expectedHpAbsError": 10.96650080975013,
+          "potionMaskNll": 2.198814841361107,
+          "nonLizardRelicTrajectoryNllByGroup": {
+            "turns": 1.3235073504510728
+          }
+        },
+        {
+          "sourceSeed": 4200393,
+          "maxHpNll": 1.1086525383518087e-05,
+          "hpNll": 4.314350710472205,
+          "expectedHpAbsError": 14.330136245349422,
+          "potionMaskNll": 1.8445841248140638,
+          "nonLizardRelicTrajectoryNllByGroup": {}
+        },
+        {
+          "sourceSeed": 4200394,
+          "maxHpNll": 0.00011933561905208486,
+          "hpNll": 4.086150497149487,
+          "expectedHpAbsError": 11.762630052658096,
+          "potionMaskNll": -0.0,
+          "nonLizardRelicTrajectoryNllByGroup": {}
+        },
+        {
+          "sourceSeed": 4200395,
+          "maxHpNll": 8.154247855027523e-05,
+          "hpNll": 4.043989719375829,
+          "expectedHpAbsError": 13.107454578671422,
+          "potionMaskNll": 0.30697423759530446,
+          "nonLizardRelicTrajectoryNllByGroup": {
+            "turns": 1.0829139528895082
+          }
+        },
+        {
+          "sourceSeed": 4200396,
+          "maxHpNll": 0.0001642838948610805,
+          "hpNll": 4.06121888709862,
+          "expectedHpAbsError": 10.577352832231014,
+          "potionMaskNll": -0.0,
+          "nonLizardRelicTrajectoryNllByGroup": {
+            "attacks": 2.2522781084218275
+          }
+        },
+        {
+          "sourceSeed": 4200397,
+          "maxHpNll": 0.0001138513523402586,
+          "hpNll": 3.979567092886486,
+          "expectedHpAbsError": 21.557021332613658,
+          "potionMaskNll": 1.7265742177644656,
+          "nonLizardRelicTrajectoryNllByGroup": {
+            "turns": 1.7557645895966056
+          }
+        },
+        {
+          "sourceSeed": 4200401,
+          "maxHpNll": 3.3378656780893193e-06,
+          "hpNll": 4.6833300807785445,
+          "expectedHpAbsError": 4.8951444003586175,
+          "potionMaskNll": -0.0,
+          "nonLizardRelicTrajectoryNllByGroup": {}
+        },
+        {
+          "sourceSeed": 4200403,
+          "maxHpNll": 0.0006799624911254674,
+          "hpNll": 4.976757378735531,
+          "expectedHpAbsError": 36.10632899135817,
+          "potionMaskNll": 0.9785111753819297,
+          "nonLizardRelicTrajectoryNllByGroup": {
+            "cards": 2.4265071238043436
+          }
+        },
+        {
+          "sourceSeed": 4200409,
+          "maxHpNll": 0.0045632968106735505,
+          "hpNll": 3.895842892291711,
+          "expectedHpAbsError": 10.326418585804618,
+          "potionMaskNll": -0.0,
+          "nonLizardRelicTrajectoryNllByGroup": {}
+        },
+        {
+          "sourceSeed": 4200410,
+          "maxHpNll": 4.255862197493396e-05,
+          "hpNll": 3.657818931652918,
+          "expectedHpAbsError": 7.138033358999564,
+          "potionMaskNll": 2.3944027129037972,
+          "nonLizardRelicTrajectoryNllByGroup": {}
+        },
+        {
+          "sourceSeed": 4200411,
+          "maxHpNll": 0.003482378143684298,
+          "hpNll": 3.998210591432522,
+          "expectedHpAbsError": 13.812198943924159,
+          "potionMaskNll": -0.0,
+          "nonLizardRelicTrajectoryNllByGroup": {}
+        },
+        {
+          "sourceSeed": 4200412,
+          "maxHpNll": 5.126012588663675e-06,
+          "hpNll": 3.098885180264648,
+          "expectedHpAbsError": 2.711104185000302,
+          "potionMaskNll": 0.30434742662345815,
+          "nonLizardRelicTrajectoryNllByGroup": {
+            "shuffles": 1.0070932110320778
+          }
+        },
+        {
+          "sourceSeed": 4200413,
+          "maxHpNll": 0.0006655881042547014,
+          "hpNll": 3.2518360886586475,
+          "expectedHpAbsError": 5.247032411781646,
+          "potionMaskNll": 1.9331604722109317,
+          "nonLizardRelicTrajectoryNllByGroup": {}
+        },
+        {
+          "sourceSeed": 4200419,
+          "maxHpNll": 8.142325954681377e-05,
+          "hpNll": 3.5641314498792847,
+          "expectedHpAbsError": 1.3518603650803982,
+          "potionMaskNll": 0.9057512799880305,
+          "nonLizardRelicTrajectoryNllByGroup": {}
+        },
+        {
+          "sourceSeed": 4200421,
+          "maxHpNll": 0.0005932421488466451,
+          "hpNll": 3.705910538220693,
+          "expectedHpAbsError": 5.98598494135058,
+          "potionMaskNll": 1.4017605913933529,
+          "nonLizardRelicTrajectoryNllByGroup": {
+            "shuffles": 0.9384281531516335
+          }
+        },
+        {
+          "sourceSeed": 4200424,
+          "maxHpNll": 3.0637256730507904e-05,
+          "hpNll": 3.385978090887488,
+          "expectedHpAbsError": 3.3786744239635027,
+          "potionMaskNll": 0.23068777028722165,
+          "nonLizardRelicTrajectoryNllByGroup": {}
+        },
+        {
+          "sourceSeed": 4200425,
+          "maxHpNll": 0.005658452587702639,
+          "hpNll": 5.11845588635279,
+          "expectedHpAbsError": 17.70242624071136,
+          "potionMaskNll": 0.16324458826365004,
+          "nonLizardRelicTrajectoryNllByGroup": {}
+        },
+        {
+          "sourceSeed": 4200426,
+          "maxHpNll": 0.0011925653003306332,
+          "hpNll": 2.5741830196960964,
+          "expectedHpAbsError": 4.540732167007377,
+          "potionMaskNll": -0.0,
+          "nonLizardRelicTrajectoryNllByGroup": {
+            "cards": 1.944432316241026
+          }
+        },
+        {
+          "sourceSeed": 4200427,
+          "maxHpNll": 3.218655997738752e-06,
+          "hpNll": 3.2340180141645285,
+          "expectedHpAbsError": 5.095472035437844,
+          "potionMaskNll": -0.0,
+          "nonLizardRelicTrajectoryNllByGroup": {
+            "attacks": 1.4376168433868237
+          }
+        }
+      ],
+      "nonLizardRelicTrajectoryNllByGroup": {
+        "turns": {
+          "rows": 9,
+          "meanNll": 1.1693032891011823
+        },
+        "attacks": {
+          "rows": 14,
+          "meanNll": 2.1454711863634452
+        },
+        "cards": {
+          "rows": 8,
+          "meanNll": 2.2537686273235167
+        },
+        "shuffles": {
+          "rows": 5,
+          "meanNll": 1.1111199330792143
+        }
+      },
+      "unscoredReasons": {
+        "unsupported:entropic_brew,potion_not_certified": 1,
+        "unsupported:gold_mutating_card": 2,
+        "unsupported:gold_mutating_encounter": 1,
+        "unsupported:gold_mutating_potion": 4,
+        "unsupported:gold_mutating_relic": 2,
+        "unsupported:pre_stolen_gold_nonzero": 3,
+        "unsupported:ritual_dagger": 4,
+        "unsupported:writhing_mass": 1
+      }
+    },
+    "tailRetainedBothArmWinPairedDelta": {
+      "eligibleBothArmWinsWithTailRetained": 71,
+      "method": "2000 paired source bootstrap draws; exploratory, not a qualification gate",
+      "metrics": {
+        "maxHpNll": {
+          "pairs": 71,
+          "meanTreatmentMinusControl": 0.0,
+          "sourceBootstrap95CI": [
+            0.0,
+            0.0
+          ]
+        },
+        "hpNll": {
+          "pairs": 71,
+          "meanTreatmentMinusControl": 0.03418280000986073,
+          "sourceBootstrap95CI": [
+            -0.1208335006156227,
+            0.18196627741070318
+          ]
+        },
+        "expectedHpAbsError": {
+          "pairs": 71,
+          "meanTreatmentMinusControl": 0.8514447716785969,
+          "sourceBootstrap95CI": [
+            -0.3709175866895373,
+            2.2759479595908827
+          ]
+        },
+        "potionMaskNll": {
+          "pairs": 71,
+          "meanTreatmentMinusControl": 0.060096543109347485,
+          "sourceBootstrap95CI": [
+            -0.04326604622698643,
+            0.17334110995683824
+          ]
+        }
+      },
+      "nonLizardRelicTrajectoryNllByGroup": {
+        "attacks": {
+          "pairs": 12,
+          "meanTreatmentMinusControl": 0.10599795297616581,
+          "sourceBootstrap95CI": [
+            -0.03967306158063285,
+            0.24892079012746848
+          ]
+        },
+        "cards": {
+          "pairs": 8,
+          "meanTreatmentMinusControl": 0.041677374163141906,
+          "sourceBootstrap95CI": [
+            -0.08512462006329491,
+            0.176435452580231
+          ]
+        },
+        "shuffles": {
+          "pairs": 5,
+          "meanTreatmentMinusControl": -0.392575691058891,
+          "sourceBootstrap95CI": [
+            -1.1982756939433163,
+            0.07551528568904642
+          ]
+        },
+        "turns": {
+          "pairs": 8,
+          "meanTreatmentMinusControl": 0.014052864761037787,
+          "sourceBootstrap95CI": [
+            -0.055086119602373175,
+            0.10090990794773882
+          ]
+        }
+      }
+    }
+  },
+  "silverPolicyDivergence": {
+    "allPairs": {
+      "pairs": 128,
+      "firstActionChanged": 59,
+      "firstActionChangeRate": 0.4609375,
+      "fullTraceChanged": 122,
+      "fullTraceChangeRate": 0.953125,
+      "meanCommonPrefixActions": 2.2109375,
+      "meanShorterTraceActions": 28.0234375
+    },
+    "activeTailWinsWithTailRetained": {
+      "pairs": 96,
+      "firstActionChanged": 43,
+      "firstActionChangeRate": 0.4479166666666667,
+      "fullTraceChanged": 90,
+      "fullTraceChangeRate": 0.9375,
+      "meanCommonPrefixActions": 2.4583333333333335,
+      "meanShorterTraceActions": 26.927083333333332
+    },
+    "perSourcePair": [
+      {
+        "seed": 4200300,
+        "tailConsumed": false,
+        "activeTailWon": true,
+        "noTailFirstActionBits": 3,
+        "activeTailFirstActionBits": 2,
+        "noTailTraceSha256": "9d8ecf4d8821cfa3712bc52d456edd8c80acd45bfa555255868f7c31628a4728",
+        "activeTailTraceSha256": "04e345cd244cf22bec0ffb14f9194510712ed99ffe71a50357d3cbd8e8e06816",
+        "firstActionEqual": false,
+        "fullTraceEqual": false,
+        "commonPrefixActions": 0,
+        "shorterTraceActions": 12
+      },
+      {
+        "seed": 4200301,
+        "tailConsumed": false,
+        "activeTailWon": true,
+        "noTailFirstActionBits": 0,
+        "activeTailFirstActionBits": 2,
+        "noTailTraceSha256": "fbfb4b3ffbfc3b26a804feb5f9c5d365c6c2b4b4e74df5a30d5badb0b34a82a8",
+        "activeTailTraceSha256": "547ffdc8441f1c382a26f97d12aaa8da3a53fb3550c29db444a05c789e5296d6",
+        "firstActionEqual": false,
+        "fullTraceEqual": false,
+        "commonPrefixActions": 0,
+        "shorterTraceActions": 13
+      },
+      {
+        "seed": 4200302,
+        "tailConsumed": false,
+        "activeTailWon": true,
+        "noTailFirstActionBits": 536870913,
+        "activeTailFirstActionBits": 3,
+        "noTailTraceSha256": "c804dcc3dc796d128152264bf7306724928232a4a9820b6439275d81a04fe869",
+        "activeTailTraceSha256": "23991a4fa7d4455ad4223963c9ca409b48ffcf2da822515f7e3e9f0dcd2b9c6c",
+        "firstActionEqual": false,
+        "fullTraceEqual": false,
+        "commonPrefixActions": 0,
+        "shorterTraceActions": 33
+      },
+      {
+        "seed": 4200303,
+        "tailConsumed": true,
+        "activeTailWon": true,
+        "noTailFirstActionBits": 1,
+        "activeTailFirstActionBits": 0,
+        "noTailTraceSha256": "0cb94e9b00e76a69ea807af392a3b7d4d3801f1413d2e47d35e7314d7df33f64",
+        "activeTailTraceSha256": "6a5b549ca5d4b310666e4c01d37a368c1124e6592ccefffc4d71fb0308f3f456",
+        "firstActionEqual": false,
+        "fullTraceEqual": false,
+        "commonPrefixActions": 0,
+        "shorterTraceActions": 17
+      },
+      {
+        "seed": 4200304,
+        "tailConsumed": true,
+        "activeTailWon": false,
+        "noTailFirstActionBits": 2,
+        "activeTailFirstActionBits": 2,
+        "noTailTraceSha256": "341dbdd57c67773cf724040054bd8ca953d3092042590368bdb2703526868463",
+        "activeTailTraceSha256": "8d9a9536296c84db62bc6ac1feeb56d57d24a20f9471f9aa2d5c171d7eb0f03b",
+        "firstActionEqual": true,
+        "fullTraceEqual": false,
+        "commonPrefixActions": 7,
+        "shorterTraceActions": 20
+      },
+      {
+        "seed": 4200305,
+        "tailConsumed": false,
+        "activeTailWon": true,
+        "noTailFirstActionBits": 0,
+        "activeTailFirstActionBits": 0,
+        "noTailTraceSha256": "426c20a6db0113873ead8a48f6cd7cf11682c421637792b66084f910553112f7",
+        "activeTailTraceSha256": "465f826163df214fa72f2dfe9e518b58611da7beeba127a7ba2b521a83a4638f",
+        "firstActionEqual": true,
+        "fullTraceEqual": false,
+        "commonPrefixActions": 7,
+        "shorterTraceActions": 17
+      },
+      {
+        "seed": 4200306,
+        "tailConsumed": false,
+        "activeTailWon": true,
+        "noTailFirstActionBits": 3,
+        "activeTailFirstActionBits": 2,
+        "noTailTraceSha256": "17e71b87bd29d377a31690dcbe8390995cbd38f5384fd2ab43c38125e073b23a",
+        "activeTailTraceSha256": "d4bd4554a54b8bfefd56847ff5dced17c4e208507898f6c90929bae4f90b4ae9",
+        "firstActionEqual": false,
+        "fullTraceEqual": false,
+        "commonPrefixActions": 0,
+        "shorterTraceActions": 17
+      },
+      {
+        "seed": 4200307,
+        "tailConsumed": true,
+        "activeTailWon": true,
+        "noTailFirstActionBits": 2,
+        "activeTailFirstActionBits": 4,
+        "noTailTraceSha256": "3f759652cd5a67d2b2d9fe52c2d12265f6c7834dfb0b6884d4d8ef4961ce80ad",
+        "activeTailTraceSha256": "aa770bce462eb915ecf7d00139516c6f4d9ef9950a4c27476f8c7b46a67eae3d",
+        "firstActionEqual": false,
+        "fullTraceEqual": false,
+        "commonPrefixActions": 0,
+        "shorterTraceActions": 20
+      },
+      {
+        "seed": 4200308,
+        "tailConsumed": false,
+        "activeTailWon": true,
+        "noTailFirstActionBits": 3,
+        "activeTailFirstActionBits": 3,
+        "noTailTraceSha256": "cc80f33e9beaa1947e8b1feb093b7a8b761ea8cb10751cad7d862381cfa87708",
+        "activeTailTraceSha256": "7fc4c5e2c917a5923632004398471c3a2daf074c4a406a2a2c4cfe13c9492f68",
+        "firstActionEqual": true,
+        "fullTraceEqual": false,
+        "commonPrefixActions": 2,
+        "shorterTraceActions": 17
+      },
+      {
+        "seed": 4200309,
+        "tailConsumed": false,
+        "activeTailWon": true,
+        "noTailFirstActionBits": 536870912,
+        "activeTailFirstActionBits": 4,
+        "noTailTraceSha256": "2ca51ba4a3ccde0362ada280ccca47d8cb34bb3f2fddb73d4315de56a497a693",
+        "activeTailTraceSha256": "3bd24b3d266ad5c25698742fc66610e33ac8389566cbb14f1fff8ffc83c6660f",
+        "firstActionEqual": false,
+        "fullTraceEqual": false,
+        "commonPrefixActions": 0,
+        "shorterTraceActions": 22
+      },
+      {
+        "seed": 4200310,
+        "tailConsumed": true,
+        "activeTailWon": true,
+        "noTailFirstActionBits": 1610612736,
+        "activeTailFirstActionBits": 1610612736,
+        "noTailTraceSha256": "0abf5d9e1c69c7eb4cd5b034eee1827beab18ef66a1f7c9e55649a62bb546f4a",
+        "activeTailTraceSha256": "daebbd0f74dc872cac85e9c363136862195b598c3295051b4cc7a72195c1178f",
+        "firstActionEqual": true,
+        "fullTraceEqual": false,
+        "commonPrefixActions": 2,
+        "shorterTraceActions": 8
+      },
+      {
+        "seed": 4200311,
+        "tailConsumed": true,
+        "activeTailWon": true,
+        "noTailFirstActionBits": 1610612736,
+        "activeTailFirstActionBits": 1610612736,
+        "noTailTraceSha256": "af4d5b625fc27dc546e4c926a166e3598ca20700261a353e49d0fa4cd973b45c",
+        "activeTailTraceSha256": "95601a9ed3efc034019cfba9d83aa06050a02cf28c718acaf0488260a35bae9f",
+        "firstActionEqual": true,
+        "fullTraceEqual": false,
+        "commonPrefixActions": 3,
+        "shorterTraceActions": 29
+      },
+      {
+        "seed": 4200312,
+        "tailConsumed": true,
+        "activeTailWon": true,
+        "noTailFirstActionBits": 4,
+        "activeTailFirstActionBits": 4,
+        "noTailTraceSha256": "dab9e94e0e37da9c5b1ce764cf927b682a9dd8601ab4a10817ef39ed524194e6",
+        "activeTailTraceSha256": "3c469399e9b25c35096e21606d23b557ca7b45b84a7e461399bf9bbf8f70557c",
+        "firstActionEqual": true,
+        "fullTraceEqual": false,
+        "commonPrefixActions": 1,
+        "shorterTraceActions": 50
+      },
+      {
+        "seed": 4200313,
+        "tailConsumed": false,
+        "activeTailWon": true,
+        "noTailFirstActionBits": 3,
+        "activeTailFirstActionBits": 2,
+        "noTailTraceSha256": "0593e649a3d13530427578ad16629b9494687f1db9982a7c2fa88f53734eb814",
+        "activeTailTraceSha256": "da0437aea715b5790351aff81518bd5d3eb488d012a14e75caf6694736a99689",
+        "firstActionEqual": false,
+        "fullTraceEqual": false,
+        "commonPrefixActions": 0,
+        "shorterTraceActions": 21
+      },
+      {
+        "seed": 4200314,
+        "tailConsumed": false,
+        "activeTailWon": true,
+        "noTailFirstActionBits": 65540,
+        "activeTailFirstActionBits": 65540,
+        "noTailTraceSha256": "6cf02cab831bd6463d6582c62e4db38609709bb15c5703bc43946b0ec87356ae",
+        "activeTailTraceSha256": "6cf02cab831bd6463d6582c62e4db38609709bb15c5703bc43946b0ec87356ae",
+        "firstActionEqual": true,
+        "fullTraceEqual": true,
+        "commonPrefixActions": 4,
+        "shorterTraceActions": 4
+      },
+      {
+        "seed": 4200315,
+        "tailConsumed": false,
+        "activeTailWon": true,
+        "noTailFirstActionBits": 3,
+        "activeTailFirstActionBits": 3,
+        "noTailTraceSha256": "a8e6a4fa5571569e46a04795fe8e949a6c59905e01e99958f2d25815e7304f4b",
+        "activeTailTraceSha256": "f19c8ddd45ad4149936ace713cc784ce83707867bfacfd403bb4bedd420dcf98",
+        "firstActionEqual": true,
+        "fullTraceEqual": false,
+        "commonPrefixActions": 1,
+        "shorterTraceActions": 44
+      },
+      {
+        "seed": 4200316,
+        "tailConsumed": false,
+        "activeTailWon": true,
+        "noTailFirstActionBits": 1,
+        "activeTailFirstActionBits": 65540,
+        "noTailTraceSha256": "8899c1bd708b42c007b2cc99063d0b07941c719a7739624d2c23f74307415e02",
+        "activeTailTraceSha256": "7a708014fbb183eac9e5a024242b1a878367eb825533443500a3fb77df01ca3e",
+        "firstActionEqual": false,
+        "fullTraceEqual": false,
+        "commonPrefixActions": 0,
+        "shorterTraceActions": 17
+      },
+      {
+        "seed": 4200317,
+        "tailConsumed": false,
+        "activeTailWon": true,
+        "noTailFirstActionBits": 1073741824,
+        "activeTailFirstActionBits": 1073741824,
+        "noTailTraceSha256": "9d2865068ccb3e76345c4e43c7bff73e79e38b598921d15cf5be1a614f21ca2a",
+        "activeTailTraceSha256": "15b79ead5b3e1a290b812719a0c4e4405e8430f063f3029b70db880db7a0642a",
+        "firstActionEqual": true,
+        "fullTraceEqual": false,
+        "commonPrefixActions": 2,
+        "shorterTraceActions": 30
+      },
+      {
+        "seed": 4200318,
+        "tailConsumed": true,
+        "activeTailWon": true,
+        "noTailFirstActionBits": 1610612736,
+        "activeTailFirstActionBits": 1610612736,
+        "noTailTraceSha256": "2e9c716cb09b6739e61833c5cef41e7c34efec381288108fe615423518052f84",
+        "activeTailTraceSha256": "d99f28c2524cc6ea4244e2befdae05a1a7e2839ba663c1cec16d270a4cf1db09",
+        "firstActionEqual": true,
+        "fullTraceEqual": false,
+        "commonPrefixActions": 1,
+        "shorterTraceActions": 13
+      },
+      {
+        "seed": 4200319,
+        "tailConsumed": true,
+        "activeTailWon": true,
+        "noTailFirstActionBits": 1,
+        "activeTailFirstActionBits": 1,
+        "noTailTraceSha256": "823a207c83d7a8380946eddd73933a260876a82f5fa7bb3c229ccf721f062973",
+        "activeTailTraceSha256": "692217db46f52af8ab4298f92af608d2ce9003decef6988d20430748fc6c048f",
+        "firstActionEqual": true,
+        "fullTraceEqual": false,
+        "commonPrefixActions": 1,
+        "shorterTraceActions": 16
+      },
+      {
+        "seed": 4200320,
+        "tailConsumed": true,
+        "activeTailWon": true,
+        "noTailFirstActionBits": 0,
+        "activeTailFirstActionBits": 3,
+        "noTailTraceSha256": "d83a18749ee860f6fe0d8218df770f5b85ccb4c45a01054ff427473e6df35510",
+        "activeTailTraceSha256": "8a56a2d5a90207987b44234241d2cfecc92ab52f972e2333aa5debb5e16b1a6b",
+        "firstActionEqual": false,
+        "fullTraceEqual": false,
+        "commonPrefixActions": 0,
+        "shorterTraceActions": 25
+      },
+      {
+        "seed": 4200321,
+        "tailConsumed": false,
+        "activeTailWon": true,
+        "noTailFirstActionBits": 0,
+        "activeTailFirstActionBits": 2,
+        "noTailTraceSha256": "db5a3ada364403e06d675d45bb6f7a2fe2b6d3b4eefbc192b932a9a4c23f0440",
+        "activeTailTraceSha256": "6bfbfd985fcd852dcf67c6fcd978153d41b97a3068d322f644605ff5d23e274c",
+        "firstActionEqual": false,
+        "fullTraceEqual": false,
+        "commonPrefixActions": 0,
+        "shorterTraceActions": 18
+      },
+      {
+        "seed": 4200322,
+        "tailConsumed": false,
+        "activeTailWon": true,
+        "noTailFirstActionBits": 2,
+        "activeTailFirstActionBits": 2,
+        "noTailTraceSha256": "88cc133aa0582df53c71619d4b02c6c20b08268c4b17372acb7b5adf1bd31918",
+        "activeTailTraceSha256": "4c6e0b94f1b248d11c2a2aafc5185b365cb85c888b0cb8d6306fa0c6e11ab079",
+        "firstActionEqual": true,
+        "fullTraceEqual": false,
+        "commonPrefixActions": 3,
+        "shorterTraceActions": 10
+      },
+      {
+        "seed": 4200323,
+        "tailConsumed": false,
+        "activeTailWon": true,
+        "noTailFirstActionBits": 5,
+        "activeTailFirstActionBits": 5,
+        "noTailTraceSha256": "7c371d9a1597798e8dae45d4e13070f5d5072ba0384f41faf0ece6dbafdff6eb",
+        "activeTailTraceSha256": "6555ef062fd915f8f5be3b10c435fdde672fc6a1bd795457270a83794e279896",
+        "firstActionEqual": true,
+        "fullTraceEqual": false,
+        "commonPrefixActions": 1,
+        "shorterTraceActions": 6
+      },
+      {
+        "seed": 4200324,
+        "tailConsumed": false,
+        "activeTailWon": true,
+        "noTailFirstActionBits": 536870914,
+        "activeTailFirstActionBits": 131072,
+        "noTailTraceSha256": "d365b4faa9b853f8227a52984e62cf1aa3218db2395e13db5e6bc4201a42e23e",
+        "activeTailTraceSha256": "b01fc26c4ae9f214e6f04bc8b641eb4c75d594182e10644e8ff1d556f0573eeb",
+        "firstActionEqual": false,
+        "fullTraceEqual": false,
+        "commonPrefixActions": 0,
+        "shorterTraceActions": 34
+      },
+      {
+        "seed": 4200325,
+        "tailConsumed": false,
+        "activeTailWon": true,
+        "noTailFirstActionBits": 0,
+        "activeTailFirstActionBits": 2,
+        "noTailTraceSha256": "1d311888e51ba1fa2a8d2d704ace445a84316d1d5652b2bc998db868c7dd8036",
+        "activeTailTraceSha256": "1f65b3c05fbeaedac55ad84645a96472ff4e7be3988668f145b01ef5a097dca4",
+        "firstActionEqual": false,
+        "fullTraceEqual": false,
+        "commonPrefixActions": 0,
+        "shorterTraceActions": 20
+      },
+      {
+        "seed": 4200326,
+        "tailConsumed": false,
+        "activeTailWon": true,
+        "noTailFirstActionBits": 65536,
+        "activeTailFirstActionBits": 1,
+        "noTailTraceSha256": "3be89d709bd5d7e58463aad56b0a895104014645c4faded9c996f276fd779c97",
+        "activeTailTraceSha256": "5d4bcceb8c8b0be082ecac0321eca1a9568e7d284e29bef1858abeb72a0b7474",
+        "firstActionEqual": false,
+        "fullTraceEqual": false,
+        "commonPrefixActions": 0,
+        "shorterTraceActions": 29
+      },
+      {
+        "seed": 4200327,
+        "tailConsumed": true,
+        "activeTailWon": true,
+        "noTailFirstActionBits": 65537,
+        "activeTailFirstActionBits": 536870914,
+        "noTailTraceSha256": "dd4bc4f33e9f46d91e73163c7c956a90c3c8651cf8e8e29d6e598d6eca24a610",
+        "activeTailTraceSha256": "d56c495edbb338fcd35c273344598b38da37d5f2a5399fdbe77b1e5b587b1837",
+        "firstActionEqual": false,
+        "fullTraceEqual": false,
+        "commonPrefixActions": 0,
+        "shorterTraceActions": 34
+      },
+      {
+        "seed": 4200328,
+        "tailConsumed": true,
+        "activeTailWon": true,
+        "noTailFirstActionBits": 65538,
+        "activeTailFirstActionBits": 65538,
+        "noTailTraceSha256": "9f3fb539d10b1ebf81db484d8987e0371bea16512481cabb81ecae9fd0a7eb5e",
+        "activeTailTraceSha256": "8483b25e6936043972d5b4c134d92525b4605699ca00e1c406de3c7d7761bb7f",
+        "firstActionEqual": true,
+        "fullTraceEqual": false,
+        "commonPrefixActions": 2,
+        "shorterTraceActions": 45
+      },
+      {
+        "seed": 4200329,
+        "tailConsumed": false,
+        "activeTailWon": true,
+        "noTailFirstActionBits": 1,
+        "activeTailFirstActionBits": 0,
+        "noTailTraceSha256": "c1a2dbef0050e219fe339e1f799f37f1e20f3483f83fdfda94e3135e8b846ff3",
+        "activeTailTraceSha256": "00655d12c25b97fd50a71384fb320b696ac3122f0b2e377d32e09e4a4ee2072f",
+        "firstActionEqual": false,
+        "fullTraceEqual": false,
+        "commonPrefixActions": 0,
+        "shorterTraceActions": 28
+      },
+      {
+        "seed": 4200330,
+        "tailConsumed": false,
+        "activeTailWon": true,
+        "noTailFirstActionBits": 0,
+        "activeTailFirstActionBits": 0,
+        "noTailTraceSha256": "abbb80f390c8b6f67e6f25a14fbf492dab92df9a9d508d5f8ef403a4cc7100bf",
+        "activeTailTraceSha256": "abbb80f390c8b6f67e6f25a14fbf492dab92df9a9d508d5f8ef403a4cc7100bf",
+        "firstActionEqual": true,
+        "fullTraceEqual": true,
+        "commonPrefixActions": 11,
+        "shorterTraceActions": 11
+      },
+      {
+        "seed": 4200331,
+        "tailConsumed": false,
+        "activeTailWon": true,
+        "noTailFirstActionBits": 6,
+        "activeTailFirstActionBits": 0,
+        "noTailTraceSha256": "9d796c4bfd397bce0eec34bf53c95661231bca4c2ed2ec607f5cecd848769bcf",
+        "activeTailTraceSha256": "b7d6211bbc0005cef484838f4bf63b46fc88d440c86c71ab129e7f15e8ac6e87",
+        "firstActionEqual": false,
+        "fullTraceEqual": false,
+        "commonPrefixActions": 0,
+        "shorterTraceActions": 96
+      },
+      {
+        "seed": 4200332,
+        "tailConsumed": false,
+        "activeTailWon": true,
+        "noTailFirstActionBits": 3,
+        "activeTailFirstActionBits": 131072,
+        "noTailTraceSha256": "fd08b462f3a0342c23f762b664a4c48b7c9f7d5292db173d4b67b9d288423ffa",
+        "activeTailTraceSha256": "dde1c73d59197c4e909710c874e7dd44d8cdc0eb11941540debefee720eb0b1e",
+        "firstActionEqual": false,
+        "fullTraceEqual": false,
+        "commonPrefixActions": 0,
+        "shorterTraceActions": 51
+      },
+      {
+        "seed": 4200333,
+        "tailConsumed": true,
+        "activeTailWon": true,
+        "noTailFirstActionBits": 2,
+        "activeTailFirstActionBits": 2,
+        "noTailTraceSha256": "b0ba82afab579fb1873bebfb0686f63caf760fb49f1891bbc8a9b6b7f40fa62b",
+        "activeTailTraceSha256": "e8ee3ef46e44ceb11e25571e8805c44f9eb4ef1799106acd6508823eadf473a9",
+        "firstActionEqual": true,
+        "fullTraceEqual": false,
+        "commonPrefixActions": 1,
+        "shorterTraceActions": 33
+      },
+      {
+        "seed": 4200334,
+        "tailConsumed": true,
+        "activeTailWon": true,
+        "noTailFirstActionBits": 536870914,
+        "activeTailFirstActionBits": 536870914,
+        "noTailTraceSha256": "8745d7e2d8c1b493b835ca2172c28f8f869306ff22cb67c33d74be9c85dc2195",
+        "activeTailTraceSha256": "98b67d79b537a06bd6963ad0e289d8ce80e9654e8210cafaa26e9f0bf98c9a6b",
+        "firstActionEqual": true,
+        "fullTraceEqual": false,
+        "commonPrefixActions": 2,
+        "shorterTraceActions": 36
+      },
+      {
+        "seed": 4200335,
+        "tailConsumed": false,
+        "activeTailWon": true,
+        "noTailFirstActionBits": 131074,
+        "activeTailFirstActionBits": 0,
+        "noTailTraceSha256": "dde94390755c8e0620c97936e7a5db74fb1313a0b05dacd590c20fa7c558869e",
+        "activeTailTraceSha256": "1474bb9b68f9afbc8b0102078f55e4b0de389ec5fce0077927db3da62e66b34d",
+        "firstActionEqual": false,
+        "fullTraceEqual": false,
+        "commonPrefixActions": 0,
+        "shorterTraceActions": 46
+      },
+      {
+        "seed": 4200336,
+        "tailConsumed": true,
+        "activeTailWon": true,
+        "noTailFirstActionBits": 3,
+        "activeTailFirstActionBits": 2,
+        "noTailTraceSha256": "939aa3db13597b02864391526e05c1da96e3523e9a0c5c18e42d0d0494419db9",
+        "activeTailTraceSha256": "b168d10bbf8b6b3a5598da2756901a51de6e9be1c46728335404c7976313fa7e",
+        "firstActionEqual": false,
+        "fullTraceEqual": false,
+        "commonPrefixActions": 0,
+        "shorterTraceActions": 40
+      },
+      {
+        "seed": 4200337,
+        "tailConsumed": true,
+        "activeTailWon": true,
+        "noTailFirstActionBits": 3,
+        "activeTailFirstActionBits": 536870912,
+        "noTailTraceSha256": "445fce21dff7fbd23693a2bf4d0a1bb0af77b4065f034141a95adad3d44ee0c6",
+        "activeTailTraceSha256": "3115033d065cda231d5eb7078744d66f2d269bd5ebe2581559c6e22c4ea6bcc1",
+        "firstActionEqual": false,
+        "fullTraceEqual": false,
+        "commonPrefixActions": 0,
+        "shorterTraceActions": 33
+      },
+      {
+        "seed": 4200338,
+        "tailConsumed": false,
+        "activeTailWon": true,
+        "noTailFirstActionBits": 0,
+        "activeTailFirstActionBits": 65537,
+        "noTailTraceSha256": "8d0335ae3b5a99d29384596c859e44c48143ef5b7fa3a26195ad7616b35f49ef",
+        "activeTailTraceSha256": "7561f9c3356a1fb62a6f36bca4e20f536db191a9c1b054f7c361811906677a08",
+        "firstActionEqual": false,
+        "fullTraceEqual": false,
+        "commonPrefixActions": 0,
+        "shorterTraceActions": 27
+      },
+      {
+        "seed": 4200339,
+        "tailConsumed": false,
+        "activeTailWon": true,
+        "noTailFirstActionBits": 65536,
+        "activeTailFirstActionBits": 65536,
+        "noTailTraceSha256": "d6b1e33daa9ddcd48c6c9de77165e0ba3d829ef51948f52057c4f51a5582de2e",
+        "activeTailTraceSha256": "d6b1e33daa9ddcd48c6c9de77165e0ba3d829ef51948f52057c4f51a5582de2e",
+        "firstActionEqual": true,
+        "fullTraceEqual": true,
+        "commonPrefixActions": 10,
+        "shorterTraceActions": 10
+      },
+      {
+        "seed": 4200340,
+        "tailConsumed": false,
+        "activeTailWon": true,
+        "noTailFirstActionBits": 4,
+        "activeTailFirstActionBits": 4,
+        "noTailTraceSha256": "d74ae64223dec13d5bc5777108f9e6d5b5fff89cf7f3f987d23553cbbd0335ff",
+        "activeTailTraceSha256": "ca795d34d0fb631bd984475afe56ec939a00327b326210f292bf1c5d5ef62f7e",
+        "firstActionEqual": true,
+        "fullTraceEqual": false,
+        "commonPrefixActions": 1,
+        "shorterTraceActions": 40
+      },
+      {
+        "seed": 4200341,
+        "tailConsumed": false,
+        "activeTailWon": true,
+        "noTailFirstActionBits": 0,
+        "activeTailFirstActionBits": 0,
+        "noTailTraceSha256": "5fdd7a530ce860223f5dd7bdf7a2d490573406bfac38e1b2e468276e3d88ca9f",
+        "activeTailTraceSha256": "cfae24f6de7df918db351a8f748485e890caa8f9e33ca3e1c04dc0e7895c59a4",
+        "firstActionEqual": true,
+        "fullTraceEqual": false,
+        "commonPrefixActions": 13,
+        "shorterTraceActions": 57
+      },
+      {
+        "seed": 4200342,
+        "tailConsumed": false,
+        "activeTailWon": true,
+        "noTailFirstActionBits": 3,
+        "activeTailFirstActionBits": 3,
+        "noTailTraceSha256": "e97ce36beadf09d3f96ac4bc11a870f5ef7b74f8c750e86fff4e327e441f340d",
+        "activeTailTraceSha256": "ea5f77699348305f7ea9468b41cc45a76c3824f8abf3cd7e7cdf81e38fc666ee",
+        "firstActionEqual": true,
+        "fullTraceEqual": false,
+        "commonPrefixActions": 13,
+        "shorterTraceActions": 26
+      },
+      {
+        "seed": 4200343,
+        "tailConsumed": true,
+        "activeTailWon": false,
+        "noTailFirstActionBits": 0,
+        "activeTailFirstActionBits": 2,
+        "noTailTraceSha256": "db08be4eda91262481f77f7b54a92667feaaf8851bcaff5333603e2a445b2682",
+        "activeTailTraceSha256": "addce916c5142a4c524161a9c89f00ff223666dec02645516457d92de4b36a4f",
+        "firstActionEqual": false,
+        "fullTraceEqual": false,
+        "commonPrefixActions": 0,
+        "shorterTraceActions": 35
+      },
+      {
+        "seed": 4200344,
+        "tailConsumed": false,
+        "activeTailWon": true,
+        "noTailFirstActionBits": 1,
+        "activeTailFirstActionBits": 0,
+        "noTailTraceSha256": "24d457b400aa0230aad8528a6f6ba8afce4d99b6e96a4f36ccb783d0fe4c6255",
+        "activeTailTraceSha256": "41c254444a352c5b555939fd9b8fbdc3f0f858131ef2930db6c8dc9686a03789",
+        "firstActionEqual": false,
+        "fullTraceEqual": false,
+        "commonPrefixActions": 0,
+        "shorterTraceActions": 22
+      },
+      {
+        "seed": 4200345,
+        "tailConsumed": false,
+        "activeTailWon": true,
+        "noTailFirstActionBits": 65541,
+        "activeTailFirstActionBits": 6,
+        "noTailTraceSha256": "675096fd5effdbca232dcdc4e092b89b4184413623a0d6986d4a82eb18afdec6",
+        "activeTailTraceSha256": "658ffb912f424214ef42ee25b9056f6976b2306d5d7e3d343acb2de115167c18",
+        "firstActionEqual": false,
+        "fullTraceEqual": false,
+        "commonPrefixActions": 0,
+        "shorterTraceActions": 17
+      },
+      {
+        "seed": 4200346,
+        "tailConsumed": false,
+        "activeTailWon": true,
+        "noTailFirstActionBits": 536870912,
+        "activeTailFirstActionBits": 536870912,
+        "noTailTraceSha256": "ecb830011dfbfdc8698cbaa6ff850c169c8ac35312d33eb41cd0346c11306fab",
+        "activeTailTraceSha256": "1cb028feda53613d22a2715ace6c630dd43823751acfa6d172b2cf900cd170ef",
+        "firstActionEqual": true,
+        "fullTraceEqual": false,
+        "commonPrefixActions": 1,
+        "shorterTraceActions": 18
+      },
+      {
+        "seed": 4200347,
+        "tailConsumed": false,
+        "activeTailWon": true,
+        "noTailFirstActionBits": 536870912,
+        "activeTailFirstActionBits": 536870912,
+        "noTailTraceSha256": "0743afc68555a10d84d54e3b169b446da5b955c887ec2c05b9a01ebe4d8199e4",
+        "activeTailTraceSha256": "817aab1ff8f8f82dd33e05dcecafcb121d9a720fe110edfb61168b7ffb6315d5",
+        "firstActionEqual": true,
+        "fullTraceEqual": false,
+        "commonPrefixActions": 2,
+        "shorterTraceActions": 26
+      },
+      {
+        "seed": 4200348,
+        "tailConsumed": false,
+        "activeTailWon": true,
+        "noTailFirstActionBits": 2,
+        "activeTailFirstActionBits": 3,
+        "noTailTraceSha256": "66b8294b73018853a5902ad2cfc93cbb4f14acdec8b51939d83c736d918233f8",
+        "activeTailTraceSha256": "924bc7246891166586fed8d21cda55715e27cb50b52412845f45e90b175aa649",
+        "firstActionEqual": false,
+        "fullTraceEqual": false,
+        "commonPrefixActions": 0,
+        "shorterTraceActions": 24
+      },
+      {
+        "seed": 4200349,
+        "tailConsumed": false,
+        "activeTailWon": true,
+        "noTailFirstActionBits": 65536,
+        "activeTailFirstActionBits": 5,
+        "noTailTraceSha256": "f2edf3c5baccd15485c26ef3ba5a5b52d7f2451ea8f848bc7ccb51aeea446ead",
+        "activeTailTraceSha256": "316cda788fe490cd797f7a9aef5c8c7336b93a6e75fbaf7063694bfacab59509",
+        "firstActionEqual": false,
+        "fullTraceEqual": false,
+        "commonPrefixActions": 0,
+        "shorterTraceActions": 32
+      },
+      {
+        "seed": 4200350,
+        "tailConsumed": true,
+        "activeTailWon": true,
+        "noTailFirstActionBits": 1,
+        "activeTailFirstActionBits": 3,
+        "noTailTraceSha256": "541a3dc34be7f08872333342c3421e5e7c46d1db6375dc933e3725545bd6a9bd",
+        "activeTailTraceSha256": "93ae6b082f781884ad3bc2f4e03022168fe1f6d6efc58db9f6a723b422d29d1e",
+        "firstActionEqual": false,
+        "fullTraceEqual": false,
+        "commonPrefixActions": 0,
+        "shorterTraceActions": 33
+      },
+      {
+        "seed": 4200351,
+        "tailConsumed": false,
+        "activeTailWon": true,
+        "noTailFirstActionBits": 1,
+        "activeTailFirstActionBits": 3,
+        "noTailTraceSha256": "c03392c4a3208ff6ccee1f30c638bf1af7310c285484b658c9ca4ead99de4f12",
+        "activeTailTraceSha256": "451ef8f80d561583b43d486b80d06c745d36a0556d8633a49e8c3c999bb8d619",
+        "firstActionEqual": false,
+        "fullTraceEqual": false,
+        "commonPrefixActions": 0,
+        "shorterTraceActions": 8
+      },
+      {
+        "seed": 4200352,
+        "tailConsumed": false,
+        "activeTailWon": true,
+        "noTailFirstActionBits": 1,
+        "activeTailFirstActionBits": 1,
+        "noTailTraceSha256": "580b50866710c33ec0e85316586f72e0910f7dda3e4039f9d6c160c0fd0521dc",
+        "activeTailTraceSha256": "580b50866710c33ec0e85316586f72e0910f7dda3e4039f9d6c160c0fd0521dc",
+        "firstActionEqual": true,
+        "fullTraceEqual": true,
+        "commonPrefixActions": 11,
+        "shorterTraceActions": 11
+      },
+      {
+        "seed": 4200353,
+        "tailConsumed": false,
+        "activeTailWon": true,
+        "noTailFirstActionBits": 0,
+        "activeTailFirstActionBits": 2,
+        "noTailTraceSha256": "0e2908c07b3600a8fb4ce06bf02b908dcbee20d5706da515e2d69e223a1e83f8",
+        "activeTailTraceSha256": "1bfc913bcf48986d8849fc474c2ddd81bd6ef1b9feab324033b45d07916b3cec",
+        "firstActionEqual": false,
+        "fullTraceEqual": false,
+        "commonPrefixActions": 0,
+        "shorterTraceActions": 74
+      },
+      {
+        "seed": 4200354,
+        "tailConsumed": false,
+        "activeTailWon": true,
+        "noTailFirstActionBits": 0,
+        "activeTailFirstActionBits": 0,
+        "noTailTraceSha256": "2b6213163dd22806eeabc96582caa6c48aeb229c8671753b6639fd6c7696eb4b",
+        "activeTailTraceSha256": "d3ae51f7e0de14b732f8ff45d891cf7be87ffde0d512915bf1ae355741e97a8c",
+        "firstActionEqual": true,
+        "fullTraceEqual": false,
+        "commonPrefixActions": 1,
+        "shorterTraceActions": 51
+      },
+      {
+        "seed": 4200355,
+        "tailConsumed": false,
+        "activeTailWon": true,
+        "noTailFirstActionBits": 1,
+        "activeTailFirstActionBits": 0,
+        "noTailTraceSha256": "34dcaebb0230c0b9ceb2c0cf5ac625a22ab725faf96b22a51041291a57904d0a",
+        "activeTailTraceSha256": "5598634e549ada78602746dd88e6e74a50b0f8f91d52998941c8db4336bc452d",
+        "firstActionEqual": false,
+        "fullTraceEqual": false,
+        "commonPrefixActions": 0,
+        "shorterTraceActions": 48
+      },
+      {
+        "seed": 4200356,
+        "tailConsumed": false,
+        "activeTailWon": true,
+        "noTailFirstActionBits": 4,
+        "activeTailFirstActionBits": 4,
+        "noTailTraceSha256": "e8c0f49d57d860e4629d51ef9f4d911f0fe49b5e282272f6856aae6a2eeea221",
+        "activeTailTraceSha256": "ed1c917b537a9d983a446756f88156887ea0cb37756ed1827d0eb3441bf32779",
+        "firstActionEqual": true,
+        "fullTraceEqual": false,
+        "commonPrefixActions": 5,
+        "shorterTraceActions": 25
+      },
+      {
+        "seed": 4200357,
+        "tailConsumed": false,
+        "activeTailWon": true,
+        "noTailFirstActionBits": 65537,
+        "activeTailFirstActionBits": 65537,
+        "noTailTraceSha256": "787e635397463d0c5442eea4a61cc65ba3f61e9b658056d7b74618c44a4a9dd7",
+        "activeTailTraceSha256": "c0abd8196c054a38408505db86498fcbcc98cdd0ccb9be97f49a97ad871b664e",
+        "firstActionEqual": true,
+        "fullTraceEqual": false,
+        "commonPrefixActions": 1,
+        "shorterTraceActions": 32
+      },
+      {
+        "seed": 4200358,
+        "tailConsumed": true,
+        "activeTailWon": true,
+        "noTailFirstActionBits": 536870914,
+        "activeTailFirstActionBits": 0,
+        "noTailTraceSha256": "512fb7f0935f4086ba2720529005bde9776342028866a5bc4b83ad78bb94eea5",
+        "activeTailTraceSha256": "805c6bad03d5d61f53163fa1c1b387ecd99bf2a5953b6e4193c71a1560648019",
+        "firstActionEqual": false,
+        "fullTraceEqual": false,
+        "commonPrefixActions": 0,
+        "shorterTraceActions": 25
+      },
+      {
+        "seed": 4200359,
+        "tailConsumed": false,
+        "activeTailWon": true,
+        "noTailFirstActionBits": 2,
+        "activeTailFirstActionBits": 0,
+        "noTailTraceSha256": "ae64e76a0c9b38af887184e6982f9cb8fba3e7c9bdbd9aad461381f76bb678a3",
+        "activeTailTraceSha256": "6680e0941cac257bb77cf5ce28cf4602c5d75edae49780a2acb90600daee178d",
+        "firstActionEqual": false,
+        "fullTraceEqual": false,
+        "commonPrefixActions": 0,
+        "shorterTraceActions": 32
+      },
+      {
+        "seed": 4200360,
+        "tailConsumed": false,
+        "activeTailWon": true,
+        "noTailFirstActionBits": 7,
+        "activeTailFirstActionBits": 7,
+        "noTailTraceSha256": "5ef7e54111b81a2babee49f4852a20549dd42592026d608af52d18b6815b2204",
+        "activeTailTraceSha256": "c76ad64fa09d28935ba7ab32afc4f9af37088db792f7a7ac1890f46442603ca6",
+        "firstActionEqual": true,
+        "fullTraceEqual": false,
+        "commonPrefixActions": 6,
+        "shorterTraceActions": 25
+      },
+      {
+        "seed": 4200361,
+        "tailConsumed": false,
+        "activeTailWon": true,
+        "noTailFirstActionBits": 536870914,
+        "activeTailFirstActionBits": 3,
+        "noTailTraceSha256": "4bff04720d76068b2caa8bd28a736ec34b934a085c6bee2d379648eab8429e94",
+        "activeTailTraceSha256": "6329e7a9c2984b4a611bb9016f103061a7f0d66c5fdb1c477421adef4b6094ee",
+        "firstActionEqual": false,
+        "fullTraceEqual": false,
+        "commonPrefixActions": 0,
+        "shorterTraceActions": 19
+      },
+      {
+        "seed": 4200362,
+        "tailConsumed": false,
+        "activeTailWon": true,
+        "noTailFirstActionBits": 536870912,
+        "activeTailFirstActionBits": 536870912,
+        "noTailTraceSha256": "10dacb12a7b8c8e378da775863301be703d3af829974e3264519cce73d62704a",
+        "activeTailTraceSha256": "c664f2947e100dcd0c564a5dcf9587de0c2a02ebfa8a4cfc19cab06dbe0b9596",
+        "firstActionEqual": true,
+        "fullTraceEqual": false,
+        "commonPrefixActions": 1,
+        "shorterTraceActions": 33
+      },
+      {
+        "seed": 4200363,
+        "tailConsumed": false,
+        "activeTailWon": true,
+        "noTailFirstActionBits": 2,
+        "activeTailFirstActionBits": 2,
+        "noTailTraceSha256": "d2bfad7b357a05c7e035e0a75558aedc951e4073ff751a0ce760c4b923e6012c",
+        "activeTailTraceSha256": "c0af0141dd527f8d3ed52a1ab66161cf8ebc009d581c53b087f4e1292dceb63e",
+        "firstActionEqual": true,
+        "fullTraceEqual": false,
+        "commonPrefixActions": 2,
+        "shorterTraceActions": 25
+      },
+      {
+        "seed": 4200364,
+        "tailConsumed": false,
+        "activeTailWon": true,
+        "noTailFirstActionBits": 6,
+        "activeTailFirstActionBits": 3,
+        "noTailTraceSha256": "bb133b99ad41f53adb6b184bd7ad9a3bd75f932f4ad0630618500c12d225f611",
+        "activeTailTraceSha256": "41a7147b00c89f009adb1961b139ecc1fec7a082685be1881fd74fd4db949e6d",
+        "firstActionEqual": false,
+        "fullTraceEqual": false,
+        "commonPrefixActions": 0,
+        "shorterTraceActions": 26
+      },
+      {
+        "seed": 4200365,
+        "tailConsumed": false,
+        "activeTailWon": true,
+        "noTailFirstActionBits": 0,
+        "activeTailFirstActionBits": 0,
+        "noTailTraceSha256": "624abf215551d41c83e257d8cb59a8332c62d39fcae52acdb6229a71705f823d",
+        "activeTailTraceSha256": "0379e25e1f870f5555383a8b2d763106de96ac17b4b536aa74ae3721b8fcb703",
+        "firstActionEqual": true,
+        "fullTraceEqual": false,
+        "commonPrefixActions": 1,
+        "shorterTraceActions": 10
+      },
+      {
+        "seed": 4200366,
+        "tailConsumed": false,
+        "activeTailWon": true,
+        "noTailFirstActionBits": 2,
+        "activeTailFirstActionBits": 2,
+        "noTailTraceSha256": "4890a69a9fe38069301d0d987e74a96ae37eee59f1d67dbfa200a3ec25ba8194",
+        "activeTailTraceSha256": "1b59a1ca3a0c90bbb6696b3d2b4594a60fd35e79c6d60609518ac1bd6578cb25",
+        "firstActionEqual": true,
+        "fullTraceEqual": false,
+        "commonPrefixActions": 5,
+        "shorterTraceActions": 20
+      },
+      {
+        "seed": 4200367,
+        "tailConsumed": false,
+        "activeTailWon": true,
+        "noTailFirstActionBits": 2,
+        "activeTailFirstActionBits": 2,
+        "noTailTraceSha256": "bce4f6d08a41adcf2d2d7ecb09dd21a2e13dde0a409e0798abb109b7afbd2a2b",
+        "activeTailTraceSha256": "f86b07b007e411370918adff09c21d76de8200d163bc06c97fce7d8ec8295133",
+        "firstActionEqual": true,
+        "fullTraceEqual": false,
+        "commonPrefixActions": 8,
+        "shorterTraceActions": 36
+      },
+      {
+        "seed": 4200368,
+        "tailConsumed": true,
+        "activeTailWon": true,
+        "noTailFirstActionBits": 6,
+        "activeTailFirstActionBits": 6,
+        "noTailTraceSha256": "364e2931fce293307796e494b9d70a94a5d36816eb211a1a93b01f6eb37e0ad1",
+        "activeTailTraceSha256": "ab274691e1119378e184cd23e4d195ef0f36a5d9f5581033b960a007a5582224",
+        "firstActionEqual": true,
+        "fullTraceEqual": false,
+        "commonPrefixActions": 6,
+        "shorterTraceActions": 25
+      },
+      {
+        "seed": 4200369,
+        "tailConsumed": false,
+        "activeTailWon": true,
+        "noTailFirstActionBits": 2,
+        "activeTailFirstActionBits": 2,
+        "noTailTraceSha256": "49fa76616ff386981db72ceae6c35690b868e83bd37ea99981a90adde0f3d904",
+        "activeTailTraceSha256": "731fb17b81e89419522cd0449bc1c8b144fef176d6a846602cf53074c2cccd70",
+        "firstActionEqual": true,
+        "fullTraceEqual": false,
+        "commonPrefixActions": 1,
+        "shorterTraceActions": 15
+      },
+      {
+        "seed": 4200370,
+        "tailConsumed": false,
+        "activeTailWon": true,
+        "noTailFirstActionBits": 2,
+        "activeTailFirstActionBits": 2,
+        "noTailTraceSha256": "5a26acbf49e198f27dd08b7a6a47183b6a694a33646735ee721e08bdadac99e1",
+        "activeTailTraceSha256": "a90d973101ebe35ad680272b68070dca21fa9cb5c6e063c091c7397b509d62c7",
+        "firstActionEqual": true,
+        "fullTraceEqual": false,
+        "commonPrefixActions": 12,
+        "shorterTraceActions": 18
+      },
+      {
+        "seed": 4200371,
+        "tailConsumed": false,
+        "activeTailWon": true,
+        "noTailFirstActionBits": 3,
+        "activeTailFirstActionBits": 3,
+        "noTailTraceSha256": "911c05a27d52321d6d36704b85598cce08bac2effacebc62b0717e216b402c99",
+        "activeTailTraceSha256": "911c05a27d52321d6d36704b85598cce08bac2effacebc62b0717e216b402c99",
+        "firstActionEqual": true,
+        "fullTraceEqual": true,
+        "commonPrefixActions": 6,
+        "shorterTraceActions": 6
+      },
+      {
+        "seed": 4200372,
+        "tailConsumed": true,
+        "activeTailWon": true,
+        "noTailFirstActionBits": 0,
+        "activeTailFirstActionBits": 0,
+        "noTailTraceSha256": "fd9ebc2e9e707fa82101c12ebbf562ec6f94e6f6e24158b137932aefae8fe65d",
+        "activeTailTraceSha256": "c69be0536600ebf120ea677a84b1f18c8bd6fab0aaaa8da8dbebe6446a731abb",
+        "firstActionEqual": true,
+        "fullTraceEqual": false,
+        "commonPrefixActions": 1,
+        "shorterTraceActions": 32
+      },
+      {
+        "seed": 4200373,
+        "tailConsumed": false,
+        "activeTailWon": true,
+        "noTailFirstActionBits": 4,
+        "activeTailFirstActionBits": 1,
+        "noTailTraceSha256": "17f45cbc3c222d4307891dd3adf2e50bcfe8599144ab8a0d292a5bd2491b66dd",
+        "activeTailTraceSha256": "d32e1025276974c80692bf4fbbfc2d98da6e137e223a87b49f24b6005259b545",
+        "firstActionEqual": false,
+        "fullTraceEqual": false,
+        "commonPrefixActions": 0,
+        "shorterTraceActions": 17
+      },
+      {
+        "seed": 4200374,
+        "tailConsumed": true,
+        "activeTailWon": true,
+        "noTailFirstActionBits": 2,
+        "activeTailFirstActionBits": 131074,
+        "noTailTraceSha256": "65824a0397f509ae56d820f0534203ca34b77b3d0783ba4d5f0f9bae4d7e13d1",
+        "activeTailTraceSha256": "0cc0a17c88663285d79f954b9d8648c62cfd4b47f505ed4da1b3a8e1265bff4c",
+        "firstActionEqual": false,
+        "fullTraceEqual": false,
+        "commonPrefixActions": 0,
+        "shorterTraceActions": 50
+      },
+      {
+        "seed": 4200375,
+        "tailConsumed": false,
+        "activeTailWon": true,
+        "noTailFirstActionBits": 3,
+        "activeTailFirstActionBits": 3,
+        "noTailTraceSha256": "4cfffcce2c58daaa8c6b3cf67bff8e2ee5b8af2dd32556e19f900b73dc50d177",
+        "activeTailTraceSha256": "d82e5c2db943db7e45013ed09faecaf6a6ce73bc7d2d720e47073b6d77b44daf",
+        "firstActionEqual": true,
+        "fullTraceEqual": false,
+        "commonPrefixActions": 1,
+        "shorterTraceActions": 43
+      },
+      {
+        "seed": 4200376,
+        "tailConsumed": false,
+        "activeTailWon": true,
+        "noTailFirstActionBits": 65540,
+        "activeTailFirstActionBits": 4,
+        "noTailTraceSha256": "fe9c0474f57be95d9ef1a7ab420556cc15bb3af9a4d8176eecd9046506c47373",
+        "activeTailTraceSha256": "5624171ee3ba4acbdaa19d78e9386d87189ff03d54708de21189bd3ce729d81d",
+        "firstActionEqual": false,
+        "fullTraceEqual": false,
+        "commonPrefixActions": 0,
+        "shorterTraceActions": 21
+      },
+      {
+        "seed": 4200377,
+        "tailConsumed": false,
+        "activeTailWon": true,
+        "noTailFirstActionBits": 536870914,
+        "activeTailFirstActionBits": 2,
+        "noTailTraceSha256": "d8eef0f787ab7fe8af7f62131097a2e43b30852870374e437a82152b554a721a",
+        "activeTailTraceSha256": "11368ffe0adc98dbbdaca74f1d49c67e275299c4d8e9d4cd66662ecfd53d2191",
+        "firstActionEqual": false,
+        "fullTraceEqual": false,
+        "commonPrefixActions": 0,
+        "shorterTraceActions": 54
+      },
+      {
+        "seed": 4200378,
+        "tailConsumed": false,
+        "activeTailWon": true,
+        "noTailFirstActionBits": 1,
+        "activeTailFirstActionBits": 1,
+        "noTailTraceSha256": "9f42aa04f7ed747e0827fb844866d3367b5fb61315bbf429b76927ef45ab2779",
+        "activeTailTraceSha256": "bfaf9369fe8aa423ec32b0427b15b915fe15c2382366f809e79dfe822109455b",
+        "firstActionEqual": true,
+        "fullTraceEqual": false,
+        "commonPrefixActions": 4,
+        "shorterTraceActions": 34
+      },
+      {
+        "seed": 4200379,
+        "tailConsumed": false,
+        "activeTailWon": true,
+        "noTailFirstActionBits": 2,
+        "activeTailFirstActionBits": 2,
+        "noTailTraceSha256": "345d5ae55f6ea26dfcd5bd79c78f01f4b704b04cd8ceb462b5195be6cb05a1aa",
+        "activeTailTraceSha256": "f9abba8a15c207382d6fce42dd18c7f43cebd6b0c88911cfad2efb8c1ac5e111",
+        "firstActionEqual": true,
+        "fullTraceEqual": false,
+        "commonPrefixActions": 4,
+        "shorterTraceActions": 37
+      },
+      {
+        "seed": 4200380,
+        "tailConsumed": true,
+        "activeTailWon": true,
+        "noTailFirstActionBits": 0,
+        "activeTailFirstActionBits": 536870913,
+        "noTailTraceSha256": "bc8daacab43ccfcbd9bf10fae502c6bf5fa66df8ef1acf4a08b6f56b78093d93",
+        "activeTailTraceSha256": "6702acc1b59c1abadc418fc1a39c1351c06ca0cb2f6f39e15df7374ef309b827",
+        "firstActionEqual": false,
+        "fullTraceEqual": false,
+        "commonPrefixActions": 0,
+        "shorterTraceActions": 41
+      },
+      {
+        "seed": 4200381,
+        "tailConsumed": false,
+        "activeTailWon": true,
+        "noTailFirstActionBits": 536870912,
+        "activeTailFirstActionBits": 536870912,
+        "noTailTraceSha256": "7019479847c539e0b13bbb84e467bb0dadb32e66dd31757029196bdcf7f0ea6f",
+        "activeTailTraceSha256": "65c827ab5d09919fc35c62ea6810ed2a73a8dfafcb661c88c09d91048a3b6ad7",
+        "firstActionEqual": true,
+        "fullTraceEqual": false,
+        "commonPrefixActions": 2,
+        "shorterTraceActions": 28
+      },
+      {
+        "seed": 4200382,
+        "tailConsumed": true,
+        "activeTailWon": true,
+        "noTailFirstActionBits": 3,
+        "activeTailFirstActionBits": 3,
+        "noTailTraceSha256": "098a5b81994805669d0003b1e3346b794407f5ac68415ff742a47db862427d09",
+        "activeTailTraceSha256": "ed3cc0fef1783dd22f8dabbe5aa7da9a24b543e937a71782b783c02e235d6f9c",
+        "firstActionEqual": true,
+        "fullTraceEqual": false,
+        "commonPrefixActions": 2,
+        "shorterTraceActions": 22
+      },
+      {
+        "seed": 4200383,
+        "tailConsumed": false,
+        "activeTailWon": true,
+        "noTailFirstActionBits": 2,
+        "activeTailFirstActionBits": 1,
+        "noTailTraceSha256": "85e7b4f51a7a91b03ac913a3fdb66af0d5387fd3e37fdbbdf213eeb237420eaf",
+        "activeTailTraceSha256": "da7a89fb6bbbdd6b38dadc2849b30ba8c0335614f42733f0b20b84fc150a16fb",
+        "firstActionEqual": false,
+        "fullTraceEqual": false,
+        "commonPrefixActions": 0,
+        "shorterTraceActions": 62
+      },
+      {
+        "seed": 4200384,
+        "tailConsumed": false,
+        "activeTailWon": true,
+        "noTailFirstActionBits": 3,
+        "activeTailFirstActionBits": 0,
+        "noTailTraceSha256": "229c519d670a0f469b71a43d4ef972fa9ec0aa914ee79a5ab20ae8e5f158eb6d",
+        "activeTailTraceSha256": "7f3c37dc451a654be594f7c9337c22f67831c61d13e84a36b338fa6f689952e6",
+        "firstActionEqual": false,
+        "fullTraceEqual": false,
+        "commonPrefixActions": 0,
+        "shorterTraceActions": 14
+      },
+      {
+        "seed": 4200385,
+        "tailConsumed": false,
+        "activeTailWon": true,
+        "noTailFirstActionBits": 3,
+        "activeTailFirstActionBits": 1,
+        "noTailTraceSha256": "19b8d818794711522dc4e8499d4bde2679dac46ebfbe197342d86654f6745586",
+        "activeTailTraceSha256": "325640b7ca0944fbadaee84e4c4f2416d4e8d8439be8ecb47dc9e179de290162",
+        "firstActionEqual": false,
+        "fullTraceEqual": false,
+        "commonPrefixActions": 0,
+        "shorterTraceActions": 14
+      },
+      {
+        "seed": 4200386,
+        "tailConsumed": false,
+        "activeTailWon": true,
+        "noTailFirstActionBits": 536870913,
+        "activeTailFirstActionBits": 1,
+        "noTailTraceSha256": "328748c910cbd37c5bcf7ebdbdd68aeb52dbab21dc674edd6450a2e0d47765cd",
+        "activeTailTraceSha256": "90b8dfd07ba99c922f2b866e80569a7f4ee6f7d292e7608bcd78c730580ef771",
+        "firstActionEqual": false,
+        "fullTraceEqual": false,
+        "commonPrefixActions": 0,
+        "shorterTraceActions": 13
+      },
+      {
+        "seed": 4200387,
+        "tailConsumed": false,
+        "activeTailWon": true,
+        "noTailFirstActionBits": 3,
+        "activeTailFirstActionBits": 3,
+        "noTailTraceSha256": "4658c95d4dcbd59a762fbc5d0e2fc4ee559e0afda830834174c38cc66298dead",
+        "activeTailTraceSha256": "dafc492b33775fd0abd7eb5847815da505854368c42f2b0778654be10870be8f",
+        "firstActionEqual": true,
+        "fullTraceEqual": false,
+        "commonPrefixActions": 1,
+        "shorterTraceActions": 39
+      },
+      {
+        "seed": 4200388,
+        "tailConsumed": false,
+        "activeTailWon": true,
+        "noTailFirstActionBits": 536870914,
+        "activeTailFirstActionBits": 536870914,
+        "noTailTraceSha256": "7c1d11d086b2236d4a920c02ee16325989c5b5abb8463a6df24812737db38616",
+        "activeTailTraceSha256": "aac599b9c152252ec230a77002f89a2d5bb4b599a463fbf7c28eb83a8a5e4ec8",
+        "firstActionEqual": true,
+        "fullTraceEqual": false,
+        "commonPrefixActions": 3,
+        "shorterTraceActions": 32
+      },
+      {
+        "seed": 4200389,
+        "tailConsumed": false,
+        "activeTailWon": true,
+        "noTailFirstActionBits": 3,
+        "activeTailFirstActionBits": 3,
+        "noTailTraceSha256": "ec12b0ea5511dbf5afbe834624ddca90e5b6e3fb2bc90613faf7fec665edbdb1",
+        "activeTailTraceSha256": "9ced8dd24897d395a189aab2e0bea1b6ad58a2ec94f2662b0889d3e89bbc7f9c",
+        "firstActionEqual": true,
+        "fullTraceEqual": false,
+        "commonPrefixActions": 2,
+        "shorterTraceActions": 22
+      },
+      {
+        "seed": 4200390,
+        "tailConsumed": false,
+        "activeTailWon": true,
+        "noTailFirstActionBits": 1,
+        "activeTailFirstActionBits": 1,
+        "noTailTraceSha256": "2b93c03ff93f947ebe31a73c0f34518335591eeb93092f332f8b24ba002328cc",
+        "activeTailTraceSha256": "6ac5c4725b1a1b95791e2e3fa1aa9c5f1f09d525f68f20d8595b251c0b2d5cfc",
+        "firstActionEqual": true,
+        "fullTraceEqual": false,
+        "commonPrefixActions": 2,
+        "shorterTraceActions": 25
+      },
+      {
+        "seed": 4200391,
+        "tailConsumed": false,
+        "activeTailWon": true,
+        "noTailFirstActionBits": 3,
+        "activeTailFirstActionBits": 2147483648,
+        "noTailTraceSha256": "53318048dfefebecb1c271488974921a049af7b9f9aafed2963d1cbbb98c6c32",
+        "activeTailTraceSha256": "2973b617d22d2c8e6d29463eff166776a651af6474174564a014ab80b81c45c9",
+        "firstActionEqual": false,
+        "fullTraceEqual": false,
+        "commonPrefixActions": 0,
+        "shorterTraceActions": 16
+      },
+      {
+        "seed": 4200392,
+        "tailConsumed": false,
+        "activeTailWon": true,
+        "noTailFirstActionBits": 0,
+        "activeTailFirstActionBits": 1,
+        "noTailTraceSha256": "c8c888e741a1d8c64979f7bf951ecb08a0aaab841f2ca695a1d77ea275c74554",
+        "activeTailTraceSha256": "c04a8aa43657283efab568f8cc7a5abf0482d335b3fadeda5f62c59c1257eecc",
+        "firstActionEqual": false,
+        "fullTraceEqual": false,
+        "commonPrefixActions": 0,
+        "shorterTraceActions": 19
+      },
+      {
+        "seed": 4200393,
+        "tailConsumed": false,
+        "activeTailWon": true,
+        "noTailFirstActionBits": 131076,
+        "activeTailFirstActionBits": 1,
+        "noTailTraceSha256": "059244657b305b6ff0d203336db429e9382d01e43304714ea48717eb86e890df",
+        "activeTailTraceSha256": "b0166d95189c5bc51ddc0e7b0e8121f681cb5d29cf800c26f6fda466be109031",
+        "firstActionEqual": false,
+        "fullTraceEqual": false,
+        "commonPrefixActions": 0,
+        "shorterTraceActions": 36
+      },
+      {
+        "seed": 4200394,
+        "tailConsumed": false,
+        "activeTailWon": true,
+        "noTailFirstActionBits": 4,
+        "activeTailFirstActionBits": 0,
+        "noTailTraceSha256": "04d2d3f873c7238c4a09ccdf2eb605cb387b692d6a986b9e1ac24adcc10720f6",
+        "activeTailTraceSha256": "7ff86020c6f2efe75b7cbb0e91e865b85502c1b0ed5abb3fe9cc7dc18590fc2d",
+        "firstActionEqual": false,
+        "fullTraceEqual": false,
+        "commonPrefixActions": 0,
+        "shorterTraceActions": 17
+      },
+      {
+        "seed": 4200395,
+        "tailConsumed": false,
+        "activeTailWon": true,
+        "noTailFirstActionBits": 3,
+        "activeTailFirstActionBits": 3,
+        "noTailTraceSha256": "5a1a99dbd9109125559870d7930b29522eb56ed8f66c79124361c96e0f935cfd",
+        "activeTailTraceSha256": "ad886d474b92853138c787c7ec03a6b4ac4b8ec2401296a919dade41e04e0191",
+        "firstActionEqual": true,
+        "fullTraceEqual": false,
+        "commonPrefixActions": 1,
+        "shorterTraceActions": 36
+      },
+      {
+        "seed": 4200396,
+        "tailConsumed": false,
+        "activeTailWon": true,
+        "noTailFirstActionBits": 0,
+        "activeTailFirstActionBits": 0,
+        "noTailTraceSha256": "3755f0a44e8fae746c7a3523e006bdda7519ee7d8fad6089293da7b842fb5892",
+        "activeTailTraceSha256": "5d50c32d8f13f7801eb943b52be0a57685c5b51b3f7887963acec5d0e082b2a1",
+        "firstActionEqual": true,
+        "fullTraceEqual": false,
+        "commonPrefixActions": 1,
+        "shorterTraceActions": 22
+      },
+      {
+        "seed": 4200397,
+        "tailConsumed": false,
+        "activeTailWon": true,
+        "noTailFirstActionBits": 4,
+        "activeTailFirstActionBits": 4,
+        "noTailTraceSha256": "a1e18bfd4d7ccd27fb60c20afaf47b6ce1354552e91fd318032ba9a2122cef34",
+        "activeTailTraceSha256": "a00f0b1c125889108fcb7f0e26d12aedff19a55bc55393aedf6d1323bc5842e0",
+        "firstActionEqual": true,
+        "fullTraceEqual": false,
+        "commonPrefixActions": 1,
+        "shorterTraceActions": 36
+      },
+      {
+        "seed": 4200398,
+        "tailConsumed": true,
+        "activeTailWon": true,
+        "noTailFirstActionBits": 536870914,
+        "activeTailFirstActionBits": 4,
+        "noTailTraceSha256": "9faffd3a32ba9e2f1c7ae7970a289a5e5fa9e801d8106d832848f336e68252fd",
+        "activeTailTraceSha256": "50843dafb4bf324ef27dc244e97a201e0bb22b3814f084a5e9a9640fc3bbc1fb",
+        "firstActionEqual": false,
+        "fullTraceEqual": false,
+        "commonPrefixActions": 0,
+        "shorterTraceActions": 45
+      },
+      {
+        "seed": 4200399,
+        "tailConsumed": false,
+        "activeTailWon": true,
+        "noTailFirstActionBits": 2,
+        "activeTailFirstActionBits": 2,
+        "noTailTraceSha256": "582518191ea7f68fb010b0524464dd0b48e68255c4c904391e64215cd86430d3",
+        "activeTailTraceSha256": "52f1ab4c8283699bbec22c71e4d0c60bfeb1878d4a6483d2eecfe60f54949983",
+        "firstActionEqual": true,
+        "fullTraceEqual": false,
+        "commonPrefixActions": 1,
+        "shorterTraceActions": 18
+      },
+      {
+        "seed": 4200400,
+        "tailConsumed": true,
+        "activeTailWon": true,
+        "noTailFirstActionBits": 196608,
+        "activeTailFirstActionBits": 65540,
+        "noTailTraceSha256": "ff88944be935b76d20d892caf8e0abbc7ef15112e779cfc7e6abae8e8f24bd8a",
+        "activeTailTraceSha256": "20e857298b0a5728f53e618716e9e6689a3056e69b9e7b630c25e243b5378144",
+        "firstActionEqual": false,
+        "fullTraceEqual": false,
+        "commonPrefixActions": 0,
+        "shorterTraceActions": 48
+      },
+      {
+        "seed": 4200401,
+        "tailConsumed": false,
+        "activeTailWon": true,
+        "noTailFirstActionBits": 1,
+        "activeTailFirstActionBits": 1,
+        "noTailTraceSha256": "98eb53c94f8711f1eed74756a39fe1dc748d558f61b2567f4b28303b195f2037",
+        "activeTailTraceSha256": "b6f93306ff97d0bd219d78386a06b47b7553807345fdf617ca349a586925f266",
+        "firstActionEqual": true,
+        "fullTraceEqual": false,
+        "commonPrefixActions": 1,
+        "shorterTraceActions": 8
+      },
+      {
+        "seed": 4200402,
+        "tailConsumed": false,
+        "activeTailWon": true,
+        "noTailFirstActionBits": 0,
+        "activeTailFirstActionBits": 2,
+        "noTailTraceSha256": "dc7ac784fe7743994f8f7f57fb7f3579573fcb421ba31491dc52e760c1768c27",
+        "activeTailTraceSha256": "5dc056e6e236053071096cb809e947a531901fca035ea3826a8c8d592c27de5f",
+        "firstActionEqual": false,
+        "fullTraceEqual": false,
+        "commonPrefixActions": 0,
+        "shorterTraceActions": 36
+      },
+      {
+        "seed": 4200403,
+        "tailConsumed": false,
+        "activeTailWon": true,
+        "noTailFirstActionBits": 4,
+        "activeTailFirstActionBits": 2,
+        "noTailTraceSha256": "cbc0dac13d1a75d2d827c0b7c03ac406a1ce64d0bc6f33dcf24cee5b7d3baf83",
+        "activeTailTraceSha256": "bd552c3eb27991564af1cfb3ae9413190d8a7f7cec48bf54983f4a3d02835184",
+        "firstActionEqual": false,
+        "fullTraceEqual": false,
+        "commonPrefixActions": 0,
+        "shorterTraceActions": 23
+      },
+      {
+        "seed": 4200404,
+        "tailConsumed": true,
+        "activeTailWon": false,
+        "noTailFirstActionBits": 0,
+        "activeTailFirstActionBits": 131072,
+        "noTailTraceSha256": "2b647f6e5bab9c814720b2ff6a52dbfb9f2215b2fd0d4dac472e639c839bade5",
+        "activeTailTraceSha256": "cd3eeed5ce2ee480ab96ce6e74c5ea5a9251c8edb3a279f0a29696717fd5eead",
+        "firstActionEqual": false,
+        "fullTraceEqual": false,
+        "commonPrefixActions": 0,
+        "shorterTraceActions": 4
+      },
+      {
+        "seed": 4200405,
+        "tailConsumed": true,
+        "activeTailWon": false,
+        "noTailFirstActionBits": 4,
+        "activeTailFirstActionBits": 4,
+        "noTailTraceSha256": "5ca6878b8823edc89329e369c8b42421202d86a2a6aab6d61824788cbdc3036d",
+        "activeTailTraceSha256": "7f0e2af433e77843246b1849c37d29afc9c0acc6b362dc466035cffef615eb4f",
+        "firstActionEqual": true,
+        "fullTraceEqual": false,
+        "commonPrefixActions": 1,
+        "shorterTraceActions": 63
+      },
+      {
+        "seed": 4200406,
+        "tailConsumed": false,
+        "activeTailWon": true,
+        "noTailFirstActionBits": 131074,
+        "activeTailFirstActionBits": 131074,
+        "noTailTraceSha256": "fb17c4ff22698323d187ad0cb375caad0bc9af5dd285cdd4b0afd4d4b5e20966",
+        "activeTailTraceSha256": "a951f1f29bd4f1010bb9ac8155551aaa99814a739499f1c59a3b6abdd12934b4",
+        "firstActionEqual": true,
+        "fullTraceEqual": false,
+        "commonPrefixActions": 2,
+        "shorterTraceActions": 14
+      },
+      {
+        "seed": 4200407,
+        "tailConsumed": false,
+        "activeTailWon": true,
+        "noTailFirstActionBits": 536870914,
+        "activeTailFirstActionBits": 2,
+        "noTailTraceSha256": "41d091690db1161cf07d2d5aa5f60a18a6e9c88bd9908c66deb87ca8cdf9bf37",
+        "activeTailTraceSha256": "878bfbf51f10e4dd8c97483a7f54cddf92671e0c4d5f4a00d25134dfb80853a3",
+        "firstActionEqual": false,
+        "fullTraceEqual": false,
+        "commonPrefixActions": 0,
+        "shorterTraceActions": 44
+      },
+      {
+        "seed": 4200408,
+        "tailConsumed": true,
+        "activeTailWon": false,
+        "noTailFirstActionBits": 131078,
+        "activeTailFirstActionBits": 2,
+        "noTailTraceSha256": "322a130c45f81c03092e8182a6517ed3c5ebb12dc0924204244f064621217a18",
+        "activeTailTraceSha256": "3d426aed8f6c4fa7ea00466ccf007e2d5e711ada7359a61b2293f909be03afff",
+        "firstActionEqual": false,
+        "fullTraceEqual": false,
+        "commonPrefixActions": 0,
+        "shorterTraceActions": 27
+      },
+      {
+        "seed": 4200409,
+        "tailConsumed": false,
+        "activeTailWon": true,
+        "noTailFirstActionBits": 65537,
+        "activeTailFirstActionBits": 65537,
+        "noTailTraceSha256": "0bbc24b0d128d07e2ddd174f93d2273be9d764a05081e6bc9ca44769bed14e0a",
+        "activeTailTraceSha256": "73942dbf6b185c04b4020e4776cb356822bad00263980f5111b4518421891c6f",
+        "firstActionEqual": true,
+        "fullTraceEqual": false,
+        "commonPrefixActions": 4,
+        "shorterTraceActions": 27
+      },
+      {
+        "seed": 4200410,
+        "tailConsumed": false,
+        "activeTailWon": true,
+        "noTailFirstActionBits": 5,
+        "activeTailFirstActionBits": 3,
+        "noTailTraceSha256": "5f7290d3944ed377496d36a84fb576c616b78fd31db3fd962d4e9125de33e497",
+        "activeTailTraceSha256": "4a8b26e437c5b40f0f7094ff5788974392283e8a85a4be66fd2764ea26923cce",
+        "firstActionEqual": false,
+        "fullTraceEqual": false,
+        "commonPrefixActions": 0,
+        "shorterTraceActions": 55
+      },
+      {
+        "seed": 4200411,
+        "tailConsumed": false,
+        "activeTailWon": true,
+        "noTailFirstActionBits": 3,
+        "activeTailFirstActionBits": 3,
+        "noTailTraceSha256": "4ab8bb4bdcb0ec826394da14b4833867eabb68ca53942b1a74c0a90e5195cfdf",
+        "activeTailTraceSha256": "caee81d85ec9f86d7f1e599921807591b6566309c3ee59db405743793f0acf4c",
+        "firstActionEqual": true,
+        "fullTraceEqual": false,
+        "commonPrefixActions": 5,
+        "shorterTraceActions": 50
+      },
+      {
+        "seed": 4200412,
+        "tailConsumed": false,
+        "activeTailWon": true,
+        "noTailFirstActionBits": 536870913,
+        "activeTailFirstActionBits": 536870913,
+        "noTailTraceSha256": "97bc72d8b7608afd645edacb8a92a1c55123697c67cd12be1c2af71cc54fd062",
+        "activeTailTraceSha256": "29eb37899d8c65f12e28ae053316f80391418b71d248cd4d4b9da31aee54ba4f",
+        "firstActionEqual": true,
+        "fullTraceEqual": false,
+        "commonPrefixActions": 14,
+        "shorterTraceActions": 24
+      },
+      {
+        "seed": 4200413,
+        "tailConsumed": false,
+        "activeTailWon": true,
+        "noTailFirstActionBits": 0,
+        "activeTailFirstActionBits": 0,
+        "noTailTraceSha256": "5d5537096cd2f77e5f549fe2b06c610f673077f8fde7bb05ea983c53f7330c85",
+        "activeTailTraceSha256": "913f879f4d26cb5a2f4c8b714f4dda80238d9a7061384f899a57d0297db0efc5",
+        "firstActionEqual": true,
+        "fullTraceEqual": false,
+        "commonPrefixActions": 12,
+        "shorterTraceActions": 40
+      },
+      {
+        "seed": 4200414,
+        "tailConsumed": false,
+        "activeTailWon": true,
+        "noTailFirstActionBits": 1073741824,
+        "activeTailFirstActionBits": 1073741824,
+        "noTailTraceSha256": "5e017732d4be56564d699c4b902b374a3934360b2521060cb27b882182527959",
+        "activeTailTraceSha256": "625020662169d4b80862abbf058bd36621881906522170be2091e49e5c0fac0d",
+        "firstActionEqual": true,
+        "fullTraceEqual": false,
+        "commonPrefixActions": 5,
+        "shorterTraceActions": 27
+      },
+      {
+        "seed": 4200415,
+        "tailConsumed": false,
+        "activeTailWon": true,
+        "noTailFirstActionBits": 2,
+        "activeTailFirstActionBits": 2,
+        "noTailTraceSha256": "422fcebe5b280e2787db31ac6cdd387ed384ba5f09360a079a39f4b01492b3da",
+        "activeTailTraceSha256": "8c669faab0f7ee04b6928c799c9c6448e10e25a3809ad57e7f36a1562c6c2619",
+        "firstActionEqual": true,
+        "fullTraceEqual": false,
+        "commonPrefixActions": 3,
+        "shorterTraceActions": 31
+      },
+      {
+        "seed": 4200416,
+        "tailConsumed": false,
+        "activeTailWon": true,
+        "noTailFirstActionBits": 0,
+        "activeTailFirstActionBits": 2,
+        "noTailTraceSha256": "6400da2e7e4e21e64f21ab28d4ab30c1bbde44d6e563c00cac02724ea0fbe236",
+        "activeTailTraceSha256": "ac5ebb3b4f505aec4fb3203db966fa0e9ead958d96dc5997be3466982871aad6",
+        "firstActionEqual": false,
+        "fullTraceEqual": false,
+        "commonPrefixActions": 0,
+        "shorterTraceActions": 9
+      },
+      {
+        "seed": 4200417,
+        "tailConsumed": true,
+        "activeTailWon": true,
+        "noTailFirstActionBits": 4,
+        "activeTailFirstActionBits": 4,
+        "noTailTraceSha256": "a7c30565ccf50e56a769db95fba4fc05bbef488023e5849014277bfb955c75bf",
+        "activeTailTraceSha256": "4df9a3be5c640b26cd7823f73dd27cb4794b829bb58f099e5f6fe2ec92efb903",
+        "firstActionEqual": true,
+        "fullTraceEqual": false,
+        "commonPrefixActions": 6,
+        "shorterTraceActions": 46
+      },
+      {
+        "seed": 4200418,
+        "tailConsumed": true,
+        "activeTailWon": true,
+        "noTailFirstActionBits": 536870913,
+        "activeTailFirstActionBits": 536870913,
+        "noTailTraceSha256": "79d58d6894715d90b6d024e126e7a78a6d92b2b2686398be7fd3beeaaee1d4cf",
+        "activeTailTraceSha256": "0760e6085aa0b1814f6be53fcaa070e9d14abc52e966f83580e974f6ad234ff1",
+        "firstActionEqual": true,
+        "fullTraceEqual": false,
+        "commonPrefixActions": 1,
+        "shorterTraceActions": 21
+      },
+      {
+        "seed": 4200419,
+        "tailConsumed": false,
+        "activeTailWon": true,
+        "noTailFirstActionBits": 1,
+        "activeTailFirstActionBits": 1,
+        "noTailTraceSha256": "c28eb4503e0c0ee34f13de2828a41c33e375d63e758954a82cbcee8366fa4482",
+        "activeTailTraceSha256": "10d663c738f2a157a45c4f8c543b43d3f86f67d75cf742bfb38156f34c180154",
+        "firstActionEqual": true,
+        "fullTraceEqual": false,
+        "commonPrefixActions": 8,
+        "shorterTraceActions": 12
+      },
+      {
+        "seed": 4200420,
+        "tailConsumed": false,
+        "activeTailWon": true,
+        "noTailFirstActionBits": 1,
+        "activeTailFirstActionBits": 1,
+        "noTailTraceSha256": "b4081515c48cec69718074e653a6f587d51ea453108e4d11fd6f139544e6ff9e",
+        "activeTailTraceSha256": "a8bb2463b31edd499dfa2ae5a11894461874c6b8f217f27ebfd8d716ae5f0b19",
+        "firstActionEqual": true,
+        "fullTraceEqual": false,
+        "commonPrefixActions": 4,
+        "shorterTraceActions": 7
+      },
+      {
+        "seed": 4200421,
+        "tailConsumed": false,
+        "activeTailWon": true,
+        "noTailFirstActionBits": 536870912,
+        "activeTailFirstActionBits": 536870912,
+        "noTailTraceSha256": "070cda90335386c19f9bb64d1fbd31f99e04fe7995037ac3a9ba04c8896ef941",
+        "activeTailTraceSha256": "dbd3552205044d5020467b2415a922a33b876adb668feebca4122d3b415ce061",
+        "firstActionEqual": true,
+        "fullTraceEqual": false,
+        "commonPrefixActions": 4,
+        "shorterTraceActions": 59
+      },
+      {
+        "seed": 4200422,
+        "tailConsumed": true,
+        "activeTailWon": true,
+        "noTailFirstActionBits": 4,
+        "activeTailFirstActionBits": 4,
+        "noTailTraceSha256": "2a9e0d89b4b6db9f18aa8b182fac66641884c4105d7aed1fd814cffec3287fb1",
+        "activeTailTraceSha256": "bd9cc1520d6201cfc7b75999a953034cec597a1caae00255ce571df6df634fdc",
+        "firstActionEqual": true,
+        "fullTraceEqual": false,
+        "commonPrefixActions": 10,
+        "shorterTraceActions": 38
+      },
+      {
+        "seed": 4200423,
+        "tailConsumed": true,
+        "activeTailWon": true,
+        "noTailFirstActionBits": 65536,
+        "activeTailFirstActionBits": 2147483648,
+        "noTailTraceSha256": "b6af6692de2043d830dcc0071dad7e70b5a8b75ad93ae0ed1becb39b65577f24",
+        "activeTailTraceSha256": "fc1823e15bbfee41605899b56e0e3aca93b81eabeed5d94d7a0bcbff38da7b6a",
+        "firstActionEqual": false,
+        "fullTraceEqual": false,
+        "commonPrefixActions": 0,
+        "shorterTraceActions": 28
+      },
+      {
+        "seed": 4200424,
+        "tailConsumed": false,
+        "activeTailWon": true,
+        "noTailFirstActionBits": 0,
+        "activeTailFirstActionBits": 0,
+        "noTailTraceSha256": "714fea7db957538ff6e5a9ccf2cb9724a308cc0148ddf034119b78b9fc40ef9b",
+        "activeTailTraceSha256": "714fea7db957538ff6e5a9ccf2cb9724a308cc0148ddf034119b78b9fc40ef9b",
+        "firstActionEqual": true,
+        "fullTraceEqual": true,
+        "commonPrefixActions": 14,
+        "shorterTraceActions": 14
+      },
+      {
+        "seed": 4200425,
+        "tailConsumed": false,
+        "activeTailWon": true,
+        "noTailFirstActionBits": 536870912,
+        "activeTailFirstActionBits": 131072,
+        "noTailTraceSha256": "f5cd82159a22d020cdb308a3605b150589c6e2afc767dd99780cd9789ececa83",
+        "activeTailTraceSha256": "7623dfe421bd23a8784493fd7e4b831d3c28ea7518ae7a2918c141b2237059ab",
+        "firstActionEqual": false,
+        "fullTraceEqual": false,
+        "commonPrefixActions": 0,
+        "shorterTraceActions": 19
+      },
+      {
+        "seed": 4200426,
+        "tailConsumed": false,
+        "activeTailWon": true,
+        "noTailFirstActionBits": 0,
+        "activeTailFirstActionBits": 0,
+        "noTailTraceSha256": "14726fafdbd99de6e8144266cc71094d72324934a70adb0beb2596ac8b2b663d",
+        "activeTailTraceSha256": "535a93cf5b58d77fc36285bf2bfea80c21523b8dc18703a44eed69eddf97516f",
+        "firstActionEqual": true,
+        "fullTraceEqual": false,
+        "commonPrefixActions": 4,
+        "shorterTraceActions": 12
+      },
+      {
+        "seed": 4200427,
+        "tailConsumed": false,
+        "activeTailWon": true,
+        "noTailFirstActionBits": 0,
+        "activeTailFirstActionBits": 0,
+        "noTailTraceSha256": "e8c443c83a208a63b52d07eacdaf5cc315dcfaa33649ee9672cab81a53b9e526",
+        "activeTailTraceSha256": "4136fa2e6805c3630afc4c81f9b71c99f6108231dcef4242062fea861057388e",
+        "firstActionEqual": true,
+        "fullTraceEqual": false,
+        "commonPrefixActions": 2,
+        "shorterTraceActions": 10
+      }
+    ]
+  },
+  "sourceGroupedInterpretation": "one pair per unique source seed; risk-stratified outcomes are descriptive and require source-clustered uncertainty for calibration claims",
+  "frozenModelHashes": {
+    "survival": "2447b2daf1a48a619a5f071488908afd6f0fb83bfd855ee9f379c04120efeaef",
+    "max_hp": "66ac8f70da69e29bf9b1364243f6f903e4f74dda1ec8a909ef54a7ea97dc6479",
+    "hp": "a667a3cfa7d7eca3cb07b46f50321e443c75e8a58f7627becb1fd69bf90f08c9",
+    "potion": "8e04bcd5265fb11b8fa91b4553a84690915f437e7b3afee0b93358e312de3ad6",
+    "potion_encoder": "2085010f1aeef7a7957cdc45c851b2424d640037fd0fa981eb7ae7274190f6ef",
+    "relic": "e07e79d487152ae294f4915ef4aecd0e8bd38b8dec8d0133a57b6b58af92bd71"
+  },
+  "producerGitSha": "8fa9f5ca0b22cf69417146dfbb5ac4fc1edf31c3",
+  "producerExecutableSha256": "250d26bfa21a15b2859931822f0b3185cbd4050199772218f51262dfe6bcc5d2",
+  "teacherId": "silver-ordinary-fair-exact10k-combat-transition-runtime16-f0bbd77"
+}

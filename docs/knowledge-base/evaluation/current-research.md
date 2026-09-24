@@ -776,6 +776,20 @@ conditional post-combat heads. It does not alter the prior qualification
 rejection or runtime guard. See the [paired pilot packet](../../experiments/evidence/lizard_tail_rescue_pilot_2026-09-23/README.md)
 and [ledger §339](../../experiments/ledger-06.md).
 
+A follow-up risk-targeted cohort paired 128 unique fights. The ordinary arm died
+27 times; active Tail won 22 of those, consuming Tail in 14 and retaining it in
+8. Tail was consumed in 32/128 pairs overall. Silver's first action changed in
+59/128 pairs and its full committed-action trace in 122/128, so Tail-aware
+policy adaptation is frequent. On 71 retained-Tail pairs where both arms won,
+the conditional post-head score deltas did not meet the preregistered material
+shift threshold, but the intervals do not establish equivalence and relic
+subgroups remain small. This supports testing small survival/consumption
+corrections that account for policy adaptation; it does not qualify reuse of
+existing heads, a Tail model, or runtime support. See the [targeted cohort
+evidence packet](../../experiments/evidence/lizard_tail_targeted_rescue_2026-09-23/README.md)
+and [ledger §340](../../experiments/ledger-06.md). The prior Lizard-head
+qualification rejection and production fail-closed guard remain unchanged.
+
 The [frozen composed qualification protocol](../../experiments/evidence/composed_transition_2026-09-14.md)
 uses the original source-grouped **reused engineering TEST**, exact HP marginal
 over 11 maxHP classes, and 32 ancestral draws for potion/relic and complete states,

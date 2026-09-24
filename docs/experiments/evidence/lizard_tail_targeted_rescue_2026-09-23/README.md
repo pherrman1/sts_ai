@@ -1,6 +1,6 @@
 # Targeted active Lizard Tail rescue experiment
 
-**Status: pre-registered implementation; data collection has not started.**
+**Status: cohort and analysis complete; descriptive research only.**
 The 32-pair screen in the neighboring `lizard_tail_rescue_pilot_2026-09-23`
 packet was too sparse for the rescue decomposition. This follow-up targets
 precombat CTM risk without selecting on either paired combat result.
@@ -78,3 +78,67 @@ heads. A specialist becomes justified only if postcombat distributions also
 show a material Tail-specific shift, particularly among retained-Tail wins.
 No training, runtime integration, support expansion, or default change is
 authorized by this cohort.
+
+## Observed results
+
+Candidate generation completed all 128 source seeds and recorded 2,700
+ordinary combat rows with zero quarantines. The selector then chose 128 unique
+sources. Since risk-band availability overlaps by source, the final selected
+counts were 40 in `[0.10,0.20)`, 32 in `[0.20,0.35)`, 20 in `[0.35,0.55)`,
+17 in `[0.55,1.0]`, and 19 fallback targets below `0.10`. Paired collection
+completed all 128 targets with zero quarantines and exact precombat input and
+persistent-state matches.
+
+The no-Tail arm died in 27/128 pairs (21.1%); the active-Tail arm won 123/128
+(96.1%) and consumed Tail in 32/128 (25.0%). Among the 27 no-Tail deaths, the
+active arm won 22 (81.5%): Tail was consumed in 14 and retained in 8. This
+confirms both effects in the proposed decomposition: mechanical rescues and a
+policy effect that can produce a win without consuming Tail. Across all pairs,
+Silver's first action changed in 59/128 (46.1%) and its complete committed
+action trace changed in 122/128 (95.3%). Among active wins with Tail retained
+(96 pairs), the corresponding rates were 43/96 (44.8%) and 90/96 (93.8%).
+
+The cohort mean ordinary CTM death probability was 27.4% against 21.1% observed
+no-Tail deaths (Brier 0.1254). By band, observed no-Tail death rates were
+10.0%, 18.8%, 20.0%, and 76.5% for the four risk bands; the 19 low-risk
+fallback pairs had no deaths. These risk-stratified figures are descriptive,
+not a recalibration result. The HP-shift mechanical proxy predicted 90.3% mean
+win probability against 96.1% active-Tail wins (Brier 0.0470); it is still not
+an exact lethal-crossing replay and does not capture the frequent policy
+changes.
+
+For 71 pairs where both arms won and active Tail was retained, treatment-minus-
+control head-score changes did not meet the preregistered material-shift rule.
+HP NLL changed by `+0.034` nat (source-bootstrap 95% CI `[-0.121,+0.182]`),
+potion-mask NLL by `+0.060` nat (`[-0.043,+0.173]`), and maxHP NLL by zero.
+Supported relic-group paired counts were 12 attacks, 8 cards, 5 shuffles, and
+8 turns; all intervals crossed zero. This does not establish equivalence: the
+analysis is teacher-forced and unsupported mutation rows are excluded. On
+active wins with consumed Tail, existing postcombat heads scored 22/27 rows;
+five rows were outside current support. No head was trained or qualified.
+
+The results favor testing a small active-Tail survival/consumption correction
+on top of the ordinary CTM before a full specialist. The high first-action and
+trace divergence means the correction must account for policy adaptation; the
+mechanical reserve proxy alone is inadequate as a complete treatment model.
+The retained-Tail post-head comparison did not demonstrate a material shift,
+but remains descriptive and cannot certify reuse. Production
+`active_unqualified_lizard` remains unchanged; no model, runtime, default,
+native/Python parity, or gameplay qualification changed.
+
+## Integrity and provenance
+
+- Candidate JSONL SHA-256: `8b5b2d349208075e4de0f40580ce223807c6acbf7c004944858b5370657d2468`.
+- Candidate manifest SHA-256: `9620b38e6bcd006f5bcfe504d0b388964c90970f1d1e26045fd872da24b4d9f1`.
+- Target-selection JSON SHA-256: `36f444009306c2df140512fa17cadfdf28ee5845117af9a1a7d66299ac35d89c`.
+- Paired JSONL SHA-256: `1bfe609be0c32b0a504e5a97622ea385269ca3c5d1693a49c079421fcbae7d0e`.
+- Paired manifest SHA-256: `122bd32fdf834dccd1003d3f490ff63fba47c17152655c0a200e81c6d0c40ab4`.
+- Analysis JSON SHA-256: `0958e0ed15c53216eda2b29ead8d01d19257f94cce9dde2b6c88a753e004b4dd`.
+- Candidate and paired producer Git SHA: `8fa9f5ca0b22cf69417146dfbb5ac4fc1edf31c3`;
+  executable SHA-256: `250d26bfa21a15b2859931822f0b3185cbd4050199772218f51262dfe6bcc5d2`.
+- Frozen teacher: `silver-ordinary-fair-exact10k-combat-transition-runtime16-f0bbd77`.
+  The dedicated candidate mode permits producer SHA drift while checking the
+  frozen Silver settings, teacher environment except its producer SHA field,
+  and model artifact hashes; the actual producer identities are recorded.
+- Frozen ordinary CTM model hashes are recorded in `targets.json` and
+  `analysis.json`.

@@ -11449,3 +11449,39 @@ runtime integration followed. The failed Lizard-head proper-score result in
 [paired pilot evidence packet](evidence/lizard_tail_rescue_pilot_2026-09-23/README.md).
 
 **Knowledge impact:** exploratory evidence only; no model or runtime change.
+
+### §340 — Risk-targeted active Lizard Tail rescue experiment (2026-09-24)
+
+The preregistered 128-source cohort (`4200300..4200427`) completed candidate
+generation with 2,700 ordinary combat rows and zero quarantines. Precombat CTM
+risk-only selection yielded 128 unique targets across the four declared risk
+bands plus 19 low-risk fallbacks, because band availability overlapped by
+source. Exact-state paired collection completed 128/128 targets with zero
+quarantines.
+
+The no-Tail arm died in 27/128 fights (21.1%); active Tail won 123/128 (96.1%)
+and was consumed in 32/128 (25.0%). Among control deaths, active Tail won 22/27:
+14 wins consumed Tail, while 8 wins retained it. Silver's first action changed
+in 59/128 pairs and full action traces in 122/128, confirming that policy
+adaptation is frequent even when Tail remains. The HP-shift survival proxy
+predicted 90.3% mean win probability versus 96.1% observed active-Tail wins;
+this is not a lethal-crossing replay or a policy-aware Tail model.
+
+On 71 both-arm wins with active Tail retained, paired post-head NLL deltas did
+not meet the preregistered material-shift criterion. The CIs remain too wide to
+establish equivalence, and supported relic-group comparisons had only 5–12
+pairs. The head scores are teacher-forced descriptive screens, not
+qualification. The data support continuing with small survival/consumption
+corrections as the next research candidate while modeling policy adaptation;
+they do not justify a full specialist or establish that existing heads can be
+reused in runtime.
+
+The complete candidate, selection, paired, and analysis artifacts, hashes,
+unsupported-row counts, and interpretation are in the [targeted rescue evidence
+packet](evidence/lizard_tail_targeted_rescue_2026-09-23/README.md). No training,
+support expansion, runtime integration, model/default change, native/Python
+parity test, or gameplay qualification followed. Production
+`active_unqualified_lizard` remains fail-closed.
+
+**Knowledge impact:** targeted descriptive evidence only; qualification and
+runtime boundary unchanged.
