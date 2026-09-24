@@ -1716,7 +1716,7 @@ static bool bestBench(int sims, int nSeeds, int asc, std::uint64_t seedOffset = 
               << "  shop-beam=" << (g_oocShopBeam ? "ON" : "off")
               << "  native-OOC=" << (g_nativeOoc ? "ON" : "OFF")
               << "  keys=" << (g_collectKeys ? "collect" : "skip")
-              << "  searcher=" << (search::g_useSearcher3 ? "Searcher3" : "Searcher2")
+              << "  searcher=" << (search::silverLiveBackendInstalled() ? "Silver" : search::g_useSearcher3 ? "Searcher3" : "Searcher2")
               << (search::g_useSearcher3
                   ? "  S3-abl[b,p,c,l,crn]=" + std::to_string(search::g_s3Belief)
                     + std::to_string(search::g_s3Prune) + std::to_string(search::g_s3Chain)
@@ -8370,6 +8370,32 @@ int main(int argc, char **argv) {
     g_mainArgv.clear();
     for (int i = 1; i < argc; ++i) g_mainArgv.emplace_back(argv[i]);
     std::string mode = argc > 1 ? argv[1] : "";
+
+    // ADR-0018: Silver is the default combat backend for whole-run play
+    // (run, bestbench, reprobench).  An explicit STS_SILVER_SEARCH (including
+    // =0) or STS_SEARCHER3=1 keeps the native searcher path.  The resolved
+    // default is written back to the environment so provenance checks and
+    // child processes see the effective configuration.
+    if (mode == "run" || mode == "bestbench" || mode == "reprobench") {
+        const char *searcher3Env = std::getenv("STS_SEARCHER3");
+        const bool searcher3Requested = searcher3Env && std::atoi(searcher3Env) != 0;
+        if (!std::getenv("STS_SILVER_SEARCH") && !searcher3Requested) {
+            setenv("STS_SILVER_SEARCH", "1", 0);
+            setenv("STS_FAIR", "1", 0);
+            std::cout << "[default combat backend: Silver (STS_SILVER_SEARCH=0 restores native)]\n";
+        }
+        // Adaptive Silver ignores the caller's budget, so an explicit sims
+        // argument selects flat Silver unless adaptive stopping was configured.
+        const char *silverEnv = std::getenv("STS_SILVER_SEARCH");
+        const bool silverEffective = silverEnv && std::atoi(silverEnv) != 0;
+        if (silverEffective && argc > 2 && !std::getenv("STS_SILVER_ADAPTIVE")
+                && !std::getenv("STS_SILVER_ADAPTIVE_RETAINED_ONLY")
+                && !std::getenv("STS_SILVER_ADAPTIVE_TOP_GAP")) {
+            setenv("STS_SILVER_ADAPTIVE", "0", 0);
+            std::cout << "[explicit sims " << argv[2]
+                      << ": flat Silver budget (STS_SILVER_ADAPTIVE=1 restores adaptive)]\n";
+        }
+    }
 
     if (const char *d = std::getenv("VPORT")) g_vPort = std::atoi(d);
 

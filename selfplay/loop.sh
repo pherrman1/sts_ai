@@ -111,11 +111,13 @@ ASC=${ASC:-0}
 EPS=${EPS:-0.05}
 CEPS=${CEPS:-0.3}                       # combat/policy datagen exploration eps
 export OMP_NUM_THREADS=${OMP_NUM_THREADS:-12}
+# Self-play keeps the native fair Searcher2 combat path: bestbench defaults to
+# Silver (ADR-0018), so the loop pins STS_SILVER_SEARCH=0 explicitly.
 # Start from the proven hybrid OOC policy: V_floor (v_rich) for card/shop choices and
 # V_win for survival-shaped rest choices.  A newly trained V_win only takes over all
 # OOC choices after the held-out gate proves that the unified policy beats this anchor.
-FLOOR_POLICY_ENV="STS_FAIR=1 STS_CARD_WIN=0 STS_SHOP_WIN=0 STS_REST_WIN=1"
-WIN_POLICY_ENV="STS_FAIR=1 STS_CARD_WIN=1 STS_SHOP_WIN=1 STS_REST_WIN=1"
+FLOOR_POLICY_ENV="STS_FAIR=1 STS_SILVER_SEARCH=0 STS_CARD_WIN=0 STS_SHOP_WIN=0 STS_REST_WIN=1"
+WIN_POLICY_ENV="STS_FAIR=1 STS_SILVER_SEARCH=0 STS_CARD_WIN=1 STS_SHOP_WIN=1 STS_REST_WIN=1"
 # The META arm must exercise the CANDIDATE models through v_server (Issue 01):
 # with native OOC left on, one_combat's fixed models/v_rich_trees.txt +
 # models/v_win_trees.txt own every OOC decision and the candidate V_win/rest are
