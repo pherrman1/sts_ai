@@ -353,6 +353,33 @@ int testSilverSearcher() {
               << " reroots=" << reroots << '\n';
     check(searchWins > greedyWins, "search beats the greedy policy");
 
+    // Hidden intents (Runic Dome search mode): a pending roll is part of the
+    // search state, search does not resolve it at the root, and materializing
+    // it rolls a move.
+    {
+        const GameContext gc(CharacterClass::IRONCLAD, 0xD0E5u, 0);
+        BattleContext bc;
+        bc.init(gc, MonsterEncounter::JAW_WORM);
+        while (bc.inputState != InputState::PLAYER_NORMAL && bc.outcome == Outcome::UNDECIDED) {
+            bc.executeActions();
+        }
+        BattleContext root = silverSearchRoot(bc);
+        root.intentsHidden = true;
+        auto &worm = root.monsters.arr[0];
+        worm.pendingRollInputs = worm.captureRollInputs(root);
+        worm.pendingMoveRolls = 1;
+        BattleContext rolled = root;
+        rolled.monsters.arr[0].materializePendingMove(rolled);
+        check(rolled.monsters.arr[0].pendingMoveRolls == 0 && !root.equalForSearch(rolled),
+              "pending and rolled intents are different search states");
+        search::SilverSearcher searcher(root, {});
+        searcher.search(300);
+        check(searcher.rootSearchState().monsters.arr[0].pendingMoveRolls == 1,
+              "search keeps the root intent hidden");
+        check(search::SilverSearcher::translateAction(searcher.bestAction(), searcher.rootSearchState(), bc)
+                  .isValidAction(bc), "hidden-intent search returns a valid action");
+    }
+
     std::cout << "silver_searcher " << (failures == 0 ? "PASS" : "FAIL") << '\n';
     return failures == 0 ? 0 : 1;
 }

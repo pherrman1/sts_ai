@@ -367,6 +367,22 @@ treatment. If Silver telemetry is expected, retain both
 The validator rejects an absent, empty, or zero telemetry setting before a
 seed can run.
 
+Schema version 2 adds `environment_policy` and per-arm `fresh_outputs`.
+Decision-bearing comparisons should use `environment_policy: "clean"` and
+include explicit `HOME` and `PATH` in `common_env`; this launches each process
+with `env -i` so inherited model-routing variables cannot leak between arms.
+List every trace/support/action-trace output in that arm's `fresh_outputs` so
+the launcher refuses to append to stale files. Schema version 1 remains
+accepted with its original inherited-environment behavior for existing
+manifests.
+
+For manifest runs, the launcher invokes `tools/seed_guard.sh` from
+the manifest's exact-SHA checkout, not from the mutable remote root. Exact-SHA
+preflight also requires that guard to be tracked and present in the checkout
+at the manifest's frozen SHA. The launcher keeps its working directory at the
+designated remote root, as required by the guard's GCP host/root/context check.
+Generic non-manifest runs continue to use the remote-root guard.
+
 Use this sequence after CI and before gameplay:
 
 ```bash
@@ -378,10 +394,12 @@ python tools/agent/gcp_benchmark.py run-manifest path/to/run-manifest.json A
 ```
 
 The exact-SHA preflight fails unless the designated checkout has the frozen
-HEAD, no tracked modifications, a CMake cache bound to that checkout, and the
-declared binary/artifact hashes. The manifest launcher routes through the
-existing seed guard and refuses any arm whose result, metadata sidecar, or log
-already exists. It does not replace the experiment-specific post-run canary:
+HEAD, no tracked modifications, a CMake cache bound to that checkout, the
+tracked seed guard, and the declared binary/artifact hashes. Manifest runs
+invoke that guard from the pinned checkout while keeping the working directory
+at the designated remote root. The manifest launcher refuses any arm whose
+result, metadata sidecar, log, or declared fresh output already exists. It
+does not replace the experiment-specific post-run canary:
 validate completed results with `tools/agent/check_benchmark_canary.py` and the
 required scientific analyzer before interpreting them.
 

@@ -3249,6 +3249,7 @@ namespace {
                a.inputState == b.inputState &&
                a.cardSelectInfo == b.cardSelectInfo &&
                a.monsterTurnIdx == b.monsterTurnIdx &&
+               a.intentsHidden == b.intentsHidden &&
                a.endTurnQueued == b.endTurnQueued &&
                a.turnHasEnded == b.turnHasEnded &&
                a.skipMonsterTurn == b.skipMonsterTurn &&
