@@ -765,10 +765,80 @@ fraction and potion mask into later factors; relics reuse the HP encoder state.
 Native reconstruction copies supported fields, derives potion count, shares
 trajectory residues and emits exact inherited potion/misc OOC continuation
 RNG. It does not emit the four recreated battle-local RAW RNG streams.
-Nondeterministic active Lizard Tail fails closed. Models remain frozen; the
-potion support predicate now excludes actual
-generation routes (explicit Alchemize and Entropic Brew), allowing harmless
-off-color cards. No production dispatch change is implied by this correction.
+Nondeterministic active Lizard Tail fails closed. The targeted 111-source
+qualification attempted only the existing Lizard head after supported
+non-Lizard composition exposure passed its existing gates. The fixed head-only
+fit was rejected against the TRAIN-only prior (+0.50675 nat TEST NLL gap,
+source-bootstrap 95% CI [+0.37380, +0.61081]); the production guard and frozen
+artifacts remain unchanged. No runtime integration or live support smoke was
+run. The potion support predicate also excludes actual generation routes
+(explicit Alchemize and Entropic Brew), allowing harmless off-color cards.
+See the [active Lizard evidence packet](../../experiments/evidence/active_lizard_ctm_2026-09-23/README.md).
+
+A separate 32-pair rescue pilot found two no-Tail deaths; both active-Tail
+treatments won, but one retained Tail, consistent with the relic changing the
+policy trajectory. Ordinary CTM mean death probability was `0.05704` versus
+`0.0625` observed deaths; Tail consumption was `0.03125` of pairs. This is too
+small to calibrate a rescue head, and the single Tail-consumed win cannot assess
+conditional post-combat heads. It does not alter the prior qualification
+rejection or runtime guard. See the [paired pilot packet](../../experiments/evidence/lizard_tail_rescue_pilot_2026-09-23/README.md)
+and [ledger §344](../../experiments/ledger-06.md).
+
+A follow-up risk-targeted cohort paired 128 unique fights. The ordinary arm died
+27 times; active Tail won 22 of those, consuming Tail in 14 and retaining it in
+8. Tail was consumed in 32/128 pairs overall. Silver's first action changed in
+59/128 pairs and its full committed-action trace in 122/128, so Tail-aware
+policy adaptation is frequent. On 71 retained-Tail pairs where both arms won,
+the conditional post-head score deltas did not meet the preregistered material
+shift threshold, but the intervals do not establish equivalence and relic
+subgroups remain small. This supports testing small survival/consumption
+corrections that account for policy adaptation; it does not qualify reuse of
+existing heads, a Tail model, or runtime support. See the [targeted cohort
+evidence packet](../../experiments/evidence/lizard_tail_targeted_rescue_2026-09-23/README.md)
+and [ledger §345](../../experiments/ledger-06.md). The prior Lizard-head
+qualification rejection and production fail-closed guard remain unchanged.
+
+A same-cohort minimal three-state diagnostic found a promising fixed
+`T2` revive-HP conditioning input for consumed-Tail wins: HP NLL improved by
+`1.084` nat on 22 supported rows, while its CRPS interval crossed zero. `T1`
+was not retained because it showed clear paired degradation in three sparse
+relic constraint groups. Source-grouped q/r calibration slightly improved
+three-class NLL/Brier over the coherent mechanical reserve baseline, but both
+paired intervals included zero. Six Fairy Potion rows remained exact-boundary
+fallbacks, and the five `LOSS_CONSUMED` examples leave rescue prediction
+data-limited. The offline 32-draw diagnostic had zero impossible or invalid
+Tail-state transitions on 98 supported sources; 30 sources used existing
+support/native fallbacks. Classification is
+`LIZARD_MINIMAL_CORRECTION_DATA_LIMITED`; no production support or model
+qualification changed. See the [Phase A-C packet](../../experiments/evidence/lizard_tail_targeted_rescue_2026-09-23/README.md#minimal-three-state-correction-diagnostic),
+[analysis JSON](../../experiments/evidence/lizard_tail_targeted_rescue_2026-09-23/minimal-correction-analysis.json),
+and [ledger §346](../../experiments/ledger-06.md).
+
+The fixed-B1 candidate-pool extension reused 475 unique paired fights from the
+same 2,700-row pool after dropping 35 repeated source/fight keys, with repeated
+sources kept together for five-fold CV and source bootstrap. The 35 overlapping
+replays are exact combat-observation duplicates; only their `targetRiskBand`
+selection metadata differs. There are 13 `LOSS_CONSUMED` examples total (eight
+new), short of the 20-additional target.
+
+The broad, post-boundary descriptive comparison covers 451 rows from 124
+sources and scores q/r NLL `0.3544` / Brier `0.1994` against B1 `1.9122` /
+`0.2158`. On the prospective runtime domain—`full_support_reasons()` after
+removing Lizard Tail from both pre-state and predictor input, plus Fairy/Bloom
+exact-boundary exclusions—24 additional unsupported rows are excluded. The
+remaining 427 rows from 124 sources contain 12 `LOSS_CONSUMED` examples; q/r
+scores NLL `0.3427` / Brier `0.1932` against B1 `1.9890` / `0.2096`, with
+source-bootstrap intervals favoring q/r. The 1,611 remaining supported and
+coherent candidate rows held only `1.4045` summed fixed-B1 loss mass, so no more
+trajectories were generated. The 34 new `WIN_CONSUMED` observations remain
+confirmation data for frozen T2; a future T0-vs-T2 analysis can score them
+without retuning. This remains promising but data-limited evidence, not
+qualification, and the production `active_unqualified_lizard` guard is
+unchanged. See the [B1-ranked extension
+packet](../../experiments/evidence/lizard_tail_targeted_rescue_2026-09-23/README.md#b1-ranked-candidate-pool-extension),
+[prospective-domain analysis](../../experiments/evidence/lizard_tail_targeted_rescue_2026-09-23/b1-qr-runtime-support-analysis.json),
+[broad analysis](../../experiments/evidence/lizard_tail_targeted_rescue_2026-09-23/b1-qr-combined-analysis.json),
+and [ledger §347](../../experiments/ledger-06.md).
 
 The [frozen composed qualification protocol](../../experiments/evidence/composed_transition_2026-09-14.md)
 uses the original source-grouped **reused engineering TEST**, exact HP marginal
@@ -1247,8 +1317,9 @@ Native reconstruction shares turn/attack/card/shuffle residues across related
 relics; partial labels intersect modular constraints. Certified victories:
 TRAIN 224,715 / 17,718 sources; HOLDOUT 25,398 / 1,979 sources. Full relic-vector
 mode exact is 0.805667113 versus native+copy-through 0.792700213; these are
-secondary metrics. No eligible active Lizard Tail exists, so its stochastic
-head is unqualified and the offline adapter fails closed on that support.
+secondary metrics. This pre-existing relic corpus has no eligible active Lizard
+Tail rows; the later targeted cohort also failed the Lizard-head proper-score
+gate, so that head remains unqualified and the offline adapter fails closed.
 Inserter has no corpus tokens; its source-derived reconstruction shares the
 qualified turn residue but has no relic-specific empirical score.
 

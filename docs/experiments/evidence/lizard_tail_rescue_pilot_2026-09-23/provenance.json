@@ -1,0 +1,176 @@
+{
+  "schema": "lizard_tail_paired_pilot_aggregation_v1",
+  "method": "bytewise JSON value concatenation in ascending source-seed order; no row fields changed",
+  "seedRange": [
+    4200100,
+    4200131
+  ],
+  "rows": 32,
+  "producerGitSha": "d6674ee4ef66ee5fc214e528be4e42077151c0dd",
+  "producerExecutableSha256": "ddd63f3b7cd74949b23740638c7c718634466a1904586a6e873e443dc74f9838",
+  "componentRows": [
+    {
+      "sourceSeed": 4200100,
+      "sha256": "df5e5a401344d434c5ad4c5aaf9f77d87b84a2cc1d56fa1acbac0449e6e227f0"
+    },
+    {
+      "sourceSeed": 4200101,
+      "sha256": "16fee7693320a6351cca83facd1dc17d5f496eae9b61d8110c6729d3dbe6e2d1"
+    },
+    {
+      "sourceSeed": 4200102,
+      "sha256": "7c7055ac8b81e1347fbf278a1bfef17343617f32e3fd8cce8865236f9cc62b4d"
+    },
+    {
+      "sourceSeed": 4200103,
+      "sha256": "66baa78cbfd17a8d80713b2a124a1e8e8826e4a9b916793faf2c9b85f805868f"
+    },
+    {
+      "sourceSeed": 4200104,
+      "sha256": "1c763715e6a940d46d128bb57606d0b43b32fe97a2dffd46ce1fb1dbd9a8bb24"
+    },
+    {
+      "sourceSeed": 4200105,
+      "sha256": "2172c3c9f73b4cadda3567e6f640be72cae697505c7d0da7321b1103bc13ea1b"
+    },
+    {
+      "sourceSeed": 4200106,
+      "sha256": "4d63500b8d56ba0f5984cda46c61128d01c31e335ebf3b2ae2630d5c3f3b2fa9"
+    },
+    {
+      "sourceSeed": 4200107,
+      "sha256": "84eeb36d2f91f4df77f5c8a12d0a67582be27b83f9e6b4cf08be94532a10f982"
+    },
+    {
+      "sourceSeed": 4200108,
+      "sha256": "13645c7c99ddad5137a9178de5a1a7be3a20a0a3b044766d089087bbe7144006"
+    },
+    {
+      "sourceSeed": 4200109,
+      "sha256": "2037f47fd3df9ab1a0ddf1d5c545a51bedc64067fba37d32e50f155d1ccda185"
+    },
+    {
+      "sourceSeed": 4200110,
+      "sha256": "b0f2aa7b9664057c3d7a8fe5dfc7ddc3db3185e2b8960db0fff0dcc76c610446"
+    },
+    {
+      "sourceSeed": 4200111,
+      "sha256": "b440e645d706d096c620e4f3f3e59bc93753fd20a57d77066b45d70faf08e31e"
+    },
+    {
+      "sourceSeed": 4200112,
+      "sha256": "d8824f7a9e83e20ca2e2beefc08917a34224387863029de297564b2d91b8b029"
+    },
+    {
+      "sourceSeed": 4200113,
+      "sha256": "64a509fd286cca6491e10571bdd476c51f79b8aa7610364903fc4ae77843e574"
+    },
+    {
+      "sourceSeed": 4200114,
+      "sha256": "b21b0bed3401789680c827a2dd01d5447686eaed1fbe2c64c35bcbba999cbfe1"
+    },
+    {
+      "sourceSeed": 4200115,
+      "sha256": "11b5a980d9c46773eac16221e865f813a758275b43be380252659855203664d5"
+    },
+    {
+      "sourceSeed": 4200116,
+      "sha256": "e1dffca9e101ae2c127083a8a2a467c6d6279fda120336c40c93522a685bf26d"
+    },
+    {
+      "sourceSeed": 4200117,
+      "sha256": "74897150625b2f6e3be57ebdc42e9998f9621fbd102e9c878c4cf55b5cc6a28c"
+    },
+    {
+      "sourceSeed": 4200118,
+      "sha256": "0202d9352aa4a5cdfcdcb601ef836f539b6cc3c9fd36e11a424b926703a6cdde"
+    },
+    {
+      "sourceSeed": 4200119,
+      "sha256": "10205e211180bdd5ef24fd478737034702d35c09d90506b44ebb01162b706ece"
+    },
+    {
+      "sourceSeed": 4200120,
+      "sha256": "e7db60c26dca4dd6190a43a0c04a7399c1d063d27d731a90270da0cfc2babfbb"
+    },
+    {
+      "sourceSeed": 4200121,
+      "sha256": "d1a2455e408f6ad79b62cda3f91de07422039ad67a2aa7f1d311f518070fa861"
+    },
+    {
+      "sourceSeed": 4200122,
+      "sha256": "e54e063a9f7343bcc5b27f580a88669ae98fb21b7626999a2151c21e971cb683"
+    },
+    {
+      "sourceSeed": 4200123,
+      "sha256": "eb5232035cf39385e6cef89f6f7e542a6db32405b558a3e04374d480802fd05c"
+    },
+    {
+      "sourceSeed": 4200124,
+      "sha256": "f21ee01a0831e4dcf6e1adf4614c621f426460bc3b170719e3f127de3117c6c6"
+    },
+    {
+      "sourceSeed": 4200125,
+      "sha256": "ce6f9a1259fbd9defc3e09b8c51d0ffa529fc82d7ade53b2543211c20d19218a"
+    },
+    {
+      "sourceSeed": 4200126,
+      "sha256": "89fe93db929095516ea34eb27cc79cbf86bdb84365263de0bbb45512c789df67"
+    },
+    {
+      "sourceSeed": 4200127,
+      "sha256": "ffbb8428941ee365ae7ab2577f1d96e99efc032579648d3576e989a825c88060"
+    },
+    {
+      "sourceSeed": 4200128,
+      "sha256": "3ae675573916a26c69cc34e69da97b7629451eda7245664801bc9d9798bfe0d3"
+    },
+    {
+      "sourceSeed": 4200129,
+      "sha256": "0c870b06a273a88ef6e86fa12a10c326dd11fed81bd777b10459252fb91d5733"
+    },
+    {
+      "sourceSeed": 4200130,
+      "sha256": "166d8f7993494d9e096cca179f30ee51851d33402c311f6b5d747551f28fd9ac"
+    },
+    {
+      "sourceSeed": 4200131,
+      "sha256": "77f3a6bd65a67eb6ab0aa031cca1f7e582c585390ae94a8a93020de90d73faa7"
+    }
+  ],
+  "individualManifestPaths": [
+    "/tmp/lizard-tail-paired-fixed-seeds/pair-4200101.jsonl.manifest.json",
+    "/tmp/lizard-tail-paired-fixed-seeds/pair-4200102.jsonl.manifest.json",
+    "/tmp/lizard-tail-paired-fixed-seeds/pair-4200103.jsonl.manifest.json",
+    "/tmp/lizard-tail-paired-fixed-seeds/pair-4200104.jsonl.manifest.json",
+    "/tmp/lizard-tail-paired-fixed-seeds/pair-4200105.jsonl.manifest.json",
+    "/tmp/lizard-tail-paired-fixed-seeds/pair-4200106.jsonl.manifest.json",
+    "/tmp/lizard-tail-paired-fixed-seeds/pair-4200107.jsonl.manifest.json",
+    "/tmp/lizard-tail-paired-fixed-seeds/pair-4200108.jsonl.manifest.json",
+    "/tmp/lizard-tail-paired-fixed-seeds/pair-4200109.jsonl.manifest.json",
+    "/tmp/lizard-tail-paired-fixed-seeds/pair-4200110.jsonl.manifest.json",
+    "/tmp/lizard-tail-paired-fixed-seeds/pair-4200111.jsonl.manifest.json",
+    "/tmp/lizard-tail-paired-fixed-seeds/pair-4200112.jsonl.manifest.json",
+    "/tmp/lizard-tail-paired-fixed-seeds/pair-4200113.jsonl.manifest.json",
+    "/tmp/lizard-tail-paired-fixed-seeds/pair-4200114.jsonl.manifest.json",
+    "/tmp/lizard-tail-paired-fixed-seeds/pair-4200115.jsonl.manifest.json",
+    "/tmp/lizard-tail-paired-fixed-seeds/pair-4200116.jsonl.manifest.json",
+    "/tmp/lizard-tail-paired-fixed-seeds/pair-4200117.jsonl.manifest.json",
+    "/tmp/lizard-tail-paired-fixed-seeds/pair-4200118.jsonl.manifest.json",
+    "/tmp/lizard-tail-paired-fixed-seeds/pair-4200119.jsonl.manifest.json",
+    "/tmp/lizard-tail-paired-fixed-seeds/pair-4200120.jsonl.manifest.json",
+    "/tmp/lizard-tail-paired-fixed-seeds/pair-4200121.jsonl.manifest.json",
+    "/tmp/lizard-tail-paired-fixed-seeds/pair-4200122.jsonl.manifest.json",
+    "/tmp/lizard-tail-paired-fixed-seeds/pair-4200123.jsonl.manifest.json",
+    "/tmp/lizard-tail-paired-fixed-seeds/pair-4200124.jsonl.manifest.json",
+    "/tmp/lizard-tail-paired-fixed-seeds/pair-4200125.jsonl.manifest.json",
+    "/tmp/lizard-tail-paired-fixed-seeds/pair-4200126.jsonl.manifest.json",
+    "/tmp/lizard-tail-paired-fixed-seeds/pair-4200127.jsonl.manifest.json",
+    "/tmp/lizard-tail-paired-fixed-seeds/pair-4200128.jsonl.manifest.json",
+    "/tmp/lizard-tail-paired-fixed-seeds/pair-4200129.jsonl.manifest.json",
+    "/tmp/lizard-tail-paired-fixed-seeds/pair-4200130.jsonl.manifest.json",
+    "/tmp/lizard-tail-paired-fixed-seeds/pair-4200131.jsonl.manifest.json"
+  ],
+  "seed4200100Source": "one completed row from the seed-guarded batch command; the aggregate manifest was finalized after all component rows validated",
+  "aggregateJsonlSha256": "c7e55552ae2329d85dee6d486bdaa266702f1cb122e615273cebb7daccfe41a3"
+}

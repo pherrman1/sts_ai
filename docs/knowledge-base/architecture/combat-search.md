@@ -168,7 +168,7 @@ intents are visible; Gambling Chip and Purity selections are atomic subsets;
 the vendored reroot repairs are replaced by multiset equality plus action
 translation. On the standard 128-seed block it won 86/128 against the
 vendored 83/128 (no detectable difference;
-[§343](../../experiments/ledger-06.md)). The vendored backend remains the
+[§348](../../experiments/ledger-06.md)). The vendored backend remains the
 default.
 
 ## Silver backend

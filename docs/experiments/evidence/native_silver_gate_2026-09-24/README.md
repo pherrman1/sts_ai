@@ -2,7 +2,7 @@
 
 Whole-run comparison of the Silver search ported onto the main engine
 (`STS_NATIVE_SILVER=1`) against the vendored Silver backend on the standard
-128-seed block. Ledger entry: [§343](../../ledger-06.md).
+128-seed block. Ledger entry: [§348](../../ledger-06.md).
 
 ## Command
 
