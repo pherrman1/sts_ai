@@ -42,10 +42,11 @@ zero. See [the exact continuation evidence](../../experiments/evidence/combat_rn
 and [current research](../evaluation/current-research.md).
 
 All battles recreate AI/card-random/monster-HP/shuffle even at the same floor.
-Current normal controller paths contain no reachable same-floor successor:
-Colosseum is disabled and its handler is a TODO, event combats return to
-rewards/map, and the A20 second boss increments floor. Corpus source ordering
-confirms zero same-floor pairs among 485,031 consecutive fights. Card-random
+The live Colosseum controller can now enter a second fight on the same floor;
+its victory reward includes two relics, 100 gold, a card offer, and the normal
+event-combat potion roll. The earlier corpus source ordering found zero same-floor
+pairs among 485,031 consecutive fights under a controller that disabled
+Colosseum, so that result does not qualify the live Colosseum chain. Card-random
 and shuffle OOC consumers after combat run after normal floor or boss-treasure
 reset (including Pandora's Box). Their RAW post values need no generated state
 for normal supported continuation; exact six-stream RAW snapshot synthesis is

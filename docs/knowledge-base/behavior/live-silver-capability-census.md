@@ -30,6 +30,10 @@ The pinned native boundary has explicit representations for:
 - up to five encounter slots, including dead/escaped slots when the observer
   supplies them, with a battle-lifetime Java-object-to-slot registry so target
   indices are not compacted after a death, escape, summon, or replacement.
+  Gremlin Leader summons reuse a recorded dead minion's native slot only when
+  that replacement is unique; ambiguous replacements fail closed. If several
+  historical dead objects share a slot after repeated summons, the observer
+  retains only the latest observed occupant for that native slot.
 - the ordinary `LARGE_SLIME` split preserves native child slots 0 and 1;
   `SLIME_BOSS` remains the separate 0 and 2 layout.
 - the separate non-native exclusion manifest records `FOUR_BYRDS`: vanilla can
@@ -49,18 +53,43 @@ The producer-side exceptions are part of that contract: Cultist Ritual reads
 `RitualPower.skipFirst` as native `justApplied`, `SlaverBlue` emits native
 `miscInfo` zero, Java `Weakened` maps to native player `Weak`, and Java
 `Flex`/`FlexPower` maps to native player `LoseStrength` (the pending temporary
-Strength loss).
+Strength loss). The vanilla `Regeneration` player power from Regen Potion maps
+to native `Regen`, which heals and decrements at the end of each turn.
+Vanilla's visible `Double Tap` power maps to native `DoubleTap` for the next
+attack-copy count.
+The live mapping also accepts exact vanilla `POWER_ID` strings for native
+player and monster statuses; Java class-name aliases alone are insufficient
+because many emitted IDs differ (for example `After Image`, `Energized`, and
+`Painful Stabs`). The importer still checks extra state such as `justApplied`
+and Echo Form's doubled-card count before accepting those powers.
+Vanilla's Mad Gremlin uses the Java ID `GremlinWarrior`; its native move logic
+does not consult `miscInfo`, so the observer supplies an explicit zero.
+An unqualified transient combat observation leaves the last qualified Silver
+search session intact. The strict driver still rejects that observation if it
+remains the current player decision; a later qualified root in the same combat
+can reroot from the last modeled action after summon animations settle.
 
 ## Public-information rules
 
 - The importer never consumes or accepts live RNG fields.
 - An ordinary draw array is imported as an unordered multiset. Concrete order is
   retained only when `Frozen Eye` is present.
-- `Runic Dome` remains fail-closed at the Java boundary. The observer now
+- `Runic Dome` uses the native deferred hidden-intent boundary. The observer
   omits `nextMove`, `moveHistory`, `intent`, and `intentDamage` while the relic
-  is active; native deferred hidden-intent support exists for native fixtures,
-  but the live producer still does not provide the complete public pre-roll
-  tracker needed to qualify a fair import.
+  is active, and emits public pre-roll history with an explicit valid-entry
+  count, ordered public inputs for every pending roll, pending roll counts, and the bounded Looter/Mugger
+  direct-choice marker. Hidden rolls preserve the first public move history
+  while retaining each roll's own volatile inputs, including rolls across
+  turns. An incomplete input sequence fails closed. Louse and Darkling use a public candidate mask for their persistent
+  randomized damage. Observed player HP and block changes narrow the mask
+  when they determine the attack amount. Darkling Chomp has fixed damage, so a
+  matching public hit leaves every Nip-damage candidate possible under Runic.
+  Multiple compatible values remain
+  in the mask; unqualified or contradictory damage observations fail closed.
+  Silver samples a candidate inside each search continuation. A live Act-2 TWO_THIEVES root
+  was imported by Silver and returned a model-driven action with the temporary
+  deployed advisor; this is implementation evidence, not whole-run
+  qualification evidence.
 - Java physical UUIDs are assigned monotonically by a battle-lifetime
   `SilverImportContext`. The registry resets only when the protocol session or
   combat instance changes and rejects duplicate UUID claims in one snapshot.
@@ -93,8 +122,6 @@ those cards are implemented by `BattleContext`.
 These are deliberate boundaries, not silently fabricated defaults:
 
 - live OOC `GameContext + PathHistory` import and OOC MCTS;
-- Runic Dome live import (`silver_hidden_information_required` until the
-  public pre-roll tracker is serialized);
 - unknown Java card/relic/potion/power/task IDs;
 - encounter or monster `miscInfo` values that are not present in the public
   runtime or cannot be derived from the current public tracker;

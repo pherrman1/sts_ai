@@ -497,7 +497,10 @@ json silverEvaluator(const one_combat::advisor::Request &request,
         priorCache.clear();
     };
     if (!imported.ok) {
-        clearSession();
+        // An animation/summon can emit a transient unqualified observation
+        // before the next actionable player root. The driver rejects that
+        // snapshot if it remains current; keep the last qualified search
+        // session so a later root in the same combat can reroot from it.
         evaluator["status"] = "UNSUPPORTED";
         evaluator["reason"] = imported.reason;
         return evaluator;
@@ -671,6 +674,8 @@ json silverEvaluator(const one_combat::advisor::Request &request,
         clearSession();
         evaluator["status"] = "UNSUPPORTED";
         evaluator["reason"] = "silver_live_action_lowering";
+        evaluator["failedActionLabel"] = evaluator["selectedLabel"];
+        evaluator["failedActionFingerprint"] = evaluator["selectedAction"];
         evaluator.erase("selectedAction");
         evaluator.erase("selectedLabel");
         evaluator.erase("selectedLiveAction");

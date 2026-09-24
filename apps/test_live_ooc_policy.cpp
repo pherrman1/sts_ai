@@ -27,6 +27,64 @@ int main(int argc, char **argv) {
         // One fixed native fixture seed, no campaign traversal.
         GameContext gc(CharacterClass::IRONCLAD, 0x51514Du, 0);
         {
+            auto wing = gc;
+            wing.map = std::make_shared<Map>();
+            wing.curMapNodeX = 3;
+            wing.curMapNodeY = 0;
+            wing.floorNum = 1;
+            wing.curRoom = Room::MONSTER;
+            wing.screenState = ScreenState::MAP_SCREEN;
+            wing.map->getNode(3, 0).addEdge(3);
+            for (int y = 1; y <= 2; ++y) {
+                wing.map->getNode(3, y).room = Room::REST;
+                wing.map->getNode(4, y).room = Room::REST;
+            }
+            wing.map->getNode(3, 1).addEdge(3);
+            wing.map->getNode(4, 1).addEdge(3);
+            wing.obtainRelic(RelicId::WING_BOOTS);
+            require(wing.wingBootsCharges == 3, "new Wing Boots lack three charges");
+            const auto chargedReach = forwardMapFeatures(wing);
+            auto exhaustedReach = wing;
+            exhaustedReach.wingBootsCharges = 0;
+            require(chargedReach.cRest > forwardMapFeatures(exhaustedReach).cRest,
+                    "frozen model map features ignore charged reachable rooms");
+            require(GameAction(4).isValidAction(wing), "Wing Boots omit reachable next-row node");
+            auto ordinary = wing;
+            ordinary.transitionToMapNode(3);
+            require(ordinary.wingBootsCharges == 3, "ordinary map edge spent Wing Boots charge");
+            {
+                OocAdapterOptions options;
+                options.stopAtMapCheckpoint = true;
+                OocMctsDependencies deps;
+                deps.policyAvailable = [] { return true; };
+                deps.policyLogits = [](const GameContext &, const PathHistory &,
+                                       const std::vector<GameAction> &actions) {
+                    return std::vector<double>(actions.size(), 0.0);
+                };
+                deps.leafValue = [](const GameContext &, const PathHistory &) { return 0.5; };
+                OocGameContextModel search(wing, PathHistory{}, {}, options, std::move(deps));
+                const auto actions = search.legalActions(0);
+                const auto offEdge = std::find_if(actions.begin(), actions.end(), [&](const auto &action) {
+                    return search.candidate(0, action.id).primitive.bits == GameAction(4).bits;
+                });
+                require(offEdge != actions.end(), "MCTS root omitted charged map action");
+                std::mt19937_64 draws(67);
+                const auto child = search.sampleSuccessor(0, offEdge->id, draws);
+                require(search.state(child).wingBootsCharges == 2
+                        && search.state(0).wingBootsCharges == 3,
+                    "MCTS charged map transition did not preserve root and spend charge");
+            }
+            wing.transitionToMapNode(4);
+            require(wing.wingBootsCharges == 2, "off-edge move did not spend one Wing Boots charge");
+            wing.screenState = ScreenState::MAP_SCREEN;
+            wing.wingBootsCharges = 1;
+            require(GameAction(4).isValidAction(wing), "last Wing Boots charge unavailable");
+            wing.transitionToMapNode(4);
+            require(wing.wingBootsCharges == 0, "last Wing Boots charge not exhausted");
+            wing.screenState = ScreenState::MAP_SCREEN;
+            require(!GameAction(4).isValidAction(wing), "exhausted Wing Boots still permit off-edge move");
+        }
+        {
             auto counterState = gc;
             counterState.floorNum = 16;
             std::mt19937_64 draws(97);
@@ -121,6 +179,52 @@ int main(int argc, char **argv) {
         gc.screenState = ScreenState::REST_ROOM;
         gc.curHp = 40;
         const PathHistory path{};
+        {
+            // Two exact public histories: ? -> MONSTER -> EVENT and
+            // ? -> SHOP -> EVENT. Exercise the production live sampler through
+            // the actual MCTS root successor, after future RNG resampling.
+            const auto sampledRoot = [&](float monster, float shop, float treasure) {
+                auto root = gc;
+                root.floorNum = 5;
+                root.monsterChance = monster;
+                root.shopChance = shop;
+                root.treasureChance = treasure;
+                root.regainControlAction = [](GameContext &state) {
+                    state.screenState = ScreenState::MAP_SCREEN;
+                    state.regainControlAction = nullptr;
+                };
+                OocAdapterOptions options;
+                options.sampleNoncombat = true;
+                options.stopAtMapCheckpoint = true;
+                OocMctsDependencies deps;
+                deps.sampleHiddenCounters = sampleLiveOocHiddenPityCounters;
+                deps.policyAvailable = [] { return true; };
+                deps.policyLogits = [](const GameContext &, const PathHistory &,
+                                       const std::vector<GameAction> &actions) {
+                    return std::vector<double>(actions.size(), 0.0);
+                };
+                deps.leafValue = [](const GameContext &, const PathHistory &) { return 0.5; };
+                OocGameContextModel search(root, path, {}, options, std::move(deps));
+                const auto actions = search.legalActions(0);
+                const auto rest = std::find_if(actions.begin(), actions.end(), [&](const auto &action) {
+                    return search.candidate(0, action.id).primitive.bits == GameAction(0).bits;
+                });
+                require(rest != actions.end(), "rest action missing from MCTS root");
+                std::mt19937_64 rng(149);
+                for (int i = 0; i < 16; ++i) {
+                    const auto child = search.sampleSuccessor(0, rest->id, rng);
+                    const auto &state = search.state(child);
+                    require(state.monsterChance == monster && state.shopChance == shop
+                            && state.treasureChance == treasure,
+                        "MCTS root successor replaced exact public question history");
+                    require(state.potionChance >= -40 && state.potionChance <= 60
+                            && state.cardRarityFactor >= -40 && state.cardRarityFactor <= 5,
+                        "MCTS root successor did not sample hidden pity counters");
+                }
+            };
+            sampledRoot(.2f, .09f, .06f);
+            sampledRoot(.3f, .06f, .06f);
+        }
         auto model = std::make_unique<OocStrategicTokNet>();
         const auto missingModel = scoreLiveOocV4(gc, path, *model);
         require(!missingModel.supported && missingModel.reason == "MODEL_UNAVAILABLE"

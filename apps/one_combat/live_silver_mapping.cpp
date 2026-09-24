@@ -115,14 +115,17 @@ const std::map<std::string, PlayerStatus> kPlayerStatuses = {
     {"NoBlockPower", PlayerStatus::NO_BLOCK}, {"Entangled", PlayerStatus::ENTANGLED}, {"EntanglePower", PlayerStatus::ENTANGLED},
     {"Intangible", PlayerStatus::INTANGIBLE}, {"IntangiblePlayerPower", PlayerStatus::INTANGIBLE}, {"Barricade", PlayerStatus::BARRICADE},
     {"Corruption", PlayerStatus::CORRUPTION}, {"Confused", PlayerStatus::CONFUSED},
+    {"Confusion", PlayerStatus::CONFUSED},
     {"Hex", PlayerStatus::HEX}, {"Pen Nib", PlayerStatus::PEN_NIB},
-    {"DoubleTapPower", PlayerStatus::DOUBLE_TAP}, {"Metallicize", PlayerStatus::METALLICIZE}, {"MetallicizePower", PlayerStatus::METALLICIZE},
+    {"Double Tap", PlayerStatus::DOUBLE_TAP}, {"DoubleTapPower", PlayerStatus::DOUBLE_TAP},
+    {"Metallicize", PlayerStatus::METALLICIZE}, {"MetallicizePower", PlayerStatus::METALLICIZE},
     {"Plated Armor", PlayerStatus::PLATED_ARMOR}, {"PlatedArmorPower", PlayerStatus::PLATED_ARMOR}, {"Feel No Pain", PlayerStatus::FEEL_NO_PAIN}, {"FeelNoPain", PlayerStatus::FEEL_NO_PAIN},
     {"Dark Embrace", PlayerStatus::DARK_EMBRACE}, {"DarkEmbrace", PlayerStatus::DARK_EMBRACE}, {"Demon Form", PlayerStatus::DEMON_FORM}, {"DemonForm", PlayerStatus::DEMON_FORM},
     {"Combust", PlayerStatus::COMBUST}, {"Evolve", PlayerStatus::EVOLVE},
     {"Fire Breathing", PlayerStatus::FIRE_BREATHING}, {"FireBreathing", PlayerStatus::FIRE_BREATHING}, {"Juggernaut", PlayerStatus::JUGGERNAUT},
     {"Rage", PlayerStatus::RAGE}, {"Rupture", PlayerStatus::RUPTURE}, {"Thorns", PlayerStatus::THORNS},
     {"Vigor", PlayerStatus::VIGOR}, {"Buffer", PlayerStatus::BUFFER},
+    {"Regeneration", PlayerStatus::REGEN},
     {"RitualPower", PlayerStatus::RITUAL}, {"Wraith Form v2", PlayerStatus::WRAITH_FORM}, {"WraithForm", PlayerStatus::WRAITH_FORM}, {"Panache", PlayerStatus::PANACHE},
     // Vanilla power IDs with their Java Power suffixes.
     {"DoubleDamagePower", PlayerStatus::DOUBLE_DAMAGE}, {"DrawReductionPower", PlayerStatus::DRAW_REDUCTION},
@@ -145,6 +148,7 @@ const std::map<std::string, PlayerStatus> kPlayerStatuses = {
     {"DrawCardNextTurnPower", PlayerStatus::DRAW_CARD_NEXT_TURN}, {"EnergizedPower", PlayerStatus::ENERGIZED},
     {"EnvenomPower", PlayerStatus::ENVENOM}, {"EstablishmentPower", PlayerStatus::ESTABLISHMENT},
     {"EvolvePower", PlayerStatus::EVOLVE}, {"FlameBarrierPower", PlayerStatus::FLAME_BARRIER},
+    {"Flame Barrier", PlayerStatus::FLAME_BARRIER},
     {"ForesightPower", PlayerStatus::FORESIGHT}, {"HelloWorldPower", PlayerStatus::HELLO_WORLD},
     {"InfiniteBladesPower", PlayerStatus::INFINITE_BLADES}, {"LikeWaterPower", PlayerStatus::LIKE_WATER},
     {"LoopPower", PlayerStatus::LOOP}, {"MagnetismPower", PlayerStatus::MAGNETISM},
@@ -153,6 +157,25 @@ const std::map<std::string, PlayerStatus> kPlayerStatuses = {
     {"PhantasmalKillerPower", PlayerStatus::PHANTASMAL}, {"SadisticNaturePower", PlayerStatus::SADISTIC},
     {"StaticDischargePower", PlayerStatus::STATIC_DISCHARGE}, {"ThousandCutsPower", PlayerStatus::THOUSAND_CUTS},
     {"ToolsOfTheTradePower", PlayerStatus::TOOLS_OF_THE_TRADE}, {"EquilibriumPower", PlayerStatus::EQUILIBRIUM},
+    // Exact vanilla POWER_ID constants from desktop-1.0.jar. Class-name
+    // aliases above are retained for recorded fixtures and compatibility.
+    {"Accuracy", PlayerStatus::ACCURACY}, {"After Image", PlayerStatus::AFTER_IMAGE},
+    {"Amplify", PlayerStatus::AMPLIFY}, {"Bias", PlayerStatus::BIAS},
+    {"Blur", PlayerStatus::BLUR}, {"Brutality", PlayerStatus::BRUTALITY},
+    {"Burst", PlayerStatus::BURST}, {"Collect", PlayerStatus::COLLECT},
+    {"Constricted", PlayerStatus::CONSTRICTED}, {"Creative AI", PlayerStatus::CREATIVE_AI},
+    {"Double Damage", PlayerStatus::DOUBLE_DAMAGE}, {"Draw Card", PlayerStatus::DRAW_CARD_NEXT_TURN},
+    {"Draw Reduction", PlayerStatus::DRAW_REDUCTION}, {"Energized", PlayerStatus::ENERGIZED},
+    {"Envenom", PlayerStatus::ENVENOM}, {"Equilibrium", PlayerStatus::EQUILIBRIUM},
+    {"Infinite Blades", PlayerStatus::INFINITE_BLADES}, {"IntangiblePlayer", PlayerStatus::INTANGIBLE},
+    {"Loop", PlayerStatus::LOOP}, {"DexLoss", PlayerStatus::LOSE_DEXTERITY},
+    {"Magnetism", PlayerStatus::MAGNETISM}, {"Mayhem", PlayerStatus::MAYHEM},
+    {"Next Turn Block", PlayerStatus::NEXT_TURN_BLOCK}, {"Noxious Fumes", PlayerStatus::NOXIOUS_FUMES},
+    {"Rebound", PlayerStatus::REBOUND}, {"StaticDischarge", PlayerStatus::STATIC_DISCHARGE},
+    {"Surrounded", PlayerStatus::SURROUNDED}, {"Thousand Cuts", PlayerStatus::THOUSAND_CUTS},
+    {"Tools Of The Trade", PlayerStatus::TOOLS_OF_THE_TRADE},
+    {"Echo Form", PlayerStatus::ECHO_FORM}, {"Electro", PlayerStatus::ELECTRO},
+    {"Sadistic", PlayerStatus::SADISTIC}, {"Phantasmal", PlayerStatus::PHANTASMAL},
 };
 
 const std::map<std::string, sts::MonsterStatus> kMonsterStatuses = {
@@ -184,6 +207,13 @@ const std::map<std::string, sts::MonsterStatus> kMonsterStatuses = {
     {"ModeShiftPower", sts::MonsterStatus::MODE_SHIFT}, {"SporeCloudPower", sts::MonsterStatus::SPORE_CLOUD},
     {"ThieveryPower", sts::MonsterStatus::THIEVERY}, {"SharpHidePower", sts::MonsterStatus::SHARP_HIDE},
     {"AsleepPower", sts::MonsterStatus::ASLEEP},
+    // Exact vanilla POWER_ID constants for statuses already represented by
+    // the native monster model.
+    {"Choked", sts::MonsterStatus::CHOKED}, {"Lockon", sts::MonsterStatus::LOCK_ON},
+    {"Shackled", sts::MonsterStatus::SHACKLED}, {"Regenerate", sts::MonsterStatus::REGEN},
+    {"Painful Stabs", sts::MonsterStatus::PAINFUL_STABS},
+    {"Generic Strength Up Power", sts::MonsterStatus::GENERIC_STRENGTH_UP},
+    {"Compulsive", sts::MonsterStatus::REACTIVE},
 };
 
 const std::map<std::string, sts::CardSelectTask> kSelectionTasks = {
@@ -230,6 +260,27 @@ const std::vector<LiveEncounterExclusionEntry> &encounterExclusionManifest() {
     return exclusions;
 }
 std::optional<sts::MonsterStatus> monsterStatus(const std::string &id) { return find(kMonsterStatuses, id); }
+std::optional<sts::MonsterStatus> monsterStatusForMonster(const std::string &monsterId,
+                                                        const std::string &id) {
+    // Vanilla RegrowPower (Darkling) and ResurrectPower share POWER_ID
+    // "Life Link". Only the Darkling representation is the native REGROW bit.
+    if (id == "Life Link")
+        return monsterId == "Darkling" ? std::optional{sts::MonsterStatus::REGROW} : std::nullopt;
+    return monsterStatus(id);
+}
+bool nativeImplicitMonsterPower(const std::string &monsterId, const std::string &id,
+                                int amount, int playerTurn, int nativeMiscInfo) {
+    // The phase-one Awakened One marker has no effect beyond the phase
+    // transition. Native miscInfo is the phase bit: zero until rebirth.
+    if (id == "Unawakened")
+        return monsterId == "AwakenedOne" && amount == -1 && nativeMiscInfo == 0;
+    // Vanilla Exploder starts with Explosive(3) and decrements it during each
+    // monster turn. Native Exploder scripts the same two slams and explosion
+    // through its move history, without a separate status slot. Only accept
+    // the public countdown when it agrees with that native turn sequence.
+    return monsterId == "Exploder" && id == "Explosive"
+        && playerTurn >= 1 && playerTurn <= 3 && amount == 4 - playerTurn;
+}
 std::optional<PlayerStatus> playerStatus(const std::string &id) { return find(kPlayerStatuses, id); }
 std::optional<sts::CardSelectTask> cardSelectTask(const std::string &id) { return find(kSelectionTasks, id); }
 

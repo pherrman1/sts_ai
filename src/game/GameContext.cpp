@@ -6,6 +6,7 @@
 
 #include <algorithm>
 #include <cassert>
+#include <vector>
 
 #include "constants/RelicPools.h"
 #include "constants/CardPools.h"
@@ -750,6 +751,13 @@ void GameContext::transitionToAct(int targetAct) {
 }
 
 void GameContext::transitionToMapNode(int mapNodeX) {
+    if (curMapNodeY >= 0 && curMapNodeY < 14 && wingBootsCharges > 0) {
+        const auto &node = map->getNode(curMapNodeX, curMapNodeY);
+        bool connected = false;
+        for (int i = 0; i < node.edgeCount; ++i)
+            connected |= node.edges[i] == mapNodeX;
+        if (!connected) --wingBootsCharges;
+    }
     lastRoom = curRoom;
     curMapNodeX = mapNodeX;
     ++floorNum;
@@ -882,49 +890,22 @@ void GameContext::setupEvent() { // todo necronomicon event
             info.hpAmount0 = std::max(1, fractionMaxHp(.10f, FLOOR));
             break;
 
-        case Event::FALLING: { // todo test and CANNOT BE BOTTLED
-            int counts[8] {0};
-            for (const auto &c : deck.cards) {
-                int t = static_cast<int>(c.getType());
-                if (t >= 0 && t < 8) ++counts[t];
-            }
-
-            int attacksIdx = counts[0] > 0 ? miscRng.random(counts[0] - 1) : -1;
-            int skillsIdx = counts[1] > 0 ? miscRng.random(counts[1] - 1) : -1;
-            int powersIdx = counts[2] > 0 ? miscRng.random(counts[2] - 1) : -1;
-
-            int attackCount = 0;
-            int skillCount = 0;
-            int powerCount = 0;
-
+        case Event::FALLING: {
             info.attackCardDeckIdx = -1;
             info.skillCardDeckIdx = -1;
             info.powerCardDeckIdx = -1;
-
-            for (int i = 0; i < deck.cards.size(); ++i) {
-                switch (deck.cards[i].getType()) {
-                    case CardType::ATTACK:
-                        if (attackCount++ == attacksIdx) {
-                            info.attackCardDeckIdx = i;
-                        }
-                        break;
-
-                    case CardType::SKILL:
-                        if (skillCount++ == skillsIdx) {
-                            info.skillCardDeckIdx = i;
-                        }
-                        break;
-
-                    case CardType::POWER:
-                        if (powerCount++ == powersIdx) {
-                            info.powerCardDeckIdx = i;
-                        }
-                        break;
-
-                    default:
-                        break;
-                }
-            }
+            const auto randomUnbottledCard = [&](CardType type) {
+                std::vector<int> eligible;
+                for (int i = 0; i < deck.size(); ++i)
+                    if (deck.cards[i].getType() == type && !deck.isCardBottled(i))
+                        eligible.push_back(i);
+                return eligible.empty() ? -1 : eligible[miscRng.random(static_cast<int>(eligible.size()) - 1)];
+            };
+            // Vanilla Falling calls CardHelper.returnCardOfType in Attack,
+            // Skill, Power order, excluding cards held by bottled relics.
+            info.attackCardDeckIdx = randomUnbottledCard(CardType::ATTACK);
+            info.skillCardDeckIdx = randomUnbottledCard(CardType::SKILL);
+            info.powerCardDeckIdx = randomUnbottledCard(CardType::POWER);
             break;
         }
 
@@ -1394,6 +1375,18 @@ bool GameContext::obtainRelic(RelicId r) {
 
         case RelicId::OMAMORI: {
             relicData = 2;
+            break;
+        }
+
+        case RelicId::LIZARD_TAIL: {
+            // The saved counter is not the simulator's active flag. Keep the
+            // revive available until the first lethal hit consumes it.
+            relicData = 1;
+            break;
+        }
+
+        case RelicId::WING_BOOTS: {
+            wingBootsCharges = 3;
             break;
         }
 
@@ -2558,8 +2551,24 @@ void GameContext::chooseEventOption(int idx) {
             break;
         }
 
-        case Event::COLOSSEUM: // todo
-            regainControl();
+        case Event::COLOSSEUM:
+            if (info.eventData == 1 && idx == 0) {
+                regainControl();
+            } else if (info.eventData == 1 && idx == 1) {
+                Rewards reward;
+                reward.addRelic(returnRandomScreenlessRelic(RelicTier::RARE));
+                reward.addRelic(returnRandomScreenlessRelic(RelicTier::UNCOMMON));
+                reward.addGold(100);
+                regainControlAction = [reward](GameContext &gc) mutable {
+                    gc.addPotionRewards(reward);
+                    reward.addCardReward(gc.createCardReward(Room::EVENT));
+                    gc.openCombatRewardScreen(reward);
+                    gc.regainControlAction = returnToMapAction;
+                };
+                enterBattle(MonsterEncounter::COLOSSEUM_EVENT_NOBS);
+            } else {
+                assert(false);
+            }
             break;
 
         case Event::CURSED_TOME: {
@@ -2744,7 +2753,7 @@ void GameContext::chooseEventOption(int idx) {
             switch (idx) {
                 case 0:
                     obtainGold(unfavorable ? 50 : 75);
-                    damagePlayer(std::max(fractionMaxHp(.10f), 1));
+                    damagePlayer(info.hpAmount0);
                     regainControl();
                     break;
 
@@ -3187,7 +3196,7 @@ void GameContext::chooseEventOption(int idx) {
 
         case Event::SCRAP_OOZE:
             if (idx == 0) {
-                damagePlayer(unfavorable ? 5 : 3);
+                damagePlayer((unfavorable ? 5 : 3) + info.eventData);
                 const int roll = miscRng.random(99);
                 const int relicChance = info.eventData*10 + 25;
                 if (roll >= 99 - relicChance) {

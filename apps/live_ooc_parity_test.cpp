@@ -32,6 +32,7 @@ static J project(const GameContext &g,const PathHistory &path,const std::string 
         {"currentActPathVisits",J::array({0,0,0,0,0,0,0,0,0,0})},{"acquiredRelics",J::array()},
         {"pathHistory",J::array()},{"combatFloors",J::array()},
         {"combatHistory",J::array()},{"combatHistoryComplete",true},
+        {"questionOutcomes",J::array()},{"questionHistoryComplete",true},
         {"seenRelics",J::array()},{"seenRelicsComplete",true},
         {"rewardPityHistoryComplete",true},
         {"priorEvents",J::array()},{"shopRemoveCount",g.shopRemoveCount}};
@@ -48,17 +49,21 @@ static J project(const GameContext &g,const PathHistory &path,const std::string 
     switch(g.screenState){
         case ScreenState::REWARDS:{screen="card_reward";const auto &r=g.info.rewardsContainer;
             d={{"gold",J::array()},{"cardRewards",J::array()},{"relics",J::array()},{"potions",J::array()},
-                {"emeraldKey",r.emeraldKey},{"sapphireKey",r.sapphireKey}};
+                {"emeraldKey",r.emeraldKey},{"sapphireKey",r.sapphireKey},
+                {"opaqueCardRewardGroups",g.opaqueCardRewardGroups}};
             for(int i=0;i<r.goldRewardCount;++i)d["gold"].push_back(r.gold[i]);
             for(int i=0;i<r.cardRewardCount;++i){J cs=J::array();for(const auto &c:r.cardRewards[i])cs.push_back(cardWire(c));d["cardRewards"].push_back(cs);}
             for(int i=0;i<r.relicCount;++i)d["relics"].push_back(J(r.relics[i]));
             for(int i=0;i<r.potionCount;++i)d["potions"].push_back(J(r.potions[i]));break;}
         case ScreenState::REST_ROOM:screen="rest";break;
         case ScreenState::MAP_SCREEN:screen="map";break;
-        case ScreenState::TREASURE_ROOM:screen="treasure";break;
+        case ScreenState::TREASURE_ROOM:screen="treasure";
+            d["chestSize"]=g.info.chestSize==ChestSize::SMALL?"SMALL":
+                g.info.chestSize==ChestSize::MEDIUM?"MEDIUM":"LARGE";break;
         case ScreenState::BOSS_RELIC_REWARDS:screen="boss_relic";d["relics"]=J::array();for(auto r:g.info.bossRelics)d["relics"].push_back(J(r));break;
         case ScreenState::CARD_SELECT:screen="selector";d={{"type",g.info.selectScreenType==CardSelectScreenType::UPGRADE?"upgrade":
-            g.info.selectScreenType==CardSelectScreenType::TRANSFORM?"transform":"remove"},
+            g.info.selectScreenType==CardSelectScreenType::TRANSFORM?"transform":
+            g.info.selectScreenType==CardSelectScreenType::BOTTLE?"bottle":"remove"},
             {"requiredPicks",g.info.toSelectCount},{"completedPicks",g.info.haveSelectedCards.size()},{"cards",J::array()}};
             for(const auto &c:g.info.toSelectCards)d["cards"].push_back({{"deckIndex",c.deckIdx},{"card",cardWire(c.card)}});break;
         case ScreenState::SHOP_ROOM:{screen="shop";const auto &s=g.info.shop;
@@ -68,10 +73,18 @@ static J project(const GameContext &g,const PathHistory &path,const std::string 
                 d["potions"].push_back({{"id",J(s.potions[i])},{"price",s.potionPrice(i)}});}break;}
         case ScreenState::EVENT_SCREEN:{screen="event";const auto &i=g.info;
             d={{"event",g.curEvent==Event::NEOW?J("Neow"):J(g.curEvent)},{"eventData",i.eventData},{"phase",i.phase},
+                {"hpAmount0",i.hpAmount0},{"hpAmount1",i.hpAmount1},{"hpAmount2",i.hpAmount2},
                 {"upgradeOne",i.upgradeOne},{"cleanUpIsRemoveCard",i.cleanUpIsRemoveCard},{"skillCardDeckIdx",i.skillCardDeckIdx},
                 {"powerCardDeckIdx",i.powerCardDeckIdx},{"attackCardDeckIdx",i.attackCardDeckIdx},{"potionIdx",i.potionIdx},
-                {"gold",i.gold},{"cardIdx",i.cardIdx}};
-            if(g.curEvent==Event::NEOW){d["neow"]=J::array();for(const auto &n:i.neowRewards)d["neow"].push_back({{"bonus",J(n.r)},{"drawback",J(n.d)}});}break;}
+                {"gold",i.gold},{"goldLoss",i.goldLoss},{"cardIdx",i.cardIdx}};
+            if(g.curEvent==Event::NEOW){d["neow"]=J::array();for(const auto &n:i.neowRewards)d["neow"].push_back({{"bonus",J(n.r)},{"drawback",J(n.d)}});}
+            if(g.curEvent==Event::NOTE_FOR_YOURSELF)d["noteForYourselfCard"]=cardWire(g.noteForYourselfCard);
+            if(g.curEvent==Event::NLOTH) {
+                d["relicIdx0"]=i.relicIdx0;d["relicIdx1"]=i.relicIdx1;
+                d["relicOffer0"]=J(g.relics.relics[i.relicIdx0].id);
+                d["relicOffer1"]=J(g.relics.relics[i.relicIdx1].id);
+            }
+            break;}
         default:throw std::runtime_error("fixture screen missing");
     }
     J o={{"schemaVersion",1},{"screen",screen},{"publicState",p},{"details",d},{"liveChoices",J::array()}};
@@ -118,6 +131,18 @@ int main(int argc,char **argv){try{
     base.deck.bottleCard(base.deck.size()-1,CardType::ATTACK);
     base.deck.obtain(base,Card(CardId::STRIKE_RED,1));
     PathHistory path;path.roomVisits={1,2,3,4,5,6,1,1,0,0};
+    auto falling=base;
+    falling.deck.obtain(falling,Card(CardId::DEFEND_RED));
+    falling.deck.obtain(falling,Card(CardId::INFLAME));
+    falling.screenState=ScreenState::EVENT_SCREEN;
+    falling.curEvent=Event::FALLING;
+    falling.setupEvent();
+    check(falling.info.attackCardDeckIdx>=0
+            && !falling.deck.isCardBottled(falling.info.attackCardDeckIdx)
+            && falling.deck.cards[falling.info.attackCardDeckIdx].getType()==CardType::ATTACK
+            && falling.info.skillCardDeckIdx>=0
+            && falling.info.powerCardDeckIdx>=0,
+        "Falling setup must expose one eligible unbottled card per available type");
     {
         auto source = base;
         source.screenState = ScreenState::REWARDS;
@@ -185,10 +210,12 @@ int main(int argc,char **argv){try{
     }
     std::vector<std::pair<std::string,GameContext>> fixtures;
     auto add=[&](std::string n,GameContext g){fixtures.emplace_back(n,g);};
+    add("event_falling_visible_cards",falling);
     auto g=base;g.screenState=ScreenState::MAP_SCREEN;add("map_multiple_children",g);
     g=base;g.screenState=ScreenState::REST_ROOM;add("rest_smith_lift_dig_remove_key",g);
     g.blueKey=g.greenKey=g.redKey=true;add("rest_keys_collected",g);
-    g=base;g.screenState=ScreenState::TREASURE_ROOM;add("treasure_open_leave",g);
+    g=base;g.screenState=ScreenState::TREASURE_ROOM;g.info.chestSize=ChestSize::SMALL;
+    add("visible_small_chest_hidden_contents",g);
     g=base;g.screenState=ScreenState::REWARDS;g.info.rewardsContainer.clear();
     CardReward cards;cards.push_back(Card(CardId::STRIKE_RED));cards.push_back(Card(CardId::STRIKE_RED));cards.push_back(Card(CardId::BASH,1));
     g.info.rewardsContainer.addCardReward(cards);add("card_reward_duplicate_take_skip",g);
@@ -206,12 +233,80 @@ int main(int argc,char **argv){try{
     g=base;g.openCardSelectScreen(CardSelectScreenType::UPGRADE,1);add("upgrade_duplicate_physical_cards",g);
     g=base;g.openCardSelectScreen(CardSelectScreenType::REMOVE,1);add("remove_selector",g);
     g=base;g.openCardSelectScreen(CardSelectScreenType::TRANSFORM,1);add("transform_selector",g);
-    g=base;g.screenState=ScreenState::EVENT_SCREEN;g.curEvent=Event::BIG_FISH;add("event_big_fish",g);
+    g=base;g.deck.obtain(g,Card(CardId::INFLAME));g.deck.obtain(g,Card(CardId::INFLAME));
+    g.relics.add({RelicId::BOTTLED_TORNADO,0});
+    g.info.toSelectCards.clear();
+    g.info.toSelectCards.push_back({g.deck.cards[g.deck.size()-2],g.deck.size()-2});
+    g.info.toSelectCards.push_back({g.deck.cards[g.deck.size()-1],g.deck.size()-1});
+    g.openCardSelectScreen(CardSelectScreenType::BOTTLE,1,false);
+    add("bottle_power_selector_duplicate_physical_cards",g);
+    g=base;g.screenState=ScreenState::EVENT_SCREEN;g.curEvent=Event::BIG_FISH;g.setupEvent();add("event_big_fish",g);
+    g.curEvent=Event::PLEADING_VAGRANT;g.gold=100;add("event_addict_three_public_choices",g);
+    g=base;g.screenState=ScreenState::EVENT_SCREEN;g.curEvent=Event::CURSED_TOME;
+    add("event_cursed_tome_intro",g);
+    g.info.eventData=4;add("event_cursed_tome_last_page",g);
+    g=base;g.screenState=ScreenState::EVENT_SCREEN;g.curEvent=Event::COLOSSEUM;
+    g.info.eventData=1;add("event_colosseum_post_combat",g);
+    auto colosseum=g;
+    search::GameAction(1).execute(colosseum);
+    check(colosseum.screenState==ScreenState::BATTLE
+            && colosseum.info.encounter==MonsterEncounter::COLOSSEUM_EVENT_NOBS,
+        "Colosseum victory choice must enter the public second encounter");
+    colosseum.curRoom=Room::EVENT;
+    colosseum.afterBattle();
+    check(colosseum.screenState==ScreenState::REWARDS
+            && colosseum.info.rewardsContainer.relicCount==2
+            && colosseum.info.rewardsContainer.goldRewardCount==1
+            && colosseum.info.rewardsContainer.cardRewardCount==1
+            && colosseum.info.rewardsContainer.gold[0]==100,
+        "Colosseum second encounter must retain its fixed public reward structure");
+    g.curEvent=Event::VAMPIRES;g.maxHp=105;g.info.hpAmount0=32;
+    add("event_vampires_no_vial_public_max_hp_loss",g);
+    g=base;g.curEvent=Event::FORGOTTEN_ALTAR;g.setupEvent();add("event_forgotten_altar",g);
+    g.curEvent=Event::THE_CLERIC;g.info.hpAmount0=g.maxHp/4;add("event_cleric_public_heal",g);
     g.curEvent=Event::LIVING_WALL;add("event_living_wall",g);
+    g.curEvent=Event::GOLDEN_SHRINE;add("event_gold_shrine_public_amount",g);
+    g.curEvent=Event::SHINING_LIGHT;g.info.hpAmount0=16;add("event_shining_light_public_damage",g);
+    g.curEvent=Event::WORLD_OF_GOOP;g.info.goldLoss=41;add("event_world_of_goop_public_gold_loss",g);
+    g.curEvent=Event::GOLDEN_IDOL;g.info.hpAmount0=20;g.info.hpAmount1=6;
+    add("event_golden_idol_public_trap",g);
+    g.curEvent=Event::WING_STATUE;add("event_golden_wing_locked_attack",g);
     g.curEvent=Event::THE_WOMAN_IN_BLUE;add("event_woman_in_blue",g);
-    g.curEvent=Event::THE_LIBRARY;add("unsupported_library_reward_pity",g);
-    g.curEvent=Event::HYPNOTIZING_COLORED_MUSHROOMS;add("unsupported_mushrooms_reward_pity",g);
-    g.curEvent=Event::MYSTERIOUS_SPHERE;add("unsupported_sphere_reward_pity",g);
+    g.curEvent=Event::THE_SSSSSERPENT;add("event_liars_game_serpent",g);
+    g.curEvent=Event::SCRAP_OOZE;g.info.eventData=3;
+    auto scrapRetry=g;const int scrapHp=scrapRetry.curHp;
+    scrapRetry.regainControlAction=[](GameContext &) {};
+    search::GameAction(0).execute(scrapRetry);
+    check(scrapRetry.curHp==scrapHp-6,"Scrap Ooze retry must pay rising public HP cost");
+    add("event_scrap_ooze_public_retry",g);
+    g=base;g.screenState=ScreenState::EVENT_SCREEN;g.curEvent=Event::KNOWING_SKULL;
+    g.info.hpAmount0=g.info.hpAmount1=g.info.hpAmount2=6;add("event_knowing_skull_ask_public_costs",g);
+    auto knowingSkullGold=g;knowingSkullGold.regainControlAction=[](GameContext &) {};
+    const int skullHp=knowingSkullGold.curHp,skullGold=knowingSkullGold.gold;
+    search::GameAction(0).execute(knowingSkullGold);
+    check(knowingSkullGold.curHp==skullHp-6 && knowingSkullGold.gold==skullGold+90,
+        "Knowing Skull native option 0 must map to its labeled gold choice and public HP cost");
+    auto knowingSkullPotion=g;knowingSkullPotion.regainControlAction=[](GameContext &) {};
+    search::GameAction(2).execute(knowingSkullPotion);
+    check(knowingSkullPotion.curHp==skullHp-6 && knowingSkullPotion.info.hpAmount2==7,
+        "Knowing Skull native potion option must charge then increment only the potion cost");
+    g.curEvent=Event::WE_MEET_AGAIN;g.info.cardIdx=g.deck.size()-1;
+    g.info.potionIdx=-1;g.info.gold=-1;add("event_we_meet_again_card_or_attack",g);
+    g=base;g.screenState=ScreenState::EVENT_SCREEN;g.curEvent=Event::NOTE_FOR_YOURSELF;
+    g.noteForYourselfCard=Card(CardId::UPPERCUT);add("event_note_for_yourself_visible_card",g);
+    g.curEvent=Event::THE_LIBRARY;g.info.hpAmount0=26;add("library_public_heal_hidden_offer",g);
+    g=base;g.screenState=ScreenState::EVENT_SCREEN;g.curEvent=Event::FACE_TRADER;
+    g.maxHp=g.curHp=88;g.info.hpAmount0=8;
+    auto faceTouch=g;const int faceGold=faceTouch.gold;
+    faceTouch.regainControlAction=[](GameContext &) {};
+    search::GameAction(0).execute(faceTouch);
+    check(faceTouch.curHp==80 && faceTouch.gold==faceGold+75,
+        "Face Trader Touch must use the public floored HP loss");
+    add("event_face_trader_public_hp_loss",g);
+    g.curEvent=Event::WINDING_HALLS;g.info.hpAmount0=11;g.info.hpAmount1=22;g.info.hpAmount2=4;
+    add("event_winding_halls_public_hp_amounts",g);
+    g.curEvent=Event::HYPNOTIZING_COLORED_MUSHROOMS;add("event_mushrooms_hidden_reward_pity",g);
+    g.curEvent=Event::MYSTERIOUS_SPHERE;add("event_sphere_hidden_reward_pity",g);
     g=base;g.screenState=ScreenState::EVENT_SCREEN;g.curEvent=Event::NEOW;add("neow",g);
     g=base;g.deck=Deck{};g.deck.obtain(g,Card(CardId::BASH));g.screenState=ScreenState::EVENT_SCREEN;
     g.curEvent=Event::AUGMENTER;add("thin_deck_augmenter",g);
@@ -228,16 +323,28 @@ int main(int argc,char **argv){try{
     const auto nativeSmith=v4CandidateActions(g),recomputedSmith=v4CandidateActions(recomputed);
     check(nativeSmith.size()+1==recomputedSmith.size(),"Searing Blow history must change campfire candidates");
     add("unsupported_searing_blow_upgrade_history",g);
+    g=base;g.act=3;g.floorNum=34;g.screenState=ScreenState::MAP_SCREEN;
+    g.curMapNodeX=-1;g.curMapNodeY=-1;
+    auto nextActMap=project(g,path,"next_act_first_map");
+    nextActMap["ooc"]["publicState"]["map"]["y"]=15;
+    nextActMap["ooc"]["mcpState"]={{"screen_type","MAP"},{"screen_state",{
+        {"first_node_chosen",false},{"current_node",{{"x",-1},{"y",15}}},
+        {"next_nodes",J::array({{{"x",0},{"y",0}}})}}}};
+    advisor::LiveOocStateV1 nextActImported;
+    auto nextActResult=advisor::importLiveOocStateV1(nextActMap,nextActImported);
+    check(nextActResult.ok && nextActImported.projected.curMapNodeX==-1
+            && nextActImported.projected.curMapNodeY==-1,
+          "confirmed next-act first map must lower old boss sentinel to native start");
+    nextActMap["ooc"]["publicState"]["floor"]=35;
+    const auto invalidNextAct=advisor::importLiveOocStateV1(nextActMap,nextActImported);
+    check(!invalidNextAct.ok && invalidNextAct.message=="V4_BOSS_MAP_TRANSITION",
+          "boss sentinel outside next-act first map must fail closed: "
+              +invalidNextAct.message);
     int passed=0;
     for(const auto &[name,source]:fixtures){
         const auto wire=project(source,path,name);advisor::LiveOocStateV1 live;const auto result=advisor::importLiveOocStateV1(wire,live);
-        if(name=="unsupported_searing_blow_upgrade_history"
-                || name=="unsupported_library_reward_pity"
-                || name=="unsupported_mushrooms_reward_pity"
-                || name=="unsupported_sphere_reward_pity") {
-            const std::string expected = name=="unsupported_searing_blow_upgrade_history"
-                ? "SEARING_BLOW_UPGRADE_HISTORY_UNQUALIFIED"
-                : "PUBLIC_REWARD_PITY_HISTORY_UNQUALIFIED";
+        if(name=="unsupported_searing_blow_upgrade_history") {
+            const std::string expected = "SEARING_BLOW_UPGRADE_HISTORY_UNQUALIFIED";
             check(!result.ok && result.code=="UNSUPPORTED"
                 && result.message==expected,name+" must fail closed before scoring");
             if(output)output<<wire.dump()<<'\n';
@@ -284,7 +391,8 @@ int main(int argc,char **argv){try{
         auto qa=scoreLiveOocV4(publicSource,path,*model),qb=scoreLiveOocV4(live.projected,live.path,*model);
         check(qa.supported==qb.supported&&qa.reason==qb.reason,name+" score support");
         const bool v4Unsupported = name.rfind("unsupported_",0)==0
-            || name=="rewards_without_cards" || name=="remove_selector" || name=="transform_selector";
+            || name=="rewards_without_cards" || name=="remove_selector" || name=="transform_selector"
+            || name=="bottle_power_selector_duplicate_physical_cards";
         if(v4Unsupported)check(!qa.supported,name+" must be outside direct V4 support");else check(qa.supported,name+": "+qa.reason);
         check(qa.selectedIndex==qb.selectedIndex&&qa.candidates.size()==qb.candidates.size(),name+" argmax");
         std::vector<std::uint32_t> bits;
@@ -328,7 +436,7 @@ int main(int argc,char **argv){try{
         p["combatHistory"][0]["encounter"] = "JAW_WORM";
         p["combatHistory"][1]["encounter"] = "GREMLIN_NOB";
         p["questionHistoryComplete"] = true;
-        p["questionOutcomes"] = J::array({"MONSTER"});
+        p["questionOutcomes"] = J::array({{{"floor",22},{"outcome","MONSTER"}}});
         // Earlier act transitions mean path_taken[22] does not exist.
         p["pathHistory"] = J::array({"MONSTER", "EVENT", "ELITE"});
         advisor::LiveOocStateV1 live;
@@ -339,6 +447,26 @@ int main(int argc,char **argv){try{
                 "act-two elite and question-monster must consume separate queues");
         check(live.mctsRoot.currentActEventVisits == 1,
                 "room belief must use current-act event visits, not whole-run path visits");
+        check(std::abs(live.mctsRoot.state.monsterChance - 0.1f) < 1e-6f
+                && std::abs(live.mctsRoot.state.shopChance - 0.06f) < 1e-6f
+                && std::abs(live.mctsRoot.state.treasureChance - 0.04f) < 1e-6f,
+                "resolved public question monster did not update native room counters");
+    }
+    {
+        auto source = base;
+        source.screenState = ScreenState::EVENT_SCREEN;
+        source.curEvent = Event::SHINING_LIGHT;
+        source.info.hpAmount0 = 16;
+        auto wire = project(source, path, "current_question_shining_light");
+        auto &p = wire["ooc"]["publicState"];
+        p["currentActPathVisits"][static_cast<int>(Room::EVENT)] = 1;
+        p["questionOutcomes"] = J::array({{{"floor",7},{"outcome","EVENT"}}});
+        advisor::LiveOocStateV1 live;
+        check(advisor::importLiveOocStateV1(wire, live).ok, "current resolved question event import");
+        check(live.mctsRoot.state.curRoom == Room::EVENT
+                && live.mctsRoot.state.info.hpAmount0 == 16
+                && std::abs(live.mctsRoot.state.monsterChance - 0.2f) < 1e-6f,
+                "current public Shining Light outcome or damage lost");
     }
     {
         auto source = base;
@@ -375,9 +503,11 @@ int main(int argc,char **argv){try{
         wire["ooc"]["publicState"]["acquiredRelics"].push_back(J(RelicId::WING_BOOTS));
         advisor::LiveOocStateV1 live;
         const auto imported = advisor::importLiveOocStateV1(wire, live);
-        check(imported.ok && !live.mctsRoot.supported
-                && live.mctsRoot.reason == "RELIC_NATIVE_STATE_UNREPRESENTABLE:WingedGreaves:active",
-              "active Wing Boots MAP roots must fail closed");
+        check(imported.ok && live.mctsRoot.supported
+                && live.mctsRoot.state.wingBootsCharges == 1,
+              "active Wing Boots MAP roots must retain public charge count: "
+                  + imported.message + " / " + live.mctsRoot.reason + " / "
+                  + std::to_string(live.mctsRoot.state.wingBootsCharges));
     }
     {
         auto source = base;
@@ -394,6 +524,7 @@ int main(int argc,char **argv){try{
         auto source = base;
         source.screenState = ScreenState::EVENT_SCREEN;
         source.curEvent = Event::BIG_FISH;
+        source.setupEvent();
         auto wire = project(source, path, "incomplete_seen_relic_history");
         wire["ooc"]["publicState"]["seenRelicsComplete"] = false;
         advisor::LiveOocStateV1 live;
@@ -417,6 +548,129 @@ int main(int argc,char **argv){try{
     bad=wire;bad["ooc"]["publicState"]["map"]["nodes"].erase(0);reject(bad);
     bad=wire;for(int x=0;x<7;++x)bad["ooc"]["publicState"]["map"]["nodes"][x]["edges"]={3};reject(bad);
     advisor::LiveOocStateV1 live;check(advisor::importLiveOocStateV1(wire,live).ok,"baseline import");
+    {
+        auto note=base;
+        note.screenState=ScreenState::EVENT_SCREEN;
+        note.curEvent=Event::NOTE_FOR_YOURSELF;
+        note.noteForYourselfCard=Card(CardId::UPPERCUT);
+        auto noteWire=project(note,path,"note_for_yourself_visible_card");
+        advisor::LiveOocStateV1 noteLive;
+        check(advisor::importLiveOocStateV1(noteWire,noteLive).ok
+                && noteLive.mctsRoot.state.noteForYourselfCard.id==CardId::UPPERCUT,
+            "Note For Yourself must import its publicly offered card into the MCTS root");
+        auto missing=noteWire;
+        missing["ooc"]["details"].erase("noteForYourselfCard");
+        check(!advisor::importLiveOocStateV1(missing,noteLive).ok,
+            "Note For Yourself missing offered card was accepted");
+    }
+    {
+        auto nloth = base;
+        nloth.screenState = ScreenState::EVENT_SCREEN;
+        nloth.curEvent = Event::NLOTH;
+        // Compare against an independent event initialization, then deliberately
+        // publish a different visible offer pair to exercise exact live import.
+        auto independent = nloth;
+        independent.setupEvent();
+        const int native0 = independent.info.relicIdx0;
+        const int native1 = independent.info.relicIdx1;
+        int offered0 = -1, offered1 = -1;
+        for (int i = 0; i < nloth.relics.size() && offered0 < 0; ++i)
+            for (int j = 0; j < nloth.relics.size(); ++j)
+                if (i != j && (i != native0 || j != native1)) {
+                    offered0 = i; offered1 = j; break;
+                }
+        check(offered0 >= 0 && (offered0 != native0 || offered1 != native1),
+                "N'loth parity test failed to construct different public offer pair");
+        nloth.info.relicIdx0 = offered0;
+        nloth.info.relicIdx1 = offered1;
+        const auto expected0 = nloth.relics.relics[offered0].id;
+        const auto expected1 = nloth.relics.relics[offered1].id;
+        const auto nlothWire = project(nloth, path, "nloth_exact_public_relic_offers");
+        advisor::LiveOocStateV1 nlothLive;
+        check(advisor::importLiveOocStateV1(nlothWire, nlothLive).ok,
+                "N'loth exact offered relic import");
+        check(nlothLive.projected.info.relicIdx0 == offered0
+                && nlothLive.projected.info.relicIdx1 == offered1
+                && nlothLive.mctsRoot.state.info.relicIdx0 == offered0
+                && nlothLive.mctsRoot.state.info.relicIdx1 == offered1,
+                "N'loth public pair did not replace independent native setup");
+        auto takeFirst = nlothLive.mctsRoot.state;
+        takeFirst.chooseEventOption(0);
+        check(!takeFirst.relics.has(expected0) && takeFirst.relics.has(expected1),
+                "N'loth option 0 removed a relic other than its visible offer");
+        auto takeSecond = nlothLive.mctsRoot.state;
+        takeSecond.chooseEventOption(1);
+        check(takeSecond.relics.has(expected0) && !takeSecond.relics.has(expected1),
+                "N'loth option 1 removed a relic other than its visible offer");
+        auto missing = nlothWire;
+        missing["ooc"]["details"].erase("relicOffer1");
+        check(!advisor::importLiveOocStateV1(missing, nlothLive).ok,
+                "N'loth missing offered relic identity was accepted");
+        missing = nlothWire;
+        missing["ooc"]["details"].erase("relicIdx0");
+        check(!advisor::importLiveOocStateV1(missing, nlothLive).ok,
+                "N'loth missing offered relic index was accepted");
+        auto mismatch = nlothWire;
+        mismatch["ooc"]["details"]["relicOffer0"] = J(RelicId::NLOTHS_GIFT);
+        check(!advisor::importLiveOocStateV1(mismatch, nlothLive).ok,
+                "N'loth offer identity inconsistent with owned relic order was accepted");
+    }
+    for (const auto event : {Event::BIG_FISH, Event::GHOSTS}) {
+        auto source = base;
+        source.screenState = ScreenState::EVENT_SCREEN;
+        source.curEvent = event;
+        source.setupEvent();
+        check(source.info.hpAmount0 > 0, "event setup did not initialize public HP effect");
+        const auto eventWire = project(source, path,
+                event == Event::BIG_FISH ? "big_fish_exact_heal" : "ghosts_exact_max_hp_loss");
+        check(eventWire["ooc"]["details"]["hpAmount0"] == source.info.hpAmount0,
+                "event fixture did not serialize setup HP effect: "
+                    + std::to_string(source.info.hpAmount0) + " / "
+                    + eventWire["ooc"]["details"]["hpAmount0"].dump());
+        advisor::LiveOocStateV1 eventLive;
+        check(advisor::importLiveOocStateV1(eventWire, eventLive).ok,
+                "initial event public HP effect import");
+        check(eventLive.projected.info.hpAmount0 == source.info.hpAmount0
+                && eventLive.mctsRoot.state.info.hpAmount0 == source.info.hpAmount0,
+                "initial event public HP effect did not survive into MCTS root");
+    }
+    {
+        auto dead=base;
+        dead.screenState=ScreenState::EVENT_SCREEN;
+        dead.curEvent=Event::DEAD_ADVENTURER;
+        dead.info.phase=0;
+        dead.info.encounter=MonsterEncounter::GREMLIN_NOB;
+        dead.info.rewards={0,1,2};
+        auto deadWire=project(dead,path,"dead_adventurer_initial");
+        deadWire["ooc"]["details"]["deadAdventurerEncounter"]=1;
+        advisor::LiveOocStateV1 deadLive;
+        check(advisor::importLiveOocStateV1(deadWire,deadLive).ok,
+            "Dead Adventurer public encounter failed import");
+        check(deadLive.mctsRoot.state.info.encounter==MonsterEncounter::GREMLIN_NOB
+                && deadLive.mctsRoot.state.info.rewards==std::array<int,3>{0,1,2},
+            "Dead Adventurer encounter or hidden-reward support lost");
+        auto missing=deadWire;
+        missing["ooc"]["details"].erase("deadAdventurerEncounter");
+        advisor::LiveOocStateV1 unsupported;
+        check(!advisor::importLiveOocStateV1(missing,unsupported).ok,
+            "Dead Adventurer missing public encounter was accepted");
+    }
+    {
+        auto opaqueParent=base;
+        opaqueParent.screenState=ScreenState::REWARDS;
+        opaqueParent.info.rewardsContainer.clear();
+        opaqueParent.info.rewardsContainer.addRelic(RelicId::ANCHOR);
+        opaqueParent.info.rewardsContainer.sapphireKey=true;
+        opaqueParent.opaqueCardRewardGroups=1;
+        const auto opaqueWire=project(opaqueParent,path,"opaque_card_parent_rewards");
+        advisor::LiveOocStateV1 opaqueLive;
+        check(advisor::importLiveOocStateV1(opaqueWire,opaqueLive).ok,
+            "visible parent rewards with opaque card group failed import");
+        check(opaqueLive.projected.opaqueCardRewardGroups==1
+                && opaqueLive.mctsRoot.state.opaqueCardRewardGroups==1
+                && v4DecisionSupported(opaqueLive.projected),
+            "opaque card reward count was lost before model scoring");
+    }
     auto conditioned=wire;conditioned["ooc"]["publicState"]["priorEvents"]={"Big Fish"};
     conditioned["ooc"]["publicState"]["shopRemoveCount"]=3;
     advisor::LiveOocStateV1 conditionedLive;check(advisor::importLiveOocStateV1(conditioned,conditionedLive).ok,"history import");

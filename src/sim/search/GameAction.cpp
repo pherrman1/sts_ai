@@ -179,7 +179,9 @@ bool isValidMapAction(const GameContext &gc, const search::GameAction a) {
             return true;
         }
     }
-    return false;
+    return gc.wingBootsCharges > 0 && curNode.edgeCount > 0
+        && gc.curMapNodeY < 14
+        && gc.map->getNode(select, gc.curMapNodeY + 1).room != Room::NONE;
 }
 
 bool isValidRewardsAction(const GameContext &gc, const search::GameAction a) {
@@ -649,6 +651,16 @@ std::vector<search::GameAction> getAllMapActions(const sts::GameContext &gc) {
         auto node = gc.map->getNode(gc.curMapNodeX, gc.curMapNodeY);
         for (int i = 0; i < node.edgeCount; ++i) {
             actions.emplace_back(node.edges[i]);
+        }
+        if (gc.wingBootsCharges > 0 && node.edgeCount > 0 && gc.curMapNodeY < 14) {
+            for (int x = 0; x < 7; ++x) {
+                if (gc.map->getNode(x, gc.curMapNodeY + 1).room == Room::NONE)
+                    continue;
+                bool connected = false;
+                for (int i = 0; i < node.edgeCount; ++i)
+                    connected |= node.edges[i] == x;
+                if (!connected) actions.emplace_back(x);
+            }
         }
     }
 

@@ -201,6 +201,16 @@ def transition_identity(screen: Mapping[str, Any], game_state: Mapping[str, Any]
     return hashlib.sha256(encoded.encode()).hexdigest()
 
 
+def _same_mcp_boundary(screen: Mapping[str, Any], game_state: Mapping[str, Any]) -> bool:
+    """Reject snapshots split across a combat-to-reward or similar transition."""
+    for key in ("screen_type", "room_phase"):
+        screen_value = screen.get(key)
+        game_value = game_state.get(key)
+        if screen_value is not None and game_value is not None and screen_value != game_value:
+            return False
+    return True
+
+
 def _ready(value: Any) -> bool:
     data = _mapping(value)
     return data.get("ready_for_command", data.get("readyForCommand", True)) is True
@@ -321,7 +331,8 @@ def build_legal_actions(screen: Mapping[str, Any], commands: Mapping[str, Any] |
                     continue
                 if tool == "discard_potion" and not can_discard:
                     continue
-                semantic = {"kind": "potion", "potion_slot": index + 1, "discard": tool == "discard_potion"}
+                semantic = {"kind": "potion", "potion_id": potion_id,
+                            "potion_slot": index + 1, "discard": tool == "discard_potion"}
                 args = {"potion_slot": index + 1}
                 requires_target = potion.get("requires_target", potion.get("requiresTarget", potion.get("has_target", False)))
                 for target in (targets if requires_target else [None]):
@@ -372,6 +383,22 @@ def build_legal_actions(screen: Mapping[str, Any], commands: Mapping[str, Any] |
     return actions
 
 
+def forced_ooc_action(screen: Mapping[str, Any], candidates: Sequence[LegalAction]) -> LegalAction | None:
+    """Take the only enumerated legal noncombat action without a model round trip."""
+    if _is_combat(screen) or len(candidates) != 1:
+        return None
+    if _text(screen.get("screen_type", screen.get("screenType"))).upper() in {"MAIN_MENU", "GAME_OVER"}:
+        return None
+    candidate = candidates[0]
+    if candidate.mcp_tool == "choose":
+        choices = _list(screen.get("choice_list", screen.get("choices", screen.get("options"))))
+        if len(choices) != 1 or candidate.mcp_arguments != {"choice_index": 1}:
+            return None
+    elif candidate.mcp_tool not in ACTION_TOOLS:
+        return None
+    return candidate
+
+
 def _semantic_match(selected: Mapping[str, Any], action: LegalAction) -> bool:
     semantic = action.semantic
     selected_kind = selected.get("kind")
@@ -396,6 +423,19 @@ def map_silver_action(selected_live_action: Any, candidates: Sequence[LegalActio
     if not isinstance(selected_live_action, Mapping):
         raise IntegrationFailure("Silver response has no structured selectedLiveAction")
     matches = [candidate for candidate in candidates if _semantic_match(selected_live_action, candidate)]
+    if (len(matches) > 1 and selected_live_action.get("kind") == "potion"
+            and selected_live_action.get("discard") is False
+            and "targetIndex" not in selected_live_action
+            and "target_index" not in selected_live_action
+            and all(candidate.mcp_tool == "use_potion"
+                    and candidate.semantic.get("potion_id") in {"SmokeBomb", "Explosive Potion"}
+                    and candidate.semantic.get("potion_slot") == selected_live_action.get("potionSlot")
+                    and isinstance(candidate.semantic.get("target_index"), int)
+                    for candidate in matches)):
+        # Vanilla SmokeBomb.use overwrites the argument with the player;
+        # ExplosivePotion.use damages every enemy without reading the argument.
+        # MCP still requires a monster target for these thrown potions.
+        return min(matches, key=lambda candidate: candidate.semantic["target_index"])
     if len(matches) != 1:
         raise IntegrationFailure(f"Silver action mapping expected exactly one candidate, got {len(matches)} for {selected_live_action!r}")
     return matches[0]
@@ -620,7 +660,14 @@ class InspectorSnapshot:
                 max_visits = max(candidate["visits"] for candidate in summaries)
                 if selected["visits"] != max_visits:
                     raise DriverError("OOC selected candidate is not the visit winner")
-            if require_mcts_stats and (total_visits <= 0 or abs(total_share - 1.0) > 1e-6):
+            # The native planner bypasses simulations for a qualified sole
+            # legal root. It reports that one forced action with zero visits
+            # and a full share; multi-action roots still require visits.
+            sole_root_bypass = (require_mcts_stats and len(summaries) == 1 and total_visits == 0
+                                and summaries[0]["visits"] == 0
+                                and summaries[0]["prior"] == 1.0)
+            if require_mcts_stats and ((total_visits <= 0 and not sole_root_bypass)
+                                       or abs(total_share - 1.0) > 1e-6):
                 raise DriverError("OOC MCTS root visits/shares do not form a complete root distribution")
             if selected.get("liveAction") != evaluator.get("selectedLiveAction"):
                 raise DriverError("OOC selected action disagrees with candidate summary")
@@ -648,6 +695,30 @@ class InspectorReader:
                 last_error = error
             await asyncio.sleep(self.poll_interval)
         raise DriverError(f"no fresh inspector response for current state: {last_error}")
+
+    async def read_ooc_observation_for(self, state: Mapping[str, Any],
+                                       previous: tuple[str, int] | None = None) -> tuple[str, int, Mapping[str, Any]]:
+        """Read correlated public reward identities without waiting for scoring."""
+        deadline, last_error = time.monotonic() + self.timeout, None
+        while time.monotonic() < deadline:
+            try:
+                raw = json.loads(self.path.read_text())
+                if not isinstance(raw, Mapping):
+                    raise DriverError("inspector observation is malformed")
+                session, sequence = raw.get("session"), raw.get("sequence")
+                if not isinstance(session, str) or not session or type(sequence) is not int or sequence < 0:
+                    raise DriverError("inspector observation has incomplete identity")
+                if previous and session == previous[0] and sequence <= previous[1]:
+                    raise DriverError("inspector observation sequence did not advance")
+                observation = _mapping(raw.get("observation"))
+                if observation.get("boundary") != "ooc":
+                    raise DriverError("inspector observation is not OOC")
+                validate_ooc_current(observation, state)
+                return session, sequence, _mapping(observation.get("ooc"))
+            except (OSError, ValueError, DriverError) as error:
+                last_error = error
+            await asyncio.sleep(self.poll_interval)
+        raise DriverError(f"no fresh inspector OOC observation for current state: {last_error}")
 
 
 class TraceWriter:
@@ -685,6 +756,144 @@ class TraceWriter:
         finally:
             temporary.unlink(missing_ok=True)
         return path
+
+    @property
+    def run_report_path(self) -> Path:
+        return self.path.with_suffix(".run.json")
+
+    def write_run_report(self, summary: Mapping[str, Any], *, identity: Mapping[str, Any],
+                         failure: Mapping[str, Any] | None = None) -> Path:
+        """Write one readable, per-run decision and wait-time report."""
+        decisions = []
+        try:
+            rows = (json.loads(line) for line in self.path.read_text(encoding="utf-8").splitlines())
+            for row in rows:
+                if not isinstance(row, Mapping) or row.get("record_type") == "summary":
+                    continue
+                source = _text(row.get("decision_source", "unknown"))
+                if source == "silver":
+                    kind = "Silver combat model"
+                elif source == "ooc_v4":
+                    kind = "OOC decision model"
+                elif source in {"run_control", "game_over_navigation", "menu_inspection"}:
+                    kind = "run control"
+                else:
+                    kind = "driver automation"
+                durations = {
+                    key.removesuffix("_micros"): round(value / 1000.0, 3)
+                    for key, value in row.items()
+                    if key.endswith("_micros") and isinstance(value, (int, float))
+                    and math.isfinite(value) and value >= 0
+                }
+                wait_reasons = []
+                if durations.get("inspector_wait", 0) > 0:
+                    wait_reasons.append({
+                        "phase": "model observation and decision",
+                        "reason": "waiting for the inspector response; the response latency is recorded separately",
+                        "milliseconds": durations["inspector_wait"],
+                    })
+                if durations.get("post_action_wait", 0) > 0:
+                    wait_reasons.append({
+                        "phase": "game transition",
+                        "reason": "waiting for MCP readiness, command availability, and a changed correlated state",
+                        "milliseconds": durations["post_action_wait"],
+                    })
+                if durations.get("mcp_action", 0) > 0:
+                    wait_reasons.append({
+                        "phase": "MCP action",
+                        "reason": "waiting for the game-control action call to return",
+                        "milliseconds": durations["mcp_action"],
+                    })
+                action = row.get("selected_mcp_tool") or row.get("executed_mcp_tool")
+                args = row.get("selected_mcp_arguments") or row.get("executed_mcp_arguments") or {}
+                model_latency_ms = round(row.get("ooc_v4_latency_micros", row.get("silver_latency_micros", 0)) / 1000.0, 3)
+                model_wait_ms = durations.get("inspector_wait", 0.0)
+                elapsed_ms = round(row.get("driver_step_micros", 0) / 1000.0, 3)
+                timed_phases = {
+                    "model compute": model_latency_ms,
+                    "waiting for model response": model_wait_ms,
+                    "MCP action": durations.get("mcp_action", 0.0),
+                    "game transition": durations.get("post_action_wait", 0.0),
+                }
+                dominant_phase = max(timed_phases, key=timed_phases.get)
+                dominant_reasons = {
+                    "model compute": "the model-reported OOC/Silver search latency; this work may finish before the driver receives the ready response",
+                    "waiting for model response": "the driver waited for a fresh inspector observation/advisor result",
+                    "MCP action": "the game-control action call took the most measured time",
+                    "game transition": "the driver waited for MCP readiness and the correlated next game state",
+                }
+                automated_reasons = {
+                    "parent_reward_cleanup": "collect an unconditional gold reward mechanically",
+                    "card_reward_reveal": "reveal the concealed card group after visible parent rewards were resolved",
+                    "neow_navigation": "advance the Neow screen after the model decision completed",
+                    "shop_navigation": "enter or leave the shop through its mechanical navigation button",
+                    "event_completion": "select the only Leave option after the event decision completed",
+                    "dead_adventurer_fight": "start the encounter because Fight is the only active event option",
+                    "nest_intro": "advance the Nest introduction to expose its actual reward decision",
+                    "boss_door": "advance through the act boss door after combat has ended",
+                    "selector_confirmation": "confirm the model-selected card operation",
+                    "combat_selection_confirmation": "confirm the already selected combat card target",
+                    "boss_chest_skip_cleanup": "close the boss chest after the model declined its relic",
+                    "boss_chest_reveal": "open the boss chest to reveal its relic offer",
+                    "declined_reward_cleanup": "clear rewards already declined by the model",
+                    "empty_reward_proceed": "proceed because no reward choices remain",
+                    "forced_ooc_action": "take the only legal noncombat action enumerated by the driver",
+                    "stale_observation_retry": "discard a decision after the game state changed before action and request a fresh observation",
+                }
+                decision_reason = (row.get("fallback_reason") or row.get("unsupported_reason")
+                                   or row.get("decision_error") or automated_reasons.get(source))
+                if source == "silver":
+                    decision_reason = "Silver selected the action from the current legal combat choices"
+                elif source == "ooc_v4":
+                    decision_reason = "OOC selected the action from the current public noncombat choices"
+                selected_id = row.get("selected_candidate")
+                description = next((candidate.get("human_description")
+                                    for candidate in _list(row.get("legal_candidates"))
+                                    if isinstance(candidate, Mapping) and candidate.get("id") == selected_id), None)
+                decisions.append({
+                    "step": row.get("step"),
+                    "screen": row.get("screen_type"),
+                    "decision_type": kind,
+                    "decision_source": source,
+                    "decision_reason": decision_reason,
+                    "model_status": row.get("ooc_v4_status") or row.get("silver_status"),
+                    "model_latency_ms": model_latency_ms,
+                    "chosen_action": {"tool": action, "arguments": args,
+                                      "description": description},
+                    "elapsed_ms": elapsed_ms,
+                    "driver_elapsed_ms": elapsed_ms,
+                    "model_compute_ms": model_latency_ms,
+                    "model_response_wait_ms": model_wait_ms,
+                    "dominant_delay": {"phase": dominant_phase,
+                                       "milliseconds": timed_phases[dominant_phase],
+                                       "reason": dominant_reasons[dominant_phase]},
+                    "durations_ms": durations,
+                    "wait_reasons": wait_reasons,
+                })
+        except (OSError, ValueError):
+            decisions = []
+        report = {
+            "schema": "live_driver_run_report",
+            "schemaVersion": 1,
+            "created_at": datetime.now(timezone.utc).isoformat(),
+            "driver": dict(identity),
+            "summary": dict(summary),
+            "decision_count": len(decisions),
+            "decisions": decisions,
+        }
+        if failure is not None:
+            report["failure"] = dict(failure)
+        temporary = self.run_report_path.with_name(self.run_report_path.name + f".tmp-{os.getpid()}")
+        try:
+            with temporary.open("w", encoding="utf-8") as handle:
+                json.dump(self._sanitize(report), handle, sort_keys=True, indent=2, default=str)
+                handle.write("\n")
+                handle.flush()
+                os.fsync(handle.fileno())
+            os.replace(temporary, self.run_report_path)
+        finally:
+            temporary.unlink(missing_ok=True)
+        return self.run_report_path
 
 
 class McpGameClient:
@@ -737,11 +946,6 @@ async def connected_mcp(url: str) -> AsyncIterator[McpGameClient]:
 def _is_combat(screen: Mapping[str, Any]) -> bool:
     phase = _text(screen.get("room_phase", screen.get("roomPhase", ""))).upper()
     screen_type = _text(screen.get("screen_type", screen.get("screenType", ""))).upper()
-    # Potion/discovery choices reuse CARD_REWARD during combat. The inspector
-    # routes this modal through OOC with an explicit unsupported boundary;
-    # GRID/HAND_SELECT remain Silver combat selection boundaries.
-    if screen_type == "CARD_REWARD":
-        return False
     return phase == "COMBAT" or (not phase and screen_type == "COMBAT")
 
 
@@ -788,33 +992,226 @@ def choose_deterministic_action(screen: Mapping[str, Any], candidates: Sequence[
 
 
 def card_reward_reveal_action(screen: Mapping[str, Any], game: Mapping[str, Any],
-                              candidates: Sequence[LegalAction]) -> LegalAction | None:
-    """Open a card reward only after claimable parent rewards are collected."""
+                              candidates: Sequence[LegalAction],
+                              declined_indexes: set[int] | None = None) -> LegalAction | None:
+    """Open a hidden card group without claiming any parent reward."""
     if _text(screen.get("screen_type", screen.get("screenType"))).upper() != "COMBAT_REWARD":
         return None
     occurrences = _list(_mapping(game.get("screen_state", {})).get("rewards"))
     if not occurrences:
         return None
-    choice_indexes = {
-        candidate.mcp_arguments.get("choice_index")
-        for candidate in candidates
-        if candidate.mcp_tool == "choose"
-        and type(candidate.mcp_arguments.get("choice_index")) is int
-    }
+    # A concealed card group may be opened mechanically only after OOC has
+    # chosen among any remaining visible parent rewards.  Those choices can
+    # conflict (notably Sapphire Key vs relic), so keep the card hidden until
+    # the model has consumed the public parent surface.
     for index, reward in enumerate(occurrences):
+        if index in (declined_indexes or set()):
+            continue
         kind = _text(_mapping(reward).get("reward_type", _mapping(reward).get("type", ""))).upper()
-        if kind in {"GOLD", "STOLEN_GOLD", "RELIC", "POTION"} and index + 1 in choice_indexes:
-            # The default simulator continuation collects gold, relics, and
-            # claimable potions before it evaluates the card group. Keys stay
-            # as normal OOC choices under the default policy.
+        has_live_choice = any(candidate.mcp_tool == "choose"
+                              and candidate.mcp_arguments == {"choice_index": index + 1}
+                              for candidate in candidates)
+        if kind in {"RELIC", "POTION", "EMERALD_KEY", "SAPPHIRE_KEY"} and has_live_choice:
             return None
     for index, reward in enumerate(occurrences):
         kind = _text(_mapping(reward).get("reward_type", _mapping(reward).get("type", ""))).upper()
-        if kind == "CARD":
+        if kind == "CARD" and index not in (declined_indexes or set()):
             return next((candidate for candidate in candidates
                          if candidate.mcp_tool == "choose"
                          and candidate.mcp_arguments == {"choice_index": index + 1}), None)
     return None
+
+
+def parent_reward_action(screen: Mapping[str, Any], game: Mapping[str, Any],
+                         candidates: Sequence[LegalAction]) -> LegalAction | None:
+    """Collect only unconditional gold before asking OOC about other rewards."""
+    if _text(screen.get("screen_type", screen.get("screenType"))).upper() != "COMBAT_REWARD":
+        return None
+    occurrences = _list(_mapping(game.get("screen_state", {})).get("rewards"))
+    if not occurrences:
+        return None
+    visible_types = {"GOLD", "STOLEN_GOLD"}
+    for index, reward in enumerate(occurrences):
+        kind = _text(_mapping(reward).get("reward_type", _mapping(reward).get("type", ""))).upper()
+        if kind not in visible_types:
+            continue
+        match = next((candidate for candidate in candidates
+                      if candidate.mcp_tool == "choose"
+                      and candidate.mcp_arguments == {"choice_index": index + 1}), None)
+        if match is not None:
+            return match
+    return None
+
+
+def empty_combat_reward_proceed_action(screen: Mapping[str, Any], game: Mapping[str, Any],
+                                       candidates: Sequence[LegalAction]) -> LegalAction | None:
+    """Advance only an explicitly empty combat reward with one Proceed command."""
+    if _text(screen.get("screen_type")).upper() != "COMBAT_REWARD" or len(candidates) != 1:
+        return None
+    rewards = _mapping(game.get("screen_state", screen.get("screen_state"))).get("rewards")
+    if rewards != [] or candidates[0].mcp_tool != "proceed":
+        return None
+    return candidates[0]
+
+
+def neow_navigation_action(screen: Mapping[str, Any], candidates: Sequence[LegalAction]) -> LegalAction | None:
+    """Advance Neow's single Talk or Leave prompt around a model-selected bonus."""
+    if (_text(screen.get("screen_type")).upper() != "EVENT"
+            or _text(screen.get("room_type")) != "NeowRoom"
+            or screen.get("floor") != 0
+            or _text(_mapping(screen.get("screen_state")).get("event_id")) != "Neow Event"
+            or _list(screen.get("choice_list")) not in (["[Talk]"], ["[Leave]"])
+            or len(candidates) != 1):
+        return None
+    candidate = candidates[0]
+    return candidate if candidate.mcp_tool == "choose" and candidate.mcp_arguments == {"choice_index": 1} else None
+
+
+def shop_entry_action(screen: Mapping[str, Any], candidates: Sequence[LegalAction],
+                      entered: bool = False) -> LegalAction | None:
+    """Open the merchant inventory once, then advance after the model leaves it."""
+    if (_text(screen.get("screen_type")).upper() != "SHOP_ROOM"
+            or _text(screen.get("room_type")) != "ShopRoom"
+            or _text(screen.get("room_phase")) != "COMPLETE"
+            or _list(screen.get("choice_list")) != ["shop"]
+            or len(candidates) != 2
+            or {candidate.mcp_tool for candidate in candidates} != {"choose", "proceed"}):
+        return None
+    tool, arguments = ("proceed", {}) if entered else ("choose", {"choice_index": 1})
+    return next((candidate for candidate in candidates
+                 if candidate.mcp_tool == tool and candidate.mcp_arguments == arguments), None)
+
+
+def event_completion_action(screen: Mapping[str, Any], candidates: Sequence[LegalAction]) -> LegalAction | None:
+    """Dismiss an already resolved event's sole Leave button."""
+    if (_text(screen.get("screen_type")).upper() != "EVENT"
+            or _text(screen.get("room_type")) != "EventRoom"
+            or _text(screen.get("room_phase")) not in {"EVENT", "COMPLETE"}
+            or _list(screen.get("choice_list")) != ["[Leave]"]
+            or len(candidates) != 1):
+        return None
+    candidate = candidates[0]
+    return candidate if candidate.mcp_tool == "choose" and candidate.mcp_arguments == {"choice_index": 1} else None
+
+
+def dead_adventurer_fight_action(screen: Mapping[str, Any], candidates: Sequence[LegalAction]) -> LegalAction | None:
+    """Advance the sole Fight button after Dead Adventurer's modeled Search."""
+    if (_text(screen.get("screen_type")).upper() != "EVENT"
+            or _text(screen.get("room_type")) != "EventRoom"
+            or _text(_mapping(screen.get("screen_state")).get("event_id")) != "Dead Adventurer"
+            or _list(screen.get("choice_list")) != ["[Fight]"]
+            or len(candidates) != 1):
+        return None
+    candidate = candidates[0]
+    return candidate if candidate.mcp_tool == "choose" and candidate.mcp_arguments == {"choice_index": 1} else None
+
+
+def nest_intro_action(screen: Mapping[str, Any], candidates: Sequence[LegalAction]) -> LegalAction | None:
+    """Advance the Nest's introductory Continue before its first choice."""
+    if (_text(screen.get("screen_type")).upper() != "EVENT"
+            or _text(screen.get("room_type")) != "EventRoom"
+            or _text(_mapping(screen.get("screen_state")).get("event_id")) != "Nest"
+            or _list(screen.get("choice_list")) != ["[Continue]"]
+            or len(candidates) != 1):
+        return None
+    candidate = candidates[0]
+    return candidate if candidate.mcp_tool == "choose" and candidate.mcp_arguments == {"choice_index": 1} else None
+
+
+def boss_door_action(screen: Mapping[str, Any], candidates: Sequence[LegalAction]) -> LegalAction | None:
+    """Enter the boss when the map has exactly its sole Boss node."""
+    if (_text(screen.get("screen_type")).upper() != "MAP"
+            or screen.get("floor") not in (15, 32, 49)
+            or _list(screen.get("choice_list")) != ["Boss!"]
+            or len(candidates) not in (1, 2)
+            or (len(candidates) == 2 and {c.mcp_tool for c in candidates} != {"choose", "cancel"})):
+        return None
+    candidate = candidates[0]
+    return candidate if candidate.mcp_tool == "choose" and candidate.mcp_arguments == {"choice_index": 1} else None
+
+
+def boss_chest_reveal_action(screen: Mapping[str, Any], candidates: Sequence[LegalAction]) -> LegalAction | None:
+    """Open the boss chest so its relic offer becomes visible to OOC."""
+    state = _mapping(screen.get("screen_state"))
+    if (_text(screen.get("screen_type")).upper() != "CHEST"
+            or _text(screen.get("room_type")) != "TreasureRoomBoss"
+            or _text(state.get("chest_type")) != "BossChest"
+            or state.get("chest_open") is not False
+            or _list(screen.get("choice_list")) != ["open"]
+            or len(candidates) != 2
+            or {c.mcp_tool for c in candidates} != {"choose", "proceed"}):
+        return None
+    return next((c for c in candidates if c.mcp_tool == "choose"
+                 and c.mcp_arguments == {"choice_index": 1}), None)
+
+
+def boss_chest_skip_cleanup_action(screen: Mapping[str, Any],
+                                   candidates: Sequence[LegalAction]) -> LegalAction | None:
+    """Leave the chest after OOC explicitly selected no boss relic."""
+    state = _mapping(screen.get("screen_state"))
+    if (_text(screen.get("screen_type")).upper() != "CHEST"
+            or _text(screen.get("room_type")) != "TreasureRoomBoss"
+            or _text(state.get("chest_type")) != "BossChest"
+            or _list(screen.get("choice_list")) != ["open"]):
+        return None
+    return next((c for c in candidates if c.mcp_tool == "proceed"
+                 and c.mcp_arguments == {}), None)
+
+
+def selector_confirmation_action(screen: Mapping[str, Any],
+                                 candidates: Sequence[LegalAction]) -> LegalAction | None:
+    """Confirm the single card already chosen by OOC on this grid."""
+    state = _mapping(screen.get("screen_state"))
+    if (_text(screen.get("screen_type")).upper() != "GRID"
+            or state.get("confirm_up") is not True
+            or state.get("num_cards") != 1
+            or screen.get("can_proceed") is not True
+            or _text(screen.get("proceed_button")) != "confirm"):
+        return None
+    return next((c for c in candidates if c.mcp_tool == "proceed"
+                 and c.mcp_arguments == {}), None)
+
+
+def combat_selection_confirmation_action(screen: Mapping[str, Any],
+                                         candidates: Sequence[LegalAction]) -> LegalAction | None:
+    """Confirm a completed hand selection when MCP exposes only Confirm."""
+    state = _mapping(screen.get("screen_state"))
+    selected = _list(state.get("selected"))
+    maximum = state.get("max_cards")
+    if (_text(screen.get("screen_type")).upper() != "HAND_SELECT"
+            or not _is_combat(screen) or screen.get("can_proceed") is not True
+            or _text(screen.get("proceed_button")) != "confirm"
+            or type(maximum) is not int or maximum < 1
+            or len(selected) != maximum or len(candidates) != 1):
+        return None
+    candidate = candidates[0]
+    return candidate if candidate.mcp_tool == "proceed" and candidate.mcp_arguments == {} else None
+
+
+def declined_reward_cleanup_action(occurrences: Sequence[Any], declined_indexes: set[int],
+                                   candidates: Sequence[LegalAction]) -> LegalAction | None:
+    """Claim free gold or leave once every remaining card group was model-declined."""
+    if not occurrences or not declined_indexes:
+        return None
+    gold_indexes = []
+    for item in occurrences:
+        reward = _mapping(item)
+        index = reward.get("index")
+        kind = _text(reward.get("type")).upper()
+        if type(index) is not int:
+            return None
+        if kind == "CARD" and index in declined_indexes:
+            continue
+        if kind in {"GOLD", "STOLEN_GOLD"}:
+            gold_indexes.append(index)
+            continue
+        return None
+    if gold_indexes:
+        return next((candidate for candidate in candidates
+                     if candidate.mcp_tool == "choose"
+                     and candidate.mcp_arguments == {"choice_index": min(gold_indexes) + 1}), None)
+    return next((candidate for candidate in candidates if candidate.mcp_tool == "proceed"
+                 and candidate.mcp_arguments == {}), None)
 
 
 def _latency_summary(values: Sequence[float]) -> dict[str, Any]:
@@ -855,6 +1252,7 @@ class Driver:
         self.dry_run, self.strict_silver, self.max_steps = dry_run, strict_silver, max_steps
         self.strict_ooc, self.ooc_policy = strict_ooc, {"v4": "v4_q", "mcts": "mcts_ctm"}.get(ooc_policy, ooc_policy)
         self.new_run, self.continue_run, self.character = new_run, continue_run, character
+        self.new_run_started = False
         self.ascension, self.seed = ascension, seed
         self.poll_timeout, self.poll_interval = poll_timeout, poll_interval
         self.startup_timeout = startup_timeout
@@ -862,6 +1260,8 @@ class Driver:
         self.previous_inspector: tuple[str, int] | None = None
         self.entered_shop_rooms: set[tuple[int, int]] = set()
         self.declined_rewards: set[tuple[str, str]] = set()
+        self.boss_relic_skipped_rooms: set[tuple[int, int]] = set()
+        self.pending_selector_confirmation: tuple[int, int, str] | None = None
         self.ooc_actions_seen: set[tuple[str, str, str]] = set()
         self.counters: Counter[str] = Counter({name: 0 for name in (
             "silver_ok", "silver_unsupported", "ooc_v4_ok", "ooc_v4_unsupported",
@@ -870,10 +1270,12 @@ class Driver:
         self.latencies: dict[str, list[float]] = {"ooc_v4_micros": [], "ooc_scorer_micros": [], "driver_step_micros": []}
         self.started = time.monotonic()
         self.steps = 0
+        self.stale_retries = 0
         self.outcome = "unknown"
         self.last_screen: Mapping[str, Any] = {}
         self.last_game: Mapping[str, Any] = {}
         self.context: dict[str, Any] = {}
+        self.context_started_monotonic = self.started
         self.failure_path: Path | None = None
         self.identity = _git_identity()
 
@@ -901,6 +1303,12 @@ class Driver:
                 budget = max(self.poll_timeout, self.startup_timeout)
                 deadline = started + budget
             if _is_terminal(screen):
+                if (self.new_run and not self.new_run_started
+                        and _text(screen.get("screen_type")).upper() == "GAME_OVER"
+                        and _ready(screen)):
+                    commands = await self.client.call("get_available_commands")
+                    if _ready(commands):
+                        return screen, commands
                 return screen, {}
             if _ready(screen) and not _has_uninitialized_combat_intent(screen):
                 commands = await self.client.call("get_available_commands")
@@ -915,22 +1323,26 @@ class Driver:
             screen, commands = await self.read_ready_state()
             game = await self.read_game_state()
             self.last_game = game
-            if not _has_uninitialized_combat_intent(screen, game):
+            if (_same_mcp_boundary(screen, game)
+                    and not _has_uninitialized_combat_intent(screen, game)):
                 return screen, commands, game
             await asyncio.sleep(self.poll_interval)
         raise DriverError("MCP combat monster intent remained DEBUG before the decision boundary")
 
-    async def wait_for_ready_advance(self, before: str) -> tuple[Mapping[str, Any], dict[str, Any]]:
+    async def wait_for_ready_advance(self, before: str, *,
+                                     ignore_terminal: bool = False) -> tuple[Mapping[str, Any], dict[str, Any]]:
         deadline, last = time.monotonic() + self.poll_timeout, {}
         while time.monotonic() < deadline:
             screen = await self.read_screen()
             last = screen
-            if _is_terminal(screen):
+            if _is_terminal(screen) and not ignore_terminal:
                 return screen, await self.read_game_state()
             if _ready(screen):
                 commands = await self.client.call("get_available_commands")
                 game_state = await self.read_game_state()
-                if (_ready(commands) and not _has_uninitialized_combat_intent(screen, game_state)
+                if (_ready(commands) and (not ignore_terminal or not _is_terminal(screen))
+                        and _same_mcp_boundary(screen, game_state)
+                        and not _has_uninitialized_combat_intent(screen, game_state)
                         and transition_identity(screen, game_state) != before):
                     return screen, game_state
             await asyncio.sleep(self.poll_interval)
@@ -939,7 +1351,7 @@ class Driver:
     def menu_action(self, screen: Mapping[str, Any], commands: Any) -> LegalAction | None:
         names = _tool_names(commands)
         if not ({"continue_game", "start_game"} & set(names)):
-            if self.new_run and self.steps == 0:
+            if self.new_run and not self.new_run_started:
                 raise DriverError("--new-run cannot replace a currently live run")
             return None
         if "continue_game" in names:
@@ -1029,11 +1441,30 @@ class Driver:
 
     async def step(self, step: int) -> bool:
         started = time.monotonic()
+        self.context_started_monotonic = started
         self.context = {"step": step, "timestamp": datetime.now(timezone.utc).isoformat()}
         row = self.context
         screen, commands, game_state = await self.read_ready_snapshot()
         self.last_screen, self.last_game = screen, game_state
         if _is_terminal(screen):
+            if (self.new_run and not self.new_run_started
+                    and _text(screen.get("screen_type")).upper() == "GAME_OVER"
+                    and "proceed" in _tool_names(commands)):
+                row.update({"decision_source": "game_over_navigation",
+                            "screen_type": "GAME_OVER", "executed_mcp_tool": "proceed",
+                            "executed_mcp_arguments": {}})
+                row["mcp_result"] = await self.client.call("proceed", {})
+                if (_mapping(row["mcp_result"]).get("success") is False
+                        or _mapping(row["mcp_result"]).get("error")):
+                    raise DriverError("MCP game-over Proceed failed")
+                self.steps += 1
+                post, post_game_state = await self.wait_for_ready_advance(
+                    transition_identity(screen, game_state), ignore_terminal=True)
+                row["post_action_state"] = _compact({"screen": post, "game_state": post_game_state})
+                row["driver_step_micros"] = (time.monotonic() - started) * 1e6
+                self.last_screen, self.last_game = post, post_game_state
+                self.trace.write(row)
+                return True
             self.outcome = _terminal_outcome(screen)
             return False
         if (self.dry_run and not (self.new_run or self.continue_run or self.character)
@@ -1056,23 +1487,131 @@ class Driver:
         if not candidates:
             raise DriverError("no legal candidates for a non-terminal screen")
         reveal_card = False
+        parent_reward = False
+        neow_navigation = False
+        shop_entry = False
+        event_completion = False
+        dead_adventurer_fight = False
+        nest_intro = False
+        boss_door = False
+        boss_chest_reveal = False
+        boss_chest_skip_cleanup = False
+        selector_confirmation = False
+        combat_selection_confirmation = False
+        declined_reward_cleanup = False
+        empty_reward_proceed = False
+        forced_ooc = False
+        advisor_started = time.monotonic()
+        declined_card_indexes: set[int] = set()
+        reward_occurrences: list[Any] = []
+        reward_observation: Mapping[str, Any] | None = None
+        reward_observation_marker: tuple[str, int] | None = None
+        if (action is None and self.declined_rewards
+                and _text(screen.get("screen_type")).upper() == "COMBAT_REWARD"):
+            inspector_state = {**game_state, **screen, "_expected_boundary": "ooc"}
+            session, sequence, ooc = await self.inspector.read_ooc_observation_for(
+                inspector_state, self.previous_inspector)
+            reward_observation_marker = (session, sequence)
+            row.update({"inspector_session": session, "inspector_sequence": sequence,
+                        "inspector_observation_only": True})
+            reward_observation = ooc
+            reward_occurrences = _list(ooc.get("rewardOccurrences"))
+            declined_card_indexes = {
+                _mapping(item)["index"] for item in reward_occurrences
+                if _text(_mapping(item).get("type")).upper() == "CARD"
+                and type(_mapping(item).get("index")) is int
+                and (session, _mapping(item).get("identity")) in self.declined_rewards}
         if action is None:
-            reveal = card_reward_reveal_action(screen, game_state, candidates)
-            if reveal is not None:
-                action = reveal
-                reveal_card = True
+            action = combat_selection_confirmation_action(screen, candidates)
+            combat_selection_confirmation = action is not None
+        if action is None:
+            parent = parent_reward_action(screen, game_state, candidates)
+            if parent is not None:
+                action = parent
+                parent_reward = True
+            else:
+                reveal = card_reward_reveal_action(screen, game_state, candidates, declined_card_indexes)
+                if reveal is not None:
+                    action = reveal
+                    reveal_card = True
+                else:
+                    action = neow_navigation_action(screen, candidates)
+                    neow_navigation = action is not None
+                    if action is None:
+                        act, floor = game_state.get("act"), screen.get("floor")
+                        room = (act, floor) if type(act) is int and type(floor) is int else None
+                        action = shop_entry_action(screen, candidates,
+                                                   entered=room in self.entered_shop_rooms)
+                        shop_entry = action is not None
+                        if shop_entry and action.mcp_tool == "choose" and room is not None:
+                            shop_entry_key = room
+                        if action is None:
+                            action = event_completion_action(screen, candidates)
+                            event_completion = action is not None
+                        if action is None:
+                            action = dead_adventurer_fight_action(screen, candidates)
+                            dead_adventurer_fight = action is not None
+                        if action is None:
+                            action = nest_intro_action(screen, candidates)
+                            nest_intro = action is not None
+                        if action is None:
+                            action = boss_door_action(screen, candidates)
+                            boss_door = action is not None
+                        if action is None:
+                            act, floor = game_state.get("act"), screen.get("floor")
+                            selector_key = (act, floor, _text(screen.get("room_type")))
+                            if self.pending_selector_confirmation == selector_key:
+                                action = selector_confirmation_action(screen, candidates)
+                                selector_confirmation = action is not None
+                            self.pending_selector_confirmation = None
+                        if action is None:
+                            act, floor = game_state.get("act"), screen.get("floor")
+                            room = (act, floor) if type(act) is int and type(floor) is int else None
+                            if room in self.boss_relic_skipped_rooms:
+                                action = boss_chest_skip_cleanup_action(screen, candidates)
+                                boss_chest_skip_cleanup = action is not None
+                        if action is None:
+                            action = boss_chest_reveal_action(screen, candidates)
+                            boss_chest_reveal = action is not None
+                        if action is None:
+                            action = declined_reward_cleanup_action(
+                                reward_occurrences, declined_card_indexes, candidates)
+                            declined_reward_cleanup = action is not None
+                        if action is None:
+                            action = empty_combat_reward_proceed_action(screen, game_state, candidates)
+                            empty_reward_proceed = action is not None
+                        if action is None:
+                            action = forced_ooc_action(screen, candidates)
+                            forced_ooc = action is not None
         row.update({"screen_type": screen.get("screen_type", screen.get("screenType")),
                     "state_identity": transition_identity(screen, game_state),
                     "legal_candidates": [candidate.trace() for candidate in candidates]})
         if action:
-            row["decision_source"] = "card_reward_reveal" if reveal_card else "run_control"
+            if reward_observation_marker is not None:
+                self.previous_inspector = reward_observation_marker
+            row["decision_source"] = ("parent_reward_cleanup" if parent_reward else
+                                      "card_reward_reveal" if reveal_card else
+                                      "neow_navigation" if neow_navigation else
+                                      "shop_navigation" if shop_entry else
+                                      "event_completion" if event_completion else
+                                      "dead_adventurer_fight" if dead_adventurer_fight else
+                                      "nest_intro" if nest_intro else
+                                      "boss_door" if boss_door else
+                                      "selector_confirmation" if selector_confirmation else
+                                      "combat_selection_confirmation" if combat_selection_confirmation else
+                                      "boss_chest_skip_cleanup" if boss_chest_skip_cleanup else
+                                      "boss_chest_reveal" if boss_chest_reveal else
+                                      "declined_reward_cleanup" if declined_reward_cleanup else
+                                      "empty_reward_proceed" if empty_reward_proceed else "run_control")
+            if forced_ooc:
+                row["decision_source"] = "forced_ooc_action"
         else:
             combat = _is_combat(screen)
             inspector_state = {**game_state, **screen, "_expected_boundary": "combat" if combat else "ooc"}
             if combat and _list(game_state.get("monsters")):
                 inspector_state["monsters"] = game_state["monsters"]
-            advisor_started = time.monotonic()
-            snapshot = await self.inspector.read_for(inspector_state, self.previous_inspector)
+            if snapshot is None:
+                snapshot = await self.inspector.read_for(inspector_state, self.previous_inspector)
             row.update({"inspector_session": snapshot.session, "inspector_sequence": snapshot.sequence,
                         "inspector_observationHash": snapshot.observation_hash,
                         "inspector_boundary": _mapping(snapshot.raw.get("observation")).get("boundary"),
@@ -1096,6 +1635,7 @@ class Driver:
                 reason = _text(evaluator.get("reason", evaluator.get("silverReason", "unknown")))
                 self.counters[f"{prefix}_unsupported"] += 1
                 self.unsupported[f"{prefix}:{reason}"] += 1
+                row.update({"decision_source": prefix, "unsupported_reason": reason})
                 if (self.strict_silver if combat else self.strict_ooc):
                     raise DriverError(f"{prefix} explicitly unsupported: {reason}")
                 action, shop_entry_key = self.fallback_action(screen, game_state, candidates, snapshot)
@@ -1120,10 +1660,11 @@ class Driver:
         row.update({"selected_candidate": action.id, "selected_mcp_tool": action.mcp_tool,
                     "selected_mcp_arguments": action.mcp_arguments})
         cycle_state = transition_identity(screen, game_state)
-        if snapshot is not None and screen.get("screen_type") in {"CARD_REWARD", "COMBAT_REWARD"}:
-            ooc = _mapping(_mapping(snapshot.raw.get("observation")).get("ooc"))
+        if (snapshot is not None or reward_observation is not None) and screen.get("screen_type") in {"CARD_REWARD", "COMBAT_REWARD"}:
+            ooc = reward_observation if reward_observation is not None else _mapping(
+                _mapping(snapshot.raw.get("observation")).get("ooc"))
             # Identical visible offers can belong to distinct physical rewards.
-            cycle_state += json.dumps([snapshot.session, ooc.get("rewardIdentity"),
+            cycle_state += json.dumps([row.get("inspector_session"), ooc.get("rewardIdentity"),
                                        ooc.get("rewardOccurrences")], sort_keys=True)
         cycle_key = (cycle_state, action.mcp_tool,
                      json.dumps(action.mcp_arguments, sort_keys=True))
@@ -1140,9 +1681,25 @@ class Driver:
         if transition_identity(current_screen, current_game) != transition_identity(screen, game_state):
             row["observed_state"] = {"screen": screen, "game_state": game_state}
             row["pre_action_state"] = {"screen": current_screen, "game_state": current_game}
-            raise DriverError("MCP state changed while awaiting the advisor; no action executed")
+            self.stale_retries += 1
+            if self.stale_retries > 3:
+                raise DriverError("MCP state changed during four consecutive advisor attempts; no action executed")
+            previous_source = row.get("decision_source")
+            if previous_source in {"silver", "ooc_v4"}:
+                self.counters[f"{previous_source}_ok"] -= 1
+            row["rejected_decision_source"] = previous_source
+            row["decision_source"] = "stale_observation_retry"
+            # The MCP can change display-only fields without a new inspector
+            # observation. Revalidate this snapshot against the next state;
+            # read_for still rejects it if an actionable identity changed.
+            self.previous_inspector = None
+            row["driver_step_micros"] = (time.monotonic() - started) * 1e6
+            self.last_screen, self.last_game = current_screen, current_game
+            self.trace.write(row)
+            return True
         if action.mcp_tool not in _tool_names(current_commands):
             raise DriverError("selected MCP command is no longer advertised; no action executed")
+        self.stale_retries = 0
         call_started = time.monotonic()
         row.update({"executed_mcp_tool": action.mcp_tool,
                     "executed_mcp_arguments": action.mcp_arguments})
@@ -1152,6 +1709,18 @@ class Driver:
             raise DriverError(f"MCP action failed: {row['mcp_result']!r}")
         if shop_entry_key is not None:
             self.entered_shop_rooms.add(shop_entry_key)
+        if action.mcp_tool == "start_game":
+            self.new_run_started = True
+        if (screen.get("screen_type") == "GRID" and action.mcp_tool == "choose"
+                and row.get("decision_source") == "ooc_v4"):
+            act, floor = game_state.get("act"), screen.get("floor")
+            if type(act) is int and type(floor) is int:
+                self.pending_selector_confirmation = (act, floor, _text(screen.get("room_type")))
+        if (screen.get("screen_type") == "BOSS_REWARD" and action.mcp_tool == "skip"
+                and row.get("decision_source") == "ooc_v4"):
+            act, floor = game_state.get("act"), screen.get("floor")
+            if type(act) is int and type(floor) is int:
+                self.boss_relic_skipped_rooms.add((act, floor))
         if not _is_combat(screen):
             self.ooc_actions_seen.add(cycle_key)
         if screen.get("screen_type") == "CARD_REWARD" and action.mcp_tool == "skip":
@@ -1190,6 +1759,13 @@ class Driver:
 
     def write_failure(self, error: BaseException) -> Path:
         self.outcome = "error"
+        if (self.context.get("step") is not None
+                and (not self.trace.recent or self.trace.recent[-1].get("step") != self.context.get("step"))):
+            self.context.setdefault("driver_step_micros",
+                                    (time.monotonic() - self.context_started_monotonic) * 1e6)
+            self.context["decision_error"] = _exception_text(error)
+            self.context["record_type"] = "decision_failure"
+            self.trace.write(self.context)
         packet = {"schema": "live_driver_failure", "schemaVersion": 1,
                   "timestamp": datetime.now(timezone.utc).isoformat(), "driver": self.identity,
                   "step": self.context.get("step", self.steps), "screen": self.last_screen,
@@ -1208,6 +1784,10 @@ class Driver:
         except (OSError, ValueError):
             packet["inspector_snapshot"] = None
         self.failure_path = self.trace.write_failure(packet)
+        self.trace.write_run_report(self.summary(), identity=self.identity,
+                                    failure={"error_class": type(error).__name__,
+                                             "reason": _exception_text(error),
+                                             "step": packet["step"]})
         return self.failure_path
 
     async def run(self) -> None:
@@ -1223,7 +1803,16 @@ class Driver:
             self.write_failure(error)
             raise
         finally:
-            self.trace.write(self.summary())
+            summary = self.summary()
+            self.trace.write(summary)
+            failure = None
+            if self.failure_path is not None:
+                try:
+                    packet = json.loads(self.failure_path.read_text(encoding="utf-8"))
+                    failure = {key: packet.get(key) for key in ("error_class", "reason", "step")}
+                except (OSError, ValueError):
+                    failure = {"reason": "failure packet could not be read"}
+            self.trace.write_run_report(summary, identity=self.identity, failure=failure)
 
 
 def _terminal_outcome(screen: Mapping[str, Any]) -> str:
@@ -1281,9 +1870,10 @@ async def async_main(args: argparse.Namespace) -> int:
                 "error_class": type(error).__name__, "reason": _exception_text(error),
                 "trace_path": str(trace_path), "driver": _git_identity(), "recent_trace": [],
                 "reproduction_command": reproduction})
-        print(f"LIVE_DRIVER_ERROR type={type(error).__name__} step={step} trace={shlex.quote(str(trace_path))} failure={shlex.quote(str(failure))}", file=sys.stderr)
+        print(f"LIVE_DRIVER_ERROR type={type(error).__name__} step={step} trace={shlex.quote(str(trace_path))} report={shlex.quote(str(trace.run_report_path))} failure={shlex.quote(str(failure))}", file=sys.stderr)
         return 2
     print(f"trace: {trace_path}")
+    print(f"run report: {trace.run_report_path}")
     return 0
 
 

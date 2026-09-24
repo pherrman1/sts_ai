@@ -21,21 +21,30 @@ FwdMap forwardMapFeatures(const sts::GameContext &gc) {
     fm.dBoss = 14 - std::max(gc.curMapNodeY, 0);
     if (gc.map == nullptr) return fm;
     const sts::Map &map = *gc.map;
-    std::array<bool, 7> reach{};
+    // Track remaining Wing Boots charges along each visible path. The frozen
+    // model has no charge scalar, but its existing forward-map features can
+    // describe rooms reachable through the public charged map edges.
+    std::array<std::array<bool, 4>, 7> reach{};
+    const int charges = std::clamp(gc.wingBootsCharges, 0, 3);
     int startRow;
     if (gc.curMapNodeY < 0) {
         startRow = 0;
-        for (const sts::MapNode &n : map.nodes[0]) if (n.edgeCount > 0) reach[n.x] = true;
+        for (const sts::MapNode &n : map.nodes[0]) if (n.edgeCount > 0) reach[n.x][charges] = true;
     } else {
         startRow = gc.curMapNodeY + 1;
         if (startRow > 14) return fm;
         const sts::MapNode &cur = map.getNode(gc.curMapNodeX, gc.curMapNodeY);
-        for (int i = 0; i < cur.edgeCount; ++i) reach[cur.edges[i]] = true;
+        for (int i = 0; i < cur.edgeCount; ++i) reach[cur.edges[i]][charges] = true;
+        if (charges > 0 && cur.edgeCount > 0 && gc.curMapNodeY < 14)
+            for (int x = 0; x < 7; ++x)
+                if (map.getNode(x, startRow).room != sts::Room::NONE)
+                    reach[x][charges - 1] = true;
     }
     const int base = std::max(gc.curMapNodeY, 0);
     for (int y = startRow; y <= 14; ++y) {
-        std::array<bool, 7> nxt{};
-        for (int x = 0; x < 7; ++x) if (reach[x]) {
+        std::array<std::array<bool, 4>, 7> nxt{};
+        for (int x = 0; x < 7; ++x) if (std::any_of(reach[x].begin(), reach[x].end(),
+                                                     [](bool found) { return found; })) {
             const sts::MapNode &n = map.getNode(x, y);
             const int d = y - base;
             switch (n.room) {
@@ -47,7 +56,15 @@ FwdMap forwardMapFeatures(const sts::GameContext &gc) {
                 case sts::Room::TREASURE: ++fm.cTreasure; break;
                 default: break;
             }
-            for (int i = 0; i < n.edgeCount; ++i) nxt[n.edges[i]] = true;
+            for (int charge = 0; charge <= 3; ++charge) {
+                if (!reach[x][charge]) continue;
+                for (int i = 0; i < n.edgeCount; ++i)
+                    nxt[n.edges[i]][charge] = true;
+                if (charge > 0 && n.edgeCount > 0 && y < 14)
+                    for (int destination = 0; destination < 7; ++destination)
+                        if (map.getNode(destination, y + 1).room != sts::Room::NONE)
+                            nxt[destination][charge - 1] = true;
+            }
         }
         reach = nxt;
     }

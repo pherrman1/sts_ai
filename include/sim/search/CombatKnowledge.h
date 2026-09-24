@@ -133,6 +133,7 @@ struct CombatKnowledgeState final : CombatKnowledgeObserver {
     int lastObservedDrawPileSize = 0;
     std::array<std::uint8_t, 5> pendingHiddenIntentRolls {};
     std::array<HiddenIntentRollInputs, 5> pendingHiddenIntentInputs {};
+    std::array<std::vector<HiddenIntentRollInputs>, 5> pendingHiddenIntentInputHistory {};
     // Configured from GameContext before BattleContext::init. This is a
     // knowledge-policy fact, not a property read from the already-initialized
     // Player, whose relic list is unavailable during monster initialization.

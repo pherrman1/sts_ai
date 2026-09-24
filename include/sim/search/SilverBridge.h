@@ -111,6 +111,9 @@ struct MonsterWire {
     // which public direct-choice rule is pending, never its live outcome.
     std::uint8_t pendingDirectMoveChoice = 0;
     MonsterRollInputsWire pendingRollInputs {};
+    // Public inputs at each deferred roll, in chronological order. The final
+    // entry also equals pendingRollInputs for the single-roll legacy boundary.
+    std::vector<MonsterRollInputsWire> pendingRollInputHistory;
 };
 
 struct CardSelectWire {

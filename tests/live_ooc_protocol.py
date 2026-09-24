@@ -91,9 +91,12 @@ class LiveOocProtocol(unittest.TestCase):
         self.assertEqual(response["evaluators"][0]["status"], "UNSUPPORTED")
         self.assertEqual(response["evaluators"][0]["reason"], "SEARING_BLOW_UPGRADE_HISTORY_UNQUALIFIED")
 
-    def test_event_fights_fail_closed_without_public_reward_pity_history(self):
-        rows = self.run_rows([self.fixtures["unsupported_mushrooms_reward_pity"],
-                              self.fixtures["unsupported_sphere_reward_pity"]], policy="v4")
+    def test_direct_v4_event_scoring_requires_exact_public_reward_pity_history(self):
+        observations = [copy.deepcopy(self.fixtures["event_mushrooms_hidden_reward_pity"]),
+                        copy.deepcopy(self.fixtures["event_sphere_hidden_reward_pity"])]
+        for observation in observations:
+            observation["ooc"]["publicState"]["rewardPityHistoryComplete"] = False
+        rows = self.run_rows(observations, policy="v4")
         for response in rows:
             evaluator, = response["evaluators"]
             self.assertEqual(evaluator["status"], "UNSUPPORTED")
@@ -331,13 +334,11 @@ class LiveOocProtocol(unittest.TestCase):
                                   policy="v4")
         self.assertEqual(response["evaluators"][0]["status"], "UNSUPPORTED")
 
-    def test_active_winged_is_bounded_to_non_map_roots(self):
+    def test_active_winged_map_root(self):
         selector = copy.deepcopy(self.fixtures["upgrade_duplicate_physical_cards"])
         selector["ooc"]["publicState"]["relics"].append(
             {"id": "WingedGreaves", "data": 0, "liveCounter": 3})
         selector["ooc"]["publicState"]["acquiredRelics"].append("WingedGreaves")
-        selector["ooc"]["unsupportedReason"] = \
-            "RELIC_NATIVE_STATE_UNREPRESENTABLE:WingedGreaves:active"
         response, = self.run_rows([selector])
         self.assertEqual(response["evaluators"][0]["status"], "OK", response)
 
@@ -345,12 +346,8 @@ class LiveOocProtocol(unittest.TestCase):
         direct_map["ooc"]["publicState"]["relics"].append(
             {"id": "WingedGreaves", "data": 0, "liveCounter": 3})
         direct_map["ooc"]["publicState"]["acquiredRelics"].append("WingedGreaves")
-        direct_map["ooc"]["unsupportedReason"] = \
-            "RELIC_NATIVE_STATE_UNREPRESENTABLE:WingedGreaves:active"
         response, = self.run_rows([direct_map], policy="v4")
-        self.assertEqual(response["evaluators"][0]["status"], "UNSUPPORTED")
-        self.assertEqual(response["evaluators"][0]["reason"],
-                         "RELIC_NATIVE_STATE_UNREPRESENTABLE:WingedGreaves:active")
+        self.assertEqual(response["evaluators"][0]["status"], "OK", response)
 
     def test_schema_and_mapping_errors_cannot_fallback(self):
         base = self.fixtures["event_big_fish"]

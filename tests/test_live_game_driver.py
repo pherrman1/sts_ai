@@ -7,9 +7,13 @@ from pathlib import Path
 
 from tools.live_game_driver import (
     CandidateEnumerationError, Driver, DriverError, InspectorSnapshot, InspectorReader, IntegrationFailure,
-    LegalAction, TraceWriter, build_legal_actions, choose_deterministic_action,
+    LegalAction, TraceWriter, build_legal_actions, choose_deterministic_action, forced_ooc_action,
     map_silver_action, map_ooc_action, normalize_game_state, state_identity, transition_identity, main,
-    _is_combat, card_reward_reveal_action,
+    _is_combat, card_reward_reveal_action, parent_reward_action, empty_combat_reward_proceed_action,
+    neow_navigation_action, shop_entry_action,
+    event_completion_action, dead_adventurer_fight_action, nest_intro_action, boss_door_action, boss_chest_reveal_action,
+    boss_chest_skip_cleanup_action, selector_confirmation_action, combat_selection_confirmation_action,
+    declined_reward_cleanup_action,
 )
 
 
@@ -116,6 +120,26 @@ class LiveGameDriverTest(unittest.TestCase):
         actions = build_legal_actions({"screen_type": "NONE", "room_phase": "COMBAT"}, ["use_potion"], nested)
         self.assertEqual(actions[0].mcp_arguments, {"potion_slot": 1, "target_index": 1})
 
+    def test_smoke_bomb_ignores_mcp_monster_target(self):
+        screen = combat_screen(potions=[
+            {"id": "SmokeBomb", "requires_target": True, "can_use": True}],
+            monsters=[{"id": "Cultist", "current_hp": 52},
+                      {"id": "Chosen", "current_hp": 98}])
+        actions = build_legal_actions(screen, ["use_potion"])
+        self.assertEqual(len(actions), 2)
+        self.assertEqual(map_silver_action(
+            {"kind": "potion", "potionSlot": 1, "discard": False}, actions).mcp_arguments,
+            {"potion_slot": 1, "target_index": 1})
+        screen["potions"][0]["id"] = "Explosive Potion"
+        self.assertEqual(map_silver_action(
+            {"kind": "potion", "potionSlot": 1, "discard": False},
+            build_legal_actions(screen, ["use_potion"])).mcp_arguments,
+            {"potion_slot": 1, "target_index": 1})
+        screen["potions"][0]["id"] = "FirePotion"
+        with self.assertRaises(IntegrationFailure):
+            map_silver_action({"kind": "potion", "potionSlot": 1, "discard": False},
+                              build_legal_actions(screen, ["use_potion"]))
+
     def test_potion_candidates_require_advertised_legality(self):
         screen = {"screen_type": "NONE", "room_phase": "COMBAT", "potions": [
             {"id": "Block Potion", "can_discard": True},
@@ -138,6 +162,55 @@ class LiveGameDriverTest(unittest.TestCase):
                          {"card_index": 2, "target_index": 1})
         with self.assertRaises(IntegrationFailure):
             map_silver_action({"kind": "card", "cardUuid": "wrong", "targetIndex": 1}, actions)
+
+    def test_boss_relic_skip_uses_mcp_skip_command(self):
+        # Reproduces seed 13027001, floor 17: MCTS selected the fourth
+        # boss relic option, while MCP exposed it as Skip rather than Cancel.
+        screen = {"screen_type": "BOSS_REWARD", "choice_list": [
+            "Slaver's Collar", "Runic Cube", "Coffee Dripper"]}
+        actions = build_legal_actions(screen, ["choose", "skip"])
+        self.assertEqual(map_ooc_action({"kind": "skip"}, actions).mcp_tool, "skip")
+        with self.assertRaises(IntegrationFailure):
+            map_ooc_action({"kind": "cancel"}, actions)
+        chest = {"screen_type": "CHEST", "room_type": "TreasureRoomBoss",
+                 "choice_list": ["open"],
+                 "screen_state": {"chest_type": "BossChest", "chest_open": False}}
+        chest_actions = build_legal_actions(chest, ["choose", "proceed"])
+        self.assertEqual(boss_chest_skip_cleanup_action(chest, chest_actions).mcp_tool, "proceed")
+        self.assertIsNone(boss_chest_skip_cleanup_action(
+            {**chest, "room_type": "TreasureRoom"}, chest_actions))
+
+    def test_new_run_clears_previous_game_over_screen(self):
+        with tempfile.TemporaryDirectory() as directory:
+            class TerminalClient(FakeClient):
+                async def call(self, tool, arguments=None):
+                    if tool == "proceed":
+                        self.calls.append((tool, arguments or {}))
+                        self.states[0] = {"screen_type": "MAIN_MENU", "ready_for_command": True}
+                        return {"success": True}
+                    return await super().call(tool, arguments)
+            client = TerminalClient(
+                {"screen_type": "GAME_OVER", "room_phase": "COMBAT",
+                 "screen_state": {"victory": False}, "ready_for_command": True},
+                ["proceed", "start_game"])
+            driver = Driver(client, InspectorReader(Path(directory) / "unused"),
+                            TraceWriter(Path(directory) / "trace"),
+                            new_run=True, character="IRONCLAD", ascension=0, seed="13027002",
+                            max_steps=2)
+            asyncio.run(driver.run())
+            self.assertEqual([(tool, args) for tool, args in client.calls
+                              if tool in {"proceed", "start_game"}],
+                             [("proceed", {}), ("start_game", {"character": "IRONCLAD",
+                                                              "ascension": 0, "seed": "13027002"})])
+
+    def test_neow_selector_confirm_is_mechanical_only_after_model_card_choice(self):
+        screen = {"screen_type": "GRID", "room_type": "NeowRoom", "floor": 0,
+                  "can_proceed": True, "proceed_button": "confirm",
+                  "screen_state": {"confirm_up": True, "num_cards": 1, "for_transform": True}}
+        actions = build_legal_actions(screen, ["proceed", "cancel"])
+        self.assertEqual(selector_confirmation_action(screen, actions).mcp_tool, "proceed")
+        self.assertIsNone(selector_confirmation_action(
+            {**screen, "screen_state": {**screen["screen_state"], "confirm_up": False}}, actions))
 
     def test_selected_live_action_ambiguous_and_label_only_fail(self):
         candidates = [LegalAction("a0", "same", "play_card", {}, {"kind": "card", "card_uuid": "x"}),
@@ -205,21 +278,207 @@ class LiveGameDriverTest(unittest.TestCase):
         actions = build_legal_actions(screen, ["proceed", "choose"])
         self.assertEqual(choose_deterministic_action(screen, actions).mcp_tool, "choose")
 
-    def test_card_reveal_waits_for_parent_rewards(self):
+    def test_empty_combat_reward_proceeds_without_mcts_zero_visit_rejection(self):
+        # The floor-1 live failure offered only Proceed, while the forced OOC
+        # root reported visits=0, visitShare=1 and the driver rejected it.
+        screen = {"screen_type": "COMBAT_REWARD", "room_phase": "COMPLETE",
+                  "ready_for_command": True, "can_proceed": True, "floor": 1,
+                  "screen_state": {"rewards": []}}
+        game = {"act": 1, "screen_state": {"rewards": []}}
+        actions = build_legal_actions(screen, ["proceed"])
+        self.assertEqual(empty_combat_reward_proceed_action(screen, game, actions).mcp_tool,
+                         "proceed")
+        self.assertIsNone(empty_combat_reward_proceed_action(
+            screen, {"screen_state": {"rewards": [{"reward_type": "GOLD"}]}}, actions))
+        self.assertIsNone(empty_combat_reward_proceed_action(screen, game, actions + actions))
+        with tempfile.TemporaryDirectory() as directory:
+            trace = Path(directory) / "trace.jsonl"
+            client = FakeClient(screen, ["proceed"], game_state=game)
+            driver = Driver(client, InspectorReader(Path(directory) / "missing.json"),
+                            TraceWriter(trace), strict_ooc=True, max_steps=1)
+            asyncio.run(driver.run())
+            row = json.loads(trace.read_text().splitlines()[0])
+            self.assertEqual((row["decision_source"], row["executed_mcp_tool"]),
+                             ("empty_reward_proceed", "proceed"))
+            self.assertFalse(any(tool == "choose" for tool, _ in client.calls))
+            report = json.loads(trace.with_suffix(".run.json").read_text())
+            self.assertEqual(report["decision_count"], 1)
+            self.assertEqual(report["decisions"][0]["decision_type"], "driver automation")
+            self.assertEqual(report["decisions"][0]["chosen_action"]["tool"], "proceed")
+
+    def test_card_reveal_waits_for_model_decisions_on_visible_parent_rewards(self):
         screen = {"screen_type": "COMBAT_REWARD", "choice_list": ["Gold", "Anchor", "Card"],
                   "ready_for_command": True}
         game = {"screen_state": {"rewards": [
             {"reward_type": "GOLD"}, {"reward_type": "RELIC"}, {"reward_type": "CARD"}]}}
         candidates = build_legal_actions(screen, ["choose"])
         self.assertIsNone(card_reward_reveal_action(screen, game, candidates))
-        card_only = [candidate for candidate in candidates if candidate.mcp_arguments == {"choice_index": 3}]
-        self.assertEqual(card_reward_reveal_action(screen, game, card_only).mcp_arguments,
-                         {"choice_index": 3})
+        parent_rewards_collected = {"screen_state": {"rewards": [{"reward_type": "CARD"}]}}
+        remaining_screen = {**screen, "choice_list": ["Card"]}
+        remaining_candidates = build_legal_actions(remaining_screen, ["choose"])
+        self.assertEqual(card_reward_reveal_action(remaining_screen, parent_rewards_collected,
+                                                   remaining_candidates).mcp_arguments,
+                         {"choice_index": 1})
+
+    def test_card_reveal_with_gold_is_mechanical(self):
+        screen = {"screen_type": "COMBAT_REWARD", "choice_list": ["16(+0 bonus) gold", "card"],
+                  "ready_for_command": True}
+        game = {"screen_state": {"rewards": [
+            {"reward_type": "GOLD", "gold": 16}, {"reward_type": "CARD"}]}}
+        candidates = build_legal_actions(screen, ["choose", "proceed"])
+        self.assertEqual(card_reward_reveal_action(screen, game, candidates).mcp_arguments,
+                         {"choice_index": 2})
+
+    def test_parent_reward_is_claimed_before_hidden_card_group(self):
+        screen = {"screen_type": "COMBAT_REWARD", "choice_list": ["16 gold", "card"],
+                  "ready_for_command": True}
+        game = {"screen_state": {"rewards": [
+            {"reward_type": "GOLD", "gold": 16}, {"reward_type": "CARD"}]}}
+        candidates = build_legal_actions(screen, ["choose"])
+        self.assertEqual(parent_reward_action(screen, game, candidates).mcp_arguments,
+                         {"choice_index": 1})
+
+    def test_parent_reward_cleanup_does_not_choose_relic_potion_or_key(self):
+        screen = {"screen_type": "COMBAT_REWARD", "choice_list": ["relic", "card"],
+                  "ready_for_command": True}
+        for kind in ("RELIC", "POTION", "EMERALD_KEY", "SAPPHIRE_KEY"):
+            game = {"screen_state": {"rewards": [
+                {"reward_type": kind}, {"reward_type": "CARD"}]}}
+            candidates = build_legal_actions(screen, ["choose"])
+            self.assertIsNone(parent_reward_action(screen, game, candidates), kind)
+            self.assertIsNone(card_reward_reveal_action(screen, game, candidates), kind)
+
+    def test_card_reveal_waits_for_visible_parent_reward_decision(self):
+        screen = {"screen_type": "COMBAT_REWARD", "choice_list": ["card", "Sapphire Key"],
+                  "ready_for_command": True}
+        game = {"screen_state": {"rewards": [
+            {"reward_type": "CARD"}, {"reward_type": "SAPPHIRE_KEY"}]}}
+        candidates = build_legal_actions(screen, ["choose"])
+        self.assertIsNone(card_reward_reveal_action(screen, game, candidates))
+
+    def test_card_reveal_resumes_after_visible_parent_rewards_are_gone(self):
+        screen = {"screen_type": "COMBAT_REWARD", "choice_list": ["card"],
+                  "ready_for_command": True}
+        game = {"screen_state": {"rewards": [{"reward_type": "CARD"}]}}
+        candidates = build_legal_actions(screen, ["choose"])
+        self.assertEqual(card_reward_reveal_action(screen, game, candidates).mcp_arguments,
+                         {"choice_index": 1})
+
+    def test_neow_navigation_is_mechanical_only_around_bonus_choices(self):
+        screen = {"screen_type": "EVENT", "room_type": "NeowRoom", "floor": 0,
+                  "choice_list": ["[Talk]"], "screen_state": {"event_id": "Neow Event"}}
+        candidates = build_legal_actions(screen, ["choose"])
+        self.assertEqual(neow_navigation_action(screen, candidates).mcp_arguments,
+                         {"choice_index": 1})
+        screen["choice_list"] = ["[Leave]"]
+        self.assertEqual(neow_navigation_action(screen, candidates).mcp_arguments,
+                         {"choice_index": 1})
+        screen["choice_list"] = ["[Max HP]", "[Random card]"]
+        self.assertIsNone(neow_navigation_action(screen, build_legal_actions(screen, ["choose"])))
 
     def test_shop_leaves(self):
         screen = {"screen_type": "SHOP_SCREEN", "ready_for_command": True}
         actions = build_legal_actions(screen, ["cancel", "proceed"])
         self.assertEqual(choose_deterministic_action(screen, actions).mcp_tool, "cancel")
+
+    def test_resolved_event_single_leave_is_mechanical(self):
+        screen = {"screen_type": "EVENT", "room_type": "EventRoom", "room_phase": "EVENT",
+                  "choice_list": ["[Leave]"]}
+        candidates = build_legal_actions(screen, ["choose"])
+        self.assertEqual(event_completion_action(screen, candidates).mcp_arguments,
+                         {"choice_index": 1})
+        screen["room_phase"] = "COMPLETE"
+        screen["screen_state"] = {"event_id": "The Woman in Blue"}
+        self.assertEqual(event_completion_action(screen, candidates).mcp_arguments,
+                         {"choice_index": 1})
+        screen["choice_list"] = ["[Leave]", "[Fight]"]
+        self.assertIsNone(event_completion_action(screen, build_legal_actions(screen, ["choose"])))
+
+    def test_dead_adventurer_forced_fight(self):
+        screen = {"screen_type": "EVENT", "room_type": "EventRoom", "room_phase": "EVENT",
+                  "screen_state": {"event_id": "Dead Adventurer"}, "choice_list": ["[Fight]"]}
+        candidates = build_legal_actions(screen, ["choose"])
+        self.assertEqual(dead_adventurer_fight_action(screen, candidates).mcp_arguments,
+                         {"choice_index": 1})
+        screen["choice_list"] = ["[Fight]", "[Leave]"]
+        self.assertIsNone(dead_adventurer_fight_action(screen, build_legal_actions(screen, ["choose"])))
+
+    def test_single_ooc_action_advances_without_model(self):
+        event = {"screen_type": "EVENT", "room_phase": "EVENT", "choice_list": ["[Fight]"]}
+        self.assertEqual(forced_ooc_action(event, build_legal_actions(event, ["choose"])).mcp_arguments,
+                         {"choice_index": 1})
+        event["choice_list"] = ["[Search]", "[Leave]"]
+        self.assertIsNone(forced_ooc_action(event, build_legal_actions(event, ["choose"])))
+        forced_button = LegalAction("a0", "Forced action", "discard_potion", {"slot": 1},
+                                    {"kind": "discard_potion", "potion_slot": 1})
+        self.assertIs(forced_ooc_action({"screen_type": "EVENT"}, [forced_button]), forced_button)
+        reward = {"screen_type": "CARD_REWARD", "choice_list": ["Take card"]}
+        self.assertIsNone(forced_ooc_action(reward, build_legal_actions(reward, ["choose", "skip"])))
+        combat = {"screen_type": "NONE", "room_phase": "COMBAT"}
+        self.assertIsNone(forced_ooc_action(combat, build_legal_actions(combat, ["end_turn"])))
+        menu = {"screen_type": "MAIN_MENU", "choice_list": ["Continue"]}
+        self.assertIsNone(forced_ooc_action(menu, build_legal_actions(menu, ["choose"])))
+
+    def test_completed_combat_hand_selection_confirms_without_model(self):
+        screen = {"screen_type": "HAND_SELECT", "room_phase": "COMBAT",
+                  "can_proceed": True, "proceed_button": "confirm",
+                  "screen_state": {"max_cards": 1, "selected": [{"uuid": "chosen"}]}}
+        candidates = build_legal_actions(screen, ["proceed"])
+        self.assertEqual(combat_selection_confirmation_action(screen, candidates).mcp_tool,
+                         "proceed")
+        screen["screen_state"]["selected"] = []
+        self.assertIsNone(combat_selection_confirmation_action(screen, candidates))
+        screen["screen_state"]["selected"] = [{"uuid": "chosen"}]
+        self.assertIsNone(combat_selection_confirmation_action(screen, candidates + candidates))
+
+    def test_nest_intro_continue_only(self):
+        screen = {"screen_type": "EVENT", "room_type": "EventRoom",
+                  "screen_state": {"event_id": "Nest"}, "choice_list": ["[Continue]"]}
+        candidates = build_legal_actions(screen, ["choose"])
+        self.assertEqual(nest_intro_action(screen, candidates).mcp_arguments, {"choice_index": 1})
+        screen["choice_list"] = ["[Continue]", "[Leave]"]
+        self.assertIsNone(nest_intro_action(screen, build_legal_actions(screen, ["choose"])))
+
+    def test_boss_door_requires_exact_single_map_choice(self):
+        screen = {"screen_type": "MAP", "floor": 15, "choice_list": ["Boss!"]}
+        candidates = build_legal_actions(screen, ["choose", "cancel"])
+        self.assertEqual(boss_door_action(screen, candidates).mcp_arguments,
+                         {"choice_index": 1})
+        screen["choice_list"] = ["Boss!", "Rest"]
+        self.assertIsNone(boss_door_action(screen, build_legal_actions(screen, ["choose"])))
+
+    def test_boss_chest_reveal_requires_unopened_boss_chest(self):
+        screen = {"screen_type": "CHEST", "room_type": "TreasureRoomBoss",
+                  "screen_state": {"chest_type": "BossChest", "chest_open": False},
+                  "choice_list": ["open"]}
+        candidates = build_legal_actions(screen, ["choose", "proceed"])
+        self.assertEqual(boss_chest_reveal_action(screen, candidates).mcp_arguments,
+                         {"choice_index": 1})
+        screen["screen_state"]["chest_open"] = True
+        self.assertIsNone(boss_chest_reveal_action(screen, candidates))
+
+    def test_model_declined_card_leaves_only_free_reward_cleanup(self):
+        screen = {"screen_type": "COMBAT_REWARD", "choice_list": ["20 gold", "card"]}
+        candidates = build_legal_actions(screen, ["choose", "proceed"])
+        offers = [{"index": 0, "type": "GOLD"}, {"index": 1, "type": "CARD"}]
+        self.assertEqual(declined_reward_cleanup_action(offers, {1}, candidates).mcp_arguments,
+                         {"choice_index": 1})
+        self.assertIsNone(declined_reward_cleanup_action(offers, set(), candidates))
+        self.assertIsNone(declined_reward_cleanup_action(
+            offers + [{"index": 2, "type": "RELIC"}], {1}, candidates))
+        self.assertEqual(declined_reward_cleanup_action(offers[1:], {1}, candidates).mcp_tool,
+                         "proceed")
+
+    def test_shop_entry_only_opens_exact_single_merchant_inventory(self):
+        screen = {"screen_type": "SHOP_ROOM", "room_type": "ShopRoom",
+                  "room_phase": "COMPLETE", "choice_list": ["shop"]}
+        candidates = build_legal_actions(screen, ["choose", "proceed"])
+        self.assertEqual(shop_entry_action(screen, candidates).mcp_arguments,
+                         {"choice_index": 1})
+        self.assertEqual(shop_entry_action(screen, candidates, entered=True).mcp_tool,
+                         "proceed")
+        screen["choice_list"] = ["shop", "leave"]
+        self.assertIsNone(shop_entry_action(screen, build_legal_actions(screen, ["choose", "proceed"])))
 
     def test_shop_fallback_does_not_buy_prismatic_shard(self):
         screen = {"screen_type": "SHOP_SCREEN", "ready_for_command": True}
@@ -362,6 +621,25 @@ class LiveGameDriverTest(unittest.TestCase):
             self.assertEqual(len(reads), 2)
             self.assertFalse(any(tool == "end_turn" for tool, _ in client.calls))
 
+    def test_split_combat_reward_boundary_waits_for_consistent_mcp_snapshot(self):
+        with tempfile.TemporaryDirectory() as directory:
+            screen = combat_screen()
+            client = FakeClient(screen, ["end_turn"], game_state={})
+            original = client.call
+            reads = []
+            async def call(tool, arguments=None):
+                if tool == "get_game_state":
+                    reads.append(tool)
+                    return {"screen_type": "COMBAT_REWARD", "room_phase": "COMPLETE"} if len(reads) == 1 else {
+                        "screen_type": "NONE", "room_phase": "COMBAT"}
+                return await original(tool, arguments)
+            client.call = call
+            driver = Driver(client, InspectorReader(Path(directory) / "missing"),
+                            TraceWriter(Path(directory) / "trace"), poll_timeout=.05, poll_interval=.001)
+            _, _, game = asyncio.run(driver.read_ready_snapshot())
+            self.assertEqual(game["screen_type"], "NONE")
+            self.assertEqual(len(reads), 2)
+
     def test_wait_ready_timeout_fails_closed(self):
         with tempfile.TemporaryDirectory() as directory:
             client = FakeClient({"screen_type": "CARD_REWARD", "choice_list": ["Bash"], "ready_for_command": False}, ["choose"])
@@ -390,6 +668,33 @@ class LiveGameDriverTest(unittest.TestCase):
             path = Path(directory) / "trace"
             TraceWriter(path).write({"api_key": "secret", "result": "secret"})
             self.assertIn('[REDACTED]', path.read_text())
+
+    def test_run_report_attributes_decision_time_and_wait_reason(self):
+        with tempfile.TemporaryDirectory() as directory:
+            trace = TraceWriter(Path(directory) / "seed-7.jsonl")
+            trace.write({"step": 4, "screen_type": "MAP", "decision_source": "ooc_v4",
+                         "ooc_v4_latency_micros": 1500000, "inspector_wait_micros": 1300000,
+                         "post_action_wait_micros": 450000, "driver_step_micros": 1900000,
+                         "selected_candidate": "a1", "selected_mcp_tool": "choose",
+                         "selected_mcp_arguments": {"choice_index": 2},
+                         "legal_candidates": [{"id": "a1", "human_description": "Choose 2: Rest"}]})
+            report_path = trace.write_run_report({"outcome": "death", "steps": 5},
+                                                 identity={"head": "abc"})
+            report = json.loads(report_path.read_text())
+            self.assertEqual(report["decision_count"], 1)
+            decision = report["decisions"][0]
+            self.assertEqual(decision["decision_type"], "OOC decision model")
+            self.assertEqual(decision["decision_reason"],
+                             "OOC selected the action from the current public noncombat choices")
+            self.assertEqual(decision["model_latency_ms"], 1500.0)
+            self.assertEqual(decision["model_compute_ms"], 1500.0)
+            self.assertEqual(decision["driver_elapsed_ms"], 1900.0)
+            self.assertEqual(decision["model_response_wait_ms"], 1300.0)
+            self.assertEqual(decision["dominant_delay"]["phase"], "model compute")
+            self.assertIn("may finish before", decision["dominant_delay"]["reason"])
+            self.assertEqual(decision["chosen_action"]["description"], "Choose 2: Rest")
+            self.assertEqual({item["phase"] for item in decision["wait_reasons"]},
+                             {"model observation and decision", "game transition"})
 
 
 class OocDriverTest(unittest.TestCase):
@@ -485,7 +790,7 @@ class OocDriverTest(unittest.TestCase):
             action, _ = driver.fallback_action(screen, {}, actions, snapshot)
             self.assertEqual(action.mcp_arguments, {"choice_index": 2})
 
-    def test_mixed_reward_unsupported_fallback_collects_gold_before_card(self):
+    def test_mixed_reward_claims_visible_parent_before_card_reveal(self):
         with tempfile.TemporaryDirectory() as directory:
             screen = {"screen_type": "COMBAT_REWARD", "choice_list": ["Gold", "Anchor", "Card"],
                       "ready_for_command": True}
@@ -506,23 +811,57 @@ class OocDriverTest(unittest.TestCase):
             self.assertEqual([call for call in client.calls if call[0] == "choose"],
                              [("choose", {"choice_index": 1})])
 
-    def test_mixed_key_reward_does_not_precede_card_reveal(self):
+    def test_model_selects_key_before_hidden_card_reveal(self):
+        with tempfile.TemporaryDirectory() as directory:
+            screen = {"screen_type": "COMBAT_REWARD",
+                      "choice_list": ["Anchor", "Sapphire Key", "Card"],
+                      "ready_for_command": True}
+            game = {"screen_state": {"rewards": [
+                {"reward_type": "RELIC"}, {"reward_type": "SAPPHIRE_KEY"},
+                {"reward_type": "CARD"}]}}
+            client = FakeClient(screen, ["choose"], game_state=game)
+            path = ooc_inspector_file(directory, screen, "OK", selectedLiveAction={
+                "kind": "choose", "choiceIndex": 2})
+            raw = json.loads(path.read_text())
+            ooc = raw["observation"]["ooc"]
+            ooc["screen"] = "combat_reward"
+            ooc["liveChoices"] = [
+                {"nativeAction": {"kind": "relic", "index": 0},
+                 "liveAction": {"kind": "choose", "choiceIndex": 1}},
+                {"nativeAction": {"kind": "key", "index": 0},
+                 "liveAction": {"kind": "choose", "choiceIndex": 2}}]
+            ooc["rewardOccurrences"] = [
+                {"index": 0, "type": "RELIC", "identity": "relic-1"},
+                {"index": 1, "type": "SAPPHIRE_KEY", "identity": "key-1"},
+                {"index": 2, "type": "CARD", "identity": "card-1"}]
+            path.write_text(json.dumps(raw))
+            driver = Driver(client, InspectorReader(path, timeout=.01, poll_interval=.001),
+                            TraceWriter(Path(directory) / "trace"),
+                            strict_ooc=True, max_steps=1)
+            asyncio.run(driver.run())
+            self.assertEqual([call for call in client.calls if call[0] == "choose"],
+                             [("choose", {"choice_index": 2})])
+            decision = json.loads(driver.trace.path.read_text().splitlines()[0])
+            self.assertEqual(decision["decision_source"], "ooc_v4")
+
+    def test_mixed_key_reward_stays_model_decision_before_card_reveal(self):
         screen = {"screen_type": "COMBAT_REWARD", "choice_list": ["Gold", "Emerald Key", "Card"],
                   "ready_for_command": True}
         game = {"screen_state": {"rewards": [
             {"reward_type": "GOLD"}, {"reward_type": "EMERALD_KEY"}, {"reward_type": "CARD"}]}}
         candidates = build_legal_actions(screen, ["choose"])
         self.assertIsNone(card_reward_reveal_action(screen, game, candidates))
-        self.assertEqual(card_reward_reveal_action(screen, game, candidates[1:]).mcp_arguments,
+        self.assertEqual(card_reward_reveal_action(screen, game, candidates[2:]).mcp_arguments,
                          {"choice_index": 3})
 
-    def test_stolen_gold_reward_precedes_card_reveal(self):
+    def test_stolen_gold_reward_allows_card_reveal(self):
         screen = {"screen_type": "COMBAT_REWARD", "choice_list": ["Stolen Gold", "Card"],
                   "ready_for_command": True}
         game = {"screen_state": {"rewards": [
             {"reward_type": "STOLEN_GOLD"}, {"reward_type": "CARD"}]}}
         candidates = build_legal_actions(screen, ["choose"])
-        self.assertIsNone(card_reward_reveal_action(screen, game, candidates))
+        self.assertEqual(card_reward_reveal_action(screen, game, candidates).mcp_arguments,
+                         {"choice_index": 2})
         self.assertEqual(card_reward_reveal_action(screen, game, candidates[1:]).mcp_arguments,
                          {"choice_index": 2})
 
@@ -566,20 +905,25 @@ class OocDriverTest(unittest.TestCase):
                 self.assertEqual(packet["summary"]["outcome"], "error")
                 self.assertIsNotNone(packet["inspector_snapshot"])
 
-    def test_in_combat_card_reward_consumes_explicit_ooc_boundary(self):
+    def test_in_combat_card_reward_requires_silver(self):
         with tempfile.TemporaryDirectory() as directory:
-            screen = {**self.screen(), "room_phase": "COMBAT"}
-            self.assertFalse(_is_combat(screen))
-            for kind in ("NONE", "GRID", "HAND_SELECT"):
+            screen = {**self.screen(), "room_phase": "COMBAT",
+                      "session": "s", "sequence": 1, "observationHash": "h"}
+            for kind in ("NONE", "GRID", "HAND_SELECT", "CARD_REWARD"):
                 self.assertTrue(_is_combat({**screen, "screen_type": kind}))
             client = FakeClient(screen, ["choose"])
-            path = ooc_inspector_file(directory, screen, "UNSUPPORTED", reason="CARD_REWARD_SKIP_UNAVAILABLE")
-            driver = Driver(client, InspectorReader(path), TraceWriter(Path(directory) / "trace"), max_steps=1)
-            asyncio.run(driver.run())
-            self.assertEqual(driver.counters["silver_unsupported"], 0)
-            self.assertEqual(driver.counters["ooc_v4_unsupported"], 1)
-            self.assertEqual([(t, a) for t, a in client.calls if t == "choose"],
-                             [("choose", {"choice_index": 1})])
+            path = inspector_file(directory, "UNSUPPORTED", reason="silver_unmapped_selection_task")
+            driver = Driver(client, InspectorReader(path, timeout=.01), TraceWriter(Path(directory) / "trace"),
+                            strict_silver=True, strict_ooc=True, max_steps=1)
+            with self.assertRaises(DriverError):
+                asyncio.run(driver.run())
+            self.assertEqual(driver.counters["silver_unsupported"], 1)
+            self.assertEqual(driver.counters["ooc_v4_unsupported"], 0)
+            self.assertFalse(any(tool == "choose" for tool, _ in client.calls))
+            candidates = build_legal_actions(screen, ["choose"])
+            self.assertEqual(map_silver_action({"kind": "choose", "choiceIndex": 1},
+                                               candidates).mcp_arguments,
+                             {"choice_index": 1})
 
     def test_top_level_advisor_error_reports_root_cause_without_fallback(self):
         with tempfile.TemporaryDirectory() as directory:
@@ -622,6 +966,26 @@ class OocDriverTest(unittest.TestCase):
         self.assertEqual(map_ooc_action({"kind": "map", "x": 3, "y": 2}, actions).mcp_arguments, {"choice_index": 2})
         with self.assertRaises(IntegrationFailure):
             map_ooc_action({"kind": "map", "x": 9, "y": 2}, actions)
+
+    def test_sole_map_root_accepts_native_zero_visit_shortcut(self):
+        # Real floor-1 map had one path. Native sole-root bypass returned
+        # visits=0, visitShare=1; the driver rejected it before choosing.
+        screen = {"screen_type": "MAP", "choice_list": [{"x": 3, "y": 1}]}
+        selected = {"kind": "map", "x": 3, "y": 1}
+        sole = {"semanticKey": "map:3:1", "q": 0.0, "visits": 0,
+                "visitShare": 1.0, "prior": 1.0, "liveAction": selected}
+        with tempfile.TemporaryDirectory() as directory:
+            path = ooc_inspector_file(directory, screen, status="OK", selectedLiveAction=selected,
+                                      selectedSemanticKey="map:3:1", candidateSummaries=[sole])
+            self.assertEqual(InspectorSnapshot.load(path).ooc_evaluator("mcts_ctm")[
+                "selectedLiveAction"], selected)
+            extra = dict(sole, semanticKey="map:4:1", liveAction={"kind": "map", "x": 4, "y": 1},
+                         visitShare=0.0, prior=0.0)
+            raw = json.loads(path.read_text())
+            raw["response"]["advisor"]["evaluators"][0]["candidateSummaries"] = [sole, extra]
+            path.write_text(json.dumps(raw))
+            with self.assertRaisesRegex(DriverError, "root visits/shares"):
+                InspectorSnapshot.load(path).ooc_evaluator("mcts_ctm")
 
     def test_single_screen_compound_and_controls(self):
         for kind in ("skip", "proceed", "cancel", "confirm"):
@@ -696,14 +1060,37 @@ class OocDriverTest(unittest.TestCase):
             with self.assertRaises(DriverError):
                 driver.menu_action(menu, {"available_tools": ["start_game"]})
 
-    def test_state_change_during_advisor_wait_stops_before_mutation(self):
+    def test_state_change_during_advisor_wait_retries_without_mutation(self):
         with tempfile.TemporaryDirectory() as directory:
             driver, client, _ = self.make(directory)
             client.states = [self.screen(), {**self.screen(), "choice_list": ["Other"]}]
-            with self.assertRaisesRegex(DriverError, "changed while awaiting"):
-                asyncio.run(driver.run())
+            asyncio.run(driver.run())
             self.assertFalse(any(tool in {"choose", "skip"} for tool, _ in client.calls))
-            self.assertIsNotNone(driver.failure_path)
+            self.assertEqual(driver.counters["ooc_v4_ok"], 0)
+            self.assertEqual(driver.steps, 0)
+            self.assertIsNone(driver.failure_path)
+            self.assertIsNone(driver.previous_inspector)
+            rows = [json.loads(line) for line in driver.trace.path.read_text().splitlines()]
+            self.assertEqual(rows[0]["decision_source"], "stale_observation_retry")
+            self.assertNotIn("executed_mcp_tool", rows[0])
+
+    def test_reward_identity_read_does_not_wait_for_advisor(self):
+        with tempfile.TemporaryDirectory() as directory:
+            state = {"screen_type": "COMBAT_REWARD", "choice_list": ["Card"],
+                     "floor": 1, "current_hp": 80}
+            path = Path(directory) / "latest.json"
+            path.write_text(json.dumps({"session": "s", "sequence": 2, "observationHash": "h2",
+                "observation": {"boundary": "ooc", "ooc": {"schemaVersion": 1,
+                    "screen": "combat_reward", "publicState": {"floor": 1, "hp": 80},
+                    "mcpState": state, "liveChoices": [],
+                    "rewardOccurrences": [{"index": 0, "type": "CARD", "identity": "card-1"}]}},
+                "response": {"ready": False, "status": "WAITING"}}))
+            reader = InspectorReader(path, timeout=.01)
+            session, sequence, ooc = asyncio.run(reader.read_ooc_observation_for(state, ("s", 1)))
+            self.assertEqual((session, sequence, ooc["rewardOccurrences"][0]["identity"]),
+                             ("s", 2, "card-1"))
+            with self.assertRaises(DriverError):
+                asyncio.run(reader.read_for(state, ("s", 1)))
 
     def test_missing_ooc_snapshot_cannot_fallback(self):
         with tempfile.TemporaryDirectory() as directory:
@@ -794,8 +1181,10 @@ class OocDriverTest(unittest.TestCase):
             self.assertEqual(mutations, [("choose", {"choice_index": 1}), ("choose", {"choice_index": 1}),
                                          ("cancel", {}), ("proceed", {})])
             self.assertEqual(driver.entered_shop_rooms, {(1, 4)})
-            self.assertEqual(driver.counters["ooc_v4_ok"], 2)
-            self.assertEqual(driver.counters["deterministic_fallback_ooc"], 2)
+            self.assertEqual(driver.counters["ooc_v4_ok"], 1)
+            self.assertEqual(driver.counters["deterministic_fallback_ooc"], 0)
+            rows = [json.loads(line) for line in (Path(directory) / "trace").read_text().splitlines()]
+            self.assertIn("forced_ooc_action", [row.get("decision_source") for row in rows])
 
     def test_shop_entry_is_not_recorded_on_dry_run_or_failed_call(self):
         for dry_run in (True, False):
@@ -858,6 +1247,10 @@ class OocDriverTest(unittest.TestCase):
                 path.write_text(json.dumps(raw))
                 return await original(state, previous)
             reader.read_for = capture
+            async def capture_identity(state, previous=None):
+                snapshot = await capture(state, previous)
+                return snapshot.session, snapshot.sequence, snapshot.raw["observation"]["ooc"]
+            reader.read_ooc_observation_for = capture_identity
             driver = Driver(client, reader, TraceWriter(Path(directory) / "trace"))
             asyncio.run(driver.run())
             self.assertEqual([(t, a) for t, a in client.calls if t in {"choose", "skip", "proceed"}],

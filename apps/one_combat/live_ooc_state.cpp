@@ -1,6 +1,7 @@
 #include "live_ooc_state.h"
 
 #include <algorithm>
+#include <cmath>
 #include <cstdint>
 #include <limits>
 #include <map>
@@ -117,10 +118,13 @@ LiveOocStateV1::LiveOocMctsRootV1 makeMctsRoot(const LiveOocStateV1 &source) {
     root.screenState = source.projected.screenState;
     root.lastRoom = source.projected.lastRoom;
     root.curEvent = source.projected.curEvent;
+    root.noteForYourselfCard = source.projected.noteForYourselfCard;
     root.boss = source.projected.boss;
     // Keep the constructor's public prior for hidden reward/event counters.
     // Live Java's private blizzard counters are deliberately not imported.
     root.shopRemoveCount = source.projected.shopRemoveCount;
+    root.wingBootsCharges = source.projected.wingBootsCharges;
+    root.opaqueCardRewardGroups = source.projected.opaqueCardRewardGroups;
     root.curMapNodeX = source.projected.curMapNodeX;
     root.curMapNodeY = source.projected.curMapNodeY;
     root.floorNum = source.projected.floorNum;
@@ -174,6 +178,32 @@ LiveOocStateV1::LiveOocMctsRootV1 makeMctsRoot(const LiveOocStateV1 &source) {
         0, 1000, "current-act event visits");
     const bool questionHistoryComplete = publicState.contains("questionHistoryComplete")
         ? boolean(publicState, "questionHistoryComplete") : false;
+    const auto &questionOutcomes = array(publicState, "questionOutcomes", 100);
+    if (questionHistoryComplete) {
+        require(questionOutcomes.size() == static_cast<std::size_t>(eventVisits),
+                "complete question history length differs from event visits");
+        int previousFloor = actStartFloor;
+        root.monsterChance = 0.1f;
+        root.shopChance = 0.03f;
+        root.treasureChance = 0.02f;
+        for (const auto &entry : questionOutcomes) {
+            const int floor = integer(entry, "floor", actStartFloor + 1, source.projected.floorNum);
+            require(floor > previousFloor, "question outcomes must follow floor order");
+            previousFloor = floor;
+            const auto outcome = string(entry, "outcome");
+            Room room = Room::INVALID;
+            if (outcome == "MONSTER") room = Room::MONSTER;
+            else if (outcome == "SHOP") room = Room::SHOP;
+            else if (outcome == "TREASURE") room = Room::TREASURE;
+            else if (outcome == "EVENT") room = Room::EVENT;
+            require(room != Room::INVALID, "unknown public question outcome");
+            root.monsterChance = room == Room::MONSTER ? 0.1f : root.monsterChance + 0.1f;
+            root.shopChance = room == Room::SHOP ? 0.03f : root.shopChance + 0.03f;
+            root.treasureChance = room == Room::TREASURE ? 0.02f : root.treasureChance + 0.02f;
+            if (floor == source.projected.floorNum) root.curRoom = room;
+            if (floor + 1 == source.projected.floorNum) root.lastRoom = room;
+        }
+    }
     int normalCombats = 0, eliteCombats = 0;
     require(!combatHistoryComplete || combatHistory.size() == completedCombatFloors.size(),
         "complete combat history length differs from public combat metric");
@@ -273,6 +303,7 @@ LiveOocStateV1::LiveOocMctsRootV1 makeMctsRoot(const LiveOocStateV1 &source) {
             case Event::BIG_FISH:
             case Event::PLEADING_VAGRANT:
             case Event::DEAD_ADVENTURER:
+            case Event::COLOSSEUM:
                 return true;
             default:
                 return false;
@@ -296,11 +327,7 @@ LiveOocStateV1::LiveOocMctsRootV1 makeMctsRoot(const LiveOocStateV1 &source) {
     // MAP roots are searchable with sampled room-outcome belief particles;
     // stopAtMapCheckpoint applies only after a searched transition. Random
     // relic branches still require complete public offer history.
-    if (source.projected.screenState == ScreenState::MAP_SCREEN
-            && source.projected.wingBootsCharges > 0) {
-        result.supported = false;
-        result.reason = "RELIC_NATIVE_STATE_UNREPRESENTABLE:WingedGreaves:active";
-    } else if (!combatHistoryComplete) {
+    if (!combatHistoryComplete) {
         result.supported = false;
         result.reason = "PUBLIC_COMBAT_CLASS_HISTORY_UNQUALIFIED";
     } else if (!questionHistoryComplete && eventVisits > 0) {
@@ -326,18 +353,12 @@ ImportResult importLiveOocStateV1(const J &observation, LiveOocStateV1 &out) {
         std::string deferredUnsupportedReason;
         if (o.contains("unsupportedReason")) {
             const auto reason = string(o,"unsupportedReason");
-            // Non-MAP screens may carry the relic through continuation, but a
-            // direct MAP decision with active charges is fail-closed because
-            // the frozen value models do not encode remaining charges.
-            const bool boundedWinged = reason
-                    == "RELIC_NATIVE_STATE_UNREPRESENTABLE:WingedGreaves:active"
-                && screenName != "map";
             // A normal combat reward can expose gold alongside an unopened
             // card group. Defer this one support boundary until the complete
             // capture and its live mappings have been validated below.
             const bool hiddenCardReward = reason == "CARD_GROUP_NOT_REVEALED"
                 && (screenName == "combat_reward" || screenName == "rewards");
-            if (!reason.empty() && !boundedWinged && !hiddenCardReward)
+            if (!reason.empty() && !hiddenCardReward)
                 return {false,"UNSUPPORTED",reason};
             if (hiddenCardReward) deferredUnsupportedReason = reason;
         }
@@ -466,6 +487,30 @@ ImportResult importLiveOocStateV1(const J &observation, LiveOocStateV1 &out) {
             next.path.lastNodeKey = static_cast<long>(g.act) * 100000L
                 + static_cast<long>(g.curMapNodeY) * 100L + g.curMapNodeX;
         g.screenState=screen(screenName);
+        if (g.screenState == ScreenState::MAP_SCREEN
+                && g.curMapNodeX == -1 && g.curMapNodeY == 15
+                && g.act >= 2 && g.act <= 3
+                && g.floorNum == 17 * (g.act - 1)
+                && boolean(p, "pathComplete")
+                && o.contains("mcpState") && o.at("mcpState").is_object()) {
+            const auto &mcp = o.at("mcpState");
+            if (mcp.value("screen_type", "") == "MAP"
+                    && mcp.contains("screen_state") && mcp.at("screen_state").is_object()) {
+                const auto &state = mcp.at("screen_state");
+                const auto &current = state.at("current_node");
+                const auto &nextNodes = array(state, "next_nodes", 7);
+                require(!boolean(state, "first_node_chosen")
+                            && integer(current, "x", -1, 6) == -1
+                            && integer(current, "y", -1, 15) == 15
+                            && !nextNodes.empty(), "invalid next-act map sentinel");
+                for (const auto &node : nextNodes)
+                    require(integer(node, "y", 0, 14) == 0,
+                            "next-act map choices must start in row zero");
+                // Vanilla retains the previous boss node while displaying the
+                // new act's first row. Native transitionToAct uses (-1,-1).
+                g.curMapNodeY = -1;
+            }
+        }
         if (g.screenState == ScreenState::REST_ROOM && o.contains("details")
                 && o.at("details").is_object() && o.at("details").contains("options")) {
             const auto &options = o.at("details").at("options");
@@ -476,8 +521,18 @@ ImportResult importLiveOocStateV1(const J &observation, LiveOocStateV1 &out) {
         if (g.screenState==ScreenState::MAP_SCREEN && g.curMapNodeY>=14)
             return {false,"UNSUPPORTED","V4_BOSS_MAP_TRANSITION"};
         const auto &d=o.at("details"); require(d.is_object(),"details must be an object");
+        if(g.screenState==ScreenState::TREASURE_ROOM && !d.value("opened",false)) {
+            const auto size=string(d,"chestSize");
+            if(size=="SMALL")g.info.chestSize=ChestSize::SMALL;
+            else if(size=="MEDIUM")g.info.chestSize=ChestSize::MEDIUM;
+            else if(size=="LARGE")g.info.chestSize=ChestSize::LARGE;
+            else return {false,"UNSUPPORTED","TREASURE_STATE_UNREPRESENTABLE:chest_size"};
+        }
         if(g.screenState==ScreenState::REWARDS) {
             auto &r=g.info.rewardsContainer;
+            g.opaqueCardRewardGroups = d.value("opaqueCardRewardGroups", 0);
+            require(g.opaqueCardRewardGroups >= 0 && g.opaqueCardRewardGroups <= 5,
+                    "opaqueCardRewardGroups out of range");
             for(const auto &v:array(d,"gold",2)) r.addGold(integerValue(v,0,1000000,"gold reward"));
             for(const auto &group:array(d,"cardRewards",5)) {
                 require(group.is_array() && !group.empty() && group.size()<=4,"invalid card reward group");
@@ -505,6 +560,7 @@ ImportResult importLiveOocStateV1(const J &observation, LiveOocStateV1 &out) {
             if(kind=="upgrade")g.info.selectScreenType=CardSelectScreenType::UPGRADE;
             else if(kind=="remove")g.info.selectScreenType=CardSelectScreenType::REMOVE;
             else if(kind=="transform")g.info.selectScreenType=CardSelectScreenType::TRANSFORM;
+            else if(kind=="bottle")g.info.selectScreenType=CardSelectScreenType::BOTTLE;
             else return {false,"UNSUPPORTED","selector_type:"+kind};
             g.info.toSelectCount=integer(d,"requiredPicks",1,3);
             for(const auto &v:array(d,"cards",96)) {
@@ -519,11 +575,92 @@ ImportResult importLiveOocStateV1(const J &observation, LiveOocStateV1 &out) {
             g.curEvent=event=="Neow" ? Event::NEOW : id<Event>(d.at("event"),Event::INVALID);
             g.info.eventData=integer(d,"eventData",0,100);
             g.info.phase=integer(d,"phase",0,100);
+            if (g.curEvent == Event::NLOTH) {
+                require(g.info.phase == 0, "N'loth phase unsupported");
+                require(g.relics.size() >= 2, "N'loth requires two owned relics");
+                g.info.relicIdx0 = integer(d, "relicIdx0", 0, g.relics.size() - 1);
+                g.info.relicIdx1 = integer(d, "relicIdx1", 0, g.relics.size() - 1);
+                require(g.info.relicIdx0 != g.info.relicIdx1,
+                        "N'loth offered relic indices must be distinct");
+                const auto offered0 = id<RelicId>(d.at("relicOffer0"), RelicId::INVALID);
+                const auto offered1 = id<RelicId>(d.at("relicOffer1"), RelicId::INVALID);
+                require(offered0 != RelicId::INVALID && offered1 != RelicId::INVALID
+                        && offered0 != offered1
+                        && g.relics.relics[g.info.relicIdx0].id == offered0
+                        && g.relics.relics[g.info.relicIdx1].id == offered1,
+                        "N'loth offered relic identities do not match owned relic order");
+            }
+            if (g.curEvent == Event::BIG_FISH) {
+                g.info.hpAmount0 = integer(d, "hpAmount0", 0, g.maxHp);
+                require(g.info.hpAmount0 == g.maxHp / 3,
+                        "Big Fish public heal differs from native setup: captured="
+                        + std::to_string(g.info.hpAmount0) + " maxHp=" + std::to_string(g.maxHp));
+            }
+            if (g.curEvent == Event::GHOSTS) {
+                require(g.maxHp > 1, "Ghosts max HP is not valid");
+                g.info.hpAmount0 = integer(d, "hpAmount0", 1, g.maxHp - 1);
+                require(g.info.hpAmount0 == std::min(g.maxHp - 1, (g.maxHp + 1) / 2),
+                        "Ghosts public max-HP loss differs from native setup");
+            }
+            if (g.curEvent == Event::KNOWING_SKULL) {
+                g.info.hpAmount0 = integer(d, "hpAmount0", 0, 100);
+                g.info.hpAmount1 = integer(d, "hpAmount1", 0, 100);
+                g.info.hpAmount2 = integer(d, "hpAmount2", 0, 100);
+            }
+            if (g.curEvent == Event::NOTE_FOR_YOURSELF)
+                g.noteForYourselfCard = card(d.at("noteForYourselfCard"));
+            if (g.curEvent == Event::DEAD_ADVENTURER) {
+                require(g.info.phase == 0, "Dead Adventurer later phase unsupported");
+                const int encounter = integer(d,"deadAdventurerEncounter",0,2);
+                constexpr MonsterEncounter encounters[] {MonsterEncounter::THREE_SENTRIES,
+                    MonsterEncounter::GREMLIN_NOB, MonsterEncounter::LAGAVULIN_EVENT};
+                g.info.encounter = encounters[encounter];
+                g.info.rewards = {0,1,2}; // Hidden order is shuffled per root sample.
+            }
+            if(g.curEvent==Event::SHINING_LIGHT)
+                g.info.hpAmount0=integer(d,"hpAmount0",1,g.maxHp);
+            if(g.curEvent==Event::FORGOTTEN_ALTAR)
+                g.info.hpAmount0=integer(d,"hpAmount0",0,g.maxHp);
+            if(g.curEvent==Event::THE_LIBRARY)
+                g.info.hpAmount0=integer(d,"hpAmount0",1,g.maxHp);
+            if(g.curEvent==Event::FACE_TRADER) {
+                g.info.hpAmount0=integer(d,"hpAmount0",1,g.maxHp);
+                require(g.info.hpAmount0==std::max(1,g.maxHp/10),"Face Trader public HP loss differs from native setup");
+            }
+            if(g.curEvent==Event::VAMPIRES) {
+                g.info.hpAmount0=integer(d,"hpAmount0",1,g.maxHp-1);
+                require(g.info.hpAmount0==std::min(g.maxHp-1,
+                    static_cast<int>(std::ceil(0.3f*g.maxHp))),
+                    "Vampires public max-HP loss differs from native setup");
+            }
+            if(g.curEvent==Event::WINDING_HALLS) {
+                g.info.hpAmount0=integer(d,"hpAmount0",1,g.maxHp);
+                g.info.hpAmount1=integer(d,"hpAmount1",1,g.maxHp);
+                g.info.hpAmount2=integer(d,"hpAmount2",1,g.maxHp);
+            }
+            if(g.curEvent==Event::WORLD_OF_GOOP)
+                g.info.goldLoss=integer(d,"goldLoss",0,g.gold);
+            if(g.curEvent==Event::GOLDEN_IDOL) {
+                g.info.hpAmount0=integer(d,"hpAmount0",1,g.maxHp);
+                g.info.hpAmount1=integer(d,"hpAmount1",1,g.maxHp);
+            }
             // Fields used by native candidate/semantic enumeration are explicit even when inactive.
             g.info.upgradeOne=boolean(d,"upgradeOne");g.info.cleanUpIsRemoveCard=boolean(d,"cleanUpIsRemoveCard");
             g.info.skillCardDeckIdx=integer(d,"skillCardDeckIdx",-1,g.deck.size()-1);
             g.info.powerCardDeckIdx=integer(d,"powerCardDeckIdx",-1,g.deck.size()-1);
             g.info.attackCardDeckIdx=integer(d,"attackCardDeckIdx",-1,g.deck.size()-1);
+            if(g.curEvent==Event::FALLING) {
+                const auto validFallingIndex=[&](int index,CardType type) {
+                    return index==-1 || (g.deck.cards[index].getType()==type
+                        && !g.deck.isCardBottled(index));
+                };
+                require(validFallingIndex(g.info.skillCardDeckIdx,CardType::SKILL)
+                        && validFallingIndex(g.info.powerCardDeckIdx,CardType::POWER)
+                        && validFallingIndex(g.info.attackCardDeckIdx,CardType::ATTACK)
+                        && (g.info.skillCardDeckIdx>=0 || g.info.powerCardDeckIdx>=0
+                            || g.info.attackCardDeckIdx>=0),
+                    "Falling offered-card identities differ from eligible deck cards");
+            }
             g.info.potionIdx=integer(d,"potionIdx",-1,4);g.info.gold=integer(d,"gold",-1,1000000);
             g.info.cardIdx=integer(d,"cardIdx",-1,g.deck.size()-1);
             if(g.curEvent==Event::NEOW) {
@@ -533,10 +670,6 @@ ImportResult importLiveOocStateV1(const J &observation, LiveOocStateV1 &out) {
                     g.info.neowRewards[i].d=id<Neow::Drawback>(ns[i].at("drawback"),Neow::Drawback::INVALID);
                 }
             }
-            if (g.curEvent == Event::THE_LIBRARY
-                    || g.curEvent == Event::HYPNOTIZING_COLORED_MUSHROOMS
-                    || g.curEvent == Event::MYSTERIOUS_SPHERE)
-                return {false,"UNSUPPORTED","PUBLIC_REWARD_PITY_HISTORY_UNQUALIFIED"};
         }
         for(const auto &choice:array(o,"liveChoices",1024)) {
             primitive(choice,g.screenState);validateHint(choice.at("liveAction"));

@@ -145,7 +145,7 @@ bool isValidSingleCardSelectAction(const BattleContext &bc, const search::Action
             return a.getSelectIdx() >= 0 && a.getSelectIdx() < 4;
 
         case CardSelectTask::DISCOVERY:
-            return a.getSelectIdx() >= 0 && a.getSelectIdx() < 3;
+            return a.getSelectIdx() >= 0 && a.getSelectIdx() < (bc.cardSelectInfo.canPickZero ? 4 : 3);
 
         case CardSelectTask::HOLOGRAM:
         case CardSelectTask::LIQUID_MEMORIES_POTION:
@@ -370,7 +370,7 @@ void executeSingleCardSelectActionHelper(BattleContext &bc, search::Action a) {
             break;
 
         case CardSelectTask::DISCOVERY:
-            bc.chooseDiscoveryCard(bc.cardSelectInfo.discovery_Cards()[idx]);
+            if (idx != 3) bc.chooseDiscoveryCard(bc.cardSelectInfo.discovery_Cards()[idx]);
             break;
 
         case CardSelectTask::DUAL_WIELD:
@@ -573,7 +573,7 @@ std::vector<search::Action> search::Action::enumerateCardSelectActions(const Bat
             break;
 
         case CardSelectTask::DISCOVERY:
-            for (int i = 0; i < 3; ++i) {
+            for (int i = 0; i < (bc.cardSelectInfo.canPickZero ? 4 : 3); ++i) {
                 actions.push_back({Action(search::ActionType::SINGLE_CARD_SELECT, i)});
             }
             break;

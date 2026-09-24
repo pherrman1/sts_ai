@@ -1,6 +1,8 @@
 package stsmodelinspector;
 
 import java.util.HashMap;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 
 /** Pure projection tests: no game, rendering context, RNG, or save is initialized. */
@@ -18,6 +20,11 @@ public final class LiveOocCaptureTest {
             throw new AssertionError(id + ": " + actual + " " + state);
     }
     public static void main(String[] args) throws Exception {
+        if (LiveOocCapture.hasStrategicParentReward(Arrays.asList("CARD", "GOLD", "STOLEN_GOLD"))
+                || !LiveOocCapture.hasStrategicParentReward(Arrays.asList("CARD", "SAPPHIRE_KEY"))
+                || !LiveOocCapture.hasStrategicParentReward(Arrays.asList("RELIC"))
+                || !LiveOocCapture.hasStrategicParentReward(Arrays.asList("POTION")))
+            throw new AssertionError("opaque card reward boundary did not distinguish strategic parent rewards");
         check("MawBank", -1, false, 1, null);
         check("MawBank", -2, true, 0, null);
         check("Happy Flower", 2, false, 2, null);
@@ -26,13 +33,38 @@ public final class LiveOocCaptureTest {
         check("Omamori", 2, false, 2, null);
         check("NeowsBlessing", -2, true, -2, null);
         check("Burning Blood", -1, false, -1, null);
-        check("Lizard Tail", -1, false, -1, "RELIC_NATIVE_STATE_UNREPRESENTABLE:Lizard Tail:active");
+        check("Lizard Tail", -1, false, 1, null);
         check("Lizard Tail", -2, true, 0, null);
         check("Matryoshka", 2, false, 2, "RELIC_NATIVE_STATE_UNREPRESENTABLE:Matryoshka:active");
         check("WingedGreaves", 3, false, 0, null);
         check("NlothsMask", 1, false, 1, "RELIC_NATIVE_STATE_UNREPRESENTABLE:NlothsMask:active");
         check("Matryoshka", -2, true, 0, null);
         check("UnqualifiedCounter", 3, false, 3, "RELIC_NATIVE_COUNTER_UNQUALIFIED:UnqualifiedCounter");
+        if (!LiveOocCapture.bottlePromptMatches("Choose a card for Bottled Tornado.",
+                    "Choose a card for ", "Bottled Tornado", ".")
+                || LiveOocCapture.bottlePromptMatches("Choose a card to upgrade.",
+                    "Choose a card for ", "Bottled Tornado", ".")
+                || LiveOocCapture.bottlePromptMatches(null,
+                    "Choose a card for ", "Bottled Tornado", "."))
+            throw new AssertionError("bottle selector prompt identity widened");
+        if (!"remove".equals(LiveOocCapture.selectorType(false, false, false, "other", "NeowRoom", 2))
+                || !"transform".equals(LiveOocCapture.selectorType(false, false, true, "other", "NeowRoom", 2))
+                || !"other".equals(LiveOocCapture.selectorType(false, false, false, "other", "MonsterRoom", 2)))
+            throw new AssertionError("Neow REMOVE_TWO selector was not distinguished from transform/unknown grids");
+        List<String> skullLabels = Arrays.asList(
+                "[A Pick Me Up?] Get a Potion. Lose 6 HP.",
+                "[Riches?] Gain 90 Gold. Lose 6 HP.",
+                "[Success?] Get a Colorless Card. Lose 6 HP.",
+                "[How do I leave?] Lose 6 HP.");
+        List<Map<String,Object>> skullOptions = Arrays.asList(
+                obj("index", 2), obj("index", 0), obj("index", 1), obj("index", 3));
+        if (LiveOocCapture.knowingSkullNativeIndex(skullLabels.get(0)) != 2
+                || LiveOocCapture.knowingSkullNativeIndex(skullLabels.get(1)) != 0
+                || LiveOocCapture.knowingSkullNativeIndex(skullLabels.get(2)) != 1
+                || LiveOocCapture.knowingSkullNativeIndex(skullLabels.get(3)) != 3
+                || !LiveOocCapture.knowingSkullAskVisible("ASK", skullLabels, skullOptions, 6, 6, 6, 6)
+                || LiveOocCapture.knowingSkullAskVisible("ASK", skullLabels, skullOptions, 7, 6, 6, 6))
+            throw new AssertionError("Knowing Skull costs or public option order did not match native event actions");
         if (!"GAMBLE".equals(STSModelInspector.handSelectionTask("", true, true, 99)))
             throw new AssertionError("Gambler's Brew hand selector was not classified as GAMBLE");
         if (!"".equals(STSModelInspector.handSelectionTask("", false, true, 99)))
@@ -60,6 +92,116 @@ public final class LiveOocCaptureTest {
                 persistedPath, false, "", 2, java.util.Arrays.asList(16, 18));
         if (!"BOSS".equals(qualified.get(15)) || !"MONSTER".equals(qualified.get(16)))
             throw new AssertionError("completed public boss marker stayed incomplete in Act 2");
+        java.util.List<String> act3Path = new java.util.ArrayList<>();
+        for (int i = 0; i < 15; ++i) act3Path.add("M");
+        act3Path.add("unknown-boss-marker");
+        for (int i = 0; i < 15; ++i) act3Path.add("R");
+        act3Path.add("unknown-boss-marker");
+        java.util.List<String> act3Qualified = LiveOocCapture.canonicalPathHistory(
+                act3Path, true, "", 3, java.util.Arrays.asList(16, 33));
+        if (!"BOSS".equals(act3Qualified.get(31)))
+            throw new AssertionError("completed Act 2 boss marker was lost at Act 3 map entry");
+        java.util.List<String> sensoryLabels = java.util.Arrays.asList(
+                "[Recall] Add 1 Colorless card to your deck.",
+                "[Recall] Add 2 Colorless cards to your deck. Lose 5 HP.",
+                "[Recall] Add 3 Colorless cards to your deck. Lose 10 HP.");
+        java.util.List<Map<String,Object>> sensoryOptions = new java.util.ArrayList<>();
+        for (int i = 0; i < 3; ++i) sensoryOptions.add(obj("index", i));
+        if (!"Sensory Stone".equals(LiveOocCapture.canonicalEventId("SensoryStone"))
+                || !LiveOocCapture.sensoryStoneInitialVisible(
+                        "INTRO_2", sensoryLabels, sensoryOptions)
+                || LiveOocCapture.sensoryStoneInitialVisible(
+                        "OTHER", sensoryLabels, sensoryOptions))
+            throw new AssertionError("Sensory Stone public Recall choices lost native indices or costs");
+        java.util.List<String> priorEvents = new java.util.ArrayList<>();
+        LiveOocCapture.addPriorEvent(priorEvents, "SensoryStone");
+        LiveOocCapture.addPriorEvent(priorEvents, "Sensory Stone");
+        if (priorEvents.size() != 1 || !"Sensory Stone".equals(priorEvents.get(0)))
+            throw new AssertionError("Sensory Stone metric history retained its raw Java ID");
+        java.util.List<Map<String,Object>> designerOptions = new java.util.ArrayList<>();
+        for (int i = 0; i < 4; ++i) designerOptions.add(obj("index", i));
+        java.util.List<String> designerLabels = java.util.Arrays.asList(
+                "[Adjustments] Lose 40 Gold. Upgrade a card.",
+                "[Clean Up] Lose 60 Gold. Transform 2 cards.",
+                "[Full Service] Lose 90 Gold. Remove a card and upgrade a random card.",
+                "[Punch] Lose 3 HP.");
+        if (!java.util.Arrays.equals(new int[] {0, 3, 4, 5},
+                LiveOocCapture.designerInitialNativeIndices("0", designerLabels,
+                        designerOptions, true, false, 40, 60, 90, 3, 0))
+                || LiveOocCapture.designerInitialNativeIndices("1", designerLabels,
+                        designerOptions, true, false, 40, 60, 90, 3, 0) != null)
+            throw new AssertionError("Designer visible services lost native option identities");
+        designerLabels = java.util.Arrays.asList(
+                "[Adjustments] Lose 50 Gold. Upgrade 2 random cards.",
+                "[Clean Up] Lose 75 Gold. Remove a card.",
+                "[Full Service] Lose 110 Gold. Remove a card and upgrade a random card.",
+                "[Punch] Lose 5 HP.");
+        if (!java.util.Arrays.equals(new int[] {1, 2, 4, 5},
+                LiveOocCapture.designerInitialNativeIndices("0", designerLabels,
+                        designerOptions, false, true, 50, 75, 110, 5, 20)))
+            throw new AssertionError("Designer high-ascension services lost native option identities");
+        java.util.List<Map<String,Object>> banditOptions = java.util.Arrays.asList(
+                obj("index", 0), obj("index", 1));
+        java.util.List<String> banditLabels = java.util.Arrays.asList(
+                "[Pay] Lose ALL of your Gold.", "[Fight!]");
+        if (!LiveOocCapture.maskedBanditsInitialVisible("INTRO", banditLabels, banditOptions)
+                || LiveOocCapture.maskedBanditsInitialVisible("LEAVE", banditLabels, banditOptions))
+            throw new AssertionError("Masked Bandits Pay/Fight event phase was misidentified");
+        java.util.List<String> libraryLabels = java.util.Arrays.asList(
+                "[Read] Choose 1 of 20 cards to add to your deck.", "[Sleep] Heal 26 HP.");
+        if (!LiveOocCapture.libraryInitialVisible("0", libraryLabels, banditOptions, 26)
+                || LiveOocCapture.libraryInitialVisible("1", libraryLabels, banditOptions, 26)
+                || LiveOocCapture.libraryInitialVisible("0", libraryLabels, banditOptions, 25))
+            throw new AssertionError("Library public Read/Sleep choice or heal was misidentified");
+        java.util.List<Map<String,Object>> augmenterOptions = java.util.Arrays.asList(
+                obj("index", 0), obj("index", 1), obj("index", 2));
+        java.util.List<String> augmenterLabels = java.util.Arrays.asList(
+                "[Test J.A.X.] Get JAXXED.",
+                "[Become Test Subject] Transform 2 cards.",
+                "[Ingest Mutagens] Obtain a special relic.");
+        if (!LiveOocCapture.augmenterInitialVisible("0", augmenterLabels, augmenterOptions)
+                || LiveOocCapture.augmenterInitialVisible("1", augmenterLabels, augmenterOptions)
+                || LiveOocCapture.augmenterInitialVisible("0", augmenterLabels, banditOptions))
+            throw new AssertionError("Augmenter initial options lost their native indices");
+        java.util.List<String> writingLabels = java.util.Arrays.asList(
+                "[Elegance] Remove a card from your deck.",
+                "[Simplicity] Upgrade all Strikes and Defends.");
+        if (!LiveOocCapture.ancientWritingInitialVisible("INTRO", writingLabels, banditOptions)
+                || LiveOocCapture.ancientWritingInitialVisible("LEAVE", writingLabels, banditOptions)
+                || LiveOocCapture.ancientWritingInitialVisible("INTRO", writingLabels, augmenterOptions))
+            throw new AssertionError("Ancient Writing initial options lost their native indices");
+        java.util.List<String> hallsLabels = java.util.Arrays.asList(
+                "[Embrace Madness] Receive 2 Madness. Lose 11 HP.",
+                "[Focus] Become Cursed - Writhe. Heal 22 HP.",
+                "[Retrace Your Steps] Lose 4 Max HP.");
+        if (!LiveOocCapture.windingHallsChoiceVisible("1", hallsLabels, augmenterOptions, 11, 22, 4)
+                || LiveOocCapture.windingHallsChoiceVisible("0", hallsLabels, augmenterOptions, 11, 22, 4)
+                || LiveOocCapture.windingHallsChoiceVisible("1", hallsLabels, augmenterOptions, 12, 22, 4))
+            throw new AssertionError("Winding Halls public HP costs or options were misidentified");
+        java.util.List<String> faceLabels = java.util.Arrays.asList(
+                "[Touch] Lose 8 HP, gain 75 Gold.",
+                "[Trade] 50%: Good Face. 50%: Bad Face.", "[Leave]");
+        if (!LiveOocCapture.faceTraderChoiceVisible("MAIN", faceLabels, augmenterOptions, 8, 75, 0)
+                || LiveOocCapture.faceTraderChoiceVisible("INTRO", faceLabels, augmenterOptions, 8, 75, 0)
+                || LiveOocCapture.faceTraderChoiceVisible("MAIN", faceLabels, augmenterOptions, 9, 75, 0)
+                || LiveOocCapture.faceTraderChoiceVisible("MAIN", faceLabels, augmenterOptions, 8, 75, 20))
+            throw new AssertionError("Face Trader public Touch and Trade options were misidentified");
+        java.util.List<String> addictLabels = java.util.Arrays.asList(
+                "[Offer Gold] 85 Gold: Obtain a Relic.",
+                "[Rob] Obtain a Relic. Become Cursed - Shame.", "[Leave]");
+        if (!LiveOocCapture.addictInitialVisible("0", addictLabels, augmenterOptions, 85)
+                || LiveOocCapture.addictInitialVisible("1", addictLabels, augmenterOptions, 85)
+                || LiveOocCapture.addictInitialVisible("0", addictLabels, augmenterOptions, 84))
+            throw new AssertionError("Addict initial public Pay/Rob/Leave options were misidentified");
+        java.util.List<String> vampireLabels = java.util.Arrays.asList(
+                "[Accept] Remove all Strikes. Receive 5 Bites. Lose 32 Max HP.", "[Refuse]");
+        if (!LiveOocCapture.vampiresNoVialInitialVisible("0", vampireLabels, banditOptions, 32, false)
+                || LiveOocCapture.vampiresNoVialInitialVisible("0", vampireLabels, banditOptions, 32, true)
+                || LiveOocCapture.vampiresNoVialInitialVisible("0", vampireLabels, banditOptions, 31, false))
+            throw new AssertionError("Vampires no-vial choices lost their native indices or HP cost");
+        if (!"INVALID".equals(LiveOocCapture.canonicalPathHistory(
+                act3Path, true, "", 3, java.util.Arrays.asList(16)).get(31)))
+            throw new AssertionError("unconfirmed Act 2 boss marker was promoted");
         if (!"INVALID".equals(LiveOocCapture.canonicalPathHistory(
                 persistedPath, false, "", 2, java.util.Arrays.asList(18)).get(15)))
             throw new AssertionError("unknown path marker was promoted without a boss combat");
@@ -80,13 +222,13 @@ public final class LiveOocCaptureTest {
                 || !"CHEST_ALREADY_OPEN".equals(openedChest.get("unsupportedReason")))
             throw new AssertionError("open chest without Proceed exposed a false live action");
         Map<String,Object> phaseUnsupported = obj("publicState", obj("pathComplete", true,
-                "unsupportedReason", "RELIC_NATIVE_STATE_UNREPRESENTABLE:WingedGreaves:active"),
+                "unsupportedReason", "RELIC_NATIVE_STATE_UNREPRESENTABLE:Lizard Tail:active"),
                 "unsupportedReason", "EVENT_PHASE_UNREPRESENTABLE:Beggar:LEAVE");
         LiveOocCapture.finalizeSupportReason(phaseUnsupported);
         if (!"EVENT_PHASE_UNREPRESENTABLE:Beggar:LEAVE".equals(phaseUnsupported.get("unsupportedReason")))
             throw new AssertionError("relic warning hid the unsupported event outro phase");
         Map<String,Object> missingPath = obj("publicState", obj("pathComplete", false,
-                "unsupportedReason", "RELIC_NATIVE_STATE_UNREPRESENTABLE:WingedGreaves:active"));
+                "unsupportedReason", "RELIC_NATIVE_STATE_UNREPRESENTABLE:Lizard Tail:active"));
         LiveOocCapture.finalizeSupportReason(missingPath);
         if (!"PATH_HISTORY_UNAVAILABLE".equals(missingPath.get("unsupportedReason")))
             throw new AssertionError("relic warning hid incomplete public path history");
@@ -111,13 +253,146 @@ public final class LiveOocCaptureTest {
         if (!"Neow".equals(LiveOocCapture.canonicalEventId("NEOW"))
                 || !"Big Fish".equals(LiveOocCapture.canonicalEventId("Big Fish")))
             throw new AssertionError("event canonical save identity mismatch");
-        if (!LiveOocCapture.simpleInitialEventSupported("WomanInBlue")
-                || LiveOocCapture.simpleInitialEventSupported("WomanInBlueDialogue")
-                || LiveOocCapture.simpleInitialEventSupported("ShiningLight")
-                || LiveOocCapture.simpleInitialEventSupported("Ghosts")
-                || LiveOocCapture.simpleInitialEventSupported("WindingHalls")
-                || LiveOocCapture.simpleInitialEventSupported("WorldOfGoop"))
-            throw new AssertionError("Woman in Blue initial-phase support boundary mismatch");
+        if (!LiveOocCapture.nativeIndexedInitialEventVisible("INTRO",
+                    Arrays.asList("[Offer]", "[Leave]"),
+                    Arrays.asList(obj("index", 1), obj("index", 2)))
+                || !LiveOocCapture.nativeIndexedInitialEventVisible(0,
+                    Arrays.asList("[Pay]", "[Leave]"),
+                    Arrays.asList(obj("index", 0), obj("index", 1)))
+                || LiveOocCapture.nativeIndexedInitialEventVisible("RESULT",
+                    Arrays.asList("[Offer]", "[Leave]"),
+                    Arrays.asList(obj("index", 0), obj("index", 1)))
+                || LiveOocCapture.nativeIndexedInitialEventVisible("INTRO",
+                    Arrays.asList("[Offer]", "[Leave]"),
+                    Arrays.asList(obj("index", 1), obj("index", 1)))
+                || LiveOocCapture.nativeIndexedInitialEventVisible("INTRO",
+                    Arrays.asList("[Offer]", "[Leave]"),
+                    Arrays.asList(obj("index", 1), obj("index", 8))))
+            throw new AssertionError("generic native-indexed event surface qualification mismatch");
+        Object relicA = new Object(), relicB = new Object(), relicC = new Object();
+        int[] nlothPair = LiveOocCapture.nlothInitialRelicIndices(
+                Arrays.asList(relicA, relicB, relicC), relicC, relicA);
+        List<String> nlothLabels = Arrays.asList("[Offer: Odd Mushroom]", "[Offer: Anchor]", "[Leave]");
+        List<Map<String,Object>> nlothOptions = Arrays.asList(
+                obj("index", 0), obj("index", 1), obj("index", 2));
+        if (nlothPair[0] != 2 || nlothPair[1] != 0
+                || !LiveOocCapture.nlothInitialOfferVisible("INTRO", nlothLabels,
+                        nlothOptions, nlothPair[0], nlothPair[1], "Odd Mushroom", "Anchor")
+                || !LiveOocCapture.nlothInitialOfferVisible(0, nlothLabels,
+                        nlothOptions, nlothPair[0], nlothPair[1], "Odd Mushroom", "Anchor")
+                || LiveOocCapture.nlothInitialOfferVisible("INTRO", nlothLabels,
+                        nlothOptions, nlothPair[0], nlothPair[1], "Anchor", "Odd Mushroom"))
+            throw new AssertionError("N'loth visible relics were not bound to exact native option indices");
+        boolean nlothAbsentRejected = false, nlothAmbiguousRejected = false;
+        try { LiveOocCapture.nlothInitialRelicIndices(Arrays.asList(relicA, relicB), relicC, relicA); }
+        catch (IllegalArgumentException expected) { nlothAbsentRejected = true; }
+        try { LiveOocCapture.nlothInitialRelicIndices(Arrays.asList(relicA, relicA, relicB), relicA, relicB); }
+        catch (IllegalArgumentException expected) { nlothAmbiguousRejected = true; }
+        if (!nlothAbsentRejected || !nlothAmbiguousRejected)
+            throw new AssertionError("N'loth missing or ambiguous relic identity did not fail closed");
+        String[] adventurerDescriptions = {"", "", "search", "sentries", "nob", "lagavulin", "ending"};
+        if (LiveOocCapture.deadAdventurerPublicEncounter(0,
+                    Arrays.asList("[Search] 25%", "[Leave]"),
+                    Arrays.asList(obj("index", 0), obj("index", 1)),
+                    "searchsentriesending", adventurerDescriptions, 0) != 0)
+            throw new AssertionError("Dead Adventurer numeric intro phase lost its public encounter");
+        if (!LiveOocCapture.bigFishInitialVisible("INTRO",
+                    Arrays.asList("[Banana] Heal 20 HP", "[Donut] Gain 5 Max HP", "[Box] Obtain Relic"),
+                    Arrays.asList(obj("index", 0), obj("index", 1), obj("index", 2)), 20, 60)
+                || LiveOocCapture.bigFishInitialVisible("INTRO",
+                    Arrays.asList("[Banana] Heal 19 HP", "[Donut] Gain 5 Max HP", "[Box] Obtain Relic"),
+                    Arrays.asList(obj("index", 0), obj("index", 1), obj("index", 2)), 19, 60))
+            throw new AssertionError("Big Fish heal and native options were not qualified together");
+        if (!LiveOocCapture.ghostsInitialVisible("INTRO",
+                    Arrays.asList("[Accept] Receive 5 Apparition. Lose 30 Max HP", "[Refuse]"),
+                    Arrays.asList(obj("index", 0), obj("index", 1)), 30, 60, 0)
+                || LiveOocCapture.ghostsInitialVisible("INTRO",
+                    Arrays.asList("[Accept] Receive 5 Apparition. Lose 29 Max HP", "[Refuse]"),
+                    Arrays.asList(obj("index", 0), obj("index", 1)), 29, 60, 0)
+                || !LiveOocCapture.ghostsInitialVisible(0,
+                    Arrays.asList("[Accept] Receive 3 Apparition. Lose 30 Max HP", "[Leave]"),
+                    Arrays.asList(obj("index", 0), obj("index", 1)), 30, 60, 15))
+            throw new AssertionError("Ghosts max-HP loss and native options were not qualified together");
+        if (LiveOocCapture.mindBloomNativeOptionIndex("MindBloom", "INTRO",
+                    "[I am Healthy] Heal to full HP. Cursed - Doubt.", 2, 48) != 3
+                || LiveOocCapture.mindBloomNativeOptionIndex("MindBloom", "INTRO",
+                    "[I am Healthy] Heal to full HP. Cursed - Doubt.", 2, 40) != 2
+                || LiveOocCapture.mindBloomNativeOptionIndex("MindBloom", "INTRO",
+                    "[I am Rich] Gain Gold. Become Cursed - Normality.", 2, 48) != -1)
+            throw new AssertionError("Mind Bloom post-floor-40 native option identity mismatch");
+        if (!"SMALL".equals(LiveOocCapture.visibleChestSize("SmallChest"))
+                || !"MEDIUM".equals(LiveOocCapture.visibleChestSize("MediumChest"))
+                || !"LARGE".equals(LiveOocCapture.visibleChestSize("LargeChest"))
+                || !LiveOocCapture.visibleChestSize("BossChest").isEmpty())
+            throw new AssertionError("public chest size mapping did not stay bounded");
+        List<Object> nestOptions = Arrays.asList(obj("index", 0), obj("index", 1));
+        List<String> nestLabels = Arrays.asList("[Smash and Grab] Obtain 99 Gold.",
+                "[Stay in Line] Obtain Ritual Dagger. Lose 6 HP.");
+        if (!LiveOocCapture.nestDecisionVisible("Nest", 1, nestLabels, nestOptions, 0)
+                || LiveOocCapture.nestDecisionVisible("Nest", 0, nestLabels, nestOptions, 0)
+                || LiveOocCapture.nestDecisionVisible("Nest", 1, nestLabels, nestOptions, 15))
+            throw new AssertionError("Nest visible decision phase or ascension mismatch");
+        if (!LiveOocCapture.goldenWingInitialVisible("INTRO", Arrays.asList(
+                    "[Pray] Remove a card. Lose 7 HP.", "[Leave]"),
+                    Arrays.asList(obj("index", 0), obj("index", 2)), false, 7)
+                || LiveOocCapture.goldenWingInitialVisible("INTRO", Arrays.asList(
+                    "[Pray] Remove a card. Lose 7 HP.", "[Leave]"),
+                    Arrays.asList(obj("index", 0), obj("index", 1)), false, 7))
+            throw new AssertionError("Golden Wing locked-option slot mismatch");
+        if (LiveOocCapture.scrapOozeRetryCount(25, 3, 0) != 0
+                || LiveOocCapture.scrapOozeRetryCount(35, 4, 0) != 1
+                || LiveOocCapture.scrapOozeRetryCount(55, 8, 20) != 3
+                || LiveOocCapture.scrapOozeRetryCount(105, 13, 20) != 8)
+            throw new AssertionError("Scrap Ooze public chance lost native retry count");
+        List<Object> goopOptions = Arrays.asList(obj("index", 0), obj("index", 1));
+        List<String> goopLabels = Arrays.asList(
+                "[Gather Gold] Gain 75 Gold. Lose 11 HP.", "[Leave It] Lose 41 Gold.");
+        if (!LiveOocCapture.goopInitialVisible("INTRO", goopLabels, goopOptions, 11, 75, 41, 99)
+                || LiveOocCapture.goopInitialVisible("RESULT", goopLabels, goopOptions, 11, 75, 41, 99)
+                || LiveOocCapture.goopInitialVisible("INTRO", goopLabels, goopOptions, 11, 75, 42, 99)
+                || LiveOocCapture.goopInitialVisible("INTRO", goopLabels, goopOptions, 11, 75, 41, 40))
+            throw new AssertionError("World of Goop public loss or phase mismatch");
+        List<Object> shrineOptions = Arrays.asList(obj("index", 0), obj("index", 1), obj("index", 2));
+        List<String> shrineLabels = Arrays.asList("[Pray] Gain 100 Gold.",
+                "[Desecrate] Gain 275 Gold. Become Cursed - Regret.", "[Leave]");
+        if (!LiveOocCapture.goldShrineInitialVisible("INTRO", shrineLabels, shrineOptions, 100, 0)
+                || LiveOocCapture.goldShrineInitialVisible("INTRO", shrineLabels, shrineOptions, 100, 20)
+                || LiveOocCapture.goldShrineInitialVisible("RESULT", shrineLabels, shrineOptions, 100, 0))
+            throw new AssertionError("GoldShrine runtime class or public amount mismatch");
+        List<String> clericLabels = Arrays.asList("[Heal] 35 Gold: Heal 20 HP.",
+                "[Purify] 50 Gold: Remove a card from your deck.", "[Leave]");
+        if (!LiveOocCapture.clericInitialVisible(0, clericLabels, shrineOptions, 20, 50, 80, 117, 0)
+                || LiveOocCapture.clericInitialVisible(1, clericLabels, shrineOptions, 20, 50, 80, 117, 0)
+                || LiveOocCapture.clericInitialVisible(0, clericLabels, shrineOptions, 19, 50, 80, 117, 0)
+                || LiveOocCapture.clericInitialVisible(0, clericLabels, shrineOptions, 20, 50, 80, 49, 0)
+                || LiveOocCapture.clericInitialVisible(0, clericLabels, shrineOptions, 20, 50, 80, 117, 20))
+            throw new AssertionError("Cleric initial public options or amount mismatch");
+        List<Object> deadOptions = Arrays.asList(obj("index", 0), obj("index", 1));
+        List<String> deadLabels = Arrays.asList("[Search] Find Loot. 25%: monster returns.", "[Leave]");
+        String[] deadDescriptions = {"", "", "start", "sentries", "nob", "lagavulin", "end"};
+        if (LiveOocCapture.deadAdventurerPublicEncounter("INTRO", deadLabels, deadOptions,
+                "startnobend", deadDescriptions, 0) != 1
+                || LiveOocCapture.deadAdventurerPublicEncounter("RESULT", deadLabels, deadOptions,
+                        "startnobend", deadDescriptions, 0) != -1
+                || LiveOocCapture.deadAdventurerPublicEncounter("INTRO", deadLabels, deadOptions,
+                        "startnobend", deadDescriptions, 20) != -1
+                || LiveOocCapture.deadAdventurerPublicEncounter("INTRO", deadLabels, deadOptions,
+                        "unknown", deadDescriptions, 0) != -1)
+            throw new AssertionError("Dead Adventurer public encounter or phase mismatch");
+        List<Object> altarOptions = Arrays.asList(obj("index", 1), obj("index", 2));
+        List<String> altarLabels = Arrays.asList("[Sacrifice] Gain 5 Max HP. Lose 22 HP.",
+                "[Desecrate] Become Cursed - Decay.");
+        if (!LiveOocCapture.forgottenAltarInitialVisible(0, altarLabels, altarOptions, 22, 87, 0, false)
+                || LiveOocCapture.forgottenAltarInitialVisible(1, altarLabels, altarOptions, 22, 87, 0, false)
+                || LiveOocCapture.forgottenAltarInitialVisible(0, altarLabels, altarOptions, 21, 87, 0, false)
+                || LiveOocCapture.forgottenAltarInitialVisible(0, altarLabels, altarOptions, 22, 87, 20, false)
+                || LiveOocCapture.forgottenAltarInitialVisible(0, altarLabels,
+                        Arrays.asList(obj("index", 0), obj("index", 2)), 22, 87, 0, false))
+            throw new AssertionError("Forgotten Altar public options or loss mismatch");
+        try {
+            LiveOocCapture.scrapOozeRetryCount(30, 3, 0);
+            throw new AssertionError("non-native Scrap Ooze chance was accepted");
+        } catch (IllegalArgumentException expected) { /* fail closed */ }
         Object firstReward = new Object(), secondReward = new Object();
         String firstIdentity = LiveOocCapture.rewardIdentity(firstReward, null, null);
         if (!firstIdentity.equals(LiveOocCapture.rewardIdentity(firstReward, null, null))
@@ -125,6 +400,33 @@ public final class LiveOocCaptureTest {
             throw new AssertionError("physical reward identity is unstable or ambiguous");
         if (firstIdentity.equals(LiveOocCapture.rewardIdentity(firstReward, new Object(), null)))
             throw new AssertionError("reward identity reused after run boundary");
+        String oldHome = System.getProperty("user.home");
+        java.nio.file.Path home = java.nio.file.Files.createTempDirectory("live-ooc-history");
+        System.setProperty("user.home", home.toString());
+        LiveOocCapture.CardRewardVisits rewardVisits = new LiveOocCapture.CardRewardVisits();
+        Object rewardPlayer = new Object(), rewardNode = new Object();
+        rewardVisits.parent(rewardPlayer, rewardNode, java.util.Arrays.asList("card-a", "card-b"));
+        if (rewardVisits.declined("card-a"))
+            throw new AssertionError("unopened card was marked declined");
+        rewardVisits.opened(rewardPlayer, rewardNode, "card-a");
+        rewardVisits.parent(rewardPlayer, rewardNode, java.util.Arrays.asList("card-a", "card-b"));
+        if (!rewardVisits.declined("card-a") || rewardVisits.declined("card-b"))
+            throw new AssertionError("only the publicly skipped card should be declined");
+        rewardVisits.parent(rewardPlayer, new Object(), java.util.Arrays.asList("card-a"));
+        if (rewardVisits.declined("card-a"))
+            throw new AssertionError("declined card leaked into another room");
+        LiveOocCapture.QuestionHistory questions = new LiveOocCapture.QuestionHistory();
+        questions.observe(222, 1, 0, 0, false, "NeowRoom");
+        questions.observe(222, 1, 3, 1, true, "EventRoom");
+        if (!questions.completeFor(1) || !"EVENT".equals(questions.snapshot().get(0).get("outcome")))
+            throw new AssertionError("public question event outcome not captured");
+        LiveOocCapture.QuestionHistory restoredQuestions = new LiveOocCapture.QuestionHistory();
+        restoredQuestions.observe(222, 1, 3, 1, true, "EventRoom");
+        if (!restoredQuestions.completeFor(1))
+            throw new AssertionError("question outcome did not survive restart");
+        restoredQuestions.observe(222, 1, 5, 2, true, "ShopRoom");
+        if (!restoredQuestions.completeFor(2) || restoredQuestions.completeFor(3))
+            throw new AssertionError("question outcome count did not gate completeness");
         LiveOocCapture.SeenRelicOffers seen = new LiveOocCapture.SeenRelicOffers();
         Object player = new Object();
         seen.observe(player, 10, 5, false, "shop", obj("relics",
@@ -140,12 +442,20 @@ public final class LiveOocCaptureTest {
                 java.util.Arrays.asList("Vajra", "Anchor")));
         if (!seen.complete() || !seen.snapshot().equals(java.util.Arrays.asList("Anchor", "Vajra")))
             throw new AssertionError("visible offered relics were lost or duplicated");
+        LiveOocCapture.SeenRelicOffers restartedSeen = new LiveOocCapture.SeenRelicOffers();
+        restartedSeen.observe(new Object(), 11, 1, false, "map", obj());
+        if (!restartedSeen.complete()
+                || !restartedSeen.snapshot().equals(java.util.Arrays.asList("Anchor", "Vajra")))
+            throw new AssertionError("persisted public relic offers did not restore after restart");
+        LiveOocCapture.SeenRelicOffers menuThenSave = new LiveOocCapture.SeenRelicOffers();
+        menuThenSave.observe(new Object(), 99, 0, true, "event", obj());
+        menuThenSave.observe(new Object(), 11, 1, false, "map", obj());
+        if (!menuThenSave.complete()
+                || !menuThenSave.snapshot().equals(java.util.Arrays.asList("Anchor", "Vajra")))
+            throw new AssertionError("saved offer ledger did not restore after a transient fresh player");
         seen.observe(player, 11, 3, false, "map", obj());
         if (seen.complete()) throw new AssertionError("missed floors retained complete history");
         LiveOocCapture.CombatClassHistory combats = new LiveOocCapture.CombatClassHistory();
-        String oldHome = System.getProperty("user.home");
-        java.nio.file.Path home = java.nio.file.Files.createTempDirectory("live-ooc-history");
-        System.setProperty("user.home", home.toString());
         Object group = new Object();
         combats.observe(player, 12345, 1, 3, true, true, group, "FIXED_EVENT", "MUSHROOMS_EVENT");
         combats.observe(player, 12345, 1, 3, true, true, new Object(), "FIXED_EVENT", "MUSHROOMS_EVENT");
@@ -162,6 +472,9 @@ public final class LiveOocCaptureTest {
         restored.restoreFor(player, 12345, 1);
         if (!restored.completeFor(java.util.Arrays.asList(3, 5, 8)))
             throw new AssertionError("persisted combat history did not restore");
+        restored.observe(player, 12345, 1, 8, false, true, new Object(), "ELITE_QUEUE", "");
+        if (!restored.completeFor(java.util.Arrays.asList(3, 5, 8)))
+            throw new AssertionError("empty encounter during reward reload invalidated saved combat");
         restored.observe(player, 12345, 1, 8, false, true, new Object(), "ELITE_QUEUE", "GREMLIN_NOB");
         if (restored.snapshot().size() != 3)
             throw new AssertionError("restart during combat duplicated the current floor");
@@ -171,6 +484,32 @@ public final class LiveOocCaptureTest {
         combats.observe(player, 12345, 2, 18, true, true, new Object(), "NORMAL_QUEUE", "CULTIST");
         if (!combats.completeFor(java.util.Arrays.asList(18)))
             throw new AssertionError("new act did not reset complete combat-class history");
+        LiveOocCapture.CombatClassHistory colosseum = new LiveOocCapture.CombatClassHistory();
+        colosseum.observe(player, 67890, 2, 29, true, true, new Object(),
+                "FIXED_EVENT", "COLOSSEUM_EVENT_SLAVERS");
+        colosseum.observe(player, 67890, 2, 29, false, false, null, null, "");
+        colosseum.observe(player, 67890, 2, 29, false, true, new Object(),
+                "FIXED_EVENT", "COLOSSEUM_EVENT_NOBS");
+        if (!colosseum.completeFor(java.util.Arrays.asList(29, 29))
+                || colosseum.snapshot().size() != 2)
+            throw new AssertionError("Colosseum same-floor combats were not recorded separately");
+        LiveOocCapture.CombatClassHistory restartedColosseum = new LiveOocCapture.CombatClassHistory();
+        restartedColosseum.observe(player, 67891, 2, 29, true, true, new Object(),
+                "FIXED_EVENT", "COLOSSEUM_EVENT_SLAVERS");
+        LiveOocCapture.CombatClassHistory recoveredColosseum = new LiveOocCapture.CombatClassHistory();
+        recoveredColosseum.restoreFor(player, 67891, 2);
+        recoveredColosseum.observe(player, 67891, 2, 29, false, true, new Object(),
+                "FIXED_EVENT", "");
+        recoveredColosseum.reconcileCompletedColosseum(java.util.Arrays.asList(29, 29),
+                java.util.Arrays.asList(obj("floor", 29, "enemies", "Colosseum Slavers"),
+                        obj("floor", 29, "enemies", "unknown")));
+        if (recoveredColosseum.completeFor(java.util.Arrays.asList(29, 29)))
+            throw new AssertionError("unknown second encounter was accepted as Colosseum Nobs");
+        recoveredColosseum.reconcileCompletedColosseum(java.util.Arrays.asList(29, 29),
+                java.util.Arrays.asList(obj("floor", 29, "enemies", "Colosseum Slavers"),
+                        obj("floor", 29, "enemies", "Colosseum Nobs")));
+        if (!recoveredColosseum.completeFor(java.util.Arrays.asList(29, 29)))
+            throw new AssertionError("completed Colosseum did not reconcile from exact public metrics");
         LiveOocCapture.CombatClassHistory sameSeed = new LiveOocCapture.CombatClassHistory();
         sameSeed.resetForFreshRun(player, 12345, 1);
         if (!sameSeed.snapshot().isEmpty() || !sameSeed.completeFor(java.util.Collections.emptyList()))
@@ -185,6 +524,6 @@ public final class LiveOocCaptureTest {
                 || !"BLUE_SLAVER".equals(STSModelInspector.singleEncounterName("SlaverBlue", false))
                 || !"BLUE_SLAVER".equals(STSModelInspector.singleEncounterName("BlueSlaver", false)))
             throw new AssertionError("canonical Slaver runtime identity mismatch");
-        System.out.println("LiveOocCaptureTest: 15 relic, 7 map edge, 5 screen, 3 path, 4 integrity, 4 event, 3 reward identity, 4 Slaver identity checks passed");
+        System.out.println("LiveOocCaptureTest: relic, map, screen, path, integrity, event identity/state, reward identity and Slaver checks passed");
     }
 }

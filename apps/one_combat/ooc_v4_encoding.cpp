@@ -93,7 +93,8 @@ TokState buildTokStatePure(const GameContext &gc, const PathHistory &path) {
 namespace one_combat {
 bool v4DecisionSupported(const GameContext &gc) {
     switch (gc.screenState) {
-        case ScreenState::REWARDS: return gc.info.rewardsContainer.cardRewardCount > 0;
+        case ScreenState::REWARDS: return gc.info.rewardsContainer.cardRewardCount > 0
+                || gc.opaqueCardRewardGroups > 0;
         case ScreenState::REST_ROOM:
         case ScreenState::SHOP_ROOM:
         case ScreenState::TREASURE_ROOM:

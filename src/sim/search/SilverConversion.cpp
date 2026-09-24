@@ -257,6 +257,8 @@ SilverBattleStateConversion makeSilverBattleStateConversion(
         if (out.intentsHidden) {
             wm.pendingMoveRolls = knowledge.pendingHiddenIntentRolls[i];
             wm.pendingRollInputs = toWire(knowledge.pendingHiddenIntentInputs[i]);
+            for (const auto &entry : knowledge.pendingHiddenIntentInputHistory[i])
+                wm.pendingRollInputHistory.push_back(toWire(entry));
             // Looter/Mugger sample their next move directly inside takeTurn,
             // rather than through rollMove. At a post-turn Runic root the
             // live concrete result is hidden, so carry only the public rule

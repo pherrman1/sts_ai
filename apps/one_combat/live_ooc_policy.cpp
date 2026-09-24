@@ -215,7 +215,7 @@ void LiveOocMctsPolicy::setRootPrimitiveBits(const std::vector<std::uint32_t> &b
 }
 
 LiveOocDecision LiveOocMctsPolicy::score(const sts::GameContext &projected,
-                                         const PathHistory &path, int currentActEventVisits) const {
+                                         const PathHistory &path, int) const {
     LiveOocDecision unsupportedResult;
     unsupportedResult.policy = name();
     if (!model_.ok) { unsupportedResult.reason = "MODEL_UNAVAILABLE"; return unsupportedResult; }
@@ -231,15 +231,17 @@ LiveOocDecision LiveOocMctsPolicy::score(const sts::GameContext &projected,
 
     OocAdapterOptions options;
     options.sampleNoncombat = true;
-    options.checkpointLeaves = true;
+    // The frozen CTM excludes an initial Smoke Bomb. At roots carrying one,
+    // leave hypothetical combats at battle entry so the existing OOC win
+    // model values that state without claiming a CTM combat prediction.
+    options.checkpointLeaves = liveOocUsesCombatTransitionCheckpoints(projected);
     options.stopAtMapCheckpoint = true;
     if (hasRootPrimitiveBits_) options.rootPrimitiveBits = rootPrimitiveBits_;
     OocMctsDependencies dependencies;
-    const int observedEventRooms = currentActEventVisits;
-    dependencies.sampleHiddenCounters = [observedEventRooms](sts::GameContext &gc,
-                                                               std::mt19937_64 &rng) {
-        sampleLiveOocHiddenCounters(gc, rng, observedEventRooms);
-    };
+    // The importer qualified and replayed exact public '?' outcomes into the
+    // room-chance triple. Replacing it with a synthetic history would search a
+    // different run while still reporting a supported live decision.
+    dependencies.sampleHiddenCounters = sampleLiveOocHiddenPityCounters;
     // The deployed CTM was trained with the ordinary fixed search keep value.
     // Omitting this dependency falls back to zero, far outside that input domain.
     dependencies.potionKeepValue = [](const sts::GameContext &) { return 4.0; };

@@ -132,8 +132,7 @@ void sampleLiveOocHiddenCountersImpl(GameContext &gc, std::mt19937_64 &rng,
         gc.shopChance = outcome == 1 ? 0.03f : gc.shopChance + 0.03f;
         gc.treasureChance = outcome == 2 ? 0.02f : gc.treasureChance + 0.02f;
     }
-    gc.potionChance = 10 * std::uniform_int_distribution<int>(-4, 6)(rng);
-    gc.cardRarityFactor = std::uniform_int_distribution<int>(-40, 5)(rng);
+    sampleLiveOocHiddenPityCounters(gc, rng);
 }
 
 void require(bool ok, const char *why) { if (!ok) throw std::runtime_error(why); }
@@ -154,6 +153,14 @@ void applySampledCombatExit(GameContext &gc, const CombatRuntimeSample &sample) 
 void sampleLiveOocHiddenCounters(GameContext &gc, std::mt19937_64 &rng,
                                  int priorEventRooms) {
     sampleLiveOocHiddenCountersImpl(gc, rng, priorEventRooms);
+}
+void sampleLiveOocHiddenPityCounters(GameContext &gc, std::mt19937_64 &rng) {
+    gc.potionChance = 10 * std::uniform_int_distribution<int>(-4, 6)(rng);
+    gc.cardRarityFactor = std::uniform_int_distribution<int>(-40, 5)(rng);
+}
+bool liveOocUsesCombatTransitionCheckpoints(const GameContext &gc) {
+    return std::none_of(gc.potions.begin(), gc.potions.end(),
+        [](sts::Potion potion) { return potion == sts::Potion::SMOKE_BOMB; });
 }
 #ifndef STS_LIVE_ADVISOR
 OocMctsDependencies defaultOocMctsDependencies() {
@@ -451,6 +458,7 @@ const OocGameContextModel::Metadata &OocGameContextModel::metadata(sts::search::
     return mutableMetadata(id);
 }
 bool OocGameContextModel::isLeafBoundary(sts::search::OocStateId id) const {
+    if (states.at(id).opaqueRewardCheckpoint) return true;
     if (options.stopAtMapCheckpoint
             && id != 0 && state(id).screenState == sts::ScreenState::MAP_SCREEN)
         return true;
@@ -544,7 +552,8 @@ sts::search::OocStateId OocGameContextModel::sampleSuccessor(sts::search::OocSta
     if (it == actions.end()) throw std::runtime_error("OOC MCTS illegal action ID");
     auto &edge = cached.edges.at(it - actions.begin());
     if (!options.sampleNoncombat && edge.deterministic) return *edge.deterministic;
-    auto child = Snapshot{detachedCopy(state(id)), states.at(id).path, {}};
+    auto child = Snapshot{detachedCopy(state(id)), states.at(id).path, {}, {},
+        id == 0 && state(id).opaqueCardRewardGroups > 0};
     // A live MAP root is searchable.  The hidden room outcome must be sampled
     // before transitionToMapNode consumes monster/shop/treasure chances; a
     // downstream MAP checkpoint is still evaluated as a leaf.
@@ -1966,6 +1975,11 @@ void oocMctsAdapterSelfTest() {
     require(fixture.info.selectScreenType==CardSelectScreenType::BOTTLE,"bottle fixture opens selector");
     checkCandidates(fixture);
     {
+        OocGameContextModel bottleRoot(fixture,path);
+        require(!bottleRoot.isLeafBoundary(0) && !bottleRoot.legalActions(0).empty(),
+            "native bottle selector remains an MCTS decision root");
+    }
+    {
         auto fresh=detachedCopy(gc); fresh.openCardSelectScreen(CardSelectScreenType::REMOVE,1);
         OocGameContextModel provider(fresh,path);
         const auto chosen=provider.candidate(0,provider.legalActions(0).front().id);
@@ -2050,6 +2064,114 @@ void oocMctsAdapterSelfTest() {
         varied(source,OocSemanticEffect::TRANSFORM_UPGRADE_CARD,OocSemanticSource::SELECTOR);
         source=detachedCopy(gc); source.screenState=ScreenState::EVENT_SCREEN; source.curEvent=Event::THE_LIBRARY;
         varied(source,OocSemanticEffect::EVENT_CHOICE,OocSemanticSource::EVENT);
+        {
+            source.info.hpAmount0=26;
+            const int startingHp=std::max(1,source.maxHp-30);
+            source.curHp=startingHp;
+            int pitySamples=0;
+            OocMctsDependencies liveBelief=defaultOocMctsDependencies();
+            liveBelief.sampleHiddenCounters=[&](GameContext &sample,std::mt19937_64 &draws) {
+                sampleLiveOocHiddenPityCounters(sample,draws);
+                ++pitySamples;
+            };
+            OocGameContextModel library(source,path,{},sampled,liveBelief);
+            std::optional<OocActionId> read,sleep;
+        for (const auto action:library.legalActions(0)) {
+            const auto &candidate=library.candidate(0,action.id);
+            if (!candidate.semantic || candidate.semantic->effect!=OocSemanticEffect::EVENT_CHOICE) continue;
+                const int option=candidate.primitive.getIdx1();
+                if (option==0) read=action.id;
+                if (option==1) sleep=action.id;
+            }
+            require(read && sleep,"Library Read and Sleep are distinct native root actions");
+            std::set<std::string> offers;
+            std::mt19937_64 draws(94271);
+            for (int n=0;n<16;++n) {
+                const auto child=library.sampleSuccessor(0,*read,draws);
+                const auto &state=library.state(child);
+                require(state.screenState==ScreenState::CARD_SELECT && state.info.toSelectCards.size()==20,
+                    "Library Read samples the hidden 20-card offer after the public choice");
+                std::string offer;
+                for (const auto &card:state.info.toSelectCards) offer+=":"+std::to_string(int(card.card.getId()));
+                offers.insert(offer);
+            }
+            require(offers.size()>1 && pitySamples==16,
+                "Library root samples hidden pity and offers on each search particle");
+            const auto slept=library.sampleSuccessor(0,*sleep,draws);
+            require(library.state(slept).curHp==startingHp+26 && pitySamples==17,
+                "Library Sleep uses the displayed heal amount in a sampled root");
+            require(source.curHp==startingHp && source.info.toSelectCards.empty(),
+                "Library belief search does not mutate the public root");
+        }
+        {
+            auto ghostsRoot=detachedCopy(gc);
+            ghostsRoot.screenState=ScreenState::EVENT_SCREEN;
+            ghostsRoot.curEvent=Event::GHOSTS;
+            ghostsRoot.setupEvent();
+            OocGameContextModel ghosts(ghostsRoot,path);
+            std::optional<OocActionId> accept,refuse;
+            for (const auto action:ghosts.legalActions(0)) {
+                const auto &candidate=ghosts.candidate(0,action.id);
+                if (!candidate.semantic || candidate.semantic->effect!=OocSemanticEffect::EVENT_CHOICE) continue;
+                if (candidate.primitive.getIdx1()==0) accept=action.id;
+                if (candidate.primitive.getIdx1()==1) refuse=action.id;
+            }
+            require(accept && refuse,"Ghosts initial Accept and Refuse choices are model actions");
+            std::mt19937_64 draws(20260923);
+            const auto accepted=ghosts.sampleSuccessor(0,*accept,draws);
+            const auto refused=ghosts.sampleSuccessor(0,*refuse,draws);
+            const auto apparitions=std::count_if(ghosts.state(accepted).deck.cards.begin(),
+                ghosts.state(accepted).deck.cards.end(),[](const Card &card) {
+                    return card.id==CardId::APPARITION;
+                });
+            require(ghosts.state(accepted).maxHp==ghostsRoot.maxHp-ghostsRoot.info.hpAmount0
+                && apparitions==(ghostsRoot.ascension>=15 ? 3 : 5)
+                && ghosts.state(refused).maxHp==ghostsRoot.maxHp
+                && ghostsRoot.maxHp==gc.maxHp,
+                "Ghosts native setup derives its max-HP cost and models Accept/Refuse outcomes");
+        }
+        for (const auto event : {Event::HYPNOTIZING_COLORED_MUSHROOMS,
+                                 Event::MYSTERIOUS_SPHERE}) {
+            auto eventRoot=detachedCopy(gc);
+            eventRoot.screenState=ScreenState::EVENT_SCREEN;
+            eventRoot.curRoom=Room::EVENT;
+            eventRoot.curEvent=event;
+            eventRoot.setupEvent();
+            int pitySamples=0;
+            std::set<std::pair<int,int>> sampledPity;
+            OocMctsDependencies eventBelief=defaultOocMctsDependencies();
+            eventBelief.sampleHiddenCounters=[&](GameContext &sample,std::mt19937_64 &draws) {
+                sampleLiveOocHiddenPityCounters(sample,draws);
+                sampledPity.emplace(sample.potionChance,sample.cardRarityFactor);
+                ++pitySamples;
+            };
+            OocGameContextModel eventSearch(eventRoot,path,{},sampled,eventBelief);
+            std::optional<OocActionId> fight;
+            for (const auto action : eventSearch.legalActions(0)) {
+                const auto &candidate=eventSearch.candidate(0,action.id);
+                if (candidate.semantic && candidate.semantic->effect==OocSemanticEffect::EVENT_CHOICE
+                        && candidate.primitive.getIdx1()==0) {
+                    fight=action.id;
+                    break;
+                }
+            }
+            require(fight.has_value(),"pity-belief event exposes its public fight choice");
+            std::mt19937_64 draws(event==Event::HYPNOTIZING_COLORED_MUSHROOMS ? 50871 : 50872);
+            for (int n=0;n<16;++n) {
+                const auto successor=eventSearch.sampleSuccessor(0,*fight,draws);
+                auto afterFight=detachedCopy(eventSearch.state(successor));
+                require(afterFight.screenState==ScreenState::BATTLE,
+                    "public fight choice enters its event combat");
+                afterFight.afterBattle();
+                const auto &rewards=afterFight.info.rewardsContainer;
+                require(afterFight.screenState==ScreenState::REWARDS
+                        && rewards.cardRewardCount==1 && rewards.relicCount==1
+                        && rewards.goldRewardCount==1,
+                    "event combat successor generates its hidden card and public reward groups");
+            }
+            require(pitySamples==16 && sampledPity.size()>1,
+                "unqualified event root samples hidden reward pity on every MCTS particle");
+        }
         source=detachedCopy(gc); source.setupTreasureRoom();
         varied(source,OocSemanticEffect::OPEN_CHEST,OocSemanticSource::TREASURE);
         source=detachedCopy(gc); source.screenState=ScreenState::EVENT_SCREEN; source.curEvent=Event::DEAD_ADVENTURER;
@@ -2253,6 +2375,20 @@ void oocMctsAdapterSelfTest() {
     auto rewardChild=rewards.sampleSuccessor(0,sourceId(rewards,skip.bits),rng);
     require(rewards.state(rewardChild).info.rewardsContainer.cardRewardCount
         ==reward.info.rewardsContainer.cardRewardCount-1,"reward skip execution");
+    auto opaqueParent=detachedCopy(gc);
+    opaqueParent.screenState=ScreenState::REWARDS;
+    opaqueParent.info.rewardsContainer.clear();
+    opaqueParent.info.rewardsContainer.addRelic(RelicId::ANCHOR);
+    opaqueParent.info.rewardsContainer.sapphireKey=true;
+    opaqueParent.opaqueCardRewardGroups=1;
+    OocGameContextModel opaqueRoot(opaqueParent,path);
+    const auto opaqueActions=opaqueRoot.legalActions(0);
+    require(!opaqueRoot.isLeafBoundary(0) && opaqueActions.size()>=3,
+        "visible relic/key choices remain searchable beside an opaque card group");
+    auto opaqueChild=opaqueRoot.sampleSuccessor(0,
+        sourceId(opaqueRoot,GameAction(GameAction::RewardsActionType::RELIC).bits),rng);
+    require(opaqueRoot.isLeafBoundary(opaqueChild),
+        "search stops after one visible parent choice instead of inventing the hidden card group");
     // Inject an equivalent RAW result from a deterministic native exit. The
     // callback dispatches the same native reward code in both branches.
     struct FakeSampler final : CombatTransitionSampler {
@@ -2785,6 +2921,48 @@ void oocMctsAdapterSelfTest() {
         && unsupportedMetrics.continuation.supportReasons.at("test unsupported")==1
         && test::oocStateFingerprint(live)==before && !sts::search::g_disallowImaginedCombat,
         "unsupported live search returns untouched decision to existing V4 with reconciled abort metrics");
+    {
+        auto smokeLive=detachedCopy(live);
+        smokeLive.potions[0]=Potion::SMOKE_BOMB;
+        smokeLive.potionCount=1;
+        const auto smokeRootBefore=test::oocStateFingerprint(smokeLive);
+        require(!liveOocUsesCombatTransitionCheckpoints(smokeLive)
+            && liveOocUsesCombatTransitionCheckpoints(live),
+            "only an initial Smoke Bomb changes live combat checkpoint handling");
+        OocAdapterOptions smokeOptions=liveOptions;
+        smokeOptions.sampleNoncombat=true;
+        smokeOptions.stopAtMapCheckpoint=true;
+        smokeOptions.checkpointLeaves=liveOocUsesCombatTransitionCheckpoints(smokeLive);
+        int winModelCalls=0;
+        auto smokeDependencies=defaultOocMctsDependencies();
+        smokeDependencies.policyAvailable=[] { return true; };
+        smokeDependencies.policyLogits=[](const GameContext &,const PathHistory &,
+                const std::vector<GameAction> &actions) {
+            return std::vector<double>(actions.size(),0.0);
+        };
+        smokeDependencies.leafValue=[&](const GameContext &leaf,const PathHistory &) {
+            require(leaf.screenState==ScreenState::BATTLE
+                && leaf.info.encounter!=MonsterEncounter::INVALID
+                && leaf.potions[0]==Potion::SMOKE_BOMB
+                && leaf.outcome==GameOutcome::UNDECIDED,
+                "Smoke Bomb fallback evaluates the unmodified battle-entry state");
+            ++winModelCalls;
+            return 0.63;
+        };
+        smokeDependencies.sampleHiddenCounters=[](GameContext &,std::mt19937_64 &) {};
+        OocGameContextModel smokeSearch(smokeLive,livePath,liveSampler,smokeOptions,
+                                        std::move(smokeDependencies));
+        const auto rootActions=smokeSearch.legalActions(0);
+        require(!rootActions.empty(),"Smoke Bomb map root retains public map candidates");
+        std::mt19937_64 smokeRng(20260923);
+        const auto entry=smokeSearch.sampleSuccessor(0,rootActions.front().id,smokeRng);
+        require(smokeSearch.state(entry).screenState==ScreenState::BATTLE,
+            "Smoke Bomb hypothetical map action reaches a battle-entry leaf");
+        require(smokeSearch.evaluateLeaf(entry,smokeRng)==0.63 && winModelCalls==1
+            && smokeSearch.continuationMetrics().unsupportedCombats==0
+            && test::oocStateFingerprint(smokeLive)==smokeRootBefore,
+            "frozen OOC win value handles initial-Smoke battle entry without unsupported CTM fallback or root mutation");
+    }
     auto sole=detachedCopy(live);
     int firstNode=-1;
     for (auto &node : sole.map->nodes[0]) {

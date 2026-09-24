@@ -9,6 +9,7 @@ import basemod.interfaces.PostBattleSubscriber;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.megacrit.cardcrawl.cards.DamageInfo;
+import com.megacrit.cardcrawl.characters.AbstractPlayer;
 import com.megacrit.cardcrawl.dungeons.AbstractDungeon;
 import com.megacrit.cardcrawl.cards.AbstractCard;
 import com.megacrit.cardcrawl.cards.CardQueueItem;
@@ -76,6 +77,8 @@ public final class STSModelInspector implements PostInitializeSubscriber,
     private static final Color MUTED = new Color(0.60f, 0.76f, 0.82f, 1.0f);
     private static final Color WARNING = new Color(1.0f, 0.67f, 0.20f, 1.0f);
     private static int trackedLastUnblockedDamage;
+    private static long eventRewardReadySinceNanos;
+    private static Field mcpWaitingForCommandField;
     private static int trackedTimesDamaged;
     private static boolean trackedPlayerVulnerableSeen;
     private static AbstractMonster trackedLastTargetedMonster;
@@ -88,10 +91,36 @@ public final class STSModelInspector implements PostInitializeSubscriber,
     // is not occupied by a live object in the current snapshot.
     private static final IdentityHashMap<AbstractMonster, Integer> monsterSlots =
             new IdentityHashMap<>();
+    private static final IdentityHashMap<AbstractMonster, Integer> monsterFirstSeen =
+            new IdentityHashMap<>();
+    private static int nextMonsterFirstSeen;
     private static final Set<AbstractMonster> replacedMonsterParents =
             Collections.newSetFromMap(new IdentityHashMap<AbstractMonster, Boolean>());
     private static final IdentityHashMap<AbstractMonster, Integer> hexaghostDividerDamage =
             new IdentityHashMap<>();
+    private static final IdentityHashMap<AbstractMonster, Integer> guardianPublicThreshold =
+            new IdentityHashMap<>();
+    private static final IdentityHashMap<AbstractMonster, HiddenIntentSnapshot> hiddenIntentSnapshots =
+            new IdentityHashMap<>();
+    // Candidate bits come only from publicly observed player damage. A zero
+    // mask means that the public observation could not be represented safely.
+    private static final IdentityHashMap<AbstractMonster, Integer> hiddenMiscMasks =
+            new IdentityHashMap<>();
+    private static final Set<AbstractMonster> hiddenDirectTurnMarkers =
+            Collections.newSetFromMap(new IdentityHashMap<AbstractMonster, Boolean>());
+
+    static final class HiddenIntentSnapshot {
+        final int[] publicMoveHistory = new int[]{0, 0};
+        int publicMoveHistoryCount;
+        int publicMiscInfo;
+        int pendingMoveRolls;
+        int pendingDirectMoveChoice;
+        int generation;
+        int curHp, maxHp, knightCurHp, knightMaxHp, monsterTurnNumber, aliveCount, monstersAlive;
+        int miscInfo;
+        boolean knightAlive, playerConstricted, asleep, halfDead;
+        final List<HiddenIntentSnapshot> pendingRollInputHistory = new ArrayList<>();
+    }
 
     /**
      * Vanilla removes a CardQueueItem before the stable player boundary is
@@ -160,8 +189,28 @@ public final class STSModelInspector implements PostInitializeSubscriber,
     private long silverSearchBudget = DEFAULT_SILVER_SEARCH_BUDGET;
     private String silverBudgetStateFingerprint = "";
     private volatile double ctmDeath = 0.0;
-    private volatile int ctmHistogramMin = 1;
-    private volatile double[] ctmHistogram = new double[0];
+    static final class HistogramSnapshot {
+        final int min;
+        final double[] values;
+
+        HistogramSnapshot(int min, double[] values) {
+            this.min = min;
+            this.values = values.clone();
+        }
+    }
+    static int[] histogramNonzeroRange(HistogramSnapshot snapshot) {
+        int first = -1;
+        int last = -1;
+        final double[] values = snapshot.values;
+        for (int i = 0; i < values.length; ++i) {
+            if (values[i] > 0.000001) {
+                if (first < 0) first = i;
+                last = i;
+            }
+        }
+        return new int[]{first, last};
+    }
+    private volatile HistogramSnapshot ctmHistogram = new HistogramSnapshot(1, new double[0]);
     private volatile OocOverlay oocOverlay;
     private volatile PotionOverlay potionOverlay;
     private volatile boolean panelVisible = true;
@@ -190,8 +239,81 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         BaseMod.subscribe(INSTANCE);
     }
 
+    static final class PublicDamageSnapshot {
+        final int hp, block;
+        final AbstractMonster owner;
+        final int[] candidateOutputs;
+        final int independentOutput;
+        final boolean publicAmountQualified;
+        PublicDamageSnapshot(int hp, int block, AbstractMonster owner, int[] candidateOutputs,
+                             int independentOutput,
+                             boolean publicAmountQualified) {
+            this.hp = hp;
+            this.block = block;
+            this.owner = owner;
+            this.candidateOutputs = candidateOutputs;
+            this.independentOutput = independentOutput;
+            this.publicAmountQualified = publicAmountQualified;
+        }
+    }
+
+    static int hiddenMiscMinimum(String monsterId, int ascension) {
+        if ("FuzzyLouseNormal".equals(monsterId) || "FuzzyLouseDefensive".equals(monsterId))
+            return ascension >= 2 ? 6 : 5;
+        if ("Darkling".equals(monsterId)) return ascension >= 2 ? 11 : 7;
+        return -1;
+    }
+
+    static int hiddenMiscCount(String monsterId) {
+        return "Darkling".equals(monsterId) ? 5 : runicPrivateMiscInfo(monsterId) ? 3 : 0;
+    }
+
+    static int compatiblePrivateMiscMask(int prior, int[] outputs, int publicDamage) {
+        return compatiblePrivateMiscMask(prior, outputs, publicDamage, -1);
+    }
+
+    static int compatiblePrivateMiscMask(int prior, int[] outputs, int publicDamage,
+                                         int independentOutput) {
+        // Darkling Chomp uses a fixed base damage, while Nip uses its private
+        // persistent parameter. The move itself is hidden by Runic Dome.
+        if (publicDamage == independentOutput) return prior;
+        int compatible = 0;
+        for (int i = 0; i < outputs.length; ++i)
+            if (outputs[i] == publicDamage) compatible |= 1 << i;
+        return prior & compatible;
+    }
+
+    static PublicDamageSnapshot beginPlayerDamage(DamageInfo info, AbstractPlayer player) {
+        AbstractMonster owner = info != null && info.owner instanceof AbstractMonster
+                ? (AbstractMonster)info.owner : null;
+        int[] predicted = null;
+        int independentOutput = -1;
+        if (owner != null && hasRunicDome() && runicPrivateMiscInfo(owner.id)) {
+            int minimum = hiddenMiscMinimum(owner.id, AbstractDungeon.ascensionLevel);
+            int count = hiddenMiscCount(owner.id);
+            predicted = new int[count];
+            for (int i = 0; i < count; ++i) {
+                DamageInfo candidate = new DamageInfo(owner, minimum + i, info.type);
+                candidate.applyPowers(owner, player);
+                predicted[i] = candidate.output;
+            }
+            if ("Darkling".equals(owner.id)) {
+                DamageInfo chomp = new DamageInfo(owner,
+                        AbstractDungeon.ascensionLevel >= 2 ? 9 : 8, info.type);
+                chomp.applyPowers(owner, player);
+                independentOutput = chomp.output;
+            }
+        }
+        // Buffer, Torii and Tungsten Rod can change the visible HP/block delta
+        // after DamageInfo's power calculation. Do not condition on those hits.
+        boolean qualified = !player.hasPower("Buffer") && !player.hasRelic("Torii")
+                && !player.hasRelic("TungstenRod");
+        return new PublicDamageSnapshot(player.currentHealth, player.currentBlock,
+                owner, predicted, independentOutput, qualified);
+    }
+
     /** Called by the post-AbstractPlayer.damage ModTheSpire patch. */
-    static void recordPlayerDamage(DamageInfo info, int finalDamage) {
+    static void recordPlayerDamage(DamageInfo info, int finalDamage, PublicDamageSnapshot before) {
         if (info == null || AbstractDungeon.player == null
                 || AbstractDungeon.currMapNode == null) return;
         if (info.type == DamageInfo.DamageType.HP_LOSS) {
@@ -204,14 +326,194 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         // events rather than being collapsed into a turn total.
         trackedLastUnblockedDamage = Math.max(0, finalDamage);
         if (finalDamage > 0) ++trackedTimesDamaged;
+        if (before != null && before.candidateOutputs != null && before.owner != null) {
+            int all = (1 << before.candidateOutputs.length) - 1;
+            int prior = hiddenMiscMasks.containsKey(before.owner)
+                    ? hiddenMiscMasks.get(before.owner) : all;
+            int publicDamage = before.block - AbstractDungeon.player.currentBlock + finalDamage;
+            if (!before.publicAmountQualified || before.hp <= finalDamage
+                    || publicDamage < 0 || AbstractDungeon.player.currentBlock > before.block) {
+                hiddenMiscMasks.put(before.owner, 0);
+                return;
+            }
+            hiddenMiscMasks.put(before.owner, compatiblePrivateMiscMask(
+                    prior, before.candidateOutputs, publicDamage, before.independentOutput));
+        }
+    }
+
+    static void recordHiddenIntentRoll(AbstractMonster monster) {
+        // This hook can run before relic initialization publishes Runic Dome.
+        // Capture the pre-roll boundary regardless; serialization decides
+        // whether the snapshot is relevant to the current combat.
+        if (monster == null || AbstractDungeon.getMonsters() == null) return;
+        HiddenIntentSnapshot previous = hiddenIntentSnapshots.get(monster);
+        HiddenIntentSnapshot snapshot = captureHiddenRollInputs(monster);
+        hiddenIntentSnapshots.put(monster,
+                appendHiddenIntentRoll(previous, snapshot, monster.moveHistory));
+    }
+
+    static HiddenIntentSnapshot appendHiddenIntentRoll(HiddenIntentSnapshot previous,
+                                                        HiddenIntentSnapshot snapshot,
+                                                        List<Byte> moveHistory) {
+        if (previous != null && previous.pendingMoveRolls > 0) {
+            // Only the first pre-roll move history is public. Later rolls may
+            // happen on different turns, so retain each roll's own inputs.
+            System.arraycopy(previous.publicMoveHistory, 0,
+                    snapshot.publicMoveHistory, 0, 2);
+            snapshot.publicMoveHistoryCount = previous.publicMoveHistoryCount;
+            snapshot.publicMiscInfo = previous.publicMiscInfo;
+            snapshot.pendingMoveRolls = previous.pendingMoveRolls + 1;
+            snapshot.pendingRollInputHistory.addAll(previous.pendingRollInputHistory);
+        } else {
+            recordHiddenMoveHistory(snapshot, moveHistory);
+        }
+        snapshot.pendingRollInputHistory.add(copyHiddenRollInputs(snapshot));
+        snapshot.generation = previous == null ? 1 : previous.generation + 1;
+        return snapshot;
+    }
+
+    private static HiddenIntentSnapshot captureHiddenRollInputs(AbstractMonster monster) {
+        HiddenIntentSnapshot snapshot = new HiddenIntentSnapshot();
+        Integer publicMisc = runicPrivateMiscInfo(monster.id)
+                ? null : monsterMiscInfo(monster);
+        snapshot.publicMiscInfo = publicMisc == null ? 0 : publicMisc;
+        snapshot.curHp = monster.currentHealth;
+        snapshot.maxHp = monster.maxHealth;
+        snapshot.miscInfo = snapshot.publicMiscInfo;
+        snapshot.monsterTurnNumber = Math.max(1,
+                AbstractDungeon.actionManager == null ? 1 : AbstractDungeon.actionManager.turn);
+        snapshot.playerConstricted = AbstractDungeon.player != null
+                && AbstractDungeon.player.hasPower("Constricted");
+        snapshot.asleep = monster.hasPower("Sleep");
+        snapshot.halfDead = monster.halfDead;
+        int alive = 0;
+        for (AbstractMonster candidate : AbstractDungeon.getMonsters().monsters)
+            if (candidate != null && !candidate.isDeadOrEscaped()) ++alive;
+        snapshot.aliveCount = alive;
+        snapshot.monstersAlive = alive;
+        if (!AbstractDungeon.getMonsters().monsters.isEmpty()) {
+            AbstractMonster knight = AbstractDungeon.getMonsters().monsters.get(0);
+            snapshot.knightCurHp = knight.currentHealth;
+            snapshot.knightMaxHp = knight.maxHealth;
+            snapshot.knightAlive = !knight.isDeadOrEscaped();
+        }
+        return snapshot;
+    }
+
+    private static HiddenIntentSnapshot copyHiddenRollInputs(HiddenIntentSnapshot source) {
+        HiddenIntentSnapshot copy = new HiddenIntentSnapshot();
+        copy.curHp = source.curHp;
+        copy.maxHp = source.maxHp;
+        copy.knightCurHp = source.knightCurHp;
+        copy.knightMaxHp = source.knightMaxHp;
+        copy.monsterTurnNumber = source.monsterTurnNumber;
+        copy.miscInfo = source.miscInfo;
+        copy.aliveCount = source.aliveCount;
+        copy.monstersAlive = source.monstersAlive;
+        copy.knightAlive = source.knightAlive;
+        copy.playerConstricted = source.playerConstricted;
+        copy.asleep = source.asleep;
+        copy.halfDead = source.halfDead;
+        return copy;
+    }
+
+    private static void appendHiddenRollInputs(StringBuilder out,
+                                               HiddenIntentSnapshot input,
+                                               boolean privateMisc) {
+        out.append("{\"curHp\":").append(input.curHp)
+                .append(",\"maxHp\":").append(input.maxHp)
+                .append(",\"knightCurHp\":").append(input.knightCurHp)
+                .append(",\"knightMaxHp\":").append(input.knightMaxHp)
+                .append(",\"monsterTurnNumber\":").append(input.monsterTurnNumber);
+        if (!privateMisc) out.append(",\"miscInfo\":").append(input.miscInfo);
+        out.append(",\"aliveCount\":").append(input.aliveCount)
+                .append(",\"monstersAlive\":").append(input.monstersAlive)
+                .append(",\"knightAlive\":").append(input.knightAlive)
+                .append(",\"playerConstricted\":").append(input.playerConstricted)
+                .append(",\"asleep\":").append(input.asleep)
+                .append(",\"halfDead\":").append(input.halfDead).append('}');
+    }
+
+    static void recordHiddenMoveHistory(HiddenIntentSnapshot snapshot,
+                                        List<Byte> moveHistory) {
+        if (snapshot.pendingMoveRolls > 0) {
+            // Preserve the first public pre-roll snapshot. An intermediate
+            // move and its history are hidden until the chained reroll resolves.
+            snapshot.pendingMoveRolls = snapshot.pendingMoveRolls + 1;
+            return;
+        }
+        capturePublicMoveHistory(snapshot, moveHistory);
+        snapshot.pendingMoveRolls = 1;
+    }
+
+    private static void capturePublicMoveHistory(HiddenIntentSnapshot snapshot,
+                                                   List<Byte> moveHistory) {
+        int historySize = moveHistory == null ? 0 : moveHistory.size();
+        snapshot.publicMoveHistoryCount = Math.min(2, historySize);
+        if (historySize > 0) snapshot.publicMoveHistory[0] = moveHistory.get(historySize - 1);
+        if (historySize > 1) snapshot.publicMoveHistory[1] = moveHistory.get(historySize - 2);
+    }
+
+    static boolean runicPrivateMiscInfo(String monsterId) {
+        // These randomized damage parameters normally become public through
+        // visible intent damage. Runic Dome hides that damage, so the private
+        // Java fields cannot be copied into Silver's root.
+        return "FuzzyLouseNormal".equals(monsterId)
+                || "FuzzyLouseDefensive".equals(monsterId)
+                || "Darkling".equals(monsterId);
+    }
+
+    static void recordKnownIntent(AbstractMonster monster) {
+        if (monster == null || !hasRunicDome()) return;
+        HiddenIntentSnapshot snapshot = hiddenIntentSnapshots.get(monster);
+        if (snapshot == null) {
+            snapshot = new HiddenIntentSnapshot();
+            hiddenIntentSnapshots.put(monster, snapshot);
+        }
+        snapshot.pendingMoveRolls = 0;
+        capturePublicMoveHistory(snapshot, monster.moveHistory);
+        snapshot.publicMiscInfo = monsterMiscInfo(monster) == null ? 0 : monsterMiscInfo(monster);
+        snapshot.miscInfo = snapshot.publicMiscInfo;
+        snapshot.pendingMoveRolls = 0;
+        snapshot.pendingDirectMoveChoice = 0;
+    }
+
+    static void beginHiddenDirectTurn(AbstractMonster monster, int choice) {
+        if (monster == null || !hasRunicDome()) return;
+        HiddenIntentSnapshot snapshot = hiddenIntentSnapshots.get(monster);
+        if (snapshot == null) {
+            snapshot = new HiddenIntentSnapshot();
+            hiddenIntentSnapshots.put(monster, snapshot);
+        }
+        capturePublicMoveHistory(snapshot, monster.moveHistory);
+        snapshot.publicMiscInfo = monsterMiscInfo(monster) == null ? 0 : monsterMiscInfo(monster);
+        snapshot.miscInfo = snapshot.publicMiscInfo;
+        snapshot.pendingMoveRolls = 0;
+        snapshot.pendingDirectMoveChoice = choice;
+        hiddenDirectTurnMarkers.add(monster);
+    }
+
+    static void finishHiddenDirectTurn(AbstractMonster monster) {
+        if (monster == null || !hasRunicDome()) return;
+        if (!hiddenDirectTurnMarkers.remove(monster)) recordKnownIntent(monster);
+    }
+
+    static void finishHiddenIntentRoll(AbstractMonster monster) {
+        if (monster == null || !hasRunicDome()) return;
+        HiddenIntentSnapshot snapshot = hiddenIntentSnapshots.get(monster);
+        if (snapshot != null) snapshot.pendingDirectMoveChoice = 0;
     }
 
     @Override
     public void receiveOnBattleStart(AbstractRoom room) {
         resetSilverBudget();
+        hiddenMiscMasks.clear();
         monsterSlots.clear();
+        monsterFirstSeen.clear();
+        nextMonsterFirstSeen = 0;
         replacedMonsterParents.clear();
         hexaghostDividerDamage.clear();
+        guardianPublicThreshold.clear();
         liveEncounter = encounterName(room);
         trackedLastUnblockedDamage = 0;
         trackedTimesDamaged = 0;
@@ -233,8 +535,14 @@ public final class STSModelInspector implements PostInitializeSubscriber,
     public void receivePostBattle(AbstractRoom room) {
         resetSilverBudget();
         monsterSlots.clear();
+        monsterFirstSeen.clear();
+        nextMonsterFirstSeen = 0;
         replacedMonsterParents.clear();
         hexaghostDividerDamage.clear();
+        guardianPublicThreshold.clear();
+        hiddenIntentSnapshots.clear();
+        hiddenMiscMasks.clear();
+        hiddenDirectTurnMarkers.clear();
         liveEncounter = "";
         combatEntry = "";
         combatEntryHash = "";
@@ -260,7 +568,7 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         silverTotalSimulations = 0;
         silverRootVisits = 0;
         ctmDeath = 0.0;
-        ctmHistogram = new double[0];
+        ctmHistogram = new HistogramSnapshot(1, new double[0]);
     }
 
     private STSModelInspector() {}
@@ -280,6 +588,7 @@ public final class STSModelInspector implements PostInitializeSubscriber,
     @Override
     public void receivePostUpdate() {
         observeRoomTransition();
+        unblockStableEventCombatReward();
         boolean down = Keyboard.isKeyDown(loadToggleKey());
         if (down && !toggleDown) panelVisible = !panelVisible;
         toggleDown = down;
@@ -316,12 +625,51 @@ public final class STSModelInspector implements PostInitializeSubscriber,
             ctmStatus = "";
             ctmReason = "";
             ctmDeath = 0.0;
-            ctmHistogram = new double[0];
+            ctmHistogram = new HistogramSnapshot(1, new double[0]);
         }
         advisorStatus = "waiting";
         advisorReason = "";
         advisor.send(emitted);
         latestPublisher.publishObservation(emitted);
+    }
+
+    private static void unblockStableEventCombatReward() {
+        // MCPTheSpire's event waitTimer gate can remain closed after a
+        // Colosseum fight while vanilla already displays an interactive
+        // combat-reward screen. Only repair its command-ready latch after a
+        // stable reward screen and empty action queues; leave game state alone.
+        if (AbstractDungeon.currMapNode == null) {
+            eventRewardReadySinceNanos = 0;
+            return;
+        }
+        AbstractRoom room = AbstractDungeon.getCurrRoom();
+        boolean visible = room instanceof EventRoom
+                && room.event != null
+                && "Colosseum".equals(room.event.getClass().getSimpleName())
+                && room.phase == AbstractRoom.RoomPhase.COMPLETE
+                && AbstractDungeon.isScreenUp
+                && (AbstractDungeon.screen == AbstractDungeon.CurrentScreen.COMBAT_REWARD
+                    || AbstractDungeon.screen == AbstractDungeon.CurrentScreen.CARD_REWARD
+                    || AbstractDungeon.screen == AbstractDungeon.CurrentScreen.MAP)
+                && !AbstractDungeon.isFadingIn && !AbstractDungeon.isFadingOut
+                && AbstractDungeon.actionManager != null
+                && AbstractDungeon.actionManager.actions.isEmpty()
+                && AbstractDungeon.actionManager.cardQueue.isEmpty()
+                && AbstractDungeon.actionManager.preTurnActions.isEmpty();
+        if (!visible) { eventRewardReadySinceNanos = 0; return; }
+        long now = System.nanoTime();
+        if (eventRewardReadySinceNanos == 0) { eventRewardReadySinceNanos = now; return; }
+        if (now - eventRewardReadySinceNanos < 1_000_000_000L) return;
+        try {
+            if (mcpWaitingForCommandField == null) {
+                mcpWaitingForCommandField = Class.forName("mcpthespire.GameStateListener")
+                        .getDeclaredField("waitingForCommand");
+                mcpWaitingForCommandField.setAccessible(true);
+            }
+            mcpWaitingForCommandField.setBoolean(null, true);
+        } catch (ReflectiveOperationException | SecurityException ignored) {
+            // Missing MCP internals remain a strict unsupported boundary.
+        }
     }
 
     @Override
@@ -841,7 +1189,9 @@ public final class STSModelInspector implements PostInitializeSubscriber,
 
     private void renderHistogram(SpriteBatch sb, float x, float bottom, float width,
                                  float height, float scale) {
-        if (ctmHistogram.length == 0) {
+        final HistogramSnapshot snapshot = ctmHistogram;
+        final double[] histogram = snapshot.values;
+        if (histogram.length == 0) {
             renderFittedText(sb, ctmStatus.isEmpty() ? "Awaiting forecast" : "Forecast unavailable",
                     x, bottom + height - 12.0f * scale, width, WARNING, 0.78f);
             if (!ctmStatus.isEmpty()) renderFittedText(sb,
@@ -849,14 +1199,9 @@ public final class STSModelInspector implements PostInitializeSubscriber,
                     x, bottom + height - 36.0f * scale, width, MUTED, 0.65f);
             return;
         }
-        int first = -1;
-        int last = -1;
-        for (int i = 0; i < ctmHistogram.length; ++i) {
-            if (ctmHistogram[i] > 0.000001) {
-                if (first < 0) first = i;
-                last = i;
-            }
-        }
+        int[] range = histogramNonzeroRange(snapshot);
+        int first = range[0];
+        int last = range[1];
         if (first < 0) return;
         final int span = last - first + 1;
         final int buckets = Math.min(14, span);
@@ -865,7 +1210,7 @@ public final class STSModelInspector implements PostInitializeSubscriber,
             int begin = first + bucket * span / buckets;
             int end = first + (bucket + 1) * span / buckets;
             double probability = 0.0;
-            for (int i = begin; i < end; ++i) probability += ctmHistogram[i];
+            for (int i = begin; i < end; ++i) probability += histogram[i];
             maximum = Math.max(maximum, probability);
         }
         if (maximum <= 0.0) return;
@@ -886,14 +1231,14 @@ public final class STSModelInspector implements PostInitializeSubscriber,
             int begin = first + bucket * span / buckets;
             int end = first + (bucket + 1) * span / buckets;
             double probability = 0.0;
-            for (int i = begin; i < end; ++i) probability += ctmHistogram[i];
+            for (int i = begin; i < end; ++i) probability += histogram[i];
             float barHeight = (float) (chartHeight * probability / maximum);
             sb.setColor(bucket < buckets / 2 ? CYAN_DIM : CYAN);
             sb.draw(ImageMaster.WHITE_SQUARE_IMG, chartX + bucket * barWidth,
                     chartBottom, Math.max(scale, barWidth - scale), barHeight);
         }
-        int firstHp = ctmHistogramMin + first;
-        int lastHp = ctmHistogramMin + last;
+        int firstHp = snapshot.min + first;
+        int lastHp = snapshot.min + last;
         renderSmallText(sb, Integer.toString(firstHp), chartX,
                 bottom + 1.0f * scale, MUTED, 0.70f);
         renderSmallText(sb, Integer.toString(lastHp), chartX + chartWidth - 12.0f * scale,
@@ -901,8 +1246,8 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         double mean = 0.0;
         double mass = 0.0;
         for (int i = first; i <= last; ++i) {
-            mean += (ctmHistogramMin + i) * ctmHistogram[i];
-            mass += ctmHistogram[i];
+            mean += (snapshot.min + i) * histogram[i];
+            mass += histogram[i];
         }
         if (mass > 0.0 && newest.maxHp > 0) {
             renderSmallText(sb, "Mean", x + width - 42.0f * scale,
@@ -1213,6 +1558,35 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         return candidate;
     }
 
+    static int gremlinReplacementSlot(Set<Integer> deadKnown, Set<Integer> livingKnown) {
+        int replacement = -1;
+        for (int slot = 1; slot <= 2; ++slot) {
+            if (deadKnown.contains(slot) && !livingKnown.contains(slot)) {
+                if (replacement >= 0) return -1;
+                replacement = slot;
+            }
+        }
+        return replacement;
+    }
+
+    static Map<Integer,Integer> latestDeadOrdinalBySlot(
+            Map<Integer,List<Integer>> deadOrdinals, Set<Integer> livingSlots) {
+        Map<Integer,Integer> latest = new HashMap<>();
+        for (Map.Entry<Integer,List<Integer>> entry : deadOrdinals.entrySet()) {
+            if (livingSlots.contains(entry.getKey())) continue;
+            for (Integer ordinal : entry.getValue())
+                if (ordinal != null && ordinal > latest.getOrDefault(entry.getKey(), -1))
+                    latest.put(entry.getKey(), ordinal);
+        }
+        return latest;
+    }
+
+    static int collectorNativeSlotFromEnemySlot(int vanillaSlot) {
+        // Collector stores its two TorchHeads under keys 1 and 2. Native
+        // replaces them in physical slots 1 and 0; slot 2 is the boss.
+        return vanillaSlot == 1 ? 1 : (vanillaSlot == 2 ? 0 : -1);
+    }
+
     private static Integer reflectedEncounterSlot(String encounter, AbstractMonster candidate) {
         if (AbstractDungeon.getMonsters() == null
                 || AbstractDungeon.getMonsters().monsters == null) return null;
@@ -1235,7 +1609,7 @@ public final class STSModelInspector implements PostInitializeSubscriber,
             if (!(raw instanceof Map<?, ?>)) return null;
             for (Map.Entry<?, ?> entry : ((Map<?, ?>) raw).entrySet()) {
                 if (entry.getValue() == candidate && entry.getKey() instanceof Number)
-                    return ((Number) entry.getKey()).intValue();
+                    return collectorNativeSlotFromEnemySlot(((Number) entry.getKey()).intValue());
             }
         } else {
             Object raw = readObjectField(owner, "daggers");
@@ -1279,10 +1653,15 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         if (!"SLIME_BOSS".equals(encounter) || candidate == null
                 || !"SlimeBoss".equals(candidate.id) || !candidate.isDeadOrEscaped()) return false;
         for (AbstractMonster monster : monsters) {
-            if (monster == null || monster == candidate || monster.isDeadOrEscaped()) continue;
-            if ("SpikeSlime_L".equals(monster.id) || "AcidSlime_L".equals(monster.id)) return true;
+            if (monster == null || monster == candidate) continue;
+            if (slimeBossDescendant(monster.id)) return true;
         }
         return false;
+    }
+
+    static boolean slimeBossDescendant(String id) {
+        return "SpikeSlime_L".equals(id) || "AcidSlime_L".equals(id)
+                || "SpikeSlime_M".equals(id) || "AcidSlime_M".equals(id);
     }
 
     private static int preferredMonsterSlot(String encounter, String id, int sameIdOrdinal,
@@ -1367,6 +1746,20 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         int nonLeaderOrdinal = 0;
         Set<Integer> usedMonsterSlots = new HashSet<>();
         List<AbstractMonster> monsters = AbstractDungeon.getMonsters().monsters;
+        for (AbstractMonster monster : monsters)
+            if (monster != null && !monsterFirstSeen.containsKey(monster))
+                monsterFirstSeen.put(monster, ++nextMonsterFirstSeen);
+        Set<Integer> deadGremlinSlots = new HashSet<>();
+        Set<Integer> livingGremlinSlots = new HashSet<>();
+        if ("GREMLIN_LEADER".equals(encounter)) {
+            for (AbstractMonster monster : monsters) {
+                if (monster == null || "GremlinLeader".equals(monster.id)) continue;
+                Integer known = monsterSlots.get(monster);
+                if (known == null || known < 1 || known > 2) continue;
+                if (monster.isDeadOrEscaped()) deadGremlinSlots.add(known);
+                else livingGremlinSlots.add(known);
+            }
+        }
         for (int monsterIndex = 0; monsterIndex < monsters.size(); ++monsterIndex) {
             AbstractMonster monster = monsters.get(monsterIndex);
             if (monster == null) continue;
@@ -1379,9 +1772,19 @@ public final class STSModelInspector implements PostInitializeSubscriber,
             int preferred = reflected != null ? reflected : preferredMonsterSlot(
                     encounter, monster.id, sameIdOrdinal,
                     "GremlinLeader".equals(monster.id) ? -1 : nonLeaderOrdinal);
+            boolean gremlinReplacement = "GREMLIN_LEADER".equals(encounter)
+                    && !"GremlinLeader".equals(monster.id) && nonLeaderOrdinal >= 2
+                    && !monster.isDeadOrEscaped() && !monsterSlots.containsKey(monster);
+            if (gremlinReplacement)
+                preferred = gremlinReplacementSlot(deadGremlinSlots, livingGremlinSlots);
             if (!"GremlinLeader".equals(monster.id)) ++nonLeaderOrdinal;
             int slot;
-            if ("SLIME_BOSS".equals(encounter) && preferred >= 0) {
+            if (gremlinReplacement && preferred < 0) {
+                // A summoned gremlin has no unique native slot without a
+                // recorded dead predecessor; fail closed instead of claiming
+                // the leader's reserved slot or guessing another position.
+                slot = -1;
+            } else if (("SLIME_BOSS".equals(encounter) || gremlinReplacement) && preferred >= 0) {
                 // Slime Boss and its large-child splits use a fixed native
                 // layout (0, 1, 2). Java leaves replaced parents in its
                 // monster list, so retain the native slot rather than the
@@ -1389,16 +1792,33 @@ public final class STSModelInspector implements PostInitializeSubscriber,
                 slot = preferred;
                 monsterSlots.put(monster, slot);
                 usedMonsterSlots.add(slot);
+                if (gremlinReplacement) livingGremlinSlots.add(slot);
             } else {
                 slot = monsterSlot(monster, preferred >= 0 ? preferred : monsterIndex,
                         usedMonsterSlots);
             }
             emitted.put(monster, slot);
         }
+        // Summoned gremlins reuse physical slots. Java may retain the dead
+        // predecessor in its monster list; the native root has one monster
+        // state per slot, with the living replacement taking precedence.
+        Set<Integer> livingSlots = new HashSet<>();
+        for (Map.Entry<AbstractMonster, Integer> entry : emitted.entrySet())
+            if (entry.getValue() >= 0 && entry.getKey().currentHealth > 0
+                    && !entry.getKey().isDeadOrEscaped()) livingSlots.add(entry.getValue());
+        Map<Integer,List<Integer>> deadOrdinals = new HashMap<>();
+        for (Map.Entry<AbstractMonster, Integer> entry : emitted.entrySet())
+            if (entry.getValue() >= 0 && entry.getKey().isDeadOrEscaped())
+                deadOrdinals.computeIfAbsent(entry.getValue(), ignored -> new ArrayList<>())
+                        .add(monsterFirstSeen.get(entry.getKey()));
+        Map<Integer,Integer> latestDead = latestDeadOrdinalBySlot(deadOrdinals, livingSlots);
+        emitted.entrySet().removeIf(entry -> entry.getValue() >= 0
+                && entry.getKey().isDeadOrEscaped()
+                && !monsterFirstSeen.get(entry.getKey()).equals(latestDead.get(entry.getValue())));
         return emitted;
     }
 
-    private static String multiEncounterName(Map<String, Integer> counts, boolean eventRoom) {
+    static String multiEncounterName(Map<String, Integer> counts, boolean eventRoom) {
         int total = 0;
         for (Integer value : counts.values()) total += value;
         if (counts.size() == 1) {
@@ -1440,7 +1860,7 @@ public final class STSModelInspector implements PostInitializeSubscriber,
                 return "AWAKENED_ONE";
             if (count(counts, "Cultist") == 1 && count(counts, "Chosen") == 1)
                 return "CULTIST_AND_CHOSEN";
-            if (count(counts, "Chosen") == 1 && count(counts, "Byrd") == 2)
+            if (count(counts, "Chosen") == 1 && count(counts, "Byrd") == 1)
                 return "CHOSEN_AND_BYRDS";
             if (count(counts, "Sentry") == 1 && count(counts, "SphericGuardian") == 1)
                 return "SENTRY_AND_SPHERE";
@@ -1528,7 +1948,8 @@ public final class STSModelInspector implements PostInitializeSubscriber,
 
     private String combatEntryJson(AbstractRoom room, String encounter) {
         if (AbstractDungeon.player == null || AbstractDungeon.currMapNode == null) return "";
-        String previous = lastRoomClass;
+        String previous = firstRoomAfterBossTreasure(lastRoomClass,
+                AbstractDungeon.actNum, AbstractDungeon.floorNum, AbstractDungeon.currMapNode.y);
         // A freshly started inspector can observe a saved run directly inside
         // the act boss before observeRoomTransition has rebuilt its in-memory
         // latch. The persisted metric path includes the boss sentinel, so use
@@ -1588,6 +2009,16 @@ public final class STSModelInspector implements PostInitializeSubscriber,
                 .append(",\"relics\":").append(relicEntryJson())
                 .append(",\"potions\":").append(potionEntryJson()).append('}');
         return out.toString();
+    }
+
+    static String firstRoomAfterBossTreasure(String previous, int act, int floor, int nodeY) {
+        // Native transitionToAct retains BOSS_TREASURE as curRoom, then uses it
+        // as lastRoom when the first node is entered. Vanilla can clear the
+        // inspector's room latch while moving between acts.
+        if ((previous == null || previous.isEmpty()) && (act == 2 || act == 3)
+                && floor == 17 * (act - 1) + 1 && nodeY == 0)
+            return "BOSS_TREASURE";
+        return previous == null ? "" : previous;
     }
 
     private static String metricRoomClass(String symbol) {
@@ -1749,7 +2180,8 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         return phase == AbstractRoom.RoomPhase.COMBAT
                 && ((screen == AbstractDungeon.CurrentScreen.NONE && playerDecision)
                     || ((screen == AbstractDungeon.CurrentScreen.GRID
-                         || screen == AbstractDungeon.CurrentScreen.HAND_SELECT) && selectionAvailable));
+                         || screen == AbstractDungeon.CurrentScreen.HAND_SELECT
+                         || screen == AbstractDungeon.CurrentScreen.CARD_REWARD) && selectionAvailable));
     }
 
     private static boolean isCardSelectionBoundary() {
@@ -1757,7 +2189,9 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         return (AbstractDungeon.screen == AbstractDungeon.CurrentScreen.GRID
                     && AbstractDungeon.gridSelectScreen != null)
                 || (AbstractDungeon.screen == AbstractDungeon.CurrentScreen.HAND_SELECT
-                    && AbstractDungeon.handCardSelectScreen != null);
+                    && AbstractDungeon.handCardSelectScreen != null)
+                || (AbstractDungeon.screen == AbstractDungeon.CurrentScreen.CARD_REWARD
+                    && AbstractDungeon.cardRewardScreen != null);
     }
 
     static void recordCardQueueItem(CardQueueItem item) {
@@ -1935,6 +2369,47 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         return null;
     }
 
+    static Integer guardianThresholdFromPublicPower(Integer previous, Integer visibleAmount) {
+        if (visibleAmount == null || visibleAmount <= 0) return previous;
+        return previous == null ? visibleAmount : Math.max(previous, visibleAmount);
+    }
+
+    static boolean nativeMiscZeroForId(String id) {
+        return ("AcidSlime_L".equals(id) || "AcidSlime_M".equals(id)
+                || "AcidSlime_S".equals(id) || "AwakenedOne".equals(id)
+                || "BanditBear".equals(id) || "BanditChild".equals(id)
+                || "BanditLeader".equals(id) || "Bear".equals(id)
+                || "BlueSlaver".equals(id) || "BronzeOrb".equals(id)
+                || "Byrd".equals(id) || "Centurion".equals(id)
+                || "Chosen".equals(id) || "CorruptHeart".equals(id)
+                || "Cultist".equals(id) || "Dagger".equals(id)
+                || "Deca".equals(id) || "Donu".equals(id)
+                || "Exploder".equals(id) || "FungiBeast".equals(id)
+                || "GiantHead".equals(id) || "JawWorm".equals(id)
+                || "GremlinFat".equals(id) || "GremlinLeader".equals(id)
+                || "GremlinNob".equals(id) || "GremlinWarrior".equals(id)
+                || "SpikeSlime_L".equals(id) || "SpikeSlime_M".equals(id)
+                || "SpikeSlime_S".equals(id) || "Lagavulin".equals(id)
+                || "Healer".equals(id) || "Reptomancer".equals(id)
+                || "SlimeBoss".equals(id)
+                || "MadGremlin".equals(id) || "Mystic".equals(id)
+                || "Nemesis".equals(id) || "Orb Walker".equals(id)
+                || "Pointy".equals(id) || "RedSlaver".equals(id)
+                || "Repulsor".equals(id) || "Romeo".equals(id)
+                || "Sentry".equals(id) || "Shelled Parasite".equals(id)
+                || "ShelledParasite".equals(id) || "GremlinSneaky".equals(id)
+                || "GremlinShield".equals(id) || "GremlinTsundere".equals(id)
+                || "GremlinThief".equals(id)
+                || "SnakePlant".equals(id) || "Snecko".equals(id)
+                || "SphericGuardian".equals(id) || "SpireGrowth".equals(id)
+                || "Serpent".equals(id) || "SpireShield".equals(id)
+                || "SpireSpear".equals(id) || "Taskmaster".equals(id)
+                || "SlaverBoss".equals(id) || "TheCollector".equals(id)
+                || "TheMaw".equals(id) || "Maw".equals(id)
+                || "TimeEater".equals(id) || "TorchHead".equals(id)
+                || "Transient".equals(id));
+    }
+
     private static Integer monsterMiscInfo(AbstractMonster monster) {
         String id = monster.id;
         if ("FuzzyLouseNormal".equals(id) || "FuzzyLouseDefensive".equals(id))
@@ -1954,9 +2429,12 @@ public final class STSModelInspector implements PostInitializeSubscriber,
             return dividerDamage == null ? 0 : dividerDamage;
         }
         if ("TheGuardian".equals(id)) {
+            Integer threshold = guardianPublicThreshold.get(monster);
             for (AbstractPower power : monster.powers)
-                if ("Mode Shift".equals(power.ID)) return power.amount;
-            return null;
+                if ("Mode Shift".equals(power.ID))
+                    threshold = guardianThresholdFromPublicPower(threshold, power.amount);
+            if (threshold != null) guardianPublicThreshold.put(monster, threshold);
+            return threshold;
         }
         if ("BookOfStabbing".equals(id)) return readIntField(monster, "stabCount");
         if ("SlaverBlue".equals(id)) return 0;
@@ -1994,38 +2472,7 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         // Explicit zero is safe only for monsters whose native move logic does
         // not consult miscInfo. Unknown/reflectively inaccessible state is
         // omitted and therefore rejected by the importer.
-        if ("AcidSlime_L".equals(id) || "AcidSlime_M".equals(id)
-                || "AcidSlime_S".equals(id) || "AwakenedOne".equals(id)
-                || "BanditBear".equals(id) || "BanditChild".equals(id)
-                || "BanditLeader".equals(id) || "Bear".equals(id)
-                || "BlueSlaver".equals(id) || "BronzeOrb".equals(id)
-                || "Byrd".equals(id) || "Centurion".equals(id)
-                || "Chosen".equals(id) || "CorruptHeart".equals(id)
-                || "Cultist".equals(id) || "Dagger".equals(id)
-                || "Deca".equals(id) || "Donu".equals(id)
-                || "Exploder".equals(id) || "FungiBeast".equals(id)
-                || "GiantHead".equals(id) || "JawWorm".equals(id)
-                || "GremlinFat".equals(id) || "GremlinLeader".equals(id)
-                || "GremlinNob".equals(id)
-                || "SpikeSlime_L".equals(id) || "SpikeSlime_M".equals(id)
-                || "SpikeSlime_S".equals(id) || "Lagavulin".equals(id)
-                || "Healer".equals(id) || "Reptomancer".equals(id)
-                || "SlimeBoss".equals(id)
-                || "MadGremlin".equals(id) || "Mystic".equals(id)
-                || "Nemesis".equals(id) || "Orb Walker".equals(id)
-                || "Pointy".equals(id) || "RedSlaver".equals(id)
-                || "Repulsor".equals(id) || "Romeo".equals(id)
-                || "Sentry".equals(id) || "Shelled Parasite".equals(id)
-                || "ShelledParasite".equals(id) || "GremlinSneaky".equals(id)
-                || "GremlinShield".equals(id) || "GremlinThief".equals(id)
-                || "SnakePlant".equals(id) || "Snecko".equals(id)
-                || "SphericGuardian".equals(id) || "SpireGrowth".equals(id)
-                || "Serpent".equals(id) || "SpireShield".equals(id)
-                || "SpireSpear".equals(id) || "Taskmaster".equals(id)
-                || "SlaverBoss".equals(id) || "TheCollector".equals(id)
-                || "TheMaw".equals(id) || "Maw".equals(id)
-                || "TimeEater".equals(id) || "TorchHead".equals(id)
-                || "Transient".equals(id)) return 0;
+        if (nativeMiscZeroForId(id)) return 0;
         return null;
     }
 
@@ -2050,13 +2497,42 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         return task;
     }
 
+    static String gridSelectionTask(String reason, boolean anyNumber, boolean exhumeAction) {
+        // Exhume's vanilla prompt is generic "return to your hand" text, which
+        // otherwise aliases Hologram. The active native action identifies its
+        // exhaust-pile selector exactly.
+        return exhumeAction ? "EXHUME" : selectionTask(reason, anyNumber);
+    }
+
+    static boolean singleForethoughtSelection(boolean action, boolean anyNumber,
+                                              boolean canPickZero, int count) {
+        return action && !anyNumber && !canPickZero && count == 1;
+    }
+
+    static boolean singlePutOnDeckSelection(boolean action, boolean anyNumber,
+                                            boolean canPickZero, int count) {
+        return action && !anyNumber && !canPickZero && count == 1;
+    }
+
     static String selectionJson(String task, boolean canPickZero, boolean anyNumber, int pickCount,
                                         List<AbstractCard> source) {
+        return selectionJson(task, canPickZero, anyNumber, pickCount, 0, source);
+    }
+
+    static String selectionJson(String task, boolean canPickZero, boolean anyNumber, int pickCount,
+                                        int data0, List<AbstractCard> source) {
+        return selectionJson(task, canPickZero, anyNumber, pickCount, data0, true, source);
+    }
+
+    static String selectionJson(String task, boolean canPickZero, boolean anyNumber, int pickCount,
+                                int data0, boolean setCostToZero, List<AbstractCard> source) {
         StringBuilder out = new StringBuilder("{\"task\":\"")
                 .append(task).append("\",\"canPickZero\":").append(canPickZero)
                 .append(",\"canPickAnyNumber\":")
                 .append(anyNumber).append(",\"pickCount\":").append(Math.max(0, pickCount))
-                .append(",\"data0\":0,\"setCostToZero\":true,\"selectedBits\":0,\"cards\":[");
+                .append(",\"data0\":").append(data0)
+                .append(",\"setCostToZero\":").append(setCostToZero)
+                .append(",\"selectedBits\":0,\"cards\":[");
         boolean offerCards = "DISCOVERY".equals(task) || "CODEX".equals(task);
         boolean first = true;
         if (offerCards && source != null) {
@@ -2068,6 +2544,13 @@ public final class STSModelInspector implements PostInitializeSubscriber,
                 out.append('\"').append(escapeJson(card.cardID)).append('\"');
             }
         }
+        out.append("],\"liveUuids\":[");
+        first = true;
+        if (source != null) for (AbstractCard card : source) {
+            if (!first) out.append(',');
+            first = false;
+            out.append('"').append(escapeJson(String.valueOf(card.uuid))).append('"');
+        }
         return out.append("]}").toString();
     }
 
@@ -2076,7 +2559,10 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         boolean first = true;
         if (AbstractDungeon.getMonsters() != null) {
             for (AbstractMonster monster : AbstractDungeon.getMonsters().monsters) {
-                if (monster == null) continue;
+                // Vanilla can retain StasisPower on a dead Bronze Orb after
+                // its card has returned to hand. Only a living orb still
+                // owns a card outside the player's piles.
+                if (monster == null || monster.isDeadOrEscaped()) continue;
                 for (AbstractPower power : monster.powers) {
                     if (!"Stasis".equals(power.ID)) continue;
                     Object card = readObjectField(power, "card");
@@ -2096,12 +2582,38 @@ public final class STSModelInspector implements PostInitializeSubscriber,
     }
 
     private static String cardSelectionJson() {
+        if (AbstractDungeon.screen == AbstractDungeon.CurrentScreen.CARD_REWARD
+                && AbstractDungeon.cardRewardScreen != null) {
+            com.megacrit.cardcrawl.screens.CardRewardScreen screen = AbstractDungeon.cardRewardScreen;
+            Object current = AbstractDungeon.actionManager == null ? null
+                    : AbstractDungeon.actionManager.currentAction;
+            Boolean discovery = readBooleanField(screen, "discovery");
+            Boolean skippable = readBooleanField(screen, "skippable");
+            Integer copyCount = current instanceof com.megacrit.cardcrawl.actions.unique.DiscoveryAction
+                    ? readIntField(current, "amount") : null;
+            // DiscoveryAction holds the native copy count while its modal is open.
+            // An unknown combat card reward still reaches Silver as unsupported.
+            if (qualifiedDiscoverySelection(discovery, skippable, copyCount,
+                    screen.rewardGroup == null ? -1 : screen.rewardGroup.size()))
+                return selectionJson("DISCOVERY", skippable, false, 1, copyCount, screen.rewardGroup);
+            // Toolbox uses ChooseOneColorless, which opens the same
+            // Discovery-style combat reward but retains normal card cost.
+            if (qualifiedToolboxSelection(discovery, skippable,
+                    current instanceof com.megacrit.cardcrawl.actions.utility.ChooseOneColorless,
+                    screen.rewardGroup == null ? -1 : screen.rewardGroup.size()))
+                return selectionJson("DISCOVERY", false, false, 1, 1, false, screen.rewardGroup);
+            return selectionJson("", false, false, 1, screen.rewardGroup);
+        }
         if (AbstractDungeon.screen == AbstractDungeon.CurrentScreen.GRID
                 && AbstractDungeon.gridSelectScreen != null) {
             com.megacrit.cardcrawl.screens.select.GridCardSelectScreen screen =
                     AbstractDungeon.gridSelectScreen;
             Integer amount = readIntField(screen, "numCards", "cardSelectAmount");
-            String task = selectionTask(readStringField(screen, "tipMsg", "lastTip"), screen.anyNumber);
+            Object current = AbstractDungeon.actionManager == null ? null
+                    : AbstractDungeon.actionManager.currentAction;
+            String task = liquidMemoriesSelection(current) ? "LIQUID_MEMORIES_POTION"
+                    : gridSelectionTask(readStringField(screen, "tipMsg", "lastTip"), screen.anyNumber,
+                            current instanceof com.megacrit.cardcrawl.actions.unique.ExhumeAction);
             if (task.isEmpty() && screen.forUpgrade) task = "ARMAMENTS";
             return selectionJson(task, false, screen.anyNumber, amount == null ? 1 : amount,
                     screen.targetGroup == null ? null : screen.targetGroup.group);
@@ -2110,6 +2622,8 @@ public final class STSModelInspector implements PostInitializeSubscriber,
                 && AbstractDungeon.handCardSelectScreen != null) {
             com.megacrit.cardcrawl.screens.select.HandCardSelectScreen screen =
                     AbstractDungeon.handCardSelectScreen;
+            Object current = AbstractDungeon.actionManager == null ? null
+                    : AbstractDungeon.actionManager.currentAction;
             Boolean anyNumber = readBooleanField(screen, "anyNumber");
             boolean canPickAnyNumber = anyNumber != null ? anyNumber : screen.upTo;
             // DiscardAction(-1), used by Gambler's Brew and Gambling Chip,
@@ -2118,10 +2632,38 @@ public final class STSModelInspector implements PostInitializeSubscriber,
             // not an unknown combat screen.
             String task = handSelectionTask(screen.selectionReason, canPickAnyNumber,
                     screen.canPickZero, screen.numCardsToSelect);
+            if (singlePutOnDeckSelection(
+                    current instanceof com.megacrit.cardcrawl.actions.common.PutOnDeckAction,
+                    canPickAnyNumber, screen.canPickZero, screen.numCardsToSelect)) task = "WARCRY";
+            if (singleForethoughtSelection(current instanceof com.megacrit.cardcrawl.actions.unique.ForethoughtAction,
+                    canPickAnyNumber, screen.canPickZero, screen.numCardsToSelect)) task = "FORETHOUGHT";
             return selectionJson(task, screen.canPickZero, canPickAnyNumber, screen.numCardsToSelect,
                     AbstractDungeon.player.hand.group);
         }
         return null;
+    }
+
+    static boolean qualifiedDiscoverySelection(Boolean discovery, Boolean skippable,
+                                               Integer copyCount, int offerCount) {
+        return Boolean.TRUE.equals(discovery) && skippable != null
+                && copyCount != null && (copyCount == 1 || copyCount == 2)
+                && offerCount == 3;
+    }
+
+    static boolean qualifiedToolboxSelection(Boolean discovery, Boolean skippable,
+                                             boolean chooseOneColorlessAction, int offerCount) {
+        return Boolean.TRUE.equals(discovery) && Boolean.FALSE.equals(skippable)
+                && chooseOneColorlessAction && offerCount == 3;
+    }
+
+    private static boolean liquidMemoriesSelection(Object current) {
+        return zeroCostDiscardReturn(
+                current instanceof com.megacrit.cardcrawl.actions.common.BetterDiscardPileToHandAction,
+                readBooleanField(current, "setCost"), readIntField(current, "newCost"));
+    }
+
+    static boolean zeroCostDiscardReturn(boolean discardReturnAction, Boolean setCost, Integer newCost) {
+        return discardReturnAction && Boolean.TRUE.equals(setCost) && Integer.valueOf(0).equals(newCost);
     }
 
     private static String combatJson() {
@@ -2171,6 +2713,11 @@ public final class STSModelInspector implements PostInitializeSubscriber,
                 .append(",\"playerVulnerableSeen\":").append(trackedPlayerVulnerableSeen)
                 .append(",\"cardDrawPerTurn\":").append(readIntField(AbstractDungeon.player, "gameHandSize") == null
                         ? 5 : readIntField(AbstractDungeon.player, "gameHandSize"))
+                .append(",\"energyMaster\":").append(AbstractDungeon.player.energy.energyMaster)
+                .append(",\"energyPerTurn\":").append(AbstractDungeon.player.energy.energyMaster
+                        + AbstractDungeon.player.powers.stream()
+                            .filter(power -> "Berserk".equals(power.ID))
+                            .mapToInt(power -> power.amount).sum())
                 .append(",\"playedThisTurn\":[");
         boolean firstPlayed = true;
         for (AbstractCard card : AbstractDungeon.actionManager.cardsPlayedThisTurn) {
@@ -2185,8 +2732,12 @@ public final class STSModelInspector implements PostInitializeSubscriber,
             if (!firstPower) out.append(',');
             firstPower = false;
             String powerId = power.ID;
-            out.append("{\"id\":\"").append(escapeJson(powerId))
-                    .append("\",\"amount\":").append(power.amount);
+            out.append("{\"id\":\"").append(escapeJson(powerId)).append('"');
+            // Vanilla PanachePower.amount is the remaining card countdown;
+            // its private damage field is the native status magnitude.
+            Integer panacheDamage = "Panache".equals(powerId) ? readIntField(power, "damage") : null;
+            if (!"Panache".equals(powerId) || panacheDamage != null)
+                out.append(",\"amount\":").append(panacheDamage == null ? power.amount : panacheDamage);
             // Several native statuses have a turn-local justApplied bit.  It
             // is private in vanilla powers, so emit it only when reflection
             // can read the actual field; the importer remains fail-closed if
@@ -2208,8 +2759,7 @@ public final class STSModelInspector implements PostInitializeSubscriber,
                 Integer value = readIntField(power, "cardsDoubled", "cardsPlayed");
                 if (value != null) out.append(",\"echoFormCardsDoubled\":").append(value);
             } else if ("Panache".equals(power.ID)) {
-                Integer value = readIntField(power, "panacheCounter", "cardsUntilTrigger");
-                if (value != null) out.append(",\"panacheCounter\":").append(value);
+                out.append(",\"panacheCounter\":").append(power.amount);
             } else if ("Deva Form".equals(power.ID) || "DevaFormPower".equals(power.ID)) {
                 Integer value = readIntField(power, "energyPerTurn", "energyAmount");
                 if (value != null) out.append(",\"devaFormEnergyPerTurn\":").append(value);
@@ -2284,6 +2834,7 @@ public final class STSModelInspector implements PostInitializeSubscriber,
             List<AbstractMonster> monsters = AbstractDungeon.getMonsters().monsters;
             for (AbstractMonster monster : monsters) {
                 if (monster == null) continue;
+                if (!emittedSlots.containsKey(monster)) continue;
                 if (replacedLargeSlimeParent(encounter, monster, monsters)) continue;
                 if (replacedSlimeBossParent(encounter, monster, monsters)) continue;
                 if (!first) out.append(',');
@@ -2325,10 +2876,40 @@ public final class STSModelInspector implements PostInitializeSubscriber,
                     out.append('}');
                 }
                 out.append(']');
-                Integer miscInfo = monsterMiscInfo(monster);
+                HiddenIntentSnapshot hidden = runicDome ? hiddenIntentSnapshots.get(monster) : null;
+                boolean hiddenPrivateMisc = runicDome && runicPrivateMiscInfo(monster.id);
+                Integer miscInfo = hiddenPrivateMisc ? null : monsterMiscInfo(monster);
                 if (miscInfo != null) out.append(",\"miscInfo\":").append(miscInfo);
+                if (hiddenPrivateMisc) {
+                    int all = (1 << hiddenMiscCount(monster.id)) - 1;
+                    int mask = hiddenMiscMasks.containsKey(monster)
+                            ? hiddenMiscMasks.get(monster) : all;
+                    out.append(",\"privateMiscInfoUnderRunic\":true")
+                            .append(",\"publicMiscCandidateMask\":").append(mask);
+                }
                 Integer uniquePower0 = monsterUniquePower0(monster);
                 if (uniquePower0 != null) out.append(",\"uniquePower0\":").append(uniquePower0);
+                if (runicDome) {
+                    if (hidden != null) {
+                        out.append(",\"publicMoveHistory\":[")
+                                .append(hidden.publicMoveHistory[0]).append(',')
+                                .append(hidden.publicMoveHistory[1]).append(']')
+                                .append(",\"publicMoveHistoryCount\":")
+                                .append(hidden.publicMoveHistoryCount)
+                                .append(",\"pendingMoveRolls\":").append(hidden.pendingMoveRolls)
+                                .append(",\"pendingDirectMoveChoice\":")
+                                .append(hidden.pendingDirectMoveChoice)
+                                .append(",\"pendingRollInputs\":");
+                        appendHiddenRollInputs(out, hidden, hiddenPrivateMisc);
+                        out.append(",\"pendingRollInputHistory\":[");
+                        for (int roll = 0; roll < hidden.pendingRollInputHistory.size(); ++roll) {
+                            if (roll > 0) out.append(',');
+                            appendHiddenRollInputs(out, hidden.pendingRollInputHistory.get(roll),
+                                    hiddenPrivateMisc);
+                        }
+                        out.append(']');
+                    }
+                }
                 if (!runicDome) {
                     out.append(",\"intent\":\"")
                             .append(escapeJson(monster.intent == null ? "UNKNOWN" : monster.intent.name()))
@@ -2408,7 +2989,6 @@ public final class STSModelInspector implements PostInitializeSubscriber,
         private Process process;
         private BufferedWriter stdin;
         private Thread reader;
-        private Thread errorReader;
         private Thread writer;
         private Snapshot pendingObservation;
         private boolean stopping;
@@ -2447,16 +3027,19 @@ public final class STSModelInspector implements PostInitializeSubscriber,
                 String oocFloorModel = environmentFirst(p, "STS_LIVE_OOC_FLOOR_MODEL", "oocFloorModel");
                 if (oocFloorModel != null)
                     builder.environment().put("STS_LIVE_OOC_FLOOR_MODEL", oocFloorModel);
-                Process started = builder.redirectErrorStream(false).start();
+                Path advisorLog = Paths.get(System.getProperty("user.home"), ".cache",
+                        "sts-model-inspector", "advisor-stderr.log");
+                Files.createDirectories(advisorLog.getParent());
+                // ModTheSpire's Swing console can block inside accessibility
+                // callbacks. Never make the advisor's stderr drain depend on
+                // that UI thread: a full pipe also blocks its JSON responses.
+                Process started = builder.redirectError(ProcessBuilder.Redirect.to(advisorLog.toFile())).start();
                 process = started;
                 stopping = false;
                 stdin = new BufferedWriter(new OutputStreamWriter(process.getOutputStream(), StandardCharsets.UTF_8));
                 reader = new Thread(() -> readResponses(started), "sts-model-inspector-responses");
                 reader.setDaemon(true);
                 reader.start();
-                errorReader = new Thread(() -> drainErrors(started), "sts-model-inspector-stderr");
-                errorReader.setDaemon(true);
-                errorReader.start();
                 write("{\"protocol\":\"" + PROTOCOL + "\",\"kind\":\"hello\"}");
             } catch (Exception e) {
                 advisorStatus = "error";
@@ -2515,7 +3098,6 @@ public final class STSModelInspector implements PostInitializeSubscriber,
             notifyAll();
             if (process != null) process.destroy();
             if (reader != null) reader.interrupt();
-            if (errorReader != null) errorReader.interrupt();
             if (writer != null) writer.interrupt();
             process = null;
             stdin = null;
@@ -2542,8 +3124,7 @@ public final class STSModelInspector implements PostInitializeSubscriber,
                             ctmStatus = "";
                             ctmReason = "";
                             ctmDeath = 0.0;
-                            ctmHistogramMin = 1;
-                            ctmHistogram = new double[0];
+                            ctmHistogram = new HistogramSnapshot(1, new double[0]);
                             silverStatus = "";
                             silverReason = "";
                             silverSelectedAction = "";
@@ -2605,8 +3186,9 @@ public final class STSModelInspector implements PostInitializeSubscriber,
                                 ctmReason = forecastReason == null ? ctmStatus : forecastReason;
                                 if ("OK".equals(ctmStatus)) {
                                     ctmDeath = doubleField(ctm, "deathProbability");
-                                    ctmHistogramMin = (int) numberField(ctm, "winningHpHistogramMin");
-                                    ctmHistogram = numberArrayField(ctm, "winningHpHistogram");
+                                    ctmHistogram = new HistogramSnapshot(
+                                            (int) numberField(ctm, "winningHpHistogramMin"),
+                                            numberArrayField(ctm, "winningHpHistogram"));
                                 }
                             }
                             try { potionOverlay = PotionOverlay.parse(line); }
@@ -2625,12 +3207,6 @@ public final class STSModelInspector implements PostInitializeSubscriber,
                 advisorStatus = "disconnected";
                 advisorReason = "advisor exited";
             }
-        }
-
-        private void drainErrors(Process p) {
-            try (BufferedReader r = new BufferedReader(new InputStreamReader(p.getErrorStream(), StandardCharsets.UTF_8))) {
-                while (r.readLine() != null) { /* drain; diagnostics stay out of the game UI */ }
-            } catch (IOException ignored) {}
         }
 
         private String field(String json, String key) {

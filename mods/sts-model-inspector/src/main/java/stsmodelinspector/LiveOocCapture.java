@@ -5,9 +5,14 @@ import com.megacrit.cardcrawl.cards.AbstractCard;
 import com.megacrit.cardcrawl.core.CardCrawlGame;
 import com.megacrit.cardcrawl.core.Settings;
 import com.megacrit.cardcrawl.dungeons.AbstractDungeon;
+import com.megacrit.cardcrawl.events.exordium.DeadAdventurer;
 import com.megacrit.cardcrawl.map.MapEdge;
 import com.megacrit.cardcrawl.map.MapRoomNode;
 import com.megacrit.cardcrawl.relics.AbstractRelic;
+import com.megacrit.cardcrawl.relics.BottledFlame;
+import com.megacrit.cardcrawl.relics.BottledLightning;
+import com.megacrit.cardcrawl.relics.BottledTornado;
+import com.megacrit.cardcrawl.localization.LocalizedStrings;
 import com.megacrit.cardcrawl.rewards.RewardItem;
 import com.megacrit.cardcrawl.rooms.AbstractRoom;
 import com.megacrit.cardcrawl.shop.ShopScreen;
@@ -38,6 +43,111 @@ final class LiveOocCapture {
     private static final java.util.IdentityHashMap<Object,String> rewardIdentities = new java.util.IdentityHashMap<>();
     private static final SeenRelicOffers seenRelicOffers = new SeenRelicOffers();
     private static final CombatClassHistory combatClassHistory = new CombatClassHistory();
+    private static final QuestionHistory questionHistory = new QuestionHistory();
+    private static final CardRewardVisits cardRewardVisits = new CardRewardVisits();
+
+    static final class CardRewardVisits {
+        private Object player, node;
+        private String opened;
+        private final LinkedHashSet<String> declined = new LinkedHashSet<>();
+        private void scope(Object currentPlayer, Object currentNode) {
+            if (player == currentPlayer && node == currentNode) return;
+            player = currentPlayer; node = currentNode; opened = null; declined.clear();
+        }
+        void opened(Object currentPlayer, Object currentNode, String identity) {
+            scope(currentPlayer, currentNode);
+            opened = identity;
+        }
+        void parent(Object currentPlayer, Object currentNode, List<String> cardIdentities) {
+            scope(currentPlayer, currentNode);
+            if (opened != null && cardIdentities.contains(opened)) declined.add(opened);
+            opened = null;
+        }
+        boolean declined(String identity) { return declined.contains(identity); }
+    }
+
+    static final class QuestionHistory {
+        private long seed = Long.MIN_VALUE;
+        private int act = -1;
+        private boolean invalid;
+        private final List<Map<String,Object>> entries = new ArrayList<>();
+
+        private Path path(long runSeed, int runAct) {
+            return Paths.get(System.getProperty("user.home", "."), ".cache",
+                    "sts-model-inspector", "question-history", runSeed + "-act" + runAct + ".tsv");
+        }
+        private void load(long runSeed, int runAct) {
+            if (seed == runSeed && act == runAct) return;
+            seed = runSeed; act = runAct; invalid = false; entries.clear();
+            Path ledger = path(seed, act);
+            if (!Files.isRegularFile(ledger)) return;
+            try (BufferedReader reader = Files.newBufferedReader(ledger, StandardCharsets.UTF_8)) {
+                String line;
+                int previous = 0;
+                while ((line = reader.readLine()) != null) {
+                    String[] fields = line.split("\\t", -1);
+                    if (fields.length != 2) throw new IllegalArgumentException("question ledger fields");
+                    int floor = Integer.parseInt(fields[0]);
+                    if (floor <= previous || !valid(fields[1]))
+                        throw new IllegalArgumentException("question ledger order or outcome");
+                    entries.add(object("floor", floor, "outcome", fields[1]));
+                    previous = floor;
+                }
+            } catch (IOException | RuntimeException failure) {
+                entries.clear(); invalid = true;
+            }
+        }
+        private static boolean valid(String outcome) {
+            return Arrays.asList("MONSTER", "SHOP", "TREASURE", "EVENT").contains(outcome);
+        }
+        private void persist() {
+            if (invalid) return;
+            Path ledger = path(seed, act);
+            try {
+                Files.createDirectories(ledger.getParent());
+                Path temp = ledger.resolveSibling(ledger.getFileName() + ".tmp");
+                try (BufferedWriter writer = Files.newBufferedWriter(temp, StandardCharsets.UTF_8)) {
+                    for (Map<String,Object> entry : entries)
+                        writer.write(entry.get("floor") + "\t" + entry.get("outcome") + "\n");
+                }
+                try { Files.move(temp, ledger, java.nio.file.StandardCopyOption.ATOMIC_MOVE,
+                        java.nio.file.StandardCopyOption.REPLACE_EXISTING); }
+                catch (java.nio.file.AtomicMoveNotSupportedException ignored) {
+                    Files.move(temp, ledger, java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+                }
+            } catch (IOException failure) { invalid = true; }
+        }
+        void observe(long runSeed, int runAct, int floor, int expectedCount,
+                boolean currentQuestion, String roomClass) {
+            load(runSeed, runAct);
+            if (floor == 0) {
+                entries.clear(); invalid = false;
+                try {
+                    for (int a = 1; a <= 4; ++a) Files.deleteIfExists(path(runSeed, a));
+                } catch (IOException failure) { invalid = true; }
+                return;
+            }
+            if (!currentQuestion || invalid) return;
+            String outcome = roomClass.startsWith("MonsterRoom") ? "MONSTER"
+                    : "ShopRoom".equals(roomClass) ? "SHOP"
+                    : roomClass.startsWith("TreasureRoom") ? "TREASURE"
+                    : "EventRoom".equals(roomClass) ? "EVENT" : "";
+            if (!valid(outcome)) return;
+            for (Map<String,Object> entry : entries) {
+                if (((Number)entry.get("floor")).intValue() != floor) continue;
+                if (!outcome.equals(entry.get("outcome"))) invalid = true;
+                return;
+            }
+            if (entries.size() >= expectedCount
+                    || (!entries.isEmpty() && floor <= ((Number)entries.get(entries.size()-1).get("floor")).intValue())) {
+                invalid = true; return;
+            }
+            entries.add(object("floor", floor, "outcome", outcome));
+            persist();
+        }
+        boolean completeFor(int expectedCount) { return !invalid && entries.size() == expectedCount; }
+        List<Map<String,Object>> snapshot() { return new ArrayList<>(entries); }
+    }
 
     // The public damage metric records a combat's floor but not whether that
     // combat consumed an encounter queue. Observe the live room class before
@@ -135,15 +245,27 @@ final class LiveOocCapture {
             // populated its monster group. Wait for the first real group;
             // missing fights are caught against damage_taken at the next OOC.
             if (group == null) return;
-            if (kind == null) { complete = false; return; }
-            if (("NORMAL_QUEUE".equals(kind) || "ELITE_QUEUE".equals(kind))
-                    && (encounter == null || encounter.isEmpty())) { complete = false; return; }
+            if (kind == null) {
+                complete = false; return;
+            }
+            if (encounter == null || encounter.isEmpty()) {
+                // Loading a completed combat can expose its room and group
+                // before the encounter identity is restored. The floor ledger
+                // still catches any fight never observed with an identity.
+                return;
+            }
             if (group != lastGroup) {
                 if (!entries.isEmpty()
                         && ((Number)entries.get(entries.size() - 1).get("floor")).intValue() == floor) {
                     String previousKind = String.valueOf(entries.get(entries.size() - 1).get("kind"));
                     String previousEncounter = String.valueOf(entries.get(entries.size() - 1).getOrDefault("encounter", ""));
-                    if (!previousKind.equals(kind) || !previousEncounter.equals(encounter)) complete = false;
+                    if ("FIXED_EVENT".equals(previousKind) && "FIXED_EVENT".equals(kind)
+                            && "COLOSSEUM_EVENT_SLAVERS".equals(previousEncounter)
+                            && "COLOSSEUM_EVENT_NOBS".equals(encounter)) {
+                        entries.add(object("floor", floor, "kind", kind, "encounter", encounter));
+                    } else if (!previousKind.equals(kind) || !previousEncounter.equals(encounter)) {
+                        complete = false;
+                    }
                 } else {
                     entries.add(object("floor", floor, "kind", kind,
                             "encounter", encounter == null ? "" : encounter));
@@ -152,7 +274,29 @@ final class LiveOocCapture {
                 persist();
             }
         }
-        void invalidate() { complete = false; }
+        void reconcileCompletedColosseum(List<Integer> completedFloors, List<?> damageMetrics) {
+            if (!complete || entries.isEmpty() || entries.size() + 1 != completedFloors.size()
+                    || damageMetrics == null) return;
+            int actStart = act <= 1 ? 0 : act == 2 ? 17 : act == 3 ? 34 : 51;
+            List<?> currentActMetrics = damageMetrics.stream()
+                    .filter(raw -> map(raw).get("floor") instanceof Number
+                            && ((Number)map(raw).get("floor")).intValue() > actStart)
+                    .collect(java.util.stream.Collectors.toList());
+            if (currentActMetrics.size() != completedFloors.size()) return;
+            for (int i = 0; i < entries.size(); ++i)
+                if (((Number)entries.get(i).get("floor")).intValue() != completedFloors.get(i)) return;
+            int last = completedFloors.size() - 1;
+            if (completedFloors.get(last).intValue() != completedFloors.get(last - 1).intValue()
+                    || !"COLOSSEUM_EVENT_SLAVERS".equals(entries.get(last - 1).get("encounter"))
+                    || !"Colosseum Slavers".equals(map(currentActMetrics.get(last - 1)).get("enemies"))
+                    || !"Colosseum Nobs".equals(map(currentActMetrics.get(last)).get("enemies"))) return;
+            entries.add(object("floor", completedFloors.get(last), "kind", "FIXED_EVENT",
+                    "encounter", "COLOSSEUM_EVENT_NOBS"));
+            persist();
+        }
+        void invalidate() {
+            complete = false;
+        }
         boolean completeFor(List<Integer> completedFloors) {
             if (!complete || entries.size() != completedFloors.size()) return false;
             for (int i = 0; i < entries.size(); ++i) {
@@ -212,6 +356,55 @@ final class LiveOocCapture {
         private boolean complete;
         private final LinkedHashSet<String> offers = new LinkedHashSet<>();
 
+        private Path ledgerPath(long currentSeed) {
+            return Paths.get(System.getProperty("user.home", "."), ".cache",
+                    "sts-model-inspector", "seen-relic-offers", currentSeed + ".tsv");
+        }
+
+        private boolean restore(long currentSeed, int currentFloor) {
+            Path path = ledgerPath(currentSeed);
+            if (!Files.isRegularFile(path)) return false;
+            try (BufferedReader reader = Files.newBufferedReader(path, StandardCharsets.UTF_8)) {
+                String header = reader.readLine();
+                if (header == null) return false;
+                String[] fields = header.split("\\t", -1);
+                if (fields.length != 3 || !"v1".equals(fields[0])) return false;
+                int savedFloor = Integer.parseInt(fields[1]);
+                if (savedFloor < 0 || savedFloor > currentFloor
+                        || (!"0".equals(fields[2]) && !"1".equals(fields[2]))) return false;
+                LinkedHashSet<String> restoredOffers = new LinkedHashSet<>();
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    if (line.isEmpty() || line.indexOf('\t') >= 0 || restoredOffers.size() >= 181)
+                        return false;
+                    restoredOffers.add(line);
+                }
+                lastFloor = savedFloor;
+                complete = "1".equals(fields[2]);
+                offers.clear();
+                offers.addAll(restoredOffers);
+                return true;
+            } catch (IOException | NumberFormatException failure) { return false; }
+        }
+
+        private void persist() {
+            if (player == null) return;
+            Path path = ledgerPath(seed);
+            try {
+                Files.createDirectories(path.getParent());
+                Path temp = path.resolveSibling(path.getFileName() + ".tmp");
+                try (BufferedWriter writer = Files.newBufferedWriter(temp, StandardCharsets.UTF_8)) {
+                    writer.write("v1\t" + lastFloor + "\t" + (complete ? "1" : "0") + "\n");
+                    for (String offer : offers) writer.write(offer + "\n");
+                }
+                try { Files.move(temp, path, java.nio.file.StandardCopyOption.ATOMIC_MOVE,
+                        java.nio.file.StandardCopyOption.REPLACE_EXISTING); }
+                catch (java.nio.file.AtomicMoveNotSupportedException ignored) {
+                    Files.move(temp, path, java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+                }
+            } catch (IOException failure) { complete = false; }
+        }
+
         void observe(Object currentPlayer, long currentSeed, int floor,
                      boolean freshRun, String screen, Map<String,Object> details) {
             if (player != currentPlayer || seed != currentSeed || floor < lastFloor) {
@@ -220,6 +413,9 @@ final class LiveOocCapture {
                 lastFloor = -1;
                 complete = freshRun;
                 offers.clear();
+                if (!freshRun && restore(currentSeed, floor)) {
+                    // Preserve offers observed before a process restart.
+                }
             }
             if (lastFloor >= 0 && floor > lastFloor + 1) complete = false;
             lastFloor = floor;
@@ -234,8 +430,9 @@ final class LiveOocCapture {
                 for (Object relic : list(details.get("relics")))
                     offers.add(String.valueOf(relic));
             }
+            persist();
         }
-        void invalidate() { complete = false; }
+        void invalidate() { complete = false; persist(); }
         boolean complete() { return complete; }
         List<String> snapshot() { return new ArrayList<>(offers); }
     }
@@ -306,8 +503,6 @@ final class LiveOocCapture {
                     out.put("screen", type.toLowerCase(java.util.Locale.ROOT));
                     out.put("unsupportedReason", "NATIVE_SCREEN_UNSUPPORTED:" + type);
             }
-            if ("map".equals(out.get("screen")) && activeWingBoots(core))
-                unsupported(out, "RELIC_NATIVE_STATE_UNREPRESENTABLE:WingedGreaves:active");
             seenRelicOffers.observe(AbstractDungeon.player, Settings.seed,
                     AbstractDungeon.floorNum, freshRun, String.valueOf(out.get("screen")),
                     map(out.getOrDefault("details", object())));
@@ -316,7 +511,6 @@ final class LiveOocCapture {
             finalizeSupportReason(out);
         } catch (ReflectiveOperationException | RuntimeException failure) {
             seenRelicOffers.invalidate();
-            combatClassHistory.invalidate();
             recordCaptureError(out, failure);
         }
         return JSON.toJson(out);
@@ -410,6 +604,9 @@ final class LiveOocCapture {
             if (floor > combatActStart && floor <= AbstractDungeon.floorNum)
                 currentActCombatFloors.add(floor);
         combatClassHistory.restoreFor(AbstractDungeon.player, Settings.seed, AbstractDungeon.actNum);
+        if (CardCrawlGame.metricData != null)
+            combatClassHistory.reconcileCompletedColosseum(currentActCombatFloors,
+                    CardCrawlGame.metricData.damage_taken);
         p.put("combatHistory", combatClassHistory.snapshot());
         p.put("combatHistoryComplete", combatClassHistory.completeFor(currentActCombatFloors));
         // At the act-boss transition vanilla can leave one non-room sentinel
@@ -468,12 +665,12 @@ final class LiveOocCapture {
             if (idx >= 0 && idx < 6) ++actVisits[idx];
         }
         p.put("currentActPathVisits", actVisits);
-        // The immutable map symbol preserves '?' after conversion, but this
-        // capture does not yet persist the resolved public outcome. Do not
-        // let the native importer reconstruct those counters from a uniform
-        // hypothetical history.
-        p.put("questionOutcomes", new ArrayList<String>());
-        p.put("questionHistoryComplete", false);
+        boolean currentQuestion = !canonicalPathHistory.isEmpty()
+                && "EVENT".equals(canonicalPathHistory.get(canonicalPathHistory.size() - 1));
+        questionHistory.observe(Settings.seed, AbstractDungeon.actNum, AbstractDungeon.floorNum,
+                actVisits[2], currentQuestion, AbstractDungeon.getCurrRoom().getClass().getSimpleName());
+        p.put("questionOutcomes", questionHistory.snapshot());
+        p.put("questionHistoryComplete", questionHistory.completeFor(actVisits[2]));
         List<String> acquiredRelics = new ArrayList<>();
         List<String> priorEvents = new ArrayList<>();
         int shopRemovals = 0;
@@ -485,7 +682,7 @@ final class LiveOocCapture {
             for (Object raw : CardCrawlGame.metricData.event_choices) {
                 Map<String,Object> event = map(raw);
                 Object name = event.get("event_name");
-                if (name != null && !priorEvents.contains(String.valueOf(name))) priorEvents.add(String.valueOf(name));
+                addPriorEvent(priorEvents, name);
                 for (String key : Arrays.asList("relics_obtained", "relics_lost")) {
                     Object values = event.get(key);
                     if (values instanceof List) for (Object relic : (List<?>)values)
@@ -507,15 +704,351 @@ final class LiveOocCapture {
 
     static String canonicalEventId(String liveId) {
         // The native save mapping spells Neow differently from the Java class.
-        return "NEOW".equals(liveId) ? "Neow" : liveId;
+        if ("NEOW".equals(liveId)) return "Neow";
+        if ("SensoryStone".equals(liveId)) return "Sensory Stone";
+        return liveId;
     }
 
-    static boolean simpleInitialEventSupported(String simple) {
-        return Arrays.asList("BigFish", "GoldenShrine",
-                "LivingWall", "LiarsGame", "Mushrooms", "TheLibrary",
-                "TheMausoleum", "MysteriousSphere", "SecretPortal", "FountainOfCurseRemoval", "UpgradeShrine",
-                "PurificationShrine", "Transmogrifier", "Duplicator", "Bonfire", "TheJoust",
-                "WomanInBlue").contains(simple);
+    static void addPriorEvent(List<String> priorEvents, Object name) {
+        if (name == null) return;
+        String canonical = canonicalEventId(String.valueOf(name));
+        if (!priorEvents.contains(canonical)) priorEvents.add(canonical);
+    }
+
+    static boolean sensoryStoneInitialVisible(Object phase, List<?> labels, List<?> options) {
+        if (!"INTRO_2".equals(String.valueOf(phase))
+                || labels.size() != 3 || options.size() != 3) return false;
+        for (int i = 0; i < 3; ++i)
+            if (((Number)map(options.get(i)).get("index")).intValue() != i
+                    || !String.valueOf(labels.get(i)).contains("[Recall]")) return false;
+        return String.valueOf(labels.get(0)).contains("1 Colorless")
+                && String.valueOf(labels.get(1)).contains("2 Colorless")
+                && String.valueOf(labels.get(1)).contains("5 HP")
+                && String.valueOf(labels.get(2)).contains("3 Colorless")
+                && String.valueOf(labels.get(2)).contains("10 HP");
+    }
+
+    static int[] designerInitialNativeIndices(Object phase, List<?> labels, List<?> options,
+            boolean upgradeOne, boolean cleanUpRemoves, int adjustCost, int cleanUpCost,
+            int fullServiceCost, int hpLoss, int ascension) {
+        if (!"0".equals(String.valueOf(phase)) || labels.size() != 4 || options.size() != 4
+                || adjustCost != (ascension >= 15 ? 50 : 40)
+                || cleanUpCost != (ascension >= 15 ? 75 : 60)
+                || fullServiceCost != (ascension >= 15 ? 110 : 90)
+                || hpLoss != (ascension >= 15 ? 5 : 3)) return null;
+        for (int i = 0; i < 4; ++i)
+            if (((Number)map(options.get(i)).get("index")).intValue() != i) return null;
+        String[] required = {upgradeOne ? "Upgrade a card" : "Upgrade 2 random cards",
+            cleanUpRemoves ? "Remove a card" : "Transform 2 cards",
+            "Remove a card", "Lose " + hpLoss + " HP"};
+        int[] costs = {adjustCost, cleanUpCost, fullServiceCost};
+        for (int i = 0; i < 4; ++i) {
+            String label = String.valueOf(labels.get(i));
+            if (!label.contains(required[i]) || (i < 3 && !label.contains("Lose " + costs[i] + " Gold")))
+                return null;
+        }
+        return new int[] {upgradeOne ? 0 : 1, cleanUpRemoves ? 2 : 3, 4, 5};
+    }
+
+    static boolean maskedBanditsInitialVisible(Object phase, List<?> labels, List<?> options) {
+        return "INTRO".equals(String.valueOf(phase)) && labels.size() == 2 && options.size() == 2
+                && ((Number)map(options.get(0)).get("index")).intValue() == 0
+                && ((Number)map(options.get(1)).get("index")).intValue() == 1
+                && String.valueOf(labels.get(0)).contains("[Pay] Lose ALL of your Gold")
+                && String.valueOf(labels.get(1)).contains("[Fight!]");
+    }
+
+    static boolean libraryInitialVisible(Object phase, List<?> labels, List<?> options, int heal) {
+        return "0".equals(String.valueOf(phase)) && labels.size() == 2 && options.size() == 2
+                && heal > 0
+                && ((Number)map(options.get(0)).get("index")).intValue() == 0
+                && ((Number)map(options.get(1)).get("index")).intValue() == 1
+                && String.valueOf(labels.get(0)).contains("[Read] Choose 1 of 20 cards")
+                && String.valueOf(labels.get(1)).contains("[Sleep] Heal " + heal + " HP");
+    }
+
+    static boolean augmenterInitialVisible(Object phase, List<?> labels, List<?> options) {
+        return "0".equals(String.valueOf(phase)) && labels.size() == 3 && options.size() == 3
+                && ((Number)map(options.get(0)).get("index")).intValue() == 0
+                && ((Number)map(options.get(1)).get("index")).intValue() == 1
+                && ((Number)map(options.get(2)).get("index")).intValue() == 2
+                && String.valueOf(labels.get(0)).contains("[Test J.A.X.] Get JAXXED")
+                && String.valueOf(labels.get(1)).contains("[Become Test Subject] Transform 2 cards")
+                && String.valueOf(labels.get(2)).contains("[Ingest Mutagens] Obtain a special relic");
+    }
+
+    static boolean ancientWritingInitialVisible(Object phase, List<?> labels, List<?> options) {
+        return "INTRO".equals(String.valueOf(phase)) && labels.size() == 2 && options.size() == 2
+                && ((Number)map(options.get(0)).get("index")).intValue() == 0
+                && ((Number)map(options.get(1)).get("index")).intValue() == 1
+                && String.valueOf(labels.get(0)).contains("[Elegance] Remove a card from your deck")
+                && String.valueOf(labels.get(1)).contains("[Simplicity] Upgrade all Strikes and Defends");
+    }
+
+    static boolean windingHallsChoiceVisible(Object phase, List<?> labels, List<?> options,
+                                             int hpLoss, int heal, int maxHpLoss) {
+        return "1".equals(String.valueOf(phase)) && labels.size() == 3 && options.size() == 3
+                && hpLoss > 0 && heal > 0 && maxHpLoss > 0
+                && ((Number)map(options.get(0)).get("index")).intValue() == 0
+                && ((Number)map(options.get(1)).get("index")).intValue() == 1
+                && ((Number)map(options.get(2)).get("index")).intValue() == 2
+                && String.valueOf(labels.get(0)).contains("Receive 2 Madness. Lose " + hpLoss + " HP")
+                && String.valueOf(labels.get(1)).contains("Writhe. Heal " + heal + " HP")
+                && String.valueOf(labels.get(2)).contains("Lose " + maxHpLoss + " Max HP");
+    }
+
+    static boolean faceTraderChoiceVisible(Object phase, List<?> labels, List<?> options,
+                                           int damage, int gold, int ascension) {
+        return "MAIN".equals(String.valueOf(phase)) && labels.size() == 3 && options.size() == 3
+                && damage > 0 && gold == (ascension >= 15 ? 50 : 75)
+                && ((Number)map(options.get(0)).get("index")).intValue() == 0
+                && ((Number)map(options.get(1)).get("index")).intValue() == 1
+                && ((Number)map(options.get(2)).get("index")).intValue() == 2
+                && String.valueOf(labels.get(0)).contains("[Touch] Lose " + damage + " HP, gain " + gold + " Gold")
+                && String.valueOf(labels.get(1)).contains("[Trade] 50%: Good Face. 50%: Bad Face")
+                && String.valueOf(labels.get(2)).contains("[Leave]");
+    }
+
+    static boolean addictInitialVisible(Object phase, List<?> labels, List<?> options, int gold) {
+        return "0".equals(String.valueOf(phase)) && gold >= 85
+                && labels.size() == 3 && options.size() == 3
+                && ((Number)map(options.get(0)).get("index")).intValue() == 0
+                && ((Number)map(options.get(1)).get("index")).intValue() == 1
+                && ((Number)map(options.get(2)).get("index")).intValue() == 2
+                && String.valueOf(labels.get(0)).contains("[Offer Gold] 85 Gold: Obtain a Relic")
+                && String.valueOf(labels.get(1)).contains("[Rob] Obtain a Relic. Become Cursed - Shame")
+                && String.valueOf(labels.get(2)).contains("[Leave]");
+    }
+
+    static boolean vampiresNoVialInitialVisible(Object phase, List<?> labels, List<?> options,
+                                                int maxHpLoss, boolean hasVial) {
+        return "0".equals(String.valueOf(phase)) && !hasVial && maxHpLoss > 0
+                && labels.size() == 2 && options.size() == 2
+                && ((Number)map(options.get(0)).get("index")).intValue() == 0
+                && ((Number)map(options.get(1)).get("index")).intValue() == 1
+                && String.valueOf(labels.get(0)).contains("Receive 5 Bites. Lose " + maxHpLoss + " Max HP")
+                && String.valueOf(labels.get(1)).contains("[Refuse]");
+    }
+
+    static String visibleChestSize(String chestClass) {
+        if ("SmallChest".equals(chestClass)) return "SMALL";
+        if ("MediumChest".equals(chestClass)) return "MEDIUM";
+        if ("LargeChest".equals(chestClass)) return "LARGE";
+        return "";
+    }
+
+    static int scrapOozeRetryCount(int publicChance, int publicDamage, int ascension) {
+        if (publicChance < 25 || publicChance > 105
+                || (publicChance - 25) % 10 != 0)
+            throw new IllegalArgumentException("Scrap Ooze public retry state differs from native event");
+        int retry = (publicChance - 25) / 10;
+        if (publicDamage != (ascension >= 15 ? 5 : 3) + retry)
+            throw new IllegalArgumentException("Scrap Ooze public retry state differs from native event");
+        return retry;
+    }
+
+    static boolean nativeIndexedInitialEventVisible(Object phase, List<?> labels, List<?> options) {
+        if (!("INTRO".equals(String.valueOf(phase)) || "0".equals(String.valueOf(phase)))
+                || labels.isEmpty() || labels.size() != options.size()) return false;
+        boolean[] seen = new boolean[8];
+        for (int i = 0; i < options.size(); ++i) {
+            Object raw = map(options.get(i)).get("index");
+            if (!(raw instanceof Number)) return false;
+            int index = ((Number)raw).intValue();
+            if (index < 0 || index >= seen.length || seen[index]) return false;
+            seen[index] = true;
+        }
+        return true;
+    }
+
+    static int[] nlothInitialRelicIndices(List<?> ownedRelics, Object choice0, Object choice1)
+            throws ReflectiveOperationException {
+        if (choice0 == null || choice1 == null || choice0 == choice1)
+            throw new IllegalArgumentException("N'loth offered relic identities are missing or duplicated");
+        int index0 = -1, index1 = -1, matches0 = 0, matches1 = 0;
+        for (int i = 0; i < ownedRelics.size(); ++i) {
+            if (ownedRelics.get(i) == choice0) { index0 = i; ++matches0; }
+            if (ownedRelics.get(i) == choice1) { index1 = i; ++matches1; }
+        }
+        if (matches0 != 1 || matches1 != 1 || index0 == index1)
+            throw new IllegalArgumentException("N'loth offered relic identity is absent or ambiguous in owned relics");
+        return new int[] {index0, index1};
+    }
+
+    static boolean nlothInitialOfferVisible(Object phase, List<?> labels, List<?> options,
+                                             int index0, int index1, String relic0, String relic1) {
+        if (!nativeIndexedInitialEventVisible(phase, labels, options)
+                || options.size() != 3 || index0 < 0 || index1 < 0 || index0 == index1
+                || relic0 == null || relic0.isEmpty() || relic1 == null || relic1.isEmpty()
+                || relic0.equals(relic1)) return false;
+        for (int i = 0; i < 3; ++i)
+            if (((Number)map(options.get(i)).get("index")).intValue() != i) return false;
+        String first = String.valueOf(labels.get(0));
+        String second = String.valueOf(labels.get(1));
+        return first.contains(relic0) && second.contains(relic1)
+                && !first.contains(relic1) && !second.contains(relic0);
+    }
+
+    static boolean bigFishInitialVisible(Object phase, List<?> labels, List<?> options,
+                                         int healAmount, int maxHp) {
+        if (!("INTRO".equals(String.valueOf(phase)) || "0".equals(String.valueOf(phase)))
+                || labels.size() != 3 || options.size() != 3 || maxHp < 1
+                || healAmount != maxHp / 3) return false;
+        for (int i = 0; i < 3; ++i)
+            if (((Number)map(options.get(i)).get("index")).intValue() != i) return false;
+        return String.valueOf(labels.get(0)).contains("[Banana]")
+                && String.valueOf(labels.get(0)).contains(Integer.toString(healAmount))
+                && String.valueOf(labels.get(1)).contains("[Donut]")
+                && String.valueOf(labels.get(2)).contains("[Box]");
+    }
+
+    static boolean ghostsInitialVisible(Object phase, List<?> labels, List<?> options,
+                                        int hpLoss, int maxHp, int ascension) {
+        int expectedLoss = Math.min(maxHp - 1, (maxHp + 1) / 2);
+        int expectedApparitions = ascension >= 15 ? 3 : 5;
+        String accept = labels.size() > 0 ? String.valueOf(labels.get(0)) : "";
+        String leave = labels.size() > 1 ? String.valueOf(labels.get(1)) : "";
+        return ("INTRO".equals(String.valueOf(phase)) || "0".equals(String.valueOf(phase)))
+                && hpLoss == expectedLoss && labels.size() == 2 && options.size() == 2
+                && ((Number)map(options.get(0)).get("index")).intValue() == 0
+                && ((Number)map(options.get(1)).get("index")).intValue() == 1
+                && accept.contains("[Accept]") && accept.contains(expectedApparitions + " Apparition")
+                && accept.contains(Integer.toString(hpLoss))
+                && (leave.contains("[Refuse]") || leave.contains("[Leave]"));
+    }
+
+    static int mindBloomNativeOptionIndex(String simple, Object phase, String label,
+                                          int liveIndex, int floor) {
+        if ("MindBloom".equals(simple)
+                && ("INTRO".equals(String.valueOf(phase)) || "0".equals(String.valueOf(phase)))
+                && floor > 40 && liveIndex == 2) {
+            return label != null && label.contains("[I am Healthy]") ? 3 : -1;
+        }
+        return liveIndex;
+    }
+
+    static int knowingSkullNativeIndex(String label) {
+        if (label == null) return -1;
+        if (label.contains("[Riches?]")) return 0;       // gold
+        if (label.contains("[Success?]")) return 1;     // colorless card
+        if (label.contains("[A Pick Me Up?]")) return 2; // potion
+        if (label.contains("[How do I leave?]")) return 3;
+        return -1;
+    }
+
+    static boolean knowingSkullAskVisible(Object phase, List<?> labels, List<?> options,
+            int goldCost, int cardCost, int potionCost, int leaveCost) {
+        if (!"ASK".equals(String.valueOf(phase)) || labels.size() != 4 || options.size() != 4
+                || goldCost < 0 || cardCost < 0 || potionCost < 0 || leaveCost < 0) return false;
+        int[] costs = {goldCost, cardCost, potionCost, leaveCost};
+        boolean[] seen = new boolean[4];
+        for (int i = 0; i < labels.size(); ++i) {
+            String label = String.valueOf(labels.get(i));
+            int nativeIndex = knowingSkullNativeIndex(label);
+            int optionIndex = ((Number)map(options.get(i)).get("index")).intValue();
+            if (nativeIndex < 0 || nativeIndex != optionIndex || seen[nativeIndex]
+                    || !label.contains("Lose " + costs[nativeIndex] + " HP")) return false;
+            seen[nativeIndex] = true;
+        }
+        for (boolean present : seen) if (!present) return false;
+        return true;
+    }
+
+    static int deadAdventurerPublicEncounter(Object phase, List<?> labels, List<?> options,
+            String body, String[] descriptions, int ascension) {
+        if (!("INTRO".equals(String.valueOf(phase)) || "0".equals(String.valueOf(phase)))
+                || labels.size() != 2 || options.size() != 2
+                || descriptions.length < 7
+                || ((Number)map(options.get(0)).get("index")).intValue() != 0
+                || ((Number)map(options.get(1)).get("index")).intValue() != 1
+                || !String.valueOf(labels.get(0)).contains("[Search]")
+                || !String.valueOf(labels.get(0)).contains((ascension >= 15 ? 35 : 25) + "%")
+                || !String.valueOf(labels.get(1)).contains("[Leave]")) return -1;
+        for (int encounter = 0; encounter < 3; ++encounter)
+            if (body.equals(descriptions[2] + descriptions[3 + encounter] + descriptions[6]))
+                return encounter;
+        return -1;
+    }
+
+    static boolean forgottenAltarInitialVisible(Object phase, List<?> labels, List<?> options,
+            int hpLoss, int maxHp, int ascension, boolean hasGoldenIdol) {
+        int expectedLoss = Math.round(maxHp * (ascension >= 15 ? 0.35f : 0.25f));
+        int first = hasGoldenIdol ? 0 : 1;
+        if (!"0".equals(String.valueOf(phase)) || hpLoss != expectedLoss
+                || labels.size() != 3 - first || options.size() != 3 - first) return false;
+        for (int i = first; i < 3; ++i)
+            if (((Number)map(options.get(i - first)).get("index")).intValue() != i)
+                return false;
+        if (hasGoldenIdol && !String.valueOf(labels.get(0)).contains("[Offer]")) return false;
+        return String.valueOf(labels.get(1 - first)).contains("[Sacrifice]")
+                && String.valueOf(labels.get(1 - first)).contains("5 Max HP")
+                && String.valueOf(labels.get(1 - first)).contains(hpLoss + " HP")
+                && String.valueOf(labels.get(2 - first)).contains("[Desecrate]")
+                && String.valueOf(labels.get(2 - first)).contains("Decay");
+    }
+
+    static boolean clericInitialVisible(Object phase, List<?> labels, List<?> options,
+                                        int healAmount, int purifyCost, int maxHp, int gold,
+                                        int ascension) {
+        int expectedCost = ascension >= 15 ? 75 : 50;
+        return "0".equals(String.valueOf(phase)) && labels.size() == 3 && options.size() == 3
+                && gold >= expectedCost && healAmount == (int)(maxHp * 0.25f)
+                && purifyCost == expectedCost
+                && ((Number)map(options.get(0)).get("index")).intValue() == 0
+                && ((Number)map(options.get(1)).get("index")).intValue() == 1
+                && ((Number)map(options.get(2)).get("index")).intValue() == 2
+                && String.valueOf(labels.get(0)).contains("[Heal]")
+                && String.valueOf(labels.get(0)).contains("35 Gold")
+                && String.valueOf(labels.get(0)).contains(Integer.toString(healAmount))
+                && String.valueOf(labels.get(1)).contains("[Purify]")
+                && String.valueOf(labels.get(1)).contains(purifyCost + " Gold")
+                && String.valueOf(labels.get(2)).contains("[Leave]");
+    }
+
+    static boolean goopInitialVisible(Object phase, List<?> labels, List<?> options,
+                                      int damage, int gain, int goldLoss, int playerGold) {
+        return "INTRO".equals(String.valueOf(phase)) && labels.size() == 2 && options.size() == 2
+                && ((Number)map(options.get(0)).get("index")).intValue() == 0
+                && ((Number)map(options.get(1)).get("index")).intValue() == 1
+                && damage == 11 && gain == 75 && goldLoss >= 0 && goldLoss <= playerGold
+                && String.valueOf(labels.get(0)).contains(Integer.toString(gain))
+                && String.valueOf(labels.get(0)).contains(Integer.toString(damage))
+                && String.valueOf(labels.get(1)).contains(Integer.toString(goldLoss));
+    }
+
+    static boolean goldShrineInitialVisible(Object phase, List<?> labels, List<?> options,
+                                            int goldAmount, int ascension) {
+        int expected = ascension >= 15 ? 50 : 100;
+        return "INTRO".equals(String.valueOf(phase)) && labels.size() == 3 && options.size() == 3
+                && ((Number)map(options.get(0)).get("index")).intValue() == 0
+                && ((Number)map(options.get(1)).get("index")).intValue() == 1
+                && ((Number)map(options.get(2)).get("index")).intValue() == 2
+                && goldAmount == expected
+                && String.valueOf(labels.get(0)).contains(Integer.toString(expected))
+                && String.valueOf(labels.get(1)).contains("275");
+    }
+
+    static boolean nestDecisionVisible(String simple, Object phase, List<?> labels, List<?> options,
+            int ascension) {
+        if (!"Nest".equals(simple) || !"1".equals(String.valueOf(phase))
+                || labels.size() != 2 || options.size() != 2) return false;
+        int gold = ascension >= 15 ? 50 : 99;
+        return ((Number)map(options.get(0)).get("index")).intValue() == 0
+                && ((Number)map(options.get(1)).get("index")).intValue() == 1
+                && String.valueOf(labels.get(0)).contains("Obtain " + gold + " Gold")
+                && String.valueOf(labels.get(1)).contains("Ritual Dagger")
+                && String.valueOf(labels.get(1)).contains("Lose 6 HP");
+    }
+
+    static boolean goldenWingInitialVisible(Object phase, List<?> labels, List<?> options,
+            boolean canAttack, int damage) {
+        if (!"INTRO".equals(String.valueOf(phase)) || damage != 7
+                || labels.size() != (canAttack ? 3 : 2) || options.size() != labels.size()) return false;
+        int[] expected = canAttack ? new int[]{0, 1, 2} : new int[]{0, 2};
+        for (int i = 0; i < expected.length; ++i)
+            if (((Number)map(options.get(i)).get("index")).intValue() != expected[i]) return false;
+        return String.valueOf(labels.get(0)).contains("Lose 7 HP")
+                && String.valueOf(labels.get(labels.size() - 1)).contains("Leave");
     }
 
     static String canonicalScreen(String type) {
@@ -560,10 +1093,10 @@ final class LiveOocCapture {
             return usedUp ? 0 : 1;
         }
         if ("Lizard Tail".equals(id)) {
-            // Native fresh-run initialization currently differs from Java.
-            // Do not silently choose between the raw-save and fresh-run forms.
-            if (!usedUp) unsupported(state, "RELIC_NATIVE_STATE_UNREPRESENTABLE:Lizard Tail:active");
-            return usedUp ? 0 : counter;
+            // Native relic data is the active bit used by afterBattle and by
+            // the combat bridge. Java exposes usedUp directly; raw save
+            // counters alone cannot distinguish the active and spent forms.
+            return usedUp ? 0 : 1;
         }
         if ("Matryoshka".equals(id) || "NlothsMask".equals(id)) {
             if (counter > 0)
@@ -575,17 +1108,6 @@ final class LiveOocCapture {
         // Nonpositive counters have the same V4 token encoding as native zero.
         // Known persistent counters are copied exactly, never reconstructed.
         return counter;
-    }
-
-    private static boolean activeWingBoots(Map<String,Object> state) {
-        for (Object raw : list(state.get("relics"))) {
-            Map<String,Object> relic = map(raw);
-            if ("WingedGreaves".equals(relic.get("id"))
-                    && relic.get("liveCounter") instanceof Number
-                    && ((Number)relic.get("liveCounter")).intValue() > 0)
-                return true;
-        }
-        return false;
     }
 
     private static Map<String,Object> card(AbstractCard c) throws ReflectiveOperationException {
@@ -601,7 +1123,13 @@ final class LiveOocCapture {
     private static Map<String,Object> emptyRewards() {
         return object("cardRewards", new ArrayList<>(), "gold", new ArrayList<>(),
                 "relics", new ArrayList<>(), "potions", new ArrayList<>(),
-                "emeraldKey", false, "sapphireKey", false);
+                "emeraldKey", false, "sapphireKey", false, "opaqueCardRewardGroups", 0);
+    }
+    static boolean hasStrategicParentReward(List<String> rewardTypes) {
+        for (String kind : rewardTypes)
+            if ("RELIC".equals(kind) || "POTION".equals(kind)
+                    || "EMERALD_KEY".equals(kind) || "SAPPHIRE_KEY".equals(kind)) return true;
+        return false;
     }
     private static boolean hasPotionSlot() {
         int occupied = 0;
@@ -615,8 +1143,11 @@ final class LiveOocCapture {
     private static void cardReward(Map<String,Object> out, List<Map<String,Object>> cs, List<?> labels)
             throws ReflectiveOperationException {
         out.put("screen", "card_reward");
-        if (AbstractDungeon.cardRewardScreen.rItem != null)
-            out.put("rewardIdentity", rewardIdentity(AbstractDungeon.cardRewardScreen.rItem));
+        if (AbstractDungeon.cardRewardScreen.rItem != null) {
+            String identity = rewardIdentity(AbstractDungeon.cardRewardScreen.rItem);
+            out.put("rewardIdentity", identity);
+            cardRewardVisits.opened(AbstractDungeon.player, AbstractDungeon.currMapNode, identity);
+        }
         Map<String,Object> r = emptyRewards();
         List<AbstractCard> offered = AbstractDungeon.cardRewardScreen.rewardGroup;
         mutableList(r.get("cardRewards")).add(cards(offered)); out.put("details", r);
@@ -636,15 +1167,31 @@ final class LiveOocCapture {
         Map<String,Object> r = emptyRewards(); out.put("details", r);
         List<Object> occurrences = new ArrayList<>(); out.put("rewardOccurrences", occurrences);
         List<RewardItem> offered = AbstractDungeon.combatRewardScreen.rewards;
+        List<String> cardIdentities = new ArrayList<>();
+        List<String> rewardTypes = new ArrayList<>();
+        for (RewardItem reward : offered)
+            { rewardTypes.add(reward.type.name());
+              if ("CARD".equals(reward.type.name())) cardIdentities.add(rewardIdentity(reward)); }
+        boolean hasUnrevealedCard = false;
+        int opaqueCardRewardGroups = 0;
+        List<String> visibleTypes = new ArrayList<>();
+        for (String kind : rewardTypes)
+            if (!"CARD".equals(kind)) visibleTypes.add(kind);
+        boolean hasStrategicParentReward = hasStrategicParentReward(visibleTypes);
+        cardRewardVisits.parent(AbstractDungeon.player, AbstractDungeon.currMapNode, cardIdentities);
         for (int i = 0; i < offered.size(); ++i) {
             RewardItem reward = offered.get(i);
             String kind = reward.type.name();
-            occurrences.add(object("index", i, "type", kind, "identity", rewardIdentity(reward)));
+            String identity = rewardIdentity(reward);
+            occurrences.add(object("index", i, "type", kind, "identity", identity));
             if ("CARD".equals(kind)) {
                 // The unopened reward icon reveals only its type. Vanilla
                 // has already generated reward.cards, but those identities
                 // are not yet public and must never enter this observation.
-                out.put("unsupportedReason", "CARD_GROUP_NOT_REVEALED");
+                if (!cardRewardVisits.declined(identity)) {
+                    hasUnrevealedCard = true;
+                    ++opaqueCardRewardGroups;
+                }
             } else if ("GOLD".equals(kind) || "STOLEN_GOLD".equals(kind)) {
                 int idx = list(r.get("gold")).size();
                 mutableList(r.get("gold")).add(reward.goldAmt + reward.bonusGold);
@@ -660,6 +1207,9 @@ final class LiveOocCapture {
                 add(cs, labels, i, "key", 0, 0);
             } else out.put("unsupportedReason", "REWARD_TYPE_UNREPRESENTABLE:" + kind);
         }
+        map(out.get("details")).put("opaqueCardRewardGroups", opaqueCardRewardGroups);
+        if (hasUnrevealedCard && !hasStrategicParentReward)
+            out.put("unsupportedReason", "CARD_GROUP_NOT_REVEALED");
         button(cs, "proceed", "skip", 0, 0);
     }
     private static void rest(Map<String,Object> out, List<Map<String,Object>> cs, List<?> labels)
@@ -715,12 +1265,54 @@ final class LiveOocCapture {
         List<Object> selectionCards = new ArrayList<>();
         for (int i = 0; i < offered.size(); ++i)
             selectionCards.add(object("deckIndex", indices.get(i), "card", card((AbstractCard)offered.get(i))));
-        out.put("details", object("type", upgrade ? "upgrade" : AbstractDungeon.gridSelectScreen.forPurge ? "remove"
-                        : AbstractDungeon.gridSelectScreen.forTransform ? "transform" : "other",
+        String bottle = bottleSelectorType((String)field(AbstractDungeon.gridSelectScreen, "tipMsg"), offered);
+        String selectorType = selectorType(upgrade, AbstractDungeon.gridSelectScreen.forPurge,
+                AbstractDungeon.gridSelectScreen.forTransform, bottle,
+                AbstractDungeon.getCurrRoom() == null ? "" : AbstractDungeon.getCurrRoom().getClass().getSimpleName(),
+                ((Number)field(AbstractDungeon.gridSelectScreen, "numCards")).intValue());
+        out.put("details", object("type", selectorType,
                 "requiredPicks", ((Number)field(AbstractDungeon.gridSelectScreen, "numCards")).intValue(),
                 "completedPicks", selected.size(), "cards", selectionCards,
                 "selectedDeckIndices", selected, "confirm", confirm));
         if (confirm) out.put("unsupportedReason", "SELECTOR_CONFIRMATION_ONLY");
+    }
+    private static String bottleSelectorType(String prompt, List<?> offered) {
+        if (prompt == null || offered.isEmpty() || AbstractDungeon.player == null) return "other";
+        for (AbstractRelic relic : AbstractDungeon.player.relics) {
+            AbstractCard.CardType type;
+            AbstractCard bound;
+            if (relic instanceof BottledFlame) {
+                type = AbstractCard.CardType.ATTACK; bound = ((BottledFlame)relic).card;
+            } else if (relic instanceof BottledLightning) {
+                type = AbstractCard.CardType.SKILL; bound = ((BottledLightning)relic).card;
+            } else if (relic instanceof BottledTornado) {
+                type = AbstractCard.CardType.POWER; bound = ((BottledTornado)relic).card;
+            } else continue;
+            if (bound != null || relic.DESCRIPTIONS.length < 2
+                    || !bottlePromptMatches(prompt, relic.DESCRIPTIONS[1], relic.name,
+                            LocalizedStrings.PERIOD)) continue;
+            boolean matching = true;
+            for (Object card : offered) if (!(card instanceof AbstractCard)
+                    || ((AbstractCard)card).type != type) matching = false;
+            if (matching) return "bottle";
+        }
+        return "other";
+    }
+
+    static String selectorType(boolean upgrade, boolean purge, boolean transform, String bottle,
+                               String roomSimpleName, int requiredPicks) {
+        if (upgrade) return "upgrade";
+        if (purge) return "remove";
+        if (transform) return "transform";
+        if (!"other".equals(bottle)) return bottle;
+        // Neow's REMOVE_TWO bonus opens a normal grid selector without setting
+        // forPurge. The transform variant sets forTransform and was handled above.
+        if ("NeowRoom".equals(roomSimpleName) && requiredPicks == 2) return "remove";
+        return "other";
+    }
+    static boolean bottlePromptMatches(String prompt, String description, String relicName, String period) {
+        return prompt != null && description != null && relicName != null && period != null
+                && prompt.equals(description + relicName + period);
     }
     private static void boss(Map<String,Object> out, List<Map<String,Object>> cs, List<?> labels) {
         out.put("screen", "boss_relic");
@@ -728,7 +1320,8 @@ final class LiveOocCapture {
         for (int i = 0; i < AbstractDungeon.bossRelicScreen.relics.size(); ++i) {
             relics.add(AbstractDungeon.bossRelicScreen.relics.get(i).relicId); add(cs, labels, i, "option", i, 0);
         }
-        out.put("details", object("relics", relics)); button(cs, "cancel", "option", 3, 0);
+        // MCPTheSpire advertises Skip for the boss relic screen's fourth option.
+        out.put("details", object("relics", relics)); button(cs, "skip", "option", 3, 0);
     }
     private static void treasure(Map<String,Object> out, List<Map<String,Object>> cs, List<?> labels)
             throws ReflectiveOperationException {
@@ -743,11 +1336,14 @@ final class LiveOocCapture {
             captureOpenedTreasure(out, cs,
                     Boolean.TRUE.equals(map(out.get("mcpState")).get("can_proceed")));
         } else {
-            // The native chest particle depends on setupTreasureRoom() state
-            // (chest size, gold branch, and relic tier). The capture currently
-            // exposes only the Java chest class, so never score an unopened
-            // chest from a fabricated default StateInfo.
-            out.put("unsupportedReason", "TREASURE_STATE_UNREPRESENTABLE");
+            // Chest size is visible. Gold and relic tier remain hidden and
+            // are sampled together by the native root particle.
+            String size = visibleChestSize(chest.getClass().getSimpleName());
+            if (size.isEmpty()) out.put("unsupportedReason", "TREASURE_STATE_UNREPRESENTABLE:"
+                    + chest.getClass().getSimpleName());
+            if (!out.containsKey("unsupportedReason"))
+                out.put("details", object("chestType", chest.getClass().getSimpleName(),
+                        "opened", false, "chestSize", size));
             add(cs, labels, 0, "option", 0, 0);
             button(cs, "proceed", "option", 1, 0);
         }
@@ -771,19 +1367,317 @@ final class LiveOocCapture {
         for (int i = 0; i < active.size(); ++i) {
             int index = ((Number)field(active.get(i), "slot")).intValue();
             if (index != all.indexOf(active.get(i))) throw new IllegalArgumentException("event slot/order disagreement");
-            options.add(object("index", index, "disabled", false));
-            add(cs, labels, i, "option", index, 0);
+            int nativeIndex = "CursedTome".equals(simple) && "LAST_PAGE".equals(String.valueOf(phase))
+                    ? index + 5 : "GoldenIdolEvent".equals(simple) && "1".equals(String.valueOf(phase))
+                    ? index + 2 : "Vampires".equals(simple)
+                        && !Boolean.TRUE.equals(field(event, "hasVial")) ? index + 1
+                    : mindBloomNativeOptionIndex(simple, phase, String.valueOf(labels.get(i)),
+                            index, AbstractDungeon.floorNum);
+            if (nativeIndex < 0) throw new IllegalArgumentException("Mind Bloom option label/index mismatch");
+            if ("KnowingSkull".equals(simple) && "ASK".equals(String.valueOf(phase)))
+                nativeIndex = knowingSkullNativeIndex(String.valueOf(labels.get(i)));
+            options.add(object("index", "KnowingSkull".equals(simple)
+                    && "ASK".equals(String.valueOf(phase)) ? nativeIndex : index, "disabled", false));
+            add(cs, labels, i, "option", nativeIndex, 0);
         }
         Map<String,Object> e = object("id", id, "phase", String.valueOf(phase), "options", options, "eventData", 0);
         out.put("event", e);
-        out.put("details", object("event", id, "eventData", 0, "phase", 0,
+        Map<String,Object> eventDetails = object("event", id, "eventData", 0, "phase", 0,
                 "upgradeOne", false, "cleanUpIsRemoveCard", false,
                 "skillCardDeckIdx", -1, "powerCardDeckIdx", -1, "attackCardDeckIdx", -1,
-                "potionIdx", -1, "gold", -1, "cardIdx", -1));
-        // Only initial phases with native one-to-one option indices qualify.
+                "potionIdx", -1, "gold", -1, "cardIdx", -1);
+        out.put("details", eventDetails);
+        boolean nlothInitial = false;
+        if ("Nloth".equals(simple)
+                && ("INTRO".equals(String.valueOf(phase)) || "0".equals(String.valueOf(phase)))) {
+            Object offered0 = field(event, "choice1");
+            Object offered1 = field(event, "choice2");
+            List<?> owned = list(field(AbstractDungeon.player, "relics"));
+            int[] indices = nlothInitialRelicIndices(owned, offered0, offered1);
+            String relic0 = String.valueOf(field(offered0, "relicId"));
+            String relic1 = String.valueOf(field(offered1, "relicId"));
+            nlothInitial = nlothInitialOfferVisible(phase, labels, options,
+                    indices[0], indices[1], relic0, relic1);
+            if (nlothInitial) {
+                map(out.get("details")).put("relicIdx0", indices[0]);
+                map(out.get("details")).put("relicIdx1", indices[1]);
+                map(out.get("details")).put("relicOffer0", relic0);
+                map(out.get("details")).put("relicOffer1", relic1);
+            }
+        }
+        boolean bigFish = false;
+        if ("BigFish".equals(simple)) {
+            int healAmount = ((Number)field(event, "healAmt")).intValue();
+            bigFish = bigFishInitialVisible(phase, labels, options,
+                    healAmount, AbstractDungeon.player.maxHealth);
+            if (bigFish) map(out.get("details")).put("hpAmount0", healAmount);
+        }
+        boolean ghosts = false;
+        if ("Ghosts".equals(simple)) {
+            int hpLoss = ((Number)field(event, "hpLoss")).intValue();
+            ghosts = ghostsInitialVisible(phase, labels, options,
+                    hpLoss, AbstractDungeon.player.maxHealth, AbstractDungeon.ascensionLevel);
+            if (ghosts) map(out.get("details")).put("hpAmount0", hpLoss);
+        }
+        if ("ShiningLight".equals(simple))
+            map(out.get("details")).put("hpAmount0", field(event, "damage"));
+        if ("GoldenIdolEvent".equals(simple)) {
+            map(out.get("details")).put("hpAmount0", field(event, "damage"));
+            map(out.get("details")).put("hpAmount1", field(event, "maxHpLoss"));
+            map(out.get("details")).put("phase", ((Number)phase).intValue());
+        }
+        boolean knowingSkullAsk = false;
+        if ("KnowingSkull".equals(simple) && "ASK".equals(String.valueOf(phase))) {
+            int goldCost = ((Number)field(event, "goldCost")).intValue();
+            int cardCost = ((Number)field(event, "cardCost")).intValue();
+            int potionCost = ((Number)field(event, "potionCost")).intValue();
+            int leaveCost = ((Number)field(event, "leaveCost")).intValue();
+            map(out.get("details")).put("hpAmount0", goldCost);
+            map(out.get("details")).put("hpAmount1", cardCost);
+            map(out.get("details")).put("hpAmount2", potionCost);
+            knowingSkullAsk = knowingSkullAskVisible(phase, labels, options,
+                    goldCost, cardCost, potionCost, leaveCost);
+        }
+        boolean cursedTomeLastPage = "CursedTome".equals(simple)
+                && "LAST_PAGE".equals(String.valueOf(phase))
+                && options.size() == 2 && labels.size() == 2
+                && ((Number)map(options.get(0)).get("index")).intValue() == 0
+                && ((Number)map(options.get(1)).get("index")).intValue() == 1
+                && ((Number)field(event, "finalDmg")).intValue()
+                    == (AbstractDungeon.ascensionLevel >= 15 ? 15 : 10)
+                && String.valueOf(labels.get(0)).contains("[Take]")
+                && String.valueOf(labels.get(0)).contains(String.valueOf(field(event, "finalDmg")))
+                && String.valueOf(labels.get(1)).contains("[Stop]");
+        if (cursedTomeLastPage) map(out.get("details")).put("eventData", 4);
+        boolean colosseumPostCombat = "Colosseum".equals(simple)
+                && "POST_COMBAT".equals(String.valueOf(phase))
+                && options.size() == 2 && labels.size() == 2
+                && ((Number)map(options.get(0)).get("index")).intValue() == 0
+                && ((Number)map(options.get(1)).get("index")).intValue() == 1
+                && String.valueOf(labels.get(0)).contains("[COWARDICE]")
+                && String.valueOf(labels.get(1)).contains("[VICTORY]");
+        if (colosseumPostCombat) map(out.get("details")).put("eventData", 1);
+        boolean goldenWing = "GoldenWing".equals(simple)
+                && goldenWingInitialVisible(phase, labels, options,
+                        Boolean.TRUE.equals(field(event, "canAttack")),
+                        ((Number)field(event, "damage")).intValue());
+        boolean noteForYourself = false;
+        if ("NoteForYourself".equals(simple) && "CHOOSE".equals(String.valueOf(phase))
+                && options.size() == 2 && labels.size() == 2
+                && ((Number)map(options.get(0)).get("index")).intValue() == 0
+                && ((Number)map(options.get(1)).get("index")).intValue() == 1) {
+            AbstractCard offered = (AbstractCard)field(event, "obtainCard");
+            noteForYourself = offered != null
+                    && String.valueOf(labels.get(0)).contains("[Take and Give]")
+                    && String.valueOf(labels.get(0)).contains(offered.name)
+                    && String.valueOf(labels.get(1)).contains("[Ignore]");
+            if (noteForYourself) map(out.get("details")).put("noteForYourselfCard", card(offered));
+        }
+        if ("ScrapOoze".equals(simple) && "0".equals(String.valueOf(phase)))
+            map(out.get("details")).put("eventData", scrapOozeRetryCount(
+                    ((Number)field(event, "relicObtainChance")).intValue(),
+                    ((Number)field(event, "dmg")).intValue(), AbstractDungeon.ascensionLevel));
+        boolean goop = false;
+        if ("GoopPuddle".equals(simple) && "INTRO".equals(String.valueOf(phase))) {
+            int damage = ((Number)field(event, "damage")).intValue();
+            int gain = ((Number)field(event, "gold")).intValue();
+            int goldLoss = ((Number)field(event, "goldLoss")).intValue();
+            goop = goopInitialVisible(phase, labels, options, damage, gain, goldLoss,
+                    AbstractDungeon.player.gold);
+            if (goop) map(out.get("details")).put("goldLoss", goldLoss);
+        }
+        boolean goldShrine = "GoldShrine".equals(simple)
+                && goldShrineInitialVisible(phase, labels, options,
+                        ((Number)field(event, "goldAmt")).intValue(), AbstractDungeon.ascensionLevel);
+        boolean cleric = "Cleric".equals(simple)
+                && clericInitialVisible(phase, labels, options,
+                        ((Number)field(event, "healAmt")).intValue(),
+                        ((Number)field(event, "purifyCost")).intValue(),
+                        AbstractDungeon.player.maxHealth, AbstractDungeon.player.gold,
+                        AbstractDungeon.ascensionLevel);
+        if (cleric) map(out.get("details")).put("hpAmount0", field(event, "healAmt"));
+        boolean sensoryStone = "SensoryStone".equals(simple)
+                && sensoryStoneInitialVisible(phase, labels, options);
+        boolean maskedBandits = "MaskedBandits".equals(simple)
+                && maskedBanditsInitialVisible(phase, labels, options);
+        boolean library = "TheLibrary".equals(simple)
+                && libraryInitialVisible(phase, labels, options,
+                        ((Number)field(event, "healAmt")).intValue());
+        if (library) map(out.get("details")).put("hpAmount0", field(event, "healAmt"));
+        boolean augmenter = "DrugDealer".equals(simple)
+                && augmenterInitialVisible(phase, labels, options);
+        boolean ancientWriting = "BackToBasics".equals(simple)
+                && ancientWritingInitialVisible(phase, labels, options);
+        boolean windingHalls = false;
+        if ("WindingHalls".equals(simple)) {
+            int hpLoss = ((Number)field(event, "hpAmt")).intValue();
+            int heal = ((Number)field(event, "healAmt")).intValue();
+            int maxHpLoss = ((Number)field(event, "maxHPAmt")).intValue();
+            windingHalls = windingHallsChoiceVisible(phase, labels, options,
+                    hpLoss, heal, maxHpLoss);
+            if (windingHalls) {
+                map(out.get("details")).put("hpAmount0", hpLoss);
+                map(out.get("details")).put("hpAmount1", heal);
+                map(out.get("details")).put("hpAmount2", maxHpLoss);
+            }
+        }
+        boolean faceTrader = false;
+        if ("FaceTrader".equals(simple)) {
+            int damage = ((Number)field(event, "damage")).intValue();
+            int gold = ((Number)field(event, "goldReward")).intValue();
+            faceTrader = faceTraderChoiceVisible(phase, labels, options,
+                    damage, gold, AbstractDungeon.ascensionLevel);
+            if (faceTrader) map(out.get("details")).put("hpAmount0", damage);
+        }
+        boolean addict = "Addict".equals(simple)
+                && addictInitialVisible(phase, labels, options, AbstractDungeon.player.gold);
+        boolean vampiresNoVial = false;
+        if ("Vampires".equals(simple)) {
+            int maxHpLoss = ((Number)field(event, "maxHpLoss")).intValue();
+            boolean hasVial = Boolean.TRUE.equals(field(event, "hasVial"));
+            vampiresNoVial = vampiresNoVialInitialVisible(phase, labels, options,
+                    maxHpLoss, hasVial);
+            if (vampiresNoVial) map(out.get("details")).put("hpAmount0", maxHpLoss);
+        }
+        int[] designerIndices = null;
+        if ("Designer".equals(simple)) {
+            boolean upgradeOne = (Boolean)field(event, "adjustmentUpgradesOne");
+            boolean cleanUpRemoves = (Boolean)field(event, "cleanUpRemovesCards");
+            designerIndices = designerInitialNativeIndices(phase, labels, options,
+                    upgradeOne, cleanUpRemoves,
+                    ((Number)field(event, "adjustCost")).intValue(),
+                    ((Number)field(event, "cleanUpCost")).intValue(),
+                    ((Number)field(event, "fullServiceCost")).intValue(),
+                    ((Number)field(event, "hpLoss")).intValue(), AbstractDungeon.ascensionLevel);
+            if (designerIndices != null) {
+                Map<String,Object> details = map(out.get("details"));
+                details.put("upgradeOne", upgradeOne);
+                details.put("cleanUpIsRemoveCard", cleanUpRemoves);
+                for (int i = 0; i < designerIndices.length; ++i) {
+                    map(options.get(i)).put("index", designerIndices[i]);
+                    map(cs.get(i).get("nativeAction")).put("index", designerIndices[i]);
+                }
+            }
+        }
+        int deadAdventurerEncounter = "DeadAdventurer".equals(simple)
+                ? deadAdventurerPublicEncounter(phase, labels, options,
+                        String.valueOf(field(event, "body")), DeadAdventurer.DESCRIPTIONS,
+                        AbstractDungeon.ascensionLevel) : -1;
+        if (deadAdventurerEncounter >= 0)
+            map(out.get("details")).put("deadAdventurerEncounter", deadAdventurerEncounter);
+        boolean forgottenAltar = "ForgottenAltar".equals(simple)
+                && forgottenAltarInitialVisible(phase, labels, options,
+                        ((Number)field(event, "hpLoss")).intValue(), AbstractDungeon.player.maxHealth,
+                        AbstractDungeon.ascensionLevel, AbstractDungeon.player.hasRelic("Golden Idol"));
+        if (forgottenAltar)
+            map(out.get("details")).put("hpAmount0", field(event, "hpLoss"));
+        boolean fallingChoice = false;
+        if ("Falling".equals(simple) && "CHOICE".equals(String.valueOf(phase))) {
+            int skillIndex = fallingCardDeckIndex(field(event, "skillCard"));
+            int powerIndex = fallingCardDeckIndex(field(event, "powerCard"));
+            int attackIndex = fallingCardDeckIndex(field(event, "attackCard"));
+            boolean hasSkill = Boolean.TRUE.equals(field(event, "skill"));
+            boolean hasPower = Boolean.TRUE.equals(field(event, "power"));
+            boolean hasAttack = Boolean.TRUE.equals(field(event, "attack"));
+            if (hasSkill != (skillIndex >= 0) || hasPower != (powerIndex >= 0)
+                    || hasAttack != (attackIndex >= 0))
+                throw new IllegalArgumentException("Falling offered cards differ from native availability");
+            List<Integer> expectedSlots = new ArrayList<>();
+            if (hasSkill) expectedSlots.add(0);
+            if (hasPower) expectedSlots.add(1);
+            if (hasAttack) expectedSlots.add(2);
+            if (expectedSlots.isEmpty() || options.size() != expectedSlots.size()
+                    || labels.size() != expectedSlots.size())
+                throw new IllegalArgumentException("Falling CHOICE option count differs from native cards");
+            for (int i = 0; i < expectedSlots.size(); ++i)
+                if (((Number)map(options.get(i)).get("index")).intValue() != expectedSlots.get(i))
+                    throw new IllegalArgumentException("Falling CHOICE slots differ from native order");
+            eventDetails.put("skillCardDeckIdx", skillIndex);
+            eventDetails.put("powerCardDeckIdx", powerIndex);
+            eventDetails.put("attackCardDeckIdx", attackIndex);
+            fallingChoice = true;
+        }
+        if ("WeMeetAgain".equals(simple) && "INTRO".equals(String.valueOf(phase))) {
+            Map<String,Object> details = map(out.get("details"));
+            Object offeredPotion = field(event, "potionOption");
+            Object offeredCard = field(event, "cardOption");
+            int goldAmount = ((Number)field(event, "goldAmount")).intValue();
+            int potionIndex = -1, cardIndex = -1;
+            if (offeredPotion != null) {
+                for (int i = 0; i < AbstractDungeon.player.potions.size(); ++i)
+                    if (AbstractDungeon.player.potions.get(i) == offeredPotion) potionIndex = i;
+                if (potionIndex < 0) throw new IllegalArgumentException("We Meet Again potion identity lost");
+            }
+            if (offeredCard != null) {
+                AbstractCard card = (AbstractCard)offeredCard;
+                for (int i = 0; i < AbstractDungeon.player.masterDeck.group.size(); ++i)
+                    if (AbstractDungeon.player.masterDeck.group.get(i).uuid.equals(card.uuid)) cardIndex = i;
+                if (cardIndex < 0) throw new IllegalArgumentException("We Meet Again card identity lost");
+            }
+            details.put("potionIdx", potionIndex);
+            details.put("gold", goldAmount >= 50 ? goldAmount : -1);
+            details.put("cardIdx", cardIndex);
+            List<Integer> expected = new ArrayList<>();
+            if (potionIndex >= 0) expected.add(0);
+            if (goldAmount >= 50) expected.add(1);
+            if (cardIndex >= 0) expected.add(2);
+            expected.add(3);
+            if (expected.size() != options.size())
+                throw new IllegalArgumentException("We Meet Again public options differ from native availability");
+            for (int i = 0; i < expected.size(); ++i)
+                if (((Number)map(options.get(i)).get("index")).intValue() != expected.get(i))
+                    throw new IllegalArgumentException("We Meet Again option slots differ from native order");
+        }
+        // Initial screens are admitted from their actual native-indexed public
+        // options. The native importer then checks the complete live/native
+        // legal-action set before model scoring; event class names are not a
+        // support allowlist.
         boolean initial = "INTRO".equals(String.valueOf(phase)) || "0".equals(String.valueOf(phase));
-        if (!simpleInitialEventSupported(simple) || !initial)
+        boolean nativeIndexedInitial = nativeIndexedInitialEventVisible(phase, labels, options);
+        // A generic option map is insufficient when this event's native state
+        // consumes additional public fields. Keep the event name out of the
+        // supported-state list while requiring its field/label validator to
+        // pass before admitting the generic initial-phase map.
+        boolean initialEventParametersQualified =
+                (!"GoopPuddle".equals(simple) || goop)
+                && (!"GoldShrine".equals(simple) || goldShrine)
+                && (!"GoldenWing".equals(simple) || goldenWing)
+                && (!"Cleric".equals(simple) || cleric)
+                && (!"SensoryStone".equals(simple) || sensoryStone)
+                && (!"MaskedBandits".equals(simple) || maskedBandits)
+                && (!"TheLibrary".equals(simple) || library)
+                && (!"DrugDealer".equals(simple) || augmenter)
+                && (!"BackToBasics".equals(simple) || ancientWriting)
+                && (!"WindingHalls".equals(simple) || windingHalls)
+                && (!"FaceTrader".equals(simple) || faceTrader)
+                && (!"Addict".equals(simple) || addict)
+                && (!"Vampires".equals(simple) || vampiresNoVial)
+                && (!"ForgottenAltar".equals(simple) || forgottenAltar)
+                && (!"Designer".equals(simple) || designerIndices != null)
+                && (!"Nloth".equals(simple) || nlothInitial)
+                && (!"BigFish".equals(simple) || bigFish)
+                && (!"Ghosts".equals(simple) || ghosts)
+                && (!"KnowingSkull".equals(simple) || knowingSkullAsk)
+                && (!"DeadAdventurer".equals(simple) || deadAdventurerEncounter >= 0);
+        boolean idolTrap = "GoldenIdolEvent".equals(simple) && "1".equals(String.valueOf(phase))
+                && options.size() == 3 && labels.size() == 3
+                && ((Number)map(options.get(0)).get("index")).intValue() == 0
+                && ((Number)map(options.get(1)).get("index")).intValue() == 1
+                && ((Number)map(options.get(2)).get("index")).intValue() == 2;
+        if (!(nativeIndexedInitial && initial && initialEventParametersQualified)
+                && !goop && !noteForYourself && !cursedTomeLastPage && !colosseumPostCombat
+                && !goldShrine
+                && !nestDecisionVisible(simple, phase, labels, options, AbstractDungeon.ascensionLevel)
+                && !idolTrap && !goldenWing && !cleric && !sensoryStone
+                && designerIndices == null && !maskedBandits && !library && !augmenter
+                && !ancientWriting && !windingHalls && !faceTrader && !addict && !vampiresNoVial
+                && deadAdventurerEncounter < 0
+                && !forgottenAltar && !fallingChoice)
             out.put("unsupportedReason", "EVENT_PHASE_UNREPRESENTABLE:" + id + ":" + phase);
+        if (knowingSkullAsk) {
+            map(out.get("details")).put("phase", 0);
+            out.remove("unsupportedReason");
+        }
         if ("NeowEvent".equals(simple)) {
             List<Object> offers = new ArrayList<>();
             Object rs = optionalField(event, "rewards");
@@ -896,7 +1790,8 @@ final class LiveOocCapture {
         List<String> result = new ArrayList<>();
         for (int i = 0; i < raw.size(); ++i) {
             String symbol = roomSymbol(raw.get(i));
-            if ("INVALID".equals(symbol) && bossTransitionSentinel && i == raw.size() - 1) {
+            if ("INVALID".equals(symbol) && bossTransitionSentinel && i == raw.size() - 1
+                    && !inferredBossPrecedingRoom.isEmpty()) {
                 // The current boss-transition sentinel may stand for the
                 // preceding visible map room, not for the boss itself.
                 symbol = inferredBossPrecedingRoom;
@@ -936,6 +1831,20 @@ final class LiveOocCapture {
     }
     private static Object optionalField(Object o, String name) throws ReflectiveOperationException {
         try { return field(o, name); } catch (NoSuchFieldException absent) { return null; }
+    }
+    private static int fallingCardDeckIndex(Object offered) throws ReflectiveOperationException {
+        if (offered == null) return -1;
+        if (!(offered instanceof AbstractCard))
+            throw new IllegalArgumentException("Falling offered card has unexpected type");
+        AbstractCard card = (AbstractCard)offered;
+        int found = -1;
+        for (int i = 0; i < AbstractDungeon.player.masterDeck.group.size(); ++i) {
+            if (!AbstractDungeon.player.masterDeck.group.get(i).uuid.equals(card.uuid)) continue;
+            if (found >= 0) throw new IllegalArgumentException("Falling deck UUID is ambiguous");
+            found = i;
+        }
+        if (found < 0) throw new IllegalArgumentException("Falling offered card is absent from master deck");
+        return found;
     }
     private static Object field(Object o, String name) throws ReflectiveOperationException {
         for (Class<?> c = o.getClass(); c != null; c = c.getSuperclass()) {
