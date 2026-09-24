@@ -326,6 +326,9 @@ namespace sts::search {
         // Default-off rollout/terminal decomposition collection. This is
         // diagnostic accounting only; it is never consulted by selection.
         bool collectRolloutDiagnostics = false;
+        // Default-off rollout-only pile optimization. Tree states retain the
+        // canonical unknown-region order regardless of this setting.
+        bool rolloutUnsortedPilesEnabled = false;
         bool collectVictoryCounts = false;
         bool collectUidFragmentationDiagnostics = false;
         silver_bridge::SilverLeafObserver leafObserver;
