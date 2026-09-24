@@ -1,6 +1,6 @@
 # Important invariants
 
-Last verified: 2026-09-24 for the Searcher3 removal; 2026-09-20 against the current working tree.
+Last verified: 2026-09-24 for the Searcher2/3 and self-play removals; 2026-09-20 against the current working tree.
 
 ## Purpose
 
@@ -109,6 +109,9 @@ See
 
 ### Evaluation and self-play invariants
 
+The self-play loop was removed (ADR-0020); its promotion rules below are
+historical.
+
 - Project-fair and known-RNG metrics are never merged into one baseline series.
 - Candidate comparisons use common seeds and align rows by seed.
 - Self-play promotion requires the lower nominal bound to strictly clear the
@@ -152,24 +155,23 @@ Operational assumptions that are not enforced by types or tests:
 - No test automatically asserts schema order, native/server parity, or
   self-play arm ownership end to end. CTest runs parse/syntax checks, and the
   `test` dispatcher gains targeted checks (observation identity, card-select
-  parity, Searcher2 draw-pile-index boundary, battle-context round-trip,
-  simulator-health empty-hand detection; `small-test isbattleover`); the
+  parity, battle-context round-trip, simulator-health empty-hand detection;
+  `small-test isbattleover`); the
   remaining invariants are
   review-enforced.
 - The simulator health monitor covers only its four hard invariants
   (UNDECIDED_BATTLE_EXIT, NO_LEGAL_PROGRESSION, ACTION_SELECTION_FAILED,
   INVALID_LIVE_ACTION); issue 87 GAMBLE/empty-hand and the same
-  EXHAUST_MANY/empty-hand class are caught, and the non-fair Searcher2
-  zero-action path is covered; deeper simulator invariants remain
+  EXHAUST_MANY/empty-hand class are caught; deeper simulator invariants remain
   review-enforced.
 - `OocCheckpointNet::load` and `OocStrategicNet::load` check every payload read;
   truncated files fail load and the net is not used (issue 08, closed).
 - `tools/verify/check_replay.py` probes repeated-seed CSV equality, but fair multi-thread
   replay is not bit-identical across invocations and no automated guarantee
   exists.
-- The self-play meta arm now disables native OOC for meta gates
-  (`STS_NATIVE_OOC=0`), but candidate use is evidenced by env plus server port
-  liveness, not a per-decision query log.
+- (Historical) the removed self-play meta arm disabled native OOC for meta
+  gates (`STS_NATIVE_OOC=0`); candidate use was evidenced by env plus server
+  port liveness, not a per-decision query log.
 - `VALUE_MARGIN` is clamped unless `VALUE_MARGIN_LATENCY=1`; the checked-in
   `config.env` snapshot predates the latency gate.
 
@@ -190,7 +192,6 @@ Operational assumptions that are not enforced by types or tests:
 - `src/sim/search/GameAction.cpp::isValidAction`, `execute`
 - `src/sim/search/ScumSearchAgent2.cpp::playoutBattleFair`
 - `src/sim/search/SimHealth.cpp::reportSimHealthFailure`
-- `include/sim/search/BattleScumSearcher2.h::Node`, `Edge`
 - `src/sim/search/CombatValueNet.cpp::combatFeatureNames`
 - `apps/one_combat.cpp::vFeatCsv`, `main`
 - `selfplay/loop.sh::gate_stats`, promotion block

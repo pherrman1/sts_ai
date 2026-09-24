@@ -26,6 +26,9 @@ the replacement.
 
 ## Current architecture ADRs
 
+- [ADR-0020](0020-silver-only-combat-remove-searcher2-and-selfplay.md) makes
+  Silver the only combat searcher, removes Searcher2 with its
+  search-statistics generators and controls, and removes the self-play loop.
 - [ADR-0019](0019-remove-searcher3.md) removes Searcher3 and its
   Searcher3-only modes, flags, tests and scripts; `STS_SEARCHER3=1` now
   fails.

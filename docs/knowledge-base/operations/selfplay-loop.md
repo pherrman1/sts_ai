@@ -1,5 +1,13 @@
 # Self-play loop
 
+> **Status (2026-09-24): removed.** The self-play loop (`selfplay/loop.sh`,
+> `status.sh`, the collection scripts and `config.env`/`state.env`) was deleted
+> by [ADR-0020](../../../decisions/0020-silver-only-combat-remove-searcher2-and-selfplay.md).
+> Its FIGHT arm trained Searcher2-only models, and Searcher2 was removed.
+> `selfplay/models/` and `selfplay/ooc_buffer/` remain because live and
+> research code reads them. This page is a historical record; reproducing the
+> loop needs a binary and scripts from before ADR-0020.
+
 Last verified: 2026-08-11 against the current working tree (tracked V_win
 bootstrap source relocated to `models/v_win_xgb.json`; the two other first-run
 sources stay ignored `build/` files).

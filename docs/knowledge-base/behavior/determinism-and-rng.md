@@ -1,6 +1,6 @@
 # Determinism and RNG
 
-Last verified: 2026-09-24 for the Searcher3 removal; 2026-09-20 for live OOC MCTS hypothetical noncombat futures; 2026-09-14 for supported-v1 RNG continuation;
+Last verified: 2026-09-24 for Silver-only combat (ADR-0020) and the Searcher3 removal; 2026-09-20 for live OOC MCTS hypothetical noncombat futures; 2026-09-14 for supported-v1 RNG continuation;
 2026-08-02 against commit `6f7159f` and the current working tree (hidden-information boundary audit, plan 5.6.4 / spec §A.14).
 
 ## Purpose
@@ -52,13 +52,11 @@ for normal supported continuation; exact six-stream RAW snapshot synthesis is
 a different contract. Re-audit any new chain/controller or combat RNG consumer.
 Runtime surrogate integration and multi-fight qualification remain pending.
 
-`STS_FAIR=1` calls `ScumSearchAgent2::playoutBattleFair`. With Searcher2, each
-simulation shuffles the draw pile and replaces only shuffle and card-random RNG
-(`src/sim/search/BattleScumSearcher2.cpp::determinize`). The fair path commits
-one root action and creates a new searcher for the next observed decision.
-Silver owns its own chance randomness from a stable per-battle seed (see
-[combat-search.md](../architecture/combat-search.md)). Searcher3, whose
-particles carried all six RNG streams, was removed (ADR-0019).
+Combat search is Silver only (ADR-0020). Silver converts the visible state into
+its private representation and owns its chance randomness from a stable
+per-battle seed (see [combat-search.md](../architecture/combat-search.md)); it
+never reads the live battle's hidden RNG streams. Searcher2 (partial
+determinization) and Searcher3 (particles) were removed.
 
 Live opt-in OOC MCTS separately samples unknown native futures in
 `apps/one_combat/ooc_mcts_adapter.cpp::sampleNoncombatFuture`. Before search
@@ -81,7 +79,7 @@ sampled encounter queues.
 
 1. Run RNG state enters `BattleContext::init`.
 2. A fair search copies the root battle for each simulation.
-3. Searcher2 partially determinizes the copy.
+3. Silver builds its private state from the visible observation.
 4. Search explores copied worlds and chooses a root move.
 5. The agent validates that move against the live battle and applies it if
    valid.
@@ -90,7 +88,7 @@ sampled encounter queues.
 ```mermaid
 flowchart TD
     A["Run RNG state enters BattleContext::init"] --> B["Fair search copies the root battle per simulation"]
-    B --> D["Searcher2 partially determinizes the copy"]
+    B --> D["Silver builds its private state from the visible observation"]
     D --> F["Search explores copied worlds"]
     F --> G["Search chooses a root move"]
     G --> H{"Move valid against the live battle?"}
@@ -148,17 +146,9 @@ flowchart TD
   `gc.info.chestSize` for the CURSED_KEY treasure open/skip choice. Chest
   size is treated as visible by the sampled OOC contract; contents (gold/tier
   and relic identity) are sampled before opening.
-- Searcher2 leaves four combat RNG streams concrete under `STS_FAIR=1`.
 - `CombatObservation::operator==` and `visibleHash` share one canonical field
   set; card piles compare as `CardKey` multisets, so order-insensitive equality
   is deliberate and equal observations hash equally.
-- `search::g_potionKeepValue` is thread-local because `runFullRunOOC`
-  computes it per fight while fair benchmark seeds execute concurrently. A
-  process-global value caused cross-seed contamination and non-reproducible
-  outcomes; the declaration/definition are in
-  `include/sim/search/BattleScumSearcher2.h` and
-  `src/sim/search/BattleScumSearcher2.cpp`. A repeated 8-seed, 1k-sim,
-  12-thread check matched outcomes, floors, HP, and death fields after the fix.
 - Historical repeated fair multi-thread runs were not bit-identical
   (`EXPERIMENTS.md` entries 66e, 66j). Since commit `63d8b89` the recorded
   divergence did not reproduce: fair Searcher2/Searcher3 and known-RNG runs
@@ -191,10 +181,8 @@ flowchart TD
 - `src/game/GameContext.cpp::GameContext`
 - `include/combat/BattleContext.h::BattleContext`
 - `src/combat/BattleContext.cpp::init`, `exitBattle`
-- `src/sim/search/BattleScumSearcher2.cpp::determinize`
 - `include/sim/search/CombatObservation.h::CombatObservation`
 - `src/sim/search/CombatObservation.cpp::visibleHash`, `operator==`
-- `src/sim/search/ScumSearchAgent2.cpp::playoutBattleFair`
 - `src/sim/search/ScumSearchAgent2.cpp::stepOutOfCombatPolicy` (TREASURE_ROOM chest-size read)
 - `src/sim/search/GameAction.cpp::getAllActionsInState`, `getValidEventSelectBits`
 - `src/game/GameContext.cpp::setupEvent`, `chooseEventOption`
