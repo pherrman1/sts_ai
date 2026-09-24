@@ -1,6 +1,6 @@
 # Combat search
 
-Last verified: 2026-09-24 for the experimental native Silver backend, the Silver-only dispatch (ADR-0020), the Searcher3 removal and the Silver whole-run default; 2026-09-19 against the current working tree.
+Last verified: 2026-09-24 for the native Silver default (ADR-0021), the Silver-only dispatch (ADR-0020), the Searcher3 removal and the Silver whole-run default; 2026-09-19 against the current working tree.
 
 ## Purpose
 
@@ -145,9 +145,9 @@ Runic Dome prevents future intent materialization. Looter and Mugger use
 `assignInformationState` and this deferred choice are project-fair adaptations
 of the vendored simulator.
 
-## Native Silver backend (experimental)
+## Native Silver backend (default)
 
-`STS_NATIVE_SILVER=1` replaces the vendored model with `SilverSearcher`
+The default combat backend (ADR-0021) is `SilverSearcher`
 (`src/sim/search/SilverSearcher.cpp`), a port of the Silver fork's
 `BattleSearcher` production path that runs directly on the main
 `BattleContext`, installed by `NativeSilverBackend`. At each decision the
@@ -174,8 +174,10 @@ unchanged. Remaining gaps against the vendored model: Gambling Chip and Purity
 selections are atomic subsets; the vendored reroot repairs are replaced by
 multiset equality plus action translation. On the standard 128-seed block it won 86/128 against the
 vendored 83/128 (no detectable difference;
-[§348](../../experiments/ledger-06.md)). The vendored backend remains the
-default.
+[§348](../../experiments/ledger-06.md)). `one_combat` selects the vendored
+backend below on `STS_NATIVE_SILVER=0` or when a vendored-only `STS_SILVER_*`
+option is set (captures, diagnostics, telemetry, leaf VNet, root prior); an
+explicit `STS_NATIVE_SILVER=1` with such an option is an error.
 
 ## Silver backend
 
