@@ -650,6 +650,18 @@ namespace sts {
 
 namespace {
 
+    template <typename Pile>
+    bool sameMultiset(const Pile &a, const Pile &b) {
+        if (a.size() != b.size()) {
+            return false;
+        }
+        std::vector<CardInstance> x(a.begin(), a.end());
+        std::vector<CardInstance> y(b.begin(), b.end());
+        std::sort(x.begin(), x.end());
+        std::sort(y.begin(), y.end());
+        return x == y;
+    }
+
     bool sameNonHandState(const CardManager &a, const CardManager &b) {
         return a.nextUniqueCardId == b.nextUniqueCardId &&
                a.cardsInHand == b.cardsInHand &&
@@ -674,7 +686,25 @@ bool CardManager::operator==(const CardManager &rhs) const {
 }
 
 bool CardManager::equalForSearch(const CardManager &rhs) const {
-    if (!sameNonHandState(*this, rhs)) {
+    if (!drawPile.isConcrete() || !rhs.drawPile.isConcrete()) {
+        // Information-set search: discard and exhaust order carry no information
+        // the search can use (reshuffles forget order, selections are by card).
+        if (!(nextUniqueCardId == rhs.nextUniqueCardId &&
+              cardsInHand == rhs.cardsInHand &&
+              limbo == rhs.limbo &&
+              stasisCards == rhs.stasisCards &&
+              drawPile == rhs.drawPile &&
+              handNormalityCount == rhs.handNormalityCount &&
+              handPainCount == rhs.handPainCount &&
+              strikeCount == rhs.strikeCount &&
+              handBloodCardCount == rhs.handBloodCardCount &&
+              drawPileBloodCardCount == rhs.drawPileBloodCardCount &&
+              discardPileBloodCardCount == rhs.discardPileBloodCardCount &&
+              sameMultiset(discardPile, rhs.discardPile) &&
+              sameMultiset(exhaustPile, rhs.exhaustPile))) {
+            return false;
+        }
+    } else if (!sameNonHandState(*this, rhs)) {
         return false;
     }
     std::array<CardInstance, MAX_HAND_SIZE> lhsHand;
