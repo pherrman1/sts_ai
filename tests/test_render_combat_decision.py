@@ -104,6 +104,24 @@ class RenderCombatDecisionTest(unittest.TestCase):
             self.assertIn(">0.6</span>", rendered)
             self.assertIn("width:60.000%", rendered)
 
+    def test_applied_silver_prior_is_rendered_separately_from_q_and_visits(self):
+        with tempfile.TemporaryDirectory() as directory:
+            value = snapshot_data(priorModel={
+                "loaded": True, "applied": True, "status": "APPLIED",
+                "artifactSha256": "prior-artifact-sha", "scope": "root_only", "puctC": 2.5,
+            })
+            summaries = value["response"]["advisor"]["evaluators"][0]["rootActionSummaries"]
+            summaries[0].update(priorLogit=2.4483, prior=0.8244)
+            summaries[1].update(priorLogit=-0.4521, prior=0.1756)
+            source = load_snapshot(self.write_json(directory, "latest.json", value))
+            rendered = render_html(source)
+            self.assertIn("prior logit", rendered)
+            self.assertIn("root P(a|state)", rendered)
+            self.assertIn("Loaded SilverPriorNet root policy", rendered)
+            self.assertIn("2.4483", rendered)
+            self.assertIn("0.8244", rendered)
+            self.assertIn("prior-artifact-sha", rendered)
+
     def test_malformed_visit_share_is_preserved_but_bar_is_safe(self):
         with tempfile.TemporaryDirectory() as directory:
             value = snapshot_data()

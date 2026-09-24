@@ -11450,7 +11450,252 @@ production artifact, or default changed.
 Knowledge impact: current potion-representation status and experiment evidence
 updated; qualified encoders and runtime defaults remain unchanged.
 
-## §339 — Silver rollout-cost screen: B faster, fixed-work quality inconclusive (2026-09-24)
+## §339 — Potion-pooled-blind DeepSets follow-up (2026-09-23)
+
+- **Question and baseline:** Does removing the initial pooled potion identity/
+  slot contribution from DeepSets `z` preserve the PR #298 specialist's overall
+  result and repair recursive Brew? Baseline `1ed96f2aa564742156cc6593a1fc1915ea4e9033`;
+  Attention reference validation trajectory NLL `0.506803228`.
+- **Intervention:** C reproduced the ordinary PR #298 warm-start encoder and
+  exact trajectory decoder. P used identical checkpoint bytes and fixed batch
+  order, replacing only the pooled potion block with zeros. Potion embedding/
+  MLP parameters stayed in the checkpoint module but were frozen and excluded
+  from AdamW. The current-inventory-conditioned decoder, trajectory DAG, labels,
+  legality, and global fields remained unchanged. Thus `potionCount` and
+  `potionCapacity` remain in P's global representation.
+- **Stage 0:** frozen TRAIN contains 90 recursive-Brew winning rows from 90
+  source seeds; VALIDATION has 12 from 12 seeds. Every audited target has at
+  least one compatible trajectory, with no obvious target/DAG defect. Full
+  per-case inventory, capacity, boss, Sozu, generated-body, target, graph, and
+  existing-model NLL details are in the audit JSON.
+- **Provenance and fit:** implementation `cffe964a806891908ea1082bcca632683c4d2d37`;
+  encoder/decoder warm-start hashes `bee6800dd7230b180c2b4894c0f01763efca4b7799e3f36a805333c3003dc663` /
+  `06eda953b523ed6b3b9dbc3031bf44408c3bc67f0bc8b7862d28c150448819c1`;
+  TRAIN 393,677 rows / 19,986 sources; VALIDATION 48,590 / 2,496. C selected
+  epoch 34 at NLL `0.486931329`, within `0.000231` of the prior W result and
+  inside the fixed `0.005` control-reproduction tolerance. P selected epoch 31
+  at NLL `0.489927014`. Local runtime was Python 3.12.3, PyTorch 2.5.1+cu121,
+  CUDA 12.1, RTX 3060 Ti. Runtime counters recorded zero TEST encoding, scoring,
+  or teacher-metric rows.
+- **Result:** P relative overall trajectory NLL was `-3.3299%` versus
+  Attention; no-change Brier improved from `0.092057790` to `0.087477024`,
+  normal action/count accuracies were `0.815202435`/`0.824292207`, illegal
+  probability was exactly zero, and maximum normalization error was
+  `1.99e-7`. Recursive Brew was `3.026048` versus Attention `2.412967`
+  (`+25.4078%`) and C `2.985346` (`+0.040702` nat mean difference). P improved
+  on 5/12 paired recursive cases and worsened on 7/12; see the report for every
+  row. The other P slice changes were Brew `+6.9947%`, Smoke `-7.9783%`, and
+  trajectory-special `+4.5160%`.
+- **Decision:** **`POTION_DEEPSET_POTION_BLIND_REJECTED`** by the unchanged
+  teacher-forced gate. Removing the pooled potion branch did not repair the
+  recursive-Brew regression. The result weakens that pooled-branch-only
+  hypothesis; it does not test removing global count/capacity signals or
+  establish another cause. Stop here: no ancestral evaluation, TEST scoring,
+  export, native/runtime qualification, gameplay, or alternate architecture.
+- **Checks/artifacts:** focused specialist unit tests: 13 passed; Python
+  compilation and `git diff --check` passed. The experiment command exited 0,
+  checkpoint reload reproduced metrics, and runtime TEST counters were zero.
+  GitHub Actions CI was not run locally. See
+  [report](evidence/deepset_potion_blind_2026-09-23.md),
+  [complete receipt](evidence/deepset_potion_blind_2026-09-23.json) (SHA256
+  `16a7958fe0ea6c74ffac1fe7552a66be2215fe19e778a10bfc6254ff8e7ae4be`), and
+  [Stage 0 recursive audit](evidence/deepset_potion_blind_recursive_audit_2026-09-23.json).
+  Selected checkpoint hashes: C `99a43bfa138021ff9f645accd1e098ec89863b9498490294837762a93b18ff1c`,
+  P `38c2b8eadc0aa1926c6bbbbe46e952d30e652dee7887559b6b57a0f4726dcab0`.
+
+Knowledge impact: current potion-representation hypothesis and evidence updated;
+runtime defaults and qualified artifacts remain unchanged.
+
+## §340 — Silver handoff timing and adaptive 128-seed baseline (2026-09-24)
+
+Measured how much Silver decision time goes to moving state between the main
+simulator and the isolated Silver simulator. The run used the new opt-in
+`STS_SILVER_HANDOFF_TIMING=1` instrumentation. It also recorded a Silver
+whole-run reference on the standard seed block under the ADR-0018 defaults.
+
+- **Configuration:** Release `one_combat` from clean commit `2a602f6`, 4-core
+  container, `bestbench 1000 128 0 126700` with `STS_SILVER_ADAPTIVE=1`. The
+  sims argument has no effect under adaptive Silver, which searches 500 to
+  10,000 simulations per decision. Silver fair play, reuse cap 32,768
+  (`allocated`), native OOC trees, policy prior auto-load, keys skipped,
+  ascension 0. Regime: project-fair.
+- **Gameplay:** 83/128 wins (64.8%; Wilson 95% [56.2%, 72.6%]). Mean floor
+  48.26, mean end HP 30.9, 38.05 CPU s/run, 1,240 s wall. Win means beating
+  the Act 3 boss; keys were not collected.
+- **Timing:** 3,245 combats, 59,961 decisions, 377.3M simulations, 4,818.6
+  decision-seconds.
+
+  | Part | Share of decision time | Mean per decision |
+  | --- | ---: | ---: |
+  | Live-state conversion | 0.006% | 5.0 µs |
+  | Private-state materialization | 0.004% | 3.4 µs |
+  | Semantic-action resolution | 0.002% | 1.3 µs |
+  | Root setup (exact reroot or fresh root, including collection) | 2.56% | 2.06 ms |
+  | Search | 97.36% | 78.2 ms |
+  | Other (diagnostics, captures) | 0.07% | — |
+
+  In a pre-commit smoke of the same code, 16 seeds with flat 1,000-simulation
+  Silver gave 0.045% copy time (8 µs/decision), 0.99% root setup and 98.9%
+  search.
+- **Interpretation:** Copying state across the simulator boundary
+  (conversion, materialization and resolution) costs about 10 µs per decision
+  and is negligible. Root setup is the only material non-search cost. A
+  retained-tree design needs it regardless of simulator count.
+  **Inference:** merging the simulators would not produce a meaningful speed
+  gain. Its case rests on having one rule set and removing the
+  boundary-matching code.
+- **Artifacts:** [evidence packet](evidence/silver_handoff_timing_2026-09-24/README.md)
+  with the results CSV, metadata, all per-combat timing lines and the
+  reproducible summary.
+
+Knowledge impact: combat-search architecture records the handoff cost;
+current-baselines records the Silver adaptive whole-run reference.
+## §341 — V4 policy-prior cost under uniform-leaf OOC MCTS (2026-09-24)
+
+On baseline `41c0f5af5711c452b6e133e6dc66c7756f50874c`, refreshed the fixed
+seed `12002032` profile with the requested V4 policy prior, uniform leaf policy,
+2,048 simulations, same DeepSets CTM and Act-3 stop. The refreshed run reported
+119,445 simulations, 115,398 transitions, 88,566 policy/state evaluations,
+29.823s MCTS thread CPU, 35.516s real-combat CPU, 5.226s CTM preparation,
+5.428s policy prediction exclusive CPU and 7.023s V4 state-network CPU.
+Expanded-node action counts were 0:0, 1:40,599, 2:21,831, 3+:49,456; 23,700
+singleton nodes called `policyLogits()` and V4 inference.
+
+Two exact changes were retained: singleton legal sets now receive prior 1.0
+without model inference, and the V4 policy head reuses the immutable state
+prefix (ordered dimensions 0–127) across candidate actions before consuming
+the unchanged action suffix (128–183). The Q path and candidate encoding were
+not changed. Exact source logits, aggregate/normalized priors and action order
+are covered by the focused adapter self-test; fixed-work MAP search preserves
+selected action, priors, visits, Q, work counts, state fingerprints and RNG.
+
+An alternating prefix-only/prefix+singleton/singleton/prefix-only fixed-seed
+comparison preserved run outcome and byte-identical action/support traces.
+Singleton V4 policy inferences dropped from 23,700 to zero; the policy/state
+inference count fell 26.8%. Mean MCTS thread CPU decreased 37.867s to 34.888s
+(7.9%). Mean measured whole-process CPU decreased 3.3%, a modest result under
+substantial CPU throttling. Separately, the prefix-only change measured 10.6%
+lower MCTS CPU and 6.0% lower whole-run wall in its alternating repetitions.
+A final observational profile split the remaining 6.166s V4 state-preparation
+inclusive CPU into deck 3.154s, state fusion 2.488s, relic 0.199s, and potion
+0.070s; these components were not optimized.
+
+The one-seed performance evidence does not establish gameplay improvement,
+production speedup or default promotion. Live OOC MCTS stays opt-in, and the
+uniform-leaf/V4-prior research configuration remains unchanged. See the
+[complete evidence packet](evidence/ooc_v4_prior_uniform_leaf_optimization_2026-09-24/README.md)
+for provenance, raw commands/results, checks and remaining uncertainty.
+
+Knowledge impact: current OOC implementation and profile evidence updated in
+the architecture and current-research pages; no qualified baseline or runtime
+default changed.
+
+## §342 — Experimental DeepSets CTM with Entropic Brew fallback (2026-09-24)
+
+- **Question and baseline:** Can the PR #298 potion-aware DeepSets specialist
+  serve ordinary OOC CTM preparations while the current standard Attention
+  artifact handles every pre-combat Entropic Brew state? Baseline is merged
+  PR #303 at `41c0f5af5711c452b6e133e6dc66c7756f50874c`. This is an
+  engineering screen, not another offline potion qualification.
+- **Intervention/provenance:** Exported the existing, already-verified W
+  checkpoint unchanged (SHA256
+  `71d88a71cf7579e1092c3b3c27e000538a6aafe35bbf5228c10c15fa0edd4ace`,
+  epoch 27) as a dedicated potion encoder/decoder in the experimental
+  DeepSets stack. A new opt-in hybrid routes each full predictor-visible
+  pre-combat input containing Brew to the exact current standard V2 CTM;
+  other inputs use the experimental fast child. The default path is
+  unchanged, and the specialist itself rejects direct Brew use.
+- **Mechanism/parity:** Python/native W parity passed on 31 frozen fixtures
+  at `1e-4` absolute tolerance (maximum encoder/probability errors
+  `7.75e-7`/`4.77e-7`, zero legal-mask mismatches). Hybrid/direct-child support,
+  prepared and scalar draws, full RAW state and RNG identity passed for the
+  same fixture inputs; routing consumed no planner RNG. Direct fast-path Brew
+  use failed closed. The 18 Brew rows among 31 fixtures are mechanism coverage,
+  not a representative dispatch sample. Pre-combat routing is sufficient for
+  the known recursive-Brew case because its trajectory starts with Brew in
+  the visible inventory.
+- **Fixed-input timing:** On 31 frozen fixtures, 10 warmups and 100 repeats
+  per row, the 10 non-Brew rows supported by fast were timed on both children:
+  median preparation was 3,715 us standard versus 491 us fast (7.57x), with
+  hybrid fast at 487 us on those same rows. Median sampling was 39.5 us
+  standard versus 35.0 us fast. Separately, on 18 supported Brew rows standard
+  preparation was 3,315 us and hybrid fallback 3,419 us; sampling was 41.7 and
+  44.4 us. Encoder calls were 4 for standard/fallback and 3 for fast. Fixture
+  fallback share is 18/31 and cannot estimate OOC frequency or whole-search
+  speed. This is a fixed-fixture timing smoke only.
+- **Implementation checks:** The initial review confirmed fallback metadata
+  identity but did not bind the standard artifact bytes. Follow-up review found
+  the gap; source commit `9a1335a243e08ad57c59a36c95b48778fdba8b76` pins the
+  actual standard artifact SHA256 to
+  `e9a18951710fdfe9e1a81a2703090a41f039067c670a1d8a0393b5e7e8e0ddfd` and
+  adds a matching-metadata byte-tamper rejection check. After rebasing onto
+  `bb2379e844464f9bff35a6ca61e1eeaa8dbb0090`, the six runtime-linked Release
+  targets built, focused adapter/runtime-loader CTest passed 2/2, Python/native
+  parity and the hybrid mechanism probe passed again, and fixed-input timing was
+  rerun. Full GitHub Actions CI was not yet available.
+- **Paired OOC screen:** After review, the implementation was frozen at
+  `9ce11fdbe50f32b4b2646dd8a0803c6dc0c3f351`. Standard and hybrid both ran
+  seeds `980000..980063` with 10,000 combat simulations, 2,048 OOC MCTS
+  simulations, A0 fair play, 24 threads, Silver continuation, V4 policy, and
+  identical non-model settings. Each arm has 64 unique results and matching
+  per-seed MCTS traces/configuration metadata. Standard won 40/64, hybrid
+  39/64; discordant outcomes were 7 hybrid-only and 8 standard-only wins. The
+  paired delta is **-1.56 pp** (bootstrap 95% CI `[-14.06,+10.94] pp`, exact
+  discordant p `1.0`), classified
+  **`OOC_HYBRID_WINRATE_INCONCLUSIVE`**. This is not equivalence evidence.
+- **Runtime and dispatch:** Mean bestbench elapsed time was 641.4 s/seed for
+  standard and 439.7 s/seed for hybrid (paired change `-201.7 s`, 95% CI
+  `[-254.8,-141.3]`). Mean MCTS CPU was 139.35 vs 94.85 s/seed (change
+  `-44.50 s`, 95% CI `[-69.61,-5.93]`); MCTS wall was 462.83 vs 276.65 s.
+  The hybrid recorded 4,219 Brew fallbacks out of 1,135,061 preparation calls
+  (**0.372%**) and 401 per-seed unique Brew states summed across runs. It
+  recorded 21 fast-child and 1 fallback-child support-failure queries. MCTS
+  support aborts were 20 control and 22 hybrid; all were the existing
+  `smoke_bomb` exclusion, with no new unsupported reason. Whole-process CPU
+  was not separately recorded. Arms made different work counts, so total time
+  is a runtime signal, not a matched-work causal estimate.
+- **Decision:** The mechanism and runtime questions look promising: ordinary
+  fixed-input preparations are substantially faster and Brew is rare in this
+  OOC cohort. The observed paired win-rate difference is small, but the
+  interval still includes a sizable regression; the screen is inconclusive and
+  does not establish quality equivalence. A separate larger confirmation is
+  warranted before any default promotion. Do not use this bounded result as
+  offline CTM qualification.
+- **Checks/evidence:** Release targets built; focused adapter/runtime-loader
+  CTest passed 2/2; Python compilation and `git diff --check` passed. Full CI
+  was not run. See the
+  [mechanism, timing, and paired OOC packet](evidence/deepset_entropic_brew_hybrid_2026-09-24/README.md),
+  including the raw per-seed CSV, source/config receipts, support counts,
+  compressed action traces, and reproducible summary.
+- **Evidence:** [mechanism and timing packet](evidence/deepset_entropic_brew_hybrid_2026-09-24/README.md).
+
+After PR #309 advanced `main` to `7a181b3fa296fda4122033b70767fc2c0f03618c`,
+the branch was rebased onto that Silver-only architecture. The six Release
+targets and focused 2/2 CTest selection passed again; 31-fixture parity and
+hybrid routing/RNG checks passed. On 10 matched ordinary rows, standard median
+preparation was 4,732 us, fast was 534 us (8.86x), and hybrid fast was 661 us
+(7.16x). On 18 Brew rows, standard was 3,687 us and hybrid fallback 3,726 us.
+An OpenSSL-disabled configuration also built the non-CTM `main` target after
+the Crypto dependency was made optional at configure time. These checks do not
+change or relabel the original 64-pair outcome, which remains attached to frozen
+executable `9ce11fdbe50f32b4b2646dd8a0803c6dc0c3f351`. Exact commands and raw
+outputs are in the [Silver-only main verification packet](evidence/deepset_entropic_brew_hybrid_2026-09-24/silver-only-main-source/COMMANDS.md).
+
+Before publication, `main` advanced again through PR #310 to
+`7b4244ef8af4508466e01a1a6b515c70015e6274`; the branch was rebased onto this
+head and all six Release targets plus focused CTest passed again. Parity and
+mechanism checks again passed all 31 fixtures. Fixed-input preparation medians
+on 10 matched ordinary rows were 3,957 us standard, 520 us fast (7.61x), and
+508 us hybrid (7.79x); on 18 Brew rows, standard was 3,565 us and hybrid
+fallback 3,708 us. OpenSSL-disabled configure and non-CTM `main` build passed.
+No gameplay run was repeated. Results and commands are in the
+[PR #310 verification packet](evidence/deepset_entropic_brew_hybrid_2026-09-24/main-7b4244-source/COMMANDS.md).
+
+Knowledge impact: current research status now records an experimental hybrid
+path and its bounded engineering evidence; qualified models and runtime defaults
+remain unchanged.
+
+## §343 — Silver rollout-cost screen: B faster, fixed-work quality inconclusive (2026-09-24)
 
 - **Question and baseline:** Can rollout hot-path work be reduced while
   preserving useful fixed-time Silver decisions? The handoff baseline

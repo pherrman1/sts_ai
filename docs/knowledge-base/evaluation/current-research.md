@@ -1,6 +1,7 @@
 # Current research status
 
-Last verified: 2026-09-24 for the Silver rollout-cost screen; 2026-09-23 for the frozen Silver prior online gameplay screen;
+Last verified: 2026-09-24 for the Silver rollout-cost screen and experimental
+DeepSets Brew-fallback mechanism/timing smoke; 2026-09-23 for the frozen Silver prior online gameplay screen;
 2026-09-21 for the complete frozen Silver internal-node FPU cohort and local 80-source learned-prefix scale validation;
 2026-09-20 for the tactical-prefix Silver oracle headroom screen
 and contextual first-action Silver selector headroom/policy screen; 2026-09-19 for forced-action historical artifact recovery and
@@ -74,7 +75,14 @@ other sections retain their prior verification and linked evidence.
 
 ## Purpose
 
-The [current OOC CPU profile](../../experiments/evidence/ooc_cpu_profile_2026-09-18/README.md)
+The [latest OOC CPU profile and exact V4-prior optimizations](../../experiments/evidence/ooc_v4_prior_uniform_leaf_optimization_2026-09-24/README.md)
+profile fixed seed12002032 with V4 prior and uniform leaf policy. A singleton
+prior fast path and state-prefix policy-head reuse preserve the fixed-work
+trace; the singleton change reduced mean MCTS thread CPU by 7.9% against the
+prefix-only build, with modest/noisy whole-process CPU movement. The separate
+prefix-only comparison reduced mean MCTS thread CPU by 10.6% and whole-run
+wall by 6.0%. This is one-seed runtime evidence, not gameplay-quality evidence
+or a production benchmark. The [previous OOC CPU profile](../../experiments/evidence/ooc_cpu_profile_2026-09-18/README.md)
 reuses only historical seeds12002032/12002033, with exact workload reproduction
 and frozen opt-in instrumentation on main589a7a7. Real Silver combat accounts
 for54–57% of full CPU; V4 prior/continuation inference for17–19%; all CTM
@@ -990,6 +998,51 @@ the cause of the remaining slice gap. See
 [ledger-06 §338](../../experiments/ledger-06.md) and the
 [potion-specialist evidence](../../experiments/evidence/potion_specialist_deepsets_2026-09-23.md).
 
+### Potion-pooled-blind DeepSets follow-up
+
+The paired warm-start follow-up is **`POTION_DEEPSET_POTION_BLIND_REJECTED`**.
+The control reproduced PR #298 W closely (validation NLL `0.486931329` versus
+`0.487162724`). P zeroed only the pooled potion identity/slot block before the
+same trunk; global inputs, including `potionCount` and `potionCapacity`, stayed
+unchanged as specified. P retained strong overall validation trajectory NLL
+`0.489927014` (`-3.3299%` versus Attention), improved no-change Brier and kept
+illegal probability exactly zero. The existing teacher-forced gate still
+rejects P: recursive-Brew NLL was `3.026048` versus Attention `2.412967`
+(`+25.4078%`) and control C `2.985346` (`+0.040702` nat paired mean). P
+improved on 5 of the 12 cases and worsened on 7, so no consistent case-level
+fix appeared. This weakens the hypothesis that the pooled potion block alone
+causes the recursive-Brew regression; it does not isolate the remaining global
+potion-count/capacity signal or establish another cause. The raw receipt records
+zero TEST encoding/scoring/teacher-metric rows. No ancestral stage, TEST use,
+export, native parity, runtime change, or gameplay qualification was run.
+See [ledger-06 §339](../../experiments/ledger-06.md), the
+[experiment report](../../experiments/evidence/deepset_potion_blind_2026-09-23.md),
+and its [raw receipt](../../experiments/evidence/deepset_potion_blind_2026-09-23.json).
+
+### Experimental DeepSets CTM with Entropic Brew fallback
+
+An opt-in hybrid implementation now uses the PR #298 W potion-aware specialist
+for predictor-visible pre-combat inputs without Entropic Brew and dispatches
+the whole transition to the current standard Attention CTM whenever Brew is
+present. Specialist parity and hybrid/direct-child state/RNG identity passed on
+the frozen 31-row fixture set. On the same 10 non-Brew fixture rows supported
+by fast DeepSets, median preparation was 3.715 ms standard and 0.491 ms fast
+(7.57x). In the subsequent canonical 64-pair OOC engineering screen at frozen
+source `9ce11fdbe50f32b4b2646dd8a0803c6dc0c3f351`, standard won 40 and hybrid
+39; paired win delta was `-1.56 pp` (95% CI `[-14.06,+10.94] pp`), an
+**inconclusive** quality estimate. Across 1,135,061 OOC hybrid preparations,
+4,219 used Brew fallback (`0.372%`) in this 64-seed cohort. Observed mean
+bestbench elapsed time was lower (641.4 vs 439.7 s/seed), as was mean MCTS CPU
+(139.35 vs 94.85 s/seed); this is
+runtime evidence under changed search trajectories, not a matched-work causal
+estimate. The observed 64-pair difference was small, but its uncertainty still
+includes a sizable win-rate regression. The screen is not equivalence evidence
+or a default-promotion gate. The specialist
+remains offline-rejected; the hybrid remains unqualified and opt-in only. A
+separate larger confirmation is warranted before any promotion. See
+[ledger-06 §342](../../experiments/ledger-06.md) and the
+[mechanism/timing/paired OOC packet](../../experiments/evidence/deepset_entropic_brew_hybrid_2026-09-24/README.md).
+
 ### Qualified DeepSets representation for survival prediction
 
 The matched frozen survival-head screen is **`DEEPSET_SURVIVAL_REJECTED`**.
@@ -1426,7 +1479,7 @@ The experiment-only runtime flag, fixture executable, and searcher hook were
 removed before merging the evidence; no B implementation or opt-in runtime
 path remains.
 
-The separate §339 rollout-cost candidate tested an early energy rejection (A)
+The separate §343 rollout-cost candidate tested an early energy rejection (A)
 and rollout-only unsorted unknown piles (B). A preserved deterministic outputs
 but had no speed gain and was reverted. B reduced matched fixed-work Release CPU
 about 11%, but selected-action agreement against a fresh current-main 10k DEV
@@ -1435,9 +1488,9 @@ estimate is **inconclusive** and does not pass the no-harm gate, so no
 equal-runtime or complete-combat screen ran. A separate instrumented profile
 estimated `getIncomingDamage` at 2.6% inclusive, so no fragile cache was
 implemented. Chance duplicate counters were exposed by category, but exact
-support exhaustion was not established. The §339 unsorted-pile candidate
+support exhaustion was not established. The §343 unsorted-pile candidate
 remains a draft review candidate only; it is not qualified for promotion. See
-[ledger-06 §339](../../experiments/ledger-06.md)
+[ledger-06 §343](../../experiments/ledger-06.md)
 and the [complete rollout-cost packet](../../experiments/evidence/silver_rollout_cost_20260924/README.md).
 
 ### Whole-Act OOC evaluator
@@ -1474,6 +1527,8 @@ scaling experiment").
 
 ### Searcher3 belief filtering and rejuvenation
 
+Closed: Searcher3 was removed (ADR-0019).
+
 Exact real-observation filtering is semantically promising but remains opt-in;
 persistent transfer is not in the executable, and single-child AI_RNG
 rejuvenation stayed mixed/inconclusive with possible downside tail risk. A new
@@ -1484,6 +1539,8 @@ promotion or broader rejuvenation work. See the
 confirmation").
 
 ### Searcher3 particle count
+
+Closed: Searcher3 was removed (ADR-0019).
 
 128 particles remains directionally promising but unconfirmed; 64 remains the
 default. The next justified action is a full-block confirmation on the current

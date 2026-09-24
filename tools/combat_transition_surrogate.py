@@ -952,9 +952,11 @@ def _safe_state_dict(net) -> dict:
 class DeepSetsEncoder:
     """Corrected PR #161 DeepSets representation, returning a width-64 run vector."""
 
-    def __init__(self, nn, torch, scalar_mean: np.ndarray, scalar_std: np.ndarray):
+    def __init__(self, nn, torch, scalar_mean: np.ndarray, scalar_std: np.ndarray,
+                 potion_blind: bool = False):
         self.torch = torch
         self.nn = nn
+        self.potion_blind = potion_blind
         self.scalar_mean = torch.tensor(scalar_mean, dtype=torch.float32)
         self.scalar_inv = torch.tensor(1.0 / np.maximum(scalar_std, 1e-6), dtype=torch.float32)
 
@@ -962,6 +964,7 @@ class DeepSetsEncoder:
             def __init__(self, outer):
                 super().__init__()
                 self.outer = outer
+                self.potion_blind = outer.potion_blind
                 self.register_buffer("scalar_mean", outer.scalar_mean)
                 self.register_buffer("scalar_inv", outer.scalar_inv)
                 self.card_id = nn.Embedding(CARD_COUNT, 48)
@@ -990,6 +993,11 @@ class DeepSetsEncoder:
                 rvec = self.relic_mlp(t.cat((self.relic_id(r[:, :, 0].long()), rfields), -1))
                 rpool = (rvec * rmask.unsqueeze(-1)).sum(1)
                 pvec = self.potion_mlp(t.cat((self.potion_id(p[:, :, 1].long()), self.potion_slot(p[:, :, 0].long())), -1)).sum(1)
+                if self.potion_blind:
+                    # This experiment ablates only the pooled potion branch.
+                    # Global fields such as potionCount/capacity remain unchanged
+                    # to preserve the requested trunk inputs and tensor shapes.
+                    pvec = t.zeros_like(pvec)
                 cats = t.cat([embedding(gc[:, index].long()) for index, embedding in enumerate(self.global_category)], -1)
                 gs = (g - self.scalar_mean.to(g.device)) * self.scalar_inv.to(g.device)
                 global_vec = self.global_mlp(t.cat((gs, cats), -1))

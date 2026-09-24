@@ -1,6 +1,6 @@
 # Architecture overview
 
-Last verified: 2026-09-10 against the current working tree.
+Last verified: 2026-09-24 for battle-state equality/hashing, value-type combat actions, the one_combat translation-unit split and the Searcher3 removal; 2026-09-10 against the current working tree.
 
 ## Purpose
 
@@ -25,10 +25,31 @@ separate packed `search::Action` (`include/sim/search/GameAction.h::GameAction`;
 
 `apps/one_combat.cpp::main` is the active integration workbench. It parses
 environment flags, loads models, and dispatches benchmarks, data generators,
-tracing, and counterfactual evaluators. The self-contained `vnettest`,
-`policynettest`, `pvnetparity`, and `policystats` offline diagnostics live in
-`apps/combat_model_diagnostics.cpp`. Core simulator behavior remains under
+tracing, and counterfactual evaluators. The larger mode bodies (run tracing,
+semantic pilot, combat datasets, OOC factor/budget evaluators, strategic and
+counterfactual generators) are separate translation units under
+`apps/one_combat/` that share driver state through
+`apps/one_combat/driver_shared.h`. The self-contained `vnettest` offline
+diagnostic lives in `apps/combat_model_diagnostics.cpp`. Core simulator behavior remains under
 `src/game`, `src/combat`, and `src/sim` (`CMakeLists.txt::sts_lightspeed_SOURCES`).
+
+Combat actions (`include/combat/Actions.h`) are plain values: a
+`CombatActionType` tag plus a trivially copyable parameter struct
+(`ActData_*`) whose `operator()` performs the action. Queued actions compare
+with `operator==` and a `BattleContext` copies its action queue with memcpy.
+`Actions::` factory signatures are unchanged.
+
+`BattleContext::operator==` compares every state field except the static
+benchmark counter, ignoring unused slots (hand past `cardsInHand`, monsters
+past `monsterCount`, ring-buffer slots outside the action and card queues).
+`BattleContext::equalForSearch` additionally ignores the six RNG streams and
+`loopCount` and compares the hand as a multiset; `sts::search::hashBattleState`
+(`src/sim/search/SearchStateHash.cpp`) is consistent with it. `Player`,
+`Monster`, `CardInstance`, `CardQueueItem` and `CardSelectInfo` use defaulted
+comparisons, so new members join equality automatically; the hand-written
+comparisons in `BattleContext.cpp`, `CardManager.cpp` and `MonsterGroup.cpp`
+must be extended when those structs gain fields. These are the building blocks
+for running Silver's search directly on this engine (`test battle_equality`).
 
 The retained E2c RAW/POST capture contract is isolated in
 `apps/one_combat/e2c_capture.{h,cpp}`. The module owns capture state, row
@@ -51,10 +72,9 @@ delegates the real battle exit and reward-screen boundaries to the module.
 ## Important data flow
 
 1. `GameContext` advances a run until `ScreenState::BATTLE`.
-2. `BattleContext::init` copies combat inputs and initializes transient state.
-3. `ScumSearchAgent2::playoutBattle` selects the project-fair or tree-reuse
-   path and Searcher2/Searcher3, then commits combat `Action` values. Searcher3's
-   non-fair path is a particle/reuse hybrid, not known-RNG Searcher2.
+2. `ScumSearchAgent2::playoutBattle` hands the combat to the installed Silver
+   backend, which runs `BattleContext::init`, searches, and commits combat
+   `Action` values. Silver is the only combat searcher (ADR-0020).
 4. `BattleContext::exitBattle` transfers outcome, HP, rewards, RNG streams, and
    persistent effects back to the run. When E2c capture is enabled,
    `e2c_capture` temporarily arms its RAW observer only around this real exit;
@@ -69,10 +89,8 @@ flowchart LR
     GC["GameContext advances a run"] -->|until| BATTLE["ScreenState::BATTLE"]
     BATTLE --> INIT["BattleContext::init (copies combat inputs)"]
     INIT --> CHOICE["ScumSearchAgent2::playoutBattle (project-fair or tree-reuse)"]
-    CHOICE --> S2["Searcher2 (known-RNG determinize)"]
-    CHOICE --> S3["Searcher3 (particle sampling; non-fair: particle/reuse hybrid, not known-RNG Searcher2)"]
-    S2 --> COMMIT["commit combat Action values"]
-    S3 --> COMMIT
+    CHOICE --> SILVER["Silver backend (only combat searcher)"]
+    SILVER --> COMMIT["commit combat Action values"]
     COMMIT --> EXIT["BattleContext::exitBattle (outcome, HP, rewards, RNG streams, persistent effects back)"]
     EXIT --> OOC["Out-of-combat policy applies GameAction values"]
     OOC --> NEXT["next combat or terminal GameOutcome"]
@@ -126,7 +144,6 @@ Detailed flows are in [combat search](combat-search.md),
 - `apps/one_combat.cpp::main`, `apps/one_combat/run_driver.cpp::runFullRunOOC`
 - `apps/one_combat/e2c_capture.{h,cpp}` — retained E2c RAW/POST lifecycle, canonical projection, and run-win parity
 - `apps/one_combat/ooc_policy.{h,cpp}` — live OOC action/checkpoint/one-ply/map policies
-- `apps/one_combat/fight_replay.{h,cpp}` — Act-3 boss fight-start capture and isolated `fightrep` replay
 - `apps/one_combat/run_features.{h,cpp}` — path history, forward-map features, rich schema, and feature index map
 - `apps/one_combat/compact_tree.{h,cpp}` — compact tree declaration and loader/predictor
 - `apps/combat_model_diagnostics.cpp::runCombatModelDiagnosticMode`

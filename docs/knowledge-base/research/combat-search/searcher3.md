@@ -1,5 +1,10 @@
 # Searcher3 ISMCTS
 
+> **Status (2026-09-24):** Searcher3 was removed by
+> [ADR-0019](../../../../decisions/0019-remove-searcher3.md). This page is a
+> historical research record; reproducing it needs a binary built before that
+> change.
+
 Last verified: 2026-08-11.
 
 ## Purpose / research question

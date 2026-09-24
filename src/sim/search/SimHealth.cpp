@@ -13,8 +13,6 @@
 #include "combat/BattleContextBinary.h"
 #include "constants/MonsterEncounters.h"
 #include "sim/search/Action.h"
-#include "sim/search/BattleScumSearcher2.h"
-#include "sim/search/BattleScumSearcher3.h"
 
 #include <atomic>
 #include <cstdlib>
@@ -78,9 +76,8 @@ std::string metadataText(const BattleContext &bc, const SimHealthMeta &meta,
     os << "rng.monsterHp=" << bc.monsterHpRng.counter << '\n';
     os << "rng.potion=" << bc.potionRng.counter << '\n';
     os << "rng.shuffle=" << bc.shuffleRng.counter << '\n';
-    os << "searcherType=" << (g_useSearcher3 ? "S3" : "S2") << '\n';
-    os << "fairMode=" << (g_fairPlay ? "1" : "0") << '\n';
-    os << "particles=" << g_s3Particles << '\n';
+    os << "searcherType=silver\n";
+    os << "fairMode=1\n";
     return os.str();
 }
 

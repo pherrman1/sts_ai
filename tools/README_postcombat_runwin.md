@@ -100,8 +100,9 @@ retains every valid RAW row for primary RAW analysis and uses complete
 RAW+POST pairs only for explicitly named paired arms and retention calculations.
 The analyzer reports completeness overall, by room, and by eventual outcome.
 
-Correct human launcher: use `STS_LIVE_VALID=1` and the designated GCP wrapper;
-do not launch it during implementation:
+Historical launcher: this command uses Searcher3, which ADR-0019 removed, so it
+needs a binary built before that change. It used `STS_LIVE_VALID=1` and the
+designated GCP wrapper:
 
 ```bash
 python3 tools/agent/gcp_benchmark.py run -- \

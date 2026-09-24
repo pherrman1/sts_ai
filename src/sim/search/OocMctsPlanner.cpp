@@ -68,6 +68,10 @@ struct Search {
 
     void expand(DecisionNode &node) {
         auto actions = model.legalActions(node.state);
+        if (actions.empty()) ++metrics.expandedNodes0Actions;
+        else if (actions.size() == 1) ++metrics.expandedNodes1Action;
+        else if (actions.size() == 2) ++metrics.expandedNodes2Actions;
+        else ++metrics.expandedNodes3PlusActions;
         if (actions.empty()) throw std::runtime_error("OOC MCTS nonterminal has no legal actions");
         std::sort(actions.begin(), actions.end(), [](auto a, auto b) { return a.id < b.id; });
         double largest = 0;

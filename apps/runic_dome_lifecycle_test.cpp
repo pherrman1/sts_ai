@@ -151,14 +151,14 @@ void testRestrictedHistoryAndPreRollMiscInfo() {
 void testReactiveChainAndIntentQuery() {
     LiveFixture chained(MonsterEncounter::WRITHING_MASS, 0xD003u);
     chained.bc.monsters.arr[0].setStatus<MS::REACTIVE>(2);
-    Actions::ReactiveRollMove().actFunc(chained.bc);
+    Actions::ReactiveRollMove()(chained.bc);
     check(chained.knowledge.pendingHiddenIntentRolls[0] == 3,
           "two real reactive rerolls must extend the deferred chain from one to three");
 
     LiveFixture queried(MonsterEncounter::CULTIST, 0xD004u);
     check(queried.knowledge.pendingHiddenIntentRolls[0] == 1,
           "query fixture must begin with pending intent");
-    Actions::SpotWeaknessAction(0, 3).actFunc(queried.bc);
+    Actions::SpotWeaknessAction(0, 3)(queried.bc);
     check(queried.knowledge.pendingHiddenIntentRolls[0] == 0,
           "Spot Weakness must materialize and consume the pending intent");
     check(queried.knowledge.publicMonsterMoveHistory[0][0]
@@ -221,7 +221,7 @@ void testPostTurnDeterministicAndDirectRandomTransitions() {
     check(sawSmokeBomb && sawLunge,
           "the deferred direct choice must remain stochastic across isolated Silver RNG realizations");
 
-    Actions::SpotWeaknessAction(0, 3).actFunc(random.bc);
+    Actions::SpotWeaknessAction(0, 3)(random.bc);
     check(!random.knowledge.hasUnrepresentableHiddenIntent[0],
           "a public intent query must consume the deferred Looter choice marker");
     const auto queriedDirectChoice = silver_bridge::inspectConvertedBattleState(random.wire());

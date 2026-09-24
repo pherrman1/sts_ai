@@ -74,7 +74,7 @@ retain their existing locations and invocation conventions.
 ## Active vs reproducibility-only
 
 Scripts under `tools/run/` include both current experiment harnesses (used
-in ongoing Searcher3 and strategic-policy research) and historical data
+in ongoing strategic-policy research) and historical data
 generation loops (`datagen_loop.sh`, `datagen2_loop.sh`) retained for
 reproducibility. See `docs/knowledge-base/evaluation/current-research.md`
 for the active set.
@@ -91,13 +91,10 @@ import refactors:
   trainers, root exporters, and `tools/` scripts. Moving one would break the
   others.
 
-- **PVNet eval cluster:** `combat_pvnet_parity.py`, `eval_combat_pvnet.py` —
-  the evaluator imports the shared parity module.
-
-- **Self-play active scripts:** `train_value_combat.py`, `train_winrate.py`,
-  `train_rest_cf.py`, `train_policy.py`, `train_card_cf.py`,
-  `v_server.py`, `paired_analysis.py` — invoked by `selfplay/loop.sh` and
-  related scripts; call-site changes risk breaking the loop state machine.
+- **Former self-play scripts:** `train_value_combat.py`, `train_winrate.py`,
+  `train_rest_cf.py`, `train_card_cf.py`, `v_server.py`
+  and `paired_analysis.py` were driven by the self-play loop, which ADR-0020
+  removed. They remain usable standalone.
 
 - **Cross-imported modules:** `train_deckset.py`, `train_combat_deepsets.py`,
   `train_combat_dist.py`, `export_combat_model.py` — imported by both root

@@ -1,6 +1,6 @@
 # Build and debugging
 
-Last verified: 2026-09-10 against the current working tree.
+Last verified: 2026-09-24 for the Searcher2/3 and self-play removals; 2026-09-10 against the current working tree.
 
 ## Purpose
 
@@ -9,7 +9,7 @@ manual checks, model-load diagnostics, and tracing boundaries.
 
 ## Current implementation
 
-`CMakeLists.txt` requires CMake 3.19 and C++17. All configurations retain
+`CMakeLists.txt` requires CMake 3.19 and C++20. All configurations retain
 `-Wno-shift-count-overflow` and `-fopenmp`; Release adds `-O3 -flto`, while
 Debug uses its normal assertion-enabled flags without forced optimization or
 LTO. It recursively gathers `src/*.cpp` into the `sts_core_objects` OBJECT
@@ -29,6 +29,11 @@ Nlohmann JSON library used by native configuration, wire formats, and evidence
 tools. `pybind11` builds the optional `slaythespire` Python extension; native
 executables still use the repository without that extension when Python
 development headers are unavailable.
+
+OpenSSL Crypto is optional at configure time. CMake links it to targets that
+compile the CTM runtime when it is available; without it, unrelated targets
+such as `main` still configure and build, while CTM runtime targets require the
+OpenSSL headers and Crypto library.
 
 Submodule checkouts are per worktree. Raw `git worktree add` therefore creates
 a checkout whose dependency directories are initially empty, and raw removal
@@ -93,7 +98,7 @@ native/Python regressions including
 is named `unit-test` in CMake with `OUTPUT_NAME test` (CTest reserves the name
 `test`); `apps/test.cpp::main` is a manual command dispatcher that with no
 arguments prints `incorrect arguments` and exits successfully, and with a
-known subcommand runs the targeted Searcher3/terminal checks; unknown
+known subcommand runs the targeted search/terminal checks; unknown
 subcommands fail nonzero (see
 [`architecture/combat-search.md`](../architecture/combat-search.md)).
 `apps/parity_test.cpp` has a CMake target `parity_test`; `parity_test.py`
@@ -380,9 +385,6 @@ already exists. It does not replace the experiment-specific post-run canary:
 validate completed results with `tools/agent/check_benchmark_canary.py` and the
 required scientific analyzer before interpreting them.
 
-`selfplay/loop.sh` still defaults to `build/one_combat` (overridable via
-`ONE_COMBAT_BIN`/`STS_BIN`). Set either variable to
-`build/linux-gcc-release/one_combat` when using the checked-in preset.
 
 ### Python tooling environment
 
@@ -545,9 +547,8 @@ never compare throughput against the instrumented collection binary. Refresh
 teacher/producer executable hashes for each binary, and keep all seed-driving
 commands under `tools/seed_guard.sh` (local cap 128).
 
-The checked-in self-play configuration selects `./build/one_combat`, whereas
-the Release preset produces `build/linux-gcc-release/one_combat`. Neither path
-proves a running producer is optimized: inspect the actual job command,
+The Release preset produces `build/linux-gcc-release/one_combat`. The path does
+not prove a running producer is optimized: inspect the actual job command,
 `CMakeCache.txt`, generated compile flags, and binary hash on its host before
 drawing a production conclusion. PGO remains an experimental build option;
 no production speedup is established by enabling it.
@@ -586,12 +587,9 @@ Useful focused checks after the relevant target exists:
 
 ```bash
 ./build/test
-./build/test seed_contract 0
 ./build/small-test isbattleover
-STS_FAIR=1 ./build/one_combat bestbench 1000 8 0
+bash tools/seed_guard.sh ./build/one_combat bestbench 1000 8 0
 ctest --test-dir build --output-on-failure
-bash -n selfplay/loop.sh
-bash -n selfplay/status.sh
 python3 -m py_compile paired_analysis.py
 ```
 
@@ -841,6 +839,4 @@ recording.
 - `apps/test.cpp::main`
 - `apps/parity_test.cpp::main`; `parity_test.py`
 - `tools/verify/check_replay.py`
-- `selfplay/loop.sh::run_gate_batch`
-- `src/sim/search/CombatPVNet.cpp` BLAS initialization
 - `src/sim/search/CombatDistValueNet.cpp` BLAS initialization

@@ -7,27 +7,532 @@
 #include "combat/BattleContext.h"
 #include "game/Game.h"
 
+#include <type_traits>
+#include <utility>
+
 using namespace sts;
 
+namespace {
+
+    constexpr std::size_t kPlayerStatusCount = static_cast<std::size_t>(PlayerStatus::THE_BOMB) + 1;
+    constexpr std::size_t kMonsterStatusCount = static_cast<std::size_t>(MonsterStatus::INVALID) + 1;
+
+    // Calls fn(std::integral_constant<Enum, value>{}) so a status stored in an
+    // action reaches the status templates on Player, Monster and BattleContext.
+    template <typename Enum, typename Fn, std::size_t... I>
+    void dispatchStatus(Enum value, Fn &fn, std::index_sequence<I...>) {
+        using Call = void (*)(Fn &);
+        static constexpr Call table[] = {
+            +[](Fn &f) { f(std::integral_constant<Enum, static_cast<Enum>(I)>{}); }...
+        };
+        table[static_cast<std::size_t>(value)](fn);
+    }
+
+    template <typename Fn>
+    void withPlayerStatus(PlayerStatus s, Fn &&fn) {
+        dispatchStatus(s, fn, std::make_index_sequence<kPlayerStatusCount>{});
+    }
+
+    template <typename Fn>
+    void withMonsterStatus(MonsterStatus s, Fn &&fn) {
+        dispatchStatus(s, fn, std::make_index_sequence<kMonsterStatusCount>{});
+    }
+
+}
+
+void Action::operator()(BattleContext &bc) const {
+    switch (type) {
+#define STS_ACT_CALL(Name, ...) case CombatActionType::Name: v_##Name(bc); break;
+        STS_FOREACH_COMBAT_ACTION(STS_ACT_CALL)
+#undef STS_ACT_CALL
+        case CombatActionType::INVALID:
+            break;
+    }
+}
+
+bool Action::operator==(const Action &rhs) const {
+    if (type != rhs.type || clearOnCombatVictory != rhs.clearOnCombatVictory
+            || executeAfterCombatVictory != rhs.executeAfterCombatVictory) {
+        return false;
+    }
+    switch (type) {
+#define STS_ACT_EQ(Name, ...) case CombatActionType::Name: return v_##Name == rhs.v_##Name;
+        STS_FOREACH_COMBAT_ACTION(STS_ACT_EQ)
+#undef STS_ACT_EQ
+        case CombatActionType::INVALID:
+            return true;
+    }
+    return false;
+}
+
+// ---------------------------------------------------------------------------
+// Factories
+
 Action Actions::SetState(InputState state) {
-    return {[=] (BattleContext &bc) {
-        bc.setState(state);
-    }};
+    return makeAction(ActData_SetState{state});
 }
 
 Action Actions::AttackEnemy(int idx, int damage) {
-    return {[=] (BattleContext &bc) {
+    return makeAction(ActData_AttackEnemy{idx, damage});
+}
+
+Action Actions::AttackAllEnemy(int baseDamage) {
+    return makeAction(ActData_AttackAllEnemy{baseDamage});
+}
+
+Action Actions::AttackAllEnemy(DamageMatrix damageMatrix) {
+    return makeAction(ActData_AttackAllEnemyMatrix{damageMatrix});
+}
+
+Action Actions::DamageEnemy(int idx, int damage) {
+    return makeAction(ActData_DamageEnemy{idx, damage});
+}
+
+Action Actions::DamageAllEnemy(int damage) {
+    // todo this is probably broken
+    return makeAction(ActData_DamageAllEnemy{damage});
+}
+
+Action Actions::AttackPlayer(int idx, int damage) {
+    return makeAction(ActData_AttackPlayer{idx, damage}, false);
+}
+
+Action Actions::DamagePlayer(int damage, bool selfDamage) {
+    return makeAction(ActData_DamagePlayer{damage, selfDamage}, false);
+}
+
+Action Actions::VampireAttack(int damage) {
+    return makeAction(ActData_VampireAttack{damage});
+}
+
+Action Actions::PlayerLoseHp(int hp, bool selfDamage) {
+    // TODO this doesn't take into account intangible or relics
+    return makeAction(ActData_PlayerLoseHp{hp, selfDamage}, false);
+}
+
+Action Actions::HealPlayer(int amount, bool executeAfterCombatVictory) {
+    return makeAction(ActData_HealPlayer{amount}, false, executeAfterCombatVictory);
+}
+
+Action Actions::MonsterGainBlock(int idx, int amount) {
+    return makeAction(ActData_MonsterGainBlock{idx, amount});
+}
+
+Action Actions::RollMove(int monsterIdx) {
+    return makeAction(ActData_RollMove{monsterIdx});
+}
+
+Action Actions::ReactiveRollMove() {
+    return makeAction(ActData_ReactiveRollMove{});
+}
+
+Action Actions::NoOpRollMove() {
+    return makeAction(ActData_NoOpRollMove{});
+}
+
+Action Actions::ChangeStance(Stance stance) {
+    return makeAction(ActData_ChangeStance{stance});
+}
+
+Action Actions::GainEnergy(int amount) {
+    return makeAction(ActData_GainEnergy{amount});
+}
+
+Action Actions::GainBlock(int amount) {
+    return makeAction(ActData_GainBlock{amount}, false);
+}
+
+Action Actions::DrawCards(int amount) {
+    return makeAction(ActData_DrawCards{amount});
+}
+
+Action Actions::EmptyDeckShuffle() {
+    return makeAction(ActData_EmptyDeckShuffle{});
+}
+
+Action Actions::ShuffleDrawPile() {
+    return makeAction(ActData_ShuffleDrawPile{});
+}
+
+Action Actions::ShuffleTempCardIntoDrawPile(CardId id, int count) {
+    return makeAction(ActData_ShuffleTempCardIntoDrawPile{id, count});
+}
+
+Action Actions::PlayTopCard(int monsterTargetIdx, bool exhausts) {
+    return makeAction(ActData_PlayTopCard{monsterTargetIdx, exhausts});
+}
+
+Action Actions::MakeTempCardInHand(CardInstance card, int amount) {
+    // todo master reality when the action is created
+    return makeAction(ActData_MakeTempCardInHand{card, amount});
+}
+
+Action Actions::MakeTempCardInDrawPile(const CardInstance &c, int amount, bool shuffleInto) {
+    // the random calculation is done in an effect so it be wrong to do it here?
+    return makeAction(ActData_MakeTempCardInDrawPile{c, amount, shuffleInto});
+}
+
+Action Actions::MakeTempCardInDiscard(const CardInstance &c, int amount) {
+    return makeAction(ActData_MakeTempCardInDiscard{c, amount});
+}
+
+Action Actions::DiscardNoTriggerCard() {
+    return makeAction(ActData_DiscardNoTriggerCard{});
+}
+
+Action Actions::ClearCardQueue() {
+    return makeAction(ActData_ClearCardQueue{});
+}
+
+Action Actions::DiscardAtEndOfTurn() {
+    return makeAction(ActData_DiscardAtEndOfTurn{});
+}
+
+Action Actions::DiscardAtEndOfTurnHelper() {
+    return makeAction(ActData_DiscardAtEndOfTurnHelper{});
+}
+
+Action Actions::RestoreRetainedCards(int count) {
+    return makeAction(ActData_RestoreRetainedCards{count});
+}
+
+Action Actions::UnnamedEndOfTurnAction() {
+    // EndTurnAction does this:
+        //        AbstractDungeon.player.resetControllerValues();
+        //        this.turnHasEnded = true;
+        //        playerHpLastTurn = AbstractDungeon.player.currentHealth;
+    return makeAction(ActData_UnnamedEndOfTurnAction{});
+}
+
+Action Actions::MonsterStartTurnAction() {
+    return makeAction(ActData_MonsterStartTurnAction{});
+}
+
+Action Actions::TriggerEndOfTurnOrbsAction() {
+    return makeAction(ActData_TriggerEndOfTurnOrbsAction{});
+}
+
+Action Actions::ExhaustTopCardInHand() {
+    return makeAction(ActData_ExhaustTopCardInHand{});
+}
+
+Action Actions::ExhaustSpecificCardInHand(int idx, std::int16_t uniqueId) {
+    return makeAction(ActData_ExhaustSpecificCardInHand{idx, uniqueId});
+}
+
+Action Actions::DamageRandomEnemy(int damage) {
+    return makeAction(ActData_DamageRandomEnemy{damage});
+}
+
+Action Actions::ExhaustRandomCardInHand(int count) {
+    return makeAction(ActData_ExhaustRandomCardInHand{count});
+}
+
+Action Actions::MadnessAction() {
+    return makeAction(ActData_MadnessAction{});
+}
+
+Action Actions::RandomizeHandCost() {
+    return makeAction(ActData_RandomizeHandCost{});
+}
+
+Action Actions::GainBlockRandomEnemy(int sourceMonster, int amount) {
+    return makeAction(ActData_GainBlockRandomEnemy{sourceMonster, amount});
+}
+
+Action Actions::SummonGremlins() {
+    // gremlin leader searches in the order 1, 2, 0 for open space
+    return makeAction(ActData_SummonGremlins{});
+}
+
+Action Actions::SpawnTorchHeads() {
+    return makeAction(ActData_SpawnTorchHeads{});
+}
+
+Action Actions::SpireShieldDebuff() {
+    return makeAction(ActData_SpireShieldDebuff{});
+}
+
+Action Actions::OnAfterCardUsed() {
+    return makeAction(ActData_OnAfterCardUsed{}, false);
+}
+
+Action Actions::PutRandomCardsInDrawPile(CardType type, int count) {
+    return makeAction(ActData_PutRandomCardsInDrawPile{type, count});
+}
+
+Action Actions::DiscoveryAction(CardType type, int amount) {
+    return makeAction(ActData_DiscoveryAction{type, amount});
+}
+
+Action Actions::InfernalBladeAction() {
+    return makeAction(ActData_InfernalBladeAction{});
+}
+
+Action Actions::JackOfAllTradesAction(bool upgraded) {
+    return makeAction(ActData_JackOfAllTradesAction{upgraded});
+}
+
+Action Actions::TransmutationAction(bool upgraded, int energy, bool useEnergy) {
+    return makeAction(ActData_TransmutationAction{upgraded, energy, useEnergy});
+}
+
+Action Actions::ViolenceAction(int count) {
+    // todo a faster algorithm for inserting into the attack list
+    return makeAction(ActData_ViolenceAction{count});
+}
+
+Action Actions::BetterDiscardPileToHandAction(int amount, CardSelectTask task) {
+    return makeAction(ActData_BetterDiscardPileToHandAction{amount, task});
+}
+
+Action Actions::ArmamentsAction() {
+    return makeAction(ActData_ArmamentsAction{});
+}
+
+Action Actions::DualWieldAction(int copyCount) {
+    return makeAction(ActData_DualWieldAction{copyCount});
+}
+
+Action Actions::ExhumeAction() {
+    // todo this is bugged because the selected card cannot be exhume
+    return makeAction(ActData_ExhumeAction{});
+}
+
+Action Actions::ForethoughtAction(bool upgraded) {
+    return makeAction(ActData_ForethoughtAction{upgraded});
+}
+
+Action Actions::HeadbuttAction() {
+    return makeAction(ActData_HeadbuttAction{});
+}
+
+Action Actions::ChooseExhaustOne() {
+    return makeAction(ActData_ChooseExhaustOne{});
+}
+
+Action Actions::DrawToHandAction(CardSelectTask task, CardType cardType) {
+    return makeAction(ActData_DrawToHandAction{task, cardType});
+}
+
+Action Actions::WarcryAction() {
+    return makeAction(ActData_WarcryAction{});
+}
+
+Action Actions::TimeEaterPlayCardQueueItem(const CardQueueItem &x) {
+    return makeAction(ActData_TimeEaterPlayCardQueueItem{x}, false);
+}
+
+Action Actions::UpgradeAllCardsInHand() {
+    return makeAction(ActData_UpgradeAllCardsInHand{});
+}
+
+Action Actions::EssenceOfDarkness(int darkOrbsPerSlot) {
+    return makeAction(ActData_EssenceOfDarkness{darkOrbsPerSlot});
+}
+
+Action Actions::IncreaseOrbSlots(int count) {
+    return makeAction(ActData_IncreaseOrbSlots{count});
+}
+
+Action Actions::SuicideAction(int monsterIdx, bool triggerRelics) {
+    return makeAction(ActData_SuicideAction{monsterIdx, triggerRelics});
+}
+
+Action Actions::PoisonLoseHpAction(int monsterIdx) {
+    return makeAction(ActData_PoisonLoseHpAction{monsterIdx});
+}
+
+Action Actions::RemovePlayerDebuffs() {
+    return makeAction(ActData_RemovePlayerDebuffs{});
+}
+
+Action Actions::UpgradeRandomCardAction() {
+    return makeAction(ActData_UpgradeRandomCardAction{});
+}
+
+Action Actions::CodexAction() {
+    return makeAction(ActData_CodexAction{});
+}
+
+Action Actions::ExhaustMany(int limit) {
+    return makeAction(ActData_ExhaustMany{limit});
+}
+
+Action Actions::GambleAction() {
+    return makeAction(ActData_GambleAction{});
+}
+
+Action Actions::ToolboxAction() {
+    return makeAction(ActData_ToolboxAction{});
+}
+
+Action Actions::DualityAction() {
+    return makeAction(ActData_DualityAction{});
+}
+
+Action Actions::ApotheosisAction() {
+    return makeAction(ActData_ApotheosisAction{});
+}
+
+Action Actions::DropkickAction(int targetIdx) {
+    // assume bc.curCard is the card being used
+    return makeAction(ActData_DropkickAction{targetIdx});
+}
+
+Action Actions::EnlightenmentAction(bool upgraded) {
+    return makeAction(ActData_EnlightenmentAction{upgraded});
+}
+
+Action Actions::EntrenchAction() {
+    return makeAction(ActData_EntrenchAction{});
+}
+
+Action Actions::FeedAction(int idx, int damage, bool upgraded) {
+    return makeAction(ActData_FeedAction{idx, damage, upgraded});
+}
+
+Action Actions::FiendFireAction(int targetIdx, int calculatedDamage) {
+    return makeAction(ActData_FiendFireAction{targetIdx, calculatedDamage});
+}
+
+Action Actions::HandOfGreedAction(int idx, int damage, bool upgraded) {
+    return makeAction(ActData_HandOfGreedAction{idx, damage, upgraded});
+}
+
+Action Actions::LimitBreakAction() {
+    return makeAction(ActData_LimitBreakAction{});
+}
+
+Action Actions::ReaperAction(int baseDamage) {
+    return makeAction(ActData_ReaperAction{baseDamage});
+}
+
+Action Actions::RitualDaggerAction(int idx, int damage) {
+    return makeAction(ActData_RitualDaggerAction{idx, damage});
+}
+
+Action Actions::SecondWindAction(int blockPerCard) {
+    return makeAction(ActData_SecondWindAction{blockPerCard});
+}
+
+Action Actions::SeverSoulExhaustAction() {
+    return makeAction(ActData_SeverSoulExhaustAction{});
+}
+
+Action Actions::SwordBoomerangAction(int baseDamage) {
+    // pretty hacky until I can figure out a better solution
+    return makeAction(ActData_SwordBoomerangAction{baseDamage});
+}
+
+Action Actions::SpotWeaknessAction(int target, int strength) {
+    return makeAction(ActData_SpotWeaknessAction{target, strength});
+}
+
+Action Actions::WhirlwindAction(int baseDamage, int energy, bool useEnergy) {
+    return makeAction(ActData_WhirlwindAction{baseDamage, energy, useEnergy});
+}
+
+Action Actions::AttackAllMonsterRecursive(DamageMatrix matrix, int timesRemaining) {
+    return makeAction(ActData_AttackAllMonsterRecursive{matrix, timesRemaining});
+}
+
+Action Actions::MakeTempCardInHand(CardId card, bool upgraded, int amount) {
+    CardInstance c(card, upgraded);
+    return Actions::MakeTempCardInHand(c, amount);
+}
+Action Actions::TransmutationCardsInHand(const Random &rng, int count, bool upgraded) {
+    return makeAction(ActData_TransmutationCardsInHand{rng, count, upgraded});
+}
+
+Action Actions::IncreasePlayerOrbSlots(int count) {
+    return makeAction(ActData_IncreasePlayerOrbSlots{count});
+}
+
+// ---------------------------------------------------------------------------
+// Action bodies
+
+void ActData_BuffPlayer::operator()(BattleContext &bc) const {
+    if (s == PlayerStatus::CORRUPTION && !bc.player.hasStatus<PS::CORRUPTION>()) {
+        bc.cards.onBuffCorruption();
+    }
+    const int amount = this->amount;
+    withPlayerStatus(s, [&](auto status) { bc.player.buff<decltype(status)::value>(amount); });
+}
+
+void ActData_DebuffPlayer::operator()(BattleContext &bc) const {
+    const int amount = this->amount;
+    const bool isSourceMonster = this->isSourceMonster;
+    withPlayerStatus(s, [&](auto status) {
+        bc.player.debuff<decltype(status)::value>(amount, isSourceMonster);
+    });
+}
+
+void ActData_DecrementStatus::operator()(BattleContext &bc) const {
+    const int amount = this->amount;
+    withPlayerStatus(s, [&](auto status) { bc.player.decrementStatus<decltype(status)::value>(amount); });
+}
+
+void ActData_RemoveStatus::operator()(BattleContext &bc) const {
+    withPlayerStatus(s, [&](auto status) { bc.player.setHasStatus<decltype(status)::value>(false); });
+}
+
+void ActData_BuffEnemy::operator()(BattleContext &bc) const {
+    // todo check if alive?
+    const int amount = this->amount;
+    auto &monster = bc.monsters.arr[idx];
+    withMonsterStatus(s, [&](auto status) { monster.buff<decltype(status)::value>(amount); });
+}
+
+void ActData_DebuffEnemy::operator()(BattleContext &bc) const {
+    const int idx = this->idx;
+    const int amount = this->amount;
+    const bool isSourceMonster = this->isSourceMonster;
+    withMonsterStatus(s, [&](auto status) {
+        bc.debuffEnemy<decltype(status)::value>(idx, amount, isSourceMonster);
+    });
+}
+
+void ActData_DebuffAllEnemy::operator()(BattleContext &bc) const {
+    // todo this should just add all to bot immediately, not be called first
+    // ^^ never mind i think adding to top is a workaround here
+    for (int i = bc.monsters.monsterCount-1; i >= 0; --i) {
+        if (bc.monsters.arr[i].isTargetable()) {
+            bc.addToTop(makeAction(ActData_DebuffEnemy{s, i, amount, isSourceMonster}));
+        }
+    }
+}
+
+void ActData_TransmutationCardsInHand::operator()(BattleContext &bc) const {
+    Random rolls = rng;
+    for (int i = 0; i < count; ++i) {
+        const auto cid = sts::getTrulyRandomColorlessCardInCombat(rolls);
+        CardInstance c(cid, upgraded);
+        c.setCostForTurn(0);
+        c.uniqueId = bc.cards.nextUniqueCardId++;
+        bc.cards.notifyAddCardToCombat(c);
+        bc.moveToHandHelper(c);
+    }
+}
+
+void ActData_IncreasePlayerOrbSlots::operator()(BattleContext &bc) const {
+    bc.player.increaseOrbSlots(count);
+}
+
+void ActData_SetState::operator()(BattleContext &bc) const {
+        bc.setState(state);
+    }
+
+void ActData_AttackEnemy::operator()(BattleContext &bc) const {
         if (bc.monsters.arr[idx].isDeadOrEscaped()) {
             return;
         }
 
         bc.monsters.arr[idx].attacked(bc, damage);
         bc.checkCombat();
-    }};
-}
+    }
 
-Action Actions::AttackAllEnemy(int baseDamage) {
-    return {[=] (BattleContext &bc) {
+void ActData_AttackAllEnemy::operator()(BattleContext &bc) const {
         // assume bc.curCard is the card being used
 
         int damageMatrix[5];
@@ -44,11 +549,9 @@ Action Actions::AttackAllEnemy(int baseDamage) {
         }
 
         bc.checkCombat();
-    }};
-}
+    }
 
-Action Actions::AttackAllEnemy(DamageMatrix damageMatrix) {
-    return {[=] (BattleContext &bc) {
+void ActData_AttackAllEnemyMatrix::operator()(BattleContext &bc) const {
         // assume bc.curCard is the card being used
 
         for (int i = 0; i < bc.monsters.monsterCount; ++i) {
@@ -58,81 +561,61 @@ Action Actions::AttackAllEnemy(DamageMatrix damageMatrix) {
         }
 
         bc.checkCombat();
-    }};
-}
+    }
 
-Action Actions::DamageEnemy(int idx, int damage) {
-    return {[=] (BattleContext &bc) {
+void ActData_DamageEnemy::operator()(BattleContext &bc) const {
         if (bc.monsters.arr[idx].isDeadOrEscaped()) {
             return;
         }
 
         bc.monsters.arr[idx].damage(bc, damage);
         bc.checkCombat();
-    }};
-}
+    }
 
-Action Actions::DamageAllEnemy(int damage) { // todo this is probably broken
-    return {[=] (BattleContext &bc) {
+void ActData_DamageAllEnemy::operator()(BattleContext &bc) const {
         for (int idx = 0; idx < bc.monsters.monsterCount; idx++) {
             if (!bc.monsters.arr[idx].isDeadOrEscaped()) {
                 bc.monsters.arr[idx].damage(bc, damage); // possible should addToBot here todo
             }
         }
         bc.checkCombat();
-    }};
-}
+    }
 
-Action Actions::AttackPlayer(int idx, int damage) {
-    return {[=] (BattleContext &bc) {
+void ActData_AttackPlayer::operator()(BattleContext &bc) const {
         bc.player.attacked(bc, idx, damage);
-    }, false};
-}
+    }
 
-Action Actions::DamagePlayer(int damage, bool selfDamage) {
-    return {[=] (BattleContext &bc) {
+void ActData_DamagePlayer::operator()(BattleContext &bc) const {
         bc.player.damage(bc, damage, selfDamage);
-    }, false};
-}
+    }
 
-Action Actions::VampireAttack(int damage) {
-    return {[=] (BattleContext &bc) {
+void ActData_VampireAttack::operator()(BattleContext &bc) const {
         const auto mIdx = 0;
         auto &m = bc.monsters.arr[mIdx]; // only used by shelled parasite so idx is 0
         bc.player.attacked(bc, mIdx, damage);
         if (m.isAlive()) {
             m.heal(std::min(damage, static_cast<int>(bc.player.lastAttackUnblockedDamage)));
         }
-    }};
-}
+    }
 
-Action Actions::PlayerLoseHp(int hp, bool selfDamage) { // TODO this doesn't take into account intangible or relics
-    return {[=] (BattleContext &bc) {
+void ActData_PlayerLoseHp::operator()(BattleContext &bc) const {
         bc.player.loseHp(bc, hp, selfDamage);
-    }, false};
-}
+    }
 
-Action Actions::HealPlayer(int amount, bool executeAfterCombatVictory) {
-    return {[=] (BattleContext &bc) {
+void ActData_HealPlayer::operator()(BattleContext &bc) const {
         bc.player.heal(amount);
-    }, false, executeAfterCombatVictory};
-}
+    }
 
-Action Actions::MonsterGainBlock(int idx, int amount) {
-    return {[=] (BattleContext &bc) {
+void ActData_MonsterGainBlock::operator()(BattleContext &bc) const {
         bc.monsters.arr[idx].block += amount;
-    }};
-}
+    }
 
-Action Actions::RollMove(int monsterIdx) {
-    return {[=] (BattleContext &bc) {
+void ActData_RollMove::operator()(BattleContext &bc) const {
         Monster &m = bc.monsters.arr[monsterIdx];
         m.rollMove(bc);
-    }};
-}
+    }
 
-Action Actions::ReactiveRollMove() {
-    return {[=] (BattleContext &bc) {
+void ActData_ReactiveRollMove::operator()(BattleContext &bc) const {
         // writhing mass is always monster 0
         Monster &m = bc.monsters.arr[0];
 
@@ -140,49 +623,29 @@ Action Actions::ReactiveRollMove() {
             m.rollMove(bc);
         }
         m.setStatus<MS::REACTIVE>(0);
-    }};
-}
+    }
 
-Action Actions::NoOpRollMove() {
-    return {[=] (BattleContext &bc) {
+void ActData_NoOpRollMove::operator()(BattleContext &bc) const {
         bc.noOpRollMove();
-    }};
-}
+    }
 
-Action Actions::ChangeStance(Stance stance) {
-    return {[] (BattleContext &bc) {
-        // stance system is not implemented; no-op to avoid an empty actFunc crash
-    }};
-}
+void ActData_ChangeStance::operator()(BattleContext &bc) const {
+        // stance system is not implemented; no-op
+    }
 
-Action Actions::GainEnergy(int amount) {
-    return {[=] (BattleContext &bc) {
+void ActData_GainEnergy::operator()(BattleContext &bc) const {
         bc.player.gainEnergy(amount);
-    }};
-}
+    }
 
-Action Actions::GainBlock(int amount) {
-    return {[=] (BattleContext &bc) {
+void ActData_GainBlock::operator()(BattleContext &bc) const {
         bc.player.gainBlock(bc, amount);
-    }, false};
-}
-//
-//Action Actions::GainBlockFromCard(int amount) {
-//    return {[=] (BattleContext &bc) {
-//
-//        // TODO
-//        bc.player.block += amount;
-//    };
-//}
+    }
 
-Action Actions::DrawCards(int amount) {
-    return {[=] (BattleContext &bc) {
+void ActData_DrawCards::operator()(BattleContext &bc) const {
         bc.drawCards(amount);
-    }};
-}
+    }
 
-Action Actions::EmptyDeckShuffle() {
-    return {[=] (BattleContext &bc) {
+void ActData_EmptyDeckShuffle::operator()(BattleContext &bc) const {
         java::Collections::shuffle(
                 bc.cards.discardPile.begin(),
                 bc.cards.discardPile.end(),
@@ -190,59 +653,39 @@ Action Actions::EmptyDeckShuffle() {
         );
 
         bc.cards.moveDiscardPileIntoToDrawPile();
-    }};
-}
+    }
 
-Action Actions::ShuffleDrawPile() {
-    return {[=] (BattleContext &bc) {
+void ActData_ShuffleDrawPile::operator()(BattleContext &bc) const {
         java::Collections::shuffle(
                 bc.cards.drawPile.begin(),
                 bc.cards.drawPile.end(),
                 java::Random(bc.shuffleRng.randomLong())
         );
         search::emitCombatKnowledgeEvent(search::CombatKnowledgeEventType::SHUFFLE_OCCURRED);
-    }};
-}
+    }
 
-Action Actions::ShuffleTempCardIntoDrawPile(CardId id, int count) {
-    return {[=] (BattleContext &bc) {
+void ActData_ShuffleTempCardIntoDrawPile::operator()(BattleContext &bc) const {
         CardInstance c(id);
         for (int i = 0; i < count; ++i) {
             const int idx = bc.cards.drawPile.empty() ? 0 : bc.cardRandomRng.random(static_cast<int>(bc.cards.drawPile.size()-1));
             bc.cards.createTempCardInDrawPile(idx, c);
         }
-    }};
-}
+    }
 
-Action Actions::PlayTopCard(int monsterTargetIdx, bool exhausts) {
-    return {[=](BattleContext &bc) {
+void ActData_PlayTopCard::operator()(BattleContext &bc) const {
         bc.playTopCardInDrawPile(monsterTargetIdx, exhausts);
-    }};
-}
+    }
 
-
-// todo fix the arguments are used wrongly all over ? what did this mean
-// todo check for master reality
-Action Actions::MakeTempCardInHand(CardId card, bool upgraded, int amount) {
-    CardInstance c(card, upgraded);
-    return Actions::MakeTempCardInHand(c, amount);
-}
-
-Action Actions::MakeTempCardInHand(CardInstance card, int amount) {
-    // todo master reality when the action is created
-    return {[=](BattleContext &bc) {
+void ActData_MakeTempCardInHand::operator()(BattleContext &bc) const {
         for (int i = 0; i < amount; ++i) {
             CardInstance c(card);
             c.uniqueId = bc.cards.nextUniqueCardId++;
             bc.cards.notifyAddCardToCombat(c);
             bc.moveToHandHelper(c);
         }
-    }};
-}
+    }
 
-Action Actions::MakeTempCardInDrawPile(const CardInstance &c, int amount, bool shuffleInto) {
-    // the random calculation is done in an effect so it be wrong to do it here?
-    return {[=](BattleContext &bc) {
+void ActData_MakeTempCardInDrawPile::operator()(BattleContext &bc) const {
         for (int i = 0; i < amount; ++i) {
             if (shuffleInto) {
                 const int idx = bc.cards.drawPile.empty() ? 0 : bc.cardRandomRng.random(static_cast<int>(bc.cards.drawPile.size()-1));
@@ -250,113 +693,70 @@ Action Actions::MakeTempCardInDrawPile(const CardInstance &c, int amount, bool s
             }
             // todo else
         }
-    }};
-}
+    }
 
-Action Actions::MakeTempCardInDiscard(const CardInstance &c, int amount) {
-    CardInstance c_copy(c);
-    return {[=](BattleContext &bc) { // todo maybe store by reference instead of copy if CardInstance is too big to fit directly in the lambda. Make a seperate space where the card will be stored
+void ActData_MakeTempCardInDiscard::operator()(BattleContext &bc) const { // todo maybe store by reference instead of copy if CardInstance is too big to fit directly in the lambda. Make a seperate space where the card will be stored
         for (int i = 0; i < amount; ++i) {
-            bc.cards.createTempCardInDiscard(c_copy);
+            bc.cards.createTempCardInDiscard(c);
         }
-    }};
-}
+    }
 
-Action Actions::MakeTempCardsInHand(std::vector<CardInstance> cards) {
-    return {[=](BattleContext &bc) {
-        for (auto c : cards) {
-            c.uniqueId = bc.cards.nextUniqueCardId++;
-            bc.cards.notifyAddCardToCombat(c);
-            bc.moveToHandHelper(c);
-        }
-    }};
-}
-
-
-Action Actions::DiscardNoTriggerCard() {
-    return {[](BattleContext &bc) {
+void ActData_DiscardNoTriggerCard::operator()(BattleContext &bc) const {
         const auto &c = bc.curCardQueueItem.card;
         bc.cards.notifyRemoveFromHand(c);
         bc.cards.moveToDiscardPile(c);
-    }};
-}
+    }
 
-Action Actions::ClearCardQueue() {
-    return {[](BattleContext &bc) {
+void ActData_ClearCardQueue::operator()(BattleContext &bc) const {
         bc.cardQueue.clear();
-    }};
-}
+    }
 
-Action Actions::DiscardAtEndOfTurn() {
-    return {[] (BattleContext &bc) {
+void ActData_DiscardAtEndOfTurn::operator()(BattleContext &bc) const {
         bc.discardAtEndOfTurn();
-    }};
-}
+    }
 
-Action Actions::DiscardAtEndOfTurnHelper() {
-    return {[] (BattleContext &bc) {
+void ActData_DiscardAtEndOfTurnHelper::operator()(BattleContext &bc) const {
         bc.discardAtEndOfTurnHelper();
-    }};
-}
+    }
 
-Action Actions::RestoreRetainedCards(int count) {
-    return {[=] (BattleContext &bc) {
+void ActData_RestoreRetainedCards::operator()(BattleContext &bc) const {
         bc.restoreRetainedCards(count);
-    }};
-}
+    }
 
-Action Actions::UnnamedEndOfTurnAction() {
-    // EndTurnAction does this:
-    //        AbstractDungeon.player.resetControllerValues();
-    //        this.turnHasEnded = true;
-    //        playerHpLastTurn = AbstractDungeon.player.currentHealth;
-
-    return {[=] (BattleContext &bc) {
+void ActData_UnnamedEndOfTurnAction::operator()(BattleContext &bc) const {
         bc.turnHasEnded = true;
         if (!bc.skipMonsterTurn) {
             bc.addToBot(Actions::MonsterStartTurnAction());
             bc.monsterTurnIdx = 0; // monstergroup preincrements this
         }
-    }};
-}
+    }
 
-Action Actions::MonsterStartTurnAction() {
-    return {[] (BattleContext &bc) {
+void ActData_MonsterStartTurnAction::operator()(BattleContext &bc) const {
         bc.monsters.applyPreTurnLogic(bc);
-    }};
-}
+    }
 
-Action Actions::TriggerEndOfTurnOrbsAction() {
-    return {[] (BattleContext &bc) {
+void ActData_TriggerEndOfTurnOrbsAction::operator()(BattleContext &bc) const {
         // todo
-    }};
-}
+    }
 
-Action Actions::ExhaustTopCardInHand() {
-    return {[=] (BattleContext &bc) {
+void ActData_ExhaustTopCardInHand::operator()(BattleContext &bc) const {
         bc.exhaustTopCardInHand();
-    }};
-}
+    }
 
-Action Actions::ExhaustSpecificCardInHand(int idx, std::int16_t uniqueId) {
-    return {[=] (BattleContext &bc) {
+void ActData_ExhaustSpecificCardInHand::operator()(BattleContext &bc) const {
         bc.exhaustSpecificCardInHand(idx, uniqueId);
-    }};
-}
+    }
 
-Action Actions::DamageRandomEnemy(int damage) {
-    return {[=] (BattleContext &bc) {
+void ActData_DamageRandomEnemy::operator()(BattleContext &bc) const {
         const int idx = bc.monsters.getRandomMonsterIdx(bc.cardRandomRng, true);
         if (idx == -1) {
             return;
         }
         bc.monsters.arr[idx].damage(bc, damage);
         bc.checkCombat();
-    }};
-}
+    }
 
-Action Actions::ExhaustRandomCardInHand(int count) {
-    return {[=] (BattleContext &bc) {
+void ActData_ExhaustRandomCardInHand::operator()(BattleContext &bc) const {
         for (int i = 0; i < count; ++i) {
             if (bc.cards.cardsInHand <= 0) {
                 return;
@@ -366,11 +766,9 @@ Action Actions::ExhaustRandomCardInHand(int count) {
             bc.cards.removeFromHandAtIdx(idx);
             bc.triggerAndMoveToExhaustPile(c);
         }
-    }};
-}
+    }
 
-Action Actions::MadnessAction() {
-    return {[=] (BattleContext &bc) {
+void ActData_MadnessAction::operator()(BattleContext &bc) const {
 
         bool haveNonZeroCost = false;
         bool haveNonZeroTurnCost = false;
@@ -421,11 +819,9 @@ Action Actions::MadnessAction() {
         }
 //#pragma clang diagnostic pop
 
-    }};
-}
+    }
 
-Action Actions::RandomizeHandCost() {
-    return {[=] (BattleContext &bc) {
+void ActData_RandomizeHandCost::operator()(BattleContext &bc) const {
         for (int i = 0; i < bc.cards.cardsInHand; ++i) {
             auto &c = bc.cards.hand[i];
             if (c.cost >= 0) {
@@ -434,11 +830,9 @@ Action Actions::RandomizeHandCost() {
                 c.costForTurn = newCost;
             }
         }
-    }};
-}
+    }
 
-Action Actions::GainBlockRandomEnemy(int sourceMonster, int amount) {
-    return {[=] (BattleContext &bc) {
+void ActData_GainBlockRandomEnemy::operator()(BattleContext &bc) const {
         int validIdxs[5];
         int validCount = 0;
 
@@ -457,13 +851,9 @@ Action Actions::GainBlockRandomEnemy(int sourceMonster, int amount) {
         }
 
         bc.monsters.arr[targetIdx].addBlock(amount);
-    }};
-}
+    }
 
-Action Actions::SummonGremlins() {
-    // gremlin leader searches in the order 1, 2, 0 for open space
-
-    return {[=] (BattleContext &bc) {
+void ActData_SummonGremlins::operator()(BattleContext &bc) const {
         int openIdxCount = 0;
         int newGremlinIdxs[2];
         if (bc.monsters.arr[1].isDying()) {
@@ -498,11 +888,9 @@ Action Actions::SummonGremlins() {
 
         gremlin0.rollMove(bc);
         gremlin1.rollMove(bc);
-    }};
-}
+    }
 
-Action Actions::SpawnTorchHeads() {
-    return {[=] (BattleContext &bc) {
+void ActData_SpawnTorchHeads::operator()(BattleContext &bc) const {
         const auto spawnCount = 3-bc.monsters.monstersAlive;
 #ifdef sts_asserts
         assert(spawnCount > 0);
@@ -527,28 +915,21 @@ Action Actions::SpawnTorchHeads() {
         for (int i = 0; i < spawnCount; ++i) {
             bc.noOpRollMove();
         }
-    }};
-}
+    }
 
-Action Actions::SpireShieldDebuff() {
-    return {[] (BattleContext &bc) {
+void ActData_SpireShieldDebuff::operator()(BattleContext &bc) const {
         if (bc.aiRng.randomBoolean()) {
             bc.player.debuff<PS::FOCUS>(-1);
         } else {
             bc.player.debuff<PS::STRENGTH>(-1);
         }
-    }};
-}
+    }
 
-
-Action Actions::OnAfterCardUsed() {
-    return {[] (BattleContext &bc) {
+void ActData_OnAfterCardUsed::operator()(BattleContext &bc) const {
         bc.onAfterUseCard();
-    }, false};
-}
+    }
 
-Action Actions::PutRandomCardsInDrawPile(CardType type, int count) {
-    return {[=] (BattleContext &bc) {
+void ActData_PutRandomCardsInDrawPile::operator()(BattleContext &bc) const {
         CardId ids[5];
         for (int i = 0; i < count; ++i) {
             ids[i] = getTrulyRandomCardInCombat(bc.cardRandomRng, bc.player.cc, type);
@@ -562,61 +943,48 @@ Action Actions::PutRandomCardsInDrawPile(CardType type, int count) {
             const int idx = bc.cards.drawPile.empty() ? 0 : bc.cardRandomRng.random(static_cast<int>(bc.cards.drawPile.size()-1));
             bc.cards.createTempCardInDrawPile(idx, card);
         }
-    }};
-}
+    }
 
-Action Actions::DiscoveryAction(CardType type, int amount) {
-    return {[=] (BattleContext &bc) {
+void ActData_DiscoveryAction::operator()(BattleContext &bc) const {
         bc.haveUsedDiscoveryAction = true;
         bc.openDiscoveryScreen(sts::generateDiscoveryCards(bc.cardRandomRng, bc.player.cc, type), amount);
-    }};
-}
+    }
 
-Action Actions::InfernalBladeAction() {
-    return {[=] (BattleContext &bc) {
+void ActData_InfernalBladeAction::operator()(BattleContext &bc) const {
         const auto cid = getTrulyRandomCardInCombat(bc.cardRandomRng, bc.player.cc, CardType::ATTACK);
         CardInstance c(cid);
         c.setCostForTurn(0);
         bc.addToTop( Actions::MakeTempCardInHand(c) );
-    }};
-}
+    }
 
-Action Actions::JackOfAllTradesAction(bool upgraded) {
-    return {[=] (BattleContext &bc) {
+void ActData_JackOfAllTradesAction::operator()(BattleContext &bc) const {
         const auto c1 = sts::getTrulyRandomColorlessCardInCombat(bc.cardRandomRng);
         bc.addToTop( Actions::MakeTempCardInHand(c1) );
         if (upgraded) {
             auto c2 = sts::getTrulyRandomColorlessCardInCombat(bc.cardRandomRng);
             bc.addToTop( Actions::MakeTempCardInHand(c2) );
         }
-    }};
-}
+    }
 
-Action Actions::TransmutationAction(bool upgraded, int energy, bool useEnergy) {
-    return {[=] (BattleContext &bc) {
+void ActData_TransmutationAction::operator()(BattleContext &bc) const {
         const auto effectAmount = energy + (bc.player.hasRelic<R::CHEMICAL_X>() ? 2 : 0);
 
         if (effectAmount == 0) {
             return;
         }
 
-        std::vector<CardInstance> cards;
-       for (int i = 0; i < effectAmount; ++i) {
-           const auto cid = sts::getTrulyRandomColorlessCardInCombat(bc.cardRandomRng);
-           CardInstance c(cid, upgraded);
-           c.setCostForTurn(0);
-           cards.push_back(c);
-       }
-       bc.addToBot( Actions::MakeTempCardsInHand(cards) );
+        const Random rolls = bc.cardRandomRng;
+        for (int i = 0; i < effectAmount; ++i) {
+            sts::getTrulyRandomColorlessCardInCombat(bc.cardRandomRng);
+        }
+        bc.addToBot( Actions::TransmutationCardsInHand(rolls, effectAmount, upgraded) );
 
        if (useEnergy) {
            bc.player.useEnergy(bc.player.energy);
        }
-    }};
-}
+    }
 
-Action Actions::ViolenceAction(int count) { // todo a faster algorithm for inserting into the attack list
-    return {[=] (BattleContext &bc) {
+void ActData_ViolenceAction::operator()(BattleContext &bc) const {
         fixed_list<int,CardManager::MAX_GROUP_SIZE> attackIdxList;
         for (int i = 0; i < bc.cards.drawPile.size(); ++i) {
             const auto &c = bc.cards.drawPile[i];
@@ -661,12 +1029,9 @@ Action Actions::ViolenceAction(int count) { // todo a faster algorithm for inser
             bc.cards.removeFromDrawPileAtIdx(drawPileRemoveIdx);
         }
 
-    }};
-}
+    }
 
-// todo the amount should be the copies put into the hand 2 if have sacred bark and liquid memories
-Action Actions::BetterDiscardPileToHandAction(int amount, CardSelectTask task) {
-    return {[=] (BattleContext &bc) {
+void ActData_BetterDiscardPileToHandAction::operator()(BattleContext &bc) const {
         if (bc.cards.discardPile.empty()) {
             return;
         }
@@ -676,11 +1041,9 @@ Action Actions::BetterDiscardPileToHandAction(int amount, CardSelectTask task) {
         } else {
             bc.openSimpleCardSelectScreen(task, 1);
         }
-    }};
-}
+    }
 
-Action Actions::ArmamentsAction() {
-    return {[=] (BattleContext &bc) {
+void ActData_ArmamentsAction::operator()(BattleContext &bc) const {
         int canUpgradeCount = 0;
         int lastUpgradeIdx = 0;
         for (int i = 0; i < bc.cards.cardsInHand; ++i) {
@@ -699,11 +1062,9 @@ Action Actions::ArmamentsAction() {
         } else {
             bc.openSimpleCardSelectScreen(CardSelectTask::ARMAMENTS, 1);
         }
-    }};
-}
+    }
 
-Action Actions::DualWieldAction(int copyCount) {
-    return {[=] (BattleContext &bc) {
+void ActData_DualWieldAction::operator()(BattleContext &bc) const {
 
 //        fixed_list<CardInstance, 10> validCards;
 //        fixed_list<CardInstance, 10> invalidCards;
@@ -753,11 +1114,9 @@ Action Actions::DualWieldAction(int copyCount) {
         }
 
 
-    }};
-}
+    }
 
-Action Actions::ExhumeAction() { // todo this is bugged because the selected card cannot be exhume
-    return {[=] (BattleContext &bc) {
+void ActData_ExhumeAction::operator()(BattleContext &bc) const {
         if (bc.cards.exhaustPile.empty() || bc.cards.cardsInHand == 10) {
             return;
         }
@@ -782,11 +1141,9 @@ Action Actions::ExhumeAction() { // todo this is bugged because the selected car
             bc.inputState = InputState::CARD_SELECT;
         }
 
-    }};
-}
+    }
 
-Action Actions::ForethoughtAction(bool upgraded) {
-    return {[=] (BattleContext &bc) {
+void ActData_ForethoughtAction::operator()(BattleContext &bc) const {
         if (bc.cards.cardsInHand == 0) {
             return;
         }
@@ -809,11 +1166,9 @@ Action Actions::ForethoughtAction(bool upgraded) {
 //        }
 
 
-    }};
-}
+    }
 
-Action Actions::HeadbuttAction() {
-    return {[=] (BattleContext &bc) {
+void ActData_HeadbuttAction::operator()(BattleContext &bc) const {
         if (bc.cards.discardPile.empty()) {
             return;
 
@@ -822,11 +1177,9 @@ Action Actions::HeadbuttAction() {
         } else {
             bc.openSimpleCardSelectScreen(CardSelectTask::HEADBUTT, 1);
         }
-    }};
-}
+    }
 
-Action Actions::ChooseExhaustOne() {
-    return {[=] (BattleContext &bc) {
+void ActData_ChooseExhaustOne::operator()(BattleContext &bc) const {
         if (bc.cards.cardsInHand == 0) {
             return;
 
@@ -837,11 +1190,9 @@ Action Actions::ChooseExhaustOne() {
             bc.openSimpleCardSelectScreen(CardSelectTask::EXHAUST_ONE, 1);
 
         }
-    }};
-}
+    }
 
-Action Actions::DrawToHandAction(CardSelectTask task, CardType cardType) {
-    return {[=] (BattleContext &bc) {
+void ActData_DrawToHandAction::operator()(BattleContext &bc) const {
         int count = 0;
         int idx = 0;
 
@@ -870,11 +1221,9 @@ Action Actions::DrawToHandAction(CardSelectTask task, CardType cardType) {
             bc.inputState = InputState::CARD_SELECT;
         }
 
-    }};
-}
+    }
 
-Action Actions::WarcryAction() {
-    return {[=] (BattleContext &bc) {
+void ActData_WarcryAction::operator()(BattleContext &bc) const {
         // todo if the handSize equals or less than the cardsToChoose just choose them here
         if (bc.cards.cardsInHand == 0) {
             return;
@@ -888,42 +1237,32 @@ Action Actions::WarcryAction() {
             bc.inputState = InputState::CARD_SELECT;
             bc.cardSelectInfo.cardSelectTask = CardSelectTask::WARCRY;
         }
-    }};
-}
+    }
 
-Action Actions::TimeEaterPlayCardQueueItem(const CardQueueItem &x) {
-    return {[=] (BattleContext &bc) {
+void ActData_TimeEaterPlayCardQueueItem::operator()(BattleContext &bc) const {
         auto item = x;
         item.exhaustOnUse |= item.card.doesExhaust();
         item.triggerOnUse = false;
         bc.curCardQueueItem = item;
         bc.onAfterUseCard();
 
-    }, false};
-}
+    }
 
-Action Actions::UpgradeAllCardsInHand() {
-    return {[=] (BattleContext &bc) {
+void ActData_UpgradeAllCardsInHand::operator()(BattleContext &bc) const {
         for (int i = 0; i < bc.cards.cardsInHand; ++i) {
             bc.cards.hand[i].upgrade();
         }
-    }};
-}
+    }
 
-Action Actions::EssenceOfDarkness(int darkOrbsPerSlot) {
-    return {[] (BattleContext &bc) {
-        // orb system is not implemented; no-op to avoid an empty actFunc crash
-    }};
-}
+void ActData_EssenceOfDarkness::operator()(BattleContext &bc) const {
+        // orb system is not implemented; no-op
+    }
 
-Action Actions::IncreaseOrbSlots(int count) {
-    return {[] (BattleContext &bc) {
-        // orb system is not implemented; no-op to avoid an empty actFunc crash
-    }};
-}
+void ActData_IncreaseOrbSlots::operator()(BattleContext &bc) const {
+        // orb system is not implemented; no-op
+    }
 
-Action Actions::SuicideAction(int monsterIdx, bool triggerRelics) {
-    return {[=] (BattleContext &bc) {
+void ActData_SuicideAction::operator()(BattleContext &bc) const {
         auto &m = bc.monsters.arr[monsterIdx];
         if (triggerRelics) {
             if (m.isAlive()) {
@@ -932,11 +1271,9 @@ Action Actions::SuicideAction(int monsterIdx, bool triggerRelics) {
         } else {
             bc.monsters.arr[monsterIdx].suicideAction(bc);
         }
-    }};
-}
+    }
 
-Action Actions::PoisonLoseHpAction(int monsterIdx) {
-    return {[=] (BattleContext &bc) {
+void ActData_PoisonLoseHpAction::operator()(BattleContext &bc) const {
         Monster &m = bc.monsters.arr[monsterIdx];
         if (m.isDeadOrEscaped() || !m.hasStatus<MS::POISON>()) {
             return;
@@ -945,17 +1282,13 @@ Action Actions::PoisonLoseHpAction(int monsterIdx) {
         m.damageUnblockedHelper(bc, m.getStatus<MS::POISON>());
         m.decrementStatus<MS::POISON>();
         bc.checkCombat();
-    }};
-}
+    }
 
-Action Actions::RemovePlayerDebuffs() {
-    return {[] (BattleContext &bc) {
+void ActData_RemovePlayerDebuffs::operator()(BattleContext &bc) const {
         bc.player.removeDebuffs();
-    }};
-}
+    }
 
-Action Actions::UpgradeRandomCardAction() {
-    return {[] (BattleContext &bc) {
+void ActData_UpgradeRandomCardAction::operator()(BattleContext &bc) const {
         fixed_list<int,10> upgradeableHandIdxs;
         for (int i = 0; i < bc.cards.cardsInHand; ++i) {
             if (bc.cards.hand[i].canUpgrade()) {
@@ -975,52 +1308,40 @@ Action Actions::UpgradeRandomCardAction() {
 
         const auto upgradeIdx = upgradeableHandIdxs[0];
         bc.cards.hand[upgradeIdx].upgrade();
-    }};
-}
+    }
 
-Action Actions::CodexAction() {
-    return {[] (BattleContext &bc) {
+void ActData_CodexAction::operator()(BattleContext &bc) const {
         bc.inputState = InputState::CARD_SELECT;
         bc.cardSelectInfo.cardSelectTask = CardSelectTask::CODEX;
         bc.cardSelectInfo.codexCards() =
                 generateDiscoveryCards(bc.cardRandomRng, CharacterClass::IRONCLAD, CardType::INVALID);
-    }};
-}
+    }
 
-Action Actions::ExhaustMany(int limit) {
-    return {[=] (BattleContext &bc) {
+void ActData_ExhaustMany::operator()(BattleContext &bc) const {
         bc.inputState = InputState::CARD_SELECT;
         bc.cardSelectInfo.cardSelectTask = CardSelectTask::EXHAUST_MANY;
         bc.cardSelectInfo.pickCount = limit;
-    }};
-}
+    }
 
-Action Actions::GambleAction() {
-    return {[] (BattleContext &bc) {
+void ActData_GambleAction::operator()(BattleContext &bc) const {
         bc.inputState = InputState::CARD_SELECT;
         bc.cardSelectInfo.cardSelectTask = CardSelectTask::GAMBLE;
-    }};
-}
+    }
 
-Action Actions::ToolboxAction() {
-    return {[] (BattleContext &bc) {
+void ActData_ToolboxAction::operator()(BattleContext &bc) const {
         bc.inputState = InputState::CARD_SELECT;
         bc.cardSelectInfo.cardSelectTask = CardSelectTask::DISCOVERY;
         bc.cardSelectInfo.discovery_CopyCount() = 1;
         bc.cardSelectInfo.discovery_Cards() =
                 generateDiscoveryCards(bc.cardRandomRng, bc.player.cc, CardType::STATUS); // status is mapped to colorless
-    }};
-}
+    }
 
-Action Actions::DualityAction() {
-    return {[](BattleContext &bc) {
+void ActData_DualityAction::operator()(BattleContext &bc) const {
         bc.player.buff<PS::DEXTERITY>(1);
         bc.player.debuff<PS::LOSE_DEXTERITY>(1);
-    }};
-}
+    }
 
-Action Actions::ApotheosisAction() {
-    return {[](BattleContext &bc) {
+void ActData_ApotheosisAction::operator()(BattleContext &bc) const {
 
         for (int i = 0; i < bc.cards.cardsInHand; ++i) {
             auto &c = bc.cards.hand[i];
@@ -1046,12 +1367,9 @@ Action Actions::ApotheosisAction() {
                 c.upgrade();
             }
         }
-    }};
-}
+    }
 
-Action Actions::DropkickAction(int targetIdx) {
-    // assume bc.curCard is the card being used
-    return {[=](BattleContext &bc) {
+void ActData_DropkickAction::operator()(BattleContext &bc) const {
         if (bc.monsters.arr[targetIdx].isTargetable() && bc.monsters.arr[targetIdx].hasStatus<MS::VULNERABLE>()) {
             bc.addToTop(Actions::DrawCards(1));
             bc.addToTop(Actions::GainEnergy(1));
@@ -1060,11 +1378,9 @@ Action Actions::DropkickAction(int targetIdx) {
         const auto &c = bc.curCardQueueItem.card;
         const int damage = bc.calculateCardDamage(c, targetIdx, c.isUpgraded() ? 8 : 5);
         bc.addToTop(Actions::AttackEnemy(targetIdx, damage));
-    }};
-}
+    }
 
-Action Actions::EnlightenmentAction(bool upgraded) {
-    return {[=] (BattleContext &bc) {
+void ActData_EnlightenmentAction::operator()(BattleContext &bc) const {
         for (int i = 0; i < bc.cards.cardsInHand; ++i) {
             auto &c = bc.cards.hand[i];
             if (c.costForTurn > 1) {
@@ -1075,17 +1391,13 @@ Action Actions::EnlightenmentAction(bool upgraded) {
                 c.cost = 1;
             }
         }
-    }};
-}
+    }
 
-Action Actions::EntrenchAction() {
-    return {[=] (BattleContext &bc) {
+void ActData_EntrenchAction::operator()(BattleContext &bc) const {
         bc.player.gainBlock(bc, bc.player.block);
-    }};
-}
+    }
 
-Action Actions::FeedAction(int idx, int damage, bool upgraded) {
-    return {[=] (BattleContext &bc) {
+void ActData_FeedAction::operator()(BattleContext &bc) const {
         auto &m = bc.monsters.arr[idx];
         if (m.isDeadOrEscaped()) {
             return;
@@ -1102,11 +1414,9 @@ Action Actions::FeedAction(int idx, int damage, bool upgraded) {
         }
 
         bc.checkCombat();
-    }};
-}
+    }
 
-Action Actions::FiendFireAction(int targetIdx, int calculatedDamage) {
-    return {[=] (BattleContext &bc) {
+void ActData_FiendFireAction::operator()(BattleContext &bc) const {
         for (int i = 0; i < bc.cards.cardsInHand; ++i) {
             bc.addToTop(Actions::AttackEnemy(targetIdx, calculatedDamage));
         }
@@ -1114,11 +1424,9 @@ Action Actions::FiendFireAction(int targetIdx, int calculatedDamage) {
         for (int i = 0; i < bc.cards.cardsInHand; ++i) {
             bc.addToTop( Actions::ExhaustRandomCardInHand(1) );
         }
-    }};
-}
+    }
 
-Action Actions::HandOfGreedAction(int idx, int damage, bool upgraded) {
-    return {[=] (BattleContext &bc) {
+void ActData_HandOfGreedAction::operator()(BattleContext &bc) const {
         auto &m = bc.monsters.arr[idx];
         if (m.isDeadOrEscaped()) {
             return;
@@ -1135,17 +1443,13 @@ Action Actions::HandOfGreedAction(int idx, int damage, bool upgraded) {
         }
 
         bc.checkCombat();
-    }};
-}
+    }
 
-Action Actions::LimitBreakAction() {
-    return {[] (BattleContext &bc) {
+void ActData_LimitBreakAction::operator()(BattleContext &bc) const {
         bc.player.buff<PS::STRENGTH>(bc.player.getStatus<PS::STRENGTH>());
-    }};
-}
+    }
 
-Action Actions::ReaperAction(int baseDamage) {
-    return {[=] (BattleContext &bc) {
+void ActData_ReaperAction::operator()(BattleContext &bc) const {
 
         int healAmount = 0;
         for (int i = 0; i < bc.monsters.monsterCount; ++i) {
@@ -1165,11 +1469,9 @@ Action Actions::ReaperAction(int baseDamage) {
         //if (AbstractDungeon.getCurrRoom().monsters.areMonstersBasicallyDead()) {
         //                AbstractDungeon.actionManager.clearPostCombatActions();
         //            }
-    }};
-}
+    }
 
-Action Actions::RitualDaggerAction(int idx, int damage) {
-    return {[=] (BattleContext &bc) {
+void ActData_RitualDaggerAction::operator()(BattleContext &bc) const {
         auto &m = bc.monsters.arr[idx];
         if (m.isDeadOrEscaped()) {
             return;
@@ -1190,11 +1492,9 @@ Action Actions::RitualDaggerAction(int idx, int damage) {
         }
 
         bc.checkCombat();
-    }};
-}
+    }
 
-Action Actions::SecondWindAction(int blockPerCard) {
-    return {[=] (BattleContext &bc) {
+void ActData_SecondWindAction::operator()(BattleContext &bc) const {
         int cardIdxsToExhaust[10];
         int toExhaustCount = 0;
 
@@ -1212,22 +1512,18 @@ Action Actions::SecondWindAction(int blockPerCard) {
 
             bc.addToTop( Actions::ExhaustSpecificCardInHand(handIdx, c.uniqueId) );
         }
-    }};
-}
+    }
 
-Action Actions::SeverSoulExhaustAction() {
-    return {[=] (BattleContext &bc) {
+void ActData_SeverSoulExhaustAction::operator()(BattleContext &bc) const {
         for (int i = bc.cards.cardsInHand-1; i >= 0; --i) {
             const auto &c = bc.cards.hand[i];
             if (c.getType() != CardType::ATTACK) {
                 bc.addToBot( Actions::ExhaustSpecificCardInHand(i, c.getUniqueId()) );
             }
         }
-    }};
-}
+    }
 
-Action Actions::SwordBoomerangAction(int baseDamage) { // pretty hacky until I can figure out a better solution
-    return {[=](BattleContext &bc) {
+void ActData_SwordBoomerangAction::operator()(BattleContext &bc) const {
         const static CardInstance swordBoomerang {CardId::SWORD_BOOMERANG};
         const auto idx = bc.monsters.getRandomMonsterIdx(bc.cardRandomRng, true);
         if (idx == -1) {
@@ -1236,11 +1532,9 @@ Action Actions::SwordBoomerangAction(int baseDamage) { // pretty hacky until I c
 
         int damage = bc.calculateCardDamage(swordBoomerang, idx, baseDamage);
         bc.addToTop(Actions::AttackEnemy(idx, damage));
-    }};
-}
+    }
 
-Action Actions::SpotWeaknessAction(int target, int strength) {
-    return {[=](BattleContext &bc) {
+void ActData_SpotWeaknessAction::operator()(BattleContext &bc) const {
         // Spot Weakness queries the current intent. Under Runic Dome this is
         // an epistemic materialization point just like the monster acting.
         // The observer captures the now-public move before isAttacking reads
@@ -1252,11 +1546,9 @@ Action Actions::SpotWeaknessAction(int target, int strength) {
         if (bc.monsters.arr[target].isAttacking()) {
             bc.player.buff<PS::STRENGTH>(strength);
         }
-    }};
-}
+    }
 
-Action Actions::WhirlwindAction(int baseDamage, int energy, bool useEnergy) {
-    return {[=] (BattleContext &bc) {
+void ActData_WhirlwindAction::operator()(BattleContext &bc) const {
         // assume bc.curCard is the card being used
 
         if (useEnergy) {
@@ -1279,21 +1571,18 @@ Action Actions::WhirlwindAction(int baseDamage, int energy, bool useEnergy) {
 
         const auto effectAmount = energy + (bc.player.hasRelic<R::CHEMICAL_X>() ? 2 : 0);
         if (effectAmount > 0) {
-            Actions::AttackAllMonsterRecursive(damageMatrix, effectAmount).actFunc(bc);
+            Actions::AttackAllMonsterRecursive(damageMatrix, effectAmount)(bc);
         }
-    }};
-}
+    }
 
-Action Actions::AttackAllMonsterRecursive(DamageMatrix matrix, int timesRemaining) {
-    return {[=] (BattleContext &bc) {
+void ActData_AttackAllMonsterRecursive::operator()(BattleContext &bc) const {
         if (timesRemaining <= 0) {
             return;
         }
 
-        Actions::AttackAllEnemy(matrix).actFunc(bc);
+        Actions::AttackAllEnemy(matrix)(bc);
 
         if (timesRemaining > 1) {
-            bc.addToTop(AttackAllMonsterRecursive(matrix, timesRemaining-1)); // todo should this be to the top? test with
+            bc.addToTop(Actions::AttackAllMonsterRecursive(matrix, timesRemaining-1)); // todo should this be to the top? test with
         }
-    }};
-}
+    }

@@ -98,19 +98,14 @@ int main() {
         const std::string modelPath = "models/v_combat_7k_tuned.txt";
         CombatValueNet expectedModel;
         if (!expectedModel.load(modelPath)) throw std::runtime_error("parity fixture model did not load");
-        const auto previousTrace = g_onVNetQuery;
-        int traceCalls = 0;
-        g_onVNetQuery = [&](const BattleContext &, double) { ++traceCalls; };
         const double expectedPrediction = expectedModel.predict(parityLive, false);
         const double projectedPrediction = silverLiveLeafVNetPredictionForTest(parityWire, modelPath);
-        g_onVNetQuery = previousTrace;
-        if (traceCalls != 0 || !std::isfinite(expectedPrediction)
+        if (!std::isfinite(expectedPrediction)
                 || !std::isfinite(projectedPrediction)
                 || std::abs(expectedPrediction - projectedPrediction) > 1e-9) {
             std::cerr << "silver_integration FAIL: Silver wire/live VNet parity mismatch"
                       << " expected=" << expectedPrediction
-                      << " projected=" << projectedPrediction
-                      << " trace_calls=" << traceCalls << '\n';
+                      << " projected=" << projectedPrediction << '\n';
             uninstallSilverLiveBackend();
             return 1;
         }

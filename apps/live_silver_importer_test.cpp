@@ -349,6 +349,11 @@ void normalizeFirstObservationIdentity(BattleStateWire &wire) {
     wire.limbo.assign(10, CardWire{});
     for (auto &card : wire.limbo) card.uniqueId = -1;
     wire.stasisCards.fill(CardWire{});
+    for (auto &card : wire.stasisCards) {
+        card.uniqueId = -1;
+        card.cost = 1;
+        card.costForTurn = 1;
+    }
 }
 void normalizeDynamicObservationIdentity(BattleStateWire &wire) {
     int nextId = 0;
@@ -359,11 +364,15 @@ void normalizeDynamicObservationIdentity(BattleStateWire &wire) {
     assign(wire.discardPile.unknown);
     assign(wire.exhaustPile.unknown);
     assign(wire.hand);
-    wire.limbo.clear();
+    wire.limbo.assign(10, CardWire{});
+    for (auto &card : wire.limbo) card.uniqueId = -1;
     const auto stasisCards = wire.stasisCards;
     wire.stasisCards.fill(CardWire{});
     for (std::size_t i = 0; i < wire.stasisCards.size(); ++i) {
         auto &card = wire.stasisCards[i];
+        card.uniqueId = -1;
+        card.cost = 1;
+        card.costForTurn = 1;
         if (stasisCards[i].id != static_cast<std::int16_t>(CardId::INVALID))
             card = stasisCards[i];
         if (card.id != static_cast<std::int16_t>(CardId::INVALID))
@@ -371,6 +380,22 @@ void normalizeDynamicObservationIdentity(BattleStateWire &wire) {
     }
     wire.nextUniqueCardId = nextId;
     wire.observedGeneration = 1;
+}
+void assertAbsentLimboAndStasisLayout(const BattleStateWire &wire, const char *source) {
+    if (wire.limbo.size() != 10)
+        throw std::runtime_error(std::string(source) + " limbo does not have ten native slots");
+    for (std::size_t i = 0; i < wire.limbo.size(); ++i) {
+        const auto &card = wire.limbo[i];
+        if (card.id == static_cast<std::int16_t>(CardId::INVALID)
+            && (card.uniqueId != -1 || card.cost != 0 || card.costForTurn != 0))
+            throw std::runtime_error(std::string(source) + " absent limbo slot is not default-constructed");
+    }
+    for (std::size_t i = 0; i < wire.stasisCards.size(); ++i) {
+        const auto &card = wire.stasisCards[i];
+        if (card.id == static_cast<std::int16_t>(CardId::INVALID)
+            && (card.uniqueId != -1 || card.cost != 1 || card.costForTurn != 1))
+            throw std::runtime_error(std::string(source) + " absent stasis slot has the wrong sentinel");
+    }
 }
 void resolveMonsterTransition(BattleContext &live, int monsterIdx) {
     if (monsterIdx < 0 || monsterIdx >= live.monsters.monsterCount)
@@ -399,6 +424,7 @@ void assertDynamicParity(const char *name, BattleContext &live, CombatKnowledgeS
     if (!imported.ok)
         throw std::runtime_error(std::string(name) + " Java-like observation rejected: "
             + imported.reason);
+    assertAbsentLimboAndStasisLayout(imported.wire, name);
     auto canonical = wire;
     canonical.isolatedSearchSeed = imported.wire.isolatedSearchSeed;
     if (!convertedStatesEqualForSearch(canonical, imported.wire))
@@ -1078,6 +1104,7 @@ void verifyEncounterManifestAndNativeSweep() {
                 + " renderedCount=" + std::to_string(rendered["silverRoot"]["combat"]["monsters"].size())
                 + " slots=" + rendered["silverRoot"]["combat"]["monsters"].dump());
         }
+        assertAbsentLimboAndStasisLayout(imported.wire, entry.enumName);
         auto canonical = normalized;
         canonical.isolatedSearchSeed = imported.wire.isolatedSearchSeed;
         if (!convertedStatesEqualForSearch(canonical, imported.wire)) {
@@ -2001,6 +2028,7 @@ int main() {
                 + std::to_string(eyeImported.ok) + " reason=" + eyeImported.reason
                 + " full=" + std::to_string(eyeImported.wire.fullDrawOrderObserved)
                 + " size=" + std::to_string(eyeImported.wire.drawPile.knownTop.size()));
+        assertAbsentLimboAndStasisLayout(eyeImported.wire, "Frozen Eye");
         auto stasis = general;
         stasis["silverRoot"]["encounter"] = "AUTOMATON";
         stasis["silverRoot"]["combat"]["monsters"][0]["id"] = "BronzeOrb";
