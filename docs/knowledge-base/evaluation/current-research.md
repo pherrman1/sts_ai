@@ -1040,7 +1040,7 @@ includes a sizable win-rate regression. The screen is not equivalence evidence
 or a default-promotion gate. The specialist
 remains offline-rejected; the hybrid remains unqualified and opt-in only. A
 separate larger confirmation is warranted before any promotion. See
-[ledger-06 §340](../../experiments/ledger-06.md) and the
+[ledger-06 §342](../../experiments/ledger-06.md) and the
 [mechanism/timing/paired OOC packet](../../experiments/evidence/deepset_entropic_brew_hybrid_2026-09-24/README.md).
 
 ### Qualified DeepSets representation for survival prediction

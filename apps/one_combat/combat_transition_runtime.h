@@ -21,6 +21,7 @@ class CombatTransitionRuntime {
     std::vector<float> encode(const std::string &, const CombatPredictorInputV1 &) const;
 public:
     static constexpr float probabilityTolerance = 1e-4f;
+    static void requireCurrentStandardFallbackArtifact(const std::string &path);
     explicit CombatTransitionRuntime(const std::string &path);
     const nlohmann::json &metadata() const { return metadata_; }
     bool nearFull() const { return metadata_.at("version")==2; }

@@ -6,13 +6,39 @@
 #include <cmath>
 #include <cstring>
 #include <fstream>
+#include <iomanip>
 #include <limits>
+#include <memory>
+#include <openssl/evp.h>
+#include <sstream>
 #include <stdexcept>
 
 namespace one_combat {
 namespace {
 using Vec=std::vector<float>;
 void require(bool value,const char *why) { if(!value) throw std::runtime_error(why); }
+std::string sha256File(const std::string &path) {
+    std::ifstream file(path,std::ios::binary);
+    require(bool(file),"cannot open combat artifact for SHA256");
+    std::unique_ptr<EVP_MD_CTX,decltype(&EVP_MD_CTX_free)> context(EVP_MD_CTX_new(),EVP_MD_CTX_free);
+    require(bool(context) && EVP_DigestInit_ex(context.get(),EVP_sha256(),nullptr)==1,
+        "cannot initialize combat artifact SHA256");
+    char buffer[64*1024];
+    while(file) {
+        file.read(buffer,sizeof(buffer));
+        const auto count=file.gcount();
+        if(count>0) require(EVP_DigestUpdate(context.get(),buffer,static_cast<std::size_t>(count))==1,
+            "cannot update combat artifact SHA256");
+    }
+    require(file.eof(),"cannot read combat artifact for SHA256");
+    unsigned char digest[EVP_MAX_MD_SIZE];unsigned int length=0;
+    require(EVP_DigestFinal_ex(context.get(),digest,&length)==1 && length==32,
+        "cannot finalize combat artifact SHA256");
+    std::ostringstream result;
+    result << std::hex << std::setfill('0');
+    for(unsigned int i=0;i<length;++i) result << std::setw(2) << unsigned(digest[i]);
+    return result.str();
+}
 bool hasEntropicBrew(const CombatPredictorInputV1 &input) {
     return std::any_of(input.potions.begin(),input.potions.end(),[](const auto &p) {
         return p.potionId==int(sts::Potion::ENTROPIC_BREW);
@@ -38,6 +64,11 @@ const std::map<std::string,std::string> sourceHashes={
  {"potion","8e04bcd5265fb11b8fa91b4553a84690915f437e7b3afee0b93358e312de3ad6"},
  {"potion_encoder","2085010f1aeef7a7957cdc45c851b2424d640037fd0fa981eb7ae7274190f6ef"},
  {"relic","e07e79d487152ae294f4915ef4aecd0e8bd38b8dec8d0133a57b6b58af92bd71"}};
+}
+void CombatTransitionRuntime::requireCurrentStandardFallbackArtifact(const std::string &path) {
+    static const std::string expected="e9a18951710fdfe9e1a81a2703090a41f039067c670a1d8a0393b5e7e8e0ddfd";
+    require(sha256File(path)==expected,
+        "Brew fallback artifact SHA256 differs from the pinned current standard Attention CTM");
 }
 CombatTransitionRuntime::CombatTransitionRuntime(const std::string &path) {
     std::ifstream f(path,std::ios::binary);
@@ -455,6 +486,7 @@ EntropicBrewFallbackCombatTransitionSampler::EntropicBrewFallbackCombatTransitio
     std::string fastPath,std::string standardPath)
     :fast_(std::make_shared<NativeCombatTransitionSampler>(fastPath)),
      standard_(std::make_shared<NativeCombatTransitionSampler>(standardPath)) {
+    CombatTransitionRuntime::requireCurrentStandardFallbackArtifact(standardPath);
     require(fast_->runtime().requiresEntropicBrewFallback(),
         "fast combat artifact must require Entropic Brew fallback");
     const auto &standardMetadata=standard_->runtime().metadata();

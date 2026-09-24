@@ -28,6 +28,11 @@ CombatTransitionPersistentState persistent(const json &j) {
 }
 int main(int argc,char **argv) {
     try {
+        if(argc==3 && std::string(argv[1])=="--require-standard-fallback") {
+            CombatTransitionRuntime::requireCurrentStandardFallbackArtifact(argv[2]);
+            std::cout << "pinned standard fallback SHA256 PASS\n";
+            return 0;
+        }
         if(argc==6 && std::string(argv[1])=="--benchmark") {
             NativeCombatTransitionSampler fast(argv[2]),standard(argv[3]);
             EntropicBrewFallbackCombatTransitionSampler hybrid(argv[2],argv[3]);
