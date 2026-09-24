@@ -46,6 +46,7 @@
 #include "combat/BattleContextBinary.h"
 #include "sim/search/SearchStateHash.h"
 #include "sim/search/SilverSearcher.h"
+#include "sim/search/SearchRng.h"
 #include "one_combat/combat_transition.h"
 #include "ooc_test_state.h"
 #include "constants/MonsterMoves.h"
@@ -237,6 +238,7 @@ namespace {
         BattleContext root = real;
         std::vector<CardInstance> unknown(real.cards.drawPile.begin(), real.cards.drawPile.end());
         root.cards.drawPile.assignInformationState({}, unknown, {});
+        search::seedSearchRng(root, real.seed ^ 0x5EA5C4u);   // never the live streams
         return root;
     }
 

@@ -10,6 +10,7 @@
 #include "game/GameContext.h"
 #include "sim/search/CombatKnowledge.h"
 #include "sim/search/ScumSearchAgent2.h"
+#include "sim/search/SearchRng.h"
 #include "sim/search/SilverConversion.h"
 #include "sim/search/SilverSearcher.h"
 
@@ -74,15 +75,27 @@ namespace sts::search {
                 + " encounter=" + std::to_string(static_cast<int>(bc.encounter)));
         }
 
-        // The search view of the live state: the draw pile becomes the player's
+        // Public per-battle seed for the search's randomness (the vendored
+        // backend's isolatedBattleSeed): constant through the battle and never
+        // derived from live RNG state.
+        std::uint64_t searchBattleSeed(const BattleContext &bc) {
+            std::uint64_t x = bc.seed ^ (static_cast<std::uint64_t>(bc.floorNum) << 32);
+            x ^= 0x9e3779b97f4a7c15ULL + (x << 6) + (x >> 2);
+            return x;
+        }
+
+        // The search view of the live state. The draw pile becomes the player's
         // information set (known bottom, unknown multiset, known top), or stays
-        // concrete when its whole order is observed (Frozen Eye).
+        // concrete when its whole order is observed (Frozen Eye). The RNG streams
+        // are replaced by public ones: the live streams determine the real future
+        // (monster rolls, generated cards) and must never reach the search.
         BattleContext searchRoot(const BattleContext &live, const CombatKnowledgeState &knowledge) {
             BattleContext root = live;
             const auto view = makeSilverDrawPileObservation(live, knowledge);
             if (!view.fullOrderObserved) {
                 root.cards.drawPile.assignInformationState(view.knownBottom, view.unknown, view.knownTop);
             }
+            seedSearchRng(root, searchBattleSeed(live));
             return root;
         }
 
