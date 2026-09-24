@@ -134,10 +134,51 @@ def validate_manifest(manifest: dict, verify_data: bool = True) -> dict:
         # deterministic fixture is accepted only through the explicit,
         # testFixture-marked branch above.
         validate_teacher(teacher)
-    if teacher.get("git_sha") != manifest["producerGitSha"]:
-        raise ValueError("producer Git SHA disagrees with combat teacher")
-    if teacher.get("executable_sha256") != manifest["producerExecutableSha256"]:
-        raise ValueError("producer executable hash disagrees with combat teacher")
+    intervention = manifest.get("lizardIntervention")
+    if intervention is None:
+        if teacher.get("git_sha") != manifest["producerGitSha"]:
+            raise ValueError("producer Git SHA disagrees with combat teacher")
+        if teacher.get("executable_sha256") != manifest["producerExecutableSha256"]:
+            raise ValueError("producer executable hash disagrees with combat teacher")
+    else:
+        required_intervention = {
+            "schema", "activeLizard", "baselineGitSha", "collectorGitSha",
+            "collectorExecutableSha256", "teacherId", "teacherGitSha",
+            "teacherExecutableSha256", "teacherManifestSha256", "teacherModelArtifacts",
+            "predictorInputFieldSchemaHash", "sourceSeedStart", "sourceSeedCount",
+            "activeLizardRows", "sourceTrajectory", "markOfBloomRows",
+        }
+        if not isinstance(intervention, dict) or set(intervention) != required_intervention:
+            raise ValueError("lizardIntervention keys mismatch")
+        if intervention["schema"] != "active_lizard_shadow_intervention_v1" or intervention["activeLizard"] is not True:
+            raise ValueError("unsupported active Lizard intervention")
+        if intervention["collectorGitSha"] != manifest["producerGitSha"]:
+            raise ValueError("collector Git SHA disagrees with producer")
+        if intervention["collectorExecutableSha256"] != manifest["producerExecutableSha256"]:
+            raise ValueError("collector executable hash disagrees with producer")
+        if intervention["teacherId"] != teacher.get("teacher_id"):
+            raise ValueError("intervention teacher ID disagrees with combat teacher")
+        if intervention["teacherGitSha"] != teacher.get("git_sha") or intervention["teacherExecutableSha256"] != teacher.get("executable_sha256"):
+            raise ValueError("intervention frozen teacher identity mismatch")
+        if intervention["teacherModelArtifacts"] != teacher.get("model_artifacts"):
+            raise ValueError("intervention frozen model artifacts mismatch")
+        if intervention["predictorInputFieldSchemaHash"] != manifest["predictorInputFieldSchemaHash"]:
+            raise ValueError("intervention predictor schema mismatch")
+        if (intervention["teacherId"] != "silver-ordinary-fair-exact10k-combat-transition-runtime16-f0bbd77"
+                or intervention["sourceTrajectory"] != "untouched_normal_policy"
+                or intervention["markOfBloomRows"] != "excluded"):
+            raise ValueError("active Lizard corpus teacher or intervention contract mismatch")
+        if intervention["baselineGitSha"] != "aa09f75e6be837f7f39a2e31dde234bfd2c2ef08":
+            raise ValueError("active Lizard corpus baseline differs from accepted handoff")
+        for key, length in (("baselineGitSha", 40), ("collectorGitSha", 40),
+                            ("collectorExecutableSha256", 64), ("teacherGitSha", 40),
+                            ("teacherExecutableSha256", 64), ("teacherManifestSha256", 64)):
+            value = intervention[key]
+            if not isinstance(value, str) or len(value) != length or any(c not in "0123456789abcdef" for c in value):
+                raise ValueError(f"lizardIntervention.{key} must be a full lowercase hash")
+        if (intervention["sourceSeedStart"] != manifest["seedSpec"]["start"]
+                or intervention["sourceSeedCount"] != manifest["seedSpec"]["count"]):
+            raise ValueError("intervention source seed block mismatch")
     path = Path(manifest["csv"]["path"])
     if verify_data and (not path.is_file() or sha256(path) != manifest["csv"].get("sha256")):
         raise ValueError("JSONL is missing or its SHA256 disagrees with manifest")
@@ -146,6 +187,7 @@ def validate_manifest(manifest: dict, verify_data: bool = True) -> dict:
 
 def validate_corpus(manifest: dict, verify_data: bool = True) -> dict:
     validate_manifest(manifest, verify_data)
+    intervention = manifest.get("lizardIntervention")
     path = Path(manifest["csv"]["path"])
     teacher_id = manifest["combatTeacher"]["teacher_id"]
     seed_spec = manifest["seedSpec"]
@@ -174,6 +216,7 @@ def validate_corpus(manifest: dict, verify_data: bool = True) -> dict:
     rows = 0
     seeds = set()
     keys = set()
+    intervention_keys = set()
     outcomes = {0: 0, 1: 0, 2: 0}
     quarantined = 0
     if not path.is_file():
@@ -216,6 +259,26 @@ def validate_corpus(manifest: dict, verify_data: bool = True) -> dict:
                         or predictor_input["fieldSchemaHash"] != manifest["predictorInputFieldSchemaHash"]):
                     raise ValueError("predictor input does not match manifest schema binding")
                 globals_value = predictor_input["globals"]
+                if intervention is not None:
+                    try:
+                        from tools.combat_transition_surrogate import _RELIC_IDS
+                    except ModuleNotFoundError:
+                        from combat_transition_surrogate import _RELIC_IDS
+                    lizard_id = _RELIC_IDS["LIZARD_TAIL"]
+                    if not any(r["relicId"] == lizard_id and r["data"] == 1
+                               for r in predictor_input["relics"]):
+                        raise ValueError("active Lizard predictor input is missing data=1")
+                    if any(r["relicId"] == _RELIC_IDS["MARK_OF_THE_BLOOM"]
+                           for r in predictor_input["relics"]):
+                        raise ValueError("Mark of the Bloom contaminated active Lizard corpus")
+                    intervention_keys.add((seed, fight))
+                    pre_relics = row["transition"]["pre"]["relics"] if row["transition"] else []
+                    if row["transition"] is not None:
+                        if not any(r["id"] == lizard_id and r["data"] == 1 for r in pre_relics):
+                            raise ValueError("active Lizard RAW pre-state is not active")
+                        post_relics = row["transition"]["post"]["relics"]
+                        if not any(r["id"] == lizard_id and r["data"] in (0, 1) for r in post_relics):
+                            raise ValueError("active Lizard RAW post-state is missing or invalid")
                 for field in ("act", "floor", "encounter"):
                     if globals_value[field] != row[field]:
                         raise ValueError(f"predictor input {field} disagrees with row")
@@ -264,6 +327,22 @@ def validate_corpus(manifest: dict, verify_data: bool = True) -> dict:
         raise ValueError("corpus contains a seed outside seedSpec")
     if len(seeds) != completed_integrity:
         raise ValueError("completed source seed count does not match corpus")
+    if intervention is not None:
+        declared_rows = intervention["activeLizardRows"]
+        if not isinstance(declared_rows, list):
+            raise ValueError("activeLizardRows must be an array")
+        declared_keys = set()
+        for item in declared_rows:
+            if (not isinstance(item, dict) or set(item) != {"sourceSeed", "fightIdx", "activeLizard"}
+                    or item["activeLizard"] is not True):
+                raise ValueError("activeLizardRows entry is malformed")
+            key = (_integer(item["sourceSeed"], "activeLizardRows.sourceSeed"),
+                   _integer(item["fightIdx"], "activeLizardRows.fightIdx"))
+            if key in declared_keys:
+                raise ValueError("duplicate active Lizard intervention identity")
+            declared_keys.add(key)
+        if declared_keys != intervention_keys:
+            raise ValueError("activeLizardRows do not exactly cover the emitted intervention rows")
     if quarantined > rows:
         raise ValueError("quarantine accounting is impossible")
     return {"rows": rows, "sourceSeeds": len(seeds),
