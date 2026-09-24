@@ -36,11 +36,6 @@ namespace sts::search {
     bool g_fairPlay = false;
     int g_maxRolloutDepth = 0;   // 0 = unlimited (play rollouts to battle end)
     double g_leafTurnPenalty = 0.0;  // -turn*k on capped non-terminal leaf; breaks stall loops
-    bool g_rolloutCaps = false;      // STS_ROLLOUT_CAPS: context-adaptive rollout caps
-    int g_rolloutCapBoss = 8;        // cap for boss encounters
-    int g_rolloutCapTurn0 = 8;       // cap at turn 0 (whole-fight rollouts)
-    int g_rolloutCapAct23 = 8;       // cap for act 2-3 (floors 17..50)
-    int g_rolloutCapLateAlive = 1;   // monsters alive <= this -> uncapped
     bool g_useTT = false;        // transposition table (value sharing across action orders)
     thread_local double g_potionKeepValue = 4.0; // HP-equiv per potion kept at fight end (dynamic potion-saving)
     bool g_convergeStop = false;         // convergence-based early stopping (see searchToTotalAdaptive)
@@ -750,20 +745,6 @@ static int rolloutActionWeight(const search::Action &a, const BattleContext &bc)
     }
 }
 
-// Context-adaptive rollout cap (STS_ROLLOUT_CAPS=1): boss fights, turn 0, and
-// act 2-3 (floors 17..50) get per-context caps in the 6-10 action range; short
-// late-fight states (monsters alive <= g_rolloutCapLateAlive) stay uncapped so
-// decisive rollouts play to terminal. Off by default: returns the flat
-// g_maxRolloutDepth so the pre-existing STS_ROLLOUT_DEPTH behavior is unchanged.
-static int rolloutCapForContext(const BattleContext &bc) {
-    if (!search::g_rolloutCaps) return search::g_maxRolloutDepth;
-    if (bc.monsters.getAliveCount() <= search::g_rolloutCapLateAlive) return 0;
-    if (isBossEncounter(bc.encounter)) return search::g_rolloutCapBoss;
-    if (bc.turn == 0) return search::g_rolloutCapTurn0;
-    if (bc.floorNum >= 17 && bc.floorNum <= 50) return search::g_rolloutCapAct23;
-    return 0;
-}
-
 // Returns the number of actions executed (diagnostics); sets `stop` to the
 // reason the rollout ended. TERMINAL includes the case where the state is
 // already terminal at entry (zero actions).
@@ -773,7 +754,7 @@ int search::BattleScumSearcher2::playoutRandom(BattleContext &state, std::vector
     // value so the search can't stall by exploiting the off-policy net.
     if (g_useVNet && g_combatVNet.loaded() && g_vnetAlpha >= 1.0) { stop = RolloutStop::VNET_SKIP; return 0; }
     stop = RolloutStop::TERMINAL;
-    const int rolloutCap = rolloutCapForContext(state);
+    const int rolloutCap = search::g_maxRolloutDepth;
     Node tempNode; // temp
     int rolloutSteps = 0;
     while (!isTerminalState(state)) {

@@ -148,7 +148,6 @@ backend when this override is on.
 | `STS_CONV_ROOT` | Root-stability early stopping | `0` (off, falsified §118) | `main` ~L9556 |
 | `STS_CONV_ROOT_*` | Various root-stability thresholds | see Searcher2 header | `main` ~L9557+ |
 | `STS_ROLLOUT_DEPTH` | Cap combat rollout length | 0 (unlimited) | `main` ~L9217 |
-| `STS_ROLLOUT_CAPS` | Context-adaptive rollout caps | `0` (off, falsified §119) | `main` ~L9221 |
 | `STS_TURN_PENALTY` | `-turn*k` on capped leaf (loop-breaker) | 0 | `main` ~L9235 |
 | `STS_TT` | Transposition table (value sharing) | `0` (off) | `main` ~L9239 |
 

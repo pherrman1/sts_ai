@@ -47,7 +47,7 @@ edge re-selection; §122 + §123 gates: +5.5pp and +5.9pp win at +7.9% and
 +14.6% cpu — the recorded cpu-trade call accepts that cost; `STS_LIVE_VALID=0`
 disables). The §113 headline (44.5% @3k) was measured before the live-valid
 default flip and remains valid as recorded; a full-stack re-measurement with
-the new default is an open follow-up. `STS_CONV_ROOT`, `STS_ROLLOUT_CAPS`,
+the new default is an open follow-up. `STS_CONV_ROOT` (and the since-removed `STS_ROLLOUT_CAPS`)
 and the non-fair forced-move variant remain opt-in (falsified at the gates,
 §118/§119). Since 2026-08-07 (EXPERIMENTS.md §124/§126) the **Searcher3 fair
 path loads a combat value leaf by default** — first the fresh honest-data

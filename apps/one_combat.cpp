@@ -7504,18 +7504,6 @@ int main(int argc, char **argv) {
         search::g_maxRolloutDepth = std::atoi(d);
         std::cout << "[rollout depth cap = " << search::g_maxRolloutDepth << "]\n";
     }
-    if (const char *d = std::getenv("STS_ROLLOUT_CAPS")) {    // context-adaptive rollout caps (Phase 2)        search::g_rolloutCaps = std::atoi(d) != 0;
-        if (search::g_rolloutCaps) {
-            if (const char *v = std::getenv("STS_ROLLOUT_CAPS_BOSS"))      search::g_rolloutCapBoss = std::atoi(v);
-            if (const char *v = std::getenv("STS_ROLLOUT_CAPS_TURN0"))     search::g_rolloutCapTurn0 = std::atoi(v);
-            if (const char *v = std::getenv("STS_ROLLOUT_CAPS_ACT23"))     search::g_rolloutCapAct23 = std::atoi(v);
-            if (const char *v = std::getenv("STS_ROLLOUT_CAPS_LATE_ALIVE")) search::g_rolloutCapLateAlive = std::atoi(v);
-            std::cout << "[context rollout caps ON: boss=" << search::g_rolloutCapBoss
-                      << " turn0=" << search::g_rolloutCapTurn0
-                      << " act23=" << search::g_rolloutCapAct23
-                      << " lateAlive<=" << search::g_rolloutCapLateAlive << "]\n";
-        }
-    }
     if (const char *d = std::getenv("STS_FORCED_MOVE")) {    // forced-action contraction (Phase 5; default ON, 0 disables)
         search::g_forcedMoveSkip = std::atoi(d) != 0;
         std::cout << "[forced-move contraction " << (search::g_forcedMoveSkip ? "ON" : "OFF") << "]\n";

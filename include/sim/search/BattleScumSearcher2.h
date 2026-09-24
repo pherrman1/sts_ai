@@ -200,20 +200,6 @@ namespace sts::search {
                                  // (information-set / determinized MCTS: no peeking at draws)
     extern int g_maxRolloutDepth; // >0: cap random-rollout length; leaf estimated (speedup)
     extern double g_leafTurnPenalty; // -turn*k on capped leaf (loop-breaker); 0 = off
-    // Context-adaptive rollout caps (STS_ROLLOUT_CAPS=1, opt-in): instead of the
-    // single flat g_maxRolloutDepth, cap rollout length per context — boss
-    // fights, turn 0 (whole-fight rollouts), and act 2-3 — while leaving short
-    // late-fight states (monsters alive <= g_rolloutCapLateAlive) uncapped so
-    // decisive rollouts play to terminal. Leaf evaluation stays the heuristic
-    // (evaluateLeafState; combat VNet rejected at the gates, EXPERIMENTS.md
-    // §97). Phase 2 of the adaptive-budget program; measured before/after with
-    // the searchdiag avgRolloutLen / rolloutDepthCapped columns (§118,
-    // plan-searchdiag-adaptive-continuation.md T6).
-    extern bool g_rolloutCaps;          // STS_ROLLOUT_CAPS: enable context caps
-    extern int  g_rolloutCapBoss;       // cap for boss encounters (default 8)
-    extern int  g_rolloutCapTurn0;      // cap when bc.turn == 0 (default 8)
-    extern int  g_rolloutCapAct23;      // cap for act 2-3 floors 17..50 (default 8)
-    extern int  g_rolloutCapLateAlive;  // monsters alive <= this -> uncapped (default 1)
     extern bool g_useTT;             // enable the transposition table (value sharing across paths)
     extern double g_vnetAlpha;       // V_combat leaf blend weight: value = a*VNet + (1-a)*rollout; >=1 skips rollout
     extern bool g_convergeStop;      // early-stop a fight's search once the best line's value plateaus
