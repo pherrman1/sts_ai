@@ -1027,9 +1027,11 @@ double search::BattleSearcher::rolloutToEnd(BattleContext &bc, std::vector<Actio
                                              const Node *parent,
                                              const Action *incomingAction,
                                              int depth) {
-    bc.cards.drawPile.enableRolloutUnsortedUnknownRegion();
-    bc.cards.discardPile.enableRolloutUnsortedUnknownRegion();
-    bc.cards.exhaustPile.enableRolloutUnsortedUnknownRegion();
+    if (rolloutUnsortedPilesEnabled) {
+        bc.cards.drawPile.enableRolloutUnsortedUnknownRegion();
+        bc.cards.discardPile.enableRolloutUnsortedUnknownRegion();
+        bc.cards.exhaustPile.enableRolloutUnsortedUnknownRegion();
+    }
     const int rolloutInputState = static_cast<int>(bc.inputState);
     const auto diagnosticStart = collectRolloutDiagnostics
         ? std::chrono::steady_clock::now() : std::chrono::steady_clock::time_point{};

@@ -230,7 +230,21 @@ void rolloutPileMutationTests(sts::GameContext &gc) {
 }
 
 void rolloutPileTreeIsolation(const sts::BattleContext &original) {
+    Search defaultSearch(original);
+    require(!defaultSearch.rolloutUnsortedPilesEnabled,
+            "unsorted rollout piles must be disabled by default");
+    defaultSearch.runDiagnosticRollout();
+    require(!defaultSearch.rolloutScratch.cards.drawPile.rolloutUnsortedUnknownRegionEnabled()
+                && !defaultSearch.rolloutScratch.cards.discardPile.rolloutUnsortedUnknownRegionEnabled()
+                && !defaultSearch.rolloutScratch.cards.exhaustPile.rolloutUnsortedUnknownRegionEnabled(),
+            "default rollout must preserve canonical pile mode");
+    require(defaultSearch.rolloutScratch.cards.drawPile.unknownRegionIsSorted()
+                && defaultSearch.rolloutScratch.cards.discardPile.unknownRegionIsSorted()
+                && defaultSearch.rolloutScratch.cards.exhaustPile.unknownRegionIsSorted(),
+            "default rollout piles must remain canonically sorted");
+
     Search search(original);
+    search.rolloutUnsortedPilesEnabled = true;
     const auto rootBefore = *search.root->state;
     search.runDiagnosticRollout();
     require(*search.root->state == rootBefore,

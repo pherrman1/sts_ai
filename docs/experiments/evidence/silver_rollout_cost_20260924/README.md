@@ -1,9 +1,11 @@
 # Silver rollout cost screen — 2026-09-24
 
-**Status:** B has a repeatable throughput signal, but the 59-root fixed-work
-quality screen is inconclusive and lower on the candidate point estimate. The
-candidate remains in a draft review branch only; no equal-runtime, complete
-combat, holdout, or production-promotion claim is made.
+**Status:** the original fixed-work quality screen is invalid because it
+shared RNG between the control and its teacher. Its raw data are preserved but
+withdrawn from quality interpretation. The corrected independent-teacher and
+uninstrumented CPU follow-up is preregistered in
+[`review_followup/PROTOCOL.md`](review_followup/PROTOCOL.md); results will be
+recorded there before any readiness or promotion claim.
 
 ## Baseline and provenance
 
@@ -103,24 +105,31 @@ had already been observed.
 
 ## Fixed-work quality screen
 
-A fresh current-main 10,000-simulation reference was generated on the same
-roots with the control binary: 590,000 valid simulations total, with the same
-five technical failures. Selected-action fingerprints on the 59 matched roots
-gave:
+**Review correction (2026-09-25):** the original comparison below is
+`QUALITY_SCREEN_INVALID_SHARED_REFERENCE_RNG`. Control at 1k and the control
+10k reference used the same `benchmark_seed`, so the former was a literal
+prefix of its teacher. B used a different RNG-to-card mapping. The preserved
+`40/59` and `35/59` counts are not evidence of harm or of no harm and must not
+drive a promotion decision. See the independent-seed protocol in
+[`review_followup/PROTOCOL.md`](review_followup/PROTOCOL.md).
+
+The invalid original shared-RNG comparison generated a 10,000-simulation
+reference on the same roots with the control binary: 590,000 valid simulations
+total, with the same five technical failures. Its selected-action fingerprints
+were:
 
 | 1,000-simulation arm | Agreement with current-main 10k | Rate |
 | --- | ---: | ---: |
 | Current-main control | 40 / 59 | 67.8% |
 | B | 35 / 59 | 59.3% |
 
-The paired point difference is −8.5 percentage points for B: there were eight
-roots where control agreed and B did not, versus three in the other direction.
-This is a concerning but small development-set result, so classify it as
-**inconclusive / no-harm gate not passed**, not as a proven broad quality
-regression. The speed gate was reached, but equal-runtime testing was skipped
-because this fixed-work comparison was not directionally non-worse. No
-complete-combat screen was run because the first-decision result was not
-promising. Do not tune the candidate on these DEV roots.
+The previously reported paired difference was −8.5 percentage points, with
+eight control-only versus three B-only agreements. Because of the shared-RNG
+coupling, this statistic is now withdrawn; neither a no-harm failure nor a
+quality regression is established. The corrected follow-up will use three
+independent teachers and four matched search identities per root and arm. No
+equal-runtime or complete-combat conclusion is carried forward from this
+invalid comparison, and B is not tuned on these DEV roots.
 
 ## C and D — stop decisions
 
@@ -155,7 +164,8 @@ Raw JSONL outputs for every A and B repetition and the 10k reference are in
 input is already in the repository and is not duplicated here.
 The supporting gprof excerpt is [`gprof-summary.txt`](gprof-summary.txt).
 
-**Knowledge impact:** the proposed rollout scratch-state invariant and the
-inconclusive B quality status are updated in the maintained combat-search and
-current-research pages. There is no claim of qualification or default
-promotion.
+**Knowledge impact:** the rollout scratch-state invariant and default-off B
+configuration are updated in maintained combat-search documentation. The
+shared-RNG quality screen is withdrawn and the corrected independent-seed
+follow-up is preregistered in maintained current-research status. No
+qualification or default promotion is claimed.

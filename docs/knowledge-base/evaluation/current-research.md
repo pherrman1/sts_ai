@@ -1,7 +1,8 @@
 # Current research status
 
-Last verified: 2026-09-24 for the Silver rollout-cost screen and experimental
-DeepSets Brew-fallback mechanism/timing smoke; 2026-09-23 for the frozen Silver prior online gameplay screen;
+Last verified: 2026-09-25 for the corrected Silver rollout-cost protocol and
+default-off status; 2026-09-24 for the experimental DeepSets Brew-fallback mechanism/timing smoke;
+2026-09-23 for the frozen Silver prior online gameplay screen;
 2026-09-21 for the complete frozen Silver internal-node FPU cohort and local 80-source learned-prefix scale validation;
 2026-09-20 for the tactical-prefix Silver oracle headroom screen
 and contextual first-action Silver selector headroom/policy screen; 2026-09-19 for forced-action historical artifact recovery and
@@ -1481,16 +1482,20 @@ path remains.
 
 The separate §343 rollout-cost candidate tested an early energy rejection (A)
 and rollout-only unsorted unknown piles (B). A preserved deterministic outputs
-but had no speed gain and was reverted. B reduced matched fixed-work Release CPU
-about 11%, but selected-action agreement against a fresh current-main 10k DEV
-reference was 35/59 versus control's 40/59 at 1k. This small lower point
-estimate is **inconclusive** and does not pass the no-harm gate, so no
-equal-runtime or complete-combat screen ran. A separate instrumented profile
-estimated `getIncomingDamage` at 2.6% inclusive, so no fragile cache was
-implemented. Chance duplicate counters were exposed by category, but exact
-support exhaustion was not established. The §343 unsorted-pile candidate
-remains a draft review candidate only; it is not qualified for promotion. See
-[ledger-06 §343](../../experiments/ledger-06.md)
+but had no speed gain and was reverted. B reduced matched fixed-work Release
+CPU about 11% in the original instrumented screen. Review found that the
+reported 35/59-versus-40/59 action comparison was invalid: the control 1k
+search was a prefix of its same-seed 10k teacher, while B mapped the same RNG
+values to different cards. Those counts are withdrawn as a quality result, not
+evidence of a B regression. B is now explicitly default-off pending the
+corrected independent-teacher and uninstrumented CPU follow-up; the preregistered
+protocol uses the current-main baseline and frozen DEV roots. No equal-runtime
+or gameplay result is available yet. A separate instrumented profile estimated
+`getIncomingDamage` at 2.6% inclusive, so no fragile cache was implemented.
+Chance duplicate counters were exposed by category, but exact support
+exhaustion was not established. B remains experimental and is not qualified
+for promotion. See [ledger-06 §343](../../experiments/ledger-06.md), the
+[corrected follow-up protocol](../../experiments/evidence/silver_rollout_cost_20260924/review_followup/PROTOCOL.md),
 and the [complete rollout-cost packet](../../experiments/evidence/silver_rollout_cost_20260924/README.md).
 
 ### Whole-Act OOC evaluator

@@ -1052,6 +1052,7 @@ public:
         searcher->endTurnWideningC = config.endTurnWideningC;
         searcher->endTurnWideningAlpha = config.endTurnWideningAlpha;
         searcher->collectRolloutDiagnostics = config.collectRolloutDiagnostics;
+        searcher->rolloutUnsortedPilesEnabled = config.rolloutUnsortedPilesEnabled;
         searcher->collectVictoryCounts = config.collectRootActionSummaries;
         searcher->collectUidFragmentationDiagnostics = config.collectUidFragmentationDiagnostics;
         searcher->leafObserver = config.leafObserver;

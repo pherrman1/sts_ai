@@ -11695,7 +11695,7 @@ Knowledge impact: current research status now records an experimental hybrid
 path and its bounded engineering evidence; qualified models and runtime defaults
 remain unchanged.
 
-## §343 — Silver rollout-cost screen: B faster, fixed-work quality inconclusive (2026-09-24)
+## §343 — Silver rollout-cost screen: B faster; original quality screen invalid (2026-09-24 onward)
 
 - **Question and baseline:** Can rollout hot-path work be reduced while
   preserving useful fixed-time Silver decisions? The handoff baseline
@@ -11721,14 +11721,26 @@ remain unchanged.
   summed rollout wall fell 13.0%, and process user CPU fell 10.9% (1.0275 to
   0.9150 s). This is a useful throughput signal. RNG mapping changed, and B
   executed about 0.24% more rollout actions at the same simulation count.
-- **Fixed-work DEV quality:** a fresh current-main 10k reference on the same
-  roots yielded 40/59 action-fingerprint agreements for current-main at 1k and
-  35/59 for B at 1k (eight control-only agreements versus three B-only).
-  Classify the small-cohort point estimate as **inconclusive / no-harm gate not
-  passed**, not a proven broad regression. The equal-runtime test requires a
-  directionally non-worse fixed-work result, so it did not run. The result was
-  not promising enough for a complete-combat DEV screen; no gameplay or
-  holdout was run.
+- **Original fixed-work DEV quality screen — invalid:** it reported 40/59
+  current-main/control agreements and 35/59 B agreements against a 10k control
+  reference, with eight control-only versus three B-only. The 1k control and
+  10k reference shared the same `benchmark_seed`; because B changes
+  RNG-to-card mapping, control's 1k search was the exact prefix of its teacher
+  while B was not. Reclassify the former result as
+  `QUALITY_SCREEN_INVALID_SHARED_REFERENCE_RNG`. Preserve the raw rows, but do
+  not interpret them as no-harm failure or as a B quality regression.
+- **Corrective implementation and protocol:** B now requires the default-off
+  `rolloutUnsortedPilesEnabled` flag, and the replay harness defaults detailed
+  rollout diagnostics and search timing off. The harness accepts an optional
+  `isolated_search_seed` while retaining and reporting the validated
+  state-bound `benchmark_seed`; `seed_guard.sh` checks both uint64 values and
+  caps replay JSONL roots at 128. A preregistered current-main follow-up uses
+  three independent 10k teachers, four matched 1k identities per arm, and an
+  uninstrumented CPU comparison. Its decision rule, seed transform, frozen
+  eligible mask, and stop conditions are in the
+  [corrected protocol](evidence/silver_rollout_cost_20260924/review_followup/PROTOCOL.md).
+  Data collection has not started; no equal-runtime, gameplay, holdout, or
+  default-promotion conclusion is available.
 - **C — incoming-damage reuse:** no cache was implemented. A separate
   instrumented `-pg` diagnostic estimated `SimpleAgent::getIncomingDamage` at
   2.6% inclusive time (1,543,022 calls) on the same fixed-work cohort. Given

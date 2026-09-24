@@ -490,6 +490,9 @@ struct SilverSearchConfig {
     // evaluation mean.  This is default-off diagnostic observation only.
     bool collectRootActionSummaries = false;
     bool collectRolloutDiagnostics = false;
+    // Default-off candidate B: skip canonical unknown-region maintenance
+    // only inside rollout scratch states.
+    bool rolloutUnsortedPilesEnabled = false;
     // Default-off diagnostic accounting for conservative UID-only search
     // fragmentation candidates. This never changes search behavior.
     bool collectUidFragmentationDiagnostics = false;
@@ -1108,9 +1111,10 @@ SilverDecisionResult runSilverDecision(SilverSearchSession &session,
                                        const BattleStateWire &state,
                                        const SilverSearchConfig &config);
 
-// Replays one frozen fight entirely inside the isolated Silver model. The
-// caller must put the snapshot's stored deterministic benchmark seed in
-// `state.isolatedSearchSeed` before calling this function.
+// Replays one frozen fight entirely inside the isolated Silver model. Ordinary
+// snapshot replay uses its stored benchmark seed; an explicitly designed
+// independent-RNG evaluation may replace `state.isolatedSearchSeed` only after
+// validating the snapshot and must record both seed identities.
 SilverCombatReplayResult runSilverCombatReplay(
     const BattleStateWire &state, const SilverSearchConfig &config);
 // Run one root in two contiguous pieces on the same private search session.
