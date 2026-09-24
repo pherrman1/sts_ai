@@ -1,0 +1,22 @@
+{
+  "checkedDateUtc": "2026-09-24",
+  "gameSeedsRun": {
+    "canary": 0,
+    "confirmation": 0
+  },
+  "instanceListPreviouslyObservedEmpty": true,
+  "noRemoteFilesModified": true,
+  "noVmCreatedOrSubstituted": true,
+  "reason": "The designated VM resource does not exist, so its checkout, outputs, and preserved artifacts cannot be inspected.",
+  "remoteFileInventoryCompleted": false,
+  "statusCommand": "python3 tools/agent/gcp_benchmark.py status",
+  "statusRecheckedAtUtc": "2026-09-24 21:37:01 UTC",
+  "statusExitCode": 1,
+  "statusOutput": "ERROR: (gcloud.compute.instances.describe) Could not fetch resource: The resource 'projects/sts-ai-502709/zones/europe-west3-c/instances/sts-test' was not found",
+  "target": {
+    "instance": "sts-test",
+    "project": "sts-ai-502709",
+    "remoteRoot": "/home/philippherrmann/sts_sweep",
+    "zone": "europe-west3-c"
+  }
+}

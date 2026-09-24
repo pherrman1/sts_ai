@@ -367,6 +367,15 @@ treatment. If Silver telemetry is expected, retain both
 The validator rejects an absent, empty, or zero telemetry setting before a
 seed can run.
 
+Schema version 2 adds `environment_policy` and per-arm `fresh_outputs`.
+Decision-bearing comparisons should use `environment_policy: "clean"` and
+include explicit `HOME` and `PATH` in `common_env`; this launches each process
+with `env -i` so inherited model-routing variables cannot leak between arms.
+List every trace/support/action-trace output in that arm's `fresh_outputs` so
+the launcher refuses to append to stale files. Schema version 1 remains
+accepted with its original inherited-environment behavior for existing
+manifests.
+
 Use this sequence after CI and before gameplay:
 
 ```bash

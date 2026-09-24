@@ -1,0 +1,33 @@
+{
+  "binaryPath": "/home/philippherrmann/.codex/worktrees/2212/sts_lightspeed/build/linux-gcc-release/one_combat",
+  "binarySha256": "c08bdd7e37a26c0ad47d3b6e75c0e08dcc729fc49191553e0fcbbc169d10d244",
+  "binaryType": "ELF 64-bit LSB pie executable, x86-64, dynamically linked",
+  "branch": "codex/deepsets-ctm-quality-confirmation",
+  "buildPreset": "linux-gcc-release",
+  "buildType": "Release",
+  "cmakeVersion": "cmake version 4.4.2",
+  "commands": [
+    "cmake --preset linux-gcc-release",
+    "cmake --build build/linux-gcc-release --target one_combat -j2"
+  ],
+  "compileFlags": "-O3 -DNDEBUG",
+  "compiler": "/usr/bin/g++",
+  "compilerVersion": "g++ (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0",
+  "executionNote": "This exact-hash binary is prepared for transfer; it has not run on sts-test because that instance is absent.",
+  "linkedRuntimeLibraries": [
+    "libcrypto.so.3",
+    "libstdc++.so.6",
+    "libm.so.6",
+    "libgomp.so.1",
+    "libgcc_s.so.1",
+    "libc.so.6"
+  ],
+  "sourceGitSha": "c9ecfb2041f8061d89bd728b8dccded2e8e12adf",
+  "status": "built_locally_from_frozen_source",
+  "warningsObserved": [
+    "vendored Silver compiler warnings",
+    "existing narrowing warning in apps/one_combat.cpp",
+    "ODR warning for simulator vs Silver Path type",
+    "LTO reported serial compilation jobs"
+  ]
+}

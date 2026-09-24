@@ -1,0 +1,7 @@
+c08bdd7e37a26c0ad47d3b6e75c0e08dcc729fc49191553e0fcbbc169d10d244  frozen_binary  /home/philippherrmann/.codex/worktrees/2212/sts_lightspeed/build/linux-gcc-release/one_combat
+e9a18951710fdfe9e1a81a2703090a41f039067c670a1d8a0393b5e7e8e0ddfd  standard_ctm  /home/philippherrmann/.codex/worktrees/2212/sts_lightspeed/selfplay/models/combat_transition_near_full_except_smoke_v2.native
+a23c0f86593fef2380c3efee3cf75783bf2b5e714395ec93237fac19376bfd1a  fast_ctm  /tmp/deepset-entropic-hybrid-specialist.native
+e62abd833fc8cb9081a1cec4a1a012832ac3b0e3166da3892841911664f1184c  v4_policy  /home/philippherrmann/.codex/worktrees/2212/sts_lightspeed/selfplay/models/ooc_strategic_tok_final.native
+3a3420469b1d648e0e306d6cb6a7e85f3d3499105e3ff3a56eee6c579194ffe3  floor_model  /home/philippherrmann/.codex/worktrees/2212/sts_lightspeed/models/v_rich_trees.txt
+fc52c14cb7239a33b3c1f9d0477ccb6c895fd51a07240fe804744e605067ad70  win_model  /home/philippherrmann/.codex/worktrees/2212/sts_lightspeed/models/v_win_trees.txt
+71d88a71cf7579e1092c3b3c27e000538a6aafe35bbf5228c10c15fa0edd4ace  specialist_source_checkpoint  /tmp/deepset-potion-specialist-20260923/W.pt
