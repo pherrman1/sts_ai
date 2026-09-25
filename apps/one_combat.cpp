@@ -2786,6 +2786,26 @@ static void exportCardCfMaps(const std::string &inputPath, const std::string &ou
 }
 
 // ---------------------------------------------------------------------------
+// Environment variables that only the vendored Silver backend implements. When
+// any is set, one_combat keeps the vendored backend so research producers and
+// their provenance checks are unchanged (ADR-0021).
+static std::string vendoredOnlySilverOption() {
+    static const char *const kNativeSupported[] = {
+        "STS_SILVER_SEARCH", "STS_SILVER_ADAPTIVE", "STS_SILVER_ADAPTIVE_TOP_GAP",
+    };
+    for (char **env = environ; env && *env; ++env) {
+        const std::string entry(*env);
+        if (entry.rfind("STS_SILVER_", 0) != 0) continue;
+        const std::string name = entry.substr(0, entry.find('='));
+        const std::string value = entry.substr(entry.find('=') + 1);
+        if (name == "STS_SILVER_ADAPTIVE_RETAINED_ONLY" && value == "1") continue;
+        bool supported = false;
+        for (const char *n : kNativeSupported) supported = supported || name == n;
+        if (!supported) return name;
+    }
+    return {};
+}
+
 int main(int argc, char **argv) {
     g_mainBinaryPath = argc > 0 ? argv[0] : "one_combat";
     g_mainArgv.clear();
@@ -3220,16 +3240,29 @@ int main(int argc, char **argv) {
         std::cerr << "error: STS_SEARCHER3 is no longer supported; Searcher3 was removed (ADR-0019)\n";
         return 2;
     }
-    // Silver owns local RNG/chance search for every combat (ADR-0020).
+    // Silver owns local RNG/chance search for every combat (ADR-0020). The
+    // native port on the main engine is the default (ADR-0021); the vendored
+    // model runs when STS_NATIVE_SILVER=0 or when a vendored-only Silver option
+    // (captures, diagnostics, leaf VNet, root prior, telemetry) is set.
     search::installSilverLiveBackend();
-    // Experimental: STS_NATIVE_SILVER=1 runs the Silver search ported onto the
-    // main engine instead of the vendored model.
-    if (const char *d = std::getenv("STS_NATIVE_SILVER"); d && std::atoi(d) != 0) {
+    const std::string vendoredOption = vendoredOnlySilverOption();
+    const char *nativeSilverEnv = std::getenv("STS_NATIVE_SILVER");
+    const bool nativeRequested = nativeSilverEnv && std::atoi(nativeSilverEnv) != 0;
+    const bool vendoredRequested = nativeSilverEnv && std::atoi(nativeSilverEnv) == 0;
+    if (nativeRequested && !vendoredOption.empty()) {
+        std::cerr << "error: STS_NATIVE_SILVER=1 conflicts with vendored-only option "
+                  << vendoredOption << " (use STS_NATIVE_SILVER=0 or unset it)\n";
+        return 2;
+    }
+    if (!vendoredRequested && vendoredOption.empty()) {
         search::installNativeSilverBackend();
         std::cout << "[Native Silver combat backend: Silver search on the main engine"
                   << (search::nativeSilverAdaptiveEnabled() ? "; adaptive" : "; flat budget")
                   << "]\n";
     } else {
+        if (!vendoredOption.empty()) {
+            std::cout << "[vendored Silver selected by " << vendoredOption << "]\n";
+        }
         std::cout << "[Silver combat backend: local Silver RNG/chance search; reuse-cap="
                   << search::silverLiveReuseCapMode() << " cap=" << search::silverLiveReuseCap()
                   << (search::silverLiveAdaptiveEnabled() ? "; adaptive" : "; flat budget")
