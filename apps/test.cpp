@@ -467,7 +467,7 @@ int testSilverWireState() {
             ++failures;
         }
     };
-    enum class Variant { PLAIN, RUNIC_DOME, FROZEN_EYE };
+    enum class Variant { PLAIN, RUNIC_DOME, FROZEN_EYE, PLAY_COUNT_RELICS };
     const MonsterEncounter encounters[] = {
         MonsterEncounter::JAW_WORM, MonsterEncounter::LOOTER, MonsterEncounter::GREMLIN_NOB,
         MonsterEncounter::THREE_SENTRIES, MonsterEncounter::THE_GUARDIAN, MonsterEncounter::SLIME_BOSS,
@@ -479,8 +479,10 @@ int testSilverWireState() {
     int decisions = 0;
     int hiddenRoots = 0;
     int edgesChecked = 0;
-    int unrepresentable = 0;
-    for (const auto variant : {Variant::PLAIN, Variant::RUNIC_DOME, Variant::FROZEN_EYE}) {
+    int queuedRoots = 0;
+    int missedReactionRoots = 0;
+    for (const auto variant : {Variant::PLAIN, Variant::RUNIC_DOME, Variant::FROZEN_EYE,
+                               Variant::PLAY_COUNT_RELICS}) {
         for (std::uint64_t seed = 11; seed <= 12; ++seed) {
             for (const auto encounter : encounters) {
                 GameContext gc(CharacterClass::IRONCLAD, seed, 0);
@@ -490,6 +492,13 @@ int testSilverWireState() {
                 gc.potionCount = 2;
                 if (variant == Variant::RUNIC_DOME) gc.obtainRelic(RelicId::RUNIC_DOME);
                 if (variant == Variant::FROZEN_EYE) gc.obtainRelic(RelicId::FROZEN_EYE);
+                if (variant == Variant::PLAY_COUNT_RELICS) {
+                    for (const auto relic : {RelicId::KUNAI, RelicId::SHURIKEN, RelicId::PEN_NIB,
+                                             RelicId::NUNCHAKU, RelicId::INK_BOTTLE, RelicId::LETTER_OPENER,
+                                             RelicId::ORNAMENTAL_FAN}) {
+                        gc.obtainRelic(relic);
+                    }
+                }
 
                 BattleContext bc;
                 search::CombatKnowledgeState knowledge;
@@ -522,15 +531,33 @@ int testSilverWireState() {
                     const std::string where = " seed=" + std::to_string(seed) + " encounter="
                         + std::to_string(static_cast<int>(encounter)) + " variant="
                         + std::to_string(static_cast<int>(variant)) + " step=" + std::to_string(steps);
-                    // The wire has no action queue; the one queued action it can
-                    // restore is the interrupted card play's OnAfterCardUsed.
-                    const bool representable = nativeRoot.cardQueue.size == 0
-                        && (nativeRoot.actionQueue.size == 0
-                            || (nativeRoot.actionQueue.size == 1
-                                && nativeRoot.actionQueue.arr[nativeRoot.actionQueue.front].type
-                                    == CombatActionType::OnAfterCardUsed));
-                    unrepresentable += !representable;
-                    if (representable) {
+                    // The wire has no queues; an interrupted card play's pending
+                    // work is rebuilt by replaying the card.
+                    queuedRoots += nativeRoot.actionQueue.size + nativeRoot.cardQueue.size > 1;
+                    // Known limit: monster reactions queued while the card's own
+                    // pre-selection effects ran (Sharp Hide, Mode Shift) are not
+                    // rebuilt. Such a root may lack queued actions but must match
+                    // otherwise.
+                    bool missingReactions = false;
+                    if (!wireRoot.equalForSearch(nativeRoot)) {
+                        BattleContext withNativeQueue = wireRoot;
+                        withNativeQueue.actionQueue = nativeRoot.actionQueue;
+                        std::vector<int> wireTypes, nativeTypes;
+                        for (int k = 0; k < wireRoot.actionQueue.size; ++k) {
+                            wireTypes.push_back(static_cast<int>(wireRoot.actionQueue.arr[(wireRoot.actionQueue.front + k) % 128].type));
+                        }
+                        for (int k = 0; k < nativeRoot.actionQueue.size; ++k) {
+                            nativeTypes.push_back(static_cast<int>(nativeRoot.actionQueue.arr[(nativeRoot.actionQueue.front + k) % 128].type));
+                        }
+                        std::size_t matched = 0;
+                        for (const int type : nativeTypes) {
+                            if (matched < wireTypes.size() && wireTypes[matched] == type) ++matched;
+                        }
+                        missingReactions = withNativeQueue.equalForSearch(nativeRoot)
+                            && matched == wireTypes.size() && wireTypes.size() < nativeTypes.size();
+                        missedReactionRoots += missingReactions;
+                    }
+                    if (!missingReactions) {
                         check(wireRoot.equalForSearch(nativeRoot), "wire root differs from native root" + where);
                         check(search::hashBattleState(wireRoot) == search::hashBattleState(nativeRoot),
                               "wire root hash differs" + where);
@@ -572,7 +599,7 @@ int testSilverWireState() {
     }
     std::cout << "silver_wire_state decisions=" << decisions << " hiddenRoots=" << hiddenRoots
               << " edges=" << edgesChecked
-              << " unrepresentable=" << unrepresentable << ' ' << (failures == 0 ? "PASS" : "FAIL") << '\n';
+              << " queuedRoots=" << queuedRoots << " missedReactionRoots=" << missedReactionRoots << ' ' << (failures == 0 ? "PASS" : "FAIL") << '\n';
     return failures == 0 ? 0 : 1;
 }
 
