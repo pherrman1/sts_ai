@@ -1,4 +1,4 @@
-// Semantic-action lowering at the isolated Silver / live sts_ai boundary.
+// Lowers an index-free Silver semantic action to a live search::Action.
 #ifndef STS_SILVER_SEMANTIC_ACTION_H
 #define STS_SILVER_SEMANTIC_ACTION_H
 
