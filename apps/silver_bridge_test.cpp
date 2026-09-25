@@ -1254,6 +1254,99 @@ int main(int argc, char **argv) {
               "live->wire successor must exact-reroot with inherited visits under a stable battle seed");
     }
 
+    // Search a two-action root where a strongly preferred Bash leaves only
+    // END_TURN. Skip that singleton decision through the retained session,
+    // then execute the forced edge and prove its already-retained continuation
+    // exact-reroots at the next live observation.
+    auto continuityLive = first;
+    continuityLive.player.energy = 2;
+    continuityLive.player.cardDrawPerTurn = 0;
+    continuityLive.cards.hand = {};
+    continuityLive.cards.cardsInHand = 1;
+    continuityLive.cards.hand[0] = card(CardId::BASH, 9901);
+    continuityLive.potions.fill(Potion::EMPTY_POTION_SLOT);
+    continuityLive.potionCount = 0;
+    search::CombatKnowledgeState continuityKnowledge;
+    continuityKnowledge.initializeFromLiveBattle(continuityLive);
+    const auto continuityRootWire = convert(
+        continuityLive, gc, continuityKnowledge);
+    const auto continuityRootActions = silver_bridge::enumerateSilverLegalActions(
+        continuityRootWire);
+    silver_bridge::SilverSearchConfig continuityConfig = reuseConfig;
+    continuityConfig.simulationsPerDecision = 128;
+    continuityConfig.collectDecisionDiagnostics = true;
+    continuityConfig.rootPuctEnabled = true;
+    continuityConfig.rootPriors.clear();
+    continuityConfig.rootPuctActionFingerprints.clear();
+    for (const auto &action : continuityRootActions) {
+        const bool bash = action.type == silver_bridge::SemanticActionType::CARD
+            && action.card.id == static_cast<std::int16_t>(CardId::BASH);
+        continuityConfig.rootPriors.push_back(bash ? 0.999999
+            : 0.000001 / static_cast<double>(std::max<std::size_t>(1,
+                continuityRootActions.size() - 1)));
+        continuityConfig.rootPuctActionFingerprints.push_back(
+            silver_bridge::semanticActionFingerprint(action));
+    }
+    auto continuitySession = silver_bridge::makeSilverSearchSession();
+    const auto searchedContinuityRoot = silver_bridge::runSilverDecision(
+        *continuitySession, continuityRootWire, continuityConfig);
+    const auto bashAction = search::resolveSilverSemanticAction(
+        continuityLive, searchedContinuityRoot.action);
+    check(continuityRootActions.size() == 2
+              && searchedContinuityRoot.accepted && searchedContinuityRoot.simulations == 128
+              && searchedContinuityRoot.action.type == silver_bridge::SemanticActionType::CARD
+              && searchedContinuityRoot.action.card.id == static_cast<std::int16_t>(CardId::BASH)
+              && bashAction.ok,
+          "continuity fixture must search and select its strongly preferred Bash root edge");
+    if (searchedContinuityRoot.accepted && bashAction.ok) {
+        search::ScumSearchAgent2 executor;
+        executor.takeAction(continuityLive, bashAction.action);
+        continuityKnowledge.initializeFromLiveBattle(continuityLive);
+        const auto singletonWire = convert(continuityLive, gc, continuityKnowledge);
+        const auto singletonActions = silver_bridge::enumerateSilverLegalActions(singletonWire);
+        auto singletonConfig = continuityConfig;
+        singletonConfig.rootPuctEnabled = false;
+        singletonConfig.rootPriors.clear();
+        singletonConfig.rootPuctActionFingerprints.clear();
+        check(singletonActions.size() == 1
+                  && singletonActions.front().type == silver_bridge::SemanticActionType::END_TURN,
+              "continuity fixture must reach a forced END_TURN singleton root");
+        if (singletonActions.size() == 1) {
+            const auto skippedSingleton = silver_bridge::runSilverSingletonDecisionWithoutSearch(
+                *continuitySession, singletonWire, singletonConfig, singletonActions.front());
+            check(skippedSingleton.accepted && skippedSingleton.singletonSearchSkipped
+                      && skippedSingleton.simulations == 0 && skippedSingleton.initialSimulations == 0
+                      && skippedSingleton.rerootExact == 1 && skippedSingleton.rerootFallback == 0
+                      && skippedSingleton.inheritedVisits > 0,
+                  "singleton zero-search decision must exact-reroot the searched predecessor and retain visits");
+            const auto endTurnAction = search::resolveSilverSemanticAction(
+                continuityLive, skippedSingleton.action);
+            check(skippedSingleton.accepted && endTurnAction.ok,
+                  "zero-search singleton edge must remain valid for live END_TURN execution");
+            if (skippedSingleton.accepted && endTurnAction.ok) {
+                executor.takeAction(continuityLive, endTurnAction.action);
+                continuityKnowledge.initializeFromLiveBattle(continuityLive);
+                const auto continuationWire = convert(
+                    continuityLive, gc, continuityKnowledge);
+                const auto continuation = silver_bridge::runSilverDecision(
+                    *continuitySession, continuationWire, singletonConfig);
+                if (!(continuation.accepted && continuation.rerootExact == 1
+                          && continuation.rerootFallback == 0
+                          && continuation.inheritedVisits > 0)) {
+                    std::cerr << "  singleton continuation diagnostic: accepted=" << continuation.accepted
+                              << " exact=" << continuation.rerootExact
+                              << " fallback=" << continuation.rerootFallback
+                              << " inherited=" << continuation.inheritedVisits
+                              << " private_miss=" << continuation.rerootMissDiagnostic << '\n';
+                }
+                check(continuation.accepted && continuation.rerootExact == 1
+                          && continuation.rerootFallback == 0
+                          && continuation.inheritedVisits > 0,
+                      "searched root -> singleton zero-search -> next root must exact-reroot through the retained singleton edge");
+            }
+        }
+    }
+
     BattleContext alteredRng = first;
     alteredRng.aiRng = Random(1); alteredRng.cardRandomRng = Random(2); alteredRng.miscRng = Random(3);
     alteredRng.monsterHpRng = Random(4); alteredRng.potionRng = Random(5); alteredRng.shuffleRng = Random(6);

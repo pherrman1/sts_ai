@@ -829,6 +829,9 @@ struct SilverDecisionResult {
     SilverRootUncertainty rootUncertainty;
     std::string initialActionFingerprint;
     std::int64_t initialSimulations = 0;
+    // True when the live singleton fast path materialized this root, validated
+    // its sole semantic edge, and selected it without adding simulations.
+    bool singletonSearchSkipped = false;
     bool adaptiveEscalated = false;
     bool adaptiveRequireRetainedRoot = false;
     double adaptiveThreshold = 0.0;
@@ -908,6 +911,7 @@ struct SilverCombatReplayResult {
     int primitiveActionsExecuted = 0;
     int forcedSelectionsContracted = 0;
     int macroSelectionsTaken = 0;
+    int singletonSearchSkips = 0;
     std::array<int, 22> macroSelectionsByTask {};
     int rerootExact = 0;
     int rerootFallback = 0;
@@ -1110,13 +1114,22 @@ SilverDecisionResult replaySilverRoot(const BattleStateWire &state,
 SilverDecisionResult runSilverDecision(SilverSearchSession &session,
                                        const BattleStateWire &state,
                                        const SilverSearchConfig &config);
+// Advance a retained session through a singleton root without searching it.
+// The sole edge is validated against the supplied live semantic action and is
+// retained as previousBest so the next observation can reroot through it.
+SilverDecisionResult runSilverSingletonDecisionWithoutSearch(
+    SilverSearchSession &session, const BattleStateWire &state,
+    const SilverSearchConfig &config, const SemanticAction &expectedAction);
 
 // Replays one frozen fight entirely inside the isolated Silver model. Ordinary
 // snapshot replay uses its stored benchmark seed; an explicitly designed
 // independent-RNG evaluation may replace `state.isolatedSearchSeed` only after
-// validating the snapshot and must record both seed identities.
+// validating the snapshot and must record both seed identities. The optional
+// singleton bypass is benchmark-only and defaults off; when enabled, a
+// one-edge private root selects its retained edge without adding simulations.
 SilverCombatReplayResult runSilverCombatReplay(
-    const BattleStateWire &state, const SilverSearchConfig &config);
+    const BattleStateWire &state, const SilverSearchConfig &config,
+    bool skipSingletonSearch = false);
 // Run one root in two contiguous pieces on the same private search session.
 // The returned budgetDiagnostic is the only additional observation; the final
 // action and root state are those of the full-budget search.

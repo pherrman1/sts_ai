@@ -287,16 +287,33 @@ schedule monster actions immediately after a card play and create spurious
 chance branches in the retained search graph.
 
 
-The live Silver default uses the retained-root adaptive policy: fresh and
-one-action/forced roots search 10,000 simulations, while a retained non-forced
-root first searches 500, measures the top-two visit-share gap, and stops at 500
-when it is at least `0.2932885906040268`; otherwise the same root continues to
-10,000 total. `STS_SILVER_ADAPTIVE=0` restores flat Silver. For `run`, `bestbench` and
-`reprobench`, an explicit sims argument selects flat Silver at that budget
-unless adaptive stopping is configured through its environment variables
-([ADR-0018](../../../decisions/0018-silver-default-combat-backend.md)). The policy applies
-at ordinary roots and private sequential-selection subdecisions; the first
-search is not discarded.
+Before an ordinary live search in the vendored backend, Silver enumerates the
+legal root actions. When exactly one action is legal, the backend materializes
+and reroots the retained session, validates the complete singleton edge
+surface against the live semantic action, and selects that edge without adding
+simulations. This keeps the forced edge as `previousBest`, so the following
+live observation can exact-reroot through a retained continuation. The existing semantic-action
+resolver still checks the action against the live `BattleContext`. This covers
+forced `END_TURN` and one-option selections. If a retained singleton surface
+cannot be validated, ordinary live play clears that predecessor, runs the
+full-budget search again from the live observation, and accepts the result
+only when it is the sole live semantic action. Hard-combat and root-mechanism
+capture modes remain fail-closed on that mismatch. Full-budget per-root and
+checkpoint diagnostic modes retain their complete search observations.
+Aggregate `[silver-combat]` telemetry reports `singleton_root_search_skips`.
+
+The vendored live backend otherwise uses the retained-root adaptive policy:
+fresh roots with multiple legal actions search 10,000 simulations, while an
+eligible retained root with multiple legal actions first searches 500,
+measures the top-two visit-share gap, and stops at 500 when it is at least
+`0.2932885906040268`; otherwise the same root continues to 10,000 total.
+For the vendored backend, `STS_SILVER_ADAPTIVE=0` restores flat Silver for
+multi-action roots. For `run`, `bestbench` and `reprobench`, an explicit sims
+argument selects flat Silver at that budget unless adaptive stopping is
+configured through its environment variables
+([ADR-0018](../../../decisions/0018-silver-default-combat-backend.md)). The
+policy applies at ordinary roots and private sequential-selection
+subdecisions; the first search is not discarded when a search is run.
 
 Silver's search-local action enumeration canonically retains the first legal
 representative when ordinary playable cards match on all gameplay-relevant

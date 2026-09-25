@@ -88,8 +88,9 @@ See
   Buffer intercepts direct positive HP loss before Tungsten Rod; and Neow's
   Lament skips invalid reserved monster slots. The test records the affected
   path and old/new observable behavior for each correction.
-- A project-fair combat policy commits only one searched root action before
-  observing and searching again.
+- A project-fair combat policy commits at most one searched root action before
+  observing and searching again; when the live root has exactly one legal
+  action, it may commit that action without search.
 - Counterfactual `GameContext` map mutation requires detaching the shared map.
 
 ### Layout and model invariants
